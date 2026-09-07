@@ -33,14 +33,14 @@ local infixr:70 " × " => rprodMap
 
 /-- The canonical coproduct action of two relations in `Rel(Set)`.  It hides the chosen
     `Sum` coproducts so calculations can use Bird and de Moor's `R + S` notation. -/
-@[expose] public def rsumMap {a a' b b' : RelSet.{0}} (R : a ⟶ a') (S : b ⟶ b') :
-    (⟨a.carrier ⊕ b.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩ :=
-  sumMap (sumCop a b) (sumCop a' b') R S
+@[expose] public def rsumMap {A a' B b' : RelSet.{0}} (R : A ⟶ a') (S : B ⟶ b') :
+    (⟨A.carrier ⊕ B.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩ :=
+  sumMap (sumCop A B) (sumCop a' b') R S
 
 /-- Bird and de Moor's coproduct-bifunctor `+` on relations. -/
-@[expose] public instance {a a' b b' : RelSet.{0}} :
-    HAdd (a ⟶ a') (b ⟶ b')
-      ((⟨a.carrier ⊕ b.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩) where
+@[expose] public instance {A a' B b' : RelSet.{0}} :
+    HAdd (A ⟶ a') (B ⟶ b')
+      ((⟨A.carrier ⊕ B.carrier⟩ : RelSet.{0}) ⟶ ⟨a'.carrier ⊕ b'.carrier⟩) where
   hAdd := rsumMap
 
 /-! ## Datatypes and their objects in `Rel(Set)` (universe 0) -/
@@ -67,23 +67,23 @@ abbrev dDigit : RelSet.{0} := ⟨Digit⟩
 /-- Carrier of `F A`.  The first summand is spelled `dDigitP.carrier` (not `DigitP`) so that
     unifying an `⁅g, h⁆`-hole against `Fobj c` solves the coproduct object to the CONSTANT
     `dDigitP` — the same spelling standalone `⁅g, h⁆` gets — keeping `rw` steps syntactic. -/
-@[expose] public def Fobj (c : RelSet.{0}) : RelSet.{0} := ⟨dDigitP.carrier ⊕ (c.carrier × Digit)⟩
+@[expose] public def Fobj (C : RelSet.{0}) : RelSet.{0} := ⟨dDigitP.carrier ⊕ (C.carrier × Digit)⟩
 
 /-- Action of `F` on a relation: identity on the `Digit⁺` summand, `R × id` on `A × Digit`. -/
-@[expose] public def Fmap {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj c ⟶ Fobj c' :=
+@[expose] public def Fmap {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj C ⟶ Fobj c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ p.2 = q.2
     | _, _ => False
 
-@[simp] theorem Fmap_ll {c c' : RelSet.{0}} (R : c ⟶ c') (d d' : DigitP) :
+@[simp] theorem Fmap_ll {C c' : RelSet.{0}} (R : C ⟶ c') (d d' : DigitP) :
     Fmap R (Sum.inl d) (Sum.inl d') = (d = d') := rfl
-@[simp] theorem Fmap_rr {c c' : RelSet.{0}} (R : c ⟶ c') (p : c.carrier × Digit)
+@[simp] theorem Fmap_rr {C c' : RelSet.{0}} (R : C ⟶ c') (p : C.carrier × Digit)
     (q : c'.carrier × Digit) :
     Fmap R (Sum.inr p) (Sum.inr q) = (R p.1 q.1 ∧ p.2 = q.2) := rfl
-@[simp] theorem Fmap_lr {c c' : RelSet.{0}} (R : c ⟶ c') (d : DigitP) (q : c'.carrier × Digit) :
+@[simp] theorem Fmap_lr {C c' : RelSet.{0}} (R : C ⟶ c') (d : DigitP) (q : c'.carrier × Digit) :
     Fmap R (Sum.inl d) (Sum.inr q) = False := rfl
-@[simp] theorem Fmap_rl {c c' : RelSet.{0}} (R : c ⟶ c') (p : c.carrier × Digit) (d : DigitP) :
+@[simp] theorem Fmap_rl {C c' : RelSet.{0}} (R : C ⟶ c') (p : C.carrier × Digit) (d : DigitP) :
     Fmap R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
@@ -92,7 +92,7 @@ abbrev dDigit : RelSet.{0} := ⟨Digit⟩
   map := Fmap
   -- constructive case split (no `grind` — it is classical and would put `Classical.choice`
   -- into every theorem whose statement mentions `F`, including the §6.1 headline)
-  map_id c := hom_ext fun u v => by
+  map_id C := hom_ext fun u v => by
     cases u with
     | inl d => cases v with
       | inl d' => exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
@@ -123,7 +123,7 @@ abbrev dDigit : RelSet.{0} := ⟨Digit⟩
           fun ⟨w, hw1, hw2⟩ => by cases w with
             | inl e => exact hw1.elim
             | inr md => exact ⟨⟨md.1, hw1.1, hw2.1⟩, hw1.2.trans hw2.2⟩⟩
-  map_mono {c c' R S} h := le_iff.mpr fun u v => by
+  map_mono {C c' R S} h := le_iff.mpr fun u v => by
     cases u <;> cases v <;>
       first | exact id | exact fun hh => ⟨le_iff.mp h _ _ hh.1, hh.2⟩ | exact False.elim
 
@@ -136,18 +136,18 @@ def con : (Fobj dDec).carrier → Decimal
 
 /-- The structural fold of a decimal through an algebra `f`, defined DIRECTLY from the
     algebra-RELATION `f` (so no choice is needed to turn `f` into a function). -/
-@[expose] public def cataFold {c : RelSet.{0}} (f : Fobj c ⟶ c) : Decimal → c.carrier → Prop
+@[expose] public def cataFold {C : RelSet.{0}} (f : Fobj C ⟶ C) : Decimal → C.carrier → Prop
   | Decimal.wrap d => fun r => f (Sum.inl d) r
   | Decimal.snoc dec dig => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r
 
-@[simp] theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj c ⟶ c) (d : DigitP) (r : c.carrier) :
+@[simp] theorem cataFold_wrap {C : RelSet.{0}} (f : Fobj C ⟶ C) (d : DigitP) (r : C.carrier) :
     cataFold f (Decimal.wrap d) r = f (Sum.inl d) r := rfl
-@[simp] theorem cataFold_snoc {c : RelSet.{0}} (f : Fobj c ⟶ c) (dec : Decimal) (dig : Digit)
-    (r : c.carrier) :
+@[simp] theorem cataFold_snoc {C : RelSet.{0}} (f : Fobj C ⟶ C) (dec : Decimal) (dig : Digit)
+    (r : C.carrier) :
     cataFold f (Decimal.snoc dec dig) r = ∃ r', cataFold f dec r' ∧ f (Sum.inr (r', dig)) r := rfl
 
 /-- Every decimal folds to at least one value: the fold is entire when `f` is. -/
-theorem cataFold_total {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
+theorem cataFold_total {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
     ∀ dec : Decimal, ∃ r, cataFold f dec r
   | Decimal.wrap d => entire_total hf.1 (Sum.inl d)
   | Decimal.snoc dec dig => by
@@ -156,8 +156,8 @@ theorem cataFold_total {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
     exact ⟨r, r', hr', hr⟩
 
 /-- The fold is single-valued: it is simple when `f` is. -/
-theorem cataFold_functional {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
-    ∀ (dec : Decimal) (r r' : c.carrier), cataFold f dec r → cataFold f dec r' → r = r'
+theorem cataFold_functional {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
+    ∀ (dec : Decimal) (r r' : C.carrier), cataFold f dec r → cataFold f dec r' → r = r'
   | Decimal.wrap d, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | Decimal.snoc dec dig, r, r', h1, h2 => by
     obtain ⟨s, hs, hfs⟩ := h1
@@ -166,8 +166,8 @@ theorem cataFold_functional {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
     subst hss
     exact simple_uniq hf.2 hfs hfs'
 
-theorem cataFold_map {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
-    Map (a := dDec) (b := c) (cataFold f) := by
+theorem cataFold_map {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
+    Map (a := dDec) (b := C) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = 𝟙 dDec
     apply hom_ext; intro dec dec'
@@ -180,11 +180,11 @@ theorem cataFold_map {c : RelSet.{0}} (f : Fobj c ⟶ c) (hf : Map f) :
     exact cataFold_functional f hf dec r r' h1 h2
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dDec ⟶ c`. -/
-@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj c ⟶ c) : dDec ⟶ c := cataFold φ
+@[expose] public def cataR {C : RelSet.{0}} (φ : Fobj C ⟶ C) : dDec ⟶ C := cataFold φ
 
 /-- The fold square `α ≫ ⦇φ⦈ = F⦇φ⦈ ≫ φ` for EVERY algebra `φ` (not only maps) — the
     homomorphism equation, hoisted out of `decInitial` so the §6.1 derivation can cite it. -/
-theorem cata_square {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
+theorem cata_square {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     graph con ≫ cataR φ = F.map (cataR φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -302,7 +302,7 @@ theorem con_recip_con : (graph con)° ≫ graph con = 𝟙 dDec := by
     | snoc a b => exact ⟨Sum.inr (a, b), rfl, rfl⟩
 
 /-- The fold's fixed-point form `⦇φ⦈ = α° ≫ F⦇φ⦈ ≫ φ` — the book's "{catamorphisms}" step. -/
-theorem cata_fix {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
+theorem cata_fix {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     cataR φ = (graph con)° ≫ (F.map (cataR φ) ≫ φ) :=
   calc cataR φ
       = 𝟙 dDec ≫ cataR φ := (Cat.id_comp _).symm
@@ -312,8 +312,8 @@ theorem cata_fix {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
 
 /-- `F`'s action in the coproduct calculus: `F R = id + (R × id)` as a `sumMap` over the
     concrete coproducts `sumCop` — the raw material of the "{definition of F}" step. -/
-theorem Fmap_eq_sumMap {c c' : RelSet.{0}} (R : c ⟶ c') :
-    F.map R = sumMap (sumCop dDigitP ⟨c.carrier × Digit⟩) (sumCop dDigitP ⟨c'.carrier × Digit⟩)
+theorem Fmap_eq_sumMap {C c' : RelSet.{0}} (R : C ⟶ c') :
+    F.map R = sumMap (sumCop dDigitP ⟨C.carrier × Digit⟩) (sumCop dDigitP ⟨c'.carrier × Digit⟩)
       (𝟙 dDigitP) (R × 𝟙 dDigit) := by
   apply hom_ext; intro u v
   constructor
@@ -332,8 +332,8 @@ theorem Fmap_eq_sumMap {c c' : RelSet.{0}} (R : c ⟶ c') :
 
 /-- Converse of `F`'s action: `(F R)° = id + (R° × id)` — the "{definition of F}" step
     as used on p.138 (the functor applied to the conversed fold). -/
-theorem Fmap_recip {c c' : RelSet.{0}} (R : c ⟶ c') :
-    (F.map R)° = sumMap (sumCop dDigitP ⟨c'.carrier × Digit⟩) (sumCop dDigitP ⟨c.carrier × Digit⟩)
+theorem Fmap_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
+    (F.map R)° = sumMap (sumCop dDigitP ⟨c'.carrier × Digit⟩) (sumCop dDigitP ⟨C.carrier × Digit⟩)
       (𝟙 dDigitP) (R° × 𝟙 dDigit) := by
   rw [Fmap_eq_sumMap, sumMap_recip, recip_id, rprodMap_recip]
   -- `rw [recip_id]` cannot key-match this last `(Cat.id dDigit)°`: its `Cat` instance sits
@@ -355,8 +355,8 @@ theorem con_eq_junc : graph con = ⁅wrap, snoc⁆ := by
 
 /-- Every algebra on `F` is a junc `⁅g, h⁆` of its two restrictions — so stating the
     derivation below for `⦇⁅g, h⁆⦈` loses no generality. -/
-theorem alg_eq_junc {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
-    ∃ (g : dDigitP ⟶ c) (h : (⟨c.carrier × Digit⟩ : RelSet.{0}) ⟶ c), φ = ⁅g, h⁆ := by
+theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
+    ∃ (g : dDigitP ⟶ C) (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C), φ = ⁅g, h⁆ := by
   refine ⟨fun d r => φ (Sum.inl d) r, fun p r => φ (Sum.inr p) r, ?_⟩
   apply hom_ext; intro u r
   constructor
@@ -374,8 +374,8 @@ theorem alg_eq_junc {c : RelSet.{0}} (φ : Fobj c ⟶ c) :
     Instantiating `g := embed`, `h := op` gives the book's `val°` recursion verbatim.
 
     The proof is the book's derivation, step for step (brace-hints as on p.138). -/
-theorem cata_converse_eq {c : RelSet.{0}} (g : dDigitP ⟶ c)
-    (h : (⟨c.carrier × Digit⟩ : RelSet.{0}) ⟶ c) :
+theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
     (cataR ⁅g, h⁆)° = g° ≫ wrap
       ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
   calc (cataR ⁅g, h⁆)°
@@ -398,7 +398,7 @@ theorem cata_converse_eq {c : RelSet.{0}} (g : dDigitP ⟶ c)
         rw [sumMap_junc, Cat.id_comp]
       -- {coproduct (5.11)}: `⁅g, h⁆° ≫ ⁅P, Q⁆ = (g° ≫ P) ∪ (h° ≫ Q)`
     _ = g° ≫ wrap ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
-        junc_recip_junc (sumCop dDigitP ⟨c.carrier × Digit⟩)
+        junc_recip_junc (sumCop dDigitP ⟨C.carrier × Digit⟩)
 
 /-! ## The `val`uation catamorphism and its recursion (book p.138)
 

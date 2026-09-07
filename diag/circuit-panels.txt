@@ -1,0 +1,129 @@
+# Every CIRCUIT panel the note draws, and the Lean statement `diag-export --circuit` must draw it
+# from.  The PANELS are the obligations: one line per `#cpanel` the note emits, in the note's own
+# document order, so a panel with no declaration behind it is a line marked `-` and reported as
+# NO-DECL rather than silently skipped, and deleting a line cannot make `scripts/circuit-check`
+# pass — the gate loops over the note's panels and asks this file for each one's record.
+#
+#   <selector> | <the display's label> | <the panel's own `cert: expect:`>
+#
+# The selector is `<full Lean name>.lhs` / `.rhs` (or `.lhs.inl`, `#binder.lhs`), as
+# `./scripts/diag-export --circuit` takes it — never the note's `lean:` marker spelling, which is
+# `<module>.<name as its file writes it>` and no declaration name.
+#
+# WHY THE MAPPING IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST COMMENT,
+# which the compiler discards before anything can query it, so no typed reader can see it and the
+# note-panel → declaration mapping cannot be computed: it is written here by hand, once, the way
+# `diag/cd-panels.txt` names its selectors.  What IS typed is everything the gate then does: the
+# panel list and each panel's cert come from `typst query … metadata` (`cpanel` emits one
+# `(kind: "circuit", cert: …)` per panel), the note's own picture is rebuilt from that cert by
+# `scripts/circuit`, and the two pictures are held to each other as SVG path data.
+#
+# A `-` line means the panel draws a STEP of a calculation — an intermediate term of a `vstep`
+# chain — which is no declaration's statement and so has nothing to generate from.  It becomes a
+# real obligation the moment that step gets a lemma of its own.
+#
+# The side, and the ARM.  A row of a proof table carries the marker of the law whose left side it
+# is, so `.lhs` is the default; a row that is the law's other side takes `.rhs`, and a row that
+# draws ONE ARM of a bracket — the note's `vstep` chains work on the cons arm and leave the nil arm
+# to the formula — takes `.lhs.inr` / `.rhs.inr`, because `.lhs` alone draws the whole case split.
+# Which one a line takes is settled against the note's own panel: the exe's tree and the note's
+# must agree in top-level node kind and in port arity before a line names that selector, and a row
+# no side or arm reaches keeps `.lhs` and shows up as a DIFF rather than as a silently-passing
+# wrong picture.
+Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
+Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
+- | <subseq-EW-case> | [nil,(𝟙×∋)(cons ∪ π₂)]
+- | <subseq-EW-case> | [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]
+- | <subseq-EW-case> | [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]
+- | <subseq-EW-join> | (𝟙×∋)(cons ∪ π₂)
+- | <subseq-EW-join> | (𝟙×∋)cons ∪ (𝟙×∋)π₂
+- | <subseq-EW-join> | (𝟙×∋)cons ∪ π₂∋
+- | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
+- | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
+- | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
+Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R°R°
+Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R°
+Freyd.Alg.RelSet.CL.F.lhs | <prefix-defn> | [nil,⊸ nil ∪ cons]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-alg> | α prefix list(p)
+- | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
+- | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]
+- | <takewhile-alg> | [nil,⊸ nil ∪ (p×(prefix list(p))) cons]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.rhs | <takewhile-alg> | F(prefix list(p))S
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
+- | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
+- | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
+- | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs | <takewhile-step> | S%∋ est(R°)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs | <takewhile-step> | [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs | <takewhile-step> | [nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs | <takewhile-step> | [nil,(π₁p→cons,⊸ nil)]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.lhs | <takewhile-laws> | (prefix list(p))%∋ est(R°)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,(π₁p→cons,⊸ nil)]⦈
+- | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
+- | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
+- | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
+- | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
+- | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
+Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
+Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
+- | <mss-mono> | ⊸ zero ∪ plus ≥
+- | <mss-mono> | (⊸ zero ∪ plus)≥
+Freyd.Alg.RelSet.MSS.mss_step1.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
+Freyd.Alg.RelSet.MSS.mss_shape.lhs | <mss-deriv> | (segment sum)%∋ est(≥)
+Freyd.Alg.RelSet.MSS.mss_shape.rhs | <mss-deriv> | suffix%∋ E((prefix sum)%∋ est(≥))est(≥)
+Freyd.Alg.RelSet.Filter.filter_mono.lhs.inr | <filter-mono> | (𝟙×R°)(π₂ ∪ (p×𝟙) cons)
+- | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
+- | <filter-mono> | π₂R° ∪ (p×R°) cons
+- | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
+- | <filter-mono> | (π₂ ∪ (p×𝟙) cons)R°
+Freyd.Alg.RelSet.Filter.filter_step1.lhs | <filter-step> | S%∋ est(R°)
+Freyd.Alg.RelSet.Filter.filter_step1.rhs | <filter-step> | [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.Filter.filter_step2.rhs | <filter-step> | [nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.Filter.filter_step3.rhs | <filter-step> | [nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)]
+Freyd.Alg.RelSet.Filter.filter_step4.rhs | <filter-step> | [nil,(π₁p→cons,π₂)]
+Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
+Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs | <filter-deriv> | ⦇[nil,(π₁p→cons,π₂)]⦈
+Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×(R;H))old
+Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
+Freyd.Alg.RelSet.Van.RH_eq_strict.lhs | <van-mono> | new (R∩H) ∪ old (R∩H)
+Freyd.Alg.RelSet.Van.van_mono.rhs | <van-mono> | (new ∪ old)(R;H)
+Freyd.Alg.RelSet.Van.van_laws.rhs | <van-laws> | (partition list(secure))%∋ est(R)
+Freyd.Alg.greedy.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.RelSet.Van.van_spec.lhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
+Freyd.Alg.RelSet.Van.van_7_15_false.lhs | <van-laws> | ⦇S%∋ est(R;H)⦈
+Freyd.Alg.RelSet.Van.van_mono_new.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
+Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
+Freyd.Alg.thinning_est.lhs | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
+- | <thin-cor> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
+- | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R
+- | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R
+Freyd.Alg.dynamic_programming_thin.rhs | <dp-laws> | H%∋ est(R)
+Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin Q P(F(X)h) est(R)
+- | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
+Freyd.Alg.RelSet.Bracket.R_eq.lhs | <mct-laws> | (flatten°)%∋ est(R)
+- | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)
+Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | (cat°)%∋ P((X×X)bin) est(R)
+Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | splits list((mct×mct)bin)minlist R
+- | <code-laws> | (decode°)%∋ est(R)
+- | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
+- | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
+- | <code-laws> | reduce list((encode×𝟙)snoc)minlist R
+Freyd.Alg.greedy_dp.rhs | <greedy-laws> | H%∋ est(R)
+Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
+- | <greedy-laws> | (Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ
+Freyd.Alg.RelSet.Detab.Q.lhs | <entab-laws> | (detab°)%∋ est(R)
+Freyd.Alg.RelSet.Detab.Q.lhs | <entab-laws> | ([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]
+Freyd.Alg.RelSet.Detab.expand_V_step.lhs | <entab-laws> | (expand°)%∋ est(V×U)(X×𝟙)snoc
+- | <tardy-laws> | (bagify°)%∋ est(R)
+- | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
+- | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
+- | <tardy-laws> | pick (schedule×𝟙)snoc
+- | <tex-laws> | (intern°)%∋ est(R)
+- | <tex-laws> | interval (inrange val°)%∋ est(R)
+- | <tex-laws> | interval H%∋ est(R)
+- | <tex-laws> | interval ([arb,step]°)%∋ est(Q)F(X)α

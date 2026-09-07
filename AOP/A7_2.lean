@@ -31,18 +31,18 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a : 𝒜}
+variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 
 /-! ## Monotonic algebras (B&dM p.172) -/
 
 section MonotonicAlg
 
-variable {R : a ⟶ a} {S f : F.obj a ⟶ a}
+variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
-/-- **B&dM p.172**: `S` is MONOTONIC on `R` when `S·FR ⊆ R·S`, mirrored `F.map R ≫ S ⊑ S ≫ R`.
-    (An algebra `S` "does not care" whether `R`-related recursive results are computed before
-    or after applying `S`.) -/
-@[expose] public def MonotonicAlg (S : F.obj a ⟶ a) (R : a ⟶ a) : Prop := F.map R ≫ S ⊑ S ≫ R
+/-- **B&dM p.172**: `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
+    (An algebra `φ` "does not care" whether `R`-related recursive results are computed before
+    or after applying `φ`.) -/
+@[expose] public def MonotonicAlg (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
 public theorem monotonicAlg_iff_conj (hf : Map f) : MonotonicAlg f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
@@ -58,7 +58,7 @@ public theorem monotonicAlg_iff_sandwich (hf : Map f) : MonotonicAlg f R ↔ F.m
 public theorem monotonicAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
     MonotonicAlg f R ↔ MonotonicAlg f R° := by
   rw [monotonicAlg_iff_conj hf, monotonicAlg_iff_conj hf]
-  have hconj : ∀ T : a ⟶ a, (f° ≫ F.map T ≫ f)° = f° ≫ F.map T° ≫ f := fun T => by
+  have hconj : ∀ T : A ⟶ A, (f° ≫ F.map T ≫ f)° = f° ≫ F.map T° ≫ f := fun T => by
     rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc, ← hFr T]
   constructor
   · intro h
@@ -79,11 +79,11 @@ end MonotonicAlg
 
 section Distributes
 
-variable {R : a ⟶ a} {f : F.obj a ⟶ a}
+variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R°`: `f·F(min R°) ⊆ min R°·Λ(f·F∈)`, mirrored. -/
-@[expose] public def Distributes (f : F.obj a ⟶ a) (R : a ⟶ a) : Prop :=
-  F.map (est R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ est R
+@[expose] public def Distributes (f : F.obj A ⟶ A) (R : A ⟶ A) : Prop :=
+  F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
     distributes over `min R°`. -/
@@ -91,18 +91,18 @@ public theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
     (hmono : MonotonicAlg f R°) : Distributes f R := by
   unfold Distributes
   apply le_Λ_comp_est_iff.mpr
-  refine ⟨comp_mono_right (F.map_mono (show est R ⊑ ∋ a from inter_lb_left _ _)) f, ?_⟩
-  have step1 : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
-    rw [Allegory.recip_comp, ← hFr (∋ a)]
-  have step2 : F.map ((∋ a)°) ≫ F.map (est R) = F.map ((∋ a)° ≫ est R) :=
+  refine ⟨comp_mono_right (F.map_mono (show est R ⊑ ∋ A from inter_lb_left _ _)) f, ?_⟩
+  have step1 : (F.map (∋ A) ≫ f)° = f° ≫ F.map ((∋ A)°) := by
+    rw [Allegory.recip_comp, ← hFr (∋ A)]
+  have step2 : F.map ((∋ A)°) ≫ F.map (est R) = F.map ((∋ A)° ≫ est R) :=
     (F.map_comp _ _).symm
-  have step3 : (∋ a)° ≫ est R ⊑ R° :=
-    le_trans (comp_mono_left _ (show est R ⊑ (((∋ a)°) \ R°) from inter_lb_right _ _))
+  have step3 : (∋ A)° ≫ est R ⊑ R° :=
+    le_trans (comp_mono_left _ (show est R ⊑ (((∋ A)°) \ R°) from inter_lb_right _ _))
       (leftDiv_comp_le _ R°)
-  have step4 : F.map ((∋ a)° ≫ est R) ⊑ F.map R° := F.map_mono step3
-  have heq : (F.map (∋ a) ≫ f)° ≫ (F.map (est R) ≫ f)
-      = f° ≫ F.map ((∋ a)° ≫ est R) ≫ f := by
-    rw [step1, Cat.assoc, ← Cat.assoc (F.map ((∋ a)°)) (F.map (est R)) f, step2]
+  have step4 : F.map ((∋ A)° ≫ est R) ⊑ F.map R° := F.map_mono step3
+  have heq : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
+      = f° ≫ F.map ((∋ A)° ≫ est R) ≫ f := by
+    rw [step1, Cat.assoc, ← Cat.assoc (F.map ((∋ A)°)) (F.map (est R)) f, step2]
   rw [heq]
   exact le_trans (comp_mono_left _ (comp_mono_right step4 f)) ((monotonicAlg_iff_conj hf).mp hmono)
 
@@ -111,37 +111,37 @@ public theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
     available in this setting), distributivity of `f` over `min R°` implies `f` is monotonic
     on `R°`. -/
 theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
-    (hpair : R° ⊑ (∋ a)° ≫ est R) (hdist : Distributes f R) : MonotonicAlg f R° := by
+    (hpair : R° ⊑ (∋ A)° ≫ est R) (hdist : Distributes f R) : MonotonicAlg f R° := by
   apply (monotonicAlg_iff_conj hf).mpr
-  have hdist' : F.map (est R) ≫ f ⊑ Λ (F.map (∋ a) ≫ f) ≫ est R := hdist
-  have hXrecip : (F.map (∋ a) ≫ f)° = f° ≫ F.map ((∋ a)°) := by
-    rw [Allegory.recip_comp, ← hFr (∋ a)]
-  have hXA : (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f) ⊑ (∋ a)° := by
-    have hrecip : (F.map (∋ a) ≫ f)° = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° :=
-      calc (F.map (∋ a) ≫ f)°
-          = (Λ (F.map (∋ a) ≫ f) ≫ ∋ a)° := by rw [Λ_eps_eq']
-        _ = (∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))° := Allegory.recip_comp _ _
-    calc (F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)
-        = ((∋ a)° ≫ (Λ (F.map (∋ a) ≫ f))°) ≫ Λ (F.map (∋ a) ≫ f) := by rw [hrecip]
-      _ = (∋ a)° ≫ ((Λ (F.map (∋ a) ≫ f))° ≫ Λ (F.map (∋ a) ≫ f)) := Cat.assoc _ _ _
-      _ ⊑ (∋ a)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ a) ≫ f)).2
-      _ = (∋ a)° := Cat.comp_id _
-  have h1 : F.map R° ⊑ F.map ((∋ a)° ≫ est R) := F.map_mono hpair
-  have hmapcomp : F.map ((∋ a)° ≫ est R) = F.map ((∋ a)°) ≫ F.map (est R) := F.map_comp _ _
-  have hUP : (∋ a)° ≫ est R ⊑ R° :=
-    le_trans (comp_mono_left _ (show est R ⊑ (((∋ a)°) \ R°) from inter_lb_right _ _))
+  have hdist' : F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R := hdist
+  have hXrecip : (F.map (∋ A) ≫ f)° = f° ≫ F.map ((∋ A)°) := by
+    rw [Allegory.recip_comp, ← hFr (∋ A)]
+  have hXA : (F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f) ⊑ (∋ A)° := by
+    have hrecip : (F.map (∋ A) ≫ f)° = (∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))° :=
+      calc (F.map (∋ A) ≫ f)°
+          = (Λ (F.map (∋ A) ≫ f) ≫ ∋ A)° := by rw [Λ_eps_eq']
+        _ = (∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))° := Allegory.recip_comp _ _
+    calc (F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f)
+        = ((∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))°) ≫ Λ (F.map (∋ A) ≫ f) := by rw [hrecip]
+      _ = (∋ A)° ≫ ((Λ (F.map (∋ A) ≫ f))° ≫ Λ (F.map (∋ A) ≫ f)) := Cat.assoc _ _ _
+      _ ⊑ (∋ A)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ A) ≫ f)).2
+      _ = (∋ A)° := Cat.comp_id _
+  have h1 : F.map R° ⊑ F.map ((∋ A)° ≫ est R) := F.map_mono hpair
+  have hmapcomp : F.map ((∋ A)° ≫ est R) = F.map ((∋ A)°) ≫ F.map (est R) := F.map_comp _ _
+  have hUP : (∋ A)° ≫ est R ⊑ R° :=
+    le_trans (comp_mono_left _ (show est R ⊑ (((∋ A)°) \ R°) from inter_lb_right _ _))
       (leftDiv_comp_le _ R°)
-  have hregroup : f° ≫ F.map ((∋ a)° ≫ est R) ≫ f
-      = (F.map (∋ a) ≫ f)° ≫ (F.map (est R) ≫ f) := by
+  have hregroup : f° ≫ F.map ((∋ A)° ≫ est R) ≫ f
+      = (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f) := by
     rw [hmapcomp, hXrecip]; simp only [Cat.assoc]
-  have hA : f° ≫ F.map R° ≫ f ⊑ f° ≫ F.map ((∋ a)° ≫ est R) ≫ f :=
+  have hA : f° ≫ F.map R° ≫ f ⊑ f° ≫ F.map ((∋ A)° ≫ est R) ≫ f :=
     comp_mono_left _ (comp_mono_right h1 f)
   rw [hregroup] at hA
-  have hC : (F.map (∋ a) ≫ f)° ≫ (F.map (est R) ≫ f)
-      ⊑ (F.map (∋ a) ≫ f)° ≫ (Λ (F.map (∋ a) ≫ f) ≫ est R) := comp_mono_left _ hdist'
+  have hC : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
+      ⊑ (F.map (∋ A) ≫ f)° ≫ (Λ (F.map (∋ A) ≫ f) ≫ est R) := comp_mono_left _ hdist'
   have hA2 := le_trans hA hC
-  rw [← Cat.assoc (F.map (∋ a) ≫ f)° (Λ (F.map (∋ a) ≫ f)) (est R)] at hA2
-  have hE : ((F.map (∋ a) ≫ f)° ≫ Λ (F.map (∋ a) ≫ f)) ≫ est R ⊑ (∋ a)° ≫ est R :=
+  rw [← Cat.assoc (F.map (∋ A) ≫ f)° (Λ (F.map (∋ A) ≫ f)) (est R)] at hA2
+  have hE : ((F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f)) ≫ est R ⊑ (∋ A)° ≫ est R :=
     comp_mono_right hXA _
   exact le_trans (le_trans hA2 hE) hUP
 
@@ -155,40 +155,51 @@ end Distributes
 
 section Greedy
 
-variable {R : a ⟶ a} {S : F.obj a ⟶ a}
+variable {R : A ⟶ A} {S : F.obj A ⟶ A}
+
+/-- Step 1 of the greedy chain: `S°F(R°)(`#frc(S)` est(R)) ⊑ R°S°(`#frc(S)` est(R))` — the
+    monotonicity hypothesis, conversed (`F(R)°=F(R°)`, `(SR)°=R°S°`), slides `R°` out of the
+    relator's span and up above `S°`; the three arrows to its right do not move. -/
+public theorem greedy_step1 (hFr : F.PreservesRecip) {R : A ⟶ A} {S : F.obj A ⟶ A}
+    (hmono : MonotonicAlg S R) :
+    S° ≫ F.map R° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ S° ≫ (S%∋ ≫ est(R)) := by
+  have hslide : S° ≫ F.map R° ⊑ R° ≫ S° := by
+    have h := recip_mono hmono
+    have heqL : (F.map R ≫ S)° = S° ≫ F.map R° := by
+      rw [Allegory.recip_comp, hFr R]
+    have heqR : (S ≫ R)° = R° ≫ S° := Allegory.recip_comp _ _
+    rwa [heqL, heqR] at h
+  have hB := comp_mono_right hslide (S%∋ ≫ est(R))
+  rwa [Cat.assoc S° (F.map R°) (S%∋ ≫ est(R)), Cat.assoc R° S° (S%∋ ≫ est(R))] at hB
+
+/-- Step 2 of the greedy chain: `R°S°(`#frc(S)` est(R)) ⊑ R°R°` — `S%∋ est(R)` is below the
+    left division `S°\R°` (`est(R) ⊑ ∈\R°`), and `S°(S°\R°) ⊑ R°` cancels it against `S°`. -/
+public theorem greedy_step2 {R : A ⟶ A} {S : F.obj A ⟶ A} :
+    R° ≫ S° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ R° := by
+  have hdiv : S%∋ ≫ est(R) ⊑ (S° \ R°) := by
+    rw [Λ_comp_est]; exact inter_lb_right _ _
+  exact le_trans (comp_mono_left _ (comp_mono_left _ hdiv))
+    (comp_mono_left _ (leftDiv_comp_le _ _))
+
+/-- Step 3 of the greedy chain: `R°R° ⊑ R°` — transitivity of `R`, conversed. -/
+public theorem greedy_step3 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R° ⊑ R° := by
+  have h := recip_mono htrans
+  rwa [Allegory.recip_comp] at h
 
 /-- **Theorem 7.2 (THE GREEDY THEOREM, B&dM p.173)**: `⦇est R·ΛS⦈ ⊆ est R·Λ⦇S⦈` if `S` is
     monotonic on the preorder `R`, mirrored.  (B&dM state it for `min R` with `S` monotonic
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
-public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a} {S : F.obj a ⟶ a}
+public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
     (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg S R) :
     ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
-  have htrans' : R° ≫ R° ⊑ R° := by
-    have h := recip_mono htrans
-    rwa [Allegory.recip_comp] at h
   apply le_Λ_comp_est_iff.mpr
   refine ⟨?_, ?_⟩
   · have hi : Λ S ≫ est R ⊑ S := by
-      have h := comp_mono_left (Λ S) (show est R ⊑ ∋ a from inter_lb_left _ _)
+      have h := comp_mono_left (Λ S) (show est R ⊑ ∋ A from inter_lb_left _ _)
       rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
-  · have step1 : S° ≫ F.map R° ⊑ R° ≫ S° := by
-      have h := recip_mono hmono
-      have heqL : (F.map R ≫ S)° = S° ≫ F.map R° := by
-        rw [Allegory.recip_comp, hFr R]
-      have heqR : (S ≫ R)° = R° ≫ S° := Allegory.recip_comp _ _
-      rwa [heqL, heqR] at h
-    have step2 : Λ S ≫ est R ⊑ (S° \ R°) := by
-      rw [Λ_comp_est]; exact inter_lb_right _ _
-    have hprefixed : S° ≫ F.map R° ≫ (Λ S ≫ est R) ⊑ R° := by
-      have hB : (S° ≫ F.map R°) ≫ (Λ S ≫ est R) ⊑ (R° ≫ S°) ≫ (Λ S ≫ est R) :=
-        comp_mono_right step1 _
-      rw [Cat.assoc S° (F.map R°) (Λ S ≫ est R), Cat.assoc R° S° (Λ S ≫ est R)] at hB
-      have hC : R° ≫ (S° ≫ (Λ S ≫ est R)) ⊑ R° ≫ (S° ≫ (S° \ R°)) :=
-        comp_mono_left _ (comp_mono_left _ step2)
-      have hD : R° ≫ (S° ≫ (S° \ R°)) ⊑ R° ≫ R° := comp_mono_left _ (leftDiv_comp_le _ _)
-      exact le_trans hB (le_trans hC (le_trans hD htrans'))
-    exact hylo_le_of_prefixed hFr I hprefixed
+  · exact hylo_le_of_prefixed hFr I
+      (le_trans (greedy_step1 hFr hmono) (le_trans greedy_step2 (greedy_step3 htrans)))
 
 end Greedy
 
@@ -196,7 +207,7 @@ end Greedy
 
 section Exercises
 
-variable {R : a ⟶ a} {S f : F.obj a ⟶ a}
+variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map
     forces `R` to be reflexive — `⦇α⦈ = id ⊆ R` follows from `α` being the least prefixed
@@ -212,8 +223,8 @@ theorem reflexive_of_alpha_monotonicAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
     candidate `Λ S ≫ est R`, its catamorphism already lands inside `min R°·Λ⦇S⦈` — a
     one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
     form `Λ S ≫ est R` up to equality. -/
-public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
-    {S : F.obj a ⟶ a} {f : F.obj a ⟶ a} (htrans : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg f R°)
+public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A}
+    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg f R°)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
   apply le_Λ_comp_est_iff.mpr
@@ -230,25 +241,25 @@ public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra
     `est(Q) ≫ Λ(T) ≫ est(R') ⊑ E(T) ≫ est(R')`.  (An earlier note here thought this out of
     reach of `le_Λ_comp_est_iff`; it is not — `E(T) = Λ(∋ ≫ T)` already puts the right side
     in the `Λ_ ≫ est` shape the universal property wants.) -/
-public theorem est_Λ_est_le {b : 𝒜} {Q : a ⟶ a} {T : a ⟶ b} {R' : b ⟶ b}
+public theorem est_Λ_est_le {B : 𝒜} {Q : A ⟶ A} {T : A ⟶ B} {R' : B ⟶ B}
     (hQT : Q ≫ T ⊑ T ≫ R') (htrans : R' ≫ R' ⊑ R') :
     est(Q) ≫ Λ T ≫ est(R') ⊑ existsImage T ≫ est(R') := by
-  show est(Q) ≫ Λ T ≫ est(R') ⊑ Λ (∋ a ≫ T) ≫ est(R')
+  show est(Q) ≫ Λ T ≫ est(R') ⊑ Λ (∋ A ≫ T) ≫ est(R')
   apply le_Λ_comp_est_iff.mpr
   have hΛest : Λ T ≫ est(R') ⊑ T ∩ (T° \ R'°) := le_of_eq (Λ_comp_est T R')
   constructor
   · exact le_trans (comp_mono_left _ (le_trans hΛest (inter_lb_left _ _)))
-      (comp_mono_right (show est(Q) ⊑ ∋ a from inter_lb_left _ _) T)
+      (comp_mono_right (show est(Q) ⊑ ∋ A from inter_lb_left _ _) T)
   · -- (∋ ≫ T)° ≫ est(Q) ≫ ΛT ≫ est(R') ⊑ T°Q°(ΛT est R') ⊑ R'°T°(ΛT est R') ⊑ R'°R'° ⊑ R'°
-    have hrecip : (∋ a ≫ T)° = T° ≫ (∋ a)° := Allegory.recip_comp _ _
+    have hrecip : (∋ A ≫ T)° = T° ≫ (∋ A)° := Allegory.recip_comp _ _
     have hQT' : T° ≫ Q° ⊑ R'° ≫ T° := by
       have h := recip_mono hQT
       rwa [Allegory.recip_comp, Allegory.recip_comp] at h
     have hTbest : T° ≫ (Λ T ≫ est(R')) ⊑ R'° :=
       le_trans (comp_mono_left _ (le_trans hΛest (inter_lb_right _ _))) (leftDiv_comp_le _ _)
-    have h1 : (∋ a ≫ T)° ≫ (est(Q) ≫ Λ T ≫ est(R'))
+    have h1 : (∋ A ≫ T)° ≫ (est(Q) ≫ Λ T ≫ est(R'))
         ⊑ T° ≫ Q° ≫ (Λ T ≫ est(R')) := by
-      rw [hrecip, Cat.assoc, ← Cat.assoc (∋ a)° (est(Q)) (Λ T ≫ est(R'))]
+      rw [hrecip, Cat.assoc, ← Cat.assoc (∋ A)° (est(Q)) (Λ T ≫ est(R'))]
       exact comp_mono_left _ (comp_mono_right (recip_eps_comp_est_le Q) _)
     have h2 : T° ≫ Q° ≫ (Λ T ≫ est(R')) ⊑ R'° ≫ T° ≫ (Λ T ≫ est(R')) := by
       rw [← Cat.assoc T° Q° (Λ T ≫ est(R')), ← Cat.assoc R'° T° (Λ T ≫ est(R'))]

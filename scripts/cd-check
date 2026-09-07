@@ -1,0 +1,72 @@
+#!/bin/sh
+# cd-check — the commutative diagrams' gate.  Regenerates every panel `diag/cd-panels.txt` names,
+# compiles it and the drawing in the note it answers, and holds the two to each other.
+#
+#   ./scripts/cd-check
+#
+# FOUR OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
+#   every panel        `svg-check` clean — reach, clear, face, square, with nothing excused;
+#   every pair         its wiring differences from the note's drawing are EXACTLY the accepted ones
+#                      of `diag/cd-accepted.txt`, so a new difference and a vanished one both fail
+#                      and deleting an accepted line cannot make the gate pass;
+#   every pair's label the panel's label set (`scripts/cd-labels`, read off `pdftotext -bbox`'s
+#                      typed XML, never a regex) equals the reference's, its own title line dropped
+#                      by the `typst query ... strong` that drew it — checked the same way as wiring,
+#                      through `diag/cd-accepted.txt`;
+#   every reference    `diag/cdref*.typ` is named by a panel — a drawing nothing is compared to is
+#                      a check nobody runs.
+set -e
+cd "$(dirname "$0")/.." || exit 1
+OUT=.lake/build/cd-check
+rm -rf "$OUT"
+mkdir -p "$OUT/gen" "$OUT/ref"
+PANELS=diag/cd-panels.txt
+ACCEPT=diag/cd-accepted.txt
+rc=0
+
+# One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
+# so a second invocation pays for the whole `Freyd` import again.
+# shellcheck disable=SC2046
+./scripts/diag-export --commutative $(awk '!/^#/ && NF {print $1}' "$PANELS")
+
+awk '!/^#/ && NF {print $1}' "$PANELS" | while read -r s; do
+  typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.svg"
+done
+awk '!/^#/ && NF == 2 {print $2}' "$PANELS" | sort -u | while read -r r; do
+  typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.svg"
+done
+
+# PDFs and the panel's own title-line query, for the label check below — only the panels that have
+# a reference need either, since a panel with no reference has nothing to compare its labels to.
+awk '!/^#/ && NF == 2 {print $1}' "$PANELS" | while read -r s; do
+  typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.pdf"
+  typst query --root . "diag/generated/commutative/$s.typ" strong > "$OUT/gen/$s.strong.json"
+done
+awk '!/^#/ && NF == 2 {print $2}' "$PANELS" | sort -u | while read -r r; do
+  typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.pdf"
+done
+
+for f in diag/cdref*.typ; do
+  awk -v r="$(basename "$f")" '!/^#/ && $2 == r {found = 1} END {exit !found}' "$PANELS" || {
+    echo "cd-check: $f is a reference drawing no line of $PANELS names, so nothing is held to it" >&2
+    rc=1
+  }
+done
+
+./scripts/svg-check "$OUT"/gen/*.svg || rc=1
+
+awk '!/^#/ && NF == 2 {print $1, $2}' "$PANELS" | while read -r s r; do
+  ./scripts/svg-check --against "$OUT/ref/${r%.typ}.svg" "$OUT/gen/$s.svg" >/dev/null \
+    2>"$OUT/$s.err" || true
+  sed 's|^ *[^:]*: wiring — ||' "$OUT/$s.err" > "$OUT/$s.got"
+  ./scripts/cd-labels "$OUT/gen/$s.pdf" "$OUT/ref/${r%.typ}.pdf" "${r%.typ}.svg" \
+    "$OUT/gen/$s.strong.json" >> "$OUT/$s.got"
+  sort -o "$OUT/$s.got" "$OUT/$s.got"
+  awk -v s="$s" -F' \\| ' '!/^#/ && $1 == s {print $2}' "$ACCEPT" | sort > "$OUT/$s.want"
+  diff -u "$OUT/$s.want" "$OUT/$s.got" && continue
+  echo "cd-check: $s against $r — the differences above are not the ones $ACCEPT accepts: a minus" \
+    "line is an accepted difference the panel no longer has, a plus line one nobody has agreed to" >&2
+  echo fail > "$OUT/$s.fail"
+done
+[ -z "$(find "$OUT" -name '*.fail')" ] || rc=1
+exit $rc

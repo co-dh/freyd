@@ -243,8 +243,8 @@ public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
 
 /-! ### Pointwise unfolds of the three `junc` algebras -/
 
-theorem junc_inl {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (x : a.carrier) (z : c.carrier) :
-    junc (sumCop a b) T U (Sum.inl x) z ↔ T x z := by
+theorem junc_inl {A B C : RelSet.{0}} (T : A ⟶ C) (U : B ⟶ C) (x : A.carrier) (z : C.carrier) :
+    junc (sumCop A B) T U (Sum.inl x) z ↔ T x z := by
   constructor
   · rintro (⟨x', hx', hT⟩ | ⟨y', hy', -⟩)
     · cases Sum.inl.inj hx'; exact hT
@@ -252,8 +252,8 @@ theorem junc_inl {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (x : a.carrier
   · intro h
     exact Or.inl ⟨x, rfl, h⟩
 
-theorem junc_inr {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (y : b.carrier) (z : c.carrier) :
-    junc (sumCop a b) T U (Sum.inr y) z ↔ U y z := by
+theorem junc_inr {A B C : RelSet.{0}} (T : A ⟶ C) (U : B ⟶ C) (y : B.carrier) (z : C.carrier) :
+    junc (sumCop A B) T U (Sum.inr y) z ↔ U y z := by
   constructor
   · rintro (⟨x', hx', -⟩ | ⟨y', hy', hU⟩)
     · nomatch hx'
@@ -274,24 +274,24 @@ public theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
   · rintro ⟨hp, hw⟩
     exact ⟨(x, c), ⟨⟨rfl, hp⟩, rfl⟩, hw⟩
 
-theorem prefAlg_inl (d : Unit) (ys : ConsList Unit E) :
-    prefAlg (Sum.inl d) ys ↔ ys = ConsList.wrap () := by
+theorem prefAlg_inl (D : Unit) (ys : ConsList Unit E) :
+    prefAlg (Sum.inl D) ys ↔ ys = ConsList.wrap () := by
   unfold prefAlg; exact junc_inl _ _ _ _
 
 theorem prefAlg_inr (x : E) (r ys : ConsList Unit E) :
     prefAlg (Sum.inr (x, r)) ys ↔ ys = ConsList.wrap () ∨ ys = ConsList.cons x r := by
   unfold prefAlg; exact junc_inr _ _ _ _
 
-public theorem listPAlg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    listPAlg p (Sum.inl d) ws ↔ ws = [] := by
+public theorem listPAlg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    listPAlg p (Sum.inl D) ws ↔ ws = [] := by
   unfold listPAlg; exact junc_inl _ _ _ _
 
 public theorem listPAlg_inr (p : E → Bool) (x : E) (c ws : List E) :
     listPAlg p (Sum.inr (x, c)) ws ↔ p x = true ∧ ws = x :: c := by
   unfold listPAlg; exact (junc_inr _ _ _ _).trans (pcons_apply p x c ws)
 
-theorem Salg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    Salg p (Sum.inl d) ws ↔ ws = [] := by
+theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_inl _ _ _ _
 
 theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
@@ -330,10 +330,10 @@ theorem pre_eq_of_length : ∀ {a b v : List E}, Pre a v → Pre b v → a.lengt
 theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
     (prefixR ≫ listP p) u ws ↔ Pre ws (flat u) ∧ AllP p ws := by
   induction u generalizing ws with
-  | wrap d =>
+  | wrap D =>
       constructor
       · rintro ⟨ys, hpre, hlp⟩
-        have hys : ys = ConsList.wrap () := (prefAlg_inl d ys).mp hpre
+        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
         subst hys
         have hws : ws = [] := (listPAlg_inl p () ws).mp hlp
         subst hws
@@ -341,7 +341,7 @@ theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
       · rintro ⟨hpre, -⟩
         cases ws with
         | nil =>
-            exact ⟨ConsList.wrap (), (prefAlg_inl d _).mpr rfl, (listPAlg_inl p () _).mpr rfl⟩
+            exact ⟨ConsList.wrap (), (prefAlg_inl D _).mpr rfl, (listPAlg_inl p () _).mpr rfl⟩
         | cons y ys => exact hpre.elim
   | cons x t ih =>
       constructor
@@ -385,11 +385,11 @@ public theorem takewhile_alg_comm (p : E → Bool) :
     have hm' : m = con u := hm
     subst hm'
     cases u with
-    | inl d =>
+    | inl D =>
         obtain ⟨ys, hpre, hlp⟩ := hX
-        have hys : ys = ConsList.wrap () := (prefAlg_inl d ys).mp hpre
+        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
         subst hys
-        exact ⟨Sum.inl d, rfl, (Salg_inl p d ws).mpr ((listPAlg_inl p () ws).mp hlp)⟩
+        exact ⟨Sum.inl D, rfl, (Salg_inl p D ws).mpr ((listPAlg_inl p () ws).mp hlp)⟩
     | inr q =>
         obtain ⟨x, t⟩ := q
         obtain ⟨ys, hpre, hlp⟩ := hX
@@ -406,10 +406,10 @@ public theorem takewhile_alg_comm (p : E → Bool) :
             (Salg_inr p x w' ws).mpr (Or.inr ⟨hp, hws⟩)⟩
   · rintro ⟨v, hv, hS⟩
     cases u with
-    | inl d =>
+    | inl D =>
         cases v with
         | inl d' =>
-            exact ⟨ConsList.wrap d, rfl, ConsList.wrap (), (prefAlg_inl d _).mpr rfl,
+            exact ⟨ConsList.wrap D, rfl, ConsList.wrap (), (prefAlg_inl D _).mpr rfl,
               (listPAlg_inl p () _).mpr ((Salg_inl p d' ws).mp hS)⟩
         | inr q => exact hv.elim
     | inr q =>
@@ -514,12 +514,12 @@ public theorem takewhile_mono (p : E → Bool) :
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hws : ws = [] := (Salg_inl p d' ws).mp hS
           subst hws
-          exact ⟨[], (Salg_inl p d []).mpr rfl, Nat.le_refl 0⟩
+          exact ⟨[], (Salg_inl p D []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       cases v with
@@ -544,36 +544,69 @@ theorem twStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : twSt
 theorem twStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : twStep p x c = [] := by
   unfold twStep; rw [h]
 
-/-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
-    lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
-    not.  The right side is the AoPA route's algebra, so both routes share one program. -/
-public theorem takewhile_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) := by
-  apply hom_ext; intro u ws
+/-- The algebra's cons branch at a point: stop with `nil`, or keep a head that passes `p`. -/
+theorem discNil_union_pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
+    (discNil ∪ pcons p) (x, c) ws ↔ ws = [] ∨ (p x = true ∧ ws = x :: c) :=
+  (junc_inr (graph fun _ => ([] : List E)) (discNil ∪ pcons p) (x, c) ws).symm.trans
+    (Salg_inr p x c ws)
+
+/-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]` —
+    the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
+    coproduct is the coproduct of the composites. -/
+public theorem takewhile_step1 (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°)
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  unfold Salg; rw [Λ_junc, junc_comp]
+
+/-- `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one element and the longest of a
+    one-element set is that element.  The `nil` arm of every algebra of §7.7. -/
+public theorem Λ_nil_comp_est :
+    (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°)
+      = graph (fun _ => ([] : List E)) := by
+  apply hom_ext; intro D ws
   rw [Λ_comp_est_apply]
+  refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
+  have hz' : z = ([] : List E) := hz
+  have hw' : ws = ([] : List E) := h
+  subst hz'; subst hw'; exact Nat.le_refl 0
+
+/-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
+    element and the longest of a one-element set is that element. -/
+public theorem takewhile_step2 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  rw [Λ_nil_comp_est]
+
+/-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
+    offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
+    loses the second. -/
+public theorem takewhile_step3 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+      = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) := by
+  apply hom_ext; intro u ws
   cases u with
-  | inl d =>
-      constructor
-      · rintro ⟨hS, -⟩
-        exact (Salg_inl p d ws).mp hS
-      · intro h0
-        have hws : ws = [] := h0
-        subst hws
-        refine ⟨(Salg_inl p d []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p d z).mp hz
-        subst hz'
-        exact Nat.le_refl 0
+  | inl D => rw [junc_inl]; exact Iff.rfl
   | inr q =>
       obtain ⟨x, c⟩ := q
+      rw [junc_inr, Λ_comp_est_apply]
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = twStep p x c
-        rcases (Salg_inr p x c ws).mp hS with hws | ⟨hp, hws⟩
+        rcases (discNil_union_pcons_apply p x c ws).mp hS with hws | ⟨hp, hws⟩
         · subst hws
           cases hpx : p x with
           | false => rw [twStep_neg hpx]
           | true =>
-              have hz := hmax (x :: c) ((Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩))
+              have hz := hmax (x :: c)
+                ((discNil_union_pcons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩))
               exact absurd hz (Nat.not_succ_le_zero _)
         · rw [twStep_pos hp, hws]
       · intro h0
@@ -582,17 +615,24 @@ public theorem takewhile_step (p : E → Bool) :
         | true =>
             rw [twStep_pos hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨-, hz'⟩
+            refine ⟨(discNil_union_pcons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
+            rcases (discNil_union_pcons_apply p x c z).mp hz with hz' | ⟨-, hz'⟩
             · subst hz'; exact Nat.zero_le _
             · subst hz'; exact Nat.le_refl _
         | false =>
             rw [twStep_neg hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inl rfl), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨hp', hz'⟩
+            refine ⟨(discNil_union_pcons_apply p x c _).mpr (Or.inl rfl), fun z hz => ?_⟩
+            rcases (discNil_union_pcons_apply p x c z).mp hz with hz' | ⟨hp', hz'⟩
             · subst hz'; exact Nat.le_refl _
             · rw [hpx] at hp'; nomatch hp'
+
+/-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
+    lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
+    not.  The right side is the AoPA route's algebra, so both routes share one program. -/
+public theorem takewhile_step (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) :=
+  (takewhile_step1 p).trans ((takewhile_step2 p).trans (takewhile_step3 p))
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
@@ -626,5 +666,19 @@ public theorem takewhile_eq_cata (p : E → Bool) :
 public theorem takewhile_entire (p : E → Bool) : Entire (takewhile p) := by
   rw [takewhile_eq_cata p, ← takeWhile_emerges p]
   exact graph_entire _
+
+-- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
+
+-- printing-only: the note calls the algebra `S` and the element-wise lift `list(p)`.  The predicate
+-- is an argument of the lift — it is what the lift lifts — but not of the algebra's name.
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | _ => `($(mkIdent `S))
+
+notation:max "list(" p ")" => listP p
 
 end Freyd.Alg.RelSet.GCTakeWhile

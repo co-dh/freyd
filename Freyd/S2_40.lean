@@ -435,7 +435,7 @@ public theorem symm_div_eq_Λ_comp {a b c : 𝒜} [PowerAllegory 𝒜] (R : a �
 
 /-- `Entire R ↔ 1 ⊑ RR°` (§2.122): since `dom R = 1 ∩ RR°` and `1 ∩ RR° ⊑ 1` always,
     `dom R = 1` is equivalent to `1 ⊑ RR°`. -/
-private theorem entire_iff_one_le {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) :
+public theorem entire_iff_one_le {a b : 𝒜} [Allegory 𝒜] (R : a ⟶ b) :
     Entire R ↔ Cat.id a ⊑ R ≫ R° := by
   dsimp [Entire, dom]
   constructor
@@ -1510,5 +1510,21 @@ theorem pre_positive_well_joined_equiv {𝒜 : Type u} [PrePositivePowerAllegory
 -- well-supported object A such that K(A) has no ultra-filters closed under countable
 -- intersections. Then any cocartesian functor T : C → S is everywhere empty (T = ∅).
 -- (Needs: logos/topos functors, cocartesian, ultra-filters; not in repo.)
+
+/-! ### Printing -/
+
+/-- The note's spelling of the singleton `Λ(𝟙)` (§2.415): the fraction with the identity over `∋`. -/
+notation:max "𝟙%∋" => singletonMap
+
+-- Printing-only: `∋` is taken at the object its target already names, so a label repeats nothing by
+-- dropping the argument; `E` is the power object's own letter.  No statement changes.
+open Lean PrettyPrinter in
+@[app_unexpander PowerAllegory.eps] public meta def unexpandEps : Unexpander
+  | _ => `(∋)
+
+open Lean PrettyPrinter in
+@[app_unexpander PowerAllegory.powerObj] public meta def unexpandPowerObj : Unexpander
+  | `($_ $A) => `($(mkIdent `E) $A)
+  | _ => throw ()
 
 end Freyd.Alg

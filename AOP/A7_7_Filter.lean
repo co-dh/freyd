@@ -64,8 +64,8 @@ public theorem id_le_pi2_lenLE_cons :
 
 /-! ### Pointwise unfolds of `S` -/
 
-theorem Salg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    Salg p (Sum.inl d) ws ↔ ws = [] := by
+theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 /-- `S`'s cons branch `π₂ ∪ (p×𝟙) cons` at `(x,c)`: drop the head, or keep a passing one. -/
@@ -94,7 +94,7 @@ theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
 public theorem filter_alg_comm (p : E → Bool) :
     (initial Unit E).α ≫ (subseq ≫ listP p)
       = (F Unit E).map (subseq ≫ listP p) ≫ Salg p := by
-  refine (cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩
+  refine (cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩
   · constructor
     · rintro ⟨ys, hs, hl⟩
       cases ys with
@@ -141,12 +141,12 @@ public theorem filter_mono (p : E → Bool) :
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hws : ws = [] := (Salg_inl p d' ws).mp hS
           subst hws
-          exact ⟨[], (Salg_inl p d []).mpr rfl, Nat.le_refl 0⟩
+          exact ⟨[], (Salg_inl p D []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       obtain ⟨x, c⟩ := q
@@ -185,37 +185,70 @@ theorem fStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : fStep
 theorem fStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : fStep p x c = c := by
   unfold fStep; rw [h]
 
-/-- The `filter-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,π₂)]` — at `(a,xs)` the algebra allows
-    `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
-    The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
-    `⊸ nil`. -/
-public theorem filter_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) := by
+/-- The power object of `[A]`, and the product of two copies of it — where the `∪` of two
+    transposes is taken. -/
+public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0}))
+    (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0})) :=
+  relProd _ _
+
+/-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the
+    transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
+    is the coproduct of the composites. -/
+public theorem filter_step1 (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°)
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  unfold Salg; rw [Λ_junc, junc_comp]
+
+/-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` — the `nil` arm, as in `takewhile-step`. -/
+public theorem filter_step2 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  rw [Λ_nil_comp_est]
+
+/-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
+    a union is the pair of the transposes followed by the power object's union. -/
+public theorem filter_step3 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
+            ≫ cup (PL (E := E)) ≫ est(lenLE°)) := by
+  rw [Λ_union _ _ (PL (E := E)), pair_eq_rpair, Cat.assoc]
+
+/-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
+    `(a,xs)` the union is `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and
+    `xs` loses the second.  The head is dropped, not the whole tail: the one place `π₂` shows
+    against takewhile's `⊸ nil`. -/
+public theorem filter_step4 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
+          ≫ cup (PL (E := E)) ≫ est(lenLE°))
+      = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) := by
+  rw [← filter_step3]
   apply hom_ext; intro u ws
-  rw [Λ_comp_est_apply]
   cases u with
-  | inl d =>
-      constructor
-      · rintro ⟨hS, -⟩
-        exact (Salg_inl p d ws).mp hS
-      · intro h0
-        have hws : ws = [] := h0
-        subst hws
-        refine ⟨(Salg_inl p d []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p d z).mp hz
-        subst hz'
-        exact Nat.le_refl 0
+  | inl D => rw [junc_sum_inl]; exact Iff.rfl
   | inr q =>
       obtain ⟨x, c⟩ := q
+      rw [junc_sum_inr, Λ_comp_est_apply]
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = fStep p x c
-        rcases (Salg_inr p x c ws).mp hS with hws | ⟨hp, hws⟩
+        rcases (Scons_apply p x c ws).mp hS with hws | ⟨hp, hws⟩
         · subst hws
           cases hpx : p x with
           | false => rw [fStep_neg hpx]
           | true =>
-              have hz := hmax (x :: ws) ((Salg_inr p x ws _).mpr (Or.inr ⟨hpx, rfl⟩))
+              have hz := hmax (x :: ws) ((Scons_apply p x ws _).mpr (Or.inr ⟨hpx, rfl⟩))
               exact absurd hz (Nat.not_succ_le_self _)
         · rw [fStep_pos hp, hws]
       · intro h0
@@ -224,17 +257,25 @@ public theorem filter_step (p : E → Bool) :
         | true =>
             rw [fStep_pos hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨-, hz'⟩
+            refine ⟨(Scons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
+            rcases (Scons_apply p x c z).mp hz with hz' | ⟨-, hz'⟩
             · subst hz'; exact Nat.le_succ _
             · subst hz'; exact Nat.le_refl _
         | false =>
             rw [fStep_neg hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x ws _).mpr (Or.inl rfl), fun z hz => ?_⟩
-            rcases (Salg_inr p x ws z).mp hz with hz' | ⟨hp', hz'⟩
+            refine ⟨(Scons_apply p x ws _).mpr (Or.inl rfl), fun z hz => ?_⟩
+            rcases (Scons_apply p x ws z).mp hz with hz' | ⟨hp', hz'⟩
             · subst hz'; exact Nat.le_refl _
             · rw [hpx] at hp'; nomatch hp'
+
+/-- The `filter-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,π₂)]` — at `(a,xs)` the algebra allows
+    `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
+    The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
+    `⊸ nil`. -/
+public theorem filter_step (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) :=
+  (filter_step1 p).trans ((filter_step2 p).trans ((filter_step3 p).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
@@ -244,7 +285,7 @@ public theorem filter_step (p : E → Bool) :
   | ConsList.wrap _ => []
   | ConsList.cons x xs => fStep p x (filtCL p xs)
 
-theorem filtCL_wrap (p : E → Bool) (d : Unit) : filtCL p (ConsList.wrap d) = [] := rfl
+theorem filtCL_wrap (p : E → Bool) (D : Unit) : filtCL p (ConsList.wrap D) = [] := rfl
 
 theorem filtCL_cons (p : E → Bool) (x : E) (t : ConsList Unit E) :
     filtCL p (ConsList.cons x t) = fStep p x (filtCL p t) := rfl
@@ -290,7 +331,7 @@ theorem sub_eq_of_length : ∀ {a b : List E}, Sub a b → b.length ≤ a.length
 /-- Achievability: `filtCL p u` is itself a `p`-passing subsequence of the list `u` carries. -/
 public theorem filt_sound (p : E → Bool) :
     ∀ u : ConsList Unit E, (subseq ≫ listP p) u (filtCL p u)
-  | ConsList.wrap d => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p d)⟩
+  | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p D)⟩
   | ConsList.cons x t => by
       obtain ⟨ys, hs, hl⟩ := filt_sound p t
       rw [filtCL_cons]
@@ -305,7 +346,7 @@ public theorem filt_sound (p : E → Bool) :
     that drops a passing element is beaten by the one that keeps it. -/
 public theorem filt_best (p : E → Bool) :
     ∀ (u : ConsList Unit E) (ws : List E), (subseq ≫ listP p) u ws → Sub ws (filtCL p u)
-  | ConsList.wrap d, ws, ⟨ys, hs, hl⟩ => by
+  | ConsList.wrap D, ws, ⟨ys, hs, hl⟩ => by
       cases ys with
       | wrap v =>
           have hws : ws = [] := (listPAlg_inl p v ws).mp hl
@@ -377,5 +418,11 @@ example : filtCL (fun n => decide (n % 2 = 0)) (ofList [1, 2, 3, 4]) = [2, 4] :=
 example : filtCL (fun n => decide (n % 2 = 0)) (ofList [1, 3]) = [] := by decide
 /-- The head fails but the tail survives — where `takewhile` would stop. -/
 example : filtCL (fun n => decide (n < 3)) (ofList [5, 1, 2]) = [1, 2] := by decide
+
+-- printing-only: the note calls the algebra a fold folds with `S`.  WHICH predicate it filters on
+-- is the context every panel of the section is drawn in, not part of the arrow's name.
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | _ => `($(mkIdent `S))
 
 end Freyd.Alg.RelSet.Filter

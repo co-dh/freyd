@@ -1,0 +1,199 @@
+#!/usr/bin/env python3
+"""svg-diff — hold two compiled panels to the same GEOMETRY.
+
+    ./scripts/svg-diff old.svg new.svg
+
+Reads both SVGs as XML, composes the nested `transform` matrices, and puts every drawn primitive
+into one bag per file: a path as the absolute coordinates of its own `d`, a circle as its centre and
+radius, a placed glyph as the box its `use` stands in.  The two bags are matched after removing each
+file's own translation — the panels are compared as PICTURES, not as page positions — and every
+primitive present in one and absent in the other beyond the tolerance is printed.
+
+Exits 0 iff the geometry bags match.  Glyph boxes are reported SEPARATELY and do not decide the
+exit status: two panels drawn from the same types may legitimately carry different LETTERS (Lean's
+own bound-variable names against the note's), and a letter is not a geometry.
+"""
+import math
+import re
+import sys
+import xml.etree.ElementTree as ET
+
+TOL = 0.2835  # 0.01cm in SVG points
+NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
+CMD = re.compile(r"([MmLlHhVvCcSsQqTtAaZz])")
+
+
+def mat_of(s):
+    """One `transform` attribute as a 2x3 matrix (a, b, c, d, e, f)."""
+    m = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+    for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", s or ""):
+        v = [float(x) for x in NUM.findall(args)]
+        if name == "translate":
+            n = (1, 0, 0, 1, v[0], v[1] if len(v) > 1 else 0.0)
+        elif name == "scale":
+            n = (v[0], 0, 0, v[1] if len(v) > 1 else v[0], 0, 0)
+        elif name == "matrix":
+            n = tuple(v[:6])
+        elif name == "rotate":
+            t = math.radians(v[0])
+            n = (math.cos(t), math.sin(t), -math.sin(t), math.cos(t), 0, 0)
+        else:
+            continue
+        m = mul(m, n)
+    return m
+
+
+def mul(p, q):
+    a, b, c, d, e, f = p
+    A, B, C, D, E, F = q
+    return (a * A + c * B, b * A + d * B, a * C + c * D, b * C + d * D,
+            a * E + c * F + e, b * E + d * F + f)
+
+
+def apply(m, x, y):
+    a, b, c, d, e, f = m
+    return (a * x + c * y + e, b * x + d * y + f)
+
+
+def path_points(d):
+    """Every coordinate pair a path's `d` names, in its own user space.  Relative commands are
+    accumulated, so the points are absolute wherever the path started."""
+    out, cur, start, cmd = [], (0.0, 0.0), (0.0, 0.0), None
+    toks = [t for t in CMD.split(d) if t.strip()]
+    i = 0
+    while i < len(toks):
+        t = toks[i]
+        if CMD.fullmatch(t):
+            cmd, i = t, i + 1
+            if cmd in "Zz":
+                cur = start
+                out.append(cur)
+            continue
+        v = [float(x) for x in NUM.findall(t)]
+        rel = cmd.islower()
+        k, up = {"m": 2, "l": 2, "h": 1, "v": 1, "c": 6, "s": 4, "q": 4, "t": 2, "a": 7}[cmd.lower()], cmd.lower()
+        j = 0
+        while j + k <= len(v):
+            seg = v[j:j + k]
+            if up == "h":
+                cur = (cur[0] + seg[0], cur[1]) if rel else (seg[0], cur[1])
+            elif up == "v":
+                cur = (cur[0], cur[1] + seg[0]) if rel else (cur[0], seg[0])
+            else:
+                pts = [(seg[p], seg[p + 1]) for p in range(0, k - (1 if up == "a" else 0), 2)] \
+                    if up != "a" else [(seg[5], seg[6])]
+                for px, py in pts:
+                    p = (cur[0] + px, cur[1] + py) if rel else (px, py)
+                    out.append(p)
+                cur = out[-1]
+            out.append(cur)
+            if up == "m":
+                start = cur
+            j += k
+        i += 1
+    return out
+
+
+def collect(path):
+    """Every primitive of one file, as (kind, tuple of numbers)."""
+    root = ET.parse(path).getroot()
+    geom, glyphs = [], []
+
+    def walk(node, m):
+        m = mul(m, mat_of(node.get("transform")))
+        tag = node.tag.split("}")[-1]
+        # A glyph outline inside `defs`/`symbol` is a DEFINITION, not ink: counting it would pin
+        # the translation to the origin in both files and normalise nothing.
+        if tag in ("defs", "symbol"):
+            return
+        if tag == "path" and node.get("d"):
+            pts = [apply(m, x, y) for x, y in path_points(node.get("d"))]
+            if pts:
+                geom.append(("path", tuple(round(c, 4) for p in pts for c in p)))
+        elif tag == "circle":
+            cx, cy = float(node.get("cx", 0)), float(node.get("cy", 0))
+            x, y = apply(m, cx, cy)
+            geom.append(("circle", (round(x, 4), round(y, 4), round(float(node.get("r", 0)), 4))))
+        elif tag in ("rect", "use", "image"):
+            x, y = apply(m, float(node.get("x", 0)), float(node.get("y", 0)))
+            (glyphs if tag == "use" else geom).append(
+                (tag, (round(x, 4), round(y, 4), node.get("width", ""), node.get("height", ""))))
+        for c in node:
+            walk(c, m)
+
+    walk(root, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
+    return geom, glyphs
+
+
+def best_offset(xs, ys):
+    """The translation that makes the two files agree on the MOST primitives.  A corner is the wrong
+    anchor: a longer label grows the page and moves the whole panel inside it, so aligning on the
+    bounding box would report every wire as displaced."""
+    best, bn = (0.0, 0.0), -1
+    for k, a in xs:
+        for j, b in ys:
+            if k != j or len(a) != len(b) or not isinstance(a[0], float):
+                continue
+            off = (a[0] - b[0], a[1] - b[1])
+            n = len(xs) - len(unmatched(xs, shift(ys, (-off[0], -off[1]))))
+            if n > bn:
+                best, bn = off, n
+    return best
+
+
+def shift(items, off):
+    out = []
+    for k, v in items:
+        w = tuple(v[i] - (off[0] if i % 2 == 0 else off[1]) if isinstance(v[i], float) else v[i]
+                  for i in range(len(v)))
+        out.append((k, w))
+    return out
+
+
+def close(a, b):
+    if a[0] != b[0] or len(a[1]) != len(b[1]):
+        return False
+    return all(abs(x - y) <= TOL if isinstance(x, float) and isinstance(y, float) else x == y
+               for x, y in zip(a[1], b[1]))
+
+
+def unmatched(xs, ys):
+    """What is in `xs` and not in `ys`, matching each at most once."""
+    left, out = list(ys), []
+    for a in xs:
+        for i, b in enumerate(left):
+            if close(a, b):
+                del left[i]
+                break
+        else:
+            out.append(a)
+    return out
+
+
+def report(name, xs, ys):
+    only_a, only_b = unmatched(xs, ys), unmatched(ys, xs)
+    for k, v in only_a:
+        print(f"  only in OLD  {name} {k} {v[:8]}")
+    for k, v in only_b:
+        print(f"  only in NEW  {name} {k} {v[:8]}")
+    return len(only_a) + len(only_b)
+
+
+def main(argv):
+    if len(argv) != 3:
+        print(__doc__)
+        return 2
+    ga, la = collect(argv[1])
+    gb, lb = collect(argv[2])
+    off = best_offset(ga, gb)
+    gb, lb = shift(gb, (-off[0], -off[1])), shift(lb, (-off[0], -off[1]))
+    n = report("geometry", ga, gb)
+    print(f"{argv[1]} vs {argv[2]}: {len(ga)} vs {len(gb)} primitives, {n} unmatched")
+    m = report("glyph", la, lb)
+    if m:
+        print(f"  ({m} glyph boxes differ — labels, not geometry)")
+    return 1 if n else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

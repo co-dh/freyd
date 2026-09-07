@@ -26,28 +26,28 @@ universe u
 namespace Freyd.Alg
 namespace RelSet
 
-variable {a b : RelSet.{u}}
+variable {A B : RelSet.{u}}
 
 /-- Galois connection, pointwise (AoPA `galois`): `∀ x y, f x ≼ y ⇔ x ⊴ g y`. -/
-def galois (f : a.carrier → b.carrier) (g : b.carrier → a.carrier)
-    (R : b ⟶ b) (S : a ⟶ a) : Prop :=
+def galois (f : A.carrier → B.carrier) (g : B.carrier → A.carrier)
+    (R : B ⟶ B) (S : A ⟶ A) : Prop :=
   ∀ x y, R y (f x) ↔ S (g y) x
 
 /-- Point-free formulation of the Galois connection (AoPA `galois-○`):
     `(fun f)˘ ○ R ≑ S ○ fun g`, i.e. `R ≫ (graph f)° = graph g ≫ S`. -/
-def galoisPF (f : a.carrier → b.carrier) (g : b.carrier → a.carrier)
-    (R : b ⟶ b) (S : a ⟶ a) : Prop :=
+def galoisPF (f : A.carrier → B.carrier) (g : B.carrier → A.carrier)
+    (R : B ⟶ B) (S : A ⟶ A) : Prop :=
   R ≫ (graph f)° = graph g ≫ S
 
-variable {f : a.carrier → b.carrier} {g : b.carrier → a.carrier} {R : b ⟶ b} {S : a ⟶ a}
+variable {f : A.carrier → B.carrier} {g : B.carrier → A.carrier} {R : B ⟶ B} {S : A ⟶ A}
 
 /-- Both composites reduce pointwise: `(R ≫ (graph f)°) y x ↔ R y (f x)`. -/
-private theorem comp_graphf_recip (y : b.carrier) (x : a.carrier) :
+private theorem comp_graphf_recip (y : B.carrier) (x : A.carrier) :
     (R ≫ (graph f)°) y x ↔ R y (f x) :=
   ⟨fun ⟨_, hR, hz⟩ => hz ▸ hR, fun hR => ⟨f x, hR, rfl⟩⟩
 
 /-- `(graph g ≫ S) y x ↔ S (g y) x`. -/
-private theorem graphg_comp (y : b.carrier) (x : a.carrier) :
+private theorem graphg_comp (y : B.carrier) (x : A.carrier) :
     (graph g ≫ S) y x ↔ S (g y) x :=
   ⟨fun ⟨_, hw, hS⟩ => hw ▸ hS, fun hS => ⟨g y, rfl, hS⟩⟩
 
@@ -70,7 +70,7 @@ theorem galois_iff : galois f g R S ↔ galoisPF f g R S :=
 /-- AoPA `monotonic-lower`: for preorders `≼`, `⊴`, the lower adjoint `f` is monotone,
     `x₀ ⊴ x₁ → f x₀ ≼ f x₁`.  (In repo orientation `S x₁ x₀ → R (f x₁) (f x₀)`.) -/
 theorem monotonic_lower (hRrefl : Reflexive R) (hStrans : Transitive S)
-    (gal : galois f g R S) {x₀ x₁ : a.carrier} (h : S x₁ x₀) : R (f x₁) (f x₀) := by
+    (gal : galois f g R S) {x₀ x₁ : A.carrier} (h : S x₁ x₀) : R (f x₁) (f x₀) := by
   -- `x ⊴ g (f x)`, from reflexivity of `≼` through the connection.
   have hunit : ∀ x, S (g (f x)) x := fun x =>
     (gal x (f x)).mp (le_iff.mp hRrefl (f x) (f x) rfl)
@@ -101,7 +101,7 @@ theorem galois_easy_mpr (gal : galois f g R S) (hSrefl : Reflexive S) :
     graph g ⊑ R ≫ (graph f)° := by
   rw [galois_equiv_mpr gal]  -- `R ≫ (graph f)° = graph g ≫ S`
   -- `graph g ⊑ graph g ≫ S` since `id ⊑ S` and `graph g ≫ id = graph g`.
-  calc graph g = graph g ≫ Cat.id a := (Cat.comp_id _).symm
+  calc graph g = graph g ≫ Cat.id A := (Cat.comp_id _).symm
     _ ⊑ graph g ≫ S := comp_mono_left (graph g) hSrefl
 
 /-- AoPA `galois-hard-⇒`: `fun g ○ ((fun f)˘ ○ R)˘ ⊑ S˘`, i.e.
@@ -114,7 +114,7 @@ theorem galois_hard_mpr (gal : galois f g R S) :
   -- `(S° ≫ (graph g)°) ≫ graph g ⊑ S°`, using `(graph g)° ≫ graph g ⊑ id`.
   calc (S° ≫ (graph g)°) ≫ graph g
       = S° ≫ ((graph g)° ≫ graph g) := Cat.assoc _ _ _
-    _ ⊑ S° ≫ Cat.id a := comp_mono_left (S°) (graph_simple g)
+    _ ⊑ S° ≫ Cat.id A := comp_mono_left (S°) (graph_simple g)
     _ = S° := Cat.comp_id _
 
 end RelSet

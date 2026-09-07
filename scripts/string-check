@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""string-check — the note's string diagrams' gate.  Every Hinze–Marsden panel the note draws is an
+obligation `diag/string-panels.txt` states, and this redraws it from LEAN and holds the two to each
+other.
+
+    ./scripts/string-check            # every display
+    ./scripts/string-check 13.6       # only the displays whose number starts so
+
+THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
+  every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
+                  display the file does not name fails here rather than going unchecked, and a line
+                  naming a display the note no longer holds fails too;
+  every panel     of a display whose line names a selector is drawn by `diag-export --string`,
+                  swept by `scanline --strict`, and compared to the note's own panel;
+  every selector  the file names is drawn, so a declaration whose statement the exporter refuses is
+                  reported as CANNOT-DRAW rather than dropped.
+
+WHY THERE IS NO REGEX OVER THE NOTE.  The panels come out of `typst query` as the note's own
+metadata — id, `cert`, lanes, beads, ports — so nothing here reads the `.typ` source.  The note side
+of each comparison is the panel `scripts/diagram` rebuilds from that same `cert:`, which
+`make pairs`/`diagram --compare` already holds to the literal in the note; the Lean side is
+`diag-export --string`.  Both are compiled to SVG and put to `scripts/svg-diff`, which compares
+drawn PRIMITIVES, not text.  One thing is genuinely out of reach: a display's `lean:` marker is a
+Typst COMMENT, invisible to `typst query`, so the selector column of `diag/string-panels.txt` was
+authored once (through `scripts/cite-cover`'s own note reader) and is static — the gate never
+re-derives it, and a display whose line carries no selector is reported NO-DECL.
+"""
+import json
+import os
+import subprocess
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(ROOT)
+sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
+PANELS = "diag/string-panels.txt"
+NOTE = "diag/allegory-axioms.typ"
+OUT = ".lake/build/string-check"
+run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
+
+
+def note_panels():
+    """Every panel the note draws, grouped by display, in document order — the note's own metadata."""
+    p = run("typst", "query", "--root", ".", NOTE, "metadata", "--field", "value")
+    if p.returncode:
+        sys.exit(f"string-check: typst query {NOTE} failed:\n{p.stderr}")
+    out = {}
+    for m in json.loads(p.stdout):
+        if isinstance(m, dict) and m.get("kind") == "scanline":
+            out.setdefault(m["id"].rsplit(".", 1)[0], []).append(m)
+    return out
+
+
+def obligations():
+    """One line per display: the selectors, the display, what its panels draw."""
+    rows = []
+    for line in open(PANELS, encoding="utf-8"):
+        line = line.split("\t#")[0].rstrip("\n")
+        if not line or line.startswith("#"):
+            continue
+        sels, disp, _ = (line.split("\t") + ["", ""])[:3]
+        rows.append((disp.split("/")[0], disp, sels.split(",")))
+    return rows
+
+
+def diagram_args(cert):
+    """A panel's `cert:` handed to `scripts/diagram` WHOLE.  Re-spelling it as flags means writing
+    each mapping field (`sigs`, `tint`, `defn`) back in that flag's own pair syntax, and a field
+    whose syntax this got wrong — or did not know about — came back as a parse error naming
+    nothing; `--cert` reads the cert with the same code `--compare` does."""
+    return ["--cert", json.dumps(cert, ensure_ascii=False)]
+
+
+def content(path):
+    """A compiled panel's own `hm-meta` — lanes, beads, object wire, ports — or the typst error."""
+    p = run("typst", "query", "--root", ".", path, "metadata", "--field", "value")
+    if p.returncode:
+        return None, next((l.strip() for l in p.stderr.splitlines() if l.startswith("error")),
+                          "compile failed")
+    ms = [m for m in json.loads(p.stdout) if isinstance(m, dict) and m.get("kind") == "scanline"]
+    return (ms[0], None) if ms else (None, "the file draws no panel")
+
+
+def why(n, g):
+    """What the two panels disagree about, named by the thing that is wrong rather than by a count:
+    a lane's label, a bead's, the object wire's, the ports, a bead the generator spiders."""
+    lab = lambda xs: [x[1] for x in xs or []]
+    out = []
+    for k in ("lanes", "beads", "obj"):
+        if lab(n.get(k)) != lab(g.get(k)):
+            out.append(f"{k} {lab(n.get(k))} vs {lab(g.get(k))}")
+    if lab(n.get("top")) != lab(g.get("top")) or lab(n.get("bot")) != lab(g.get("bot")):
+        out.append(f"ports {lab(n.get('top'))}->{lab(n.get('bot'))} vs "
+                   f"{lab(g.get('top'))}->{lab(g.get('bot'))}")
+    if (g.get("cert") or {}).get("nat"):
+        out.append(f"spider {[x[0] for x in g['cert']['nat']]} where the note dots a bead")
+    return "; ".join(out)
+
+
+def wrap(path, body):
+    open(path, "w", encoding="utf-8").write(
+        '#set page(width: auto, height: auto, margin: 0.3cm, fill: white)\n' + body)
+
+
+def svg(src, dst):
+    p = run("typst", "compile", "--root", ".", "--format", "svg", src, dst)
+    return None if not p.returncode else p.stderr.strip().splitlines()[-1:] or ["compile failed"]
+
+
+def main(argv):
+    want = argv[0] if argv else ""
+    os.makedirs(OUT, exist_ok=True)
+    live = note_panels()
+    rows = obligations()
+    rc, named = 0, {d for d, _, _ in rows}
+    for d in live:
+        if d not in named:
+            print(f"{d}: MISSING — the note draws {len(live[d])} panel(s) here and {PANELS} names"
+                  f" no line for it, so nothing is held to them")
+            rc = 1
+    for d, disp, sels in rows:
+        if d not in live:
+            print(f"{disp}: STALE — {PANELS} names a display the note no longer draws")
+            rc = 1
+
+    todo = sorted({s for d, _, sels in rows if d in live and d.startswith(want)
+                   for s in sels if s != "-"})
+    if todo:
+        p = run("./scripts/diag-export", "--string", *todo)
+        drawn = p.stderr + p.stdout
+    for d, disp, sels in rows:
+        if d not in live or not d.startswith(want):
+            continue
+        ps = live[d]
+        if len(sels) != len(ps):
+            print(f"{disp}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)} panels")
+            rc = 1
+            continue
+        for k, (sel, panel) in enumerate(zip(sels, ps), 1):
+            tag = f"{disp}.{k}"
+            if sel == "-":
+                print(f"{tag}: NO-DECL — no declaration is cited for this panel")
+                continue
+            gen = f"diag/generated/string/{sel}.typ"
+            if not os.path.exists(gen):
+                err = next((l for l in drawn.splitlines() if sel in l), "no such file drawn")
+                print(f"{tag} {sel}: CANNOT-DRAW {err}")
+                rc = 1
+                continue
+            gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
+            wrap(gwrap, f'#import "/{gen}": pic\n#pic\n')
+            drew, err = content(gwrap)
+            if err:
+                print(f"{tag} {sel}: CANNOT-DRAW {err}")
+                rc = 1
+                continue
+            cert = panel.get("cert") or {}
+            if not all(cert.get(f) for f in ("expect", "src", "tgt")):
+                print(f"{tag} {sel}: UNCERTIFIED — the note's panel's `cert:` names no"
+                      f" {', '.join(f for f in ('expect', 'src', 'tgt') if not cert.get(f))}, so"
+                      f" there is nothing to rebuild it from")
+                rc = 1
+                continue
+            p = run("./scripts/diagram", *diagram_args(cert))
+            if p.returncode or not p.stdout.strip():
+                print(f"{tag} {sel}: NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}")
+                rc = 1
+                continue
+            # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
+            # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
+            wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n'
+                 + p.stdout)
+            e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
+            if e:
+                print(f"{tag} {sel}: CANNOT-DRAW typst {e}")
+                rc = 1
+                continue
+            s = run("./scripts/scanline", "--strict", gen)
+            if s.returncode:
+                print(f"{tag} {sel}: SWEEP {s.stdout.strip().splitlines()[-1:]}"
+                      f"{s.stderr.strip().splitlines()[-1:]}")
+                rc = 1
+                continue
+            v = run("./scripts/svg-diff", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
+            if v.returncode:
+                n = len([l for l in v.stdout.splitlines() if "only in" in l])
+                print(f"{tag} {sel}: DIFF {n} unmatched primitive(s); {why(panel, drew)}")
+                rc = 1
+            else:
+                print(f"{tag} {sel}: ok")
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

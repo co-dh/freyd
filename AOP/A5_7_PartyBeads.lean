@@ -23,17 +23,6 @@ open RT (Rose dRose cataFold cataFoldList cataFoldList_eq_listP)
 
 variable {A B : Type}
 
-/-! ## The source object `x×[[x]×[x]]` and its relator -/
-
-/-- The note's source object `x×[[x]×[x]]`: `F(A, [x]×[x])`, one branch of the rose tree with
-    both parties already computed for every subtree. -/
-public abbrev dBranch (A : Type) : RelSet.{0} :=
-  (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-
-/-- The relator of `x×[[x]×[x]]`: `R × list(list(R) × list(R))`. -/
-@[expose] public def branch (R : dE A ⟶ dE B) : dBranch A ⟶ dBranch B :=
-  rprodMap R (list (rprodMap (list R) (list R)))
-
 /-! ## `include` -/
 
 /-- Elementwise: a `R×S`-related pair of lists has `S`-related second components. -/
@@ -49,8 +38,8 @@ public theorem listP_cmap_snd {A₁ A₂ B₁ B₂ : Type} (R : dE A₁ ⟶ dE B
     root is passed through by `R`, and the concatenated second components are `list(R)`-related
     because `list(R)` cannot move an element across a segment boundary (`listP_cconcat`). -/
 public theorem include_lax_natural (R : dE A ⟶ dE B) :
-    branch R ≫ (graph includeFn : dBranch B ⟶ dList B)
-      ⊑ (graph includeFn : dBranch A ⟶ dList A) ≫ list R := by
+    branch R ≫ (includeR : dBranch B ⟶ dList B)
+      ⊑ (includeR : dBranch A ⟶ dList A) ≫ list R := by
   refine le_iff.mpr fun u w h => ?_
   obtain ⟨v, ⟨h1, h2⟩, rfl⟩ := h
   exact ⟨includeFn u, rfl, h1,
@@ -271,10 +260,10 @@ public theorem branch_Rtt_empty : ∀ v, ¬ branch Rtt uEx v
     `Rtt` — the right-hand side must relate the discarded `[false]`, the left-hand side never
     sees it. -/
 public theorem include_not_strict :
-    ¬ ((graph includeFn : dBranch Bool ⟶ dList Bool) ≫ list Rtt
-        ⊑ branch Rtt ≫ (graph includeFn : dBranch Bool ⟶ dList Bool)) := by
+    ¬ ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt
+        ⊑ branch Rtt ≫ (includeR : dBranch Bool ⟶ dList Bool)) := by
   intro hle
-  have hrhs : ((graph includeFn : dBranch Bool ⟶ dList Bool) ≫ list Rtt) uEx
+  have hrhs : ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt) uEx
       (ConsList.cons true (ConsList.wrap ())) :=
     ⟨includeFn uEx, rfl, ⟨rfl, rfl⟩, trivial⟩
   obtain ⟨v, hv, -⟩ := le_iff.mp hle _ _ hrhs

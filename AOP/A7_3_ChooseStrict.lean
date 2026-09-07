@@ -30,23 +30,23 @@ namespace Freyd.Alg
   legs are the graphs of the two product projections.  The two `Tabulates` conjuncts
   beyond `Map` are proven pointwise first so the structure literal stays flat. -/
 
-public theorem RelSet.graph_fst_snd_topMor (a b : RelSet.{u}) :
-    topMor a b = (graph (Prod.fst : a.carrier × b.carrier → a.carrier))° ≫
-      (graph (Prod.snd : a.carrier × b.carrier → b.carrier)) := by
+public theorem RelSet.graph_fst_snd_topMor (A B : RelSet.{u}) :
+    topMor A B = (graph (Prod.fst : A.carrier × B.carrier → A.carrier))° ≫
+      (graph (Prod.snd : A.carrier × B.carrier → B.carrier)) := by
   apply hom_ext
   intro x y
   constructor
   · intro h
     exact ⟨(x, y), rfl, rfl⟩
   · intro h
-    exact (le_iff.mp (topMor_max (a := a) (b := b) (R := fun _ _ => True))) x y trivial
+    exact (le_iff.mp (topMor_max (a := A) (b := B) (R := fun _ _ => True))) x y trivial
 
-public theorem RelSet.graph_fst_snd_joint (a b : RelSet.{u}) :
-    (graph (Prod.fst : a.carrier × b.carrier → a.carrier)) ≫
-        (graph (Prod.fst : a.carrier × b.carrier → a.carrier))°
-      ∩ (graph (Prod.snd : a.carrier × b.carrier → b.carrier)) ≫
-        (graph (Prod.snd : a.carrier × b.carrier → b.carrier))°
-      = Cat.id (RelSet.mk (a.carrier × b.carrier)) := by
+public theorem RelSet.graph_fst_snd_joint (A B : RelSet.{u}) :
+    (graph (Prod.fst : A.carrier × B.carrier → A.carrier)) ≫
+        (graph (Prod.fst : A.carrier × B.carrier → A.carrier))°
+      ∩ (graph (Prod.snd : A.carrier × B.carrier → B.carrier)) ≫
+        (graph (Prod.snd : A.carrier × B.carrier → B.carrier))°
+      = Cat.id (RelSet.mk (A.carrier × B.carrier)) := by
   apply hom_ext
   intro p q
   constructor
@@ -62,23 +62,23 @@ public theorem RelSet.graph_fst_snd_joint (a b : RelSet.{u}) :
 
 /-- The concrete product of `a` and `b` in `Rel(Set)`: the apex is the Lean product type and the
     legs are the graphs of `Prod.fst`, `Prod.snd`. -/
-@[expose] public def RelSet.prod (a b : RelSet.{u}) : RelProd a b :=
-  { p := RelSet.mk (a.carrier × b.carrier)
-    outl := graph (Prod.fst : a.carrier × b.carrier → a.carrier)
-    outr := graph (Prod.snd : a.carrier × b.carrier → b.carrier)
-    tab := ⟨graph_map (Prod.fst), graph_map (Prod.snd), graph_fst_snd_topMor a b,
-      graph_fst_snd_joint a b⟩ }
+@[expose] public def RelSet.prod (A B : RelSet.{u}) : RelProd A B :=
+  { p := RelSet.mk (A.carrier × B.carrier)
+    outl := graph (Prod.fst : A.carrier × B.carrier → A.carrier)
+    outr := graph (Prod.snd : A.carrier × B.carrier → B.carrier)
+    tab := ⟨graph_map (Prod.fst), graph_map (Prod.snd), graph_fst_snd_topMor A B,
+      graph_fst_snd_joint A B⟩ }
 
-theorem RelSet.prod_outl_apply (a b : RelSet.{u}) (p : (a.carrier × b.carrier)) (x : a.carrier) :
-    (RelSet.prod a b).outl p x = (x = p.1) := rfl
+theorem RelSet.prod_outl_apply (A B : RelSet.{u}) (p : (A.carrier × B.carrier)) (x : A.carrier) :
+    (RelSet.prod A B).outl p x = (x = p.1) := rfl
 
-theorem RelSet.prod_outr_apply (a b : RelSet.{u}) (p : (a.carrier × b.carrier)) (y : b.carrier) :
-    (RelSet.prod a b).outr p y = (y = p.2) := rfl
+theorem RelSet.prod_outr_apply (A B : RelSet.{u}) (p : (A.carrier × B.carrier)) (y : B.carrier) :
+    (RelSet.prod A B).outr p y = (y = p.2) := rfl
 
 /-- Pointwise computation of `pair` in `Rel(Set)`: `⟨R,S⟩ x p = R x p.1 ∧ S x p.2`. -/
-theorem RelSet.prod_pair_apply {a b c : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b)
-    (x : c.carrier) (p : a.carrier × b.carrier) :
-    (RelSet.prod a b).pair R S x p = (R x p.1 ∧ S x p.2) := by
+theorem RelSet.prod_pair_apply {A B C : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B)
+    (x : C.carrier) (p : A.carrier × B.carrier) :
+    (RelSet.prod A B).pair R S x p = (R x p.1 ∧ S x p.2) := by
   rw [RelProd.pair]
   apply propext
   constructor
@@ -138,8 +138,8 @@ public theorem choose_monotonic_strict :
 /-- When `R` is entire the `Dom` factors are `𝟙` and `choose_monotonic` becomes an EQUALITY.  The
     `Dom` factors of (5.6)/(5.7) become `𝟙` by `entire_comp` (`S2_10` §2.13): both legs of `P` are
     maps, hence entire, and so is `R`. -/
-public theorem choose_monotonic_eq_of_entire {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {a : 𝒜}
-    (P : RelProd a a) (R : a ⟶ a) (hR : Entire R) :
+public theorem choose_monotonic_eq_of_entire {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A : 𝒜}
+    (P : RelProd A A) (R : A ⟶ A) (hR : Entire R) :
     prodMap P P R R ≫ choose P = choose P ≫ R := by
   calc
     prodMap P P R R ≫ choose P

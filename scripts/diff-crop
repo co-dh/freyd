@@ -551,7 +551,12 @@ def esc(t):
     # `%` doubled BEFORE the markup entities: magick interpolates image properties in every filename
     # argument, so the note's `%∋` reached pango as one byte of the `∋` and it refused the whole
     # caption as invalid UTF-8 — the symbolic division sign is in half the keys this cuts.
-    return t.replace("%", "%%").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    t = t.replace("%", "%%")
+    # Twice: magick decodes the entities once itself before pango parses the markup, so a single
+    # `&lt;` reaches pango as `<` and a caption with `<=` in it dies as a bad element name.
+    for _ in range(2):
+        t = t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return t
 
 
 def textimg(text, out, color):

@@ -16,7 +16,7 @@ namespace Freyd.Alg.Vec.Rel
 open Freyd RelSet
 open Freyd.Alg.RelSet.Tuple (dTuple tupleP)
 
-variable {a b c d : RelSet.{0}} {n m k j p : Nat}
+variable {A B C D : RelSet.{0}} {n m k j p : Nat}
 
 /-! ## The beads as relations
 
@@ -27,7 +27,7 @@ variable {a b c d : RelSet.{0}} {n m k j p : Nat}
 
 /-- **`moves` is lax natural**: `Vec(n)(S) moves ⊑ moves Vec(3)(Vec(n)(S))`.  Not an equality:
     the three rows of the right-hand side may take unrelated `S`-images of one entry. -/
-public theorem moves_lax_natural (S : a ⟶ b) :
+public theorem moves_lax_natural (S : A ⟶ B) :
     tupleP n S ≫ RelSet.graph moves ⊑ RelSet.graph moves ≫ tupleP 3 (tupleP n S) := by
   refine le_iff.mpr fun t V h => ?_
   obtain ⟨u, hu, hV⟩ := h
@@ -37,7 +37,7 @@ public theorem moves_lax_natural (S : a ⟶ b) :
 
 /-- **`trans` is natural**: transposing is a bijection on indices, so the transpose of an image is
     the image of the transpose — read backwards by transposing again. -/
-public theorem trans_natural (S : a ⟶ b) :
+public theorem trans_natural (S : A ⟶ B) :
     tupleP 3 (tupleP n S) ≫ RelSet.graph trans = RelSet.graph trans ≫ tupleP n (tupleP 3 S) := by
   apply hom_ext; intro v W
   constructor
@@ -52,7 +52,7 @@ public theorem trans_natural (S : a ⟶ b) :
 
 /-- **`concat` is natural**: flattening is a bijection on indices, entry `r·p+i` of the row laid
     out being entry `i` of row `r`, so an image of the flattening is the flattening of an image. -/
-public theorem concat_natural (S : a ⟶ b) :
+public theorem concat_natural (S : A ⟶ B) :
     tupleP j (tupleP p S) ≫ RelSet.graph concat = RelSet.graph concat ≫ tupleP (j * p) S := by
   apply hom_ext; intro v W
   constructor
@@ -71,7 +71,7 @@ public theorem concat_natural (S : a ⟶ b) :
 
 /-- **`zip` is natural**: `F(Vec(n)(S),Vec(n)(T)) zip = zip Vec(n)(F(S,T))`.  `graph zip` IS
     `AOP.A7_4_CylinderBeads`'s `zipT`, so this is that square, restated for the `Vec` bead. -/
-public theorem zip_natural (S : a ⟶ b) (T : c ⟶ d) :
+public theorem zip_natural (S : A ⟶ B) (T : C ⟶ D) :
     rprodMap (tupleP n S) (tupleP n T) ≫ RelSet.graph zip
       = RelSet.graph zip ≫ tupleP n (rprodMap S T) :=
   Tuple.zip_natural S T
@@ -79,7 +79,7 @@ public theorem zip_natural (S : a ⟶ b) (T : c ⟶ d) :
 /-- **`cp` is lax natural**: `F(S,Vec(k)(T)) cp ⊑ cp Vec(k)(F(S,T))`.  Not an equality: the copied
     square is one point on the left and may take a different `S`-image in each entry on the
     right. -/
-public theorem cp_lax_natural (S : a ⟶ b) (T : c ⟶ d) :
+public theorem cp_lax_natural (S : A ⟶ B) (T : C ⟶ D) :
     rprodMap S (tupleP k T) ≫ RelSet.graph cp ⊑ RelSet.graph cp ≫ tupleP k (rprodMap S T) := by
   refine le_iff.mpr fun q r h => ?_
   obtain ⟨w, ⟨h1, h2⟩, hr⟩ := h
@@ -89,7 +89,7 @@ public theorem cp_lax_natural (S : a ⟶ b) (T : c ⟶ d) :
 
 /-- **`cons` is natural**: `F(S,Vec(m)(S)) cons = cons Vec(m+1)(S)`.  A head and a tail is a
     bijection with a tuple one longer, `uncons` reading it backwards. -/
-public theorem cons_natural (S : a ⟶ b) :
+public theorem cons_natural (S : A ⟶ B) :
     rprodMap S (tupleP m S) ≫ RelSet.graph cons = RelSet.graph cons ≫ tupleP (m + 1) S := by
   apply hom_ext; intro q W
   constructor
@@ -111,12 +111,12 @@ public theorem cons_natural (S : a ⟶ b) :
   only the derivation below composes with them. -/
 
 /-- `Vec(n)(𝟙) = 𝟙`: agreeing entry by entry is being the same tuple. -/
-public theorem tupleP_id : tupleP n (𝟙 a) = 𝟙 (dTuple n a) := by
+public theorem tupleP_id : tupleP n (𝟙 A) = 𝟙 (dTuple n A) := by
   apply hom_ext; intro t u
   exact ⟨fun h => funext fun i => h i, fun h i => congrFun h i⟩
 
 /-- `Vec(n)(S) Vec(n)(T) = Vec(n)(ST)`: the intermediate tuple is chosen entry by entry. -/
-public theorem tupleP_comp (S : a ⟶ b) (T : b ⟶ c) :
+public theorem tupleP_comp (S : A ⟶ B) (T : B ⟶ C) :
     tupleP n (S ≫ T) = tupleP n S ≫ tupleP n T := by
   apply hom_ext; intro t w
   constructor
@@ -127,12 +127,12 @@ public theorem tupleP_comp (S : a ⟶ b) (T : b ⟶ c) :
     exact ⟨u i, h1 i, h2 i⟩
 
 /-- `Vec(n)` is monotonic. -/
-public theorem tupleP_mono {S T : a ⟶ b} (h : S ⊑ T) : tupleP n S ⊑ tupleP n T :=
+public theorem tupleP_mono {S T : A ⟶ B} (h : S ⊑ T) : tupleP n S ⊑ tupleP n T :=
   le_iff.mpr fun _ _ hS i => le_iff.mp h _ _ (hS i)
 
 /-- `Vec(n)` of a function's graph is the graph of `Vec(n)`'s action on it. -/
-public theorem tupleP_graph (f : a.carrier → b.carrier) :
-    tupleP n (RelSet.graph f) = (RelSet.graph ((Vec n).map f) : dTuple n a ⟶ dTuple n b) := by
+public theorem tupleP_graph (f : A.carrier → B.carrier) :
+    tupleP n (RelSet.graph f) = (RelSet.graph ((Vec n).map f) : dTuple n A ⟶ dTuple n B) := by
   apply hom_ext; intro t u
   constructor
   · intro h
@@ -146,14 +146,14 @@ public theorem tupleP_graph (f : a.carrier → b.carrier) :
 /-! ## `∋` and `est` on a vector -/
 
 /-- **`∋ : X[k]⟶X`** — a component of the vector, the note's membership on a row. -/
-@[expose] public def mem {k : Nat} : dTuple k a ⟶ a := fun v x => ∃ i, v i = x
+@[expose] public def mem {k : Nat} : dTuple k A ⟶ A := fun v x => ∃ i, v i = x
 
 /-- **`est(S) ≜ ∋∩(∈\S°)`** on a vector: a component that is `S`-below every component. -/
-@[expose] public def est (S : a ⟶ a) {k : Nat} : dTuple k a ⟶ a :=
+@[expose] public def est (S : A ⟶ A) {k : Nat} : dTuple k A ⟶ A :=
   fun v x => (∃ i, v i = x) ∧ ∀ i, S x (v i)
 
 /-- **`est(S) = ∋∩(∈\S°)`** — the pointwise definition above is B&dM's operator, `∈ = ∋°`. -/
-public theorem est_eq (S : a ⟶ a) : (est S : dTuple k a ⟶ a) = mem ∩ (mem° \ S°) := by
+public theorem est_eq (S : A ⟶ A) : (est S : dTuple k A ⟶ A) = mem ∩ (mem° \ S°) := by
   apply hom_ext; intro v x
   constructor
   · rintro ⟨hx, hall⟩
@@ -166,26 +166,26 @@ public theorem est_eq (S : a ⟶ a) : (est S : dTuple k a ⟶ a) = mem ∩ (mem�
 /-- **`Q(S) ≜ F(𝟙,moves trans Vec(n)(est(S))) zip Vec(n)(cons)`** — `gen` with the choice made:
     each square keeps ONE cheapest of the three paths offered by its neighbours, and the square
     goes in front of it. -/
-@[expose] public def Q {n m : Nat} (S : dTuple m a ⟶ dTuple m a) :
-    (⟨(dTuple n a).carrier × (dTuple n (dTuple m a)).carrier⟩ : RelSet.{0})
-      ⟶ dTuple n (dTuple (m + 1) a) :=
-  rprodMap (𝟙 (dTuple n a)) (RelSet.graph moves ≫ RelSet.graph trans ≫ tupleP n (est S))
+@[expose] public def Q {n m : Nat} (S : dTuple m A ⟶ dTuple m A) :
+    (⟨(dTuple n A).carrier × (dTuple n (dTuple m A)).carrier⟩ : RelSet.{0})
+      ⟶ dTuple n (dTuple (m + 1) A) :=
+  rprodMap (𝟙 (dTuple n A)) (RelSet.graph moves ≫ RelSet.graph trans ≫ tupleP n (est S))
     ≫ RelSet.graph zip ≫ tupleP n (RelSet.graph cons)
 
 /-- **`⦇Q⦈`** — the greedy fold: one cheapest path per square, extended a column at a time.  The
     order compared at stage `m` is `R (m+1)`, the length the fold has already built. -/
-@[expose] public def Qfold {n : Nat} (R : (i : Nat) → dTuple i a ⟶ dTuple i a) :
-    (m : Nat) → dTuple (m + 1) (dTuple n a) ⟶ dTuple n (dTuple (m + 1) a)
+@[expose] public def Qfold {n : Nat} (R : (i : Nat) → dTuple i A ⟶ dTuple i A) :
+    (m : Nat) → dTuple (m + 1) (dTuple n A) ⟶ dTuple n (dTuple (m + 1) A)
   | 0 => RelSet.graph fun v i _ => v 0 i
-  | m + 1 => RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n a)) (Qfold R m) ≫ Q (R (m + 1))
+  | m + 1 => RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1))
 
 /-- **`α⦇Q⦈ = F(𝟙,⦇Q⦈)Q`** at `α = cons` — the greedy fold's defining equation. -/
-public theorem cons_Qfold (R : (i : Nat) → dTuple i a ⟶ dTuple i a) {n m : Nat} :
-    (RelSet.graph cons : (⟨(dTuple n a).carrier × (dTuple (m + 1) (dTuple n a)).carrier⟩ : RelSet.{0})
-        ⟶ dTuple (m + 2) (dTuple n a)) ≫ Qfold R (m + 1)
-      = rprodMap (𝟙 (dTuple n a)) (Qfold R m) ≫ Q (R (m + 1)) := by
-  have h : (RelSet.graph cons : (⟨(dTuple n a).carrier × (dTuple (m + 1) (dTuple n a)).carrier⟩
-        : RelSet.{0}) ⟶ dTuple (m + 2) (dTuple n a)) ≫ RelSet.graph uncons = 𝟙 _ := by
+public theorem cons_Qfold (R : (i : Nat) → dTuple i A ⟶ dTuple i A) {n m : Nat} :
+    (RelSet.graph cons : (⟨(dTuple n A).carrier × (dTuple (m + 1) (dTuple n A)).carrier⟩ : RelSet.{0})
+        ⟶ dTuple (m + 2) (dTuple n A)) ≫ Qfold R (m + 1)
+      = rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1)) := by
+  have h : (RelSet.graph cons : (⟨(dTuple n A).carrier × (dTuple (m + 1) (dTuple n A)).carrier⟩
+        : RelSet.{0}) ⟶ dTuple (m + 2) (dTuple n A)) ≫ RelSet.graph uncons = 𝟙 _ := by
     rw [RelSet.graph_comp]
     exact hom_ext fun _ _ => ⟨Eq.symm, Eq.symm⟩
   show RelSet.graph cons ≫ RelSet.graph uncons ≫ _ = _
@@ -201,7 +201,7 @@ public theorem cons_Qfold (R : (i : Nat) → dTuple i a ⟶ dTuple i a) {n m : N
     flattens every entry to `false` FIRST, making the neighbours agree, so the left-hand side goes
     through. -/
 public theorem Qfold_not_lax_natural :
-    ¬ ∀ (a : RelSet.{0}) (n m : Nat) (R : (i : Nat) → dTuple i a ⟶ dTuple i a) (f : a ⟶ a),
+    ¬ ∀ (A : RelSet.{0}) (n m : Nat) (R : (i : Nat) → dTuple i A ⟶ dTuple i A) (f : A ⟶ A),
         tupleP (m + 1) (tupleP n f) ≫ Qfold R m ⊑ Qfold R m ≫ tupleP n (tupleP (m + 1) f) := by
   intro h
   have key := le_iff.mp
@@ -238,8 +238,8 @@ public theorem Qfold_not_lax_natural :
 
 /-- **`Vec(j)(est(S)) est(S) ⊑ concat est(S)`** — a cheapest of each of the `j` rows and then a
     cheapest of those is a cheapest of all `j·k` entries.  Needs `S` transitive. -/
-public theorem est_concat {S : a ⟶ a} (htrans : S ≫ S ⊑ S) :
-    (tupleP j (est S) ≫ est S : dTuple j (dTuple k a) ⟶ a) ⊑ RelSet.graph concat ≫ est S := by
+public theorem est_concat {S : A ⟶ A} (htrans : S ≫ S ⊑ S) :
+    (tupleP j (est S) ≫ est S : dTuple j (dTuple k A) ⟶ A) ⊑ RelSet.graph concat ≫ est S := by
   refine le_iff.mpr fun v x h => ?_
   obtain ⟨u, hu, ⟨r₀, hr₀⟩, hxu⟩ := h
   obtain ⟨i₀, hi₀⟩ := (hu r₀).1
@@ -250,9 +250,9 @@ public theorem est_concat {S : a ⟶ a} (htrans : S ≫ S ⊑ S) :
 /-- **(7.13)** `F(𝟙,est(R)) cons ⊑ cp Vec(k)(cons) est(R)` — choose the cheapest path and put the
     square in front of it, or put the square in front of all `k` and choose.  Needs `hmono`:
     putting the same square in front keeps the cost order. -/
-public theorem cyl_7_13 {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {m k : Nat}
-    (hmono : rprodMap (𝟙 a) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
-    rprodMap (𝟙 a) (est (R m) (k := k)) ≫ RelSet.graph cons
+public theorem cyl_7_13 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {m k : Nat}
+    (hmono : rprodMap (𝟙 A) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
+    rprodMap (𝟙 A) (est (R m) (k := k)) ≫ RelSet.graph cons
       ⊑ RelSet.graph cp ≫ tupleP k (RelSet.graph cons) ≫ est (R (m + 1)) := by
   refine le_iff.mpr fun q y h => ?_
   obtain ⟨q₁, q₂⟩ := q
@@ -272,10 +272,10 @@ public theorem cyl_7_13 {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {m k : Nat
     path per square before extending the column is no better than extending and choosing after.
     The left `est` is over the `p` paths of a square, the right over the `3p` of the next
     column. -/
-public theorem cyl_fusion {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n m p : Nat}
+public theorem cyl_fusion {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m p : Nat}
     (htrans : R m ≫ R m ⊑ R m)
-    (hmono : rprodMap (𝟙 a) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
-    rprodMap (𝟙 (dTuple n a)) (tupleP n (est (R m) (k := p))) ≫ Q (R m)
+    (hmono : rprodMap (𝟙 A) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
+    rprodMap (𝟙 (dTuple n A)) (tupleP n (est (R m) (k := p))) ≫ Q (R m)
       ⊑ RelSet.graph gen ≫ tupleP n (est (R (m + 1))) := by
   refine le_iff.mpr fun q z h => ?_
   obtain ⟨q₁, q₂⟩ := q
@@ -303,10 +303,10 @@ public theorem cyl_fusion {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n m p :
 
 /-- **`⦇Q⦈ ⊑ ⦇gen⦈ Vec(n)(est(R))`** — the greedy fold picks one of the paths `⦇gen⦈` generates,
     and a cheapest one.  By induction on the columns, from the fusion condition. -/
-public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n : Nat}
-    (hrefl : ∀ i, 𝟙 (dTuple i a) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
-    (hmono : ∀ i, rprodMap (𝟙 a) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) : ∀ m : Nat,
-    (Qfold R m : dTuple (m + 1) (dTuple n a) ⟶ dTuple n (dTuple (m + 1) a))
+public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n : Nat}
+    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
+    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) : ∀ m : Nat,
+    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ dTuple n (dTuple (m + 1) A))
       ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (R (m + 1)))
   | 0 => by
       refine le_iff.mpr fun v z h => ?_
@@ -315,21 +315,21 @@ public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n
       exact ⟨genFold 0 v, rfl, fun i => ⟨⟨⟨0, by decide⟩, rfl⟩, fun l =>
         le_iff.mp (hrefl 1) _ _ rfl⟩⟩
   | m + 1 => by
-      have h1 : rprodMap (𝟙 (dTuple n a)) (Qfold R m)
-          ⊑ rprodMap (𝟙 (dTuple n a)) (RelSet.graph (genFold m))
-              ≫ rprodMap (𝟙 (dTuple n a)) (tupleP n (est (R (m + 1)))) := by
+      have h1 : rprodMap (𝟙 (dTuple n A)) (Qfold R m)
+          ⊑ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m))
+              ≫ rprodMap (𝟙 (dTuple n A)) (tupleP n (est (R (m + 1)))) := by
         rw [rprodMap_comp, Cat.id_comp]
         exact rprodMap_mono (le_refl _) (Qfold_le_genFold hrefl htrans hmono m)
-      have key : rprodMap (𝟙 (dTuple n a)) (Qfold R m) ≫ Q (R (m + 1))
-          ⊑ rprodMap (𝟙 (dTuple n a)) (RelSet.graph (genFold m))
+      have key : rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1))
+          ⊑ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m))
               ≫ RelSet.graph gen ≫ tupleP n (est (R (m + 1 + 1))) := by
         refine le_trans (comp_mono_right h1 _) ?_
         rw [Cat.assoc]
         exact comp_mono_left _ (cyl_fusion (htrans (m + 1)) (hmono (m + 1)))
       -- `graph_id` and `rprodMap_graph` are module-private in `AOP.A6_1_RelSet`, so the pair's
       -- graph is re-derived here rather than cited.
-      have hpair : rprodMap (𝟙 (dTuple n a)) (RelSet.graph (genFold (n := n) (A := a.carrier) m))
-          = RelSet.graph (Prod.map id (genFold (n := n) (A := a.carrier) m)) := by
+      have hpair : rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold (n := n) (A := A.carrier) m))
+          = RelSet.graph (Prod.map id (genFold (n := n) (A := A.carrier) m)) := by
         apply hom_ext; intro q r
         obtain ⟨r₁, r₂⟩ := r
         constructor
@@ -339,26 +339,51 @@ public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n
         · intro h
           injection h with h1 h2
           exact ⟨h1.symm, h2⟩
-      have hgraph : (RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n a)) (RelSet.graph (genFold m)))
+      have hgraph : (RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m)))
           ≫ RelSet.graph gen = RelSet.graph (genFold (m + 1)) := by
         rw [hpair, RelSet.graph_comp, RelSet.graph_comp]
         rfl
-      show RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n a)) (Qfold R m) ≫ Q (R (m + 1)) ⊑ _
+      show RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1)) ⊑ _
       refine le_trans (comp_mono_left _ key) ?_
       rw [← Cat.assoc, ← Cat.assoc, hgraph]
       exact le_refl _
 
+/-- **`⦇Q⦈ est(R) ⊑ ⦇gen⦈ Vec(n)(est(R)) est(R)`** — step 1 of `vec-cyl-laws`: the greedy fold
+    is below `⦇gen⦈` followed by a cheapest of each column's answers. -/
+public theorem cyl_laws_step1 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
+    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
+    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
+    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
+      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (R (m + 1))) ≫ est (R (m + 1)) := by
+  rw [← Cat.assoc]
+  exact comp_mono_right (Qfold_le_genFold hrefl htrans hmono m) _
+
+/-- **`⦇gen⦈ Vec(n)(est(R)) est(R) ⊑ ⦇gen⦈ concat est(R)`** — step 2: a cheapest of the column
+    minima is a cheapest of everything the columns hold, `concat` being the flattening. -/
+public theorem cyl_laws_step2 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
+    (htrans : ∀ i, R i ≫ R i ⊑ R i) :
+    (RelSet.graph (genFold m) : dTuple (m + 1) (dTuple n A) ⟶ _)
+        ≫ tupleP n (est (R (m + 1))) ≫ est (R (m + 1))
+      ⊑ RelSet.graph (genFold m) ≫ RelSet.graph concat ≫ est (R (m + 1)) :=
+  comp_mono_left _ (est_concat (htrans (m + 1)))
+
+/-- **`⦇gen⦈ concat est(R) = paths est(R)`** — step 3: `paths` IS `genFold` then `concat`. -/
+public theorem cyl_laws_step3 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat} :
+    (RelSet.graph (genFold m) : dTuple (m + 1) (dTuple n A) ⟶ _)
+        ≫ RelSet.graph concat ≫ est (R (m + 1))
+      = RelSet.graph paths ≫ est (R (m + 1)) := by
+  rw [← Cat.assoc, RelSet.graph_comp]; rfl
+
 /-- **`⦇Q⦈ est(R) ⊑ paths est(R)`** — the note's `paths est(R) ⊒ ⦇Q⦈ est(R)`: the greedy fold
     followed by a cheapest of the `n` column answers is a cheapest of all `n·3^m` paths. -/
-public theorem cyl_laws {R : (i : Nat) → dTuple i a ⟶ dTuple i a} {n m : Nat}
-    (hrefl : ∀ i, 𝟙 (dTuple i a) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
-    (hmono : ∀ i, rprodMap (𝟙 a) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
-    (Qfold R m : dTuple (m + 1) (dTuple n a) ⟶ _) ≫ est (R (m + 1))
-      ⊑ RelSet.graph paths ≫ est (R (m + 1)) := by
-  refine le_trans (comp_mono_right (Qfold_le_genFold hrefl htrans hmono m) _) ?_
-  rw [Cat.assoc]
-  refine le_trans (comp_mono_left _ (est_concat (htrans (m + 1)))) ?_
-  rw [← Cat.assoc, RelSet.graph_comp]
-  exact le_refl _
+public theorem cyl_laws {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
+    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
+    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
+    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
+      ⊑ RelSet.graph paths ≫ est (R (m + 1)) :=
+  calc (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
+      ⊑ _ := cyl_laws_step1 hrefl htrans hmono
+    _ ⊑ _ := cyl_laws_step2 htrans
+    _ = _ := cyl_laws_step3
 
 end Freyd.Alg.Vec.Rel

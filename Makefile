@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check circuit-check string-check cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -30,7 +30,7 @@ SLICE := diag/circuit-slice.typ
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit pairs cite spell scan-strict hm-sigs
+p: $(STAMP) slice circuit pairs cite spell scan-strict scan-generated hm-sigs
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
@@ -110,6 +110,43 @@ scan-full:
 # acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
 scan-strict:
 	./scripts/scanline diag/allegory-axioms.typ --strict
+
+# Every picture `diag-export --string` has written, swept against LEAN.  The FILES are the
+# obligations — one `scanline --strict` each, so a panel nobody imports is still checked — and each
+# panel's `cert: lean:` is its certificate: `scanline` asks `diag-export --string --sigs` for its
+# bead types at check time, so a picture the declaration no longer draws fails here.
+scan-generated: $(STAMP)
+	@test -n "$(wildcard diag/generated/string/*.typ)" || \
+	  { echo "no diag/generated/string/*.typ — draw one with ./scripts/diag-export --string"; exit 1; }
+	for f in diag/generated/string/*.typ; do ./scripts/scanline --strict "$$f" || exit 1; done
+
+# Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
+# note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
+# that no panel names fails here rather than sitting unchecked.
+cd-check: $(STAMP)
+	./scripts/cd-check
+
+# Every CIRCUIT panel the note draws, redrawn from LEAN and held to the note's own picture.  The
+# note's panels are the obligations — read back from its `cpanel` metadata, not from its text — and
+# `diag/circuit-panels.txt` must answer one for one.
+circuit-check: $(STAMP)
+	./scripts/circuit-check
+
+# Every string panel of `diag/string-panels.txt` — that is, every Hinze–Marsden panel the note draws
+# — redrawn from LEAN and held to the note's own panel by SVG.  The DISPLAYS are the obligations:
+# one the file does not name fails here rather than going unchecked.
+string-check: $(STAMP)
+	./scripts/string-check
+
+# Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
+# obligations and each one's basename IS the declaration it renders, so a cell whose declaration
+# changed type is regenerated here rather than staying at what it said when it was first written.
+# One exe run for all of them: the environment is imported once per process.
+types: $(STAMP)
+	@test -n "$(wildcard diag/generated/type/*.typ)" || \
+	  { echo "no diag/generated/type/*.typ — write one with ./scripts/diag-export --type"; exit 1; }
+	./scripts/diag-export --type \
+	  $(patsubst diag/generated/type/%.typ,%,$(wildcard diag/generated/type/*.typ))
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.

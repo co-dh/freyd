@@ -3,7 +3,7 @@
 
   A bead the note draws OFF the object wire claims a naturality square — `G(S) φ ⊑ φ F(S)` for
   EVERY relation `S`, not only for the maps.  `Sched` is `list∘list` and `Seg` is `list` as
-  functors of the transaction type `Tx`, so each of the six families of `AOP.A7_5_Van` gets its
+  functors of the transaction type `X`, so each of the six families of `AOP.A7_5_Van` gets its
   square at an arbitrary `S : dE A ⟶ dE B`.  The verdicts:
 
   * `new` is STRICTLY natural (`new_natural`).  It is `(wrap×𝟙) cons`, and both factors are
@@ -23,7 +23,7 @@
   * `glue` is STRICTLY natural (`glue_natural`) and so is `nil` (`nil_natural`).  `glue` moves
     the transaction onto the front of the first segment and passes every other element along
     untouched, and `nil` looks at no element at all, so both squares are equalities.
-  * `R∩H` and `⊤` are NOT EVEN LAX (`RH_inter_not_lax_natural`, `top_not_lax_natural`), for the
+  * `R∩H` and `⊤` are NOT EVEN LAX (`RinterH_not_lax_natural`, `top_not_lax_natural`), for the
     same reason `R` and `H` are not: the left side of the square constrains only the SOURCE
     schedule while the right side demands a `list(list S)`-preimage of the TARGET.
 
@@ -53,25 +53,6 @@ public theorem new_natural (S : dE A ⟶ dE B) :
     rprodMap S (list (list S)) ≫ newR B = newR A ≫ list (list S) := by
   rw [new_eq, new_eq, ← Cat.assoc, rprodMap_comp, Cat.comp_id, ← wrap_natural S, Cat.assoc,
     ← cons_natural (list S), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
-
-/-- **`wrap×𝟙` is STRICTLY natural**: `(S×list(list S))(wrap×𝟙) = (wrap×𝟙)(list S×list(list S))`.
-    The bead the note draws between `new`'s two factors, and it is `strictNatural_prod` at `wrap`
-    and the identity family — `×` closes in the strict theory, so nothing is computed here.  The
-    four `prodMap_eq_rprodMap` rewrites are the concrete model's product read as the allegory's. -/
-public theorem wrapProd_natural (S : dE A ⟶ dE B) :
-    rprodMap S (list (list S)) ≫ rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B)))
-      = rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A)))
-        ≫ rprodMap (list S) (list (list S)) := by
-  rw [← RelSet.prodMap_eq_rprodMap S (list (list S)),
-    ← RelSet.prodMap_eq_rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B))),
-    ← RelSet.prodMap_eq_rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A))),
-    ← RelSet.prodMap_eq_rprodMap (list S) (list (list S))]
-  exact strictNatural_prod (F := listRelator) (F' := Relator.comp listRelator listRelator)
-    (G := Relator.idRelator RelSet.{0}) (G' := Relator.comp listRelator listRelator)
-    (φ := fun a => (singleR () : dE a.carrier ⟶ dList a.carrier))
-    (ψ := fun a => 𝟙 ((Relator.comp listRelator listRelator).obj a))
-    (fun {_ _} R => (wrap_natural R).symm)
-    (fun {_ _} _ => by rw [Cat.comp_id, Cat.id_comp]) S
 
 /-! ## `head` is lax only -/
 
@@ -215,9 +196,9 @@ public theorem glue_natural (S : dE A ⟶ dE B) :
     side relates `[[]]` to `[[false]]` — `[[]]` is its own `list(list(trueOnly))`-image, the two
     schedules have the same length, and `[]` is a prefix of `[false]` — while the right side
     would need a `list(list(trueOnly))`-preimage of `[[false]]`, and `false` has none. -/
-public theorem RH_inter_not_lax_natural :
+public theorem RinterH_not_lax_natural :
     ∃ S : dE Bool ⟶ dE Bool,
-      ¬ (list (list S) ≫ (R Bool ∩ Hrel Bool) ⊑ (R Bool ∩ Hrel Bool) ≫ list (list S)) := by
+      ¬ (list (list S) ≫ RinterH Bool ⊑ RinterH Bool ≫ list (list S)) := by
   refine ⟨trueOnly, fun h => ?_⟩
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h schedNil schedFalse
@@ -241,7 +222,7 @@ public theorem top_not_lax_natural :
 
 /-! ## `nil` is strictly natural
 
-  The note's `nil : 𝟏 ⟶ [[Tx]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched Tx` —
+  The note's `nil : 𝟏 ⟶ [[X]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched X` —
   the same relation `H_eq` already writes there — so no new definition is made for it. -/
 
 /-- **`nil` is STRICTLY natural**: `𝟙 nil = nil list(list S)`.  `nil` produces the empty schedule
@@ -262,14 +243,14 @@ public theorem nil_natural (S : dE A ⟶ dE B) :
 
 /-! ## The greedy fold is not even lax natural -/
 
-variable {Tx : Type} {amount : Tx → Int} {N : Int}
+variable {X : Type} {amount : X → Int} {N : Int}
 
 /-- The fold `⦇S%∋ est(R;H)⦈` read one transaction at a time: the empty stretch has only the
     empty schedule to answer with. -/
-public theorem greedyFold_wrap (r : Sched Tx) :
+public theorem greedyFold_wrap (r : Sched X) :
     greedyFold amount N (ConsList.wrap ()) r ↔ r = ConsList.wrap () := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH Tx) (Sum.inl ()) r) ?_
+  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH X) (Sum.inl ()) r) ?_
   constructor
   · rintro ⟨hmem, -⟩
     rw [Salg, junc_sum_inl] at hmem
@@ -283,14 +264,14 @@ public theorem greedyFold_wrap (r : Sched Tx) :
 
 /-- The fold `⦇S%∋ est(R;H)⦈` at a `cons`: the tail's answer `y` is extended by `new∪old`, and
     the answer kept is one of those extensions that is `R;H`-below every one of them. -/
-public theorem greedyFold_cons (a : Tx) (x : Seg Tx) (r : Sched Tx) :
+public theorem greedyFold_cons (a : X) (x : Seg X) (r : Sched X) :
     greedyFold amount N (ConsList.cons a x) r
-      ↔ ∃ y, greedyFold amount N x y ∧ (newR Tx ∪ oldR amount N) (a, y) r
-          ∧ ∀ z, (newR Tx ∪ oldR amount N) (a, y) z → RH Tx r z := by
+      ↔ ∃ y, greedyFold amount N x y ∧ (newR X ∪ oldR amount N) (a, y) r
+          ∧ ∀ z, (newR X ∪ oldR amount N) (a, y) z → RH X r z := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH Tx)) (ConsList.cons a x) r
-      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH Tx)) x y
-          ∧ (Λ (Salg amount N) ≫ est (RH Tx)) (Sum.inr (a, y)) r).trans ?_
+  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH X)) (ConsList.cons a x) r
+      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH X)) x y
+          ∧ (Λ (Salg amount N) ≫ est (RH X)) (Sum.inr (a, y)) r).trans ?_
   constructor
   · rintro ⟨y, hy, hmem⟩
     rw [Λ_comp_est_apply] at hmem

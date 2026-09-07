@@ -60,29 +60,4 @@ public instance instCatFAlg {F : Relator 𝒜 𝒜} : Cat.{v₁} (FAlg F) where
   comp_id f := FHom.ext (Cat.comp_id f.h)
   assoc f g h := FHom.ext (Cat.assoc f.h g.h h.h)
 
-/-- The LIFT of `F` to `Alg(F)`: `F̃(X) = ⟨F(X.carrier), F(X.α)⟩` on objects, `F̃(f) = F(f.h)`
-    on arrows.  The `comm` obligation of `F̃(f)` is `F` applied to `f.comm`, so it is exactly
-    `F.map_comp` on both sides of that square.
-
-    The repo's `Freyd.Functor` structure is used as-is: its class signature asks only for a
-    `Cat` on either side, which `instCatFAlg` supplies — it does not demand an allegory. -/
-@[expose] public def liftRelator (F : Relator 𝒜 𝒜) : Freyd.Functor (FAlg F) (FAlg F) where
-  obj X := ⟨F.obj X.carrier, F.map X.α⟩
-  map := fun {X Y} f => ⟨F.map f.h, by rw [← F.map_comp X.α f.h, f.comm, F.map_comp]⟩
-  map_id X := FHom.ext (F.map_id X.carrier)
-  map_comp f g := FHom.ext (F.map_comp f.h g.h)
-
-/-- The COMPONENT of `α` at `X`, as an arrow `F̃(X) ⟶ X` of `Alg(F)`.  Its `comm` obligation
-    is `F.map X.α ≫ X.α = F.map X.α ≫ X.α`: the structure map is a homomorphism from the
-    lifted algebra to the algebra itself, on the nose. -/
-@[expose] public def alphaComp {F : Relator 𝒜 𝒜} (X : FAlg F) : (liftRelator F).obj X ⟶ X :=
-  ⟨X.α, rfl⟩
-
-/-- NATURALITY of `α` on `Alg(F)`: `α_X ≫ f = F̃(f) ≫ α_Y` for every homomorphism `f`.
-    The proof is `f.comm` under `FHom.ext` — the square holds by construction of `Alg(F)`'s
-    arrows, which is the whole content of the statement. -/
-public theorem alpha_natural_alg {F : Relator 𝒜 𝒜} {X Y : FAlg F} (f : X ⟶ Y) :
-    alphaComp X ≫ f = (liftRelator F).map f ≫ alphaComp Y :=
-  FHom.ext f.comm
-
 end Freyd.Alg

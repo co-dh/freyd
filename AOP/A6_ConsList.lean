@@ -48,22 +48,22 @@ public inductive ConsList (L E : Type) where
 /-! ## The functor `F X = L + (E × X)` -/
 
 /-- Carrier of `F X`. -/
-@[expose] public def Fobj (L E : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × c.carrier)⟩
+@[expose] public def Fobj (L E : Type) (C : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × C.carrier)⟩
 
 /-- Action of `F` on a relation: identity on the `L` summand, `id × R` on `E × X`. -/
-@[expose] public def Fmap (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj L E c ⟶ Fobj L E c' :=
+@[expose] public def Fmap (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj L E C ⟶ Fobj L E c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => p.1 = q.1 ∧ R p.2 q.2
     | _, _ => False
 
-@[simp] theorem Fmap_ll (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (d d' : L) :
+@[simp] theorem Fmap_ll (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (d d' : L) :
     Fmap L E R (Sum.inl d) (Sum.inl d') = (d = d') := rfl
-@[simp] theorem Fmap_rr (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (p : E × c.carrier)
+@[simp] theorem Fmap_rr (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (p : E × C.carrier)
     (q : E × c'.carrier) : Fmap L E R (Sum.inr p) (Sum.inr q) = (p.1 = q.1 ∧ R p.2 q.2) := rfl
-@[simp] theorem Fmap_lr (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (d : L) (q : E × c'.carrier) :
+@[simp] theorem Fmap_lr (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (d : L) (q : E × c'.carrier) :
     Fmap L E R (Sum.inl d) (Sum.inr q) = False := rfl
-@[simp] theorem Fmap_rl (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (p : E × c.carrier) (d : L) :
+@[simp] theorem Fmap_rl (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (p : E × C.carrier) (d : L) :
     Fmap L E R (Sum.inr p) (Sum.inl d) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
@@ -72,7 +72,7 @@ public inductive ConsList (L E : Type) where
   map R := Fmap L E R
   -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
   -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound}).
-  map_id c := hom_ext fun u v => by
+  map_id C := hom_ext fun u v => by
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;>
       first
         | exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
@@ -103,13 +103,13 @@ public inductive ConsList (L E : Type) where
             | inr md =>
               obtain ⟨ma, mtl⟩ := md
               exact ⟨hw1.1.trans hw2.1, mtl, hw1.2, hw2.2⟩⟩
-  map_mono {c c' R S} h := le_iff.mpr fun u v => by
+  map_mono {C c' R S} h := le_iff.mpr fun u v => by
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
       first | exact id | exact fun hh => ⟨hh.1, le_iff.mp h _ _ hh.2⟩ | exact False.elim
 
 /-- `F` preserves converse. -/
 public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
-  intro c c' R
+  intro C c' R
   apply hom_ext; intro u v
   cases u <;> cases v <;> simp only [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
     first
@@ -121,7 +121,7 @@ public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
     isomorphic to it: `Rel(Set)` names its own coproduct (`sumCop`) and its own relational product
     (`HasRelProd`), so the two sides agree on OBJECTS definitionally — which is what makes this
     equation typecheck — and the calculation below settles them on relations. -/
-public theorem F_eq_sum_prod (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') :
+public theorem F_eq_sum_prod (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
     (Relator.sum (Relator.const (dL L))
         (Relator.prod (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))).map R
       = (F L E).map R := by
@@ -133,8 +133,8 @@ public theorem F_eq_sum_prod (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') :
 /-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
     on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
     square needs the action that moves it. -/
-@[expose] public def Fbimap (L : Type) {E E' : Type} {c c' : RelSet.{0}} (R : dE E ⟶ dE E')
-    (S : c ⟶ c') : Fobj L E c ⟶ Fobj L E' c' :=
+@[expose] public def Fbimap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R : dE E ⟶ dE E')
+    (S : C ⟶ c') : Fobj L E C ⟶ Fobj L E' c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
@@ -153,17 +153,17 @@ public theorem F_eq_sum_prod (L E : Type) {c c' : RelSet.{0}} (R : c ⟶ c') :
 @[expose] public def alphaR : (F L E).obj (dCL L E) ⟶ dCL L E := graph con
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-@[expose] public def cataFold {c : RelSet.{0}} (f : Fobj L E c ⟶ c) : ConsList L E → c.carrier → Prop
+@[expose] public def cataFold {C : RelSet.{0}} (f : Fobj L E C ⟶ C) : ConsList L E → C.carrier → Prop
   | ConsList.wrap d => fun r => f (Sum.inl d) r
   | ConsList.cons dig dec => fun r => ∃ r', cataFold f dec r' ∧ f (Sum.inr (dig, r')) r
 
-@[simp] public theorem cataFold_wrap {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (d : L) (r : c.carrier) :
+@[simp] public theorem cataFold_wrap {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (d : L) (r : C.carrier) :
     cataFold f (ConsList.wrap d) r = f (Sum.inl d) r := rfl
-@[simp] public theorem cataFold_cons {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (dig : E) (dec : ConsList L E)
-    (r : c.carrier) :
+@[simp] public theorem cataFold_cons {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (dig : E) (dec : ConsList L E)
+    (r : C.carrier) :
     cataFold f (ConsList.cons dig dec) r = ∃ r', cataFold f dec r' ∧ f (Sum.inr (dig, r')) r := rfl
 
-public theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
+public theorem cataFold_total {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (hf : Map f) :
     ∀ dec : ConsList L E, ∃ r, cataFold f dec r
   | ConsList.wrap d => entire_total hf.1 (Sum.inl d)
   | ConsList.cons dig dec => by
@@ -171,8 +171,8 @@ public theorem cataFold_total {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map 
     obtain ⟨r, hr⟩ := entire_total hf.1 (Sum.inr (dig, r'))
     exact ⟨r, r', hr', hr⟩
 
-public theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
-    ∀ (dec : ConsList L E) (r r' : c.carrier), cataFold f dec r → cataFold f dec r' → r = r'
+public theorem cataFold_functional {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (hf : Map f) :
+    ∀ (dec : ConsList L E) (r r' : C.carrier), cataFold f dec r → cataFold f dec r' → r = r'
   | ConsList.wrap d, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | ConsList.cons dig dec, r, r', h1, h2 => by
     obtain ⟨s, hs, hfs⟩ := h1
@@ -181,8 +181,8 @@ public theorem cataFold_functional {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf :
     subst hss
     exact simple_uniq hf.2 hfs hfs'
 
-public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f) :
-    Map (a := dCL L E) (b := c) (cataFold f) := by
+public theorem cataFold_map {C : RelSet.{0}} (f : Fobj L E C ⟶ C) (hf : Map f) :
+    Map (a := dCL L E) (b := C) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = Cat.id (dCL L E)
     apply hom_ext; intro dec dec'
@@ -273,11 +273,11 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj L E c ⟶ c) (hf : Map f)
 /-! ## The recursive equation for the converse of a catamorphism -/
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dCL L E ⟶ c`. -/
-@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dCL L E ⟶ c := cataFold φ
+@[expose] public def cataR {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) : dCL L E ⟶ C := cataFold φ
 
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataFold φ = F(cataFold φ) ≫ φ`.  (The structural proof never uses `Map φ`.) -/
-public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cataFold_comm {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
     graph con ≫ cataFold φ = (F L E).map (cataFold φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -309,7 +309,7 @@ public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
 /-- The structural fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright, via
     `cataFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism laws
     (fusion, …) apply to `cataR`. -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F L E).obj c ⟶ c) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F L E).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial L E) φ (cataR φ)).mp (cataFold_comm φ)
 
@@ -329,9 +329,9 @@ public theorem cataR_con : cataR (graph (con (L := L) (E := E))) = 𝟙 (dCL L E
       exact ⟨x, (ih x).mpr rfl, h.symm⟩
 
 /-- The `wrap`-component of an algebra `φ = [g, h]`. -/
-@[expose] public def algWrap {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : dL L ⟶ c := fun d r => φ (Sum.inl d) r
+@[expose] public def algWrap {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) : dL L ⟶ C := fun d r => φ (Sum.inl d) r
 /-- The `cons`-component of an algebra `φ = [g, h]`. -/
-@[expose] public def algCons {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c :=
+@[expose] public def algCons {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) : (⟨E × C.carrier⟩ : RelSet.{0}) ⟶ C :=
   fun p r => φ (Sum.inr p) r
 
 /-- The constructor `wrap` (`nil`) as a relation. -/
@@ -345,7 +345,7 @@ public theorem cataR_con : cataR (graph (con (L := L) (E := E))) = 𝟙 (dCL L E
 
 /-- The recursive equation for the converse of a cons-list catamorphism:
     `val° = (wrap·g°) ∪ (cons·(id×val°)·h°)` (mirrored), for any algebra `φ = [g, h]`. -/
-public theorem cata_converse_eq {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
+public theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
     (cataR φ)° = (algWrap φ)° ≫ wrapR
       ∪ (algCons φ)° ≫ rprodMap (Cat.id (dE E)) (cataR φ)° ≫ consR := by
   apply hom_ext; intro r dec
@@ -386,5 +386,78 @@ public theorem cata_converse_eq {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) :
         · rw [hdd]; exact hcata
         · have hpa : pa = dig := hpq.trans hda.symm
           rw [hpa] at hp; exact hp
+
+-- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
+-- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
+-- it as.  The note writes a list by its BRACKETS (`[A]`), the base functor by its letter alone —
+-- `L` and `E` are which `F`, not arguments of the application — and `dE` names no former at all:
+-- it is the object the element type already is (`glue:Int×[[Int]]⟶[[Int]]`).  They change no
+-- statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander ConsList] public meta def unexpandConsListObj : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dCL] public meta def unexpandDCL : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dE] public meta def unexpandDE : Unexpander
+  | `($_ $E) => `($E)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander F] public meta def unexpandF : Unexpander
+  | `($_ $_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Fbimap] public meta def unexpandFbimap : Unexpander
+  | `($_ $_ $R $S) => `($(mkIdent `F) $R $S)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander consR] public meta def unexpandConsR : Unexpander
+  | _ => `($(mkIdent `cons))
+
+open Lean PrettyPrinter in
+@[app_unexpander alphaR] public meta def unexpandAlphaR : Unexpander
+  | _ => `($(mkIdent `α))
+
+-- The leaf at the EMPTY leaf type is the note's `nil`: `wrap ()` is the one cons-list with no
+-- elements.  At any other leaf type it is a leaf carrying a value and keeps its own spelling, which
+-- is why the unit argument is matched and not the constructor alone.
+open Lean PrettyPrinter in
+@[app_unexpander ConsList.wrap] public meta def unexpandNil : Unexpander
+  | `($_ ()) => `($(mkIdent `nil))
+  | `($_ $x) => `($(mkIdent `wrap) $x)
+  | _ => throw ()
+
+-- The structural fold wears the note's banana.  `cataR` and `relCata` are equal only
+-- propositionally (`cataR_eq_relCata`), which is why they are two constants; but a PICTURE says
+-- which arrow it draws by the algebra in the brackets, and the note writes `⦇S⦈` for both.
+open Lean PrettyPrinter in
+@[app_unexpander cataR] public meta def unexpandCataR : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
+-- B&dM's `wrap` is `singleR` at the empty leaf: the leaf argument is matched as `()` for the same
+-- reason as `nil` above.
+open Lean PrettyPrinter in
+@[app_unexpander singleR] public meta def unexpandWrap : Unexpander
+  | `($_ ()) => `($(mkIdent `wrap))
+  | _ => throw ()
+
+-- The leaf CONSTRUCTOR as an arrow, at the empty leaf type, is that same `nil`.  A DELABORATOR and
+-- not an unexpander: the leaf type is an implicit argument, so it is in the term and not in the
+-- syntax, and only something that reads the term can tell `nil` from a leaf carrying a value.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.wrapR] public meta def delabWrapRAsNil : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size != 2 then failure
+  unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure
+  `($(mkIdent `nil))
 
 end Freyd.Alg.RelSet.CL

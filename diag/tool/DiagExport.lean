@@ -54,9 +54,17 @@ import Lean
 import diag.FO
 import diag.Tape
 import diag.S2_124
+import diag.tool.Label
+import diag.tool.StringDiagram
+import diag.tool.TypeRender
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
+-- The CIRCUIT functor: the same declarations, drawn in the OTHER picture language (wire = object,
+-- box = morphism, left to right), emitted for `diag/cpanel.typ`.
+import diag.tool.CircuitDiagram
+-- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
+import diag.tool.CommutativeDiagram
 
 open Lean
 
@@ -789,86 +797,13 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
 
 /-! ### The term walk -/
 
+-- Every label of every picture is `diag/tool/Label.lean`'s: one spelling of composition, of the
+-- converse and of the note's brackets, shared with the string, circuit and commutative functors.
+open StrDiag (label labelAt)
+
 /-- The two arrow arguments of a binary operator applied with instance and object arguments. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
-
-/-- Last resort: Lean's pretty printer, on one line.  The repo's namespaces carry no information
-    inside a picture of the repo's own algebra, so they come off. -/
-def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr e)
-  -- Both the fully qualified form and the form the printer shortens to under `open Freyd`.
-  let s := s.replace "Freyd." "" |>.replace "Diag.CartBicat." "" |>.replace "Diag." ""
-    |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
-  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
-
-/-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
-    — rather than left to the pretty printer, because it is read beside a picture, where
-    `CartBicat.conv S` is noise and `S°` is the thing itself.  `°`, not the paper's `†`: these terms
-    are read against Freyd throughout, and one symbol per idea beats matching two.
-
-    PARENTHESISED BY PRECEDENCE, composition loosest and `°` tightest, so the bracketing is visible.  That
-    matters: several steps of a `calc` do nothing but re-bracket, and the term column is the only
-    place a reader can see them happen — the picture, quite correctly, does not change. -/
-partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
-  let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
-  -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
-  -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
-  -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
-  -- `(R S) ∩ T`.
-  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String :=
-    match lastTwo args with
-    | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
-    | none => plain e
-  match e.getAppFnArgs with
-  | (``Cat.id, _) => return "𝟙"
-  | (``Freyd.Diag.CartBicat.Δ, _) => return "◁"
-  | (``Freyd.Diag.CartBicat.«∇», _) => return "▷"
-  | (``Freyd.Diag.CartBicat.«!», _) => return "⊸"
-  | (``Freyd.Diag.CartBicat.«?», _) => return "⟜"
-  -- BY THEIR DEFINITIONS, not by name.  `cap` and `cup` are `def`s over the four generators —
-  -- `cap = ▷⊸`, `cup = ⟜◁` — and a term column that prints them as words introduces two more
-  -- things to look up, in a note whose whole claim is that everything is built from those four.
-  -- The pictures already draw them as the merge and the fork with their dot.
-  | (``Freyd.Diag.CartBicat.cap, _) => return "▷⊸"
-  | (``Freyd.Diag.CartBicat.cup, _) => return "⟜◁"
-  | (``Freyd.Diag.top, _) | (``Freyd.Alg.topHom, _) => return "⊤"
-  | (``Freyd.Diag.Biprod.bot, _) => return "⊥"
-  -- The allegory's zero keeps the book's own `𝟘`; the tape layer's is `⊥` and they are different
-  -- arrows of different towers, so they are not spelled alike.
-  | (``Freyd.Alg.DistributiveAllegory.zero, _) => return "𝟘"
-  -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
-  -- do not exist and no statement can mention one.
-  | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
-  | (``Cat.comp, args) => bin 0 " " args 2
-  | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args
-  | (``Freyd.Diag.SymMonCat.tensHom, args) => bin 1 " ⊗ " args
-  | (``Freyd.Alg.Allegory.inter, args) | (``Freyd.Diag.meet, args) => bin 1 " ∩ " args
-  | (``Freyd.Diag.Biprod.union, args) | (``Freyd.Alg.DistributiveAllegory.union, args) =>
-    bin 1 " ∪ " args
-  | (``Freyd.Diag.ClosedLinearBicat.residual, args)
-  | (``Freyd.Alg.DivisionAllegory.div, args) => bin 1 " / " args
-  | (``Freyd.Alg.leftDiv, args) => bin 1 " \\ " args
-  | (``Freyd.Alg.symmDiv, args) => bin 1 " /ₛ " args
-  | (``Freyd.Alg.impl, args) => bin 1 " ⇨ " args
-  | (``Freyd.Alg.thenRel, args) => bin 1 " ⨾ " args
-  | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) =>
-    match args.back? with
-    | some r => return (← labelAt 3 r) ++ "°"
-    | none => plain e
-  | (``Freyd.Diag.ClosedLinearBicat.perp, args) =>
-    match args.back? with
-    | some r => return (← labelAt 3 r) ++ "⊥"
-    | none => plain e
-  -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
-  | (``Freyd.Alg.neg, args) =>
-    match args.back? with
-    | some r => return "∼" ++ (← labelAt 3 r)
-    | none => plain e
-  | _ => plain e
-
-/-- A label at the top of its own picture or box: no outer parentheses. -/
-def label (e : Expr) : MetaM String := labelAt 0 e
 
 /-- Whether the local context carries a `Map` hypothesis for this arrow.  No threading needed: the
     walk runs inside the statement's own `forallTelescope`, so `Map f` is a local hypothesis right
@@ -1010,26 +945,6 @@ partial def toCells (e : Expr) : MetaM (Array Cell) := do
 
 end
 
-/-- The relation between the two sides of a statement, and the sides. -/
-def split (e : Expr) : Option (String × Expr × Expr) :=
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.le, args) => (lastTwo args).map fun (l, r) => ("⊑", l, r)
-  | (``LE.le, args) => (lastTwo args).map fun (l, r) => ("≤", l, r)
-  | (``Eq, args) => (lastTwo args).map fun (l, r) => ("=", l, r)
-  | _ => none
-
-/-- `split`, retrying once through the definition of a named predicate.  `Total (R ∩ S)` is a `Prop`
-    with no sides until `Total` is unfolded; then it is `𝟙 ≤ (R ∩ S);(R ∩ S)°` and draws.
-
-    ONE delta step, never `whnf`: `whnf` keeps going past `LE.le` into the `OrderedCat` projection it
-    is a field of, and the whole inequation collapses into one opaque box. -/
-def splitM (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
-  if let some r := split e then return some r
-  let .const n us := e.getAppFn | return none
-  let some ci := (← getEnv).find? n | return none
-  let some v := ci.value? | return none
-  return split ((mkAppN (v.instantiateLevelParams ci.levelParams us) e.getAppArgs).headBeta)
-
 /-! ### Proofs
 
 A `calc` proof elaborates to nested `Trans.trans`/`Eq.trans`, so its intermediate terms are all
@@ -1065,7 +980,7 @@ partial def chainOrLeaf (e : Expr) : MetaM (Array Step) := do
   | some c => return c
   | none =>
     let t ← (do pure (some (← Meta.inferType e))) <|> pure none
-    match ← t.mapM splitM with
+    match ← t.mapM StrDiag.splitM with
     | some (some st) => return #[st]
     | _ => return #[]
 
@@ -1236,12 +1151,12 @@ def draw (declName : Name) : MetaM String := do
     -- bare `a ⟶ b` and says nothing.  A THEOREM is never unfolded — `ci.value?` is its proof, and an
     -- `↔` statement does not split, so testing only for a split would draw the proof term.
     let isDef := match ci with | .defnInfo _ => true | _ => false
-    let body := if isDef && (split tybody).isNone then
+    let body := if isDef && (StrDiag.split tybody).isNone then
         match ci.value? with
         | some v => (mkAppN v xs).headBeta
         | none => tybody
       else tybody
-    match ← splitM body with
+    match ← StrDiag.splitM body with
     | some (sym, lhs, rhs) =>
       -- The two SIDES are bound as well as the whole statement, as for `↔` below: a note that wants
       -- to caption each side — "one shop with both" under one, "two shops" under the other — needs
@@ -1254,7 +1169,7 @@ def draw (declName : Name) : MetaM String := do
       -- An `↔` between two containments — the shunting rules — is four drawings in a row.
       match body.getAppFnArgs with
       | (``Iff, #[l, r]) =>
-        match ← splitM l, ← splitM r with
+        match ← StrDiag.splitM l, ← StrDiag.splitM r with
         | some (s₁, a, b), some (s₂, c, d) =>
           -- The two SIDES are bound as well as the whole `⟺`.  A proof of an `↔` runs one side to
           -- the other, so a note presenting that proof wants each side on its own — as the
@@ -1266,6 +1181,128 @@ def draw (declName : Name) : MetaM String := do
       | _ =>
         let (d, _) := renderCells (← toCells body) 0.0
         return page declName doc ("cetz.canvas({\n" ++ d ++ "\n})\n")
+
+/-! ### `--sig`: the elaborated TYPE, as JSON
+
+`hm-check --verify-sigs` holds a note signature row against the declaration its `lean:` marker
+names, and the only honest way to do that is to COMPARE THE TYPES.  The pretty printer cannot
+supply them: it prints `⟶` with the category erased, so `F(X) ⟶ X` in `FAlg F` and `F(X) ⟶ X` in
+the base category read the same, which is exactly the confusion the gate exists to catch.  So the
+type is walked as an `Expr` and emitted as nested JSON arrays — an application is
+`["<constant>", arg, …]`, a variable its binder name — with instance arguments and universe levels
+dropped, because neither is anything the note draws. -/
+
+/-- One JSON string.  The corpus's names are identifiers and notation glyphs, so only the structural
+    characters and the control range can occur; everything else goes through untouched. -/
+def jstr (s : String) : String :=
+  let esc (c : Char) : String :=
+    if c == '"' then "\\\"" else if c == '\\' then "\\\\"
+    else if c == '\n' then "\\n" else if c == '\r' then "\\r" else if c == '\t' then "\\t"
+    else if c.toNat < 0x20 then
+      let hex := Nat.toDigits 16 c.toNat
+      "\\u" ++ "".pushn '0' (4 - hex.length) ++ String.ofList hex
+    else c.toString
+  "\"" ++ s.foldl (fun acc c => acc ++ esc c) "" ++ "\""
+
+def jarr (xs : List String) : String := "[" ++ String.intercalate ", " xs ++ "]"
+
+def jobj (kvs : List (String × String)) : String :=
+  "{" ++ String.intercalate ", " (kvs.map fun (k, v) => jstr k ++ ": " ++ v) ++ "}"
+
+/-- The binder kinds of a constant's own telescope, in order.  An APPLICATION carries its instance
+    arguments as ordinary `Expr`s, so the only place to learn which of them are instances is the
+    head constant's type. -/
+partial def binderKinds (env : Environment) (n : Name) : List BinderInfo :=
+  match env.find? n with
+  | none => []
+  | some ci =>
+    let rec go : Expr → List BinderInfo → List BinderInfo
+      | .forallE _ _ b bi, acc => go b (bi :: acc)
+      | .mdata _ b, acc => go b acc
+      | _, acc => acc.reverse
+    go ci.type []
+
+/-- The type as nested JSON arrays.  A binder is walked through a telescope so its variables come
+    out under their own names, which is what lets the caller see that `alpha_natural_alg`'s `f`
+    ranges over the homs of `FAlg F` and not over the base category's. -/
+partial def sexp (e : Expr) : MetaM String := do
+  match e with
+  | .mdata _ b => sexp b
+  | .letE _ _ v b _ => sexp (b.instantiate1 v)
+  | .forallE .. => telescope "∀" Meta.forallTelescope e
+  | .lam .. => telescope "λ" Meta.lambdaTelescope e
+  | .proj s i b => return jarr [jstr s!"{s}.{i}", ← sexp b]
+  | _ =>
+    let args := e.getAppArgs
+    match e.getAppFn with
+    | .const n _ =>
+      let env ← getEnv
+      -- A FIELD of a bound structure — `I.t`, `X.carrier`, the coercion `R.toFunctor` — reads as a
+      -- constant applied to the structure, and for a CLASS field that structure argument is
+      -- instance-implicit and would be dropped, leaving `InitialAlgebra.t 𝒜 inst F`: a name that
+      -- looks like one object of the note's own where it is the carrier of whatever `I` is bound to.
+      -- Emitted as `[".", field, base]` so the reader can tell the two apart.
+      match env.getProjectionFnInfo? n with
+      | some pi =>
+        if args.size == pi.numParams + 1 && args[pi.numParams]!.isFVar then
+          return jarr [jstr ".", jstr n.toString, ← sexp args[pi.numParams]!]
+        projless env n args
+      | none => projless env n args
+    | .fvar fid =>
+      let nm := jstr (← fid.getUserName).toString
+      let ss ← args.toList.mapM sexp
+      return if args.isEmpty then nm else jarr (nm :: ss)
+    | .sort l => return jstr s!"Sort {l}"
+    | .lit (.natVal k) => return jstr (toString k)
+    | .lit (.strVal s) => return jstr s
+    | .bvar i => return jstr s!"#{i}"
+    | .mvar _ => return jstr "?m"
+    | f => return jarr (jstr (toString (← Meta.ppExpr f)) :: (← args.toList.mapM sexp))
+where
+  projless (env : Environment) (n : Name) (args : Array Expr) : MetaM String := do
+    let kinds := binderKinds env n
+    let keep := args.toList.zipIdx.filterMap fun (a, i) =>
+      if kinds[i]? == some .instImplicit then none else some a
+    return jarr (jstr n.toString :: (← keep.mapM sexp))
+  telescope (tag : String)
+      (walk : Expr → (Array Expr → Expr → MetaM String) → MetaM String) (e : Expr) : MetaM String :=
+    walk e fun xs body => do
+      let bs ← xs.toList.mapM fun x => do
+        let d ← x.fvarId!.getDecl
+        return jarr [jstr d.userName.toString, ← sexp d.type]
+      return jarr (jstr tag :: bs ++ [← sexp body])
+
+def kindOf : ConstantInfo → String
+  | .axiomInfo _ => "axiom" | .defnInfo _ => "def"     | .thmInfo _ => "theorem"
+  | .opaqueInfo _ => "opaque" | .quotInfo _ => "quot"  | .inductInfo _ => "inductive"
+  | .ctorInfo _ => "ctor" | .recInfo _ => "rec"
+
+/-- One JSON line for `declName`: its kind, the binders it quantifies over (instances dropped,
+    hypotheses kept — a `Prop`-typed binder is as much a part of what the row claims as an object
+    one), and the type they end in.  `forallTelescope`, never the reducing form: whnf would unfold
+    `Cat.Hom` into whatever the instance defines it as and the category — the region the note draws
+    in — would be gone before the walk ever saw it.
+
+    A definition that lands in `Prop` also carries its `value`: it DEFINES a statement rather than
+    stating one, so a caller asking what square it claims has to read the body — `LaxNatural F G φ`
+    says nothing in its type, and the inequation is the whole of what a panel drawing `φ` cites. -/
+def sig (declName : Name) : MetaM String := do
+  let some ci := (← getEnv).find? declName
+    | throwError "no such declaration: {declName}"
+  Meta.forallTelescope ci.type fun xs body => do
+    let bs ← xs.toList.filterMapM fun x => do
+      let d ← x.fvarId!.getDecl
+      if d.binderInfo == .instImplicit then return none
+      -- Whether the binder is a HYPOTHESIS: a rule may be cited as a licence only for what it
+      -- asks, and a `Prop` in the telescope is something the picture has to carry.
+      let p ← Meta.isProp d.type
+      return some (jobj [("name", jstr d.userName.toString), ("type", ← sexp d.type),
+                         ("prop", if p then "true" else "false")])
+    let val : List (String × String) ← match ci.value?, body with
+      | some v, .sort .zero => do pure [("value", ← sexp (← Meta.instantiateLambda v xs))]
+      | _, _ => pure []
+    return jobj ([("name", jstr declName.toString), ("kind", jstr (kindOf ci)),
+                  ("binders", jarr bs), ("type", ← sexp body)] ++ val)
 
 /-! ### Driver -/
 
@@ -1284,44 +1321,142 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --type] <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
-   --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ"
+   --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
+   --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
+   --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
+   --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
+   --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
+     an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
+     categories a relator runs between; no side or branch selector applies\n\
+   --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
+     one line `<panel>\\t<label>\\t<src>⟶<tgt>`, which `scripts/scanline` reads at check time\n\
+     a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
+       symbol between them, every panel as deep as the deepest side\n\
+     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
+       in that same statement-wide frame\n\
+     `<name>.lhs.inl` / `.inr` draws ONE ARM of the fork (--circuit) or ONE OPERAND of the\n\
+       union or meet (--string) at that side's head\n\
+   `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too, and has\n\
+     sides of its own: `<name>#h.lhs` (--circuit, --string)\n\
+   --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
+     the per-panel display scale the note picks (`s: N%`) — all three --string only"
+
+/-- One `--frame N` style option, and the arguments with it removed. -/
+def takeOpt (args : List String) (flag : String) : Option Nat × List String :=
+  match args with
+  | a :: b :: rest =>
+    if a == flag then (b.toNat?, rest)
+    else let (v, r) := takeOpt (b :: rest) flag; (v, a :: r)
+  | rest => (none, rest)
 
 def main (args : List String) : IO UInt32 := do
+  if args.contains "--commutative" then return ← Freyd.CommutativeDiagram.main args
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
-  let args := args.filter (· != "--proof")
+  let sigMode := args.contains "--sig"
+  let stringMode := args.contains "--string"
+  let sigsMode := args.contains "--sigs"
+  let circuitMode := args.contains "--circuit"
+  let typeMode := args.contains "--type"
+  let (frame, args) := takeOpt args "--frame"
+  let (topRow, args) := takeOpt args "--top"
+  let (scale, args) := takeOpt args "--scale"
+  let args := args.filter (fun a =>
+    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--string" && a != "--circuit"
+      && a != "--type")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
+  -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
+  -- extension state — a class declared in one of these modules is not known to BE a class, so every
+  -- instance argument stays an unassigned metavariable and `relProd` never reduces; and the
+  -- unexpander table is empty, so not one `notation` in the repo is applied to a label.
   let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
-  IO.FS.createDirAll "diag/generated"
+    (loadExts := true)
+  -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
+  -- `openDecls` below resolves NAMES in those scopes; a `scoped notation`'s unexpander is extension
+  -- state that only `open` activates, so without this `𝟙 A` prints as `Cat.id A`.
+  let scopes := [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+  let exts ← scopedEnvExtensionsRef.get
+  let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
+  -- Each route writes under its own directory: the three functors are three pictures of one name.
+  let outDir := if stringMode then "diag/generated/string"
+    else if circuitMode then "diag/generated/circuit"
+    else if typeMode then "diag/generated/type" else "diag/generated"
+  unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
   -- Generalized field notation prints a class projection through its instance argument, so `Δ_a`
   -- comes out as `inst✝.delta a`.  The instance is anonymous inside a `forallTelescope`, so that is
   -- worse than useless in a picture; off, it prints `CartBicat.delta a` and the strip in `plain`
   -- takes the namespace.
+  -- A statement's frame is the deepest of its SIDES, so one file costs a walk of every side and not
+  -- just of the part drawn; the default budget was set for one panel.  Wall clock is `scripts/cap`'s.
   let opts : Options :=
-    (Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false
+    ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
+      |>.insert `maxHeartbeats (.ofNat 1000000)
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default,
       options := opts,
-      -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
-      openDecls := [.simple `Freyd [], .simple `Freyd.Diag.SymMonCat [],
-        .simple `Freyd.Diag.Word []] }
+      openDecls := (scopes ++ StrDiag.repoNamespaces env).map (.simple · []) }
   let mut status : UInt32 := 0
   for arg in args do
+    -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
+    -- string and circuit routes read a side, the others take the name whole.
+    -- `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork,
+    -- the panel draws when the other carries none of the law's content.  The selectors go LAST,
+    -- after the side they select inside, and they CHAIN: `.inr.inr` is the arm and then that arm's
+    -- operand, each applied to what the one before it left.  Outermost first, so the list is built
+    -- by consing as the suffixes come off the end.
+    -- A SIDE SELECTOR CHAINS TOO: a statement can be built from statements (`↔`, `∧`), so
+    -- `.lhs.lhs` is the left equation and then its left side, and one loop comes off the end.
+    let mut stem : String.Slice := arg
+    let mut branch : List Nat := []
+    let mut sides : List String := []
+    let mut more := circuitMode || stringMode
+    while more do
+      if stem.endsWith ".inl" then
+        stem := stem.dropEnd 4
+        branch := 0 :: branch
+      else if stem.endsWith ".inr" then
+        stem := stem.dropEnd 4
+        branch := 1 :: branch
+      else if stem.endsWith ".lhs" then
+        stem := stem.dropEnd 4
+        sides := "lhs" :: sides
+      else if stem.endsWith ".rhs" then
+        stem := stem.dropEnd 4
+        sides := "rhs" :: sides
+      else more := false
+    let base := stem
+    -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
+    -- statement too.  Split before `toName`: `#` is not an identifier character, so
+    -- `String.toName` returns the anonymous name for a name that still carries one.
+    let (base, binder) := match base.toString.splitOn "#" with
+      | [b, h] => (b, some h)
+      | _ => (base.toString, none)
     let run : CoreM String :=
-      Meta.MetaM.run' (if proofMode then drawProof arg.toName else draw arg.toName)
-    match ← (do pure (some (← Prod.fst <$> run.toIO ctx { env }))) <|> pure none with
-    | none =>
-      IO.eprintln s!"diag-export: cannot draw `{arg}` — no such declaration in `Freyd` or `diag.*`, \
-        or (with --proof) no calc chain in its proof term"
+      Meta.MetaM.run' (if sigMode then sig arg.toName
+        else if stringMode then
+          StrDiag.drawString base.toName sides binder branch frame topRow scale sigsMode
+        -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
+        -- naming the statement rather than drawing a side nobody asked for.
+        else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
+        else if typeMode then Freyd.TypeRender.file arg.toName
+        else if proofMode then drawProof arg.toName else draw arg.toName)
+    -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
+    -- and a bead whose naturality nobody proved has a message naming the three statements it
+    -- looked for.
+    match ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO with
+    | .error ex =>
+      IO.eprintln s!"diag-export: {arg}: {ex}"
       status := 1
-    | some text =>
-      let path := System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+    | .ok text =>
+      if sigMode then IO.println text else if sigsMode then IO.print text else
+      let path := if stringMode || circuitMode || typeMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
+        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path text
       IO.println path.toString
   return status

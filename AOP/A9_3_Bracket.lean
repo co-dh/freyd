@@ -312,4 +312,10 @@ public theorem mct_laws (hassoc : Assoc sb) :
     (R_recip_trans st sb cb) (R_recip_refl st sb cb)
   rwa [hH] at key
 
+-- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
+-- map, the split cost and the combine cost are the section's context, not part of the name.
+open Lean PrettyPrinter in
+@[app_unexpander R] public meta def unexpandBracketR : Unexpander
+  | _ => `($(mkIdent `R))
+
 end Freyd.Alg.RelSet.Bracket

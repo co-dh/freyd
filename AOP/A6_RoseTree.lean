@@ -32,34 +32,34 @@ public inductive Rose (A : Type) where
 /-! ## The base functor `F(A, X) = A × [X]` -/
 
 /-- Carrier of `F(A, X) = A × [X]`: an employee beside the recursive positions, one layer deep. -/
-@[expose] public def Fobj (A : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨A × ConsList Unit c.carrier⟩
+@[expose] public def Fobj (A : Type) (C : RelSet.{0}) : RelSet.{0} := ⟨A × ConsList Unit C.carrier⟩
 
 /-- Action of `F` on a relation: `𝟙 × list(R)` — the root untouched, the subtree results
     related elementwise. -/
-@[expose] public def Fmap (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : Fobj A c ⟶ Fobj A c' :=
-  rprodMap (𝟙 (dE A)) (list (A := c.carrier) (B := c'.carrier) R)
+@[expose] public def Fmap (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj A C ⟶ Fobj A c' :=
+  rprodMap (𝟙 (dE A)) (list (A := C.carrier) (B := c'.carrier) R)
 
 /-- `F(A, −)` is a relator (monotone functor) on `Rel(Set)`. -/
 @[expose] public def F (A : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := Fobj A
   map := Fmap A
-  map_id c := by
-    show rprodMap (𝟙 (dE A)) (list (𝟙 (dE c.carrier)))
-        = 𝟙 (⟨A × ConsList Unit c.carrier⟩ : RelSet.{0})
+  map_id C := by
+    show rprodMap (𝟙 (dE A)) (list (𝟙 (dE C.carrier)))
+        = 𝟙 (⟨A × ConsList Unit C.carrier⟩ : RelSet.{0})
     rw [list_id, rprodMap_id]
-  map_comp {c c' c''} R S := by
-    show rprodMap (𝟙 (dE A)) (list (A := c.carrier) (B := c''.carrier) (R ≫ S))
-        = rprodMap (𝟙 (dE A)) (list (A := c.carrier) (B := c'.carrier) R)
+  map_comp {C c' c''} R S := by
+    show rprodMap (𝟙 (dE A)) (list (A := C.carrier) (B := c''.carrier) (R ≫ S))
+        = rprodMap (𝟙 (dE A)) (list (A := C.carrier) (B := c'.carrier) R)
           ≫ rprodMap (𝟙 (dE A)) (list (A := c'.carrier) (B := c''.carrier) S)
     rw [rprodMap_comp, Cat.id_comp, list_comp]
-  map_mono {c c'} {R S} h :=
+  map_mono {C c'} {R S} h :=
     le_iff.mpr fun p q hpq => ⟨hpq.1, listP_mono (le_iff.mp h) _ _ hpq.2⟩
 
 /-- `F` preserves converse: `F(R°) = F(R)°` — componentwise, `𝟙° = 𝟙` and `list(R°) = list(R)°`. -/
 public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
-  intro c c' R
-  show rprodMap (𝟙 (dE A)) (list (A := c'.carrier) (B := c.carrier) R°)
-      = (rprodMap (𝟙 (dE A)) (list (A := c.carrier) (B := c'.carrier) R))°
+  intro C c' R
+  show rprodMap (𝟙 (dE A)) (list (A := c'.carrier) (B := C.carrier) R°)
+      = (rprodMap (𝟙 (dE A)) (list (A := C.carrier) (B := c'.carrier) R))°
   rw [list_recip, rprodMap_recip, recip_id]
 
 /-! ## `tree A` is the initial algebra of `F` -/
@@ -69,19 +69,19 @@ public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
 
 mutual
   /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-  @[expose] public def cataFold {c : RelSet.{0}} (f : Fobj A c ⟶ c) : Rose A → c.carrier → Prop
+  @[expose] public def cataFold {C : RelSet.{0}} (f : Fobj A C ⟶ C) : Rose A → C.carrier → Prop
     | Rose.node a ts => fun r => ∃ rs, cataFoldList f ts rs ∧ f (a, rs) r
   /-- `list(cataFold f)`, unrolled so the nested recursion is structural. -/
-  @[expose] public def cataFoldList {c : RelSet.{0}} (f : Fobj A c ⟶ c) :
-      ConsList Unit (Rose A) → ConsList Unit c.carrier → Prop
+  @[expose] public def cataFoldList {C : RelSet.{0}} (f : Fobj A C ⟶ C) :
+      ConsList Unit (Rose A) → ConsList Unit C.carrier → Prop
     | ConsList.wrap _ => fun rs => rs = ConsList.wrap ()
     | ConsList.cons t ts => fun rs =>
         ∃ r' rs', cataFold f t r' ∧ cataFoldList f ts rs' ∧ rs = ConsList.cons r' rs'
 end
 
 /-- The unrolled list fold IS `list(cataFold f)`. -/
-public theorem cataFoldList_eq_listP {c : RelSet.{0}} (f : Fobj A c ⟶ c) :
-    ∀ (ts : ConsList Unit (Rose A)) (rs : ConsList Unit c.carrier),
+public theorem cataFoldList_eq_listP {C : RelSet.{0}} (f : Fobj A C ⟶ C) :
+    ∀ (ts : ConsList Unit (Rose A)) (rs : ConsList Unit C.carrier),
       cataFoldList f ts rs ↔ listP (cataFold f) ts rs
   | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => trivial, fun _ => rfl⟩
   | ConsList.wrap _, ConsList.cons _ _ => ⟨(fun h => nomatch h), False.elim⟩
@@ -97,21 +97,21 @@ public theorem cataFoldList_eq_listP {c : RelSet.{0}} (f : Fobj A c ⟶ c) :
         exact ⟨r0, rs0, h1, (cataFoldList_eq_listP f ts rs0).mpr h2, rfl⟩
 
 /-- The fold at a node, with the list fold already spelled `list(cataFold f)`. -/
-public theorem cataFold_node {c : RelSet.{0}} (f : Fobj A c ⟶ c) (a : A)
-    (ts : ConsList Unit (Rose A)) (r : c.carrier) :
+public theorem cataFold_node {C : RelSet.{0}} (f : Fobj A C ⟶ C) (a : A)
+    (ts : ConsList Unit (Rose A)) (r : C.carrier) :
     cataFold f (Rose.node a ts) r ↔ ∃ rs, listP (cataFold f) ts rs ∧ f (a, rs) r := by
   constructor
   · rintro ⟨rs, h1, h2⟩; exact ⟨rs, (cataFoldList_eq_listP f ts rs).mp h1, h2⟩
   · rintro ⟨rs, h1, h2⟩; exact ⟨rs, (cataFoldList_eq_listP f ts rs).mpr h1, h2⟩
 
 mutual
-  public theorem cataFold_total {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
+  public theorem cataFold_total {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
       ∀ t : Rose A, ∃ r, cataFold f t r
     | Rose.node a ts => by
         obtain ⟨rs, hrs⟩ := cataFoldList_total f hf ts
         obtain ⟨r, hr⟩ := entire_total hf.1 (a, rs)
         exact ⟨r, rs, hrs, hr⟩
-  public theorem cataFoldList_total {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
+  public theorem cataFoldList_total {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
       ∀ ts : ConsList Unit (Rose A), ∃ rs, cataFoldList f ts rs
     | ConsList.wrap _ => ⟨ConsList.wrap (), rfl⟩
     | ConsList.cons t ts => by
@@ -121,13 +121,13 @@ mutual
 end
 
 mutual
-  public theorem cataFold_functional {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
-      ∀ (t : Rose A) (r r' : c.carrier), cataFold f t r → cataFold f t r' → r = r'
+  public theorem cataFold_functional {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
+      ∀ (t : Rose A) (r r' : C.carrier), cataFold f t r → cataFold f t r' → r = r'
     | Rose.node a ts, r, r', ⟨rs, hrs, hfr⟩, ⟨rs', hrs', hfr'⟩ => by
         obtain rfl : rs = rs' := cataFoldList_functional f hf ts rs rs' hrs hrs'
         exact simple_uniq hf.2 hfr hfr'
-  public theorem cataFoldList_functional {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
-      ∀ (ts : ConsList Unit (Rose A)) (rs rs' : ConsList Unit c.carrier),
+  public theorem cataFoldList_functional {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
+      ∀ (ts : ConsList Unit (Rose A)) (rs rs' : ConsList Unit C.carrier),
         cataFoldList f ts rs → cataFoldList f ts rs' → rs = rs'
     | ConsList.wrap _, _, _, h, h' => h.trans h'.symm
     | ConsList.cons t ts, _, _, ⟨r1, rs1, hr1, hrs1, rfl⟩, ⟨r2, rs2, hr2, hrs2, rfl⟩ => by
@@ -136,8 +136,8 @@ mutual
         rfl
 end
 
-public theorem cataFold_map {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
-    Map (a := dRose A) (b := c) (cataFold f) := by
+public theorem cataFold_map {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
+    Map (a := dRose A) (b := C) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = 𝟙 (dRose A)
     apply hom_ext; intro t t'
@@ -151,7 +151,7 @@ public theorem cataFold_map {c : RelSet.{0}} (f : Fobj A c ⟶ c) (hf : Map f) :
 
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataFold φ = F(cataFold φ) ≫ φ`.  (The structural proof never uses `Map φ`.) -/
-public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj A c ⟶ c) :
+public theorem cataFold_comm {C : RelSet.{0}} (φ : Fobj A C ⟶ C) :
     graph con ≫ cataFold φ = Fmap A (cataFold φ) ≫ φ := by
   apply hom_ext; intro u r
   constructor
@@ -165,9 +165,9 @@ public theorem cataFold_comm {c : RelSet.{0}} (φ : Fobj A c ⟶ c) :
       (show u.1 = v.1 from hv1) ▸ hφ⟩
 
 mutual
-  public theorem cataFold_unique_tree {c : RelSet.{0}} (f : Fobj A c ⟶ c) (h : dRose A ⟶ c)
+  public theorem cataFold_unique_tree {C : RelSet.{0}} (f : Fobj A C ⟶ C) (h : dRose A ⟶ C)
       (hcomm : graph con ≫ h = Fmap A h ≫ f) :
-      ∀ (t : Rose A) (r : c.carrier), h t r ↔ cataFold f t r
+      ∀ (t : Rose A) (r : C.carrier), h t r ↔ cataFold f t r
     | Rose.node a ts, r => by
       have key : (graph con ≫ h) (a, ts) r = (Fmap A h ≫ f) (a, ts) r := by rw [hcomm]
       constructor
@@ -186,9 +186,9 @@ mutual
         obtain ⟨t', ht', hh⟩ := hrhs
         have hh' : h (con (a, ts)) r := (show t' = con (a, ts) from ht') ▸ hh
         exact hh'
-  public theorem cataFold_unique_list {c : RelSet.{0}} (f : Fobj A c ⟶ c) (h : dRose A ⟶ c)
+  public theorem cataFold_unique_list {C : RelSet.{0}} (f : Fobj A C ⟶ C) (h : dRose A ⟶ C)
       (hcomm : graph con ≫ h = Fmap A h ≫ f) :
-      ∀ (ts : ConsList Unit (Rose A)) (rs : ConsList Unit c.carrier),
+      ∀ (ts : ConsList Unit (Rose A)) (rs : ConsList Unit C.carrier),
         listP h ts rs ↔ listP (cataFold f) ts rs
     | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
     | ConsList.wrap _, ConsList.cons _ _ => Iff.rfl
@@ -215,12 +215,12 @@ end
     hom_ext fun t r => cataFold_unique_tree f h hcomm t r
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `tree A ⟶ c`. -/
-@[expose] public def cataR {c : RelSet.{0}} (φ : Fobj A c ⟶ c) : dRose A ⟶ c := cataFold φ
+@[expose] public def cataR {C : RelSet.{0}} (φ : Fobj A C ⟶ C) : dRose A ⟶ C := cataFold φ
 
 /-- The structural fold IS the relational catamorphism (Eilenberg–Wright, via `cataFold_comm`
     and the universal property `relCata_UP`).  Lets the abstract catamorphism laws apply to
     `cataR`. -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F A).obj c ⟶ c) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataFold_comm φ)
 

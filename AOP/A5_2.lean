@@ -30,7 +30,7 @@ public import Freyd.S2_30
 public import AOP.A4_2
 public import AOP.A5_1
 
-universe v₂ u₂ u
+universe v v₂ v₃ u₂ u₃ u
 
 namespace Freyd.Alg
 
@@ -475,6 +475,51 @@ variable [HasRelProd 𝒜]
     simp only [F.map_comp, G.map_comp]; exact (prodMap_comp _ _ _ _ _ _ _).symm
   map_mono h := prodMap_mono (F.map_mono h) (G.map_mono h)
 
+/-- The PAIRING of two relators into the PRODUCT allegory: `x ↦ (F x, G x)`, `R ↦ (F R, G R)`.
+    Its own `𝒜`, not the section's: pairing needs the product ALLEGORY and nothing else, and a
+    signature carrying the section's `TabularUnitaryDivisionAllegory` projection instead would not
+    typecheck beside a relator whose allegory instance reached `𝒜` by another route. -/
+@[expose] public def Relator.pair {𝒜 : Type u} [Allegory.{v} 𝒜] {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    (F G : Relator 𝒮 𝒜) : Relator 𝒮 (𝒜 × 𝒜) where
+  obj x := (F.obj x, G.obj x)
+  map R := (F.map R, G.map R)
+  map_id x := Prod.ext (F.map_id x) (G.map_id x)
+  map_comp R S := Prod.ext (F.map_comp R S) (G.map_comp R S)
+  map_mono h := Prod.ext (F.map_mono h) (G.map_mono h)
+
+/-- The product bifunctor AS A RELATOR `𝒜 × 𝒜 ⟶ 𝒜`, on the same `relProd` apex `Relator.prod`
+    takes.  Splitting `F×G` through it is what makes a product TWO NESTED WIRES in a picture —
+    the pairing inside the region `𝒜×𝒜`, this one outside it — and not two parallel wires. -/
+@[expose] public def timesRel : Relator (𝒜 × 𝒜) 𝒜 where
+  obj p := (relProd p.1 p.2).p
+  map R := prodMap (relProd _ _) (relProd _ _) R.1 R.2
+  map_id p := prodMap_id (relProd p.1 p.2)
+  map_comp _ _ := (prodMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := prodMap_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+/-- `F×G` IS the pairing followed by the product bifunctor, on the nose.  A SPELLING BRIDGE: a
+    picture packs the two arguments (`⟨F,G⟩` then the bifunctor) where the library writes one
+    product relator, and the `←` orientation rewrites the picture's spelling into the library's,
+    which is the one a closure theorem states its conclusion in. -/
+@[diag_bridge ←] public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+    Relator.prod F G = Relator.comp (Relator.pair F G) timesRel := rfl
+
+/-- A relator on the INSIDE distributes over a product: running `K` first and then `F×G` is
+    running `K F` and `K G` and taking their product, on the same apex.  A SPELLING BRIDGE: a
+    closure theorem reindexed along `K` (`laxNatural_inside`, `strictNatural_inside`) states its
+    conclusion with the `K` OUTSIDE the product, where a panel's own lane stack has it
+    distributed — one arrow, two spellings, and the search has to see them as one. -/
+@[diag_bridge] public theorem Relator.comp_prod {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) (F G : Relator 𝒮 𝒜) :
+    Relator.comp K (Relator.prod F G) = Relator.prod (Relator.comp K F) (Relator.comp K G) := rfl
+
+/-- The identity relator composed on is no relator at all.  A SPELLING BRIDGE for the same
+    reason as the last: a lane stack of one wire IS that wire, where a closure theorem
+    instantiated at the identity leaves the `comp` standing. -/
+@[diag_bridge] public theorem Relator.comp_id {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) :
+    Relator.comp K (Relator.idRelator 𝒮) = K := rfl
+
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
     relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
 @[expose] public def Δ (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
@@ -505,5 +550,66 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
   prodMap_outr_eq_of_entire _ _ _ (hF R)
 
 end ProdRelator
+
+-- printing-only unexpander: the note's spelling.  `R×S` is what (5.2) is called, and the two
+-- products it is taken over are the objects' own, which the sign already says.  Changes no
+-- statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander prodMap] public meta def unexpandProdMap : Unexpander
+  | `($_ $_ $_ $R $S) => `($R × $S)
+  | _ => throw ()
+
+-- printing-only: a product's two projections are the note's `π₁`/`π₂`.  WHICH product they are
+-- taken over is the `RelProd` argument, and that is what the picture's own wires already say, so
+-- the label names the arrow alone.
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outl] public meta def unexpandOutl : Unexpander
+  | _ => `($(mkIdent `π₁))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outr] public meta def unexpandOutr : Unexpander
+  | _ => `($(mkIdent `π₂))
+
+/-! ## The adjoint triple `𝓓 ⊣ ·⊤ ⊣ 𝟙∩·/⊤`
+
+  `⊤` read as an operator on hom-sets rather than as one arrow.  Between the COREFLEXIVES on
+  `c` and the hom-set `c ⟶ b` there are three operators — `𝓓`, `·⊤`, `𝟙∩·/⊤` — and each
+  consecutive pair is an adjunction, so `·⊤` is a right adjoint by the first and a left adjoint
+  by the second.  Both halves are stated as the iff an adjunction IS: the left adjoint's value
+  is below `X` exactly when the argument is below the right adjoint's value.  Only two universal
+  properties are spent, `dom_coref_comp` (§2.10) and `le_div_iff` (§2.31); coreflexivity of `X`
+  is what makes the two poset ends line up, and the chain stops at three (`·⊤` preserves neither
+  all meets nor all joins in general). -/
+
+/-- `𝓓 ⊣ ·⊤`: `𝓓S ⊑ X ≡ S ⊑ X⊤`, for a COREFLEXIVE `X : c ⟶ c` and `S : c ⟶ b`.  Taking the
+    domain is LEFT adjoint to composing with `⊤`.  Left to right is `S = (𝓓S)S ⊑ XS ⊑ X⊤`;
+    right to left is monotonicity of `𝓓` followed by `𝓓(XT) = X ∩ 𝓓T ⊑ X`. -/
+public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX : Coreflexive X) :
+    dom S ⊑ X ↔ S ⊑ X ≫ topMor c b := by
+  -- a coreflexive is its own domain: `𝓓X = 𝟙∩XX° = 𝟙∩X = X`, by symmetry and idempotence.
+  have hdomX : dom X = X := by
+    obtain ⟨hsym, hidem⟩ := coreflexive_symmetric_idempotent hX
+    show Cat.id c ∩ (X ≫ X°) = X
+    rw [symmetric_eq hsym, hidem, Allegory.inter_comm]; exact hX
+  constructor
+  · intro h
+    calc S ⊑ dom S ≫ S := le_dom_comp S
+      _ ⊑ X ≫ S := comp_mono_right h S
+      _ ⊑ X ≫ topMor c b := comp_mono_left X (topMor_max S)
+  · intro h
+    have hS : X ≫ S = S := by
+      rw [← hdomX, ← inter_comp_topMor_eq_dom_comp S X]; exact h
+    exact (dom_UP hX).mpr (by rw [hS]; exact le_refl S)
+
+/-- `·⊤ ⊣ 𝟙∩·/⊤`: `X⊤ ⊑ R ≡ X ⊑ 𝟙∩R/⊤`, for a COREFLEXIVE `X : c ⟶ c` and `R : c ⟶ b`.
+    Composing with `⊤` is LEFT adjoint to `R ↦ 𝟙∩R/⊤`, the third link of the triple.  Right to
+    left is the division UP alone; left to right adds `X ⊑ 𝟙`, which is coreflexivity — the
+    `𝟙∩` is exactly what lands the right adjoint back in the coreflexives. -/
+public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X : c ⟶ c}
+    (hX : Coreflexive X) :
+    X ≫ topMor c b ⊑ R ↔ X ⊑ Cat.id c ∩ (R / topMor c b) := by
+  constructor
+  · intro h; exact le_inter hX ((le_div_iff X R (topMor c b)).mpr h)
+  · intro h; exact (le_div_iff X R (topMor c b)).mp (le_trans h (inter_lb_right _ _))
 
 end Freyd.Alg

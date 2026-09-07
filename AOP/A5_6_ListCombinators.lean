@@ -338,10 +338,10 @@ public theorem geq_trans : geq ≫ geq ⊑ geq :=
   and the algebra bracket `[g,h]` is `junc` over the concrete coproduct `F c = Unit + (E × c)`. -/
 
 /-- `[g,h]` on the left summand: `[g,h] (inl x) = g x`. -/
-public theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x : a.carrier) (r : c.carrier) :
-    junc (sumCop a b) g h (Sum.inl x) r ↔ g x r := by
-  show (∃ x', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
-      ∨ (∃ y', (Sum.inl x : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ g x r
+public theorem junc_sum_inl {A B C : RelSet.{0}} (g : A ⟶ C) (h : B ⟶ C) (x : A.carrier) (r : C.carrier) :
+    junc (sumCop A B) g h (Sum.inl x) r ↔ g x r := by
+  show (∃ x', (Sum.inl x : A.carrier ⊕ B.carrier) = Sum.inl x' ∧ g x' r)
+      ∨ (∃ y', (Sum.inl x : A.carrier ⊕ B.carrier) = Sum.inr y' ∧ h y' r) ↔ g x r
   constructor
   · rintro (⟨x', hx', hg⟩ | ⟨y', hy', -⟩)
     · obtain rfl := Sum.inl.inj hx'
@@ -350,10 +350,10 @@ public theorem junc_sum_inl {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (x 
   · exact fun hg => Or.inl ⟨x, rfl, hg⟩
 
 /-- `[g,h]` on the right summand: `[g,h] (inr p) = h p`. -/
-public theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p : b.carrier) (r : c.carrier) :
-    junc (sumCop a b) g h (Sum.inr p) r ↔ h p r := by
-  show (∃ x', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inl x' ∧ g x' r)
-      ∨ (∃ y', (Sum.inr p : a.carrier ⊕ b.carrier) = Sum.inr y' ∧ h y' r) ↔ h p r
+public theorem junc_sum_inr {A B C : RelSet.{0}} (g : A ⟶ C) (h : B ⟶ C) (p : B.carrier) (r : C.carrier) :
+    junc (sumCop A B) g h (Sum.inr p) r ↔ h p r := by
+  show (∃ x', (Sum.inr p : A.carrier ⊕ B.carrier) = Sum.inl x' ∧ g x' r)
+      ∨ (∃ y', (Sum.inr p : A.carrier ⊕ B.carrier) = Sum.inr y' ∧ h y' r) ↔ h p r
   constructor
   · rintro (⟨x', hx', -⟩ | ⟨y', hy', hh⟩)
     · exact nomatch hx'
@@ -363,7 +363,7 @@ public theorem junc_sum_inr {a b c : RelSet.{0}} (g : a ⟶ c) (h : b ⟶ c) (p 
 
 /-- The Eilenberg–Wright square `α ≫ X = F(X) ≫ φ` of `relCata_UP`, unpacked to one pointwise
     component per constructor. -/
-theorem cata_square_iff {L E : Type} {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) (X : dCL L E ⟶ c) :
+theorem cata_square_iff {L E : Type} {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) (X : dCL L E ⟶ C) :
     (graph con ≫ X = (F L E).map X ≫ φ)
       ↔ ((∀ d r, X (ConsList.wrap d) r ↔ φ (Sum.inl d) r)
           ∧ (∀ a x r, X (ConsList.cons a x) r ↔ ∃ y, X x y ∧ φ (Sum.inr (a, y)) r)) := by
@@ -440,9 +440,9 @@ theorem cata_square_iff {L E : Type} {c : RelSet.{0}} (φ : Fobj L E c ⟶ c) (X
 
 /-- `cata_square_iff` for a `[g,h]` (`junc`) algebra, the coproduct already evaluated: the two
     components mention `g` and `h` directly. -/
-public theorem cata_square_junc_iff {L E : Type} {c : RelSet.{0}} (g : dL L ⟶ c)
-    (h : (⟨E × c.carrier⟩ : RelSet.{0}) ⟶ c) (X : dCL L E ⟶ c) :
-    (graph con ≫ X = (F L E).map X ≫ junc (sumCop (dL L) ⟨E × c.carrier⟩) g h)
+public theorem cata_square_junc_iff {L E : Type} {C : RelSet.{0}} (g : dL L ⟶ C)
+    (h : (⟨E × C.carrier⟩ : RelSet.{0}) ⟶ C) (X : dCL L E ⟶ C) :
+    (graph con ≫ X = (F L E).map X ≫ junc (sumCop (dL L) ⟨E × C.carrier⟩) g h)
       ↔ ((∀ d r, X (ConsList.wrap d) r ↔ g d r)
           ∧ (∀ a x r, X (ConsList.cons a x) r ↔ ∃ y, X x y ∧ h (a, y) r)) := by
   rw [cata_square_iff]
@@ -479,8 +479,8 @@ public theorem list_cata (R : dE A ⟶ dE B) :
     list R = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit B⟩) wrapR
         (rprodMap R (𝟙 (dList B)) ≫ consR) : (F Unit A).obj (dList B) ⟶ dList B)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
-  · show listP R (ConsList.wrap ()) r ↔ r = ConsList.wrap d
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show listP R (ConsList.wrap ()) r ↔ r = ConsList.wrap D
     cases r with
     | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
@@ -665,9 +665,9 @@ public theorem alphaR_natural (R : dE A ⟶ dE B) :
       = Fbimap Unit R (list R) ≫ (alphaR : (F Unit B).obj (dList B) ⟶ dList B) := by
   apply hom_ext; intro u w
   cases u with
-  | inl d =>
+  | inl D =>
     cases w with
-    | wrap e => exact ⟨fun _ => ⟨Sum.inl e, rfl, rfl⟩, fun _ => ⟨ConsList.wrap d, rfl, trivial⟩⟩
+    | wrap e => exact ⟨fun _ => ⟨Sum.inl e, rfl, rfl⟩, fun _ => ⟨ConsList.wrap D, rfl, trivial⟩⟩
     | cons b y =>
       refine ⟨fun h => ?_, fun h => ?_⟩
       · obtain ⟨_, rfl, hz⟩ := h; exact hz.elim
@@ -751,8 +751,8 @@ public theorem subseq_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
           (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
-  · show subseqP r (ConsList.wrap d) ↔ r = ConsList.wrap d
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show subseqP r (ConsList.wrap D) ↔ r = ConsList.wrap D
     cases r with
     | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
@@ -770,6 +770,63 @@ public theorem subseq_cata :
       · exact Or.inl ⟨rfl, hy⟩
       · exact subseqP.weaken hy
 
+/-- The note's `subseq-EW-join` second row: **`(𝟙×∋)(cons ∪ π₂) = (𝟙×∋)cons ∪ (𝟙×∋)π₂`** —
+    `comp_union_distrib` at `subseq`'s algebra, the instance the row states. -/
+public theorem prod_ni_union_dist :
+    rprodMap (𝟙 (dE A)) (∋ (dList A))
+        ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ graph fun p : A × ConsList Unit A => p.2) :=
+  DistributiveAllegory.comp_union_distrib _ _ _
+
+/-- The note's `subseq-EW-join` third row: **`(𝟙×∋)π₂ = π₂∋`** — `rprodMap_id_snd` at `∋`, the
+    instance the row states: the membership crosses the projection unchanged. -/
+public theorem prod_ni_proj_slide :
+    rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2)
+      = (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
+  rprodMap_id_snd _
+
+/-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
+    second arm of `subseq`'s algebra under the power transpose.  Composition distributes over the
+    `∪`, `(𝟙×∋)π₂ = π₂∋` slides the membership past the projection (`rprodMap_id_snd`), `Λ` of a
+    union is the fork into `cup` (`Λ_union`), and then absorption takes `Λ` inside the `cons`
+    operand while fusion and `Λ(∋)=𝟙` leave the `π₂` operand bare. -/
+public theorem subseq_alg_join :
+    Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+        ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))
+      = rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
+          (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+        ≫ cup (relProd (PowerAllegory.powerObj (dList A))
+            (PowerAllegory.powerObj (dList A))) := by
+  rw [DistributiveAllegory.comp_union_distrib, rprodMap_id_snd,
+    Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
+      (PowerAllegory.powerObj (dList A))),
+    pair_eq_rpair, Λ_absorption, Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
+
+/-- The note's `subseq-EW-case` third row: **`F(∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
+    `F(∋)` IS the sum `𝟙+𝟙×∋` (`F_eq_sum_prod`), and a sum before a junction is the junction of
+    the branches (`sumMap_junc`), the leaf arm's `𝟙` cancelling. -/
+public theorem subseq_alg_sum_junc :
+    (F Unit A).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+          (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
+  rw [← F_eq_sum_prod]
+  show sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
+      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) (∋ (dList A))) ≫ _ = _
+  rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap]
+
+/-- The note's `subseq-EW-case` last row: **`nil%∋ = nil 𝟙%∋`** — the leaf arm alone.  `nil` is a
+    map, so `Λ` fuses out of it (`Λ_fusion` at `𝟙`), leaving the singleton `𝟙%∋ = Λ(𝟙)`. -/
+public theorem Λ_nil_singleton :
+    Λ (wrapR : dL Unit ⟶ dList A) = wrapR ≫ singletonMap := by
+  have h := Λ_fusion (graph_map (ConsList.wrap : Unit → ConsList Unit A)) (Cat.id (dList A))
+  rw [Cat.comp_id] at h
+  exact h
+
 /-- **`prefix = ⦇[nil, nil ∪ cons]⦈`** (note `comb-fns`; B&dM §5.6): fold the list; the first
     branch (`⊸nil`, discard then `nil`) stops early, `cons` keeps going. -/
 public theorem prefix_cata :
@@ -777,8 +834,8 @@ public theorem prefix_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
           ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
-  · show prefixP r (ConsList.wrap d) ↔ r = ConsList.wrap d
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show prefixP r (ConsList.wrap D) ↔ r = ConsList.wrap D
     cases r with
     | wrap u => exact ⟨fun _ => rfl, fun _ => trivial⟩
     | cons b z => exact ⟨False.elim, fun h => nomatch h⟩
@@ -792,6 +849,18 @@ public theorem prefix_cata :
     · rintro ⟨y, hy, rfl | rfl⟩
       · exact trivial
       · exact ⟨rfl, hy⟩
+
+/-- **`α prefix = F(𝟙,prefix)[nil, ⊸nil ∪ cons]`**: the fold law of `prefix` in the cancellation
+    form (5.12) — build the list, then take a prefix, is take a prefix of the tail and then
+    either stop or keep the head.  `prefix_cata` is the fold, this is its square, which is what a
+    picture of the two sides is drawn from. -/
+public theorem prefix_cancel :
+    (initial Unit A).α ≫ (prefixR : dList A ⟶ dList A)
+      = (F Unit A).map (prefixR : dList A ⟶ dList A)
+        ≫ (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            ((graph fun _ => ConsList.wrap ()) ∪ consR) : (F Unit A).obj (dList A) ⟶ dList A) := by
+  rw [prefix_cata]
+  exact relCata_cancel (initial Unit A) _
 
 /-- **`prefix = cat° π₁`** (note `comb-fns`): split `x` as `ys ++ v` and keep the left part.
     `π₁ = graph (·.1)`, as in `subseq_cata`. -/
@@ -836,8 +905,8 @@ public theorem perm_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (consR ≫ perm)
           : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
-  · show Perm (ConsList.wrap ()) r ↔ r = ConsList.wrap d
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show Perm (ConsList.wrap ()) r ↔ r = ConsList.wrap D
     exact ⟨fun h => Perm.eq_nil h rfl, fun h => by obtain rfl := h; exact Perm.nil⟩
   · show Perm (ConsList.cons a x) r
         ↔ ∃ y, Perm x y ∧ ∃ w, w = ConsList.cons a y ∧ Perm w r
@@ -855,8 +924,8 @@ public theorem partition_concat :
         : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A)
       = concatNE := by
     refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
-      ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun seg rest r => ?_⟩)
-    · show (ConsList.wrap () = r ∧ True) ↔ r = ConsList.wrap d
+      ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
+    · show (ConsList.wrap () = r ∧ True) ↔ r = ConsList.wrap D
       exact ⟨fun hh => hh.1.symm, fun hh => ⟨hh.symm, trivial⟩⟩
     · show (cappend seg (cconcat rest) = r ∧ isNonempty seg ∧ allNonempty rest)
           ↔ ∃ y, (cconcat rest = y ∧ allNonempty rest)
@@ -877,7 +946,7 @@ public theorem concat_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catR
           : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈ := by
   refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun seg rest r => ?_⟩)
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun seg rest r => ?_⟩)
   · exact Iff.rfl
   · show r = cappend seg (cconcat rest) ↔ ∃ y, y = cconcat rest ∧ r = cappend seg y
     exact ⟨fun h => ⟨cconcat rest, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
@@ -889,9 +958,46 @@ public theorem sum_cata :
       = ⦇(junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int))
           (graph fun q => q.1 + q.2) : (F Unit Int).obj (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩)⦈ := by
   refine (relCata_UP (initial Unit Int) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => Iff.rfl, fun a x r => ?_⟩)
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
+
+-- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
+-- the name; `listRelator` is its lane `list`; `prefixR` is `prefix`, a Lean keyword, which the
+-- printer escapes as `«prefix»` and the label emitter (`diag/tool/ExprReader`) unescapes.
+-- Changes no statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander dList] public meta def unexpandDList : Unexpander
+  | `($_ $A) => `([$A])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander listRelator] public meta def unexpandListRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `list))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
+
+-- `partition`, `concat` and `sum` are what the note calls these arrows.  The namespace is the only
+-- reason the printer keeps `ListRel.` in front of them, and a picture of the repo's own algebra has
+-- no second `partition` to tell this one from.
+open Lean PrettyPrinter in
+@[app_unexpander partition] public meta def unexpandPartition : Unexpander
+  | `($_:ident) => `($(mkIdent `partition))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander concatR] public meta def unexpandConcatR : Unexpander
+  | `($_:ident) => `($(mkIdent `concat))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander sumR] public meta def unexpandSumR : Unexpander
+  | `($_:ident) => `($(mkIdent `sum))
+  | _ => throw ()
+
+/-- The list relator's action on an arrow, with its own brackets like every other relator's `F(R)`,
+    because juxtaposition in this repo is composition. -/
+notation:max "list(" R ")" => list R
 
 end Freyd.Alg.RelSet.ListRel
 

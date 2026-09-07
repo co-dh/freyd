@@ -35,46 +35,46 @@ abbrev dA (A : Type) : RelSet.{0} := ⟨A⟩
 /-! ## Two elementary `Rel(Set)` facts about maps -/
 
 /-- An entire relation relates every point to something. -/
-public theorem entire_total {a b : RelSet.{u}} {R : a ⟶ b} (h : Entire R) (x : a.carrier) :
+public theorem entire_total {A B : RelSet.{u}} {R : A ⟶ B} (h : Entire R) (x : A.carrier) :
     ∃ y, R x y := by
   have hd : (dom R) x x := by
-    have e : (dom R) x x = (Cat.id a) x x := congrFun (congrFun h x) x
+    have e : (dom R) x x = (Cat.id A) x x := congrFun (congrFun h x) x
     rw [e]; rfl
   obtain ⟨_, y, hy, _⟩ := hd
   exact ⟨y, hy⟩
 
 /-- A simple relation is single-valued. -/
-public theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : a.carrier}
-    {y y' : b.carrier} (hy : R x y) (hy' : R x y') : y = y' :=
+public theorem simple_uniq {A B : RelSet.{u}} {R : A ⟶ B} (h : Simple R) {x : A.carrier}
+    {y y' : B.carrier} (hy : R x y) (hy' : R x y') : y = y' :=
   le_iff.mp h y y' ⟨x, hy, hy'⟩
 
 /-! ## The functor `F X = 1 + (X × A × X)` -/
 
 /-- Carrier of `F X`. -/
-@[expose] public def TFobj (A : Type) (c : RelSet.{0}) : RelSet.{0} := ⟨Unit ⊕ (c.carrier × A × c.carrier)⟩
+@[expose] public def TFobj (A : Type) (C : RelSet.{0}) : RelSet.{0} := ⟨Unit ⊕ (C.carrier × A × C.carrier)⟩
 
 /-- Action of `F` on a relation: identity on the `1` summand, `R × id × R` on `X × A × X`. -/
-@[expose] public def Fmap (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : TFobj A c ⟶ TFobj A c' :=
+@[expose] public def Fmap (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : TFobj A C ⟶ TFobj A c' :=
   fun u v => match u, v with
     | Sum.inl _, Sum.inl _ => True
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ p.2.1 = q.2.1 ∧ R p.2.2 q.2.2
     | _, _ => False
 
-@[simp] theorem Fmap_ll (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (x y : Unit) :
+@[simp] theorem Fmap_ll (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (x y : Unit) :
     Fmap A R (Sum.inl x) (Sum.inl y) = True := rfl
-@[simp] public theorem Fmap_rr (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c')
-    (p : c.carrier × A × c.carrier) (q : c'.carrier × A × c'.carrier) :
+@[simp] public theorem Fmap_rr (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c')
+    (p : C.carrier × A × C.carrier) (q : c'.carrier × A × c'.carrier) :
     Fmap A R (Sum.inr p) (Sum.inr q) = (R p.1 q.1 ∧ p.2.1 = q.2.1 ∧ R p.2.2 q.2.2) := rfl
-@[simp] theorem Fmap_lr (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (x : Unit)
+@[simp] theorem Fmap_lr (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (x : Unit)
     (q : c'.carrier × A × c'.carrier) : Fmap A R (Sum.inl x) (Sum.inr q) = False := rfl
-@[simp] public theorem Fmap_rl (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c')
-    (p : c.carrier × A × c.carrier) (y : Unit) : Fmap A R (Sum.inr p) (Sum.inl y) = False := rfl
+@[simp] public theorem Fmap_rl (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c')
+    (p : C.carrier × A × C.carrier) (y : Unit) : Fmap A R (Sum.inr p) (Sum.inl y) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
 @[expose] public def F (A : Type) : Relator RelSet.{0} RelSet.{0} where
   obj := TFobj A
   map R := Fmap A R
-  map_id c := hom_ext fun u v => by
+  map_id C := hom_ext fun u v => by
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl, id_apply] <;> grind
   map_comp R S := hom_ext fun u v => by
     cases u with
@@ -110,7 +110,7 @@ public theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : 
             obtain ⟨hRm1, hpa, hRm2⟩ := hw1
             obtain ⟨hSm1, haq, hSm2⟩ := hw2
             exact ⟨⟨m1, hRm1, hSm1⟩, hpa.trans haq, ⟨m2, hRm2, hSm2⟩⟩
-  map_mono {c c' R S} h := le_iff.mpr fun u v => by
+  map_mono {C c' R S} h := le_iff.mpr fun u v => by
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
       first
         | exact id
@@ -119,7 +119,7 @@ public theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : 
 
 /-- `F` preserves converse. -/
 public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
-  intro c c' R
+  intro C c' R
   apply hom_ext; intro u v
   cases u <;> cases v <;> simp only [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
     first
@@ -135,18 +135,18 @@ public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
   | Sum.inr (l, a, r) => Tree.node l a r
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-@[expose] public def cataTreeFold {c : RelSet.{0}} (f : TFobj A c ⟶ c) : Tree A → c.carrier → Prop
+@[expose] public def cataTreeFold {C : RelSet.{0}} (f : TFobj A C ⟶ C) : Tree A → C.carrier → Prop
   | Tree.nil => fun r => f (Sum.inl ()) r
   | Tree.node l a r => fun res =>
       ∃ rl rr, cataTreeFold f l rl ∧ cataTreeFold f r rr ∧ f (Sum.inr (rl, a, rr)) res
 
-@[simp] public theorem cataTreeFold_nil {c : RelSet.{0}} (f : TFobj A c ⟶ c) (r : c.carrier) :
+@[simp] public theorem cataTreeFold_nil {C : RelSet.{0}} (f : TFobj A C ⟶ C) (r : C.carrier) :
     cataTreeFold f Tree.nil r = f (Sum.inl ()) r := rfl
-@[simp] public theorem cataTreeFold_node {c : RelSet.{0}} (f : TFobj A c ⟶ c) (l r : Tree A) (a : A)
-    (res : c.carrier) : cataTreeFold f (Tree.node l a r) res =
+@[simp] public theorem cataTreeFold_node {C : RelSet.{0}} (f : TFobj A C ⟶ C) (l r : Tree A) (a : A)
+    (res : C.carrier) : cataTreeFold f (Tree.node l a r) res =
       ∃ rl rr, cataTreeFold f l rl ∧ cataTreeFold f r rr ∧ f (Sum.inr (rl, a, rr)) res := rfl
 
-public theorem cataTree_total {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
+public theorem cataTree_total {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
     ∀ t : Tree A, ∃ r, cataTreeFold f t r
   | Tree.nil => entire_total hf.1 (Sum.inl ())
   | Tree.node l a r => by
@@ -155,8 +155,8 @@ public theorem cataTree_total {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f
     obtain ⟨res, hres⟩ := entire_total hf.1 (Sum.inr (rl, a, rr))
     exact ⟨res, rl, rr, hrl, hrr, hres⟩
 
-public theorem cataTree_functional {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
-    ∀ (t : Tree A) (r r' : c.carrier), cataTreeFold f t r → cataTreeFold f t r' → r = r'
+public theorem cataTree_functional {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
+    ∀ (t : Tree A) (r r' : C.carrier), cataTreeFold f t r → cataTreeFold f t r' → r = r'
   | Tree.nil, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | Tree.node l a r, res, res', h1, h2 => by
     obtain ⟨rl, rr, hl, hr, hf1⟩ := h1
@@ -166,8 +166,8 @@ public theorem cataTree_functional {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : 
     subst hll; subst hrr'
     exact simple_uniq hf.2 hf1 hf2
 
-public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
-    Map (a := dTree A) (b := c) (cataTreeFold f) := by
+public theorem cataTree_map {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
+    Map (a := dTree A) (b := C) (cataTreeFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataTreeFold f) = Cat.id (dTree A)
     apply hom_ext; intro t t'
@@ -262,13 +262,13 @@ public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) 
         rw [hteq] at hh; exact hh
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dTree A ⟶ c`. -/
-@[expose] public def cataR {c : RelSet.{0}} (φ : TFobj A c ⟶ c) : dTree A ⟶ c := cataTreeFold φ
+@[expose] public def cataR {C : RelSet.{0}} (φ : TFobj A C ⟶ C) : dTree A ⟶ C := cataTreeFold φ
 
 /-- The catamorphism computation rule holds for ANY algebra-relation `φ` (not just maps):
     `α ≫ cataTreeFold φ = F(cataTreeFold φ) ≫ φ`.  This is the `Map`-free form of `initial`'s own
     `cata_comm` field — the structural proof never references `Map φ` — and is the tree analogue of
     `A6_SnocList.cataFold_comm`. -/
-public theorem cataTreeFold_comm {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
+public theorem cataTreeFold_comm {C : RelSet.{0}} (φ : TFobj A C ⟶ C) :
     graph con ≫ cataTreeFold φ = (F A).map (cataTreeFold φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -304,7 +304,7 @@ public theorem cataTreeFold_comm {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
     `cataTreeFold_comm` and the universal property `relCata_UP`).  Lets the abstract catamorphism
     laws (fusion, greedy, …) apply to `cataR` over binary trees.  Tree analogue of
     `A6_SnocList.cataR_eq_relCata`. -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F A).obj c ⟶ c) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataTreeFold_comm φ)
 

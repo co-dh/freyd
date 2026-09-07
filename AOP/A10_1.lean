@@ -38,7 +38,7 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
+variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-! ## Theorem 10.1 (B&dM p.245) — the greedy theorem, as extreme dynamic programming -/
 
@@ -48,8 +48,8 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b 
     thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q°` handled directly by
     `inter_lb_left` (member) and `recip_eps_comp_est_le` (lower bound). -/
-public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {T : F.obj b ⟶ b}
-    {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b} {H : b ⟶ a} (hh : Map h) (hmono : MonotonicAlg h R)
+public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B}
+    {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h) (hmono : MonotonicAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
@@ -63,18 +63,18 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
   constructor
   · -- component (i): greedy body ⊑ H, via `min Q° ⊆ ∈` and the fixed-point equation
     have s1 : Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ Λ (T°) ≫ ∋ (F.obj b) ≫ F.map (Λ H ≫ est R) ≫ h :=
-      comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj b) from inter_lb_left _ _) _)
-    have s2 : Λ (T°) ≫ ∋ (F.obj b) ≫ F.map (Λ H ≫ est R) ≫ h
+        ⊑ Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est R) ≫ h :=
+      comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj B) from inter_lb_left _ _) _)
+    have s2 : Λ (T°) ≫ ∋ (F.obj B) ≫ F.map (Λ H ≫ est R) ≫ h
         = T° ≫ F.map (Λ H ≫ est R) ≫ h := by
-      rw [← Cat.assoc (Λ (T°)) (∋ (F.obj b)) _, Λ_eps_eq']
+      rw [← Cat.assoc (Λ (T°)) (∋ (F.obj B)) _, Λ_eps_eq']
     have s3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
       comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
     rw [s2] at s1
     rw [hHfix] at s3
     exact le_trans s1 s3
   · -- component (ii): `H°·(greedy body) ⊑ R°`
-    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj b))° := by
+    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj B))° := by
       have h0 := recip_comp_Λ_le_recip_eps (T°)
       rwa [Allegory.recip_recip] at h0
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
@@ -83,7 +83,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
       rw [← h1, hHfix]
     -- the tail bound: peel `T·ΛT°` to `∋°`, then the `min` lower bound gives `Q°`
     have htail : T ≫ Λ (T°) ≫ est Q ⊑ Q° := by
-      have t1 : T ≫ Λ (T°) ≫ est Q ⊑ (∋ (F.obj b))° ≫ est Q := by
+      have t1 : T ≫ Λ (T°) ≫ est Q ⊑ (∋ (F.obj B))° ≫ est Q := by
         rw [← Cat.assoc T (Λ (T°)) _]
         exact comp_mono_right hTA _
       exact le_trans t1 (recip_eps_comp_est_le Q)
@@ -131,6 +131,22 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     rw [hre2]
     exact le_trans step7 htrans'
 
+/-! ### The optimisation chain (note §16.1b)
+
+  `H%∋ est(R) ⊒ (T°)%∋ est(Q)F(X)h`: the note draws the spec as the single bead `X` sitting
+  inside the body, so the step abstracts that abbreviation out of `greedy_dp_prefixed`. -/
+
+/-- Step 1: at `X≜H%∋ est(R)` the greedy body is below the spec — the prefixed point
+    Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
+public theorem greedy_dp_step1 (hFr : F.PreservesRecip)
+    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A}
+    {X : B ⟶ A} (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
+    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
+    (hX : X = Λ H ≫ est R) :
+    Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ Λ H ≫ est R := by
+  subst hX
+  exact greedy_dp_prefixed hFr hh hmono htrans hHfix hQ
+
 /-- **Theorem 10.1 (B&dM p.245)**, the GREEDY theorem as an extreme case of dynamic
     programming: `(μX : h·FX·min Q°·ΛT°) ⊆ min R°·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — greedily
     committing to a single `Q°`-minimum decomposition at each unfold step, then refolding
@@ -139,13 +155,14 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj a ⟶ a} {
     (`Sup_le`'s lower-bound half) via `greedy_dp_prefixed`.  (Distinct from `AOP.A7_2`'s `greedy`,
     the Theorem 7.2 greedy theorem `⦇min R°·ΛS⦈ ⊆ min R°·Λ⦇S⦈`.) -/
 public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {h : F.obj a ⟶ a} {T : F.obj b ⟶ b} {R : a ⟶ a} {Q : F.obj b ⟶ F.obj b}
+    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B}
     (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
     (hQ : Q ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
         ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
-    mu (fun X : b ⟶ a => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
+    mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (greedy_dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
+    (greedy_dp_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
 
 /-! ## B&dM p.246 — the greedy hypotheses via a bifunctor (recall of Proposition 9.4)
 
@@ -161,7 +178,7 @@ public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     and `(id_e)° = id_e`, so `G.PreservesRecip` at `id_e` gives the relator condition. -/
 theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.PreservesRecip) (e : 𝒜) :
     (G.fixLeft e).PreservesRecip := by
-  intro c d R
+  intro C D R
   have h := hGr (Cat.id e) R
   rwa [recip_id] at h
 
@@ -171,12 +188,12 @@ theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.Preserves
     folded `°`, the note's letters), discharge all of `greedy_dp`'s hypotheses — so the
     greedy recursion refines the spec. -/
 theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
-    (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj a ⟶ a}
-    {T : (G.fixLeft e).obj b ⟶ b} {R : a ⟶ a}
-    {U : e ⟶ e} {V : b ⟶ b} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U)
+    (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj A ⟶ A}
+    {T : (G.fixLeft e).obj B ⟶ B} {R : A ⟶ A}
+    {U : e ⟶ e} {V : B ⟶ B} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U)
     (hU : G.map U R ≫ h ⊑ h ≫ R)
     (hV : V ≫ ((relCata T)° ≫ relCata h) ⊑ ((relCata T)° ≫ relCata h) ≫ R) :
-    mu (fun X : b ⟶ a => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
+    mu (fun X : B ⟶ A => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R := by
   have hFr' : (G.fixLeft e).PreservesRecip := Birelator.fixLeft_preservesRecip hGr e
   exact greedy_dp (F := G.fixLeft e) hFr' I hh (birelator_fixLeft_mono hUrefl hU) htrans

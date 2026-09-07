@@ -117,8 +117,9 @@ def branch(formula):
     if cut(e, False, None) == e:
         return None
     ks = picks(e, [])
-    if len({sl.summand(k, TBL) for k in ks}) != 1:
-        raise Unhandled(f"the choices {ks} cut to the summands {[sl.summand(k, TBL) for k in ks]};"
+    ss = [sl.summand(k, TBL) for k in ks]
+    if any(not sl.same_summand(ss[0], s) for s in ss):
+        raise Unhandled(f"the choices {ks} cut to the summands {ss};"
                         f" one panel draws one branch, so they must be the same summand")
     return ks[0]
 
@@ -151,6 +152,39 @@ class Undecided(Exception):
     """A polymorphic row that states no `nat:`.  The picture cannot be drawn from it either way."""
 
 
+# The rules by which a COMPOUND bead inherits a verdict from its parts, each with the Lean theorem
+# that is the rule.  `diag/hm-sigs.json`'s `closure`, beside the signatures, because it is the same
+# kind of fact: a claim the note draws and the corpus proves.  A compound whose rule is not there is
+# `Undecided` — deriving the dot from the parts is a theorem, and no declaration, no dot.
+CLOSURE = sl.sigs().get("closure") or {}
+# The verdicts whose square commutes ONE WAY only, and which therefore draw as a hollow dot.  Both
+# are carried into the panel by name: `dpanel` draws them alike and the `cert:` says which way round.
+ONEWAY = ("lax", "oplax")
+
+
+def closed(how, fs, core):
+    """A compound bead's verdict, from its parts'.  The WEAKEST part decides — one lax part makes the
+    compound lax, one refuted part puts the whole bead back on the object wire — because the square
+    the compound states is the parts' squares side by side.  Which is a THEOREM about the former,
+    not a reading of the picture, so it is drawn only where `closure` names the proof of it, and the
+    verdict it returns is that theorem's CONCLUSION, which need not be the parts': the converse of a
+    lax family is oplax (`recip_oplax`), and of an oplax one lax again (`recip_lax`)."""
+    if not fs or not all(fs):
+        return False
+    weak = set(fs) - {"strict"}    # a strict square is both a lax and an oplax one, so it weakens to
+    if len(weak) > 1:              # whichever the others are; lax and oplax weaken to nothing shared
+        raise Undecided(f"{spell(core)}'s parts are {' and '.join(sorted(weak))}, and neither square"
+                        f" weakens to the other, so a {how} of them states none — give the bead a"
+                        f" row of its own with its own `nat`")
+    v = weak.pop() if weak else "strict"
+    rule = (CLOSURE.get(how) or {}).get(v)
+    if rule is None:
+        raise Undecided(f"{spell(core)} is {v} in every part, but diag/hm-sigs.json's `closure`"
+                        f" names no proof of what a {how} of {v} parts is — cite one there, or"
+                        f" give the bead a row of its own with its own `nat`")
+    return rule["is"]
+
+
 def natural(core, sigs):
     """Is this bead a natural transformation, and so barred from the object wire (IntroString p. 36)?
     Only where its row SAYS so, in `nat`, with the Lean proof of it named in `nat-lean`.  No
@@ -159,7 +193,16 @@ def natural(core, sigs):
     an ERROR rather than a default — drawing it either way is a claim nobody checked.  A row with no
     variable at all needs no statement: it is one arrow between two named objects."""
     if core[0] == 'conv':
-        return natural(core[1], sigs)
+        # A CONVERSE is not the free ride it looks: `recip_not_laxNatural` exhibits a lax `φ` whose
+        # `φ°` is not lax, so a lax bead's converse comes back OPLAX and not lax.  Which verdict each
+        # part's verdict earns is exactly what `closure.conv` says.
+        return closed('conv', [natural(core[1], sigs)], core)
+    if core[0] == 'prod':
+        # A PRODUCT is typed factor by factor (`signature` above), and it is natural the same way:
+        # `𝟙` is natural at every object, so `wrap×𝟙` is `wrap`'s own square in the first component
+        # and nothing in the second.  Without this a product wearing a natural factor falls through
+        # to the object wire, which says it is an arrow at one object.
+        return closed('prod', [natural(x, sigs) for x in core[1] if x != ('atom', sl.UNIT)], core)
     lab = core[1] if core[0] == 'app' else spell(core)
     k = key(core, sigs)                # the row it reads its objects off is the row that says this
     if k in NAT:                       # `"strict"` or `"lax"`: the dot's fill draws which.  `"no"` is
@@ -214,7 +257,10 @@ def ground(e):
         return None
     SPLIT, keep = frozenset(), SPLIT
     try:
-        return render(e)
+        # `render` folds back only what the split gave a wire to; an index functor it never folds,
+        # so `A[n]` would name nothing and `A[n]×A[n][p][m]` open no lane at all.  A CLOSED object
+        # is a name whatever its wires, and its own spelling is that name.
+        return render(e) if render(e) is not None else spell(e)
     finally:
         SPLIT = keep
 
@@ -326,6 +372,14 @@ def isvar(e):
     return e[0] == 'atom' and '@' in e[1] and e[1].split('@')[0] in VARS
 
 
+def hasvar(e):
+    """Does the object name an object with a LETTER anywhere in it? — `isvar` down the whole tree.
+    `sl.varsof` cannot answer it here: a scheme's letters are renamed apart (`x@3`) and no longer the
+    table's own, so it counts none of them."""
+    return isvar(e) or (e[0] == 'app' and hasvar(e[2])) or (e[0] == 'conv' and hasvar(e[1])) \
+        or (e[0] in ('comp', 'prod', 'hc') and any(hasvar(x) for x in e[1]))
+
+
 def fresh(e, n):
     if e[0] == 'atom' and e[1] in VARS:
         return ('atom', f"{e[1]}@{n}")
@@ -383,7 +437,7 @@ def unify(a, b, sub, why, ix=None):
         unify(a[1 if a[0] == 'conv' else 2], b[1 if a[0] == 'conv' else 2], sub, why, ix)
 
 
-def layer(e, sub=None):
+def layer(e, sub=None, lane=None):
     """`peel`'s step read on a scheme: the outermost wire an object names, and what is under it.  A
     product's wire is the factor that needs no wire of its own, LEFT end first — `A×[X]` keeps the
     `A×−` context, and `[X]×A`, whose left factor is a wire stack, opens `−×A` over `[X]` instead of
@@ -399,10 +453,17 @@ def layer(e, sub=None):
     if e[0] == 'prod':
         xs = e[1]
         st = [settle(x, sub) for x in xs] if sub is not None else xs
-        if len(xs) == 2 and xs[0] == xs[1]:
+        # A doubled factor reads BOTH ways — `Δ`, or `x×−` over `x` — and only the cut says
+        # which, exactly as `peel_arrow` takes `Δ` on `live == 'Δ'`.  `choose : x×x⟶x` meets a `Δ`
+        # lane; the list's `plus : A×A⟶A` meets the `A×−` its own base functor opened.
+        if len(xs) == 2 and xs[0] == xs[1] and lane in (None, 'Δ'):
             return 'Δ', xs[0]
         for lab in (lambda x: None if isvar(x) else render(x), ground,
-                    lambda x: render(x) if isvar(x) else None):
+                    lambda x: render(x) if isvar(x) else None,
+                    # Last: a variable UNDER wires — `x[k]×y[k]` names its factor `x[k]`, which the
+                    # cut settles to `A[n]` the way a bare `x` is settled to `A`.  Only where every
+                    # earlier reading gave nothing, so no product that opens today moves.
+                    lambda x: spell(x) if hasvar(x) else None):
             for k, mk in ((0, lambda w: w + '×−'), (-1, lambda w: '−×' + w)):
                 if lab(st[k]) is not None:
                     rest = xs[1:] if k == 0 else xs[:-1]
@@ -426,10 +487,31 @@ def matches(pat, lane, sub, ix):
     for p, w in zip(ps, ws):
         # NORMALISED: a lane's name may be a composite object (`[Int]×−`), and the variable it binds
         # has to come out as the wire stack `list(Int)`, not as the atom the bracket parses to.
-        v = norm(parse(w))
-        if p != w and not (isvar(('atom', p)) and sub.setdefault(p, ([], v))[1] == v):
+        if p != w and not wfit(norm(parse(p)), norm(parse(w)), sub, ix):
             return False
     return True
+
+
+def wfit(pat, e, sub, ix):
+    """A scheme's wire NAME against the cut's, node for node.  A variable takes the object under it
+    (`x` takes `A`) and keeps it everywhere; a variable UNDER wires takes the same wires over its own
+    (`x[k]×−` takes `A[n]×−`), which is what lets one row type a bead whose product context is built
+    from the very object the panel draws.  Nothing here opens a wire: a lane is a NAME, and this only
+    says the two names are one."""
+    if isvar(pat):
+        return sub.setdefault(pat[1], ([], e))[1] == e
+    if pat[0] != e[0]:
+        return False
+    if pat[0] == 'atom':
+        return pat[1] == e[1]
+    if pat[0] == 'app':
+        h, g = pat[1], e[1]
+        return (h == g or (sl.idxhead(h) and sl.idxhead(g)
+                           and (sl.ibind(h[1:-1], g[1:-1], ix) or sl.ibind(g[1:-1], h[1:-1], ix)))) \
+            and wfit(pat[2], e[2], sub, ix)
+    if pat[0] in ('prod', 'comp', 'hc'):
+        return len(pat[1]) == len(e[1]) and all(wfit(a, b, sub, ix) for a, b in zip(pat[1], e[1]))
+    return pat == e
 
 
 def wire_eq(w, lane):
@@ -453,7 +535,7 @@ def eat(pat, lanes, obj, sub, why, ix):
         # `sub`, not a bare deref: a scheme names its later wires with letters its earlier ones bound
         # (`cons×𝟙`'s `x×[x]×z` learns `x` from the first wire), so peeling the raw form would ask a
         # lane to match a variable where the cut already knows the object.
-        w, inner = layer(deref(pat, sub), sub)
+        w, inner = layer(deref(pat, sub), sub, lanes[k].label if k < len(lanes) else None)
         if k >= len(lanes):
             # past the end of the cut the scheme still names a wire: open it here rather than unify
             # it away, since a wire eaten unopened is drawn nowhere at all.  What stays folded: a
@@ -1052,7 +1134,7 @@ def place(rows, made, otop, obot, dfn, cert):
         # symmetric and drops its survivor vertically from their midpoint (p. 74).
         xs = [l.x for l in (r.arms or r.legs)]
         dot = round((min(xs) + max(xs)) / 2, 4) if xs and r.nat else None
-        beads.append([ys[i], r.label, "#000000", reach, dot] + (["lax"] if r.nat == "lax" else [])
+        beads.append([ys[i], r.label, "#000000", reach, dot] + ([r.nat] if r.nat in ONEWAY else [])
                      if dot is not None
                      else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
 
@@ -1106,13 +1188,14 @@ def place(rows, made, otop, obot, dfn, cert):
     rec = {"kind": "scanline", "id": "gen.1", "helper": "dpanel", "h": hh,
             "w": (max(q[0] for q in op) if op else xo) + PAD,
             "xo": xo,
-            # A lane's 6th element is `"lax"`, as a bead's is: the head bead a unit gives the lane
-            # draws the naturality its row states, hollow where the square commutes one way only.
+            # A lane's 6th element is the one-way verdict, as a bead's is: the head bead a unit gives
+            # the lane draws the naturality its row states, hollow where the square goes one way only.
             "lanes": [[l.x, "top" if l.born == TOP else ys[l.born],
                        "bot" if l.dies == n else ys[l.dies],
                        None if l.born == TOP or l.dies == n else l.label,
                        unit.get(l, (None, None))[0]]
-                      + (["lax"] if unit.get(l, (None, None))[1] == "lax" else []) for l in made],
+                      + ([unit[l][1]] if unit.get(l, (None, None))[1] in ONEWAY else [])
+                      for l in made],
             "beads": beads,
             # the object wire's type at every seam.  `dpanel` takes no such argument, so `emit`
             # drops it: a panel pasted into the note is read back by the sweep's own guess.
@@ -1295,8 +1378,8 @@ def quoted(v):
 
 
 def lanecode(l):
-    """One lane as Typst source.  The naturality marker is spelled as a BEAD's is — the quoted word
-    `"lax"`, not a label — so one claim has one spelling wherever the note carries it."""
+    """One lane as Typst source.  The naturality marker is spelled as a BEAD's is — the quoted
+    verdict word, not a label — so one claim has one spelling wherever the note carries it."""
     return ("(" + ", ".join(cell(x) for x in l[:5])
             + (f', "{l[5]}"' if len(l) > 5 else "") + ")")
 
@@ -1357,6 +1440,16 @@ def endpoints(p):
             c.get("tgt") or spell(sl.fold_cut(p, sl.ports(p, False))))
 
 
+def redraw(c, tbl, src=None, tgt=None):
+    """The panel a `cert:` denotes — the ONE place a cert is read.  A caller that already HAS one
+    (the note's literal, `--roundtrip`, `--cert`) hands it over whole rather than re-spelling it as
+    flags, so a mapping field (`sigs`, `tint`, `defn`) cannot be serialised in some other syntax and
+    a field added here cannot be dropped by one caller."""
+    return draw(c["expect"], src or c["src"], tgt or c["tgt"], tbl, c.get("split", DEFSPLIT),
+                c.get("sigs"), c.get("slope"), c.get("mu"), frame=c.get("frame"),
+                top=c.get("top"), tint=c.get("tint"), defn=c.get("defn"))
+
+
 def roundtrip(path, frm, show, out, tbl):
     recs = sl.panels(path, frm)
     ok, printer, law, fail, gen = 0, 0, 0, [], []
@@ -1366,10 +1459,7 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
-                     r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"),
-                     top=r["cert"].get("top"), tint=r["cert"].get("tint"),
-                     defn=r["cert"].get("defn"))
+            g = redraw(r["cert"], tbl, src, tgt)
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1456,9 +1546,7 @@ def regen(path, tbl, write):
         ln = text.count("\n", 0, i) + 1
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
-            new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
-                            c.get("sigs"), c.get("slope"), c.get("mu"),
-                            frame=c.get("frame"), top=c.get("top"), defn=c.get("defn")))[1:-1]
+            new = emit(redraw(c, tbl))[1:-1]
         except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -1702,6 +1790,10 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               ' (`--tint "T(f)=INDUCED"`), for a panel that stands beside a commutative square and'
               ' tints each bead to the arrow it draws; it rides in the `cert:` so `--compare`'
               " rebuilds the same colours instead of bleaching them black"
+              '\n--cert JSON   a panel'"'"'s whole `cert:` as JSON, in place of --src/--tgt/--sigs/'
+              '--defn/--tint/--frame/--top/--fold-list and the formula — for a caller that already'
+              ' HAS the cert (`typst query`), which would otherwise have to re-spell each mapping'
+              " field in that flag's own pair syntax and get one of them wrong"
               '\n--png OUT     also render the panel to OUT (200 dpi); the `dpanel` literal still'
               " goes to stdout and the written path to stderr"
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
@@ -1744,9 +1836,10 @@ def main(argv):
     tint = dict(x.rsplit("=", 1) for x in tint.split()) if tint else None
     defn = sl.opt(argv, "--defn")
     defn = dict(x.split("≜", 1) for x in defn.split()) if defn else None
+    cert = sl.opt(argv, "--cert")
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--frame", "--top", "--tint", "--defn", "--panel", "--png")
+                         "--frame", "--top", "--tint", "--defn", "--panel", "--png", "--cert")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -1761,7 +1854,7 @@ def main(argv):
             regen(path, tbl, "--write" in argv)
         return
     formula = next((a for a in free if not a.endswith(".typ")), None)
-    if not (formula and src and tgt):
+    if not (cert or (formula and src and tgt)):
         sys.exit(__doc__.strip().splitlines()[0]
                  + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
                  + ' [--png OUT] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
@@ -1773,8 +1866,12 @@ def main(argv):
     if "--book" in argv:
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
-    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book, frame=frame, top=top, tint=tint, defn=defn)
+    if cert:
+        cert = json.loads(cert)
+        formula, r = cert["expect"], redraw(cert, tbl)
+    else:
+        r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
+                 book, frame=frame, top=top, tint=tint, defn=defn)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`

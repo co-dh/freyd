@@ -16,7 +16,10 @@ DB = ".lake/build/refactor-index.db"
 CACHE = ".lake/build/cite-check.cache"
 # The note writes the marker inside a raw span — outside one Typst reads the `@` as a reference and
 # refuses to compile.  The lookbehind keeps a comment's `AOP/A4_2.lean:223` from reading as a marker.
-MARK = re.compile(r"(?<![\w.])lean:([^\s\[\];,@`]+)(?:@([0-9a-f]+))?")
+# A `#name` after the key names a BINDER of the declaration: the arrow a schematic display draws is
+# a binder of the definition it displays, not a declaration of its own.  Which binder is `hm-check
+# --verify-sigs`'s business — here it only has to be part of the marker rather than stray text.
+MARK = re.compile(r"(?<![\w.])lean:([^\s\[\];,@`]+)(?:@([0-9a-f]+)(?:#[^\s\[\];,@`\"!()]+)?)?")
 # 32 bits of the 64-bit `stmt_key`: 8 hex digits stay readable in the rendered `#src`, and a changed
 # statement keeping the low half is a 1-in-4-billion coincidence.
 key = lambda k: f"{k & 0xFFFFFFFF:08x}"

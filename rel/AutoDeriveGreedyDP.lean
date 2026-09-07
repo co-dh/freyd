@@ -217,7 +217,7 @@ def hAlg (P : GreedyDP L E S W) : (CL.F L E).obj ⟨W⟩ ⟶ (⟨W⟩ : RelSet.{
 
 /-- The thinning order `Q := G(U, V)` on decompositions (B&dM p.246). -/
 def Qrel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ CL.Fobj L E ⟨S⟩ :=
-  (sumBirel L).map (a := CL.dE E) (b := CL.dE E) (c := ⟨S⟩) (d := ⟨S⟩) P.Up P.Vp
+  (sumBirel L).map (A := CL.dE E) (B := CL.dE E) (C := ⟨S⟩) (D := ⟨S⟩) P.Up P.Vp
 
 /-- B&dM's optimisation-problem relation `H = ⦇h⦈·⦇T⦈°`, mirrored. -/
 def specH (P : GreedyDP L E S W) : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=

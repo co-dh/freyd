@@ -1,0 +1,15 @@
+# Every commutative panel `diag-export --commutative` draws, and the drawing in the note it must be
+# joined up like.  A panel with no reference is checked for its own geometry only; a reference file
+# `diag/cdref*.typ` that no line here names is an unclaimed drawing and fails the gate.
+#
+# <selector>                                                        [<reference in diag/>]
+Freyd.Alg.alpha_natural
+Freyd.Alg.InitialAlgebra.cata_comm                                  cdref.typ
+Freyd.Alg.RelSet.ListRel.list_id
+Freyd.Alg.RelSet.ListRel.prefix_lax_natural
+Freyd.Alg.RelSet.Party.rose_id
+Freyd.Alg.RelSet.Van.glue_eq
+Freyd.Alg.Vec.Rel.tupleP_id
+Freyd.Alg.relCata_pair_beta                                          cdref-banana.typ
+Freyd.Alg.pair_eq_relCata_pair_iff.lhs                              cdref-fokkinga.typ
+Freyd.Alg.Λ_eps_eq'+Freyd.Alg.Λ_eq_singleton_existsImage            cdref-adjE.typ

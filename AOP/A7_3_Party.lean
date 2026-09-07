@@ -34,16 +34,16 @@ namespace Freyd.Alg
 
 section Choose
 
-variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {a : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A : 𝒜}
 
 /-- **B&dM p.176**: `choose = outl ∪ outr` — pick either component of a pair (either party). -/
-@[expose] public def choose (P : RelProd a a) : P.p ⟶ a := P.outl ∪ P.outr
+@[expose] public def choose (P : RelProd A A) : P.p ⟶ A := P.outl ∪ P.outr
 
 /-- **§7.3 (B&dM p.177), first monotonicity claim** ("left as a simple exercise"): `choose` is
     monotonic on `R`, i.e. `choose·(R×R) ⊆ R·choose` (mirrored `(R×R) ≫ choose ⊑ choose ≫ R`).
     Immediate from the product projection laws `prodMap ≫ outl ⊑ outl ≫ R` (and `outr`) and the
     distributivity of composition over `∪`. -/
-public theorem choose_monotonic (P : RelProd a a) (R : a ⟶ a) :
+public theorem choose_monotonic (P : RelProd A A) (R : A ⟶ A) :
     prodMap P P R R ≫ choose P ⊑ choose P ≫ R := by
   show prodMap P P R R ≫ (P.outl ∪ P.outr) ⊑ (P.outl ∪ P.outr) ≫ R
   rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
@@ -58,8 +58,8 @@ namespace RelSet
 open CL ListRel
 
 /-- A map is its own best output for a reflexive order: `f ⊑ Λ(f) est(Q)` when `𝟙 ⊑ Q`. -/
-public theorem graph_le_Λ_est {a b : RelSet.{0}} (f : a.carrier → b.carrier) {Q : b ⟶ b}
-    (hrefl : 𝟙 b ⊑ Q) : graph f ⊑ Λ (graph f) ≫ est(Q) := by
+public theorem graph_le_Λ_est {A B : RelSet.{0}} (f : A.carrier → B.carrier) {Q : B ⟶ B}
+    (hrefl : 𝟙 B ⊑ Q) : graph f ⊑ Λ (graph f) ≫ est(Q) := by
   apply le_iff.mpr; intro x y hy
   refine ⟨fun z => graph f x z, by rw [Λ_eq_classifier]; rfl, ?_⟩
   refine ⟨hy, fun z hz => ?_⟩
@@ -67,8 +67,8 @@ public theorem graph_le_Λ_est {a b : RelSet.{0}} (f : a.carrier → b.carrier) 
 
 /-- **Ex 7.15 (B&dM p.169) in `Rel(Set)`**: componentwise bests assemble to a pairwise best,
     `⟨Λ(U) est(Ra°), Λ(V) est(Rb°)⟩ ⊑ Λ(⟨U,V⟩) est((Ra×Rb)°)`. -/
-public theorem pair_est_le {c a b : RelSet.{0}} (U : c ⟶ a) (V : c ⟶ b)
-    (Ra : a ⟶ a) (Rb : b ⟶ b) :
+public theorem pair_est_le {C A B : RelSet.{0}} (U : C ⟶ A) (V : C ⟶ B)
+    (Ra : A ⟶ A) (Rb : B ⟶ B) :
     rpair (Λ U ≫ est(Ra°)) (Λ V ≫ est(Rb°)) ⊑ Λ (rpair U V) ≫ est((rprodMap Ra Rb)°) := by
   apply le_iff.mpr; intro x p hp
   obtain ⟨⟨Pu, hPu, hest1⟩, ⟨Pv, hPv, hest2⟩⟩ := hp
@@ -149,6 +149,15 @@ public theorem RR_recip_trans :
 
 /-! ### The two algebras and `S = ⟨include, exclude⟩` -/
 
+/-- The note's source object `x×[[x]×[x]]`: `F(A, [x]×[x])`, one branch of the rose tree with
+    both parties already computed for every subtree. -/
+public abbrev dBranch (A : Type) : RelSet.{0} :=
+  (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+
+/-- The relator of `x×[[x]×[x]]`: `R × list(list(R) × list(R))`. -/
+@[expose] public def branch {A B : Type} (R : dE A ⟶ dE B) : dBranch A ⟶ dBranch B :=
+  rprodMap R (list (rprodMap (list R) (list R)))
+
 /-- **party-defn**: `include ≜ (𝟙×(list(π₂) concat)) cons`, concretely — the party that invites
     the root, which puts every immediate subtree's root out.  A map (`include_eq` is the
     point-free form). -/
@@ -156,10 +165,14 @@ public theorem RR_recip_trans :
     A × ConsList Unit (ConsList Unit A × ConsList Unit A) → ConsList Unit A :=
   fun u => ConsList.cons u.1 (cconcat (cmap Prod.snd u.2))
 
+/-- `include` as an ARROW of the note's region — the graph of `includeFn`, which is a Lean
+    function and no arrow at all.  Spelled `x×[[x]×[x]]⟶[x]` through `dBranch`, the source the
+    note's panels draw open. -/
+@[expose] public def includeR : dBranch A ⟶ dList A := graph includeFn
+
 /-- `include = (𝟙×(list(π₂) concat)) cons`, point-free. -/
 public theorem include_eq :
-    (graph includeFn
-        : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)
+    (includeR : dBranch A ⟶ dList A)
       = rprodMap (𝟙 (dE A)) (list (graph Prod.snd) ≫ concatR) ≫ consR := by
   apply hom_ext; intro u y
   constructor
@@ -184,8 +197,7 @@ public theorem choose_eq : choose (relProd (dList A) (dList A)) = chooseR (A := 
 /-- **party-defn**: `exclude ≜ (𝟙×(list(choose) concat))π₂`, concretely — the party that leaves
     the root out, so each subtree is free to choose.  Not a map (`exclude_eq` is the
     point-free form). -/
-@[expose] public def excludeR :
-    (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+@[expose] public def excludeR : dBranch A ⟶ dList A :=
   fun u y => ∃ qs, listP chooseR u.2 qs ∧ y = cconcat qs
 
 /-- `exclude = (𝟙×(list(choose) concat))π₂`, point-free. -/
@@ -203,9 +215,8 @@ public theorem exclude_eq :
 /-- **party-defn**: `S ≜ ⟨include, exclude⟩` — the algebra: one step returns both parties of a
     subtree at once (`pair_eq_rpair` ties `rpair` to the §5.2 `⟨,⟩`). -/
 @[expose] public def S :
-    (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-      ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) :=
-  rpair (graph includeFn) excludeR
+    dBranch A ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) :=
+  rpair includeR excludeR
 
 /-- **party-defn**: `party ≜ ⦇S⦈ choose` — every guest list the president's ruling allows
     (structural fold; `party_eq` is the relational-catamorphism form). -/
@@ -303,8 +314,8 @@ public theorem branch_monotonic {g : (⟨ConsList Unit A × ConsList Unit A⟩ :
 /-- **party-mono-branch, `include` row**: `(𝟙×list((R×R)°)) include ⊑ include R°` —
     `g := π₂` (laws 1 and 4 of the product calculus, concretely) and `h := cons`. -/
 public theorem include_monotonic :
-    rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°)) ≫ graph includeFn
-      ⊑ graph includeFn ≫ (R rating)° := by
+    rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°)) ≫ includeR
+      ⊑ includeR ≫ (R rating)° := by
   rw [include_eq]
   refine branch_monotonic rating ?_ (cons_monotonic rating)
   -- the `g := π₂` row: `(R×R)°π₂ ⊑ π₂R°`

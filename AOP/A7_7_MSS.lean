@@ -77,7 +77,7 @@ public theorem geq_trans : geq ≫ geq ⊑ geq :=
 
 theorem zeroPlus_apply (a b w : Int) : zeroPlus (a, b) w ↔ w = 0 ∨ w = a + b := Iff.rfl
 
-theorem Salg_inl (d : Unit) (w : Int) : Salg (Sum.inl d) w ↔ w = 0 := by
+theorem Salg_inl (D : Unit) (w : Int) : Salg (Sum.inl D) w ↔ w = 0 := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b := by
@@ -103,7 +103,7 @@ theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b
 public theorem mss_prefix_sum : prefixR ≫ sumR = cataR Salg := by
   rw [cataR_eq_relCata]
   refine (relCata_UP (initial Unit Int) Salg (prefixR ≫ sumR)).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · constructor
     · rintro ⟨ys, hs, hl⟩
       cases ys with
@@ -140,12 +140,12 @@ public theorem mss_mono : MonotonicAlg (F := F Unit Int) Salg geq := by
   intro u w h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hw : w = 0 := (Salg_inl d' w).mp hS
           subst hw
-          exact ⟨0, (Salg_inl d 0).mpr rfl, Int.le_refl 0⟩
+          exact ⟨0, (Salg_inl D 0).mpr rfl, Int.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       obtain ⟨a, c⟩ := q
@@ -169,33 +169,41 @@ public theorem mss_greedy : cataR (Salg%∋ ≫ est(geq)) ⊑ (cataR Salg)%∋ �
 
 /-! ## The note's `mss-step`: the program algebra -/
 
+/-- Step 1 of `mss-step`: `[zero,⊸ zero ∪ plus]%∋ est(≥) = [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]`
+    — the power transpose of a coproduct of maps is the coproduct of their transposes, and a
+    composite after a coproduct is the coproduct of the composites. -/
+public theorem mss_step1 :
+    Salg%∋ ≫ est(geq)
+      = junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq))
+          (zeroPlus%∋ ≫ est(geq)) := by
+  unfold Salg; rw [Λ_junc, junc_comp]
+
+/-- Step 2 of `mss-step`: `[zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)] = [zero,⊕]` — `zero` is a map,
+    so its singleton has one element and `est(≥)` returns it; the other branch is `⊕`'s
+    definition. -/
+public theorem mss_step2 :
+    junc (sumCop (dL Unit) ⟨Int × Int⟩)
+        ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq))
+        (zeroPlus%∋ ≫ est(geq))
+      = junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus := by
+  have hzero : (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq)
+      = graph (fun _ => (0 : Int)) := by
+    apply hom_ext; intro D w
+    rw [Λ_comp_est_apply]
+    refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
+    have hz0 : z = (0 : Int) := hz
+    have hw0 : w = (0 : Int) := h
+    subst hz0; subst hw0; exact Int.le_refl 0
+  rw [hzero]; rfl
+
 /-- The `mss-step` row: `Λ(S) est(≥) = [zero, ⊕]` — the `zero` branch is a singleton, and the
     `plus` branch is `⊕`'s definition. -/
 public theorem mss_step :
     Salg%∋ ≫ est(geq)
-      = junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int)) oplus := by
-  apply hom_ext; intro u w
-  rw [Λ_comp_est_apply]
-  cases u with
-  | inl d =>
-      rw [junc_sum_inl]
-      constructor
-      · rintro ⟨hS, -⟩
-        exact (Salg_inl d w).mp hS
-      · intro h
-        refine ⟨(Salg_inl d w).mpr h, fun z hz => ?_⟩
-        rw [(Salg_inl d z).mp hz, h]
-        exact Int.le_refl 0
-  | inr q =>
-      obtain ⟨a, b⟩ := q
-      rw [junc_sum_inr]
-      show (Salg (Sum.inr (a, b)) w ∧ ∀ z, Salg (Sum.inr (a, b)) z → geq w z)
-        ↔ (Λ zeroPlus ≫ est(geq)) (a, b) w
-      rw [Λ_comp_est_apply]
-      exact ⟨fun ⟨h1, h2⟩ => ⟨(Salg_inr a b w).mp h1,
-               fun z hz => h2 z ((Salg_inr a b z).mpr hz)⟩,
-             fun ⟨h1, h2⟩ => ⟨(Salg_inr a b w).mpr h1,
-               fun z hz => h2 z ((Salg_inr a b z).mp hz)⟩⟩
+      = junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int)) oplus :=
+  mss_step1.trans mss_step2
 
 /-- `⊕` as a function: the larger of `0` and `a+b`. -/
 @[expose] public def oplusFn (a b : Int) : Int := if 0 ≤ a + b then a + b else 0
@@ -244,7 +252,7 @@ public theorem zero_oplus_eq_prog :
   rw [oplus_eq]
   apply hom_ext; intro u w
   cases u with
-  | inl d => rw [junc_sum_inl]; exact Iff.rfl
+  | inl D => rw [junc_sum_inl]; exact Iff.rfl
   | inr q => obtain ⟨a, b⟩ := q; rw [junc_sum_inr]; exact Iff.rfl
 
 /-! ## Closing the greedy `⊑` to an equality -/
@@ -415,7 +423,7 @@ public theorem suffixMax_not_relCata :
       rw [e] at hl
       obtain ⟨u, hu, hhu⟩ := hl
       cases u with
-      | inl d => exact hu.elim
+      | inl D => exact hu.elim
       | inr q =>
         obtain ⟨b, T⟩ := q
         obtain ⟨hab, hT⟩ := hu
@@ -531,7 +539,7 @@ theorem Kalg_eq_prog :
   rw [Kalg]
   apply hom_ext; intro u q
   cases u with
-  | inl d =>
+  | inl D =>
     rw [junc_sum_inl]
     constructor
     · rintro ⟨v, hv, h1, h2⟩
@@ -607,11 +615,30 @@ theorem scanFn_snd : ∀ (s : ConsList Unit Int) (v : Int),
         · exact Or.inl (by rw [hvy]; show mssPreFn (ConsList.cons a x) = _; rw [scanFn_fst x]; rfl)
         · exact Or.inr ((scanFn_snd x v).mpr ((suffix_mssPre_apply x v).mpr ⟨y, hy, hvy⟩))
 
-/-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
-    of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
-public theorem mss_eq_scan :
-    mss = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
-      : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩) ≫ est(geq) := by
+/-- Step 2 of `mss-deriv` (its first step is `mss_shape`): the inner `Λ(prefix sum) est(≥)` under
+    the `E` is the fold the greedy row produced, `⦇[zero,⊕]⦈`. -/
+public theorem mss_eq_scan_step2 :
+    suffixR%∋ ≫ existsImage mssPre ≫ est(geq)
+      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) ≫ est(geq) := by
+  have halg : consScalarAlg (fun _ : Unit => (0 : Int)) oplusFn
+      = junc (sumCop (dL Unit) ⟨Int × Int⟩)
+          (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus := by
+    rw [oplus_eq]
+    apply hom_ext; intro u w
+    cases u with
+    | inl D => rw [junc_sum_inl]; exact Iff.rfl
+    | inr q => rw [junc_sum_inr]; exact Iff.rfl
+  rw [mssPre_eq_cata, halg]
+
+/-- Step 3 of `mss-deriv`: `𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥) = ⦇k⦈ π₂ est(≥)` — the suffixes and
+    the inner fold fuse into the ONE fold `k`, whose carrier keeps the running maximum beside the
+    set, and `π₂` reads the set back. -/
+public theorem mss_eq_scan_step3 :
+    suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
+        (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) ≫ est(geq)
+      = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+          : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩) ≫ est(geq) := by
   have hcata : ⦇Kalg⦈ = (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩) := by
     rw [scan_emerges, ← Kalg_eq_prog, ← cataR_eq_relCata]
   have hsnd : (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩)
@@ -630,7 +657,15 @@ public theorem mss_eq_scan :
       show P = (scanFn s).2
       rw [show P = fun v => (suffixR ≫ mssPre) s v from hP]
       exact funext fun v => propext (scanFn_snd s v).symm
-  rw [hcata, ← Cat.assoc, hsnd, Cat.assoc, ← mss_shape]
+  rw [← mss_eq_scan_step2, hcata]
+  conv => rhs; rw [← Cat.assoc, hsnd, Cat.assoc]
+
+/-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
+    of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
+public theorem mss_eq_scan :
+    mss = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+      : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨Int⟩) ≫ est(geq) :=
+  mss_shape.trans (mss_eq_scan_step2.trans mss_eq_scan_step3)
 
 /-! ## Executable sanity checks -/
 
@@ -638,5 +673,19 @@ public theorem mss_eq_scan :
 example : mssPreFn (ofList [(1 : Int), -2, 3]) = 2 := by decide
 /-- Every prefix sum negative ⇒ the empty prefix wins with `0`. -/
 example : mssPreFn (ofList [(-1 : Int), -2]) = 0 := by decide
+
+-- printing-only: the note's own spelling of §7.7's two arrows.  `≥` is the order the maximum is
+-- taken under and `S` the algebra the fold folds with; which module they were declared in is not
+-- part of either name.  `≥` is no Lean identifier, so the formatter escapes it and the label
+-- emitter (`diag/tool/ExprReader`) unescapes it, exactly as it does for `«prefix»`.
+open Lean PrettyPrinter in
+@[app_unexpander geq] public meta def unexpandGeq : Unexpander
+  | `($_:ident) => `($(mkIdent (Name.mkSimple "≥")))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | `($_:ident) => `($(mkIdent `S))
+  | _ => throw ()
 
 end Freyd.Alg.RelSet.MSS
