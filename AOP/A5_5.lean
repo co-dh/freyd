@@ -231,4 +231,24 @@ open Lean PrettyPrinter in
   | some a => `($(mkIdent `α) $a)
   | none => `($(mkIdent `α))
 
+/-! ## Mutual recursion (B&dM Ex 3.8, p. 58) -/
+
+/-- **An algebra on a PRODUCT carrier is folded by a fork.**  `⟨f,g⟩` meets the two defining
+    equations of `h` and `k` — one per component, each seeing BOTH components through `F(⟨f,g⟩)` —
+    exactly when it is `⦇⟨h,k⟩⦈`.  Strictly more general than banana split, where `h` and `k`
+    factor as `F(π₁)h` and `F(π₂)k` and so each sees only its own component. -/
+public theorem pair_eq_relCata_pair_iff [HasBinaryProducts 𝒜] (I : InitialAlgebra F)
+    {A B : 𝒜} (f : I.t ⟶ A) (g : I.t ⟶ B)
+    (h : F.obj (prod A B) ⟶ A) (k : F.obj (prod A B) ⟶ B) :
+    (I.α ≫ f = F.map (pair f g) ≫ h ∧ I.α ≫ g = F.map (pair f g) ≫ k)
+      ↔ pair f g = ⦇pair h k⦈ := by
+  -- The fold's universal property at `X := ⟨f,g⟩`, `R := ⟨h,k⟩`, with both sides of its equation
+  -- pushed through the fork (`pair_precomp`); `⟨-,-⟩` is then injective by its own two β-laws.
+  rw [← relCata_UP I (pair h k) (pair f g), pair_precomp, pair_precomp]
+  constructor
+  · rintro ⟨h₁, h₂⟩; rw [h₁, h₂]
+  · intro hEq
+    exact ⟨by rw [← fst_pair (I.α ≫ f) (I.α ≫ g), hEq, fst_pair],
+           by rw [← snd_pair (I.α ≫ f) (I.α ≫ g), hEq, snd_pair]⟩
+
 end Freyd.Alg

@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -119,6 +119,12 @@ scan-generated: $(STAMP)
 	@test -n "$(wildcard diag/generated/string/*.typ)" || \
 	  { echo "no diag/generated/string/*.typ — draw one with ./scripts/diag-export --string"; exit 1; }
 	for f in diag/generated/string/*.typ; do ./scripts/scanline --strict "$$f" || exit 1; done
+
+# Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
+# note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
+# that no panel names fails here rather than sitting unchecked.
+cd-check: $(STAMP)
+	./scripts/cd-check
 
 # Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
 # obligations and each one's basename IS the declaration it renders, so a cell whose declaration
