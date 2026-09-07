@@ -955,3 +955,13 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 end Freyd.Alg.RelSet.Van
+
+namespace Freyd.Alg.RelSet.Van
+
+-- `headR` takes the element type as an argument, and a picture's label must name the ARROW, not the
+-- object it happens to be taken at — `head`, the way `consR` prints `cons`.
+open Lean PrettyPrinter in
+@[app_unexpander headR] public meta def unexpandHeadR : Unexpander
+  | _ => `($(mkIdent `head))
+
+end Freyd.Alg.RelSet.Van

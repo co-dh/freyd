@@ -735,7 +735,7 @@ def instance(row, d):
 # answer and belongs here for the same reason the other two do: a family Lean REFUTES draws on the
 # object wire, which is where an untyped letter falls anyway, so without a word for it the refutation
 # has nowhere to be cited and the two cases become indistinguishable in the note.
-NATWORD = {"nat": "strict", "lax": "lax", "no": "no"}
+NATWORD = {"nat": "strict", "lax": "lax", "oplax": "oplax", "no": "no"}
 
 
 def sigfields(v):
