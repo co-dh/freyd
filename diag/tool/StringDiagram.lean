@@ -479,13 +479,9 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
-    drawn past it are alike none of its naturality statement's business.
-
-    `fam` is the family the bead is a component of, where the caller already knows it: `φ×𝟙` varies
-    with the object UNDER its lane, not with an object variable of the statement, so no fvar of the
-    statement abstracts it.  Left off, the family is read off the statement's own object binders. -/
+    drawn past it are alike none of its naturality statement's business. -/
 def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (arms legs : Array Wire) (ox oy core : Expr) (fam : Option Expr := none) :
+    (arms legs : Array Wire) (ox oy core : Expr) :
     MetaM Diagram := do
   let mut lanes : Array Lane := #[]
   for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
@@ -493,12 +489,9 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
   -- away a naturality the environment proves.
-  let φ ← match fam with
-    | some φ => pure (some φ)
-    | none =>
-      match ← familyVar core objVars with
-      | some v => some <$> familyOf regionTy v core
-      | none => pure none
+  let φ ← match ← familyVar core objVars with
+    | some v => some <$> familyOf regionTy v core
+    | none => pure none
   let vd ← match φ with
     | none => pure none
     | some φ => some <$> verdict regionTy cat core φ
@@ -609,16 +602,16 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
         let mut d ← interp regionTy cat objVars vpass parts[0]!
         for i in [1 : parts.size] do d ← d.vcomp (← interp regionTy cat objVars vpass parts[i]!)
         return d
-    -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`.  Its family runs over the object
-    -- UNDER that lane, which no binder of the statement names, so it is built here and handed to
-    -- `Diagram.bead`; the lanes east of it are what that object is, and only run past.
-    let (ax, ox) ← peelObj objVars cat regionTy (← homEnds e).1
-    let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
-    let fam ← Meta.withLocalDeclD `Y regionTy fun Y => do
-      Meta.mkLambdaFVars #[Y] (← Meta.mkAppM n #[φ, ← Meta.mkAppM ``Cat.id #[Y]])
-    let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
-      (some fam)
-    return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
+    -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`, ONLY where it is a family in the
+    -- statement's own object: the lanes east of it are then what that object is, and only run past.
+    -- Where `φ` cannot vary with it — `secure amount N`, whose `amount` pins the object — the whole
+    -- `φ×𝟙` is ONE arrow, it rides the object wire like `α` and `⦇R⦈`, and its arrow is every lane
+    -- its bar spans, which is what the tail below types it as.
+    if (← familyVar e objVars).isSome then
+      let (ax, ox) ← peelObj objVars cat regionTy (← homEnds e).1
+      let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
+      let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+      return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
