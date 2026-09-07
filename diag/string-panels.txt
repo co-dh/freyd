@@ -26,7 +26,7 @@ Freyd.Alg.relCata_alpha.lhs,Freyd.Alg.relCata_alpha.rhs	11.4.1a/cata-reflection	
 Freyd.Alg.relCata_fusion#h.lhs,Freyd.Alg.relCata_fusion#h.rhs,Freyd.Alg.relCata_fusion.lhs,Freyd.Alg.relCata_fusion.rhs	11.4.2a/cata-fusion	R S = F(S)Q = ⦇R⦈S = ⦇Q⦈	# the hypothesis and the conclusion, two sides each
 Freyd.Alg.alpha_natural.lhs,Freyd.Alg.alpha_natural.rhs	11.5.1b/tfun-sq	α T(f) = F(⟨𝟙,T⟩(f))α
 Freyd.Alg.typeMap_fusion.lhs,Freyd.Alg.typeMap_fusion.rhs	11.5.1c/tfun-fusion	T(f)⦇h⦈ = ⦇F(f,𝟙)h⦈
-Freyd.Alg.relCata_UP.lhs,Freyd.Alg.relCata_UP.rhs	11.6.1a/cata-defining	α X = F(X)f
+Freyd.Alg.relCata_UP.lhs.lhs,Freyd.Alg.relCata_UP.lhs.rhs	11.6.1a/cata-defining	α X = F(X)f
 Freyd.Alg.Λ_relCata.lhs,Freyd.Alg.Λ_relCata.rhs	11.6.2a/cata-map-square	α⦇F(∋)R%∋⦈ = F(⦇F(∋)R%∋⦈)f
 Freyd.Alg.hylo_fixed_step1.lhs,Freyd.Alg.hylo_fixed_step1.rhs,Freyd.Alg.hylo_fixed_step2.rhs,Freyd.Alg.hylo_fixed_step3.rhs,Freyd.Alg.hylo_fixed_step4.rhs	11.6.4a/hylo-fix	S° F(⦇S⦈°⦇R⦈)R = S° F(⦇S⦈°)F(⦇R⦈)R = S° F(⦇S⦈°)α⦇R⦈ = ⦇S⦈° α° α⦇R⦈ = ⦇S⦈°⦇R⦈
 Freyd.Alg.hylo_le_of_prefixed.lhs,Freyd.Alg.hylo_le_of_prefixed.rhs,Freyd.Alg.hylo_le_of_prefixed_step1.lhs,Freyd.Alg.hylo_le_of_prefixed_step1.rhs,Freyd.Alg.hylo_le_of_prefixed_step2.lhs,Freyd.Alg.hylo_le_of_prefixed_step2.rhs,Freyd.Alg.hylo_le_of_prefixed_step3.lhs,Freyd.Alg.hylo_le_of_prefixed_step3.rhs,Freyd.Alg.hylo_le_of_prefixed_step4.lhs,Freyd.Alg.hylo_le_of_prefixed_step4.rhs,Freyd.Alg.hylo_le_of_prefixed#h.lhs,Freyd.Alg.hylo_le_of_prefixed#h.rhs	11.6.4b/hylo-least	⦇S⦈°⦇R⦈ = X = ⦇R⦈ = ⦇S⦈°\X = α° F(⦇S⦈°\X)R = ⦇S⦈°\X = ⦇S⦈° α° F(⦇S⦈°\X)R = X = S° F(⦇S⦈°)F(⦇S⦈°\X)R = X = S° F(X)R = X

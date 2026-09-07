@@ -690,7 +690,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     A statement is drawn WHOLE — both sides in one frame — or one side at a time; either way every
     side is read, because the frame is a property of the statement and a side alone cannot know how
     deep the other one is. -/
-def drawString (declName : Name) (side binder : Option String) (branch : List Nat)
+def drawString (declName : Name) (path : List String) (binder : Option String) (branch : List Nat)
     (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
@@ -717,6 +717,15 @@ def drawString (declName : Name) (side binder : Option String) (branch : List Na
             | some v => (mkAppN v xs).headBeta
             | none => body
           else body
+    -- A STATEMENT CAN NEST, so the side selector chains: `relCata_UP` is an `↔` between two
+    -- equations and `.lhs.lhs` reads "the left equation, its left side".  Every step but the last
+    -- picks a statement inside a statement (`conn?`), which draws no panel of its own; the last
+    -- picks the side of the equation that does.
+    let mut body := body
+    for s in path.dropLast do
+      let some (l, r) := conn? body
+        | throwError "`.{s}` names no side of {← Meta.ppExpr body}: it is no `↔` and no `∧`"
+      body := if s == "lhs" then l else r
     -- The statement's PARTS: the two sides a relation symbol joins, or the arrow itself.
     let parts : Array (String × Expr) := match split body with
       | some (sym, l, r) => #[("", l), (sym, r)]
@@ -746,7 +755,7 @@ def drawString (declName : Name) (side binder : Option String) (branch : List Na
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    let drawn : Array (String × Expr) ← match side with
+    let drawn : Array (String × Expr) ← match path.getLast? with
       | none => pure parts
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
@@ -758,7 +767,7 @@ def drawString (declName : Name) (side binder : Option String) (branch : List Na
       ps := ps.push (sym, ← panelOf regionTy cat e objVars)
     if sigsOnly then return ← sigLines (ps.map (·.2))
     let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
-      ++ (match side with | some s => "." ++ s | none => "")
+      ++ path.foldl (fun a s => a ++ "." ++ s) ""
       ++ branch.foldl (fun s i => s ++ (if i == 0 then ".inl" else ".inr")) ""
     -- A branch panel can be deeper than the side it was cut from — `R ∪ S` is one row and `R` may
     -- be three — so the frame is the deepest of the statement's sides AND of what is drawn.
