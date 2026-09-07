@@ -322,6 +322,15 @@ public theorem old_eq_ok_glue : oldR amount N = okR amount N ≫ glueR X := by
     subst h2
     exact ⟨s, t, hx, hr, hsec⟩
 
+/-- **`old` is NO map**: at the empty schedule it returns nothing — `old` has to glue the
+    transaction onto a FIRST SEGMENT, and there is none — so it is not entire.  `old_eq_ok_glue`
+    says where it does return: on `ok`.  The note must therefore draw `old` chamfered, not as a
+    rectangle. -/
+public theorem old_not_map (a : X) : ¬ Map (oldR amount N) := by
+  intro h
+  obtain ⟨_, s, t, hx, _⟩ := entire_total h.1 (a, ConsList.wrap ())
+  cases hx
+
 /-! ### `new`, `glue`, `old` point-free, as B&dM write them on p.185 -/
 
 /-- The re-bracketing B&dM write as `assocl` (p.185); the note's pictures draw nothing for it,
@@ -781,13 +790,29 @@ public theorem van_mono_step2 :
       ⊑ newR X ≫ RinterH X ∪ oldR amount N ≫ RinterH X :=
   union_mono van_strict_old van_7_21
 
+/-- **@van-mono's `old` operand, last link**: `old (R∩H) ⊑ old (R;H)`, the mirror of
+    `van_mono_new_step4`.  The `old` lane of the display runs through this one, NOT through
+    `(𝟙×|R|)old`: the strict operand crosses to `new` at `van_strict_old`. -/
+public theorem van_mono_old_step4 :
+    oldR amount N ≫ RinterH X ⊑ oldR amount N ≫ RH X :=
+  comp_mono_left _ (show RinterH X ⊑ RH X from inter_le_RH)
+
 /-- **@van-mono's third step**: `new (R∩H) ∪ old (R∩H) ⊑ new (R;H) ∪ old (R;H)` — `X∩Y ⊑ X;Y`
     on each operand. -/
 public theorem van_mono_step3 :
     newR X ≫ RinterH X ∪ oldR amount N ≫ RinterH X
       ⊑ newR X ≫ RH X ∪ oldR amount N ≫ RH X :=
-  union_mono (comp_mono_left _ (show RinterH X ⊑ RH X from inter_le_RH))
-    (comp_mono_left _ (show RinterH X ⊑ RH X from inter_le_RH))
+  union_mono van_mono_new_step4 van_mono_old_step4
+
+/-- **@van-mono's last step with the sides the display draws**: `new (R∩H) ∪ old (R∩H) ⊑
+    (new ∪ old)(R;H)` — `van_mono_step3` with the `(R;H)` factored back out of the union, which
+    is the shape the row after it is drawn in. -/
+public theorem van_mono_step4 :
+    newR X ≫ RinterH X ∪ oldR amount N ≫ RinterH X
+      ⊑ (newR X ∪ oldR amount N) ≫ RH X :=
+  calc newR X ≫ RinterH X ∪ oldR amount N ≫ RinterH X
+      ⊑ newR X ≫ RH X ∪ oldR amount N ≫ RH X := van_mono_step3
+    _ = (newR X ∪ oldR amount N) ≫ RH X := (union_comp_distrib _ _ _).symm
 
 /-- **van-mono** (book p.187's (7.17)): `(𝟙×(R;H))old ⊑ (new∪old)(R;H)` — gluing the
     transaction onto a better schedule for the rest gets no further than gluing it on, or
@@ -804,8 +829,7 @@ public theorem van_mono :
       = rprodMap (𝟙 (⟨X⟩ : RelSet.{0})) (strictR X) ≫ oldR amount N
         ∪ rprodMap (𝟙 (⟨X⟩ : RelSet.{0})) (RinterH X) ≫ oldR amount N := van_mono_step1
     _ ⊑ newR X ≫ RinterH X ∪ oldR amount N ≫ RinterH X := van_mono_step2
-    _ ⊑ newR X ≫ RH X ∪ oldR amount N ≫ RH X := van_mono_step3
-    _ = (newR X ∪ oldR amount N) ≫ RH X := (union_comp_distrib _ _ _).symm
+    _ ⊑ (newR X ∪ oldR amount N) ≫ RH X := van_mono_step4
 
 /-- **van-laws**, the greedy theorem's hypothesis: `MonotonicAlg S (R;H)`, the two halves
     `van_mono_new` (7.16) and `van_mono` (7.17) together with the `nil` case. -/

@@ -216,6 +216,58 @@ public theorem cp_natural (L E : Type) (R : a ⟶ b) :
     dList (Fin n → A) ⟶ dTuple n (PowerAllegory.powerObj (dList A)) :=
   graph fun xs => fun k => genFn xs k
 
+/-- **cyl-gen** as a FUNCTION: `gen` at a value.  The empty column folds to the one empty path in
+    every row; a new column `c` conses `c k` onto every path any row of the tail holds, which is
+    `zip` pairing row `k` with `moves trans N(union)`'s union and `N(cp P(α))` prefixing it. -/
+@[expose] public def genFun :
+    (Fobj Unit (Fin n → A) (dTuple n (PowerAllegory.powerObj (dList A)))).carrier →
+      Fin n → ConsList Unit A → Prop
+  | Sum.inl _ => fun _ p => p = ConsList.wrap ()
+  | Sum.inr (c, T) => fun k p => ∃ j q, T j q ∧ p = ConsList.cons (c k) q
+
+/-- **cyl-gen**: `gen : F(N(E(L A)))⟶N(E(L A))`, the algebra `⦇gen⦈` folds with — an arrow, so
+    the note's `gen` bead has a declaration to hang on. -/
+@[expose] public def gen :
+    (F Unit (Fin n → A)).obj (dTuple n (PowerAllegory.powerObj (dList A)))
+      ⟶ dTuple n (PowerAllegory.powerObj (dList A)) :=
+  graph genFun
+
+/-- **`gen` is an `F`-algebra and `⦇gen⦈` its fold** (`<fold-diag>`): `α⦇gen⦈=F(𝟙,⦇gen⦈)gen`.
+    `cata_comm` at this algebra, with the two sides the display draws — the fold bead is OUTSIDE
+    `F` on the left and INSIDE it on the right, which is all the recursion there is. -/
+public theorem cataGen_comm :
+    InitialAlgebra.α (F := F Unit (Fin n → A)) ≫ cataGen
+      = (F Unit (Fin n → A)).map cataGen ≫ gen (A := A) (n := n) := by
+  apply hom_ext; intro u T
+  cases u with
+  | inl d =>
+    constructor
+    · rintro ⟨xs, hxs, hT⟩
+      have hx : xs = ConsList.wrap d := hxs
+      subst hx
+      exact ⟨Sum.inl d, rfl, hT⟩
+    · rintro ⟨v, hv, hT⟩
+      cases v with
+      | inl d' => exact ⟨ConsList.wrap d, rfl, hT⟩
+      | inr q => exact hv.elim
+  | inr p =>
+    obtain ⟨c, cs⟩ := p
+    constructor
+    · rintro ⟨xs, hxs, hT⟩
+      have hx : xs = ConsList.cons c cs := hxs
+      subst hx
+      exact ⟨Sum.inr (c, fun k => genFn cs k), ⟨rfl, rfl⟩, hT⟩
+    · rintro ⟨v, hv, hT⟩
+      cases v with
+      | inl d => exact hv.elim
+      | inr q =>
+        obtain ⟨c', S⟩ := q
+        obtain ⟨h1, h2⟩ := hv
+        have hc : c = c' := h1
+        have hS : S = fun k => genFn cs k := h2
+        subst hc; subst hS
+        exact ⟨ConsList.cons c cs, rfl, hT⟩
+
 /-- The square at values: `L(N(R))`-related lists of columns fold to path sets that are
     Egli-Milner `L(R)`-related row by row.  The cons step needs both halves at every row `j`,
     because `gen` unions all of them before consing; the union of Egli-Milner related
