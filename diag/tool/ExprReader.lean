@@ -491,6 +491,14 @@ def openNoted (e : Expr) : MetaM Expr := do
   | some v => return v.headBeta
   | none => return e
 
+/-- A statement built from two STATEMENTS, and those two.  A different question from `split`, which
+    reads the relation between two ARROWS: a side of one of these is itself a statement, so it
+    draws no panel of its own and a selector has to go on through it. -/
+def conn? (e : Expr) : Option (Expr × Expr) :=
+  match e.getAppFnArgs with
+  | (``Iff, args) | (``And, args) => lastTwo args
+  | _ => none
+
 /-- The relation between the two sides of a statement, and the sides.  ONE copy: the string, the
     circuit and the commutative functors and the proof walk all ask this same question of a head. -/
 def split (e : Expr) : Option (String × Expr × Expr) :=

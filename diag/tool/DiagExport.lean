@@ -1410,8 +1410,11 @@ def main (args : List String) : IO UInt32 := do
     -- after the side they select inside, and they CHAIN: `.inr.inr` is the arm and then that arm's
     -- operand, each applied to what the one before it left.  Outermost first, so the list is built
     -- by consing as the suffixes come off the end.
+    -- A SIDE SELECTOR CHAINS TOO: a statement can be built from statements (`↔`, `∧`), so
+    -- `.lhs.lhs` is the left equation and then its left side, and one loop comes off the end.
     let mut stem : String.Slice := arg
     let mut branch : List Nat := []
+    let mut sides : List String := []
     let mut more := circuitMode || stringMode
     while more do
       if stem.endsWith ".inl" then
@@ -1420,11 +1423,14 @@ def main (args : List String) : IO UInt32 := do
       else if stem.endsWith ".inr" then
         stem := stem.dropEnd 4
         branch := 1 :: branch
+      else if stem.endsWith ".lhs" then
+        stem := stem.dropEnd 4
+        sides := "lhs" :: sides
+      else if stem.endsWith ".rhs" then
+        stem := stem.dropEnd 4
+        sides := "rhs" :: sides
       else more := false
-    let (base, side) :=
-      if (stringMode || circuitMode) && stem.endsWith ".lhs" then (stem.dropEnd 4, some "lhs")
-      else if (stringMode || circuitMode) && stem.endsWith ".rhs" then (stem.dropEnd 4, some "rhs")
-      else (stem, none)
+    let base := stem
     -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
     -- statement too.  Split before `toName`: `#` is not an identifier character, so
     -- `String.toName` returns the anonymous name for a name that still carries one.
@@ -1434,8 +1440,10 @@ def main (args : List String) : IO UInt32 := do
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
         else if stringMode then
-          StrDiag.drawString base.toName side binder branch frame topRow scale sigsMode
-        else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName side binder branch
+          StrDiag.drawString base.toName sides binder branch frame topRow scale sigsMode
+        -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
+        -- naming the statement rather than drawing a side nobody asked for.
+        else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
