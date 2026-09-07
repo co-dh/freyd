@@ -372,6 +372,61 @@ public theorem sortRel_comp_listMap_le
     ← Cat.assoc (existsImage f) (setify°) ordered]
   exact comp_mono_right hshunt ordered
 
+/-- **(8.11)** (book p.203): `F(sort P)·listcp(F) ⊑ cp(F)·sort(FP)`, mirrored
+    `F.map (sortRel setify ordered) ≫ listcp ⊑ cpMap F A ≫ sortRel setifyF orderedFP` —
+    `listcp(F)` is the list implementation of the cartesian product.  Two defining properties
+    again: on the underlying sets `listcp(F)` IS the cartesian product
+    (`listcp·setifyF ⊑ F(setify)·cp(F)`), and it carries `F`-many `P`-ordered lists to an
+    `FP`-ordered one.  A relator preserves a map and its converse (Lemma 5.1), which is what lets
+    the `setify°` of the sort come out from under `F`. -/
+public theorem map_sortRel_comp_listcp_le
+    {setify : L ⟶ PowerAllegory.powerObj A} (hset : Map setify)
+    {setifyF : LF ⟶ PowerAllegory.powerObj (F.obj A)} (hsetF : Map setifyF)
+    {ordered : L ⟶ L} {orderedFP : LF ⟶ LF} {listcp : F.obj L ⟶ LF}
+    (hnat : listcp ≫ setifyF ⊑ F.map setify ≫ cpMap F A)
+    (hordcp : F.map ordered ≫ listcp ⊑ listcp ≫ orderedFP) :
+    F.map (sortRel setify ordered) ≫ listcp ⊑ cpMap F A ≫ sortRel setifyF orderedFP := by
+  have hshunt : (F.map setify)° ≫ listcp ⊑ cpMap F A ≫ setifyF° := by
+    refine (map_shunt_left (F.map_is_map hset) listcp _).mpr ?_
+    have hent : listcp ⊑ listcp ≫ setifyF ≫ setifyF° := by
+      have := comp_mono_left listcp (entire_id_le hsetF.1)
+      rwa [Cat.comp_id] at this
+    refine le_trans hent ?_
+    rw [← Cat.assoc listcp setifyF (setifyF°), ← Cat.assoc (F.map setify) (cpMap F A) (setifyF°)]
+    exact comp_mono_right hnat _
+  show F.map (setify° ≫ ordered) ≫ listcp ⊑ cpMap F A ≫ (setifyF° ≫ orderedFP)
+  rw [F.map_comp, F.map_recip_map hset, Cat.assoc]
+  refine le_trans (comp_mono_left _ hordcp) ?_
+  rw [← Cat.assoc ((F.map setify)°) listcp orderedFP,
+    ← Cat.assoc (cpMap F A) (setifyF°) orderedFP]
+  exact comp_mono_right hshunt orderedFP
+
+/-- **(8.10)** (book p.203): `(sort P×sort P)·merge P ⊑ cup·sort P` — merging two sorted lists
+    sorts their union.  `merge P`'s two defining properties do it: a listing of `S` and a listing
+    of `T` merge to a listing of `S∪T`, and merging two `P`-ordered lists gives a `P`-ordered
+    list.  The only step besides those is that `−×−` is a functor, so the pair of sorts splits
+    into the pair of listings followed by the pair of order tests. -/
+public theorem prodMap_sortRel_comp_merge_le
+    {setify : L ⟶ PowerAllegory.powerObj A} {ordered : L ⟶ L}
+    {Pr : RelProd L L} {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
+    {mergeP : Pr.p ⟶ L}
+    (hmset : prodMap Pr' Pr (setify°) (setify°) ≫ mergeP ⊑ cup Pr' ≫ setify°)
+    (hmord : prodMap Pr Pr ordered ordered ≫ mergeP ⊑ mergeP ≫ ordered) :
+    prodMap Pr' Pr (sortRel setify ordered) (sortRel setify ordered) ≫ mergeP
+      ⊑ cup Pr' ≫ sortRel setify ordered := by
+  have hfun : prodMap Pr' Pr (setify° ≫ ordered) (setify° ≫ ordered)
+      = prodMap Pr' Pr (setify°) (setify°) ≫ prodMap Pr Pr ordered ordered := by
+    show Pr.pair (Pr'.outl ≫ setify° ≫ ordered) (Pr'.outr ≫ setify° ≫ ordered)
+      = Pr.pair (Pr'.outl ≫ setify°) (Pr'.outr ≫ setify°) ≫ prodMap Pr Pr ordered ordered
+    rw [RelProd.pair_prodMap, Cat.assoc, Cat.assoc]
+  show prodMap Pr' Pr (setify° ≫ ordered) (setify° ≫ ordered) ≫ mergeP
+    ⊑ cup Pr' ≫ (setify° ≫ ordered)
+  rw [hfun, Cat.assoc]
+  refine le_trans (comp_mono_left _ hmord) ?_
+  rw [← Cat.assoc (prodMap Pr' Pr (setify°) (setify°)) mergeP ordered,
+    ← Cat.assoc (cup Pr') (setify°) ordered]
+  exact comp_mono_right hmset ordered
+
 end SortLaws
 
 end Freyd.Alg
