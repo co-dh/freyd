@@ -409,6 +409,17 @@ public theorem exclude_step :
   rw [(show z = cconcat qs from hz), (show y = cconcat ys from hy)]
   exact cost_cconcat_le rating (best_dominates rating u.2 ys qs hys hqs)
 
+/-- **party-laws, the Ex 7.15 row at the party's own letters** (`<party-laws-fold>`, rows 1-2):
+    `⟨include%∋ est(R°), exclude%∋ est(R°)⟩ ⊑ S%∋ est((R×R)°)`.  Both sides run
+    `x×[[x]×[x]]⟶[x]×[x]`, which is what makes the row's step a statement: the generic
+    `pair_est_le` is stated at `U`, `V`, `Ra`, `Rb`, and its `⟨U,V⟩` is this `S`. -/
+public theorem party_pair_step :
+    rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      ⊑ Λ (S : dBranch A ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))
+          ≫ est((rprodMap (R rating) (R rating))°) :=
+  pair_est_le includeR excludeR (R rating) (R rating)
+
 /-- **party-laws (the derivation's headline)**: the greedy program refines the specification,
     `⦇⟨include, π₂ list(Λ(choose) est(R°)) concat⟩⦈ Λ(choose) est(R°) ⊑ Λ(party) est(R°)` —
     the best of every guest list the president allows is one pass up the tree, each subtree
@@ -428,7 +439,7 @@ public theorem party_laws :
     have h := recip_mono (R_refl rating); rwa [recip_id] at h
   have row7 := rpair_mono (graph_le_Λ_est includeFn hRrefl) (exclude_step rating)
   -- Ex 7.15 row: `⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩ ⊑ Λ(S) est((R×R)°)`
-  have row6 := pair_est_le (graph includeFn) excludeR (R rating) (R rating)
+  have row6 := party_pair_step rating
   have hcata : ⦇(rpair (graph includeFn)
         ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
