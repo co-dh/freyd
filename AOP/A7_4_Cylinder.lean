@@ -177,22 +177,14 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
 
 /-! ## `cyl-laws` -/
 
-/-- **cyl-laws** (B&dM §7.4, p.182): `paths est(R) ⊒ ⦇Q⦈ setify est(R)` — a cheapest path
-    across the cylinder is one fold over the columns that keeps, for every row, only the
-    cheapest path that can start there.
-
-    The chain is the book's: `paths` unfolds to `⦇gen⦈ setify union est(R)`; (7.11)
-    replaces `union` by `P(est(R))` (`powerRel_est_le_bigUnion`, `R` transitive); `setify`'s
-    lax square moves the minimum inside the tuple (`hsetify`); and fusion at `cyl_fusion`
-    (`hfusion`) folds `Q` instead of `gen`. -/
-public theorem cyl_laws (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
+/-- **cyl-laws** step 1: `⦇Q⦈ setify est(R) ⊑ ⦇gen⦈ N(est(R)) setify est(R)` — fusion, i.e.
+    `⦇Q⦈ ⊑ ⦇gen⦈ N(est(R))` by the least-prefixed-point property of `⦇Q⦈`, composed on the
+    right.  The `J` ascription is what pins the fold's initial algebra. -/
+public theorem cyl_laws_step1 (R : I.t ⟶ I.t)
     (hfusion : G.map (N.map (est R)) ≫ Q I moves trans zip R
-      ⊑ gen I moves trans zip ≫ N.map (est R))
-    (hsetify : N.map (est R) ≫ setify I.t ≫ est R
-      ⊑ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R) :
-    ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
-      ⊑ paths I J moves trans zip setify ≫ est R := by
-  -- fusion: `⦇Q⦈ ⊑ ⦇gen⦈ N(est R)`, by the least-prefixed-point property of `⦇Q⦈`
+      ⊑ gen I moves trans zip ≫ N.map (est R)) :
+    (⦇Q I moves trans zip R⦈ : J.t ⟶ N.obj I.t) ≫ setify I.t ≫ est R
+      ⊑ ⦇gen I moves trans zip⦈ ≫ N.map (est R) ≫ setify I.t ≫ est R := by
   have hcata : (⦇Q I moves trans zip R⦈ : J.t ⟶ N.obj I.t)
       ⊑ ⦇gen I moves trans zip⦈ ≫ N.map (est R) := by
     apply relCata_le_of_prefixed J
@@ -208,18 +200,59 @@ public theorem cyl_laws (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
           rw [relCata_cancel J]; simp only [Cat.assoc]
       _ = ⦇gen I moves trans zip⦈ ≫ N.map (est R) := by
           rw [← Cat.assoc, ← Cat.assoc, J.recip_alpha_alpha, Cat.id_comp]
-  calc ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
+  calc (⦇Q I moves trans zip R⦈ : J.t ⟶ N.obj I.t) ≫ setify I.t ≫ est R
       ⊑ (⦇gen I moves trans zip⦈ ≫ N.map (est R)) ≫ setify I.t ≫ est R :=
         comp_mono_right hcata _
     _ = ⦇gen I moves trans zip⦈ ≫ N.map (est R) ≫ setify I.t ≫ est R := by
         simp only [Cat.assoc]
-    _ ⊑ ⦇gen I moves trans zip⦈
+
+/-- **cyl-laws** step 2: `⦇gen⦈ N(est(R)) setify est(R) ⊑ ⦇gen⦈ setify P(est(R)) est(R)` —
+    `setify`'s lax square, taking the minimum out of the tuple and into the set. -/
+public theorem cyl_laws_step2 (R : I.t ⟶ I.t)
+    (hsetify : N.map (est R) ≫ setify I.t ≫ est R
+      ⊑ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R) :
+    (⦇gen I moves trans zip⦈ : J.t ⟶ N.obj (PowerAllegory.powerObj I.t))
+        ≫ N.map (est R) ≫ setify I.t ≫ est R
+      ⊑ ⦇gen I moves trans zip⦈
           ≫ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R :=
-        comp_mono_left _ hsetify
-    _ ⊑ ⦇gen I moves trans zip⦈
+  comp_mono_left _ hsetify
+
+/-- **cyl-laws** step 3: `⦇gen⦈ setify P(est(R)) est(R) ⊑ ⦇gen⦈ setify union est(R)` — (7.11)
+    at the transitive `R`. -/
+public theorem cyl_laws_step3 (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R) :
+    (⦇gen I moves trans zip⦈ : J.t ⟶ N.obj (PowerAllegory.powerObj I.t))
+        ≫ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R
+      ⊑ ⦇gen I moves trans zip⦈
           ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion ≫ est R :=
-        comp_mono_left _ (comp_mono_left _ (powerRel_est_le_bigUnion htrans))
-    _ = paths I J moves trans zip setify ≫ est R := by rw [paths]; simp only [Cat.assoc]
+  comp_mono_left _ (comp_mono_left _ (powerRel_est_le_bigUnion htrans))
+
+/-- **cyl-laws** step 4: `⦇gen⦈ setify union est(R) = paths est(R)` — `paths`' definition. -/
+public theorem cyl_laws_step4 (R : I.t ⟶ I.t) :
+    (⦇gen I moves trans zip⦈ : J.t ⟶ N.obj (PowerAllegory.powerObj I.t))
+        ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion ≫ est R
+      = paths I J moves trans zip setify ≫ est R := by
+  rw [paths]; simp only [Cat.assoc]
+
+/-- **cyl-laws** (B&dM §7.4, p.182): `paths est(R) ⊒ ⦇Q⦈ setify est(R)` — a cheapest path
+    across the cylinder is one fold over the columns that keeps, for every row, only the
+    cheapest path that can start there.
+
+    The chain is the book's: `paths` unfolds to `⦇gen⦈ setify union est(R)`; (7.11)
+    replaces `union` by `P(est(R))` (`powerRel_est_le_bigUnion`, `R` transitive); `setify`'s
+    lax square moves the minimum inside the tuple (`hsetify`); and fusion at `cyl_fusion`
+    (`hfusion`) folds `Q` instead of `gen`. -/
+public theorem cyl_laws (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
+    (hfusion : G.map (N.map (est R)) ≫ Q I moves trans zip R
+      ⊑ gen I moves trans zip ≫ N.map (est R))
+    (hsetify : N.map (est R) ≫ setify I.t ≫ est R
+      ⊑ setify (PowerAllegory.powerObj I.t) ≫ powerRel (est R) ≫ est R) :
+    ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
+      ⊑ paths I J moves trans zip setify ≫ est R :=
+  calc ⦇Q I moves trans zip R⦈ ≫ setify I.t ≫ est R
+      ⊑ _ := cyl_laws_step1 I J moves trans zip setify R hfusion
+    _ ⊑ _ := cyl_laws_step2 I J moves trans zip setify R hsetify
+    _ ⊑ _ := cyl_laws_step3 I J moves trans zip setify R htrans
+    _ = _ := cyl_laws_step4 I J moves trans zip setify R
 
 /-! ## `cyl-step` -/
 

@@ -348,17 +348,42 @@ public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n
       rw [← Cat.assoc, ← Cat.assoc, hgraph]
       exact le_refl _
 
+/-- **`⦇Q⦈ est(R) ⊑ ⦇gen⦈ Vec(n)(est(R)) est(R)`** — step 1 of `vec-cyl-laws`: the greedy fold
+    is below `⦇gen⦈` followed by a cheapest of each column's answers. -/
+public theorem cyl_laws_step1 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
+    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
+    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
+    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
+      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (R (m + 1))) ≫ est (R (m + 1)) := by
+  rw [← Cat.assoc]
+  exact comp_mono_right (Qfold_le_genFold hrefl htrans hmono m) _
+
+/-- **`⦇gen⦈ Vec(n)(est(R)) est(R) ⊑ ⦇gen⦈ concat est(R)`** — step 2: a cheapest of the column
+    minima is a cheapest of everything the columns hold, `concat` being the flattening. -/
+public theorem cyl_laws_step2 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
+    (htrans : ∀ i, R i ≫ R i ⊑ R i) :
+    (RelSet.graph (genFold m) : dTuple (m + 1) (dTuple n A) ⟶ _)
+        ≫ tupleP n (est (R (m + 1))) ≫ est (R (m + 1))
+      ⊑ RelSet.graph (genFold m) ≫ RelSet.graph concat ≫ est (R (m + 1)) :=
+  comp_mono_left _ (est_concat (htrans (m + 1)))
+
+/-- **`⦇gen⦈ concat est(R) = paths est(R)`** — step 3: `paths` IS `genFold` then `concat`. -/
+public theorem cyl_laws_step3 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat} :
+    (RelSet.graph (genFold m) : dTuple (m + 1) (dTuple n A) ⟶ _)
+        ≫ RelSet.graph concat ≫ est (R (m + 1))
+      = RelSet.graph paths ≫ est (R (m + 1)) := by
+  rw [← Cat.assoc, RelSet.graph_comp]; rfl
+
 /-- **`⦇Q⦈ est(R) ⊑ paths est(R)`** — the note's `paths est(R) ⊒ ⦇Q⦈ est(R)`: the greedy fold
     followed by a cheapest of the `n` column answers is a cheapest of all `n·3^m` paths. -/
 public theorem cyl_laws {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
     (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
     (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
     (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
-      ⊑ RelSet.graph paths ≫ est (R (m + 1)) := by
-  refine le_trans (comp_mono_right (Qfold_le_genFold hrefl htrans hmono m) _) ?_
-  rw [Cat.assoc]
-  refine le_trans (comp_mono_left _ (est_concat (htrans (m + 1)))) ?_
-  rw [← Cat.assoc, RelSet.graph_comp]
-  exact le_refl _
+      ⊑ RelSet.graph paths ≫ est (R (m + 1)) :=
+  calc (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
+      ⊑ _ := cyl_laws_step1 hrefl htrans hmono
+    _ ⊑ _ := cyl_laws_step2 htrans
+    _ = _ := cyl_laws_step3
 
 end Freyd.Alg.Vec.Rel
