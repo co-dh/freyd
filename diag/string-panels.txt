@@ -66,9 +66,9 @@ Freyd.Alg.RelSet.Van.van_7_20.lhs,Freyd.Alg.RelSet.Van.van_7_20.rhs	13.6.6b/van-
 Freyd.Alg.RelSet.Van.van_7_21.lhs,Freyd.Alg.RelSet.Van.van_7_21.rhs	13.6.6c/van-721	(𝟙×(R∩H))old = old (R∩H)
 -,-,-,-	13.6.6d/van-mono	(𝟙×R;H)old = (𝟙×|R|)old = old (R∩H) = old R;H	# candidates: Freyd.Alg.RelSet.Van.van_mono Freyd.Alg.RelSet.Van.oldR Freyd.Alg.RelSet.Van.RH_not_lax_natural
 -,-,-,-,-	13.6.7a/van-laws	𝟙%∋ E(partition)E(list(secure))est(R) = 𝟙%∋ E(⦇S⦈)est(R) = 𝟙%∋ E(⦇S⦈)est(R;H) = ⦇S%∋ est(R;H)⦈ = ⦇[nil,(ok→glue,new)]⦈	# candidates: Freyd.Alg.RelSet.Van.van_laws Freyd.Alg.RelSet.Van.secure Freyd.Alg.RelSet.Van.van_7_15_false
--,-,-,-	14.1c/thin-83	S° S%∋ est(R)𝟙%∋ = ∈ est(R∩S°S)𝟙%∋ = Q° 𝟙%∋ = Q° ∈	# candidates: Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel
--,-,-,-,-	14.1d/thin-thm81	S° F(Q° ∈)(F(∋)S)%∋ thin(Q) = Q° S° F(∈)(F(∋)S)%∋ thin(Q) = Q° ∈ thin(Q) = Q° Q° ∈ = Q° ∈	# candidates: Freyd.Alg.thinning
--,-,-	14.1e/thin-cor	⦇(F(∋)S)%∋ thin(Q)⦈est(R) = 𝟙%∋ E(⦇S⦈)thin(Q)est(R) = 𝟙%∋ E(⦇S⦈)est(R)	# candidates: Freyd.Alg.thinning_est
+Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.lhs,Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.rhs,Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step2.rhs,Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step3.rhs	14.1c/thin-83	S° S%∋ est(R)𝟙%∋ = ∈ est(R∩S°S)𝟙%∋ = Q° 𝟙%∋ = Q° ∈
+Freyd.Alg.thinning_step1.lhs,Freyd.Alg.thinning_step1.rhs,Freyd.Alg.thinning_step2.rhs,Freyd.Alg.thinning_step3.rhs,Freyd.Alg.thinning_step4.rhs	14.1d/thin-thm81	S° F(Q° ∈)(F(∋)S)%∋ thin(Q) = Q° S° F(∈)(F(∋)S)%∋ thin(Q) = Q° ∈ thin(Q) = Q° Q° ∈ = Q° ∈
+Freyd.Alg.thinning_est_step1.lhs,Freyd.Alg.thinning_est_step1.rhs,Freyd.Alg.thinning_est_step2.rhs	14.1e/thin-cor	⦇(F(∋)S)%∋ thin(Q)⦈est(R) = 𝟙%∋ E(⦇S⦈)thin(Q)est(R) = 𝟙%∋ E(⦇S⦈)est(R)
 Freyd.Alg.thinning_paths.lhs,Freyd.Alg.thinning_paths.rhs	14.2c/path-laws	⦇F(∋,𝟙)α⦈%∋ est(R) = ⦇(F(∋,∋)α)%∋ thin(Q)⦈est(R)
 -,-,-,-,-	14.3c/thinlist-86	sort(P)thinlist(Q) = setify° ordered(P)thinlist(Q) = setify° thinlist(Q)ordered(P) = thin(Q)setify° ordered(P) = thin(Q)sort(P)	# candidates: Freyd.Alg.sortRel_comp_thinlist_le Freyd.Alg.RelSet.ListRel.setify_lax_natural Freyd.Alg.RelSet.ListRel.setify_not_strict
 Freyd.Alg.map_sort_comp_listcp_le.lhs,Freyd.Alg.map_sort_comp_listcp_le.rhs	14.3d/thinlist-lem81	(F(∋)f p)%∋ sort(P) = F(∋)f%∋ sort(P)filter(p)
