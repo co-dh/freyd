@@ -127,26 +127,12 @@ partial def concHead : Expr → Name
 inductive Wire where
   | rel (r : Expr)
   | timesL (l : Expr)
-  /-- A PAIRING `⟨F,G⟩ : 𝒜 ⟶ 𝒜×𝒜`, kept as its TWO BUNDLES rather than as one composed relator:
-      `×` is a functor out of a PRODUCT category, so its input is two regions side by side and the
-      halves are drawn side by side too — which is what lets a factor act on one of them. -/
-  | pairW (l r : Array Wire)
   deriving Inhabited
-
-/-- The LANES a wire draws as.  A pairing is no lane of its own: it is its left bundle west of its
-    right bundle, which is what puts `φ×𝟙`'s bead on the left factor's wires and nowhere else. -/
-partial def Wire.lanes : Wire → Array Wire
-  | .pairW l r => (l ++ r).foldl (fun acc w => acc ++ w.lanes) #[]
-  | w => #[w]
-
-/-- How many lanes a wire occupies — one, except a pairing, which is as many as its bundles are. -/
-def Wire.width (w : Wire) : Nat := w.lanes.size
 
 /-- Does the wire mention `v`?  A lane is a relator of the WHOLE region, so a wire built over an
     object the statement quantifies over is a different functor at each object and carries no bead. -/
-partial def Wire.mentions (v : FVarId) : Wire → Bool
+def Wire.mentions (v : FVarId) : Wire → Bool
   | .rel r | .timesL r => r.containsFVar v
-  | .pairW l r => (l ++ r).any (Wire.mentions v)
 
 /-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
     pairing, an identity, a composite and the product bifunctor have no name of their own, so they
@@ -174,22 +160,12 @@ partial def relLabel (r : Expr) : MetaM String := do
   | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
   | _ => plain r
 
-def Wire.label : Wire → MetaM String
-  | .rel r => relLabel r
-  | .timesL l => return (← plain l) ++ "×−"
-  | .pairW l r => throwError "a pairing is not a lane but two bundles of them, {l.size} wires west \
-      and {r.size} east; a picture asks `Wire.lanes` for the lanes it draws"
-
-/-- Elementwise into a pairing's bundles, so two pairings are one wire only when both halves are. -/
-partial def Wire.beq (a b : Wire) : MetaM Bool :=
+/-- Two lanes are one wire when they are the same relator — or the same left factor, that lane
+    being pinned to its object. -/
+def Wire.beq (a b : Wire) : MetaM Bool :=
   match a, b with
   | .rel x, .rel y => Meta.isDefEq x y
   | .timesL x, .timesL y => Meta.isDefEq x y
-  | .pairW lx rx, .pairW ly ry => do
-    unless lx.size == ly.size && rx.size == ry.size do return false
-    for i in [0 : lx.size] do unless ← Wire.beq lx[i]! ly[i]! do return false
-    for i in [0 : rx.size] do unless ← Wire.beq rx[i]! ry[i]! do return false
-    return true
   | _, _ => return false
 
 /-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
@@ -249,15 +225,9 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
   | some (a, b) => Meta.mkAppM ``Prod.mk #[← freshObj a, ← freshObj b]
   | none => Meta.mkFreshExprMVar (some ty)
 
-mutual
-
-/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity, and a pairing
-    is `⟨−,−⟩` of what its two bundles compose to — an EMPTY bundle being the region's identity,
-    which is why the region is passed in rather than read off a wire that may not exist. -/
-partial def wireRelator (regionTy : Expr) : Wire → MetaM Expr
+/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity. -/
+def wireRelator (regionTy : Expr) : Wire → MetaM Expr
   | .rel r => return r
-  | .pairW l r => do
-    Meta.mkAppM ``Freyd.Alg.Relator.pair #[← stackRelator regionTy l, ← stackRelator regionTy r]
   | .timesL l => do
     let inst ← allegoryInst regionTy
     Meta.mkAppM ``Freyd.Alg.Relator.prod
@@ -267,14 +237,12 @@ partial def wireRelator (regionTy : Expr) : Wire → MetaM Expr
 
 /-- The composite relator a wire stack is, outermost first: `[W₀,W₁]` is `comp W₁ W₀`, whose object
     map is `W₀.obj ∘ W₁.obj`. -/
-partial def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
+def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
   if ws.isEmpty then return ← idRelatorOf regionTy
   let mut acc ← wireRelator regionTy ws[ws.size - 1]!
   for i in [0 : ws.size - 1] do
     acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
   return acc
-
-end
 
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
     `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
@@ -291,6 +259,15 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
       if !a.hasExprMVar && !b.hasExprMVar then return some (a, b)
     s.restore; return none
   catch _ => s.restore; return none
+
+def Wire.label : Wire → MetaM String
+  | .rel r => relLabel r
+  -- `(A×B)×−`, never `A×B×−`: a left factor that is itself a product must be bracketed or the
+  -- label names a different lane.  The test is the product READER, not the printed string.
+  | .timesL l => do
+    let s ← plain l
+    let par := (← splitTimes? (← Meta.inferType l) l).isSome
+    return (if par then "(" ++ s ++ ")" else s) ++ "×−"
 
 /-- The endorelators of a region the environment NAMES.  A combinator — `comp`, `prod`, `pair` —
     is excluded by its own type: it takes a relator as an argument, so peeling with it would peel
@@ -356,14 +333,12 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     s.restore; return none
   catch _ => s.restore; return none
 
-/-- A product's LEFT factor as lanes.  `(A×B)×C` and `A×(B×C)` are the same stack of lanes, which
-    is why an associativity re-bracketing is invisible in a picture. -/
-partial def peelLefts (regionTy a : Expr) : MetaM (Array Wire) := do
-  match ← splitTimes? regionTy a with
-  | some (x, y) => return (← peelLefts regionTy x) ++ (← peelLefts regionTy y)
-  | none => return #[Wire.timesL a]
+/-- An object peeled into its wire stack (outermost first) and the object underneath.
 
-/-- An object peeled into its wire stack (outermost first) and the object underneath. -/
+    A PRODUCT `A×Y` is the ONE lane `A×−` over the lanes of `Y`, whatever `A` is.  `×` is a functor
+    out of `𝒜×𝒜` and Hinze–Marsden has no wire for one, so the left factor cannot be drawn as a
+    bundle beside its sibling; it is pinned into the endofunctor `A×−` at that object, and only the
+    right factor goes on being peeled. -/
 partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array Wire × Expr) := do
   match X.getAppFnArgs with
@@ -371,24 +346,10 @@ partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr
     if let some (f, x) := lastTwo args then
       let (ws, o) ← peelObj objVars cat regionTy x
       return ((wiresOf f).map Wire.rel ++ ws, o)
-  | (``Prod.mk, args) =>
-    -- An object of a PRODUCT region IS a pair, and the two halves' stacks are the pairing's TWO
-    -- BUNDLES, drawn side by side.  Both halves have to stand over the same object: that is what
-    -- makes the pairing a functor of one variable.
-    if let some (l, r) := prodRegions? regionTy then
-      if args.size == 4 then
-        let (wsx, ox) ← peelObj objVars cat l args[2]!
-        let (wsy, oy) ← peelObj objVars cat r args[3]!
-        if ← Meta.isDefEq ox oy then return (#[Wire.pairW wsx wsy], ox)
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
-    let la ← peelLefts regionTy a
-    -- `A×−` is a lane only while `A` is CONSTANT.  A left factor that mentions an object the
-    -- statement quantifies over varies with the wire underneath it, so the product is the bifunctor
-    -- `×` fed by a pairing — which the catalogue's own `timesRel` peels, over the product region.
-    unless la.any (fun w => objVars.any fun v => Wire.mentions v.fvarId! w) do
-      let (ws, o) ← peelObj objVars cat regionTy b
-      return (la ++ ws, o)
+    let (ws, o) ← peelObj objVars cat regionTy b
+    return (#[Wire.timesL a] ++ ws, o)
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then
       let (ws, o) ← peelObj objVars cat src inner

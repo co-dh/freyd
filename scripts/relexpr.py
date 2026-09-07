@@ -653,8 +653,10 @@ def act(label, e, obj=False):
         # The named slot is PARSED, like the object wire's own label in `fold_cut`: `A[n]×−` names
         # the object `A[n]`, and left as an atom spelling it the cut would differ from the very src
         # it spells the same.
+        # `split_top`, never `split`: a bracketed factor — `(A×B)×−`, the lane a re-bracketing
+        # makes — holds a `×` of its own, and a naive cut hands `parse` half a bracket.
         return ('prod', [e if p == '−' else (norm(parse(p, True)) if obj else ('atom', UNIT))
-                         for p in label.split('×')])
+                         for p in split_top(label, '×')])
     if label == 'Δ':
         return ('prod', [e, e])
     return ('app', label, e)
@@ -663,7 +665,7 @@ def act(label, e, obj=False):
 def fill(wire, bead, inner):
     """A bead ON a context wire, at the same height as the one inside it (13.3.5b's `p×𝟙` beside
     `p`): the wire's hole takes the inner factor and the bead supplies the other slots."""
-    ps, bs = wire.split('×'), bead.split('×')
+    ps, bs = split_top(wire, '×'), split_top(bead, '×')
     if '−' not in ps or len(ps) != len(bs) or bs[ps.index('−')] != UNIT:
         raise Unhandled(f"the bead {bead} does not fit the wire {wire}")
     return ('prod', [inner if p == '−' else parse(b) for p, b in zip(ps, bs)])

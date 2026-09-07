@@ -90,7 +90,7 @@ structure Cut where
     may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back, and `scripts/scanline` folds
     this list with the very `fold_cut` it reads the drawn cut with. -/
 def cutText (c : Cut) : MetaM String := do
-  let ls ← (c.ws.foldl (· ++ ·.lanes) #[]).mapM Wire.label
+  let ls ← c.ws.mapM Wire.label
   return String.intercalate "|" (ls.push (← plain c.o)).toList
 
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
@@ -100,13 +100,11 @@ structure Row where
   arms  : Array Nat
   legs  : Array Nat
   obj   : String
-  /-- The cut the BAR is drawn between, sibling lanes and all — `Diagram.beside` widens both when
-      the bar runs over a bundle east of the arms, so the panel states the type LEAN gives the bar
-      and `scripts/scanline` checks the drawn type against that and not against `x⟶x`. -/
+  /-- The cut the bead is drawn between: the lanes it TOUCHES, over the object wire.  Never a cut
+      assembled from a sibling bundle — `scripts/scanline` narrows the drawn cut to the touched
+      lanes too, so the two are the same list read from the two sides. -/
   src   : Cut
   tgt   : Cut
-  /-- What the bar IS, so a `beside` outside this one can widen it again: `core`, or `core×𝟙`. -/
-  shown : Expr
   nat   : Option String := none
   /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
       bead the environment REFUTES, which draws no dot and is a claim all the same. -/
@@ -395,18 +393,17 @@ structure Verdict where
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
     spider"). -/
-def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label : String) :
+def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core φ : Expr) (label : String) :
     MetaM Verdict := do
-  let φ ← familyOf regionTy v core
   -- The three statements have to be BUILDABLE before they can be searched for: a wire that is not
   -- a `Relator` — a bifunctor applied to two arrows, say — has no `StrictNatural` to state, and
   -- saying so names the bead instead of leaving an elaboration error to stand for it.
   let some G ← (some <$> stackRelator regionTy armsW) <|> pure none
     | throwError "the bead `{label}` runs under wires that are not relators, so there is no \
-      naturality statement to look for: {← (armsW.foldl (· ++ ·.lanes) #[]).mapM Wire.label}"
+      naturality statement to look for: {← armsW.mapM Wire.label}"
   let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
     | throwError "the bead `{label}` makes wires that are not relators, so there is no \
-      naturality statement to look for: {← (legsW.foldl (· ++ ·.lanes) #[]).mapM Wire.label}"
+      naturality statement to look for: {← legsW.mapM Wire.label}"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
@@ -439,36 +436,44 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
 /-- The bare wires `ws` over the object `o`: born at the top edge, dying at the bottom, no bead.
     `⟦𝟙⟧`, and the lanes a factor merely runs past. -/
 def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
-  let ls := ws.foldl (· ++ ·.lanes) #[]
-  let lanes ← ls.mapM fun w => return { label := ← w.label, born := -1, dies := LIVE, wire := w }
+  let lanes ← ws.mapM fun w => return { label := ← w.label, born := -1, dies := LIVE, wire := w }
   let ix := Array.mk (List.range lanes.size)
   return { lanes, rows := #[], top := ix, bot := ix, otop := o, obot := o }
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, under `vpass` — the relators the bead runs under are part of its
-    naturality statement, where the `×` and a sibling bundle are only drawn past it. -/
+    naturality statement, where a lane merely drawn past it is not.
+
+    `fam` is the family the bead is a component of, where the caller already knows it: `φ×𝟙` varies
+    with the object UNDER its lane, not with an object variable of the statement, so no fvar of the
+    statement abstracts it.  Left off, the family is read off the statement's own object binders. -/
 def Diagram.bead (regionTy : Expr) (objVars : Array Expr) (vpass arms legs : Array Wire)
-    (src tgt : Cut) (core : Expr) : MetaM Diagram := do
-  let al := arms.foldl (· ++ ·.lanes) #[]
-  let ll := legs.foldl (· ++ ·.lanes) #[]
+    (ox oy core : Expr) (fam : Option Expr := none) : MetaM Diagram := do
   let mut lanes : Array Lane := #[]
-  for w in al do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
-  for w in ll do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
+  for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
+  for w in legs do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
   -- Only the wires of the bead's own naturality statement are asked about here.  A lane a `beside`
-  -- puts west of it cannot change the answer: `peelObj` refuses to make a lane of anything that
-  -- mentions an object variable, and the two peels that do not go through it — `F.map`'s relators
-  -- and a constant left factor's — are exactly the ones `interp` adds to `vpass`.
-  let wires := (vpass ++ arms ++ legs).foldl (· ++ ·.lanes) #[]
-  let fam ← if ← Meta.isDefEq src.o tgt.o then familyVar core src.o objVars wires else pure none
-  let vd ← match fam with
+  -- puts west of it cannot change the answer: it is either part of `vpass` or a lane the bead does
+  -- not touch, and a lane that MENTIONS an object variable is a different functor at each object,
+  -- which is what `familyVar` refuses.
+  let φ ← match fam with
+    | some φ => pure (some φ)
+    | none =>
+      if ← Meta.isDefEq ox oy then
+        match ← familyVar core ox objVars (vpass ++ arms ++ legs) with
+        | some v => some <$> familyOf regionTy v core
+        | none => pure none
+      else pure none
+  let vd ← match φ with
     | none => pure none
-    | some v => some <$> verdict regionTy (vpass ++ arms) (vpass ++ legs) core v (← plain core)
-  let top := Array.mk (List.range al.size)
-  let bot := Array.mk (List.range' al.size ll.size)
+    | some φ => some <$> verdict regionTy (vpass ++ arms) (vpass ++ legs) core φ (← plain core)
+  let top := Array.mk (List.range arms.size)
+  let bot := Array.mk (List.range' arms.size legs.size)
   let row : Row :=
-    { label := (← plain core), arms := top, legs := bot, obj := (← plain tgt.o),
-      src, tgt, shown := core, nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
-  return { lanes, rows := #[row], top, bot, otop := src.o, obot := tgt.o }
+    { label := (← plain core), arms := top, legs := bot, obj := (← plain oy),
+      src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
+      nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
+  return { lanes, rows := #[row], top, bot, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
     above it, and the two edge sentinels — `-1` the top, `LIVE` the bottom — do not move. -/
@@ -500,10 +505,8 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
   return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot }
 
 /-- `d` WEST of `e`.  The object wire is the EASTMOST one, so `e` owns it and `d` only runs past it;
-    that is also why a dot-less bar of `d` spans `e`'s top lanes and what the bar IS, is `shown×𝟙`
-    — `prod` being the product map's own head constant and the `𝟙` it pairs with, so the label is
-    spelled by the notation the declaration is written in and by no string surgery. -/
-def Diagram.beside (d e : Diagram) (prod : Option (Name × Expr)) : MetaM Diagram := do
+    a row of `d` therefore keeps its OWN ends and only picks up the object wire's new label. -/
+def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   let nt := d.top.size; let mt := e.top.size; let dn := d.lanes.size - nt; let nr := d.rows.size
   let dmap : Nat → Nat := fun i => if i < nt then i else i + mt
   let emap : Nat → Nat := fun j => if j < mt then nt + j else nt + dn + j
@@ -511,22 +514,8 @@ def Diagram.beside (d e : Diagram) (prod : Option (Name × Expr)) : MetaM Diagra
     { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
   let lanes := d.lanes.extract 0 nt ++ (e.lanes.extract 0 mt).map esh
     ++ d.lanes.extract nt d.lanes.size ++ (e.lanes.extract mt e.lanes.size).map esh
-  let east := e.top.map fun j => e.lanes[j]!.wire
   let obj ← plain e.otop
-  let mut drows : Array Row := #[]
-  for r in d.rows do
-    let mut r := { r with arms := r.arms.map dmap, legs := r.legs.map dmap, obj }
-    -- A bead with a dot sits on its OWN lane and its bar stops there; one WITHOUT rides the object
-    -- wire, so the bar reaches east over every lane between it and that wire.
-    if let some (n, i) := prod then
-      if !r.arms.isEmpty && r.nat.isNone && !east.isEmpty then
-        let shown ← try Meta.mkAppM n #[r.shown, i] catch ex =>
-          throwError "`{n}` does not take `{← plain r.shown}` and `{← plain i}` as its two arrows, \
-            so the bar over it cannot be labelled: {ex.toMessageData}"
-        r := { r with shown, label := (← plain shown),
-                      src := { r.src with ws := r.src.ws ++ east },
-                      tgt := { r.tgt with ws := r.tgt.ws ++ east } }
-    drows := drows.push r
+  let drows := d.rows.map fun r => { r with arms := r.arms.map dmap, legs := r.legs.map dmap, obj }
   let rows := drows ++ e.rows.map fun r => { r with arms := r.arms.map emap, legs := r.legs.map emap }
   return { lanes, rows, top := Array.mk (List.range (nt + mt)),
            bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot }
@@ -536,86 +525,68 @@ def Diagram.beside (d e : Diagram) (prod : Option (Name × Expr)) : MetaM Diagra
 
     * `⟦f≫g⟧` is `⟦f⟧` above `⟦g⟧`;
     * `⟦F(R)⟧` is `F`'s wires beside `⟦R⟧` — running past OUTSIDE it;
-    * `⟦φ×𝟙⟧` is `×` beside `⟦φ⟧` beside the right bundle, and `⟦𝟙×ψ⟧` is `×` beside the left
-      bundle beside `⟦ψ⟧`; `⟦φ×ψ⟧` is the interchange `⟦(φ×𝟙)(𝟙×ψ)⟧`, so the gate that the two
-      halves meet at one cut is `vcomp`'s and needs no second copy here.
+    * `⟦𝟙×ψ⟧` is the same thing for the lane `A×−`, `A×−` being a relator like any other and
+      `𝟙×ψ` its action on `ψ`; `⟦φ×𝟙⟧` is ONE bead on that lane, turning `A×−` into `A'×−`; and
+      `⟦φ×ψ⟧` is the interchange `⟦(φ×𝟙)(𝟙×ψ)⟧`, so the gate that the two halves meet at one cut
+      is `vcomp`'s and needs no second copy here.
 
     Comparing the two ends' wire STACKS cannot do this: `cons : [A]×[[A]] ⟶ [[A]]` and
     `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
-    does not.  What separates them is the factor's own form, which is what is read here.  A factor
-    whose two ends are DIFFERENT objects with the SAME stack is a re-bracketing of a product —
-    `assocl` — and a picture has no bracketing to redraw, so it is the identity picture. -/
+    does not.  What separates them is the factor's own form, which is what is read here. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (vpass : Array Wire) (inLeft : Bool) (e : Expr) : MetaM Diagram := do
+    (vpass : Array Wire) (e : Expr) : MetaM Diagram := do
   let fs := factors e
   if fs.size > 1 then
-    let mut d ← interp regionTy cat objVars vpass inLeft fs[0]!
+    let mut d ← interp regionTy cat objVars vpass fs[0]!
     for i in [1 : fs.size] do
-      d ← d.vcomp (← interp regionTy cat objVars vpass inLeft fs[i]!)
+      d ← d.vcomp (← interp regionTy cat objVars vpass fs[i]!)
     return d
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
       let ws := (wiresOf args[4]!).map Wire.rel
-      let d ← interp regionTy cat objVars (vpass ++ ws) inLeft args[args.size - 1]!
-      return ← (← Diagram.id ws d.otop).beside d none
+      let d ← interp regionTy cat objVars (vpass ++ ws) args[args.size - 1]!
+      return ← (← Diagram.id ws d.otop).beside d
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
-    let (ex, ey) ← homEnds e
-    let (ax, ox) ← peelObj objVars cat regionTy ex
-    let (ay, _) ← peelObj objVars cat regionTy ey
-    -- The head constant is how `beside` spells the `×𝟙` a bar reaching east of `φ` is.
+    -- The head constant is how a factor of `φ` is paired back with `𝟙` — the notation the
+    -- declaration is written in, and no string surgery.
     let .const n _ := e.getAppFn
-      | throwError "the product map `{← plain e}` is headed by no constant, so the bar over it \
-          cannot be spelled `×𝟙`"
-    let (bx, _) ← homEnds ψ
-    let one ← Meta.mkAppM ``Cat.id #[bx]
-    -- `×` is a functor out of a PRODUCT category, so an object of `𝒜×𝒜` is two BUNDLES of lanes
-    -- side by side and `φ×ψ` acts on one of them with `×` and the sibling bundle running past.
-    -- `vpass` is not extended: neither of those is part of the bead's own naturality statement,
-    -- and `𝟙×cons°` asked for a closure chain one step deeper than `cons°` itself.
-    if let some (Wire.pairW la ra) := ax[1]? then
-      if ← isIdArrow φ then
-        let dψ ← interp regionTy cat objVars vpass false ψ
-        return ← (← Diagram.id (#[ax[0]!] ++ la) dψ.otop).beside dψ none
-      let dφ ← interp regionTy cat objVars vpass false φ
-      let left ← dφ.beside (← Diagram.id ra ox) (some (n, one))
-      let left ← (← Diagram.id #[ax[0]!] left.otop).beside left none
-      if ← isIdArrow ψ then return left
-      -- Interchange: `φ×ψ` is `(φ×𝟙)(𝟙×ψ)`, so by the time `ψ` runs the left bundle is `φ`'s TARGET.
-      let some (Wire.pairW la' _) := ay[1]?
-        | throwError "the product map `{← plain e}` ends at `{← plain ey}`, which peels to \
-            {ay.size} wires whose second is no pairing, so `{← plain ψ}` has no bundle to run east of"
-      let dψ ← interp regionTy cat objVars vpass false ψ
-      return ← left.vcomp (← (← Diagram.id (#[ax[0]!] ++ la') dψ.otop).beside dψ none)
-    -- A CONSTANT left factor is a lane of its own, and `φ` then acts on the lanes below it.
-    if ← isIdArrow ψ then
-      let (rw, ro) ← peelObj objVars cat regionTy bx
-      let dφ ← interp regionTy cat objVars vpass true φ
-      return ← dφ.beside (← Diagram.id rw ro) (some (n, one))
+      | throwError "the product map `{← plain e}` is headed by no constant, so its left factor \
+          cannot be paired back with `𝟙`"
+    let (a, a') ← homEnds φ
+    let (b, _) ← homEnds ψ
+    -- `𝟙×ψ` IS `(A×−).map ψ`: the left factor is one lane and `ψ` runs under it, so this is the
+    -- `F.map` route and the verdict of `ψ` closes through the same chain as any `F(R)`.
     if ← isIdArrow φ then
-      let (x, _) ← homEnds φ
-      let ls ← peelLefts regionTy x
-      let dψ ← interp regionTy cat objVars (vpass ++ ls) inLeft ψ
-      return ← (← Diagram.id ls dψ.otop).beside dψ none
+      let l := Wire.timesL a
+      let d ← interp regionTy cat objVars (vpass.push l) ψ
+      return ← (← Diagram.id #[l] d.otop).beside d
+    let one ← Meta.mkAppM ``Cat.id #[b]
+    -- Interchange, `φ×ψ = (φ×𝟙)(𝟙×ψ)`, and functoriality, `(φ₁φ₂)×𝟙 = (φ₁×𝟙)(φ₂×𝟙)`: both split
+    -- the map into product maps this same case then draws, one bead each.
+    let fφ := factors φ
+    if !(← isIdArrow ψ) || fφ.size > 1 then
+      let mut parts : Array Expr := #[]
+      for f in fφ do parts := parts.push (← Meta.mkAppM n #[f, one])
+      unless ← isIdArrow ψ do parts := parts.push (← Meta.mkAppM n #[← Meta.mkAppM ``Cat.id #[a'], ψ])
+      if parts.size > 1 then
+        let mut d ← interp regionTy cat objVars vpass parts[0]!
+        for i in [1 : parts.size] do d ← d.vcomp (← interp regionTy cat objVars vpass parts[i]!)
+        return d
+    -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`.  Its family runs over the object
+    -- UNDER that lane, which no binder of the statement names, so it is built here and handed to
+    -- `Diagram.bead`; the lanes east of it are what that object is, and only run past.
+    let (ax, ox) ← peelObj objVars cat regionTy (← homEnds e).1
+    let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
+    let fam ← Meta.withLocalDeclD `Y regionTy fun Y => do
+      Meta.mkLambdaFVars #[Y] (← Meta.mkAppM n #[φ, ← Meta.mkAppM ``Cat.id #[Y]])
+    let d ← Diagram.bead regionTy objVars #[] #[Wire.timesL a] #[Wire.timesL a'] ox oy e (some fam)
+    return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
-  let arms ← if inLeft then peelLefts regionTy x else pure ax
-  let legs ← if inLeft then peelLefts regionTy y else pure ay
-  -- A re-bracketing is the ONE factor a picture does not show: the same LANES over the same object
-  -- at both ends, `(A×B)×C` and `A×(B×C)` differing only in a tree a picture has no room for.  The
-  -- object has to be compared too — `⦇R⦈ : t F ⟶ c` has no lanes at either end and is not invisible.
-  let al := arms.foldl (· ++ ·.lanes) #[]
-  let ll := legs.foldl (· ++ ·.lanes) #[]
-  if (← Meta.isDefEq ox oy) && al.size == ll.size && !(← Meta.isDefEq x y) then
-    let mut same := true
-    for i in [0 : al.size] do
-      unless ← Wire.beq al[i]! ll[i]! do same := false
-    -- Each edge keeps its OWN spelling of the object: the two are defeq, and the picture writes
-    -- what the arrow's end says rather than what the other end happens to print as.
-    if same then return { ← Diagram.id arms ox with obot := oy }
-  Diagram.bead regionTy objVars vpass arms legs { ws := ax, o := ox } { ws := ay, o := oy } e
+  Diagram.bead regionTy objVars vpass ax ay ox oy e
 
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be. -/
@@ -627,7 +598,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   -- naming an `isDefEq` that is not the expensive one.  What bounds the work is
   -- `CANDIDATE_HEARTBEATS` on each match the search tries, and `scripts/cap` on the process.
   withTheReader Core.Context (fun c => { c with maxHeartbeats := 0 }) do
-  let d ← interp regionTy cat objVars #[] false side
+  let d ← interp regionTy cat objVars #[] side
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
 
