@@ -13,6 +13,8 @@
   the same place.  The numbers are IntroString's own (pp. 46/75/79), measured there and not chosen.
 -/
 import diag.tool.ExprReader
+-- The note's spelling of a term, shared with the circuit and commutative pictures.
+import diag.tool.Label
 
 open Lean
 
@@ -93,6 +95,18 @@ def cutText (c : Cut) : MetaM String := do
   let ls ← c.ws.mapM Wire.label
   return String.intercalate "|" (ls.push (← plain c.o)).toList
 
+/-- WHAT THE ENVIRONMENT PROVED ABOUT A BEAD, as a type and not a string.  The emitter matches on
+    these four, so a verdict added here is a compile error until the mark it draws is decided —
+    where a default branch silently drew the new one as an old one (`oplax` as `lax`). -/
+inductive Mark where
+  | strict | lax | oplax | spider
+  deriving Inhabited, DecidableEq
+
+/-- The word the drawing side reads the mark by.  One spelling, here: the panel's `nat:` row cites
+    the same word the bead's 6th element carries. -/
+def Mark.key : Mark → String
+  | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .spider => "spider"
+
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
     declaration says it is natural. -/
 structure Row where
@@ -105,7 +119,7 @@ structure Row where
       lanes too, so the two are the same list read from the two sides. -/
   src   : Cut
   tgt   : Cut
-  nat   : Option String := none
+  nat   : Option Mark := none
   /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
       bead the environment REFUTES, which draws no dot and is a claim all the same. -/
   natLean : Option Name := none
@@ -250,11 +264,13 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     let dot : Option Float :=
       if xsd.isEmpty || r.nat.isNone then none
       else some (roundTo 4 ((minA xsd 1e9 + maxA xsd (-1e9)) / 2.0))
-    -- The 6th element is the MARK: `"lax"` and `"oplax"` a hollow dot — the square commutes one way
-    -- only, and which way is the cert's business — `"spider"` no dot at all.
+    -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
+    -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
+    -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
+    let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
     let mark := match r.nat with
-      | some "lax" => ", \"lax\"" | some "oplax" => ", \"oplax\""
-      | some "spider" => ", \"spider\"" | _ => ""
+      | none | some .strict => ""
+      | some .lax => key .lax | some .oplax => key .oplax | some .spider => key .spider
     beads := beads.push <| match reach, dot with
       | none, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
       | none, some d =>
@@ -268,7 +284,7 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     -- see that the search ran and came back empty, which an absent row cannot say.
     if r.nat.isSome || r.natLean.isSome then
       nats := nats.push
-        ("(" ++ str r.label ++ ", " ++ str (r.nat.getD "not-lax") ++ ", "
+        ("(" ++ str r.label ++ ", " ++ str ((r.nat.map Mark.key).getD "not-lax") ++ ", "
           ++ str ((r.natLean.map Name.toString).getD "") ++ ")")
   let lanecode : Lane → String := fun l =>
     let birth := if l.born < 0 then "\"top\"" else num ys[l.born.toNat]!
@@ -411,7 +427,7 @@ def FUEL : Nat := 3
     where nothing is proved either way, or none where the family is REFUTED and the bead rides the
     object wire — and the declaration that says so, which a spider has none of. -/
 structure Verdict where
-  mark : Option String
+  mark : Option Mark
   lean : Option Name
   deriving Inhabited
 
@@ -430,7 +446,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- no proposition to search for, and that is a SPIDER: the tool looked, there was nothing to look
   -- at, and the bead makes no claim.  Naming it an error would fail the whole panel over one bead.
   let some (G, F) ← (some <$> relatorsOf cat regionTy φ) <|> pure none
-    | return { mark := some "spider", lean := none }
+    | return { mark := some .spider, lean := none }
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
@@ -444,13 +460,13 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   let br ← bridges
   let found : Option Verdict ← id do
       if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
-        return some { mark := some "strict", lean := n }
+        return some { mark := some .strict, lean := n }
       if let some (n, _) ← findSquare br strict must FUEL then
-        return some { mark := some "strict", lean := n }
+        return some { mark := some .strict, lean := n }
       if let some (n, _) ← findProof br lax ``Freyd.Alg.LaxNatural {} FUEL then
-        return some { mark := some "lax", lean := n }
+        return some { mark := some .lax, lean := n }
       if let some (n, _) ← findSquare br lax must FUEL then
-        return some { mark := some "lax", lean := n }
+        return some { mark := some .lax, lean := n }
       -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
       -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot
       -- whose square points the other way, and the `nat:` row is where the direction is written.
@@ -459,14 +475,14 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
       -- ever produces — and that closure's own hypothesis IS searched as a square, through
       -- `discharge`.  A whole extra sweep per bead is what the H panels' budget cannot pay.
       if let some (n, _) ← findProof br oplax ``Freyd.Alg.OpLaxNatural {} FUEL then
-        return some { mark := some "oplax", lean := n }
+        return some { mark := some .oplax, lean := n }
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
         return some { mark := none, lean := n }
       return none
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
-  return found.getD { mark := some "spider", lean := none }
+  return found.getD { mark := some .spider, lean := none }
 
 /-! ### The four constructors — nothing else builds a `Diagram` -/
 
@@ -489,9 +505,9 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
     became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`).  A constant that wants its index
     dropped drops it in its own rule, beside itself. -/
 def beadLabel (core : Expr) : Option Expr → MetaM String
-  | none => plain core
+  | none => label core
   | some v => do
-    plain (← Meta.transform core (post := fun x => match x with
+    label (← Meta.transform core (post := fun x => match x with
       | .app f a => return if a == v && f.getAppFn.isFVar then .done f else .continue
       | _ => return .continue))
 
@@ -582,6 +598,10 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     does not.  What separates them is the factor's own form, which is what is read here. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (e : Expr) : MetaM Diagram := do
+  -- A constant the note draws OPENED is opened first, so the picture is of the body the note
+  -- writes and not of one bead carrying the name Lean prints.
+  let e' ← openNoted e
+  if e' != e then return ← interp regionTy cat objVars vpass e'
   let fs := factors e
   if fs.size > 1 then
     let mut d ← interp regionTy cat objVars vpass fs[0]!
@@ -594,6 +614,12 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let ws := (wiresOf args[4]!).map Wire.rel
       let d ← interp regionTy cat objVars (vpass ++ ws) args[args.size - 1]!
       return ← (← Diagram.id ws d.otop).beside d
+  -- AN IDENTITY IS NO BEAD: `𝟙` is the bare wire, so its picture is the lanes it runs on with
+  -- nothing drawn on them.  On the HEAD, so every identity of every object goes the same way.
+  | (``Cat.id, _) =>
+    let (x, _) ← homEnds e
+    let (ax, ox) ← peelObj objVars cat regionTy x
+    return ← Diagram.id ax ox
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
     -- The head constant is how a factor of `φ` is paired back with `𝟙` — the notation the
