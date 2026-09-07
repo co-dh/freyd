@@ -803,10 +803,7 @@ def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
 /-- Last resort: Lean's pretty printer, on one line.  The repo's namespaces carry no information
     inside a picture of the repo's own algebra, so they come off. -/
 def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr e)
-  -- Both the fully qualified form and the form the printer shortens to under `open Freyd`.
-  let s := s.replace "Freyd." "" |>.replace "Diag.CartBicat." "" |>.replace "Diag." ""
-    |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
+  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -1471,7 +1468,8 @@ def main (args : List String) : IO UInt32 := do
       |>.insert `maxHeartbeats (.ofNat 1000000)
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default,
-      options := opts, openDecls := scopes.map (.simple · []) }
+      options := opts,
+      openDecls := (scopes ++ StrDiag.repoNamespaces env).map (.simple · []) }
   let mut status : UInt32 := 0
   for arg in args do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the

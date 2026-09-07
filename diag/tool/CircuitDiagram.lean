@@ -107,9 +107,7 @@ repo's own algebra.  The book's own spellings (`cons`, `nil`, `[A]`) are structu
 the term, never a table of strings: `cons` is the arrow whose graph is `List.cons`. -/
 
 def plain (e : Expr) : MetaM String := do
-  let s := toString (← Meta.ppExpr e)
-  let s := s.replace "Freyd.Alg.RelSet." "" |>.replace "Freyd.Alg." "" |>.replace "Freyd." ""
-    |>.replace "Alg.RelSet." "" |>.replace "Alg." "" |>.replace "RelSet." ""
+  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- The leading identifier of a label, which is what decides whether an applied functor needs a

@@ -19,6 +19,14 @@ open Lean
 
 namespace Freyd.StrDiag
 
+/-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
+    PRINTER: it knows which namespaces are open and keeps exactly the qualification two constants
+    sharing a name need to be told apart, where cutting namespaces off the printed string knows
+    only the ones someone wrote into the chain and leaves `MSS.geq` for every one it does not.
+    Read off the environment, so a namespace added tomorrow needs no edit here. -/
+def repoNamespaces (env : Environment) : List Name :=
+  env.getNamespaceSet.toList.filter fun n => n.getRoot == `Freyd
+
 /-- A one-field record IS its field as far as a picture is concerned: the object `⟨X⟩` of a
     category of sets is the set `X`, and printing the wrapper makes every lane label unreadable.
     Generic over the environment — any constructor with exactly one field, no list of names.
@@ -43,8 +51,6 @@ def plain (e : Expr) : MetaM String := do
   -- A label is the note's spelling, not Lean syntax: a name the parser would need escaped (`prefix`
   -- is a keyword) prints bare, so the `«»` the formatter wraps it in are dropped.
   let s := (toString (← Meta.ppExpr (← unwrapRecords e))).replace "«" "" |>.replace "»" ""
-  let s := s.replace "Freyd.Alg.RelSet." "" |>.replace "Freyd.Alg." "" |>.replace "Freyd." ""
-    |>.replace "Alg." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- The source and target of a hom type `a ⟶ b`. -/
