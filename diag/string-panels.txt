@@ -52,7 +52,7 @@ Freyd.Alg.RelSet.Party.party_laws.lhs,Freyd.Alg.RelSet.Party.party_laws.rhs,Frey
 Freyd.Alg.Vec.genFold_natural.lhs,Freyd.Alg.Vec.genFold_natural.rhs	13.5.2a/vec-fold-diag	⦇gen⦈ = (𝟙×⦇gen⦈)gen
 -	13.5.3a/vec-q-diag	(𝟙×(moves trans Vec(n)(est(R))))zip	# candidates: Freyd.Alg.Vec.Rel.moves_lax_natural Freyd.Alg.Vec.moves Freyd.Alg.Vec.Rel.trans_natural
 Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs,Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs,Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs,Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs	13.5.4a/vec-cyl-laws	paths est(R) = ⦇gen⦈concat est(R) = ⦇gen⦈Vec(n)(est(R))est(R) = ⦇Q⦈est(R)	# the note reads the chain backwards, so the selectors run from the last step to the first
-Freyd.Alg.Vec.Rel.cyl_fusion.lhs,Freyd.Alg.Vec.Rel.cyl_fusion.rhs	13.5.4b/vec-cyl-fusion	gen Vec(n)(est(R)) = (𝟙×Vec(n)(est(R)))Q
+Freyd.Alg.Vec.Rel.cyl_fusion.rhs,Freyd.Alg.Vec.Rel.cyl_fusion.lhs	13.5.4b/vec-cyl-fusion	gen Vec(n)(est(R)) = (𝟙×Vec(n)(est(R)))Q
 Freyd.Alg.RelSet.Van.secure_bmax.lhs,Freyd.Alg.RelSet.Van.secure_bmax.rhs	13.6.1a/van-secure	secure⟨ceiling,ceiling−floor⟩bmax = ⟨ceiling,ceiling−floor⟩bmax ≤N
 Freyd.Alg.RelSet.Van.secure_prefix.lhs,Freyd.Alg.RelSet.Van.secure_prefix.rhs	13.6.1b/van-prefix	secure prefix = prefix secure
 Freyd.Alg.RelSet.Van.new_eq.rhs,Freyd.Alg.RelSet.Van.glue_eq.rhs,Freyd.Alg.RelSet.Van.old_eq.rhs	13.6.2a/van-algebras	(wrap×𝟙)cons = (𝟙×cons°)assocl (cons×𝟙)cons = (𝟙×cons°)assocl ((cons secure)×𝟙)cons
