@@ -119,7 +119,7 @@ theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : 
 
 /-- `Λ(|R|) = (|Λ(R·F∈)|)` (B&dM p.121): the power-transpose of the relational catamorphism
     is exactly the map catamorphism of the transposed algebra it was built from. -/
-theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+public theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     Λ (relCata R) = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) := by
   rw [relCata_unfold]
   generalize hu_def : I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) = u
