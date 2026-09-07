@@ -1,0 +1,114 @@
+#!/bin/sh
+# circuit-check — the circuit diagrams' gate.  Every panel the note draws is an obligation, and the
+# record answering it is a line of `diag/circuit-panels.txt`.
+#
+#   ./scripts/circuit-check
+#
+# ENUMERATED FROM THE NOTE, NOT FROM THE FILE.  The panel list comes from the NOTE: `cpanel` emits
+# one `metadata((kind: "circuit", cert: …))` per panel, so `typst query` hands back every panel the
+# note draws, in document order, with its own cert.  `diag/circuit-panels.txt` is then read in that
+# same order and must answer panel for panel — deleting a line does not drop an obligation, it
+# leaves a panel with no record and fails the gate.
+#
+# NOTHING HERE READS THE `.typ` AS TEXT.  Both halves of every comparison are drawn, not parsed:
+#   the note's half   `scripts/circuit` rebuilt from the panel's OWN cert — the same rebuild
+#                     `circuit --compare` gates at 0 drift, so it IS the note's picture;
+#   the generated half `diag-export --circuit <selector>`, from the elaborated Lean statement;
+#   the comparison    `scripts/svg-diff` over the two compiled SVGs — path data, not labels.
+# Both halves render through `diag/cpanel.typ`, so a difference is a difference of CONTENT.
+#
+# ONE LINE PER PANEL:
+#   ok            the two pictures carry the same primitives
+#   DIFF          they do not; the report is under .lake/build/circuit-check/
+#   NO-DECL       the line names no declaration (`-`) — a calculation step, which is no statement
+#   CANNOT-DRAW   the exe refused the selector; its own message follows
+# Exit is non-zero on any DIFF or CANNOT-DRAW.  NO-DECL is reported, not failed: it is a panel
+# waiting for a lemma, and the count is what says how much of the note the generator can reach.
+set -e
+cd "$(dirname "$0")/.." || exit 1
+OUT=.lake/build/circuit-check
+NOTE=diag/allegory-axioms.typ
+PANELS=diag/circuit-panels.txt
+rm -rf "$OUT"
+mkdir -p "$OUT/note" "$OUT/gen"
+rc=0
+
+typst query --root . "$NOTE" metadata --field value > "$OUT/meta.json"
+CERTS='[.[] | select(type == "object" and .kind == "circuit") | .cert] | .[]'
+jq -r "$CERTS | .expect" "$OUT/meta.json" > "$OUT/expect"
+# The cert's own fields as `scripts/circuit`'s arguments, shell-quoted by jq: `--at` takes the keys
+# that are neither the formula nor the ports nor the three named options — the table constants the
+# row instantiates, which `draw` merges back into the cert it emits.
+jq -r "$CERTS"' | ["--src", .src, "--tgt", .tgt]
+  + (if .sigs then ["--sigs", .sigs] else [] end)
+  + (if .mu then ["--mu", .mu] else [] end)
+  + (if .polys then ["--polys", .polys] else [] end)
+  + ((del(.expect, .src, .tgt, .sigs, .mu, .polys) | to_entries
+      | map(.key + ":" + .value)) as $at
+     | if ($at | length) > 0 then ["--at", ($at | join(" "))] else [] end)
+  + [.expect] | @sh' "$OUT/meta.json" > "$OUT/args"
+
+awk -F' [|] ' '!/^#/ && NF { print $1 }' "$PANELS" > "$OUT/sel"
+awk -F' [|] ' '!/^#/ && NF { print $2 }' "$PANELS" > "$OUT/lab"
+awk -F' [|] ' '!/^#/ && NF { print $3 }' "$PANELS" > "$OUT/want"
+diff -u "$OUT/want" "$OUT/expect" || {
+  echo "circuit-check: $PANELS does not answer the note panel for panel — a minus line is a record" \
+    "for a panel the note no longer draws, a plus line a panel with no record at all" >&2
+  exit 1
+}
+
+# One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
+# so a second invocation pays for the whole `Freyd` import again.  The FILE is the answer to
+# "did it draw" — the ones about to be drawn are deleted first, so a stale one cannot stand in.
+awk '$1 != "-" { print $1 }' "$OUT/sel" | sort -u > "$OUT/draw"
+while read -r s; do rm -f "diag/generated/circuit/$s.typ"; done < "$OUT/draw"
+# shellcheck disable=SC2046
+./scripts/diag-export --circuit $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || true
+
+n=$(wc -l < "$OUT/expect")
+i=0
+while [ "$i" -lt "$n" ]; do
+  i=$((i + 1))
+  sel=$(sed -n "${i}p" "$OUT/sel")
+  lab=$(sed -n "${i}p" "$OUT/lab")
+  exp=$(sed -n "${i}p" "$OUT/expect")
+  head="$lab  $exp"
+  if [ "$sel" = "-" ]; then
+    echo "NO-DECL      $head"
+    continue
+  fi
+  gen="diag/generated/circuit/$sel.typ"
+  if [ ! -f "$gen" ]; then
+    echo "CANNOT-DRAW  $head  --  $(grep -F -- "$sel:" "$OUT/export.log" | head -1)"
+    rc=1
+    continue
+  fi
+  {
+    echo '#import "/diag/cpanel.typ": cpanel'
+    echo '#set page(width: auto, height: auto, margin: 12pt)'
+    echo '#set text(size: 10pt)'
+  } > "$OUT/note/$i.typ"
+  if ! eval "./scripts/circuit $(sed -n "${i}p" "$OUT/args")" >> "$OUT/note/$i.typ" \
+       2> "$OUT/note/$i.err"; then
+    echo "CANNOT-DRAW  $head  --  the NOTE's own cert no longer draws: $(head -1 "$OUT/note/$i.err")"
+    rc=1
+    continue
+  fi
+  if ! typst compile --root . "$OUT/note/$i.typ" "$OUT/note/$i.svg" > "$OUT/note/$i.log" 2>&1; then
+    echo "CANNOT-DRAW  $head  --  the note's panel does not compile, see $OUT/note/$i.log"
+    rc=1
+    continue
+  fi
+  if ! typst compile --root . "$gen" "$OUT/gen/$sel.svg" > "$OUT/gen/$sel.log" 2>&1; then
+    echo "CANNOT-DRAW  $head  --  $sel does not compile, see $OUT/gen/$sel.log"
+    rc=1
+    continue
+  fi
+  if ./scripts/svg-diff "$OUT/note/$i.svg" "$OUT/gen/$sel.svg" > "$OUT/note/$i.diff" 2>&1; then
+    echo "ok           $head"
+  else
+    echo "DIFF         $head  --  $sel: $(wc -l < "$OUT/note/$i.diff") lines in $OUT/note/$i.diff"
+    rc=1
+  fi
+done
+exit $rc
