@@ -199,6 +199,34 @@ def projIndex (body : Expr) : Option Nat :=
     | (``Prod.snd, _) => some 1
     | _ => none
 
+/-- The name of a value computed FROM THE INPUT, in diagram order: `p(π₁ s)` is `π₁p` — first the
+    projection, then the test.  The input itself is the identity and contributes nothing, and an
+    argument that does not mention the input is a PARAMETER of the function, not a step of the
+    computation, so it stays inside the function's own name. -/
+partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
+  if x == .fvar s then return ""
+  match x with
+  | .proj ``Prod i st => return (← valLabel s st) ++ (if i == 0 then "π₁" else "π₂")
+  | _ =>
+    let args := x.getAppArgs
+    match x.getAppFnArgs.1, args.back? with
+    | ``Prod.fst, some st => return (← valLabel s st) ++ "π₁"
+    | ``Prod.snd, some st => return (← valLabel s st) ++ "π₂"
+    | _, _ =>
+      let deps := args.filter fun a => a.containsFVar s
+      if deps.size == 1 then
+        let rest := args.filter fun a => !a.containsFVar s
+        return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
+      plain x
+
+/-- Beta at the head, to a fixed point.  An alternative reconstructed from a `match` arrives as a
+    lambda applied to the summand's factors, and the lambda it names may itself be one; nothing
+    beyond beta is reduced, because a NUMERAL delta-reduces to a constructor and would then read as
+    the carrier's empty structure map. -/
+partial def betaHead (e : Expr) : Expr :=
+  let e' := e.headBeta
+  if e' == e then e else betaHead e'
+
 /-- Whether the labeller has a spelling of its own for this arrow: those keep their name and are
     never unfolded, because the name IS what the note writes on the box. -/
 def isNamed (e : Expr) : Bool :=
@@ -219,35 +247,70 @@ def hasClause (e : Expr) : Bool :=
   | ``Freyd.Alg.RelSet.rprodMap | ``Freyd.Alg.prodMap | ``Freyd.Functor.map => true
   | _ => false
 
+mutual
+
+/-- The BODY of a map, named as an arrow out of the input `s`: a body that does not mention `s` is
+    a constant, one that projects is a `π`, and a constructor fed the input's factors is the
+    carrier's own structure map. -/
+partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
+  -- WHAT THE MAP DOES, not how it was written: an arm reconstructed from a `match` arrives as the
+  -- alternative applied to the summand's factors.  The fallback still prints what was written.
+  let body := betaHead body₀
+  match projIndex body with
+  | some 0 => return "π₁"
+  | some _ => return "π₂"
+  | none =>
+    if let some g ← guardLabel s body then return g
+    -- The book's names for the two structure maps of a list-like carrier, read off the TERM:
+    -- a CONSTRUCTOR fed both factors of the input pair is `cons`, and one fed nothing from the
+    -- input is `nil`.  Nothing here knows `List`: the next carrier built the same way gets the
+    -- same names without a line being added.
+    let isCtor ← match body.getAppFn with
+      | .const n _ => match (← getEnv).find? n with
+        | some (.ctorInfo _) => pure true
+        | _ => pure false
+      | _ => pure false
+    if isCtor && !body.containsFVar s then return "nil"
+    if isCtor && (body.find? fun x => projIndex x == some 0).isSome
+        && (body.find? fun x => projIndex x == some 1).isSome then return "cons"
+    if body₀.containsFVar s then plain f else plain body₀
+
+/-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note
+    writes it into the box's own name: `(π₁p→cons,⊸ nil)`, the test, the arm taken when it holds,
+    and the other.  The arms are read by REDUCING the matcher at each value of `Bool`, so nothing
+    here depends on the order the alternatives were written in or on how the `match` compiled. -/
+partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := do
+  -- A step is a `def` around its own `match`, so the matcher is behind one delta; the ARMS are then
+  -- taken by `whnfCore`, which fires the matcher without unfolding a numeral into a constructor.
+  let some ma ← Meta.matchMatcherApp? (← Meta.whnfD body₀) | return none
+  unless ma.discrs.size == 1 && ma.alts.size == 2 && ma.remaining.isEmpty do return none
+  unless (← Meta.whnfD (← Meta.inferType ma.discrs[0]!)).isConstOf ``Bool do return none
+  let hd := mkAppN (mkConst ma.matcherName ma.matcherLevels.toList) ma.params
+  -- An arm that ignores the input DISCARDS its strands, which is what `⊸` says; at a `𝟏` input
+  -- there is nothing to discard and the constant stands alone.
+  let ws := ((← typeObj (← s.getType)).wires.toOption.getD #[])
+  let arm (v : Name) : MetaM String := do
+    let b ← Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
+    let l ← bodyLabel s b (← Meta.mkLambdaFVars #[.fvar s] b)
+    return (if b.containsFVar s || ws.isEmpty then l else "⊸ " ++ l)
+  return some ("(" ++ (← valLabel s ma.discrs[0]!) ++ "→" ++ (← arm ``Bool.true) ++ ","
+    ++ (← arm ``Bool.false) ++ ")")
+
 /-- The label of a MAP given by its function.  A cons cell is `cons`, a projection its `π`, a
     constant the thing it creates — each read off the function's own body, so the next map built
     the same way gets the same name without anything being added here. -/
-def mapLabel (f : Expr) : MetaM String := do
+partial def mapLabel (f : Expr) : MetaM String := do
   let f ← Meta.whnfD f
-  match f with
-  | .lam _ _ body _ =>
-    match projIndex body with
-    | some 0 => return "π₁"
-    | some _ => return "π₂"
-    | none =>
-      -- The book's names for the two structure maps of a list-like carrier, read off the TERM:
-      -- a CONSTRUCTOR fed both factors of the input pair is `cons`, and one fed nothing from the
-      -- input is `nil`.  Nothing here knows `List`: the next carrier built the same way gets the
-      -- same names without a line being added.
-      let isCtor ← match body.getAppFn with
-        | .const n _ => match (← getEnv).find? n with
-          | some (.ctorInfo _) => pure true
-          | _ => pure false
-        | _ => pure false
-      if isCtor && !body.hasLooseBVars then return "nil"
-      if isCtor && (body.find? fun x => projIndex x == some 0).isSome
-          && (body.find? fun x => projIndex x == some 1).isSome then return "cons"
-      if body.hasLooseBVars then plain f else plain body
-  | _ =>
-    match f.getAppFnArgs with
-    | (``Prod.fst, _) => return "π₁"
-    | (``Prod.snd, _) => return "π₂"
-    | _ => plain f
+  if f.isLambda then
+    return ← Meta.lambdaBoundedTelescope f 1 fun xs body => do
+      let some x := xs[0]? | plain f
+      bodyLabel x.fvarId! body f
+  match f.getAppFnArgs with
+  | (``Prod.fst, _) => return "π₁"
+  | (``Prod.snd, _) => return "π₂"
+  | _ => plain f
+
+end
 
 /-- The label a box carries.  A MAP GIVEN BY ITS FUNCTION is named from that function's own body —
     a question about the map, which only this functor asks — and everything else is the note's
@@ -373,6 +436,40 @@ def wiresOf (o : Obj) : MetaM (Array Obj) :=
   match o.wires with
   | .ok ws => return ws
   | .error m => throwError m
+
+/-- The fork's `open` generator: the coproduct arrives as ONE wire and the arm splits or ends it
+    according to its summand. -/
+def openPic (src s : Obj) : MetaM Pic := return mkPic "open" #[src] (← wiresOf s) src s true #[]
+
+/-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
+    peeled the way a tuple pattern binds it. -/
+partial def factors (s ty : Expr) (n : Nat) : MetaM (Array Expr) := do
+  if n == 0 then return #[]
+  if n == 1 then return #[s]
+  match (← Meta.whnfD ty).getAppFnArgs with
+  | (``Prod, #[_, b]) => return #[.proj ``Prod 0 s] ++ (← factors (.proj ``Prod 1 s) b (n - 1))
+  | _ => throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which is not a \
+      product of that many factors"
+
+/-- One alternative as a map OUT OF ITS SUMMAND, which is what an arm of the tape draws. -/
+def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
+  Meta.withLocalDeclD `s ty fun s => do
+    Meta.mkLambdaFVars #[s] (mkAppN alt (← factors s ty n)).headBeta
+
+/-- The arms of a map given by a `match` ON ITS INPUT at a coproduct.  `matchMatcherApp?` reads the
+    discriminant, the alternatives and their arities off the elaborated term and the coproduct off
+    the discriminant's TYPE, so any `match` written this way — at any coproduct, any arity — is the
+    tape, and no `def`'s name appears here. -/
+def matchArms (fw : Expr) : MetaM (Option (Array Expr)) := do
+  unless fw.isLambda do return none
+  Meta.lambdaBoundedTelescope fw 1 fun xs body => do
+    let some u := xs[0]? | return none
+    let some ma ← Meta.matchMatcherApp? body | return none
+    unless ma.discrs.size == 1 && ma.discrs[0]! == u && ma.alts.size == 2
+      && ma.altNumParams.size == 2 && ma.remaining.isEmpty do return none
+    let (``Sum, #[a, b]) := (← Meta.whnfD (← Meta.inferType u)).getAppFnArgs | return none
+    return some #[← armFun ma.alts[0]! a ma.altNumParams[0]!,
+      ← armFun ma.alts[1]! b ma.altNumParams[1]!]
 
 /-- A DEFINED arrow opened to its body, on the same test `leaf` uses: a name the labeller keeps is
     never opened, and a body with no clause has no circuit inside it.  Every clause that matches on
@@ -595,16 +692,24 @@ partial def stackPic (fs : Array Expr) (src tgt : Obj) : MetaM Pic := do
 
 /-- §3 row 13.  The coproduct arrives as ONE wire, the fork being what opens it; each arm opens
     that wire into its summand's strands, and the seam after the generator names them. -/
-partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pic := do
+partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pic :=
+  tapePic src tgt fun i s =>
+    armParts (if i == 0 then f else g) src s (if i == 1 then fuse else none) (opened := true)
+
+/-- The tape itself: the fork, its two arms, the join.  How an arm is DRAWN is the caller's — a
+    junction draws its two arrows, a map's `match` its two alternatives — and what they share is
+    the fork: the coproduct arrives as one wire, the arm's `open` generator splits or ends it, and
+    the seam after that generator names the summand's strands. -/
+partial def tapePic (src tgt : Obj) (arm : Nat → Obj → MetaM (Array Pic × Array Obj)) :
+    MetaM Pic := do
   let ss := src.parts
   if ss.size != 2 then
     throwError "a case forks {ss.size} summands, and the tape fork draws two"
   let mut bodies : Array Pic := #[]
   let mut isMap := true
-  let arms : Array (Expr × Obj × Bool) := #[(f, ss[0]!, false), (g, ss[1]!, true)]
-  for arm in arms do
-    let (br, s, last) := (arm.1, arm.2.1, arm.2.2)
-    let (items, objs) ← armParts br src s (if last then fuse else none) (opened := true)
+  for i in [0 : 2] do
+    let s := ss[i]!
+    let (items, objs) ← arm i s
     let ws ← wiresOf s
     let seams := (if ws.isEmpty then #[] else #[(0, ws.map (·.label))])
       ++ (seamsOf objs).filter (·.1 != 0)
@@ -627,7 +732,7 @@ partial def armParts (br : Expr) (src s : Obj) (fuse : Option Expr) (opened : Bo
     | some r => do let pre ← fusedStack s r; pure (#[pre] ++ items, #[s] ++ objs)
     | none => pure (items, objs)
   if !opened then return (items, objs)
-  return (#[mkPic "open" #[src] (← wiresOf s) src s true #[]] ++ items, #[src] ++ objs)
+  return (#[← openPic src s] ++ items, #[src] ++ objs)
 
 /-- `.inl`/`.inr` on a route: ONE arm of the fork at the head of the run, drawn with the summand as
     the SOURCE — what a panel draws when the other arm is a constant and carries none of the law's
@@ -689,8 +794,16 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
     and creates its value; a projection ends the factors it drops at a dot and crosses the one it
     keeps, costing no box at all; anything else is a rectangle. -/
 partial def graphPic (f : Expr) (src tgt : Obj) : MetaM Pic := do
-  let ws ← wiresOf src
   let fw ← Meta.whnfD f
+  -- §3 row 13 AT A MAP: a `match` on the input at a coproduct is the SAME tape `[f,g]` draws — the
+  -- junction is the same object, written the other way round — so it forks here rather than
+  -- collapsing to one box carrying the `def`'s name.
+  if src.kind == .sum then
+    if let some arms ← matchArms fw then
+      return ← tapePic src tgt fun i s => do
+        let p ← graphPic arms[i]! s tgt
+        return (#[← openPic src s, p], #[src, s, p.tgt])
+  let ws ← wiresOf src
   match fw with
   | .lam _ _ body _ =>
     if !body.hasLooseBVars then
