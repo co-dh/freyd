@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -119,6 +119,16 @@ scan-generated: $(STAMP)
 	@test -n "$(wildcard diag/generated/string/*.typ)" || \
 	  { echo "no diag/generated/string/*.typ — draw one with ./scripts/diag-export --string"; exit 1; }
 	for f in diag/generated/string/*.typ; do ./scripts/scanline --strict "$$f" || exit 1; done
+
+# Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
+# obligations and each one's basename IS the declaration it renders, so a cell whose declaration
+# changed type is regenerated here rather than staying at what it said when it was first written.
+# One exe run for all of them: the environment is imported once per process.
+types: $(STAMP)
+	@test -n "$(wildcard diag/generated/type/*.typ)" || \
+	  { echo "no diag/generated/type/*.typ — write one with ./scripts/diag-export --type"; exit 1; }
+	./scripts/diag-export --type \
+	  $(patsubst diag/generated/type/%.typ,%,$(wildcard diag/generated/type/*.typ))
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
