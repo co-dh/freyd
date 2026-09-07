@@ -179,9 +179,14 @@ def p_prod(s, i, obj=False):
                 i += 1
             x = ('atom', squeeze(s[j0:i]))
         xs.append(x)
-        if i >= len(s) or s[i] != '×':
+        # Space around `×` is spelling, not structure: Lean's pretty-printer writes `secure × 𝟙`
+        # where the note writes `secure×𝟙`, and both name the one arrow on the pair.
+        j = i
+        while j < len(s) and s[j] in " \t":
+            j += 1
+        if j >= len(s) or s[j] != '×':
             return (xs[0] if len(xs) == 1 else ('prod', xs)), i
-        i += 1
+        i = j + 1
 
 
 def p_prim(s, i, obj=False):
@@ -189,6 +194,11 @@ def p_prim(s, i, obj=False):
     LEFTMOST bracket is the OUTERMOST functor and the chain is built from the right; the nodes carry
     no context spelling, which is what makes `spell` write the whole chain back in one go."""
     x, i = p_base(s, i, obj)
+    # AN IDENTITY PRINTED WITH ITS OBJECT is still the identity: Lean writes `𝟙[[Tx]]`, `𝟙A`, and
+    # the object is redundant in a cut reading — it names the very lanes running past the bead.
+    if (x[0] == 'app' and x[1] == UNIT) \
+            or (x[0] == 'atom' and x[1].startswith(UNIT) and x[1][len(UNIT):].isalnum()):
+        x = ('atom', UNIT)
     bs = []
     while i < len(s) and s[i] == '[' and not INTERVAL.match(s, i):
         j = matching(s, i)

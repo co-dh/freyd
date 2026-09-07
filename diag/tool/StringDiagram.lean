@@ -411,7 +411,28 @@ structure RowSpec where
   arms  : Array Wire
   legs  : Array Wire
   core  : Expr
+  /-- What the bead is LABELLED and TYPED as.  `core` itself, except where a sibling bundle runs
+      east of it: the bar then spans that bundle too, and what the bar is, is `core×𝟙`. -/
+  shown : Expr
+  /-- The sibling lanes the bar runs over, east of the arms and west of the object wire. -/
+  east  : Array Wire := #[]
   deriving Inhabited
+
+/-- The rows of `φ` re-read as rows of `φ×𝟙`, `e` being the product map they were cut from and
+    `east` the sibling bundle the bar runs over.  The `𝟙` is built with `e`'s OWN head constant, so
+    the label is spelled by the notation the declaration is written in and by no string surgery;
+    `core` is untouched, since the naturality the dot claims is still `φ`'s own. -/
+def underProd (e ψ : Expr) (east : Array Wire) (rs : Array RowSpec) : MetaM (Array RowSpec) := do
+  if (east.foldl (· ++ ·.lanes) #[]).isEmpty then return rs
+  let .const n _ := e.getAppFn
+    | throwError "the product map `{← plain e}` is headed by no constant, so the bar over it \
+        cannot be spelled `×𝟙`"
+  let i ← Meta.mkAppM ``Cat.id #[(← homEnds ψ).1]
+  rs.mapM fun r => do
+    let shown ← try Meta.mkAppM n #[r.shown, i] catch ex =>
+      throwError "`{n}` does not take `{← plain r.shown}` and `{← plain i}` as its two arrows, so \
+        the bar over `{← plain e}` cannot be labelled: {ex.toMessageData}"
+    return { r with shown, east := r.east ++ east }
 
 /-- The rows a factor is.  A factor is taken apart until what is left acts on ONE contiguous block
     of lanes, and the parts that are identities are what runs past:
@@ -425,7 +446,11 @@ structure RowSpec where
     `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
     does not.  What separates them is the factor's own form, which is what is read here.  A factor
     whose two ends are DIFFERENT objects with the SAME stack is a re-bracketing of a product —
-    `assocl` — and a picture has no bracketing to redraw, so it is no row at all. -/
+    `assocl` — and a picture has no bracketing to redraw, so it is no row at all.
+
+    `dpanel` draws a bead as a BAR from its westmost arm to the object wire, so a sibling bundle
+    east of `φ` lies under that bar: what the bar is, is `φ×𝟙` on the pair, and `underProd` names
+    and types it as one.  `𝟙×ψ` needs none of that — `φ`'s bundle passes WEST of the bar. -/
 partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
     (pass vpass : Array Wire) (inLeft : Bool) (e : Expr) : MetaM (Array RowSpec) := do
   let fs := factors e
@@ -447,10 +472,10 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
     -- side by side and `φ×ψ` acts on one of them with `×` and the sibling bundle running past.
     -- `vpass` is not extended: neither of those is part of the bead's own naturality statement,
     -- and `𝟙×cons°` asked for a closure chain one step deeper than `cons°` itself.
-    if let some (Wire.pairW la _) := ax[1]? then
+    if let some (Wire.pairW la ra) := ax[1]? then
       if ← isIdArrow φ then
         return ← rowsOf objVars regionTy cat (pass.push ax[0]! ++ la) vpass false ψ
-      let rl ← rowsOf objVars regionTy cat (pass.push ax[0]!) vpass false φ
+      let rl ← underProd e ψ ra (← rowsOf objVars regionTy cat (pass.push ax[0]!) vpass false φ)
       if ← isIdArrow ψ then return rl
       -- Interchange: `φ×ψ` is `(φ×𝟙)(𝟙×ψ)`, so by the time `ψ` runs the left bundle is `φ`'s TARGET.
       let some (Wire.pairW la' _) := ay[1]?
@@ -458,7 +483,9 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
             {ay.size} wires whose second is no pairing, so `{← plain ψ}` has no bundle to run east of"
       return rl ++ (← rowsOf objVars regionTy cat (pass.push ax[0]! ++ la') vpass false ψ)
     -- A CONSTANT left factor is a lane of its own, and `φ` then acts on the lanes below it.
-    if ← isIdArrow ψ then return ← rowsOf objVars regionTy cat pass vpass true φ
+    if ← isIdArrow ψ then
+      return ← underProd e ψ (← peelObj objVars cat regionTy (← homEnds ψ).1).1
+        (← rowsOf objVars regionTy cat pass vpass true φ)
     if ← isIdArrow φ then
       let (x, _) ← homEnds φ
       let ls ← peelLefts regionTy x
@@ -478,13 +505,12 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
     for i in [0 : al.size] do
       unless ← Wire.beq al[i]! ll[i]! do same := false
     if same then return #[]
-  return #[{ pass, vpass, arms, legs, core := e }]
+  return #[{ pass, vpass, arms, legs, core := e, shown := e }]
 
-/-- An object AS A CUT: the lanes it peels to, outermost first, then the object, `|`-separated —
-    `F|a`.  Not `F(a)`: a lane may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back, and
-    `scripts/scanline` folds this list with the very `fold_cut` it reads the drawn cut with. -/
-def objText (objVars : Array Expr) (cat : Array Name) (regionTy e : Expr) : MetaM String := do
-  let (ws, o) ← peelObj objVars cat regionTy e
+/-- A CUT: the lanes, outermost first, then the object, `|`-separated — `F|a`.  Not `F(a)`: a lane
+    may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back, and `scripts/scanline` folds
+    this list with the very `fold_cut` it reads the drawn cut with. -/
+def cutText (ws : Array Wire) (o : Expr) : MetaM String := do
   let ls ← (ws.foldl (· ++ ·.lanes) #[]).mapM Wire.label
   return String.intercalate "|" (ls.push (← plain o)).toList
 
@@ -525,19 +551,24 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
         lanes := lanes.push { label := ← w.label, born := i, dies := LIVE }
         legs := legs.push (lanes.size - 1)
       stack := stack.extract 0 p ++ legs ++ stack.extract (p + na) stack.size
-      let label ← plain r.core
       let (cx, cy) ← homEnds r.core
-      let (_, ox) ← peelObj objVars cat regionTy cx
-      let (_, oy) ← peelObj objVars cat regionTy cy
+      let (wx, ox) ← peelObj objVars cat regionTy cx
+      let (wy, oy) ← peelObj objVars cat regionTy cy
       let wires := (r.pass ++ r.arms ++ r.legs).foldl (· ++ ·.lanes) #[]
       let fam ← if ← Meta.isDefEq ox oy then familyVar r.core ox objVars wires else pure none
       let vd ← match fam with
         | none => pure none
         | some v =>
-          some <$> verdict regionTy (r.vpass ++ r.arms) (r.vpass ++ r.legs) r.core v label
+          some <$> verdict regionTy (r.vpass ++ r.arms) (r.vpass ++ r.legs) r.core v
+            (← plain r.core)
+      -- A bead with a verdict sits on its OWN lane and its bar stops at its dot; one WITHOUT sits
+      -- on the object wire, so its bar spans the sibling bundle east of it and is `core×𝟙`.
+      let east := if !arms.isEmpty && (vd.bind (·.mark)).isNone then r.east else #[]
       rows := rows.push
-        { label, arms, legs, obj,
-          sig := (← objText objVars cat regionTy cx) ++ "⟶" ++ (← objText objVars cat regionTy cy),
+        { label := ← plain (if east.isEmpty then r.core else r.shown), arms, legs, obj,
+          -- The cut the BAR is drawn between, sibling lanes and all: `core`'s own ends would say
+          -- the bead eats fewer wires than the bar covers, which is the drift this reports.
+          sig := (← cutText (wx ++ east) ox) ++ "⟶" ++ (← cutText (wy ++ east) oy),
           nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
