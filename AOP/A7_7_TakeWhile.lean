@@ -633,4 +633,12 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
 
+-- printing-only: the note calls the algebra `S` and the element-wise lift `list(p)`.  The predicate
+-- is an argument of the lift — it is what the lift lifts — but not of the algebra's name.
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | _ => `($(mkIdent `S))
+
+notation:max "list(" p ")" => listP p
+
 end Freyd.Alg.RelSet.GCTakeWhile

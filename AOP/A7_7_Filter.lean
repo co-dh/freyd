@@ -378,4 +378,10 @@ example : filtCL (fun n => decide (n % 2 = 0)) (ofList [1, 3]) = [] := by decide
 /-- The head fails but the tail survives — where `takewhile` would stop. -/
 example : filtCL (fun n => decide (n < 3)) (ofList [5, 1, 2]) = [1, 2] := by decide
 
+-- printing-only: the note calls the algebra a fold folds with `S`.  WHICH predicate it filters on
+-- is the context every panel of the section is drawn in, not part of the arrow's name.
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | _ => `($(mkIdent `S))
+
 end Freyd.Alg.RelSet.Filter

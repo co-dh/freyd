@@ -471,5 +471,11 @@ open Lean PrettyPrinter in
     else `($(mkIdent (Name.mkSimple "⊸")) $c)
   | _ => throw ()
 
+-- printing-only: the top arrow is the note's `⊤`.  BETWEEN WHICH two objects it is taken is what
+-- the picture's own wires already say, so the label names the arrow alone.
+open Lean PrettyPrinter in
+@[app_unexpander relTop] public meta def unexpandRelTop : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊤")))
+
 end RelSet
 end Freyd.Alg
