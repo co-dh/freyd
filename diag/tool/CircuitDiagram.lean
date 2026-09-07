@@ -384,6 +384,29 @@ def openDef (e : Expr) : MetaM Expr := do
   | some v => let b := v.headBeta; return (if hasClause b then b else e)
   | none => return e
 
+/-- Whether `f` is a FOLD-FORMER, read off its own polymorphic type: `f : (a(C) ⟶ C) → (b ⟶ C)`,
+    where the carrier `C` is one of `f`'s parameters, the argument is an algebra ON it, and the
+    result comes out of a `b` that does NOT move with it — the initial algebra's own object.  That
+    last clause is the whole test: `est(R) : E(C) ⟶ C` has the same two targets and its source
+    moves with `C`, `[f,g] : a+b ⟶ c` has a fixed source and an argument that is not an algebra,
+    and a fold has both.  So every carrier's own pointwise `cataR` — a `def` with no circuit in its
+    body, which `hasClause` therefore refuses to open — draws the functorial box with no clause of
+    its own, and so does the next carrier's. -/
+def isFold (fn : Expr) : MetaM Bool := do
+  let n := fn.getAppNumArgs
+  let (xs, _, ty) ← Meta.forallMetaBoundedTelescope (← Meta.inferType fn.getAppFn) n
+  if xs.size != n then return false
+  let .forallE _ dom body _ := ty | return false
+  if body.hasLooseBVars then return false
+  match (← Meta.whnfR dom).getAppFnArgs, (← Meta.whnfR body).getAppFnArgs with
+  | (``Cat.Hom, da), (``Cat.Hom, ba) =>
+    if da.size < 2 || ba.size < 2 then return false
+    let c := da[da.size - 1]!
+    let .mvar cid := c | return false
+    let holds (t : Expr) := (t.find? fun x => x.isMVar && x.mvarId! == cid).isSome
+    return ba[ba.size - 1]! == c && holds da[da.size - 2]! && !holds ba[ba.size - 2]!
+  | _, _ => return false
+
 mutual
 
 /-- §3 row 5: a composite is its factors' pictures, ports glued.  The factors are flattened, so a
@@ -495,27 +518,28 @@ partial def draw (e : Expr) : MetaM Pic := do
     match args.back? with
     | some f => graphPic f src tgt
     | none => leaf e src tgt
-  -- §3 row 17: the fold as MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars.
-  -- Nothing crosses the LEFT pair: the input arrives at them and the algebra's strands start
-  -- inside, and that break IS the recursion.  The carrier labels the output wire only where it
-  -- differs from that wire's own label; a product carrier is already drawn as its wires.
   -- A least fixpoint is drawn by its BODY at the recursion variable: the note's `X` inside
   -- `P(F(X)h)` IS that variable, so `μ` costs no box — the picture is the body's.
   | (``Freyd.Alg.mu, args) =>
     match args.back? with
     | some φ => Meta.lambdaTelescope φ fun _ b => drawRun b
     | none => leaf e src tgt
-  | (``Freyd.Alg.relCata, args) =>
-    match args.back? with
-    | some r =>
-      let body ← lane (← drawRun r)
-      let cw ← wiresOf tgt
-      let named := cw.size == 1 && cw[0]!.label != tgt.label
-      return mkPic "cata" #[src] cw src tgt body.isMap
-        #[("body", body.val), ("label", if named then .s tgt.label else .nul),
-          ("port", .arr (body.ins.map fun o => .s o.label))]
-    | none => leaf e src tgt
-  | _ => leaf e src tgt
+  | _ => do
+    if e.isApp then
+      if ← isFold e.appFn! then return ← cataPic e.appArg! src tgt
+    leaf e src tgt
+
+/-- §3 row 17: the fold as MELLIÈS' FUNCTORIAL BOX — the algebra's own circuit between two bars.
+    Nothing crosses the LEFT pair: the input arrives at them and the algebra's strands start
+    inside, and that break IS the recursion.  The carrier labels the output wire only where it
+    differs from that wire's own label; a product carrier is already drawn as its wires. -/
+partial def cataPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
+  let body ← lane (← drawRun r)
+  let cw ← wiresOf tgt
+  let named := cw.size == 1 && cw[0]!.label != tgt.label
+  return mkPic "cata" #[src] cw src tgt body.isMap
+    #[("body", body.val), ("label", if named then .s tgt.label else .nul),
+      ("port", .arr (body.ins.map fun o => .s o.label))]
 
 /-- `(R×S)° = R°×S°`: over a PRODUCT the `°` distributes, one flipped box per wire. -/
 partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
