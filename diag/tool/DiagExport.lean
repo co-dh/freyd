@@ -1398,10 +1398,14 @@ def usage : String :=
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
    --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
-     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes)\n\
+     a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
+       symbol between them, every panel as deep as the deepest side\n\
+     `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
+       in that same statement-wide frame\n\
      `<name>.lhs.inl` / `.inr` draws ONE ARM of the fork (--circuit) or ONE OPERAND of the\n\
        union or meet (--string) at that side's head\n\
-   `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too (--circuit)\n\
+   `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too, and has\n\
+     sides of its own: `<name>#h.lhs` (--circuit, --string)\n\
    --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
      the per-panel display scale the note picks (`s: N%`) — all three --string only"
 
@@ -1449,8 +1453,11 @@ def main (args : List String) : IO UInt32 := do
   -- comes out as `inst✝.delta a`.  The instance is anonymous inside a `forallTelescope`, so that is
   -- worse than useless in a picture; off, it prints `CartBicat.delta a` and the strip in `plain`
   -- takes the namespace.
+  -- A statement's frame is the deepest of its SIDES, so one file costs a walk of every side and not
+  -- just of the part drawn; the default budget was set for one panel.  Wall clock is `scripts/cap`'s.
   let opts : Options :=
-    (Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false
+    ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
+      |>.insert `maxHeartbeats (.ofNat 1000000)
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default,
       options := opts, openDecls := scopes.map (.simple · []) }
@@ -1486,7 +1493,7 @@ def main (args : List String) : IO UInt32 := do
       | _ => (base.toString, none)
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
-        else if stringMode then StrDiag.drawString base.toName side branch frame topRow scale
+        else if stringMode then StrDiag.drawString base.toName side binder branch frame topRow scale
         else if circuitMode then Freyd.CircuitDiagram.drawDecl base.toName side binder branch
         else if proofMode then drawProof arg.toName else draw arg.toName)
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
