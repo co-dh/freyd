@@ -243,8 +243,8 @@ public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
 
 /-! ### Pointwise unfolds of the three `junc` algebras -/
 
-theorem junc_inl {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (x : a.carrier) (z : c.carrier) :
-    junc (sumCop a b) T U (Sum.inl x) z ↔ T x z := by
+theorem junc_inl {A B C : RelSet.{0}} (T : A ⟶ C) (U : B ⟶ C) (x : A.carrier) (z : C.carrier) :
+    junc (sumCop A B) T U (Sum.inl x) z ↔ T x z := by
   constructor
   · rintro (⟨x', hx', hT⟩ | ⟨y', hy', -⟩)
     · cases Sum.inl.inj hx'; exact hT
@@ -252,8 +252,8 @@ theorem junc_inl {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (x : a.carrier
   · intro h
     exact Or.inl ⟨x, rfl, h⟩
 
-theorem junc_inr {a b c : RelSet.{0}} (T : a ⟶ c) (U : b ⟶ c) (y : b.carrier) (z : c.carrier) :
-    junc (sumCop a b) T U (Sum.inr y) z ↔ U y z := by
+theorem junc_inr {A B C : RelSet.{0}} (T : A ⟶ C) (U : B ⟶ C) (y : B.carrier) (z : C.carrier) :
+    junc (sumCop A B) T U (Sum.inr y) z ↔ U y z := by
   constructor
   · rintro (⟨x', hx', -⟩ | ⟨y', hy', hU⟩)
     · nomatch hx'
@@ -274,24 +274,24 @@ public theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
   · rintro ⟨hp, hw⟩
     exact ⟨(x, c), ⟨⟨rfl, hp⟩, rfl⟩, hw⟩
 
-theorem prefAlg_inl (d : Unit) (ys : ConsList Unit E) :
-    prefAlg (Sum.inl d) ys ↔ ys = ConsList.wrap () := by
+theorem prefAlg_inl (D : Unit) (ys : ConsList Unit E) :
+    prefAlg (Sum.inl D) ys ↔ ys = ConsList.wrap () := by
   unfold prefAlg; exact junc_inl _ _ _ _
 
 theorem prefAlg_inr (x : E) (r ys : ConsList Unit E) :
     prefAlg (Sum.inr (x, r)) ys ↔ ys = ConsList.wrap () ∨ ys = ConsList.cons x r := by
   unfold prefAlg; exact junc_inr _ _ _ _
 
-public theorem listPAlg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    listPAlg p (Sum.inl d) ws ↔ ws = [] := by
+public theorem listPAlg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    listPAlg p (Sum.inl D) ws ↔ ws = [] := by
   unfold listPAlg; exact junc_inl _ _ _ _
 
 public theorem listPAlg_inr (p : E → Bool) (x : E) (c ws : List E) :
     listPAlg p (Sum.inr (x, c)) ws ↔ p x = true ∧ ws = x :: c := by
   unfold listPAlg; exact (junc_inr _ _ _ _).trans (pcons_apply p x c ws)
 
-theorem Salg_inl (p : E → Bool) (d : Unit) (ws : List E) :
-    Salg p (Sum.inl d) ws ↔ ws = [] := by
+theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+    Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_inl _ _ _ _
 
 theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
@@ -330,10 +330,10 @@ theorem pre_eq_of_length : ∀ {a b v : List E}, Pre a v → Pre b v → a.lengt
 theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
     (prefixR ≫ listP p) u ws ↔ Pre ws (flat u) ∧ AllP p ws := by
   induction u generalizing ws with
-  | wrap d =>
+  | wrap D =>
       constructor
       · rintro ⟨ys, hpre, hlp⟩
-        have hys : ys = ConsList.wrap () := (prefAlg_inl d ys).mp hpre
+        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
         subst hys
         have hws : ws = [] := (listPAlg_inl p () ws).mp hlp
         subst hws
@@ -341,7 +341,7 @@ theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
       · rintro ⟨hpre, -⟩
         cases ws with
         | nil =>
-            exact ⟨ConsList.wrap (), (prefAlg_inl d _).mpr rfl, (listPAlg_inl p () _).mpr rfl⟩
+            exact ⟨ConsList.wrap (), (prefAlg_inl D _).mpr rfl, (listPAlg_inl p () _).mpr rfl⟩
         | cons y ys => exact hpre.elim
   | cons x t ih =>
       constructor
@@ -385,11 +385,11 @@ public theorem takewhile_alg_comm (p : E → Bool) :
     have hm' : m = con u := hm
     subst hm'
     cases u with
-    | inl d =>
+    | inl D =>
         obtain ⟨ys, hpre, hlp⟩ := hX
-        have hys : ys = ConsList.wrap () := (prefAlg_inl d ys).mp hpre
+        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
         subst hys
-        exact ⟨Sum.inl d, rfl, (Salg_inl p d ws).mpr ((listPAlg_inl p () ws).mp hlp)⟩
+        exact ⟨Sum.inl D, rfl, (Salg_inl p D ws).mpr ((listPAlg_inl p () ws).mp hlp)⟩
     | inr q =>
         obtain ⟨x, t⟩ := q
         obtain ⟨ys, hpre, hlp⟩ := hX
@@ -406,10 +406,10 @@ public theorem takewhile_alg_comm (p : E → Bool) :
             (Salg_inr p x w' ws).mpr (Or.inr ⟨hp, hws⟩)⟩
   · rintro ⟨v, hv, hS⟩
     cases u with
-    | inl d =>
+    | inl D =>
         cases v with
         | inl d' =>
-            exact ⟨ConsList.wrap d, rfl, ConsList.wrap (), (prefAlg_inl d _).mpr rfl,
+            exact ⟨ConsList.wrap D, rfl, ConsList.wrap (), (prefAlg_inl D _).mpr rfl,
               (listPAlg_inl p () _).mpr ((Salg_inl p d' ws).mp hS)⟩
         | inr q => exact hv.elim
     | inr q =>
@@ -514,12 +514,12 @@ public theorem takewhile_mono (p : E → Bool) :
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hws : ws = [] := (Salg_inl p d' ws).mp hS
           subst hws
-          exact ⟨[], (Salg_inl p d []).mpr rfl, Nat.le_refl 0⟩
+          exact ⟨[], (Salg_inl p D []).mpr rfl, Nat.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       cases v with
@@ -552,15 +552,15 @@ public theorem takewhile_step (p : E → Bool) :
   apply hom_ext; intro u ws
   rw [Λ_comp_est_apply]
   cases u with
-  | inl d =>
+  | inl D =>
       constructor
       · rintro ⟨hS, -⟩
-        exact (Salg_inl p d ws).mp hS
+        exact (Salg_inl p D ws).mp hS
       · intro h0
         have hws : ws = [] := h0
         subst hws
-        refine ⟨(Salg_inl p d []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p d z).mp hz
+        refine ⟨(Salg_inl p D []).mpr rfl, fun z hz => ?_⟩
+        have hz' : z = [] := (Salg_inl p D z).mp hz
         subst hz'
         exact Nat.le_refl 0
   | inr q =>

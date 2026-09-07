@@ -43,13 +43,13 @@ namespace Freyd.Alg
 theorem desarguesHorn_reflect {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     (F : AllegoryFunctor 𝒜 ℬ) (hF : F.Faithful) (horn : DesarguesHorn ℬ) :
     DesarguesHorn 𝒜 := by
-  intro p q a b c A₁ A₂ B₁ B₂ C₁ C₂ hyp
+  intro p q A B C A₁ A₂ B₁ B₂ C₁ C₂ hyp
   refine hF _ _ ?_
   rw [F.map_inter]
   have hpush : (F.map A₁ ≫ F.map A₂) ∩ (F.map B₁ ≫ F.map B₂) ⊑ F.map C₁ ≫ F.map C₂ := by
     have := F.mono hyp
     rwa [F.map_inter, F.map_comp, F.map_comp, F.map_comp] at this
-  have hconc := horn (F.obj p) (F.obj q) (F.obj a) (F.obj b) (F.obj c)
+  have hconc := horn (F.obj p) (F.obj q) (F.obj A) (F.obj B) (F.obj C)
     (F.map A₁) (F.map A₂) (F.map B₁) (F.map B₂) (F.map C₁) (F.map C₂) hpush
   -- rewrite both sides back into images of the 𝒜-composites
   simp only [F.map_inter, F.map_comp, F.map_recip]
@@ -218,19 +218,19 @@ end RelSetBridge
 
 section RelPowerBridge
 
-variable {I : Type u} {a b c : I → Type u}
+variable {I : Type u} {A B C : I → Type u}
 
 /-- The concrete binary relation of a power span at fibre `i`. -/
-def powRel (R : BinRel (I → Type u) a b) (i : I) : a i → b i → Prop :=
+def powRel (R : BinRel (I → Type u) A B) (i : I) : A i → B i → Prop :=
   fun x y => ∃ t : R.src i, R.colA i t = x ∧ R.colB i t = y
 
 /-- `°` computes to fibrewise transposition. -/
-theorem powRel_recip (R : BinRel (I → Type u) a b) (i : I) (x : a i) (y : b i) :
+theorem powRel_recip (R : BinRel (I → Type u) A B) (i : I) (x : A i) (y : B i) :
     powRel R° i y x ↔ powRel R i x y :=
   ⟨fun ⟨t, h1, h2⟩ => ⟨t, h2, h1⟩, fun ⟨t, h1, h2⟩ => ⟨t, h2, h1⟩⟩
 
 /-- `⊂` computes to fibrewise pointwise implication. -/
-theorem relLe_iff_powRel {R S : BinRel (I → Type u) a b} :
+theorem relLe_iff_powRel {R S : BinRel (I → Type u) A B} :
     RelLe R S ↔ ∀ i x y, powRel R i x y → powRel S i x y := by
   constructor
   · rintro ⟨⟨h, hA, hB⟩⟩ i x y ⟨t, rfl, rfl⟩
@@ -245,25 +245,25 @@ theorem relLe_iff_powRel {R S : BinRel (I → Type u) a b} :
 
 /-- The ONE-ROW span `{(x, y)}` supported at fibre `i`: the pointed family
     `ULift (PLift (i = j))`, inhabited only at `j = i`. -/
-def pointRelPow (i : I) (x : a i) (y : b i) : BinRel (I → Type u) a b where
+def pointRelPow (i : I) (x : A i) (y : B i) : BinRel (I → Type u) A B where
   src := fun j => ULift.{u} (PLift (i = j))
   colA := fun _ p => p.down.down ▸ x
   colB := fun _ p => p.down.down ▸ y
   isMonicPair := fun f g _ _ => funext fun j => funext fun w => by
     rcases hf : f j w with ⟨⟨e⟩⟩; rcases hg : g j w with ⟨⟨e'⟩⟩; rfl
 
-theorem powRel_pointRelPow (i : I) (x : a i) (y : b i) :
+theorem powRel_pointRelPow (i : I) (x : A i) (y : B i) :
     powRel (pointRelPow i x y) i x y :=
   ⟨ULift.up (PLift.up rfl), rfl, rfl⟩
 
 /-- `pointRelPow i x y ⊂ R` as soon as `R` relates `x` to `y` at fibre `i`. -/
-theorem pointRelPow_le {R : BinRel (I → Type u) a b} {i : I} {x : a i} {y : b i}
+theorem pointRelPow_le {R : BinRel (I → Type u) A B} {i : I} {x : A i} {y : B i}
     (h : powRel R i x y) : RelLe (pointRelPow i x y) R :=
   relLe_iff_powRel.mpr fun j x' y' ⟨w, h1, h2⟩ => by
     obtain ⟨⟨e⟩⟩ := w; cases e; exact h1 ▸ h2 ▸ h
 
 /-- `⊓` computes to fibrewise conjunction. -/
-theorem powRel_inter (R S : BinRel (I → Type u) a b) (i : I) (x : a i) (y : b i) :
+theorem powRel_inter (R S : BinRel (I → Type u) A B) (i : I) (x : A i) (y : B i) :
     powRel (R ⊓ S) i x y ↔ powRel R i x y ∧ powRel S i x y := by
   constructor
   · intro h
@@ -276,16 +276,16 @@ theorem powRel_inter (R S : BinRel (I → Type u) a b) (i : I) (x : a i) (y : b 
 /-- `⊚` computes to fibrewise relational composition (the `setRel_comp` argument with
     the fibre index threaded through; the pullback lift enters through the pointed
     family at `i`). -/
-theorem powRel_comp (R : BinRel (I → Type u) a b) (S : BinRel (I → Type u) b c)
-    (i : I) (x : a i) (z : c i) :
+theorem powRel_comp (R : BinRel (I → Type u) A B) (S : BinRel (I → Type u) B C)
+    (i : I) (x : A i) (z : C i) :
     powRel (R ⊚ S) i x z ↔ ∃ y, powRel R i x y ∧ powRel S i y z := by
   let pb := HasPullbacks.has R.colB S.colA
-  let h : pb.cone.pt ⟶ prod a c := pair (pb.cone.π₁ ≫ R.colA) (pb.cone.π₂ ≫ S.colB)
+  let h : pb.cone.pt ⟶ prod A C := pair (pb.cone.π₁ ≫ R.colA) (pb.cone.π₂ ≫ S.colB)
   constructor
   · rintro ⟨t, h1, h2⟩
     -- the concrete fibrewise-image subobject
-    let J : Subobject (I → Type u) (prod a c) :=
-      ⟨fun j => {w : (prod a c) j // ∃ q, h j q = w}, fun _ p => p.val,
+    let J : Subobject (I → Type u) (prod A C) :=
+      ⟨fun j => {w : (prod A C) j // ∃ q, h j q = w}, fun _ p => p.val,
         fun f g hfg => funext fun j => funext fun w =>
           Subtype.ext (congrFun (congrFun hfg j) w)⟩
     obtain ⟨k, hk⟩ := (HasImages.isImage h).2 J ⟨fun j q => ⟨h j q, q, rfl⟩, rfl⟩
@@ -323,10 +323,10 @@ theorem powRel_comp (R : BinRel (I → Type u) a b) (S : BinRel (I → Type u) b
 
 /-- The Horn sentence at the SPAN level over `Set^I`: the §2.157 element chase runs
     entirely inside each single fibre. -/
-theorem desarguesHorn_spanPow {p q a b c : I → Type u}
-    (A₁ : BinRel (I → Type u) p a) (A₂ : BinRel (I → Type u) a q)
-    (B₁ : BinRel (I → Type u) p b) (B₂ : BinRel (I → Type u) b q)
-    (C₁ : BinRel (I → Type u) p c) (C₂ : BinRel (I → Type u) c q)
+theorem desarguesHorn_spanPow {p q A B C : I → Type u}
+    (A₁ : BinRel (I → Type u) p A) (A₂ : BinRel (I → Type u) A q)
+    (B₁ : BinRel (I → Type u) p B) (B₂ : BinRel (I → Type u) B q)
+    (C₁ : BinRel (I → Type u) p C) (C₂ : BinRel (I → Type u) C q)
     (hyp : RelLe ((A₁ ⊚ A₂) ⊓ (B₁ ⊚ B₂)) (C₁ ⊚ C₂)) :
     RelLe ((A₁° ⊚ B₁) ⊓ (A₂ ⊚ B₂°))
       (((A₁° ⊚ C₁) ⊓ (A₂ ⊚ C₂°)) ⊚ ((C₁° ⊚ B₁) ⊓ (C₂ ⊚ B₂°))) := by

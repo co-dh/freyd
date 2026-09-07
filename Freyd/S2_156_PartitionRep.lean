@@ -185,27 +185,27 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
 variable (F : AllegoryFunctor 𝒜 ℬ)
 
 /-- Allegory functors preserve reflexivity (`1 ⊑ R` and `map_id`). -/
-theorem AllegoryFunctor.map_reflexive {a : 𝒜} {R : a ⟶ a} (h : Reflexive R) :
+theorem AllegoryFunctor.map_reflexive {A : 𝒜} {R : A ⟶ A} (h : Reflexive R) :
     Reflexive (F.map R) := by
-  have h' : F.map (Cat.id a) ⊑ F.map R := F.mono h
+  have h' : F.map (Cat.id A) ⊑ F.map R := F.mono h
   rwa [F.map_id] at h'
 
 /-- Allegory functors preserve symmetry (`R° ⊑ R` and `map_recip`). -/
-theorem AllegoryFunctor.map_symmetric {a : 𝒜} {R : a ⟶ a} (h : Symmetric R) :
+theorem AllegoryFunctor.map_symmetric {A : 𝒜} {R : A ⟶ A} (h : Symmetric R) :
     Symmetric (F.map R) := by
   show (F.map R)° ⊑ F.map R
   rw [← F.map_recip]
   exact F.mono h
 
 /-- Allegory functors preserve transitivity (`R ≫ R ⊑ R` and `map_comp`). -/
-theorem AllegoryFunctor.map_transitive {a : 𝒜} {R : a ⟶ a} (h : Transitive R) :
+theorem AllegoryFunctor.map_transitive {A : 𝒜} {R : A ⟶ A} (h : Transitive R) :
     Transitive (F.map R) := by
   show F.map R ≫ F.map R ⊑ F.map R
   rw [← F.map_comp]
   exact F.mono h
 
 /-- Allegory functors carry equivalence relations to equivalence relations. -/
-def AllegoryFunctor.mapEquivRel {a : 𝒜} (E : EquivRel a) : EquivRel (F.obj a) :=
+def AllegoryFunctor.mapEquivRel {A : 𝒜} (E : EquivRel A) : EquivRel (F.obj A) :=
   ⟨F.map E.E, F.map_reflexive E.refl, F.map_symmetric E.sym, F.map_transitive E.trans⟩
 
 end FunctorPreserves

@@ -33,8 +33,8 @@ open scoped Word
     either side is empty, and their proofs carry those cases. -/
 def Interp : List RelSet.{u} → Type u
   | [] => PUnit
-  | [a] => a.carrier
-  | a :: rest => a.carrier × Interp rest
+  | [A] => A.carrier
+  | A :: rest => A.carrier × Interp rest
 
 /-- The set a word denotes. -/
 def carrier (a : Word RelSet.{u}) : Type u := Interp (Word.letters a)
@@ -45,14 +45,14 @@ def split : (u v : List RelSet.{u}) → Interp (u ++ v) → Interp u × Interp v
   | [], _, p => (PUnit.unit, p)
   | [_], [], p => (p, PUnit.unit)
   | [_], _ :: _, p => (p.1, p.2)
-  | _ :: (b :: u), v, p => ((p.1, (split (b :: u) v p.2).1), (split (b :: u) v p.2).2)
+  | _ :: (B :: u), v, p => ((p.1, (split (B :: u) v p.2).1), (split (B :: u) v p.2).2)
 
 /-- `⟦u⟧ × ⟦v⟧ → ⟦u ++ v⟧`, the inverse. -/
 def merge : (u v : List RelSet.{u}) → Interp u × Interp v → Interp (u ++ v)
   | [], _, p => p.2
   | [_], [], p => p.1
   | [_], _ :: _, p => (p.1, p.2)
-  | _ :: (b :: u), v, p => (p.1.1, merge (b :: u) v (p.1.2, p.2))
+  | _ :: (B :: u), v, p => (p.1.1, merge (B :: u) v (p.1.2, p.2))
 
 @[simp] theorem split_merge (u v : List RelSet.{u}) (p : Interp u × Interp v) :
     split u v (merge u v p) = p := by
@@ -156,9 +156,9 @@ theorem tensRel_mono {a a' b b' : Word RelSet.{u}} {R R' : a ⟶ a'} {S S' : b �
 
 /-- A transport along a list equality passes through a `cons` whose tail is itself a `cons` — the
     only shape in which `Interp` is a pair, now that a one-letter word denotes its letter. -/
-theorem cast_cons {x b b' : RelSet.{u}} {l l' : List RelSet.{u}} (h : b :: l = b' :: l')
-    (v : x.carrier) (p : Interp (b :: l)) :
-    cast (congrArg Interp (congrArg (x :: ·) h)) ((v, p) : Interp (x :: b :: l))
+theorem cast_cons {x B b' : RelSet.{u}} {l l' : List RelSet.{u}} (h : B :: l = b' :: l')
+    (v : x.carrier) (p : Interp (B :: l)) :
+    cast (congrArg Interp (congrArg (x :: ·) h)) ((v, p) : Interp (x :: B :: l))
       = ((v, cast (congrArg Interp h) p) : Interp (x :: b' :: l')) := by
   injection h with hb hl
   subst hb; subst hl; rfl
@@ -176,9 +176,9 @@ theorem merge_assoc (u v w : List RelSet.{u}) (x : Interp u) (y : Interp v) (z :
     | nil => cases v with
       | nil => rfl
       | cons _ _ => rfl
-    | cons b u' =>
-      show (x.1, merge ((b :: u') ++ v) w (merge (b :: u') v (x.2, y), z)) = _
-      rw [ih x.2, ← cast_cons (List.append_assoc (b :: u') v w).symm x.1]
+    | cons B u' =>
+      show (x.1, merge ((B :: u') ++ v) w (merge (B :: u') v (x.2, y), z)) = _
+      rw [ih x.2, ← cast_cons (List.append_assoc (B :: u') v w).symm x.1]
       rfl
 
 /-- A transport on the left factor comes out of the merge. -/
@@ -248,9 +248,9 @@ theorem split_nil (u : List RelSet.{u}) (p : Interp (u ++ [])) :
   | cons head u ih =>
     cases u with
     | nil => rfl
-    | cons b u' =>
-      show (p.1, (split (b :: u') [] p.2).1) = _
-      rw [ih p.2, ← cast_cons (List.append_nil (b :: u')) p.1]
+    | cons B u' =>
+      show (p.1, (split (B :: u') [] p.2).1) = _
+      rw [ih p.2, ← cast_cons (List.append_nil (B :: u')) p.1]
       rfl
 
 theorem splitTens_unit_right (a : Word RelSet.{u}) (p : carrier (Word.tens a Word.unit)) :

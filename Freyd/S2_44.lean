@@ -51,27 +51,27 @@ variable {𝒜 : Type u}
 /-- (1) PRE-POSITIVE (§2.441): every pair embeds into a common object via monic maps with
     disjoint images. -/
 @[expose] public def PrePositiveCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
-  ∀ (a b : 𝒜), ∃ (γ : 𝒜) (f : a ⟶ γ) (g : b ⟶ γ),
+  ∀ (A B : 𝒜), ∃ (γ : 𝒜) (f : A ⟶ γ) (g : B ⟶ γ),
     Map f ∧ Map g ∧
-    f ≫ f° = Cat.id a ∧ g ≫ g° = Cat.id b ∧ f ≫ g° = (𝟘 : a ⟶ b)
+    f ≫ f° = Cat.id A ∧ g ≫ g° = Cat.id B ∧ f ≫ g° = (𝟘 : A ⟶ B)
 
 /-- (2) WELL-JOINED (§2.441, the figure's retract form): every pair of objects are both
     retracts of a common object, i.e. there are maps `f : a → γ`, `g : b → γ` each having a
     right inverse (`f ≫ f' = 1`, `g ≫ g' = 1`). -/
 @[expose] public def WellJoinedCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
-  ∀ (a b : 𝒜), ∃ (γ : 𝒜) (f : a ⟶ γ) (g : b ⟶ γ),
+  ∀ (A B : 𝒜), ∃ (γ : 𝒜) (f : A ⟶ γ) (g : B ⟶ γ),
     Map f ∧ Map g ∧
-    (∃ f' : γ ⟶ a, f ≫ f' = Cat.id a) ∧ (∃ g' : γ ⟶ b, g ≫ g' = Cat.id b)
+    (∃ f' : γ ⟶ A, f ≫ f' = Cat.id A) ∧ (∃ g' : γ ⟶ B, g ≫ g' = Cat.id B)
 
 /-- (3) STRAIGHT-JOIN (§2.441): every pair has a common target reached by straight morphisms. -/
 @[expose] public def StraightJoinCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
-  ∀ (a b : 𝒜), ∃ (γ : 𝒜) (S₁ : a ⟶ γ) (S₂ : b ⟶ γ), Straight S₁ ∧ Straight S₂
+  ∀ (A B : 𝒜), ∃ (γ : 𝒜) (S₁ : A ⟶ γ) (S₂ : B ⟶ γ), Straight S₁ ∧ Straight S₂
 
 /-- (4) CONNECTED-SIMPLE-FACTOR (§2.441): the allegory is connected (every pair of objects
     has a morphism) and every morphism factors as a straight one followed by a simple one. -/
 def ConnectedSimpleFactorCond (𝒜 : Type u) [DivisionAllegory 𝒜] : Prop :=
-  (∀ (a b : 𝒜), Nonempty (a ⟶ b)) ∧
-  (∀ (a b : 𝒜) (R : a ⟶ b), ∃ (c : 𝒜) (S : a ⟶ c) (F : c ⟶ b),
+  (∀ (A B : 𝒜), Nonempty (A ⟶ B)) ∧
+  (∀ (A B : 𝒜) (R : A ⟶ B), ∃ (C : 𝒜) (S : A ⟶ C) (F : C ⟶ B),
     Straight S ∧ Simple F ∧ R = S ≫ F)
 
 variable [DivisionAllegory 𝒜]
@@ -79,15 +79,15 @@ variable [DivisionAllegory 𝒜]
 /-- §2.441 (1)⟹(2): pre-positive implies well-joined.  The monic equation `f ≫ f° = 1`
     exhibits `f°` as a right inverse of `f`, so each object is a retract of the common `γ`. -/
 public theorem prePositive_to_wellJoined (hPP : PrePositiveCond 𝒜) : WellJoinedCond 𝒜 := by
-  intro a b
-  obtain ⟨γ, f, g, hf, hg, hff, hgg, _⟩ := hPP a b
+  intro A B
+  obtain ⟨γ, f, g, hf, hg, hff, hgg, _⟩ := hPP A B
   exact ⟨γ, f, g, hf, hg, ⟨f°, hff⟩, ⟨g°, hgg⟩⟩
 
 /-- §2.441 (2)⟹(3): well-joined implies straight-join.  A right-invertible morphism is
     straight [§2.355 `rightInvertible_straight`], so the retraction maps `f`, `g` are straight. -/
 public theorem wellJoined_to_straightJoin (hWJ : WellJoinedCond 𝒜) : StraightJoinCond 𝒜 := by
-  intro a b
-  obtain ⟨γ, f, g, _hf, _hg, ⟨f', hf'⟩, ⟨g', hg'⟩⟩ := hWJ a b
+  intro A B
+  obtain ⟨γ, f, g, _hf, _hg, ⟨f', hf'⟩, ⟨g', hg'⟩⟩ := hWJ A B
   exact ⟨γ, f, g, rightInvertible_straight hf', rightInvertible_straight hg'⟩
 
 /-- §2.441 (1)⟹(3): pre-positive implies straight-join (composing the two arrows above). -/
@@ -102,12 +102,12 @@ theorem prePositive_to_straightJoin (hPP : PrePositiveCond 𝒜) : StraightJoinC
     `S ≫ F = (f ∪ R≫g) ≫ g° = f≫g° ∪ R≫(g≫g°) = 0 ∪ R = R`. -/
 theorem prePositive_to_connectedSimpleFactor (hPP : PrePositiveCond 𝒜) :
     ConnectedSimpleFactorCond 𝒜 := by
-  refine ⟨fun a b => ?_, fun a b R => ?_⟩
-  · obtain ⟨_γ, f, g, _hf, _hg, _, _, _⟩ := hPP a b
+  refine ⟨fun A B => ?_, fun A B R => ?_⟩
+  · obtain ⟨_γ, f, g, _hf, _hg, _, _, _⟩ := hPP A B
     exact ⟨f ≫ g°⟩
-  · obtain ⟨γ, f, g, _hf, _hg, hff, hgg, hfg⟩ := hPP a b
+  · obtain ⟨γ, f, g, _hf, _hg, hff, hgg, hfg⟩ := hPP A B
     -- Disjointness reciprocated: g ≫ f° = (f ≫ g°)° = 0° = 0.
-    have hgf : g ≫ f° = (𝟘 : b ⟶ a) := by
+    have hgf : g ≫ f° = (𝟘 : B ⟶ A) := by
       have : (g ≫ f°) = (f ≫ g°)° := by rw [Allegory.recip_comp, Allegory.recip_recip]
       rw [this, hfg, recip_zero]
     refine ⟨γ, f ∪ R ≫ g, g°, ?_, ?_, ?_⟩
@@ -153,8 +153,8 @@ public theorem prePositive_wellJoined_straightJoin_tfae
     simple morphism out of `γ`.  (In `Rel(Set)` with `γ` a singleton-supporting generator this
     is "two relations agree iff they agree on every element".) -/
 def Separates (γ : 𝒜) : Prop :=
-  ∀ ⦃a b : 𝒜⦄ (R R' : a ⟶ b),
-    (∀ (F : γ ⟶ a), Simple F → F ≫ R = F ≫ R') → R = R'
+  ∀ ⦃A B : 𝒜⦄ (R R' : A ⟶ B),
+    (∀ (F : γ ⟶ A), Simple F → F ≫ R = F ≫ R') → R = R'
 
 /-- §2.416 maximality (the iso, including the EPIC half).  If `S = h ≫ S'` with `S`, `S'`
     straight, `h` a map, and `S` is THICK from the progenitor (`∀ R : γ → α` there is a map
@@ -262,8 +262,8 @@ theorem hCotuple_of_coproduct {ℬ : Type u} [EffectiveDivisionAllegory ℬ]
   have hu2 : Map cp.u₂ :=
     ⟨by show dom cp.u₂ = Cat.id β; dsimp [dom]; rw [cp.u₂_self_comp_recip, Allegory.inter_idem], hu2simp⟩
   -- Straighten `M` (§2.354): `M = k ≫ (k° ≫ M)`, `k` a map, `k° ≫ M` straight.
-  obtain ⟨c, k, hk, _, hS'str, hMeq⟩ := straight_factorization M
-  refine ⟨c, k° ≫ M, cp.u₁ ≫ k, cp.u₂ ≫ k, hS'str, map_comp hu1 hk, map_comp hu2 hk, ?_, ?_⟩
+  obtain ⟨C, k, hk, _, hS'str, hMeq⟩ := straight_factorization M
+  refine ⟨C, k° ≫ M, cp.u₁ ≫ k, cp.u₂ ≫ k, hS'str, map_comp hu1 hk, map_comp hu2 hk, ?_, ?_⟩
   · show S = (cp.u₁ ≫ k) ≫ (k° ≫ M); rw [Cat.assoc, ← hMeq, hM1]
   · show R = (cp.u₂ ≫ k) ≫ (k° ≫ M); rw [Cat.assoc, ← hMeq, hM2]
 
@@ -274,12 +274,12 @@ theorem hCotuple_of_coproduct {ℬ : Type u} [EffectiveDivisionAllegory ℬ]
 theorem progenitor_straight_thick_of_coproduct {ℬ : Type u} [EffectiveDivisionAllegory ℬ]
     (γ : ℬ) (hSep : Separates γ) {P α : ℬ} {S : P ⟶ α} (hSstr : Straight S)
     (hSthick : ∀ (R : γ ⟶ α), ∃ (f : γ ⟶ P), Map f ∧ R = f ≫ S)
-    (hcoprod : ∀ (b : ℬ), ∃ (Q : ℬ), Nonempty (Coproduct Q P b))
+    (hcoprod : ∀ (B : ℬ), ∃ (Q : ℬ), Nonempty (Coproduct Q P B))
     {β : ℬ} (R : β ⟶ α) :
     ∃ (m : β ⟶ P), Map m ∧ R = m ≫ S := by
   refine progenitor_straight_thick γ hSep hSstr hSthick ?_ R
-  intro b R'
-  obtain ⟨Q, ⟨cp⟩⟩ := hcoprod b
+  intro B R'
+  obtain ⟨Q, ⟨cp⟩⟩ := hcoprod B
   exact hCotuple_of_coproduct S R' cp
 
 /-! ## §2.441  The disjointness crux `Λ(0) ∩ Λ(1) = 0`
@@ -292,35 +292,35 @@ theorem progenitor_straight_thick_of_coproduct {ℬ : Type u} [EffectiveDivision
   `codBox S = codBox ∋` (`Λ_is_map`); so the full assembly is box-gated, exactly as §2.537.) -/
 
 section PowerDisjoint
-variable {ℬ : Type u} [PowerAllegory ℬ] {a : ℬ}
+variable {ℬ : Type u} [PowerAllegory ℬ] {A : ℬ}
 
 /-- If `W ⊑ Λ(0)` and `W ⊑ Λ(1)` then `W = 0`.  `WW° ⊑ Λ(0)Λ(1)° ⊑ (0/∋)∋ ⊑ 0`
     (`Λ(0) ⊑ 0/∋`, `Λ(1)° ⊑ ∋/1 = ∋`), so `dom W ⊑ 0` and `W ⊑ (dom W)W ⊑ 0`. -/
-public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ PowerAllegory.powerObj a)
-    (h0 : W ⊑ Λ (𝟘 : a ⟶ a)) (h1 : W ⊑ Λ (Cat.id a)) :
-    W = (𝟘 : a ⟶ PowerAllegory.powerObj a) := by
+public theorem le_zero_of_le_Λ_zero_Λ_one (W : A ⟶ PowerAllegory.powerObj A)
+    (h0 : W ⊑ Λ (𝟘 : A ⟶ A)) (h1 : W ⊑ Λ (Cat.id A)) :
+    W = (𝟘 : A ⟶ PowerAllegory.powerObj A) := by
   apply le_antisymm _ (zero_le _)
-  have hA0 : Λ (𝟘 : a ⟶ a) ⊑ (𝟘 : a ⟶ a) / PowerAllegory.eps a := inter_lb_left _ _
-  have hA1r : (Λ (Cat.id a))° ⊑ PowerAllegory.eps a := by
-    show (symmDiv (Cat.id a) (PowerAllegory.eps a))° ⊑ _
+  have hA0 : Λ (𝟘 : A ⟶ A) ⊑ (𝟘 : A ⟶ A) / PowerAllegory.eps A := inter_lb_left _ _
+  have hA1r : (Λ (Cat.id A))° ⊑ PowerAllegory.eps A := by
+    show (symmDiv (Cat.id A) (PowerAllegory.eps A))° ⊑ _
     rw [symmDiv, Allegory.recip_inter, Allegory.recip_recip, div_one]
     exact inter_lb_right _ _
-  have hWW : W ≫ W° ⊑ (𝟘 : a ⟶ a) := by
-    have h1' : W ≫ W° ⊑ Λ (𝟘 : a ⟶ a) ≫ (Λ (Cat.id a))° :=
+  have hWW : W ≫ W° ⊑ (𝟘 : A ⟶ A) := by
+    have h1' : W ≫ W° ⊑ Λ (𝟘 : A ⟶ A) ≫ (Λ (Cat.id A))° :=
       le_trans (comp_mono_right h0 (W°)) (comp_mono_left _ (recip_mono h1))
-    have h2 : Λ (𝟘 : a ⟶ a) ≫ (Λ (Cat.id a))°
-        ⊑ ((𝟘 : a ⟶ a) / PowerAllegory.eps a) ≫ PowerAllegory.eps a :=
+    have h2 : Λ (𝟘 : A ⟶ A) ≫ (Λ (Cat.id A))°
+        ⊑ ((𝟘 : A ⟶ A) / PowerAllegory.eps A) ≫ PowerAllegory.eps A :=
       le_trans (comp_mono_right hA0 _) (comp_mono_left _ hA1r)
     exact le_trans h1' (le_trans h2 (DivisionAllegory.div_comp_le _ _))
-  have hdom : dom W ⊑ (𝟘 : a ⟶ a) := by
-    show Cat.id a ∩ W ≫ W° ⊑ (𝟘 : a ⟶ a); exact le_trans (inter_lb_right _ _) hWW
+  have hdom : dom W ⊑ (𝟘 : A ⟶ A) := by
+    show Cat.id A ∩ W ≫ W° ⊑ (𝟘 : A ⟶ A); exact le_trans (inter_lb_right _ _) hWW
   refine le_trans (le_dom_comp W) (le_trans (comp_mono_right hdom W) ?_)
   rw [DistributiveAllegory.zero_comp]; exact le_refl _
 
 /-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`Λ 𝟘 ∩ Λ 1 = 𝟘`).  The empty-transpose
     and the singleton-transpose are disjoint — the heart of (3)⟹(1)'s `ℓϰ° = 0`. -/
 public theorem Λ_zero_inter_Λ_one :
-    Λ (𝟘 : a ⟶ a) ∩ Λ (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
+    Λ (𝟘 : A ⟶ A) ∩ Λ (Cat.id A) = (𝟘 : A ⟶ PowerAllegory.powerObj A) :=
   le_zero_of_le_Λ_zero_Λ_one _ (inter_lb_left _ _) (inter_lb_right _ _)
 
 end PowerDisjoint

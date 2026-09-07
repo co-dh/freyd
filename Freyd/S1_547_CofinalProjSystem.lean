@@ -333,9 +333,9 @@ private theorem mem_filter_ne {C x : 𝒞} {V : List 𝒞} :
 
 private theorem nodup_filter (p : 𝒞 → Bool) : ∀ {l : List 𝒞}, l.Nodup → (l.filter p).Nodup
   | [], _ => by simp
-  | a :: t, hh => by
+  | A :: t, hh => by
     rw [List.filter_cons]
-    by_cases hp : p a
+    by_cases hp : p A
     · simp only [hp, if_pos]
       exact List.nodup_cons.2
         ⟨fun hc => (List.nodup_cons.1 hh).1 (List.mem_filter.1 hc).1,

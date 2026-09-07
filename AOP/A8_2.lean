@@ -72,12 +72,12 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
 
 /-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
     every candidate list counts as sorted. -/
-public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {a : RelSet.{0}}
-    (f : (F.obj a).carrier → a.carrier) :
-    MonotonicAlg (F := F) (RelSet.graph f) (topMor a a) :=
+public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+    (f : (F.obj A).carrier → A.carrier) :
+    MonotonicAlg (F := F) (RelSet.graph f) (topMor A A) :=
   RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
 
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {a c w : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 
 /-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
     eliminated"): split the thinning algebra's source as `V ≫ S`, and the `thin Q` at its end
@@ -88,16 +88,16 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {a c w : 𝒜}
     `Λ V ≫ P(Λ S) ≫ union`; (8.4) moves `thin Q` under `P`; thin-elimination (8.3) replaces it
     by `min R` followed by the singleton, at `R ∩ (S°S) ⊑ Q`; and `P τ ≫ union = id` absorbs
     the singleton and the union together. -/
-public theorem thinAlg_elim (V : c ⟶ w) (S : w ⟶ a) {Q R : a ⟶ a}
+public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
     (hQ : R ∩ (S° ≫ S) ⊑ Q) :
     Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thinRel Q := by
   -- the power transpose of a composition (book p.198)
   have hsplit : Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
     rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
-  have hmapτ : Map (singletonMap : a ⟶ PowerAllegory.powerObj a) := Λ_is_map' (𝟙 a)
+  have hmapτ : Map (singletonMap : A ⟶ PowerAllegory.powerObj A) := Λ_is_map' (𝟙 A)
   -- `P τ ≫ union = id` (`union·Pτ = id`, the monad law)
-  have hτ : powerRel (singletonMap : a ⟶ PowerAllegory.powerObj a) ≫ bigUnion
-      = 𝟙 (PowerAllegory.powerObj a) := by
+  have hτ : powerRel (singletonMap : A ⟶ PowerAllegory.powerObj A) ≫ bigUnion
+      = 𝟙 (PowerAllegory.powerObj A) := by
     rw [powerRel_map hmapτ, bigUnion_existsImage_singleton]
   -- thin-elimination (8.3)
   have h83 : (Λ S ≫ est R) ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
@@ -125,12 +125,12 @@ variable {F : Relator 𝒜 𝒜}
     `ΛV·P(ΛS·min R)` is the book's `[P wrap, cpl·P step]`.  Corollary 8.1 (`thinning_est`)
     supplies the fold, `thinAlg_elim` the algebra. -/
 public theorem thinning_paths (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {Sspec : F.obj a ⟶ a} {V : F.obj (PowerAllegory.powerObj a) ⟶ w} {S : w ⟶ a} {Q R : a ⟶ a}
-    (hbif : F.map (∋ a) ≫ Sspec = V ≫ S)
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 a ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    {Sspec : F.obj A ⟶ A} {V : F.obj (PowerAllegory.powerObj A) ⟶ w} {S : w ⟶ A} {Q R : A ⟶ A}
+    (hbif : F.map (∋ A) ≫ Sspec = V ≫ S)
+    (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
     (hmono : MonotonicAlg Sspec Q) (hQ : R ∩ (S° ≫ S) ⊑ Q) :
     relCata (Λ V ≫ powerRel (Λ S ≫ est R)) ≫ est R ⊑ Λ (relCata Sspec) ≫ est R := by
-  have halg : Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (F.map (∋ a) ≫ Sspec) ≫ thinRel Q := by
+  have halg : Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (F.map (∋ A) ≫ Sspec) ≫ thinRel Q := by
     rw [hbif]
     exact thinAlg_elim V S hQ
   exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))

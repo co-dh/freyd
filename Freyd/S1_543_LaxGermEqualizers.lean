@@ -47,18 +47,18 @@ variable (L : LaxCatSystem.{w, w} ι D) (hL : Coherent L)
 
   Mirrors `Colim.objIncl_preserves_equalizers`. -/
 theorem objInclL_preserves_equalizers (eqData : LaxEqualizerData L)
-    (i : ι) {a b : L.A i} (f g : a ⟶ b) :
+    (i : ι) {A B : L.A i} (f g : A ⟶ B) :
     @EqualizerCone.IsEqualizer (Obj L) (laxColimCat L hL)
-      (objIncl L i a) (objIncl L i b) (stageInclL L hL f) (stageInclL L hL g)
+      (objIncl L i A) (objIncl L i B) (stageInclL L hL f) (stageInclL L hL g)
       (@EqualizerCone.mk (Obj L) (laxColimCat L hL) _ _ (stageInclL L hL f) (stageInclL L hL g)
-        (objIncl L i (@eqObj _ _ (eqData.he i) a b f g))
-        (stageInclL L hL (@eqMap _ _ (eqData.he i) a b f g))
+        (objIncl L i (@eqObj _ _ (eqData.he i) A B f g))
+        (stageInclL L hL (@eqMap _ _ (eqData.he i) A B f g))
         (by
           letI : Cat (Obj L) := laxColimCat L hL
           letI : HasEqualizers (L.A i) := eqData.he i
-          show @compL _ _ L hL ⟨i, eqObj f g⟩ ⟨i, a⟩ ⟨i, b⟩
+          show @compL _ _ L hL ⟨i, eqObj f g⟩ ⟨i, A⟩ ⟨i, B⟩
                 (stageInclL L hL (eqMap f g)) (stageInclL L hL f)
-             = @compL _ _ L hL ⟨i, eqObj f g⟩ ⟨i, a⟩ ⟨i, b⟩
+             = @compL _ _ L hL ⟨i, eqObj f g⟩ ⟨i, A⟩ ⟨i, B⟩
                 (stageInclL L hL (eqMap f g)) (stageInclL L hL g)
           rw [← stageInclL_comp L hL (eqMap f g) f, ← stageInclL_comp L hL (eqMap f g) g,
               eqMap_eq f g])) := by

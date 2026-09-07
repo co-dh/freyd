@@ -50,7 +50,7 @@ public inductive PolyF where
   | .otimes l r, a, x => sem l a x × sem r a x
 
 /-- The bundled `Rel(Set)` object `⟨⟦F⟧ A X⟩`. -/
-@[reducible, expose] public def Fo (F : PolyF) (a x : RelSet.{0}) : RelSet.{0} := ⟨sem F a.carrier x.carrier⟩
+@[reducible, expose] public def Fo (F : PolyF) (A x : RelSet.{0}) : RelSet.{0} := ⟨sem F A.carrier x.carrier⟩
 
 /-! ## The initial algebra `μ F A`
 
@@ -193,7 +193,7 @@ public theorem bimap_comp (F : PolyF) {A₁ A₂ A₃ B₁ B₂ B₃ : Type}
   bimapP F (fun _ => True) Q
 
 /-- The coreflexive (partial identity) `P¿` of a predicate `P` (aopa `_¿`). -/
-def corefl {b : RelSet.{0}} (P : b.carrier → Prop) : b ⟶ b := fun x y => x = y ∧ P x
+def corefl {B : RelSet.{0}} (P : B.carrier → Prop) : B ⟶ B := fun x y => x = y ∧ P x
 
 /-! ## Action on relations — the relator (`bimapR`, `fmapR`) -/
 
@@ -211,8 +211,8 @@ def corefl {b : RelSet.{0}} (P : b.carrier → Prop) : b ⟶ b := fun x y => x =
   | .otimes l r, _, _, _, _, R, S => fun u v => bimapR l R S u.1 v.1 ∧ bimapR r R S u.2 v.2
 
 /-- aopa `fmapR F R = bimapR F idR R`. -/
-@[expose] public def fmapR (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) : Fo F a b₁ ⟶ Fo F a b₂ :=
-  bimapR F (Cat.id a) R
+@[expose] public def fmapR (F : PolyF) {A b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) : Fo F A b₁ ⟶ Fo F A b₂ :=
+  bimapR F (Cat.id A) R
 
 /-- aopa `bimapR-functor-⊑`: `⟦F⟧R ≫ ⟦F⟧R' ⊑ ⟦F⟧(R≫R')`. -/
 public theorem bimapR_functor_le (F : PolyF) {a₁ a₂ a₃ b₁ b₂ b₃ : RelSet.{0}}
@@ -295,17 +295,17 @@ theorem bimapR_cong (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} {R S : a₁ �
     (hRS : R = S) (hTU : T = U) : bimapR F R T = bimapR F S U := by rw [hRS, hTU]
 
 /-- aopa `bimapR-id`: `⟦F⟧ idR idR ≑ idR` — the relator's identity law. -/
-public theorem bimapR_id (F : PolyF) (a b : RelSet.{0}) :
-    bimapR F (Cat.id a) (Cat.id b) = Cat.id (Fo F a b) := by
+public theorem bimapR_id (F : PolyF) (A B : RelSet.{0}) :
+    bimapR F (Cat.id A) (Cat.id B) = Cat.id (Fo F A B) := by
   induction F with
   | zer => exact hom_ext fun u _ => (u : Empty).elim
   | one => exact hom_ext fun u v => ⟨fun _ => by cases u; cases v; rfl, fun _ => trivial⟩
   | arg₁ => exact hom_ext fun _ _ => Iff.rfl
   | arg₂ => exact hom_ext fun _ _ => Iff.rfl
   | oplus l r ihl ihr =>
-      have hl : ∀ x y, bimapR l (Cat.id a) (Cat.id b) x y ↔ x = y := fun x y => by
+      have hl : ∀ x y, bimapR l (Cat.id A) (Cat.id B) x y ↔ x = y := fun x y => by
         rw [ihl]; exact Iff.rfl
-      have hr : ∀ x y, bimapR r (Cat.id a) (Cat.id b) x y ↔ x = y := fun x y => by
+      have hr : ∀ x y, bimapR r (Cat.id A) (Cat.id B) x y ↔ x = y := fun x y => by
         rw [ihr]; exact Iff.rfl
       refine hom_ext fun u v => ?_
       show _ ↔ u = v
@@ -317,9 +317,9 @@ public theorem bimapR_id (F : PolyF) (a b : RelSet.{0}) :
         | inl y => exact ⟨False.elim, fun h => nomatch h⟩
         | inr y => exact (hr x y).trans ⟨congrArg Sum.inr, Sum.inr.inj⟩
   | otimes l r ihl ihr =>
-      have hl : ∀ x y, bimapR l (Cat.id a) (Cat.id b) x y ↔ x = y := fun x y => by
+      have hl : ∀ x y, bimapR l (Cat.id A) (Cat.id B) x y ↔ x = y := fun x y => by
         rw [ihl]; exact Iff.rfl
-      have hr : ∀ x y, bimapR r (Cat.id a) (Cat.id b) x y ↔ x = y := fun x y => by
+      have hr : ∀ x y, bimapR r (Cat.id A) (Cat.id B) x y ↔ x = y := fun x y => by
         rw [ihr]; exact Iff.rfl
       refine hom_ext fun u v => ?_
       show _ ↔ u = v
@@ -327,23 +327,23 @@ public theorem bimapR_id (F : PolyF) (a b : RelSet.{0}) :
         fun h => ⟨(hl _ _).mpr (congrArg Prod.fst h), (hr _ _).mpr (congrArg Prod.snd h)⟩⟩
 
 /-- `(𝟙)° = 𝟙` in `Rel(Set)`. -/
-public theorem recip_id {a : RelSet.{0}} : (Cat.id a)° = Cat.id a := hom_ext fun x y => eq_comm
+public theorem recip_id {A : RelSet.{0}} : (Cat.id A)° = Cat.id A := hom_ext fun x y => eq_comm
 
 /-- aopa `fmapR-functor`: `⟦F⟧R ≫ ⟦F⟧S = ⟦F⟧(R≫S)`. -/
-public theorem fmapR_functor (F : PolyF) (a : RelSet.{0}) {b₁ b₂ b₃ : RelSet.{0}}
+public theorem fmapR_functor (F : PolyF) (A : RelSet.{0}) {b₁ b₂ b₃ : RelSet.{0}}
     (R : b₁ ⟶ b₂) (S : b₂ ⟶ b₃) :
-    (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂) ≫ fmapR F S = fmapR F (R ≫ S) := by
-  show bimapR F (Cat.id a) R ≫ bimapR F (Cat.id a) S = bimapR F (Cat.id a) (R ≫ S)
+    (fmapR F R : Fo F A b₁ ⟶ Fo F A b₂) ≫ fmapR F S = fmapR F (R ≫ S) := by
+  show bimapR F (Cat.id A) R ≫ bimapR F (Cat.id A) S = bimapR F (Cat.id A) (R ≫ S)
   rw [bimapR_functor, Cat.id_comp]
 
 /-- aopa `fmapR-monotonic`. -/
-public theorem fmapR_monotonic (F : PolyF) {a b₁ b₂ : RelSet.{0}} {R S : b₁ ⟶ b₂} (h : R ⊑ S) :
-    (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂) ⊑ fmapR F S :=
-  bimapR_monotonic F (le_refl (Cat.id a)) h
+public theorem fmapR_monotonic (F : PolyF) {A b₁ b₂ : RelSet.{0}} {R S : b₁ ⟶ b₂} (h : R ⊑ S) :
+    (fmapR F R : Fo F A b₁ ⟶ Fo F A b₂) ⊑ fmapR F S :=
+  bimapR_monotonic F (le_refl (Cat.id A)) h
 
 /-- aopa `fmapR-cong`. -/
-theorem fmapR_cong (F : PolyF) {a b₁ b₂ : RelSet.{0}} {R S : b₁ ⟶ b₂} (h : R = S) :
-    (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂) = fmapR F S := by rw [h]
+theorem fmapR_cong (F : PolyF) {A b₁ b₂ : RelSet.{0}} {R S : b₁ ⟶ b₂} (h : R = S) :
+    (fmapR F R : Fo F A b₁ ⟶ Fo F A b₂) = fmapR F S := by rw [h]
 
 /-- aopa `bimapR-˘-preservation`: `(⟦F⟧R S)° = ⟦F⟧R° S°`. -/
 public theorem bimapR_recip (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂) :
@@ -369,9 +369,9 @@ public theorem bimapR_recip (F : PolyF) {a₁ a₂ b₁ b₂ : RelSet.{0}} (R : 
       exact ⟨fun h => ⟨el.mp h.1, er.mp h.2⟩, fun h => ⟨el.mpr h.1, er.mpr h.2⟩⟩
 
 /-- aopa `fmapR-˘-preservation`: `(⟦F⟧R)° = ⟦F⟧R°`. -/
-public theorem fmapR_recip (F : PolyF) {a b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) :
-    (fmapR F R : Fo F a b₁ ⟶ Fo F a b₂)° = fmapR F R° := by
-  show (bimapR F (Cat.id a) R)° = bimapR F (Cat.id a) R°
+public theorem fmapR_recip (F : PolyF) {A b₁ b₂ : RelSet.{0}} (R : b₁ ⟶ b₂) :
+    (fmapR F R : Fo F A b₁ ⟶ Fo F A b₂)° = fmapR F R° := by
+  show (bimapR F (Cat.id A) R)° = bimapR F (Cat.id A) R°
   rw [bimapR_recip, recip_id]
 
 /-- aopa `bimap-bimapR`: `graph (bimap F f g) = ⟦F⟧ (graph f) (graph g)`. -/
@@ -429,11 +429,11 @@ public theorem fmap_fmapR (F : PolyF) {A B₁ B₂ : Type} (g : B₁ → B₂) :
 
 /-- `⟦F⟧ A −` as a `Relator` on `Rel(Set)`: the three laws `bimapR_id`, `fmapR_functor` and
     `fmapR_monotonic` packaged so `A5_*`'s generic relator theory applies to every `PolyF` code. -/
-@[expose] public def relator (F : PolyF) (a : RelSet.{0}) : Relator RelSet.{0} RelSet.{0} where
-  obj := Fo F a
+@[expose] public def relator (F : PolyF) (A : RelSet.{0}) : Relator RelSet.{0} RelSet.{0} where
+  obj := Fo F A
   map R := fmapR F R
-  map_id b := bimapR_id F a b
-  map_comp R S := (fmapR_functor F a R S).symm
+  map_id B := bimapR_id F A B
+  map_comp R S := (fmapR_functor F A R S).symm
   map_mono h := fmapR_monotonic F h
 
 end Freyd.Alg.RelSet.Poly

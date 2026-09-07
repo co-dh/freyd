@@ -76,13 +76,13 @@ def step : (Int × Int) → (Int → Bool) → (Int → Bool) :=
     recursion above (there is no pre-existing `List`-curried function to wrap, unlike `L98`'s
     `within` — `noAdjFrom` is not itself defined by recursion on the initial algebra). -/
 def noAdjFromC : ConsList Unit (Int × Int) → (Int → Bool)
-  | ConsList.wrap d => g d
+  | ConsList.wrap D => g D
   | ConsList.cons iv xs => step iv (noAdjFromC xs)
 
 /-! ## The FORCED structural recursion of `noAdjFromC` -/
 
 /-- The base condition: `noAdjFromC (wrap d) = g d` — by construction. -/
-theorem hwrap (d : Unit) : noAdjFromC (ConsList.wrap d) = g d := rfl
+theorem hwrap (D : Unit) : noAdjFromC (ConsList.wrap D) = g D := rfl
 
 /-- The step condition: `noAdjFromC (cons iv xs) = step iv (noAdjFromC xs)` — by construction. -/
 theorem hcons (iv : Int × Int) (xs : ConsList Unit (Int × Int)) :

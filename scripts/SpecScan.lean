@@ -43,7 +43,7 @@ open Lean Meta LibrarySearch
 /-- Strip a proof's leading binders: `theorem foo (a b) := rfl` elaborates to `fun a b => rfl`, so
     the head constant is only visible underneath them. -/
 partial def proofHead : Expr → Expr
-  | .lam _ _ b _ => proofHead b
+  | .lam _ _ B _ => proofHead B
   | .mdata _ e => proofHead e
   | e => e.getAppFn
 
@@ -163,7 +163,7 @@ def main : IO Unit := do
     let some idx := env.getModuleIdxFor? name | continue
     unless `Freyd |>.isPrefixOf env.header.moduleNames[idx.toNat]! do continue
     let provedByRfl := match proofHead value with
-      | .const c _ => c == ``rfl || c == ``Eq.refl
+      | .const C _ => C == ``rfl || C == ``Eq.refl
       | _ => false
     let generated := generatedDeclName env name
     thms := thms.push { name, mod := env.header.moduleNames[idx.toNat]!, kind, type, value,
@@ -213,7 +213,7 @@ def main : IO Unit := do
           -- `try/catch` deliberately does not catch — that is precisely how the old bucket loop lost
           -- whole buckets of findings to one slow pair.
           let outcome ← tryCatchRuntimeEx
-              (withTheReader Core.Context (fun c => { c with maxHeartbeats := 20000 })
+              (withTheReader Core.Context (fun C => { C with maxHeartbeats := 20000 })
                 (Core.withCurrHeartbeats (withNewMCtxDepth (specializes special general))))
               (fun _ => pure none)
           if let some result := outcome then

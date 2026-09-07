@@ -76,7 +76,7 @@ def foldFn : ConsList Unit Int → List Int
   | ConsList.cons x xs => st x (foldFn xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `foldFn (wrap d) = g d`. -/
-theorem foldFn_wrap : ∀ d : Unit, foldFn (ConsList.wrap d) = g d := fun _ => rfl
+theorem foldFn_wrap : ∀ D : Unit, foldFn (ConsList.wrap D) = g D := fun _ => rfl
 
 /-- The step condition IS `foldFn`'s cons equation: `foldFn (cons x xs) = st x (foldFn xs)`. -/
 theorem foldFn_cons :

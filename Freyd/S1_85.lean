@@ -200,7 +200,7 @@ public class ThinCategory (P : Type u) [Cat.{v} P] : Prop where
 class HasHeytingArrow (P : Type u) [Cat.{v} P] [HasBinaryProducts P] where
   imp : P → P → P
   /-- Adjunction: a map x → (a→b) exists iff a∧x → b exists. -/
-  imp_adj : ∀ (a b x : P), Nonempty (x ⟶ imp a b) ↔ Nonempty (prod a x ⟶ b)
+  imp_adj : ∀ (A B x : P), Nonempty (x ⟶ imp A B) ↔ Nonempty (prod A x ⟶ B)
 
 /-- §1.852: A poset (thin category) is exponential iff it has binary meets
     and a Heyting arrow. -/
@@ -213,12 +213,12 @@ theorem poset_exponential_iff_meets_heytingArrow
     rintro ⟨he⟩
     refine ⟨he.toHasBinaryProducts, ⟨?_⟩⟩
     refine
-      { imp := fun a b => he.exp_obj a b
-        imp_adj := fun a b x => ?_ }
+      { imp := fun A B => he.exp_obj A B
+        imp_adj := fun A B x => ?_ }
     constructor
     · -- x ⟶ b^a  ↦  prodMap a x b^a g ≫ eval : a×x ⟶ b
       rintro ⟨g⟩
-      exact ⟨@prodMap P _ he.toHasBinaryProducts a x (he.exp_obj a b) g ≫ he.eval_map⟩
+      exact ⟨@prodMap P _ he.toHasBinaryProducts A x (he.exp_obj A B) g ≫ he.eval_map⟩
     · -- a×x ⟶ b  ↦  curry : x ⟶ b^a
       rintro ⟨f⟩
       exact ⟨he.curry_map f⟩
@@ -227,7 +227,7 @@ theorem poset_exponential_iff_meets_heytingArrow
     refine ⟨?_⟩
     refine
       { toHasBinaryProducts := hm
-        exp_obj := fun a b => ha.imp a b
+        exp_obj := fun A B => ha.imp A B
         eval_map := fun {A B} => Classical.choice ((ha.imp_adj A B (ha.imp A B)).mp ⟨Cat.id _⟩)
         curry_map := fun {A B X} f => Classical.choice ((ha.imp_adj A B X).mpr ⟨f⟩)
         curry_eval := fun {A B X} f => ThinCategory.thin _ _

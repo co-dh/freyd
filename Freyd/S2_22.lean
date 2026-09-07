@@ -1125,14 +1125,14 @@ end Q3
 /-- In the §2.228(c) model the simple morphisms are exactly `{𝟎, e, a, a²}`
     (everything but `M`): `F° F ⊑ e` fails only for `F = M` (`M° M = M ⋢ e`). -/
 theorem Q3.simple_of {F : Q3} (hF : F ≠ Q3.top) :
-    Simple (𝒜 := Unit) (a := ()) (b := ()) F := by
+    Simple (𝒜 := Unit) (A := ()) (B := ()) F := by
   dsimp [Simple, le]
   cases F <;> first | rfl | exact absurd rfl hF
 
 /-- Each group element `g` (and `𝟎`) is semi-simple: `g = e° ≫ g` with `e, g`
     simple; `𝟎 = 𝟎° ≫ 𝟎`. -/
 theorem Q3.semiSimple_of {R : Q3} (hR : R ≠ Q3.top) :
-    SemiSimple (𝒜 := Unit) (a := ()) (b := ()) R :=
+    SemiSimple (𝒜 := Unit) (A := ()) (B := ()) R :=
   ⟨(), Q3.e, R, Q3.simple_of (by decide), Q3.simple_of hR, by cases R <;> rfl⟩
 
 /-- `S ⊑ R` in the §2.228(c) model is the decidable identity `S ∩ R = S`. -/
@@ -1146,7 +1146,7 @@ theorem counter_unionOfSemiSimple (R : Q3) :
     UnionOfSemiSimpleUA (𝒜 := Unit) (a := ()) (b := ()) R := by
   -- helper: a non-M element x with x ∩ R = x is a semi-simple sub-morphism of R
   have ss : ∀ (x : Q3), x ≠ Q3.top → Q3.meet x R = x →
-      SemiSimple (𝒜 := Unit) (a := ()) (b := ()) x ∧
+      SemiSimple (𝒜 := Unit) (A := ()) (B := ()) x ∧
         @le Unit () () counterAllegory x R :=
     fun _ hx hle => ⟨Q3.semiSimple_of hx, Q3.le_of hle⟩
   cases R

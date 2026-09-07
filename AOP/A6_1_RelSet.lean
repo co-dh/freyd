@@ -40,7 +40,7 @@ public structure RelSet : Type (u + 1) where
 namespace RelSet
 
 @[expose] public instance : Cat RelSet.{u} where
-  Hom a b := a.carrier → b.carrier → Prop
+  Hom A B := A.carrier → B.carrier → Prop
   id _ := fun x y => x = y
   comp R S := fun x z => ∃ y, R x y ∧ S y z
   id_comp R := funext fun x => funext fun y => propext ⟨fun ⟨_, h, hR⟩ => h ▸ hR,
@@ -50,13 +50,13 @@ namespace RelSet
   assoc R S T := funext fun x => funext fun w => propext
     ⟨fun ⟨y, ⟨z, hR, hS⟩, hT⟩ => ⟨z, hR, y, hS, hT⟩, fun ⟨z, hR, y, hS, hT⟩ => ⟨y, ⟨z, hR, hS⟩, hT⟩⟩
 
-@[simp] public theorem comp_apply {a b c : RelSet.{u}} (R : a ⟶ b) (S : b ⟶ c) (x : a.carrier)
-    (z : c.carrier) : (R ≫ S) x z = ∃ y, R x y ∧ S y z := rfl
+@[simp] public theorem comp_apply {A B C : RelSet.{u}} (R : A ⟶ B) (S : B ⟶ C) (x : A.carrier)
+    (z : C.carrier) : (R ≫ S) x z = ∃ y, R x y ∧ S y z := rfl
 
-@[simp] public theorem id_apply {a : RelSet.{u}} (x y : a.carrier) : (Cat.id a) x y = (x = y) := rfl
+@[simp] public theorem id_apply {A : RelSet.{u}} (x y : A.carrier) : (Cat.id A) x y = (x = y) := rfl
 
 /-- Extensionality for `Rel(Set)` morphisms: relations are equal iff pointwise equivalent. -/
-public theorem hom_ext {a b : RelSet.{u}} {R S : a ⟶ b} (h : ∀ x y, R x y ↔ S x y) : R = S :=
+public theorem hom_ext {A B : RelSet.{u}} {R S : A ⟶ B} (h : ∀ x y, R x y ↔ S x y) : R = S :=
   funext fun x => funext fun y => propext (h x y)
 
 @[expose] public instance : Allegory RelSet.{u} where
@@ -75,11 +75,11 @@ public theorem hom_ext {a b : RelSet.{u}} {R S : a ⟶ b} (h : ∀ x y, R x y �
     ⟨fun ⟨⟨y, hR, hS⟩, hT⟩ => ⟨⟨⟨y, hR, hS⟩, hT⟩, ⟨y, ⟨hR, ⟨z, hT, hS⟩⟩, hS⟩⟩,
      fun ⟨⟨hRS, hT⟩, _⟩ => ⟨hRS, hT⟩⟩
 
-@[simp] public theorem inter_apply {a b : RelSet.{u}} (R S : a ⟶ b) (x : a.carrier)
-    (y : b.carrier) : (R ∩ S) x y = (R x y ∧ S x y) := rfl
+@[simp] public theorem inter_apply {A B : RelSet.{u}} (R S : A ⟶ B) (x : A.carrier)
+    (y : B.carrier) : (R ∩ S) x y = (R x y ∧ S x y) := rfl
 
 /-- The allegory order is exactly relational inclusion. -/
-public theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, R x y → S x y := by
+public theorem le_iff {A B : RelSet.{u}} {R S : A ⟶ B} : R ⊑ S ↔ ∀ x y, R x y → S x y := by
   constructor
   · intro h x y hR
     have e : (R x y ∧ S x y) = R x y := congrFun (congrFun h x) y
@@ -95,41 +95,41 @@ public theorem le_iff {a b : RelSet.{u}} {R S : a ⟶ b} : R ⊑ S ↔ ∀ x y, 
   obligation in one place. -/
 
 /-- The graph relation `y = f x` of an ordinary function `f`. -/
-@[expose] public def graph {a b : RelSet.{u}} (f : a.carrier → b.carrier) : a ⟶ b := fun x y => y = f x
+@[expose] public def graph {A B : RelSet.{u}} (f : A.carrier → B.carrier) : A ⟶ B := fun x y => y = f x
 
-theorem graph_apply {a b : RelSet.{u}} (f : a.carrier → b.carrier) (x : a.carrier)
-    (y : b.carrier) : graph f x y = (y = f x) := rfl
+theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x : A.carrier)
+    (y : B.carrier) : graph f x y = (y = f x) := rfl
 
-@[simp] public theorem recip_apply {a b : RelSet.{u}} (R : a ⟶ b) (y : b.carrier) (x : a.carrier) :
+@[simp] public theorem recip_apply {A B : RelSet.{u}} (R : A ⟶ B) (y : B.carrier) (x : A.carrier) :
     R° y x = R x y := rfl
 
-public theorem graph_simple {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Simple (graph f) := by
-  show (graph f)° ≫ graph f ⊑ Cat.id b
+public theorem graph_simple {A B : RelSet.{u}} (f : A.carrier → B.carrier) : Simple (graph f) := by
+  show (graph f)° ≫ graph f ⊑ Cat.id B
   rw [le_iff]; intro y y' h
   obtain ⟨x, hy, hy'⟩ := h
   exact hy.trans hy'.symm
 
-public theorem graph_entire {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Entire (graph f) := by
-  show dom (graph f) = Cat.id a
+public theorem graph_entire {A B : RelSet.{u}} (f : A.carrier → B.carrier) : Entire (graph f) := by
+  show dom (graph f) = Cat.id A
   apply hom_ext; intro x x'
   exact ⟨fun h => h.1, fun h => ⟨h, f x, rfl, congrArg f h⟩⟩
 
-public theorem graph_map {a b : RelSet.{u}} (f : a.carrier → b.carrier) : Map (graph f) :=
+public theorem graph_map {A B : RelSet.{u}} (f : A.carrier → B.carrier) : Map (graph f) :=
   ⟨graph_entire f, graph_simple f⟩
 
 /-- Diagram-order composition of two graphs is the graph of the composite function. -/
-public theorem graph_comp {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (g : b.carrier → c.carrier) :
+public theorem graph_comp {A B C : RelSet.{u}} (f : A.carrier → B.carrier) (g : B.carrier → C.carrier) :
     graph f ≫ graph g = graph (fun x => g (f x)) :=
   hom_ext fun x z => ⟨fun ⟨y, hy, hz⟩ => hz.trans (congrArg g hy), fun hz => ⟨f x, rfl, hz⟩⟩
 
 /-- Precomposing an ARBITRARY relation with a graph just renames the source point. -/
-public theorem graph_comp_left {a b c : RelSet.{u}} (f : a.carrier → b.carrier) (S : b ⟶ c) :
+public theorem graph_comp_left {A B C : RelSet.{u}} (f : A.carrier → B.carrier) (S : B ⟶ C) :
     graph f ≫ S = fun x z => S (f x) z :=
   hom_ext fun x z => ⟨fun ⟨y, hy, hS⟩ => hy ▸ hS, fun h => ⟨f x, rfl, h⟩⟩
 
 /-- The graph of the identity function is the identity relation.  Not `rfl`: `graph` orients its
     equation as `y = f x` and the identity as `x = y`. -/
-theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
+theorem graph_id (A : RelSet.{u}) : graph (fun x : A.carrier => x) = 𝟙 A :=
   hom_ext fun _ _ => ⟨Eq.symm, Eq.symm⟩
 
 /-! ### Distributive structure: `𝟘` = empty relation, `∪` = union -/
@@ -157,8 +157,8 @@ theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
        fun h => h.elim (fun ⟨hR, hS⟩ => ⟨hR, Or.inl hS⟩) (fun ⟨hR, hT⟩ => ⟨hR, Or.inr hT⟩)⟩
     zero_union := fun R => hom_ext fun x y => ⟨fun h => h.elim (fun hf => hf.elim) id, fun hR => Or.inr hR⟩ }
 
-@[simp] public theorem union_apply {a b : RelSet.{u}} (R S : a ⟶ b) (x : a.carrier)
-    (y : b.carrier) : (R ∪ S) x y = (R x y ∨ S x y) := rfl
+@[simp] public theorem union_apply {A B : RelSet.{u}} (R S : A ⟶ B) (x : A.carrier)
+    (y : B.carrier) : (R ∪ S) x y = (R x y ∨ S x y) := rfl
 
 /-! ### Division: `R / S` = the right residual `∀ z, S y z → R x z` -/
 
@@ -189,16 +189,16 @@ theorem graph_id (a : RelSet.{u}) : graph (fun x : a.carrier => x) = 𝟙 a :=
 /-! ### Power objects: `[b]` = the powerset `b → Prop`, `∋` = membership -/
 
 /-- The power object of `b`: its carrier is the powerset `b.carrier → Prop`. -/
-@[expose] public def pow (b : RelSet.{u}) : RelSet.{u} := ⟨b.carrier → Prop⟩
+@[expose] public def pow (B : RelSet.{u}) : RelSet.{u} := ⟨B.carrier → Prop⟩
 
 /-- Membership `∋_b : [b] ⟶ b` in `Rel(Set)`: `P ∋ y` iff `y ∈ P`. -/
-@[expose] public def epsRel (b : RelSet.{u}) : pow b ⟶ b := fun P y => P y
+@[expose] public def epsRel (B : RelSet.{u}) : pow B ⟶ B := fun P y => P y
 
 /-- The classifier of a relation `R : c ⟶ b` — the graph of `x ↦ {y | R x y}`; this is the
     transpose `ΛR`, and it witnesses that `∋` classifies EVERY relation. -/
-@[expose] public def classifier {b c : RelSet.{u}} (R : c ⟶ b) : c ⟶ pow b := graph fun x => fun y => R x y
+@[expose] public def classifier {B C : RelSet.{u}} (R : C ⟶ B) : C ⟶ pow B := graph fun x => fun y => R x y
 
-public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier R ≫ epsRel b = R := by
+public theorem classifier_comp_eps {B C : RelSet.{u}} (R : C ⟶ B) : classifier R ≫ epsRel B = R := by
   apply hom_ext; intro x y
   exact ⟨fun ⟨P, hP, hPy⟩ => by rw [hP] at hPy; exact hPy, fun hR => ⟨fun y => R x y, rfl, hR⟩⟩
 
@@ -206,8 +206,8 @@ public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier
   { (inferInstance : DivisionAllegory RelSet) with
     powerObj := pow
     eps := epsRel
-    eps_straight := fun b => by
-      show epsRel b /ₛ epsRel b ⊑ Cat.id (pow b)
+    eps_straight := fun B => by
+      show epsRel B /ₛ epsRel B ⊑ Cat.id (pow B)
       rw [le_iff]; intro P Q h
       obtain ⟨h1, h2⟩ := h
       funext y; exact propext ⟨h2 y, h1 y⟩
@@ -225,8 +225,8 @@ public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier
 
 @[expose] public instance : TabularAllegory RelSet.{u} :=
   { (inferInstance : Allegory RelSet) with
-    tabular := fun {a b} R =>
-      ⟨⟨{ p : a.carrier × b.carrier // R p.1 p.2 }⟩, graph (fun p => p.1.1), graph (fun p => p.1.2),
+    tabular := fun {A B} R =>
+      ⟨⟨{ p : A.carrier × B.carrier // R p.1 p.2 }⟩, graph (fun p => p.1.1), graph (fun p => p.1.2),
         graph_map _, graph_map _,
         (by
           apply hom_ext; intro x y
@@ -247,8 +247,8 @@ public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier
     unit_obj := ⟨PUnit⟩
     unit_prop :=
       ⟨fun R => le_iff.mpr fun x y _ => Subsingleton.elim x y,
-       fun a => ⟨fun _ _ => True, by
-        show dom (fun _ _ => True) = Cat.id a
+       fun A => ⟨fun _ _ => True, by
+        show dom (fun _ _ => True) = Cat.id A
         apply hom_ext; intro x x'
         exact ⟨fun h => h.1, fun h => ⟨h, PUnit.unit, trivial, trivial⟩⟩⟩⟩ }
 
@@ -269,41 +269,41 @@ public theorem classifier_comp_eps {b c : RelSet.{u}} (R : c ⟶ b) : classifier
   `A6_1_Digits`; hoisted here (the base each engine imports) so a single copy serves all three. -/
 
 /-- An entire relation relates every point to something. -/
-public theorem entire_total {a b : RelSet.{u}} {R : a ⟶ b} (h : Entire R) (x : a.carrier) :
+public theorem entire_total {A B : RelSet.{u}} {R : A ⟶ B} (h : Entire R) (x : A.carrier) :
     ∃ y, R x y := by
   have hd : (dom R) x x := by
-    have e : (dom R) x x = (Cat.id a) x x := congrFun (congrFun h x) x
+    have e : (dom R) x x = (Cat.id A) x x := congrFun (congrFun h x) x
     rw [e]; rfl
   obtain ⟨_, y, hy, _⟩ := hd
   exact ⟨y, hy⟩
 
 /-- A simple relation is single-valued. -/
-public theorem simple_uniq {a b : RelSet.{u}} {R : a ⟶ b} (h : Simple R) {x : a.carrier}
-    {y y' : b.carrier} (hy : R x y) (hy' : R x y') : y = y' :=
+public theorem simple_uniq {A B : RelSet.{u}} {R : A ⟶ B} (h : Simple R) {x : A.carrier}
+    {y y' : B.carrier} (hy : R x y) (hy' : R x y') : y = y' :=
   le_iff.mp h y y' ⟨x, hy, hy'⟩
 
 /-- The product action `R × S` in `Rel(Set)`: `(x,y) ~ (x',y')` iff `R x x'` and `S y y'`. -/
-@[expose] public def rprodMap {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
-    (⟨a.carrier × b.carrier⟩ : RelSet.{u}) ⟶ ⟨a'.carrier × b'.carrier⟩ :=
+@[expose] public def rprodMap {A a' B b' : RelSet.{u}} (R : A ⟶ a') (S : B ⟶ b') :
+    (⟨A.carrier × B.carrier⟩ : RelSet.{u}) ⟶ ⟨a'.carrier × b'.carrier⟩ :=
   fun p q => R p.1 q.1 ∧ S p.2 q.2
 
-theorem rprodMap_apply {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b')
-    (p : a.carrier × b.carrier) (q : a'.carrier × b'.carrier) :
+theorem rprodMap_apply {A a' B b' : RelSet.{u}} (R : A ⟶ a') (S : B ⟶ b')
+    (p : A.carrier × B.carrier) (q : a'.carrier × b'.carrier) :
     rprodMap R S p q = (R p.1 q.1 ∧ S p.2 q.2) := rfl
 
 /-- Converse acts componentwise on the product action: `(R × S)° = R° × S°`. -/
-public theorem rprodMap_recip {a a' b b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
+public theorem rprodMap_recip {A a' B b' : RelSet.{u}} (R : A ⟶ a') (S : B ⟶ b') :
     (rprodMap R S)° = rprodMap R° S° := rfl
 
 /-- The product action on the identities is the identity. -/
-public theorem rprodMap_id (a b : RelSet.{u}) :
-    rprodMap (𝟙 a) (𝟙 b) = 𝟙 (⟨a.carrier × b.carrier⟩ : RelSet.{u}) := by
+public theorem rprodMap_id (A B : RelSet.{u}) :
+    rprodMap (𝟙 A) (𝟙 B) = 𝟙 (⟨A.carrier × B.carrier⟩ : RelSet.{u}) := by
   apply hom_ext; intro p q
   exact ⟨fun h => Prod.ext h.1 h.2, fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
 
 /-- The product action is functorial: `(R×S)(R'×S') = (RR')×(SS')`. -/
-public theorem rprodMap_comp {a a' a'' b b' b'' : RelSet.{u}} (R : a ⟶ a') (R' : a' ⟶ a'')
-    (S : b ⟶ b') (S' : b' ⟶ b'') :
+public theorem rprodMap_comp {A a' a'' B b' b'' : RelSet.{u}} (R : A ⟶ a') (R' : a' ⟶ a'')
+    (S : B ⟶ b') (S' : b' ⟶ b'') :
     rprodMap R S ≫ rprodMap R' S' = rprodMap (R ≫ R') (S ≫ S') := by
   apply hom_ext; intro p q
   constructor
@@ -311,15 +311,15 @@ public theorem rprodMap_comp {a a' a'' b b' b'' : RelSet.{u}} (R : a ⟶ a') (R'
   · rintro ⟨⟨y1, hR, hR'⟩, ⟨y2, hS, hS'⟩⟩; exact ⟨(y1, y2), ⟨hR, hS⟩, hR', hS'⟩
 
 /-- The product action is monotonic in both arguments. -/
-public theorem rprodMap_mono {a a' b b' : RelSet.{u}} {R R' : a ⟶ a'} {S S' : b ⟶ b'}
+public theorem rprodMap_mono {A a' B b' : RelSet.{u}} {R R' : A ⟶ a'} {S S' : B ⟶ b'}
     (hR : R ⊑ R') (hS : S ⊑ S') : rprodMap R S ⊑ rprodMap R' S' :=
   le_iff.mpr fun p q h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
 
 /-- `(𝟙×Q)π₂ = π₂Q` — an identity first component slides any `Q` past the second projection
     (the note's `h:=π₂` row of `party-mono-branch`: `𝟙` is entire, so `Dom(π₁)=𝟙`). -/
-public theorem rprodMap_id_snd {a b b' : RelSet.{u}} (Q : b ⟶ b') :
-    rprodMap (𝟙 a) Q ≫ graph (Prod.snd : a.carrier × b'.carrier → b'.carrier)
-      = graph (Prod.snd : a.carrier × b.carrier → b.carrier) ≫ Q := by
+public theorem rprodMap_id_snd {A B b' : RelSet.{u}} (Q : B ⟶ b') :
+    rprodMap (𝟙 A) Q ≫ graph (Prod.snd : A.carrier × b'.carrier → b'.carrier)
+      = graph (Prod.snd : A.carrier × B.carrier → B.carrier) ≫ Q := by
   apply hom_ext; intro p y
   constructor
   · rintro ⟨q, ⟨_, hQ⟩, hy⟩; exact ⟨p.2, rfl, hy ▸ hQ⟩
@@ -327,18 +327,18 @@ public theorem rprodMap_id_snd {a b b' : RelSet.{u}} (Q : b ⟶ b') :
 
 /-- The product action on two graphs is the graph of the product function — the fact that makes
     every structural isomorphism of the cartesian product a graph, hence a map. -/
-theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
-    (g : b.carrier → b'.carrier) :
+theorem rprodMap_graph {A a' B b' : RelSet.{u}} (f : A.carrier → a'.carrier)
+    (g : B.carrier → b'.carrier) :
     rprodMap (graph f) (graph g)
-      = (graph (fun p : a.carrier × b.carrier => (f p.1, g p.2))
-          : (⟨a.carrier × b.carrier⟩ : RelSet.{u}) ⟶ (⟨a'.carrier × b'.carrier⟩ : RelSet.{u})) := by
+      = (graph (fun p : A.carrier × B.carrier => (f p.1, g p.2))
+          : (⟨A.carrier × B.carrier⟩ : RelSet.{u}) ⟶ (⟨a'.carrier × b'.carrier⟩ : RelSet.{u})) := by
   apply hom_ext; intro p q
   exact ⟨fun h => Prod.ext_iff.mpr ⟨h.1, h.2⟩,
     fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
 
 /-- The sum type `a ⊕ b` with the injection graphs satisfies the five coproduct equations of
     §2.214 — Rel(Set)'s concrete coproducts, feeding the `junc`/`sumMap` calculus of `A5_3`. -/
-@[expose] public def sumCop (a b : RelSet.{u}) : Coproduct (⟨a.carrier ⊕ b.carrier⟩ : RelSet.{u}) a b where
+@[expose] public def sumCop (A B : RelSet.{u}) : Coproduct (⟨A.carrier ⊕ B.carrier⟩ : RelSet.{u}) A B where
   u₁ := graph Sum.inl
   u₂ := graph Sum.inr
   u₁_self_comp_recip := hom_ext fun x x' =>
@@ -365,35 +365,35 @@ theorem rprodMap_graph {a a' b b' : RelSet.{u}} (f : a.carrier → a'.carrier)
 @[expose] public instance : PositiveAllegory RelSet.{u} :=
   { (inferInstance : DistributiveAllegory RelSet) with
     coterm := ⟨PEmpty.{u + 1}⟩
-    coprod := fun a b => ⟨a.carrier ⊕ b.carrier⟩
+    coprod := fun A B => ⟨A.carrier ⊕ B.carrier⟩
     has_coproduct := sumCop }
 
 /-- `⊤ : a ⟶ b` in `Rel(Set)`, constructively: a hom here IS a predicate, so the greatest one
     is the predicate that holds everywhere.  The abstract `topMor` of a unitary allegory picks
     the two unit projections with `Exists.choose` and is therefore noncomputable; this one costs
     no choice, so a statement that names `⊤` stays axiom-clean. -/
-@[expose] public def relTop (a b : RelSet.{u}) : a ⟶ b := fun _ _ => True
+@[expose] public def relTop (A B : RelSet.{u}) : A ⟶ B := fun _ _ => True
 
 /-- `relTop` is the greatest relation: every `R : a ⟶ b` is below it. -/
-public theorem le_relTop {a b : RelSet.{u}} (R : a ⟶ b) : R ⊑ relTop a b :=
+public theorem le_relTop {A B : RelSet.{u}} (R : A ⟶ B) : R ⊑ relTop A B :=
   le_iff.mpr fun _ _ _ => trivial
 
 /-- `⊤` in `Rel(Set)` relates everything to everything: it is above the full relation, hence
     equal to it.  (`topMor` is the abstract division `𝟘/𝟘`, so it is read through `topMor_max`
     rather than unfolded.) -/
-public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
-    topMor a b x y :=
-  le_iff.mp (topMor_max (fun _ _ => True : a ⟶ b)) x y trivial
+public theorem topMor_apply {A B : RelSet.{u}} (x : A.carrier) (y : B.carrier) :
+    topMor A B x y :=
+  le_iff.mp (topMor_max (fun _ _ => True : A ⟶ B)) x y trivial
 
 /-- Rel(Set)'s own relational product: the cartesian product `a.carrier × b.carrier` with the two
     projection graphs, which tabulate `⊤ : a ⟶ b`.  Named concretely for the same reason as
     `coprod` above — an apex obtained from A5_2's `relProd_nonempty` never reduces, so
     `Relator.prod` could not be recognised as the product of two datatypes. -/
 @[expose] public instance : HasRelProd RelSet.{u} where
-  relProd a b :=
-    { p := ⟨a.carrier × b.carrier⟩
-      outl := graph (fun p : a.carrier × b.carrier => p.1)
-      outr := graph (fun p : a.carrier × b.carrier => p.2)
+  relProd A B :=
+    { p := ⟨A.carrier × B.carrier⟩
+      outl := graph (fun p : A.carrier × B.carrier => p.1)
+      outr := graph (fun p : A.carrier × B.carrier => p.2)
       tab := ⟨graph_map _, graph_map _,
         le_antisymm (le_iff.mpr fun x y _ => ⟨(x, y), rfl, rfl⟩) (topMor_max _),
         hom_ext fun p q =>
@@ -405,8 +405,8 @@ public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
 
 /-- On the product just chosen, the abstract `R×S` of (5.2) IS the pointwise `rprodMap` — the
     projections being graphs, both legs of `pair` collapse to a component lookup. -/
-@[diag_bridge ←] public theorem prodMap_eq_rprodMap {a b a' b' : RelSet.{u}} (R : a ⟶ a') (S : b ⟶ b') :
-    prodMap (relProd a b) (relProd a' b') R S = rprodMap R S := by
+@[diag_bridge ←] public theorem prodMap_eq_rprodMap {A B a' b' : RelSet.{u}} (R : A ⟶ a') (S : B ⟶ b') :
+    prodMap (relProd A B) (relProd a' b') R S = rprodMap R S := by
   apply hom_ext
   intro p q
   constructor
@@ -418,19 +418,19 @@ public theorem topMor_apply {a b : RelSet.{u}} (x : a.carrier) (y : b.carrier) :
 /-- Relational pairing `⟨R,S⟩` in `Rel(Set)`: `x ↦ (y,z)` iff `R x y` and `S x z` — the
     graph-level form of (5.1), free of the abstract `topMor` inside `RelProd.tab`
     (which `pair_eq_rpair` below shows it equals). -/
-@[expose] public def rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
-    c ⟶ (⟨a.carrier × b.carrier⟩ : RelSet.{u}) :=
+@[expose] public def rpair {C A B : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B) :
+    C ⟶ (⟨A.carrier × B.carrier⟩ : RelSet.{u}) :=
   fun x p => R x p.1 ∧ S x p.2
 
 /-- `rpair` is monotonic in both arguments. -/
-public theorem rpair_mono {c a b : RelSet.{u}} {R R' : c ⟶ a} {S S' : c ⟶ b}
+public theorem rpair_mono {C A B : RelSet.{u}} {R R' : C ⟶ A} {S S' : C ⟶ B}
     (hR : R ⊑ R') (hS : S ⊑ S') : rpair R S ⊑ rpair R' S' :=
   le_iff.mpr fun x p h => ⟨le_iff.mp hR _ _ h.1, le_iff.mp hS _ _ h.2⟩
 
 /-- On the product just chosen, the abstract `⟨R,S⟩` of (5.1) IS the pointwise `rpair` — the
     projections being graphs, each defining conjunct collapses to a component lookup. -/
-public theorem pair_eq_rpair {c a b : RelSet.{u}} (R : c ⟶ a) (S : c ⟶ b) :
-    (relProd a b).pair R S = rpair R S := by
+public theorem pair_eq_rpair {C A B : RelSet.{u}} (R : C ⟶ A) (S : C ⟶ B) :
+    (relProd A B).pair R S = rpair R S := by
   apply hom_ext; intro x p
   constructor
   · rintro ⟨⟨y, hy, hy1⟩, ⟨z, hz, hz1⟩⟩

@@ -45,15 +45,15 @@ universe u
 /-! ## Abstract: greedy-from-refinement with monotonicity stated on `R` -/
 
 section Abstract
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {a b : 𝒜}
+variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-- **`A7_2.greedy_of_refinement` with monotonicity on `R` instead of `R°`.**  A deterministic
     algebra `f` (a map), MONOTONIC on the order `R`, that REFINES the greedy choice
     `Λ S ≫ est R`, already has its catamorphism inside `est R·Λ⦇S⦈` — the Pareto frontier of
     the plain non-deterministic catamorphism `⦇S⦈`.  Transitivity and monotonicity are
     transposed to `R°` by `recip_mono`/`monotonicAlg_recip_iff` (the latter needs `f` a map). -/
-public theorem greedy_of_refinement_mono (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : a ⟶ a}
-    {S f : F.obj a ⟶ a} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
+public theorem greedy_of_refinement_mono (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A}
+    {S f : F.obj A ⟶ A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : MonotonicAlg f R)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
@@ -68,19 +68,19 @@ namespace RelSet
 
 /-- In Rel(Set) the transpose `Λ` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
     both are maps whose composition with `∋` is `R`, and that map is unique. -/
-public theorem Λ_eq_classifier {b c : RelSet.{0}} (R : c ⟶ b) : Λ R = classifier R :=
+public theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
   ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
 
 /-- Pointwise form of `est` in Rel(Set): `w` is a `est R`-choice of the set `P` iff
     `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
-public theorem est_apply {a : RelSet.{0}} (R : a ⟶ a)
-    (P : (PowerAllegory.powerObj a).carrier) (w : a.carrier) :
+public theorem est_apply {A : RelSet.{0}} (R : A ⟶ A)
+    (P : (PowerAllegory.powerObj A).carrier) (w : A.carrier) :
     (est R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
 
 /-- Pointwise form of `Λ T ≫ est R` ((7.5) unbundled): `w` is an `est R`-choice over the
     `T`-image of `x` iff `T x w` and `w` `R`-dominates every `T`-image `z` of `x`. -/
-public theorem Λ_comp_est_apply {b a : RelSet.{0}} (T : b ⟶ a) (R : a ⟶ a) (x : b.carrier)
-    (w : a.carrier) : (Λ T ≫ est R) x w ↔ T x w ∧ ∀ z, T x z → R w z := by
+public theorem Λ_comp_est_apply {B A : RelSet.{0}} (T : B ⟶ A) (R : A ⟶ A) (x : B.carrier)
+    (w : A.carrier) : (Λ T ≫ est R) x w ↔ T x w ∧ ∀ z, T x z → R w z := by
   rw [Λ_eq_classifier]
   constructor
   · rintro ⟨P, hP, hest⟩
@@ -92,16 +92,16 @@ public theorem Λ_comp_est_apply {b a : RelSet.{0}} (T : b ⟶ a) (R : a ⟶ a) 
 
 /-- Pointwise form of `E R` in Rel(Set): the `E R`-image of a set `P` is the set of all
     `R`-images of its members. -/
-public theorem existsImage_apply {a b : RelSet.{0}} (R : a ⟶ b) (P : (pow a).carrier)
-    (Q : (pow b).carrier) : existsImage R P Q ↔ Q = fun w => ∃ s, P s ∧ R s w := by
-  show Λ (epsRel a ≫ R) P Q ↔ _
+public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) : existsImage R P Q ↔ Q = fun w => ∃ s, P s ∧ R s w := by
+  show Λ (epsRel A ≫ R) P Q ↔ _
   rw [Λ_eq_classifier]
   exact Iff.rfl
 
 /-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
     of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/
-public theorem existsImage_comp_est_apply {a b : RelSet.{0}} (T : a ⟶ b) (R : b ⟶ b)
-    (P : (pow a).carrier) (w : b.carrier) :
+public theorem existsImage_comp_est_apply {A B : RelSet.{0}} (T : A ⟶ B) (R : B ⟶ B)
+    (P : (pow A).carrier) (w : B.carrier) :
     (existsImage T ≫ est R) P w
       ↔ (∃ s, P s ∧ T s w) ∧ ∀ z, (∃ s, P s ∧ T s z) → R w z := by
   constructor

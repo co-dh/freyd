@@ -42,7 +42,7 @@ open Freyd.Alg.RelSet.Poly
     and `false` is the `≤`-least member — while the right side takes the least member first and
     then negates it, reaching `true` alone. -/
 public theorem est_not_lax_natural :
-    ∃ (a : RelSet.{0}) (R f : a ⟶ a), ¬ (powerRel f ≫ est R ⊑ est R ≫ f) := by
+    ∃ (A : RelSet.{0}) (R f : A ⟶ A), ¬ (powerRel f ≫ est R ⊑ est R ≫ f) := by
   refine ⟨⟨Bool⟩, leB, notB, fun h => ?_⟩
   have hfull : powerRel notB (fun _ => True) (fun _ => True) :=
     (powerRel_apply notB _ _).mpr
