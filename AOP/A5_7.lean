@@ -851,4 +851,36 @@ public theorem strictNatural_const {b b' : ℬ} (f : b ⟶ b') :
 
 end ConstLane
 
+/-! ## `R⊑S` is a special case of a lax transformation
+
+  The lax square at two CONSTANT relators.  `const A` and `const B` send every arrow of the
+  source to an identity, so both VERTICALS of the square are identities, and identity verticals
+  are what turn a square into a comparison of its two horizontals.  What is left of
+  `G(R)φ_Y ⊑ φ_X F(R)` is `φ_Y ⊑ φ_X`: a lax transformation `const A ⇒ const B` is a family of
+  arrows `A ⟶ B` that DECREASES along every arrow of the source.  Over a source with one
+  non-identity arrow `X ⟶ Y` the entire datum is the pair `φ X, φ Y` with `φ Y ⊑ φ X` — one
+  containment `R ⊑ S`, and no naturality left to check. -/
+
+section LaTConst
+
+variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+
+/-- **The collapse**: a lax transformation between two CONSTANT relators is EXACTLY a family
+    `φ : 𝒜 → (A ⟶ B)` decreasing along every arrow — `φ Y ⊑ φ X` for every `R : X ⟶ Y`.  Both
+    directions are the same rewrite, `𝟙 A ≫ φ Y ⊑ φ X ≫ 𝟙 B` against `φ Y ⊑ φ X`; nothing about
+    `R` beyond its existence is used, which is why the collapse is total. -/
+public theorem laxNatural_const_iff {A B : ℬ} (φ : ∀ _ : 𝒜, A ⟶ B) :
+    LaxNatural (Relator.const B : Relator 𝒜 ℬ) (Relator.const A) φ
+      ↔ ∀ {X Y : 𝒜} (_ : X ⟶ Y), φ Y ⊑ φ X := by
+  constructor
+  · intro hlax X Y R
+    have hR : 𝟙 A ≫ φ Y ⊑ φ X ≫ 𝟙 B := hlax R
+    rwa [Cat.id_comp, Cat.comp_id] at hR
+  · intro hle X Y R
+    show 𝟙 A ≫ φ Y ⊑ φ X ≫ 𝟙 B
+    rw [Cat.id_comp, Cat.comp_id]
+    exact hle R
+
+end LaTConst
+
 end Freyd.Alg
