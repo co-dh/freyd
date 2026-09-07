@@ -200,3 +200,32 @@ theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e 
     (birelator_thin_condition (H := (relCata T)° ≫ relCata h) hU hV)
 
 end Freyd.Alg
+
+/-! # Proposition 10.1 (B&dM p.246) in the Set model — the two arms of `F L E X = L+(X×E)`
+
+  "A variation on Proposition 9.1": `AOP.A9_1`'s `est_arm₁_le`/`est_arm₂_le` are the two branches
+  of Theorem 10.1's body, and the recursion that runs them separately still refines the spec. -/
+
+namespace Freyd.Alg.RelSet.SL
+
+variable {L E : Type} {b c : RelSet.{0}}
+
+/-- **Theorem 10.1 in coproduct form** — the note's @greedy-laws, third row: at `T=[V₁,V₂]`,
+    `h=[U₁,U₂]`, `Q=Q₁+Q₂` and `V₂V₁°=⊥`, the greedy recursion split into its two branches
+    still refines `H%∋ est(R)`.  `AOP.A10_1.greedy_dp` at the snoc-list functor. -/
+public theorem greedy_dp_arms {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
+    (hh : Map U) (hmono : MonotonicAlg U R) (htrans : R ≫ R ⊑ R)
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False)
+    (hQ : Q ≫ (F L E).map ((relCata T)° ≫ relCata U) ≫ U
+        ⊑ (F L E).map ((relCata T)° ≫ relCata U) ≫ U ≫ R) :
+    mu (fun X : b ⟶ c =>
+        (Λ ((arm₁ T)°) ≫ est (armQ₁ Q) ≫ arm₁ U)
+          ∪ (Λ ((arm₂ T)°) ≫ est (armQ₂ Q)
+              ≫ rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U))
+      ⊑ Λ ((relCata T)° ≫ relCata U) ≫ est R :=
+  le_trans (mu_le_mu fun X => union_lub (est_arm₁_le (X := X) hdisj) (est_arm₂_le hdisj))
+    (greedy_dp (F := F L E) (F_preservesRecip L E) (initial L E) hh hmono htrans hQ)
+
+end Freyd.Alg.RelSet.SL

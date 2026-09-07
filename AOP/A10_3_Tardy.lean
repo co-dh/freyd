@@ -505,4 +505,16 @@ public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀
     (by rw [tardy_H]; exact tardy_greedy ct dt wt hct hwt)
   rwa [tardy_H] at key
 
+/-- **tardy-laws**, third row (Proposition 10.1): `nil` and `snag` have disjoint ranges
+    (`nil_ne_snag`), so the branch `(snag°)%∋ est(Q')(X×𝟙)snoc` refines `tardy_laws`' body
+    `([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]` — `AOP.A9_1.est_arm₂_le` at `[nil,snag]`, whose
+    `Q₂` at `Q≜f≤f°` is `Q'`. -/
+public theorem tardy_branch (X : Bag Job ⟶ dSL Unit Job) :
+    Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt)
+        ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job)))
+      ⊑ Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt)
+          ≫ (F Unit Job).map X ≫ graph (con (L := Unit) (E := Job)) :=
+  est_arm₂_le (X := X) (Q := Q ct dt wt)
+    fun _d p y h1 h2 => nil_ne_snag p.1 p.2 (Eq.trans (Eq.symm (h1 : y = _)) (h2 : y = _))
+
 end Freyd.Alg.RelSet.Tardy

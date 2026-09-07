@@ -461,6 +461,35 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
     (by rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
   rwa [hH] at key
 
+/-- `expand` never returns the empty string: on a tab it fills at least one blank (the column is
+    `< n` after `%`), on any other character it snocs.  This is B&dM's Proposition 10.1
+    hypothesis `nil` and `expand` have disjoint ranges. -/
+public theorem expand_ne_nil (n : Nat) (tb nl blank : Char) (hn : 0 < n) (x : Str) (a : Char) :
+    expandFn n tb nl blank x a ≠ SnocList.wrap () := by
+  unfold expandFn
+  split
+  · unfold fillFn
+    obtain ⟨k, hk⟩ : ∃ k, n - colFn nl x % n = k + 1 :=
+      ⟨n - colFn nl x % n - 1, by have := Nat.mod_lt (colFn nl x) hn; omega⟩
+    rw [hk]
+    show SnocList.snoc (pad blank x k) blank ≠ SnocList.wrap ()
+    intro h; cases h
+  · intro h; cases h
+
+/-- **entab-laws**, third row (Proposition 10.1): with `nil` and `expand` of disjoint ranges the
+    branch `(expand°)%∋ est(V×U)(X×𝟙)snoc` refines `entab_laws`' body
+    `([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]` — `AOP.A9_1.est_arm₂_le` at `[nil,expand]`, whose
+    `Q₂` at `Q≜𝟙+(V×U)` is `V×U`. -/
+public theorem entab_branch (n : Nat) (tb nl blank : Char) (hn : 0 < n)
+    (X : dSL Unit Char ⟶ dSL Unit Char) :
+    Λ ((arm₂ (graph (expandAlgFn n tb nl blank)))°) ≫ est (rprodMap (V n nl blank) (U tb))
+        ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Char)))
+      ⊑ Λ ((graph (expandAlgFn n tb nl blank))°) ≫ est (Q n tb nl blank)
+          ≫ (F Unit Char).map X ≫ graph (con (L := Unit) (E := Char)) :=
+  est_arm₂_le (X := X) (Q := Q n tb nl blank)
+    fun _d p y h1 h2 =>
+      expand_ne_nil n tb nl blank hn p.1 p.2 (Eq.trans (Eq.symm (h2 : y = _)) (h1 : y = _))
+
 -- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
 open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander

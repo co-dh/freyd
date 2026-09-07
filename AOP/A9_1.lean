@@ -27,6 +27,9 @@ module
 public import AOP.A7_2
 public import AOP.A8_1
 public import AOP.A5_2
+-- Proposition 9.1's coproduct split is proved at the END of this file in the Set model, over
+-- `F L E X = L+(X×E)`; the generic form needs a typeclass the repo does not have (drop note).
+public import AOP.A6_SnocList
 
 universe u
 
@@ -784,6 +787,189 @@ public theorem dynamic_programming_context (hFr : F.PreservesRecip) (I : Initial
     an Ex-8.x-style fusion law for `thin` against `junc`, analogous to the already-dropped
     §8's (8.4)/Ex 8.7 `powerRel`-vs-`union` fusion, `AOP.A8_1`'s stretch-items note) on top
     of the missing combined typeclass. Building the combined class and the fusion law is a
-    multi-file undertaking outside this task's scope; recorded here rather than forced. -/
+    multi-file undertaking outside this task's scope; recorded here rather than forced.  What
+    IS proved, at the end of this file, is Proposition 9.1 in the Set model over
+    `AOP.A6_SnocList`'s `F L E X = L+(X×E)`: there the summand is read off the point, so no
+    `guard`/`cond` and no combined class are needed. -/
 
 end Freyd.Alg
+
+/-! # Proposition 9.1 (B&dM p.219) in the Set model — the two arms of `F L E X = L+(X×E)`
+
+  `T=[V₁,V₂] : F(B)⟶B` and `h=[U₁,U₂] : F(A)⟶A` are ANY relations on that functor: `arm₁` and
+  `arm₂` name their two halves, so `arm₁ T = V₁`, `arm₂ T = V₂`, and B&dM's disjoint ranges
+  `V₂V₁°=⊥` is `hdisj`.  Each body of Theorem 9.2 / Theorem 10.1 then splits into the two
+  branches the note's @dp-laws and @greedy-laws draw, and each branch refines the body. -/
+
+namespace Freyd.Alg.RelSet.SL
+
+variable {L E : Type} {b c : RelSet.{0}}
+
+-- `Λ R` in `Rel(Set)` IS the classifier `x↦{y∣R x y}`, by `Λ`'s uniqueness; private because
+-- `AOP.A7_4_Horner` already exports the same lemma, on a branch of the import graph this file
+-- does not reach.  `est`/`thin`/`P(−)` are read pointwise off their definitions in the proofs.
+private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
+  (Λ_unique R (classifier R) (graph_map _) (classifier_comp_eps R)).symm
+
+/-- The `L` arm `V₁` of a relation out of `F L E`. -/
+@[expose] public def arm₁ (T : (F L E).obj b ⟶ c) : dL L ⟶ c := fun d y => T (Sum.inl d) y
+
+/-- The `X×E` arm `V₂` of a relation out of `F L E`. -/
+@[expose] public def arm₂ (T : (F L E).obj b ⟶ c) : (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ c :=
+  fun p y => T (Sum.inr p) y
+
+/-- The `L` arm `Q₁` of a preorder on `F L E X`. -/
+@[expose] public def armQ₁ (Q : (F L E).obj b ⟶ (F L E).obj b) : dL L ⟶ dL L :=
+  fun d d' => Q (Sum.inl d) (Sum.inl d')
+
+/-- The `X×E` arm `Q₂` of a preorder on `F L E X`. -/
+@[expose] public def armQ₂ (Q : (F L E).obj b ⟶ (F L E).obj b) :
+    (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ ⟨b.carrier × E⟩ := fun p q => Q (Sum.inr p) (Sum.inr q)
+
+/-- The second arm of `F(X)·h` is the note's `(X×𝟙)U₂`: `F(X)` keeps the `E` component. -/
+public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
+    arm₂ ((F L E).map X ≫ U) = rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U := by
+  apply hom_ext; intro p y
+  constructor
+  · rintro ⟨w, hw, hU⟩
+    cases w with
+    | inl _ => exact hw.elim
+    | inr q => exact ⟨q, ⟨hw.1, hw.2⟩, hU⟩
+  · rintro ⟨q, hq, hU⟩
+    exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, hU⟩
+
+/-- The first arm of `F(X)·h` is `U₁` alone: `F(X)` is the identity on the `L` summand. -/
+public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
+    arm₁ ((F L E).map X ≫ U) = arm₁ U := by
+  apply hom_ext; intro e y
+  constructor
+  · rintro ⟨w, hw, hU⟩
+    cases w with
+    | inl d' => exact (hw : e = d') ▸ hU
+    | inr _ => exact hw.elim
+  · intro hU
+    exact ⟨Sum.inl e, rfl, hU⟩
+
+/-! ## The transpose of a coalgebra sits inside one summand
+
+  `Λ(T°)` at a point of `V₂`'s range is the `inr`-image of `Λ(V₂°)` there — `hdisj` says the
+  `inl` part is empty — and everything downstream of `est`/`thin` kills the empty set.  That is
+  the whole content of Proposition 9.1; the four theorems below are it at the four shapes the
+  note draws. -/
+
+/-- **Proposition 9.1**, greedy form, second arm: the note's @greedy-laws third row
+    `(V₂°)%∋ est(Q₂)(X×𝟙)U₂` refines the body `(T°)%∋ est(Q)F(X)h`. -/
+public theorem est_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {X : b ⟶ c} {U : (F L E).obj c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False) :
+    Λ ((arm₂ T)°) ≫ est (armQ₂ Q) ≫ rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U
+      ⊑ Λ (T°) ≫ est Q ≫ (F L E).map X ≫ U := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, p, hp, q, hq, hU⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, Sum.inr p, ?_, Sum.inr q, ⟨hq.1, hq.2⟩, hU⟩
+  · rw [Λ_eq_classifier]; rfl
+  · refine ⟨hp.1, ?_⟩
+    rintro (d | z) hz
+    · exact (hdisj d p y hz hp.1).elim
+    · exact hp.2 z hz
+
+/-- **Proposition 9.1**, greedy form, first arm: the `L` branch of the same body. -/
+public theorem est_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {X : b ⟶ c} {U : (F L E).obj c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False) :
+    Λ ((arm₁ T)°) ≫ est (armQ₁ Q) ≫ arm₁ U ⊑ Λ (T°) ≫ est Q ≫ (F L E).map X ≫ U := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, d, hd, hU⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, Sum.inl d, ?_, Sum.inl d, rfl, hU⟩
+  · rw [Λ_eq_classifier]; rfl
+  · refine ⟨hd.1, ?_⟩
+    rintro (e | z) hz
+    · exact hd.2 e hz
+    · exact (hdisj d z y hd.1 hz).elim
+
+/-- **Proposition 9.1**, thinning form, second arm: the note's @dp-laws third row
+    `(V₂°)%∋ thin(Q₂)P((X×𝟙)U₂)est(R)` refines `(T°)%∋ thin(Q)P(F(X)h)est(R)`. -/
+public theorem thin_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {X : b ⟶ c} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False) :
+    Λ ((arm₂ T)°) ≫ thinRel (armQ₂ Q) ≫ powerRel (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L E).map X ≫ U) ≫ est R := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, Y, hY, Z, hZ, hest⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, fun w => ∃ q, Y q ∧ w = Sum.inr q, ?_, Z, ?_, hest⟩
+  · rw [Λ_eq_classifier]; rfl
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨q, hq, rfl⟩
+      exact hY.1 q hq
+    · rintro (d | z) hz
+      · obtain ⟨t, ht, _⟩ := hZ.2 a hest.1
+        exact (hdisj d t y hz (hY.1 t ht)).elim
+      · obtain ⟨w, hw, hwY⟩ := hY.2 z hz
+        exact ⟨Sum.inr w, hw, w, hwY, rfl⟩
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨q, hq, rfl⟩
+      obtain ⟨u, hu, hZu⟩ := hZ.1 q hq
+      exact ⟨u, (arm₂_comp X U ▸ hu : arm₂ ((F L E).map X ≫ U) q u), hZu⟩
+    · intro u hu
+      obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
+      exact ⟨Sum.inr t, ⟨t, ht, rfl⟩, (arm₂_comp X U ▸ hgt : arm₂ ((F L E).map X ≫ U) t u)⟩
+
+/-- **Proposition 9.1**, thinning form, first arm: the `L` branch of the same body. -/
+public theorem thin_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
+    {X : b ⟶ c} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False) :
+    Λ ((arm₁ T)°) ≫ thinRel (armQ₁ Q) ≫ powerRel (arm₁ U) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L E).map X ≫ U) ≫ est R := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, Y, hY, Z, hZ, hest⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, fun w => ∃ d, Y d ∧ w = Sum.inl d, ?_, Z, ?_, hest⟩
+  · rw [Λ_eq_classifier]; rfl
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨d, hd, rfl⟩
+      exact hY.1 d hd
+    · rintro (e | z) hz
+      · obtain ⟨w, hw, hwY⟩ := hY.2 e hz
+        exact ⟨Sum.inl w, hw, w, hwY, rfl⟩
+      · obtain ⟨t, ht, _⟩ := hZ.2 a hest.1
+        exact (hdisj t z y (hY.1 t ht) hz).elim
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨d, hd, rfl⟩
+      obtain ⟨u, hu, hZu⟩ := hZ.1 d hd
+      exact ⟨u, (arm₁_comp X U ▸ hu : arm₁ ((F L E).map X ≫ U) d u), hZu⟩
+    · intro u hu
+      obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
+      exact ⟨Sum.inl t, ⟨t, ht, rfl⟩, (arm₁_comp X U ▸ hgt : arm₁ ((F L E).map X ≫ U) t u)⟩
+
+/-- **Theorem 9.2 in coproduct form** — the note's @dp-laws, third row: at `T=[V₁,V₂]`,
+    `h=[U₁,U₂]`, `Q=Q₁+Q₂` and `V₂V₁°=⊥`, the recursion that runs the two branches separately
+    still refines the optimisation spec.  `AOP.A9_1.dynamic_programming_thin` at the snoc-list
+    functor, with the body replaced by the union of the two arms `thin_arm₁_le`/`thin_arm₂_le`
+    draw. -/
+public theorem dynamic_programming_thin_arms {T : (F L E).obj b ⟶ b}
+    {Q : (F L E).obj b ⟶ (F L E).obj b} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
+    (hh : Map U) (hmono : MonotonicAlg U R°) (htrans : R° ≫ R° ⊑ R°)
+    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+      T (Sum.inl d) y → T (Sum.inr p) y → False)
+    (hQ : Q ≫ (F L E).map ((relCata T)° ≫ relCata U) ≫ U
+        ⊑ (F L E).map ((relCata T)° ≫ relCata U) ≫ U ≫ R) :
+    mu (fun X : b ⟶ c =>
+        (Λ ((arm₁ T)°) ≫ thinRel (armQ₁ Q) ≫ powerRel (arm₁ U) ≫ est R)
+          ∪ (Λ ((arm₂ T)°) ≫ thinRel (armQ₂ Q)
+              ≫ powerRel (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R))
+      ⊑ Λ ((relCata T)° ≫ relCata U) ≫ est R :=
+  le_trans (mu_le_mu fun X => union_lub (thin_arm₁_le (X := X) hdisj) (thin_arm₂_le hdisj))
+    (dynamic_programming_thin (F := F L E) (F_preservesRecip L E) (initial L E) hh hmono htrans hQ)
+
+end Freyd.Alg.RelSet.SL
