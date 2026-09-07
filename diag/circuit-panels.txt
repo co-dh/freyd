@@ -41,27 +41,27 @@ Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons �
 - | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
 - | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
 - | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
-Freyd.Alg.greedy.rhs | <greedy-thm72> | R°R°
-Freyd.Alg.greedy.lhs | <greedy-thm72> | R°
+Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R°R°
+Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R°
 Freyd.Alg.RelSet.CL.F.lhs | <prefix-defn> | [nil,⊸ nil ∪ cons]
-Freyd.Alg.RelSet.Filter.filter_alg.lhs | <takewhile-alg> | α prefix list(p)
-Freyd.Alg.RelSet.Filter.filter_alg.lhs | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-alg> | α prefix list(p)
+- | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
 - | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]
 - | <takewhile-alg> | [nil,⊸ nil ∪ (p×(prefix list(p))) cons]
-- | <takewhile-alg> | F(prefix list(p))S
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_disc.lhs | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_slide.lhs | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_nil.lhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.rhs | <takewhile-alg> | F(prefix list(p))S
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
+- | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
+- | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
+- | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs | <takewhile-step> | S%∋ est(R°)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs | <takewhile-step> | [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs | <takewhile-step> | [nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs | <takewhile-step> | [nil,(π₁p→cons,⊸ nil)]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.lhs | <takewhile-laws> | (prefix list(p))%∋ est(R°)
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇[nil,(π₁p→cons,⊸ nil)]⦈
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,(π₁p→cons,⊸ nil)]⦈
 - | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
 - | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
 - | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
@@ -75,7 +75,7 @@ Freyd.Alg.RelSet.MSS.mss_step1.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero �
 Freyd.Alg.RelSet.MSS.mss_shape.lhs | <mss-deriv> | (segment sum)%∋ est(≥)
 Freyd.Alg.RelSet.MSS.mss_shape.rhs | <mss-deriv> | suffix%∋ E((prefix sum)%∋ est(≥))est(≥)
 Freyd.Alg.RelSet.Filter.filter_mono.lhs.inr | <filter-mono> | (𝟙×R°)(π₂ ∪ (p×𝟙) cons)
-Freyd.Alg.RelSet.Filter.filter_mono.lhs | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
+- | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
 - | <filter-mono> | π₂R° ∪ (p×R°) cons
 - | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
 - | <filter-mono> | (π₂ ∪ (p×𝟙) cons)R°
@@ -84,25 +84,25 @@ Freyd.Alg.RelSet.Filter.filter_step1.rhs | <filter-step> | [nil%∋ est(R°),(π
 Freyd.Alg.RelSet.Filter.filter_step2.rhs | <filter-step> | [nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]
 Freyd.Alg.RelSet.Filter.filter_step3.rhs | <filter-step> | [nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)]
 Freyd.Alg.RelSet.Filter.filter_step4.rhs | <filter-step> | [nil,(π₁p→cons,π₂)]
-Freyd.Alg.RelSet.Filter.filter.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
-Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇[nil,(π₁p→cons,π₂)]⦈
+Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
+Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs | <filter-deriv> | ⦇[nil,(π₁p→cons,π₂)]⦈
 Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×(R;H))old
 Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
 Freyd.Alg.RelSet.Van.RH_eq_strict.lhs | <van-mono> | new (R∩H) ∪ old (R∩H)
-Freyd.Alg.RelSet.Van.van_strict_old.lhs | <van-mono> | (new ∪ old)(R;H)
-Freyd.Alg.RelSet.Van.van_laws.lhs | <van-laws> | (partition list(secure))%∋ est(R)
-Freyd.Alg.RelSet.Van.van_laws.lhs | <van-laws> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.RelSet.Van.van_mono.rhs | <van-mono> | (new ∪ old)(R;H)
+Freyd.Alg.RelSet.Van.van_laws.rhs | <van-laws> | (partition list(secure))%∋ est(R)
+Freyd.Alg.greedy.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.RelSet.Van.van_spec.lhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
 Freyd.Alg.RelSet.Van.van_7_15_false.lhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_mono_new.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 Freyd.Alg.thinning_est.lhs | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
 - | <thin-cor> | (⦇S⦈)%∋ est(R)
-Freyd.Alg.thinningList.lhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
-Freyd.Alg.thinningList.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
+Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 - | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R
 - | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R
-Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | H%∋ est(R)
+Freyd.Alg.dynamic_programming_thin.rhs | <dp-laws> | H%∋ est(R)
 Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin Q P(F(X)h) est(R)
 - | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
 Freyd.Alg.RelSet.Bracket.R_eq.lhs | <mct-laws> | (flatten°)%∋ est(R)
@@ -113,7 +113,7 @@ Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | splits list((mct×mct)bin
 - | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
 - | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
 - | <code-laws> | reduce list((encode×𝟙)snoc)minlist R
-Freyd.Alg.greedy_dp.lhs | <greedy-laws> | H%∋ est(R)
+Freyd.Alg.greedy_dp.rhs | <greedy-laws> | H%∋ est(R)
 Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
 - | <greedy-laws> | (Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ
 Freyd.Alg.RelSet.Detab.Q.lhs | <entab-laws> | (detab°)%∋ est(R)
