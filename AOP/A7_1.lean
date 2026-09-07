@@ -377,6 +377,52 @@ public theorem powerRel_comp_est_le (S : B ⟶ A) (R : A ⟶ A) :
       rw [Cat.assoc]; exact comp_mono_left S haR
     exact le_trans hstep1 hstep2
 
+/-! ### (7.8): shunting a map through `est`
+
+    Two division slides do the work; both are the map adjunctions of A4_2 read through
+    `le_leftDiv_iff`, and neither has a home yet (`Freyd.S2_40`'s `leftDiv_recip_map_eps` and
+    `map_comp_leftDiv` are the `∋`-instances of the first). -/
+
+/-- `f°· ⊣ f·` as a division: for a MAP `f`, `f°\X = f·X`. -/
+public theorem recip_map_leftDiv {C : 𝒜} {f : A ⟶ B} (hf : Map f) (X : B ⟶ C) :
+    ((f°) \ X) = f ≫ X :=
+  le_antisymm ((map_shunt_left hf _ _).mp (leftDiv_comp_le _ _))
+    ((le_leftDiv_iff _ _ _).mpr ((map_shunt_left hf _ _).mpr (le_refl _)))
+
+/-- `·f ⊣ ·f°` as a division: for a MAP `f`, `(S\T)·f° = S\(T·f°)`. -/
+public theorem leftDiv_comp_recip_map {C D : 𝒜} {f : D ⟶ C} (hf : Map f) (S : A ⟶ B)
+    (T : A ⟶ C) : (S \ T) ≫ f° = (S \ (T ≫ f°)) := by
+  refine le_antisymm ((le_leftDiv_iff _ _ _).mpr ?_)
+    ((map_shunt_right hf _ _).mp ((le_leftDiv_iff _ _ _).mpr ?_))
+  · rw [← Cat.assoc]; exact comp_mono_right (leftDiv_comp_le S T) _
+  · rw [← Cat.assoc]
+    refine le_trans (comp_mono_right (leftDiv_comp_le S (T ≫ f°)) f) ?_
+    rw [Cat.assoc]
+    exact le_trans (comp_mono_left T hf.2) (le_of_eq (Cat.comp_id T))
+
+/-- **(7.8)**: `P f·min R = min (f°·R·f)·f` at `R°`, mirrored to
+    `powerRel f ≫ est R = est (f ≫ R ≫ f°) ≫ f` for a MAP `f`.  `P = E` on maps opens `est`
+    (`E f` is a map, so it distributes over the meet and slides through the division), the two
+    adjunction slides above move `f` across, and the ONE step that is not an adjunction is the
+    modular law at the simple `f` (`simple_modular_eq`). -/
+public theorem powerRel_map_comp_est {f : A ⟶ B} (hf : Map f) (R : B ⟶ B) :
+    powerRel f ≫ est R = est (f ≫ R ≫ f°) ≫ f := by
+  have hE : Map (existsImage f) := Λ_is_map' _
+  have hEeps : existsImage f ≫ ∋ B = ∋ A ≫ f := existsImage_eps f
+  have h2 : existsImage f ≫ (((∋ B)°) \ R°) = (((∋ A)°) \ (f ≫ R°)) := by
+    rw [← recip_map_leftDiv hE, ← leftDiv_comp, ← Allegory.recip_comp, hEeps,
+      Allegory.recip_comp, leftDiv_comp, recip_map_leftDiv hf]
+  calc powerRel f ≫ est R
+      = existsImage f ≫ (∋ B ∩ (((∋ B)°) \ R°)) := by rw [powerRel_map hf]; rfl
+    _ = (existsImage f ≫ ∋ B) ∩ (existsImage f ≫ (((∋ B)°) \ R°)) := simple_dist_inter hE.2 _ _
+    _ = (∋ A ≫ f) ∩ (((∋ A)°) \ (f ≫ R°)) := by rw [hEeps, h2]
+    _ = (∋ A ∩ ((((∋ A)°) \ (f ≫ R°)) ≫ f°)) ≫ f := (simple_modular_eq hf.2 _ _).symm
+    _ = est (f ≫ R ≫ f°) ≫ f := by
+        rw [leftDiv_comp_recip_map hf, Cat.assoc]
+        show (∋ A ∩ (((∋ A)°) \ (f ≫ R° ≫ f°))) ≫ f
+            = (∋ A ∩ (((∋ A)°) \ ((f ≫ R ≫ f°)°))) ≫ f
+        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
+
 /-- **(7.11)** mirrored (for a transitive `R`): `min R·P(min R) ⊆ min R·union` at `R°`,
     mirrored `powerRel (est R) ≫ est R ⊑ bigUnion ≫ est R`, via `bigUnion = Λ(∋[a]≫∋a)` and
     `le_Λ_comp_est_iff`.  Component (i): `powerRel(est R)·est R ⊑ ∋[a]·∋a` chains
@@ -573,13 +619,13 @@ public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
       _ ⊑ powerRel (est R) ≫ est R :=
           comp_mono_right (powerRel_dom_comp_existsImage_le (est R)) _
 
--- (7.12), (7.8), the (7.9) equality, Ex 7.3/7.4, Ex 7.8/7.9/7.16/7.17/7.18, and
+-- (7.12), the (7.9) equality, Ex 7.3/7.4, Ex 7.8/7.9/7.16/7.17/7.18, and
 -- well-boundedness (Ex 7.26-7.32) are DROPPED here.  Ex 7.8/7.9/7.18/7.26 are TABULATION
 -- walls: B&dM's argument pairs two maps `f, g : c ⟶ a` into `h := Λ(f∪g) : c ⟶ PowerAllegory
 -- .powerObj a` and reasons about the resulting two-element sets, which needs a tabular
 -- setting (`f,g` jointly monic factoring a relation) not assumed by `UnguardedPowerLCDA`.
 -- Ex 7.3/7.4/7.16/7.17 and the rest of well-boundedness build on that pairing or on
--- `existsImage = powerRel` restricted to maps (unproven here); (7.12)/(7.8)/(7.9) likewise
+-- `existsImage = powerRel` restricted to maps; (7.12)/(7.9) likewise
 -- chain through the tabulation-dependent facts.  All left as future work once a tabular
 -- unitary layer (as in `Freyd.S2_218_Tabular`) is threaded through chapter 7.
 

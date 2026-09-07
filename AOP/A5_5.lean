@@ -274,4 +274,16 @@ public theorem relCata_pair_beta [HasBinaryProducts 𝒜] (I : InitialAlgebra F)
     pair ⦇h⦈ ⦇k⦈ ≫ fst = ⦇h⦈ ∧ pair ⦇h⦈ ⦇k⦈ ≫ snd = ⦇k⦈ :=
   ⟨fst_pair _ _, snd_pair _ _⟩
 
+/-- **BANANA SPLIT (B&dM Ex 3.6, p. 57)**: `⟨(|h|),(|k|)⟩ = (|⟨F(π₁)·h, F(π₂)·k⟩|)` — a fork of
+    two folds is ONE fold, hence one traversal.  It is the special case of the mutual-recursion
+    law (`pair_eq_relCata_pair_iff`) where the two algebras factor through the projections, so
+    each sees only its own component; the two defining equations then reduce to
+    `F(⟨(|h|),(|k|)⟩)·F(π₁) = F((|h|))` and its mirror. -/
+public theorem pair_relCata_eq_relCata_pair [HasBinaryProducts 𝒜] (I : InitialAlgebra F)
+    {A B : 𝒜} (h : F.obj A ⟶ A) (k : F.obj B ⟶ B) :
+    pair ⦇h⦈ ⦇k⦈ = ⦇pair (F.map fst ≫ h) (F.map snd ≫ k)⦈ :=
+  (pair_eq_relCata_pair_iff I ⦇h⦈ ⦇k⦈ (F.map fst ≫ h) (F.map snd ≫ k)).mp
+    ⟨by rw [relCata_cancel I h, ← Cat.assoc, ← F.map_comp, fst_pair],
+     by rw [relCata_cancel I k, ← Cat.assoc, ← F.map_comp, snd_pair]⟩
+
 end Freyd.Alg
