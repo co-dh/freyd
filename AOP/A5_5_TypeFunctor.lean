@@ -245,12 +245,14 @@ public theorem alphaT_strictNatural :
 
 end TypeRelator
 
--- printing-only unexpanders: the note's spelling.  `α` indexed by the object it is the component
--- at, `T` applied to the arrow it maps: §2.7's own `α_A : F(A,TA) ⟶ TA` and `T(R)`.  The family
--- argument `I` is not part of either name — it is which initial algebras, not which component.
+-- printing-only unexpanders: the note's spelling.  `α` bare and `T` applied to the arrow it maps:
+-- §2.7's own `α : F(⟨𝟙,T⟩)⟶T` and `T(R)`.  The family argument `I` is not part of either name — it
+-- is which initial algebras, not which component — and neither is the OBJECT `α` is taken at: on a
+-- string diagram that object is the wire the bead sits over, and writing it in the label as well
+-- spells it twice.
 open Lean PrettyPrinter in
 @[app_unexpander alphaT] public meta def unexpandAlphaT : Unexpander
-  | `($_ $_ $a) => `($(mkIdent `α) $a)
+  | `($_ $_ $_) => `($(mkIdent `α))
   | _ => throw ()
 
 open Lean PrettyPrinter in

@@ -479,14 +479,20 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
 
 /-- A BEAD'S LABEL IS THE FAMILY'S NAME, and the object it is taken at is the WIRE UNDER IT.  So
     every application to the region's own object variable comes off the label — `α A` is the bead
-    `α` over the `A` wire, `R X` the bead `R` — because writing the index into the label as well
-    spells one object twice and lets the two drift (`skills/string-diagram`: "a bead's index is the
-    object wire under it").  A bead that is no family in the object has no index to drop. -/
+    `α` over the `A` wire — because writing the index into the label as well spells one object twice
+    and lets the two drift (`skills/string-diagram`: "a bead's index is the object wire under it").
+    A bead that is no family in the object has no index to drop.
+
+    ONLY WHERE THE HEAD IS A BINDER.  A CONSTANT's spelling is its own unexpander's business, and
+    that unexpander matches the term as APPLIED — cutting the object argument out from under it
+    stops it firing, and the label comes out worse than the one it was meant to fix (`prefixR A`
+    became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`).  A constant that wants its index
+    dropped drops it in its own rule, beside itself. -/
 def beadLabel (core : Expr) : Option Expr → MetaM String
   | none => plain core
   | some v => do
     plain (← Meta.transform core (post := fun x => match x with
-      | .app f a => return if a == v then .done f else .continue
+      | .app f a => return if a == v && f.getAppFn.isFVar then .done f else .continue
       | _ => return .continue))
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.

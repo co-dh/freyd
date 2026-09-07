@@ -992,6 +992,10 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `H))
 
 open Lean PrettyPrinter in
+@[app_unexpander R] public meta def unexpandVanR : Unexpander
+  | _ => `($(mkIdent `R))
+
+open Lean PrettyPrinter in
 @[app_unexpander leN] public meta def unexpandLeN : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤N")))
 
