@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""cd-labels — the label half of `scripts/cd-check`: the set of label strings a compiled
+commutative panel PDF carries, against the set its reference drawing carries.
+
+    ./scripts/cd-labels GEN.pdf REF.pdf REF-NAME TITLE-STRONG-JSON-FILE
+
+`GEN.pdf`/`REF.pdf` are PDFs already compiled by `cd-check` from the generated panel and its
+`diag/cdref*.typ` reference.  `TITLE-STRONG-JSON-FILE` holds the JSON array `typst query ...
+strong` already produced for the generated panel's source — every panel is wrapped in one bold `raw`
+title line naming the Lean selector, which is not a diagram label, so it is read out through the
+same typed query that drew it and dropped from the panel's label set, never guessed from its text.
+
+Labels come from `pdftotext -bbox`, parsed as XML (`xml.etree`, no regex): every `<word>` element
+is one label token, exactly the tokenisation the PDF's own text layer uses.  Prints one line per
+label present on one side and not the other, in `cd-check`'s own diff format.
+"""
+import json, subprocess, sys, xml.etree.ElementTree as ET
+
+def words(pdf):
+    xml_text = subprocess.run(["pdftotext", "-bbox", pdf, "-"], check=True,
+                               capture_output=True, text=True).stdout
+    root = ET.fromstring(xml_text)
+    return {el.text for el in root.iter() if el.tag.rsplit("}", 1)[-1] == "word" and el.text}
+
+def title_tokens(strong_json_file):
+    with open(strong_json_file) as f:
+        text = f.read().strip()
+    nodes = json.loads(text) if text else []
+    tokens = set()
+    def walk(v):
+        if isinstance(v, dict):
+            if v.get("func") == "raw" and isinstance(v.get("text"), str):
+                tokens.update(v["text"].split())
+            for k in ("body", "text"):
+                if k in v and isinstance(v[k], (dict, list)):
+                    walk(v[k])
+        elif isinstance(v, list):
+            for it in v:
+                walk(it)
+    for n in nodes:
+        walk(n)
+    return tokens
+
+def main():
+    gen_pdf, ref_pdf, ref_name, strong_json_file = sys.argv[1:5]
+    gen = words(gen_pdf) - title_tokens(strong_json_file)
+    ref = words(ref_pdf)
+    for w in sorted(gen - ref):
+        print(f"label {w!r} is in the panel, not in {ref_name}")
+    for w in sorted(ref - gen):
+        print(f"label {w!r} is in {ref_name}, not in the panel")
+
+if __name__ == "__main__":
+    main()
