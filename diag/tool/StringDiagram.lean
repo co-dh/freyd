@@ -262,7 +262,7 @@ private def LIVE : Int := -2
 def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : Option Expr :=
   objVars.find? fun v =>
     core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
-      && !wires.any fun w => (Wire.expr w).containsFVar v.fvarId!
+      && !wires.any (Wire.mentions v.fvarId!)
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
     `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
@@ -292,10 +292,10 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
   -- saying so names the bead instead of leaving an elaboration error to stand for it.
   let some G ← (some <$> stackRelator regionTy armsW) <|> pure none
     | throwError "the bead `{label}` runs under wires that are not relators, so there is no \
-      naturality statement to look for: {← armsW.mapM (Meta.ppExpr ·.expr)}"
+      naturality statement to look for: {← (armsW.foldl (· ++ ·.lanes) #[]).mapM Wire.label}"
   let some F ← (some <$> stackRelator regionTy legsW) <|> pure none
     | throwError "the bead `{label}` makes wires that are not relators, so there is no \
-      naturality statement to look for: {← legsW.mapM (Meta.ppExpr ·.expr)}"
+      naturality statement to look for: {← (legsW.foldl (· ++ ·.lanes) #[]).mapM Wire.label}"
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
@@ -327,6 +327,9 @@ def verdict (regionTy : Expr) (armsW legsW : Array Wire) (core v : Expr) (label 
     eats, the lanes it makes, and the arrow itself. -/
 structure RowSpec where
   pass  : Array Wire
+  /-- The wires the VERDICT composes outside the bead.  A relator the bead runs under is part of
+      its naturality statement; the `×` and the sibling bundle of a product are only drawn past it. -/
+  vpass : Array Wire := #[]
   arms  : Array Wire
   legs  : Array Wire
   core  : Expr
@@ -336,8 +339,8 @@ structure RowSpec where
     of lanes, and the parts that are identities are what runs past:
 
     * `F.map R` is `R` with `F`'s wires running past OUTSIDE it — the rule that was already here;
-    * a product map `φ×𝟙` is `φ` on the left factor's lanes with the rest of the stack running
-      past, and `𝟙×ψ` is `ψ` on the rest with the left factor's lanes running past;
+    * a product map `φ×𝟙` is `φ` on the LEFT BUNDLE's lanes with `×` and the right bundle running
+      past, and `𝟙×ψ` is `ψ` on the right bundle with `×` and the left bundle running past;
     * a composite inside either of those is still a composite, so `(cons secure)×𝟙` is two beads.
 
     Comparing the two ends' wire STACKS cannot do this: `cons : [A]×[[A]] ⟶ [[A]]` and
@@ -345,47 +348,59 @@ structure RowSpec where
     does not.  What separates them is the factor's own form, which is what is read here.  A factor
     whose two ends are DIFFERENT objects with the SAME stack is a re-bracketing of a product —
     `assocl` — and a picture has no bracketing to redraw, so it is no row at all. -/
-partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name) (pass : Array Wire)
-    (inLeft : Bool) (e : Expr) : MetaM (Array RowSpec) := do
+partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
+    (pass vpass : Array Wire) (inLeft : Bool) (e : Expr) : MetaM (Array RowSpec) := do
   let fs := factors e
   if fs.size > 1 then
     let mut out : Array RowSpec := #[]
-    for f in fs do out := out ++ (← rowsOf objVars regionTy cat pass inLeft f)
+    for f in fs do out := out ++ (← rowsOf objVars regionTy cat pass vpass inLeft f)
     return out
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
-      return ← rowsOf objVars regionTy cat (pass ++ (wiresOf args[4]!).map Wire.rel) inLeft
-        args[args.size - 1]!
+      let ws := (wiresOf args[4]!).map Wire.rel
+      return ← rowsOf objVars regionTy cat (pass ++ ws) (vpass ++ ws) inLeft args[args.size - 1]!
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
-    -- A product whose factors VARY with the object is the bifunctor `×` fed by a pairing, so `φ×ψ`
-    -- is ONE bead on the pairing lane with `×` running past it.  Only a CONSTANT left factor is a
-    -- lane of its own, and that is the only reading under which `φ` acts on the lanes below it.
     let (ex, ey) ← homEnds e
     let (ax, _) ← peelObj objVars cat regionTy ex
     let (ay, _) ← peelObj objVars cat regionTy ey
-    if ax.size > 0 && ay.size > 0 && !(ax[0]!.isTimesL) && (← Wire.beq ax[0]! ay[0]!) then
-      return #[{ pass := pass.push ax[0]!, arms := ax.extract 1 ax.size,
-                 legs := ay.extract 1 ay.size, core := e }]
-    if ← isIdArrow ψ then return ← rowsOf objVars regionTy cat pass true φ
+    -- `×` is a functor out of a PRODUCT category, so an object of `𝒜×𝒜` is two BUNDLES of lanes
+    -- side by side and `φ×ψ` acts on one of them with `×` and the sibling bundle running past.
+    -- `vpass` is not extended: neither of those is part of the bead's own naturality statement,
+    -- and `𝟙×cons°` asked for a closure chain one step deeper than `cons°` itself.
+    if let some (Wire.pairW la _) := ax[1]? then
+      if ← isIdArrow φ then
+        return ← rowsOf objVars regionTy cat (pass.push ax[0]! ++ la) vpass false ψ
+      let rl ← rowsOf objVars regionTy cat (pass.push ax[0]!) vpass false φ
+      if ← isIdArrow ψ then return rl
+      -- Interchange: `φ×ψ` is `(φ×𝟙)(𝟙×ψ)`, so by the time `ψ` runs the left bundle is `φ`'s TARGET.
+      let some (Wire.pairW la' _) := ay[1]?
+        | throwError "the product map `{← plain e}` ends at `{← plain ey}`, which peels to \
+            {ay.size} wires whose second is no pairing, so `{← plain ψ}` has no bundle to run east of"
+      return rl ++ (← rowsOf objVars regionTy cat (pass.push ax[0]! ++ la') vpass false ψ)
+    -- A CONSTANT left factor is a lane of its own, and `φ` then acts on the lanes below it.
+    if ← isIdArrow ψ then return ← rowsOf objVars regionTy cat pass vpass true φ
     if ← isIdArrow φ then
       let (x, _) ← homEnds φ
-      return ← rowsOf objVars regionTy cat (pass ++ (← peelLefts regionTy x)) inLeft ψ
+      let ls ← peelLefts regionTy x
+      return ← rowsOf objVars regionTy cat (pass ++ ls) (vpass ++ ls) inLeft ψ
   let (x, y) ← homEnds e
   let (ax, ox) ← peelObj objVars cat regionTy x
   let (ay, oy) ← peelObj objVars cat regionTy y
   let arms ← if inLeft then peelLefts regionTy x else pure ax
   let legs ← if inLeft then peelLefts regionTy y else pure ay
-  -- A re-bracketing is the ONE factor a picture does not show: the same lanes over the same object
-  -- at both ends.  The object has to be compared too — `⦇R⦈ : t F ⟶ c` has no lanes at either end
-  -- and is not invisible.
-  if (← Meta.isDefEq ox oy) && arms.size == legs.size && !(← Meta.isDefEq x y) then
+  -- A re-bracketing is the ONE factor a picture does not show: the same LANES over the same object
+  -- at both ends, `(A×B)×C` and `A×(B×C)` differing only in a tree a picture has no room for.  The
+  -- object has to be compared too — `⦇R⦈ : t F ⟶ c` has no lanes at either end and is not invisible.
+  let al := arms.foldl (· ++ ·.lanes) #[]
+  let ll := legs.foldl (· ++ ·.lanes) #[]
+  if (← Meta.isDefEq ox oy) && al.size == ll.size && !(← Meta.isDefEq x y) then
     let mut same := true
-    for i in [0 : arms.size] do
-      unless ← Wire.beq arms[i]! legs[i]! do same := false
+    for i in [0 : al.size] do
+      unless ← Wire.beq al[i]! ll[i]! do same := false
     if same then return #[]
-  return #[{ pass, arms, legs, core := e }]
+  return #[{ pass, vpass, arms, legs, core := e }]
 
 /-- One side of a statement, as a panel. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
@@ -400,35 +415,39 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let (ws0, o0) ← peelObj objVars cat regionTy src
   let mut lanes : Array Lane := #[]
   let mut stack : Array Nat := #[]
-  for w in ws0 do
+  -- The stack is FLAT: a pairing is its bundles' lanes, so a product's left factor's wires sit west
+  -- of its right factor's and a bead lands on one block of them.
+  for w in ws0.foldl (· ++ ·.lanes) #[] do
     lanes := lanes.push { label := ← w.label, born := -1, dies := LIVE }
     stack := stack.push (lanes.size - 1)
   let mut rows : Array Row := #[]
   for f in factors side do
     let (_, fy) ← homEnds f
     let obj ← plain (← peelObj objVars cat regionTy fy).2
-    let specs ← rowsOf objVars regionTy cat #[] false f
+    let specs ← rowsOf objVars regionTy cat #[] #[] false f
     for r in specs do
-      let p := r.pass.size
-      if p + r.arms.size > stack.size then
-        throwError "the factor `{← plain r.core}` eats {r.arms.size} wires under {p}, and \
+      let p := r.pass.foldl (· + ·.width) 0
+      let na := r.arms.foldl (· + ·.width) 0
+      if p + na > stack.size then
+        throwError "the factor `{← plain r.core}` eats {na} lanes under {p}, and \
           only {stack.size} are live"
       let i : Int := rows.size
-      let arms := stack.extract p (p + r.arms.size)
+      let arms := stack.extract p (p + na)
       for a in arms do lanes := lanes.set! a { lanes[a]! with dies := i }
       let mut legs : Array Nat := #[]
-      for w in r.legs do
+      for w in r.legs.foldl (· ++ ·.lanes) #[] do
         lanes := lanes.push { label := ← w.label, born := i, dies := LIVE }
         legs := legs.push (lanes.size - 1)
-      stack := stack.extract 0 p ++ legs ++ stack.extract (p + r.arms.size) stack.size
+      stack := stack.extract 0 p ++ legs ++ stack.extract (p + na) stack.size
       let label ← plain r.core
       let (cx, cy) ← homEnds r.core
       let (_, ox) ← peelObj objVars cat regionTy cx
       let (_, oy) ← peelObj objVars cat regionTy cy
-      let wires := r.pass ++ r.arms ++ r.legs
+      let wires := (r.pass ++ r.arms ++ r.legs).foldl (· ++ ·.lanes) #[]
       let vd ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars wires else none) with
         | none => pure none
-        | some v => some <$> verdict regionTy (r.pass ++ r.arms) (r.pass ++ r.legs) r.core v label
+        | some v =>
+          some <$> verdict regionTy (r.vpass ++ r.arms) (r.vpass ++ r.legs) r.core v label
       rows := rows.push
         { label, arms, legs, obj, nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   let n : Int := rows.size
