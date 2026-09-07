@@ -684,6 +684,36 @@ def sigs():
     return _TBL
 
 
+EXPORT = "./scripts/diag-export"
+LEANSIG = {}                       # panel id → [(label, "src⟶tgt")] in the order the panel draws
+
+
+def leansigs(recs):
+    """The bead types a `lean:` cert stands for, read from LEAN at CHECK TIME.  A generated panel
+    stores no `sigs:` of its own: `diag-export --string --sigs` prints one
+    `<panel>\\t<label>\\t<src>⟶<tgt>` per bead, in the order the panel draws them, so the sweep holds
+    the ink to the environment and never to a copy of it that can go stale.  One call per
+    declaration — every panel of a statement comes back from the same run."""
+    per = {}
+    for r in recs:
+        c = r.get("cert") or {}
+        if c.get("lean") and not c.get("sigs"):
+            per.setdefault(c["lean"], []).append(r["id"])
+    out = {}
+    for name, ids in per.items():
+        p = subprocess.run([EXPORT, "--string", "--sigs", name], capture_output=True, text=True)
+        if p.returncode:
+            sys.exit(f"scanline: {EXPORT} --string --sigs {name}:"
+                     f" {p.stderr.strip() or p.stdout.strip()}")
+        rows = {}
+        for line in p.stdout.splitlines():
+            i, lab, sig = line.split("\t")
+            rows.setdefault(int(i), []).append((lab, sig))
+        for k, pid in enumerate(ids):
+            out[pid] = rows.get(k + 1, [])
+    return out
+
+
 def instance(row, d):
     """Is the panel's signature `d` the ROW's arrow, written at this display's objects?
     `cons : Op×[Op]⟶[Op]` instantiates the row's `x×[x]⟶[x]` and is the same arrow; an `X : A⟶B`
@@ -898,6 +928,10 @@ def certify(p):
         else:
             bad.append(f"{p.id}: the panel denotes {spell(tidy(p.expr))} but states"
                        f" {c['expect']}, which reads {spell(said)}" + first_diff(got, want))
+    # A generated panel states no formula: its certificate is the DECLARATION it was drawn from, so
+    # what the sweep read is reported against that name and its bead types are checked from Lean.
+    if c.get('lean') and not c.get('expect'):
+        note.append(f"{p.id}: {c['lean']} reads {spell(tidy(p.expr))}")
     return bad, note
 
 
@@ -987,7 +1021,36 @@ def crosscheck(ps):
             lo = min(touched(p, b, p.cuts[i])) - EPS
             drew = tuple(fold_cut(p, [(x, l) for (x, l) in cut if x >= lo], ds)
                          for cut in (p.cuts[i], p.cuts[i + 1]))
-            say = beadrow(dg, lab, rows, c, str(n))
+            # A `lean:` panel's types are LEAN's, bead by bead in drawing order: the label is the
+            # checksum on that alignment, so a picture the declaration no longer draws says so.
+            ls = LEANSIG.get(p.id)
+            if ls is None:
+                say = beadrow(dg, lab, rows, c, str(n))
+            elif n >= len(ls) or ls[n][0] != b.label:
+                bad.append(f"{p.id}: bead {n + 1} is drawn {b.label} where {c['lean']} types"
+                           f" {ls[n][0] if n < len(ls) else 'nothing — it draws only ' + str(len(ls))}"
+                           f" — regenerate it with {EXPORT} --string {c['lean']}")
+                continue
+            else:
+                # Lean types the bead ALONE, so the drawn cut is narrowed to the wires it TOUCHES:
+                # a lane it merely passes lies in the tail and is no part of its arrow.
+                tw = touched(p, b, p.cuts[i])
+                drew = tuple(fold_cut(p, [e for e in cut[:-1]
+                                          if any(abs(e[0] - t) < EPS for t in tw)] + [cut[-1]], ds)
+                             for cut in (p.cuts[i], p.cuts[i + 1]))
+                # Each end is a CUT — lanes outermost first, then the object — folded by the very
+                # function that folds the drawn one, so the two are built in one language.
+                src, tgt = ls[n][1].split("⟶")
+                say = tuple(fold_cut(p, [(0, l) for l in e.split("|")], ds) for e in (src, tgt))
+                # A bead's ARMS are its source's lanes, and its reach is how far west they run: a
+                # bead whose source is the bare object reaches nothing, and one drawn reaching a
+                # lane it does not eat says it is a transformation of that functor.
+                if (b.reach is not None) != ("|" in src):
+                    bad.append(f"{p.id}: the bead {b.label} is drawn "
+                               + ("reaching a lane" if b.reach is not None
+                                  else "on the object wire alone")
+                               + f", but {c['lean']} types it {src.replace('|', ' ')}⟶"
+                               + tgt.replace('|', ' '))
             if say is None:
                 gap.append(f"{p.id}: {lab}")
                 continue
@@ -1029,7 +1092,10 @@ def lit_hashes(path):
 GATE = ".lake/build/note-gate.json"
 # A dotfile so no `diag/*.typ` glob picks the scratch slice up, and per-process because `make` runs
 # `spell` and `scan-strict` in parallel: one fixed path had each removing the other's file mid-query.
-SLICE = "diag/.gate-slice-%d.typ" % os.getpid()
+# BESIDE the file it is cut from: a copied panel keeps the source's own relative imports, and a
+# slice written elsewhere resolves them against the wrong directory.
+def slicepath(path):
+    return os.path.join(os.path.dirname(path) or ".", ".gate-slice-%d.typ" % os.getpid())
 MAXSEC = 4                         # more sections than this changed: the whole note is cheaper
 HEAD = re.compile(r'(={1,6}) ')
 DECL = re.compile(r'#(?:let|show|set|import)\b')
@@ -1092,6 +1158,15 @@ def sliced(pre, secs, sel):
             + "".join(b for s in sel for b in s["text"]))
 
 
+def placed(path):
+    """A picture file's own text with every top-level `#let` PLACED after it.  `#let pic = dpanel(…)`
+    BINDS a panel and draws nothing, so `typst query` finds no metadata until the document holds it
+    — and a sweep that reports zero panels for a file full of them is the check that exits 0."""
+    text = open(path, encoding="utf-8").read()
+    return text + "".join("#%s\n" % NAME.match(b).group(1)
+                          for b in text.splitlines() if NAME.match(b))
+
+
 def marked(pre, secs):
     """The whole note verbatim, with a `secmark` record emitted before every heading, so the full
     query's panels partition by the SOURCE POSITION that drew them — total by construction, and
@@ -1101,7 +1176,9 @@ def marked(pre, secs):
 
 
 def query(path, kinds=("scanline",), name=None):
-    out = subprocess.run(["typst", "query", "--input", "nodraw=1", path, "metadata",
+    # `--root .`: typst's default root is the INPUT's own directory, so a panel under
+    # `diag/generated/string/` cannot reach `diag/dpanel.typ` and the query dies on "access denied".
+    out = subprocess.run(["typst", "query", "--root", ".", "--input", "nodraw=1", path, "metadata",
                           "--field", "value"], capture_output=True, text=True)
     if out.returncode:
         sys.exit(f"scanline: typst query {name or path}: {out.stderr.strip()}")
@@ -1124,6 +1201,15 @@ def panels(path, frm, full=False):
         return [v for v in json.load(open(frm, encoding="utf-8"))
                 if isinstance(v, dict) and v.get("kind") == "scanline"]
     pre, secs = parts(path)
+    if not secs:
+        # No headings: a PICTURE FILE, not the note.  There is no section sha to invalidate a cache
+        # with, so it is swept WHOLE every time — silently sweeping none of it is what this fixes.
+        sl = slicepath(path)
+        open(sl, "w", encoding="utf-8").write(placed(path))
+        try:
+            return query(sl, name=path)
+        finally:
+            os.remove(sl)
     imp = sha("".join(open(p, encoding="utf-8").read() for p in sorted(glob.glob("diag/*.typ"))
                       if os.path.abspath(p) != os.path.abspath(path)))
     key = {"path": path, "pre": sha("".join(pre)), "imports": imp,
@@ -1147,11 +1233,12 @@ def panels(path, frm, full=False):
           and len(stale) <= MAXSEC and not any(k.startswith("@") or k in rest for k in changed))
     if ok:
         for s in stale:
-            open(SLICE, "w", encoding="utf-8").write(sliced(pre, secs, [s]))
+            sl = slicepath(path)
+            open(sl, "w", encoding="utf-8").write(sliced(pre, secs, [s]))
             try:
-                s["recs"] = query(SLICE)
+                s["recs"] = query(sl)
             finally:
-                os.remove(SLICE)
+                os.remove(sl)
             if not all(owns(s["num"])(r["id"]) for r in s["recs"]):
                 ok = False                        # the slice drew something this section does not own
                 break
@@ -1167,11 +1254,12 @@ def panels(path, frm, full=False):
         # number (the note's last chapter is counted 16.4 and draws 17.3.*), and an id-prefix test
         # dropped every panel no section claimed — so the next run, rebuilt from this table, was
         # short by fifteen and said nothing.  The marker makes the partition total by construction.
-        open(SLICE, "w", encoding="utf-8").write(marked(pre, secs))
+        sl = slicepath(path)
+        open(sl, "w", encoding="utf-8").write(marked(pre, secs))
         try:
-            vals = query(SLICE, ("scanline", "secmark"), path)
+            vals = query(sl, ("scanline", "secmark"), path)
         finally:
-            os.remove(SLICE)
+            os.remove(sl)
         by, cur = {s["num"]: s for s in secs}, None
         for s in secs:
             s["recs"] = []
@@ -1223,9 +1311,26 @@ def locate(path, p):
     return path
 
 
+VALOPT = ("--view", "--panel", "--from", "--json")   # flags whose next word is their VALUE
+
+
+def positional(argv):
+    """The file argument: the first word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
+    --full f` opened `0-.1` as the file, because a value does not start with `-` either."""
+    out, skip = [], False
+    for a in argv:
+        if skip:
+            skip = False
+        elif a.startswith("-"):
+            skip = a in VALOPT
+        else:
+            out.append(a)
+    return out[0] if out else "diag/allegory-axioms.typ"
+
+
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
-    path = next((a for a in argv if not a.startswith("-")), "diag/allegory-axioms.typ")
+    path = positional(argv)
     view = opt(argv, "--view")
     if view:
         pre, secs = parts(path)
@@ -1250,6 +1355,7 @@ def main(argv):
     # The obligations are the panels the FILE draws, enumerated before any cache is consulted: a
     # cached pass may skip the WORK of re-checking a panel, never subtract it from the total.
     recs = panels(path, frm, "--full" in argv)
+    LEANSIG.update(leansigs(recs))
     if "--spell" in argv:
         n, bad = respell(recs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
@@ -1299,7 +1405,7 @@ def main(argv):
                     print(f"  y={f['y']:<5} ({', '.join(f['above'])}) --{'+'.join(f['beads'])}-->"
                           f" ({', '.join(f['below'])})   {f['spelled']}")
     print(*note, sep="\n")
-    cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src"))
+    cert = sum(1 for p in ps if p.cert.get("expect") or p.cert.get("src") or p.cert.get("lean"))
     print(f"scanline: {len(recs) + len(skipped)} panels, {len(ps)} swept,"
           f" {len(skipped)} skipped as unchanged, {cert} certified,"
           f" {len(unhandled)} unhandled, {len(bad)} failures")
@@ -1341,6 +1447,12 @@ _HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict]
 --full         ignore the literal-hash cache and re-sweep every panel even if nothing changed
 --json FILE    write each panel's source/target/factors/expr as JSON to FILE
 --list         print one line per panel: its id and the composite the sweep reads it as
+
+A file with NO headings is a picture file — `diag/generated/string/<decl>.typ`, which binds its
+panel instead of placing it — and is swept whole, uncached, with every top-level `#let` placed.  A
+panel whose `cert:` carries `lean:` and no `sigs:` has its bead types read from LEAN at check time
+(`diag-export --string --sigs <decl>`, one call per declaration), so nothing about a type is stored
+in the picture; `make scan-generated` runs that over every file in diag/generated/string/.
 
 With no flags, sweeps every panel in the file (default diag/allegory-axioms.typ), prints the
 `cert:` mismatches, and a summary line "N panels, M swept, K skipped as unchanged, C certified, U

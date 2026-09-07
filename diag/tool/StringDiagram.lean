@@ -81,6 +81,9 @@ structure Row where
   arms  : Array Nat
   legs  : Array Nat
   obj   : String
+  /-- What the bead is an arrow BETWEEN, its `core`'s hom ends in the note's notation.  The panel
+      states it so `scripts/scanline` checks the drawn type against Lean's and not against `x⟶x`. -/
+  sig   : String := ""
   nat   : Option String := none
   /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
       bead the environment REFUTES, which draws no dot and is a claim all the same. -/
@@ -203,8 +206,9 @@ def panelCode (p : Panel) (declName : String) (frame topRow scale : Option Nat) 
   let mut nats : Array String := #[]
   for i in [0 : n] do
     let r := p.rows[i]!
-    let idx := if r.arms.isEmpty then r.legs else r.arms
-    let xsr := idx.map fun j => ls[j]!.x
+    -- A bead with NO arms stands on the object wire and its legs bend OUT of it, so it writes no
+    -- x fields: a reach taken from the legs draws it on the very wire it creates.
+    let xsr := r.arms.map fun j => ls[j]!.x
     let reach : Option Float := if xsr.isEmpty then none else some (minA xsr 1e9)
     let dot : Option Float :=
       if xsr.isEmpty || r.nat.isNone then none
@@ -257,6 +261,17 @@ def fileOf (declName body : String) : String :=
 /-- One panel on its own — one side of a statement, or one branch of a side. -/
 def emit (p : Panel) (declName : String) (frame topRow scale : Option Nat) : String :=
   fileOf declName ("#let pic = " ++ panelCode p declName frame topRow scale ++ "\n")
+
+/-- `--string --sigs`: what LEAN says each bead is an arrow between, one line
+    `<panel>\t<label>\t<src>⟶<tgt>` per bead, the panels numbered as the file emits them.  Nothing
+    is written into the picture: `scripts/scanline` asks this at check time, so the types it holds
+    the ink to are the environment's and cannot go stale in a file. -/
+def sigLines (ps : Array Panel) : String := Id.run do
+  let mut out := ""
+  for i in [0 : ps.size] do
+    for r in ps[i]!.rows do
+      out := out ++ toString (i + 1) ++ "\t" ++ r.label ++ "\t" ++ r.sig ++ "\n"
+  return out
 
 /-- Where a part's first bead sits, in rows.  The deepest part's sits one row below the ceiling; a
     shorter part slides until a bead it SHARES with that part stands at the same height, which is
@@ -316,11 +331,16 @@ private def LIVE : Int := -2
     a different functor at each `A` and states no naturality at all.  The packing `⟨𝟙,T⟩` then `F`
     is what gives that same bead lanes it can be a family over; where no packed relator exists —
     `F Unit A`, the base functor with the element type baked in — the bead is an arrow at one
-    object and carries no dot. -/
-def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : Option Expr :=
-  objVars.find? fun v =>
-    core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
-      && !wires.any (Wire.mentions v.fvarId!)
+    object and carries no dot.
+
+    ABSTRACTABLE over the object, not merely MENTIONING it: `S° : b⟶F(b)` names `b` only through
+    the type of the local `S : F(b)⟶b`, so `fun b => S°` is ill-typed and `S` is one arrow. -/
+def familyVar (core oX : Expr) (objVars : Array Expr) (wires : Array Wire) : MetaM (Option Expr) :=
+  objVars.findM? fun v => do
+    unless core.containsFVar v.fvarId! && oX.containsFVar v.fvarId!
+        && !wires.any (Wire.mentions v.fvarId!) do
+      return false
+    try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
     `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
@@ -460,6 +480,14 @@ partial def rowsOf (objVars : Array Expr) (regionTy : Expr) (cat : Array Name)
     if same then return #[]
   return #[{ pass, vpass, arms, legs, core := e }]
 
+/-- An object AS A CUT: the lanes it peels to, outermost first, then the object, `|`-separated —
+    `F|a`.  Not `F(a)`: a lane may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back, and
+    `scripts/scanline` folds this list with the very `fold_cut` it reads the drawn cut with. -/
+def objText (objVars : Array Expr) (cat : Array Name) (regionTy e : Expr) : MetaM String := do
+  let (ws, o) ← peelObj objVars cat regionTy e
+  let ls ← (ws.foldl (· ++ ·.lanes) #[]).mapM Wire.label
+  return String.intercalate "|" (ls.push (← plain o)).toList
+
 /-- One side of a statement, as a panel. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Panel :=
@@ -502,12 +530,15 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
       let (_, ox) ← peelObj objVars cat regionTy cx
       let (_, oy) ← peelObj objVars cat regionTy cy
       let wires := (r.pass ++ r.arms ++ r.legs).foldl (· ++ ·.lanes) #[]
-      let vd ← match (if ← Meta.isDefEq ox oy then familyVar r.core ox objVars wires else none) with
+      let fam ← if ← Meta.isDefEq ox oy then familyVar r.core ox objVars wires else pure none
+      let vd ← match fam with
         | none => pure none
         | some v =>
           some <$> verdict regionTy (r.vpass ++ r.arms) (r.vpass ++ r.legs) r.core v label
       rows := rows.push
-        { label, arms, legs, obj, nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
+        { label, arms, legs, obj,
+          sig := (← objText objVars cat regionTy cx) ++ "⟶" ++ (← objText objVars cat regionTy cy),
+          nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   let n : Int := rows.size
   lanes := lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l
   -- The two edges' own objects: the source's tail at the top, the target's at the bottom.
@@ -535,7 +566,8 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     side is read, because the frame is a property of the statement and a side alone cannot know how
     deep the other one is. -/
 def drawString (declName : Name) (side binder : Option String) (branch : List Nat)
-    (frame topRow scale : Option Nat) : MetaM String := withDeclScope declName do
+    (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
+    withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescopeReducing ci.type fun xs body => do
@@ -593,6 +625,7 @@ def drawString (declName : Name) (side binder : Option String) (branch : List Na
       let mut e := e
       for i in branch do e ← branchOf regionTy e i
       ps := ps.push (sym, ← panelOf regionTy cat e objVars)
+    if sigsOnly then return sigLines (ps.map (·.2))
     let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
       ++ (match side with | some s => "." ++ s | none => "")
       ++ branch.foldl (fun s i => s ++ (if i == 0 then ".inl" else ".inr")) ""

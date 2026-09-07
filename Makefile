@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -30,7 +30,7 @@ SLICE := diag/circuit-slice.typ
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit pairs cite spell scan-strict hm-sigs
+p: $(STAMP) slice circuit pairs cite spell scan-strict scan-generated hm-sigs
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
@@ -110,6 +110,15 @@ scan-full:
 # acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
 scan-strict:
 	./scripts/scanline diag/allegory-axioms.typ --strict
+
+# Every picture `diag-export --string` has written, swept against LEAN.  The FILES are the
+# obligations — one `scanline --strict` each, so a panel nobody imports is still checked — and each
+# panel's `cert: lean:` is its certificate: `scanline` asks `diag-export --string --sigs` for its
+# bead types at check time, so a picture the declaration no longer draws fails here.
+scan-generated: $(STAMP)
+	@test -n "$(wildcard diag/generated/string/*.typ)" || \
+	  { echo "no diag/generated/string/*.typ — draw one with ./scripts/diag-export --string"; exit 1; }
+	for f in diag/generated/string/*.typ; do ./scripts/scanline --strict "$$f" || exit 1; done
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
