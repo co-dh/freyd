@@ -51,7 +51,7 @@ Freyd.Alg.RelSet.Party.party_laws.lhs,Freyd.Alg.RelSet.Party.party_laws.rhs,Frey
 -	13.5.1a/vec-gen-diag	(𝟙×(moves trans Vec(n)(concat)))zip Vec(n)(cp)	# candidates: Freyd.Alg.Vec.moves_natural Freyd.Alg.Vec.moves Freyd.Alg.Vec.trans_natural
 Freyd.Alg.Vec.genFold_natural.lhs,Freyd.Alg.Vec.genFold_natural.rhs	13.5.2a/vec-fold-diag	⦇gen⦈ = (𝟙×⦇gen⦈)gen
 -	13.5.3a/vec-q-diag	(𝟙×(moves trans Vec(n)(est(R))))zip	# candidates: Freyd.Alg.Vec.Rel.moves_lax_natural Freyd.Alg.Vec.moves Freyd.Alg.Vec.Rel.trans_natural
--,-,-,-	13.5.4a/vec-cyl-laws	paths est(R) = ⦇gen⦈concat est(R) = ⦇gen⦈Vec(n)(est(R))est(R) = ⦇Q⦈est(R)	# candidates: Freyd.Alg.Vec.Rel.cyl_laws Freyd.Alg.Vec.paths_natural Freyd.Alg.Vec.paths
+Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs,Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs,Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs,Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs	13.5.4a/vec-cyl-laws	paths est(R) = ⦇gen⦈concat est(R) = ⦇gen⦈Vec(n)(est(R))est(R) = ⦇Q⦈est(R)	# the note reads the chain backwards, so the selectors run from the last step to the first
 Freyd.Alg.Vec.Rel.cyl_fusion.lhs,Freyd.Alg.Vec.Rel.cyl_fusion.rhs	13.5.4b/vec-cyl-fusion	gen Vec(n)(est(R)) = (𝟙×Vec(n)(est(R)))Q
 Freyd.Alg.RelSet.Van.secure_bmax.lhs,Freyd.Alg.RelSet.Van.secure_bmax.rhs	13.6.1a/van-secure	secure⟨ceiling,ceiling−floor⟩bmax = ⟨ceiling,ceiling−floor⟩bmax ≤N
 Freyd.Alg.RelSet.Van.secure_prefix.lhs,Freyd.Alg.RelSet.Van.secure_prefix.rhs	13.6.1b/van-prefix	secure prefix = prefix secure
@@ -86,8 +86,8 @@ Freyd.Alg.RelSet.Tour.tour_laws.lhs,Freyd.Alg.RelSet.Tour.tour_laws.rhs	14.6c/to
 -,-,-,-	16.3b/tardy-laws	(bagify°)%∋ est(R) = ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc] = (snag°)%∋ est(Q')(X×𝟙)snoc = pick (schedule×𝟙)snoc	# the display carries no marker of its own
 -,-,-,-	16.4b/(unlabelled)	𝟙%∋ E(intern°)est(R) = interval 𝟙%∋ E(inrange val°)est(R) = interval 𝟙%∋ E(H)est(R) = interval 𝟙%∋ E([arb,step]°)est(Q)F(H)α	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
 -,-,-	17.3.2a/(unlabelled)	𝟙%∋ E(F(𝟙,∋)) = 𝟙%∋ E(𝟙×∋) = 𝟙%∋	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
--	17.3.3a/(unlabelled)	F(𝟙,moves trans N(union))zip N(cp P(α))	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+Freyd.Alg.Cylinder.gen	17.3.3a/(unlabelled)	F(𝟙,moves trans N(union))zip N(cp P(α))	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
 -,-	17.3.4a/(unlabelled)	α⦇gen⦈ = F(𝟙,⦇gen⦈)gen	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
--,-	17.3.5b/(unlabelled)	Q = F(𝟙,moves trans N(est(R)))zip N(α)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
--,-,-,-,-	17.3.5c/(unlabelled)	paths est(R) = ⦇gen⦈setify union est(R) = ⦇gen⦈setify P(est(R))est(R) = ⦇gen⦈N(est(R))setify est(R) = ⦇Q⦈setify est(R)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
--,-	17.3.5d/(unlabelled)	gen N(est(R)) = F(𝟙,N(est(R)))Q	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,Freyd.Alg.Cylinder.Q	17.3.5b/(unlabelled)	Q = F(𝟙,moves trans N(est(R)))zip N(α)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+Freyd.Alg.Cylinder.cyl_laws_step4.rhs,Freyd.Alg.Cylinder.cyl_laws_step4.lhs,Freyd.Alg.Cylinder.cyl_laws_step3.lhs,Freyd.Alg.Cylinder.cyl_laws_step2.lhs,Freyd.Alg.Cylinder.cyl_laws_step1.lhs	17.3.5c/(unlabelled)	paths est(R) = ⦇gen⦈setify union est(R) = ⦇gen⦈setify P(est(R))est(R) = ⦇gen⦈N(est(R))setify est(R) = ⦇Q⦈setify est(R)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+Freyd.Alg.Cylinder.cyl_fusion.rhs,Freyd.Alg.Cylinder.cyl_fusion.lhs	17.3.5d/(unlabelled)	gen N(est(R)) = F(𝟙,N(est(R)))Q	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
