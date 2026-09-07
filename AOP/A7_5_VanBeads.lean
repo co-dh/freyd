@@ -243,14 +243,14 @@ public theorem nil_natural (S : dE A ⟶ dE B) :
 
 /-! ## The greedy fold is not even lax natural -/
 
-variable {Tx : Type} {amount : Tx → Int} {N : Int}
+variable {X : Type} {amount : X → Int} {N : Int}
 
 /-- The fold `⦇S%∋ est(R;H)⦈` read one transaction at a time: the empty stretch has only the
     empty schedule to answer with. -/
-public theorem greedyFold_wrap (r : Sched Tx) :
+public theorem greedyFold_wrap (r : Sched X) :
     greedyFold amount N (ConsList.wrap ()) r ↔ r = ConsList.wrap () := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH Tx) (Sum.inl ()) r) ?_
+  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH X) (Sum.inl ()) r) ?_
   constructor
   · rintro ⟨hmem, -⟩
     rw [Salg, junc_sum_inl] at hmem
@@ -264,14 +264,14 @@ public theorem greedyFold_wrap (r : Sched Tx) :
 
 /-- The fold `⦇S%∋ est(R;H)⦈` at a `cons`: the tail's answer `y` is extended by `new∪old`, and
     the answer kept is one of those extensions that is `R;H`-below every one of them. -/
-public theorem greedyFold_cons (a : Tx) (x : Seg Tx) (r : Sched Tx) :
+public theorem greedyFold_cons (a : X) (x : Seg X) (r : Sched X) :
     greedyFold amount N (ConsList.cons a x) r
-      ↔ ∃ y, greedyFold amount N x y ∧ (newR Tx ∪ oldR amount N) (a, y) r
-          ∧ ∀ z, (newR Tx ∪ oldR amount N) (a, y) z → RH Tx r z := by
+      ↔ ∃ y, greedyFold amount N x y ∧ (newR X ∪ oldR amount N) (a, y) r
+          ∧ ∀ z, (newR X ∪ oldR amount N) (a, y) z → RH X r z := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH Tx)) (ConsList.cons a x) r
-      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH Tx)) x y
-          ∧ (Λ (Salg amount N) ≫ est (RH Tx)) (Sum.inr (a, y)) r).trans ?_
+  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH X)) (ConsList.cons a x) r
+      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH X)) x y
+          ∧ (Λ (Salg amount N) ≫ est (RH X)) (Sum.inr (a, y)) r).trans ?_
   constructor
   · rintro ⟨y, hy, hmem⟩
     rw [Λ_comp_est_apply] at hmem
