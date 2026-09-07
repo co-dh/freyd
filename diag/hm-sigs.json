@@ -33,17 +33,31 @@
     "//": [
       "The rules by which a COMPOUND bead inherits its verdict from its parts, and the Lean theorem",
       "that IS each rule: `scripts/diagram`'s `natural()` derives a `p×q` verdict from `p` and `q`,",
-      "which is a theorem about `Relator.prod` and not a reading of the picture, so it is drawn only",
+      "which is a theorem about the arrow `p×q` IS and not a reading of the picture, so it is drawn only",
       "from here.  A compound with no rule of its own verdict is `Undecided` — no declaration, no dot.",
-      "`relator` is the former the rule is about; the theorem's conclusion must be that former's own",
-      "square, which is what `hm-check --verify-sigs` holds each marker to.  A verdict ABSENT from a",
-      "rule is refused: `conv` carries no `lax`, because `recip_not_laxNatural` exhibits a lax `φ`",
-      "whose `φ°` is not lax."
+      "`former` is the ARROW the rule builds — `prodMap` for `p×q`, `Allegory.recip` for `R°` — and",
+      "the theorem's conclusion must be a square of THAT arrow, which is what `hm-check --verify-sigs`",
+      "holds each marker to.  `lanes` is the one hypothesis a rule may ask beyond the parts' own",
+      "squares, a property of the relators the square is stated at, and it carries the declaration",
+      "that gives the note's regions that property.  A verdict ABSENT from a rule is refused."
     ],
     "prod": {
-      "relator": "Freyd.Alg.Relator.prod",
+      "former": "Freyd.Alg.prodMap",
       "strict": "AOP.A5_7.strictNatural_prod@1802c7e8",
       "lax": "AOP.A5_7.laxNatural_prod@dc776aa7"
+    },
+    "conv": {
+      "former": "Freyd.Alg.Allegory.recip",
+      "lanes": {
+        "Freyd.Alg.Relator.PreservesRecip": "AOP.A5_1.Relator.preservesRecip_of_tabular@02b327b3"
+      },
+      "strict": "AOP.A5_7.strictNatural_recip@a8b1257f",
+      "//lax": [
+        "NO `lax`, and the theorems say why: `AOP.A5_7.recip_oplax@7735eec0` takes a LAX square to an",
+        "OPLAX one, not to a lax one, and `AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6` exhibits",
+        "a lax `φ` whose `φ°` is not lax.  So the converse of a lax bead is Undecided, and a panel",
+        "that wants one states its own row."
+      ]
     }
   },
   "clear": [

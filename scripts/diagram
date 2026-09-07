@@ -1428,6 +1428,16 @@ def endpoints(p):
             c.get("tgt") or spell(sl.fold_cut(p, sl.ports(p, False))))
 
 
+def redraw(c, tbl, src=None, tgt=None):
+    """The panel a `cert:` denotes — the ONE place a cert is read.  A caller that already HAS one
+    (the note's literal, `--roundtrip`, `--cert`) hands it over whole rather than re-spelling it as
+    flags, so a mapping field (`sigs`, `tint`, `defn`) cannot be serialised in some other syntax and
+    a field added here cannot be dropped by one caller."""
+    return draw(c["expect"], src or c["src"], tgt or c["tgt"], tbl, c.get("split", DEFSPLIT),
+                c.get("sigs"), c.get("slope"), c.get("mu"), frame=c.get("frame"),
+                top=c.get("top"), tint=c.get("tint"), defn=c.get("defn"))
+
+
 def roundtrip(path, frm, show, out, tbl):
     recs = sl.panels(path, frm)
     ok, printer, law, fail, gen = 0, 0, 0, [], []
@@ -1437,10 +1447,7 @@ def roundtrip(path, frm, show, out, tbl):
         want = r["cert"]["expect"]
         try:
             src, tgt = endpoints(sl.Panel(r))
-            g = draw(want, src, tgt, tbl, r["cert"].get("split", DEFSPLIT), r["cert"].get("sigs"),
-                     r["cert"].get("slope"), r["cert"].get("mu"), frame=r["cert"].get("frame"),
-                     top=r["cert"].get("top"), tint=r["cert"].get("tint"),
-                     defn=r["cert"].get("defn"))
+            g = redraw(r["cert"], tbl, src, tgt)
             g["id"] = r["id"]
             got, bad = swept(g)
             gen.append(g)
@@ -1527,9 +1534,7 @@ def regen(path, tbl, write):
         ln = text.count("\n", 0, i) + 1
         head = f"{path}:{ln}  {c['expect']}   [{c['src']} ⟶ {c['tgt']}]"
         try:
-            new = emit(draw(c["expect"], c["src"], c["tgt"], tbl, c.get("split", DEFSPLIT),
-                            c.get("sigs"), c.get("slope"), c.get("mu"),
-                            frame=c.get("frame"), top=c.get("top"), defn=c.get("defn")))[1:-1]
+            new = emit(redraw(c, tbl))[1:-1]
         except (Unhandled, Undecided, ValueError, KeyError, StopIteration) as ex:
             fail += 1; msgs.append(f"{head}\n  {ex}"); continue
         if new == text[i:e]:
@@ -1773,6 +1778,10 @@ _HELP_BODY = ('usage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--
               ' (`--tint "T(f)=INDUCED"`), for a panel that stands beside a commutative square and'
               ' tints each bead to the arrow it draws; it rides in the `cert:` so `--compare`'
               " rebuilds the same colours instead of bleaching them black"
+              '\n--cert JSON   a panel'"'"'s whole `cert:` as JSON, in place of --src/--tgt/--sigs/'
+              '--defn/--tint/--frame/--top/--fold-list and the formula — for a caller that already'
+              ' HAS the cert (`typst query`), which would otherwise have to re-spell each mapping'
+              " field in that flag's own pair syntax and get one of them wrong"
               '\n--png OUT     also render the panel to OUT (200 dpi); the `dpanel` literal still'
               " goes to stdout and the written path to stderr"
               '\n--book        lay the panel out as IntroString p.74 does: a STRAIGHT object edge'
@@ -1815,9 +1824,10 @@ def main(argv):
     tint = dict(x.rsplit("=", 1) for x in tint.split()) if tint else None
     defn = sl.opt(argv, "--defn")
     defn = dict(x.split("≜", 1) for x in defn.split()) if defn else None
+    cert = sl.opt(argv, "--cert")
     pan, png = sl.opt(argv, "--panel"), sl.opt(argv, "--png")
     taken = {i for o in ("--from", "--json", "--src", "--tgt", "--sigs", "--slope", "--mu",
-                         "--frame", "--top", "--tint", "--defn", "--panel", "--png")
+                         "--frame", "--top", "--tint", "--defn", "--panel", "--png", "--cert")
              if o in argv for i in (argv.index(o), argv.index(o) + 1)}
     free = [a for i, a in enumerate(argv) if i not in taken and not a.startswith("-")]
     path = next((a for a in free if a.endswith(".typ")), None)
@@ -1832,7 +1842,7 @@ def main(argv):
             regen(path, tbl, "--write" in argv)
         return
     formula = next((a for a in free if not a.endswith(".typ")), None)
-    if not (formula and src and tgt):
+    if not (cert or (formula and src and tgt)):
         sys.exit(__doc__.strip().splitlines()[0]
                  + '\nusage: diagram [--fold-list] [--sigs "R:F(A)⟶A S:F(B)⟶B"] [--slope left]'
                  + ' [--png OUT] --src "F([A])" --tgt "[A]" "α prefix list(p)"'
@@ -1844,8 +1854,12 @@ def main(argv):
     if "--book" in argv:
         book = (tuple(int(v) for v in pan.lower().split("x")) if pan else (None, None)) \
             + ("--obreak" in argv,)
-    r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
-             book, frame=frame, top=top, tint=tint, defn=defn)
+    if cert:
+        cert = json.loads(cert)
+        formula, r = cert["expect"], redraw(cert, tbl)
+    else:
+        r = draw(formula, src, tgt, tbl, "" if "--fold-list" in argv else DEFSPLIT, own, slope, ini,
+                 book, frame=frame, top=top, tint=tint, defn=defn)
     if png:
         print("wrote", picture([r], png), file=sys.stderr)
     if book:                    # the sweep reads the bottom edge for the target, and a `--book`

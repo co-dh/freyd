@@ -64,17 +64,11 @@ def obligations():
 
 
 def diagram_args(cert):
-    """A panel's `cert:` as `scripts/diagram`'s own flags — the note's panel, rebuilt from what
-    certifies it.  `split: ""` is the one panel that keeps a composite object folded."""
-    a = ["--src", cert["src"], "--tgt", cert["tgt"]]
-    if cert.get("sigs"):
-        a += ["--sigs", " ".join(f"{k}:{v}" for k, v in cert["sigs"].items())]
-    for flag in ("mu", "defn", "frame", "top"):
-        if cert.get(flag) is not None:
-            a += ["--" + flag, str(cert[flag])]
-    if cert.get("split") == "":
-        a += ["--fold-list"]
-    return a + [cert["expect"]]
+    """A panel's `cert:` handed to `scripts/diagram` WHOLE.  Re-spelling it as flags means writing
+    each mapping field (`sigs`, `tint`, `defn`) back in that flag's own pair syntax, and a field
+    whose syntax this got wrong — or did not know about — came back as a parse error naming
+    nothing; `--cert` reads the cert with the same code `--compare` does."""
+    return ["--cert", json.dumps(cert, ensure_ascii=False)]
 
 
 def content(path):
