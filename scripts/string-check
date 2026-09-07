@@ -5,6 +5,7 @@ other.
 
     ./scripts/string-check            # every display
     ./scripts/string-check 13.6       # only the displays whose number starts so
+    ./scripts/string-check --selectors  # the manifest's selectors, one per line, for `make`
 
 THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
   every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
@@ -108,6 +109,11 @@ def svg(src, dst):
 
 
 def main(argv):
+    # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
+    # gate's, so the two cannot come to disagree about what the manifest names.
+    if "--selectors" in argv:
+        print(*sorted({s for _, _, sels in obligations() for s in sels if s != "-"}), sep="\n")
+        return 0
     want = argv[0] if argv else ""
     os.makedirs(OUT, exist_ok=True)
     live = note_panels()

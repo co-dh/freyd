@@ -15,6 +15,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 # One file standing for all of diag/generated: `diag-regen` deletes and rewrites the pictures
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
+STRSEL := .lake/build/string-selectors
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
@@ -111,14 +112,20 @@ scan-full:
 scan-strict:
 	./scripts/scanline diag/allegory-axioms.typ --strict
 
-# Every picture `diag-export --string` has written, swept against LEAN.  The FILES are the
-# obligations — one `scanline --strict` each, so a panel nobody imports is still checked — and each
-# panel's `cert: lean:` is its certificate: `scanline` asks `diag-export --string --sigs` for its
-# bead types at check time, so a picture the declaration no longer draws fails here.
+# Every picture `diag/string-panels.txt` names, drawn from LEAN and swept against it.  The
+# manifest's SELECTORS are the obligations, never the files on disk: diag/generated is gitignored,
+# so a fresh clone had nothing to sweep and this passed, and deleting a picture dropped an
+# obligation instead of failing.  `string-check --selectors` is the manifest's ONE reader, so the
+# two gates cannot come to disagree about what it names.  Each panel's `cert: lean:` is its
+# certificate: `scanline` asks `diag-export --string --sigs` for its bead types at check time, so a
+# picture the declaration no longer draws fails here.  One `diag-export` and one `scanline` for all
+# of them — each pays its import once per process.
 scan-generated: $(STAMP)
-	@test -n "$(wildcard diag/generated/string/*.typ)" || \
-	  { echo "no diag/generated/string/*.typ — draw one with ./scripts/diag-export --string"; exit 1; }
-	for f in diag/generated/string/*.typ; do ./scripts/scanline --strict "$$f" || exit 1; done
+	./scripts/string-check --selectors > $(STRSEL)
+	@test -s $(STRSEL) || { echo "$(STRSEL): diag/string-panels.txt names no selector to draw"; exit 1; }
+	tr '\n' '\0' < $(STRSEL) | xargs -0 ./scripts/diag-export --string
+	sed 's|.*|diag/generated/string/&.typ|' $(STRSEL) | tr '\n' '\0' \
+	  | xargs -0 ./scripts/scanline --strict
 
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
 # note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
@@ -142,11 +149,14 @@ string-check: $(STAMP)
 # obligations and each one's basename IS the declaration it renders, so a cell whose declaration
 # changed type is regenerated here rather than staying at what it said when it was first written.
 # One exe run for all of them: the environment is imported once per process.
+# No name reaches the shell through make's own splice: `Freyd.Alg.Λ_eps_eq'` carries a prime and a
+# guillemet name carries whatever it likes, so `find`/`xargs -0` hands them over byte for byte.
 types: $(STAMP)
-	@test -n "$(wildcard diag/generated/type/*.typ)" || \
+	@n=$$(find diag/generated/type -maxdepth 1 -name '*.typ' 2>/dev/null | wc -l); \
+	  test "$$n" -gt 0 || \
 	  { echo "no diag/generated/type/*.typ — write one with ./scripts/diag-export --type"; exit 1; }
-	./scripts/diag-export --type \
-	  $(patsubst diag/generated/type/%.typ,%,$(wildcard diag/generated/type/*.typ))
+	find diag/generated/type -maxdepth 1 -name '*.typ' -print0 | xargs -0 basename -a -s .typ \
+	  | tr '\n' '\0' | xargs -0 ./scripts/diag-export --type
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
@@ -196,7 +206,9 @@ w: p
 # note: `diag-regen` reads its list off the note's imports, but editing prose changes no picture,
 # and hanging the redraw on the note put a whole Lean elaboration behind every typo fix.  Add an
 # import and the typst compile says which file is missing.
-$(STAMP): $(LEAN)
+# `$(BOOK)` too, and not `$(LEAN)` alone: the statements drawn are the library's — AOP, Freyd, rel
+# — so an edit to the declaration a picture is exported FROM left the picture at what it said.
+$(STAMP): $(LEAN) $(BOOK)
 	./scripts/cap lake build diag-export
 	./scripts/diag-regen
 	@touch $@

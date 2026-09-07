@@ -1330,7 +1330,7 @@ VALOPT = ("--view", "--panel", "--from", "--json")   # flags whose next word is 
 
 
 def positional(argv):
-    """The file argument: the first word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
+    """The file arguments: every word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
     --full f` opened `0-.1` as the file, because a value does not start with `-` either."""
     out, skip = [], False
     for a in argv:
@@ -1340,12 +1340,13 @@ def positional(argv):
             skip = a in VALOPT
         else:
             out.append(a)
-    return out[0] if out else "diag/allegory-axioms.typ"
+    return out or ["diag/allegory-axioms.typ"]
 
 
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
-    path = positional(argv)
+    paths = positional(argv)
+    path = paths[0]
     view = opt(argv, "--view")
     if view:
         pre, secs = parts(path)
@@ -1365,20 +1366,43 @@ def main(argv):
         return
     only = opt(argv, "--panel")
     frm = opt(argv, "--from")
-    keep = not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
-    hs = lit_hashes(path) if keep else None
-    # The obligations are the panels the FILE draws, enumerated before any cache is consulted: a
+    # A cache keyed on ONE path cannot answer for a batch, so a batch does not read one.
+    keep = (not any(a in argv for a in ("--spell", "--strict")) and not only and not frm
+            and len(paths) == 1)
+    # The obligations are the panels the FILES draw, enumerated before any cache is consulted: a
     # cached pass may skip the WORK of re-checking a panel, never subtract it from the total.
-    recs = panels(path, frm, "--full" in argv)
-    LEANSIG.update(leansigs(recs))
+    per = [(p, panels(p, frm, "--full" in argv)) for p in paths]
+    allrecs = [r for _, rs in per for r in rs]
     if "--spell" in argv:
-        n, bad = respell(recs)
+        LEANSIG.update(leansigs(allrecs))
+        n, bad = respell(allrecs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
         if bad:
             print(*bad, sep="\n", file=sys.stderr)
             sys.exit(f"scanline: {len(bad)} string{'s' * (len(bad) > 1)} the grammar cannot"
                      " write back")
         return
+    fail, swept = 0, []
+    for path, recs in per:
+        n, ps = check(path, recs, argv, only, keep)
+        fail += n
+        swept += ps
+    if opt(argv, "--json"):
+        json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
+                    "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
+                    "expr": spell(tidy(p.expr))} for p in swept],
+                  open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    if fail:
+        sys.exit(1)
+
+
+def check(path, recs, argv, only, keep):
+    """One file's panels swept, its failures named on stderr: how many failed, and the panels."""
+    # A panel id is the FILE's (`0-.1` in every generated picture), so one file's Lean types would
+    # answer for the next file's panel of the same id: the table is built afresh for each.
+    LEANSIG.clear()
+    LEANSIG.update(leansigs(recs))
+    hs = lit_hashes(path) if keep else None
     skipped = []
     if keep and "--full" not in argv:
         c = json.load(open(CACHE, encoding="utf-8")) if os.path.exists(CACHE) else {}
@@ -1407,11 +1431,6 @@ def main(argv):
     if "--strict" in argv:
         bad += warn["cut order"] + warn["ink"] + drawn
         warn = {k: [] for k in warn}; drawn = []
-    if opt(argv, "--json"):
-        json.dump([{"id": p.id, "source": [l for _, l in p.cuts[0]],
-                    "target": [l for _, l in p.cuts[-1]], "factors": p.factors,
-                    "expr": spell(tidy(p.expr))} for p in ps],
-                  open(opt(argv, "--json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     if only or "--list" in argv:
         for p in ps:
             print(f"{p.id:<12} {spell(tidy(p.expr))}")
@@ -1446,14 +1465,20 @@ def main(argv):
     if bad:
         print(*[f"{path}: {b}" for b in bad], sep="\n", file=sys.stderr)
         first = next((p for p in ps if bad[0].startswith(p.id.rsplit('.', 1)[0])), None)
-        sys.exit(f"scanline: {len(bad)} check{'s' * (len(bad) > 1)} failed"
-                 + (f"; the first is drawn at {locate(path, first)}" if first else ""))
-    if unhandled:
-        sys.exit(f"scanline: {len(unhandled)} panels the sweep has no rule for")
+        print(f"scanline: {len(bad)} check{'s' * (len(bad) > 1)} failed"
+              + (f"; the first is drawn at {locate(path, first)}" if first else ""),
+              file=sys.stderr)
+    elif unhandled:
+        print(f"scanline: {len(unhandled)} panels the sweep has no rule for", file=sys.stderr)
+    return len(bad) + len(unhandled), ps
 
 
 _HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict] [--full]
-       [--json FILE] [--list] [diag/allegory-axioms.typ]
+       [--json FILE] [--list] [FILE ...]
+
+SEVERAL FILES in one run, each swept and reported on its own line, the exit status non-zero if any
+of them failed — `make scan-generated` hands over every picture the manifest names in one call.
+The literal cache is one file's, so a batch neither reads nor writes it.
 
 --panel ID     sweep and print only the one panel with this metadata id, with its per-bead factors
 --from FIELD   read `#metadata` with this --field name instead of the default "value"
