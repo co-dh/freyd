@@ -70,9 +70,9 @@ Freyd.Alg.RelSet.Van.van_7_21.lhs,Freyd.Alg.RelSet.Van.van_7_21.rhs	13.6.6c/van-
 -,-,-,-,-	14.1d/thin-thm81	S° F(Q° ∈)(F(∋)S)%∋ thin(Q) = Q° S° F(∈)(F(∋)S)%∋ thin(Q) = Q° ∈ thin(Q) = Q° Q° ∈ = Q° ∈	# candidates: Freyd.Alg.thinning
 -,-,-	14.1e/thin-cor	⦇(F(∋)S)%∋ thin(Q)⦈est(R) = 𝟙%∋ E(⦇S⦈)thin(Q)est(R) = 𝟙%∋ E(⦇S⦈)est(R)	# candidates: Freyd.Alg.thinning_est
 Freyd.Alg.thinning_paths.lhs,Freyd.Alg.thinning_paths.rhs	14.2c/path-laws	⦇F(∋,𝟙)α⦈%∋ est(R) = ⦇(F(∋,∋)α)%∋ thin(Q)⦈est(R)
--,-,-,-,-	14.3c/thinlist-86	sort(P)thinlist(Q) = setify° ordered(P)thinlist(Q) = setify° thinlist(Q)ordered(P) = thin(Q)setify° ordered(P) = thin(Q)sort(P)	# candidates: Freyd.Alg.sortRel_comp_thinlist_le Freyd.Alg.RelSet.ListRel.setify_lax_natural Freyd.Alg.RelSet.ListRel.setify_not_strict
+Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs,Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs,Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs,Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs,Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs	14.3c/thinlist-86	sort(P)thinlist(Q) = setify° ordered(P)thinlist(Q) = setify° thinlist(Q)ordered(P) = thin(Q)setify° ordered(P) = thin(Q)sort(P)
 Freyd.Alg.map_sort_comp_listcp_le.lhs,Freyd.Alg.map_sort_comp_listcp_le.rhs	14.3d/thinlist-lem81	(F(∋)f p)%∋ sort(P) = F(∋)f%∋ sort(P)filter(p)
--,-,-,-	14.3e/thinlist-thm82	⦇S⦈%∋ est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈sort(P)minlist(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.thinningList
+Freyd.Alg.thinningList_step3.rhs,Freyd.Alg.thinningList_step3.lhs,Freyd.Alg.thinningList_step2.lhs,Freyd.Alg.thinningList_step1.lhs	14.3e/thinlist-thm82	⦇S⦈%∋ est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈sort(P)minlist(R) = ⦇−thinlist(Q)⦈minlist(R)
 Freyd.Alg.sortedAlg_fusion.lhs,Freyd.Alg.sortedAlg_fusion.rhs	14.3f/thinlist-fusion	F(∋)S%∋ thin(Q)sort(P) = F(∋)S%∋ sort(P)thinlist(Q)
 -,-,-	14.4c/knap-laws	(subseq within(w))%∋ est(R) = ⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈%∋ est(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.RelSet.Knapsack.knap_laws Freyd.Alg.RelSet.Knapsack.knap_spec
 -,-,-	14.5c/para-laws	(partition list⁺(fits(w)))%∋ est(R) = ⦇[wrap wrap,new ∪ (glue (ok w))]⦈%∋ est(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.RelSet.Paragraph.para_laws Freyd.Alg.RelSet.Paragraph.partition Freyd.Alg.RelSet.Paragraph.para_alg_fusion
