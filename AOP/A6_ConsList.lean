@@ -434,6 +434,14 @@ open Lean PrettyPrinter in
   | `($_ ()) => `($(mkIdent `nil))
   | _ => throw ()
 
+-- The structural fold wears the note's banana.  `cataR` and `relCata` are equal only
+-- propositionally (`cataR_eq_relCata`), which is why they are two constants; but a PICTURE says
+-- which arrow it draws by the algebra in the brackets, and the note writes `⦇S⦈` for both.
+open Lean PrettyPrinter in
+@[app_unexpander cataR] public meta def unexpandCataR : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
 -- B&dM's `wrap` is `singleR` at the empty leaf: the leaf argument is matched as `()` for the same
 -- reason as `nil` above.
 open Lean PrettyPrinter in
