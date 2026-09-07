@@ -978,6 +978,11 @@ open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
+-- `suffix` is a name of its own, so the def carries the `R` only because `prefix` is a keyword.
+open Lean PrettyPrinter in
+@[app_unexpander suffixR] public meta def unexpandSuffixR : Unexpander
+  | `($_:ident) => `($(mkIdent `suffix))
+  | _ => throw ()
 
 -- `partition`, `concat` and `sum` are what the note calls these arrows.  The namespace is the only
 -- reason the printer keeps `ListRel.` in front of them, and a picture of the repo's own algebra has

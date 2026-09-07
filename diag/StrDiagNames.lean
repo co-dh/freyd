@@ -12,6 +12,9 @@ import AOP.A5_5_TypeFunctor
 import AOP.A5_5
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
+import AOP.A7_3_Party
+import AOP.A7_4_Cylinder
+import AOP.A7_5_Van
 import AOP.A7_7_MSS
 import AOP.A8_1
 import AOP.A8_4_Knapsack
@@ -62,6 +65,9 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.graph] def unexpandGraph : Unexpander
   | `($_ Prod.fst) => `($(mkIdent `π₁))
   | `($_ Prod.snd) => `($(mkIdent `π₂))
+  -- Eta-expanded, which is how a `fun p => p.2` written at the use site comes back out.
+  | `($_ fun $_:ident => Prod.fst $_) => `($(mkIdent `π₁))
+  | `($_ fun $_:ident => Prod.snd $_) => `($(mkIdent `π₂))
   -- Only a map with a NAME: `graph (fun _ => 0)` keeps `AOP.A6_1_RelSet`'s own `⊸ 0`, which this
   -- clause would otherwise shadow with the lambda.
   | `($_ $f:ident) => `($f)
@@ -82,6 +88,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.R] def unexpandParagraphR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.R] def unexpandCodeR : Unexpander | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
 
 -- THE MAP A SECTION IS NAMED AFTER.  The note draws the specification's own name, not the Lean
 -- function the graph is taken of: `edit`, `detab`, `flatten` are `editFn`, `detabR`, `flattenFn`.
@@ -117,6 +125,30 @@ open Lean PrettyPrinter in
 @[app_unexpander mu] def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
+
+-- A SECTION'S PARAMETERS ARE THE PANEL'S REGION, NOT PART OF THE BEAD'S NAME.  `gen`, `Q` and
+-- `paths` are stated over the cylinder's fixed data (`I`, `moves`, `trans`, `zip`, …), which every
+-- panel of §17.3 sits in, so spelling it in the label writes the section's context on every bead.
+open Lean PrettyPrinter in
+@[app_unexpander Cylinder.gen] def unexpandCylinderGen : Unexpander | _ => `($(mkIdent `gen))
+open Lean PrettyPrinter in
+@[app_unexpander Cylinder.Q] def unexpandCylinderQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Cylinder.paths] def unexpandCylinderPaths : Unexpander | _ => `($(mkIdent `paths))
+
+open Lean PrettyPrinter in
+/-- The note's bead for the maximum-segment-sum step algebra is `k`; `Kalg` is only the Lean name. -/
+@[app_unexpander RelSet.MSS.Kalg] def unexpandKalg : Unexpander | _ => `($(mkIdent `k))
+
+open Lean PrettyPrinter in
+/-- `Van.bmax` keeps its namespace only because `RelSet.Tardy.bmax` shares the name; a picture of
+    one section's algebra has no second `bmax` to tell this one from. -/
+@[app_unexpander RelSet.Van.bmax] def unexpandVanBmax : Unexpander | _ => `($(mkIdent `bmax))
+
+open Lean PrettyPrinter in
+/-- The note draws the union of a set of sets as `union`: which of the many `union`s of the book it
+    is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
+@[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
 
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
