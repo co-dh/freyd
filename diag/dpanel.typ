@@ -218,7 +218,7 @@
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
 // the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
 // `dknees` gave the bead this lane is born on and the one it dies on.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false, ulax: false) = {
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false, unat: "strict") = {
   let wc = if col == none { (:) } else { (col: col) }
   // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
   // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
@@ -247,9 +247,9 @@
   hm-wire(pts, ..(if flat { (k: 0) } else { (:) }), ..wc,
           hs: (if not flat and y0 != "top" and un == none { (0,) } else { () })
             + (if not flat and y1 != "bot" { (pts.len() - 1,) } else { () }))
-  // The unit's own dot draws its naturality, exactly as a bead's does: hollow where the row says
-  // `lax`, because the singleton's naturality square commutes one way only.
-  if un != none { hm-bead((x, y0), un, bg: if ulax { fb-ALLC } else { none }) }
+  // The unit's own mark draws its naturality, exactly as a bead's does: `hm-mark` is handed the
+  // verdict word and picks the glyph, so a lane and a bead cannot disagree about what one means.
+  if un != none { hm-bead((x, y0), un, bg: fb-ALLC, nat: unat) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out, at
@@ -395,7 +395,7 @@
     let alone = (corr.len() == 0
       and lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1)
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
-                        alone: alone, ulax: l.at(5, default: none) == "lax") }
+                        alone: alone, unat: l.at(5, default: "strict")) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // On the birth row, where every arm leaves its dot vertically — EXCEPT where another strand
     // sweeps that row west of this lane: a leg of the same bead born there, or a lane DYING there,
@@ -421,15 +421,12 @@
               ..(if nm == none { (:) } else { (col: fcol(nm)) }))
     }
   }
-  // A bead's 6th element is `"lax"`: the naturality square commutes one way only, so the dot is
-  // hollow — punched out in the region behind it, which is the `Rel` side every dot sits in.
-  // `"oplax"` draws the same: it is the same one-way square with `⊑` the other way round (the
-  // converse of a lax family), and WHICH way is written in the `cert:`, not in the ink.
-  // It is `"spider"` where the environment proves neither naturality nor its refutation: NO dot at
-  // all, only the name where the wires meet, because a mark would claim what nobody has proved.
+  // A bead's 6th element is the verdict its row states, and `hm-mark` is where that word becomes a
+  // glyph — hollow marks punched out in `fb-ALLC`, the region behind every dot.  The word is the
+  // only thing passed: a panel that decided the shape here would drift from the lane above and from
+  // the exporter, which name the same three verdicts.  Absent, it is `"strict"`.
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
-                           bg: if b.at(5, default: none) in ("lax", "oplax") { fb-ALLC } else { none },
-                           dot: b.at(5, default: none) != "spider") }
+                           bg: fb-ALLC, nat: b.at(5, default: "strict")) }
   for (x, l) in top {
     if not dcovers(defn, h, x) {
       hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { fcol(l) }) } }

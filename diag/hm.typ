@@ -103,15 +103,31 @@
   close: true, fill: fill, stroke: none, hm-path(pts, k: k, straight: straight),
 )
 
+// The diamond's half-diagonal.  Equal AREA to the circle reads smaller — a diamond loses its
+// corners to the eye — so it is set by the width that matches, not by the area.
+#let HMD = HMR * 1.45
+
+/// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
+/// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
+/// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
+/// round, a different claim and so not the same mark.  `spider` draws none at all (IntroString
+/// §2.2.4), for a family no declaration says anything about.  A fourth verdict is a branch HERE.
+#let hm-mark(p, nat, col, bg) = {
+  if nat == "oplax" {
+    d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
+           (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat != "spider" {
+    d.circle(p, radius: HMR, fill: if nat == "lax" { bg } else { col },
+             stroke: if nat == "lax" { col + lw } else { none })
+  }
+}
+
 /// Dot and name share `col`, so an arrow and its label cannot be told apart by colour.  `dx`/`dy`
 /// move the name off the dot: centred on one it falls inside the fork of a merge.
-/// `bg` is the colour BEHIND the dot and makes it hollow at the same radius — a naturality that
-/// holds only laxly, which is a weaker claim and so must not draw the same mark as a strict one.
-/// `dot: false` drops the mark entirely and leaves the name beside the wires that meet there: the
-/// book's SPIDER (IntroString §2.2.4), for a family no declaration says anything about.
-#let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none, dot: true) = {
-  if dot { d.circle(p, radius: HMR, fill: if bg == none { col } else { bg },
-           stroke: if bg == none { none } else { col + lw }) }
+/// `nat` is the verdict the row states and `hm-mark` turns it into ink; `bg` is the colour BEHIND a
+/// hollow mark, which the panel knows and this does not.
+#let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none, nat: "strict") = {
+  hm-mark(p, nat, col, bg)
   if label != none {
     d.content((p.at(0) + dx, p.at(1) + dy), text(col)[#label], anchor: anchor)
   }
