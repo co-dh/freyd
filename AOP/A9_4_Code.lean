@@ -449,6 +449,35 @@ public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
     (by rw [hH]; exact code_thin_condition c p hc hp)
   rwa [hH] at key
 
+/-- `extend` never returns the empty string: the symbol case snocs, and the pointer case appends
+    a `zs` its own side condition keeps non-empty.  This is B&dM's Proposition 9.1 hypothesis
+    `nil` and `extend` have disjoint ranges. -/
+public theorem extend_ne_nil : ∀ (q : Str × Code) (w : Str), extendP q w → w ≠ SnocList.wrap ()
+  | (xs, Code.sym a), w, h => by
+      rw [(h : w = SnocList.snoc xs a)]; exact snoc_ne_wrap xs a
+  | (xs, Code.ptr _ zs), w, h => by
+      obtain ⟨hw, hz, _⟩ := h
+      cases zs with
+      | wrap _ => exact absurd rfl hz
+      | snoc z b =>
+        rw [hw]
+        show SnocList.snoc (sappend xs z) b ≠ SnocList.wrap ()
+        exact snoc_ne_wrap _ b
+
+/-- **code-laws**, third row (Proposition 9.1): with `nil` and `extend` of disjoint ranges the
+    branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)` refines `code_laws`' body
+    `([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)` — `AOP.A9_1.thin_arm₂_le` at
+    `[nil,extend]`, whose `Q₂` at `Q≜𝟙+(prefix°×(⊤+⊤))` is `prefix°×(⊤+⊤)`. -/
+public theorem code_branch (X : dStr ⟶ dCodes) :
+    Λ ((arm₂ extendAlg)°) ≫ thinRel (rprodMap (prefixR°) U)
+        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0}))
+            ≫ arm₂ (graph (con (L := Unit) (E := Code)))) ≫ est (R c p)
+      ⊑ Λ (Allegory.recip extendAlg) ≫ thinRel Q
+          ≫ powerRel ((F Unit Code).map X ≫ graph (con (L := Unit) (E := Code)))
+          ≫ est (R c p) :=
+  thin_arm₂_le (X := X) (Q := Q) (R := R c p)
+    fun _d q w h1 h2 => extend_ne_nil q w h2 (h1 : w = SnocList.wrap ())
+
 -- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
 open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander

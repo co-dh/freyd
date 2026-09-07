@@ -805,22 +805,11 @@ namespace Freyd.Alg.RelSet.SL
 
 variable {L E : Type} {b c : RelSet.{0}}
 
-/-- `Λ R` in `Rel(Set)` IS the classifier `x↦{y∣R x y}`: it is a map and `Λ R ≫ ∋ = R`, and
-    `Λ` is the only such. -/
-public theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
+-- `Λ R` in `Rel(Set)` IS the classifier `x↦{y∣R x y}`, by `Λ`'s uniqueness; private because
+-- `AOP.A7_4_Horner` already exports the same lemma, on a branch of the import graph this file
+-- does not reach.  `est`/`thin`/`P(−)` are read pointwise off their definitions in the proofs.
+private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
   (Λ_unique R (classifier R) (graph_map _) (classifier_comp_eps R)).symm
-
-/-- `est R P x`: `x` is a member of `P` and `R`-below every member of `P`. -/
-public theorem est_pt (R : c ⟶ c) (P : (pow c).carrier) (x : c.carrier) :
-    est R P x ↔ (P x ∧ ∀ z, P z → R x z) := Iff.rfl
-
-/-- `thin Q P Y`: `Y` is a subset of `P` keeping, for every member of `P`, a `Q`-smaller one. -/
-public theorem thinRel_pt (Q : c ⟶ c) (P Y : (pow c).carrier) :
-    thinRel Q P Y ↔ ((∀ y, Y y → P y) ∧ ∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
-
-/-- `P(g) P Z`: `Z` is the `g`-image of `P`, read as the two inclusions. -/
-public theorem powerRel_pt (g : b ⟶ c) (P : (pow b).carrier) (Z : (pow c).carrier) :
-    powerRel g P Z ↔ ((∀ t, P t → ∃ u, g t u ∧ Z u) ∧ ∀ u, Z u → ∃ t, P t ∧ g t u) := Iff.rfl
 
 /-- The `L` arm `V₁` of a relation out of `F L E`. -/
 @[expose] public def arm₁ (T : (F L E).obj b ⟶ c) : dL L ⟶ c := fun d y => T (Sum.inl d) y
