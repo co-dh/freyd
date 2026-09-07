@@ -742,15 +742,17 @@ def sigrow(env, proofs, name, row, where):
 
 
 def verdicts(rule):
-    """A closure rule's verdict markers — every key that is neither one of the rule's own fields nor
-    a `//` comment, because a comment inside a rule is a comment wherever it sits."""
+    """A closure rule's verdict entries, keyed by the PARTS' verdict — every key that is neither one
+    of the rule's own fields nor a `//` comment, because a comment inside a rule is a comment
+    wherever it sits.  Each value is `{"is": <the compound's verdict>, "lean": <marker>}`."""
     return {k: v for k, v in rule.items()
             if k not in ("former", "lanes") and not k.startswith("//")}
 
 
 def markers(rule):
     """Every declaration a closure rule cites: its verdicts' and its lanes'."""
-    return list(verdicts(rule).values()) + list((rule.get("lanes") or {}).values())
+    return [v["lean"] for v in verdicts(rule).values() if isinstance(v, dict) and "lean" in v] \
+        + list((rule.get("lanes") or {}).values())
 
 
 def built(t):
@@ -769,6 +771,10 @@ def closurerow(env, how, rule, where):
     licenses nothing about the product and a lax rule licenses no strict dot.  And it must ASK only
     what the parts already say: a hypothesis beyond the parts' own squares is a condition the
     picture does not carry, so a dot drawn on it is again a claim nobody checked.
+
+    A rule is KEYED by the parts' verdict and its `is` names the compound's, and those two are not
+    the same one in general — `recip_oplax` takes a LAX square to an OPLAX one — so the two checks
+    are held to different predicates: the CONCLUSION to `is`'s, the prop BINDERS to the key's.
 
     `former` is the ARROW-former the rule is about — `prodMap` for `p×q`, `Allegory.recip` for `R°`
     — never the relator former: a converse leaves the relators of the square alone and builds its
@@ -794,10 +800,17 @@ def closurerow(env, how, rule, where):
                        f" {leanstr(t) if t else 'nothing the exporter printed'}, which does not"
                        f" give a lane {prop} — the hypothesis a rule asks beyond the parts' own"
                        f" squares is discharged by this and nothing else")
-    for verdict, m in verdicts(rule).items():
-        want = VERDICT.get(verdict)
-        if want is None:
-            bad.append(f"{where}: `{verdict}` is no verdict a bead is drawn with — {', '.join(VERDICT)}")
+    for verdict, spec in verdicts(rule).items():
+        if not (isinstance(spec, dict) and isinstance(spec.get("is"), str)
+                and isinstance(spec.get("lean"), str)):
+            bad.append(f"{where} {verdict}: states no `is`/`lean` — a rule maps the PARTS' verdict to"
+                       f" the compound's, and with no `is` nothing says which square is concluded")
+            continue
+        gives, m = spec["is"], spec["lean"]
+        part, want = VERDICT.get(verdict), VERDICT.get(gives)
+        if part is None or want is None:
+            bad.append(f"{where}: `{verdict}`→`{gives}` names a verdict no bead is drawn with —"
+                       f" {', '.join(VERDICT)}")
             continue
         mark, k, _ = marked(m)
         moved = cc.check(env["db"], mark, k, f"{where} {verdict}")
@@ -811,19 +824,20 @@ def closurerow(env, how, rule, where):
             continue
         t = rec["type"]
         if not (isinstance(t, list) and t[0] == want):
-            bad.append(f"{where} {verdict}: {nu} concludes {leanstr(t)}, which is no {verdict}"
-                       f" square — the {verdict} dot on a {how} is drawn on this and nothing else")
+            bad.append(f"{where} {verdict}: {nu} concludes {leanstr(t)}, which is no {gives}"
+                       f" square — the {gives} dot on a {how} of {verdict} parts is drawn on this"
+                       f" and nothing else")
         elif built(t[-1]) != former:
             bad.append(f"{where} {verdict}: {nu} concludes a square of {leanstr(t[-1])}, which"
                        f" {former} does not build — the rule says a {how} of {verdict} parts is"
-                       f" {verdict}")
+                       f" {gives}")
         for b in rec["binders"]:
             bt = b["type"]
-            if b.get("prop") and not (isinstance(bt, list) and (bt[0] == want or bt[0] in lanes)):
+            if b.get("prop") and not (isinstance(bt, list) and (bt[0] == part or bt[0] in lanes)):
                 bad.append(f"{where} {verdict}: {nu} also asks {leanstr(bt)}, which is neither one"
-                           f" of the parts' own squares nor a `lanes` property this rule cites — a"
-                           f" {how} carries only its parts' verdicts, so a rule wanting more"
-                           f" licenses no dot")
+                           f" of the parts' own {verdict} squares nor a `lanes` property this rule"
+                           f" cites — a {how} carries only its parts' verdicts, so a rule wanting"
+                           f" more licenses no dot")
     return bad
 
 

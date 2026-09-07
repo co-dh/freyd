@@ -39,24 +39,27 @@
       "the theorem's conclusion must be a square of THAT arrow, which is what `hm-check --verify-sigs`",
       "holds each marker to.  `lanes` is the one hypothesis a rule may ask beyond the parts' own",
       "squares, a property of the relators the square is stated at, and it carries the declaration",
-      "that gives the note's regions that property.  A verdict ABSENT from a rule is refused."
+      "that gives the note's regions that property.  A verdict ABSENT from a rule is refused.",
+      "A rule is KEYED by the parts' verdict and `is` names the compound's, and the two need not be",
+      "the same one: `recip_oplax` takes a LAX square to an OPLAX one, and `recip_lax` back again."
     ],
     "prod": {
       "former": "Freyd.Alg.prodMap",
-      "strict": "AOP.A5_7.strictNatural_prod@1802c7e8",
-      "lax": "AOP.A5_7.laxNatural_prod@dc776aa7"
+      "strict": {"is": "strict", "lean": "AOP.A5_7.strictNatural_prod@1802c7e8"},
+      "lax": {"is": "lax", "lean": "AOP.A5_7.laxNatural_prod@dc776aa7"}
     },
     "conv": {
       "former": "Freyd.Alg.Allegory.recip",
       "lanes": {
         "Freyd.Alg.Relator.PreservesRecip": "AOP.A5_1.Relator.preservesRecip_of_tabular@02b327b3"
       },
-      "strict": "AOP.A5_7.strictNatural_recip@a8b1257f",
+      "strict": {"is": "strict", "lean": "AOP.A5_7.strictNatural_recip@a8b1257f"},
+      "lax": {"is": "oplax", "lean": "AOP.A5_7.recip_oplax@7735eec0"},
+      "oplax": {"is": "lax", "lean": "AOP.A5_7.recip_lax@a6a8affa"},
       "//lax": [
-        "NO `lax`, and the theorems say why: `AOP.A5_7.recip_oplax@7735eec0` takes a LAX square to an",
-        "OPLAX one, not to a lax one, and `AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6` exhibits",
-        "a lax `φ` whose `φ°` is not lax.  So the converse of a lax bead is Undecided, and a panel",
-        "that wants one states its own row."
+        "The `lax` rule does NOT give back a lax bead, and a theorem says so both ways:",
+        "`AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6` exhibits a lax `φ` whose `φ°` is not lax,",
+        "so `lax` maps to `oplax` and nothing weaker would be true."
       ]
     }
   },
