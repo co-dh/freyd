@@ -68,23 +68,23 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- **§1.57 (allegory form)**: `c` is PROJECTIVE if every §2.147 cover onto it —
     a map `f : x ⟶ c` with `Cat.id c ⊑ f° ≫ f` — splits with a MAP section.
     Mirrors the retract-form `Freyd.Projective` of S1_57 (every cover onto C splits). -/
-@[expose] public def ProjectiveObj (c : 𝒜) : Prop :=
-  ∀ {x : 𝒜} (f : x ⟶ c), Map f → Cat.id c ⊑ f° ≫ f →
-    ∃ s : c ⟶ x, Map s ∧ s ≫ f = Cat.id c
+@[expose] public def ProjectiveObj (C : 𝒜) : Prop :=
+  ∀ {x : 𝒜} (f : x ⟶ C), Map f → Cat.id C ⊑ f° ≫ f →
+    ∃ s : C ⟶ x, Map s ∧ s ≫ f = Cat.id C
 
 /-- **AC** (§1.57, §2.16(13)): every cover of `Map 𝒜` splits, i.e. every object is
     projective.  This is the "axiom of choice" of an AC regular category, stated for
     its allegory of relations. -/
 @[expose] public def CoversSplit (𝒜 : Type u) [Allegory 𝒜] : Prop :=
-  ∀ c : 𝒜, ProjectiveObj c
+  ∀ C : 𝒜, ProjectiveObj C
 
 /-- §2.147 covers compose: `(f ≫ g)° ≫ (f ≫ g) = g° ≫ (f° ≫ f) ≫ g ⊒ g° ≫ g ⊒ 1`. -/
-theorem covers_compose {a b c : 𝒜} {f : a ⟶ b} {g : b ⟶ c}
-    (hf : Cat.id b ⊑ f° ≫ f) (hg : Cat.id c ⊑ g° ≫ g) :
-    Cat.id c ⊑ (f ≫ g)° ≫ (f ≫ g) := by
+theorem covers_compose {A B C : 𝒜} {f : A ⟶ B} {g : B ⟶ C}
+    (hf : Cat.id B ⊑ f° ≫ f) (hg : Cat.id C ⊑ g° ≫ g) :
+    Cat.id C ⊑ (f ≫ g)° ≫ (f ≫ g) := by
   have heq : (f ≫ g)° ≫ (f ≫ g) = g° ≫ (f° ≫ f) ≫ g := by
     rw [Allegory.recip_comp]; simp [Cat.assoc]
-  have h1 : g° ≫ Cat.id b ≫ g ⊑ g° ≫ (f° ≫ f) ≫ g :=
+  have h1 : g° ≫ Cat.id B ≫ g ⊑ g° ≫ (f° ≫ f) ≫ g :=
     comp_mono_left g° (comp_mono_right hf g)
   rw [Cat.id_comp] at h1
   rw [heq]
@@ -105,36 +105,36 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 /-- The embedding `𝒜 → Spl(Eq 𝒜)` on objects: `a ↦ (a, 1_a)` (the identity idempotent
     is reflexive).  On homs it is literally `embHom` (§2.164), since `Spl(Eq)`-homs
     ARE the underlying `SplHom`s. -/
-@[expose] public def embEq (a : 𝒜) : SplEqObj 𝒜 := ⟨embObj a, le_refl _⟩
+@[expose] public def embEq (A : 𝒜) : SplEqObj 𝒜 := ⟨embObj A, le_refl _⟩
 
 /-- The embedding `𝒜 → Spl(Eq 𝒜)` on homs: `embHom` (§2.164), retyped at the
     embedded `Spl(Eq)`-objects. -/
-@[expose] public def embEqHom {a b : 𝒜} (R : a ⟶ b) : (embEq a : SplEqObj 𝒜) ⟶ embEq b := embHom R
+@[expose] public def embEqHom {A B : 𝒜} (R : A ⟶ B) : (embEq A : SplEqObj 𝒜) ⟶ embEq B := embHom R
 
-@[simp] theorem embEqHom_R {a b : 𝒜} (R : a ⟶ b) : (embEqHom R).R = R := rfl
+@[simp] theorem embEqHom_R {A B : 𝒜} (R : A ⟶ B) : (embEqHom R).R = R := rfl
 
 /-- The embedding preserves identities in `Spl(Eq 𝒜)`. -/
-public theorem embEq_id (a : 𝒜) : embEqHom (Cat.id a) = Cat.id (embEq a : SplEqObj 𝒜) :=
+public theorem embEq_id (A : 𝒜) : embEqHom (Cat.id A) = Cat.id (embEq A : SplEqObj 𝒜) :=
   SplHom.ext rfl
 
 /-- The embedding preserves composition in `Spl(Eq 𝒜)`. -/
-public theorem embEq_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem embEq_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
     embEqHom (R ≫ S) = embEqHom R ≫ embEqHom S :=
   SplHom.ext rfl
 
 /-- The embedding preserves reciprocation in `Spl(Eq 𝒜)`. -/
-theorem embEq_recip {a b : 𝒜} (R : a ⟶ b) :
+theorem embEq_recip {A B : 𝒜} (R : A ⟶ B) :
     embEqHom (R°) = (embEqHom R)° :=
   SplHom.ext rfl
 
 /-- The embedding preserves intersection in `Spl(Eq 𝒜)`. -/
-theorem embEq_inter {a b : 𝒜} (R S : a ⟶ b) :
+theorem embEq_inter {A B : 𝒜} (R S : A ⟶ B) :
     embEqHom (R ∩ S) = embEqHom R ∩ embEqHom S :=
   SplHom.ext rfl
 
 /-- The embedding preserves and reflects MAPS: `embEqHom f` is a map of `Spl(Eq 𝒜)`
     iff `f` is a map of `𝒜` (both `dom` and the simplicity order compute underlying). -/
-public theorem embEq_map_iff {a b : 𝒜} (f : a ⟶ b) :
+public theorem embEq_map_iff {A B : 𝒜} (f : A ⟶ B) :
     Map (embEqHom f) ↔ Map f := by
   constructor
   · rintro ⟨hent, hsimp⟩
@@ -214,25 +214,25 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- **Step 2 (§2.16(13), "if C ∈ C then it is projective in Ĉ")**: if covers split in
     `Map 𝒜` (AC), then every embedded object `embEq a` is projective in `Spl(Eq 𝒜)`. -/
-theorem embEq_projective (hAC : CoversSplit 𝒜) (a : 𝒜) :
-    ProjectiveObj (embEq a : SplEqObj 𝒜) := by
+theorem embEq_projective (hAC : CoversSplit 𝒜) (A : 𝒜) :
+    ProjectiveObj (embEq A : SplEqObj 𝒜) := by
   intro B Φ hΦ hcov
   -- The composite `covHom B ≫ Φ : embEq b ⟶ embEq a` is a map-cover between
   -- embedded objects.
   have hcomp_map : Map (covHom B ≫ Φ) := map_comp (covHom_map B) hΦ
-  have hcomp_cov : Cat.id (embEq a : SplEqObj 𝒜) ⊑ (covHom B ≫ Φ)° ≫ (covHom B ≫ Φ) :=
+  have hcomp_cov : Cat.id (embEq A : SplEqObj 𝒜) ⊑ (covHom B ≫ Φ)° ≫ (covHom B ≫ Φ) :=
     covers_compose (covHom_cover B) hcov
   -- By fullness it is `embHom g` for `g := (covHom B ≫ Φ).R`; transfer map + cover to `𝒜`.
   have hg_map : Map (covHom B ≫ Φ).R :=
     (embEq_map_iff _).mp ((embHom_full (covHom B ≫ Φ)).symm ▸ hcomp_map)
-  have hg_cov : Cat.id a ⊑ (covHom B ≫ Φ).R° ≫ (covHom B ≫ Φ).R :=
+  have hg_cov : Cat.id A ⊑ (covHom B ≫ Φ).R° ≫ (covHom B ≫ Φ).R :=
     (splEqLe_iff _ _).mp hcomp_cov
   -- AC in `𝒜` splits the cover `g`.
-  obtain ⟨t, ht_map, ht_sec⟩ := hAC a (covHom B ≫ Φ).R hg_map hg_cov
+  obtain ⟨t, ht_map, ht_sec⟩ := hAC A (covHom B ≫ Φ).R hg_map hg_cov
   -- The section of `Φ` is `embEqHom t ≫ covHom B`.
   refine ⟨embEqHom t ≫ covHom B, map_comp ((embEq_map_iff t).mpr ht_map) (covHom_map B), ?_⟩
   apply SplHom.ext
-  show (t ≫ B.1.idem.e) ≫ Φ.R = Cat.id a
+  show (t ≫ B.1.idem.e) ≫ Φ.R = Cat.id A
   rw [Cat.assoc]
   exact ht_sec
 
@@ -256,7 +256,7 @@ end EmbeddedProjective
 public theorem splitsAsMap_of_section {𝒜 : Type u} [TabularAllegory 𝒜] (B : SplEqObj 𝒜)
     {s : B ⟶ (embEq B.1.carrier : SplEqObj 𝒜)} (hs : Map s)
     (hsec : s ≫ covHom B = Cat.id B) :
-    ∃ (d : 𝒜) (f : B.1.carrier ⟶ d), SplitsAsMap f B.1.idem.e := by
+    ∃ (D : 𝒜) (f : B.1.carrier ⟶ D), SplitsAsMap f B.1.idem.e := by
   obtain ⟨hs_ent, hs_simp⟩ := hs
   -- Underlying data in `𝒜`.
   have hsec' : s.R ≫ B.1.idem.e = B.1.idem.e := congrArg SplHom.R hsec
@@ -275,7 +275,7 @@ public theorem splitsAsMap_of_section {𝒜 : Type u} [TabularAllegory 𝒜] (B 
       le_trans (comp_mono_right hSle s.R°) (comp_mono_left B.1.idem.e (recip_mono hSle))
     rwa [B.1.idem.sym, B.1.idem.idem] at h1
   -- Split the coreflexive `S° ≫ S` (tabularity, §2.163).
-  obtain ⟨d, h, _hh_map, hh1, hh2⟩ := coreflexive_splits (𝒜 := 𝒜) hsimple
+  obtain ⟨D, h, _hh_map, hh1, hh2⟩ := coreflexive_splits (𝒜 := 𝒜) hsimple
   -- `f := S ≫ h°` splits `e` as a map.
   have hff : (s.R ≫ h°) ≫ (s.R ≫ h°)° = B.1.idem.e := by
     rw [Allegory.recip_comp, Allegory.recip_recip]
@@ -285,19 +285,19 @@ public theorem splitsAsMap_of_section {𝒜 : Type u} [TabularAllegory 𝒜] (B 
       _ = (s.R ≫ s.R°) ≫ s.R ≫ s.R° := by simp [Cat.assoc]
       _ = B.1.idem.e ≫ B.1.idem.e := by rw [hSS]
       _ = B.1.idem.e := B.1.idem.idem
-  have hff' : (s.R ≫ h°)° ≫ (s.R ≫ h°) = Cat.id d := by
+  have hff' : (s.R ≫ h°)° ≫ (s.R ≫ h°) = Cat.id D := by
     rw [Allegory.recip_comp, Allegory.recip_recip]
     calc (h ≫ s.R°) ≫ s.R ≫ h°
         = h ≫ (s.R° ≫ s.R) ≫ h° := by simp [Cat.assoc]
       _ = h ≫ (h° ≫ h) ≫ h° := by rw [hh1]
       _ = (h ≫ h°) ≫ h ≫ h° := by simp [Cat.assoc]
-      _ = Cat.id d := by rw [hh2, Cat.id_comp]
-  refine ⟨d, s.R ≫ h°, ⟨?_, ?_⟩, hff, hff'⟩
+      _ = Cat.id D := by rw [hh2, Cat.id_comp]
+  refine ⟨D, s.R ≫ h°, ⟨?_, ?_⟩, hff, hff'⟩
   · -- Entire: `dom f = 1 ∩ f ≫ f° = 1 ∩ e = 1` by reflexivity.
     show Cat.id B.1.carrier ∩ (s.R ≫ h°) ≫ (s.R ≫ h°)° = Cat.id B.1.carrier
     rw [hff]; exact B.2
   · -- Simple: `f° ≫ f = 1 ⊑ 1`.
-    show (s.R ≫ h°)° ≫ (s.R ≫ h°) ⊑ Cat.id d
+    show (s.R ≫ h°)° ≫ (s.R ≫ h°) ⊑ Cat.id D
     rw [hff']; exact le_refl _
 
 /-! ## Milestone (c) — Step 4: if `Spl(Eq 𝒜)` is AC then `𝒜` is effective
@@ -311,16 +311,16 @@ variable {𝒜 : Type u} [TabularAllegory 𝒜]
 
 /-- The object of `Spl(Eq 𝒜)` carried by an equivalence relation
     (reflexive symmetric idempotent) `e : a ⟶ a` of `𝒜`. -/
-@[expose] public def eqRelObj {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e)
+@[expose] public def eqRelObj {A : 𝒜} (e : A ⟶ A) (hrefl : Cat.id A ⊑ e) (hsym : e° = e)
     (hidem : e ≫ e = e) : SplEqObj 𝒜 :=
-  ⟨⟨a, e, hsym, hidem⟩, hrefl⟩
+  ⟨⟨A, e, hsym, hidem⟩, hrefl⟩
 
 /-- **Step 4 (§2.16(13))**: if every cover of `Map (Spl(Eq 𝒜))` splits (the effective
     reflection is AC), then every equivalence relation of `𝒜` splits as a map — `𝒜`
     is EFFECTIVE (§2.169 shape, cf. `EffectiveAllegory.split_symmetric_idempotent`). -/
 public theorem effective_of_coversSplit (hAC : CoversSplit (SplEqObj 𝒜))
-    {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e) :
-    ∃ (d : 𝒜) (f : a ⟶ d), SplitsAsMap f e := by
+    {A : 𝒜} (e : A ⟶ A) (hrefl : Cat.id A ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e) :
+    ∃ (D : 𝒜) (f : A ⟶ D), SplitsAsMap f e := by
   obtain ⟨s, hs_map, hs_sec⟩ :=
     hAC (eqRelObj e hrefl hsym hidem) (covHom _) (covHom_map _) (covHom_cover _)
   exact splitsAsMap_of_section (eqRelObj e hrefl hsym hidem) hs_map hs_sec
@@ -329,11 +329,11 @@ public theorem effective_of_coversSplit (hAC : CoversSplit (SplEqObj 𝒜))
     relation of `𝒜` with no map-splitting witnesses that covers do NOT all split in
     the effective reflection `Spl(Eq 𝒜)`. -/
 public theorem not_coversSplit_of_not_effective
-    {a : 𝒜} (e : a ⟶ a) (hrefl : Cat.id a ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e)
-    (hno : ∀ (d : 𝒜) (f : a ⟶ d), ¬ SplitsAsMap f e) :
+    {A : 𝒜} (e : A ⟶ A) (hrefl : Cat.id A ⊑ e) (hsym : e° = e) (hidem : e ≫ e = e)
+    (hno : ∀ (D : 𝒜) (f : A ⟶ D), ¬ SplitsAsMap f e) :
     ¬ CoversSplit (SplEqObj 𝒜) := fun hAC =>
-  let ⟨d, f, hf⟩ := effective_of_coversSplit hAC e hrefl hsym hidem
-  hno d f hf
+  let ⟨D, f, hf⟩ := effective_of_coversSplit hAC e hrefl hsym hidem
+  hno D f hf
 
 end Effectiveness
 
@@ -350,37 +350,37 @@ section ProjectiveEmbedded
 /-- A map-splitting `f` of `e = B.1.idem.e` in `𝒜` makes `B` ISOMORPHIC to the
     embedded object `embEq d` in `Spl(Eq 𝒜)` — the iso legs are `f` and `f°`, both
     maps.  (The book's "forcing it to be isomorphic to a C-object".) -/
-theorem isoEmbedded_of_splitsAsMap {𝒜 : Type u} [Allegory 𝒜] (B : SplEqObj 𝒜) {d : 𝒜}
-    {f : B.1.carrier ⟶ d} (h : SplitsAsMap f B.1.idem.e) :
-    ∃ (i : B ⟶ (embEq d : SplEqObj 𝒜)) (j : (embEq d : SplEqObj 𝒜) ⟶ B),
-      Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq d) := by
+theorem isoEmbedded_of_splitsAsMap {𝒜 : Type u} [Allegory 𝒜] (B : SplEqObj 𝒜) {D : 𝒜}
+    {f : B.1.carrier ⟶ D} (h : SplitsAsMap f B.1.idem.e) :
+    ∃ (i : B ⟶ (embEq D : SplEqObj 𝒜)) (j : (embEq D : SplEqObj 𝒜) ⟶ B),
+      Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq D) := by
   obtain ⟨_hf_map, hff, hff'⟩ := h
   -- `e ≫ f = f` and `f° ≫ e = f°` (so `f`, `f°` are well-typed `Spl(Eq)`-homs).
   have hef : B.1.idem.e ≫ f = f := by
     calc B.1.idem.e ≫ f = (f ≫ f°) ≫ f := by rw [hff]
       _ = f ≫ f° ≫ f := Cat.assoc f (f°) f
-      _ = f ≫ Cat.id d := by rw [hff']
+      _ = f ≫ Cat.id D := by rw [hff']
       _ = f := Cat.comp_id f
   have hfe : f° ≫ B.1.idem.e = f° := by
     have h2 : (B.1.idem.e ≫ f)° = f° := congrArg Allegory.recip hef
     rwa [Allegory.recip_comp, B.1.idem.sym] at h2
-  let i : B ⟶ (embEq d : SplEqObj 𝒜) :=
-    ⟨f, by show B.1.idem.e ≫ f ≫ Cat.id d = f; rw [Cat.comp_id]; exact hef⟩
-  let j : (embEq d : SplEqObj 𝒜) ⟶ B :=
-    ⟨f°, by show Cat.id d ≫ f° ≫ B.1.idem.e = f°; rw [Cat.id_comp]; exact hfe⟩
+  let i : B ⟶ (embEq D : SplEqObj 𝒜) :=
+    ⟨f, by show B.1.idem.e ≫ f ≫ Cat.id D = f; rw [Cat.comp_id]; exact hef⟩
+  let j : (embEq D : SplEqObj 𝒜) ⟶ B :=
+    ⟨f°, by show Cat.id D ≫ f° ≫ B.1.idem.e = f°; rw [Cat.id_comp]; exact hfe⟩
   refine ⟨i, j, ⟨?_, ?_⟩, ⟨?_, ?_⟩, ?_, ?_⟩
   · -- Entire i: `e ∩ f ≫ f° = e ∩ e = e`.
     apply SplHom.ext
     show B.1.idem.e ∩ f ≫ f° = B.1.idem.e
     rw [hff]; exact Allegory.inter_idem _
   · -- Simple i: `i° ≫ i = 1 ⊑ 1`.
-    have h2 : (i° ≫ i : (embEq d : SplEqObj 𝒜) ⟶ embEq d) = Cat.id (embEq d) := by
-      apply SplHom.ext; show f° ≫ f = Cat.id d; exact hff'
-    show i° ≫ i ⊑ Cat.id (embEq d)
+    have h2 : (i° ≫ i : (embEq D : SplEqObj 𝒜) ⟶ embEq D) = Cat.id (embEq D) := by
+      apply SplHom.ext; show f° ≫ f = Cat.id D; exact hff'
+    show i° ≫ i ⊑ Cat.id (embEq D)
     rw [h2]; exact le_refl _
   · -- Entire j: `1 ∩ f° ≫ f°° = 1 ∩ 1 = 1`.
     apply SplHom.ext
-    show Cat.id d ∩ f° ≫ f°° = Cat.id d
+    show Cat.id D ∩ f° ≫ f°° = Cat.id D
     rw [Allegory.recip_recip, hff']; exact Allegory.inter_idem _
   · -- Simple j: `j° ≫ j = e ⊑ e = 1_B`.
     have h2 : (j° ≫ j : B ⟶ B) = Cat.id B := by
@@ -389,31 +389,31 @@ theorem isoEmbedded_of_splitsAsMap {𝒜 : Type u} [Allegory 𝒜] (B : SplEqObj
     show j° ≫ j ⊑ Cat.id B
     rw [h2]; exact le_refl _
   · apply SplHom.ext; show f ≫ f° = B.1.idem.e; exact hff
-  · apply SplHom.ext; show f° ≫ f = Cat.id d; exact hff'
+  · apply SplHom.ext; show f° ≫ f = Cat.id D; exact hff'
 
 /-- **Step 3 (§2.16(13), "if B is projective in Ĉ then … it is isomorphic to a
     C-object")**: a projective object of `Spl(Eq 𝒜)` is isomorphic (by maps) to an
     embedded `𝒜`-object. -/
 theorem projective_isoEmbedded {𝒜 : Type u} [TabularAllegory 𝒜] {B : SplEqObj 𝒜}
     (hproj : ProjectiveObj B) :
-    ∃ (d : 𝒜) (i : B ⟶ (embEq d : SplEqObj 𝒜)) (j : (embEq d : SplEqObj 𝒜) ⟶ B),
-      Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq d) := by
+    ∃ (D : 𝒜) (i : B ⟶ (embEq D : SplEqObj 𝒜)) (j : (embEq D : SplEqObj 𝒜) ⟶ B),
+      Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq D) := by
   obtain ⟨s, hs_map, hs_sec⟩ := hproj (covHom B) (covHom_map B) (covHom_cover B)
-  obtain ⟨d, f, hsplit⟩ := splitsAsMap_of_section B hs_map hs_sec
-  exact ⟨d, isoEmbedded_of_splitsAsMap B hsplit⟩
+  obtain ⟨D, f, hsplit⟩ := splitsAsMap_of_section B hs_map hs_sec
+  exact ⟨D, isoEmbedded_of_splitsAsMap B hsplit⟩
 
 /-- An object of `Spl(Eq 𝒜)` isomorphic (by maps) to an embedded object is
     projective, given AC in `𝒜` — projectivity of `embEq c` (step 2) transfers
     across the isomorphism. -/
 theorem projective_of_isoEmbedded {𝒜 : Type u} [Allegory 𝒜] (hAC : CoversSplit 𝒜)
-    {B : SplEqObj 𝒜} {c : 𝒜} {i : B ⟶ (embEq c : SplEqObj 𝒜)}
-    {j : (embEq c : SplEqObj 𝒜) ⟶ B} (hi : Map i) (hj : Map j)
-    (hij : i ≫ j = Cat.id B) (hji : j ≫ i = Cat.id (embEq c)) :
+    {B : SplEqObj 𝒜} {C : 𝒜} {i : B ⟶ (embEq C : SplEqObj 𝒜)}
+    {j : (embEq C : SplEqObj 𝒜) ⟶ B} (hi : Map i) (hj : Map j)
+    (hij : i ≫ j = Cat.id B) (hji : j ≫ i = Cat.id (embEq C)) :
     ProjectiveObj B := by
   intro X Φ hΦ hcov
   -- `Φ ≫ i : X ⟶ embEq c` is a map-cover (`i` is a split cover: `1 = i°(j°j)i ⊑ i°i`).
-  have hi_cover : Cat.id (embEq c : SplEqObj 𝒜) ⊑ i° ≫ i := by
-    have h0 : Cat.id (embEq c : SplEqObj 𝒜) = (j ≫ i)° ≫ (j ≫ i) := by
+  have hi_cover : Cat.id (embEq C : SplEqObj 𝒜) ⊑ i° ≫ i := by
+    have h0 : Cat.id (embEq C : SplEqObj 𝒜) = (j ≫ i)° ≫ (j ≫ i) := by
       rw [hji, recip_id, Cat.id_comp]
     have heq : (j ≫ i)° ≫ (j ≫ i) = i° ≫ (j° ≫ j) ≫ i := by
       rw [Allegory.recip_comp]; simp [Cat.assoc]
@@ -423,14 +423,14 @@ theorem projective_of_isoEmbedded {𝒜 : Type u} [Allegory 𝒜] (hAC : CoversS
     rw [h0, heq]
     exact h1
   obtain ⟨t, ht_map, ht_sec⟩ :=
-    embEq_projective hAC c (Φ ≫ i) (map_comp hΦ hi) (covers_compose hcov hi_cover)
+    embEq_projective hAC C (Φ ≫ i) (map_comp hΦ hi) (covers_compose hcov hi_cover)
   refine ⟨i ≫ t, map_comp hi ht_map, ?_⟩
   -- `(i ≫ t) ≫ Φ = ((i ≫ t) ≫ Φ) ≫ (i ≫ j) = (i ≫ (t ≫ (Φ ≫ i))) ≫ j = i ≫ j = 1_B`.
   calc (i ≫ t) ≫ Φ
       = ((i ≫ t) ≫ Φ) ≫ Cat.id B := (Cat.comp_id _).symm
     _ = ((i ≫ t) ≫ Φ) ≫ i ≫ j := by rw [hij]
     _ = (i ≫ (t ≫ (Φ ≫ i))) ≫ j := by simp [Cat.assoc]
-    _ = (i ≫ Cat.id (embEq c)) ≫ j := by rw [ht_sec]
+    _ = (i ≫ Cat.id (embEq C)) ≫ j := by rw [ht_sec]
     _ = Cat.id B := by rw [Cat.comp_id, hij]
 
 /-- **§2.16(13) HEADLINE**: for a tabular allegory `𝒜` with AC (`Map 𝒜` an AC regular
@@ -442,8 +442,8 @@ theorem projective_of_isoEmbedded {𝒜 : Type u} [Allegory 𝒜] (hAC : CoversS
 theorem projective_iff_isoEmbedded {𝒜 : Type u} [TabularAllegory 𝒜]
     (hAC : CoversSplit 𝒜) (B : SplEqObj 𝒜) :
     ProjectiveObj B ↔
-      ∃ (d : 𝒜) (i : B ⟶ (embEq d : SplEqObj 𝒜)) (j : (embEq d : SplEqObj 𝒜) ⟶ B),
-        Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq d) :=
+      ∃ (D : 𝒜) (i : B ⟶ (embEq D : SplEqObj 𝒜)) (j : (embEq D : SplEqObj 𝒜) ⟶ B),
+        Map i ∧ Map j ∧ i ≫ j = Cat.id B ∧ j ≫ i = Cat.id (embEq D) :=
   ⟨fun hproj => projective_isoEmbedded hproj,
    fun ⟨_, _, _, hi, hj, hij, hji⟩ => projective_of_isoEmbedded hAC hi hj hij hji⟩
 
@@ -490,9 +490,9 @@ theorem contains_map_of_entire {𝒜 : Type u} [TabularAllegory 𝒜] (hAC : Cov
     choice picks a map `m` inside its underlying relation, and `ℓ := embHom m ≫
     covHom X` works since `ℓ ≫ Φ ⊑ ψ` and both are maps. -/
 theorem embEq_projective_lifts {𝒜 : Type u} [TabularAllegory 𝒜] (hAC : CoversSplit 𝒜)
-    {a : 𝒜} {X C : SplEqObj 𝒜} (Φ : X ⟶ C) (hΦ : Map Φ)
-    (hcov : Cat.id C ⊑ Φ° ≫ Φ) (ψ : (embEq a : SplEqObj 𝒜) ⟶ C) (hψ : Map ψ) :
-    ∃ ℓ : (embEq a : SplEqObj 𝒜) ⟶ X, Map ℓ ∧ ℓ ≫ Φ = ψ := by
+    {A : 𝒜} {X C : SplEqObj 𝒜} (Φ : X ⟶ C) (hΦ : Map Φ)
+    (hcov : Cat.id C ⊑ Φ° ≫ Φ) (ψ : (embEq A : SplEqObj 𝒜) ⟶ C) (hψ : Map ψ) :
+    ∃ ℓ : (embEq A : SplEqObj 𝒜) ⟶ X, Map ℓ ∧ ℓ ≫ Φ = ψ := by
   -- A map that is a cover satisfies `Φ° ≫ Φ = 1` exactly.
   have hΦΦ : Φ° ≫ Φ = Cat.id C := le_antisymm hΦ.2 hcov
   -- `Φ°` and `covHom X°` are entire, so the relational lift is entire.

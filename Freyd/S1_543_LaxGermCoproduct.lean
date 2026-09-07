@@ -151,37 +151,37 @@ public theorem homInclL_epiCase_of_stage
 /-! ## `objIncl i` preserves the stage coproduct `(hcop i).coprod a b`
 
   Mirrors `Colim.objIncl_preserves_coproducts`; the coproduct dual of `objInclL_preserves_products`. -/
-public theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
+public theorem objInclL_preserves_coproducts (i : ι) (A B : L.A i) :
     @IsIso (Obj L) (laxColimCat L hL) _ _
       (@HasBinaryCoproducts.case (Obj L) (laxColimCat L hL) (laxColimHasBinaryCoproducts L hL data)
-        (objIncl L i ((data.hcop i).coprod a b)) (objIncl L i a) (objIncl L i b)
-        (stageInclL L hL ((data.hcop i).inl (A := a) (B := b)))
-        (stageInclL L hL ((data.hcop i).inr (A := a) (B := b)))) := by
+        (objIncl L i ((data.hcop i).coprod A B)) (objIncl L i A) (objIncl L i B)
+        (stageInclL L hL ((data.hcop i).inl (A := A) (B := B)))
+        (stageInclL L hL ((data.hcop i).inr (A := A) (B := B)))) := by
   letI : Cat (Obj L) := laxColimCat L hL
   letI : HasBinaryCoproducts (Obj L) := laxColimHasBinaryCoproducts L hL data
-  let P0 : L.A i := (data.hcop i).coprod a b
-  let inlS : a ⟶ P0 := (data.hcop i).inl
-  let inrS : b ⟶ P0 := (data.hcop i).inr
+  let P0 : L.A i := (data.hcop i).coprod A B
+  let inlS : A ⟶ P0 := (data.hcop i).inl
+  let inrS : B ⟶ P0 := (data.hcop i).inr
   -- joint epimorphy (uniqueness half) of the two stage injections.  The hcancel hypothesis is the
   -- helper's `map injA`-cancellation, reduced to the fibre's `data.pres` by stripping the leading
   -- `reflApp` alignment iso (dual of the products consumer's trailing-iso strip).
   have hcancel : ∀ {n : ι} (hk0n : D.le i n) (Zt : L.A n)
       (u v : L.F hk0n P0 ⟶ Zt),
-      (L.functF hk0n).map (reflApp L a ≫ inlS) ≫ u = (L.functF hk0n).map (reflApp L a ≫ inlS) ≫ v →
-      (L.functF hk0n).map (reflApp L b ≫ inrS) ≫ u = (L.functF hk0n).map (reflApp L b ≫ inrS) ≫ v →
+      (L.functF hk0n).map (reflApp L A ≫ inlS) ≫ u = (L.functF hk0n).map (reflApp L A ≫ inlS) ≫ v →
+      (L.functF hk0n).map (reflApp L B ≫ inrS) ≫ u = (L.functF hk0n).map (reflApp L B ≫ inrS) ≫ v →
       u = v := by
     intro n hk0n Zt u v hu hv
-    refine data.pres hk0n a b Zt u v ?_ ?_
-    · have key := congrArg ((L.functF hk0n).map (isoInv (reflApp_isIso L a)) ≫ ·) hu
-      rw [(L.functF hk0n).map_comp (reflApp L a) inlS] at key
+    refine data.pres hk0n A B Zt u v ?_ ?_
+    · have key := congrArg ((L.functF hk0n).map (isoInv (reflApp_isIso L A)) ≫ ·) hu
+      rw [(L.functF hk0n).map_comp (reflApp L A) inlS] at key
       simp only [← Cat.assoc] at key
-      rw [← (L.functF hk0n).map_comp (isoInv (reflApp_isIso L a)) (reflApp L a),
+      rw [← (L.functF hk0n).map_comp (isoInv (reflApp_isIso L A)) (reflApp L A),
           inv_isoInv_comp, (L.functF hk0n).map_id, Cat.id_comp] at key
       exact key
-    · have key := congrArg ((L.functF hk0n).map (isoInv (reflApp_isIso L b)) ≫ ·) hv
-      rw [(L.functF hk0n).map_comp (reflApp L b) inrS] at key
+    · have key := congrArg ((L.functF hk0n).map (isoInv (reflApp_isIso L B)) ≫ ·) hv
+      rw [(L.functF hk0n).map_comp (reflApp L B) inrS] at key
       simp only [← Cat.assoc] at key
-      rw [← (L.functF hk0n).map_comp (isoInv (reflApp_isIso L b)) (reflApp L b),
+      rw [← (L.functF hk0n).map_comp (isoInv (reflApp_isIso L B)) (reflApp L B),
           inv_isoInv_comp, (L.functF hk0n).map_id, Cat.id_comp] at key
       exact key
   -- joint epimorphy over the two `stageInclL` injections, from the generic helper.  `hbrL`/`hbrR`
@@ -189,23 +189,23 @@ public theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
   -- `(reflApp ≫ inj) ≫ isoInv reflApp` form (the products consumer needed no such bridge because its
   -- alignment iso is the LEADING `reflApp`).
   have hbrL : stageInclL L hL inlS
-      = homInclL L hL a P0 ⟨i, D.refl i, D.refl i⟩
-        ((reflApp L a ≫ inlS) ≫ isoInv (reflApp_isIso L P0)) := by
+      = homInclL L hL A P0 ⟨i, D.refl i, D.refl i⟩
+        ((reflApp L A ≫ inlS) ≫ isoInv (reflApp_isIso L P0)) := by
     unfold stageInclL; rw [← Cat.assoc]
   have hbrR : stageInclL L hL inrS
-      = homInclL L hL b P0 ⟨i, D.refl i, D.refl i⟩
-        ((reflApp L b ≫ inrS) ≫ isoInv (reflApp_isIso L P0)) := by
+      = homInclL L hL B P0 ⟨i, D.refl i, D.refl i⟩
+        ((reflApp L B ≫ inrS) ≫ isoInv (reflApp_isIso L P0)) := by
     unfold stageInclL; rw [← Cat.assoc]
   have hEC : ∀ {W : Obj L} (s t : homL L hL ⟨i, P0⟩ W),
-      @compL _ _ L hL ⟨i, a⟩ ⟨i, P0⟩ W (stageInclL L hL inlS) s
-        = @compL _ _ L hL ⟨i, a⟩ ⟨i, P0⟩ W (stageInclL L hL inlS) t →
-      @compL _ _ L hL ⟨i, b⟩ ⟨i, P0⟩ W (stageInclL L hL inrS) s
-        = @compL _ _ L hL ⟨i, b⟩ ⟨i, P0⟩ W (stageInclL L hL inrS) t → s = t := by
+      @compL _ _ L hL ⟨i, A⟩ ⟨i, P0⟩ W (stageInclL L hL inlS) s
+        = @compL _ _ L hL ⟨i, A⟩ ⟨i, P0⟩ W (stageInclL L hL inlS) t →
+      @compL _ _ L hL ⟨i, B⟩ ⟨i, P0⟩ W (stageInclL L hL inrS) s
+        = @compL _ _ L hL ⟨i, B⟩ ⟨i, P0⟩ W (stageInclL L hL inrS) t → s = t := by
     intro W s t h1 h2
     rw [hbrL] at h1
     rw [hbrR] at h2
-    exact homInclL_epiCase_of_stage L hL P0 a b (D.refl i) (D.refl i)
-      (reflApp L a ≫ inlS) (reflApp L b ≫ inrS) hcancel s t h1 h2
+    exact homInclL_epiCase_of_stage L hL P0 A B (D.refl i) (D.refl i)
+      (reflApp L A ≫ inlS) (reflApp L B ≫ inrS) hcancel s t h1 h2
   refine isIso_of_coproduct_up _ _ (fun {Z} f g => ?_)
   -- existence half: build the case mediator OUT of `⟨i,P0⟩` at a common stage `N ≥ i`.
   refine Quotient.inductionOn f (fun rf => ?_)
@@ -218,11 +218,11 @@ public theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
   have hbgN : D.le bg.1 N := D.trans he1b hNe
   -- competitor legs at `N`, pre-composed with the inverse unit conjugator `isoInv prUnit` (lands the
   -- SOURCE in `F hiN a/b`).
-  let p_case : L.F hiN a ⟶ L.F (D.trans af.2.2 hafN) Z.2 :=
-    isoInv (prUnit_isIso L a hiN) ≫ pushHom L a Z.2 af.2.1 af.2.2 hafN fa
-  let q_case : L.F hiN b ⟶ L.F (D.trans af.2.2 hafN) Z.2 :=
-    isoInv (prUnit_isIso L b hiN) ≫ pushHom L b Z.2 bg.2.1 bg.2.2 hbgN ga
-  obtain ⟨r, hr_inl, hr_inr⟩ := data.presCase hiN a b (L.F (D.trans af.2.2 hafN) Z.2) p_case q_case
+  let p_case : L.F hiN A ⟶ L.F (D.trans af.2.2 hafN) Z.2 :=
+    isoInv (prUnit_isIso L A hiN) ≫ pushHom L A Z.2 af.2.1 af.2.2 hafN fa
+  let q_case : L.F hiN B ⟶ L.F (D.trans af.2.2 hafN) Z.2 :=
+    isoInv (prUnit_isIso L B hiN) ≫ pushHom L B Z.2 bg.2.1 bg.2.2 hbgN ga
+  obtain ⟨r, hr_inl, hr_inr⟩ := data.presCase hiN A B (L.F (D.trans af.2.2 hafN) Z.2) p_case q_case
   let u : @homL _ _ L hL ⟨i, P0⟩ Z :=
     homInclL L hL P0 Z.2 ⟨N, hiN, D.trans af.2.2 hafN⟩ (prUnit L P0 hiN ≫ r)
   -- `coprCaseExists.leg`, specialised: an injection composite of `u` reduces to the pushed competitor.
@@ -260,22 +260,22 @@ public theorem objInclL_preserves_coproducts (i : ι) (a b : L.A i) :
     rw [isoInv_prUnit L w hiN, ← Cat.assoc,
         ← (L.functF hiN).map_comp (reflApp L w) (isoInv (reflApp_isIso L w)),
         isoInv_comp, (L.functF hiN).map_id, Cat.id_comp]
-  have hcomp_inl : (L.functF hiN).map (reflApp L a ≫ inlS) ≫ r
-      = isoInv (transApp_isIso L (D.refl i) hiN a) ≫ pushHom L a Z.2 af.2.1 af.2.2 hafN fa := by
-    rw [(L.functF hiN).map_comp (reflApp L a) inlS, Cat.assoc, hr_inl]
-    show (L.functF hiN).map (reflApp L a)
-        ≫ (isoInv (prUnit_isIso L a hiN) ≫ pushHom L a Z.2 af.2.1 af.2.2 hafN fa) = _
-    rw [← Cat.assoc, hpu a]
-  have hcomp_inr : (L.functF hiN).map (reflApp L b ≫ inrS) ≫ r
-      = isoInv (transApp_isIso L (D.refl i) hiN b) ≫ pushHom L b Z.2 bg.2.1 bg.2.2 hbgN ga := by
-    rw [(L.functF hiN).map_comp (reflApp L b) inrS, Cat.assoc, hr_inr]
-    show (L.functF hiN).map (reflApp L b)
-        ≫ (isoInv (prUnit_isIso L b hiN) ≫ pushHom L b Z.2 bg.2.1 bg.2.2 hbgN ga) = _
-    rw [← Cat.assoc, hpu b]
-  have hux : @compL _ _ L hL ⟨i, a⟩ ⟨i, P0⟩ Z (stageInclL L hL inlS) u = Quotient.mk _ ⟨af, fa⟩ :=
-    leg a inlS af fa hafN hcomp_inl
-  have huy : @compL _ _ L hL ⟨i, b⟩ ⟨i, P0⟩ Z (stageInclL L hL inrS) u = Quotient.mk _ ⟨bg, ga⟩ :=
-    leg b inrS bg ga hbgN hcomp_inr
+  have hcomp_inl : (L.functF hiN).map (reflApp L A ≫ inlS) ≫ r
+      = isoInv (transApp_isIso L (D.refl i) hiN A) ≫ pushHom L A Z.2 af.2.1 af.2.2 hafN fa := by
+    rw [(L.functF hiN).map_comp (reflApp L A) inlS, Cat.assoc, hr_inl]
+    show (L.functF hiN).map (reflApp L A)
+        ≫ (isoInv (prUnit_isIso L A hiN) ≫ pushHom L A Z.2 af.2.1 af.2.2 hafN fa) = _
+    rw [← Cat.assoc, hpu A]
+  have hcomp_inr : (L.functF hiN).map (reflApp L B ≫ inrS) ≫ r
+      = isoInv (transApp_isIso L (D.refl i) hiN B) ≫ pushHom L B Z.2 bg.2.1 bg.2.2 hbgN ga := by
+    rw [(L.functF hiN).map_comp (reflApp L B) inrS, Cat.assoc, hr_inr]
+    show (L.functF hiN).map (reflApp L B)
+        ≫ (isoInv (prUnit_isIso L B hiN) ≫ pushHom L B Z.2 bg.2.1 bg.2.2 hbgN ga) = _
+    rw [← Cat.assoc, hpu B]
+  have hux : @compL _ _ L hL ⟨i, A⟩ ⟨i, P0⟩ Z (stageInclL L hL inlS) u = Quotient.mk _ ⟨af, fa⟩ :=
+    leg A inlS af fa hafN hcomp_inl
+  have huy : @compL _ _ L hL ⟨i, B⟩ ⟨i, P0⟩ Z (stageInclL L hL inrS) u = Quotient.mk _ ⟨bg, ga⟩ :=
+    leg B inrS bg ga hbgN hcomp_inr
   exact ⟨u, ⟨hux, huy⟩, fun v hv₁ hv₂ => hEC v u (hv₁.trans hux.symm) (hv₂.trans huy.symm)⟩
 
 end Freyd.LaxColim

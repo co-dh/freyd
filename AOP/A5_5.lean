@@ -131,8 +131,8 @@ theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     Unlike the inclusion laws (6.4)/(6.5) of `AOP.A6_2` this needs NO local completeness —
     no `Sup`/`Inf`, no fixed point — only `relCata_UP` and `relCata_cancel`: the composite
     `(|R|) S` is shown to satisfy `Q`'s defining equation, and uniqueness does the rest. -/
-public theorem relCata_fusion (I : InitialAlgebra F) {A d : 𝒜} {R : F.obj A ⟶ A}
-    {Q : F.obj d ⟶ d} {S : A ⟶ d} (h : R ≫ S = F.map S ≫ Q) :
+public theorem relCata_fusion (I : InitialAlgebra F) {A D : 𝒜} {R : F.obj A ⟶ A}
+    {Q : F.obj D ⟶ D} {S : A ⟶ D} (h : R ≫ S = F.map S ≫ Q) :
     relCata R ≫ S = relCata Q := by
   apply (relCata_UP I Q (relCata R ≫ S)).mp
   calc I.α ≫ relCata R ≫ S
@@ -154,7 +154,7 @@ public theorem relCata_fusion (I : InitialAlgebra F) {A d : 𝒜} {R : F.obj A �
 
     A one-term theorem, kept despite the repo's no-wrapper rule under its stated exception
     for a statement that is itself a required deliverable — this is a book-numbered exercise. -/
-public theorem relCata_of_comp (I : InitialAlgebra F) {a x : 𝒜} (f : x ⟶ a) (g : F.obj a ⟶ x) :
+public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A) (g : F.obj A ⟶ x) :
     relCata (F.map f ≫ g) ≫ f = relCata (g ≫ f) :=
   relCata_fusion I (Cat.assoc (F.map f) g f)
 

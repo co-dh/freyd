@@ -116,7 +116,7 @@ public theorem R_recip_trans : (R vol)° ≫ (R vol)° ⊑ (R vol)° :=
 /-- **knap-defn**: `[nil,π₂]` as a function — keep `nil`, or drop the head item.  (`[nil,cons]`
     is the initial algebra `con` itself.) -/
 @[expose] public def dropFn : (Fobj Unit Item (dList Item)).carrier → ConsList Unit Item
-  | Sum.inl d => ConsList.wrap d
+  | Sum.inl D => ConsList.wrap D
   | Sum.inr p => p.2
 
 /-- `[nil,cons] = con`, the initial algebra. -/
@@ -125,7 +125,7 @@ public theorem con_eq_junc :
       = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR consR := by
   apply hom_ext; intro u r
   cases u with
-  | inl d => exact (junc_sum_inl (wrapR : dL Unit ⟶ dList Item) consR d r).symm
+  | inl D => exact (junc_sum_inl (wrapR : dL Unit ⟶ dList Item) consR D r).symm
   | inr p => exact (junc_sum_inr (wrapR : dL Unit ⟶ dList Item) consR p r).symm
 
 /-- `[nil,π₂] = dropFn`. -/
@@ -135,9 +135,9 @@ public theorem drop_eq_junc :
           (graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
-  | inl d =>
+  | inl D =>
     exact (junc_sum_inl (wrapR : dL Unit ⟶ dList Item)
-      (graph fun p : Item × ConsList Unit Item => p.2) d r).symm
+      (graph fun p : Item × ConsList Unit Item => p.2) D r).symm
   | inr p =>
     exact (junc_sum_inr (wrapR : dL Unit ⟶ dList Item)
       (graph fun p : Item × ConsList Unit Item => p.2) p r).symm
@@ -168,13 +168,13 @@ public theorem Salg_junc :
       ((consR ≫ within wt w) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
-  | inl d =>
+  | inl D =>
     rw [junc_sum_inl]
     constructor
     · rintro (hc | hd)
-      · exact ((con_within_apply (wt := wt) (w := w) (Sum.inl d) r).mp hc).1
-      · exact (hd : r = dropFn (Sum.inl d))
-    · intro hr; exact Or.inr (hr : r = ConsList.wrap d)
+      · exact ((con_within_apply (wt := wt) (w := w) (Sum.inl D) r).mp hc).1
+      · exact (hd : r = dropFn (Sum.inl D))
+    · intro hr; exact Or.inr (hr : r = ConsList.wrap D)
   | inr p =>
     rw [junc_sum_inr]
     constructor
@@ -198,11 +198,11 @@ public theorem knap_mono_cons :
     obtain ⟨v, hFv, hcon⟩ := h
     obtain ⟨rfl, hwr⟩ := (con_within_apply (wt := wt) (w := w) v r).mp hcon
     cases u with
-    | inl d =>
+    | inl D =>
       cases v with
       | inl d' =>
-        obtain rfl : d = d' := hFv
-        exact ⟨con (Sum.inl d), (con_within_apply (wt := wt) (w := w) _ _).mpr ⟨rfl, hwr⟩,
+        obtain rfl : D = d' := hFv
+        exact ⟨con (Sum.inl D), (con_within_apply (wt := wt) (w := w) _ _).mpr ⟨rfl, hwr⟩,
           Int.le_refl _, Int.le_refl _⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
@@ -249,11 +249,11 @@ public theorem knap_mono_drop :
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
     cases u with
-    | inl d =>
+    | inl D =>
       cases v with
       | inl d' =>
-        obtain rfl : d = d' := hFv
-        exact ⟨dropFn (Sum.inl d), rfl, Int.le_refl _, Int.le_refl _⟩
+        obtain rfl : D = d' := hFv
+        exact ⟨dropFn (Sum.inl D), rfl, Int.le_refl _, Int.le_refl _⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
       cases v with
@@ -267,11 +267,11 @@ public theorem knap_sort_cons : MonotonicAlg (F := F Unit Item) (graph con) (R v
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = con v := hr
     cases u with
-    | inl d =>
+    | inl D =>
       cases v with
       | inl d' =>
-        obtain rfl : d = d' := hFv
-        exact ⟨con (Sum.inl d), rfl, Int.le_refl _⟩
+        obtain rfl : D = d' := hFv
+        exact ⟨con (Sum.inl D), rfl, Int.le_refl _⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
       cases v with
@@ -290,11 +290,11 @@ public theorem knap_sort_drop : MonotonicAlg (F := F Unit Item) (graph dropFn) (
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
     cases u with
-    | inl d =>
+    | inl D =>
       cases v with
       | inl d' =>
-        obtain rfl : d = d' := hFv
-        exact ⟨dropFn (Sum.inl d), rfl, Int.le_refl _⟩
+        obtain rfl : D = d' := hFv
+        exact ⟨dropFn (Sum.inl D), rfl, Int.le_refl _⟩
       | inr q => exact (hFv : False).elim
     | inr p =>
       cases v with
@@ -319,7 +319,7 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     · rintro ⟨hs, hwr⟩; exact ⟨r, hs, rfl, hwr⟩
   rw [Salg_junc]
   refine (relCata_UP (initial Unit Item) _ _).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · rw [hspec]
     constructor
     · rintro ⟨hs, -⟩
@@ -327,7 +327,7 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
       | wrap u => rfl
       | cons b z => exact hs.elim
     · intro hr
-      obtain rfl : r = ConsList.wrap d := hr
+      obtain rfl : r = ConsList.wrap D := hr
       exact ⟨trivial, hw⟩
   · rw [hspec]
     constructor

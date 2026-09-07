@@ -64,7 +64,7 @@ def discreteCat (α : Type u) : Cat.{0, u} α where
 
 /-- §1.15  A category is DISCRETE if `Hom a b` is non-empty only when `a = b`. -/
 def IsDiscreteCategory {𝒞 : Type u} [Cat.{v} 𝒞] : Prop :=
-  ∀ {a b : 𝒞}, (a ⟶ b) → a = b
+  ∀ {A B : 𝒞}, (A ⟶ B) → A = B
 
 -- ---------------------------------------------------------------------------
 -- §1.17  LEFT-INVERTIBLE, RIGHT-INVERTIBLE, ISOMORPHISM

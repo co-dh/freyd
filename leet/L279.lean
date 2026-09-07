@@ -147,7 +147,7 @@ def sqDP : DPCount Unit Nat Nat where
     obtain ⟨hpos, hct, hv'⟩ := h
     have h1 : 1 * 1 ≤ c * c := Nat.mul_le_mul hpos hpos
     omega
-  memo_lb_base := fun {d v} h => by
+  memo_lb_base := fun {D v} h => by
     subst h
     exact Nat.le_refl 0
   memo_lb_step := fun {c v' v} h => by

@@ -69,7 +69,7 @@ def foldPre : ConsList Unit Int → PreCarrier
   | ConsList.cons x xs => preSt x (foldPre xs)
 
 /-- The base condition is a COMPUTATION: `foldPre (wrap d) = preG d`. -/
-theorem foldPre_wrap : ∀ d : Unit, foldPre (ConsList.wrap d) = preG d := fun _ => rfl
+theorem foldPre_wrap : ∀ D : Unit, foldPre (ConsList.wrap D) = preG D := fun _ => rfl
 
 /-- The step condition IS `foldPre`'s cons equation. -/
 theorem foldPre_cons :
@@ -112,7 +112,7 @@ def foldSuf : ConsList Unit Int → SufCarrier
   | ConsList.cons x xs => sufSt x (foldSuf xs)
 
 /-- The base condition is a COMPUTATION: `foldSuf (wrap d) = sufG d`. -/
-theorem foldSuf_wrap : ∀ d : Unit, foldSuf (ConsList.wrap d) = sufG d := fun _ => rfl
+theorem foldSuf_wrap : ∀ D : Unit, foldSuf (ConsList.wrap D) = sufG D := fun _ => rfl
 
 /-- The step condition IS `foldSuf`'s cons equation. -/
 theorem foldSuf_cons :

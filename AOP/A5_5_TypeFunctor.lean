@@ -48,7 +48,7 @@ namespace Freyd.Alg
 public structure BiRelator (𝒜 : Type u) [Allegory.{v} 𝒜] where
   obj : 𝒜 → 𝒜 → 𝒜
   map : {a₁ a₂ b₁ b₂ : 𝒜} → (a₁ ⟶ a₂) → (b₁ ⟶ b₂) → (obj a₁ b₁ ⟶ obj a₂ b₂)
-  map_id : ∀ (a b : 𝒜), map (𝟙 a) (𝟙 b) = 𝟙 (obj a b)
+  map_id : ∀ (A B : 𝒜), map (𝟙 A) (𝟙 B) = 𝟙 (obj A B)
   map_comp : ∀ {a₁ a₂ a₃ b₁ b₂ b₃ : 𝒜} (R : a₁ ⟶ a₂) (R' : a₂ ⟶ a₃) (S : b₁ ⟶ b₂)
     (S' : b₂ ⟶ b₃), map (R ≫ R') (S ≫ S') = map R S ≫ map R' S'
   map_mono : ∀ {a₁ a₂ b₁ b₂ : 𝒜} {R R' : a₁ ⟶ a₂} {S S' : b₁ ⟶ b₂},
@@ -73,18 +73,18 @@ public theorem interchange' {a₁ a₂ b₁ b₂ : 𝒜} (R : a₁ ⟶ a₂) (S 
     first argument ... is the one that describes the initial algebra" (§2.7 p. 50); the note
     abbreviates its action as `F(X) ≜ F(𝟙,X)`.  Reducible so that `rw` against the unary
     `relCata` lemmas (stated at `F.appl a`) matches goals spelled with `F.obj`/`F.map`. -/
-@[expose, reducible] public def appl (a : 𝒜) : Relator 𝒜 𝒜 where
-  obj b := F.obj a b
-  map S := F.map (𝟙 a) S
-  map_id b := F.map_id a b
+@[expose, reducible] public def appl (A : 𝒜) : Relator 𝒜 𝒜 where
+  obj B := F.obj A B
+  map S := F.map (𝟙 A) S
+  map_id B := F.map_id A B
   map_comp S S' := by rw [← F.map_comp, Cat.id_comp]
   map_mono h := F.map_mono (le_refl _) h
 
 /-- The other partial application `F(−,b)`, fixing the recursive position. -/
-@[expose, reducible] public def appr (b : 𝒜) : Relator 𝒜 𝒜 where
-  obj a := F.obj a b
-  map R := F.map R (𝟙 b)
-  map_id a := F.map_id a b
+@[expose, reducible] public def appr (B : 𝒜) : Relator 𝒜 𝒜 where
+  obj A := F.obj A B
+  map R := F.map R (𝟙 B)
+  map_id A := F.map_id A B
   map_comp R R' := by rw [← F.map_comp, Cat.id_comp]
   map_mono h := F.map_mono h (le_refl _)
 
@@ -134,37 +134,37 @@ end BiRelator
   Eilenberg-Wright UP `relCata_UP` (5.12) or of the equality fusion (2.12). -/
 
 variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : BiRelator 𝒜}
-  (I : ∀ a : 𝒜, InitialAlgebra (F.appl a))
+  (I : ∀ A : 𝒜, InitialAlgebra (F.appl A))
 
 /-- **(2.13) / B&dM p. 122**: `T` acts on an arrow `R : A ⟶ B` by `T(R) = ⦇F(R,𝟙)α⦈ : TA ⟶ TB`
     — rebuild the structure with `α`, applying `R` to the parameter on the way. -/
-@[expose] public def typeMap {a b : 𝒜} (R : a ⟶ b) : (I a).t ⟶ (I b).t :=
-  relCata (I := I a) (F.map R (𝟙 (I b).t) ≫ (I b).α)
+@[expose] public def typeMap {A B : 𝒜} (R : A ⟶ B) : (I A).t ⟶ (I B).t :=
+  relCata (I := I A) (F.map R (𝟙 (I B).t) ≫ (I B).α)
 
 /-- The defining equation (2.13), unfolded — `T(R) = ⦇F(R,𝟙)α⦈` as a citable statement. -/
-public theorem typeMap_defn {a b : 𝒜} (R : a ⟶ b) :
-    typeMap I R = relCata (I := I a) (F.map R (𝟙 (I b).t) ≫ (I b).α) := rfl
+public theorem typeMap_defn {A B : 𝒜} (R : A ⟶ B) :
+    typeMap I R = relCata (I := I A) (F.map R (𝟙 (I B).t) ≫ (I B).α) := rfl
 
 /-- **§2.7**: `T(𝟙) = 𝟙` — "bifunctors preserve identities; reflection law". -/
-public theorem typeMap_id (a : 𝒜) : typeMap I (𝟙 a) = 𝟙 (I a).t := by
-  rw [typeMap_defn I (𝟙 a)]
-  refine ((relCata_UP (I a) _ _).mp ?_).symm
+public theorem typeMap_id (A : 𝒜) : typeMap I (𝟙 A) = 𝟙 (I A).t := by
+  rw [typeMap_defn I (𝟙 A)]
+  refine ((relCata_UP (I A) _ _).mp ?_).symm
   dsimp only [BiRelator.appl]
   rw [Cat.comp_id, F.map_id, Cat.id_comp, Cat.id_comp]
 
 /-- **Type functor fusion (2.14)**: `T(R)⦇Q⦈ = ⦇F(R,𝟙)Q⦈` — "a catamorphism composed with
     its type functor can always be expressed as a single catamorphism."  The side condition
     of (2.12)-fusion is discharged by interchange, `F` being a bifunctor. -/
-public theorem typeMap_fusion {a b c : 𝒜} (R : a ⟶ b) (Q : F.obj b c ⟶ c) :
-    typeMap I R ≫ relCata (I := I b) Q = relCata (I := I a) (F.map R (𝟙 c) ≫ Q) := by
+public theorem typeMap_fusion {A B C : 𝒜} (R : A ⟶ B) (Q : F.obj B C ⟶ C) :
+    typeMap I R ≫ relCata (I := I B) Q = relCata (I := I A) (F.map R (𝟙 C) ≫ Q) := by
   rw [typeMap_defn I R]
-  refine relCata_fusion (I a) ?_
-  rw [Cat.assoc, relCata_cancel (I b) Q]
+  refine relCata_fusion (I A) ?_
+  rw [Cat.assoc, relCata_cancel (I B) Q]
   dsimp only [BiRelator.appl]
-  rw [← Cat.assoc, F.interchange, ← F.interchange' R (relCata (I := I b) Q), Cat.assoc]
+  rw [← Cat.assoc, F.interchange, ← F.interchange' R (relCata (I := I B) Q), Cat.assoc]
 
 /-- **§2.7**: `T(R)T(S) = T(RS)` — type functor fusion at `Q := F(S,𝟙)α`, then `F` bifunctor. -/
-public theorem typeMap_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+public theorem typeMap_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
     typeMap I R ≫ typeMap I S = typeMap I (R ≫ S) := by
   rw [typeMap_defn I S, typeMap_fusion I R, typeMap_defn I (R ≫ S), ← Cat.assoc,
     ← F.map_comp, Cat.comp_id]
@@ -172,15 +172,15 @@ public theorem typeMap_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
 /-- **§2.7 p. 51**: the initial algebras as one FAMILY in the parameter — `αᴀ : F(A,TA) ⟶ TA`,
     the note's `α : F(⟨𝟙,T⟩(A))⟶T(A)`, whose square in `A` is `alpha_natural` below.  Not the
     single arrow `α : F(T)⟶T` of one initial algebra (@cata-defn): the same letter, indexed. -/
-@[expose] public def alphaT (a : 𝒜) : F.obj a (I a).t ⟶ (I a).t := (I a).α
+@[expose] public def alphaT (A : 𝒜) : F.obj A (I A).t ⟶ (I A).t := (I A).α
 
 /-- **§2.7 p. 51**: `αT(R) = F(R,T(R))α` — "`α` is a natural transformation from
     `G(R) = F(R,T(R))` to `T`": building and then mapping is mapping the parts and then
     building.  The cancellation `α⦇·⦈ = F(⦇·⦈)·` (5.12) plus interchange. -/
-public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
-    alphaT I a ≫ typeMap I R = F.map R (typeMap I R) ≫ alphaT I b := by
-  show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α
-  rw [typeMap_defn I R, relCata_cancel (I a)]
+public theorem alpha_natural {A B : 𝒜} (R : A ⟶ B) :
+    alphaT I A ≫ typeMap I R = F.map R (typeMap I R) ≫ alphaT I B := by
+  show (I A).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I B).α
+  rw [typeMap_defn I R, relCata_cancel (I A)]
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange']
 
@@ -188,22 +188,22 @@ public theorem alpha_natural {a b : 𝒜} (R : a ⟶ b) :
     map of the converse is the converse of the map.  Needs `F` converse-preserving; the
     book's chain (converse the naturality square, cancel the invertible `α` on both sides)
     with Lambek's `α°≫α = 𝟙`, `α≫α° = 𝟙` from `AOP.A6_2`. -/
-public theorem typeMap_recip (hF : F.PreservesRecip) {a b : 𝒜} (R : a ⟶ b) :
+public theorem typeMap_recip (hF : F.PreservesRecip) {A B : 𝒜} (R : A ⟶ B) :
     (typeMap I R)° = typeMap I R° := by
-  have hrec : (typeMap I R)° ≫ (I a).α° = (I b).α° ≫ (F.map R (typeMap I R))° := by
+  have hrec : (typeMap I R)° ≫ (I A).α° = (I B).α° ≫ (F.map R (typeMap I R))° := by
     rw [← Allegory.recip_comp, ← Allegory.recip_comp,
-      show (I a).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I b).α from alpha_natural I R]
+      show (I A).α ≫ typeMap I R = F.map R (typeMap I R) ≫ (I B).α from alpha_natural I R]
   rw [typeMap_defn I R°]
-  refine (relCata_UP (I b) _ _).mp ?_
+  refine (relCata_UP (I B) _ _).mp ?_
   dsimp only [BiRelator.appl]
-  calc (I b).α ≫ (typeMap I R)°
-      = (I b).α ≫ ((typeMap I R)° ≫ (I a).α°) ≫ (I a).α := by
-        rw [Cat.assoc, (I a).recip_alpha_alpha, Cat.comp_id]
-    _ = ((I b).α ≫ (I b).α°) ≫ (F.map R (typeMap I R))° ≫ (I a).α := by
+  calc (I B).α ≫ (typeMap I R)°
+      = (I B).α ≫ ((typeMap I R)° ≫ (I A).α°) ≫ (I A).α := by
+        rw [Cat.assoc, (I A).recip_alpha_alpha, Cat.comp_id]
+    _ = ((I B).α ≫ (I B).α°) ≫ (F.map R (typeMap I R))° ≫ (I A).α := by
         rw [hrec, Cat.assoc, Cat.assoc]
-    _ = F.map R° (typeMap I R)° ≫ (I a).α := by
-        rw [(I b).alpha_alpha_recip, Cat.id_comp, ← hF R (typeMap I R)]
-    _ = F.map (𝟙 b) (typeMap I R)° ≫ F.map R° (𝟙 (I a).t) ≫ (I a).α := by
+    _ = F.map R° (typeMap I R)° ≫ (I A).α := by
+        rw [(I B).alpha_alpha_recip, Cat.id_comp, ← hF R (typeMap I R)]
+    _ = F.map (𝟙 B) (typeMap I R)° ≫ F.map R° (𝟙 (I A).t) ≫ (I A).α := by
         rw [← Cat.assoc, F.interchange']
 
 /-! ## The type relator, bundled
@@ -216,18 +216,18 @@ public theorem typeMap_recip (hF : F.PreservesRecip) {a b : 𝒜} (R : a ⟶ b) 
 section TypeRelator
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : BiRelator 𝒜}
-  (I : ∀ a : 𝒜, InitialAlgebra (F.appl a))
+  (I : ∀ A : 𝒜, InitialAlgebra (F.appl A))
 
 /-- `T` is MONOTONIC: `⦇·⦈` is monotonic in the algebra (Ex 6.7) and `F` in its arguments. -/
-public theorem typeMap_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) :
+public theorem typeMap_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) :
     typeMap I R ⊑ typeMap I S := by
   rw [typeMap_defn I R, typeMap_defn I S]
-  exact relCata_mono (I a) (comp_mono_right (F.map_mono h (le_refl _)) (I b).α)
+  exact relCata_mono (I A) (comp_mono_right (F.map_mono h (le_refl _)) (I B).α)
 
 /-- **B&dM §5.5 p. 122**: the TYPE RELATOR — the type functor `T` of the initial type
     `(α,T)` of a binary relator `F`, bundled as a relator: `A ↦ TA`, `R ↦ ⦇F(R,𝟙)α⦈`. -/
 @[expose] public def typeRelator : Relator 𝒜 𝒜 where
-  obj a := (I a).t
+  obj A := (I A).t
   map := typeMap I
   map_id := typeMap_id I
   map_comp R S := (typeMap_comp I R S).symm

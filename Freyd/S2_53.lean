@@ -74,7 +74,7 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
         Rq Sq
     -- §2.536: `(R⁺/S⁺)S⁺ ⊑ R⁺` implies `(overline(R⁺/S⁺))S̄ ⊑ R̄`.
     div_comp_le := by
-      intro a b c Rq Sq
+      intro A B C Rq Sq
       refine Quotient.inductionOn₂ Rq Sq (fun R S => ?_)
       -- Goal (defeq): `[(R⁺/S⁺) ≫ S] ⊑ [R]`.  By `quotient_le_iff_largest`:
       --   `((R⁺/S⁺) ≫ S)⁺ ⊑ R⁺`.
@@ -94,7 +94,7 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
       rw [heq]; exact hmono
     -- §2.536: if `overline(TS) ⊑ R̄` then `T̄ ⊑ overline(R⁺/S⁺)`.
     le_div := by
-      intro a b c Tq Rq Sq
+      intro A B C Tq Rq Sq
       refine Quotient.inductionOn₃ Tq Rq Sq (fun T R S => ?_)
       intro h
       -- `h : [T ≫ S] ⊑ [R]`, i.e. `(TS)⁺ ⊑ R⁺` by §2.533.
@@ -117,10 +117,10 @@ def QuotAllegory.instDivisionAllegory (amen : AmenableCongruence 𝒜) :
     `T̄ ⊑ R̄/S̄  ↔  T̄ ≫ S̄ ⊑ R̄`, where `R̄/S̄ = overline(R⁺/S⁺)`.  This is the
     division-allegory law `le_div_iff` re-exported against
     `QuotAllegory.instDivisionAllegory`. -/
-theorem quotient_le_div_iff (amen : AmenableCongruence 𝒜) {a b c : 𝒜}
-    (Tq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ a b)
-    (Rq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ a c)
-    (Sq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ b c) :
+theorem quotient_le_div_iff (amen : AmenableCongruence 𝒜) {A B C : 𝒜}
+    (Tq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ A B)
+    (Rq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ A C)
+    (Sq : @Cat.Hom (QuotAllegory 𝒜 amen.cong) _ B C) :
     letI := QuotAllegory.instDivisionAllegory amen
     Tq ⊑ Rq / Sq ↔ Tq ≫ Sq ⊑ Rq := by
   letI := QuotAllegory.instDivisionAllegory amen
@@ -236,7 +236,7 @@ section Descent
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜] (amen : AmenableCongruence 𝒜)
 
 /-- `quotRep` preserves `dom`: `dom [R] = [dom R]`. -/
-theorem quotRep_dom {a b : 𝒜} (R : a ⟶ b) :
+theorem quotRep_dom {A B : 𝒜} (R : A ⟶ B) :
     dom ((quotRep amen.cong).map R) = (quotRep amen.cong).map (dom R) := by
   dsimp [dom]
   rw [(quotRep amen.cong).map_inter, (quotRep amen.cong).map_comp,
@@ -258,21 +258,21 @@ section Effectivity
 variable {𝒜 : Type u} [EffectivePowerAllegory 𝒜] (amen : AmenableCongruence 𝒜)
 
 /-- §2.535: a quotient-reflexive `[E₀]` forces `E₀⁺` reflexive. -/
-theorem quot_largest_reflexive {a : 𝒜} {E₀ : a ⟶ a}
+theorem quot_largest_reflexive {A : 𝒜} {E₀ : A ⟶ A}
     (h : Reflexive ((quotRep amen.cong).map E₀)) : Reflexive (amen.largest E₀) := by
-  have h2 : (quotRep amen.cong).map (Cat.id a) ⊑ (quotRep amen.cong).map E₀ := by
+  have h2 : (quotRep amen.cong).map (Cat.id A) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_id]; exact h
-  exact le_trans (self_le_largest amen (Cat.id a)) ((Freyd.Alg.quotient_le_iff_largest amen (Cat.id a) E₀).mp h2)
+  exact le_trans (self_le_largest amen (Cat.id A)) ((Freyd.Alg.quotient_le_iff_largest amen (Cat.id A) E₀).mp h2)
 
 /-- §2.535: a quotient-symmetric `[E₀]` forces `E₀⁺` symmetric. -/
-theorem quot_largest_symmetric {a : 𝒜} {E₀ : a ⟶ a}
+theorem quot_largest_symmetric {A : 𝒜} {E₀ : A ⟶ A}
     (h : Symmetric ((quotRep amen.cong).map E₀)) : Symmetric (amen.largest E₀) := by
   have h2 : (quotRep amen.cong).map (E₀°) ⊑ (quotRep amen.cong).map E₀ := by
     rw [(quotRep amen.cong).map_recip]; exact h
   exact le_trans (largest_recip_le amen E₀) ((Freyd.Alg.quotient_le_iff_largest amen (E₀°) E₀).mp h2)
 
 /-- §2.535: a quotient-idempotent `[E₀]` (with `E₀⁺` reflexive) forces `E₀⁺` idempotent. -/
-theorem quot_largest_idempotent {a : 𝒜} {E₀ : a ⟶ a}
+theorem quot_largest_idempotent {A : 𝒜} {E₀ : A ⟶ A}
     (hRefl : Reflexive (amen.largest E₀))
     (h : (quotRep amen.cong).map E₀ ≫ (quotRep amen.cong).map E₀ = (quotRep amen.cong).map E₀) :
     amen.largest E₀ ≫ amen.largest E₀ = amen.largest E₀ := by
@@ -289,10 +289,10 @@ theorem quot_largest_idempotent {a : 𝒜} {E₀ : a ⟶ a}
     `E₀⁺` is a reflexive/symmetric/idempotent (equivalence) relation of `𝒜`, so it splits
     in `𝒜` (`EffectiveAllegory.split_symmetric_idempotent`); the leg `[f₀]` is a map
     (`quotRep_preserves_map`) and the two split equations descend. -/
-theorem quotSplit {a : 𝒜} (E : (quotRep amen.cong).obj a ⟶ (quotRep amen.cong).obj a)
+theorem quotSplit {A : 𝒜} (E : (quotRep amen.cong).obj A ⟶ (quotRep amen.cong).obj A)
     (hR : Reflexive E) (hS : Symmetric E) (hI : E ≫ E = E) :
-    ∃ (c : QuotAllegory 𝒜 amen.cong) (f : (quotRep amen.cong).obj a ⟶ c),
-      Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id c := by
+    ∃ (C : QuotAllegory 𝒜 amen.cong) (f : (quotRep amen.cong).obj A ⟶ C),
+      Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id C := by
   refine Quotient.inductionOn E (fun E₀ => ?_) hR hS hI
   intro hR hS hI
   -- E₀⁺ is a reflexive, symmetric, idempotent equivalence relation of 𝒜.
@@ -300,15 +300,15 @@ theorem quotSplit {a : 𝒜} (E : (quotRep amen.cong).obj a ⟶ (quotRep amen.co
   have hSym' : Symmetric (amen.largest E₀) := quot_largest_symmetric amen hS
   have hIdem' : amen.largest E₀ ≫ amen.largest E₀ = amen.largest E₀ :=
     quot_largest_idempotent amen hRefl' hI
-  obtain ⟨c, f₀, hf₀Map, hff, hffid⟩ :=
+  obtain ⟨C, f₀, hf₀Map, hff, hffid⟩ :=
     EffectiveAllegory.split_symmetric_idempotent (amen.largest E₀) hRefl' hSym' hIdem'
-  refine ⟨c, (quotRep amen.cong).map f₀, quotRep_preserves_map amen.cong hf₀Map, ?_, ?_⟩
+  refine ⟨C, (quotRep amen.cong).map f₀, quotRep_preserves_map amen.cong hf₀Map, ?_, ?_⟩
   · -- [f₀][f₀]° = [f₀f₀°] = [E₀⁺] = [E₀] = E.
     rw [← (quotRep amen.cong).map_recip, ← (quotRep amen.cong).map_comp, hff]
     exact Quotient.sound (amen.cong.symm (amen.largest_rel E₀))
   · -- [f₀]°[f₀] = [f₀°f₀] = [Cat.id c] = Cat.id c.
     rw [← (quotRep amen.cong).map_recip, ← (quotRep amen.cong).map_comp, hffid]
-    exact (quotRep amen.cong).map_id c
+    exact (quotRep amen.cong).map_id C
 
 end Effectivity
 
@@ -326,7 +326,7 @@ section Thickness
 variable {𝒜 : Type u} [EffectivePowerAllegory 𝒜] (amen : AmenableCongruence 𝒜)
 
 /-- `quotRep` preserves `codBox`: `codBox [R] = [codBox R]`. -/
-theorem quotRep_codBox {a b : 𝒜} (R : a ⟶ b) :
+theorem quotRep_codBox {A B : 𝒜} (R : A ⟶ B) :
     codBox ((quotRep amen.cong).map R) = (quotRep amen.cong).map (codBox R) := by
   show dom (((quotRep amen.cong).map R)°) = _
   rw [← (quotRep amen.cong).map_recip, quotRep_dom]
@@ -339,32 +339,32 @@ theorem quotRep_codBox {a b : 𝒜} (R : a ⟶ b) :
     `f₀ = Λ(R₀⁺)` comes from `𝒜`-thickness of `∋_b` applied to `R₀⁺`; the three quotient
     containments are read off from `f₀`'s three `𝒜`-containments through `quotient_le_iff_largest`
     (§2.533) and `amenable_le_largest` (§2.531). -/
-theorem quotThickEps (b : 𝒜)
-    (hbox : ∀ {c : 𝒜} (R₀ : c ⟶ b),
-      amen.cong.rel (codBox R₀) (codBox (∋ b)) → codBox (amen.largest R₀) = codBox (∋ b)) :
+theorem quotThickEps (B : 𝒜)
+    (hbox : ∀ {C : 𝒜} (R₀ : C ⟶ B),
+      amen.cong.rel (codBox R₀) (codBox (∋ B)) → codBox (amen.largest R₀) = codBox (∋ B)) :
     letI := QuotAllegory.instDivisionAllegory amen
-    Thick ((quotRep amen.cong).map (∋ b)) := by
+    Thick ((quotRep amen.cong).map (∋ B)) := by
   letI := QuotAllegory.instDivisionAllegory amen
   rw [thick_iff_existential]
-  intro c R hboxQ
+  intro C R hboxQ
   refine Quotient.inductionOn R (fun R₀ => ?_) hboxQ
   intro hboxQ
   -- Descend the quotient box-match to `codBox R₀ ≡ codBox (∋ b)`, then to the exact
   -- `𝒜`-box-match for `R₀⁺`.
   rw [← quotRep_map amen.cong R₀, quotRep_codBox, quotRep_codBox] at hboxQ
-  have hrelBox : amen.cong.rel (codBox R₀) (codBox (∋ b)) := Quotient.exact hboxQ
-  have hboxA : codBox (amen.largest R₀) = codBox (∋ b) := hbox R₀ hrelBox
+  have hrelBox : amen.cong.rel (codBox R₀) (codBox (∋ B)) := Quotient.exact hboxQ
+  have hboxA : codBox (amen.largest R₀) = codBox (∋ B) := hbox R₀ hrelBox
   -- 𝒜-thickness of ∋_b applied to R₀⁺ gives the witness f₀ = Λ(R₀⁺).
   obtain ⟨f₀, hEnt, hf₀_le, hf₀o⟩ :=
-    (thick_iff_existential (∋ b)).mp (fun _ R hbox => (Λ_is_map R hbox).1)
-      c (amen.largest R₀) hboxA
+    (thick_iff_existential (∋ B)).mp (fun _ R hbox => (Λ_is_map R hbox).1)
+      C (amen.largest R₀) hboxA
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hEnt, ?_, ?_⟩
   · -- [f₀][∋] ⊑ [R₀] :  largest(f₀∋) ⊑ largest(R₀⁺) = R₀⁺ = largest R₀  (§2.531).
-    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ b) R₀).mpr ?_
+    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ B) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
     rwa [largest_idem amen] at h
   · -- [f₀]°[R₀] ⊑ [∋] :  R₀ ≡ R₀⁺ ⟹ largest(f₀°R₀)=largest(f₀°R₀⁺) ⊑ largest(∋)  (§2.531).
-    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ b)).mpr ?_
+    refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ B)).mpr ?_
     have hcong : amen.cong.rel (f₀° ≫ R₀) (f₀° ≫ amen.largest R₀) :=
       amen.cong.comp_congr (amen.cong.refl _) (amen.largest_rel R₀)
     rw [amenable_largest_class_invariant amen hcong]
@@ -386,8 +386,8 @@ variable {𝒜 : Type u} [EffectivePowerAllegory 𝒜] (amen : AmenableCongruenc
     For every object `b` and relation `R₀` targeted at `b`, a quotient box-match descends to
     an exact `𝒜`-box-match for the largest representative `R₀⁺`. -/
 def QuotBoxNaming : Prop :=
-  ∀ (b : 𝒜) {c : 𝒜} (R₀ : c ⟶ b),
-    amen.cong.rel (codBox R₀) (codBox (∋ b)) → codBox (amen.largest R₀) = codBox (∋ b)
+  ∀ (B : 𝒜) {C : 𝒜} (R₀ : C ⟶ B),
+    amen.cong.rel (codBox R₀) (codBox (∋ B)) → codBox (amen.largest R₀) = codBox (∋ B)
 
 /-- §2.535 + §2.536 + §2.537: the amenable quotient of an effective power allegory is an
     EFFECTIVE PRE-POWER ALLEGORY.
@@ -405,11 +405,11 @@ noncomputable def quotEffectivePrePower
     tabular := fun {_ _} R => Quotient.inductionOn R
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
-    thick_target := fun b =>
+    thick_target := fun B =>
       -- `powerObj`/`∋` are taken in `𝒜` (the syntactic quotient object `b` would otherwise
       -- send instance resolution looking for the very `PowerAllegory` we are building).
-      ⟨@PowerAllegory.powerObj 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
-        quotThickEps amen b (hbox b)⟩ }
+      ⟨@PowerAllegory.powerObj 𝒜 _ B, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ B),
+        quotThickEps amen B (hbox B)⟩ }
 
 /-- §2.537 (HEADLINE): **An amenable quotient of an effective power allegory is an effective
     power allegory.**  Conditional on the single named book step `hbox` (§2.41 membership
@@ -443,24 +443,24 @@ variable {𝒜 : Type u} [EffectiveUnguardedPowerAllegory 𝒜] (amen : Amenable
     The witness `[f₀]` comes from the UNGUARDED thickness `eps_thick_all` applied to `R₀⁺`
     (a map with `f₀ ∋ = R₀⁺`); the two quotient containments are read off exactly as in
     `quotThickEps` via `quotient_le_iff_largest`/`amenable_le_largest`/`largest_idem`. -/
-theorem quotThickEps_unguarded (b : 𝒜) :
+theorem quotThickEps_unguarded (B : 𝒜) :
     letI := QuotAllegory.instDivisionAllegory amen
-    Thick ((quotRep amen.cong).map (∋ b)) := by
+    Thick ((quotRep amen.cong).map (∋ B)) := by
   letI := QuotAllegory.instDivisionAllegory amen
   rw [thick_iff_existential]
-  intro c R _hboxQ
+  intro C R _hboxQ
   refine Quotient.inductionOn R (fun R₀ => ?_) _hboxQ
   intro _
-  obtain ⟨f₀, hf₀map, hf₀eq⟩ := UnguardedPowerAllegory.eps_thick_all (b := b) (amen.largest R₀)
-  have hf₀_le : f₀ ≫ ∋ b ⊑ amen.largest R₀ := by rw [hf₀eq]; exact le_refl _
-  have hf₀o : f₀° ≫ amen.largest R₀ ⊑ ∋ b := by
+  obtain ⟨f₀, hf₀map, hf₀eq⟩ := UnguardedPowerAllegory.eps_thick_all (B := B) (amen.largest R₀)
+  have hf₀_le : f₀ ≫ ∋ B ⊑ amen.largest R₀ := by rw [hf₀eq]; exact le_refl _
+  have hf₀o : f₀° ≫ amen.largest R₀ ⊑ ∋ B := by
     rw [← hf₀eq, ← Cat.assoc]
-    have h := comp_mono_right hf₀map.2 (∋ b); rwa [Cat.id_comp] at h
+    have h := comp_mono_right hf₀map.2 (∋ B); rwa [Cat.id_comp] at h
   refine ⟨(quotRep amen.cong).map f₀, quotRep_preserves_entire amen.cong hf₀map.1, ?_, ?_⟩
-  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ b) R₀).mpr ?_
+  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀ ≫ ∋ B) R₀).mpr ?_
     have h := amenable_le_largest amen hf₀_le
     rwa [largest_idem amen] at h
-  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ b)).mpr ?_
+  · refine (Freyd.Alg.quotient_le_iff_largest amen (f₀° ≫ R₀) (∋ B)).mpr ?_
     have hcong : amen.cong.rel (f₀° ≫ R₀) (f₀° ≫ amen.largest R₀) :=
       amen.cong.comp_congr (amen.cong.refl _) (amen.largest_rel R₀)
     rw [amenable_largest_class_invariant amen hcong]
@@ -473,9 +473,9 @@ noncomputable def quotEffectivePrePower_unguarded :
     tabular := fun {_ _} R => Quotient.inductionOn R
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
-    thick_target := fun b =>
-      ⟨@PowerAllegory.powerObj 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
-        quotThickEps_unguarded amen b⟩ }
+    thick_target := fun B =>
+      ⟨@PowerAllegory.powerObj 𝒜 _ B, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ B),
+        quotThickEps_unguarded amen B⟩ }
 
 /-- **§2.537 (unconditional)**: an amenable quotient of an effective UNGUARDED power allegory
     is a power allegory — `hbox`-free (the §2.41 box-naming is automatic when `∋` is unguarded). -/

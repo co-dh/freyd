@@ -64,11 +64,11 @@ open Freyd
     the leaf summand and componentwise on the product. -/
 def sumBirel (L : Type) : Birelator RelSet.{0} where
   obj y x := ⟨L ⊕ (y.carrier × x.carrier)⟩
-  map {a b c d} R T := fun u v => match u, v with
+  map {A B C D} R T := fun u v => match u, v with
     | Sum.inl l, Sum.inl l' => l = l'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ T p.2 q.2
     | _, _ => False
-  map_id a c := hom_ext fun u v => by
+  map_id A C := hom_ext fun u v => by
     cases u <;> cases v
     · exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
     · next l q => exact ⟨False.elim, fun h => nomatch (show Sum.inl l = Sum.inr q from h)⟩
@@ -96,7 +96,7 @@ def sumBirel (L : Type) : Birelator RelSet.{0} where
           fun ⟨w, h1, h2⟩ => by cases w with
             | inl m => exact h1.elim
             | inr m => exact ⟨⟨m.1, h1.1, h2.1⟩, m.2, h1.2, h2.2⟩⟩
-  map_mono {a b c d R R' T T'} hR hT := le_iff.mpr fun u v => by
+  map_mono {A B C D R R' T T'} hR hT := le_iff.mpr fun u v => by
     cases u <;> cases v
     · exact id
     · exact False.elim
@@ -105,7 +105,7 @@ def sumBirel (L : Type) : Birelator RelSet.{0} where
 
 /-- `sumBirel` preserves converse — the hypothesis Prop 9.4's thinning reduction needs. -/
 theorem sumBirel_preservesRecip (L : Type) : (sumBirel L).PreservesRecip := by
-  intro a b c d R T
+  intro A B C D R T
   apply hom_ext; intro u v
   cases u <;> cases v
   · exact ⟨Eq.symm, Eq.symm⟩
@@ -116,7 +116,7 @@ theorem sumBirel_preservesRecip (L : Type) : (sumBirel L).PreservesRecip := by
 /-- Freezing `sumBirel`'s left slot at the identity IS the cons-list pattern functor's action:
     `G(id_E, X) = (CL.F L E).map X`.  The bridge along which `birelator_fixLeft_mono` and
     `birelator_thin_condition` (Prop 9.4) discharge `greedy_dp`'s hypotheses at `F := CL.F L E`. -/
-theorem sumBirel_fixLeft_map {L E : Type} {c c' : RelSet.{0}} (X : c ⟶ c') :
+theorem sumBirel_fixLeft_map {L E : Type} {C c' : RelSet.{0}} (X : C ⟶ c') :
     (sumBirel L).map (Cat.id (CL.dE E)) X = (CL.F L E).map X := by
   apply hom_ext; intro u v
   cases u <;> cases v
@@ -217,7 +217,7 @@ def hAlg (P : GreedyDP L E S W) : (CL.F L E).obj ⟨W⟩ ⟶ (⟨W⟩ : RelSet.{
 
 /-- The thinning order `Q := G(U, V)` on decompositions (B&dM p.246). -/
 def Qrel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ CL.Fobj L E ⟨S⟩ :=
-  (sumBirel L).map (a := CL.dE E) (b := CL.dE E) (c := ⟨S⟩) (d := ⟨S⟩) P.Up P.Vp
+  (sumBirel L).map (A := CL.dE E) (B := CL.dE E) (C := ⟨S⟩) (D := ⟨S⟩) P.Up P.Vp
 
 /-- B&dM's optimisation-problem relation `H = ⦇h⦈·⦇T⦈°`, mirrored. -/
 def specH (P : GreedyDP L E S W) : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=

@@ -103,13 +103,13 @@ theorem inflation_strong_equiv (B : 𝒞) (I : Inflation B) (S : InflationCrossS
   -- component at `a : I.objSet` lives in [T], i.e. is a map I.T (S (I.T a)) ⟶ I.T a in 𝒞.
   unit := ⟨{
     nat := {
-      app a := (eqToHom (S.sec (I.T a)) : I.T (S.S (I.T a)) ⟶ I.T a)
-      naturality {a a'} f := by
-        show (eqToHom (S.sec (I.T a)) ≫ f ≫ eqToHom (S.sec (I.T a')).symm)
-            ≫ eqToHom (S.sec (I.T a')) = eqToHom (S.sec (I.T a)) ≫ f
+      app A := (eqToHom (S.sec (I.T A)) : I.T (S.S (I.T A)) ⟶ I.T A)
+      naturality {A a'} f := by
+        show (eqToHom (S.sec (I.T A)) ≫ f ≫ eqToHom (S.sec (I.T a')).symm)
+            ≫ eqToHom (S.sec (I.T a')) = eqToHom (S.sec (I.T A)) ≫ f
         rw [Cat.assoc, Cat.assoc, eqToHom_symm_comp_eqToHom, Cat.comp_id]
     }
-    isIso a := ⟨(eqToHom (S.sec (I.T a)).symm : I.T a ⟶ I.T (S.S (I.T a))),
+    isIso A := ⟨(eqToHom (S.sec (I.T A)).symm : I.T A ⟶ I.T (S.S (I.T A))),
       eqToHom_comp_eqToHom_symm _, eqToHom_symm_comp_eqToHom _⟩
   }⟩
   -- counit : NatIso (forget ∘ csFunctor) id  on  𝒞.
@@ -609,8 +609,8 @@ theorem equivalenceFunctor_factors_via_kernel
   -- Step 5: G has representative image.
   -- For b : 𝒟, repF gives A : 𝒞 with h : F A ⟶ b iso.
   -- G (Q K A) = F A by hGQ, so eqToHom (hGQ A) ≫ h : G (Q K A) ⟶ b is an iso.
-  · intro b
-    obtain ⟨A, h, hiso⟩ := repF b
+  · intro B
+    obtain ⟨A, h, hiso⟩ := repF B
     refine ⟨QuotientByKernel.Q K A, eqToHom (hGQ A) ≫ h, ?_⟩
     exact isIso_comp ⟨eqToHom (hGQ A).symm, eqToHom_comp_eqToHom_symm _, eqToHom_symm_comp_eqToHom _⟩ hiso
 

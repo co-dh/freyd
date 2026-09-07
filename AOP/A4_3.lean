@@ -30,9 +30,9 @@ variable {𝒜 : Type u} [Allegory 𝒜]
     `UnitaryAllegory`): two maps into a partial unit `t` are equal — `t` is terminal in
     the subcategory of maps.  `g = 1≫g ⊑ (f f°)≫g = f≫(f°≫g) ⊑ f≫1 = f` [`Entire f`,
     `PartialUnit t`], giving `g ⊑ f`; `map_order_discrete` (§2.133) upgrades `⊑` to `=`. -/
-theorem maps_to_partial_unit_unique {a t : 𝒜} (ht : PartialUnit t) {f g : a ⟶ t}
+theorem maps_to_partial_unit_unique {A t : 𝒜} (ht : PartialUnit t) {f g : A ⟶ t}
     (hf : Map f) (hg : Map g) : f = g := by
-  have hf_ent : Cat.id a ⊑ f ≫ f° := entire_id_le hf.1
+  have hf_ent : Cat.id A ⊑ f ≫ f° := entire_id_le hf.1
   have h1 : f° ≫ g ⊑ Cat.id t := ht (f° ≫ g)
   have hge : g ⊑ f := by
     have step1 : g ⊑ (f ≫ f°) ≫ g := by
@@ -47,14 +47,14 @@ theorem maps_to_partial_unit_unique {a t : 𝒜} (ht : PartialUnit t) {f g : a �
 
 /-- **B&dM p.94** (Π): reciprocating a cospan of maps into a common apex `t` swaps the
     legs — `(p_a·p_b°)° = p_b·p_a°`. -/
-theorem unit_top_recip {a b t : 𝒜} (p_a : a ⟶ t) (p_b : b ⟶ t) :
+theorem unit_top_recip {A B t : 𝒜} (p_a : A ⟶ t) (p_b : B ⟶ t) :
     (p_a ≫ p_b°)° = p_b ≫ p_a° := by
   rw [Allegory.recip_comp, Allegory.recip_recip]
 
 /-- **B&dM p.94**: naturality of the terminal cone into a partial unit `t` — composing a
     map `f : a → b` with the projection `p_b : b → t` recovers the (unique) projection
     `p_a : a → t`.  Used later for products in `Map(𝒜)`. -/
-theorem map_comp_proj {a b t : 𝒜} (ht : PartialUnit t) {f : a ⟶ b} {p_a : a ⟶ t} {p_b : b ⟶ t}
+theorem map_comp_proj {A B t : 𝒜} (ht : PartialUnit t) {f : A ⟶ B} {p_a : A ⟶ t} {p_b : B ⟶ t}
     (hf : Map f) (hp_a : Map p_a) (hp_b : Map p_b) : f ≫ p_b = p_a :=
   maps_to_partial_unit_unique ht (map_comp hf hp_b) hp_a
 
@@ -64,7 +64,7 @@ variable {𝒜 : Type u} [UnitaryAllegory 𝒜]
 
 /-- **B&dM p.94**: the unit is terminal among maps: any two maps into the chosen unit of
     a unitary allegory agree.  Corollary of `maps_to_partial_unit_unique`. -/
-theorem maps_to_unit_unique {a : 𝒜} {f g : a ⟶ UnitaryAllegory.unit_obj (𝒜 := 𝒜)}
+theorem maps_to_unit_unique {A : 𝒜} {f g : A ⟶ UnitaryAllegory.unit_obj (𝒜 := 𝒜)}
     (hf : Map f) (hg : Map g) : f = g :=
   maps_to_partial_unit_unique (UnitaryAllegory.unit_prop (𝒜 := 𝒜)).1 hf hg
 
@@ -82,14 +82,14 @@ variable {𝒜 : Type u} [TabularAllegory 𝒜]
     `apex → t` so `f = g` by the hypothesis; the tabulation identity then collapses to
     `g≫g° = 1`, and `R = f°≫g = g°≫g ⊑ 1` is exactly `Simple g`. -/
 theorem unit_of_terminal_in_maps (t : 𝒜)
-    (hex : ∀ a : 𝒜, ∃ f : a ⟶ t, Map f)
-    (huniq : ∀ {a : 𝒜} (f g : a ⟶ t), Map f → Map g → f = g) :
+    (hex : ∀ A : 𝒜, ∃ f : A ⟶ t, Map f)
+    (huniq : ∀ {A : 𝒜} (f g : A ⟶ t), Map f → Map g → f = g) :
     IsUnit t := by
-  refine ⟨fun R => ?_, fun a => ?_⟩
-  · obtain ⟨c, f, g, hf, hg, hRfg, _⟩ := TabularAllegory.tabular R
+  refine ⟨fun R => ?_, fun A => ?_⟩
+  · obtain ⟨C, f, g, hf, hg, hRfg, _⟩ := TabularAllegory.tabular R
     have hfg : f = g := huniq f g hf hg
     rw [hRfg, hfg]; exact hg.2
-  · obtain ⟨f, hf⟩ := hex a
+  · obtain ⟨f, hf⟩ := hex A
     exact ⟨f, hf.1⟩
 
 end TerminalUnit
@@ -102,17 +102,17 @@ end TerminalUnit
     `f≫f° = 1`, i.e. `f°` splits `f` on the nose).  Chain: `f° ⊑ R≫g°` and `f ⊑ g≫R°`
     (both from `Entire g`); combining and using `Simple R` gives `f≫f° ⊑ g≫g°`; then
     `f≫f° = f≫f°∩g≫g° = 1` by the tabulation identity. -/
-theorem tabulates_simple_monic {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
-    (ht : Tabulates f g R) (hR : Simple R) : f ≫ f° = Cat.id c := by
+theorem tabulates_simple_monic {A B C : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
+    (ht : Tabulates f g R) (hR : Simple R) : f ≫ f° = Cat.id C := by
   obtain ⟨_, hg, hReq, htab⟩ := ht
-  have hg_ent : Cat.id c ⊑ g ≫ g° := entire_id_le hg.1
+  have hg_ent : Cat.id C ⊑ g ≫ g° := entire_id_le hg.1
   have h_fo_le : f° ⊑ R ≫ g° := by
-    calc f° = f° ≫ Cat.id c := (Cat.comp_id f°).symm
+    calc f° = f° ≫ Cat.id C := (Cat.comp_id f°).symm
       _ ⊑ f° ≫ (g ≫ g°) := comp_mono_left f° hg_ent
       _ = R ≫ g° := by rw [← Cat.assoc, ← hReq]
   have h_f_le : f ⊑ g ≫ R° := by
     have hRo : g° ≫ f = R° := by rw [hReq, Allegory.recip_comp, Allegory.recip_recip]
-    calc f = Cat.id c ≫ f := (Cat.id_comp f).symm
+    calc f = Cat.id C ≫ f := (Cat.id_comp f).symm
       _ ⊑ (g ≫ g°) ≫ f := comp_mono_right hg_ent f
       _ = g ≫ (g° ≫ f) := Cat.assoc g g° f
       _ = g ≫ R° := by rw [hRo]
@@ -121,33 +121,33 @@ theorem tabulates_simple_monic {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a
       le_trans (comp_mono_right h_f_le f°) (comp_mono_left (g ≫ R°) h_fo_le)
     have step2 : (g ≫ R°) ≫ (R ≫ g°) = g ≫ (R° ≫ R) ≫ g° := by simp [Cat.assoc]
     rw [step2] at step1
-    have step3 : g ≫ (R° ≫ R) ≫ g° ⊑ g ≫ Cat.id b ≫ g° :=
+    have step3 : g ≫ (R° ≫ R) ≫ g° ⊑ g ≫ Cat.id B ≫ g° :=
       comp_mono_left g (comp_mono_right hR g°)
     have step4 := le_trans step1 step3
     rwa [Cat.id_comp] at step4
   calc f ≫ f° = (f ≫ f°) ∩ (g ≫ g°) := (inter_eq_left h_ff_le).symm
-    _ = Cat.id c := htab
+    _ = Cat.id C := htab
 
 /-- **B&dM Ex 4.22**: if `R` is entire, its `a`-side tabulating leg `f` is a cover (in
     fact `f°≫f = 1`).  `⊑` is `Simple f`; `⊒` follows from `Entire R` via the modular law
     applied to `X≫f ∩ 1` with `X := f°≫(g≫g°)` (so `X≫f = R≫R°`). -/
-theorem tabulates_entire_cover {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
-    (ht : Tabulates f g R) (hR : Entire R) : f° ≫ f = Cat.id a := by
+theorem tabulates_entire_cover {A B C : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
+    (ht : Tabulates f g R) (hR : Entire R) : f° ≫ f = Cat.id A := by
   obtain ⟨hf, _, hReq, _⟩ := ht
   apply le_antisymm hf.2
   have hRRo : R ≫ R° = (f° ≫ (g ≫ g°)) ≫ f := by
     rw [hReq, Allegory.recip_comp, Allegory.recip_recip]; simp [Cat.assoc]
-  have h_id_le : Cat.id a ⊑ (f° ≫ (g ≫ g°)) ≫ f := by rw [← hRRo]; exact entire_id_le hR
-  have h_mod := modular_le (f° ≫ (g ≫ g°)) f (Cat.id a)
+  have h_id_le : Cat.id A ⊑ (f° ≫ (g ≫ g°)) ≫ f := by rw [← hRRo]; exact entire_id_le hR
+  have h_mod := modular_le (f° ≫ (g ≫ g°)) f (Cat.id A)
   rw [Cat.id_comp] at h_mod
-  have heq : ((f° ≫ (g ≫ g°)) ≫ f) ∩ Cat.id a = Cat.id a := by
+  have heq : ((f° ≫ (g ≫ g°)) ≫ f) ∩ Cat.id A = Cat.id A := by
     rw [Allegory.inter_comm]; exact h_id_le
   rw [heq] at h_mod
   exact le_trans h_mod (comp_mono_right (inter_lb_right _ _) f)
 
 /-- **B&dM Ex 4.23**: if `R` is a map, its `a`-side tabulating leg `f` is an isomorphism
     (with inverse `f°`).  Immediate from Ex 4.21 (`Simple R`) and Ex 4.22 (`Entire R`). -/
-theorem tabulates_map_iso {a b c : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+theorem tabulates_map_iso {A B C : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
     (ht : Tabulates f g R) (hR : Map R) : Freyd.IsIso f :=
   ⟨f°, tabulates_simple_monic ht hR.2, tabulates_entire_cover ht hR.1⟩
 

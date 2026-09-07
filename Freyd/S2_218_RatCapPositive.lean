@@ -132,45 +132,45 @@ public theorem bcSummandIso {C D K X : 𝒞} (g : C ⟶ D) (kh : K ⟶ D) {j : X
     rw [Cat.assoc, hθ1, hθinv_m, Cat.id_comp]
   exact ⟨θ, θinv, hθθinv, hθinvθ, hθ1⟩
 
-variable {C D : 𝒞} (g : C ⟶ D) (a b : Over D)
+variable {C D : 𝒞} (g : C ⟶ D) (A B : Over D)
 
 /-- **Base change preserves the binary coproduct: the iso.**  There is an iso
     `Φ : (g*a).dom + (g*b).dom ≅ (g*(a+b)).dom` whose legs are the base-change injections
     `(g* inl).f`, `(g* inr).f`.  The two summands are identified via `bcSummandIso`; the apex
     decomposition is the §1.62 complemented-pair iso `complementedSub_legs_iso`. -/
 public theorem baseChange_coprod_iso :
-    ∃ (Φ : HasBinaryCoproducts.coprod (baseChangeObj g a).dom (baseChangeObj g b).dom
-            ⟶ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).dom)
-      (Φinv : (baseChangeObj g (HasBinaryCoproducts.coprod a b)).dom
-            ⟶ HasBinaryCoproducts.coprod (baseChangeObj g a).dom (baseChangeObj g b).dom),
+    ∃ (Φ : HasBinaryCoproducts.coprod (baseChangeObj g A).dom (baseChangeObj g B).dom
+            ⟶ (baseChangeObj g (HasBinaryCoproducts.coprod A B)).dom)
+      (Φinv : (baseChangeObj g (HasBinaryCoproducts.coprod A B)).dom
+            ⟶ HasBinaryCoproducts.coprod (baseChangeObj g A).dom (baseChangeObj g B).dom),
       Φ ≫ Φinv = Cat.id _ ∧ Φinv ≫ Φ = Cat.id _ ∧
-      HasBinaryCoproducts.inl ≫ Φ = (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ∧
-      HasBinaryCoproducts.inr ≫ Φ = (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f := by
+      HasBinaryCoproducts.inl ≫ Φ = (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ∧
+      HasBinaryCoproducts.inr ≫ Φ = (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f := by
   -- abbreviations.
-  let cp : Over D := HasBinaryCoproducts.coprod a b
-  let il : a ⟶ cp := HasBinaryCoproducts.inl (𝒞 := Over D) (A := a) (B := b)
-  let ir : b ⟶ cp := HasBinaryCoproducts.inr (𝒞 := Over D) (A := a) (B := b)
+  let cp : Over D := HasBinaryCoproducts.coprod A B
+  let il : A ⟶ cp := HasBinaryCoproducts.inl (𝒞 := Over D) (A := A) (B := B)
+  let ir : B ⟶ cp := HasBinaryCoproducts.inr (𝒞 := Over D) (A := A) (B := B)
   let il' := (baseChangeMap g il).f
   let ir' := (baseChangeMap g ir).f
   let pbcp := HasPullbacks.has cp.hom g
   let π₁ := pbcp.cone.π₁
   -- the two inverse-image halves of the apex `cp ×_D C`.
-  let Ul := InverseImage π₁ (inlSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inl_mono)
-  let Ur := InverseImage π₁ (inrSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inr_mono)
+  let Ul := InverseImage π₁ (inlSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inl_mono)
+  let Ur := InverseImage π₁ (inrSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inr_mono)
   -- leg equations for the base-change injections.
-  have hil1 : il' ≫ π₁ = (HasPullbacks.has a.hom g).cone.π₁ ≫ HasBinaryCoproducts.inl :=
+  have hil1 : il' ≫ π₁ = (HasPullbacks.has A.hom g).cone.π₁ ≫ HasBinaryCoproducts.inl :=
     bcMap_fst g il
-  have hir1 : ir' ≫ π₁ = (HasPullbacks.has b.hom g).cone.π₁ ≫ HasBinaryCoproducts.inr :=
+  have hir1 : ir' ≫ π₁ = (HasPullbacks.has B.hom g).cone.π₁ ≫ HasBinaryCoproducts.inr :=
     bcMap_fst g ir
-  have hil2 : il' ≫ pbcp.cone.π₂ = (baseChangeObj g a).hom := (baseChangeMap g il).w
-  have hir2 : ir' ≫ pbcp.cone.π₂ = (baseChangeObj g b).hom := (baseChangeMap g ir).w
+  have hil2 : il' ≫ pbcp.cone.π₂ = (baseChangeObj g A).hom := (baseChangeMap g il).w
+  have hir2 : ir' ≫ pbcp.cone.π₂ = (baseChangeObj g B).hom := (baseChangeMap g ir).w
   -- summand isos via bcSummandIso.
   obtain ⟨θl, θlinv, hθlθinv, hθinvθl, hθl⟩ :=
-    bcSummandIso g cp.hom (inl_mono (A := a.dom) (B := b.dom)) a.hom
-      (HasBinaryCoproducts.case_inl a.hom b.hom) il' hil1 hil2
+    bcSummandIso g cp.hom (inl_mono (A := A.dom) (B := B.dom)) A.hom
+      (HasBinaryCoproducts.case_inl A.hom B.hom) il' hil1 hil2
   obtain ⟨θr, θrinv, hθrθinv, hθinvθr, hθr⟩ :=
-    bcSummandIso g cp.hom (inr_mono (A := a.dom) (B := b.dom)) b.hom
-      (HasBinaryCoproducts.case_inr a.hom b.hom) ir' hir1 hir2
+    bcSummandIso g cp.hom (inr_mono (A := A.dom) (B := B.dom)) B.hom
+      (HasBinaryCoproducts.case_inr A.hom B.hom) ir' hir1 hir2
   -- complemented-pair iso on the apex.
   -- cover: entire ≤ π₁#(entire) ≤ π₁#(inl ∪ inr) ≤ π₁#inl ∪ π₁#inr.
   have hcover : (Subobject.entire pbcp.cone.pt).le (HasSubobjectUnions.union Ul Ur) := by
@@ -180,12 +180,12 @@ public theorem baseChange_coprod_iso :
   -- disjoint: a point of `Ul ∩ Ur` collides `inl`/`inr`, hence is initial (`≤ ⊥`).
   have hdisj : (Subobject.inter Ul Ur).le (PreLogos.bottom pbcp.cone.pt) := by
     let pb := HasPullbacks.has Ul.arr Ur.arr
-    let ulπ₂ := (HasPullbacks.has π₁ (inlSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inl_mono).arr).cone.π₂
-    let urπ₂ := (HasPullbacks.has π₁ (inrSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inr_mono).arr).cone.π₂
+    let ulπ₂ := (HasPullbacks.has π₁ (inlSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inl_mono).arr).cone.π₂
+    let urπ₂ := (HasPullbacks.has π₁ (inrSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inr_mono).arr).cone.π₂
     have hUlw : Ul.arr ≫ π₁ = ulπ₂ ≫ HasBinaryCoproducts.inl :=
-      (HasPullbacks.has π₁ (inlSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inl_mono).arr).cone.w
+      (HasPullbacks.has π₁ (inlSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inl_mono).arr).cone.w
     have hUrw : Ur.arr ≫ π₁ = urπ₂ ≫ HasBinaryCoproducts.inr :=
-      (HasPullbacks.has π₁ (inrSub (𝒞 := 𝒞) (A := a.dom) (B := b.dom) inr_mono).arr).cone.w
+      (HasPullbacks.has π₁ (inrSub (𝒞 := 𝒞) (A := A.dom) (B := B.dom) inr_mono).arr).cone.w
     have hcollide : (pb.cone.π₁ ≫ ulπ₂) ≫ HasBinaryCoproducts.inl
                   = (pb.cone.π₂ ≫ urπ₂) ≫ HasBinaryCoproducts.inr := by
       have hw := pb.cone.w   -- pb.cone.π₁ ≫ Ul.arr = pb.cone.π₂ ≫ Ur.arr
@@ -245,29 +245,29 @@ public theorem baseChange_coprod_iso :
 /-- **Base change preserves binary coproducts — JOINT-EPI (slice).**  Two slice maps out of
     `g*(a+b)` agreeing after `g* inl` and after `g* inr` are equal. -/
 public theorem baseChange_coprod_jointEpi (z : Over C)
-    (u v : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod a b)) z)
-    (hl : baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ u
-        = baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ v)
-    (hr : baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b)) ⊚ u
-        = baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b)) ⊚ v) :
+    (u v : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod A B)) z)
+    (hl : baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B)) ⊚ u
+        = baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B)) ⊚ v)
+    (hr : baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B)) ⊚ u
+        = baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B)) ⊚ v) :
     u = v := by
-  obtain ⟨Φ, Φinv, _, hΦinvΦ, hΦl, hΦr⟩ := baseChange_coprod_iso g a b
+  obtain ⟨Φ, Φinv, _, hΦinvΦ, hΦl, hΦr⟩ := baseChange_coprod_iso g A B
   apply OverHom.ext
   -- underlying: il' ≫ u.f = il' ≫ v.f and ir' ≫ u.f = ir' ≫ v.f.
-  have hlf : (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ u.f
-           = (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ v.f :=
+  have hlf : (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ u.f
+           = (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ v.f :=
     congrArg OverHom.f hl
-  have hrf : (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ u.f
-           = (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ v.f :=
+  have hrf : (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ u.f
+           = (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ v.f :=
     congrArg OverHom.f hr
   -- Φ ≫ u.f and Φ ≫ v.f both copair the same legs.
   have hu : Φ ≫ u.f = HasBinaryCoproducts.case
-      ((baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ u.f)
-      ((baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ u.f) :=
+      ((baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ u.f)
+      ((baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ u.f) :=
     HasBinaryCoproducts.case_uniq _ _ _ (by rw [← Cat.assoc, hΦl]) (by rw [← Cat.assoc, hΦr])
   have hv : Φ ≫ v.f = HasBinaryCoproducts.case
-      ((baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ v.f)
-      ((baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ v.f) :=
+      ((baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ v.f)
+      ((baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ v.f) :=
     HasBinaryCoproducts.case_uniq _ _ _ (by rw [← Cat.assoc, hΦl]) (by rw [← Cat.assoc, hΦr])
   have hΦuv : Φ ≫ u.f = Φ ≫ v.f := by rw [hu, hv, hlf, hrf]
   -- cancel Φ on the left (Φ is split epi: section Φinv, `Φinv ≫ Φ = id`).
@@ -280,47 +280,47 @@ public theorem baseChange_coprod_jointEpi (z : Over C)
 /-- **Base change preserves binary coproducts — COPAIRING (slice).**  Given slice maps
     `p : g*a ⟶ z`, `q : g*b ⟶ z`, there is a copairing `r : g*(a+b) ⟶ z` restricting to `p`/`q`. -/
 public theorem baseChange_coprod_copair (z : Over C)
-    (p : OverHom (baseChangeObj g a) z) (q : OverHom (baseChangeObj g b) z) :
-    ∃ r : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod a b)) z,
-      baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b)) ⊚ r = p ∧
-      baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b)) ⊚ r = q := by
-  obtain ⟨Φ, Φinv, hΦΦinv, hΦinvΦ, hΦl, hΦr⟩ := baseChange_coprod_iso g a b
+    (p : OverHom (baseChangeObj g A) z) (q : OverHom (baseChangeObj g B) z) :
+    ∃ r : OverHom (baseChangeObj g (HasBinaryCoproducts.coprod A B)) z,
+      baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B)) ⊚ r = p ∧
+      baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B)) ⊚ r = q := by
+  obtain ⟨Φ, Φinv, hΦΦinv, hΦinvΦ, hΦl, hΦr⟩ := baseChange_coprod_iso g A B
   -- il' ≫ Φinv = inl, ir' ≫ Φinv = inr (Φ ≫ Φinv = id).
-  have hΦinv_l : (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ Φinv
+  have hΦinv_l : (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ Φinv
       = HasBinaryCoproducts.inl := by
     rw [← hΦl, Cat.assoc, hΦΦinv, Cat.comp_id]
-  have hΦinv_r : (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ Φinv
+  have hΦinv_r : (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ Φinv
       = HasBinaryCoproducts.inr := by
     rw [← hΦr, Cat.assoc, hΦΦinv, Cat.comp_id]
   -- candidate underlying arrow and its copairing legs.
   let rf := Φinv ≫ HasBinaryCoproducts.case p.f q.f
-  have hrl : (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f ≫ rf = p.f := by
-    show (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).f
+  have hrl : (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f ≫ rf = p.f := by
+    show (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).f
         ≫ (Φinv ≫ HasBinaryCoproducts.case p.f q.f) = p.f
     rw [← Cat.assoc, hΦinv_l, HasBinaryCoproducts.case_inl]
-  have hrr : (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f ≫ rf = q.f := by
-    show (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).f
+  have hrr : (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f ≫ rf = q.f := by
+    show (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).f
         ≫ (Φinv ≫ HasBinaryCoproducts.case p.f q.f) = q.f
     rw [← Cat.assoc, hΦinv_r, HasBinaryCoproducts.case_inr]
   -- structure-map check: rf ≫ z.hom = π₂, checked after Φ (split epi) then cancelled.
-  have hrw : rf ≫ z.hom = (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom := by
+  have hrw : rf ≫ z.hom = (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom := by
     have hcase1 : Φ ≫ (rf ≫ z.hom)
-        = HasBinaryCoproducts.case (baseChangeObj g a).hom (baseChangeObj g b).hom :=
+        = HasBinaryCoproducts.case (baseChangeObj g A).hom (baseChangeObj g B).hom :=
       HasBinaryCoproducts.case_uniq _ _ _
         (by rw [← Cat.assoc, hΦl, ← Cat.assoc, hrl]; exact p.w)
         (by rw [← Cat.assoc, hΦr, ← Cat.assoc, hrr]; exact q.w)
-    have hcase2 : Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom
-        = HasBinaryCoproducts.case (baseChangeObj g a).hom (baseChangeObj g b).hom :=
+    have hcase2 : Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom
+        = HasBinaryCoproducts.case (baseChangeObj g A).hom (baseChangeObj g B).hom :=
       HasBinaryCoproducts.case_uniq _ _ _
-        (by rw [← Cat.assoc, hΦl]; exact (baseChangeMap g (HasBinaryCoproducts.inl (A := a) (B := b))).w)
-        (by rw [← Cat.assoc, hΦr]; exact (baseChangeMap g (HasBinaryCoproducts.inr (A := a) (B := b))).w)
-    have key : Φ ≫ (rf ≫ z.hom) = Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom := by
+        (by rw [← Cat.assoc, hΦl]; exact (baseChangeMap g (HasBinaryCoproducts.inl (A := A) (B := B))).w)
+        (by rw [← Cat.assoc, hΦr]; exact (baseChangeMap g (HasBinaryCoproducts.inr (A := A) (B := B))).w)
+    have key : Φ ≫ (rf ≫ z.hom) = Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom := by
       rw [hcase1, hcase2]
     calc rf ≫ z.hom = (Φinv ≫ Φ) ≫ (rf ≫ z.hom) := by rw [hΦinvΦ, Cat.id_comp]
       _ = Φinv ≫ (Φ ≫ (rf ≫ z.hom)) := Cat.assoc _ _ _
-      _ = Φinv ≫ (Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom) := by rw [key]
-      _ = (Φinv ≫ Φ) ≫ (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom := (Cat.assoc _ _ _).symm
-      _ = (baseChangeObj g (HasBinaryCoproducts.coprod a b)).hom := by rw [hΦinvΦ, Cat.id_comp]
+      _ = Φinv ≫ (Φ ≫ (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom) := by rw [key]
+      _ = (Φinv ≫ Φ) ≫ (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom := (Cat.assoc _ _ _).symm
+      _ = (baseChangeObj g (HasBinaryCoproducts.coprod A B)).hom := by rw [hΦinvΦ, Cat.id_comp]
   exact ⟨⟨rf, hrw⟩, OverHom.ext hrl, OverHom.ext hrr⟩
 
 end BaseChangeCoproduct
@@ -399,8 +399,8 @@ variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [Disjoin
   letI hbc : @HasBinaryCoproducts (Obj (laxOfProjSystem' P)) (ratCat P) :=
     laxColimCoprodOfDisjoint (laxOfProjSystem' P) (coherentProj P)
       (fun i => overDisjointBinaryCoproduct (P.pr i))
-      (fun {i j} hij a b z u v hl hr => baseChange_coprod_jointEpi (P.proj hij) a b z u v hl hr)
-      (fun {i j} hij a b z p q => baseChange_coprod_copair (P.proj hij) a b z p q)
+      (fun {i j} hij A B z u v hl hr => baseChange_coprod_jointEpi (P.proj hij) A B z u v hl hr)
+      (fun {i j} hij A B z p q => baseChange_coprod_copair (P.proj hij) A B z p q)
   letI hUn : @HasSubobjectUnions (Obj (laxOfProjSystem' P)) (ratCat P) hReg.toHasImages :=
     @hasSubobjectUnions_of_coproducts_images (Obj (laxOfProjSystem' P)) (ratCat P) hReg.toHasImages hbc
   -- instantiate `laxColimPositive`.
@@ -409,8 +409,8 @@ variable {ι : Type u} {D : Directed ι} {𝒞 : Type u} [Cat.{u} 𝒞] [Disjoin
     (fun {i j} hij => baseChange_strictCoterminator (P.proj hij)
       (fun {X} f => any_map_to_zero_is_iso (overPreLogos (P.pr i)) f))
     (ratLaxTerminalData P) (ratLaxProductData P) (ratLaxEqualizerData P)
-    (fun {i j} hij a b z u v hl hr => baseChange_coprod_jointEpi (P.proj hij) a b z u v hl hr)
-    (fun {i j} hij a b z p q => baseChange_coprod_copair (P.proj hij) a b z p q)
+    (fun {i j} hij A B z u v hl hr => baseChange_coprod_jointEpi (P.proj hij) A B z u v hl hr)
+    (fun {i j} hij A B z p q => baseChange_coprod_copair (P.proj hij) A B z p q)
     (fun i => overHasImages (P.pr i))
     (fun {i j} hij {x y} p q heq => projStage_faithful P hij (hpc hij) p q heq)
     (fun {i j} hij {X Y} f =>

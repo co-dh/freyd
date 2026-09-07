@@ -51,15 +51,15 @@ section Hylo
 
 /-- The hylomorphism recursion body `φX = S·FX·R` (mirrored: `S° ≫ F.map X ≫ R`) is
     monotonic (B&dM p.142), by the same argument as `cataBody_monotonic` (`AOP.A6_2`). -/
-public theorem hyloBody_monotonic {a b : 𝒜} (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
-    Monotonic (fun X : b ⟶ a => S° ≫ F.map X ≫ R) :=
+public theorem hyloBody_monotonic {A B : 𝒜} (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    Monotonic (fun X : B ⟶ A => S° ≫ F.map X ≫ R) :=
   fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
 
 /-- **Step B of Theorem 6.2**: the hylomorphism `[[R,S]]` refines any prefixed point `X` of the
     body `S° ≫ F.map X ≫ R` — proved DIRECTLY (not via `hylo_eq_mu`, which uses this as its
     leastness half). -/
-public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
-    {R : F.obj a ⟶ a} {S : F.obj b ⟶ b} {X : b ⟶ a} (h : S° ≫ F.map X ≫ R ⊑ X) :
+public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
     (relCata S)° ≫ relCata R ⊑ X := by
   apply (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp
   apply relCata_le_of_prefixed
@@ -78,10 +78,10 @@ public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra 
 
 /-- **Theorem 6.2 (hylomorphism theorem, B&dM p.142)**: the hylomorphism `[[R,S]]` (mirrored:
     `(|S|)° ≫ (|R|)`) equals the least fixed point of the body `S° ≫ F.map X ≫ R`. -/
-public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
-    (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
-    (relCata S)° ≫ relCata R = mu (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := by
-  have hφ_mono : Monotonic (fun X : b ⟶ a => S° ≫ F.map X ≫ R) := hyloBody_monotonic R S
+public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
+    (relCata S)° ≫ relCata R = mu (fun X : B ⟶ A => S° ≫ F.map X ≫ R) := by
+  have hφ_mono : Monotonic (fun X : B ⟶ A => S° ≫ F.map X ≫ R) := hyloBody_monotonic R S
   have hstepA : S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
       = (relCata S)° ≫ relCata R := by
     have h1 : F.map ((relCata S)° ≫ relCata R)
@@ -99,8 +99,8 @@ public theorem hylo_eq_mu (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b :
 /-- The hylomorphism FIXED-POINT EQUATION `[[R,S]] = R·F[[R,S]]·S°` (mirrored), extracted from
     Theorem 6.2 via `mu_fixed` — the form in which ch. 9's dynamic-programming theorems consume
     the hylomorphism theorem (B&dM p.220, "definition of `H` and hylomorphism theorem"). -/
-public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
-    (R : F.obj a ⟶ a) (S : F.obj b ⟶ b) :
+public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
     S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R := by
   rw [hylo_eq_mu hFr I R S]
   exact mu_fixed (hyloBody_monotonic R S)
@@ -116,12 +116,12 @@ section ExSimple
 
 /-- **Ex 6.10**: the least fixed point of `φX = S·FX·R` (mirrored: `S ≫ F.map X ≫ R`, with `S`
     a COALGEBRA `b ⟶ F b`) is `Simple` whenever the algebra `R` and coalgebra `S` both are. -/
-theorem mu_simple (hFr : F.PreservesRecip) {a b : 𝒜} {R : F.obj a ⟶ a} {S : b ⟶ F.obj b}
+theorem mu_simple (hFr : F.PreservesRecip) {A B : 𝒜} {R : F.obj A ⟶ A} {S : B ⟶ F.obj B}
     (hR : Simple R) (hS : Simple S) :
-    Simple (mu (fun X : b ⟶ a => S ≫ F.map X ≫ R)) := by
-  let T : b ⟶ a := mu (fun X : b ⟶ a => S ≫ F.map X ≫ R)
+    Simple (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)) := by
+  let T : B ⟶ A := mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)
   show Simple T
-  have hφ_mono : Monotonic (fun X : b ⟶ a => S ≫ F.map X ≫ R) :=
+  have hφ_mono : Monotonic (fun X : B ⟶ A => S ≫ F.map X ≫ R) :=
     fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R)
   have hTfix : S ≫ F.map T ≫ R = T := mu_fixed hφ_mono
   have hTrecip : T° = R° ≫ F.map T° ≫ S° :=
@@ -130,29 +130,29 @@ theorem mu_simple (hFr : F.PreservesRecip) {a b : 𝒜} {R : F.obj a ⟶ a} {S :
       _ = (R° ≫ (F.map T)°) ≫ S° := by rw [Allegory.recip_comp]
       _ = R° ≫ (F.map T)° ≫ S° := Cat.assoc R° (F.map T)° S°
       _ = R° ≫ F.map T° ≫ S° := by rw [← hFr T]
-  show T° ≫ T ⊑ Cat.id a
-  apply (le_leftDiv_iff T T° (Cat.id a)).mp
-  have hWprefixed : S ≫ F.map (T° \ (Cat.id a)) ≫ R ⊑ (T° \ (Cat.id a)) := by
-    apply (le_leftDiv_iff _ T° (Cat.id a)).mpr
+  show T° ≫ T ⊑ Cat.id A
+  apply (le_leftDiv_iff T T° (Cat.id A)).mp
+  have hWprefixed : S ≫ F.map (T° \ (Cat.id A)) ≫ R ⊑ (T° \ (Cat.id A)) := by
+    apply (le_leftDiv_iff _ T° (Cat.id A)).mpr
     have step1 : T° ≫ S ⊑ R° ≫ F.map T° := by
       have e : T° ≫ S = R° ≫ F.map T° ≫ S° ≫ S := by
         have e0 : T° ≫ S = (R° ≫ F.map T° ≫ S°) ≫ S := congrArg (· ≫ S) hTrecip
         rw [Cat.assoc, Cat.assoc] at e0
         exact e0
-      have hmono : R° ≫ F.map T° ≫ S° ≫ S ⊑ R° ≫ F.map T° ≫ Cat.id (F.obj b) :=
+      have hmono : R° ≫ F.map T° ≫ S° ≫ S ⊑ R° ≫ F.map T° ≫ Cat.id (F.obj B) :=
         comp_mono_left _ (comp_mono_left _ hS)
       rw [Cat.comp_id] at hmono
       rw [e]; exact hmono
-    have hmono2 : (T° ≫ S) ≫ F.map (T° \ (Cat.id a)) ≫ R
-        ⊑ (R° ≫ F.map T°) ≫ F.map (T° \ (Cat.id a)) ≫ R :=
+    have hmono2 : (T° ≫ S) ≫ F.map (T° \ (Cat.id A)) ≫ R
+        ⊑ (R° ≫ F.map T°) ≫ F.map (T° \ (Cat.id A)) ≫ R :=
       comp_mono_right step1 _
-    have heq2 : (R° ≫ F.map T°) ≫ F.map (T° \ (Cat.id a)) ≫ R
-        = R° ≫ F.map (T° ≫ (T° \ (Cat.id a))) ≫ R := by
+    have heq2 : (R° ≫ F.map T°) ≫ F.map (T° \ (Cat.id A)) ≫ R
+        = R° ≫ F.map (T° ≫ (T° \ (Cat.id A))) ≫ R := by
       rw [Cat.assoc, F.map_comp, Cat.assoc]
-    have hWX : T° ≫ (T° \ (Cat.id a)) ⊑ Cat.id a := leftDiv_comp_le T° (Cat.id a)
-    have hmono4 : R° ≫ F.map (T° ≫ (T° \ (Cat.id a))) ≫ R ⊑ R° ≫ F.map (Cat.id a) ≫ R :=
+    have hWX : T° ≫ (T° \ (Cat.id A)) ⊑ Cat.id A := leftDiv_comp_le T° (Cat.id A)
+    have hmono4 : R° ≫ F.map (T° ≫ (T° \ (Cat.id A))) ≫ R ⊑ R° ≫ F.map (Cat.id A) ≫ R :=
       comp_mono_left _ (comp_mono_right (F.map_mono hWX) R)
-    have heq5 : R° ≫ F.map (Cat.id a) ≫ R = R° ≫ R := by rw [F.map_id, Cat.id_comp]
+    have heq5 : R° ≫ F.map (Cat.id A) ≫ R = R° ≫ R := by rw [F.map_id, Cat.id_comp]
     rw [← Cat.assoc]
     refine le_trans hmono2 ?_
     rw [heq2]
@@ -164,8 +164,8 @@ theorem mu_simple (hFr : F.PreservesRecip) {a b : 𝒜} {R : F.obj a ⟶ a} {S :
 /-- Corollary in hylomorphism form: the body `S° ≫ F.map X ≫ R` of `hylo_eq_mu` matches
     `mu_simple`'s body with coalgebra `S°`, giving simplicity of the hylomorphism from
     simplicity of `R` and of `S°`. -/
-theorem hylo_simple (hFr : F.PreservesRecip) (I : InitialAlgebra F) {a b : 𝒜}
-    {R : F.obj a ⟶ a} {S : F.obj b ⟶ b} (hR : Simple R) (hS : Simple (S°)) :
+theorem hylo_simple (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} (hR : Simple R) (hS : Simple (S°)) :
     Simple ((relCata S)° ≫ relCata R) := by
   rw [hylo_eq_mu hFr I R S]
   exact mu_simple hFr hR hS
@@ -189,18 +189,18 @@ section Corollary61
 theorem hylo_body_coprod_decompose {G H : Relator 𝒜 𝒜}
     (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
     (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
-    {a b : 𝒜} {R₁ : G.obj a ⟶ a} {R₂ : H.obj a ⟶ a} {S₁ : G.obj b ⟶ b} {S₂ : H.obj b ⟶ b}
-    (X : b ⟶ a) :
-    (junc (C b) S₁ S₂)° ≫ F.map X ≫ junc (C a) R₁ R₂
+    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
+    (X : B ⟶ A) :
+    (junc (C B) S₁ S₂)° ≫ F.map X ≫ junc (C A) R₁ R₂
       = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂) := by
   rw [hF X]
-  show (junc (C b) S₁ S₂)°
-      ≫ junc (C b) (G.map X ≫ (C a).u₁) (H.map X ≫ (C a).u₂) ≫ junc (C a) R₁ R₂
+  show (junc (C B) S₁ S₂)°
+      ≫ junc (C B) (G.map X ≫ (C A).u₁) (H.map X ≫ (C A).u₂) ≫ junc (C A) R₁ R₂
       = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)
-  rw [← Cat.assoc, junc_recip_junc (C b)]
-  have hb1 : (S₁° ≫ (G.map X ≫ (C a).u₁)) ≫ junc (C a) R₁ R₂ = S₁° ≫ G.map X ≫ R₁ := by
+  rw [← Cat.assoc, junc_recip_junc (C B)]
+  have hb1 : (S₁° ≫ (G.map X ≫ (C A).u₁)) ≫ junc (C A) R₁ R₂ = S₁° ≫ G.map X ≫ R₁ := by
     rw [Cat.assoc, Cat.assoc, u₁_junc]
-  have hb2 : (S₂° ≫ (H.map X ≫ (C a).u₂)) ≫ junc (C a) R₁ R₂ = S₂° ≫ H.map X ≫ R₂ := by
+  have hb2 : (S₂° ≫ (H.map X ≫ (C A).u₂)) ≫ junc (C A) R₁ R₂ = S₂° ≫ H.map X ≫ R₂ := by
     rw [Cat.assoc, Cat.assoc, u₂_junc]
   rw [union_comp_distrib, hb1, hb2]
 
@@ -211,10 +211,10 @@ theorem hylo_body_coprod_decompose {G H : Relator 𝒜 𝒜}
 theorem hylo_eq_mu_coprod (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {G H : Relator 𝒜 𝒜} (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
     (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
-    {a b : 𝒜} {R₁ : G.obj a ⟶ a} {R₂ : H.obj a ⟶ a} {S₁ : G.obj b ⟶ b} {S₂ : H.obj b ⟶ b} :
-    (relCata (junc (C b) S₁ S₂))° ≫ relCata (junc (C a) R₁ R₂)
-      = mu (fun X : b ⟶ a => (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)) := by
-  rw [hylo_eq_mu hFr I (junc (C a) R₁ R₂) (junc (C b) S₁ S₂)]
+    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B} :
+    (relCata (junc (C B) S₁ S₂))° ≫ relCata (junc (C A) R₁ R₂)
+      = mu (fun X : B ⟶ A => (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)) := by
+  rw [hylo_eq_mu hFr I (junc (C A) R₁ R₂) (junc (C B) S₁ S₂)]
   exact mu_congr (fun X => hylo_body_coprod_decompose C hF X)
 
 end Corollary61

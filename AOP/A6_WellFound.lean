@@ -22,13 +22,13 @@ universe u
 namespace Freyd.Alg
 namespace RelSet
 
-variable {a b : RelSet.{u}}
+variable {A B : RelSet.{u}}
 
 /-! ### Accessibility transported along a function (AoPA `acc-fRfº`) -/
 
 /-- AoPA `acc-fRfº`: if `f x` is accessible under `f ○ R ○ f°` then `x` is accessible under `R`.
     The transported relation `fun f ○ R ○ (fun f)˘` is `(graph f)° ≫ (R ≫ graph f)`. -/
-theorem acc_fRf_recip (f : a.carrier → b.carrier) (R : a ⟶ a) (x : a.carrier)
+theorem acc_fRf_recip (f : A.carrier → B.carrier) (R : A ⟶ A) (x : A.carrier)
     (hx : Acc ((graph f)° ≫ (R ≫ graph f)) (f x)) : Acc R x := by
   -- Generalise `f x` to an abstract accessible point `z` with a witness `z = f w`.
   have gen : ∀ z, Acc ((graph f)° ≫ (R ≫ graph f)) z → ∀ w, z = f w → Acc R w := by
@@ -46,19 +46,19 @@ theorem acc_fRf_recip (f : a.carrier → b.carrier) (R : a ⟶ a) (x : a.carrier
 /-! ### Transitive closure and its accessibility (AoPA `_⁺` / `acc-tc`) -/
 
 /-- The transitive closure `R⁺` (AoPA `_⁺`): a nonempty `R`-chain, extended on the right. -/
-inductive TransClo (R : a ⟶ a) : a.carrier → a.carrier → Prop where
+inductive TransClo (R : A ⟶ A) : A.carrier → A.carrier → Prop where
   | base {x y} : R x y → TransClo R x y
-  | step {x z} (y : a.carrier) : TransClo R x y → R y z → TransClo R x z
+  | step {x z} (y : A.carrier) : TransClo R x y → R y z → TransClo R x z
 
 /-- The recursive core of `acc_tc` (AoPA's local `access`): from `Acc R x` build accessibility
     under `R⁺` of every `R⁺`-predecessor of `x`.  Structural recursion on the `Acc R _` proof. -/
-private def accessTC (R : a ⟶ a) :
+private def accessTC (R : A ⟶ A) :
     ∀ x, Acc R x → ∀ y, TransClo R y x → Acc (TransClo R) y
   | _, Acc.intro _ h, y, TransClo.base yRx => Acc.intro y (accessTC R y (h y yRx))
   | _, Acc.intro _ h, y, TransClo.step z hyz zRx => accessTC R z (h z zRx) y hyz
 
 /-- AoPA `acc-tc`: accessibility under `R` implies accessibility under its transitive closure. -/
-theorem acc_tc (R : a ⟶ a) (x : a.carrier) (ac : Acc R x) : Acc (TransClo R) x :=
+theorem acc_tc (R : A ⟶ A) (x : A.carrier) (ac : Acc R x) : Acc (TransClo R) x :=
   Acc.intro x (accessTC R x ac)
 
 end RelSet

@@ -36,15 +36,15 @@ variable {𝒜 : Type u}
 /-! ## The shrink operator and its calculus (any `DivisionAllegory`) -/
 
 section Division
-variable [DivisionAllegory 𝒜] {a b c : 𝒜}
+variable [DivisionAllegory 𝒜] {A B C : 𝒜}
 
 /-- AoPA `_↾_`: `S ↾ R = S ⊓ (R / S˘)`, mirrored to `S ∩ (S° \ R)`.  The `R`-optimal part of
     `S`: an `S`-image kept only if it `R`-dominates every other `S`-image of the same point. -/
-@[expose] public def shrink (S : b ⟶ a) (R : a ⟶ a) : b ⟶ a := S ∩ (S° \ R)
+@[expose] public def shrink (S : B ⟶ A) (R : A ⟶ A) : B ⟶ A := S ∩ (S° \ R)
 
 @[inherit_doc] scoped infixl:65 " ↾ " => shrink
 
-variable {S : b ⟶ a} {R : a ⟶ a} {X : b ⟶ a}
+variable {S : B ⟶ A} {R : A ⟶ A} {X : B ⟶ A}
 
 /-! ### Universal property (AoPA `↾-universal-*`)
 
@@ -85,8 +85,8 @@ theorem recip_comp_shrink_le : S° ≫ (S ↾ R) ⊑ R := shrink_universal_mp₂
 
 /-- AoPA `↾-simple-absorption`.  For a SIMPLE `T` (`T ○ T˘ ⊑ idR`, i.e. `T° ≫ T ⊑ 1`),
     `(S ↾ R) ○ T ⊑ (S ○ T) ↾ R`, mirrored to `T ≫ (S ↾ R) ⊑ (T ≫ S) ↾ R`. -/
-theorem shrink_simple_absorption (S : b ⟶ a) (T : c ⟶ b) (R : a ⟶ a)
-    (hT : T° ≫ T ⊑ Cat.id b) : T ≫ (S ↾ R) ⊑ (T ≫ S) ↾ R := by
+theorem shrink_simple_absorption (S : B ⟶ A) (T : C ⟶ B) (R : A ⟶ A)
+    (hT : T° ≫ T ⊑ Cat.id B) : T ≫ (S ↾ R) ⊑ (T ≫ S) ↾ R := by
   refine shrink_universal_mpr ⟨comp_mono_left T shrink_le_left, ?_⟩  -- ○-monotonic-l S↾R⊑S
   -- The AoPA chain for `((S↾R) ○ T) ○ (S ○ T)˘ ⊑ R`, mirrored right-to-left:
   --   (T≫S)° ≫ (T≫(S↾R))  =  S° ≫ (T°≫T) ≫ (S↾R)   (˘-○-distr, ○-assoc)
@@ -104,7 +104,7 @@ theorem shrink_simple_absorption (S : b ⟶ a) (T : c ⟶ b) (R : a ⟶ a)
   If the preference order is more liberal, the shrink may return more. -/
 
 /-- AoPA `↾-ord-monotonic`. -/
-theorem shrink_ord_monotonic (S : b ⟶ a) (R T : a ⟶ a) (h : R ⊑ T) : S ↾ R ⊑ S ↾ T :=
+theorem shrink_ord_monotonic (S : B ⟶ A) (R T : A ⟶ A) (h : R ⊑ T) : S ↾ R ⊑ S ↾ T :=
   shrink_universal_mpr
     ⟨shrink_le_left,                                      -- S↾R⊑S
      le_trans recip_comp_shrink_le h⟩                     -- S↾RS˘⊑R then R⊑T
@@ -114,13 +114,13 @@ end Division
 /-! ## Coherence with §7.1: shrink IS `min R · Λ S` -/
 
 section Power
-variable [UnguardedPowerLCDA 𝒜] {a b : 𝒜}
+variable [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
 /-- **(7.5) as a coherence law.**  `S ↾ R° = Λ S ≫ est R`.  The shrink operator is exactly
     Bird & de Moor's `min R° · Λ S`; this is `A7_1.Λ_comp_est` read backwards, unfolding the
     definition `S ↾ R° = S ∩ (S° \ R°)`.  So a shrink headline `X = S ↾ R°` and an optimization
     headline `X = Λ S ≫ est R` are literally the same statement. -/
-public theorem shrink_eq_Λ_comp_est (S : b ⟶ a) (R : a ⟶ a) : S ↾ R° = Λ S ≫ est R :=
+public theorem shrink_eq_Λ_comp_est (S : B ⟶ A) (R : A ⟶ A) : S ↾ R° = Λ S ≫ est R :=
   (Λ_comp_est S R).symm
 
 end Power
@@ -133,8 +133,8 @@ open Freyd
 
 /-- AoPA `↾-fun-absorption`: `↾-simple-absorption` at a graph `fun f`, which is simple
     (`graph_simple`).  `(graph f) ≫ (S ↾ R) ⊑ ((graph f) ≫ S) ↾ R`. -/
-theorem shrink_graph_absorption {a b c : RelSet.{0}} (S : b ⟶ a) (f : c.carrier → b.carrier)
-    (R : a ⟶ a) : graph f ≫ (S ↾ R) ⊑ (graph f ≫ S) ↾ R :=
+theorem shrink_graph_absorption {A B C : RelSet.{0}} (S : B ⟶ A) (f : C.carrier → B.carrier)
+    (R : A ⟶ A) : graph f ≫ (S ↾ R) ⊑ (graph f ≫ S) ↾ R :=
   shrink_simple_absorption S (graph f) R (graph_simple f)
 
 end RelSet

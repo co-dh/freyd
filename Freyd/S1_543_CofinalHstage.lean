@@ -291,17 +291,17 @@ public theorem hstage_of_cofinal (b : PreRegBundle.{u}) (ccs : CofinalCapStep.{u
     (htpres : ∀ {i j} (hij : uliftNatDirected.le i j),
       (towerSystem b ccs.step).F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts ((towerSystem b ccs.step).A i))
-    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b ccs.step).A i)
+    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (A C : (towerSystem b ccs.step).A i)
       (z : (towerSystem b ccs.step).A j)
-      (uu vv : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a c)),
+      (uu vv : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod A C)),
       uu ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst =
         vv ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst →
       uu ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd =
         vv ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b ccs.step).A i)
+    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (A C : (towerSystem b ccs.step).A i)
       (z : (towerSystem b ccs.step).A j)
-      (p : z ⟶ (towerSystem b ccs.step).F hij a) (q : z ⟶ (towerSystem b ccs.step).F hij c),
-      ∃ r : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a c),
+      (p : z ⟶ (towerSystem b ccs.step).F hij A) (q : z ⟶ (towerSystem b ccs.step).F hij C),
+      ∃ r : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod A C),
         r ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst = p ∧
         r ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers ((towerSystem b ccs.step).A i))

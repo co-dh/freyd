@@ -254,16 +254,16 @@ end OneObj
   meet/join/top/bot = `∩`/`∪`/`1`/`𝟘` and implication `1 ∩ B/A` (`heytingImpl`). -/
 
 /-- The coreflexives (subidentities) on `a`: `{R : a ⟶ a // R ⊑ 1}`. -/
-@[expose] public def Cor {𝒜 : Type u} [DivisionAllegory 𝒜] (a : 𝒜) : Type v :=
-  {R : a ⟶ a // Coreflexive R}
+@[expose] public def Cor {𝒜 : Type u} [DivisionAllegory 𝒜] (A : 𝒜) : Type v :=
+  {R : A ⟶ A // Coreflexive R}
 
 namespace Cor
 
-variable {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜}
+variable {𝒜 : Type u} [DivisionAllegory 𝒜] {A : 𝒜}
 
 /-- §2.316: `Cor(a)` is a Heyting algebra.  Order = allegory order `⊑`;
     meet/join = `∩`/`∪`; top/bot = `1`/`𝟘`; implication = `heytingImpl`. -/
-@[expose] public instance instHeytAlg : HeytAlg (Cor a) where
+@[expose] public instance instHeytAlg : HeytAlg (Cor A) where
   le A B := A.1 ⊑ B.1
   le_refl A := Freyd.Alg.le_refl A.1
   le_trans h1 h2 := Freyd.Alg.le_trans h1 h2
@@ -276,7 +276,7 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜}
   le_join_left A B := le_union_left A.1 B.1
   le_join_right A B := le_union_right A.1 B.1
   join_le h1 h2 := union_lub h1 h2
-  top := ⟨Cat.id a, Freyd.Alg.le_refl _⟩
+  top := ⟨Cat.id A, Freyd.Alg.le_refl _⟩
   le_top A := A.2
   bot := ⟨𝟘, zero_le _⟩
   bot_le A := zero_le A.1

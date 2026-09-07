@@ -30,7 +30,7 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 /-- The join of three elements regrouped: `(R ∪ K) ∪ (S ∪ K) = (R ∪ S) ∪ K`.
     Both sides are the least upper bound of `R`, `S`, `K`; proved by the
     union laws (associativity, commutativity, idempotence). -/
-private theorem union_pull {a b : 𝒜} (R S K : a ⟶ b) :
+private theorem union_pull {A B : 𝒜} (R S K : A ⟶ B) :
     (R ∪ K) ∪ (S ∪ K) = (R ∪ S) ∪ K := by
   rw [DistributiveAllegory.union_assoc (R ∪ K) S K,
       ← DistributiveAllegory.union_assoc R K S,
@@ -60,33 +60,33 @@ private theorem union_pull {a b : 𝒜} (R S K : a ⟶ b) :
     congruence is amenable, with largest-in-class operator the book's
     `R⁺ = R ∪ (p a ≫ U ≫ (p b)°)`. -/
 def closedQuotient_amenable
-    {T : 𝒜} (U : T ⟶ T) (p : ∀ (a : 𝒜), a ⟶ T) (hU : U° = U)
-    (hL : ∀ {a b c : 𝒜} (R : a ⟶ b),
-      R ≫ (p b ≫ U ≫ (p c)°) ⊑ p a ≫ U ≫ (p c)°)
-    (hR' : ∀ {a b c : 𝒜} (S : b ⟶ c),
-      (p a ≫ U ≫ (p b)°) ≫ S ⊑ p a ≫ U ≫ (p c)°) :
+    {T : 𝒜} (U : T ⟶ T) (p : ∀ (A : 𝒜), A ⟶ T) (hU : U° = U)
+    (hL : ∀ {A B C : 𝒜} (R : A ⟶ B),
+      R ≫ (p B ≫ U ≫ (p C)°) ⊑ p A ≫ U ≫ (p C)°)
+    (hR' : ∀ {A B C : 𝒜} (S : B ⟶ C),
+      (p A ≫ U ≫ (p B)°) ≫ S ⊑ p A ≫ U ≫ (p C)°) :
     AmenableCongruence 𝒜 where
   cong := closedQuotientRel_is_congruence U p hU hL hR'
-  union_congr {a b R S R' S'} hR hS := by
+  union_congr {A B R S R' S'} hR hS := by
     -- `cong.rel X Y` is `X ∪ K = Y ∪ K` with `K = p a ≫ U ≫ (p b)°`.
-    have hRe : R ∪ (p a ≫ U ≫ (p b)°) = R' ∪ (p a ≫ U ≫ (p b)°) := hR
-    have hSe : S ∪ (p a ≫ U ≫ (p b)°) = S' ∪ (p a ≫ U ≫ (p b)°) := hS
-    show closedQuotientRel U (p a) (p b) (R ∪ S) (R' ∪ S')
+    have hRe : R ∪ (p A ≫ U ≫ (p B)°) = R' ∪ (p A ≫ U ≫ (p B)°) := hR
+    have hSe : S ∪ (p A ≫ U ≫ (p B)°) = S' ∪ (p A ≫ U ≫ (p B)°) := hS
+    show closedQuotientRel U (p A) (p B) (R ∪ S) (R' ∪ S')
     simp only [closedQuotientRel]
     -- (R∪S)∪K = (R∪K)∪(S∪K) = (R'∪K)∪(S'∪K) = (R'∪S')∪K.
-    rw [← union_pull R S (p a ≫ U ≫ (p b)°), ← union_pull R' S' (p a ≫ U ≫ (p b)°),
+    rw [← union_pull R S (p A ≫ U ≫ (p B)°), ← union_pull R' S' (p A ≫ U ≫ (p B)°),
         hRe, hSe]
-  largest {a b} R := R ∪ (p a ≫ U ≫ (p b)°)
-  largest_rel {a b} R := by
+  largest {A B} R := R ∪ (p A ≫ U ≫ (p B)°)
+  largest_rel {A B} R := by
     -- Goal: `R ∪ K = (R ∪ K) ∪ K`, by associativity + idempotence.
-    show R ∪ (p a ≫ U ≫ (p b)°)
-       = (R ∪ (p a ≫ U ≫ (p b)°)) ∪ (p a ≫ U ≫ (p b)°)
-    rw [← DistributiveAllegory.union_assoc R (p a ≫ U ≫ (p b)°) (p a ≫ U ≫ (p b)°),
+    show R ∪ (p A ≫ U ≫ (p B)°)
+       = (R ∪ (p A ≫ U ≫ (p B)°)) ∪ (p A ≫ U ≫ (p B)°)
+    rw [← DistributiveAllegory.union_assoc R (p A ≫ U ≫ (p B)°) (p A ≫ U ≫ (p B)°),
         DistributiveAllegory.union_idem]
-  largest_max {a b R S} h := by
+  largest_max {A B R S} h := by
     -- h : R ∪ K = S ∪ K.  Goal: S ⊑ R ∪ K.  Use S ⊑ S ∪ K = R ∪ K.
-    have he : R ∪ (p a ≫ U ≫ (p b)°) = S ∪ (p a ≫ U ≫ (p b)°) := h
-    have hs : S ⊑ S ∪ (p a ≫ U ≫ (p b)°) := le_union_left S _
+    have he : R ∪ (p A ≫ U ≫ (p B)°) = S ∪ (p A ≫ U ≫ (p B)°) := h
+    have hs : S ⊑ S ∪ (p A ≫ U ≫ (p B)°) := le_union_left S _
     rw [← he] at hs
     exact hs
 
@@ -94,13 +94,13 @@ def closedQuotient_amenable
     canonical projections `p` and ideal-absorption laws `hL`, `hR'`) is amenable.
     Its largest-in-class operator is Freyd's `R⁺ = R ∪ (p a ≫ U ≫ (p b)°)`. -/
 theorem closedQuotient_amenable_largest_eq
-    {T : 𝒜} (U : T ⟶ T) (p : ∀ (a : 𝒜), a ⟶ T) (hU : U° = U)
-    (hL : ∀ {a b c : 𝒜} (R : a ⟶ b),
-      R ≫ (p b ≫ U ≫ (p c)°) ⊑ p a ≫ U ≫ (p c)°)
-    (hR' : ∀ {a b c : 𝒜} (S : b ⟶ c),
-      (p a ≫ U ≫ (p b)°) ≫ S ⊑ p a ≫ U ≫ (p c)°)
-    {a b : 𝒜} (R : a ⟶ b) :
-    (closedQuotient_amenable U p hU hL hR').largest R = R ∪ (p a ≫ U ≫ (p b)°) :=
+    {T : 𝒜} (U : T ⟶ T) (p : ∀ (A : 𝒜), A ⟶ T) (hU : U° = U)
+    (hL : ∀ {A B C : 𝒜} (R : A ⟶ B),
+      R ≫ (p B ≫ U ≫ (p C)°) ⊑ p A ≫ U ≫ (p C)°)
+    (hR' : ∀ {A B C : 𝒜} (S : B ⟶ C),
+      (p A ≫ U ≫ (p B)°) ≫ S ⊑ p A ≫ U ≫ (p C)°)
+    {A B : 𝒜} (R : A ⟶ B) :
+    (closedQuotient_amenable U p hU hL hR').largest R = R ∪ (p A ≫ U ≫ (p B)°) :=
   rfl
 
 end Freyd.Alg
