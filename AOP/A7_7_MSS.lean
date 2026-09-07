@@ -265,38 +265,32 @@ public theorem mss_greedy : cataR (Salg%∋ ≫ est(geq)) ⊑ (cataR Salg)%∋ �
 /-- Step 1 of `mss-step`: `[zero,⊸ zero ∪ plus]%∋ est(≥) = [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]`
     — the power transpose of a coproduct of maps is the coproduct of their transposes, and a
     composite after a coproduct is the coproduct of the composites. -/
-public theorem mss_step1 :
-    Salg%∋ ≫ est(geq)
+public theorem mss_step1 (R : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩) :
+    Salg%∋ ≫ est(R)
       = junc (sumCop (dL Unit) ⟨Int × Int⟩)
-          ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq))
-          (zeroPlus%∋ ≫ est(geq)) := by
-  unfold Salg; rw [Λ_junc, junc_comp]
+          ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(R))
+          (zeroPlus%∋ ≫ est(R)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R
 
 /-- Step 2 of `mss-step`: `[zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)] = [zero,⊕]` — `zero` is a map,
     so its singleton has one element and `est(≥)` returns it; the other branch is `⊕`'s
     definition. -/
-public theorem mss_step2 :
+public theorem mss_step2 {R : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩}
+    (hrefl : Cat.id (⟨Int⟩ : RelSet.{0}) ⊑ R) :
     junc (sumCop (dL Unit) ⟨Int × Int⟩)
-        ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq))
-        (zeroPlus%∋ ≫ est(geq))
+        ((graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(R))
+        (zeroPlus%∋ ≫ est(R))
       = junc (sumCop (dL Unit) ⟨Int × Int⟩)
-          (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus := by
-  have hzero : (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))%∋ ≫ est(geq)
-      = graph (fun _ => (0 : Int)) := by
-    apply hom_ext; intro D w
-    rw [Λ_comp_est_apply]
-    refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
-    have hz0 : z = (0 : Int) := hz
-    have hw0 : w = (0 : Int) := h
-    subst hz0; subst hw0; exact Int.le_refl 0
-  rw [hzero]; rfl
+          (graph (fun _ => (0 : Int)) : dL Unit ⟶ (⟨Int⟩ : RelSet.{0}))
+          (zeroPlus%∋ ≫ est(R)) := by
+  rw [Λ_map_comp_est (graph_map _) hrefl]
 
 /-- The `mss-step` row: `Λ(S) est(≥) = [zero, ⊕]` — the `zero` branch is a singleton, and the
     `plus` branch is `⊕`'s definition. -/
 public theorem mss_step :
     Salg%∋ ≫ est(geq)
       = junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int)) oplus :=
-  mss_step1.trans mss_step2
+  (mss_step1 geq).trans (mss_step2 geq_refl)
 
 /-- `⊕` as a function: the larger of `0` and `a+b`. -/
 @[expose] public def oplusFn (a b : Int) : Int := if 0 ≤ a + b then a + b else 0

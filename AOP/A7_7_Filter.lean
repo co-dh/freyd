@@ -194,33 +194,35 @@ public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0}))
 /-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the
     transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
     is the coproduct of the composites. -/
-public theorem filter_step1 (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°)
+public theorem filter_step1 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
+    (Salg p)%∋ ≫ est(R)
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
-          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
-  unfold Salg; rw [Λ_junc, junc_comp]
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R
 
-/-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` — the `nil` arm, as in `takewhile-step`. -/
-public theorem filter_step2 (p : E → Bool) :
+/-- Step 2 of `filter-step`: `nil%∋ est(R) = nil` for reflexive `R` — the `nil` arm, as in
+    `takewhile-step`. -/
+public theorem filter_step2 (p : E → Bool) {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
+    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
     junc (sumCop (dL Unit) ⟨E × List E⟩)
-        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
-        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R))
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
           (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°)) := by
-  rw [Λ_nil_comp_est]
+          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
+  rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
     a union is the pair of the transposes followed by the power object's union. -/
-public theorem filter_step3 (p : E → Bool) :
+public theorem filter_step3 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
     junc (sumCop (dL Unit) ⟨E × List E⟩)
         (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(lenLE°))
+        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R))
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
           (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
           (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
-            ≫ cup (PL (E := E)) ≫ est(lenLE°)) := by
+            ≫ cup (PL (E := E)) ≫ est(R)) := by
   rw [Λ_union _ _ (PL (E := E)), pair_eq_rpair, Cat.assoc]
 
 /-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
@@ -275,7 +277,8 @@ public theorem filter_step4 (p : E → Bool) :
     `⊸ nil`. -/
 public theorem filter_step (p : E → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) :=
-  (filter_step1 p).trans ((filter_step2 p).trans ((filter_step3 p).trans (filter_step4 p)))
+  (filter_step1 p lenLE°).trans ((filter_step2 p lenLE_recip_refl).trans
+    ((filter_step3 p lenLE°).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
