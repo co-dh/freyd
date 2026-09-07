@@ -35,6 +35,9 @@ module
 public import AOP.A8_1
 public import AOP.A5_6
 public import AOP.A6_1_RelSet
+-- the layered network's paths are `ConsList V V`, whose base relator `X ↦ (V→Prop)+(V→Prop)×X`
+-- is what `thinning_paths`'s `F` is instantiated to below.
+public import AOP.A6_ConsList
 
 universe u
 
@@ -135,5 +138,145 @@ public theorem thinning_paths (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     exact thinAlg_elim V S hQ
   exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))
     (thinning_est hFr I hQR hreflQ htransQ htransR hmono)
+
+/-! ## The note's `path-mono`: the two laws `thinning_paths` assumes, discharged
+
+  `thinning_paths` takes `hmono` and `hQ` as hypotheses.  The note's `path-mono` table states
+  them as the two laws of the layered-network example, and both are proved below: the second by
+  the book's own shunting step (p.198), which uses nothing of the datatype beyond `head` being a
+  map and `S·head` being simple; the first for the concrete network, where it is the arithmetic
+  of `consw` and nothing else. -/
+
+/-- **The shunting step of book p.198**: `S·S° ⊑ head°·head`, mirrored `S° ≫ S ⊑ head ≫ head°`,
+    whenever `head` is a map and `S·head` is simple.  Sandwiching `S° ≫ S` between two copies of
+    `𝟙 ⊑ head ≫ head°` regroups it as `head ≫ (S≫head)° ≫ (S≫head) ≫ head°`. -/
+public theorem recip_comp_le_of_simple_comp {A B C : 𝒜} {S : C ⟶ A} {hd : A ⟶ B}
+    (hhd : Map hd) (hs : Simple (S ≫ hd)) : S° ≫ S ⊑ hd ≫ hd° := by
+  have h1 : S ⊑ S ≫ hd ≫ hd° := by
+    have := comp_mono_left S (entire_id_le hhd.1)
+    rwa [Cat.comp_id] at this
+  have h2 : S° ≫ S ⊑ (S ≫ hd ≫ hd°)° ≫ (S ≫ hd ≫ hd°) :=
+    le_trans (comp_mono_right (recip_mono h1) S) (comp_mono_left _ h1)
+  have e1 : (S ≫ hd ≫ hd°)° ≫ (S ≫ hd ≫ hd°) = hd ≫ hd° ≫ S° ≫ S ≫ hd ≫ hd° := by
+    simp only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
+  have hs' : hd° ≫ S° ≫ S ≫ hd ⊑ 𝟙 B := by
+    have h : (S ≫ hd)° ≫ (S ≫ hd) ⊑ 𝟙 B := hs
+    simp only [Allegory.recip_comp, Cat.assoc] at h
+    exact h
+  have h3 : hd ≫ (hd° ≫ S° ≫ S ≫ hd) ≫ hd° ⊑ hd ≫ 𝟙 B ≫ hd° :=
+    comp_mono_left hd (comp_mono_right hs' (hd°))
+  simp only [Cat.assoc, Cat.id_comp] at h3
+  rw [e1] at h2
+  exact le_trans h2 h3
+
+/-! ### The layered network itself (book p.196)
+
+  A layered network is a non-empty sequence of sets of vertices; a path through it is a non-empty
+  sequence of vertices, one from each layer, and `wt` gives the cost of stepping from one vertex
+  to the next.  So the paths are `ConsList V V` (`wrap` a single vertex, `cons` one on the front)
+  and the input functor is `X ↦ (V→Prop) + (V→Prop)×X`, i.e. `AOP.A6_ConsList`'s relator at
+  leaf and element type `V→Prop` — the layers. -/
+
+section Paths
+
+open RelSet RelSet.CL
+
+variable {V : Type}
+
+/-- The first vertex of a path. -/
+@[expose] public def headOf : ConsList V V → V
+  | ConsList.wrap v => v
+  | ConsList.cons v _ => v
+
+/-- `cost [a₀,…,aₙ] = (+j : 0 ≤ j < n : wt(aⱼ,aⱼ₊₁))` (book p.196), as the `consw` recursion
+    `cost(cons(a,x)) = wt(a,head x) + cost x`. -/
+@[expose] public def costOf (wt : V → V → Nat) : ConsList V V → Nat
+  | ConsList.wrap _ => 0
+  | ConsList.cons v q => wt v (headOf q) + costOf wt q
+
+/-- `R ≜ cost≤cost°`: `p R q` iff `p` costs no more than `q`. -/
+@[expose] public def pathR (wt : V → V → Nat) : dCL V V ⟶ dCL V V :=
+  fun p q => costOf wt p ≤ costOf wt q
+
+/-- `Q ≜ R∩(head head°)` (book p.197): no dearer, and starting at the same vertex. -/
+@[expose] public def pathQ (wt : V → V → Nat) : dCL V V ⟶ dCL V V :=
+  fun p q => costOf wt p ≤ costOf wt q ∧ headOf p = headOf q
+
+/-- `Sspec ≜ F(∋,𝟙)α`, the specification's algebra: take a vertex out of the layer and `wrap` it,
+    or `cons` it onto the partial path already built. -/
+@[expose] public def pathAlg : (CL.F (V → Prop) (V → Prop)).obj (dCL V V) ⟶ dCL V V :=
+  fun u p => match u with
+    | Sum.inl S => ∃ v, S v ∧ p = ConsList.wrap v
+    | Sum.inr q => ∃ v, q.1 v ∧ p = ConsList.cons v q.2
+
+/-- `S ≜ F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
+@[expose] public def pathSplit : Fobj V V (pow (dCL V V)) ⟶ dCL V V :=
+  fun u p => match u with
+    | Sum.inl v => p = ConsList.wrap v
+    | Sum.inr q => ∃ t, q.2 t ∧ p = ConsList.cons q.1 t
+
+/-- `head : LA ⟶ A`. -/
+@[expose] public def headRel : dCL V V ⟶ (⟨V⟩ : RelSet.{0}) := RelSet.graph headOf
+
+/-- `[𝟙,π₁] : F(A,E(LA)) ⟶ A`, the first vertex of whatever `S` builds. -/
+@[expose] public def headAlg : Fobj V V (pow (dCL V V)) ⟶ (⟨V⟩ : RelSet.{0}) :=
+  RelSet.graph fun u => match u with | Sum.inl v => v | Sum.inr q => q.1
+
+public theorem headRel_map : Map (headRel (V := V)) := RelSet.graph_map _
+
+public theorem headAlg_map : Map (headAlg (V := V)) := RelSet.graph_map _
+
+/-- **The first law of the note's `path-mono`** (book p.197): `F(∋,Q)α ⊑ F(∋,𝟙)αQ`, mirrored
+    `MonotonicAlg Sspec Q`.  Consing the same vertex onto a `Q`-better path gives a `Q`-better
+    path: equal heads make the new edge cost the same, and the rest is the assumption.  On `R`
+    alone it fails — `wt(a,head q)` can be arbitrarily large — which is why `Q` records the head. -/
+public theorem pathAlg_monotonic (wt : V → V → Nat) :
+    MonotonicAlg (F := CL.F (V → Prop) (V → Prop)) (pathAlg (V := V)) (pathQ wt) := by
+  refine le_iff.mpr ?_
+  rintro u p ⟨u', hu, hp⟩
+  cases u with
+  | inl S =>
+    cases u' with
+    | inl S' =>
+      have hS : S = S' := hu
+      subst hS
+      exact ⟨p, hp, Nat.le_refl _, rfl⟩
+    | inr q' => exact hu.elim
+  | inr q =>
+    cases u' with
+    | inl S' => exact hu.elim
+    | inr q' =>
+      obtain ⟨hSS, hq⟩ := hu
+      obtain ⟨v, hv, rfl⟩ := hp
+      refine ⟨ConsList.cons v q.2, ⟨v, by rw [hSS]; exact hv, rfl⟩, ?_, rfl⟩
+      show wt v (headOf q.2) + costOf wt q.2 ≤ wt v (headOf q'.2) + costOf wt q'.2
+      rw [hq.2]
+      exact Nat.add_le_add_left hq.1 _
+
+/-- **The second law of the note's `path-mono`** (book p.198, left as an exercise there):
+    `S head ⊑ [𝟙,π₁]` — whichever path `S` builds, its first vertex is fixed by `S`'s argument
+    alone, so `S head` is simple. -/
+public theorem pathSplit_comp_headRel_le : pathSplit (V := V) ≫ headRel ⊑ headAlg := by
+  refine le_iff.mpr ?_
+  rintro u x ⟨p, hp, hx⟩
+  cases u with
+  | inl v => subst hp; exact hx
+  | inr q => obtain ⟨t, _, rfl⟩ := hp; exact hx
+
+/-- `thinning_paths`'s `hQ` for the network (book p.198): `R∩(S°S) ⊑ Q` at `Q ≜ R∩(head head°)`.
+    `S head ⊑ [𝟙,π₁]` makes `S head` simple, and the shunting step turns that into
+    `S°S ⊑ head head°`. -/
+public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
+    pathR wt ∩ ((pathSplit (V := V))° ≫ pathSplit) ⊑ pathQ wt := by
+  have hsimple : Simple (pathSplit (V := V) ≫ headRel) :=
+    le_trans (le_trans (comp_mono_right (recip_mono pathSplit_comp_headRel_le) _)
+      (comp_mono_left _ pathSplit_comp_headRel_le)) headAlg_map.2
+  refine le_trans (inter_mono (le_refl (pathR wt))
+    (recip_comp_le_of_simple_comp headRel_map hsimple)) ?_
+  refine le_iff.mpr ?_
+  rintro p q ⟨hcost, x, hx, hq⟩
+  exact ⟨hcost, hx ▸ hq⟩
+
+end Paths
 
 end Freyd.Alg
