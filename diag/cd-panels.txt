@@ -4,7 +4,7 @@
 #
 # <selector>                                                        [<reference in diag/>]
 Freyd.Alg.alpha_natural
-Freyd.Alg.relCata_cancel                                            cdref.typ
+Freyd.Alg.InitialAlgebra.cata_comm                                  cdref.typ
 Freyd.Alg.RelSet.ListRel.list_id
 Freyd.Alg.RelSet.ListRel.prefix_lax_natural
 Freyd.Alg.RelSet.Party.rose_id
