@@ -544,36 +544,66 @@ theorem twStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : twSt
 theorem twStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : twStep p x c = [] := by
   unfold twStep; rw [h]
 
-/-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
-    lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
-    not.  The right side is the AoPA route's algebra, so both routes share one program. -/
-public theorem takewhile_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) := by
+/-- The algebra's cons branch at a point: stop with `nil`, or keep a head that passes `p`. -/
+theorem discNil_union_pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
+    (discNil ∪ pcons p) (x, c) ws ↔ ws = [] ∨ (p x = true ∧ ws = x :: c) :=
+  (junc_inr (graph fun _ => ([] : List E)) (discNil ∪ pcons p) (x, c) ws).symm.trans
+    (Salg_inr p x c ws)
+
+/-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]` —
+    the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
+    coproduct is the coproduct of the composites. -/
+public theorem takewhile_step1 (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°)
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  unfold Salg; rw [Λ_junc, junc_comp]
+
+/-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
+    element and the longest of a one-element set is that element. -/
+public theorem takewhile_step2 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°))
+        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+      = junc (sumCop (dL Unit) ⟨E × List E⟩)
+          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+          ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
+  have hnil : (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋
+        ≫ est(lenLE°)
+      = graph (fun _ => ([] : List E)) := by
+    apply hom_ext; intro D ws
+    rw [Λ_comp_est_apply]
+    refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
+    have hz' : z = ([] : List E) := hz
+    have hw' : ws = ([] : List E) := h
+    subst hz'; subst hw'; exact Nat.le_refl 0
+  rw [hnil]
+
+/-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
+    offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
+    loses the second. -/
+public theorem takewhile_step3 (p : E → Bool) :
+    junc (sumCop (dL Unit) ⟨E × List E⟩)
+        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+        ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
+      = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) := by
   apply hom_ext; intro u ws
-  rw [Λ_comp_est_apply]
   cases u with
-  | inl D =>
-      constructor
-      · rintro ⟨hS, -⟩
-        exact (Salg_inl p D ws).mp hS
-      · intro h0
-        have hws : ws = [] := h0
-        subst hws
-        refine ⟨(Salg_inl p D []).mpr rfl, fun z hz => ?_⟩
-        have hz' : z = [] := (Salg_inl p D z).mp hz
-        subst hz'
-        exact Nat.le_refl 0
+  | inl D => rw [junc_inl]; exact Iff.rfl
   | inr q =>
       obtain ⟨x, c⟩ := q
+      rw [junc_inr, Λ_comp_est_apply]
       constructor
       · rintro ⟨hS, hmax⟩
         show ws = twStep p x c
-        rcases (Salg_inr p x c ws).mp hS with hws | ⟨hp, hws⟩
+        rcases (discNil_union_pcons_apply p x c ws).mp hS with hws | ⟨hp, hws⟩
         · subst hws
           cases hpx : p x with
           | false => rw [twStep_neg hpx]
           | true =>
-              have hz := hmax (x :: c) ((Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩))
+              have hz := hmax (x :: c)
+                ((discNil_union_pcons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩))
               exact absurd hz (Nat.not_succ_le_zero _)
         · rw [twStep_pos hp, hws]
       · intro h0
@@ -582,17 +612,24 @@ public theorem takewhile_step (p : E → Bool) :
         | true =>
             rw [twStep_pos hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨-, hz'⟩
+            refine ⟨(discNil_union_pcons_apply p x c _).mpr (Or.inr ⟨hpx, rfl⟩), fun z hz => ?_⟩
+            rcases (discNil_union_pcons_apply p x c z).mp hz with hz' | ⟨-, hz'⟩
             · subst hz'; exact Nat.zero_le _
             · subst hz'; exact Nat.le_refl _
         | false =>
             rw [twStep_neg hpx] at hws
             subst hws
-            refine ⟨(Salg_inr p x c _).mpr (Or.inl rfl), fun z hz => ?_⟩
-            rcases (Salg_inr p x c z).mp hz with hz' | ⟨hp', hz'⟩
+            refine ⟨(discNil_union_pcons_apply p x c _).mpr (Or.inl rfl), fun z hz => ?_⟩
+            rcases (discNil_union_pcons_apply p x c z).mp hz with hz' | ⟨hp', hz'⟩
             · subst hz'; exact Nat.le_refl _
             · rw [hpx] at hp'; nomatch hp'
+
+/-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
+    lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
+    not.  The right side is the AoPA route's algebra, so both routes share one program. -/
+public theorem takewhile_step (p : E → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) :=
+  (takewhile_step1 p).trans ((takewhile_step2 p).trans (takewhile_step3 p))
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
