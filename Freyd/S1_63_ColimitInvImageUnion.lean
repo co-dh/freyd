@@ -311,13 +311,13 @@ public theorem invImage_germ_equiv (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod a b)),
+    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod A B)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
-        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
+        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -358,13 +358,13 @@ public theorem invImage_germ_equiv (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
 set_option maxHeartbeats 1000000 in
 public theorem union_germ_equiv (C : CatSystem ι D) (hC : C.Coherent) (hmono : TransMono C)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hcop i).coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hcop i).coprod A B) ⟶ z),
         (C.functF hij).map (hcop i).inl ≫ u = (C.functF hij).map (hcop i).inl ≫ v →
         (C.functF hij).map (hcop i).inr ≫ u = (C.functF hij).map (hcop i).inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hcop i).coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hcop i).coprod A B) ⟶ z,
           (C.functF hij).map (hcop i).inl ≫ r = p ∧ (C.functF hij).map (hcop i).inr ≫ r = q)
     (hi : ∀ i, HasImages (C.A i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),
@@ -494,13 +494,13 @@ public theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coh
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod a b)),
+    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod A B)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
-        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
+        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -511,13 +511,13 @@ public theorem colimit_invImage_union_le (C : CatSystem.{u, u} ι D) (hC : C.Coh
         (_hk : k ≫ (C.functF hij).map f = k ≫ (C.functF hij).map g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ (C.functF hij).map (eqMap f g) = k)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hcop i).coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hcop i).coprod A B) ⟶ z),
         (C.functF hij).map (hcop i).inl ≫ u = (C.functF hij).map (hcop i).inl ≫ v →
         (C.functF hij).map (hcop i).inr ≫ u = (C.functF hij).map (hcop i).inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hcop i).coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hcop i).coprod A B) ⟶ z,
           (C.functF hij).map (hcop i).inl ≫ r = p ∧ (C.functF hij).map (hcop i).inr ≫ r = q)
     (hi : ∀ i, HasImages (C.A i))
     (hfaith : ∀ {i j : ι} (hij : D.le i j) {x y : C.A i} (p q : x ⟶ y),

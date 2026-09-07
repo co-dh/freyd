@@ -77,7 +77,7 @@ public theorem geq_trans : geq ≫ geq ⊑ geq :=
 
 theorem zeroPlus_apply (a b w : Int) : zeroPlus (a, b) w ↔ w = 0 ∨ w = a + b := Iff.rfl
 
-theorem Salg_inl (d : Unit) (w : Int) : Salg (Sum.inl d) w ↔ w = 0 := by
+theorem Salg_inl (D : Unit) (w : Int) : Salg (Sum.inl D) w ↔ w = 0 := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b := by
@@ -103,7 +103,7 @@ theorem Salg_inr (a b w : Int) : Salg (Sum.inr (a, b)) w ↔ w = 0 ∨ w = a + b
 public theorem mss_prefix_sum : prefixR ≫ sumR = cataR Salg := by
   rw [cataR_eq_relCata]
   refine (relCata_UP (initial Unit Int) Salg (prefixR ≫ sumR)).mp
-    ((cata_square_junc_iff _ _ _).mpr ⟨fun d r => ?_, fun a x r => ?_⟩)
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
   · constructor
     · rintro ⟨ys, hs, hl⟩
       cases ys with
@@ -140,12 +140,12 @@ public theorem mss_mono : MonotonicAlg (F := F Unit Int) Salg geq := by
   intro u w h
   obtain ⟨v, hv, hS⟩ := h
   cases u with
-  | inl d =>
+  | inl D =>
       cases v with
       | inl d' =>
           have hw : w = 0 := (Salg_inl d' w).mp hS
           subst hw
-          exact ⟨0, (Salg_inl d 0).mpr rfl, Int.le_refl 0⟩
+          exact ⟨0, (Salg_inl D 0).mpr rfl, Int.le_refl 0⟩
       | inr q => exact hv.elim
   | inr q =>
       obtain ⟨a, c⟩ := q
@@ -177,14 +177,14 @@ public theorem mss_step :
   apply hom_ext; intro u w
   rw [Λ_comp_est_apply]
   cases u with
-  | inl d =>
+  | inl D =>
       rw [junc_sum_inl]
       constructor
       · rintro ⟨hS, -⟩
-        exact (Salg_inl d w).mp hS
+        exact (Salg_inl D w).mp hS
       · intro h
-        refine ⟨(Salg_inl d w).mpr h, fun z hz => ?_⟩
-        rw [(Salg_inl d z).mp hz, h]
+        refine ⟨(Salg_inl D w).mpr h, fun z hz => ?_⟩
+        rw [(Salg_inl D z).mp hz, h]
         exact Int.le_refl 0
   | inr q =>
       obtain ⟨a, b⟩ := q
@@ -244,7 +244,7 @@ public theorem zero_oplus_eq_prog :
   rw [oplus_eq]
   apply hom_ext; intro u w
   cases u with
-  | inl d => rw [junc_sum_inl]; exact Iff.rfl
+  | inl D => rw [junc_sum_inl]; exact Iff.rfl
   | inr q => obtain ⟨a, b⟩ := q; rw [junc_sum_inr]; exact Iff.rfl
 
 /-! ## Closing the greedy `⊑` to an equality -/
@@ -415,7 +415,7 @@ public theorem suffixMax_not_relCata :
       rw [e] at hl
       obtain ⟨u, hu, hhu⟩ := hl
       cases u with
-      | inl d => exact hu.elim
+      | inl D => exact hu.elim
       | inr q =>
         obtain ⟨b, T⟩ := q
         obtain ⟨hab, hT⟩ := hu
@@ -531,7 +531,7 @@ theorem Kalg_eq_prog :
   rw [Kalg]
   apply hom_ext; intro u q
   cases u with
-  | inl d =>
+  | inl D =>
     rw [junc_sum_inl]
     constructor
     · rintro ⟨v, hv, h1, h2⟩

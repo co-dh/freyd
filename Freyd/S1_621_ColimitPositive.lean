@@ -194,15 +194,15 @@ variable {ι : Type u} {D : Directed ι}
 @[expose] public noncomputable def colimitCoprodOfDisjoint
     (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     @HasBinaryCoproducts C.Obj (colimitCat C hC) :=
@@ -224,15 +224,15 @@ public theorem objIncl_pair_commonStage (C : CatSystem ι D) (A B : C.Obj) :
     `case (homInclObj inl) (homInclObj inr)` (`monic_inl_of_factor`). -/
 public theorem colimit_inl_monic (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     letI : Cat C.Obj := colimitCat C hC
@@ -252,15 +252,15 @@ public theorem colimit_inl_monic (C : CatSystem ι D) (hC : C.Coherent)
 /-- **The colimit's right injection is monic** (dual of `colimit_inl_monic`). -/
 public theorem colimit_inr_monic (C : CatSystem ι D) (hC : C.Coherent)
     (hdisj : ∀ i, DisjointBinaryCoproduct (C.A i)) (hmono : TransMono C)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     letI : Cat C.Obj := colimitCat C hC
@@ -295,13 +295,13 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod a b)),
+    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod A B)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
-        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
+        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -311,15 +311,15 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
         (k : z ⟶ C.F hij A)
         (_hk : k ≫ (C.functF hij).map f = k ≫ (C.functF hij).map g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ (C.functF hij).map (eqMap f g) = k)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q)
     [hPL : @PreLogos C.Obj (colimitCat C hC)]
@@ -403,13 +403,13 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod a b)),
+    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod A B)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
-        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
+        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -419,15 +419,15 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
         (k : z ⟶ C.F hij A)
         (_hk : k ≫ (C.functF hij).map f = k ≫ (C.functF hij).map g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ (C.functF hij).map (eqMap f g) = k)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q)
     [hPL : @PreLogos C.Obj (colimitCat C hC)] :
@@ -463,13 +463,13 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod a b)),
+    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod A B)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
-        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
+        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -479,15 +479,15 @@ public theorem colimit_inl_inter_inr (C : CatSystem.{u, u} ι D) (hC : C.Coheren
         (k : z ⟶ C.F hij A)
         (_hk : k ≫ (C.functF hij).map f = k ≫ (C.functF hij).map g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ (C.functF hij).map (eqMap f g) = k)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (u v : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
-        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
-        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
+        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
+        ∃ r : C.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
           (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q)
     (hi : ∀ i, HasImages (C.A i))

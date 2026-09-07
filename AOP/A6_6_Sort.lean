@@ -25,7 +25,7 @@ variable {A : Type}
 @[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
 /-- Coreflexives in `Rel(Set)` are symmetric: `R ⊑ id ⟹ R° = R`. -/
-public theorem coref_recip {a : RelSet.{0}} {R : a ⟶ a} (h : R ⊑ Cat.id a) : R° = R :=
+public theorem coref_recip {A : RelSet.{0}} {R : A ⟶ A} (h : R ⊑ Cat.id A) : R° = R :=
   symmetric_eq (coreflexive_symmetric_idempotent h).1
 
 variable (select : dList A ⟶ (⟨A × ConsList Unit A⟩ : RelSet.{0}))

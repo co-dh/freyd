@@ -81,7 +81,7 @@ public theorem junc_mono {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R R
 /-- Fusion: post-composing a junc with any `Z` distributes into the branches, an immediate
     consequence of (5.9) via `comp_union_distrib`.  Used for `sumMap`'s functor laws and the
     guard/conditional laws (Ex 5.17) without re-expanding `junc` by hand each time. -/
-public theorem junc_comp {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) (Z : c ⟶ d) :
+public theorem junc_comp {s a₁ a₂ c D : 𝒜} (C : Coproduct s a₁ a₂) (R : a₁ ⟶ c) (S : a₂ ⟶ c) (Z : c ⟶ D) :
     junc C R S ≫ Z = junc C (R ≫ Z) (S ≫ Z) := by
   show ((C.u₁° ≫ R) ∪ (C.u₂° ≫ S)) ≫ Z = (C.u₁° ≫ (R ≫ Z)) ∪ (C.u₂° ≫ (S ≫ Z))
   rw [union_comp_distrib, Cat.assoc, Cat.assoc]
@@ -117,8 +117,8 @@ public theorem coproduct_is_product {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁
 /-! ## §2  (5.11) cancellation -/
 
 /-- **B&dM (5.11)**: `[U,V]° ≫ [R,S] = (U°≫R) ∪ (V°≫S)`. -/
-public theorem junc_recip_junc {s a₁ a₂ c d : 𝒜} (C : Coproduct s a₁ a₂)
-    {U : a₁ ⟶ d} {V : a₂ ⟶ d} {R : a₁ ⟶ c} {S : a₂ ⟶ c} :
+public theorem junc_recip_junc {s a₁ a₂ c D : 𝒜} (C : Coproduct s a₁ a₂)
+    {U : a₁ ⟶ D} {V : a₂ ⟶ D} {R : a₁ ⟶ c} {S : a₂ ⟶ c} :
     (junc C U V)° ≫ junc C R S = (U° ≫ R) ∪ (V° ≫ S) := by
   rw [junc_recip, union_comp_distrib, Cat.assoc, Cat.assoc, u₁_junc, u₂_junc]
 
@@ -294,38 +294,38 @@ section Guard
 variable {𝒜 : Type u} [BooleanAllegory 𝒜]
 
 /-- The complement of `X` within the coreflexives (Ex 5.17). -/
-def corNeg {a : 𝒜} (X : a ⟶ a) : a ⟶ a := (∼X) ∩ Cat.id a
+def corNeg {A : 𝒜} (X : A ⟶ A) : A ⟶ A := (∼X) ∩ Cat.id A
 
-theorem corNeg_coreflexive {a : 𝒜} (X : a ⟶ a) : Coreflexive (corNeg X) :=
-  inter_lb_right (∼X) (Cat.id a)
+theorem corNeg_coreflexive {A : 𝒜} (X : A ⟶ A) : Coreflexive (corNeg X) :=
+  inter_lb_right (∼X) (Cat.id A)
 
 /-- `X ∩ corNeg X = 0` — holds unconditionally (no coreflexivity hypothesis needed). -/
-theorem inter_corNeg {a : 𝒜} (X : a ⟶ a) : X ∩ corNeg X = 𝟘 := by
-  show X ∩ ((∼X) ∩ Cat.id a) = 𝟘
+theorem inter_corNeg {A : 𝒜} (X : A ⟶ A) : X ∩ corNeg X = 𝟘 := by
+  show X ∩ ((∼X) ∩ Cat.id A) = 𝟘
   rw [Allegory.inter_assoc, inter_neg_zero X]
   exact inter_eq_left (zero_le _)
 
 /-- `X ∪ corNeg X = 1` when `X` is coreflexive (Ex 5.17): `X` and its coreflexive complement
     exhaust the identity. -/
-theorem union_corNeg {a : 𝒜} {X : a ⟶ a} (hX : Coreflexive X) : X ∪ corNeg X = Cat.id a := by
-  have hsplit : Cat.id a ∩ (X ∪ ∼X) = (Cat.id a ∩ X) ∪ (Cat.id a ∩ (∼X)) :=
-    DistributiveAllegory.inter_union_distrib (Cat.id a) X (∼X)
-  rw [union_neg_eq_top X, inter_eq_left (show Cat.id a ⊑ topHom a a from LocallyCompleteDistributiveAllegory.le_Sup trivial),
-    Allegory.inter_comm (Cat.id a) X, inter_eq_left hX, Allegory.inter_comm (Cat.id a) (∼X)] at hsplit
+theorem union_corNeg {A : 𝒜} {X : A ⟶ A} (hX : Coreflexive X) : X ∪ corNeg X = Cat.id A := by
+  have hsplit : Cat.id A ∩ (X ∪ ∼X) = (Cat.id A ∩ X) ∪ (Cat.id A ∩ (∼X)) :=
+    DistributiveAllegory.inter_union_distrib (Cat.id A) X (∼X)
+  rw [union_neg_eq_top X, inter_eq_left (show Cat.id A ⊑ topHom A A from LocallyCompleteDistributiveAllegory.le_Sup trivial),
+    Allegory.inter_comm (Cat.id A) X, inter_eq_left hX, Allegory.inter_comm (Cat.id A) (∼X)] at hsplit
   exact hsplit.symm
 
 /-- **Ex 5.17**: the guard morphism dispatching to the first branch on `X`, the second on
     `corNeg X`. -/
-def guard {s a : 𝒜} (C : Coproduct s a a) (X : a ⟶ a) : a ⟶ s :=
+def guard {s A : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) : A ⟶ s :=
   (junc C X (corNeg X))°
 
 /-- Two coreflexive helper facts (symmetry + idempotence), packaged once for reuse. -/
-private theorem coreflexive_facts {a : 𝒜} {X : a ⟶ a} (hX : Coreflexive X) :
+private theorem coreflexive_facts {A : 𝒜} {X : A ⟶ A} (hX : Coreflexive X) :
     X° = X ∧ X ≫ X = X :=
   ⟨symmetric_eq (coreflexive_symmetric_idempotent hX).1, (coreflexive_symmetric_idempotent hX).2⟩
 
 /-- **Ex 5.17**: `guard C X` is a map (entire and simple) whenever `X` is coreflexive. -/
-theorem guard_map {s a : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Coreflexive X) :
+theorem guard_map {s A : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X) :
     Map (guard C X) := by
   have hCX := corNeg_coreflexive X
   obtain ⟨hXsymm, hXidem⟩ := coreflexive_facts hX
@@ -335,12 +335,12 @@ theorem guard_map {s a : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Corefle
     rw [coreflexive_comp_eq_inter hCX hX, Allegory.inter_comm, inter_corNeg X]
   refine ⟨?_, ?_⟩
   · -- Entire: `guard≫guard° = 1`, hence `dom(guard) = 1`.
-    show dom (guard C X) = Cat.id a
-    have hgg : guard C X ≫ (guard C X)° = Cat.id a := by
-      show (junc C X (corNeg X))° ≫ (junc C X (corNeg X))°° = Cat.id a
+    show dom (guard C X) = Cat.id A
+    have hgg : guard C X ≫ (guard C X)° = Cat.id A := by
+      show (junc C X (corNeg X))° ≫ (junc C X (corNeg X))°° = Cat.id A
       rw [Allegory.recip_recip, junc_recip_junc, hXsymm, hCsymm, hXidem, hCidem]
       exact union_corNeg hX
-    show Cat.id a ∩ (guard C X ≫ (guard C X)°) = Cat.id a
+    show Cat.id A ∩ (guard C X ≫ (guard C X)°) = Cat.id A
     rw [hgg, Allegory.inter_idem]
   · -- Simple: `guard°≫guard ⊑ 1_s`.  (`recip_recip` is a propositional `Allegory` axiom, not
     -- a definitional unfolding, so `(guard C X)°` must be turned into `junc C X (corNeg X)` by
@@ -371,13 +371,13 @@ theorem guard_map {s a : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Corefle
 
 /-- **Ex 5.17**: the conditional `cond C X R S` runs `R` when `X` holds, `S` when `corNeg X`
     holds. -/
-def cond {s a b : 𝒜} (C : Coproduct s a a) (X : a ⟶ a) (R S : a ⟶ b) : a ⟶ b :=
+def cond {s A B : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) (R S : A ⟶ B) : A ⟶ B :=
   guard C X ≫ junc C R S
 
 /-- `cond` unfolds to the explicit union form `(X≫R) ∪ (corNeg X≫S)`, via the (5.11)
     cancellation law. -/
-theorem cond_eq_union {s a b : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Coreflexive X)
-    (R S : a ⟶ b) : cond C X R S = (X ≫ R) ∪ (corNeg X ≫ S) := by
+theorem cond_eq_union {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X)
+    (R S : A ⟶ B) : cond C X R S = (X ≫ R) ∪ (corNeg X ≫ S) := by
   obtain ⟨hXsymm, _⟩ := coreflexive_facts hX
   obtain ⟨hCsymm, _⟩ := coreflexive_facts (corNeg_coreflexive X)
   show (junc C X (corNeg X))° ≫ junc C R S = (X ≫ R) ∪ (corNeg X ≫ S)
@@ -385,8 +385,8 @@ theorem cond_eq_union {s a b : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : C
 
 /-- **Ex 5.17**: the universal characterisation of `cond` — `T` refines `cond C X R S` iff its
     `X`-guarded restriction refines `R` and its `corNeg X`-guarded restriction refines `S`. -/
-theorem cond_spec {s a b : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Coreflexive X)
-    (R S : a ⟶ b) (T : a ⟶ b) :
+theorem cond_spec {s A B : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Coreflexive X)
+    (R S : A ⟶ B) (T : A ⟶ B) :
     T ⊑ cond C X R S ↔ (X ≫ T ⊑ R ∧ corNeg X ≫ T ⊑ S) := by
   have hCX := corNeg_coreflexive X
   obtain ⟨_, hXidem⟩ := coreflexive_facts hX
@@ -414,7 +414,7 @@ theorem cond_spec {s a b : 𝒜} {C : Coproduct s a a} {X : a ⟶ a} (hX : Coref
     have e2 : corNeg X ≫ T ⊑ corNeg X ≫ S := by
       have h := comp_mono_left (corNeg X) h2; rw [← Cat.assoc, hCidem] at h; exact h
     have hsplit : T = (X ≫ T) ∪ (corNeg X ≫ T) := by
-      calc T = Cat.id a ≫ T := (Cat.id_comp T).symm
+      calc T = Cat.id A ≫ T := (Cat.id_comp T).symm
         _ = (X ∪ corNeg X) ≫ T := by rw [union_corNeg hX]
         _ = (X ≫ T) ∪ (corNeg X ≫ T) := union_comp_distrib X (corNeg X) T
     rw [hsplit]

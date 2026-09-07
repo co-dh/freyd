@@ -64,13 +64,13 @@ def step : Int → (List Int → Bool) → (List Int → Bool) :=
 /-- `matchC t` — fold `t` (as a `ConsList Unit Int`) into the residual matcher that still awaits
     `s`. Defined directly by the `g`/`step` read off above, so `hwrap`/`hcons` below are `rfl`. -/
 def matchC : ConsList Unit Int → List Int → Bool
-  | ConsList.wrap d => g d
+  | ConsList.wrap D => g D
   | ConsList.cons b tl => step b (matchC tl)
 
 /-! ## The FORCED structural recursion of the curried `isSubseqFn` -/
 
 /-- The base condition: `matchC (wrap d) = g d`, by construction. -/
-theorem hwrap (d : Unit) : matchC (ConsList.wrap d) = g d := rfl
+theorem hwrap (D : Unit) : matchC (ConsList.wrap D) = g D := rfl
 
 /-- The step condition: `matchC (cons b tl) = step b (matchC tl)`, by construction. -/
 theorem hcons (b : Int) (tl : ConsList Unit Int) :

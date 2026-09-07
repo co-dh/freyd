@@ -279,21 +279,21 @@ private def complete_hasEqualizers {ℬ : Type u₁} [Cat.{v} ℬ] (hc : Complet
     have he : e ≫ f = e ≫ g := hf.trans hg.symm
     -- a cone over the parallel pair from an equalizer cone `c`:
     -- src-leg `c.map`, tgt-leg `c.map ≫ f`
-    let coneOf : EqualizerCone f g → DiagCone (wppDiagFunctor f g) := fun c =>
-      { apex := c.dom
-        π := fun X => match X with | ⟨.src⟩ => c.map | ⟨.tgt⟩ => c.map ≫ f
+    let coneOf : EqualizerCone f g → DiagCone (wppDiagFunctor f g) := fun C =>
+      { apex := C.dom
+        π := fun X => match X with | ⟨.src⟩ => C.map | ⟨.tgt⟩ => C.map ≫ f
         nat := by
           rintro ⟨X⟩ ⟨Y⟩ ⟨x⟩
-          cases x <;> (try exact Cat.comp_id _) <;> (try rfl) <;> exact c.eq.symm }
+          cases x <;> (try exact Cat.comp_id _) <;> (try rfl) <;> exact C.eq.symm }
     { cone := { dom := lim.cone.apex, map := e, eq := he }
-      lift := fun c => lim.lift (coneOf c)
-      fac := fun c => lim.fac (coneOf c) ⟨.src⟩
-      uniq := fun c m hm => by
-        apply lim.uniq (coneOf c)
+      lift := fun C => lim.lift (coneOf C)
+      fac := fun C => lim.fac (coneOf C) ⟨.src⟩
+      uniq := fun C m hm => by
+        apply lim.uniq (coneOf C)
         rintro ⟨X⟩
         cases X
         · exact hm
-        · show m ≫ lim.cone.π ⟨.tgt⟩ = c.map ≫ f
+        · show m ≫ lim.cone.π ⟨.tgt⟩ = C.map ≫ f
           rw [← hf, ← Cat.assoc, hm] }
 
 /-- Hard (⇐): equalizers + products → complete.
@@ -306,16 +306,16 @@ private def eq_prod_complete {ℬ : Type u₁} [Cat.{v} ℬ]
   hasLimit {𝒟} _ D :=
     -- Σ of arrows in 𝒟
     let Arr := Σ (i : 𝒟) (j : 𝒟), (i ⟶ j)
-    let tgtOf : Arr → 𝒟 := fun a => a.snd.fst
-    let srcOf : Arr → 𝒟 := fun a => a.fst
-    let arrOf : (a : Arr) → srcOf a ⟶ tgtOf a := fun a => a.snd.snd
+    let tgtOf : Arr → 𝒟 := fun A => A.snd.fst
+    let srcOf : Arr → 𝒟 := fun A => A.fst
+    let arrOf : (A : Arr) → srcOf A ⟶ tgtOf A := fun A => A.snd.snd
     let PD := hp.prod D.obj
-    let QD := hp.prod (fun a => D.obj (tgtOf a))
+    let QD := hp.prod (fun A => D.obj (tgtOf A))
     let P   := PD.prod
     let Q   := QD.prod
     -- mapF's a-component = proj(src a) ≫ D(arr a); mapG's = proj(tgt a)
-    let mapF : P ⟶ Q := QD.lift (fun a => PD.proj (srcOf a) ≫ D.map (arrOf a))
-    let mapG : P ⟶ Q := QD.lift (fun a => PD.proj (tgtOf a))
+    let mapF : P ⟶ Q := QD.lift (fun A => PD.proj (srcOf A) ≫ D.map (arrOf A))
+    let mapG : P ⟶ Q := QD.lift (fun A => PD.proj (tgtOf A))
     let e    := eqMap mapF mapG (𝒞 := ℬ)
     let πi : (i : 𝒟) → eqObj mapF mapG ⟶ D.obj i := fun i => e ≫ PD.proj i
     -- Naturality: (e ≫ proj i) ≫ D(x) = e ≫ proj j
@@ -331,23 +331,23 @@ private def eq_prod_complete {ℬ : Type u₁} [Cat.{v} ℬ]
       have step2 : mapG ≫ QD.proj ⟨i, j, x⟩ = PD.proj j := QD.lift_π _ _
       rw [step1, ← Cat.assoc, heq_fg, Cat.assoc, step2]
     -- Given cone c, tupling c.π equalizes mapF and mapG
-    have tupling_eq : ∀ (c : DiagCone D), PD.lift c.π ≫ mapF = PD.lift c.π ≫ mapG := by
-      intro c
+    have tupling_eq : ∀ (C : DiagCone D), PD.lift C.π ≫ mapF = PD.lift C.π ≫ mapG := by
+      intro C
       -- Both sides equal tupling of components; those agree by naturality
-      have hF : PD.lift c.π ≫ mapF = QD.lift (fun a => c.π (srcOf a) ≫ D.map (arrOf a)) := by
-        apply QD.lift_uniq; intro a
+      have hF : PD.lift C.π ≫ mapF = QD.lift (fun A => C.π (srcOf A) ≫ D.map (arrOf A)) := by
+        apply QD.lift_uniq; intro A
         rw [Cat.assoc, QD.lift_π, ← Cat.assoc, PD.lift_π]
-      have hG : PD.lift c.π ≫ mapG = QD.lift (fun a => c.π (tgtOf a)) := by
-        apply QD.lift_uniq; intro a
+      have hG : PD.lift C.π ≫ mapG = QD.lift (fun A => C.π (tgtOf A)) := by
+        apply QD.lift_uniq; intro A
         rw [Cat.assoc, QD.lift_π]; exact PD.lift_π _ _
-      rw [hF, hG]; congr 1; funext ⟨i, j, x⟩; exact c.nat x
+      rw [hF, hG]; congr 1; funext ⟨i, j, x⟩; exact C.nat x
     { cone  := { apex := eqObj mapF mapG, π := πi, nat := nat_pf }
-      lift  := fun c => eqLift mapF mapG (PD.lift c.π) (tupling_eq c)
-      fac   := fun c i => by
-        show eqLift mapF mapG (PD.lift c.π) (tupling_eq c) ≫ πi i = c.π i
+      lift  := fun C => eqLift mapF mapG (PD.lift C.π) (tupling_eq C)
+      fac   := fun C i => by
+        show eqLift mapF mapG (PD.lift C.π) (tupling_eq C) ≫ πi i = C.π i
         dsimp only [πi]
         rw [← Cat.assoc, eqLift_fac, PD.lift_π]
-      uniq  := fun c u hu => by
+      uniq  := fun C u hu => by
         apply eqLift_uniq
         -- need: u ≫ e = PD.lift c.π
         apply PD.lift_uniq; intro i
@@ -406,7 +406,7 @@ def IsCocontinuous {ℬ : Type u₁} [Cat.{v} ℬ] {𝒞 : Type u₂} [Cat.{v} �
 public structure HasWeakLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v} ℬ]
     (D : Functor 𝒟 ℬ) where
   cone  : DiagCone D
-  exist : (c : DiagCone D) → ∃ u : c.apex ⟶ cone.apex, ∀ i, u ≫ cone.π i = c.π i
+  exist : (C : DiagCone D) → ∃ u : C.apex ⟶ cone.apex, ∀ i, u ≫ cone.π i = C.π i
 
 /-- A category is WEAKLY-COMPLETE if every small diagram has a weak-limit (§1.828). -/
 public class WeaklyComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
@@ -417,7 +417,7 @@ public class WeaklyComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
     WeaklyComplete ℬ where
   hasWeakLimit := fun {_} _ D =>
     let hl := hc.hasLimit D
-    { cone := hl.cone, exist := fun c => ⟨hl.lift c, hl.fac c⟩ }
+    { cone := hl.cone, exist := fun C => ⟨hl.lift C, hl.fac C⟩ }
 
 -- ---------------------------------------------------------------------------
 -- §1.82(10)  Pre-limit and Pre-complete
@@ -432,8 +432,8 @@ public structure HasPreLimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [C
     (D : Functor 𝒟 ℬ) where
   J       : Type v
   cones   : J → DiagCone D
-  cofinal : (c : DiagCone D) →
-              ∃ (j : J) (u : c.apex ⟶ (cones j).apex), ∀ i, u ≫ (cones j).π i = c.π i
+  cofinal : (C : DiagCone D) →
+              ∃ (j : J) (u : C.apex ⟶ (cones j).apex), ∀ i, u ≫ (cones j).π i = C.π i
 
 /-- A category is PRE-COMPLETE if every small diagram has a pre-limit (§1.82(10)). -/
 public class PreComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
@@ -446,7 +446,7 @@ public class PreComplete (ℬ : Type u₁) [Cat.{v} ℬ] where
     let hl := hc.hasLimit D
     { J := PUnit.{v+1},
       cones := fun _ => hl.cone,
-      cofinal := fun c => ⟨PUnit.unit, hl.lift c, hl.fac c⟩ }
+      cofinal := fun C => ⟨PUnit.unit, hl.lift C, hl.fac C⟩ }
 
 -- ---------------------------------------------------------------------------
 -- §1.83  Pre-adjoint and General Adjoint Functor Theorem
@@ -508,9 +508,9 @@ theorem isContinuous_of_adjunction
     intro i j x
     rw [← ψ_nat_right adj (legs i) (D.map x), hnat x]
   -- Lift the F W-cone through the limit, getting w : F W → lim.apex.
-  let c : DiagCone D := { apex := F.obj W, π := fun i => adj.ψ (legs i), nat := tnat }
-  let w := lim.lift c
-  have hwfac : ∀ i, w ≫ lim.cone.π i = adj.ψ (legs i) := lim.fac c
+  let C : DiagCone D := { apex := F.obj W, π := fun i => adj.ψ (legs i), nat := tnat }
+  let w := lim.lift C
+  have hwfac : ∀ i, w ≫ lim.cone.π i = adj.ψ (legs i) := lim.fac C
   -- Transpose w back: u := φ w = η_W ≫ G w : W → G(lim.apex).
   refine ⟨adj.φ w, ?_, ?_⟩
   · intro i
@@ -523,7 +523,7 @@ theorem isContinuous_of_adjunction
       intro i
       -- ψ u' ≫ π i = ψ(u' ≫ G(π i)) = ψ(legs i).
       rw [← ψ_nat_right adj u' (lim.cone.π i), hu' i]
-    have hwu : adj.ψ u' = w := lim.uniq c (adj.ψ u') hψfac
+    have hwu : adj.ψ u' = w := lim.uniq C (adj.ψ u') hψfac
     calc u' = adj.φ (adj.ψ u') := (adj.φψ u').symm
       _ = adj.φ w := by rw [hwu]
 
@@ -809,26 +809,26 @@ private noncomputable def gaft_representability
   -- ── G preserves equalizers: a reusable factoring lemma via the WPP limit ──
   -- for a,b : Y ⟶ Z and k : A ⟶ G.obj Y with k ≫ G a = k ≫ G b, build E, m : E ⟶ Y (monic,
   -- m ≫ a = m ≫ b) and unique θ_E : A ⟶ G.obj E with θ_E ≫ G m = k.
-  let eqFactor : ∀ {Y Z : ℬ} (a b : Y ⟶ Z) (k : A ⟶ G.obj Y),
-      k ≫ G.map a = k ≫ G.map b →
+  let eqFactor : ∀ {Y Z : ℬ} (a B : Y ⟶ Z) (k : A ⟶ G.obj Y),
+      k ≫ G.map a = k ≫ G.map B →
       Σ' (E : ℬ) (m : E ⟶ Y),
-        (m ≫ a = m ≫ b) ×'
+        (m ≫ a = m ≫ B) ×'
         (∀ {W : ℬ} (s t : W ⟶ E), s ≫ m = t ≫ m → s = t) ×'
         Σ' θE : A ⟶ G.obj E, θE ≫ G.map m = k := by
-    intro Y Z a b k hk
-    let wlim := hc.hasLimit (wppDiagFunctor a b)
+    intro Y Z a B k hk
+    let wlim := hc.hasLimit (wppDiagFunctor a B)
     let m : wlim.cone.apex ⟶ Y := wlim.cone.π ⟨.src⟩
     have hmsrc : m = wlim.cone.π ⟨.src⟩ := rfl
     -- m ≫ a = tgt-leg, m ≫ b = tgt-leg
     have hma : m ≫ a = wlim.cone.π ⟨.tgt⟩ :=
       wlim.cone.nat (⟨.arr0⟩ : (⟨.src⟩ : WPPv) ⟶ ⟨.tgt⟩)
-    have hmb : m ≫ b = wlim.cone.π ⟨.tgt⟩ :=
+    have hmb : m ≫ B = wlim.cone.π ⟨.tgt⟩ :=
       wlim.cone.nat (⟨.arr1⟩ : (⟨.src⟩ : WPPv) ⟶ ⟨.tgt⟩)
-    have hmeq : m ≫ a = m ≫ b := hma.trans hmb.symm
+    have hmeq : m ≫ a = m ≫ B := hma.trans hmb.symm
     -- m monic: two maps agreeing after m lift the same cone
     have mMonic : ∀ {W : ℬ} (s t : W ⟶ wlim.cone.apex), s ≫ m = t ≫ m → s = t := by
       intro W s t hst
-      let cc : DiagCone (wppDiagFunctor a b) :=
+      let cc : DiagCone (wppDiagFunctor a B) :=
         { apex := W
           π := fun X => match X with | ⟨.src⟩ => s ≫ m | ⟨.tgt⟩ => (s ≫ m) ≫ a
           nat := by
@@ -838,7 +838,7 @@ private noncomputable def gaft_representability
             | idT  => exact Cat.comp_id _
             | arr0 => rfl
             | arr1 =>
-                show (s ≫ m) ≫ b = (s ≫ m) ≫ a
+                show (s ≫ m) ≫ B = (s ≫ m) ≫ a
                 rw [Cat.assoc, Cat.assoc, ← hmeq] }
       have hs : s = wlim.lift cc := wlim.uniq cc s (by
         rintro ⟨X⟩; cases X
@@ -852,17 +852,17 @@ private noncomputable def gaft_representability
           rw [← hma, ← Cat.assoc, ← hst, Cat.assoc])
       rw [hs, ht]
     -- continuity: the cone {k at src, k≫Ga at tgt} over G∘D factors uniquely
-    let glegs : (Z : WPPv) → A ⟶ G.obj (wppDiagObj a b Z) :=
+    let glegs : (Z : WPPv) → A ⟶ G.obj (wppDiagObj a B Z) :=
       fun Z => match Z with | ⟨.src⟩ => k | ⟨.tgt⟩ => k ≫ G.map a
     have gnat : ∀ {X Yy : WPPv} (x : X ⟶ Yy),
-        glegs X ≫ G.map ((wppDiagFunctor a b).map x) = glegs Yy := by
+        glegs X ≫ G.map ((wppDiagFunctor a B).map x) = glegs Yy := by
       rintro ⟨X⟩ ⟨Yy⟩ ⟨x⟩
       cases x with
       | idS => show k ≫ G.map (Cat.id Y) = k; rw [G.map_id, Cat.comp_id]
       | idT => show (k ≫ G.map a) ≫ G.map (Cat.id Z) = k ≫ G.map a
                rw [G.map_id, Cat.comp_id]
       | arr0 => show k ≫ G.map a = k ≫ G.map a; rfl
-      | arr1 => show k ≫ G.map b = k ≫ G.map a; rw [hk]
+      | arr1 => show k ≫ G.map B = k ≫ G.map a; rw [hk]
     let θex := hcont wlim A glegs gnat
     let θE : A ⟶ G.obj wlim.cone.apex := θex.choose
     have hθfac : θE ≫ G.map m = k := θex.choose_spec.1 ⟨.src⟩
@@ -1469,7 +1469,7 @@ theorem preserves_weaklim_iff_preserves_lim
   intro 𝒟 _ D lim W legs hnat
   -- Use the limit as a weak-limit
   let wl : HasWeakLimit D :=
-    { cone := lim.cone, exist := fun c => ⟨lim.lift c, lim.fac c⟩ }
+    { cone := lim.cone, exist := fun C => ⟨lim.lift C, lim.fac C⟩ }
   -- T maps this weak-limit to a weak-limit-like structure by hypothesis
   obtain ⟨u, hu⟩ := hpwl wl W legs hnat
   refine ⟨u, hu, ?_⟩
@@ -1480,13 +1480,13 @@ theorem preserves_weaklim_iff_preserves_lim
   let L  := lim.cone.apex
   let πf : (i : 𝒟) → L ⟶ D.obj i := lim.cone.π
   -- the limit projections are collectively monic
-  have limMonic : ∀ {X : ℬ} (a b : X ⟶ L), (∀ i, a ≫ πf i = b ≫ πf i) → a = b := by
-    intro X a b hab
+  have limMonic : ∀ {X : ℬ} (A B : X ⟶ L), (∀ i, A ≫ πf i = B ≫ πf i) → A = B := by
+    intro X A B hab
     let cc : DiagCone D :=
-      { apex := X, π := fun i => a ≫ πf i
+      { apex := X, π := fun i => A ≫ πf i
         nat := fun {i j} x => by rw [Cat.assoc, lim.cone.nat x] }
-    have ha : a = lim.lift cc := lim.uniq cc a (fun i => rfl)
-    have hb : b = lim.lift cc := lim.uniq cc b (fun i => (hab i).symm)
+    have ha : A = lim.lift cc := lim.uniq cc A (fun i => rfl)
+    have hb : B = lim.lift cc := lim.uniq cc B (fun i => (hab i).symm)
     rw [ha, hb]
   let D' := mfDiagObj D.obj L
   let hD' := mfDiagFunctor D.obj πf
@@ -1505,22 +1505,22 @@ theorem preserves_weaklim_iff_preserves_lim
   -- which holds because `{π i}` is collectively monic (from `lim.uniq`).
   let wl' : HasWeakLimit hD' :=
     { cone := c₀
-      exist := fun c => by
+      exist := fun C => by
         -- the `botL`-leg is a valid factorization
-        refine ⟨c.π .botL, ?_⟩
+        refine ⟨C.π .botL, ?_⟩
         rintro (i | _ | _)
         · -- c.π botL ≫ π i = c.π (pt i): naturality of c on `arrL i`
-          exact c.nat (MFHom.arrL i : (MFShape.botL : MFShape 𝒟) ⟶ .pt i)
+          exact C.nat (MFHom.arrL i : (MFShape.botL : MFShape 𝒟) ⟶ .pt i)
         · exact Cat.comp_id _
         · -- need c.π botL ≫ id = c.π botR; both legs agree after composing with every π i
-          have heq : c.π .botL = c.π .botR := by
-            apply limMonic (c.π .botL) (c.π .botR)
+          have heq : C.π .botL = C.π .botR := by
+            apply limMonic (C.π .botL) (C.π .botR)
             intro i
-            have hL := c.nat (MFHom.arrL i : (MFShape.botL : MFShape 𝒟) ⟶ .pt i)
-            have hR := c.nat (MFHom.arrR i : (MFShape.botR : MFShape 𝒟) ⟶ .pt i)
+            have hL := C.nat (MFHom.arrL i : (MFShape.botL : MFShape 𝒟) ⟶ .pt i)
+            have hR := C.nat (MFHom.arrR i : (MFShape.botR : MFShape 𝒟) ⟶ .pt i)
             -- both equal c.π (pt i)
             exact hL.trans hR.symm
-          exact (Cat.comp_id (c.π .botL)).trans heq }
+          exact (Cat.comp_id (C.π .botL)).trans heq }
   -- T preserves this weak-limit: build the test cone over `T∘D'` with apex W,
   -- legs `u` at botL, `u'` at botR, `legs i` at pt i.
   let testLegs : (Z : MFShape 𝒟) → W ⟶ T.obj (D' Z) :=
@@ -1581,8 +1581,8 @@ theorem uniformly_continuous_preserves_prelimits
   -- By uniform continuity, find B,cone,φ
   obtain ⟨B, cone_legs, cone_nat, φ, hφ⟩ := huc A legs hnat
   -- pl is cofinal: there exist j and u : B → apex(cones j)
-  let c : DiagCone D := { apex := B, π := cone_legs, nat := cone_nat }
-  obtain ⟨j, u, hu⟩ := pl.cofinal c
+  let C : DiagCone D := { apex := B, π := cone_legs, nat := cone_nat }
+  obtain ⟨j, u, hu⟩ := pl.cofinal C
   refine ⟨j, φ ≫ G.map u, ?_⟩
   intro i
   rw [Cat.assoc, ← G.map_comp, hu i, hφ i]
@@ -1918,8 +1918,8 @@ structure HasPreColimit {𝒟 : Type u} [Cat.{v} 𝒟] {ℬ : Type u₁} [Cat.{v
     (D : Functor 𝒟 ℬ) where
   J       : Type v
   cocones : J → DiagCocone D
-  cofinal : (c : DiagCocone D) →
-              ∃ (j : J) (u : (cocones j).nadir ⟶ c.nadir), ∀ i, (cocones j).ι i ≫ u = c.ι i
+  cofinal : (C : DiagCocone D) →
+              ∃ (j : J) (u : (cocones j).nadir ⟶ C.nadir), ∀ i, (cocones j).ι i ≫ u = C.ι i
 
 /-- A category is PRE-COCOMPLETE if every small diagram has a pre-colimit (§1.837). -/
 class PreCocomplete (ℬ : Type u₁) [Cat.{v} ℬ] where
@@ -1933,7 +1933,7 @@ def cocomplete_imp_preCocomplete {ℬ : Type u₁} [Cat.{v} ℬ] (hc : Cocomplet
     let hl := hc.hasColimit D
     { J := PUnit.{v+1}
       cocones := fun _ => hl.cocone
-      cofinal := fun c => ⟨PUnit.unit, hl.lift c, hl.fac c⟩ }
+      cofinal := fun C => ⟨PUnit.unit, hl.lift C, hl.fac C⟩ }
 
 /-- §1.837 (hard half, the heart): a *complete* pre-cocomplete category is cocomplete.
 
@@ -1977,9 +1977,9 @@ private noncomputable def cocomplete_of_complete_precocomplete
     rw [Cat.assoc, hκproj]
     exact (pc.cocones j).nat x
   -- weak initiality: every cocone `c` is reached from `(P, κ)`
-  have weakInit : ∀ (c : DiagCocone D), ∃ w : P ⟶ c.nadir, ∀ i, κ i ≫ w = c.ι i := by
-    intro c
-    obtain ⟨j, u, hu⟩ := pc.cofinal c
+  have weakInit : ∀ (C : DiagCocone D), ∃ w : P ⟶ C.nadir, ∀ i, κ i ≫ w = C.ι i := by
+    intro C
+    obtain ⟨j, u, hu⟩ := pc.cofinal C
     refine ⟨hpN.proj j ≫ u, ?_⟩
     intro i
     rw [← Cat.assoc, hκproj, hu i]
@@ -2065,16 +2065,16 @@ private noncomputable def cocomplete_of_complete_precocomplete
   -- ── assemble the colimit ──
   exact
     { cocone := { nadir := R, ι := ιR, nat := fun {i i'} x => ιRnat x }
-      lift := fun c => r ≫ (weakInit c).choose
-      fac := fun c i => by
-        show ιR i ≫ (r ≫ (weakInit c).choose) = c.ι i
-        rw [← Cat.assoc, hιR, (weakInit c).choose_spec i]
-      uniq := fun c u hu => by
+      lift := fun C => r ≫ (weakInit C).choose
+      fac := fun C i => by
+        show ιR i ≫ (r ≫ (weakInit C).choose) = C.ι i
+        rw [← Cat.assoc, hιR, (weakInit C).choose_spec i]
+      uniq := fun C u hu => by
         apply colimMonic
         intro i
         rw [hu i]
-        show c.ι i = ιR i ≫ (r ≫ (weakInit c).choose)
-        rw [← Cat.assoc, hιR, (weakInit c).choose_spec i] }
+        show C.ι i = ιR i ≫ (r ≫ (weakInit C).choose)
+        rw [← Cat.assoc, hιR, (weakInit C).choose_spec i] }
 
 -- ---------------------------------------------------------------------------
 -- §1.825 (dual)  Cocomplete iff coequalizers + all coproducts
@@ -2157,22 +2157,22 @@ private def coeq_coprod_cocomplete {ℬ : Type u₁} [Cat.{v} ℬ]
     (hce : HasCoequalizers ℬ) (hp : HasCoproducts ℬ) : Cocomplete ℬ where
   hasColimit {𝒟} _ D :=
     let Arr := Σ (i : 𝒟) (j : 𝒟), (i ⟶ j)
-    let tgtOf : Arr → 𝒟 := fun a => a.snd.fst
-    let srcOf : Arr → 𝒟 := fun a => a.fst
-    let arrOf : (a : Arr) → srcOf a ⟶ tgtOf a := fun a => a.snd.snd
+    let tgtOf : Arr → 𝒟 := fun A => A.snd.fst
+    let srcOf : Arr → 𝒟 := fun A => A.fst
+    let arrOf : (A : Arr) → srcOf A ⟶ tgtOf A := fun A => A.snd.snd
     let P   := hp.coprodObj D.obj
-    let Q   := hp.coprodObj (fun a => D.obj (srcOf a))
+    let Q   := hp.coprodObj (fun A => D.obj (srcOf A))
     -- mapF's a-component = D(arr a) ≫ inj(tgt a); mapG's = inj(src a)
-    let mapF : Q ⟶ P := hp.cotupling (fun a => D.map (arrOf a) ≫ hp.inj (tgtOf a))
-    let mapG : Q ⟶ P := hp.cotupling (fun a => hp.inj (srcOf a))
-    let c    := hce.coeq mapF mapG
-    let ιi : (i : 𝒟) → D.obj i ⟶ c.obj := fun i => hp.inj i ≫ c.map
+    let mapF : Q ⟶ P := hp.cotupling (fun A => D.map (arrOf A) ≫ hp.inj (tgtOf A))
+    let mapG : Q ⟶ P := hp.cotupling (fun A => hp.inj (srcOf A))
+    let C    := hce.coeq mapF mapG
+    let ιi : (i : 𝒟) → D.obj i ⟶ C.obj := fun i => hp.inj i ≫ C.map
     -- Naturality: D(x) ≫ (inj j ≫ coeqMap) = inj i ≫ coeqMap
     have nat_pf : ∀ {i j : 𝒟} (x : i ⟶ j), D.map x ≫ ιi j = ιi i := by
       intro i j x
-      show D.map x ≫ (hp.inj j ≫ c.map) = hp.inj i ≫ c.map
+      show D.map x ≫ (hp.inj j ≫ C.map) = hp.inj i ≫ C.map
       rw [← Cat.assoc]
-      have hcoeq_fg : mapF ≫ c.map = mapG ≫ c.map := c.eq
+      have hcoeq_fg : mapF ≫ C.map = mapG ≫ C.map := C.eq
       -- D(x) ≫ inj j = inj⟨i,j,x⟩ ≫ mapF
       have step1 : D.map x ≫ hp.inj j = hp.inj ⟨i, j, x⟩ ≫ mapF := by
         rw [hp.cotupling_fac]
@@ -2182,21 +2182,21 @@ private def coeq_coprod_cocomplete {ℬ : Type u₁} [Cat.{v} ℬ]
     -- Given cocone c', cotupling c'.ι coequalizes mapF and mapG
     have cotupling_eq : ∀ (c' : DiagCocone D), mapF ≫ hp.cotupling c'.ι = mapG ≫ hp.cotupling c'.ι := by
       intro c'
-      have hF : mapF ≫ hp.cotupling c'.ι = hp.cotupling (fun a => D.map (arrOf a) ≫ c'.ι (tgtOf a)) := by
-        apply hp.cotupling_uniq; intro a
+      have hF : mapF ≫ hp.cotupling c'.ι = hp.cotupling (fun A => D.map (arrOf A) ≫ c'.ι (tgtOf A)) := by
+        apply hp.cotupling_uniq; intro A
         rw [← Cat.assoc, hp.cotupling_fac, Cat.assoc, hp.cotupling_fac]
-      have hG : mapG ≫ hp.cotupling c'.ι = hp.cotupling (fun a => c'.ι (srcOf a)) := by
-        apply hp.cotupling_uniq; intro a
+      have hG : mapG ≫ hp.cotupling c'.ι = hp.cotupling (fun A => c'.ι (srcOf A)) := by
+        apply hp.cotupling_uniq; intro A
         rw [← Cat.assoc, hp.cotupling_fac]; exact hp.cotupling_fac _ _
       rw [hF, hG]; congr 1; funext ⟨i, j, x⟩; exact c'.nat x
-    { cocone := { nadir := c.obj, ι := ιi, nat := nat_pf }
-      lift   := fun c' => c.desc (hp.cotupling c'.ι) (cotupling_eq c')
+    { cocone := { nadir := C.obj, ι := ιi, nat := nat_pf }
+      lift   := fun c' => C.desc (hp.cotupling c'.ι) (cotupling_eq c')
       fac    := fun c' i => by
-        show ιi i ≫ c.desc (hp.cotupling c'.ι) (cotupling_eq c') = c'.ι i
+        show ιi i ≫ C.desc (hp.cotupling c'.ι) (cotupling_eq c') = c'.ι i
         dsimp only [ιi]
-        rw [Cat.assoc, c.fac, hp.cotupling_fac]
+        rw [Cat.assoc, C.fac, hp.cotupling_fac]
       uniq   := fun c' u hu => by
-        apply c.uniq
+        apply C.uniq
         apply hp.cotupling_uniq; intro i
         rw [← Cat.assoc]; exact hu i }
 
@@ -2559,16 +2559,16 @@ private def wideCoequalizer {ℬ : Type u₁} [Cat.{v} ℬ]
       have e2 : g ≫ m = hp.cotupling (fun k => hp.inj k ≫ (g ≫ m)) :=
         hp.cotupling_uniq (fun k => hp.inj k ≫ (g ≫ m)) (g ≫ m) (fun _ => rfl)
       exact e1.trans e2.symm
-  let c := hce.coeq f g
-  let r : P ⟶ c.obj := c.map
-  have hr : ∀ k, e k ≫ r = r := (key r).1 c.eq
+  let C := hce.coeq f g
+  let r : P ⟶ C.obj := C.map
+  have hr : ∀ k, e k ≫ r = r := (key r).1 C.eq
   exact
-  { R    := c.obj
+  { R    := C.obj
     r    := r
     spec := hr
-    desc := fun {X} m h => c.desc m ((key m).2 h)
-    fac  := fun {X} m h => c.fac m ((key m).2 h)
-    uniq := fun {X} m h u hu => c.uniq m ((key m).2 h) u hu }
+    desc := fun {X} m h => C.desc m ((key m).2 h)
+    fac  := fun {X} m h => C.fac m ((key m).2 h)
+    uniq := fun {X} m h u hu => C.uniq m ((key m).2 h) u hu }
 
 /-! ### §1.83(11)  Dual GAFT engine (dual of `gaft_representability`) -/
 
@@ -2661,27 +2661,27 @@ private noncomputable def dual_gaft_finalElement
   -- ── F preserves coequalizers: a reusable factoring lemma via the WPP colimit ──
   -- for a,b : Y ⟶ Z and k : F.obj Z ⟶ B with F a ≫ k = F b ≫ k, build E, m : Z ⟶ E (epic,
   -- a ≫ m = b ≫ m) and unique θ_E : F.obj E ⟶ B with F m ≫ θ_E = k.
-  let coeqFactor : ∀ {Y Z : 𝒜} (a b : Y ⟶ Z) (k : F.obj Z ⟶ B),
-      F.map a ≫ k = F.map b ≫ k →
+  let coeqFactor : ∀ {Y Z : 𝒜} (A b : Y ⟶ Z) (k : F.obj Z ⟶ B),
+      F.map A ≫ k = F.map b ≫ k →
       Σ' (E : 𝒜) (m : Z ⟶ E),
-        (a ≫ m = b ≫ m) ×'
+        (A ≫ m = b ≫ m) ×'
         (∀ {W : 𝒜} (s t : E ⟶ W), m ≫ s = m ≫ t → s = t) ×'
         Σ' θE : F.obj E ⟶ B, F.map m ≫ θE = k := by
-    intro Y Z a b k hk
-    let wcol := hcc.hasColimit (wppDiagFunctor a b)
+    intro Y Z A b k hk
+    let wcol := hcc.hasColimit (wppDiagFunctor A b)
     let m : Z ⟶ wcol.cocone.nadir := wcol.cocone.ι ⟨.tgt⟩
     -- a ≫ m = src-leg, b ≫ m = src-leg
-    have hma : a ≫ m = wcol.cocone.ι ⟨.src⟩ :=
+    have hma : A ≫ m = wcol.cocone.ι ⟨.src⟩ :=
       wcol.cocone.nat (⟨.arr0⟩ : (⟨.src⟩ : WPPv) ⟶ ⟨.tgt⟩)
     have hmb : b ≫ m = wcol.cocone.ι ⟨.src⟩ :=
       wcol.cocone.nat (⟨.arr1⟩ : (⟨.src⟩ : WPPv) ⟶ ⟨.tgt⟩)
-    have hmeq : a ≫ m = b ≫ m := hma.trans hmb.symm
+    have hmeq : A ≫ m = b ≫ m := hma.trans hmb.symm
     -- m epic: two maps agreeing after m lift the same cocone
     have mEpic : ∀ {W : 𝒜} (s t : wcol.cocone.nadir ⟶ W), m ≫ s = m ≫ t → s = t := by
       intro W s t hst
-      let cc : DiagCocone (wppDiagFunctor a b) :=
+      let cc : DiagCocone (wppDiagFunctor A b) :=
         { nadir := W
-          ι := fun X => match X with | ⟨.src⟩ => a ≫ (m ≫ s) | ⟨.tgt⟩ => m ≫ s
+          ι := fun X => match X with | ⟨.src⟩ => A ≫ (m ≫ s) | ⟨.tgt⟩ => m ≫ s
           nat := by
             rintro ⟨X⟩ ⟨Yy⟩ ⟨x⟩
             cases x with
@@ -2689,31 +2689,31 @@ private noncomputable def dual_gaft_finalElement
             | idT  => exact Cat.id_comp _
             | arr0 => rfl
             | arr1 =>
-                show b ≫ (m ≫ s) = a ≫ (m ≫ s)
+                show b ≫ (m ≫ s) = A ≫ (m ≫ s)
                 rw [← Cat.assoc, ← Cat.assoc, ← hmeq] }
       have hs : s = wcol.lift cc := wcol.uniq cc s (by
         rintro ⟨X⟩; cases X
-        · show wcol.cocone.ι ⟨.src⟩ ≫ s = a ≫ (m ≫ s)
+        · show wcol.cocone.ι ⟨.src⟩ ≫ s = A ≫ (m ≫ s)
           rw [← hma, Cat.assoc]
         · show m ≫ s = m ≫ s; rfl)
       have ht : t = wcol.lift cc := wcol.uniq cc t (by
         rintro ⟨X⟩; cases X
-        · show wcol.cocone.ι ⟨.src⟩ ≫ t = a ≫ (m ≫ s)
+        · show wcol.cocone.ι ⟨.src⟩ ≫ t = A ≫ (m ≫ s)
           rw [← hma, Cat.assoc, hst]
         · show m ≫ t = m ≫ s; exact hst.symm)
       rw [hs, ht]
     -- cocontinuity: the cocone {k at tgt, a≫?} over F∘D factors uniquely
-    let glegs : (Z' : WPPv) → F.obj (wppDiagObj a b Z') ⟶ B :=
-      fun Z' => match Z' with | ⟨.src⟩ => F.map a ≫ k | ⟨.tgt⟩ => k
+    let glegs : (Z' : WPPv) → F.obj (wppDiagObj A b Z') ⟶ B :=
+      fun Z' => match Z' with | ⟨.src⟩ => F.map A ≫ k | ⟨.tgt⟩ => k
     have gnat : ∀ {X Yy : WPPv} (x : X ⟶ Yy),
-        F.map ((wppDiagFunctor a b).map x) ≫ glegs Yy = glegs X := by
+        F.map ((wppDiagFunctor A b).map x) ≫ glegs Yy = glegs X := by
       rintro ⟨X⟩ ⟨Yy⟩ ⟨x⟩
       cases x with
-      | idS => show F.map (Cat.id Y) ≫ (F.map a ≫ k) = F.map a ≫ k
+      | idS => show F.map (Cat.id Y) ≫ (F.map A ≫ k) = F.map A ≫ k
                rw [F.map_id, Cat.id_comp]
       | idT => show F.map (Cat.id Z) ≫ k = k; rw [F.map_id, Cat.id_comp]
-      | arr0 => show F.map a ≫ k = F.map a ≫ k; rfl
-      | arr1 => show F.map b ≫ k = F.map a ≫ k; rw [hk]
+      | arr0 => show F.map A ≫ k = F.map A ≫ k; rfl
+      | arr1 => show F.map b ≫ k = F.map A ≫ k; rw [hk]
     let θex := hcoc wcol B glegs gnat
     let θE : F.obj wcol.cocone.nadir ⟶ B := θex.choose
     have hθfac : F.map m ≫ θE = k := θex.choose_spec.1 ⟨.tgt⟩

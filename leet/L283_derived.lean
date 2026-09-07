@@ -65,7 +65,7 @@ def h : ConsList Unit Int → List Int × Nat
   | ConsList.cons x xs => st x (h xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `h (wrap d) = g d`. -/
-theorem hwrap : ∀ d : Unit, h (ConsList.wrap d) = g d := fun _ => rfl
+theorem hwrap : ∀ D : Unit, h (ConsList.wrap D) = g D := fun _ => rfl
 
 /-- The step condition IS `h`'s cons equation: `h (cons x xs) = st x (h xs)`. -/
 theorem hcons : ∀ (x : Int) (xs : ConsList Unit Int), h (ConsList.cons x xs) = st x (h xs) :=

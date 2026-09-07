@@ -34,16 +34,16 @@ namespace Freyd.Alg
 
 section Choose
 
-variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {a : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {A : 𝒜}
 
 /-- **B&dM p.176**: `choose = outl ∪ outr` — pick either component of a pair (either party). -/
-@[expose] public def choose (P : RelProd a a) : P.p ⟶ a := P.outl ∪ P.outr
+@[expose] public def choose (P : RelProd A A) : P.p ⟶ A := P.outl ∪ P.outr
 
 /-- **§7.3 (B&dM p.177), first monotonicity claim** ("left as a simple exercise"): `choose` is
     monotonic on `R`, i.e. `choose·(R×R) ⊆ R·choose` (mirrored `(R×R) ≫ choose ⊑ choose ≫ R`).
     Immediate from the product projection laws `prodMap ≫ outl ⊑ outl ≫ R` (and `outr`) and the
     distributivity of composition over `∪`. -/
-public theorem choose_monotonic (P : RelProd a a) (R : a ⟶ a) :
+public theorem choose_monotonic (P : RelProd A A) (R : A ⟶ A) :
     prodMap P P R R ≫ choose P ⊑ choose P ≫ R := by
   show prodMap P P R R ≫ (P.outl ∪ P.outr) ⊑ (P.outl ∪ P.outr) ≫ R
   rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
@@ -58,8 +58,8 @@ namespace RelSet
 open CL ListRel
 
 /-- A map is its own best output for a reflexive order: `f ⊑ Λ(f) est(Q)` when `𝟙 ⊑ Q`. -/
-public theorem graph_le_Λ_est {a b : RelSet.{0}} (f : a.carrier → b.carrier) {Q : b ⟶ b}
-    (hrefl : 𝟙 b ⊑ Q) : graph f ⊑ Λ (graph f) ≫ est(Q) := by
+public theorem graph_le_Λ_est {A B : RelSet.{0}} (f : A.carrier → B.carrier) {Q : B ⟶ B}
+    (hrefl : 𝟙 B ⊑ Q) : graph f ⊑ Λ (graph f) ≫ est(Q) := by
   apply le_iff.mpr; intro x y hy
   refine ⟨fun z => graph f x z, by rw [Λ_eq_classifier]; rfl, ?_⟩
   refine ⟨hy, fun z hz => ?_⟩
@@ -67,8 +67,8 @@ public theorem graph_le_Λ_est {a b : RelSet.{0}} (f : a.carrier → b.carrier) 
 
 /-- **Ex 7.15 (B&dM p.169) in `Rel(Set)`**: componentwise bests assemble to a pairwise best,
     `⟨Λ(U) est(Ra°), Λ(V) est(Rb°)⟩ ⊑ Λ(⟨U,V⟩) est((Ra×Rb)°)`. -/
-public theorem pair_est_le {c a b : RelSet.{0}} (U : c ⟶ a) (V : c ⟶ b)
-    (Ra : a ⟶ a) (Rb : b ⟶ b) :
+public theorem pair_est_le {C A B : RelSet.{0}} (U : C ⟶ A) (V : C ⟶ B)
+    (Ra : A ⟶ A) (Rb : B ⟶ B) :
     rpair (Λ U ≫ est(Ra°)) (Λ V ≫ est(Rb°)) ⊑ Λ (rpair U V) ≫ est((rprodMap Ra Rb)°) := by
   apply le_iff.mpr; intro x p hp
   obtain ⟨⟨Pu, hPu, hest1⟩, ⟨Pv, hPv, hest2⟩⟩ := hp

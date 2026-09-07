@@ -59,7 +59,7 @@ def foldFn (target : Int) : ConsList Unit Int → Nat
   | ConsList.cons x xs => if target ≤ x then 0 else 1 + foldFn target xs
 
 /-- Base condition (`rfl`): `foldFn target (wrap d) = g target d`. -/
-theorem foldFn_wrap (target : Int) (d : Unit) : foldFn target (ConsList.wrap d) = g target d := rfl
+theorem foldFn_wrap (target : Int) (D : Unit) : foldFn target (ConsList.wrap D) = g target D := rfl
 
 /-- Step condition (`rfl`): `foldFn target (cons x xs) = st target x (foldFn target xs)`. -/
 theorem foldFn_cons (target : Int) (x : Int) (xs : ConsList Unit Int) :

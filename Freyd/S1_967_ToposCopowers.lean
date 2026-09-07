@@ -1444,9 +1444,9 @@ theorem cfpEmbed_disjoint {I : Type v} (A : I → 𝒞) {i j : I} (hij : i ≠ j
       = (pb.cone.π₂ ≫ term (A j)) ≫ coprodInr (A i) (one : 𝒞) := by
     rw [Cat.assoc]; exact hcoord
   let pbC := HasPullbacks.has (coprodInl (A i) (one : 𝒞)) (coprodInr (A i) (one : 𝒞))
-  let c : Cone (coprodInl (A i) (one : 𝒞)) (coprodInr (A i) (one : 𝒞)) :=
+  let C : Cone (coprodInl (A i) (one : 𝒞)) (coprodInr (A i) (one : 𝒞)) :=
     ⟨P, pb.cone.π₁, pb.cone.π₂ ≫ term (A j), hcollapse⟩
-  let δ : P ⟶ pbC.cone.pt := pbC.lift c
+  let δ : P ⟶ pbC.cone.pt := pbC.lift C
   obtain ⟨e, _⟩ := coprodInjections_disjoint (A i) (one : 𝒞)
   obtain ⟨θ, _⟩ := bottomSub_dom_iso (coprodObj (A i) (one : 𝒞)) (one : 𝒞)
   let z : P ⟶ (bottomSub (one : 𝒞)).dom := δ ≫ e ≫ θ

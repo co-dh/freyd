@@ -35,8 +35,8 @@ variable {𝒜 : Type u₁} [UnguardedPowerAllegory 𝒜]
 
 /-- **B&dM p.133**: membership `∋` is lax natural from the power relator to the identity
     relator. -/
-theorem eps_lax_natural {a b : 𝒜} (R : a ⟶ b) :
-    powerRel R ≫ ∋ b ⊑ ∋ a ≫ (Relator.idRelator 𝒜).map R :=
+theorem eps_lax_natural {A B : 𝒜} (R : A ⟶ B) :
+    powerRel R ≫ ∋ B ⊑ ∋ A ≫ (Relator.idRelator 𝒜).map R :=
   powerRel_eps_lax R
 
 end EpsExample
@@ -46,55 +46,55 @@ end EpsExample
 section Theorem52
 
 variable {𝒜 : Type u₁} {ℬ : Type u₂} [TabularAllegory 𝒜] [Allegory.{v₂} ℬ]
-  (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a)
+  (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A)
 
 /-- **B&dM Theorem 5.2**: `φ` is lax natural from `G` to `F` iff it is STRICTLY natural on
     every map `f`. -/
 public theorem laxNatural_iff_strict_on_maps :
-    LaxNatural F G φ ↔ ∀ {a b : 𝒜} (f : a ⟶ b), Map f → G.map f ≫ φ b = φ a ≫ F.map f := by
+    LaxNatural F G φ ↔ ∀ {A B : 𝒜} (f : A ⟶ B), Map f → G.map f ≫ φ B = φ A ≫ F.map f := by
   constructor
-  · intro hlax a b f hf
+  · intro hlax A B f hf
     have hFf : Map (F.map f) := F.map_is_map hf
     have hGf : Map (G.map f) := G.map_is_map hf
     have hFfrecip : F.map f° = (F.map f)° := F.map_recip_map hf
     have hGfrecip : G.map f° = (G.map f)° := G.map_recip_map hf
-    have hle1 : G.map f ≫ φ b ⊑ φ a ≫ F.map f := hlax f
-    have hle2 : G.map f° ≫ φ a ⊑ φ b ≫ F.map f° := hlax f°
+    have hle1 : G.map f ≫ φ B ⊑ φ A ≫ F.map f := hlax f
+    have hle2 : G.map f° ≫ φ A ⊑ φ B ≫ F.map f° := hlax f°
     rw [hGfrecip, hFfrecip] at hle2
-    have hle2a : φ a ⊑ G.map f ≫ (φ b ≫ (F.map f)°) := (map_shunt_left hGf _ _).mp hle2
-    have hle2b : φ a ⊑ (G.map f ≫ φ b) ≫ (F.map f)° := by rw [Cat.assoc]; exact hle2a
-    have hle2' : φ a ≫ F.map f ⊑ G.map f ≫ φ b := (map_shunt_right hFf _ _).mpr hle2b
+    have hle2a : φ A ⊑ G.map f ≫ (φ B ≫ (F.map f)°) := (map_shunt_left hGf _ _).mp hle2
+    have hle2b : φ A ⊑ (G.map f ≫ φ B) ≫ (F.map f)° := by rw [Cat.assoc]; exact hle2a
+    have hle2' : φ A ≫ F.map f ⊑ G.map f ≫ φ B := (map_shunt_right hFf _ _).mpr hle2b
     exact le_antisymm hle1 hle2'
-  · intro hstrict a b R
-    obtain ⟨c, h, k, hh, hk, hR, _⟩ := TabularAllegory.tabular (𝒜 := 𝒜) R
+  · intro hstrict A B R
+    obtain ⟨C, h, k, hh, hk, hR, _⟩ := TabularAllegory.tabular (𝒜 := 𝒜) R
     have hFhmap : Map (F.map h) := F.map_is_map hh
     have hGhmap : Map (G.map h) := G.map_is_map hh
     have hFhrecip : F.map h° = (F.map h)° := F.map_recip_map hh
     have hGhrecip : G.map h° = (G.map h)° := G.map_recip_map hh
-    have hstep_h : (G.map h)° ≫ φ c ⊑ φ a ≫ (F.map h)° := by
-      have he : G.map h ≫ φ a = φ c ≫ F.map h := hstrict h hh
+    have hstep_h : (G.map h)° ≫ φ C ⊑ φ A ≫ (F.map h)° := by
+      have he : G.map h ≫ φ A = φ C ≫ F.map h := hstrict h hh
       apply (map_shunt_left hGhmap _ _).mpr
-      have hent : Cat.id (F.obj c) ⊑ F.map h ≫ (F.map h)° := entire_id_le hFhmap.1
-      calc φ c = φ c ≫ Cat.id (F.obj c) := (Cat.comp_id _).symm
-        _ ⊑ φ c ≫ (F.map h ≫ (F.map h)°) := comp_mono_left _ hent
-        _ = (φ c ≫ F.map h) ≫ (F.map h)° := (Cat.assoc _ _ _).symm
-        _ = (G.map h ≫ φ a) ≫ (F.map h)° := by rw [he]
-        _ = G.map h ≫ (φ a ≫ (F.map h)°) := Cat.assoc _ _ _
+      have hent : Cat.id (F.obj C) ⊑ F.map h ≫ (F.map h)° := entire_id_le hFhmap.1
+      calc φ C = φ C ≫ Cat.id (F.obj C) := (Cat.comp_id _).symm
+        _ ⊑ φ C ≫ (F.map h ≫ (F.map h)°) := comp_mono_left _ hent
+        _ = (φ C ≫ F.map h) ≫ (F.map h)° := (Cat.assoc _ _ _).symm
+        _ = (G.map h ≫ φ A) ≫ (F.map h)° := by rw [he]
+        _ = G.map h ≫ (φ A ≫ (F.map h)°) := Cat.assoc _ _ _
     have hFcomp : F.map (h° ≫ k) = (F.map h)° ≫ F.map k := by rw [F.map_comp, hFhrecip]
-    have p1 : G.map R ≫ φ b = ((G.map h)° ≫ φ c) ≫ F.map k := by
-      calc G.map R ≫ φ b
-          = G.map (h° ≫ k) ≫ φ b := by rw [hR]
-        _ = (G.map h° ≫ G.map k) ≫ φ b := by rw [G.map_comp]
-        _ = ((G.map h)° ≫ G.map k) ≫ φ b := by rw [hGhrecip]
-        _ = (G.map h)° ≫ (G.map k ≫ φ b) := Cat.assoc _ _ _
-        _ = (G.map h)° ≫ (φ c ≫ F.map k) := by rw [hstrict k hk]
-        _ = ((G.map h)° ≫ φ c) ≫ F.map k := (Cat.assoc _ _ _).symm
-    have p2 : ((G.map h)° ≫ φ c) ≫ F.map k ⊑ φ a ≫ F.map R := by
-      calc ((G.map h)° ≫ φ c) ≫ F.map k
-          ⊑ (φ a ≫ (F.map h)°) ≫ F.map k := comp_mono_right hstep_h _
-        _ = φ a ≫ ((F.map h)° ≫ F.map k) := Cat.assoc _ _ _
-        _ = φ a ≫ F.map (h° ≫ k) := by rw [hFcomp]
-        _ = φ a ≫ F.map R := by rw [← hR]
+    have p1 : G.map R ≫ φ B = ((G.map h)° ≫ φ C) ≫ F.map k := by
+      calc G.map R ≫ φ B
+          = G.map (h° ≫ k) ≫ φ B := by rw [hR]
+        _ = (G.map h° ≫ G.map k) ≫ φ B := by rw [G.map_comp]
+        _ = ((G.map h)° ≫ G.map k) ≫ φ B := by rw [hGhrecip]
+        _ = (G.map h)° ≫ (G.map k ≫ φ B) := Cat.assoc _ _ _
+        _ = (G.map h)° ≫ (φ C ≫ F.map k) := by rw [hstrict k hk]
+        _ = ((G.map h)° ≫ φ C) ≫ F.map k := (Cat.assoc _ _ _).symm
+    have p2 : ((G.map h)° ≫ φ C) ≫ F.map k ⊑ φ A ≫ F.map R := by
+      calc ((G.map h)° ≫ φ C) ≫ F.map k
+          ⊑ (φ A ≫ (F.map h)°) ≫ F.map k := comp_mono_right hstep_h _
+        _ = φ A ≫ ((F.map h)° ≫ F.map k) := Cat.assoc _ _ _
+        _ = φ A ≫ F.map (h° ≫ k) := by rw [hFcomp]
+        _ = φ A ≫ F.map R := by rw [← hR]
     rw [p1]; exact p2
 
 end Theorem52
@@ -136,7 +136,7 @@ public theorem comp_slides {a₁ a₂ b₁ b₂ c₁ c₂ : 𝒜} {Ta : a₁ ⟶
     _ ⊑ X' ≫ (Y' ≫ Tc) := comp_mono_left X' hY
     _ = (X' ≫ Y') ≫ Tc := (Cat.assoc _ _ _).symm
 
-example {a : 𝒜} {T : a ⟶ a} {R S : a ⟶ a} (hR : T ≫ R ⊑ R ≫ T) (hS : T ≫ S ⊑ S ≫ T) :
+example {A : 𝒜} {T : A ⟶ A} {R S : A ⟶ A} (hR : T ≫ R ⊑ R ≫ T) (hS : T ≫ S ⊑ S ≫ T) :
     T ≫ (R ≫ S) ⊑ (R ≫ S) ≫ T := comp_slides hR hS
 
 end CompSlides
@@ -185,8 +185,8 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
     `φ ∘ K : G ∘ K ⟶ F ∘ K`, with `K` running first.  Free — the new inequation at `R` is
     `φ`'s own at `K.map R`, nothing is composed onto either side. -/
 public theorem laxNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator 𝒞 𝒜) (h : LaxNatural F G φ) :
-    LaxNatural (Relator.comp K F) (Relator.comp K G) (fun c => φ (K.obj c)) :=
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (K : Relator 𝒞 𝒜) (h : LaxNatural F G φ) :
+    LaxNatural (Relator.comp K F) (Relator.comp K G) (fun C => φ (K.obj C)) :=
   fun {_ _} R => h (K.map R)
 
 /-- A relator on the OUTSIDE carries a lax natural transformation to a lax natural one:
@@ -194,8 +194,8 @@ public theorem laxNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G 
     read through `map_comp` on both sides — `Relator.map_slides` at `Ta, Tb := G.map R, F.map R`
     and `X, X' := φ b, φ a`. -/
 public theorem laxNatural_outside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator ℬ 𝒞) (h : LaxNatural F G φ) :
-    LaxNatural (Relator.comp F K) (Relator.comp G K) (fun a => K.map (φ a)) :=
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (K : Relator ℬ 𝒞) (h : LaxNatural F G φ) :
+    LaxNatural (Relator.comp F K) (Relator.comp G K) (fun A => K.map (φ A)) :=
   fun {_ _} R => K.map_slides (h R)
 
 
@@ -212,44 +212,44 @@ public theorem laxNatural_outside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G
 /-- HORIZONTAL composition with the OUTER 2-cell first: `χ` reindexed along `G` on the inside,
     then `K` applied to `φ` on the outside. -/
 public theorem laxNatural_hcomp_outer_first {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {K L : Relator ℬ 𝒞} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} {χ : ∀ b : ℬ, L.obj b ⟶ K.obj b}
+    {K L : Relator ℬ 𝒞} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B}
     (hχ : LaxNatural K L χ) (hφ : LaxNatural F G φ) :
-    LaxNatural (Relator.comp F K) (Relator.comp G L) (fun a => χ (G.obj a) ≫ K.map (φ a)) :=
+    LaxNatural (Relator.comp F K) (Relator.comp G L) (fun A => χ (G.obj A) ≫ K.map (φ A)) :=
   fun {_ _} R => comp_slides (laxNatural_inside G hχ R) (K.map_slides (hφ R))
 
 /-- HORIZONTAL composition with the INNER 2-cell first: `L` applied to `φ` on the outside, then
     `χ` reindexed along `F` on the inside.  Same source, same target, same type as
     `laxNatural_hcomp_outer_first` — and a DIFFERENT family, below it by `hχ (φ a)`. -/
 public theorem laxNatural_hcomp_inner_first {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {K L : Relator ℬ 𝒞} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} {χ : ∀ b : ℬ, L.obj b ⟶ K.obj b}
+    {K L : Relator ℬ 𝒞} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B}
     (hχ : LaxNatural K L χ) (hφ : LaxNatural F G φ) :
-    LaxNatural (Relator.comp F K) (Relator.comp G L) (fun a => L.map (φ a) ≫ χ (F.obj a)) :=
+    LaxNatural (Relator.comp F K) (Relator.comp G L) (fun A => L.map (φ A) ≫ χ (F.obj A)) :=
   fun {_ _} R => comp_slides (L.map_slides (hφ R)) (laxNatural_inside F hχ R)
 
 -- The two horizontal composites are ORDERED, inner-first below outer-first, and the ordering IS
 -- `χ`'s own defining inequation read at the arrow `φ a`: it gets no theorem of its own.
 example {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ} {K L : Relator ℬ 𝒞}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} {χ : ∀ b : ℬ, L.obj b ⟶ K.obj b} (hχ : LaxNatural K L χ)
-    (a : 𝒜) : L.map (φ a) ≫ χ (F.obj a) ⊑ χ (G.obj a) ≫ K.map (φ a) := hχ (φ a)
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B} (hχ : LaxNatural K L χ)
+    (A : 𝒜) : L.map (φ A) ≫ χ (F.obj A) ⊑ χ (G.obj A) ≫ K.map (φ A) := hχ (φ A)
 
 /-- STRICTLY natural: the `LaxNatural` inequation as an EQUALITY at EVERY arrow, not only at the
     maps, where Theorem 5.2 gives it for free. -/
-@[expose] public def StrictNatural (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
-  ∀ {a b : 𝒜} (R : a ⟶ b), G.map R ≫ φ b = φ a ≫ F.map R
+@[expose] public def StrictNatural (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
+  ∀ {A B : 𝒜} (R : A ⟶ B), G.map R ≫ φ B = φ A ≫ F.map R
 
 /-- THE IDENTITY 2-CELL: `𝟙` at every object is strictly natural, `F(R) ≫ 𝟙 = F(R) = 𝟙 ≫ F(R)`.
     The identity of `laxNaturalCat` below, and the factor a compound family carries wherever one
     side of a product is left alone — `φ×𝟙` closes through `strictNatural_prod` only if `𝟙` has a
     square of its own. -/
-public theorem strictNatural_id (F : Relator 𝒜 ℬ) : StrictNatural F F (fun a => 𝟙 (F.obj a)) :=
+public theorem strictNatural_id (F : Relator 𝒜 ℬ) : StrictNatural F F (fun A => 𝟙 (F.obj A)) :=
   fun {_ _} R => by rw [Cat.comp_id, Cat.id_comp]
 
 /-- A relator on the INSIDE reindexes a STRICTLY natural family along its object map, the twin of
     `laxNatural_inside`: the new equation at `R` is `φ`'s own at `K.map R`, so it is as free as the
     lax one and needs none of `strictNatural_outside`'s `congrArg`. -/
 public theorem strictNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator 𝒞 𝒜) (h : StrictNatural F G φ) :
-    StrictNatural (Relator.comp K F) (Relator.comp K G) (fun c => φ (K.obj c)) :=
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (K : Relator 𝒞 𝒜) (h : StrictNatural F G φ) :
+    StrictNatural (Relator.comp K F) (Relator.comp K G) (fun C => φ (K.obj C)) :=
   fun {_ _} R => h (K.map R)
 
 /-- A relator on the OUTSIDE carries a STRICTLY natural family to a strictly natural one, which
@@ -257,24 +257,24 @@ public theorem strictNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F
     `map_comp`, where the lax version has only monotonicity.  The twin of `laxNatural_outside`,
     which is stated with the rest of the lax closure above. -/
 public theorem strictNatural_outside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (K : Relator ℬ 𝒞) (h : StrictNatural F G φ) :
-    StrictNatural (Relator.comp F K) (Relator.comp G K) (fun a => K.map (φ a)) := by
-  intro a b R
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (K : Relator ℬ 𝒞) (h : StrictNatural F G φ) :
+    StrictNatural (Relator.comp F K) (Relator.comp G K) (fun A => K.map (φ A)) := by
+  intro A B R
   have := congrArg K.map (h R)
   rwa [K.map_comp, K.map_comp] at this
 
 /-- Every strictly natural family is lax natural: the inequation at `R` is its own equality. -/
 public theorem laxNatural_of_strictNatural {F G : Relator 𝒜 ℬ}
-    {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (h : StrictNatural F G φ) : LaxNatural F G φ :=
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (h : StrictNatural F G φ) : LaxNatural F G φ :=
   fun {_ _} R => le_of_eq (h R)
 
 /-- THE CONVERSE OF A STRICTLY NATURAL FAMILY IS STRICTLY NATURAL, the other way round — read the
     square at `R°` and take its converse, which needs both relators to preserve `°`.  Lax has no
     such rule: `recip_not_laxNatural` (A6_1_OrdRelSet) refutes it. -/
-public theorem strictNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+public theorem strictNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
     (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : StrictNatural F G φ) :
-    StrictNatural G F (fun a => (φ a)°) := by
-  intro a b R
+    StrictNatural G F (fun A => (φ A)°) := by
+  intro A B R
   have e := congrArg Allegory.recip (h R°)
   rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
     Allegory.recip_recip] at e
@@ -286,17 +286,17 @@ public theorem strictNatural_recip {F G : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, 
     convenience of its proof: shunting the two maps in the step `(G f)° ≫ φ ⊑ φ ≫ (F f)°` that
     tabulation needs turns it into `(G f)° ≫ φ ≫ F f ⊑ φ`, the CONVERSE of what the inclusion
     `G f ≫ φ ⊑ φ ≫ F f` gives. -/
-@[expose] public def LaxOnMaps (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
-  ∀ {a b : 𝒜} (f : a ⟶ b), Map f → G.map f ≫ φ b ⊑ φ a ≫ F.map f
+@[expose] public def LaxOnMaps (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
+  ∀ {A B : 𝒜} (f : A ⟶ B), Map f → G.map f ≫ φ B ⊑ φ A ≫ F.map f
 
 /-- The two horizontal composites COINCIDE when the OUTER 2-cell is strictly natural: their whole
     gap is `χ`'s laxness at the components `φ a`, so removing laxness removes the gap.  Nothing is
     asked of `φ` — it need not even be lax natural. -/
 public theorem hcomp_eq_of_strictNatural {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G : Relator 𝒜 ℬ}
-    {K L : Relator ℬ 𝒞} (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) {χ : ∀ b : ℬ, L.obj b ⟶ K.obj b}
+    {K L : Relator ℬ 𝒞} (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B}
     (hχ : StrictNatural K L χ) :
-    (fun a => L.map (φ a) ≫ χ (F.obj a)) = (fun a => χ (G.obj a) ≫ K.map (φ a)) :=
-  funext fun a => hχ (φ a)
+    (fun A => L.map (φ A) ≫ χ (F.obj A)) = (fun A => χ (G.obj A) ≫ K.map (φ A)) :=
+  funext fun A => hχ (φ A)
 
 /-! ### INTERCHANGE
 
@@ -308,31 +308,31 @@ public theorem hcomp_eq_of_strictNatural {𝒞 : Type u₃} [Allegory.{v₃} �
 /-- INTERCHANGE, outer-first: the vertical composite of the two horizontal composites is BELOW
     the horizontal composite of the two vertical ones. -/
 public theorem laxNatural_interchange_outer_first {𝒞 : Type u₃} [Allegory.{v₃} 𝒞]
-    {F G H : Relator 𝒜 ℬ} {K L M : Relator ℬ 𝒞} {φ₁ : ∀ a : 𝒜, H.obj a ⟶ G.obj a}
-    {φ₂ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} (χ₁ : ∀ b : ℬ, M.obj b ⟶ L.obj b)
-    {χ₂ : ∀ b : ℬ, L.obj b ⟶ K.obj b} (hχ₂ : LaxNatural K L χ₂) (a : 𝒜) :
-    (χ₁ (H.obj a) ≫ L.map (φ₁ a)) ≫ (χ₂ (G.obj a) ≫ K.map (φ₂ a))
-      ⊑ (χ₁ (H.obj a) ≫ χ₂ (H.obj a)) ≫ K.map (φ₁ a ≫ φ₂ a) :=
-  calc (χ₁ (H.obj a) ≫ L.map (φ₁ a)) ≫ (χ₂ (G.obj a) ≫ K.map (φ₂ a))
-      = χ₁ (H.obj a) ≫ ((L.map (φ₁ a) ≫ χ₂ (G.obj a)) ≫ K.map (φ₂ a)) := by simp [Cat.assoc]
-    _ ⊑ χ₁ (H.obj a) ≫ ((χ₂ (H.obj a) ≫ K.map (φ₁ a)) ≫ K.map (φ₂ a)) :=
-        comp_mono_left _ (comp_mono_right (hχ₂ (φ₁ a)) _)
-    _ = (χ₁ (H.obj a) ≫ χ₂ (H.obj a)) ≫ K.map (φ₁ a ≫ φ₂ a) := by rw [K.map_comp]; simp [Cat.assoc]
+    {F G H : Relator 𝒜 ℬ} {K L M : Relator ℬ 𝒞} {φ₁ : ∀ A : 𝒜, H.obj A ⟶ G.obj A}
+    {φ₂ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (χ₁ : ∀ B : ℬ, M.obj B ⟶ L.obj B)
+    {χ₂ : ∀ B : ℬ, L.obj B ⟶ K.obj B} (hχ₂ : LaxNatural K L χ₂) (A : 𝒜) :
+    (χ₁ (H.obj A) ≫ L.map (φ₁ A)) ≫ (χ₂ (G.obj A) ≫ K.map (φ₂ A))
+      ⊑ (χ₁ (H.obj A) ≫ χ₂ (H.obj A)) ≫ K.map (φ₁ A ≫ φ₂ A) :=
+  calc (χ₁ (H.obj A) ≫ L.map (φ₁ A)) ≫ (χ₂ (G.obj A) ≫ K.map (φ₂ A))
+      = χ₁ (H.obj A) ≫ ((L.map (φ₁ A) ≫ χ₂ (G.obj A)) ≫ K.map (φ₂ A)) := by simp [Cat.assoc]
+    _ ⊑ χ₁ (H.obj A) ≫ ((χ₂ (H.obj A) ≫ K.map (φ₁ A)) ≫ K.map (φ₂ A)) :=
+        comp_mono_left _ (comp_mono_right (hχ₂ (φ₁ A)) _)
+    _ = (χ₁ (H.obj A) ≫ χ₂ (H.obj A)) ≫ K.map (φ₁ A ≫ φ₂ A) := by rw [K.map_comp]; simp [Cat.assoc]
 
 /-- INTERCHANGE, inner-first: the horizontal composite of the two vertical ones is BELOW the
     vertical composite of the two horizontal composites — the opposite direction. -/
 public theorem laxNatural_interchange_inner_first {𝒞 : Type u₃} [Allegory.{v₃} 𝒞]
-    {F G H : Relator 𝒜 ℬ} {K L M : Relator ℬ 𝒞} {φ₁ : ∀ a : 𝒜, H.obj a ⟶ G.obj a}
-    {φ₂ : ∀ a : 𝒜, G.obj a ⟶ F.obj a} {χ₁ : ∀ b : ℬ, M.obj b ⟶ L.obj b}
-    (χ₂ : ∀ b : ℬ, L.obj b ⟶ K.obj b) (hχ₁ : LaxNatural L M χ₁) (a : 𝒜) :
-    M.map (φ₁ a ≫ φ₂ a) ≫ (χ₁ (F.obj a) ≫ χ₂ (F.obj a))
-      ⊑ (M.map (φ₁ a) ≫ χ₁ (G.obj a)) ≫ (L.map (φ₂ a) ≫ χ₂ (F.obj a)) :=
-  calc M.map (φ₁ a ≫ φ₂ a) ≫ (χ₁ (F.obj a) ≫ χ₂ (F.obj a))
-      = M.map (φ₁ a) ≫ ((M.map (φ₂ a) ≫ χ₁ (F.obj a)) ≫ χ₂ (F.obj a)) := by
+    {F G H : Relator 𝒜 ℬ} {K L M : Relator ℬ 𝒞} {φ₁ : ∀ A : 𝒜, H.obj A ⟶ G.obj A}
+    {φ₂ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {χ₁ : ∀ B : ℬ, M.obj B ⟶ L.obj B}
+    (χ₂ : ∀ B : ℬ, L.obj B ⟶ K.obj B) (hχ₁ : LaxNatural L M χ₁) (A : 𝒜) :
+    M.map (φ₁ A ≫ φ₂ A) ≫ (χ₁ (F.obj A) ≫ χ₂ (F.obj A))
+      ⊑ (M.map (φ₁ A) ≫ χ₁ (G.obj A)) ≫ (L.map (φ₂ A) ≫ χ₂ (F.obj A)) :=
+  calc M.map (φ₁ A ≫ φ₂ A) ≫ (χ₁ (F.obj A) ≫ χ₂ (F.obj A))
+      = M.map (φ₁ A) ≫ ((M.map (φ₂ A) ≫ χ₁ (F.obj A)) ≫ χ₂ (F.obj A)) := by
         rw [M.map_comp]; simp [Cat.assoc]
-    _ ⊑ M.map (φ₁ a) ≫ ((χ₁ (G.obj a) ≫ L.map (φ₂ a)) ≫ χ₂ (F.obj a)) :=
-        comp_mono_left _ (comp_mono_right (hχ₁ (φ₂ a)) _)
-    _ = (M.map (φ₁ a) ≫ χ₁ (G.obj a)) ≫ (L.map (φ₂ a) ≫ χ₂ (F.obj a)) := by simp [Cat.assoc]
+    _ ⊑ M.map (φ₁ A) ≫ ((χ₁ (G.obj A) ≫ L.map (φ₂ A)) ≫ χ₂ (F.obj A)) :=
+        comp_mono_left _ (comp_mono_right (hχ₁ (φ₂ A)) _)
+    _ = (M.map (φ₁ A) ≫ χ₁ (G.obj A)) ≫ (L.map (φ₂ A) ≫ χ₂ (F.obj A)) := by simp [Cat.assoc]
 
 end LaxNaturalClosure
 
@@ -350,10 +350,10 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃} [Allegory.{v₁
     a MAP, which by Theorem 5.2 is where a lax `χ` is already strict.  Strict naturality of `χ`
     (`hcomp_eq_of_strictNatural`) is sufficient but NOT necessary. -/
 public theorem hcomp_eq_of_map_components {F G : Relator 𝒜 ℬ} {K L : Relator ℬ 𝒞}
-    (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) {χ : ∀ b : ℬ, L.obj b ⟶ K.obj b} (hχ : LaxNatural K L χ)
-    (hφ : ∀ a : 𝒜, Map (φ a)) :
-    (fun a => L.map (φ a) ≫ χ (F.obj a)) = (fun a => χ (G.obj a) ≫ K.map (φ a)) :=
-  funext fun a => (laxNatural_iff_strict_on_maps K L χ).mp hχ (φ a) (hφ a)
+    (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B} (hχ : LaxNatural K L χ)
+    (hφ : ∀ A : 𝒜, Map (φ A)) :
+    (fun A => L.map (φ A) ≫ χ (F.obj A)) = (fun A => χ (G.obj A) ≫ K.map (φ A)) :=
+  funext fun A => (laxNatural_iff_strict_on_maps K L χ).mp hχ (φ A) (hφ A)
 
 end HcompOnMaps
 
@@ -382,32 +382,32 @@ variable {𝒜 : Type u₁} [Allegory.{v₁} 𝒜]
 /-- Monotone relations form a CATEGORY: `𝟙` is monotone because `a.ord ≫ 𝟙 = a.ord = 𝟙 ≫ a.ord`,
     and composition is `comp_slides`. -/
 @[expose] public instance ordObjCat : Cat.{v₁} (OrdObj 𝒜) where
-  Hom a b := MonoHom a b
-  id a := ⟨𝟙 a.carrier, by rw [Cat.comp_id, Cat.id_comp]; exact le_refl _⟩
+  Hom A B := MonoHom A B
+  id A := ⟨𝟙 A.carrier, by rw [Cat.comp_id, Cat.id_comp]; exact le_refl _⟩
   comp X Y := ⟨X.1 ≫ Y.1, comp_slides X.2 Y.2⟩
   id_comp X := Subtype.ext (Cat.id_comp X.1)
   comp_id X := Subtype.ext (Cat.comp_id X.1)
   assoc X Y Z := Subtype.ext (Cat.assoc X.1 Y.1 Z.1)
 
 /-- The hom-sets are POSETS, ordered pointwise by `⊑` on the underlying relations. -/
-@[expose] public def MonoHom.le {a b : OrdObj 𝒜} (X Y : MonoHom a b) : Prop := X.1 ⊑ Y.1
+@[expose] public def MonoHom.le {A B : OrdObj 𝒜} (X Y : MonoHom A B) : Prop := X.1 ⊑ Y.1
 
 -- Reflexivity gets no theorem: `MonoHom.le X X` unfolds to `X.1 ⊑ X.1`, so it IS `le_refl X.1`.
 /-- `calc` support, and transitivity: the underlying `le_trans`. -/
-public instance {a b : OrdObj 𝒜} :
-    Trans (α := MonoHom a b) MonoHom.le MonoHom.le MonoHom.le where
+public instance {A B : OrdObj 𝒜} :
+    Trans (α := MonoHom A B) MonoHom.le MonoHom.le MonoHom.le where
   trans := Freyd.Alg.le_trans
 
 /-- Antisymmetry, from `le_antisymm` on the underlying relations: two monotone relations ordered
     both ways have equal `.val`, and a `MonoHom` is its `.val` (`Subtype.ext`).  With the
     underlying `le_refl` and `le_trans` this makes each hom-set a POSET, not merely a preorder. -/
-public theorem MonoHom.le_antisymm {a b : OrdObj 𝒜} {X Y : MonoHom a b} (hXY : X.le Y)
+public theorem MonoHom.le_antisymm {A B : OrdObj 𝒜} {X Y : MonoHom A B} (hXY : X.le Y)
     (hYX : Y.le X) : X = Y := Subtype.ext (Freyd.Alg.le_antisymm hXY hYX)
 
 /-- Composition is a POSET MAP in both arguments — `comp_mono_right` then `comp_mono_left` on the
     `.val`s.  This and the previous theorem are what "`OrdObj 𝒜` is enriched over posets" asserts:
     hom-sets are posets AND `≫` is monotone. -/
-public theorem MonoHom.comp_mono {a b c : OrdObj 𝒜} {X X' : a ⟶ b} {Y Y' : b ⟶ c}
+public theorem MonoHom.comp_mono {A B C : OrdObj 𝒜} {X X' : A ⟶ B} {Y Y' : B ⟶ C}
     (hX : MonoHom.le X X') (hY : MonoHom.le Y Y') : MonoHom.le (X ≫ Y) (X' ≫ Y') := by
   show X.1 ≫ Y.1 ⊑ X'.1 ≫ Y'.1
   exact Freyd.Alg.le_trans (comp_mono_right hX Y.1) (comp_mono_left X'.1 hY)
@@ -416,7 +416,7 @@ public theorem MonoHom.comp_mono {a b c : OrdObj 𝒜} {X X' : a ⟶ b} {Y Y' : 
     an involution, this is ALL the hypothesis says about `X°`.  Monotonicity of `X°` for any
     orders `S`, `S'` would read `S ≫ X° ⊑ X° ≫ S'` — the composites sit on the opposite sides of
     `⊑`, and flipping the orders to `Tb°`, `Ta°` does not move them.  So `°` leaves `MonoHom`. -/
-public theorem recip_slides {a b : 𝒜} {Ta : a ⟶ a} {Tb : b ⟶ b} {X : a ⟶ b}
+public theorem recip_slides {A B : 𝒜} {Ta : A ⟶ A} {Tb : B ⟶ B} {X : A ⟶ B}
     (h : Ta ≫ X ⊑ X ≫ Tb) : X° ≫ Ta° ⊑ Tb° ≫ X° := by
   have hr := recip_mono h
   rwa [Allegory.recip_comp, Allegory.recip_comp] at hr
@@ -435,8 +435,8 @@ variable {𝒜 : Type u₁} [TabularUnitaryDivisionAllegory 𝒜]
     does force.  At `P = Q`, `X' = X`, `Y' = Y` it says `(a,Ta) × (b,Tb) := (P.p, Ta×Tb)` is a
     TENSOR on `OrdObj 𝒜` — not a CATEGORICAL product, since (5.6) makes
     `⟨X,Y⟩ ≫ outl = dom Y ≫ X`, which is `X` only when `Y` is entire. -/
-public theorem pair_slides {a b a' b' c c' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
-    {Tc : c ⟶ c'} {Ta : a ⟶ a'} {Tb : b ⟶ b'} {X : c ⟶ a} {Y : c ⟶ b} {X' : c' ⟶ a'}
+public theorem pair_slides {A B a' b' C c' : 𝒜} (P : RelProd A B) (Q : RelProd a' b')
+    {Tc : C ⟶ c'} {Ta : A ⟶ a'} {Tb : B ⟶ b'} {X : C ⟶ A} {Y : C ⟶ B} {X' : c' ⟶ a'}
     {Y' : c' ⟶ b'} (hX : Tc ≫ X' ⊑ X ≫ Ta) (hY : Tc ≫ Y' ⊑ Y ≫ Tb) :
     Tc ≫ Q.pair X' Y' ⊑ P.pair X Y ≫ prodMap P Q Ta Tb := by
   rw [RelProd.pair_prodMap]
@@ -450,8 +450,8 @@ public theorem pair_slides {a b a' b' c c' : 𝒜} (P : RelProd a b) (Q : RelPro
 
 /-- The lax COPY law `R◁ ⊑ ◁(R×R)` is `pair_slides` at `X = Y = 𝟙` — copy IS `⟨𝟙,𝟙⟩` — so it gets
     no theorem of its own.  Its two hypotheses are `T ≫ 𝟙 ⊑ 𝟙 ≫ T`, i.e. `le_refl`. -/
-example {a : 𝒜} (P : RelProd a a) {T : a ⟶ a} :
-    T ≫ P.pair (𝟙 a) (𝟙 a) ⊑ P.pair (𝟙 a) (𝟙 a) ≫ prodMap P P T T :=
+example {A : 𝒜} (P : RelProd A A) {T : A ⟶ A} :
+    T ≫ P.pair (𝟙 A) (𝟙 A) ⊑ P.pair (𝟙 A) (𝟙 A) ≫ prodMap P P T T :=
   pair_slides P P (by rw [Cat.comp_id, Cat.id_comp]; exact le_refl T)
     (by rw [Cat.comp_id, Cat.id_comp]; exact le_refl T)
 
@@ -462,9 +462,9 @@ example {a : 𝒜} (P : RelProd a a) {T : a ⟶ a} :
     compares them componentwise.  Stated over FOUR products and non-endo arrows, for the same
     reason `pair_slides` is: `laxNatural_prod`'s square names a different product at each of its
     four corners, and is then an INSTANCE rather than the same calculation written again. -/
-public theorem prodMap_slides {a b a' b' c d c' d' : 𝒜} (P : RelProd a b) (Q : RelProd a' b')
-    (P' : RelProd c d) (Q' : RelProd c' d') {Ta : a ⟶ a'} {Tb : b ⟶ b'} {Tc : c ⟶ c'}
-    {Td : d ⟶ d'} {X : a ⟶ c} {Y : b ⟶ d} {X' : a' ⟶ c'} {Y' : b' ⟶ d'}
+public theorem prodMap_slides {A B a' b' C D c' d' : 𝒜} (P : RelProd A B) (Q : RelProd a' b')
+    (P' : RelProd C D) (Q' : RelProd c' d') {Ta : A ⟶ a'} {Tb : B ⟶ b'} {Tc : C ⟶ c'}
+    {Td : D ⟶ d'} {X : A ⟶ C} {Y : B ⟶ D} {X' : a' ⟶ c'} {Y' : b' ⟶ d'}
     (hX : Ta ≫ X' ⊑ X ≫ Tc) (hY : Tb ≫ Y' ⊑ Y ≫ Td) :
     prodMap P Q Ta Tb ≫ prodMap Q Q' X' Y' ⊑ prodMap P P' X Y ≫ prodMap P' Q' Tc Td := by
   rw [prodMap_comp, prodMap_comp]
@@ -472,13 +472,13 @@ public theorem prodMap_slides {a b a' b' c d c' d' : 𝒜} (P : RelProd a b) (Q 
 
 /-- The SWAP `a×b ⟶ b×a`: the two projections paired in the other order.  A MAP, being a `pair`
     of two maps (`RelProd.pair_map`), so it is exempt from (5.6)'s `dom` — see `swap_swap`. -/
-@[expose] public def RelProd.swap {a b : 𝒜} (P : RelProd a b) (Q : RelProd b a) : P.p ⟶ Q.p :=
+@[expose] public def RelProd.swap {A B : 𝒜} (P : RelProd A B) (Q : RelProd B A) : P.p ⟶ Q.p :=
   Q.pair P.outr P.outl
 
 /-- The swap is SELF-INVERSE.  Running it twice re-pairs `outl` with `outr` — the `dom`s that
     (5.6)/(5.7) leave behind are identities because the projections are maps — and
     `⟨outl,outr⟩ = 1` is the tabulation's joint-monic equation. -/
-public theorem RelProd.swap_swap {a b : 𝒜} (P : RelProd a b) (Q : RelProd b a) :
+public theorem RelProd.swap_swap {A B : 𝒜} (P : RelProd A B) (Q : RelProd B A) :
     P.swap Q ≫ Q.swap P = Cat.id P.p := by
   show Q.pair P.outr P.outl ≫ P.pair Q.outr Q.outl = Cat.id P.p
   rw [RelProd.map_comp_pair (Q.pair_map P.outr_map P.outl_map), RelProd.pair_outl,
@@ -688,7 +688,7 @@ variable {𝒜 : Type u₁} [DistributiveAllegory 𝒜]
 
 /-- Binary UNION of monotone relations, well defined by `union_slides`: the hom-sets are
     join-semilattices under `MonoHom.le`. -/
-@[expose] public def MonoHom.union {a b : OrdObj 𝒜} (X Y : MonoHom a b) : MonoHom a b :=
+@[expose] public def MonoHom.union {A B : OrdObj 𝒜} (X Y : MonoHom A B) : MonoHom A B :=
   ⟨X.1 ∪ Y.1, union_slides X.2 Y.2⟩
 
 end MonoHomUnion
@@ -701,7 +701,7 @@ variable {𝒜 : Type u₁} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd �
     `outr_lax_natural` (B&dM p.133) uses `prodMap_outr_le`.  The two together are the smallest
     pair of lax natural transformations whose MEET is not one (`laxNatural_inter_false`). -/
 public theorem outl_lax_natural :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun a => (relProd a a).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outl) :=
   fun R => prodMap_outl_le _ _ R R
 
 end ProjLax
@@ -722,7 +722,7 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
     relation with its slide proof.  `LaxNatural G F` reads "`φ` runs from `F` to `G`" — the
     definition of A5_1 names the TARGET first. -/
 @[expose] public def LaT (F G : Relator 𝒜 ℬ) :=
-  { φ : ∀ a : 𝒜, F.obj a ⟶ G.obj a // LaxNatural G F φ }
+  { φ : ∀ A : 𝒜, F.obj A ⟶ G.obj A // LaxNatural G F φ }
 
 -- NOT an allegory, for two independent reasons: `∩` leaves the arrows (`laxNatural_inter_false`)
 -- and `°` lands among the OPLAX families (`recip_oplax` below).
@@ -730,51 +730,51 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
     `F(R) ≫ 𝟙 = F(R) = 𝟙 ≫ F(R)`, and composition is `comp_slides` at every `R`. -/
 @[expose] public instance laxNaturalCat : Cat.{max u₁ v₂} (Relator 𝒜 ℬ) where
   Hom F G := LaT F G
-  id F := ⟨fun a => 𝟙 (F.obj a), laxNatural_of_strictNatural (strictNatural_id F)⟩
-  comp φ ψ := ⟨fun a => φ.1 a ≫ ψ.1 a, fun R => comp_slides (φ.2 R) (ψ.2 R)⟩
-  id_comp φ := Subtype.ext (funext fun a => Cat.id_comp (φ.1 a))
-  comp_id φ := Subtype.ext (funext fun a => Cat.comp_id (φ.1 a))
-  assoc φ ψ χ := Subtype.ext (funext fun a => Cat.assoc (φ.1 a) (ψ.1 a) (χ.1 a))
+  id F := ⟨fun A => 𝟙 (F.obj A), laxNatural_of_strictNatural (strictNatural_id F)⟩
+  comp φ ψ := ⟨fun A => φ.1 A ≫ ψ.1 A, fun R => comp_slides (φ.2 R) (ψ.2 R)⟩
+  id_comp φ := Subtype.ext (funext fun A => Cat.id_comp (φ.1 A))
+  comp_id φ := Subtype.ext (funext fun A => Cat.comp_id (φ.1 A))
+  assoc φ ψ χ := Subtype.ext (funext fun A => Cat.assoc (φ.1 A) (ψ.1 A) (χ.1 A))
 
 /-- The hom-sets are POSETS, ordered COMPONENTWISE by `⊑` on the underlying relations. -/
-@[expose] public def LaT.le {F G : Relator 𝒜 ℬ} (φ ψ : LaT F G) : Prop := ∀ a : 𝒜, φ.1 a ⊑ ψ.1 a
+@[expose] public def LaT.le {F G : Relator 𝒜 ℬ} (φ ψ : LaT F G) : Prop := ∀ A : 𝒜, φ.1 A ⊑ ψ.1 A
 
 -- Unlike `MonoHom.le`, this does NOT unfold to a single `⊑`: a component has to be supplied
 -- first, so reflexivity is `le_refl` under a binder and gets a theorem.
 /-- Reflexivity, componentwise. -/
 public theorem LaT.le_refl {F G : Relator 𝒜 ℬ} (φ : LaT F G) : φ.le φ :=
-  fun a => Freyd.Alg.le_refl (φ.1 a)
+  fun A => Freyd.Alg.le_refl (φ.1 A)
 
 /-- `calc` support, and transitivity: the underlying `le_trans` at every component. -/
 public instance LaT.le_trans {F G : Relator 𝒜 ℬ} :
     Trans (α := LaT F G) LaT.le LaT.le LaT.le where
-  trans h h' := fun a => Freyd.Alg.le_trans (h a) (h' a)
+  trans h h' := fun A => Freyd.Alg.le_trans (h A) (h' A)
 
 /-- Antisymmetry: two lax natural transformations ordered both ways agree at every component, so
     their families are equal as FUNCTIONS (`funext`) and hence as arrows (`Subtype.ext`).  With
     `LaT.le_refl` and the `Trans` instance this makes each hom-set a POSET. -/
 public theorem LaT.le_antisymm {F G : Relator 𝒜 ℬ} {φ ψ : LaT F G} (hφψ : φ.le ψ)
     (hψφ : ψ.le φ) : φ = ψ :=
-  Subtype.ext (funext fun a => Freyd.Alg.le_antisymm (hφψ a) (hψφ a))
+  Subtype.ext (funext fun A => Freyd.Alg.le_antisymm (hφψ A) (hψφ A))
 
 /-- Composition is a POSET MAP in both arguments — `comp_mono_right` then `comp_mono_left` at
     every component.  This and the previous theorem are what "the LaT category is enriched over
     posets" asserts. -/
 public theorem LaT.comp_mono {F G H : Relator 𝒜 ℬ} {φ φ' : F ⟶ G} {ψ ψ' : G ⟶ H}
     (hφ : LaT.le φ φ') (hψ : LaT.le ψ ψ') : LaT.le (φ ≫ ψ) (φ' ≫ ψ') :=
-  fun a => Freyd.Alg.le_trans (comp_mono_right (hφ a) (ψ.1 a)) (comp_mono_left (φ'.1 a) (hψ a))
+  fun A => Freyd.Alg.le_trans (comp_mono_right (hφ A) (ψ.1 A)) (comp_mono_left (φ'.1 A) (hψ A))
 
 /-- OPLAX: the `LaxNatural` inequation with `⊑` the other way round. -/
-@[expose] public def OpLaxNatural (F G : Relator 𝒜 ℬ) (φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a) : Prop :=
-  ∀ {a b : 𝒜} (R : a ⟶ b), φ a ≫ F.map R ⊑ G.map R ≫ φ b
+@[expose] public def OpLaxNatural (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
+  ∀ {A B : 𝒜} (R : A ⟶ B), φ A ≫ F.map R ⊑ G.map R ≫ φ B
 
 /-- **`°` does not act on this category.**  Reciprocating `G(R) ≫ φ b ⊑ φ a ≫ F(R)` at `R°` and
     pushing `°` through both relators turns it into `φ a° ≫ G(R) ⊑ F(R) ≫ φ b°` — the inequation
     of `LaxNatural F G (fun a => (φ a)°)` with `⊑` REVERSED, i.e. `φ°` is OPLAX.  It is not lax:
     `recip_not_laxNatural` (A6_1_OrdRelSet) is a lax `φ` over `Rel(Set)` whose `φ°` is not. -/
-public theorem recip_oplax {F G : Relator 𝒜 ℬ} {φ : ∀ a : 𝒜, G.obj a ⟶ F.obj a}
+public theorem recip_oplax {F G : Relator 𝒜 ℬ} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
     (hF : F.PreservesRecip) (hG : G.PreservesRecip) (h : LaxNatural F G φ) :
-    OpLaxNatural G F (fun a => (φ a)°) := fun {a b} R => by
+    OpLaxNatural G F (fun A => (φ A)°) := fun {A B} R => by
   have hr := recip_mono (h R°)
   rw [Allegory.recip_comp, Allegory.recip_comp, hF, hG, Allegory.recip_recip,
     Allegory.recip_recip] at hr
@@ -797,28 +797,28 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Distributi
     `𝟘` at every object.  Every `X : F(a) ⟶ z` is `X ≫ 𝟙 z = X ≫ 𝟘 = 𝟘`. -/
 public theorem const_zero_terminal {z : ℬ} (hz : 𝟙 z = (𝟘 : z ⟶ z)) (F : Relator 𝒜 ℬ) :
     ∃ φ : LaT F (Relator.const z), ∀ ψ : LaT F (Relator.const z), ψ = φ := by
-  have hone : ∀ {a : 𝒜} (X : F.obj a ⟶ z), X = 𝟘 := by
-    intro a X
+  have hone : ∀ {A : 𝒜} (X : F.obj A ⟶ z), X = 𝟘 := by
+    intro A X
     have hX : X ≫ 𝟙 z = X := Cat.comp_id X
     rw [hz, DistributiveAllegory.comp_zero] at hX
     exact hX.symm
   exact ⟨⟨fun _ => 𝟘, fun _ => by
       rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_comp]; exact le_refl _⟩,
-    fun ψ => Subtype.ext (funext fun a => hone (ψ.1 a))⟩
+    fun ψ => Subtype.ext (funext fun A => hone (ψ.1 A))⟩
 
 /-- `Relator.const z` is INITIAL as well, so it is a ZERO OBJECT: every `X : z ⟶ F(a)` is
     `𝟙 z ≫ X = 𝟘 ≫ X = 𝟘`.  The two arguments are dual, not one theorem applied twice — `𝟘`'s
     two absorption laws are separate axioms of `DistributiveAllegory`. -/
 public theorem const_zero_initial {z : ℬ} (hz : 𝟙 z = (𝟘 : z ⟶ z)) (F : Relator 𝒜 ℬ) :
     ∃ φ : LaT (Relator.const z) F, ∀ ψ : LaT (Relator.const z) F, ψ = φ := by
-  have hone : ∀ {a : 𝒜} (X : z ⟶ F.obj a), X = 𝟘 := by
-    intro a X
+  have hone : ∀ {A : 𝒜} (X : z ⟶ F.obj A), X = 𝟘 := by
+    intro A X
     have hX : 𝟙 z ≫ X = X := Cat.id_comp X
     rw [hz, DistributiveAllegory.zero_comp] at hX
     exact hX.symm
   exact ⟨⟨fun _ => 𝟘, fun _ => by
       rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_comp]; exact le_refl _⟩,
-    fun ψ => Subtype.ext (funext fun a => hone (ψ.1 a))⟩
+    fun ψ => Subtype.ext (funext fun A => hone (ψ.1 A))⟩
 
 end LaTZero
 

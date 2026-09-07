@@ -83,20 +83,20 @@ theorem relPullback_graphComp {A P C : 𝒞} (f : A ⟶ P) (U : BinRel 𝒞 P C)
   pattern). -/
 
 /-- The §1.9 transpose `Λ(R₀) : c → [b]` of a relation `R₀ : c → b`. -/
-noncomputable def memTranspose (b : 𝒞) {c : 𝒞} (R₀ : BinRel 𝒞 c b) :
-    c ⟶ HasPowerObject.powerObj (C := b) :=
-  univClassify923 (HasPowerObject.is_universal (C := b)) R₀
+noncomputable def memTranspose (B : 𝒞) {C : 𝒞} (R₀ : BinRel 𝒞 C B) :
+    C ⟶ HasPowerObject.powerObj (C := B) :=
+  univClassify923 (HasPowerObject.is_universal (C := B)) R₀
 
 /-- **§2.413 thickness**: `[graph Λ(R₀)]` is a `Rel(C)`-map with `[graph Λ(R₀)] ≫ [∈_b] = [R₀]`. -/
-theorem mem_thick (b : 𝒞) {c : 𝒞} (R₀ : BinRel 𝒞 c b) :
-    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨c⟩) (b := ⟨HasPowerObject.powerObj (C := b)⟩)
-        (relClass (graph (memTranspose b R₀))) ∧
-    relClass (graph (memTranspose b R₀) ⊚ HasPowerObject.mem (C := b)) = relClass R₀ := by
-  refine ⟨relClass_graph_map (memTranspose b R₀), ?_⟩
+theorem mem_thick (B : 𝒞) {C : 𝒞} (R₀ : BinRel 𝒞 C B) :
+    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (A := ⟨C⟩) (B := ⟨HasPowerObject.powerObj (C := B)⟩)
+        (relClass (graph (memTranspose B R₀))) ∧
+    relClass (graph (memTranspose B R₀) ⊚ HasPowerObject.mem (C := B)) = relClass R₀ := by
+  refine ⟨relClass_graph_map (memTranspose B R₀), ?_⟩
   -- reduce to `graph Λ ⊚ ∈ ≈ R₀`.
-  obtain ⟨hbr1, hbr2⟩ := relPullback_graphComp (memTranspose b R₀) (HasPowerObject.mem (C := b))
+  obtain ⟨hbr1, hbr2⟩ := relPullback_graphComp (memTranspose B R₀) (HasPowerObject.mem (C := B))
   obtain ⟨hiso1, hiso2⟩ :=
-    univClassifyIso923 (HasPowerObject.is_universal (C := b)) R₀
+    univClassifyIso923 (HasPowerObject.is_universal (C := B)) R₀
   exact Quotient.sound
     ⟨rel_le_trans hbr2 ⟨hiso2⟩, rel_le_trans ⟨hiso1⟩ hbr1⟩
 
@@ -149,26 +149,26 @@ theorem straight_of_universal {P C : 𝒞} (U : BinRel 𝒞 P C) (hU : IsUnivers
 /-- **§2.414 (straightness of `∋`)**: the universal relation `[∈_b]` is straight in `Rel(C)`.
     `∈/ₛ∈ ⊑ 1` because every symmetric `∈`-congruence is the diagonal (`straight_of_universal`),
     Freyd's "uniqueness forces ∋ straight." -/
-theorem mem_straight (b : 𝒞) :
-    Straight (𝒜 := RelObj 𝒞) (relClass (HasPowerObject.mem (C := b))) := by
+theorem mem_straight (B : 𝒞) :
+    Straight (𝒜 := RelObj 𝒞) (relClass (HasPowerObject.mem (C := B))) := by
   -- For every `D` with `D ≫ ∈ ⊑ ∈` and `D° ≫ ∈ ⊑ ∈`, `D ⊑ 1`; apply to `D = ∈/ₛ∈`.
-  have key : ∀ (D : (⟨HasPowerObject.powerObj (C := b)⟩ : RelObj 𝒞) ⟶
-                    ⟨HasPowerObject.powerObj (C := b)⟩),
-      D ≫ relClass (HasPowerObject.mem (C := b)) ⊑ relClass (HasPowerObject.mem (C := b)) →
-      D° ≫ relClass (HasPowerObject.mem (C := b)) ⊑ relClass (HasPowerObject.mem (C := b)) →
+  have key : ∀ (D : (⟨HasPowerObject.powerObj (C := B)⟩ : RelObj 𝒞) ⟶
+                    ⟨HasPowerObject.powerObj (C := B)⟩),
+      D ≫ relClass (HasPowerObject.mem (C := B)) ⊑ relClass (HasPowerObject.mem (C := B)) →
+      D° ≫ relClass (HasPowerObject.mem (C := B)) ⊑ relClass (HasPowerObject.mem (C := B)) →
       D ⊑ Cat.id _ := by
     intro D
     refine Quotient.inductionOn D (fun T₀ => ?_)
     intro hD1 hD2
-    have h1 : RelLe (T₀ ⊚ HasPowerObject.mem (C := b)) (HasPowerObject.mem (C := b)) :=
+    have h1 : RelLe (T₀ ⊚ HasPowerObject.mem (C := B)) (HasPowerObject.mem (C := B)) :=
       (quotLe_iff_algLe _ _).mpr hD1
-    have h2 : RelLe (T₀° ⊚ HasPowerObject.mem (C := b)) (HasPowerObject.mem (C := b)) :=
+    have h2 : RelLe (T₀° ⊚ HasPowerObject.mem (C := B)) (HasPowerObject.mem (C := B)) :=
       (quotLe_iff_algLe _ _).mpr hD2
     exact (quotLe_iff_algLe _ _).mp
-      (straight_of_universal (HasPowerObject.mem (C := b)) (HasPowerObject.is_universal (C := b))
+      (straight_of_universal (HasPowerObject.mem (C := B)) (HasPowerObject.is_universal (C := B))
         T₀ h1 h2)
-  show relClass (HasPowerObject.mem (C := b)) /ₛ relClass (HasPowerObject.mem (C := b))
-      ⊑ Cat.id (⟨HasPowerObject.powerObj (C := b)⟩ : RelObj 𝒞)
+  show relClass (HasPowerObject.mem (C := B)) /ₛ relClass (HasPowerObject.mem (C := B))
+      ⊑ Cat.id (⟨HasPowerObject.powerObj (C := B)⟩ : RelObj 𝒞)
   apply key
   · exact ((le_symmDiv_iff _ _ _).mp (le_refl _)).1
   · exact ((le_symmDiv_iff _ _ _).mp (le_refl _)).2
@@ -186,15 +186,15 @@ theorem mem_straight (b : 𝒞) :
     thickness is the §2.413 transpose (`mem_thick`). -/
 noncomputable def relPowerAllegory : PowerAllegory (RelObj 𝒞) :=
   { relDivisionAllegory with
-    powerObj := fun b => ⟨HasPowerObject.powerObj (C := b.carrier)⟩
-    eps := fun b => relClass (HasPowerObject.mem (C := b.carrier))
-    eps_straight := fun b => mem_straight b.carrier
-    eps_thick := fun {b c} R _hbox => by
+    powerObj := fun B => ⟨HasPowerObject.powerObj (C := B.carrier)⟩
+    eps := fun B => relClass (HasPowerObject.mem (C := B.carrier))
+    eps_straight := fun B => mem_straight B.carrier
+    eps_thick := fun {B C} R _hbox => by
       refine Quotient.inductionOn R (fun R₀ => ?_)
-      refine ⟨relClass (graph (memTranspose b.carrier R₀)), (mem_thick b.carrier R₀).1, ?_⟩
-      show relClass (graph (memTranspose b.carrier R₀) ⊚ HasPowerObject.mem (C := b.carrier))
+      refine ⟨relClass (graph (memTranspose B.carrier R₀)), (mem_thick B.carrier R₀).1, ?_⟩
+      show relClass (graph (memTranspose B.carrier R₀) ⊚ HasPowerObject.mem (C := B.carrier))
           = relClass R₀
-      exact (mem_thick b.carrier R₀).2 }
+      exact (mem_thick B.carrier R₀).2 }
 
 /-- **§2.414 forward (full)**: `Rel(C)` of a topos is an UNGUARDED power allegory — its
     membership `∋` classifies EVERY relation (the §2.413 transpose `mem_thick` is unguarded,
@@ -202,11 +202,11 @@ noncomputable def relPowerAllegory : PowerAllegory (RelObj 𝒞) :=
     use, and the witness for `UnguardedPowerAllegory`'s non-vacuity. -/
 noncomputable def relUnguardedPowerAllegory : UnguardedPowerAllegory (RelObj 𝒞) :=
   { relPowerAllegory with
-    eps_thick_all := fun {b c} R => by
+    eps_thick_all := fun {B C} R => by
       refine Quotient.inductionOn R (fun R₀ => ?_)
-      refine ⟨relClass (graph (memTranspose b.carrier R₀)), (mem_thick b.carrier R₀).1, ?_⟩
-      show relClass (graph (memTranspose b.carrier R₀) ⊚ HasPowerObject.mem (C := b.carrier))
+      refine ⟨relClass (graph (memTranspose B.carrier R₀)), (mem_thick B.carrier R₀).1, ?_⟩
+      show relClass (graph (memTranspose B.carrier R₀) ⊚ HasPowerObject.mem (C := B.carrier))
           = relClass R₀
-      exact (mem_thick b.carrier R₀).2 }
+      exact (mem_thick B.carrier R₀).2 }
 
 end Freyd

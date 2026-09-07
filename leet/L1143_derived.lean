@@ -61,8 +61,8 @@ def g (ys : List Int) : Unit → List Nat := fun _ => List.replicate (ys.length 
 def st (ys : List Int) : Int → List Nat → List Nat := fun x prev => LC1143.rowStep x ys prev
 
 /-- The base condition is a COMPUTATION, not a guess: `colCL ys (wrap d) = g ys d`. -/
-theorem colCL_wrap (ys : List Int) : ∀ d : Unit, colCL ys (ConsList.wrap d) = g ys d :=
-  fun d => rfl
+theorem colCL_wrap (ys : List Int) : ∀ D : Unit, colCL ys (ConsList.wrap D) = g ys D :=
+  fun D => rfl
 
 /-- The step condition IS `colCL`'s cons equation: `colCL ys (cons x xs) = st ys x (colCL ys xs)`. -/
 theorem colCL_cons (ys : List Int) :

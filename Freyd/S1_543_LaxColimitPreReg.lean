@@ -216,13 +216,13 @@ public theorem homInclL_isIso_of_rep (L : LaxCatSystem.{u, w} ι D) (hL : Cohere
     transition; `presPair` is pairing preservation under a transition. -/
 public structure LaxProductData (L : LaxCatSystem.{u, w} ι D) where
   hp : ∀ i, HasBinaryProducts (L.A i)
-  pres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
-      (u v : z ⟶ L.F hij ((hp i).prod a b)),
+  pres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
+      (u v : z ⟶ L.F hij ((hp i).prod A B)),
       u ≫ (L.functF hij).map (hp i).fst = v ≫ (L.functF hij).map (hp i).fst →
       u ≫ (L.functF hij).map (hp i).snd = v ≫ (L.functF hij).map (hp i).snd → u = v
-  presPair : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
-      (p : z ⟶ L.F hij a) (q : z ⟶ L.F hij b),
-      ∃ r : z ⟶ L.F hij ((hp i).prod a b),
+  presPair : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
+      (p : z ⟶ L.F hij A) (q : z ⟶ L.F hij B),
+      ∃ r : z ⟶ L.F hij ((hp i).prod A B),
         r ≫ (L.functF hij).map (hp i).fst = p ∧ r ≫ (L.functF hij).map (hp i).snd = q
 
 /-- LAX equalizer-preservation bundle (mirrors `colimitHasEqualizers`'s `he`/`hepres`/`hepres_lift`). -/

@@ -56,7 +56,7 @@ def isortFold : ConsList Unit Int → List Int
   | ConsList.cons x xs => st x (isortFold xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `isortFold (wrap d) = g d`. -/
-theorem isortFold_wrap : ∀ d : Unit, isortFold (ConsList.wrap d) = g d := fun _ => rfl
+theorem isortFold_wrap : ∀ D : Unit, isortFold (ConsList.wrap D) = g D := fun _ => rfl
 
 /-- The step condition IS `isortFold`'s cons equation: `isortFold (cons x xs) = st x (isortFold xs)`. -/
 theorem isortFold_cons :
