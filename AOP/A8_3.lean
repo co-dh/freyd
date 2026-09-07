@@ -30,6 +30,11 @@
 module
 
 public import AOP.A8_2
+-- (8.5) is the one law of `<thinlist-laws>` that is NOT abstract: it needs `bump Q` and
+-- `minlist Q` written out on a concrete list, hence the cons-list algebra and `est`'s
+-- pointwise reading.
+public import AOP.A6_ConsList
+public import AOP.A7_4_Horner
 
 universe u
 
@@ -497,3 +502,158 @@ public theorem prodMap_sortRel_comp_merge_le
 end SortLaws
 
 end Freyd.Alg
+
+/-! ## (8.5): `thinlist Q` on a concrete cons-list (B&dM p.200)
+
+    The rest of §8.3 keeps `thinlist Q` and `minlist Q` abstract, constrained only by the laws
+    that use them.  (8.5) cannot: it says what `thinlist Q` COMPUTES, so the fold `⦇[nil,bump Q]⦈`
+    and the least member have to be written out.  `minlist Q` is `setify ≫ est Q` — the same
+    `est` (8.7) compares it with — and `bump Q` is the book's
+
+      `bump Q (a,[]) = [a]`,  `bump Q (a,[b]⧺x) = (aQb → [a]⧺x, bQa → [b]⧺x, [a]⧺[b]⧺x)`.
+
+    The note's `<thinlist-defn>` prints those two guards against the OTHER two results; read that
+    way (8.5) is false already at `[a,b]` with `b Q a` and `¬ a Q b`, where the note's `bump`
+    returns `[a]` and the least member is `b`. -/
+
+namespace Freyd.Alg.RelSet.CL
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet
+
+variable {A : Type}
+
+/-- Membership in a cons-list. -/
+@[expose] public def clMem (w : A) : ConsList Unit A → Prop
+  | ConsList.wrap _ => False
+  | ConsList.cons a xs => w = a ∨ clMem w xs
+
+public theorem clMem_wrap {u : Unit} {w : A} : clMem w (ConsList.wrap u) ↔ False := Iff.rfl
+
+public theorem clMem_cons {w c : A} {d : ConsList Unit A} :
+    clMem w (ConsList.cons c d) ↔ (w = c ∨ clMem w d) := Iff.rfl
+
+/-- `setify : [A]⟶EA` for cons-lists: a list ↦ the set of its elements. -/
+@[expose] public def setifyCL : dCL Unit A ⟶ pow (dE A) := graph (fun xs => fun w => clMem w xs)
+
+/-- `minlist Q : [A]⟶A` — a `Q`-least member of the list, i.e. `setify` then `est Q`. -/
+@[expose] public def minlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := setifyCL ≫ est Q
+
+public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
+    minlist Q xs w ↔ clMem w xs ∧ ∀ z, clMem z xs → Q w z := by
+  constructor
+  · rintro ⟨P, hP, hest⟩
+    have hP' : P = fun v => clMem v xs := hP
+    subst hP'
+    exact (RelSet.est_apply Q _ w).mp hest
+  · intro h
+    exact ⟨fun v => clMem v xs, rfl, (RelSet.est_apply Q _ w).mpr h⟩
+
+/-- `bump Q` (B&dM p.200): insert `a` into an already thinned list, dropping whichever of the
+    new element and the old head the other dominates. -/
+@[expose] public def bumpRel (Q : dE A ⟶ dE A) :
+    (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dCL Unit A := fun p ys =>
+  match p.2 with
+  | ConsList.wrap _ => ys = ConsList.cons p.1 (ConsList.wrap ())
+  | ConsList.cons b xs =>
+      (Q p.1 b ∧ ys = ConsList.cons p.1 xs)
+      ∨ (Q b p.1 ∧ ys = ConsList.cons b xs)
+      ∨ (¬ Q p.1 b ∧ ¬ Q b p.1 ∧ ys = ConsList.cons p.1 (ConsList.cons b xs))
+
+/-- The algebra `[nil, bump Q]`. -/
+@[expose] public def bumpAlg (Q : dE A ⟶ dE A) : Fobj Unit A (dCL Unit A) ⟶ dCL Unit A :=
+  fun u ys => match u with
+    | Sum.inl _ => ys = ConsList.wrap ()
+    | Sum.inr p => bumpRel Q p ys
+
+/-- `thinlist Q ≜ ⦇[nil,bump Q]⦈`. -/
+@[expose] public def thinlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dCL Unit A := cataR (bumpAlg Q)
+
+public theorem thinlist_wrap (Q : dE A ⟶ dE A) (u : Unit) (r : ConsList Unit A) :
+    thinlist Q (ConsList.wrap u) r ↔ r = ConsList.wrap () := Iff.rfl
+
+public theorem thinlist_cons (Q : dE A ⟶ dE A) (c : A) (d r : ConsList Unit A) :
+    thinlist Q (ConsList.cons c d) r ↔ ∃ r', thinlist Q d r' ∧ bumpRel Q (c, r') r := Iff.rfl
+
+/-- A non-empty list has a `Q`-least member when `Q` is a connected preorder. -/
+public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
+    (htrans : ∀ a b c, Q a b → Q b c → Q a c) (hconn : ∀ a b, Q a b ∨ Q b a) :
+    ∀ (a : A) (xs : ConsList Unit A), ∃ w, minlist Q (ConsList.cons a xs) w := by
+  intro a xs
+  induction xs generalizing a with
+  | wrap u =>
+      refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩⟩
+      intro z hz
+      rcases clMem_cons.mp hz with rfl | hz'
+      · exact hrefl _
+      · exact hz'.elim
+  | cons b zs ih =>
+      obtain ⟨m, hm⟩ := ih b
+      rw [minlist_apply] at hm
+      rcases hconn a m with h | h
+      · refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩⟩
+        intro z hz
+        rcases clMem_cons.mp hz with rfl | hz'
+        · exact hrefl _
+        · exact htrans a m z h (hm.2 z hz')
+      · refine ⟨m, (minlist_apply Q _ m).mpr ⟨clMem_cons.mpr (Or.inr hm.1), ?_⟩⟩
+        intro z hz
+        rcases clMem_cons.mp hz with rfl | hz'
+        · exact h
+        · exact hm.2 z hz'
+
+/-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
+    `thinlist Q xs = [minlist Q xs]` — thinning comes down to one element. -/
+public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
+    (htrans : ∀ a b c, Q a b → Q b c → Q a c) (hconn : ∀ a b, Q a b ∨ Q b a)
+    (a : A) (xs ys : ConsList Unit A) :
+    thinlist Q (ConsList.cons a xs) ys
+      ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
+  induction xs generalizing a ys with
+  | wrap u =>
+      rw [thinlist_cons]
+      constructor
+      · rintro ⟨r', hr', hb⟩
+        rw [thinlist_wrap] at hr'
+        subst hr'
+        refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
+        intro z hz
+        rcases clMem_cons.mp hz with rfl | hz'
+        · exact hrefl _
+        · exact hz'.elim
+      · rintro ⟨w, hw, rfl⟩
+        rw [minlist_apply] at hw
+        rcases clMem_cons.mp hw.1 with rfl | hw'
+        · exact ⟨ConsList.wrap (), rfl, rfl⟩
+        · exact hw'.elim
+  | cons b zs ih =>
+      rw [thinlist_cons]
+      constructor
+      · rintro ⟨r', hr', hb⟩
+        obtain ⟨m, hm, rfl⟩ := (ih b r').mp hr'
+        rw [minlist_apply] at hm
+        rcases hb with ⟨hab, rfl⟩ | ⟨hba, rfl⟩ | ⟨h1, h2, _⟩
+        · refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩, rfl⟩
+          intro z hz
+          rcases clMem_cons.mp hz with rfl | hz'
+          · exact hrefl _
+          · exact htrans a m z hab (hm.2 z hz')
+        · refine ⟨m, (minlist_apply Q _ m).mpr ⟨clMem_cons.mpr (Or.inr hm.1), ?_⟩, rfl⟩
+          intro z hz
+          rcases clMem_cons.mp hz with rfl | hz'
+          · exact hba
+          · exact hm.2 z hz'
+        · exact ((hconn a m).elim h1 h2).elim
+      · rintro ⟨w, hw, rfl⟩
+        rw [minlist_apply] at hw
+        rcases clMem_cons.mp hw.1 with rfl | hwtail
+        · obtain ⟨m, hm⟩ := minlist_exists hrefl htrans hconn b zs
+          rw [minlist_apply] at hm
+          refine ⟨ConsList.cons m (ConsList.wrap ()),
+            (ih b _).mpr ⟨m, (minlist_apply Q _ m).mpr hm, rfl⟩, ?_⟩
+          exact Or.inl ⟨hw.2 m (clMem_cons.mpr (Or.inr hm.1)), rfl⟩
+        · refine ⟨ConsList.cons w (ConsList.wrap ()),
+            (ih b _).mpr ⟨w, (minlist_apply Q _ w).mpr
+              ⟨hwtail, fun z hz => hw.2 z (clMem_cons.mpr (Or.inr hz))⟩, rfl⟩, ?_⟩
+          exact Or.inr (Or.inl ⟨hw.2 a (clMem_cons.mpr (Or.inl rfl)), rfl⟩)
+
+end Freyd.Alg.RelSet.CL
