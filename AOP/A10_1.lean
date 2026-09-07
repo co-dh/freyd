@@ -131,6 +131,22 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj A ⟶ A} {
     rw [hre2]
     exact le_trans step7 htrans'
 
+/-! ### The optimisation chain (note §16.1b)
+
+  `H%∋ est(R) ⊒ (T°)%∋ est(Q)F(X)h`: the note draws the spec as the single bead `X` sitting
+  inside the body, so the step abstracts that abbreviation out of `greedy_dp_prefixed`. -/
+
+/-- Step 1: at `X≜H%∋ est(R)` the greedy body is below the spec — the prefixed point
+    Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
+public theorem greedy_dp_step1 (hFr : F.PreservesRecip)
+    {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A}
+    {X : B ⟶ A} (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
+    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
+    (hX : X = Λ H ≫ est R) :
+    Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ Λ H ≫ est R := by
+  subst hX
+  exact greedy_dp_prefixed hFr hh hmono htrans hHfix hQ
+
 /-- **Theorem 10.1 (B&dM p.245)**, the GREEDY theorem as an extreme case of dynamic
     programming: `(μX : h·FX·min Q°·ΛT°) ⊆ min R°·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — greedily
     committing to a single `Q°`-minimum decomposition at each unfold step, then refolding
@@ -145,7 +161,8 @@ public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
         ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (greedy_dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hQ))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
+    (greedy_dp_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
 
 /-! ## B&dM p.246 — the greedy hypotheses via a bifunctor (recall of Proposition 9.4)
 
