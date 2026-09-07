@@ -22,9 +22,14 @@
 # chain — which is no declaration's statement and so has nothing to generate from.  It becomes a
 # real obligation the moment that step gets a lemma of its own.
 #
-# The side is `.lhs` throughout: a row of a proof table carries the marker of the law whose LEFT
-# side it is, the next row being that law's right side.  A row that turns out to be the right side
-# shows up as a DIFF, not as a silently-passing wrong picture.
+# The side, and the ARM.  A row of a proof table carries the marker of the law whose left side it
+# is, so `.lhs` is the default; a row that is the law's other side takes `.rhs`, and a row that
+# draws ONE ARM of a bracket — the note's `vstep` chains work on the cons arm and leave the nil arm
+# to the formula — takes `.lhs.inr` / `.rhs.inr`, because `.lhs` alone draws the whole case split.
+# Which one a line takes is settled against the note's own panel: the exe's tree and the note's
+# must agree in top-level node kind and in port arity before a line names that selector, and a row
+# no side or arm reaches keeps `.lhs` and shows up as a DIFF rather than as a silently-passing
+# wrong picture.
 Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
 Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
 - | <subseq-EW-case> | [nil,(𝟙×∋)(cons ∪ π₂)]
@@ -36,7 +41,7 @@ Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons �
 - | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
 - | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
 - | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
-Freyd.Alg.greedy.lhs | <greedy-thm72> | R°R°
+Freyd.Alg.greedy.rhs | <greedy-thm72> | R°R°
 Freyd.Alg.greedy.lhs | <greedy-thm72> | R°
 Freyd.Alg.RelSet.CL.F.lhs | <prefix-defn> | [nil,⊸ nil ∪ cons]
 Freyd.Alg.RelSet.Filter.filter_alg.lhs | <takewhile-alg> | α prefix list(p)
@@ -46,7 +51,7 @@ Freyd.Alg.RelSet.Filter.filter_alg.lhs | <takewhile-alg> | F(prefix) [nil,⊸ ni
 - | <takewhile-alg> | F(prefix list(p))S
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.lhs | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_disc.lhs | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_slide.lhs | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_nil.lhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
@@ -62,14 +67,14 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇[nil,(
 - | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
 - | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
 - | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
-Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
+Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
 Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
 - | <mss-mono> | ⊸ zero ∪ plus ≥
 - | <mss-mono> | (⊸ zero ∪ plus)≥
-Freyd.Alg.RelSet.MSS.mss_step.lhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
+Freyd.Alg.RelSet.MSS.mss_step.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
 Freyd.Alg.RelSet.MSS.mss_eq_scan.lhs | <mss-deriv> | (segment sum)%∋ est(≥)
 Freyd.Alg.RelSet.MSS.mss_eq_scan.lhs | <mss-deriv> | suffix%∋ E((prefix sum)%∋ est(≥))est(≥)
-Freyd.Alg.RelSet.Filter.filter_mono.lhs | <filter-mono> | (𝟙×R°)(π₂ ∪ (p×𝟙) cons)
+Freyd.Alg.RelSet.Filter.filter_mono.lhs.inr | <filter-mono> | (𝟙×R°)(π₂ ∪ (p×𝟙) cons)
 Freyd.Alg.RelSet.Filter.filter_mono.lhs | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
 - | <filter-mono> | π₂R° ∪ (p×R°) cons
 - | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
