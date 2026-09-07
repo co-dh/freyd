@@ -560,6 +560,18 @@ public theorem takewhile_step1 (p : E → Bool) :
           ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
   unfold Salg; rw [Λ_junc, junc_comp]
 
+/-- `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one element and the longest of a
+    one-element set is that element.  The `nil` arm of every algebra of §7.7. -/
+public theorem Λ_nil_comp_est :
+    (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(lenLE°)
+      = graph (fun _ => ([] : List E)) := by
+  apply hom_ext; intro D ws
+  rw [Λ_comp_est_apply]
+  refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
+  have hz' : z = ([] : List E) := hz
+  have hw' : ws = ([] : List E) := h
+  subst hz'; subst hw'; exact Nat.le_refl 0
+
 /-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
     element and the longest of a one-element set is that element. -/
 public theorem takewhile_step2 (p : E → Bool) :
@@ -569,16 +581,7 @@ public theorem takewhile_step2 (p : E → Bool) :
       = junc (sumCop (dL Unit) ⟨E × List E⟩)
           (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
           ((discNil ∪ pcons p)%∋ ≫ est(lenLE°)) := by
-  have hnil : (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋
-        ≫ est(lenLE°)
-      = graph (fun _ => ([] : List E)) := by
-    apply hom_ext; intro D ws
-    rw [Λ_comp_est_apply]
-    refine ⟨fun h => h.1, fun h => ⟨h, fun z hz => ?_⟩⟩
-    have hz' : z = ([] : List E) := hz
-    have hw' : ws = ([] : List E) := h
-    subst hz'; subst hw'; exact Nat.le_refl 0
-  rw [hnil]
+  rw [Λ_nil_comp_est]
 
 /-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
     offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
