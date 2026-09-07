@@ -137,7 +137,11 @@
   // closest; to `list`: 54, 49, 34, 71, 69) — which is why they are picked TOGETHER, and picked
   // from hues already rounded to 8 bits, the rounding being worth ΔE76 1 on its own.
   "×": rgb("#5f3f32"), "⟨𝟙,list list⟩": rgb("#1f4e48"), "⟨list,list list⟩": rgb("#454460"),
-  "⟨𝟙,⟨list,list list⟩ ×⟩": rgb("#3d4c14"), "⟨⟨𝟙,list⟩ ×,list list⟩": rgb("#8a1831"))
+  "⟨𝟙,⟨list,list list⟩ ×⟩": rgb("#3d4c14"), "⟨⟨𝟙,list⟩ ×,list list⟩": rgb("#8a1831"),
+  // §13.6.1's van again, now that the left factor of a product is a lane: the three product
+  // contexts its panels draw beside `list`.  Picked TOGETHER, pairwise ΔE76 ≥ 33 and ≥ 29 from
+  // `list`, because naming any one of them moves the free hues the other two would take.
+  "Tx×−": rgb("#d09369"), "[Tx]×−": rgb("#a66378"), "(Tx × [Tx])×−": rgb("#74691d"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.

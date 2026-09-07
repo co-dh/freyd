@@ -822,4 +822,23 @@ public theorem const_zero_initial {z : ℬ} (hz : 𝟙 z = (𝟘 : z ⟶ z)) (F 
 
 end LaTZero
 
+/-! ## The left factor of a product as a lane
+
+  A string diagram draws a product `A×Y` as the ONE lane `A×−` — `Relator.prod (Relator.const A)
+  (Relator.idRelator _)` — over the lanes of `Y`, so a bead on that lane is a 2-cell
+  `A×− ⟶ A'×−` and its dot is the naturality below. -/
+
+section ConstLane
+
+variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
+
+/-- A CONSTANT relator leaves no naturality condition: `(const b).map R` is `𝟙 b` at every `R`, so
+    ONE arrow `f : b ⟶ b'` is already a strictly natural family.  Through `strictNatural_prod` and
+    `strictNatural_id` this is what makes `Y ↦ f×𝟙 Y` strictly natural from `b×−` to `b'×−`. -/
+public theorem strictNatural_const {b b' : ℬ} (f : b ⟶ b') :
+    StrictNatural (Relator.const b' : Relator 𝒜 ℬ) (Relator.const b) (fun _ => f) :=
+  fun {_ _} _ => by show 𝟙 b ≫ f = f ≫ 𝟙 b'; rw [Cat.id_comp, Cat.comp_id]
+
+end ConstLane
+
 end Freyd.Alg
