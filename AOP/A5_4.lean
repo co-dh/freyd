@@ -48,6 +48,10 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
     PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj B :=
   ((∋ A)° \ (R ≫ (∋ B)°)) ∩ ((∋ A ≫ R) / ∋ B)
 
+/-- B&dM's own spelling of the power relator's action on an arrow: `P(R)`.  Its own brackets, like
+    a relator's `F(R)`, because juxtaposition in this repo is composition. -/
+notation:max "P(" R ")" => powerRel R
+
 /-- Term₂ cancellation (the "output-reachable" half): `powerRel R ≫ ∋ b ⊑ ∋ a ≫ R`.
     This is B&dM p.133's example that `∈` is LAX NATURAL along the power relator
     (used again, unnamed, in `AOP.A5_7`). -/

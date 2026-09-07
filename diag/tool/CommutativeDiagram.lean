@@ -71,8 +71,6 @@ def fmt (x : Float) : String :=
     a table in this file. -/
 def plain (e : Expr) : MetaM String := do
   let s := toString (← Meta.ppExpr e)
-  let s := s.replace "Freyd." "" |>.replace "Diag.CartBicat." "" |>.replace "Diag."  ""
-    |>.replace "Alg.Allegory." "" |>.replace "Alg." "" |>.replace "RelSet." ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- The note's SPACING, and nothing else.  Lean's formatter always sets an application's argument
@@ -690,7 +688,7 @@ def main (args : List String) : IO UInt32 := do
     `pp.structureInstances false
   let ctx : Core.Context :=
     { fileName := "<diag-export>", fileMap := default, options := opts,
-      openDecls := openNs.map (.simple · []) }
+      openDecls := (openNs ++ StrDiag.repoNamespaces env).map (.simple · []) }
   -- `openDecls` alone only SHORTENS names.  Every notation the repo writes is `scoped`, and a
   -- scoped unexpander lives in a scoped extension that `open` activates during elaboration — which
   -- an exe never runs.  Without this the labels read `Cat.id X`, `Cat.comp R S`, and the note's own

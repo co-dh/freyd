@@ -964,4 +964,19 @@ open Lean PrettyPrinter in
 @[app_unexpander headR] public meta def unexpandHeadR : Unexpander
   | _ => `($(mkIdent `head))
 
+-- Same rule for the van's own arrows: the schedule's element type, the cost and the capacity are
+-- the CONTEXT every panel of the section is drawn in, not part of the arrow's name — the note
+-- calls them `old`, `new`, `glue`, `secure`, and so does the picture.
+open Lean PrettyPrinter in
+@[app_unexpander oldR] public meta def unexpandOldR : Unexpander
+  | _ => `($(mkIdent `old))
+
+open Lean PrettyPrinter in
+@[app_unexpander newR] public meta def unexpandNewR : Unexpander
+  | _ => `($(mkIdent `new))
+
+open Lean PrettyPrinter in
+@[app_unexpander secure] public meta def unexpandSecure : Unexpander
+  | _ => `($(mkIdent `secure))
+
 end Freyd.Alg.RelSet.Van

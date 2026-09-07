@@ -559,4 +559,15 @@ open Lean PrettyPrinter in
   | `($_ $_ $_ $R $S) => `($R × $S)
   | _ => throw ()
 
+-- printing-only: a product's two projections are the note's `π₁`/`π₂`.  WHICH product they are
+-- taken over is the `RelProd` argument, and that is what the picture's own wires already say, so
+-- the label names the arrow alone.
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outl] public meta def unexpandOutl : Unexpander
+  | _ => `($(mkIdent `π₁))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outr] public meta def unexpandOutr : Unexpander
+  | _ => `($(mkIdent `π₂))
+
 end Freyd.Alg

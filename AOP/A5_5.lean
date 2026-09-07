@@ -58,6 +58,14 @@ variable {F}
     equal `relCata` only propositionally (`cataR_eq_relCata`), so they are spelled by name. -/
 notation:max "⦇" R "⦈" => relCata R
 
+open Lean PrettyPrinter in
+/-- The MAP fold wears the same banana as the relational one: the note's `<initial-defn>` square
+    writes `⦇f⦈` for the arrow `cata_comm` characterises.  `hf : Map f` is a proof, and a proof is
+    not part of what the note calls the arrow. -/
+@[app_unexpander InitialAlgebra.cata] public meta def unexpandCata : Unexpander
+  | `($_ $f $_hf) => `(⦇$f⦈)
+  | _ => throw ()
+
 public theorem relCata_unfold (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     relCata R = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := rfl
 
