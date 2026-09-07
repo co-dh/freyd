@@ -172,7 +172,10 @@ def main(argv):
                 print(f"{tag} {sel}: NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}")
                 rc = 1
                 continue
-            wrap(nwrap, '#import "/diag/dpanel.typ": *\n' + p.stdout)
+            # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
+            # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
+            wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n'
+                 + p.stdout)
             e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
             if e:
                 print(f"{tag} {sel}: CANNOT-DRAW typst {e}")

@@ -39,10 +39,10 @@ section MonotonicAlg
 
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
-/-- **B&dM p.172**: `S` is MONOTONIC on `R` when `S·FR ⊆ R·S`, mirrored `F.map R ≫ S ⊑ S ≫ R`.
-    (An algebra `S` "does not care" whether `R`-related recursive results are computed before
-    or after applying `S`.) -/
-@[expose] public def MonotonicAlg (S : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ S ⊑ S ≫ R
+/-- **B&dM p.172**: `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
+    (An algebra `φ` "does not care" whether `R`-related recursive results are computed before
+    or after applying `φ`.) -/
+@[expose] public def MonotonicAlg (φ : F.obj A ⟶ A) (R : A ⟶ A) : Prop := F.map R ≫ φ ⊑ φ ≫ R
 
 /-- Function form (conjugation), for `f` a MAP: `f·FR·f° ⊆ R`, mirrored. -/
 public theorem monotonicAlg_iff_conj (hf : Map f) : MonotonicAlg f R ↔ f° ≫ F.map R ≫ f ⊑ R :=
