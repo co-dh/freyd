@@ -150,13 +150,13 @@ public theorem homInclObj_mono_reflects (C : CatSystem.{u, u} ι D) (hC : C.Cohe
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {X Y : C.A i} (f g : X ⟶ Y) (z : C.A j)
@@ -248,13 +248,13 @@ public theorem wellPointed_of_stage
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A c : C.A i) (z : C.A j)
-      (uu vv : z ⟶ C.F hij ((hp i).prod A c)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a c : C.A i) (z : C.A j)
+      (uu vv : z ⟶ C.F hij ((hp i).prod a c)),
       uu ≫ (C.Fmap hij (hp i).fst) = vv ≫ (C.Fmap hij (hp i).fst) →
       uu ≫ (C.Fmap hij (hp i).snd) = vv ≫ (C.Fmap hij (hp i).snd) → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A c : C.A i) (z : C.A j)
-      (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij c),
-      ∃ r : z ⟶ C.F hij ((hp i).prod A c),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a c : C.A i) (z : C.A j)
+      (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij c),
+      ∃ r : z ⟶ C.F hij ((hp i).prod a c),
         r ≫ (C.Fmap hij (hp i).fst) = p ∧ r ≫ (C.Fmap hij (hp i).snd) = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {X Y : C.A i} (f g : X ⟶ Y) (z : C.A j)
@@ -408,17 +408,17 @@ public theorem tower_capital_of_cofinal
     (htpres : ∀ {i j} (hij : uliftNatDirected.le i j),
       (towerSystem b ccs.step).F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts ((towerSystem b ccs.step).A i))
-    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b ccs.step).A i)
+    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b ccs.step).A i)
       (z : (towerSystem b ccs.step).A j)
-      (uu vv : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a C)),
+      (uu vv : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a c)),
       uu ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst =
         vv ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst →
       uu ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd =
         vv ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b ccs.step).A i)
+    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b ccs.step).A i)
       (z : (towerSystem b ccs.step).A j)
-      (p : z ⟶ (towerSystem b ccs.step).F hij a) (q : z ⟶ (towerSystem b ccs.step).F hij C),
-      ∃ r : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a C),
+      (p : z ⟶ (towerSystem b ccs.step).F hij a) (q : z ⟶ (towerSystem b ccs.step).F hij c),
+      ∃ r : z ⟶ (towerSystem b ccs.step).F hij ((hp i).prod a c),
         r ≫ (towerSystem b ccs.step).Fmap hij (hp i).fst = p ∧
         r ≫ (towerSystem b ccs.step).Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers ((towerSystem b ccs.step).A i))
@@ -487,13 +487,13 @@ theorem capital_of_cofinalSystem {ι : Type u} {D : Colim.Directed ι}
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A c : C.A i) (z : C.A j)
-      (uu vv : z ⟶ C.F hij ((hp i).prod A c)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a c : C.A i) (z : C.A j)
+      (uu vv : z ⟶ C.F hij ((hp i).prod a c)),
       uu ≫ (C.Fmap hij (hp i).fst) = vv ≫ (C.Fmap hij (hp i).fst) →
       uu ≫ (C.Fmap hij (hp i).snd) = vv ≫ (C.Fmap hij (hp i).snd) → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A c : C.A i) (z : C.A j)
-      (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij c),
-      ∃ r : z ⟶ C.F hij ((hp i).prod A c),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a c : C.A i) (z : C.A j)
+      (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij c),
+      ∃ r : z ⟶ C.F hij ((hp i).prod a c),
         r ≫ (C.Fmap hij (hp i).fst) = p ∧ r ≫ (C.Fmap hij (hp i).snd) = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {X Y : C.A i} (f g : X ⟶ Y) (z : C.A j)

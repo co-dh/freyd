@@ -53,8 +53,8 @@ open Freyd Freyd.Alg
 namespace Freyd.S2_154
 
 /-- `calc`-chaining for the allegory order `⊑` (`Freyd.Alg.le` has no `Trans` instance). -/
-@[expose] public instance {𝒜 : Type u} [Allegory.{v} 𝒜] {A B : 𝒜} :
-    Trans (α := A ⟶ B) (β := A ⟶ B) (γ := A ⟶ B) Alg.le Alg.le Alg.le :=
+@[expose] public instance {𝒜 : Type u} [Allegory.{v} 𝒜] {a b : 𝒜} :
+    Trans (α := a ⟶ b) (β := a ⟶ b) (γ := a ⟶ b) Alg.le Alg.le Alg.le :=
   ⟨Alg.le_trans⟩
 
 /-! ## 1.  §2.15 unit facts -/
@@ -65,13 +65,13 @@ variable {𝒜 : Type u} [Allegory.{v} 𝒜]
 
 /-- §2.15: an ENTIRE morphism into a PARTIAL UNIT is a map (simplicity is free:
     `R°≫R : u → u ⊑ 1_u`). -/
-public theorem map_of_entire_to_partialUnit {u A : 𝒜} (hu : PartialUnit u)
-    {R : A ⟶ u} (hR : Alg.Entire R) : Alg.Map R := ⟨hR, hu _⟩
+public theorem map_of_entire_to_partialUnit {u a : 𝒜} (hu : PartialUnit u)
+    {R : a ⟶ u} (hR : Alg.Entire R) : Alg.Map R := ⟨hR, hu _⟩
 
 /-- §2.15: any two MAPS into a partial unit agree (generalizes `Alg.Map(𝒜)`-terminality of
     the unit beyond the designated one). -/
-theorem maps_to_partialUnit_unique {u A : 𝒜} (hu : PartialUnit u)
-    {f g : A ⟶ u} (hf : Alg.Map f) (hg : Alg.Map g) : f = g := by
+theorem maps_to_partialUnit_unique {u a : 𝒜} (hu : PartialUnit u)
+    {f g : a ⟶ u} (hf : Alg.Map f) (hg : Alg.Map g) : f = g := by
   apply map_order_discrete hf hg
   have h1 : f ⊑ (g ≫ g°) ≫ f := by
     have := comp_mono_right (Alg.entire_id_le hg.1) f; rwa [Cat.id_comp] at this
@@ -138,8 +138,8 @@ public theorem isUnit_transfer {w x : 𝒜} (hw : IsUnit w) {k : x ⟶ w} (_hk :
       _ = k ≫ k° := by rw [Cat.id_comp]
       _ = Cat.id x := hkk
   · -- entireness: postcompose the entire `a → w` with the entire `k° : w → x`.
-    intro A
-    obtain ⟨R, hR⟩ := hEnt A
+    intro a
+    obtain ⟨R, hR⟩ := hEnt a
     have hko : Alg.Entire (k° : w ⟶ x) := by
       show Cat.id w ∩ k° ≫ k°° = Cat.id w
       rw [Allegory.recip_recip, hkok, Allegory.inter_idem]
@@ -181,8 +181,8 @@ theorem mapMonic_iff {q : A} {a : MapObj A} (m : q ⟶ a) (hm : Alg.Map m) :
 
 /-- §2.147: a map is a COVER in `Alg.Map 𝒜` iff `f° ≫ f = 1` ("surjective").
     Forward: `mapCover_entire` + simplicity; backward: `mapEntire_cover`. -/
-theorem mapCover_iff {a C : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a C) :
-    @Cover (MapObj A) (mapCat (𝒜 := A)) a C f ↔ f.val° ≫ f.val = Cat.id C := by
+theorem mapCover_iff {a c : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a c) :
+    @Cover (MapObj A) (mapCat (𝒜 := A)) a c f ↔ f.val° ≫ f.val = Cat.id c := by
   constructor
   · intro h
     exact le_antisymm f.property.2 (mapCover_entire f h)
@@ -191,9 +191,9 @@ theorem mapCover_iff {a C : MapObj A} (f : @Cat.Hom _ (mapCat (𝒜 := A)) a C) 
 
 /-- Tabulations transport along a map-iso of the apex: if `i` is a map with
     `i≫i° = 1`, `i°≫i = 1` and `(f, g)` tabulates `R`, then `(i≫f, i≫g)` tabulates `R`. -/
-theorem tabulates_precomp_iso {p q a B : A} {i : q ⟶ p} (hi : Alg.Map i)
+theorem tabulates_precomp_iso {p q a b : A} {i : q ⟶ p} (hi : Alg.Map i)
     (hii : i ≫ i° = Cat.id q) (hioi : i° ≫ i = Cat.id p)
-    {f : p ⟶ a} {g : p ⟶ B} {R : a ⟶ B} (ht : Tabulates f g R) :
+    {f : p ⟶ a} {g : p ⟶ b} {R : a ⟶ b} (ht : Tabulates f g R) :
     Tabulates (i ≫ f) (i ≫ g) R := by
   obtain ⟨hf, hg, hR, hjm⟩ := ht
   refine ⟨map_comp hi hf, map_comp hi hg, ?_, ?_⟩
@@ -226,12 +226,12 @@ theorem tabulates_precomp_iso {p q a B : A} {i : q ⟶ p} (hi : Alg.Map i)
     `f : a → c`, `g : b → c` in `Alg.Map 𝒜` tabulate `f ≫ g°`.  (Compare the cone with the
     canonical tabulation of `f ≫ g°` via the mediating maps in both directions; the
     comparison is a map-iso and `tabulates_precomp_iso` transports.) -/
-theorem mapIsPullback_tabulates {a B C : MapObj A}
-    {f : @Cat.Hom _ (mapCat (𝒜 := A)) a C} {g : @Cat.Hom _ (mapCat (𝒜 := A)) B C}
-    (cone : @Cone (MapObj A) (mapCat (𝒜 := A)) a B C f g)
-    (hpb : @Cone.IsPullback (MapObj A) (mapCat (𝒜 := A)) a B C f g cone) :
-    Tabulates (@Cone.π₁ (MapObj A) (mapCat (𝒜 := A)) a B C f g cone).val
-      (@Cone.π₂ (MapObj A) (mapCat (𝒜 := A)) a B C f g cone).val
+theorem mapIsPullback_tabulates {a b c : MapObj A}
+    {f : @Cat.Hom _ (mapCat (𝒜 := A)) a c} {g : @Cat.Hom _ (mapCat (𝒜 := A)) b c}
+    (cone : @Cone (MapObj A) (mapCat (𝒜 := A)) a b c f g)
+    (hpb : @Cone.IsPullback (MapObj A) (mapCat (𝒜 := A)) a b c f g cone) :
+    Tabulates (@Cone.π₁ (MapObj A) (mapCat (𝒜 := A)) a b c f g cone).val
+      (@Cone.π₂ (MapObj A) (mapCat (𝒜 := A)) a b c f g cone).val
       (f.val ≫ g.val°) := by
   -- Canonical tabulation (p, π₁, π₂) of f ≫ g°.
   obtain ⟨p, π₁, π₂, ht⟩ := Classical.choice (α := PSigma fun p : A =>
@@ -240,17 +240,17 @@ theorem mapIsPullback_tabulates {a B C : MapObj A}
     obtain ⟨p, π₁, π₂, ht⟩ := TabularAllegory.tabular (𝒜 := A) (f.val ≫ g.val°)
     exact ⟨⟨p, π₁, π₂, ht⟩⟩)
   -- Cone-field accessors.
-  let cpt : MapObj A := @Cone.pt _ (mapCat (𝒜 := A)) a B C f g cone
-  let cπ₁ : @Cat.Hom _ (mapCat (𝒜 := A)) cpt a := @Cone.π₁ _ (mapCat (𝒜 := A)) a B C f g cone
-  let cπ₂ : @Cat.Hom _ (mapCat (𝒜 := A)) cpt B := @Cone.π₂ _ (mapCat (𝒜 := A)) a B C f g cone
+  let cpt : MapObj A := @Cone.pt _ (mapCat (𝒜 := A)) a b c f g cone
+  let cπ₁ : @Cat.Hom _ (mapCat (𝒜 := A)) cpt a := @Cone.π₁ _ (mapCat (𝒜 := A)) a b c f g cone
+  let cπ₂ : @Cat.Hom _ (mapCat (𝒜 := A)) cpt b := @Cone.π₂ _ (mapCat (𝒜 := A)) a b c f g cone
   have hcw : cπ₁.val ≫ f.val = cπ₂.val ≫ g.val :=
-    congrArg Subtype.val (@Cone.w _ (mapCat (𝒜 := A)) a B C f g cone)
+    congrArg Subtype.val (@Cone.w _ (mapCat (𝒜 := A)) a b c f g cone)
   -- hm : cpt → p mediates the cone into the tabulation.
   obtain ⟨hm, hm_map, hm1, hm2, _⟩ :=
     tab_pullback_UMP g.property ht cπ₁.property cπ₂.property hcw
   -- The canonical tabulation is itself a cone; u : p → cpt from the pullback UMP.
-  let cone0 : @Cone (MapObj A) (mapCat (𝒜 := A)) a B C f g :=
-    @Cone.mk (MapObj A) (mapCat (𝒜 := A)) a B C f g p ⟨π₁, ht.1⟩ ⟨π₂, ht.2.1⟩
+  let cone0 : @Cone (MapObj A) (mapCat (𝒜 := A)) a b c f g :=
+    @Cone.mk (MapObj A) (mapCat (𝒜 := A)) a b c f g p ⟨π₁, ht.1⟩ ⟨π₂, ht.2.1⟩
       (Subtype.ext (tab_pullback_cone' f.property g.property ht))
   obtain ⟨u, ⟨hu1, hu2⟩, huniq⟩ := hpb cone0
   have hu1' : u.val ≫ cπ₁.val = π₁ := congrArg Subtype.val hu1
@@ -293,18 +293,18 @@ theorem mapIsPullback_tabulates {a B C : MapObj A}
 
 /-- **§2.147 (tabulating cones are pullbacks)**: a cone of maps whose legs tabulate
     `f ≫ g°` satisfies the pullback universal property (from `tab_pullback_UMP`). -/
-theorem mapTabulates_isPullback {a B C : MapObj A}
-    {f : @Cat.Hom _ (mapCat (𝒜 := A)) a C} {g : @Cat.Hom _ (mapCat (𝒜 := A)) B C}
-    (cone : @Cone (MapObj A) (mapCat (𝒜 := A)) a B C f g)
-    (ht : Tabulates (@Cone.π₁ (MapObj A) (mapCat (𝒜 := A)) a B C f g cone).val
-      (@Cone.π₂ (MapObj A) (mapCat (𝒜 := A)) a B C f g cone).val (f.val ≫ g.val°)) :
-    @Cone.IsPullback (MapObj A) (mapCat (𝒜 := A)) a B C f g cone := by
+theorem mapTabulates_isPullback {a b c : MapObj A}
+    {f : @Cat.Hom _ (mapCat (𝒜 := A)) a c} {g : @Cat.Hom _ (mapCat (𝒜 := A)) b c}
+    (cone : @Cone (MapObj A) (mapCat (𝒜 := A)) a b c f g)
+    (ht : Tabulates (@Cone.π₁ (MapObj A) (mapCat (𝒜 := A)) a b c f g cone).val
+      (@Cone.π₂ (MapObj A) (mapCat (𝒜 := A)) a b c f g cone).val (f.val ≫ g.val°)) :
+    @Cone.IsPullback (MapObj A) (mapCat (𝒜 := A)) a b c f g cone := by
   intro d
-  let dpt : MapObj A := @Cone.pt _ (mapCat (𝒜 := A)) a B C f g d
-  let dπ₁ : @Cat.Hom _ (mapCat (𝒜 := A)) dpt a := @Cone.π₁ _ (mapCat (𝒜 := A)) a B C f g d
-  let dπ₂ : @Cat.Hom _ (mapCat (𝒜 := A)) dpt B := @Cone.π₂ _ (mapCat (𝒜 := A)) a B C f g d
+  let dpt : MapObj A := @Cone.pt _ (mapCat (𝒜 := A)) a b c f g d
+  let dπ₁ : @Cat.Hom _ (mapCat (𝒜 := A)) dpt a := @Cone.π₁ _ (mapCat (𝒜 := A)) a b c f g d
+  let dπ₂ : @Cat.Hom _ (mapCat (𝒜 := A)) dpt b := @Cone.π₂ _ (mapCat (𝒜 := A)) a b c f g d
   have hdw : dπ₁.val ≫ f.val = dπ₂.val ≫ g.val :=
-    congrArg Subtype.val (@Cone.w _ (mapCat (𝒜 := A)) a B C f g d)
+    congrArg Subtype.val (@Cone.w _ (mapCat (𝒜 := A)) a b c f g d)
   obtain ⟨hm, hm_map, hm1, hm2, huniq⟩ :=
     tab_pullback_UMP g.property ht dπ₁.property dπ₂.property hdw
   refine ⟨⟨hm, hm_map⟩, ⟨Subtype.ext hm1, Subtype.ext hm2⟩, ?_⟩
@@ -314,19 +314,19 @@ theorem mapTabulates_isPullback {a B C : MapObj A}
 
 /-- **§2.16 (image characterization, forward)**: if `I` is an image of `f : a → b` in
     `Alg.Map 𝒜` then its coreflexive is `dom (f°)`: `I.arr° ≫ I.arr = dom (f.val°)`. -/
-theorem mapIsImage_corOf {a B : MapObj A}
-    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a B)
-    (I : @Subobject (MapObj A) (mapCat (𝒜 := A)) B)
-    (hI : @IsImage (MapObj A) (mapCat (𝒜 := A)) a B f I) :
-    (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I).val°
-      ≫ (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I).val = dom (f.val°) := by
-  let m : @Cat.Hom _ (mapCat (𝒜 := A)) _ B := @Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I
+theorem mapIsImage_corOf {a b : MapObj A}
+    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b)
+    (I : @Subobject (MapObj A) (mapCat (𝒜 := A)) b)
+    (hI : @IsImage (MapObj A) (mapCat (𝒜 := A)) a b f I) :
+    (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I).val°
+      ≫ (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I).val = dom (f.val°) := by
+  let m : @Cat.Hom _ (mapCat (𝒜 := A)) _ b := @Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I
   show m.val° ≫ m.val = dom (f.val°)
   apply le_antisymm
   · -- ⊑ : split dom(f°) as e°≫e; `⟨p,e⟩` allows f, so minimality factors I through it.
     obtain ⟨p, e, he_map, hee_l, hee_r⟩ := coreflexive_splits (dom_coreflexive (f.val°))
-    have hSallows : @Allows (MapObj A) (mapCat (𝒜 := A)) a B
-        (@Subobject.mk (MapObj A) (mapCat (𝒜 := A)) B p ⟨e, he_map⟩
+    have hSallows : @Allows (MapObj A) (mapCat (𝒜 := A)) a b
+        (@Subobject.mk (MapObj A) (mapCat (𝒜 := A)) b p ⟨e, he_map⟩
           (map_retract_monic he_map hee_r)) f := by
       -- (e,e) tabulates e°≫e = dom(f°) ⊒ f°≫f? — no: f°f ⊑ dom(f°); use tabulation UP.
       have htab_e : Tabulates e e (e° ≫ e) :=
@@ -351,22 +351,22 @@ theorem mapIsImage_corOf {a B : MapObj A}
             rw [← hk', Allegory.recip_comp]; simp [Cat.assoc]
         _ ⊑ m.val° ≫ Cat.id _ ≫ m.val := comp_mono_left _ (comp_mono_right k.property.2 _)
         _ = m.val° ≫ m.val := by rw [Cat.id_comp]
-    calc dom (f.val°) = Cat.id B ∩ f.val° ≫ f.val := by
-          show Cat.id B ∩ f.val° ≫ f.val°° = _; rw [Allegory.recip_recip]
+    calc dom (f.val°) = Cat.id b ∩ f.val° ≫ f.val := by
+          show Cat.id b ∩ f.val° ≫ f.val°° = _; rw [Allegory.recip_recip]
       _ ⊑ f.val° ≫ f.val := inter_lb_right _ _
       _ ⊑ m.val° ≫ m.val := h1
 
 /-- **§2.16 (image characterization, backward)**: a MONIC map `m` with coreflexive
     `m° ≫ m = dom (f°)` is an image of `f` in `Alg.Map 𝒜`. -/
-theorem mapIsImage_of_corOf {a B : MapObj A}
-    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a B)
-    (I : @Subobject (MapObj A) (mapCat (𝒜 := A)) B)
-    (hcor : (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I).val°
-      ≫ (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I).val = dom (f.val°)) :
-    @IsImage (MapObj A) (mapCat (𝒜 := A)) a B f I := by
-  let m : @Cat.Hom _ (mapCat (𝒜 := A)) _ B := @Subobject.arr (MapObj A) (mapCat (𝒜 := A)) B I
-  have hmono : @Monic (MapObj A) (mapCat (𝒜 := A)) _ B m :=
-    @Subobject.monic (MapObj A) (mapCat (𝒜 := A)) B I
+theorem mapIsImage_of_corOf {a b : MapObj A}
+    (f : @Cat.Hom _ (mapCat (𝒜 := A)) a b)
+    (I : @Subobject (MapObj A) (mapCat (𝒜 := A)) b)
+    (hcor : (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I).val°
+      ≫ (@Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I).val = dom (f.val°)) :
+    @IsImage (MapObj A) (mapCat (𝒜 := A)) a b f I := by
+  let m : @Cat.Hom _ (mapCat (𝒜 := A)) _ b := @Subobject.arr (MapObj A) (mapCat (𝒜 := A)) b I
+  have hmono : @Monic (MapObj A) (mapCat (𝒜 := A)) _ b m :=
+    @Subobject.monic (MapObj A) (mapCat (𝒜 := A)) b I
   have hmm : m.val ≫ m.val° = Cat.id _ := by
     have := (mapMonic_iff m.val m.property).mp (by
       -- `⟨m.val, m.property⟩ = m` by subtype eta.
@@ -386,7 +386,7 @@ theorem mapIsImage_of_corOf {a B : MapObj A}
     obtain ⟨k_S, hk_S⟩ := hS
     have hle : m.val° ≫ m.val ⊑ f.val° ≫ f.val := by
       rw [hcor]
-      show Cat.id B ∩ f.val° ≫ f.val°° ⊑ _
+      show Cat.id b ∩ f.val° ≫ f.val°° ⊑ _
       rw [Allegory.recip_recip]; exact inter_lb_right _ _
     have := mapIsImage_min_aux (A := A) m.property hmm f hle S k_S hk_S
     -- `Subobject.mk _ ⟨m.val, m.property⟩ _ = I` by eta on subtypes and structures.
@@ -395,9 +395,9 @@ theorem mapIsImage_of_corOf {a B : MapObj A}
 /-- The tabulation of a span through a partial unit is a PRODUCT cone in `Map 𝒜`
     (existence + uniqueness of the mediating map, at the allegory level). -/
 theorem tabulates_span_partialUnit_product {u' : A} (hu' : PartialUnit u')
-    {a B P : A} {pa : a ⟶ u'} {pb : B ⟶ u'} (hpa : Alg.Map pa) (hpb : Alg.Map pb)
-    {r : P ⟶ a} {s : P ⟶ B} (ht : Tabulates r s (pa ≫ pb°))
-    {w : A} {x : w ⟶ a} {y : w ⟶ B} (hx : Alg.Map x) (hy : Alg.Map y) :
+    {a b P : A} {pa : a ⟶ u'} {pb : b ⟶ u'} (hpa : Alg.Map pa) (hpb : Alg.Map pb)
+    {r : P ⟶ a} {s : P ⟶ b} (ht : Tabulates r s (pa ≫ pb°))
+    {w : A} {x : w ⟶ a} {y : w ⟶ b} (hx : Alg.Map x) (hy : Alg.Map y) :
     ∃ h : w ⟶ P, Alg.Map h ∧ h ≫ r = x ∧ h ≫ s = y ∧
       ∀ h', Alg.Map h' → h' ≫ r = x → h' ≫ s = y → h' = h := by
   obtain ⟨h, hh, hr, hs⟩ := tabulation_UP_forward ht hx hy
@@ -418,9 +418,9 @@ section MapRep
 
 /-- An allegory functor preserves `dom` (it is equational: `dom R = 1 ∩ R≫R°`). -/
 theorem map_dom {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
-    (T : AllegoryFunctor 𝒜 ℬ) {A B : 𝒜} (R : A ⟶ B) :
+    (T : AllegoryFunctor 𝒜 ℬ) {a b : 𝒜} (R : a ⟶ b) :
     T.map (Alg.dom R) = Alg.dom (T.map R) := by
-  show T.map (Cat.id A ∩ R ≫ R°) = Cat.id _ ∩ T.map R ≫ (T.map R)°
+  show T.map (Cat.id a ∩ R ≫ R°) = Cat.id _ ∩ T.map R ≫ (T.map R)°
   rw [T.map_inter, T.map_id, T.map_comp, T.map_recip]
 
 -- The §2.154 "preserves terminators" clause carried by `RegRep` below uses `Horn.IsTerminalObj`
@@ -469,7 +469,7 @@ theorem mapRep_pres_covers :
 theorem mapRep_pres_pullback :
     @PreservesPullbacks (MapObj A) (MapObj B) (mapCat (𝒜 := A)) (mapCat (𝒜 := B))
       (mapRepFunctor T) := by
-  intro a b C f g cone hpb
+  intro a b c f g cone hpb
   apply mapTabulates_isPullback
   have ht := T.preserves_tabulates (mapIsPullback_tabulates cone hpb)
   rw [T.map_comp, T.map_recip] at ht
@@ -499,19 +499,19 @@ theorem mapRep_pres_term (hu : IsUnit (T.obj (UnitaryAllegory.unit_obj (𝒜 := 
 
 /-- The tabulation equation for the CHOSEN product of `Map 𝒜`: it is (defined as) the
     pullback over the unit, so its legs tabulate `trm a ≫ (trm b)°`. -/
-theorem mapProd_tabulates {A : Type u₁} [TabularUnitaryAllegory.{u₁, v} A] (a B : MapObj A) :
+theorem mapProd_tabulates {A : Type u₁} [TabularUnitaryAllegory.{u₁, v} A] (a b : MapObj A) :
     Tabulates
-      (@Freyd.fst (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryProducts a B).val
-      (@Freyd.snd (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryProducts a B).val
+      (@Freyd.fst (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryProducts a b).val
+      (@Freyd.snd (MapObj A) (mapCat (𝒜 := A)) mapHasBinaryProducts a b).val
       ((@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal a).val
-        ≫ (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal B).val°) :=
+        ≫ (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal b).val°) :=
   mapIsPullback_tabulates
-    (@HasPullback.cone (MapObj A) (mapCat (𝒜 := A)) a B _ _ _
+    (@HasPullback.cone (MapObj A) (mapCat (𝒜 := A)) a b _ _ _
       (mapHasPullback (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal a)
-        (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal B)))
-    (@HasPullback.cone_isPullback (MapObj A) (mapCat (𝒜 := A)) a B _ _ _
+        (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal b)))
+    (@HasPullback.cone_isPullback (MapObj A) (mapCat (𝒜 := A)) a b _ _ _
       (mapHasPullback (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal a)
-        (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal B)))
+        (@HasTerminal.trm (MapObj A) (mapCat (𝒜 := A)) mapHasTerminal b)))
 
 /-- **§2.154**: a UNITARY `T'` preserves BINARY PRODUCTS.  The product of `Map 𝒜`
     tabulates the span through the unit; `T` carries it to a tabulation of a span through
@@ -619,15 +619,15 @@ theorem relIsUnit_of_terminal {D : Type u} [Cat.{u} D] [RegularCategory D]
       obtain ⟨f, hf⟩ := hT R.src
       rw [Cat.comp_id, hf R.colA, hf R.colB]
   · -- entireness: the graph of the terminal map.
-    intro A
-    obtain ⟨f, _⟩ := hT A.carrier
+    intro a
+    obtain ⟨f, _⟩ := hT a.carrier
     exact ⟨relClass (Freyd.graph f), (relClass_graph_map f).1⟩
 
 /-- `Rel(1_C) = 1_{Rel C}` on relation classes: the image of a span under the identity
     functor is the span itself (its pair is already monic). -/
 theorem relMap_of_id {C : Type u} [Cat.{u} C] [RegularCategory C]
     (hid : @RelFunctor.RegularFunctor C C _ _ (idFunctor (𝒞 := C)) _ _)
-    {A B : C} (x : BinRelQuot (𝒞 := C) A B) : hid.relMap x = x := by
+    {a b : C} (x : BinRelQuot (𝒞 := C) a b) : hid.relMap x = x := by
   refine Quotient.inductionOn x (fun R => ?_)
   show relClass (RelFunctor.relImageObj hid R) = relClass R
   have hpair : pair ((idFunctor (𝒞 := C)).map R.colA) ((idFunctor (𝒞 := C)).map R.colB) =
@@ -663,7 +663,7 @@ theorem relMap_of_comp {C D E : Type u} [Cat.{u} C] [Cat.{u} D] [Cat.{u} E]
     (F : Functor C D) (G : Functor D E)
     (hrF : RelFunctor.RegularFunctor F) (hrG : RelFunctor.RegularFunctor G)
     (hrGF : @RelFunctor.RegularFunctor C E _ _ (compFunctor F G) _ _)
-    {A B : C} (x : BinRelQuot (𝒞 := C) A B) :
+    {a b : C} (x : BinRelQuot (𝒞 := C) a b) :
     hrGF.relMap x = hrG.relMap (hrF.relMap x) := by
   refine Quotient.inductionOn x (fun R => ?_)
   show relClass (RelFunctor.relImageObj hrGF R)
@@ -714,14 +714,14 @@ section Bundles
     hom parts. -/
 theorem allegFunctor_ext {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ]
     {F G : AllegoryFunctor 𝒜 ℬ} (hobj : F.obj = G.obj)
-    (hmap : ∀ (A B : 𝒜) (R : A ⟶ B), HEq (F.map R) (G.map R)) : F = G := by
+    (hmap : ∀ (a b : 𝒜) (R : a ⟶ b), HEq (F.map R) (G.map R)) : F = G := by
   obtain ⟨Fo, Fm, _, _, _, _⟩ := F
   obtain ⟨Go, Gm, _, _, _, _⟩ := G
   dsimp at hobj hmap
   subst hobj
   have hm : @Fm = @Gm := by
-    funext A B R
-    exact eq_of_heq (hmap A B R)
+    funext a b R
+    exact eq_of_heq (hmap a b R)
   subst hm
   rfl
 
@@ -807,7 +807,7 @@ theorem UnitaryRep.ext {𝒜 ℬ : SmallTabAlleg.{u}} {F G : UnitaryRep 𝒜 ℬ
 
 /-- The identity representation of allegories. -/
 @[expose] public def allegIdFun (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : AllegoryFunctor 𝒜 𝒜 where
-  obj A := A
+  obj a := a
   map R := R
   map_id _ := rfl
   map_comp _ _ := rfl
@@ -896,7 +896,7 @@ theorem RelF.onMap_id (C : SmallRegCat.{u}) :
   apply UnitaryRep.ext
   apply allegFunctor_ext
   · rfl
-  · intro A B x
+  · intro a b x
     exact heq_of_eq (relMap_of_id _ x)
 
 /-- `RelF` is functorial: composition. -/
@@ -907,11 +907,11 @@ theorem RelF.onMap_comp {C D E : SmallRegCat.{u}} (F : RegRep C D) (G : RegRep D
   apply UnitaryRep.ext
   apply allegFunctor_ext
   · rfl
-  · intro A B x
+  · intro a b x
     exact heq_of_eq (@relMap_of_comp C.carrier D.carrier E.carrier C.cat D.cat E.cat
       C.reg D.reg E.reg F.functor G.functor
       F.regular G.regular
-      (RegRep.regular (@Cat.comp SmallRegCat.{u} _ C D E F G)) A.carrier B.carrier x)
+      (RegRep.regular (@Cat.comp SmallRegCat.{u} _ C D E F G)) a.carrier b.carrier x)
 
 /-- **§2.154**: `Rel` as a functor `SmallRegCat → SmallTabAlleg`. -/
 noncomputable def relFFunctor : Functor SmallRegCat SmallTabAlleg where
@@ -936,44 +936,44 @@ section CounitIso
 variable (𝒜 : SmallTabAlleg.{u})
 
 /-- `relOf` lifted to mutual-containment classes. -/
-noncomputable def relOfQ {A B : MapObj 𝒜.carrier}
+noncomputable def relOfQ {a b : MapObj 𝒜.carrier}
     (x : @BinRelQuot (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier))
-      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks A B) :
-    @Cat.Hom 𝒜.carrier Allegory.toCat A B :=
+      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks a b) :
+    @Cat.Hom 𝒜.carrier Allegory.toCat a b :=
   Quotient.liftOn x Freyd.Alg.relOf (fun _ _ h =>
     le_antisymm (Freyd.Alg.relOf_le_of_relLe h.1) (Freyd.Alg.relOf_le_of_relLe h.2))
 
-theorem relOfQ_relId (A : MapObj 𝒜.carrier) :
-    relOfQ 𝒜 (@relId (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory A)
-      = Cat.id A := by
-  show Freyd.Alg.relOf (@Freyd.graph (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) A A
-    (@Cat.id (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) A)) = Cat.id A
+theorem relOfQ_relId (a : MapObj 𝒜.carrier) :
+    relOfQ 𝒜 (@relId (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory a)
+      = Cat.id a := by
+  show Freyd.Alg.relOf (@Freyd.graph (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) a a
+    (@Cat.id (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) a)) = Cat.id a
   rw [Freyd.Alg.relOf_graph]
   rfl
 
-theorem relOfQ_comp {A B C : MapObj 𝒜.carrier}
+theorem relOfQ_comp {a b c : MapObj 𝒜.carrier}
     (x : @BinRelQuot (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier))
-      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks A B)
+      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks a b)
     (y : @BinRelQuot (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier))
-      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks B C) :
+      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks b c) :
     relOfQ 𝒜 (@qComp (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory
-        A B C x y)
+        a b c x y)
       = relOfQ 𝒜 x ≫ relOfQ 𝒜 y := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
   exact Freyd.Alg.relOf_compose R S
 
-theorem relOfQ_recip {A B : MapObj 𝒜.carrier}
+theorem relOfQ_recip {a b : MapObj 𝒜.carrier}
     (x : @BinRelQuot (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier))
-      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks A B) :
-    relOfQ 𝒜 (@qRecip (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory A B x)
+      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks a b) :
+    relOfQ 𝒜 (@qRecip (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory a b x)
       = (relOfQ 𝒜 x)° := by
   refine Quotient.inductionOn x (fun R => ?_)
   exact Freyd.Alg.relOf_reciprocal R
 
-theorem relOfQ_inter {A B : MapObj 𝒜.carrier}
+theorem relOfQ_inter {a b : MapObj 𝒜.carrier}
     (x y : @BinRelQuot (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier))
-      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks A B) :
-    relOfQ 𝒜 (@qInter (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory A B x y)
+      Freyd.Alg.mapHasBinaryProducts Freyd.Alg.mapHasPullbacks a b) :
+    relOfQ 𝒜 (@qInter (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) mapRegularCategory a b x y)
       = relOfQ 𝒜 x ∩ relOfQ 𝒜 y := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
   exact Freyd.Alg.relOf_inter R S
@@ -982,7 +982,7 @@ theorem relOfQ_inter {A B : MapObj 𝒜.carrier}
 noncomputable def counitFun :
     AllegoryFunctor (RelF (MapF 𝒜)).carrier 𝒜.carrier :=
   ⟨fun A => A.carrier, fun {_a _b} x => relOfQ 𝒜 x,
-   fun A => relOfQ_relId 𝒜 A.carrier,
+   fun a => relOfQ_relId 𝒜 a.carrier,
    fun {_a _b _c} x y => relOfQ_comp 𝒜 x y,
    fun {_a _b} x => relOfQ_recip 𝒜 x,
    fun {_a _b} x y => relOfQ_inter 𝒜 x y⟩
@@ -1003,7 +1003,7 @@ theorem counitInv_comp_counit :
   apply UnitaryRep.ext
   apply allegFunctor_ext
   · rfl
-  · intro A B R
+  · intro a b R
     exact heq_of_eq (Freyd.relOf_tabSpan 𝒜.carrier R)
 
 theorem counit_comp_counitInv :
@@ -1013,7 +1013,7 @@ theorem counit_comp_counitInv :
   apply UnitaryRep.ext
   apply allegFunctor_ext
   · rfl
-  · intro A B m
+  · intro a b m
     refine heq_of_eq ?_
     refine Quotient.inductionOn m (fun P => ?_)
     apply Quotient.sound
@@ -1055,9 +1055,9 @@ variable {C : SmallRegCat.{u}}
 theorem eFull {X Y : MapObj (RelObj C.carrier)}
     (m : @Cat.Hom (MapObj (RelObj C.carrier)) (mapCat (𝒜 := RelObj C.carrier)) X Y) :
     ∃ f : X.carrier ⟶ Y.carrier, m = Freyd.embedRel f := by
-  have h : ∀ {A B : C.carrier}
-      (n : @Cat.Hom (MapObj (RelObj C.carrier)) (mapCat (𝒜 := RelObj C.carrier)) ⟨A⟩ ⟨B⟩),
-      ∃ f : A ⟶ B, n = Freyd.embedRel f := (Freyd.embedRel_cat_iso (𝒞 := C.carrier)).2
+  have h : ∀ {a b : C.carrier}
+      (n : @Cat.Hom (MapObj (RelObj C.carrier)) (mapCat (𝒜 := RelObj C.carrier)) ⟨a⟩ ⟨b⟩),
+      ∃ f : a ⟶ b, n = Freyd.embedRel f := (Freyd.embedRel_cat_iso (𝒞 := C.carrier)).2
   exact @h X.carrier Y.carrier m
 
 /-- The inverse of the graph embedding on homs (§2.148 dual: every `Map` of `Rel C` is
@@ -1067,17 +1067,17 @@ noncomputable def eInv {X Y : MapObj (RelObj C.carrier)}
     X.carrier ⟶ Y.carrier :=
   Classical.choose (eFull m)
 
-theorem eInv_embedRel {A B : C.carrier} (f : A ⟶ B) :
-    eInv (X := ⟨A⟩) (Y := ⟨B⟩) (Freyd.embedRel f) = f :=
+theorem eInv_embedRel {a b : C.carrier} (f : a ⟶ b) :
+    eInv (X := ⟨a⟩) (Y := ⟨b⟩) (Freyd.embedRel f) = f :=
   Freyd.embedRel_faithful (Classical.choose_spec (eFull (Freyd.embedRel f))).symm
 
 /-- The graph embedding `C → Map(Rel C)` as a (pinned) functor. -/
 noncomputable def eFunctor (C : SmallRegCat.{u}) :
     @Functor C.carrier (MapObj (RelObj C.carrier)) C.cat (mapCat (𝒜 := RelObj C.carrier)) :=
   @Functor.mk C.carrier (MapObj (RelObj C.carrier)) C.cat (mapCat (𝒜 := RelObj C.carrier))
-    (fun A => (⟨A⟩ : RelObj C.carrier))
+    (fun a => (⟨a⟩ : RelObj C.carrier))
     (fun {_a _b} f => Freyd.embedRel f)
-    (fun A => Freyd.embedRel_id A)
+    (fun a => Freyd.embedRel_id a)
     (fun {_a _b _c} f g => Freyd.embedRel_comp f g)
 
 /-- `embedRel` preserves monos (full + faithful + bijective on objects). -/
@@ -1211,9 +1211,9 @@ theorem e_pres_prod (C : SmallRegCat.{u}) :
 /-- **§2.148 dual / §2.154 unit**: the graph embedding `C → Map(Rel C)` as a morphism of
     `SmallRegCat`. -/
 noncomputable def unitRep (C : SmallRegCat.{u}) : RegRep C (MapF (RelF C)) where
-  obj := fun A => (⟨A⟩ : RelObj C.carrier)
+  obj := fun a => (⟨a⟩ : RelObj C.carrier)
   map := fun f => Freyd.embedRel f
-  map_id := fun A => Freyd.embedRel_id A
+  map_id := fun a => Freyd.embedRel_id a
   map_comp := fun f g => Freyd.embedRel_comp f g
   regular :=
     @RelFunctor.RegularFunctor.mk C.carrier (MapObj (RelObj C.carrier)) C.cat
@@ -1462,7 +1462,7 @@ theorem unit_comp_inv (C : SmallRegCat.{u}) :
       = @Cat.id SmallRegCat.{u} _ C := by
   apply RegRep.ext
   · rfl
-  · intro A B f
+  · intro a b f
     exact heq_of_eq (eInv_embedRel f)
 
 /-- The two directions compose to the identity of `Map(Rel C)`. -/
@@ -1490,19 +1490,19 @@ end UnitIso
 /-! ### Naturality of the unit -/
 
 /-- `Rel(F)` sends graphs to graphs: `Rel(F)[graph f] = [graph (F f)]` (§2.154). -/
-theorem relMap_graph {C D : SmallRegCat.{u}} (F : RegRep C D) {A B : C.carrier} (f : A ⟶ B) :
+theorem relMap_graph {C D : SmallRegCat.{u}} (F : RegRep C D) {a b : C.carrier} (f : a ⟶ b) :
     @RelFunctor.RegularFunctor.relMap C.carrier D.carrier C.cat D.cat F.functor
-        C.reg D.reg F.regular A B (relClass (Freyd.graph f))
+        C.reg D.reg F.regular a b (relClass (Freyd.graph f))
       = relClass (Freyd.graph (F.map f)) := by
   let I := @RelFunctor.relImageObj C.carrier D.carrier C.cat D.cat
-    F.functor C.reg D.reg F.regular A B (Freyd.graph f)
+    F.functor C.reg D.reg F.regular a b (Freyd.graph f)
   obtain ⟨e, hcov, heA, heB⟩ := @RelFunctor.relImageObj_cover C.carrier D.carrier C.cat D.cat
-    F.functor C.reg D.reg F.regular A B (Freyd.graph f)
-  have heA0 : e ≫ I.colA = F.map (Cat.id A) := heA
+    F.functor C.reg D.reg F.regular a b (Freyd.graph f)
+  have heA0 : e ≫ I.colA = F.map (Cat.id a) := heA
   have heB0 : e ≫ I.colB = F.map f := heB
   show relClass I = relClass (Freyd.graph (F.map f))
-  have heA' : e ≫ I.colA = Cat.id (F.obj A) := by
-    rw [heA0]; exact F.map_id A
+  have heA' : e ≫ I.colA = Cat.id (F.obj a) := by
+    rw [heA0]; exact F.map_id a
   have hmono : Monic e := by
     intro W p q hpq
     have h2 : (p ≫ e) ≫ I.colA = (q ≫ e) ≫ I.colA := by rw [hpq]
@@ -1515,7 +1515,7 @@ theorem relMap_graph {C D : SmallRegCat.{u}} (F : RegRep C D) {A B : C.carrier} 
     calc I.colA = Cat.id _ ≫ I.colA := (Cat.id_comp _).symm
       _ = (e' ≫ e) ≫ I.colA := by rw [he2]
       _ = e' ≫ (e ≫ I.colA) := Cat.assoc _ _ _
-      _ = e' ≫ Cat.id (F.obj A) := by rw [heA']
+      _ = e' ≫ Cat.id (F.obj a) := by rw [heA']
       _ = e' := Cat.comp_id e'
   have hIAFf : I.colA ≫ F.map f = I.colB := by
     calc I.colA ≫ F.map f = e' ≫ F.map f := by rw [hIA]
@@ -1530,8 +1530,8 @@ theorem relMap_graph {C D : SmallRegCat.{u}} (F : RegRep C D) {A B : C.carrier} 
     exact relClass_mono ⟨⟨e, heA', heB0⟩⟩
 
 /-- Naturality core: the graph embedding intertwines `F` with `Map(Rel F)`. -/
-theorem embedRel_natural {C D : SmallRegCat.{u}} (F : RegRep C D) {A B : C.carrier}
-    (g : A ⟶ B) :
+theorem embedRel_natural {C D : SmallRegCat.{u}} (F : RegRep C D) {a b : C.carrier}
+    (g : a ⟶ b) :
     (MapF.onMap (RelF.onMap F)).map (Freyd.embedRel g) = Freyd.embedRel (F.map g) :=
   Subtype.ext (relMap_graph F g)
 
@@ -1542,7 +1542,7 @@ theorem unitRep_natural {C D : SmallRegCat.{u}} (F : RegRep C D) :
       = @Cat.comp SmallRegCat.{u} _ C D (MapF (RelF D)) F (unitRep D) := by
   apply RegRep.ext
   · rfl
-  · intro A B g
+  · intro a b g
     exact heq_of_eq (embedRel_natural F g)
 
 /-- **§2.154 unit-inverse naturality** (the square the `NatIso` to the identity needs). -/
@@ -1569,21 +1569,21 @@ theorem unitInvRep_natural {C D : SmallRegCat.{u}} (F : RegRep C D) :
     the image cover `e` is a cover-map, so `e° ≫ e = 1` and the image span's morphism
     collapses to `T(colA)° ≫ T(colB) = T(colA° ≫ colB)`. -/
 theorem relOf_relImage {𝒜 ℬ : SmallTabAlleg.{u}} (T : UnitaryRep 𝒜 ℬ)
-    {A B : MapObj 𝒜.carrier}
-    (P : @BinRel (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) A B) :
+    {a b : MapObj 𝒜.carrier}
+    (P : @BinRel (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) a b) :
     Freyd.Alg.relOf (@RelFunctor.relImageObj (MapObj 𝒜.carrier) (MapObj ℬ.carrier)
         (mapCat (𝒜 := 𝒜.carrier)) (mapCat (𝒜 := ℬ.carrier))
         (mapRepFunctor T.toFun) Freyd.Alg.mapRegularCategory Freyd.Alg.mapRegularCategory
-        (mapRep_regular T.toFun T.unit) A B P)
+        (mapRep_regular T.toFun T.unit) a b P)
       = T.toFun.map (Freyd.Alg.relOf P) := by
   let I := @RelFunctor.relImageObj (MapObj 𝒜.carrier) (MapObj ℬ.carrier)
     (mapCat (𝒜 := 𝒜.carrier)) (mapCat (𝒜 := ℬ.carrier))
     (mapRepFunctor T.toFun) Freyd.Alg.mapRegularCategory Freyd.Alg.mapRegularCategory
-    (mapRep_regular T.toFun T.unit) A B P
+    (mapRep_regular T.toFun T.unit) a b P
   obtain ⟨e, hcov, heA, heB⟩ := @RelFunctor.relImageObj_cover (MapObj 𝒜.carrier)
     (MapObj ℬ.carrier) (mapCat (𝒜 := 𝒜.carrier)) (mapCat (𝒜 := ℬ.carrier))
     (mapRepFunctor T.toFun) Freyd.Alg.mapRegularCategory Freyd.Alg.mapRegularCategory
-    (mapRep_regular T.toFun T.unit) A B P
+    (mapRep_regular T.toFun T.unit) a b P
   let iA := @BinRel.colA (MapObj ℬ.carrier) (mapCat (𝒜 := ℬ.carrier)) _ _ I
   let iB := @BinRel.colB (MapObj ℬ.carrier) (mapCat (𝒜 := ℬ.carrier)) _ _ I
   let pA := @BinRel.colA (MapObj 𝒜.carrier) (mapCat (𝒜 := 𝒜.carrier)) _ _ P
@@ -1609,7 +1609,7 @@ theorem counit_natural {𝒜 ℬ : SmallTabAlleg.{u}} (T : UnitaryRep 𝒜 ℬ) 
   apply UnitaryRep.ext
   apply allegFunctor_ext
   · rfl
-  · intro A B x
+  · intro a b x
     refine heq_of_eq ?_
     refine Quotient.inductionOn x (fun P => ?_)
     exact relOf_relImage T P

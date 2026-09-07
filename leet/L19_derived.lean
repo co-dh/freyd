@@ -73,7 +73,7 @@ def removeCL (n : Nat) : ConsList Unit Int → Nat × List Int
   | ConsList.cons x xs => st n x (removeCL n xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `removeCL n (wrap d) = g d`. -/
-theorem removeCL_wrap (n : Nat) : ∀ D : Unit, removeCL n (ConsList.wrap D) = g D := fun _ => rfl
+theorem removeCL_wrap (n : Nat) : ∀ d : Unit, removeCL n (ConsList.wrap d) = g d := fun _ => rfl
 
 /-- The step condition IS `removeCL`'s cons equation: `removeCL n (cons x xs) = st n x (removeCL n xs)`. -/
 theorem removeCL_cons (n : Nat) :

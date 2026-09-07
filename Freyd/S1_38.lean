@@ -253,8 +253,8 @@ def DiagonalFillable
     (𝔹 : ∀ {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ] (_F : Functor 𝒜 ℬ), Prop)
     (𝒜cls : ∀ {𝒜 ℬ : Type u} [Cat.{v} 𝒜] [Cat.{v} ℬ] (_F : Functor 𝒜 ℬ), Prop) : Prop :=
   ∀ {𝒜₀ 𝒜₁ ℬ ℬ' : Type u} [Cat.{v} 𝒜₀] [Cat.{v} 𝒜₁] [Cat.{v} ℬ] [Cat.{v} ℬ']
-    (B : Functor 𝒜₀ 𝒜₁) (A : Functor ℬ ℬ'),
-    𝔹 B → 𝒜cls A → True  -- placeholder: existence of diagonal in the functor-category sense
+    (b : Functor 𝒜₀ 𝒜₁) (a : Functor ℬ ℬ'),
+    𝔹 b → 𝒜cls a → True  -- placeholder: existence of diagonal in the functor-category sense
 
 /-- §1.396: Morphisms in `𝒜` preserve satisfaction of a Q-sequence in `𝔹` (forward direction).
     The full proof goes by induction on the Q-sequence length. -/
@@ -602,6 +602,6 @@ theorem conjugate_satisfies_sat_symm (Q : QSequence) {𝒞 𝒟 : Type u} [Cat.{
 /-- A LINEARLY ORDERED CATEGORY (§1.39): objects form a totally ordered set. -/
 class LinearlyOrdered (𝒞 : Type u) [Cat.{v} 𝒞] where
   order : 𝒞 → 𝒞 → Prop
-  total : ∀ A B : 𝒞, order A B ∨ order B A
+  total : ∀ a b : 𝒞, order a b ∨ order b a
 
 end Freyd

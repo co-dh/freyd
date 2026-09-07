@@ -379,7 +379,7 @@ set_option maxHeartbeats 1000000 in
       (ℬ := Over (listProd (𝒞 := S) ((W.base).1.map Prod.snd))) (ℰ := uniformTargetTy W)
       (F := terminalSliceFunctor W) (G := stageInclNil W)
       (terminalSlicePresTerminal W) (stageInclNilPresTerminal W)
-      (fun {A B} ψ hψ =>
+      (fun {a b} ψ hψ =>
         stageInclFunctorL_preservesMono (laxOfProjSystem' (cofinalProjSystem (S := S)))
           (coherentProj (cofinalProjSystem (S := S)))
           (fun {i j} hij {p q} χ hχ => projStage_preservesMono (cofinalProjSystem (S := S)) hij χ hχ)
@@ -432,14 +432,14 @@ set_option maxHeartbeats 1000000 in
   stepMono := fun {x y} φ hφ =>
     stageInclFunctorL_preservesMono (laxOfProjSystem' (cofinalProjSystem (S := S)))
       (coherentProj (cofinalProjSystem (S := S)))
-      (fun {i j} hij {A B} ψ hψ => projStage_preservesMono (cofinalProjSystem (S := S)) hij ψ hψ)
+      (fun {i j} hij {a b} ψ hψ => projStage_preservesMono (cofinalProjSystem (S := S)) hij ψ hψ)
       (i := W.base) (terminalSliceFunctor W |>.map φ) (terminalSlicePresMono W φ hφ)
   stepCover := fun {x y} φ hφ =>
     stageInclFunctorL_preservesCover (laxOfProjSystem' (cofinalProjSystem (S := S)))
       (coherentProj (cofinalProjSystem (S := S)))
-      (fun {i j} hij {A B} p q heq =>
+      (fun {i j} hij {a b} p q heq =>
         projStage_faithful (cofinalProjSystem (S := S)) hij (cofinalProjSystem_cover hij) p q heq)
-      (fun {i j} hij {A B} ψ hψ => projStage_preservesCover (cofinalProjSystem (S := S)) hij ψ hψ)
+      (fun {i j} hij {a b} ψ hψ => projStage_preservesCover (cofinalProjSystem (S := S)) hij ψ hψ)
       (i := W.base) (terminalSliceFunctor W |>.map φ) (terminalSlicePresCover W φ hφ)
 
 end Freyd.UniformCap

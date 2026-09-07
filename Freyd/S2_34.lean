@@ -145,8 +145,8 @@ public theorem splCorLe_iff {𝒜 : Type u} [Allegory 𝒜] {E F : SplCorObj �
 
 /-- The embedded object `a ↦ (a, 1_a)` lands in the COREFLEXIVE sub-completion: its idempotent
     is `1_a`, which is coreflexive (`1_a ⊑ 1_a`). -/
-def corEmbObj {𝒜 : Type u} [Allegory 𝒜] (A : 𝒜) : SplCorObj 𝒜 :=
-  ⟨embObj A, le_refl _⟩
+def corEmbObj {𝒜 : Type u} [Allegory 𝒜] (a : 𝒜) : SplCorObj 𝒜 :=
+  ⟨embObj a, le_refl _⟩
 
 /-- **§2.34**: the canonical embedding `𝒜 → Spl(Cor 𝒜)`, `a ↦ (a, 1_a)`, `R ↦ R`.  It is an
     allegory functor (preserves `id`, `≫`, `°`, `∩`) — every law is the corresponding `embHom`
@@ -154,8 +154,8 @@ def corEmbObj {𝒜 : Type u} [Allegory 𝒜] (A : 𝒜) : SplCorObj 𝒜 :=
     `splComp`/`splRecip`/`splInter` from `SplObj 𝒜`. -/
 def corEmb (𝒜 : Type u) [Allegory 𝒜] : AllegoryFunctor 𝒜 (SplCorObj 𝒜) where
   obj := corEmbObj
-  map {A B} R := embHom R
-  map_id A := by apply SplHom.ext; rfl
+  map {a b} R := embHom R
+  map_id a := by apply SplHom.ext; rfl
   map_comp R S := by apply SplHom.ext; rfl
   map_recip R := by apply SplHom.ext; rfl
   map_inter R S := by apply SplHom.ext; rfl
@@ -166,7 +166,7 @@ theorem corEmb_faithful (𝒜 : Type u) [Allegory 𝒜] : (corEmb 𝒜).Faithful
 
 /-- **§2.34**: the embedding `𝒜 ↪ Spl(Cor 𝒜)` PRESERVES DIVISION.  On embedded objects the
     idempotent is `1`, so `splDiv`'s `E.e ≫ (R/S) ≫ F.e` collapses to `R/S` (`embHom_div`). -/
-theorem corEmb_div {𝒜 : Type u} [DivisionAllegory 𝒜] {A B C : 𝒜} (R : A ⟶ C) (S : B ⟶ C) :
+theorem corEmb_div {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     (corEmb 𝒜).map (R / S) = (corEmb 𝒜).map R / (corEmb 𝒜).map S :=
   embHom_div R S
 
@@ -182,7 +182,7 @@ theorem corEmb_div {𝒜 : Type u} [DivisionAllegory 𝒜] {A B C : 𝒜} (R : A
 theorem preTabularDivision_repr (𝒜 : Type u) [PreTabularDivisionAllegory 𝒜] :
     ∃ F : AllegoryFunctor 𝒜 (SplCorObj 𝒜),
       F.Faithful ∧
-      ∀ {A B C : 𝒜} (R : A ⟶ C) (S : B ⟶ C), F.map (R / S) = F.map R / F.map S :=
+      ∀ {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c), F.map (R / S) = F.map R / F.map S :=
   ⟨corEmb 𝒜, corEmb_faithful 𝒜, fun R S => corEmb_div R S⟩
 
 /-! ## §2.341 (part 2) — the semi-simple case
@@ -194,8 +194,8 @@ theorem preTabularDivision_repr (𝒜 : Type u) [PreTabularDivisionAllegory 𝒜
     functor). -/
 def splEmb (𝒜 : Type u) [Allegory 𝒜] : AllegoryFunctor 𝒜 (SplObj 𝒜) where
   obj := embObj
-  map {A B} R := embHom R
-  map_id A := by apply SplHom.ext; rfl
+  map {a b} R := embHom R
+  map_id a := by apply SplHom.ext; rfl
   map_comp R S := by apply SplHom.ext; rfl
   map_recip R := by apply SplHom.ext; rfl
   map_inter R S := by apply SplHom.ext; rfl

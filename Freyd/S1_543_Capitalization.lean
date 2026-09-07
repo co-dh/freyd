@@ -230,20 +230,20 @@ theorem objIncl_preservesTerminal (C : CatSystem.{u, u} ι D) (hC : C.Coherent) 
     `Functor` instance so the §1.43/§1.437 machinery applies. -/
 public theorem objIncl_preservesBinaryProducts (C : CatSystem.{u, u} ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     (i : ι) :
     letI : Cat C.Obj := colimitCat C hC
     letI : HasBinaryProducts (C.A i) := hp i
     letI : HasBinaryProducts C.Obj := colimitHasBinaryProducts C hC hp hpres hpres_pair
     PreservesBinaryProducts (stageInclFunctor C hC i) :=
-  fun {A B} => objIncl_preserves_products C hC hp hpres hpres_pair i A B
+  fun {a b} => objIncl_preserves_products C hC hp hpres hpres_pair i a b
 
 /-- **`objIncl i` preserves equalizers, as `PreservesEqualizers`.**  Convert the
     `EqualizerCone.IsEqualizer` form (`objIncl_preserves_equalizers`) to the comparison-map
@@ -266,12 +266,12 @@ public theorem objIncl_preservesEqualizers (C : CatSystem.{u, u} ι D) (hC : C.C
   letI : Cat C.Obj := colimitCat C hC
   letI : HasEqualizers (C.A i) := he i
   letI : HasEqualizers C.Obj := colimitHasEqualizers C hC he hepres hepres_lift
-  intro A B f g
+  intro a b f g
   -- the image cone (objIncl(eqObj f g), homInclObj (eqMap f g)) is an equalizer (item (3))
   have himg := objIncl_preserves_equalizers C hC he hepres hepres_lift i f g
   -- the chosen equalizer comparison map `k` factors `homInclObj (eqMap f g)`; both are
   -- equalizers, so `k` is iso (`isIso_of_two_equalizers`).
-  let eqD := HasEqualizers.eq (C.objIncl i A) (C.objIncl i B)
+  let eqD := HasEqualizers.eq (C.objIncl i a) (C.objIncl i b)
     (stageInclFunctor C hC i |>.map f) (stageInclFunctor C hC i |>.map g)
   exact isIso_of_two_equalizers himg (chosenEqualizer_isEqualizer _ _) _ (eqD.fac _)
 
@@ -285,13 +285,13 @@ public theorem objIncl_preserves_pullbacks (C : CatSystem.{u, u} ι D) (hC : C.C
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -301,7 +301,7 @@ public theorem objIncl_preserves_pullbacks (C : CatSystem.{u, u} ι D) (hC : C.C
         (k : z ⟶ C.F hij A)
         (_ : k ≫ C.Fmap hij f = k ≫ C.Fmap hij g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ C.Fmap hij (eqMap f g) = k)
-    (i : ι) {A B c : C.A i} (f : A ⟶ c) (g : B ⟶ c) :
+    (i : ι) {a b c : C.A i} (f : a ⟶ c) (g : b ⟶ c) :
     letI : Cat C.Obj := colimitCat C hC
     letI : HasTerminal (C.A i) := ht i
     letI : HasBinaryProducts (C.A i) := hp i
@@ -360,13 +360,13 @@ public theorem colimitCanonicalCover (C : CatSystem.{u, u} ι D) (hC : C.Coheren
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -609,13 +609,13 @@ public structure CapData (A : Type u) [Cat.{u} A] [PreRegularCategory A] where
   ht : ∀ i, HasTerminal (C.A i)
   htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one
   hp : ∀ i, HasBinaryProducts (C.A i)
-  hppres : ∀ {i j} (hij : D.le i j) (a B : C.A i) (z : C.A j)
-    (u v : z ⟶ C.F hij ((hp i).prod a B)),
+  hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+    (u v : z ⟶ C.F hij ((hp i).prod a b)),
     u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
     u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v
-  hppres_pair : ∀ {i j} (hij : D.le i j) (a B : C.A i) (z : C.A j)
-    (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij B),
-    ∃ r : z ⟶ C.F hij ((hp i).prod a B),
+  hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+    (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+    ∃ r : z ⟶ C.F hij ((hp i).prod a b),
       r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q
   he : ∀ i, HasEqualizers (C.A i)
   hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -1493,8 +1493,8 @@ public theorem towerF_preservesEqualizers (nextStep : ∀ (S : PreRegBundle.{u})
 /-- **`hppres`** (joint monicity of `(F fst, F snd)`) from `towerF_preservesBinaryProducts`. -/
 public theorem towerHppres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
-    (A C : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
-    (uu vv : z ⟶ (towerSystem b nextStep).F hij ((towerHp b nextStep i).prod A C))
+    (a c : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
+    (uu vv : z ⟶ (towerSystem b nextStep).F hij ((towerHp b nextStep i).prod a c))
     (hf : uu ≫ (towerSystem b nextStep).Fmap hij (towerHp b nextStep i).fst =
         vv ≫ (towerSystem b nextStep).Fmap hij (towerHp b nextStep i).fst)
     (hs : uu ≫ (towerSystem b nextStep).Fmap hij (towerHp b nextStep i).snd =
@@ -1502,20 +1502,20 @@ public theorem towerHppres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.car
   (@preservesBinaryProducts_jointly_monic _ _ (stageBundle nextStep b i.down).cat
     (stageBundle nextStep b j.down).cat (towerHp b nextStep i) (towerHp b nextStep j)
     (towerFunctF b nextStep hij)
-    (towerF_preservesBinaryProducts b nextStep hij) A C) uu vv hf hs
+    (towerF_preservesBinaryProducts b nextStep hij) a c) uu vv hf hs
 
 /-- **`hppres_pair`** (pairing through `(F fst, F snd)`) from `towerF_preservesBinaryProducts`. -/
 public theorem towerHppresPair (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
-    (A C : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
-    (p : z ⟶ (towerSystem b nextStep).F hij A) (q : z ⟶ (towerSystem b nextStep).F hij C) :
-    ∃ r : z ⟶ (towerSystem b nextStep).F hij ((towerHp b nextStep i).prod A C),
+    (a c : (towerSystem b nextStep).A i) (z : (towerSystem b nextStep).A j)
+    (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij c) :
+    ∃ r : z ⟶ (towerSystem b nextStep).F hij ((towerHp b nextStep i).prod a c),
       r ≫ (towerSystem b nextStep).Fmap hij (towerHp b nextStep i).fst = p ∧
       r ≫ (towerSystem b nextStep).Fmap hij (towerHp b nextStep i).snd = q :=
   @preservesBinaryProducts_pair _ _ (stageBundle nextStep b i.down).cat
     (stageBundle nextStep b j.down).cat (towerHp b nextStep i) (towerHp b nextStep j)
     (towerFunctF b nextStep hij)
-    (towerF_preservesBinaryProducts b nextStep hij) A C z p q
+    (towerF_preservesBinaryProducts b nextStep hij) a c z p q
 
 /-- **`hepres`** (joint monicity of `F (eqMap)`) from `towerF_preservesEqualizers`. -/
 public theorem towerHepres (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.carrier)
@@ -1593,8 +1593,8 @@ public theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.car
     letI : HasPullbacks (towerSystem b nextStep).Obj :=
       colimitHasPullbacks _ (towerCoherent b nextStep) (towerHasTerminal b nextStep)
         (fun {_ _} hij => towerHtpres b nextStep hij) (towerHp b nextStep)
-        (fun {_ _} hij a C z uu vv h1 h2 => towerHppres b nextStep hij a C z uu vv h1 h2)
-        (fun {_ _} hij a C z p q => towerHppresPair b nextStep hij a C z p q)
+        (fun {_ _} hij a c z uu vv h1 h2 => towerHppres b nextStep hij a c z uu vv h1 h2)
+        (fun {_ _} hij a c z p q => towerHppresPair b nextStep hij a c z p q)
         (towerHe b nextStep)
         (fun {_ _} hij _ _ f g z uu vv h => towerHepres b nextStep hij f g z uu vv h)
         (fun {_ _} hij _ _ f g z k hk => towerHepresLift b nextStep hij f g z k hk)
@@ -1603,8 +1603,8 @@ public theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.car
   colimitCanonicalCover (towerSystem b nextStep) (towerCoherent b nextStep)
     (towerHasTerminal b nextStep) (fun {_ _} hij => towerHtpres b nextStep hij)
     (towerHp b nextStep)
-    (fun {_ _} hij A C z uu vv h1 h2 => towerHppres b nextStep hij A C z uu vv h1 h2)
-    (fun {_ _} hij A C z p q => towerHppresPair b nextStep hij A C z p q)
+    (fun {_ _} hij a c z uu vv h1 h2 => towerHppres b nextStep hij a c z uu vv h1 h2)
+    (fun {_ _} hij a c z p q => towerHppresPair b nextStep hij a c z p q)
     (towerHe b nextStep)
     (fun {_ _} hij _ _ f g z uu vv h => towerHepres b nextStep hij f g z uu vv h)
     (fun {_ _} hij _ _ f g z k hk => towerHepresLift b nextStep hij f g z k hk)
@@ -1632,17 +1632,17 @@ public theorem towerHcanon (nextStep : ∀ (S : PreRegBundle.{u}), CapStep S.car
     (htpres : ∀ {i j} (hij : uliftNatDirected.le i j),
       (towerSystem b nextStep).F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts ((towerSystem b nextStep).A i))
-    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b nextStep).A i)
+    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b nextStep).A i)
       (z : (towerSystem b nextStep).A j)
-      (uu vv : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a C)),
+      (uu vv : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a c)),
       uu ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst =
         vv ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst →
       uu ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd =
         vv ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b nextStep).A i)
+    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b nextStep).A i)
       (z : (towerSystem b nextStep).A j)
-      (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij C),
-      ∃ r : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a C),
+      (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij c),
+      ∃ r : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a c),
         r ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst = p ∧
         r ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers ((towerSystem b nextStep).A i))
@@ -1708,17 +1708,17 @@ public theorem capData_of_tower_regular (A : Type u) [Cat.{u} A] [PreRegularCate
     (htpres : ∀ {i j} (hij : uliftNatDirected.le i j),
       (towerSystem b nextStep).F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts ((towerSystem b nextStep).A i))
-    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b nextStep).A i)
+    (hppres : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b nextStep).A i)
       (z : (towerSystem b nextStep).A j)
-      (uu vv : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a C)),
+      (uu vv : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a c)),
       uu ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst =
         vv ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst →
       uu ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd =
         vv ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd → uu = vv)
-    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a C : (towerSystem b nextStep).A i)
+    (hppres_pair : ∀ {i j} (hij : uliftNatDirected.le i j) (a c : (towerSystem b nextStep).A i)
       (z : (towerSystem b nextStep).A j)
-      (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij C),
-      ∃ r : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a C),
+      (p : z ⟶ (towerSystem b nextStep).F hij a) (q : z ⟶ (towerSystem b nextStep).F hij c),
+      ∃ r : z ⟶ (towerSystem b nextStep).F hij ((hp i).prod a c),
         r ≫ ((towerSystem b nextStep).functF hij).map (hp i).fst = p ∧
         r ≫ ((towerSystem b nextStep).functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers ((towerSystem b nextStep).A i))

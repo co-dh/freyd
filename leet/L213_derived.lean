@@ -63,8 +63,8 @@ def g : Unit → Int × Int := fun _ => LC213.foldL []
 def st : Int → Int × Int → Int × Int := fun x s => (LC213.imax s.1 (s.2 + x), s.1)
 
 /-- The base condition is a COMPUTATION, not a guess: `foldLCL (wrap d) = g d`. -/
-theorem foldLCL_wrap : ∀ D : Unit, foldLCL (ConsList.wrap D) = g D :=
-  fun D => rfl
+theorem foldLCL_wrap : ∀ d : Unit, foldLCL (ConsList.wrap d) = g d :=
+  fun d => rfl
 
 /-- The step condition IS `foldLCL`'s cons equation: `foldLCL (cons x xs) = st x (foldLCL xs)`. -/
 theorem foldLCL_cons :

@@ -258,8 +258,8 @@ public theorem colimOut_spec (C : CatSystem ι D) (p : C.Obj) :
 
 /-- C.F is proof-irrelevant in the ordering proof: two proofs of `D.le i j` give
     the same object (since `D.le` is a `Prop`). -/
-public theorem CatSystem.F_proof_irrel (C : CatSystem ι D) {i j : ι} (h h' : D.le i j) (A : C.A i) :
-    C.F h A = C.F h' A := by congr 1
+public theorem CatSystem.F_proof_irrel (C : CatSystem ι D) {i j : ι} (h h' : D.le i j) (a : C.A i) :
+    C.F h a = C.F h' a := by congr 1
 
 /-- Raw composition of germs: push representatives `f` (level `a`) and `g` (level
     `b`) to a common level `c`, compose in `A c`, and include.  The middle objects

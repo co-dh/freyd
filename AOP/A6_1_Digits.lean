@@ -167,7 +167,7 @@ theorem cataFold_functional {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
     exact simple_uniq hf.2 hfs hfs'
 
 theorem cataFold_map {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
-    Map (A := dDec) (B := C) (cataFold f) := by
+    Map (a := dDec) (b := C) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = 𝟙 dDec
     apply hom_ext; intro dec dec'

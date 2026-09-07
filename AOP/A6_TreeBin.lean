@@ -167,7 +167,7 @@ public theorem cataTree_functional {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : 
     exact simple_uniq hf.2 hf1 hf2
 
 public theorem cataTree_map {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
-    Map (A := dTree A) (B := C) (cataTreeFold f) := by
+    Map (a := dTree A) (b := C) (cataTreeFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataTreeFold f) = Cat.id (dTree A)
     apply hom_ext; intro t t'

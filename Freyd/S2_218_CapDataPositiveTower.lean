@@ -256,8 +256,8 @@ public theorem towerF_preservesBinaryCoproducts (b : PreRegBundle.{u})
 public theorem towerHcoppres (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
-    (A C : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
-    (u v : (towerSystem b uniformStepFun).F hij ((towerHcop b hb0 hpb0 i).coprod A C) ⟶ z)
+    (a c : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
+    (u v : (towerSystem b uniformStepFun).F hij ((towerHcop b hb0 hpb0 i).coprod a c) ⟶ z)
     (hl : ((towerSystem b uniformStepFun).functF hij).map (towerHcop b hb0 hpb0 i).inl ≫ u
         = ((towerSystem b uniformStepFun).functF hij).map (towerHcop b hb0 hpb0 i).inl ≫ v)
     (hr : ((towerSystem b uniformStepFun).functF hij).map (towerHcop b hb0 hpb0 i).inr ≫ u
@@ -266,22 +266,22 @@ public theorem towerHcoppres (b : PreRegBundle.{u})
     (stageBundle uniformStepFun b j.down).carrier (stageBundle uniformStepFun b i.down).cat
     (stageBundle uniformStepFun b j.down).cat (towerHcop b hb0 hpb0 i) (towerHcop b hb0 hpb0 j)
     (towerFunctF b uniformStepFun hij)
-    (towerF_preservesBinaryCoproducts b hb0 hpb0 hij) A C z u v hl hr
+    (towerF_preservesBinaryCoproducts b hb0 hpb0 hij) a c z u v hl hr
 
 /-- **`hcoppres_case`** (copairing through `(F inl, F inr)`) from `towerF_preservesBinaryCoproducts`. -/
 public theorem towerHcoppresCase (b : PreRegBundle.{u})
     (hb0 : @DisjointBinaryCoproduct b.carrier b.cat) (hpb0 : dbcPreReg hb0 = b.pre)
     {i j : ULift.{u} Nat} (hij : uliftNatDirected.le i j)
-    (A C : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
-    (p : (towerSystem b uniformStepFun).F hij A ⟶ z) (q : (towerSystem b uniformStepFun).F hij C ⟶ z) :
-    ∃ r : (towerSystem b uniformStepFun).F hij ((towerHcop b hb0 hpb0 i).coprod A C) ⟶ z,
+    (a c : (towerSystem b uniformStepFun).A i) (z : (towerSystem b uniformStepFun).A j)
+    (p : (towerSystem b uniformStepFun).F hij a ⟶ z) (q : (towerSystem b uniformStepFun).F hij c ⟶ z) :
+    ∃ r : (towerSystem b uniformStepFun).F hij ((towerHcop b hb0 hpb0 i).coprod a c) ⟶ z,
       ((towerSystem b uniformStepFun).functF hij).map (towerHcop b hb0 hpb0 i).inl ≫ r = p
       ∧ ((towerSystem b uniformStepFun).functF hij).map (towerHcop b hb0 hpb0 i).inr ≫ r = q :=
   @Freyd.Colim.preservesBinaryCoproducts_case (stageBundle uniformStepFun b i.down).carrier
     (stageBundle uniformStepFun b j.down).carrier (stageBundle uniformStepFun b i.down).cat
     (stageBundle uniformStepFun b j.down).cat (towerHcop b hb0 hpb0 i) (towerHcop b hb0 hpb0 j)
     (towerFunctF b uniformStepFun hij)
-    (towerF_preservesBinaryCoproducts b hb0 hpb0 hij) A C z p q
+    (towerF_preservesBinaryCoproducts b hb0 hpb0 hij) a c z p q
 
 /-! ### Strict-initial preservation along the tower (for the colimit `hinitpres`) -/
 
@@ -341,15 +341,15 @@ theorem capitalization_of_capData_positive {A : Type u} [Cat.{u} A] [PreRegularC
     (hbot : ∀ i, PreLogos (cd.C.A i))
     (hinitpres : ∀ {i j : cd.ι} (hij : cd.D.le i j),
         @StrictCoterminator (cd.C.A j) (cd.C.catA j) (cd.C.F hij (Colim.stageZero cd.C hbot i)))
-    (hcoppres : ∀ {i j} (hij : cd.D.le i j) (a B : cd.C.A i) (z : cd.C.A j)
-        (u v : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : cd.D.le i j) (a b : cd.C.A i) (z : cd.C.A j)
+        (u v : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : cd.D.le i j) (a B : cd.C.A i) (z : cd.C.A j)
-        (p : cd.C.F hij a ⟶ z) (q : cd.C.F hij B ⟶ z),
-        ∃ r : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : cd.D.le i j) (a b : cd.C.A i) (z : cd.C.A j)
+        (p : cd.C.F hij a ⟶ z) (q : cd.C.F hij b ⟶ z),
+        ∃ r : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     ∃ (Ā : Type u) (hC : Cat.{u} Ā) (hD : @DisjointBinaryCoproduct Ā hC),
@@ -425,22 +425,22 @@ public theorem capitalization_lemma_regular_positive_strong (A : Type u) [Cat.{u
   let b : PreRegBundle.{u} := ⟨A, inferInstance, inferInstance⟩
   letI cd : CapData.{u} A := capData_of_tower A ccs.step b rfl
     (towerHasTerminal b ccs.step) (fun {i j} hij => towerHtpres b ccs.step hij) (towerHp b ccs.step)
-    (fun {i j} hij a C z uu vv h1 h2 => towerHppres b ccs.step hij a C z uu vv h1 h2)
-    (fun {i j} hij a C z p q => towerHppresPair b ccs.step hij a C z p q) (towerHe b ccs.step)
+    (fun {i j} hij a c z uu vv h1 h2 => towerHppres b ccs.step hij a c z uu vv h1 h2)
+    (fun {i j} hij a c z p q => towerHppresPair b ccs.step hij a c z p q) (towerHe b ccs.step)
     (fun {i j} hij _ _ f g z uu vv h => towerHepres b ccs.step hij f g z uu vv h)
     (fun {i j} hij _ _ f g z k hk => towerHepresLift b ccs.step hij f g z k hk)
     (towerHcanon b ccs.step)
     (tower_capital_of_cofinal A ccs b
       (towerHasTerminal b ccs.step) (fun {i j} hij => towerHtpres b ccs.step hij) (towerHp b ccs.step)
-      (fun {i j} hij a C z uu vv h1 h2 => towerHppres b ccs.step hij a C z uu vv h1 h2)
-      (fun {i j} hij a C z p q => towerHppresPair b ccs.step hij a C z p q) (towerHe b ccs.step)
+      (fun {i j} hij a c z uu vv h1 h2 => towerHppres b ccs.step hij a c z uu vv h1 h2)
+      (fun {i j} hij a c z p q => towerHppresPair b ccs.step hij a c z p q) (towerHe b ccs.step)
       (fun {i j} hij _ _ f g z uu vv h => towerHepres b ccs.step hij f g z uu vv h)
       (fun {i j} hij _ _ f g z k hk => towerHepresLift b ccs.step hij f g z k hk)
       (towerHcanon b ccs.step)
       (hstage_of_cofinal b ccs
         (towerHasTerminal b ccs.step) (fun {i j} hij => towerHtpres b ccs.step hij) (towerHp b ccs.step)
-        (fun {i j} hij a C z uu vv h1 h2 => towerHppres b ccs.step hij a C z uu vv h1 h2)
-        (fun {i j} hij a C z p q => towerHppresPair b ccs.step hij a C z p q) (towerHe b ccs.step)
+        (fun {i j} hij a c z uu vv h1 h2 => towerHppres b ccs.step hij a c z uu vv h1 h2)
+        (fun {i j} hij a c z p q => towerHppresPair b ccs.step hij a c z p q) (towerHe b ccs.step)
         (fun {i j} hij _ _ f g z uu vv h => towerHepres b ccs.step hij f g z uu vv h)
         (fun {i j} hij _ _ f g z k hk => towerHepresLift b ccs.step hij f g z k hk)
         (towerHcanon b ccs.step)))
@@ -458,19 +458,19 @@ public theorem capitalization_lemma_regular_positive_strong (A : Type u) [Cat.{u
   let hcovpresElem : ∀ {i j : cd.ι} (hij : cd.D.le i j) {x y : cd.C.A i} (φ : x ⟶ y),
       Cover φ → Cover ((cd.C.functF hij).map φ) :=
     fun {i j} hij {x y} φ hφ => towerHcovpres b ccs.step hij φ hφ
-  let hcoppres : ∀ {i j : cd.ι} (hij : cd.D.le i j) (a C : cd.C.A i) (z : cd.C.A j)
-      (u v : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a C) ⟶ z),
+  let hcoppres : ∀ {i j : cd.ι} (hij : cd.D.le i j) (a c : cd.C.A i) (z : cd.C.A j)
+      (u v : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a c) ⟶ z),
       (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
           = (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
       (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
           = (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v :=
-    fun {i j} hij a C z u v hl hr => towerHcoppres b inferInstance rfl hij a C z u v hl hr
-  let hcoppres_case : ∀ {i j : cd.ι} (hij : cd.D.le i j) (a C : cd.C.A i) (z : cd.C.A j)
-      (p : cd.C.F hij a ⟶ z) (q : cd.C.F hij C ⟶ z),
-      ∃ r : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a C) ⟶ z,
+    fun {i j} hij a c z u v hl hr => towerHcoppres b inferInstance rfl hij a c z u v hl hr
+  let hcoppres_case : ∀ {i j : cd.ι} (hij : cd.D.le i j) (a c : cd.C.A i) (z : cd.C.A j)
+      (p : cd.C.F hij a ⟶ z) (q : cd.C.F hij c ⟶ z),
+      ∃ r : cd.C.F hij ((hdisj i).toHasBinaryCoproducts.coprod a c) ⟶ z,
         (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
         ∧ (cd.C.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q :=
-    fun {i j} hij a C z p q => towerHcoppresCase b inferInstance rfl hij a C z p q
+    fun {i j} hij a c z p q => towerHcoppresCase b inferInstance rfl hij a c z p q
   let hinitpres : ∀ {i j : cd.ι} (hij : cd.D.le i j),
       @StrictCoterminator (cd.C.A j) (cd.C.catA j) (cd.C.F hij (Colim.stageZero cd.C hbot i)) :=
     fun {i j} hij => towerF_preservesStrictCot b hij (Colim.stageZero cd.C hbot i)

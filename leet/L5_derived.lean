@@ -81,7 +81,7 @@ def foldCL : ConsList Unit Int → Carrier
   | ConsList.cons x xs => st x (foldCL xs)
 
 /-- The base condition is a COMPUTATION: `foldCL (wrap d) = g d`. -/
-theorem foldCL_wrap : ∀ D : Unit, foldCL (ConsList.wrap D) = g D := fun _ => rfl
+theorem foldCL_wrap : ∀ d : Unit, foldCL (ConsList.wrap d) = g d := fun _ => rfl
 
 /-- The step condition IS `foldCL`'s cons equation. -/
 theorem foldCL_cons :

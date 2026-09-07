@@ -36,32 +36,32 @@ namespace Freyd.Alg
     semi-distributivity, and the modular law. -/
 public class Allegory (𝒜 : Type u) extends Cat.{v} 𝒜 where
   /-- RECIPROCATION: R° : b → a when R : a → b. -/
-  recip {A B : 𝒜} (R : A ⟶ B) : B ⟶ A
+  recip {a b : 𝒜} (R : a ⟶ b) : b ⟶ a
   /-- INTERSECTION: R ∩ S : a → b when R, S : a → b. -/
-  inter {A B : 𝒜} (R S : A ⟶ B) : A ⟶ B
+  inter {a b : 𝒜} (R S : a ⟶ b) : a ⟶ b
 
   /-- (R°)° = R (§2.11). -/
-  recip_recip {A B : 𝒜} (R : A ⟶ B) : recip (recip R) = R
+  recip_recip {a b : 𝒜} (R : a ⟶ b) : recip (recip R) = R
   /-- (RS)° = S°R° (§2.11). -/
-  recip_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) : recip (R ≫ S) = recip S ≫ recip R
+  recip_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) : recip (R ≫ S) = recip S ≫ recip R
   /-- (R ∩ S)° = R° ∩ S° (§2.11). -/
-  recip_inter {A B : 𝒜} (R S : A ⟶ B) : recip (inter R S) = inter (recip R) (recip S)
+  recip_inter {a b : 𝒜} (R S : a ⟶ b) : recip (inter R S) = inter (recip R) (recip S)
 
   /-- R ∩ R = R (§2.11). -/
-  inter_idem {A B : 𝒜} (R : A ⟶ B) : inter R R = R
+  inter_idem {a b : 𝒜} (R : a ⟶ b) : inter R R = R
   /-- R ∩ S = S ∩ R (§2.11). -/
-  inter_comm {A B : 𝒜} (R S : A ⟶ B) : inter R S = inter S R
+  inter_comm {a b : 𝒜} (R S : a ⟶ b) : inter R S = inter S R
   /-- R ∩ (S ∩ T) = (R ∩ S) ∩ T (§2.11). -/
-  inter_assoc {A B : 𝒜} (R S T : A ⟶ B) : inter R (inter S T) = inter (inter R S) T
+  inter_assoc {a b : 𝒜} (R S T : a ⟶ b) : inter R (inter S T) = inter (inter R S) T
 
   /-- SEMI-DISTRIBUTIVITY: R(S ∩ T) = RS ∩ R(S ∩ T) ∩ RT (§2.11).
       Equivalent to R(S ∩ T) ⊑ RS ∩ RT. -/
-  semidistrib {A B C : 𝒜} (R : A ⟶ B) (S T : B ⟶ C) :
+  semidistrib {a b c : 𝒜} (R : a ⟶ b) (S T : b ⟶ c) :
     R ≫ inter S T = inter (inter (R ≫ S) (R ≫ inter S T)) (R ≫ T)
 
   /-- MODULAR LAW: RS ∩ T = (RS ∩ T) ∩ (R ∩ TS°)S (§2.11).
       Equivalent to RS ∩ T ⊑ (R ∩ TS°)S. -/
-  modular {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) :
+  modular {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     inter (R ≫ S) T = inter (inter (R ≫ S) T) ((inter R (T ≫ recip S)) ≫ S)
 
 /-! ### Notation for allegory operations -/
@@ -74,7 +74,7 @@ infixl:70 " ∩ " => Allegory.inter
 
 /-- The ALLEGORY ORDER: R ⊑ S iff R = R ∩ S (§2.11).
     In the book, this is denoted R ⊂ S. -/
-@[expose] public def le {A B : 𝒜} [Allegory 𝒜] (R S : A ⟶ B) : Prop :=
+@[expose] public def le {a b : 𝒜} [Allegory 𝒜] (R S : a ⟶ b) : Prop :=
   R ∩ S = R
 
 infix:50 " ⊑ " => le
@@ -87,12 +87,12 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-! ### Order properties derived from semi-lattice equations -/
 
-public theorem inter_eq_left {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : R ∩ S = R := h
+public theorem inter_eq_left {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : R ∩ S = R := h
 
-public theorem le_refl {A B : 𝒜} (R : A ⟶ B) : R ⊑ R := by
+public theorem le_refl {a b : 𝒜} (R : a ⟶ b) : R ⊑ R := by
   dsimp [le]; rw [Allegory.inter_idem]
 
-public theorem le_trans {A B : 𝒜} {R S T : A ⟶ B} (hRS : R ⊑ S) (hST : S ⊑ T) : R ⊑ T := by
+public theorem le_trans {a b : 𝒜} {R S T : a ⟶ b} (hRS : R ⊑ S) (hST : S ⊑ T) : R ⊑ T := by
   dsimp [le] at hRS hST ⊢
   calc
     R ∩ T = (R ∩ S) ∩ T := by rw [hRS]
@@ -101,17 +101,17 @@ public theorem le_trans {A B : 𝒜} {R S T : A ⟶ B} (hRS : R ⊑ S) (hST : S 
     _ = R := hRS
 
 /-- `calc` support: two consecutive `⊑` steps chain. -/
-public instance {A B : 𝒜} : Trans (α := A ⟶ B) le le le where
+public instance {a b : 𝒜} : Trans (α := a ⟶ b) le le le where
   trans := le_trans
 
-public theorem le_antisymm {A B : 𝒜} {R S : A ⟶ B} (hRS : R ⊑ S) (hSR : S ⊑ R) : R = S := by
+public theorem le_antisymm {a b : 𝒜} {R S : a ⟶ b} (hRS : R ⊑ S) (hSR : S ⊑ R) : R = S := by
   dsimp [le] at hRS hSR
   calc
     R = R ∩ S := by rw [hRS]
     _ = S ∩ R := by rw [Allegory.inter_comm]
     _ = S := by rw [hSR]
 
-public theorem inter_lb_left {A B : 𝒜} (R S : A ⟶ B) : R ∩ S ⊑ R := by
+public theorem inter_lb_left {a b : 𝒜} (R S : a ⟶ b) : R ∩ S ⊑ R := by
   dsimp [le]
   calc
     (R ∩ S) ∩ R = R ∩ (R ∩ S) := by
@@ -119,10 +119,10 @@ public theorem inter_lb_left {A B : 𝒜} (R S : A ⟶ B) : R ∩ S ⊑ R := by
     _ = (R ∩ R) ∩ S := by rw [Allegory.inter_assoc]
     _ = R ∩ S := by rw [Allegory.inter_idem]
 
-public theorem inter_lb_right {A B : 𝒜} (R S : A ⟶ B) : R ∩ S ⊑ S := by
+public theorem inter_lb_right {a b : 𝒜} (R S : a ⟶ b) : R ∩ S ⊑ S := by
   rw [Allegory.inter_comm R S]; exact inter_lb_left S R
 
-public theorem le_inter {A B : 𝒜} {R S T : A ⟶ B} (hRS : R ⊑ S) (hRT : R ⊑ T) : R ⊑ S ∩ T := by
+public theorem le_inter {a b : 𝒜} {R S T : a ⟶ b} (hRS : R ⊑ S) (hRT : R ⊑ T) : R ⊑ S ∩ T := by
   dsimp [le] at hRS hRT ⊢
   calc
     R ∩ (S ∩ T) = (R ∩ S) ∩ T := by rw [Allegory.inter_assoc]
@@ -132,19 +132,19 @@ public theorem le_inter {A B : 𝒜} {R S T : A ⟶ B} (hRS : R ⊑ S) (hRT : R 
 /-! ### Derived order properties for reciprocation and composition -/
 
 /-- Reciprocation preserves order: R ⊑ S → R° ⊑ S° (§2.11). -/
-public theorem recip_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : R° ⊑ S° := by
+public theorem recip_mono {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : R° ⊑ S° := by
   dsimp [le] at h ⊢
   calc
     R° ∩ S° = (R ∩ S)° := by rw [← Allegory.recip_inter]
     _ = R° := by rw [h]
 
 /-- Reciprocation is its own Galois adjoint: R° ⊑ S ↔ R ⊑ S° (§2.11). -/
-public theorem recip_le_iff {A B : 𝒜} {R : A ⟶ B} {S : B ⟶ A} : R° ⊑ S ↔ R ⊑ S° :=
+public theorem recip_le_iff {a b : 𝒜} {R : a ⟶ b} {S : b ⟶ a} : R° ⊑ S ↔ R ⊑ S° :=
   ⟨fun h => by simpa [Allegory.recip_recip] using recip_mono h,
    fun h => by simpa [Allegory.recip_recip] using recip_mono h⟩
 
 /-- Composition preserves order in the second argument (Horn sentence, §2.11). -/
-public theorem comp_mono_left {A B C : 𝒜} {S T : B ⟶ C} (R : A ⟶ B) (hST : S ⊑ T) : R ≫ S ⊑ R ≫ T := by
+public theorem comp_mono_left {a b c : 𝒜} {S T : b ⟶ c} (R : a ⟶ b) (hST : S ⊑ T) : R ≫ S ⊑ R ≫ T := by
   dsimp [le] at hST ⊢
   have h := Allegory.semidistrib R S T
   -- h: R ≫ (S ∩ T) = (R ≫ S ∩ R ≫ (S ∩ T)) ∩ R ≫ T
@@ -159,7 +159,7 @@ public theorem comp_mono_left {A B C : 𝒜} {S T : B ⟶ C} (R : A ⟶ B) (hST 
     _ = R ≫ S := by rw [hST]
 
 /-- Composition preserves order in the first argument. -/
-public theorem comp_mono_right {A B C : 𝒜} {R₁ R₂ : A ⟶ B} (h : R₁ ⊑ R₂) (S : B ⟶ C) : R₁ ≫ S ⊑ R₂ ≫ S := by
+public theorem comp_mono_right {a b c : 𝒜} {R₁ R₂ : a ⟶ b} (h : R₁ ⊑ R₂) (S : b ⟶ c) : R₁ ≫ S ⊑ R₂ ≫ S := by
   have h_recip : R₁° ⊑ R₂° := recip_mono h
   have h_comp : S° ≫ R₁° ⊑ S° ≫ R₂° := comp_mono_left S° h_recip
   -- (R₁ ≫ S)°° = R₁ ≫ S, similarly for R₂
@@ -175,7 +175,7 @@ public theorem comp_mono_right {A B C : 𝒜} {R₁ R₂ : A ⟶ B} (h : R₁ �
 /-! ### The modular law in its order form -/
 
 /-- The modular law in order form: RS ∩ T ⊑ (R ∩ TS°)S (§2.11). -/
-public theorem modular_le {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ C) :
+public theorem modular_le {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) (T : a ⟶ c) :
     (R ≫ S) ∩ T ⊑ (R ∩ T ≫ S°) ≫ S := by
   dsimp [le]
   rw [Allegory.modular R S T, ← Allegory.inter_assoc, Allegory.inter_idem]
@@ -183,50 +183,50 @@ public theorem modular_le {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) (T : A ⟶ 
 /-! ## §2.12  Reflexive, symmetric, transitive, coreflexive -/
 
 /-- R is REFLEXIVE if 1 ⊑ R (§2.12). -/
-@[expose] public def Reflexive {A : 𝒜} (R : A ⟶ A) : Prop := Cat.id A ⊑ R
+@[expose] public def Reflexive {a : 𝒜} (R : a ⟶ a) : Prop := Cat.id a ⊑ R
 
 /-- R is SYMMETRIC if R° ⊑ R (§2.12).  Equivalent to R = R°. -/
-@[expose] public def Symmetric {A : 𝒜} (R : A ⟶ A) : Prop := R° ⊑ R
+@[expose] public def Symmetric {a : 𝒜} (R : a ⟶ a) : Prop := R° ⊑ R
 
 /-- R is TRANSITIVE if RR ⊑ R (§2.12). -/
-@[expose] public def Transitive {A : 𝒜} (R : A ⟶ A) : Prop := R ≫ R ⊑ R
+@[expose] public def Transitive {a : 𝒜} (R : a ⟶ a) : Prop := R ≫ R ⊑ R
 
 /-- R is COREFLEXIVE if R ⊑ 1 (§2.12). -/
-@[expose] public def Coreflexive {A : 𝒜} (R : A ⟶ A) : Prop := R ⊑ Cat.id A
+@[expose] public def Coreflexive {a : 𝒜} (R : a ⟶ a) : Prop := R ⊑ Cat.id a
 
 /-! ### Symmetric iff R = R° -/
 
-public theorem symmetric_eq {A : 𝒜} {R : A ⟶ A} (hSym : Symmetric R) : R° = R :=
+public theorem symmetric_eq {a : 𝒜} {R : a ⟶ a} (hSym : Symmetric R) : R° = R :=
   le_antisymm hSym <| by
     calc
       R = (R°)° := by rw [Allegory.recip_recip]
       _ ⊑ R° := recip_mono hSym
 
-public theorem symmetric_iff {A : 𝒜} (R : A ⟶ A) : Symmetric R ↔ R° = R := by
+public theorem symmetric_iff {a : 𝒜} (R : a ⟶ a) : Symmetric R ↔ R° = R := by
   constructor
   · exact symmetric_eq
   · intro h; dsimp [Symmetric, le]; rw [h, Allegory.inter_idem]
 
 /-- Reflexive and transitive imply idempotent (§2.12). -/
-public theorem reflexive_transitive_idempotent {A : 𝒜} {R : A ⟶ A}
+public theorem reflexive_transitive_idempotent {a : 𝒜} {R : a ⟶ a}
     (hR : Reflexive R) (hT : Transitive R) : R ≫ R = R := by
   apply le_antisymm hT
   dsimp [Reflexive, le] at hR
   calc
-    R = (Cat.id A) ≫ R := by rw [Cat.id_comp]
+    R = (Cat.id a) ≫ R := by rw [Cat.id_comp]
     _ ⊑ R ≫ R := comp_mono_right hR R
 
 /-! ### Identity is self-reciprocal -/
 
 /-- 1° = 1: derived from `recip_comp` and `recip_recip` (§2.11). -/
-public theorem recip_id {A : 𝒜} : (Cat.id A)° = Cat.id A := by
+public theorem recip_id {a : 𝒜} : (Cat.id a)° = Cat.id a := by
   calc
-    (Cat.id A)° = ((Cat.id A)°)°° := by rw [Allegory.recip_recip]
-    _ = ((Cat.id A ≫ (Cat.id A)°)°)° := by rw [Cat.id_comp]
-    _ = (((Cat.id A)°)° ≫ (Cat.id A)°)° := by rw [Allegory.recip_comp]
-    _ = (Cat.id A ≫ (Cat.id A)°)° := by rw [Allegory.recip_recip]
-    _ = ((Cat.id A)°)° := by rw [Cat.id_comp]
-    _ = Cat.id A := by rw [Allegory.recip_recip]
+    (Cat.id a)° = ((Cat.id a)°)°° := by rw [Allegory.recip_recip]
+    _ = ((Cat.id a ≫ (Cat.id a)°)°)° := by rw [Cat.id_comp]
+    _ = (((Cat.id a)°)° ≫ (Cat.id a)°)° := by rw [Allegory.recip_comp]
+    _ = (Cat.id a ≫ (Cat.id a)°)° := by rw [Allegory.recip_recip]
+    _ = ((Cat.id a)°)° := by rw [Cat.id_comp]
+    _ = Cat.id a := by rw [Allegory.recip_recip]
 
 /-! ### Coreflexive properties -/
 
@@ -234,34 +234,34 @@ public theorem recip_id {A : 𝒜} : (Cat.id A)° = Cat.id A := by
     Proof chain: R ⊑ RR°R (modular law) ⊑ R° (since R ⊑ 1), so R ⊑ R°.
     Taking ° gives R° ⊑ R, hence symmetric.  Idempotent: R = R° gives
     R ⊑ R²R ⊑ R² (from modular law + R⊑1) and R² ⊑ 1R = R. -/
-public theorem coreflexive_symmetric_idempotent {A : 𝒜} {R : A ⟶ A} (h : Coreflexive R) :
+public theorem coreflexive_symmetric_idempotent {a : 𝒜} {R : a ⟶ a} (h : Coreflexive R) :
     Symmetric R ∧ R ≫ R = R := by
   -- h: R ⊑ 1
-  have h_le_one : R ⊑ Cat.id A := h
+  have h_le_one : R ⊑ Cat.id a := h
   -- Step 1: R ⊑ RR°R via modular law
   have hR_le_RRrecipR : R ⊑ (R ≫ R°) ≫ R := by
-    have h_mod := modular_le (Cat.id A) R R
+    have h_mod := modular_le (Cat.id a) R R
     -- h_mod: (1≫R)∩R ⊑ (1 ∩ RR°)≫R, simplify using id_comp, inter_idem
-    have h1 : R ⊑ (Cat.id A ∩ R ≫ R°) ≫ R := by
+    have h1 : R ⊑ (Cat.id a ∩ R ≫ R°) ≫ R := by
       simpa [Cat.id_comp, Allegory.inter_idem] using h_mod
     -- (1∩RR°) ⊑ RR°, so (1∩RR°)R ⊑ RR°R by comp_mono_right
-    have h2 : (Cat.id A ∩ R ≫ R°) ≫ R ⊑ (R ≫ R°) ≫ R :=
-      comp_mono_right (inter_lb_right (Cat.id A) (R ≫ R°)) R
+    have h2 : (Cat.id a ∩ R ≫ R°) ≫ R ⊑ (R ≫ R°) ≫ R :=
+      comp_mono_right (inter_lb_right (Cat.id a) (R ≫ R°)) R
     exact le_trans h1 h2
   -- Step 2: RR°R ⊑ R° (using R ⊑ 1)
   have hRRrecipR_le_Rrecip : (R ≫ R°) ≫ R ⊑ R° := by
     -- R ⊑ 1 ⇒ RR° ⊑ 1R° (comp_mono_right R°)
-    have h_RRrecip_le_1Rrecip : R ≫ R° ⊑ (Cat.id A) ≫ R° := comp_mono_right h_le_one R°
+    have h_RRrecip_le_1Rrecip : R ≫ R° ⊑ (Cat.id a) ≫ R° := comp_mono_right h_le_one R°
     -- RR°R ⊑ (1R°)R
-    have h1 : (R ≫ R°) ≫ R ⊑ ((Cat.id A) ≫ R°) ≫ R :=
+    have h1 : (R ≫ R°) ≫ R ⊑ ((Cat.id a) ≫ R°) ≫ R :=
       comp_mono_right h_RRrecip_le_1Rrecip R
     -- (1R°)R = 1(R°R) ⊑ 1(R°1) = 1R° = R° (since R ⊑ 1)
-    have h2 : ((Cat.id A) ≫ R°) ≫ R ⊑ R° := by
+    have h2 : ((Cat.id a) ≫ R°) ≫ R ⊑ R° := by
       calc
-        ((Cat.id A) ≫ R°) ≫ R = (Cat.id A) ≫ (R° ≫ R) := by rw [Cat.assoc]
-        _ ⊑ (Cat.id A) ≫ (R° ≫ Cat.id A) :=
-          comp_mono_left (Cat.id A) (comp_mono_left R° h_le_one)
-        _ = (Cat.id A) ≫ R° := by rw [Cat.comp_id]
+        ((Cat.id a) ≫ R°) ≫ R = (Cat.id a) ≫ (R° ≫ R) := by rw [Cat.assoc]
+        _ ⊑ (Cat.id a) ≫ (R° ≫ Cat.id a) :=
+          comp_mono_left (Cat.id a) (comp_mono_left R° h_le_one)
+        _ = (Cat.id a) ≫ R° := by rw [Cat.comp_id]
         _ = R° := by rw [Cat.id_comp]
     exact le_trans h1 h2
   -- Step 3: R ⊑ R°, hence symmetric
@@ -281,14 +281,14 @@ public theorem coreflexive_symmetric_idempotent {A : 𝒜} {R : A ⟶ A} (h : Co
     have hRRR_le_RR : (R ≫ R) ≫ R ⊑ R ≫ R := by
       calc
         (R ≫ R) ≫ R = R ≫ (R ≫ R) := by rw [Cat.assoc]
-        _ ⊑ R ≫ (R ≫ Cat.id A) := comp_mono_left R (comp_mono_left R h_le_one)
+        _ ⊑ R ≫ (R ≫ Cat.id a) := comp_mono_left R (comp_mono_left R h_le_one)
         _ = R ≫ R := by rw [Cat.comp_id]
     -- So R ⊑ R²
     have hR_le_RR : R ⊑ R ≫ R := le_trans hR_le_RR_R hRRR_le_RR
     -- R² ⊑ R (since R ⊑ 1)
     have hRR_le_R : R ≫ R ⊑ R := by
       calc
-        R ≫ R ⊑ (Cat.id A) ≫ R := comp_mono_right h_le_one R
+        R ≫ R ⊑ (Cat.id a) ≫ R := comp_mono_right h_le_one R
         _ = R := by rw [Cat.id_comp]
     exact le_antisymm hRR_le_R hR_le_RR
   exact ⟨h_symm, h_idem⟩
@@ -325,14 +325,14 @@ public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : Corefl
 /-! ## §2.122  Domain -/
 
 /-- The DOMAIN of R, denoted %mR in the book: 1 ∩ RR° (§2.122). -/
-@[expose] public def dom {A B : 𝒜} (R : A ⟶ B) : A ⟶ A := Cat.id A ∩ R ≫ R°
+@[expose] public def dom {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := Cat.id a ∩ R ≫ R°
 
 /-- Domain is coreflexive (§2.122). -/
-public theorem dom_coreflexive {A B : 𝒜} (R : A ⟶ B) : Coreflexive (dom R) :=
-  inter_lb_left (Cat.id A) (R ≫ R°)
+public theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : Coreflexive (dom R) :=
+  inter_lb_left (Cat.id a) (R ≫ R°)
 
 /-- dom is symmetric: (dom R)° = dom R. -/
-public theorem dom_recip {A B : 𝒜} (R : A ⟶ B) : (dom R)° = dom R :=
+public theorem dom_recip {a b : 𝒜} (R : a ⟶ b) : (dom R)° = dom R :=
   symmetric_eq (coreflexive_symmetric_idempotent (dom_coreflexive R)).1
 
 /-! ## §2.124  Domain of intersection -/
@@ -340,7 +340,7 @@ public theorem dom_recip {A B : 𝒜} (R : A ⟶ B) : (dom R)° = dom R :=
 /-- dom(R ∩ S) = 1 ∩ SR° (§2.124).
     Proof uses modular law: 1 ∩ (R∩S)(R∩S)° ⊑ 1 ∩ RS°, and
     1 ∩ SR° ⊑ 1 ∩ (R∩S)(R∩S)°. -/
-public theorem dom_inter {A B : 𝒜} (R S : A ⟶ B) : dom (R ∩ S) = Cat.id A ∩ S ≫ R° := by
+public theorem dom_inter {a b : 𝒜} (R S : a ⟶ b) : dom (R ∩ S) = Cat.id a ∩ S ≫ R° := by
   apply le_antisymm
   · -- dom(R∩S) ⊑ 1 ∩ S R°
     dsimp [dom]
@@ -356,14 +356,14 @@ public theorem dom_inter {A B : 𝒜} (R S : A ⟶ B) : dom (R ∩ S) = Cat.id A
     rw [Allegory.recip_inter]
     -- Goal: 1 ∩ S R° ⊑ 1 ∩ (R∩S)(R°∩S°)
     -- Step 1: 1 ∩ S R° = 1 ∩ (R∩S) R°
-    have h_eq1 : Cat.id A ∩ S ≫ R° = Cat.id A ∩ ((R ∩ S) ≫ R°) := by
+    have h_eq1 : Cat.id a ∩ S ≫ R° = Cat.id a ∩ ((R ∩ S) ≫ R°) := by
       apply le_antisymm
       · -- 1 ∩ S R° ⊑ 1 ∩ (R∩S) R° via modular law
-        have h_m : Cat.id A ∩ S ≫ R° ⊑ (R ∩ S) ≫ R° := by
+        have h_m : Cat.id a ∩ S ≫ R° ⊑ (R ∩ S) ≫ R° := by
           calc
-            Cat.id A ∩ S ≫ R° = (S ≫ R°) ∩ Cat.id A := by rw [Allegory.inter_comm]
-            _ ⊑ (S ∩ (Cat.id A ≫ R)) ≫ R° := by
-              have h := modular_le S R° (Cat.id A)
+            Cat.id a ∩ S ≫ R° = (S ≫ R°) ∩ Cat.id a := by rw [Allegory.inter_comm]
+            _ ⊑ (S ∩ (Cat.id a ≫ R)) ≫ R° := by
+              have h := modular_le S R° (Cat.id a)
               rw [Allegory.recip_recip] at h
               exact h
             _ = (S ∩ R) ≫ R° := by rw [Cat.id_comp]
@@ -374,29 +374,29 @@ public theorem dom_inter {A B : 𝒜} (R S : A ⟶ B) : dom (R ∩ S) = Cat.id A
         exact le_inter (inter_lb_left _ _) (le_trans (inter_lb_right _ _) h)
     rw [h_eq1]
     -- Step 2: 1 ∩ (R∩S) R° = 1 ∩ R (R°∩S°)  (via recip symmetry of coreflexives)
-    have h_eq2 : Cat.id A ∩ ((R ∩ S) ≫ R°) = Cat.id A ∩ (R ≫ (R° ∩ S°)) := by
-      have h_coref : Coreflexive (Cat.id A ∩ (R ≫ (R° ∩ S°))) :=
+    have h_eq2 : Cat.id a ∩ ((R ∩ S) ≫ R°) = Cat.id a ∩ (R ≫ (R° ∩ S°)) := by
+      have h_coref : Coreflexive (Cat.id a ∩ (R ≫ (R° ∩ S°))) :=
         inter_lb_left _ _
-      have h_symm : Symmetric (Cat.id A ∩ (R ≫ (R° ∩ S°))) :=
+      have h_symm : Symmetric (Cat.id a ∩ (R ≫ (R° ∩ S°))) :=
         (coreflexive_symmetric_idempotent h_coref).1
-      have h_self_recip : (Cat.id A ∩ (R ≫ (R° ∩ S°)))° = Cat.id A ∩ (R ≫ (R° ∩ S°)) :=
+      have h_self_recip : (Cat.id a ∩ (R ≫ (R° ∩ S°)))° = Cat.id a ∩ (R ≫ (R° ∩ S°)) :=
         symmetric_eq h_symm
       -- LHS° = RHS (computed via recip_inter, recip_comp, recip_recip)
       -- So LHS = LHS°° = RHS° = RHS (by symmetry of coreflexive RHS)
-      have h_recip_eq : (Cat.id A ∩ ((R ∩ S) ≫ R°))° = Cat.id A ∩ (R ≫ (R° ∩ S°)) := by
+      have h_recip_eq : (Cat.id a ∩ ((R ∩ S) ≫ R°))° = Cat.id a ∩ (R ≫ (R° ∩ S°)) := by
         simp [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip, recip_id]
       calc
-        Cat.id A ∩ ((R ∩ S) ≫ R°) = (Cat.id A ∩ ((R ∩ S) ≫ R°))°° := by
+        Cat.id a ∩ ((R ∩ S) ≫ R°) = (Cat.id a ∩ ((R ∩ S) ≫ R°))°° := by
           simp [Allegory.recip_recip]
-        _ = (Cat.id A ∩ (R ≫ (R° ∩ S°)))° := by rw [h_recip_eq]
-        _ = Cat.id A ∩ (R ≫ (R° ∩ S°)) := h_self_recip
+        _ = (Cat.id a ∩ (R ≫ (R° ∩ S°)))° := by rw [h_recip_eq]
+        _ = Cat.id a ∩ (R ≫ (R° ∩ S°)) := h_self_recip
     rw [h_eq2]
     -- Step 3: 1 ∩ R (R°∩S°) ⊑ (R∩S)(R°∩S°) via modular law
-    have h_m2 : Cat.id A ∩ (R ≫ (R° ∩ S°)) ⊑ (R ∩ S) ≫ (R° ∩ S°) := by
+    have h_m2 : Cat.id a ∩ (R ≫ (R° ∩ S°)) ⊑ (R ∩ S) ≫ (R° ∩ S°) := by
       calc
-        Cat.id A ∩ (R ≫ (R° ∩ S°)) = (R ≫ (R° ∩ S°)) ∩ Cat.id A := by rw [Allegory.inter_comm]
-        _ ⊑ (R ∩ (Cat.id A ≫ ((R° ∩ S°)°))) ≫ (R° ∩ S°) :=
-          modular_le R (R° ∩ S°) (Cat.id A)
+        Cat.id a ∩ (R ≫ (R° ∩ S°)) = (R ≫ (R° ∩ S°)) ∩ Cat.id a := by rw [Allegory.inter_comm]
+        _ ⊑ (R ∩ (Cat.id a ≫ ((R° ∩ S°)°))) ≫ (R° ∩ S°) :=
+          modular_le R (R° ∩ S°) (Cat.id a)
         _ = (R ∩ (R ∩ S)) ≫ (R° ∩ S°) := by
           simp [Allegory.recip_inter, Allegory.recip_recip, Cat.id_comp]
         _ = (R ∩ S) ≫ (R° ∩ S°) := by
@@ -411,36 +411,36 @@ public theorem dom_inter {A B : 𝒜} (R S : A ⟶ B) : dom (R ∩ S) = Cat.id A
   R is a map if it is entire and simple.  §2.13. -/
 
 /-- R is ENTIRE if dom R = 1_a; equivalently 1_a ⊑ RR° (§2.13). -/
-@[expose] public def Entire {A B : 𝒜} (R : A ⟶ B) : Prop := dom R = Cat.id A
+@[expose] public def Entire {a b : 𝒜} (R : a ⟶ b) : Prop := dom R = Cat.id a
 
 /-- An entire morphism satisfies the equivalent inequality `1 ⊑ R ≫ R°` (§2.13). -/
-public theorem entire_id_le {A B : 𝒜} {R : A ⟶ B} (hR : Entire R) : 𝟙 A ⊑ R ≫ R° := by
+public theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a ⊑ R ≫ R° := by
   rw [← hR]
   exact inter_lb_right _ _
 
 /-- R is SIMPLE if R°R ⊑ 1_b (§2.13).
     Note: R°R : b → b, so we compare to id_b. -/
-@[expose] public def Simple {A B : 𝒜} (R : A ⟶ B) : Prop := R° ≫ R ⊑ Cat.id B
+@[expose] public def Simple {a b : 𝒜} (R : a ⟶ b) : Prop := R° ≫ R ⊑ Cat.id b
 
 /-- R is a MAP if it is entire and simple (§2.13). -/
-@[expose] public def Map {A B : 𝒜} (R : A ⟶ B) : Prop := Entire R ∧ Simple R
+@[expose] public def Map {a b : 𝒜} (R : a ⟶ b) : Prop := Entire R ∧ Simple R
 
 /-! ## §2.133  Order on maps is discrete -/
 
 /-- An ENTIRE relation below a SIMPLE one equals it — §2.133's engine, which never uses the
     other two halves of `Map`. -/
-public theorem eq_of_le_entire_simple {A B : 𝒜} {X Y : A ⟶ B} (hX : Entire X) (hY : Simple Y)
+public theorem eq_of_le_entire_simple {a b : 𝒜} {X Y : a ⟶ b} (hX : Entire X) (hY : Simple Y)
     (h : X ⊑ Y) : X = Y := by
   -- Entire means dom = 1, so 1 = 1 ∩ X X°
-  have h_one_X_eq : Cat.id A ∩ (X ≫ X°) = Cat.id A := by
+  have h_one_X_eq : Cat.id a ∩ (X ≫ X°) = Cat.id a := by
     dsimp [Entire, dom] at hX; exact hX
   have h_recip : X° ⊑ Y° := recip_mono h
   have h_Y_le_X : Y ⊑ X := by
     -- Y = (1 ∩ X X°) Y ⊑ (X X°) Y = X (X° Y) ⊑ X (Y° Y) ⊑ X 1 = X
-    have h1 : Y = (Cat.id A ∩ (X ≫ X°)) ≫ Y := by rw [h_one_X_eq, Cat.id_comp]
-    have h2 : (Cat.id A ∩ (X ≫ X°)) ≫ Y ⊑ X := by
-      have h2a : (Cat.id A ∩ (X ≫ X°)) ≫ Y ⊑ (X ≫ X°) ≫ Y :=
-        comp_mono_right (inter_lb_right (Cat.id A) (X ≫ X°)) Y
+    have h1 : Y = (Cat.id a ∩ (X ≫ X°)) ≫ Y := by rw [h_one_X_eq, Cat.id_comp]
+    have h2 : (Cat.id a ∩ (X ≫ X°)) ≫ Y ⊑ X := by
+      have h2a : (Cat.id a ∩ (X ≫ X°)) ≫ Y ⊑ (X ≫ X°) ≫ Y :=
+        comp_mono_right (inter_lb_right (Cat.id a) (X ≫ X°)) Y
       have h2b : (X ≫ X°) ≫ Y ⊑ X := by
         rw [Cat.assoc]
         have h_XY : X° ≫ Y ⊑ Y° ≫ Y := comp_mono_right h_recip Y
@@ -450,37 +450,37 @@ public theorem eq_of_le_entire_simple {A B : 𝒜} {X Y : A ⟶ B} (hX : Entire 
     rw [h1]; exact h2
   exact le_antisymm h h_Y_le_X
 
-public theorem map_order_discrete {A B : 𝒜} {f g : A ⟶ B} (hf : Map f) (hg : Map g) (h : f ⊑ g) :
+public theorem map_order_discrete {a b : 𝒜} {f g : a ⟶ b} (hf : Map f) (hg : Map g) (h : f ⊑ g) :
     f = g :=
   eq_of_le_entire_simple hf.1 hg.2 h
 
 /-! ## §2.134  Reciprocation on maps -/
 
-theorem map_recip_is_inverse {A B : 𝒜} {f : A ⟶ B} (hf : Map f) (hfo : Map (f°)) :
-    f ≫ f° = Cat.id A ∧ f° ≫ f = Cat.id B := by
+theorem map_recip_is_inverse {a b : 𝒜} {f : a ⟶ b} (hf : Map f) (hfo : Map (f°)) :
+    f ≫ f° = Cat.id a ∧ f° ≫ f = Cat.id b := by
   rcases hf with ⟨hf_entire, hf_simple⟩
   rcases hfo with ⟨hfo_entire, hfo_simple⟩
   -- Entire f: 1_a ∩ f f° = 1_a → 1_a ⊑ f f°
-  have h_id_le_ff : Cat.id A ⊑ f ≫ f° := by
+  have h_id_le_ff : Cat.id a ⊑ f ≫ f° := by
     dsimp [Entire, dom] at hf_entire
     dsimp [le]; rw [hf_entire]
   -- Simple (f°): (f°)° f° ⊑ 1_a, i.e., f f° ⊑ 1_a
-  have h_ff_le_id : f ≫ f° ⊑ Cat.id A := by
+  have h_ff_le_id : f ≫ f° ⊑ Cat.id a := by
     dsimp [Simple] at hfo_simple
     simpa [Allegory.recip_recip] using hfo_simple
   -- Entire (f°): 1_b ∩ f° (f°)° = 1_b → 1_b ⊑ f° f
-  have h_id_le_ffr : Cat.id B ⊑ f° ≫ f := by
+  have h_id_le_ffr : Cat.id b ⊑ f° ≫ f := by
     dsimp [Entire, dom] at hfo_entire
     dsimp [le]
     simpa [Allegory.recip_recip] using hfo_entire
   -- Simple f: f° f ⊑ 1_b
-  have h_ffr_le_id : f° ≫ f ⊑ Cat.id B := by
+  have h_ffr_le_id : f° ≫ f ⊑ Cat.id b := by
     dsimp [Simple] at hf_simple; exact hf_simple
   exact ⟨le_antisymm h_ff_le_id h_id_le_ff, le_antisymm h_ffr_le_id h_id_le_ffr⟩
 
 -- §2.136: If F is simple then F(R ∩ S) = FR ∩ FS.  (Stated here, ahead of §2.14, since
 -- the §2.141 monic-pair proof uses it.)
-public theorem simple_dist_inter {A B C : 𝒜} {F : A ⟶ B} (hF : Simple F) (R S : B ⟶ C) :
+public theorem simple_dist_inter {a b c : 𝒜} {F : a ⟶ b} (hF : Simple F) (R S : b ⟶ c) :
     F ≫ (R ∩ S) = (F ≫ R) ∩ (F ≫ S) := by
   apply le_antisymm
   · exact le_inter (comp_mono_left F (inter_lb_left R S)) (comp_mono_left F (inter_lb_right R S))
@@ -492,7 +492,7 @@ public theorem simple_dist_inter {A B C : 𝒜} {F : A ⟶ B} (hF : Simple F) (R
       apply le_inter (inter_lb_left _ _)
       refine le_trans (inter_lb_right _ _) ?_
       rw [Allegory.recip_recip, Cat.assoc]
-      calc S° ≫ (F° ≫ F) ⊑ S° ≫ Cat.id B := comp_mono_left S° hF
+      calc S° ≫ (F° ≫ F) ⊑ S° ≫ Cat.id b := comp_mono_left S° hF
         _ = S° := Cat.comp_id S°
     have := recip_mono hgoal
     rwa [Allegory.recip_recip, Allegory.recip_recip] at this
@@ -506,16 +506,16 @@ public theorem simple_dist_inter {A B C : 𝒜} {F : A ⟶ B} (hF : Simple F) (R
 
 /-- A pair of maps f : c → a, g : c → b (common apex c) TABULATES
     R : a → b if R = f° ≫ g and f ≫ f° ∩ g ≫ g° = id_c (§2.14). -/
-@[expose] public def Tabulates {A B C : 𝒜} (f : C ⟶ A) (g : C ⟶ B) (R : A ⟶ B) : Prop :=
-  Map f ∧ Map g ∧ R = f° ≫ g ∧ f ≫ f° ∩ g ≫ g° = Cat.id C
+@[expose] public def Tabulates {a b c : 𝒜} (f : c ⟶ a) (g : c ⟶ b) (R : a ⟶ b) : Prop :=
+  Map f ∧ Map g ∧ R = f° ≫ g ∧ f ≫ f° ∩ g ≫ g° = Cat.id c
 
 /-- R is TABULAR if it has a tabulation (§2.14). -/
-@[expose] public def Tabular {A B : 𝒜} (R : A ⟶ B) : Prop :=
-  ∃ (C : 𝒜) (f : C ⟶ A) (g : C ⟶ B), Tabulates f g R
+@[expose] public def Tabular {a b : 𝒜} (R : a ⟶ b) : Prop :=
+  ∃ (c : 𝒜) (f : c ⟶ a) (g : c ⟶ b), Tabulates f g R
 
 /-- A TABULAR ALLEGORY is one where every morphism is tabular (§2.14). -/
 public class TabularAllegory (𝒜 : Type u) extends Allegory 𝒜 where
-  tabular {A B : 𝒜} (R : A ⟶ B) : Tabular R
+  tabular {a b : 𝒜} (R : a ⟶ b) : Tabular R
 
 /-! ## §2.141  Monic pair in Map(A)
 
@@ -525,13 +525,13 @@ public class TabularAllegory (𝒜 : Type u) extends Allegory 𝒜 where
 /-- **§2.141**: If ff° ∩ gg° = 1 for maps f, g : a → c, then (f, g) is a monic pair
     in Map(A).  For any maps h₁, h₂ : w → a, h₁f = h₂f ∧ h₁g = h₂g ⇒ h₁ = h₂.
     Book proof: h₁ = h₁(ff°∩gg°) = h₁ff° ∩ h₁gg° = h₂ff° ∩ h₂gg° = h₂(ff°∩gg°) = h₂. -/
-public theorem tabulates_monic_pair {w A c₁ c₂ : 𝒜} {f : A ⟶ c₁} {g : A ⟶ c₂}
+public theorem tabulates_monic_pair {w a c₁ c₂ : 𝒜} {f : a ⟶ c₁} {g : a ⟶ c₂}
     (_hf : Map f) (_hg : Map g)
-    (h : f ≫ f° ∩ g ≫ g° = Cat.id A) :
-    ∀ (h₁ h₂ : w ⟶ A), Map h₁ → Map h₂ → h₁ ≫ f = h₂ ≫ f → h₁ ≫ g = h₂ ≫ g → h₁ = h₂ := by
+    (h : f ≫ f° ∩ g ≫ g° = Cat.id a) :
+    ∀ (h₁ h₂ : w ⟶ a), Map h₁ → Map h₂ → h₁ ≫ f = h₂ ≫ f → h₁ ≫ g = h₂ ≫ g → h₁ = h₂ := by
   intro h₁ h₂ h₁_map h₂_map hf_eq hg_eq
   -- h_i (ff° ∩ gg°) = (h_i f)f° ∩ (h_i g)g°  (simple distributes over ∩, §2.136).
-  have hdist : ∀ (hₖ : w ⟶ A), Map hₖ →
+  have hdist : ∀ (hₖ : w ⟶ a), Map hₖ →
       hₖ ≫ (f ≫ f° ∩ g ≫ g°) = (hₖ ≫ f) ≫ f° ∩ (hₖ ≫ g) ≫ g° := by
     intro hₖ hₖm
     rw [simple_dist_inter hₖm.2 (f ≫ f°) (g ≫ g°)]
@@ -550,7 +550,7 @@ public theorem tabulates_monic_pair {w A c₁ c₂ : 𝒜} {f : A ⟶ c₁} {g :
 /-- T is a UNIT if it is a partial unit and every object is the source of
     an entire morphism to T (§2.15). -/
 @[expose] public def IsUnit (T : 𝒜) : Prop :=
-  PartialUnit T ∧ ∀ (A : 𝒜), ∃ (R : A ⟶ T), Entire R
+  PartialUnit T ∧ ∀ (a : 𝒜), ∃ (R : a ⟶ T), Entire R
 
 /-- A UNITARY ALLEGORY has a unit (§2.15). -/
 public class UnitaryAllegory (𝒜 : Type u) extends Allegory 𝒜 where
@@ -561,7 +561,7 @@ public class UnitaryAllegory (𝒜 : Type u) extends Allegory 𝒜 where
 
 /-- A PRE-TABULAR allegory: every morphism is contained in a tabular one (§2.165). -/
 public class PreTabularAllegory (𝒜 : Type u) extends Allegory 𝒜 where
-  pre_tabular {A B : 𝒜} (R : A ⟶ B) : ∃ (S : A ⟶ B), R ⊑ S ∧ Tabular S
+  pre_tabular {a b : 𝒜} (R : a ⟶ b) : ∃ (S : a ⟶ b), R ⊑ S ∧ Tabular S
 
 /-- An EFFECTIVE ALLEGORY: tabular + every EQUIVALENCE RELATION splits (§2.167, §2.169).
     Freyd §2.169: "An effective allegory is one in which all equivalence relations split."
@@ -571,30 +571,30 @@ public class PreTabularAllegory (𝒜 : Type u) extends Allegory 𝒜 where
     symmetric idempotent splits with a partial-map leg, never an entire one (`dom f = E ≠ id`).
     Hence the field is stated for equivalence relations, as the book has it. -/
 public class EffectiveAllegory (𝒜 : Type u) extends TabularAllegory 𝒜 where
-  split_symmetric_idempotent {A : 𝒜} (E : A ⟶ A) :
+  split_symmetric_idempotent {a : 𝒜} (E : a ⟶ a) :
     Reflexive E → Symmetric E → E ≫ E = E →
-      ∃ (C : 𝒜) (f : A ⟶ C), Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id C
+      ∃ (c : 𝒜) (f : a ⟶ c), Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id c
 
 /-- A SEMI-SIMPLE morphism factors as F° ≫ G with F, G simple (§2.16(10)).
     F : c → a, G : c → b have a common source (apex) c, so F° ≫ G : a → b — exactly
     the form `R = F°G` of a tabulation (§2.143).  (Note: this is NOT the reciprocal
     `F ≫ G°`; simplicity is not preserved under reciprocation, so the apex must be the
     common *source*.) -/
-@[expose] public def SemiSimple {A B : 𝒜} (R : A ⟶ B) : Prop :=
-  ∃ (C : 𝒜) (F : C ⟶ A) (G : C ⟶ B), Simple F ∧ Simple G ∧ R = F° ≫ G
+@[expose] public def SemiSimple {a b : 𝒜} (R : a ⟶ b) : Prop :=
+  ∃ (c : 𝒜) (F : c ⟶ a) (G : c ⟶ b), Simple F ∧ Simple G ∧ R = F° ≫ G
 
 /-- A SEMI-SIMPLE ALLEGORY: every morphism is semi-simple (§2.16(10)). -/
 public class SemiSimpleAllegory (𝒜 : Type u) extends Allegory 𝒜 where
-  semi_simple {A B : 𝒜} (R : A ⟶ B) : SemiSimple R
+  semi_simple {a b : 𝒜} (R : a ⟶ b) : SemiSimple R
 
 /-- **§2.16(10)**: every TABULAR allegory is SEMI-SIMPLE.  A tabulation `R = f°≫g` with
     `f, g` MAPS (entire+simple) is in particular a semi-simple factoring `F°≫G` with
     `F = f`, `G = g` simple — semi-simplicity drops the entireness, keeping only simplicity.
     (Fresh type variable `ℬ` avoids a diamond with the file-level `variable [Allegory 𝒜]`.) -/
-public theorem tabular_is_semiSimple {ℬ : Type u} [TabularAllegory ℬ] {A B : ℬ} (R : A ⟶ B) :
+public theorem tabular_is_semiSimple {ℬ : Type u} [TabularAllegory ℬ] {a b : ℬ} (R : a ⟶ b) :
     SemiSimple R := by
-  obtain ⟨C, f, g, hf, hg, hRfg, _⟩ := TabularAllegory.tabular R
-  exact ⟨C, f, g, hf.2, hg.2, hRfg⟩
+  obtain ⟨c, f, g, hf, hg, hRfg, _⟩ := TabularAllegory.tabular R
+  exact ⟨c, f, g, hf.2, hg.2, hRfg⟩
 
 /-- **§2.16(10)**: a tabular allegory, viewed as a semi-simple allegory.  Provided as a `def`
     (not a global instance) to avoid surprising typeclass resolution; apply via `letI`. -/
@@ -611,8 +611,8 @@ public theorem tabular_is_semiSimple {ℬ : Type u} [TabularAllegory ℬ] {A B :
 
 /-- §2.122 helper: R ⊑ dom R ≫ R always.
     modular_le 1 R R: (1≫R)∩R ⊑ (1∩RR°)≫R = dom(R)≫R, and LHS = R∩R = R. -/
-public theorem le_dom_comp {A B : 𝒜} (R : A ⟶ B) : R ⊑ dom R ≫ R := by
-  have h := modular_le (Cat.id A) R R
+public theorem le_dom_comp {a b : 𝒜} (R : a ⟶ b) : R ⊑ dom R ≫ R := by
+  have h := modular_le (Cat.id a) R R
   simp only [Cat.id_comp, Allegory.inter_idem] at h
   exact h
 
@@ -620,7 +620,7 @@ public theorem le_dom_comp {A B : 𝒜} (R : A ⟶ B) : R ⊑ dom R ≫ R := by
     Apply modular_le (R≫S≫S°, R°, dom(R≫S)):
     LHS = (RS)(RS)°∩dom(RS) = dom(RS) (since dom(RS)⊑(RS)(RS)°);
     RHS ⊑ R≫R° (since RSS°∩dom(RS)≫R ⊑ dom(RS)≫R ⊑ R). -/
-public theorem dom_comp_le {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
+public theorem dom_comp_le {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     dom (R ≫ S) ⊑ dom R := by
   -- Expand (RS)(RS)° = R≫S≫S°≫R°.
   have hexp : (R ≫ S) ≫ (R ≫ S)° = R ≫ S ≫ S° ≫ R° := by
@@ -647,7 +647,7 @@ public theorem dom_comp_le {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
     exact this
   -- dom(RS)≫R ⊑ R (dom(RS) coreflexive).
   have h2 : dom (R ≫ S) ≫ R ⊑ R := by
-    calc dom (R ≫ S) ≫ R ⊑ Cat.id A ≫ R := comp_mono_right (dom_coreflexive _) R
+    calc dom (R ≫ S) ≫ R ⊑ Cat.id a ≫ R := comp_mono_right (dom_coreflexive _) R
       _ = R := Cat.id_comp _
   -- RSS°∩dom(RS)≫R ⊑ dom(RS)≫R ⊑ R.
   have h3 : R ≫ S ≫ S° ∩ dom (R ≫ S) ≫ R ⊑ R :=
@@ -659,15 +659,15 @@ public theorem dom_comp_le {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
 -- RS entire implies R entire.
 -- §2.131: simples compose — already formalized as `simple_comp` in S2_4.lean.
 
-public theorem entire_comp {A B C : 𝒜} {R : A ⟶ B} {S : B ⟶ C} (hR : Entire R) (hS : Entire S) :
+public theorem entire_comp {a b c : 𝒜} {R : a ⟶ b} {S : b ⟶ c} (hR : Entire R) (hS : Entire S) :
     Entire (R ≫ S) := by
   -- 1 ⊑ RR°; 1 ⊑ SS°.  Then 1 ⊑ RR° = R·1·R° ⊑ R(SS°)R° = (RS)(RS)°.
-  have hfe : Cat.id A ⊑ R ≫ R° := by
+  have hfe : Cat.id a ⊑ R ≫ R° := by
     dsimp [Entire, dom] at hR; rw [← hR]; exact inter_lb_right _ _
-  have hge : Cat.id B ⊑ S ≫ S° := by
+  have hge : Cat.id b ⊑ S ≫ S° := by
     dsimp [Entire, dom] at hS; rw [← hS]; exact inter_lb_right _ _
   have hstep : R ≫ R° ⊑ R ≫ (S ≫ S°) ≫ R° := by
-    calc R ≫ R° = R ≫ Cat.id B ≫ R° := by rw [Cat.id_comp]
+    calc R ≫ R° = R ≫ Cat.id b ≫ R° := by rw [Cat.id_comp]
       _ ⊑ R ≫ (S ≫ S°) ≫ R° := comp_mono_left R (comp_mono_right hge R°)
   have heq : R ≫ (S ≫ S°) ≫ R° = (R ≫ S) ≫ (R ≫ S)° := by
     rw [Allegory.recip_comp]; simp [Cat.assoc]
@@ -676,66 +676,66 @@ public theorem entire_comp {A B C : 𝒜} {R : A ⟶ B} {S : B ⟶ C} (hR : Enti
     (le_inter (le_refl _) (heq ▸ le_trans hfe hstep))
 
 /-- §2.131: simples compose.  `(fg)°(fg) = g°(f°f)g ⊑ g°g ⊑ 1`. -/
-public theorem simple_comp {A B C : 𝒜} {f : A ⟶ B} {g : B ⟶ C} (hf : Simple f) (hg : Simple g) :
+public theorem simple_comp {a b c : 𝒜} {f : a ⟶ b} {g : b ⟶ c} (hf : Simple f) (hg : Simple g) :
     Simple (f ≫ g) := by
   dsimp [Simple] at hf hg ⊢
   rw [Allegory.recip_comp]
   have hrw : (g° ≫ f°) ≫ (f ≫ g) = g° ≫ (f° ≫ f) ≫ g := by simp [Cat.assoc]
   rw [hrw]
   have h1 : g° ≫ (f° ≫ f) ≫ g ⊑ g° ≫ g := by
-    calc g° ≫ (f° ≫ f) ≫ g ⊑ g° ≫ Cat.id B ≫ g := comp_mono_left _ (comp_mono_right hf _)
+    calc g° ≫ (f° ≫ f) ≫ g ⊑ g° ≫ Cat.id b ≫ g := comp_mono_left _ (comp_mono_right hf _)
       _ = g° ≫ g := by rw [Cat.id_comp]
   exact le_trans h1 hg
 
 /-- §2.131: composition of maps is a map. -/
-public theorem map_comp {A B C : 𝒜} {f : A ⟶ B} {g : B ⟶ C} (hf : Map f) (hg : Map g) :
+public theorem map_comp {a b c : 𝒜} {f : a ⟶ b} {g : b ⟶ c} (hf : Map f) (hg : Map g) :
     Map (f ≫ g) :=
   ⟨entire_comp hf.1 hg.1, simple_comp hf.2 hg.2⟩
 
-public theorem entire_of_comp_entire {A B C : 𝒜} {R : A ⟶ B} {S : B ⟶ C} (h : Entire (R ≫ S)) :
+public theorem entire_of_comp_entire {a b c : 𝒜} {R : a ⟶ b} {S : b ⟶ c} (h : Entire (R ≫ S)) :
     Entire R := by
   -- 1 ⊑ (RS)(RS)° = R(SS°)R°.
   -- modular_le (RSS°) R° 1: (RSS°·R°) ∩ 1 ⊑ (RSS° ∩ R)·R° ⊑ R·R°.
-  have h_one_le : Cat.id A ⊑ (R ≫ S) ≫ (R ≫ S)° := by
+  have h_one_le : Cat.id a ⊑ (R ≫ S) ≫ (R ≫ S)° := by
     dsimp [Entire, dom] at h; rw [← h]; exact inter_lb_right _ _
   have heq : (R ≫ S) ≫ (R ≫ S)° = R ≫ S ≫ S° ≫ R° := by
     rw [Allegory.recip_comp]; simp [Cat.assoc]
-  have h_rss_r : Cat.id A ⊑ R ≫ S ≫ S° ≫ R° := heq ▸ h_one_le
+  have h_rss_r : Cat.id a ⊑ R ≫ S ≫ S° ≫ R° := heq ▸ h_one_le
   -- h_mod: ((RSS°)≫R°) ∩ 1 ⊑ ((RSS°) ∩ R)≫R°
-  have h_mod := modular_le (R ≫ S ≫ S°) R° (Cat.id A)
+  have h_mod := modular_le (R ≫ S ≫ S°) R° (Cat.id a)
   simp only [Cat.id_comp, Allegory.recip_recip] at h_mod
   -- LHS of h_mod is (RSS°)·R° ∩ 1; match to R(SS°R°) using associativity
   have hrw : (R ≫ S ≫ S°) ≫ R° = R ≫ S ≫ S° ≫ R° := by simp [Cat.assoc]
   -- h_rss_r gives 1 ⊑ (RSS°)R°; combine with 1 ⊑ 1 to get 1 ⊑ (RSS°)R° ∩ 1
-  have h_in : Cat.id A ⊑ (R ≫ S ≫ S°) ≫ R° ∩ Cat.id A :=
+  have h_in : Cat.id a ⊑ (R ≫ S ≫ S°) ≫ R° ∩ Cat.id a :=
     le_inter (hrw ▸ h_rss_r) (le_refl _)
   -- Apply h_mod: 1 ⊑ (RSS° ∩ R)·R°
-  have h3 : Cat.id A ⊑ (R ≫ S ≫ S° ∩ R) ≫ R° := le_trans h_in h_mod
+  have h3 : Cat.id a ⊑ (R ≫ S ≫ S° ∩ R) ≫ R° := le_trans h_in h_mod
   -- RSS° ∩ R ⊑ R
-  have h_one_le_rr : Cat.id A ⊑ R ≫ R° :=
+  have h_one_le_rr : Cat.id a ⊑ R ≫ R° :=
     le_trans h3 (comp_mono_right (inter_lb_right _ _) R°)
   dsimp [Entire, dom]
   exact le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) h_one_le_rr)
 
 -- §2.135: If R is an isomorphism (§1.41 IsIso) then R is a map and R⁻¹ = R°.
-theorem iso_is_map {A B : 𝒜} {R : A ⟶ B} (hR : Freyd.IsIso R) : Map R := by
+theorem iso_is_map {a b : 𝒜} {R : a ⟶ b} (hR : Freyd.IsIso R) : Map R := by
   obtain ⟨g, h1, h2⟩ := hR
   -- h1 : R ≫ g = id_a, h2 : g ≫ R = id_b.
   -- g°≫R° = (R≫g)° = id_a.
-  have hg_recip : g° ≫ R° = Cat.id A := by
+  have hg_recip : g° ≫ R° = Cat.id a := by
     rw [← Allegory.recip_comp, h1, recip_id]
   -- R°≫g° = (g≫R)° = id_b.
-  have hR_recip : R° ≫ g° = Cat.id B := by
+  have hR_recip : R° ≫ g° = Cat.id b := by
     rw [← Allegory.recip_comp, h2, recip_id]
   -- id_a ⊑ g°≫g.  modular_le R g id_a, R≫g = id_a: id_a ⊑ (R∩g°)≫g ⊑ g°≫g.
-  have h_id_g : Cat.id A ⊑ g° ≫ g := by
-    have h_mod := modular_le R g (Cat.id A)
+  have h_id_g : Cat.id a ⊑ g° ≫ g := by
+    have h_mod := modular_le R g (Cat.id a)
     rw [Cat.id_comp, h1, Allegory.inter_idem] at h_mod
     -- h_mod : Cat.id a ⊑ (R ∩ g°) ≫ g  (recip_recip already applied g°° → g)
     exact le_trans h_mod (comp_mono_right (inter_lb_right _ _) g)
   -- Entire: id_a ⊑ R≫R°.  modular_le g° R° id_a, g°≫R° = id_a: id_a ⊑ (g°∩R°°)≫R° = (g°∩R)≫R° ⊑ R≫R°.
   have h_entire : Entire R := by
-    have h_mod := modular_le g° R° (Cat.id A)
+    have h_mod := modular_le g° R° (Cat.id a)
     rw [Cat.id_comp, hg_recip, Allegory.inter_idem, Allegory.recip_recip] at h_mod
     -- h_mod : Cat.id a ⊑ (g° ∩ R) ≫ R°
     dsimp [Entire, dom]
@@ -749,40 +749,40 @@ theorem iso_is_map {A B : 𝒜} {R : A ⟶ B} (hR : Freyd.IsIso R) : Map R := by
           have h := comp_mono_left R° (comp_mono_right h_id_g R)
           rwa [Cat.id_comp] at h
       _ = (R° ≫ g°) ≫ (g ≫ R) := by simp [Cat.assoc]
-      _ = Cat.id B ≫ Cat.id B := by rw [hR_recip, h2]
-      _ = Cat.id B := Cat.id_comp _
+      _ = Cat.id b ≫ Cat.id b := by rw [hR_recip, h2]
+      _ = Cat.id b := Cat.id_comp _
   exact ⟨h_entire, h_simple⟩
 
 -- §2.135: The inverse of an iso equals its reciprocal.
 -- If Rinv is the inverse of iso R (i.e. R ≫ Rinv = 1 ∧ Rinv ≫ R = 1), then Rinv = R°.
-theorem iso_inv_eq_recip {A B : 𝒜} {R : A ⟶ B} (hR : Freyd.IsIso R)
-    {Rinv : B ⟶ A} (h1 : R ≫ Rinv = Cat.id A) (h2 : Rinv ≫ R = Cat.id B) :
+theorem iso_inv_eq_recip {a b : 𝒜} {R : a ⟶ b} (hR : Freyd.IsIso R)
+    {Rinv : b ⟶ a} (h1 : R ≫ Rinv = Cat.id a) (h2 : Rinv ≫ R = Cat.id b) :
     Rinv = R° := by
   -- R°≫R = id_b (Simple R already proved; need equality, not just ⊑).
   -- id_b ⊑ R°≫R by modular_le Rinv R id_b with Rinv≫R = id_b.
   -- R°≫R ⊑ id_b (Simple R from iso_is_map).
   have hR_map := iso_is_map hR
-  have h_simple : R° ≫ R ⊑ Cat.id B := hR_map.2
+  have h_simple : R° ≫ R ⊑ Cat.id b := hR_map.2
   -- id_b ⊑ R°≫R from modular_le with h2 (Rinv≫R = id_b):
   -- modular_le Rinv R id_b: (Rinv≫R)∩id_b ⊑ (Rinv∩R°)≫R. LHS=id_b⊑(Rinv∩R°)≫R⊑R°≫R.
-  have h_refl : Cat.id B ⊑ R° ≫ R := by
-    have h_mod := modular_le Rinv R (Cat.id B)
+  have h_refl : Cat.id b ⊑ R° ≫ R := by
+    have h_mod := modular_le Rinv R (Cat.id b)
     rw [Cat.id_comp, h2, Allegory.inter_idem] at h_mod
     -- h_mod : Cat.id b ⊑ (Rinv ∩ R°) ≫ R
     exact le_trans h_mod (comp_mono_right (inter_lb_right _ _) R)
   -- R°≫R = id_b
-  have h_RoR : R° ≫ R = Cat.id B := le_antisymm h_simple h_refl
+  have h_RoR : R° ≫ R = Cat.id b := le_antisymm h_simple h_refl
   -- Rinv = id_b ≫ Rinv = (R°≫R) ≫ Rinv = R° ≫ (R ≫ Rinv) = R° ≫ id_a = R°.
-  calc Rinv = Cat.id B ≫ Rinv := (Cat.id_comp _).symm
+  calc Rinv = Cat.id b ≫ Rinv := (Cat.id_comp _).symm
     _ = (R° ≫ R) ≫ Rinv := by rw [h_RoR]
     _ = R° ≫ (R ≫ Rinv) := Cat.assoc _ _ _
-    _ = R° ≫ Cat.id A := by rw [h1]
+    _ = R° ≫ Cat.id a := by rw [h1]
     _ = R° := Cat.comp_id _
 
 -- §2.136: `simple_dist_inter` is proved before §2.14 (it is used by §2.141).
 
 /-- `Cat.id` is a map (entire + simple). -/
-public theorem id_is_map_local (A : 𝒜) : Map (Cat.id A) :=
+public theorem id_is_map_local (a : 𝒜) : Map (Cat.id a) :=
   ⟨by simp [Entire, dom, recip_id, Cat.comp_id, Allegory.inter_idem],
    by simp only [Simple, recip_id, Cat.id_comp]; exact le_refl _⟩
 
@@ -795,8 +795,8 @@ public theorem id_is_map_local (A : 𝒜) : Map (Cat.id A) :=
 
 /-- §2.143 backward: if `h` is a map with `h≫f=x` and `h≫g=y`, then `x°≫y ⊑ R`.
     `x°y = (hf)°(hg) = f°(h°h)g ⊑ f°g = R`. -/
-theorem tabulation_UP_backward {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {x : p ⟶ A} {y : p ⟶ B} {h : p ⟶ C}
+theorem tabulation_UP_backward {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b} {h : p ⟶ c}
     (hh : Map h) (hf_eq : h ≫ f = x) (hg_eq : h ≫ g = y) :
     x° ≫ y ⊑ R := by
   obtain ⟨_, _, hR, _⟩ := ht
@@ -811,8 +811,8 @@ theorem tabulation_UP_backward {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R :
 
 /-- §2.143 entire: `H = x≫f° ∩ y≫g°` is entire when `x°y ⊑ R = f°g`.
     `1 ⊑ (xx°)(yy°) ⊑ x(x°y)y° ⊑ x f° g y° = (xf°)(yg°)° ⊑ dom H`. -/
-private theorem tab_UP_H_entire {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {x : p ⟶ A} {y : p ⟶ B}
+private theorem tab_UP_H_entire {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b}
     (hx : Map x) (hy : Map y) (hxy : x° ≫ y ⊑ R) :
     Entire (x ≫ f° ∩ y ≫ g°) := by
   obtain ⟨_, _, hR, _⟩ := ht
@@ -838,8 +838,8 @@ private theorem tab_UP_H_entire {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R 
     SIMPLE (not full maps): the entire/totality of `x, y` is only used to show `H` is entire
     (`tab_UP_H_entire`), never here.  Public: also the canonical "pairing of simples is
     simple" fact reused for `RelProd.pair` (`AOP.A5_2`, e.g. Prop 9.3's context rule). -/
-public theorem tabulation_simple_of_simple {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {x : p ⟶ A} {y : p ⟶ B}
+public theorem tabulation_simple_of_simple {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b}
     (hx : Simple x) (hy : Simple y) :
     Simple (x ≫ f° ∩ y ≫ g°) := by
   obtain ⟨_, _, _, htab⟩ := ht
@@ -866,29 +866,29 @@ public theorem tabulation_simple_of_simple {A B C p : 𝒜} {f : C ⟶ A} {g : C
 
 /-- §2.143 forward: if `x°y ⊑ R` then there is a map `h = x≫f° ∩ y≫g°` with `h≫f=x`, `h≫g=y`.
     `Hf = (xf° ∩ yg°)f ⊑ xf°f ⊑ x`, and `Hf = x` by [2.133]; similarly `Hg = y`. -/
-public theorem tabulation_UP_forward {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {x : p ⟶ A} {y : p ⟶ B}
+public theorem tabulation_UP_forward {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b}
     (hx : Map x) (hy : Map y) (hxy : x° ≫ y ⊑ R) :
-    ∃ (h : p ⟶ C), Map h ∧ h ≫ f = x ∧ h ≫ g = y := by
+    ∃ (h : p ⟶ c), Map h ∧ h ≫ f = x ∧ h ≫ g = y := by
   have hf_map : Map f := ht.1
   have hg_map : Map g := ht.2.1
   have hH : Map (x ≫ f° ∩ y ≫ g°) :=
     ⟨tab_UP_H_entire ht hx hy hxy, tabulation_simple_of_simple ht hx.2 hy.2⟩
   refine ⟨x ≫ f° ∩ y ≫ g°, hH, ?_, ?_⟩
   · apply map_order_discrete (map_comp hH hf_map) hx
-    have h1 : (x ≫ f° ∩ y ≫ g°) ≫ f ⊑ x ≫ Cat.id A := by
+    have h1 : (x ≫ f° ∩ y ≫ g°) ≫ f ⊑ x ≫ Cat.id a := by
       refine le_trans (comp_mono_right (inter_lb_left _ _) f) ?_
       rw [Cat.assoc]; exact comp_mono_left x hf_map.2
     rwa [Cat.comp_id] at h1
   · apply map_order_discrete (map_comp hH hg_map) hy
-    have h2 : (x ≫ f° ∩ y ≫ g°) ≫ g ⊑ y ≫ Cat.id B := by
+    have h2 : (x ≫ f° ∩ y ≫ g°) ≫ g ⊑ y ≫ Cat.id b := by
       refine le_trans (comp_mono_right (inter_lb_right _ _) g) ?_
       rw [Cat.assoc]; exact comp_mono_left y hg_map.2
     rwa [Cat.comp_id] at h2
 
 /-- §2.143 forward, EXPLICIT witness: the mediating map is exactly `x≫f° ∩ y≫g°`. -/
-public theorem tabulation_UP_forward_witness {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {x : p ⟶ A} {y : p ⟶ B}
+public theorem tabulation_UP_forward_witness {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b}
     (hx : Map x) (hy : Map y) (hxy : x° ≫ y ⊑ R) :
     Map (x ≫ f° ∩ y ≫ g°) ∧ (x ≫ f° ∩ y ≫ g°) ≫ f = x ∧ (x ≫ f° ∩ y ≫ g°) ≫ g = y := by
   have hf_map : Map f := ht.1
@@ -897,12 +897,12 @@ public theorem tabulation_UP_forward_witness {A B C p : 𝒜} {f : C ⟶ A} {g :
     ⟨tab_UP_H_entire ht hx hy hxy, tabulation_simple_of_simple ht hx.2 hy.2⟩
   refine ⟨hH, ?_, ?_⟩
   · apply map_order_discrete (map_comp hH hf_map) hx
-    have h1 : (x ≫ f° ∩ y ≫ g°) ≫ f ⊑ x ≫ Cat.id A := by
+    have h1 : (x ≫ f° ∩ y ≫ g°) ≫ f ⊑ x ≫ Cat.id a := by
       refine le_trans (comp_mono_right (inter_lb_left _ _) f) ?_
       rw [Cat.assoc]; exact comp_mono_left x hf_map.2
     rwa [Cat.comp_id] at h1
   · apply map_order_discrete (map_comp hH hg_map) hy
-    have h2 : (x ≫ f° ∩ y ≫ g°) ≫ g ⊑ y ≫ Cat.id B := by
+    have h2 : (x ≫ f° ∩ y ≫ g°) ≫ g ⊑ y ≫ Cat.id b := by
       refine le_trans (comp_mono_right (inter_lb_right _ _) g) ?_
       rw [Cat.assoc]; exact comp_mono_left y hg_map.2
     rwa [Cat.comp_id] at h2
@@ -910,8 +910,8 @@ public theorem tabulation_UP_forward_witness {A B C p : 𝒜} {f : C ⟶ A} {g :
 /-- §2.143 uniqueness: two maps `h, h'` mediating the same factorization are equal.
     If `h≫f=x=h'≫f` then `h = h(f f° … )`; more directly `h = h(ff°∩gg°)…` is not needed —
     we use `h≫f=h'≫f` and `h≫g=h'≫g` and §2.141 joint-monicity of `(f,g)`. -/
-public theorem tabulation_UP_unique {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ B}
-    (ht : Tabulates f g R) {h h' : p ⟶ C}
+public theorem tabulation_UP_unique {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+    (ht : Tabulates f g R) {h h' : p ⟶ c}
     (hh : Map h) (hh' : Map h')
     (hf : h ≫ f = h' ≫ f) (hg : h ≫ g = h' ≫ g) : h = h' := by
   obtain ⟨hf_map, hg_map, _, htab⟩ := ht
@@ -922,10 +922,10 @@ public theorem tabulation_UP_unique {A B C p : 𝒜} {f : C ⟶ A} {g : C ⟶ B}
     `u : c' → c` (a map with map inverse) such that `f' = u f`, `g' = u g`.
     Existence: apply §2.143 forward to `(f',g')` viewed via `f'°g' = R ⊑ R`, giving `u`
     with `u f = f'`, `u g = g'`; the reverse tabulation gives the inverse. -/
-public theorem tabulation_unique_iso {A B C c' : 𝒜} {f : C ⟶ A} {g : C ⟶ B}
-    {f' : c' ⟶ A} {g' : c' ⟶ B} {R : A ⟶ B}
+public theorem tabulation_unique_iso {a b c c' : 𝒜} {f : c ⟶ a} {g : c ⟶ b}
+    {f' : c' ⟶ a} {g' : c' ⟶ b} {R : a ⟶ b}
     (ht : Tabulates f g R) (ht' : Tabulates f' g' R) :
-    ∃ (u : c' ⟶ C), Map u ∧ Freyd.IsIso u ∧ f' = u ≫ f ∧ g' = u ≫ g := by
+    ∃ (u : c' ⟶ c), Map u ∧ Freyd.IsIso u ∧ f' = u ≫ f ∧ g' = u ≫ g := by
   -- u : c'→c with u≫f = f', u≫g = g', from forward UP applied at apex c' with x=f', y=g'.
   have hxy : f'° ≫ g' ⊑ R := by rw [← ht'.2.2.1]; exact le_refl _
   obtain ⟨u, hu, huf, hug⟩ := tabulation_UP_forward ht ht'.1 ht'.2.1 hxy
@@ -937,8 +937,8 @@ public theorem tabulation_unique_iso {A B C c' : 𝒜} {f : C ⟶ A} {g : C ⟶ 
     apply tabulation_UP_unique ht' (map_comp hu hv) (id_is_map_local c')
     · rw [Cat.assoc, hvf, huf, Cat.id_comp]
     · rw [Cat.assoc, hvg, hug, Cat.id_comp]
-  have hvu_id : v ≫ u = Cat.id C := by
-    apply tabulation_UP_unique ht (map_comp hv hu) (id_is_map_local C)
+  have hvu_id : v ≫ u = Cat.id c := by
+    apply tabulation_UP_unique ht (map_comp hv hu) (id_is_map_local c)
     · rw [Cat.assoc, huf, hvf, Cat.id_comp]
     · rw [Cat.assoc, hug, hvg, Cat.id_comp]
   exact ⟨u, hu, ⟨v, huv_id, hvu_id⟩, huf.symm, hug.symm⟩
@@ -947,9 +947,9 @@ public theorem tabulation_unique_iso {A B C c' : 𝒜} {f : C ⟶ A} {g : C ⟶ 
 /-- §2.145: if a coreflexive `A` is tabular by `(f,g)` then `g = f` (by [2.133]) and `f` is
     a monic map with `A = f°f`.  (`g ⊑ ff°g ⊑ fA ⊑ f`, so `g = f`; clearly `ff° = 1`.) -/
 theorem coreflexive_tabular_monic {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) (hTab : Tabular A) :
-    ∃ (C : 𝒜) (h : C ⟶ a), Map h ∧ Freyd.Monic h ∧ A = h° ≫ h ∧ h ≫ h° = Cat.id C := by
-  obtain ⟨C, f, g, hf_map, hg_map, hA_eq, h_tab_eq⟩ := hTab
-  have hidff : Cat.id C ⊑ f ≫ f° := h_tab_eq ▸ inter_lb_left _ _
+    ∃ (c : 𝒜) (h : c ⟶ a), Map h ∧ Freyd.Monic h ∧ A = h° ≫ h ∧ h ≫ h° = Cat.id c := by
+  obtain ⟨c, f, g, hf_map, hg_map, hA_eq, h_tab_eq⟩ := hTab
+  have hidff : Cat.id c ⊑ f ≫ f° := h_tab_eq ▸ inter_lb_left _ _
   -- g ⊑ f: g ⊑ (ff°)g = f(f°g) = f A ⊑ f (since A ⊑ 1).
   have hg_le_f : g ⊑ f := by
     have h1 : g ⊑ (f ≫ f°) ≫ g := by
@@ -963,10 +963,10 @@ theorem coreflexive_tabular_monic {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) 
   -- A = f°≫f.
   have hA_id : A = f° ≫ f := by rw [hA_eq, hfg]
   -- ff° = 1_c (since g = f, the joint-monicity equation collapses to ff° = 1_c).
-  have hff_id : f ≫ f° = Cat.id C := by
-    have heq : f ≫ f° ∩ g ≫ g° = Cat.id C := h_tab_eq
+  have hff_id : f ≫ f° = Cat.id c := by
+    have heq : f ≫ f° ∩ g ≫ g° = Cat.id c := h_tab_eq
     rw [← hfg, Allegory.inter_idem] at heq; exact heq
-  refine ⟨C, f, hf_map, Freyd.mono_of_retraction f f° hff_id, hA_id, hff_id⟩
+  refine ⟨c, f, hf_map, Freyd.mono_of_retraction f f° hff_id, hA_id, hff_id⟩
 
 -- §2.147: If A is a tabular allegory then Map(A) has pullbacks, equalizers, images
 -- and pullbacks transfer images.  PROVED in MapCat.lean via the source-apex UMP
@@ -978,7 +978,7 @@ theorem coreflexive_tabular_monic {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) 
 /-! ## §2.151  Dom isomorphism onto an ideal for partial units -/
 
 /-- §2.151: Dom is order-preserving on (α,π). -/
-public theorem dom_mono_of_le {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : dom R ⊑ dom S := by
+public theorem dom_mono_of_le {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : dom R ⊑ dom S := by
   dsimp [dom]
   apply le_inter (inter_lb_left _ _)
   -- Goal: id ∩ RR° ⊑ SS°. Since R⊑S and R°⊑S°: RR° ⊑ SR° ⊑ SS°.
@@ -987,8 +987,8 @@ public theorem dom_mono_of_le {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : dom R
 
 /-- §2.151: For a partial unit π, Dom is injective on (α,π):
     `dom R ⊑ dom S → R ⊑ S`. -/
-theorem dom_injective_partial_unit {A T : 𝒜} (hPU : PartialUnit T)
-    {R S : A ⟶ T} (h : dom R ⊑ dom S) : R ⊑ S := by
+theorem dom_injective_partial_unit {a T : 𝒜} (hPU : PartialUnit T)
+    {R S : a ⟶ T} (h : dom R ⊑ dom S) : R ⊑ S := by
   -- R ⊑ dom(R)≫R ⊑ dom(S)≫R ⊑ SS°≫R ⊑ S·id_T = S.
   -- SS°R: S°R : T→T, and by PartialUnit T: S°R ⊑ id_T.
   -- R ⊑ domR≫R ⊑ domS≫R ⊑ (SS°)≫R = S≫(S°≫R) ⊑ S≫id = S.
@@ -1003,8 +1003,8 @@ theorem dom_injective_partial_unit {A T : 𝒜} (hPU : PartialUnit T)
 
 /-- §2.151: For a partial unit π, `dom R = dom S ↔ R = S`.
     (Dom is a semi-lattice isomorphism onto its image.) -/
-theorem dom_eq_iff_eq_of_partial_unit {A T : 𝒜} (hPU : PartialUnit T)
-    {R S : A ⟶ T} : dom R = dom S ↔ R = S := by
+theorem dom_eq_iff_eq_of_partial_unit {a T : 𝒜} (hPU : PartialUnit T)
+    {R S : a ⟶ T} : dom R = dom S ↔ R = S := by
   constructor
   · intro h
     exact le_antisymm
@@ -1020,10 +1020,10 @@ theorem dom_eq_iff_eq_of_partial_unit {A T : 𝒜} (hPU : PartialUnit T)
 section UnitProj
 variable {𝒜 : Type u} [UnitaryAllegory 𝒜]
 
-public theorem unit_proj_is_map (A : 𝒜) :
-    ∃ (p : A ⟶ UnitaryAllegory.unit_obj (𝒜 := 𝒜)), Map p := by
+public theorem unit_proj_is_map (a : 𝒜) :
+    ∃ (p : a ⟶ UnitaryAllegory.unit_obj (𝒜 := 𝒜)), Map p := by
   obtain ⟨hPU, hEntire⟩ := UnitaryAllegory.unit_prop (𝒜 := 𝒜)
-  obtain ⟨p, hp_entire⟩ := hEntire A
+  obtain ⟨p, hp_entire⟩ := hEntire a
   exact ⟨p, hp_entire, hPU (p° ≫ p)⟩
 
 /-- §2.152: If λ is a unit then p_α(p_β)° is maximum in (α,β):
@@ -1077,11 +1077,11 @@ end UnitProj
 -- in a power of the allegory of sets.
 
 -- §2.162: If R,S splits a symmetric idempotent T (RS = T, SR = 1) then S = R°.
-theorem split_symm_idem_recip {A C : 𝒜} {R : A ⟶ C} {S : C ⟶ A} {T : A ⟶ A}
-    (hRS : R ≫ S = T) (hSR : S ≫ R = Cat.id C) (hSymm : Symmetric T) :
+theorem split_symm_idem_recip {a c : 𝒜} {R : a ⟶ c} {S : c ⟶ a} {T : a ⟶ a}
+    (hRS : R ≫ S = T) (hSR : S ≫ R = Cat.id c) (hSymm : Symmetric T) :
     S = R° := by
   -- R°≫S° = (S≫R)° = id_c
-  have h_ro_so : R° ≫ S° = Cat.id C := by
+  have h_ro_so : R° ≫ S° = Cat.id c := by
     rw [← Allegory.recip_comp, hSR, recip_id]
   -- S°≫R° = (R≫S)° = T° = T
   have h_so_ro : S° ≫ R° = T := by
@@ -1093,25 +1093,25 @@ theorem split_symm_idem_recip {A C : 𝒜} {R : A ⟶ C} {S : C ⟶ A} {T : A �
   have h_S_T : S ≫ T = S := by
     rw [← hRS, ← Cat.assoc, hSR, Cat.id_comp]
   -- id_c ⊑ R°≫R  (modular law on S≫R = id_c)
-  have h_id_le_ror : Cat.id C ⊑ R° ≫ R := by
-    have h_mod := modular_le S R (Cat.id C)
+  have h_id_le_ror : Cat.id c ⊑ R° ≫ R := by
+    have h_mod := modular_le S R (Cat.id c)
     rw [Cat.id_comp, hSR, Allegory.inter_idem] at h_mod
     exact le_trans h_mod (comp_mono_right (inter_lb_right _ _) R)
   -- id_c ⊑ S≫S°  (modular law on R°≫S° = id_c)
-  have h_id_le_sso : Cat.id C ⊑ S ≫ S° := by
-    have h_mod := modular_le R° S° (Cat.id C)
+  have h_id_le_sso : Cat.id c ⊑ S ≫ S° := by
+    have h_mod := modular_le R° S° (Cat.id c)
     rw [Cat.id_comp, h_ro_so, Allegory.inter_idem, Allegory.recip_recip] at h_mod
     exact le_trans h_mod (comp_mono_right (inter_lb_right _ _) S°)
   -- S ⊑ R°
   have h_s_le_ro : S ⊑ R° := by
-    calc S = Cat.id C ≫ S := (Cat.id_comp _).symm
+    calc S = Cat.id c ≫ S := (Cat.id_comp _).symm
       _ ⊑ (R° ≫ R) ≫ S := comp_mono_right h_id_le_ror S
       _ = R° ≫ (R ≫ S) := Cat.assoc _ _ _
       _ = R° ≫ T := by rw [hRS]
       _ = R° := h_ro_T
   -- R° ⊑ S
   have h_ro_le_s : R° ⊑ S := by
-    calc R° = Cat.id C ≫ R° := (Cat.id_comp _).symm
+    calc R° = Cat.id c ≫ R° := (Cat.id_comp _).symm
       _ ⊑ (S ≫ S°) ≫ R° := comp_mono_right h_id_le_sso R°
       _ = S ≫ (S° ≫ R°) := Cat.assoc _ _ _
       _ = S ≫ T := by rw [h_so_ro]
@@ -1121,44 +1121,44 @@ theorem split_symm_idem_recip {A C : 𝒜} {R : A ⟶ C} {S : C ⟶ A} {T : A �
 -- §2.163: A coreflexive morphism A is a split idempotent iff A is tabular.
 -- Split form (source-apex): ∃ map h : c → a with h°≫h = A and h≫h° = id_c.
 theorem coreflexive_split_iff_tabular {a : 𝒜} {A : a ⟶ a} (hA : Coreflexive A) :
-    (∃ (C : 𝒜) (h : C ⟶ a), Map h ∧ h° ≫ h = A ∧ h ≫ h° = Cat.id C) ↔ Tabular A := by
+    (∃ (c : 𝒜) (h : c ⟶ a), Map h ∧ h° ≫ h = A ∧ h ≫ h° = Cat.id c) ↔ Tabular A := by
   constructor
   · -- Split ⟹ Tabular: tabulate A by the pair (h, h).
-    rintro ⟨C, h, hh_map, hhh, hhh_id⟩
-    refine ⟨C, h, h, hh_map, hh_map, ?_, ?_⟩
+    rintro ⟨c, h, hh_map, hhh, hhh_id⟩
+    refine ⟨c, h, h, hh_map, hh_map, ?_, ?_⟩
     · rw [hhh]
     · rw [hhh_id, Allegory.inter_idem]
   · -- Tabular ⟹ Split: `coreflexive_tabular_monic` already produces the split map.
     intro hTab
-    obtain ⟨C, h, hh_map, _, hA_eq, hhh_id⟩ := coreflexive_tabular_monic hA hTab
-    exact ⟨C, h, hh_map, hA_eq.symm, hhh_id⟩
+    obtain ⟨c, h, hh_map, _, hA_eq, hhh_id⟩ := coreflexive_tabular_monic hA hTab
+    exact ⟨c, h, hh_map, hA_eq.symm, hhh_id⟩
 
 -- §2.163: An equivalence relation E is a split idempotent iff it is effective
 -- (∃ map f with ff° = E, f°f = 1).
-@[expose] public def EquivalenceRel {A : 𝒜} (E : A ⟶ A) : Prop :=
+@[expose] public def EquivalenceRel {a : 𝒜} (E : a ⟶ a) : Prop :=
   Reflexive E ∧ Symmetric E ∧ Transitive E
 
-theorem equiv_rel_split_iff_effective {A : 𝒜} {E : A ⟶ A} (hE : EquivalenceRel E) :
-    (∃ (C : 𝒜) (f : A ⟶ C), Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id C) ↔
-    ∃ (C : 𝒜) (R : A ⟶ C) (S : C ⟶ A), R ≫ S = E ∧ S ≫ R = Cat.id C := by
+theorem equiv_rel_split_iff_effective {a : 𝒜} {E : a ⟶ a} (hE : EquivalenceRel E) :
+    (∃ (c : 𝒜) (f : a ⟶ c), Map f ∧ f ≫ f° = E ∧ f° ≫ f = Cat.id c) ↔
+    ∃ (c : 𝒜) (R : a ⟶ c) (S : c ⟶ a), R ≫ S = E ∧ S ≫ R = Cat.id c := by
   obtain ⟨hRefl, hSymm, _⟩ := hE
   constructor
   · -- Effective ⟹ split: take R = f, S = f°.
-    rintro ⟨C, f, _, hff, hffr⟩
-    exact ⟨C, f, f°, hff, hffr⟩
+    rintro ⟨c, f, _, hff, hffr⟩
+    exact ⟨c, f, f°, hff, hffr⟩
   · -- Split ⟹ effective: split_symm_idem_recip gives S = R°, then R is the map.
-    rintro ⟨C, R, S, hRS, hSR⟩
+    rintro ⟨c, R, S, hRS, hSR⟩
     have hS : S = R° := split_symm_idem_recip hRS hSR hSymm
     subst hS
     -- Now R≫R° = E and R°≫R = id_c; R is a map.
-    refine ⟨C, R, ⟨?_, ?_⟩, hRS, hSR⟩
+    refine ⟨c, R, ⟨?_, ?_⟩, hRS, hSR⟩
     · -- Entire R: dom R = id_a, i.e. id_a ∩ R≫R° = id_a, from id_a ⊑ E = R≫R°.
-      show Cat.id A ∩ R ≫ R° = Cat.id A
-      have h_id_le : Cat.id A ⊑ R ≫ R° := by rw [hRS]; exact hRefl
+      show Cat.id a ∩ R ≫ R° = Cat.id a
+      have h_id_le : Cat.id a ⊑ R ≫ R° := by rw [hRS]; exact hRefl
       -- id_a ⊑ R≫R° means id_a ∩ R≫R° = id_a.
       dsimp [le] at h_id_le; exact h_id_le
     · -- Simple R: R°≫R ⊑ id_c, in fact = id_c.
-      show R° ≫ R ⊑ Cat.id C
+      show R° ≫ R ⊑ Cat.id c
       rw [hSR]; exact le_refl _
 
 -- BOOK §2.165: If A is pre-tabular then Spl(Cor(A)) remains pre-tabular.
@@ -1177,6 +1177,6 @@ theorem equiv_rel_split_iff_effective {A : 𝒜} {E : A ⟶ A} (hE : Equivalence
 -- hence if Ĉ is not effective then C is not AC.
 
 /-- `R = S → R ⊑ S`. -/
-public theorem le_of_eq {𝒜 : Type u} [Allegory 𝒜] {A B : 𝒜} {R S : A ⟶ B}
+public theorem le_of_eq {𝒜 : Type u} [Allegory 𝒜] {a b : 𝒜} {R S : a ⟶ b}
     (h : R = S) : R ⊑ S := h ▸ le_refl R
 end Freyd.Alg

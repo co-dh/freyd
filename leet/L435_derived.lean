@@ -89,7 +89,7 @@ def foldSort : ConsList Unit (Int × Int) → List (Int × Int)
   | ConsList.cons iv xs => stSort iv (foldSort xs)
 
 /-- The base condition is a COMPUTATION: `foldSort (wrap d) = gSort d`. -/
-theorem foldSort_wrap : ∀ D : Unit, foldSort (ConsList.wrap D) = gSort D := fun _ => rfl
+theorem foldSort_wrap : ∀ d : Unit, foldSort (ConsList.wrap d) = gSort d := fun _ => rfl
 
 /-- The step condition IS `foldSort`'s cons equation. -/
 theorem foldSort_cons : ∀ (iv : Int × Int) (xs : ConsList Unit (Int × Int)),
@@ -132,11 +132,11 @@ def stKept : (Int × Int) → (Int → List (Int × Int)) → (Int → List (Int
 /-- The residual threshold-scan, folded directly over `ConsList Unit (Int×Int)` by the forced
     recursion above. -/
 def foldKept : ConsList Unit (Int × Int) → (Int → List (Int × Int))
-  | ConsList.wrap D => gKept D
+  | ConsList.wrap d => gKept d
   | ConsList.cons iv xs => stKept iv (foldKept xs)
 
 /-- The base condition: `foldKept (wrap d) = gKept d` — by construction. -/
-theorem foldKept_wrap : ∀ D : Unit, foldKept (ConsList.wrap D) = gKept D := fun _ => rfl
+theorem foldKept_wrap : ∀ d : Unit, foldKept (ConsList.wrap d) = gKept d := fun _ => rfl
 
 /-- The step condition: `foldKept (cons iv xs) = stKept iv (foldKept xs)` — by construction. -/
 theorem foldKept_cons : ∀ (iv : Int × Int) (xs : ConsList Unit (Int × Int)),

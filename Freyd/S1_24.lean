@@ -94,7 +94,7 @@ def PreOrdHom (P : PreOrd) (x y : P.carrier) : Type := PLift (P.le x y)
 
 /-- An order-preserving map between pre-orders is a functor between their categories (§1.245). -/
 def orderPreservingFunctor (P Q : PreOrd) (f : P.carrier → Q.carrier)
-    (hf : ∀ {A B : P.carrier}, P.le A B → Q.le (f A) (f B)) :
+    (hf : ∀ {a b : P.carrier}, P.le a b → Q.le (f a) (f b)) :
     @Functor P.carrier Q.carrier (preOrderCat P) (preOrderCat Q) where
   obj := f
   map h := ⟨hf h.down⟩

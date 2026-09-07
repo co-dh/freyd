@@ -136,15 +136,15 @@ public theorem coprInr_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A
     Lax mirror of `Colim.colimitCoprodOfDisjoint`'s `fun i => (hdisj i).toHasBinaryCoproducts`. -/
 @[expose] public noncomputable def laxCoprodDataOfDisjoint
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     LaxCoproductData L where
@@ -156,15 +156,15 @@ public theorem coprInr_factor (data : LaxCoproductData L) {iA iB : ι} (xA : L.A
     of `Colim.colimitCoprodOfDisjoint`. -/
 @[expose] public noncomputable def laxColimCoprodOfDisjoint
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     @HasBinaryCoproducts (Obj L) (laxColimCat L hL) :=
@@ -180,15 +180,15 @@ public theorem laxColim_inl_monic
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     letI : Cat (Obj L) := laxColimCat L hL
@@ -209,15 +209,15 @@ public theorem laxColim_inr_monic
     (hdisj : ∀ i, DisjointBinaryCoproduct (L.A i))
     (hmono : ∀ {i j : ι} (hij : D.le i j),
         @PreservesMono _ (L.catA i) _ (L.catA j) (L.functF hij))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q) :
     letI : Cat (Obj L) := laxColimCat L hL
@@ -254,15 +254,15 @@ public theorem laxColim_inl_inter_inr [Nonempty ι]
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (L.A j) (L.catA j) (L.F hij (stageZero L hbot i)))
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q)
     [hPL : @PreLogos (Obj L) (laxColimCat L hL)]

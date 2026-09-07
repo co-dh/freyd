@@ -173,7 +173,7 @@ theorem asmEmbedHom_map_iff {A B : Assembly.{u} K} (R : (⟨A⟩ : AsmRel K) ⟶
     morphism `A/1_A ⟶ B/1_B` of `E`. -/
 def asmEmbedMap {A B : Assembly.{u} K} (f : A ⟶ B) :
     asmEmbed K A ⟶ asmEmbed K B :=
-  embEqHom (𝒜 := AsmRel K) (A := ⟨A⟩) (B := ⟨B⟩) (relGraph f)
+  embEqHom (𝒜 := AsmRel K) (a := ⟨A⟩) (b := ⟨B⟩) (relGraph f)
 
 /-- `asmEmbedMap f` is a MAP of `E` (graphs are maps, §2.217 `relClass_graph_map`;
     the embedding reflects maps). -/
@@ -189,9 +189,9 @@ theorem asmEmbedMap_id (A : Assembly.{u} K) :
 /-- `asmEmbedMap` preserves composition (graphs compose, §2.217 `relGraph_comp`). -/
 theorem asmEmbedMap_comp {A B C : Assembly.{u} K} (f : A ⟶ B) (g : B ⟶ C) :
     asmEmbedMap K (f ≫ g) = asmEmbedMap K f ≫ asmEmbedMap K g := by
-  show embEqHom (𝒜 := AsmRel K) (A := ⟨A⟩) (B := ⟨C⟩) (relGraph (f ≫ g)) = _
+  show embEqHom (𝒜 := AsmRel K) (a := ⟨A⟩) (b := ⟨C⟩) (relGraph (f ≫ g)) = _
   rw [relGraph_comp]
-  exact embEq_comp (𝒜 := AsmRel K) (A := ⟨A⟩) (B := ⟨B⟩) (C := ⟨C⟩)
+  exact embEq_comp (𝒜 := AsmRel K) (a := ⟨A⟩) (b := ⟨B⟩) (c := ⟨C⟩)
     (relGraph f) (relGraph g)
 
 /-- `asmEmbedMap` is FAITHFUL: the category of assemblies sits inside `E`

@@ -71,7 +71,7 @@ public theorem objInclL_preserves_images
           (@Subobject.map _ _ (L.catA i) (L.catA j) (L.functF hij) (hmono hij) _
             (@image _ (L.catA i) (hi i) _ _ f)))
     [hpull : @HasPullbacks (Obj L) (laxColimCat L hL)]
-    (i : ι) {A B : L.A i} (f : A ⟶ B) :
+    (i : ι) {a b : L.A i} (f : a ⟶ b) :
     letI : Cat (Obj L) := laxColimCat L hL
     letI : HasImages (L.A i) := hi i
     IsImage (stageInclL L hL f)
@@ -83,11 +83,11 @@ public theorem objInclL_preserves_images
   have hfac_stage : image.lift f ≫ (image f).arr = f := image.lift_fac f
   -- the cover leg: `stageInclL (image.lift f)` is a colimit cover.
   have hcov : @Cover (Obj L) (laxColimCat L hL) _ _ (stageInclL L hL (image.lift f)) :=
-    homInclL_cover_of_stage L hL hfaith A (image f).dom (image.lift f)
+    homInclL_cover_of_stage L hL hfaith a (image f).dom (image.lift f)
       (fun {e} hie => preservesImage_lift_cover (L.functF hie) (hmono hie) f
         (himgpres hie f))
   -- the composite `stageInclL (image.lift f) ⊚ stageInclL (image f).arr = stageInclL f`.
-  have hcomp : @compL _ _ L hL (objIncl L i A) (objIncl L i (image f).dom) (objIncl L i B)
+  have hcomp : @compL _ _ L hL (objIncl L i a) (objIncl L i (image f).dom) (objIncl L i b)
       (stageInclL L hL (image.lift f)) (stageInclL L hL (image f).arr)
       = stageInclL L hL f := by
     rw [← stageInclL_comp L hL (image.lift f) (image f).arr, hfac_stage]

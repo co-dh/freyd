@@ -80,7 +80,7 @@ theorem eE_idem : eE ≫ eE = eE := by
     `[graph g]`; then `f ≫ f° = eE` says `g ⊚ g° ≈ ERel` and `f° ≫ f = 1_d` says `g`
     is a cover (§1.569).  That is exactly `IsEffective ERel`, which `ERel_not_effective`
     forbids.  (This is the transported form of §1.572's non-effectiveness.) -/
-theorem no_splitsAsMap (D : RelObj ExtNat) (f : (⟨omega⟩ : RelObj ExtNat) ⟶ D) :
+theorem no_splitsAsMap (d : RelObj ExtNat) (f : (⟨omega⟩ : RelObj ExtNat) ⟶ d) :
     ¬ Freyd.Alg.SplitsAsMap f eE := by
   refine Quotient.inductionOn f (fun R => ?_)
   show ¬ Freyd.Alg.SplitsAsMap (relClass R) eE
@@ -91,20 +91,20 @@ theorem no_splitsAsMap (D : RelObj ExtNat) (f : (⟨omega⟩ : RelObj ExtNat) �
   -- decode the two allegory equations into `BinRel` containments
   have hff2 : relClass (graph g ⊚ (graph g)°) = relClass ERel := by
     rw [← qComp_mk, ← qRecip_mk]; exact hff
-  have hf'f2 : relClass ((graph g)° ⊚ graph g) = relClass (graph (Cat.id D.carrier)) := by
+  have hf'f2 : relClass ((graph g)° ⊚ graph g) = relClass (graph (Cat.id d.carrier)) := by
     rw [← qComp_mk, ← qRecip_mk]; exact hf'f
   obtain ⟨hgg_le, hle_gg⟩ := Quotient.exact hff2
   obtain ⟨_, hone_le⟩ := Quotient.exact hf'f2
   -- `g` is a cover (§1.569), so `E` is the level of a cover — i.e. effective.
   have hcover : Cover g := (cover_iff_one_le_reciprocal_comp_self g).mpr hone_le
-  exact ERel_not_effective ⟨ERel_equivalence, D.carrier, g, hcover, hle_gg, hgg_le⟩
+  exact ERel_not_effective ⟨ERel_equivalence, d.carrier, g, hcover, hle_gg, hgg_le⟩
 
 /-- **§2.16(13) for R.**  The effective reflection `Spl(Eq (Rel R))` of the recursive
     category R is NOT an allegory of choice: covers do not all split there.  This is the
     Chapter-2 transport of §1.572's `ERel_not_effective`. -/
 theorem reflection_not_ac :
     ¬ Freyd.Alg.CoversSplit (Freyd.Alg.SplEqObj (RelObj ExtNat)) :=
-  Freyd.Alg.not_coversSplit_of_not_effective (A := ⟨omega⟩) eE eE_refl eE_sym eE_idem
+  Freyd.Alg.not_coversSplit_of_not_effective (a := ⟨omega⟩) eE eE_refl eE_sym eE_idem
     no_splitsAsMap
 
 end Freyd.RecEff

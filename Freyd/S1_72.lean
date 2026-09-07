@@ -562,27 +562,27 @@ class FocalLogos (𝒞 : Type u) [Cat.{v} 𝒞] extends Logos 𝒞 where
   id_comp _ := rfl; comp_id _ := rfl; assoc _ _ _ := rfl
 
 /-- All parallel morphisms are equal in a Heyting-lattice thin category. -/
-public theorem hl_thin (L : HeytingLattice) {A B : L.carrier} (f g : A ⟶ B) : f = g := by
+public theorem hl_thin (L : HeytingLattice) {a b : L.carrier} (f g : a ⟶ b) : f = g := by
   cases f; cases g; rfl
 
 /-- In a Heyting-lattice thin category, covers = isos. -/
-theorem hl_cover_iff_iso (L : HeytingLattice) {A B : L.carrier} (f : A ⟶ B) :
+theorem hl_cover_iff_iso (L : HeytingLattice) {a b : L.carrier} (f : a ⟶ b) :
     Cover f ↔ IsIso f :=
-  ⟨fun hcov => hcov f (Cat.id A) (fun {_W} p q _ => hl_thin L p q) (Cat.id_comp f),
+  ⟨fun hcov => hcov f (Cat.id a) (fun {_W} p q _ => hl_thin L p q) (Cat.id_comp f),
    fun hiso _C m h _hmono _hgm => by
-     rw [show IsIso m ↔ L.le B _C from
+     rw [show IsIso m ↔ L.le b _C from
        ⟨fun ⟨finv, _, _⟩ => finv.down, fun hba => ⟨⟨hba⟩, hl_thin L _ _, hl_thin L _ _⟩⟩]
      exact L.le_trans
        ((⟨fun ⟨finv, _, _⟩ => finv.down, fun hba => ⟨⟨hba⟩, hl_thin L _ _, hl_thin L _ _⟩⟩ :
-         IsIso f ↔ L.le B A).mp hiso) h.down⟩
+         IsIso f ↔ L.le b a).mp hiso) h.down⟩
 
 /-- Pullbacks in the Heyting-lattice thin category are binary meets. -/
 @[expose] public instance hl_hasPullbacks (L : HeytingLattice) : HasPullbacks L.carrier where
-  has := fun {A B _c} _f _g =>
+  has := fun {a b _c} _f _g =>
     { cone :=
-        { pt := L.meet A B
-          π₁ := ⟨L.meet_le_left A B⟩
-          π₂ := ⟨L.meet_le_right A B⟩
+        { pt := L.meet a b
+          π₁ := ⟨L.meet_le_left a b⟩
+          π₂ := ⟨L.meet_le_right a b⟩
           w := hl_thin L _ _ }
       lift := fun d => ⟨L.le_meet d.π₁.down d.π₂.down⟩
       lift_fst := fun _ => hl_thin L _ _
@@ -592,7 +592,7 @@ theorem hl_cover_iff_iso (L : HeytingLattice) {A B : L.carrier} (f : A ⟶ B) :
 /-- Images in the Heyting-lattice thin category: image of `f : a → b` is `a` itself
     (the domain, viewed as a subobject of `b` via `f`). -/
 @[expose] public instance hl_hasImages (L : HeytingLattice) : HasImages L.carrier where
-  image := fun {A _b} f => { dom := A, arr := f, monic := fun p q _ => hl_thin L p q }
+  image := fun {a _b} f => { dom := a, arr := f, monic := fun p q _ => hl_thin L p q }
   isImage := fun f => ⟨⟨Cat.id _, Cat.id_comp f⟩, fun _S ⟨g, hg⟩ => ⟨g, hg⟩⟩
 
 /-- §1.722 (⟹): every Heyting algebra, viewed as a thin category, is a logos.
@@ -615,7 +615,7 @@ noncomputable def heytingLattice_is_logos (L : HeytingLattice) : Logos L.carrier
         uniq f g := hl_thin L f g
       }
       toHasBinaryProducts := {
-        prod A B := L.meet A B
+        prod a b := L.meet a b
         fst := ⟨L.meet_le_left _ _⟩
         snd := ⟨L.meet_le_right _ _⟩
         pair f g := ⟨L.le_meet f.down g.down⟩
@@ -627,18 +627,18 @@ noncomputable def heytingLattice_is_logos (L : HeytingLattice) : Logos L.carrier
       toHasImages := hl_hasImages L
       toPullbacksTransferCovers := {
         pullbacks_transfer_covers := by
-          intro A B C f g cone hIsPB hCoverF
+          intro a b c f g cone hIsPB hCoverF
           rw [hl_cover_iff_iso L] at hCoverF; rw [hl_cover_iff_iso L]
           -- f : a → b iso (b ≤ a), g : c → b; want π₂ : cone.pt → c iso.
           -- Build a cone from c: use g.down ≫ f-iso to get c → a, and id_c.
-          have hca : L.le C A := L.le_trans g.down
+          have hca : L.le c a := L.le_trans g.down
             ((⟨fun ⟨finv, _, _⟩ => finv.down, fun hba => ⟨⟨hba⟩, hl_thin L _ _, hl_thin L _ _⟩⟩ :
-              IsIso f ↔ L.le B A).mp hCoverF)
-          let cCone : Cone f g := Cone.mk C ⟨hca⟩ (Cat.id C) (hl_thin L _ _)
+              IsIso f ↔ L.le b a).mp hCoverF)
+          let cCone : Cone f g := Cone.mk c ⟨hca⟩ (Cat.id c) (hl_thin L _ _)
           -- The universal property gives a map from c into cone.pt = meet a c.
           -- Its π₂-component is a left-inverse of cone.π₂, making π₂ iso.
           exact (⟨fun ⟨finv, _, _⟩ => finv.down, fun hba => ⟨⟨hba⟩, hl_thin L _ _, hl_thin L _ _⟩⟩ :
-            IsIso cone.π₂ ↔ L.le C cone.pt).mpr ((hIsPB cCone).choose.down)
+            IsIso cone.π₂ ↔ L.le c cone.pt).mpr ((hIsPB cCone).choose.down)
       }
     }
     toHasSubobjectUnions := {
@@ -653,22 +653,22 @@ noncomputable def heytingLattice_is_logos (L : HeytingLattice) : Logos L.carrier
         exact ⟨⟨L.join_le hs.down ht.down⟩, hl_thin L _ _⟩
     }
     -- f## : Sub(A) → Sub(B) given f : A → B; f##(A') has dom = B ∧ (A → A'.dom).
-    rightAdj := fun {A B} f A' =>
-      { dom := L.meet B (L.imp A A'.dom)
-        arr := ⟨L.meet_le_left B (L.imp A A'.dom)⟩
+    rightAdj := fun {a b} f A' =>
+      { dom := L.meet b (L.imp a A'.dom)
+        arr := ⟨L.meet_le_left b (L.imp a A'.dom)⟩
         monic := fun p q _ => hl_thin L p q }
     -- f#(B') ≤ A' ↔ B' ≤ f##(A'): use Heyting adjunction + fact that
     -- InverseImage f B' has dom = meet a B'.dom (definitionally).
-    adjunction := fun {A B} f B' A' => by
+    adjunction := fun {a b} f B' A' => by
       simp only [Subobject.le]
       constructor
       · intro ⟨h, _⟩
         -- h.down : L.le (meet a B'.dom) A'.dom
-        exact ⟨⟨L.le_meet B'.arr.down ((L.imp_adj (x := B'.dom) (a := A) (b := A'.dom)).mp h.down)⟩, hl_thin L _ _⟩
+        exact ⟨⟨L.le_meet B'.arr.down ((L.imp_adj (x := B'.dom) (a := a) (b := A'.dom)).mp h.down)⟩, hl_thin L _ _⟩
       · intro ⟨h, _⟩
         -- h.down : L.le B'.dom (meet b (imp a A'.dom))
-        have hle_imp := L.le_trans h.down (L.meet_le_right B (L.imp A A'.dom))
-        exact ⟨⟨(L.imp_adj (x := B'.dom) (a := A) (b := A'.dom)).mpr hle_imp⟩, hl_thin L _ _⟩
+        have hle_imp := L.le_trans h.down (L.meet_le_right b (L.imp a A'.dom))
+        exact ⟨⟨(L.imp_adj (x := B'.dom) (a := a) (b := A'.dom)).mpr hle_imp⟩, hl_thin L _ _⟩
     bottom := fun A =>
       { dom := L.bot, arr := ⟨L.bot_le A⟩, monic := fun p q _ => hl_thin L p q }
     bottom_min := fun {_A} S => ⟨⟨L.bot_le S.dom⟩, hl_thin L _ _⟩
@@ -708,58 +708,58 @@ noncomputable def heytingLattice_is_logos (L : HeytingLattice) : Logos L.carrier
     Axioms: `[Classical.choice]` only (no Sorry).  -/
 noncomputable def thinLogos_is_heytingLattice
     {𝒞 : Type} [Cat.{0} 𝒞] [ThinCategory 𝒞] [Logos 𝒞]
-    (hskeletal : ∀ {A B : 𝒞}, Nonempty (A ⟶ B) → Nonempty (B ⟶ A) → A = B) :
+    (hskeletal : ∀ {a b : 𝒞}, Nonempty (a ⟶ b) → Nonempty (b ⟶ a) → a = b) :
     HeytingLattice :=
   -- Every object viewed as a subterminator of `one`
-  let thinSub : 𝒞 → Subobject 𝒞 one := fun A =>
-    ⟨A, term A, fun p q _ => ThinCategory.thin p q⟩
+  let thinSub : 𝒞 → Subobject 𝒞 one := fun a =>
+    ⟨a, term a, fun p q _ => ThinCategory.thin p q⟩
   { carrier       := 𝒞
-    le            := fun A B => Nonempty (A ⟶ B)
-    le_refl       := fun A   => ⟨Cat.id A⟩
+    le            := fun a b => Nonempty (a ⟶ b)
+    le_refl       := fun a   => ⟨Cat.id a⟩
     le_trans      := fun ⟨f⟩ ⟨g⟩ => ⟨f ≫ g⟩
     le_antisymm   := hskeletal
     top           := one
-    le_top        := fun A   => ⟨term A⟩
-    meet          := fun A B => prod A B
+    le_top        := fun a   => ⟨term a⟩
+    meet          := fun a b => prod a b
     meet_le_left  := fun _a _b => ⟨fst⟩
     meet_le_right := fun _a _b => ⟨snd⟩
     le_meet       := fun ⟨f⟩ ⟨g⟩ => ⟨pair f g⟩
-    join          := fun A B => (HasSubobjectUnions.union (thinSub A) (thinSub B)).dom
-    le_join_left  := fun A B =>
-      ⟨(HasSubobjectUnions.union_left (thinSub A) (thinSub B)).choose⟩
-    le_join_right := fun A B =>
-      ⟨(HasSubobjectUnions.union_right (thinSub A) (thinSub B)).choose⟩
+    join          := fun a b => (HasSubobjectUnions.union (thinSub a) (thinSub b)).dom
+    le_join_left  := fun a b =>
+      ⟨(HasSubobjectUnions.union_left (thinSub a) (thinSub b)).choose⟩
+    le_join_right := fun a b =>
+      ⟨(HasSubobjectUnions.union_right (thinSub a) (thinSub b)).choose⟩
     join_le       := fun {_a _b _c} ⟨ha⟩ ⟨hb⟩ =>
       have h := HasSubobjectUnions.union_min (thinSub _) (thinSub _) (thinSub _)
         ⟨ha, ThinCategory.thin _ _⟩ ⟨hb, ThinCategory.thin _ _⟩
       ⟨h.choose⟩
-    imp           := fun A B =>
-      (Logos.rightAdj (term A) (InverseImage (term A) (thinSub B))).dom
-    imp_adj := fun {x A B} => by
+    imp           := fun a b =>
+      (Logos.rightAdj (term a) (InverseImage (term a) (thinSub b))).dom
+    imp_adj := fun {x a b} => by
       -- R := f##(f#(thinSub b)) in Sub(one), imp a b = R.dom
-      let R := Logos.rightAdj (term A) (InverseImage (term A) (thinSub B))
+      let R := Logos.rightAdj (term a) (InverseImage (term a) (thinSub b))
       constructor
       · -- (⟹) Nonempty (prod a x ⟶ b) → Nonempty (x ⟶ R.dom)
         intro ⟨f⟩
-        let pb_x := HasPullbacks.has (term A) (thinSub x).arr
-        let pb_b := HasPullbacks.has (term A) (thinSub B).arr
-        have hle : (InverseImage (term A) (thinSub x)).le (InverseImage (term A) (thinSub B)) :=
+        let pb_x := HasPullbacks.has (term a) (thinSub x).arr
+        let pb_b := HasPullbacks.has (term a) (thinSub b).arr
+        have hle : (InverseImage (term a) (thinSub x)).le (InverseImage (term a) (thinSub b)) :=
           ⟨pb_b.lift ⟨pb_x.cone.pt, pb_x.cone.π₁,
               pair pb_x.cone.π₁ pb_x.cone.π₂ ≫ f, ThinCategory.thin _ _⟩,
            ThinCategory.thin _ _⟩
-        exact ⟨((Logos.adjunction (term A) (thinSub x)
-          (InverseImage (term A) (thinSub B))).mp hle).choose⟩
+        exact ⟨((Logos.adjunction (term a) (thinSub x)
+          (InverseImage (term a) (thinSub b))).mp hle).choose⟩
       · -- (⟸) Nonempty (x ⟶ R.dom) → Nonempty (prod a x ⟶ b)
         intro ⟨f⟩
         have hxR : (thinSub x).le R := ⟨f, ThinCategory.thin _ _⟩
-        obtain ⟨h, _⟩ := (Logos.adjunction (term A) (thinSub x)
-          (InverseImage (term A) (thinSub B))).mpr hxR
-        let pb_x := HasPullbacks.has (term A) (thinSub x).arr
-        let pb_b := HasPullbacks.has (term A) (thinSub B).arr
-        exact ⟨pb_x.lift ⟨prod A x, fst, snd, ThinCategory.thin _ _⟩ ≫ h ≫ pb_b.cone.π₂⟩
+        obtain ⟨h, _⟩ := (Logos.adjunction (term a) (thinSub x)
+          (InverseImage (term a) (thinSub b))).mpr hxR
+        let pb_x := HasPullbacks.has (term a) (thinSub x).arr
+        let pb_b := HasPullbacks.has (term a) (thinSub b).arr
+        exact ⟨pb_x.lift ⟨prod a x, fst, snd, ThinCategory.thin _ _⟩ ≫ h ≫ pb_b.cone.π₂⟩
     bot           := (Logos.bottom (one : 𝒞)).dom
-    bot_le        := fun A =>
-      ⟨(Logos.bottom_min (thinSub A)).choose⟩ }
+    bot_le        := fun a =>
+      ⟨(Logos.bottom_min (thinSub a)).choose⟩ }
 
 /-! ### §1.722 combined: the iff
 
@@ -780,7 +780,7 @@ noncomputable def section_1722_fwd (L : HeytingLattice) : Logos L.carrier :=
 -- §1.722 reverse: every thin logos (universe 0, skeletal) gives a HeytingLattice.
 noncomputable def section_1722_rev
     {𝒞 : Type} [Cat.{0} 𝒞] [ThinCategory 𝒞] [Logos 𝒞]
-    (hskeletal : ∀ {A B : 𝒞}, Nonempty (A ⟶ B) → Nonempty (B ⟶ A) → A = B) :
+    (hskeletal : ∀ {a b : 𝒞}, Nonempty (a ⟶ b) → Nonempty (b ⟶ a) → a = b) :
     HeytingLattice :=
   @thinLogos_is_heytingLattice 𝒞 _ _ _ hskeletal
 

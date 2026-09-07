@@ -53,7 +53,7 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
 
 /-- If two morphisms have the same largest element they are congruent
     (`R⁺ = S⁺ → R ≡ S`).  The converse of `amenable_largest_class_invariant`. -/
-theorem rel_of_largest_eq (amen : AmenableCongruence 𝒜) {A B : 𝒜} {X Y : A ⟶ B}
+theorem rel_of_largest_eq (amen : AmenableCongruence 𝒜) {a b : 𝒜} {X Y : a ⟶ b}
     (h : amen.largest X = amen.largest Y) : amen.cong.rel X Y := by
   have h1 : amen.cong.rel X (amen.largest X) := amen.largest_rel X
   have h2 : amen.cong.rel (amen.largest Y) Y := amen.cong.symm (amen.largest_rel Y)
@@ -77,8 +77,8 @@ variable {𝒜 : Type u} [LocallyCompleteDistributiveAllegory 𝒜]
     `Sup`: `P₁` plays the role of `∪ᵢRᵢ`, `P₂` of the congruence-saturated family.
     Proof: `Sup P₁ ⊑ (Sup P₂)⁺` and `Sup P₂ ⊑ (Sup P₁)⁺` (base `Sup_le`,
     `self_le_largest`, class-invariance), then §2.531 + idempotence collapse `⁺`. -/
-theorem quotSup_distrib_rel (amen : AmenableCongruence 𝒜) {A B : 𝒜}
-    (P₁ P₂ : (A ⟶ B) → Prop)
+theorem quotSup_distrib_rel (amen : AmenableCongruence 𝒜) {a b : 𝒜}
+    (P₁ P₂ : (a ⟶ b) → Prop)
     (hsat : ∀ x, P₂ x → ∃ y, P₁ y ∧ amen.cong.rel x y)
     (hsub : ∀ x, P₁ x → P₂ x) :
     amen.cong.rel (Sup P₁) (Sup P₂) := by
@@ -116,30 +116,30 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
     (amen : AmenableCongruence 𝒜) :
     LocallyCompleteDistributiveAllegory (QuotAllegory 𝒜 amen.cong) :=
   { QuotAllegory.instDistributiveAllegory amen.cong amen.union_congr with
-    Sup := fun {A B} P =>
+    Sup := fun {a b} P =>
       Quotient.mk (congSetoid amen.cong)
-        (@LocallyCompleteDistributiveAllegory.Sup 𝒜 _ A B
+        (@LocallyCompleteDistributiveAllegory.Sup 𝒜 _ a b
           (fun r => P (Quotient.mk (congSetoid amen.cong) r)))
     -- `[r] ⊑ Sup P`: since `r ⊑ Sup(P∘[·])` in the base, §2.531 gives `r⁺ ⊑ (Sup …)⁺`.
     le_Sup := by
-      intro A B P R hR
+      intro a b P R hR
       induction R using Quotient.inductionOn with
       | _ r =>
         refine (Freyd.Alg.quotient_le_iff_largest amen r _).mpr ?_
         exact amenable_le_largest amen
-          (@LocallyCompleteDistributiveAllegory.le_Sup 𝒜 _ A B
+          (@LocallyCompleteDistributiveAllegory.le_Sup 𝒜 _ a b
             (fun r => P (Quotient.mk (congSetoid amen.cong) r)) r hR)
     -- `Sup P ⊑ [t]`: each `r` in the family has `r ⊑ r⁺ ⊑ t⁺`, so `Sup(P∘[·]) ⊑ t⁺`,
     -- whence `(Sup …)⁺ ⊑ t⁺⁺ = t⁺`.
     Sup_le := by
-      intro A B P T h
+      intro a b P T h
       induction T using Quotient.inductionOn with
       | _ t =>
         refine (Freyd.Alg.quotient_le_iff_largest amen _ t).mpr ?_
         have hbound :
-            (@LocallyCompleteDistributiveAllegory.Sup 𝒜 _ A B
+            (@LocallyCompleteDistributiveAllegory.Sup 𝒜 _ a b
               (fun r => P (Quotient.mk (congSetoid amen.cong) r))) ⊑ amen.largest t := by
-          refine @LocallyCompleteDistributiveAllegory.Sup_le 𝒜 _ A B
+          refine @LocallyCompleteDistributiveAllegory.Sup_le 𝒜 _ a b
             (fun r => P (Quotient.mk (congSetoid amen.cong) r)) (amen.largest t) ?_
           intro r hr
           have hrt : amen.largest r ⊑ amen.largest t :=
@@ -149,11 +149,11 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
         rwa [largest_idem amen] at hh
     -- §2.22 right distributivity `[r] ≫ Sup P = Sup {[r] ≫ S}` (the well-definedness crux).
     comp_Sup_distrib := by
-      intro A B C R P
+      intro a b c R P
       induction R using Quotient.inductionOn with
       | _ r =>
         refine Quotient.sound ?_
-        rw [@LocallyCompleteDistributiveAllegory.comp_Sup_distrib 𝒜 _ A B C r
+        rw [@LocallyCompleteDistributiveAllegory.comp_Sup_distrib 𝒜 _ a b c r
           (fun s => P (Quotient.mk (congSetoid amen.cong) s))]
         apply quotSup_distrib_rel amen
         · -- congruence-saturation: every RHS member is congruent to a literal `r ≫ s`
@@ -173,11 +173,11 @@ def QuotAllegory.instLocallyComplete {𝒜 : Type u} [LocallyCompleteDistributiv
           rfl
     -- §2.22 intersection distributivity `[r] ∩ Sup P = Sup {[r] ∩ S}`.
     inter_Sup_distrib := by
-      intro A B R P
+      intro a b R P
       induction R using Quotient.inductionOn with
       | _ r =>
         refine Quotient.sound ?_
-        rw [@LocallyCompleteDistributiveAllegory.inter_Sup_distrib 𝒜 _ A B r
+        rw [@LocallyCompleteDistributiveAllegory.inter_Sup_distrib 𝒜 _ a b r
           (fun s => P (Quotient.mk (congSetoid amen.cong) s))]
         apply quotSup_distrib_rel amen
         · intro x hx
@@ -278,9 +278,9 @@ variable {I : Type u} {α : I → 𝒜} {β : 𝒜}
     (§2.215/§2.551, the reciprocal dual of `IsIndexedCoproduct`): every family
     `{Rᵢ : c → αᵢ}` factors uniquely through the projections. -/
 def IsIndexedProduct (p : (i : I) → β ⟶ α i) : Prop :=
-  ∀ (C : 𝒜) (R : (i : I) → C ⟶ α i),
-    ∃ M : C ⟶ β, (∀ i, M ≫ p i = R i) ∧
-      (∀ M' : C ⟶ β, (∀ i, M' ≫ p i = R i) → M' = M)
+  ∀ (c : 𝒜) (R : (i : I) → c ⟶ α i),
+    ∃ M : c ⟶ β, (∀ i, M ≫ p i = R i) ∧
+      (∀ M' : c ⟶ β, (∀ i, M' ≫ p i = R i) → M' = M)
 
 /-- **§2.551 (product coincidence).**  A disjoint union is an indexed PRODUCT with
     projections `Uᵢ°`.  By §2.215 reciprocal duality, the product mediator of a family
@@ -290,9 +290,9 @@ def IsIndexedProduct (p : (i : I) → β ⟶ α i) : Prop :=
     and uniqueness reciprocates the coproduct's. -/
 theorem IndexedDisjointUnion.isProduct (du : IndexedDisjointUnion α β) :
     IsIndexedProduct (fun i => (du.U i)°) := by
-  intro C R
+  intro c R
   -- Coproduct mediator `N : β → c` of the reciprocated family `Rᵢ° : αᵢ → c`.
-  obtain ⟨N, hN, hNuniq⟩ := du.isCoproduct C (fun i => (R i)°)
+  obtain ⟨N, hN, hNuniq⟩ := du.isCoproduct c (fun i => (R i)°)
   refine ⟨N°, ?_, ?_⟩
   · -- `N° ≫ Uᵢ° = (Uᵢ ≫ N)° = (Rᵢ°)° = Rᵢ`.
     intro i

@@ -137,7 +137,7 @@ mutual
 end
 
 public theorem cataFold_map {C : RelSet.{0}} (f : Fobj A C ⟶ C) (hf : Map f) :
-    Map (A := dRose A) (B := C) (cataFold f) := by
+    Map (a := dRose A) (b := C) (cataFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataFold f) = 𝟙 (dRose A)
     apply hom_ext; intro t t'

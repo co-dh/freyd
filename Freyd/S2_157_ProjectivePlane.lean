@@ -676,8 +676,8 @@ noncomputable example (P : ProjectivePlane.{u}) :
     `C₁ : p ⟶ c`, `C₂ : c ⟶ q`; the hypothesis lives in `p ⟶ q`, the conclusion
     in `a ⟶ b`, composed through `c`. -/
 @[expose] public def DesarguesHorn (𝒜 : Type u) [Allegory.{v} 𝒜] : Prop :=
-  ∀ (p q A B C : 𝒜) (A₁ : p ⟶ A) (A₂ : A ⟶ q) (B₁ : p ⟶ B) (B₂ : B ⟶ q)
-    (C₁ : p ⟶ C) (C₂ : C ⟶ q),
+  ∀ (p q a b c : 𝒜) (A₁ : p ⟶ a) (A₂ : a ⟶ q) (B₁ : p ⟶ b) (B₂ : b ⟶ q)
+    (C₁ : p ⟶ c) (C₂ : c ⟶ q),
     (A₁ ≫ A₂) ∩ (B₁ ≫ B₂) ⊑ C₁ ≫ C₂ →
     (A₁° ≫ B₁) ∩ (A₂ ≫ B₂°) ⊑
       ((A₁° ≫ C₁) ∩ (A₂ ≫ C₂°)) ≫ ((C₁° ≫ B₁) ∩ (C₂ ≫ B₂°))

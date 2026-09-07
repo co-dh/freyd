@@ -98,7 +98,7 @@ def st (dict : List (List α)) : α → List α × List Bool → List α × List
 
 /-- The tabulating fold, defined FROM `g`/`st` so `consFold_unique` applies by `rfl`. -/
 def tab (dict : List (List α)) : ConsList Unit α → List α × List Bool
-  | ConsList.wrap D => g D
+  | ConsList.wrap d => g d
   | ConsList.cons c xs => st dict c (tab dict xs)
 
 /-- **The derivation.**  The tabulating DP fold is PRODUCED by the general-carrier fold-uniqueness

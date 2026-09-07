@@ -208,26 +208,26 @@ namespace Alg
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-- The hom-set `(a,b)` of the book, as a preorder. -/
-@[expose] public def homPre (A B : 𝒜) : Pre.{v} := ⟨A ⟶ B, le, le_refl, fun h k => le_trans h k⟩
+@[expose] public def homPre (a b : 𝒜) : Pre.{v} := ⟨a ⟶ b, le, le_refl, fun h k => le_trans h k⟩
 
 /-- `•S : (a,b) ⟶ (a,c)`, the note's `/`. -/
-@[expose] public def postComp (A : 𝒜) {B C : 𝒜} (S : B ⟶ C) : homPre A B ⟶ homPre A C :=
+@[expose] public def postComp (a : 𝒜) {b c : 𝒜} (S : b ⟶ c) : homPre a b ⟶ homPre a c :=
   ⟨(· ≫ S), fun h => comp_mono_right h S⟩
 
 /-- `•/S : (a,c) ⟶ (a,b)`, the note's `\`. -/
-@[expose] public def postDiv (A : 𝒜) {B C : 𝒜} (S : B ⟶ C) : homPre A C ⟶ homPre A B :=
+@[expose] public def postDiv (a : 𝒜) {b c : 𝒜} (S : b ⟶ c) : homPre a c ⟶ homPre a b :=
   ⟨(· / S), fun h => div_mono_left h S⟩
 
 /-- **§2.313**: `•S ⊣ •/S`.  Both sides are composition — `pt X ≫ postComp a S = pt (X ≫ S)`
     and `pt X ≫ postDiv a S = pt (X / S)`, by `Pre.pt_comp` — so the statement contains no
     application. -/
-public theorem comp_adj_div (A : 𝒜) {B C : 𝒜} (S : B ⟶ C) : Adj (postComp A S) (postDiv A S) := by
+public theorem comp_adj_div (a : 𝒜) {b c : 𝒜} (S : b ⟶ c) : Adj (postComp a S) (postDiv a S) := by
   intro X Y
   exact ⟨fun h u => (le_div_iff _ _ _).mpr (h u), fun h u => (le_div_iff _ _ _).mp (h u)⟩
 
 /-- `•(S T) = •S ≫ •T`: associativity, the ascending side of the note's §1.1. -/
-public theorem postComp_comp (A : 𝒜) {B C D : 𝒜} (S : B ⟶ C) (T : C ⟶ D) :
-    postComp A (S ≫ T) = postComp A S ≫ postComp A T :=
+public theorem postComp_comp (a : 𝒜) {b c d : 𝒜} (S : b ⟶ c) (T : c ⟶ d) :
+    postComp a (S ≫ T) = postComp a S ≫ postComp a T :=
   Monotone.ext_of_le le_antisymm (fun X => le_of_eq (Cat.assoc X S T).symm)
     (fun X => le_of_eq (Cat.assoc X S T))
 
@@ -237,12 +237,12 @@ public theorem postComp_comp (A : 𝒜) {B C D : 𝒜} (S : B ⟶ C) (T : C ⟶ 
     §2.313 alone: right adjoints compose the other way round, and a left adjoint has only one
     right adjoint.  `div_comp_assoc` is the same fact with a point applied,
     `R / (S ≫ T) = (R / T) / S`. -/
-public theorem postDiv_comp (A : 𝒜) {B C D : 𝒜} (S : B ⟶ C) (T : C ⟶ D) :
-    postDiv A (S ≫ T) = postDiv A T ≫ postDiv A S := by
-  have h : Adj (postComp A (S ≫ T)) (postDiv A T ≫ postDiv A S) := by
+public theorem postDiv_comp (a : 𝒜) {b c d : 𝒜} (S : b ⟶ c) (T : c ⟶ d) :
+    postDiv a (S ≫ T) = postDiv a T ≫ postDiv a S := by
+  have h : Adj (postComp a (S ≫ T)) (postDiv a T ≫ postDiv a S) := by
     rw [postComp_comp]
-    exact Adj.comp (comp_adj_div A S) (comp_adj_div A T)
-  exact Adj.right_unique le_antisymm (comp_adj_div A (S ≫ T)) h
+    exact Adj.comp (comp_adj_div a S) (comp_adj_div a T)
+  exact Adj.right_unique le_antisymm (comp_adj_div a (S ≫ T)) h
 
 end Alg
 

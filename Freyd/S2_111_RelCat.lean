@@ -247,7 +247,7 @@ variable [RegularCategory 𝒞]
     (`= RelLe` on representatives).  `x ⊑ y` unfolds to `x ∩ y = x`, i.e. `[R⊓S] = [R]`,
     i.e. `R⊓S ≈ R`; the nontrivial half is `R ⊑ R⊓S ↔ R ⊑ S` (meet UMP). -/
 public theorem quotLe_iff_algLe {a b : 𝒞} (x y : BinRelQuot (𝒞 := 𝒞) a b) :
-    quotLe x y ↔ Freyd.Alg.le (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) x y := by
+    quotLe x y ↔ Freyd.Alg.le (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) x y := by
   refine Quotient.inductionOn₂ x y (fun R S => ?_)
   show RelLe R S ↔ qInter (relClass R) (relClass S) = relClass R
   rw [qInter_mk]
@@ -856,7 +856,7 @@ public theorem jointMonic_le {a b : 𝒞} (R : BinRel 𝒞 a b) :
 
 /-- The allegory domain `dom` of a `relClass` is the class of `graph id ⊓ R⊚R°`. -/
 private theorem dom_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
-    Freyd.Alg.dom (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass R)
+    Freyd.Alg.dom (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R)
       = relClass (graph (Cat.id a) ⊓ (R ⊚ R°)) := by
   show qInter (relId a) (qComp (relClass R) (qRecip (relClass R))) = _
   rw [qRecip_mk, qComp_mk]; rfl
@@ -864,7 +864,7 @@ private theorem dom_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
 /-- **Entire bridge**: `Alg.Entire (relClass R) ↔ Entire R` (BinRel).  Both say
     `graph id ⊂ R⊚R°`. -/
 private theorem entire_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
-    Freyd.Alg.Entire (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass R) ↔ Freyd.Entire R := by
+    Freyd.Alg.Entire (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R) ↔ Freyd.Entire R := by
   show Freyd.Alg.dom (𝒜 := RelObj 𝒞) (relClass R) = relId a ↔ _
   rw [dom_relClass]
   constructor
@@ -880,7 +880,7 @@ private theorem entire_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
 /-- **Simple bridge**: `Alg.Simple (relClass R) ↔ Simple R` (BinRel).  Both say
     `R°⊚R ⊂ graph id`. -/
 private theorem simple_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
-    Freyd.Alg.Simple (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass R) ↔ Freyd.Simple R := by
+    Freyd.Alg.Simple (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R) ↔ Freyd.Simple R := by
   -- `Alg.Simple (relClass R)` is `Alg.le (relClass (R°⊚R)) (relId b)`; `Simple R` is the
   -- corresponding `quotLe`, which `quotLe_iff_algLe` identifies.
   change Freyd.Alg.le (𝒜 := RelObj 𝒞) (relClass (R° ⊚ R)) (relId b) ↔ _
@@ -888,12 +888,12 @@ private theorem simple_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
 
 /-- **Map bridge**: `Alg.Map (relClass R) ↔ Map R`. -/
 private theorem map_relClass {a b : 𝒞} (R : BinRel 𝒞 a b) :
-    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass R) ↔ Freyd.Map R :=
+    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R) ↔ Freyd.Map R :=
   and_congr (entire_relClass R) (simple_relClass R)
 
 /-- A graph's class is a `Map` in `Rel(C)` (from `graph_is_map`). -/
 public theorem relClass_graph_map {a b : 𝒞} (f : a ⟶ b) :
-    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass (graph f)) :=
+    Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass (graph f)) :=
   (map_relClass (graph f)).mpr (graph_is_map f)
 
 /-! ### §2.14  `Rel(C)` is a tabular allegory -/
@@ -938,7 +938,7 @@ public theorem partialUnit_one : PartialUnit (𝒜 := RelObj 𝒞) ⟨Freyd.one 
 
 /-- The graph of the terminal map `a → 1` is an entire relation `⟨a⟩ → ⟨1⟩`. -/
 public theorem entire_to_one (a : 𝒞) :
-    Freyd.Alg.Entire (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨Freyd.one (𝒞 := 𝒞)⟩)
+    Freyd.Alg.Entire (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨Freyd.one (𝒞 := 𝒞)⟩)
       (relClass (graph (Freyd.term a))) :=
   (entire_relClass (graph (Freyd.term a))).mpr (graph_is_map (Freyd.term a)).1
 
@@ -1155,7 +1155,7 @@ public theorem embedRel_faithful {a b : 𝒞} {f g : a ⟶ b} (h : embedRel f = 
     equality by `Quotient.sound`.  (`R` and `BinRel.mk R.src R.colA R.colB R.isMonicPair` are
     defeq by η.) -/
 public theorem embedRel_full {a b : 𝒞} (R : BinRel 𝒞 a b)
-    (M : Freyd.Alg.Map (𝒜 := RelObj 𝒞) (A := ⟨a⟩) (B := ⟨b⟩) (relClass R)) :
+    (M : Freyd.Alg.Map (𝒜 := RelObj 𝒞) (a := ⟨a⟩) (b := ⟨b⟩) (relClass R)) :
     ∃ f : a ⟶ b, relClass R = relClass (graph f) := by
   have hmapR : Map R := (map_relClass R).mp M
   -- left leg is an iso (cover ∧ monic, then balance)
@@ -1509,7 +1509,7 @@ theorem s217_2_effectiveSplit_isCover
     `dom (embHom R) = embHom (dom R) = embHom 1 = 1` (Entire), and similarly Simple. -/
 theorem embHom_preserves_map {𝒜 : Type u} [Freyd.Alg.Allegory 𝒜] {a b : 𝒜} {R : a ⟶ b}
     (hR : Freyd.Alg.Map R) :
-    Freyd.Alg.Map (A := Freyd.Alg.embObj a) (B := Freyd.Alg.embObj b) (Freyd.Alg.embHom R) := by
+    Freyd.Alg.Map (a := Freyd.Alg.embObj a) (b := Freyd.Alg.embObj b) (Freyd.Alg.embHom R) := by
   obtain ⟨hEnt, hSim⟩ := hR
   let eR : Freyd.Alg.embObj a ⟶ Freyd.Alg.embObj b := Freyd.Alg.embHom R
   -- embHom commutes with `dom` (functoriality of `∩`, `≫`, `°`, `id`).
@@ -1642,7 +1642,7 @@ open Freyd.Alg Freyd.Alg.Mat
     `dom`/`id`-commutation of `embHom` (`embHom_inter`/`embHom_comp`/`embHom_recip`/`embHom_id`,
     plus `embHom_injective`). -/
 theorem embHom_reflects_map {𝒜 : Type u} [Freyd.Alg.Allegory 𝒜] {a b : 𝒜} {R : a ⟶ b}
-    (h : Freyd.Alg.Map (𝒜 := SplObj 𝒜) (A := Freyd.Alg.embObj a) (B := Freyd.Alg.embObj b)
+    (h : Freyd.Alg.Map (𝒜 := SplObj 𝒜) (a := Freyd.Alg.embObj a) (b := Freyd.Alg.embObj b)
           (Freyd.Alg.embHom R)) :
     Freyd.Alg.Map R := by
   obtain ⟨hEnt, hSim⟩ := h
@@ -1670,7 +1670,7 @@ theorem embHom_reflects_map {𝒜 : Type u} [Freyd.Alg.Allegory 𝒜] {a b : �
     (`embed1_dom`) and `id` (`embed1_id`) and reflects order (`embed1_le_iff`). -/
 theorem embed1_reflects_map {𝒜 : Type u} [Freyd.Alg.DistributiveAllegory 𝒜] {a b : 𝒜}
     {r : a ⟶ b}
-    (h : Freyd.Alg.Map (𝒜 := MatObj 𝒜) (A := unitObj a) (B := unitObj b) (embed1' r)) :
+    (h : Freyd.Alg.Map (𝒜 := MatObj 𝒜) (a := unitObj a) (b := unitObj b) (embed1' r)) :
     Freyd.Alg.Map r := by
   obtain ⟨hEnt, hSim⟩ := h
   constructor
@@ -1768,7 +1768,7 @@ theorem embed217_2_full {a b : 𝒞}
     ∃ f : a ⟶ b, m = embed217_2 f := by
   -- (1) Spl layer: `m.val = embHom m.val.R`, and `Map m.val.R` in `Mat(Rel C)`.
   have hsplmap : Freyd.Alg.Map (𝒜 := SplObj (MatObj (RelObj 𝒞)))
-      (A := Freyd.Alg.embObj (embed217Obj a)) (B := Freyd.Alg.embObj (embed217Obj b))
+      (a := Freyd.Alg.embObj (embed217Obj a)) (b := Freyd.Alg.embObj (embed217Obj b))
       (Freyd.Alg.embHom m.val.R) := by
     rw [Freyd.Alg.embHom_full]; exact m.property
   have hmatmap : Freyd.Alg.Map (𝒜 := MatObj (RelObj 𝒞)) m.val.R := embHom_reflects_map hsplmap

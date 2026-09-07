@@ -75,7 +75,7 @@ def isortCLFold : ConsList Unit (Int × Int) → List (Int × Int)
   | ConsList.cons iv xs => stSort iv (isortCLFold xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `isortCLFold (wrap d) = gSort d`. -/
-theorem isortCLFold_wrap : ∀ D : Unit, isortCLFold (ConsList.wrap D) = gSort D := fun _ => rfl
+theorem isortCLFold_wrap : ∀ d : Unit, isortCLFold (ConsList.wrap d) = gSort d := fun _ => rfl
 
 /-- The step condition IS `isortCLFold`'s cons equation. -/
 theorem isortCLFold_cons : ∀ (iv : Int × Int) (xs : ConsList Unit (Int × Int)),
@@ -119,7 +119,7 @@ def mergeCLFold : ConsList Unit (Int × Int) → ((Int × Int) → List (Int × 
   | ConsList.cons iv xs  => stMerge iv (mergeCLFold xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `mergeCLFold (wrap d) = gMerge d`. -/
-theorem mergeCLFold_wrap : ∀ D : Unit, mergeCLFold (ConsList.wrap D) = gMerge D := fun _ => rfl
+theorem mergeCLFold_wrap : ∀ d : Unit, mergeCLFold (ConsList.wrap d) = gMerge d := fun _ => rfl
 
 /-- The step condition IS `mergeCLFold`'s cons equation. -/
 theorem mergeCLFold_cons : ∀ (iv : Int × Int) (xs : ConsList Unit (Int × Int)),

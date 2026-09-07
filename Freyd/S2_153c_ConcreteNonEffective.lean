@@ -118,7 +118,7 @@ public theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u}
     (hequiv : EquivalenceRelation E) (hne : ¬ IsEffective E) :
     ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (D : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ D), ¬ SplitsAsMap f I := by
+      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I := by
   -- `I := relClass E`, read as an endomorphism `⟨A⟩ ⟶ ⟨A⟩` of `Rel(Assembly K)`.
   let I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩ := relClass E
   -- Reflexive: the diagonal witness of `hequiv` is a `RelHom (graph 1_A) E`.
@@ -138,9 +138,9 @@ public theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u}
     (quotLe_iff_algLe (relClass (E ⊚ E)) (relClass E)).mp
       (relClass_mono (hequiv.2.2 : RelLe (E ⊚ E) E))
   -- No map-splitting exists: it would exhibit `E` as the level of a cover.
-  have hno : ∀ (D : AsmRel.{u} K) (f : (⟨A⟩ : AsmRel K) ⟶ D),
+  have hno : ∀ (d : AsmRel.{u} K) (f : (⟨A⟩ : AsmRel K) ⟶ d),
       ¬ SplitsAsMap f I := by
-    intro D f
+    intro d f
     refine Quotient.inductionOn f (fun R => ?_)
     show ¬ SplitsAsMap (relClass R) I
     rintro ⟨hmap, hff, hf'f⟩
@@ -150,12 +150,12 @@ public theorem asm_not_effective_of_binRel {K : ModulusSystem} {A : Assembly.{u}
     have hff2 : relClass (graph g ⊚ (graph g)°) = relClass E := by
       rw [← qComp_mk, ← qRecip_mk]; exact hff
     have hf'f2 : relClass ((graph g)° ⊚ graph g)
-        = relClass (graph (Cat.id D.carrier)) := by
+        = relClass (graph (Cat.id d.carrier)) := by
       rw [← qComp_mk, ← qRecip_mk]; exact hf'f
     obtain ⟨hgg_le, hle_gg⟩ := Quotient.exact hff2
     obtain ⟨_, hone_le⟩ := Quotient.exact hf'f2
     have hcover : Cover g := (cover_iff_one_le_reciprocal_comp_self g).mpr hone_le
-    exact hne ⟨hequiv, D.carrier, g, hcover, hle_gg, hgg_le⟩
+    exact hne ⟨hequiv, d.carrier, g, hcover, hle_gg, hgg_le⟩
   exact ⟨A, I, hrefl, hsym, htrans, hno⟩
 
 end Freyd.Alg

@@ -75,16 +75,16 @@ public theorem powerRel_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : powerR
     whole meet is `powerOrder° ∩ powerOrder = powerOrder ∩ powerOrder°`, which is exactly
     the unfolding of `Λ (∋ a) = ∋a /ₛ ∋a`. -/
 public theorem powerRel_id {A : 𝒜} : powerRel (Cat.id A) = Cat.id (PowerAllegory.powerObj A) := by
-  have hterm1 : ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) = (powerOrder (A := A))° := by
+  have hterm1 : ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) = (powerOrder (a := A))° := by
     have e : Cat.id A ≫ (∋ A)° = (∋ A)° := Cat.id_comp _
     rw [e]
-    show ((((∋ A)°)°) / (((∋ A)°)°))° = (powerOrder (A := A))°
+    show ((((∋ A)°)°) / (((∋ A)°)°))° = (powerOrder (a := A))°
     rw [Allegory.recip_recip]
     rfl
   show ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) ∩ ((∋ A ≫ Cat.id A) / ∋ A)
       = Cat.id (PowerAllegory.powerObj A)
   rw [hterm1, Cat.comp_id]
-  show (powerOrder (A := A))° ∩ powerOrder (A := A) = Cat.id (PowerAllegory.powerObj A)
+  show (powerOrder (a := A))° ∩ powerOrder (a := A) = Cat.id (PowerAllegory.powerObj A)
   rw [Allegory.inter_comm]
   exact Λ_eps_reflection
 
@@ -337,63 +337,63 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     it cannot be stated as `LaxNatural` because `E` is not monotone, hence not a `Relator`. -/
 public theorem bigUnion_lax_natural :
     LaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.comp powerRelator powerRelator)
-      (fun A => bigUnion (A := A)) :=
+      (fun A => bigUnion (a := A)) :=
   fun {A B} R => by
-  have hUm : ∀ x : 𝒜, Map (bigUnion (A := x)) := fun x => by
+  have hUm : ∀ x : 𝒜, Map (bigUnion (a := x)) := fun x => by
     show Map (Λ (∋ (PowerAllegory.powerObj x) ≫ ∋ x)); exact Λ_is_map' _
-  have hUe : ∀ x : 𝒜, bigUnion (A := x) ≫ ∋ x = ∋ (PowerAllegory.powerObj x) ≫ ∋ x :=
+  have hUe : ∀ x : 𝒜, bigUnion (a := x) ≫ ∋ x = ∋ (PowerAllegory.powerObj x) ≫ ∋ x :=
     fun x => Λ_eps_eq' _
-  show powerRel (powerRel R) ≫ bigUnion (A := B) ⊑ bigUnion (A := A) ≫ powerRel R
+  show powerRel (powerRel R) ≫ bigUnion (a := B) ⊑ bigUnion (a := A) ≫ powerRel R
   refine (map_shunt_left (hUm A) _ _).mp ?_
-  show (bigUnion (A := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (A := B))
+  show (bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := B))
       ⊑ ((∋ A)° \ (R ≫ (∋ B)°)) ∩ ((∋ A ≫ R) / ∋ B)
   apply le_inter
   · -- TERM₁: cancel `(∋a)°⋃°` to `(∋a)°(∋_{[a]})°`, then term₁ at `P R` and at `R`.
     refine (le_leftDiv_iff _ _ _).mpr ?_
-    have e1 : (∋ A)° ≫ (bigUnion (A := A))° = (∋ A)° ≫ (∋ (PowerAllegory.powerObj A))° := by
+    have e1 : (∋ A)° ≫ (bigUnion (a := A))° = (∋ A)° ≫ (∋ (PowerAllegory.powerObj A))° := by
       rw [← Allegory.recip_comp, hUe A, Allegory.recip_comp]
     -- `⋃` is simple, so a member of a member of a family is a member of its union.
-    have h3 : (bigUnion (A := B))° ≫ (∋ (PowerAllegory.powerObj B) ≫ ∋ B) ⊑ ∋ B := by
+    have h3 : (bigUnion (a := B))° ≫ (∋ (PowerAllegory.powerObj B) ≫ ∋ B) ⊑ ∋ B := by
       rw [← hUe B, ← Cat.assoc]
-      calc ((bigUnion (A := B))° ≫ bigUnion (A := B)) ≫ ∋ B
+      calc ((bigUnion (a := B))° ≫ bigUnion (a := B)) ≫ ∋ B
           ⊑ Cat.id _ ≫ ∋ B := comp_mono_right (hUm B).2 _
         _ = ∋ B := Cat.id_comp _
-    have s3 : (∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (A := B)) ⊑ (∋ B)° := by
+    have s3 : (∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) ⊑ (∋ B)° := by
       simpa only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc] using recip_mono h3
-    calc (∋ A)° ≫ ((bigUnion (A := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (A := B)))
-        = ((∋ A)° ≫ (bigUnion (A := A))°) ≫ (powerRel (powerRel R) ≫ bigUnion (A := B)) := by
+    calc (∋ A)° ≫ ((bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)))
+        = ((∋ A)° ≫ (bigUnion (a := A))°) ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)) := by
           simp only [Cat.assoc]
       _ = ((∋ A)° ≫ (∋ (PowerAllegory.powerObj A))°)
-            ≫ (powerRel (powerRel R) ≫ bigUnion (A := B)) := by rw [e1]
+            ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)) := by rw [e1]
       _ = (∋ A)° ≫ (((∋ (PowerAllegory.powerObj A))° ≫ powerRel (powerRel R))
-            ≫ bigUnion (A := B)) := by simp only [Cat.assoc]
-      _ ⊑ (∋ A)° ≫ ((powerRel R ≫ (∋ (PowerAllegory.powerObj B))°) ≫ bigUnion (A := B)) :=
+            ≫ bigUnion (a := B)) := by simp only [Cat.assoc]
+      _ ⊑ (∋ A)° ≫ ((powerRel R ≫ (∋ (PowerAllegory.powerObj B))°) ≫ bigUnion (a := B)) :=
           comp_mono_left _ (comp_mono_right (powerRel_term1_cancel (powerRel R)) _)
       _ = ((∋ A)° ≫ powerRel R)
-            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (A := B)) := by simp only [Cat.assoc]
+            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) := by simp only [Cat.assoc]
       _ ⊑ (R ≫ (∋ B)°)
-            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (A := B)) :=
+            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) :=
           comp_mono_right (powerRel_term1_cancel R) _
-      _ = R ≫ ((∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (A := B))) := by
+      _ = R ≫ ((∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B))) := by
           simp only [Cat.assoc]
       _ ⊑ R ≫ (∋ B)° := comp_mono_left _ s3
   · -- TERM₂: `⋃∋ = ∋∋` on both ends, with `∋` lax natural at `P R` and at `R` in between.
     refine (le_div_iff _ _ _).mpr ?_
-    calc ((bigUnion (A := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (A := B))) ≫ ∋ B
-        = (bigUnion (A := A))° ≫ (powerRel (powerRel R) ≫ (bigUnion (A := B) ≫ ∋ B)) := by
+    calc ((bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := B))) ≫ ∋ B
+        = (bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ (bigUnion (a := B) ≫ ∋ B)) := by
           simp only [Cat.assoc]
-      _ = (bigUnion (A := A))°
+      _ = (bigUnion (a := A))°
             ≫ ((powerRel (powerRel R) ≫ ∋ (PowerAllegory.powerObj B)) ≫ ∋ B) := by
           rw [hUe B]; simp only [Cat.assoc]
-      _ ⊑ (bigUnion (A := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ powerRel R) ≫ ∋ B) :=
+      _ ⊑ (bigUnion (a := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ powerRel R) ≫ ∋ B) :=
           comp_mono_left _ (comp_mono_right (powerRel_eps_lax (powerRel R)) _)
-      _ = (bigUnion (A := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (powerRel R ≫ ∋ B)) := by
+      _ = (bigUnion (a := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (powerRel R ≫ ∋ B)) := by
           simp only [Cat.assoc]
-      _ ⊑ (bigUnion (A := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (∋ A ≫ R)) :=
+      _ ⊑ (bigUnion (a := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (∋ A ≫ R)) :=
           comp_mono_left _ (comp_mono_left _ (powerRel_eps_lax R))
-      _ = (bigUnion (A := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ ∋ A) ≫ R) := by
+      _ = (bigUnion (a := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ ∋ A) ≫ R) := by
           simp only [Cat.assoc]
-      _ = ((bigUnion (A := A))° ≫ bigUnion (A := A)) ≫ (∋ A ≫ R) := by
+      _ = ((bigUnion (a := A))° ≫ bigUnion (a := A)) ≫ (∋ A ≫ R) := by
           rw [← hUe A]; simp only [Cat.assoc]
       _ ⊑ Cat.id _ ≫ (∋ A ≫ R) := comp_mono_right (hUm A).2 _
       _ = ∋ A ≫ R := Cat.id_comp _

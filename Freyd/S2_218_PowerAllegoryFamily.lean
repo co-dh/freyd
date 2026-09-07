@@ -28,9 +28,9 @@ variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [Allegory.{
     `PowerObj I ℬ`), all operations pointwise. -/
 def familyAllegoryHom (F : I → AllegoryFunctor 𝒜 ℬ) :
     AllegoryFunctor 𝒜 (PowerObj I ℬ) where
-  obj A := fun i => (F i).obj A
+  obj a := fun i => (F i).obj a
   map {_ _} R := fun i => (F i).map R
-  map_id A := funext fun i => (F i).map_id A
+  map_id a := funext fun i => (F i).map_id a
   map_comp R S := funext fun i => (F i).map_comp R S
   map_recip R := funext fun i => (F i).map_recip R
   map_inter R S := funext fun i => (F i).map_inter R S
@@ -39,7 +39,7 @@ def familyAllegoryHom (F : I → AllegoryFunctor 𝒜 ℬ) :
     of Freyd's §1.635 collective faithfulness: a power representation separates `R ≠ S` as soon as
     SOME coordinate `i` does — no single coordinate need reflect isos. -/
 theorem familyAllegoryHom_faithful (F : I → AllegoryFunctor 𝒜 ℬ)
-    (hjoint : ∀ {A B : 𝒜} (R S : A ⟶ B), (∀ i, (F i).map R = (F i).map S) → R = S) :
+    (hjoint : ∀ {a b : 𝒜} (R S : a ⟶ b), (∀ i, (F i).map R = (F i).map S) → R = S) :
     (familyAllegoryHom F).Faithful :=
   fun {_ _} R S h => hjoint R S (fun i => congrFun h i)
 

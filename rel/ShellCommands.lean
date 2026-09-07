@@ -202,7 +202,7 @@ theorem sort_head_bridge :
   earns its keep — the recursive walk is a term. -/
 
 /-- Paths of length `1..k+1` as a term (`RelInterp.Demo207.reachE`, generic in the object). -/
-def reachE {A : FinObj} (R : RE A A) : Nat → RE A A
+def reachE {a : FinObj} (R : RE a a) : Nat → RE a a
   | 0 => R
   | k + 1 => .join R (.comp R (reachE R k))
 
@@ -216,7 +216,7 @@ def findE : RE Entry Entry := .join (.id Entry) (reachE containsE 5)
 
 /-- Every relation sits inside its own transitive closure: `R ⊑ reach^{k}(R)`, by induction on the
     fuel (the closure always starts with a `∪ R`). -/
-theorem reachE_ge {A : FinObj} (R : RE A A) : ∀ k, eval R ⊑ eval (reachE R k)
+theorem reachE_ge {a : FinObj} (R : RE a a) : ∀ k, eval R ⊑ eval (reachE R k)
   | 0 => le_refl _
   | k + 1 => le_union_left (eval R) (eval (.comp R (reachE R k)))
 

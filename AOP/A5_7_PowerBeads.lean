@@ -74,20 +74,20 @@ public theorem powerRel_apply {A B : RelSet.{u}} (R : A ⟶ B)
 public theorem bigUnion_apply {A : RelSet.{u}}
     (F : (PowerAllegory.powerObj (PowerAllegory.powerObj A)).carrier)
     (U : (PowerAllegory.powerObj A).carrier) :
-    bigUnion (A := A) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
-  have hmap : Map (bigUnion (A := A)) := by
+    bigUnion (a := A) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
+  have hmap : Map (bigUnion (a := A)) := by
     show Map (Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A)); exact Λ_is_map' _
-  have heq : bigUnion (A := A) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ ∋ A := Λ_eps_eq' _
-  have fwd : ∀ V : (PowerAllegory.powerObj A).carrier, bigUnion (A := A) F V →
+  have heq : bigUnion (a := A) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ ∋ A := Λ_eps_eq' _
+  have fwd : ∀ V : (PowerAllegory.powerObj A).carrier, bigUnion (a := A) F V →
       ∀ x, (V x ↔ ∃ X, F X ∧ X x) := by
     intro V hFV x
     constructor
     · intro hVx
-      have h1 : (bigUnion (A := A) ≫ ∋ A) F x := ⟨V, hFV, hVx⟩
+      have h1 : (bigUnion (a := A) ≫ ∋ A) F x := ⟨V, hFV, hVx⟩
       rw [heq] at h1
       exact h1
     · intro hx
-      have h2 : (bigUnion (A := A) ≫ ∋ A) F x := by rw [heq]; exact hx
+      have h2 : (bigUnion (a := A) ≫ ∋ A) F x := by rw [heq]; exact hx
       obtain ⟨V', hFV', hV'x⟩ := h2
       exact RelSet.simple_uniq hmap.2 hFV' hFV ▸ hV'x
   refine ⟨fwd U, fun hdesc => ?_⟩
@@ -150,7 +150,7 @@ public theorem mem_not_laxNatural :
     neighbouring square that genuinely fails. -/
 public theorem bigUnion_strict_relSet {A B : RelSet.{u}} (R : A ⟶ B) :
     powerRel (powerRel R) ≫ bigUnion = bigUnion ≫ powerRel R := by
-  have hlax : powerRel (powerRel R) ≫ bigUnion (A := B) ⊑ bigUnion (A := A) ≫ powerRel R :=
+  have hlax : powerRel (powerRel R) ≫ bigUnion (a := B) ⊑ bigUnion (a := A) ≫ powerRel R :=
     bigUnion_lax_natural R
   refine le_antisymm hlax (RelSet.le_iff.mpr fun F Y hFY => ?_)
   obtain ⟨U, hFU, hUY⟩ := hFY

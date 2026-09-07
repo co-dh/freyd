@@ -514,7 +514,7 @@ public theorem powerRel_dom_comp_existsImage_le {A B : 𝒜} (S : A ⟶ B) :
 public theorem bigUnion_comp_est_le (R : A ⟶ A) :
     bigUnion ≫ est R ⊑ existsImage (est R) ≫ est R := by
   have hmap : Map (existsImage (est R)) := Λ_is_map' _
-  have hUmap : Map (bigUnion (A := A)) := Λ_is_map' _
+  have hUmap : Map (bigUnion (a := A)) := Λ_is_map' _
   have heps : existsImage (est R) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ est R :=
     existsImage_eps (est R)
   have hbeps : ∋ (PowerAllegory.powerObj A) ≫ ∋ A = bigUnion ≫ ∋ A := (Λ_eps_eq' _).symm

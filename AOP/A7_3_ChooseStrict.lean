@@ -39,7 +39,7 @@ public theorem RelSet.graph_fst_snd_topMor (A B : RelSet.{u}) :
   · intro h
     exact ⟨(x, y), rfl, rfl⟩
   · intro h
-    exact (le_iff.mp (topMor_max (A := A) (B := B) (R := fun _ _ => True))) x y trivial
+    exact (le_iff.mp (topMor_max (a := A) (b := B) (R := fun _ _ => True))) x y trivial
 
 public theorem RelSet.graph_fst_snd_joint (A B : RelSet.{u}) :
     (graph (Prod.fst : A.carrier × B.carrier → A.carrier)) ≫

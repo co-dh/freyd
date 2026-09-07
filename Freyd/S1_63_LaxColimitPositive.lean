@@ -110,15 +110,15 @@ variable {ι : Type w} {D : Directed ι}
     (hinitpres : ∀ {i j : ι} (hij : D.le i j),
       @StrictCoterminator (L.A j) (L.catA j) (L.F hij (stageZero L hbot i)))
     (tData : LaxTerminalData L) (pData : LaxProductData L) (eqData : LaxEqualizerData L)
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (u v : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z),
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ v →
         (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ u
             = (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-        (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+        (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+        ∃ r : L.F hij ((hdisj i).toHasBinaryCoproducts.coprod a b) ⟶ z,
           (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inl ≫ r = p
           ∧ (L.functF hij).map (hdisj i).toHasBinaryCoproducts.inr ≫ r = q)
     (hi : ∀ i, @HasImages (L.A i) (L.catA i))

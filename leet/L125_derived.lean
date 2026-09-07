@@ -56,7 +56,7 @@ def st : Int → List Int → List Int := fun x l => x :: l
 
 /-- The reconstruction fold, defined FROM `g`/`st` so `consFold_unique` applies by `rfl`. -/
 def toListCL : ConsList Unit Int → List Int
-  | ConsList.wrap D => g D
+  | ConsList.wrap d => g d
   | ConsList.cons x xs => st x (toListCL xs)
 
 /-! ## The reconstruction fold EMERGES as the catamorphism -/

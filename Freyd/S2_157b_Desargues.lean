@@ -346,8 +346,8 @@ public theorem desarguesHorn_of_latticeHorn {P : ProjectivePlane.{u}}
     (h : ∀ a₁ a₂ b₁ b₂ c₁ c₂ : PElem P,
       PElem.HornHyp a₁ a₂ b₁ b₂ c₁ c₂ → PElem.HornConc a₁ a₂ b₁ b₂ c₁ c₂) :
     DesarguesHorn (LMonObj (PElem P)) := by
-  intro p q A B C A₁ A₂ B₁ B₂ C₁ C₂ hyp
-  cases p; cases q; cases A; cases B; cases C
+  intro p q a b c A₁ A₂ B₁ B₂ C₁ C₂ hyp
+  cases p; cases q; cases a; cases b; cases c
   exact PElem.le_iff_meet_eq.mp
     (h A₁ A₂ B₁ B₂ C₁ C₂ (PElem.le_iff_meet_eq.mpr hyp))
 

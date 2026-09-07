@@ -58,7 +58,7 @@ def revAcc : ConsList Unit Int → (List Int → List Int)
   | ConsList.cons x xs => st x (revAcc xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `revAcc (wrap d) = g d`. -/
-theorem revAcc_wrap : ∀ D : Unit, revAcc (ConsList.wrap D) = g D := fun _ => rfl
+theorem revAcc_wrap : ∀ d : Unit, revAcc (ConsList.wrap d) = g d := fun _ => rfl
 
 /-- The step condition IS `revAcc`'s cons equation: `revAcc (cons x xs) = st x (revAcc xs)`. -/
 theorem revAcc_cons :

@@ -45,31 +45,31 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
   Here `1 ∩ T` is the coreflexive cut of the endomorphism `T : a ⟶ a`. -/
 
 /-- The "diagonal" relation of §2.436: `R = 𝟘 / (1 ∩ T)`. -/
-def diag {A : 𝒜} (T : A ⟶ A) : A ⟶ A := (𝟘 : A ⟶ A) / (Cat.id A ∩ T)
+def diag {a : 𝒜} (T : a ⟶ a) : a ⟶ a := (𝟘 : a ⟶ a) / (Cat.id a ∩ T)
 
 /-- §2.436 characterisation of the diagonal relation: `S ⊑ R ↔ S(1∩T) = 𝟘`
     (the inequality `S(1∩T) ⊑ 𝟘` is an equality since `𝟘` is the minimum). -/
-theorem le_diag_iff {A : 𝒜} (T : A ⟶ A) (S : A ⟶ A) :
-    S ⊑ diag T ↔ S ≫ (Cat.id A ∩ T) = (𝟘 : A ⟶ A) := by
-  rw [show diag T = (𝟘 : A ⟶ A) / (Cat.id A ∩ T) from rfl, le_div_iff]
+theorem le_diag_iff {a : 𝒜} (T : a ⟶ a) (S : a ⟶ a) :
+    S ⊑ diag T ↔ S ≫ (Cat.id a ∩ T) = (𝟘 : a ⟶ a) := by
+  rw [show diag T = (𝟘 : a ⟶ a) / (Cat.id a ∩ T) from rfl, le_div_iff]
   constructor
   · intro h; exact le_antisymm h (zero_le _)
   · intro h; rw [h]; exact le_refl _
 
 /-- The diagonal absorbs `1 ∩ T` to `𝟘`: `(diag T)(1∩T) ⊑ 𝟘` (the
     `div_comp_le` half of §2.31 for `R = 𝟘 / (1 ∩ T)`). -/
-theorem diag_comp_le_zero {A : 𝒜} (T : A ⟶ A) :
-    diag T ≫ (Cat.id A ∩ T) ⊑ (𝟘 : A ⟶ A) :=
-  DivisionAllegory.div_comp_le (𝟘 : A ⟶ A) (Cat.id A ∩ T)
+theorem diag_comp_le_zero {a : 𝒜} (T : a ⟶ a) :
+    diag T ≫ (Cat.id a ∩ T) ⊑ (𝟘 : a ⟶ a) :=
+  DivisionAllegory.div_comp_le (𝟘 : a ⟶ a) (Cat.id a ∩ T)
 
 /-- Right-domain factorization `R ⊑ R ≫ (1 ∩ R° R)` — the reciprocal of
     `le_dom_comp` (§2.122).  `dom (R°) = 1 ∩ R° R` is the codomain coreflexive. -/
-theorem le_comp_codom {A B : 𝒜} (R : A ⟶ B) :
-    R ⊑ R ≫ (Cat.id B ∩ R° ≫ R) := by
+theorem le_comp_codom {a b : 𝒜} (R : a ⟶ b) :
+    R ⊑ R ≫ (Cat.id b ∩ R° ≫ R) := by
   -- Left-domain factorization for R° (modular law, R=1, S=R°, T=R°):
   --   R° = (1≫R°)∩R° ⊑ (1 ∩ R°≫R°°)≫R° = (1 ∩ R°R)≫R°.
-  have h : R° ⊑ (Cat.id B ∩ R° ≫ R) ≫ R° := by
-    have hm := modular_le (Cat.id B) (R°) (R°)
+  have h : R° ⊑ (Cat.id b ∩ R° ≫ R) ≫ R° := by
+    have hm := modular_le (Cat.id b) (R°) (R°)
     rw [Cat.id_comp, Allegory.inter_idem, Allegory.recip_recip] at hm
     exact hm
   -- Reciprocate: R ⊑ R ≫ (1 ∩ R°R)°, then simplify the inner reciprocal.
@@ -108,20 +108,20 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
     `R = 𝟘 / (1 ∩ T)` that lies below the diagonal (`R' ⊑ diag T`), is entire,
     and satisfies `R'°R' ⊑ T`, the diagonal argument collapses `R'` to `𝟘` and
     then forces `1_a = 𝟘`. -/
-theorem inconsistency_core {A : 𝒜} (T : A ⟶ A) (R' : A ⟶ A)
-    (hEnt : Cat.id A ⊑ R' ≫ R'°)
+theorem inconsistency_core {a : 𝒜} (T : a ⟶ a) (R' : a ⟶ a)
+    (hEnt : Cat.id a ⊑ R' ≫ R'°)
     (hRoR : R'° ≫ R' ⊑ T)
     (hDiag : R' ⊑ diag T) :
-    Cat.id A = (𝟘 : A ⟶ A) := by
+    Cat.id a = (𝟘 : a ⟶ a) := by
   -- Step 1: R' ⊑ R'(1 ∩ R'°R') ⊑ R'(1 ∩ T)  (codomain factorization + (iii)).
-  have step1 : R' ⊑ R' ≫ (Cat.id A ∩ T) :=
+  have step1 : R' ⊑ R' ≫ (Cat.id a ∩ T) :=
     le_trans (le_comp_codom R') (comp_mono_left R' (le_inter (inter_lb_left _ _)
       (le_trans (inter_lb_right _ _) hRoR)))
   -- Step 2: R'(1 ∩ T) ⊑ (diag T)(1 ∩ T) ⊑ 𝟘   (R' ⊑ diag T, then div_comp_le).
-  have step2 : R' ≫ (Cat.id A ∩ T) ⊑ (𝟘 : A ⟶ A) :=
-    le_trans (comp_mono_right hDiag (Cat.id A ∩ T)) (diag_comp_le_zero T)
+  have step2 : R' ≫ (Cat.id a ∩ T) ⊑ (𝟘 : a ⟶ a) :=
+    le_trans (comp_mono_right hDiag (Cat.id a ∩ T)) (diag_comp_le_zero T)
   -- Hence R' = 𝟘.
-  have hR'zero : R' = (𝟘 : A ⟶ A) :=
+  have hR'zero : R' = (𝟘 : a ⟶ a) :=
     le_antisymm (le_trans step1 step2) (zero_le _)
   -- Step 3: entireness (i) forces 1 ⊑ R'R'° = 𝟘, so 1 = 𝟘.
   rw [hR'zero, DistributiveAllegory.zero_comp] at hEnt
@@ -169,25 +169,25 @@ theorem inconsistency_core {A : 𝒜} (T : A ⟶ A) (R' : A ⟶ A)
     is valid **exactly** when it holds, and then the whole §2.436 chain goes through
     with no gap.  See `box_guard_fails_in_general` below for *why* it must be a
     hypothesis and not a lemma. -/
-theorem one_object_pre_power_inconsistent {A : 𝒜} (T : A ⟶ A) (hT : Thick T)
+theorem one_object_pre_power_inconsistent {a : 𝒜} (T : a ⟶ a) (hT : Thick T)
     (hBox : codBox (diag T) = codBox T) :
-    Cat.id A = (𝟘 : A ⟶ A) := by
+    Cat.id a = (𝟘 : a ⟶ a) := by
   -- §2.431 witness W = diag T /ₛ T from `thick_iff_existential`.
   rw [thick_iff_existential] at hT
-  obtain ⟨W, hEnt, hWT, hWoR⟩ := hT A (diag T) hBox
+  obtain ⟨W, hEnt, hWT, hWoR⟩ := hT a (diag T) hBox
   -- Entire W → 1 ⊑ W ≫ W°.
-  have hEnt' : Cat.id A ⊑ W ≫ W° := by
+  have hEnt' : Cat.id a ⊑ W ≫ W° := by
     dsimp [Entire, dom] at hEnt; rw [← hEnt]; exact inter_lb_right _ _
   -- (1∩T) is coreflexive, hence idempotent: (1∩T)(1∩T) = 1∩T.
-  have hcoref : Coreflexive (Cat.id A ∩ T) := inter_lb_left _ _
-  have hidem : (Cat.id A ∩ T) ≫ (Cat.id A ∩ T) = Cat.id A ∩ T :=
+  have hcoref : Coreflexive (Cat.id a ∩ T) := inter_lb_left _ _
+  have hidem : (Cat.id a ∩ T) ≫ (Cat.id a ∩ T) = Cat.id a ∩ T :=
     (coreflexive_symmetric_idempotent hcoref).2
   -- W(1∩T) ⊑ WT ⊑ diag T (since 1∩T ⊑ T and hWT).
-  have hW1T : W ≫ (Cat.id A ∩ T) ⊑ diag T :=
+  have hW1T : W ≫ (Cat.id a ∩ T) ⊑ diag T :=
     le_trans (comp_mono_left W (inter_lb_right _ _)) hWT
   -- W(1∩T) = 𝟘 by idempotency: W(1∩T)(1∩T) = W(1∩T) ⊑ diag T ≫ (1∩T) ⊑ 𝟘.
-  have hWzero : W ≫ (Cat.id A ∩ T) = 𝟘 := le_antisymm
-    (by have step : (W ≫ (Cat.id A ∩ T)) ≫ (Cat.id A ∩ T) ⊑ 𝟘 :=
+  have hWzero : W ≫ (Cat.id a ∩ T) = 𝟘 := le_antisymm
+    (by have step : (W ≫ (Cat.id a ∩ T)) ≫ (Cat.id a ∩ T) ⊑ 𝟘 :=
           le_trans (comp_mono_right hW1T _) (diag_comp_le_zero T)
         rwa [Cat.assoc, hidem] at step) (zero_le _)
   -- Hence W ⊑ diag T (by le_diag_iff).
@@ -218,21 +218,21 @@ theorem one_object_pre_power_inconsistent {A : 𝒜} (T : A ⟶ A) (hT : Thick T
   simultaneously makes the box guard for `diag T` unattainable, so the diagonal
   collapse can only be asserted *under* `hBox`.  Freyd's "as insured by [2.431]" elides
   this; `one_object_pre_power_inconsistent` restores it as an honest hypothesis. -/
-theorem box_guard_fails_at_id_unless_degenerate {A : 𝒜} :
-    codBox (diag (Cat.id A)) = (𝟘 : A ⟶ A) ∧ codBox (Cat.id A) = Cat.id A := by
+theorem box_guard_fails_at_id_unless_degenerate {a : 𝒜} :
+    codBox (diag (Cat.id a)) = (𝟘 : a ⟶ a) ∧ codBox (Cat.id a) = Cat.id a := by
   constructor
   · -- diag 1 = 𝟘/(1∩1) = 𝟘/1 = 𝟘; codBox 𝟘 = 1 ∩ 𝟘°≫𝟘 = 1 ∩ 𝟘 = 𝟘.
-    have hdiag : diag (Cat.id A) = (𝟘 : A ⟶ A) := by
-      show (𝟘 : A ⟶ A) / (Cat.id A ∩ Cat.id A) = 𝟘
+    have hdiag : diag (Cat.id a) = (𝟘 : a ⟶ a) := by
+      show (𝟘 : a ⟶ a) / (Cat.id a ∩ Cat.id a) = 𝟘
       rw [Allegory.inter_idem, div_one]
-    show codBox (diag (Cat.id A)) = (𝟘 : A ⟶ A)
+    show codBox (diag (Cat.id a)) = (𝟘 : a ⟶ a)
     rw [hdiag]
-    show dom ((𝟘 : A ⟶ A)°) = (𝟘 : A ⟶ A)
+    show dom ((𝟘 : a ⟶ a)°) = (𝟘 : a ⟶ a)
     dsimp [dom]
     rw [recip_zero, DistributiveAllegory.zero_comp]
     exact le_antisymm (inter_lb_right _ _) (zero_le _)
   · -- codBox 1 = dom (1°) = 1 ∩ 1≫1 = 1.
-    show dom ((Cat.id A)°) = Cat.id A
+    show dom ((Cat.id a)°) = Cat.id a
     dsimp [dom]
     rw [Allegory.recip_recip, recip_id, Cat.id_comp, Allegory.inter_idem]
 
@@ -304,11 +304,11 @@ end Freyd.Alg
 namespace Freyd.Alg
 
 section SplEqCore
-variable {𝒜 : Type u} [DivisionAllegory 𝒜] {x A B : 𝒜}
+variable {𝒜 : Type u} [DivisionAllegory 𝒜] {x a b : 𝒜}
 
 /-- A morphism fixed on the left by an idempotent is absorbed by it: if
     `E' ≫ R ≫ E = R` and `E'` is idempotent then `E' ≫ R = R`. -/
-public theorem fix_absorb_left (E' : B ⟶ B) (E : A ⟶ A) (R : B ⟶ A)
+public theorem fix_absorb_left (E' : b ⟶ b) (E : a ⟶ a) (R : b ⟶ a)
     (hE'_idem : E' ≫ E' = E') (hfix : E' ≫ R ≫ E = R) : E' ≫ R = R := by
   calc E' ≫ R = E' ≫ (E' ≫ R ≫ E) := by rw [hfix]
     _ = (E' ≫ E') ≫ R ≫ E := by simp only [Cat.assoc]
@@ -317,14 +317,14 @@ public theorem fix_absorb_left (E' : B ⟶ B) (E : A ⟶ A) (R : B ⟶ A)
 
 /-- A reflexive symmetric idempotent (an equivalence relation) is ENTIRE.
     `dom E = 1 ∩ E≫E° = 1 ∩ E = 1` (symmetric, idempotent, reflexive). -/
-theorem equiv_entire (E : B ⟶ B)
-    (hrefl : Cat.id B ⊑ E) (hsym : E° = E) (hidem : E ≫ E = E) : Entire E := by
-  show Cat.id B ∩ E ≫ E° = Cat.id B
+theorem equiv_entire (E : b ⟶ b)
+    (hrefl : Cat.id b ⊑ E) (hsym : E° = E) (hidem : E ≫ E = E) : Entire E := by
+  show Cat.id b ∩ E ≫ E° = Cat.id b
   rw [hsym, hidem]; exact inter_eq_left hrefl
 
 /-- **§2.433 (chain 1).**  `R̂ ≫ (T ≫ E) ⊑ R`, where `R̂ = E' ≫ (R /ₛ T)`.
     `E'(R/ₛT)TE ⊑ E'RE = R`, using `(R/ₛT)≫T ⊑ R` and the fixing `E'RE = R`. -/
-public theorem splEq_chain1 (E : A ⟶ A) (E' : B ⟶ B) (T : x ⟶ A) (R : B ⟶ A)
+public theorem splEq_chain1 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
     (hfix : E' ≫ R ≫ E = R) :
     (E' ≫ (R /ₛ T)) ≫ (T ≫ E) ⊑ R := by
   have h1 : (R /ₛ T) ≫ T ⊑ R := ((le_symmDiv_iff (R /ₛ T) R T).mp (le_refl _)).1
@@ -336,8 +336,8 @@ public theorem splEq_chain1 (E : A ⟶ A) (E' : B ⟶ B) (T : x ⟶ A) (R : B �
 /-- **§2.433 (chain 2).**  `R̂° ≫ R ⊑ T ≫ E`.  `R̂° = (R/ₛT)° ≫ E'`, so
     `R̂°R = (R/ₛT)° ≫ E' ≫ R = (R/ₛT)° ≫ R ⊑ T ⊑ T ≫ E`, using `(R/ₛT)°≫R ⊑ T`
     (second `le_symmDiv_iff` component), `E'R = R`, and `E` reflexive. -/
-public theorem splEq_chain2 (E : A ⟶ A) (E' : B ⟶ B) (T : x ⟶ A) (R : B ⟶ A)
-    (hErefl : Cat.id A ⊑ E) (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
+public theorem splEq_chain2 (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
+    (hErefl : Cat.id a ⊑ E) (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
     (hfix : E' ≫ R ≫ E = R) :
     (E' ≫ (R /ₛ T))° ≫ R ⊑ T ≫ E := by
   have h2 : (R /ₛ T)° ≫ R ⊑ T := ((le_symmDiv_iff (R /ₛ T) R T).mp (le_refl _)).2
@@ -355,9 +355,9 @@ public theorem splEq_chain2 (E : A ⟶ A) (E' : B ⟶ B) (T : x ⟶ A) (R : B �
     realizing the thickness of `T ≫ E` against `R`:
       `Entire R̂`,  `R̂ ≫ (T ≫ E) ⊑ R`,  `R̂° ≫ R ⊑ T ≫ E`.
     This is precisely the `thick_iff_existential` body (§2.431) for `T ≫ E`. -/
-theorem splEq_thick_witness (E : A ⟶ A) (E' : B ⟶ B) (T : x ⟶ A) (R : B ⟶ A)
-    (hErefl : Cat.id A ⊑ E)
-    (hE'refl : Cat.id B ⊑ E') (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
+theorem splEq_thick_witness (E : a ⟶ a) (E' : b ⟶ b) (T : x ⟶ a) (R : b ⟶ a)
+    (hErefl : Cat.id a ⊑ E)
+    (hE'refl : Cat.id b ⊑ E') (hE'_sym : E'° = E') (hE'_idem : E' ≫ E' = E')
     (hfix : E' ≫ R ≫ E = R) (hent : Entire (R /ₛ T)) :
     Entire (E' ≫ (R /ₛ T)) ∧
     (E' ≫ (R /ₛ T)) ≫ (T ≫ E) ⊑ R ∧
@@ -504,19 +504,19 @@ theorem splEq_thick_target (E : SplObj 𝒜) (hErefl : Cat.id E.carrier ⊑ E.id
     `𝒜`-`codBox` (no `E.idem.e` to weaken it), and `splEqTarget (embObj a) T` has underlying
     `T ≫ 1_a = T`.  So the hypothesis `hbox` of `splEqTarget_thick` is genuinely satisfiable
     (it is codBox bookkeeping, not the thickness conclusion in disguise). -/
-theorem splEq_embObj_boxNaming (A : 𝒜) : SplEqBoxNaming (embObj A) := by
+theorem splEq_embObj_boxNaming (a : 𝒜) : SplEqBoxNaming (embObj a) := by
   intro x T Q R hboxQ
   -- For the embedded target the underlying `SplObj`-`codBox` IS the `𝒜`-`codBox`.
-  have h : codBox R.R = codBox ((splEqTarget (embObj A) T).R) := congrArg SplHom.R hboxQ
+  have h : codBox R.R = codBox ((splEqTarget (embObj a) T).R) := congrArg SplHom.R hboxQ
   simpa only [splEqTarget_R, embObj, idSymIdem, Cat.comp_id] using h
 
 /-- **§2.433 (embedded case, `hbox`-free).**  For an embedded object `embObj a` and a base
     thick `T : x → a` of `𝒜`, the split-hom `splEqTarget (embObj a) T` is THICK in `SplObj 𝒜`
     with NO box-naming hypothesis — here `splEqTarget (embObj a) T` is just `embHom T` and the
     `SplObj` thickness reduces verbatim to the `𝒜` thickness of `T`. -/
-theorem splEq_embObj_thick (A : 𝒜) {x : 𝒜} (T : x ⟶ A) (hThickT : Thick T) :
-    Thick (splEqTarget (embObj A) T) :=
-  splEqTarget_thick (embObj A) (le_refl _) T hThickT (splEq_embObj_boxNaming A)
+theorem splEq_embObj_thick (a : 𝒜) {x : 𝒜} (T : x ⟶ a) (hThickT : Thick T) :
+    Thick (splEqTarget (embObj a) T) :=
+  splEqTarget_thick (embObj a) (le_refl _) T hThickT (splEq_embObj_boxNaming a)
 
 end Core
 
@@ -995,30 +995,30 @@ variable {𝒜 : Type u} [PowerAllegory 𝒜]
 
 /-- `codBox (F∋) = codBox ∋` when `F°F = 1` (§2.41 box bookkeeping).
     `codBox R = 1 ∩ R°R`; for `R = F∋`, `(F∋)°(F∋) = ∋°(F°F)∋ = ∋°∋`. -/
-theorem codBox_comp_eps {A : 𝒜} (F : A ⟶ PowerAllegory.powerObj A)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj A)) :
-    codBox (F ≫ ∋ A) = codBox (∋ A) := by
-  show dom ((F ≫ ∋ A)°) = dom ((∋ A)°)
+theorem codBox_comp_eps {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
+    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a)) :
+    codBox (F ≫ ∋ a) = codBox (∋ a) := by
+  show dom ((F ≫ ∋ a)°) = dom ((∋ a)°)
   dsimp only [dom]
   rw [Allegory.recip_recip, Allegory.recip_recip, Allegory.recip_comp]
   -- goal: 1 ∩ (∋° ≫ F°) ≫ (F ≫ ∋) = 1 ∩ ∋° ≫ ∋
   congr 1
-  rw [Cat.assoc (∋ A)° F° (F ≫ ∋ A), ← Cat.assoc F° F (∋ A), hF, Cat.id_comp]
+  rw [Cat.assoc (∋ a)° F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp]
 
 /-- §2.435 Cantor: in a power allegory, `F : a → [a]` with `F°F = 1` makes
     `T = F∋` a thick endomorphism.  Witness `R̂ = Λ(R)F°` (book `(R/∋)F°`). -/
-theorem cantor_thick_endo {A : 𝒜} (F : A ⟶ PowerAllegory.powerObj A)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj A)) :
-    Thick (F ≫ ∋ A) := by
+theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
+    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a)) :
+    Thick (F ≫ ∋ a) := by
   rw [thick_iff_existential]
-  intro C R hbox
+  intro c R hbox
   -- translate the box guard of T = F∋ to the box guard of ∋.
-  have hboxA : codBox R = codBox (∋ A) := hbox.trans (codBox_comp_eps F hF)
+  have hboxA : codBox R = codBox (∋ a) := hbox.trans (codBox_comp_eps F hF)
   have hAmap : Map (Λ R) := Λ_is_map R hboxA
   -- witness R̂ = Λ(R) ≫ F°
   refine ⟨Λ R ≫ F°, ?_, ?_, ?_⟩
   · -- Entire R̂ : R̂R̂° = Λ(R)(F°F)Λ(R)° = Λ(R)Λ(R)° ⊒ 1.
-    have hAent : Cat.id C ⊑ Λ R ≫ (Λ R)° := by
+    have hAent : Cat.id c ⊑ Λ R ≫ (Λ R)° := by
       have hd := hAmap.1; dsimp [Entire, dom] at hd; rw [← hd]; exact inter_lb_right _ _
     have hcomp : (Λ R ≫ F°) ≫ (Λ R ≫ F°)° = Λ R ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip,
@@ -1027,8 +1027,8 @@ theorem cantor_thick_endo {A : 𝒜} (F : A ⟶ PowerAllegory.powerObj A)
     rw [hcomp]
     exact le_antisymm (inter_lb_left _ _) (le_inter (le_refl _) hAent)
   · -- R̂T ⊑ R : R̂T = Λ(R)(F°F)∋ = Λ(R)∋ = R.
-    have hTeq : (Λ R ≫ F°) ≫ (F ≫ ∋ A) = R := by
-      rw [Cat.assoc (Λ R) F° (F ≫ ∋ A), ← Cat.assoc F° F (∋ A), hF, Cat.id_comp,
+    have hTeq : (Λ R ≫ F°) ≫ (F ≫ ∋ a) = R := by
+      rw [Cat.assoc (Λ R) F° (F ≫ ∋ a), ← Cat.assoc F° F (∋ a), hF, Cat.id_comp,
         Λ_eps_eq R hboxA]
     rw [hTeq]
     exact le_refl R
@@ -1036,11 +1036,11 @@ theorem cantor_thick_endo {A : 𝒜} (F : A ⟶ PowerAllegory.powerObj A)
     have hRhat_recip : (Λ R ≫ F°)° = F ≫ (Λ R)° := by
       rw [Allegory.recip_comp, Allegory.recip_recip]
     rw [hRhat_recip]
-    have hinner : (Λ R)° ≫ R ⊑ ∋ A := by
-      have e1 : (Λ R)° ≫ R = ((Λ R)° ≫ Λ R) ≫ ∋ A := by
+    have hinner : (Λ R)° ≫ R ⊑ ∋ a := by
+      have e1 : (Λ R)° ≫ R = ((Λ R)° ≫ Λ R) ≫ ∋ a := by
         rw [Cat.assoc, Λ_eps_eq R hboxA]
       rw [e1]
-      have h2 := comp_mono_right (Λ_simple R) (∋ A)
+      have h2 := comp_mono_right (Λ_simple R) (∋ a)
       rwa [Cat.id_comp] at h2
     rw [Cat.assoc F (Λ R)° R]
     exact comp_mono_left F hinner
@@ -1053,12 +1053,12 @@ theorem cantor_thick_endo {A : 𝒜} (F : A ⟶ PowerAllegory.powerObj A)
     The box guard `codBox (diag (F∋)) = codBox (F∋)` is §2.436's load-bearing
     side-condition (S2_43 `one_object_pre_power_inconsistent`; it can fail for the
     box-guarded `Thick`, which is why it is an explicit hypothesis here). -/
-theorem cantor_degenerate (hSC : StronglyConnectedAllegory 𝒜) {A : 𝒜}
-    (F : A ⟶ PowerAllegory.powerObj A)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj A))
-    (hBox : codBox (diag (F ≫ ∋ A)) = codBox (F ≫ ∋ A)) :
+theorem cantor_degenerate (hSC : StronglyConnectedAllegory 𝒜) {a : 𝒜}
+    (F : a ⟶ PowerAllegory.powerObj a)
+    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a))
+    (hBox : codBox (diag (F ≫ ∋ a)) = codBox (F ≫ ∋ a)) :
     ∀ (β : 𝒜), Cat.id β = (𝟘 : β ⟶ β) :=
-  thick_endo_degenerate hSC (F ≫ ∋ A) (cantor_thick_endo F hF) hBox
+  thick_endo_degenerate hSC (F ≫ ∋ a) (cantor_thick_endo F hF) hBox
 
 end Freyd.Alg
 
@@ -1082,17 +1082,17 @@ variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-- §2.353 (cancellation on maps): if `S/ₛS` is tabular and the cancellation
     property holds for MAPS (`fS = gS → f = g`), then `S` is straight. -/
-theorem straight_of_cancel_on_maps {A B : 𝒜} {S : A ⟶ B}
+theorem straight_of_cancel_on_maps {a b : 𝒜} {S : a ⟶ b}
     (hTab : Tabular (S /ₛ S))
-    (hmap : ∀ {D : 𝒜} (f g : D ⟶ A), Map f → Map g → f ≫ S = g ≫ S → f = g) :
+    (hmap : ∀ {d : 𝒜} (f g : d ⟶ a), Map f → Map g → f ≫ S = g ≫ S → f = g) :
     Straight S := by
-  obtain ⟨C, ℓ, r, hℓmap, hrmap, hW, _hjoint⟩ := hTab
+  obtain ⟨c, ℓ, r, hℓmap, hrmap, hW, _hjoint⟩ := hTab
   -- counit of symmetric division: (S/ₛS) S ⊑ S.
   have hssS : (S /ₛ S) ≫ S ⊑ S := ((le_symmDiv_iff (S /ₛ S) S S).mp (le_refl _)).1
   -- ℓ, r entire (maps).
-  have hℓent : Cat.id C ⊑ ℓ ≫ ℓ° := by
+  have hℓent : Cat.id c ⊑ ℓ ≫ ℓ° := by
     have hd := hℓmap.1; dsimp [Entire, dom] at hd; rw [← hd]; exact inter_lb_right _ _
-  have hrent : Cat.id C ⊑ r ≫ r° := by
+  have hrent : Cat.id c ⊑ r ≫ r° := by
     have hd := hrmap.1; dsimp [Entire, dom] at hd; rw [← hd]; exact inter_lb_right _ _
   -- ℓ°(rS) ⊑ S  (= (S/ₛS)S ⊑ S after the tabulation).
   have hℓrS : ℓ° ≫ r ≫ S ⊑ S := by

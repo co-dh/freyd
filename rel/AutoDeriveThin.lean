@@ -54,7 +54,7 @@ open Freyd
 
 /-- In Rel(Set) the transpose `Λ W` sends `u` to exactly its `W`-successor set (the pointwise
     content of `Λ_eq_classifier`). -/
-theorem Λ_apply_iff {B C : RelSet.{0}} (W : C ⟶ B) (u : C.carrier) (G : (pow B).carrier) :
+theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow b).carrier) :
     Λ W u G ↔ G = fun y => W u y := by
   rw [Λ_eq_classifier]; exact Iff.rfl
 

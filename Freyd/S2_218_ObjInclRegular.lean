@@ -142,13 +142,13 @@ public theorem objIncl_preservesPullbacks_generic {ι : Type u} {D : Directed ι
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -188,13 +188,13 @@ theorem objIncl_regularFunctor {ι : Type u} {D : Directed ι}
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ (C.functF hij).map (hp i).fst = v ≫ (C.functF hij).map (hp i).fst →
         u ≫ (C.functF hij).map (hp i).snd = v ≫ (C.functF hij).map (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ (C.functF hij).map (hp i).fst = p ∧ r ≫ (C.functF hij).map (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)

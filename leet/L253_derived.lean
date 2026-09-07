@@ -67,7 +67,7 @@ def foldCL (ivs : List (Int × Int)) : ConsList Unit (Int × Int) → Nat
   | ConsList.cons e xs => LC253.nmax (LC253.countCover ivs e.1) (foldCL ivs xs)
 
 /-- The base condition is a COMPUTATION: `foldCL ivs (wrap d) = g ivs d`. -/
-theorem foldCL_wrap (ivs : List (Int × Int)) : ∀ D : Unit, foldCL ivs (ConsList.wrap D) = g ivs D :=
+theorem foldCL_wrap (ivs : List (Int × Int)) : ∀ d : Unit, foldCL ivs (ConsList.wrap d) = g ivs d :=
   fun _ => rfl
 
 /-- The step condition IS `foldCL`'s cons equation: `foldCL ivs (cons e xs) = st ivs e (…)`. -/

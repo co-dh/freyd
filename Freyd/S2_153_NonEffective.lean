@@ -84,7 +84,7 @@ variable {K : ModulusSystem}
 public theorem asmReflection_not_ac_of_nonsplitting {A : Assembly.{u} K}
     (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩)
     (hrefl : Reflexive I) (hsym : Symmetric I) (htrans : Transitive I)
-    (hno : ∀ (D : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ D), ¬ SplitsAsMap f I) :
+    (hno : ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I) :
     ¬ CoversSplit (AsmEffReflection.{u} K) := by
   -- Pre-compute each hypothesis so its universes pin to `I` (letting `𝒜 = AsmRel K`
   -- be inferred, not annotated).  `Reflexive I` is defeq `Cat.id ⟨A⟩ ⊑ I`.
@@ -101,7 +101,7 @@ public theorem asmReflection_not_ac_of_nonsplitting {A : Assembly.{u} K}
 public theorem asmReflection_not_ac_of_notEffective
     (hne : ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (D : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ D), ¬ SplitsAsMap f I) :
+      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I) :
     ¬ CoversSplit (AsmEffReflection.{u} K) := by
   obtain ⟨A, I, hrefl, hsym, htrans, hno⟩ := hne
   exact asmReflection_not_ac_of_nonsplitting I hrefl hsym htrans hno

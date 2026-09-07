@@ -193,7 +193,7 @@ def foldCL : ConsList Unit Int → Resid
 
 /-! ## The FORCED first-order recursion of the curried scan (both hold by `rfl`) -/
 
-theorem hwrap : ∀ D, foldCL (ConsList.wrap D) = g D := fun _ => rfl
+theorem hwrap : ∀ d, foldCL (ConsList.wrap d) = g d := fun _ => rfl
 
 theorem hcons : ∀ (x : Int) (xs : ConsList Unit Int),
     foldCL (ConsList.cons x xs) = step x (foldCL xs) := fun _ _ => rfl

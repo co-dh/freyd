@@ -37,7 +37,7 @@ namespace Freyd.Alg
     * `E ⊑ E/E`: by `le_div_iff` this reduces to `E ≫ E ⊑ E`, i.e. transitivity.
     * `E/E ⊑ E`: `E/E = (E/E) ≫ 1 ⊑ (E/E) ≫ E ⊑ E`, using reflexivity `1 ⊑ E`
       and the division counit `(E/E) ≫ E ⊑ E`. -/
-theorem equivRel_eq_div_self {𝒜 : Type u} [DivisionAllegory 𝒜] {A : 𝒜} {E : A ⟶ A}
+theorem equivRel_eq_div_self {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} {E : a ⟶ a}
     (hE : EquivalenceRel E) : E = E / E := by
   apply le_antisymm
   · -- E ⊑ E/E  ⟺  E ≫ E ⊑ E  (Transitive E)
@@ -63,17 +63,17 @@ theorem equivRel_eq_div_self {𝒜 : Type u} [DivisionAllegory 𝒜] {A : 𝒜} 
     equivalence relation `E` is effective — there is a map `h` with `h ≫ h° = E` and
     `h° ≫ h = 1`.  The "coreflexives split" hypothesis is taken in the exact shape produced by
     `coreflexive_splits` (S2_2): a coreflexive `A` splits as `g° ≫ g = A`, `g ≫ g° = 1`. -/
-theorem equivRel_effective_of_coreflexives_split {𝒜 : Type u} [PowerAllegory 𝒜] {A : 𝒜}
-    (E : A ⟶ A) (hE : EquivalenceRel E) (hbox : codBox E = codBox (∋ A))
+theorem equivRel_effective_of_coreflexives_split {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
+    (E : a ⟶ a) (hE : EquivalenceRel E) (hbox : codBox E = codBox (∋ a))
     (hsplit : ∀ {x : 𝒜} {A : x ⟶ x}, Coreflexive A →
-      ∃ (C : 𝒜) (g : C ⟶ x), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id C) :
-    ∃ (C : 𝒜) (h : A ⟶ C), Map h ∧ h ≫ h° = E ∧ h° ≫ h = Cat.id C := by
+      ∃ (c : 𝒜) (g : c ⟶ x), Map g ∧ g° ≫ g = A ∧ g ≫ g° = Cat.id c) :
+    ∃ (c : 𝒜) (h : a ⟶ c), Map h ∧ h ≫ h° = E ∧ h° ≫ h = Cat.id c := by
   -- §2.421/§2.422: E = f ≫ f° with f = Λ(E) a map.
   obtain ⟨f, hf, hEeq⟩ := equivRel_eq_map_comp_recip E hE hbox
   have hffE : f ≫ f° = E := hEeq.symm
   -- f° ≫ f is coreflexive (f is simple); split it.
   have hcor : Coreflexive (f° ≫ f) := hf.2
-  obtain ⟨D, g, _, hgg, hgg1⟩ := hsplit hcor   -- hgg : g° ≫ g = f° ≫ f,  hgg1 : g ≫ g° = 1_d
+  obtain ⟨d, g, _, hgg, hgg1⟩ := hsplit hcor   -- hgg : g° ≫ g = f° ≫ f,  hgg1 : g ≫ g° = 1_d
   -- The candidate splitting map h = f ≫ g°.
   have hrecip : (f ≫ g°)° = g ≫ f° := by rw [Allegory.recip_comp, Allegory.recip_recip]
   -- h ≫ h° = E
@@ -85,20 +85,20 @@ theorem equivRel_effective_of_coreflexives_split {𝒜 : Type u} [PowerAllegory 
       rw [a1, hgg, a2]
     rw [hstep, hffE, equivRel_idem hE]
   -- h° ≫ h = 1_d
-  have hHrH : (f ≫ g°)° ≫ (f ≫ g°) = Cat.id D := by
+  have hHrH : (f ≫ g°)° ≫ (f ≫ g°) = Cat.id d := by
     rw [hrecip]
     have hstep : (g ≫ f°) ≫ (f ≫ g°) = (g ≫ g°) ≫ (g ≫ g°) := by
       have a1 : (g ≫ f°) ≫ (f ≫ g°) = g ≫ (f° ≫ f) ≫ g° := by simp only [Cat.assoc]
       have a2 : g ≫ (g° ≫ g) ≫ g° = (g ≫ g°) ≫ (g ≫ g°) := by simp only [Cat.assoc]
       rw [a1, ← hgg, a2]
     rw [hstep, hgg1, Cat.id_comp]
-  refine ⟨D, f ≫ g°, ⟨?_, ?_⟩, hHHr, hHrH⟩
+  refine ⟨d, f ≫ g°, ⟨?_, ?_⟩, hHHr, hHrH⟩
   · -- Entire (f ≫ g°): dom = id_a, i.e. id_a ⊑ (f≫g°)(f≫g°)° = E, by reflexivity.
-    show Cat.id A ∩ (f ≫ g°) ≫ (f ≫ g°)° = Cat.id A
-    have hle : Cat.id A ⊑ (f ≫ g°) ≫ (f ≫ g°)° := by rw [hHHr]; exact hE.1
+    show Cat.id a ∩ (f ≫ g°) ≫ (f ≫ g°)° = Cat.id a
+    have hle : Cat.id a ⊑ (f ≫ g°) ≫ (f ≫ g°)° := by rw [hHHr]; exact hE.1
     dsimp [le] at hle; exact hle
   · -- Simple (f ≫ g°): (f≫g°)°(f≫g°) = 1_d ⊑ 1_d.
-    show (f ≫ g°)° ≫ (f ≫ g°) ⊑ Cat.id D
+    show (f ≫ g°)° ≫ (f ≫ g°) ⊑ Cat.id d
     rw [hHrH]; exact le_refl _
 
 end Freyd.Alg
@@ -181,7 +181,7 @@ end Division
     Freyd: connectivity in any allegory implies strong connectivity, so this is the working
     form of "connected". -/
 @[expose] public def StronglyConnectedAllegory (𝒜 : Type u) [Allegory 𝒜] : Prop :=
-  ∀ (A B : 𝒜), ∃ (g : A ⟶ B), Map g
+  ∀ (a b : 𝒜), ∃ (g : a ⟶ b), Map g
 
 /-! ## §2.423  A connected power allegory in which coreflexives split has a unit -/
 
@@ -201,8 +201,8 @@ variable {𝒜 : Type u} [PowerAllegory 𝒜]
     (`target_split_partialUnit`) and connectivity gives every object a map to `π`. -/
 theorem connected_power_coreflexivesSplit_has_unit
     (hconn : StronglyConnectedAllegory 𝒜)
-    (hsplit : ∀ {A : 𝒜} (E : A ⟶ A), Reflexive E → Symmetric E → E ≫ E = E →
-       ∃ (B : 𝒜) (g : A ⟶ B), Map g ∧ g ≫ g° = E ∧ g° ≫ g = Cat.id B)
+    (hsplit : ∀ {a : 𝒜} (E : a ⟶ a), Reflexive E → Symmetric E → E ≫ E = E →
+       ∃ (b : 𝒜) (g : a ⟶ b), Map g ∧ g ≫ g° = E ∧ g° ≫ g = Cat.id b)
     (α : 𝒜) :
     ∃ (π : 𝒜), IsUnit π := by
   -- M = 1_α/0_α is reflexive, symmetric, idempotent (an equivalence relation).
@@ -213,8 +213,8 @@ theorem connected_power_coreflexivesSplit_has_unit
   -- Split it: f : α → π with f f° = M, f° f = 1_π.
   obtain ⟨π, f, hf, hff, hf'f⟩ := hsplit (maxEndo α) hRefl hSym hIdem
   -- π is a partial unit, and every object has a map to π (connectivity ≫ f).
-  refine ⟨π, target_split_partialUnit f hff hf'f, fun A => ?_⟩
-  obtain ⟨g, hg⟩ := hconn A α
+  refine ⟨π, target_split_partialUnit f hff hf'f, fun a => ?_⟩
+  obtain ⟨g, hg⟩ := hconn a α
   exact ⟨g ≫ f, (map_comp hg hf).1⟩
 
 end Power

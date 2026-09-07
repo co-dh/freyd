@@ -66,26 +66,26 @@ macro_rules
 --  the examples below are generic — they hold for ALL atoms, which is the notation's real payoff.)
 
 -- (2) Two programs EQUAL, generic over atoms — an allegory-law proof, no instance data.
-example {A B C : FinObj} (e : RE A B) (f : RE B C) :
+example {a b c : FinObj} (e : RE a b) (f : RE b c) :
     eval rel⟦ (!(e) ≫ !(f))° ⟧ = eval rel⟦ !(f)° ≫ !(e)° ⟧ :=
   Allegory.recip_comp (eval e) (eval f)
 
 -- (3) Program-refines-spec via the division universal property — generic, structural.
-example {A B C : FinObj} (t : RE A B) (r : RE A C) (s : RE B C) :
+example {a b c : FinObj} (t : RE a b) (r : RE a c) (s : RE b c) :
     eval rel⟦ !(t) ⟧ ⊑ eval rel⟦ !(r) / !(s) ⟧ ↔ eval rel⟦ !(t) ≫ !(s) ⟧ ⊑ eval rel⟦ !(r) ⟧ :=
   le_div_iff (eval t) (eval r) (eval s)
 
 -- (4) Equal-precedence left fold parses like the book: `a ≫ b ∩ c` = `(a ≫ b) ∩ c`.
-example {A : FinObj} (e f g : RE A A) :
+example {a : FinObj} (e f g : RE a a) :
     eval rel⟦ !(e) ≫ !(f) ∩ !(g) ⟧ = eval rel⟦ (!(e) ≫ !(f)) ∩ !(g) ⟧ := rfl
 
 -- (5) A verified TERM-LEVEL optimizer step: double-converse elimination preserves `eval`
 --     — a theorem ABOUT programs, by cases on the AST. Unstatable for an external .ralg file.
-def unconv2 : {A B : FinObj} → RE A B → RE A B
+def unconv2 : {a b : FinObj} → RE a b → RE a b
   | _, _, .conv (.conv e) => e
   | _, _, e => e
 
-theorem eval_unconv2 {A B : FinObj} (e : RE A B) : eval (unconv2 e) = eval e := by
+theorem eval_unconv2 {a b : FinObj} (e : RE a b) : eval (unconv2 e) = eval e := by
   match e with
   | .conv (.conv e) => exact (Allegory.recip_recip (eval e)).symm
   | .atom _ | .id _ | .comp _ _ | .conv (.atom _) | .conv (.id _) | .conv (.comp _ _)

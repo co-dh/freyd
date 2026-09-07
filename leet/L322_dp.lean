@@ -109,7 +109,7 @@ def coinDP (coins : SnocList Nat Nat) : DPCount Unit Nat Nat where
   meas_lt := fun {c v' v} h => by
     obtain ⟨-, hpos, hveq⟩ := h
     omega
-  memo_lb_base := fun {D v} h => by
+  memo_lb_base := fun {d v} h => by
     subst h
     exact Nat.le_refl 0
   memo_lb_step := fun {c v' v} h => by

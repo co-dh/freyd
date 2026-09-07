@@ -60,8 +60,8 @@ def edgeFn (es : List (Nat × Nat)) : Fin 4 → Fin 4 → Bool := fun i j =>
   es.any fun e => e.1 == i.val && e.2 == j.val
 
 /-- Nonemptiness of an evaluated relation, executably. -/
-def nonemptyR {A B : FinObj} (R : A ⟶ B) : Bool :=
-  anyFin A.card fun x => anyFin B.card fun y => R x y
+def nonemptyR {a b : FinObj} (R : a ⟶ b) : Bool :=
+  anyFin a.card fun x => anyFin b.card fun y => R x y
 
 /-- LC 207: no course reaches itself — `reach ∩ id = 𝟘`. -/
 def canFinish (es : List (Nat × Nat)) : Bool :=

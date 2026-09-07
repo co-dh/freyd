@@ -76,7 +76,7 @@ variable {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜]
     `(Dom S) ∩ (Dom T) ⊂ (Dom S)(Dom T) ⊂ SS°TT°`.  The first link is §2.121
     (`coreflexive_comp_eq_inter`, an equality for coreflexives); the second is
     `dom R ⊑ R ≫ R°` in each factor. -/
-public theorem dom_inter_dom_le {A B C : 𝒜} (S : A ⟶ B) (T : A ⟶ C) :
+public theorem dom_inter_dom_le {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     dom S ∩ dom T ⊑ (S ≫ S°) ≫ (T ≫ T°) := by
   rw [← coreflexive_comp_eq_inter (dom_coreflexive S) (dom_coreflexive T)]
   exact le_trans (comp_mono_right (inter_lb_right _ _) (dom T))
@@ -86,7 +86,7 @@ public theorem dom_inter_dom_le {A B C : 𝒜} (S : A ⟶ B) (T : A ⟶ C) :
     `S°T ⊂ S°(Dom S)(Dom T)T ⊂ S°[Dom(S) ∩ Dom(T)]T`.  The first link is
     `R ⊑ dom R ≫ R` (§2.122) on both factors (reciprocated on the left); the second is
     §2.121 collapsing `(Dom S)(Dom T)` to the meet. -/
-public theorem recip_comp_le_through_doms {A B C : 𝒜} (S : A ⟶ B) (T : A ⟶ C) :
+public theorem recip_comp_le_through_doms {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     S° ≫ T ⊑ S° ≫ (dom S ∩ dom T) ≫ T := by
   -- `S° ⊑ S° ≫ dom S`: reciprocate `S ⊑ dom S ≫ S` and use `(dom S)° = dom S`.
   have hS : S° ⊑ S° ≫ dom S := by
@@ -102,7 +102,7 @@ public theorem recip_comp_le_through_doms {A B C : 𝒜} (S : A ⟶ B) (T : A �
 /-- **Freyd §2.217 (parenthetical recast): `S°T = 0` iff `Dom S` and `Dom T` are disjoint.**
     Forward: chain 1 sandwiches the meet of the domains under `S(S°T)T° = S𝟘T° = 𝟘`.
     Reverse: chain 2 sandwiches `S°T` under `S°𝟘T = 𝟘`. -/
-public theorem recip_comp_eq_zero_iff_dom_disjoint {A B C : 𝒜} (S : A ⟶ B) (T : A ⟶ C) :
+public theorem recip_comp_eq_zero_iff_dom_disjoint {a b c : 𝒜} (S : a ⟶ b) (T : a ⟶ c) :
     S° ≫ T = 𝟘 ↔ dom S ∩ dom T = 𝟘 := by
   constructor
   · intro h
@@ -270,9 +270,9 @@ public theorem matEmbed_faithful {𝒜 : Type u} [DistributiveAllegory.{u, v} �
 
 /-- `matEmbed` is FULL — every `Mat 𝒜`-morphism between singleton objects is the 1×1 matrix
     of its unique entry ("full and faithful representation", §2.216). -/
-theorem matEmbed_full {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜] {A B : 𝒜}
-    (N : (matEmbed 𝒜).obj A ⟶ (matEmbed 𝒜).obj B) :
-    ∃ R : A ⟶ B, (matEmbed 𝒜).map R = N := by
+theorem matEmbed_full {𝒜 : Type u} [DistributiveAllegory.{u, v} 𝒜] {a b : 𝒜}
+    (N : (matEmbed 𝒜).obj a ⟶ (matEmbed 𝒜).obj b) :
+    ∃ R : a ⟶ b, (matEmbed 𝒜).map R = N := by
   refine ⟨N ⟨0, Nat.zero_lt_one⟩ ⟨0, Nat.zero_lt_one⟩, funext fun i => funext fun j => ?_⟩
   have hi : i = ⟨0, Nat.zero_lt_one⟩ := Fin.fin_one_eq_zero i
   have hj : j = ⟨0, Nat.zero_lt_one⟩ := Fin.fin_one_eq_zero j
@@ -315,23 +315,23 @@ variable {𝒞 : Type u} [Cat.{v} 𝒞] [PreLogos 𝒞]
 
 /-- `embed217` preserves identities: both sides have `val = matId (unitObj ⟨a⟩)` (through
     `embedRel_id` and `embed1_id`), and `Map`-witnesses are proof-irrelevant. -/
-public theorem embed217_id (A : 𝒞) :
-    embed217 (Cat.id A)
+public theorem embed217_id (a : 𝒞) :
+    embed217 (Cat.id a)
       = @Cat.id (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞)))
-          (embed217Obj A) := by
+          (embed217Obj a) := by
   apply Subtype.ext
-  show embed1' (embedRel (Cat.id A)).val = _
-  rw [show (embedRel (Cat.id A)).val
-        = (@Cat.id (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨A⟩).val
-      from congrArg Subtype.val (embedRel_id A)]
+  show embed1' (embedRel (Cat.id a)).val = _
+  rw [show (embedRel (Cat.id a)).val
+        = (@Cat.id (MapObj (RelObj 𝒞)) (mapCat (𝒜 := RelObj 𝒞)) ⟨a⟩).val
+      from congrArg Subtype.val (embedRel_id a)]
   exact embed1_id
 
 /-- `embed217` preserves composition: on `val` this is `embedRel_comp` (graph composition in
     `Map(Rel C)`) followed by `embed1_comp` (1×1 matrix composition). -/
-public theorem embed217_comp {A B C : 𝒞} (f : A ⟶ B) (g : B ⟶ C) :
+public theorem embed217_comp {a b c : 𝒞} (f : a ⟶ b) (g : b ⟶ c) :
     embed217 (f ≫ g)
       = @Cat.comp (MapObj (MatObj (RelObj 𝒞))) (mapCat (𝒜 := MatObj (RelObj 𝒞)))
-          (embed217Obj A) (embed217Obj B) (embed217Obj C) (embed217 f) (embed217 g) := by
+          (embed217Obj a) (embed217Obj b) (embed217Obj c) (embed217 f) (embed217 g) := by
   apply Subtype.ext
   show embed1' (embedRel (f ≫ g)).val = _
   rw [show (embedRel (f ≫ g)).val
@@ -363,11 +363,11 @@ variable {𝒞 : Type u} [Cat.{u} 𝒞] [PreLogos 𝒞]
 public theorem prelogos_repr_in_positive_prelogos :
     Nonempty (@PositivePreLogos (MapObj (MatObj (RelObj 𝒞)))
         (mapCat (𝒜 := MatObj (RelObj 𝒞)))) ∧
-    ∀ {A B : 𝒞} {f g : A ⟶ B},
+    ∀ {a b : 𝒞} {f g : a ⟶ b},
       @Functor.map 𝒞 (MapObj (MatObj (RelObj 𝒞))) _
-          (mapCat (𝒜 := MatObj (RelObj 𝒞))) (embed217Functor (𝒞 := 𝒞)) A B f =
+          (mapCat (𝒜 := MatObj (RelObj 𝒞))) (embed217Functor (𝒞 := 𝒞)) a b f =
         @Functor.map 𝒞 (MapObj (MatObj (RelObj 𝒞))) _
-          (mapCat (𝒜 := MatObj (RelObj 𝒞))) (embed217Functor (𝒞 := 𝒞)) A B g → f = g :=
+          (mapCat (𝒜 := MatObj (RelObj 𝒞))) (embed217Functor (𝒞 := 𝒞)) a b g → f = g :=
   ⟨⟨s217PreLogos⟩, fun h => embed217_faithful h⟩
 
 end S217HeadlineSmall

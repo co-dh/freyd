@@ -106,21 +106,21 @@ variable {ι : Type u} {D : Directed ι}
 
 @[expose] public noncomputable def colimitHasBinaryProducts (C : CatSystem ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u : z ⟶ C.F hij ((hp i).prod A B)) (v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q) :
     @HasBinaryProducts C.Obj (colimitCat C hC) := by
   -- Helper: proof irrelevance for D.le (a Prop)
   have hDirSubsingleton : ∀ {i j : ι} (h h' : D.le i j), h = h' := by
     intro i j h h'; exact Subsingleton.elim h h'
   -- Helper: C.F respects proof irrelevance
-  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (A : C.A i), C.F h A = C.F h' A := by
-    intro i j h h' A; rw [hDirSubsingleton h h']
+  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (a : C.A i), C.F h a = C.F h' a := by
+    intro i j h h' a; rw [hDirSubsingleton h h']
   -- Shared data parameterized by (A, B): ensures fst, snd, pair all use the same product stage.
   let iObj (A : C.Obj) : ι := (colimOut C A).1
   let xObj (A : C.Obj) : C.A (iObj A) := (colimOut C A).2
@@ -428,19 +428,19 @@ variable {ι : Type u} {D : Directed ι}
 
 @[expose] public noncomputable def colimitHasBinaryCoproducts (C : CatSystem ι D) (hC : C.Coherent)
     (hcop : ∀ i, HasBinaryCoproducts (C.A i))
-    (hcoppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : C.F hij ((hcop i).coprod A B) ⟶ z),
+    (hcoppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : C.F hij ((hcop i).coprod a b) ⟶ z),
         C.Fmap hij (hcop i).inl ≫ u = C.Fmap hij (hcop i).inl ≫ v →
         C.Fmap hij (hcop i).inr ≫ u = C.Fmap hij (hcop i).inr ≫ v → u = v)
-    (hcoppres_case : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : C.F hij A ⟶ z) (q : C.F hij B ⟶ z),
-        ∃ r : C.F hij ((hcop i).coprod A B) ⟶ z,
+    (hcoppres_case : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : C.F hij a ⟶ z) (q : C.F hij b ⟶ z),
+        ∃ r : C.F hij ((hcop i).coprod a b) ⟶ z,
           C.Fmap hij (hcop i).inl ≫ r = p ∧ C.Fmap hij (hcop i).inr ≫ r = q) :
     @HasBinaryCoproducts C.Obj (colimitCat C hC) := by
   have hDirSubsingleton : ∀ {i j : ι} (h h' : D.le i j), h = h' := by
     intro i j h h'; exact Subsingleton.elim h h'
-  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (A : C.A i), C.F h A = C.F h' A := by
-    intro i j h h' A; rw [hDirSubsingleton h h']
+  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (a : C.A i), C.F h a = C.F h' a := by
+    intro i j h h' a; rw [hDirSubsingleton h h']
   -- Shared data parameterized by (A, B): the coproduct stage k and pushed summands.
   let iObj (A : C.Obj) : ι := (colimOut C A).1
   let xObj (A : C.Obj) : C.A (iObj A) := (colimOut C A).2
@@ -764,8 +764,8 @@ variable {ι : Type u} {D : Directed ι}
   letI : Cat C.Obj := colimitCat C hC
   have hDirSubsingleton : ∀ {i j : ι} (h h' : D.le i j), h = h' :=
     fun {_ _} h h' => Subsingleton.elim h h'
-  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (A : C.A i), C.F h A = C.F h' A :=
-    fun {_ _} h h' A => by rw [hDirSubsingleton h h']
+  have hF_proof_irrel : ∀ {i j : ι} (h h' : D.le i j) (a : C.A i), C.F h a = C.F h' a :=
+    fun {_ _} h h' a => by rw [hDirSubsingleton h h']
   have hEdata : ∀ (X Y : C.Obj) (F G : X ⟶ Y),
       ∃ (E : C.Obj) (m : E ⟶ X), m ≫ F = m ≫ G ∧
         ∀ (W : C.Obj) (c : W ⟶ X), c ≫ F = c ≫ G →
@@ -1876,36 +1876,36 @@ public theorem colimHom_monicPair_of_rep (C : CatSystem ι D) (hC : C.Coherent)
     `colimHom_monicPair_of_rep` with `hpres` as the joint stage-cancellation. -/
 public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hpres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u : z ⟶ C.F hij ((hp i).prod A B)) (v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hpres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hpres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hpres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
-    (i : ι) (A B : C.A i) :
+    (i : ι) (a b : C.A i) :
     @IsIso C.Obj (colimitCat C hC) _ _
       (@pair C.Obj (colimitCat C hC) (colimitHasBinaryProducts C hC hp hpres hpres_pair)
-        (C.objIncl i ((hp i).prod A B)) (C.objIncl i A) (C.objIncl i B)
-        (homInclObj C hC ((hp i).fst (A := A) (B := B)))
-        (homInclObj C hC ((hp i).snd (A := A) (B := B)))) := by
+        (C.objIncl i ((hp i).prod a b)) (C.objIncl i a) (C.objIncl i b)
+        (homInclObj C hC ((hp i).fst (A := a) (B := b)))
+        (homInclObj C hC ((hp i).snd (A := a) (B := b)))) := by
   letI : Cat C.Obj := colimitCat C hC
   letI : HasBinaryProducts C.Obj := colimitHasBinaryProducts C hC hp hpres hpres_pair
   -- abbreviations (`set` is a Mathlib tactic unavailable here; `let`s unfold by defeq).
-  let P0 : C.A i := (hp i).prod A B
-  let fstS : P0 ⟶ A := (hp i).fst
-  let sndS : P0 ⟶ B := (hp i).snd
-  let xa : C.A (colimOut C (C.objIncl i A)).1 := (colimOut C (C.objIncl i A)).2
-  let xb : C.A (colimOut C (C.objIncl i B)).1 := (colimOut C (C.objIncl i B)).2
+  let P0 : C.A i := (hp i).prod a b
+  let fstS : P0 ⟶ a := (hp i).fst
+  let sndS : P0 ⟶ b := (hp i).snd
+  let xa : C.A (colimOut C (C.objIncl i a)).1 := (colimOut C (C.objIncl i a)).2
+  let xb : C.A (colimOut C (C.objIncl i b)).1 := (colimOut C (C.objIncl i b)).2
   let xprod : C.A (colimOut C (C.objIncl i P0)).1 := (colimOut C (C.objIncl i P0)).2
   -- fold the goal to use the abbreviations (so `rw [homInclObj_eq … fstS …]` matches)
   show @IsIso C.Obj (colimitCat C hC) _ _
     (@pair C.Obj (colimitCat C hC) (colimitHasBinaryProducts C hC hp hpres hpres_pair)
-      (C.objIncl i P0) (C.objIncl i A) (C.objIncl i B)
+      (C.objIncl i P0) (C.objIncl i a) (C.objIncl i b)
       (homInclObj C hC fstS) (homInclObj C hC sndS))
-  obtain ⟨ka, hpa, hia, heqa⟩ := Quotient.exact (colimOut_spec C (C.objIncl i A))
-  obtain ⟨kb, hpb, hib, heqb⟩ := Quotient.exact (colimOut_spec C (C.objIncl i B))
+  obtain ⟨ka, hpa, hia, heqa⟩ := Quotient.exact (colimOut_spec C (C.objIncl i a))
+  obtain ⟨kb, hpb, hib, heqb⟩ := Quotient.exact (colimOut_spec C (C.objIncl i b))
   obtain ⟨kP, hpP, hiP, heqP⟩ := Quotient.exact (colimOut_spec C (C.objIncl i P0))
   dsimp only [CatSystem.objSystem] at heqa heqb heqP
   -- a common stage L ≥ i, ka, kb, kP
@@ -1914,19 +1914,19 @@ public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
   have hkaL : D.le ka L := D.trans hkam hm1L
   have hkbL : D.le kb L := D.trans hkbm hm1L
   have hiL : D.le i L := D.trans hia hkaL
-  have hgaL : C.F (D.trans hpa hkaL) xa = C.F hiL A := by
+  have hgaL : C.F (D.trans hpa hkaL) xa = C.F hiL a := by
     rw [C.F_trans hpa hkaL, heqa, ← C.F_trans hia hkaL]
-  have hgbL : C.F (D.trans hpb hkbL) xb = C.F hiL B := by
+  have hgbL : C.F (D.trans hpb hkbL) xb = C.F hiL b := by
     rw [C.F_trans hpb hkbL, heqb, show hiL = D.trans hib hkbL from Subsingleton.elim _ _,
         ← C.F_trans hib hkbL]
   have hgPL : C.F (D.trans hpP hkPL) xprod = C.F hiL P0 := by
     rw [C.F_trans hpP hkPL, heqP, show hiL = D.trans hiP hkPL from Subsingleton.elim _ _,
         ← C.F_trans hiP hkPL]
-  let wF : HioWitness C P0 A := ⟨L, D.trans hpP hkPL, D.trans hpa hkaL, hiL, hgPL, hgaL⟩
-  let wS : HioWitness C P0 B := ⟨L, D.trans hpP hkPL, D.trans hpb hkbL, hiL, hgPL, hgbL⟩
+  let wF : HioWitness C P0 a := ⟨L, D.trans hpP hkPL, D.trans hpa hkaL, hiL, hgPL, hgaL⟩
+  let wS : HioWitness C P0 b := ⟨L, D.trans hpP hkPL, D.trans hpb hkbL, hiL, hgPL, hgbL⟩
   refine isIso_of_product_up _ _ (fun {Z} f g => ?_)
   -- joint monicity of the two projections (uniqueness half)
-  have hMP : @MonicPair C.Obj (colimitCat C hC) (C.objIncl i P0) (C.objIncl i A) (C.objIncl i B)
+  have hMP : @MonicPair C.Obj (colimitCat C hC) (C.objIncl i P0) (C.objIncl i a) (C.objIncl i b)
       (homInclObj C hC fstS) (homInclObj C hC sndS) := by
     rw [homInclObj_eq C hC fstS wF, homInclObj_eq C hC sndS wS]
     refine colimHom_monicPair_of_rep C hC (D.trans hpP hkPL) (D.trans hpa hkaL) (D.trans hpb hkbL)
@@ -1934,10 +1934,10 @@ public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
     -- reduce both germ maps to `castHom ∘ functF.map`, apply `hpres`
     have e_P : C.F hjk (C.F (D.trans hpP hkPL) xprod) = C.F (D.trans hiL hjk) P0 :=
       (congrArg (C.F hjk) hgPL).trans (C.F_trans hiL hjk P0).symm
-    have e_a : C.F hjk (C.F (D.trans hpa hkaL) xa) = C.F (D.trans hiL hjk) A :=
-      (congrArg (C.F hjk) hgaL).trans (C.F_trans hiL hjk A).symm
-    have e_b : C.F hjk (C.F (D.trans hpb hkbL) xb) = C.F (D.trans hiL hjk) B :=
-      (congrArg (C.F hjk) hgbL).trans (C.F_trans hiL hjk B).symm
+    have e_a : C.F hjk (C.F (D.trans hpa hkaL) xa) = C.F (D.trans hiL hjk) a :=
+      (congrArg (C.F hjk) hgaL).trans (C.F_trans hiL hjk a).symm
+    have e_b : C.F hjk (C.F (D.trans hpb hkbL) xb) = C.F (D.trans hiL hjk) b :=
+      (congrArg (C.F hjk) hgbL).trans (C.F_trans hiL hjk b).symm
     have hmapF : C.Fmap hjk (wF.germ fstS)
         = castHom e_P.symm e_a.symm (C.Fmap (D.trans hiL hjk) fstS) := by
       dsimp only [HioWitness.germ]
@@ -1963,7 +1963,7 @@ public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
         = (castHom rfl e_P v) ≫ C.Fmap (D.trans hiL hjk) sndS := by
       apply castHom_injective rfl e_b.symm; rw [cT, cT, cR, cR]; exact hv
     exact castHom_injective rfl e_P
-      (hpres (D.trans hiL hjk) A B z (castHom rfl e_P u) (castHom rfl e_P v) huu hvv)
+      (hpres (D.trans hiL hjk) a b z (castHom rfl e_P u) (castHom rfl e_P v) huu hvv)
   -- existence half: build the mediator at stage L
   refine Quotient.inductionOn f (fun ⟨af, fa⟩ => ?_)
   refine Quotient.inductionOn g (fun ⟨bg, ga⟩ => ?_)
@@ -1974,16 +1974,16 @@ public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
   have hbgN : D.le bg.1 N := D.trans hbgm hm2N
   have hiN : D.le i N := D.trans hiL hLN
   -- rep-agreements at N
-  have hgaN : C.F (D.trans (D.trans hpa hkaL) hLN) xa = C.F hiN A := by
+  have hgaN : C.F (D.trans (D.trans hpa hkaL) hLN) xa = C.F hiN a := by
     rw [C.F_trans (D.trans hpa hkaL) hLN, hgaL, ← C.F_trans hiL hLN]
-  have hgbN : C.F (D.trans (D.trans hpb hkbL) hLN) xb = C.F hiN B := by
+  have hgbN : C.F (D.trans (D.trans hpb hkbL) hLN) xb = C.F hiN b := by
     rw [C.F_trans (D.trans hpb hkbL) hLN, hgbL, ← C.F_trans hiL hLN]
   have hgPN : C.F (D.trans (D.trans hpP hkPL) hLN) xprod = C.F hiN P0 := by
     rw [C.F_trans (D.trans hpP hkPL) hLN, hgPL, ← C.F_trans hiL hLN]
   -- witnesses at N
-  let wFN : HioWitness C P0 A :=
+  let wFN : HioWitness C P0 a :=
     ⟨N, D.trans (D.trans hpP hkPL) hLN, D.trans (D.trans hpa hkaL) hLN, hiN, hgPN, hgaN⟩
-  let wSN : HioWitness C P0 B :=
+  let wSN : HioWitness C P0 b :=
     ⟨N, D.trans (D.trans hpP hkPL) hLN, D.trans (D.trans hpb hkbL) hLN, hiN, hgPN, hgbN⟩
   -- competitor germs at N
   let fL_raw : C.F (D.trans af.2.1 hafN) z ⟶ C.F (D.trans af.2.2 hafN) xa :=
@@ -1992,15 +1992,15 @@ public theorem objIncl_preserves_products (C : CatSystem ι D) (hC : C.Coherent)
     homTr C z xb bg ⟨N, D.trans bg.2.1 hbgN, D.trans bg.2.2 hbgN⟩ hbgN ga
   have hzeq : C.F (D.trans bg.2.1 hbgN) z = C.F (D.trans af.2.1 hafN) z :=
     C.F_proof_irrel _ _ z
-  have hfa_tgt : C.F (D.trans af.2.2 hafN) xa = C.F hiN A := by
+  have hfa_tgt : C.F (D.trans af.2.2 hafN) xa = C.F hiN a := by
     rw [show D.trans af.2.2 hafN = D.trans (D.trans hpa hkaL) hLN from Subsingleton.elim _ _]
     exact hgaN
-  have hgb_tgt : C.F (D.trans bg.2.2 hbgN) xb = C.F hiN B := by
+  have hgb_tgt : C.F (D.trans bg.2.2 hbgN) xb = C.F hiN b := by
     rw [show D.trans bg.2.2 hbgN = D.trans (D.trans hpb hkbL) hLN from Subsingleton.elim _ _]
     exact hgbN
-  let pL : C.F (D.trans af.2.1 hafN) z ⟶ C.F hiN A := castHom rfl hfa_tgt fL_raw
-  let qL : C.F (D.trans af.2.1 hafN) z ⟶ C.F hiN B := castHom hzeq hgb_tgt gL_raw
-  obtain ⟨r, hr_fst, hr_snd⟩ := hpres_pair hiN A B (C.F (D.trans af.2.1 hafN) z) pL qL
+  let pL : C.F (D.trans af.2.1 hafN) z ⟶ C.F hiN a := castHom rfl hfa_tgt fL_raw
+  let qL : C.F (D.trans af.2.1 hafN) z ⟶ C.F hiN b := castHom hzeq hgb_tgt gL_raw
+  obtain ⟨r, hr_fst, hr_snd⟩ := hpres_pair hiN a b (C.F (D.trans af.2.1 hafN) z) pL qL
   let rgerm : C.F (D.trans af.2.1 hafN) z ⟶ C.F (D.trans (D.trans hpP hkPL) hLN) xprod :=
     castHom rfl hgPN.symm r
   let u : Z ⟶ C.objIncl i P0 :=
@@ -2067,12 +2067,12 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
         (k : z ⟶ C.F hij A)
         (_hk : k ≫ C.Fmap hij f = k ≫ C.Fmap hij g),
         ∃ r : z ⟶ C.F hij (eqObj f g), r ≫ C.Fmap hij (eqMap f g) = k)
-    (i : ι) {A B : C.A i} (f g : A ⟶ B) :
+    (i : ι) {a b : C.A i} (f g : a ⟶ b) :
     @EqualizerCone.IsEqualizer C.Obj (colimitCat C hC)
-      (C.objIncl i A) (C.objIncl i B) (homInclObj C hC f) (homInclObj C hC g)
+      (C.objIncl i a) (C.objIncl i b) (homInclObj C hC f) (homInclObj C hC g)
       (@EqualizerCone.mk C.Obj (colimitCat C hC) _ _ (homInclObj C hC f) (homInclObj C hC g)
-        (C.objIncl i (@eqObj _ _ (he i) A B f g))
-        (homInclObj C hC (@eqMap _ _ (he i) A B f g))
+        (C.objIncl i (@eqObj _ _ (he i) a b f g))
+        (homInclObj C hC (@eqMap _ _ (he i) a b f g))
         (by
           letI : Cat C.Obj := colimitCat C hC
           letI : HasEqualizers (C.A i) := he i
@@ -2083,28 +2083,28 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
   letI : Cat C.Obj := colimitCat C hC
   letI : HasEqualizers (C.A i) := he i
   let Eobj : C.A i := eqObj f g
-  let eS : Eobj ⟶ A := eqMap f g
+  let eS : Eobj ⟶ a := eqMap f g
   -- uniqueness: `homInclObj eS` is monic (`eqMap` is jointly cancellable via `hepres`)
-  have hmono : @Monic C.Obj (colimitCat C hC) (C.objIncl i Eobj) (C.objIncl i A)
+  have hmono : @Monic C.Obj (colimitCat C hC) (C.objIncl i Eobj) (C.objIncl i a)
       (homInclObj C hC eS) :=
     homInclObj_mono_of_stage C hC eS
       (fun {j} hij z u v huv => hepres hij f g z u v huv)
   -- reps of `objIncl i a`, `objIncl i b` and `objIncl i Eobj`, aligned at a stage `L ≥ i`
-  obtain ⟨ka, hpa, hia, heqa⟩ := Quotient.exact (colimOut_spec C (C.objIncl i A))
-  obtain ⟨kb, hpb, hib, heqb⟩ := Quotient.exact (colimOut_spec C (C.objIncl i B))
+  obtain ⟨ka, hpa, hia, heqa⟩ := Quotient.exact (colimOut_spec C (C.objIncl i a))
+  obtain ⟨kb, hpb, hib, heqb⟩ := Quotient.exact (colimOut_spec C (C.objIncl i b))
   obtain ⟨kE, hpE, hiE, heqE⟩ := Quotient.exact (colimOut_spec C (C.objIncl i Eobj))
   dsimp only [CatSystem.objSystem] at heqa heqb heqE
-  let xa : C.A (colimOut C (C.objIncl i A)).1 := (colimOut C (C.objIncl i A)).2
-  let xb : C.A (colimOut C (C.objIncl i B)).1 := (colimOut C (C.objIncl i B)).2
+  let xa : C.A (colimOut C (C.objIncl i a)).1 := (colimOut C (C.objIncl i a)).2
+  let xb : C.A (colimOut C (C.objIncl i b)).1 := (colimOut C (C.objIncl i b)).2
   let xE : C.A (colimOut C (C.objIncl i Eobj)).1 := (colimOut C (C.objIncl i Eobj)).2
   obtain ⟨m1, hkam, hkbm⟩ := D.bound ka kb
   obtain ⟨L, hm1L, hkEL⟩ := D.bound m1 kE
   have hkaL : D.le ka L := D.trans hkam hm1L
   have hkbL : D.le kb L := D.trans hkbm hm1L
   have hiL : D.le i L := D.trans hia hkaL
-  have hgaL : C.F (D.trans hpa hkaL) xa = C.F hiL A := by
+  have hgaL : C.F (D.trans hpa hkaL) xa = C.F hiL a := by
     rw [C.F_trans hpa hkaL, heqa, ← C.F_trans hia hkaL]
-  have hgbL : C.F (D.trans hpb hkbL) xb = C.F hiL B := by
+  have hgbL : C.F (D.trans hpb hkbL) xb = C.F hiL b := by
     rw [C.F_trans hpb hkbL, heqb, show hiL = D.trans hib hkbL from Subsingleton.elim _ _,
         ← C.F_trans hib hkbL]
   have hgEL : C.F (D.trans hpE hkEL) xE = C.F hiL Eobj := by
@@ -2121,13 +2121,13 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
   -- a first stage `N ≥ ad.1, L` to express the competitor and the two parallel germs
   obtain ⟨N, hadN, hLN⟩ := D.bound ad.1 L
   have hiN : D.le i N := D.trans hiL hLN
-  have hgaN : C.F (D.trans (D.trans hpa hkaL) hLN) xa = C.F hiN A := by
+  have hgaN : C.F (D.trans (D.trans hpa hkaL) hLN) xa = C.F hiN a := by
     rw [C.F_trans (D.trans hpa hkaL) hLN, hgaL, ← C.F_trans hiL hLN]
-  have hgbN : C.F (D.trans (D.trans hpb hkbL) hLN) xb = C.F hiN B := by
+  have hgbN : C.F (D.trans (D.trans hpb hkbL) hLN) xb = C.F hiN b := by
     rw [C.F_trans (D.trans hpb hkbL) hLN, hgbL, ← C.F_trans hiL hLN]
-  let wfN : HioWitness C A B :=
+  let wfN : HioWitness C a b :=
     ⟨N, D.trans (D.trans hpa hkaL) hLN, D.trans (D.trans hpb hkbL) hLN, hiN, hgaN, hgbN⟩
-  let wgN : HioWitness C A B :=
+  let wgN : HioWitness C a b :=
     ⟨N, D.trans (D.trans hpa hkaL) hLN, D.trans (D.trans hpb hkbL) hLN, hiN, hgaN, hgbN⟩
   -- reduce the competitor's leg-equation `d.eq` to a germ equation; `Quotient.exact`
   -- produces the working stage `M := R.1 ≥ N` where everything is built.
@@ -2151,21 +2151,21 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
   have hadM : D.le ad.1 M := D.trans hadN hNM
   have hLM : D.le L M := D.trans hLN hNM
   -- rep-equalities at the working stage `M`
-  have hgaM : C.F (D.trans (D.trans hpa hkaL) hLM) xa = C.F hiM A := by
+  have hgaM : C.F (D.trans (D.trans hpa hkaL) hLM) xa = C.F hiM a := by
     rw [C.F_trans (D.trans hpa hkaL) hLM, hgaL, ← C.F_trans hiL hLM]
-  have hgbM : C.F (D.trans (D.trans hpb hkbL) hLM) xb = C.F hiM B := by
+  have hgbM : C.F (D.trans (D.trans hpb hkbL) hLM) xb = C.F hiM b := by
     rw [C.F_trans (D.trans hpb hkbL) hLM, hgbL, ← C.F_trans hiL hLM]
   have hgEM : C.F (D.trans (D.trans hpE hkEL) hLM) xE = C.F hiM Eobj := by
     rw [C.F_trans (D.trans hpE hkEL) hLM, hgEL, ← C.F_trans hiL hLM]
-  let wEM : HioWitness C Eobj A :=
+  let wEM : HioWitness C Eobj a :=
     ⟨M, D.trans (D.trans hpE hkEL) hLM, D.trans (D.trans hpa hkaL) hLM, hiM, hgEM, hgaM⟩
   -- competitor germ pushed to `M`, then cast to land in `C.F hiM a`
   let dM_raw : C.F (D.trans ad.2.1 hadM) zz ⟶ C.F (D.trans ad.2.2 hadM) xa :=
     homTr C zz xa ad ⟨M, D.trans ad.2.1 hadM, D.trans ad.2.2 hadM⟩ hadM dm
-  have hda_tgt : C.F (D.trans ad.2.2 hadM) xa = C.F hiM A := by
+  have hda_tgt : C.F (D.trans ad.2.2 hadM) xa = C.F hiM a := by
     rw [show D.trans ad.2.2 hadM = D.trans (D.trans hpa hkaL) hLM from Subsingleton.elim _ _]
     exact hgaM
-  let pL : C.F (D.trans ad.2.1 hadM) zz ⟶ C.F hiM A := castHom rfl hda_tgt dM_raw
+  let pL : C.F (D.trans ad.2.1 hadM) zz ⟶ C.F hiM a := castHom rfl hda_tgt dM_raw
   -- transport `hReq` to the equation `pL ≫ functF.map f = pL ≫ functF.map g` at `M`
   have key := congrArg
     (homTr C zz xb R ⟨M, D.trans R.2.1 (D.refl M), D.trans R.2.2 (D.refl M)⟩ (D.refl M)) hReq
@@ -2173,10 +2173,10 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
   rw [homTr_comp C, homTr_comp C] at key
   rw [← homTr_trans C hC, ← homTr_trans C hC, ← homTr_trans C hC] at key
   -- the witness germs pushed from `N` to `M` are `castHom ∘ functF.map f` (resp. g) at `M`
-  have HcfP : C.F (D.trans wfN.hix hNM) A = C.F (D.trans wfN.hpx hNM) xa :=
+  have HcfP : C.F (D.trans wfN.hix hNM) a = C.F (D.trans wfN.hpx hNM) xa :=
     by rw [show D.trans wfN.hix hNM = hiM from Subsingleton.elim _ _,
            show D.trans wfN.hpx hNM = D.trans (D.trans hpa hkaL) hLM from Subsingleton.elim _ _, hgaM]
-  have HcfQ : C.F (D.trans wfN.hix hNM) B = C.F (D.trans wfN.hpy hNM) xb :=
+  have HcfQ : C.F (D.trans wfN.hix hNM) b = C.F (D.trans wfN.hpy hNM) xb :=
     by rw [show D.trans wfN.hix hNM = hiM from Subsingleton.elim _ _,
            show D.trans wfN.hpy hNM = D.trans (D.trans hpb hkbL) hLM from Subsingleton.elim _ _, hgbM]
   have hpush_f := homInclObj_germ_push C hC f wfN M hNM HcfP HcfQ
@@ -2200,7 +2200,7 @@ public theorem objIncl_preserves_equalizers (C : CatSystem ι D) (hC : C.Coheren
        = castHom rfl hda_tgt dM_raw ≫ C.Fmap hiM g
     rw [cR hda_tgt, cR hda_tgt]
     -- both sides: `dM_raw ≫ castHom hda_tgt.symm rfl (functF.map _)`, defeq to `key2`'s legs
-    have hslide : ∀ (h : A ⟶ B),
+    have hslide : ∀ (h : a ⟶ b),
         castHom hda_tgt.symm rfl (C.Fmap hiM h)
           = castHom HcfP (HcfQ.trans hgbM) (C.Fmap hiM h) := by
       intro h
@@ -2355,7 +2355,7 @@ public theorem objIncl_preserves_images (C : CatSystem ι D) (hC : C.Coherent)
           (Subobject.map (C.functF hij) (hmono hij)
             (@image _ (C.catA i) (hi i) _ _ f)))
     [hpull : @HasPullbacks C.Obj (colimitCat C hC)]
-    (i : ι) {A B : C.A i} (f : A ⟶ B) :
+    (i : ι) {a b : C.A i} (f : a ⟶ b) :
     letI : Cat C.Obj := colimitCat C hC
     letI : HasImages (C.A i) := hi i
     IsImage (homInclObj C hC f)
@@ -2723,13 +2723,13 @@ public theorem image_chosenPullback_isPullback {𝒞 𝒟 : Type u} [Cat.{v} �
     (_htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     -- binary-product data
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u : z ⟶ C.F hij ((hp i).prod A B)) (v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     -- equalizer data
     (he : ∀ i, HasEqualizers (C.A i))
@@ -2759,13 +2759,13 @@ public theorem colimitHasPullbacks_has (C : CatSystem ι D) (hC : C.Coherent) [h
     (ht : ∀ i, HasTerminal (C.A i))
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     (he : ∀ i, HasEqualizers (C.A i))
     (hepres : ∀ {i j} (hij : D.le i j) {A B : C.A i} (f g : A ⟶ B) (z : C.A j)
@@ -3066,13 +3066,13 @@ public theorem colimHom_cospan_as_homInclObj (C : CatSystem ι D) (hC : C.Cohere
     (htpres : ∀ {i j} (hij : D.le i j), C.F hij (ht i).one = (ht j).one)
     -- binary products
     (hp : ∀ i, HasBinaryProducts (C.A i))
-    (hppres : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (u : z ⟶ C.F hij ((hp i).prod A B)) (v : z ⟶ C.F hij ((hp i).prod A B)),
+    (hppres : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (u : z ⟶ C.F hij ((hp i).prod a b)) (v : z ⟶ C.F hij ((hp i).prod a b)),
         u ≫ C.Fmap hij (hp i).fst = v ≫ C.Fmap hij (hp i).fst →
         u ≫ C.Fmap hij (hp i).snd = v ≫ C.Fmap hij (hp i).snd → u = v)
-    (hppres_pair : ∀ {i j} (hij : D.le i j) (A B : C.A i) (z : C.A j)
-        (p : z ⟶ C.F hij A) (q : z ⟶ C.F hij B),
-        ∃ r : z ⟶ C.F hij ((hp i).prod A B),
+    (hppres_pair : ∀ {i j} (hij : D.le i j) (a b : C.A i) (z : C.A j)
+        (p : z ⟶ C.F hij a) (q : z ⟶ C.F hij b),
+        ∃ r : z ⟶ C.F hij ((hp i).prod a b),
           r ≫ C.Fmap hij (hp i).fst = p ∧ r ≫ C.Fmap hij (hp i).snd = q)
     -- equalizers
     (he : ∀ i, HasEqualizers (C.A i))

@@ -56,28 +56,28 @@ variable {𝒜 𝒮 : Type u} [Cat.{u} 𝒜] [Cat.{u} 𝒮] [HasTerminal 𝒮] [
     the structure maps are the `a`-components of `G`'s NTs (terminator/product in `𝒮^𝒜` are
     pointwise, so the types match on the nose), and the four axioms are the `a`-components of
     `G`'s axiom equations of natural transformations. -/
-def ptOb (G : AbelianGroupObject (Functor 𝒜 𝒮)) (A : 𝒜) : AbelianGroupObject 𝒮 where
-  carrier   := G.carrier.obj A
-  zero      := G.zero.app A
-  neg       := G.neg.app A
-  add       := G.add.app A
-  add_zero  := congrFun (congrArg NaturalTransformation.app G.add_zero) A
-  add_neg   := congrFun (congrArg NaturalTransformation.app G.add_neg) A
-  add_assoc := congrFun (congrArg NaturalTransformation.app G.add_assoc) A
-  add_comm  := congrFun (congrArg NaturalTransformation.app G.add_comm) A
+def ptOb (G : AbelianGroupObject (Functor 𝒜 𝒮)) (a : 𝒜) : AbelianGroupObject 𝒮 where
+  carrier   := G.carrier.obj a
+  zero      := G.zero.app a
+  neg       := G.neg.app a
+  add       := G.add.app a
+  add_zero  := congrFun (congrArg NaturalTransformation.app G.add_zero) a
+  add_neg   := congrFun (congrArg NaturalTransformation.app G.add_neg) a
+  add_assoc := congrFun (congrArg NaturalTransformation.app G.add_assoc) a
+  add_comm  := congrFun (congrArg NaturalTransformation.app G.add_comm) a
 
 /-- Each transition `G.carrier.map f` is an Ab-object homomorphism `ptOb G a → ptOb G b`.
     This is exactly the naturality square of the NT `G.add`, read backwards
     (`(F×F).map f` unfolds pointwise to `⟨fst ≫ F.map f, snd ≫ F.map f⟩`). -/
-theorem ptOb_isHom (G : AbelianGroupObject (Functor 𝒜 𝒮)) {A B : 𝒜} (f : A ⟶ B) :
-    IsHomAbelianGroupObject (ptOb G A) (ptOb G B) (G.carrier.map f) :=
+theorem ptOb_isHom (G : AbelianGroupObject (Functor 𝒜 𝒮)) {a b : 𝒜} (f : a ⟶ b) :
+    IsHomAbelianGroupObject (ptOb G a) (ptOb G b) (G.carrier.map f) :=
   (G.add.naturality f).symm
 
 /-- §1.596 forward map: `G ↦ (a ↦ ptOb G a)`, a functor `𝒜 → Ab(𝒮)`. -/
 def fwdFun (G : AbelianGroupObject (Functor 𝒜 𝒮)) : Functor 𝒜 (AbelianGroupObject 𝒮) where
-  obj A := ptOb G A
+  obj a := ptOb G a
   map      := fun {_ _} f => ⟨G.carrier.map f, ptOb_isHom G f⟩
-  map_id   := fun A => Subtype.ext (G.carrier.map_id A)
+  map_id   := fun a => Subtype.ext (G.carrier.map_id a)
   map_comp := fun f g => Subtype.ext (G.carrier.map_comp f g)
 
 /-! ## Backward direction  `(Ab 𝒮)^𝒜 → Ab(𝒮^𝒜)`
@@ -90,28 +90,28 @@ def fwdFun (G : AbelianGroupObject (Functor 𝒜 𝒮)) : Functor 𝒜 (AbelianG
 /-- Underlying `𝒮`-functor of `H : 𝒜 → Ab(𝒮)`: `a ↦ (H a).carrier`, `f ↦ (H f).val`.
     Functoriality is `H`'s, projected to carriers (`ab_id_val`/`ab_comp_val`). -/
 def bwdCarrier (H : Functor 𝒜 (AbelianGroupObject 𝒮)) : Functor 𝒜 𝒮 where
-  obj A := (H.obj A).carrier
+  obj a := (H.obj a).carrier
   map      := fun {_ _} f => (H.map f).val
-  map_id   := fun A => congrArg Subtype.val (H.map_id A)
+  map_id   := fun a => congrArg Subtype.val (H.map_id a)
   map_comp := fun f g => congrArg Subtype.val (H.map_comp f g)
 
 /-- Levelwise zero as an NT `1 ⟶ bwdCarrier H`.  Naturality = `H.map f` preserves zero. -/
 def bwdZero (H : Functor 𝒜 (AbelianGroupObject 𝒮)) :
     (one : Functor 𝒜 𝒮) ⟶ bwdCarrier H where
-  app A := (H.obj A).zero
-  naturality {A B} f := by
+  app a := (H.obj a).zero
+  naturality {a b} f := by
     have h := hom_preserves_zero (H.map f).property (term (one : 𝒮))
     rw [term_uniq (term (one : 𝒮)) (Cat.id one), Cat.id_comp, Cat.id_comp] at h
-    show Cat.id one ≫ (H.obj B).zero = (H.obj A).zero ≫ (H.map f).val
+    show Cat.id one ≫ (H.obj b).zero = (H.obj a).zero ≫ (H.map f).val
     rw [Cat.id_comp, h]
 
 /-- Levelwise negation as an NT `bwdCarrier H ⟶ bwdCarrier H`.  Naturality = `H.map f`
     preserves negation (`hom_preserves_neg`). -/
 def bwdNeg (H : Functor 𝒜 (AbelianGroupObject 𝒮)) :
     bwdCarrier H ⟶ bwdCarrier H where
-  app A := (H.obj A).neg
-  naturality {A B} f := by
-    have h := hom_preserves_neg (H.map f).property (Cat.id (H.obj A).carrier)
+  app a := (H.obj a).neg
+  naturality {a b} f := by
+    have h := hom_preserves_neg (H.map f).property (Cat.id (H.obj a).carrier)
     rw [Cat.id_comp, Cat.id_comp] at h
     exact h.symm
 
@@ -119,7 +119,7 @@ def bwdNeg (H : Functor 𝒜 (AbelianGroupObject 𝒮)) :
     exactly the homomorphism condition of `H.map f` (`(F×F).map f` unfolds pointwise). -/
 def bwdAdd (H : Functor 𝒜 (AbelianGroupObject 𝒮)) :
     prod (bwdCarrier H) (bwdCarrier H) ⟶ bwdCarrier H where
-  app A := (H.obj A).add
+  app a := (H.obj a).add
   naturality {_a _b} f := (H.map f).property.symm
 
 /-- §1.596 backward map: assemble a functor `H : 𝒜 → Ab(𝒮)` into an Ab-object of `𝒮^𝒜`.
@@ -131,10 +131,10 @@ def bwdFun (H : Functor 𝒜 (AbelianGroupObject 𝒮)) :
   zero      := bwdZero H
   neg       := bwdNeg H
   add       := bwdAdd H
-  add_zero  := NaturalTransformation.ext' fun A => (H.obj A).add_zero
-  add_neg   := NaturalTransformation.ext' fun A => (H.obj A).add_neg
-  add_assoc := NaturalTransformation.ext' fun A => (H.obj A).add_assoc
-  add_comm  := NaturalTransformation.ext' fun A => (H.obj A).add_comm
+  add_zero  := NaturalTransformation.ext' fun a => (H.obj a).add_zero
+  add_neg   := NaturalTransformation.ext' fun a => (H.obj a).add_neg
+  add_assoc := NaturalTransformation.ext' fun a => (H.obj a).add_assoc
+  add_comm  := NaturalTransformation.ext' fun a => (H.obj a).add_comm
 
 /-! ## The two maps are mutually inverse — object-level bijection `Ab(𝒮^𝒜) ≃ (Ab 𝒮)^𝒜`
 
@@ -160,15 +160,15 @@ variable {G₁ G₂ G₃ : AbelianGroupObject (Functor 𝒜 𝒮)}
     Pointwise homomorphism = `a`-component of `φ`'s homomorphism square; naturality in `Ab(𝒮)` =
     `φ`'s naturality (carriers agree). -/
 def fwdHom (φ : HomAb G₁ G₂) : FunctorHom (fwdFun G₁) (fwdFun G₂) where
-  app A := ⟨φ.val.app A, congrFun (congrArg NaturalTransformation.app φ.property) A⟩
+  app a := ⟨φ.val.app a, congrFun (congrArg NaturalTransformation.app φ.property) a⟩
   naturality {_a _b} f := Subtype.ext (φ.val.naturality f)
 
 /-- Backward on homs: a natural family `ψ` of levelwise homs is the NT `a ↦ (ψ.app a).val`,
     whose homomorphism square holds componentwise (each `ψ.app a` is a levelwise hom). -/
 def bwdHom (ψ : FunctorHom (fwdFun G₁) (fwdFun G₂)) : HomAb G₁ G₂ :=
-  ⟨{ app        := fun A => (ψ.app A).val
+  ⟨{ app        := fun a => (ψ.app a).val
      naturality := fun {_ _} f => congrArg Subtype.val (ψ.naturality f) },
-   NaturalTransformation.ext' fun A => (ψ.app A).property⟩
+   NaturalTransformation.ext' fun a => (ψ.app a).property⟩
 
 /-- §1.596 hom bijection, round-trip 1: `bwdHom ∘ fwdHom = id`. -/
 theorem bwdHom_fwdHom (φ : HomAb G₁ G₂) : bwdHom (fwdHom φ) = φ := rfl

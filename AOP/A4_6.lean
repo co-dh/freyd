@@ -138,23 +138,23 @@ public theorem bigUnion_eq_existsImage_eps {A : 𝒜} :
 
 /-- Monad law `μ·τ = id`: `singletonMap ≫ bigUnion = 1`. -/
 theorem bigUnion_singleton {A : 𝒜} :
-    singletonMap ≫ bigUnion (A := A) = Cat.id (PowerAllegory.powerObj A) := by
+    singletonMap ≫ bigUnion (a := A) = Cat.id (PowerAllegory.powerObj A) := by
   rw [bigUnion_eq_existsImage_eps, singletonMap, Λ_absorption, Cat.id_comp, Λ_eps_reflection]
 
 /-- Monad law `μ·Pτ = id`: `E singletonMap ≫ bigUnion = 1`. -/
 public theorem bigUnion_existsImage_singleton {A : 𝒜} :
-    existsImage (singletonMap (A := A)) ≫ bigUnion = Cat.id (PowerAllegory.powerObj A) := by
+    existsImage (singletonMap (a := A)) ≫ bigUnion = Cat.id (PowerAllegory.powerObj A) := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, Λ_eps_eq', existsImage_id]
 
 /-- Monad law `μ·μ = μ·Pμ`: `bigUnion ≫ bigUnion = E bigUnion ≫ bigUnion`. -/
 theorem bigUnion_assoc {A : 𝒜} :
-    bigUnion ≫ bigUnion (A := A)
-      = existsImage (bigUnion (A := A)) ≫ bigUnion := by
-  have hL : bigUnion (A := PowerAllegory.powerObj A) ≫ bigUnion (A := A)
+    bigUnion ≫ bigUnion (a := A)
+      = existsImage (bigUnion (a := A)) ≫ bigUnion := by
+  have hL : bigUnion (a := PowerAllegory.powerObj A) ≫ bigUnion (a := A)
       = existsImage (∋ (PowerAllegory.powerObj A) ≫ ∋ A) := by
     rw [bigUnion_eq_existsImage_eps (A := PowerAllegory.powerObj A),
         bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp]
-  have hR : existsImage (bigUnion (A := A)) ≫ bigUnion (A := A)
+  have hR : existsImage (bigUnion (a := A)) ≫ bigUnion (a := A)
       = existsImage (∋ (PowerAllegory.powerObj A) ≫ ∋ A) := by
     rw [bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp, existsImage_eps]
   exact hL.trans hR.symm

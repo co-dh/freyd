@@ -165,40 +165,40 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- `g := ι° ≫ I ≫ ι` is a symmetric idempotent on `s` when `ι ≫ ι° = 1_a` and `I` is a
     symmetric idempotent on `a` (the transport of `I` along the partial iso `ι`). -/
-def symIdemConj {A s : 𝒜} (ι : A ⟶ s) (hι : ι ≫ ι° = Cat.id A)
-    (I : A ⟶ A) (hIsym : I° = I) (hIidem : I ≫ I = I) : SymIdem s where
+def symIdemConj {a s : 𝒜} (ι : a ⟶ s) (hι : ι ≫ ι° = Cat.id a)
+    (I : a ⟶ a) (hIsym : I° = I) (hIidem : I ≫ I = I) : SymIdem s where
   e := ι° ≫ I ≫ ι
   sym := by
     rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, hIsym, Cat.assoc]
   idem := by
     calc (ι° ≫ I ≫ ι) ≫ (ι° ≫ I ≫ ι)
         = ι° ≫ I ≫ (ι ≫ ι°) ≫ I ≫ ι := by simp only [Cat.assoc]
-      _ = ι° ≫ I ≫ Cat.id A ≫ I ≫ ι := by rw [hι]
+      _ = ι° ≫ I ≫ Cat.id a ≫ I ≫ ι := by rw [hι]
       _ = ι° ≫ I ≫ I ≫ ι := by rw [Cat.id_comp]
       _ = ι° ≫ (I ≫ I) ≫ ι := by rw [Cat.assoc]
       _ = ι° ≫ I ≫ ι := by rw [hIidem]
 
 /-- **The conjugation isomorphism** `(a, I) ≅ (s, ι° ≫ I ≫ ι)` in `SplObj 𝒜`.  Legs
     `i = I ≫ ι` and `j = ι° ≫ I`; `i ≫ j = I = id_{(a,I)}`, `j ≫ i = ι° ≫ I ≫ ι = id`. -/
-theorem splObj_conj_iso {A s : 𝒜} (ι : A ⟶ s) (hι : ι ≫ ι° = Cat.id A)
-    (I : A ⟶ A) (hIsym : I° = I) (hIidem : I ≫ I = I) :
-    ∃ (i : (⟨A, ⟨I, hIsym, hIidem⟩⟩ : SplObj 𝒜) ⟶ ⟨s, symIdemConj ι hι I hIsym hIidem⟩)
-      (j : (⟨s, symIdemConj ι hι I hIsym hIidem⟩ : SplObj 𝒜) ⟶ ⟨A, ⟨I, hIsym, hIidem⟩⟩),
-      i ≫ j = Cat.id (⟨A, ⟨I, hIsym, hIidem⟩⟩ : SplObj 𝒜) ∧
+theorem splObj_conj_iso {a s : 𝒜} (ι : a ⟶ s) (hι : ι ≫ ι° = Cat.id a)
+    (I : a ⟶ a) (hIsym : I° = I) (hIidem : I ≫ I = I) :
+    ∃ (i : (⟨a, ⟨I, hIsym, hIidem⟩⟩ : SplObj 𝒜) ⟶ ⟨s, symIdemConj ι hι I hIsym hIidem⟩)
+      (j : (⟨s, symIdemConj ι hι I hIsym hIidem⟩ : SplObj 𝒜) ⟶ ⟨a, ⟨I, hIsym, hIidem⟩⟩),
+      i ≫ j = Cat.id (⟨a, ⟨I, hIsym, hIidem⟩⟩ : SplObj 𝒜) ∧
       j ≫ i = Cat.id (⟨s, symIdemConj ι hι I hIsym hIidem⟩ : SplObj 𝒜) := by
   refine ⟨⟨I ≫ ι, ?_⟩, ⟨ι° ≫ I, ?_⟩, ?_, ?_⟩
   · -- fixed i: I ≫ (I ≫ ι) ≫ (ι° ≫ I ≫ ι) = I ≫ ι
     show I ≫ (I ≫ ι) ≫ (ι° ≫ I ≫ ι) = I ≫ ι
     calc I ≫ (I ≫ ι) ≫ (ι° ≫ I ≫ ι)
         = (I ≫ I) ≫ (ι ≫ ι°) ≫ I ≫ ι := by simp only [Cat.assoc]
-      _ = (I ≫ I) ≫ Cat.id A ≫ I ≫ ι := by rw [hι]
+      _ = (I ≫ I) ≫ Cat.id a ≫ I ≫ ι := by rw [hι]
       _ = (I ≫ I) ≫ (I ≫ ι) := by rw [Cat.id_comp]
       _ = I ≫ ι := by rw [hIidem, ← Cat.assoc, hIidem]
   · -- fixed j: (ι° ≫ I ≫ ι) ≫ (ι° ≫ I) ≫ I = ι° ≫ I
     show (ι° ≫ I ≫ ι) ≫ (ι° ≫ I) ≫ I = ι° ≫ I
     calc (ι° ≫ I ≫ ι) ≫ (ι° ≫ I) ≫ I
         = ι° ≫ I ≫ (ι ≫ ι°) ≫ I ≫ I := by simp only [Cat.assoc]
-      _ = ι° ≫ I ≫ Cat.id A ≫ I ≫ I := by rw [hι]
+      _ = ι° ≫ I ≫ Cat.id a ≫ I ≫ I := by rw [hι]
       _ = ι° ≫ I ≫ I ≫ I := by rw [Cat.id_comp]
       _ = ι° ≫ I := by rw [hIidem, hIidem]
   · -- i ≫ j = id_{(a,I)}: (I ≫ ι) ≫ (ι° ≫ I) = I
@@ -206,7 +206,7 @@ theorem splObj_conj_iso {A s : 𝒜} (ι : A ⟶ s) (hι : ι ≫ ι° = Cat.id 
     show (I ≫ ι) ≫ (ι° ≫ I) = I
     calc (I ≫ ι) ≫ (ι° ≫ I)
         = I ≫ (ι ≫ ι°) ≫ I := by simp only [Cat.assoc]
-      _ = I ≫ Cat.id A ≫ I := by rw [hι]
+      _ = I ≫ Cat.id a ≫ I := by rw [hι]
       _ = I ≫ I := by rw [Cat.id_comp]
       _ = I := hIidem
   · -- j ≫ i = id_{(s,g)}: (ι° ≫ I) ≫ (I ≫ ι) = ι° ≫ I ≫ ι

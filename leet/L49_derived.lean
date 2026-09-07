@@ -66,7 +66,7 @@ def foldCL : ConsList Unit (List Int) → List (List (List Int))
   | ConsList.cons s xs => st s (foldCL xs)
 
 /-- The base condition is a COMPUTATION, not a guess: `foldCL (wrap d) = g d`. -/
-theorem foldCL_wrap : ∀ D : Unit, foldCL (ConsList.wrap D) = g D := fun _ => rfl
+theorem foldCL_wrap : ∀ d : Unit, foldCL (ConsList.wrap d) = g d := fun _ => rfl
 
 /-- The step condition IS `foldCL`'s cons equation: `foldCL (cons s xs) = st s (foldCL xs)`. -/
 theorem foldCL_cons :

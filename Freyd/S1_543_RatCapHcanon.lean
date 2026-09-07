@@ -496,11 +496,11 @@ public theorem homInclL_cover_reflects
     (hcov : @Cover (Obj L) (laxColimCat L hL) ⟨i, x⟩ ⟨i, y⟩ (stageInclL L hL g)) :
     Cover g := by
   letI : Cat (Obj L) := laxColimCat L hL
-  intro C m' g'' hm' hg''m'
+  intro c m' g'' hm' hg''m'
   -- include the stage mono `m'` as a colimit mono (mono of stage via hmono).
-  have hM_mono : @Monic (Obj L) (laxColimCat L hL) ⟨i, C⟩ ⟨i, y⟩ (stageInclL L hL m') := by
+  have hM_mono : @Monic (Obj L) (laxColimCat L hL) ⟨i, c⟩ ⟨i, y⟩ (stageInclL L hL m') := by
     unfold stageInclL
-    apply homInclL_mono_of_stage L hL C y ⟨i, D.refl i, D.refl i⟩
+    apply homInclL_mono_of_stage L hL c y ⟨i, D.refl i, D.refl i⟩
     intro e hie z u v huv
     -- `pushHom (reflApp ≫ m' ≫ isoInv) = transApp ≫ map(reflApp ≫ m' ≫ isoInv) ≫ isoInv`,
     -- all but `map m'` isos, and `map m'` mono (hmono) ⇒ the push is mono.
@@ -509,28 +509,28 @@ public theorem homInclL_cover_reflects
     -- `pushHom = transApp ≫ map(reflApp x ≫ m' ≫ isoInv) ≫ isoInv transApp`; expand `map`.
     revert huv
     unfold pushHom
-    rw [(L.functF hie).map_comp (reflApp L C) (m' ≫ isoInv (reflApp_isIso L y)),
+    rw [(L.functF hie).map_comp (reflApp L c) (m' ≫ isoInv (reflApp_isIso L y)),
         (L.functF hie).map_comp m' (isoInv (reflApp_isIso L y))]
     intro huv
     -- the composite map is mono: map m' mono flanked by isos (pre/post compose mono by iso stays mono).
-    have hbig : Monic ((L.functF hie).map (reflApp L C)
+    have hbig : Monic ((L.functF hie).map (reflApp L c)
           ≫ (L.functF hie).map m'
           ≫ (L.functF hie).map (isoInv (reflApp_isIso L y))) :=
       mono_precomp_iso'
-        (functor_preserves_iso (F := L.functF hie) (reflApp L C) (reflApp_isIso L C))
+        (functor_preserves_iso (F := L.functF hie) (reflApp L c) (reflApp_isIso L c))
         (mono_postcomp_iso' hmono_map
           (functor_preserves_iso (F := L.functF hie) (isoInv (reflApp_isIso L y))
             ⟨reflApp L y, inv_isoInv_comp _, isoInv_comp _⟩))
-    exact mono_precomp_iso' (transApp_isIso L (D.refl i) hie C)
+    exact mono_precomp_iso' (transApp_isIso L (D.refl i) hie c)
       (mono_postcomp_iso' hbig
         ⟨transApp L (D.refl i) hie y, inv_isoInv_comp _, isoInv_comp _⟩) u v huv
   -- factorization `stageInclL g'' ⊚ stageInclL m' = stageInclL g`.
-  have hfac : @compL _ _ L hL ⟨i, x⟩ ⟨i, C⟩ ⟨i, y⟩ (stageInclL L hL g'') (stageInclL L hL m')
+  have hfac : @compL _ _ L hL ⟨i, x⟩ ⟨i, c⟩ ⟨i, y⟩ (stageInclL L hL g'') (stageInclL L hL m')
       = stageInclL L hL g := by
     rw [← stageInclL_comp L hL g'' m', hg''m']
-  have hMiso : @IsIso (Obj L) (laxColimCat L hL) ⟨i, C⟩ ⟨i, y⟩ (stageInclL L hL m') :=
+  have hMiso : @IsIso (Obj L) (laxColimCat L hL) ⟨i, c⟩ ⟨i, y⟩ (stageInclL L hL m') :=
     hcov (stageInclL L hL m') (stageInclL L hL g'') hM_mono hfac
-  exact homInclL_isIso_reflects' L hL hcons C y m' hm' hMiso
+  exact homInclL_isIso_reflects' L hL hcons c y m' hm' hMiso
 
 /-! ## Object realignment: identifying `⟨i,x⟩` with its push `⟨e, F x⟩`
 

@@ -97,13 +97,13 @@ end CoprGeneric
   base and `g*` preserves THEM via the comparison — discharged downstream). -/
 public structure LaxCoproductData (L : LaxCatSystem.{u, w} ι D) where
   hcop : ∀ i, HasBinaryCoproducts (L.A i)
-  pres : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-      (u v : L.F hij ((hcop i).coprod A B) ⟶ z),
+  pres : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+      (u v : L.F hij ((hcop i).coprod a b) ⟶ z),
       (L.functF hij).map (hcop i).inl ≫ u = (L.functF hij).map (hcop i).inl ≫ v →
       (L.functF hij).map (hcop i).inr ≫ u = (L.functF hij).map (hcop i).inr ≫ v → u = v
-  presCase : ∀ {i j} (hij : D.le i j) (A B : L.A i) (z : L.A j)
-      (p : L.F hij A ⟶ z) (q : L.F hij B ⟶ z),
-      ∃ r : L.F hij ((hcop i).coprod A B) ⟶ z,
+  presCase : ∀ {i j} (hij : D.le i j) (a b : L.A i) (z : L.A j)
+      (p : L.F hij a ⟶ z) (q : L.F hij b ⟶ z),
+      ∃ r : L.F hij ((hcop i).coprod a b) ⟶ z,
         (L.functF hij).map (hcop i).inl ≫ r = p ∧ (L.functF hij).map (hcop i).inr ≫ r = q
 
 /-! ## §M3b' (lax) — binary coproducts of the lax colimit category -/

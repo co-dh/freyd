@@ -24,20 +24,20 @@ namespace Freyd.Diag
     axioms should read on the page the way the paper prints them.  Core's `Preorder extends LE` is
     the same split, one relation per type instead of one per hom-set. -/
 class HomLE (𝒞 : Type u) [Cat.{v} 𝒞] where
-  «≤» {A B : 𝒞} (R S : A ⟶ B) : Prop
+  «≤» {a b : 𝒞} (R S : a ⟶ b) : Prop
 
-instance {𝒞 : Type u} [Cat.{v} 𝒞] [HomLE.{v} 𝒞] {A B : 𝒞} : LE (A ⟶ B) := ⟨HomLE.«≤»⟩
+instance {𝒞 : Type u} [Cat.{v} 𝒞] [HomLE.{v} 𝒞] {a b : 𝒞} : LE (a ⟶ b) := ⟨HomLE.«≤»⟩
 
 /-- A poset-enriched category (functorialSemanticsForRelationalTheories.pdf, Def. 4.1
     preamble: "a poset enriched category that
     is symmetric monoidal"; the symmetric monoidal part is layered on in `diag.CB`): every
     hom-set is a partial order and composition is monotone in both arguments. -/
 class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞, HomLE.{v} 𝒞 where
-  «≤_refl» {A B : 𝒞} (R : A ⟶ B) : R ≤ R
-  «≤_trans» {A B : 𝒞} {R S T : A ⟶ B} : R ≤ S → S ≤ T → R ≤ T
-  «≤_antisymm» {A B : 𝒞} {R S : A ⟶ B} : R ≤ S → S ≤ R → R = S
+  «≤_refl» {a b : 𝒞} (R : a ⟶ b) : R ≤ R
+  «≤_trans» {a b : 𝒞} {R S T : a ⟶ b} : R ≤ S → S ≤ T → R ≤ T
+  «≤_antisymm» {a b : 𝒞} {R S : a ⟶ b} : R ≤ S → S ≤ R → R = S
   /-- Poset enrichment of `≫`: composition is monotone in both arguments. -/
-  comp_mono {A B C : 𝒞} {R R' : A ⟶ B} {S S' : B ⟶ C} :
+  comp_mono {a b c : 𝒞} {R R' : a ⟶ b} {S S' : b ⟶ c} :
     R ≤ R' → S ≤ S' → R ≫ S ≤ R' ≫ S'
 
 /-- So that `calc` can carry the hom order, and MIX it with `=` — core's `Trans Eq r r` and
@@ -47,7 +47,7 @@ class OrderedCat (𝒞 : Type u) extends Cat.{v} 𝒞, HomLE.{v} 𝒞 where
     where the link is an equality, and `diag-export --proof` then draws a chain of `≤`s that hides
     which step is the real inequality.  Written as a `calc`, each step carries its true relation and
     the drawing says so. -/
-instance {𝒞 : Type u} [OrderedCat.{v} 𝒞] {A B : 𝒞} :
-    @Trans (A ⟶ B) _ _ (· ≤ ·) (· ≤ ·) (· ≤ ·) := ⟨OrderedCat.«≤_trans»⟩
+instance {𝒞 : Type u} [OrderedCat.{v} 𝒞] {a b : 𝒞} :
+    @Trans (a ⟶ b) _ _ (· ≤ ·) (· ≤ ·) (· ≤ ·) := ⟨OrderedCat.«≤_trans»⟩
 
 end Freyd.Diag

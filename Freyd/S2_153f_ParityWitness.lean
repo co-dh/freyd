@@ -270,7 +270,7 @@ theorem parityRel_not_effective : ¬ IsEffective (parityRel (K := K)) := by
 theorem asm_not_effective_of_projBounded (hb : ProjBounded K) :
     ∃ (A : Assembly.{u} K) (I : (⟨A⟩ : AsmRel K) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (D : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ D), ¬ SplitsAsMap f I :=
+      ∀ (d : AsmRel K) (f : (⟨A⟩ : AsmRel K) ⟶ d), ¬ SplitsAsMap f I :=
   asm_not_effective_of_binRel parityRel (parityRel_equivalence hb) parityRel_not_effective
 
 /-- Generic headline: over any projection-bounded `K`, the effective reflection of
@@ -284,7 +284,7 @@ theorem asmReflection_not_ac_of_projBounded (hb : ProjBounded K) :
 theorem asm_not_effective :
     ∃ (A : Assembly.{u} Krec) (I : (⟨A⟩ : AsmRel Krec) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (D : AsmRel Krec) (f : (⟨A⟩ : AsmRel Krec) ⟶ D), ¬ SplitsAsMap f I :=
+      ∀ (d : AsmRel Krec) (f : (⟨A⟩ : AsmRel Krec) ⟶ d), ¬ SplitsAsMap f I :=
   asm_not_effective_of_projBounded krec_projBounded
 
 /-- **§2.153 / §2.16(13) (headline 2), over `Krec`**: the effective reflection of the
@@ -301,8 +301,8 @@ theorem asm_not_effective_allPartial :
     ∃ (A : Assembly.{u} ModulusSystem.allPartial)
       (I : (⟨A⟩ : AsmRel ModulusSystem.allPartial) ⟶ ⟨A⟩),
       Reflexive I ∧ Symmetric I ∧ Transitive I ∧
-      ∀ (D : AsmRel ModulusSystem.allPartial)
-        (f : (⟨A⟩ : AsmRel ModulusSystem.allPartial) ⟶ D), ¬ SplitsAsMap f I :=
+      ∀ (d : AsmRel ModulusSystem.allPartial)
+        (f : (⟨A⟩ : AsmRel ModulusSystem.allPartial) ⟶ d), ¬ SplitsAsMap f I :=
   asm_not_effective_of_projBounded allPartial_projBounded
 
 /-- **§2.153 / §2.16(13) over `allPartial`**: the effective reflection fails AC there

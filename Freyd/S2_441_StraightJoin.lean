@@ -38,7 +38,7 @@ section DivHelpers
 variable [DivisionAllegory 𝒜]
 
 /-- Division is antitone in its denominator: `S ⊑ S' → R/S' ⊑ R/S`. -/
-theorem div_den_antimono {A B C : 𝒜} (R : A ⟶ C) {S S' : B ⟶ C} (h : S ⊑ S') :
+theorem div_den_antimono {a b c : 𝒜} (R : a ⟶ c) {S S' : b ⟶ c} (h : S ⊑ S') :
     R / S' ⊑ R / S :=
   (le_div_iff _ _ _).mpr
     (le_trans (comp_mono_left _ h) (DivisionAllegory.div_comp_le R S'))
@@ -46,9 +46,9 @@ theorem div_den_antimono {A B C : 𝒜} (R : A ⟶ C) {S S' : B ⟶ C} (h : S �
 /-- Right division by an ENTIRE morphism is bounded by composition with its reciprocal:
     `R / f ⊑ R ≫ f°`.  (For a map `f`, this is an equality — §1.782 `R/f = Rf°` — but only
     the `⊑` half is needed here, and it uses only entireness of `f`.) -/
-theorem div_by_entire_le {A B C : 𝒜} (R : A ⟶ C) {f : B ⟶ C} (hf : Entire f) :
+theorem div_by_entire_le {a b c : 𝒜} (R : a ⟶ c) {f : b ⟶ c} (hf : Entire f) :
     R / f ⊑ R ≫ f° := by
-  have h1 : Cat.id B ⊑ f ≫ f° := by
+  have h1 : Cat.id b ⊑ f ≫ f° := by
     have h := hf; dsimp [Entire, dom] at h; rw [← h]; exact inter_lb_right _ _
   have step : R / f ⊑ (R / f) ≫ (f ≫ f°) := by
     have hc := comp_mono_left (R / f) h1
@@ -66,24 +66,24 @@ variable [DivisionAllegory 𝒜]
 
 /-- The composition of two SPLIT-MONIC morphisms is split-monic: if `pp° = 1` and `qq° = 1`
     then `(pq)(pq)° = 1`. -/
-theorem split_comp {A m n : 𝒜} {p : A ⟶ m} {q : m ⟶ n}
-    (hp : p ≫ p° = Cat.id A) (hq : q ≫ q° = Cat.id m) :
-    (p ≫ q) ≫ (p ≫ q)° = Cat.id A := by
+theorem split_comp {a m n : 𝒜} {p : a ⟶ m} {q : m ⟶ n}
+    (hp : p ≫ p° = Cat.id a) (hq : q ≫ q° = Cat.id m) :
+    (p ≫ q) ≫ (p ≫ q)° = Cat.id a := by
   rw [Allegory.recip_comp]
   calc (p ≫ q) ≫ (q° ≫ p°) = p ≫ ((q ≫ q°) ≫ p°) := by simp [Cat.assoc]
     _ = p ≫ (Cat.id m ≫ p°) := by rw [hq]
     _ = p ≫ p° := by rw [Cat.id_comp]
-    _ = Cat.id A := hp
+    _ = Cat.id a := hp
 
 /-- Cross-disjointness propagates through pre/post-composition: if `uv° = 0` then
     `(pu)(qv)° = 0`. -/
-theorem cross_zero {A B m n : 𝒜} {p : A ⟶ m} {q : B ⟶ m} {u : m ⟶ n} {v : m ⟶ n}
+theorem cross_zero {a b m n : 𝒜} {p : a ⟶ m} {q : b ⟶ m} {u : m ⟶ n} {v : m ⟶ n}
     (huv : u ≫ v° = (𝟘 : m ⟶ m)) :
-    (p ≫ u) ≫ (q ≫ v)° = (𝟘 : A ⟶ B) := by
+    (p ≫ u) ≫ (q ≫ v)° = (𝟘 : a ⟶ b) := by
   rw [Allegory.recip_comp]
   calc (p ≫ u) ≫ (v° ≫ q°) = p ≫ ((u ≫ v°) ≫ q°) := by simp [Cat.assoc]
     _ = p ≫ ((𝟘 : m ⟶ m) ≫ q°) := by rw [huv]
-    _ = (𝟘 : A ⟶ B) := by
+    _ = (𝟘 : a ⟶ b) := by
         rw [DistributiveAllegory.zero_comp, DistributiveAllegory.comp_zero]
 
 end Split
@@ -94,13 +94,13 @@ section Power
 variable [UnguardedPowerAllegory 𝒜]
 
 /-- The identity is straight (right-invertible by itself). -/
-theorem straight_id {A : 𝒜} : Straight (Cat.id A) :=
-  rightInvertible_straight (Cat.comp_id (Cat.id A))
+theorem straight_id {a : 𝒜} : Straight (Cat.id a) :=
+  rightInvertible_straight (Cat.comp_id (Cat.id a))
 
 /-- For straight `S`, `Λ(S)` is a SPLIT-MONIC map: `Λ S ≫ (Λ S)° = 1`.  (Monic by
     `Λ_monic_of_straight`, and `1 ⊑ Λ S ≫ (Λ S)°` because `Λ S` is entire — `Λ_is_map'`.) -/
-theorem Λ_split_monic {A B : 𝒜} {S : A ⟶ B} (hS : Straight S) :
-    Λ S ≫ (Λ S)° = Cat.id A := by
+theorem Λ_split_monic {a b : 𝒜} {S : a ⟶ b} (hS : Straight S) :
+    Λ S ≫ (Λ S)° = Cat.id a := by
   refine le_antisymm (Λ_monic_of_straight hS) ?_
   have hent := (Λ_is_map' S).1
   dsimp [Entire, dom] at hent
@@ -108,73 +108,73 @@ theorem Λ_split_monic {A B : 𝒜} {S : A ⟶ B} (hS : Straight S) :
 
 /-- `1/∋ = 1_a / ∋_a` is STRAIGHT: it is right-invertible, `(1/∋) ≫ ∋ = 1`.
     `⊑` is `div_comp_le`; `⊒` is `1 = Λ(1)∋ ⊑ (1/∋)∋` since `Λ(1) = 1/ₛ∋ ⊑ 1/∋`. -/
-theorem invMem_straight (A : 𝒜) : Straight (Cat.id A / ∋ A) := by
-  refine rightInvertible_straight (T := ∋ A) ?_
-  refine le_antisymm (DivisionAllegory.div_comp_le (Cat.id A) (∋ A)) ?_
-  have hA : Λ (Cat.id A) ≫ ∋ A = Cat.id A := Λ_eps_eq' (Cat.id A)
-  have hAle : Λ (Cat.id A) ⊑ Cat.id A / ∋ A := inter_lb_left _ _
-  calc Cat.id A = Λ (Cat.id A) ≫ ∋ A := hA.symm
-    _ ⊑ (Cat.id A / ∋ A) ≫ ∋ A := comp_mono_right hAle (∋ A)
+theorem invMem_straight (a : 𝒜) : Straight (Cat.id a / ∋ a) := by
+  refine rightInvertible_straight (T := ∋ a) ?_
+  refine le_antisymm (DivisionAllegory.div_comp_le (Cat.id a) (∋ a)) ?_
+  have hA : Λ (Cat.id a) ≫ ∋ a = Cat.id a := Λ_eps_eq' (Cat.id a)
+  have hAle : Λ (Cat.id a) ⊑ Cat.id a / ∋ a := inter_lb_left _ _
+  calc Cat.id a = Λ (Cat.id a) ≫ ∋ a := hA.symm
+    _ ⊑ (Cat.id a / ∋ a) ≫ ∋ a := comp_mono_right hAle (∋ a)
 
 /-- `ℓ_a := Λ(1_a) ≫ Λ(1_[a]) : a → [[a]]` — the composite of two singleton maps. -/
-def ellMap (A : 𝒜) : A ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj A) :=
-  Λ (Cat.id A) ≫ Λ (Cat.id (PowerAllegory.powerObj A))
+def ellMap (a : 𝒜) : a ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj a) :=
+  Λ (Cat.id a) ≫ Λ (Cat.id (PowerAllegory.powerObj a))
 
 /-- `ϰ_a := Λ(1_a / ∋_a) : a → [[a]]` — the transpose of the (straight) `1/∋`. -/
-def kappaMap (A : 𝒜) : A ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj A) :=
-  Λ (Cat.id A / ∋ A)
+def kappaMap (a : 𝒜) : a ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj a) :=
+  Λ (Cat.id a / ∋ a)
 
 /-- `ℓ_a` is a map (composite of the two singleton maps). -/
-theorem ellMap_map (A : 𝒜) : Map (ellMap A) :=
+theorem ellMap_map (a : 𝒜) : Map (ellMap a) :=
   map_comp (Λ_is_map' _) (Λ_is_map' _)
 
 /-- `ℓ_a` is split-monic: `ℓℓ° = 1_a`. -/
-theorem ellMap_split (A : 𝒜) : ellMap A ≫ (ellMap A)° = Cat.id A := by
+theorem ellMap_split (a : 𝒜) : ellMap a ≫ (ellMap a)° = Cat.id a := by
   unfold ellMap
   exact split_comp (Λ_split_monic straight_id) (Λ_split_monic straight_id)
 
 /-- `ϰ_a` is split-monic: `ϰϰ° = 1_a` (since `1/∋` is straight). -/
-theorem kappaMap_split (A : 𝒜) : kappaMap A ≫ (kappaMap A)° = Cat.id A := by
+theorem kappaMap_split (a : 𝒜) : kappaMap a ≫ (kappaMap a)° = Cat.id a := by
   unfold kappaMap
-  exact Λ_split_monic (invMem_straight A)
+  exact Λ_split_monic (invMem_straight a)
 
 /-- **The disjointness** `ℓϰ° = 0`.  Following Freyd: it suffices that
     `Λ(1_[a]) ≫ ϰ° = 0`, which is bounded by `1_[a] / (1/∋)` and reduced through
     `Λ(0), Λ(1) ⊑ 1/∋` and `R/f = Rf°` to `Λ(0)° ∩ Λ(1)° = (Λ(0) ∩ Λ(1))° = 0`. -/
-theorem ellMap_kappaMap_disjoint (A : 𝒜) :
-    ellMap A ≫ (kappaMap A)° = (𝟘 : A ⟶ A) := by
+theorem ellMap_kappaMap_disjoint (a : 𝒜) :
+    ellMap a ≫ (kappaMap a)° = (𝟘 : a ⟶ a) := by
   -- The core: the second singleton composed with ϰ° vanishes.
   have key :
-      Λ (Cat.id (PowerAllegory.powerObj A)) ≫ (kappaMap A)°
-        = (𝟘 : PowerAllegory.powerObj A ⟶ A) := by
+      Λ (Cat.id (PowerAllegory.powerObj a)) ≫ (kappaMap a)°
+        = (𝟘 : PowerAllegory.powerObj a ⟶ a) := by
     refine le_antisymm ?_ (zero_le _)
     -- `ϰ° ⊑ ∋' / (1/∋)`.
-    have step1 : (kappaMap A)° ⊑ ∋ (PowerAllegory.powerObj A) / (Cat.id A / ∋ A) := by
-      have e : (kappaMap A)°
-          = ∋ (PowerAllegory.powerObj A) /ₛ (Cat.id A / ∋ A) := by
+    have step1 : (kappaMap a)° ⊑ ∋ (PowerAllegory.powerObj a) / (Cat.id a / ∋ a) := by
+      have e : (kappaMap a)°
+          = ∋ (PowerAllegory.powerObj a) /ₛ (Cat.id a / ∋ a) := by
         simp only [kappaMap, Λ]; rw [symmDiv_recip]
       rw [e]; exact inter_lb_left _ _
     -- `Λ(1_[a]) = 1_[a] /ₛ ∋' ⊑ 1_[a] / ∋'`.
-    have step3 : Λ (Cat.id (PowerAllegory.powerObj A))
-        ⊑ Cat.id (PowerAllegory.powerObj A) / ∋ (PowerAllegory.powerObj A) :=
+    have step3 : Λ (Cat.id (PowerAllegory.powerObj a))
+        ⊑ Cat.id (PowerAllegory.powerObj a) / ∋ (PowerAllegory.powerObj a) :=
       inter_lb_left _ _
     -- `Λ(0) ⊑ 1/∋` and `Λ(1) ⊑ 1/∋`.
-    have hAzero_le : Λ (𝟘 : A ⟶ A) ⊑ Cat.id A / ∋ A :=
-      le_trans (inter_lb_left _ _) (div_mono_left (zero_le _) (∋ A))
-    have hAone_le : Λ (Cat.id A) ⊑ Cat.id A / ∋ A := inter_lb_left _ _
+    have hAzero_le : Λ (𝟘 : a ⟶ a) ⊑ Cat.id a / ∋ a :=
+      le_trans (inter_lb_left _ _) (div_mono_left (zero_le _) (∋ a))
+    have hAone_le : Λ (Cat.id a) ⊑ Cat.id a / ∋ a := inter_lb_left _ _
     -- `1_[a] / Λ(0) ⊑ Λ(0)°`,  `1_[a] / Λ(1) ⊑ Λ(1)°`.
-    have h7zero : Cat.id (PowerAllegory.powerObj A) / Λ (𝟘 : A ⟶ A)
-        ⊑ (Λ (𝟘 : A ⟶ A))° := by
-      have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj A))
-        (Λ_is_map' (𝟘 : A ⟶ A)).1
+    have h7zero : Cat.id (PowerAllegory.powerObj a) / Λ (𝟘 : a ⟶ a)
+        ⊑ (Λ (𝟘 : a ⟶ a))° := by
+      have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj a))
+        (Λ_is_map' (𝟘 : a ⟶ a)).1
       rwa [Cat.id_comp] at h
-    have h7one : Cat.id (PowerAllegory.powerObj A) / Λ (Cat.id A)
-        ⊑ (Λ (Cat.id A))° := by
-      have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj A))
-        (Λ_is_map' (Cat.id A)).1
+    have h7one : Cat.id (PowerAllegory.powerObj a) / Λ (Cat.id a)
+        ⊑ (Λ (Cat.id a))° := by
+      have h := div_by_entire_le (Cat.id (PowerAllegory.powerObj a))
+        (Λ_is_map' (Cat.id a)).1
       rwa [Cat.id_comp] at h
     -- `Λ(0)° ∩ Λ(1)° = (Λ(0) ∩ Λ(1))° = 0°  = 0`.
-    have h8 : (Λ (𝟘 : A ⟶ A))° ∩ (Λ (Cat.id A))° = (𝟘 : PowerAllegory.powerObj A ⟶ A) := by
+    have h8 : (Λ (𝟘 : a ⟶ a))° ∩ (Λ (Cat.id a))° = (𝟘 : PowerAllegory.powerObj a ⟶ a) := by
       rw [← Allegory.recip_inter, Λ_zero_inter_Λ_one, recip_zero]
     refine le_trans (comp_mono_left _ step1) ?_
     refine le_trans (comp_mono_right step3 _) ?_
@@ -196,8 +196,8 @@ theorem ellMap_kappaMap_disjoint (A : 𝒜) :
     `f = Λ S₁ ≫ ℓ_[γ]` and `g = Λ S₂ ≫ ϰ_[γ]`. -/
 theorem straightJoin_to_prePositive :
     StraightJoinCond 𝒜 → PrePositiveCond 𝒜 := by
-  intro hSJ A B
-  obtain ⟨γ, S₁, S₂, hS₁, hS₂⟩ := hSJ A B
+  intro hSJ a b
+  obtain ⟨γ, S₁, S₂, hS₁, hS₂⟩ := hSJ a b
   refine ⟨PowerAllegory.powerObj (PowerAllegory.powerObj (PowerAllegory.powerObj γ)),
     Λ S₁ ≫ ellMap (PowerAllegory.powerObj γ),
     Λ S₂ ≫ kappaMap (PowerAllegory.powerObj γ),

@@ -144,8 +144,8 @@ variable {ι : Type u'} {D : Directed ι} {𝒞 : Type u'} [Cat.{u'} 𝒞] [Disj
 @[expose] public noncomputable def ratLaxCoproductData (P : ProjSystem ι D 𝒞) :
     LaxCoproductData (laxOfProjSystem' P) where
   hcop i := overHasBinaryCoproducts (P.pr i)
-  pres {_i _j} hij A B z u v hl hr := baseChange_coprod_jointEpi (P.proj hij) A B z u v hl hr
-  presCase {_i _j} hij A B z p q := baseChange_coprod_copair (P.proj hij) A B z p q
+  pres {_i _j} hij a b z u v hl hr := baseChange_coprod_jointEpi (P.proj hij) a b z u v hl hr
+  presCase {_i _j} hij a b z p q := baseChange_coprod_copair (P.proj hij) a b z p q
 
 end Freyd.LaxColim
 

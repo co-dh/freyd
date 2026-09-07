@@ -30,19 +30,19 @@ section ListJoin
 
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
-@[simp] theorem listJoin'_nil  {A B : 𝒜} : listJoinD ([] : List (A ⟶ B)) = 𝟘 := rfl
-@[simp] theorem listJoin'_cons {A B : 𝒜} (x : A ⟶ B) (xs : List (A ⟶ B)) :
+@[simp] theorem listJoin'_nil  {a b : 𝒜} : listJoinD ([] : List (a ⟶ b)) = 𝟘 := rfl
+@[simp] theorem listJoin'_cons {a b : 𝒜} (x : a ⟶ b) (xs : List (a ⟶ b)) :
     listJoinD (x :: xs) = x ∪ listJoinD xs := rfl
 
 /-- `finJoin f = ⨆_{i : Fin n} f i`. -/
-@[expose] public def finJoin {A B : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) : A ⟶ B :=
+@[expose] public def finJoin {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) : a ⟶ b :=
   listJoinD (List.ofFn f)
 
-public theorem finJoin_mono {A B : 𝒜} {n : Nat} {f g : Fin n → (A ⟶ B)}
+public theorem finJoin_mono {a b : 𝒜} {n : Nat} {f g : Fin n → (a ⟶ b)}
     (h : ∀ i, f i ⊑ g i) : finJoin f ⊑ finJoin g :=
   listJoinD_le (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact le_trans (h i) (show g i ⊑ finJoin g from le_listJoinD (List.mem_ofFn.mpr ⟨i, rfl⟩)))
 
-public theorem comp_finJoin {A B C : 𝒜} {n : Nat} (R : A ⟶ B) (f : Fin n → (B ⟶ C)) :
+public theorem comp_finJoin {a b c : 𝒜} {n : Nat} (R : a ⟶ b) (f : Fin n → (b ⟶ c)) :
     R ≫ finJoin f = finJoin (fun j => R ≫ f j) := by
   simp only [finJoin]
   induction n with
@@ -51,7 +51,7 @@ public theorem comp_finJoin {A B C : 𝒜} {n : Nat} (R : A ⟶ B) (f : Fin n �
     simp only [List.ofFn_succ, listJoin'_cons, DistributiveAllegory.comp_union_distrib]
     congr 1; exact ih (fun i => f i.succ)
 
-public theorem finJoin_comp {A B C : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) (R : B ⟶ C) :
+public theorem finJoin_comp {a b c : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) (R : b ⟶ c) :
     finJoin f ≫ R = finJoin (fun j => f j ≫ R) := by
   simp only [finJoin]
   induction n with
@@ -60,7 +60,7 @@ public theorem finJoin_comp {A B C : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) (
     simp only [List.ofFn_succ, listJoin'_cons, union_comp_distrib]
     congr 1; exact ih (fun i => f i.succ)
 
-public theorem recip_finJoin {A B : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) :
+public theorem recip_finJoin {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) :
     (finJoin f)° = finJoin (fun j => (f j)°) := by
   apply le_antisymm
   · rw [recip_le_iff]
@@ -69,7 +69,7 @@ public theorem recip_finJoin {A B : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) :
     exact show (fun j => (f j)°) j ⊑ finJoin (fun j => (f j)°) from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩)
   · refine listJoinD_le (fun x hx => ?_); obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hx; exact recip_mono (show f j ⊑ finJoin f from le_listJoinD (List.mem_ofFn.mpr ⟨j, rfl⟩))
 
-public theorem inter_finJoin {A B : 𝒜} {n : Nat} (T : A ⟶ B) (f : Fin n → (A ⟶ B)) :
+public theorem inter_finJoin {a b : 𝒜} {n : Nat} (T : a ⟶ b) (f : Fin n → (a ⟶ b)) :
     T ∩ finJoin f = finJoin (fun j => T ∩ f j) := by
   simp only [finJoin]
   induction n with
@@ -92,18 +92,18 @@ section ListMeet
 
 variable {𝒜 : Type u} [Allegory 𝒜]
 
-@[expose] public def listMeet' {A B : 𝒜} : (l : List (A ⟶ B)) → l ≠ [] → A ⟶ B
+@[expose] public def listMeet' {a b : 𝒜} : (l : List (a ⟶ b)) → l ≠ [] → a ⟶ b
   | [x],            _  => x
   | x :: y :: rest, _  => x ∩ listMeet' (y :: rest) (List.cons_ne_nil y rest)
 
-theorem listMeet'_singleton {A B : 𝒜} {x : A ⟶ B} (h : [x] ≠ []) :
+theorem listMeet'_singleton {a b : 𝒜} {x : a ⟶ b} (h : [x] ≠ []) :
     listMeet' [x] h = x := rfl
 
-public theorem listMeet'_cons_cons {A B : 𝒜} {x y : A ⟶ B} {rest : List (A ⟶ B)}
+public theorem listMeet'_cons_cons {a b : 𝒜} {x y : a ⟶ b} {rest : List (a ⟶ b)}
     (h : x :: y :: rest ≠ []) :
     listMeet' (x :: y :: rest) h = x ∩ listMeet' (y :: rest) (List.cons_ne_nil y rest) := rfl
 
-public theorem listMeet'_le {A B : 𝒜} (l : List (A ⟶ B)) (hne : l ≠ []) {x : A ⟶ B}
+public theorem listMeet'_le {a b : 𝒜} (l : List (a ⟶ b)) (hne : l ≠ []) {x : a ⟶ b}
     (hx : x ∈ l) : listMeet' l hne ⊑ x := by
   induction l with
   | nil => exact absurd rfl hne
@@ -117,7 +117,7 @@ public theorem listMeet'_le {A B : 𝒜} (l : List (A ⟶ B)) (hne : l ≠ []) {
       · exact inter_lb_left _ _
       · exact le_trans (inter_lb_right _ _) (ih (List.cons_ne_nil z zs) hmem)
 
-public theorem le_listMeet' {A B : 𝒜} (l : List (A ⟶ B)) (hne : l ≠ []) {T : A ⟶ B}
+public theorem le_listMeet' {a b : 𝒜} (l : List (a ⟶ b)) (hne : l ≠ []) {T : a ⟶ b}
     (h : ∀ x ∈ l, T ⊑ x) : T ⊑ listMeet' l hne := by
   induction l with
   | nil => exact absurd rfl hne
@@ -129,10 +129,10 @@ public theorem le_listMeet' {A B : 𝒜} (l : List (A ⟶ B)) (hne : l ≠ []) {
         (ih (List.cons_ne_nil z zs) (fun x hx => h x (List.mem_cons_of_mem y hx)))
 
 /-- `finMeet f = ⋀_{i : Fin (n+1)} f i`. -/
-@[expose] public def finMeet {A B : 𝒜} {n : Nat} (f : Fin (n + 1) → (A ⟶ B)) : A ⟶ B :=
+@[expose] public def finMeet {a b : 𝒜} {n : Nat} (f : Fin (n + 1) → (a ⟶ b)) : a ⟶ b :=
   listMeet' (List.ofFn f) (by rw [List.ofFn_succ]; exact List.cons_ne_nil _ _)
 
-public theorem le_finMeet {A B : 𝒜} {n : Nat} {f : Fin (n + 1) → (A ⟶ B)} {T : A ⟶ B}
+public theorem le_finMeet {a b : 𝒜} {n : Nat} {f : Fin (n + 1) → (a ⟶ b)} {T : a ⟶ b}
     (h : ∀ i, T ⊑ f i) : T ⊑ finMeet f :=
   le_listMeet' _ _ (fun x hx => by obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx; exact h i)
 
@@ -336,7 +336,7 @@ public theorem matComp_union_distrib {X Y Z : MatObj 𝒜} (M : MatHom X Y) (N P
       funext i j; simp only [matUnion, matZero]; exact DistributiveAllegory.zero_union _ }
 
 /-- `finJoin` of a family supported at a single index `k₀` is its value there. -/
-public theorem finJoin_single {A B : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) (k₀ : Fin n)
+public theorem finJoin_single {a b : 𝒜} {n : Nat} (f : Fin n → (a ⟶ b)) (k₀ : Fin n)
     (h : ∀ k, k ≠ k₀ → f k = 𝟘) : finJoin f = f k₀ := by
   apply le_antisymm
   · refine listJoinD_le (fun x hx => ?_); obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx
@@ -345,7 +345,7 @@ public theorem finJoin_single {A B : 𝒜} {n : Nat} (f : Fin n → (A ⟶ B)) (
     · rw [h k hk]; exact zero_le _
   · exact show f k₀ ⊑ finJoin f from le_listJoinD (List.mem_ofFn.mpr ⟨k₀, rfl⟩)
 
-public theorem zero_inter {A B : 𝒜} (R : A ⟶ B) : (𝟘 : A ⟶ B) ∩ R = 𝟘 :=
+public theorem zero_inter {a b : 𝒜} (R : a ⟶ b) : (𝟘 : a ⟶ b) ∩ R = 𝟘 :=
   le_antisymm (inter_lb_left _ _) (zero_le _)
 
 /-- Pointwise characterization of the matrix order: `M ⊑ N` iff entrywise. -/
@@ -430,36 +430,36 @@ section Embed1
 variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- The single-object 1×1 matrix object. -/
-@[expose] public def unitObj (A : 𝒜) : MatObj 𝒜 := { n := 1, objs := fun _ => A }
+@[expose] public def unitObj (a : 𝒜) : MatObj 𝒜 := { n := 1, objs := fun _ => a }
 
 /-- The 1×1 embedding: wraps a morphism as a 1×1 matrix. -/
-@[expose] public def embed1 {A B : 𝒜} (R : A ⟶ B) : MatHom (unitObj A) (unitObj B) :=
+@[expose] public def embed1 {a b : 𝒜} (R : a ⟶ b) : MatHom (unitObj a) (unitObj b) :=
   fun _i _j => R
 
 /-- `embed1` is injective (faithful). -/
-public theorem embed1_injective {A B : 𝒜} {R S : A ⟶ B} (h : embed1 R = embed1 S) : R = S :=
+public theorem embed1_injective {a b : 𝒜} {R S : a ⟶ b} (h : embed1 R = embed1 S) : R = S :=
   congrFun (congrFun h ⟨0, Nat.zero_lt_one⟩) ⟨0, Nat.zero_lt_one⟩
 
 /-- `embed1` preserves composition. -/
-public theorem embed1_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
+public theorem embed1_comp {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
     embed1 (R ≫ S) = matComp (embed1 R) (embed1 S) := by
   funext i k; simp only [embed1, matComp, finJoin, List.ofFn_succ, List.ofFn_zero, listJoin'_cons,
     listJoin'_nil, union_zero]
 
 /-- `embed1` preserves reciprocation. -/
-public theorem embed1_recip {A B : 𝒜} (R : A ⟶ B) :
+public theorem embed1_recip {a b : 𝒜} (R : a ⟶ b) :
     embed1 (R°) = matRecip (embed1 R) := rfl
 
 /-- `embed1` preserves intersection. -/
-public theorem embed1_inter {A B : 𝒜} (R S : A ⟶ B) :
+public theorem embed1_inter {a b : 𝒜} (R S : a ⟶ b) :
     embed1 (R ∩ S) = matInter (embed1 R) (embed1 S) := rfl
 
 /-- `embed1` preserves union. -/
-theorem embed1_union {A B : 𝒜} (R S : A ⟶ B) :
+theorem embed1_union {a b : 𝒜} (R S : a ⟶ b) :
     embed1 (R ∪ S) = matUnion (embed1 R) (embed1 S) := rfl
 
-theorem embed1_zero {A B : 𝒜} :
-    embed1 (𝟘 : A ⟶ B) = matZero := rfl
+theorem embed1_zero {a b : 𝒜} :
+    embed1 (𝟘 : a ⟶ b) = matZero := rfl
 
 end Embed1
 
@@ -468,7 +468,7 @@ section Embed1Div
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-- `embed1` preserves division. -/
-theorem embed1_div {A B C : 𝒜} (R : A ⟶ C) (S : B ⟶ C) :
+theorem embed1_div {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     embed1 (R / S) = matDiv (embed1 R) (embed1 S) := by
   funext i j
   simp only [embed1, matDiv, unitObj]
@@ -539,12 +539,12 @@ public theorem cast_zero_recip {A B C : 𝒜} (h : A = B) : (h ▸ (𝟘 : B ⟶
 
 /-! ### `finJoin` helpers: zero family, append split, dependent-codomain vanishing. -/
 
-public theorem finJoin_zero_all {A B : 𝒜} {n : Nat} {f : Fin n → (A ⟶ B)}
+public theorem finJoin_zero_all {a b : 𝒜} {n : Nat} {f : Fin n → (a ⟶ b)}
     (h : ∀ k, f k = 𝟘) : finJoin f = 𝟘 :=
   le_antisymm (listJoinD_le (fun x hx => by
     obtain ⟨k, rfl⟩ := List.mem_ofFn.mp hx; rw [h k]; exact le_refl _)) (zero_le _)
 
-public theorem listJoin'_append {A B : 𝒜} (l₁ l₂ : List (A ⟶ B)) :
+public theorem listJoin'_append {a b : 𝒜} (l₁ l₂ : List (a ⟶ b)) :
     listJoinD (l₁ ++ l₂) = listJoinD l₁ ∪ listJoinD l₂ := by
   induction l₁ with
   | nil => simp only [List.nil_append, listJoin'_nil, DistributiveAllegory.zero_union]
@@ -552,7 +552,7 @@ public theorem listJoin'_append {A B : 𝒜} (l₁ l₂ : List (A ⟶ B)) :
     simp only [List.cons_append, listJoin'_cons, ih, DistributiveAllegory.union_assoc]
 
 /-- Split a `finJoin` over `Fin (m + n)` into its left (`castAdd`) and right (`natAdd`) blocks. -/
-public theorem finJoin_addCases {A B : 𝒜} {m n : Nat} (f : Fin (m + n) → (A ⟶ B)) :
+public theorem finJoin_addCases {a b : 𝒜} {m n : Nat} (f : Fin (m + n) → (a ⟶ b)) :
     finJoin f = finJoin (fun i => f (Fin.castAdd n i)) ∪ finJoin (fun j => f (Fin.natAdd m j)) := by
   simp only [finJoin]; rw [List.ofFn_add, listJoin'_append]; rfl
 
@@ -873,7 +873,7 @@ variable [TabularDistributiveAllegory 𝒜]
 /-! ### Per-entry tabulation data, chosen by `Classical.choice`. -/
 
 @[expose] public noncomputable def entryTab {X Y : MatObj 𝒜} (M : MatHom X Y) (i : Fin X.n) (j : Fin Y.n) :
-    {C : 𝒜 // ∃ (f : C ⟶ X.objs i) (g : C ⟶ Y.objs j), Tabulates f g (M i j)} :=
+    {c : 𝒜 // ∃ (f : c ⟶ X.objs i) (g : c ⟶ Y.objs j), Tabulates f g (M i j)} :=
   ⟨(TabularAllegory.tabular (M i j)).choose, (TabularAllegory.tabular (M i j)).choose_spec⟩
 
 /-- Apex object: the family `c (uFst k) (uSnd k)` over `Fin (X.n * Y.n)`. -/

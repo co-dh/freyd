@@ -109,15 +109,15 @@ public structure Env (𝒞 : Type u) [Cat.{v} 𝒞] (nObj : Nat) where
 @[expose] public def IsTerminalObj (o : 𝒞) : Prop := ∀ X : 𝒞, ∃ f : X ⟶ o, ∀ g : X ⟶ o, g = f
 
 /-- The PRODUCT predicate (universal property) for `(p, pf, ps)` over `a`, `b`. -/
-@[expose] public def IsProductObj {A B p : 𝒞} (pf : p ⟶ A) (ps : p ⟶ B) : Prop :=
-  ∀ (X : 𝒞) (u : X ⟶ A) (v : X ⟶ B),
+@[expose] public def IsProductObj {a b p : 𝒞} (pf : p ⟶ a) (ps : p ⟶ b) : Prop :=
+  ∀ (X : 𝒞) (u : X ⟶ a) (v : X ⟶ b),
     ∃ h : X ⟶ p, h ≫ pf = u ∧ h ≫ ps = v ∧
       ∀ k : X ⟶ p, k ≫ pf = u → k ≫ ps = v → k = h
 
 /-- The EQUALIZER predicate (universal property) for `em : e→a` over `f g : a→bb`. -/
-@[expose] public def IsEqualizerObj {e A bb : 𝒞} (em : e ⟶ A) (f g : A ⟶ bb) : Prop :=
+@[expose] public def IsEqualizerObj {e a bb : 𝒞} (em : e ⟶ a) (f g : a ⟶ bb) : Prop :=
   em ≫ f = em ≫ g ∧
-  ∀ (X : 𝒞) (h : X ⟶ A), h ≫ f = h ≫ g →
+  ∀ (X : 𝒞) (h : X ⟶ a), h ≫ f = h ≫ g →
     ∃ k : X ⟶ e, k ≫ em = h ∧ ∀ m : X ⟶ e, m ≫ em = h → m = k
 
 /-- Satisfaction of an atom by an environment. -/
@@ -174,7 +174,7 @@ public theorem homFunctor_preserves_terminal (i : 𝒞) {o : 𝒞} (ho : IsTermi
 /-- `Hom(i,-)` preserves PRODUCTS: a product `(p, pf, ps)` in `𝒞` is sent to the product
     `(i⟶p, (·≫pf), (·≫ps))` in `Type v`.  The Set-product UP is solved by the unique
     `𝒞`-lift of the pair of legs. -/
-public theorem homFunctor_preserves_product (i : 𝒞) {A B p : 𝒞} {pf : p ⟶ A} {ps : p ⟶ B}
+public theorem homFunctor_preserves_product (i : 𝒞) {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (hp : IsProductObj pf ps) :
     IsProductObj (𝒞 := Type v)
       ((homFunctor i).map pf) ((homFunctor i).map ps) := by
@@ -189,7 +189,7 @@ public theorem homFunctor_preserves_product (i : 𝒞) {A B p : 𝒞} {pf : p �
 
 /-- `Hom(i,-)` preserves EQUALIZERS: an equalizer `em : e→a` of `f,g : a→bb` in `𝒞` is
     sent to the equalizer `(i⟶e, (·≫em))` of `(·≫f), (·≫g)` in `Type v`. -/
-public theorem homFunctor_preserves_equalizer (i : 𝒞) {e A bb : 𝒞} {em : e ⟶ A} {f g : A ⟶ bb}
+public theorem homFunctor_preserves_equalizer (i : 𝒞) {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (he : IsEqualizerObj em f g) :
     IsEqualizerObj (𝒞 := Type v)
       ((homFunctor i).map em)
@@ -284,7 +284,7 @@ public theorem reflect_terminal {o : 𝒞}
 /-- **REFLECTION of PRODUCT**: if `(Hom(i,p), (·≫pf), (·≫ps))` is a Set-product for every
     `i`, then `(p, pf, ps)` is a product in `𝒞`.  Existence of the lift is read off at
     `i := X`; uniqueness is `cayley_faithful`. -/
-public theorem reflect_product {A B p : 𝒞} {pf : p ⟶ A} {ps : p ⟶ B}
+public theorem reflect_product {a b p : 𝒞} {pf : p ⟶ a} {ps : p ⟶ b}
     (h : ∀ i : 𝒞, IsProductObj (𝒞 := Type v)
       ((homFunctor i).map pf) ((homFunctor i).map ps)) :
     IsProductObj pf ps := by
@@ -318,7 +318,7 @@ public theorem reflect_product {A B p : 𝒞} {pf : p ⟶ A} {ps : p ⟶ B}
 
 /-- **REFLECTION of EQUALIZER**: if `(Hom(i,e), (·≫em))` is a Set-equalizer of
     `(·≫f), (·≫g)` for every `i`, then `em` is an equalizer of `f, g` in `𝒞`. -/
-public theorem reflect_equalizer {e A bb : 𝒞} {em : e ⟶ A} {f g : A ⟶ bb}
+public theorem reflect_equalizer {e a bb : 𝒞} {em : e ⟶ a} {f g : a ⟶ bb}
     (h : ∀ i : 𝒞, IsEqualizerObj (𝒞 := Type v)
       ((homFunctor i).map em)
       ((homFunctor i).map f) ((homFunctor i).map g)) :
