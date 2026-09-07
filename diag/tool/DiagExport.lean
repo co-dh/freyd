@@ -54,6 +54,7 @@ import Lean
 import diag.FO
 import diag.Tape
 import diag.S2_124
+import diag.tool.Label
 import diag.tool.StringDiagram
 import diag.tool.TypeRender
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
@@ -796,83 +797,13 @@ def renderCells (cells : Array Cell) (x0 : Float) : String × Float :=
 
 /-! ### The term walk -/
 
+-- Every label of every picture is `diag/tool/Label.lean`'s: one spelling of composition, of the
+-- converse and of the note's brackets, shared with the string, circuit and commutative functors.
+open StrDiag (label labelAt)
+
 /-- The two arrow arguments of a binary operator applied with instance and object arguments. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
-
-/-- Last resort: Lean's pretty printer, on one line.  The repo's namespaces carry no information
-    inside a picture of the repo's own algebra, so they come off. -/
-def plain (e : Expr) : MetaM String := do
-  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
-  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
-
-/-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
-    — rather than left to the pretty printer, because it is read beside a picture, where
-    `CartBicat.conv S` is noise and `S°` is the thing itself.  `°`, not the paper's `†`: these terms
-    are read against Freyd throughout, and one symbol per idea beats matching two.
-
-    PARENTHESISED BY PRECEDENCE, composition loosest and `°` tightest, so the bracketing is visible.  That
-    matters: several steps of a `calc` do nothing but re-bracket, and the term column is the only
-    place a reader can see them happen — the picture, quite correctly, does not change. -/
-partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
-  let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
-  -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
-  -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
-  -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
-  -- `(R S) ∩ T`.
-  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String :=
-    match lastTwo args with
-    | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
-    | none => plain e
-  match e.getAppFnArgs with
-  | (``Cat.id, _) => return "𝟙"
-  | (``Freyd.Diag.CartBicat.Δ, _) => return "◁"
-  | (``Freyd.Diag.CartBicat.«∇», _) => return "▷"
-  | (``Freyd.Diag.CartBicat.«!», _) => return "⊸"
-  | (``Freyd.Diag.CartBicat.«?», _) => return "⟜"
-  -- BY THEIR DEFINITIONS, not by name.  `cap` and `cup` are `def`s over the four generators —
-  -- `cap = ▷⊸`, `cup = ⟜◁` — and a term column that prints them as words introduces two more
-  -- things to look up, in a note whose whole claim is that everything is built from those four.
-  -- The pictures already draw them as the merge and the fork with their dot.
-  | (``Freyd.Diag.CartBicat.cap, _) => return "▷⊸"
-  | (``Freyd.Diag.CartBicat.cup, _) => return "⟜◁"
-  | (``Freyd.Diag.top, _) | (``Freyd.Alg.topHom, _) => return "⊤"
-  | (``Freyd.Diag.Biprod.bot, _) => return "⊥"
-  -- The allegory's zero keeps the book's own `𝟘`; the tape layer's is `⊥` and they are different
-  -- arrows of different towers, so they are not spelled alike.
-  | (``Freyd.Alg.DistributiveAllegory.zero, _) => return "𝟘"
-  -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
-  -- do not exist and no statement can mention one.
-  | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
-  | (``Cat.comp, args) => bin 0 " " args 2
-  | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args
-  | (``Freyd.Diag.SymMonCat.tensHom, args) => bin 1 " ⊗ " args
-  | (``Freyd.Alg.Allegory.inter, args) | (``Freyd.Diag.meet, args) => bin 1 " ∩ " args
-  | (``Freyd.Diag.Biprod.union, args) | (``Freyd.Alg.DistributiveAllegory.union, args) =>
-    bin 1 " ∪ " args
-  | (``Freyd.Diag.ClosedLinearBicat.residual, args)
-  | (``Freyd.Alg.DivisionAllegory.div, args) => bin 1 " / " args
-  | (``Freyd.Alg.leftDiv, args) => bin 1 " \\ " args
-  | (``Freyd.Alg.symmDiv, args) => bin 1 " /ₛ " args
-  | (``Freyd.Alg.impl, args) => bin 1 " ⇨ " args
-  | (``Freyd.Alg.thenRel, args) => bin 1 " ⨾ " args
-  | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) =>
-    match args.back? with
-    | some r => return (← labelAt 3 r) ++ "°"
-    | none => plain e
-  | (``Freyd.Diag.ClosedLinearBicat.perp, args) =>
-    match args.back? with
-    | some r => return (← labelAt 3 r) ++ "⊥"
-    | none => plain e
-  -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
-  | (``Freyd.Alg.neg, args) =>
-    match args.back? with
-    | some r => return "∼" ++ (← labelAt 3 r)
-    | none => plain e
-  | _ => plain e
-
-/-- A label at the top of its own picture or box: no outer parentheses. -/
-def label (e : Expr) : MetaM String := labelAt 0 e
 
 /-- Whether the local context carries a `Map` hypothesis for this arrow.  No threading needed: the
     walk runs inside the statement's own `forallTelescope`, so `Map f` is a local hypothesis right
