@@ -7,7 +7,20 @@
 # lays out corners of its own.  A wrong direction, an arrow through a label, a chord that is not
 # straight — none of those can be accepted: they are the drawer's bug, and the drawer is fixed.
 #
-# EMPTY, and that is the point: every one of the four panels with a reference drawing now joins up
-# exactly as the note draws it.  What used to be excused here was the drawer's, not the note's —
-# which arrow is INDUCED (`Face.dashes`) and when a pasted pair is a FAN rather than a square
-# (`Face.isFan`), both now read off the statement.
+# COLOUR is the one kind of difference that may be accepted here, and only for `<banana-split>`.
+# The note colours that picture BY COMPONENT — `⦇h⦈`, `π₁`, `A` in GIVEN1 and `⦇k⦈`, `π₂`, `B` in
+# GIVEN2, so a reader follows one product component down each side, with `A×B` INDUCED and `T`
+# black.  The rule the generator applies reads the ROLE off the statement instead: `⦇h⦈` and `⦇k⦈`
+# are both arrows the statement is handed (GIVEN1), `π₁` and `π₂` both the structure the universal
+# property is about (GIVEN2), `T` an end of GIVEN1 arrows and of no GIVEN2 one, and `A`, `B`, `A×B`
+# ends of a GIVEN2 arrow, hence black.  The eight lines below are exactly that disagreement; the
+# user has been told of it and will decide which of the two the note keeps.  Wiring is never
+# accepted here — every panel with a reference drawing joins up exactly as the note draws it.
+Freyd.Alg.relCata_pair_beta | panel 1 adds the GIVEN1 arrow from column 1 row 0 to column 2 row 1 that cdref-banana.svg has not
+Freyd.Alg.relCata_pair_beta | panel 1 adds the GIVEN2 arrow from column 1 row 1 to column 0 row 1 that cdref-banana.svg has not
+Freyd.Alg.relCata_pair_beta | panel 1 draws the node at column 0 row 1 in black, where cdref-banana.svg draws it in GIVEN1
+Freyd.Alg.relCata_pair_beta | panel 1 draws the node at column 1 row 0 in GIVEN1, where cdref-banana.svg draws it in black
+Freyd.Alg.relCata_pair_beta | panel 1 draws the node at column 1 row 1 in black, where cdref-banana.svg draws it in INDUCED
+Freyd.Alg.relCata_pair_beta | panel 1 draws the node at column 2 row 1 in black, where cdref-banana.svg draws it in GIVEN2
+Freyd.Alg.relCata_pair_beta | panel 1 lacks the GIVEN1 arrow from column 1 row 1 to column 0 row 1 that cdref-banana.svg draws
+Freyd.Alg.relCata_pair_beta | panel 1 lacks the GIVEN2 arrow from column 1 row 0 to column 2 row 1 that cdref-banana.svg draws

@@ -119,6 +119,8 @@ structure Node where
   gx : Float
   gy : Float
   label : String
+  /-- The note's hue its object is drawn in, named by the ROLE it plays — see `nodeHues`. -/
+  hue : String := "BLACK"
 
 /-- An edge: the two nodes it joins, the arrow it stands for, and which side of the face it is on —
     the side is the direction its label is set in, away from the face. -/
@@ -134,6 +136,10 @@ structure Edge where
   /-- Drawn dashed.  THE NOTE DASHES THE ARROW THE STATEMENT PRODUCES, and nothing else — see
       `Face.dashes`. -/
   dash : Bool := false
+  /-- The note's hue it is drawn in, named by the ROLE its arrow plays in the statement — see
+      `Face.hue`.  No default: every edge is drawn in some colour, so every place that makes one
+      says which. -/
+  hue : String
 
 /-- Where a face's symbol is set, once the grid is known. -/
 structure FaceMark where
@@ -326,6 +332,61 @@ def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
   if isInduced (← inducedHeads) f then return true
   fc.induced.anyM fun g => Meta.isDefEq g f
 
+/-! ### Which role an arrow plays, hence its colour -/
+
+/-- Whether an arrow expression mentions one of the statement's free ARROW VARIABLES — the `f`, `R`,
+    `h`, `k` a picture is HANDED.  Read off the TERM and never off a list of letters: a free variable
+    whose type is a `Cat.Hom` is an arrow the statement binds, so a fold `⦇h⦈` of one mentions one
+    and the structure map of a bundled algebra, whose free variable is the algebra, does not. -/
+partial def givenArrow (e : Expr) : MetaM Bool := do
+  match e with
+  | .fvar _ => return (← Meta.inferType e).isAppOf ``Cat.Hom
+  | .app f a => return (← givenArrow f) || (← givenArrow a)
+  | .lam _ t b _ | .forallE _ t b _ => return (← givenArrow t) || (← givenArrow b)
+  | .letE _ t v b _ => return (← givenArrow t) || (← givenArrow v) || (← givenArrow b)
+  | .mdata _ b => givenArrow b
+  | .proj _ _ b => givenArrow b
+  | _ => return false
+
+/-- The arrow a FUNCTOR has moved, when this arrow is one: an application carrying an arrow argument
+    and standing at objects that argument does not — `F(⦇f⦈) : FT ⟶ FA` over `⦇f⦈ : T ⟶ A`, `E(R)`
+    over `R`, whichever way the action is written (`Functor.map`, or a relator's own constant, as
+    the existential image is).  Read off the two TYPES, never off the head's name: an operator that
+    RESHAPES an arrow — `R°`, `R∩S` — stands at the arrow's own two objects and is not an image, so
+    it is still the arrow the statement handed over. -/
+def imageOf (f : Expr) : MetaM (Option Expr) := do
+  let (a, b) ← StrDiag.homEnds f
+  for g in f.getAppArgs do
+    if (← Meta.inferType g).isAppOf ``Cat.Hom then
+      let (c, d) ← StrDiag.homEnds g
+      unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
+        return some g
+  return none
+
+/-- WHICH ROLE an arrow plays, hence which of the note's hues it is drawn in (`diag/draw.typ`:
+    `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue).
+
+    `INDUCED` is what a universal property PRODUCES: every arrow the dash rule marks, and a
+    functor's image of an induced one — `F(⦇f⦈)` is induced without being dashed, since the induced
+    arrow is what determines it.  `GIVEN1` is an arrow the picture is HANDED, which is exactly one
+    mentioning a free arrow variable.  `GIVEN2` is the structure the property is ABOUT — the initial
+    algebra's `α`, `∋`, `π₁`, the singleton `𝟙%∋`, none of which mentions one — and a relator's image
+    of a given arrow, `E(R)`, which the relator determines rather than the statement handing it
+    over. -/
+def Face.hue (fc : Face) (f : Expr) : MetaM String := do
+  if ← fc.dashes f then return "INDUCED"
+  match ← imageOf f with
+  | some g => return if isInduced (← inducedHeads) g then "INDUCED" else "GIVEN2"
+  | none => return if ← givenArrow f then "GIVEN1" else "GIVEN2"
+
+/-- A node's hue, from the edges that touch it: `GIVEN1` when it is an end of a GIVEN1 edge and of
+    no GIVEN2 one — an object the picture is handed, as against one where the structure the property
+    is about already lives (`T` and `FT` are ends of `α`, so they stay black). -/
+def nodeHues (ns : Array Node) (es : Array Edge) : Array Node :=
+  ns.map fun v =>
+    let touches (h : String) := es.any fun e => (e.src == v.id || e.tgt == v.id) && e.hue == h
+    if touches "GIVEN1" && !touches "GIVEN2" then { v with hue := "GIVEN1" } else v
+
 /-! ### The grid
 
 A path of `n` edges from the top-left corner to the bottom-right one runs along two legs, and the
@@ -380,7 +441,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
         es := es.push { src, tgt, label := (← label f), side := if i == 0 then side₀ else "bottom",
-                        dash := ← fc.dashes f }
+                        dash := ← fc.dashes f, hue := ← fc.hue f }
       return (ns, es)
     let (ln, le) ← place fc.lhs "left" 0.0
     let (rn, re) ← place fc.rhs "right" 2.0
@@ -389,14 +450,14 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
     -- of the face the `lhs` bounds.
     let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "left",
-                                 dash := true : Edge }]
+                                 dash := true, hue := "INDUCED" : Edge }]
     let mark (s : String) (ids : Array String) : Array FaceMark :=
       let ps := ids.filterMap fun id => (nodes.find? (·.id == id)).map fun v => (v.gx, v.gy)
       let k := ps.size.toFloat
       if s == "=" || ps.isEmpty then #[] else
         #[{ sym := s, gx := ps.foldl (fun a p => a + p.1) 0.0 / k,
             gy := ps.foldl (fun a p => a + p.2) 0.0 / k }]
-    return (nodes, edges,
+    return (nodeHues nodes edges, edges,
       mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
   let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
   let (top, right) := legs n false
@@ -424,11 +485,13 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
     edges := edges.push { src, tgt, label := (← label f), side := sideAt top right false i,
-                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f }
+                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
+                          hue := ← fc.hue f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
     edges := edges.push { src, tgt, label := (← label f), side := sideAt left bot true j,
-                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f }
+                          bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
+                          hue := ← fc.hue f }
   -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
   -- The symbol goes at the average of ITS OWN corners, which for a convex polygon is inside it —
   -- and a chord splits the polygon in two, so each side's symbol takes that side's corners alone.
@@ -440,13 +503,14 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       #[{ sym, gx := ps.foldl (fun a p => a + p.1) 0.0 / k,
           gy := ps.foldl (fun a p => a + p.2) 0.0 / k }]
   match fc.chord with
-  | none => return (nodes, edges, mark fc.sym (nodes.map (·.id)))
+  | none => return (nodeHues nodes edges, edges, mark fc.sym (nodes.map (·.id)))
   | some (c, sym) =>
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
     let withChord := edges.push
-      { src := "s", tgt := "t", label := (← label c), side := "top", dash := true }
-    return (nodes, withChord,
+      { src := "s", tgt := "t", label := (← label c), side := "top", dash := true,
+        hue := "INDUCED" }
+    return (nodeHues nodes withChord, withChord,
       mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
 
 /-! ### Emitting the page -/
@@ -458,7 +522,8 @@ def typstArr (rows : List String) (close : String) : String :=
 
 def typstNodes (ns : Array Node) (close := "\n") : String :=
   typstArr (ns.toList.map fun v =>
-    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: raw({typstString v.label}))")
+    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: raw({typstString v.label}), \
+       hue: {typstString v.hue})")
     close
 
 -- `dash` is written only where it is set: the chord is the one dashed edge, and a `dash: false` on
@@ -466,8 +531,8 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
 def typstEdges (es : Array Edge) (close := "\n") : String :=
   typstArr (es.toList.map fun e =>
     s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
-       label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}\
-       {if e.dash then ", dash: true" else ""})")
+       label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}, \
+       hue: {typstString e.hue}{if e.dash then ", dash: true" else ""})")
     close
 
 def typstFaces (fs : Array FaceMark) (close := "\n") : String :=

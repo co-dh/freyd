@@ -17,7 +17,14 @@
 //   ./scripts/diag-export --commutative Freyd.Alg.relCata_cancel
 //   typst compile --root . diag/generated/commutative/<name>.typ
 #import "note-style.typ": P
-#import "draw.typ": ar, cetz, d, lab, node
+#import "draw.typ": GIVEN1, GIVEN2, INDUCED, ar, cetz, d, lab, node
+
+// THE NOTE'S OWN PALETTE, ONE HUE PER ROLE (`draw.typ`).  Which role an arrow or an object plays is
+// decided from the STATEMENT, in `CommutativeDiagram.lean`'s `Face.hue`/`nodeHues`, and arrives here
+// as the tuple's `hue`; nothing in this file is per-declaration.  No default: a role nobody has
+// given a colour is a compile error naming it, never a silently black arrow.
+#let HUES = (BLACK: black, GIVEN1: GIVEN1, GIVEN2: GIVEN2, INDUCED: INDUCED)
+#let hue(x) = HUES.at(x.hue)
 
 // THE NOTE'S SQUARE, `diag/allegory-axioms.typ` `<initial-defn>`: `cetz.canvas(length: 0.8cm)` with
 // its corners at `(±2.6, ±1.35)`.  One grid step is therefore 5.2 across and 2.7 down, whatever the
@@ -134,7 +141,7 @@
     // `ar`'s `bow` is signed towards the LEFT normal, and `nm` is the side the label is on.
     let sgn = if nm.at(0) * per.at(0) + nm.at(1) * per.at(1) < 0 { -1 } else { 1 }
     // A dashed edge is the arrow the statement PRODUCES (`Face.dashes`), which is what the note dashes.
-    ar(a, b, black, bow: sgn * e.bow, dash: if e.at("dash", default: false) { "dashed" } else { none },
+    ar(a, b, hue(e), bow: sgn * e.bow, dash: if e.at("dash", default: false) { "dashed" } else { none },
       s0: calc.max(0.55, reach(ext.at(e.at("from")), u) + ACLEAR),
       s1: calc.max(0.55, reach(ext.at(e.at("to")), (-u.at(0), -u.at(1))) + ACLEAR))
     let lh = hext(lbl(e.label), 0pt, length)
@@ -142,9 +149,11 @@
     // clears the edge and not just its centre.
     let off = LABGAP + calc.abs(nm.at(0)) * lh.at(0) + calc.abs(nm.at(1)) * lh.at(1) + e.bow
     let mid = ((a.at(0) + b.at(0)) / 2, (a.at(1) + b.at(1)) / 2)
-    lab(mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off, black, lbl(e.label))
+    // A LABEL WEARS ITS ARROW'S COLOUR: an arrow whose name is a different colour from its mark
+    // reads as two different things.
+    lab(mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off, hue(e), lbl(e.label))
   }
-  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), black, lbl(n.label)) }
+  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), hue(n), lbl(n.label)) }
   for f in faces {
     let p = pos(f.at)
     d.content(p, text(SYMSIZE)[#f.sym])

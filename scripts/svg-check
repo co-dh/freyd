@@ -27,7 +27,10 @@ WHAT IS CHECKED
 
   wiring  `--against <ref.svg>` only: the page is joined up as the reference is — same number of
           diagrams, same nodes per diagram, and every arrow between the same two grid CELLS, dashed
-          where the reference's is.  Coordinates are deliberately absent: the note hand-places a
+          where the reference's is and IN THE ROLE THE REFERENCE DRAWS IT: an arrow's stroke and a
+          node label's fill are read back out of the SVG and mapped to the note's role names
+          (`ROLES`), so a picture that has lost a colour fails here as a wrong direction does.
+          Coordinates are deliberately absent: the note hand-places a
           corner to fit a label of its own and writes its own letters, so `scripts/svg-diff`'s
           primitive-by-primitive report never comes back empty against a generated panel and cannot
           be a gate.  A wrong direction, a missing arrow and a missing dash survive here.
@@ -60,6 +63,16 @@ GAP = 0.55 * 0.8 * PT  # the note's arrow shortening: how far a grown label box 
 TOL = 0.05 * PT        # 0.05cm
 EPS = 0.35             # a point of slack for the renderer's own rounding
 HEADNEAR = 3.0         # how far an arrowhead's box centre sits from the tip its arrow ends at
+
+# THE NOTE'S ONE HUE PER ROLE, `diag/draw.typ`'s `GIVEN1`/`GIVEN2`/`INDUCED`, read back the other
+# way: a drawn colour to the role it names.  A colour not here is reported BY ITS HEX rather than
+# guessed at — the palette moving is a difference the gate must show, not one it may swallow.
+ROLES = {"#000000": "black", "#26734d": "GIVEN1", "#7d3c98": "GIVEN2", "#1a5fb4": "INDUCED"}
+
+
+def role(c):
+    c = (c or "#000000").lower()
+    return ROLES.get(c, f"the colour {c}, which diag/draw.typ names no role")
 
 
 # ---- transforms -------------------------------------------------------------------------------
@@ -191,7 +204,7 @@ def shapes_of(path):
     tree = ET.parse(path)
     root = tree.getroot()
     vb = [float(x) for x in (root.get("viewBox") or "0 0 0 0").split()]
-    out = []
+    out, glyphs = [], []
 
     def walk(node, m):
         m = mat_mul(m, parse_transform(node.get("transform")))
@@ -200,11 +213,16 @@ def shapes_of(path):
                 out.append(Shape([apply(m, p) for p in pts], closed,
                                  node.get("fill"), node.get("stroke"),
                                  node.get("stroke-dasharray")))
+        # A PLACED GLYPH IS A `use`, and its `fill` is the colour the text was set in — the only
+        # place a label's colour survives, the outline in `defs` carrying none.
+        elif node.tag.endswith("use"):
+            glyphs.append((apply(m, (float(node.get("x", 0)), float(node.get("y", 0)))),
+                           node.get("fill")))
         for kid in node:
             walk(kid, m)
 
     walk(root, (1.0, 0.0, 0.0, 1.0, 0.0, 0.0))
-    return out, vb
+    return out, glyphs, vb
 
 
 # ---- geometry ---------------------------------------------------------------------------------
@@ -252,7 +270,7 @@ def in_polygon(p, poly):
 # ---- the checks -------------------------------------------------------------------------------
 
 def read_page(path):
-    shapes, vb = shapes_of(path)
+    shapes, glyphs, vb = shapes_of(path)
     page = (vb[2] - vb[0]) * (vb[3] - vb[1]) if len(vb) == 4 else 0.0
     nodes, frames, edges, heads = [], [], [], []
     for s in shapes:
@@ -282,6 +300,11 @@ def read_page(path):
     # `𝟙/∋`, a rule, an underline — and counted as an arrow it invents a wire the page has not got.
     edges = [e for e in edges
              if any(math.dist(h.centre, p) < HEADNEAR for h in heads for p in (e.pts[0], e.pts[-1]))]
+    # A NODE'S COLOUR IS ITS LABEL'S: `node` draws a white box whatever the role and sets only the
+    # text, so the glyphs standing inside that box are what says which role the object plays.
+    for n in nodes:
+        inside = [f for p, f in glyphs if dist_to_box(p, n.box) < EPS]
+        n.colour = inside[0] if inside else None
     return nodes, free, edges, heads
 
 
@@ -412,10 +435,11 @@ def grid_lines(edges):
 
 
 def wiring(path):
-    """A page's WIRING: how many diagrams, how many nodes each, and which grid CELL each arrow runs
-    from and to, dashed or not.  That is the part of a picture its statement fixes.  Coordinates are
-    not in it: the note hand-places a corner to fit a label of its own (`<banana-split>`'s ±4.6) and
-    writes its own letters, so two honest drawings of one statement differ there and nowhere else."""
+    """A page's WIRING: how many diagrams, how many nodes each, which grid CELL each arrow runs from
+    and to, dashed or not, and the ROLE each arrow and each node label is drawn in.  That is the part
+    of a picture its statement fixes.  Coordinates are not in it: the note hand-places a corner to
+    fit a label of its own (`<banana-split>`'s ±4.6) and writes its own letters, so two honest
+    drawings of one statement differ there and nowhere else."""
     nodes, _, edges, _ = read_page(path)
     out = []
     for ns, es in components(nodes, edges):
@@ -430,8 +454,9 @@ def wiring(path):
                     min(range(len(rows)), key=lambda i: abs(rows[i] - c[1])))
 
         out.append((min(n.centre[0] for n in ns), len(ns),
-                    sorted((cell(e.pts[0]), cell(e.pts[-1]), e.dash) for e in es)))
-    return [(k, a) for _, k, a in sorted(out)]
+                    sorted((cell(e.pts[0]), cell(e.pts[-1]), e.dash, role(e.stroke)) for e in es),
+                    sorted((cell(n.centre), role(n.colour)) for n in ns)))
+    return [(k, a, c) for _, k, a, c in sorted(out)]
 
 
 def against(ref_path, path):
@@ -442,19 +467,26 @@ def against(ref_path, path):
     if len(a) != len(b):
         return [f"{g}: wiring — {len(b)} diagrams, {r} has {len(a)}"]
     bad = []
-    for i, ((ka, ea), (kb, eb)) in enumerate(zip(a, b), 1):
+    for i, ((ka, ea, ca), (kb, eb, cb)) in enumerate(zip(a, b), 1):
         if ka != kb:
             bad.append(f"{g}: wiring — panel {i} has {kb} nodes, {r}'s has {ka}")
         for e in [x for x in ea if x not in eb]:
             bad.append(f"{g}: wiring — panel {i} lacks the {arrow_str(e)} that {r} draws")
         for e in [x for x in eb if x not in ea]:
             bad.append(f"{g}: wiring — panel {i} adds the {arrow_str(e)} that {r} has not")
+        # EVERY node is asked for its colour, not only the ones that have one: a node the reference
+        # colours and this page leaves black is exactly the difference this check is for.
+        ca, cb = dict(ca), dict(cb)
+        for k in sorted(set(ca) | set(cb)):
+            if ca.get(k, "no node") != cb.get(k, "no node"):
+                bad.append(f"{g}: wiring — panel {i} draws the node at column {k[0]} row {k[1]} in "
+                           f"{cb.get(k, 'no node')}, where {r} draws it in {ca.get(k, 'no node')}")
     return bad
 
 
 def arrow_str(e):
-    (a, b, dash) = e
-    return (f"{'dashed ' if dash else ''}arrow from column {a[0]} row {a[1]} "
+    (a, b, dash, col) = e
+    return (f"{'dashed ' if dash else ''}{col} arrow from column {a[0]} row {a[1]} "
             f"to column {b[0]} row {b[1]}")
 
 
