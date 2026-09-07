@@ -141,10 +141,18 @@ def best_offset(xs, ys):
     return best
 
 
+# How many leading slots of a primitive's tuple are POSITIONS.  A path is a run of (x, y) pairs, so
+# all of them; every other primitive is one point followed by data that is not a position — a
+# circle's radius, a box's size — which a translation must leave alone.
+NPOS = {"path": None, "circle": 2, "rect": 2, "use": 2, "image": 2}
+
+
 def shift(items, off):
     out = []
     for k, v in items:
-        w = tuple(v[i] - (off[0] if i % 2 == 0 else off[1]) if isinstance(v[i], float) else v[i]
+        n = NPOS[k]                        # KeyError names a kind `collect` grew and this did not
+        n = len(v) if n is None else n
+        w = tuple(v[i] - off[i % 2] if i < n and isinstance(v[i], float) else v[i]
                   for i in range(len(v)))
         out.append((k, w))
     return out
