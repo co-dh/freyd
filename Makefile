@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check string-check cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -125,6 +125,12 @@ scan-generated: $(STAMP)
 # that no panel names fails here rather than sitting unchecked.
 cd-check: $(STAMP)
 	./scripts/cd-check
+
+# Every string panel of `diag/string-panels.txt` — that is, every Hinze–Marsden panel the note draws
+# — redrawn from LEAN and held to the note's own panel by SVG.  The DISPLAYS are the obligations:
+# one the file does not name fails here rather than going unchecked.
+string-check: $(STAMP)
+	./scripts/string-check
 
 # Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
 # obligations and each one's basename IS the declaration it renders, so a cell whose declaration
