@@ -21,8 +21,7 @@
   lab(0, T + 0.5, GIVEN1)[`R`]
   // Each label also says what the arrow IS in the one operator, so the four read as instances of it.
   lab(xA - 0.62, 0, GIVEN2)[$frac(#[`𝟙`], ∋)$]
-  lab(0, B - 0.95, GIVEN2)[#align(center)[`E(R)` \
-    #text(8.5pt)[`E=` $frac(#[`∋·`], ∋)$]]]
+  lab(0, B - 0.95, GIVEN2)[`E(R)`]
   lab(xB + 0.35, 0, GIVEN2)[`∋`]
   lab(1.25, 0.2, INDUCED)[$frac(#[`R`], ∋)$]
   node(xA, T, black, `A`); node(xB, T, black, `B`)

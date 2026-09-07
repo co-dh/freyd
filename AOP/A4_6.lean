@@ -80,6 +80,9 @@ public theorem Λ_eps_reflection {B : 𝒜} : Λ (∋ B) = Cat.id (PowerAllegory
   have heq : Cat.id (PowerAllegory.powerObj B) ≫ ∋ B = ∋ B := Cat.id_comp _
   exact (Λ_unique _ _ (id_is_map_local _) heq).symm
 
+/-- (10.1a) at this layer: the counit triangle `Λ(R) ∋ = R` with the layer's object letters `A B`. -/
+theorem Λ_comp_eps {A B : 𝒜} (R : A ⟶ B) : Λ R ≫ ∋ B = R := Λ_eps_eq' R
+
 /-! ## Existential image `E` (B&dM p.104-105)
 
     Restricted to maps `f`, `existsImage f` is B&dM's power functor `P`
