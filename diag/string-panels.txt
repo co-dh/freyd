@@ -1,0 +1,93 @@
+# Every Hinze-Marsden panel `diag/allegory-axioms.typ` draws, and the Lean statement
+# `diag-export --string` must draw the same picture from.  ONE LINE PER DISPLAY, three tab-separated
+# columns:
+#
+#   <selector per panel>   one `diag-export --string` selector for each panel of the display, in the
+#                          order the display draws them, `-` where no declaration is cited; a `#`
+#                          comment after the third column names the candidates a `-` line has.
+#   <number>/<label>       the note's own display number (`dispnum`, from the panel's `scanline`
+#                          metadata) and the `#disp` label, `(unlabelled)` where the display has none
+#   <what its panels draw> each panel's `cert: expect`, joined by ` = `
+#
+# THE DISPLAYS ARE THE OBLIGATIONS.  `scripts/string-check` enumerates the note's panels from
+# `typst query` and fails on a display no line here names, so a picture cannot go unchecked by being
+# left out, and deleting a line cannot make the gate pass.  A panel whose selector is `-` is
+# reported NO-DECL: an obligation with no record, not a silent skip.
+#
+# The selector column is STATIC and was authored once.  A display's `lean:` marker is a Typst
+# comment, so `typst query` cannot see it; the markers were read through `scripts/cite-cover`'s own
+# note reader and resolved to full Lean names through the index.  A display carrying one marker per
+# pair of panels took `<decl>.lhs`, `<decl>.rhs`; every other shape was left `-` with its candidates
+# in the comment, because which side of which declaration a panel of a proof CHAIN draws is a
+# judgement, not a derivation.
+-,-	7.2b/horner	tri(f)⦇g⦈ = ⦇F(𝟙,f)g⦈	# the display carries no marker of its own
+Freyd.Alg.InitialAlgebra.lhs,Freyd.Alg.InitialAlgebra.rhs,Freyd.Alg.relCata_cancel.lhs,Freyd.Alg.relCata_cancel.rhs	11.4a/initial-defn	f h = F(h)g = α⦇f⦈ = F(⦇f⦈)f
+Freyd.Alg.relCata_alpha.lhs,Freyd.Alg.relCata_alpha.rhs	11.4.1a/cata-reflection	⦇α⦈ = 𝟙
+-,-,-,-	11.4.2a/cata-fusion	R S = F(S)Q = ⦇R⦈S = ⦇Q⦈	# candidates: Freyd.Alg.relCata_fusion
+Freyd.Alg.alpha_natural.lhs,Freyd.Alg.alpha_natural.rhs	11.5.1b/tfun-sq	α T(f) = F(⟨𝟙,T⟩(f))α
+Freyd.Alg.typeMap_fusion.lhs,Freyd.Alg.typeMap_fusion.rhs	11.5.1c/tfun-fusion	T(f)⦇h⦈ = ⦇F(f,𝟙)h⦈
+Freyd.Alg.relCata_UP.lhs,Freyd.Alg.relCata_UP.rhs	11.6.1a/cata-defining	α X = F(X)f
+Freyd.Alg.Λ_relCata.lhs,Freyd.Alg.Λ_relCata.rhs	11.6.2a/cata-map-square	α⦇F(∋)R%∋⦈ = F(⦇F(∋)R%∋⦈)f
+-,-,-,-,-	11.6.4a/hylo-fix	S° F(⦇S⦈°⦇R⦈)R = S° F(⦇S⦈°)F(⦇R⦈)R = S° F(⦇S⦈°)α⦇R⦈ = ⦇S⦈° α° α⦇R⦈ = ⦇S⦈°⦇R⦈	# candidates: Freyd.Alg.hylo_fixed Freyd.Alg.InitialAlgebra.recip_alpha_alpha
+Freyd.Alg.hylo_le_of_prefixed.lhs,Freyd.Alg.hylo_le_of_prefixed.rhs,-,-,-,-,-,-,-,-,-,-	11.6.4b/hylo-least	⦇S⦈°⦇R⦈ = X = ⦇R⦈ = ⦇S⦈°\X = α° F(⦇S⦈°\X)R = ⦇S⦈°\X = ⦇S⦈° α° F(⦇S⦈°\X)R = X = S° F(⦇S⦈°)F(⦇S⦈°\X)R = X = S° F(X)R = X
+-,-,-	11.6.4c/hylo-mu	(μX : S°F(X)R) = ⦇S⦈°⦇R⦈ = (μX : S°F(X)R)	# candidates: Freyd.Alg.hylo_eq_mu Freyd.Alg.mu_le_of_fixed Freyd.Alg.mu_prefixed
+-,-,-,-,-	12.1b/subseq-EW-case	(𝟙×∋)π₂ = (𝟙×∋)π₂ = (𝟙×∋)π₂ = 𝟙%∋ E(𝟙×∋)E(π₂) = 𝟙%∋ E(𝟙×∋)E(π₂)	# candidates: Freyd.Alg.RelSet.ListRel.subseq_cata
+-,-,-,-,-	12.1d/subseq-EW-join	(𝟙×∋)cons = (𝟙×∋)π₂ = π₂ ∋ = 𝟙%∋ E(𝟙×∋)E(cons) = π₂	# the display carries no marker of its own
+Freyd.Alg.LaxNatural.lhs,Freyd.Alg.LaxNatural.rhs	13.2b/lax-str	G(R)φ = φ F(R)
+Freyd.Alg.MonotonicAlg.lhs,Freyd.Alg.MonotonicAlg.rhs	13.3b/mon-str	F(R)φ = φ R
+Freyd.Alg.Distributes.lhs,Freyd.Alg.Distributes.rhs	13.3.1b/dist-str	F(est(R))f = (F(∋)f)%∋ est(R)
+-,-,-,-,-,-,-,-,-,-,-,-	13.3.1c/mon-thm71	F(est(R))f = 𝟙%∋ E(F(∋)f)est(R) = F(est(R))f = F(∋)f = f° F(∈)F(est(R))f = R° = f° F(∈)F(est(R))f = R° = f° F(R°)f = R° = f° F(R)f = R	# candidates: Freyd.Alg.monotonicAlg_of_distributes Freyd.Alg.monotonicAlg_iff_conj Freyd.Alg.monotonicAlg_recip_iff
+-,-,-,-,-	13.3.2a/greedy-thm72	S° F(R°)𝟙%∋ E(S)est(R) = R° = R° S° 𝟙%∋ E(S)est(R) = R° R° = R°	# candidates: Freyd.Alg.greedy
+Freyd.Alg.RelSet.ListRel.prefix_cata.lhs,Freyd.Alg.RelSet.ListRel.prefix_cata.rhs	13.3.3b/prefix-defn	α prefix = F(prefix)[nil,⊸ nil ∪ cons]
+-,-,-,-	13.3.3c/takewhile-alg	α prefix list(p) = F(prefix)[nil,⊸ nil ∪ cons]list(p) = F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons] = [nil,⊸ nil ∪ (p×(prefix list(p))) cons]	# candidates: Freyd.Alg.RelSet.Filter.filter_alg_comm Freyd.Alg.RelSet.Filter.filter_alg Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm
+-,-,-,-	13.3.3g/(unlabelled)	(prefix list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°) = ⦇S%∋ est(R°)⦈ = ⦇[nil,(π₁p→cons,⊸ nil)]⦈	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+Freyd.Alg.RelSet.MSS.mss_prefix_sum.lhs,Freyd.Alg.RelSet.MSS.mss_prefix_sum.rhs	13.3.4c/mss-prefix-sum	cons sum = (𝟙×sum)plus
+-,-,-	13.3.4e/mss-step	𝟙%∋ E([zero,⊸ zero ∪ plus])est(≥) = 𝟙%∋ E(plus)est(≥) = [zero,⊕]	# candidates: Freyd.Alg.RelSet.MSS.mss_step Freyd.Alg.RelSet.MSS.mss_greedy
+-,-,-,-	13.3.4g/mss-deriv	𝟙%∋ E(segment sum)est(≥) = 𝟙%∋ E(suffix)E(𝟙%∋)E(E(prefix sum))E(est(≥))est(≥) = 𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥) = ⦇k⦈π₂ est(≥)	# candidates: Freyd.Alg.RelSet.MSS.mss_eq_scan
+-,-,-	13.3.5e/(unlabelled)	(subseq list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°) = ⦇S%∋ est(R°)⦈	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+Freyd.Alg.RelSet.Party.branch_monotonic.lhs,Freyd.Alg.RelSet.Party.branch_monotonic.rhs,Freyd.Alg.RelSet.Party.exclude_monotonic.lhs,Freyd.Alg.RelSet.Party.exclude_monotonic.rhs	13.4.3c/party-mono-branch	(𝟙×list((R×R)°))include = (𝟙×list(g))(𝟙×list(R°))(𝟙×concat)h = (𝟙×list(g))(𝟙×concat)(𝟙×R°)h = include R°
+Freyd.Alg.RelSet.Party.party_laws.lhs,Freyd.Alg.RelSet.Party.party_laws.rhs,Freyd.Alg.est_Λ_est_le.lhs,Freyd.Alg.est_Λ_est_le.rhs	13.4.4a/party-laws	𝟙%∋ E(party)est(R°) = 𝟙%∋ E(⦇S⦈)E(choose)est(R°) = 𝟙%∋ E(⦇S⦈)E(choose)est(R°) = 𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)
+-,-,-	13.4.4b/party-laws-fold	𝟙%∋ E(S)est((R×R)°) = 𝟙%∋ E(include)est(R°) = π₂ list(𝟙%∋)list(E(choose))list(est(R°))concat	# candidates: Freyd.Alg.greedy Freyd.Alg.RelSet.pair_est_le Freyd.Alg.RelSet.graph_le_Λ_est
+-	13.5.1a/vec-gen-diag	(𝟙×(moves trans Vec(n)(concat)))zip Vec(n)(cp)	# candidates: Freyd.Alg.Vec.moves_natural Freyd.Alg.Vec.moves Freyd.Alg.Vec.trans_natural
+Freyd.Alg.Vec.genFold_natural.lhs,Freyd.Alg.Vec.genFold_natural.rhs	13.5.2a/vec-fold-diag	⦇gen⦈ = (𝟙×⦇gen⦈)gen
+-	13.5.3a/vec-q-diag	(𝟙×(moves trans Vec(n)(est(R))))zip	# candidates: Freyd.Alg.Vec.Rel.moves_lax_natural Freyd.Alg.Vec.moves Freyd.Alg.Vec.Rel.trans_natural
+-,-,-,-	13.5.4a/vec-cyl-laws	paths est(R) = ⦇gen⦈concat est(R) = ⦇gen⦈Vec(n)(est(R))est(R) = ⦇Q⦈est(R)	# candidates: Freyd.Alg.Vec.Rel.cyl_laws Freyd.Alg.Vec.paths_natural Freyd.Alg.Vec.paths
+Freyd.Alg.Vec.Rel.cyl_fusion.lhs,Freyd.Alg.Vec.Rel.cyl_fusion.rhs	13.5.4b/vec-cyl-fusion	gen Vec(n)(est(R)) = (𝟙×Vec(n)(est(R)))Q
+Freyd.Alg.RelSet.Van.secure_bmax.lhs,Freyd.Alg.RelSet.Van.secure_bmax.rhs	13.6.1a/van-secure	secure⟨ceiling,ceiling−floor⟩bmax = ⟨ceiling,ceiling−floor⟩bmax ≤N
+Freyd.Alg.RelSet.Van.secure_prefix.lhs,Freyd.Alg.RelSet.Van.secure_prefix.rhs	13.6.1b/van-prefix	secure prefix = prefix secure
+Freyd.Alg.RelSet.Van.new_eq.rhs,Freyd.Alg.RelSet.Van.glue_eq.rhs,Freyd.Alg.RelSet.Van.old_eq.rhs	13.6.2a/van-algebras	(wrap×𝟙)cons = (𝟙×cons°)assocl (cons×𝟙)cons = (𝟙×cons°)assocl ((cons secure)×𝟙)cons
+Freyd.Alg.RelSet.Van.van_spec.lhs,Freyd.Alg.RelSet.Van.van_spec.rhs	13.6.2b/van-fusion	partition list(secure) = ⦇[nil,new ∪ old]⦈
+-,-,-	13.6.3a/van-714	(𝟙×R)new = (wrap×R)cons = new R	# candidates: Freyd.Alg.RelSet.Van.van_7_14 Freyd.Alg.RelSet.Van.R_not_lax_natural Freyd.Alg.RelSet.Van.R
+Freyd.Alg.RelSet.Van.H_eq.rhs.inl,Freyd.Alg.RelSet.Van.H_eq.rhs.inr	13.6.4a/van-h	head prefix° head° = nil° nil
+Freyd.Alg.RelSet.Van.van_7_18.lhs,Freyd.Alg.RelSet.Van.van_7_18.rhs	13.6.5a/van-718	(𝟙×⊤)new = new H
+-,-,-,-,-,-	13.6.5b/van-716	(𝟙×R;H)new = (𝟙×R)new = new R = new H = new (R∩H) = new R;H	# candidates: Freyd.Alg.RelSet.Van.van_mono_new Freyd.Alg.RelSet.Van.RH_not_lax_natural Freyd.Alg.RelSet.Van.RH
+Freyd.Alg.RelSet.Van.van_7_19.lhs,Freyd.Alg.RelSet.Van.van_7_19.rhs	13.6.6a/van-719	(𝟙×⊤)old = new H
+Freyd.Alg.RelSet.Van.van_7_20.lhs,Freyd.Alg.RelSet.Van.van_7_20.rhs	13.6.6b/van-720	(𝟙×|R|)old = new R
+Freyd.Alg.RelSet.Van.van_7_21.lhs,Freyd.Alg.RelSet.Van.van_7_21.rhs	13.6.6c/van-721	(𝟙×(R∩H))old = old (R∩H)
+-,-,-,-	13.6.6d/van-mono	(𝟙×R;H)old = (𝟙×|R|)old = old (R∩H) = old R;H	# candidates: Freyd.Alg.RelSet.Van.van_mono Freyd.Alg.RelSet.Van.oldR Freyd.Alg.RelSet.Van.RH_not_lax_natural
+-,-,-,-,-	13.6.7a/van-laws	𝟙%∋ E(partition)E(list(secure))est(R) = 𝟙%∋ E(⦇S⦈)est(R) = 𝟙%∋ E(⦇S⦈)est(R;H) = ⦇S%∋ est(R;H)⦈ = ⦇[nil,(ok→glue,new)]⦈	# candidates: Freyd.Alg.RelSet.Van.van_laws Freyd.Alg.RelSet.Van.secure Freyd.Alg.RelSet.Van.van_7_15_false
+-,-,-,-	14.1c/thin-83	S° S%∋ est(R)𝟙%∋ = ∈ est(R∩S°S)𝟙%∋ = Q° 𝟙%∋ = Q° ∈	# candidates: Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel
+-,-,-,-,-	14.1d/thin-thm81	S° F(Q° ∈)(F(∋)S)%∋ thin(Q) = Q° S° F(∈)(F(∋)S)%∋ thin(Q) = Q° ∈ thin(Q) = Q° Q° ∈ = Q° ∈	# candidates: Freyd.Alg.thinning
+-,-,-	14.1e/thin-cor	⦇(F(∋)S)%∋ thin(Q)⦈est(R) = 𝟙%∋ E(⦇S⦈)thin(Q)est(R) = 𝟙%∋ E(⦇S⦈)est(R)	# candidates: Freyd.Alg.thinning_est
+Freyd.Alg.thinning_paths.lhs,Freyd.Alg.thinning_paths.rhs	14.2c/path-laws	⦇F(∋,𝟙)α⦈%∋ est(R) = ⦇(F(∋,∋)α)%∋ thin(Q)⦈est(R)
+-,-,-,-,-	14.3c/thinlist-86	sort(P)thinlist(Q) = setify° ordered(P)thinlist(Q) = setify° thinlist(Q)ordered(P) = thin(Q)setify° ordered(P) = thin(Q)sort(P)	# candidates: Freyd.Alg.sortRel_comp_thinlist_le Freyd.Alg.RelSet.ListRel.setify_lax_natural Freyd.Alg.RelSet.ListRel.setify_not_strict
+Freyd.Alg.map_sort_comp_listcp_le.lhs,Freyd.Alg.map_sort_comp_listcp_le.rhs	14.3d/thinlist-lem81	(F(∋)f p)%∋ sort(P) = F(∋)f%∋ sort(P)filter(p)
+-,-,-,-	14.3e/thinlist-thm82	⦇S⦈%∋ est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈est(R) = ⦇(F(∋)S)%∋ thin(Q)⦈sort(P)minlist(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.thinningList
+Freyd.Alg.sortedAlg_fusion.lhs,Freyd.Alg.sortedAlg_fusion.rhs	14.3f/thinlist-fusion	F(∋)S%∋ thin(Q)sort(P) = F(∋)S%∋ sort(P)thinlist(Q)
+-,-,-	14.4c/knap-laws	(subseq within(w))%∋ est(R) = ⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈%∋ est(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.RelSet.Knapsack.knap_laws Freyd.Alg.RelSet.Knapsack.knap_spec
+-,-,-	14.5c/para-laws	(partition list⁺(fits(w)))%∋ est(R) = ⦇[wrap wrap,new ∪ (glue (ok w))]⦈%∋ est(R) = ⦇−thinlist(Q)⦈minlist(R)	# candidates: Freyd.Alg.RelSet.Paragraph.para_laws Freyd.Alg.RelSet.Paragraph.partition Freyd.Alg.RelSet.Paragraph.para_alg_fusion
+Freyd.Alg.RelSet.Tour.tour_laws.lhs,Freyd.Alg.RelSet.Tour.tour_laws.rhs	14.6c/tour-laws	tour%∋ est(R) = ⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈minlist(R)
+-,-,-	15.1b/dp-laws	H%∋ est(R) = (T°)%∋ thin(Q)P(F(X)h)est(R) = (Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)	# candidates: Freyd.Alg.dynamic_programming_thin
+-,-,-,-	15.2b/edit-laws	(edit°)%∋ est(R) = ([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R) = (step°)%∋ thin(U×V)P((𝟙×X)cons)est(R) = unstep list((𝟙×mle)cons)minlist(R)	# candidates: Freyd.Alg.RelSet.Edit.edit_laws
+-,-,-	15.3b/mct-laws	(flatten°)%∋ est(R) = ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R) = splits list((mct×mct)bin)minlist(R)	# candidates: Freyd.Alg.RelSet.Bracket.mct_laws
+-,-,-,-	15.4b/code-laws	(decode°)%∋ est(R) = ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R) = (extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R) = reduce list((encode×𝟙)snoc)minlist(R)	# the display carries no marker of its own
+-,-,-	16.1b/greedy-laws	H%∋ est(R) = (T°)%∋ est(Q)F(X)h = (Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ	# candidates: Freyd.Alg.greedy_dp
+-,-,-	16.2b/entab-laws	(detab°)%∋ est(R) = ([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc] = (expand°)%∋ est(V×U)(X×𝟙)snoc	# candidates: Freyd.Alg.RelSet.Detab.entab_laws
+-,-,-,-	16.3b/tardy-laws	(bagify°)%∋ est(R) = ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc] = (snag°)%∋ est(Q')(X×𝟙)snoc = pick (schedule×𝟙)snoc	# the display carries no marker of its own
+-,-,-,-	16.4b/(unlabelled)	𝟙%∋ E(intern°)est(R) = interval 𝟙%∋ E(inrange val°)est(R) = interval 𝟙%∋ E(H)est(R) = interval 𝟙%∋ E([arb,step]°)est(Q)F(H)α	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,-,-	17.3.2a/(unlabelled)	𝟙%∋ E(F(𝟙,∋)) = 𝟙%∋ E(𝟙×∋) = 𝟙%∋	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-	17.3.3a/(unlabelled)	F(𝟙,moves trans N(union))zip N(cp P(α))	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,-	17.3.4a/(unlabelled)	α⦇gen⦈ = F(𝟙,⦇gen⦈)gen	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,-	17.3.5b/(unlabelled)	Q = F(𝟙,moves trans N(est(R)))zip N(α)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,-,-,-,-	17.3.5c/(unlabelled)	paths est(R) = ⦇gen⦈setify union est(R) = ⦇gen⦈setify P(est(R))est(R) = ⦇gen⦈N(est(R))setify est(R) = ⦇Q⦈setify est(R)	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
+-,-	17.3.5d/(unlabelled)	gen N(est(R)) = F(𝟙,N(est(R)))Q	# unlabelled #disp: a display is found from its label, so this one's markers were never read — read them by hand
