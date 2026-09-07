@@ -219,6 +219,14 @@ partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
         return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
       plain x
 
+/-- Beta at the head, to a fixed point.  An alternative reconstructed from a `match` arrives as a
+    lambda applied to the summand's factors, and the lambda it names may itself be one; nothing
+    beyond beta is reduced, because a NUMERAL delta-reduces to a constructor and would then read as
+    the carrier's empty structure map. -/
+partial def betaHead (e : Expr) : Expr :=
+  let e' := e.headBeta
+  if e' == e then e else betaHead e'
+
 /-- Whether the labeller has a spelling of its own for this arrow: those keep their name and are
     never unfolded, because the name IS what the note writes on the box. -/
 def isNamed (e : Expr) : Bool :=
@@ -246,9 +254,8 @@ mutual
     carrier's own structure map. -/
 partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
   -- WHAT THE MAP DOES, not how it was written: an arm reconstructed from a `match` arrives as the
-  -- alternative applied to the summand's factors, and a step is a `def` around its own `match`, so
-  -- the questions below are asked of the REDUCED body.  The fallback still prints what was written.
-  let body ← Meta.whnfD body₀
+  -- alternative applied to the summand's factors.  The fallback still prints what was written.
+  let body := betaHead body₀
   match projIndex body with
   | some 0 => return "π₁"
   | some _ => return "π₂"
@@ -272,8 +279,10 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     writes it into the box's own name: `(π₁p→cons,⊸ nil)`, the test, the arm taken when it holds,
     and the other.  The arms are read by REDUCING the matcher at each value of `Bool`, so nothing
     here depends on the order the alternatives were written in or on how the `match` compiled. -/
-partial def guardLabel (s : FVarId) (body : Expr) : MetaM (Option String) := do
-  let some ma ← Meta.matchMatcherApp? body | return none
+partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := do
+  -- A step is a `def` around its own `match`, so the matcher is behind one delta; the ARMS are then
+  -- taken by `whnfCore`, which fires the matcher without unfolding a numeral into a constructor.
+  let some ma ← Meta.matchMatcherApp? (← Meta.whnfD body₀) | return none
   unless ma.discrs.size == 1 && ma.alts.size == 2 && ma.remaining.isEmpty do return none
   unless (← Meta.whnfD (← Meta.inferType ma.discrs[0]!)).isConstOf ``Bool do return none
   let hd := mkAppN (mkConst ma.matcherName ma.matcherLevels.toList) ma.params
@@ -281,7 +290,7 @@ partial def guardLabel (s : FVarId) (body : Expr) : MetaM (Option String) := do
   -- there is nothing to discard and the constant stands alone.
   let ws := ((← typeObj (← s.getType)).wires.toOption.getD #[])
   let arm (v : Name) : MetaM String := do
-    let b ← Meta.whnfD (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
+    let b ← Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
     let l ← bodyLabel s b (← Meta.mkLambdaFVars #[.fvar s] b)
     return (if b.containsFVar s || ws.isEmpty then l else "⊸ " ++ l)
   return some ("(" ++ (← valLabel s ma.discrs[0]!) ++ "→" ++ (← arm ``Bool.true) ++ ","
