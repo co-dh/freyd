@@ -979,5 +979,25 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
 
+-- `partition`, `concat` and `sum` are what the note calls these arrows.  The namespace is the only
+-- reason the printer keeps `ListRel.` in front of them, and a picture of the repo's own algebra has
+-- no second `partition` to tell this one from.
+open Lean PrettyPrinter in
+@[app_unexpander partition] public meta def unexpandPartition : Unexpander
+  | `($_:ident) => `($(mkIdent `partition))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander concatR] public meta def unexpandConcatR : Unexpander
+  | `($_:ident) => `($(mkIdent `concat))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander sumR] public meta def unexpandSumR : Unexpander
+  | `($_:ident) => `($(mkIdent `sum))
+  | _ => throw ()
+
+/-- The list relator's action on an arrow, with its own brackets like every other relator's `F(R)`,
+    because juxtaposition in this repo is composition. -/
+notation:max "list(" R ")" => list R
+
 end Freyd.Alg.RelSet.ListRel
 

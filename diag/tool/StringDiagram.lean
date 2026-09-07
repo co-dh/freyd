@@ -477,6 +477,24 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
   let ix := Array.mk (List.range lanes.size)
   return { lanes, rows := #[], top := ix, bot := ix, otop := o, obot := o }
 
+/-- A BEAD'S LABEL IS THE FAMILY'S NAME, and the object it is taken at is the WIRE UNDER IT.  So
+    every application to the region's own object variable comes off the label — `α A` is the bead
+    `α` over the `A` wire — because writing the index into the label as well spells one object twice
+    and lets the two drift (`skills/string-diagram`: "a bead's index is the object wire under it").
+    A bead that is no family in the object has no index to drop.
+
+    ONLY WHERE THE HEAD IS A BINDER.  A CONSTANT's spelling is its own unexpander's business, and
+    that unexpander matches the term as APPLIED — cutting the object argument out from under it
+    stops it firing, and the label comes out worse than the one it was meant to fix (`prefixR A`
+    became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`).  A constant that wants its index
+    dropped drops it in its own rule, beside itself. -/
+def beadLabel (core : Expr) : Option Expr → MetaM String
+  | none => plain core
+  | some v => do
+    plain (← Meta.transform core (post := fun x => match x with
+      | .app f a => return if a == v && f.getAppFn.isFVar then .done f else .continue
+      | _ => return .continue))
+
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
     drawn past it are alike none of its naturality statement's business. -/
@@ -489,7 +507,8 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
   -- away a naturality the environment proves.
-  let φ ← match ← familyVar core objVars with
+  let v? ← familyVar core objVars
+  let φ ← match v? with
     | some v => some <$> familyOf regionTy v core
     | none => pure none
   let vd ← match φ with
@@ -498,7 +517,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let top := Array.mk (List.range arms.size)
   let bot := Array.mk (List.range' arms.size legs.size)
   let row : Row :=
-    { label := (← plain core), arms := top, legs := bot, obj := (← plain oy),
+    { label := (← beadLabel core v?), arms := top, legs := bot, obj := (← plain oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   return { lanes, rows := #[row], top, bot, otop := ox, obot := oy }

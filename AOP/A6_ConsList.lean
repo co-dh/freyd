@@ -432,6 +432,7 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander ConsList.wrap] public meta def unexpandNil : Unexpander
   | `($_ ()) => `($(mkIdent `nil))
+  | `($_ $x) => `($(mkIdent `wrap) $x)
   | _ => throw ()
 
 -- The structural fold wears the note's banana.  `cataR` and `relCata` are equal only

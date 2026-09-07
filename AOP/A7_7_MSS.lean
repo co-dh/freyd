@@ -639,4 +639,18 @@ example : mssPreFn (ofList [(1 : Int), -2, 3]) = 2 := by decide
 /-- Every prefix sum negative ⇒ the empty prefix wins with `0`. -/
 example : mssPreFn (ofList [(-1 : Int), -2]) = 0 := by decide
 
+-- printing-only: the note's own spelling of §7.7's two arrows.  `≥` is the order the maximum is
+-- taken under and `S` the algebra the fold folds with; which module they were declared in is not
+-- part of either name.  `≥` is no Lean identifier, so the formatter escapes it and the label
+-- emitter (`diag/tool/ExprReader`) unescapes it, exactly as it does for `«prefix»`.
+open Lean PrettyPrinter in
+@[app_unexpander geq] public meta def unexpandGeq : Unexpander
+  | `($_:ident) => `($(mkIdent (Name.mkSimple "≥")))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandSalg : Unexpander
+  | `($_:ident) => `($(mkIdent `S))
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.MSS

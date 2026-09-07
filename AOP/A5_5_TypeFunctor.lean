@@ -155,13 +155,13 @@ public theorem typeMap_id (A : 𝒜) : typeMap I (𝟙 A) = 𝟙 (I A).t := by
 /-- **Type functor fusion (2.14)**: `T(R)⦇Q⦈ = ⦇F(R,𝟙)Q⦈` — "a catamorphism composed with
     its type functor can always be expressed as a single catamorphism."  The side condition
     of (2.12)-fusion is discharged by interchange, `F` being a bifunctor. -/
-public theorem typeMap_fusion {A B C : 𝒜} (R : A ⟶ B) (Q : F.obj B C ⟶ C) :
-    typeMap I R ≫ relCata (I := I B) Q = relCata (I := I A) (F.map R (𝟙 C) ≫ Q) := by
-  rw [typeMap_defn I R]
+public theorem typeMap_fusion {A B C : 𝒜} (f : A ⟶ B) (h : F.obj B C ⟶ C) :
+    typeMap I f ≫ relCata (I := I B) h = relCata (I := I A) (F.map f (𝟙 C) ≫ h) := by
+  rw [typeMap_defn I f]
   refine relCata_fusion (I A) ?_
-  rw [Cat.assoc, relCata_cancel (I B) Q]
+  rw [Cat.assoc, relCata_cancel (I B) h]
   dsimp only [BiRelator.appl]
-  rw [← Cat.assoc, F.interchange, ← F.interchange' R (relCata (I := I B) Q), Cat.assoc]
+  rw [← Cat.assoc, F.interchange, ← F.interchange' f (relCata (I := I B) h), Cat.assoc]
 
 /-- **§2.7**: `T(R)T(S) = T(RS)` — type functor fusion at `Q := F(S,𝟙)α`, then `F` bifunctor. -/
 public theorem typeMap_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
@@ -245,12 +245,14 @@ public theorem alphaT_strictNatural :
 
 end TypeRelator
 
--- printing-only unexpanders: the note's spelling.  `α` indexed by the object it is the component
--- at, `T` applied to the arrow it maps: §2.7's own `α_A : F(A,TA) ⟶ TA` and `T(R)`.  The family
--- argument `I` is not part of either name — it is which initial algebras, not which component.
+-- printing-only unexpanders: the note's spelling.  `α` bare and `T` applied to the arrow it maps:
+-- §2.7's own `α : F(⟨𝟙,T⟩)⟶T` and `T(R)`.  The family argument `I` is not part of either name — it
+-- is which initial algebras, not which component — and neither is the OBJECT `α` is taken at: on a
+-- string diagram that object is the wire the bead sits over, and writing it in the label as well
+-- spells it twice.
 open Lean PrettyPrinter in
 @[app_unexpander alphaT] public meta def unexpandAlphaT : Unexpander
-  | `($_ $_ $a) => `($(mkIdent `α) $a)
+  | `($_ $_ $_) => `($(mkIdent `α))
   | _ => throw ()
 
 open Lean PrettyPrinter in

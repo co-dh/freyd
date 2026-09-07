@@ -979,4 +979,32 @@ open Lean PrettyPrinter in
 @[app_unexpander secure] public meta def unexpandSecure : Unexpander
   | _ => `($(mkIdent `secure))
 
+-- The rest of §7.5's arrows, by the same rule: the schedule's element type, the cost and the
+-- capacity are the section's context, and what is left is what the note writes on the bead.  None
+-- of `|R|`, `≤N`, the ceiling pair or the van's algebra is a Lean identifier, so the formatter
+-- escapes each and the label emitter (`diag/tool/ExprReader`) unescapes it.
+open Lean PrettyPrinter in
+@[app_unexpander strictR] public meta def unexpandStrictR : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "|R|")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Hrel] public meta def unexpandHrel : Unexpander
+  | _ => `($(mkIdent `H))
+
+open Lean PrettyPrinter in
+@[app_unexpander R] public meta def unexpandVanR : Unexpander
+  | _ => `($(mkIdent `R))
+
+open Lean PrettyPrinter in
+@[app_unexpander leN] public meta def unexpandLeN : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤N")))
+
+open Lean PrettyPrinter in
+@[app_unexpander ceilSpread] public meta def unexpandCeilSpread : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⟨ceiling,ceiling−floor⟩")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Salg] public meta def unexpandVanSalg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[nil,new ∪ old]")))
+
 end Freyd.Alg.RelSet.Van
