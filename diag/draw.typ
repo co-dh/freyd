@@ -132,6 +132,9 @@
   // §13.6.1's `[Int]×−`, the segment `new`, `glue` and `old` build: it stands beside `Int×−` and
   // `list` in every one of their panels, hence ΔE76 43 and 40 from those two.
   "[Int]×−": rgb("#613a56"),
+  // §13.5.1's cylinder, generated: the relator `H` of `cpMap H T` is a LANE beside `E`, `N`, `G`, `T`;
+  // violet is ΔE76 37 from the nearest FCOL entry (the free hue it fell to was 12 from `E`).
+  "H": rgb("#5b2e91"),
   // §13.6.1's van, generated: the product bifunctor `×` and the four pairings that feed it.  All
   // five stand in the one panel with `list`, so all six are pairwise ΔE76 ≥ 29 (29.3 at the
   // closest; to `list`: 54, 49, 34, 71, 69) — which is why they are picked TOGETHER, and picked
