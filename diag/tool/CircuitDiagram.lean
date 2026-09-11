@@ -73,22 +73,19 @@ inductive OKind where
   deriving Inhabited, BEq
 
 inductive Obj where
-  | mk (label : String) (kind : OKind) (parts : Array Obj)
+  /-- `bare` records, WHERE THE LABEL IS BUILT, whether it may be juxtaposed under a functor with
+      no brackets: an atom (`A`, `𝟏`), a bracketed argument (`[A]`) or an application already
+      spelled by `applyLabel` (`EA`, `F[A]`) may; a label written INFIX from the parts (`A×[A]`,
+      `𝟏+A×[A]`) may not, `×` and `+` binding looser than juxtaposition, and neither may a label
+      the printer set in several words.  Asking the finished STRING instead is a guess about the
+      spelling — the kind cannot tell `F[A]` from `𝟏+A×[A]`, both `.sum`. -/
+  | mk (label : String) (kind : OKind) (parts : Array Obj) (bare : Bool)
   deriving Inhabited
 
-def Obj.label : Obj → String | .mk l _ _ => l
-def Obj.kind : Obj → OKind | .mk _ k _ => k
-def Obj.parts : Obj → Array Obj | .mk _ _ p => p
-
-/-- Whether this object's label is written INFIX — `A×[A]`, `𝟏+A×[A]` — rather than as an
-    application (`F[A]`, `EA`) of a functor that happens to land on the same coproduct.  Only the
-    infix spelling needs brackets under a functor, `×` and `+` binding looser than juxtaposition
-    where an application does not; the KIND cannot tell the two apart, since both are `.sum`.
-    The test reconstructs the infix spelling from the parts and asks whether the label IS it. -/
-def Obj.infixLabel : Obj → Bool
-  | .mk l k ps => (k == .prod || k == .sum) && ps.size ≥ 2
-      && (l == String.intercalate "×" (ps.toList.map Obj.label)
-          || l == String.intercalate "+" (ps.toList.map Obj.label))
+def Obj.label : Obj → String | .mk l _ _ _ => l
+def Obj.kind : Obj → OKind | .mk _ k _ _ => k
+def Obj.parts : Obj → Array Obj | .mk _ _ p _ => p
+def Obj.bare : Obj → Bool | .mk _ _ _ b => b
 
 /-- Two objects are the same for seam purposes when they print the same: the label IS what a seam
     would show, so a seam that would repeat its neighbour is exactly one whose label repeats it. -/
@@ -99,17 +96,17 @@ def Obj.same (a b : Obj) : Bool := a.label == b.label
     `F([A])` at a box is the recursive branch's `A`,`[A]`.  A coproduct with two real summands has
     no port reading at all: only a tape draws it, and the tape says so itself. -/
 partial def Obj.wires : Obj → Except String (Array Obj)
-  | .mk _ .one _ => return #[]
-  | .mk _ .prod ps => do
+  | .mk _ .one _ _ => return #[]
+  | .mk _ .prod ps _ => do
     let mut out := #[]
     for p in ps do out := out ++ (← p.wires)
     return out
-  | o@(.mk _ .sum ps) => do
+  | o@(.mk _ .sum ps _) => do
     let ss := ps.filter fun p => p.kind != .one
     -- `𝟏+X` is not drawn, so its port is `X`'s strands.  A coproduct of two REAL summands stays
     -- ONE wire at a port: the tape fork is what opens it, and a port is where none forks.
     if h : ss.size = 1 then (ss[0]'(by omega)).wires else return #[o]
-  | o@(.mk _ .opaq _) => return #[o]
+  | o@(.mk _ .opaq _ _) => return #[o]
 
 /-! ### Labels
 
@@ -122,21 +119,34 @@ def plain (e : Expr) : MetaM String := do
   let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
-/-- The leading identifier of a label, which is what decides whether an applied functor needs a
-    space: `E[A]` opens with `E`, `tree A` with `tree`. -/
-def headWord (s : String) : String :=
-  (s.takeWhile fun c => c.isAlphanum).toString
+/-- Whether the printer's own spelling of a term is ONE juxtaposable unit.  The SYNTAX decides, not
+    the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
+    token `[A]`, so the term's argument count answers a different question, and the finished string
+    answers none.  An identifier or a literal is one token; a form the printer CLOSED IN ITS OWN
+    BRACKETS — first child an atom and last child an atom, which is what a bracket is — is one
+    group; everything else (an application, an infix operator, an arrow) runs on into the functor's
+    name and takes brackets. -/
+def stxBare : Syntax → Bool
+  | .ident .. | .atom .. => true
+  | .node _ _ args =>
+    match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
+    | some (.atom ..), some (.atom ..) => true
+    | _, _ => false
+  | .missing => false
+
+/-- An object with no structure of its own: the printer's label, and whether that label juxtaposes
+    read off the syntax the printer built it from. -/
+def opaqObj (e : Expr) : MetaM Obj :=
+  return .mk (← plain e) .opaq #[] (stxBare (← PrettyPrinter.delab e))
 
 /-- A functor's action on an OBJECT, spelled as the note spells a wire's type: a COMPOSITE argument
     is parenthesised — `E(A×[A])`, `F(CL.ConsList Unit A)` — because juxtaposition is composition
     and `EA×[A]` would read as the product of `EA` with `[A]`; everything else is juxtaposed, which
     is how the note sets every one of them (`EA`, `E𝟏`, `EF[A]`, `EFB`, `E[A]`).
 
-    COMPOSITE IS THE ARGUMENT'S OWN SPELLING, never the length of its name: an infix label needs
-    the brackets whatever its factors are called, a label the printer wrote in several words needs
-    them because the words would run on, and an application needs none however long it is. -/
+    COMPOSITE IS RECORDED WHERE THE ARGUMENT WAS BUILT (`Obj.bare`), never re-read off its name. -/
 def applyLabel (f : String) (a : Obj) : String :=
-  if a.infixLabel || a.label.any (· == ' ') then f ++ "(" ++ a.label ++ ")" else f ++ a.label
+  if a.bare then f ++ a.label else f ++ "(" ++ a.label ++ ")"
 
 mutual
 
@@ -146,8 +156,8 @@ partial def objOf (o : Expr) : MetaM Obj := do
   match o.getAppFnArgs with
   | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
     match args.back? with
-    | some b => return .mk (applyLabel "E" (← objOf b)) .opaq #[]
-    | none => return .mk (← plain o) .opaq #[]
+    | some b => return .mk (applyLabel "E" (← objOf b)) .opaq #[] true
+    | none => opaqObj o
   | _ =>
     match (← Meta.whnfD o).getAppFnArgs with
     | (``Freyd.Alg.RelSet.mk, #[t]) => do
@@ -159,7 +169,7 @@ partial def objOf (o : Expr) : MetaM Obj := do
         if h : ss.size = 1 then
           let s := ss[0]'(by omega)
           let c := if s.kind == .prod then (s.parts.back?).getD s else s
-          return .mk (applyLabel "F" c) .sum ob.parts
+          return .mk (applyLabel "F" c) .sum ob.parts true
       return ob
     -- A RELATOR APPLIED TO AN OBJECT that does NOT reduce to a carrier — an abstract `F B` — is an
     -- application like the power object's and is spelled by the same rule; `plain` would hand back
@@ -168,9 +178,9 @@ partial def objOf (o : Expr) : MetaM Obj := do
       match o.getAppFnArgs with
       | (``Freyd.Functor.obj, args) =>
         match StrDiag.lastTwo args with
-        | some (f, b) => return .mk (applyLabel (← plain f) (← objOf b)) .opaq #[]
-        | none => return .mk (← plain o) .opaq #[]
-      | _ => return .mk (← plain o) .opaq #[]
+        | some (f, b) => return .mk (applyLabel (← plain f) (← objOf b)) .opaq #[] true
+        | none => opaqObj o
+      | _ => opaqObj o
 
 /-- A carrier TYPE.  `×` is the product of wires, `⊕` the coproduct only a tape opens, `Unit` the
     empty word, and a list its bracketed spelling. -/
@@ -183,13 +193,13 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   match t.getAppFnArgs with
   | (``Prod, #[a, b]) => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
-    return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob]
+    return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob] false
   | (``Sum, #[a, b]) => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
-    return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob]
-  | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[]
-  | (``Unit, _) | (``PUnit, _) => return .mk "𝟏" .one #[]
-  | _ => return .mk (← plain t) .opaq #[]
+    return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] false
+  | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] true
+  | (``Unit, _) | (``PUnit, _) => return .mk "𝟏" .one #[] true
+  | _ => opaqObj t
 
 end
 
@@ -450,7 +460,7 @@ partial def isMapOf (e : Expr) : MetaM Bool := do
   | _ => hasMapHyp e
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
-def powLabel (a : Obj) : Obj := .mk (applyLabel "E" a) .opaq #[]
+def powLabel (a : Obj) : Obj := .mk (applyLabel "E" a) .opaq #[] true
 
 def wiresOf (o : Obj) : MetaM (Array Obj) :=
   match o.wires with
@@ -807,7 +817,7 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
   let ins := ls.foldl (fun a l => a ++ l.ins) #[]
   let outw := ls.foldl (fun a l => a ++ l.outs) #[]
   let t := if outs.size == 1 then outs[0]! else
-    .mk (String.intercalate "×" (outs.toList.map Obj.label)) .prod outs
+    .mk (String.intercalate "×" (outs.toList.map Obj.label)) .prod outs false
   return mkPic "stack" ins outw s t false #[("lanes", .arr (ls.map (·.val)))]
 
 /-- §3 rows 2/3/14: a map given by a function.  A constant DISCARDS every input strand at a dot
