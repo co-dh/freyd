@@ -41,8 +41,8 @@ Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons �
 - | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
 - | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
 - | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
-Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R°R°
-Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R°
+Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R R
+Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R
 Freyd.Alg.RelSet.CL.F.lhs | <prefix-defn> | [nil,⊸ nil ∪ cons]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-alg> | α prefix list(p)
 - | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
