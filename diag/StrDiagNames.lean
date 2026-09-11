@@ -152,6 +152,11 @@ open Lean PrettyPrinter in
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- `H≜⦇T⦈°⦇h⦈` is the note's ONE bead `H`: which coalgebra and algebra it is built from is what
+    the definition above the table states, not what the wire is labelled with. -/
+@[app_unexpander H] def unexpandH : Unexpander | _ => `($(mkIdent `H))
+
 -- A SECTION'S PARAMETERS ARE THE PANEL'S REGION, NOT PART OF THE BEAD'S NAME.  `gen`, `Q` and
 -- `paths` are stated over the cylinder's fixed data (`I`, `moves`, `trans`, `zip`, …), which every
 -- panel of §17.3 sits in, so spelling it in the label writes the section's context on every bead.

@@ -308,9 +308,9 @@ public theorem mct_laws (hassoc : Assoc sb) :
   have key := dynamic_programming_context (F := TT.F A) (F_preservesRecip A) (initial A)
     (h := graph (con (A := A))) (T := graph (wrapCatFn (A := A))) (R := R st sb cb)
     (graph_map con)
-    (by rw [hH, Allegory.recip_recip]; exact mct_mono_recip st sb cb hassoc)
+    (by simp only [H]; rw [hH, Allegory.recip_recip]; exact mct_mono_recip st sb cb hassoc)
     (R_recip_trans st sb cb) (R_recip_refl st sb cb)
-  rwa [hH] at key
+  simp only [H] at key; rwa [hH] at key
 
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.
