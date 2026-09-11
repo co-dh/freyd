@@ -56,6 +56,13 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The pairing that packs a bifunctor's two arguments is the note's lane `⟨𝟙,T⟩` — what it does
+    to an arrow, `R ↦ (R,T(R))`, IS its name; which initial algebras `T` comes from is not. -/
+@[app_unexpander typePair] def unexpandTypePair : Unexpander
+  | `($_ $_) => `($(mkIdent (Name.mkSimple "⟨𝟙,T⟩")))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The rose-tree relator is the note's lane `tree`, the letter its action on arrows already
     prints with — so `dRose A` and the initial algebra's carrier draw as the one lane. -/
 @[app_unexpander RelSet.RT.roseRelator] def unexpandRoseRelator : Unexpander

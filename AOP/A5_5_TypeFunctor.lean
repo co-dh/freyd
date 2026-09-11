@@ -233,15 +233,29 @@ public theorem typeMap_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) :
   map_comp R S := (typeMap_comp I R S).symm
   map_mono := typeMap_mono I
 
+/-- **B&dM §5.5 p. 122**: the PAIRING `⟨𝟙,T⟩ : 𝒜 ⟶ 𝒜×𝒜`.  `F` is a bifunctor and a wire is a
+    unary functor, so the two arguments are packed first and `F(R,T(R))` becomes `F` at the one
+    arrow `⟨𝟙,T⟩(R)`; bundled under a name of its own because a relator built by a COMBINATOR is
+    not a lane the picture can name — `Relator.pair` takes relators, so it is a construction over
+    the region and not a thing of it. -/
+@[expose] public def typePair : Relator 𝒜 (𝒜 × 𝒜) :=
+  Relator.pair (Relator.idRelator 𝒜) (typeRelator I)
+
+/-- **§2.7 p. 51 as the note writes it**: `αT(R) = F(⟨𝟙,T⟩(R))α` — `alpha_natural` with both sides
+    spelled through the relators the picture's lanes ARE, so `F` and `⟨𝟙,T⟩` are wires and `R` is
+    the bead on the object wire.  Same equation, one spelling per wire. -/
+public theorem alphaT_natural {A B : 𝒜} (f : A ⟶ B) :
+    alphaT I A ≫ (typeRelator I).map f
+      = (Relator.comp (typePair I) F.toRelator).map f ≫ alphaT I B :=
+  alpha_natural I f
+
 /-- **§2.7 p. 51 as a 2-CELL**: `α` is STRICTLY NATURAL from `F∘⟨𝟙,T⟩` to `T`.  Same square as
     `alpha_natural`, with both sides spelled as relators of `𝒜`: `F(R,T(R))` is `F` applied to the
     pairing `⟨𝟙,T⟩` at the one arrow `R`, so the source is a relator and not a family of objects,
     which is what makes the square a naturality statement rather than an equation per `A`. -/
 public theorem alphaT_strictNatural :
-    StrictNatural (typeRelator I)
-      (Relator.comp (Relator.pair (Relator.idRelator 𝒜) (typeRelator I)) F.toRelator)
-      (alphaT I) :=
-  fun R => (alpha_natural I R).symm
+    StrictNatural (typeRelator I) (Relator.comp (typePair I) F.toRelator) (alphaT I) :=
+  fun R => (alphaT_natural I R).symm
 
 end TypeRelator
 
