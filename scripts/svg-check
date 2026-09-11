@@ -363,14 +363,16 @@ def cut(face, a, b):
 
 
 def faces_of(nodes, edges):
-    """The regions the arrows bound.  With three nodes or more they are one closed walk, possibly
-    with CHORDS — the induced arrow a pasted pair draws dashed across the polygon — and each chord
-    cuts the region holding its two ends in two.  With two nodes the one region is the box the
-    parallel arcs sweep.  `None` when the arrows are no such walk."""
+    """The regions the arrows bound, each with the number of CHORDS that bound it.  With three
+    nodes or more the arrows are one closed walk, possibly with chords — the induced arrow a pasted
+    pair draws dashed across the polygon — and each chord cuts the region holding its two ends in
+    two, bounding BOTH halves.  With two nodes the one region is the box the parallel arcs sweep.
+    `None` when the arrows are no such walk."""
     if len(nodes) == 2:
         xs = [p[0] for e in edges for p in e.pts]
         ys = [p[1] for e in edges for p in e.pts]
-        return [[(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)), (min(xs), max(ys))]]
+        return [([(min(xs), min(ys)), (max(xs), min(ys)), (max(xs), max(ys)),
+                  (min(xs), max(ys))], 0)]
     n = len(nodes)
     pairs = []
     for e in edges:
@@ -386,14 +388,15 @@ def faces_of(nodes, edges):
         walk = cycle_through(n, [p for i, p in enumerate(pairs) if i not in chords])
         if walk is None:
             continue
-        fs = [walk]
+        fs = [(walk, 0)]
         for i in chords:
             a, b = pairs[i]
-            k = next((j for j, f in enumerate(fs) if a in f and b in f), None)
+            k = next((j for j, (f, _) in enumerate(fs) if a in f and b in f), None)
             if k is None:
                 return None
-            fs = fs[:k] + cut(fs[k], a, b) + fs[k + 1:]
-        return [[nodes[i].centre for i in f] for f in fs]
+            f, c = fs[k]
+            fs = fs[:k] + [(arc, c + 1) for arc in cut(f, a, b)] + fs[k + 1:]
+        return [([nodes[i].centre for i in f], c) for f, c in fs]
     return None
 
 
@@ -521,12 +524,18 @@ def check(path, ref):
         if polys is None:
             bad.append(f"{path}: face — the arrows are not one closed walk through "
                        f"{len(ns)} nodes, so there is no polygon to test")
-        for poly in polys or []:
+        # WHAT A FACE MAY HOLD: its own relation symbol, and the label of each CHORD bounding it.
+        # A chord lies between two faces and its label has to be inside one of them — the note's own
+        # `(R×S)π₁⊑π₁R ∧ (R×S)π₂⊑π₂S` sets `R×S` above the chord, inside the face the `⊑` also marks
+        # — so a flat "at most one" calls the drawing the note makes a defect.  An arrow driven
+        # THROUGH a label is still caught, by the `clear` rule, which this does not touch.
+        for poly, nchords in polys or []:
             inside = [f for f in free if in_polygon(f.centre, poly)]
-            if len(inside) > 1:
+            if len(inside) > 1 + nchords:
                 bad.append(f"{path}: face — {len(inside)} labels lie inside a face bounded by "
-                           f"{len(poly)} nodes, want at most one (the relation symbol, or the "
-                           f"chord's own label; an equation carries none)")
+                           f"{len(poly)} nodes and {nchords} chord(s), want at most "
+                           f"{1 + nchords} (its relation symbol, and one for each chord that "
+                           f"bounds it; an equation carries no symbol)")
         bad += rule_square(path, ref, ns, es)
 
     for h in heads:

@@ -35,13 +35,30 @@ namespace Freyd.Alg
 -- WHICH ARROWS A PICTURE DASHES.  Each is the arrow a universal property produces: the fold from
 -- the initial algebra's, the fork from the product's, the transpose from the power object's.  The
 -- attribute is `AOP.A5_1`'s; the tags are here because dashing is the DIAGRAM's vocabulary.
+-- The allegory's own fork and product map are induced for the same reason the category's `pair`
+-- is: `⟨R,S⟩` is what the tabulation of `⊤` gives from `R` and `S`, and `R×S` is that fork taken
+-- at the two projections.  A statement about `R×S` against a projection is therefore a statement
+-- about ITS TWO COMPONENTS, which is what `Face.components` reads off an induced head.
 attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pair Λ
+  RelProd.pair prodMap
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- A `RelProd a b`'s apex IS the product of `a` and `b` — that is what tabulating `⊤ : a ⟶ b`
+    says — so the note writes it `a×b`, never by the field's own name.  A DELABORATOR and not an
+    unexpander: the two objects are the `RelProd` argument's TYPE, which an unexpander, seeing only
+    the syntax the elaborator produced, does not have.  One rule for every product apex the
+    statements name, the abstract `P.p` of `prodMap` included. -/
+@[delab app.Freyd.Alg.RelProd.p] def delabRelProdApex : Delab := do
+  guard ((← getExpr).getAppNumArgs == 5)
+  let a ← withNaryArg 2 delab
+  let b ← withNaryArg 3 delab
+  `($a × $b)
 
 open Lean PrettyPrinter in
 /-- The bifunctor's unary form is still the same bifunctor: the note's lane is `F`. -/
