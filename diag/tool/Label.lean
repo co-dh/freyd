@@ -45,7 +45,8 @@ def juxt (a b : String) : String :=
     `app_unexpander` beside the constant already printed. -/
 def tightHeads : Array Name :=
   #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj, ``Freyd.Alg.existsImage,
-    ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair, ``Freyd.Alg.RelProd.p]
+    ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair, ``Freyd.Alg.RelProd.p,
+    ``Freyd.Alg.RelProd.pair]
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
     — rather than left to the pretty printer, because it is read beside a picture, where

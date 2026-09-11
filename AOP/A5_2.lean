@@ -137,6 +137,12 @@ public theorem inter_comp_topMor_eq_dom_comp {a b c : 𝒜} (R : c ⟶ a) (S : c
       have h3 : S ≫ (S° ≫ R) ⊑ S ≫ topMor b a := comp_mono_left S (topMor_max (S° ≫ R))
       rw [h2] at h1; exact le_trans h1 h3
 
+-- THE PICTURES' OWN LETTERS.  The note draws the fork `⟨R,S⟩ : C⟶A×B` and the product square
+-- `R×S : C×D⟶A×B`, so a statement it draws binds its SOURCES `C`,`D` and its TARGETS `A`,`B`.  The
+-- file's shared `a b a' b' c` cannot spell both: `a` is a TARGET in the fork and a SOURCE in the
+-- square, so one letter would have to mean both.
+variable {A B C D : 𝒜}
+
 /-! ## (5.1)  Pairing -/
 
 /-- **(5.1)**: `⟨R,S⟩ = (outl°R) ∩ (outr°S)`, mirrored: `pair R S = (R≫outl°) ∩ (S≫outr°)`. -/
@@ -177,6 +183,20 @@ public theorem RelProd.pair_outr {P : RelProd a b} (R : c ⟶ a) (S : c ⟶ b) :
   show (R ≫ P.outl° ∩ S ≫ P.outr°) ≫ P.outr = dom R ≫ S
   rw [simple_modular_eq P.outr_map.2 (R ≫ P.outl°) S, Cat.assoc, P.eq_topMor, Allegory.inter_comm]
   exact inter_comp_topMor_eq_dom_comp S R
+
+/-- **(5.6) relaxed**: a domain is coreflexive, so the fork's left triangle closes only up to `⊑`.
+    Equality is `pair_outl` with `S` entire — the `dom` factor (5.6) leaves behind sits on the
+    OTHER leg, the one the projection discards. -/
+public theorem RelProd.pair_outl_le {P : RelProd A B} (R : C ⟶ A) (S : C ⟶ B) :
+    P.pair R S ≫ P.outl ⊑ R := by
+  rw [pair_outl (P := P) R S]
+  have h := comp_mono_right (dom_coreflexive S) R; rwa [Cat.id_comp] at h
+
+/-- **(5.7) relaxed**, the mirror: `⟨R,S⟩ ≫ outr ⊑ S`, equality with `R` entire. -/
+public theorem RelProd.pair_outr_le {P : RelProd A B} (R : C ⟶ A) (S : C ⟶ B) :
+    P.pair R S ≫ P.outr ⊑ S := by
+  rw [pair_outr (P := P) R S]
+  have h := comp_mono_right (dom_coreflexive R) S; rwa [Cat.id_comp] at h
 
 /-! ## The pairing Galois connection
 
@@ -254,12 +274,6 @@ public theorem prodMap_recip {P : RelProd a b} {Q : RelProd a' b'} (R : a ⟶ a'
   (5.4)/(5.5) with one identity factor via the modular law, then the composite chain
   through an intermediate relational product.  Everything below is mirrored to diagram
   order: `pair X Y ≫ prodMap P Q R S = pair (X≫R) (Y≫S)`. -/
-
--- THE SQUARE'S OWN LETTERS.  A statement of `R×S` against a projection IS the note's product
--- square, whose two sources it writes `C`,`D` and whose two targets it writes `A`,`B`.  The file's
--- shared `a b a' b'` cannot spell it: `a` is a TARGET in the fork family above — the note draws
--- `⟨R,S⟩ : C⟶A×B` — and a SOURCE here, so one letter would have to mean both.
-variable {A B C D : 𝒜}
 
 /-- Book p.115 claim: `outr·(R×S) ⊑ S·outr`, mirrored: `(R×S) ≫ Q.outr ⊑ P.outr ≫ S`.
     From (5.7) and `dom ⊑ id`. -/
@@ -563,6 +577,14 @@ end ProdRelator
 open Lean PrettyPrinter in
 @[app_unexpander prodMap] public meta def unexpandProdMap : Unexpander
   | `($_ $_ $_ $R $S) => `($R × $S)
+  | _ => throw ()
+
+-- printing-only: the fork (5.1) is the note's `⟨R,S⟩`, the same brackets the category's `pair`
+-- prints — `⟨R,S⟩` IS what the tabulation of `⊤` gives from `R` and `S`, and WHICH tabulation is
+-- the `RelProd` argument, which the picture's own apex already names.
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.pair] public meta def unexpandPair : Unexpander
+  | `($_ $_ $R $S) => `(⟨$R, $S⟩)
   | _ => throw ()
 
 -- printing-only: a product's two projections are the note's `π₁`/`π₂`.  WHICH product they are
