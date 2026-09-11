@@ -55,6 +55,13 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `T))
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- The rose-tree relator is the note's lane `tree`, the letter its action on arrows already
+    prints with — so `dRose A` and the initial algebra's carrier draw as the one lane. -/
+@[app_unexpander RelSet.RT.roseRelator] def unexpandRoseRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q

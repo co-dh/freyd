@@ -224,4 +224,121 @@ public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataFold_comm φ)
 
+/-! ## The rose-tree relator `tree(R)` -/
+
+mutual
+  /-- Elementwise lifting on rose trees: roots related by `R`, subtree lists related pointwise. -/
+  @[expose] public def roseP {B : Type} (R : dE A ⟶ dE B) : Rose A → Rose B → Prop
+    | Rose.node a ts, Rose.node b us => R a b ∧ roseListP R ts us
+  /-- `list(roseP R)`, unrolled so the nested recursion stays structural (as `cataFoldList` is). -/
+  @[expose] public def roseListP {B : Type} (R : dE A ⟶ dE B) :
+      ConsList Unit (Rose A) → ConsList Unit (Rose B) → Prop
+    | ConsList.wrap _, ConsList.wrap _ => True
+    | ConsList.wrap _, ConsList.cons _ _ => False
+    | ConsList.cons _ _, ConsList.wrap _ => False
+    | ConsList.cons t ts, ConsList.cons u us => roseP R t u ∧ roseListP R ts us
+end
+
+/-- The unrolled subtree-list lifting IS `list(roseP R)`. -/
+public theorem roseListP_eq_listP {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (ts : ConsList Unit (Rose A)) (us : ConsList Unit (Rose B)),
+      roseListP R ts us ↔ listP (roseP R) ts us
+  | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
+  | ConsList.wrap _, ConsList.cons _ _ => Iff.rfl
+  | ConsList.cons _ _, ConsList.wrap _ => Iff.rfl
+  | ConsList.cons t ts, ConsList.cons u us =>
+      ⟨fun h => ⟨h.1, (roseListP_eq_listP R ts us).mp h.2⟩,
+       fun h => ⟨h.1, (roseListP_eq_listP R ts us).mpr h.2⟩⟩
+
+/-- The relator's action `tree(R) : tree A ⟶ tree B` — the note's lane `tree` over `A`, as
+    `list` is over `A`. -/
+@[expose] public def tree {B : Type} (R : dE A ⟶ dE B) : dRose A ⟶ dRose B := roseP R
+
+mutual
+  public theorem roseP_id : ∀ t u : Rose A, roseP (𝟙 (dE A)) t u ↔ t = u
+    | Rose.node a ts, Rose.node b us =>
+        ⟨fun h => by rw [show a = b from h.1, (roseListP_id ts us).mp h.2],
+         fun h => by cases h; exact ⟨rfl, (roseListP_id ts ts).mpr rfl⟩⟩
+  public theorem roseListP_id :
+      ∀ ts us : ConsList Unit (Rose A), roseListP (𝟙 (dE A)) ts us ↔ ts = us
+    | ConsList.wrap (), ConsList.wrap () => ⟨fun _ => rfl, fun _ => trivial⟩
+    | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+    | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+    | ConsList.cons t ts, ConsList.cons u us =>
+        ⟨fun h => by rw [(roseP_id t u).mp h.1, (roseListP_id ts us).mp h.2],
+         fun h => by cases h; exact ⟨(roseP_id t t).mpr rfl, (roseListP_id ts ts).mpr rfl⟩⟩
+end
+
+/-- `tree(𝟙) = 𝟙`. -/
+public theorem tree_id : tree (𝟙 (dE A)) = 𝟙 (dRose A) := hom_ext roseP_id
+
+mutual
+  public theorem roseP_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+      ∀ (t : Rose A) (v : Rose C), roseP (R ≫ S) t v ↔ ∃ u, roseP R t u ∧ roseP S u v
+    | Rose.node a ts, Rose.node c vs => by
+        constructor
+        · rintro ⟨⟨b, hR, hS⟩, hts⟩
+          obtain ⟨us, h1, h2⟩ := (roseListP_comp R S ts vs).mp hts
+          exact ⟨Rose.node b us, ⟨hR, h1⟩, hS, h2⟩
+        · rintro ⟨u, hu1, hu2⟩
+          cases u with
+          | node b us =>
+              exact ⟨⟨b, hu1.1, hu2.1⟩, (roseListP_comp R S ts vs).mpr ⟨us, hu1.2, hu2.2⟩⟩
+  public theorem roseListP_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+      ∀ (ts : ConsList Unit (Rose A)) (vs : ConsList Unit (Rose C)),
+        roseListP (R ≫ S) ts vs ↔ ∃ us, roseListP R ts us ∧ roseListP S us vs
+    | ConsList.wrap _, ConsList.wrap _ =>
+        ⟨fun _ => ⟨ConsList.wrap (), trivial, trivial⟩, fun _ => trivial⟩
+    | ConsList.wrap _, ConsList.cons _ _ =>
+        ⟨False.elim, fun ⟨us, h1, h2⟩ => by cases us with
+          | wrap _ => exact h2
+          | cons _ _ => exact h1⟩
+    | ConsList.cons _ _, ConsList.wrap _ =>
+        ⟨False.elim, fun ⟨us, h1, h2⟩ => by cases us with
+          | wrap _ => exact h1
+          | cons _ _ => exact h2⟩
+    | ConsList.cons t ts, ConsList.cons v vs => by
+        constructor
+        · rintro ⟨htv, hts⟩
+          obtain ⟨u, hu1, hu2⟩ := (roseP_comp R S t v).mp htv
+          obtain ⟨us, hs1, hs2⟩ := (roseListP_comp R S ts vs).mp hts
+          exact ⟨ConsList.cons u us, ⟨hu1, hs1⟩, hu2, hs2⟩
+        · rintro ⟨us, h1, h2⟩
+          cases us with
+          | wrap _ => exact h1.elim
+          | cons u us' =>
+              exact ⟨(roseP_comp R S t v).mpr ⟨u, h1.1, h2.1⟩,
+                (roseListP_comp R S ts vs).mpr ⟨us', h1.2, h2.2⟩⟩
+end
+
+/-- `tree(RS) = tree(R) tree(S)`. -/
+public theorem tree_comp {B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    tree (R ≫ S) = tree R ≫ tree S := hom_ext (roseP_comp R S)
+
+mutual
+  public theorem roseP_mono {B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+      ∀ t u, roseP R t u → roseP S t u
+    | Rose.node a ts, Rose.node b us, htu => ⟨h a b htu.1, roseListP_mono h ts us htu.2⟩
+  public theorem roseListP_mono {B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+      ∀ ts us, roseListP R ts us → roseListP S ts us
+    | ConsList.wrap _, ConsList.wrap _, _ => trivial
+    | ConsList.wrap _, ConsList.cons _ _, htu => htu.elim
+    | ConsList.cons _ _, ConsList.wrap _, htu => htu.elim
+    | ConsList.cons t ts, ConsList.cons u us, htu =>
+        ⟨roseP_mono h t u htu.1, roseListP_mono h ts us htu.2⟩
+end
+
+/-- `R ⊑ S ⟹ tree(R) ⊑ tree(S)` — `tree` is monotonic. -/
+public theorem tree_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : tree R ⊑ tree S :=
+  le_iff.mpr (roseP_mono (le_iff.mp h))
+
+/-- `tree` BUNDLED as a relator, so a rose tree is ONE lane over its element: the exporter peels
+    both `dRose A` and the initial algebra's carrier to `tree` over `A`, one spelling for `party`. -/
+@[expose] public def roseRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dRose a.carrier
+  map R := tree R
+  map_id _ := tree_id
+  map_comp R S := tree_comp R S
+  map_mono h := tree_mono h
+
 end Freyd.Alg.RelSet.RT
