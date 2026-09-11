@@ -418,7 +418,7 @@ public theorem edit_laws :
   have key := dynamic_programming_thin (F := F Unit (Op Char)) (F_preservesRecip Unit (Op Char))
     (initial Unit (Op Char)) (h := graph con) (T := editAlg (Char := Char)) (R := R Char)
     (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
-    (by rw [hH]; exact edit_thin_condition)
-  rwa [hH] at key
+    (by simp only [H]; rw [hH]; exact edit_thin_condition)
+  simp only [H] at key; rwa [hH] at key
 
 end Freyd.Alg.RelSet.Edit

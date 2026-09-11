@@ -37,6 +37,12 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
+/-- **`H≜⦇T⦈°⦇h⦈ : A⟶B`** (B&dM p.220): decompose through the coalgebra `T°` and reassemble
+    through the algebra `h`.  It is the arrow the optimisation problem `H%∋ est(R)` is taken of,
+    and a name of its own is what lets a picture draw it as one bead. -/
+@[expose] public def H [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
+  (relCata T)° ≫ relCata h
+
 /-! ## Theorem 9.1 (B&dM pp. 220-221) -/
 
 /-- **Core of Theorem 9.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
@@ -136,7 +142,7 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T)))
 
 /-! ## Theorem 9.2 (B&dM p.221) — thinning dynamic programming
@@ -292,10 +298,10 @@ public theorem dynamic_programming_thin_step1 (hFr : F.PreservesRecip)
 public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : Q ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
-        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
+    (hQ : Q ≫ F.map (H T h) ≫ h
+        ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
     (dynamic_programming_thin_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
 
@@ -318,13 +324,13 @@ public theorem mu_le_mu_thinRel_id {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : 
 /-- At `Q := id`, Theorem 9.2's thinning condition `hQ` says only that `R` is reflexive. -/
 public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj A ⟶ A}
     {T : F.obj B ⟶ B} {R : A ⟶ A} (hrefl : Cat.id A ⊑ R°) :
-    Cat.id (F.obj B) ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
-      ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R := by
+    Cat.id (F.obj B) ≫ F.map (H T h) ≫ h
+      ⊑ F.map (H T h) ≫ h ≫ R := by
   rw [Cat.id_comp]
   have hid : Cat.id A ⊑ R := by
     have h1 := recip_mono hrefl
     rwa [recip_id, Allegory.recip_recip] at h1
-  have step := comp_mono_left (F.map ((relCata T)° ≫ relCata h) ≫ h) hid
+  have step := comp_mono_left (F.map (H T h) ≫ h) hid
   rw [Cat.comp_id, Cat.assoc] at step
   exact step
 
@@ -332,7 +338,7 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id A ⊑ R°) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ (H T h) ≫ est R :=
   le_trans mu_le_mu_thinRel_id
     (dynamic_programming_thin hFr I hh hmono htrans (thin_condition_of_refl I hrefl))
 
@@ -742,13 +748,13 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj A ⟶ A} {T
     hypotheses discharge the least-fixed-point refinement exactly as Theorem 9.2 does. -/
 public theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
-    (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
+    (hctx1 : F.map (R° ∩ ((H T h)° ≫ H T h)) ≫ h
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°)
-    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map ((relCata T)° ≫ relCata h) ≫ h
-        ⊑ F.map ((relCata T)° ≫ relCata h) ≫ h ≫ R) :
+    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map (H T h) ≫ h
+        ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
 
 /-- **Theorem 9.1 in context**: the plain (un-thinned) dynamic-programming recursion refines the
@@ -757,11 +763,11 @@ public theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : In
     flattening are ever compared.  Ex 9.2 (`dynamic_programming_thin_context`) at `Q := id`. -/
 public theorem dynamic_programming_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} (hh : Map h)
-    (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
+    (hctx1 : F.map (R° ∩ ((H T h)° ≫ H T h)) ≫ h
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id A ⊑ R°) :
     mu (fun X : B ⟶ A => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
-      ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
+      ⊑ Λ (H T h) ≫ est R :=
   le_trans mu_le_mu_thinRel_id
     (dynamic_programming_thin_context hFr I hh hctx1 htrans
       (le_trans (comp_mono_right (inter_lb_left _ _) _) (thin_condition_of_refl I hrefl)))

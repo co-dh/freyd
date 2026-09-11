@@ -458,8 +458,8 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
   have key := greedy_dp (F := F Unit Char) (F_preservesRecip Unit Char) (initial Unit Char)
     (h := graph (con (L := Unit) (E := Char))) (T := graph (expandAlgFn n tb nl blank))
     (R := R) (Q := Q n tb nl blank) (graph_map con) entab_mono R_trans
-    (by rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
-  rwa [hH] at key
+    (by simp only [H]; rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
+  simp only [H] at key; rwa [hH] at key
 
 /-- `expand` never returns the empty string: on a tab it fills at least one blank (the column is
     `< n` after `%`), on any other character it snocs.  This is B&dM's Proposition 10.1
