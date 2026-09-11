@@ -36,41 +36,41 @@ namespace Freyd.Alg.RelSet.Filter
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.GCTakeWhile
 open Freyd.Alg.RelSet.ListRel hiding listP prefixR
 
-variable {E : Type}
+variable {A : Type}
 
 /-! ## The note's `filter-defn`: the algebra `S` and the specification -/
 
 /-- The note's `S ≜ [nil, π₂ ∪ (p×𝟙) cons]` — `subseq`'s algebra with one extra `p`: drop the
     head, or keep a head that passes `p`.  `π₂` is spelled as its Rel(Set) value `graph (·.2)`,
     as in `subseq_cata`, to keep `Classical.choice` out of the axioms. -/
-@[expose] public def Salg (p : E → Bool) :
-    Fobj Unit E (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
-  junc (sumCop (dL Unit) ⟨E × List E⟩) (graph fun _ => [])
+@[expose] public def Salg (p : A → Bool) :
+    Fobj Unit A (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩ :=
+  junc (sumCop (dL Unit) ⟨A × List A⟩) (graph fun _ => [])
     ((graph fun q => q.2) ∪ pcons p)
 
 /-- Ex 7.41's specification: `filter(p) ≜ Λ(subseq list(p)) est(R°)` — the longest subsequence
     all of whose elements pass `p`. -/
-@[expose] public def filter (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
+@[expose] public def filter (p : A → Bool) : dCL Unit A ⟶ (⟨List A⟩ : RelSet.{0}) :=
   (subseq ≫ listP p)%∋ ≫ est(lenLE°)
 
 /-- The `filter-defn` table's last row, `𝟙 ⊑ π₂ R cons°`: the tail is one shorter than the cons,
     so `π₂` loses the `est(R°)` at every step — where takewhile's loser is `nil`. -/
 public theorem id_le_pi2_lenLE_cons :
-    Cat.id (⟨E × List E⟩ : RelSet.{0})
-      ⊑ (graph fun q => q.2) ≫ lenLE ≫ (graph fun q : E × List E => q.1 :: q.2)° :=
+    Cat.id (⟨A × List A⟩ : RelSet.{0})
+      ⊑ (graph fun q => q.2) ≫ lenLE ≫ (graph fun q : A × List A => q.1 :: q.2)° :=
   le_iff.mpr fun q q' h => by
     obtain rfl : q = q' := h
     exact ⟨q.2, rfl, q.1 :: q.2, Nat.le_succ _, rfl⟩
 
 /-! ### Pointwise unfolds of `S` -/
 
-theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+theorem Salg_inl (p : A → Bool) (D : Unit) (ws : List A) :
     Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_sum_inl _ _ _ _
 
 /-- `S`'s cons branch `π₂ ∪ (p×𝟙) cons` at `(x,c)`: drop the head, or keep a passing one. -/
-public theorem Scons_apply (p : E → Bool) (x : E) (c ws : List E) :
-    ((graph fun q : E × List E => q.2) ∪ pcons p) (x, c) ws
+public theorem Scons_apply (p : A → Bool) (x : A) (c ws : List A) :
+    ((graph fun q : A × List A => q.2) ∪ pcons p) (x, c) ws
       ↔ ws = c ∨ (p x = true ∧ ws = x :: c) := by
   constructor
   · rintro (h | h)
@@ -80,7 +80,7 @@ public theorem Scons_apply (p : E → Bool) (x : E) (c ws : List E) :
     · exact Or.inl h
     · exact Or.inr ((pcons_apply p x c ws).mpr h)
 
-theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
+theorem Salg_inr (p : A → Bool) (x : A) (c ws : List A) :
     Salg p (Sum.inr (x, c)) ws ↔ ws = c ∨ (p x = true ∧ ws = x :: c) := by
   unfold Salg
   exact (junc_sum_inr _ _ _ _).trans (Scons_apply p x c ws)
@@ -91,9 +91,9 @@ theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
     list and then keeping a `p`-passing subsequence of it is keeping one of the tail first, and
     then building with `S`.  (Fusion is blocked — `list(p)` is not entire — so this is proved
     pointwise and fed to the universal property below.) -/
-public theorem filter_alg_comm (p : E → Bool) :
-    (initial Unit E).α ≫ (subseq ≫ listP p)
-      = (F Unit E).map (subseq ≫ listP p) ≫ Salg p := by
+public theorem filter_alg_comm (p : A → Bool) :
+    (initial Unit A).α ≫ (subseq ≫ listP p)
+      = (F Unit A).map (subseq ≫ listP p) ≫ Salg p := by
   refine (cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩
   · constructor
     · rintro ⟨ys, hs, hl⟩
@@ -125,35 +125,35 @@ public theorem filter_alg_comm (p : E → Bool) :
 
 /-- The `filter-alg` row: `subseq list(p) = ⦇S⦈`, read off the defining equation above by the
     Eilenberg–Wright universal property. -/
-public theorem filter_alg (p : E → Bool) : subseq ≫ listP p = cataR (Salg p) := by
+public theorem filter_alg (p : A → Bool) : subseq ≫ listP p = cataR (Salg p) := by
   rw [cataR_eq_relCata]
-  exact (relCata_UP (initial Unit E) (Salg p) (subseq ≫ listP p)).mp (filter_alg_comm p)
+  exact (relCata_UP (initial Unit A) (Salg p) (subseq ≫ listP p)).mp (filter_alg_comm p)
 
 /-! ## The note's `filter-mono` and the greedy row -/
 
 /-- The `filter-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step lands
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
-public theorem filter_mono_cons (p : E → Bool) :
-    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ ((graph fun q : E × List E => q.2) ∪ pcons p)
-      ⊑ ((graph fun q : E × List E => q.2) ∪ pcons p) ≫ lenLE° :=
-  calc rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ ((graph fun q : E × List E => q.2) ∪ pcons p)
-      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ (graph fun q : E × List E => q.2)
-          ∪ rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p :=
+public theorem filter_mono_cons (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ ((graph fun q : A × List A => q.2) ∪ pcons p)
+      ⊑ ((graph fun q : A × List A => q.2) ∪ pcons p) ≫ lenLE° :=
+  calc rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ ((graph fun q : A × List A => q.2) ∪ pcons p)
+      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.2)
+          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p :=
         DistributiveAllegory.comp_union_distrib _ _ _
-    _ = (graph fun q : E × List E => q.2) ≫ (lenLE (E := E))°
-          ∪ rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p := by
+    _ = (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
+          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p := by
         rw [rprodMap_id_snd]
-    _ ⊑ (graph fun q : E × List E => q.2) ≫ (lenLE (E := E))° ∪ pcons p ≫ lenLE° :=
+    _ ⊑ (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))° ∪ pcons p ≫ lenLE° :=
         union_mono (le_refl _) (pcons_slide p)
-    _ = ((graph fun q : E × List E => q.2) ∪ pcons p) ≫ lenLE° :=
+    _ = ((graph fun q : A × List A => q.2) ∪ pcons p) ≫ lenLE° :=
         (union_comp_distrib _ _ _).symm
 
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
-public theorem filter_mono (p : E → Bool) :
-    MonotonicAlg (F := F Unit E) (Salg p) lenLE° := by
-  show (F Unit E).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
+public theorem filter_mono (p : A → Bool) :
+    MonotonicAlg (F := F Unit A) (Salg p) lenLE° := by
+  show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
   apply le_iff.mpr
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
@@ -177,75 +177,75 @@ public theorem filter_mono (p : E → Bool) :
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
     every `p`-subsequence collected and one chosen at the end. -/
-public theorem filter_greedy (p : E → Bool) :
+public theorem filter_greedy (p : A → Bool) :
     cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit E) (initial Unit E) lenLE_recip_trans (filter_mono p)
+  exact greedy (F_preservesRecip Unit A) (initial Unit A) lenLE_recip_trans (filter_mono p)
 
 /-! ## The note's `filter-step`: the program algebra -/
 
 /-- The step of `filter`: keep a head that passes `p`, drop it otherwise. -/
-@[expose] public def fStep (p : E → Bool) (x : E) (c : List E) : List E :=
+@[expose] public def fStep (p : A → Bool) (x : A) (c : List A) : List A :=
   match p x with
   | true  => x :: c
   | false => c
 
-theorem fStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : fStep p x c = x :: c := by
+theorem fStep_pos {p : A → Bool} {x : A} (h : p x = true) (c : List A) : fStep p x c = x :: c := by
   unfold fStep; rw [h]
 
-theorem fStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : fStep p x c = c := by
+theorem fStep_neg {p : A → Bool} {x : A} (h : p x = false) (c : List A) : fStep p x c = c := by
   unfold fStep; rw [h]
 
 /-- The power object of `[A]`, and the product of two copies of it — where the `∪` of two
     transposes is taken. -/
-public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0}))
-    (PowerAllegory.powerObj (⟨List E⟩ : RelSet.{0})) :=
+public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List A⟩ : RelSet.{0}))
+    (PowerAllegory.powerObj (⟨List A⟩ : RelSet.{0})) :=
   relProd _ _
 
 /-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the
     transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
     is the coproduct of the composites. -/
-public theorem filter_step1 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
-    (Salg p)%∋ ≫ est(R)
-      = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
-          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
-  unfold Salg; exact junc_Λ_est _ _ _ R
+public theorem filter_step1 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
+    (Salg p)%∋ ≫ est(R°)
+      = junc (sumCop (dL Unit) ⟨A × List A⟩)
+          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R°
 
-/-- Step 2 of `filter-step`: `nil%∋ est(R) = nil` for reflexive `R` — the `nil` arm, as in
+/-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` for reflexive `R°` — the `nil` arm, as in
     `takewhile-step`. -/
-public theorem filter_step2 (p : E → Bool) {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
-    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
-    junc (sumCop (dL Unit) ⟨E × List E⟩)
-        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
-        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R))
-      = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-          ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
+public theorem filter_step2 (p : A → Bool) {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩}
+    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R°) :
+    junc (sumCop (dL Unit) ⟨A × List A⟩)
+        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°))
+      = junc (sumCop (dL Unit) ⟨A × List A⟩)
+          (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
     a union is the pair of the transposes followed by the power object's union. -/
-public theorem filter_step3 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
-    junc (sumCop (dL Unit) ⟨E × List E⟩)
-        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-        ((((graph fun q : E × List E => q.2)) ∪ pcons p)%∋ ≫ est(R))
-      = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-          (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
-            ≫ cup (PL (E := E)) ≫ est(R)) := by
-  rw [Λ_union _ _ (PL (E := E)), pair_eq_rpair, Cat.assoc]
+public theorem filter_step3 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
+    junc (sumCop (dL Unit) ⟨A × List A⟩)
+        (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R))
+      = junc (sumCop (dL Unit) ⟨A × List A⟩)
+          (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+          (rpair ((graph fun q : A × List A => q.2)%∋) ((pcons p)%∋)
+            ≫ cup (PL (A := A)) ≫ est(R)) := by
+  rw [Λ_union _ _ (PL (A := A)), pair_eq_rpair, Cat.assoc]
 
 /-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
     `(a,xs)` the union is `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and
     `xs` loses the second.  The head is dropped, not the whole tail: the one place `π₂` shows
     against takewhile's `⊸ nil`. -/
-public theorem filter_step4 (p : E → Bool) :
-    junc (sumCop (dL Unit) ⟨E × List E⟩)
-        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-        (rpair ((graph fun q : E × List E => q.2)%∋) ((pcons p)%∋)
-          ≫ cup (PL (E := E)) ≫ est(lenLE°))
-      = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) := by
+public theorem filter_step4 (p : A → Bool) :
+    junc (sumCop (dL Unit) ⟨A × List A⟩)
+        (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+        (rpair ((graph fun q : A × List A => q.2)%∋) ((pcons p)%∋)
+          ≫ cup (PL (A := A)) ≫ est(lenLE°))
+      = consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p) := by
   rw [← filter_step3]
   apply hom_ext; intro u ws
   cases u with
@@ -286,45 +286,45 @@ public theorem filter_step4 (p : E → Bool) :
     `{xs}` where `p` fails on `a` and `{xs,cons(a,xs)}` where it holds, and `xs` loses the second.
     The head is dropped, not the whole tail: the one place `π₂` shows against takewhile's
     `⊸ nil`. -/
-public theorem filter_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p) :=
-  (filter_step1 p lenLE°).trans ((filter_step2 p lenLE_recip_refl).trans
+public theorem filter_step (p : A → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p) :=
+  (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
     ((filter_step3 p lenLE°).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
 /-- `filter p` on `ConsList Unit E`, by the very recursion whose base/step is `fun _ => []` /
     `fStep p`. -/
-@[expose] public def filtCL (p : E → Bool) : ConsList Unit E → List E
+@[expose] public def filtCL (p : A → Bool) : ConsList Unit A → List A
   | ConsList.wrap _ => []
   | ConsList.cons x xs => fStep p x (filtCL p xs)
 
-theorem filtCL_wrap (p : E → Bool) (D : Unit) : filtCL p (ConsList.wrap D) = [] := rfl
+theorem filtCL_wrap (p : A → Bool) (D : Unit) : filtCL p (ConsList.wrap D) = [] := rfl
 
-theorem filtCL_cons (p : E → Bool) (x : E) (t : ConsList Unit E) :
+theorem filtCL_cons (p : A → Bool) (x : A) (t : ConsList Unit A) :
     filtCL p (ConsList.cons x t) = fStep p x (filtCL p t) := rfl
 
 /-- **The program is produced by the fold law**: `filtCL p` obeys the cons-list recursion of its
     base/step, so it IS the catamorphism of `consScalarAlg (fun _ => []) (fStep p)`. -/
-public theorem filter_emerges (p : E → Bool) :
-    (graph (filtCL p) : dCL Unit E ⟶ ⟨List E⟩)
-      = cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p)) :=
+public theorem filter_emerges (p : A → Bool) :
+    (graph (filtCL p) : dCL Unit A ⟶ ⟨List A⟩)
+      = cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p)) :=
   consFold_unique (fun _ => []) (fStep p) (filtCL p) (fun _ => rfl) (fun _ _ => rfl)
 
 /-- `ws` is a subsequence of `xs` (drop elements) — `subseqP` on the raw-list carrier, as `Pre`
     is `prefixP` there. -/
-@[expose] public def Sub : List E → List E → Prop
+@[expose] public def Sub : List A → List A → Prop
   | [], _ => True
   | _ :: _, [] => False
   | w :: ws, x :: xs => (w = x ∧ Sub ws xs) ∨ Sub (w :: ws) xs
 
 /-- The empty list is a subsequence of every list. -/
-theorem Sub.nil : ∀ b : List E, Sub [] b
+theorem Sub.nil : ∀ b : List A, Sub [] b
   | [] => trivial
   | _ :: _ => trivial
 
 /-- A subsequence is no longer than its host. -/
-theorem sub_length : ∀ {a b : List E}, Sub a b → a.length ≤ b.length
+theorem sub_length : ∀ {a b : List A}, Sub a b → a.length ≤ b.length
   | [], _, _ => Nat.zero_le _
   | _ :: _, [], h => h.elim
   | w :: ws, x :: xs, h => by
@@ -333,7 +333,7 @@ theorem sub_length : ∀ {a b : List E}, Sub a b → a.length ≤ b.length
       · exact Nat.le_trans (sub_length hs) (Nat.le_succ _)
 
 /-- A subsequence of its host's length IS the host. -/
-theorem sub_eq_of_length : ∀ {a b : List E}, Sub a b → b.length ≤ a.length → a = b
+theorem sub_eq_of_length : ∀ {a b : List A}, Sub a b → b.length ≤ a.length → a = b
   | [], [], _, _ => rfl
   | [], _ :: _, _, hlen => absurd hlen (Nat.not_succ_le_zero _)
   | _ :: _, [], h, _ => h.elim
@@ -343,8 +343,8 @@ theorem sub_eq_of_length : ∀ {a b : List E}, Sub a b → b.length ≤ a.length
       · exact absurd (Nat.le_trans hlen (sub_length hs)) (Nat.not_succ_le_self _)
 
 /-- Achievability: `filtCL p u` is itself a `p`-passing subsequence of the list `u` carries. -/
-public theorem filt_sound (p : E → Bool) :
-    ∀ u : ConsList Unit E, (subseq ≫ listP p) u (filtCL p u)
+public theorem filt_sound (p : A → Bool) :
+    ∀ u : ConsList Unit A, (subseq ≫ listP p) u (filtCL p u)
   | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p D)⟩
   | ConsList.cons x t => by
       obtain ⟨ys, hs, hl⟩ := filt_sound p t
@@ -358,8 +358,8 @@ public theorem filt_sound (p : E → Bool) :
 
 /-- Domination: every `p`-passing subsequence is a subsequence of `filtCL p u` — a subsequence
     that drops a passing element is beaten by the one that keeps it. -/
-public theorem filt_best (p : E → Bool) :
-    ∀ (u : ConsList Unit E) (ws : List E), (subseq ≫ listP p) u ws → Sub ws (filtCL p u)
+public theorem filt_best (p : A → Bool) :
+    ∀ (u : ConsList Unit A) (ws : List A), (subseq ≫ listP p) u ws → Sub ws (filtCL p u)
   | ConsList.wrap D, ws, ⟨ys, hs, hl⟩ => by
       cases ys with
       | wrap v =>
@@ -389,13 +389,13 @@ public theorem filt_best (p : E → Bool) :
 /-- The simplicity row: `filter(p)° filter(p) ⊑ 𝟙`.  NOT the takewhile argument — two
     `p`-subsequences of one list can be of equal length and different — but through `filtCL`:
     a longest `p`-subsequence is a subsequence of `filtCL p u` of its length, hence IS it. -/
-public theorem filter_simple (p : E → Bool) : Simple (filter p) := by
+public theorem filter_simple (p : A → Bool) : Simple (filter p) := by
   show (filter p)° ≫ filter p ⊑ Cat.id _
   apply le_iff.mpr
   intro ws zs h
   obtain ⟨u, h1, h2⟩ := h
-  have h1' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (E := E))°) u ws).mp h1
-  have h2' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (E := E))°) u zs).mp h2
+  have h1' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (A := A))°) u ws).mp h1
+  have h2' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (A := A))°) u zs).mp h2
   have e1 : ws = filtCL p u :=
     sub_eq_of_length (filt_best p u ws h1'.1) (h1'.2 _ (filt_sound p u))
   have e2 : zs = filtCL p u :=
@@ -406,21 +406,21 @@ public theorem filter_simple (p : E → Bool) : Simple (filter p) := by
 /-- **Ex 7.41's headline** (the note's `filter-deriv`): `filter(p) = ⦇[nil,(π₁p→cons,π₂)]⦈`.
     The greedy `⊒` becomes `=`: the program is entire (a reduce of maps) and the specification
     is simple, so `eq_of_le_entire_simple` closes the gap. -/
-public theorem filter_eq_cata (p : E → Bool) :
-    filter p = cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p)) := by
-  have hle : cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p)) ⊑ filter p := by
+public theorem filter_eq_cata (p : A → Bool) :
+    filter p = cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p)) := by
+  have hle : cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p)) ⊑ filter p := by
     rw [← filter_step p]
     show cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (subseq ≫ listP p)%∋ ≫ est(lenLE°)
     rw [filter_alg p]
     exact filter_greedy p
-  have hentire : Entire (cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (fStep p))) := by
+  have hentire : Entire (cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p))) := by
     rw [← filter_emerges p]
     exact graph_entire _
   exact (eq_of_le_entire_simple hentire (filter_simple p) hle).symm
 
 /-- The entirety row: `Λ(subseq list(p)) est(R°)` is entire — `nil` is always a `p`-subsequence
     and a longest one exists; read off the headline, whose program is a reduce of maps. -/
-public theorem filter_entire (p : E → Bool) : Entire (filter p) := by
+public theorem filter_entire (p : A → Bool) : Entire (filter p) := by
   rw [filter_eq_cata p, ← filter_emerges p]
   exact graph_entire _
 

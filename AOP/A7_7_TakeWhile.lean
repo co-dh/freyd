@@ -47,31 +47,31 @@ namespace Freyd.Alg.RelSet.GCTakeWhile
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL
 
-variable {E : Type}
+variable {A : Type}
 
 /-! ## Supporting list facts (AoPA `Examples/GC/List.agda`, `Nat.agda`) -/
 
 /-- The underlying list of a `ConsList Unit E` (AoPA's `μ ListF` unfolded). -/
-def flat : ConsList Unit E → List E
+def flat : ConsList Unit A → List A
   | ConsList.wrap _   => []
   | ConsList.cons x xs => x :: flat xs
 
 /-- `AllP p l` — every element of `l` satisfies `p` (AoPA `mapR (p ¿)` restricted to the
     diagonal). -/
-def AllP (p : E → Bool) : List E → Prop
+def AllP (p : A → Bool) : List A → Prop
   | []      => True
   | x :: xs => p x = true ∧ AllP p xs
 
 /-- The prefix relation `u ≼ w` (AoPA `_≼_ = foldR ListF [ nil , (nil ○ !) ⊔ cons ]`):
     `[] ≼ w` always, and `x∷u ≼ x∷w` iff `u ≼ w`. -/
-def Pre : List E → List E → Prop
+def Pre : List A → List A → Prop
   | []      , _       => True
   | _ :: _  , []      => False
   | x :: xs , y :: ys => x = y ∧ Pre xs ys
 
 /-- Prefix antisymmetry (AoPA: `_≼_` is a partial order; underlies `≼-isPreorder` + antisymmetry
     used for the shrink's uniqueness). -/
-theorem pre_antisym : ∀ {a b : List E}, Pre a b → Pre b a → a = b
+theorem pre_antisym : ∀ {a b : List A}, Pre a b → Pre b a → a = b
   | []      , []      , _  , _  => rfl
   | []      , _ :: _  , _  , hb => (hb).elim
   | _ :: _  , []      , ha , _  => (ha).elim
@@ -83,40 +83,40 @@ theorem pre_antisym : ∀ {a b : List E}, Pre a b → Pre b a → a = b
 /-! ## The program `twCL` and its base/step -/
 
 /-- The step of `takeWhile`: keep the head iff it satisfies `p`, else stop. -/
-public def twStep (p : E → Bool) (x : E) (c : List E) : List E :=
+public def twStep (p : A → Bool) (x : A) (c : List A) : List A :=
   match p x with
   | true  => x :: c
   | false => []
 
 /-- `takeWhile p` on `ConsList Unit E`.  Defined by the very recursion whose base/step is
     `(fun _ => [])` / `twStep p`, so `CL.consFold_unique` produces it as a catamorphism. -/
-def twCL (p : E → Bool) : ConsList Unit E → List E
+def twCL (p : A → Bool) : ConsList Unit A → List A
   | ConsList.wrap _    => []
   | ConsList.cons x xs => twStep p x (twCL p xs)
 
 /-! ## The spec (program-independent) -/
 
 /-- `twSpec p c out`: `out` is a `p`-satisfying prefix of the list `flat c`. -/
-def twSpec (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
+def twSpec (p : A → Bool) : dCL Unit A ⟶ (⟨List A⟩ : RelSet.{0}) :=
   fun c out => Pre out (flat c) ∧ AllP p out
 
 /-- Dominance order on answers: `w` dominates `z` when `z ≼ w` (`w` is at least as long).
     `est prefDom` selects the LONGEST prefix. -/
-def prefDom : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ := fun w z => Pre z w
+def prefDom : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩ := fun w z => Pre z w
 
 /-! ## Program emergence (AoPA `foldR-fold`) -/
 
 /-- **The program is produced by the fold law.**  `twCL p` obeys the cons-list recursion of its
     base/step, so it IS the catamorphism of `consScalarAlg (fun _ => []) (twStep p)`. -/
-theorem takeWhile_emerges (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩)
-      = cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p)) :=
+theorem takeWhile_emerges (p : A → Bool) :
+    (graph (twCL p) : dCL Unit A ⟶ ⟨List A⟩)
+      = cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p)) :=
   consFold_unique (fun _ => []) (twStep p) (twCL p) (fun _ => rfl) (fun _ _ => rfl)
 
 /-! ## The two halves the headline consumes -/
 
 /-- Achievability: `twCL p c` is itself a `p`-satisfying prefix of `flat c`. -/
-theorem tw_sound (p : E → Bool) (c : ConsList Unit E) : twSpec p c (twCL p c) := by
+theorem tw_sound (p : A → Bool) (c : ConsList Unit A) : twSpec p c (twCL p c) := by
   induction c with
   | wrap u => exact ⟨trivial, trivial⟩
   | cons x xs ih =>
@@ -128,7 +128,7 @@ theorem tw_sound (p : E → Bool) (c : ConsList Unit E) : twSpec p c (twCL p c) 
 
 /-- Domination: every `p`-satisfying prefix `out` of `flat c` is a prefix of `twCL p c`
     (so `twCL p c` is the longest). -/
-theorem tw_best (p : E → Bool) (c : ConsList Unit E) (out : List E)
+theorem tw_best (p : A → Bool) (c : ConsList Unit A) (out : List A)
     (h : twSpec p c out) : Pre out (twCL p c) := by
   induction c generalizing out with
   | wrap u =>
@@ -158,9 +158,9 @@ theorem tw_best (p : E → Bool) (c : ConsList Unit E) (out : List E)
     `takeWhile p` is exactly `max prefDom · Λ twSpec`, the longest `p`-satisfying prefix, as a
     relation (not merely pointwise).  Via `RelSet.eq_Λ_comp_est`, fed the two halves above and
     prefix antisymmetry. -/
-theorem takeWhile_eq_Λ_est (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = Λ (twSpec p) ≫ est (prefDom (E := E)) :=
-  eq_Λ_comp_est (prefDom (E := E))
+theorem takeWhile_eq_Λ_est (p : A → Bool) :
+    (graph (twCL p) : dCL Unit A ⟶ ⟨List A⟩) = Λ (twSpec p) ≫ est (prefDom (A := A)) :=
+  eq_Λ_comp_est (prefDom (A := A))
     (fun x y h1 h2 => pre_antisym h2 h1)               -- antisymmetry of prefDom
     (twCL p) (twSpec p)
     (tw_sound p)                                        -- achievability
@@ -170,8 +170,8 @@ theorem takeWhile_eq_Λ_est (p : E → Bool) :
     the AoPA shrink presentation: the `p`-satisfying-prefix relation, shrunk by the prefix order,
     equals `takeWhile`.  Immediate from the max form by `shrink_eq_Λ_comp_est`
     (`est R = est R°`). -/
-theorem takeWhile_eq_shrink (p : E → Bool) :
-    (graph (twCL p) : dCL Unit E ⟶ ⟨List E⟩) = twSpec p ↾ (prefDom (E := E))° := by
+theorem takeWhile_eq_shrink (p : A → Bool) :
+    (graph (twCL p) : dCL Unit A ⟶ ⟨List A⟩) = twSpec p ↾ (prefDom (A := A))° := by
   rw [shrink_eq_Λ_comp_est]
   exact takeWhile_eq_Λ_est p
 
@@ -192,57 +192,57 @@ example : twCL (fun n => decide (n < 1)) (ofList [1, 2]) = [] := by decide
   route's `consScalarAlg (fun _ => []) (twStep p)`, shared verbatim. -/
 
 /-- The note's coreflexive `p : A⟶A` — the partial identity on the `p`-passers. -/
-@[expose] public def pcor (p : E → Bool) : dE E ⟶ dE E := fun x y => x = y ∧ p x = true
+@[expose] public def pcor (p : A → Bool) : dE A ⟶ dE A := fun x y => x = y ∧ p x = true
 
 /-- The note's `R ≜ length ≤ length°`, the length preorder: `xs lenLE ys ⟺ |xs| ≤ |ys|`. -/
-@[expose] public def lenLE : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
+@[expose] public def lenLE : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩ :=
   fun xs ys => xs.length ≤ ys.length
 
 /-- `R°` is transitive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
-public theorem lenLE_recip_refl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ (lenLE (E := E))° :=
+public theorem lenLE_recip_refl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ (lenLE (A := A))° :=
   le_iff.mpr fun _ _ h => by cases h; exact Nat.le_refl _
 
 /-- `R°` is transitive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
-public theorem lenLE_recip_trans : (lenLE (E := E))° ≫ lenLE° ⊑ lenLE° :=
+public theorem lenLE_recip_trans : (lenLE (A := A))° ≫ lenLE° ⊑ lenLE° :=
   le_iff.mpr fun xs zs h => by
     obtain ⟨ys, h1, h2⟩ := h
     exact Nat.le_trans h2 h1
 
 /-- `prefix`'s algebra `[nil, ⊸ nil ∪ cons]`, on the carrier `[A]` itself. -/
-@[expose] public def prefAlg : Fobj Unit E (dCL Unit E) ⟶ dCL Unit E :=
-  junc (sumCop (dL Unit) ⟨E × ConsList Unit E⟩) wrapR
+@[expose] public def prefAlg : Fobj Unit A (dCL Unit A) ⟶ dCL Unit A :=
+  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
     ((graph fun _ => ConsList.wrap ()) ∪ consR)
 
 /-- `prefix ≜ ⦇[nil, ⊸ nil ∪ cons]⦈` — at each `cons`, stop or keep the head. -/
-@[expose] public def prefixR : dCL Unit E ⟶ dCL Unit E := cataR prefAlg
+@[expose] public def prefixR : dCL Unit A ⟶ dCL Unit A := cataR prefAlg
 
 /-- `(p×𝟙) cons : A×[A] ⟶ [A]` — keep a head that passes `p` onto the folded tail. -/
-@[expose] public def pcons (p : E → Bool) :
-    (⟨E × List E⟩ : RelSet.{0}) ⟶ (⟨List E⟩ : RelSet.{0}) :=
-  rprodMap (pcor p) (Cat.id (⟨List E⟩ : RelSet.{0})) ≫ graph fun q => q.1 :: q.2
+@[expose] public def pcons (p : A → Bool) :
+    (⟨A × List A⟩ : RelSet.{0}) ⟶ (⟨List A⟩ : RelSet.{0}) :=
+  rprodMap (pcor p) (Cat.id (⟨List A⟩ : RelSet.{0})) ≫ graph fun q => q.1 :: q.2
 
 /-- `list(p)`'s algebra `[nil, (p×𝟙) cons]`, carried to the raw-list carrier. -/
-@[expose] public def listPAlg (p : E → Bool) :
-    Fobj Unit E (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
-  junc (sumCop (dL Unit) ⟨E × List E⟩) (graph fun _ => []) (pcons p)
+@[expose] public def listPAlg (p : A → Bool) :
+    Fobj Unit A (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩ :=
+  junc (sumCop (dL Unit) ⟨A × List A⟩) (graph fun _ => []) (pcons p)
 
 /-- `list(p) ≜ ⦇[nil, (p×𝟙) cons]⦈` — the coreflexive "every element passes `p`" (not entire). -/
-@[expose] public def listP (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
+@[expose] public def listP (p : A → Bool) : dCL Unit A ⟶ (⟨List A⟩ : RelSet.{0}) :=
   cataR (listPAlg p)
 
 /-- `⊸ nil : A×[A] ⟶ [A]` — discard the pair, return `nil`; `S`'s `stop` operand. -/
-@[expose] public def discNil : (⟨E × List E⟩ : RelSet.{0}) ⟶ (⟨List E⟩ : RelSet.{0}) :=
+@[expose] public def discNil : (⟨A × List A⟩ : RelSet.{0}) ⟶ (⟨List A⟩ : RelSet.{0}) :=
   graph fun _ => []
 
 /-- The note's `S ≜ [nil, ⊸ nil ∪ (p×𝟙) cons]` — `prefix`'s algebra with one extra `p`. -/
-@[expose] public def Salg (p : E → Bool) :
-    Fobj Unit E (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩ :=
-  junc (sumCop (dL Unit) ⟨E × List E⟩) (graph fun _ => [])
+@[expose] public def Salg (p : A → Bool) :
+    Fobj Unit A (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩ :=
+  junc (sumCop (dL Unit) ⟨A × List A⟩) (graph fun _ => [])
     (discNil ∪ pcons p)
 
 /-- Ex 7.39's specification: `takewhile(p) ≜ Λ(prefix list(p)) est(R°)` — the longest prefix
     all of whose elements pass `p`. -/
-@[expose] public def takewhile (p : E → Bool) : dCL Unit E ⟶ (⟨List E⟩ : RelSet.{0}) :=
+@[expose] public def takewhile (p : A → Bool) : dCL Unit A ⟶ (⟨List A⟩ : RelSet.{0}) :=
   (prefixR ≫ listP p)%∋ ≫ est(lenLE°)
 
 /-! ### Pointwise unfolds of the three `junc` algebras -/
@@ -265,7 +265,7 @@ theorem junc_inr {A B C : RelSet.{0}} (T : A ⟶ C) (U : B ⟶ C) (y : B.carrier
   · intro h
     exact Or.inr ⟨y, rfl, h⟩
 
-public theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
+public theorem pcons_apply (p : A → Bool) (x : A) (c ws : List A) :
     pcons p (x, c) ws ↔ p x = true ∧ ws = x :: c := by
   constructor
   · rintro ⟨q, ⟨⟨hx, hp⟩, hc⟩, hw⟩
@@ -278,27 +278,27 @@ public theorem pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
   · rintro ⟨hp, hw⟩
     exact ⟨(x, c), ⟨⟨rfl, hp⟩, rfl⟩, hw⟩
 
-theorem prefAlg_inl (D : Unit) (ys : ConsList Unit E) :
+theorem prefAlg_inl (D : Unit) (ys : ConsList Unit A) :
     prefAlg (Sum.inl D) ys ↔ ys = ConsList.wrap () := by
   unfold prefAlg; exact junc_inl _ _ _ _
 
-theorem prefAlg_inr (x : E) (r ys : ConsList Unit E) :
+theorem prefAlg_inr (x : A) (r ys : ConsList Unit A) :
     prefAlg (Sum.inr (x, r)) ys ↔ ys = ConsList.wrap () ∨ ys = ConsList.cons x r := by
   unfold prefAlg; exact junc_inr _ _ _ _
 
-public theorem listPAlg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+public theorem listPAlg_inl (p : A → Bool) (D : Unit) (ws : List A) :
     listPAlg p (Sum.inl D) ws ↔ ws = [] := by
   unfold listPAlg; exact junc_inl _ _ _ _
 
-public theorem listPAlg_inr (p : E → Bool) (x : E) (c ws : List E) :
+public theorem listPAlg_inr (p : A → Bool) (x : A) (c ws : List A) :
     listPAlg p (Sum.inr (x, c)) ws ↔ p x = true ∧ ws = x :: c := by
   unfold listPAlg; exact (junc_inr _ _ _ _).trans (pcons_apply p x c ws)
 
-theorem Salg_inl (p : E → Bool) (D : Unit) (ws : List E) :
+theorem Salg_inl (p : A → Bool) (D : Unit) (ws : List A) :
     Salg p (Sum.inl D) ws ↔ ws = [] := by
   unfold Salg; exact junc_inl _ _ _ _
 
-theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
+theorem Salg_inr (p : A → Bool) (x : A) (c ws : List A) :
     Salg p (Sum.inr (x, c)) ws ↔ ws = [] ∨ (p x = true ∧ ws = x :: c) := by
   unfold Salg
   refine (junc_inr _ _ _ _).trans ?_
@@ -313,13 +313,13 @@ theorem Salg_inr (p : E → Bool) (x : E) (c ws : List E) :
 /-! ### Supporting facts: `nil` prefixes everything, prefixes of equal length agree -/
 
 /-- `nil` is a prefix of every list — the entire half of `prefix`. -/
-theorem prefix_wrap : ∀ xs : ConsList Unit E, prefixR xs (ConsList.wrap ())
+theorem prefix_wrap : ∀ xs : ConsList Unit A, prefixR xs (ConsList.wrap ())
   | ConsList.wrap _ => (prefAlg_inl _ _).mpr rfl
   | ConsList.cons _ t =>
       ⟨ConsList.wrap (), prefix_wrap t, (prefAlg_inr _ _ _).mpr (Or.inl rfl)⟩
 
 /-- Two prefixes of one list of equal length are equal. -/
-theorem pre_eq_of_length : ∀ {a b v : List E}, Pre a v → Pre b v → a.length = b.length → a = b
+theorem pre_eq_of_length : ∀ {a b v : List A}, Pre a v → Pre b v → a.length = b.length → a = b
   | [], [], _, _, _, _ => rfl
   | [], _ :: _, _, _, _, hlen => absurd hlen.symm (Nat.succ_ne_zero _)
   | _ :: _, [], _, _, _, hlen => absurd hlen (Nat.succ_ne_zero _)
@@ -331,7 +331,7 @@ theorem pre_eq_of_length : ∀ {a b v : List E}, Pre a v → Pre b v → a.lengt
 
 /-- The two routes' specifications agree pointwise: `xs (prefix list(p)) ws` iff `ws` is a
     `p`-passing prefix of the list `xs` carries. -/
-theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
+theorem spec_iff (p : A → Bool) (u : ConsList Unit A) (ws : List A) :
     (prefixR ≫ listP p) u ws ↔ Pre ws (flat u) ∧ AllP p ws := by
   induction u generalizing ws with
   | wrap D =>
@@ -380,9 +380,9 @@ theorem spec_iff (p : E → Bool) (u : ConsList Unit E) (ws : List E) :
     the list and then keeping a `p`-passing prefix of it is keeping one of the tail first, and
     then building with `S`.  (Fusion cannot derive this — `list(p)` is not entire and no algebra
     meets the side condition — so it is proved pointwise and fed to @cata-defining below.) -/
-public theorem takewhile_alg_comm (p : E → Bool) :
-    (initial Unit E).α ≫ (prefixR ≫ listP p)
-      = (F Unit E).map (prefixR ≫ listP p) ≫ Salg p := by
+public theorem takewhile_alg_comm (p : A → Bool) :
+    (initial Unit A).α ≫ (prefixR ≫ listP p)
+      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
   apply hom_ext; intro u ws
   constructor
   · rintro ⟨m, hm, hX⟩
@@ -436,9 +436,9 @@ public theorem takewhile_alg_comm (p : E → Bool) :
 
 /-- The `takewhile-alg` row: `prefix list(p) = ⦇S⦈`, read off the defining equation above by
     @cata-defining (the Eilenberg–Wright universal property). -/
-public theorem takewhile_alg (p : E → Bool) : prefixR ≫ listP p = cataR (Salg p) := by
+public theorem takewhile_alg (p : A → Bool) : prefixR ≫ listP p = cataR (Salg p) := by
   rw [cataR_eq_relCata]
-  exact (relCata_UP (initial Unit E) (Salg p) (prefixR ≫ listP p)).mp (takewhile_alg_comm p)
+  exact (relCata_UP (initial Unit A) (Salg p) (prefixR ≫ listP p)).mp (takewhile_alg_comm p)
 
 /-! ### `takewhile-mono`, a law to a step
 
@@ -449,26 +449,26 @@ public theorem takewhile_alg (p : E → Bool) : prefixR ≫ listP p = cataR (Sal
 
 /-- `(𝟙×R°)⊸ nil⊑⊸ nil` — `⊸` discards the pair, so nothing that ran on it survives. -/
 public theorem takewhile_mono_disc :
-    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
       ⊑ discNil :=
   le_iff.mpr fun _ _ h => h.elim fun _ hy => hy.2
 
 /-- `(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)=(𝟙×R°)⊸ nil ∪ (p×R°) cons` — `R°` reaches each operand of the
     `∪` on its own, and on the `cons` one it stands beside `p` as the pair's second strand. -/
-public theorem takewhile_mono_fork (p : E → Bool) :
-    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ (discNil ∪ pcons p)
-      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
-        ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
-  have hcons : rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p
-      = rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 := by
+public theorem takewhile_mono_fork (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (discNil ∪ pcons p)
+      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 := by
+  have hcons : rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p
+      = rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 := by
     unfold pcons
     rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
   rw [DistributiveAllegory.comp_union_distrib, hcons]
 
 /-- `(p×R°) cons⊑(p×𝟙) cons R°` — a shorter tail makes a shorter list, so the `R°` the pair
     carried in comes back out on the built list. -/
-public theorem takewhile_mono_slide (p : E → Bool) :
-    rprodMap (pcor p) (lenLE (E := E))° ≫ (graph fun q : E × List E => q.1 :: q.2)
+public theorem takewhile_mono_slide (p : A → Bool) :
+    rprodMap (pcor p) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.1 :: q.2)
       ⊑ pcons p ≫ lenLE° := by
   refine le_iff.mpr fun q ws h => ?_
   obtain ⟨x, c⟩ := q
@@ -478,7 +478,7 @@ public theorem takewhile_mono_slide (p : E → Bool) :
 
 /-- `⊸ nil R°=⊸ nil` — `nil` is the shortest list, so it is above only itself. -/
 public theorem takewhile_mono_nil :
-    discNil ≫ (lenLE (E := E))°
+    discNil ≫ (lenLE (A := A))°
       = discNil := by
   refine hom_ext fun _ ws => ⟨?_, ?_⟩
   · rintro ⟨vs, hvs, hlen⟩
@@ -491,8 +491,8 @@ public theorem takewhile_mono_nil :
 
 /-- The step both mono chains share: **`(𝟙×R°) pcons(p) ⊑ pcons(p) R°`** — `p` still holds of the
     head, and a shorter tail makes a shorter `cons`. -/
-public theorem pcons_slide (p : E → Bool) :
-    rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ pcons p ⊑ pcons p ≫ lenLE° :=
+public theorem pcons_slide (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p ⊑ pcons p ≫ lenLE° :=
   le_iff.mpr fun q ws h => by
     obtain ⟨x, c⟩ := q
     obtain ⟨q', hq, hp⟩ := h
@@ -504,30 +504,30 @@ public theorem pcons_slide (p : E → Bool) :
     exact ⟨x :: c, (pcons_apply p x c (x :: c)).mpr ⟨hpx, rfl⟩, Nat.succ_le_succ hlen⟩
 
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
-public theorem takewhile_mono_cons (p : E → Bool) :
-    rprodMap (𝟙 (dE E)) (lenLE (E := E))°
+public theorem takewhile_mono_cons (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))°
         ≫ (discNil ∪ pcons p)
       ⊑ (discNil ∪ pcons p) ≫ lenLE° :=
-  calc rprodMap (𝟙 (dE E)) (lenLE (E := E))°
+  calc rprodMap (𝟙 (dE A)) (lenLE (A := A))°
           ≫ (discNil ∪ pcons p)
-      = rprodMap (𝟙 (dE E)) (lenLE (E := E))° ≫ discNil
-          ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 :=
+      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
+          ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
         takewhile_mono_fork p
     _ ⊑ discNil
-          ∪ rprodMap (pcor p) (lenLE (E := E))° ≫ graph fun q : E × List E => q.1 :: q.2 :=
+          ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
         union_mono takewhile_mono_disc (le_refl _)
     _ ⊑ discNil ∪ pcons p ≫ lenLE° :=
         union_mono (le_refl _) (takewhile_mono_slide p)
-    _ = discNil ≫ (lenLE (E := E))° ∪ pcons p ≫ lenLE° := by
+    _ = discNil ≫ (lenLE (A := A))° ∪ pcons p ≫ lenLE° := by
         rw [takewhile_mono_nil]
     _ = (discNil ∪ pcons p) ≫ lenLE° :=
         (union_comp_distrib _ _ _).symm
 
 /-- The `takewhile-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step
     lands inside taking the step and then shortening the result. -/
-public theorem takewhile_mono (p : E → Bool) :
-    MonotonicAlg (F := F Unit E) (Salg p) lenLE° := by
-  show (F Unit E).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
+public theorem takewhile_mono (p : A → Bool) :
+    MonotonicAlg (F := F Unit A) (Salg p) lenLE° := by
+  show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
   apply le_iff.mpr
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
@@ -551,62 +551,62 @@ public theorem takewhile_mono (p : E → Bool) :
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,
     with `takewhile-mono` for its hypothesis: one longest `p`-prefix kept at each `cons`
     refines every `p`-prefix collected and one chosen at the end. -/
-public theorem takewhile_greedy (p : E → Bool) :
+public theorem takewhile_greedy (p : A → Bool) :
     cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit E) (initial Unit E) lenLE_recip_trans (takewhile_mono p)
+  exact greedy (F_preservesRecip Unit A) (initial Unit A) lenLE_recip_trans (takewhile_mono p)
 
-theorem twStep_pos {p : E → Bool} {x : E} (h : p x = true) (c : List E) : twStep p x c = x :: c := by
+theorem twStep_pos {p : A → Bool} {x : A} (h : p x = true) (c : List A) : twStep p x c = x :: c := by
   unfold twStep; rw [h]
 
-theorem twStep_neg {p : E → Bool} {x : E} (h : p x = false) (c : List E) : twStep p x c = [] := by
+theorem twStep_neg {p : A → Bool} {x : A} (h : p x = false) (c : List A) : twStep p x c = [] := by
   unfold twStep; rw [h]
 
 /-- The algebra's cons branch at a point: stop with `nil`, or keep a head that passes `p`. -/
-theorem discNil_union_pcons_apply (p : E → Bool) (x : E) (c ws : List E) :
+theorem discNil_union_pcons_apply (p : A → Bool) (x : A) (c ws : List A) :
     (discNil ∪ pcons p) (x, c) ws ↔ ws = [] ∨ (p x = true ∧ ws = x :: c) :=
-  (junc_inr (graph fun _ => ([] : List E)) (discNil ∪ pcons p) (x, c) ws).symm.trans
+  (junc_inr (graph fun _ => ([] : List A)) (discNil ∪ pcons p) (x, c) ws).symm.trans
     (Salg_inr p x c ws)
 
 /-- Step 1 of `takewhile-step`: `S%∋ est(R°) = [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]` —
     the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
     coproduct is the coproduct of the composites. -/
-public theorem takewhile_step1 (p : E → Bool) (R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩) :
-    (Salg p)%∋ ≫ est(R)
-      = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
-          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
-  unfold Salg; exact junc_Λ_est _ _ _ R
+public theorem takewhile_step1 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
+    (Salg p)%∋ ≫ est(R°)
+      = junc (sumCop (dL Unit) ⟨A × List A⟩)
+          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R°
 
 /-- `nil%∋ est(R) = nil` for any REFLEXIVE `R` — `nil` is a map, so its singleton has one element
     and the `R`-greatest of a one-element set is that element.  The `nil` arm of every algebra of
     §7.7; the order never enters beyond `𝟙 ⊑ R`. -/
-public theorem Λ_nil_comp_est {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
-    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
-    (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R)
-      = graph (fun _ => ([] : List E)) :=
+public theorem Λ_nil_comp_est {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩}
+    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R) :
+    (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R)
+      = graph (fun _ => ([] : List A)) :=
   Λ_map_comp_est (graph_map _) hrefl
 
-/-- Step 2 of `takewhile-step`: `nil%∋ est(R) = nil` — `nil` is a map, so its singleton has one
-    element and the `R`-greatest of a one-element set is that element. -/
-public theorem takewhile_step2 (p : E → Bool) {R : (⟨List E⟩ : RelSet.{0}) ⟶ ⟨List E⟩}
-    (hrefl : Cat.id (⟨List E⟩ : RelSet.{0}) ⊑ R) :
-    junc (sumCop (dL Unit) ⟨E × List E⟩)
-        ((graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))%∋ ≫ est(R))
-        ((discNil ∪ pcons p)%∋ ≫ est(R))
-      = junc (sumCop (dL Unit) ⟨E × List E⟩)
-          (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
-          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
+/-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
+    element and the `R°`-greatest of a one-element set is that element. -/
+public theorem takewhile_step2 (p : A → Bool) {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩}
+    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R°) :
+    junc (sumCop (dL Unit) ⟨A × List A⟩)
+        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+        ((discNil ∪ pcons p)%∋ ≫ est(R°))
+      = junc (sumCop (dL Unit) ⟨A × List A⟩)
+          (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
     offers `{nil}` where `p` fails on the head and `{nil, cons(a,xs)}` where it holds, and `nil`
     loses the second. -/
-public theorem takewhile_step3 (p : E → Bool) :
-    junc (sumCop (dL Unit) ⟨E × List E⟩)
-        (graph (fun _ => ([] : List E)) : dL Unit ⟶ (⟨List E⟩ : RelSet.{0}))
+public theorem takewhile_step3 (p : A → Bool) :
+    junc (sumCop (dL Unit) ⟨A × List A⟩)
+        (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
         ((discNil ∪ pcons p)%∋ ≫ est(lenLE°))
-      = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) := by
+      = consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p) := by
   apply hom_ext; intro u ws
   cases u with
   | inl D => rw [junc_inl]; exact Iff.rfl
@@ -646,41 +646,41 @@ public theorem takewhile_step3 (p : E → Bool) :
 /-- The `takewhile-step` row: `Λ(S) est(R°) = [nil,(π₁p→cons,⊸ nil)]` — the longest of the
     lists the algebra allows is the `cons` where the head passes `p`, and `nil` where it does
     not.  The right side is the AoPA route's algebra, so both routes share one program. -/
-public theorem takewhile_step (p : E → Bool) :
-    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p) :=
-  (takewhile_step1 p lenLE°).trans
+public theorem takewhile_step (p : A → Bool) :
+    (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p) :=
+  (takewhile_step1 p lenLE).trans
     ((takewhile_step2 p lenLE_recip_refl).trans (takewhile_step3 p))
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
-public theorem takewhile_simple (p : E → Bool) : Simple (takewhile p) := by
+public theorem takewhile_simple (p : A → Bool) : Simple (takewhile p) := by
   show (takewhile p)° ≫ takewhile p ⊑ Cat.id _
   apply le_iff.mpr
   intro ws zs h
   obtain ⟨u, h1, h2⟩ := h
-  have h1' := (Λ_comp_est_apply (prefixR ≫ listP p) ((lenLE (E := E))°) u ws).mp h1
-  have h2' := (Λ_comp_est_apply (prefixR ≫ listP p) ((lenLE (E := E))°) u zs).mp h2
+  have h1' := (Λ_comp_est_apply (prefixR ≫ listP p) ((lenLE (A := A))°) u ws).mp h1
+  have h2' := (Λ_comp_est_apply (prefixR ≫ listP p) ((lenLE (A := A))°) u zs).mp h2
   exact pre_eq_of_length ((spec_iff p u ws).mp h1'.1).1 ((spec_iff p u zs).mp h2'.1).1
     (Nat.le_antisymm (h2'.2 ws h1'.1) (h1'.2 zs h2'.1))
 
 /-- **Ex 7.39's headline** (the note's `takewhile-laws`): `takewhile(p) = ⦇[nil,(π₁p→cons,⊸ nil)]⦈`.
     The greedy `⊒` becomes `=`: the program is entire (a reduce of maps, via `takeWhile_emerges`)
     and the specification is simple, so `eq_of_le_entire_simple` closes the gap. -/
-public theorem takewhile_eq_cata (p : E → Bool) :
-    takewhile p = cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p)) := by
-  have hle : cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p)) ⊑ takewhile p := by
+public theorem takewhile_eq_cata (p : A → Bool) :
+    takewhile p = cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p)) := by
+  have hle : cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p)) ⊑ takewhile p := by
     rw [← takewhile_step p]
     show cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (prefixR ≫ listP p)%∋ ≫ est(lenLE°)
     rw [takewhile_alg p]
     exact takewhile_greedy p
-  have hentire : Entire (cataR (consScalarAlg (fun _ : Unit => ([] : List E)) (twStep p))) := by
+  have hentire : Entire (cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p))) := by
     rw [← takeWhile_emerges p]
     exact graph_entire _
   exact (eq_of_le_entire_simple hentire (takewhile_simple p) hle).symm
 
 /-- The entirety row: `Λ(prefix list(p)) est(R°)` is entire — `nil` is always a `p`-prefix and
     the longest exists; read off the headline, whose program is a reduce of maps. -/
-public theorem takewhile_entire (p : E → Bool) : Entire (takewhile p) := by
+public theorem takewhile_entire (p : A → Bool) : Entire (takewhile p) := by
   rw [takewhile_eq_cata p, ← takeWhile_emerges p]
   exact graph_entire _
 

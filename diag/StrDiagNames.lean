@@ -16,6 +16,7 @@ import AOP.A7_3_Party
 import AOP.A7_4_Cylinder
 import AOP.A7_5_Van
 import AOP.A7_7_MSS
+import AOP.A7_7_TakeWhile
 import AOP.A8_1
 import AOP.A8_4_Knapsack
 import AOP.A8_5_Paragraph
@@ -80,6 +81,14 @@ open Lean PrettyPrinter in
   | `($_ $f:ident) => `($f)
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- A PREDICATE'S COREFLEXIVE is written by the predicate's own name, for the reason a map's graph
+    is: the note's `p` box and its `(p×𝟙)` lane are this partial identity, and `pcor` is the Lean
+    spelling of the same arrow. -/
+@[app_unexpander RelSet.GCTakeWhile.pcor] def unexpandPcor : Unexpander
+  | `($_ $p) => `($p)
+  | _ => throw ()
+
 -- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
 -- the line width, the due dates — is the section's context and not part of the name, exactly as
 -- `AOP.A9_3_Bracket.R`'s own unexpander already has it.  One per constant: the attribute keys on one.
@@ -97,6 +106,10 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.R] def unexpandCodeR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
+-- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
+-- and the note draws `R` on that box and `est(R°)` on the greedy step.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.GCTakeWhile.lenLE] def unexpandLenLE : Unexpander | _ => `($(mkIdent `R))
 
 -- THE MAP A SECTION IS NAMED AFTER.  The note draws the specification's own name, not the Lean
 -- function the graph is taken of: `edit`, `detab`, `flatten` are `editFn`, `detabR`, `flattenFn`.
