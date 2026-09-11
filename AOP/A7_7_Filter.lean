@@ -206,22 +206,22 @@ public abbrev PL : RelProd (PowerAllegory.powerObj (⟨List A⟩ : RelSet.{0}))
     transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a coproduct
     is the coproduct of the composites. -/
 public theorem filter_step1 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
-    (Salg p)%∋ ≫ est(R)
+    (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × List A⟩)
-          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R))
-          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
-  unfold Salg; exact junc_Λ_est _ _ _ R
+          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R°
 
-/-- Step 2 of `filter-step`: `nil%∋ est(R) = nil` for reflexive `R` — the `nil` arm, as in
+/-- Step 2 of `filter-step`: `nil%∋ est(R°) = nil` for reflexive `R°` — the `nil` arm, as in
     `takewhile-step`. -/
 public theorem filter_step2 (p : A → Bool) {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩}
-    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R) :
+    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × List A⟩)
-        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R))
-        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R))
+        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × List A⟩)
           (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
-          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R)) := by
+          ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `filter-step`: `(π₂ ∪ (p×𝟙) cons)%∋ = ⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup` — the transpose of
@@ -288,7 +288,7 @@ public theorem filter_step4 (p : A → Bool) :
     `⊸ nil`. -/
 public theorem filter_step (p : A → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p) :=
-  (filter_step1 p lenLE°).trans ((filter_step2 p lenLE_recip_refl).trans
+  (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
     ((filter_step3 p lenLE°).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/

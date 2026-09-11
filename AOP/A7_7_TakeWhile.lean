@@ -572,11 +572,11 @@ theorem discNil_union_pcons_apply (p : A → Bool) (x : A) (c ws : List A) :
     the power transpose of a coproduct is the coproduct of the transposes, and `est(R°)` after a
     coproduct is the coproduct of the composites. -/
 public theorem takewhile_step1 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
-    (Salg p)%∋ ≫ est(R)
+    (Salg p)%∋ ≫ est(R°)
       = junc (sumCop (dL Unit) ⟨A × List A⟩)
-          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R))
-          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
-  unfold Salg; exact junc_Λ_est _ _ _ R
+          ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
+  unfold Salg; exact junc_Λ_est _ _ _ R°
 
 /-- `nil%∋ est(R) = nil` for any REFLEXIVE `R` — `nil` is a map, so its singleton has one element
     and the `R`-greatest of a one-element set is that element.  The `nil` arm of every algebra of
@@ -587,16 +587,16 @@ public theorem Λ_nil_comp_est {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩
       = graph (fun _ => ([] : List A)) :=
   Λ_map_comp_est (graph_map _) hrefl
 
-/-- Step 2 of `takewhile-step`: `nil%∋ est(R) = nil` — `nil` is a map, so its singleton has one
-    element and the `R`-greatest of a one-element set is that element. -/
+/-- Step 2 of `takewhile-step`: `nil%∋ est(R°) = nil` — `nil` is a map, so its singleton has one
+    element and the `R°`-greatest of a one-element set is that element. -/
 public theorem takewhile_step2 (p : A → Bool) {R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩}
-    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R) :
+    (hrefl : Cat.id (⟨List A⟩ : RelSet.{0}) ⊑ R°) :
     junc (sumCop (dL Unit) ⟨A × List A⟩)
-        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R))
-        ((discNil ∪ pcons p)%∋ ≫ est(R))
+        ((graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))%∋ ≫ est(R°))
+        ((discNil ∪ pcons p)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × List A⟩)
           (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
-          ((discNil ∪ pcons p)%∋ ≫ est(R)) := by
+          ((discNil ∪ pcons p)%∋ ≫ est(R°)) := by
   rw [Λ_nil_comp_est hrefl]
 
 /-- Step 3 of `takewhile-step`: `(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°) = (π₁p→cons,⊸ nil)` — the branch
@@ -648,7 +648,7 @@ public theorem takewhile_step3 (p : A → Bool) :
     not.  The right side is the AoPA route's algebra, so both routes share one program. -/
 public theorem takewhile_step (p : A → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p) :=
-  (takewhile_step1 p lenLE°).trans
+  (takewhile_step1 p lenLE).trans
     ((takewhile_step2 p lenLE_recip_refl).trans (takewhile_step3 p))
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
