@@ -351,6 +351,53 @@ def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   | some g => return if isInduced (← inducedHeads) g then "INDUCED" else "GIVEN2"
   | none => return if ← givenArrow f then "GIVEN1" else "GIVEN2"
 
+/-- WHICH COMPONENT OF THE ARROW IT INDUCES each side of a pasted face carries — `none` unless the
+    statement is ABOUT those components.  The chord is what the two faces jointly determine; when an
+    induced constructor built it out of arrow arguments — `⟨f,g⟩` out of `f` and `g` — and each side
+    of the paste carries exactly one of them, the two sides ARE the two components, and which is
+    which is the whole content of the picture.  `some (i, j)`: the `lhs` carries the `i`-th
+    argument, the `rhs` the `j`-th.  Every other chord names no components and each arrow keeps its
+    ROLE hue: `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)` builds its chord out of the one arrow `R`, which is one
+    side's leg and not a component the other side has a counterpart for. -/
+def Face.components (fc : Face) : MetaM (Option (Nat × Nat)) := do
+  let some (c, _) := fc.chord | return none
+  unless isInduced (← inducedHeads) c do return none
+  let mut args : Array Expr := #[]
+  for a in c.getAppArgs do
+    if (← Meta.inferType a).isAppOf ``Cat.Hom then args := args.push a
+  -- One component per SIDE of the paste, and a side carries exactly one of them: fewer and the
+  -- sides would have to share a component, more and a side would carry two.
+  unless args.size == 2 do return none
+  let carries (p : Path) : MetaM (Array Nat) := do
+    let mut out : Array Nat := #[]
+    for i in [0 : args.size] do
+      if ← p.edges.anyM fun (_, _, f) => Meta.isDefEq f args[i]! then out := out.push i
+    return out
+  let (l, r) := (← carries fc.lhs, ← carries fc.rhs)
+  unless l.size == 1 && r.size == 1 && l[0]! != r[0]! do return none
+  return some (l[0]!, r[0]!)
+
+/-- The hue an edge of one side of the face takes.  Where the statement is about the components
+    (`Face.components`) it is the SIDE's, so a reader follows one component down each side; where it
+    is not, it is the arrow's own role (`Face.hue`). -/
+def Face.hueOn (fc : Face) (comp : Option Nat) (f : Expr) : MetaM String := do
+  match comp with
+  | some i => return s!"GIVEN{i + 1}"
+  | none => fc.hue f
+
+/-- The nodes of a face drawn BY COMPONENT.  A node on one side only belongs to that component and
+    wears its hue; the two the chord joins are on every side, and the chord tells them apart — the
+    end every component LEAVES is shared by all of them and belongs to none, so it stays black,
+    while the end the chord ARRIVES in is the object the universal property builds out of the
+    components' objects (`A×B` out of `A` and `B`) and wears the induced hue. -/
+def componentNodeHues (fc : Face) (i j : Nat) (ns : Array Node) : Array Node :=
+  ns.map fun v =>
+    if v.id == fc.lhs.src then { v with hue := "BLACK" }
+    else if v.id == fc.lhs.tgt then { v with hue := "INDUCED" }
+    else if fc.lhs.nodes.any (·.1 == v.id) then { v with hue := s!"GIVEN{i + 1}" }
+    else if fc.rhs.nodes.any (·.1 == v.id) then { v with hue := s!"GIVEN{j + 1}" }
+    else v
+
 /-- A node's hue, from the edges that touch it: `GIVEN1` when it is an end of a GIVEN1 edge and of
     no GIVEN2 one — an object the picture is handed, as against one where the structure the property
     is about already lives (`T` and `FT` are ends of `α`, so they stay black). -/
@@ -401,9 +448,11 @@ def Face.isFan (fc : Face) : Bool :=
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
 def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+  let comps ← fc.components
   if fc.isFan then
     -- Three columns, two rows: the apex over the middle of the row its chord ends in.
-    let place (p : Path) (side₀ : String) (gx : Float) : MetaM (Array Node × Array Edge) := do
+    let place (p : Path) (side₀ : String) (gx : Float) (comp : Option Nat)
+        : MetaM (Array Node × Array Edge) := do
       let mut ns : Array Node := #[]
       let mut es : Array Edge := #[]
       for i in [0:3] do
@@ -413,10 +462,10 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
         es := es.push { src, tgt, label := (← label f), side := if i == 0 then side₀ else "bottom",
-                        dash := ← fc.dashes f, hue := ← fc.hue f }
+                        dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
-    let (ln, le) ← place fc.lhs "left" 0.0
-    let (rn, re) ← place fc.rhs "right" 2.0
+    let (ln, le) ← place fc.lhs "left" 0.0 (comps.map (·.1))
+    let (rn, re) ← place fc.rhs "right" 2.0 (comps.map (·.2))
     let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
     let some (c, sym) := fc.chord | throwError "a fan is a pasted pair and has a chord"
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
@@ -429,7 +478,10 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       if s == "=" || ps.isEmpty then #[] else
         #[{ sym := s, gx := ps.foldl (fun a p => a + p.1) 0.0 / k,
             gy := ps.foldl (fun a p => a + p.2) 0.0 / k }]
-    return (nodeHues nodes edges, edges,
+    let hued := match comps with
+      | some (i, j) => componentNodeHues fc i j nodes
+      | none => nodeHues nodes edges
+    return (hued, edges,
       mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
   let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
   let (top, right) := legs n false
@@ -458,12 +510,12 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let (src, tgt, f) := fc.lhs.edges[i]!
     edges := edges.push { src, tgt, label := (← label f), side := sideAt top right false i,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← fc.hue f }
+                          hue := ← fc.hueOn (comps.map (·.1)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
     edges := edges.push { src, tgt, label := (← label f), side := sideAt left bot true j,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← fc.hue f }
+                          hue := ← fc.hueOn (comps.map (·.2)) f }
   -- A face commutes unless marked: an equation carries no symbol, a lax face keeps its `⊑`/`≤`.
   -- The symbol goes at the average of ITS OWN corners, which for a convex polygon is inside it —
   -- and a chord splits the polygon in two, so each side's symbol takes that side's corners alone.
@@ -482,7 +534,10 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let withChord := edges.push
       { src := "s", tgt := "t", label := (← label c), side := "top", dash := true,
         hue := "INDUCED" }
-    return (nodeHues nodes withChord, withChord,
+    let hued := match comps with
+      | some (i, j) => componentNodeHues fc i j nodes
+      | none => nodeHues nodes withChord
+    return (hued, withChord,
       mark fc.sym (fc.lhs.nodes.map (·.1)) ++ mark sym (fc.rhs.nodes.map (·.1)))
 
 /-! ### Emitting the page -/
