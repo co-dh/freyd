@@ -114,6 +114,12 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `E))
 
 open Lean PrettyPrinter in
+/-- The existential-image functor is the same `E` lane: it has the power relator's object action
+    and is the only `E` an abstract region has, where `powerRelator` needs tabularity. -/
+@[app_unexpander existsImageFunctor] def unexpandExistsImageFunctor : Unexpander
+  | _ => `($(mkIdent `E))
+
+open Lean PrettyPrinter in
 /-- The diagonal relator's lane is `Δ`: the category it is taken over is the panel's region, which
     the lane already sits in, so `Δ 𝒜` writes it twice. -/
 @[app_unexpander Δ] def unexpandDiagonalRelator : Unexpander
@@ -156,5 +162,11 @@ open Lean PrettyPrinter in
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
+-- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
+-- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
+-- the identity law.
+attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
+-- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
+attribute [diag_unfold] singletonMap
 
 end Freyd.Alg

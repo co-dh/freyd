@@ -1027,6 +1027,9 @@ def crosscheck(ps):
                 for k, v in t["sigs"].items()}
         for w in p.wires:
             wlab.setdefault(w.label, p.id)
+        # DRAWING ORDER IS TOP TO BOTTOM: a unit is parsed off its lane before the bead tuples, so
+        # the rank a Lean row is matched by is the bead's height, never its place in the parse.
+        rank = {i: k for k, i in enumerate(sorted(range(len(p.beads)), key=lambda i: -p.beads[i].y))}
         for n, b in enumerate(p.beads):
             lab = deindex(b.label or "")[0]     # a fold's carrier is the object wire, not the key
             if not lab:
@@ -1040,9 +1043,10 @@ def crosscheck(ps):
             ls = LEANSIG.get(p.id)
             if ls is None:
                 say = beadrow(dg, lab, rows, c, str(n))
-            elif n >= len(ls) or ls[n][0] != b.label:
-                bad.append(f"{p.id}: bead {n + 1} is drawn {b.label} where {c['lean']} types"
-                           f" {ls[n][0] if n < len(ls) else 'nothing — it draws only ' + str(len(ls))}"
+            elif rank[n] >= len(ls) or ls[rank[n]][0] != b.label:
+                m = rank[n]
+                bad.append(f"{p.id}: bead {m + 1} is drawn {b.label} where {c['lean']} types"
+                           f" {ls[m][0] if m < len(ls) else 'nothing — it draws only ' + str(len(ls))}"
                            f" — regenerate it with {EXPORT} --string {c['lean']}")
                 continue
             else:
@@ -1054,7 +1058,7 @@ def crosscheck(ps):
                              for cut in (p.cuts[i], p.cuts[i + 1]))
                 # Each end is a CUT — lanes outermost first, then the object — folded by the very
                 # function that folds the drawn one, so the two are built in one language.
-                src, tgt = arrow(ls[n][1], f"{EXPORT} --string --sigs {c['lean']}")
+                src, tgt = arrow(ls[rank[n]][1], f"{EXPORT} --string --sigs {c['lean']}")
                 slanes, tlanes = split_top(src, "|"), split_top(tgt, "|")
                 say = tuple(fold_cut(p, [(0, l) for l in e], ds) for e in (slanes, tlanes))
                 # A bead's ARMS are its source's lanes, and its reach is how far west they run: a

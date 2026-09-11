@@ -23,6 +23,12 @@ open Lean
     that imports the one declaring it, so the tags go in `diag/StrDiagNames.lean`. -/
 register_label_attr diag_unfold
 
+/-- WHICH EQUATIONS A SIDE IS REWRITTEN ALONG before it is drawn.  The mirror of a name opened: where
+    the NOTE draws a factor as two beads and Lean's statement names it as one, the side is rewritten
+    by the declaration that says so, so the picture is of the note's form.  Registered here, tagged
+    in `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
+register_label_attr diag_rewrite
+
 namespace Freyd.StrDiag
 
 /-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
@@ -172,14 +178,6 @@ partial def relLabel (r : Expr) : MetaM String := do
   | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
   | _ => plain r
 
-/-- Two lanes are one wire when they are the same relator — or the same left factor, that lane
-    being pinned to its object. -/
-def Wire.beq (a b : Wire) : MetaM Bool :=
-  match a, b with
-  | .rel x, .rel y => Meta.isDefEq x y
-  | .timesL x, .timesL y => Meta.isDefEq x y
-  | _, _ => return false
-
 /-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
     ones given and the instance arguments synthesised afterwards, when the category they mention is
     known.  `mkAppM` cannot do this: it refuses a result that still holds a metavariable, and a peel
@@ -203,6 +201,29 @@ def mkAppMeta (n : Name) (last : Array Expr) : MetaM (Expr × Array Expr) := do
     let .some v ← Meta.trySynthInstance t | throwError "no instance for {← Meta.ppExpr t}"
     unless ← Meta.isDefEq args[i]! v do throwError "{n}: instance mismatch at {← Meta.ppExpr t}"
   return (mkAppN (mkConst n lvls) args, args)
+
+/-- A lane's action as a FUNCTOR: a relator's is its underlying functor, and a functor lane — `E`,
+    which is no relator — is its own.  Read off the lane's TYPE, never its name. -/
+def laneFunctor (R : Expr) : MetaM Expr := do
+  if (← Meta.inferType R).isAppOf ``Freyd.Alg.Relator then
+    return (← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]).1
+  return R
+
+/-- Two lanes are one wire when they have the same OBJECT ACTION — or the same left factor, that
+    lane being pinned to its object.  A lane's geometry is its object action, so the power relator
+    and the existential-image functor, which agree on objects (`E A`) and differ only on arrows,
+    are the one `E` lane the note draws; asked by `isDefEq` on a fresh object of the region. -/
+def Wire.beq (a b : Wire) : MetaM Bool :=
+  match a, b with
+  | .rel x, .rel y => do
+    if ← Meta.isDefEq x y then return true
+    let some region := (← Meta.inferType x).getAppArgs[0]? | return false
+    Meta.withLocalDeclD `a region fun o => do
+      let (ox, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor x, o]
+      let (oy, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor y, o]
+      Meta.isDefEq ox oy
+  | .timesL x, .timesL y => Meta.isDefEq x y
+  | _, _ => return false
 
 /-- The `Allegory` instance of a region, LOCAL one first.  A statement quantified over its own
     `[Allegory 𝒜]` has no global instance to find, and synthesising one with the hom universe still
@@ -237,25 +258,6 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
   | some (a, b) => Meta.mkAppM ``Prod.mk #[← freshObj a, ← freshObj b]
   | none => Meta.mkFreshExprMVar (some ty)
 
-/-- A lane as a RELATOR: `A×−` is the product of the constant `A` with the identity. -/
-def wireRelator (regionTy : Expr) : Wire → MetaM Expr
-  | .rel r => return r
-  | .timesL l => do
-    let inst ← allegoryInst regionTy
-    Meta.mkAppM ``Freyd.Alg.Relator.prod
-      #[← Meta.mkAppOptM ``Freyd.Alg.Relator.const
-          #[some regionTy, some regionTy, some inst, some inst, some l],
-        ← idRelatorOf regionTy]
-
-/-- The composite relator a wire stack is, outermost first: `[W₀,W₁]` is `comp W₁ W₀`, whose object
-    map is `W₀.obj ∘ W₁.obj`. -/
-def stackRelator (regionTy : Expr) (ws : Array Wire) : MetaM Expr := do
-  if ws.isEmpty then return ← idRelatorOf regionTy
-  let mut acc ← wireRelator regionTy ws[ws.size - 1]!
-  for i in [0 : ws.size - 1] do
-    acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ← wireRelator regionTy ws[ws.size - 2 - i]!]
-  return acc
-
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
     `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
 def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
@@ -281,14 +283,16 @@ def Wire.label : Wire → MetaM String
     let par := (← splitTimes? (← Meta.inferType l) l).isSome
     return (if par then "(" ++ s ++ ")" else s) ++ "×−"
 
-/-- The endorelators of a region the environment NAMES.  A combinator — `comp`, `prod`, `pair` —
-    is excluded by its own type: it takes a relator as an argument, so peeling with it would peel
-    with an unknown, and `const`/`idRelator` are excluded at the peel by the progress test. -/
-def relatorCatalogue : MetaM (Array Name) := do
+/-- The constants of the environment that ARE one `head` — a relator, a functor — and are a thing of
+    the region rather than a COMBINATOR over the region: one that takes a `head` as an argument is
+    excluded by its own type (`comp`, `prod`, `pair`, `Functor.comp`, `Relator.toFunctor`), so
+    peeling with it would peel with an unknown, and `const`/`idRelator`/`idFunctor` are excluded at
+    the peel by the progress test.  ONE copy of the sweep: the catalogues differ only in the heads. -/
+def catalogueOf (head : Name) (excluded : Array Name) : MetaM (Array Name) := do
   let env ← getEnv
   let mut out : Array Name := #[]
   for (n, ci) in env.constants do
-    if n.isInternal || ci.isUnsafe || concHead ci.type != ``Freyd.Alg.Relator then continue
+    if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
     let s ← Meta.saveState
     let ok : Bool ← try
       let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
@@ -296,43 +300,60 @@ def relatorCatalogue : MetaM (Array Name) := do
         (ci.type.instantiateLevelParams ci.levelParams lvls)
       let mut good := true
       for a in args do
-        if (← instantiateMVars (← Meta.inferType a)).isAppOf ``Freyd.Alg.Relator then good := false
+        let ty ← instantiateMVars (← Meta.inferType a)
+        if excluded.any ty.isAppOf then good := false
       pure (good && concl.getAppArgs.size ≥ 2)
     catch _ => pure false
     s.restore
     if ok then out := out.push n
   return out.qsort (fun a b => a.toString < b.toString)
 
+/-- The LANES the environment names: the relators of a region, and its functors.  A lane is a
+    functor between regions with a bead for each arrow it carries, and a relator is one that is
+    also monotone; `E` is the case that is not — `existsImage` has no `map_mono`, so the power
+    object's lane in a region where `powerRelator` cannot be instantiated (an abstract allegory that
+    is not tabular) is `existsImageFunctor` itself, and the note's `E` lane.  ONE sweep over the
+    environment, threaded down: the read asks at every level of the term. -/
+def catalogue : MetaM (Array Name) :=
+  return (← catalogueOf ``Freyd.Alg.Relator #[``Freyd.Alg.Relator])
+    ++ (← catalogueOf ``Freyd.Functor #[``Freyd.Functor, ``Freyd.Alg.Relator])
+
+/-- The catalogue entry `n` instantiated at the region: fresh level metavariables, its argument
+    telescope opened with metavariables, and every INSTANCE argument synthesised — one left standing
+    is an unknown no later test can see, and the peel that silently finds nothing rather than
+    failing.  `ends` is the test on the region arguments, asked FIRST because the instances are
+    synthesised from those regions.  The state is the caller's: every refusal is `none` here and
+    rolled back there. -/
+def instCatalogue (n : Name) (ends : Array Expr → MetaM Bool) :
+    MetaM (Option (Expr × Array Expr)) := do
+  let some ci := (← getEnv).find? n | return none
+  let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+  let (args, bis, concl) ← Meta.forallMetaTelescope
+    (ci.type.instantiateLevelParams ci.levelParams lvls)
+  let cargs := concl.getAppArgs
+  unless ← ends cargs do return none
+  for i in [0 : args.size] do
+    unless bis[i]! == .instImplicit do continue
+    let .mvar id := args[i]! | continue
+    if ← id.isAssigned then continue
+    let .some v ← Meta.trySynthInstance (← instantiateMVars (← id.getType)) | return none
+    unless ← Meta.isDefEq args[i]! v do return none
+  return some (mkAppN (mkConst n lvls) args, cargs)
+
 /-- `X` as `R.obj a` for the catalogue entry `n`, or `none`.  Progress is required — a relator
     that gives back `X` itself peels nothing — and so is a fully determined answer, which is what
     keeps a relator with an undetermined parameter from matching anything. -/
 def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     MetaM (Option (Expr × Expr × Expr)) := do
-  let some ci := (← getEnv).find? n | return none
   let s ← Meta.saveState
   try
-    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
-    let (args, bis, concl) ← Meta.forallMetaTelescope
-      (ci.type.instantiateLevelParams ci.levelParams lvls)
-    let cargs := concl.getAppArgs
     -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
     -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
-    unless (← Meta.isDefEq cargs[1]! regionTy) do s.restore; return none
-    -- Instance arguments can only be synthesised once the regions are known, and left unsolved
-    -- they leave the relator holding a metavariable that the `hasExprMVar` test then drops with no
-    -- error — the peel that silently finds nothing.
-    for i in [0 : args.size] do
-      unless bis[i]! == .instImplicit do continue
-      let .mvar id := args[i]! | continue
-      if ← id.isAssigned then continue
-      let .some v ← Meta.trySynthInstance (← instantiateMVars (← id.getType))
-        | s.restore; return none
-      unless ← Meta.isDefEq args[i]! v do s.restore; return none
+    let some (R, cargs) ← instCatalogue n (fun c => Meta.isDefEq c[1]! regionTy)
+      | s.restore; return none
     let src ← instantiateMVars cargs[0]!
-    let R := mkAppN (mkConst n lvls) args
     let inner ← freshObj src
-    let (fR, _) ← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]
-    let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[fR, inner]
+    let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor R, inner]
     if ← Meta.isDefEq app X then
       let inner ← instantiateMVars inner
       let R ← instantiateMVars R
@@ -345,75 +366,87 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     s.restore; return none
   catch _ => s.restore; return none
 
-/-- The ARROW analogue of `peelWith?`: `e` as `F(r)` for the catalogue entry `n`, or `none`.  A
-    relator's action on arrows has a name of its own in the environment — `list R`, `existsImage R`
-    — and a picture must read those the way it reads `F.map R`, one wire running past a bead, or a
-    whole composite under `F` comes out as one bead nobody can slide anything past.  Asked by
-    `isDefEq` against `F.map ?r`, so every spelling of the action answers, and progress is required
-    for the same reason it is there: `idRelator.map` gives back `e` and peels nothing. -/
-def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
-    MetaM (Option (Expr × Expr)) := do
-  let some ci := (← getEnv).find? n | return none
+/-- `e` as `G.map r` for the functor `g`, with `r` the arrow underneath.  The functor is the FIRST
+    explicit argument of the projection, so the application is built with it already in place: an
+    all-metavariable one cannot synthesise `Cat ?𝒞` and throws.  `none` ROLLS THE STATE BACK, so a
+    candidate that does not fit leaves nothing for the next one.  Progress is required: `idFunctor`
+    gives back `e` and peels nothing. -/
+def mapOfFunctor? (g : Expr) (regionTy e : Expr) : MetaM (Option Expr) := do
   let s ← Meta.saveState
   try
-    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
-    let (args, bis, concl) ← Meta.forallMetaTelescope
-      (ci.type.instantiateLevelParams ci.levelParams lvls)
-    let cargs := concl.getAppArgs
-    -- An ENDORELATOR of the region, both ends: the bead's own lanes are what runs past it, and a
-    -- wire out of another region has none of them to run on.
-    unless (← Meta.isDefEq cargs[0]! regionTy) && (← Meta.isDefEq cargs[1]! regionTy) do
-      s.restore; return none
-    for i in [0 : args.size] do
-      unless bis[i]! == .instImplicit do continue
-      let .mvar id := args[i]! | continue
-      if ← id.isAssigned then continue
-      let .some v ← Meta.trySynthInstance (← instantiateMVars (← id.getType))
-        | s.restore; return none
-      unless ← Meta.isDefEq args[i]! v do s.restore; return none
-    let R := mkAppN (mkConst n lvls) args
-    let (fR, _) ← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]
-    -- The functor is the FIRST explicit argument of the projection, so the application is built
-    -- with it already in place: an all-metavariable one cannot synthesise `Cat ?𝒞` and throws.
     let x ← Meta.mkFreshExprMVar (some regionTy)
     let y ← Meta.mkFreshExprMVar (some regionTy)
     let r ← Meta.mkFreshExprMVar (some (← Meta.mkAppM ``Cat.Hom #[x, y]))
-    let app ← Meta.mkAppM ``Freyd.Functor.map #[fR, r]
+    let app ← Meta.mkAppM ``Freyd.Functor.map #[g, r]
     unless ← Meta.isDefEq app e do s.restore; return none
     let r ← instantiateMVars r
-    let R ← instantiateMVars R
-    if r.hasExprMVar || R.hasExprMVar then s.restore; return none
-    if objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
-    if ← Meta.isDefEq r e then s.restore; return none
-    return some (R, r)
+    if r.hasExprMVar || (← Meta.isDefEq r e) then s.restore; return none
+    return some r
   catch _ => s.restore; return none
 
-/-- The first catalogue relator `e` is the action of, and the arrow underneath. -/
+/-- The ARROW analogue of `peelWith?`: `e` as `F(r)` for the catalogue entry `n`, or `none`.  A
+    lane's action on arrows has a name of its own in the environment — `list R`, `existsImage R`
+    — and a picture must read those the way it reads `F.map R`, one wire running past a bead, or a
+    whole composite under `F` comes out as one bead nobody can slide anything past.  Asked by
+    `isDefEq` against `F.map ?r`, so every spelling of the action answers, and progress is required
+    for the same reason it is there: `idRelator.map` gives back `e` and peels nothing.
+    `Λ S = 𝟙%∋ ≫ E(S)` is B&dM's factorisation, drawn as the unit bead and `S`'s own bead on `E`. -/
+def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
+    MetaM (Option (Expr × Expr)) := do
+  let s ← Meta.saveState
+  try
+    -- An ENDOFUNCTOR of the region, both ends: the bead's own lanes are what runs past it, and a
+    -- wire out of another region has none of them to run on.  A relator's and a functor's two type
+    -- arguments alike are its two regions.
+    let ends : Array Expr → MetaM Bool := fun c => do
+      let lo ← Meta.isDefEq c[0]! regionTy
+      let hi ← Meta.isDefEq c[1]! regionTy
+      return lo && hi
+    let some (R, _) ← instCatalogue n ends | s.restore; return none
+    let R ← instantiateMVars R
+    if R.hasExprMVar || objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
+    if let some r ← mapOfFunctor? (← laneFunctor R) regionTy e then return some (R, r)
+    s.restore; return none
+  catch _ => s.restore; return none
+
+/-- The first catalogue lane `e` is the action of, and the arrow underneath. -/
 def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     MetaM (Option (Expr × Expr)) :=
   cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
 
-/-- An object peeled into its wire stack (outermost first) and the object underneath.
+/-- An object peeled into its wire stack (outermost first), each wire with the OBJECT UNDER IT, and
+    the object underneath them all.  The object under a wire is what a bead taken there is a family
+    AT: `𝟙%∋` at `F A` is `singletonMap (F A)`, and `F A` is the cut the `F` lane stands over.
 
     A PRODUCT `A×Y` is the ONE lane `A×−` over the lanes of `Y`, whatever `A` is.  `×` is a functor
     out of `𝒜×𝒜` and Hinze–Marsden has no wire for one, so the left factor cannot be drawn as a
     bundle beside its sibling; it is pinned into the endofunctor `A×−` at that object, and only the
     right factor goes on being peeled. -/
-partial def peelObj (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
-    MetaM (Array Wire × Expr) := do
+partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
+    MetaM (Array (Wire × Expr) × Expr) := do
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
-      let (ws, o) ← peelObj objVars cat regionTy x
-      return ((wiresOf f).map Wire.rel ++ ws, o)
+      let (cs, o) ← peelCuts objVars cat regionTy x
+      -- `wiresOf` is outermost first, so the objects are built from the inside out: under the
+      -- innermost wire is `x`, under the next is that wire applied to it.
+      let ws := wiresOf f
+      let mut under := x
+      let mut acc : Array (Wire × Expr) := #[]
+      for i in [0 : ws.size] do
+        let w := ws[ws.size - 1 - i]!
+        acc := acc.push (Wire.rel w, under)
+        if i + 1 < ws.size then
+          under := (← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor w, under]).1
+      return (acc.reverse ++ cs, o)
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
-    let (ws, o) ← peelObj objVars cat regionTy b
-    return (#[Wire.timesL a] ++ ws, o)
+    let (cs, o) ← peelCuts objVars cat regionTy b
+    return (#[(Wire.timesL a, b)] ++ cs, o)
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then
-      let (ws, o) ← peelObj objVars cat src inner
-      return (#[Wire.rel R] ++ ws, o)
+      let (cs, o) ← peelCuts objVars cat src inner
+      return (#[(Wire.rel R, inner)] ++ cs, o)
   return (#[], X)
 
 /-- An OBJECT read as a RELATOR in `v` — the one reader every naturality statement is built from.
@@ -458,9 +491,11 @@ partial def relatorOfObj (cat : Array Name) (regionTy v X : Expr) : MetaM Expr :
   | _ => pure ()
   -- `#[v]`: the wire peeled off has to be a relator of the REGION, so one that mentions `v` is no
   -- reading of `X` at all — refusing it here is both the correctness rule and what keeps the peel
-  -- from ranging over the whole catalogue at every level.
+  -- from ranging over the whole catalogue at every level.  A FUNCTOR lane (`E`) is no relator, so
+  -- a family under it states no naturality in the relator sense and is refused below.
   for n in cat do
     if let some (R, src, inner) ← peelWith? n #[v] regionTy X then
+      unless (← Meta.inferType R).isAppOf ``Freyd.Alg.Relator do continue
       return ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[← relatorOfObj cat src v inner, R]
   throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no relator of \
     {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
@@ -538,6 +573,58 @@ def openNoted (e : Expr) : MetaM Expr := do
   match ← Meta.unfoldDefinition? e with
   | some v => return v.headBeta
   | none => return e
+
+/-- One `diag_rewrite` step: `e` rewritten to the right side of the first equation whose left side it
+    IS, or `none`; the state is threaded by the caller.  THE HEAD TEST IS THE TERMINATION ARGUMENT:
+    matching is `isDefEq`, which UNFOLDS, so `Λ ?R =?= singletonMap` would unfold `singletonMap` to
+    `Λ (𝟙 a)` and rewrite for ever — while the equation fires only where the node's head constant is
+    the left side's, the left sides' heads being different from one another. -/
+def rewriteHead? (e : Expr) : MetaM (Option Expr) := do
+  let some n := e.getAppFn.constName? | return none
+  for thm in (← Lean.labelled `diag_rewrite) do
+    let some ci := (← getEnv).find? thm | continue
+    let s ← Meta.saveState
+    let mut out : Option Expr := none
+    try
+      let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let (_, _, concl) ← Meta.forallMetaTelescope
+        (ci.type.instantiateLevelParams ci.levelParams lvls)
+      let cargs := concl.getAppArgs
+      if concl.isAppOf ``Eq && cargs.size ≥ 3 && cargs[1]!.getAppFn.constName? == some n then
+        if ← Meta.withReducible (Meta.isDefEq cargs[1]! e) then
+          -- An equation whose right side the match leaves undetermined says nothing about `e`: a
+          -- metavariable left in the picture is a wire with no object under it.
+          let rhs ← instantiateMVars cargs[2]!
+          if !rhs.hasMVar then out := some rhs
+    catch _ => pure ()
+    s.restore
+    if let some x := out then return some x
+  return none
+
+/-- A side rewritten along its composite SPINE by the `diag_rewrite` equations: `Λ S` is drawn as the
+    unit bead `𝟙%∋` and `S` on the `E` lane, but a `Λ` inside a fold's body is that bead's own label
+    and stays.  The spine is what `Cat.comp` joins; a fold's body, a junction's arms and an `est(R)`
+    argument are LEAVES of it and are never entered.
+
+    `fuel` bounds the rewrites at ONE node, each of which yields a fresh node to rewrite (`Λ S` yields
+    `singletonMap ≫ E(S)`, a composite), and the head test above is what stops the run: the fuel only
+    makes that stop something stated rather than hoped for. -/
+partial def rewriteSpine (e : Expr) (fuel : Nat := 8) : MetaM Expr := do
+  -- The operands first, so a `Λ 𝟙` anywhere on the spine folds back to the unit bead like one at
+  -- its head.  Nothing below a `Cat.comp` node is entered.
+  let e ← match e.getAppFnArgs with
+    | (``Cat.comp, args) =>
+      if let some (f, g) := lastTwo args then
+        let f' ← rewriteSpine f fuel
+        let g' ← rewriteSpine g fuel
+        pure (mkAppN e.getAppFn ((args.extract 0 (args.size - 2)).push f' |>.push g'))
+      else pure e
+    | _ => pure e
+  match ← rewriteHead? e with
+  | none => return e
+  | some r =>
+    if fuel == 0 then throwError "diag_rewrite does not terminate on {← Meta.ppExpr e}"
+    else rewriteSpine r (fuel - 1)
 
 /-- A statement built from two STATEMENTS, and those two.  A different question from `split`, which
     reads the relation between two ARROWS: a side of one of these is itself a statement, so it

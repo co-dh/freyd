@@ -117,6 +117,14 @@ public theorem existsImage_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
   rw [Cat.assoc] at h
   exact h.symm
 
+/-- B&dM p.104: `E` is a functor `Rel → Map` — on objects the power object, on arrows the existential image.
+    It is NOT a relator: `existsImage` is not monotone, so it has no `map_mono`. -/
+@[expose] public def existsImageFunctor : Freyd.Functor 𝒜 𝒜 where
+  obj := PowerAllegory.powerObj
+  map := existsImage
+  map_id _ := existsImage_id
+  map_comp := existsImage_comp
+
 /-- Singleton naturality (B&dM p.106): for a map `f`, `f ≫ singletonMap = singletonMap ≫ E f`. -/
 theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     f ≫ singletonMap = singletonMap ≫ existsImage f := by

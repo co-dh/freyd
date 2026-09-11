@@ -123,6 +123,12 @@ structure Row where
   /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
       bead the environment REFUTES, which draws no dot and is a claim all the same. -/
   natLean : Option Name := none
+  /-- The lanes the bead STANDS OVER: the object it is a family at, `F A` for `𝟙%∋` taken there.
+      They run past it inside, and a bead with no arms opens its leg WEST of them. -/
+  over  : Array Nat := #[]
+  /-- A UNIT: a family `𝟙 ⟹ W` — no arms, one leg, the same object under both.  Drawn as the
+      note's unit lane, born half a row below the row it stands on with its own mark, not a bead. -/
+  unit  : Bool := false
   deriving Inhabited
 
 /-- What LEAN says the bead is an arrow between, in the note's notation. -/
@@ -165,9 +171,12 @@ def columns (p : Diagram) : Array Lane := Id.run do
       (xs[j]!).isSome && p.lanes[j]!.born < (i : Int) && (i : Int) < p.lanes[j]!.dies
     let arms := r.arms.filterMap (fun a => xs[a]!)
     -- A bead with no arms of its own opens its wire east of every lane already live: born west, it
-    -- would cross each of them on the way out.
+    -- would cross each of them on the way out.  Unless it STANDS OVER lanes — then it is outside
+    -- them, and its leg opens one column west of the outermost, where `𝟙%∋` at `F A` puts `E`.
+    let over := r.over.filterMap (fun j => xs[j]!)
     let c := if arms.isEmpty then
-        (maxA (Array.mk (live.map (fun j => (xs[j]!).get!))) (-DX)) + DX
+        if over.isEmpty then (maxA (Array.mk (live.map (fun j => (xs[j]!).get!))) (-DX)) + DX
+        else minA over 1e9 - DX
       else (minA arms 1e9 + maxA arms (-1e9)) / 2.0
     -- A bead that gives back as many wires as it takes moves nothing sideways, so its legs KEEP the
     -- arms' columns and a swap is two straight lines crossing, not a staircase of knees.
@@ -246,8 +255,14 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let t0 := t0n.toFloat
   let ys : Array Float := Array.mk ((List.range n).map fun i => (t0 - i.toFloat) * DY)
   let xo := roundTo 2 (maxA (ls.map (·.x)) X0 + DX)
-  let cell (s : String) : String := "[`" ++ s ++ "`]"
+  -- A DIVISION `x%∋` is one token of the note's, `frac(x, ∋)` (`note-style.typ`'s `plain` reads it
+  -- back as this very spelling), so a label that IS one is written as the note draws it — the unit
+  -- `𝟙%∋` above all — where a division inside a composite label stays in the composite's text.
+  let cell (s : String) : String :=
+    let top := (s.dropEnd 2).toString
+    if s.endsWith "%∋" && !top.contains '%' then "frc([`" ++ top ++ "`])" else "[`" ++ s ++ "`]"
   let str (s : String) : String := "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\""
+  let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
   let mut beads : Array String := #[]
   let mut objs : Array String := #[]
   let mut nats : Array String := #[]
@@ -267,19 +282,22 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
     let mark := match r.nat with
       | none | some .strict => ""
       | some .lax => key .lax | some .oplax => key .oplax | some .spider => key .spider
-    beads := beads.push <| match reach, dot with
-      | none, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
-      | none, some d =>
-        "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, " ++ num d ++ mark ++ ")"
-      | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
-      | some rc, some d =>
-        "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
-          ++ mark ++ ")"
-    objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
+    -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
+    if r.unit then
+      objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
+    else
+      beads := beads.push <| match reach, dot with
+        | none, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
+        | none, some d =>
+          "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, " ++ num d ++ mark ++ ")"
+        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
+        | some rc, some d =>
+          "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
+            ++ mark ++ ")"
+      objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
     -- Every FAMILY the tool looked at gets a row, the spider included: a reader must be able to
     -- see that the search ran and came back empty, which an absent row cannot say.
     if r.nat.isSome || r.natLean.isSome then
@@ -287,10 +305,23 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
         ("(" ++ str r.label ++ ", " ++ str ((r.nat.map Mark.key).getD "not-lax") ++ ", "
           ++ str ((r.natLean.map Name.toString).getD "") ++ ")")
   let lanecode : Lane → String := fun l =>
-    let birth := if l.born < 0 then "\"top\"" else num ys[l.born.toNat]!
+    -- A lane born at a UNIT carries the unit as its own birth: half a row below the unit's row, the
+    -- unit's label as the 5th element and its verdict as the 6th — `dlane` draws the mark there.
+    let un : Option Row := if l.born < 0 then none else
+      let r := p.rows[l.born.toNat]!
+      if r.unit then some r else none
+    let birth := if l.born < 0 then "\"top\""
+      else if un.isSome then num (ys[l.born.toNat]! - DY / 2.0) else num ys[l.born.toNat]!
     let death := if l.dies >= (n : Int) then "\"bot\"" else num ys[l.dies.toNat]!
     let nm := if l.born < 0 || l.dies >= (n : Int) then "none" else cell l.label
-    "(" ++ num l.x ++ ", " ++ birth ++ ", " ++ death ++ ", " ++ nm ++ ", none)"
+    let tail := match un with
+      | none => "none"
+      | some r => cell r.label ++ match r.nat with
+        | some .strict => ""
+        | some m => key m
+        -- A refuted unit draws no mark, as a refuted bead draws no dot; the `nat:` row says which.
+        | none => key .spider
+    "(" ++ num l.x ++ ", " ++ birth ++ ", " ++ death ++ ", " ++ nm ++ ", " ++ tail ++ ")"
   let tup (xs : Array String) : String :=
     "(" ++ String.intercalate ", " xs.toList ++ (if xs.size == 1 then "," else "") ++ ")"
   let top := (ls.filter (·.born < 0)).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
@@ -313,7 +344,8 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
 def fileOf (declName body : String) : String :=
   "// GENERATED by `diag-export --string` — do not edit; regenerate with\n\
    //   ./scripts/diag-export --string " ++ declName ++ "\n\
-   #import \"../../dpanel.typ\": *\n\n" ++ body
+   #import \"../../dpanel.typ\": *\n\
+   #import \"../../circuit.typ\": frc\n\n" ++ body
 
 /-- One panel on its own — one side of a statement, or one branch of a side. -/
 def emit (p : Diagram) (declName : String) (frame topRow scale : Option Nat) : MetaM String :=
@@ -515,10 +547,12 @@ def beadLabel (core : Expr) : Option Expr → MetaM String
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
     drawn past it are alike none of its naturality statement's business. -/
 def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (arms legs : Array Wire) (ox oy core : Expr) :
+    (arms legs : Array Wire) (ox oy core : Expr) (over : Array Wire := #[]) :
     MetaM Diagram := do
   let mut lanes : Array Lane := #[]
   for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
+  -- The lanes the bead stands over are born at the top and live past it, inside its legs.
+  for w in over do lanes := lanes.push { label := ← w.label, born := -1, dies := LIVE, wire := w }
   for w in legs do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
@@ -530,13 +564,16 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let vd ← match φ with
     | none => pure none
     | some φ => some <$> verdict regionTy cat core φ
-  let top := Array.mk (List.range arms.size)
-  let bot := Array.mk (List.range' arms.size legs.size)
+  let ar := Array.mk (List.range arms.size)
+  let ov := Array.mk (List.range' arms.size over.size)
+  let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
+  -- A unit is a FAMILY `𝟙 ⟹ W`: a fixed arrow `A ⟶ F A` (`S°`) is a bead with a leg, not a lane.
+  let unit := arms.isEmpty && legs.size == 1 && v?.isSome && (← Meta.isDefEq ox oy)
   let row : Row :=
-    { label := (← beadLabel core v?), arms := top, legs := bot, obj := (← plain oy),
+    { label := (← beadLabel core v?), arms := ar, legs := lg, over := ov, unit, obj := (← plain oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
-  return { lanes, rows := #[row], top, bot, otop := ox, obot := oy }
+  return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
     above it, and the two edge sentinels — `-1` the top, `LIVE` the bottom — do not move. -/
@@ -564,7 +601,8 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
   for j in [mt : e.lanes.size] do
     let l := e.lanes[j]!
     lanes := lanes.push { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
-  let rows := d.rows ++ e.rows.map fun r => { r with arms := r.arms.map emap, legs := r.legs.map emap }
+  let rows := d.rows ++ e.rows.map fun r =>
+    { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
   return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot }
 
 /-- `d` WEST of `e`.  The object wire is the EASTMOST one, so `e` owns it and `d` only runs past it;
@@ -578,8 +616,10 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   let lanes := d.lanes.extract 0 nt ++ (e.lanes.extract 0 mt).map esh
     ++ d.lanes.extract nt d.lanes.size ++ (e.lanes.extract mt e.lanes.size).map esh
   let obj ← plain e.otop
-  let drows := d.rows.map fun r => { r with arms := r.arms.map dmap, legs := r.legs.map dmap, obj }
-  let rows := drows ++ e.rows.map fun r => { r with arms := r.arms.map emap, legs := r.legs.map emap }
+  let drows := d.rows.map fun r =>
+    { r with arms := r.arms.map dmap, legs := r.legs.map dmap, over := r.over.map dmap, obj }
+  let rows := drows ++ e.rows.map fun r =>
+    { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
   return { lanes, rows, top := Array.mk (List.range (nt + mt)),
            bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot }
 
@@ -618,8 +658,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- nothing drawn on them.  On the HEAD, so every identity of every object goes the same way.
   | (``Cat.id, _) =>
     let (x, _) ← homEnds e
-    let (ax, ox) ← peelObj objVars cat regionTy x
-    return ← Diagram.id ax ox
+    let (cx, ox) ← peelCuts objVars cat regionTy x
+    return ← Diagram.id (cx.map (·.1)) ox
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
     -- The head constant is how a factor of `φ` is paired back with `𝟙` — the notation the
@@ -653,10 +693,10 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- `φ×𝟙` is ONE arrow, it rides the object wire like `α` and `⦇R⦈`, and its arrow is every lane
     -- its bar spans, which is what the tail below types it as.
     if (← familyVar e objVars).isSome then
-      let (ax, ox) ← peelObj objVars cat regionTy (← homEnds e).1
-      let (_, oy) ← peelObj objVars cat regionTy (← homEnds e).2
-      let d ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
-      return ← d.beside (← Diagram.id (ax.extract 1 ax.size) ox)
+      let (cx, ox) ← peelCuts objVars cat regionTy (← homEnds e).1
+      let (_, oy) ← peelCuts objVars cat regionTy (← homEnds e).2
+      return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+        (over := (cx.extract 1 cx.size).map (·.1))
   -- A RELATOR'S ACTION IS THE `F.map` ROUTE WHATEVER IT IS SPELLED: `list (Λ(R) est(Q))` is that
   -- composite drawn under the `list` wire, two beads, not one bead nobody can read the run inside
   -- of.  Last, so a factor the reader already has a form for keeps it.
@@ -665,8 +705,35 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let d ← interp regionTy cat objVars (vpass ++ ws) r
     return ← (← Diagram.id ws d.otop).beside d
   let (x, y) ← homEnds e
-  let (ax, ox) ← peelObj objVars cat regionTy x
-  let (ay, oy) ← peelObj objVars cat regionTy y
+  let (cx, ox) ← peelCuts objVars cat regionTy x
+  let (cy, oy) ← peelCuts objVars cat regionTy y
+  let ax := cx.map (·.1)
+  let ay := cy.map (·.1)
+  -- THE LANES UNDER A BEAD RUN PAST IT INSIDE.  A family `φ : G a ⟶ H a` taken at `a := F' A` acts
+  -- on `G` alone, and `F'` is the object it is taken at: the inner stack the two ends share is what
+  -- the bead stands over, when the bead depends on the statement's objects through that object
+  -- ONLY — `𝟙%∋` at `F A` opens the `E` lane beside `F` and eats nothing, where `cons` at `A`, a
+  -- family in `A` itself, eats every lane of `[A]×[[A]]`.
+  -- With NO lane shared the object itself is what the bead may be a family in: `𝟙%∋` at the
+  -- type functor's carrier `T`, an object no wire spells, is the same unit as at `F A`.
+  if ← Meta.isDefEq ox oy then
+    let mut k := 0
+    while k < ax.size && k < ay.size do
+      unless ← Wire.beq ax[ax.size - 1 - k]! ay[ay.size - 1 - k]! do break
+      k := k + 1
+    let x' := if k == ax.size then x else cx[ax.size - k - 1]!.2
+    let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
+    if (← Meta.isDefEq (← Meta.inferType x') regionTy) && (← Meta.isDefEq x' y') then
+      let e' ← Meta.kabstract e x'
+      if e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) then
+        -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too,
+        -- but `S : F A ⟶ A` pins it, and the result is no arrow of any object.
+        let d? ← Meta.withLocalDeclD `a regionTy fun a => do
+          let ea := e'.instantiate1 a
+          unless ← Meta.isTypeCorrect ea do return none
+          some <$> Diagram.bead regionTy cat #[a] (ax.extract 0 (ax.size - k))
+            (ay.extract 0 (ay.size - k)) ox oy ea (over := ax.extract (ax.size - k) ax.size)
+        if let some d := d? then return d
   Diagram.bead regionTy cat objVars ax ay ox oy e
 
 /-- ONE STEP OF THE SELECTOR CHAIN that goes inside a side: an operand of a binary operation, an arm
@@ -687,10 +754,12 @@ def muArg? (e : Expr) : Option Expr :=
   | _ => none
 
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
-    picture turned out to be. -/
+    picture turned out to be.  A SIDE IS REWRITTEN ONCE, HERE, along its spine and before the read:
+    `Λ S` is drawn as the note draws it — the unit bead and `S` on the `E` lane — and a side is what
+    a rewrite is a statement about, so it is applied at the top and never inside `interp`. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← interp regionTy cat objVars #[] side
+  let d ← interp regionTy cat objVars #[] (← instantiateMVars (← rewriteSpine side))
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
 
@@ -793,7 +862,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- two readings are one family and `StrictNatural F G φ` is a statement about it after all.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src
-    let cat ← relatorCatalogue
+    let cat ← catalogue
     let idxTy ← regionIndexType? regionTy
     let mut objVars : Array Expr := #[]
     for x in xs do
