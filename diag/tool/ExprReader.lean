@@ -90,6 +90,32 @@ partial def wiresOf (f : Expr) : Array Expr :=
   | (``Freyd.idFunctor, _) => #[]
   | _ => #[f]
 
+/-- How a carrier TYPE decomposes into the strands a port at it carries: the unit, a product of
+    two, a coproduct of two, or an atom — a base type, a list, a power object's predicate type.
+    The elaborator answers it (`whnfD`), no table does, and the `.atom` carries the REDUCED term so
+    a reader that labels it labels what it decomposed. -/
+inductive Wiring where
+  | one | prod (a b : Expr) | sum (a b : Expr) | atom (t : Expr)
+
+def wiringOf (t : Expr) : MetaM Wiring := do
+  let t ← Meta.whnfD t
+  match t.getAppFnArgs with
+  | (``Prod, #[a, b]) => return .prod a b
+  | (``Sum, #[a, b]) => return .sum a b
+  | (``Unit, _) | (``PUnit, _) => return .one
+  | _ => return .atom t
+
+/-- Whether a port at this TYPE carries any strand at all — the whole of what `⊸` asks, since
+    discarding nothing is not a discard.  Stated on the TYPE, so the question does not have to
+    build a labelled object first.  A COPRODUCT always carries one: `𝟏+X` is drawn as `X`'s
+    strands, which a summand of a pattern functor has, and any other coproduct stays the one wire
+    a tape opens. -/
+partial def hasStrands (t : Expr) : MetaM Bool := do
+  match ← wiringOf t with
+  | .one => return false
+  | .prod a b => return (← hasStrands a) || (← hasStrands b)
+  | .sum .. | .atom _ => return true
+
 /-! ### A region built as a ONE-FIELD STRUCTURE over its index
 
   `RelSet` is `⟨carrier : Type⟩`, so a theorem about it quantifies over the INDEX — `A : Type` —

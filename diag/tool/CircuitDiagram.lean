@@ -189,17 +189,20 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   -- object is: `(E[A]).carrier` unfolds to a predicate type that says nothing, and then the second
   -- summand of `F(E[A])` no longer matches `∋`'s source, so the fused `𝟙×∋` draws `𝟙×𝟙`.
   if let (``Freyd.Alg.RelSet.carrier, #[o]) := t.getAppFnArgs then return ← objOf o
-  let t ← Meta.whnfD t
-  match t.getAppFnArgs with
-  | (``Prod, #[a, b]) => do
+  -- The DECOMPOSITION is `StrDiag.wiringOf`'s, the one the `⊸` of a label asks too; only the
+  -- LABELS are this functor's, so a type read one way here and another way there cannot happen.
+  match ← StrDiag.wiringOf t with
+  | .prod a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
     return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob] false
-  | (``Sum, #[a, b]) => do
+  | .sum a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
     return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] false
-  | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] true
-  | (``Unit, _) | (``PUnit, _) => return .mk "𝟏" .one #[] true
-  | _ => opaqObj t
+  | .one => return .mk "𝟏" .one #[] true
+  | .atom t =>
+    match t.getAppFnArgs with
+    | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] true
+    | _ => opaqObj t
 
 end
 
@@ -220,43 +223,6 @@ def endsOf (e : Expr) : MetaM (Obj × Obj) := do
 Spelled the way the BOOK spells it, and read off the TERM: `est(R)` is the `est` of the note,
 `∋` the epsiloff, `cons` the arrow whose graph is `List.cons`, `𝟙` the identity. -/
 
-/-- Which factor of a product a projection keeps, read off the function's own body. -/
-def projIndex (body : Expr) : Option Nat :=
-  match body with
-  | .proj ``Prod i _ => some i
-  | _ => match body.getAppFnArgs with
-    | (``Prod.fst, _) => some 0
-    | (``Prod.snd, _) => some 1
-    | _ => none
-
-/-- The name of a value computed FROM THE INPUT, in diagram order: `p(π₁ s)` is `π₁p` — first the
-    projection, then the test.  The input itself is the identity and contributes nothing, and an
-    argument that does not mention the input is a PARAMETER of the function, not a step of the
-    computation, so it stays inside the function's own name. -/
-partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
-  if x == .fvar s then return ""
-  match x with
-  | .proj ``Prod i st => return (← valLabel s st) ++ (if i == 0 then "π₁" else "π₂")
-  | _ =>
-    let args := x.getAppArgs
-    match x.getAppFnArgs.1, args.back? with
-    | ``Prod.fst, some st => return (← valLabel s st) ++ "π₁"
-    | ``Prod.snd, some st => return (← valLabel s st) ++ "π₂"
-    | _, _ =>
-      let deps := args.filter fun a => a.containsFVar s
-      if deps.size == 1 then
-        let rest := args.filter fun a => !a.containsFVar s
-        return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
-      plain x
-
-/-- Beta at the head, to a fixed point.  An alternative reconstructed from a `match` arrives as a
-    lambda applied to the summand's factors, and the lambda it names may itself be one; nothing
-    beyond beta is reduced, because a NUMERAL delta-reduces to a constructor and would then read as
-    the carrier's empty structure map. -/
-partial def betaHead (e : Expr) : Expr :=
-  let e' := e.headBeta
-  if e' == e then e else betaHead e'
-
 /-- Whether the labeller has a spelling of its own for this arrow: those keep their name and are
     never unfolded, because the name IS what the note writes on the box. -/
 def isNamed (e : Expr) : Bool :=
@@ -276,82 +242,6 @@ def hasClause (e : Expr) : Bool :=
   | ``Freyd.Alg.DistributiveAllegory.union | ``Freyd.Alg.RelSet.graph
   | ``Freyd.Alg.RelSet.rprodMap | ``Freyd.Alg.prodMap | ``Freyd.Functor.map => true
   | _ => false
-
-mutual
-
-/-- The BODY of a map, named as an arrow out of the input `s`: a body that does not mention `s` is
-    a constant, one that projects is a `π`, and a constructor fed the input's factors is the
-    carrier's own structure map. -/
-partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
-  -- WHAT THE MAP DOES, not how it was written: an arm reconstructed from a `match` arrives as the
-  -- alternative applied to the summand's factors.  The fallback still prints what was written.
-  let body := betaHead body₀
-  match projIndex body with
-  | some 0 => return "π₁"
-  | some _ => return "π₂"
-  | none =>
-    if let some g ← guardLabel s body then return g
-    -- The book's names for the two structure maps of a list-like carrier, read off the TERM:
-    -- a CONSTRUCTOR fed both factors of the input pair is `cons`, and one fed nothing from the
-    -- input is `nil`.  Nothing here knows `List`: the next carrier built the same way gets the
-    -- same names without a line being added.
-    let isCtor ← match body.getAppFn with
-      | .const n _ => match (← getEnv).find? n with
-        | some (.ctorInfo _) => pure true
-        | _ => pure false
-      | _ => pure false
-    if isCtor && !body.containsFVar s then return "nil"
-    if isCtor && (body.find? fun x => projIndex x == some 0).isSome
-        && (body.find? fun x => projIndex x == some 1).isSome then return "cons"
-    if body₀.containsFVar s then plain f else plain body₀
-
-/-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note
-    writes it into the box's own name: `(π₁p→cons,⊸ nil)`, the test, the arm taken when it holds,
-    and the other.  The arms are read by REDUCING the matcher at each value of `Bool`, so nothing
-    here depends on the order the alternatives were written in or on how the `match` compiled. -/
-partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := do
-  -- A step is a `def` around its own `match`, so the matcher is behind one delta; the ARMS are then
-  -- taken by `whnfCore`, which fires the matcher without unfolding a numeral into a constructor.
-  let some ma ← Meta.matchMatcherApp? (← Meta.whnfD body₀) | return none
-  unless ma.discrs.size == 1 && ma.alts.size == 2 && ma.remaining.isEmpty do return none
-  unless (← Meta.whnfD (← Meta.inferType ma.discrs[0]!)).isConstOf ``Bool do return none
-  let hd := mkAppN (mkConst ma.matcherName ma.matcherLevels.toList) ma.params
-  -- An arm that ignores the input DISCARDS its strands, which is what `⊸` says; at a `𝟏` input
-  -- there is nothing to discard and the constant stands alone.
-  let ws := ((← typeObj (← s.getType)).wires.toOption.getD #[])
-  let arm (v : Name) : MetaM String := do
-    let b ← Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
-    let l ← bodyLabel s b (← Meta.mkLambdaFVars #[.fvar s] b)
-    return (if b.containsFVar s || ws.isEmpty then l else "⊸ " ++ l)
-  return some ("(" ++ (← valLabel s ma.discrs[0]!) ++ "→" ++ (← arm ``Bool.true) ++ ","
-    ++ (← arm ``Bool.false) ++ ")")
-
-/-- The label of a MAP given by its function.  A cons cell is `cons`, a projection its `π`, a
-    constant the thing it creates — each read off the function's own body, so the next map built
-    the same way gets the same name without anything being added here. -/
-partial def mapLabel (f : Expr) : MetaM String := do
-  let f ← Meta.whnfD f
-  if f.isLambda then
-    return ← Meta.lambdaBoundedTelescope f 1 fun xs body => do
-      let some x := xs[0]? | plain f
-      bodyLabel x.fvarId! body f
-  match f.getAppFnArgs with
-  | (``Prod.fst, _) => return "π₁"
-  | (``Prod.snd, _) => return "π₂"
-  | _ => plain f
-
-end
-
-/-- The label a box carries.  A MAP GIVEN BY ITS FUNCTION is named from that function's own body —
-    a question about the map, which only this functor asks — and everything else is the note's
-    spelling, `diag/tool/Label.lean`'s, the same one the string and commutative pictures write. -/
-def arrLabel (e : Expr) : MetaM String := do
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.RelSet.graph, args) =>
-    match args.back? with
-    | some f => mapLabel f
-    | none => StrDiag.label e
-  | _ => StrDiag.label e
 
 /-! ### The picture
 
@@ -578,7 +468,7 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
       let ws ← wiresOf rs
       let frac := boxPic "𝟙" ws #[powLabel rs] rs (powLabel rs) true (frac := true)
       if r.getAppFnArgs.1 == ``Cat.id then return #[{ frac with tgt := a }]
-      return #[frac, boxPic ("E(" ++ (← arrLabel r) ++ ")") #[powLabel rs] #[powLabel rt]
+      return #[frac, boxPic ("E(" ++ (← StrDiag.label r) ++ ")") #[powLabel rs] #[powLabel rt]
         (powLabel rs) (powLabel rt) true]
     | none => return #[← draw e]
   | (``Cat.id, _) => return #[]
@@ -684,9 +574,9 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
   | _ =>
     let p ← draw r
     if p.val.kindOf != some "box" then
-      throwError "`{← arrLabel r}°` writes `°` on a composite, which is the cup/cap frame of \
+      throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame of \
         CIRCUIT-GEN §3 row 8 — `cpanel` has no node for it"
-    return boxPic (← arrLabel r) p.outs p.ins src tgt false
+    return boxPic (← StrDiag.label r) p.outs p.ins src tgt false
       (frac := p.val.flag "frac") (flip := !(p.val.flag "flip"))
 
 /-- §3 rows 1-2: an atom.  A relation's chamfer says which way it runs; a map is a rectangle.
@@ -705,9 +595,9 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
         -- body that draws as ONE box is that one arrow, and the note writes it by the name the
         -- definition gave it (`plus`, `glue`), not by the lambda the body happens to be.
         if p.val.kindOf == some "box" then
-          return { p with val := p.val.relabel (← arrLabel e) }
+          return { p with val := p.val.relabel (← StrDiag.label e) }
         return p
-  return boxPic (← arrLabel e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
+  return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
 
 partial def lane (p : Pic) : MetaM Pic := do
   if p.val.kindOf == some "seq" then return p
@@ -779,9 +669,9 @@ partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
     else (fs.size, none)
   if j ≥ fs.size then
     throwError "`.inl`/`.inr` draws one arm of a fork, and this side has none at the head of its \
-      run: it starts with {← arrLabel fs[0]!}"
+      run: it starts with {← StrDiag.label fs[0]!}"
   let some (u, v) := lastTwo (← openDef fs[j]!).getAppArgs
-    | throwError "a junction with no arms: {← arrLabel fs[j]!}"
+    | throwError "a junction with no arms: {← StrDiag.label fs[j]!}"
   let (src, _) ← endsOf fs[0]!
   let ss := src.parts
   if ss.size != 2 then
@@ -837,10 +727,10 @@ partial def graphPic (f : Expr) (src tgt : Obj) : MetaM Pic := do
   match fw with
   | .lam _ _ body _ =>
     if !body.hasLooseBVars then
-      let bx := boxPic (← mapLabel f) #[] (← wiresOf tgt) src tgt true
+      let bx := boxPic (← StrDiag.mapLabel f true) #[] (← wiresOf tgt) src tgt true
       if ws.isEmpty then return bx
       return mkPic "konst" ws (← wiresOf tgt) src tgt true #[("body", (← lane bx).val)]
-    match projIndex body with
+    match StrDiag.projIndex body with
     | some i =>
       if src.kind != .prod || i ≥ src.parts.size then
         throwError "a projection out of {src.label}, which is not a product of {i + 1} factors"
@@ -848,8 +738,8 @@ partial def graphPic (f : Expr) (src tgt : Obj) : MetaM Pic := do
       return mkPic "proj" ws (← wiresOf tgt) src tgt true
         #[("at", .n i), ("label", .s (if i == 0 then "π₁" else "π₂")),
           ("keep", .arr (keep.map .n))]
-    | none => return boxPic (← mapLabel f) ws (← wiresOf tgt) src tgt true
-  | _ => return boxPic (← mapLabel f) ws (← wiresOf tgt) src tgt true
+    | none => return boxPic (← StrDiag.mapLabel f true) ws (← wiresOf tgt) src tgt true
+  | _ => return boxPic (← StrDiag.mapLabel f true) ws (← wiresOf tgt) src tgt true
 
 end
 

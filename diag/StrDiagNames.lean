@@ -182,6 +182,9 @@ open Lean PrettyPrinter in
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
+-- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
+-- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
+attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
