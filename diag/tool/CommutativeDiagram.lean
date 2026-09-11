@@ -467,6 +467,15 @@ def Face.isFan (fc : Face) : Bool :=
   fc.chord.isSome && fc.lhs.edges.size == 2 && fc.rhs.edges.size == 2 &&
     (fc.lhs.edges ++ fc.rhs.edges).all fun (s, _, _) => s == "s" || s == "t"
 
+/-- A PASTED PAIR OF SQUARES: each face, opened at the chord, runs the chord's source, two interior
+    vertices and the chord's target — four vertices, three edges.  Two squares cannot be folded
+    into one square's boundary the way two two-edge sides can, so the chord is drawn HORIZONTALLY
+    between the two ends it joins, with one square above it and one below: the two components are
+    symmetric about the arrow they induce, and the picture says so.  `(R×S)π₁⊑π₁R ∧ (R×S)π₂⊑π₂S`
+    is this shape; `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)`, two two-edge sides, is the diagonal-chord square. -/
+def Face.isPastedSquares (fc : Face) : Bool :=
+  fc.chord.isSome && fc.lhs.edges.size == 3 && fc.rhs.edges.size == 3
+
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
 def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
@@ -493,6 +502,36 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
     -- of the face the `lhs` bounds.
     let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "left",
+                                 dash := true, hue := "INDUCED" : Edge }]
+    let hued := match comps with
+      | some (l, r) => componentNodeHues l r nodes
+      | none => nodeHues nodes edges
+    return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
+      faceMark nodes sym (fc.rhs.nodes.map (·.1)))
+  if fc.isPastedSquares then
+    -- Two columns, three rows: the chord along the middle row, the `lhs` square's interior on the
+    -- row above and the `rhs` square's on the row below.  Each side runs left, along, right.
+    let place (p : Path) (gy : Float) (mid : String) (comp : Option Nat)
+        : MetaM (Array Node × Array Edge) := do
+      let cell : Array (Float × Float) := #[(0.0, -1.0), (0.0, gy), (1.0, gy), (1.0, -1.0)]
+      let sides : Array String := #["left", mid, "right"]
+      let mut ns : Array Node := #[]
+      let mut es : Array Edge := #[]
+      for i in [0:4] do
+        let (id, o) := p.nodes[i]!
+        ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← label o) }
+      for i in [0:3] do
+        let (src, tgt, f) := p.edges[i]!
+        es := es.push { src, tgt, label := (← label f), side := sides[i]!,
+                        dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
+      return (ns, es)
+    let (ln, le) ← place fc.lhs 0.0 "top" (comps.map (·.1.idx))
+    let (rn, re) ← place fc.rhs (-2.0) "bottom" (comps.map (·.2.idx))
+    let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let some (c, sym) := fc.chord | throwError "a pasted pair of squares is a paste and has a chord"
+    -- The chord's own label is set ABOVE it, inside the face the `lhs` square bounds, which is where
+    -- the note puts it: a chord lies between two faces and its label has to be inside one of them.
+    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "top",
                                  dash := true, hue := "INDUCED" : Edge }]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes

@@ -255,9 +255,15 @@ public theorem prodMap_recip {P : RelProd a b} {Q : RelProd a' b'} (R : a ⟶ a'
   through an intermediate relational product.  Everything below is mirrored to diagram
   order: `pair X Y ≫ prodMap P Q R S = pair (X≫R) (Y≫S)`. -/
 
+-- THE SQUARE'S OWN LETTERS.  A statement of `R×S` against a projection IS the note's product
+-- square, whose two sources it writes `C`,`D` and whose two targets it writes `A`,`B`.  The file's
+-- shared `a b a' b'` cannot spell it: `a` is a TARGET in the fork family above — the note draws
+-- `⟨R,S⟩ : C⟶A×B` — and a SOURCE here, so one letter would have to mean both.
+variable {A B C D : 𝒜}
+
 /-- Book p.115 claim: `outr·(R×S) ⊑ S·outr`, mirrored: `(R×S) ≫ Q.outr ⊑ P.outr ≫ S`.
     From (5.7) and `dom ⊑ id`. -/
-public theorem prodMap_outr_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem prodMap_outr_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     prodMap P Q R S ≫ Q.outr ⊑ P.outr ≫ S := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr ⊑ P.outr ≫ S
   rw [RelProd.pair_outr]
@@ -268,13 +274,13 @@ public theorem prodMap_outr_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
     is `𝟙` as soon as that leg's relation is ENTIRE: `(R×S) ≫ outr = outr ≫ S`.
     `prodMap_id_outr` is the case `R = 𝟙`; the inclusion is STRICT without the hypothesis
     (`outr_not_strictNatural`, A6_1_OrdRelSet). -/
-public theorem prodMap_outr_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') {R : a ⟶ a'}
-    (S : b ⟶ b') (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
+public theorem prodMap_outr_eq_of_entire (P : RelProd C D) (Q : RelProd A B) {R : C ⟶ A}
+    (S : D ⟶ B) (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr = P.outr ≫ S
   rw [RelProd.pair_outr, entire_comp P.outl_map.1 hR, Cat.id_comp]
 
 /-- Mirror of the previous claim on the left leg: `(R×S) ≫ Q.outl ⊑ P.outl ≫ R`. -/
-public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem prodMap_outl_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     prodMap P Q R S ≫ Q.outl ⊑ P.outl ≫ R := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl ⊑ P.outl ≫ R
   rw [RelProd.pair_outl]
@@ -284,42 +290,42 @@ public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
 /-- **(5.6) sharpened**, the mirror of `prodMap_outr_eq_of_entire`: the `dom` factor (5.6) leaves
     behind sits on the DISCARDED leg, so it is `𝟙` as soon as that leg's relation is ENTIRE:
     `(R×S) ≫ outl = outl ≫ R`.  `prodMap_id_outl` is the case `S = 𝟙`. -/
-public theorem prodMap_outl_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a')
-    {S : b ⟶ b'} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
+public theorem prodMap_outl_eq_of_entire (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A)
+    {S : D ⟶ B} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl = P.outl ≫ R
   rw [RelProd.pair_outl, entire_comp P.outr_map.1 hS, Cat.id_comp]
 
 /-- Book p.115 claim: `outl·(R×id) = R·outl` — with the identity in the second slot the
     `dom` factor of (5.6) is the identity (`outr` is entire), so the bound sharpens to an
     equality.  Mirrored: `(R×id) ≫ Q.outl = P.outl ≫ R`. -/
-public theorem prodMap_id_outl (P : RelProd a b) (Q : RelProd a' b) (R : a ⟶ a') :
-    prodMap P Q R (Cat.id b) ≫ Q.outl = P.outl ≫ R :=
-  prodMap_outl_eq_of_entire P Q R (id_is_map_local b).1
+public theorem prodMap_id_outl (P : RelProd C D) (Q : RelProd A D) (R : C ⟶ A) :
+    prodMap P Q R (Cat.id D) ≫ Q.outl = P.outl ≫ R :=
+  prodMap_outl_eq_of_entire P Q R (id_is_map_local D).1
 
 /-- Mirror on the right leg: `(id×S) ≫ Q.outr = P.outr ≫ S`. -/
-public theorem prodMap_id_outr (P : RelProd a b) (Q : RelProd a b') (S : b ⟶ b') :
-    prodMap P Q (Cat.id a) S ≫ Q.outr = P.outr ≫ S :=
-  prodMap_outr_eq_of_entire P Q S (id_is_map_local a).1
+public theorem prodMap_id_outr (P : RelProd C D) (Q : RelProd C B) (S : D ⟶ B) :
+    prodMap P Q (Cat.id C) S ≫ Q.outr = P.outr ≫ S :=
+  prodMap_outr_eq_of_entire P Q S (id_is_map_local C).1
 
 /-- Claim 1 reciprocated: `R ≫ Q.outl° = P.outl° ≫ (R×id)` — the rewrite that pushes a
     relation across the products' left legs in (5.4)'s proof. -/
-public theorem outl_recip_prodMap (P : RelProd a b) (Q : RelProd a' b) (R : a ⟶ a') :
-    R ≫ Q.outl° = P.outl° ≫ prodMap P Q R (Cat.id b) := by
+public theorem outl_recip_prodMap (P : RelProd C D) (Q : RelProd A D) (R : C ⟶ A) :
+    R ≫ Q.outl° = P.outl° ≫ prodMap P Q R (Cat.id D) := by
   have h := congrArg Allegory.recip (prodMap_id_outl Q P R°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, recip_id,
     Allegory.recip_recip] at h
   exact h.symm
 
 /-- Mirror: `S ≫ Q.outr° = P.outr° ≫ (id×S)`. -/
-public theorem outr_recip_prodMap (P : RelProd a b) (Q : RelProd a b') (S : b ⟶ b') :
-    S ≫ Q.outr° = P.outr° ≫ prodMap P Q (Cat.id a) S := by
+public theorem outr_recip_prodMap (P : RelProd C D) (Q : RelProd C B) (S : D ⟶ B) :
+    S ≫ Q.outr° = P.outr° ≫ prodMap P Q (Cat.id C) S := by
   have h := congrArg Allegory.recip (prodMap_id_outr Q P S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, recip_id,
     Allegory.recip_recip] at h
   exact h.symm
 
 /-- Claim 2 reciprocated: `P.outr° ≫ (R×S) ⊑ S ≫ Q.outr°`. -/
-public theorem recip_outr_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem recip_outr_prodMap_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     P.outr° ≫ prodMap P Q R S ⊑ S ≫ Q.outr° := by
   have h := recip_mono (prodMap_outr_le Q P R° S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, Allegory.recip_recip,
@@ -327,7 +333,7 @@ public theorem recip_outr_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : 
   exact h
 
 /-- Mirror: `P.outl° ≫ (R×S) ⊑ R ≫ Q.outl°`. -/
-public theorem recip_outl_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem recip_outl_prodMap_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     P.outl° ≫ prodMap P Q R S ⊑ R ≫ Q.outl° := by
   have h := recip_mono (prodMap_outl_le Q P R° S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, Allegory.recip_recip,

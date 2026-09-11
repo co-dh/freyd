@@ -259,8 +259,19 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
   | none => Meta.mkFreshExprMVar (some ty)
 
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
-    `relProd ?a ?b` unifies with it.  `none` where the region has no products at all. -/
+    `relProd ?a ?b` unifies with it.  `none` where the region has no products at all.
+
+    A `RelProd a b` GIVEN as a hypothesis is a product apex just as much as the region's chosen
+    one — a tabulation of `⊤ : a ⟶ b` is what "product" means here — and it does not unify with
+    `relProd ?a ?b`, being an arbitrary one.  Its factors are its TYPE's two arguments, which is
+    the same rule the apex's delaborator prints by, so a statement quantified over `P : RelProd a b`
+    reads as a product square everywhere rather than only where the chosen product was written. -/
 def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+  if X.isAppOfArity ``Freyd.Alg.RelProd.p 5 then
+    let t ← Meta.whnf (← Meta.inferType X.appArg!)
+    if t.isAppOfArity ``Freyd.Alg.RelProd 4 then
+      let args := t.getAppArgs
+      return some (args[2]!, args[3]!)
   let s ← Meta.saveState
   try
     let a ← Meta.mkFreshExprMVar (some regionTy)
