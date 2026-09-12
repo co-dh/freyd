@@ -1,27 +1,65 @@
-# Every commutative panel `diag-export --commutative` draws, and the drawing in the note it must be
-# joined up like.  A panel with no reference is checked for its own geometry only; a reference file
-# `diag/cdref*.typ` that no line here names is an unclaimed drawing and fails the gate.
+# Every COMMUTATIVE CANVAS the note draws, and the Lean statement `diag-export --commutative` must
+# draw it from.  THE CANVASES ARE THE OBLIGATIONS: `scripts/cd-obligations` reads them off the note's
+# own drawing (`--input cdscan=1`, one mark per `cetz.canvas`, per `ar`, per `node`) and
+# `scripts/cd-check` asks this file for each one's record, in the note's document order — so
+# deleting a line does not drop an obligation, it leaves a canvas with no record and fails the gate.
 #
-# <selector>                                                        [<reference in diag/>]
-Freyd.Alg.alpha_natural
-Freyd.Alg.InitialAlgebra.cata_comm                                  cdref.typ
-# No reference: the note's `<initial-defn>` first canvas draws the same four arrows the same way
-# round, but paints `h`/`F(h)` black and `f` GIVEN2, which are the hues its SECOND canvas gets from
-# `⦇f⦈` being induced and `α` being supplied by the structure.  Here all three arrows are free, so
-# the statement's own roles put the transported `h` in GIVEN2 and both algebras in GIVEN1.
-Freyd.Alg.IsFHom
-Freyd.Alg.RelSet.ListRel.list_id
-Freyd.Alg.RelSet.ListRel.prefix_lax_natural
-Freyd.Alg.RelSet.ListRel.prefix_cancel                               cdref-prefix.typ
-Freyd.Alg.RelSet.Party.rose_id
-Freyd.Alg.RelSet.Van.glue_eq
-Freyd.Alg.Vec.Rel.tupleP_id
-Freyd.Alg.relCata_pair_beta                                          cdref-banana.typ
-Freyd.Alg.tri_cata_fusion                                           cdref-horner.typ
-Freyd.Alg.relCata_UP.lhs                                            cdref-catadef.typ
-Freyd.Alg.pair_eq_relCata_pair_iff.lhs                              cdref-fokkinga.typ
-Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage           cdref-adjE.typ
-Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le                 cdref-relprod.typ
-Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le       cdref-fork.typ
-Freyd.Alg.MonotonicAlg                                              cdref-mon.typ
-Freyd.Alg.LaxNatural                                                cdref-lax.typ
+#   <number>/<label>#<canvas> | <selector> | <reference in diag/>
+#
+# The canvas number counts the commutative canvases of that display, in the order the display draws
+# them.  `-` in a column: no selector (the canvas is drawn from no statement — its candidates are in
+# the trailing `#` comment), or no reference (nothing in `diag/` holds the generated panel to the
+# note's drawing, so only the panel's own geometry is checked).
+#
+# WHY THE SELECTOR IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST
+# COMMENT, which the compiler discards before anything can query it, so no typed reader can see it
+# and the canvas → declaration mapping cannot be computed; it is written here by hand, the way
+# `diag/circuit-panels.txt` and `diag/string-panels.txt` name theirs.  The candidates in the
+# comments come from `./scripts/cite-cover`, which reads the markers through `cite-check`'s own
+# reader.  Everything the gate then does is typed: the canvas list from `typst query`, the panel
+# from the elaborated Lean statement, the comparison from SVG path data and `pdftotext -bbox`.
+#
+# A row whose canvas column is `-` names a panel the note draws NO canvas for: it is exported and
+# checked for its own geometry, and holds nothing to the note.
+#
+7b/banana-split#1                | Freyd.Alg.relCata_pair_beta                                | cdref-banana.typ
+7.1a/fokkinga#1                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ
+7.1a/fokkinga#2                  | -                                                          | -    # the converse half of Fokkinga's theorem; `Freyd.Alg.pair_eq_relCata_pair_iff.rhs`
+7.2b/horner#1                    | Freyd.Alg.tri_cata_fusion                                  | cdref-horner.typ
+10.1a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
+11.1c/fork-pic#1                 | Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le | cdref-fork.typ
+11.1.1b/relprod-pic#1            | Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le        | cdref-relprod.typ
+11.2.1b/coprod-square#1          | -                                                          | -    # the coproduct's two injections; the display carries no marker
+11.4a/initial-defn#1             | Freyd.Alg.IsFHom                                           | -    # the homomorphism square; see cd-accepted.txt for the colours the note gives it
+11.4a/initial-defn#2             | Freyd.Alg.InitialAlgebra.cata_comm                         | cdref.typ
+11.4.1a/cata-reflection#1        | -                                                          | -    # `Freyd.Alg.relCata_alpha` is the arrow equation `⦇α⦈=𝟙`, which draws as two nodes; the note draws the homomorphism SQUARE at `h:=𝟙`, and no declaration states that square
+11.4.2a/cata-fusion#1            | -                                                          | -    # `Freyd.Alg.relCata_fusion`
+11.5.1b/tfun-sq#1                | -                                                          | -    # `Freyd.Alg.alphaT_natural`
+11.5.1c/tfun-fusion#1            | -                                                          | -    # `Freyd.Alg.typeMap_fusion`
+11.6.1a/cata-defining#1          | Freyd.Alg.relCata_UP.lhs                                   | cdref-catadef.typ
+11.6.2a/cata-map-square#1        | -                                                          | -    # `Freyd.Alg.Λ_relCata`, `Freyd.Alg.relCata_unfold`
+12.1c/subseq-outr-square#1       | -                                                          | -    # the display carries no marker
+13.2b/lax-str#1                  | Freyd.Alg.LaxNatural                                       | cdref-lax.typ
+13.2c/lax-closure#1              | -                                                          | -    # `Freyd.Alg.laxNatural_hcomp_outer_first`
+13.2c/lax-closure#2              | -                                                          | -    # `Freyd.Alg.laxNatural_hcomp_outer_first`
+13.2c/lax-closure#3              | -                                                          | -    # `Freyd.Alg.union_slides`
+13.2c/lax-closure#4              | -                                                          | -    # `Freyd.Alg.union_slides`
+13.2c/lax-closure#5              | -                                                          | -    # `Freyd.Alg.comp_slides`
+13.2c/lax-closure#6              | -                                                          | -    # `Freyd.Alg.comp_slides`
+13.2.1a/meet-counterex#1         | -                                                          | -    # `Freyd.Alg.laxNatural_inter_false`
+13.2.3a/lat-const#1              | -                                                          | -    # `Freyd.Alg.laxNatural_const_iff`
+13.3b/mon-str#1                  | Freyd.Alg.MonotonicAlg                                     | cdref-mon.typ
+13.3.1b/dist-str#1               | -                                                          | -    # `Freyd.Alg.Distributes` draws this square arrow for arrow, but labels its top edge `(F(∋)f)%∋` where the note writes the fraction's numerator bare: `cdpanel` sets `%` as a bar, which delimits, while the inline spelling `Label.lean` prints needs the brackets because `%` binds tighter than juxtaposition
+13.3.1b/dist-str#2               | -                                                          | -    # the same square at `est(≤)`, `+` on `Nat`, with each corner's VALUE under its type — a worked instance, which is no statement
+13.3.3b/prefix-defn#1            | Freyd.Alg.RelSet.ListRel.prefix_cancel                     | cdref-prefix.typ
+13.4.3a/party-mono#1             | -                                                          | -    # `Freyd.Alg.RelSet.Party.party_mono`
+13.4.3b/party-absorb#1           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, drawn with `=` where the generator draws a triangle — the author's call
+13.4.3b/party-absorb#2           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, as above
+#
+# Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
+- | Freyd.Alg.alpha_natural                          | -
+- | Freyd.Alg.RelSet.ListRel.list_id                 | -
+- | Freyd.Alg.RelSet.ListRel.prefix_lax_natural      | -
+- | Freyd.Alg.RelSet.Party.rose_id                   | -
+- | Freyd.Alg.RelSet.Van.glue_eq                     | -
+- | Freyd.Alg.Vec.Rel.tupleP_id                      | -

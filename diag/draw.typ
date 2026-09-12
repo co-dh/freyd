@@ -639,11 +639,18 @@
 // A square's SMALLER side is always drawn down the left then across the bottom, so its `⊑` is `-45deg`.
 #let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
 
+// Under `--input cdscan=1` every `ar` and every `node` drops a queryable mark, so `scripts/cd-check`
+// enumerates the note's commutative diagrams from the VOCABULARY THAT DRAWS THEM — a canvas whose
+// nodes are joined by `ar` arrows — instead of reading the note's source as text.
+#let CDSCAN = "cdscan" in sys.inputs
+#let cdmark(el, p) = if CDSCAN { d.content(p, [#metadata((kind: "cd", el: el))]) }
+
 // `ar` pulls both ends back off the node centres: a head drawn at a centre is buried under that node's
 // own white box.  `s0`/`s1` are the clearances — 0.95 leaving `A × B` sideways, 0.55 entering vertically.
 // `bow` bends the arrow that far off its chord, towards the chord's LEFT normal (negative for the
 // right): two arrows between ONE pair of nodes are drawn on top of each other otherwise.
 #let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45, bow: 0) = {
+  cdmark("ar", a)
   let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
   let n = calc.sqrt(dx * dx + dy * dy)
   let p = (a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy)
@@ -657,7 +664,10 @@
 
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box
 // cover the stub — every edge then ends the same distance from its label, whatever its width.
-#let node(x, y, c, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
+#let node(x, y, c, w) = {
+  cdmark("node", (x, y))
+  d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
+}
 
 // A column of nodes at x; a row is (y, label, the people it names).
 #let nodes(x, rows) = for (k, row) in rows.enumerate() { node(x, row.at(0), (INDUCED, SLACK).at(k), row.at(1)) }

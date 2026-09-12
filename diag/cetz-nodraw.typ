@@ -18,4 +18,16 @@
 #let NODRAW = "nodraw" in sys.inputs
 // The placeholder has a NONZERO size on purpose: `hchain(fill: true)` divides by the summed width of
 // the pictures it packs, and a zero-width box makes that a division by zero rather than a blank page.
-#let canvas(..a) = if NODRAW { box(width: 2cm, height: 1cm) } else { cetzlib.canvas(..a) }
+// `--input cdscan=1`: one queryable mark per canvas, ahead of the marks `draw.typ`'s `ar`/`node`
+// drop inside it, so a gate can cut the note's mark stream into CANVASES — the unit a commutative
+// diagram is one of — without reading the note's source as text.
+#let CDSCAN = "cdscan" in sys.inputs
+// The mark goes INSIDE the canvas, as its first drawn element: wrapping the canvas in a sequence
+// changes what the caller gets back, and `pair`'s `hm-sepx` reads its panel's content tree.
+#let canvas(..a) = if NODRAW { box(width: 2cm, height: 1cm) } else if CDSCAN {
+  // cetz flattens no nesting: a body is an ARRAY of element functions, so the mark is concatenated
+  // onto it rather than tupled with it.
+  let body = a.pos().at(0)
+  cetzlib.canvas(draw.content((0, 0), [#metadata((kind: "cd", el: "canvas"))])
+    + (if type(body) == array { body } else { (body,) }), ..a.named())
+} else { cetzlib.canvas(..a) }

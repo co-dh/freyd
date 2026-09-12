@@ -80,6 +80,12 @@
   // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
   // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
+    // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
+    // belongs to the figure, and only a show rule holds the element it is attached to.
+    if cetz.CDSCAN {
+      metadata((kind: "cd", el: "disp",
+        label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
+    }
     context {
       let n = text(9pt, luma(130), it.counter.display(it.numbering))
       place(top + right, dx: measure(n).width + NUMGAP, n)
@@ -116,20 +122,23 @@
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
 // `query(heading.before(here()))` per picture is quadratic in the note (650 pictures × 600 headings).
-#let pic-meta(key, body, width: auto) = if NODRAW { none } else { context {
+// `disp: true` only from `disp` below: a picture INSIDE a display reports a crop box of its own, so
+// without the flag a gate grouping marks by the preceding `pic` would file a display's arrows under
+// whichever inner picture came last.
+#let pic-meta(key, body, width: auto, disp: false) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
     numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
   let (sz, pos) = (measure(body, width: width), here().position())
   // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
   [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
-    x: pos.x.pt(), y: pos.y.pt(),
+    x: pos.x.pt(), y: pos.y.pt(), disp: disp,
     w: sz.width.pt(), h: sz.height.pt()))<pic>]
 } }
 #let disp(body) = figure(kind: "disp", supplement: none, {
   // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
   context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
-    body, width: PAGEW - 2 * MARGIN)
+    body, width: PAGEW - 2 * MARGIN, disp: true)
   body
 })
 
