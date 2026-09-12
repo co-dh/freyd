@@ -378,7 +378,7 @@
     "choose": {
       "src": "x×x",
       "tgt": "x",
-      "lean": "AOP.A7_3_Party.choose@c779f253",
+      "lean": "AOP.A7_3_Party.Freyd.Alg.choose@c779f253",
       "nat": "lax",
       "nat-lean": [
         "AOP.A7_3_Party.choose_monotonic@0f31f0a7",
@@ -408,7 +408,7 @@
     "party": {
       "src": "tree(x)",
       "tgt": "[x]",
-      "lean": "AOP.A7_3_Party.party@d5001e89",
+      "lean": "AOP.A7_3_Party.party@77d67b83",
       "nat": "lax",
       "nat-lean": [
         "AOP.A5_7_PartyBeads.RelSet.Party.party_lax_natural@f036a11a",
