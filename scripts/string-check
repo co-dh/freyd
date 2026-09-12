@@ -328,8 +328,8 @@ def main(argv):
 
     todo = sorted({route(s)[0] for n, sels in rows if n in live and num(n).startswith(want)
                    for s in sels if s != "-"})
-    # The FILE is the answer to "did it draw", so the ones about to be drawn are deleted first: a
-    # selector the exporter refuses was otherwise checked against LAST run's picture and said `ok`.
+    # The RECORD answers "did it draw"; the pictures about to be drawn are still deleted first, so a
+    # selector the exporter refuses leaves no LAST run's picture on disk for another sweep to pass.
     for s in todo:
         if os.path.exists(f"diag/generated/string/{s}.typ"):
             os.remove(f"diag/generated/string/{s}.typ")
@@ -427,13 +427,13 @@ def compare(sel, panel, which, gen):
 def sweep(gens):
     """ONE `scanline --strict` over every picture a panel is drawn from — a file holds several
     panels and is swept once for them all — and each file's verdict read from its `--result`
-    fields, keyed by the path as given."""
+    fields, keyed by the path as given.  Its bead types come from the export's `RECS`."""
     if not gens:
         return {}
     res = f"{OUT}/sweep.json"
     if os.path.exists(res):
         os.remove(res)
-    s = run("./scripts/scanline", "--strict", "--result", res, *gens)
+    s = run("./scripts/scanline", "--strict", "--result", res, "--records", RECS, *gens)
     rs = json.load(open(res, encoding="utf-8")) if os.path.exists(res) else []
     if not rs or s.returncode and not any(r["failures"] or r["unhandled"] or r["missing"]
                                           for r in rs):

@@ -689,13 +689,17 @@ EXPORT = "./scripts/diag-export"
 LEANSIG = {}             # (declaration, panel id) → [(label, src, tgt)] in the order the panel draws
 
 
-def leansigs(per):
+def leansigs(per, recs=None):
     """The bead types a `lean:` cert stands for, read from LEAN at CHECK TIME.  A generated panel
     stores no `sigs:` of its own: `diag-export --string --sigs` prints one JSON object per bead —
     selector, panel, label, src, tgt — in the order the panel draws them, so the sweep holds the ink
     to the environment and never to a copy of it that can go stale.  ONE call for every declaration
     of every file `per` holds: the exporter's panel k is the k-th panel citing the declaration IN
-    ITS FILE, so the key carries the declaration and the table serves the whole run."""
+    ITS FILE, so the key carries the declaration and the table serves the whole run.
+
+    `recs` names a file of `diag-export --string --records` records instead: the run that DREW the
+    pictures already read those types, and asking again starts Lean a second time for the same
+    statements.  Every (declaration, panel) key the files need must be one its record drew."""
     num = {}
     for path, recs in per:
         seen = {}
@@ -708,12 +712,23 @@ def leansigs(per):
                              f" another file's {r['id']} is its panel {num[c['lean'], r['id']]}")
     if not num:
         return {}
-    p = subprocess.run([EXPORT, "--string", "--sigs", *dict.fromkeys(n for n, _ in num)],
-                       capture_output=True, text=True)
-    if p.returncode:
-        sys.exit(f"scanline: {EXPORT} --string --sigs: {p.stderr.strip() or p.stdout.strip()}")
+    if recs:
+        rs = {o["selector"]: o for o in map(json.loads, open(recs, encoding="utf-8").read()
+                                            .splitlines())}
+        drew = lambda n, k: "file" in rs.get(n, {}) and k <= rs[n]["panels"]
+        lack = sorted({(n, k) for (n, _), k in num.items() if not drew(n, k)})
+        if lack:
+            sys.exit(f"scanline: {recs} holds no record drawing (declaration, panel) "
+                     + ", ".join(f"({n}, {k})" for n, k in lack))
+        out = [o for n in dict.fromkeys(n for n, _ in num) for o in rs[n]["sigs"]]
+    else:
+        p = subprocess.run([EXPORT, "--string", "--sigs", *dict.fromkeys(n for n, _ in num)],
+                           capture_output=True, text=True)
+        if p.returncode:
+            sys.exit(f"scanline: {EXPORT} --string --sigs: {p.stderr.strip() or p.stdout.strip()}")
+        out = map(json.loads, p.stdout.splitlines())
     rows = {}
-    for o in map(json.loads, p.stdout.splitlines()):
+    for o in out:
         rows.setdefault((o["selector"], o["panel"]), []).append((o["label"], o["src"], o["tgt"]))
     return {(n, i): rows.get((n, k), []) for (n, i), k in num.items()}
 
@@ -1345,7 +1360,7 @@ def locate(path, p):
     return path
 
 
-VALOPT = ("--view", "--panel", "--from", "--json", "--result")   # flags whose next word is a VALUE
+VALOPT = ("--view", "--panel", "--from", "--json", "--result", "--records")  # next word: a VALUE
 
 
 def positional(argv):
@@ -1406,7 +1421,7 @@ def main(argv):
         except SystemExit as e:
             unread[p] = str(e)
     allrecs = [r for _, rs in per for r in rs]
-    LEANSIG.update(leansigs(per))
+    LEANSIG.update(leansigs(per, opt(argv, "--records")))
     if "--spell" in argv:
         n, bad = respell(allrecs)
         print(f"scanline: {n} certified strings respelled, {len(bad)} differ")
@@ -1518,7 +1533,7 @@ def check(path, recs, argv, only, keep):
 
 
 _HELP_BODY = """usage: scanline [--panel ID] [--from FIELD] [--spell] [--strict] [--full]
-       [--json FILE] [--result FILE] [--list] [FILE ...]
+       [--json FILE] [--result FILE] [--records FILE] [--list] [FILE ...]
 
 SEVERAL FILES in one run, each swept and reported on its own line, the exit status non-zero if any
 of them failed — `make scan-generated` hands over every picture the manifest names in one call.
@@ -1532,6 +1547,9 @@ The literal cache is one file's, so a batch neither reads nor writes it.
 --json FILE    write each panel's source/target/factors/expr as JSON to FILE
 --result FILE  write each FILE argument's verdict as JSON to FILE, in argument order: its `panels`
                (ids), `failures` and `unhandled` (messages), and whether it is `missing`
+--records FILE read the `lean:` panels' bead types from FILE, the records `diag-export --string
+               --records` printed when it drew them, instead of asking the exporter again; a
+               (declaration, panel) key FILE does not draw is an error naming it
 --list        print one line per panel: its id and the composite the sweep reads it as
 
 A file with NO headings is a picture file — `diag/generated/string/<decl>.typ`, which binds its
