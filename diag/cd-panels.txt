@@ -52,7 +52,7 @@
 13.3.1b/dist-str#1               | Freyd.Alg.Distributes                                      | cdref-dist.typ
 13.3.1b/dist-str#2               | -                                                          | -    # the same square at `est(≤)`, `+` on `Nat`, with each corner's VALUE under its type — a worked instance, which is no statement
 13.3.3b/prefix-defn#1            | Freyd.Alg.RelSet.ListRel.prefix_cancel                     | cdref-prefix.typ
-13.4.3a/party-mono#1             | -                                                          | -    # `Freyd.Alg.RelSet.Party.party_mono` draws this square ARROW FOR ARROW, hue for hue — every difference is a LABEL, and the rule is `Label.relatorName?`'s, "a relator is named by itself": `tightHeads` hands a `Functor.obj` application whole to the printer, so an APPLIED relator prints with the type parameters the objects beside it already carry (`(RT.FA)([A]×[A])` for the note's `F([A]×[A])`), and `Prod` spaces its `×`.  That clause is `diag/tool/Label.lean`'s, shared with the string and circuit pictures, so changing it needs their gates run too.  The edge is the other half: the note SPELLS the relator's action out, `𝟙×list((R×R)°)` where the panel writes `F((R×R)°)`
+13.4.3a/party-mono#1             | Freyd.Alg.RelSet.Party.party_mono                          | cdref-party.typ
 13.4.3b/party-absorb#1           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, drawn with `=` where the generator draws a triangle — the author's call
 13.4.3b/party-absorb#2           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, as above
 #

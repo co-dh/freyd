@@ -634,6 +634,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- application up, which is what a tight head would do.
   | (``Prod, #[a, b]) => return wrap 1 ((← labelAt 2 a) ++ "×" ++ (← labelAt 2 b))
   | (``Freyd.Functor.map, _) =>
+    -- A RELATOR WHOSE ACTION THE NOTE WRITES OUT is rewritten to that spelling first, the same
+    -- `diag_rewrite` step the composite takes and for the same reason: the note keeps the letter on
+    -- the OBJECTS (`F([A]×[A])`) and spells the ARROW (`𝟙×list((R×R)°)`), and only an equation
+    -- beside the relator can say so.  The right side is headed by the operator it spells out, never
+    -- by `Functor.map`, so no rewrite reaches this clause twice.
+    if let some r ← rewriteHead? e then return ← labelAt prec r else
     match functorMap? e with
     | some (f, r) =>
       return ((← relatorName? f).getD (← labelAt 4 f)) ++ "(" ++ (← labelAt 0 r) ++ ")"
