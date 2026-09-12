@@ -12,10 +12,10 @@
 
 #cetz.canvas(length: 0.8cm, {
   let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-  ar(FA, A, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-  ar(FA, FB, black, s0: 0.55, s1: 0.55); ar(A, B, black, s0: 0.55, s1: 0.55)
-  lab(0, 1.9, GIVEN2)[`f`]; lab(0, -1.9, GIVEN1)[`g`]
-  lab(-3.55, 0, black)[`F(h)`]; lab(3.2, 0, black)[`h`]
+  ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+  ar(FA, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(A, B, GIVEN2, s0: 0.55, s1: 0.55)
+  lab(0, 1.9, GIVEN1)[`f`]; lab(0, -1.9, GIVEN1)[`g`]
+  lab(-3.55, 0, GIVEN2)[`F(h)`]; lab(3.2, 0, GIVEN2)[`h`]
   node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-  node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
+  node(FB.at(0), FB.at(1), black, `FB`); node(B.at(0), B.at(1), black, `B`)
 })
