@@ -210,10 +210,22 @@ def split_text(text):
     return out
 
 
-def join_text(root_dir=None):
+def note_source(path):
+    """THE TEXT A GATE READS: the note as one document, whether or not it is split.
+
+    A split root holds a preamble and `#include` lines, so a gate that opened it alone would sweep
+    a file with no panels in it and report zero — the check that exits 0.  Reading the join instead
+    leaves every gate's logic, and its counts, exactly as they were."""
+    text = read(path)
+    return join_text(root_path=path) if text.startswith(ROOT_MARK) else text
+
+
+def join_text(root_dir=None, root_path=None):
     """The monolith, read back from the prelude, the root and the chapter files."""
     root_dir = root_dir or ROOT_DIR
-    rl = read(os.path.join(root_dir, NOTE)).split("\n")
+    root_path = root_path or os.path.join(root_dir, NOTE)
+    here = os.path.dirname(os.path.abspath(root_path))
+    rl = read(root_path).split("\n")
     if rl and rl[-1] == "":
         rl = rl[:-1]
     if len(rl) < 2 or rl[0] != ROOT_MARK or rl[1] != ROOT_IMPORT:
@@ -227,15 +239,16 @@ def join_text(root_dir=None):
     if len(incs) != len(rl) - f - 1:
         die("%s has a line after %r that is not an `#include`" % (NOTE, ROOT_FLAG))
 
-    pl = read(os.path.join(root_dir, PRELUDE)).split("\n")
+    prelude = os.path.join(here, typst_string(rl[1]))
+    pl = read(prelude).split("\n")
     if PRELUDE_MARK not in pl:
-        die("%s has no split footer: it was not written by scripts/note-split" % PRELUDE)
+        die("%s has no split footer: it was not written by scripts/note-split" % prelude)
     pre = pl[:pl.index(PRELUDE_MARK)]
 
     body, tail = [], "\n"
     for n, inc in enumerate(incs, 1):
-        path = os.path.join("diag", inc)
-        cl = read(os.path.join(root_dir, path))
+        path = os.path.join(here, inc)
+        cl = read(path)
         tail = "\n" if cl.endswith("\n") else ""
         cl = cl[:-1].split("\n") if cl.endswith("\n") else cl.split("\n")
         want = chapter_header(n)

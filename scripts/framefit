@@ -33,6 +33,10 @@ from importlib.machinery import SourceFileLoader
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
+# The note is one file per chapter (`scripts/note-split`): `note_source` reads a split root as the
+# one document it stands for, so the `cert:`s counted here are the note's, not a preamble's none.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_source
 PDF = os.path.join(ROOT, "diag", "allegory-axioms.pdf")
 BAND = 0.6      # a fill wider or taller than this much of the page is a rule or a page band, not a panel
 PAD = 2.0       # the two regions a panel is made of meet on the object wire, so the join needs slack
@@ -70,7 +74,7 @@ def tuples(args, i):
 
 def literals(path):
     """(line, name, expect, rows below the last bead, licensed) for every `#dpanel` in the note."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     out = []
     for m in re.finditer(r"\bdpanel\(", text):
         popen = m.end() - 1

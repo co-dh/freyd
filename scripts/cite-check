@@ -89,6 +89,12 @@ def fingerprint(paths):
 
 
 def main(paths):
+    # The note is one file per chapter (`scripts/note-split`), so a marker lives in a chapter and a
+    # chapter edit must invalidate the cache: both the fingerprint and the scan walk the files the
+    # note is made of.  Per file, not through the join, so a location still names a file to open.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from notesplit import note_files
+    paths = [os.path.relpath(f) for a in paths for f in note_files(a)]
     fp = fingerprint(paths)
     try:
         cached = json.load(open(CACHE))
