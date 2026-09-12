@@ -51,9 +51,9 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-alg> | α prefi
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.rhs | <takewhile-alg> | F(prefix list(p))S
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
-- | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
-- | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
-- | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs | <takewhile-mono> | ⊸ nil ∪ (p×R°) cons
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs | <takewhile-mono> | ⊸ nil ∪ (p×𝟙) cons R°
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs | <takewhile-step> | S%∋ est(R°)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs | <takewhile-step> | [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙)cons)%∋ est(R°)]
@@ -62,23 +62,23 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs | <takewhile-step> | [nil,(π�
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.lhs | <takewhile-laws> | (prefix list(p))%∋ est(R°)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,(π₁p→cons,⊸ nil)]⦈
-- | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
-- | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
-- | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
-- | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
-- | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.lhs | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step2.rhs | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step4.rhs | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
 Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
 Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
-- | <mss-mono> | ⊸ zero ∪ plus ≥
-- | <mss-mono> | (⊸ zero ∪ plus)≥
+Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs | <mss-mono> | ⊸ zero ∪ plus ≥
+Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs | <mss-mono> | (⊸ zero ∪ plus)≥
 Freyd.Alg.RelSet.MSS.mss_step1.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
 Freyd.Alg.RelSet.MSS.mss_shape.lhs | <mss-deriv> | (segment sum)%∋ est(≥)
 Freyd.Alg.RelSet.MSS.mss_shape.rhs | <mss-deriv> | suffix%∋ E((prefix sum)%∋ est(≥))est(≥)
 Freyd.Alg.RelSet.Filter.filter_mono.lhs.inr | <filter-mono> | (𝟙×R°)(π₂ ∪ (p×𝟙) cons)
-- | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
-- | <filter-mono> | π₂R° ∪ (p×R°) cons
-- | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
-- | <filter-mono> | (π₂ ∪ (p×𝟙) cons)R°
+Freyd.Alg.RelSet.Filter.filter_mono_step1.rhs | <filter-mono> | (𝟙×R°)π₂ ∪ (p×R°) cons
+Freyd.Alg.RelSet.Filter.filter_mono_step2.rhs | <filter-mono> | π₂R° ∪ (p×R°) cons
+Freyd.Alg.RelSet.Filter.filter_mono_step3.rhs | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
+Freyd.Alg.RelSet.Filter.filter_mono_cons.rhs | <filter-mono> | (π₂ ∪ (p×𝟙) cons)R°
 Freyd.Alg.RelSet.Filter.filter_step1.lhs | <filter-step> | S%∋ est(R°)
 Freyd.Alg.RelSet.Filter.filter_step1.rhs | <filter-step> | [nil%∋ est(R°),(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]
 Freyd.Alg.RelSet.Filter.filter_step2.rhs | <filter-step> | [nil,(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]
@@ -97,7 +97,7 @@ Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 - | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
-- | <thin-cor> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 - | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R

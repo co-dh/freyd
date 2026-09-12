@@ -503,6 +503,36 @@ public theorem pcons_slide (p : A → Bool) :
     subst hws
     exact ⟨x :: c, (pcons_apply p x c (x :: c)).mpr ⟨hpx, rfl⟩, Nat.succ_le_succ hlen⟩
 
+/-- **`takewhile-mono`'s second step**: `(𝟙×R°)⊸ nil ∪ (p×R°) cons ⊑ ⊸ nil ∪ (p×R°) cons` —
+    `takewhile_mono_disc` on the constant operand, the other left where it stands. -/
+public theorem takewhile_mono_step2 (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ discNil
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.1 :: q.2)
+      ⊑ discNil
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
+  union_mono takewhile_mono_disc (le_refl _)
+
+/-- **`takewhile-mono`'s third step**: `⊸ nil ∪ (p×R°) cons ⊑ ⊸ nil ∪ (p×𝟙) cons R°` —
+    `takewhile_mono_slide` on the `cons` operand. -/
+public theorem takewhile_mono_step3 (p : A → Bool) :
+    (discNil : (⟨A × List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩)
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.1 :: q.2)
+      ⊑ discNil ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := by
+  refine union_mono (le_refl _) ?_
+  rw [← Cat.assoc]
+  exact takewhile_mono_slide p
+
+/-- **`takewhile-mono`'s fourth step**: `⊸ nil ∪ (p×𝟙) cons R° = ⊸ nil R° ∪ (p×𝟙) cons R°` —
+    `nil R°=nil`, so the constant operand may carry the `R°` the other one already has. -/
+public theorem takewhile_mono_step4 (p : A → Bool) :
+    (discNil : (⟨A × List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩)
+        ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE°
+      = discNil ≫ (lenLE (A := A))° ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := by
+  rw [takewhile_mono_nil]
+
 /-- The `cons` branch of `F(R°)S⊑SR°`, the note's `takewhile-mono` chain step by step. -/
 public theorem takewhile_mono_cons (p : A → Bool) :
     rprodMap (𝟙 (dE A)) (lenLE (A := A))°
@@ -515,13 +545,14 @@ public theorem takewhile_mono_cons (p : A → Bool) :
         takewhile_mono_fork p
     _ ⊑ discNil
           ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
-        union_mono takewhile_mono_disc (le_refl _)
-    _ ⊑ discNil ∪ pcons p ≫ lenLE° :=
-        union_mono (le_refl _) (takewhile_mono_slide p)
-    _ = discNil ≫ (lenLE (A := A))° ∪ pcons p ≫ lenLE° := by
-        rw [takewhile_mono_nil]
-    _ = (discNil ∪ pcons p) ≫ lenLE° :=
-        (union_comp_distrib _ _ _).symm
+        takewhile_mono_step2 p
+    _ ⊑ discNil ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := takewhile_mono_step3 p
+    _ = discNil ≫ (lenLE (A := A))° ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := takewhile_mono_step4 p
+    _ = (discNil ∪ pcons p) ≫ lenLE° := by
+        rw [← Cat.assoc]
+        exact (union_comp_distrib _ _ _).symm
 
 /-- The `takewhile-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step
     lands inside taking the step and then shortening the result. -/
