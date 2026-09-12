@@ -14,7 +14,7 @@
   the note's own spacing.
 -/
 import diag.tool.ExprReader
--- The tape and first-order layers' own operators (`⨟•`, `⊥`, the four generators): `labelAt` is one
+-- The tape and first-order layers' own operators (`⨟•`, `⊥`, the four generators): `labelTree` is one
 -- rule over both towers, so it has to see both.
 import diag.FO
 import diag.Tape
@@ -181,7 +181,7 @@ def homArgs (args : Array Expr) : MetaM (Array Expr) :=
 
 /-! ### A MAP, named from its own function
 
-A relation given as the graph of a function has no operator inside it, so no clause of `labelAt`
+A relation given as the graph of a function has no operator inside it, so no clause of `labelTree`
 can reach its content: its name is read off the FUNCTION'S BODY — a projection is a `π`, a
 constructor fed the input's factors is the carrier's structure map, a body that ignores the input
 is a discard.  One rule, so a map is named the same wherever it is spelled: on the box the circuit
@@ -195,6 +195,35 @@ def projIndex (body : Expr) : Option Nat :=
     | (``Prod.fst, _) => some 0
     | (``Prod.snd, _) => some 1
     | _ => none
+
+/-- The last component of a declaration's name, for the places a picture writes a declaration by
+    name and nothing else.  A namespace is what a resolver needs, and nothing inside a picture
+    resolves a name, so `cat` is what the box says wherever `cat` is what was declared. -/
+def declName? (e : Expr) : MetaM (Option String) := do
+  let .const n _ := e.getAppFn | return none
+  if ((← getEnv).find? n).isNone then return none
+  -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
+  -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
+  -- drops the namespace chose nothing, so the constant's own last component stands.
+  if let some h := stxHead (← PrettyPrinter.delab e) then
+    if h.getString! != n.getString! then return some h.getString!
+  return some n.getString!
+
+/-- A HEAD WITH THE ARGUMENTS THE PICTURE ALREADY DRAWS TAKEN OUT, spelled from its EXPLICIT
+    positions alone.  An implicit or instance argument is the elaborator's business and no factor of
+    the note's name: taking the drawn arguments out of `x + c` left `HAdd.hAdd` carrying its
+    `instHAdd`, which is a projection applied to an instance, and the printer wrote `instHAdd` into
+    the label.  WHICH POSITIONS THOSE ARE IS THE HEAD'S OWN BINDER INFO, never a count, a position or
+    a name; with no explicit argument left the head is written by its own declared name. -/
+def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM String := do
+  let fi ← Meta.getFunInfoNArgs f args.size
+  let mut keep : Array Expr := #[]
+  for i in [0 : args.size] do
+    if ((fi.paramInfo[i]?.map (·.isExplicit)).getD true) && keepArg args[i]! then
+      keep := keep.push args[i]!
+  if keep.isEmpty then
+    if let some n ← declName? f then return n
+  plain (mkAppN f keep)
 
 /-- The name of a value computed FROM THE INPUT, in diagram order: `p(π₁ s)` is `π₁p` — first the
     projection, then the test.  The input itself is the identity and contributes nothing, and an
@@ -212,8 +241,7 @@ partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
     | _, _ =>
       let deps := args.filter fun a => a.containsFVar s
       if deps.size == 1 then
-        let rest := args.filter fun a => !a.containsFVar s
-        return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
+        return (← valLabel s deps[0]!) ++ (← headShow x.getAppFn args fun a => !a.containsFVar s)
       plain x
 
 /-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
@@ -345,18 +373,42 @@ def ctorName? (e : Expr) : MetaM (Option String) := do
   | some (.ctorInfo _) => return some n.getString!
   | _ => return none
 
-/-- The same answer for ANY declaration, for the one place a box writes a declaration by name and
-    nothing else.  A namespace is what a resolver needs, and nothing inside a picture resolves a
-    name, so `cat` is what the box says wherever `cat` is what was declared. -/
-def declName? (e : Expr) : MetaM (Option String) := do
-  let .const n _ := e.getAppFn | return none
-  if ((← getEnv).find? n).isNone then return none
-  -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
-  -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
-  -- drops the namespace chose nothing, so the constant's own last component stands.
-  if let some h := stxHead (← PrettyPrinter.delab e) then
-    if h.getString! != n.getString! then return some h.getString!
-  return some n.getString!
+/-- THE OBJECT AN ARGUMENT IS TAKEN AT, at whatever depth it sits: the algebra of a parametrised
+    initial algebra is written `(I A).α`, so the object the family is indexed by is inside the
+    bundle handed to the field, not beside it.  An argument that IS an object is that object; one
+    built from objects is searched, last first, because a family is applied to its index last. -/
+partial def objIn? (a : Expr) : MetaM (Option Expr) := do
+  if ← isObjType (← Meta.inferType a) then return some a
+  let mut r : Option Expr := none
+  for x in a.getAppArgs do
+    if let some y ← objIn? x then r := some y
+  return r
+
+/-- A COMPONENT OF A DECLARED FAMILY, as the head's own spelling and the object it is taken at.
+    A family tagged `@[diag_indexed]` wears a notation that writes its letter ALONE — `α` for the
+    algebra of a parametrised initial algebra — so the object is missing from the label and goes
+    BENEATH it: `α`#sub[`A`] and `α`#sub[`B`] are the two algebras of the one family, and nothing
+    else in the square tells them apart.  The INDEX is the LAST explicit argument that is an object,
+    which is where a family is indexed (`φ A`, `alphaT I A`); an argument that is a bundle or an
+    arrow is not one, and `I.α` — whose one explicit argument is the algebra — has no index at all
+    and stays the bare `α` the note writes. -/
+def indexedComponent? (e : Expr) : MetaM (Option (String × Expr)) := do
+  let .const c _ := e.getAppFn | return none
+  unless (← Lean.labelled `diag_indexed).contains c do return none
+  unless (homObjs? (← Meta.inferType e)).isSome do return none
+  -- THE LETTER IS THE HEAD OF THE SPELLING, read off the SYNTAX and not off the constant's name:
+  -- `alphaT I A` is the `α` its notation writes and `(I A).α` the `α` the field is called, and the
+  -- index each of them wrote or dropped is set beneath by this clause either way.
+  let some h := stxHead (← PrettyPrinter.delab e) | return none
+  let args := e.getAppArgs
+  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+  let mut ix : Option Expr := none
+  for i in [0 : args.size] do
+    if (fi.paramInfo[i]?.map (·.isExplicit)).getD true then
+      if let some a ← objIn? args[i]! then ix := some a
+  match ix with
+  | some a => return some (h.getString!, a)
+  | none => return none
 
 mutual
 
@@ -389,7 +441,7 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     if let some g ← guardLabel s body then return g
     -- A `match` ON A COPRODUCT IS THE JUNCTION `[f,g]`, wherever it is spelled: the picture opens it
     -- as a tape and a label names it, and both read the arms off the same `sumArms`.  The brackets
-    -- are `labelAt`'s own for `junc`, because it is the same arrow.
+    -- are `labelTree`'s own for `junc`, because it is the same arrow.
     if let some arms ← sumArms (← Meta.mkLambdaFVars #[.fvar s] body₀) then
       if arms.size == 2 then
         return "[" ++ (← mapLabel arms[0]! false) ++ "," ++ (← mapLabel arms[1]! false) ++ "]"
@@ -447,7 +499,7 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
       if (List.range args.size).all fun i =>
           !(fi.paramInfo[i]?.map (·.isExplicit) |>.getD true) || args[i]!.containsFVar s then
         if let some n ← declName? body then return n
-      return ← plain (mkAppN body.getAppFn (args.filter fun a => !a.containsFVar s))
+      return ← headShow body.getAppFn args fun a => !a.containsFVar s
     if body₀.containsFVar s then plain f else plain body₀
 
 /-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note
@@ -485,7 +537,7 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   -- walk went on through `Cat.comp` into the category instance's own `comp`.  `whnfCore` leaves a
   -- constant alone and still beta/eta-reduces and fires a matcher, which is all an anonymous
   -- `fun p => cat p.1 p.2` at a use site needs; a name the note draws OPENED says so with
-  -- `@[diag_unfold]`, which `labelAt` has already applied wherever it is spelled.
+  -- `@[diag_unfold]`, which `labelTree` has already applied wherever it is spelled.
   let f ← Meta.whnfCore f
   let f := (← branchForm? f).getD f
   if f.isLambda then
@@ -503,6 +555,72 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   | _ => do if let some n ← ctorName? f then return n else plain f
 
 end
+
+/-! ### The shape of a label
+
+A `String` holds the note's SPELLING and none of its SHAPE: the note sets a family's index as a
+SUBSCRIPT (`α`#sub[`A`]) and a symmetric division as a FRACTION, and either may stand inside another
+operator's brackets (`⦇`$frac(F(∋)R, ∋)$`⦈`).  `labelTree` is the one spelling, and `Lbl.flat` is
+what it looked like before — a box and a bead each get one string, and only the commutative panel,
+which sets typst content, reads the tree.  Every clause of the labeller therefore builds an `Lbl`
+and the two ways of writing it can never disagree. -/
+
+/-- A label's shape.  `sub` is an index set under its head, `frac` the note's symmetric division,
+    `seq` two parts written one after the other. -/
+inductive Lbl where
+  | text (s : String)
+  | sub (base index : Lbl)
+  | frac (num den : Lbl)
+  | seq (parts : Array Lbl)
+  deriving Inhabited, BEq
+
+/-- THE FLAT SPELLING, which is what a string label always was: an index closes up under its head
+    (`χGA`) and a division writes the note's inline `%` (`F(∋)R%∋`). -/
+partial def Lbl.flat : Lbl → String
+  | .text s => s
+  | .sub b i => b.flat ++ i.flat
+  | .frac n d => n.flat ++ "%" ++ d.flat
+  | .seq ps => String.join (ps.toList.map Lbl.flat)
+
+/-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
+    `text` and is written exactly as the string label was. -/
+partial def Lbl.norm (l : Lbl) : Lbl :=
+  match go l with
+  | #[x] => x
+  | ps => .seq ps
+where
+  go : Lbl → Array Lbl
+    | .text "" => #[]
+    | .text s => #[.text s]
+    | .seq ps => ps.foldl (fun acc p => (go p).foldl push acc) #[]
+    | .sub b i => #[.sub b.norm i.norm]
+    | .frac n d => #[.frac n.norm d.norm]
+  push (acc : Array Lbl) (x : Lbl) : Array Lbl :=
+    match acc.back?, x with
+    | some (.text a), .text b => acc.pop.push (.text (a ++ b))
+    | _, _ => acc.push x
+
+instance : Coe String Lbl := ⟨Lbl.text⟩
+instance : HAppend Lbl Lbl Lbl := ⟨fun a b => .seq #[a, b]⟩
+instance : HAppend String Lbl Lbl := ⟨fun a b => .seq #[.text a, b]⟩
+instance : HAppend Lbl String Lbl := ⟨fun a b => .seq #[a, .text b]⟩
+
+/-- A term's printed spelling as a leaf of the tree — the printer's answer has no shape in it. -/
+def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
+
+/-- The note's juxtaposition spacing between two labels, decided on their flat spelling (`juxt`), so
+    one rule answers for the string and for the tree alike. -/
+def juxtL (a b : Lbl) : Lbl :=
+  if juxt a.flat b.flat == a.flat ++ b.flat then a ++ b else a ++ " " ++ b
+
+/-- `sep` between the parts. -/
+def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
+  ps.foldl (fun acc p => if acc == Lbl.text "" then p else acc ++ sep ++ p) (Lbl.text "")
+
+/-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
+    spelling exactly as the string rule reads it. -/
+def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
+  if j == .bracket || (f.length == 1 && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
 
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, and `∋°` makes the
     reader undo one level of indirection to get back to it.  Decided by the OPERAND's head constant,
@@ -525,49 +643,49 @@ mutual
     RECURSIVE THROUGH THE BRACKETING OPERATORS TOO.  `⦇…⦈`, `E(…)` and `…%∋` delimit their operand,
     so a composite inside one is still a composite of the note's: `⦇S%∋ est(R°)⦈`, never
     `⦇S%∋ ≫ est(R°)⦈`, which is what the raw printer hands back for the whole application. -/
-partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
+partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
   let e' ← openNotedAll e
-  if e' != e then return ← labelAt prec e'
+  if e' != e then return ← labelTree prec e'
   -- A ONE-FIELD RECORD IS ITS FIELD, the rule `plain` already prints by: the object `⟨X⟩` of a
   -- category of sets IS the set `X`, so the wrapper must come off HERE too or the clause below
   -- dispatches on `RelSet.mk` and the operator inside — a product, a sum — is never seen.
-  if let some x ← unwrapRecord? e then return ← labelAt prec x
+  if let some x ← unwrapRecord? e then return ← labelTree prec x
   -- …and its FIELD is that record, the same identification read the other way: `E[A].carrier` is
   -- the object `E[A]`, and a projection Lean wrote only because `×` is a type former is not a step
   -- of the algebra.  Each peel strictly shrinks the term, so the two cannot loop through each other.
-  if let some x ← unprojRecord? e then return ← labelAt prec x
+  if let some x ← unprojRecord? e then return ← labelTree prec x
   -- A FIELD LEAN LEFT AS A POSITION is written through the field's own name, or the notation keyed
   -- on it — `RelProd.p`'s `a×b` — never fires and the label prints `inst✝.1`.
-  if let some x ← namedProj? e then return ← labelAt prec x
+  if let some x ← namedProj? e then return ← labelTree prec x
   -- …and a field of a bundle with no name of its own is the field's DEFINITION at that bundle: the
   -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
-  if let some x ← openBuiltField? e then return ← labelAt prec x
-  let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
+  if let some x ← openBuiltField? e then return ← labelTree prec x
+  let wrap (p : Nat) (s : Lbl) : Lbl := if prec > p then "(" ++ s ++ ")" else s
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
   -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
   -- `(R S) ∩ T`.
   let arrows : Array Expr → MetaM (Array Expr) := homArgs
-  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String := do
+  let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM Lbl := do
     match lastTwo (← arrows args) with
-    | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
-    | none => plain e
+    | some (f, g) => return wrap p ((← labelTree cp f) ++ op ++ (← labelTree cp g))
+    | none => txt e
   -- The one argument of a unary operator, at the precedence its operand is set at.
-  let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM String := do
+  let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM Lbl := do
     match (← arrows args).back? with
-    | some r => return wrap p (pre ++ (← labelAt cp r) ++ post)
-    | none => plain e
+    | some r => return wrap p (pre ++ (← labelTree cp r) ++ post)
+    | none => txt e
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- A MAP is named from its own function, wherever it is spelled: the box the circuit draws for it
   -- and the `E(…)` of a label are the same name, so the rule sits here and not beside the drawing.
   | (``Freyd.Alg.RelSet.graph, args) =>
     match args.back? with
-    | some f => mapLabel f false
-    | none => plain e
+    | some f => return .text (← mapLabel f false)
+    | none => txt e
   | (``Freyd.Diag.CartBicat.Δ, _) => return "◁"
   | (``Freyd.Diag.CartBicat.«∇», _) => return "▷"
   | (``Freyd.Diag.CartBicat.«!», _) => return "⊸"
@@ -601,10 +719,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- composite the note spells as ONE arrow is rewritten to it first: `F(X)[T,U]` is `[T,(X×𝟙)U]`,
     -- the relator slid into the bracket.  Every other head keeps the notation its clause writes,
     -- which is what keeps `Λ R` out of this and out of the loop through `singletonMap`.
-    if let some r ← rewriteHead? e then return ← labelAt prec r
-    if lastTwo args |>.isNone then plain e else do
-      let mut s := ""
-      for t in (← labelRun e) do s := juxt s t
+    if let some r ← rewriteHead? e then return ← labelTree prec r
+    if lastTwo args |>.isNone then txt e else do
+      let mut s : Lbl := .text ""
+      for t in (← labelRunT e) do s := juxtL s t
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS, as `relexpr.py`'s own `spell` sets
       -- them: `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
@@ -629,7 +747,7 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | some r => match namedRecip r with
       | some n => return n
       | none => un 3 3 "" "°" args
-    | none => plain e
+    | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un 3 3 "" "⊥" args
   -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
   | (``Freyd.Alg.neg, args) => un 3 3 "∼" "" args
@@ -648,16 +766,19 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
   -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
   -- `⦇F(∋)R%∋⦈`, `𝟙%∋`, the numerator at composition's own precedence so a composite carries no
-  -- brackets of its own.  The TWO-ARROW form `𝟙%∋ E(R)` is `labelRun`'s, because it is the two
+  -- brackets of its own.  The TWO-ARROW form `𝟙%∋ E(R)` is `labelRunT`'s, because it is the two
   -- beads a PICTURE splits the transpose into and not a spelling of the term; a label nested inside
   -- another operator has no picture to split and takes the fraction, written flat.
-  | (``Freyd.Alg.Λ, args) => un 1 1 "" "%∋" args
+  | (``Freyd.Alg.Λ, args) => do
+    match (← arrows args).back? with
+    | some r => return wrap 1 (.frac (← labelTree 1 r) (.text "∋"))
+    | none => txt e
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.
   | (``Freyd.Alg.junc, args) => do
     match lastTwo (← arrows args) with
-    | some (f, g) => return "[" ++ (← labelAt 0 f) ++ "," ++ (← labelAt 0 g) ++ "]"
-    | none => plain e
+    | some (f, g) => return "[" ++ (← labelTree 0 f) ++ "," ++ (← labelTree 0 g) ++ "]"
+    | none => txt e
   -- The TYPE FUNCTOR's action on an arrow is a relator's action like any other, so it takes the same
   -- brackets as `F(R)`: `T(f)`, never `T f`, juxtaposition being composition and nothing else.  The
   -- letter is `typeRelator`'s own unexpander's (`diag/StrDiagNames.lean`), which the lane wears too.
@@ -672,26 +793,29 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     match args.back? with
     | some φ => Meta.lambdaBoundedTelescope φ 1 fun xs b => do
       match xs[0]? with
-      | some x => return "(μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelAt 0 b) ++ ")"
-      | none => plain e
-    | none => plain e
+      | some x => return "(μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b) ++ ")"
+      | none => txt e
+    | none => txt e
   -- A relator's action on an ARROW is the ONE bracket no term carries: `F(⦇R⦈)`, the note's way of
   -- saying the argument is applied and not composed.
   -- AN OBJECT'S PRODUCT is the note's `×` between its two factors, each spelled HERE: a factor the
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
-  | (``Prod, #[a, b]) => return wrap 1 ((← labelAt 2 a) ++ "×" ++ (← labelAt 2 b))
+  | (``Prod, #[a, b]) => return wrap 1 ((← labelTree 2 a) ++ "×" ++ (← labelTree 2 b))
   | (``Freyd.Functor.map, _) =>
     -- A RELATOR WHOSE ACTION THE NOTE WRITES OUT is rewritten to that spelling first, the same
     -- `diag_rewrite` step the composite takes and for the same reason: the note keeps the letter on
     -- the OBJECTS (`F([A]×[A])`) and spells the ARROW (`𝟙×list((R×R)°)`), and only an equation
     -- beside the relator can say so.  The right side is headed by the operator it spells out, never
     -- by `Functor.map`, so no rewrite reaches this clause twice.
-    if let some r ← rewriteHead? e then return ← labelAt prec r else
+    if let some r ← rewriteHead? e then return ← labelTree prec r else
     match functorMap? e with
     | some (f, r) =>
-      return ((← relatorName? f).getD (← labelAt 4 f)) ++ "(" ++ (← labelAt 0 r) ++ ")"
-    | none => plain e
+      let h : Lbl ← match ← relatorName? f with
+        | some n => pure (.text n)
+        | none => labelTree 4 f
+      return h ++ "(" ++ (← labelTree 0 r) ++ ")"
+    | none => txt e
   -- A BIFUNCTOR'S action takes the same bracket and BOTH its arrows: `F(𝟙,f)`, `F(f,T(f))`.  An
   -- unexpander cannot write it — `F(𝟙,f)` is no term — and the one beside the constant prints the
   -- second argument alone, so `F.map (𝟙 A) f` and `F.map g f` come out the same picture.
@@ -700,16 +824,16 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | some (x, y) => do
       let fns ← args.filterM fun a => return (← Meta.inferType a).isAppOf ``Freyd.Alg.BiRelator
       match fns.back? with
-      | some fn => return (← labelAt 4 fn) ++ "(" ++ (← labelAt 0 x) ++ "," ++ (← labelAt 0 y) ++ ")"
-      | none => plain e
-    | none => plain e
+      | some fn => return (← labelTree 4 fn) ++ "(" ++ (← labelTree 0 x) ++ "," ++ (← labelTree 0 y) ++ ")"
+      | none => txt e
+    | none => txt e
   | (c, args) =>
     -- A HEAD THE LABEL HAS NO SPELLING OF is rewritten along the note's own equations first, and
     -- ONLY here: `arm₂` of an algebra is the arm the note names, while every head with a clause
     -- above is already written as the note writes it — `Λ R` is the `𝟙%∋ E(R)` its clause writes,
     -- not the composite the PICTURE splits it into, and rewriting it here loops through
     -- `singletonMap` and back.
-    if let some r ← rewriteHead? e then return ← labelAt prec r
+    if let some r ← rewriteHead? e then return ← labelTree prec r
     if tightHeads.contains c then return (← plain e).replace " " "" else do
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
     -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
@@ -720,29 +844,35 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- AFTER the spellings above: a head the note writes ITSELF (`E A`, an unexpander's own
     -- notation) is that spelling, and the action rule answers where the printer wrote none.
     if let some (f, xs) ← functorObj? e then
-      let parts ← xs.mapM (labelAt 0)
+      let parts ← xs.mapM (labelTree 0)
       let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
-      return applyLabel (← functorName f) (",".intercalate parts.toList) j
-    -- A COMPONENT OF A FAMILY the statement BINDS is set tight for the same reason a relator's
-    -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
-    -- Lean's formatter sets the object off from the head.  Its head is a free variable and has no
-    -- constant for `tightHeads`, so the test is `isComponent`'s, on the TYPE.
+      return applyLabelL (← functorName f) (Lbl.join "," parts) j
+    -- A COMPONENT OF A FAMILY THE THEORY DECLARES is its letter with its index BENEATH.
+    if let some (h, ix) ← indexedComponent? e then return .sub (.text h) (← labelTree 0 ix)
+    -- A COMPONENT OF A FAMILY the statement BINDS is ONE NAME, head and index closed up: the note
+    -- writes `φ`'s component at `A` as `φA` and `χ`'s at `GA` as `χGA`, because the letter is the
+    -- statement's own and says nothing without the index the statement wrote beside it.  Its head is
+    -- a free variable and has no constant for `tightHeads`, so the test is `isComponent`'s, on the
+    -- TYPE.  A family with a NOTATION of its own is the clause below: there the letter stands alone
+    -- and the index is what the notation dropped.
     if ← isComponent e then
-      -- ONE NAME, built from the head and its indices and not from the printer's string: squeezing
-      -- the spaces out of `χ (GA)` leaves the parentheses the formatter put round the index, where
-      -- the note writes `χGA`.  Each index is an object of the note's, spelled by its own rule.
-      return (← plain e.getAppFn) ++ String.join (← e.getAppArgs.mapM (labelAt 0)).toList
+      -- Built from the head and its indices and not from the printer's string: squeezing the spaces
+      -- out of `χ (GA)` leaves the parentheses the formatter put round the index.  Each index is an
+      -- object of the note's, spelled by its own rule, and closes up flat (`χGA`).
+      let mut l : Lbl := .text (← plain e.getAppFn)
+      for a in e.getAppArgs do l := l ++ (← labelTree 0 a)
+      return l
     else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.
     if let some (x, _) := homObjs? (← Meta.inferType e) then
       if let some (φ, ψ) ← asProdMap? (← Meta.inferType x) e then
-        return wrap 1 ((← labelAt 2 φ) ++ "×" ++ (← labelAt 2 ψ))
+        return wrap 1 ((← labelTree 2 φ) ++ "×" ++ (← labelTree 2 ψ))
     -- A SUM OF ARROWS the same way, and for the same reason: the two coproducts `sumMap` runs
     -- between are the objects the picture already draws at the edge's ends.
     if let some (φ, ψ) ← asSumMap? e then
-      return wrap 1 ((← labelAt 2 φ) ++ "+" ++ (← labelAt 2 ψ))
+      return wrap 1 ((← labelTree 2 φ) ++ "+" ++ (← labelTree 2 ψ))
     -- EVERY OTHER HEAD KEEPS THE PRINTER'S SPELLING — a delimited notation (`thin(Q)`) is the
     -- constant's own business, and a clause here would be a second copy of it — but its ARROW
     -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
@@ -757,10 +887,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- identifier head, `stxHead`'s test, since a notation opens with an atom.
     let stx ← PrettyPrinter.delab e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
-    let rec go : List Expr → Expr → MetaM String
-      | [], t => appShow t
+    -- THE HEAD'S OWN PRINTER TAKES A NAME, so an operand handed back to it is its FLAT spelling:
+    -- a shape set inside a notation nobody here wrote has nowhere to be set.
+    let rec go : List Expr → Expr → MetaM Lbl
+      | [], t => return .text (← appShow t)
       | a :: rest, t => do
-        let nm := Name.mkSimple (← labelAt (if paren then 0 else 4) a)
+        let nm := Name.mkSimple (← labelTree (if paren then 0 else 4) a).flat
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
           go rest (t.replace fun s => if s == a then some x else none)
     go hom.toList e
@@ -772,42 +904,56 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
 
     FLAT is the whole point of the array: the split makes one factor of a run into two, and
     juxtaposition is associative, so a bracket round them would say a grouping the note does not. -/
-partial def labelRun (e : Expr) : MetaM (Array String) := do
+partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
   let e' ← openNotedAll e
-  if e' != e then return ← labelRun e'
+  if e' != e then return ← labelRunT e'
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
-    if (lastTwo args).isNone then return #[← labelAt 2 e]
+    if (lastTwo args).isNone then return #[← labelTree 2 e]
     let mut out := #[]
-    for f in factors e do out := out ++ (← labelRun f)
+    for f in factors e do out := out ++ (← labelRunT f)
     return out
   | (``Freyd.Alg.Λ, args) =>
     match (← homArgs args).back? with
     | some r =>
-      if r.isAppOf ``Cat.id then return #[(← labelAt 3 r) ++ "%∋"]
-      return #["𝟙%∋", "E(" ++ (← labelAt 0 r) ++ ")"]
-    | none => return #[← plain e]
-  | _ => return #[← labelAt 2 e]
+      if r.isAppOf ``Cat.id then return #[.frac (← labelTree 3 r) (.text "∋")]
+      return #[.frac (.text "𝟙") (.text "∋"), "E(" ++ (← labelTree 0 r) ++ ")"]
+    | none => return #[← txt e]
+  | _ => return #[← labelTree 2 e]
 
 end
 
-/-- A label at the top of its own picture or box: no outer parentheses. -/
-def label (e : Expr) : MetaM String := labelAt 0 e
+/-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses. -/
+def labelT (e : Expr) : MetaM Lbl := return (← labelTree 0 e).norm
+
+/-- …and FLAT, which is every label a box, a bead or a wire carries. -/
+def label (e : Expr) : MetaM String := return (← labelTree 0 e).flat
+
+/-- The flat spelling at a given precedence, for the pictures that write one string. -/
+def labelAt (prec : Nat) (e : Expr) : MetaM String := return (← labelTree prec e).flat
+
+/-- The factors a label writes, flat. -/
+def labelRun (e : Expr) : MetaM (Array String) :=
+  return (← labelRunT e).map Lbl.flat
 
 /-- A label in the PARTS the picture sets it in.  A SYMMETRIC DIVISION is the note's fraction, and a
     bar DELIMITS its numerator, so that part is spelled at the loosest precedence — `frac(F(∋)f, ∋)`,
     where the inline spelling has to write `(F(∋)f)%∋`.  Every other arrow is one part.  Dispatched
     on the HEAD CONSTANT, the same way the inline spelling above is, so no reader has to find the
     operator again by looking for a `%` in a string. -/
-partial def labelParts (e : Expr) : MetaM (Array String) := do
+partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
   let e' ← openNoted e
-  if e' != e then return ← labelParts e'
+  if e' != e then return ← labelPartsT e'
   match e.getAppFnArgs with
   | (``Freyd.Alg.Λ, args) => do
     let arrows ← args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
     match arrows.back? with
-    | some r => return #[← labelAt 0 r, "∋"]
-    | none => return #[← label e]
-  | _ => return #[← label e]
+    | some r => return #[(← labelTree 0 r).norm, .text "∋"]
+    | none => return #[← labelT e]
+  | _ => return #[← labelT e]
+
+/-- …and each part flat, for the pictures that write one string. -/
+def labelParts (e : Expr) : MetaM (Array String) :=
+  return (← labelPartsT e).map Lbl.flat
 
 end Freyd.StrDiag

@@ -429,4 +429,9 @@ attribute [diag_unfold] singletonMap
 -- no drawing.
 attribute [diag_join "∪"] DistributiveAllegory.union
 
+-- THE PARAMETRISED ALGEBRA'S `α` IS A FAMILY OVER ITS PARAMETER (§2.7), and its own notation writes
+-- the letter alone: the note sets the parameter beneath it (`α`#sub[`A`], `α`#sub[`B`]), which is
+-- the only thing that tells the two algebras of one naturality square apart.
+attribute [diag_indexed] alphaT InitialAlgebra.α
+
 end Freyd.Alg

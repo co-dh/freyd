@@ -26,6 +26,16 @@ open Lean
     that imports the one declaring it, so the tags go in `diag/StrDiagNames.lean`. -/
 register_label_attr diag_unfold
 
+/-- WHICH FAMILIES WRITE THEIR INDEX BENEATH THEIR LETTER.  A family the theory DECLARES wears a
+    notation of its own, and that notation spells the letter alone — `α` for the algebra of a
+    parametrised initial algebra — so the object it is taken at is missing from the label and the
+    note sets it as a subscript (`α`#sub[`A`], `α`#sub[`B`], the two ends of one naturality square).
+    NOT derivable from the type: `∋ A`, `π₁ A B P` and `φ A` are components of families too and the
+    note writes every one of them without an index, so what is tagged is the family whose picture
+    needs telling apart, and the tag is one line beside the declaration.  Registered here, tagged in
+    `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
+register_label_attr diag_indexed
+
 /-- WHICH EQUATIONS A SIDE IS REWRITTEN ALONG before it is drawn.  The mirror of a name opened: where
     the NOTE draws a factor as two beads and Lean's statement names it as one, the side is rewritten
     by the declaration that says so, so the picture is of the note's form.  Registered here, tagged
