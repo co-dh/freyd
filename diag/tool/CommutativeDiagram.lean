@@ -1042,6 +1042,12 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
     let (this, other) := if s == "lhs" then (l, r) else (r, l)
     faces what this none fuel (induced ++ (← inducedIn other)) k
   | _ =>
+  -- A `∀` IS OPENED WHEREVER IT STANDS, not only under a delta step: a claim quantified over the
+  -- objects and arrows it is about — `∀ {X Y} (R : X ⟶ Y), φ Y ⊑ φ X`, a side of an `↔` — states
+  -- its face at those binders, and the face is read at the bottom of the telescope like every other.
+  if body.isForall then
+    Meta.forallTelescopeReducing body fun _ b => faces what b side fuel induced k
+  else
   match ← joinSplit? body with
   | some (sep, b₀, b₁) =>
     faces what b₀ side fuel induced fun f₀ =>
