@@ -46,16 +46,21 @@ def repoNamespaces (env : Environment) : List Name :=
     A RECORD is a type with ONE constructor.  Without that test the leaf `wrap ()` of a cons-list —
     a one-field constructor of a type that has another — prints as `()`, and the note's `nil`
     disappears from the label of an algebra that is about nothing else. -/
+def unwrapRecord? (x : Expr) : MetaM (Option Expr) := do
+  let .const n _ := x.getAppFn | return none
+  let some (.ctorInfo ci) := (← getEnv).find? n | return none
+  if ci.numFields != 1 then return none
+  let some (.inductInfo ii) := (← getEnv).find? ci.induct | return none
+  if ii.ctors.length != 1 then return none
+  let args := x.getAppArgs
+  if args.size != ci.numParams + 1 then return none
+  return some args[args.size - 1]!
+
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
-    let .const n _ := x.getAppFn | return .continue
-    let some (.ctorInfo ci) := (← getEnv).find? n | return .continue
-    if ci.numFields != 1 then return .continue
-    let some (.inductInfo ii) := (← getEnv).find? ci.induct | return .continue
-    if ii.ctors.length != 1 then return .continue
-    let args := x.getAppArgs
-    if args.size != ci.numParams + 1 then return .continue
-    return .done args[args.size - 1]!)
+    match ← unwrapRecord? x with
+    | some y => return .done y
+    | none => return .continue)
 
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/

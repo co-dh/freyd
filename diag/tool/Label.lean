@@ -40,6 +40,57 @@ partial def stxHead : Syntax → Option Name
   | .node _ _ args => args[0]?.bind stxHead
   | _ => none
 
+/-- How a label JOINS under a functor's name — the note's rule (CLAUDE.md), one copy for every
+    picture that writes an object. -/
+inductive Join where
+  /-- ONE NAME the reader cannot take for a composite (`A`, `𝟏`, `Word`), or a chain of one-letter
+      functors on one (`EA`, `FEA`): a ONE-LETTER functor juxtaposes with it -/
+  | name
+  /-- SELF-DELIMITED by the printer's own brackets (`[A]`): any functor juxtaposes with it -/
+  | bracket
+  /-- everything else — an application under a longer name (`bag(Job)`), a label written INFIX from
+      the parts (`A×[A]`) — and applying an operator to it takes parentheses -/
+  | other
+  deriving Inhabited, BEq
+
+/-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
+    the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
+    token `[A]`, so the term's argument count answers a different question, and the finished string
+    answers none.  ONE TOKEN is one name, however long (`A`, `𝟏`, `Word`); a form the printer CLOSED
+    IN ITS OWN BRACKETS — first child an atom and last child an atom, which is what a bracket is —
+    delimits itself; and an APPLICATION the printer wrote by juxtaposition (`Bag Job`, `list⁺ A`) is
+    neither, because juxtaposition is composition and closing a functor's name up against it would
+    read as one more factor of a composite. -/
+partial def stxJoin : Syntax → Join
+  | .ident .. | .atom .. => .name
+  | .node _ _ args =>
+    match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
+    -- A BRACKET IS A TOKEN WITH NO NAME IN IT.  `bag(Job)` and `list⁺(A)` open with an atom and
+    -- close with one just as `[A]` does, but their opening token CARRIES THE FUNCTOR'S NAME, so the
+    -- next functor's would close up against it (`Ebag(Job)`) and read as two things composed.  The
+    -- test is on the token, not on its length: a character a name can be spelled with disqualifies.
+    | some (.atom _ o), some (.atom ..) =>
+      if o.any fun c => Lean.isIdFirst c || Lean.isIdRest c then .other else .bracket
+    | _, _ => .other
+  | .missing => .other
+
+/-- A functor's action on an OBJECT, by the repo's juxtaposition rule: juxtaposition is composition,
+    so APPLYING takes parentheses (`bag(Job)`, `E(A×[A])`, `E(bag(Job))`) — `EA×[A]` would read as the
+    product of `EA` with `[A]` and `E bag Job` as three things composed.  Two forms stay closed up: a
+    CHAIN OF ONE-LETTER FUNCTORS on one name, which no reader can take for a composite (`EA`, `FEA`,
+    `E𝟏`), and an argument the printer ALREADY DELIMITED with its own brackets (`E[A]`, `F[Char]`).
+
+    THE ARGUMENT'S JOIN IS THE ARGUMENT'S, never re-read off the finished name. -/
+def applyLabel (f : String) (a : String) (j : Join) : String :=
+  if j == .bracket || (f.length == 1 && j == .name) then f ++ a
+  else f ++ "(" ++ a ++ ")"
+
+/-- The join of what `applyLabel f` builds, which is decided by the label's OWN HEAD and nothing
+    else: a one-letter functor heads what it builds, so `E(bag(Job))` juxtaposes under the next one
+    exactly as `EA` does (`EF(bag(Job))`), while a longer name heads an application the next functor
+    parenthesises. -/
+def applyJoin (f : String) : Join := if f.length == 1 then .name else .other
+
 /-- A JUXTAPOSED application as THE PRINTER wrote it: the identifier it opens with and the operands
     beside it, `none` for everything else — a bare name, an infix, a notation that delimits its own
     operand.  The printer's operands, never the term's arguments: an unexpander that drops arguments
@@ -89,18 +140,21 @@ def juxt (a b : String) : String :=
   else if ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
   else a ++ " " ++ b
 
-/-- The heads the note sets TIGHT: a relator's action on an OBJECT, the power object, the initial
-    type at an object, the product and the fork.  Lean's formatter always sets an application's
-    argument off from its head (`F T`, `E A`, `T A`) and an infix off from its operands (`A × B`,
-    `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched — it is what the
-    `app_unexpander` beside the constant already printed.
+/-- The heads the note sets TIGHT: the power object, the initial type at an object, the product and
+    the fork.  Lean's formatter always sets an application's argument off from its head (`P A`,
+    `T A`) and an infix off from its operands (`A × B`, `⟨f, g⟩`) where the note closes them up; the
+    SPELLING is untouched — it is what the `app_unexpander` beside the constant already printed.
+
+    A RELATOR'S ACTION ON AN OBJECT IS NOT ONE OF THESE.  Closing the whole application up welds the
+    head's own spelling shut (`(RT.F A)([A] × [A])` came out `(RT.FA)([A]×[A])`), and whether it
+    juxtaposes at all is the note's join rule, which needs head and operand apart: `applyLabel`.
 
     AN ACTION ON AN ARROW IS NOT ONE OF THESE, however tight its object action sets.  `E(R)` is an
     operator APPLIED to a term of the note's, so its operand is respelled here (the `existsImage`
     clause below) where a tight head hands the whole application to the printer and the operand
     keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition. -/
 def tightHeads : Array Name :=
-  #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj,
+  #[``Freyd.Alg.PowerAllegory.powerObj,
     ``Freyd.Alg.InitialAlgebra.t, ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
     ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair]
 
@@ -208,6 +262,31 @@ def relatorName? (e : Expr) : MetaM (Option String) := do
   if let some h := stxHead (← PrettyPrinter.delab e) then return some h.getString!
   let some c := e.getAppFn.constName? | return none
   return some c.getString!
+
+/-- A FUNCTOR'S ACTION ON AN OBJECT, as the two things the note writes it from: the functor and the
+    object it is taken at.  Read off the field's own arguments — the last one is the object — so an
+    unexpander that hides them cannot lose them, exactly as `functorMap?` reads the action on an
+    arrow. -/
+def functorObj? (e : Expr) : Option (Expr × Expr) :=
+  match e.getAppFnArgs with
+  | (``Freyd.Functor.obj, args) =>
+    if args.size ≥ 6 then some (args[4]!, args[args.size - 1]!) else none
+  | _ => none
+
+/-- The NAME a functor writes on a label — the lane's own name where it has one, the printer's
+    otherwise, so the object `FA` and the arrow `F(R)` are headed by the same letter. -/
+def functorName (f : Expr) : MetaM String := do
+  match ← relatorName? f with
+  | some n => return n
+  | none => plain f
+
+/-- How an OBJECT's label joins under a functor's name.  A functor's action heads with THAT
+    functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
+    answer, read off the syntax it built. -/
+def objJoin (e : Expr) : MetaM Join := do
+  match functorObj? e with
+  | some (f, _) => return applyJoin (← functorName f)
+  | none => return stxJoin (← PrettyPrinter.delab e)
 
 /-- The last component of the head's name WHEN THAT HEAD IS A CONSTRUCTOR — read off the
     environment, never off the printed string.  A constructor is qualified by the type it builds,
@@ -404,6 +483,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
   let e' ← openNotedAll e
   if e' != e then return ← labelAt prec e'
+  -- A ONE-FIELD RECORD IS ITS FIELD, the rule `plain` already prints by: the object `⟨X⟩` of a
+  -- category of sets IS the set `X`, so the wrapper must come off HERE too or the clause below
+  -- dispatches on `RelSet.mk` and the operator inside — a product, a sum — is never seen.
+  if let some x ← unwrapRecord? e then return ← labelAt prec x
   let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
@@ -537,6 +620,19 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | none => plain e
   -- A relator's action on an ARROW is the ONE bracket no term carries: `F(⦇R⦈)`, the note's way of
   -- saying the argument is applied and not composed.
+  | (``Freyd.Functor.obj, _) =>
+    -- A FUNCTOR'S ACTION ON AN OBJECT joins by the note's own rule (CLAUDE.md): a ONE-LETTER
+    -- functor closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed
+    -- (`E[A]`), and every other application takes parentheses (`tree(A)`, `E(bag(Job))`,
+    -- `F([A]×[A])`).  Head and operand are spelled APART, each by its own rule: the operand is an
+    -- object of the note's, respelled here, and the head keeps the name its lane wears.
+    match functorObj? e with
+    | some (f, x) => return applyLabel (← functorName f) (← labelAt 0 x) (← objJoin x)
+    | none => plain e
+  -- AN OBJECT'S PRODUCT is the note's `×` between its two factors, each spelled HERE: a factor the
+  -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
+  -- application up, which is what a tight head would do.
+  | (``Prod, #[a, b]) => return wrap 1 ((← labelAt 2 a) ++ "×" ++ (← labelAt 2 b))
   | (``Freyd.Functor.map, _) =>
     match functorMap? e with
     | some (f, r) =>
