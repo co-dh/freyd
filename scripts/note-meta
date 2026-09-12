@@ -67,20 +67,17 @@ def main(argv):
         query_cmd = ["typst", "query", "--root", ".", *args, NOTE, "metadata", "--field", "value"]
         deps_path = os.path.join(tmpdir, "deps.json")
         pdf_path = os.path.join(tmpdir, "note.pdf")
-        # `typst query` has no `--deps`, and a compile of the same world reads the same files.
+        # `typst query` has no `--deps`, and a compile of the same world reads the same files.  One after
+        # the other: each lays out the whole note (13 GB, `--pages` saves none), and two at once exhaust RAM.
         compile_cmd = ["typst", "compile", "--root", ".", *args, NOTE, pdf_path,
                        "--deps", deps_path, "--deps-format", "json"]
-        qp = subprocess.Popen(query_cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True, encoding="utf-8")
-        cp = subprocess.Popen(compile_cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True, encoding="utf-8")
-        qout, qerr = qp.communicate()
-        cout, cerr = cp.communicate()
-        if qp.returncode:
-            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{qerr}")
-        if cp.returncode:
-            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{cerr}")
-        meta = json.loads(qout)
+        q = subprocess.run(query_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        if q.returncode:
+            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{q.stderr}")
+        c = subprocess.run(compile_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        if c.returncode:
+            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{c.stderr}")
+        meta = json.loads(q.stdout)
         with open(deps_path) as f:
             deps_list = json.load(f)["inputs"]
         deps = {p: sha256_file(os.path.join(ROOT, p)) for p in deps_list}
