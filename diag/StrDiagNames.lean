@@ -197,6 +197,10 @@ open Lean PrettyPrinter in
 @[app_unexpander Cylinder.Q] def unexpandCylinderQ : Unexpander | _ => `($(mkIdent `Q))
 open Lean PrettyPrinter in
 @[app_unexpander Cylinder.paths] def unexpandCylinderPaths : Unexpander | _ => `($(mkIdent `paths))
+-- A section's thinning preorder is the note's `Q`, for the reason its ordering is `R`: which
+-- relation it is, is the `code-defn` line above the table, not what the box is labelled with.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.Q] def unexpandCodeQ : Unexpander | _ => `($(mkIdent `Q))
 
 open Lean PrettyPrinter in
 /-- The note's bead for the maximum-segment-sum step algebra is `k`; `Kalg` is only the Lean name. -/
@@ -215,7 +219,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 /-- `thin Q` — B&dM (8.1), and the name the note writes on the box.  The definition is an
     intersection, so without a spelling of its own the picture opened it into the cap of
-    `subsetRel` with a residual, which is the operator the name exists to hide. -/
+    `subsetRel` with a residual, which is the operator the name exists to hide.
+
+    Juxtaposed, NOT the `thin(" Q ")` notation above: the note writes `thin Q` on every §8 row it
+    draws (`thin-cor`, `thinlist-thm82`, the `dp-laws` head row), and only the indexed `thin(Qᵢ)`
+    rows bracket it — so bracketing here turns three drawn rows red to chase two undrawn ones. -/
 @[app_unexpander thinRel] def unexpandThinRel : Unexpander
   | `($_ $q) => `($(mkIdent `thin) $q)
   | _ => `($(mkIdent `thin))

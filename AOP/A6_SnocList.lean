@@ -295,7 +295,8 @@ def algSnoc {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
 /-- The constructor `wrap` as a relation. -/
 def wrapR : dL L ⟶ dSL L E := graph SnocList.wrap
 /-- The constructor `snoc` as a relation. -/
-def snocR : (⟨SnocList L E × E⟩ : RelSet.{0}) ⟶ dSL L E := graph (fun p => SnocList.snoc p.1 p.2)
+@[expose] public def snocR : (⟨SnocList L E × E⟩ : RelSet.{0}) ⟶ dSL L E :=
+  graph (fun p => SnocList.snoc p.1 p.2)
 
 /-- **The §6.1/§6.4 recursive equation** (B&dM p.138/145): the converse of a catamorphism over a
     snoc-list datatype satisfies `val° = (wrap·g°) ∪ (snoc·(val°×id)·h°)` (mirrored to diagram
@@ -368,6 +369,11 @@ open Lean PrettyPrinter in
   | `($_ ()) => `($(mkIdent `nil))
   | `($_ $x) => `($(mkIdent `wrap) $x)
   | _ => throw ()
+
+-- The constructor as an arrow wears the note's own word, as the cons list's `cons` does.
+open Lean PrettyPrinter in
+@[app_unexpander snocR] public meta def unexpandSnocR : Unexpander
+  | _ => `($(mkIdent `snoc))
 
 -- The structural fold wears the note's banana, for the reason `AOP.A6_ConsList.cataR`'s does: a
 -- picture says which arrow it draws by the algebra in the brackets.
