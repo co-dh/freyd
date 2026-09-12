@@ -1115,9 +1115,12 @@ open Lean PrettyPrinter in
 @[app_unexpander ceilSpread] public meta def unexpandCeilSpread : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⟨ceiling,ceiling−floor⟩")))
 
+-- THE SECTION'S ALGEBRA IS THE NOTE'S BEAD `S`, as it is in every other §13.4 case study
+-- (`A7_7_TakeWhile`, `A7_7_Filter`, `A7_7_MSS` each unexpand their own `Salg` to `S`): what it is
+-- built from is the `van-defn` line above the table, not what the box is labelled with.
 open Lean PrettyPrinter in
 @[app_unexpander Salg] public meta def unexpandVanSalg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[nil,new ∪ old]")))
+  | _ => `($(mkIdent `S))
 
 -- The program's algebra is the greedy choice already made — the note's last van panel writes it
 -- `[nil,(ok→glue,new)]`, the security test picking the branch that `Salg` leaves as a union.
