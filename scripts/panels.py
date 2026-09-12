@@ -24,7 +24,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import chapter_env, sections_of, take_chapter    # noqa: E402
+from notesplit import chapter_env, sections_of, take_chapter, typst_label    # noqa: E402
 
 
 def read(path, ch=None):
@@ -42,7 +42,9 @@ def read(path, ch=None):
     if n is None:
         return rows
     here = sections_of(n)
-    return [r for r in rows if r[1] in here]
+    # The name column is a LABEL, which `diag/circuit-panels.txt` writes as typst does (`<x>`) and
+    # `diag/string-panels.txt` bare; both name the same display, so both are read as the label.
+    return [r for r in rows if typst_label(r[1]) in here]
 
 
 if __name__ == "__main__":

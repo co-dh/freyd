@@ -34,10 +34,12 @@ ifeq ($(strip $(CH)),)
 NOTESRC := diag/allegory-axioms.typ
 CITESRC := $(TYP)
 else
-NOTESRC := $(shell ./scripts/note-files --ch $(CH) 2>&1)
+# The resolver's own message goes to make's stderr, naming the chapters there are; it prints no path
+# when it fails, and one file when it succeeds, so anything else stops make here.
+NOTESRC := $(shell ./scripts/note-files --ch $(CH))
 CITESRC := $(NOTESRC)
-ifeq ($(wildcard $(NOTESRC)),)
-$(error $(NOTESRC))
+ifneq ($(words $(NOTESRC)),1)
+$(error CH=$(CH): ./scripts/note-files --ch $(CH) named no chapter file — its message is above)
 endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)

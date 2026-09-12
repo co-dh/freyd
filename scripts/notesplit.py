@@ -90,6 +90,16 @@ def typst_string(line):
     return None
 
 
+def typst_label(s):
+    """A display's label as its NAME: `<thin-up>` is typst's own spelling of the label `thin-up`.
+
+    The manifests write it both ways — `diag/string-panels.txt` bare, `diag/circuit-panels.txt` as
+    typst writes it — and a label's identity is its name, which is what the note's metadata carries.
+    The delimiters are read off as the syntax they are, not compared as text."""
+    s = s.strip()
+    return s[1:-1] if len(s) > 1 and s[0] == "<" and s[-1] == ">" else s
+
+
 def retarget(line, f):
     """`line` with its first string literal replaced by `f` of that literal's text."""
     i = line.find('"')

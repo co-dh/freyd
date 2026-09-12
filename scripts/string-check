@@ -386,6 +386,11 @@ def main(argv):
     # manifest keys by.  `want` therefore filters the NUMBER, not the name.
     num = lambda n: number.get(n, n)
     addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    # A section the scoped note does not hold is a MISTAKE, never an empty report: with `CH` naming
+    # one chapter, `13.4` asked of chapter 12 would otherwise check nothing and exit 0.
+    if want and not any(num(n).startswith(want) for n in live):
+        sys.exit(f"string-check: no display {want} in {NOTE} — it draws "
+                 + ", ".join(sorted({num(n) for n in live})[:8]) + ", …")
     rc, named = 0, {n for n, _ in rows}
     for n in live:
         if n not in named:
