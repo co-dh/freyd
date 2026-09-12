@@ -117,27 +117,36 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
     | _, _ => none
   | _ => none
 
-/-- One operand as the printer writes it, with the parentheses the printer put round it to keep it
-    out of the juxtaposition dropped — the brackets of `f(…)` already separate it, and
-    `thin((prefix°×(⊤+⊤)))` doubles them. -/
-partial def stxShow (s : Syntax) : MetaM String := do
+/-- The parentheses the printer put round an operand to keep it out of the juxtaposition taken off,
+    and its null wrappers with them — the brackets of `f(…)` already separate it, and
+    `thin((prefix°×(⊤+⊤)))` doubles them.  ONE peel, because the string an operand is written as
+    and the join it is read at must be the same syntax: reading the join off the unpeeled `(A × B)`
+    calls it self-delimiting and juxtaposes `E` against the string the peel already opened. -/
+partial def stxPeel (s : Syntax) : Syntax :=
   match s.getArgs with
-  | #[.atom _ "(", inner, .atom _ ")"] => stxShow inner
-  | #[inner] => if s.isOfKind nullKind then stxShow inner else fmt s
-  | _ => fmt s
-where
-  fmt (s : Syntax) : MetaM String := do
-    let t := (toString (← PrettyPrinter.ppTerm ⟨s⟩)).replace "«" "" |>.replace "»" ""
-    return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
+  | #[.atom _ "(", inner, .atom _ ")"] => stxPeel inner
+  | #[inner] => if s.isOfKind nullKind then stxPeel inner else s
+  | _ => s
 
-/-- The printer's spelling of a term, with a JUXTAPOSED application re-set in the repo's brackets:
-    `thin(Q)`, never `thin Q`, because juxtaposition is composition and the second reads as a
-    composite of two arrows.  A head whose own notation already delimits its operands (`est(R)`,
-    `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote. -/
+/-- One operand as the printer writes it, peeled. -/
+def stxShow (s : Syntax) : MetaM String := do
+  let t := (toString (← PrettyPrinter.ppTerm ⟨stxPeel s⟩)).replace "«" "" |>.replace "»" ""
+  return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
+
+/-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
+    rule: ONE operand goes through `applyLabel`, so a ONE-LETTER head juxtaposes with it (`TA`,
+    `PA`, `E[A]`) and a longer name applies with parentheses (`thin(Q)`, `bag(Job)`, `list⁺(A)`),
+    juxtaposition being composition and `thin Q` reading as a composite of two arrows.  The LENGTH
+    and the operand's own join decide it, never a list of names — the next one-letter functor
+    declared draws right with no line added here.  SEVERAL operands are the note's comma list, which
+    no juxtaposition can be read as.  A head whose own notation already delimits its operands
+    (`est(R)`, `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote. -/
 def appShow (e : Expr) : MetaM String := do
   match appParts (← PrettyPrinter.delab e) with
   | some (h, ops) =>
-    return (← stxShow h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+    match ops with
+    | #[a] => return applyLabel (← stxShow h) (← stxShow a) (stxJoin (stxPeel a))
+    | _ => return (← stxShow h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
   | none => plain e
 
 /-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
@@ -151,10 +160,15 @@ def juxt (a b : String) : String :=
   else if ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
   else a ++ " " ++ b
 
-/-- The heads the note sets TIGHT: the power object, the initial type at an object, the product and
-    the fork.  Lean's formatter always sets an application's argument off from its head (`P A`,
-    `T A`) and an infix off from its operands (`A × B`, `⟨f, g⟩`) where the note closes them up; the
-    SPELLING is untouched — it is what the `app_unexpander` beside the constant already printed.
+/-- The heads the note sets TIGHT: the product and the fork.  Lean's formatter sets an INFIX off
+    from its operands (`A × B`, `⟨f, g⟩`, `a + b`) where the note closes them up; the SPELLING is
+    untouched — it is what the `app_unexpander` beside the constant already printed.
+
+    AN APPLICATION IS NOT ONE OF THESE ANY MORE.  `P A` and `T A` are a functor's action written by
+    juxtaposition, and `appShow` decides those by the head's own LENGTH — one letter closes up, a
+    longer name takes parentheses — so the next one-letter functor draws right with no name added
+    here.  What is left is infix, where the space to close is the formatter's around the operator's
+    OWN ATOM and no length test can see it.
 
     A RELATOR'S ACTION ON AN OBJECT IS NOT ONE OF THESE.  Closing the whole application up welds the
     head's own spelling shut (`(RT.F A)([A] × [A])` came out `(RT.FA)([A]×[A])`), and whether it
@@ -165,8 +179,7 @@ def juxt (a b : String) : String :=
     clause below) where a tight head hands the whole application to the printer and the operand
     keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition. -/
 def tightHeads : Array Name :=
-  #[``Freyd.Alg.PowerAllegory.powerObj,
-    ``Freyd.Alg.InitialAlgebra.t, ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
+  #[``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
     ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair,
     -- A COPRODUCT OBJECT sets as tight as a product apex: the note writes `GA+G'A`.  The sum of two
     -- ARROWS is not here for the reason the paragraph above gives — it welded `F(R)+F'(R)` shut to
@@ -652,6 +665,19 @@ def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
 def namedRecip (r : Expr) : Option String :=
   if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then some "∈" else none
 
+/-- The one FIELD of a one-field record IS that record (`ExprReader.unprojRecord?`) — EXCEPT where
+    the record is an INSTANCE.  A class with one field is a one-field record, so `m + 1`, which is
+    `HAdd.hAdd` at `instHAdd`, was read as its own instance and the label came out `instHAdd`, with
+    the two operands dropped.  An instance argument is the elaborator's business and no factor of a
+    name the note writes — the same rule `headShow` keeps — and the BINDER INFO of the projection's
+    structure argument is what says so, never the head's name or the field's. -/
+def unprojNoted? (e : Expr) : MetaM (Option Expr) := do
+  if let .const n _ := e.getAppFn then
+    if let some pi := (← getEnv).getProjectionFnInfo? n then
+      let fi ← Meta.getFunInfoNArgs e.getAppFn (pi.numParams + 1)
+      if (fi.paramInfo[pi.numParams]?.map (·.isInstImplicit)).getD false then return none
+  unprojRecord? e
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -679,7 +705,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- …and its FIELD is that record, the same identification read the other way: `E[A].carrier` is
   -- the object `E[A]`, and a projection Lean wrote only because `×` is a type former is not a step
   -- of the algebra.  Each peel strictly shrinks the term, so the two cannot loop through each other.
-  if let some x ← unprojRecord? e then return ← labelTree prec x
+  if let some x ← unprojNoted? e then return ← labelTree prec x
   -- A FIELD LEAN LEFT AS A POSITION is written through the field's own name, or the notation keyed
   -- on it — `RelProd.p`'s `a×b` — never fires and the label prints `inst✝.1`.
   if let some x ← namedProj? e then return ← labelTree prec x
@@ -788,13 +814,14 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- has, one line up, for the same reason.
   | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
   -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
-  -- `⦇F(∋)R%∋⦈`, `𝟙%∋`, the numerator at composition's own precedence so a composite carries no
-  -- brackets of its own.  The TWO-ARROW form `𝟙%∋ E(R)` is `labelRunT`'s, because it is the two
-  -- beads a PICTURE splits the transpose into and not a spelling of the term; a label nested inside
-  -- another operator has no picture to split and takes the fraction, written flat.
+  -- `S%∋`, `(F(∋)S)%∋`, `𝟙%∋`.  The NUMERATOR carries the brackets, at juxtaposition's own
+  -- precedence, because the `%` binds tighter than composition: `F(∋)S%∋ thin(Q)` would read as
+  -- `F(∋)` composed with `S%∋`, and a bracket round the whole fraction says a grouping of the
+  -- composite instead.  The TWO-ARROW form `𝟙%∋ E(R)` is the PICTURE's, written by the spine
+  -- rewrite before anything is labelled (`labelRunT`); a label has no picture to split.
   | (``Freyd.Alg.Λ, args) => do
     match (← arrows args).back? with
-    | some r => return wrap 1 (.frac (← labelTree 1 r) (.text "∋"))
+    | some r => return .frac (← labelTree 2 r) (.text "∋")
     | none => txt e
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.
@@ -879,12 +906,13 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- TYPE.  A family with a NOTATION of its own is the clause below: there the letter stands alone
     -- and the index is what the notation dropped.
     if ← isComponent e then
-      -- Built from the head and its indices and not from the printer's string: squeezing the spaces
-      -- out of `χ (GA)` leaves the parentheses the formatter put round the index.  Each index is an
-      -- object of the note's, spelled by its own rule, and closes up flat (`χGA`).
-      let mut l : Lbl := .text (← plain e.getAppFn)
-      for a in e.getAppArgs do l := l ++ (← labelTree 0 a)
-      return l
+      -- A BEAD'S INDEX IS THE OBJECT WIRE UNDER IT, so the string label writes the letter ALONE and
+      -- the index goes BENEATH, the shape a family with a notation of its own gets above: a label
+      -- that writes it too spells one object twice and lets the two drift (`est(R)` over `[m + 1]`,
+      -- never `est(R(m+1))`).  The commutative panel, having no wire to read it off, keeps the
+      -- subscript, which is what `Lbl.sub` is: the index is dropped by `flat` and by nothing else.
+      let ix ← e.getAppArgs.toList.mapM (labelTree 0)
+      return .sub (.text (← plain e.getAppFn)) (Lbl.join "," ix.toArray)
     else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
@@ -920,13 +948,18 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
           go rest (t.replace fun s => if s == a then some x else none)
     go hom.toList e
 
-/-- THE FACTORS A LABEL WRITES, in diagram order, FLAT.  Composition's own factors, and the
-    transpose opened into the two arrows the picture draws: `Λ R = 𝟙%∋ E(R)`
-    (`Λ_eq_singleton_existsImage`), ONE fraction the statement writes and TWO arrows the note sets
-    beside each other — the unit, then `E` outside `R`.  Fixed at `Λ 𝟙`, which IS the unit.
+/-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
+    the one rule above.
 
-    FLAT is the whole point of the array: the split makes one factor of a run into two, and
-    juxtaposition is associative, so a bracket round them would say a grouping the note does not. -/
+    NO TRANSPOSE IS OPENED HERE.  `Λ S` IS drawn as the unit bead `𝟙%∋` and `S` on the `E` lane, and
+    the term the picture draws is rewritten to that shape along its SPINE before anything is
+    labelled (`ExprReader.rewriteSpine`, `Λ_eq_singleton_existsImage`) — which is the one place that
+    rule belongs, because only the spine has the two beads to split into.  A second copy of it here
+    fired where the spine rewrite deliberately does not go, inside a fold's body and a relator's
+    argument, and wrote `⦇𝟙%∋ E(S)est(R°)⦈` where the note writes `⦇S%∋ est(R°)⦈`.
+
+    FLAT is the whole point of the array: juxtaposition is associative, so a bracket round the
+    factors would say a grouping the note does not. -/
 partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
   let e' ← openNotedAll e
   if e' != e then return ← labelRunT e'
@@ -936,12 +969,6 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
     let mut out := #[]
     for f in factors e do out := out ++ (← labelRunT f)
     return out
-  | (``Freyd.Alg.Λ, args) =>
-    match (← homArgs args).back? with
-    | some r =>
-      if r.isAppOf ``Cat.id then return #[.frac (← labelTree 3 r) (.text "∋")]
-      return #[.frac (.text "𝟙") (.text "∋"), "E(" ++ (← labelTree 0 r) ++ ")"]
-    | none => return #[← txt e]
   | _ => return #[← labelTree 2 e]
 
 end
