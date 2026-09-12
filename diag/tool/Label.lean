@@ -196,6 +196,35 @@ def projIndex (body : Expr) : Option Nat :=
     | (``Prod.snd, _) => some 1
     | _ => none
 
+/-- The last component of a declaration's name, for the places a picture writes a declaration by
+    name and nothing else.  A namespace is what a resolver needs, and nothing inside a picture
+    resolves a name, so `cat` is what the box says wherever `cat` is what was declared. -/
+def declName? (e : Expr) : MetaM (Option String) := do
+  let .const n _ := e.getAppFn | return none
+  if ((← getEnv).find? n).isNone then return none
+  -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
+  -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
+  -- drops the namespace chose nothing, so the constant's own last component stands.
+  if let some h := stxHead (← PrettyPrinter.delab e) then
+    if h.getString! != n.getString! then return some h.getString!
+  return some n.getString!
+
+/-- A HEAD WITH THE ARGUMENTS THE PICTURE ALREADY DRAWS TAKEN OUT, spelled from its EXPLICIT
+    positions alone.  An implicit or instance argument is the elaborator's business and no factor of
+    the note's name: taking the drawn arguments out of `x + c` left `HAdd.hAdd` carrying its
+    `instHAdd`, which is a projection applied to an instance, and the printer wrote `instHAdd` into
+    the label.  WHICH POSITIONS THOSE ARE IS THE HEAD'S OWN BINDER INFO, never a count, a position or
+    a name; with no explicit argument left the head is written by its own declared name. -/
+def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM String := do
+  let fi ← Meta.getFunInfoNArgs f args.size
+  let mut keep : Array Expr := #[]
+  for i in [0 : args.size] do
+    if ((fi.paramInfo[i]?.map (·.isExplicit)).getD true) && keepArg args[i]! then
+      keep := keep.push args[i]!
+  if keep.isEmpty then
+    if let some n ← declName? f then return n
+  plain (mkAppN f keep)
+
 /-- The name of a value computed FROM THE INPUT, in diagram order: `p(π₁ s)` is `π₁p` — first the
     projection, then the test.  The input itself is the identity and contributes nothing, and an
     argument that does not mention the input is a PARAMETER of the function, not a step of the
@@ -212,8 +241,7 @@ partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
     | _, _ =>
       let deps := args.filter fun a => a.containsFVar s
       if deps.size == 1 then
-        let rest := args.filter fun a => !a.containsFVar s
-        return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
+        return (← valLabel s deps[0]!) ++ (← headShow x.getAppFn args fun a => !a.containsFVar s)
       plain x
 
 /-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
@@ -345,19 +373,6 @@ def ctorName? (e : Expr) : MetaM (Option String) := do
   | some (.ctorInfo _) => return some n.getString!
   | _ => return none
 
-/-- The same answer for ANY declaration, for the one place a box writes a declaration by name and
-    nothing else.  A namespace is what a resolver needs, and nothing inside a picture resolves a
-    name, so `cat` is what the box says wherever `cat` is what was declared. -/
-def declName? (e : Expr) : MetaM (Option String) := do
-  let .const n _ := e.getAppFn | return none
-  if ((← getEnv).find? n).isNone then return none
-  -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
-  -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
-  -- drops the namespace chose nothing, so the constant's own last component stands.
-  if let some h := stxHead (← PrettyPrinter.delab e) then
-    if h.getString! != n.getString! then return some h.getString!
-  return some n.getString!
-
 mutual
 
 /-- The BODY of a map, named as an arrow out of the input `s`: a body that does not mention `s` is
@@ -447,7 +462,7 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
       if (List.range args.size).all fun i =>
           !(fi.paramInfo[i]?.map (·.isExplicit) |>.getD true) || args[i]!.containsFVar s then
         if let some n ← declName? body then return n
-      return ← plain (mkAppN body.getAppFn (args.filter fun a => !a.containsFVar s))
+      return ← headShow body.getAppFn args fun a => !a.containsFVar s
     if body₀.containsFVar s then plain f else plain body₀
 
 /-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note

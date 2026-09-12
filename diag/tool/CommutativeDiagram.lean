@@ -347,6 +347,37 @@ def definingFace (f : Expr) : MetaM (Option Face) := do
     st.restore
   return none
 
+/-- Every edge's arrow with `c` rewritten to `g`, the VERTICES untouched: an equation between two
+    arrows says they stand between the same objects, so a polygon's corners are the law's and only
+    its labels are the statement's. -/
+def Path.substEdges (p : Path) (c g : Expr) : MetaM Path := do
+  let sub (f : Expr) : MetaM Expr :=
+    Meta.transform f (pre := fun x => do
+      if x.isApp && (← Meta.inferType x).isAppOf ``Cat.Hom && (← Meta.isDefEq x c) then
+        return .done g
+      return .continue)
+  return { p with edges := ← p.edges.mapM fun (s, t, f) => return (s, t, ← sub f) }
+
+/-- AN EQUATION BETWEEN TWO SINGLE ARROWS, ONE OF WHICH A UNIVERSAL PROPERTY PRODUCED, draws as the
+    SQUARE that produced it, at the arrow the equation says it is: `⦇α⦈=𝟙` is `α⦇α⦈=F(⦇α⦈)α` with
+    `𝟙` written on the fold's edge and `F(𝟙)` on the left, which is the note's own drawing.  The
+    equation is what pins the arrow down, so that edge is the one this face produces.
+
+    EACH SIDE IS ONE ARROW.  A side that walks through an object of its own is a path the statement
+    draws — `⦇R⦈=⦇Λ(F(∋)R)⦈∋` steps through `E A` — and the picture is that walk, not a square
+    about one of its factors. -/
+def foldEqFace (l r : Expr) : MetaM (Option Face) := do
+  let heads ← inducedHeads
+  let some (c, g) :=
+      if isInduced heads l && !isInduced heads r then some (l, r)
+      else if isInduced heads r && !isInduced heads l then some (r, l)
+      else none
+    | return none
+  unless (← interp l).edges.size ≤ 1 && (← interp r).edges.size ≤ 1 do return none
+  let some d ← definingFace c | return none
+  return some { d with lhs := ← d.lhs.substEdges c g, rhs := ← d.rhs.substEdges c g,
+                       induced := #[g] }
+
 /-- Whether the AMBIENT STRUCTURE supplies this arrow, as against the statement handing it over: its
     head is a structure's PROJECTION — `(initial _ _).α`, `P.outl`, `∋`, `𝟙` — or its own declaration
     takes an INSTANCE of the class that gives it, as the singleton `𝟙%∋` takes a `PowerAllegory`.
@@ -527,15 +558,17 @@ where
 def imageOf (f : Expr) : MetaM (Option Expr) := do
   let (a, b) ← StrDiag.homEnds f
   let mut gs : Array Expr := #[]
+  let mut ids : Array Expr := #[]
   for g in f.getAppArgs do
     if (← Meta.inferType g).isAppOf ``Cat.Hom then
       let (c, d) ← StrDiag.homEnds g
-      -- AN IDENTITY SLOT IS THE BIFUNCTOR APPLIED AT THAT OBJECT — `𝟙×∋` is `A×−` acting on `∋`,
-      -- `F(𝟙,f)` is `F(A,−)` acting on `f` — and not a second source.  The head CONSTANT, not the
-      -- two ends: an ordering `R : A⟶A` is an endo and is the source arrow of its own image.
-      unless g.isAppOf ``Cat.id do
-        unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
-          gs := gs.push g
+      unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
+        -- AN IDENTITY SLOT IS THE BIFUNCTOR APPLIED AT THAT OBJECT — `𝟙×∋` is `A×−` acting on `∋`,
+        -- `F(𝟙,f)` is `F(A,−)` acting on `f` — and not a second source.  It is a SLOT only while
+        -- another slot carries an arrow: where every argument is an identity the operator moved
+        -- nothing else, so `F(𝟙)` is `F` acting on `𝟙` and is induced exactly as `𝟙` is.
+        if g.isAppOf ``Cat.id then ids := ids.push g else gs := gs.push g
+  if gs.isEmpty then gs := ids
   -- AN IMAGE HAS ONE SOURCE ARROW.  An arrow built from TWO that stand elsewhere — `φ×ψ`, the
   -- product of two transformations — is the image of NEITHER, and calling it `φ` moved makes the
   -- lax square it sits in read as being about carrying `φ` across.
@@ -1104,6 +1137,12 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
   | none =>
     match StrDiag.split body with
     | some (sym, l, r) =>
+      -- AN EQUATION SAYING WHAT AN INDUCED ARROW IS draws the square that produced it
+      -- (`foldEqFace`) — unless the selector asked for ONE SIDE, where the picture is that side's
+      -- own path and there is no square to draw it in.
+      if sym == "=" && side.isNone then
+        if let some fc ← foldEqFace l r then
+          return ← k #[{ fc with induced := fc.induced ++ induced }]
       -- The selector names a side of whatever relation the statement wears: of an `↔` WHICH CLAIM,
       -- of an equation WHICH SIDE — one path, the note's two canvases with the `=` between them.
       let atoms ← termArrows body
