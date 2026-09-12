@@ -71,13 +71,13 @@ public theorem cyl_cp : cpMap H I.t = Λ (H.map (∋ I.t)) := rfl
 
 /-- **cp-diag**, the `A×−` summand of `F(A,−)=A+A×−`: `cp = 𝟙%∋ E(𝟙×∋)` — the new square is
     carried untouched and `∋` picks one path out of the set beside it. -/
-public theorem cyl_cp_prod [HasRelProd 𝒜] (a b : 𝒜) :
-    cpMap (Relator.prod (Relator.const a) (Relator.idRelator 𝒜)) b
-      = Λ (prodMap (relProd a (PowerAllegory.powerObj b)) (relProd a b) (𝟙 a) (∋ b)) := rfl
+public theorem cyl_cp_prod [HasRelProd 𝒜] (A B : 𝒜) :
+    cpMap (Relator.prod (Relator.const A) (Relator.idRelator 𝒜)) B
+      = Λ (prodMap (relProd A (PowerAllegory.powerObj B)) (relProd A B) (𝟙 A) (∋ B)) := rfl
 
 /-- **cp-diag**, the `A` summand: `cp = 𝟙%∋` — a constant relator has no `E` to distribute, so
     the transpose is the singleton `a↦{a}`. -/
-public theorem cyl_cp_const (a b : 𝒜) : cpMap (Relator.const (𝒜 := 𝒜) a) b = Λ (𝟙 a) := rfl
+public theorem cyl_cp_const (A B : 𝒜) : cpMap (Relator.const (𝒜 := 𝒜) A) B = Λ (𝟙 A) := rfl
 
 /-- **cyl-defn**: `gen ≜ F(𝟙,moves trans N(union)) zip N(cp P(α))`, of type
     `F(NA,N(E(LA)))⟶N(E(LA))` — one fold step, extending every path of every row by the new
