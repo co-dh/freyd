@@ -9,7 +9,7 @@
 //   ./scripts/scanline diag/allegory-axioms.typ --strict // sweep what these calls emit
 #import "note-style.typ": P, dispnum, plain
 #import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
-#import "draw.typ": BCOL, fb-ALLC, fcol, lanecheck, objcol
+#import "draw.typ": BCOL, fb-ALLC, fcol, lanecheck, objcols
 
 // ---- the Hinze-Marsden panel machinery, ABOVE every section that draws one: Typst binds a
 // `#let` where it stands, and §11.4's generated panels are the first `dpanel` calls in the note.
@@ -117,7 +117,9 @@
   // `(ytop, object, hue)`: the OBJECT travels with its band, because the rule the sweep holds is
   // about the objects drawn — two of them in one colour — and a band that carried only a hue could
   // not name the pair that collided.
-  bs.map(b => (b.at(0), b.at(1), objcol(b.at(1))))
+  // The hues come from `objcols`, which allocates the whole wire's bands at once: `objcol` alone
+  // hashes each name in isolation and so can hand two neighbouring objects one band.
+  bs.zip(objcols(bs.map(b => b.at(1)))).map(((b, c)) => (b.at(0), b.at(1), c))
 }
 // The band a height falls in: the LAST one that opens above it, the bands running down the panel.
 #let ocolat(bs, y) = {
