@@ -87,12 +87,30 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
 
+-- A DATATYPE'S CARRIER IS THE NOTE'S OBJECT, under the note's own name for it: `tree(A)`,
+-- `list⁺(A)`.  The unexpander writes the NAME, applied; the BRACKETS are the label printer's
+-- (`appShow`), which puts them round the operand of every juxtaposed application, because
+-- juxtaposition is composition and `tree A` reads as two things composed (CLAUDE.md).  One clause
+-- per carrier, keyed on the constant — the tree the note draws is the tip-tree as much as the rose
+-- tree, and the element type is the one argument either takes.
 open Lean PrettyPrinter in
-/-- The rose tree's CARRIER is the note's object `tree A`: the relator's own lane letter applied to
-    the element type, which is what `dRose A` is.  Space-applied, as the note writes it; a bracketed
-    spelling would have to be a `notation`, for the reason `bag(` below is one. -/
 @[app_unexpander RelSet.RT.dRose] def unexpandDRose : Unexpander
   | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.dTree] def unexpandDTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.Tree] def unexpandTreeType : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.dNE] def unexpandDNE : Unexpander
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)

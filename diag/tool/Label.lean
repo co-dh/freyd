@@ -89,15 +89,26 @@ def juxt (a b : String) : String :=
   else if ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
   else a ++ " " ++ b
 
-/-- The heads the note sets TIGHT: a relator's action on an object, the power object and the
-    existential image, the initial type at an object, the product and the fork.  Lean's formatter
-    always sets an application's argument off from its head (`F T`, `E A`, `T A`) and an infix off
-    from its operands (`A × B`, `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched
-    — it is what the `app_unexpander` beside the constant already printed. -/
+/-- The heads the note sets TIGHT: a relator's action on an OBJECT, the power object, the initial
+    type at an object, the product and the fork.  Lean's formatter always sets an application's
+    argument off from its head (`F T`, `E A`, `T A`) and an infix off from its operands (`A × B`,
+    `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched — it is what the
+    `app_unexpander` beside the constant already printed.
+
+    AN ACTION ON AN ARROW IS NOT ONE OF THESE, however tight its object action sets.  `E(R)` is an
+    operator APPLIED to a term of the note's, so its operand is respelled here (the `existsImage`
+    clause below) where a tight head hands the whole application to the printer and the operand
+    keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition. -/
 def tightHeads : Array Name :=
-  #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj, ``Freyd.Alg.existsImage,
+  #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj,
     ``Freyd.Alg.InitialAlgebra.t, ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
     ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair]
+
+/-- The ARROW arguments of an application, picked by their TYPE and not by their position:
+    `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
+    `⦇hf⦈` for `⦇f⦈`. -/
+def homArgs (args : Array Expr) : MetaM (Array Expr) :=
+  args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
 
 /-! ### A MAP, named from its own function
 
@@ -136,6 +147,49 @@ partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
         return (← valLabel s deps[0]!) ++ (← plain (mkAppN x.getAppFn rest))
       plain x
 
+/-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
+    peeled the way a tuple pattern binds it. -/
+partial def tupleFactors (s ty : Expr) (n : Nat) : MetaM (Array Expr) := do
+  if n == 0 then return #[]
+  if n == 1 then return #[s]
+  match (← Meta.whnfD ty).getAppFnArgs with
+  | (``Prod, #[_, b]) => return #[.proj ``Prod 0 s] ++ (← tupleFactors (.proj ``Prod 1 s) b (n - 1))
+  | _ => throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which is not a \
+      product of that many factors"
+
+/-- One alternative as a map OUT OF ITS SUMMAND, which is what an arm of the junction is. -/
+def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
+  Meta.withLocalDeclD `s ty fun s => do
+    Meta.mkLambdaFVars #[s] (mkAppN alt (← tupleFactors s ty n)).headBeta
+
+/-- The arms of a map given by a `match` ON ITS INPUT at a coproduct — the junction `[f,g]` the note
+    writes, whether the picture opens it as a tape or a label names it.  `matchMatcherApp?` reads
+    the discriminant, the alternatives and their arities off the elaborated term and the coproduct
+    off the discriminant's TYPE, so any `match` written this way — at any coproduct, any arity — is
+    the junction, and no `def`'s name appears here. -/
+def sumArms (fw : Expr) : MetaM (Option (Array Expr)) := do
+  unless fw.isLambda do return none
+  Meta.lambdaBoundedTelescope fw 1 fun xs body => do
+    let some u := xs[0]? | return none
+    let some ma ← Meta.matchMatcherApp? body | return none
+    unless ma.discrs.size == 1 && ma.discrs[0]! == u && ma.alts.size == 2
+      && ma.altNumParams.size == 2 && ma.remaining.isEmpty do return none
+    let (``Sum, #[a, b]) := (← Meta.whnfD (← Meta.inferType u)).getAppFnArgs | return none
+    return some #[← armFun ma.alts[0]! a ma.altNumParams[0]!,
+      ← armFun ma.alts[1]! b ma.altNumParams[1]!]
+
+/-- THE PROJECTION PATH a value is of the input, `none` where it is not one of its factors: `[]` is
+    the input itself, `[0]` its first factor.  Read off the term, so `p.1`, `Prod.fst p` and the
+    projection the elaborator compiled a pattern to all answer the same. -/
+partial def projPath (s : FVarId) (x : Expr) : Option (List Nat) :=
+  if x == .fvar s then some [] else
+  match x with
+  | .proj ``Prod i st => (projPath s st).map (· ++ [i])
+  | _ => match x.getAppFnArgs with
+    | (``Prod.fst, args) => (args.back?.bind (projPath s)).map (· ++ [0])
+    | (``Prod.snd, args) => (args.back?.bind (projPath s)).map (· ++ [1])
+    | _ => none
+
 /-- Beta at the head, to a fixed point.  An alternative reconstructed from a `match` arrives as a
     lambda applied to the summand's factors, and the lambda it names may itself be one; nothing
     beyond beta is reduced, because a NUMERAL delta-reduces to a constructor and would then read as
@@ -158,6 +212,12 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
   | some _ => return "π₂"
   | none =>
     if let some g ← guardLabel s body then return g
+    -- A `match` ON A COPRODUCT IS THE JUNCTION `[f,g]`, wherever it is spelled: the picture opens it
+    -- as a tape and a label names it, and both read the arms off the same `sumArms`.  The brackets
+    -- are `labelAt`'s own for `junc`, because it is the same arrow.
+    if let some arms ← sumArms (← Meta.mkLambdaFVars #[.fvar s] body₀) then
+      if arms.size == 2 then
+        return "[" ++ (← mapLabel arms[0]! false) ++ "," ++ (← mapLabel arms[1]! false) ++ "]"
     -- The book's names for the two structure maps of a list-like carrier, read off the TERM:
     -- a CONSTRUCTOR fed both factors of the input pair is `cons`, and one fed nothing from the
     -- input is `nil`.  Nothing here knows `List`: the next carrier built the same way gets the
@@ -167,9 +227,32 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
         | some (.ctorInfo _) => pure true
         | _ => pure false
       | _ => pure false
-    if isCtor && !body.containsFVar s then return "nil"
+    -- `nil` IS THE STRUCTURE MAP OUT OF `𝟏`, and whether the constructor was written with the unit
+    -- value in it (`wrap s`) or without it is a spelling: `𝟏` carries no strand either way, which is
+    -- the same test `mapLabel` asks before it writes a `⊸`.
+    if isCtor && (!body.containsFVar s || !(← hasStrands (← s.getType))) then return "nil"
     if isCtor && (body.find? fun x => projIndex x == some 0).isSome
-        && (body.find? fun x => projIndex x == some 1).isSome then return "cons"
+        && (body.find? fun x => projIndex x == some 1).isSome then
+      -- WHICH FACTOR RECURSES NAMES THE MAP: the constructor is fed both factors of the input pair
+      -- and one of them has the CARRIER's own type — the list being extended.  Second factor and the
+      -- element goes on the front (`cons`), first and it goes on the end (`snoc`).  Read off the
+      -- types, so the next carrier built either way is named without a line being added here.
+      let t ← Meta.inferType body
+      let recAt (i : Nat) : MetaM Bool := do
+        match body.find? fun x => projIndex x == some i with
+        | some p => Meta.isDefEq (← Meta.inferType p) t
+        | none => return false
+      return if ← recAt 0 then "snoc" else "cons"
+    -- A MAP THAT HANDS THE INPUT'S FACTORS STRAIGHT TO ONE ARROW IS THAT ARROW.  `fun p => snag p`
+    -- and `fun p => cat p.1 p.2` are `snag` and `cat` η-expanded, and the lambda is what the
+    -- elaborator wrote, not what the note draws.  The test is on the PATHS: every argument that
+    -- mentions the input is a projection of it, and together they are its factors in order.
+    let args := body.getAppArgs
+    let deps := args.filter fun a => a.containsFVar s
+    let paths := deps.toList.filterMap (projPath s)
+    if !deps.isEmpty && paths.length == deps.size
+        && (paths == [[]] || paths == (List.range deps.size).map ([·])) then
+      return ← plain (mkAppN body.getAppFn (args.filter fun a => !a.containsFVar s))
     if body₀.containsFVar s then plain f else plain body₀
 
 /-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note
@@ -215,6 +298,8 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
 
 end
 
+mutual
+
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
     — rather than left to the pretty printer, because it is read beside a picture, where
     `CartBicat.conv S` is noise and `S°` is the thing itself.  `°`, not the paper's `†`: these terms
@@ -238,10 +323,7 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
   -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
   -- `(R S) ∩ T`.
-  -- An operand is an ARROW, picked by its TYPE and not by its position: `I.cata f hf` carries the
-  -- algebra AND the proof it is one, and taking the last argument wrote `⦇hf⦈` for `⦇f⦈`.
-  let arrows (args : Array Expr) : MetaM (Array Expr) :=
-    args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
+  let arrows : Array Expr → MetaM (Array Expr) := homArgs
   let bin (p : Nat) (op : String) (args : Array Expr) (cp : Nat := p + 1) : MetaM String := do
     match lastTwo (← arrows args) with
     | some (f, g) => return wrap p ((← labelAt cp f) ++ op ++ (← labelAt cp g))
@@ -289,9 +371,8 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- undo, so the whole run is written as the note writes it.
   | (``Cat.comp, args) =>
     if lastTwo args |>.isNone then plain e else do
-      let fs := factors e
       let mut s := ""
-      for f in fs do s := juxt s (← labelAt 2 f)
+      for t in (← labelRun e) do s := juxt s t
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS, as `relexpr.py`'s own `spell` sets
       -- them: `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
@@ -327,7 +408,17 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- which is the relator's PROOF and not its picture.
   | (``Freyd.Alg.powerRel, args) => un 4 0 "P(" ")" args
   | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) => un 4 0 "⦇" "⦈" args
-  | (``Freyd.Alg.Λ, args) => un 2 3 "" "%∋" args
+  -- The EXISTENTIAL IMAGE is a relator's action on an arrow, so it takes the brackets every applied
+  -- operator takes and its operand is a term of the note's, respelled here — the same clause `P(R)`
+  -- has, one line up, for the same reason.
+  | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
+  -- The TRANSPOSE is drawn as the two arrows `labelRun` splits it into, so it is spelled as those
+  -- two as well: one picture, one label.  `Λ 𝟙` is the unit itself and stays one factor.
+  | (``Freyd.Alg.Λ, _) => do
+    let ts ← labelRun e
+    let mut s := ""
+    for t in ts do s := juxt s t
+    return wrap (if ts.size == 1 then 2 else 1) s
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.
   | (``Freyd.Alg.junc, args) => do
@@ -390,7 +481,11 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- and then APPLYING TAKES PARENTHESES (`appShow`), because juxtaposition is composition.  Those
     -- brackets are what separates an operand from the head, so where they are coming the operand is
     -- respelled at the TOP of its own precedence: `thin(prefix°×(⊤+⊤))`, not a second pair inside.
-    let paren := (appParts (← PrettyPrinter.delab e)).isSome
+    -- SOMETHING ALREADY DELIMITS IT in two ways, and both count: the brackets `appShow` is about to
+    -- write, and a head whose OWN NOTATION delimits its operand — which is exactly a syntax with no
+    -- identifier head, `stxHead`'s test, since a notation opens with an atom.
+    let stx ← PrettyPrinter.delab e
+    let paren := (appParts stx).isSome || (stxHead stx).isNone
     let rec go : List Expr → Expr → MetaM String
       | [], t => appShow t
       | a :: rest, t => do
@@ -398,6 +493,32 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
           go rest (t.replace fun s => if s == a then some x else none)
     go hom.toList e
+
+/-- THE FACTORS A LABEL WRITES, in diagram order, FLAT.  Composition's own factors, and the
+    transpose opened into the two arrows the picture draws: `Λ R = 𝟙%∋ E(R)`
+    (`Λ_eq_singleton_existsImage`), ONE fraction the statement writes and TWO arrows the note sets
+    beside each other — the unit, then `E` outside `R`.  Fixed at `Λ 𝟙`, which IS the unit.
+
+    FLAT is the whole point of the array: the split makes one factor of a run into two, and
+    juxtaposition is associative, so a bracket round them would say a grouping the note does not. -/
+partial def labelRun (e : Expr) : MetaM (Array String) := do
+  let e' ← openNoted e
+  if e' != e then return ← labelRun e'
+  match e.getAppFnArgs with
+  | (``Cat.comp, args) =>
+    if (lastTwo args).isNone then return #[← labelAt 2 e]
+    let mut out := #[]
+    for f in factors e do out := out ++ (← labelRun f)
+    return out
+  | (``Freyd.Alg.Λ, args) =>
+    match (← homArgs args).back? with
+    | some r =>
+      if r.isAppOf ``Cat.id then return #[(← labelAt 3 r) ++ "%∋"]
+      return #["𝟙%∋", "E(" ++ (← labelAt 0 r) ++ ")"]
+    | none => return #[← plain e]
+  | _ => return #[← labelAt 2 e]
+
+end
 
 /-- A label at the top of its own picture or box: no outer parentheses. -/
 def label (e : Expr) : MetaM String := labelAt 0 e
