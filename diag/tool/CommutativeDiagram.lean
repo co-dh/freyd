@@ -321,7 +321,12 @@ def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
 partial def arrowVars (e : Expr) : MetaM (Array Expr) := do
   match e with
   | .fvar _ => return if (← Meta.inferType e).isAppOf ``Cat.Hom then #[e] else #[]
-  | .app f a => return (← arrowVars f) ++ (← arrowVars a)
+  -- A FAMILY the statement binds is handed over one COMPONENT at a time: `φ : ∀ A, GA ⟶ FA` is no
+  -- arrow itself — its type is a `∀`, so the clause above cannot see it — and `φ A` is, at the two
+  -- objects that component runs between, which are the ones the picture draws.
+  | .app f a =>
+    if ← StrDiag.isComponent e then return #[e]
+    return (← arrowVars f) ++ (← arrowVars a)
   | .lam _ t b _ | .forallE _ t b _ => return (← arrowVars t) ++ (← arrowVars b)
   | .letE _ t v b _ => return (← arrowVars t) ++ (← arrowVars v) ++ (← arrowVars b)
   | .mdata _ b => arrowVars b
@@ -346,6 +351,29 @@ def imageOf (f : Expr) : MetaM (Option Expr) := do
         return some g
   return none
 
+/-- The CLAIMS the face asserts, each as the arrows it is made of: a single face asserts one, its
+    whole boundary, and a paste asserts two — the two statements it was pasted out of, each being one
+    side closed by the chord the two share. -/
+def Face.claims (fc : Face) : Array (Array Expr) :=
+  let es (p : Path) := p.edges.map (·.2.2)
+  match fc.chord with
+  | none => #[es fc.lhs ++ es fc.rhs]
+  | some (c, _) => #[(es fc.lhs).push c, (es fc.rhs).push c]
+
+/-- Whether ONE CLAIM of the face names both this arrow and its image under a relator — `F(R)` drawn
+    beside `R`.  A claim carrying an arrow BOTH ways is ABOUT that transport, so the arrow is the
+    structure the property is about and not one more arrow the statement hands over, which is why it
+    takes `GIVEN2` though it mentions a free variable.  Asked of one claim and not of the whole
+    polygon: a paste is two statements, and `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)` names `R` in the first and
+    `E(R)` in the second, so neither claim is about carrying `R` anywhere. -/
+def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
+  fc.claims.anyM fun cl => do
+    unless ← cl.anyM (Meta.isDefEq · f) do return false
+    cl.anyM fun g => do
+      match ← imageOf g with
+      | some h => Meta.isDefEq h f
+      | none => return false
+
 /-- WHICH ROLE an arrow plays, hence which of the note's hues it is drawn in (`diag/draw.typ`:
     `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue).
 
@@ -362,7 +390,7 @@ def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   if ← fc.dashes f then return "INDUCED"
   match ← imageOf f with
   | some g => return if ← fc.produces g then "INDUCED" else "GIVEN2"
-  | none => return if ← givenArrow f then "GIVEN1" else "GIVEN2"
+  | none => return if (← givenArrow f) && !(← fc.transports f) then "GIVEN1" else "GIVEN2"
 
 /-- WHICH COMPONENT OF THE ARROW IT INDUCES each side of a pasted face carries — `none` unless the
     statement is ABOUT those components.  The chord is what the two faces jointly determine; when an
@@ -488,6 +516,35 @@ def sideAt (first second : Nat) (mirror : Bool) (i : Nat) : String :=
   else if mirror then (if i < first then "left" else "bottom")
   else (if i < first then "top" else "right")
 
+/-- Whether that side is one of the two VERTICAL ones. -/
+def isVertical (first second : Nat) (mirror : Bool) (i : Nat) : Bool :=
+  let s := sideAt first second mirror i
+  s == "left" || s == "right"
+
+/-- WHICH WAY ROUND THE FACE HANGS.  `legs` sends a path clockwise — along the top, then down the
+    right — and its partner counter-clockwise, and swapping the two flags is the only other way the
+    same polygon can be laid on the same grid: it transposes the picture, horizontals for verticals.
+    The note hangs an arrow a relator has MOVED — `F(R)` over `R`, `list(R)` over `R` — on a VERTICAL
+    side, so the square reads as the transport sliding across, and that is the choice made here:
+    whichever of the two orientations stands more of the moved edges upright, the clockwise one when
+    they tie.  A face that moves nothing scores zero either way and keeps the default.
+
+    A PASTE IS NOT FREE TO TURN: its chord runs from the shared source to the shared target with the
+    `lhs` face above it and the `rhs` below, and the chord's own label is set inside the `lhs` face,
+    so swapping the two sides would put each face on the other side of the arrow they induce. -/
+def Face.transposed (fc : Face) : MetaM Bool := do
+  if fc.chord.isSome then return false
+  let moved (es : Array (String × String × Expr)) : MetaM (Array Bool) :=
+    es.mapM fun (_, _, f) => return (← imageOf f).isSome
+  let (ml, mr) := (← moved fc.lhs.edges, ← moved fc.rhs.edges)
+  let upright (ms : Array Bool) (mirror : Bool) : Nat := Id.run do
+    let (first, second) := legs ms.size mirror
+    let mut k := 0
+    for i in [0 : ms.size] do
+      if ms[i]! && isVertical first second mirror i then k := k + 1
+    return k
+  return upright ml true + upright mr false > upright ml false + upright mr true
+
 /-- A FAN, the one pasted shape that is not a square: every arrow of the polygon LEAVES an end of
     the chord, so the two ends are two apexes over one row of shared targets, and the chord runs
     between them.  Laid out that way — the chord's source above, its target below it, the two
@@ -604,15 +661,22 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
   let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
-  let (top, right) := legs n false
-  let (left, bot) := legs m true
+  -- Which of the two sides runs clockwise is `Face.transposed`, so `lhs` carries the mirror flag and
+  -- `rhs` the other one; every reader of the legs below takes them from the side's own flag.
+  let flip ← fc.transposed
+  let (lfst, lsnd) := legs n flip
+  let (rfst, rsnd) := legs m (!flip)
+  -- Each side's legs named by AXIS instead of by position: `legs` gives the leg a path leaves along
+  -- first, and which axis that is is the side's own orientation.
+  let (lhor, lver) := if flip then (lsnd, lfst) else (lfst, lsnd)
+  let (rhor, rver) := if flip then (rfst, rsnd) else (rsnd, rfst)
   -- The grid is as wide as the wider of its two horizontal legs and as tall as the taller of its
   -- two vertical ones; a leg a chord does not use counts for nothing.  Both sides chords is the
   -- digon: one column, no rows, and the two edges told apart by their bow.
   -- A leg belongs to a path only when that path turns a corner: `legs` gives a chord `(1, 0)`, whose
   -- `1` is the whole path and not a leg, so a side with a zero SECOND leg contributes neither.
-  let nx := (max (if right == 0 then 0 else top) (if bot == 0 then 0 else bot)).max 1
-  let ny := max (if right == 0 then 0 else right) (if bot == 0 then 0 else left)
+  let nx := (max (if lsnd == 0 then 0 else lhor) (if rsnd == 0 then 0 else rhor)).max 1
+  let ny := max (if lsnd == 0 then 0 else lver) (if rsnd == 0 then 0 else rver)
   let (fx, fy) := (nx.toFloat, ny.toFloat)
   let bowed := ny == 0
   let mut nodes : Array Node := #[]
@@ -620,20 +684,20 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   -- The two paths share their end vertices, so the second contributes only its interior.
   for i in [0:n+1] do
     let (id, o) := fc.lhs.nodes[i]!
-    let (gx, gy) := vertexAt top right fx fy false i
+    let (gx, gy) := vertexAt lfst lsnd fx fy flip i
     unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
   for j in [0:m+1] do
     let (id, o) := fc.rhs.nodes[j]!
-    let (gx, gy) := vertexAt left bot fx fy true j
+    let (gx, gy) := vertexAt rfst rsnd fx fy (!flip) j
     unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
-    edges := edges.push { src, tgt, label := (← label f), side := sideAt top right false i,
+    edges := edges.push { src, tgt, label := (← label f), side := sideAt lfst lsnd flip i,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
-    edges := edges.push { src, tgt, label := (← label f), side := sideAt left bot true j,
+    edges := edges.push { src, tgt, label := (← label f), side := sideAt rfst rsnd (!flip) j,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← fc.hueOn (comps.map (·.2.idx)) f }
   match fc.chord with
@@ -713,12 +777,19 @@ def cdPage (sel : String) (ps : Array Panel) : String :=
     conjunct, each drawn on its own grid unless the two paste; an `↔` is the side `side` names,
     because the two sides of an equivalence are two claims and not two paths.  What is not yet any
     of those gets ONE delta step on its head and its binders opened — `StrictNatural F G φ` needs
-    exactly one such step, and a statement that needs none pays nothing. -/
-partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat)
-    (induced : Array Expr := #[]) : MetaM (Array Face) := do
+    exactly one such step, and a statement that needs none pays nothing.
+
+    THE FACES ARE HANDED TO A CONTINUATION, not returned.  Opening a predicate's inner `∀` binders
+    puts the arrows and objects the face is made of in a LOCAL CONTEXT, and a `Face` returned out of
+    that context names free variables nobody can look up any more — an `unknown free variable` at the
+    first `inferType`, which is every line of `layout`.  `k` runs at the bottom of every telescope
+    this opens, so whatever reads the face reads it while its binders are still live. -/
+partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side : Option String)
+    (fuel : Nat) (induced : Array Expr) (k : Array Face → MetaM α) : MetaM α := do
   match body.getAppFnArgs with
   | (``And, #[l, r]) =>
-    return (← faces what l side fuel induced) ++ (← faces what r side fuel induced)
+    faces what l side fuel induced fun fl =>
+      faces what r side fuel induced fun fr => k (fl ++ fr)
   | (``Iff, #[l, r]) =>
     let some s := side
       | throwError "{what}: an `↔` is two claims, not two paths — name a side, `{what}.lhs` or \
@@ -726,10 +797,10 @@ partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat
     -- The side NOT drawn is still read: it is where an equivalence says which of the drawn
     -- arrows the statement produces, and that is what the picture dashes.
     let (this, other) := if s == "lhs" then (l, r) else (r, l)
-    faces what this none fuel (induced ++ (← inducedIn other))
+    faces what this none fuel (induced ++ (← inducedIn other)) k
   | _ =>
     match StrDiag.split body with
-    | some (sym, l, r) => return #[← Face.of sym (← interp l) (← interp r) induced]
+    | some (sym, l, r) => k #[← Face.of sym (← interp l) (← interp r) induced]
     | none =>
       if fuel == 0 then
         throwError "{what}: not an equation or inequation of composites, and no definition to \
@@ -741,7 +812,7 @@ partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat
       let some v := ci.value?
         | throwError "{what}: `{n}` heads the statement and has no definition to open"
       let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
-      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced
+      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced k
 
 /-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
 def part (s : String) : Name × Option String :=
@@ -749,18 +820,18 @@ def part (s : String) : Name × Option String :=
   else if s.endsWith ".rhs" then ((s.dropEnd 4).toString.toName, some "rhs")
   else (s.toName, none)
 
-/-- Draw one or more statements as ONE page.  The FIRST names the telescope and every other is
-    instantiated at its binders: two faces of one picture are about one set of objects and arrows,
-    and separately opened binders would be two variables that only look alike, so nothing would ever
-    be found shared.  Two faces sharing exactly one edge are pasted along it; anything else is one
-    panel per face, set side by side. -/
-def draw (sel : String) : MetaM String := do
-  let parts := (sel.splitOn "+").toArray.map part
-  let (n₀, s₀) := parts[0]!
-  let some ci := (← getEnv).find? n₀ | throwError "no such declaration: {n₀}"
-  Meta.forallTelescopeReducing ci.type fun xs body => do
-    let mut fs ← faces n₀ body s₀ 3
-    for (n, s) in parts.extract 1 parts.size do
+/-- The page, once the FIRST part's faces are in hand: each remaining part adds its own, read inside
+    its own telescope, and the layout runs at the bottom of them all.  It is a fold over the parts
+    written as a recursion because every step opens a scope the next step must still be inside. -/
+partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs : Array Expr)
+    (i : Nat) (fs : Array Face) : MetaM String := do
+  if i ≥ parts.size then
+    if let #[f, g] := fs then
+      if let some fc ← Face.paste f g then
+        return cdPage sel #[← layout fc]
+    return cdPage sel (← fs.mapM layout)
+  else
+      let (n, s) := parts[i]!
       let some c := (← getEnv).find? n | throwError "no such declaration: {n}"
       -- Matched by TYPE, not by position or by name: the two declarations may bind the same objects
       -- in either order — an instance before or after the objects it is about — and a binder's name
@@ -773,22 +844,34 @@ def draw (sel : String) : MetaM String := do
       for m in ms do
         let ty ← Meta.inferType m
         let mut hit := false
-        for i in [0 : free.size] do
+        for j in [0 : free.size] do
           unless hit do
             if ← commitWhen (do
-                if ← Meta.isDefEq ty (← Meta.inferType free[i]!) then Meta.isDefEq m free[i]!
+                if ← Meta.isDefEq ty (← Meta.inferType free[j]!) then Meta.isDefEq m free[j]!
                 else return false) then
-              free := free.extract 0 i ++ free.extract (i + 1) free.size
+              free := free.extract 0 j ++ free.extract (j + 1) free.size
               hit := true
         unless hit do
-          throwError "{n} binds `{← Meta.ppExpr ty}`, which {n₀} does not — it binds \
+          throwError "{n} binds `{← Meta.ppExpr ty}`, which {parts[0]!.1} does not — it binds \
             {← free.mapM fun x => do return m!"`{← Meta.ppExpr (← Meta.inferType x)}`"} — so the \
             two are not statements about one set of objects and arrows and cannot be one picture"
-      fs := fs ++ (← faces n (← instantiateMVars b) s 3)
-    if let #[f, g] := fs then
-      if let some fc ← Face.paste f g then
-        return cdPage sel #[← layout fc]
-    return cdPage sel (← fs.mapM layout)
+      faces n (← instantiateMVars b) s 3 #[] fun fs' => drawParts sel parts xs (i + 1) (fs ++ fs')
+
+/-- Draw one or more statements as ONE page.  The FIRST names the telescope and every other is
+    instantiated at its binders: two faces of one picture are about one set of objects and arrows,
+    and separately opened binders would be two variables that only look alike, so nothing would ever
+    be found shared.  Two faces sharing exactly one edge are pasted along it; anything else is one
+    panel per face, set side by side. -/
+def draw (sel : String) : MetaM String := do
+  let parts := (sel.splitOn "+").toArray.map part
+  let (n₀, s₀) := parts[0]!
+  let some ci := (← getEnv).find? n₀ | throwError "no such declaration: {n₀}"
+  Meta.forallTelescopeReducing ci.type fun xs body => do
+    -- A DECLARATION WHOSE TYPE ENDS IN A SORT IS A PREDICATE, not a proof, so its claim is in its
+    -- VALUE: what it states is itself APPLIED to its own binders, which `faces` opens with the same
+    -- delta step it takes on a predicate a theorem names (`MonotonicAlg φ R`, `LaxNatural F G φ`).
+    let body := if body.isSort then mkAppN (.const n₀ (ci.levelParams.map .param)) xs else body
+    faces n₀ body s₀ 3 #[] fun fs => drawParts sel parts xs 1 fs
 
 /-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
     activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
