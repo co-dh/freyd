@@ -373,32 +373,40 @@ def ctorName? (e : Expr) : MetaM (Option String) := do
   | some (.ctorInfo _) => return some n.getString!
   | _ => return none
 
-/-- THE OBJECT AN ARGUMENT IS TAKEN AT, at whatever depth it sits: the algebra of a parametrised
-    initial algebra is written `(I A).α`, so the object the family is indexed by is inside the
-    bundle handed to the field, not beside it.  An argument that IS an object is that object; one
-    built from objects is searched, last first, because a family is applied to its index last. -/
-partial def objIn? (a : Expr) : MetaM (Option Expr) := do
-  if ← isObjType (← Meta.inferType a) then return some a
+/-- AN OBJECT OF THE GIVEN CATEGORY INSIDE AN ARGUMENT, at whatever depth it sits: the algebra of a
+    parametrised initial algebra is written `(I A).α`, so the object the family is indexed by is
+    inside the BUNDLE handed to the field, not beside it, and that bundle reaches the projection
+    instance-implicitly.  `obj` is the category's own object type — the type of the endpoints of the
+    hom the component IS — and it is what rules the other arguments out: the category `𝒜` is a
+    `Type`, the relator `F` a `Relator 𝒜 𝒜`, and neither is an object however object-shaped it
+    looks, where a position or an explicitness test lets both in or shuts the bundle out.  A
+    compound argument is searched last-first, because a family is applied to its index last. -/
+partial def objIn? (obj : Expr) (a : Expr) : MetaM (Option Expr) := do
+  if ← Meta.isDefEq (← Meta.inferType a) obj then return some a
   let mut r : Option Expr := none
   for x in a.getAppArgs do
-    if let some y ← objIn? x then r := some y
+    if let some y ← objIn? obj x then r := some y
   return r
 
 /-- A COMPONENT OF A DECLARED FAMILY, as the head's own spelling and the object it is taken at.
     A family tagged `@[diag_indexed]` wears a notation that writes its letter ALONE — `α` for the
     algebra of a parametrised initial algebra — so the object is missing from the label and goes
     BENEATH it: `α`#sub[`A`] and `α`#sub[`B`] are the two algebras of the one family, and nothing
-    else in the square tells them apart.  The INDEX is the LAST explicit argument that is an object,
-    which is where a family is indexed (`φ A`, `alphaT I A`); an argument that is a bundle or an
-    arrow is not one, and `I.α` — whose one explicit argument is the algebra — has no index at all
-    and stays the bare `α` the note writes. -/
+    else in the square tells them apart.  The INDEX is the LAST argument holding an object OF THE
+    CATEGORY THE COMPONENT IS AN ARROW IN, which is where a family is indexed — beside the head in
+    `alphaT I A`, and inside the bundle in `(I A).α`, where every argument including the bundle
+    arrives implicit.  A family over a bundle that is indexed by nothing, `I.α`, holds no such
+    object anywhere and stays the bare `α` the note writes. -/
 def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
   -- A FIELD LEAN LEFT AS A POSITION is the same component written another way, so it is normalised
   -- HERE too: otherwise the bundle the field is taken of never reaches the search for the index.
   let e := (← namedProj? e₀).getD e₀
   let .const c _ := e.getAppFn | return none
   unless (← Lean.labelled `diag_indexed).contains c do return none
-  unless (homObjs? (← Meta.inferType e)).isSome do return none
+  let some (src, _) := homObjs? (← Meta.inferType e) | return none
+  -- THE CATEGORY'S OBJECT TYPE, taken from the hom the component IS: its endpoints are objects of
+  -- the very category the index is drawn from, so nothing else has to say which category that is.
+  let obj ← Meta.inferType src
   -- THE LETTER IS THE HEAD OF THE SPELLING, read off the SYNTAX and not off the constant's name:
   -- `alphaT I A` is the `α` its notation writes and the index it dropped is set beneath by this
   -- clause.  A FIELD is written under the field's own identifier, which the printer puts AFTER the
@@ -408,12 +416,9 @@ def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
     if ((← getEnv).getProjectionFnInfo? c).isSome then return some (Name.mkSimple c.getString!)
     return stxHead (← PrettyPrinter.delab e)
   let some h ← head? | return none
-  let args := e.getAppArgs
-  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
   let mut ix : Option Expr := none
-  for i in [0 : args.size] do
-    if (fi.paramInfo[i]?.map (·.isExplicit)).getD true then
-      if let some a ← objIn? args[i]! then ix := some a
+  for a in e.getAppArgs do
+    if let some x ← objIn? obj a then ix := some x
   match ix with
   | some a => return some (h.getString!, a)
   | none => return none
@@ -582,11 +587,16 @@ inductive Lbl where
   | seq (parts : Array Lbl)
   deriving Inhabited, BEq
 
-/-- THE FLAT SPELLING, which is what a string label always was: an index closes up under its head
-    (`χGA`) and a division writes the note's inline `%` (`F(∋)R%∋`). -/
+/-- THE FLAT SPELLING, which is what a string label always was: a division writes the note's inline
+    `%` (`F(∋)R%∋`), and A COMPONENT'S INDEX IS DROPPED — it is the `sub` constructor and nothing
+    else that says so, never a name or a slice of the string.  A COMMUTATIVE panel's arrow runs
+    between two NAMED objects and the index is what tells `α`#sub[`A`] from `α`#sub[`B`]; every flat
+    consumer is a string or circuit picture, where the bead IS the natural family and the object it
+    is taken at is the wire it sits on, drawn and labelled beside it.  An index written there is the
+    wire's own name spelled a second time. -/
 partial def Lbl.flat : Lbl → String
   | .text s => s
-  | .sub b i => b.flat ++ i.flat
+  | .sub b _ => b.flat
   | .frac n d => n.flat ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
 
