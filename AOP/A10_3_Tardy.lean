@@ -20,6 +20,8 @@ module
 
 public import AOP.A10_1
 public import AOP.A6_SnocList
+public import AOP.A6_MonoFactor
+public import AOP.A7_4_Horner
 
 universe u
 
@@ -491,7 +493,7 @@ public theorem tardy_H :
     `Q≜f≤f°`, one job of the bag committed to the end of the schedule at each step.  `nil` and
     `snag` having disjoint ranges (`nil_ne_snag`, Proposition 10.1) is what lets the `nil` branch
     be read off; refining `est(Q')Λsnag°` further to the partial function `pick` gives the
-    quadratic program of B&dM p.258, which is not formalised here. -/
+    quadratic program of B&dM p.258 — `schedule` below. -/
 public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     mu (fun X : Bag Job ⟶ dSL Unit Job =>
         Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
@@ -505,6 +507,13 @@ public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀
     (by rw [tardy_H]; exact tardy_greedy ct dt wt hct hwt)
   rwa [tardy_H] at key
 
+/-- **Proposition 10.1** in the shape both arm laws ask for: no bag is built by `nil` and by
+    `snag` alike, so a branch of `[nil,snag]°` can be read off on its own. -/
+private theorem nil_snag_disjoint (d : Unit) (p : (Bag Job).carrier × Job)
+    (y : (Bag Job).carrier) (h1 : bagAlg (Job := Job) (Sum.inl d) y)
+    (h2 : bagAlg (Job := Job) (Sum.inr p) y) : False :=
+  nil_ne_snag p.1 p.2 (Eq.trans (Eq.symm (h1 : y = _)) (h2 : y = _))
+
 /-- **tardy-laws**, third row (Proposition 10.1): `nil` and `snag` have disjoint ranges
     (`nil_ne_snag`), so the branch `(snag°)%∋ est(Q')(X×𝟙)snoc` refines `tardy_laws`' body
     `([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]` — `AOP.A9_1.est_arm₂_le` at `[nil,snag]`, whose
@@ -514,7 +523,135 @@ public theorem tardy_branch (X : Bag Job ⟶ dSL Unit Job) :
         ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job)))
       ⊑ Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt)
           ≫ (F Unit Job).map X ≫ graph (con (L := Unit) (E := Job)) :=
-  est_arm₂_le (X := X) (Q := Q ct dt wt)
-    fun _d p y h1 h2 => nil_ne_snag p.1 p.2 (Eq.trans (Eq.symm (h1 : y = _)) (h2 : y = _))
+  est_arm₂_le (X := X) (Q := Q ct dt wt) nil_snag_disjoint
+
+/-! ## The program (B&dM p.258): `pick`, and `schedule` as its least fixed point
+
+  The book's last refinement: the search `est(Q')Λsnag°` — take a job of least penalty out of the
+  bag — is replaced by ANY partial function `pick` below it, and the program is the least fixed
+  point of the equation that leaves.  `pick` is a PARAMETER, not a definition: the book fixes no
+  tie-break, so nothing here may assume an order on `Job`. -/
+
+section Pick
+
+/-- `∪` is the least upper bound: the allegory axioms give `le_union_left`/`le_union_right` but no
+    lub, and in `RelSet` it is pointwise `∨`. -/
+private theorem union_le {a b : RelSet.{0}} {S T U : a ⟶ b} (hS : S ⊑ U) (hT : T ⊑ U) :
+    S ∪ T ⊑ U :=
+  le_iff.mpr fun x y h => ((union_apply S T x y) ▸ h).elim (le_iff.mp hS x y) (le_iff.mp hT x y)
+
+private theorem union_mono {a b : RelSet.{0}} {S S' T T' : a ⟶ b} (hS : S ⊑ S') (hT : T ⊑ T') :
+    S ∪ T ⊑ S' ∪ T' :=
+  union_le (le_trans hS (le_union_left _ _)) (le_trans hT (le_union_right _ _))
+
+variable (pick : Bag Job ⟶ (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}))
+  (hpickS : Simple pick)
+  (hpick : pick ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt))
+
+/-- **tardy-laws**, last row: `null`, the guard the base case is taken on — the empty bag. -/
+@[expose] public def null : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b = nilBag
+
+/-- The other branch's guard, `null`'s complement among the coreflexives: `RelSet` is no
+    `BooleanAllegory`, so `corNeg` — hence `cond` — is unavailable and it is written out. -/
+@[expose] public def notNull : Bag Job ⟶ Bag Job := fun b b' => b = b' ∧ b ≠ nilBag
+
+/-- A guard only ever shrinks what it precedes. -/
+private theorem notNull_comp_le {c : RelSet.{0}} (S : Bag Job ⟶ c) :
+    notNull (Job := Job) ≫ S ⊑ S :=
+  le_iff.mpr fun x y h => by
+    obtain ⟨z, ⟨hxz, _⟩, hS⟩ := h
+    subst hxz
+    exact hS
+
+/-- The unique map to the one-point object, which carries the base case's `nil` out of a bag. -/
+@[expose] public def bangBag : Bag Job ⟶ dL Unit := graph (fun _ : (Bag Job).carrier => ())
+
+/-- **tardy-laws**, last row: `schedule≜(null→nil,pick (schedule×𝟙) snoc)` (B&dM p.258), the least
+    fixed point of the greedy step.  `RelSet` is no `BooleanAllegory`, so the conditional's second
+    guard is written out where `cond` would take `corNeg null`. -/
+@[expose] public def schedule : Bag Job ⟶ dSL Unit Job :=
+  mu fun X : Bag Job ⟶ dSL Unit Job =>
+    (null ≫ bangBag ≫ nilR)
+      ∪ (notNull ≫ pick
+          ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))
+
+private theorem scheduleBody_monotonic :
+    Monotonic (fun X : Bag Job ⟶ dSL Unit Job =>
+      (null ≫ bangBag ≫ nilR)
+        ∪ (notNull ≫ pick
+            ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))) :=
+  fun h =>
+    union_mono (le_refl _)
+      (comp_mono_left _ (comp_mono_left _ (comp_mono_right (rprodMap_mono h (le_refl _)) _)))
+
+/-- **tardy-laws**: the cell's second claim — `schedule` satisfies the note's equation, the least
+    fixed point being a fixed point (Theorem 6.1). -/
+public theorem schedule_unfold :
+    schedule pick
+      = (null ≫ bangBag ≫ nilR)
+        ∪ (notNull ≫ pick
+            ≫ rprodMap (schedule pick) (𝟙 (⟨Job⟩ : RelSet.{0}))
+            ≫ arm₂ (graph (con (L := Unit) (E := Job)))) :=
+  (mu_fixed (scheduleBody_monotonic pick)).symm
+
+include hpick in
+/-- **tardy-laws**, last row: the step the panel draws — `pick` in place of the search
+    `est(Q')Λsnag°` refines the branch `tardy_branch` starts from. -/
+public theorem pick_branch_le (schedule : Bag Job ⟶ dSL Unit Job) :
+    pick ≫ rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0}))
+        ≫ arm₂ (graph (con (L := Unit) (E := Job)))
+      ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt)
+          ≫ rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0}))
+          ≫ arm₂ (graph (con (L := Unit) (E := Job))) := by
+  have h := comp_mono_right hpick
+    (rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))
+  rw [Cat.assoc] at h
+  exact h
+
+include hpickS in
+/-- **tardy-laws**, last row: the step is a PARTIAL FUNCTION whenever the continuation is — that
+    is what makes B&dM's p.258 program a program and not a search: `pick` is single-valued and
+    `snoc` is a map, so nothing in the step branches. -/
+public theorem pick_branch_simple {X : Bag Job ⟶ dSL Unit Job} (hX : Simple X) :
+    Simple (pick ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
+      ≫ arm₂ (graph (con (L := Unit) (E := Job)))) := by
+  rw [Simple, le_iff]
+  intro s s' h
+  obtain ⟨b, ⟨p, hp, q, ⟨hq1, hq2⟩, hs⟩, ⟨p', hp', q', ⟨hq1', hq2'⟩, hs'⟩⟩ := h
+  have hpp : p = p' := simple_uniq hpickS hp hp'
+  subst hpp
+  have hq : q = q' := Prod.ext (simple_uniq hX hq1 hq1') (hq2.symm.trans hq2')
+  subst hq
+  exact hs.trans hs'.symm
+
+/-- The base case: on the empty bag the search `est(Q)Λ[nil,snag]°` leaves `nil` itself, so the
+    guarded constant `null≫nil` is below the `nil` arm of the specification's body. -/
+private theorem null_nil_le :
+    null ≫ bangBag ≫ nilR
+      ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt))
+          ≫ arm₁ (graph (con (L := Unit) (E := Job))) := by
+  have haux : null ≫ bangBag ⊑ Λ ((arm₁ (bagAlg (Job := Job)))°) ≫ est (armQ₁ (Q ct dt wt)) :=
+    le_iff.mpr fun b u h => by
+      obtain ⟨_b', ⟨_, hb0⟩, _⟩ := h
+      exact (Λ_comp_est_apply _ _ b u).mpr ⟨hb0, fun _z _ => Int.le_refl _⟩
+  have h := comp_mono_right haux (nilR (E := Job))
+  rw [Cat.assoc, Cat.assoc] at h
+  exact h
+
+include hpick in
+/-- **tardy-laws**: the cell's first claim — the program refines the specification.  Both branches
+    of the step are below `tardy_laws`' body: the base case by `est_arm₁_le`, the greedy step by
+    `pick_branch_le` and then `tardy_branch`. -/
+public theorem schedule_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    schedule pick ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) :=
+  le_trans
+    (mu_le_mu fun X =>
+      union_le
+        (le_trans (null_nil_le ct dt wt) (est_arm₁_le (X := X) nil_snag_disjoint))
+        (le_trans (notNull_comp_le _)
+          (le_trans (pick_branch_le ct dt wt pick hpick X) (tardy_branch ct dt wt X))))
+    (tardy_laws ct dt wt hct hwt)
+
+end Pick
 
 end Freyd.Alg.RelSet.Tardy
