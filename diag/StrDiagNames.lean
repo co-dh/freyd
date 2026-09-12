@@ -114,6 +114,14 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 
+-- The CARRIER needs the clause as much as the object: `NEList A` is an `abbrev`, so the term keeps
+-- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
+-- declared objects is labelled from the carrier and would print the Lean name.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.NEList] def unexpandNEListType : Unexpander
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
+  | _ => throw ()
+
 -- THE LEAF TYPE SAYS WHICH LIST A CONS-LIST IS, and a leaf carrying an ELEMENT is a one-element
 -- list: `ConsList A A` is the note's `list⁺(A)`, where `ConsList Unit A` is its `[A]`
 -- (`AOP.A6_ConsList`).  A DELABORATOR, because the two differ only in a TYPE the syntax repeats

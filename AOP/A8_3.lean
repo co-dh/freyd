@@ -559,6 +559,11 @@ public theorem clMem_cons {w c : A} {d : ConsList Unit A} :
 /-- `minlist Q : [A]⟶A` — a `Q`-least member of the list, i.e. `setify` then `est Q`. -/
 @[expose] public def minlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := setifyCL ≫ est Q
 
+/-- Applying an operator takes its own brackets, like `P(R)` and `est(R)`.  The spelling is also
+    what keeps the arrow ONE box in a circuit: a constant printed under its own bare name is opened
+    and drawn by its body, and `minlist`'s body is the `setify est(Q)` the step exists to replace. -/
+notation:max "minlist(" Q ")" => Freyd.Alg.RelSet.CL.minlist Q
+
 public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
     minlist Q xs w ↔ clMem w xs ∧ ∀ z, clMem z xs → Q w z := by
   constructor
