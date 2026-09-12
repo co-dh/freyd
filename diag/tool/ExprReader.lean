@@ -1457,14 +1457,15 @@ def unfiltered (h : Name) : MetaM Bool := do
     if ex.size < 2 then return true
     return !(← Meta.isDefEq (← Meta.inferType ex[ex.size - 2]!) (← Meta.inferType ex[ex.size - 1]!))
 
-/-- A search that FOUND NOTHING, by what its answer depends on besides the fuel: the goal (for a
-    `square`, its `∀`-statement), the filter, and the local context — a hypothesis in scope answers
-    a premise (`discharge`), so the same goal under more hypotheses is another question. -/
+/-- A search that FOUND NOTHING, by what its answer depends on besides the fuel: the filter, and the
+    goal (for a `square`, its `∀`-statement) closed over the local context — a hypothesis in scope
+    answers a premise (`discharge`), so the same goal under more hypotheses is another question.
+    Closed, not keyed by `FVarId`s: those are names the generator hands out, and a later selector
+    reuses one for a local of another type, whose goal would then read this failure as its own. -/
 structure Failed where
   square : Bool
   goal : Expr
   must : List Name
-  ctx : Array FVarId
   deriving BEq, Hashable
 
 /-- Each failed search with the most fuel it failed with.  Fuel only bounds how deep `discharge`
@@ -1481,11 +1482,16 @@ initialize leanedOn : IO.Ref Nat ← IO.mkRef 0
     98M heartbeats for six statements no declaration proves, most of it re-runs of one search.
     Only a CLEAN failure is kept, which holds under any ancestors and any cache state: none below
     it was cut by a loop through an ancestor OUTSIDE it (`seen` is a context — under other
-    ancestors that goal is searched, and may be proved), and none by a heartbeat budget.  A goal
-    with metavariables is no key.  Remembering a failure proves nothing, so no dot can come of it. -/
-def remembered (key : Failed) (fuel : Nat) (seen : Array Expr) (search : MetaM (Option (Name × Expr))) :
-    MetaM (Option (Name × Expr)) := do
-  if key.goal.hasMVar then return ← search
+    ancestors that goal is searched, and may be proved), and none by a heartbeat budget.  A question
+    with metavariables, in the goal or a hypothesis, is no key.  Remembering a failure proves
+    nothing, so no dot can come of it. -/
+def remembered (square : Bool) (goal : Expr) (must : List Name) (fuel : Nat) (seen : Array Expr)
+    (search : MetaM (Option (Name × Expr))) : MetaM (Option (Name × Expr)) := do
+  -- The pure `LocalContext.mkForall`, not `Meta.mkForallFVars`: that one reverts an unassigned
+  -- metavariable, assigning it (or throwing) before the test below could decline the key.
+  let lctx ← instantiateLCtxMVars (← getLCtx)
+  let key : Failed := { square, must, goal := lctx.mkForall lctx.getFVars (← instantiateMVars goal) }
+  if key.goal.hasMVar || key.goal.hasFVar then return ← search
   if (← failedRef.get)[key]?.any (fuel ≤ ·) then return none
   let outer ← leanedOn.get
   leanedOn.set (seen.size + 1)
@@ -1508,8 +1514,7 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
-  remembered { square := false, goal := ← instantiateMVars want, must := must.toList,
-               ctx := (← getLCtx).getFVarIds } fuel seen (scan br want head must fuel seen)
+  remembered false want must.toList fuel seen (scan br want head must fuel seen)
 
 /-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn. -/
 partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat)
@@ -1629,8 +1634,7 @@ partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
 partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat)
     (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
-  remembered { square := true, goal := ← instantiateMVars body, must := must.toList,
-               ctx := (← getLCtx).getFVarIds } fuel seen <|
+  remembered true body must.toList fuel seen <|
     Meta.forallTelescope body fun xs sq => do
       let .const h _ := sq.getAppFn | return none
       if let some (n, pf) ← findProof br sq h must fuel seen then
