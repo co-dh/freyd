@@ -1331,7 +1331,7 @@ def usage : String :=
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
      categories a relator runs between; no side or branch selector applies\n\
    --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
-     one line `<panel>\\t<label>\\t<src>⟶<tgt>`, which `scripts/scanline` reads at check time\n\
+     one JSON object per bead (selector, panel, label, src, tgt), read by `scripts/scanline`\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
@@ -1397,8 +1397,10 @@ def main (args : List String) : IO UInt32 := do
   let opts : Options :=
     ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
       |>.insert `maxHeartbeats (.ofNat 1000000)
-  let mut status : UInt32 := 0
-  for arg in args do
+  -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
+  -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
+  -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
+  let tasks ← args.mapM fun arg => do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
     -- string and circuit routes read a side, the others take the name whole.
     -- `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork,
@@ -1445,7 +1447,8 @@ def main (args : List String) : IO UInt32 := do
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
         else if stringMode then
-          StrDiag.drawString base.toName sides binder branch frame topRow scale sigsMode
+          StrDiag.drawString base.toName sides binder branch frame topRow scale
+            (if sigsMode then some arg else none)
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
@@ -1456,10 +1459,14 @@ def main (args : List String) : IO UInt32 := do
             (branch.map fun s => if s == .inl then 0 else 1)
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
+    IO.asTask (Prod.fst <$> run.toIO ctx { env })
+  -- The results are reported in ARGUMENT order, as a serial run reported them.
+  let mut status : UInt32 := 0
+  for (arg, t) in args.zip tasks do
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
     -- and a bead whose naturality nobody proved has a message naming the three statements it
     -- looked for.
-    match ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO with
+    match ← IO.wait t with
     | .error ex =>
       IO.eprintln s!"diag-export: {arg}: {ex}"
       status := 1
