@@ -14,6 +14,7 @@ import AOP.A5_5
 -- unexpander below keys on one of its constants.
 import AOP.A7_3_Party
 import AOP.A7_4_Cylinder
+import AOP.A7_4_CylinderVecRel
 import AOP.A7_5_Van
 import AOP.A7_7_MSS
 import AOP.A7_7_TakeWhile
@@ -237,6 +238,43 @@ open Lean PrettyPrinter in
 /-- The note draws the union of a set of sets as `union`: which of the many `union`s of the book it
     is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
 @[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
+
+open Lean PrettyPrinter in
+/-- AN INDEX FUNCTOR IS THE NOTE'S `[k]`, and the length it indexes is the whole of its name — one
+    lane per AXIS, which is what lets `fcol` (`diag/draw.typ`) give each dimension of a matrix its
+    own colour.  Both spellings of the one functor go through this: `Vec k` on functions, and the
+    relator `[k]` bundles on relations, so the LANE and the OBJECT under it are written the same way
+    and a cut reads as one composite instead of `Alg.Vec n` over `dTuple n A`. -/
+@[app_unexpander Vec] def unexpandVec : Unexpander
+  | `($_ $n) => `([$n])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- `Vec(n)` on relations is the same lane `[n]`, for the same reason. -/
+@[app_unexpander Vec.Rel.tupleRelator] def unexpandTupleRelator : Unexpander
+  | `($_ $n) => `([$n])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- One more index bracket on the BASE object, never at the end of the name: `A[m][n]` is
+    `[m]([n](A))`, so the brackets read left to right in the order the wires of a cut do, and the
+    bracket a nest adds goes in front of the ones already there. -/
+private partial def spliceIndex {m} [Monad m] [MonadQuotation m] (s i : Term) : m Term := do
+  match s with
+  | `($b[$j]) => let b ← spliceIndex b i; `($b[$j])
+  | _ => `($s[$i])
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- AN INDEXED OBJECT IS THE NOTE'S `A[n]`, one bracket per index functor over it — the same
+    spelling as the LANE `[n]` that carries it, which is what lets a cut be read as one composite
+    (`scripts/scanline`) instead of a lane called one thing standing over an object called another.
+    A delaborator and not an unexpander: the outermost bracket is written FIRST, so the nest has to
+    be walked, and the syntax the elaborator produced for the inner object is what is spliced. -/
+@[delab app.Freyd.Alg.RelSet.Tuple.dTuple] def delabDTuple : Delab := do
+  guard ((← getExpr).getAppNumArgs == 2)
+  let i ← withNaryArg 0 delab
+  let inner ← withNaryArg 1 delab
+  spliceIndex inner i
 
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
