@@ -32,14 +32,6 @@ open Lean
 
 namespace Freyd.StrDiag
 
-/-- The head IDENTIFIER the printer writes an application under, and `none` where the printer's own
-    notation DELIMITS the operand instead (`est(R)`, `⦇S⦈`) — those open with an ATOM, which is what
-    a bracket is. -/
-partial def stxHead : Syntax → Option Name
-  | .ident _ _ n _ => some n
-  | .node _ _ args => args[0]?.bind stxHead
-  | _ => none
-
 /-- How a label JOINS under a functor's name — the note's rule (CLAUDE.md), one copy for every
     picture that writes an object. -/
 inductive Join where
@@ -304,21 +296,29 @@ partial def betaHead (e : Expr) : Expr :=
     name spells one thing twice, and the note writes the lane `F`.  The TYPE decides that this is a
     relator and the PRINTER gives the letter, so an unexpander's chosen name still wins. -/
 def relatorName? (e : Expr) : MetaM (Option String) := do
-  let t ← Meta.whnfD (← Meta.inferType e)
-  unless t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor do return none
+  unless ← isLaneBundle e do return none
   if let some h := stxHead (← PrettyPrinter.delab e) then return some h.getString!
   let some c := e.getAppFn.constName? | return none
   return some c.getString!
 
-/-- A FUNCTOR'S ACTION ON AN OBJECT, as the two things the note writes it from: the functor and the
-    object it is taken at.  Read off the field's own arguments — the last one is the object — so an
-    unexpander that hides them cannot lose them, exactly as `functorMap?` reads the action on an
-    arrow. -/
-def functorObj? (e : Expr) : Option (Expr × Expr) :=
-  match e.getAppFnArgs with
-  | (``Freyd.Functor.obj, args) =>
-    if args.size ≥ 6 then some (args[4]!, args[args.size - 1]!) else none
-  | _ => none
+/-- A FUNCTOR'S ACTION ON OBJECTS, as the things the note writes it from: the functor and EVERY
+    object it is taken at.  Read off the field's own arguments — the bundle stands at the
+    projection's parameters and the objects after it — so an unexpander that hides them cannot lose
+    them, exactly as `functorMap?` reads the action on an arrow, and a BINARY relator's action
+    stands at two (`F(A,C)`) with no clause of its own.  What makes it an action and not some other
+    field is the TYPE: the bundle is one the picture draws a lane for (`relatorName?`) and both the
+    arguments and the value are OBJECTS, which is what separates `obj` from `map`. -/
+def functorObj? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
+  let .const n _ := e.getAppFn | return none
+  let some pi := (← getEnv).getProjectionFnInfo? n | return none
+  let args := e.getAppArgs
+  unless args.size > pi.numParams + 1 do return none
+  let f := args[pi.numParams]!
+  unless (← relatorName? f).isSome do return none
+  unless ← isObjType (← Meta.inferType e) do return none
+  let xs := args.extract (pi.numParams + 1) args.size
+  unless ← xs.allM (fun x => do isObjType (← Meta.inferType x)) do return none
+  return some (f, xs)
 
 /-- The NAME a functor writes on a label — the lane's own name where it has one, the printer's
     otherwise, so the object `FA` and the arrow `F(R)` are headed by the same letter. -/
@@ -331,7 +331,7 @@ def functorName (f : Expr) : MetaM String := do
     functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
     answer, read off the syntax it built. -/
 def objJoin (e : Expr) : MetaM Join := do
-  match functorObj? e with
+  match ← functorObj? e with
   | some (f, _) => return applyJoin (← functorName f)
   | none => return stxJoin (← PrettyPrinter.delab e)
 
@@ -678,15 +678,6 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | none => plain e
   -- A relator's action on an ARROW is the ONE bracket no term carries: `F(⦇R⦈)`, the note's way of
   -- saying the argument is applied and not composed.
-  | (``Freyd.Functor.obj, _) =>
-    -- A FUNCTOR'S ACTION ON AN OBJECT joins by the note's own rule (CLAUDE.md): a ONE-LETTER
-    -- functor closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed
-    -- (`E[A]`), and every other application takes parentheses (`tree(A)`, `E(bag(Job))`,
-    -- `F([A]×[A])`).  Head and operand are spelled APART, each by its own rule: the operand is an
-    -- object of the note's, respelled here, and the head keeps the name its lane wears.
-    match functorObj? e with
-    | some (f, x) => return applyLabel (← functorName f) (← labelAt 0 x) (← objJoin x)
-    | none => plain e
   -- AN OBJECT'S PRODUCT is the note's `×` between its two factors, each spelled HERE: a factor the
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
@@ -721,11 +712,28 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- `singletonMap` and back.
     if let some r ← rewriteHead? e then return ← labelAt prec r
     if tightHeads.contains c then return (← plain e).replace " " "" else do
+    -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
+    -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
+    -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
+    -- and operands are spelled APART, each by its own rule: an operand is an object of the note's,
+    -- respelled here, and the head keeps the name its lane wears.  SEVERAL operands are the note's
+    -- comma list inside that bracket (`F(A,C)`), which is `BiRelator.map`'s `F(𝟙,f)` on objects.
+    -- AFTER the spellings above: a head the note writes ITSELF (`E A`, an unexpander's own
+    -- notation) is that spelling, and the action rule answers where the printer wrote none.
+    if let some (f, xs) ← functorObj? e then
+      let parts ← xs.mapM (labelAt 0)
+      let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
+      return applyLabel (← functorName f) (",".intercalate parts.toList) j
     -- A COMPONENT OF A FAMILY the statement BINDS is set tight for the same reason a relator's
     -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
     -- Lean's formatter sets the object off from the head.  Its head is a free variable and has no
     -- constant for `tightHeads`, so the test is `isComponent`'s, on the TYPE.
-    if ← isComponent e then return (← plain e).replace " " "" else do
+    if ← isComponent e then
+      -- ONE NAME, built from the head and its indices and not from the printer's string: squeezing
+      -- the spaces out of `χ (GA)` leaves the parentheses the formatter put round the index, where
+      -- the note writes `χGA`.  Each index is an object of the note's, spelled by its own rule.
+      return (← plain e.getAppFn) ++ String.join (← e.getAppArgs.mapM (labelAt 0)).toList
+    else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.
