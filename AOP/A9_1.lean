@@ -832,6 +832,10 @@ private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = class
 @[expose] public def armQ₂ (Q : (F L E).obj b ⟶ (F L E).obj b) :
     (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ ⟨b.carrier × E⟩ := fun p q => Q (Sum.inr p) (Sum.inr q)
 
+/-- The second arm of the constructor algebra is `snoc` — what `[nil,snoc]` does on its `X×E`
+    summand.  The note writes the arm by that name, never as the algebra restricted. -/
+public theorem arm₂_con : arm₂ (graph (con (L := L) (E := E))) = snocR := rfl
+
 /-- The second arm of `F(X)·h` is the note's `(X×𝟙)U₂`: `F(X)` keeps the `E` component. -/
 public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
     arm₂ ((F L E).map X ≫ U) = rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U := by

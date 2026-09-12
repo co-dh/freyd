@@ -196,11 +196,17 @@ public theorem properPrefixS_shorten {xs ys zs zs' : Str}
       w = sappend xs zs ∧ zs ≠ SnocList.wrap ()
         ∧ properPrefixS (sappend ys zs) (sappend xs zs)
 
+/-- **code-defn**: `extend`, the partial map above read as the arrow the note draws. -/
+@[expose] public def extend : (⟨Str × Code⟩ : RelSet.{0}) ⟶ dStr := extendP
+
 /-- **code-defn**: `[nil,extend]`, the algebra `decode` folds. -/
 @[expose] public def extendAlg : (F Unit Code).obj dStr ⟶ dStr := fun u w =>
   match u with
   | Sum.inl _ => w = SnocList.wrap ()
   | Sum.inr q => extendP q w
+
+/-- The algebra's `Str×Code` arm IS `extend`: `[nil,extend]` is the two written as one. -/
+public theorem arm₂_extendAlg : arm₂ extendAlg = extend := rfl
 
 /-- **code-defn**: `decode≜⦇[nil,extend]⦈ : [Code]⟶String`, a partial function because `extend`
     is one. -/
@@ -469,14 +475,29 @@ public theorem extend_ne_nil : ∀ (q : Str × Code) (w : Str), extendP q w → 
     `([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)` — `AOP.A9_1.thin_arm₂_le` at
     `[nil,extend]`, whose `Q₂` at `Q≜𝟙+(prefix°×(⊤+⊤))` is `prefix°×(⊤+⊤)`. -/
 public theorem code_branch (X : dStr ⟶ dCodes) :
-    Λ ((arm₂ extendAlg)°) ≫ thinRel (rprodMap (prefixR°) U)
-        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0}))
-            ≫ arm₂ (graph (con (L := Unit) (E := Code)))) ≫ est (R c p)
+    Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
+        ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R c p)
       ⊑ Λ (Allegory.recip extendAlg) ≫ thinRel Q
           ≫ powerRel ((F Unit Code).map X ≫ graph (con (L := Unit) (E := Code)))
           ≫ est (R c p) :=
-  thin_arm₂_le (X := X) (Q := Q) (R := R c p)
+  -- `T` and `U` are named because `arm₂ ?T = extend` is a higher-order unification the elaborator
+  -- will not solve; `arm₂_extendAlg` and `arm₂_con` say the two arms are these, definitionally.
+  thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R c p)
+    (U := graph (con (L := Unit) (E := Code)))
     fun _d q w h1 h2 => extend_ne_nil q w h2 (h1 : w = SnocList.wrap ())
+
+-- `extend` keeps its namespace where `decode` does not, `Freyd.UF.Filter.extend` sharing the name;
+-- a picture of §9.4's algebra has no second `extend` to tell this one from.
+open Lean PrettyPrinter in
+@[app_unexpander extend] public meta def unexpandExtend : Unexpander
+  | _ => `($(mkIdent `extend))
+
+-- `U≜⊤+⊤` is written by what it IS, the way `RinterH` is written `R∩H`: the note's box says the
+-- relation, not the letter the definition bound it to.  Its own brackets, because it appears as a
+-- factor of `prefix°×(⊤+⊤)` and `+` binds looser than `×`.
+open Lean PrettyPrinter in
+@[app_unexpander U] public meta def unexpandCodeU : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "(⊤+⊤)")))
 
 -- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
 open Lean PrettyPrinter in
