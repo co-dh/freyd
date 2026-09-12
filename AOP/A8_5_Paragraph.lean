@@ -105,19 +105,21 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
   | ConsList.wrap l => widthFn len l ≤ w
   | ConsList.cons l p => widthFn len l ≤ w ∧ allFitP len w p
 
+-- The line-length function is the SECTION'S data, not part of the names the note writes
+-- (`fits(w)`, `ok(w)`), so it is an implicit binder supplied by name where a use site pins it.
 /-- **para-defn**: `list⁺(fits w)`, the coreflexive on paragraphs all of whose lines fit. -/
-@[expose] public def allFit (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
+@[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word :=
   fun p q => p = q ∧ allFitP len w p
 
 /-- **para-defn**: `ok w`, the coreflexive on `[x]⧺xs` with `width x ≤ w` — only the FIRST
     line is tested. -/
-@[expose] public def okW (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
+@[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word :=
   fun p q => p = q ∧ widthFn len (headLine p) ≤ w
 
-public theorem allFit_coreflexive : Coreflexive (allFit len w) :=
+public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
-public theorem okW_coreflexive : Coreflexive (okW len w) :=
+public theorem ok_coreflexive : Coreflexive (ok (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **para-defn**: `R ≜ (waste w) ≤ (waste w)°`. -/
@@ -193,7 +195,7 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
 @[expose] public def Salg (len : Word → Int) (w : Int) :
     (F Word Word).obj (dPara Word) ⟶ dPara Word :=
-  graph (newAlgFn (Word := Word)) ∪ (graph glueAlgFn ≫ okW len w)
+  graph (newAlgFn (Word := Word)) ∪ (graph glueAlgFn ≫ ok (len := len) w)
 
 /-! ## `para-mono` -/
 
@@ -250,7 +252,7 @@ public theorem para_mono_new :
 /-- **para-mono**, second row: `(𝟙×Q)(glue (ok w)) ⊑ glue (ok w)Q` — `Q` pins the first line,
     which is the only thing `glue` changes and the only thing `waste` reads about it. -/
 public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
-    MonotonicAlg (F := F Word Word) (graph glueAlgFn ≫ okW len w) (Q len w) :=
+    MonotonicAlg (F := F Word Word) (graph glueAlgFn ≫ ok (len := len) w) (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, s, hs, hsr, hok⟩ := h
     obtain rfl : s = glueAlgFn v := hs
@@ -362,7 +364,7 @@ public theorem para_sort_glue :
     of the result is the same as testing the first line at every step, given that every word
     fits on a line by itself and that gluing only widens a line. -/
 public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partAlg ≫ allFit len w = (F Word Word).map (allFit len w) ≫ Salg len w := by
+    partAlg ≫ fits (len := len) w = (F Word Word).map (fits (len := len) w) ≫ Salg len w := by
   apply hom_ext; intro u r
   cases u with
   | inl a =>
@@ -416,7 +418,7 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
           exact ⟨glueFn a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
 
 public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partition ≫ allFit len w = ⦇Salg len w⦈ :=
+    partition ≫ fits (len := len) w = ⦇Salg len w⦈ :=
   relCata_fusion (initial Word Word) (para_alg_fusion hlen hfit)
 
 /-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
@@ -436,7 +438,7 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
       ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
     (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
       ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
-    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (okW len w) ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
     (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
       ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
@@ -451,7 +453,7 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
   have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
-    (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := okW len w)
+    (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := ok (len := len) w)
     (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
@@ -465,7 +467,7 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
 
 /-- **para-laws**, the specification step: `para_spec` under `Λ(−) est(R)`. -/
 public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    Λ ⦇Salg len w⦈ ≫ est (R len w) = Λ (partition ≫ allFit len w) ≫ est (R len w) := by
+    Λ ⦇Salg len w⦈ ≫ est (R len w) = Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [para_spec hlen hfit]
 
 /-- **para-laws** (B&dM §8.5, p.210): a paragraph laid out as a fold that thins the layouts
@@ -488,14 +490,14 @@ public theorem para_laws {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a) (hfit :
       ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
     (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
       ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
-    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (okW len w) ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
     (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
       ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R len w)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist⦈ ≫ minlist
-      ⊑ Λ (partition ≫ allFit len w) ≫ est (R len w) := by
+      ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [← para_laws_step2 hlen hfit]
   exact para_laws_step1 hlen hsortF h88₁ h88₂ h89₂ h811 h810 h86 h87
 

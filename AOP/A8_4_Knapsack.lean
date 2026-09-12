@@ -46,10 +46,12 @@ variable {Item : Type} {vol wt : Item → Int} {w : Int}
 
 /-- **knap-defn**: `within w`, the coreflexive on the packings whose weight fits the knapsack
     (`value ≜ total vol`, `weight ≜ total wt`). -/
-@[expose] public def within (wt : Item → Int) (w : Int) : dList Item ⟶ dList Item :=
+-- The weight function is the SECTION'S data, not part of the name the note writes (`within(w)`),
+-- so it is an implicit binder supplied by name where a use site has to pin it.
+@[expose] public def within (w : Int) : dList Item ⟶ dList Item :=
   fun x y => x = y ∧ total wt x ≤ w
 
-public theorem within_coreflexive : Coreflexive (within wt w) :=
+public theorem within_coreflexive : Coreflexive (within (wt := wt) w) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `x R y` iff `x` is worth at
@@ -146,12 +148,12 @@ public theorem drop_eq_junc :
     item, keep it if the packing still fits, or drop it. -/
 @[expose] public def Salg (wt : Item → Int) (w : Int) :
     (F Unit Item).obj (dList Item) ⟶ dList Item :=
-  (graph con ≫ within wt w) ∪ graph dropFn
+  (graph con ≫ within (wt := wt) w) ∪ graph dropFn
 
 /-- Pointwise reading of `[nil,cons](within w)`. -/
 theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     (r : ConsList Unit Item) :
-    (graph con ≫ within wt w) u r ↔ r = con u ∧ total wt r ≤ w := by
+    (graph con ≫ within (wt := wt) w) u r ↔ r = con u ∧ total wt r ≤ w := by
   constructor
   · rintro ⟨c, hc, hcr, hwc⟩
     obtain rfl : c = con u := hc
@@ -165,7 +167,7 @@ theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     redundant beside the unfiltered one. -/
 public theorem Salg_junc :
     Salg wt w = junc (sumCop (dL Unit) ⟨Item × ConsList Unit Item⟩) wrapR
-      ((consR ≫ within wt w) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
+      ((consR ≫ within (wt := wt) w) ∪ graph fun p : Item × ConsList Unit Item => p.2) := by
   apply hom_ext; intro u r
   cases u with
   | inl D =>
@@ -193,7 +195,7 @@ public theorem Salg_junc :
 /-- **knap-mono**, first row: `(𝟙×Q)(cons (within w)) ⊑ cons (within w)Q` — bettering a
     packing keeps it inside the knapsack, because `Q` also forbids getting heavier. -/
 public theorem knap_mono_cons :
-    MonotonicAlg (F := F Unit Item) (graph con ≫ within wt w) (Q vol wt) :=
+    MonotonicAlg (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q vol wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hcon⟩ := h
     obtain ⟨rfl, hwr⟩ := (con_within_apply (wt := wt) (w := w) v r).mp hcon
@@ -227,7 +229,7 @@ public theorem knap_mono_cons :
     and each is worth 1, the capacity is 5: `[10]` and `[0]` tie on value, so `R` lets the
     fold replace one by the other, but only `[0]` still admits another item. -/
 public theorem knap_mono_cons_false :
-    ¬ MonotonicAlg (F := F Unit Int) (graph con ≫ within (fun i : Int => i) 5)
+    ¬ MonotonicAlg (F := F Unit Int) (graph con ≫ within (wt := fun i : Int => i) 5)
         (R (fun _ : Int => (1 : Int))) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr (0, ConsList.cons (10 : Int) (ConsList.wrap ())))
@@ -308,9 +310,9 @@ public theorem knap_sort_drop : MonotonicAlg (F := F Unit Item) (graph dropFn) (
     partial packing because weights are non-negative — a subsequence of a packing that fits,
     fits — and the empty packing is legal because `0 ≤ w`. -/
 public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    (subseq ≫ within wt w : dList Item ⟶ dList Item) = ⦇Salg wt w⦈ := by
+    (subseq ≫ within (wt := wt) w : dList Item ⟶ dList Item) = ⦇Salg wt w⦈ := by
   have hspec : ∀ x r : ConsList Unit Item,
-      (subseq ≫ within wt w : dList Item ⟶ dList Item) x r ↔ subseqP r x ∧ total wt r ≤ w := by
+      (subseq ≫ within (wt := wt) w : dList Item ⟶ dList Item) x r ↔ subseqP r x ∧ total wt r ≤ w := by
     intro x r
     constructor
     · rintro ⟨y, hy, hxy, hwy⟩
@@ -376,7 +378,7 @@ public theorem knap_laws_step1 {l lF : RelSet.{0}}
     (h88₁ : sortF (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ sortP)
     (h88₂ : sortF (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
       ⊑ powerRel (graph dropFn) ≫ sortP)
-    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage (within wt w) ≫ sortP)
+    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ sortP)
     (h811 : (F Unit Item).map sortP ≫ listcp
       ⊑ cpMap (F Unit Item) (dList Item) ≫ sortF ((F Unit Item).map (R vol)))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
@@ -390,7 +392,7 @@ public theorem knap_laws_step1 {l lF : RelSet.{0}}
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
   have key := thinningList (F := F Unit Item) (F_preservesRecip Unit Item) (initial Unit Item)
-    (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within wt w) (p₂ := 𝟙 (dList Item))
+    (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within (wt := wt) w) (p₂ := 𝟙 (dList Item))
     (P := R vol) (Q := Q vol wt) (R := R vol)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
@@ -404,7 +406,7 @@ public theorem knap_laws_step1 {l lF : RelSet.{0}}
 
 /-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
 public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
-    Λ ⦇Salg wt w⦈ ≫ est (R vol) = Λ (subseq ≫ within wt w) ≫ est (R vol) := by
+    Λ ⦇Salg wt w⦈ ≫ est (R vol) = Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
   rw [knap_spec hw hwt]
 
 /-- **knap-laws** (B&dM §8.4, p.206): the knapsack problem as a fold that thins the packings
@@ -427,14 +429,14 @@ public theorem knap_laws {l lF : RelSet.{0}} (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ 
     (h88₁ : sortF (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ sortP)
     (h88₂ : sortF (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
       ⊑ powerRel (graph dropFn) ≫ sortP)
-    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage (within wt w) ≫ sortP)
+    (h89₁ : sortP ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ sortP)
     (h811 : (F Unit Item).map sortP ≫ listcp
       ⊑ cpMap (F Unit Item) (dList Item) ≫ sortF ((F Unit Item).map (R vol)))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Q vol wt) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R vol)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 l) ≫ mergeP ≫ thinlist⦈ ≫ minlist
-      ⊑ Λ (subseq ≫ within wt w) ≫ est (R vol) := by
+      ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
   rw [← knap_laws_step2 hw hwt]
   exact knap_laws_step1 hsortF h88₁ h88₂ h89₁ h811 h810 h86 h87
 
