@@ -392,14 +392,22 @@ partial def objIn? (a : Expr) : MetaM (Option Expr) := do
     which is where a family is indexed (`φ A`, `alphaT I A`); an argument that is a bundle or an
     arrow is not one, and `I.α` — whose one explicit argument is the algebra — has no index at all
     and stays the bare `α` the note writes. -/
-def indexedComponent? (e : Expr) : MetaM (Option (String × Expr)) := do
+def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
+  -- A FIELD LEAN LEFT AS A POSITION is the same component written another way, so it is normalised
+  -- HERE too: otherwise the bundle the field is taken of never reaches the search for the index.
+  let e := (← namedProj? e₀).getD e₀
   let .const c _ := e.getAppFn | return none
   unless (← Lean.labelled `diag_indexed).contains c do return none
   unless (homObjs? (← Meta.inferType e)).isSome do return none
   -- THE LETTER IS THE HEAD OF THE SPELLING, read off the SYNTAX and not off the constant's name:
-  -- `alphaT I A` is the `α` its notation writes and `(I A).α` the `α` the field is called, and the
-  -- index each of them wrote or dropped is set beneath by this clause either way.
-  let some h := stxHead (← PrettyPrinter.delab e) | return none
+  -- `alphaT I A` is the `α` its notation writes and the index it dropped is set beneath by this
+  -- clause.  A FIELD is written under the field's own identifier, which the printer puts AFTER the
+  -- dot and `stxHead` — whose business is an application's head — cannot reach; that the constant
+  -- is a projection is read off the environment, never off its spelling.
+  let head? : MetaM (Option Name) := do
+    if ((← getEnv).getProjectionFnInfo? c).isSome then return some (Name.mkSimple c.getString!)
+    return stxHead (← PrettyPrinter.delab e)
+  let some h ← head? | return none
   let args := e.getAppArgs
   let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
   let mut ix : Option Expr := none
