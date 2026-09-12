@@ -14,12 +14,23 @@ display the note leaves unlabelled is named by its number, and the gate says whi
 
 Imported, `read(path)` hands back the rows as `(selectors, name, draws)` triples with the selector
 column already split on `,`.
+
+ONE CHAPTER: with `CH=13` (or `--ch 13`) a manifest reads as the rows whose display lies in chapter
+13, and the gate above it is then scoped by saying nothing.  Which displays those are comes from
+`notesplit.sections_of` — the note's own query, keyed by the same `#disp` label the name column is —
+never from the shape of a number in the name, which a heading move rewrites.
 """
+import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import chapter_env, sections_of, take_chapter    # noqa: E402
 
-def read(path):
-    """Every row of a manifest, as `(selectors, name, draws)` — selectors split on `,`."""
+
+def read(path, ch=None):
+    """Every row of a manifest, as `(selectors, name, draws)` — selectors split on `,`.
+
+    Chapter-scoped when one is named: the rows whose display the chapter draws, in file order."""
     rows = []
     for line in open(path, encoding="utf-8"):
         line = line.split("\t#")[0].rstrip("\n")
@@ -27,10 +38,15 @@ def read(path):
             continue
         sels, name, draws = (line.split(" | ") + ["", ""])[:3]
         rows.append((sels.split(","), name.strip(), draws.strip()))
-    return rows
+    n = chapter_env(ch)
+    if n is None:
+        return rows
+    here = sections_of(n)
+    return [r for r in rows if r[1] in here]
 
 
 if __name__ == "__main__":
-    path, col = sys.argv[1], int(sys.argv[2])
+    argv = take_chapter(sys.argv[1:])
+    path, col = argv[0], int(argv[1])
     for sels, name, draws in read(path):
         print([",".join(sels), name, draws][col - 1])

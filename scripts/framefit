@@ -32,12 +32,14 @@ import importlib.util, os, re, subprocess, sys, tempfile
 from importlib.machinery import SourceFileLoader
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
 # The note is one file per chapter (`scripts/note-split`): `note_source` reads a split root as the
-# one document it stands for, so the `cert:`s counted here are the note's, not a preamble's none.
+# one document it stands for, so the `cert:`s counted here are the note's, not a preamble's none,
+# and `note_root`/`note_pdf` are the chapter's own files when `CH`/`--ch` names one — the page
+# numbers reported are then that pdf's.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import note_source
-PDF = os.path.join(ROOT, "diag", "allegory-axioms.pdf")
+from notesplit import note_pdf, note_root, note_source
+NOTE = os.path.join(ROOT, note_root())
+PDF = os.path.join(ROOT, note_pdf())
 BAND = 0.6      # a fill wider or taller than this much of the page is a rule or a page band, not a panel
 PAD = 2.0       # the two regions a panel is made of meet on the object wire, so the join needs slack
 ONE = 1.0       # the band, in rows: one row under the last bead, as `layout` lays it out

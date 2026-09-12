@@ -16,6 +16,25 @@ monolith still land after the split:
     git apply -p0 <patch>        # the patch names diag/allegory-axioms.typ; apply it to m.typ
     ./scripts/note-split m.typ
 
+ONE CHAPTER, THE WHOLE RECIPE — `CH=<n>` is the ONE variable every gate honours.  `n` is the
+chapter's position among the level-1 headings, which is the number its displays already carry
+(`13.4.3c` is in chapter 13).  Working on chapter 13:
+
+    make ch N=13                    # the chapter's own pdf, diag/ch/13-optimisation.pdf
+    make c CH=13                    # circuit, pairs, labels, cite, spell, scan-strict, hm-sigs
+    make cite CH=13                 # the markers in that chapter alone
+    make scan-generated CH=13       # the generated pictures its panels name
+    CH=13 ./scripts/string-check    # or ./scripts/string-check --ch 13
+    CH=13 ./scripts/cd-check        # or ./scripts/cd-check --ch 13
+    CH=13 ./scripts/circuit-check
+    ./scripts/diagram --write diag/ch/13-optimisation.typ     # a rewrite lands in the chapter file
+
+and the patch an agent hands back is a patch against the chapter file, or against the monolith
+`note-join` prints.  With `CH` unset every gate is the whole note, exactly as it was.  A gate told a
+chapter that does not exist, or a section outside the chapter, stops and names it: nothing falls
+back to the whole book, because a gate that checked something else and exited 0 is worse than one
+that failed.
+
 The reader here is a LINE reader, never a regex over prose: a level-1 heading is a line beginning
 `= `, the preamble is everything before the first one, and a preamble statement starts at a line
 beginning `#` and runs while its bracket nesting is open.
@@ -274,20 +293,173 @@ def join_text(root_dir=None, root_path=None):
     return "\n".join(pre + rules + body) + tail
 
 
-def note_files(root=None, root_dir=None):
-    """The root and every file it `#include`s, in order — a marker or a `cert:` lives in a chapter
-    now, so a gate that reads the note alone reads a preamble and nothing else."""
-    root_dir = root_dir or ROOT_DIR
-    root = root or NOTE
-    path = root if os.path.isabs(root) else os.path.join(root_dir, root)
-    out, here = [path], os.path.dirname(path)
+def includes(path):
+    """The files this one `#include`s, in order, read with the string reader and not a regex.
+
+    The ONE place an include is recognised: `note_files` walks it, `chapter_file` counts it."""
+    here, out = os.path.dirname(path), []
     for ln in read(path).split("\n"):
         if ln.startswith("#include "):
             inc = typst_string(ln)
             if inc is None:
                 die("%s: `#include` with no file name: %s" % (path, ln))
-            out += note_files(root=os.path.join(here, inc), root_dir=root_dir)
+            out.append(os.path.join(here, inc))
     return out
+
+
+def note_files(root=None, root_dir=None, ch=None):
+    """The root and every file it `#include`s, in order — a marker or a `cert:` lives in a chapter
+    now, so a gate that reads the note alone reads a preamble and nothing else.
+
+    A chapter named (`--ch 13`, `CH=13`) narrows this to that chapter's file: a gate told a chapter
+    reads the chapter and nothing outside it.  The root itself holds no prose — only `#show` rules
+    and the includes — so dropping it drops no marker."""
+    root_dir = root_dir or ROOT_DIR
+    root = root or NOTE
+    path = root if os.path.isabs(root) else os.path.join(root_dir, root)
+    n = chapter_env(ch)
+    if n is not None and os.path.abspath(path) == os.path.abspath(os.path.join(root_dir, NOTE)):
+        return [chapter_file(n, root_dir)]
+    out = [path]
+    for inc in includes(path):
+        out += note_files(root=inc, root_dir=root_dir)
+    return out
+
+
+# ---- one chapter -----------------------------------------------------------------------------
+# `CH` is the ONE variable every gate honours, and the four functions below are the ONE resolution
+# of it: which file to compile and query (`note_root`/`note_pdf`), which chapter that is
+# (`chapter_file`/`chapter_pdf`), and which displays lie in it (`sections_of`).  A gate therefore
+# takes no chapter flag of its own — it defaults its path through `note_root()` — and a second gate
+# cannot come to disagree with the first about what chapter 13 is.
+
+def chapter_env(ch=None):
+    """The chapter a gate was told to work on: the argument, else `$CH`, else None for the book.
+
+    An empty value is no chapter (`make c CH=` is the whole book); anything that is not a number
+    stops the run rather than being read as one.
+
+    `--ch N` is read off the running process's own command line, so a gate that resolves its paths
+    at import time answers for the chapter too; `take_chapter` takes the flag back out of the
+    arguments the gate parses and puts it in the environment for the processes it starts."""
+    if ch is None or ch == "":
+        rest = sys.argv[1:]
+        if "--ch" in rest:
+            i = rest.index("--ch")
+            if i + 1 >= len(rest):
+                die("--ch takes the chapter's number, e.g. --ch 13")
+            ch = rest[i + 1]
+        else:
+            ch = os.environ.get("CH", "")
+    if isinstance(ch, int):
+        return ch
+    if not ch.strip():
+        return None
+    try:
+        return int(ch.strip())
+    except ValueError:
+        die("CH=%s is no chapter: give its number among the note's level-1 headings, e.g. CH=13 "
+            "(./scripts/note-files lists the chapters in order)" % ch)
+
+
+def take_chapter(argv):
+    """`--ch N` taken off `argv` and put in the environment, so every child process sees it too.
+
+    Returns the remaining arguments.  One reader for the flag, so `--ch` and `CH=` cannot drift."""
+    if "--ch" not in argv:
+        return list(argv)
+    i = argv.index("--ch")
+    if i + 1 >= len(argv):
+        die("--ch takes the chapter's number, e.g. --ch 13")
+    os.environ["CH"] = str(chapter_env(argv[i + 1]))
+    return list(argv[:i]) + list(argv[i + 2:])
+
+
+def chapter_file(n, root_dir=None):
+    """Chapter N's file: the N-th file the root includes, which is the N-th level-1 heading."""
+    root_dir = root_dir or ROOT_DIR
+    path = os.path.join(root_dir, NOTE)
+    if not read(path).startswith(ROOT_MARK):
+        die("CH=%d, but %s is not split into chapters: run ./scripts/note-split first" % (n, NOTE))
+    chs = includes(path)
+    if not 1 <= n <= len(chs):
+        die("no chapter %d: %s includes %d chapters —\n  %s"
+            % (n, NOTE, len(chs), "\n  ".join("%d %s" % (i, os.path.relpath(p, root_dir))
+                                              for i, p in enumerate(chs, 1))))
+    return chs[n - 1]
+
+
+def chapter_pdf(n, root_dir=None):
+    """The pdf chapter N compiles to, beside its source — `make ch N=13` writes exactly this."""
+    return os.path.splitext(chapter_file(n, root_dir))[0] + ".pdf"
+
+
+def note_root(ch=None, root_dir=None):
+    """THE .typ EVERY GATE COMPILES, QUERIES AND SCANS: the chapter when one is named, else the note.
+
+    Repository-relative, the spelling every gate already had as its default."""
+    n = chapter_env(ch)
+    root_dir = root_dir or ROOT_DIR
+    return NOTE if n is None else os.path.relpath(chapter_file(n, root_dir), root_dir)
+
+
+def note_pdf(ch=None, root_dir=None):
+    """The pdf `note_root` compiles to: the chapter's own, so page numbers are the chapter's."""
+    return os.path.splitext(note_root(ch, root_dir))[0] + ".pdf"
+
+
+def sections_of(n=None, root_dir=None):
+    """The displays chapter N holds, named as a manifest names them — its `#disp` LABEL, or its
+    number where the note leaves it unlabelled.
+
+    READ OFF THE NOTE'S OWN QUERY (`scripts/note-meta`, which answers for the chapter because it
+    resolves its root the same way), never by matching a number against a string: which chapter a
+    display lies in is where the note puts it, and a `13.` that a heading move turned into `12.`
+    would answer for the wrong chapter without saying so."""
+    import json
+    import subprocess
+    root_dir = root_dir or ROOT_DIR
+    n = chapter_env(n)
+    if n is None:
+        return None                      # no chapter named: a manifest keeps every row
+    env = dict(os.environ, CH=str(n))
+    p = subprocess.run([os.path.join(root_dir, "scripts", "note-meta")], cwd=root_dir,
+                       capture_output=True, text=True, env=env)
+    if p.returncode:
+        die("chapter %d: scripts/note-meta failed, so which displays lie in it is unknown:\n%s"
+            % (n, p.stderr.strip()))
+    ms = [m for m in json.loads(p.stdout) if isinstance(m, dict)]
+    return {d.get("label") or d["id"] for d in ms if d.get("kind") == "disp"}
+
+
+def generated_imports(root_dir=None):
+    """Every picture under diag/generated/ that a .typ in diag/ imports, named as the exporter takes
+    it — the list `scripts/diag-regen` redraws.
+
+    Each import is RESOLVED AS A PATH from the file that makes it, so the note's own
+    `generated/x.typ` and a chapter's `../generated/x.typ` are one name.  A pattern matching the
+    note's spelling alone went blind to every chapter the split created and redrew fewer pictures
+    while exiting 0; a path resolution needs no edit at the next directory a file moves to."""
+    root_dir = root_dir or ROOT_DIR
+    diag = os.path.join(root_dir, "diag")
+    gen = os.path.join(diag, "generated")
+    out = []
+    for d, subs, names in os.walk(diag):
+        subs[:] = [s for s in subs if os.path.join(d, s) != gen]   # a picture's own imports are not the list
+        for name in sorted(names):
+            if not name.endswith(".typ"):
+                continue
+            path = os.path.join(d, name)
+            for ln in read(path).split("\n"):
+                if ln[:1] + "".join(takewhile_alpha(ln[1:])) != "#import":
+                    continue
+                s = typst_string(ln)
+                if s is None or s.startswith("@") or s.startswith("/"):
+                    continue
+                tgt = os.path.normpath(os.path.join(d, s))
+                if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
+                    out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
+    return sorted(set(out))
 
 
 def note_text(root=None, root_dir=None):
@@ -453,6 +625,14 @@ def cmd_join(argv):
 
 
 def cmd_files(argv):
+    """The files a gate reads — `--ch 13` prints chapter 13's alone, `--help` the chapter recipe."""
+    if "--help" in argv or "-h" in argv:
+        sys.stdout.write(__doc__)
+        return
+    if "--generated" in argv:
+        print(*generated_imports(), sep="\n")
+        return
+    argv = take_chapter(argv)
     for p in note_files(argv[0] if argv else None):
         print(os.path.relpath(p, ROOT_DIR))
 

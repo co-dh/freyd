@@ -20,6 +20,28 @@ STRREC := .lake/build/string-records.jsonl
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
+# ONE CHAPTER, ONE VARIABLE: `make c CH=13`, `make cite CH=13`, `make scan-generated CH=13` compile,
+# query and scan chapter 13's file and nothing else — the whole note costs about 13 GiB and 40s of
+# layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/string-check`, `cd-check`,
+# `circuit-check` and every python gate resolve the same chapter from the environment and need no
+# flag of their own; `scripts/notesplit.py`'s `note_root` is the one resolution behind all of them.
+# `make ch N=13` is the same variable under the name that target has always taken.
+# A chapter that does not exist STOPS make here, naming it: a gate that fell back to the whole book
+# would check something else and exit 0.
+CH ?= $(N)
+export CH
+ifeq ($(strip $(CH)),)
+NOTESRC := diag/allegory-axioms.typ
+CITESRC := $(TYP)
+else
+NOTESRC := $(shell ./scripts/note-files --ch $(CH) 2>&1)
+CITESRC := $(NOTESRC)
+ifeq ($(wildcard $(NOTESRC)),)
+$(error $(NOTESRC))
+endif
+endif
+NOTEPDF := $(NOTESRC:.typ=.pdf)
+
 .PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check circuit-check string-check cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
@@ -33,6 +55,8 @@ SLICE := diag/circuit-slice.typ
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
 p: $(STAMP) slice circuit pairs cite spell scan-strict scan-generated hm-sigs
+	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
+	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
@@ -50,30 +74,34 @@ slice:
 # BEFORE the compile and without typst: a pasted circuit the generator no longer draws is drift,
 # and `./scripts/circuit --write` splices the rebuilt one over it.
 circuit:
-	./scripts/circuit --compare diag/allegory-axioms.typ
+	./scripts/circuit --compare $(NOTESRC)
 
 # Two panels either side of a step sign are one statement: unequal boxes read as different arrows,
 # and a bead they share must sit at the same height or the picture claims it moved.  BEFORE the
 # compile, next to `circuit`, so a misaligned pair never produces a PDF that looks fine.
 pairs:
-	./scripts/diagram --pairs diag/allegory-axioms.typ
+	./scripts/diagram --pairs $(NOTESRC)
 
 # No two labels inside one panel may touch, measured off the COMPILED page — the check that makes
 # `scripts/diagram`'s vertical unit a measured number instead of a guess, and keeps it one.  It
 # needs the PDF, so unlike its neighbours it pays a typst compile when the note is newer; `p` calls
 # it straight after its own compile instead, and pays nothing extra.
-labels: diag/allegory-axioms.pdf
+# The three read `CH` themselves, so they measure the CHAPTER's pages when one is named: the page
+# numbers they report are then the chapter pdf's, which is the file the author has open.
+labels: $(NOTEPDF)
 	./scripts/labelfit
 	./scripts/inkfit
 	./scripts/framefit
 
-diag/allegory-axioms.pdf: diag/allegory-axioms.typ $(wildcard diag/*.typ)
-	typst compile diag/allegory-axioms.typ $@
+# `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
+# resolve the same either way.
+$(NOTEPDF): $(NOTESRC) $(wildcard diag/*.typ)
+	typst compile --root . $(NOTESRC) $@
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
-	./scripts/cite-check $(TYP)
+	./scripts/cite-check $(CITESRC)
 
 # Every string a `cert:` states, parsed and written back: `spell(parse(x)) == x`.  BESIDE `cite`
 # and before the compile for the same reason — a formula the parser cannot reproduce is a formula
@@ -81,14 +109,14 @@ cite: $(DB)
 # `typst query`, which `scan` refuses to; this one reads the note's STRINGS, not its geometry, and
 # the strings are what every other check quotes.
 spell: $(DB)
-	./scripts/scanline --spell diag/allegory-axioms.typ
+	./scripts/scanline --spell $(NOTESRC)
 
 # The displays that carry NO `lean:` marker, each with the statements worth reading against it.
 # A PROMPT, not a check: it never passes or fails and nothing depends on it, because what it asks
 # for — is this display the same claim as that theorem? — only a person can answer.  `--unmarked`
 # for the work left, `--label X` for one display.
 cover: $(DB)
-	./scripts/cite-cover $(TYP)
+	./scripts/cite-cover $(CITESRC)
 
 # The reference PDFs as text: `./scripts/book find 3.1a IntroString`, `book grep`, `book page`.
 # NO prerequisites and no `book-index.db` target: the PDFs are downloads, not build products, so
@@ -102,16 +130,16 @@ books:
 # `dpanel`/`cpanel`/`tpan` call: unchanged since the last clean pass skips the `typst query`
 # that dominates its cost; `scan-full` bypasses the cache.
 scan: $(DB)
-	./scripts/scanline diag/allegory-axioms.typ
+	./scripts/scanline $(NOTESRC)
 
 scan-full: $(DB)
-	./scripts/scanline diag/allegory-axioms.typ --full
+	./scripts/scanline $(NOTESRC) --full
 
 # The same sweep with crossings fatal, and the one `p` runs.  A wire is a functor and horizontal
 # composition has no swap, so a crossing claims a symmetry that is not there and there is no
 # acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
 scan-strict: $(DB)
-	./scripts/scanline diag/allegory-axioms.typ --strict
+	./scripts/scanline $(NOTESRC) --strict
 
 # Every picture `diag/string-panels.txt` names, drawn from LEAN and swept against it.  The
 # manifest's SELECTORS are the obligations, never the files on disk: diag/generated is gitignored,
@@ -166,7 +194,7 @@ c: circuit pairs labels cite spell scan-strict hm-sigs
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
 v: $(DB)
-	./scripts/scanline diag/allegory-axioms.typ --view $(SEC)
+	./scripts/scanline $(NOTESRC) --view $(SEC)
 
 # `scan` run backwards: the panel a formula denotes.  The target is the ROUND TRIP — every panel
 # whose `cert:` states an `expect` is redrawn from that formula alone and swept again, and the
@@ -174,7 +202,7 @@ v: $(DB)
 # a generator no one should paste from.  `./scripts/diagram --show` prints the calls it makes,
 # `--compare` puts each beside the note's own, and `--src`/`--tgt` draw one formula by hand.
 diagram:
-	./scripts/diagram --roundtrip diag/allegory-axioms.typ
+	./scripts/diagram --roundtrip $(NOTESRC)
 
 # `diagram` run against the BOOK: each fixture in `diag/pairs/` is one of IntroString's own
 # formula/picture pairs, and the panel our generator draws for the formula must have the book's port
@@ -199,16 +227,13 @@ hm-sigs: $(DB)
 # and two viewers.  `make w NOTE=diag/allegory2.typ` for the proofs.
 NOTE ?= diag/allegory-axioms.typ
 
-# ONE CHAPTER: `make ch N=13`.  The whole note costs about 13 GiB and 40s to compile and every gate
-# paid it; one chapter is a quarter of that.  N is the chapter's position among the level-1 headings,
-# which is the number its displays already carry (`13.4.3c` is in chapter 13), and the file is found
-# by that number so a renamed heading needs no edit here.  `--root .`: a chapter sits one directory
-# below the prelude it imports.
-CH = $(firstword $(wildcard diag/ch/$(N)-*.typ diag/ch/$(N).typ diag/ch/0$(N)-*.typ diag/ch/0$(N).typ))
+# ONE CHAPTER'S PDF: `make ch N=13`.  N is the chapter's position among the level-1 headings, which
+# is the number its displays already carry (`13.4.3c` is in chapter 13); `CH ?= $(N)` at the top of
+# this file makes it the same variable every gate takes, and `./scripts/note-files --ch` the one
+# thing that turns it into a file, so a renamed heading needs no edit here.
 ch:
-	@test -n "$(N)" || { echo "make ch N=13 — the chapter's number among the level-1 headings"; exit 1; }
-	@test -n "$(CH)" || { echo "no chapter $(N): run ./scripts/note-split, then ls diag/ch"; exit 1; }
-	typst compile --root . $(CH) $(CH:.typ=.pdf)
+	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the chapter's number among the level-1 headings"; exit 1; }
+	typst compile --root . $(NOTESRC) $(NOTEPDF)
 
 w: p
 	@zathura $(NOTE:.typ=.pdf) & \
