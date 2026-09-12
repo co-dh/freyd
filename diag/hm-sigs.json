@@ -200,6 +200,16 @@
         "AOP.A7_5_VanBeads.Van.greedyFold_not_lax_natural@3a27bdfc"
       ]
     },
+    "⦇𝟙%∋ E(F(∋)S)thin(Q)⦈": {
+      "src": "T",
+      "tgt": "E(y)",
+      "lean": "AOP.A5_5.relCata@6ef23f02",
+      "note": "§14.1's thinned fold, the algebra spelled as Lean prints it: `Λ W = 𝟙%∋ E(W)`, so the unit births E outside the fold and the row below is the same arrow written unfactored. Both keys stand until §14.3's panels, whose S is itself an abbreviation, are redrawn from Lean",
+      "nat": "no",
+      "nat-lean": [
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.relCata_not_lax_natural@fef916b7"
+      ]
+    },
     "⦇(F(∋)S)%∋ thin(Q)⦈": {
       "src": "T",
       "tgt": "y",

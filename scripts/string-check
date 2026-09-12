@@ -96,12 +96,24 @@ def content(path):
     return (ms[0], None) if ms else (None, "the file draws no panel")
 
 
+def lanelab(rec):
+    """A lane's NAME, by `dpanel`'s own `dnm`: its 4th element where the lane carries one, and
+    otherwise the label the port list writes at the edge that lane reaches — the two places on the
+    page one wire can be read.  A lane's 2nd element is its TOP HEIGHT, so reading it the way a
+    bead's label is read compared two coordinates and called a renamed lane equal."""
+    port = lambda side, x: next((p[1] for p in rec.get(side) or [] if p[0] == x), None)
+    return [l[3] if l[3] is not None else port("top" if l[1] == "top" else "bot", l[0])
+            for l in rec.get("lanes") or []]
+
+
 def why(n, g):
     """What the two panels disagree about, named by the thing that is wrong rather than by a count:
     a lane's label, a bead's, the object wire's, the ports, a bead the generator spiders."""
     lab = lambda xs: [x[1] for x in xs or []]
     out = []
-    for k in ("lanes", "beads", "obj"):
+    if lanelab(n) != lanelab(g):
+        out.append(f"lanes {lanelab(n)} vs {lanelab(g)}")
+    for k in ("beads", "obj"):
         if lab(n.get(k)) != lab(g.get(k)):
             out.append(f"{k} {lab(n.get(k))} vs {lab(g.get(k))}")
     if lab(n.get("top")) != lab(g.get("top")) or lab(n.get("bot")) != lab(g.get("bot")):
@@ -114,6 +126,14 @@ def why(n, g):
     ver = lambda xs: [x[5] if len(x) > 5 else "strict" for x in xs or []]
     if ver(n.get("beads")) != ver(g.get("beads")):
         out.append(f"marks {ver(n.get('beads'))} vs {ver(g.get('beads'))}")
+    # A UNIT IS A BEAD TOO, and it is the one bead that is not in `beads`: the wire it is born on
+    # carries it, so its name and its mark are the LANE's 5th and 6th elements.  Reading `beads`
+    # alone left `𝟙%∋` drawn lax against a `singletonMap_natural` the export cites as strict, on
+    # the very panel whose object wire the gate did catch — the same hole, one tuple over.
+    unit = lambda xs: [(x[4], x[5] if len(x) > 5 else "strict")
+                       for x in xs or [] if len(x) > 4 and x[4] is not None]
+    if unit(n.get("lanes")) != unit(g.get("lanes")):
+        out.append(f"units {unit(n.get('lanes'))} vs {unit(g.get('lanes'))}")
     return "; ".join(out)
 
 
@@ -226,9 +246,19 @@ def main(argv):
                 rc = 1
                 continue
             v = run("./scripts/svg-diff", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
-            if v.returncode:
-                n = len([l for l in v.stdout.splitlines() if "only in" in l])
-                print(f"{tag} {sel}: DIFF {n} unmatched primitive(s); {why(panel, drew)}")
+            # EVERY OBLIGATION `why` ENUMERATES DECIDES, and the ink is one more of them rather than
+            # the gate: a bead's mark is a handful of points (a filled dot against a hollow ring)
+            # that `svg-diff` pairs off with each other, so a panel whose one defect was a lax bead
+            # drawn strict came back `ok` and the verdict decided nothing.  Either side failing fails.
+            d = why(panel, drew)
+            if v.returncode or d:
+                # The count and the KIND are `svg-diff`'s own lines, never one spelling of one kind:
+                # grepping them for "only in" printed `0 unmatched primitive(s)` on a panel that tool
+                # had just called 10 unmatched, because every line of it said `moved`.
+                ds = [l.strip() for l in v.stdout.splitlines() if l.startswith("  ")]
+                ks = sorted({l.split(maxsplit=1)[0] for l in ds if l[:1].isalpha()})
+                print(f"{tag} {sel}: DIFF {len(ds)} unmatched primitive(s)"
+                      f"{' ' + '/'.join(ks) if ks else ''}; {d}")
                 rc = 1
             else:
                 print(f"{tag} {sel}: ok")
