@@ -608,6 +608,22 @@ public theorem pick_branch_le (schedule : Bag Job ⟶ dSL Unit Job) :
   rw [Cat.assoc] at h
   exact h
 
+include hpickS in
+/-- **tardy-laws**, last row: the step is a PARTIAL FUNCTION whenever the continuation is — that
+    is what makes B&dM's p.258 program a program and not a search: `pick` is single-valued and
+    `snoc` is a map, so nothing in the step branches. -/
+public theorem pick_branch_simple {X : Bag Job ⟶ dSL Unit Job} (hX : Simple X) :
+    Simple (pick ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
+      ≫ arm₂ (graph (con (L := Unit) (E := Job)))) := by
+  rw [Simple, le_iff]
+  intro s s' h
+  obtain ⟨b, ⟨p, hp, q, ⟨hq1, hq2⟩, hs⟩, ⟨p', hp', q', ⟨hq1', hq2'⟩, hs'⟩⟩ := h
+  have hpp : p = p' := simple_uniq hpickS hp hp'
+  subst hpp
+  have hq : q = q' := Prod.ext (simple_uniq hX hq1 hq1') (hq2.symm.trans hq2')
+  subst hq
+  exact hs.trans hs'.symm
+
 /-- The base case: on the empty bag the search `est(Q)Λ[nil,snag]°` leaves `nil` itself, so the
     guarded constant `null≫nil` is below the `nil` arm of the specification's body. -/
 private theorem null_nil_le :
