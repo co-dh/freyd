@@ -194,10 +194,17 @@ partial def termArrows (e : Expr) : MetaM (Array Expr) := do
 
 /-- A term read as a path.  Composition is the ONLY structural case — that is the functor law; `𝟙`
     is the empty path, and any other expression is one edge, whatever it is made of.  `atoms` are the
-    arrows the statement names as terms (`termArrows`), and a composite among them is NOT opened: the
-    statement names no object between its factors, it names the arrow itself — `⦇F(f,𝟙)h⦈` is the
-    fold over `F(f,𝟙)h`, so `F(f,𝟙)h` is ONE edge wherever the same statement walks it. -/
-partial def interp (e : Expr) (atoms : Array Expr := #[]) : MetaM Path := do
+    arrows the statement names as terms (`termArrows`), and a composite among them is one edge WHERE
+    IT STANDS AS A FACTOR of a longer path: the route already has corners at that factor's ends and
+    the statement names no object between them — `F(⦇F(f,𝟙)h⦈) ≫ F(f,𝟙)h` steps through `F(A,C)`
+    and nothing else.
+
+    `whole` says the walk is starting on a SIDE of the statement's relation, where the fold does not
+    apply: a side is what the statement ASSERTS about, compared factor for factor against the other
+    side, so its middle objects are corners of the face however the arrow is also used elsewhere —
+    `Λ(F(∋)R) ≫ ∋ = F(∋) ≫ R` stands at `FA` between its right side's two factors, where the same
+    `F(∋)R` handed to `Λ` is one edge. -/
+partial def interp (e : Expr) (atoms : Array Expr := #[]) (whole : Bool := true) : MetaM Path := do
   -- A COMPONENT OF A FAMILY THE STATEMENT ITSELF BUILT is ONE EDGE, whatever that component is made
   -- of.  The redex `(fun A => χ(GA) ≫ K(φA)) B` is the TRANSFORMATION's value at `B`, and a lax
   -- square's two sides are its component — the type says so, where the term's shape says only how
@@ -207,9 +214,10 @@ partial def interp (e : Expr) (atoms : Array Expr := #[]) : MetaM Path := do
   let e := e.headBeta
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
-    if ← atoms.anyM (Meta.isDefEq e) then return ← Path.arrow e
+    if !whole then
+      if ← atoms.anyM (Meta.isDefEq e) then return ← Path.arrow e
     match StrDiag.lastTwo args with
-    | some (f, g) => Path.comp (← interp f atoms) (← interp g atoms)
+    | some (f, g) => Path.comp (← interp f atoms false) (← interp g atoms false)
     | none => Path.arrow e
   | (``Cat.id, _) => return Path.id (← StrDiag.objSpelling (← StrDiag.homEnds e).1)
   | _ => Path.arrow e
