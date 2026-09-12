@@ -797,6 +797,8 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   return { lanes, rows, top := Array.mk (List.range (nt + mt)),
            bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot }
 
+mutual
+
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
     on ONE contiguous block of lanes, and the parts that are identities are what runs past:
 
@@ -811,32 +813,26 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
     does not.  What separates them is the factor's own form, which is what is read here. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (vpass : Array Wire) (e : Expr) : MetaM Diagram := do
+    (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
   -- A constant the note draws OPENED is opened first, so the picture is of the body the note
   -- writes and not of one bead carrying the name Lean prints.
   let e' ← openNoted e
-  if e' != e then return ← interp regionTy cat objVars vpass e'
+  if e' != e then return ← interp regionTy cat objVars vpass expect e'
   let fs := factors e
-  if fs.size > 1 then
-    let mut d ← interp regionTy cat objVars vpass fs[0]!
-    for i in [1 : fs.size] do
-      -- A cut mismatch is between TWO FACTORS, and the cut text alone does not say which pair, so
-      -- the factors either side of it are added here rather than left for the reader to count out.
-      d ← try d.vcomp (← interp regionTy cat objVars vpass fs[i]!)
-        catch ex => throwError "{ex.toMessageData}\n  — the cut between `{← plain fs[i-1]!}` and \
-          `{← plain fs[i]!}`"
-    return d
+  if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
       let ws := (wiresOf args[4]!).map Wire.rel
-      let d ← interp regionTy cat objVars (vpass ++ ws) args[args.size - 1]!
+      let r := args[args.size - 1]!
+      let d ← interp regionTy cat objVars (vpass ++ ws)
+        (Peeled.inner expect ws.size (← homEnds r).1) r
       return ← (← Diagram.id ws d.otop).beside d
   -- AN IDENTITY IS NO BEAD: `𝟙` is the bare wire, so its picture is the lanes it runs on with
   -- nothing drawn on them.  On the HEAD, so every identity of every object goes the same way.
   | (``Cat.id, _) =>
     let (x, _) ← homEnds e
-    let (cx, ox) ← peelCuts objVars cat regionTy x
+    let (cx, ox) ← peelCutsAt expect objVars cat regionTy x
     return ← Diagram.id (cx.map (·.1)) ox
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
@@ -851,7 +847,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- `F.map` route and the verdict of `ψ` closes through the same chain as any `F(R)`.
     if ← isIdArrow φ then
       let l := Wire.timesL a
-      let d ← interp regionTy cat objVars (vpass.push l) ψ
+      let d ← interp regionTy cat objVars (vpass.push l)
+        (Peeled.inner expect 1 (← homEnds ψ).1) ψ
       return ← (← Diagram.id #[l] d.otop).beside d
     let one ← Meta.mkAppM ``Cat.id #[b]
     -- Interchange, `φ×ψ = (φ×𝟙)(𝟙×ψ)`, and functoriality, `(φ₁φ₂)×𝟙 = (φ₁×𝟙)(φ₂×𝟙)`: both split
@@ -861,17 +858,14 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let mut parts : Array Expr := #[]
       for f in fφ do parts := parts.push (← Meta.mkAppM n #[f, one])
       unless ← isIdArrow ψ do parts := parts.push (← Meta.mkAppM n #[← Meta.mkAppM ``Cat.id #[a'], ψ])
-      if parts.size > 1 then
-        let mut d ← interp regionTy cat objVars vpass parts[0]!
-        for i in [1 : parts.size] do d ← d.vcomp (← interp regionTy cat objVars vpass parts[i]!)
-        return d
+      if parts.size > 1 then return ← vstack regionTy cat objVars vpass expect parts
     -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`, ONLY where it is a family in the
     -- statement's own object: the lanes east of it are then what that object is, and only run past.
     -- Where `φ` cannot vary with it — `secure amount N`, whose `amount` pins the object — the whole
     -- `φ×𝟙` is ONE arrow, it rides the object wire like `α` and `⦇R⦈`, and its arrow is every lane
     -- its bar spans, which is what the tail below types it as.
     if (← familyVar e objVars).isSome then
-      let (cx, ox) ← peelCuts objVars cat regionTy (← homEnds e).1
+      let (cx, ox) ← peelCutsAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelCuts objVars cat regionTy (← homEnds e).2
       return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
         (over := (cx.extract 1 cx.size).map (·.1))
@@ -880,10 +874,11 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- of.  Last, so a factor the reader already has a form for keeps it.
   if let some (R, r) ← peelMap? cat objVars regionTy e then
     let ws := (wiresOf R).map Wire.rel
-    let d ← interp regionTy cat objVars (vpass ++ ws) r
+    let d ← interp regionTy cat objVars (vpass ++ ws)
+      (Peeled.inner expect ws.size (← homEnds r).1) r
     return ← (← Diagram.id ws d.otop).beside d
   let (x, y) ← homEnds e
-  let (cx, ox) ← peelCuts objVars cat regionTy x
+  let (cx, ox) ← peelCutsAt expect objVars cat regionTy x
   let (cy, oy) ← peelCuts objVars cat regionTy y
   let ax := cx.map (·.1)
   let ay := cy.map (·.1)
@@ -914,6 +909,28 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
         if let some d := d? then return d
   Diagram.bead regionTy cat objVars ax ay ox oy e
 
+/-- THE FACTORS STACKED, each read at the cut the factor above it ENDED at.  A cut belongs to the
+    COMPOSITE and not to either factor: the two factors hold different spellings of the one object
+    between them, and an object has more than one peel, so a cut each side reads for itself comes
+    out `F|[Char]` above and `F|Char` below with nothing wrong on either side.  It is therefore read
+    once — by the factor above, at its own target, which is how that factor drew its bottom edge —
+    and handed to the factor below as its source. -/
+partial def vstack (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
+    (vpass : Array Wire) (expect : Option Peeled) (fs : Array Expr) : MetaM Diagram := do
+  let mut d ← interp regionTy cat objVars vpass expect fs[0]!
+  for i in [1 : fs.size] do
+    let y := (← homEnds fs[i-1]!).2
+    let (cy, oy) ← peelCuts objVars cat regionTy y
+    -- A cut mismatch is between TWO FACTORS, and the cut text alone does not say which pair, so
+    -- the factors either side of it are added here rather than left for the reader to count out.
+    d ← try d.vcomp (← interp regionTy cat objVars vpass
+          (some { obj := y, cuts := cy, under := oy }) fs[i]!)
+      catch err => throwError "{err.toMessageData}\n  — the cut between `{← plain fs[i-1]!}` and \
+        `{← plain fs[i]!}`"
+  return d
+
+end
+
 /-- ONE STEP OF THE SELECTOR CHAIN that goes inside a side: an operand of a binary operation, an arm
     of a junction, or the BODY of a least fixed point.  `.body` opens a BINDER, so the chain cannot
     be a list of operand indices: the bound arrow is a wire of the picture, and a number says
@@ -937,7 +954,7 @@ def muArg? (e : Expr) : Option Expr :=
     a rewrite is a statement about, so it is applied at the top and never inside `interp`. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← interp regionTy cat objVars #[] (← instantiateMVars (← rewriteSpine side))
+  let d ← interp regionTy cat objVars #[] none (← instantiateMVars (← rewriteSpine side))
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
 
