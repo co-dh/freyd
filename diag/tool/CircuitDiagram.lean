@@ -489,6 +489,19 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
               let (_, t) ← endsOf fs[i + 1]!
               pure (some (← casePic u v s t (fuse := some r)))
             | _, _ => pure none
+          -- A MAP GIVEN BY A MATCH IS THE SAME TAPE, so it fuses the same way: the junction
+          -- `[f,g]` and the `match` on a coproduct are one node written two ways, and keying the
+          -- fusion on the junction alone drew a functor box in series with the fork for every
+          -- algebra whose structure map is a Lean function.
+          | (``Freyd.Functor.map, fa), (``Freyd.Alg.RelSet.graph, ga) =>
+            match fa.back?, ga.back? with
+            | some r, some g => do
+              let (s, _) ← endsOf fs[i]!
+              let (_, t) ← endsOf fs[i + 1]!
+              if s.kind == .sum && (← matchArms (← Meta.whnfD g)).isSome then
+                pure (some (← graphPic g s t (fuse := some r)))
+              else pure none
+            | _, _ => pure none
           | _, _ => pure none
         else pure none
       match fused with
@@ -763,16 +776,24 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
 /-- §3 rows 2/3/14: a map given by a function.  A constant DISCARDS every input strand at a dot
     and creates its value; a projection ends the factors it drops at a dot and crosses the one it
     keeps, costing no box at all; anything else is a rectangle. -/
-partial def graphPic (f : Expr) (src tgt : Obj) : MetaM Pic := do
+partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none) : MetaM Pic := do
   let fw ← Meta.whnfD f
   -- §3 row 13 AT A MAP: a `match` on the input at a coproduct is the SAME tape `[f,g]` draws — the
   -- junction is the same object, written the other way round — so it forks here rather than
-  -- collapsing to one box carrying the `def`'s name.
+  -- collapsing to one box carrying the `def`'s name.  It takes the TAPE FUSION for the same
+  -- reason: `F(R)` handing over to a match is `F(R)[f,g]`, and the caller passes `src` as the
+  -- functor's source so the fork is at `F(a)` and the fused `𝟙×R` sits on the arm that crosses it.
   if src.kind == .sum then
     if let some arms ← matchArms fw then
       return ← tapePic src tgt fun i s => do
-        let p ← graphPic arms[i]! s tgt
-        return (#[← openPic src s, p], #[src, s, p.tgt])
+        match (if i == 1 then fuse else none) with
+        | some r => do
+          let pre ← fusedStack s r
+          let p ← graphPic arms[i]! pre.tgt tgt
+          return (#[← openPic src s, pre, p], #[src, s, pre.tgt, p.tgt])
+        | none => do
+          let p ← graphPic arms[i]! s tgt
+          return (#[← openPic src s, p], #[src, s, p.tgt])
   let ws ← wiresOf src
   match fw with
   | .lam _ _ body _ =>
