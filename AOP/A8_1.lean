@@ -255,14 +255,24 @@ public theorem trans_of_recip_trans {R : A ⟶ A} (h : R° ≫ R° ⊑ R°) : R 
   have h0 := recip_mono h
   rwa [Allegory.recip_comp, Allegory.recip_recip] at h0
 
+/-- The UP's first condition, steps 2 and `thinRel_comp_eps_le` end to end: everything the
+    thinning keeps of a minimum is still a member. -/
+public theorem thinRel_comp_est_cond1 (Q : A ⟶ A) {R : A ⟶ A} :
+    thinRel Q ≫ est R ⊑ ∋ A :=
+  le_trans (thinRel_comp_est_step2 Q) (thinRel_comp_eps_le Q)
+
+/-- The UP's second condition, steps 3–6 end to end: every member is `R`-above something the
+    thinning kept. -/
+public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (htrans : R ≫ R ⊑ R) :
+    (∋ A)° ≫ thinRel Q ≫ est R ⊑ R° :=
+  le_trans (thinRel_comp_est_step3 Q) (le_trans (thinRel_comp_est_step4 Q)
+    (le_trans (thinRel_comp_est_step5 hQR) (thinRel_comp_est_step6 htrans)))
+
 /-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R` is transitive — thinning below a
     coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
 public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (htrans : R ≫ R ⊑ R) :
     thinRel Q ≫ est R ⊑ est R :=
-  le_est_iff.mpr
-    ⟨le_trans (thinRel_comp_est_step2 Q) (thinRel_comp_eps_le Q),
-     le_trans (thinRel_comp_est_step3 Q) (le_trans (thinRel_comp_est_step4 Q)
-       (le_trans (thinRel_comp_est_step5 hQR) (thinRel_comp_est_step6 htrans)))⟩
+  le_est_iff.mpr ⟨thinRel_comp_est_cond1 Q, thinRel_comp_est_cond2 hQR htrans⟩
 
 /-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R`
     is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum

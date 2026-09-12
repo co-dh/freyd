@@ -97,6 +97,7 @@ Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinRel_comp_est_step1.lhs | <thin-intro> | est(R)
 Freyd.Alg.thinRel_comp_est_step1.rhs | <thin-intro> | thin(Q) est(R)
+Freyd.Alg.thinRel_comp_est_step2.lhs | <thin-intro> | thin(Q) est(R)
 Freyd.Alg.thinRel_comp_est_step2.rhs | <thin-intro> | thin(Q)∋
 Freyd.Alg.thinRel_comp_eps_le.rhs | <thin-intro> | ∋
 Freyd.Alg.thinRel_comp_est_step3.lhs | <thin-intro> | ∈ thin(Q) est(R)
