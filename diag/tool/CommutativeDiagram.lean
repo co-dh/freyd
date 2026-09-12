@@ -176,9 +176,28 @@ def Path.comp (p q : Path) : MetaM Path := do
   return { nodes := p.nodes ++ q.nodes.extract 1 q.nodes.size, edges := p.edges ++ q.edges,
            src := p.src, tgt := q.tgt }
 
+/-- THE ARROWS A STATEMENT NAMES AS TERMS: every arrow standing as an ARGUMENT of an arrow-valued
+    application other than composition — the algebra a fold is taken over, the relation a relator
+    moves.  An arrow handed to an operator is a thing the statement is ABOUT, not a route through an
+    object it names, so the picture draws it as one edge however it was built.  Composition's own two
+    arguments are excluded, or every factor of every path would be a term of it. -/
+partial def termArrows (e : Expr) : MetaM (Array Expr) := do
+  if e.hasLooseBVars then return #[]
+  let mut out : Array Expr := #[]
+  unless e.isAppOf ``Cat.comp do
+    if (← Meta.inferType e).isAppOf ``Cat.Hom then
+      for a in e.getAppArgs do
+        unless a.hasLooseBVars do
+          if (← Meta.inferType a).isAppOf ``Cat.Hom then out := out.push a
+  for a in e.getAppArgs do out := out ++ (← termArrows a)
+  return out
+
 /-- A term read as a path.  Composition is the ONLY structural case — that is the functor law; `𝟙`
-    is the empty path, and any other expression is one edge, whatever it is made of. -/
-partial def interp (e : Expr) : MetaM Path := do
+    is the empty path, and any other expression is one edge, whatever it is made of.  `atoms` are the
+    arrows the statement names as terms (`termArrows`), and a composite among them is NOT opened: the
+    statement names no object between its factors, it names the arrow itself — `⦇F(f,𝟙)h⦈` is the
+    fold over `F(f,𝟙)h`, so `F(f,𝟙)h` is ONE edge wherever the same statement walks it. -/
+partial def interp (e : Expr) (atoms : Array Expr := #[]) : MetaM Path := do
   -- A COMPONENT OF A FAMILY THE STATEMENT ITSELF BUILT is ONE EDGE, whatever that component is made
   -- of.  The redex `(fun A => χ(GA) ≫ K(φA)) B` is the TRANSFORMATION's value at `B`, and a lax
   -- square's two sides are its component — the type says so, where the term's shape says only how
@@ -188,8 +207,9 @@ partial def interp (e : Expr) : MetaM Path := do
   let e := e.headBeta
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
+    if ← atoms.anyM (Meta.isDefEq e) then return ← Path.arrow e
     match StrDiag.lastTwo args with
-    | some (f, g) => Path.comp (← interp f) (← interp g)
+    | some (f, g) => Path.comp (← interp f atoms) (← interp g atoms)
     | none => Path.arrow e
   | (``Cat.id, _) => return Path.id (← StrDiag.objSpelling (← StrDiag.homEnds e).1)
   | _ => Path.arrow e
@@ -211,6 +231,10 @@ structure Face where
   /-- The operator that joins this face to the one BEFORE it, when the statement is about a join
       (`@[diag_join]`): the note sets it between the two panels, and it never enters a label. -/
   sep : Option String := none
+  /-- Draw ONE SIDE of the statement instead of the face — `"lhs"` or `"rhs"`, from the selector.
+      The note sets an absorption law as its two sides, two canvases with the `=` between them as
+      text, and a side is a PATH: there is no second path for it to bound a face with. -/
+  only : Option String := none
 
 /-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
     A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
@@ -760,9 +784,26 @@ def Face.isTriangle (fc : Face) : Bool :=
   fc.chord.isNone && fc.lhs.edges.size + fc.rhs.edges.size == 3 &&
     (fc.lhs.edges.size == 1 || fc.rhs.edges.size == 1)
 
+/-- ONE SIDE of a statement laid along a row: its objects left to right, its arrows between them,
+    every label set above.  The hues and the dashes are still the FACE's — which arrow an equation
+    produces is a property of the equation and not of the side it is written on — so the two canvases
+    the note sets either side of an `=` are coloured as one picture. -/
+def sideLayout (fc : Face) (p : Path) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+  let given ← fc.givenNodes
+  let mut nodes : Array Node := #[]
+  for i in [0 : p.nodes.size] do
+    let (id, o) := p.nodes[i]!
+    nodes := nodes.push { id, gx := i.toFloat, gy := 0.0, label := (← label o) }
+  let mut edges : Array Edge := #[]
+  for (src, tgt, f) in p.edges do
+    edges := edges.push { src, tgt, label := (← labelParts f), side := "top",
+                          dash := ← fc.dashes f, hue := ← fc.hue f }
+  return (nodeHues given nodes edges, edges, #[])
+
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
 def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+  if let some s := fc.only then return ← sideLayout fc (if s == "lhs" then fc.lhs else fc.rhs)
   let comps ← fc.components
   let given ← fc.givenNodes
   if fc.isTriangle then
@@ -1054,7 +1095,11 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
       faces what b₁ side fuel induced fun f₁ => k (f₀ ++ f₁.map ({ · with sep := some sep }))
   | none =>
     match StrDiag.split body with
-    | some (sym, l, r) => k #[← Face.of sym (← interp l) (← interp r) induced]
+    | some (sym, l, r) =>
+      -- The selector names a side of whatever relation the statement wears: of an `↔` WHICH CLAIM,
+      -- of an equation WHICH SIDE — one path, the note's two canvases with the `=` between them.
+      let atoms ← termArrows body
+      k #[{ ← Face.of sym (← interp l atoms) (← interp r atoms) induced with only := side }]
     | none =>
       if fuel == 0 then
         throwError "{what}: not an equation or inequation of composites, and no definition to \

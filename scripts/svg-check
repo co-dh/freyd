@@ -363,6 +363,31 @@ def cycle_through(n, pairs):
     return order if len(order) == n else None
 
 
+def path_through(n, pairs):
+    """Whether `pairs` are ONE OPEN walk visiting each of `n` nodes once — a path.  A path bounds no
+    region: one SIDE of a statement is drawn as one (the note's two canvases either side of an `=`),
+    and its two ends are the only nodes an arrow meets once."""
+    if len(pairs) != n - 1:
+        return False
+    adj = {i: [] for i in range(n)}
+    for a, b in pairs:
+        adj[a].append(b)
+        adj[b].append(a)
+    if sorted(len(v) for v in adj.values()) != [1, 1] + [2] * (n - 2):
+        return False
+    start = next(i for i, v in adj.items() if len(v) == 1)
+    order, prev, cur = [start], None, start
+    while True:
+        nxt = [x for x in adj[cur] if x != prev]
+        if not nxt:
+            break
+        prev, cur = cur, nxt[0]
+        order.append(cur)
+        if len(order) > n:
+            return False
+    return len(order) == n
+
+
 def cut(face, a, b):
     """A face cut by the chord `a`–`b`: the two arcs of its walk between them, each closed by it."""
     i, j = sorted((face.index(a), face.index(b)))
@@ -387,6 +412,11 @@ def faces_of(nodes, edges):
         if a == b:
             return None
         pairs.append((a, b))
+    # A PATH BOUNDS NOTHING, and that is not a defect: `n` nodes joined by `n-1` arrows in one open
+    # walk is one SIDE of a statement, which has no region for a label to sit inside.  `[]` says
+    # "no face to test", where `None` says "these arrows are no walk at all".
+    if len(pairs) == n - 1:
+        return [] if path_through(n, pairs) else None
     if n < 3 or len(pairs) < n:
         return None
     # WHICH arrows are the chords is not written in the SVG, so every choice of the right number of
