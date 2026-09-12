@@ -451,38 +451,38 @@ N(α)(that)
 #let ca1 = dpanel(3.3, 5.6, 3.75,
   ((2.5, 2.2, 1.1, [`E`], none), (3.125, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none), (3.125, "top", 2.2, none, none)),
   ((2.2, [`paths`], black, 2.5, 2.8125, "lax"), (1.1, [`est(R)`], black, 2.5)),
-  ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`Nat`])),
-  ((3.125, [`L`]), (3.75, [`Nat`])),
-  obj: ((2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "paths est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("paths": "L(N(x))⟶E(L(x))")))
+  ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`T`])),
+  ((3.125, [`L`]), (3.75, [`T`])),
+  obj: ((2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "paths est(R)", src: "L(N(T))", tgt: "L(T)", split: "", sigs: ("paths": "L(N(x))⟶E(L(x))")))
 #let ca2 = dpanel(5.5, 6.23, 4.38,
   ((2.812, 2.2, 1.1, [`E`], none), (2.5, 3.3, 2.2, [`E`], none), (2.5, 4.4, 3.3, [`N`], none), (3.125, 4.4, 2.2, [`E`], none), (3.75, 4.4, "bot", none, none), (2.812, "top", 4.4, none, none), (3.438, "top", 4.4, none, none)),
   ((4.4, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (3.3, [`setify`], black, 2.5, 2.5, "lax"), (2.2, [`union`], black, 2.5, 2.8125), (1.1, [`est(R)`], black, 2.812)),
-  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
-  ((3.75, [`L`]), (4.38, [`Nat`])),
-  obj: ((4.4, [`Nat`]), (3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "⦇gen⦈setify union est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`T`])),
+  ((3.75, [`L`]), (4.38, [`T`])),
+  obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "⦇gen⦈setify union est(R)", src: "L(N(T))", tgt: "L(T)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca3 = dpanel(5.5, 6.23, 4.38,
   ((2.5, 3.3, 1.1, [`E`], none), (2.5, 4.4, 3.3, [`N`], none), (3.125, 4.4, 2.2, [`E`], none), (3.75, 4.4, "bot", none, none), (2.812, "top", 4.4, none, none), (3.438, "top", 4.4, none, none)),
   ((4.4, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (3.3, [`setify`], black, 2.5, 2.5, "lax"), (2.2, [`est(R)`], black, 3.125), (1.1, [`est(R)`], black, 2.5)),
-  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
-  ((3.75, [`L`]), (4.38, [`Nat`])),
-  obj: ((4.4, [`Nat`]), (3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "⦇gen⦈setify P(est(R))est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`T`])),
+  ((3.75, [`L`]), (4.38, [`T`])),
+  obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "⦇gen⦈setify P(est(R))est(R)", src: "L(N(T))", tgt: "L(T)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca4 = dpanel(5.5, 6.23, 4.38,
   ((2.5, 2.2, 1.1, [`E`], none), (2.5, 4.4, 2.2, [`N`], none), (3.125, 4.4, 3.3, [`E`], none), (3.75, 4.4, "bot", none, none), (2.812, "top", 4.4, none, none), (3.438, "top", 4.4, none, none)),
   ((4.4, [`⦇gen⦈`], black, 2.812, 3.125, "lax"), (3.3, [`est(R)`], black, 3.125), (2.2, [`setify`], black, 2.5, 2.5, "lax"), (1.1, [`est(R)`], black, 2.5)),
-  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`Nat`])),
-  ((3.75, [`L`]), (4.38, [`Nat`])),
-  obj: ((4.4, [`Nat`]), (3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "⦇gen⦈N(est(R))setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
+  ((2.812, [`L`]), (3.438, [`N`]), (4.38, [`T`])),
+  ((3.75, [`L`]), (4.38, [`T`])),
+  obj: ((4.4, [`T`]), (3.3, [`T`]), (2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "⦇gen⦈N(est(R))setify est(R)", src: "L(N(T))", tgt: "L(T)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(E(L(x)))")))
 #let ca5 = dpanel(4.4, 5.6, 3.75,
   ((2.5, 2.2, 1.1, [`E`], none), (2.5, 3.3, 2.2, [`N`], none), (3.125, 3.3, "bot", none, none), (2.5, "top", 3.3, none, none), (3.125, "top", 3.3, none, none)),
   ((3.3, [`⦇Q⦈`], black, 2.5), (2.2, [`setify`], black, 2.5, 2.5, "lax"), (1.1, [`est(R)`], black, 2.5)),
-  ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`Nat`])),
-  ((3.125, [`L`]), (3.75, [`Nat`])),
-  obj: ((3.3, [`Nat`]), (2.2, [`Nat`]), (1.1, [`Nat`])),
-  cert: (expect: "⦇Q⦈setify est(R)", src: "L(N(Nat))", tgt: "L(Nat)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(L(x))")))
+  ((2.5, [`L`]), (3.125, [`N`]), (3.75, [`T`])),
+  ((3.125, [`L`]), (3.75, [`T`])),
+  obj: ((3.3, [`T`]), (2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "⦇Q⦈setify est(R)", src: "L(N(T))", tgt: "L(T)", split: "", sigs: ("setify": "N(x)⟶E(x)", "⦇⦈": "L(N(x))⟶N(L(x))")))
 
 // ---- Chain C, generated.  `F` is CURRIED to the unary `F(NA,−)`, so its wire is a functor and the algebra
 // may die ON `N` instead of reaching past it; `trans` and `zip` are the only crossings left.
@@ -565,10 +565,10 @@ N(α)(that)
 #let cb1 = dpanel(3.3, 6.23, 4.38,
   ((2.812, 2.2, "bot", none, none), (2.5, "top", 2.2, none, none), (3.125, "top", 2.2, none, none), (3.75, "top", 1.1, none, none)),
   ((2.2, [`gen`], black, 2.5), (1.1, [`est(R)`], black, 3.75)),
-  ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`E`]), (4.38, [`LA`])),
-  ((2.812, [`N`]), (4.38, [`LA`])),
-  obj: ((2.2, [`LA`]), (1.1, [`LA`])),
-  cert: (expect: "gen N(est(R))", src: "F(N(E(LA)))", tgt: "N(LA)", split: "", sigs: ("gen": "F(N(x))⟶N(x)")))
+  ((2.5, [`F`]), (3.125, [`N`]), (3.75, [`E`]), (4.38, [`T`])),
+  ((2.812, [`N`]), (4.38, [`T`])),
+  obj: ((2.2, [`T`]), (1.1, [`T`])),
+  cert: (expect: "gen N(est(R))", src: "F(N(E(T)))", tgt: "N(T)", split: "", sigs: ("gen": "F(N(x))⟶N(x)")))
 #let cb2 = dpanel(3.3, 6.23, 4.38,
   ((2.812, 1.1, "bot", none, none), (2.5, "top", 1.1, none, none), (3.125, "top", 1.1, none, none), (3.75, "top", 2.2, none, none)),
   ((2.2, [`est(R)`], black, 3.75), (1.1, [`Q`], black, 2.5)),
