@@ -50,7 +50,43 @@ sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be read
 PANELS = "diag/string-panels.txt"
 NOTE = "diag/allegory-axioms.typ"
 OUT = ".lake/build/string-check"
+RECS = f"{OUT}/records.jsonl"
 run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
+
+
+def export(sels):
+    """ONE `diag-export --string --records` over `sels`: each selector's record — the file it drew,
+    its panels and every bead's types, or why it drew none — keyed by the selector field, and the
+    run.  The records are kept in `RECS` too, which `scanline --records` reads for the bead types, so
+    the sweep does not start Lean a second time to re-read the statements this run just drew."""
+    if not sels:
+        return {}, None                   # nothing to draw starts no Lean
+    os.makedirs(OUT, exist_ok=True)
+    p = run("./scripts/diag-export", "--string", "--records", *sels)
+    open(RECS, "w", encoding="utf-8").write(p.stdout)
+    return {o["selector"]: o for o in map(json.loads, p.stdout.splitlines())}, p
+
+
+def answer(recs, base):
+    """The picture `base` is drawn in, or why there is none — from ITS record, matched by the
+    selector.  A record holds exactly one of `file` and `error`; a selector with no record at all
+    is answered by `unanswered`, from the exporter's own words."""
+    r = recs.get(base)
+    if r is None:
+        return None, "the exporter wrote no record for it; its stderr is below"
+    return (r["file"], None) if "file" in r else (None, r["error"])
+
+
+def unanswered(recs, sels, p):
+    """The exporter's stderr IN FULL when no record says what went wrong: a selector with no record
+    (the run died before it), or a nonzero exit while every record names a file.  1 if printed."""
+    lack = [s for s in sels if s not in recs]
+    if not sels or not lack and not (p.returncode and all("file" in r for r in recs.values())):
+        return 0
+    print(f"./scripts/diag-export --string --records exited {p.returncode}"
+          + (f" and wrote no record for {', '.join(lack)}" if lack else "") + "; its stderr:")
+    print(p.stderr)
+    return 1
 
 
 def note_panels():
@@ -204,11 +240,10 @@ def marks(want):
     sel_of = [(n, sels) for n, sels in rows if n in live and num(n).startswith(want)]
     todo = sorted({route(s)[0] for _, sels in sel_of for s in sels if s != "-"})
     # A selector the exporter REFUSES is one panel's failure, not the run's: it exits non-zero for
-    # the whole batch, and the reason it names is reported against the panel that wanted it, below,
-    # the way the gate reports it.  Stopping here would leave every other panel's mark unwritten.
-    p = run("./scripts/diag-export", "--string", *todo)
-    drawn = p.stdout + p.stderr
-    os.makedirs(OUT, exist_ok=True)
+    # the whole batch, and the reason its record names is reported against the panel that wanted
+    # it, below, the way the gate reports it.  Stopping here would leave every other panel's mark
+    # unwritten.
+    recs, p = export(todo)
     nat, miss = {}, 0
     for n, sels in sel_of:
         ps = live[n]
@@ -220,11 +255,9 @@ def marks(want):
             if sel == "-":
                 continue
             base, which = route(sel)
-            gen = f"diag/generated/string/{base}.typ"
-            if not os.path.exists(gen):
-                print(f"{n} {sel}: CANNOT-DRAW "
-                      + next((l for l in drawn.splitlines() if base in l),
-                             f"the exporter wrote no {gen} and named no reason"))
+            gen, err = answer(recs, base)
+            if err:
+                print(f"{n} {sel}: CANNOT-DRAW {err}")
                 miss += 1
                 continue
             gwrap = f"{OUT}/{sel}.gen.typ"
@@ -258,7 +291,7 @@ def marks(want):
     open(NOTE, "w", encoding="utf-8").write(text)
     print(f"string-check --marks: {wrote} panel(s) carry Lean's verdicts; {left} panel(s) the note"
           f" draws no `dpanel(` literal for; {miss} not drawn")
-    return 1 if miss or left else 0
+    return 1 if unanswered(recs, todo, p) or miss or left else 0
 
 
 def main(argv):
@@ -295,21 +328,12 @@ def main(argv):
 
     todo = sorted({route(s)[0] for n, sels in rows if n in live and num(n).startswith(want)
                    for s in sels if s != "-"})
-    # The FILE is the answer to "did it draw", so the ones about to be drawn are deleted first: a
-    # selector the exporter refuses was otherwise checked against LAST run's picture and said `ok`.
+    # The RECORD answers "did it draw"; the pictures about to be drawn are still deleted first, so a
+    # selector the exporter refuses leaves no LAST run's picture on disk for another sweep to pass.
     for s in todo:
         if os.path.exists(f"diag/generated/string/{s}.typ"):
             os.remove(f"diag/generated/string/{s}.typ")
-    drawn, silent, exrc, missing = "", "", 0, False
-    if todo:
-        p = run("./scripts/diag-export", "--string", *todo)
-        drawn = p.stderr + p.stdout
-        exrc = p.returncode
-        # No line naming the selector means the run died before drawing it — an import the
-        # environment refused — and the reason is whatever the exporter said, so that is shown.
-        silent = ((p.stderr.strip() or f"./scripts/diag-export --string exited {p.returncode}"
-                   " and printed nothing") if p.returncode
-                  else "the exporter drew no file and said nothing")
+    recs, exp = export(todo)
     # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
     # waiting on its selector's drawing and on the sweep of its picture.
     done = lambda line, failed: lambda: (line, failed)
@@ -339,11 +363,9 @@ def main(argv):
                 slots.append(done(f"{tag}: NO-DECL — no declaration is cited for this panel", False))
                 continue
             base, which = route(sel)
-            gen = f"diag/generated/string/{base}.typ"
-            if not os.path.exists(gen):
-                err = next((l for l in drawn.splitlines() if base in l), silent)
+            gen, err = answer(recs, base)
+            if err:
                 slots.append(done(f"{tag} {sel}: CANNOT-DRAW {err}", True))
-                missing = True
                 continue
             g = groups.setdefault(sel, [])
             slots.append(pending(f"{tag} {sel}", sel, len(g), gen))
@@ -358,13 +380,10 @@ def main(argv):
             line, failed = slot()
             print(line)
             rc |= failed
-    # An export that drew every panel and still exited nonzero is reported by NO line above, so it
-    # would leave the gate green on a failure — its last lines say what it was.
-    if exrc and not missing:
-        print(f"./scripts/diag-export --string exited {exrc}; its last lines:")
-        print("\n".join(drawn.splitlines()[-20:]))
-        rc = 1
-    return rc
+    # An export that answered every selector with a file and still exited nonzero is reported by NO
+    # line above, so it would leave the gate green on a failure; nor has a selector with no record a
+    # reason of its own.  Both are answered by the exporter's stderr.
+    return rc | unanswered(recs, todo, exp)
 
 
 def compare(sel, panel, which, gen):
@@ -408,13 +427,13 @@ def compare(sel, panel, which, gen):
 def sweep(gens):
     """ONE `scanline --strict` over every picture a panel is drawn from — a file holds several
     panels and is swept once for them all — and each file's verdict read from its `--result`
-    fields, keyed by the path as given."""
+    fields, keyed by the path as given.  Its bead types come from the export's `RECS`."""
     if not gens:
         return {}
     res = f"{OUT}/sweep.json"
     if os.path.exists(res):
         os.remove(res)
-    s = run("./scripts/scanline", "--strict", "--result", res, *gens)
+    s = run("./scripts/scanline", "--strict", "--result", res, "--records", RECS, *gens)
     rs = json.load(open(res, encoding="utf-8")) if os.path.exists(res) else []
     if not rs or s.returncode and not any(r["failures"] or r["unhandled"] or r["missing"]
                                           for r in rs):
