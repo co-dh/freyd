@@ -74,6 +74,14 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The CHOSEN COPRODUCT OBJECT is the note's `a+b`, never the class field's own name — `RelProd.p`'s
+    `a×b` mirrored.  An unexpander and not a delaborator: both objects are arguments here, where a
+    product apex has to read them off its `RelProd`'s type. -/
+@[app_unexpander PositiveAllegory.coprod] def unexpandCoprod : Unexpander
+  | `($_ $a $b) => `($a + $b)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The type functor AS A RELATOR is the note's lane `T`, the same letter its action on arrows
     already prints with (`T(R)`); which initial algebras it is built from is not part of the name. -/
 @[app_unexpander typeRelator] def unexpandTypeRelator : Unexpander

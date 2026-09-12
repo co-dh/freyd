@@ -1046,6 +1046,28 @@ def summands? (C : Expr) : MetaM (Option (Expr × Expr × Expr)) := do
   if args.size < 3 then return none
   return some (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
 
+/-- A SUM MAP, recognised by its TYPE exactly as `asProdMap?` recognises a product map: a constant
+    applied to exactly two arrows and exactly two coproducts, each arrow running from a summand of
+    the first to the matching summand of the second.  That type has only one inhabitant a picture
+    can mean, so no name is needed, and the note writes it `R+S`.  The co-fork `junc C X Y` is not
+    one — it stands over ONE coproduct, its two arrows running into a single object. -/
+def asSumMap? (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  let .const _ _ := e.getAppFn | return none
+  let mut arrows : Array Expr := #[]
+  let mut cops : Array Expr := #[]
+  for a in e.getAppArgs do
+    let t ← Meta.inferType a
+    if (homObjs? t).isSome then arrows := arrows.push a
+    else if t.isAppOf ``Freyd.Alg.Coproduct then cops := cops.push a
+  unless arrows.size == 2 && cops.size == 2 do return none
+  let some (_, a₁, a₂) ← summands? cops[0]! | return none
+  let some (_, b₁, b₂) ← summands? cops[1]! | return none
+  let (φa, φb) ← homEnds arrows[0]!
+  let (ψa, ψb) ← homEnds arrows[1]!
+  unless (← Meta.isDefEq a₁ φa) && (← Meta.isDefEq b₁ φb)
+      && (← Meta.isDefEq a₂ ψa) && (← Meta.isDefEq b₂ ψb) do return none
+  return some (arrows[0]!, arrows[1]!)
+
 /-- A factor as a functor's action on an arrow, `F.map R`. -/
 def functorMap? (e : Expr) : Option (Expr × Expr) :=
   match e.getAppFnArgs with

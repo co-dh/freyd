@@ -586,6 +586,17 @@ public theorem junc_slides {s a₁ a₂ t b₁ b₂ c c' : 𝒜} (C : Coproduct 
   rw [sumMap_junc, junc_comp]
   exact junc_mono C hX hY
 
+/-- The SUM MAP's rule, `prodMap_slides` mirrored: `X+Y` slides past `Tc+Td` whenever `X` slides
+    past `Tc` and `Y` past `Td`.  `sumMap_comp` flattens each side to ONE `sumMap`, so the two
+    hypotheses are all it costs — the co-fork pays nothing extra, as `junc_slides` does not. -/
+public theorem sumMap_slides {s a₁ a₂ t b₁ b₂ w c₁ c₂ z d₁ d₂ : 𝒜} (C : Coproduct s a₁ a₂)
+    (D : Coproduct t b₁ b₂) (E : Coproduct w c₁ c₂) (K : Coproduct z d₁ d₂) {Ta : a₁ ⟶ b₁}
+    {Tb : a₂ ⟶ b₂} {Tc : c₁ ⟶ d₁} {Td : c₂ ⟶ d₂} {X : a₁ ⟶ c₁} {Y : a₂ ⟶ c₂} {X' : b₁ ⟶ d₁}
+    {Y' : b₂ ⟶ d₂} (hX : Ta ≫ X' ⊑ X ≫ Tc) (hY : Tb ≫ Y' ⊑ Y ≫ Td) :
+    sumMap C D Ta Tb ≫ sumMap D K X' Y' ⊑ sumMap C E X Y ≫ sumMap E K Tc Td := by
+  rw [sumMap_comp, sumMap_comp]
+  exact sumMap_mono C K hX hY
+
 -- The injections slide STRICTLY and get no theorem: `(Ta+Tb)` is by definition the junc whose
 -- branches are `Ta ≫ u₁`, `Tb ≫ u₂`, so `u₁ ≫ (Ta+Tb) = Ta ≫ u₁` IS `u₁_junc` (resp. `u₂_junc`).
 
@@ -605,6 +616,18 @@ public theorem laxNatural_junc {F F' G : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, 
     LaxNatural G (Relator.sum F F')
       (fun x => junc (PositiveAllegory.has_coproduct (F.obj x) (F'.obj x)) (φ x) (ψ x)) :=
   fun {_ _} R => junc_slides _ _ (hφ R) (hψ R)
+
+/-- **`+` CLOSES in LaT**: `φ : G ⟶ F` and `ψ : G' ⟶ F'` lax natural give the SUM MAP
+    `φ+ψ : G+G' ⟶ F+F'` lax natural — the note's coproduct row, and `laxNatural_prod` mirrored.
+    Not the co-fork `laxNatural_junc`, whose two branches run into ONE relator: the four relators
+    here make the square's four corners four different coproducts, which is what `sumMap_slides`
+    is stated over. -/
+public theorem laxNatural_sum {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    {ψ : ∀ x : 𝒮, G'.obj x ⟶ F'.obj x} (hφ : LaxNatural F G φ) (hψ : LaxNatural F' G' ψ) :
+    LaxNatural (Relator.sum F F') (Relator.sum G G')
+      (fun x => sumMap (PositiveAllegory.has_coproduct (G.obj x) (G'.obj x))
+        (PositiveAllegory.has_coproduct (F.obj x) (F'.obj x)) (φ x) (ψ x)) :=
+  fun {_ _} R => sumMap_slides _ _ _ _ (hφ R) (hψ R)
 
 /-! ### `Relator.sum` is a BIPRODUCT of relators and lax natural transformations
 

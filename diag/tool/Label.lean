@@ -175,7 +175,11 @@ def juxt (a b : String) : String :=
 def tightHeads : Array Name :=
   #[``Freyd.Alg.PowerAllegory.powerObj,
     ``Freyd.Alg.InitialAlgebra.t, ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
-    ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair]
+    ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair,
+    -- A COPRODUCT OBJECT sets as tight as a product apex: the note writes `GA+G'A`.  The sum of two
+    -- ARROWS is not here for the reason the paragraph above gives — it welded `F(R)+F'(R)` shut to
+    -- `FR+F'R` — and is read off the type instead, beside the product map (`asSumMap?`).
+    ``Freyd.Alg.PositiveAllegory.coprod]
 
 /-- The ARROW arguments of an application, picked by their TYPE and not by their position:
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
@@ -728,6 +732,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     if let some (x, _) := homObjs? (← Meta.inferType e) then
       if let some (φ, ψ) ← asProdMap? (← Meta.inferType x) e then
         return wrap 1 ((← labelAt 2 φ) ++ "×" ++ (← labelAt 2 ψ))
+    -- A SUM OF ARROWS the same way, and for the same reason: the two coproducts `sumMap` runs
+    -- between are the objects the picture already draws at the edge's ends.
+    if let some (φ, ψ) ← asSumMap? e then
+      return wrap 1 ((← labelAt 2 φ) ++ "+" ++ (← labelAt 2 ψ))
     -- EVERY OTHER HEAD KEEPS THE PRINTER'S SPELLING — a delimited notation (`thin(Q)`) is the
     -- constant's own business, and a clause here would be a second copy of it — but its ARROW
     -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
