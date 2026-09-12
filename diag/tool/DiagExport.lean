@@ -1400,7 +1400,7 @@ def main (args : List String) : IO UInt32 := do
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
   -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
-  let tasks ← args.mapM fun arg => do
+  let tasks ← args.mapM fun (arg : String) => do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
     -- string and circuit routes read a side, the others take the name whole.
     -- `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork,

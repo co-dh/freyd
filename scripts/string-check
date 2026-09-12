@@ -30,6 +30,7 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
@@ -151,74 +152,110 @@ def main(argv):
     for s in todo:
         if os.path.exists(f"diag/generated/string/{s}.typ"):
             os.remove(f"diag/generated/string/{s}.typ")
-    drawn, exrc = "", 0
+    drawn, silent = "", ""
     if todo:
         p = run("./scripts/diag-export", "--string", *todo)
-        drawn, exrc = p.stderr + p.stdout, p.returncode
+        drawn = p.stderr + p.stdout
+        # No line naming the selector means the run died before drawing it — an import the
+        # environment refused — and the reason is whatever the exporter said, so that is shown.
+        silent = ((p.stderr.strip() or f"./scripts/diag-export --string exited {p.returncode}"
+                   " and printed nothing") if p.returncode
+                  else "the exporter drew no file and said nothing")
+    # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
+    # waiting on its selector's drawing and on the sweep of its picture.
+    done = lambda line, failed: lambda: (line, failed)
+
+    def pending(head, sel, i, gen):
+        def verdict():
+            end, v = drew[sel].result()[i]
+            if not end:
+                r = swept.result()[gen]
+                fs = r["failures"] + r["unhandled"] + ["the picture was never drawn"] * r["missing"]
+                end = f"SWEEP {len(fs)} failure(s); the first: {fs[0]}" if fs else None
+            return f"{head}: {end or v}", bool(end) or v != "ok"
+        return verdict
+
+    slots, groups = [], {}
     for d, disp, sels in rows:
         if d not in live or not d.startswith(want):
             continue
         ps = live[d]
         if len(sels) != len(ps):
-            print(f"{disp}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)} panels")
-            rc = 1
+            slots.append(done(f"{disp}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for"
+                              f" {len(ps)} panels", True))
             continue
         for k, (sel, panel) in enumerate(zip(sels, ps), 1):
             tag = f"{disp}.{k}"
             if sel == "-":
-                print(f"{tag}: NO-DECL — no declaration is cited for this panel")
+                slots.append(done(f"{tag}: NO-DECL — no declaration is cited for this panel", False))
                 continue
             base, which = route(sel)
             gen = f"diag/generated/string/{base}.typ"
             if not os.path.exists(gen):
-                err = next((l for l in drawn.splitlines() if base in l),
-                           f"./scripts/diag-export --string exited {exrc} and named no reason"
-                           if exrc else "the exporter drew no file and said nothing")
-                print(f"{tag} {sel}: CANNOT-DRAW {err}")
-                rc = 1
+                err = next((l for l in drawn.splitlines() if base in l), silent)
+                slots.append(done(f"{tag} {sel}: CANNOT-DRAW {err}", True))
                 continue
-            gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
-            wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
-            drew, err = content(gwrap)
-            if err:
-                print(f"{tag} {sel}: CANNOT-DRAW {err}")
-                rc = 1
-                continue
-            cert = panel.get("cert") or {}
-            if not all(cert.get(f) for f in ("expect", "src", "tgt")):
-                print(f"{tag} {sel}: UNCERTIFIED — the note's panel's `cert:` names no"
-                      f" {', '.join(f for f in ('expect', 'src', 'tgt') if not cert.get(f))}, so"
-                      f" there is nothing to rebuild it from")
-                rc = 1
-                continue
-            p = run("./scripts/diagram", *diagram_args(cert))
-            if p.returncode or not p.stdout.strip():
-                print(f"{tag} {sel}: NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}")
-                rc = 1
-                continue
-            # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
-            # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
-            wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n'
-                 + p.stdout)
-            e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
-            if e:
-                print(f"{tag} {sel}: CANNOT-DRAW typst {e}")
-                rc = 1
-                continue
-            s = run("./scripts/scanline", "--strict", gen)
-            if s.returncode:
-                print(f"{tag} {sel}: SWEEP {s.stdout.strip().splitlines()[-1:]}"
-                      f"{s.stderr.strip().splitlines()[-1:]}")
-                rc = 1
-                continue
-            v = run("./scripts/svg-diff", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
-            if v.returncode:
-                n = len([l for l in v.stdout.splitlines() if "only in" in l])
-                print(f"{tag} {sel}: DIFF {n} unmatched primitive(s); {why(panel, drew)}")
-                rc = 1
-            else:
-                print(f"{tag} {sel}: ok")
+            g = groups.setdefault(sel, [])
+            slots.append(pending(f"{tag} {sel}", sel, len(g), gen))
+            g.append((panel, which, gen))
+    with ThreadPoolExecutor(os.cpu_count()) as pool:
+        swept = pool.submit(sweep, sorted({gen for g in groups.values() for _, _, gen in g}))
+        # One task per SELECTOR, its panels in order: two displays citing one selector share its
+        # wrapper files, so they are drawn one after the other as a serial run drew them.
+        drew = {s: pool.submit(lambda s, g: [compare(s, *x) for x in g], s, g)
+                for s, g in groups.items()}
+        for slot in slots:
+            line, failed = slot()
+            print(line)
+            rc |= failed
     return rc
+
+
+def compare(sel, panel, which, gen):
+    """One panel drawn from LEAN and from its `cert:`, and the two compared: the failure that ends
+    it, or none and `svg-diff`'s verdict — which stands only once the sweep of `gen` passes."""
+    gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
+    wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
+    drew, err = content(gwrap)
+    if err:
+        return f"CANNOT-DRAW {err}", None
+    cert = panel.get("cert") or {}
+    if not all(cert.get(f) for f in ("expect", "src", "tgt")):
+        return (f"UNCERTIFIED — the note's panel's `cert:` names no"
+                f" {', '.join(f for f in ('expect', 'src', 'tgt') if not cert.get(f))}, so"
+                f" there is nothing to rebuild it from"), None
+    p = run("./scripts/diagram", *diagram_args(cert))
+    if p.returncode or not p.stdout.strip():
+        return f"NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}", None
+    # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
+    # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
+    wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n' + p.stdout)
+    e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
+    if e:
+        return f"CANNOT-DRAW typst {e}", None
+    v = run("./scripts/svg-diff", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
+    if v.returncode:
+        n = len([l for l in v.stdout.splitlines() if "only in" in l])
+        return None, f"DIFF {n} unmatched primitive(s); {why(panel, drew)}"
+    return None, "ok"
+
+
+def sweep(gens):
+    """ONE `scanline --strict` over every picture a panel is drawn from — a file holds several
+    panels and is swept once for them all — and each file's verdict read from its `--result`
+    fields, keyed by the path as given."""
+    if not gens:
+        return {}
+    res = f"{OUT}/sweep.json"
+    if os.path.exists(res):
+        os.remove(res)
+    s = run("./scripts/scanline", "--strict", "--result", res, *gens)
+    rs = json.load(open(res, encoding="utf-8")) if os.path.exists(res) else []
+    if not rs or s.returncode and not any(r["failures"] or r["unhandled"] or r["missing"]
+                                          for r in rs):
+        sys.exit(f"string-check: ./scripts/scanline --strict exited {s.returncode} with no verdict"
+                 f" naming a file:\n{s.stderr.strip() or s.stdout.strip()}")
+    return {r["path"]: r for r in rs}
 
 
 if __name__ == "__main__":
