@@ -294,6 +294,15 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
     let some (_, l, r) := StrDiag.split e | return #[]
     if isInduced heads r then parts l else if isInduced heads l then parts r else return #[]
 
+/-- WHETHER THE STATEMENT PRODUCES THIS ARROW: an induced constructor heads it (`α⦇f⦈=F(⦇f⦈)f`
+    produces `⦇f⦈`), or the other side of the statement's `↔` says so (`αX=F(X)f ⟺ X=⦇f⦈` produces
+    `X`, which is a variable and carries no head to read it off).  Being produced is what makes an
+    arrow induced; being DRAWN dashed is that and having no chord, since a paste dashes the chord
+    alone. -/
+def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
+  if isInduced (← inducedHeads) f then return true
+  fc.induced.anyM fun g => Meta.isDefEq g f
+
 /-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  A pasted pair produces its
     CHORD — the arrow the two faces share is the one they jointly determine — and nothing else, so
     `⦇h⦈` and `⦇k⦈` under the fan's `⟨⦇h⦈,⦇k⦈⟩` stay solid: some other law produced them.  A single
@@ -301,8 +310,7 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
     (`α⦇f⦈=F(⦇f⦈)f` produces `⦇f⦈`) or when the other side of the statement's `↔` says so. -/
 def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
   if fc.chord.isSome then return false
-  if isInduced (← inducedHeads) f then return true
-  fc.induced.anyM fun g => Meta.isDefEq g f
+  fc.produces f
 
 /-! ### Which role an arrow plays, hence its colour -/
 
@@ -342,8 +350,10 @@ def imageOf (f : Expr) : MetaM (Option Expr) := do
     `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue).
 
     `INDUCED` is what a universal property PRODUCES: every arrow the dash rule marks, and a
-    functor's image of an induced one — `F(⦇f⦈)` is induced without being dashed, since the induced
-    arrow is what determines it.  `GIVEN1` is an arrow the picture is HANDED, which is exactly one
+    functor's image of a PRODUCED one — `F(⦇f⦈)` and `F(X)` under `αX=F(X)f ⟺ X=⦇f⦈` are induced
+    without being dashed, since the induced arrow is what determines them, and which arrow that is
+    is `Face.produces`, never a head test that a variable like `X` fails.  `GIVEN1` is an arrow the
+    picture is HANDED, which is exactly one
     mentioning a free arrow variable.  `GIVEN2` is the structure the property is ABOUT — the initial
     algebra's `α`, `∋`, `π₁`, the singleton `𝟙%∋`, none of which mentions one — and a relator's image
     of a given arrow, `E(R)`, which the relator determines rather than the statement handing it
@@ -351,7 +361,7 @@ def imageOf (f : Expr) : MetaM (Option Expr) := do
 def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   if ← fc.dashes f then return "INDUCED"
   match ← imageOf f with
-  | some g => return if isInduced (← inducedHeads) g then "INDUCED" else "GIVEN2"
+  | some g => return if ← fc.produces g then "INDUCED" else "GIVEN2"
   | none => return if ← givenArrow f then "GIVEN1" else "GIVEN2"
 
 /-- WHICH COMPONENT OF THE ARROW IT INDUCES each side of a pasted face carries — `none` unless the
