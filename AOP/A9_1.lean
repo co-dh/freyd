@@ -918,6 +918,80 @@ public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶
   the whole content of Proposition 9.1; the four theorems below are it at the four shapes the
   note draws. -/
 
+/-! ### Proposition 9.1 AT AN ARBITRARY SUMMAND
+
+  The law is about ONE summand of the algebra, not about the snoc list: `Fᵢ` is any relator sitting
+  inside `F` along an injection `ι`, `Vᵢ` and `Uᵢ` are `T` and `h` restricted to it, and `Qᵢ` is `Q`
+  there.  `hdisj` is the whole content — at a point `Vᵢ` reaches, `T` reaches it only through that
+  summand — and it is what lets the `est`/`thin` over the summand answer for the `est`/`thin` over
+  everything.  The two shapes below are the note's @greedy-laws and @dp-laws third rows; the snoc
+  arms are them at `Fᵢ = −×E`, `ι = Sum.inr`, where `hV`, `hQ` and `harm` hold by the coproduct's
+  own `arm₂`/`arm₂_comp`.
+
+  `Map Uᵢ` is not used by either proof: it is the fact the PICTURE draws, the summand's algebra
+  being a map is what makes its box a rectangle and not a chamfered relation. -/
+
+-- The relator binders are INLINE and not `variable`s: this section's `F` is the whole algebra's,
+-- where the file's own `F L E` is the snoc list's, and a `variable F` would shadow it below.
+-- The NAMES are `_root_`'s: nothing here is the snoc list's, and a general law under `SL` is what
+-- gets cloned at the next functor.  The proofs sit inside the namespace for its `Λ_eq_classifier`.
+
+/-- **Proposition 9.1 at one summand**, greedy form: the note's @greedy-laws third row
+    `(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ` refines the body `(T°)%∋ est(Q)F(X)h`. -/
+public theorem _root_.Freyd.Alg.RelSet.est_summand_le {A B : RelSet.{0}} {Fᵢ F : Relator RelSet.{0} RelSet.{0}}
+    {T : F.obj A ⟶ A} {Q : F.obj A ⟶ F.obj A} {X : A ⟶ B}
+    {h : F.obj B ⟶ B} {Vᵢ : Fᵢ.obj A ⟶ A} {Qᵢ : Fᵢ.obj A ⟶ Fᵢ.obj A} {Uᵢ : Fᵢ.obj B ⟶ B}
+    (ι : (Fᵢ.obj A).carrier → (F.obj A).carrier) (_hUᵢ : Map Uᵢ)
+    (hV : ∀ p y, Vᵢ p y ↔ T (ι p) y)
+    (hQ : ∀ p p', Qᵢ p p' → Q (ι p) (ι p'))
+    (harm : ∀ p z, (Fᵢ.map X ≫ Uᵢ) p z ↔ (F.map X ≫ h) (ι p) z)
+    (hdisj : ∀ w p y, Vᵢ p y → T w y → ∃ p', w = ι p') :
+    Λ (Vᵢ°) ≫ est Qᵢ ≫ Fᵢ.map X ≫ Uᵢ ⊑ Λ (T°) ≫ est Q ≫ F.map X ≫ h := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, p, hp, hW⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, ι p, ⟨(hV p y).mp hp.1, ?_⟩, (harm p a).mp hW⟩
+  · rw [Λ_eq_classifier]; rfl
+  · intro w hw
+    obtain ⟨p', rfl⟩ := hdisj w p y hp.1 hw
+    exact hQ p p' (hp.2 p' ((hV p' y).mpr hw))
+
+/-- **Proposition 9.1 at one summand**, thinning form: the note's @dp-laws third row
+    `(Vᵢ°)%∋ thin(Qᵢ)P(Fᵢ(X)Uᵢ)est(R)` refines `(T°)%∋ thin(Q)P(F(X)h)est(R)`. -/
+public theorem _root_.Freyd.Alg.RelSet.thin_summand_le {A B : RelSet.{0}} {Fᵢ F : Relator RelSet.{0} RelSet.{0}}
+    {T : F.obj A ⟶ A} {Q : F.obj A ⟶ F.obj A} {X : A ⟶ B}
+    {h : F.obj B ⟶ B} {R : B ⟶ B} {Vᵢ : Fᵢ.obj A ⟶ A} {Qᵢ : Fᵢ.obj A ⟶ Fᵢ.obj A}
+    {Uᵢ : Fᵢ.obj B ⟶ B}
+    (ι : (Fᵢ.obj A).carrier → (F.obj A).carrier) (_hUᵢ : Map Uᵢ)
+    (hV : ∀ p y, Vᵢ p y ↔ T (ι p) y)
+    (hQ : ∀ p p', Qᵢ p p' → Q (ι p) (ι p'))
+    (harm : ∀ p z, (Fᵢ.map X ≫ Uᵢ) p z ↔ (F.map X ≫ h) (ι p) z)
+    (hdisj : ∀ w p y, Vᵢ p y → T w y → ∃ p', w = ι p') :
+    Λ (Vᵢ°) ≫ thinRel Qᵢ ≫ powerRel (Fᵢ.map X ≫ Uᵢ) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R := by
+  rw [le_iff]
+  rintro y a ⟨S, hS, Y, hY, Z, hZ, hest⟩
+  rw [Λ_eq_classifier] at hS
+  subst hS
+  refine ⟨fun w => T w y, ?_, fun w => ∃ q, Y q ∧ w = ι q, ?_, Z, ?_, hest⟩
+  · rw [Λ_eq_classifier]; rfl
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨q, hq, rfl⟩
+      exact (hV q y).mp (hY.1 q hq)
+    · intro w hw
+      obtain ⟨t, ht, _⟩ := hZ.2 a hest.1
+      obtain ⟨q, rfl⟩ := hdisj w t y (hY.1 t ht) hw
+      obtain ⟨w', hQw, hw'Y⟩ := hY.2 q ((hV q y).mpr hw)
+      exact ⟨ι w', hQ w' q hQw, w', hw'Y, rfl⟩
+  · refine ⟨?_, ?_⟩
+    · rintro w ⟨q, hq, rfl⟩
+      obtain ⟨u, hu, hZu⟩ := hZ.1 q hq
+      exact ⟨u, (harm q u).mp hu, hZu⟩
+    · intro u hu
+      obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
+      exact ⟨ι t, ⟨t, ht, rfl⟩, (harm t u).mp hgt⟩
+
 /-- **Proposition 9.1**, greedy form, second arm: the note's @greedy-laws third row
     `(V₂°)%∋ est(Q₂)(X×𝟙)U₂` refines the body `(T°)%∋ est(Q)F(X)h`. -/
 public theorem est_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
