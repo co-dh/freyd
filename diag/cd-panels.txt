@@ -18,3 +18,4 @@ Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage           cdref-adjE
 Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le                 cdref-relprod.typ
 Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le       cdref-fork.typ
 Freyd.Alg.MonotonicAlg                                              cdref-mon.typ
+Freyd.Alg.LaxNatural                                                cdref-lax.typ

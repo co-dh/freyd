@@ -314,6 +314,11 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     | none => plain e
   | (c, args) =>
     if tightHeads.contains c then return (← plain e).replace " " "" else do
+    -- A COMPONENT OF A FAMILY the statement BINDS is set tight for the same reason a relator's
+    -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
+    -- Lean's formatter sets the object off from the head.  Its head is a free variable and has no
+    -- constant for `tightHeads`, so the test is `isComponent`'s, on the TYPE.
+    if ← isComponent e then return (← plain e).replace " " "" else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.

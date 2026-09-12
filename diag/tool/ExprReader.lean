@@ -71,6 +71,14 @@ def homObjs? (t : Expr) : Option (Expr × Expr) :=
   | (``Cat.Hom, #[_, _, a, b]) => some (a, b)
   | _ => none
 
+/-- Whether the term is ONE COMPONENT of a family of arrows the statement BINDS: an application
+    whose head is a free variable and whose own type is a hom, `φ A` for `φ : ∀ A, G A ⟶ F A`.  The
+    test is the TYPE and not a name: a bound family has no constant to list, and the whole point of
+    it is that the statement, not the library, is what hands the family over. -/
+def isComponent (e : Expr) : MetaM Bool := do
+  unless e.isApp && e.getAppFn.isFVar do return false
+  return (homObjs? (← Meta.inferType e)).isSome
+
 /-- The last two arguments of an application. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none

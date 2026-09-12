@@ -321,7 +321,12 @@ def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
 partial def arrowVars (e : Expr) : MetaM (Array Expr) := do
   match e with
   | .fvar _ => return if (← Meta.inferType e).isAppOf ``Cat.Hom then #[e] else #[]
-  | .app f a => return (← arrowVars f) ++ (← arrowVars a)
+  -- A FAMILY the statement binds is handed over one COMPONENT at a time: `φ : ∀ A, GA ⟶ FA` is no
+  -- arrow itself — its type is a `∀`, so the clause above cannot see it — and `φ A` is, at the two
+  -- objects that component runs between, which are the ones the picture draws.
+  | .app f a =>
+    if ← StrDiag.isComponent e then return #[e]
+    return (← arrowVars f) ++ (← arrowVars a)
   | .lam _ t b _ | .forallE _ t b _ => return (← arrowVars t) ++ (← arrowVars b)
   | .letE _ t v b _ => return (← arrowVars t) ++ (← arrowVars v) ++ (← arrowVars b)
   | .mdata _ b => arrowVars b
@@ -772,12 +777,19 @@ def cdPage (sel : String) (ps : Array Panel) : String :=
     conjunct, each drawn on its own grid unless the two paste; an `↔` is the side `side` names,
     because the two sides of an equivalence are two claims and not two paths.  What is not yet any
     of those gets ONE delta step on its head and its binders opened — `StrictNatural F G φ` needs
-    exactly one such step, and a statement that needs none pays nothing. -/
-partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat)
-    (induced : Array Expr := #[]) : MetaM (Array Face) := do
+    exactly one such step, and a statement that needs none pays nothing.
+
+    THE FACES ARE HANDED TO A CONTINUATION, not returned.  Opening a predicate's inner `∀` binders
+    puts the arrows and objects the face is made of in a LOCAL CONTEXT, and a `Face` returned out of
+    that context names free variables nobody can look up any more — an `unknown free variable` at the
+    first `inferType`, which is every line of `layout`.  `k` runs at the bottom of every telescope
+    this opens, so whatever reads the face reads it while its binders are still live. -/
+partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side : Option String)
+    (fuel : Nat) (induced : Array Expr) (k : Array Face → MetaM α) : MetaM α := do
   match body.getAppFnArgs with
   | (``And, #[l, r]) =>
-    return (← faces what l side fuel induced) ++ (← faces what r side fuel induced)
+    faces what l side fuel induced fun fl =>
+      faces what r side fuel induced fun fr => k (fl ++ fr)
   | (``Iff, #[l, r]) =>
     let some s := side
       | throwError "{what}: an `↔` is two claims, not two paths — name a side, `{what}.lhs` or \
@@ -785,10 +797,10 @@ partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat
     -- The side NOT drawn is still read: it is where an equivalence says which of the drawn
     -- arrows the statement produces, and that is what the picture dashes.
     let (this, other) := if s == "lhs" then (l, r) else (r, l)
-    faces what this none fuel (induced ++ (← inducedIn other))
+    faces what this none fuel (induced ++ (← inducedIn other)) k
   | _ =>
     match StrDiag.split body with
-    | some (sym, l, r) => return #[← Face.of sym (← interp l) (← interp r) induced]
+    | some (sym, l, r) => k #[← Face.of sym (← interp l) (← interp r) induced]
     | none =>
       if fuel == 0 then
         throwError "{what}: not an equation or inequation of composites, and no definition to \
@@ -800,13 +812,50 @@ partial def faces (what : Name) (body : Expr) (side : Option String) (fuel : Nat
       let some v := ci.value?
         | throwError "{what}: `{n}` heads the statement and has no definition to open"
       let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
-      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced
+      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced k
 
 /-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
 def part (s : String) : Name × Option String :=
   if s.endsWith ".lhs" then ((s.dropEnd 4).toString.toName, some "lhs")
   else if s.endsWith ".rhs" then ((s.dropEnd 4).toString.toName, some "rhs")
   else (s.toName, none)
+
+/-- The page, once the FIRST part's faces are in hand: each remaining part adds its own, read inside
+    its own telescope, and the layout runs at the bottom of them all.  It is a fold over the parts
+    written as a recursion because every step opens a scope the next step must still be inside. -/
+partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs : Array Expr)
+    (i : Nat) (fs : Array Face) : MetaM String := do
+  if i ≥ parts.size then
+    if let #[f, g] := fs then
+      if let some fc ← Face.paste f g then
+        return cdPage sel #[← layout fc]
+    return cdPage sel (← fs.mapM layout)
+  else
+      let (n, s) := parts[i]!
+      let some c := (← getEnv).find? n | throwError "no such declaration: {n}"
+      -- Matched by TYPE, not by position or by name: the two declarations may bind the same objects
+      -- in either order — an instance before or after the objects it is about — and a binder's name
+      -- is not what says two statements are about one arrow.
+      -- Its UNIVERSES are metavariables too: two modules name the same level differently (`u` and
+      -- `u_1`), and a level left as a parameter makes `Type u` and `Type u_1` two different types.
+      let us ← c.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let (ms, _, b) ← Meta.forallMetaTelescope (c.type.instantiateLevelParams c.levelParams us)
+      let mut free := xs
+      for m in ms do
+        let ty ← Meta.inferType m
+        let mut hit := false
+        for j in [0 : free.size] do
+          unless hit do
+            if ← commitWhen (do
+                if ← Meta.isDefEq ty (← Meta.inferType free[j]!) then Meta.isDefEq m free[j]!
+                else return false) then
+              free := free.extract 0 j ++ free.extract (j + 1) free.size
+              hit := true
+        unless hit do
+          throwError "{n} binds `{← Meta.ppExpr ty}`, which {parts[0]!.1} does not — it binds \
+            {← free.mapM fun x => do return m!"`{← Meta.ppExpr (← Meta.inferType x)}`"} — so the \
+            two are not statements about one set of objects and arrows and cannot be one picture"
+      faces n (← instantiateMVars b) s 3 #[] fun fs' => drawParts sel parts xs (i + 1) (fs ++ fs')
 
 /-- Draw one or more statements as ONE page.  The FIRST names the telescope and every other is
     instantiated at its binders: two faces of one picture are about one set of objects and arrows,
@@ -822,36 +871,7 @@ def draw (sel : String) : MetaM String := do
     -- VALUE: what it states is itself APPLIED to its own binders, which `faces` opens with the same
     -- delta step it takes on a predicate a theorem names (`MonotonicAlg φ R`, `LaxNatural F G φ`).
     let body := if body.isSort then mkAppN (.const n₀ (ci.levelParams.map .param)) xs else body
-    let mut fs ← faces n₀ body s₀ 3
-    for (n, s) in parts.extract 1 parts.size do
-      let some c := (← getEnv).find? n | throwError "no such declaration: {n}"
-      -- Matched by TYPE, not by position or by name: the two declarations may bind the same objects
-      -- in either order — an instance before or after the objects it is about — and a binder's name
-      -- is not what says two statements are about one arrow.
-      -- Its UNIVERSES are metavariables too: two modules name the same level differently (`u` and
-      -- `u_1`), and a level left as a parameter makes `Type u` and `Type u_1` two different types.
-      let us ← c.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
-      let (ms, _, b) ← Meta.forallMetaTelescope (c.type.instantiateLevelParams c.levelParams us)
-      let mut free := xs
-      for m in ms do
-        let ty ← Meta.inferType m
-        let mut hit := false
-        for i in [0 : free.size] do
-          unless hit do
-            if ← commitWhen (do
-                if ← Meta.isDefEq ty (← Meta.inferType free[i]!) then Meta.isDefEq m free[i]!
-                else return false) then
-              free := free.extract 0 i ++ free.extract (i + 1) free.size
-              hit := true
-        unless hit do
-          throwError "{n} binds `{← Meta.ppExpr ty}`, which {n₀} does not — it binds \
-            {← free.mapM fun x => do return m!"`{← Meta.ppExpr (← Meta.inferType x)}`"} — so the \
-            two are not statements about one set of objects and arrows and cannot be one picture"
-      fs := fs ++ (← faces n (← instantiateMVars b) s 3)
-    if let #[f, g] := fs then
-      if let some fc ← Face.paste f g then
-        return cdPage sel #[← layout fc]
-    return cdPage sel (← fs.mapM layout)
+    faces n₀ body s₀ 3 #[] fun fs => drawParts sel parts xs 1 fs
 
 /-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
     activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
