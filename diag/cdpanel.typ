@@ -169,10 +169,22 @@
 // Two faces that share no edge, or more than one, are not one polygon — the note's `<fokkinga>` pair
 // shares `α` and `F(⟨f,g⟩)`, so a single square cannot carry both — and are set SIDE BY SIDE, at the
 // note's own gutter.  ONE `P` around the row, so the panels scale together and keep one step.
+// `seps` is one entry per GAP, `none` where the two panels are only set beside each other and the
+// operator where the statement is about a JOIN: the note's `∪` row writes it between the squares,
+// and it is never a label — a label is an arrow's name, and this is the claim's own operator.
 #let CDGUTTER = 34pt
-#let cdrow(panels, s: 74%, length: LENGTH, cert: (:)) = {
-  context P(grid(columns: panels.len(), align: horizon, column-gutter: CDGUTTER,
-    ..panels.map(p => cetz.canvas(length: length, cdbody(p.nodes, p.edges, p.faces, length)))),
-    s: s, key: cert.at("expect", default: "cdpanel"))
+#let cdrow(panels, seps: (), s: 74%, length: LENGTH, cert: (:)) = {
+  // `cdbody` measures its labels, so every canvas is built INSIDE the context, not before it.
+  context {
+    let cells = ()
+    for i in range(panels.len()) {
+      let sep = if i > 0 { seps.at(i - 1, default: none) } else { none }
+      if sep != none { cells.push(text(SYMSIZE, raw(sep))) }
+      let p = panels.at(i)
+      cells.push(cetz.canvas(length: length, cdbody(p.nodes, p.edges, p.faces, length)))
+    }
+    P(grid(columns: cells.len(), align: horizon, column-gutter: CDGUTTER, ..cells),
+      s: s, key: cert.at("expect", default: "cdpanel"))
+  }
   metadata((kind: "commutative", helper: "cdrow", cert: cert))
 }

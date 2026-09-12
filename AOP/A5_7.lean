@@ -169,9 +169,10 @@ end UnionSlides
   arrows `φ b`, `φ a`.  So the closure rules of the previous sections ARE the closure rules of
   lax natural transformations: `fun R => comp_slides (hψ R) (hφ R)` is vertical composition,
   `fun R => union_slides (hφ R) (hψ R)` is union, `fun R => K.map_slides (hφ R)` is a relator
-  applied on the outside.  Each is one term, so none of them gets a theorem of its own; they are
-  written at the call sites (`laxNaturalCat`, `relatorSum_product`, and the two horizontal
-  composites below).
+  applied on the outside.  Each is one term, and each is nonetheless STATED — a picture draws a
+  declaration and nothing else, so the rule the note's closure display draws is a theorem here:
+  `laxNatural_comp_slide` for composition, `laxNatural_union` for `∪`,
+  `Relator.map_laxNatural` (A5_1) for a relator on the outside.
 
   What DOES need a theorem here is what the pasting rules do not give: reindexing along a relator
   on the INSIDE, the two ways of composing HORIZONTALLY, and the interchange between the two
@@ -714,6 +715,21 @@ public theorem relatorSum_product {F F' G : Relator 𝒮 𝒜} {φ : ∀ x : �
     fun _ h₁ h₂ => funext fun x => (coproduct_is_product _ (φ x) (ψ x)).2.2 _ (h₁ x) (h₂ x)⟩
 
 end LaxNaturalJunc
+
+section LaxNaturalUnion
+
+-- `∪` on the TARGET only: the source needs nothing but an allegory to index the family.
+variable {𝒮 : Type u₁} {𝒜 : Type u₂} [Allegory.{v₁} 𝒮] [DistributiveAllegory 𝒜]
+
+/-- **`∪` CLOSES in LaT**: two lax naturals `φ, ψ : G ⟶ F` between the SAME two relators give
+    `φ ∪ ψ : G ⟶ F` lax natural.  `union_slides` at every `R`, the two squares sharing all four
+    corners and both edges `G(R)`, `F(R)`.  The MEET does not close (`laxNatural_inter_false`),
+    which is why the hom-sets are join-semilattices and no more. -/
+public theorem laxNatural_union {F G : Relator 𝒮 𝒜} {φ ψ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    (hφ : LaxNatural F G φ) (hψ : LaxNatural F G ψ) : LaxNatural F G (fun x => φ x ∪ ψ x) :=
+  fun {_ _} R => union_slides (hφ R) (hψ R)
+
+end LaxNaturalUnion
 
 section MonoHomUnion
 
