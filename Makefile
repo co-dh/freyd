@@ -198,6 +198,18 @@ hm-sigs: $(DB)
 # ONE note at a time: `typst watch` takes one input, and watching the pair would need two watchers
 # and two viewers.  `make w NOTE=diag/allegory2.typ` for the proofs.
 NOTE ?= diag/allegory-axioms.typ
+
+# ONE CHAPTER: `make ch N=13`.  The whole note costs about 13 GiB and 40s to compile and every gate
+# paid it; one chapter is a quarter of that.  N is the chapter's position among the level-1 headings,
+# which is the number its displays already carry (`13.4.3c` is in chapter 13), and the file is found
+# by that number so a renamed heading needs no edit here.  `--root .`: a chapter sits one directory
+# below the prelude it imports.
+CH = $(firstword $(wildcard diag/ch/$(N)-*.typ diag/ch/$(N).typ diag/ch/0$(N)-*.typ diag/ch/0$(N).typ))
+ch:
+	@test -n "$(N)" || { echo "make ch N=13 — the chapter's number among the level-1 headings"; exit 1; }
+	@test -n "$(CH)" || { echo "no chapter $(N): run ./scripts/note-split, then ls diag/ch"; exit 1; }
+	typst compile --root . $(CH) $(CH:.typ=.pdf)
+
 w: p
 	@zathura $(NOTE:.typ=.pdf) & \
 	  v=$$!; trap "kill $$v 2>/dev/null" EXIT INT TERM; \

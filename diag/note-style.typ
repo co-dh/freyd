@@ -126,6 +126,31 @@
   body
 }
 
+/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
+/// `#include`, so a chapter can tell whether it is the document or one file of it.
+#let NOTEROOT = state("note-root", false)
+
+/// A CHAPTER COMPILED ALONE — its file starts `#show: note-chapter.with(N)` — must look like its
+/// pages in the book, and a whole-note compile costs about 13 GiB, which every gate paid.  Same
+/// rules as `conf`; the heading counter set to N-1 so §13 numbers as §13; and a reference to a
+/// label in another chapter rendered as its `names` entry, or as the label's own text, instead of
+/// stopping the compile.  Inside the whole book the root has already applied `conf` and the counter
+/// already stands at N-1, so there the chapter's own rules are skipped and nothing changes.
+#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { doc } else {
+  conf(title: title, {
+    counter(heading).update(N - 1)
+    // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
+    // never reaches `it.element`: reading that is what turns a cross-chapter reference into an error.
+    show ref: it => context {
+      let t = str(it.target)
+      let present = query(it.target).len() > 0
+      if t in names { if present { link(it.target, names.at(t)) } else { names.at(t) } }
+      else if present { it } else { [#t] }
+    }
+    doc
+  })
+}
+
 /// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
