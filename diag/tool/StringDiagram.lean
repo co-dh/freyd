@@ -665,9 +665,9 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- dot to a budget is not silent about it.
   let bounded : MetaM (Option Verdict) := Core.withCurrHeartbeats <| withTheReader Core.Context
     (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) search
-  let found : Option Verdict ← tryCatchRuntimeEx bounded fun _ => do
-    IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} spent its \
-      {SEARCH_HEARTBEATS} heartbeats and stopped: the bead draws as a spider"
+  let found : Option Verdict ← tryCatchRuntimeEx bounded fun e => do
+    IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} stopped on \
+      `{← e.toMessageData.toString}`: the bead draws as a spider"
     return none
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
