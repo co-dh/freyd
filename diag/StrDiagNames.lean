@@ -409,4 +409,11 @@ attribute [diag_rewrite] RelSet.RT.F_map_eq
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 
+-- A JOIN IS ONE PANEL PER OPERAND, with its own symbol set between them: the note's `∪` row of
+-- `<lax-closure>` is two squares, where the MEET — the same type to the letter, and absent from
+-- this line — is one bead on one panel (`laxNatural_inter_false`).  The tag lives here, not beside
+-- the allegory's `∪`: the exe imports `diag` and `AOP`, so a tag in the drawer's own module reaches
+-- no drawing.
+attribute [diag_join "∪"] DistributiveAllegory.union
+
 end Freyd.Alg

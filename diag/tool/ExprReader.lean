@@ -42,6 +42,33 @@ register_label_attr diag_rewrite
     module and not the drawer. -/
 register_label_attr diag_defines
 
+/-- WHICH BINARY OPERATION ON ONE HOM IS A JOIN, and the symbol that stands between the panels it
+    draws.  An assertion about a JOIN is ONE PANEL PER OPERAND — the note's `∪` row of
+    `<lax-closure>` is two squares with `∪` between them — where a MEET is one bead and one panel,
+    which is what `laxNatural_inter_false` makes it.  The two have the SAME type, so nothing but the
+    operator itself separates them: it is TAGGED and never matched, and the tag CARRIES ITS SYMBOL
+    (`@[diag_join "∪"]`), so no drawer spells an operator and a new join costs one line beside its
+    declaration.  Registered here, tagged in the module that reads it, like `diag_defines`. -/
+syntax (name := diagJoin) "diag_join " str : attr
+
+/-- The tagged operators, each with its symbol.  An EXTENSION and not a `ParametricAttribute`
+    because the operator is in an imported module — the allegory's `∪` is not the picture's to
+    edit — and a parametric attribute refuses those. -/
+initialize diagJoinExt : SimplePersistentEnvExtension (Name × String) (NameMap String) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := fun m (n, s) => m.insert n s
+    addImportedFn := fun es => es.foldl (fun m a => a.foldl (fun m (n, s) => m.insert n s) m) {} }
+
+initialize registerBuiltinAttribute {
+  name := `diagJoin
+  descr := "a binary operation on one hom drawn as one panel per operand, with this symbol between"
+  add := fun decl stx _ => do
+    let sym ← match stx with
+      | `(attr| diag_join $s:str) => pure s.getString
+      | _ => throwError "diag_join takes the symbol the panels are separated by, as in \
+          `@[diag_join \"∪\"]`"
+    modifyEnv (diagJoinExt.addEntry · (decl, sym)) }
+
 namespace Freyd.StrDiag
 
 /-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
@@ -953,6 +980,16 @@ def binOperands? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   unless (← Meta.isDefEq (← Meta.inferType l) t) && (← Meta.isDefEq (← Meta.inferType r) t) do
     return none
   return some (l, r)
+
+/-- The SYMBOL and the two operands of a JOIN: a `@[diag_join]` operator applied to two arrows of
+    the whole's own hom.  Both halves are needed — the attribute says which operator draws as two
+    panels, `binOperands?` that this application of it is the binary one and not a section of it —
+    and the MEET, whose type is the same to the letter, is not tagged and stays one bead. -/
+def joinOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
+  let some n := e.getAppFn.constName? | return none
+  let some sym := (diagJoinExt.getState (← getEnv)).find? n | return none
+  let some (l, r) ← binOperands? e | return none
+  return some (sym, l, r)
 
 /-- A composite flattened into its factors, in diagram order. -/
 partial def factors (e : Expr) : Array Expr :=
