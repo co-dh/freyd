@@ -646,27 +646,54 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
   throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no lane of \
     {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
 
-/-- THE NATURALITY SQUARE OF A FAMILY BETWEEN FUNCTOR LANES, as a proposition.  `φ a : G.obj a ⟶
-    F.obj a`, so naturality is `G.map f ≫ φ y = φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the
-    region — the very equation `gen_natural`, `genFold_natural`, `cons_natural` and their siblings
-    state.  It is the ONE statement a bare category has: `LaxNatural` and `OpLaxNatural` grade a
-    square by `⊑`, and a category has no `⊑` to grade it by.  Built and not named, so any pair of
-    functor lanes states it. -/
-def funSquare (regionTy F G φ : Expr) : MetaM Expr := do
+/-- HOW THE TWO SIDES OF A NATURALITY SQUARE ARE JOINED: an equality (`StrictNatural`), `⊑`
+    (`LaxNatural`), or `⊑` the other way round (`OpLaxNatural`).  The three a family can be graded
+    by, and nothing else — a spider is the absence of all three, not a fourth. -/
+inductive Grade where | strict | lax | oplax
+  deriving Inhabited, BEq
+
+/-- THE NATURALITY SQUARE OF A FAMILY BETWEEN LANES, as a proposition.  `φ a : G.obj a ⟶ F.obj a`,
+    so naturality is `G.map f ≫ φ y ∼ φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the region,
+    with `∼` the `grade` — the very statement `gen_natural`, `genFold_natural`, `moves_lax_natural`
+    and their siblings are written in.  Built and not named, so any pair of lanes states it in
+    either algebra: an allegory's lanes are relators and act by `Relator.map`, a bare category's
+    are functors and act by `Functor.map`, and a category has only `.strict` to grade a square by.
+
+    `onMaps` restricts `f` to the MAPS, which is the same square read in the sub-category the maps
+    of an allegory form.  A FUNCTOR lane in an allegory (`E`, the existential image) carries
+    families that are natural there and nowhere else — `singletonMap_natural` is `f ≫ 𝟙%∋ =
+    𝟙%∋ ≫ E(f)` for a map `f`, and at a relation both directions fail — so the square without the
+    hypothesis is the wrong question to ask of them, not a stronger one they happen to miss. -/
+def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .strict)
+    (onMaps : Bool := false) : MetaM Expr := do
   -- A STACK'S ACTION IS ITS WIRES' ACTIONS, INNERMOST FIRST — `(Vec(m+1)).map ((Vec n).map f)`,
-  -- the very spelling every naturality theorem in the repo is written in.  Composing the stack into
-  -- one `compFunctor` and taking ITS `map` is the same arrow but a different TERM, and the
-  -- unification then has to see through the composite at every level, which is where the search for
-  -- `genFold_natural` came back empty.  `wiresOf` is outermost first, so it is applied in reverse.
+  -- `tupleP 3 (tupleP n S)`, the very spelling every naturality theorem in the repo is written in.
+  -- Composing the stack into one `compFunctor`/`Relator.comp` and taking ITS `map` is the same
+  -- arrow but a different TERM, and the unification then has to see through the composite at every
+  -- level, which is where the searches for `genFold_natural` and for every `RelSet.graph` bead of
+  -- the cylinder came back empty.  `wiresOf` is outermost first, so it is applied in reverse.
+  -- A RELATOR ACTS BY THE FUNCTOR IT EXTENDS: `Relator` has no `map` of its own, so `F.map R` IS
+  -- `Functor.map F.toFunctor R` — the spelling `LaxNatural`'s own body elaborates to.
+  let act (w f : Expr) : MetaM Expr := do
+    let w ← match alg with
+      | .relator => Meta.mkAppM ``Freyd.Alg.Relator.toFunctor #[w]
+      | .functor => pure w
+    Meta.mkAppM ``Freyd.Functor.map #[w, f]
   let apply (ws : Array Expr) (f : Expr) : MetaM Expr := do
     let mut acc := f
-    for i in [0 : ws.size] do acc ← Meta.mkAppM ``Freyd.Functor.map #[ws[ws.size - 1 - i]!, acc]
+    for i in [0 : ws.size] do acc ← act ws[ws.size - 1 - i]! acc
     return acc
   Meta.withLocalDeclD `x regionTy fun x => Meta.withLocalDeclD `y regionTy fun y => do
     Meta.withLocalDeclD `f (← Meta.mkAppM ``Cat.Hom #[x, y]) fun f => do
       let l ← Meta.mkAppM ``Cat.comp #[← apply (wiresOf G) f, (mkApp φ y).headBeta]
       let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
-      Meta.mkForallFVars #[x, y, f] (← Meta.mkEq l r)
+      let sq ← match grade with
+        | .strict => Meta.mkEq l r
+        | .lax => Meta.mkAppM ``Freyd.Alg.le #[l, r]
+        | .oplax => Meta.mkAppM ``Freyd.Alg.le #[r, l]
+      if !onMaps then return ← Meta.mkForallFVars #[x, y, f] sq
+      Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
+        Meta.mkForallFVars #[x, y, f, hf] sq
 
 /-- The two ends of an arrow. -/
 def homEnds (e : Expr) : MetaM (Expr × Expr) := do
@@ -968,23 +995,6 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
-/-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
-    about — the proposition's last argument — with the region's own projections dropped, those
-    being where the object variable was substituted in rather than anything the bead is built
-    from.  A `¬` is stripped first: refuting a family is a statement about that same family.
-
-    KEEPING THE OBJECTS IS WHAT MAKES THE SEARCH FINITE IN PRACTICE.  Narrowing this to the ARROWS
-    of the family — dropping the objects they are taken at, which is what a naturality theorem is
-    general in — is the reading the statement wants, and it opens the square search to every
-    equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
-    under (`scripts/cap`) and the process dies. -/
-def mustOf (want : Expr) : MetaM NameSet := do
-  let p := match want.getAppFnArgs with | (``Not, #[q]) => q | _ => want
-  let some φ := p.getAppArgs.back? | return consts want
-  let env ← getEnv
-  return (consts φ).toList.foldl
-    (fun acc n => if env.isProjectionFn n then acc else acc.insert n) {}
-
 /-- One candidate's share of the search. Unifying a square against a concrete region unfolds every
     relator on both sides, which costs more than a whole default budget, so this is twice the
     default rather than a fraction of it; the head and `must` filters are what keep the scan short. -/
@@ -1006,6 +1016,36 @@ def bridges : MetaM Meta.Simp.Context := do
 /-- One proposition normalised through the bridges: the rewritten form, and the proof that it is
     the one asked for. -/
 def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.fst <$> Meta.simp e br
+
+/-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
+    about, ACROSS THE BRIDGES — the same normal form the two propositions are compared in, because
+    a filter read in the panel's spelling (`Λ 𝟙`) and a candidate written in the theorem's
+    (`singletonMap`) never overlap, and the candidate is dropped before the comparison that would
+    have seen through them. The region's own projections and every INSTANCE go: a term carries the
+    path typeclass resolution took to the region's structure and a theorem's context takes another,
+    so requiring either is requiring what no theorem can have.
+
+    KEEPING THE OBJECTS IS WHAT MAKES THE SEARCH FINITE IN PRACTICE.  Narrowing this to the ARROWS
+    of the family — dropping the objects they are taken at, which is what a naturality theorem is
+    general in — is the reading the statement wants, and it opens the square search to every
+    equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
+    under (`scripts/cap`) and the process dies. -/
+def mustOfFamily (br : Meta.Simp.Context) (φ : Expr) : MetaM NameSet := do
+  let env ← getEnv
+  let mut out : NameSet := {}
+  for n in (consts (← bridge br φ).expr).toList do
+    if env.isProjectionFn n then continue
+    if let some ci := env.find? n then
+      if Lean.isClass env (concHead ci.type) then continue
+    out := out.insert n
+  return out
+
+/-- The same filter for a naturality PROPOSITION: its last argument is the family, and a `¬` is
+    stripped first — refuting a family is a statement about that same family. -/
+def mustOf (br : Meta.Simp.Context) (want : Expr) : MetaM NameSet := do
+  let p := match want.getAppFnArgs with | (``Not, #[q]) => q | _ => want
+  let some φ := p.getAppArgs.back? | return consts want
+  mustOfFamily br φ
 
 /-- A candidate becomes a VERDICT only as a proof that CHECKS.  `pf` proves the candidate's own
     conclusion `rc.expr`; `rw` is the wanted proposition's own trip across the bridges, so
@@ -1090,6 +1130,13 @@ partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array 
       unless ← Meta.isDefEq args[i]! v do return false
       continue
     unless ← Meta.isProp t do return false
+    -- A HYPOTHESIS THE SQUARE ITSELF BINDS answers before the environment is scanned: a square
+    -- restricted to the maps opens `hf : Map f` as a local, and `singletonMap_natural` asks for
+    -- exactly that — searching the environment for it instead finds nothing, because `f` is a free
+    -- variable no declaration is about.
+    if let some fv ← Meta.findLocalDeclWithType? t then
+      unless ← Meta.isDefEq args[i]! (.fvar fv) do return false
+      continue
     if fuel == 0 then return false
     let some (_, pf) ← findAnyProof br t (fuel - 1) | return false
     unless ← Meta.isDefEq args[i]! pf do return false
@@ -1112,7 +1159,7 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
   -- to be found — a search that answers the question it was not asked.
   unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
       || h == ``Freyd.Alg.OpLaxNatural do return none
-  findSquare br want (← mustOf want) fuel
+  findSquare br want (← mustOf br want) fuel
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
     The binders are opened as FREE VARIABLES, not metavariables: the square is then the very

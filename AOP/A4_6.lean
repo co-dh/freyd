@@ -126,7 +126,7 @@ public theorem existsImage_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
   map_comp := existsImage_comp
 
 /-- Singleton naturality (B&dM p.106): for a map `f`, `f ≫ singletonMap = singletonMap ≫ E f`. -/
-theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
+public theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     f ≫ singletonMap = singletonMap ≫ existsImage f := by
   have hL : f ≫ singletonMap = Λ f := by
     have h := Λ_fusion hf (Cat.id B)
