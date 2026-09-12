@@ -69,7 +69,7 @@ def fmt (x : Float) : String :=
 
 -- Every label of every picture is `diag/tool/Label.lean`'s: one spelling of composition, of the
 -- converse and of the note's brackets, shared with the string and circuit functors.
-open StrDiag (plain label labelParts)
+open StrDiag (plain label labelT labelParts labelPartsT)
 
 /-! ### The graph -/
 
@@ -78,7 +78,7 @@ structure Node where
   id : String
   gx : Float
   gy : Float
-  label : String
+  label : StrDiag.Lbl
   /-- The note's hue its object is drawn in, named by the ROLE it plays — see `nodeHues`. -/
   hue : String := "BLACK"
 
@@ -89,7 +89,7 @@ structure Edge where
   tgt : String
   /-- The arrow's label in the PARTS the panel sets it in (`StrDiag.labelParts`): one part for an
       ordinary arrow, numerator and denominator for the note's fraction bar. -/
-  label : Array String
+  label : Array StrDiag.Lbl
   side : String
   /-- How far the edge bows out of its chord, in grid units — a MAGNITUDE: which way it bows is
       `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
@@ -724,7 +724,7 @@ def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array 
 def Face.chordEdge (fc : Face) (c : Expr) (side : String) : MetaM Edge := do
   let dash ← fc.induces c
   let hue ← if dash then pure "INDUCED" else fc.hue c
-  return { src := "s", tgt := "t", label := ← labelParts c, side, dash, hue }
+  return { src := "s", tgt := "t", label := ← labelPartsT c, side, dash, hue }
 
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
@@ -834,10 +834,10 @@ def sideLayout (fc : Face) (p : Path) : MetaM (Array Node × Array Edge × Array
   let mut nodes : Array Node := #[]
   for i in [0 : p.nodes.size] do
     let (id, o) := p.nodes[i]!
-    nodes := nodes.push { id, gx := i.toFloat, gy := 0.0, label := (← label o) }
+    nodes := nodes.push { id, gx := i.toFloat, gy := 0.0, label := (← labelT o) }
   let mut edges : Array Edge := #[]
   for (src, tgt, f) in p.edges do
-    edges := edges.push { src, tgt, label := (← labelParts f), side := "top",
+    edges := edges.push { src, tgt, label := (← labelPartsT f), side := "top",
                           dash := ← fc.dashes f, hue := ← fc.hue f }
   return (nodeHues given nodes edges, edges, #[])
 
@@ -858,15 +858,15 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let mut nodes : Array Node := #[]
     for i in [0:3] do
       let (id, o) := long.nodes[i]!
-      nodes := nodes.push { id, gx := cells[i]!.1, gy := cells[i]!.2, label := (← label o) }
+      nodes := nodes.push { id, gx := cells[i]!.1, gy := cells[i]!.2, label := (← labelT o) }
     let mut edges : Array Edge := #[]
     for i in [0:2] do
       let (src, tgt, f) := long.edges[i]!
-      edges := edges.push { src, tgt, label := (← labelParts f),
+      edges := edges.push { src, tgt, label := (← labelPartsT f),
                             side := if i == 0 then "top" else if turns then "right" else "left",
                             dash := ← fc.dashes f, hue := ← fc.hue f }
     let (csrc, ctgt, cf) := (if turns then fc.rhs else fc.lhs).edges[0]!
-    edges := edges.push { src := csrc, tgt := ctgt, label := (← labelParts cf),
+    edges := edges.push { src := csrc, tgt := ctgt, label := (← labelPartsT cf),
                           side := if turns then "left" else "right",
                           dash := ← fc.dashes cf, hue := ← fc.hue cf }
     return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
@@ -879,10 +879,10 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       for i in [0:3] do
         let (id, o) := p.nodes[i]!
         let p := if i == 0 then (1.0, 0.0) else if i == 1 then (gx, -1.0) else (1.0, -1.0)
-        ns := ns.push { id, gx := p.1, gy := p.2, label := (← label o) }
+        ns := ns.push { id, gx := p.1, gy := p.2, label := (← labelT o) }
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← labelParts f), side := if i == 0 then side₀ else "bottom",
+        es := es.push { src, tgt, label := (← labelPartsT f), side := if i == 0 then side₀ else "bottom",
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs "left" 0.0 (comps.map (·.1.idx))
@@ -923,10 +923,10 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       let mut es : Array Edge := #[]
       for i in [0:4] do
         let (id, o) := p.nodes[i]!
-        ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← label o) }
+        ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← labelT o) }
       for i in [0:3] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← labelParts f), side := sides[i]!,
+        es := es.push { src, tgt, label := (← labelPartsT f), side := sides[i]!,
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs 1.0 (comps.map (·.1.idx))
@@ -977,23 +977,23 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   for i in [0:n+1] do
     let (id, o) := fc.lhs.nodes[i]!
     let (gx, gy) := vertexAt lfst lsnd fx fy flip i
-    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← labelT o) }
   for j in [0:m+1] do
     let (id, o) := fc.rhs.nodes[j]!
     let (gx, gy) := vertexAt rfst rsnd fx fy (!flip) j
-    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
+    unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← labelT o) }
   let axisHue (sd : String) : String := if sd == "left" || sd == "right" then "GIVEN2" else "GIVEN1"
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
     let sd := sideAt lfst lsnd flip i
-    edges := edges.push { src, tgt, label := (← labelParts f), side := sd,
+    edges := edges.push { src, tgt, label := (← labelPartsT f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
     let sd := sideAt rfst rsnd (!flip) j
-    edges := edges.push { src, tgt, label := (← labelParts f), side := sd,
+    edges := edges.push { src, tgt, label := (← labelPartsT f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.2.idx)) f }
@@ -1016,9 +1016,20 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
 def typstArr (rows : List String) (close : String) : String :=
   "(\n" ++ String.join (rows.map fun r => s!"  {r},\n") ++ ")" ++ close
 
+/-- A LABEL AS TYPST CONTENT.  A tree with no shape in it is ONE `raw(…)`, byte for byte the string
+    the panel always carried; an index is set UNDER its head and a symmetric division as the note's
+    fraction, neither of which a string can hold.  This is the one place the tree is written out:
+    every other picture takes the flat spelling. -/
+partial def typstLbl (l : StrDiag.Lbl) : String :=
+  match l.norm with
+  | .text s => "raw(" ++ typstString s ++ ")"
+  | .sub b i => "[#" ++ typstLbl b ++ "#sub[#" ++ typstLbl i ++ "]]"
+  | .frac n d => "$frac(#" ++ typstLbl n ++ ", #" ++ typstLbl d ++ ")$"
+  | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ typstLbl p) ++ "]"
+
 def typstNodes (ns : Array Node) (close := "\n") : String :=
   typstArr (ns.toList.map fun v =>
-    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: raw({typstString v.label}), \
+    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: {typstLbl v.label}, \
        hue: {typstString v.hue})")
     close
 
@@ -1027,7 +1038,7 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
 def typstEdges (es : Array Edge) (close := "\n") : String :=
   typstArr (es.toList.map fun e =>
     s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
-       label: ({String.join (e.label.toList.map fun p => s!"raw({typstString p}), ")}), \
+       label: ({String.join (e.label.toList.map fun p => s!"{typstLbl p}, ")}), \
        side: {typstString e.side}, bow: {fmt e.bow}, \
        hue: {typstString e.hue}{if e.dash then ", dash: true" else ""})")
     close
