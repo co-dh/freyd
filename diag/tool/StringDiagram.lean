@@ -1004,7 +1004,12 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
   -- and hands back the codomain with the arrow's own elements as extra binders — the def's body
   -- then came back applied to them and was refused as "not an arrow".  The circuit exporter
   -- already stops at the hom; this one must too.
-  stmtTelescope ci.type fun xs body => do
+  -- A DECLARATION'S BINDERS AND ITS STATEMENT'S OWN ARE ONE TELESCOPE.  A `def` whose body is a
+  -- `∀` — a lax-naturality predicate — keeps the objects the statement quantifies over INSIDE the
+  -- body, where the first walk cannot reach them, and the arrow still carried them and was refused
+  -- as no arrow.  Re-quantifying over what has been entered and walking once more lands on the
+  -- statement whichever side of the definition its binders sit.
+  let stmt ← stmtTelescope ci.type fun xs body => do
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -1020,6 +1025,8 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
             | some v => (mkAppN v xs).headBeta
             | none => body
           else body
+    Meta.mkForallFVars xs body
+  stmtTelescope stmt fun xs body => do
     -- A PATH NAMES A STATEMENT; a TRAILING SIDE NAME picks one part of it.  `relCata_UP` is an `↔`
     -- between two inequations, so `.lhs` names the left inequation and draws it whole — both parts
     -- in one frame — and `.lhs.lhs` goes on to that inequation's left part alone.  A step descends
