@@ -1381,8 +1381,12 @@ def positional(argv, records=None):
     if out:
         return out
     if records:
-        recs = map(json.loads, open(records, encoding="utf-8").read().splitlines())
-        return list(dict.fromkeys(r["file"] for r in recs if "file" in r))
+        recs = [json.loads(l) for l in open(records, encoding="utf-8").read().splitlines()]
+        # A record the export could not draw is an obligation with no file: sweeping the rest would pass.
+        bad = [f"{r['selector']}: {r['error']}" for r in recs if "error" in r]
+        if bad:
+            sys.exit(f"scanline: {records} names selectors the export could not draw:\n" + "\n".join(bad))
+        return list(dict.fromkeys(r["file"] for r in recs))
     return ["diag/allegory-axioms.typ"]
 
 
