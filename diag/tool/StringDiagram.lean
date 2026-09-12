@@ -456,9 +456,13 @@ def emitStatement (declName : String) (parts : Array (String × Diagram))
     (frame topRow scale : Option Nat) : MetaM String := do
   let ps := parts.map (·.2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  let fr := frame.getD (frameOf ref ps)
   -- A frame given from outside is extra HEADROOM, so the reference drops with it and the slides
-  -- below it are unchanged: the alignment is what the frame exists to hold.
+  -- below it are unchanged: the alignment is what the frame exists to hold.  HEADROOM ONLY, never
+  -- less: a box shallower than `frameOf` lands the deepest part's last bead ON THE FLOOR, where its
+  -- legs have no row to run in — and the sweep then reads the object wire as one of the wires that
+  -- bead joins and reports its dot off the midpoint (§13.5.2a's `⦇gen⦈`).  A note asking for a box
+  -- the picture does not fit in gets the picture, and the difference is reported, not drawn.
+  let fr := max (frame.getD 0) (frameOf ref ps)
   let tr := fr - maxShift ref ps - 1
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
