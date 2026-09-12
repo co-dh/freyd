@@ -70,12 +70,12 @@ variable {Word : Type} {len : Word → Int} {w : Int}
 
 /-- **para-defn**: `glue (a,xs)=[[a]⧺head xs]⧺tail xs` — put the word at the front of the
     first line. -/
-@[expose] public def glueFn (a : Word) : Para Word → Para Word
+@[expose] public def glue (a : Word) : Para Word → Para Word
   | ConsList.wrap l => ConsList.wrap (ConsList.cons a l)
   | ConsList.cons l p => ConsList.cons (ConsList.cons a l) p
 
 public theorem headLine_glue (a : Word) (p : Para Word) :
-    headLine (glueFn a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
+    headLine (glue a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
 
 /-- **para-defn**: `sqr`, the summand of `collect ≜ list(sqr) sum`. -/
 @[expose] public def sqr (n : Int) : Int := n * n
@@ -173,16 +173,21 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 
 /-! ## The two algebras `[wrap wrap,new]` and `[wrap wrap,glue]` -/
 
+/-- **para-defn**: `new (a,xs)=[[a]]⧺xs` — open a new line for the word.  Named for the same
+    reason `glue` is: it is one arm of the algebra the note draws, and an arm is written by its
+    own name. -/
+@[expose] public def new (a : Word) (p : Para Word) : Para Word := ConsList.cons (ConsList.wrap a) p
+
 /-- **para-defn**: `[wrap wrap,new]` — a single word becomes a one-word paragraph, and
     `new (a,xs)=[[a]]⧺xs` opens a new line. -/
 @[expose] public def newAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
   | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => ConsList.cons (ConsList.wrap q.1) q.2
+  | Sum.inr q => new q.1 q.2
 
 /-- **para-defn**: `[wrap wrap,glue]`. -/
 @[expose] public def glueAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
   | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => glueFn q.1 q.2
+  | Sum.inr q => glue q.1 q.2
 
 /-- **para-defn**: `partition ≜ ⦇[wrap wrap,new∪glue]⦈` — every way of breaking the words into
     lines. -/
@@ -203,8 +208,8 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
     the step that lets the fusion below test only the FIRST line.  Needs `0 ≤ len a`: a glued
     line is wider than the line it was glued to. -/
 public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para Word) :
-    allFitP len w (glueFn a p)
-      ↔ allFitP len w p ∧ widthFn len (headLine (glueFn a p)) ≤ w := by
+    allFitP len w (glue a p)
+      ↔ allFitP len w p ∧ widthFn len (headLine (glue a p)) ≤ w := by
   have hgrow : ∀ l : Line Word, widthFn len l ≤ widthFn len (ConsList.cons a l) := by
     intro l
     have := hlen a
@@ -276,14 +281,14 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
         have hwaste : wasteFn len w x ≤ wasteFn len w y := hQ.1
         have hhead : headLine x = headLine y := hQ.2
         -- the two glued paragraphs have the same first line, so `ok w` transfers
-        have hokx : widthFn len (headLine (glueFn a x)) ≤ w := by
+        have hokx : widthFn len (headLine (glue a x)) ≤ w := by
           rw [headLine_glue, hhead, ← headLine_glue a y]
           exact hok
-        refine ⟨glueFn a x, ⟨glueFn a x, rfl, rfl, hokx⟩, ?_, ?_⟩
+        refine ⟨glue a x, ⟨glue a x, rfl, rfl, hokx⟩, ?_, ?_⟩
         · -- the waste of a glued paragraph is that of its tail plus one term fixed by the head
           cases x with
           | wrap lx =>
-            show (0 : Int) ≤ wasteFn len w (glueFn a y)
+            show (0 : Int) ≤ wasteFn len w (glue a y)
             exact wasteFn_nonneg _
           | cons lx x' =>
             cases y with
@@ -311,7 +316,7 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
               have hx : sqr (w - widthFn len ly) + wasteFn len w x'
                 ≤ sqr (w - widthFn len ly) + wasteFn len w y' := hwaste
               omega
-        · show headLine (glueFn a x) = headLine (glueFn a y)
+        · show headLine (glue a x) = headLine (glue a y)
           rw [headLine_glue, headLine_glue, hhead]
 
 /-- **para-mono**, the FALSE row (B&dM p.209, "the obvious greedy algorithm does not solve this
@@ -396,9 +401,9 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
         obtain rfl : s = ConsList.cons (ConsList.wrap a) x := hs
         exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfitS.2⟩, Or.inl rfl⟩
       | inr hs =>
-        obtain rfl : s = glueFn a x := hs
+        obtain rfl : s = glue a x := hs
         obtain ⟨hfx, hok⟩ := (allFitP_glue_iff hlen a x).mp hfitS
-        exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfx⟩, Or.inr ⟨glueFn a x, rfl, rfl, hok⟩⟩
+        exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfx⟩, Or.inr ⟨glue a x, rfl, rfl, hok⟩⟩
     · rintro ⟨v, hFv, hS⟩
       cases v with
       | inl a' => exact (hFv : False).elim
@@ -413,9 +418,9 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
           exact ⟨ConsList.cons (ConsList.wrap a) x, Or.inl rfl, rfl, ⟨hfit a, hfy⟩⟩
         | inr hS =>
           obtain ⟨s, hs, hsr, hok⟩ := hS
-          obtain rfl : s = glueFn a x := hs
-          obtain rfl : glueFn a x = r := hsr
-          exact ⟨glueFn a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
+          obtain rfl : s = glue a x := hs
+          obtain rfl : glue a x = r := hsr
+          exact ⟨glue a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
 
 public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
     partition ≫ fits (len := len) w = ⦇Salg len w⦈ :=
