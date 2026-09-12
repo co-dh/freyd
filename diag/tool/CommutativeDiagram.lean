@@ -71,18 +71,6 @@ def fmt (x : Float) : String :=
 -- converse and of the note's brackets, shared with the string and circuit functors.
 open StrDiag (plain label labelParts)
 
-/-- Every `.lean` file under `dir`, as module names below `pre` — the exe imports one environment
-    holding all of them and draws every name on the command line from it. -/
-partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) := do
-  let mut out : Array Name := #[]
-  for e in (← dir.readDir) do
-    if (← e.path.isDir) then
-      if e.fileName != "tool" && e.fileName != "generated" then
-        out := out ++ (← libModules e.path (pre.str e.fileName))
-    else if e.path.extension == some "lean" then
-      out := out.push (pre.str (e.path.fileStem.getD ""))
-  return out
-
 /-! ### The graph -/
 
 /-- A node: its identity, its place on the grid, and the object it stands for. -/
@@ -1150,64 +1138,11 @@ def draw (sel : String) : MetaM String := do
     faces n₀ body s₀ 3 #[] fun fs => drawParts sel parts xs 1 fs
 
 /-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
-    activated for printing (`main`).  `Freyd` carries `𝟙`, `≫`, `⟶`; `Freyd.Alg` the allegory's `°`,
-    `⊑` and the fold's `⦇ ⦈`; the rest the note's own spellings. -/
+    activated for printing (`DiagExport.main`, under `--commutative`).  `Freyd` carries `𝟙`, `≫`,
+    `⟶`; `Freyd.Alg` the allegory's `°`, `⊑` and the fold's `⦇ ⦈`; the rest the note's own
+    spellings. -/
 def openNs : List Name :=
   [`Freyd, `Freyd.Alg, `Freyd.Alg.RelSet, `Freyd.Alg.RelSet.CL, `Freyd.Alg.RelSet.ListRel,
     `Freyd.Alg.RelSet.Van, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
-
-/-- `--commutative`'s own entry point.  ONE environment per process, as in `DiagExport.main`: the
-    import happens once and every name on the command line is drawn from it. -/
-def main (args : List String) : IO UInt32 := do
-  let args := args.filter (fun a => a != "--commutative")
-  if args.isEmpty then
-    IO.eprintln "usage: diag-export --commutative <selector> [<selector> ...]\n\
-      a selector is `<decl>`, `<decl>.lhs`/`.rhs` for one side of an `↔`, and `<a>+<b>` for two\n\
-      statements drawn as one page — pasted along the edge they share, or set side by side"
-    return 2
-  Lean.initSearchPath (← Lean.findSysroot)
-  let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
-  -- `loadExts` is what makes a label read as the repo's own notation: without it the delaborator's
-  -- unexpander table is empty, so not one `notation` in the repo — nor `Eq`'s own `=` — is applied
-  -- and every label is a raw application (`relCata R`, `instCat.id X`).
-  let env ← importModules (mods.map fun m => { module := m }) {} (trustLevel := 1024)
-    (loadExts := true)
-  IO.FS.createDirAll "diag/generated/commutative"
-  -- Field notation is OFF.  It prints a functor's action by the FIELD's name, `F.obj X`, where the
-  -- book applies the functor's own letter, `F X`; and it is tried BEFORE an unexpander, so
-  -- `S1_18`'s `Functor.obj`/`Functor.map` unexpanders only fire once it is off.  What field
-  -- notation was hiding — the coercion `Relator.toFunctor` — is peeled by its own unexpander
-  -- (`A5_1`), so the head is still the relator's letter.
-  -- `⟶`, `≫`, `°` and `⊑` are all `Freyd`/`Freyd.Alg` notations, so the printer only reaches them
-  -- with those namespaces opened.
-  let opts : Options := (Options.empty.setBool `pp.fieldNotation false).setBool
-    -- A structure instance is not an application, so no unexpander can reach a bundled
-    -- object; printed as a constructor it becomes one, and the note's own name comes back.
-    `pp.structureInstances false
-  -- `openDecls` alone only SHORTENS names.  Every notation the repo writes is `scoped`, and a
-  -- scoped unexpander lives in a scoped extension that `open` activates during elaboration — which
-  -- an exe never runs.  Without this the labels read `Cat.id X`, `Cat.comp R S`, and the note's own
-  -- spellings below never fire either.  The activation needs a context and takes the empty one: the
-  -- context a picture is DRAWN in belongs to its own declaration and is built per argument below.
-  let env := (← (do for ns in openNs do activateScoped ns : CoreM Unit).toIO
-    (StrDiag.declCtx env opts openNs .anonymous) { env }).2.env
-  let mut status : UInt32 := 0
-  for arg in args do
-    -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT: the first part names it, and
-    -- the parts of one page are the faces of one statement's neighbourhood.
-    let ctx := StrDiag.declCtx env opts openNs (part (arg.splitOn "+").head!).1
-    let run : CoreM String := Meta.MetaM.run' (draw arg)
-    -- The thrown message is the DIAGNOSIS — which statement was reached and why it is not a face —
-    -- so a declaration this functor declines to draw says so in its own terms rather than as a
-    -- blanket "cannot draw", which is the error that sends a reader back to the source.
-    try
-      let text ← Prod.fst <$> run.toIO ctx { env }
-      let path := System.FilePath.mk s!"diag/generated/commutative/{arg}.typ"
-      IO.FS.writeFile path text
-      IO.println path.toString
-    catch e =>
-      IO.eprintln s!"diag-export --commutative: {e}"
-      status := 1
-  return status
 
 end Freyd.CommutativeDiagram

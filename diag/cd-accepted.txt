@@ -1,5 +1,6 @@
 # Wiring differences between a generated panel and the drawing in the note it answers that are
-# ACCEPTED, one per line, `<selector> | <the difference, as scripts/svg-check reports it>`.
+# ACCEPTED, one per line, `<selector> | <check> — <detail>`, a difference as `scripts/svg-check --records`
+# reports it.
 # `./scripts/cd-check` fails unless a panel's differences are EXACTLY these, so a line deleted here
 # is a difference nobody has agreed to and turns the gate red just as a new one does.
 #

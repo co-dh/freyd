@@ -28,15 +28,95 @@
 #   DIFF          they do not; the report is under .lake/build/cd-check/
 #   NO-REF        the line names a statement but no drawing in the note to hold the panel to
 #   NO-SEL        the line names no statement — a canvas nothing is drawn from
-#   CANNOT-DRAW   the exe refused the selector, or a panel did not compile
+#   CANNOT-DRAW   the exe refused the selector — its record's error follows — or wrote no record
+#                 for it, or the panel or its reference does not compile
+#   CANNOT-CHECK  `svg-check --against` failed other than by finding a difference, or the panel's
+#                 worker died before writing its row
 # Exit is non-zero on anything but `ok`: a canvas the generator does not answer is the gate's point.
+#
+# THE PER-PANEL WORK RUNS `$(nproc)` AT A TIME: `--gen <selector> <file>` compiles one picture the
+# export drew, `--ref <reference>` one drawing of the note's, and `--panel <i>` answers line `i` of
+# the manifest into `$OUT/rows/<i>`; the rows are then printed in manifest order, and the exit status
+# is read off them, never off xargs's.
 set -e
 cd "$(dirname "$0")/.." || exit 1
 OUT=.lake/build/cd-check
-rm -rf "$OUT"
-mkdir -p "$OUT/gen" "$OUT/ref"
 PANELS=diag/cd-panels.txt
 ACCEPT=diag/cd-accepted.txt
+
+# Each compile leaves `.done` only once all of it succeeded, so a panel reads its inputs' state
+# from the disk, and a failure's own words stay in the `.log` its row names.
+gen() {
+  typst compile --root . "$2" "$OUT/gen/$1.svg" > "$OUT/gen/$1.log" 2>&1
+  typst compile --root . "$2" "$OUT/gen/$1.pdf" >> "$OUT/gen/$1.log" 2>&1
+  typst query --root . "$2" strong > "$OUT/gen/$1.strong.json" 2>> "$OUT/gen/$1.log"
+  : > "$OUT/gen/$1.done"
+}
+ref() {
+  typst compile --root . "diag/$1" "$OUT/ref/${1%.typ}.svg" > "$OUT/ref/${1%.typ}.log" 2>&1
+  typst compile --root . "diag/$1" "$OUT/ref/${1%.typ}.pdf" >> "$OUT/ref/${1%.typ}.log" 2>&1
+  : > "$OUT/ref/${1%.typ}.done"
+}
+row() { printf '%s\n' "$1" > "$OUT/rows/$i"; }
+panel() {
+  i=$1
+  IFS="$(printf '\t')" read -r c s r <<EOF
+$(sed -n "${i}p" "$OUT/panels")
+EOF
+  head="$c  $s"
+  if [ "$s" = "-" ]; then row "NO-SEL       $head"; return; fi
+  # Whether it drew, and why not, is the selector's own RECORD — never a search of the run's text.
+  rec=$(jq -c --arg s "$s" 'select(.selector == $s)' "$OUT/records.jsonl")
+  if [ -z "$rec" ]; then
+    row "CANNOT-DRAW  $head  --  ./scripts/diag-export --commutative --records wrote no record for $s"
+    return
+  fi
+  err=$(printf '%s\n' "$rec" | jq -r '.error // empty')
+  if [ -n "$err" ]; then row "CANNOT-DRAW  $head  --  $s: $err"; return; fi
+  if [ ! -f "$OUT/gen/$s.done" ]; then
+    row "CANNOT-DRAW  $head  --  $s does not compile, see $OUT/gen/$s.log"
+    return
+  fi
+  if [ "$r" = "-" ]; then
+    # A row naming no canvas holds its panel to nothing BY DESIGN — that is what the `-` canvas
+    # column says — so only a canvas of the note left without a drawing to answer is a failure.
+    if [ "$c" = "-" ]; then row "geometry     $head"; else row "NO-REF       $head"; fi
+    return
+  fi
+  if [ ! -f "$OUT/ref/${r%.typ}.done" ]; then
+    row "CANNOT-DRAW  $head  --  diag/$r does not compile, see $OUT/ref/${r%.typ}.log"
+    return
+  fi
+  # Each LINE has its own files: two lines may hold one selector to two references.
+  p="$OUT/rows/$i"
+  src=0
+  ./scripts/svg-check --records --against "$OUT/ref/${r%.typ}.svg" "$OUT/gen/$s.svg" > "$p.jsonl" \
+    2> "$p.err" || src=$?
+  # 1 is svg-check's "differs", and those differences are what `$ACCEPT` is held to; any other
+  # status is svg-check failing, which no accepted line can stand for.
+  if [ "$src" -gt 1 ]; then
+    row "CANNOT-CHECK $head  --  ./scripts/svg-check --against exited $src: $(cat "$p.err")"
+    return
+  fi
+  jq -r '"\(.check) — \(.detail)"' "$p.jsonl" > "$p.got"
+  ./scripts/cd-labels "$OUT/gen/$s.pdf" "$OUT/ref/${r%.typ}.pdf" "${r%.typ}.svg" \
+    "$OUT/gen/$s.strong.json" >> "$p.got"
+  sort -o "$p.got" "$p.got"
+  awk -v s="$s" -F' \\| ' '!/^#/ && $1 == s {print $2}' "$ACCEPT" | sort > "$p.want"
+  if diff -u "$p.want" "$p.got" > "$p.diff"; then
+    row "ok           $head  --  $r"
+  else
+    row "DIFF         $head  --  $r: the differences in $p.diff are not the ones $ACCEPT \
+accepts; a minus line is an accepted difference the panel no longer has, a plus line one \
+nobody has agreed to"
+  fi
+}
+if [ "$1" = --gen ]; then gen "$2" "$3"; exit 0; fi
+if [ "$1" = --ref ]; then ref "$2"; exit 0; fi
+if [ "$1" = --panel ]; then panel "$2"; exit 0; fi
+
+rm -rf "$OUT"
+mkdir -p "$OUT/gen" "$OUT/ref" "$OUT/rows"
 rc=0
 
 # The manifest read ONCE, into the three fields every loop below wants: canvas, selector, reference.
@@ -59,24 +139,21 @@ diff -u "$OUT/canvases" "$OUT/claimed" || {
 }
 
 # One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
-# so a second invocation pays for the whole `Freyd` import again.
-# The FILE is the answer to "did it draw" — the ones about to be drawn are deleted first, so a
-# panel left over from a previous run cannot stand in for one this export refused and read `ok`.
+# so a second invocation pays for the whole `Freyd` import again.  Its RECORDS say what drew: one
+# JSON line per selector, the file it wrote or the error it drew none for.
 awk -F'\t' '$2 != "-" { print $2 }' "$OUT/panels" | sort -u > "$OUT/draw"
-while read -r s; do rm -f "diag/generated/commutative/$s.typ"; done < "$OUT/draw"
 exrc=0
 # shellcheck disable=SC2046
-./scripts/diag-export --commutative $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || exrc=$?
+./scripts/diag-export --commutative --records $(cat "$OUT/draw") > "$OUT/records.jsonl" \
+  2> "$OUT/export.log" || exrc=$?
 
-while read -r s; do
-  typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.svg"
-  typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.pdf"
-  typst query --root . "diag/generated/commutative/$s.typ" strong > "$OUT/gen/$s.strong.json"
-done < "$OUT/draw"
-awk -F'\t' '$3 != "-" { print $3 }' "$OUT/panels" | sort -u | while read -r r; do
-  typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.svg"
-  typst compile --root . "diag/$r" "$OUT/ref/${r%.typ}.pdf"
-done
+# Compiled ONCE each: every picture the export drew — a selector whose record is an error has
+# nothing to compile, and its row says why — and every reference drawing.
+xrc=
+jq -r 'select(.file) | .selector, .file' "$OUT/records.jsonl" > "$OUT/drawn"
+xargs -r -d '\n' -n 2 -P "$(nproc)" ./scripts/cd-check --gen < "$OUT/drawn" || xrc="$xrc $?"
+awk -F'\t' '$3 != "-" { print $3 }' "$OUT/panels" | sort -u > "$OUT/refs"
+xargs -r -d '\n' -n 1 -P "$(nproc)" ./scripts/cd-check --ref < "$OUT/refs" || xrc="$xrc $?"
 
 for f in diag/cdref*.typ; do
   awk -F'\t' -v r="$(basename "$f")" '$3 == r {found = 1} END {exit !found}' "$OUT/panels" || {
@@ -87,52 +164,34 @@ done
 
 ./scripts/svg-check "$OUT"/gen/*.svg || rc=1
 
-while IFS="$(printf '\t')" read -r c s r; do
-  head="$c  $s"
-  if [ "$s" = "-" ]; then
-    echo "NO-SEL       $head"
-    echo fail > "$OUT/nosel.fail"
-    continue
-  fi
-  if [ ! -f "$OUT/gen/$s.svg" ]; then
-    why=$(grep -F -- "$s:" "$OUT/export.log" | head -1)
-    [ -n "$why" ] || why="./scripts/diag-export --commutative exited $exrc and named no reason"
-    echo "CANNOT-DRAW  $head  --  $why"
-    echo fail > "$OUT/cannot.fail"
+n=$(wc -l < "$OUT/panels")
+seq "$n" | xargs -r -n 1 -P "$(nproc)" ./scripts/cd-check --panel || xrc="$xrc $?"
+i=0
+while [ "$i" -lt "$n" ]; do
+  i=$((i + 1))
+  if [ ! -f "$OUT/rows/$i" ]; then
+    echo "CANNOT-CHECK $(awk -F'\t' -v i="$i" 'NR == i { print $1 "  " $2 }' "$OUT/panels")  --" \
+      "line $i's worker wrote no row; ./scripts/cd-check --panel $i says why"
     rc=1
     continue
   fi
-  if [ "$r" = "-" ]; then
-    # A row naming no canvas holds its panel to nothing BY DESIGN — that is what the `-` canvas
-    # column says — so only a canvas of the note left without a drawing to answer is a failure.
-    if [ "$c" = "-" ]; then echo "geometry     $head"; else
-      echo "NO-REF       $head"
-      echo fail > "$OUT/noref.fail"
-    fi
-    continue
-  fi
-  ./scripts/svg-check --against "$OUT/ref/${r%.typ}.svg" "$OUT/gen/$s.svg" >/dev/null \
-    2>"$OUT/$s.err" || true
-  sed 's|^ *[^:]*: wiring — ||' "$OUT/$s.err" > "$OUT/$s.got"
-  ./scripts/cd-labels "$OUT/gen/$s.pdf" "$OUT/ref/${r%.typ}.pdf" "${r%.typ}.svg" \
-    "$OUT/gen/$s.strong.json" >> "$OUT/$s.got"
-  sort -o "$OUT/$s.got" "$OUT/$s.got"
-  awk -v s="$s" -F' \\| ' '!/^#/ && $1 == s {print $2}' "$ACCEPT" | sort > "$OUT/$s.want"
-  if diff -u "$OUT/$s.want" "$OUT/$s.got" > "$OUT/$s.diff"; then
-    echo "ok           $head  --  $r"
-  else
-    echo "DIFF         $head  --  $r: the differences in $OUT/$s.diff are not the ones $ACCEPT" \
-      "accepts; a minus line is an accepted difference the panel no longer has, a plus line one" \
-      "nobody has agreed to"
-    echo fail > "$OUT/$s.fail"
-  fi
-done < "$OUT/panels"
-# An export that drew every panel and still exited nonzero is reported by NO row above, so it would
-# leave the gate green on a failure — the last lines of its log say what it was.
-if [ "$exrc" != 0 ] && [ ! -f "$OUT/cannot.fail" ]; then
-  echo "cd-check: ./scripts/diag-export --commutative exited $exrc; its last lines:" >&2
+  cat "$OUT/rows/$i"
+  read -r v _ < "$OUT/rows/$i"
+  case $v in ok|geometry) ;; *) rc=1 ;; esac
+done
+# A selector with no record, or an export that exited nonzero while every record names a file, is
+# explained by NO row above — the last lines of the export's stderr say what it was.
+jq -r '.selector' "$OUT/records.jsonl" | sort -u > "$OUT/answered"
+jq -r 'select(.error) | .selector' "$OUT/records.jsonl" > "$OUT/refused"
+comm -23 "$OUT/draw" "$OUT/answered" > "$OUT/lack"
+if [ -s "$OUT/lack" ] || { [ "$exrc" != 0 ] && [ ! -s "$OUT/refused" ]; }; then
+  echo "cd-check: ./scripts/diag-export --commutative --records exited $exrc; its last lines:" >&2
   tail -20 "$OUT/export.log" >&2
   rc=1
 fi
-[ -z "$(find "$OUT" -name '*.fail')" ] || rc=1
+# A compile that fails is a row above; a worker that fails with every row passing is not.
+if [ -n "$xrc" ] && [ "$rc" = 0 ]; then
+  echo "cd-check: xargs exited$xrc while every row passed" >&2
+  rc=1
+fi
 exit $rc
