@@ -91,6 +91,11 @@ open Lean PrettyPrinter in
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
 
+-- A DATATYPE'S OBJECT IS SPELLED THE WAY THE NOTE'S OBJECT LANGUAGE SPELLS IT: lower case, and
+-- bracketed where the argument is applied — `tree A`, `list⁺ A`, `bag(Job)`.  A NOTATION and not an
+-- unexpander, for the reason `thin(` is one above: no term prints its own brackets.
+notation:max "bag(" J ")" => RelSet.Tardy.Bag J
+
 open Lean PrettyPrinter in
 /-- A map's GRAPH is written by the map's own name — the note's `edit`, `cons`, `nil` are all
     `graph f` — and the two projections have names of their own, B&dM's `π₁`/`π₂`. -/
@@ -201,6 +206,18 @@ open Lean PrettyPrinter in
 -- relation it is, is the `code-defn` line above the table, not what the box is labelled with.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.Q] def unexpandCodeQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.Q] def unexpandDetabQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.Q] def unexpandTardyQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.Q'] def unexpandTardyQ' : Unexpander | _ => `($(mkIdent `Q'))
+-- The same holds of the two ORDERS the thinning preorder is built from: `V` on the output string,
+-- `U` on the character, both stated over the section's tab width and its three characters.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.V] def unexpandDetabV : Unexpander | _ => `($(mkIdent `V))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.U] def unexpandDetabU : Unexpander | _ => `($(mkIdent `U))
 
 open Lean PrettyPrinter in
 /-- The note's bead for the maximum-segment-sum step algebra is `k`; `Kalg` is only the Lean name. -/
@@ -237,6 +254,11 @@ attribute [diag_unfold] RelSet.ListRel.prefAlg
 -- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
 -- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
 attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
+-- A DEFINITION THAT HIDES A COMPOSITE IS OPENED IN THE LABEL TOO.  `zeroPlus` is the union the note
+-- writes `⊸ zero ∪ plus`, `mssPre` the inner specification `(prefix sum)%∋ est(≥)`; the structural
+-- reader already opens both to draw them, so without the tag a row's picture and the label beside
+-- it said different things.
+attribute [diag_unfold] RelSet.MSS.zeroPlus RelSet.MSS.mssPre
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.

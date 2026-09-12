@@ -228,12 +228,6 @@ public theorem plusAlg_fuse_relator {B : RelSet.{0}} (S : B ⟶ C) :
       = (F Unit E).map S ≫ plusAlg zero plus :=
   (Fmap_comp_junc Unit E S zero (discZero zero ∪ plus)).symm
 
-/-- `mss-mono` rows 1→2: **`(𝟙×R)(⊸ zero ∪ plus) = (𝟙×R)⊸ zero ∪ (𝟙×R) plus`**. -/
-public theorem mss_mono_fork :
-    rprodMap (𝟙 (dE E)) R ≫ (discZero zero ∪ plus)
-      = rprodMap (𝟙 (dE E)) R ≫ discZero zero ∪ rprodMap (𝟙 (dE E)) R ≫ plus :=
-  DistributiveAllegory.comp_union_distrib _ _ _
-
 /-- **`⊸ zero ⊑ ⊸ zero R`** — the order is reflexive. -/
 public theorem mss_mono_nil (hrefl : Cat.id C ⊑ R) :
     (discZero zero : (⟨E × C.carrier⟩ : RelSet.{0}) ⟶ C) ⊑ discZero zero ≫ R :=
@@ -243,7 +237,7 @@ public theorem mss_mono_nil (hrefl : Cat.id C ⊑ R) :
 public theorem mss_mono_cons (hrefl : Cat.id C ⊑ R)
     (hplus : rprodMap (𝟙 (dE E)) R ≫ plus ⊑ plus ≫ R) :
     rprodMap (𝟙 (dE E)) R ≫ (discZero zero ∪ plus) ⊑ (discZero zero ∪ plus) ≫ R := by
-  rw [mss_mono_fork zero plus R, union_comp_distrib]
+  rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
   exact union_mono (le_trans (rprodMap_comp_discZero_le zero R) (mss_mono_nil zero R hrefl)) hplus
 
 /-- The `mss-mono` header, generically: **`F(R)[zero,⊸ zero ∪ plus] ⊑ [zero,⊸ zero ∪ plus]R`** —
@@ -392,6 +386,16 @@ public theorem mss_mono : MonotonicAlg (F := F Unit A) (Salg (A := A)) geq := by
   rw [Salg_eq_plusAlg]
   exact plusAlg_mono _ _ _ geq_refl plus_mono
 
+/-- **`mss-mono`'s second step**: `(𝟙×≥)(⊸ zero ∪ plus) = (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus` —
+    composition distributes over the union.  Stated at §7.7's OWN `≥`, `zero` and `plus` and not
+    at a generic relation over a generic carrier: `zero` and `plus` are the maps of `SumOrd A`,
+    which is what makes the picture draw their boxes square. -/
+public theorem mss_mono_fork :
+    rprodMap (𝟙 (dE A)) geq ≫ ((graph fun _ : A × A => zeroVal) ∪ plus)
+      = rprodMap (𝟙 (dE A)) geq ≫ (graph fun _ : A × A => zeroVal)
+        ∪ rprodMap (𝟙 (dE A)) geq ≫ plus :=
+  DistributiveAllegory.comp_union_distrib _ _ _
+
 /-- **`mss-mono`'s third step**: `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus ⊑ ⊸ zero ∪ plus ≥` — the discard
     swallows what ran on the pair, and `plus` is monotonic in its running total. -/
 public theorem mss_mono_step3 :
@@ -423,12 +427,12 @@ public theorem mss_greedy : cataR ((Salg (A := A))%∋ ≫ est(geq)) ⊑ (cataR 
 /-- Step 1 of `mss-step`: `[zero,⊸ zero ∪ plus]%∋ est(≥) = [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]`
     — the power transpose of a coproduct of maps is the coproduct of their transposes, and a
     composite after a coproduct is the coproduct of the composites. -/
-public theorem mss_step1 (R : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩) :
-    Salg%∋ ≫ est(R)
+public theorem mss_step1 :
+    Salg%∋ ≫ est(geq)
       = junc (sumCop (dL Unit) ⟨A × A⟩)
-          (zero%∋ ≫ est(R))
-          (zeroPlus%∋ ≫ est(R)) := by
-  unfold Salg; exact junc_Λ_est _ _ _ R
+          (zero%∋ ≫ est(geq))
+          (zeroPlus%∋ ≫ est((geq : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩))) := by
+  unfold Salg; exact junc_Λ_est _ _ _ geq
 
 /-- Step 2 of `mss-step`: `[zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)] = [zero,⊕]` — `zero` is a map,
     so its singleton has one element and `est(≥)` returns it; the other branch is `⊕`'s
@@ -448,7 +452,7 @@ public theorem mss_step2 {R : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩}
 public theorem mss_step :
     Salg%∋ ≫ est(geq)
       = junc (sumCop (dL Unit) ⟨A × A⟩) zero oplus :=
-  (mss_step1 geq).trans (mss_step2 geq_refl)
+  mss_step1.trans (mss_step2 geq_refl)
 
 /-- `⊕` as a function: the larger of `0` and `a+b`. -/
 @[expose] public def oplusFn (a b : A) : A := if 0 ≤ a + b then a + b else 0
