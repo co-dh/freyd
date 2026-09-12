@@ -662,6 +662,32 @@ def act(label, e, obj=False):
     return ('app', label, e)
 
 
+def peelobj(name):
+    """An object NAME as (how many `list` sugars wrap it, the name inside).  `[[A]]` is `list` twice
+    over `A`; `[nil,new]` is a junc and peels to nothing, which is what the comma test says.  The
+    inverse of the `[…]` `spell` writes, and the one reader a carrier rename may go through — a
+    slice or a `find('[')` would take the junc apart too and put a carrier where a case arm is."""
+    d = 0
+    while len(name) > 2 and name[0] == '[' and name[-1] == ']' \
+            and len(split_top(name[1:-1], ',')) == 1:
+        name, d = name[1:-1], d + 1
+    return d, name
+
+
+def recarrier(e, old, new):
+    """Every occurrence of the carrier `old` in a parsed expression renamed to `new`, under the
+    `[…]` sugar as well.  Structural: a name that merely CONTAINS the letters is left alone, which
+    is why this cannot be a textual substitution."""
+    if isinstance(e, tuple) and e and e[0] == 'atom':
+        d, inner = peelobj(e[1])
+        return ('atom', '[' * d + new + ']' * d) if inner == old else e
+    if isinstance(e, tuple):
+        return tuple(recarrier(x, old, new) for x in e)
+    if isinstance(e, list):
+        return [recarrier(x, old, new) for x in e]
+    return e
+
+
 def fill(wire, bead, inner):
     """A bead ON a context wire, at the same height as the one inside it (13.3.5b's `p×𝟙` beside
     `p`): the wire's hole takes the inner factor and the bead supplies the other slots."""
