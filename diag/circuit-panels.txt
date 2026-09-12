@@ -68,7 +68,7 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,
 - | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
 - | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
 Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
-Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
+Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
 - | <mss-mono> | ⊸ zero ∪ plus ≥
 - | <mss-mono> | (⊸ zero ∪ plus)≥
 Freyd.Alg.RelSet.MSS.mss_step1.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
@@ -87,8 +87,8 @@ Freyd.Alg.RelSet.Filter.filter_step4.rhs | <filter-step> | [nil,(π₁p→cons,�
 Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
 Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs | <filter-deriv> | ⦇[nil,(π₁p→cons,π₂)]⦈
 Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×(R;H))old
-Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
-Freyd.Alg.RelSet.Van.RH_eq_strict.lhs | <van-mono> | new (R∩H) ∪ old (R∩H)
+- | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
+- | <van-mono> | new (R∩H) ∪ old (R∩H)
 Freyd.Alg.RelSet.Van.van_mono.rhs | <van-mono> | (new ∪ old)(R;H)
 Freyd.Alg.RelSet.Van.van_laws.rhs | <van-laws> | (partition list(secure))%∋ est(R)
 Freyd.Alg.RelSet.Van.van_laws_step3.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
@@ -96,7 +96,7 @@ Freyd.Alg.RelSet.Van.van_laws_step2.rhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
 Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
-Freyd.Alg.thinning_est.lhs | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
+- | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
 - | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
@@ -107,8 +107,8 @@ Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin Q P(F(X)h) e
 - | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
 Freyd.Alg.RelSet.Bracket.mct_laws.rhs | <mct-laws> | (flatten°)%∋ est(R)
 Freyd.Alg.RelSet.Bracket.mct_laws.lhs | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)
-Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | (cat°)%∋ P((X×X)bin) est(R)
-Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | splits list((mct×mct)bin)minlist R
+- | <mct-laws> | (cat°)%∋ P((X×X)bin) est(R)
+- | <mct-laws> | splits list((mct×mct)bin)minlist R
 Freyd.Alg.RelSet.Code.code_laws.rhs | <code-laws> | (decode°)%∋ est(R)
 Freyd.Alg.RelSet.Code.code_laws.lhs | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
 Freyd.Alg.RelSet.Code.code_branch.lhs | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
