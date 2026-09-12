@@ -354,7 +354,8 @@
       "src": "x",
       "tgt": "E(x)",
       "lean": "Freyd.S2_40.PowerAllegory.eps@ca3b1fd5",
-      "note": "∈≜∋°, no declaration of its own: the row is eps's, read backwards",
+      "nat": "spider",
+      "note": "∈≜∋°, no declaration of its own: the row is eps's, read backwards. NOTHING GRADES IT. ∋'s square is an equality, but conversing it needs E(R)°=E(R°) (Relator.PreservesRecip), which holds only for a tabular relator, so existsImage_eps says nothing about ∈; and the one refutation, mem_not_laxNatural, is pinned to RelSet's powerRelator, not to this E. No declaration, no dot: the bead draws as a spider, which is the exporter's own verdict for it.",
       "not-lax": "AOP.A5_7_PowerBeads.mem_not_laxNatural@506c4b42"
     },
     "𝟙%∋": {

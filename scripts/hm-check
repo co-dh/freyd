@@ -709,6 +709,13 @@ def sigrow(env, proofs, name, row, where):
         bad.append(f'{where}: nat is "{row["nat"]}" with no `lean` — the verdict is drawn on the'
                    f" row's own arrow, and with none named there is nothing to hold the theorem to")
     marks = row.get("nat-lean")
+    # `spider` IS the absence of a declaration — the verdict `hm-mark` draws as no mark at all, for
+    # a family nothing in the corpus grades either way.  So it is the one verdict that must NOT name
+    # one: demanding a marker for it asks for the proof whose absence is the claim, and accepting a
+    # marker beside it would let a proved family be drawn unmarked.
+    if row["nat"] == "spider":
+        return bad + ([f'{where}: nat is "spider" — nothing grades this bead — yet nat-lean names'
+                       f' {marks}; drop one of the two'] if marks else [])
     if not marks:
         return bad + [f'{where}: nat is "{row["nat"]}" with no nat-lean — add the marker of the'
                       f' declaration that proves it, as `Mod.decl@key`']
