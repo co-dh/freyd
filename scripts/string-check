@@ -64,6 +64,15 @@ def obligations():
     return rows
 
 
+def route(sel):
+    """A selector, and which panel of the file it draws the note's panel must equal: `<sel>@<k>`
+    names the k-th, a bare selector the first.  A path that names a STATEMENT draws every part of it
+    in ONE frame — which is what a display placing the parts side by side needs, since the frame is
+    the statement's and not the part's — so one selector then answers for several note panels."""
+    base, _, k = sel.partition("@")
+    return base, (int(k) - 1 if k else 0)
+
+
 def diagram_args(cert):
     """A panel's `cert:` handed to `scripts/diagram` WHOLE.  Re-spelling it as flags means writing
     each mapping field (`sigs`, `tint`, `defn`) back in that flag's own pair syntax, and a field
@@ -117,7 +126,8 @@ def main(argv):
     # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
     # gate's, so the two cannot come to disagree about what the manifest names.
     if "--selectors" in argv:
-        print(*sorted({s for _, _, sels in obligations() for s in sels if s != "-"}), sep="\n")
+        print(*sorted({route(s)[0] for _, _, sels in obligations() for s in sels if s != "-"}),
+              sep="\n")
         return 0
     want = argv[0] if argv else ""
     os.makedirs(OUT, exist_ok=True)
@@ -134,7 +144,7 @@ def main(argv):
             print(f"{disp}: STALE — {PANELS} names a display the note no longer draws")
             rc = 1
 
-    todo = sorted({s for d, _, sels in rows if d in live and d.startswith(want)
+    todo = sorted({route(s)[0] for d, _, sels in rows if d in live and d.startswith(want)
                    for s in sels if s != "-"})
     # The FILE is the answer to "did it draw", so the ones about to be drawn are deleted first: a
     # selector the exporter refuses was otherwise checked against LAST run's picture and said `ok`.
@@ -158,16 +168,17 @@ def main(argv):
             if sel == "-":
                 print(f"{tag}: NO-DECL — no declaration is cited for this panel")
                 continue
-            gen = f"diag/generated/string/{sel}.typ"
+            base, which = route(sel)
+            gen = f"diag/generated/string/{base}.typ"
             if not os.path.exists(gen):
-                err = next((l for l in drawn.splitlines() if sel in l),
+                err = next((l for l in drawn.splitlines() if base in l),
                            f"./scripts/diag-export --string exited {exrc} and named no reason"
                            if exrc else "the exporter drew no file and said nothing")
                 print(f"{tag} {sel}: CANNOT-DRAW {err}")
                 rc = 1
                 continue
             gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
-            wrap(gwrap, f'#import "/{gen}": pic\n#pic\n')
+            wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
             drew, err = content(gwrap)
             if err:
                 print(f"{tag} {sel}: CANNOT-DRAW {err}")

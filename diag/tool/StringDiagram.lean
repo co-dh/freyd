@@ -367,9 +367,13 @@ def fileOf (declName body : String) : String :=
    #import \"../../dpanel.typ\": *\n\
    #import \"../../circuit.typ\": frc\n\n" ++ body
 
-/-- One panel on its own — one side of a statement, or one branch of a side. -/
+/-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
+    panels in order, so a caller holding the note to ONE of them — `scripts/string-check`, where the
+    note draws the parts itself and the frame belongs to the statement — names it by index instead
+    of re-splitting the picture. -/
 def emit (p : Diagram) (declName : String) (frame topRow scale : Option Nat) : MetaM String :=
-  return fileOf declName ("#let pic = " ++ (← panelCode p declName frame topRow scale) ++ "\n")
+  return fileOf declName ("#let panels = (" ++ (← panelCode p declName frame topRow scale)
+    ++ ",)\n#let pic = panels.at(0)\n")
 
 /-- `--string --sigs`: what LEAN says each bead is an arrow between, one line
     `<panel>\t<label>\t<src>⟶<tgt>` per bead, the panels numbered as the file emits them.  Nothing
@@ -427,10 +431,12 @@ def emitStatement (declName : String) (parts : Array (String × Diagram))
   -- below it are unchanged: the alignment is what the frame exists to hold.
   let tr := fr - maxShift ref ps - 1
   let mut cells : Array String := #[]
+  let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
   for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
-    cells := cells.push
+    cells := cells.push ("panels.at(" ++ toString panels.size ++ ")")
+    panels := panels.push
       (← panelCode p declName (some fr) (some (topRow.getD (topOf tr ref p))) scale)
     hs := hs.push (frameHeight p (some fr))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
@@ -440,7 +446,9 @@ def emitStatement (declName : String) (parts : Array (String × Diagram))
       throwError "{declName}: part 1 is drawn {num hs[0]!} tall and part {i + 1} is {num hs[i]!} \
         — a relation symbol joins them into ONE display, so every part takes the statement's frame \
         (the deepest part's row count, plus one)"
-  return fileOf declName ("#let pic = align(center, grid(columns: " ++ toString cells.size
+  return fileOf declName ("#let panels = (\n  "
+    ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
+    ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
     ++ String.intercalate ",\n  " cells.toList ++ "))\n")
 
@@ -904,7 +912,8 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
 
     A statement is drawn WHOLE — both sides in one frame — or one side at a time; either way every
     side is read, because the frame is a property of the statement and a side alone cannot know how
-    deep the other one is. -/
+    deep the other one is.  The path names the statement, so `.lhs` on an `↔` draws the whole left
+    statement and only a trailing name on a relation picks a side. -/
 def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
     (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
@@ -937,15 +946,20 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
             | some v => (mkAppN v xs).headBeta
             | none => body
           else body
-    -- A STATEMENT CAN NEST, so the side selector chains: `relCata_UP` is an `↔` between two
-    -- equations and `.lhs.lhs` reads "the left equation, its left side".  Every step but the last
-    -- picks a statement inside a statement (`conn?`), which draws no panel of its own; the last
-    -- picks the side of the equation that does.
+    -- A PATH NAMES A STATEMENT; a TRAILING SIDE NAME picks one part of it.  `relCata_UP` is an `↔`
+    -- between two inequations, so `.lhs` names the left inequation and draws it whole — both parts
+    -- in one frame — and `.lhs.lhs` goes on to that inequation's left part alone.  A step descends
+    -- while what it lands on is still a statement built from statements (`conn?`); the first step
+    -- that is not names a part, and nothing can follow it.
     let mut body := body
-    for s in path.dropLast do
-      let some (l, r) := conn? body
-        | throwError "`.{s}` names no side of {← Meta.ppExpr body}: it is no `↔` and no `∧`"
-      body := if s == "lhs" then l else r
+    let mut side : Option String := none
+    for s in path do
+      match side, conn? body with
+      | none, some (l, r) => body := if s == "lhs" then l else r
+      | none, none => side := some s
+      | some p, _ =>
+        throwError "`.{s}` follows `.{p}`, which already names a part of \
+          {← Meta.ppExpr body}: a part has no sides of its own"
     -- The statement's PARTS: the two sides a relation symbol joins, or the arrow itself.
     let parts : Array (String × Expr) := match split body with
       | some (sym, l, r) => #[("", l), (sym, r)]
@@ -970,7 +984,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    let drawn : Array (String × Expr) ← match path.getLast? with
+    let drawn : Array (String × Expr) ← match side with
       | none => pure parts
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
