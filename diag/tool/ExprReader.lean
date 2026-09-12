@@ -543,6 +543,23 @@ def homEnds (e : Expr) : MetaM (Expr × Expr) := do
     | throwError "not an arrow of a category: {← Meta.ppExpr e}"
   return p
 
+/-- A declaration's binders and its STATEMENT — `Meta.forallTelescopeReducing`, stopped at an arrow.
+    A hom of `RelSet` is definitionally `A → B → Prop`, so reducing walks straight through the arrow
+    an arrow-valued `def` IS and hands back `Prop`, with the def's own two elements as binders; the
+    walk stops where `homObjs?` reads a hom off the head constant, before anything unfolds it.  A
+    statement is no hom, so a theorem's telescope is the reducing one's, binder for binder. -/
+partial def stmtTelescope [Inhabited α] (ty : Expr) (k : Array Expr → Expr → MetaM α)
+    (xs : Array Expr := #[]) : MetaM α := do
+  if (homObjs? ty).isSome then return ← k xs ty
+  -- `whnf` only where the walk is STUCK, and hand `k` the type it was stuck on — both as
+  -- `forallTelescopeReducing` does.  Reducing a statement that is already a `∀`, or the statement
+  -- the walk ends on, unfolds the named predicate the panel is drawn from.
+  let peeled ← if ty.isForall then pure ty else Meta.whnf ty
+  match peeled with
+  | .forallE n d b bi =>
+    Meta.withLocalDecl n bi d fun x => stmtTelescope (b.instantiate1 x) k (xs.push x)
+  | _ => k xs ty
+
 /-- Is this arrow an identity? -/
 def isIdArrow (e : Expr) : MetaM Bool := do
   let (x, y) ← homEnds e

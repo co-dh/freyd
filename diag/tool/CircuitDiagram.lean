@@ -812,7 +812,7 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
     (branch : List Nat := []) : MetaM String := do
   let some ci := (← getEnv).find? declName
     | throwError "no such declaration: {declName}"
-  Meta.forallTelescopeReducing ci.type fun xs tybody => do
+  StrDiag.stmtTelescope ci.type fun xs tybody => do
     let tybody ← match binder with
       | none => pure tybody
       | some h => do
