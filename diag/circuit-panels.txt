@@ -122,6 +122,7 @@ Freyd.Alg.RelSet.Bracket.mct_prog.lhs | <mct-laws> | splits list((mct×mct)bin)m
 Freyd.Alg.RelSet.Code.code_laws.rhs | <code-laws> | (decode°)%∋ est(R)
 Freyd.Alg.RelSet.Code.code_laws.lhs | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
 Freyd.Alg.RelSet.Code.code_branch.lhs | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
+# missing: `reduce` — every way of splitting a legal last code off a string — and `encode` itself; `code_branch` proves only the `extend` arm of the body, not the program that replaces it.
 - | <code-laws> | reduce list((encode×𝟙)snoc)minlist R
 Freyd.Alg.greedy_dp.rhs | <greedy-laws> | H%∋ est(R)
 Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
@@ -132,7 +133,9 @@ Freyd.Alg.RelSet.Detab.entab_branch.lhs | <entab-laws> | (expand°)%∋ est(V×U
 Freyd.Alg.RelSet.Tardy.tardy_laws.rhs | <tardy-laws> | (bagify°)%∋ est(R)
 Freyd.Alg.RelSet.Tardy.tardy_laws.lhs | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
 Freyd.Alg.RelSet.Tardy.tardy_branch.lhs | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
+# missing: `pick`, a MAP choosing a least-penalty job out of a bag, so it must be shown well defined on the permutation quotient before `schedule` can be written; `tardy_laws` says so in its own doc.
 - | <tardy-laws> | pick (schedule×𝟙)snoc
+# the four tex rows are already filled on `algebra-is-an-arrow` (AOP/A10_4_Tex.lean, `tex_laws_step1/2/3`); that work is not an ancestor of this branch, so it lands with the merge, not here.
 - | <tex-laws> | (intern°)%∋ est(R)
 - | <tex-laws> | interval (inrange val°)%∋ est(R)
 - | <tex-laws> | interval H%∋ est(R)
