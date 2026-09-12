@@ -323,6 +323,30 @@ def handOver (items : Array Pic) : Array Pic := Id.run do
       out := out.set! i { out[i]! with val := out[i]!.val.set "nout" (.n 1), outs := #[out[i]!.tgt] }
   return out
 
+/-- A picture as a one-item RUN — what a node holding another picture (a lane, a fold's box, a
+    constant's body) carries. -/
+def laneVal (p : Pic) : Val :=
+  if p.val.kindOf == some "seq" then p.val
+  else nodeOf "seq" p.ins.size p.outs.size #[("items", .arr #[p.val]), ("seams", .arr #[])]
+
+/-- §3 row 14: `𝟏` IS NOT A WIRE, so a run passing through it is not two pictures in series.  The
+    factor that lands on `𝟏` discards its input and creates nothing; what the constant CREATES is
+    the factor after it, and the two are the one `konst` node — so `⊸ zero` draws the same whether
+    the declaration spells it `graph (fun _ => c)` in one term or a discard composed with `c`. -/
+def constParts (items : Array Pic) : Array Pic := Id.run do
+  let mut out := #[]
+  let mut skip := false
+  for i in [0 : items.size] do
+    if skip then skip := false
+    else
+      let it := items[i]!
+      if it.val.kindOf == some "konst" && it.outs.isEmpty && i + 1 < items.size then
+        let b := items[i + 1]!
+        out := out.push (mkPic "konst" it.ins b.outs it.src b.tgt b.isMap #[("body", laneVal b)])
+        skip := true
+      else out := out.push it
+  return out
+
 def seqPic (items₀ : Array Pic) (seams : Array (Nat × Array String)) (objs : Array Obj) : Pic :=
   let items := handOver items₀
   -- An EMPTY run is the IDENTITY, whose ports are its object's wires, not none: the `𝟙` lane of a
@@ -566,7 +590,7 @@ partial def drawRun (e : Expr) : MetaM Pic := do
   return seqPic items seams objs
 
 partial def runParts (e : Expr) : MetaM (Array Pic × Array Obj) := do
-  let items ← drawItems e
+  let items := constParts (← drawItems e)
   let (src, _) ← endsOf e
   let mut objs := #[src]
   for it in items do objs := objs.push it.tgt
@@ -689,10 +713,7 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
         return p
   return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
 
-partial def lane (p : Pic) : MetaM Pic := do
-  if p.val.kindOf == some "seq" then return p
-  return { p with val := nodeOf "seq" p.ins.size p.outs.size (extra :=
-    #[("items", .arr #[p.val]), ("seams", .arr #[])]) }
+partial def lane (p : Pic) : MetaM Pic := return { p with val := laneVal p }
 
 partial def stackPic (fs : Array Expr) (src tgt : Obj) : MetaM Pic := do
   let ls ← fs.mapM fun f => do lane (← drawRun f)
