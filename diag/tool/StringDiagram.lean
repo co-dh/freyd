@@ -362,18 +362,38 @@ def sigLines (ps : Array Diagram) : MetaM String := do
       out := out ++ toString (i + 1) ++ "\t" ++ r.label ++ "\t" ++ (← r.sig) ++ "\n"
   return out
 
-/-- Where a part's first bead sits, in rows.  The deepest part's sits one row below the ceiling; a
-    shorter part slides until a bead it SHARES with that part stands at the same height, which is
-    the alignment `diagram --pairs` holds a display to.  Labels are compared whole, as that gate
-    compares them: a bead is the same bead when it is the same 2-cell. -/
-def topOf (frame : Nat) (ref p : Diagram) : Nat :=
-  let t : Int := (frame : Int) - 1
-  let shift : Int := Id.run do
+/-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
+    SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
+    landmark is the reference's HIGHEST shared bead: a lower one would be read first by a part that
+    leads with it (`F(f)α` leads with `f`, which is `αT(f)`'s last) and would hang the part off the
+    bottom of the box.  Labels are compared whole, as that gate compares them: a bead is the same
+    bead when it is the same 2-cell. -/
+def shiftTo (ref p : Diagram) : Int := Id.run do
+  for i in [0 : ref.rows.size] do
     for j in [0 : p.rows.size] do
-      for i in [0 : ref.rows.size] do
-        if ref.rows[i]!.label == p.rows[j]!.label then return (j : Int) - (i : Int)
-    return 0
-  (max (min (t + shift) t) (p.rows.size : Int)).toNat
+      if ref.rows[i]!.label == p.rows[j]!.label then return (j : Int) - (i : Int)
+  return 0
+
+/-- How far the most-shifted part slides below the reference's first bead. -/
+def maxShift (ref : Diagram) (ps : Array Diagram) : Nat :=
+  (ps.foldl (fun a p => max a (shiftTo ref p)) 0).toNat
+
+/-- Where the REFERENCE part's first bead sits, in rows.  Every part starts `shiftTo` rows below it
+    and its own last bead must still land on row 1, so the reference sits as high as the part that
+    reaches deepest below it demands. -/
+def topRefOf (ref : Diagram) (ps : Array Diagram) : Nat :=
+  (ps.foldl (fun a p => max a ((p.rows.size : Int) - shiftTo ref p)) 1).toNat
+
+/-- A DISPLAY's frame, in rows: the reference's first bead, the rows the most-shifted part adds
+    above it, and the row of headroom the first bead sits below.  That is the deepest part's row
+    count only when nothing slides; taking the max of the parts' OWN frames instead has to clamp a
+    slide to fit, which puts a shared bead at two different heights — and aligning it is the whole
+    reason the parts are drawn in one box. -/
+def frameOf (ref : Diagram) (ps : Array Diagram) : Nat :=
+  max (topRefOf ref ps + maxShift ref ps + 1) 2
+
+/-- Where a part's first bead sits, in rows: the reference's, plus its own slide. -/
+def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftTo ref p) 1 |>.toNat
 
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
@@ -381,14 +401,17 @@ def topOf (frame : Nat) (ref p : Diagram) : Nat :=
 def emitStatement (declName : String) (parts : Array (String × Diagram))
     (frame topRow scale : Option Nat) : MetaM String := do
   let ps := parts.map (·.2)
-  let fr := frame.getD (ps.foldl (fun a p => max a (framex p)) 2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
+  let fr := frame.getD (frameOf ref ps)
+  -- A frame given from outside is extra HEADROOM, so the reference drops with it and the slides
+  -- below it are unchanged: the alignment is what the frame exists to hold.
+  let tr := fr - maxShift ref ps - 1
   let mut cells : Array String := #[]
   let mut hs : Array Float := #[]
   for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
     cells := cells.push
-      (← panelCode p declName (some fr) (some (topRow.getD (topOf fr ref p))) scale)
+      (← panelCode p declName (some fr) (some (topRow.getD (topOf tr ref p))) scale)
     hs := hs.push (frameHeight p (some fr))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
   -- different heights, which reads as two displays rather than one statement.
@@ -891,10 +914,11 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
       -- A branch panel can be deeper than the side it was cut from — `R ∪ S` is one row and `R` may
       -- be three — so the frame is the deepest of the statement's sides AND of what is drawn.
-      let fr := frame.getD (ps.foldl (fun a (_, p) => max a (framex p))
-        (sides.foldl (fun a p => max a (framex p)) 2))
+      let all := sides ++ ps.map (·.2)
+      let fr := frame.getD (frameOf ref all)
       if ps.size == 1 then
-        return ← emit ps[0]!.2 nm (some fr) (some (topRow.getD (topOf fr ref ps[0]!.2))) scale
+        return ← emit ps[0]!.2 nm (some fr)
+          (some (topRow.getD (topOf (fr - maxShift ref all - 1) ref ps[0]!.2))) scale
       return ← emitStatement nm ps (some fr) topRow scale
 
 end Freyd.StrDiag
