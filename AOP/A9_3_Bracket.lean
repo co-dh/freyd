@@ -52,20 +52,20 @@ variable {A S : Type} (st : A → S) (sb : S × S → S) (cb : S × S → Int)
 @[expose] public abbrev dNE (A : Type) : RelSet.{0} := ⟨NEList A⟩
 
 /-- **mct-defn**: `cat`, the append of two non-empty lists. -/
-@[expose] public def Freyd.Alg.RelSet.Bracket.cat : NEList A → NEList A → NEList A
+@[expose] public def cat : NEList A → NEList A → NEList A
   | CL.ConsList.wrap a, y => CL.ConsList.cons a y
-  | CL.ConsList.cons a x, y => CL.ConsList.cons a (Freyd.Alg.RelSet.Bracket.cat x y)
+  | CL.ConsList.cons a x, y => CL.ConsList.cons a (cat x y)
 
 /-- **mct-defn**: the algebra `[wrap,cat] : F(list⁺ A)⟶list⁺ A` whose catamorphism is
     `flatten`. -/
 @[expose] public def wrapCatFn : (TFobj A (dNE A)).carrier → NEList A
   | Sum.inl a => CL.ConsList.wrap a
-  | Sum.inr (x, y) => Freyd.Alg.RelSet.Bracket.cat x y
+  | Sum.inr (x, y) => cat x y
 
 /-- **mct-defn**: `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`, read as the function it is. -/
 @[expose] public def flattenFn : Tree A → NEList A
   | Tree.tip a => CL.ConsList.wrap a
-  | Tree.bin l r => Freyd.Alg.RelSet.Bracket.cat (flattenFn l) (flattenFn r)
+  | Tree.bin l r => cat (flattenFn l) (flattenFn r)
 
 /-- **mct-defn**: the catamorphism of `[wrap,cat]` IS `flattenFn`. -/
 public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flattenFn := by
@@ -79,7 +79,7 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
       obtain rfl : xl = flattenFn l := (ihl xl).mp hl
       obtain rfl : xr = flattenFn r := (ihr xr).mp hr
       exact hstep
-    · intro (h : x = Freyd.Alg.RelSet.Bracket.cat (flattenFn l) (flattenFn r))
+    · intro (h : x = cat (flattenFn l) (flattenFn r))
       exact ⟨flattenFn l, flattenFn r, (ihl _).mpr rfl, (ihr _).mpr rfl, h⟩
 
 /-- **mct-defn**: `sz`, the size of a non-empty list read directly off it. -/
@@ -106,12 +106,12 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
 @[expose] public def Assoc (sb : S × S → S) : Prop :=
   ∀ p q r : S, sb (sb (p, q), r) = sb (p, sb (q, r))
 
-public theorem sz_ncat (hassoc : Assoc sb) :
-    ∀ (x y : NEList A), szFn st sb (Freyd.Alg.RelSet.Bracket.cat x y) = sb (szFn st sb x, szFn st sb y)
+public theorem sz_cat (hassoc : Assoc sb) :
+    ∀ (x y : NEList A), szFn st sb (cat x y) = sb (szFn st sb x, szFn st sb y)
   | CL.ConsList.wrap a, y => rfl
   | CL.ConsList.cons a x, y => by
-    show sb (st a, szFn st sb (Freyd.Alg.RelSet.Bracket.cat x y)) = sb (sb (st a, szFn st sb x), szFn st sb y)
-    rw [sz_ncat hassoc x y, hassoc]
+    show sb (st a, szFn st sb (cat x y)) = sb (sb (st a, szFn st sb x), szFn st sb y)
+    rw [sz_cat hassoc x y, hassoc]
 
 /-- **mct-defn**: `sb` associative, so `size=flatten sz` — the size of a tree depends only on
     its flattening, which is what makes the context `flatten flatten°` enough for (9.5). -/
@@ -120,8 +120,8 @@ public theorem size_eq_sz_flatten (hassoc : Assoc sb) :
   | Tree.tip a => rfl
   | Tree.bin l r => by
     show sb ((costSizeFn st sb cb l).2, (costSizeFn st sb cb r).2)
-      = szFn st sb (Freyd.Alg.RelSet.Bracket.cat (flattenFn l) (flattenFn r))
-    rw [sz_ncat st sb hassoc, size_eq_sz_flatten hassoc l, size_eq_sz_flatten hassoc r]
+      = szFn st sb (cat (flattenFn l) (flattenFn r))
+    rw [sz_cat st sb hassoc, size_eq_sz_flatten hassoc l, size_eq_sz_flatten hassoc r]
 
 /-- **mct-defn**: `R≜cost≤cost°`. -/
 @[expose] public def R (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
