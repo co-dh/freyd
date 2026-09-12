@@ -227,6 +227,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- arrows of different towers, so they are not spelled alike.
   | (``Freyd.Alg.DistributiveAllegory.zero, _) => return "𝟘"
   | (``Freyd.Alg.PowerAllegory.eps, _) => return "∋"
+  -- The union of a PAIR of sets, which the note writes `cup` on the box after a `⟨,⟩` fork.  Its
+  -- `RelProd` argument is the product the fork lands in, already drawn as the two wires, so the
+  -- label is the name alone — `cup (relProd …)` writes the picture's own geometry into it.
+  | (``Freyd.Alg.cup, _) => return "cup"
   -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
   -- do not exist and no statement can mention one.
   | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"

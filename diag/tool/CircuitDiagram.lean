@@ -239,6 +239,7 @@ partial def stxHead : Syntax → Option Name
 def isNamed (e : Expr) : MetaM Bool := do
   match e.getAppFnArgs.1 with
   | ``Cat.id | ``Freyd.Alg.PowerAllegory.eps | ``Freyd.Alg.est | ``Freyd.Alg.Λ
+  | ``Freyd.Alg.cup
   | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => return true
   | .str _ s =>
     let some h := stxHead (← PrettyPrinter.delab e) | return false
@@ -304,15 +305,18 @@ def seqPic (items : Array Pic) (seams : Array (Nat × Array String)) (objs : Arr
     isMap := items.all (·.isMap) }
 
 /-- Which interior objects a run prints, one label per strand: an interior seam exactly when its
-    object is ONE wire and differs from both printed neighbours (CIRCUIT-GEN §3). -/
+    object differs from both printed neighbours (CIRCUIT-GEN §3).  ONE LABEL PER STRAND, so a
+    product seams too — the two power objects a `⟨,⟩` fork leaves for `cup` are named where they
+    are made, and a seam written as the product's own label would say `E[A]×E[A]` on two wires
+    that carry `E[A]` each. -/
 def seamsOf (objs : Array Obj) : Array (Nat × Array String) := Id.run do
   let mut out := #[]
   let mut prev := objs[0]!
   for i in [0 : objs.size - 2] do
     let o := objs[i + 1]!
-    let single := match o.wires with | .ok ws => ws.size == 1 | .error _ => false
-    if single && !o.same prev && !o.same objs[i + 2]! then
-      out := out.push (i, #[o.label]); prev := o
+    let ws := match o.wires with | .ok ws => ws.map (·.label) | .error _ => #[]
+    if ws.size > 0 && !o.same prev && !o.same objs[i + 2]! then
+      out := out.push (i, ws); prev := o
   return out
 
 /-- The node kind a picture is, for the clauses that ask (a `°` flips a BOX and frames anything
@@ -551,6 +555,16 @@ partial def draw (e : Expr) : MetaM Pic := do
       let bs := #[← lane (← drawRun f), ← lane (← drawRun g)]
       return mkPic "cap" bs[0]!.ins bs[0]!.outs src tgt false
         #[("lanes", .arr (bs.map (·.val)))]
+    | none => leaf e src tgt
+  -- §3 row 20: `⟨R,S⟩` — copy every strand, run BOTH lanes, and leave on their outputs STACKED.
+  -- A `cap` with no merge: the pair's target IS the product of the lanes' targets, so the node's
+  -- outputs are the lanes' outputs in order and no box says `⟨,⟩`.
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    match lastTwo args with
+    | some (f, g) => do
+      let bs := #[← lane (← drawRun f), ← lane (← drawRun g)]
+      return mkPic "fork" bs[0]!.ins (bs.foldl (fun a b => a ++ b.outs) #[]) src tgt
+        (bs.all (·.isMap)) #[("lanes", .arr (bs.map (·.val)))]
     | none => leaf e src tgt
   -- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.
   | (``Freyd.Alg.junc, args) =>
