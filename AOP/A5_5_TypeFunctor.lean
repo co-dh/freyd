@@ -163,6 +163,16 @@ public theorem typeMap_fusion {A B C : 𝒜} (f : A ⟶ B) (h : F.obj B C ⟶ C)
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange, ← F.interchange' f (relCata (I := I B) h), Cat.assoc]
 
+/-- **(2.14) WITH THE SQUARE THAT PRODUCED ITS FOLD**: the defining square of `⦇F(f,𝟙)h⦈` and the
+    fusion triangle, as ONE statement.  The two share exactly the edge `⦇F(f,𝟙)h⦈`, so the picture
+    is the two pasted along it — the note's `<tfun-fusion>` drawing.  Each half is its own theorem
+    (`relCata_cancel`, `typeMap_fusion`); this composes them and states nothing new. -/
+public theorem typeMap_fusion_cancel {A B C : 𝒜} (f : A ⟶ B) (h : F.obj B C ⟶ C) :
+    (I A).α ≫ relCata (I := I A) (F.map f (𝟙 C) ≫ h)
+        = (F.appl A).map (relCata (I := I A) (F.map f (𝟙 C) ≫ h)) ≫ (F.map f (𝟙 C) ≫ h)
+      ∧ typeMap I f ≫ relCata (I := I B) h = relCata (I := I A) (F.map f (𝟙 C) ≫ h) :=
+  ⟨relCata_cancel (I A) _, typeMap_fusion I f h⟩
+
 /-- **§2.7**: `T(R)T(S) = T(RS)` — type functor fusion at `Q := F(S,𝟙)α`, then `F` bifunctor. -/
 public theorem typeMap_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
     typeMap I R ≫ typeMap I S = typeMap I (R ≫ S) := by
