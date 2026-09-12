@@ -92,17 +92,28 @@ public structure Relator (𝒜 : Type u₁) (ℬ : Type u₂) [Allegory.{v₁} �
     (F G : Relator 𝒜 ℬ) (φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A) : Prop :=
   ∀ {A B : 𝒜} (R : A ⟶ B), G.map R ≫ φ B ⊑ φ A ≫ F.map R
 
-/-- A relator carries a LAX SQUARE to a lax square: `Ta ≫ X ⊑ X' ≫ Tb` gives
-    `F(Ta) ≫ F(X) ⊑ F(X') ≫ F(Tb)`.  Just `map_mono` read through `map_comp` on both sides.
-    The two sides carry DIFFERENT arrows `X`, `X'` — at `X' = X` and endo `Ta`, `Tb` this is
-    monotonicity of `F(X)`, and at `Ta, Tb := G(R), F(R)`, `X, X' := φ b, φ a` it is a relator
-    applied on the OUTSIDE of a lax natural `φ`, one `R` at a time. -/
+/-- A relator carries a LAX SQUARE to a lax square: `GR ≫ φB ⊑ φA ≫ FR` gives
+    `K(GR) ≫ K(φB) ⊑ K(φA) ≫ K(FR)`.  Just `map_mono` read through `map_comp` on both sides.
+    The letters are the ones the note's `K(φ)` row draws the square in, this being the statement it
+    draws: at `GR, FR := G(R), F(R)` and `φA, φB` the components of a lax natural `φ : G ⟶ F` it is
+    `K` applied on the OUTSIDE of `φ`, one `R` at a time.  The two sides carry DIFFERENT arrows
+    `φA`, `φB` — at `φA = φB` with endo `GR`, `FR` it is monotonicity of `K(φ)` instead. -/
 public theorem Relator.map_slides {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {a₁ a₂ b₁ b₂ : 𝒜}
-    {Ta : a₁ ⟶ a₂} {Tb : b₁ ⟶ b₂} {X : a₂ ⟶ b₂} {X' : a₁ ⟶ b₁} (h : Ta ≫ X ⊑ X' ≫ Tb) :
-    F.map Ta ≫ F.map X ⊑ F.map X' ≫ F.map Tb := by
-  have := F.map_mono h
-  rwa [F.map_comp, F.map_comp] at this
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (K : Relator 𝒜 ℬ) {GA GB FA FB : 𝒜}
+    {GR : GA ⟶ GB} {FR : FA ⟶ FB} {φB : GB ⟶ FB} {φA : GA ⟶ FA} (h : GR ≫ φB ⊑ φA ≫ FR) :
+    K.map GR ≫ K.map φB ⊑ K.map φA ≫ K.map FR := by
+  have := K.map_mono h
+  rwa [K.map_comp, K.map_comp] at this
+
+/-- A relator applied on the OUTSIDE of a lax natural leaves the square lax, one `R` at a time:
+    `K(G(R))K(φB) ⊑ K(φA)K(F(R))`.  `map_slides` states the slide for any four arrows; this is the
+    instantiation its letters are named for, and the one the note draws, so the picture's labels are
+    `G(R)` and `F(R)` and not two opaque variables. -/
+public theorem Relator.map_laxNatural {𝒜 : Type u₁} {ℬ : Type u₂} {𝒞 : Type u₃}
+    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] [Allegory.{v₃} 𝒞] (K : Relator ℬ 𝒞) {F G : Relator 𝒜 ℬ}
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (h : LaxNatural F G φ) {A B : 𝒜} (R : A ⟶ B) :
+    K.map (G.map R) ≫ K.map (φ B) ⊑ K.map (φ A) ≫ K.map (F.map R) :=
+  K.map_slides (h R)
 
 /-! ## Lemma 5.1  Relators preserve maps and their converses (B&dM p. 112)
 

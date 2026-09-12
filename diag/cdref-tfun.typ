@@ -19,7 +19,7 @@
   ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.6)
   ar(TB, C, INDUCED, dash: "dashed", s0: 0.6, s1: 0.55)
   lab(0.4, 2.55, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -2.55, GIVEN1)[`F(f,𝟙)h`]
-  lab(-5.15, 0, INDUCED)[`F(𝟙,T(f)⦇h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
+  lab(-5.15, 0, INDUCED)[`F(𝟙,⦇F(f,𝟙)h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
   lab(4.67, 1.47, INDUCED)[`T(f)`]; lab(4.67, -1.47, INDUCED)[`⦇h⦈`]
   node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
   node(TB.at(0), TB.at(1), black, `TB`)

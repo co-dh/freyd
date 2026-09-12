@@ -65,10 +65,12 @@ diff -u "$OUT/want" "$OUT/expect" || {
 awk '$1 != "-" { print $1 }' "$OUT/sel" | sort -u > "$OUT/draw"
 while read -r s; do rm -f "diag/generated/circuit/$s.typ"; done < "$OUT/draw"
 # shellcheck disable=SC2046
-./scripts/diag-export --circuit $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || true
+exrc=0
+./scripts/diag-export --circuit $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || exrc=$?
 
 n=$(wc -l < "$OUT/expect")
 i=0
+cannot=0
 while [ "$i" -lt "$n" ]; do
   i=$((i + 1))
   sel=$(sed -n "${i}p" "$OUT/sel")
@@ -81,7 +83,10 @@ while [ "$i" -lt "$n" ]; do
   fi
   gen="diag/generated/circuit/$sel.typ"
   if [ ! -f "$gen" ]; then
-    echo "CANNOT-DRAW  $head  --  $(grep -F -- "$sel:" "$OUT/export.log" | head -1)"
+    why=$(grep -F -- "$sel:" "$OUT/export.log" | head -1)
+    [ -n "$why" ] || why="./scripts/diag-export --circuit exited $exrc and named no reason"
+    echo "CANNOT-DRAW  $head  --  $why"
+    cannot=1
     rc=1
     continue
   fi
@@ -113,4 +118,11 @@ while [ "$i" -lt "$n" ]; do
     rc=1
   fi
 done
+# An export that drew every panel and still exited nonzero is reported by NO row above, so it would
+# leave the gate green on a failure — the last lines of its log say what it was.
+if [ "$exrc" != 0 ] && [ "$cannot" = 0 ]; then
+  echo "circuit-check: ./scripts/diag-export --circuit exited $exrc; its last lines:" >&2
+  tail -20 "$OUT/export.log" >&2
+  rc=1
+fi
 exit $rc

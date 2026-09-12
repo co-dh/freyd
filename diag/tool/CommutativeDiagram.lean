@@ -858,6 +858,17 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   let ny := max (if lsnd == 0 then 0 else lver) (if rsnd == 0 then 0 else rver)
   let (fx, fy) := (nx.toFloat, ny.toFloat)
   let bowed := ny == 0
+  -- ROLE FIRST, AXIS ONLY WHERE ROLE SAYS NOTHING.  `Face.hue` tells the edges of a square apart by
+  -- what each one IS; where all four come out the same kind — every edge of `map_slides` is a
+  -- `K.map` image, so the relator determines all four alike — the role test has separated nothing,
+  -- and the note paints such a square by AXIS: the two edges ACROSS are `GIVEN1` and the two DOWN
+  -- are `GIVEN2`.  That is how `lax-str`, `mon-str`, `party-mono`, `dist-str` and `subseq-outr` are
+  -- already drawn, their roles agreeing with their axes — the components across, the relation the
+  -- square carries them along down.
+  let byAxis ← do
+    if n != 2 || m != 2 || fc.chord.isSome || comps.isSome then pure false else do
+      let hs ← (fc.lhs.edges ++ fc.rhs.edges).mapM fun (_, _, f) => fc.hue f
+      pure (hs.all (· == hs[0]!) && hs[0]!.startsWith "GIVEN")
   let mut nodes : Array Node := #[]
   let mut edges : Array Edge := #[]
   -- The two paths share their end vertices, so the second contributes only its interior.
@@ -869,16 +880,21 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let (id, o) := fc.rhs.nodes[j]!
     let (gx, gy) := vertexAt rfst rsnd fx fy (!flip) j
     unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
+  let axisHue (sd : String) : String := if sd == "left" || sd == "right" then "GIVEN2" else "GIVEN1"
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
-    edges := edges.push { src, tgt, label := (← labelParts f), side := sideAt lfst lsnd flip i,
+    let sd := sideAt lfst lsnd flip i
+    edges := edges.push { src, tgt, label := (← labelParts f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← fc.hueOn (comps.map (·.1.idx)) f }
+                          hue := ← if byAxis then pure (axisHue sd)
+                                   else fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
-    edges := edges.push { src, tgt, label := (← labelParts f), side := sideAt rfst rsnd (!flip) j,
+    let sd := sideAt rfst rsnd (!flip) j
+    edges := edges.push { src, tgt, label := (← labelParts f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← fc.hueOn (comps.map (·.2.idx)) f }
+                          hue := ← if byAxis then pure (axisHue sd)
+                                   else fc.hueOn (comps.map (·.2.idx)) f }
   match fc.chord with
   | none => return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
   | some (c, sym) =>
