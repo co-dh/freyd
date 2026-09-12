@@ -281,12 +281,12 @@ public theorem plus_mono :
     cases ha
     exact ⟨a + c, rfl, by rw [hw]; exact SumOrd.add_le_add_left hc a⟩
 
-/-- `⊸ zero` at `A` is the constant `zero`: the discard is the only thing between them. -/
-public theorem discZero_zero :
-    (discZero (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}))
-        : (⟨A × A⟩ : RelSet.{0}) ⟶ (⟨A⟩ : RelSet.{0}))
-      = (graph (fun _ : A × A => zeroVal)
-          : (⟨A × A⟩ : RelSet.{0}) ⟶ (⟨A⟩ : RelSet.{0})) := by
+/-- `⊸ zero` at `A` is the constant `zero`: the discard is the only thing between them.  Generic
+    in the SOURCE, because the same `⊸ zero` stands at `A×A` inside the algebra and at `A×[A]`
+    inside the fused form, and one of those two is not the other's instance. -/
+public theorem discZero_zero {X : Type} :
+    (discZero (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) : (⟨X⟩ : RelSet.{0}) ⟶ ⟨A⟩)
+      = graph (fun _ : X => zeroVal) := by
   apply hom_ext; intro _ w
   exact ⟨fun ⟨_, _, hu⟩ => hu, fun h => ⟨(), rfl, h⟩⟩
 
@@ -295,6 +295,95 @@ theorem Salg_eq_plusAlg :
     Salg (A := A) = plusAlg zero plus := by
   unfold Salg plusAlg zeroPlus
   rw [discZero_zero]
+
+/-! ### The `mss-prefix-sum` display: `sum` fuses into `prefix`'s algebra
+
+  Five panels, four steps: each step's right-hand side is the next panel.  The display proves
+  `prefAlg_comp_sum`, which is the side condition that lets the fold absorb the `sum`. -/
+
+/-- **`sum` is entire** — every list has a sum.  This is the display's own side condition, the one
+    that lets `(𝟙×sum)` come off the `⊸ zero` arm. -/
+public theorem sumR_entire : Entire (sumR : dList A ⟶ (⟨A⟩ : RelSet.{0})) := by
+  unfold sumR; exact graph_entire _
+
+/-- **`nil sum = zero`** — the empty list sums to `zero`. -/
+public theorem nil_comp_sum : (wrapR : dL Unit ⟶ dList A) ≫ sumR = zero (A := A) := by
+  refine hom_ext fun u w => ⟨?_, ?_⟩
+  · rintro ⟨_, rfl, hw⟩; exact hw
+  · rintro rfl; exact ⟨ConsList.wrap u, rfl, rfl⟩
+
+/-- **`⊸ nil sum = ⊸ zero`** — the arm that threw its argument away and stopped at `nil` now
+    throws it away and stops at `zero`. -/
+public theorem discNil_comp_sum :
+    ((graph fun _ : A × ConsList Unit A => ConsList.wrap ())
+        : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A) ≫ sumR
+      = graph fun _ : A × ConsList Unit A => zeroVal := by
+  refine hom_ext fun _ w => ⟨?_, ?_⟩
+  · rintro ⟨_, rfl, hw⟩; exact hw
+  · rintro rfl; exact ⟨ConsList.wrap (), rfl, rfl⟩
+
+/-- **`cons sum = (𝟙×sum) plus`** — `sum` of a `cons` adds the head to `sum` of the tail, which
+    is `sum`'s defining equation read in diagram order. -/
+public theorem cons_comp_sum :
+    (consR : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A) ≫ sumR
+      = rprodMap (𝟙 (dE A)) sumR ≫ plus := by
+  refine hom_ext fun q w => ⟨?_, ?_⟩
+  · rintro ⟨_, rfl, hw⟩
+    exact ⟨(q.1, csum q.2), ⟨rfl, rfl⟩, hw⟩
+  · rintro ⟨⟨a, s⟩, ⟨ha, hs⟩, hw⟩
+    cases ha
+    have hs' : s = csum q.2 := hs
+    have hw' : w = q.1 + s := hw
+    refine ⟨ConsList.cons q.1 q.2, rfl, ?_⟩
+    show w = q.1 + csum q.2
+    rw [hw', hs']
+
+/-- **`mss-prefix-sum`, step 1**: `[nil,⊸ nil ∪ cons] sum = [nil sum,⊸ nil sum ∪ cons sum]` — a
+    bracket composed is the bracket of the composites, and composition distributes over the `∪`. -/
+public theorem mss_prefix_sum_step1 :
+    prefAlg ≫ sumR
+      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) ((wrapR : dL Unit ⟶ dList A) ≫ sumR)
+          ((graph fun _ : A × ConsList Unit A => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR) := by
+  unfold prefAlg
+  rw [junc_comp, union_comp_distrib]
+
+/-- **`mss-prefix-sum`, step 2**: `[nil sum,⊸ nil sum ∪ cons sum] = [zero,⊸ zero ∪ (𝟙×sum) plus]`
+    — `sum`'s three defining equations, one per branch. -/
+public theorem mss_prefix_sum_step2 :
+    junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) ((wrapR : dL Unit ⟶ dList A) ≫ sumR)
+        ((graph fun _ : A × ConsList Unit A => ConsList.wrap ()) ≫ sumR ∪ consR ≫ sumR)
+      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) zero
+          ((graph fun _ : A × ConsList Unit A => zeroVal)
+            ∪ rprodMap (𝟙 (dE A)) sumR ≫ plus) := by
+  rw [nil_comp_sum, discNil_comp_sum, cons_comp_sum]
+
+/-- **`mss-prefix-sum`, step 3**: `[zero,⊸ zero ∪ (𝟙×sum) plus] = [zero,(𝟙×sum)(⊸ zero ∪ plus)]`
+    — `(𝟙×sum)⊸ zero = ⊸ zero` because `sum` is entire, so the `(𝟙×sum)` comes out of both arms. -/
+public theorem mss_prefix_sum_step3 :
+    junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}))
+        ((graph fun _ : A × ConsList Unit A => zeroVal)
+          ∪ rprodMap (𝟙 (dE A)) sumR ≫ plus)
+      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) zero
+          (rprodMap (𝟙 (dE A)) sumR ≫ zeroPlus) := by
+  refine congrArg (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) zero) ?_
+  unfold zeroPlus
+  rw [← discZero_zero (X := A × ConsList Unit A), ← discZero_zero (X := A × A)]
+  exact plusAlg_fuse_fork zero plus sumR_entire
+
+/-- **`mss-prefix-sum`, step 4**: `[zero,(𝟙×sum)(⊸ zero ∪ plus)] = F(sum)[zero,⊸ zero ∪ plus]` —
+    the relator's action on `sum` slides out of the bracket. -/
+public theorem mss_prefix_sum_step4 :
+    junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}))
+        (rprodMap (𝟙 (dE A)) sumR ≫ zeroPlus)
+      = (F Unit A).map sumR ≫ junc (sumCop (dL Unit) ⟨A × A⟩) zero zeroPlus :=
+  (Fmap_comp_junc Unit A sumR zero zeroPlus).symm
+
+/-- What the `mss-prefix-sum` display proves: **`[nil,⊸ nil ∪ cons] sum = F(sum) S`** — `sum` is a
+    homomorphism from `prefix`'s algebra to `S`, which is why the fold absorbs it. -/
+public theorem prefAlg_comp_sum :
+    prefAlg ≫ sumR = (F Unit A).map sumR ≫ Salg (A := A) := by
+  unfold Salg
+  rw [mss_prefix_sum_step1, mss_prefix_sum_step2, mss_prefix_sum_step3, mss_prefix_sum_step4]
 
 /-- The `mss-mono` row: `F(≥) S ⊑ S ≥`, whose `plus` branch is `(𝟙×≥)(⊸ zero ∪ plus) ⊑
     (⊸ zero ∪ plus)≥` — `plus` is monotonic, so a bigger running total gives a bigger step;
@@ -310,7 +399,7 @@ public theorem mss_mono_step3 :
         ∪ rprodMap (𝟙 (dE A)) geq ≫ plus
       ⊑ (graph fun _ : A × A => zeroVal) ∪ plus ≫ geq := by
   refine union_mono ?_ plus_mono
-  rw [← discZero_zero]
+  rw [← discZero_zero (X := A × A)]
   exact rprodMap_comp_discZero_le zero geq
 
 /-- **`mss-mono`'s fourth step**: `⊸ zero ∪ plus ≥ ⊑ (⊸ zero ∪ plus)≥` — `≥` is reflexive, so

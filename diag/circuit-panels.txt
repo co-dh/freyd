@@ -62,11 +62,11 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs | <takewhile-step> | [nil,(π�
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.lhs | <takewhile-laws> | (prefix list(p))%∋ est(R°)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,(π₁p→cons,⊸ nil)]⦈
-- | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
-- | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
-- | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
-- | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
-- | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.lhs | <mss-prefix-sum> | [nil,⊸ nil ∪ cons] sum
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs | <mss-prefix-sum> | [nil sum,⊸ nil sum ∪ cons sum]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step2.rhs | <mss-prefix-sum> | [zero,⊸ zero ∪ (𝟙×sum) plus]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs | <mss-prefix-sum> | [zero,(𝟙×sum)(⊸ zero ∪ plus)]
+Freyd.Alg.RelSet.MSS.mss_prefix_sum_step4.rhs | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
 Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
 Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
 Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs | <mss-mono> | ⊸ zero ∪ plus ≥
@@ -97,7 +97,7 @@ Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 Freyd.Alg.thinning_est.lhs | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
-- | <thin-cor> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 - | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R
