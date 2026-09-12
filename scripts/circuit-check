@@ -33,7 +33,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT/note" "$OUT/gen"
 rc=0
 
-typst query --root . "$NOTE" metadata --field value > "$OUT/meta.json"
+./scripts/note-meta > "$OUT/meta.json"
 CERTS='[.[] | select(type == "object" and .kind == "circuit") | .cert] | .[]'
 jq -r "$CERTS | .expect" "$OUT/meta.json" > "$OUT/expect"
 # The cert's own fields as `scripts/circuit`'s arguments, shell-quoted by jq: `--at` takes the keys

@@ -96,9 +96,9 @@ def note_panels():
     for the wrong display without saying so.  A display the note leaves unlabelled has no name to
     key by and is named by its number; `number` says which number each name stands for, `bare` which
     names are numbers for want of a label."""
-    p = run("typst", "query", "--root", ".", NOTE, "metadata", "--field", "value")
+    p = run(os.path.join(ROOT, "scripts", "note-meta"))
     if p.returncode:
-        sys.exit(f"string-check: typst query {NOTE} failed:\n{p.stderr}")
+        sys.exit(f"string-check: note-meta failed:\n{p.stderr}")
     ms = [m for m in json.loads(p.stdout) if isinstance(m, dict)]
     name = {d["id"]: (d.get("label") or d["id"]) for d in ms if d.get("kind") == "disp"}
     out = {}

@@ -21,16 +21,16 @@ NOTE = "diag/allegory-axioms.typ"
 
 
 def query(*args):
-    p = subprocess.run(["typst", "query", "--root", ".", *args], cwd=ROOT,
+    p = subprocess.run([os.path.join(ROOT, "scripts", "note-meta"), *args], cwd=ROOT,
                        capture_output=True, text=True, encoding="utf-8")
     if p.returncode:
-        sys.exit(f"cd-obligations: typst query {' '.join(args)} failed:\n{p.stderr}")
+        sys.exit(f"cd-obligations: note-meta {' '.join(args)} failed:\n{p.stderr}")
     return json.loads(p.stdout)
 
 
 def canvases():
     """Every canvas of the note, in document order: (display number, [labels], el counts)."""
-    marks = query("--input", "cdscan=1", NOTE, "metadata", "--field", "value")
+    marks = query("--input", "cdscan=1")
     out, disp, lab = [], "(before the first display)", "(unlabelled)"
     for m in marks:
         if not isinstance(m, dict):

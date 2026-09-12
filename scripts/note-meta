@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""note-meta — the note's metadata query, cached against every file it reads.
+
+    ./scripts/note-meta [--input KEY=VAL]...
+
+Prints exactly what `typst query --root . [--input KEY=VAL]... diag/allegory-axioms.typ metadata
+--field value` prints.  string-check, circuit-check and cd-obligations each ran that query
+themselves — about 22s per run, paid even when the only thing that changed was Lean, which the
+note does not read.  This caches the query's own output, keyed by the CONTENT of every file the
+note reads (not by mtime, not by the argument list alone), so a byte-identical source tree answers
+from disk instead of re-running typst.
+
+Cache file: .lake/build/note-meta/<sha256 of the argument list joined by NUL>.json — one file per
+distinct argument list, holding {"args": [...], "deps": {path: sha256}, "meta": <parsed query
+output>}.  A hit requires every recorded path to still exist with the same hash; anything else
+(missing file, changed hash, no cache file) is a miss and reruns typst, atomically rewriting the
+cache so concurrent gates never see a half-written file.
+"""
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NOTE = "diag/allegory-axioms.typ"
+CACHE_DIR = os.path.join(ROOT, ".lake", "build", "note-meta")
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def cache_path(args):
+    key = hashlib.sha256(b"\0".join(a.encode() for a in args)).hexdigest()
+    return os.path.join(CACHE_DIR, f"{key}.json")
+
+
+def cache_hit(entry):
+    for path, digest in entry["deps"].items():
+        full = os.path.join(ROOT, path)
+        if not os.path.exists(full) or sha256_file(full) != digest:
+            return False
+    return True
+
+
+def main(argv):
+    args = list(argv)
+    cpath = cache_path(args)
+    if os.path.exists(cpath):
+        with open(cpath) as f:
+            entry = json.load(f)
+        if cache_hit(entry):
+            print(json.dumps(entry["meta"]))
+            return 0
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        query_cmd = ["typst", "query", "--root", ".", *args, NOTE, "metadata", "--field", "value"]
+        deps_path = os.path.join(tmpdir, "deps.json")
+        pdf_path = os.path.join(tmpdir, "note.pdf")
+        # `typst query` has no `--deps`, and a compile of the same world reads the same files.
+        compile_cmd = ["typst", "compile", "--root", ".", *args, NOTE, pdf_path,
+                       "--deps", deps_path, "--deps-format", "json"]
+        qp = subprocess.Popen(query_cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, encoding="utf-8")
+        cp = subprocess.Popen(compile_cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, encoding="utf-8")
+        qout, qerr = qp.communicate()
+        cout, cerr = cp.communicate()
+        if qp.returncode:
+            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{qerr}")
+        if cp.returncode:
+            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{cerr}")
+        meta = json.loads(qout)
+        with open(deps_path) as f:
+            deps_list = json.load(f)["inputs"]
+        deps = {p: sha256_file(os.path.join(ROOT, p)) for p in deps_list}
+
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    entry = {"args": args, "deps": deps, "meta": meta}
+    fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, suffix=".json.tmp")
+    with os.fdopen(fd, "w") as f:
+        json.dump(entry, f)
+    os.replace(tmp_path, cpath)
+    print(json.dumps(meta))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
