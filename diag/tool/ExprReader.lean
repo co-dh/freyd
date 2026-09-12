@@ -139,8 +139,7 @@ def unprojRecord? (e : Expr) : MetaM (Option Expr) := do
     term written with it prints as the picture's own spelling. -/
 def namedProj? (e : Expr) : MetaM (Option Expr) := do
   let .proj s i x := e | return none
-  unless isStructure (← getEnv) s do return none
-  let some fi := (getStructureFields (← getEnv) s)[i]? | return none
+  let some fi := (getStructureInfo? (← getEnv) s).bind (·.fieldNames[i]?) | return none
   unless (← Meta.whnf (← Meta.inferType x)).isAppOf s do return none
   return some (← Meta.mkProjection x fi)
 
@@ -171,7 +170,9 @@ def isLaneBundle (s : Expr) : MetaM Bool := do
 def builtOfFieldCarrier (fld : Name) (s : Expr) : MetaM Bool := do
   s.getAppArgs.anyM fun a => do
     let some c := (← Meta.whnfD (← Meta.inferType a)).getAppFn.constName? | return false
-    return (findField? (← getEnv) c fld).isSome
+    -- Only a structure has fields — the length `m : Nat` of `[m]` carries none — and `findField?`
+    -- on anything else panics and answers from an empty default instead of saying so.
+    return isStructure (← getEnv) c && (findField? (← getEnv) c fld).isSome
 
 /-- THE BUNDLE ITSELF, under the PARENT projections Lean writes to reach an inherited field: a
     relator and its `toFunctor` are one lane, and only the relator says what it was built from. -/
@@ -179,7 +180,7 @@ partial def bundleCore (s : Expr) : MetaM Expr := do
   let .const n _ := s.getAppFn | return s
   let some pi := (← getEnv).getProjectionFnInfo? n | return s
   let some (.ctorInfo ci) := (← getEnv).find? pi.ctorName | return s
-  let some f := (getStructureFields (← getEnv) ci.induct)[pi.i]? | return s
+  let some f := (getStructureInfo? (← getEnv) ci.induct).bind (·.fieldNames[pi.i]?) | return s
   let some _ := isSubobjectField? (← getEnv) ci.induct f | return s
   let args := s.getAppArgs
   if h : args.size > pi.numParams then bundleCore args[pi.numParams] else return s
@@ -210,7 +211,7 @@ partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
   unless args.size > pi.numParams + 1 do return none
   let s := args[pi.numParams]!
   let some (.ctorInfo ci) := (← getEnv).find? pi.ctorName | return none
-  let some fld := (getStructureFields (← getEnv) ci.induct)[pi.i]? | return none
+  let some fld := (getStructureInfo? (← getEnv) ci.induct).bind (·.fieldNames[pi.i]?) | return none
   let core ← bundleCore s
   unless ← isLaneBundle core do return none
   unless ← builtOfFieldCarrier fld core do return none
