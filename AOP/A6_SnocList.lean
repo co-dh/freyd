@@ -342,4 +342,38 @@ theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
         · have hpd : pd = dig := hpq.trans hdd.symm
           rw [hpd] at hp; exact hp
 
+-- printing-only unexpanders: the note's spelling, the same ones `AOP.A6_ConsList` gives the cons
+-- list.  A snoc list IS a list — the note writes `[Char]`, `[Code]`, `[Job]` — and which leaf type
+-- it is built over is the datatype's parameter, not part of the object's name.  On the TYPE FORMER,
+-- so every instance prints alike; they change no statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander SnocList] public meta def unexpandSnocListObj : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander dSL] public meta def unexpandDSL : Unexpander
+  | `($_ $_ $E) => `([$E])
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander F] public meta def unexpandF : Unexpander
+  | `($_ $_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+-- The leaf at the EMPTY leaf type is the note's `nil`, and at any other leaf type it is a leaf
+-- carrying a value: the unit argument is matched, not the constructor alone.
+open Lean PrettyPrinter in
+@[app_unexpander SnocList.wrap] public meta def unexpandNil : Unexpander
+  | `($_ ()) => `($(mkIdent `nil))
+  | `($_ $x) => `($(mkIdent `wrap) $x)
+  | _ => throw ()
+
+-- The structural fold wears the note's banana, for the reason `AOP.A6_ConsList.cataR`'s does: a
+-- picture says which arrow it draws by the algebra in the brackets.
+open Lean PrettyPrinter in
+@[app_unexpander cataR] public meta def unexpandCataR : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.SL
