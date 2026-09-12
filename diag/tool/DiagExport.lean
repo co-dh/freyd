@@ -1321,21 +1321,27 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit | --type] <declaration-name> [<declaration-name> ...]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type] [--records]\n\
+     <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
    --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
+   --commutative draws the COMMUTATIVE DIAGRAM of a statement, to\n\
+     diag/generated/commutative/<name>.typ; `<decl>.lhs`/`.rhs` is one side of an `↔`, and\n\
+     `<a>+<b>` two statements drawn as one page — pasted along the edge they share, or side by side\n\
+   --records prints, instead of each path, ONE JSON object per declaration argument, in argument\n\
+     order: `selector`, then `file` (the path it wrote) — or `error` (why it drew none); a gate\n\
+     matches its selectors by that field and never searches the run's text (not with --sig)\n\
    --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
      categories a relator runs between; no side or branch selector applies\n\
    --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
      one JSON object per bead (selector, panel, label, src, tgt), read by `scripts/scanline`\n\
-   --string --records draws as --string does and prints, instead of each path, ONE JSON object\n\
-     per declaration argument: `selector`, then `file` (the path it wrote), `panels` (how many\n\
-     it drew) and `sigs` (the objects --sigs prints for it) — or `error` (why it drew none);\n\
-     `scripts/string-check` hands them to `scanline --records`, so Lean is started once\n\
+   --string --records adds to each drawn record `panels` (how many it drew) and `sigs` (the\n\
+     objects --sigs prints for it); `scripts/string-check` hands them to `scanline --records`,\n\
+     so Lean is started once\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
@@ -1356,7 +1362,6 @@ def takeOpt (args : List String) (flag : String) : Option Nat × List String :=
   | rest => (none, rest)
 
 def main (args : List String) : IO UInt32 := do
-  if args.contains "--commutative" then return ← Freyd.CommutativeDiagram.main args
   if args.isEmpty then IO.eprintln usage; return 2
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
@@ -1365,16 +1370,20 @@ def main (args : List String) : IO UInt32 := do
   let recordsMode := args.contains "--records"
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
+  let commutativeMode := args.contains "--commutative"
   let (frame, args) := takeOpt args "--frame"
   let (topRow, args) := takeOpt args "--top"
   let (scale, args) := takeOpt args "--scale"
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--sigs" && a != "--records" && a != "--string"
-      && a != "--circuit" && a != "--type")
+      && a != "--circuit" && a != "--type" && a != "--commutative")
   if args.isEmpty then IO.eprintln usage; return 2
   -- Bead types are read off a STRING panel; any other route has none to report.
-  if (sigsMode || recordsMode) && !stringMode then
-    IO.eprintln s!"diag-export: --sigs and --records need --string\n{usage}"; return 2
+  if sigsMode && !stringMode then IO.eprintln s!"diag-export: --sigs needs --string\n{usage}"; return 2
+  -- A record names the file its selector drew, and `--sig` draws none.
+  if recordsMode && sigMode then
+    IO.eprintln s!"diag-export: --records names the file each selector drew, and --sig draws none\n{usage}"
+    return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1386,12 +1395,15 @@ def main (args : List String) : IO UInt32 := do
   -- `≫` and `⟶` live in `Freyd`, `⊗ₕ` in `Freyd.Diag.SymMonCat`, `⊗`/`𝕀` in `Freyd.Diag.Word`.
   -- `openDecls` below resolves NAMES in those scopes; a `scoped notation`'s unexpander is extension
   -- state that only `open` activates, so without this `𝟙 A` prints as `Cat.id A`.
-  let scopes := [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+  -- One run is one mode, and the commutative functor's labels are written in its own scopes.
+  let scopes := if commutativeMode then Freyd.CommutativeDiagram.openNs
+    else [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
   let exts ← scopedEnvExtensionsRef.get
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
-  -- Each route writes under its own directory: the three functors are three pictures of one name.
+  -- Each route writes under its own directory: the four functors are four pictures of one name.
   let outDir := if stringMode then "diag/generated/string"
     else if circuitMode then "diag/generated/circuit"
+    else if commutativeMode then "diag/generated/commutative"
     else if typeMode then "diag/generated/type" else "diag/generated"
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
@@ -1402,8 +1414,11 @@ def main (args : List String) : IO UInt32 := do
   -- takes the namespace.
   -- A statement's frame is the deepest of its SIDES, so one file costs a walk of every side and not
   -- just of the part drawn; the default budget was set for one panel.  Wall clock is `scripts/cap`'s.
-  let opts : Options :=
-    ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
+  -- The commutative functor prints a functor's action by its letter, `F X`, which field notation
+  -- (`F.obj X`) is tried before; and a bundled object as a constructor, which an unexpander reaches.
+  let opts : Options := if commutativeMode then
+      (Options.empty.setBool `pp.fieldNotation false).setBool `pp.structureInstances false
+    else ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
       |>.insert `maxHeartbeats (.ofNat 1000000)
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
@@ -1451,7 +1466,10 @@ def main (args : List String) : IO UInt32 := do
       | _ => (base.toString, none)
     -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
     -- per declaration, and not once for the whole command line.
-    let ctx := StrDiag.declCtx env opts scopes base.toName
+    -- A commutative page's first part names it, and the parts of one page are the faces of one
+    -- statement's neighbourhood.
+    let ctx := StrDiag.declCtx env opts scopes <| if commutativeMode
+      then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1 else base.toName
     -- Every route answers with a `Drawn`; only a string panel has bead types to put in it.
     let text (m : MetaM String) : MetaM StrDiag.Drawn := return { text := ← m, sigs := #[] }
     let run : CoreM StrDiag.Drawn :=
@@ -1467,7 +1485,8 @@ def main (args : List String) : IO UInt32 := do
               route draws"
           else text (Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
             (branch.map fun s => if s == .inl then 0 else 1))
-        else text (if typeMode then Freyd.TypeRender.file arg.toName
+        else text (if commutativeMode then Freyd.CommutativeDiagram.draw arg
+        else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName))
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
@@ -1490,12 +1509,15 @@ def main (args : List String) : IO UInt32 := do
       if sigMode then IO.println d.text
       else if sigsMode then d.sigs.flatten.forM fun o => IO.println o.compress
       else
-      let path := if stringMode || circuitMode || typeMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
+      let path := if stringMode || circuitMode || commutativeMode || typeMode
+        then System.FilePath.mk s!"{outDir}/{arg}.typ"
         else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
       IO.FS.writeFile path d.text
+      -- Only a string panel has beads, so only its record carries their count and types.
       IO.println <| if !recordsMode then path.toString else
-        (Json.mkObj [("selector", arg), ("file", path.toString), ("panels", toJson d.sigs.size),
-          ("sigs", toJson d.sigs.flatten)]).compress
+        (Json.mkObj <| [("selector", toJson arg), ("file", toJson path.toString)] ++
+          if stringMode then [("panels", toJson d.sigs.size), ("sigs", toJson d.sigs.flatten)]
+          else []).compress
   return status
 
 end Freyd.DiagExport

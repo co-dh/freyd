@@ -48,6 +48,7 @@ import math
 import os
 import re
 import sys
+import traceback
 import xml.etree.ElementTree as ET
 
 PT = 72.0 / 2.54  # pt per cm
@@ -600,4 +601,10 @@ def main(argv):
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    # A crash exits 3, not Python's own 1, which is this script's "differs": a caller that accepts
+    # a difference (`scripts/cd-check`) must not accept a traceback as one.
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception:
+        traceback.print_exc()
+        sys.exit(3)
