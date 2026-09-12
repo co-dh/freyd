@@ -256,6 +256,11 @@ def branchesOnInput (f : Expr) : MetaM Bool := do
   Meta.lambdaBoundedTelescope f 1 fun xs body => do
     let some x := xs[0]? | return false
     let some ma ← Meta.matchMatcherApp? body | return false
+    -- ONE ALTERNATIVE IS NO BRANCH.  A match on a single-constructor type is the elaborator's
+    -- spelling of taking the input apart — `fun (a,v) => Fin.cases a v` — so there is no second arm
+    -- to name and opening the map's name reaches a matcher that names no arrow at all (`cons`).  A
+    -- junction and a guard both have two, which is what the two shapes above are.
+    unless ma.alts.size ≥ 2 do return false
     return ma.discrs.any (·.containsFVar x.fvarId!)
 
 /-- A MAP GIVEN BY A `match` ON ITS INPUT IS WRITTEN BY WHAT IT DOES, so a NAME standing for one is
