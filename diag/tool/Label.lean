@@ -43,8 +43,9 @@ partial def stxHead : Syntax → Option Name
 /-- How a label JOINS under a functor's name — the note's rule (CLAUDE.md), one copy for every
     picture that writes an object. -/
 inductive Join where
-  /-- ONE NAME the reader cannot take for a composite (`A`, `𝟏`, `Word`), or a chain of one-letter
-      functors on one (`EA`, `FEA`): a ONE-LETTER functor juxtaposes with it -/
+  /-- ONE CHARACTER the reader cannot take for a composite (`A`, `𝟏`), or a chain of one-letter
+      functors on one (`EA`, `FEA`): a ONE-LETTER functor juxtaposes with it.  A name of two
+      characters or more is `.other` — `EWord` reads as `E` composed with `Word`. -/
   | name
   /-- SELF-DELIMITED by the printer's own brackets (`[A]`): any functor juxtaposes with it -/
   | bracket
@@ -52,6 +53,15 @@ inductive Join where
       the parts (`A×[A]`) — and applying an operator to it takes parentheses -/
   | other
   deriving Inhabited, BEq
+
+/-- The closer that MATES an opening token — `none` for a token that opens nothing.  A form is
+    self-delimiting only when the printer closed it in a PAIR: `[A]` ends where its `]` says, while
+    `[0,2¹⁶)` is an interval whose `[` and `)` are two different notations' tokens. -/
+def mate : String → Option String
+  | "(" => some ")" | "[" => some "]" | "{" => some "}" | "⦃" => some "⦄"
+  | "⟨" => some "⟩" | "⟦" => some "⟧" | "⟪" => some "⟫" | "⦇" => some "⦈"
+  | "‹" => some "›" | "«" => some "»" | "⌊" => some "⌋" | "⌈" => some "⌉"
+  | _ => none
 
 /-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
     the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
@@ -62,15 +72,24 @@ inductive Join where
     neither, because juxtaposition is composition and closing a functor's name up against it would
     read as one more factor of a composite. -/
 partial def stxJoin : Syntax → Join
-  | .ident .. | .atom .. => .name
+  -- ONE CHARACTER is what a one-letter functor may close up against (`EA`, `E𝟏`, `FEA`).  A LONGER
+  -- name closed up reads as two factors of a composite — `EDecimal` is `E` then `Decimal`, `treeA`
+  -- is `tree` then `A` — so it takes parentheses exactly as an application does.  This is the
+  -- length test `scripts/circuit`'s `lshow` writes as `len(e[1]) == 1 == len(head(e[2]))`; only
+  -- the functor's half of it lived here, in `applyJoin`.
+  | .ident _ _ n _ => if n.toString.length == 1 then .name else .other
+  | .atom _ s => if s.length == 1 then .name else .other
   | .node _ _ args =>
     match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
-    -- A BRACKET IS A TOKEN WITH NO NAME IN IT.  `bag(Job)` and `list⁺(A)` open with an atom and
-    -- close with one just as `[A]` does, but their opening token CARRIES THE FUNCTOR'S NAME, so the
-    -- next functor's would close up against it (`Ebag(Job)`) and read as two things composed.  The
-    -- test is on the token, not on its length: a character a name can be spelled with disqualifies.
-    | some (.atom _ o), some (.atom ..) =>
-      if o.any fun c => Lean.isIdFirst c || Lean.isIdRest c then .other else .bracket
+    -- A BRACKET IS A MATCHING PAIR OF TOKENS WITH NO NAME IN THEM.  `bag(Job)` and `list⁺(A)` open
+    -- with an atom and close with one just as `[A]` does, but their opening token CARRIES THE
+    -- FUNCTOR'S NAME, so the next functor's would close up against it (`Ebag(Job)`) and read as two
+    -- things composed; and `[0,2¹⁶)` opens with `[` and closes with `)`, so its own tokens do not
+    -- say where it ends and `E[0,2¹⁶)` reads as a bracket left open.  Both tests are on the TOKENS,
+    -- never on their length: a character a name can be spelled with disqualifies.
+    | some (.atom _ o), some (.atom _ c) =>
+      if o.any fun c => Lean.isIdFirst c || Lean.isIdRest c then .other
+      else if mate o == some c then .bracket else .other
     | _, _ => .other
   | .missing => .other
 
