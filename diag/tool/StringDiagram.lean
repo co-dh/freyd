@@ -325,6 +325,22 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
         -- A refuted unit draws no mark, as a refuted bead draws no dot; the `nat:` row says which.
         | none => key .spider
     "(" ++ num l.x ++ ", " ++ birth ++ ", " ++ death ++ ", " ++ nm ++ ", " ++ tail ++ ")"
+  -- THE LANE LIST IS `scripts/diagram`'s `made`: a bead's legs are written where the arms they
+  -- replace stood, not at the end.  `dnamed` reads that order to decide which segment of a chain of
+  -- same-named lanes carries the mid-run name, so the lane array's own BIRTH order puts the name on
+  -- a different segment and the two panels draw different ink for the same picture.
+  let made : Array Nat ← do
+    let mut m := p.top
+    for r in p.rows do
+      if r.legs.isEmpty then continue
+      let k := match r.arms[0]? <|> r.over[0]? with
+        | some a => (m.findIdx? (· == a)).getD m.size
+        | none => m.size
+      m := m.extract 0 k ++ r.legs ++ m.extract k m.size
+    unless m.size == ls.size do
+      throwError "the lane order is built from the top cut and each bead's legs, and that reached \
+        {m.size} of {ls.size} lanes: a lane no bead makes and the top cut has not got"
+    pure m
   let tup (xs : Array String) : String :=
     "(" ++ String.intercalate ", " xs.toList ++ (if xs.size == 1 then "," else "") ++ ")"
   let top := (ls.filter (·.born < 0)).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
@@ -332,7 +348,8 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let bot := (ls.filter (·.dies >= (n : Int))).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
     |>.push ("(" ++ num xo ++ ", " ++ cell (← plain p.obot) ++ ")")
   return "dpanel(" ++ num hh ++ ", " ++ num (roundTo 2 (xo + PAD)) ++ ", " ++ num xo ++ ",\n  "
-    ++ tup (ls.map lanecode) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top ++ ",\n  " ++ tup bot
+    ++ tup (made.map fun i => lanecode ls[i]!) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top
+    ++ ",\n  " ++ tup bot
     ++ ",\n  obj: " ++ tup objs
     -- A dot is a theorem, so the panel CITES the declaration each of its verdicts came from —
     -- including a refuted one, which draws no dot and is a claim all the same.  The frame and the
@@ -578,13 +595,20 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
     that unexpander matches the term as APPLIED — cutting the object argument out from under it
     stops it firing, and the label comes out worse than the one it was meant to fix (`prefixR A`
     became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`).  A constant that wants its index
-    dropped drops it in its own rule, beside itself. -/
-def beadLabel (core : Expr) : Option Expr → MetaM String
-  | none => label core
-  | some v => do
-    label (← Meta.transform core (post := fun x => match x with
-      | .app f a => return if a == v && f.getAppFn.isFVar then .done f else .continue
-      | _ => return .continue))
+    dropped drops it in its own rule, beside itself.
+
+    THE OBJECT IS WHATEVER THE WIRE UNDER THE BEAD CARRIES, not only a binder of the statement.
+    `moves I.t` in an abstract module is taken at the initial type, which is no binder of the
+    region, and the label came out `movesT` — the object wire's own `T` spelled a second time. So
+    the objects stripped are the bead's own two ends as well as the family variable, compared up to
+    `isDefEq` because the end comes back rebuilt from its projection. -/
+def beadLabel (core : Expr) (vs : Array Expr) : MetaM String := do
+  label (← Meta.transform core (post := fun x => match x with
+    | .app f a =>
+      if f.getAppFn.isFVar then
+        return if ← vs.anyM (Meta.isDefEq a) then .done f else .continue
+      else return .continue
+    | _ => return .continue))
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
@@ -613,7 +637,8 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- A unit is a FAMILY `𝟙 ⟹ W`: a fixed arrow `A ⟶ F A` (`S°`) is a bead with a leg, not a lane.
   let unit := arms.isEmpty && legs.size == 1 && v?.isSome && (← Meta.isDefEq ox oy)
   let row : Row :=
-    { label := (← beadLabel core v?), arms := ar, legs := lg, over := ov, unit, obj := (← plain oy),
+    { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
+      unit, obj := (← plain oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
@@ -868,7 +893,12 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
-  Meta.forallTelescopeReducing ci.type fun xs body => do
+  -- `stmtTelescope`, not `forallTelescopeReducing`: in a CONCRETE region a hom reduces to a
+  -- function type, so the reducing walk goes straight through the arrow an arrow-valued `def` IS
+  -- and hands back the codomain with the arrow's own elements as extra binders — the def's body
+  -- then came back applied to them and was refused as "not an arrow".  The circuit exporter
+  -- already stops at the hom; this one must too.
+  stmtTelescope ci.type fun xs body => do
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
