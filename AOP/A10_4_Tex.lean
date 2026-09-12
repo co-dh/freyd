@@ -222,18 +222,28 @@ public theorem shift_lt_iff (d : Int) (r b : Real.carrier) :
 /-- **tex-defn**: a digit. -/
 @[expose] public abbrev Digit : Type := Fin 10
 
-/-- **tex-defn**: the object `Decimal` — a cons-list of digits. -/
-@[expose] public abbrev Decimal : RelSet.{0} := dCL Unit Digit
+/-- **tex-defn**: the carrier of `Decimal` — a cons-list of digits.  It carries a name of its own
+    because the note draws ONE wire from `[0,2¹⁶)` to `Decimal` and never opens the list. -/
+@[expose] public def Dec : Type := ConsList Unit Digit
+
+/-- **tex-defn**: the object `Decimal`. -/
+@[expose] public def Decimal : RelSet.{0} := ⟨Dec⟩
 
 /-- **tex-defn**: the object `[0,2¹⁶)`. -/
-@[expose] public abbrev Ix : RelSet.{0} := ⟨Fin 65536⟩
+@[expose] public def Ix : RelSet.{0} := ⟨Fin 65536⟩
+
+/-- **tex-defn**: a pair `(a,b)`.  A structure and not `Real×Real` for the reason `Dec` is a name:
+    the note draws `Interval` as ONE wire, and a product carrier is what a circuit opens into two. -/
+public structure Iv where
+  lo : Real.carrier
+  hi : Real.carrier
 
 /-- **tex-defn**: the object `Interval` — the pairs `(a,b)`. -/
-@[expose] public abbrev Interval : RelSet.{0} := ⟨Real.carrier × Real.carrier⟩
+@[expose] public def Interval : RelSet.{0} := ⟨Iv⟩
 
 /-- **tex-defn**: `interval n=((2n−1)/2¹⁷,(2n+1)/2¹⁷)`. -/
 @[expose] public def intervalFn (n : Fin 65536) : Interval.carrier :=
-  (mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0))
+  ⟨mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0)⟩
 
 /-- **tex-defn**: `interval`, a map. -/
 @[expose] public def interval : Ix ⟶ Interval := graph intervalFn
@@ -241,7 +251,7 @@ public theorem shift_lt_iff (d : Int) (r b : Real.carrier) :
 public theorem interval_map : Map interval := graph_map intervalFn
 
 /-- **tex-defn**: `r inrange (a,b)⟺a<r<b`. -/
-@[expose] public def inrange : Interval ⟶ Real := fun p r => rlt p.1 r ∧ rlt r p.2
+@[expose] public def inrange : Interval ⟶ Real := fun p r => rlt p.lo r ∧ rlt r p.hi
 
 /-- **tex-defn**: `round r=n⟺2n−1<2¹⁷r<2n+1`, read as `(2n−1)/2¹⁷<r<(2n+1)/2¹⁷`. -/
 @[expose] public def round : Real ⟶ Ix := fun r n =>
@@ -267,13 +277,13 @@ public theorem round_recip : (round)° = interval ≫ inrange := by
 
 /-- **tex-defn**: `step(d,(a,b))=((d+a)/10,(d+b)/10)`. -/
 @[expose] public def stepFn (p : Digit × Interval.carrier) : Interval.carrier :=
-  (shift (p.1.val : Int) p.2.1, shift (p.1.val : Int) p.2.2)
+  ⟨shift (p.1.val : Int) p.2.lo, shift (p.1.val : Int) p.2.hi⟩
 
 /-- **tex-defn**: `[arb,step] : 1+(Digit×Interval)⟶Interval`.  `arb` is B&dM p.260's first fusion
     condition `arb=zero inrange°`, so `(a,b)` is an `arb` iff `a<0<b`. -/
 @[expose] public def arbStep : (F Unit Digit).obj Interval ⟶ Interval := fun u p =>
   match u with
-  | Sum.inl _ => rlt p.1 zeroR ∧ rlt zeroR p.2
+  | Sum.inl _ => rlt p.lo zeroR ∧ rlt zeroR p.hi
   | Sum.inr q => p = stepFn q
 
 /-- **tex-defn**: `H≜⦇[arb,step]⦈°`. -/
@@ -317,12 +327,12 @@ public theorem R_trans : R ≫ R ⊑ R :=
 
 /-- **(10.9)**: the pairs `(a,b)` with `0<b<1` and `a<b`. -/
 @[expose] public def Legal (p : Interval.carrier) : Prop :=
-  rlt zeroR p.2 ∧ rlt p.2 oneR ∧ rlt p.1 p.2
+  rlt zeroR p.hi ∧ rlt p.hi oneR ∧ rlt p.lo p.hi
 
 /-- **(10.9)** for `arb`: `arb` can always be restricted so that it returns a legal interval —
     `a<0<b` already gives `a<b`, so only `b<1` has to be asked for. -/
-public theorem arb_legal (p : Interval.carrier) (hb : rlt p.2 oneR)
-    (harb : rlt p.1 zeroR ∧ rlt zeroR p.2) : Legal p :=
+public theorem arb_legal (p : Interval.carrier) (hb : rlt p.hi oneR)
+    (harb : rlt p.lo zeroR ∧ rlt zeroR p.hi) : Legal p :=
   ⟨harb.2, hb, rlt_trans harb.1 harb.2⟩
 
 /-- **(10.9)** for `step` (B&dM p.261): if `(a',b')` satisfies (10.9) then so does
@@ -394,6 +404,7 @@ public theorem tex_fusion : val ≫ (inrange)° = cataR arbStep := by
         show p = (shift (d.val : Int) (unshift (d.val : Int) p.1),
           shift (d.val : Int) (unshift (d.val : Int) p.2))
         rw [shift_unshift, shift_unshift]
+        rfl
     · rintro ⟨q, hq, hp⟩
       obtain ⟨r', hy, hin⟩ := (ih q).mpr hq
       have hp' : p = stepFn (d, q) := hp
