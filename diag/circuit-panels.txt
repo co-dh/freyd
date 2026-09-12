@@ -110,8 +110,8 @@ Freyd.Alg.thinning_est_step1.rhs | <thin-cor> | (⦇S⦈)%∋ thin(Q) est(R)
 Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
-- | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈sort P minlist R
-- | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist(Q)⦈ minlist R
+Freyd.Alg.thinningList_step2.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈sort P minlist R
+Freyd.Alg.thinningList_step1.lhs | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist(Q)⦈ minlist R
 Freyd.Alg.dynamic_programming_thin.rhs | <dp-laws> | H%∋ est(R)
 Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin(Q) P(F(X)h) est(R)
 Freyd.Alg.RelSet.thin_summand_le.lhs | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
