@@ -1608,16 +1608,21 @@ def certof(s):
     return c
 
 
-def literals(text):
+def literals(text, drawable=True):
     """Every `dpanel(…)` in a file that carries a drawable `cert:`, as (start, cert end, end, cert):
-    the text after the `cert:` group — `names:`, `s:` — is the note's own and rides along unchanged."""
+    the text after the `cert:` group — `names:`, `s:` — is the note's own and rides along unchanged.
+
+    `drawable=False` keeps EVERY panel instead, whatever its `cert:` says.  A GENERATED panel's cert
+    names `lean:`, `frame:` and `top:` and no `expect`, so a caller reading the frame the exporter
+    drew — `scripts/string-check`'s second pass — asks for those here rather than walking the file
+    a second time with its own copy of this loop."""
     out, i = [], text.find("dpanel(")
     while i >= 0:
         j = close(text, i + 6)
         k = text.rfind("cert: (", i, j)
         c = certof(text[k:j]) if k >= 0 else {}
-        if all(c.get(x) for x in ("expect", "src", "tgt")):
-            out.append((i, close(text, k + 6) + 1, j + 1, c))
+        if not drawable or all(c.get(x) for x in ("expect", "src", "tgt")):
+            out.append((i, close(text, k + 6) + 1 if k >= 0 else i, j + 1, c))
         i = text.find("dpanel(", j)
     return out
 
