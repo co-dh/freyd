@@ -30,10 +30,16 @@
 # THE PER-PANEL WORK RUNS `$(nproc)` AT A TIME: `--gen <selector> <file>` compiles one picture the
 # export drew and `--panel <i>` answers panel `i` into `$OUT/rows/<i>`; the rows are then printed
 # in panel order, and the exit status is read off them, never off xargs's.
+#
+# ONE CHAPTER: `CH=13 ./scripts/circuit-check`, or `--ch 13`.  Both halves narrow together and by
+# the same resolution — the note's panels come from `./scripts/note-meta`, which queries chapter
+# 13's file, and the manifest through `scripts/panels.py`, which keeps the rows whose display that
+# chapter draws — so the two still answer one for one.  The rows of other chapters are out of scope
+# by request, and the scope line says how many rows that left; the whole-book run holds the rest.
 set -e
 cd "$(dirname "$0")/.." || exit 1
+if [ "$1" = --ch ]; then CH=$2; export CH; shift 2; fi
 OUT=.lake/build/circuit-check
-NOTE=diag/allegory-axioms.typ
 PANELS=diag/circuit-panels.txt
 
 row() { printf '%s\n' "$1" > "$OUT/rows/$i"; }
@@ -109,6 +115,10 @@ diff -u "$OUT/want" "$OUT/expect" || {
     "for a panel the note no longer draws, a plus line a panel with no record at all" >&2
   exit 1
 }
+if [ -n "${CH:-}" ]; then
+  echo "circuit-check: chapter $CH — $(wc -l < "$OUT/expect") panel(s), $(wc -l < "$OUT/sel") row(s)" \
+    "of $PANELS; the rows of other chapters are the whole-book run's"
+fi
 
 # One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
 # so a second invocation pays for the whole `Freyd` import again.  Its RECORDS say what drew: one

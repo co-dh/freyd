@@ -40,7 +40,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import panels                                    # noqa: E402  — the manifests' one reader
 # The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
 # stands for, and write back through the split so a rewritten `cert:` lands in the chapter holding it.
-from notesplit import note_source, note_write    # noqa: E402
+from notesplit import note_root, note_source, note_write, take_chapter    # noqa: E402
 # `scripts/diagram` is the note's reader as well as its generator: `literals` and `close` are how a
 # `dpanel(` and its `cert:` are cut out of the source, and --marks writes into that same cut rather
 # than pattern-matching the note a second time.  It has no `.py`, hence the loader.
@@ -51,7 +51,7 @@ diagram.__loader__.exec_module(diagram)
 os.chdir(ROOT)
 sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
 PANELS = "diag/string-panels.txt"
-NOTE = "diag/allegory-axioms.typ"
+NOTE = note_root()      # the chapter when `CH`/`--ch` names one, else the whole note
 OUT = ".lake/build/string-check"
 RECS = f"{OUT}/records.jsonl"
 run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
@@ -368,6 +368,7 @@ def marks(want):
 
 
 def main(argv):
+    argv = take_chapter(argv)
     if "--marks" in argv:
         return marks(next((a for a in argv if not a.startswith("-")), ""))
     # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
@@ -385,6 +386,11 @@ def main(argv):
     # manifest keys by.  `want` therefore filters the NUMBER, not the name.
     num = lambda n: number.get(n, n)
     addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    # A section the scoped note does not hold is a MISTAKE, never an empty report: with `CH` naming
+    # one chapter, `13.4` asked of chapter 12 would otherwise check nothing and exit 0.
+    if want and not any(num(n).startswith(want) for n in live):
+        sys.exit(f"string-check: no display {want} in {NOTE} — it draws "
+                 + ", ".join(sorted({num(n) for n in live})[:8]) + ", …")
     rc, named = 0, {n for n, _ in rows}
     for n in live:
         if n not in named:

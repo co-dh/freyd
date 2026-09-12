@@ -20,7 +20,7 @@ from bisect import bisect
 from collections import defaultdict
 from importlib.machinery import SourceFileLoader
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import note_source
+from notesplit import note_root, note_source, take_chapter
 
 sys.dont_write_bytecode = True        # else importing `cite-check` litters scripts/ with __pycache__
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -29,7 +29,7 @@ _load = SourceFileLoader("cite_check", HERE + "/cite-check")
 cc = importlib.util.module_from_spec(importlib.util.spec_from_loader("cite_check", _load))
 _load.exec_module(cc)                 # MARK, key, resolve, Q, DB — one spelling of each, over there.
 
-DEFAULT_NOTE = "diag/allegory-axioms.typ"
+DEFAULT_NOTE = note_root()    # the chapter when `CH`/`--ch` names one, else the whole note
 # A display states something only if one of these stands between two terms.  `≜` and `:=` included:
 # a definition IS a statement Lean can carry, it just cannot be a theorem.
 RELS = "=⊑⊒⟺⟹≜≤≥⊆⊇↔⇒⊣∼≅"
@@ -338,7 +338,7 @@ def main(argv):
     class A:
         n, thresh, label, unmarked, all, quiet, summary = 2, 6.0, None, False, False, False, False
     args, paths = A(), []
-    it = iter(argv)
+    it = iter(take_chapter(argv))
     for a in it:
         if a == "-n":
             args.n = int(next(it))

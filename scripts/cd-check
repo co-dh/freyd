@@ -38,8 +38,15 @@
 # export drew, `--ref <reference>` one drawing of the note's, and `--panel <i>` answers line `i` of
 # the manifest into `$OUT/rows/<i>`; the rows are then printed in manifest order, and the exit status
 # is read off them, never off xargs's.
+#
+# ONE CHAPTER: `CH=13 ./scripts/cd-check`, or `--ch 13`.  The obligations are then the CHAPTER's
+# canvases (`cd-obligations` reads them off `./scripts/note-meta`, which queries chapter 13's file)
+# and the manifest is read as the lines naming one of them.  A line of another chapter is out of
+# scope by request, not dropped: the scope line says how many were left out, and the whole-book run
+# is what holds them — as it does the sweep for reference drawings no line names.
 set -e
 cd "$(dirname "$0")/.." || exit 1
+if [ "$1" = --ch ]; then CH=$2; export CH; shift 2; fi
 OUT=.lake/build/cd-check
 PANELS=diag/cd-panels.txt
 ACCEPT=diag/cd-accepted.txt
@@ -131,6 +138,12 @@ awk -F' *[|] *' '/^[ \t]*#/ { next } { sub(/[ \t]+#.*$/, "") } NF == 0 { next }
 # THE OBLIGATIONS.  A canvas the file does not name is a plus line here, a line naming a canvas the
 # note no longer draws a minus line, and either fails before a single panel is drawn.
 ./scripts/cd-obligations > "$OUT/canvases"
+if [ -n "${CH:-}" ]; then
+  awk -F'\t' 'NR == FNR { keep[$0]; next } ($1 in keep)' "$OUT/canvases" "$OUT/panels" > "$OUT/ch"
+  echo "cd-check: chapter $CH — $(wc -l < "$OUT/ch") of $(wc -l < "$OUT/panels") rows of $PANELS," \
+    "$(wc -l < "$OUT/canvases") canvas(es); the rest are the whole-book run's"
+  mv "$OUT/ch" "$OUT/panels"
+fi
 awk -F'\t' '$1 != "-" { print $1 }' "$OUT/panels" > "$OUT/claimed"
 diff -u "$OUT/canvases" "$OUT/claimed" || {
   echo "cd-check: $PANELS does not answer the note canvas for canvas — a minus line is a canvas" \
@@ -155,12 +168,16 @@ xargs -r -d '\n' -n 2 -P "$(nproc)" ./scripts/cd-check --gen < "$OUT/drawn" || x
 awk -F'\t' '$3 != "-" { print $3 }' "$OUT/panels" | sort -u > "$OUT/refs"
 xargs -r -d '\n' -n 1 -P "$(nproc)" ./scripts/cd-check --ref < "$OUT/refs" || xrc="$xrc $?"
 
-for f in diag/cdref*.typ; do
-  awk -F'\t' -v r="$(basename "$f")" '$3 == r {found = 1} END {exit !found}' "$OUT/panels" || {
-    echo "cd-check: $f is a reference drawing no line of $PANELS names, so nothing is held to it" >&2
-    rc=1
-  }
-done
+if [ -n "${CH:-}" ]; then
+  echo "cd-check: chapter $CH — a reference drawing no line names is the whole-book run's to find"
+else
+  for f in diag/cdref*.typ; do
+    awk -F'\t' -v r="$(basename "$f")" '$3 == r {found = 1} END {exit !found}' "$OUT/panels" || {
+      echo "cd-check: $f is a reference drawing no line of $PANELS names, so nothing is held to it" >&2
+      rc=1
+    }
+  done
+fi
 
 ./scripts/svg-check "$OUT"/gen/*.svg || rc=1
 

@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 # The note is one file per chapter (`scripts/note-split`); `note_source` reads a split root as the
 # one document it stands for, so every sweep below counts what it always counted.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import note_source, note_files
+from notesplit import note_source, note_files, note_root, take_chapter
 
 CACHE = ".lake/build/scanline-cache.json"
 
@@ -1391,11 +1391,12 @@ def positional(argv, records=None):
         if bad:
             sys.exit(f"scanline: {records} names selectors the export could not draw:\n" + "\n".join(bad))
         return list(dict.fromkeys(r["file"] for r in recs))
-    return ["diag/allegory-axioms.typ"]
+    return [note_root()]
 
 
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
+    argv = take_chapter(argv)
     paths = positional(argv, opt(argv, "--records"))
     path = paths[0]
     view = opt(argv, "--view")

@@ -45,6 +45,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 from relexpr import load                    # noqa: E402 — the path has to be set first
+from notesplit import note_root, take_chapter   # noqa: E402 — the one chapter resolution
 
 dg = load("diagram")
 sl = dg.sl                                 # THE scanline `draw` raises from: a second copy of the
@@ -981,7 +982,7 @@ def verify_sigs():
 # Functoriality states equations no book page has to supply: they hold of EVERY typed term, so the
 # terms the repository already carries — the note's certified panels, the fixtures' own sides — test
 # them for nothing.  Each is an equality of canonical port graphs, which is where `draw` lands.
-NOTE = os.path.join(ROOT, "diag", "allegory-axioms.typ")
+NOTE = os.path.join(ROOT, note_root())      # the chapter's file when CH/--ch names one
 
 
 def how(c):
@@ -1327,6 +1328,7 @@ def check(fx, tbl, seen=False):
 
 
 def main(argv):
+    argv = take_chapter(argv)
     d = os.path.join(ROOT, "diag", "pairs")
     only = [a for a in argv if not a.startswith("-")]
     paths = [os.path.join(d, f) for f in sorted(os.listdir(d)) if f.endswith(".json")
