@@ -80,7 +80,7 @@ cite: $(DB)
 # `scanline` is only guessing at, and a hand-spaced alias is how that drift gets in.  It pays a
 # `typst query`, which `scan` refuses to; this one reads the note's STRINGS, not its geometry, and
 # the strings are what every other check quotes.
-spell:
+spell: $(DB)
 	./scripts/scanline --spell diag/allegory-axioms.typ
 
 # The displays that carry NO `lean:` marker, each with the statements worth reading against it.
@@ -101,16 +101,16 @@ books:
 # The scan line over every panel that emits its lists as metadata.  Cached on a hash of every
 # `dpanel`/`cpanel`/`tpan` call: unchanged since the last clean pass skips the `typst query`
 # that dominates its cost; `scan-full` bypasses the cache.
-scan:
+scan: $(DB)
 	./scripts/scanline diag/allegory-axioms.typ
 
-scan-full:
+scan-full: $(DB)
 	./scripts/scanline diag/allegory-axioms.typ --full
 
 # The same sweep with crossings fatal, and the one `p` runs.  A wire is a functor and horizontal
 # composition has no swap, so a crossing claims a symmetry that is not there and there is no
 # acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
-scan-strict:
+scan-strict: $(DB)
 	./scripts/scanline diag/allegory-axioms.typ --strict
 
 # Every picture `diag/string-panels.txt` names, drawn from LEAN and swept against it.  The
@@ -165,7 +165,7 @@ c: circuit pairs labels cite spell scan-strict hm-sigs
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
-v:
+v: $(DB)
 	./scripts/scanline diag/allegory-axioms.typ --view $(SEC)
 
 # `scan` run backwards: the panel a formula denotes.  The target is the ROUND TRIP — every panel
@@ -181,7 +181,7 @@ diagram:
 # graph — boundary order, and every bead's arms and legs.  `--verify-fixtures` is NOT in the target:
 # it shells out to pdftocairo to count the page's strokes and dots against the fixture, which is the
 # check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
-hm-check:
+hm-check: $(DB)
 	./scripts/hm-check
 	./scripts/hm-check --laws
 
@@ -209,7 +209,9 @@ w: p
 # import and the typst compile says which file is missing.
 # `$(BOOK)` too, and not `$(LEAN)` alone: the statements drawn are the library's — AOP, Freyd, rel
 # — so an edit to the declaration a picture is exported FROM left the picture at what it said.
-$(STAMP): $(LEAN) $(BOOK)
+# `$(DB)` because the naturality search enumerates its candidates from the index and refuses a
+# stale one, so every target that runs diag-export refreshes it first, through this or directly.
+$(STAMP): $(LEAN) $(BOOK) $(DB)
 	./scripts/cap lake build diag-export
 	./scripts/diag-regen
 	@touch $@

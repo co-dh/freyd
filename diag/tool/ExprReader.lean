@@ -1250,25 +1250,116 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
-/-- THE CANDIDATE INDEX: for each conclusion head, the declarations concluding in it and the
-    constants each one's statement uses — the two things a search selects candidates by.  Built
-    once per head and held for the life of the process, because the environment does not grow
-    while the exporter draws: a walk over `env.constants` per lookup redoes this work on every
-    call, and the walk alone measured 5.8M of the 8.1M heartbeats one `Membership.mem` search
-    spent (190180 constants examined to reach 275 candidates), with a dozen such calls per bead. -/
-initialize headBuckets : IO.Ref (NameMap (Array (Name × NameSet))) ← IO.mkRef {}
+/-- THE INDEX the candidates are enumerated from.  `./scripts/lean-refactor index` writes a row per
+    repository declaration and one per constant its statement uses (`dep … in_type = 1`), from the
+    oleans this process imports; Lean core, which it does not cover, concludes no naturality.
+    CLAUDE.md: a lookup by conclusion head or by the names a statement uses queries the index, and
+    the environment answers only for the Expr itself. -/
+def INDEX : System.FilePath := ".lake/build/refactor-index.db"
+
+/-- A broken or stale index ends the RUN, not the bead: every handler in the search reads an
+    exception as a failed candidate or a spider, and a wrong index is neither — it is every verdict
+    of the run wrong at once, exiting 0. -/
+def indexFail (msg : String) : IO α := do
+  IO.eprintln s!"diag-export: {msg}"
+  IO.Process.exit 1
+
+/-- The rows of one read-only query against `INDEX`, through the `sqlite3` CLI as lean-refactor
+    drives it, read by `Json.parse`.  `-json` prints nothing at all for an empty result, not `[]`. -/
+def indexRows (sql : String) : IO (Array Json) := do
+  let out ← IO.Process.output { cmd := "sqlite3", args := #["-readonly", "-json", INDEX.toString, sql] }
+  unless out.exitCode == 0 do
+    indexFail s!"sqlite3 -readonly {INDEX} exited {out.exitCode}: {out.stderr}\
+      write the index with `./scripts/lean-refactor index`"
+  if out.stdout.trimAscii.isEmpty then return #[]
+  match Json.parse out.stdout with
+  | .ok (.arr rows) => return rows
+  | .ok _ => indexFail s!"sqlite3 -json {INDEX} printed no array of rows for `{sql}`"
+  | .error e => indexFail s!"sqlite3 -json {INDEX}: {e}, for `{sql}`"
+
+/-- One text cell of an index row. -/
+def cell (row : Json) (k : String) : IO String :=
+  match row.getObjValAs? String k with
+  | .ok s => pure s
+  | .error e => indexFail s!"{INDEX}: row {row.compress} has no text cell `{k}`: {e}"
+
+/-- A name cell, read back by the parser of a name literal: the index stores `Name.toString`, whose
+    `«»` escapes a split on `.` would take apart. -/
+def nameCell (row : Json) (k : String) : IO Name := do
+  let s ← cell row k
+  let some n := Syntax.decodeNameLit ("`" ++ s)
+    | indexFail s!"{INDEX}: `{s}` in cell `{k}` is no name the parser reads"
+  return n
+
+/-- The key `lean-refactor index` stores a module's rows under: the `.hash` Lake wrote beside each
+    olean part, in file-name order, joined by `,` (`LeanRefactor.Index.oleanHashes`). -/
+def oleanHash (m : Name) : IO String := do
+  let o ← findOLean m
+  let mut hs := #[]
+  for p in #[o, o.addExtension "private", o.addExtension "server"] do
+    let h := p.addExtension "hash"
+    if ← h.pathExists then hs := hs.push (← IO.FS.readFile h).trimAscii.toString
+  return ",".intercalate hs.toList
+
+/-- A STALE INDEX IS A WRONG ANSWER THAT EXITS 0: a theorem built after the last index run is a
+    candidate nobody tries, and its bead draws a spider.  So every REPOSITORY module this process
+    imported — one whose source is in the checkout, which is how the index's own scan decides —
+    must be stored under the hash its olean has now, or nothing is searched. -/
+def indexFresh (env : Environment) : IO Unit := do
+  let mut stored : NameMap String := {}
+  for row in ← indexRows "select name, olean_hash from module" do
+    stored := stored.insert (← nameCell row "name") (← cell row "olean_hash")
+  let mut stale := #[]
+  for m in env.header.moduleNames do
+    unless ← (modToFilePath "." m "lean").pathExists do continue
+    unless stored.find? m == some (← oleanHash m) do stale := stale.push m
+  unless stale.isEmpty do
+    indexFail s!"{INDEX} was written before the build of {stale.size} module(s) this \
+      process imports, so the naturality search would miss what they declare: {stale.toList}\n\
+      refresh it with `./scripts/lean-refactor index`"
+
+/-- THE CANDIDATE BUCKETS: for each conclusion head, the declarations concluding in it and the
+    constants each one's statement uses — the two things a search selects candidates by.  One index
+    query per head, held for the life of the process, because the environment does not grow while
+    the exporter draws.  `none` until the first query, which the freshness check has to precede. -/
+initialize headBuckets : IO.Ref (Option (NameMap (Array (Name × NameSet)))) ← IO.mkRef none
 
 /-- The declarations that could prove a statement headed by `head`, each with the constants its own
-    statement uses.  The environment is asked for the Expr itself (`env.find?` at the one candidate
-    being tried), never for the enumeration. -/
+    statement uses.  The index says which statements USE `head`; which of them CONCLUDE in it is
+    the Expr's to say, at `env.find?`, because the index stores no conclusion. -/
 def candidates (head : Name) : MetaM (Array (Name × NameSet)) := do
-  if let some b := (← headBuckets.get).find? head then return b
   let env ← getEnv
+  let buckets ← match ← headBuckets.get with
+    | some bs => pure bs
+    | none => do indexFresh env; pure {}
+  if let some b := buckets.find? head then return b
+  -- One row per (declaration, constant its statement uses), a declaration's rows adjacent.
+  -- `name = user_name` leaves out the private ones: `Name.isInternal` drops them below anyway, and
+  -- their mangled names carry a numeric component no name literal spells.
+  let rows ← indexRows s!"select d.src as n, t.dst as c from dep d \
+    join decl_info i on i.name = d.src and i.module = d.module \
+    join dep t on t.src = d.src and t.module = d.module and t.in_type = 1 \
+    where d.dst = '{(toString head).replace "'" "''"}' and d.in_type = 1 and i.name = i.user_name \
+    order by d.src"
+  let mut uses : Array (Name × NameSet) := #[]
+  for row in rows do
+    let n ← nameCell row "n"
+    let c ← nameCell row "c"
+    uses := match uses.back? with
+      | some (m, cs) => if m == n then uses.pop.push (m, cs.insert c) else uses.push (n, ({} : NameSet).insert c)
+      | none => #[(n, ({} : NameSet).insert c)]
   let mut b : Array (Name × NameSet) := #[]
-  for (n, ci) in env.constants do
-    if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
-    b := b.push (n, consts ci.type)
-  headBuckets.modify (·.insert head b)
+  for (n, cs) in uses do
+    -- A declaration of a module this process does not import cannot be applied here.
+    let some ci := env.find? n | continue
+    -- A CONSTRUCTOR has no row of its own: its statement is part of its inductive's, so the
+    -- inductive's row is how it is found, and its own constants are read off its own type.
+    let ctors := match ci with
+      | .inductInfo v => v.ctors.filterMap fun c => (env.find? c).map fun cc => (c, cc, consts cc.type)
+      | _ => []
+    for (k, ki, ks) in (n, ci, cs) :: ctors do
+      unless k.isInternal || ki.isUnsafe || concHead ki.type != head do b := b.push (k, ks)
+  headBuckets.set (some (buckets.insert head b))
   return b
 
 /-- One candidate's share of the search. Unifying a square against a concrete region unfolds every
@@ -1366,6 +1457,44 @@ def unfiltered (h : Name) : MetaM Bool := do
     if ex.size < 2 then return true
     return !(← Meta.isDefEq (← Meta.inferType ex[ex.size - 2]!) (← Meta.inferType ex[ex.size - 1]!))
 
+/-- A search that FOUND NOTHING, by what its answer depends on besides the fuel: the goal (for a
+    `square`, its `∀`-statement), the filter, and the local context — a hypothesis in scope answers
+    a premise (`discharge`), so the same goal under more hypotheses is another question. -/
+structure Failed where
+  square : Bool
+  goal : Expr
+  must : List Name
+  ctx : Array FVarId
+  deriving BEq, Hashable
+
+/-- Each failed search with the most fuel it failed with.  Fuel only bounds how deep `discharge`
+    recurses, so a search that found nothing with `f` finds nothing with less. -/
+initialize failedRef : IO.Ref (Std.HashMap Failed Nat) ← IO.mkRef {}
+
+/-- What the failures below the current search LEANED ON, as the lowest `seen` index plus one of a
+    goal `findAnyProof` cut as a loop, and `0` for a candidate a heartbeat budget cut short. -/
+initialize leanedOn : IO.Ref Nat ← IO.mkRef 0
+
+/-- `search`, not run again once it has found nothing.  One refuted family is asked for over and
+    over: `laxNatural_of_strictNatural` re-asks the strict class `verdict` just refuted,
+    `strictNatural_recip` the converse's, `recip_oplax` the lax one — on `fun a => assocl` that was
+    98M heartbeats for six statements no declaration proves, most of it re-runs of one search.
+    Only a CLEAN failure is kept, which holds under any ancestors and any cache state: none below
+    it was cut by a loop through an ancestor OUTSIDE it (`seen` is a context — under other
+    ancestors that goal is searched, and may be proved), and none by a heartbeat budget.  A goal
+    with metavariables is no key.  Remembering a failure proves nothing, so no dot can come of it. -/
+def remembered (key : Failed) (fuel : Nat) (seen : Array Expr) (search : MetaM (Option (Name × Expr))) :
+    MetaM (Option (Name × Expr)) := do
+  if key.goal.hasMVar then return ← search
+  if (← failedRef.get)[key]?.any (fuel ≤ ·) then return none
+  let outer ← leanedOn.get
+  leanedOn.set (seen.size + 1)
+  let r ← search
+  let below ← leanedOn.get
+  leanedOn.set (min outer below)
+  if r.isNone && below > seen.size then failedRef.modify fun m => m.insert key (max fuel (m.getD key 0))
+  return r
+
 mutual
 
 /-- Is `want` PROVED by some declaration of the environment — and what is the proof?  Candidates
@@ -1379,6 +1508,12 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
+  remembered { square := false, goal := ← instantiateMVars want, must := must.toList,
+               ctx := (← getLCtx).getFVarIds } fuel seen (scan br want head must fuel seen)
+
+/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn. -/
+partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat)
+    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let env ← getEnv
   let rw ← bridge br want
   let mut hit : Option (Name × Expr) := none
@@ -1413,7 +1548,11 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
     -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
     -- `try`/`catch` in `MetaM` rethrows those, so the budget above would end the panel instead of
     -- ending the candidate.  It also ends a candidate whose assembled term fails `Meta.check`.
-    let ok : Option (Name × Expr) ← tryCatchRuntimeEx attempt (fun _ => pure none)
+    let ok : Option (Name × Expr) ← tryCatchRuntimeEx attempt fun e => do
+      -- A candidate a heartbeat budget cut short is not refuted — it may unify on a warmer cache —
+      -- so no failure above it is remembered.
+      if e.isRuntime then leanedOn.set 0
+      pure none
     if ok.isSome then hit := ok else s.restore
   return hit
 
@@ -1455,7 +1594,11 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (se
   let some h := want.getAppFn.constName? | return none
   -- A GOAL AMONG ITS OWN ANCESTORS IS NO NEW GOAL: `strictNatural_recip` twice asks again for the
   -- family it started from (`φ°° ≡ φ`), and a proof through that loop has a shorter one without it.
-  if ← seen.anyM fun s => Meta.withNewMCtxDepth (Meta.isDefEq s want) then return none
+  -- A failure below this cut leaned on that ancestor, so it is not remembered as one.
+  for i in [0 : seen.size] do
+    if ← Meta.withNewMCtxDepth (Meta.isDefEq seen[i]! want) then
+      leanedOn.modify (min · (i + 1))
+      return none
   -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
   -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
   -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
@@ -1486,13 +1629,15 @@ partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
 partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat)
     (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
-  Meta.forallTelescope body fun xs sq => do
-    let .const h _ := sq.getAppFn | return none
-    if let some (n, pf) ← findProof br sq h must fuel seen then
-      return some (n, ← Meta.mkLambdaFVars xs pf)
-    let some sqm ← flipEq? sq | return none
-    let some (n, pf) ← findProof br sqm h must fuel seen | return none
-    return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
+  remembered { square := true, goal := ← instantiateMVars body, must := must.toList,
+               ctx := (← getLCtx).getFVarIds } fuel seen <|
+    Meta.forallTelescope body fun xs sq => do
+      let .const h _ := sq.getAppFn | return none
+      if let some (n, pf) ← findProof br sq h must fuel seen then
+        return some (n, ← Meta.mkLambdaFVars xs pf)
+      let some sqm ← flipEq? sq | return none
+      let some (n, pf) ← findProof br sqm h must fuel seen | return none
+      return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
 
 end
 
