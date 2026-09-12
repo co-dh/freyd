@@ -39,6 +39,18 @@ namespace Freyd.StrDiag
 def repoNamespaces (env : Environment) : List Name :=
   env.getNamespaceSet.toList.filter fun n => n.getRoot == `Freyd
 
+/-- THE PRINTING CONTEXT OF ONE DRAWN DECLARATION: it prints as its own source file reads it, so it
+    is built per declaration and `currNamespace` is that declaration's namespace.  Which is what
+    breaks a tie: every namespace of the repo is open, so `R` names a constant in a dozen chapters
+    and the printer keeps `Tex.R` to tell them apart — but name resolution takes the CURRENT
+    namespace's longest prefix first and never reaches the open ones, so inside `…RelSet.Tex` the
+    bare `R` is that file's `R` and prints bare, while `segment`, which `…RelSet.Tex` does not
+    declare, still comes out of the open namespaces unqualified. -/
+def declCtx (env : Environment) (opts : Options) (scopes : List Name) (decl : Name) : Core.Context :=
+  { fileName := "<diag-export>", fileMap := default, options := opts,
+    currNamespace := decl.getPrefix,
+    openDecls := (scopes ++ repoNamespaces env).map (.simple · []) }
+
 /-- A one-field record IS its field as far as a picture is concerned: the object `⟨X⟩` of a
     category of sets is the set `X`, and printing the wrapper makes every lane label unreadable.
     Generic over the environment — any constructor with exactly one field, no list of names.

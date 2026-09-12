@@ -133,7 +133,7 @@ Freyd.Alg.RelSet.Tardy.tardy_laws.rhs | <tardy-laws> | (bagify°)%∋ est(R)
 Freyd.Alg.RelSet.Tardy.tardy_laws.lhs | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
 Freyd.Alg.RelSet.Tardy.tardy_branch.lhs | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
 - | <tardy-laws> | pick (schedule×𝟙)snoc
-- | <tex-laws> | (intern°)%∋ est(R)
-- | <tex-laws> | interval (inrange val°)%∋ est(R)
-- | <tex-laws> | interval H%∋ est(R)
-- | <tex-laws> | interval ([arb,step]°)%∋ est(Q)F(X)α
+Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs | <tex-laws> | (intern°)%∋ est(R)
+Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs | <tex-laws> | interval (inrange val°)%∋ est(R)
+Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs | <tex-laws> | interval H%∋ est(R)
+Freyd.Alg.RelSet.Tex.tex_laws_step3.lhs | <tex-laws> | interval ([arb,step]°)%∋ est(Q)F(X)α
