@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """cd-obligations — every COMMUTATIVE DIAGRAM the note draws, read off the note's own drawing.
 
-    ./scripts/cd-obligations              # one line per display: <number>/<label>  <canvases>
+    ./scripts/cd-obligations              # one line per commutative canvas: <number>/<label>#<n>
     ./scripts/cd-obligations --all        # every canvas, commutative or not, with its counts
 
 THE OBLIGATIONS ARE THE NOTE'S CANVASES, not the rows of a manifest: a record can be deleted, a
@@ -59,12 +59,13 @@ def main(argv):
             print(f"{disp}\t{c['ar']} ar\t{c['node']} node\t"
                   f"{'commutative' if commutative(c) else 'other picture'}")
         return
-    out = {}
+    # `<number>/<label>#<n>`: the canvas's place among the COMMUTATIVE canvases of its display, which
+    # is what a record can name — a count per display could not tell two squares of one display apart.
+    seen = {}
     for disp, c in cs:
         if commutative(c):
-            out[disp] = out.get(disp, 0) + 1
-    for disp, n in out.items():
-        print(f"{disp}\t{n}")
+            seen[disp] = seen.get(disp, 0) + 1
+            print(f"{disp}#{seen[disp]}")
 
 
 if __name__ == "__main__":

@@ -365,8 +365,15 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
     arrow induced; being DRAWN dashed is that and having no chord, since a paste dashes the chord
     alone. -/
 def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
-  if isInduced (← inducedHeads) f then return true
+  -- The `↔`'s other side is read FIRST: it says outright which arrow the claim determines, whatever
+  -- symbol this side wears.
   if ← fc.induced.anyM fun g => Meta.isDefEq g f then return true
+  -- AN INEQUATION DETERMINES NOTHING.  A universal property produces its arrow by an EQUATION —
+  -- `α⦇f⦈=F(⦇f⦈)f` says `⦇f⦈` is the one arrow making the square commute — where `⊑` only compares
+  -- two composites the statement is handed, so a lax square's `prefix` and `Λ(F(∋)f)` are arrows it
+  -- is ABOUT, not arrows it builds, and the note draws both solid.
+  unless fc.sym == "=" do return false
+  if isInduced (← inducedHeads) f then return true
   -- A CLOSED arrow carries its role in the environment instead.  The structure is asked FIRST: an
   -- equation between a fold and an arrow the ambient structure supplies — `⦇α⦈=𝟙` — is a law about
   -- that arrow, not a definition of it.
