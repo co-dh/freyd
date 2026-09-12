@@ -270,8 +270,10 @@ def Face.paste (f g : Face) : MetaM (Option Face) := do
   let (i, j) := hits[0]!
   let p := Face.opened fn fe i
   let q := Face.opened gn ge j
+  -- Both faces' produced arrows come along: the paste IS the two statements, so an arrow either of
+  -- them determines is one the picture determines.
   return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
-                chord := some (fe[i]!.2.2, g.sym) }
+                chord := some (fe[i]!.2.2, g.sym), induced := f.induced ++ g.induced }
 
 /-! ### Which arrow the statement PRODUCES -/
 
@@ -285,6 +287,39 @@ def inducedHeads : MetaM (Array Name) := do return ← Lean.labelled `diag_induc
     `⦇f⦈` is induced and `F(⦇f⦈)` is `F`'s action on it. -/
 def isInduced (heads : Array Name) (f : Expr) : Bool :=
   match f.getAppFn with | .const n _ => heads.contains n | _ => false
+
+/-- THE DEFINING EQUATIONS, read by their ATTRIBUTE and never by a name list here: a theorem carries
+    `@[diag_defines]` when it IS the equation a universal property gives its induced arrow —
+    `relCata_cancel`, `α⦇R⦈=F(⦇R⦈)R`.  `diag_induced` says which constants a universal property
+    produces, this says which law produced them. -/
+def definingLaws : MetaM (Array Name) := do return ← Lean.labelled `diag_defines
+
+/-- Every INDUCED ARROW a term mentions.  Its ARGUMENTS are walked and a lambda's body is not, so
+    nothing is asked of a loose bound variable. -/
+partial def inducedSub (heads : Array Name) (e : Expr) : MetaM (Array Expr) := do
+  let mut out : Array Expr := #[]
+  if isInduced heads e then
+    if (← Meta.inferType e).isAppOf ``Cat.Hom then out := out.push e
+  for a in e.getAppArgs do out := out ++ (← inducedSub heads a)
+  return out
+
+/-- THE SQUARE THAT PRODUCED `f`, when a tagged law states one.  The law's OWN induced arrow is
+    UNIFIED with `f` — never matched by name — so one tag answers every instance: `⦇R⦈` at one
+    initial algebra and `⦇F(f,𝟙)h⦈` at another are the same law at different arguments.  The face
+    carries `f` in `induced`: it is the arrow this square is the definition of. -/
+def definingFace (f : Expr) : MetaM (Option Face) := do
+  let heads ← inducedHeads
+  unless isInduced heads f do return none
+  for n in ← definingLaws do
+    let some ci := (← getEnv).find? n | continue
+    let st ← saveState
+    let (_, _, body) ← Meta.forallMetaTelescope ci.type
+    if let some (sym, l, r) := StrDiag.split body then
+      if ← (← inducedSub heads body).anyM (Meta.isDefEq · f) then
+        return some (← Face.of sym (← interp (← instantiateMVars l))
+          (← interp (← instantiateMVars r)) #[f])
+    st.restore
+  return none
 
 /-- Whether the AMBIENT STRUCTURE supplies this arrow, as against the statement handing it over: its
     head is a structure's PROJECTION — `(initial _ _).α`, `P.outl`, `∋`, `𝟙` — or its own declaration
@@ -392,13 +427,23 @@ def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
   unless fc.sym == "=" do return false
   fc.induces f
 
-/-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  A pasted pair produces its
-    CHORD — the arrow the two faces share is the one they jointly determine — and nothing else, so
-    `⦇h⦈` and `⦇k⦈` under the fan's `⟨⦇h⦈,⦇k⦈⟩` stay solid: some other law produced them.  A single
-    face has no chord, and then an arrow is produced when an induced constructor heads it
-    (`α⦇f⦈=F(⦇f⦈)f` produces `⦇f⦈`) or when the other side of the statement's `↔` says so. -/
+/-- THE ARROWS AN INDUCED CONSTRUCTOR BUILT THE CHORD OUT OF — `⦇h⦈` and `⦇k⦈` under `⟨⦇h⦈,⦇k⦈⟩`,
+    `R` under `Λ(R)`.  A paste determines its CHORD, and what the chord was built from is what some
+    other law produced and this picture is handed. -/
+def Face.chordArgs (fc : Face) : MetaM (Array Expr) := do
+  let some (c, _) := fc.chord | return #[]
+  unless isInduced (← inducedHeads) c do return #[]
+  c.getAppArgs.filterM fun a => return (← Meta.inferType a).isAppOf ``Cat.Hom
+
+/-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  An arrow is produced when
+    an induced constructor heads it (`α⦇f⦈=F(⦇f⦈)f` produces `⦇f⦈`) or when the other side of the
+    statement's `↔` says so — and a PASTE is no exception, because it is the two statements it was
+    pasted out of and each produces what it would alone: the note dashes `⦇R⦈` in the two stacked
+    squares of `(2.12)` exactly as `cata-defining` dashes it standing on its own.  The one arrow a
+    paste does NOT produce is one its chord was BUILT out of (`Face.chordArgs`): the chord is what
+    the two faces jointly determine, so its arguments came from elsewhere and stay solid. -/
 def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
-  if fc.chord.isSome then return false
+  if ← (← fc.chordArgs).anyM (Meta.isDefEq · f) then return false
   fc.produces f
 
 /-! ### Which role an arrow plays, hence its colour -/
@@ -968,20 +1013,37 @@ def hypFace (h : Expr) : MetaM (Option Face) := do
       and is pasted to it.  A hypothesis sharing none — the algebra condition `gf=F(f,f)g` beside
       `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` — is a claim of its own, and the note leaves it out of the picture. -/
 def withHyps (fs : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
-  let mut hs : Array Face := #[]
+  let mut hyps : Array Face := #[]
   for x in xs do
-    if let some h ← hypFace x then hs := hs.push h
-  let stands (o : Expr) (gs : Array Face) : MetaM Bool :=
-    gs.anyM fun g => g.objs.anyM (Meta.isDefEq o)
-  let touching ← hs.filterM fun h => h.objs.anyM (stands · fs)
-  unless touching.isEmpty do
-    if ← fs.allM fun f => f.objs.allM (stands · touching) then return touching
+    if let some h ← hypFace x then hyps := hyps.push h
   let shared (h : Face) : MetaM Nat := do
     let mut k := 0
     for e in h.edges do
       if ← fs.anyM fun f => f.edges.anyM (Meta.isDefEq e) then k := k + 1
     return k
-  return fs ++ (← hs.filterM fun h => return (← shared h) == 1)
+  -- A DEFINING SQUARE COMPLETES A PICTURE THE HYPOTHESES ALREADY MAKE, and is brought in for
+  -- nothing else.  Where a hypothesis PASTES onto the conclusion, the two of them still leave the
+  -- conclusion's INDUCED arrow standing on a corner nothing reaches, and the square that produced
+  -- that arrow (`definingFace`) is what closes the polygon — whereupon the candidates stand at
+  -- every object the conclusion does and REPLACE it, which is the note's two stacked squares of
+  -- `⦇R⦈S=⦇Q⦈⟸RS=F(S)Q`.  Where no hypothesis pastes, the law stands on its own arrows and the
+  -- picture is the face itself (`tri(f)⦇g⦈=⦇F(𝟙,f)g⦈`, whose side condition shares no edge with
+  -- it).  ONE square: a picture says what produced one arrow, and it is the first the statement
+  -- writes.  It is pushed BEFORE the hypotheses, because a paste puts its `lhs` face above the
+  -- chord and the note draws the defining square on top.
+  let mut ds : Array Face := #[]
+  if ← hyps.anyM fun h => return (← shared h) > 0 then
+    for f in fs do
+      for e in f.edges do
+        if ds.isEmpty then
+          if let some d ← definingFace e then ds := ds.push d
+  let stands (o : Expr) (gs : Array Face) : MetaM Bool :=
+    gs.anyM fun g => g.objs.anyM (Meta.isDefEq o)
+  let touching ← (ds ++ hyps).filterM fun h => h.objs.anyM (stands · fs)
+  unless touching.isEmpty do
+    if ← fs.allM fun f => f.objs.allM (stands · touching) then return touching
+  return (← ds.filterM fun d => return (← shared d) == 1) ++ fs
+    ++ (← hyps.filterM fun h => return (← shared h) == 1)
 
 /-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
 def part (s : String) : Name × Option String :=

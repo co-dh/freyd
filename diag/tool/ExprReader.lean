@@ -29,6 +29,16 @@ register_label_attr diag_unfold
     in `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
 register_label_attr diag_rewrite
 
+/-- WHICH EQUATION DEFINES AN INDUCED ARROW.  The mirror of `diag_induced`: that attribute says a
+    constant's application is what a universal property GIVES, this one says which theorem is the
+    equation it gives it BY — `relCata_cancel`, `α⦇R⦈=F(⦇R⦈)R`.  A commutative diagram draws that
+    square where the picture has to say what produced the arrow
+    (`diag/tool/CommutativeDiagram.lean`, `definingFace`), finding it by UNIFYING the law's own
+    induced arrow with the one in hand, so one tag answers every instance.  Registered here rather
+    than beside `diag_induced` because the tags live in `diag/StrDiagNames.lean`, which imports this
+    module and not the drawer. -/
+register_label_attr diag_defines
+
 namespace Freyd.StrDiag
 
 /-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
