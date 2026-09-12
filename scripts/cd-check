@@ -60,9 +60,13 @@ diff -u "$OUT/canvases" "$OUT/claimed" || {
 
 # One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
 # so a second invocation pays for the whole `Freyd` import again.
+# The FILE is the answer to "did it draw" — the ones about to be drawn are deleted first, so a
+# panel left over from a previous run cannot stand in for one this export refused and read `ok`.
 awk -F'\t' '$2 != "-" { print $2 }' "$OUT/panels" | sort -u > "$OUT/draw"
+while read -r s; do rm -f "diag/generated/commutative/$s.typ"; done < "$OUT/draw"
+exrc=0
 # shellcheck disable=SC2046
-./scripts/diag-export --commutative $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || true
+./scripts/diag-export --commutative $(cat "$OUT/draw") > "$OUT/export.log" 2>&1 || exrc=$?
 
 while read -r s; do
   typst compile --root . "diag/generated/commutative/$s.typ" "$OUT/gen/$s.svg"
@@ -91,7 +95,10 @@ while IFS="$(printf '\t')" read -r c s r; do
     continue
   fi
   if [ ! -f "$OUT/gen/$s.svg" ]; then
-    echo "CANNOT-DRAW  $head  --  $(grep -F -- "$s:" "$OUT/export.log" | head -1)"
+    why=$(grep -F -- "$s:" "$OUT/export.log" | head -1)
+    [ -n "$why" ] || why="./scripts/diag-export --commutative exited $exrc and named no reason"
+    echo "CANNOT-DRAW  $head  --  $why"
+    echo fail > "$OUT/cannot.fail"
     rc=1
     continue
   fi
@@ -120,5 +127,12 @@ while IFS="$(printf '\t')" read -r c s r; do
     echo fail > "$OUT/$s.fail"
   fi
 done < "$OUT/panels"
+# An export that drew every panel and still exited nonzero is reported by NO row above, so it would
+# leave the gate green on a failure — the last lines of its log say what it was.
+if [ "$exrc" != 0 ] && [ ! -f "$OUT/cannot.fail" ]; then
+  echo "cd-check: ./scripts/diag-export --commutative exited $exrc; its last lines:" >&2
+  tail -20 "$OUT/export.log" >&2
+  rc=1
+fi
 [ -z "$(find "$OUT" -name '*.fail')" ] || rc=1
 exit $rc
