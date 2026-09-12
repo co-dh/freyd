@@ -241,6 +241,23 @@ def framex (p : Diagram) : Nat := max p.rows.size 1 + 1
     so the gate measures the box that is drawn and not a second copy of the rule. -/
 def frameHeight (p : Diagram) (frame : Option Nat) : Float := (frame.getD (framex p)).toFloat * DY
 
+/-- WHICH LANES THE DRAWING ALREADY HOLDS.  A lane reaching an edge is held by the panel's own
+    ports, and one touching a bead that RIDES the object wire (`nat := none`, whose dot is drawn at
+    `xat(y)`) is held by that wire; a bead passes its hold to every lane it eats and every lane it
+    makes.  This is what `scanline`'s `pieces` asks of the ink, asked here of the lane table
+    instead — the two placements of an armless bead are the SAME diagram (isotopy, IntroString
+    (1.16)), so the one the exporter writes is decided by which of them is ONE DRAWING. -/
+def heldLanes (p : Diagram) : Array Bool :=
+  let n := p.rows.size
+  let step : Array Bool → Array Bool := fun h => p.rows.foldl (fun h r =>
+    let ws := r.arms ++ r.legs
+    if !ws.isEmpty && (r.nat.isNone || ws.any fun j => h[j]!) then ws.foldl (·.set! · true) h
+    else h) h
+  (List.range (p.lanes.size + 1)).foldl (fun h _ => step h)
+    -- `LIVE` is the sentinel a lane still alive at the bottom carries, and it is NEGATIVE: a lane
+    -- reaches the bottom edge either by outliving every row or by never having been given a death.
+    (p.lanes.map fun l => l.born < 0 || l.dies < 0 || l.dies >= (n : Int))
+
 /-- The `dpanel(...)` call this panel is.  `frame` and `top` are ROW COUNTS, the two halves of
     lining a short panel up with a tall one: the frame gives them one box, the top one bead
     height.  Left off, the frame is one row deeper than the panel and the first bead sits at the
@@ -266,6 +283,7 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     if s.endsWith "%∋" && !top.contains '%' then "frc([`" ++ top ++ "`])" else "[`" ++ s ++ "`]"
   let str (s : String) : String := "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\""
   let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
+  let held := heldLanes p
   let mut beads : Array String := #[]
   let mut objs : Array String := #[]
   let mut nats : Array String := #[]
@@ -273,11 +291,13 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     let r := p.rows[i]!
     -- THE BAR SPANS THE ARMS, THE DOT SITS ON WHAT THE BEAD TOUCHES.  A bead with NO arms stands on
     -- the object wire and its legs bend OUT of it, so it writes no reach — a bar taken from the legs
-    -- would be drawn on the very wires it creates.  Its DOT is still theirs: the mark is the bead's
-    -- own, and the only wires it has to sit among are the legs.
+    -- would be drawn on the very wires it creates.  Its DOT sits among those legs — the book's
+    -- floating unit, whose object wire runs past unbroken — ONLY where the drawing holds them
+    -- already (`held`); a leg born at a floating dot and dying inside the panel is a piece of ink
+    -- joined to nothing, and the same bead riding the object wire is the same diagram drawn whole.
     let xsr := r.arms.map fun j => ls[j]!.x
     let xsl := r.legs.map fun j => ls[j]!.x
-    let xsd := if xsr.isEmpty then xsl else xsr
+    let xsd := if xsr.isEmpty then (if r.legs.any fun j => held[j]! then xsl else #[]) else xsr
     let reach : Option Float := if xsr.isEmpty then none else some (minA xsr 1e9)
     let dot : Option Float :=
       if xsd.isEmpty || r.nat.isNone then none
@@ -292,8 +312,13 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     if r.unit then
       objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
     else
+      -- A DOT ON THE OBJECT WIRE STILL CARRIES ITS MARK: the fourth and fifth fields are the bar
+      -- and the dot's own column, both absent here, and the sixth is the verdict — which a bead
+      -- riding the object wire has exactly as much as one standing in its own column.
       beads := beads.push <| match reach, dot with
-        | none, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
+        | none, none =>
+          if mark.isEmpty then "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
+          else "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, none" ++ mark ++ ")"
         | none, some d =>
           "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, " ++ num d ++ mark ++ ")"
         | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
