@@ -240,7 +240,25 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   | .atom t =>
     match t.getAppFnArgs with
     | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] .bracket
-    | _ => opaqObj t
+    | _ =>
+      -- A TYPE THE PRINTER CLOSED IN ITS OWN BRACKETS (`ConsList Unit A` as `[A]`) is a container,
+      -- and its ELEMENT is an object of the picture like any other: `[list⁺(A)²]` is the power rule
+      -- and the note's parentheses applied INSIDE the brackets, which reading the finished string
+      -- can only guess at.  Respell the element here and hand the FRAME back to the printer — the
+      -- idiom `labelAt` uses for an operand under a head it has no clause for — so a container with
+      -- brackets of its own needs no clause here either.  WHICH argument is the element is the
+      -- LAST type-valued one, as it is for a functor's action (`functorObj?`): `ConsList Unit A`
+      -- carries its index type first, and an element in another slot comes out visibly wrong on
+      -- the label rather than silently.
+      let stx ← PrettyPrinter.delab t
+      if stxJoin stx != .bracket then opaqObj t else
+      match (← t.getAppArgs.filterM fun a => return (← Meta.inferType a).isSort).back? with
+      | none => opaqObj t
+      | some a => do
+        let inner ← typeObj a
+        let s ← Meta.withLocalDeclD (Name.mkSimple inner.label) (← Meta.inferType a) fun x =>
+          plain (t.replace fun u => if u == a then some x else none)
+        return .mk s .opaq #[] .bracket
 
 end
 
