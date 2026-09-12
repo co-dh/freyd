@@ -265,7 +265,7 @@
       "lean": "AOP.A5_6_ListCombinators.sumR@f04b1355",
       "nat": "no",
       "nat-lean": [
-        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@37c18878"
+        "AOP.A7_4_CarrierBeads.RelSet.Carrier.sum_not_lax_natural@7dabf6b8"
       ]
     },
     "plus": {

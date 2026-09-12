@@ -219,8 +219,9 @@ def head(e):
 
 
 def lshow(e):
-    """A type label: application is juxtaposition, spaced only beside a multi-letter name (`E tree A`,
-    `EF[A]`, `FA`); n equal ×-factors are a power (`E[A]²`); `F(A,B)`, `F(A×B)` keep the parentheses."""
+    """A type label: only a chain of one-letter functors on one name juxtaposes (`FA`, `EFA`, `E[A]`);
+    every other application keeps its parentheses (`tree(A)`, `E(tree(A))`, `F(A,B)`, `F(A×B)`), the
+    CLAUDE.md rule; n equal ×-factors are a power (`E[A]²`)."""
     if e[0] == 'prod':
         if any(x != e[1][0] for x in e[1]):
             return '×'.join(lshow(x) for x in e[1])
@@ -233,7 +234,9 @@ def lshow(e):
         return f"[{s}]"
     if e[2][0] == 'atom' and ',' in s or e[2][0] == 'prod' and '×' in s:
         return f"{e[1]}({s})"
-    return e[1] + ('' if s[0] == '[' or len(e[1]) == 1 == len(head(e[2])) else ' ') + s
+    if s[0] == '[' or len(e[1]) == 1 == len(head(e[2])):
+        return e[1] + s
+    return f"{e[1]}({s})"
 
 
 def wires(X):
