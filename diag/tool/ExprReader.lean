@@ -29,6 +29,16 @@ register_label_attr diag_unfold
     in `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
 register_label_attr diag_rewrite
 
+/-- WHICH EQUATION DEFINES AN INDUCED ARROW.  The mirror of `diag_induced`: that attribute says a
+    constant's application is what a universal property GIVES, this one says which theorem is the
+    equation it gives it BY — `relCata_cancel`, `α⦇R⦈=F(⦇R⦈)R`.  A commutative diagram draws that
+    square where the picture has to say what produced the arrow
+    (`diag/tool/CommutativeDiagram.lean`, `definingFace`), finding it by UNIFYING the law's own
+    induced arrow with the one in hand, so one tag answers every instance.  Registered here rather
+    than beside `diag_induced` because the tags live in `diag/StrDiagNames.lean`, which imports this
+    module and not the drawer. -/
+register_label_attr diag_defines
+
 namespace Freyd.StrDiag
 
 /-- Every namespace of the repo, for a printing context's `openDecls`.  A NAME IS SHORTENED BY THE
@@ -91,11 +101,82 @@ def unprojRecord? (e : Expr) : MetaM (Option Expr) := do
     let args := e.getAppArgs
     return if h : args.size > pi.numParams then some args[pi.numParams] else none
 
+/-- A POSITIONAL `.proj` WRITTEN THROUGH ITS OWN PROJECTION FUNCTION.  Lean leaves a field access on
+    a term whose structure it inferred as a positional node, which prints `inst✝.1` — and with the
+    field's name out of reach so is every notation and delaborator keyed on it, so the repo's own
+    `a×b` for a tabulation's apex never fires and the label leaks the elaborator's internals.  One
+    rule for every structure, read off the environment: the `i`-th field has a name, and the same
+    term written with it prints as the picture's own spelling. -/
+def namedProj? (e : Expr) : MetaM (Option Expr) := do
+  let .proj s i x := e | return none
+  unless isStructure (← getEnv) s do return none
+  let some fi := (getStructureFields (← getEnv) s)[i]? | return none
+  unless (← Meta.whnf (← Meta.inferType x)).isAppOf s do return none
+  return some (← Meta.mkProjection x fi)
+
+/-- A BUNDLE BUILT OUT OF BUNDLES OF ITS OWN KIND HAS NO NAME.  `relatorName?` writes a relator's
+    printed head and drops its arguments, because they are the TYPES the picture already draws on
+    the wires — but an argument that is ITSELF A RELATOR is another lane of the same picture, so
+    `Relator.prod G G'` and `Relator.prod F F'` both come out `prod` and one label stands for two
+    different arrows.  Read off the TYPE, so it holds of every combinator and names none. -/
+def builtOfItsOwnKind (s : Expr) : MetaM Bool := do
+  let some c := (← Meta.whnfD (← Meta.inferType s)).getAppFn.constName? | return false
+  s.getAppArgs.anyM fun a => return (← Meta.whnfD (← Meta.inferType a)).isAppOf c
+
+/-- THE BUNDLE ITSELF, under the PARENT projections Lean writes to reach an inherited field: a
+    relator and its `toFunctor` are one lane, and only the relator says what it was built from. -/
+partial def bundleCore (s : Expr) : MetaM Expr := do
+  let .const n _ := s.getAppFn | return s
+  let some pi := (← getEnv).getProjectionFnInfo? n | return s
+  let some (.ctorInfo ci) := (← getEnv).find? pi.ctorName | return s
+  let some f := (getStructureFields (← getEnv) ci.induct)[pi.i]? | return s
+  let some _ := isSubobjectField? (← getEnv) ci.induct f | return s
+  let args := s.getAppArgs
+  if h : args.size > pi.numParams then bundleCore args[pi.numParams] else return s
+
+/-- The bundle AS A CONSTRUCTOR APPLICATION, opening the definition it was built by and, above it,
+    the parent projections Lean wrote to reach an inherited field (`Relator.toFunctor`). -/
+partial def builtCtor? (s : Expr) : MetaM (Option Expr) := do
+  let .const n _ := s.getAppFn | return none
+  if let some (.ctorInfo _) := (← getEnv).find? n then return some s
+  let args := s.getAppArgs
+  if let some pi := (← getEnv).getProjectionFnInfo? n then
+    unless args.size > pi.numParams do return none
+    let some c ← builtCtor? args[pi.numParams]! | return none
+    let some v ← Meta.project? c pi.i | return none
+    return some (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
+  let some s' ← Meta.unfoldDefinition? s | return none
+  builtCtor? s'
+
+/-- A FIELD OF SUCH A BUNDLE, opened to the field's OWN DEFINITION at that bundle: what the picture
+    is of, since the name is not available.  `(G×G').obj A` is `GA×G'A` and `(G×G').map R` is
+    `G(R)×G'(R)`, which is the note's own row.  Only where the field is APPLIED — the exact case
+    `concreteProj?` excludes, and there because a relator with a NAME (`T`, `E`, `list`) is drawn by
+    it and never by the object map inside it; a bundle with an argument of its own type has none. -/
+def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
+  let .const n _ := e.getAppFn | return none
+  let some pi := (← getEnv).getProjectionFnInfo? n | return none
+  let args := e.getAppArgs
+  unless args.size > pi.numParams + 1 do return none
+  let s := args[pi.numParams]!
+  unless ← builtOfItsOwnKind (← bundleCore s) do return none
+  -- The DEFINITION is taken off the constructor and nothing further is reduced: `whnf` would go on
+  -- to unfold the object or arrow the field lands on and print its implementation.
+  let some c ← builtCtor? s | return none
+  let some v ← Meta.project? c pi.i | return none
+  return some (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
+
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
     match ← unwrapRecord? x with
     | some y => return .done y
-    | none => return .continue)
+    | none =>
+      match ← namedProj? x with
+      | some y => return .visit y
+      | none =>
+        match ← openBuiltField? x with
+        | some y => return .visit y
+        | none => return .continue)
 
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/

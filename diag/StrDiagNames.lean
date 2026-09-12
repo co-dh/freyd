@@ -44,6 +44,11 @@ namespace Freyd.Alg
 attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pair Λ
   RelProd.pair prodMap
 
+-- WHICH EQUATION PRODUCED ONE.  `relCata_cancel` IS the initial algebra's universal property read
+-- as a square, so a picture that has to say what produced a fold draws it; the drawer instantiates
+-- it by unifying its `⦇R⦈` with the fold in hand, never by this name.
+attribute [diag_defines] relCata_cancel
+
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
