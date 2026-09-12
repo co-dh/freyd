@@ -54,17 +54,86 @@ RECS = f"{OUT}/records.jsonl"
 run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
 
 
-def export(sels):
+def export(sels, frame=None):
     """ONE `diag-export --string --records` over `sels`: each selector's record — the file it drew,
     its panels and every bead's types, or why it drew none — keyed by the selector field, and the
-    run.  The records are kept in `RECS` too, which `scanline --records` reads for the bead types, so
-    the sweep does not start Lean a second time to re-read the statements this run just drew."""
+    run.  `save_recs` keeps the merged records in `RECS`, which `scanline --records` reads for the
+    bead types, so the sweep does not start Lean again to re-read the statements this run drew."""
     if not sels:
         return {}, None                   # nothing to draw starts no Lean
     os.makedirs(OUT, exist_ok=True)
-    p = run("./scripts/diag-export", "--string", "--records", *sels)
-    open(RECS, "w", encoding="utf-8").write(p.stdout)
+    opt = [] if frame is None else ["--frame", str(frame)]
+    p = run("./scripts/diag-export", "--string", "--records", *opt, *sels)
     return {o["selector"]: o for o in map(json.loads, p.stdout.splitlines())}, p
+
+
+def save_recs(recs):
+    """The records `scanline --records` reads for the bead types.  Written once, from the MERGED
+    records of every export pass, so a selector re-drawn at the display's frame is the one the
+    sweep reads — where writing each pass's own stdout left the last pass's subset behind."""
+    os.makedirs(OUT, exist_ok=True)
+    open(RECS, "w", encoding="utf-8").write(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs.values()))
+
+
+def drawn_frames(recs, bases):
+    """Each selector's panels' FRAME row counts, in panel order, off the file it drew — the `frame`
+    the exporter wrote into each panel's own `cert:`, read by `scripts/diagram`'s reader and not by
+    a pattern of this script's."""
+    out = {}
+    for b in bases:
+        r = recs.get(b)
+        if not r or "file" not in r or not os.path.exists(r["file"]):
+            continue
+        text = open(r["file"], encoding="utf-8").read()
+        # `certof` reads a row count as the NUMBER it is, which is a float: `frame: 3` comes back
+        # `3.0`, and `--frame` takes an integer count.
+        out[b] = [int(c["frame"]) if isinstance(c.get("frame"), (int, float)) else None
+                  for _, _, _, c in diagram.literals(text, drawable=False)]
+    return out
+
+
+def reframe(recs, rows, live, num, want):
+    """THE FRAME IS GEOMETRY AND THE NOTE STATES IT.  How deep a panel's box is says nothing about
+    which arrow it draws — it is how a display lines its panels up — so the note's own `cert: frame`
+    is the box, and a panel Lean draws one row shallower is the same picture in the wrong box.  Each
+    selector is therefore re-drawn at the frame the note's panel for it names (`diag-export
+    --frame N`, one `--frame` per run, hence one run per distinct depth), and only where the two
+    differ.  The re-exported records REPLACE the first pass's, and the runs are returned so a
+    failure in one is reported like the first pass's.
+
+    A selector answering two note panels must find one frame in both: the two sides of a statement
+    share one box by construction, and two frames there is a defect of the note's own pair, reported
+    rather than resolved by picking one."""
+    fr = drawn_frames(recs, sorted(recs))
+    want_at, clash = {}, []
+    for n, sels in rows:
+        if n not in live or not num(n).startswith(want) or len(sels) != len(live[n]):
+            continue
+        for sel, panel in zip(sels, live[n]):
+            if sel == "-":
+                continue
+            b, _ = route(sel)
+            f = (panel.get("cert") or {}).get("frame")
+            if b not in fr or not isinstance(f, (int, float)):
+                continue
+            f = int(f)
+            if want_at.setdefault(b, f) != f:
+                clash.append((n, sel, want_at[b], f))
+    for n, sel, a, b in clash:
+        print(f"{n} {sel}: FRAME — the note's panels for one selector name boxes {a} and {b}, so"
+              f" there is no one box to redraw it in")
+        want_at.pop(route(sel)[0], None)
+    by = {}
+    for b, m in want_at.items():
+        if any(f is not None and f != m for f in fr[b]):
+            by.setdefault(m, []).append(b)
+    runs = []
+    for m, bs in sorted(by.items()):
+        again, p = export(sorted(bs), frame=m)
+        recs.update(again)
+        runs.append((again, sorted(bs), p))
+    return runs
 
 
 def answer(recs, base):
@@ -244,6 +313,7 @@ def marks(want):
     # it, below, the way the gate reports it.  Stopping here would leave every other panel's mark
     # unwritten.
     recs, p = export(todo)
+    save_recs(recs)
     nat, miss = {}, 0
     for n, sels in sel_of:
         ps = live[n]
@@ -334,6 +404,9 @@ def main(argv):
         if os.path.exists(f"diag/generated/string/{s}.typ"):
             os.remove(f"diag/generated/string/{s}.typ")
     recs, exp = export(todo)
+    # SECOND PASS: a display whose panels came out at different depths is re-drawn at one.
+    again = reframe(recs, rows, live, num, want)
+    save_recs(recs)
     # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
     # waiting on its selector's drawing and on the sweep of its picture.
     done = lambda line, failed: lambda: (line, failed)
@@ -382,8 +455,12 @@ def main(argv):
             rc |= failed
     # An export that answered every selector with a file and still exited nonzero is reported by NO
     # line above, so it would leave the gate green on a failure; nor has a selector with no record a
-    # reason of its own.  Both are answered by the exporter's stderr.
-    return rc | unanswered(recs, todo, exp)
+    # reason of its own.  Both are answered by the exporter's stderr — the re-draw pass's runs too,
+    # whose failure would otherwise be reported by nothing at all.
+    rc |= unanswered(recs, todo, exp)
+    for r, bs, p in again:
+        rc |= unanswered(r, bs, p)
+    return rc
 
 
 def compare(sel, panel, which, gen):
