@@ -801,6 +801,52 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   return { lanes, rows, top := Array.mk (List.range (nt + mt)),
            bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot }
 
+/-- THE REGION'S NAMED OBJECTS CLOSED for `k` — a `def Ix : RelSet := ⟨Fin 65536⟩` is the OBJECT
+    `Ix`, and inside `k` nothing can unfold it to its carrier.  The objects of a concrete region
+    are the constants AT that type; a relator (`RelSet ⟶ RelSet`) is a `∀` with no constant head,
+    so the machinery that spells the lanes stays open.  A constant the note draws OPENED keeps its
+    `diag_unfold` meaning: `openNoted` opens it ABOVE the peel, where the note's own body is drawn. -/
+def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α := do
+  let some h := regionTy.getAppFn.constName? | k
+  let env ← getEnv
+  let opened ← Lean.labelled `diag_unfold
+  for (n, ci) in env.constants do
+    if n.isInternal || ci.isUnsafe || opened.contains n then continue
+    if ci.type.getAppFn.constName? == some h then Lean.setIrreducibleAttribute n
+  try k finally setEnv env
+
+/-- A CUT'S OBJECT IS READ BY THE HEAD CONSTANT IT IS WRITTEN WITH, and only an object no lane
+    spells that way is unfolded.
+
+    The peel matches by `isDefEq`, which unfolds, so an object has more than one reading and which
+    one comes back is an accident of where the catalogue's sweep reached first: `E(Ix)` is
+    `⟨Fin 65536 → Prop⟩` once `Ix` is open, which the index lane `[65536]` over `Prop` answers as
+    readily as `E` over `Ix`.  The two sides of one cut hold different spellings of its object —
+    `powerObj Ix` above, `E.obj Ix` below — so each picked its own answer and the composite came
+    apart at a cut both sides agreed the TYPE of.  Reading with the objects closed leaves exactly
+    the lanes the object is written with, which is the same list from either side.
+
+    The closure is on the READ alone, not on the comparisons: two sides holding two spellings of one
+    object — `dCodes` above and `⟨List Code⟩` below — are still the same object, and `Wire.beq` and
+    `vcomp`'s test say so with the objects open.  A fallback that OPENED a name the closed read found
+    no lane in was tried and is wrong: `Decimal` has `list` in its carrier, so the factor that holds
+    the bare name tore it open while the factor holding `E(Decimal)` — whose closed read stops at `E`
+    — did not, and the same cut came apart one factor lower down. -/
+def peelRead (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
+    MetaM (Array (Wire × Expr) × Expr) :=
+  withObjectsClosed regionTy (peelCuts objVars cat regionTy X)
+
+/-- `peelRead` where the composite has already read the cut: the handed-down reading stands for the
+    object it was read from, exactly as in `peelCutsAt`, and the closure governs only a cut this
+    factor has to read for itself. -/
+def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name)
+    (regionTy X : Expr) : MetaM (Array (Wire × Expr) × Expr) := do
+  if let some p := expect then
+    let s ← Meta.saveState
+    if ← Meta.isDefEq X p.obj then return (p.cuts, p.under)
+    s.restore
+  peelRead objVars cat regionTy X
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -836,7 +882,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- nothing drawn on them.  On the HEAD, so every identity of every object goes the same way.
   | (``Cat.id, _) =>
     let (x, _) ← homEnds e
-    let (cx, ox) ← peelCutsAt expect objVars cat regionTy x
+    let (cx, ox) ← peelReadAt expect objVars cat regionTy x
     return ← Diagram.id (cx.map (·.1)) ox
   | _ => pure ()
   if let some (φ, ψ) ← asProdMap? regionTy e then
@@ -869,8 +915,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- `φ×𝟙` is ONE arrow, it rides the object wire like `α` and `⦇R⦈`, and its arrow is every lane
     -- its bar spans, which is what the tail below types it as.
     if (← familyVar e objVars).isSome then
-      let (cx, ox) ← peelCutsAt expect objVars cat regionTy (← homEnds e).1
-      let (_, oy) ← peelCuts objVars cat regionTy (← homEnds e).2
+      let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
+      let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
       return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
         (over := (cx.extract 1 cx.size).map (·.1))
   -- A RELATOR'S ACTION IS THE `F.map` ROUTE WHATEVER IT IS SPELLED: `list (Λ(R) est(Q))` is that
@@ -882,8 +928,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       (Peeled.inner expect ws.size (← homEnds r).1) r
     return ← (← Diagram.id ws d.otop).beside d
   let (x, y) ← homEnds e
-  let (cx, ox) ← peelCutsAt expect objVars cat regionTy x
-  let (cy, oy) ← peelCuts objVars cat regionTy y
+  let (cx, ox) ← peelReadAt expect objVars cat regionTy x
+  let (cy, oy) ← peelRead objVars cat regionTy y
   let ax := cx.map (·.1)
   let ay := cy.map (·.1)
   -- THE LANES UNDER A BEAD RUN PAST IT INSIDE.  A family `φ : G a ⟶ H a` taken at `a := F' A` acts
@@ -924,7 +970,7 @@ partial def vstack (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let mut d ← interp regionTy cat objVars vpass expect fs[0]!
   for i in [1 : fs.size] do
     let y := (← homEnds fs[i-1]!).2
-    let (cy, oy) ← peelCuts objVars cat regionTy y
+    let (cy, oy) ← peelRead objVars cat regionTy y
     -- A cut mismatch is between TWO FACTORS, and the cut text alone does not say which pair, so
     -- the factors either side of it are added here rather than left for the reader to count out.
     d ← try d.vcomp (← interp regionTy cat objVars vpass
