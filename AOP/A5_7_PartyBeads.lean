@@ -50,7 +50,7 @@ public theorem include_lax_natural (R : dE A ⟶ dE B) :
 /-- **`choose` is lax natural** — `choose_monotonic` says this for an endo-relation on one
     object; `choose` also relates two DIFFERENT element types, which is what naturality needs. -/
 public theorem chooseR_lax_natural (R : dE A ⟶ dE B) :
-    rprodMap (list R) (list R) ≫ chooseR ⊑ chooseR ≫ list R := by
+    rprodMap (list R) (list R) ≫ choose ⊑ choose ≫ list R := by
   refine le_iff.mpr fun p y h => ?_
   obtain ⟨q, hq, hy⟩ := h
   rcases (show y = q.1 ∨ y = q.2 from hy) with rfl | rfl
@@ -65,8 +65,8 @@ public theorem listP_choose_transfer (R : dE A ⟶ dE B) :
     ∀ (us : ConsList Unit (ConsList Unit A × ConsList Unit A))
       (vs : ConsList Unit (ConsList Unit B × ConsList Unit B))
       (qs : ConsList Unit (ConsList Unit B)),
-      listP (rprodMap (list R) (list R)) us vs → listP chooseR vs qs →
-      ∃ ps, listP chooseR us ps ∧ listP (list R) ps qs
+      listP (rprodMap (list R) (list R)) us vs → listP choose vs qs →
+      ∃ ps, listP choose us ps ∧ listP (list R) ps qs
   | ConsList.wrap _, ConsList.wrap _, ConsList.wrap _, _, _ => ⟨ConsList.wrap (), trivial, trivial⟩
   | ConsList.wrap _, ConsList.wrap _, ConsList.cons _ _, _, hq => hq.elim
   | ConsList.wrap _, ConsList.cons _ _, _, hp, _ => hp.elim

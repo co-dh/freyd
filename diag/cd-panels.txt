@@ -5,6 +5,11 @@
 # <selector>                                                        [<reference in diag/>]
 Freyd.Alg.alpha_natural
 Freyd.Alg.InitialAlgebra.cata_comm                                  cdref.typ
+# No reference: the note's `<initial-defn>` first canvas draws the same four arrows the same way
+# round, but paints `h`/`F(h)` black and `f` GIVEN2, which are the hues its SECOND canvas gets from
+# `⦇f⦈` being induced and `α` being supplied by the structure.  Here all three arrows are free, so
+# the statement's own roles put the transported `h` in GIVEN2 and both algebras in GIVEN1.
+Freyd.Alg.IsFHom
 Freyd.Alg.RelSet.ListRel.list_id
 Freyd.Alg.RelSet.ListRel.prefix_lax_natural
 Freyd.Alg.RelSet.ListRel.prefix_cancel                               cdref-prefix.typ

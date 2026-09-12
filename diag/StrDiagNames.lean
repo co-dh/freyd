@@ -87,6 +87,14 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- The rose tree's CARRIER is the note's object `tree A`: the relator's own lane letter applied to
+    the element type, which is what `dRose A` is.  Space-applied, as the note writes it; a bracketed
+    spelling would have to be a `notation`, for the reason `bag(` below is one. -/
+@[app_unexpander RelSet.RT.dRose] def unexpandDRose : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
@@ -135,6 +143,18 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.R] def unexpandCodeR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
+
+-- AN ARROW WITH NO EXPLICIT ARGUMENT NEEDS A `delab`, NOT AN UNEXPANDER: it prints as a bare
+-- constant, never as an application, so `app_unexpander` cannot fire on it.  And it needs one: the
+-- label printer shortens a constant to the shortest suffix that is unique in the environment, so
+-- `Party.choose` and `Party.S` wear a namespace only because `Freyd.Alg.choose` and another `S` end
+-- the same way — a prefix the note's word does not have and the section's context already carries.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.Party.choose, delab const.Freyd.Alg.RelSet.Party.choose]
+def delabPartyChoose : Delab := `($(mkIdent `choose))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.Party.S, delab const.Freyd.Alg.RelSet.Party.S]
+def delabPartyS : Delab := `($(mkIdent `S))
 -- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
 -- and the note draws `R` on that box and `est(R°)` on the greedy step.
 open Lean PrettyPrinter in
