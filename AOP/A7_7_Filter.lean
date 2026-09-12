@@ -131,6 +131,40 @@ public theorem filter_alg (p : A → Bool) : subseq ≫ listP p = cataR (Salg p)
 
 /-! ## The note's `filter-mono` and the greedy row -/
 
+/-- **`filter-mono`'s first step**: `(𝟙×R°)(π₂ ∪ (p×𝟙) cons)=(𝟙×R°)π₂ ∪ (p×R°) cons` — `R°`
+    reaches each operand of the `∪` on its own, and on the `cons` one it stands beside `p` as the
+    pair's second strand. -/
+public theorem filter_mono_step1 (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ ((graph fun q : A × List A => q.2) ∪ pcons p)
+      = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.2)
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 := by
+  have hcons : rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p
+      = rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 := by
+    unfold pcons
+    rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
+  rw [DistributiveAllegory.comp_union_distrib, hcons]
+
+/-- **`filter-mono`'s second step**: `(𝟙×R°)π₂ ∪ (p×R°) cons=π₂R° ∪ (p×R°) cons` — the
+    projection's naturality square, `(𝟙×R°)π₂=π₂R°`. -/
+public theorem filter_mono_step2 (p : A → Bool) :
+    rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.2)
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.1 :: q.2)
+      = (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 := by
+  rw [rprodMap_id_snd]
+
+/-- **`filter-mono`'s third step**: `π₂R° ∪ (p×R°) cons ⊑ π₂R° ∪ (p×𝟙) cons R°` — the `cons`
+    operand slides its `R°` out, which is `takewhile-mono`'s own step. -/
+public theorem filter_mono_step3 (p : A → Bool) :
+    (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
+        ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.1 :: q.2)
+      ⊑ (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
+        ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+          ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := by
+  refine union_mono (le_refl _) ?_
+  rw [← Cat.assoc]
+  exact takewhile_mono_slide p
+
 /-- The `filter-mono` row: `F(R°) S ⊑ S R°` — shortening the tail and then taking the step lands
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
@@ -139,15 +173,17 @@ public theorem filter_mono_cons (p : A → Bool) :
       ⊑ ((graph fun q : A × List A => q.2) ∪ pcons p) ≫ lenLE° :=
   calc rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ ((graph fun q : A × List A => q.2) ∪ pcons p)
       = rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × List A => q.2)
-          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p :=
-        DistributiveAllegory.comp_union_distrib _ _ _
+          ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
+        filter_mono_step1 p
     _ = (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
-          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p := by
-        rw [rprodMap_id_snd]
-    _ ⊑ (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))° ∪ pcons p ≫ lenLE° :=
-        union_mono (le_refl _) (pcons_slide p)
-    _ = ((graph fun q : A × List A => q.2) ∪ pcons p) ≫ lenLE° :=
-        (union_comp_distrib _ _ _).symm
+          ∪ rprodMap (pcor p) (lenLE (A := A))° ≫ graph fun q : A × List A => q.1 :: q.2 :=
+        filter_mono_step2 p
+    _ ⊑ (graph fun q : A × List A => q.2) ≫ (lenLE (A := A))°
+          ∪ rprodMap (pcor p) (𝟙 (⟨List A⟩ : RelSet.{0}))
+            ≫ (graph fun q : A × List A => q.1 :: q.2) ≫ lenLE° := filter_mono_step3 p
+    _ = ((graph fun q : A × List A => q.2) ∪ pcons p) ≫ lenLE° := by
+        rw [← Cat.assoc]
+        exact (union_comp_distrib _ _ _).symm
 
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
