@@ -454,6 +454,12 @@ def matchArms (fw : Expr) : MetaM (Option (Array Expr)) := do
     a factor's HEAD must go through this, or a rule fires on `[f,g]` written out and misses the same
     junction under the name a `def` gave it. -/
 def openBody (e : Expr) : MetaM Expr := do
+  -- A TERM THIS FUNCTOR ALREADY DRAWS IS NOT OPENED.  `junc`'s own body is the union of its two
+  -- injections, which `hasClause` also answers to, so opening it handed every rule keyed on a
+  -- junction a `∪` instead — and the tape fusion `F(R)[f,g]=[f,(𝟙×R)g]` then never fired on a
+  -- bracket written out.  Only a name with NO clause of its own is opened, and only into a body
+  -- that has one.
+  if hasClause e then return e
   match ← Meta.unfoldDefinition? e with
   | some v => let b := v.headBeta; return (if hasClause b then b else e)
   | none => return e
