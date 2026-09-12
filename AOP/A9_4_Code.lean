@@ -20,10 +20,12 @@
   * `code_thin_condition` — Theorem 9.2's `hQ`, Proposition 9.4 at `U ≜ ⊤+⊤` and `V ≜ prefix°`;
   * `code_laws` — the note's `code-laws` headline, Theorem 9.2 at those data.
 
-  NOT DONE, and why: `code-laws` rows 3-4 (`lrt`, `reduce`, and `encode = (null→nil, reduce
-  list((encode×𝟙)snoc) minlist R)`) need the sorted-list interface `list`/`minlist` that §8.3
-  keeps abstract and a longest-repeated-tail algorithm the book itself only sketches — the same
-  boundary `AOP.A8_4_Knapsack`'s last row stops at.
+  * `code_prog` — the note's fourth row, `reduce list((encode×𝟙)snoc)minlist(R)` refining that
+    branch, with `reduce` listing `extend°`.
+
+  NOT DONE, and why: the book's `lrt` (longest repeated tail) is an efficient `reduce`; `reduce`
+  here enumerates the candidate splits and decides the pointer guard, which is the same relation
+  and not the same cost — the boundary `AOP.A8_4_Knapsack`'s last row stops at.
 
   Two modelling notes.  `String⁺` is not a separate type: `extend` guards its pointer with
   `zs≠nil`, which is exactly what `String⁺` asks of it.  `Str`/`slen`/`prefix` are declared here
@@ -37,6 +39,8 @@ module
 public import AOP.A9_1
 public import AOP.A6_SnocList
 public import AOP.A5_6_ListCombinators
+public import AOP.A5_7_ListBeads
+public import AOP.A9_3_Bracket
 
 namespace Freyd.Alg.RelSet.Code
 
@@ -504,6 +508,322 @@ public theorem code_branch (X : dStr ⟶ dCodes) :
   exact thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R c p)
     (U := graph (con (L := Unit) (E := Code)))
     fun _d q w h1 h2 => extend_ne_nil q w h2 (h1 : w = SnocList.wrap ())
+
+/-! ## `code-laws`, fourth row: the recursive program -/
+
+/-- Every prefix of a snoc-string, longest first. -/
+@[expose] public def prefixesFn : Str → CL.ConsList Unit Str
+  | SnocList.wrap _ => CL.ConsList.cons (SnocList.wrap ()) (CL.ConsList.wrap ())
+  | SnocList.snoc x a => CL.ConsList.cons (SnocList.snoc x a) (prefixesFn x)
+
+public theorem mem_prefixes : ∀ (w u : Str), ListRel.inlistP (prefixesFn w) u ↔ prefixS u w
+  | SnocList.wrap _, u => by
+      show (u = SnocList.wrap () ∨ ListRel.inlistP (CL.ConsList.wrap ()) u)
+        ↔ (u = SnocList.wrap ())
+      exact ⟨fun h => h.elim id (fun hf => (hf : False).elim), fun h => Or.inl h⟩
+  | SnocList.snoc x a, u => by
+      show (u = SnocList.snoc x a ∨ ListRel.inlistP (prefixesFn x) u)
+        ↔ (u = SnocList.snoc x a ∨ prefixS u x)
+      exact or_congr Iff.rfl (mem_prefixes x u)
+
+/-- `snoc a` on the RIGHT half of every split — what one more character at the end does to the
+    splits of the string before it. -/
+@[expose] public def snocSplits (a : Char) :
+    CL.ConsList Unit (Str × Str) → CL.ConsList Unit (Str × Str)
+  | CL.ConsList.wrap u => CL.ConsList.wrap u
+  | CL.ConsList.cons s ss => CL.ConsList.cons (s.1, SnocList.snoc s.2 a) (snocSplits a ss)
+
+/-- Every way of cutting a snoc-string into a prefix and a suffix. -/
+@[expose] public def splitsFn : Str → CL.ConsList Unit (Str × Str)
+  | SnocList.wrap _ =>
+      CL.ConsList.cons (SnocList.wrap (), SnocList.wrap ()) (CL.ConsList.wrap ())
+  | SnocList.snoc x a =>
+      CL.ConsList.cons (SnocList.snoc x a, SnocList.wrap ()) (snocSplits a (splitsFn x))
+
+public theorem mem_snocSplits (a : Char) (s : Str × Str) :
+    ∀ ss : CL.ConsList Unit (Str × Str),
+      ListRel.inlistP (snocSplits a ss) s
+        ↔ ∃ t, s = (t.1, SnocList.snoc t.2 a) ∧ ListRel.inlistP ss t
+  | CL.ConsList.wrap _ => ⟨fun (h : False) => h.elim, fun ⟨_, _, ht⟩ => (ht : False).elim⟩
+  | CL.ConsList.cons t ts => by
+      show (s = (t.1, SnocList.snoc t.2 a) ∨ ListRel.inlistP (snocSplits a ts) s) ↔ _
+      rw [mem_snocSplits a s ts]
+      constructor
+      · rintro (h | ⟨r, hr, hm⟩)
+        · exact ⟨t, h, Or.inl rfl⟩
+        · exact ⟨r, hr, Or.inr hm⟩
+      · rintro ⟨r, hr, (rfl | hm)⟩
+        · exact Or.inl hr
+        · exact Or.inr ⟨r, hr, hm⟩
+
+/-- `splits` LISTS the cuts: `(xs,zs)` occurs in `splitsFn w` exactly when `xs⧺zs = w`. -/
+public theorem mem_splits : ∀ (w : Str) (s : Str × Str),
+    ListRel.inlistP (splitsFn w) s ↔ sappend s.1 s.2 = w
+  | SnocList.wrap _, s => by
+      show (s = (SnocList.wrap (), SnocList.wrap ()) ∨ ListRel.inlistP (CL.ConsList.wrap ()) s)
+        ↔ sappend s.1 s.2 = SnocList.wrap ()
+      constructor
+      · rintro (rfl | (hf : False))
+        · rfl
+        · exact hf.elim
+      · intro h
+        left
+        obtain ⟨x, z⟩ := s
+        cases z with
+        | wrap _ =>
+            have hx : x = SnocList.wrap () := h
+            rw [hx]
+        | snoc z b => exact absurd h (snoc_ne_wrap (sappend x z) b)
+  | SnocList.snoc x a, s => by
+      show (s = (SnocList.snoc x a, SnocList.wrap ())
+          ∨ ListRel.inlistP (snocSplits a (splitsFn x)) s)
+        ↔ sappend s.1 s.2 = SnocList.snoc x a
+      rw [mem_snocSplits a s (splitsFn x)]
+      constructor
+      · rintro (rfl | ⟨r, rfl, hm⟩)
+        · rfl
+        · show SnocList.snoc (sappend r.1 r.2) a = SnocList.snoc x a
+          exact congrArg (fun t => SnocList.snoc t a) ((mem_splits x r).mp hm)
+      · intro h
+        obtain ⟨u, z⟩ := s
+        cases z with
+        | wrap _ =>
+            left
+            have hu : u = SnocList.snoc x a := h
+            rw [hu]
+        | snoc z b =>
+            right
+            have hb : SnocList.snoc (sappend u z) b = SnocList.snoc x a := h
+            injection hb with h1 h2
+            exact ⟨(u, z), by rw [h2], (mem_splits x (u, z)).mpr h1⟩
+
+/-- A string is a prefix of itself extended on the right. -/
+public theorem prefixS_sappend_self : ∀ (u t : Str), prefixS u (sappend u t)
+  | u, SnocList.wrap _ => prefixS_refl u
+  | u, SnocList.snoc t _ => Or.inr (prefixS_sappend_self u t)
+
+/-- The `sym` candidate: the last character stands for itself. -/
+@[expose] public def symCands : Str → CL.ConsList Unit (Str × Code)
+  | SnocList.wrap u => CL.ConsList.wrap u
+  | SnocList.snoc x a => CL.ConsList.cons (x, Code.sym a) (CL.ConsList.wrap ())
+
+/-- The `ptr` candidates at ONE cut `(xs,zs)`: one for each earlier position `ys` the tail could
+    point back to. -/
+@[expose] public def ptrsAt (s : Str × Str) :
+    CL.ConsList Unit Str → CL.ConsList Unit (Str × Code)
+  | CL.ConsList.wrap u => CL.ConsList.wrap u
+  | CL.ConsList.cons u us => CL.ConsList.cons (s.1, Code.ptr u s.2) (ptrsAt s us)
+
+/-- The `ptr` candidates over every cut. -/
+@[expose] public def ptrCands (us : CL.ConsList Unit Str) :
+    CL.ConsList Unit (Str × Str) → CL.ConsList Unit (Str × Code)
+  | CL.ConsList.wrap u => CL.ConsList.wrap u
+  | CL.ConsList.cons s ss => ListRel.cappend (ptrsAt s us) (ptrCands us ss)
+
+public theorem inlistP_cappend {B : Type} (z : B) :
+    ∀ x y : CL.ConsList Unit B,
+      ListRel.inlistP (ListRel.cappend x y) z
+        ↔ ListRel.inlistP x z ∨ ListRel.inlistP y z
+  | CL.ConsList.wrap _, _ =>
+      ⟨fun h => Or.inr h, fun h => h.elim (fun (hf : False) => hf.elim) id⟩
+  | CL.ConsList.cons b x, y => by
+      show (z = b ∨ ListRel.inlistP (ListRel.cappend x y) z) ↔ _
+      rw [inlistP_cappend z x y]
+      constructor
+      · rintro (h | (h | h))
+        · exact Or.inl (Or.inl h)
+        · exact Or.inl (Or.inr h)
+        · exact Or.inr h
+      · rintro ((h | h) | h)
+        · exact Or.inl h
+        · exact Or.inr (Or.inl h)
+        · exact Or.inr (Or.inr h)
+
+public theorem mem_ptrsAt (s : Str × Str) (q : Str × Code) :
+    ∀ us : CL.ConsList Unit Str,
+      ListRel.inlistP (ptrsAt s us) q
+        ↔ ∃ u, ListRel.inlistP us u ∧ q = (s.1, Code.ptr u s.2)
+  | CL.ConsList.wrap _ => ⟨fun (h : False) => h.elim, fun ⟨_, hu, _⟩ => (hu : False).elim⟩
+  | CL.ConsList.cons u us => by
+      show (q = (s.1, Code.ptr u s.2) ∨ ListRel.inlistP (ptrsAt s us) q) ↔ _
+      rw [mem_ptrsAt s q us]
+      constructor
+      · rintro (h | ⟨v, hv, hq⟩)
+        · exact ⟨u, Or.inl rfl, h⟩
+        · exact ⟨v, Or.inr hv, hq⟩
+      · rintro ⟨v, (rfl | hv), hq⟩
+        · exact Or.inl hq
+        · exact Or.inr ⟨v, hv, hq⟩
+
+public theorem mem_ptrCands (us : CL.ConsList Unit Str) (q : Str × Code) :
+    ∀ ss : CL.ConsList Unit (Str × Str),
+      ListRel.inlistP (ptrCands us ss) q
+        ↔ ∃ s, ListRel.inlistP ss s ∧ ∃ u, ListRel.inlistP us u ∧ q = (s.1, Code.ptr u s.2)
+  | CL.ConsList.wrap _ => ⟨fun (h : False) => h.elim, fun ⟨_, hs, _⟩ => (hs : False).elim⟩
+  | CL.ConsList.cons s ss => by
+      show ListRel.inlistP (ListRel.cappend (ptrsAt s us) (ptrCands us ss)) q ↔ _
+      rw [inlistP_cappend q (ptrsAt s us) (ptrCands us ss), mem_ptrsAt s q us,
+        mem_ptrCands us q ss]
+      constructor
+      · rintro (⟨u, hu, hq⟩ | ⟨t, ht, hrest⟩)
+        · exact ⟨s, Or.inl rfl, u, hu, hq⟩
+        · exact ⟨t, Or.inr ht, hrest⟩
+      · rintro ⟨t, (rfl | ht), hrest⟩
+        · exact Or.inl hrest
+        · exact Or.inr ⟨t, ht, hrest⟩
+
+/-- Snoc-strings have decidable equality: deciding a pointer's guard is comparing the two
+    occurrences of its tail, so `reduce` needs it to be a program at all. -/
+public def decEqStr : (x y : Str) → Decidable (x = y)
+  | SnocList.wrap _, SnocList.wrap _ => isTrue rfl
+  | SnocList.wrap _, SnocList.snoc _ _ => isFalse (by simp)
+  | SnocList.snoc _ _, SnocList.wrap _ => isFalse (by simp)
+  | SnocList.snoc x a, SnocList.snoc y b =>
+      match decEqStr x y with
+      | isFalse hx => isFalse fun h => by injection h with h1 _; exact hx h1
+      | isTrue hx =>
+          match (inferInstance : Decidable (a = b)) with
+          | isFalse ha => isFalse fun h => by injection h with _ h2; exact ha h2
+          | isTrue ha => isTrue (by rw [hx, ha])
+
+public instance : DecidableEq Str := decEqStr
+
+public def decPrefixS (x : Str) : (y : Str) → Decidable (prefixS x y)
+  | SnocList.wrap _ => decEqStr x (SnocList.wrap ())
+  | SnocList.snoc y a =>
+      match decEqStr x (SnocList.snoc y a) with
+      | isTrue h => isTrue (Or.inl h)
+      | isFalse h1 =>
+          match decPrefixS x y with
+          | isTrue h => isTrue (Or.inr h)
+          | isFalse h2 => isFalse fun h => h.elim h1 h2
+
+public instance (x y : Str) : Decidable (prefixS x y) := decPrefixS x y
+
+public instance (x y : Str) : Decidable (properPrefixS x y) :=
+  inferInstanceAs (Decidable (prefixS x y ∧ slen x < slen y))
+
+public instance : (q : Str × Code) → (w : Str) → Decidable (extendP q w)
+  | (xs, Code.sym a), w => decEqStr w (SnocList.snoc xs a)
+  | (xs, Code.ptr ys zs), w =>
+      inferInstanceAs (Decidable (w = sappend xs zs ∧ zs ≠ SnocList.wrap ()
+        ∧ properPrefixS (sappend ys zs) (sappend xs zs)))
+
+/-- Keep the candidates `extend` really does decode to `w`. -/
+@[expose] public def keepExtends (w : Str) :
+    CL.ConsList Unit (Str × Code) → CL.ConsList Unit (Str × Code)
+  | CL.ConsList.wrap u => CL.ConsList.wrap u
+  | CL.ConsList.cons q qs =>
+      if extendP q w then CL.ConsList.cons q (keepExtends w qs) else keepExtends w qs
+
+public theorem mem_keepExtends (w : Str) (q : Str × Code) :
+    ∀ qs : CL.ConsList Unit (Str × Code),
+      ListRel.inlistP (keepExtends w qs) q ↔ ListRel.inlistP qs q ∧ extendP q w
+  | CL.ConsList.wrap _ => ⟨fun (h : False) => h.elim, fun ⟨hf, _⟩ => (hf : False).elim⟩
+  | CL.ConsList.cons r rs => by
+      by_cases hr : extendP r w
+      · have hE : keepExtends w (CL.ConsList.cons r rs)
+            = CL.ConsList.cons r (keepExtends w rs) := if_pos hr
+        rw [hE]
+        show (q = r ∨ ListRel.inlistP (keepExtends w rs) q) ↔ _
+        rw [mem_keepExtends w q rs]
+        constructor
+        · rintro (rfl | ⟨h1, h2⟩)
+          · exact ⟨Or.inl rfl, hr⟩
+          · exact ⟨Or.inr h1, h2⟩
+        · rintro ⟨(rfl | h1), h2⟩
+          · exact Or.inl rfl
+          · exact Or.inr ⟨h1, h2⟩
+      · have hE : keepExtends w (CL.ConsList.cons r rs) = keepExtends w rs := if_neg hr
+        rw [hE, mem_keepExtends w q rs]
+        constructor
+        · rintro ⟨h1, h2⟩
+          exact ⟨Or.inr h1, h2⟩
+        · rintro ⟨(rfl | h1), h2⟩
+          · exact absurd h2 hr
+          · exact ⟨h1, h2⟩
+
+/-- **code-laws**, fourth row: `reduce`, every way of splitting a legal last code off a string —
+    the `sym` cut, and one `ptr` cut for each way of cutting the string and each earlier position
+    its tail could point back to.  Both halves of a legal cut are prefixes of the string, so the
+    candidates can be enumerated and the pointer's guard then decided. -/
+@[expose] public def reduceFn (w : Str) : CL.ConsList Unit (Str × Code) :=
+  keepExtends w (ListRel.cappend (symCands w) (ptrCands (prefixesFn w) (splitsFn w)))
+
+/-- `reduce : String⟶[(String,Code)]`, the map the note's panel draws. -/
+@[expose] public def reduce : dStr ⟶ ListRel.dList (Str × Code) := graph reduceFn
+
+/-- `reduce` LISTS `extend°`: `(xs,e)` occurs in `reduceFn w` exactly when `extend (xs,e) = w`. -/
+public theorem mem_reduce (w : Str) (q : Str × Code) :
+    ListRel.inlistP (reduceFn w) q ↔ extendP q w := by
+  show ListRel.inlistP
+      (keepExtends w (ListRel.cappend (symCands w) (ptrCands (prefixesFn w) (splitsFn w)))) q
+    ↔ extendP q w
+  rw [mem_keepExtends, inlistP_cappend]
+  refine ⟨fun h => h.2, fun h => ⟨?_, h⟩⟩
+  obtain ⟨xs, e⟩ := q
+  cases e with
+  | sym a =>
+      have hw : w = SnocList.snoc xs a := h
+      subst hw
+      exact Or.inl (Or.inl rfl)
+  | ptr ys zs =>
+      obtain ⟨hw, _, hpp⟩ := h
+      subst hw
+      right
+      rw [mem_ptrCands]
+      exact ⟨(xs, zs), (mem_splits _ (xs, zs)).mpr rfl, ys,
+        (mem_prefixes _ ys).mpr (prefixS_trans (prefixS_sappend_self ys zs) hpp.1), rfl⟩
+
+/-- **code-laws**, fourth row (B&dM p.242): `reduce list((encode×𝟙)snoc)minlist(R)` refines the
+    branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((encode×𝟙)snoc)est(R)` — `reduce` implements
+    `extend°` (`mem_reduce`) and `minlist R` implements `est(R)`, the list standing in for the set
+    it `setify`s to.  The one inequality is `setify`'s lax naturality
+    (`AOP.A5_7_ListBeads.setify_lax_natural`): a list of `f`-images of the splits has, as a SET, a
+    `P(f)`-image of the set of splits.  Thinning is free on the way in — `prefix°×(⊤+⊤)` is
+    reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`
+    would exploit. -/
+public theorem code_prog (encode : dStr ⟶ dCodes) :
+    reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minlist(R c p)
+      ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+  have hmem : ∀ w : Str, (fun q => ListRel.inlistP (reduceFn w) q) = fun q => extendP q w :=
+    fun w => funext fun q => propext (mem_reduce w q)
+  have hred : reduce ≫ ListRel.setify = Λ (extend°) := by
+    rw [Λ_eq_classifier]
+    funext w S
+    refine propext ⟨?_, ?_⟩
+    · rintro ⟨_, rfl, hS⟩
+      exact (hS : S = fun q => ListRel.inlistP (reduceFn w) q).trans (hmem w)
+    · intro hS
+      exact ⟨reduceFn w, rfl, (hS : S = fun q => extendP q w).trans (hmem w).symm⟩
+  have hnat : ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ ListRel.setify ≫ est (R c p)
+      ⊑ ListRel.setify ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+    rw [← Cat.assoc, ← Cat.assoc]
+    exact comp_mono_right (ListRel.setify_lax_natural _) _
+  have hrefl : 𝟙 (⟨Str × Code⟩ : RelSet.{0}) ⊑ rprodMap (prefixR°) U :=
+    le_iff.mpr fun s t hst => by
+      obtain rfl := (hst : s = t)
+      obtain ⟨x, e⟩ := s
+      refine ⟨prefixS_refl x, ?_⟩
+      cases e with
+      | sym _ => exact trivial
+      | ptr _ _ => exact trivial
+  calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minlist(R c p)
+      = reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR)
+          ≫ ListRel.setify ≫ est (R c p) := by
+        rw [Bracket.minlist_eq_setify_comp_est]
+    _ ⊑ reduce ≫ ListRel.setify
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) :=
+        comp_mono_left reduce hnat
+    _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+        rw [← Cat.assoc, hred]
+    _ ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
+          ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
+        refine comp_mono_left _ ?_
+        have h := comp_mono_right (id_le_thinRel hrefl)
+          (powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p))
+        rwa [Cat.id_comp] at h
 
 -- `extend` keeps its namespace where `decode` does not, `Freyd.UF.Filter.extend` sharing the name;
 -- a picture of §9.4's algebra has no second `extend` to tell this one from.
