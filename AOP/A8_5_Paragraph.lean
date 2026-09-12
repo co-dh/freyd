@@ -455,7 +455,7 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
     (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
     hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
-    h86 h87
+    h86 h87 rfl
   rw [Cat.comp_id (graph (newAlgFn (Word := Word)))] at key
   exact key
 

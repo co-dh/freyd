@@ -394,6 +394,7 @@ public theorem knap_laws_step1 {l lF : RelSet.{0}}
     (P := R vol) (Q := Q vol wt) (R := R vol)
     (graph_map con) (graph_map dropFn) Q_le_R Q_refl Q_trans R_recip_trans
     knap_mono_cons hm₂ hsortF knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
+    rfl
   rw [Cat.comp_id (graph dropFn)] at key
   exact key
 

@@ -198,6 +198,16 @@ partial def betaHead (e : Expr) : Expr :=
   let e' := e.headBeta
   if e' == e then e else betaHead e'
 
+/-- The last component of the head's name WHEN THAT HEAD IS A CONSTRUCTOR — read off the
+    environment, never off the printed string.  A constructor is qualified by the type it builds,
+    and the picture draws that type as the wire the box sits on, so the qualification says nothing
+    the reader cannot already see. -/
+def ctorName? (e : Expr) : MetaM (Option String) := do
+  let .const n _ := e.getAppFn | return none
+  match (← getEnv).find? n with
+  | some (.ctorInfo _) => return some n.getString!
+  | _ => return none
+
 mutual
 
 /-- The BODY of a map, named as an arrow out of the input `s`: a body that does not mention `s` is
@@ -262,6 +272,11 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
         match body.find? fun x => projIndex x == some i with
         | some p => Meta.isDefEq (← Meta.inferType p) t
         | none => return false
+      -- BOTH FACTORS THE CARRIER IS NOT A LIST: there is no side an element goes on, so `cons` and
+      -- `snoc` name nothing and the constructor keeps its own name (`bin`).  Read off the types,
+      -- so every branching carrier is named without a line being added here.
+      if (← recAt 0) && (← recAt 1) then
+        if let some n ← ctorName? body then return n
       return if ← recAt 0 then "snoc" else "cons"
     -- A MAP THAT HANDS THE INPUT'S FACTORS STRAIGHT TO ONE ARROW IS THAT ARROW.  `fun p => snag p`
     -- and `fun p => cat p.1 p.2` are `snag` and `cat` η-expanded, and the lambda is what the
@@ -272,6 +287,10 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     let paths := deps.toList.filterMap (projPath s)
     if !deps.isEmpty && paths.length == deps.size
         && (paths == [[]] || paths == (List.range deps.size).map ([·])) then
+      -- A CONSTRUCTOR'S NAMESPACE IS ITS TYPE, which the wire beside the box already shows, so the
+      -- box writes the constructor's own last name (`wrap`, not `ConsList.wrap`) — the printer's
+      -- qualification is about resolving the name, and nothing in a picture has to resolve it.
+      if let some n ← ctorName? body then return n
       return ← plain (mkAppN body.getAppFn (args.filter fun a => !a.containsFVar s))
     if body₀.containsFVar s then plain f else plain body₀
 
