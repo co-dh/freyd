@@ -26,6 +26,7 @@ import AOP.A9_3_Bracket
 import AOP.A9_4_Code
 import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
+import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
@@ -194,6 +195,14 @@ open Lean PrettyPrinter in
     escapes it and `diag/tool/ExprReader` unescapes, as it already does for `≥`. -/
 @[app_unexpander RelSet.MSS.oplus] def unexpandOplus : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⊕")))
+
+open Lean PrettyPrinter Delaborator in
+/-- The TeX problem's index object is the note's `[0,2¹⁶)`, which is no Lean identifier: the
+    formatter escapes it and `diag/tool/ExprReader` unescapes, as it already does for `⊕`.  An
+    OBJECT NEEDS A `delab`, not an unexpander: it prints as a bare constant, never as an
+    application. -/
+@[delab app.Freyd.Alg.RelSet.Tex.Ix, delab const.Freyd.Alg.RelSet.Tex.Ix]
+def delabTexIx : Delab := `($(mkIdent (Name.mkSimple "[0,2¹⁶)")))
 
 -- `[zero, ⊸ zero ∪ plus]`'s two leaves are named in the note, so the box carries the note's word
 -- and not the namespace the Lean constant happens to live in.

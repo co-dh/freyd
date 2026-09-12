@@ -1002,16 +1002,18 @@ def main (args : List String) : IO UInt32 := do
     -- A structure instance is not an application, so no unexpander can reach a bundled
     -- object; printed as a constructor it becomes one, and the note's own name comes back.
     `pp.structureInstances false
-  let ctx : Core.Context :=
-    { fileName := "<diag-export>", fileMap := default, options := opts,
-      openDecls := (openNs ++ StrDiag.repoNamespaces env).map (.simple · []) }
   -- `openDecls` alone only SHORTENS names.  Every notation the repo writes is `scoped`, and a
   -- scoped unexpander lives in a scoped extension that `open` activates during elaboration — which
   -- an exe never runs.  Without this the labels read `Cat.id X`, `Cat.comp R S`, and the note's own
-  -- spellings below never fire either.
-  let env := (← (do for ns in openNs do activateScoped ns : CoreM Unit).toIO ctx { env }).2.env
+  -- spellings below never fire either.  The activation needs a context and takes the empty one: the
+  -- context a picture is DRAWN in belongs to its own declaration and is built per argument below.
+  let env := (← (do for ns in openNs do activateScoped ns : CoreM Unit).toIO
+    (StrDiag.declCtx env opts openNs .anonymous) { env }).2.env
   let mut status : UInt32 := 0
   for arg in args do
+    -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT: the first part names it, and
+    -- the parts of one page are the faces of one statement's neighbourhood.
+    let ctx := StrDiag.declCtx env opts openNs (part (arg.splitOn "+").head!).1
     let run : CoreM String := Meta.MetaM.run' (draw arg)
     -- The thrown message is the DIAGNOSIS — which statement was reached and why it is not a face —
     -- so a declaration this functor declines to draw says so in its own terms rather than as a

@@ -1397,10 +1397,6 @@ def main (args : List String) : IO UInt32 := do
   let opts : Options :=
     ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
       |>.insert `maxHeartbeats (.ofNat 1000000)
-  let ctx : Core.Context :=
-    { fileName := "<diag-export>", fileMap := default,
-      options := opts,
-      openDecls := (scopes ++ StrDiag.repoNamespaces env).map (.simple · []) }
   let mut status : UInt32 := 0
   for arg in args do
     -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
@@ -1443,6 +1439,9 @@ def main (args : List String) : IO UInt32 := do
     let (base, binder) := match base.toString.splitOn "#" with
       | [b, h] => (b, some h)
       | _ => (base.toString, none)
+    -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
+    -- per declaration, and not once for the whole command line.
+    let ctx := StrDiag.declCtx env opts scopes base.toName
     let run : CoreM String :=
       Meta.MetaM.run' (if sigMode then sig arg.toName
         else if stringMode then

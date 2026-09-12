@@ -279,15 +279,21 @@ public theorem round_recip : (round)° = interval ≫ inrange := by
 @[expose] public def stepFn (p : Digit × Interval.carrier) : Interval.carrier :=
   ⟨shift (p.1.val : Int) p.2.lo, shift (p.1.val : Int) p.2.hi⟩
 
-/-- **tex-defn**: `[arb,step] : 1+(Digit×Interval)⟶Interval`.  `arb` is B&dM p.260's first fusion
-    condition `arb=zero inrange°`, so `(a,b)` is an `arb` iff `a<0<b`. -/
-@[expose] public def arbStep : (F Unit Digit).obj Interval ⟶ Interval := fun u p =>
-  match u with
-  | Sum.inl _ => rlt p.lo zeroR ∧ rlt zeroR p.hi
-  | Sum.inr q => p = stepFn q
+/-- **tex-defn**: `arb : 𝟏⟶Interval` — B&dM p.260's first fusion condition `arb=zero inrange°`, so
+    `(a,b)` is an `arb` iff `a<0<b`. -/
+@[expose] public def arb : dL Unit ⟶ Interval := fun _ p => rlt p.lo zeroR ∧ rlt zeroR p.hi
+
+/-- **tex-defn**: `step : Digit×Interval⟶Interval`, the map `stepFn` is the graph of. -/
+@[expose] public def step : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ Interval := graph stepFn
+
+/-- The coproduct `1+(Digit×Interval)` the algebra `[arb,step]` is the case analysis over: the
+    pattern functor's object action IS that sum, and `sumCop`'s injections are this file's `l`
+    and `r`. -/
+@[expose] public abbrev cop : Coproduct ((F Unit Digit).obj Interval) (dL Unit)
+    (⟨Digit × Interval.carrier⟩ : RelSet.{0}) := sumCop (dL Unit) ⟨Digit × Interval.carrier⟩
 
 /-- **tex-defn**: `H≜⦇[arb,step]⦈°`. -/
-@[expose] public def H : Interval ⟶ Decimal := (cataR arbStep)°
+@[expose] public def H : Interval ⟶ Decimal := (cataR (junc cop arb step))°
 
 /-- `length`, the number of digits of a decimal. -/
 @[expose] public def len : ConsList Unit Digit → Nat
@@ -375,8 +381,8 @@ public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
 /-- **tex-laws**, second step: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to
     intervals, is a fold, because `shift d` is an order-isomorphism whose inverse is `10a−d`.
     B&dM's two fusion conditions are `arb=zero inrange°` and
-    `shift inrange°=(𝟙×inrange°)step`, both true by construction of `arbStep`. -/
-public theorem tex_fusion : val ≫ (inrange)° = cataR arbStep := by
+    `shift inrange°=(𝟙×inrange°)step`, both true by construction of `[arb,step]`. -/
+public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
   apply hom_ext
   intro x
   induction x with
@@ -386,9 +392,12 @@ public theorem tex_fusion : val ≫ (inrange)° = cataR arbStep := by
     · rintro ⟨rr, hv, hin⟩
       have hr : rr = zeroR := hv
       subst hr
-      exact hin
-    · intro h
-      exact ⟨zeroR, rfl, h⟩
+      exact Or.inl ⟨u, rfl, hin⟩
+    · rintro (⟨t, ht, ha⟩ | ⟨q, hq, _⟩)
+      · obtain rfl := Sum.inl.inj ht
+        exact ⟨zeroR, rfl, ha⟩
+      · have h : Sum.inl u = Sum.inr q := hq
+        exact nomatch h
   | cons d y ih =>
     intro p
     constructor
@@ -396,22 +405,26 @@ public theorem tex_fusion : val ≫ (inrange)° = cataR arbStep := by
       obtain ⟨r', hy, hstep⟩ := hv
       have hrr : rr = shift (d.val : Int) r' := hstep
       subst hrr
-      refine ⟨(unshift (d.val : Int) p.1, unshift (d.val : Int) p.2), ?_, ?_⟩
+      refine ⟨⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩, ?_, ?_⟩
       · refine (ih _).mp ⟨r', hy, ?_, ?_⟩
         · exact (lt_shift_iff _ _ _).mp hin.1
         · exact (shift_lt_iff _ _ _).mp hin.2
-      · show p = stepFn (d, (unshift (d.val : Int) p.1, unshift (d.val : Int) p.2))
-        show p = (shift (d.val : Int) (unshift (d.val : Int) p.1),
-          shift (d.val : Int) (unshift (d.val : Int) p.2))
+      · refine Or.inr ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩), rfl, ?_⟩
+        show p = stepFn (d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩)
+        show p = (⟨shift (d.val : Int) (unshift (d.val : Int) p.lo),
+          shift (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
         rw [shift_unshift, shift_unshift]
         rfl
-    · rintro ⟨q, hq, hp⟩
-      obtain ⟨r', hy, hin⟩ := (ih q).mpr hq
-      have hp' : p = stepFn (d, q) := hp
-      subst hp'
-      refine ⟨shift (d.val : Int) r', ⟨r', hy, rfl⟩, ?_, ?_⟩
-      · exact (shift_lt_shift _ _ _).mpr hin.1
-      · exact (shift_lt_shift _ _ _).mpr hin.2
+    · rintro ⟨q, hq, (⟨t, ht, _⟩ | ⟨q', hq', hp⟩)⟩
+      · have h : Sum.inr (d, q) = Sum.inl t := ht
+        exact nomatch h
+      · obtain rfl := Sum.inr.inj hq'
+        obtain ⟨r', hy, hin⟩ := (ih q).mpr hq
+        have hp' : p = stepFn (d, q) := hp
+        subst hp'
+        refine ⟨shift (d.val : Int) r', ⟨r', hy, rfl⟩, ?_, ?_⟩
+        · exact (shift_lt_shift _ _ _).mpr hin.1
+        · exact (shift_lt_shift _ _ _).mpr hin.2
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/
 
@@ -455,8 +468,8 @@ public theorem tex_greedy (X : Interval ⟶ Decimal) :
 
 /-- `H=⦇[arb,step]⦈°⦇α⦈` collapses to `⦇[arb,step]⦈°` by reflection
     (`AOP.A6_ConsList.cataR_con`). -/
-public theorem tex_H : _root_.Freyd.Alg.H (F := F Unit Digit) arbStep alphaR = H := by
-  show (relCata (F := F Unit Digit) arbStep)° ≫ relCata (F := F Unit Digit) (graph con) = H
+public theorem tex_H : _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR = H := by
+  show (relCata (F := F Unit Digit) (junc cop arb step))° ≫ relCata (F := F Unit Digit) (graph con) = H
   rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con]
   exact Cat.comp_id _
 
@@ -475,7 +488,7 @@ public theorem tex_laws_step1 :
 public theorem tex_laws_step2 :
     interval ≫ Λ (inrange ≫ (val)°) ≫ est R = interval ≫ Λ H ≫ est R := by
   have h : inrange ≫ (val)° = H := by
-    show inrange ≫ (val)° = (cataR arbStep)°
+    show inrange ≫ (val)° = (cataR (junc cop arb step))°
     rw [← tex_fusion, Allegory.recip_comp, Allegory.recip_recip]
   rw [h]
 
@@ -483,10 +496,10 @@ public theorem tex_laws_step2 :
     specification, so the least fixed point refines it. -/
 public theorem tex_laws_step3 :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
-        Λ ((arbStep)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
+        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
       ⊑ interval ≫ Λ H ≫ est R := by
   have key := greedy_dp (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
-    (h := alphaR) (T := arbStep) (R := R) (Q := Q) (graph_map con) tex_mono R_trans
+    (h := alphaR) (T := (junc cop arb step)) (R := R) (Q := Q) (graph_map con) tex_mono R_trans
     (by rw [tex_H]; exact tex_greedy _)
   rw [tex_H] at key
   exact comp_mono_left _ key
@@ -497,7 +510,7 @@ public theorem tex_laws_step3 :
     Reading it off on points (`extern(n)=f(2n−1,2n+1)`, B&dM p.263) is not formalised here. -/
 public theorem tex_laws :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
-        Λ ((arbStep)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
+        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
       ⊑ Λ ((intern)°) ≫ est R := by
   rw [tex_laws_step1, tex_laws_step2]
   exact tex_laws_step3
