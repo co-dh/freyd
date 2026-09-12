@@ -11,6 +11,8 @@ Freyd.Alg.RelSet.Party.rose_id
 Freyd.Alg.RelSet.Van.glue_eq
 Freyd.Alg.Vec.Rel.tupleP_id
 Freyd.Alg.relCata_pair_beta                                          cdref-banana.typ
+Freyd.Alg.tri_cata_fusion                                           cdref-horner.typ
+Freyd.Alg.relCata_UP.lhs                                            cdref-catadef.typ
 Freyd.Alg.pair_eq_relCata_pair_iff.lhs                              cdref-fokkinga.typ
 Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage           cdref-adjE.typ
 Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le                 cdref-relprod.typ

@@ -42,14 +42,14 @@ def juxt (a b : String) : String :=
   else a ++ " " ++ b
 
 /-- The heads the note sets TIGHT: a relator's action on an object, the power object and the
-    existential image, the product and the fork.  Lean's formatter always sets an application's
-    argument off from its head (`F T`, `E A`) and an infix off from its operands (`A × B`,
-    `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched — it is what the
-    `app_unexpander` beside the constant already printed. -/
+    existential image, the initial type at an object, the product and the fork.  Lean's formatter
+    always sets an application's argument off from its head (`F T`, `E A`, `T A`) and an infix off
+    from its operands (`A × B`, `⟨f, g⟩`) where the note closes them up; the SPELLING is untouched
+    — it is what the `app_unexpander` beside the constant already printed. -/
 def tightHeads : Array Name :=
   #[``Freyd.Functor.obj, ``Freyd.Alg.PowerAllegory.powerObj, ``Freyd.Alg.existsImage,
-    ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair, ``Freyd.Alg.RelProd.p,
-    ``Freyd.Alg.RelProd.pair]
+    ``Freyd.Alg.InitialAlgebra.t, ``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
+    ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair]
 
 /-! ### A MAP, named from its own function
 
@@ -282,6 +282,9 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- brackets as `F(R)`: `T(f)`, never `T f`, juxtaposition being composition and nothing else.  The
   -- letter is `typeRelator`'s own unexpander's (`diag/StrDiagNames.lean`), which the lane wears too.
   | (``Freyd.Alg.typeMap, args) => un 4 0 "T(" ")" args
+  -- The RUBY TRIANGLE is an operator applied to an arrow, so it takes the brackets every applied
+  -- operator takes (CLAUDE.md): `tri(f)`, never `tri f`, which reads as `tri` composed with `f`.
+  | (``Freyd.Alg.tri, args) => un 4 0 "tri(" ")" args
   -- The LEAST FIXED POINT is the note's `(μX : S°F(X)R)`.  Its body is a term of the note's like any
   -- other — the binder is an arrow the picture draws a wire for — so its composition is
   -- juxtaposition, where the printer's own `≫` survived because the label was the raw printer's.
@@ -297,6 +300,17 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   | (``Freyd.Functor.map, _) =>
     match functorMap? e with
     | some (f, r) => return (← labelAt 4 f) ++ "(" ++ (← labelAt 0 r) ++ ")"
+    | none => plain e
+  -- A BIFUNCTOR'S action takes the same bracket and BOTH its arrows: `F(𝟙,f)`, `F(f,T(f))`.  An
+  -- unexpander cannot write it — `F(𝟙,f)` is no term — and the one beside the constant prints the
+  -- second argument alone, so `F.map (𝟙 A) f` and `F.map g f` come out the same picture.
+  | (``Freyd.Alg.BiRelator.map, args) => do
+    match lastTwo (← arrows args) with
+    | some (x, y) => do
+      let fns ← args.filterM fun a => return (← Meta.inferType a).isAppOf ``Freyd.Alg.BiRelator
+      match fns.back? with
+      | some fn => return (← labelAt 4 fn) ++ "(" ++ (← labelAt 0 x) ++ "," ++ (← labelAt 0 y) ++ ")"
+      | none => plain e
     | none => plain e
   | (c, args) =>
     if tightHeads.contains c then return (← plain e).replace " " "" else do
