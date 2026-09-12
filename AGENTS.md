@@ -18,11 +18,13 @@ You should should any 3+ digits sections of the book into `Freyd/Sa_bc.lean`. e.
 The code should follow the book's terminology, wording, convension.
 Write composition in diagram order, by juxtaposition: `xy` means first x then y (the book's convention).
 Juxtaposition is composition and nothing else, so APPLYING an operator takes parentheses: `E(R)`,
-`P(f)`, `Λ(R)`, `F(𝟙)`, `F(outl)`, `T(R)`, `tri(f)` — never B&dM's `ER`/`Pf`. The one bare form is a
-single object name (`P A`, `T A`, `F A`), which no reader can take for a composite; anything longer
-is parenthesised (`F(P B)`, never `F P B`). Pointwise evaluation is NOT outside this: a map applied
-to a point takes parentheses too — `f(a)`, `tip(f(a))`, `min(xs)`, `takewhile(p)(x)`, never `f a`. The
-one form that keeps its own brackets is an argument already delimited by them, written with no space:
+`P(f)`, `Λ(R)`, `F(𝟙)`, `F(outl)`, `T(R)`, `thin(Q)`, `tri(f)` — never B&dM's `ER`/`Pf`/`thin Q`. The
+one exception is a chain of ONE-LETTER functors on an object, juxtaposed with no space: `FEA` reads
+`F(E(A))`, `EA` is `E(A)`, `P A`/`T A`/`F A` are single objects no reader can take for a composite. A
+functor with a longer name applies with parentheses (`bag(Job)`, `E(bag(Job))`). Pointwise evaluation is NOT outside
+this: a map applied to a point takes parentheses too — `f(a)`, `tip(f(a))`, `min(xs)`, `takewhile(p)(x)`,
+never `f a`. The one form that keeps its own brackets is an argument already delimited by them, written
+with no space:
 `E[A]`, `tri(f)[a₀,…,aₙ]`, `min{x+y∣x∈xs}`.
 Use the global book notation `𝟙 A` for the categorical identity `Cat.id A`; do not spell identities
 as `Cat.id A` in new code.
