@@ -1,0 +1,43 @@
+--- diag/allegory-axioms.typ
++++ diag/allegory-axioms.typ
+@@ -2155,15 +2155,15 @@
+     ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
+     ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
+     ar(FT, FB, INDUCED, s0: 0.55, s1: 0.55)
+-    ar(FB, FC, black, s0: 0.55, s1: 0.55)
++    ar(FB, FC, GIVEN2, s0: 0.55, s1: 0.55)
+     ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
+-    ar(B, C, black, s0: 0.55, s1: 0.55)
++    ar(B, C, GIVEN2, s0: 0.55, s1: 0.55)
+     lab(-3.95, 1.25, INDUCED)[`F(⦇R⦈)`]; lab(3.45, 1.25, INDUCED)[`⦇R⦈`]
+-    lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
++    lab(-3.55, -1.25, GIVEN2)[`F(S)`]; lab(3.1, -1.25, GIVEN2)[`S`]
+     lab(0, 3.05, GIVEN2)[`α`]; lab(0, 0.55, GIVEN1)[`R`]; lab(0, -1.95, GIVEN1)[`Q`]
+     node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
+-    node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
+-    node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
++    node(FB.at(0), FB.at(1), black, `FB`); node(B.at(0), B.at(1), black, `B`)
++    node(FC.at(0), FC.at(1), black, `FC`); node(C.at(0), C.at(1), black, `C`)
+   }),
+   grid(
+     columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
+@@ -2319,7 +2319,7 @@
+   ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.6)
+   ar(TB, C, INDUCED, dash: "dashed", s0: 0.6, s1: 0.55)
+   lab(0.4, 2.55, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -2.55, GIVEN1)[`F(f,𝟙)h`]
+-  lab(-5.15, 0, INDUCED)[`F(𝟙,T(f)⦇h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
++  lab(-5.15, 0, INDUCED)[`F(𝟙,⦇F(f,𝟙)h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
+   lab(4.67, 1.47, INDUCED)[`T(f)`]; lab(4.67, -1.47, INDUCED)[`⦇h⦈`]
+   node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
+   node(TB.at(0), TB.at(1), black, `TB`)
+@@ -3683,8 +3683,8 @@
+   ar((l, SQH), (l, -SQH), GIVEN2, s0: 0.5, s1: 0.5); ar((r, SQH), (r, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
+   if es.at(0) != none { lab(x, SQH + 0.62, GIVEN1)[#es.at(0)] }
+   if es.at(1) != none { lab(x, -SQH - 0.62, GIVEN1)[#es.at(1)] }
+-  if es.at(2) != none { node(l, 0, GIVEN2, es.at(2)) }
+-  if es.at(3) != none { node(r, 0, GIVEN2, es.at(3)) }
++  if es.at(2) != none { lab(l - 0.8, 0, GIVEN2)[#es.at(2)] }
++  if es.at(3) != none { lab(r + 0.8, 0, GIVEN2)[#es.at(3)] }
+   lab(x, 0, SLACK, rot: -45deg)[`⊑`]
+   node(l, SQH, black, ns.at(0)); node(r, SQH, black, ns.at(1))
+   node(l, -SQH, black, ns.at(2)); node(r, -SQH, black, ns.at(3))

@@ -16,13 +16,13 @@
   ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
   ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
   ar(FT, FB, INDUCED, s0: 0.55, s1: 0.55)
-  ar(FB, FC, black, s0: 0.55, s1: 0.55)
+  ar(FB, FC, GIVEN2, s0: 0.55, s1: 0.55)
   ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-  ar(B, C, black, s0: 0.55, s1: 0.55)
+  ar(B, C, GIVEN2, s0: 0.55, s1: 0.55)
   lab(-3.95, 1.25, INDUCED)[`F(⦇R⦈)`]; lab(3.45, 1.25, INDUCED)[`⦇R⦈`]
-  lab(-3.55, -1.25, black)[`F(S)`]; lab(3.1, -1.25, black)[`S`]
+  lab(-3.55, -1.25, GIVEN2)[`F(S)`]; lab(3.1, -1.25, GIVEN2)[`S`]
   lab(0, 3.05, GIVEN2)[`α`]; lab(0, 0.55, GIVEN1)[`R`]; lab(0, -1.95, GIVEN1)[`Q`]
   node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-  node(FB.at(0), FB.at(1), GIVEN1, `FB`); node(B.at(0), B.at(1), GIVEN1, `B`)
-  node(FC.at(0), FC.at(1), GIVEN1, `FC`); node(C.at(0), C.at(1), GIVEN1, `C`)
+  node(FB.at(0), FB.at(1), black, `FB`); node(B.at(0), B.at(1), black, `B`)
+  node(FC.at(0), FC.at(1), black, `FC`); node(C.at(0), C.at(1), black, `C`)
 })
