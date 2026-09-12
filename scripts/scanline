@@ -655,10 +655,16 @@ def objhue(p):
     """A wire that changes OBJECT changes hue there.  One line running from an `A` port to a `B`
     port in a single colour says the object never changed; the bead that renames it is the seam, and
     the two bands are what make the rename visible without reading the ports."""
-    c = p.rec.get("ocol")
-    return [] if not c or p.olabel == p.oblabel or c[0] != c[1] else \
-        [f"{p.id}: the object wire runs from {p.olabel} to {p.oblabel} in one colour {c[0]}"
-         f" — an object wire changes hue where it changes object"]
+    # The OBJECTS the wire draws are the obligations, one band each: comparing only the two ports
+    # would pass a panel that renames the object twice and comes back to the hue it started in, and
+    # a band deleted from the list would take its own collision out of the count with it.
+    out, seen = [], {}
+    for b in p.rec.get("ocol") or ():
+        (l, c) = b
+        if seen.setdefault(c, l) != l:
+            out.append(f"{p.id}: the object wire draws {seen[c]} and {l} in one colour {c}"
+                       f" — an object wire changes hue where it changes object")
+    return out
 
 
 def indexed(p):

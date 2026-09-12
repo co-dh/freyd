@@ -114,12 +114,15 @@
   // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, which is the
   // same guess `scanline` makes when a panel says nothing, so the ink and the sweep agree.
   if plain(bot) != bs.last().at(1) and ride != () { bs.push((calc.min(..ride), plain(bot))) }
-  bs.map(b => (b.at(0), objcol(b.at(1))))
+  // `(ytop, object, hue)`: the OBJECT travels with its band, because the rule the sweep holds is
+  // about the objects drawn — two of them in one colour — and a band that carried only a hue could
+  // not name the pair that collided.
+  bs.map(b => (b.at(0), b.at(1), objcol(b.at(1))))
 }
 // The band a height falls in: the LAST one that opens above it, the bands running down the panel.
 #let ocolat(bs, y) = {
-  let c = if bs == () { BCOL } else { bs.first().at(1) }
-  for b in bs { if y < b.at(0) - 1e-9 { c = b.at(1) } }
+  let c = if bs == () { BCOL } else { bs.first().at(2) }
+  for b in bs { if y < b.at(0) - 1e-9 { c = b.at(2) } }
   c
 }
 // Cut a vertical run at the band seams with NO gap — `obroken`'s cut opens one, being a cut at a dot.
@@ -339,8 +342,8 @@
   let obnd = obands(h, obj, top.find(p => p.at(0) == xo).at(1),
                     bot.find(p => p.at(0) == xo).at(1),
                     beads.filter(b => b.at(4, default: none) == none).map(b => b.at(0)))
-  // Bound ONCE and used by both the ink and `hm-meta`: a check reading a value the drawing does not
-  // use is a check on a second copy of the rule, which is the bug the `knees` field exists to stop.
+  // The two PORTS' hues, read off the same bands the wire is drawn in, so a port and the ink that
+  // leaves it are one colour by construction.
   let (otc, obc) = (ocolat(obnd, h), ocolat(obnd, 0))
   // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
   // sides match, so taking the last one would make `xat` two functions in two languages, not one.
@@ -373,7 +376,7 @@
   lanecheck(cert.at("expect", default: "dpanel"),
     lanes.map(l => dnm(l, top, bot)).filter(n => n != none).map(n => (plain(n), fcol(n))),
     beads.map(b => (plain(b.at(1)), b.at(2, default: black)))
-      + obnd.map(o => ("the object wire", o.at(1))))
+      + obnd.map(o => (o.at(1), o.at(2))))
   dpan(h, w, xo, {
   for (i, l) in lanes.enumerate() {
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
@@ -455,7 +458,9 @@
     + (if obreak == () { (:) } else { (obreak: obreak) })
     + (if ostraight { (ostraight: true) } else { (:) })
     + (if obj == () { (:) } else { (obj: obj.map(p => p.map(plain))) })
-    // The object PORTS' hues, so the sweep can hold the rule that a wire changing object changes
-    // colour — the ink is a `dpan` argument and nothing else on the rec would show it.
-    + (ocol: (otc.to-hex(), obc.to-hex())))
+    // EVERY band the object wire is drawn in, `(object, hue)` top to bottom — not just the two
+    // ports.  The rule is that two DIFFERENT objects on one wire are two hues, and the objects the
+    // wire draws are the obligations: an endpoint pair can only catch the collisions that happen to
+    // land on the ends, and says nothing about a rename in the middle of the panel.
+    + (ocol: obnd.map(b => (b.at(1), b.at(2).to-hex()))))
 }

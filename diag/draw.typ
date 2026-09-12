@@ -65,9 +65,19 @@
 // object name belongs here — `obands` reads it with no default, so an unlisted one is a compile
 // error, not a wrong hue.
 #let OCOL = (
-  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL, "TA": TCOL, "TB": TCOL,
+  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL, "TA": TCOL, "TB": BCOL,
   "Int": TCOL, "Nat": TCOL, "LA": TCOL, "Job": TCOL, "Item": TCOL, "Word": TCOL, "City": TCOL,
+  // `TA` and `TB` are the two ends of §11.5.1c's wire and `𝟏` is the summand §13.6.4a's wire ends
+  // at: each stands beside the object above it, so it cannot wear that object's band.  `𝟏` takes a
+  // wire hue, not the grey the REGION reserves — a grey object wire would vanish into that strip.
+  "𝟏": BCOL,
   "Char": TCOL, "Code": BCOL, "Op": GCOL,
+  // The objects the SORT and THIN displays rename along one wire: `A` is green, so the list it is
+  // folded into and that list's `F`-image take the other two bands, and the wire's three names read
+  // as three objects.  A hash band is only a starting point and it put all three on green.
+  "L": BCOL, "LF": TCOL,
+  // §16's coder and paragraph objects, each beside the object it is built from on one wire.
+  "dStr": BCOL, "[Code]": TCOL, "dPara Word": BCOL,
   "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
 
 // A NAME'S OWN NUMBER — FNV over its bytes, with the round's `+` where FNV-1a has an exclusive or,
