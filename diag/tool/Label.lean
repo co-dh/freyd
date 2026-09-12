@@ -32,6 +32,52 @@ open Lean
 
 namespace Freyd.StrDiag
 
+/-- The head IDENTIFIER the printer writes an application under, and `none` where the printer's own
+    notation DELIMITS the operand instead (`est(R)`, `⦇S⦈`) — those open with an ATOM, which is what
+    a bracket is. -/
+partial def stxHead : Syntax → Option Name
+  | .ident _ _ n _ => some n
+  | .node _ _ args => args[0]?.bind stxHead
+  | _ => none
+
+/-- A JUXTAPOSED application as THE PRINTER wrote it: the identifier it opens with and the operands
+    beside it, `none` for everything else — a bare name, an infix, a notation that delimits its own
+    operand.  The printer's operands, never the term's arguments: an unexpander that drops arguments
+    (`H T h` printed `H`) dropped them from the picture too, and re-reading them off the term would
+    put them back. -/
+partial def appParts : Syntax → Option (Syntax × Array Syntax)
+  | .node _ k args =>
+    if k != ``Lean.Parser.Term.app then none else
+    match (args[0]? : Option Syntax), (args[1]? : Option Syntax) with
+    | some f, some (.node _ _ ops) =>
+      if f matches .ident .. then some (f, ops)
+      else (appParts f).map fun (h, prev) => (h, prev ++ ops)
+    | _, _ => none
+  | _ => none
+
+/-- One operand as the printer writes it, with the parentheses the printer put round it to keep it
+    out of the juxtaposition dropped — the brackets of `f(…)` already separate it, and
+    `thin((prefix°×(⊤+⊤)))` doubles them. -/
+partial def stxShow (s : Syntax) : MetaM String := do
+  match s.getArgs with
+  | #[.atom _ "(", inner, .atom _ ")"] => stxShow inner
+  | #[inner] => if s.isOfKind nullKind then stxShow inner else fmt s
+  | _ => fmt s
+where
+  fmt (s : Syntax) : MetaM String := do
+    let t := (toString (← PrettyPrinter.ppTerm ⟨s⟩)).replace "«" "" |>.replace "»" ""
+    return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
+
+/-- The printer's spelling of a term, with a JUXTAPOSED application re-set in the repo's brackets:
+    `thin(Q)`, never `thin Q`, because juxtaposition is composition and the second reads as a
+    composite of two arrows.  A head whose own notation already delimits its operands (`est(R)`,
+    `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote. -/
+def appShow (e : Expr) : MetaM String := do
+  match appParts (← PrettyPrinter.delab e) with
+  | some (h, ops) =>
+    return (← stxShow h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+  | none => plain e
+
 /-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
     generator writes back with): a bracket already separates two factors, so `F(∋)S` and `π₂R°`
     close up where `prefix list(p)` and `S%∋ est(R°)` cannot.  A factor OPENING with `(` keeps its
@@ -339,10 +385,14 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- the printer as a local of that name.  That is what turns the operand of a head with no clause
     -- from Lean's `≫` into juxtaposition, under whatever brackets the head already writes.
     let hom ← arrows args
+    -- and then APPLYING TAKES PARENTHESES (`appShow`), because juxtaposition is composition.  Those
+    -- brackets are what separates an operand from the head, so where they are coming the operand is
+    -- respelled at the TOP of its own precedence: `thin(prefix°×(⊤+⊤))`, not a second pair inside.
+    let paren := (appParts (← PrettyPrinter.delab e)).isSome
     let rec go : List Expr → Expr → MetaM String
-      | [], t => plain t
+      | [], t => appShow t
       | a :: rest, t => do
-        let nm := Name.mkSimple (← labelAt 4 a)
+        let nm := Name.mkSimple (← labelAt (if paren then 0 else 4) a)
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
           go rest (t.replace fun s => if s == a then some x else none)
     go hom.toList e

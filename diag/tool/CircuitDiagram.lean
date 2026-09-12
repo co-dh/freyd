@@ -75,17 +75,14 @@ inductive OKind where
 /-- How a label JOINS under a functor's name, recorded WHERE THE LABEL IS BUILT — the note's own
     rule, `lshow` in `scripts/circuit`. -/
 inductive Join where
-  /-- one token of ONE letter (`A`, `𝟏`), or an application already spelled under one (`EA`,
-      `F[A]`): a one-letter functor juxtaposes with nothing -/
-  | letter
-  /-- the printer closed it in its OWN BRACKETS (`[A]`): any functor juxtaposes with nothing -/
+  /-- ONE NAME the reader cannot take for a composite (`A`, `𝟏`, `Word`), or a chain of one-letter
+      functors on one (`EA`, `FEA`): a ONE-LETTER functor juxtaposes with it -/
+  | name
+  /-- SELF-DELIMITED by the printer's own brackets (`[A]`): any functor juxtaposes with it -/
   | bracket
-  /-- it opens with a name of SEVERAL letters (`Word`, `Bag Job`, `list⁺ A`): a space, or the two
-      names run into one word -/
-  | word
-  /-- written INFIX from the parts (`A×[A]`, `𝟏+A×[A]`): parentheses, `×` and `+` binding looser
-      than juxtaposition -/
-  | infx
+  /-- everything else — an application under a longer name (`bag(Job)`), a label written INFIX from
+      the parts (`A×[A]`) — and applying an operator to it takes parentheses -/
+  | other
   deriving Inhabited, BEq
 
 inductive Obj where
@@ -135,47 +132,39 @@ def plain (e : Expr) : MetaM String := do
 /-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
     the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
     token `[A]`, so the term's argument count answers a different question, and the finished string
-    answers none.  A form the printer CLOSED IN ITS OWN BRACKETS — first child an atom and last
-    child an atom, which is what a bracket is — needs no separator; anything else joins by the NAME
-    IT OPENS WITH, which is its leftmost identifier, and one of several letters would run into the
-    functor's name. -/
+    answers none.  ONE TOKEN is one name, however long (`A`, `𝟏`, `Word`); a form the printer CLOSED
+    IN ITS OWN BRACKETS — first child an atom and last child an atom, which is what a bracket is —
+    delimits itself; and an APPLICATION the printer wrote by juxtaposition (`Bag Job`, `list⁺ A`) is
+    neither, because juxtaposition is composition and closing a functor's name up against it would
+    read as one more factor of a composite. -/
 partial def stxJoin : Syntax → Join
-  | .ident _ _ n _ => if (n.getString!).length == 1 then .letter else .word
-  | .atom _ s => if s.length == 1 then .letter else .word
+  | .ident .. | .atom .. => .name
   | .node _ _ args =>
     match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
     | some (.atom ..), some (.atom ..) => .bracket
-    | _, _ => (args[0]?.map stxJoin).getD .word
-  | .missing => .word
+    | _, _ => .other
+  | .missing => .other
 
 /-- An object with no structure of its own: the printer's label, and how that label joins under a
     functor, read off the syntax the printer built it from. -/
 def opaqObj (e : Expr) : MetaM Obj :=
-  return .mk (← plain e) .opaq #[] (stxJoin (← PrettyPrinter.delab e))
+  return .mk (← StrDiag.appShow e) .opaq #[] (stxJoin (← PrettyPrinter.delab e))
 
-/-- A functor's action on an OBJECT, spelled as the note spells a wire's type (`lshow` in
-    `scripts/circuit`): a COMPOSITE argument is parenthesised — `E(A×[A])` — because juxtaposition is
-    composition and `EA×[A]` would read as the product of `EA` with `[A]`; a bracketed one needs no
-    separator (`E[A]`, `F[Char]`); everything else is juxtaposed only when BOTH names are a single
-    letter (`EA`, `E𝟏`, `EF[A]`, `EFB`) and otherwise takes a space, because `EBag Job` and
-    `list A` written closed up read as one name nobody declared.
+/-- A functor's action on an OBJECT, by the repo's juxtaposition rule: juxtaposition is composition,
+    so APPLYING takes parentheses (`bag(Job)`, `E(A×[A])`, `E(bag(Job))`) — `EA×[A]` would read as the
+    product of `EA` with `[A]` and `E bag Job` as three things composed.  Two forms stay closed up: a
+    CHAIN OF ONE-LETTER FUNCTORS on one name, which no reader can take for a composite (`EA`, `FEA`,
+    `E𝟏`), and an argument the printer ALREADY DELIMITED with its own brackets (`E[A]`, `F[Char]`).
 
     THE ARGUMENT'S JOIN IS RECORDED WHERE IT WAS BUILT (`Obj.join`), never re-read off its name. -/
 def applyLabel (f : String) (a : Obj) : String :=
-  match a.join with
-  | .infx => f ++ "(" ++ a.label ++ ")"
-  | .bracket => f ++ a.label
-  | .letter => if f.length == 1 then f ++ a.label else f ++ " " ++ a.label
-  | .word => f ++ " " ++ a.label
+  if a.join == .bracket || (f.length == 1 && a.join == .name) then f ++ a.label
+  else f ++ "(" ++ a.label ++ ")"
 
-/-- The join of what `applyLabel f` builds: it opens with `f`'s own name. -/
-def applyJoin (f : String) : Join := if f.length == 1 then .letter else .word
-
-/-- The head IDENTIFIER the printer writes an application under. -/
-partial def stxHead : Syntax → Option Name
-  | .ident _ _ n _ => some n
-  | .node _ _ args => args[0]?.bind stxHead
-  | _ => none
+/-- The join of what `applyLabel f` builds: a one-letter functor over a name is one more such name,
+    and anything else is an application, which the next functor parenthesises. -/
+def applyJoin (f : String) (a : Obj) : Join :=
+  if f.length == 1 && (a.join == .name || a.join == .bracket) then .name else .other
 
 /-- Whether a CARRIER TYPE has a spelling of its own — the same question `isNamed` asks of an arrow,
     asked of a type, and the one that decides which of the two available names a wire wears.  `List A`
@@ -188,7 +177,7 @@ def typeNamed (t : Expr) : MetaM Bool := do
   let some c := t.getAppFn.constName? | return true
   let s ← PrettyPrinter.delab t
   if stxJoin s == .bracket then return true
-  let some h := stxHead s | return true
+  let some h := StrDiag.stxHead s | return true
   return h.getString! != c.getString!
 
 mutual
@@ -202,7 +191,7 @@ partial def objOf (o : Expr) : MetaM Obj := do
   match o.getAppFnArgs with
   | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
     match args.back? with
-    | some b => return .mk (applyLabel "E" (← objOf b)) .opaq #[] (applyJoin "E")
+    | some b => do let a ← objOf b; return .mk (applyLabel "E" a) .opaq #[] (applyJoin "E" a)
     | none => opaqObj o
   -- A RELATOR APPLIED TO AN OBJECT is named by the relator and its argument — `F(c)`, whatever the
   -- carrier reduces to, and for however many summands.  Counting the carrier's summands answers a
@@ -213,7 +202,8 @@ partial def objOf (o : Expr) : MetaM Obj := do
     | some (f, b) => do
       let n ← plain f
       let (ob, _) ← carrierObj o
-      return .mk (applyLabel n (← objOf b)) ob.kind ob.parts (applyJoin n)
+      let a ← objOf b
+      return .mk (applyLabel n a) ob.kind ob.parts (applyJoin n a)
     | none => opaqObj o
   | _ => do
     let (ob, named) ← carrierObj o
@@ -226,7 +216,7 @@ partial def objOf (o : Expr) : MetaM Obj := do
       if h : ss.size = 1 then
         let s := ss[0]'(by omega)
         let c := if s.kind == .prod then (s.parts.back?).getD s else s
-        return .mk (applyLabel "F" c) .sum ob.parts (applyJoin "F")
+        return .mk (applyLabel "F" c) .sum ob.parts (applyJoin "F" c)
       return ob
     -- THE STATEMENT NAMED IT: a declared object is ONE atom where its carrier named nothing — a
     -- quotient, a structure, a bare base type is an implementation the picture never shows.  A
@@ -257,11 +247,11 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   match ← StrDiag.wiringOf t with
   | .prod a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
-    return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob] .infx
+    return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob] .other
   | .sum a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
-    return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] .infx
-  | .one => return .mk "𝟏" .one #[] .letter
+    return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] .other
+  | .one => return .mk "𝟏" .one #[] .name
   | .atom t =>
     match t.getAppFnArgs with
     | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] .bracket
@@ -299,7 +289,7 @@ def isNamed (e : Expr) : MetaM Bool := do
   | ``Freyd.Alg.cup | ``Freyd.Alg.powerRel
   | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => return true
   | .str _ s =>
-    let some h := stxHead (← PrettyPrinter.delab e) | return false
+    let some h := StrDiag.stxHead (← PrettyPrinter.delab e) | return false
     -- A name of its own is one the DECLARATION chose.  A head that is one of the term's own
     -- BINDERS chose nothing — `F(R)` prints under the relator variable `F`, and that relator is
     -- exactly what has to open for the fork inside it to be drawn — and an unexpander that only
@@ -489,7 +479,7 @@ partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
     return false
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
-def powLabel (a : Obj) : Obj := .mk (applyLabel "E" a) .opaq #[] (applyJoin "E")
+def powLabel (a : Obj) : Obj := .mk (applyLabel "E" a) .opaq #[] (applyJoin "E" a)
 
 def wiresOf (o : Obj) : MetaM (Array Obj) :=
   match o.wires with
@@ -878,7 +868,7 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
   let ins := ls.foldl (fun a l => a ++ l.ins) #[]
   let outw := ls.foldl (fun a l => a ++ l.outs) #[]
   let t := if outs.size == 1 then outs[0]! else
-    .mk (String.intercalate "×" (outs.toList.map Obj.label)) .prod outs .infx
+    .mk (String.intercalate "×" (outs.toList.map Obj.label)) .prod outs .other
   return mkPic "stack" ins outw s t false #[("lanes", .arr (ls.map (·.val)))]
 
 /-- §3 rows 2/3/14: a map given by a function.  A constant DISCARDS every input strand at a dot
