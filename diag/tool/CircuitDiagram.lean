@@ -289,7 +289,10 @@ def isNamed (e : Expr) : MetaM Bool := do
   | ``Freyd.Alg.cup | ``Freyd.Alg.powerRel
   | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => return true
   | .str _ s =>
-    let some h := StrDiag.stxHead (← PrettyPrinter.delab e) | return false
+    -- NO IDENTIFIER HEAD AT ALL means the printer wrote it under its own NOTATION (`thin(Q)`,
+    -- `⦇S⦈`), which is a spelling of its own by the same test: the head it prints is not the
+    -- constant's name.  A notation DELIMITS its operand, so the syntax opens with an atom.
+    let some h := StrDiag.stxHead (← PrettyPrinter.delab e) | return true
     -- A name of its own is one the DECLARATION chose.  A head that is one of the term's own
     -- BINDERS chose nothing — `F(R)` prints under the relator variable `F`, and that relator is
     -- exactly what has to open for the fork inside it to be drawn — and an unexpander that only

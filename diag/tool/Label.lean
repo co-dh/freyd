@@ -84,7 +84,9 @@ def appShow (e : Expr) : MetaM String := do
     space — `pick (schedule×𝟙)snoc` closed up would read as an application of `pick`. -/
 def juxt (a b : String) : String :=
   if a.isEmpty || b.isEmpty then a ++ b
-  else if ")]⟩⦈}".contains a.back || "[⟨⦇{".contains b.front then a ++ b
+  -- `°` is a POSTFIX: it terminates its operand exactly as a closer does, so `est(R∩S°S)` must not
+  -- come out `est(R∩S° S)`.
+  else if ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
   else a ++ " " ++ b
 
 /-- The heads the note sets TIGHT: a relator's action on an object, the power object and the
