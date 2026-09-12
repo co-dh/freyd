@@ -30,8 +30,8 @@
 # must agree in top-level node kind and in port arity before a line names that selector, and a row
 # no side or arm reaches keeps `.lhs` and shows up as a DIFF rather than as a silently-passing
 # wrong picture.
-Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
-Freyd.Alg.RelSet.ListRel.subseq_cata.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
+Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
+Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
 - | <subseq-EW-case> | [nil,(𝟙×∋)(cons ∪ π₂)]
 - | <subseq-EW-case> | [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]
 - | <subseq-EW-case> | [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]
@@ -105,13 +105,13 @@ Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 Freyd.Alg.dynamic_programming_thin.rhs | <dp-laws> | H%∋ est(R)
 Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin Q P(F(X)h) est(R)
 - | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
-Freyd.Alg.RelSet.Bracket.R_eq.lhs | <mct-laws> | (flatten°)%∋ est(R)
-- | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)
+Freyd.Alg.RelSet.Bracket.mct_laws.rhs | <mct-laws> | (flatten°)%∋ est(R)
+Freyd.Alg.RelSet.Bracket.mct_laws.lhs | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)
 Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | (cat°)%∋ P((X×X)bin) est(R)
 Freyd.Alg.RelSet.Bracket.mct_g_mono.lhs | <mct-laws> | splits list((mct×mct)bin)minlist R
-- | <code-laws> | (decode°)%∋ est(R)
-- | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
-- | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
+Freyd.Alg.RelSet.Code.code_laws.rhs | <code-laws> | (decode°)%∋ est(R)
+Freyd.Alg.RelSet.Code.code_laws.lhs | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
+Freyd.Alg.RelSet.Code.code_branch.lhs | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
 - | <code-laws> | reduce list((encode×𝟙)snoc)minlist R
 Freyd.Alg.greedy_dp.rhs | <greedy-laws> | H%∋ est(R)
 Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
@@ -119,9 +119,9 @@ Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
 Freyd.Alg.RelSet.Detab.entab_laws.rhs | <entab-laws> | (detab°)%∋ est(R)
 Freyd.Alg.RelSet.Detab.entab_branch.rhs | <entab-laws> | ([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]
 Freyd.Alg.RelSet.Detab.entab_branch.lhs | <entab-laws> | (expand°)%∋ est(V×U)(X×𝟙)snoc
-- | <tardy-laws> | (bagify°)%∋ est(R)
-- | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
-- | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
+Freyd.Alg.RelSet.Tardy.tardy_laws.rhs | <tardy-laws> | (bagify°)%∋ est(R)
+Freyd.Alg.RelSet.Tardy.tardy_laws.lhs | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
+Freyd.Alg.RelSet.Tardy.tardy_branch.lhs | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
 - | <tardy-laws> | pick (schedule×𝟙)snoc
 - | <tex-laws> | (intern°)%∋ est(R)
 - | <tex-laws> | interval (inrange val°)%∋ est(R)
