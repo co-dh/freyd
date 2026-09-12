@@ -45,6 +45,13 @@ public theorem relCata_alpha (I : InitialAlgebra F) : relCata I.α = Cat.id I.t 
     rw [Cat.comp_id, F.map_id, Cat.id_comp]
   exact ((relCata_UP I I.α (Cat.id I.t)).mp h).symm
 
+/-- **B&dM p.142 as the SQUARE the uniqueness produces**: the identity is the ONE arrow making the
+    initial algebra's own homomorphism square commute — `αX=F(X)α ⟺ X=𝟙`, which is `relCata_UP` at
+    `α` with `⦇α⦈=𝟙` read into its right-hand side. -/
+public theorem relCata_alpha_UP (I : InitialAlgebra F) (X : I.t ⟶ I.t) :
+    (I.α ≫ X = F.map X ≫ I.α) ↔ X = 𝟙 I.t := by
+  rw [relCata_UP I I.α X, relCata_alpha]
+
 /-! ## §6.3  Theorem 6.2 (the hylomorphism theorem)
 
   The hylomorphism `[[R,S]] = (|S|)°·(|R|)` (mirrored: `(relCata I S)° ≫ relCata I R`) is the
