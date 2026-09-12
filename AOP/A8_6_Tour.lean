@@ -419,7 +419,7 @@ public theorem tour_laws {l lF : RelSet.{0}}
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
     (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
     (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R Qc_refl Qc_trans R_recip_trans
-    hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
+    hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87 rfl
   rw [Cat.comp_id (graph (droplAlgFn (City := City))),
     Cat.comp_id (graph (droprAlgFn (City := City)))] at key
   exact key

@@ -311,6 +311,9 @@ public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F
     every step, refines the thinning specification —
     `min R·Λ⦇S⦈ ⊒ minlist R·⦇thinlist Q·merge P·⟨g₁,g₂⟩·listcp(F)⦈`, mirrored to
     `relCata (listcp(F) ≫ ⟨g₁,g₂⟩ ≫ merge P ≫ thinlist Q) ≫ minlist R ⊑ Λ ⦇S⦈ ≫ est R`.
+    The specification's algebra is BOUND as `S` (`hS : S = f₁p₁ ∪ f₂p₂`), because that is the one
+    letter the book and the note both write there and a conclusion spelling the union out reads as
+    a different theorem from the one the picture draws.
     Corollary 8.1 (`thinning_est`) puts `thin Q` inside the fold, (8.7) splits the minimum
     into `sort P` followed by `minlist R`, and `relCata_le_comp` fuses `sort P` into the
     algebra — that fusion condition being `sortedAlg_fusion`.  No set is ever built. -/
@@ -332,11 +335,13 @@ public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     (h811 : F.map sortP ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel Q ≫ sortP)
-    (h87 : sortP ≫ minlist ⊑ est R) :
+    (h87 : sortP ≫ minlist ⊑ est R) {S : F.obj A ⟶ A}
+    (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
     relCata (listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist)
         ≫ minlist
-      ⊑ Λ (relCata ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ est R :=
-  le_trans
+      ⊑ Λ (relCata S) ≫ est R := by
+  subst hS
+  exact le_trans
     (thinningList_step1 I hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86)
     (le_trans (thinningList_step2 I h87)
       (thinningList_step3 hFr I hQR hreflQ htransQ htransR hm₁ hm₂))

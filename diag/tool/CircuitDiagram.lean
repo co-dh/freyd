@@ -141,7 +141,12 @@ partial def stxJoin : Syntax → Join
   | .ident .. | .atom .. => .name
   | .node _ _ args =>
     match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
-    | some (.atom ..), some (.atom ..) => .bracket
+    -- A BRACKET IS A TOKEN WITH NO NAME IN IT.  `bag(Job)` and `list⁺(A)` open with an atom and
+    -- close with one just as `[A]` does, but their opening token CARRIES THE FUNCTOR'S NAME, so the
+    -- next functor's would close up against it (`Ebag(Job)`) and read as two things composed.  The
+    -- test is on the token, not on its length: a character a name can be spelled with disqualifies.
+    | some (.atom _ o), some (.atom ..) =>
+      if o.any fun c => Lean.isIdFirst c || Lean.isIdRest c then .other else .bracket
     | _, _ => .other
   | .missing => .other
 
@@ -161,10 +166,29 @@ def applyLabel (f : String) (a : Obj) : String :=
   if a.join == .bracket || (f.length == 1 && a.join == .name) then f ++ a.label
   else f ++ "(" ++ a.label ++ ")"
 
-/-- The join of what `applyLabel f` builds: a one-letter functor over a name is one more such name,
-    and anything else is an application, which the next functor parenthesises. -/
-def applyJoin (f : String) (a : Obj) : Join :=
-  if f.length == 1 && (a.join == .name || a.join == .bracket) then .name else .other
+/-- The join of what `applyLabel f` builds, which is decided by the label's OWN HEAD and nothing
+    else: a one-letter functor heads what it builds, so `E(bag(Job))` juxtaposes under the next one
+    exactly as `EA` does (`EF(bag(Job))`), while a longer name heads an application the next functor
+    parenthesises. -/
+def applyJoin (f : String) (_ : Obj) : Join :=
+  if f.length == 1 then .name else .other
+
+/-- A number as the exponent a power is written with. -/
+def supNum (n : Nat) : String :=
+  String.join ((toString n).toList.map fun c =>
+    #["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"][c.toNat - '0'.toNat]!)
+
+/-- The label of a PRODUCT of objects, and how it joins.  `n` EQUAL factors are a POWER (`A²`,
+    `E[A]²`): writing one name n times says nothing the exponent does not, and the picture's n
+    strands are the same either way.  A power heads with its base's own head, so it juxtaposes
+    wherever the base does (`EA²`, `E[A]²`); a genuine `×` heads with nothing and takes brackets. -/
+def prodObj (ps : Array Obj) : Obj :=
+  match ps[0]? with
+  | none => .mk "𝟏" .one #[] .name
+  | some p =>
+    if ps.size > 1 && ps.all fun q => q.label == p.label then
+      .mk (p.label ++ supNum ps.size) .prod ps p.join
+    else .mk (String.intercalate "×" (ps.toList.map Obj.label)) .prod ps .other
 
 /-- Whether a CARRIER TYPE has a spelling of its own — the same question `isNamed` asks of an arrow,
     asked of a type, and the one that decides which of the two available names a wire wears.  `List A`
@@ -200,7 +224,9 @@ partial def objOf (o : Expr) : MetaM Obj := do
   | (``Freyd.Functor.obj, args) =>
     match StrDiag.lastTwo args with
     | some (f, b) => do
-      let n ← plain f
+      -- The RELATOR NAMES ITSELF and its type parameters name nothing: `F(list⁺(A))`, never
+      -- `TT.F A(list⁺(A))`, because those parameters are the types the wires already carry.
+      let n ← do pure ((← StrDiag.relatorName? f).getD (← plain f))
       let (ob, _) ← carrierObj o
       let a ← objOf b
       return .mk (applyLabel n a) ob.kind ob.parts (applyJoin n a)
@@ -247,7 +273,10 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   match ← StrDiag.wiringOf t with
   | .prod a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
-    return .mk (oa.label ++ "×" ++ ob.label) .prod #[oa, ob] .other
+    -- `×` IS ASSOCIATIVE AND ITS FACTORS ARE THE STRANDS, so the parts are kept FLAT: `Obj.wires`
+    -- already reads a nested product as one row, and the power below counts that same row.
+    let flat (o : Obj) : Array Obj := if o.kind == .prod then o.parts else #[o]
+    return prodObj (flat oa ++ flat ob)
   | .sum a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
     return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] .other
@@ -479,6 +508,10 @@ partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
     for n in [``Freyd.Alg.RelSet.graph, ``Cat.id, ``Freyd.Alg.Λ, ``Cat.comp,
               ``Freyd.Alg.RelSet.rprodMap] do
       if let some e' ← Meta.whnfUntil e n then return ← isMapOf e' (fuel - 1)
+    -- AND AN EQUATION THE NOTE REWRITES ALONG answers this too: `arm₂` of a map is a map, and the
+    -- label already writes the arm by its own name (`snoc`), so the box has to be that map's
+    -- rectangle — the name and the shape are read off the same rewritten term or they disagree.
+    if let some r ← StrDiag.rewriteHead? e then return ← isMapOf r (fuel - 1)
     return false
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
@@ -492,36 +525,6 @@ def wiresOf (o : Obj) : MetaM (Array Obj) :=
 /-- The fork's `open` generator: the coproduct arrives as ONE wire and the arm splits or ends it
     according to its summand. -/
 def openPic (src s : Obj) : MetaM Pic := return mkPic "open" #[src] (← wiresOf s) src s true #[]
-
-/-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
-    peeled the way a tuple pattern binds it. -/
-partial def factors (s ty : Expr) (n : Nat) : MetaM (Array Expr) := do
-  if n == 0 then return #[]
-  if n == 1 then return #[s]
-  match (← Meta.whnfD ty).getAppFnArgs with
-  | (``Prod, #[_, b]) => return #[.proj ``Prod 0 s] ++ (← factors (.proj ``Prod 1 s) b (n - 1))
-  | _ => throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which is not a \
-      product of that many factors"
-
-/-- One alternative as a map OUT OF ITS SUMMAND, which is what an arm of the tape draws. -/
-def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
-  Meta.withLocalDeclD `s ty fun s => do
-    Meta.mkLambdaFVars #[s] (mkAppN alt (← factors s ty n)).headBeta
-
-/-- The arms of a map given by a `match` ON ITS INPUT at a coproduct.  `matchMatcherApp?` reads the
-    discriminant, the alternatives and their arities off the elaborated term and the coproduct off
-    the discriminant's TYPE, so any `match` written this way — at any coproduct, any arity — is the
-    tape, and no `def`'s name appears here. -/
-def matchArms (fw : Expr) : MetaM (Option (Array Expr)) := do
-  unless fw.isLambda do return none
-  Meta.lambdaBoundedTelescope fw 1 fun xs body => do
-    let some u := xs[0]? | return none
-    let some ma ← Meta.matchMatcherApp? body | return none
-    unless ma.discrs.size == 1 && ma.discrs[0]! == u && ma.alts.size == 2
-      && ma.altNumParams.size == 2 && ma.remaining.isEmpty do return none
-    let (``Sum, #[a, b]) := (← Meta.whnfD (← Meta.inferType u)).getAppFnArgs | return none
-    return some #[← armFun ma.alts[0]! a ma.altNumParams[0]!,
-      ← armFun ma.alts[1]! b ma.altNumParams[1]!]
 
 /-- A DEFINED arrow opened to its body, on the same test `leaf` uses: a name the labeller keeps is
     never opened, and a body with no clause has no circuit inside it.  Every clause that matches on
@@ -602,7 +605,7 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
             | some r, some g => do
               let (s, _) ← endsOf fs[i]!
               let (_, t) ← endsOf fs[i + 1]!
-              if s.kind == .sum && (← matchArms (← Meta.whnfD g)).isSome then
+              if s.kind == .sum && (← StrDiag.sumArms (← Meta.whnfD g)).isSome then
                 pure (some (← graphPic g s t (fuse := some r)))
               else pure none
             | _, _ => pure none
@@ -870,8 +873,7 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
       ls := ls.push (seqPic #[] #[] #[p]); outs := outs.push p
   let ins := ls.foldl (fun a l => a ++ l.ins) #[]
   let outw := ls.foldl (fun a l => a ++ l.outs) #[]
-  let t := if outs.size == 1 then outs[0]! else
-    .mk (String.intercalate "×" (outs.toList.map Obj.label)) .prod outs .other
+  let t := if outs.size == 1 then outs[0]! else prodObj outs
   return mkPic "stack" ins outw s t false #[("lanes", .arr (ls.map (·.val)))]
 
 /-- §3 rows 2/3/14: a map given by a function.  A constant DISCARDS every input strand at a dot
@@ -885,7 +887,7 @@ partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none) : M
   -- reason: `F(R)` handing over to a match is `F(R)[f,g]`, and the caller passes `src` as the
   -- functor's source so the fork is at `F(a)` and the fused `𝟙×R` sits on the arm that crosses it.
   if src.kind == .sum then
-    if let some arms ← matchArms fw then
+    if let some arms ← StrDiag.sumArms fw then
       return ← tapePic src tgt fun i s => do
         match (if i == 1 then fuse else none) with
         | some r => do

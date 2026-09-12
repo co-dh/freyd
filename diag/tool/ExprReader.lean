@@ -680,6 +680,14 @@ def openNoted (e : Expr) : MetaM Expr := do
   | some v => return v.headBeta
   | none => return e
 
+/-- The same answer WHEREVER the name is spelled, not only at the head: an operator applied to a
+    definition the note writes out — `arm₂ β`, the algebra restricted to one summand — leaves the
+    name nested, and a name left standing there is the same defect as one left standing on top. -/
+def openNotedAll (e : Expr) : MetaM Expr :=
+  Meta.transform e (pre := fun x => do
+    let x' ← openNoted x
+    return if x' == x then .continue else .done x')
+
 /-- One `diag_rewrite` step: `e` rewritten to the right side of the first equation whose left side it
     IS, or `none`; the state is threaded by the caller.  THE HEAD TEST IS THE TERMINATION ARGUMENT:
     matching is `isDefEq`, which UNFOLDS, so `Λ ?R =?= singletonMap` would unfold `singletonMap` to

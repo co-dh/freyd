@@ -88,12 +88,30 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
 
+-- A DATATYPE'S CARRIER IS THE NOTE'S OBJECT, under the note's own name for it: `tree(A)`,
+-- `list⁺(A)`.  The unexpander writes the NAME, applied; the BRACKETS are the label printer's
+-- (`appShow`), which puts them round the operand of every juxtaposed application, because
+-- juxtaposition is composition and `tree A` reads as two things composed (CLAUDE.md).  One clause
+-- per carrier, keyed on the constant — the tree the note draws is the tip-tree as much as the rose
+-- tree, and the element type is the one argument either takes.
 open Lean PrettyPrinter in
-/-- The rose tree's CARRIER is the note's object `tree A`: the relator's own lane letter applied to
-    the element type, which is what `dRose A` is.  Space-applied, as the note writes it; a bracketed
-    spelling would have to be a `notation`, for the reason `bag(` below is one. -/
 @[app_unexpander RelSet.RT.dRose] def unexpandDRose : Unexpander
   | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.dTree] def unexpandDTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.Tree] def unexpandTreeType : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.dNE] def unexpandDNE : Unexpander
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
@@ -313,10 +331,24 @@ attribute [diag_unfold] RelSet.MSS.zeroPlus RelSet.MSS.mssPre
 -- `nilR` is the same story one step down: the note's `nil` is read off the CONSTANT the map creates
 -- (`diag/tool/Label.lean`), and the arrow's own Lean name says nothing a picture of `𝟏⟼[E]` does not.
 attribute [diag_unfold] RelSet.SL.nilR
+-- The bag's algebra is the coproduct the note writes out, `[nil,snag]`, never its Lean name: the
+-- arms are read off the `match` by `diag/tool/Label.lean` once the name is opened, and `arm₂` of it
+-- is then the arm alone.
+attribute [diag_unfold] RelSet.Tardy.bagAlg
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
 attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
+-- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
+-- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
+attribute [diag_rewrite] RelSet.SL.arm₂_graph
+-- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
+-- second arm carries the `X`, never a box `F(X)` in front of the junction.
+attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
+-- The same slide at the tip-tree, where the relator is `𝟙+X²`: `F(X)[tip,bin] = [tip,(X×X)bin]`.
+-- The RULE is the generator's — rewrite at a composite — and each polynomial functor states the
+-- equation for its OWN shape, because the shape is what says which slots the `X` lands in.
+attribute [diag_rewrite] RelSet.TT.Fmap_comp_con
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 
