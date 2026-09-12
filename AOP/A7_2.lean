@@ -99,65 +99,73 @@ variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 @[expose] public def Distributes (f : F.obj A ⟶ A) (R : A ⟶ A) : Prop :=
   F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R
 
-/-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
-    distributes over `min R°`. -/
-public theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
-    (hmono : MonotonicAlg f R°) : Distributes f R := by
+/-- **`F(est R)f ⊑ F(∋)f`** — the first of the two bounds Theorem 7.1's inequation splits into:
+    `est(R) ⊑ ∋` carried through the relator and postcomposed with `f`. -/
+public theorem Fmap_est_comp_le_Fmap_eps_comp (f : F.obj A ⟶ A) (R : A ⟶ A) :
+    F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f :=
+  comp_mono_right (F.map_mono (show est R ⊑ ∋ A from inter_lb_left _ _)) f
+
+/-- **Theorem 7.1, step 1**: a bound by `Λ X ≫ est R` is exactly a bound by `X` together with
+    `X° ≫ (−) ⊑ R°`, and `hFr` moves `(F(∋)f)°` across as `f° F(∈)`. -/
+public theorem mon_thm71_step1 (hFr : F.PreservesRecip) :
+    Distributes f R ↔ (F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f ∧
+      f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R°) := by
+  have hrecip : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
+      = f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f := by
+    rw [Allegory.recip_comp, ← hFr (∋ A), Cat.assoc]
   unfold Distributes
-  apply le_Λ_comp_est_iff.mpr
-  refine ⟨comp_mono_right (F.map_mono (show est R ⊑ ∋ A from inter_lb_left _ _)) f, ?_⟩
-  have step1 : (F.map (∋ A) ≫ f)° = f° ≫ F.map ((∋ A)°) := by
-    rw [Allegory.recip_comp, ← hFr (∋ A)]
-  have step2 : F.map ((∋ A)°) ≫ F.map (est R) = F.map ((∋ A)° ≫ est R) :=
-    (F.map_comp _ _).symm
-  have step3 : (∋ A)° ≫ est R ⊑ R° :=
-    le_trans (comp_mono_left _ (show est R ⊑ (((∋ A)°) \ R°) from inter_lb_right _ _))
-      (leftDiv_comp_le _ R°)
-  have step4 : F.map ((∋ A)° ≫ est R) ⊑ F.map R° := F.map_mono step3
-  have heq : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
-      = f° ≫ F.map ((∋ A)° ≫ est R) ≫ f := by
-    rw [step1, Cat.assoc, ← Cat.assoc (F.map ((∋ A)°)) (F.map (est R)) f, step2]
-  rw [heq]
-  exact le_trans (comp_mono_left _ (comp_mono_right step4 f)) ((monotonicAlg_iff_conj hf).mp hmono)
+  rw [le_Λ_comp_est_iff, hrecip]
+
+/-- **Theorem 7.1, step 2**: the first conjunct holds outright, so the second one carries the
+    whole statement. -/
+public theorem mon_thm71_step2 :
+    (F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f ∧
+      f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R°)
+      ↔ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° :=
+  ⟨And.right, fun h => ⟨Fmap_est_comp_le_Fmap_eps_comp f R, h⟩⟩
+
+/-- **Theorem 7.1, step 3**: `∈ est(R) = R°`, under the relator and conjugated by `f`.  `⊑` is
+    (7.5)'s bound; `⊒` is `hpair`, the half that needs TABULATIONS (B&dM Ex 7.9). -/
+public theorem mon_thm71_step3 (hpair : R° ⊑ (∋ A)° ≫ est R) :
+    f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° ↔ f° ≫ F.map R° ≫ f ⊑ R° := by
+  constructor
+  · intro h
+    have hle : f° ≫ F.map R° ≫ f ⊑ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f := by
+      refine comp_mono_left _ ?_
+      rw [← Cat.assoc, ← F.map_comp]
+      exact comp_mono_right (F.map_mono hpair) f
+    exact le_trans hle h
+  · exact fun h => le_trans (conj_Fmap_eps_est_le f R) h
+
+/-- **Theorem 7.1, step 4**: both sides conversed — `F(R°)° = F(R)` by `hFr`, `f` a map. -/
+public theorem mon_thm71_step4 (hf : Map f) (hFr : F.PreservesRecip) :
+    f° ≫ F.map R° ≫ f ⊑ R° ↔ f° ≫ F.map R ≫ f ⊑ R := by
+  rw [← monotonicAlg_iff_conj hf, ← monotonicAlg_iff_conj hf]
+  exact (monotonicAlg_recip_iff hf hFr).symm
+
+/-- **Theorem 7.1 (B&dM p.172)**: `f` is monotonic on `R` exactly when it distributes over
+    `min R°` — the four steps composed. -/
+public theorem monotonicAlg_iff_distributes (hf : Map f) (hFr : F.PreservesRecip)
+    (hpair : R° ⊑ (∋ A)° ≫ est R) : f° ≫ F.map R ≫ f ⊑ R ↔ Distributes f R :=
+  (mon_thm71_step4 hf hFr).symm.trans
+    ((mon_thm71_step3 hpair).symm.trans (mon_thm71_step2.symm.trans (mon_thm71_step1 hFr).symm))
+
+/-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
+    distributes over `min R°`.  Steps 1 and 2 are the whole content; step 3's `⊑` half is
+    `conj_Fmap_eps_est_le`, which needs no `hpair`. -/
+public theorem distributes_of_monotonicAlg (hf : Map f) (hFr : F.PreservesRecip)
+    (hmono : MonotonicAlg f R°) : Distributes f R :=
+  (mon_thm71_step1 hFr).mpr (mon_thm71_step2.mpr
+    (le_trans (conj_Fmap_eps_est_le f R) ((monotonicAlg_iff_conj hf).mp hmono)))
 
 /-- **Theorem 7.1 (B&dM p.172), converse half**: given `R° = min R°·∋` (B&dM Ex 7.9, taken here
     as a hypothesis — its `⊒` half needs TABULATIONS, via Ex 7.8's pairing, not otherwise
     available in this setting), distributivity of `f` over `min R°` implies `f` is monotonic
     on `R°`. -/
 theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
-    (hpair : R° ⊑ (∋ A)° ≫ est R) (hdist : Distributes f R) : MonotonicAlg f R° := by
-  apply (monotonicAlg_iff_conj hf).mpr
-  have hdist' : F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R := hdist
-  have hXrecip : (F.map (∋ A) ≫ f)° = f° ≫ F.map ((∋ A)°) := by
-    rw [Allegory.recip_comp, ← hFr (∋ A)]
-  have hXA : (F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f) ⊑ (∋ A)° := by
-    have hrecip : (F.map (∋ A) ≫ f)° = (∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))° :=
-      calc (F.map (∋ A) ≫ f)°
-          = (Λ (F.map (∋ A) ≫ f) ≫ ∋ A)° := by rw [Λ_eps_eq']
-        _ = (∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))° := Allegory.recip_comp _ _
-    calc (F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f)
-        = ((∋ A)° ≫ (Λ (F.map (∋ A) ≫ f))°) ≫ Λ (F.map (∋ A) ≫ f) := by rw [hrecip]
-      _ = (∋ A)° ≫ ((Λ (F.map (∋ A) ≫ f))° ≫ Λ (F.map (∋ A) ≫ f)) := Cat.assoc _ _ _
-      _ ⊑ (∋ A)° ≫ Cat.id _ := comp_mono_left _ (Λ_is_map' (F.map (∋ A) ≫ f)).2
-      _ = (∋ A)° := Cat.comp_id _
-  have h1 : F.map R° ⊑ F.map ((∋ A)° ≫ est R) := F.map_mono hpair
-  have hmapcomp : F.map ((∋ A)° ≫ est R) = F.map ((∋ A)°) ≫ F.map (est R) := F.map_comp _ _
-  have hUP : (∋ A)° ≫ est R ⊑ R° :=
-    le_trans (comp_mono_left _ (show est R ⊑ (((∋ A)°) \ R°) from inter_lb_right _ _))
-      (leftDiv_comp_le _ R°)
-  have hregroup : f° ≫ F.map ((∋ A)° ≫ est R) ≫ f
-      = (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f) := by
-    rw [hmapcomp, hXrecip]; simp only [Cat.assoc]
-  have hA : f° ≫ F.map R° ≫ f ⊑ f° ≫ F.map ((∋ A)° ≫ est R) ≫ f :=
-    comp_mono_left _ (comp_mono_right h1 f)
-  rw [hregroup] at hA
-  have hC : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
-      ⊑ (F.map (∋ A) ≫ f)° ≫ (Λ (F.map (∋ A) ≫ f) ≫ est R) := comp_mono_left _ hdist'
-  have hA2 := le_trans hA hC
-  rw [← Cat.assoc (F.map (∋ A) ≫ f)° (Λ (F.map (∋ A) ≫ f)) (est R)] at hA2
-  have hE : ((F.map (∋ A) ≫ f)° ≫ Λ (F.map (∋ A) ≫ f)) ≫ est R ⊑ (∋ A)° ≫ est R :=
-    comp_mono_right hXA _
-  exact le_trans (le_trans hA2 hE) hUP
+    (hpair : R° ⊑ (∋ A)° ≫ est R) (hdist : Distributes f R) : MonotonicAlg f R° :=
+  (monotonicAlg_iff_conj hf).mpr
+    ((mon_thm71_step3 hpair).mp (mon_thm71_step2.mp ((mon_thm71_step1 hFr).mp hdist)))
 
 end Distributes
 
