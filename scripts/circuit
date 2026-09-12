@@ -448,8 +448,11 @@ def leaf(e, tbl, src, tgt):
     key = e[1] if e[0] in ('atom', 'app') else None
     # A whole-spelling row is ONE opaque box only when the head has no `arg` row: `listcp(F)` applies
     # an operator to a FUNCTOR, where `E(…)`/`P(…)`/`thin` state an ARROW and must type their argument.
+    # A row the PANEL ITSELF declares is such a row whatever the file says of the head, by `merged`'s
+    # own-over-file rule: a section that types `minlist(R)` at its own objects — §8.3's abstract list
+    # object `L`, not a `[a]` — is saying what ITS box is, and says nothing of `minlist` elsewhere.
     if (e[0] == 'app' and rows(tbl, spell(e))
-            and not any('arg' in r for r in rows(tbl, e[1]))):
+            and (spell(e) in OWN or not any('arg' in r for r in rows(tbl, e[1])))):
         e, key = ('atom', spell(e)), spell(e)
     # A letter may be both a preorder and an operator (`P`, `P(f)`): an application takes the rows
     # with an `arg` scheme and an atom the rows without, so neither ever reads the other's.
