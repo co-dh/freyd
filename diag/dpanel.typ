@@ -17,11 +17,12 @@
 // counters at the point it is PLACED, so a reordered row cannot keep a stale name.
 #let hm-meta(rec) = {
   counter("hm-panel").step()
-  context metadata((kind: "scanline",
-    id: plain(dispnum(counter(heading).get(),
+  context {
+    let disp = plain(dispnum(counter(heading).get(),
       counter(figure.where(kind: "disp")).get().first()))
-      + "." + str(counter("hm-panel").get().first()),
-    ..rec))
+    let k = counter("hm-panel").get().first()
+    metadata((kind: "scanline", id: disp + "." + str(k), disp: disp, k: k, ..rec))
+  }
 }
 
 // The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,

@@ -104,7 +104,7 @@ def note_panels():
     out = {}
     for m in ms:
         if m.get("kind") == "scanline":
-            d = m["id"].rsplit(".", 1)[0]
+            d = m["disp"]
             out.setdefault(name.get(d, d), []).append(m)
     number = {v: k for k, v in name.items()}
     return out, number, {v for k, v in name.items() if v == k}
@@ -408,19 +408,23 @@ def compare(sel, panel, which, gen):
     e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
     if e:
         return f"CANNOT-DRAW typst {e}", None
-    v = run("./scripts/svg-diff", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
+    v = run("./scripts/svg-diff", "--records", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
+    if v.returncode > 1:
+        last = (v.stderr.strip().splitlines() or ["no stderr"])[-1]
+        return f"CANNOT-CHECK ./scripts/svg-diff exited {v.returncode}: {last}", None
     # EVERY OBLIGATION `why` ENUMERATES DECIDES, and the ink is one more of them rather than
     # the gate: a bead's mark is a handful of points (a filled dot against a hollow ring)
     # that `svg-diff` pairs off with each other, so a panel whose one defect was a lax bead
     # drawn strict came back `ok` and the verdict decided nothing.  Either side failing fails.
     d = why(panel, drew)
     if v.returncode or d:
-        # The count and the KIND are `svg-diff`'s own lines, never one spelling of one kind:
-        # grepping them for "only in" printed `0 unmatched primitive(s)` on a panel that tool
-        # had just called 10 unmatched, because every line of it said `moved`.
-        ds = [l.strip() for l in v.stdout.splitlines() if l.startswith("  ")]
-        ks = sorted({l.split(maxsplit=1)[0] for l in ds if l[:1].isalpha()})
-        return None, f"DIFF {len(ds)} unmatched primitive(s){' ' + '/'.join(ks) if ks else ''}; {d}"
+        recs = [json.loads(l) for l in v.stdout.splitlines() if l.strip()]
+        n = [r for r in recs if r["layer"] == "geometry"]
+        kinds = sorted({r["kind"] for r in n})
+        m = [r for r in recs if r["layer"] == "glyph"]
+        return None, (f"DIFF {len(n)} unmatched primitive(s)"
+                       f"{' ' + '/'.join(kinds) if kinds else ''}"
+                       f"{f'; {len(m)} glyph box(es) differ' if m else ''}; {d}")
     return None, "ok"
 
 
