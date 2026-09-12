@@ -402,4 +402,20 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
 /-- A label at the top of its own picture or box: no outer parentheses. -/
 def label (e : Expr) : MetaM String := labelAt 0 e
 
+/-- A label in the PARTS the picture sets it in.  A SYMMETRIC DIVISION is the note's fraction, and a
+    bar DELIMITS its numerator, so that part is spelled at the loosest precedence — `frac(F(∋)f, ∋)`,
+    where the inline spelling has to write `(F(∋)f)%∋`.  Every other arrow is one part.  Dispatched
+    on the HEAD CONSTANT, the same way the inline spelling above is, so no reader has to find the
+    operator again by looking for a `%` in a string. -/
+partial def labelParts (e : Expr) : MetaM (Array String) := do
+  let e' ← openNoted e
+  if e' != e then return ← labelParts e'
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.Λ, args) => do
+    let arrows ← args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
+    match arrows.back? with
+    | some r => return #[← labelAt 0 r, "∋"]
+    | none => return #[← label e]
+  | _ => return #[← label e]
+
 end Freyd.StrDiag

@@ -69,7 +69,7 @@ def fmt (x : Float) : String :=
 
 -- Every label of every picture is `diag/tool/Label.lean`'s: one spelling of composition, of the
 -- converse and of the note's brackets, shared with the string and circuit functors.
-open StrDiag (plain label)
+open StrDiag (plain label labelParts)
 
 /-- Every `.lean` file under `dir`, as module names below `pre` — the exe imports one environment
     holding all of them and draws every name on the command line from it. -/
@@ -99,7 +99,9 @@ structure Node where
 structure Edge where
   src : String
   tgt : String
-  label : String
+  /-- The arrow's label in the PARTS the panel sets it in (`StrDiag.labelParts`): one part for an
+      ordinary arrow, numerator and denominator for the note's fraction bar. -/
+  label : Array String
   side : String
   /-- How far the edge bows out of its chord, in grid units — a MAGNITUDE: which way it bows is
       `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
@@ -685,11 +687,11 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let mut edges : Array Edge := #[]
     for i in [0:2] do
       let (src, tgt, f) := long.edges[i]!
-      edges := edges.push { src, tgt, label := (← label f),
+      edges := edges.push { src, tgt, label := (← labelParts f),
                             side := if i == 0 then "top" else if turns then "right" else "left",
                             dash := ← fc.dashes f, hue := ← fc.hue f }
     let (csrc, ctgt, cf) := (if turns then fc.rhs else fc.lhs).edges[0]!
-    edges := edges.push { src := csrc, tgt := ctgt, label := (← label cf),
+    edges := edges.push { src := csrc, tgt := ctgt, label := (← labelParts cf),
                           side := if turns then "left" else "right",
                           dash := ← fc.dashes cf, hue := ← fc.hue cf }
     return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
@@ -705,7 +707,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         ns := ns.push { id, gx := p.1, gy := p.2, label := (← label o) }
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← label f), side := if i == 0 then side₀ else "bottom",
+        es := es.push { src, tgt, label := (← labelParts f), side := if i == 0 then side₀ else "bottom",
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs "left" 0.0 (comps.map (·.1.idx))
@@ -714,7 +716,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let some (c, sym) := fc.chord | throwError "a fan is a pasted pair and has a chord"
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
     -- of the face the `lhs` bounds.
-    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "left",
+    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← labelParts c), side := "left",
                                  dash := true, hue := "INDUCED" : Edge }]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
@@ -735,7 +737,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← label o) }
       for i in [0:3] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← label f), side := sides[i]!,
+        es := es.push { src, tgt, label := (← labelParts f), side := sides[i]!,
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs 0.0 "top" (comps.map (·.1.idx))
@@ -744,7 +746,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let some (c, sym) := fc.chord | throwError "a pasted pair of squares is a paste and has a chord"
     -- The chord's own label is set ABOVE it, inside the face the `lhs` square bounds, which is where
     -- the note puts it: a chord lies between two faces and its label has to be inside one of them.
-    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← label c), side := "top",
+    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← labelParts c), side := "top",
                                  dash := true, hue := "INDUCED" : Edge }]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
@@ -783,12 +785,12 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     unless nodes.any (·.id == id) do nodes := nodes.push { id, gx, gy, label := (← label o) }
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
-    edges := edges.push { src, tgt, label := (← label f), side := sideAt lfst lsnd flip i,
+    edges := edges.push { src, tgt, label := (← labelParts f), side := sideAt lfst lsnd flip i,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
-    edges := edges.push { src, tgt, label := (← label f), side := sideAt rfst rsnd (!flip) j,
+    edges := edges.push { src, tgt, label := (← labelParts f), side := sideAt rfst rsnd (!flip) j,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← fc.hueOn (comps.map (·.2.idx)) f }
   match fc.chord with
@@ -797,7 +799,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
     let withChord := edges.push
-      { src := "s", tgt := "t", label := (← label c), side := "top", dash := true,
+      { src := "s", tgt := "t", label := (← labelParts c), side := "top", dash := true,
         hue := "INDUCED" }
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
@@ -823,7 +825,8 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
 def typstEdges (es : Array Edge) (close := "\n") : String :=
   typstArr (es.toList.map fun e =>
     s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
-       label: raw({typstString e.label}), side: {typstString e.side}, bow: {fmt e.bow}, \
+       label: ({String.join (e.label.toList.map fun p => s!"raw({typstString p}), ")}), \
+       side: {typstString e.side}, bow: {fmt e.bow}, \
        hue: {typstString e.hue}{if e.dash then ", dash: true" else ""})")
     close
 
