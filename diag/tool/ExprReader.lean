@@ -245,10 +245,29 @@ partial def unwrapRecords (e : Expr) : MetaM Expr :=
 
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/
+def unlabelled? (e : Expr) : MetaM (Option String) := do
+  let env ← getEnv
+  for n in e.getUsedConstants do
+    if ← Meta.isMatcher n then return some s!"the matcher `{n}`"
+    if isAuxRecursor env n then return some s!"the auxiliary recursor `{n}`"
+    if n.isInternal then return some s!"the internal name `{n}`"
+  return none
+
+/-- Lean's pretty printer on one line, the repo's own namespaces off — and the KINDS a label may
+    never be made of refused rather than printed.  A matcher, an auxiliary recursor, an internal
+    name and a local bound as an instance are Lean's own compilation artefacts: `cons.match_1` and
+    `est(RinstHAdd)` are what they spell, which is a picture of the elaborator and not of the
+    statement.  The test is the KIND — `isMatcher`, `isAuxRecursor`, `Name.isInternal`, the binder
+    — never the text of the name, so a matcher spelled any other way is refused too, and the panel
+    comes back a CANNOT-DRAW naming the kind instead of a drawing nobody can read. -/
 def plain (e : Expr) : MetaM String := do
+  let e ← unwrapRecords e
+  if let some k ← unlabelled? e then
+    throwError "a label is the note's own spelling of an arrow, and `{← Meta.ppExpr e}` is made of \
+      {k}, which is Lean's own elaboration and names no arrow the note writes"
   -- A label is the note's spelling, not Lean syntax: a name the parser would need escaped (`prefix`
   -- is a keyword) prints bare, so the `«»` the formatter wraps it in are dropped.
-  let s := (toString (← Meta.ppExpr (← unwrapRecords e))).replace "«" "" |>.replace "»" ""
+  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
 /-- A PROJECTION of a bundle the statement names OUTRIGHT, reduced to what it projects: the carrier

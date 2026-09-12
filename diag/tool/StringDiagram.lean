@@ -764,7 +764,8 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
   unless ok do
     throwError "a composite is ONE picture, so the cut it is cut at has to be the same read from \
       either side, and here the upper part ends at `{← edge d d.bot d.obot}` while the lower one \
-      starts at `{← edge e e.top e.otop}`"
+      starts at `{← edge e e.top e.otop}`\n  — the objects the two sides read are \
+      {← Meta.ppExpr d.obot} and {← Meta.ppExpr e.otop}"
   let nr := d.rows.size
   let mt := e.top.size
   let emap : Nat → Nat := fun j => if j < mt then d.bot[j]! else d.lanes.size + j - mt
@@ -819,7 +820,11 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   if fs.size > 1 then
     let mut d ← interp regionTy cat objVars vpass fs[0]!
     for i in [1 : fs.size] do
-      d ← d.vcomp (← interp regionTy cat objVars vpass fs[i]!)
+      -- A cut mismatch is between TWO FACTORS, and the cut text alone does not say which pair, so
+      -- the factors either side of it are added here rather than left for the reader to count out.
+      d ← try d.vcomp (← interp regionTy cat objVars vpass fs[i]!)
+        catch ex => throwError "{ex.toMessageData}\n  — the cut between `{← plain fs[i-1]!}` and \
+          `{← plain fs[i]!}`"
     return d
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
