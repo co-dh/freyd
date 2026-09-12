@@ -210,6 +210,13 @@ public theorem filter_mono (p : A → Bool) :
             le_iff.mp (filter_mono_cons p) q ws ⟨q', hv, (junc_sum_inr _ _ _ _).mp hS⟩
           exact ⟨vs, (junc_sum_inr _ _ _ _).mpr hvs, hlen⟩
 
+/-- **filter-deriv, first row**: the specification's own greedy choice IS the catamorphism's,
+    `(subseq list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)` — `filter_alg` rewritten under `Λ … est(R°)`.
+    Generic in `R`: the step says nothing about which order the best is taken in. -/
+public theorem filter_laws_step1 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
+    (subseq ≫ listP p)%∋ ≫ est(R°) = (cataR (Salg p))%∋ ≫ est(R°) := by
+  rw [filter_alg p]
+
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
     every `p`-subsequence collected and one chosen at the end. -/
