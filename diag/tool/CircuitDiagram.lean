@@ -239,7 +239,7 @@ partial def stxHead : Syntax → Option Name
 def isNamed (e : Expr) : MetaM Bool := do
   match e.getAppFnArgs.1 with
   | ``Cat.id | ``Freyd.Alg.PowerAllegory.eps | ``Freyd.Alg.est | ``Freyd.Alg.Λ
-  | ``Freyd.Alg.cup
+  | ``Freyd.Alg.cup | ``Freyd.Alg.powerRel
   | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => return true
   | .str _ s =>
     let some h := stxHead (← PrettyPrinter.delab e) | return false
