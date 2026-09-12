@@ -93,7 +93,7 @@ structure Cut where
     this list with the very `fold_cut` it reads the drawn cut with. -/
 def cutText (c : Cut) : MetaM String := do
   let ls ← c.ws.mapM Wire.label
-  return String.intercalate "|" (ls.push (← plain c.o)).toList
+  return String.intercalate "|" (ls.push (← label c.o)).toList
 
 /-- WHAT THE ENVIRONMENT PROVED ABOUT A BEAD, as a type and not a string.  The emitter matches on
     these four, so a verdict added here is a compile error until the mark it draws is decided —
@@ -366,9 +366,9 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let tup (xs : Array String) : String :=
     "(" ++ String.intercalate ", " xs.toList ++ (if xs.size == 1 then "," else "") ++ ")"
   let top := (ls.filter (·.born < 0)).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
-    |>.push ("(" ++ num xo ++ ", " ++ cell (← plain p.otop) ++ ")")
+    |>.push ("(" ++ num xo ++ ", " ++ cell (← label p.otop) ++ ")")
   let bot := (ls.filter (·.dies >= (n : Int))).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
-    |>.push ("(" ++ num xo ++ ", " ++ cell (← plain p.obot) ++ ")")
+    |>.push ("(" ++ num xo ++ ", " ++ cell (← label p.obot) ++ ")")
   return "dpanel(" ++ num hh ++ ", " ++ num (roundTo 2 (xo + PAD)) ++ ", " ++ num xo ++ ",\n  "
     ++ tup (made.map fun i => lanecode ls[i]!) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top
     ++ ",\n  " ++ tup bot
@@ -747,7 +747,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
     { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
-      unit, obj := (← plain oy),
+      unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
@@ -793,7 +793,7 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
   let lanes := d.lanes.extract 0 nt ++ (e.lanes.extract 0 mt).map esh
     ++ d.lanes.extract nt d.lanes.size ++ (e.lanes.extract mt e.lanes.size).map esh
-  let obj ← plain e.otop
+  let obj ← label e.otop
   let drows := d.rows.map fun r =>
     { r with arms := r.arms.map dmap, legs := r.legs.map dmap, over := r.over.map dmap, obj }
   let rows := drows ++ e.rows.map fun r =>

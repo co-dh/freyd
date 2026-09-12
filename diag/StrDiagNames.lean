@@ -387,6 +387,11 @@ open Lean PrettyPrinter Delaborator SubExpr in
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
+-- The take-while section's algebras the same way: the note draws what each arm DOES — `prefix`,
+-- `cons`, `p`, `(π₁p→cons,⊸ nil)` — and `prefAlg`, `prefConsAlg`, `consScalarAlg` and the step
+-- `twStep` are Lean names for those arms, so opened they are read off their own `match`.
+attribute [diag_unfold] RelSet.GCTakeWhile.prefAlg RelSet.GCTakeWhile.prefConsAlg
+  RelSet.GCTakeWhile.twStep RelSet.CL.consScalarAlg
 -- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
 -- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
 attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
