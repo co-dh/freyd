@@ -6,6 +6,7 @@ other.
     ./scripts/string-check            # every display
     ./scripts/string-check 13.6       # only the displays whose number starts so
     ./scripts/string-check --selectors  # the manifest's selectors, one per line, for `make`
+    ./scripts/string-check --marks 14.1 # write Lean's per-panel verdicts into the note's `cert:`s
 
 THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
   every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
@@ -26,6 +27,8 @@ Typst COMMENT, invisible to `typst query`, so the selector column of `diag/strin
 authored once (through `scripts/cite-cover`'s own note reader) and is static — the gate never
 re-derives it, and a display whose line carries no selector is reported NO-DECL.
 """
+import importlib.machinery
+import importlib.util
 import json
 import os
 import subprocess
@@ -34,6 +37,13 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import panels                                    # noqa: E402  — the manifests' one reader
+# `scripts/diagram` is the note's reader as well as its generator: `literals` and `close` are how a
+# `dpanel(` and its `cert:` are cut out of the source, and --marks writes into that same cut rather
+# than pattern-matching the note a second time.  It has no `.py`, hence the loader.
+diagram = importlib.util.module_from_spec(importlib.util.spec_from_loader(
+    "diagram", importlib.machinery.SourceFileLoader("diagram", os.path.join(ROOT, "scripts",
+                                                                            "diagram"))))
+diagram.__loader__.exec_module(diagram)
 os.chdir(ROOT)
 sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
 PANELS = "diag/string-panels.txt"
@@ -147,7 +157,112 @@ def svg(src, dst):
     return None if not p.returncode else p.stderr.strip().splitlines()[-1:] or ["compile failed"]
 
 
+def fields(g):
+    """A `cert:` group's top-level fields.  Depth-aware and quote-aware, because a value holds both
+    brackets and commas of its own (`expect: "⦇[nil,(π₁p→cons,⊸nil)]⦈"`), and a split on every
+    comma would cut one field into three that name nothing."""
+    out, d, q, s = [], 0, False, 0
+    for x, ch in enumerate(g):
+        q ^= ch == '"'
+        if q:
+            continue
+        d += (ch == "(") - (ch == ")")
+        if ch == "," and d == 0:
+            out.append(g[s:x])
+            s = x + 1
+    return [f.strip() for f in out + [g[s:]] if f.strip()]
+
+
+def setnat(lit, nat):
+    """One `dpanel(` literal with Lean's verdicts written into its `cert:`, replacing whatever `nat`
+    it carried.  Only the CERT is touched: the picture itself is rebuilt from it by
+    `./scripts/diagram --write`, which is the one place a panel is drawn."""
+    k = lit.rfind("cert: (")
+    e = diagram.close(lit, k + 6) + 1
+    fs = [f for f in fields(lit[k + 7:e - 1]) if not f.startswith("nat: ")]
+    q = lambda s: '"' + s.replace("\\", "\\\\") + '"'
+    fs.append("nat: (" + ", ".join("(" + ", ".join(q(x) for x in t) + ")" for t in nat)
+              + ("," if len(nat) == 1 else "") + ")")
+    return lit[:k + 7] + ", ".join(fs) + lit[e - 1:]
+
+
+def marks(want):
+    """WHERE A BEAD'S MARK COMES FROM.  `diag/hm-sigs.json` holds one `nat` per bead LABEL, and a
+    verdict belongs to a bead in a REGION: the same `𝟙%∋` is strict on §14.1's `E` and lax on
+    §13.6.7a's, so a global row draws one of them wrong whatever it says.  The exporter already
+    decides per panel, from the environment (`diag/tool/StringDiagram.lean`), and writes what it
+    found into each generated panel's `cert: nat`.  This copies that — verdict and the declaration
+    behind it — into the note's own `cert:`, through the SAME pairing the gate checks by, so the
+    note's mark and Lean's verdict cannot come from two different readings.
+
+    The note's panels are matched to its source literals by their `cert:` — expect, src and tgt,
+    the fields that say which arrow the panel draws — and never by position, so a `dpan` or a
+    hand-laid panel between two generated ones cannot shift the whole file by one."""
+    live, number, _ = note_panels()
+    rows, num = obligations(), lambda n: number.get(n, n)
+    sel_of = [(n, sels) for n, sels in rows if n in live and num(n).startswith(want)]
+    todo = sorted({route(s)[0] for _, sels in sel_of for s in sels if s != "-"})
+    # A selector the exporter REFUSES is one panel's failure, not the run's: it exits non-zero for
+    # the whole batch, and the reason it names is reported against the panel that wanted it, below,
+    # the way the gate reports it.  Stopping here would leave every other panel's mark unwritten.
+    p = run("./scripts/diag-export", "--string", *todo)
+    drawn = p.stdout + p.stderr
+    os.makedirs(OUT, exist_ok=True)
+    nat, miss = {}, 0
+    for n, sels in sel_of:
+        ps = live[n]
+        if len(sels) != len(ps):
+            print(f"{n}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)} panels")
+            miss += 1
+            continue
+        for sel, panel in zip(sels, ps):
+            if sel == "-":
+                continue
+            base, which = route(sel)
+            gen = f"diag/generated/string/{base}.typ"
+            if not os.path.exists(gen):
+                print(f"{n} {sel}: CANNOT-DRAW "
+                      + next((l for l in drawn.splitlines() if base in l),
+                             f"the exporter wrote no {gen} and named no reason"))
+                miss += 1
+                continue
+            gwrap = f"{OUT}/{sel}.gen.typ"
+            wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
+            drew, err = content(gwrap)
+            if err:
+                print(f"{n} {sel}: CANNOT-DRAW {err}")
+                miss += 1
+                continue
+            c = panel.get("cert") or {}
+            if not all(c.get(f) for f in ("expect", "src", "tgt")):
+                print(f"{n} {sel}: UNCERTIFIED — the note's panel names no expect/src/tgt")
+                miss += 1
+                continue
+            nat.setdefault((c["expect"], c["src"], c["tgt"]), []).append(
+                [list(t) for t in (drew.get("cert") or {}).get("nat") or []])
+    text = open(NOTE, encoding="utf-8").read()
+    wrote = 0
+    # LAST TO FIRST, so an earlier literal's offsets are still the ones this read; and the note's
+    # panels were collected in document order, so a formula drawn twice takes its verdicts from the
+    # panel at the same place in that order.
+    for i, _, j, c in reversed(diagram.literals(text)):
+        got = nat.get((c.get("expect"), c.get("src"), c.get("tgt")))
+        if not got:
+            continue
+        v = got.pop()
+        if v:
+            text = text[:i] + setnat(text[i:j], v) + text[j:]
+            wrote += 1
+    left = sum(len(v) for v in nat.values())
+    open(NOTE, "w", encoding="utf-8").write(text)
+    print(f"string-check --marks: {wrote} panel(s) carry Lean's verdicts; {left} panel(s) the note"
+          f" draws no `dpanel(` literal for; {miss} not drawn")
+    return 1 if miss or left else 0
+
+
 def main(argv):
+    if "--marks" in argv:
+        return marks(next((a for a in argv if not a.startswith("-")), ""))
     # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
     # gate's, so the two cannot come to disagree about what the manifest names.
     if "--selectors" in argv:
