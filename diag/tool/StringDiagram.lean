@@ -577,14 +577,15 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- reading used to demote it to.
   let search : MetaM (Option Verdict) := match alg with
     | .functor => id do
-      if let some (n, _) ← findTelescoped br (← funSquare regionTy F G φ) must FUEL then
+      if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ) must FUEL then
         return some { mark := some .strict, lean := n }
       -- THE SQUARE OVER THE MAPS, where the region HAS maps to restrict to.  `𝟙%∋ : 𝟙 ⟹ E` is
       -- natural there and at no relation (`singletonMap_natural`, whose `Map f` this square binds
       -- and `discharge` reads back), and so is every other family of maps between functor lanes of
       -- an allegory; asking only the unrestricted square left all of them with no claim at all.
       if alg0 == .relator then
-        if let some (n, _) ← findTelescoped br (← funSquare regionTy F G φ true) must FUEL then
+        if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ .strict true)
+            must FUEL then
           return some { mark := some .strict, lean := n }
       return none
     | .relator => id do
@@ -597,11 +598,16 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
       let nolax ← Meta.mkAppM ``Not #[lax]
       if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
         return some { mark := some .strict, lean := n }
-      if let some (n, _) ← findSquare br strict must FUEL then
+      -- THE SQUARE IS BUILT, NOT REACHED BY UNFOLDING THE CLASS, for the reason `laneSquare` gives:
+      -- `LaxNatural F G φ` spells the lane stack's action as the COMPOSITE relator's `map`, and
+      -- every hand-written square in the repo spells it wire by wire (`tupleP 3 (tupleP n S)`), so
+      -- the unfolded class matched none of them and every `RelSet.graph` bead of the cylinder came
+      -- back a spider.  Same builder as the functor algebra's, one grade apart.
+      if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ) must FUEL then
         return some { mark := some .strict, lean := n }
       if let some (n, _) ← findProof br lax ``Freyd.Alg.LaxNatural {} FUEL then
         return some { mark := some .lax, lean := n }
-      if let some (n, _) ← findSquare br lax must FUEL then
+      if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ .lax) must FUEL then
         return some { mark := some .lax, lean := n }
       -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
       -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot

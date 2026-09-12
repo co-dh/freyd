@@ -351,9 +351,10 @@
       "src": "x",
       "tgt": "E(x)",
       "lean": "Freyd.S2_40.singletonMap@d4216ae4",
-      "nat": "lax",
+      "nat": "strict",
+      "note": "the lane drawn beside it is E, the existential image (Λ W = 𝟙%∋ E(W)), so the square that grades this bead is E's, and E's is an equality at every MAP. singleton_laxNatural is lax for the Egli-Milner power relator P, a different lane the note never draws.",
       "nat-lean": [
-        "AOP.A5_7_PowerBeads.singleton_laxNatural@3fb7b1a0"
+        "AOP.A4_6.singletonMap_natural@9214d7f0"
       ]
     },
     "union": {

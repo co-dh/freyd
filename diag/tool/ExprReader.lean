@@ -646,33 +646,51 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
   throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no lane of \
     {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
 
-/-- THE NATURALITY SQUARE OF A FAMILY BETWEEN FUNCTOR LANES, as a proposition.  `φ a : G.obj a ⟶
-    F.obj a`, so naturality is `G.map f ≫ φ y = φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the
-    region — the very equation `gen_natural`, `genFold_natural`, `cons_natural` and their siblings
-    state.  It is the ONE statement a bare category has: `LaxNatural` and `OpLaxNatural` grade a
-    square by `⊑`, and a category has no `⊑` to grade it by.  Built and not named, so any pair of
-    functor lanes states it.
+/-- HOW THE TWO SIDES OF A NATURALITY SQUARE ARE JOINED: an equality (`StrictNatural`), `⊑`
+    (`LaxNatural`), or `⊑` the other way round (`OpLaxNatural`).  The three a family can be graded
+    by, and nothing else — a spider is the absence of all three, not a fourth. -/
+inductive Grade where | strict | lax | oplax
+  deriving Inhabited, BEq
+
+/-- THE NATURALITY SQUARE OF A FAMILY BETWEEN LANES, as a proposition.  `φ a : G.obj a ⟶ F.obj a`,
+    so naturality is `G.map f ≫ φ y ∼ φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the region,
+    with `∼` the `grade` — the very statement `gen_natural`, `genFold_natural`, `moves_lax_natural`
+    and their siblings are written in.  Built and not named, so any pair of lanes states it in
+    either algebra: an allegory's lanes are relators and act by `Relator.map`, a bare category's
+    are functors and act by `Functor.map`, and a category has only `.strict` to grade a square by.
 
     `onMaps` restricts `f` to the MAPS, which is the same square read in the sub-category the maps
     of an allegory form.  A FUNCTOR lane in an allegory (`E`, the existential image) carries
     families that are natural there and nowhere else — `singletonMap_natural` is `f ≫ 𝟙%∋ =
     𝟙%∋ ≫ E(f)` for a map `f`, and at a relation both directions fail — so the square without the
     hypothesis is the wrong question to ask of them, not a stronger one they happen to miss. -/
-def funSquare (regionTy F G φ : Expr) (onMaps : Bool := false) : MetaM Expr := do
+def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .strict)
+    (onMaps : Bool := false) : MetaM Expr := do
   -- A STACK'S ACTION IS ITS WIRES' ACTIONS, INNERMOST FIRST — `(Vec(m+1)).map ((Vec n).map f)`,
-  -- the very spelling every naturality theorem in the repo is written in.  Composing the stack into
-  -- one `compFunctor` and taking ITS `map` is the same arrow but a different TERM, and the
-  -- unification then has to see through the composite at every level, which is where the search for
-  -- `genFold_natural` came back empty.  `wiresOf` is outermost first, so it is applied in reverse.
+  -- `tupleP 3 (tupleP n S)`, the very spelling every naturality theorem in the repo is written in.
+  -- Composing the stack into one `compFunctor`/`Relator.comp` and taking ITS `map` is the same
+  -- arrow but a different TERM, and the unification then has to see through the composite at every
+  -- level, which is where the searches for `genFold_natural` and for every `RelSet.graph` bead of
+  -- the cylinder came back empty.  `wiresOf` is outermost first, so it is applied in reverse.
+  -- A RELATOR ACTS BY THE FUNCTOR IT EXTENDS: `Relator` has no `map` of its own, so `F.map R` IS
+  -- `Functor.map F.toFunctor R` — the spelling `LaxNatural`'s own body elaborates to.
+  let act (w f : Expr) : MetaM Expr := do
+    let w ← match alg with
+      | .relator => Meta.mkAppM ``Freyd.Alg.Relator.toFunctor #[w]
+      | .functor => pure w
+    Meta.mkAppM ``Freyd.Functor.map #[w, f]
   let apply (ws : Array Expr) (f : Expr) : MetaM Expr := do
     let mut acc := f
-    for i in [0 : ws.size] do acc ← Meta.mkAppM ``Freyd.Functor.map #[ws[ws.size - 1 - i]!, acc]
+    for i in [0 : ws.size] do acc ← act ws[ws.size - 1 - i]! acc
     return acc
   Meta.withLocalDeclD `x regionTy fun x => Meta.withLocalDeclD `y regionTy fun y => do
     Meta.withLocalDeclD `f (← Meta.mkAppM ``Cat.Hom #[x, y]) fun f => do
       let l ← Meta.mkAppM ``Cat.comp #[← apply (wiresOf G) f, (mkApp φ y).headBeta]
       let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
-      let sq ← Meta.mkEq l r
+      let sq ← match grade with
+        | .strict => Meta.mkEq l r
+        | .lax => Meta.mkAppM ``Freyd.Alg.le #[l, r]
+        | .oplax => Meta.mkAppM ``Freyd.Alg.le #[r, l]
       if !onMaps then return ← Meta.mkForallFVars #[x, y, f] sq
       Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
         Meta.mkForallFVars #[x, y, f, hf] sq
