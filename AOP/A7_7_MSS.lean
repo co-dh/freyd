@@ -98,9 +98,14 @@ public theorem geq_trans : geq (A := A) ≫ geq ⊑ geq :=
     obtain ⟨y, h1, h2⟩ := h
     exact SumOrd.le_trans (A := A) h2 h1
 
+/-- The note's **`zero`** as a VALUE.  A constant map's box carries the name of what it creates,
+    not of the arrow (`diag/tool/Label.lean`: the label of a `konst` is its body's), so `⊸ zero`
+    is drawn from this name and the bare numeral would print `0` where the note writes `zero`. -/
+@[expose] public def zeroVal : A := 0
+
 /-- The note's **`zero`** — the leaf of `[zero,⊸ zero ∪ plus]`, a name of its own so the picture
     labels the box the way the note does instead of printing the lambda. -/
-@[expose] public def zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}) := graph fun _ => (0 : A)
+@[expose] public def zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}) := graph fun _ => zeroVal
 
 /-- The note's **`plus`** — add the head to the running total. -/
 @[expose] public def plus : (⟨A × A⟩ : RelSet.{0}) ⟶ ⟨A⟩ := graph fun q => q.1 + q.2
@@ -108,7 +113,7 @@ public theorem geq_trans : geq (A := A) ≫ geq ⊑ geq :=
 /-- The note's **`⊸ zero ∪ plus : A×A ⟶ A`** — start again at `zero`, or add the head to the
     running total. -/
 @[expose] public def zeroPlus : (⟨A × A⟩ : RelSet.{0}) ⟶ ⟨A⟩ :=
-  (graph fun _ => (0 : A)) ∪ plus
+  (graph fun _ : A × A => zeroVal) ∪ plus
 
 /-- The note's `S ≜ [zero, ⊸ zero ∪ plus]` — `prefix`'s algebra with `sum` fused in. -/
 @[expose] public def Salg : Fobj Unit A (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩ :=
@@ -280,7 +285,7 @@ public theorem plus_mono :
 public theorem discZero_zero :
     (discZero (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0}))
         : (⟨A × A⟩ : RelSet.{0}) ⟶ (⟨A⟩ : RelSet.{0}))
-      = (graph (fun _ : A × A => (0 : A))
+      = (graph (fun _ : A × A => zeroVal)
           : (⟨A × A⟩ : RelSet.{0}) ⟶ (⟨A⟩ : RelSet.{0})) := by
   apply hom_ext; intro _ w
   exact ⟨fun ⟨_, _, hu⟩ => hu, fun h => ⟨(), rfl, h⟩⟩
@@ -297,6 +302,26 @@ theorem Salg_eq_plusAlg :
 public theorem mss_mono : MonotonicAlg (F := F Unit A) (Salg (A := A)) geq := by
   rw [Salg_eq_plusAlg]
   exact plusAlg_mono _ _ _ geq_refl plus_mono
+
+/-- **`mss-mono`'s third step**: `(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus ⊑ ⊸ zero ∪ plus ≥` — the discard
+    swallows what ran on the pair, and `plus` is monotonic in its running total. -/
+public theorem mss_mono_step3 :
+    rprodMap (𝟙 (dE A)) geq ≫ (graph fun _ : A × A => zeroVal)
+        ∪ rprodMap (𝟙 (dE A)) geq ≫ plus
+      ⊑ (graph fun _ : A × A => zeroVal) ∪ plus ≫ geq := by
+  refine union_mono ?_ plus_mono
+  rw [← discZero_zero]
+  exact rprodMap_comp_discZero_le zero geq
+
+/-- **`mss-mono`'s fourth step**: `⊸ zero ∪ plus ≥ ⊑ (⊸ zero ∪ plus)≥` — `≥` is reflexive, so
+    the constant operand may carry the `≥` the other one already has, and one `≥` past the join
+    is the two inside it. -/
+public theorem mss_mono_step4 :
+    (graph fun _ : A × A => zeroVal) ∪ plus ≫ geq
+      ⊑ zeroPlus ≫ (geq (A := A)) := by
+  unfold zeroPlus
+  rw [union_comp_distrib]
+  exact union_mono (le_iff.mpr fun _ w h => ⟨w, h, SumOrd.le_refl w⟩) (le_refl _)
 
 /-- The greedy row: `⦇Λ(S) est(≥)⦈ ⊑ Λ(⦇S⦈) est(≥)` — Theorem 7.2 at the preorder `≥`, with
     `mss_mono` for its hypothesis. -/
@@ -819,6 +844,13 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Salg] public meta def unexpandSalg : Unexpander
   | `($_:ident) => `($(mkIdent `S))
+  | _ => throw ()
+
+-- printing-only: the value the note writes `zero`, which is the name the `⊸ zero` box carries.
+-- A `konst` box is labelled from the VALUE it creates, so without this the picture writes `0`.
+open Lean PrettyPrinter in
+@[app_unexpander zeroVal] public meta def unexpandZeroVal : Unexpander
+  | `($_:ident) => `($(mkIdent `zero))
   | _ => throw ()
 
 end Freyd.Alg.RelSet.MSS

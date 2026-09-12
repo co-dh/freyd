@@ -69,8 +69,8 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.rhs | <takewhile-laws> | ⦇[nil,
 - | <mss-prefix-sum> | F(sum) [zero,⊸ zero ∪ plus]
 Freyd.Alg.RelSet.MSS.mss_mono.lhs.inr | <mss-mono> | (𝟙×≥)(⊸ zero ∪ plus)
 Freyd.Alg.RelSet.MSS.mss_mono.lhs | <mss-mono> | (𝟙×≥)⊸ zero ∪ (𝟙×≥) plus
-- | <mss-mono> | ⊸ zero ∪ plus ≥
-- | <mss-mono> | (⊸ zero ∪ plus)≥
+Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs | <mss-mono> | ⊸ zero ∪ plus ≥
+Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs | <mss-mono> | (⊸ zero ∪ plus)≥
 Freyd.Alg.RelSet.MSS.mss_step1.rhs | <mss-step> | [zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]
 Freyd.Alg.RelSet.MSS.mss_shape.lhs | <mss-deriv> | (segment sum)%∋ est(≥)
 Freyd.Alg.RelSet.MSS.mss_shape.rhs | <mss-deriv> | suffix%∋ E((prefix sum)%∋ est(≥))est(≥)
