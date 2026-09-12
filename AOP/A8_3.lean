@@ -299,12 +299,12 @@ public theorem thinningList_step1 (I : InitialAlgebra F)
   exact sortedAlg_fusion hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86
 
 /-- Step 2: (8.7) `sort P·minlist R ⊑ min R` reads the minimum off the sorted list. -/
-public theorem thinningList_step2 (I : InitialAlgebra F) {f₁ f₂ : F.obj A ⟶ A}
-    {p₁ p₂ P Q R : A ⟶ A}
+public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
+    {P Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ l)} {minlist : (A ⟶ A) → (l ⟶ A)}
     (h87 : sort P ≫ minlist R ⊑ est R) :
-    (relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ sort P) ≫ minlist R
-      ⊑ relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ est R :=
+    (relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ sort P) ≫ minlist R
+      ⊑ relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R :=
   le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ h87)
 
 /-- Step 3: Corollary 8.1 (`thinning_est`) at the union algebra — the union of two `Q`-monotonic
