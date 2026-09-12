@@ -334,10 +334,10 @@
       "src": "E(x)",
       "tgt": "x",
       "lean": "Freyd.S2_40.PowerAllegory.eps@ca3b1fd5",
-      "nat": "lax",
+      "nat": "strict",
+      "note": "the lane drawn beside it is E, the existential image (E(R) = Λ(∋R)), and E(R)∋ = ∋R is an equality — existsImage_eps. eps_laxNatural is lax for the Egli-Milner power relator P, a different lane the note never draws, and eps_not_strict refutes strictness for that P and not for this E. Same reading as the 𝟙%∋ row above.",
       "nat-lean": [
-        "AOP.A5_7_PowerBeads.eps_laxNatural@cc14d6e4",
-        "AOP.A5_7_PowerBeads.eps_not_strict@0780f3bc"
+        "AOP.A4_6.existsImage_eps@1441a2d6"
       ]
     },
     "∈": {
