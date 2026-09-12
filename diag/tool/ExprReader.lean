@@ -262,7 +262,14 @@ def unlabelled? (e : Expr) : MetaM (Option String) := do
     — never the text of the name, so a matcher spelled any other way is refused too, and the panel
     comes back a CANNOT-DRAW naming the kind instead of a drawing nobody can read. -/
 def plain (e : Expr) : MetaM String := do
-  let e ← unwrapRecords e
+  -- AN OPENING THAT PRODUCES LEAN'S OWN ELABORATION IS NOT AN OPENING THE NOTE CAN SPELL.  Opening
+  -- a bundle's field reaches the DEFINITION behind it, and where that definition is a matcher, an
+  -- auxiliary recursor or an internal name the opened term names no arrow — `cons` came back as
+  -- `cons.match_1 …`.  The constant's own name is what the note writes, so the unopened term
+  -- stands: the test is the KIND of what the opening produced, so every definition Lean elaborates
+  -- that way keeps its name and no constant is named here.
+  let opened ← unwrapRecords e
+  let e := if (← unlabelled? opened).isSome && (← unlabelled? e).isNone then e else opened
   if let some k ← unlabelled? e then
     throwError "a label is the note's own spelling of an arrow, and `{← Meta.ppExpr e}` is made of \
       {k}, which is Lean's own elaboration and names no arrow the note writes"
@@ -1036,7 +1043,12 @@ def openNoted (e : Expr) : MetaM Expr := do
   let .const n _ := e.getAppFn | return e
   unless (← Lean.labelled `diag_unfold).contains n do return e
   match ← Meta.unfoldDefinition? e with
-  | some v => return v.headBeta
+  -- A DEFINITION LEAN ELABORATED FOR ITSELF IS NOT A BODY THE NOTE WRITES.  `cons` opens to
+  -- `cons.match_1 …`, an auxiliary `casesOn` or an internal name — Lean's own compilation of the
+  -- equations, which spells no arrow — so the step is not taken and the constant keeps its own
+  -- name.  The test is the KIND of what the unfolding produced, so every definition compiled that
+  -- way stays closed and no constant is named here.
+  | some v => return if (← unlabelled? v.headBeta).isSome then e else v.headBeta
   | none => return e
 
 /-- The same answer WHEREVER the name is spelled, not only at the head: an operator applied to a

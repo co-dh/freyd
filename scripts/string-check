@@ -38,6 +38,9 @@ from concurrent.futures import ThreadPoolExecutor
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import panels                                    # noqa: E402  — the manifests' one reader
+# The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
+# stands for, and write back through the split so a rewritten `cert:` lands in the chapter holding it.
+from notesplit import note_source, note_write    # noqa: E402
 # `scripts/diagram` is the note's reader as well as its generator: `literals` and `close` are how a
 # `dpanel(` and its `cert:` are cut out of the source, and --marks writes into that same cut rather
 # than pattern-matching the note a second time.  It has no `.py`, hence the loader.
@@ -344,7 +347,7 @@ def marks(want):
                 continue
             nat.setdefault((c["expect"], c["src"], c["tgt"]), []).append(
                 [list(t) for t in (drew.get("cert") or {}).get("nat") or []])
-    text = open(NOTE, encoding="utf-8").read()
+    text = note_source(NOTE)
     wrote = 0
     # LAST TO FIRST, so an earlier literal's offsets are still the ones this read; and the note's
     # panels were collected in document order, so a formula drawn twice takes its verdicts from the
@@ -358,7 +361,7 @@ def marks(want):
             text = text[:i] + setnat(text[i:j], v) + text[j:]
             wrote += 1
     left = sum(len(v) for v in nat.values())
-    open(NOTE, "w", encoding="utf-8").write(text)
+    note_write(NOTE, text)
     print(f"string-check --marks: {wrote} panel(s) carry Lean's verdicts; {left} panel(s) the note"
           f" draws no `dpanel(` literal for; {miss} not drawn")
     return 1 if unanswered(recs, todo, p) or miss or left else 0
