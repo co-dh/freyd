@@ -1332,6 +1332,10 @@ def usage : String :=
      categories a relator runs between; no side or branch selector applies\n\
    --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
      one JSON object per bead (selector, panel, label, src, tgt), read by `scripts/scanline`\n\
+   --string --records draws as --string does and prints, instead of each path, ONE JSON object\n\
+     per declaration argument: `selector`, then `file` (the path it wrote), `panels` (how many\n\
+     it drew) and `sigs` (the objects --sigs prints for it) — or `error` (why it drew none);\n\
+     `scripts/string-check` hands them to `scanline --records`, so Lean is started once\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
@@ -1358,15 +1362,19 @@ def main (args : List String) : IO UInt32 := do
   let sigMode := args.contains "--sig"
   let stringMode := args.contains "--string"
   let sigsMode := args.contains "--sigs"
+  let recordsMode := args.contains "--records"
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
   let (frame, args) := takeOpt args "--frame"
   let (topRow, args) := takeOpt args "--top"
   let (scale, args) := takeOpt args "--scale"
   let args := args.filter (fun a =>
-    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--string" && a != "--circuit"
-      && a != "--type")
+    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--records" && a != "--string"
+      && a != "--circuit" && a != "--type")
   if args.isEmpty then IO.eprintln usage; return 2
+  -- Bead types are read off a STRING panel; any other route has none to report.
+  if (sigsMode || recordsMode) && !stringMode then
+    IO.eprintln s!"diag-export: --sigs and --records need --string\n{usage}"; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1444,21 +1452,23 @@ def main (args : List String) : IO UInt32 := do
     -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
     -- per declaration, and not once for the whole command line.
     let ctx := StrDiag.declCtx env opts scopes base.toName
-    let run : CoreM String :=
-      Meta.MetaM.run' (if sigMode then sig arg.toName
+    -- Every route answers with a `Drawn`; only a string panel has bead types to put in it.
+    let text (m : MetaM String) : MetaM StrDiag.Drawn := return { text := ← m, sigs := #[] }
+    let run : CoreM StrDiag.Drawn :=
+      Meta.MetaM.run' (if sigMode then text (sig arg.toName)
         else if stringMode then
           StrDiag.drawString base.toName sides binder branch frame topRow scale
-            (if sigsMode then some arg else none)
+            (if sigsMode || recordsMode then some arg else none)
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
           if branch.contains .body then
             throwError "`.body` opens a least fixed point's binder as a WIRE, which only the string \
               route draws"
-          else Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
-            (branch.map fun s => if s == .inl then 0 else 1)
-        else if typeMode then Freyd.TypeRender.file arg.toName
-        else if proofMode then drawProof arg.toName else draw arg.toName)
+          else text (Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
+            (branch.map fun s => if s == .inl then 0 else 1))
+        else text (if typeMode then Freyd.TypeRender.file arg.toName
+        else if proofMode then drawProof arg.toName else draw arg.toName))
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut status : UInt32 := 0
@@ -1466,16 +1476,23 @@ def main (args : List String) : IO UInt32 := do
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
     -- and a bead whose naturality nobody proved has a message naming the three statements it
     -- looked for.
+    -- Under --records the answer, file or error, is the selector's RECORD, so a caller matches it
+    -- by the selector field and never searches the run's text for the name.
     match ← IO.wait t with
     | .error ex =>
-      IO.eprintln s!"diag-export: {arg}: {ex}"
+      if recordsMode then IO.println (Json.mkObj [("selector", arg), ("error", toString ex)]).compress
+      else IO.eprintln s!"diag-export: {arg}: {ex}"
       status := 1
-    | .ok text =>
-      if sigMode then IO.println text else if sigsMode then IO.print text else
+    | .ok d =>
+      if sigMode then IO.println d.text
+      else if sigsMode then d.sigs.flatten.forM fun o => IO.println o.compress
+      else
       let path := if stringMode || circuitMode || typeMode then System.FilePath.mk s!"{outDir}/{arg}.typ"
         else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
-      IO.FS.writeFile path text
-      IO.println path.toString
+      IO.FS.writeFile path d.text
+      IO.println <| if !recordsMode then path.toString else
+        (Json.mkObj [("selector", arg), ("file", path.toString), ("panels", toJson d.sigs.size),
+          ("sigs", toJson d.sigs.flatten)]).compress
   return status
 
 end Freyd.DiagExport

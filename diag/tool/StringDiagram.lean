@@ -375,15 +375,21 @@ def emit (p : Diagram) (declName : String) (frame topRow scale : Option Nat) : M
 /-- `--string --sigs`: what LEAN says each bead of `sel`'s panels is an arrow between, one JSON
     object per bead — `selector`, `panel` (numbered as the file emits them), `label`, `src`, `tgt`
     — so a reader takes FIELDS and never cuts a type at a separator the type may itself spell.
-    Nothing is written into the picture: `scripts/scanline` asks this at check time, so the types
-    it holds the ink to are the environment's and cannot go stale in a file. -/
-def sigLines (sel : String) (ps : Array Diagram) : MetaM String := do
-  let mut out := ""
-  for i in [0 : ps.size] do
-    for r in ps[i]!.rows do
-      out := out ++ (Json.mkObj [("selector", sel), ("panel", toJson (i + 1)), ("label", r.label),
-        ("src", ← cutText r.src), ("tgt", ← cutText r.tgt)]).compress ++ "\n"
-  return out
+    Grouped by panel, so a panel with no bead is still one entry and a reader can tell it from a
+    panel nobody answered for.  Nothing is written into the picture: `scripts/scanline` asks this at
+    check time, so the types it holds the ink to are the environment's and cannot go stale. -/
+def sigRecords (sel : String) (ps : Array Diagram) : MetaM (Array (Array Json)) :=
+  ps.zipIdx.mapM fun (p, i) => p.rows.mapM fun r => do
+    return Json.mkObj [("selector", sel), ("panel", toJson (i + 1)), ("label", r.label),
+      ("src", ← cutText r.src), ("tgt", ← cutText r.tgt)]
+
+/-- What one `--string` selector draws: the picture file's text and, when its bead types were
+    asked for, `sigRecords` of its panels — both from ONE read of the statement, so a caller that
+    needs the two does not pay the read twice. -/
+structure Drawn where
+  text : String
+  sigs : Array (Array Json)
+  deriving Inhabited
 
 /-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
     SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
@@ -927,9 +933,9 @@ partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (sel : List Sel
 /-- Every part of the statement drawn, each under its own selectors' locals, and the file emitted
     inside all of them: a bead's ends are printed from the `Expr`, so a local opened for one part is
     still needed when the last part's panel is written out. -/
-partial def withParts (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (sel : List Sel)
-    (drawn : List (String × Expr)) (acc : Array (String × Diagram))
-    (k : Array (String × Diagram) → MetaM String) : MetaM String :=
+partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Name)
+    (objVars : Array Expr) (sel : List Sel) (drawn : List (String × Expr))
+    (acc : Array (String × Diagram)) (k : Array (String × Diagram) → MetaM α) : MetaM α :=
   match drawn with
   | [] => k acc
   | (sym, e) :: rest =>
@@ -958,7 +964,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     deep the other one is.  The path names the statement, so `.lhs` on an `↔` draws the whole left
     statement and only a trailing name on a relation picks a side. -/
 def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
-    (frame topRow scale : Option Nat) (sigsOf : Option String := none) : MetaM String :=
+    (frame topRow scale : Option Nat) (sigsOf : Option String := none) : MetaM Drawn :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1033,7 +1039,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
     withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
-      if let some s := sigsOf then return ← sigLines s (ps.map (·.2))
+      let sigs ← match sigsOf with | some s => sigRecords s (ps.map (·.2)) | none => pure #[]
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
@@ -1041,7 +1047,8 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       -- exists to hold the parts a relation symbol joins in ONE grid to one box and one bead
       -- height; a calc-table row holding only `.rhs` has no such neighbour, and giving it the whole
       -- statement's frame drew it taller than the picture beside it.
-      if ps.size == 1 then return ← emit ps[0]!.2 nm frame topRow scale
-      return ← emitStatement nm ps frame topRow scale
+      let text ← if ps.size == 1 then emit ps[0]!.2 nm frame topRow scale
+        else emitStatement nm ps frame topRow scale
+      return Drawn.mk text sigs
 
 end Freyd.StrDiag
