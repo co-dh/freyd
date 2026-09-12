@@ -390,6 +390,11 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- composite operand re-bracketed by the reader's own printer (`S° (F(X)R)`) is one more thing to
   -- undo, so the whole run is written as the note writes it.
   | (``Cat.comp, args) =>
+    -- COMPOSITION IS NOT A HEAD THE NOTE WRITES — juxtaposition is the absence of an operator — so a
+    -- composite the note spells as ONE arrow is rewritten to it first: `F(X)[T,U]` is `[T,(X×𝟙)U]`,
+    -- the relator slid into the bracket.  Every other head keeps the notation its clause writes,
+    -- which is what keeps `Λ R` out of this and out of the loop through `singletonMap`.
+    if let some r ← rewriteHead? e then return ← labelAt prec r
     if lastTwo args |>.isNone then plain e else do
       let mut s := ""
       for t in (← labelRun e) do s := juxt s t

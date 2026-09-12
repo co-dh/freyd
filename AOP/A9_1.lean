@@ -30,6 +30,9 @@ public import AOP.A5_2
 -- Proposition 9.1's coproduct split is proved at the END of this file in the Set model, over
 -- `F L E X = L+(X×E)`; the generic form needs a typeclass the repo does not have (drop note).
 public import AOP.A6_SnocList
+-- For `junc` AT AN INJECTION (`ListRel.junc_sum_inl`/`_inr`): the one place the coproduct's own
+-- equations are read back, and the snoc-list side needs the same two facts the cons-list side did.
+public import AOP.A5_6_ListCombinators
 
 universe u
 
@@ -868,6 +871,33 @@ public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶
     | inr q => exact ⟨q, ⟨hw.1, hw.2⟩, hU⟩
   · rintro ⟨q, hq, hU⟩
     exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, hU⟩
+
+/-- **`F(X)[T,U] = [T,(X×𝟙)U]`** — the relator slides into the bracket: the leaf arm is untouched,
+    the pair arm picks up `X×𝟙` in front.  `arm₁_comp` and `arm₂_comp` are its two arms, and every
+    §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this step. -/
+public theorem Fmap_comp_junc {d : RelSet.{0}} (X : b ⟶ c) (T : dL L ⟶ d)
+    (U : (⟨c.carrier × E⟩ : RelSet.{0}) ⟶ d) :
+    (F L E).map X ≫ junc (sumCop (dL L) ⟨c.carrier × E⟩) T U
+      = junc (sumCop (dL L) ⟨b.carrier × E⟩) T (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ U) := by
+  apply hom_ext; intro u y
+  cases u with
+  | inl d' =>
+    rw [ListRel.junc_sum_inl]
+    constructor
+    · rintro ⟨w, hw, hj⟩
+      cases w with
+      | inl e' => obtain rfl : d' = e' := hw; exact (ListRel.junc_sum_inl T U d' y).mp hj
+      | inr q => exact hw.elim
+    · intro hT; exact ⟨Sum.inl d', rfl, (ListRel.junc_sum_inl T U d' y).mpr hT⟩
+  | inr p =>
+    rw [ListRel.junc_sum_inr]
+    constructor
+    · rintro ⟨w, hw, hj⟩
+      cases w with
+      | inl e' => exact hw.elim
+      | inr q => exact ⟨q, ⟨hw.1, hw.2⟩, (ListRel.junc_sum_inr T U q y).mp hj⟩
+    · rintro ⟨q, hq, hU⟩
+      exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, (ListRel.junc_sum_inr T U q y).mpr hU⟩
 
 /-- The first arm of `F(X)·h` is `U₁` alone: `F(X)` is the identity on the `L` summand. -/
 public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :

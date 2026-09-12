@@ -304,6 +304,9 @@ attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
 -- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
 -- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
 attribute [diag_rewrite] RelSet.SL.arm₂_graph
+-- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
+-- second arm carries the `X`, never a box `F(X)` in front of the junction.
+attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 
