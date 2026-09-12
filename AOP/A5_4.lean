@@ -28,6 +28,31 @@ namespace Freyd.Alg
 
 -- (`div_mono_left`/`leftDiv_mono_right` were hoisted into S2_3 at collection.)
 
+/-! ## Converse swaps the two divisions -/
+
+section RecipDiv
+
+variable {𝒜 : Type u} [DivisionAllegory 𝒜]
+
+/-- `(S \ R)° = R° / S°` — converse reads a left division as a right one. -/
+public theorem recip_leftDiv {A B C : 𝒜} (S : A ⟶ B) (R : A ⟶ C) : (S \ R)° = R° / S° := by
+  apply le_antisymm
+  · exact (le_div_iff _ _ _).mpr (by
+      rw [← Allegory.recip_comp]
+      exact recip_mono ((le_leftDiv_iff _ _ _).mp (le_refl _)))
+  · have h : ((R° / S°) ≫ S°)° ⊑ R°° := recip_mono (DivisionAllegory.div_comp_le _ _)
+    rw [Allegory.recip_comp, Allegory.recip_recip, Allegory.recip_recip] at h
+    have h2 := recip_mono ((le_leftDiv_iff _ _ _).mpr h)
+    rwa [Allegory.recip_recip] at h2
+
+/-- `(R / S)° = S° \ R°` — the mirror of `recip_leftDiv`. -/
+public theorem recip_div {A B C : 𝒜} (R : A ⟶ C) (S : B ⟶ C) : (R / S)° = S° \ R° := by
+  have := recip_leftDiv (S°) (R°)
+  rw [Allegory.recip_recip, Allegory.recip_recip] at this
+  rw [← this, Allegory.recip_recip]
+
+end RecipDiv
+
 /-! ## §5.4  Definition and elementary calculus of the power relator -/
 
 section PowerRelDef
@@ -57,6 +82,13 @@ notation:max "P(" R ")" => powerRel R
     (used again, unnamed, in `AOP.A5_7`). -/
 public theorem powerRel_eps_lax {A B : 𝒜} (R : A ⟶ B) : powerRel R ≫ ∋ B ⊑ ∋ A ≫ R :=
   le_trans (comp_mono_right (inter_lb_right _ _) _) (DivisionAllegory.div_comp_le _ _)
+
+/-- `P(R°) = P(R)°`: converse swaps the definition's two division terms (`recip_leftDiv`,
+    `recip_div`) and the meet puts them back.  No tabularity — the definition is all it uses. -/
+public theorem powerRel_recip {A B : 𝒜} (R : A ⟶ B) : powerRel R° = (powerRel R)° := by
+  simp only [powerRel, Allegory.recip_inter, recip_leftDiv, recip_div, Allegory.recip_comp,
+    Allegory.recip_recip]
+  exact Allegory.inter_comm _ _
 
 /-- Term₁ cancellation (the "input-reaches" half): `(∋ a)° ≫ powerRel R ⊑ R ≫ (∋ b)°`. -/
 public theorem powerRel_term1_cancel {A B : 𝒜} (R : A ⟶ B) :
@@ -328,6 +360,11 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
   map_id _ := powerRel_id
   map_comp := powerRel_comp
   map_mono := powerRel_mono
+
+/-- The power relator preserves converse (`powerRel_recip`), so a bead on `∋` may be read
+    backwards: it is what turns `∋`'s lax square into `∈`'s op-lax one. -/
+public theorem powerRelator_preservesRecip : (powerRelator (𝒜 := 𝒜)).PreservesRecip :=
+  fun R => powerRel_recip R
 
 /-- **B&dM §7.1 p.166** (`union ≜ Λ(∋∋) : E(EA) ⟶ EA` is LAX NATURAL): the monad
     multiplication `⋃` is a lax natural transformation `P∘P ⟶ P`, i.e.

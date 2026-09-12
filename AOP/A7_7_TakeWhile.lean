@@ -717,6 +717,14 @@ public theorem takewhile_mono (p : A → Bool) :
             le_iff.mp (takewhile_mono_cons p) q ws ⟨q', hv, (junc_inr _ _ _ _).mp hS⟩
           exact ⟨vs, (junc_inr _ _ _ _).mpr hvs, hlen⟩
 
+/-- The `takewhile-laws` first row: **`(prefix list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)`** — the
+    specification is the fold (`takewhile_alg`), under a transpose and a choice that neither
+    touch, so the row holds at every `R`. -/
+public theorem takewhile_laws_step1 (p : A → Bool)
+    (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
+    (prefixR ≫ listP p)%∋ ≫ est(R°) = (cataR (Salg p))%∋ ≫ est(R°) := by
+  rw [takewhile_alg]
+
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,
     with `takewhile-mono` for its hypothesis: one longest `p`-prefix kept at each `cons`
     refines every `p`-prefix collected and one chosen at the end. -/
@@ -819,6 +827,14 @@ public theorem takewhile_step (p : A → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p) :=
   (takewhile_step1 p lenLE).trans
     ((takewhile_step2 p lenLE_recip_refl).trans (takewhile_step3 p))
+
+/-- The `takewhile-laws` last row: **`⦇S%∋ est(R°)⦈ = ⦇[nil,(π₁p→cons,⊸ nil)]⦈`** — the greedy
+    algebra IS the one-step take-while (`takewhile_step`), so the fold on the left is the fold the
+    program runs. -/
+public theorem takewhile_laws_step3 (p : A → Bool) :
+    cataR ((Salg p)%∋ ≫ est(lenLE°))
+      = cataR (consScalarAlg (fun _ : Unit => ([] : List A)) (twStep p)) := by
+  rw [takewhile_step]
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/

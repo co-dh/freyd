@@ -32,6 +32,16 @@ public theorem eps_laxNatural :
     LaxNatural (Relator.idRelator 𝒜) (powerRelator (𝒜 := 𝒜)) (fun A => ∋ A) :=
   fun R => powerRel_eps_lax R
 
+/-- The identity relator preserves converse: its action on arrows is the identity. -/
+public theorem idRelator_preservesRecip : (Relator.idRelator 𝒜).PreservesRecip :=
+  fun _ => rfl
+
+/-- **`∈ ≜ ∋°` is OP-lax**, the converse verdict `recip_oplax` turns `eps_laxNatural` into; lax it
+    is not (`mem_not_laxNatural`), so op-lax is the strongest reading its bead may carry. -/
+public theorem mem_oplaxNatural :
+    OpLaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.idRelator 𝒜) (fun A => (∋ A)°) :=
+  recip_oplax idRelator_preservesRecip powerRelator_preservesRecip eps_laxNatural
+
 end EpsLax
 
 /-! ## The singleton's two spellings -/

@@ -812,6 +812,28 @@ public theorem Λ_prod_ni_union :
   rw [Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
     (PowerAllegory.powerObj (dList A))), pair_eq_rpair]
 
+/-- The note's `subseq-EW-join` last row at the `cons` operand: **`((𝟙×∋)cons)%∋ = (𝟙×∋)%∋ E(cons)`**
+    — absorption (`Λ_absorption`) takes the transpose inside the composite. -/
+public theorem Λ_prod_ni_cons :
+    Λ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+      = Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR :=
+  (Λ_absorption _ _).symm
+
+/-- The note's `subseq-EW-join` last row at the `π₂` operand: **`(π₂∋)%∋ = π₂`** — fusion takes the
+    map out of the transpose (`Λ_fusion`) and `Λ(∋)=𝟙` (`Λ_eps_reflection`) leaves it bare. -/
+public theorem Λ_proj_ni :
+    Λ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A))
+      = graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2 := by
+  rw [Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
+
+/-- The note's `subseq-EW-case` `π₂` arm under its transpose: **`((𝟙×∋)π₂)%∋ = π₂`** — the
+    membership slides out past the projection (`prod_ni_proj_slide`) and `Λ_proj_ni` collapses
+    what is left, which is why the arm the case display carries never changes. -/
+public theorem Λ_prod_ni_proj :
+    Λ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2))
+      = graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2 := by
+  rw [prod_ni_proj_slide, Λ_proj_ni]
+
 /-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
     second arm of `subseq`'s algebra under the power transpose.  Composition distributes over the
     `∪`, `(𝟙×∋)π₂ = π₂∋` slides the membership past the projection (`rprodMap_id_snd`), `Λ` of a
@@ -824,10 +846,7 @@ public theorem subseq_alg_join :
           (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
         ≫ cup (relProd (PowerAllegory.powerObj (dList A))
             (PowerAllegory.powerObj (dList A))) := by
-  rw [DistributiveAllegory.comp_union_distrib, rprodMap_id_snd,
-    Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
-      (PowerAllegory.powerObj (dList A))),
-    pair_eq_rpair, Λ_absorption, Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
+  rw [prod_ni_union_dist, prod_ni_union_slide, Λ_prod_ni_union, Λ_prod_ni_cons, Λ_proj_ni]
 
 /-- The note's `subseq-EW-case` third row: **`F(∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
     `F(∋)` IS the sum `𝟙+𝟙×∋` (`F_eq_sum_prod`), and a sum before a junction is the junction of
