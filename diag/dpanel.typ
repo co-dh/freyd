@@ -9,7 +9,7 @@
 //   ./scripts/scanline diag/allegory-axioms.typ --strict // sweep what these calls emit
 #import "note-style.typ": P, dispnum, plain
 #import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
-#import "draw.typ": BCOL, fb-ALLC, fcol, lanecheck, objcols
+#import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
 
 // ---- the Hinze-Marsden panel machinery, ABOVE every section that draws one: Typst binds a
 // `#let` where it stands, and §11.4's generated panels are the first `dpanel` calls in the note.
@@ -102,10 +102,12 @@
 }
 // ---- THE OBJECT WIRE'S COLOUR IS ITS OBJECT.  A wire that changes object at a bead changes hue
 // there, so `A` visibly ends and `B` begins instead of one line wearing two names.  The hue is the
-// OBJECT'S, off `draw.typ`'s `objcol`, so one object is one colour across the whole note.
-// The bands top to bottom as `(ytop, colour)`: the top port's object, then every seam that RENAMES
-// it — an endo bead leaves the object alone and starts no band.
-#let obands(h, obj, top, bot, ride) = {
+// OBJECT'S, off `draw.typ`'s `panelpal`, so one object keeps one colour wherever the panel leaves
+// its band free — and takes the next band where another object on the same wire has it.
+// The bands top to bottom as `(ytop, object)`: the top port's object, then every seam that RENAMES
+// it — an endo bead leaves the object alone and starts no band.  The HUE is not decided here: it is
+// allocated with the panel's lanes in hand, by the one allocator that places every hue it draws.
+#let oseams(h, obj, top, bot, ride) = {
   let bs = ((h, plain(top)),)
   for s in obj.sorted(key: s => -s.at(0)) {
     if plain(s.at(1)) != bs.last().at(1) { bs.push((s.at(0), plain(s.at(1)))) }
@@ -114,12 +116,7 @@
   // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, which is the
   // same guess `scanline` makes when a panel says nothing, so the ink and the sweep agree.
   if plain(bot) != bs.last().at(1) and ride != () { bs.push((calc.min(..ride), plain(bot))) }
-  // `(ytop, object, hue)`: the OBJECT travels with its band, because the rule the sweep holds is
-  // about the objects drawn — two of them in one colour — and a band that carried only a hue could
-  // not name the pair that collided.
-  // The hues come from `objcols`, which allocates the whole wire's bands at once: `objcol` alone
-  // hashes each name in isolation and so can hand two neighbouring objects one band.
-  bs.zip(objcols(bs.map(b => b.at(1)))).map(((b, c)) => (b.at(0), b.at(1), c))
+  bs
 }
 // The band a height falls in: the LAST one that opens above it, the bands running down the panel.
 #let ocolat(bs, y) = {
@@ -336,9 +333,9 @@
 // the picture draws what the right side IS, two wires; the edge then writes the LEFT side's own name
 // once, under a thin bracket spanning both columns, instead of the two per-wire labels.  Reading the
 // two labels the reader would have to re-derive the abbreviation the note already stated.
-#let dbrace(x0, x1, y, l, h) = {
+#let dbrace(x0, x1, y, l, h, pal) = {
   let dir = if y > h / 2 { 1 } else { -1 }
-  let c = fcol(l)
+  let c = palf(pal, l)
   let yb = y + dir * 0.16
   hm-wire(((x0, yb), (x1, yb)), col: c)
   hm-wire(((x0, yb), (x0, yb - dir * 0.10)), col: c)
@@ -364,9 +361,21 @@
   // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
   // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
   // on the wire, reads the same list back off `hm-meta`.
-  let obnd = obands(h, obj, top.find(p => p.at(0) == xo).at(1),
-                    bot.find(p => p.at(0) == xo).at(1),
-                    beads.filter(b => b.at(4, default: none) == none).map(b => b.at(0)))
+  let bs = oseams(h, obj, top.find(p => p.at(0) == xo).at(1),
+                  bot.find(p => p.at(0) == xo).at(1),
+                  beads.filter(b => b.at(4, default: none) == none).map(b => b.at(0)))
+  // EVERY LABEL THIS PANEL COLOURS, in one list: the lanes' own names, the port labels beside the
+  // object column, and the braces'.  The allocator can only hold the floor against the hues it is
+  // shown, so a label coloured from somewhere else is a hue nobody placed.
+  let lnames = (lanes.map(l => dnm(l, top, bot)).filter(n => n != none).map(plain)
+    + top.filter(p => p.at(0) != xo).map(p => plain(p.at(1)))
+    + bot.filter(p => p.at(0) != xo).map(p => plain(p.at(1)))
+    + defn.map(d => plain(d.at(3))))
+  let pal = panelpal(lnames, bs.map(b => b.at(1)))
+  // `(ytop, object, hue)`: the OBJECT travels with its band, because the rule the sweep holds is
+  // about the objects drawn — two of them in one colour — and a band that carried only a hue could
+  // not name the pair that collided.
+  let obnd = bs.map(b => (b.at(0), b.at(1), palo(pal, b.at(1))))
   // The two PORTS' hues, read off the same bands the wire is drawn in, so a port and the ink that
   // leaves it are one colour by construction.
   let (otc, obc) = (ocolat(obnd, h), ocolat(obnd, 0))
@@ -399,7 +408,7 @@
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
   // two lanes that never share a picture may reuse a band, and only the panel knows which those are.
   lanecheck(cert.at("expect", default: "dpanel"),
-    lanes.map(l => dnm(l, top, bot)).filter(n => n != none).map(n => (plain(n), fcol(n))),
+    lanes.map(l => dnm(l, top, bot)).filter(n => n != none).map(n => (plain(n), palf(pal, n))),
     beads.map(b => (plain(b.at(1)), b.at(2, default: black)))
       + obnd.map(o => (o.at(1), o.at(2))))
   dpan(h, w, xo, {
@@ -407,10 +416,10 @@
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
     let kb = dkb(gk, l)
     let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
-    // The lane's functor name keys `fcol`, and the colour names a wire that has a PORT to be read
+    // The lane's functor name keys the panel allocation, and the colour names a wire that has a PORT to be read
     // beside; `dnamed` says on which lanes that name is nowhere else on the page.
     let nm = dnm(l, top, bot)
-    let col = if nm == none { none } else { fcol(nm) }
+    let col = if nm == none { none } else { palf(pal, nm) }
     // ALONE IN THE CORRIDOR, not merely on the two rows: a lane whose column lies between the two
     // dots and is live across the gap has ink there, and the straight line sweeps from one side of
     // that column to the other — two wires that meet have exchanged.
@@ -438,7 +447,7 @@
     if dy.len() > 1 {
       let nm = dnm(dy.sorted(key: l => l.at(0)).first(), top, bot)
       hm-wire(((dx(b.at(0)) - HSTUB, b.at(0)), (dx(b.at(0)) + HSTUB, b.at(0))),
-              ..(if nm == none { (:) } else { (col: fcol(nm)) }))
+              ..(if nm == none { (:) } else { (col: palf(pal, nm)) }))
     }
   }
   // A bead's 6th element is the verdict its row states, and `hm-mark` is where that word becomes a
@@ -449,12 +458,12 @@
                            bg: fb-ALLC, nat: b.at(5, default: "strict")) }
   for (x, l) in top {
     if not dcovers(defn, h, x) {
-      hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { fcol(l) }) } }
+      hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { palf(pal, l) }) } }
   for (x, l) in bot {
     if not dcovers(defn, 0, x) {
       hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1,
-              col: if x == xo { obc } else { fcol(l) }) } }
-  for (x0, x1, y, l) in defn { dbrace(x0, x1, y, l, h) }
+              col: if x == xo { obc } else { palf(pal, l) }) } }
+  for (x0, x1, y, l) in defn { dbrace(x0, x1, y, l, h, pal) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
   for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
