@@ -247,6 +247,9 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
   src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
+   // lean:AOP.A7_4_Cylinder.cyl_cp@a2bae65e
+   // lean:AOP.A7_4_Cylinder.cyl_cp_prod@7f182a1e
+   // lean:AOP.A7_4_Cylinder.cyl_cp_const@94a6c342
 
 #disp[#table(
   columns: (5.6cm, 1fr),
@@ -340,6 +343,7 @@ N(cp P(α))(that)
   [],
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
+   // lean:AOP.A7_4_Cylinder.gen_cata_comm@80403de2
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
 

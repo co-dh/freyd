@@ -65,6 +65,20 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
 
 /-! ## `cyl-defn` -/
 
+/-- **cp-diag**: `cp = 𝟙%∋ E(F(𝟙,∋))` — the cross product at the cylinder's own base functor is
+    the power transpose of `F(𝟙,∋)`: pick one path out of each row's set, collect the results. -/
+public theorem cyl_cp : cpMap H I.t = Λ (H.map (∋ I.t)) := rfl
+
+/-- **cp-diag**, the `A×−` summand of `F(A,−)=A+A×−`: `cp = 𝟙%∋ E(𝟙×∋)` — the new square is
+    carried untouched and `∋` picks one path out of the set beside it. -/
+public theorem cyl_cp_prod [HasRelProd 𝒜] (a b : 𝒜) :
+    cpMap (Relator.prod (Relator.const a) (Relator.idRelator 𝒜)) b
+      = Λ (prodMap (relProd a (PowerAllegory.powerObj b)) (relProd a b) (𝟙 a) (∋ b)) := rfl
+
+/-- **cp-diag**, the `A` summand: `cp = 𝟙%∋` — a constant relator has no `E` to distribute, so
+    the transpose is the singleton `a↦{a}`. -/
+public theorem cyl_cp_const (a b : 𝒜) : cpMap (Relator.const (𝒜 := 𝒜) a) b = Λ (𝟙 a) := rfl
+
 /-- **cyl-defn**: `gen ≜ F(𝟙,moves trans N(union)) zip N(cp P(α))`, of type
     `F(NA,N(E(LA)))⟶N(E(LA))` — one fold step, extending every path of every row by the new
     column. -/
@@ -78,6 +92,15 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
     across the cylinder. -/
 @[expose] public noncomputable def paths : J.t ⟶ PowerAllegory.powerObj I.t :=
   ⦇gen I moves trans zip⦈ ≫ setify (PowerAllegory.powerObj I.t) ≫ bigUnion
+
+/-- **fold-diag**: `α⦇gen⦈ = F(𝟙,⦇gen⦈)gen` — the fold's computation rule at `gen`: reading the
+    whole list is putting the column back on it and then reading it, which is reading the rest
+    under `F` and then one `gen`.  `relCata_cancel` at `gen`, the abstract counterpart of
+    `Vec.cons_genFold`. -/
+public theorem gen_cata_comm :
+    J.α ≫ (⦇gen I moves trans zip⦈ : J.t ⟶ N.obj (PowerAllegory.powerObj I.t))
+      = F.map ⦇gen I moves trans zip⦈ ≫ gen I moves trans zip :=
+  relCata_cancel J _
 
 /-- **cyl-defn**: the algebra the derivation's last step folds,
     `Q ≜ F(𝟙,moves trans N(est(R))) zip N(α)`. -/
