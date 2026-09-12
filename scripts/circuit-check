@@ -48,9 +48,11 @@ jq -r "$CERTS"' | ["--src", .src, "--tgt", .tgt]
      | if ($at | length) > 0 then ["--at", ($at | join(" "))] else [] end)
   + [.expect] | @sh' "$OUT/meta.json" > "$OUT/args"
 
-awk -F' [|] ' '!/^#/ && NF { print $1 }' "$PANELS" > "$OUT/sel"
-awk -F' [|] ' '!/^#/ && NF { print $2 }' "$PANELS" > "$OUT/lab"
-awk -F' [|] ' '!/^#/ && NF { print $3 }' "$PANELS" > "$OUT/want"
+# `scripts/panels.py`, not an `awk -F` here and another in `scripts/string-check`: the two manifests
+# have one form, so they have one reader, and a column added to the form reaches both gates at once.
+./scripts/panels.py "$PANELS" 1 > "$OUT/sel"
+./scripts/panels.py "$PANELS" 2 > "$OUT/lab"
+./scripts/panels.py "$PANELS" 3 > "$OUT/want"
 diff -u "$OUT/want" "$OUT/expect" || {
   echo "circuit-check: $PANELS does not answer the note panel for panel — a minus line is a record" \
     "for a panel the note no longer draws, a plus line a panel with no record at all" >&2

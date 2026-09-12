@@ -32,6 +32,8 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
+import panels                                    # noqa: E402  — the manifests' one reader
 os.chdir(ROOT)
 sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
 PANELS = "diag/string-panels.txt"
@@ -41,27 +43,30 @@ run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
 
 
 def note_panels():
-    """Every panel the note draws, grouped by display, in document order — the note's own metadata."""
+    """Every panel the note draws, grouped by the display's NAME, in document order — the note's own
+    metadata.  The name is the `#disp` LABEL, which `note-style.typ` emits beside the number every
+    display carries, because a number moves with every heading and a manifest keyed by one answers
+    for the wrong display without saying so.  A display the note leaves unlabelled has no name to
+    key by and is named by its number; `number` says which number each name stands for, `bare` which
+    names are numbers for want of a label."""
     p = run("typst", "query", "--root", ".", NOTE, "metadata", "--field", "value")
     if p.returncode:
         sys.exit(f"string-check: typst query {NOTE} failed:\n{p.stderr}")
+    ms = [m for m in json.loads(p.stdout) if isinstance(m, dict)]
+    name = {d["id"]: (d.get("label") or d["id"]) for d in ms if d.get("kind") == "disp"}
     out = {}
-    for m in json.loads(p.stdout):
-        if isinstance(m, dict) and m.get("kind") == "scanline":
-            out.setdefault(m["id"].rsplit(".", 1)[0], []).append(m)
-    return out
+    for m in ms:
+        if m.get("kind") == "scanline":
+            d = m["id"].rsplit(".", 1)[0]
+            out.setdefault(name.get(d, d), []).append(m)
+    number = {v: k for k, v in name.items()}
+    return out, number, {v for k, v in name.items() if v == k}
 
 
 def obligations():
-    """One line per display: the selectors, the display, what its panels draw."""
-    rows = []
-    for line in open(PANELS, encoding="utf-8"):
-        line = line.split("\t#")[0].rstrip("\n")
-        if not line or line.startswith("#"):
-            continue
-        sels, disp, _ = (line.split("\t") + ["", ""])[:3]
-        rows.append((disp.split("/")[0], disp, sels.split(",")))
-    return rows
+    """One line per display: the display's name and one selector per panel, through the reader both
+    manifests are read by."""
+    return [(name, sels) for sels, name, _ in panels.read(PANELS)]
 
 
 def route(sel):
@@ -126,25 +131,33 @@ def main(argv):
     # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
     # gate's, so the two cannot come to disagree about what the manifest names.
     if "--selectors" in argv:
-        print(*sorted({route(s)[0] for _, _, sels in obligations() for s in sels if s != "-"}),
+        print(*sorted({route(s)[0] for _, sels in obligations() for s in sels if s != "-"}),
               sep="\n")
         return 0
     want = argv[0] if argv else ""
     os.makedirs(OUT, exist_ok=True)
-    live = note_panels()
+    live, number, bare = note_panels()
     rows = obligations()
-    rc, named = 0, {d for d, _, _ in rows}
-    for d in live:
-        if d not in named:
-            print(f"{d}: MISSING — the note draws {len(live[d])} panel(s) here and {PANELS} names"
-                  f" no line for it, so nothing is held to them")
+    # A DISPLAY IS NAMED BY ITS LABEL AND ADDRESSED BY ITS NUMBER: the number is what the reader of
+    # the report looks up in the note and what a section argument selects on, the label what the
+    # manifest keys by.  `want` therefore filters the NUMBER, not the name.
+    num = lambda n: number.get(n, n)
+    addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    rc, named = 0, {n for n, _ in rows}
+    for n in live:
+        if n not in named:
+            print(f"{addr(n)}: MISSING — the note draws {len(live[n])} panel(s) here and {PANELS}"
+                  f" names no line for it, so nothing is held to them")
             rc = 1
-    for d, disp, sels in rows:
-        if d not in live:
-            print(f"{disp}: STALE — {PANELS} names a display the note no longer draws")
+    for n, sels in rows:
+        if n not in live:
+            print(f"{n}: STALE — {PANELS} names a display the note no longer draws")
             rc = 1
+    for n in sorted(bare & named):
+        print(f"{n}: UNLABELLED — the note's display carries no `#disp` label, so {PANELS} keys it"
+              f" by its number, which the next heading change moves")
 
-    todo = sorted({route(s)[0] for d, _, sels in rows if d in live and d.startswith(want)
+    todo = sorted({route(s)[0] for n, sels in rows if n in live and num(n).startswith(want)
                    for s in sels if s != "-"})
     # The FILE is the answer to "did it draw", so the ones about to be drawn are deleted first: a
     # selector the exporter refuses was otherwise checked against LAST run's picture and said `ok`.
@@ -155,16 +168,17 @@ def main(argv):
     if todo:
         p = run("./scripts/diag-export", "--string", *todo)
         drawn, exrc = p.stderr + p.stdout, p.returncode
-    for d, disp, sels in rows:
-        if d not in live or not d.startswith(want):
+    for n, sels in rows:
+        if n not in live or not num(n).startswith(want):
             continue
-        ps = live[d]
+        ps = live[n]
         if len(sels) != len(ps):
-            print(f"{disp}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)} panels")
+            print(f"{addr(n)}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for"
+                  f" {len(ps)} panels")
             rc = 1
             continue
         for k, (sel, panel) in enumerate(zip(sels, ps), 1):
-            tag = f"{disp}.{k}"
+            tag = f"{addr(n)}.{k}"
             if sel == "-":
                 print(f"{tag}: NO-DECL — no declaration is cited for this panel")
                 continue

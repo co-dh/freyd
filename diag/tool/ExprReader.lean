@@ -1044,6 +1044,27 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
+/-- THE CANDIDATE INDEX: for each conclusion head, the declarations concluding in it and the
+    constants each one's statement uses — the two things a search selects candidates by.  Built
+    once per head and held for the life of the process, because the environment does not grow
+    while the exporter draws: a walk over `env.constants` per lookup redoes this work on every
+    call, and the walk alone measured 5.8M of the 8.1M heartbeats one `Membership.mem` search
+    spent (190180 constants examined to reach 275 candidates), with a dozen such calls per bead. -/
+initialize headBuckets : IO.Ref (NameMap (Array (Name × NameSet))) ← IO.mkRef {}
+
+/-- The declarations that could prove a statement headed by `head`, each with the constants its own
+    statement uses.  The environment is asked for the Expr itself (`env.find?` at the one candidate
+    being tried), never for the enumeration. -/
+def candidates (head : Name) : MetaM (Array (Name × NameSet)) := do
+  if let some b := (← headBuckets.get).find? head then return b
+  let env ← getEnv
+  let mut b : Array (Name × NameSet) := #[]
+  for (n, ci) in env.constants do
+    if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
+    b := b.push (n, consts ci.type)
+  headBuckets.modify (·.insert head b)
+  return b
+
 /-- One candidate's share of the search. Unifying a square against a concrete region unfolds every
     relator on both sides, which costs more than a whole default budget, so this is twice the
     default rather than a fraction of it; the head and `must` filters are what keep the scan short. -/
@@ -1078,14 +1099,25 @@ def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.
     of the family — dropping the objects they are taken at, which is what a naturality theorem is
     general in — is the reading the statement wants, and it opens the square search to every
     equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
-    under (`scripts/cap`) and the process dies. -/
+    under (`scripts/cap`) and the process dies.
+
+    WHAT IS DROPPED IS DECIDED BY THE CONSTANT'S OWN CONCLUSION, NOT BY ITS KIND.  Dropping every
+    PROJECTION dropped the field that names the arrow along with the path: `∋` is the three
+    constants `UnguardedPowerLCDA.toUnguardedPowerAllegory`, `UnguardedPowerAllegory.toPowerAllegory`
+    and `PowerAllegory.eps`, and the last of those IS `∋` — the one name every theorem about `∋`
+    must carry.  With it gone `must` was EMPTY, so the square search ran over every `Eq`-headed
+    declaration in the environment and `discharge` ran another over every one of those: measured at
+    85M heartbeats for the first level and 91M for the second, past the budget before the third.
+    A conclusion that is a CLASS is the resolution path, which each declaration takes its own way;
+    a conclusion that is no constant at all is a type former, carried in types a statement never
+    prints.  Everything else a theorem can be asked for by name. -/
 def mustOfFamily (br : Meta.Simp.Context) (φ : Expr) : MetaM NameSet := do
   let env ← getEnv
   let mut out : NameSet := {}
   for n in (consts (← bridge br φ).expr).toList do
-    if env.isProjectionFn n then continue
     if let some ci := env.find? n then
-      if Lean.isClass env (concHead ci.type) then continue
+      let h := concHead ci.type
+      if h.isAnonymous || Lean.isClass env h then continue
     out := out.insert n
   return out
 
@@ -1126,7 +1158,7 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
   let env ← getEnv
   let rw ← bridge br want
   let mut hit : Option (Name × Expr) := none
-  for (n, ci) in env.constants do
+  for (n, has) in ← candidates head do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
     -- `tryCatchRuntimeEx` below: a budget spent inside one candidate is caught as that candidate's
@@ -1134,9 +1166,8 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
     -- end.  Without it a goal nothing proves is a full scan of the environment at every step of
     -- `discharge`, which is the environment cubed and never returns (`Freyd.Alg.Cylinder.Q`).
     Core.checkMaxHeartbeats "the naturality search"
-    if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
-    let has := consts ci.type
     if must.any (fun m => !has.contains m) then continue
+    let some ci := env.find? n | continue
     let s ← Meta.saveState
     let attempt : MetaM (Option (Name × Expr)) := do
       -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
