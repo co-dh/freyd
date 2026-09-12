@@ -492,6 +492,33 @@ public theorem tex_laws_step2 :
     rw [← tex_fusion, Allegory.recip_comp, Allegory.recip_recip]
   rw [h]
 
+/-- **tex-laws**, the greedy body at `H`: `interval Λ([arb,step]°) est(Q) F(H) α ⊑ interval H`.
+    `est(Q) ⊑ ∋` cancels the transpose, and what is left is `H`'s own fixed-point equation
+    `[arb,step]° F(H) α = H`, so choosing greedily among the one-step decompositions and then
+    recursing with `H` still produces a decimal `H` allows.  This is the arrow the last panel of
+    the note's `tex-laws` draws — the body with `H` in the recursive slot.  It is NOT the prefixed
+    point `tex_laws_step3` runs on: that one needs the SPECIFICATION `Λ(H) est(R)` in the slot
+    (`greedy_dp_prefixed`), and the body at `H` leaves the tail unconstrained, so it does not
+    refine `Λ(H) est(R)`. -/
+public theorem tex_laws_body :
+    interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map H ≫ alphaR
+      ⊑ interval ≫ H := by
+  have hfix : (junc cop arb step)° ≫ (F Unit Digit).map H ≫ alphaR = H := by
+    have h0 : (junc cop arb step)°
+        ≫ (F Unit Digit).map
+            (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
+          = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
+      hylo_fixed (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
+        alphaR (junc cop arb step)
+    rwa [tex_H] at h0
+  have hest : est Q ⊑ ∋ ((F Unit Digit).obj Interval) := inter_lb_left _ _
+  calc interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map H ≫ alphaR
+      ⊑ interval ≫ Λ ((junc cop arb step)°) ≫ ∋ ((F Unit Digit).obj Interval)
+          ≫ (F Unit Digit).map H ≫ alphaR :=
+        comp_mono_left _ (comp_mono_left _ (comp_mono_right hest _))
+    _ = interval ≫ H := by
+        rw [← Cat.assoc (Λ ((junc cop arb step)°)), Λ_comp_eps, hfix]
+
 /-- **tex-laws**, third step (Theorem 10.1): the greedy body is a prefixed point of the
     specification, so the least fixed point refines it. -/
 public theorem tex_laws_step3 :

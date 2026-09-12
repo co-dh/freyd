@@ -447,6 +447,15 @@ public theorem mss_step2 {R : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩}
           (zeroPlus%∋ ≫ est(R)) := by
   unfold zero; rw [Λ_map_comp_est (graph_map _) hrefl]
 
+/-- The `plus` OPERAND of step 2's cons arm, on its own: `plus%∋ est(≥) = plus`.  `⊸ zero ∪ plus`
+    offers two elements and `est(≥)` keeps the larger, but the `plus` operand alone offers one —
+    `plus` is a map and `≥` is reflexive — so under `𝟙%∋ E(−)` and `est(≥)` it is itself.  Panel 2
+    of the note's `mss-step` draws this arrow; `mss_step2` keeps the whole union, where the `⊸ zero`
+    operand is NOT absorbed (`zeroPlus%∋ est(≥) = ⊕`, not `plus`). -/
+public theorem mss_step_plus :
+    plus%∋ ≫ est((geq : (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)) = plus := by
+  unfold plus; rw [Λ_map_comp_est (graph_map _) geq_refl]
+
 /-- The `mss-step` row: `Λ(S) est(≥) = [zero, ⊕]` — the `zero` branch is a singleton, and the
     `plus` branch is `⊕`'s definition. -/
 public theorem mss_step :
