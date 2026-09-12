@@ -191,6 +191,10 @@ def Path.comp (p q : Path) : MetaM Path := do
 /-- A term read as a path.  Composition is the ONLY structural case — that is the functor law; `𝟙`
     is the empty path, and any other expression is one edge, whatever it is made of. -/
 partial def interp (e : Expr) : MetaM Path := do
+  -- A COMPONENT OF A FAMILY THE STATEMENT ITSELF BUILT is a redex — `(fun A => χ (G A) ≫ K(φ A)) B`
+  -- — and a redex is not an arrow expression: read it reduced, or the composition stays hidden under
+  -- the lambda and the picture draws ONE edge where the term composes two.
+  let e := e.headBeta
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
     match StrDiag.lastTwo args with
@@ -361,20 +365,15 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
     let some (_, l, r) := StrDiag.split e | return #[]
     if isInduced heads r then parts l else if isInduced heads l then parts r else return #[]
 
-/-- WHETHER THE STATEMENT PRODUCES THIS ARROW: an induced constructor heads it (`α⦇f⦈=F(⦇f⦈)f`
-    produces `⦇f⦈`), or the other side of the statement's `↔` says so (`αX=F(X)f ⟺ X=⦇f⦈` produces
-    `X`, which is a variable and carries no head to read it off).  Being produced is what makes an
-    arrow induced; being DRAWN dashed is that and having no chord, since a paste dashes the chord
-    alone. -/
-def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
+/-- WHETHER A UNIVERSAL CONSTRUCTION GIVES THIS ARROW: an induced constructor heads it (`⦇f⦈`,
+    `⟨R,S⟩`, `Λ(R)`), the other side of the statement's `↔` names it (`αX=F(X)f ⟺ X=⦇f⦈` names `X`,
+    a variable carrying no head to read it off), or the environment defines it by one.  This is a
+    question about the ARROW; whether THIS statement is what produces it is `Face.produces`, and a
+    paste's chord is induced by the pair whatever symbol stands between its two paths. -/
+def Face.induces (fc : Face) (f : Expr) : MetaM Bool := do
   -- The `↔`'s other side is read FIRST: it says outright which arrow the claim determines, whatever
   -- symbol this side wears.
   if ← fc.induced.anyM fun g => Meta.isDefEq g f then return true
-  -- AN INEQUATION DETERMINES NOTHING.  A universal property produces its arrow by an EQUATION —
-  -- `α⦇f⦈=F(⦇f⦈)f` says `⦇f⦈` is the one arrow making the square commute — where `⊑` only compares
-  -- two composites the statement is handed, so a lax square's `prefix` and `Λ(F(∋)f)` are arrows it
-  -- is ABOUT, not arrows it builds, and the note draws both solid.
-  unless fc.sym == "=" do return false
   if isInduced (← inducedHeads) f then return true
   -- A CLOSED arrow carries its role in the environment instead.  The structure is asked FIRST: an
   -- equation between a fold and an arrow the ambient structure supplies — `⦇α⦈=𝟙` — is a law about
@@ -382,6 +381,16 @@ def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
   if ← structureArrow f then return false
   let some n := f.getAppFn.constName? | return false
   return (← inducedDefs).contains n
+
+/-- WHETHER THIS STATEMENT PRODUCES THE ARROW, hence whether its own face may dash it.  AN
+    INEQUATION DETERMINES NOTHING: a universal property produces its arrow by an EQUATION —
+    `α⦇f⦈=F(⦇f⦈)f` says `⦇f⦈` is the one arrow making the square commute — where `⊑` only compares
+    two composites the statement is handed, so a lax square's `prefix` and `Λ(F(∋)f)` are arrows it
+    is ABOUT and the note draws both solid. -/
+def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
+  if ← fc.induced.anyM fun g => Meta.isDefEq g f then return true
+  unless fc.sym == "=" do return false
+  fc.induces f
 
 /-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  A pasted pair produces its
     CHORD — the arrow the two faces share is the one they jointly determine — and nothing else, so
@@ -407,11 +416,27 @@ partial def arrowVars (e : Expr) : MetaM (Array Expr) := do
   | .app f a =>
     if ← StrDiag.isComponent e then return #[e]
     return (← arrowVars f) ++ (← arrowVars a)
-  | .lam _ t b _ | .forallE _ t b _ => return (← arrowVars t) ++ (← arrowVars b)
-  | .letE _ t v b _ => return (← arrowVars t) ++ (← arrowVars v) ++ (← arrowVars b)
+  -- A BINDER IS OPENED BEFORE ANYTHING IS ASKED OF ITS BODY.  Under `fun A => …` every `A` is a
+  -- LOOSE BVAR, and `inferType`/`isDefEq` of one is a panic rather than an error — the traceback
+  -- `laxNatural_hcomp_outer_first` used to end in.  What the opened local reaches is an arrow at
+  -- the BOUND object, which is no object of this face, so it is none of the arrows the statement
+  -- hands the picture and drops out here.
+  | .lam .. =>
+    Meta.lambdaTelescope e fun ys b => do return (← underBinders ys b)
+  | .forallE .. =>
+    Meta.forallTelescope e fun ys b => do return (← underBinders ys b)
+  -- A `let` binds its body's variable to a term already in hand, so opening it is substituting it.
+  | .letE _ t v b _ => return (← arrowVars t) ++ (← arrowVars (b.instantiate1 v))
   | .mdata _ b => arrowVars b
   | .proj _ _ b => arrowVars b
   | _ => return #[]
+where
+  /-- The body of an opened telescope, with the binders' own types: every arrow found, minus the
+      ones that mention a local the telescope opened. -/
+  underBinders (ys : Array Expr) (b : Expr) : MetaM (Array Expr) := do
+    let mut vs ← arrowVars b
+    for y in ys do vs := vs ++ (← arrowVars (← Meta.inferType y))
+    return vs.filter fun v => !v.hasAnyFVar fun fid => ys.any (·.fvarId! == fid)
 
 /-- The arrow a FUNCTOR has moved, when this arrow is one: an application carrying an arrow argument
     and standing at objects that argument does not — `F(⦇f⦈) : FT ⟶ FA` over `⦇f⦈ : T ⟶ A`, `E(R)`
@@ -570,6 +595,16 @@ def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array 
     let touches (h : String) := es.any fun e => (e.src == v.id || e.tgt == v.id) && e.hue == h
     if given.contains v.id && !touches "GIVEN2" then { v with hue := "GIVEN1" } else v
 
+/-- THE CHORD'S OWN EDGE.  A chord is dashed and INDUCED when the two faces PRODUCE it — `⟨f,g⟩`,
+    `Λ(R)`, the arrow their pasting determines.  Two HYPOTHESES pasted along an arrow the statement
+    handed them both share a given edge instead (`T(b)` between the two slides), and it is drawn in
+    its own role, solid: dashing it would say a universal property built an arrow the statement was
+    handed. -/
+def Face.chordEdge (fc : Face) (c : Expr) (side : String) : MetaM Edge := do
+  let dash ← fc.induces c
+  let hue ← if dash then pure "INDUCED" else fc.hue c
+  return { src := "s", tgt := "t", label := ← labelParts c, side, dash, hue }
+
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
     takes that side's corners alone.  A face commutes unless marked, so an equation carries none. -/
@@ -716,8 +751,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let some (c, sym) := fc.chord | throwError "a fan is a pasted pair and has a chord"
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
     -- of the face the `lhs` bounds.
-    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← labelParts c), side := "left",
-                                 dash := true, hue := "INDUCED" : Edge }]
+    let edges := le ++ re ++ #[← fc.chordEdge c "left"]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes edges
@@ -746,8 +780,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let some (c, sym) := fc.chord | throwError "a pasted pair of squares is a paste and has a chord"
     -- The chord's own label is set ABOVE it, inside the face the `lhs` square bounds, which is where
     -- the note puts it: a chord lies between two faces and its label has to be inside one of them.
-    let edges := le ++ re ++ #[{ src := "s", tgt := "t", label := (← labelParts c), side := "top",
-                                 dash := true, hue := "INDUCED" : Edge }]
+    let edges := le ++ re ++ #[← fc.chordEdge c "top"]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes edges
@@ -798,9 +831,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   | some (c, sym) =>
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
-    let withChord := edges.push
-      { src := "s", tgt := "t", label := (← labelParts c), side := "top", dash := true,
-        hue := "INDUCED" }
+    let withChord := edges.push (← fc.chordEdge c "top")
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes withChord
@@ -908,6 +939,50 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
       let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
       Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced k
 
+/-! ### The hypotheses a statement is handed -/
+
+/-- The objects a face stands at. -/
+def Face.objs (fc : Face) : Array Expr := (fc.lhs.nodes ++ fc.rhs.nodes).map (·.2)
+
+/-- The arrows a face is made of. -/
+def Face.edges (fc : Face) : Array Expr := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2)
+
+/-- A HYPOTHESIS READ AS A FACE, when it is one.  Dispatch is on the hypothesis's TYPE and on
+    nothing else: an equation or inequation between two ARROWS is a face, where `Map f`, a preorder,
+    `LaxNatural F G φ` or an equation between objects is a property with no square of its own. -/
+def hypFace (h : Expr) : MetaM (Option Face) := do
+  let some (sym, l, r) := StrDiag.split (← Meta.inferType h) | return none
+  unless (← Meta.inferType l).isAppOf ``Cat.Hom do return none
+  return some (← Face.of sym (← interp l) (← interp r))
+
+/-- THE FACES OF AN IMPLICATION.  `h₁ → … → concl` asserts one face and is HANDED others: a
+    hypothesis that is itself a face is part of the picture, because the conclusion is what PASTING
+    the hypotheses gives.  Two rules, both read off the OBJECTS the faces stand at:
+
+    * THE HYPOTHESES REPLACE THE CONCLUSION when, standing at an object of it, they together stand
+      at EVERY object it does: the conclusion is then the outer boundary of what they already draw
+      — the rectangle around two pasted slides, the two panels of a union — and drawing it again
+      would join corners already joined.
+    * OTHERWISE a hypothesis is drawn only when it PASTES onto the conclusion, sharing exactly the
+      one edge `Face.paste` glues along: the side condition `RS=F(S)Q` shares `S` with `⦇R⦈S=⦇Q⦈`
+      and is pasted to it.  A hypothesis sharing none — the algebra condition `gf=F(f,f)g` beside
+      `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` — is a claim of its own, and the note leaves it out of the picture. -/
+def withHyps (fs : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
+  let mut hs : Array Face := #[]
+  for x in xs do
+    if let some h ← hypFace x then hs := hs.push h
+  let stands (o : Expr) (gs : Array Face) : MetaM Bool :=
+    gs.anyM fun g => g.objs.anyM (Meta.isDefEq o)
+  let touching ← hs.filterM fun h => h.objs.anyM (stands · fs)
+  unless touching.isEmpty do
+    if ← fs.allM fun f => f.objs.allM (stands · touching) then return touching
+  let shared (h : Face) : MetaM Nat := do
+    let mut k := 0
+    for e in h.edges do
+      if ← fs.anyM fun f => f.edges.anyM (Meta.isDefEq e) then k := k + 1
+    return k
+  return fs ++ (← hs.filterM fun h => return (← shared h) == 1)
+
 /-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
 def part (s : String) : Name × Option String :=
   if s.endsWith ".lhs" then ((s.dropEnd 4).toString.toName, some "lhs")
@@ -920,6 +995,7 @@ def part (s : String) : Name × Option String :=
 partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs : Array Expr)
     (i : Nat) (fs : Array Face) : MetaM String := do
   if i ≥ parts.size then
+    let fs ← withHyps fs xs
     if let #[f, g] := fs then
       if let some fc ← Face.paste f g then
         return cdPage sel #[← layout fc]
