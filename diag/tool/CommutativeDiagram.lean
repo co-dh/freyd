@@ -306,19 +306,22 @@ def Face.dashes (fc : Face) (f : Expr) : MetaM Bool := do
 
 /-! ### Which role an arrow plays, hence its colour -/
 
-/-- Whether an arrow expression mentions one of the statement's free ARROW VARIABLES — the `f`, `R`,
-    `h`, `k` a picture is HANDED.  Read off the TERM and never off a list of letters: a free variable
-    whose type is a `Cat.Hom` is an arrow the statement binds, so a fold `⦇h⦈` of one mentions one
-    and the structure map of a bundled algebra, whose free variable is the algebra, does not. -/
-partial def givenArrow (e : Expr) : MetaM Bool := do
+/-- The statement's free ARROW VARIABLES an expression mentions — the `f`, `R`, `h`, `k` a picture
+    is HANDED.  Read off the TERM and never off a list of letters: a free variable whose type is a
+    `Cat.Hom` is an arrow the statement binds, so a fold `⦇h⦈` of one mentions one and the structure
+    map of a bundled algebra, whose free variable is the algebra, does not. -/
+partial def arrowVars (e : Expr) : MetaM (Array Expr) := do
   match e with
-  | .fvar _ => return (← Meta.inferType e).isAppOf ``Cat.Hom
-  | .app f a => return (← givenArrow f) || (← givenArrow a)
-  | .lam _ t b _ | .forallE _ t b _ => return (← givenArrow t) || (← givenArrow b)
-  | .letE _ t v b _ => return (← givenArrow t) || (← givenArrow v) || (← givenArrow b)
-  | .mdata _ b => givenArrow b
-  | .proj _ _ b => givenArrow b
-  | _ => return false
+  | .fvar _ => return if (← Meta.inferType e).isAppOf ``Cat.Hom then #[e] else #[]
+  | .app f a => return (← arrowVars f) ++ (← arrowVars a)
+  | .lam _ t b _ | .forallE _ t b _ => return (← arrowVars t) ++ (← arrowVars b)
+  | .letE _ t v b _ => return (← arrowVars t) ++ (← arrowVars v) ++ (← arrowVars b)
+  | .mdata _ b => arrowVars b
+  | .proj _ _ b => arrowVars b
+  | _ => return #[]
+
+/-- Whether an arrow is one the statement HANDED over, i.e. mentions such a variable. -/
+def givenArrow (e : Expr) : MetaM Bool := return !(← arrowVars e).isEmpty
 
 /-- The arrow a FUNCTOR has moved, when this arrow is one: an application carrying an arrow argument
     and standing at objects that argument does not — `F(⦇f⦈) : FT ⟶ FA` over `⦇f⦈ : T ⟶ A`, `E(R)`
@@ -410,13 +413,31 @@ def componentNodeHues (l r : Component) (ns : Array Node) : Array Node :=
     | false, true => { v with hue := s!"GIVEN{r.idx + 1}" }
     | false, false => { v with hue := "INDUCED" }
 
-/-- A node's hue, from the edges that touch it: `GIVEN1` when it is an end of a GIVEN1 edge and of
-    no GIVEN2 one — an object the picture is handed, as against one where the structure the property
-    is about already lives (`T` and `FT` are ends of `α`, so they stay black). -/
-def nodeHues (ns : Array Node) (es : Array Edge) : Array Node :=
+/-- The nodes the statement HANDS the picture: those standing at an END of one of its free arrow
+    VARIABLES.  A variable is handed over at its two objects whether or not the picture draws the
+    variable itself — `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` draws neither `f` nor `g` and is still handed their
+    carrier `A` — so the question is asked of the OBJECTS, never of the edges that happen to be
+    drawn, which is what an "end of a GIVEN1 edge" test could only answer for the ones that are. -/
+def Face.givenNodes (fc : Face) : MetaM (Array String) := do
+  let arrows := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2) ++ (fc.chord.map (·.1)).toArray
+  let mut objs : Array Expr := #[]
+  for f in arrows do
+    for x in ← arrowVars f do
+      let (a, b) ← StrDiag.homEnds x
+      objs := (objs.push a).push b
+  let mut ids : Array String := #[]
+  for (id, o) in fc.lhs.nodes ++ fc.rhs.nodes do
+    unless ids.contains id do
+      if ← objs.anyM (Meta.isDefEq o) then ids := ids.push id
+  return ids
+
+/-- A node's hue: `GIVEN1` when the statement hands the picture that object (`Face.givenNodes`) and
+    no GIVEN2 edge touches it — an object the picture is handed, as against one where the structure
+    the property is about already lives (`T` and `FT` are ends of `α`, so they stay black). -/
+def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array Node :=
   ns.map fun v =>
     let touches (h : String) := es.any fun e => (e.src == v.id || e.tgt == v.id) && e.hue == h
-    if touches "GIVEN1" && !touches "GIVEN2" then { v with hue := "GIVEN1" } else v
+    if given.contains v.id && !touches "GIVEN2" then { v with hue := "GIVEN1" } else v
 
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
@@ -476,10 +497,44 @@ def Face.isFan (fc : Face) : Bool :=
 def Face.isPastedSquares (fc : Face) : Bool :=
   fc.chord.isSome && fc.lhs.edges.size == 3 && fc.rhs.edges.size == 3
 
+/-- A TRIANGLE: one side turns a corner, the other is a chord that cannot.  Three nodes, so the grid
+    has a free column, and the note spends it on SYMMETRY — the two sides leave the shared source at
+    opposite ends of the top row and meet at the column between them, which makes the two arrows
+    into the shared target mirror images.  The right triangle the general grid gives instead lays
+    the chord along the diagonal of a square whose fourth corner is nobody's, and the two arrows
+    into the target then look unrelated (the note's `<horner>`, `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈`). -/
+def Face.isTriangle (fc : Face) : Bool :=
+  fc.chord.isNone && fc.lhs.edges.size + fc.rhs.edges.size == 3 &&
+    (fc.lhs.edges.size == 1 || fc.rhs.edges.size == 1)
+
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
 def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
   let comps ← fc.components
+  let given ← fc.givenNodes
+  if fc.isTriangle then
+    -- The turning side leaves the shared source along the top row to the far column and drops to
+    -- the middle one; the chord drops to that same vertex from the other end of the row.  Which of
+    -- the two sides turns decides which end of the row the shared source is at.
+    let turns := fc.lhs.edges.size == 2
+    let long := if turns then fc.lhs else fc.rhs
+    let cells : Array (Float × Float) := #[(if turns then 0.0 else 2.0, 0.0),
+                                           (if turns then 2.0 else 0.0, 0.0), (1.0, -1.0)]
+    let mut nodes : Array Node := #[]
+    for i in [0:3] do
+      let (id, o) := long.nodes[i]!
+      nodes := nodes.push { id, gx := cells[i]!.1, gy := cells[i]!.2, label := (← label o) }
+    let mut edges : Array Edge := #[]
+    for i in [0:2] do
+      let (src, tgt, f) := long.edges[i]!
+      edges := edges.push { src, tgt, label := (← label f),
+                            side := if i == 0 then "top" else if turns then "right" else "left",
+                            dash := ← fc.dashes f, hue := ← fc.hue f }
+    let (csrc, ctgt, cf) := (if turns then fc.rhs else fc.lhs).edges[0]!
+    edges := edges.push { src := csrc, tgt := ctgt, label := (← label cf),
+                          side := if turns then "left" else "right",
+                          dash := ← fc.dashes cf, hue := ← fc.hue cf }
+    return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
   if fc.isFan then
     -- Three columns, two rows: the apex over the middle of the row its chord ends in.
     let place (p : Path) (side₀ : String) (gx : Float) (comp : Option Nat)
@@ -505,7 +560,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
                                  dash := true, hue := "INDUCED" : Edge }]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
-      | none => nodeHues nodes edges
+      | none => nodeHues given nodes edges
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
   if fc.isPastedSquares then
@@ -535,7 +590,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
                                  dash := true, hue := "INDUCED" : Edge }]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
-      | none => nodeHues nodes edges
+      | none => nodeHues given nodes edges
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
   let (n, m) := (fc.lhs.edges.size, fc.rhs.edges.size)
@@ -572,7 +627,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← fc.hueOn (comps.map (·.2.idx)) f }
   match fc.chord with
-  | none => return (nodeHues nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
+  | none => return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
   | some (c, sym) =>
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
@@ -581,7 +636,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         hue := "INDUCED" }
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
-      | none => nodeHues nodes withChord
+      | none => nodeHues given nodes withChord
     return (hued, withChord, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
 
