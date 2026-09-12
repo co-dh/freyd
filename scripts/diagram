@@ -32,6 +32,9 @@ import difflib, json, os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from relexpr import load                        # noqa: E402 — the path has to be set first
+# The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
+# stands for, and write back through the split so a rebuilt literal lands in the chapter holding it.
+from notesplit import note_source, note_write   # noqa: E402
 sl = load("scanline")
 norm, spell, tidy, rec, Unhandled = sl.norm, sl.spell, sl.tidy, sl.rec, sl.Unhandled
 
@@ -1625,7 +1628,7 @@ def literals(text):
 def regen(path, tbl, write):
     """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
     drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     lits = literals(text)
     fail, drift, msgs = 0, 0, []
     for i, e, j, c in reversed(lits):
@@ -1644,7 +1647,7 @@ def regen(path, tbl, write):
             msgs.append("\n".join([head] + list(difflib.unified_diff(
                 text[i:e].splitlines(), new.splitlines(), "note", "generated", lineterm=""))))
     if write:
-        open(path, "w", encoding="utf-8").write(text)
+        note_write(path, text)
     if msgs:
         print(*reversed(msgs), sep="\n")
     print(f"diagram: {len(lits)} literals in {path}, {len(lits) - drift - fail} verbatim, {drift}"
@@ -1763,7 +1766,7 @@ def pairs_check(path):
     `row` pair shares one frame height and lines up on a bead they have in common.  ONE such bead is
     the requirement, not all of them — the shorter side of a step legitimately carries fewer beads,
     so §13.3.1's first row aligns on `est(R)` while its `f` sits three rows lower on the right."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     tbl = panel_table(text)
     rows = pairs_rows(text, tbl)
     nostep = [f"{path}:{line}  {desc}  side by side, no step sign: nothing to align"

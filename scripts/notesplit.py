@@ -220,6 +220,21 @@ def note_source(path):
     return join_text(root_path=path) if text.startswith(ROOT_MARK) else text
 
 
+def note_write(path, text):
+    """THE TEXT A GENERATOR WRITES BACK, as one document: `note_source`'s inverse.
+
+    A generator that rewrites a panel in place read the whole note and hands the whole note back;
+    writing that to a split root would flatten the layout into it, so it is split again and each
+    chapter's share lands in the chapter that holds it."""
+    if not read(path).startswith(ROOT_MARK):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        return
+    if os.path.basename(path) != os.path.basename(NOTE):
+        die("%s is a split root under a name the split does not write: %s" % (path, NOTE))
+    write_split(split_text(text))
+
+
 def join_text(root_dir=None, root_path=None):
     """The monolith, read back from the prelude, the root and the chapter files."""
     root_dir = root_dir or ROOT_DIR
@@ -404,6 +419,10 @@ def cmd_split(argv):
                 die("%s holds content this split would overwrite.  Run `./scripts/note-join m.typ`,\n"
                     "  make the change there, then `./scripts/note-split m.typ` — or pass --force."
                     % path)
+    write_split(out)
+
+
+def write_split(out):
     os.makedirs(os.path.join(ROOT_DIR, CHDIR), exist_ok=True)
     for path, content in sorted(out.items()):
         with open(os.path.join(ROOT_DIR, path), "w", encoding="utf-8") as f:
