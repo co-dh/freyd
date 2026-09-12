@@ -265,11 +265,11 @@ public theorem filter_step2 (p : A → Bool) {R : (⟨List A⟩ : RelSet.{0}) �
 public theorem filter_step3 (p : A → Bool) (R : (⟨List A⟩ : RelSet.{0}) ⟶ ⟨List A⟩) :
     junc (sumCop (dL Unit) ⟨A × List A⟩)
         (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
-        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R))
+        ((((graph fun q : A × List A => q.2)) ∪ pcons p)%∋ ≫ est(R°))
       = junc (sumCop (dL Unit) ⟨A × List A⟩)
           (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
           (rpair ((graph fun q : A × List A => q.2)%∋) ((pcons p)%∋)
-            ≫ cup (PL (A := A)) ≫ est(R)) := by
+            ≫ cup (PL (A := A)) ≫ est(R°)) := by
   rw [Λ_union _ _ (PL (A := A)), pair_eq_rpair, Cat.assoc]
 
 /-- Step 4 of `filter-step`: `[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)] = [nil,(π₁p→cons,π₂)]` — at
@@ -325,7 +325,7 @@ public theorem filter_step4 (p : A → Bool) :
 public theorem filter_step (p : A → Bool) :
     (Salg p)%∋ ≫ est(lenLE°) = consScalarAlg (fun _ : Unit => ([] : List A)) (fStep p) :=
   (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
-    ((filter_step3 p lenLE°).trans (filter_step4 p)))
+    ((filter_step3 p lenLE).trans (filter_step4 p)))
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
