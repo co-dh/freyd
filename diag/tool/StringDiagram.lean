@@ -254,7 +254,10 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let t0n := topRow.getD n
   let t0 := t0n.toFloat
   let ys : Array Float := Array.mk ((List.range n).map fun i => (t0 - i.toFloat) * DY)
-  let xo := roundTo 2 (maxA (ls.map (·.x)) X0 + DX)
+  -- WITH NO LANE THERE IS NOTHING TO STAND EAST OF, so the object wire IS the first column.  The
+  -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
+  -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
+  let xo := roundTo 2 (if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0 + DX)
   -- A DIVISION `x%∋` is one token of the note's, `frac(x, ∋)` (`note-style.typ`'s `plain` reads it
   -- back as this very spelling), so a label that IS one is written as the note draws it — the unit
   -- `𝟙%∋` above all — where a division inside a composite label stays in the composite's text.
