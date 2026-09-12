@@ -227,6 +227,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- arrows of different towers, so they are not spelled alike.
   | (``Freyd.Alg.DistributiveAllegory.zero, _) => return "𝟘"
   | (``Freyd.Alg.PowerAllegory.eps, _) => return "∋"
+  -- The union of a PAIR of sets, which the note writes `cup` on the box after a `⟨,⟩` fork.  Its
+  -- `RelProd` argument is the product the fork lands in, already drawn as the two wires, so the
+  -- label is the name alone — `cup (relProd …)` writes the picture's own geometry into it.
+  | (``Freyd.Alg.cup, _) => return "cup"
   -- No `α`, `λ` or `ρ` cases: this branch's monoidal structure is STRICT, so the coherence arrows
   -- do not exist and no statement can mention one.
   | (``Freyd.Diag.SymMonCat.swap, _) => return "σ"
@@ -270,6 +274,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- loosest precedence and carries no brackets of its own — and, being a term like any other, it
   -- is spelled by this same rule rather than by the printer.
   | (``Freyd.Alg.est, args) => un 4 0 "est(" ")" args
+  -- The POWER RELATOR's action on an arrow, the note's `P(R)`.  A relator applied to an arrow takes
+  -- the same brackets as `F(R)` and `T(R)`; its definition is an intersection of two divisions,
+  -- which is the relator's PROOF and not its picture.
+  | (``Freyd.Alg.powerRel, args) => un 4 0 "P(" ")" args
   | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) => un 4 0 "⦇" "⦈" args
   | (``Freyd.Alg.Λ, args) => un 2 3 "" "%∋" args
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
