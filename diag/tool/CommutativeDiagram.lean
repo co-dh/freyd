@@ -379,7 +379,12 @@ def inducedDefs : MetaM NameSet := do
 
 /-- The arrows a claim says are produced.  One side of an equation is produced when the OTHER is
     headed by an induced constructor, and so is every arrow ARGUMENT of an induced constructor at
-    its head: `⟨f,g⟩=⦇⟨h,k⟩⦈` produces `⟨f,g⟩`, hence `f` and `g`. -/
+    its head: `⟨f,g⟩=⦇⟨h,k⟩⦈` produces `⟨f,g⟩`, hence `f` and `g`.
+
+    AN EQUATION THAT PINS A VARIABLE DOWN PRODUCES IT, whatever stands on the other side: `X=𝟙` says
+    the identity is THE arrow making the square commute exactly as `X=⦇f⦈` says the fold is, and
+    reading only the head would dash the one and not the other.  A variable is what makes it a
+    universal property — a claim between two closed terms determines nothing. -/
 partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
   let heads ← inducedHeads
   let rec parts (x : Expr) : MetaM (Array Expr) := do
@@ -391,8 +396,12 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
   match e.getAppFnArgs with
   | (``And, #[l, r]) => return (← inducedIn l) ++ (← inducedIn r)
   | _ =>
-    let some (_, l, r) := StrDiag.split e | return #[]
-    if isInduced heads r then parts l else if isInduced heads l then parts r else return #[]
+    let some (sym, l, r) := StrDiag.split e | return #[]
+    let pinned (x : Expr) : MetaM Bool := do
+      return sym == "=" && x.isFVar && (← Meta.inferType x).isAppOf ``Cat.Hom
+    if isInduced heads r then parts l else if isInduced heads l then parts r
+    else if ← pinned l then return #[l] else if ← pinned r then return #[r]
+    else return #[]
 
 /-- WHETHER A UNIVERSAL CONSTRUCTION GIVES THIS ARROW: an induced constructor heads it (`⦇f⦈`,
     `⟨R,S⟩`, `Λ(R)`), the other side of the statement's `↔` names it (`αX=F(X)f ⟺ X=⦇f⦈` names `X`,

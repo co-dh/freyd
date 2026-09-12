@@ -194,6 +194,15 @@ public theorem alpha_natural {A B : 𝒜} (f : A ⟶ B) :
   dsimp only [BiRelator.appl]
   rw [← Cat.assoc, F.interchange']
 
+/-- **§2.7 p. 51 with the left edge FACTORED**: `F(f,T(f))` is `F(𝟙,T(f))` and then `F(f,𝟙)`
+    (`BiRelator.interchange'`), so the naturality runs through `F(A,TB)` — the fifth corner the
+    square stands at when each argument of the bifunctor moves on its own. -/
+public theorem alpha_natural_split {A B : 𝒜} (f : A ⟶ B) :
+    alphaT I A ≫ typeMap I f
+      = F.map (𝟙 A) (typeMap I f) ≫ F.map f (𝟙 (I B).t) ≫ alphaT I B := by
+  rw [← Cat.assoc, F.interchange']
+  exact alpha_natural I f
+
 /-- **B&dM p. 122 (type relators)**: `T(R)° = T(R°)` — a datatype acts on relations, and the
     map of the converse is the converse of the map.  Needs `F` converse-preserving; the
     book's chain (converse the naturality square, cancel the invertible `α` on both sides)
