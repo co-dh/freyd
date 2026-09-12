@@ -303,16 +303,17 @@ public theorem suffixP_iff_append :
     (`u ++ ys ++ v = x`). -/
 @[expose] public def segment : dList A ⟶ dList A := fun x ys => ∃ u v, cappend u (cappend ys v) = x
 
-/-! ## Sum `sum : Int ← list Int` (B&dM's `sum = ⦇[zero, plus]⦈`) -/
+/-! ## Sum `sum : A ← list A` (B&dM's `sum = ⦇[zero, plus]⦈`) -/
 
-/-- The total of a list of numbers (B&dM's `Real` is `Int` here — the repo is Mathlib-free, and
-    only `+` and `≤` are ever used). -/
-@[expose] public def csum : ConsList Unit Int → Int
+/-- The total of a list.  Totalling asks of `A` only what `[zero,plus]` names — an addition and
+    a zero — so the sum is stated there and not at `Int`, which is merely the instance the case
+    studies run at (B&dM's `Real`; the repo is Mathlib-free). -/
+@[expose] public def csum [Add A] [OfNat A 0] : ConsList Unit A → A
   | ConsList.wrap _ => 0
   | ConsList.cons n x => n + csum x
 
-/-- The sum as a morphism `sum : list Int ⟶ Int`. -/
-@[expose] public def sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0}) := graph csum
+/-- The sum as a morphism `sum : list A ⟶ A`. -/
+@[expose] public def sumR [Add A] [OfNat A 0] : dList A ⟶ (⟨A⟩ : RelSet.{0}) := graph csum
 
 /-! ## The two orders on `Int` the optimisation case studies compare costs by -/
 
@@ -957,11 +958,11 @@ public theorem concat_cata :
 
 /-- **`sum = ⦇[zero, plus]⦈`** (note `cata-examples`; B&dM §5.x): fold the list, adding each head
     onto the total of the tail, `nil` contributing `zero`. -/
-public theorem sum_cata :
-    (sumR : dList Int ⟶ (⟨Int⟩ : RelSet.{0}))
-      = ⦇(junc (sumCop (dL Unit) ⟨Int × Int⟩) (graph fun _ => (0 : Int))
-          (graph fun q => q.1 + q.2) : (F Unit Int).obj (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩)⦈ := by
-  refine (relCata_UP (initial Unit Int) _ _).mp
+public theorem sum_cata [Add A] [OfNat A 0] :
+    (sumR : dList A ⟶ (⟨A⟩ : RelSet.{0}))
+      = ⦇(junc (sumCop (dL Unit) ⟨A × A⟩) (graph fun _ => (0 : A))
+          (graph fun q => q.1 + q.2) : (F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)⦈ := by
+  refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩

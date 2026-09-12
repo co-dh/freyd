@@ -151,6 +151,13 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.MSS.oplus] def unexpandOplus : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⊕")))
 
+-- `[zero, ⊸ zero ∪ plus]`'s two leaves are named in the note, so the box carries the note's word
+-- and not the namespace the Lean constant happens to live in.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.MSS.zero] def unexpandMSSZero : Unexpander | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.MSS.plus] def unexpandMSSPlus : Unexpander | _ => `($(mkIdent `plus))
+
 open Lean PrettyPrinter in
 /-- The power relator's lane is the note's `E`, the letter its object action already prints with
     (`E A`) and the only lane the note draws over a power object — 113 of them, and no `P` lane. -/
