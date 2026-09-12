@@ -824,6 +824,21 @@ private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = class
 @[expose] public def arm₂ (T : (F L E).obj b ⟶ c) : (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ c :=
   fun p y => T (Sum.inr p) y
 
+/-- **`α = [nil,snoc]`** — the initial algebra as the JUNCTION the note writes, at the one label
+    where `wrap` carries nothing.  Every §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this
+    equation and then the relator sliding into the bracket. -/
+public theorem con_eq_junc : graph (con (L := Unit) (E := E)) = junc (sumCop _ _) nilR snocR := by
+  apply hom_ext; intro u r
+  constructor
+  · intro h
+    cases u with
+    | inl d => exact Or.inl ⟨d, rfl, h⟩
+    | inr p => exact Or.inr ⟨p, rfl, h⟩
+  · intro h
+    cases h with
+    | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
+    | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
+
 /-- The `L` arm `Q₁` of a preorder on `F L E X`. -/
 @[expose] public def armQ₁ (Q : (F L E).obj b ⟶ (F L E).obj b) : dL L ⟶ dL L :=
   fun d d' => Q (Sum.inl d) (Sum.inl d')

@@ -208,6 +208,21 @@ public theorem properPrefixS_shorten {xs ys zs zs' : Str}
 /-- The algebra's `Str×Code` arm IS `extend`: `[nil,extend]` is the two written as one. -/
 public theorem arm₂_extendAlg : arm₂ extendAlg = extend := rfl
 
+/-- **code-defn**: the algebra IS the junction `[nil,extend]` the note writes.  A `match` on the
+    coproduct draws as one box labelled with its own body; the junction draws as the note's two
+    arms, which is why every §9.4 statement is written with this side. -/
+public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nilR extend := by
+  apply hom_ext; intro u r
+  constructor
+  · intro h
+    cases u with
+    | inl d => exact Or.inl ⟨d, rfl, h⟩
+    | inr q => exact Or.inr ⟨q, rfl, h⟩
+  · intro h
+    cases h with
+    | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
+    | inr h => obtain ⟨q, h1, h2⟩ := h; subst h1; exact h2
+
 /-- **code-defn**: `decode≜⦇[nil,extend]⦈ : [Code]⟶String`, a partial function because `extend`
     is one. -/
 @[expose] public def decode : dCodes ⟶ dStr := cataR extendAlg
@@ -440,9 +455,11 @@ public theorem code_thin_condition (hc : 0 ≤ c) (hp : 0 ≤ p) :
     `decode°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
 public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
     mu (fun X : dStr ⟶ dCodes =>
-        Λ (Allegory.recip extendAlg) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ graph (con (L := Unit) (E := Code))) ≫ est (R c p))
+        Λ ((junc (sumCop _ _) nilR extend
+              : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nilR snocR) ≫ est (R c p))
       ⊑ Λ (Allegory.recip decode) ≫ est (R c p) := by
+  rw [← extendAlg_eq_junc, ← con_eq_junc]
   have hH : (relCata (F := F Unit Code) extendAlg)°
         ≫ relCata (F := F Unit Code) (I := initial Unit Code)
             (graph (con (L := Unit) (E := Code)))
@@ -477,12 +494,14 @@ public theorem extend_ne_nil : ∀ (q : Str × Code) (w : Str), extendP q w → 
 public theorem code_branch (X : dStr ⟶ dCodes) :
     Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
         ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R c p)
-      ⊑ Λ (Allegory.recip extendAlg) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ graph (con (L := Unit) (E := Code)))
-          ≫ est (R c p) :=
+      ⊑ Λ ((junc (sumCop _ _) nilR extend
+              : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nilR snocR)
+          ≫ est (R c p) := by
+  rw [← extendAlg_eq_junc, ← con_eq_junc]
   -- `T` and `U` are named because `arm₂ ?T = extend` is a higher-order unification the elaborator
   -- will not solve; `arm₂_extendAlg` and `arm₂_con` say the two arms are these, definitionally.
-  thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R c p)
+  exact thin_arm₂_le (T := extendAlg) (X := X) (Q := Q) (R := R c p)
     (U := graph (con (L := Unit) (E := Code)))
     fun _d q w h1 h2 => extend_ne_nil q w h2 (h1 : w = SnocList.wrap ())
 
