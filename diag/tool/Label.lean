@@ -198,6 +198,17 @@ partial def betaHead (e : Expr) : Expr :=
   let e' := e.headBeta
   if e' == e then e else betaHead e'
 
+/-- A RELATOR IS NAMED BY ITSELF.  Its arguments are the TYPES the picture already draws on the
+    wires — the snoc-list's `F` at `L`,`E`, the tip-tree's at `A` — so writing them into the lane's
+    name spells one thing twice, and the note writes the lane `F`.  The TYPE decides that this is a
+    relator and the PRINTER gives the letter, so an unexpander's chosen name still wins. -/
+def relatorName? (e : Expr) : MetaM (Option String) := do
+  let t ← Meta.whnfD (← Meta.inferType e)
+  unless t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor do return none
+  if let some h := stxHead (← PrettyPrinter.delab e) then return some h.getString!
+  let some c := e.getAppFn.constName? | return none
+  return some c.getString!
+
 /-- The last component of the head's name WHEN THAT HEAD IS A CONSTRUCTOR — read off the
     environment, never off the printed string.  A constructor is qualified by the type it builds,
     and the picture draws that type as the wire the box sits on, so the qualification says nothing
@@ -490,7 +501,8 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- saying the argument is applied and not composed.
   | (``Freyd.Functor.map, _) =>
     match functorMap? e with
-    | some (f, r) => return (← labelAt 4 f) ++ "(" ++ (← labelAt 0 r) ++ ")"
+    | some (f, r) =>
+      return ((← relatorName? f).getD (← labelAt 4 f)) ++ "(" ++ (← labelAt 0 r) ++ ")"
     | none => plain e
   -- A BIFUNCTOR'S action takes the same bracket and BOTH its arrows: `F(𝟙,f)`, `F(f,T(f))`.  An
   -- unexpander cannot write it — `F(𝟙,f)` is no term — and the one beside the constant prints the

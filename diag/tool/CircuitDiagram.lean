@@ -224,7 +224,9 @@ partial def objOf (o : Expr) : MetaM Obj := do
   | (``Freyd.Functor.obj, args) =>
     match StrDiag.lastTwo args with
     | some (f, b) => do
-      let n ← plain f
+      -- The RELATOR NAMES ITSELF and its type parameters name nothing: `F(list⁺(A))`, never
+      -- `TT.F A(list⁺(A))`, because those parameters are the types the wires already carry.
+      let n ← do pure ((← StrDiag.relatorName? f).getD (← plain f))
       let (ob, _) ← carrierObj o
       let a ← objOf b
       return .mk (applyLabel n a) ob.kind ob.parts (applyJoin n a)
