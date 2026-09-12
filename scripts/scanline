@@ -195,10 +195,15 @@ def dknees(r, X, h):
     ones braid.  It grows with the group's longest run, capped at HALF the gap to the nearest bend
     on a participating lane or bead on that side, so two bands never OVERLAP — they may share a
     midpoint, and there each strand is vertical, in its own column.  A unit row is off the object
-    column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55."""
+    column: neither bend nor bead.  A first or last bend has no neighbour and keeps 0.55.
+    A LANE THAT CARRIES ITS OWN NAME MUST HOLD IT: that name is written in the straight run between
+    the lane's two bends, so its own cap is half of what is left after the name (`NMH`), never half
+    the gap — half the gap leaves the lane in its column for one instant and the strand sweeps the
+    corridor at every other height."""
     bys = [b[0] for b in r['beads']]
+    nmd = set(r.get('named', ()))
     run, cap = {}, {}
-    for (x, y0, y1, nm, un, *_) in r['lanes']:
+    for li, (x, y0, y1, nm, un, *_) in enumerate(r['lanes']):
         yt, yb = (h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, X, x, yt, yb)
         if un is not None and ds:
@@ -209,7 +214,8 @@ def dknees(r, X, h):
             for s in sides:
                 nb = es[i - 1][0] if s == 'd' and i > 0 else \
                     es[i + 1][0] if s == 'b' and i + 1 < len(es) else None
-                c = 0.55 * (yt - yb) if nb is None else 0.5 * abs(nb - y)
+                c = 0.55 * (yt - yb) if nb is None else \
+                    0.5 * (abs(nb - y) - (NMH if li in nmd else 0.0))
                 o = [z for z in bys if (z > y + EPS if s == 'd' else z < y - EPS)]
                 if o:
                     c = min(c, 0.5 * abs((min(o) if s == 'd' else max(o)) - y))
@@ -242,6 +248,22 @@ def dippts(x, X, h, y0, y1, ybs, gk):
     return pts, hs
 
 
+def dkb(gk, x, y0, y1, nm, un, *_):
+    """`dpanel`'s `dkb`: the knee `dknees` gave the bead this lane is BORN on — `None` at the top
+    edge and on a unit's lane, neither of which bends there."""
+    return None if y0 == 'top' or un is not None else gk[('b', float(y0))]
+
+
+def dnamey(lanes, l, kb):
+    """`dpanel`'s `dnamey`: a lane's own name is written on its birth row, except where another
+    strand sweeps that row west of it — a leg of the same bead, or a lane dying on it — and then
+    half a name's height below the END OF THE KNEE, where every strand is back in its column.  The
+    drop is the knee itself: a knee runs to half the gap to the next bead, so a drop capped short of
+    it leaves the box inside the bend on the panels whose strands sweep furthest."""
+    swept = any((o[1] == l[1] or o[2] == l[1]) and o[0] < l[0] for o in lanes)
+    return l[1] - kb - LLH / 2 if kb is not None and swept else l[1]
+
+
 def a_dpanel(p, r):
     # A bead's 5th element is where its DOT sits: a transformation between FUNCTORS names no object,
     # so it never touches the object wire (IntroString p. 36).  `dx` is `dpanel`'s own `dx` — every
@@ -258,6 +280,17 @@ def a_dpanel(p, r):
             if a is None or b is None or abs(a - b) > 1e-9:
                 p.kdrift.append(f"{p.id}: the knee {k[0]}@y={k[1]:g} is {a} in the note and {b} in"
                                 f" the sweep — `dknees` states one rule twice, and they differ")
+    # The row each lane's own NAME was drawn on, swept back the same way: the box a strike is read
+    # against is then the box the panel drew, not a second guess at where `dnamey` put it.
+    if 'namey' in r:
+        drew = {int(i): float(y) for (i, y) in r['namey']}
+        mine = {i: dnamey(r['lanes'], l, dkb(gk, *l)) for i, l in enumerate(r['lanes'])
+                if i in r.get('named', ())}
+        for i in sorted(set(drew) | set(mine)):
+            a, b = drew.get(i), mine.get(i)
+            if a is None or b is None or abs(a - b) > 1e-9:
+                p.kdrift.append(f"{p.id}: lane {i}'s name is drawn at y={a} in the note and swept at"
+                                f" y={b} — `dnamey` states one rule twice, and they differ")
     for i, (x, y0, y1, nm, un, *_) in enumerate(r['lanes']):
         yt, yb = (p.h if y0 == 'top' else y0), (0.0 if y1 == 'bot' else y1)
         ds = dipys(r, dx, x, yt, yb)
@@ -299,12 +332,7 @@ def a_dpanel(p, r):
         # rule is stated once and the boxes swept here are the boxes drawn.  A rec `scripts/diagram`
         # builds is not ink yet, so it names nothing.
         if i in r.get('named', ()):
-            # `dpanel` writes it on the birth row, or half a name's height below the knee's end
-            # where another strand — a lane born on the same bead west of this one, or one dying on
-            # it — sweeps that row.  The drop is `dpanel`'s own, knee capped at 0.3.
-            swept = any((o[1] == y0 or o[2] == y0) and o[0] < x for o in r['lanes'])
-            yn = (y0 - min(gk[('b', float(y0))], 0.3) - LLH / 2
-                  if swept and un is None and y0 != 'top' else y0)
+            yn = dnamey(r['lanes'], r['lanes'][i], dkb(gk, *r['lanes'][i]))
             p.labels.append((lab, x, yn, lbox(x, yn, lab)))
         if un is not None:
             p.beads.append(Bead(yt, x, un, born=True))
@@ -590,6 +618,9 @@ def crossings(p):
 # `length: 0.8cm` turns those into the panel's own units; `P`'s `s` scales the drawn canvas whole,
 # ink and coordinates together, so it cancels here.
 LCW, LLH, LDX = 0.2039 / 0.8, 0.2573 / 0.8, 0.12
+# The straight run a named lane owes its name: the line, plus at each end the 0.002 of slack
+# `columns` already leaves west of the box.  `dpanel`'s `NMH`.
+NMH = LLH + 0.004
 
 
 def lbox(x, y, nm):

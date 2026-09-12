@@ -49,14 +49,19 @@
 
 // ------------------------------------- a wire's colour is its type (`typed: true`): ONE HUE PER OBJECT
 // Off the note's ARROW palette, since a bead's colour says which arrow; `C` gold not olive, too near `α_C`'s green.
-// FOUR HUES, named by hue and no longer by a letter: which object wears which is `OCOL` below.  They
-// are spread by HUE ANGLE — 35°, 70°, 142°, 234° — because two objects on one wire read as the same
+// FIVE HUES, named by hue and no longer by a letter: which object wears which is `OCOL` below.  They
+// are spread by HUE ANGLE — 35°, 70°, 142°, 234°, 306° — because two objects on one wire read as the same
 // object when their angles are close, whatever ΔE says: red against amber is 35° apart and was the
 // pair the note kept getting wrong, so no display now puts those two on one wire.
 #let TCOL = rgb("#b91c1c")      // red
 #let BCOL = rgb("#0e7490")      // teal
 #let CCOL = rgb("#a16207")      // amber
 #let GCOL = rgb("#00932d")      // green, the fourth: §16.4b runs four types down one wire
+// The fifth, for the same reason the fourth exists: §13.5.1a's `gen` renames its object FIVE times
+// down one wire, and four bands cannot draw five objects.  Picked by the rule above — the widest hue
+// angle left, 306° and 72° from the nearest band where red and amber's fatal pair was 35° — ΔE76 25
+// or more from every bead hue and every lane `FCOL` names, so no lane's hash has to move for it.
+#let VCOL = rgb("#a17af8")      // violet
 
 // ONE OBJECT, ONE HUE, NOTE-WIDE.  Bands assigned by POSITION made `C` amber in one panel of §11.4.2a
 // and teal in the next, which is the one thing the colour is there to prevent.  Two objects share a
@@ -92,8 +97,35 @@
 // are: take the band from the name, so a new object is drawn before anyone declares it and always in
 // the same band.  DELIBERATE sharing stays in `OCOL` above — a derived band is only a starting point,
 // and two objects that must be told apart in one panel are what an entry there is for.
-#let OBANDS = (TCOL, BCOL, CCOL, GCOL)
+#let OBANDS = (TCOL, BCOL, CCOL, GCOL, VCOL)
 #let objcol(l) = OCOL.at(plain(l), default: OBANDS.at(calc.rem(namehash(plain(l)), OBANDS.len())))
+
+// ONE PANEL'S BANDS AT ONCE.  A wire changes hue where it changes OBJECT, so two different objects
+// on one wire may not land on one band — and `objcol`'s default is a name hash, which collides
+// (§13.5.1a drew `[n] A × [n]([p]([m] A))` and `A × [3 * p]([m] A)` both in `CCOL`).  A band is
+// allocated with the objects already on the wire in hand: the objects `OCOL` NAMES keep their hue
+// whatever else is drawn, and an unnamed one walks on from the band its name hashes to until it
+// finds one no other object here has taken.
+#let objcols(ls) = {
+  let ns = ls.map(plain)
+  let used = ns.filter(n => n in OCOL).map(n => repr(OCOL.at(n)))
+  let at = (:)
+  for n in ns {
+    if n in at { continue }
+    let c = objcol(n)
+    if not (n in OCOL) {
+      let k = calc.rem(namehash(n), OBANDS.len())
+      let ord = range(OBANDS.len()).map(i => OBANDS.at(calc.rem(k + i, OBANDS.len())))
+      let free = ord.filter(o => not used.contains(repr(o)))
+      // No free band left is a palette too small for the panel, not a hue to guess at: keep the
+      // hash's own answer and let the sweep report the pair it collides with.
+      if free.len() > 0 { c = free.first() }
+      used.push(repr(c))
+    }
+    at.insert(n, c)
+  }
+  ns.map(n => at.at(n))
+}
 
 // `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
 // a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
@@ -129,7 +161,10 @@
   "G": rgb("#babd56"),
   // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`fcol` maps `[3p]`
   // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
-  "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
+  // `[p]` is a sand, not the amber it was: `#c5893e` was ΔE76 15.9 from `CCOL`, the object hue
+  // §13.5.1's `[n] A × [n]([p]([m] A))` band is drawn in, so the lane and the object under it read
+  // as one colour.  ΔE76 29 from `CCOL` and ≥ 29 from every axis and product context it stands with.
+  "[n]": rgb("#4f7fd0"), "[p]": rgb("#bf9b61"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
   // `concat` glues the `[n]` and `[p]` axes into the one axis `[np]`, which stands beside both of
   // them in `⦇gen⦈concat est(R)`: its own hue, ΔE76 ≥ 50 from each.
   "[np]": rgb("#cb677e"),
@@ -157,7 +192,17 @@
   // §13.6.1's van again, now that the left factor of a product is a lane: the three product
   // contexts its panels draw beside `list`.  Picked TOGETHER, pairwise ΔE76 ≥ 33 and ≥ 29 from
   // `list`, because naming any one of them moves the free hues the other two would take.
-  "X×−": rgb("#d09369"), "[X]×−": rgb("#a66378"), "(X × [X])×−": rgb("#74691d"))
+  "X×−": rgb("#d09369"), "[X]×−": rgb("#a66378"), "(X × [X])×−": rgb("#74691d"),
+  // The same two product contexts at the objects LEAN names them at — §15.2's `[Char]×−` beside
+  // `list` and `E`, §13.6.2's `(A × [A])×−` beside `list`.  Each concrete context is its own entry,
+  // as `[A]×−`, `[Int]×−`, `Op×−` and `−×Char` already are; ΔE76 33 and 74 from `list`, and ≥ 29
+  // from every other lane their panels draw.
+  "[Char]×−": rgb("#c383a2"), "(A × [A])×−": rgb("#587028"),
+  // §13.5.4's cylinder axes, spelled by the arithmetic Lean carries.  `[n * pow3 m]` is `concat`'s
+  // glue of two axes and so an axis of ITS OWN, the way `[np]` is — not a length of either factor —
+  // so the shared-hue rule for one axis at two lengths does not reach it and both are named here.
+  // ΔE76 62 apart, and ≥ 29 from `[n]`, `[m]`, `[p]` and the product contexts beside them.
+  "[powm]": rgb("#af89b8"), "[npowm]": rgb("#48b19b"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -542,7 +587,7 @@
 // neighbourhoods — so an unnamed lane that clashes is answered by NAMING it, which is what the
 // assertion says, and never by tuning `RINGS` until the hashes land elsewhere.
 #let freehues() = {
-  let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, TCOL, BCOL, CCOL, GCOL)
+  let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, ..OBANDS)
   let out = ()
   for (L, C) in RINGS {
     for i in range(90) {

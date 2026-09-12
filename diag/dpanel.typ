@@ -9,7 +9,7 @@
 //   ./scripts/scanline diag/allegory-axioms.typ --strict // sweep what these calls emit
 #import "note-style.typ": P, dispnum, plain
 #import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
-#import "draw.typ": BCOL, fb-ALLC, fcol, lanecheck, objcol
+#import "draw.typ": BCOL, fb-ALLC, fcol, lanecheck, objcols
 
 // ---- the Hinze-Marsden panel machinery, ABOVE every section that draws one: Typst binds a
 // `#let` where it stands, and §11.4's generated panels are the first `dpanel` calls in the note.
@@ -117,7 +117,9 @@
   // `(ytop, object, hue)`: the OBJECT travels with its band, because the rule the sweep holds is
   // about the objects drawn — two of them in one colour — and a band that carried only a hue could
   // not name the pair that collided.
-  bs.map(b => (b.at(0), b.at(1), objcol(b.at(1))))
+  // The hues come from `objcols`, which allocates the whole wire's bands at once: `objcol` alone
+  // hashes each name in isolation and so can hand two neighbouring objects one band.
+  bs.zip(objcols(bs.map(b => b.at(1)))).map(((b, c)) => (b.at(0), b.at(1), c))
 }
 // The band a height falls in: the LAST one that opens above it, the bands running down the panel.
 #let ocolat(bs, y) = {
@@ -188,10 +190,20 @@
 // `0.5 * gap` is PROVED for the 113 `dpanel`s, under three preconditions all true today: every lane
 // left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
 // it.
-#let dknees(xat, h, lanes, beads) = {
+// A drawn name is 9pt mono, so one line of it stands 0.2573cm tall — in `dpan`'s own `length: 0.8cm`
+// unit, which every coordinate here is in.  `scanline`'s `LLH` is the same number.
+#let LLH = 0.2573 / 0.8
+// A LANE THAT CARRIES ITS OWN NAME MUST HOLD IT: the name is written in the straight run between the
+// lane's two bends, so the two knees may not eat that run.  `0.5 * gap` each leaves NOTHING — the
+// lane is in its column for one instant and the strand sweeps the corridor at every other height,
+// which is what struck §13.5.4a's `[pow3 m]` and §17.3.3a's `H` at every drop that was tried.  So a
+// named lane's own cap is half of what is left after the name, plus the 0.002 of slack `columns`
+// leaves west of it, at each end.
+#let NMH = LLH + 0.004
+#let dknees(xat, h, lanes, beads, nmd) = {
   let bys = beads.map(bd => bd.at(0))
   let (run, cap) = ((:), (:))
-  for l in lanes {
+  for (li, l) in lanes.enumerate() {
     let (x, y0, y1) = (l.at(0), l.at(1), l.at(2))
     let room = (if y0 == "top" { h } else { y0 }) - (if y1 == "bot" { 0 } else { y1 })
     let es = ((if y0 != "top" and l.at(4) == none { ((y0, ("b",)),) } else { () })
@@ -202,7 +214,8 @@
       for s in e.at(1) {
         let nb = if s == "d" and i > 0 { es.at(i - 1).at(0) }
           else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
-        let c = if nb == none { 0.55 * room } else { 0.5 * calc.abs(nb - y) }
+        let c = if nb == none { 0.55 * room }
+          else { 0.5 * (calc.abs(nb - y) - (if nmd.contains(li) { NMH } else { 0 })) }
         // 1e-6 is `scanline`'s `EPS`: ONE tolerance, so the two `dknees` are one function.
         let o = bys.filter(z => if s == "d" { z > y + 1e-6 } else { z < y - 1e-6 })
         if o != () {
@@ -332,6 +345,18 @@
   hm-wire(((x1, yb), (x1, yb - dir * 0.10)), col: c)
   hm-port(((x0 + x1) / 2, yb), l, dir: dir, col: c)
 }
+// WHICH KNEE a lane's own name is measured from: the one `dknees` gave the bead the lane is BORN
+// on.  `none` at the top edge and on a unit's lane, neither of which bends there.
+#let dkb(gk, l) = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
+// WHERE THAT NAME IS WRITTEN.  On the birth row, except where another strand sweeps that row west of
+// the lane — a leg of the same bead, or a lane dying on it — and then half a name's height below the
+// END OF THE KNEE, which is where every strand is back in its own column and the corridor `columns`
+// reserved for the name is the whole corridor.  THE DROP IS THE KNEE ITSELF, never a constant: a
+// knee runs to half the gap to the next bead, so a drop capped short of it leaves the box inside the
+// bend on exactly the panels whose strands sweep furthest (§13.5.4a's `[pow3 m]`, §17.3.3a's `H`).
+#let dnamey(lanes, l, kb) = if kb != none and lanes.any(o =>
+    (o.at(1) == l.at(1) or o.at(2) == l.at(1)) and o.at(0) < l.at(0)) {
+  l.at(1) - kb - LLH / 2 } else { l.at(1) }
 #let dcovers(defn, y, x) = defn.any(d => calc.abs(d.at(2) - y) < 1e-6
   and x >= d.at(0) - 1e-6 and x <= d.at(1) + 1e-6)
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
@@ -368,8 +393,8 @@
   let dotx = (:)
   for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
-  let gk = dknees(dx, h, lanes, beads)
   let nmd = dnamed(lanes, top, bot)
+  let gk = dknees(dx, h, lanes, beads, nmd)
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
   // two lanes that never share a picture may reuse a band, and only the panel knows which those are.
@@ -380,7 +405,7 @@
   dpan(h, w, xo, {
   for (i, l) in lanes.enumerate() {
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
-    let kb = if l.at(1) == "top" or l.at(4) != none { none } else { gk.at(dkey("b", l.at(1))) }
+    let kb = dkb(gk, l)
     let kd = if l.at(2) == "bot" { none } else { gk.at(dkey("d", l.at(2))) }
     // The lane's functor name keys `fcol`, and the colour names a wire that has a PORT to be read
     // beside; `dnamed` says on which lanes that name is nowhere else on the page.
@@ -401,18 +426,9 @@
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
                         alone: alone, unat: l.at(5, default: "strict")) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
-    // On the birth row, where every arm leaves its dot vertically — EXCEPT where another strand
-    // sweeps that row west of this lane: a leg of the same bead born there, or a lane DYING there,
-    // which arrives at the dot across the very gap the name is written in.  Then the name drops to
-    // the end of the knee, where both are back in their columns.
-    if nmd.contains(i) {
-      let swept = lanes.any(o =>
-        (o.at(1) == l.at(1) or o.at(2) == l.at(1)) and o.at(0) < l.at(0))
-      // Half a name's height BELOW the knee's end, so the box's top edge is where the sibling's
-      // strand has just come vertical; on the knee's own end the box still straddles the bend.
-      hm-name((l.at(0) - 0.12, l.at(1) - (if swept and kb != none { calc.min(kb, 0.3) + 0.161 } else { 0 })),
-              nm, col: col, anchor: "east")
-    }
+    // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
+    // another strand sweeps that row west of this lane.
+    if nmd.contains(i) { hm-name((l.at(0) - 0.12, dnamey(lanes, l, kb)), nm, col: col, anchor: "east") }
   }
   // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
   // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the
@@ -451,6 +467,9 @@
   // plus the object edge.  A pair's `cert.frame` is one panel's `rows` written into the other.
   hm-meta((helper: "dpanel", h: h, w: w, xo: xo, rows: calc.round(h / DY), wires: lanes.len() + 1,
     cert: cert, knees: gk, ok: ok, named: nmd,
+    // The ROW each of those names is drawn on, as `dnamey` put it — swept back the way `knees` is,
+    // so the boxes the sweep reads are the boxes the panel drew and the rule cannot drift.
+    namey: nmd.map(i => (i, dnamey(lanes, lanes.at(i), dkb(gk, lanes.at(i))))),
     lanes: lanes.map(l => l.map(plain)), beads: beads.map(b => b.map(plain)),
     top: top.map(p => p.map(plain)), bot: bot.map(p => p.map(plain)))
     + (if opath == none { (:) } else { (opath: opath) })
