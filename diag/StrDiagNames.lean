@@ -164,17 +164,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
 
--- AN ARROW WITH NO EXPLICIT ARGUMENT NEEDS A `delab`, NOT AN UNEXPANDER: it prints as a bare
--- constant, never as an application, so `app_unexpander` cannot fire on it.  And it needs one: the
--- label printer shortens a constant to the shortest suffix that is unique in the environment, so
--- `Party.choose` and `Party.S` wear a namespace only because `Freyd.Alg.choose` and another `S` end
--- the same way — a prefix the note's word does not have and the section's context already carries.
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Party.choose, delab const.Freyd.Alg.RelSet.Party.choose]
-def delabPartyChoose : Delab := `($(mkIdent `choose))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.RelSet.Party.S, delab const.Freyd.Alg.RelSet.Party.S]
-def delabPartyS : Delab := `($(mkIdent `S))
 -- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
 -- and the note draws `R` on that box and `est(R°)` on the greedy step.
 open Lean PrettyPrinter in
