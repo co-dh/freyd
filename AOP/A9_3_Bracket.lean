@@ -24,8 +24,9 @@
   NOT DONE, and why:
   * `mct-laws` row 3 (`single→wrap° tip`) is **Proposition 9.1**, dropped for the whole repo by
     the setting-mismatch note at the end of `AOP.A9_1`.
-  * rows 4-7 (`splits`, and the array tabulation (9.7)-(9.10)) relate arrays of trees, which the
-    note itself marks as outside the relational picture.
+  * rows 5-7 (the array tabulation (9.7)-(9.10)) relate arrays of trees, which the note itself
+    marks as outside the relational picture.  Row 4 is NOT one of them and is proved below
+    (`mct_prog`): `splits` and `minlist R` are arrows of the same allegory the body is written in.
 
   B&dM's `Real` is `Int`, as everywhere in this repo's chapter 8-10 case studies.  `list⁺ A` is
   `AOP.A6_ConsList`'s `ConsList A A` — a leaf carries the last element, so the datatype IS the
