@@ -1267,14 +1267,6 @@ def flipEq? (e : Expr) : MetaM (Option Expr) := do
   let some (_, l, r) := e.eq? | return none
   return some (← Meta.mkEq r l)
 
-/-- Each closed goal `findAnyProof` found no proof of, with the deepest fuel it was searched at.
-    Held for the life of the process, like `headBuckets`: the environment does not grow. -/
-initialize unprovable : IO.Ref (ExprMap Nat) ← IO.mkRef {}
-
-/-- The three naturality classes, the only propositions unfolded to their square. -/
-def natClass (h : Name) : Bool :=
-  h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural || h == ``Freyd.Alg.OpLaxNatural
-
 /-- Whether a head may be searched with NO filter: a DEFINED predicate (`StrictNatural`,
     `PreservesRecip`, `Map`), whose bucket is the theorems about it.  A type former or a class
     operation (`=`, `↔`, `∈`) concludes every library's theorems (33k for `=`), and a defined
@@ -1380,28 +1372,19 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (se
   -- A GOAL AMONG ITS OWN ANCESTORS IS NO NEW GOAL: `strictNatural_recip` twice asks again for the
   -- family it started from (`φ°° ≡ φ`), and a proof through that loop has a shorter one without it.
   if ← seen.anyM fun s => Meta.withNewMCtxDepth (Meta.isDefEq s want) then return none
-  -- A CLOSED GOAL SEARCHED IN VAIN at this fuel or more is not searched again: the `lax` and
-  -- `oplax` steps of one bead reach the `strict` step's goal through their closure theorems.
-  let key ← instantiateMVars want
-  let closed := !key.hasMVar && !key.hasFVar
-  if closed then
-    if let some f := (← unprovable.get)[key]? then
-      if fuel ≤ f then return none
-  let r ← id do
-    -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
-    -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
-    -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
-    -- so the filter buys nothing there, nor at any other defined predicate (`PreservesRecip`); any
-    -- other hypothesis (`=`, `⊑`, `↔`) is asked for by the constants it names, as a square is.
-    let must ← if ← unfiltered h then pure {} else mustOfFamily br want
-    if let some r ← findProof br want h must fuel seen then return some r
-    -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
-    -- like `False`, which every refutation in the environment matches with its own hypotheses
-    -- left to be found — a search that answers the question it was not asked.
-    unless natClass h do return none
-    findSquare br want (← mustOf br want) fuel (seen.push want)
-  if r.isNone && closed then unprovable.modify fun m => m.insert key (max fuel ((m[key]?).getD 0))
-  return r
+  -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
+  -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
+  -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
+  -- so the filter buys nothing there, nor at any other defined predicate (`PreservesRecip`); any
+  -- other hypothesis (`=`, `⊑`, `↔`) is asked for by the constants it names, as a square is.
+  let must ← if ← unfiltered h then pure {} else mustOfFamily br want
+  if let some r ← findProof br want h must fuel seen then return some r
+  -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
+  -- like `False`, which every refutation in the environment matches with its own hypotheses
+  -- left to be found — a search that answers the question it was not asked.
+  unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
+      || h == ``Freyd.Alg.OpLaxNatural do return none
+  findSquare br want (← mustOf br want) fuel (seen.push want)
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
     The binders are opened as FREE VARIABLES, not metavariables: the square is then the very
