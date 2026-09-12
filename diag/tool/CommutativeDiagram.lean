@@ -90,6 +90,11 @@ structure Edge where
   /-- The arrow's label in the PARTS the panel sets it in (`StrDiag.labelParts`): one part for an
       ordinary arrow, numerator and denominator for the note's fraction bar. -/
   label : Array StrDiag.Lbl
+  /-- WHAT A NAMED ARROW IS, set on the far side of the line from its name: a statement that binds
+      an arrow and says what it equals draws the name the reader looks the arrow up by AND the value
+      that pins it, `f` above the line and `Λ(F(∋)R)` below.  Empty for an arrow the statement spells
+      out, which has nothing but its spelling — see `namedValue?`. -/
+  value : Array StrDiag.Lbl := #[]
   side : String
   /-- How far the edge bows out of its chord, in grid units — a MAGNITUDE: which way it bows is
       `side`, as for the label.  Zero for every edge of a face with three or more nodes; two
@@ -108,6 +113,27 @@ structure FaceMark where
   sym : String
   gx : Float
   gy : Float
+
+/-- THE ARROWS A STATEMENT NAMED: the variable it bound, and the value it pinned that variable to.
+    Carried BY THE FACE and never in process state — one process draws many statements, so a table
+    beside them would write one statement's names onto another's arrows. -/
+abbrev Naming := Array (Expr × Expr)
+
+/-- WHAT THIS ARROW WAS NAMED AS, empty where the statement spelled it out.  Asked by every place
+    that makes an `Edge`, so a named arrow carries its value wherever the layout puts it. -/
+def namedValue? (ns : Naming) (f : Expr) : MetaM (Array StrDiag.Lbl) := do
+  for (x, v) in ns do
+    if f == x then return ← labelPartsT v
+  return #[]
+
+/-- THE LABEL AN EDGE WRITES: the NAME where the statement named this very arrow, and otherwise the
+    arrow's own spelling with every named arrow INSIDE it written out — the fold over a named
+    algebra is `⦇Λ(F(∋)R)⦈`, because a bare letter under a banana says nothing, and the name belongs
+    on the one line the statement named, where it stands beside its value and not instead of it. -/
+def edgeLabel (ns : Naming) (f : Expr) : MetaM (Array StrDiag.Lbl) := do
+  for (x, _) in ns do
+    if f == x then return #[← labelT f]
+  labelPartsT (f.replace fun s => (ns.find? fun (x, _) => x == s).map (·.2))
 
 /-! ### The value of an arrow expression: a path -/
 
@@ -243,6 +269,9 @@ structure Face where
       The note sets an absorption law as its two sides, two canvases with the `=` between them as
       text, and a side is a PATH: there is no second path for it to bound a face with. -/
   only : Option String := none
+  /-- The arrows this statement NAMED — see `Naming`.  Stamped on by `withHyps`, which is where the
+      hypotheses that name them are read. -/
+  named : Naming := #[]
 
 /-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
     A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
@@ -299,7 +328,8 @@ def Face.paste (f g : Face) : MetaM (Option Face) := do
   -- Both faces' produced arrows come along: the paste IS the two statements, so an arrow either of
   -- them determines is one the picture determines.
   return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
-                chord := some (fe[i]!.2.2, g.sym), induced := f.induced ++ g.induced }
+                chord := some (fe[i]!.2.2, g.sym), induced := f.induced ++ g.induced,
+                named := f.named ++ g.named }
 
 /-! ### Which arrow the statement PRODUCES -/
 
@@ -724,7 +754,8 @@ def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array 
 def Face.chordEdge (fc : Face) (c : Expr) (side : String) : MetaM Edge := do
   let dash ← fc.induces c
   let hue ← if dash then pure "INDUCED" else fc.hue c
-  return { src := "s", tgt := "t", label := ← labelPartsT c, side, dash, hue }
+  return { src := "s", tgt := "t", label := ← edgeLabel fc.named c, value := ← namedValue? fc.named c, side, dash,
+           hue }
 
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
@@ -837,7 +868,7 @@ def sideLayout (fc : Face) (p : Path) : MetaM (Array Node × Array Edge × Array
     nodes := nodes.push { id, gx := i.toFloat, gy := 0.0, label := (← labelT o) }
   let mut edges : Array Edge := #[]
   for (src, tgt, f) in p.edges do
-    edges := edges.push { src, tgt, label := (← labelPartsT f), side := "top",
+    edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := "top",
                           dash := ← fc.dashes f, hue := ← fc.hue f }
   return (nodeHues given nodes edges, edges, #[])
 
@@ -862,11 +893,11 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let mut edges : Array Edge := #[]
     for i in [0:2] do
       let (src, tgt, f) := long.edges[i]!
-      edges := edges.push { src, tgt, label := (← labelPartsT f),
+      edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f),
                             side := if i == 0 then "top" else if turns then "right" else "left",
                             dash := ← fc.dashes f, hue := ← fc.hue f }
     let (csrc, ctgt, cf) := (if turns then fc.rhs else fc.lhs).edges[0]!
-    edges := edges.push { src := csrc, tgt := ctgt, label := (← labelPartsT cf),
+    edges := edges.push { src := csrc, tgt := ctgt, label := (← edgeLabel fc.named cf), value := (← namedValue? fc.named cf),
                           side := if turns then "left" else "right",
                           dash := ← fc.dashes cf, hue := ← fc.hue cf }
     return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
@@ -882,7 +913,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         ns := ns.push { id, gx := p.1, gy := p.2, label := (← labelT o) }
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← labelPartsT f), side := if i == 0 then side₀ else "bottom",
+        es := es.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := if i == 0 then side₀ else "bottom",
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs "left" 0.0 (comps.map (·.1.idx))
@@ -926,7 +957,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← labelT o) }
       for i in [0:3] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← labelPartsT f), side := sides[i]!,
+        es := es.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sides[i]!,
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
     let (ln, le) ← place fc.lhs 1.0 (comps.map (·.1.idx))
@@ -986,14 +1017,14 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   for i in [0:n] do
     let (src, tgt, f) := fc.lhs.edges[i]!
     let sd := sideAt lfst lsnd flip i
-    edges := edges.push { src, tgt, label := (← labelPartsT f), side := sd,
+    edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
     let sd := sideAt rfst rsnd (!flip) j
-    edges := edges.push { src, tgt, label := (← labelPartsT f), side := sd,
+    edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
                           hue := ← if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.2.idx)) f }
@@ -1033,12 +1064,15 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
        hue: {typstString v.hue})")
     close
 
--- `dash` is written only where it is set: the chord is the one dashed edge, and a `dash: false` on
--- every other line is a field no reader of the file has to know about.
+-- `dash` and `value` are written only where they are set: the chord is the one dashed edge and a
+-- named arrow the one with a value, so on every other line they are fields no reader has to know
+-- about.
 def typstEdges (es : Array Edge) (close := "\n") : String :=
   typstArr (es.toList.map fun e =>
     s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
        label: ({String.join (e.label.toList.map fun p => s!"{typstLbl p}, ")}), \
+       {if e.value.isEmpty then "" else
+          s!"value: ({String.join (e.value.toList.map fun p => s!"{typstLbl p}, ")}), "}\
        side: {typstString e.side}, bow: {fmt e.bow}, \
        hue: {typstString e.hue}{if e.dash then ", dash: true" else ""})")
     close
@@ -1179,13 +1213,28 @@ def Face.objs (fc : Face) : Array Expr := (fc.lhs.nodes ++ fc.rhs.nodes).map (·
 /-- The arrows a face is made of. -/
 def Face.edges (fc : Face) : Array Expr := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2)
 
-/-- A HYPOTHESIS READ AS A FACE, when it is one.  Dispatch is on the hypothesis's TYPE and on
+/-- What a hypothesis contributes to the picture: a FACE it hands the conclusion, or a NAMING of one
+    of the statement's own arrows. -/
+inductive Hyp where
+  | face (f : Face)
+  | naming (x v : Expr)
+
+/-- A HYPOTHESIS READ, as whichever of the two it is.  Dispatch is on the hypothesis's TYPE and on
     nothing else: an equation or inequation between two ARROWS is a face, where `Map f`, a preorder,
     `LaxNatural F G φ` or an equation between objects is a property with no square of its own. -/
-def hypFace (h : Expr) : MetaM (Option Face) := do
+def hypRead (h : Expr) : MetaM (Option Hyp) := do
   let some (sym, l, r) := StrDiag.split (← Meta.inferType h) | return none
   unless (← Meta.inferType l).isAppOf ``Cat.Hom do return none
-  return some (← Face.of sym (← interp l) (← interp r))
+  let (p, q) := (← interp l, ← interp r)
+  -- A HYPOTHESIS THAT NAMES AN ARROW IS NOT A FACE.  An equation between two arrows that are ONE
+  -- EDGE each bounds no polygon — the two spellings are one arrow and the picture draws it once —
+  -- and where one of them is a bare VARIABLE the statement bound, that variable is the name the
+  -- note writes on the line and the other side the value it writes beneath.  Every other shape,
+  -- an inequation included, is the claim it always was.
+  if sym == "=" && p.edges.size == 1 && q.edges.size == 1 then
+    if l.isFVar && !r.isFVar then return some (.naming l r)
+    if r.isFVar && !l.isFVar then return some (.naming r l)
+  return some (.face (← Face.of sym p q))
 
 /-- THE FACES OF AN IMPLICATION.  `h₁ → … → concl` asserts one face and is HANDED others: a
     hypothesis that is itself a face is part of the picture, because the conclusion is what PASTING
@@ -1199,10 +1248,18 @@ def hypFace (h : Expr) : MetaM (Option Face) := do
       one edge `Face.paste` glues along: the side condition `RS=F(S)Q` shares `S` with `⦇R⦈S=⦇Q⦈`
       and is pasted to it.  A hypothesis sharing none — the algebra condition `gf=F(f,f)g` beside
       `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` — is a claim of its own, and the note leaves it out of the picture. -/
-def withHyps (fs : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
+def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
   let mut hyps : Array Face := #[]
+  let mut named : Naming := #[]
   for x in xs do
-    if let some h ← hypFace x then hyps := hyps.push h
+    match ← hypRead x with
+    | some (.face h) => hyps := hyps.push h
+    | some (.naming a v) => named := named.push (a, v)
+    | none => pure ()
+  -- EVERY FACE OF THIS STATEMENT CARRIES ITS NAMES, whichever of them the rules below keep: an
+  -- arrow named once is named on every face it stands on.
+  let fs := fs₀.map fun f => { f with named := f.named ++ named }
+  hyps := hyps.map fun f => { f with named := f.named ++ named }
   let shared (h : Face) : MetaM Nat := do
     let mut k := 0
     for e in h.edges do
@@ -1224,6 +1281,7 @@ def withHyps (fs : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
       for e in f.edges do
         if ds.isEmpty then
           if let some d ← definingFace e then ds := ds.push d
+  ds := ds.map fun f => { f with named := f.named ++ named }
   let stands (o : Expr) (gs : Array Face) : MetaM Bool :=
     gs.anyM fun g => g.objs.anyM (Meta.isDefEq o)
   let touching ← (ds ++ hyps).filterM fun h => h.objs.anyM (stands · fs)

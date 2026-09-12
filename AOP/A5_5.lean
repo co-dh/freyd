@@ -129,12 +129,13 @@ public theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) 
 /-- **B&dM p.121, the map algebra's square**: the fold's defining equation at the MAP algebra
     `Λ(F(∋)R)`, together with the triangle saying what that algebra is — `Λ(F(∋)R)∋ = F(∋)R`.
     Two faces of one picture: the second says the algebra the first folds is the transpose of
-    `F(∋)R`, and they share that algebra. -/
-public theorem relCata_mapAlg_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
-    I.α ≫ I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)
-        = F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)) ≫ Λ (F.map (∋ A) ≫ R)
-      ∧ Λ (F.map (∋ A) ≫ R) ≫ ∋ A = F.map (∋ A) ≫ R :=
-  ⟨I.cata_comm _ _, Λ_comp_eps _⟩
+    `F(∋)R`, and they share that algebra.  The algebra is NAMED `f` and pinned by `hf`, which is
+    how the picture writes a name on that arrow with its value beneath. -/
+public theorem relCata_mapAlg_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A)
+    {f} (hf : f = Λ (F.map (∋ A) ≫ R)) (hm : Map f) :
+    I.α ≫ I.cata f hm = F.map (I.cata f hm) ≫ f
+      ∧ f ≫ ∋ A = F.map (∋ A) ≫ R := by
+  subst hf; exact ⟨I.cata_comm _ _, Λ_comp_eps _⟩
 
 /-! ## §2.6  Fusion (2.12) and Ex 2.35 (book pp. 46, 49)
 

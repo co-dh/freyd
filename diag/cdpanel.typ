@@ -150,6 +150,15 @@
     // A LABEL WEARS ITS ARROW'S COLOUR: an arrow whose name is a different colour from its mark
     // reads as two different things.
     lab(mid.at(0) + nm.at(0) * off, mid.at(1) + nm.at(1) * off, hue(e), lbl(e.label))
+    // A NAMED ARROW'S VALUE goes on the OTHER side of the line from its name, so the two are read
+    // as one arrow's name and what it is rather than as two arrows.  Which arrows have one is
+    // decided in Lean, by the statement naming them (`CommutativeDiagram.namedValue?`).
+    let v = e.at("value", default: none)
+    if v != none {
+      let vh = hext(lbl(v), 0pt, length)
+      let voff = LABGAP + calc.abs(nm.at(0)) * vh.at(0) + calc.abs(nm.at(1)) * vh.at(1) + e.bow
+      lab(mid.at(0) - nm.at(0) * voff, mid.at(1) - nm.at(1) * voff, hue(e), lbl(v))
+    }
   }
   for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), hue(n), lbl(n.label)) }
   for f in faces {
