@@ -122,8 +122,7 @@ Freyd.Alg.RelSet.Bracket.mct_prog.lhs | <mct-laws> | splits list((mct×mct)bin)m
 Freyd.Alg.RelSet.Code.code_laws.rhs | <code-laws> | (decode°)%∋ est(R)
 Freyd.Alg.RelSet.Code.code_laws.lhs | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
 Freyd.Alg.RelSet.Code.code_branch.lhs | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)
-# missing: `reduce` — every way of splitting a legal last code off a string — and `encode` itself; `code_branch` proves only the `extend` arm of the body, not the program that replaces it.
-- | <code-laws> | reduce list((encode×𝟙)snoc)minlist(R)
+Freyd.Alg.RelSet.Code.code_prog.lhs | <code-laws> | reduce list((encode×𝟙)snoc)minlist(R)
 Freyd.Alg.greedy_dp.rhs | <greedy-laws> | H%∋ est(R)
 Freyd.Alg.greedy_dp.lhs | <greedy-laws> | (T°)%∋ est(Q)F(X)h
 Freyd.Alg.RelSet.est_summand_le.lhs | <greedy-laws> | (Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ
