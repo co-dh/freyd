@@ -98,34 +98,12 @@
 // the same band.  DELIBERATE sharing stays in `OCOL` above — a derived band is only a starting point,
 // and two objects that must be told apart in one panel are what an entry there is for.
 #let OBANDS = (TCOL, BCOL, CCOL, GCOL, VCOL)
-#let objcol(l) = OCOL.at(plain(l), default: OBANDS.at(calc.rem(namehash(plain(l)), OBANDS.len())))
-
-// ONE PANEL'S BANDS AT ONCE.  A wire changes hue where it changes OBJECT, so two different objects
-// on one wire may not land on one band — and `objcol`'s default is a name hash, which collides
-// (§13.5.1a drew `[n] A × [n]([p]([m] A))` and `A × [3 * p]([m] A)` both in `CCOL`).  A band is
-// allocated with the objects already on the wire in hand: the objects `OCOL` NAMES keep their hue
-// whatever else is drawn, and an unnamed one walks on from the band its name hashes to until it
-// finds one no other object here has taken.
-#let objcols(ls) = {
-  let ns = ls.map(plain)
-  let used = ns.filter(n => n in OCOL).map(n => repr(OCOL.at(n)))
-  let at = (:)
-  for n in ns {
-    if n in at { continue }
-    let c = objcol(n)
-    if not (n in OCOL) {
-      let k = calc.rem(namehash(n), OBANDS.len())
-      let ord = range(OBANDS.len()).map(i => OBANDS.at(calc.rem(k + i, OBANDS.len())))
-      let free = ord.filter(o => not used.contains(repr(o)))
-      // No free band left is a palette too small for the panel, not a hue to guess at: keep the
-      // hash's own answer and let the sweep report the pair it collides with.
-      if free.len() > 0 { c = free.first() }
-      used.push(repr(c))
-    }
-    at.insert(n, c)
-  }
-  ns.map(n => at.at(n))
-}
+// THE BAND A NAME PREFERS, which is where the allocator starts walking and never where it must
+// stop: `OCOL`'s entry when the note names the object, and otherwise the band its name hashes to,
+// so an object draws before anyone declares it and always in the same band when it is free.
+#let oband0(n) = OCOL.at(n, default: OBANDS.at(calc.rem(namehash(n), OBANDS.len())))
+// A HAND-LAID panel has no band list to allocate against, so it takes the preferred band.
+#let objcol(l) = oband0(plain(l))
 
 // `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
 // a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
@@ -619,15 +597,81 @@
     let ax = e.replace(regex("[^a-zA-Z]+"), "")
     "[" + (if ax == "" { e } else { ax }) + "]" }
 }
-#let fcol(nm) = {
+// A LANE'S COLOUR, PLACED AGAINST THE HUES THE PANEL ALREADY HOLDS.  `FCOL`'s entry where it has
+// one — so a functor the note names everywhere reads the same colour in every panel — and otherwise
+// the free hue the name's own number picks, WALKED ON until it clears `placed` by `SEPPANEL`.  The
+// walk is the whole rule: which free hue a name hashes to says nothing about who it stands beside,
+// so an undeclared lane landed ΔE76 17 from `list` and the only cure on offer was one more `FCOL`
+// entry — one per lane name, for ever.  `placed` empty is the standalone caller, who has no panel.
+// A free hue is already `SEPFIX` clear of every bead hue and of every `OBANDS` band (they are
+// `freehues`' own obstacles), so only the panel's other LANES enter the walk.
+#let fcol(nm, placed: ()) = {
   let n = faxis(nm)
   if n in FCOL { FCOL.at(n) } else {
     let free = freehues()
     assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
       + " within ΔE76 " + str(SEPFIX) + " of a bead or object hue, or " + str(SEPPAIR) + " of a lane"
-      + " `FCOL` already names — give `" + n + "` an entry in `FCOL` (diag/draw.typ) or widen `RINGS`")
-    free.at(calc.rem(namehash(n), free.len()))
+      + " `FCOL` already names — widen `RINGS` (diag/draw.typ)")
+    let k = calc.rem(namehash(n), free.len())
+    let ord = range(free.len()).map(i => free.at(calc.rem(k + i, free.len())))
+    let ok = ord.filter(c => placed.all(o => dE76(c, o) >= SEPPANEL))
+    // No hue at the floor is a ring set too narrow for this panel, not a hue to guess at: keep the
+    // hash's own answer, and `lanecheck` reports it with the lane it collides with.
+    if ok.len() > 0 { ok.first() } else { ord.first() }
   }
+}
+// AN OBJECT BAND, PLACED THE SAME WAY.  The bands of one wire must differ — the wire changes hue
+// where it changes object — and `OCOL` deliberately gives two objects one hue wherever no display
+// put them on one wire, which §15.4b's `dStr`/`Code` then did.  So a NAMED object is a preference
+// too, not a fixture: the preferred band first, then round the ring to the first that no band of
+// this wire has taken and that clears the panel's named lanes by `SEPFIX`.  Any two `OBANDS` are
+// ≥ ΔE76 42 apart, so distinctness of band is already distinctness of colour.
+#let ohue(n, bands, lanecols) = {
+  let b0 = oband0(n)
+  let k = OBANDS.position(b => repr(b) == repr(b0))
+  assert(k != none, message: "`OCOL` gives the object `" + n + "` a hue that is not one of `OBANDS`"
+    + " — the object wire is drawn in the bands, so the entry must name one (diag/draw.typ)")
+  let ord = range(OBANDS.len()).map(i => OBANDS.at(calc.rem(k + i, OBANDS.len())))
+  let ok = ord.filter(c => not bands.any(o => repr(o) == repr(c))
+    and lanecols.all(o => dE76(c, o) >= SEPFIX))
+  // Five bands and a wire that renames its object more often is a palette too small for the panel,
+  // not a hue to guess at: keep the preferred band and let the sweep report the pair.
+  if ok.len() > 0 { ok.first() } else { b0 }
+}
+// ONE PANEL, ONE ALLOCATOR.  EVERY hue a panel draws is placed here — a lane `FCOL` names, a lane it
+// does not, and each band of the object wire — each against every hue already placed in the SAME
+// panel.  Three rules that could not see each other is what let two of them collide, and the error
+// then asked for one more `FCOL` entry, which is a patch per lane name.  Order: the named lanes
+// (fixed, so no panel in the note moves), then the bands (clear of those), then the unnamed lanes
+// (clear of every lane placed; clear of the bands by `freehues`' construction).
+#let panelpal(lanes, objs) = {
+  let ns = lanes.map(faxis)
+  let lc = (:)
+  for n in ns { if n in FCOL and not (n in lc) { lc.insert(n, FCOL.at(n)) } }
+  let (oc, bands) = ((:), ())
+  for o in objs {
+    let n = plain(o)
+    if n in oc { continue }
+    let c = ohue(n, bands, lc.values())
+    oc.insert(n, c)
+    bands.push(c)
+  }
+  for n in ns { if not (n in lc) { lc.insert(n, fcol(n, placed: lc.values())) } }
+  (lane: lc, obj: oc)
+}
+// Reading the allocation back.  A label the allocator was never given is a panel drawing a wire it
+// did not declare, so it names that rather than falling back to a hue nobody placed.
+#let palf(pal, nm) = {
+  let n = faxis(nm)
+  assert(n in pal.lane, message: "the panel's allocator was not given the lane `" + n + "` — every"
+    + " label a panel draws a wire or a brace for goes in `panelpal`'s lane list (diag/dpanel.typ)")
+  pal.lane.at(n)
+}
+#let palo(pal, n) = {
+  let o = plain(n)
+  assert(o in pal.obj, message: "the panel's allocator was not given the object `" + o + "` — every"
+    + " band of the object wire goes in `panelpal`'s object list (diag/dpanel.typ)")
+  pal.obj.at(o)
 }
 // THE PALETTE'S RULE IS ONLY TRUE PANEL BY PANEL — two lanes that never share a picture may reuse a
 // band — so this is where it is checked: every pair of lanes drawn together, and every lane against
@@ -640,13 +684,17 @@
       // and share a hue by the rule above, so the separation rule cannot be put to them.
       assert(faxis(a.at(0)) == faxis(b.at(0)) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
         + a.at(0) + "` and `" + b.at(0) + "` are ΔE76 " + str(calc.round(d, digits: 1)) + " apart,"
-        + " under " + str(SEPPANEL) + " — give one of them its own entry in `FCOL` (diag/draw.typ)")
+        + " under " + str(SEPPANEL) + " — `panelpal` had no hue further out: either `RINGS` is too"
+        + " narrow for this panel, or both are fixed `FCOL` entries and one of those must move"
+        + " (diag/draw.typ)")
     }
     for o in obst {
       let d = dE76(a.at(1), o.at(1))
       assert(d >= SEPFIX, message: "panel `" + id + "`: the lane `" + a.at(0) + "` is ΔE76 "
         + str(calc.round(d, digits: 1)) + " from " + o.at(0) + " drawn on it, under " + str(SEPFIX)
-        + " — give the lane its own entry in `FCOL` (diag/draw.typ)")
+        + " — `panelpal` places every lane and every band at that floor, so the pair it could not"
+        + " move is a fixed `FCOL` entry against a bead hue, or a band with no free ring left"
+        + " (diag/draw.typ)")
     }
   }
 }
