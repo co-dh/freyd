@@ -326,6 +326,19 @@ open Lean PrettyPrinter in
     one section's algebra has no second `bmax` to tell this one from. -/
 @[app_unexpander RelSet.Van.bmax] def unexpandVanBmax : Unexpander | _ => `($(mkIdent `bmax))
 
+-- ONE BEAD, `R∩H`.  A meet is a bead's LABEL and never a wiring, and the note writes it TIGHT —
+-- which is what `Label.lean`'s `∩` clause already writes, off the head constant.  So the label is
+-- taken from the DEFINITION rather than from a name of its own: an unexpander would have to spell
+-- the meet as Lean's own notation prints it, spaced, and `R ∩ H` is not what the note draws.
+attribute [diag_unfold] RelSet.Van.RinterH
+
+open Lean PrettyPrinter in
+/-- §7.5's ordering and its prefix condition are the note's `R` and `H`; the object they are taken
+    at is the wire under the bead, as it is for every other section's `R`. -/
+@[app_unexpander RelSet.Van.R] def unexpandVanR : Unexpander | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Van.Hrel] def unexpandVanH : Unexpander | _ => `($(mkIdent `H))
+
 open Lean PrettyPrinter in
 /-- The note draws the union of a set of sets as `union`: which of the many `union`s of the book it
     is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
