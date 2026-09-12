@@ -400,14 +400,45 @@ public theorem old_eq :
   junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
     (newR A ∪ oldR amount N)
 
+/-- **van-defn**: `ok` as the BOOLEAN the final program tests — the schedule has a first segment
+    and `[a]⧺head` stays secure — `okR` as a boolean, which is the form a branch can test and so
+    the form the picture reads the test off. -/
+@[expose] public def okP (amount : A → Int) (N : Int) : A × Sched A → Bool
+  | (_, ConsList.wrap _) => false
+  | (a, ConsList.cons s _) => decide (secureP amount N (ConsList.cons a s))
+
+/-- **van-defn**: `glue` as a MAP.  `glueR` returns nothing at the empty schedule, and a branch of
+    `progFn` has to return something there; `ok` is false exactly there, so the value is never
+    taken and the empty schedule is what it is. -/
+@[expose] public def glueFn : A × Sched A → Sched A
+  | (_, ConsList.wrap _) => ConsList.wrap ()
+  | (a, ConsList.cons s t) => ConsList.cons (ConsList.cons a s) t
+
 /-- **van-laws**, the final program's algebra `[nil,(ok→glue,new)]`: glue the transaction onto
     the open segment wherever that segment stays secure, and call the van where it does not. -/
-@[expose] public def progFn (amount : A → Int) (N : Int) : A × Sched A → Sched A
-  | (a, ConsList.wrap _) =>
-      ConsList.cons (ConsList.cons a (ConsList.wrap ())) (ConsList.wrap ())
-  | (a, ConsList.cons s t) =>
-      if secureP amount N (ConsList.cons a s) then ConsList.cons (ConsList.cons a s) t
-      else ConsList.cons (ConsList.cons a (ConsList.wrap ())) (ConsList.cons s t)
+@[expose] public def progFn (amount : A → Int) (N : Int) (p : A × Sched A) : Sched A :=
+  match okP amount N p with
+  | true  => glueFn p
+  | false => newFn p
+
+public theorem okP_cons {a : A} {s : Seg A} {t : Sched A} :
+    okP amount N (a, ConsList.cons s t) = decide (secureP amount N (ConsList.cons a s)) := rfl
+
+/-- `ok` holds, so the transaction is glued onto the first segment. -/
+public theorem progFn_pos {a : A} {s : Seg A} {t : Sched A}
+    (h : secureP amount N (ConsList.cons a s)) :
+    progFn amount N (a, ConsList.cons s t) = ConsList.cons (ConsList.cons a s) t := by
+  unfold progFn; rw [okP_cons, decide_eq_true h]; rfl
+
+/-- `ok` fails, so the van is called: the transaction opens a segment of its own. -/
+public theorem progFn_neg {a : A} {s : Seg A} {t : Sched A}
+    (h : ¬ secureP amount N (ConsList.cons a s)) :
+    progFn amount N (a, ConsList.cons s t) = newFn (a, ConsList.cons s t) := by
+  unfold progFn; rw [okP_cons, decide_eq_false h]
+
+/-- The empty schedule has no first segment, so `ok` fails there too. -/
+public theorem progFn_wrap {a : A} {D : Unit} :
+    progFn amount N (a, ConsList.wrap D) = newFn (a, ConsList.wrap D) := rfl
 
 @[expose] public def progAlg (amount : A → Int) (N : Int) :
     (F Unit A).obj (dSched A) ⟶ dSched A :=
@@ -890,12 +921,8 @@ public theorem prog_le_greedy :
         refine Decidable.byCases (p := secureP amount N (ConsList.cons a s))
           (fun hs => ?_) (fun hs => ?_)
         · refine Or.inr ⟨s, t, rfl, ?_, hs⟩
-          show progFn amount N (a, ConsList.cons s t) = ConsList.cons (ConsList.cons a s) t
-          simp only [progFn, if_pos hs]
-        · refine Or.inl ?_
-          show progFn amount N (a, ConsList.cons s t) = newFn (a, ConsList.cons s t)
-          simp only [progFn, if_neg hs]
-          rfl
+          exact progFn_pos hs
+        · exact Or.inl (progFn_neg hs)
   · -- and it is `(R;H)`-at-least-as-good as every one of them
     refine le_iff.mpr fun r r' h => ?_
     obtain ⟨u, hS, hprog⟩ := h
@@ -929,9 +956,7 @@ public theorem prog_le_greedy :
       | cons s t =>
         refine Decidable.byCases (p := secureP amount N (ConsList.cons a s))
           (fun hs => ?_) (fun hs => ?_)
-        · have hprog' : progFn amount N (a, ConsList.cons s t)
-              = ConsList.cons (ConsList.cons a s) t := by simp only [progFn, if_pos hs]
-          rw [hprog']
+        · rw [progFn_pos hs]
           cases hS' with
           | inl hnew =>
             obtain rfl : r = newFn (a, ConsList.cons s t) := hnew
@@ -944,9 +969,7 @@ public theorem prog_le_greedy :
             subst hr
             exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨ConsList.cons a s, t, ConsList.cons a s, t,
               rfl, rfl, prefixP.refl _⟩⟩
-        · have hprog' : progFn amount N (a, ConsList.cons s t)
-              = newFn (a, ConsList.cons s t) := by simp only [progFn, if_neg hs]; rfl
-          rw [hprog']
+        · rw [progFn_neg hs]
           have hr : r = newFn (a, ConsList.cons s t) := by
             cases hS' with
             | inl hnew => exact hnew
@@ -1096,16 +1119,13 @@ open Lean PrettyPrinter in
 @[app_unexpander R] public meta def unexpandVanR : Unexpander
   | _ => `($(mkIdent `R))
 
--- The refined order and its meet part are ONE bead each in §7.5's panels, and the note writes them
--- `R;H` and `R∩H`; without these the picture would label the bead `RH`/`RinterH`, which no reader
--- of the note has met.
+-- The refined order is ONE bead in §7.5's panels and the note writes it `R;H`; without this the
+-- picture would label the bead `RH`, which no reader of the note has met.  `RinterH` gets NO name
+-- of its own: a meet is a NODE in the circuit language — copy, both lanes, merge — and a name
+-- freezes it into one box, which is the same thing naming `progAlg` did to the junction below.
 open Lean PrettyPrinter in
 @[app_unexpander RH] public meta def unexpandRH : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "R;H")))
-
-open Lean PrettyPrinter in
-@[app_unexpander RinterH] public meta def unexpandRinterH : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "R∩H")))
 
 open Lean PrettyPrinter in
 @[app_unexpander leN] public meta def unexpandLeN : Unexpander
@@ -1122,10 +1142,20 @@ open Lean PrettyPrinter in
 @[app_unexpander Salg] public meta def unexpandVanSalg : Unexpander
   | _ => `($(mkIdent `S))
 
--- The program's algebra is the greedy choice already made — the note's last van panel writes it
--- `[nil,(ok→glue,new)]`, the security test picking the branch that `Salg` leaves as a union.
+-- The program's algebra is the greedy choice already made, and the note's last van panel draws it
+-- as what it IS: the junction `[nil,…]` over a box that tests `ok` and takes `glue` or `new`.  So
+-- `progAlg` gets NO name of its own — a name freezes the whole junction into one box — and the
+-- three constants the box writes get theirs, the way `oldR` and `newR` do above.
 open Lean PrettyPrinter in
-@[app_unexpander progAlg] public meta def unexpandVanProgAlg : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "[nil,(ok→glue,new)]")))
+@[app_unexpander okP] public meta def unexpandOkP : Unexpander
+  | _ => `($(mkIdent `ok))
+
+open Lean PrettyPrinter in
+@[app_unexpander glueFn] public meta def unexpandGlueFn : Unexpander
+  | _ => `($(mkIdent `glue))
+
+open Lean PrettyPrinter in
+@[app_unexpander newFn] public meta def unexpandNewFn : Unexpander
+  | _ => `($(mkIdent `new))
 
 end Freyd.Alg.RelSet.Van
