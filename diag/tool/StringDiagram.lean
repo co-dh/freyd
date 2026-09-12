@@ -455,13 +455,13 @@ def emitStatement (declName : String) (parts : Array (String × Diagram))
     proposition `StrictNatural F G φ` type-checks by construction — `φ a : G.obj a ⟶ F.obj a` holds
     because `G` and `F` ARE those two ends — where a stack of lane labels is a second spelling of
     the same thing that can disagree with it. -/
-def relatorsOf (cat : Array Name) (regionTy φ : Expr) : MetaM (Expr × Expr) :=
+def relatorsOf (alg : LaneAlg) (cat : Array Name) (regionTy φ : Expr) : MetaM (Expr × Expr) :=
   Meta.lambdaBoundedTelescope φ 1 fun xs body => do
     let some v := xs[0]?
       | throwError "not a family: `{← Meta.ppExpr φ}` takes no object of {← Meta.ppExpr regionTy}"
     let (x, y) ← homEnds body
-    let G ← instantiateMVars (← relatorOfObj cat regionTy v x)
-    let F ← instantiateMVars (← relatorOfObj cat regionTy v y)
+    let G ← instantiateMVars (← relatorOfObj alg cat regionTy v x)
+    let F ← instantiateMVars (← relatorOfObj alg cat regionTy v y)
     -- A relator that still mentions the object, or holds a metavariable, is not a relator of the
     -- region: it would escape this telescope as a loose variable, and the reading FAILED.
     if G.containsFVar v.fvarId! || F.containsFVar v.fvarId! || G.hasExprMVar || F.hasExprMVar then
@@ -531,20 +531,32 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- is an arrow of the base category at this one object — the plain dot on the object wire every
   -- other such bead gets (`Q°`, `est(R)`), and no `nat:` row, because nothing was claimed either
   -- way.  Naming it an error would fail the whole panel over one bead.
-  let some (G, F) ← (some <$> relatorsOf cat regionTy φ) <|> pure none
+  -- WHICH ALGEBRA THE STATEMENT IS IN IS THE REGION'S, not the bead's: §1.241's function category
+  -- is a `Cat` and no allegory, so its lanes are functors and its naturality is the plain square.
+  let alg ← laneAlgOf regionTy
+  let some (G, F) ← (some <$> relatorsOf alg cat regionTy φ) <|> pure none
     | return { mark := none, lean := none }
   let must := consts core
-  let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
-  let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
-  let oplax ← Meta.mkAppM ``Freyd.Alg.OpLaxNatural #[F, G, φ]
-  -- The refutation is of the very statement just searched for, `¬ LaxNatural F G φ`, and not of
-  -- one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is not
-  -- even well typed unless the bead happens to end where it starts.
-  let nolax ← Meta.mkAppM ``Not #[lax]
   -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
   -- and not from `verdict`.
   let br ← bridges
-  let search : MetaM (Option Verdict) := id do
+  -- A CATEGORY HAS ONE NATURALITY STATEMENT, THE SQUARE, and no `⊑` to grade it by: there is no
+  -- lax, no oplax and no refutation to look for, so a family between functor lanes is the solid
+  -- dot its square proves or the spider below — never the object-wire bead a failed RELATOR
+  -- reading used to demote it to.
+  let search : MetaM (Option Verdict) := match alg with
+    | .functor => id do
+      if let some (n, _) ← findTelescoped br (← funSquare regionTy F G φ) must FUEL then
+        return some { mark := some .strict, lean := n }
+      return none
+    | .relator => id do
+      let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
+      let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
+      let oplax ← Meta.mkAppM ``Freyd.Alg.OpLaxNatural #[F, G, φ]
+      -- The refutation is of the very statement just searched for, `¬ LaxNatural F G φ`, and not
+      -- of one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is
+      -- not even well typed unless the bead happens to end where it starts.
+      let nolax ← Meta.mkAppM ``Not #[lax]
       if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
         return some { mark := some .strict, lean := n }
       if let some (n, _) ← findSquare br strict must FUEL then
@@ -954,11 +966,6 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       if ← Meta.isDefEq t regionTy then objVars := objVars.push x
       else if let some it := idxTy then
         if ← Meta.isDefEq t it then objVars := objVars.push x
-    -- EVERY part is drawn, even when one is asked for: the frame is the max row count over the
-    -- statement's sides, so the file for one side has to read the other to be sized.
-    let mut sides : Array Diagram := #[]
-    for (_, e) in parts do sides := sides.push (← panelOf regionTy cat e objVars)
-    let ref := sides.foldl (fun a p => if p.rows.size > a.rows.size then p else a) sides[0]!
     -- `.inl`/`.inr` is ONE BRANCH of the side, and the selectors CHAIN: each names an operand of
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
@@ -973,13 +980,11 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      -- A branch panel can be deeper than the side it was cut from — `R ∪ S` is one row and `R` may
-      -- be three — so the frame is the deepest of the statement's sides AND of what is drawn.
-      let all := sides ++ ps.map (·.2)
-      let fr := frame.getD (frameOf ref all)
-      if ps.size == 1 then
-        return ← emit ps[0]!.2 nm (some fr)
-          (some (topRow.getD (topOf (fr - maxShift ref all - 1) ref ps[0]!.2))) scale
-      return ← emitStatement nm ps (some fr) topRow scale
+      -- A PART EMITTED ALONE STANDS BESIDE NOTHING, so it takes its OWN depth.  The shared frame
+      -- exists to hold the parts a relation symbol joins in ONE grid to one box and one bead
+      -- height; a calc-table row holding only `.rhs` has no such neighbour, and giving it the whole
+      -- statement's frame drew it taller than the picture beside it.
+      if ps.size == 1 then return ← emit ps[0]!.2 nm frame topRow scale
+      return ← emitStatement nm ps frame topRow scale
 
 end Freyd.StrDiag

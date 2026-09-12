@@ -138,6 +138,12 @@ partial def wiresOf (f : Expr) : Array Expr :=
   | (``Freyd.Alg.Relator.comp, args) => match lastTwo args with
     | some (a, b) => wiresOf b ++ wiresOf a
     | none => #[f]
+  -- A COMPOSITE OF FUNCTORS IS THE SAME STACK: the function category's lanes are `Freyd.Functor`s
+  -- and compose by `compFunctor`, so a reading that flattened only the relator composite left the
+  -- whole stack standing as one wire labelled `compFunctor …`.
+  | (``Freyd.compFunctor, args) => match lastTwo args with
+    | some (a, b) => wiresOf b ++ wiresOf a
+    | none => #[f]
   | (``Freyd.Alg.Relator.idRelator, _) => #[]
   | (``Freyd.idFunctor, _) => #[]
   | _ => #[f]
@@ -317,10 +323,46 @@ def allegoryInst (regionTy : Expr) : MetaM Expr := do
   -- thing to solve — `mkAppM` refuses to hand back a term holding one.
   Meta.synthInstance (← mkAppMeta ``Freyd.Alg.Allegory #[regionTy]).1
 
-/-- The identity relator of a region, built with the region's OWN instance rather than a level
-    metavariable — the empty wire stack is a relator like any other and has to be nameable. -/
-def idRelatorOf (regionTy : Expr) : MetaM Expr := do
-  Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[regionTy, some (← allegoryInst regionTy)]
+/-- The `Cat` instance of a region, LOCAL one first — the same rule and the same reason as
+    `allegoryInst`'s, a category quantified over in the statement having no global instance. -/
+def catInst (regionTy : Expr) : MetaM Expr := do
+  for d in (← getLCtx) do
+    if d.isImplementationDetail then continue
+    let t ← instantiateMVars d.type
+    if t.isAppOfArity ``Cat 1 then
+      if ← Meta.isDefEq t.appArg! regionTy then return d.toExpr
+  Meta.synthInstance (← mkAppMeta ``Cat #[regionTy]).1
+
+/-- WHICH ALGEBRA OF LANES A REGION'S NATURALITY IS STATED IN, read off the region's own instances
+    and never off a name.  An `Allegory` region's lanes are `Relator`s and its naturality is the
+    `⊑`-graded family `StrictNatural`/`LaxNatural`/`OpLaxNatural`; a region that is only a `Cat` —
+    §1.241's function category, where the `Vec` beads live — has `Freyd.Functor` lanes and exactly
+    one naturality statement, the square, there being no `⊑` to grade it by. -/
+inductive LaneAlg where | relator | functor
+  deriving Inhabited, BEq
+
+def laneAlgOf (regionTy : Expr) : MetaM LaneAlg :=
+  try let _ ← allegoryInst regionTy; return .relator catch _ => return .functor
+
+/-- What a lane of this algebra IS: the type a wire's own type must be headed by for the wire to be
+    a lane of the region at all. -/
+def LaneAlg.head : LaneAlg → Name
+  | .relator => ``Freyd.Alg.Relator
+  | .functor => ``Freyd.Functor
+
+/-- Two lanes composed, in DIAGRAM order — `comp F G` is `F` then `G`, so `(comp F G).obj A` is
+    `G.obj (F.obj A)` in both algebras. -/
+def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr :=
+  Meta.mkAppM (match alg with
+    | .relator => ``Freyd.Alg.Relator.comp
+    | .functor => ``Freyd.compFunctor) #[F, G]
+
+/-- The identity lane of a region, built with the region's OWN instance rather than a level
+    metavariable — the empty wire stack is a lane like any other and has to be nameable. -/
+def LaneAlg.id (alg : LaneAlg) (regionTy : Expr) : MetaM Expr := do match alg with
+  | .relator =>
+    Meta.mkAppOptM ``Freyd.Alg.Relator.idRelator #[regionTy, some (← allegoryInst regionTy)]
+  | .functor => Meta.mkAppOptM ``Freyd.idFunctor #[regionTy, some (← catInst regionTy)]
 
 /-- The two halves of a PRODUCT region. -/
 def prodRegions? (ty : Expr) : Option (Expr × Expr) :=
@@ -552,42 +594,79 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       the source of `cons`) is read too, where pinning it into a constant `A×−` could not be.
     * `F(X)` — `F` after the reading of `X`, `F` peeled off by the same catalogue the lanes use.
 
+    WHICH ALGEBRA THE READING IS BUILT IN IS THE REGION'S, `laneAlgOf`: an allegory's lanes are
+    `Relator`s, a bare category's are `Freyd.Functor`s, and the two compose by their own `comp`.
+    `Vec n` is a functor of §1.241's function category and no relator, so a reading fixed to
+    `Relator.comp` failed on `(Vec n).obj A` and demoted every `Vec` family to an object-wire bead.
+    Only `𝟙` and composition are named in the functor algebra — the repo has no constant or product
+    functor — so a constant or product end has no reading THERE, exactly as an end no relator spells
+    has none here.
+
     Anything else mentioning `v` has no reading, and the bead it belongs to gets no verdict: it is
     refused here rather than being silently read as something it is not. -/
-partial def relatorOfObj (cat : Array Name) (regionTy v X : Expr) : MetaM Expr := do
+partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr) : MetaM Expr := do
   let .fvar vid := v | throwError "the family variable {← Meta.ppExpr v} is not a local"
   if !X.containsFVar vid then
+    unless alg == .relator do
+      throwError "the end {← Meta.ppExpr X} does not vary with {← Meta.ppExpr v} and \
+        {← Meta.ppExpr regionTy} is no allegory, so there is no constant lane to read it as"
     let inst ← allegoryInst regionTy
     return ← Meta.mkAppOptM ``Freyd.Alg.Relator.const
       #[some regionTy, some regionTy, some inst, some inst, some X]
   -- `isDefEq`, not `==`: where the region is a one-field structure over an index, the object comes
   -- back rebuilt from its projection (`⟨a.f⟩`), which is `a` only up to eta.
-  if ← Meta.isDefEq X v then return ← idRelatorOf regionTy
+  if ← Meta.isDefEq X v then return ← alg.id regionTy
   if let some (a, b) ← splitTimes? regionTy X then
+    unless alg == .relator do
+      throwError "the end {← Meta.ppExpr X} is a product and {← Meta.ppExpr regionTy} is no \
+        allegory, so there is no product lane to read it as"
     return ← Meta.mkAppM ``Freyd.Alg.Relator.prod
-      #[← relatorOfObj cat regionTy v a, ← relatorOfObj cat regionTy v b]
+      #[← relatorOfObj alg cat regionTy v a, ← relatorOfObj alg cat regionTy v b]
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
       let ws := wiresOf f
       if ws.any (·.containsFVar vid) then
-        throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no relator \
+        throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no lane \
           of the region and {← Meta.ppExpr X} has no reading"
-      let mut acc ← relatorOfObj cat regionTy v x
+      let mut acc ← relatorOfObj alg cat regionTy v x
       for i in [0 : ws.size] do
-        acc ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[acc, ws[ws.size - 1 - i]!]
+        acc ← alg.comp acc ws[ws.size - 1 - i]!
       return acc
   | _ => pure ()
-  -- `#[v]`: the wire peeled off has to be a relator of the REGION, so one that mentions `v` is no
+  -- `#[v]`: the wire peeled off has to be a lane of the REGION, so one that mentions `v` is no
   -- reading of `X` at all — refusing it here is both the correctness rule and what keeps the peel
   -- from ranging over the whole catalogue at every level.  A FUNCTOR lane (`E`) is no relator, so
-  -- a family under it states no naturality in the relator sense and is refused below.
+  -- in an allegory a family under it states no naturality in the relator sense and is refused
+  -- below; in the function category the functor IS the lane and the same test admits it.
   for n in cat do
     if let some (R, src, inner) ← peelWith? n #[v] regionTy X then
-      unless (← Meta.inferType R).isAppOf ``Freyd.Alg.Relator do continue
-      return ← Meta.mkAppM ``Freyd.Alg.Relator.comp #[← relatorOfObj cat src v inner, R]
-  throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no relator of \
+      unless (← Meta.inferType R).isAppOf alg.head do continue
+      return ← alg.comp (← relatorOfObj alg cat src v inner) R
+  throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no lane of \
     {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
+
+/-- THE NATURALITY SQUARE OF A FAMILY BETWEEN FUNCTOR LANES, as a proposition.  `φ a : G.obj a ⟶
+    F.obj a`, so naturality is `G.map f ≫ φ y = φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the
+    region — the very equation `gen_natural`, `genFold_natural`, `cons_natural` and their siblings
+    state.  It is the ONE statement a bare category has: `LaxNatural` and `OpLaxNatural` grade a
+    square by `⊑`, and a category has no `⊑` to grade it by.  Built and not named, so any pair of
+    functor lanes states it. -/
+def funSquare (regionTy F G φ : Expr) : MetaM Expr := do
+  -- A STACK'S ACTION IS ITS WIRES' ACTIONS, INNERMOST FIRST — `(Vec(m+1)).map ((Vec n).map f)`,
+  -- the very spelling every naturality theorem in the repo is written in.  Composing the stack into
+  -- one `compFunctor` and taking ITS `map` is the same arrow but a different TERM, and the
+  -- unification then has to see through the composite at every level, which is where the search for
+  -- `genFold_natural` came back empty.  `wiresOf` is outermost first, so it is applied in reverse.
+  let apply (ws : Array Expr) (f : Expr) : MetaM Expr := do
+    let mut acc := f
+    for i in [0 : ws.size] do acc ← Meta.mkAppM ``Freyd.Functor.map #[ws[ws.size - 1 - i]!, acc]
+    return acc
+  Meta.withLocalDeclD `x regionTy fun x => Meta.withLocalDeclD `y regionTy fun y => do
+    Meta.withLocalDeclD `f (← Meta.mkAppM ``Cat.Hom #[x, y]) fun f => do
+      let l ← Meta.mkAppM ``Cat.comp #[← apply (wiresOf G) f, (mkApp φ y).headBeta]
+      let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
+      Meta.mkForallFVars #[x, y, f] (← Meta.mkEq l r)
 
 /-- The two ends of an arrow. -/
 def homEnds (e : Expr) : MetaM (Expr × Expr) := do
@@ -1045,6 +1124,12 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
 partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (fuel : Nat) :
     MetaM (Option (Name × Expr)) := do
   let some body ← Meta.unfoldDefinition? prop | return none
+  findTelescoped br body must fuel
+
+/-- The same search for a square GIVEN as its own `∀`-statement rather than reached by unfolding a
+    naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
+partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat) :
+    MetaM (Option (Name × Expr)) := do
   Meta.forallTelescope body fun xs sq => do
     let .const h _ := sq.getAppFn | return none
     if let some (n, pf) ← findProof br sq h must fuel then

@@ -241,6 +241,29 @@ open Lean PrettyPrinter in
 @[app_unexpander Cylinder.Q] def unexpandCylinderQ : Unexpander | _ => `($(mkIdent `Q))
 open Lean PrettyPrinter in
 @[app_unexpander Cylinder.paths] def unexpandCylinderPaths : Unexpander | _ => `($(mkIdent `paths))
+
+-- THE CONCRETE CYLINDER WEARS THE SAME NAMES AS THE ABSTRACT ONE, for the same reason: `n`, `p`,
+-- `m` and the ordering `R` are the PANEL'S REGION, not part of the bead's name, and a bead's index
+-- is the wire under it.  A FOLD IS WRITTEN `⦇algebra⦈`, never by the name of the recursion that
+-- computes it: `genFold` is the fold of `gen` and `Qfold` the fold of `Q` — `cons_genFold` and
+-- `cons_Qfold` are the two defining equations `α⦇a⦈ = F(𝟙,⦇a⦈)a` that say so.  Delaborators and not
+-- unexpanders because `gen` and `paths` take only implicit arguments and so print as bare
+-- constants, which `app_unexpander` cannot fire on.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.gen, delab const.Freyd.Alg.Vec.gen]
+def delabVecGen : Delab := `($(mkIdent `gen))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.genFold, delab const.Freyd.Alg.Vec.genFold]
+def delabVecGenFold : Delab := `(⦇$(mkIdent `gen)⦈)
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.paths, delab const.Freyd.Alg.Vec.paths]
+def delabVecPaths : Delab := `($(mkIdent `paths))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.Rel.Q, delab const.Freyd.Alg.Vec.Rel.Q]
+def delabVecRelQ : Delab := `($(mkIdent `Q))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.Rel.Qfold, delab const.Freyd.Alg.Vec.Rel.Qfold]
+def delabVecRelQfold : Delab := `(⦇$(mkIdent `Q)⦈)
 -- A section's thinning preorder is the note's `Q`, for the reason its ordering is `R`: which
 -- relation it is, is the `code-defn` line above the table, not what the box is labelled with.
 open Lean PrettyPrinter in

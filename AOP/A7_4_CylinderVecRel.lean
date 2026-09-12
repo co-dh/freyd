@@ -105,6 +105,54 @@ public theorem cons_natural (S : A ⟶ B) :
     subst hzeq
     exact ⟨uncons W, ⟨hW 0, fun i => hW i.succ⟩, (congrFun uncons_cons W).symm⟩
 
+/-- **`gen` is lax natural**: `F(Vec(n)(S),Vec(n)(Vec(p)(Vec(m)(S)))) gen ⊑ gen
+    Vec(n)(Vec(3p)(Vec(m+1)(S)))`.  Lax and not strict for `moves`' and `cp`'s reason: the square is
+    copied into all `3p` candidates, and the right-hand side may take a different `S`-image of it in
+    each.  Every entry of `gen` is either the new square `q.1 i` or one entry of the old
+    candidates — `gen q i k = cons (q.1 i, concat (trans (moves q.2) i) k)` — so the two hypotheses
+    answer the two cases of the head/tail split. -/
+public theorem gen_lax_natural (S : A ⟶ B) :
+    rprodMap (tupleP n S) (tupleP n (tupleP p (tupleP m S))) ≫ RelSet.graph gen
+      ⊑ RelSet.graph gen ≫ tupleP n (tupleP (3 * p) (tupleP (m + 1) S)) := by
+  refine le_iff.mpr fun q V h => ?_
+  obtain ⟨w, ⟨h1, h2⟩, hV⟩ := h
+  have hVeq : V = gen w := hV
+  subst hVeq
+  refine ⟨gen q, rfl, fun i k l => ?_⟩
+  induction l using Fin.cases with
+  | zero => exact h1 i
+  | succ l' => exact h2 _ _ _
+
+/-- **`⦇gen⦈` is lax natural**: `Vec(m+1)(Vec(n)(S)) ⦇gen⦈ ⊑ ⦇gen⦈ Vec(n)(Vec(3^m)(Vec(m+1)(S)))`.
+    The fold of a lax natural algebra is lax natural, by induction on the number of columns: one
+    column copies the square (`⦇gen⦈ v i _ _ = v 0 i`), and `m+2` columns split the first off and
+    hand the rest to `gen`, whose square above absorbs the induction hypothesis. -/
+public theorem genFold_lax_natural (S : A ⟶ B) : ∀ m : Nat,
+    tupleP (m + 1) (tupleP n S) ≫ RelSet.graph (genFold m)
+      ⊑ RelSet.graph (genFold m) ≫ tupleP n (tupleP (pow3 m) (tupleP (m + 1) S))
+  | 0 => by
+      refine le_iff.mpr fun q V h => ?_
+      obtain ⟨w, hw, hV⟩ := h
+      have hVeq : V = genFold 0 w := hV
+      subst hVeq
+      exact ⟨genFold 0 q, rfl, fun i _ _ => hw 0 i⟩
+  | m + 1 => by
+      refine le_iff.mpr fun q V h => ?_
+      obtain ⟨w, hw, hV⟩ := h
+      have hVeq : V = genFold (m + 1) w := hV
+      subst hVeq
+      obtain ⟨z, hz, hstep⟩ := le_iff.mp (genFold_lax_natural S m)
+        (fun l => q l.succ) (genFold m fun l => w l.succ)
+        ⟨fun l => w l.succ, fun l i => hw l.succ i, rfl⟩
+      have hzeq : z = genFold m fun l => q l.succ := hz
+      subst hzeq
+      obtain ⟨V', hV', hres⟩ := le_iff.mp (gen_lax_natural S)
+        (q 0, genFold m fun l => q l.succ) (gen (w 0, genFold m fun l => w l.succ))
+        ⟨(w 0, genFold m fun l => w l.succ), ⟨fun i => hw 0 i, hstep⟩, rfl⟩
+      have hV'eq : V' = gen (q 0, genFold m fun l => q l.succ) := hV'
+      subst hV'eq
+      exact ⟨genFold (m + 1) q, rfl, hres⟩
+
 /-! ## `tupleP`'s laws
 
   The relator laws of `Vec(n)` on relations.  They live here rather than beside `tupleP` because
