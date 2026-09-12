@@ -211,35 +211,65 @@ public theorem id_le_thinRel_id : Cat.id (PowerAllegory.powerObj A) ⊑ thinRel 
 
 /-! ## Thin-introduction and thin-elimination (book p.194) -/
 
-/-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R°` is transitive — thinning below a
-    coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
-public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (htransR : R° ≫ R° ⊑ R°) :
-    thinRel Q ≫ est R ⊑ est R := by
-  apply le_est_iff.mpr
-  refine ⟨?_, ?_⟩
-  · exact le_trans (comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _))
-      (thinRel_comp_eps_le Q)
-  · rw [← Cat.assoc]
-    have s1 : ((∋ A)° ≫ thinRel Q) ≫ est R ⊑ (Q° ≫ (∋ A)°) ≫ est R :=
-      comp_mono_right (recip_eps_comp_thinRel_le Q) (est R)
-    have s2 : (Q° ≫ (∋ A)°) ≫ est R ⊑ R° := by
-      rw [Cat.assoc]
-      have hbnd : (∋ A)° ≫ est R ⊑ R° :=
-        le_trans (comp_mono_left _ (show est R ⊑ (((∋ A)°) \ R°) from inter_lb_right _ _))
-          (leftDiv_comp_le _ R°)
-      have t1 : Q° ≫ ((∋ A)° ≫ est R) ⊑ Q° ≫ R° := comp_mono_left Q° hbnd
-      exact le_trans t1 (le_trans (comp_mono_right (recip_mono hQR) R°) htransR)
-    exact le_trans s1 s2
+/-! ### The thin-introduction chain (note §14.1.1)
 
-/-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R°`
-    is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
-    leaves it unchanged. -/
-public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q)
-    (htransR : R° ≫ R° ⊑ R°) : thinRel Q ≫ est R = est R := by
-  apply le_antisymm (thinRel_comp_est_le hQR htransR)
-  have h : Cat.id (PowerAllegory.powerObj A) ≫ est R ⊑ thinRel Q ≫ est R :=
-    comp_mono_right (id_le_thinRel hreflQ) (est R)
+  `est R = 𝟙 ≫ est R ⊑ thin Q ≫ est R` one way; the other is the UP of `est` at
+  `X ≜ thin Q ≫ est R`, whose two conditions are `thin Q ≫ est R ⊑ thin Q ≫ ∋ ⊑ ∋` and
+  `∈ ≫ thin Q ≫ est R ⊑ Q° ≫ ∈ ≫ est R ⊑ Q° ≫ R° ⊑ R° ≫ R° ⊑ R°`, one theorem per step;
+  `thinRel_comp_est` is their composition. -/
+
+/-- Step 1: `𝟙 ⊑ thin Q` (`Q` reflexive) composed with `est R` on the right. -/
+public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hreflQ : Cat.id A ⊑ Q) :
+    est R ⊑ thinRel Q ≫ est R := by
+  have h := comp_mono_right (id_le_thinRel hreflQ) (est R)
   rwa [Cat.id_comp] at h
+
+/-- Step 2, the UP's first condition: `est R ⊑ ∋` under the thinning. -/
+public theorem thinRel_comp_est_step2 (Q : A ⟶ A) {R : A ⟶ A} :
+    thinRel Q ≫ est R ⊑ thinRel Q ≫ ∋ A :=
+  comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)
+
+/-- Step 3, the UP's second condition: `∈ thin Q ⊑ Q° ∈`, with `est R` behind it. -/
+public theorem thinRel_comp_est_step3 (Q : A ⟶ A) {R : A ⟶ A} :
+    (∋ A)° ≫ thinRel Q ≫ est R ⊑ Q° ≫ (∋ A)° ≫ est R := by
+  rw [← Cat.assoc, ← Cat.assoc]
+  exact comp_mono_right (recip_eps_comp_thinRel_le Q) (est R)
+
+/-- Step 4: `∈ est R ⊑ R°` — the UP of `est` at `X ≜ est R`, conversed. -/
+public theorem thinRel_comp_est_step4 (Q : A ⟶ A) {R : A ⟶ A} :
+    Q° ≫ (∋ A)° ≫ est R ⊑ Q° ≫ R° :=
+  comp_mono_left Q° (recip_eps_comp_est_le R)
+
+/-- Step 5: the hypothesis `Q ⊑ R`, conversed. -/
+public theorem thinRel_comp_est_step5 {Q R : A ⟶ A} (hQR : Q ⊑ R) : Q° ≫ R° ⊑ R° ≫ R° :=
+  comp_mono_right (recip_mono hQR) R°
+
+/-- Step 6: `R` transitive, conversed. -/
+public theorem thinRel_comp_est_step6 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R° ⊑ R° := by
+  have h := recip_mono htrans
+  rwa [Allegory.recip_comp] at h
+
+/-- The other direction of step 6: the §7/§9 examples state their order's transitivity at `R°`
+    (`R_recip_trans`), the thin-introduction chain needs it at `R`. -/
+public theorem trans_of_recip_trans {R : A ⟶ A} (h : R° ≫ R° ⊑ R°) : R ≫ R ⊑ R := by
+  have h0 := recip_mono h
+  rwa [Allegory.recip_comp, Allegory.recip_recip] at h0
+
+/-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R` is transitive — thinning below a
+    coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
+public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (htrans : R ≫ R ⊑ R) :
+    thinRel Q ≫ est R ⊑ est R :=
+  le_est_iff.mpr
+    ⟨le_trans (thinRel_comp_est_step2 Q) (thinRel_comp_eps_le Q),
+     le_trans (thinRel_comp_est_step3 Q) (le_trans (thinRel_comp_est_step4 Q)
+       (le_trans (thinRel_comp_est_step5 hQR) (thinRel_comp_est_step6 htrans)))⟩
+
+/-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R`
+    is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
+    leaves it unchanged.  Oriented as the book and the note's row write it, `est R` first. -/
+public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q)
+    (htrans : R ≫ R ⊑ R) : est R = thinRel Q ≫ est R :=
+  le_antisymm (thinRel_comp_est_step1 hreflQ) (thinRel_comp_est_le hQR htrans)
 
 /-- **(8.2)**, thin-elimination: `min Q ≫ τ ⊑ thin Q` — a minimum, viewed as a singleton, is a
     thinning. -/
@@ -288,7 +318,7 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : A ⟶ A} :
         exact le_refl _
       exact le_trans s1 s2
 
-/-! ### The (8.3) chain (note §14.1c)
+/-! ### The (8.3) chain (note §14.1.1b)
 
   `S° S%∋ est(R)𝟙%∋ ⊑ ∈ est(R∩S°S)𝟙%∋ ⊑ Q° 𝟙%∋ ⊑ Q° ∈`, one theorem per step; the second half
   of `Λ_comp_est_comp_singletonMap_le_thinRel`'s universal property is their composition. -/
@@ -342,7 +372,7 @@ public theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : B ⟶ A} {Q R : A �
 
 variable {F : Relator 𝒜 𝒜}
 
-/-! ### The thinning chain (note §14.1d)
+/-! ### The thinning chain (note §14.1.1c)
 
   `S° F(Q° ∈)(F(∋)S)%∋ thin(Q) ⊑ Q° S° F(∈)(F(∋)S)%∋ thin(Q) ⊑ Q° ∈ thin(Q) ⊑ Q° Q° ∈ ⊑ Q° ∈`,
   one theorem per step; the prefixed-point premise of `thinning`'s second half is their
@@ -421,7 +451,7 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A �
     exact le_trans (thinning_step1 hFr hmono)
       (le_trans (thinning_step2 hFr) (le_trans thinning_step3 (thinning_step4 htrans)))
 
-/-! ### The Corollary 8.1 chain (note §14.1e)
+/-! ### The Corollary 8.1 chain (note §14.1.1d)
 
   `⦇(F(∋)S)%∋ thin(Q)⦈est(R) ⊑ 𝟙%∋ E(⦇S⦈)thin(Q)est(R) = 𝟙%∋ E(⦇S⦈)est(R)`, one theorem per step;
   `thinning_est` is their composition. -/
@@ -433,20 +463,20 @@ public theorem thinning_est_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F
       ⊑ (Λ (relCata S) ≫ thinRel Q) ≫ est R :=
   comp_mono_right (thinning hFr I htransQ hmono) (est R)
 
-/-- Step 2: thin-introduction `thin Q ≫ est R = est R` (`Q ⊑ R`, `Q` reflexive, `R°` transitive). -/
+/-- Step 2: thin-introduction `est R = thin Q ≫ est R` (`Q ⊑ R`, `Q` reflexive, `R` transitive). -/
 public theorem thinning_est_step2 (I : InitialAlgebra F) {Q R : A ⟶ A} {S : F.obj A ⟶ A}
-    (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htransR : R° ≫ R° ⊑ R°) :
+    (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htrans : R ≫ R ⊑ R) :
     (Λ (relCata S) ≫ thinRel Q) ≫ est R = Λ (relCata S) ≫ est R := by
-  rw [Cat.assoc, thinRel_comp_est hQR hreflQ htransR]
+  rw [Cat.assoc, ← thinRel_comp_est hQR hreflQ htrans]
 
 /-- **Corollary 8.1 (B&dM p.196)**: thinning at every step, then taking the `R°`-minimum, refines
     taking the `R°`-minimum of the plain catamorphism, mirrored
     `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ≫ min R° ⊑ Λ (relCata I S) ≫ min R°`, given `Q ⊑ R`,
-    `id ⊑ Q`, `Q` and `R°` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
+    `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : A ⟶ A}
     {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R° ≫ R° ⊑ R°) (hmono : MonotonicAlg S Q) :
+    (htransR : R ≫ R ⊑ R) (hmono : MonotonicAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   rw [← thinning_est_step2 I hQR hreflQ htransR]
   exact thinning_est_step1 hFr I htransQ hmono

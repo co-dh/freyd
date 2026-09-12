@@ -424,8 +424,12 @@ theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
   have hQrefl : Cat.id (⟨St⟩ : RelSet.{0}) ⊑ P.Qm° := by
     have h0 := recip_mono P.Qm_refl_le
     rwa [recip_id] at h0
+  -- `thinning_est` takes its order's transitivity unconversed, and here that order is `Rm°`.
+  have hRtrans : P.Rm° ≫ P.Rm° ⊑ P.Rm° := by
+    have h0 := recip_mono P.Rm_trans_le
+    rwa [Allegory.recip_comp] at h0
   have Hcore := thinning_est (R := P.Rm°) (F_preservesRecip L E) (initial L E)
-    (recip_mono P.Qm_le_Rm) hQrefl hQtrans P.Rm_trans_le P.gen_mono
+    (recip_mono P.Qm_le_Rm) hQrefl hQtrans hRtrans P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore
   have hminb : est P.Rm° (fun s => s ∈ P.foldFn xs) b :=

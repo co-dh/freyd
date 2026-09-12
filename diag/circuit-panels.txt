@@ -95,6 +95,15 @@ Freyd.Alg.RelSet.Van.van_laws_step3.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.RelSet.Van.van_laws_step2.rhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
 Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
+Freyd.Alg.thinRel_comp_est_step1.lhs | <thin-intro> | est(R)
+Freyd.Alg.thinRel_comp_est_step1.rhs | <thin-intro> | thin(Q) est(R)
+Freyd.Alg.thinRel_comp_est_step2.rhs | <thin-intro> | thin(Q)∋
+Freyd.Alg.thinRel_comp_eps_le.rhs | <thin-intro> | ∋
+Freyd.Alg.thinRel_comp_est_step3.lhs | <thin-intro> | ∈ thin(Q) est(R)
+Freyd.Alg.thinRel_comp_est_step3.rhs | <thin-intro> | Q° ∈ est(R)
+Freyd.Alg.thinRel_comp_est_step4.rhs | <thin-intro> | Q°R°
+Freyd.Alg.thinRel_comp_est_step5.rhs | <thin-intro> | R°R°
+Freyd.Alg.thinRel_comp_est_step6.rhs | <thin-intro> | R°
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
 - | <thin-cor> | (⦇S⦈)%∋ thin(Q) est(R)
 Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)

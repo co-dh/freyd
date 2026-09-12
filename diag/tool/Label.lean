@@ -364,6 +364,13 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
 
 end
 
+/-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, and `∋°` makes the
+    reader undo one level of indirection to get back to it.  Decided by the OPERAND's head constant,
+    so every spelling of `∋` goes the same way — and read in TWO places, the labeller's `°` clause
+    and the circuit exporter's, so the name a box carries and the box drawn cannot disagree. -/
+def namedRecip (r : Expr) : Option String :=
+  if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then some "∈" else none
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -465,7 +472,9 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- OPERAND's head constant, so every spelling of `∋` goes the same way.
   | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) => do
     match (← arrows args).back? with
-    | some r => if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then return "∈" else un 3 3 "" "°" args
+    | some r => match namedRecip r with
+      | some n => return n
+      | none => un 3 3 "" "°" args
     | none => plain e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un 3 3 "" "⊥" args
   -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.

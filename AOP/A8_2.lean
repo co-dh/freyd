@@ -137,7 +137,7 @@ public theorem thinning_paths (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     rw [hbif]
     exact thinAlg_elim V S hQ
   exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))
-    (thinning_est hFr I hQR hreflQ htransQ htransR hmono)
+    (thinning_est hFr I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono)
 
 /-! ## The note's `path-mono`: the two laws `thinning_paths` assumes, discharged
 

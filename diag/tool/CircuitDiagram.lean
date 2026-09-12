@@ -743,8 +743,12 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
     if p.val.kindOf != some "box" then
       throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame of \
         CIRCUIT-GEN §3 row 8 — `cpanel` has no node for it"
-    return boxPic (← StrDiag.label r) p.outs p.ins src tgt false
-      (frac := p.val.flag "frac") (flip := !(p.val.flag "flip"))
+    -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
+    -- is a primitive of `circuit-sigs.json`, so mirroring `∋` would chamfer it the wrong way.
+    let named := StrDiag.namedRecip r
+    let lbl ← match named with | some n => pure n | none => StrDiag.label r
+    let flip := if named.isSome then p.val.flag "flip" else !(p.val.flag "flip")
+    return boxPic lbl p.outs p.ins src tgt false (frac := p.val.flag "frac") (flip := flip)
 
 /-- §3 rows 1-2: an atom.  A relation's chamfer says which way it runs; a map is a rectangle.
 

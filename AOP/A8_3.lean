@@ -305,7 +305,7 @@ public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F
     show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
     exact union_mono hm₁ hm₂
-  exact thinning_est hFr I hQR hreflQ htransQ htransR hmonoS
+  exact thinning_est hFr I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmonoS
 
 /-- **THEOREM 8.2** (book p.203): a fold on SORTED LISTS of partial solutions, thinned at
     every step, refines the thinning specification —
