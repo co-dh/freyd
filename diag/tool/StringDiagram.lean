@@ -524,11 +524,15 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
   -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
   -- can disagree with it, and did.
-  -- An end no relator spells — `F Unit A`, the base functor with the element type baked in — leaves
-  -- no proposition to search for, and that is a SPIDER: the tool looked, there was nothing to look
-  -- at, and the bead makes no claim.  Naming it an error would fail the whole panel over one bead.
+  -- AN END NO RELATOR SPELLS IS NO FAMILY AT ALL, so it is not a spider either.  A spider says the
+  -- tool looked at a naturality statement and found no proof; where one end is `F Unit A`, or the
+  -- lane over it is a FUNCTOR and not a relator of the region (`E` under `UnguardedPowerLCDA`,
+  -- whose `powerRelator` needs tabularity), there is no statement to look at, and what the bead IS
+  -- is an arrow of the base category at this one object — the plain dot on the object wire every
+  -- other such bead gets (`Q°`, `est(R)`), and no `nat:` row, because nothing was claimed either
+  -- way.  Naming it an error would fail the whole panel over one bead.
   let some (G, F) ← (some <$> relatorsOf cat regionTy φ) <|> pure none
-    | return { mark := some .spider, lean := none }
+    | return { mark := none, lean := none }
   let must := consts core
   let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
   let lax ← Meta.mkAppM ``Freyd.Alg.LaxNatural #[F, G, φ]
@@ -634,8 +638,15 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let ar := Array.mk (List.range arms.size)
   let ov := Array.mk (List.range' arms.size over.size)
   let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
-  -- A unit is a FAMILY `𝟙 ⟹ W`: a fixed arrow `A ⟶ F A` (`S°`) is a bead with a leg, not a lane.
-  let unit := arms.isEmpty && legs.size == 1 && v?.isSome && (← Meta.isDefEq ox oy)
+  -- A unit is a FAMILY `𝟙 ⟹ W` THE ENVIRONMENT PROVES: a fixed arrow `A ⟶ F A` (`S°`) is a bead
+  -- with a leg, not a lane, and so is one whose family the environment neither proves nor can even
+  -- state — heading a lane with it claims the transformation IS the unit, which is the dot the
+  -- spider exists to withhold.  `∈ ≜ ∋°` is that bead: the same shape as the singleton `𝟙%∋`, and
+  -- only the verdict tells them apart.
+  let proved := match vd.bind (·.mark) with
+    | some .strict | some .lax | some .oplax => true
+    | some .spider | none => false
+  let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
     { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← plain oy),

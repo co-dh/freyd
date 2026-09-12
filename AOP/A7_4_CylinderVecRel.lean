@@ -130,6 +130,17 @@ public theorem tupleP_comp (S : A ⟶ B) (T : B ⟶ C) :
 public theorem tupleP_mono {S T : A ⟶ B} (h : S ⊑ T) : tupleP n S ⊑ tupleP n T :=
   le_iff.mpr fun _ _ hS i => le_iff.mp h _ _ (hS i)
 
+/-- **`Vec(n)` BUNDLED as a relator** — the note's lane `[n]`.  A lane IS a relator, so the three
+    laws above have to be ONE value before a panel can draw `[n]` as a wire: unbundled they are
+    three theorems, and an object `X[n]` then peels off no wire at all and is drawn as one lane
+    carrying the whole nest. -/
+@[expose] public def tupleRelator (n : Nat) : Relator RelSet.{0} RelSet.{0} where
+  obj := dTuple n
+  map := tupleP n
+  map_id _ := tupleP_id
+  map_comp := tupleP_comp
+  map_mono := tupleP_mono
+
 /-- `Vec(n)` of a function's graph is the graph of `Vec(n)`'s action on it. -/
 public theorem tupleP_graph (f : A.carrier → B.carrier) :
     tupleP n (RelSet.graph f) = (RelSet.graph ((Vec n).map f) : dTuple n A ⟶ dTuple n B) := by
