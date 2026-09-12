@@ -33,6 +33,26 @@
 /// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
 #let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
 
+// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
+// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
+// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
+// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
+// ABOVE the template: a `#let` is in scope only after it is bound, and the display's own show rule
+// spells its number with this.
+#let plain(c) = {
+  if type(c) == color { c.to-hex() } else if type(c) != content { c }
+  else if c == [ ] or c.func() == linebreak { " " }
+  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
+  else if c.has("text") { c.text }
+  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
+  else if c.has("children") { c.children.map(plain).join("") }
+  else if c.has("body") { plain(c.body) }
+  // `styled` is what a `src` side note in a step's caption is; a `ref` reads as its label.
+  else if c.has("child") { plain(c.child) }
+  else if c.func() == ref { repr(c.target) }
+  else { repr(c) }
+}
+
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let PAGEW = 25cm
 #let MARGIN = 1.5cm
@@ -86,6 +106,14 @@
       metadata((kind: "cd", el: "disp",
         label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
     }
+    // THE DISPLAY'S NAME AND ITS NUMBER, TOGETHER, for every display and not only a scan: a panel's
+    // `hm-meta` can address itself only by the NUMBER it stands under, and a number moves with every
+    // heading, so `diag/string-panels.txt` names a display by its LABEL and the gate reads the pair
+    // off here.  Same reason as the line above — a label belongs to the figure, and only a show rule
+    // holds the element it is attached to.
+    context metadata((kind: "disp",
+      id: plain(dispnum(counter(heading).get(), it.counter.at(here()).first())),
+      label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
     context {
       let n = text(9pt, luma(130), it.counter.display(it.numbering))
       place(top + right, dx: measure(n).width + NUMGAP, n)
@@ -101,23 +129,6 @@
 /// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
-// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
-// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
-// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
-// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
-#let plain(c) = {
-  if type(c) == color { c.to-hex() } else if type(c) != content { c }
-  else if c == [ ] or c.func() == linebreak { " " }
-  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
-  else if c.has("text") { c.text }
-  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
-  else if c.has("children") { c.children.map(plain).join("") }
-  else if c.has("body") { plain(c.body) }
-  // `styled` is what a `src` side note in a step's caption is; a `ref` reads as its label.
-  else if c.has("child") { plain(c.child) }
-  else if c.func() == ref { repr(c.target) }
-  else { repr(c) }
-}
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
