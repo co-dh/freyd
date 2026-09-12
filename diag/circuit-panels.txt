@@ -56,8 +56,8 @@ Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | (𝟙�
 - | <takewhile-mono> | ⊸ nil R° ∪ (p×𝟙) cons R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs | <takewhile-mono> | (⊸ nil ∪ (p×𝟙) cons)R°
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs | <takewhile-step> | S%∋ est(R°)
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs | <takewhile-step> | [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
-Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs | <takewhile-step> | [nil,(⊸ nil ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs | <takewhile-step> | [nil%∋ est(R°),(⊸ nil ∪ (p×𝟙)cons)%∋ est(R°)]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs | <takewhile-step> | [nil,(⊸ nil ∪ (p×𝟙)cons)%∋ est(R°)]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs | <takewhile-step> | [nil,(π₁p→cons,⊸ nil)]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata.lhs | <takewhile-laws> | (prefix list(p))%∋ est(R°)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs | <takewhile-laws> | ⦇S%∋ est(R°)⦈
@@ -80,8 +80,8 @@ Freyd.Alg.RelSet.Filter.filter_mono.lhs.inr | <filter-mono> | (𝟙×R°)(π₂ 
 - | <filter-mono> | π₂R° ∪ (p×𝟙) cons R°
 - | <filter-mono> | (π₂ ∪ (p×𝟙) cons)R°
 Freyd.Alg.RelSet.Filter.filter_step1.lhs | <filter-step> | S%∋ est(R°)
-Freyd.Alg.RelSet.Filter.filter_step1.rhs | <filter-step> | [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]
-Freyd.Alg.RelSet.Filter.filter_step2.rhs | <filter-step> | [nil,(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]
+Freyd.Alg.RelSet.Filter.filter_step1.rhs | <filter-step> | [nil%∋ est(R°),(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]
+Freyd.Alg.RelSet.Filter.filter_step2.rhs | <filter-step> | [nil,(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]
 Freyd.Alg.RelSet.Filter.filter_step3.rhs | <filter-step> | [nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)]
 Freyd.Alg.RelSet.Filter.filter_step4.rhs | <filter-step> | [nil,(π₁p→cons,π₂)]
 Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
