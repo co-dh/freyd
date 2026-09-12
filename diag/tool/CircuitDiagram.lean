@@ -291,7 +291,40 @@ def boxPic (label : String) (ins outs : Array Obj) (src tgt : Obj) (isMap : Bool
   mkPic "box" ins outs src tgt isMap
     #[("label", .s label), ("chamfer", .b (!isMap)), ("frac", .b frac), ("flip", .b flip)]
 
-def seqPic (items : Array Pic) (seams : Array (Nat × Array String)) (objs : Array Obj) : Pic :=
+/-- The node kind a picture is, for the clauses that ask (a `°` flips a BOX and frames anything
+    else; a run splices into the run above it). -/
+def Val.kindOf : Val → Option String
+  | .dict kvs => kvs.findSome? fun (k, v) =>
+      if k == "k" then (match v with | Val.s t => some t | _ => none) else none
+  | _ => none
+
+/-- The same node with one field replaced — how a `def` opened for its WIRING keeps its own name,
+    and how a box standing before a tape ends on one wire. -/
+def Val.set (v : Val) (key : String) (x : Val) : Val :=
+  match v with
+  | .dict kvs => .dict (kvs.map fun (k, y) => if k == key then (k, x) else (k, y))
+  | v => v
+
+def Val.flag (v : Val) (name : String) : Bool :=
+  match v with
+  | .dict kvs => kvs.any fun (k, x) => k == name && (match x with | Val.b y => y | _ => false)
+  | _ => false
+
+/-- A BOX HANDS A COPRODUCT OVER WHOLE.  A port's strands are a summand's factors, and the fork is
+    what opens them — so a box standing before a tape ends on the ONE wire the tape's port is, and
+    only the fusion `F(R)[f,g] = [f,(𝟙×R)g]` puts a box on the summand's strands (`drawItems` draws
+    that as the one fused tape).  Keyed on the two node SHAPES, so it holds for every box at every
+    polynomial object, not for the `est` that found it. -/
+def handOver (items : Array Pic) : Array Pic := Id.run do
+  let mut out := items
+  for i in [0 : items.size] do
+    if i + 1 < items.size && out[i]!.val.kindOf == some "box" && out[i]!.outs.size != 1
+        && items[i + 1]!.val.kindOf == some "case" && items[i + 1]!.ins.size == 1 then
+      out := out.set! i { out[i]! with val := out[i]!.val.set "nout" (.n 1), outs := #[out[i]!.tgt] }
+  return out
+
+def seqPic (items₀ : Array Pic) (seams : Array (Nat × Array String)) (objs : Array Obj) : Pic :=
+  let items := handOver items₀
   -- An EMPTY run is the IDENTITY, whose ports are its object's wires, not none: the `𝟙` lane of a
   -- `𝟙×∋` stack draws no box but still carries its strand, and reading the ports off the items
   -- would leave the panel one strand short of the arrow it draws.
@@ -304,38 +337,29 @@ def seqPic (items : Array Pic) (seams : Array (Nat × Array String)) (objs : Arr
     ins, outs, src := objs[0]!, tgt := objs[objs.size - 1]!,
     isMap := items.all (·.isMap) }
 
-/-- Which interior objects a run prints, one label per strand: an interior seam exactly when its
-    object differs from both printed neighbours (CIRCUIT-GEN §3).  ONE LABEL PER STRAND, so a
-    product seams too — the two power objects a `⟨,⟩` fork leaves for `cup` are named where they
-    are made, and a seam written as the product's own label would say `E[A]×E[A]` on two wires
-    that carry `E[A]` each. -/
+/-- Which interior objects a run prints: an interior seam exactly when its object is ONE wire and
+    differs from both printed neighbours (CIRCUIT-GEN §3), written with the OBJECT's own name.  A
+    port of several strands is named where the strands are MADE — after the fork that makes them
+    (`runSeams`), or after the generator an arm opens its summand with (`tapePic`) — never here,
+    where a coproduct's factors would be named on a wire the fork has not yet opened. -/
 def seamsOf (objs : Array Obj) : Array (Nat × Array String) := Id.run do
   let mut out := #[]
   let mut prev := objs[0]!
   for i in [0 : objs.size - 2] do
     let o := objs[i + 1]!
-    let ws := match o.wires with | .ok ws => ws.map (·.label) | .error _ => #[]
-    if ws.size > 0 && !o.same prev && !o.same objs[i + 2]! then
-      out := out.push (i, ws); prev := o
+    let ws := match o.wires with | .ok ws => ws | .error _ => #[]
+    if ws.size == 1 && !o.same prev && !o.same objs[i + 2]! then
+      out := out.push (i, #[o.label]); prev := o
   return out
 
-/-- The node kind a picture is, for the clauses that ask (a `°` flips a BOX and frames anything
-    else; a run splices into the run above it). -/
-def Val.kindOf : Val → Option String
-  | .dict kvs => kvs.findSome? fun (k, v) =>
-      if k == "k" then (match v with | Val.s t => some t | _ => none) else none
-  | _ => none
-
-/-- The same node under a different label — how a `def` opened for its WIRING keeps its own name. -/
-def Val.relabel (v : Val) (s : String) : Val :=
-  match v with
-  | .dict kvs => .dict (kvs.map fun (k, x) => if k == "label" then (k, .s s) else (k, x))
-  | v => v
-
-def Val.flag (v : Val) (name : String) : Bool :=
-  match v with
-  | .dict kvs => kvs.any fun (k, x) => k == name && (match x with | Val.b y => y | _ => false)
-  | _ => false
+/-- A run's seams: its interior objects, and the pair a `⟨,⟩` fork leaves printed WHOLE — a pair's
+    strands are typed nowhere else, its lanes ENDING at them. -/
+def runSeams (items : Array Pic) (objs : Array Obj) : Array (Nat × Array String) := Id.run do
+  let mut out := seamsOf objs
+  for i in [0 : items.size] do
+    if i + 1 < items.size && items[i]!.val.kindOf == some "fork" then
+      out := out.push (i, items[i]!.outs.map (·.label))
+  return out.qsort (fun a b => a.1 < b.1)
 
 /-- The factors of a composite, flattened: `≫` is associative and the picture of a run does not
     record which way it was bracketed. -/
@@ -530,7 +554,7 @@ partial def drawRun (e : Expr) : MetaM Pic := do
   -- A run of ONE factor IS that factor: a `seq` around it would add a port stub at each end and
   -- draw a picture wider than the arrow it draws.  Only a seamless singleton — a seam is a label
   -- the run itself carries, and a bare item has nowhere to keep it.
-  let seams := seamsOf objs
+  let seams := runSeams items objs
   if h : items.size == 1 && seams.isEmpty then
     return items[0]'(by simp at h; omega)
   return seqPic items seams objs
@@ -655,7 +679,7 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
         -- body that draws as ONE box is that one arrow, and the note writes it by the name the
         -- definition gave it (`plus`, `glue`), not by the lambda the body happens to be.
         if p.val.kindOf == some "box" then
-          return { p with val := p.val.relabel (← StrDiag.label e) }
+          return { p with val := p.val.set "label" (.s (← StrDiag.label e)) }
         return p
   return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
 
@@ -692,7 +716,7 @@ partial def tapePic (src tgt : Obj) (arm : Nat → Obj → MetaM (Array Pic × A
     let (items, objs) ← arm i s
     let ws ← wiresOf s
     let seams := (if ws.isEmpty then #[] else #[(0, ws.map (·.label))])
-      ++ (seamsOf objs).filter (·.1 != 0)
+      ++ (runSeams items objs).filter (·.1 != 0)
     let body := seqPic items seams objs
     bodies := bodies.push body
     isMap := isMap && body.isMap
@@ -747,7 +771,7 @@ partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
     let more ← drawItems fs[k]!
     items := items ++ more
     for it in more do objs := objs.push it.tgt
-  return seqPic items (seamsOf objs) objs
+  return seqPic items (runSeams items objs) objs
 
 /-- The `𝟙×R` the tape fusion puts on a branch: `R` on the strands the functor recurses on — the
     summand's factors that ARE `R`'s source — and bare wire on the rest. -/
