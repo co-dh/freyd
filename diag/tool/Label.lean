@@ -178,6 +178,30 @@ def sumArms (fw : Expr) : MetaM (Option (Array Expr)) := do
     return some #[← armFun ma.alts[0]! a ma.altNumParams[0]!,
       ← armFun ma.alts[1]! b ma.altNumParams[1]!]
 
+/-- Whether a map BRANCHES ON ITS INPUT: a lambda whose body is a matcher applied to a discriminant
+    the input occurs in.  The two shapes the note writes out are both this — a coproduct match is
+    the junction `[nil,snag]`, a boolean one the guard `(ok→glue,new)` — so one test finds both, and
+    a match on anything else is found by the same test the day it is drawn. -/
+def branchesOnInput (f : Expr) : MetaM Bool := do
+  unless f.isLambda do return false
+  Meta.lambdaBoundedTelescope f 1 fun xs body => do
+    let some x := xs[0]? | return false
+    let some ma ← Meta.matchMatcherApp? body | return false
+    return ma.discrs.any (·.containsFVar x.fvarId!)
+
+/-- A MAP GIVEN BY A `match` ON ITS INPUT IS WRITTEN BY WHAT IT DOES, so a NAME standing for one is
+    opened until the match is in view; `none` where no delta reaches a match, and the name then
+    stands (`mapLabel`'s no-delta rule — that body is the implementation).  `CircuitDiagram` already
+    draws the arms of such a map as a two-arm tape, so a name kept here made ONE arrow read as
+    `[nil,snag]` in the picture and `bagAlgFn` in the box beside it.  A RECURSIVE map is not one:
+    its body is its recursor, not a matcher, so `flatten` keeps its name. -/
+partial def branchForm? (f : Expr) : MetaM (Option Expr) := do
+  if ← branchesOnInput f then return some f
+  if f.isLambda then return none
+  match ← Meta.unfoldDefinition? f with
+  | some v => branchForm? (← Meta.whnfCore v)
+  | none => return none
+
 /-- THE PROJECTION PATH a value is of the input, `none` where it is not one of its factors: `[]` is
     the input itself, `[0]` its first factor.  Read off the term, so `p.1`, `Prod.fst p` and the
     projection the elaborator compiled a pattern to all answer the same. -/
@@ -361,6 +385,7 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   -- `fun p => cat p.1 p.2` at a use site needs; a name the note draws OPENED says so with
   -- `@[diag_unfold]`, which `labelAt` has already applied wherever it is spelled.
   let f ← Meta.whnfCore f
+  let f := (← branchForm? f).getD f
   if f.isLambda then
     return ← Meta.lambdaBoundedTelescope f 1 fun xs body => do
       let some x := xs[0]? | plain f
