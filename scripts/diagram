@@ -750,10 +750,18 @@ class Lane:
 
 
 class Row:
-    def __init__(self, label, arms, legs, reach, obj, nat=False):
-        self.label, self.arms, self.legs, self.reach = label, arms, legs, reach
+    def __init__(self, label, arms, legs, obj, nat=False):
+        self.label, self.arms, self.legs = label, arms, legs
         self.nat = nat                     # a natural transformation: its dot may not touch the wire
         self.obj = obj                     # what the object wire carries BELOW this row
+
+    @property
+    def reach(self):
+        """THE BAR SPANS THE ARMS: how far left the bead reaches is its arms' leftmost column, and a
+        bead with NO arms reaches nothing — a bar taken from its legs would be drawn on the very
+        wires it creates.  Twin of `reach` in `diag/tool/StringDiagram.lean`; read after `columns`,
+        which is what gives a lane its `x`."""
+        return min((l.x for l in self.arms), default=None)
 
 
 def alphabet(table, *objs):
@@ -880,8 +888,6 @@ def elaborate(formula, src, tgt, table, ds=()):
         for w, e in opened:                # a wire opened HERE was born further up, where the object
             made.append(Lane(w))           # first carried it; it is drawn down to the bead eating it
             pending.append((made[-1], e, i)); arms.append(made[-1])
-        if reach is None and opened:       # a bead with no lane of its own still reaches the wires
-            reach = arms[k]                # it opened — a bead is a point, and every reach is an arm
         ws, keep, obj = grow(t, sub, why, ix)
         # A wire the source only bound to a tail VARIABLE, which the target then does not carry, is
         # eaten here too: `⦇−⦈ : L(xs)⟶E(L(A))` swallows the `E` inside its `L`.  Left out of `arms`
@@ -896,7 +902,7 @@ def elaborate(formula, src, tgt, table, ds=()):
         made[at:at] = legs
         lanes = lanes[:len(wrap)] + legs + keep
         lab = spell(tidy(core))
-        rows.append(Row(lab, arms, legs, reach, obj,
+        rows.append(Row(lab, arms, legs, obj,
                         verdict(lab, core, sigs, natural(core, sigs))))
     k, opened, obj = eat(want, lanes, obj, sub, f"the target {tgt}", ix)
     if k != len(lanes):
@@ -1121,6 +1127,24 @@ def named(rec):
                     for j in range(len(ls)))]
 
 
+def held_lanes(rows, made, n):
+    """WHICH LANES THE DRAWING ALREADY HOLDS — the twin of `heldLanes` in
+    `diag/tool/StringDiagram.lean`, and it must stay its twin, because a panel the note rebuilds from
+    its `cert:` is held to the one Lean draws.  A lane reaching an edge is held by the panel's own
+    ports; a lane touching a bead that RIDES the object wire (`nat` false, its dot drawn at `xat(y)`)
+    is held by that wire; and a bead passes its hold to every lane it eats and every lane it makes.
+    A bead whose legs nobody holds would float with its legs joined to nothing — the same bead riding
+    the object wire is the SAME diagram (isotopy, IntroString (1.16)) drawn whole, so that is the one
+    both generators write."""
+    h = {l for l in made if l.born == TOP or l.dies is None or l.dies >= n}
+    for _ in range(len(made) + 1):
+        for r in rows:
+            ws = r.arms + r.legs
+            if ws and (not r.nat or any(w in h for w in ws)):
+                h.update(ws)
+    return h
+
+
 def place(rows, made, otop, obot, dfn, cert):
     """ONE panel of the many the book calls equal (pp. 21–22): a lane per wire in birth order, a
     height per factor.  Nothing here is functorial — gluing two terms renumbers every lane."""
@@ -1146,7 +1170,7 @@ def place(rows, made, otop, obot, dfn, cert):
     ys = [(cert.get("top", n) - i) * DY for i in range(n)]
     columns(rows, made)
     xo = round(max(l.x for l in made) + DX, 2) if made else X0
-    beads, unit = [], {}
+    beads, unit, held = [], {}, held_lanes(rows, made, n)
     for i, r in enumerate(rows):
         # `𝟙%∋` is the unit `Id⟹E`, a 2-cell between FUNCTORS with no object wire to sit on, so
         # `dpanel` heads the lane it opens with it; `S° : B⟶F(B)` is a relation and stays a bead.
@@ -1158,16 +1182,25 @@ def place(rows, made, otop, obot, dfn, cert):
             continue
         # how far left the bead reaches: every lane from there to the dot bends onto it, arms and
         # crossed wires alike, because a bead is a POINT and there is no such thing as a straight bar
-        reach = r.reach.x if r.reach is not None else None
+        reach = r.reach
         # Where the DOT sits.  A bead that leaves the object wire's label alone names no object, so
         # it is a transformation between FUNCTORS and may not sit on that wire (IntroString p. 36);
         # it goes at the centre of the arms it eats, which is what makes a merge's two arms
         # symmetric and drops its survivor vertically from their midpoint (p. 74).
-        xs = [l.x for l in (r.arms or r.legs)]
+        # A bead with NO arms floats among its LEGS only where the drawing already holds them; a leg
+        # born at a floating dot and dying inside the panel is ink joined to nothing, so that bead
+        # goes back on the object wire (`held_lanes`).
+        xs = [l.x for l in (r.arms or (r.legs if any(g in held for g in r.legs) else []))]
         dot = round((min(xs) + max(xs)) / 2, 4) if xs and r.nat else None
-        beads.append([ys[i], r.label, "#000000", reach, dot] + marked(r.nat)
-                     if dot is not None
-                     else [ys[i], r.label] if reach is None else [ys[i], r.label, "#000000", reach])
+        # A BEAD'S MARK IS WRITTEN WHATEVER ELSE IT CARRIES.  Emitting it only beside a dot dropped
+        # the `spider` off every bead that rides the object wire, and `dpanel` then drew the default
+        # filled dot — the one defect the gate's own bead-by-bead mark check exists to catch.  The
+        # tuple is the full one, trimmed of what is nothing but padding at its end, which is how
+        # `panelCode` in `diag/tool/StringDiagram.lean` writes it.
+        row = [ys[i], r.label, "#000000", reach, dot] + marked(r.nat)
+        while len(row) > 2 and (row[-1] is None or row[-1] == "#000000"):
+            row.pop()
+        beads.append(row)
 
     def xat(y, dying=True):
         """The sloped object wire's x at a height: one gap right of every lane alive there or NOT
@@ -1316,7 +1349,7 @@ def booklayout(rows, made, otop, obot, dfn, cert, wr, hr, obreak):
                       "bot" if l.dies == n else by[l.dies],
                       None if l.born == TOP or l.dies == n else l.label, None] for l in made],
            "beads": [[by[i], r.label, "#000000",
-                      r.reach.x if r.reach is not None else None, bx[i]]
+                      r.reach, bx[i]]
                      for i, r in enumerate(rows)],
            "obj": [[by[i], r.obj] for i, r in enumerate(rows) if r.obj is not None],
            # `dpanel` reads an object port by its x being `xo` and then DRAWS it where the edge is,
@@ -1428,7 +1461,11 @@ def beadcode(b, tint):
     return ("(" + num(b[0]) + ", " + labelcode(b[1])
             + (", " + col + ", " + (num(b[3]) if b[3] is not None else "none") if len(b) > 3
                else ", " + col if col != "black" else "")
-            + (", " + num(b[4]) if len(b) > 4 and b[4] is not None else "")
+            # A SLOT IS WRITTEN WHENEVER A LATER ONE IS: the dot's `none` cannot be left out of a
+            # bead that carries a mark, or the mark slides into the dot's place and `dpanel` reads
+            # the verdict word as a coordinate.
+            + (", " + (num(b[4]) if b[4] is not None else "none")
+               if len(b) > 4 and (b[4] is not None or len(b) > 5) else "")
             + (f', "{b[5]}"' if len(b) > 5 else "") + ")")
 
 
