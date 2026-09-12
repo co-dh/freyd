@@ -236,6 +236,17 @@ def homObjs? (t : Expr) : Option (Expr × Expr) :=
   | (``Cat.Hom, #[_, _, a, b]) => some (a, b)
   | _ => none
 
+/-- Whether a type is the OBJECTS of a category — it carries a `Cat` instance.  The class decides,
+    not a list of carriers: `Allegory` extends `Cat`, so every category the book builds answers yes
+    without a clause, and a hom, a relator or a datum answers no.
+
+    The HOM universe is the instance's to choose — `Cat.{w} 𝒞` fixes the homs' universe, which the
+    objects' type does not name — so the class is built with fresh levels and synthesis assigns
+    them; `mkAppM` refuses the same expression for having them unassigned. -/
+def isObjType (ty : Expr) : MetaM Bool := do
+  let cls ← Meta.mkConstWithFreshMVarLevels ``Cat
+  return (← Meta.synthInstance? (mkApp cls ty)).isSome
+
 /-- Whether the term is ONE COMPONENT of a family of arrows the statement BINDS: an application
     whose head is a free variable and whose own type is a hom, `φ A` for `φ : ∀ A, G A ⟶ F A`.  The
     test is the TYPE and not a name: a bound family has no constant to list, and the whole point of
@@ -244,14 +255,17 @@ def homObjs? (t : Expr) : Option (Expr × Expr) :=
     AN INDEX IS AN OBJECT, and that is what makes the note set the component tight: `φA` is `φ` at
     the wire under it, one name.  Every OTHER argument makes the term an operator APPLIED, which
     takes parentheses like every other application (`thin(Q)`, `est(R)`, `sort(P)`, `listcp(F)`) —
-    so the test is on the arguments' TYPES against the object type the hom already names, and an
-    arrow index or a relator index goes the other way without a clause of its own. -/
+    so the test is on the arguments' TYPES: an object of SOME category, which is `isObjType`, and an
+    arrow index or a relator index goes the other way without a clause of its own.
+
+    WHOSE category is not the hom's business.  A family between two relators `F G : Relator 𝒜 ℬ` is
+    indexed by `𝒜` and valued in `ℬ`, so measuring the index against the object type the hom names
+    calls `φ A` an application wherever the two categories differ — which is every lax-naturality
+    square the note draws. -/
 def isComponent (e : Expr) : MetaM Bool := do
   unless e.isApp && e.getAppFn.isFVar do return false
-  let some (x, _) := homObjs? (← Meta.inferType e) | return false
-  let obj ← Meta.inferType x
-  e.getAppArgs.allM fun a => Meta.withNewMCtxDepth do
-    Meta.isDefEq (← Meta.inferType a) obj
+  unless (homObjs? (← Meta.inferType e)).isSome do return false
+  e.getAppArgs.allM fun a => do isObjType (← Meta.inferType a)
 
 /-- The last two arguments of an application. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
