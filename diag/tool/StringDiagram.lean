@@ -492,6 +492,25 @@ def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
     -- the same thing, which is what let the two disagree.
     try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false
 
+/-- THE FAMILY A BEAD IS, WHERE THE STATEMENT BINDS NO OBJECT TO ABSTRACT.  A bead stands at the
+    object its own WIRE carries, and that object is a family's index whether or not the statement
+    happens to quantify over it: `𝟙%∋` at an initial algebra's carrier `T` is the very singleton
+    `singleton_laxNatural` is about, and reading the index off the binders alone left it a bead
+    nothing was claimed about — the same reading `beadLabel` already takes off the bead's own ends.
+    So the object is `kabstract`ed out of the term, and TYPE-CORRECTNESS is the filter, exactly as
+    it is for a binder: abstracting the object out of `est(R)` strands `R : x⟶x` at the old one and
+    the lambda does not type-check, so an arrow AT one object stays an arrow at one object. -/
+def familyAt? (regionTy core : Expr) (os : Array Expr) : MetaM (Option Expr) := do
+  for o in os do
+    unless ← (try Meta.isDefEq (← Meta.inferType o) regionTy catch _ => pure false) do continue
+    let body ← Meta.kabstract core o
+    unless body.hasLooseBVars do continue
+    let φ? ← Meta.withLocalDeclD `a regionTy fun a => do
+      let φ ← instantiateMVars (← Meta.mkLambdaFVars #[a] (body.instantiate1 a))
+      if ← (try Meta.isTypeCorrect φ catch _ => pure false) then return some φ else return none
+    if φ?.isSome then return φ?
+  return none
+
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
     `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
     three `𝟙 X × cons°` needs, and the deepest bead the note draws.  Bounded because the search is
@@ -533,13 +552,25 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- way.  Naming it an error would fail the whole panel over one bead.
   -- WHICH ALGEBRA THE STATEMENT IS IN IS THE REGION'S, not the bead's: §1.241's function category
   -- is a `Cat` and no allegory, so its lanes are functors and its naturality is the plain square.
-  let alg ← laneAlgOf regionTy
-  let some (G, F) ← (some <$> relatorsOf alg cat regionTy φ) <|> pure none
+  -- THE LANES DECIDE WHICH NATURALITY THERE IS TO STATE, and a region can carry both kinds.  An
+  -- allegory's lanes are RELATORS and a family between them is graded by `⊑`; but `E`, the
+  -- existential image, is a FUNCTOR there and no relator (its `powerRelator` needs tabularity), so
+  -- a family under it states the plain SQUARE — read the ends a second time in the functor algebra
+  -- rather than calling a bead nothing can be said about.  Same reader both times.
+  let alg0 ← laneAlgOf regionTy
+  let read : LaneAlg → MetaM (Option (LaneAlg × Expr × Expr)) := fun a =>
+    (some <$> (do let (G, F) ← relatorsOf a cat regionTy φ; return (a, G, F))) <|> pure none
+  let some (alg, G, F) ← (do match ← read alg0 with
+      | some r => pure (some r)
+      | none => if alg0 == .relator then read .functor else pure none)
     | return { mark := none, lean := none }
-  let must := consts core
+  -- THE FILTER IS THE FAMILY'S CONSTANTS, NOT THE TERM'S AT ITS OBJECT.  A bead taken at an initial
+  -- algebra's carrier carries `InitialAlgebra.t` into `core`, and no naturality theorem mentions a
+  -- projection of the region's own structure, so filtering on it dropped every candidate there is.
   -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
   -- and not from `verdict`.
   let br ← bridges
+  let must ← mustOfFamily br φ
   -- A CATEGORY HAS ONE NATURALITY STATEMENT, THE SQUARE, and no `⊑` to grade it by: there is no
   -- lax, no oplax and no refutation to look for, so a family between functor lanes is the solid
   -- dot its square proves or the spider below — never the object-wire bead a failed RELATOR
@@ -548,6 +579,13 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
     | .functor => id do
       if let some (n, _) ← findTelescoped br (← funSquare regionTy F G φ) must FUEL then
         return some { mark := some .strict, lean := n }
+      -- THE SQUARE OVER THE MAPS, where the region HAS maps to restrict to.  `𝟙%∋ : 𝟙 ⟹ E` is
+      -- natural there and at no relation (`singletonMap_natural`, whose `Map f` this square binds
+      -- and `discharge` reads back), and so is every other family of maps between functor lanes of
+      -- an allegory; asking only the unrestricted square left all of them with no claim at all.
+      if alg0 == .relator then
+        if let some (n, _) ← findTelescoped br (← funSquare regionTy F G φ true) must FUEL then
+          return some { mark := some .strict, lean := n }
       return none
     | .relator => id do
       let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
@@ -643,7 +681,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let v? ← familyVar core objVars
   let φ ← match v? with
     | some v => some <$> familyOf regionTy v core
-    | none => pure none
+    | none => familyAt? regionTy core #[oy, ox]
   let vd ← match φ with
     | none => pure none
     | some φ => some <$> verdict regionTy cat core φ
