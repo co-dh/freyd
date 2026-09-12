@@ -46,16 +46,44 @@ def repoNamespaces (env : Environment) : List Name :=
     A RECORD is a type with ONE constructor.  Without that test the leaf `wrap ()` of a cons-list —
     a one-field constructor of a type that has another — prints as `()`, and the note's `nil`
     disappears from the label of an algebra that is about nothing else. -/
+def unwrapRecord? (x : Expr) : MetaM (Option Expr) := do
+  let .const n _ := x.getAppFn | return none
+  let some (.ctorInfo ci) := (← getEnv).find? n | return none
+  if ci.numFields != 1 then return none
+  let some (.inductInfo ii) := (← getEnv).find? ci.induct | return none
+  if ii.ctors.length != 1 then return none
+  let args := x.getAppArgs
+  if args.size != ci.numParams + 1 then return none
+  return some args[args.size - 1]!
+
+/-- The INVERSE peel: the one FIELD of a one-field record IS that record.  `⟨X⟩.carrier` is the
+    object `X`, so a product of carriers is the product of the objects the picture draws
+    (`A×E[A]`, never `A×E([A])`), and a projection Lean wrote only because `×` is a type former
+    says nothing a reader can use.  Both spellings of a projection — the `proj` node and the
+    projection FUNCTION — because either can reach a label. -/
+def unprojRecord? (e : Expr) : MetaM (Option Expr) := do
+  let oneField (ctor : Name) : MetaM Bool := do
+    let some (.ctorInfo ci) := (← getEnv).find? ctor | return false
+    if ci.numFields != 1 then return false
+    let some (.inductInfo ii) := (← getEnv).find? ci.induct | return false
+    return ii.ctors.length == 1
+  match e with
+  | .proj s _ x =>
+    let some (.inductInfo ii) := (← getEnv).find? s | return none
+    let some c := ii.ctors.head? | return none
+    return if (← oneField c) then some x else none
+  | _ =>
+    let .const n _ := e.getAppFn | return none
+    let some pi := (← getEnv).getProjectionFnInfo? n | return none
+    unless ← oneField pi.ctorName do return none
+    let args := e.getAppArgs
+    return if h : args.size > pi.numParams then some args[pi.numParams] else none
+
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
-    let .const n _ := x.getAppFn | return .continue
-    let some (.ctorInfo ci) := (← getEnv).find? n | return .continue
-    if ci.numFields != 1 then return .continue
-    let some (.inductInfo ii) := (← getEnv).find? ci.induct | return .continue
-    if ii.ctors.length != 1 then return .continue
-    let args := x.getAppArgs
-    if args.size != ci.numParams + 1 then return .continue
-    return .done args[args.size - 1]!)
+    match ← unwrapRecord? x with
+    | some y => return .done y
+    | none => return .continue)
 
 /-- Lean's pretty printer on one line, the repo's own namespaces off: inside a picture of the
     repo's algebra `Freyd.Alg.relCata R` is noise and `⦇R⦈` is the thing itself. -/

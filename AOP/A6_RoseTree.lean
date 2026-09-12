@@ -55,6 +55,12 @@ public inductive Rose (A : Type) where
   map_mono {C c'} {R S} h :=
     le_iff.mpr fun p q hpq => ⟨hpq.1, listP_mono (le_iff.mp h) _ _ hpq.2⟩
 
+/-- THE NOTE SPELLS THIS RELATOR'S ACTION OUT — `F((R×R)°) = 𝟙×list((R×R)°)` (§13.4.3a) — where it
+    keeps the letter `F` on the objects, so a picture of a statement naming `F` is rewritten along
+    this equation before an arrow of it is labelled.  `rfl`: it IS `Fmap`'s definition. -/
+public theorem F_map_eq (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
+    (F A).map R = rprodMap (𝟙 (dE A)) (list (A := C.carrier) (B := c'.carrier) R) := rfl
+
 /-- `F` preserves converse: `F(R°) = F(R)°` — componentwise, `𝟙° = 𝟙` and `list(R°) = list(R)°`. -/
 public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
   intro C c' R

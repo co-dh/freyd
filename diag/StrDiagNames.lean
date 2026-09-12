@@ -372,6 +372,9 @@ attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
 -- The RULE is the generator's — rewrite at a composite — and each polynomial functor states the
 -- equation for its OWN shape, because the shape is what says which slots the `X` lands in.
 attribute [diag_rewrite] RelSet.TT.Fmap_comp_con
+-- The rose tree's `F` keeps its LETTER on the objects (`F([A]×[A])`) and is SPELLED OUT on the
+-- arrows (`𝟙×list((R×R)°)`, §13.4.3a): one equation says which, and the object side never sees it.
+attribute [diag_rewrite] RelSet.RT.F_map_eq
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 
