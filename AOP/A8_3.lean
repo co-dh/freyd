@@ -13,10 +13,11 @@
   - `sort P = ordered P·setify°` is `sortRel setify ordered = setify° ≫ ordered`.
   - `thin Q` is `AOP.A8_1`'s `thinRel Q` (the `°` folded into the argument) and `min R°` is
     `AOP.A7_1`'s `est R`; `E`/`P` are `existsImage`/`powerRel`; `cp(F)` is `AOP.A5_6`'s
-    `cpMap F` and `cup` `AOP.A5_6`'s `cup`; `⟨g₁,g₂⟩` is `RelProd.pair g₁ g₂` and
+    `cpMap F A` (the relator AND the object) and `cup` `AOP.A5_6`'s `cup`; `⟨g₁,g₂⟩` is `RelProd.pair g₁ g₂` and
     `sort P×sort P` is `prodMap _ _ sortP sortP` (`AOP.A5_2`).
-  - The list object `[A]` is an ABSTRACT object `l`, and every list combinator (`ordered P`,
-    `subseq`, `thinlist Q`, `filter p`, `list f`, `listcp(F)`, `merge P`, `minlist R`) an
+  - The list object `[A]` is an ABSTRACT object `L`, and `[FA]` a second one, `LF`; every list
+    combinator (`ordered P`, `subseq`, `thinlist Q`, `filter p`, `list f`, `listcp`,
+    `merge P`, `minlist R`) is an
     abstract arrow constrained only through the laws it is used by — the book's own level of
     generality.  `AOP.A5_6_ListCombinators` is the `Rel`-instance of the same vocabulary.
 
@@ -45,8 +46,8 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A L : 𝒜}
 /-! ## `sort P` and (8.6) -/
 
 /-- `sort P ≜ ordered P·setify°` (book p.199), mirrored `setify° ≫ ordered P`: read the set
-    back as one of its `P`-ordered listings.  `l` is the list object `[A]` and
-    `setify : [A] ⟶ EA` the map that forgets the order. -/
+    back as one of its `P`-ordered listings.  `L` is the list object `[A]` and
+    `setify : L ⟶ EA` the map that forgets the order. -/
 @[expose] public def sortRel (setify : L ⟶ PowerAllegory.powerObj A) (ordered : L ⟶ L) :
     PowerAllegory.powerObj A ⟶ L := setify° ≫ ordered
 
