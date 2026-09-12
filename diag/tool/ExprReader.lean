@@ -14,6 +14,9 @@
 -/
 import Lean
 import AOP.A5_7
+-- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
+-- relator is one, and its partial application is what `openBuiltField?` opens.
+import AOP.A5_5_TypeFunctor
 
 open Lean
 
@@ -122,6 +125,15 @@ partial def stxHead : Syntax → Option Name
   | .node _ _ args => args[0]?.bind stxHead
   | _ => none
 
+/-- Whether a bundle is a LANE THE PICTURE NAMES — a functor between the categories it draws.  The
+    rule below is about lanes and nothing else: a CLASS INSTANCE is a bundle assembled from bundles
+    too, and its fields are drawn by the notation each carries of its own (`∋`, `EA`), never by
+    opening the instance it was assembled from. -/
+def isLaneBundle (s : Expr) : MetaM Bool := do
+  let t ← Meta.whnfD (← Meta.inferType s)
+  return t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor
+      || t.isAppOf ``Freyd.Alg.BiRelator
+
 /-- A BUNDLE ASSEMBLED FROM BUNDLES THAT CARRY THE FIELD HAS NO NAME OF ITS OWN.  `relatorName?`
     writes a relator's printed head and drops its arguments, because they are the TYPES the picture
     already draws on the wires — but an argument that is ITSELF A BUNDLE WITH THAT FIELD is another
@@ -133,16 +145,6 @@ def builtOfFieldCarrier (fld : Name) (s : Expr) : MetaM Bool := do
   s.getAppArgs.anyM fun a => do
     let some c := (← Meta.whnfD (← Meta.inferType a)).getAppFn.constName? | return false
     return (findField? (← getEnv) c fld).isSome
-
-/-- WHETHER THE PRINTER GAVE THE BUNDLE A NAME OF ITS OWN.  An unexpander that writes
-    `BiRelator.toRelator F` as `F` chose the lane's name and a field of that bundle is drawn under
-    it; a head that is only the constant's own last component chose nothing, and a bundle the
-    statement BINDS wears its own letter.  The same test `declName?` makes on a box's name. -/
-def printerNamed (s : Expr) : MetaM Bool := do
-  let some c := s.getAppFn.constName? | return true
-  match stxHead (← PrettyPrinter.delab s) with
-  | some h => return h.getString! != c.getString!
-  | none => return true
 
 /-- THE BUNDLE ITSELF, under the PARENT projections Lean writes to reach an inherited field: a
     relator and its `toFunctor` are one lane, and only the relator says what it was built from. -/
@@ -183,8 +185,8 @@ partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
   let some (.ctorInfo ci) := (← getEnv).find? pi.ctorName | return none
   let some fld := (getStructureFields (← getEnv) ci.induct)[pi.i]? | return none
   let core ← bundleCore s
+  unless ← isLaneBundle core do return none
   unless ← builtOfFieldCarrier fld core do return none
-  if ← printerNamed core then return none
   -- The DEFINITION is taken off the constructor and nothing further is reduced: `whnf` would go on
   -- to unfold the object or arrow the field lands on and print its implementation.
   let some c ← builtCtor? s | return none

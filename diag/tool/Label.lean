@@ -296,9 +296,7 @@ partial def betaHead (e : Expr) : Expr :=
     name spells one thing twice, and the note writes the lane `F`.  The TYPE decides that this is a
     relator and the PRINTER gives the letter, so an unexpander's chosen name still wins. -/
 def relatorName? (e : Expr) : MetaM (Option String) := do
-  let t ← Meta.whnfD (← Meta.inferType e)
-  unless t.isAppOf ``Freyd.Alg.Relator || t.isAppOf ``Freyd.Functor
-      || t.isAppOf ``Freyd.Alg.BiRelator do return none
+  unless ← isLaneBundle e do return none
   if let some h := stxHead (← PrettyPrinter.delab e) then return some h.getString!
   let some c := e.getAppFn.constName? | return none
   return some c.getString!
@@ -707,16 +705,6 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
       | none => plain e
     | none => plain e
   | (c, args) =>
-    -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
-    -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
-    -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
-    -- and operands are spelled APART, each by its own rule: an operand is an object of the note's,
-    -- respelled here, and the head keeps the name its lane wears.  SEVERAL operands are the note's
-    -- comma list inside that bracket (`F(A,C)`), which is `BiRelator.map`'s `F(𝟙,f)` on objects.
-    if let some (f, xs) ← functorObj? e then
-      let parts ← xs.mapM (labelAt 0)
-      let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
-      return applyLabel (← functorName f) (",".intercalate parts.toList) j
     -- A HEAD THE LABEL HAS NO SPELLING OF is rewritten along the note's own equations first, and
     -- ONLY here: `arm₂` of an algebra is the arm the note names, while every head with a clause
     -- above is already written as the note writes it — `Λ R` is the `𝟙%∋ E(R)` its clause writes,
@@ -724,6 +712,18 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- `singletonMap` and back.
     if let some r ← rewriteHead? e then return ← labelAt prec r
     if tightHeads.contains c then return (← plain e).replace " " "" else do
+    -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
+    -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
+    -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
+    -- and operands are spelled APART, each by its own rule: an operand is an object of the note's,
+    -- respelled here, and the head keeps the name its lane wears.  SEVERAL operands are the note's
+    -- comma list inside that bracket (`F(A,C)`), which is `BiRelator.map`'s `F(𝟙,f)` on objects.
+    -- AFTER the spellings above: a head the note writes ITSELF (`E A`, an unexpander's own
+    -- notation) is that spelling, and the action rule answers where the printer wrote none.
+    if let some (f, xs) ← functorObj? e then
+      let parts ← xs.mapM (labelAt 0)
+      let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
+      return applyLabel (← functorName f) (",".intercalate parts.toList) j
     -- A COMPONENT OF A FAMILY the statement BINDS is set tight for the same reason a relator's
     -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
     -- Lean's formatter sets the object off from the head.  Its head is a free variable and has no
