@@ -228,6 +228,13 @@ public theorem party_eq : party (A := A) = ⦇S⦈ ≫ chooseR := by
   show RT.cataR S ≫ chooseR = _
   rw [RT.cataR_eq_relCata]
 
+/-- **party-absorb**: `frac(⦇S⦈ choose,∋) = frac(⦇S⦈,∋) E(choose)` — the set of all parties the fold
+    allows and then chooses from is the set of all pairs the fold allows, chosen from inside.  The
+    absorption law `Λ_absorption` at this fold and this `choose`. -/
+public theorem party_absorb :
+    Λ (⦇S⦈ ≫ chooseR (A := A)) = Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage chooseR :=
+  (Λ_absorption _ _).symm
+
 /-! ### The two leaves of `party-mono-branch` (B&dM's exercises: `cost` is a sum) -/
 
 /-- `cost` adds over append. -/

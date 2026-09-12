@@ -164,9 +164,12 @@ def Path.id (o : Expr) : Path :=
   { nodes := #[(nid 0, o)], edges := #[], src := nid 0, tgt := nid 0 }
 
 /-- One edge, its two vertices read off the arrow's OWN TYPE — never guessed from the shape of the
-    statement it came from. -/
+    statement it came from — and each vertex spelled as the object it IS (`StrDiag.objSpelling`), so
+    a square at a named initial algebra has the list at its corners where an abstract one has `T`. -/
 def Path.arrow (f : Expr) : MetaM Path := do
   let (a, b) ← StrDiag.homEnds f
+  let a ← StrDiag.objSpelling a
+  let b ← StrDiag.objSpelling b
   return { nodes := #[(nid 0, a), (nid 1, b)], edges := #[(nid 0, nid 1, f)],
            src := nid 0, tgt := nid 1 }
 
@@ -191,7 +194,7 @@ partial def interp (e : Expr) : MetaM Path := do
     match StrDiag.lastTwo args with
     | some (f, g) => Path.comp (← interp f) (← interp g)
     | none => Path.arrow e
-  | (``Cat.id, _) => return Path.id (← StrDiag.homEnds e).1
+  | (``Cat.id, _) => return Path.id (← StrDiag.objSpelling (← StrDiag.homEnds e).1)
   | _ => Path.arrow e
 
 /-- A face: two paths with the SAME two ends, and the relation asserted between them.
@@ -277,6 +280,68 @@ def inducedHeads : MetaM (Array Name) := do return ← Lean.labelled `diag_induc
 def isInduced (heads : Array Name) (f : Expr) : Bool :=
   match f.getAppFn with | .const n _ => heads.contains n | _ => false
 
+/-- Whether the AMBIENT STRUCTURE supplies this arrow, as against the statement handing it over: its
+    head is a structure's PROJECTION — `(initial _ _).α`, `P.outl`, `∋`, `𝟙` — or its own declaration
+    takes an INSTANCE of the class that gives it, as the singleton `𝟙%∋` takes a `PowerAllegory`.
+    Read off the constant's declaration in the environment, never a list of names here: an arrow
+    defined outright at the objects it stands between — `[nil,⊸ nil ∪ cons]` — takes neither, and is
+    data the picture is handed exactly as a free variable would be. -/
+def structureArrow (f : Expr) : MetaM Bool := do
+  let some n := f.getAppFn.constName? | return false
+  let env ← getEnv
+  if env.isProjectionFn n then return true
+  let some ci := env.find? n | return false
+  return hasInst ci.type
+where
+  hasInst : Expr → Bool
+    | .forallE _ _ b bi => bi.isInstImplicit || hasInst b
+    | .mdata _ b => hasInst b
+    | _ => false
+
+/-- A declaration's conclusion read as an EQUATION, if it is one: the two sides, under whatever `∀`
+    binders it carries.  Pure, and that is the point — the scan below runs over every declaration in
+    the environment, so its filter may elaborate nothing. -/
+partial def eqSides : Expr → Option (Expr × Expr)
+  | .forallE _ _ b _ | .mdata _ b => eqSides b
+  | t => match t.getAppFnArgs with
+    | (``Eq, #[_, l, r]) => some (l, r)
+    | _ => none
+
+/-- Whether a constant NAMES ONE ARROW: its declaration stands at a `Cat.Hom` and takes no arrow of
+    its own, so it is an arrow with a name rather than an operator ON arrows (`≫`, `∩`, `°`, a
+    relator's action).  An equation about such a constant says what that arrow IS. -/
+def arrowName (env : Environment) (n : Name) : Bool :=
+  match env.find? n with | some ci => go ci.type | none => false
+where
+  go : Expr → Bool
+    | .forallE _ t b _ => !t.isAppOf ``Cat.Hom && go b
+    | .mdata _ b => go b
+    | t => t.isAppOf ``Cat.Hom
+
+/-- THE ARROWS THE ENVIRONMENT DEFINES BY A UNIVERSAL CONSTRUCTION: a named arrow `c` some theorem
+    states `c … = <induced former> …` of.  This is how a CLOSED statement says which of its constants
+    a universal property produced — the same question the other side of an `↔` answers for an open
+    one, and the same search the string exporter runs for a bead's naturality proof.  `prefix_cata`
+    says `prefix=⦇[nil,⊸ nil ∪ cons]⦈`, so every picture of `prefix` draws what the fold produced and
+    no name of it is written in this file.  Scanned ONCE per process: the pass is over every
+    declaration. -/
+initialize inducedDefsRef : IO.Ref (Option NameSet) ← IO.mkRef none
+
+def inducedDefs : MetaM NameSet := do
+  if let some s ← inducedDefsRef.get then return s
+  let heads ← inducedHeads
+  let env ← getEnv
+  let mut out : NameSet := {}
+  for (_, ci) in env.constants do
+    unless ci matches .thmInfo _ do continue
+    let some (l, r) := eqSides ci.type | continue
+    let some a := l.getAppFn.constName? | continue
+    let some b := r.getAppFn.constName? | continue
+    if heads.contains b && arrowName env a then out := out.insert a
+    if heads.contains a && arrowName env b then out := out.insert b
+  inducedDefsRef.set (some out)
+  return out
+
 /-- The arrows a claim says are produced.  One side of an equation is produced when the OTHER is
     headed by an induced constructor, and so is every arrow ARGUMENT of an induced constructor at
     its head: `⟨f,g⟩=⦇⟨h,k⟩⦈` produces `⟨f,g⟩`, hence `f` and `g`. -/
@@ -301,7 +366,13 @@ partial def inducedIn (e : Expr) : MetaM (Array Expr) := do
     alone. -/
 def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
   if isInduced (← inducedHeads) f then return true
-  fc.induced.anyM fun g => Meta.isDefEq g f
+  if ← fc.induced.anyM fun g => Meta.isDefEq g f then return true
+  -- A CLOSED arrow carries its role in the environment instead.  The structure is asked FIRST: an
+  -- equation between a fold and an arrow the ambient structure supplies — `⦇α⦈=𝟙` — is a law about
+  -- that arrow, not a definition of it.
+  if ← structureArrow f then return false
+  let some n := f.getAppFn.constName? | return false
+  return (← inducedDefs).contains n
 
 /-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  A pasted pair produces its
     CHORD — the arrow the two faces share is the one they jointly determine — and nothing else, so
@@ -333,9 +404,6 @@ partial def arrowVars (e : Expr) : MetaM (Array Expr) := do
   | .proj _ _ b => arrowVars b
   | _ => return #[]
 
-/-- Whether an arrow is one the statement HANDED over, i.e. mentions such a variable. -/
-def givenArrow (e : Expr) : MetaM Bool := return !(← arrowVars e).isEmpty
-
 /-- The arrow a FUNCTOR has moved, when this arrow is one: an application carrying an arrow argument
     and standing at objects that argument does not — `F(⦇f⦈) : FT ⟶ FA` over `⦇f⦈ : T ⟶ A`, `E(R)`
     over `R`, whichever way the action is written (`Functor.map`, or a relator's own constant, as
@@ -350,6 +418,21 @@ def imageOf (f : Expr) : MetaM (Option Expr) := do
       unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
         return some g
   return none
+
+/-- THE ARROWS THE PICTURE IS HANDED, as the sub-expressions that carry them: the statement's free
+    arrow VARIABLES, and — where it binds none — the arrow ITSELF, when it is a closed one no functor
+    moved, no universal construction produced and no ambient structure supplies.  A closed statement
+    hands its data over exactly as an open one does: `α prefix=F(prefix)[nil,⊸ nil ∪ cons]` hands over
+    the algebra the way `α⦇f⦈=F(⦇f⦈)f` hands over `f`, and the objects it stands between are the ones
+    the picture was handed. -/
+def Face.handed (fc : Face) (f : Expr) : MetaM (Array Expr) := do
+  let vs ← arrowVars f
+  unless vs.isEmpty do return vs
+  if (← imageOf f).isSome || (← fc.produces f) || (← structureArrow f) then return #[]
+  return #[f]
+
+/-- Whether an arrow is one the statement HANDED over. -/
+def Face.given (fc : Face) (f : Expr) : MetaM Bool := return !(← fc.handed f).isEmpty
 
 /-- The CLAIMS the face asserts, each as the arrows it is made of: a single face asserts one, its
     whole boundary, and a paste asserts two — the two statements it was pasted out of, each being one
@@ -381,16 +464,17 @@ def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
     functor's image of a PRODUCED one — `F(⦇f⦈)` and `F(X)` under `αX=F(X)f ⟺ X=⦇f⦈` are induced
     without being dashed, since the induced arrow is what determines them, and which arrow that is
     is `Face.produces`, never a head test that a variable like `X` fails.  `GIVEN1` is an arrow the
-    picture is HANDED, which is exactly one
-    mentioning a free arrow variable.  `GIVEN2` is the structure the property is ABOUT — the initial
-    algebra's `α`, `∋`, `π₁`, the singleton `𝟙%∋`, none of which mentions one — and a relator's image
-    of a given arrow, `E(R)`, which the relator determines rather than the statement handing it
-    over. -/
+    picture is HANDED (`Face.handed`) — one mentioning a free arrow variable, or, in a statement made
+    entirely of constants, one the environment neither defines by a universal construction nor
+    supplies out of the ambient structure.  `GIVEN2` is the structure the property is ABOUT — the
+    initial algebra's `α`, `∋`, `π₁`, `𝟙`, the singleton `𝟙%∋`, each of which the structure supplies —
+    and a relator's image of a given arrow, `E(R)`, which the relator determines rather than the
+    statement handing it over. -/
 def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   if ← fc.dashes f then return "INDUCED"
   match ← imageOf f with
   | some g => return if ← fc.produces g then "INDUCED" else "GIVEN2"
-  | none => return if (← givenArrow f) && !(← fc.transports f) then "GIVEN1" else "GIVEN2"
+  | none => return if (← fc.given f) && !(← fc.transports f) then "GIVEN1" else "GIVEN2"
 
 /-- WHICH COMPONENT OF THE ARROW IT INDUCES each side of a pasted face carries — `none` unless the
     statement is ABOUT those components.  The chord is what the two faces jointly determine; when an
@@ -451,16 +535,16 @@ def componentNodeHues (l r : Component) (ns : Array Node) : Array Node :=
     | false, true => { v with hue := s!"GIVEN{r.idx + 1}" }
     | false, false => { v with hue := "INDUCED" }
 
-/-- The nodes the statement HANDS the picture: those standing at an END of one of its free arrow
-    VARIABLES.  A variable is handed over at its two objects whether or not the picture draws the
-    variable itself — `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` draws neither `f` nor `g` and is still handed their
-    carrier `A` — so the question is asked of the OBJECTS, never of the edges that happen to be
+/-- The nodes the statement HANDS the picture: those standing at an END of one of the arrows it
+    hands over (`Face.handed`).  A handed arrow gives its two objects whether or not the picture
+    draws the arrow itself — `tri(f)⦇g⦈=⦇F(𝟙,f)g⦈` draws neither `f` nor `g` and is still handed
+    their carrier `A` — so the question is asked of the OBJECTS, never of the edges that happen to be
     drawn, which is what an "end of a GIVEN1 edge" test could only answer for the ones that are. -/
 def Face.givenNodes (fc : Face) : MetaM (Array String) := do
   let arrows := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2) ++ (fc.chord.map (·.1)).toArray
   let mut objs : Array Expr := #[]
   for f in arrows do
-    for x in ← arrowVars f do
+    for x in ← fc.handed f do
       let (a, b) ← StrDiag.homEnds x
       objs := (objs.push a).push b
   let mut ids : Array String := #[]

@@ -65,6 +65,50 @@ def plain (e : Expr) : MetaM String := do
   let s := (toString (← Meta.ppExpr (← unwrapRecords e))).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
+/-- A PROJECTION of a bundle the statement names OUTRIGHT, reduced to what it projects: the carrier
+    of `initial Unit A` is the list object `[A]`, where a bundle the statement BINDS — the `I` of
+    `α⦇f⦈=F(⦇f⦈)f`, or the `[inst]` an abstract allegory's `∋` and `EA` come from — has nothing to
+    reduce and keeps the structure's own letter.  Only the STRUCTURE argument is reduced, to its
+    constructor, and the projection then taken: `whnf` on the whole term would go on to unfold the
+    object it lands on and print the list's implementation where the note writes `[A]`. -/
+def concreteProj? (x : Expr) : MetaM (Option Expr) := do
+  let some b ← onBundle x | return none
+  -- The field access is one delta step and `whnfCore` then takes the field off the constructor and
+  -- stops, where `whnf` would go on to unfold the object it lands on.
+  let y ← Meta.whnfCore ((← Meta.unfoldDefinition? b).getD b)
+  return if y == x then none else some y
+where
+  /-- The same term with the BUNDLE it READS A FIELD OFF reduced to its constructor: `none` when it
+      reads none, when the bundle is one the statement binds, or when the field is APPLIED to
+      something — `F.obj X` is the functor's action, which the note writes by the functor's own name
+      and never by the object map inside it. -/
+  onBundle (x : Expr) : MetaM (Option Expr) := do
+    match x with
+    | .proj _ _ s =>
+      if s.getAppFn.isFVar then return none
+      return some (x.updateProj! (← Meta.whnf s))
+    | _ =>
+      let .const n _ := x.getAppFn | return none
+      let some pi := (← getEnv).getProjectionFnInfo? n | return none
+      let args := x.getAppArgs
+      if args.size != pi.numParams + 1 then return none
+      let s := args[pi.numParams]!
+      if s.getAppFn.isFVar then return none
+      return some (mkAppN x.getAppFn (args.set! pi.numParams (← Meta.whnf s)))
+
+/-- An OBJECT as the picture must say what it IS: every sub-expression that is ITSELF AN OBJECT of
+    the same category and is a field of a bundle the statement names outright, replaced by the object
+    that field is.  The type test is what keeps it to objects: the `F` of `F T` is a field of a
+    bundle too, and a relator is drawn by its own name, never by the object map inside it — as an
+    arrow of a named bundle is drawn `α`. -/
+def objSpelling (e : Expr) : MetaM Expr := do
+  let cat ← Meta.inferType e
+  Meta.transform e (post := fun x => do
+    unless ← Meta.isDefEq (← Meta.inferType x) cat do return .continue
+    match ← concreteProj? x with
+    | some y => return .visit y
+    | none => return .continue)
+
 /-- The source and target of a hom type `a ⟶ b`. -/
 def homObjs? (t : Expr) : Option (Expr × Expr) :=
   match t.getAppFnArgs with
