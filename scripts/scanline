@@ -1363,9 +1363,13 @@ def locate(path, p):
 VALOPT = ("--view", "--panel", "--from", "--json", "--result", "--records")  # next word: a VALUE
 
 
-def positional(argv):
+def positional(argv, records=None):
     """The file arguments: every word that is neither a flag nor a flag's VALUE.  `--panel 0-.1
-    --full f` opened `0-.1` as the file, because a value does not start with `-` either."""
+    --full f` opened `0-.1` as the file, because a value does not start with `-` either.
+
+    With `--records FILE` and no file arguments, the files to sweep are exactly the ones the
+    records name — their `file` field, never a path built out of the selector — so `string-check`
+    need not repeat the file list it already gave `diag-export --records`."""
     out, skip = [], False
     for a in argv:
         if skip:
@@ -1374,12 +1378,21 @@ def positional(argv):
             skip = a in VALOPT
         else:
             out.append(a)
-    return out or ["diag/allegory-axioms.typ"]
+    if out:
+        return out
+    if records:
+        recs = [json.loads(l) for l in open(records, encoding="utf-8").read().splitlines()]
+        # A record the export could not draw is an obligation with no file: sweeping the rest would pass.
+        bad = [f"{r['selector']}: {r['error']}" for r in recs if "error" in r]
+        if bad:
+            sys.exit(f"scanline: {records} names selectors the export could not draw:\n" + "\n".join(bad))
+        return list(dict.fromkeys(r["file"] for r in recs))
+    return ["diag/allegory-axioms.typ"]
 
 
 def main(argv):
     help_if(argv, __doc__, _HELP_BODY)
-    paths = positional(argv)
+    paths = positional(argv, opt(argv, "--records"))
     path = paths[0]
     view = opt(argv, "--view")
     if view:

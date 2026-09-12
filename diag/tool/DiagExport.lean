@@ -1480,8 +1480,11 @@ def main (args : List String) : IO UInt32 := do
     -- by the selector field and never searches the run's text for the name.
     match ← IO.wait t with
     | .error ex =>
+      -- Records mode still reports the failure on stderr, one line per selector: the JSON record on
+      -- stdout is for `scanline --records` to read back, and `make` shows no reason for its own
+      -- failure without a line here.
+      IO.eprintln s!"diag-export: {arg}: {ex}"
       if recordsMode then IO.println (Json.mkObj [("selector", arg), ("error", toString ex)]).compress
-      else IO.eprintln s!"diag-export: {arg}: {ex}"
       status := 1
     | .ok d =>
       if sigMode then IO.println d.text
