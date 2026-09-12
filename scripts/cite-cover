@@ -19,6 +19,8 @@ import importlib.util, math, os, re, sqlite3, sys
 from bisect import bisect
 from collections import defaultdict
 from importlib.machinery import SourceFileLoader
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_source
 
 sys.dont_write_bytecode = True        # else importing `cite-check` litters scripts/ with __pycache__
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +77,9 @@ class Note:
     """A note's source, indexed the few ways the report needs it."""
 
     def __init__(self, path):
-        self.path, self.src = path, open(path, encoding="utf-8").read()
+        # `note_source`: the note is one file per chapter (`scripts/note-split`), and a split root
+        # read alone is a preamble — coverage over which is zero, and zero exits 0.
+        self.path, self.src = path, note_source(path)
         self.raws, self.maths, self.skip, self.pairs = spans(self.src)
         self.nl = [m.start() for m in re.finditer("\n", self.src)]
         self.dead = sorted(self.skip)                       # comments: no formula, no marker

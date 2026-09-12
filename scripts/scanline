@@ -16,6 +16,10 @@ declared law is mechanical; its truth stays the author's certificate, as in `scr
 """
 import glob, hashlib, json, math, os, re, subprocess, sys, threading, time
 from concurrent.futures import ThreadPoolExecutor
+# The note is one file per chapter (`scripts/note-split`); `note_source` reads a split root as the
+# one document it stands for, so every sweep below counts what it always counted.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_source, note_files
 
 CACHE = ".lake/build/scanline-cache.json"
 
@@ -1114,7 +1118,7 @@ def lit_hashes(path):
     """sha256 of every `dpanel(`/`cpanel(` call in the source, whitespace included.
     `typst query` compiles the whole file regardless of which panel changed, so this is what a
     cache CAN key on cheaply — the set is compared whole, not panel by panel."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     return sorted(hashlib.sha256(text[m.start():matching(text, m.end() - 1) + 1].encode()).hexdigest()
                   for m in re.finditer(r'\b(?:dpanel|cpanel)\(', text))
 
@@ -1152,7 +1156,7 @@ def parts(path):
     `13.3.4a.1`.  A top-level `#let`/`#show`/`#set`/`#import` (column 0) runs to the line before the
     next column-0 `#`, `=` or `//`, and is held apart from the body: a slice needs EVERY declaration
     in the note — the section it draws may use any of them — but only ONE section's displays."""
-    lines = open(path, encoding="utf-8").read().splitlines(keepends=True)
+    lines = note_source(path).splitlines(keepends=True)
     pre, secs, nums, i = [], [], [], 0
     while i < len(lines):
         head = HEAD.match(lines[i])
@@ -1173,7 +1177,7 @@ def parts(path):
             (secs[-1]["decls"] if DECL.match(lines[i]) else secs[-1]["body"]).append(blk)
         i = j
     assert "".join(pre) + "".join(b for s in secs for b in s["text"]) \
-        == open(path, encoding="utf-8").read(), f"scanline: {path} did not partition"
+        == note_source(path), f"scanline: {path} did not partition"
     return pre, secs
 
 
@@ -1200,7 +1204,7 @@ def placed(path):
     """A picture file's own text with every top-level `#let` PLACED after it.  `#let pic = dpanel(…)`
     BINDS a panel and draws nothing, so `typst query` finds no metadata until the document holds it
     — and a sweep that reports zero panels for a file full of them is the check that exits 0."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     return text + "".join("#%s\n" % NAME.match(b).group(1)
                           for b in text.splitlines() if NAME.match(b))
 
@@ -1350,7 +1354,7 @@ def respell(recs):
 def locate(path, p):
     """Best effort: the one source line carrying a label unique to this panel."""
     try:
-        lines = open(path, encoding="utf-8").read().splitlines()
+        lines = note_source(path).splitlines()
     except OSError:
         return path
     for b in p.beads:

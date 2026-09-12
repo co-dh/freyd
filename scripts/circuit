@@ -36,6 +36,9 @@ sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import relexpr as rx
 from relexpr import Unhandled, norm, parse, spell
+# The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
+# stands for, and write back through the split so a rebuilt literal lands in the chapter holding it.
+from notesplit import note_source, note_write
 
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
@@ -831,7 +834,7 @@ def literals(text):
 def regen(path, write):
     """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
     drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     lits = [x for x in literals(text) if all(x[2].get(k) for k in ("expect", "src", "tgt"))]
     fail, drift, msgs = 0, 0, []
     for i, j, c in reversed(lits):
@@ -851,7 +854,7 @@ def regen(path, write):
             msgs.append("\n".join([head] + list(difflib.unified_diff(
                 text[i:j].splitlines(), new.splitlines(), "note", "generated", lineterm=""))))
     if write:
-        open(path, "w", encoding="utf-8").write(text)
+        note_write(path, text)
     if msgs:
         print(*reversed(msgs), sep="\n")
     print(f"circuit: {len(lits)} literals in {path}, {len(lits) - drift - fail} verbatim, {drift}"
