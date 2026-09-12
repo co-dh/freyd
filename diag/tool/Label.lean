@@ -347,7 +347,15 @@ partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := 
     same map written inside another label — `E(…)`, `⦇…⦈`, the arm of a guard — has no port to say
     it, so there the `⊸` is written. -/
 partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
-  let f ← Meta.whnfD f
+  -- NO DELTA: a map that has a NAME is written by that name (`graph`'s own unexpander says so), and
+  -- how that name prints is its delaborator's business — one place, beside the declaration.  `whnfD`
+  -- here opened every named map into its body and the label came back as the implementation:
+  -- `moves` as `fun v k i => v ⟨…⟩`, `paths` as the function `⦇gen⦈concat` computes, because the
+  -- walk went on through `Cat.comp` into the category instance's own `comp`.  `whnfCore` leaves a
+  -- constant alone and still beta/eta-reduces and fires a matcher, which is all an anonymous
+  -- `fun p => cat p.1 p.2` at a use site needs; a name the note draws OPENED says so with
+  -- `@[diag_unfold]`, which `labelAt` has already applied wherever it is spelled.
+  let f ← Meta.whnfCore f
   if f.isLambda then
     return ← Meta.lambdaBoundedTelescope f 1 fun xs body => do
       let some x := xs[0]? | plain f
