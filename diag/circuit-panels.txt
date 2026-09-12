@@ -95,15 +95,15 @@ Freyd.Alg.RelSet.Van.van_laws_step3.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.RelSet.Van.van_laws_step2.rhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
 Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
 Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
-Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
-- | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
+Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
+- | <thin-cor> | (⦇S⦈)%∋ thin(Q) est(R)
 Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
-Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
-- | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R
-- | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist Q⦈ minlist R
+Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
+- | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈sort P minlist R
+- | <thinlist-thm82> | ⦇listcp(F) ⟨g₁,g₂⟩ merge P thinlist(Q)⦈ minlist R
 Freyd.Alg.dynamic_programming_thin.rhs | <dp-laws> | H%∋ est(R)
-Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin Q P(F(X)h) est(R)
+Freyd.Alg.dynamic_programming_thin.lhs | <dp-laws> | (T°)%∋ thin(Q) P(F(X)h) est(R)
 - | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)
 Freyd.Alg.RelSet.Bracket.mct_laws.rhs | <mct-laws> | (flatten°)%∋ est(R)
 Freyd.Alg.RelSet.Bracket.mct_laws.lhs | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)

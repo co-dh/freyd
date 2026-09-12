@@ -218,6 +218,11 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.V] def unexpandDetabV : Unexpander | _ => `($(mkIdent `V))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.U] def unexpandDetabU : Unexpander | _ => `($(mkIdent `U))
+-- And of the section's ARROWS: `expand` is one box on the note's row, and the tab width and the
+-- three characters it is stated over are the section's, not part of the name the picture writes.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.expand] def unexpandDetabExpand : Unexpander
+  | _ => `($(mkIdent `expand))
 
 open Lean PrettyPrinter in
 /-- The note's bead for the maximum-segment-sum step algebra is `k`; `Kalg` is only the Lean name. -/
@@ -233,18 +238,6 @@ open Lean PrettyPrinter in
     is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
 @[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
 
-open Lean PrettyPrinter in
-/-- `thin Q` — B&dM (8.1), and the name the note writes on the box.  The definition is an
-    intersection, so without a spelling of its own the picture opened it into the cap of
-    `subsetRel` with a residual, which is the operator the name exists to hide.
-
-    Juxtaposed, NOT the `thin(" Q ")` notation above: the note writes `thin Q` on every §8 row it
-    draws (`thin-cor`, `thinlist-thm82`, the `dp-laws` head row), and only the indexed `thin(Qᵢ)`
-    rows bracket it — so bracketing here turns three drawn rows red to chase two undrawn ones. -/
-@[app_unexpander thinRel] def unexpandThinRel : Unexpander
-  | `($_ $q) => `($(mkIdent `thin) $q)
-  | _ => `($(mkIdent `thin))
-
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
 -- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
@@ -259,6 +252,9 @@ attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
 -- reader already opens both to draw them, so without the tag a row's picture and the label beside
 -- it said different things.
 attribute [diag_unfold] RelSet.MSS.zeroPlus RelSet.MSS.mssPre
+-- `nilR` is the same story one step down: the note's `nil` is read off the CONSTANT the map creates
+-- (`diag/tool/Label.lean`), and the arrow's own Lean name says nothing a picture of `𝟏⟼[E]` does not.
+attribute [diag_unfold] RelSet.SL.nilR
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
