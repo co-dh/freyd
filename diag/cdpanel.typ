@@ -51,15 +51,13 @@
 
 #let cu(l, length) = l / length
 
-// A label whose arrow is a SYMMETRIC DIVISION is set as the fraction the note sets it as — the
-// transpose `R%∋` and the singleton `𝟙%∋` are `frac(R, ∋)` and `frac(𝟙, ∋)`, and that is what the
-// note's `<adj-E-bend>` draws.  Every label of that shape, never a named one: the division is the
-// label's own operator, so the panel does not have to know which arrow it came from.
+// A label arrives in its PARTS, and a label of TWO parts is a symmetric division — the transpose
+// `Λ(R)` and the singleton, set as the fraction the note's `<adj-E-bend>` sets them as.  Which
+// arrows those are is decided in Lean, on the head constant (`StrDiag.labelParts`), so nothing here
+// reads an operator back out of a string: the bar delimits, so the numerator arrives unbracketed.
 #let lbl(l) = {
-  let t = l.at("text", default: none)
-  if t != none and t.contains("%") {
-    let p = t.split("%")
-    $frac(#raw(p.at(0)), #raw(p.slice(1).join("%")))$
+  if type(l) == array {
+    if l.len() == 2 { $frac(#l.at(0), #l.at(1))$ } else { l.at(0) }
   } else { l }
 }
 

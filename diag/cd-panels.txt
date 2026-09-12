@@ -24,7 +24,7 @@
 #
 7b/banana-split#1                | Freyd.Alg.relCata_pair_beta                                | cdref-banana.typ
 7.1a/fokkinga#1                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ
-7.1a/fokkinga#2                  | -                                                          | -    # the converse half of Fokkinga's theorem; `Freyd.Alg.pair_eq_relCata_pair_iff.rhs`
+7.1a/fokkinga#2                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ  # the SECOND conjunct's square: one statement, one face per conjunct, so one selector answers both canvases
 7.2b/horner#1                    | Freyd.Alg.tri_cata_fusion                                  | cdref-horner.typ
 10.1a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
 11.1c/fork-pic#1                 | Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le | cdref-fork.typ
@@ -32,10 +32,10 @@
 11.2.1b/coprod-square#1          | -                                                          | -    # the coproduct's two injections; the display carries no marker
 11.4a/initial-defn#1             | Freyd.Alg.IsFHom                                           | -    # the homomorphism square; see cd-accepted.txt for the colours the note gives it
 11.4a/initial-defn#2             | Freyd.Alg.InitialAlgebra.cata_comm                         | cdref.typ
-11.4.1a/cata-reflection#1        | -                                                          | -    # `Freyd.Alg.relCata_alpha` is the arrow equation `⦇α⦈=𝟙`, which draws as two nodes; the note draws the homomorphism SQUARE at `h:=𝟙`, and no declaration states that square
-11.4.2a/cata-fusion#1            | -                                                          | -    # `Freyd.Alg.relCata_fusion`
-11.5.1b/tfun-sq#1                | -                                                          | -    # `Freyd.Alg.alphaT_natural`
-11.5.1c/tfun-fusion#1            | -                                                          | -    # `Freyd.Alg.typeMap_fusion`
+11.4.1a/cata-reflection#1        | -                                                          | -    # `Freyd.Alg.relCata_alpha` is the arrow equation `⦇α⦈=𝟙`, which draws as two nodes; the note draws the homomorphism SQUARE at `h:=𝟙` AND DASHES its `𝟙`, the arrow uniqueness produces — `Freyd.Alg.IsFHom I.α I.α (𝟙 I.t)` states that square but produces nothing (`Face.dashes`, and `Cat.id` is no universal construction), so it would draw the square undashed
+11.4.2a/cata-fusion#1            | -                                                          | -    # the note draws fusion's PROOF — the fold's own square pasted on the SIDE CONDITION `R S=F(S)Q` — where `Freyd.Alg.relCata_fusion` states the conclusion `⦇R⦈S=⦇Q⦈`, which is the triangle those two paste to; a hypothesis is not a statement, so no selector draws the canvas
+11.5.1b/tfun-sq#1                | -                                                          | -    # `Freyd.Alg.alphaT_natural` composes the left edge as the ONE arrow `F(⟨𝟙,T⟩(f))`; the note draws it FACTORED, `F(𝟙,T(f))` then `F(f,𝟙)` through a fifth node `F(A,TB)` (`Freyd.prod_map_split`), so the canvas has an object the statement does not
+11.5.1c/tfun-fusion#1            | -                                                          | -    # `Freyd.Alg.typeMap_fusion` states the triangle `T(f)⦇h⦈=⦇F(f,𝟙)h⦈`; the note draws that triangle AND the fold's own square over it — two statements, and the second is not this one's
 11.6.1a/cata-defining#1          | Freyd.Alg.relCata_UP.lhs                                   | cdref-catadef.typ
 11.6.2a/cata-map-square#1        | -                                                          | -    # `Freyd.Alg.Λ_relCata`, `Freyd.Alg.relCata_unfold`
 12.1c/subseq-outr-square#1       | -                                                          | -    # the display carries no marker
@@ -49,10 +49,10 @@
 13.2.1a/meet-counterex#1         | -                                                          | -    # `Freyd.Alg.laxNatural_inter_false`
 13.2.3a/lat-const#1              | -                                                          | -    # `Freyd.Alg.laxNatural_const_iff`
 13.3b/mon-str#1                  | Freyd.Alg.MonotonicAlg                                     | cdref-mon.typ
-13.3.1b/dist-str#1               | -                                                          | -    # `Freyd.Alg.Distributes` draws this square arrow for arrow, but labels its top edge `(F(∋)f)%∋` where the note writes the fraction's numerator bare: `cdpanel` sets `%` as a bar, which delimits, while the inline spelling `Label.lean` prints needs the brackets because `%` binds tighter than juxtaposition
+13.3.1b/dist-str#1               | Freyd.Alg.Distributes                                      | cdref-dist.typ
 13.3.1b/dist-str#2               | -                                                          | -    # the same square at `est(≤)`, `+` on `Nat`, with each corner's VALUE under its type — a worked instance, which is no statement
 13.3.3b/prefix-defn#1            | Freyd.Alg.RelSet.ListRel.prefix_cancel                     | cdref-prefix.typ
-13.4.3a/party-mono#1             | -                                                          | -    # `Freyd.Alg.RelSet.Party.party_mono`
+13.4.3a/party-mono#1             | -                                                          | -    # `Freyd.Alg.RelSet.Party.party_mono` draws this square ARROW FOR ARROW, hue for hue — every difference is a LABEL: the note writes the relator by its own letter `F` and spells its action out as `𝟙×list((R×R)°)`, where Lean prints the relator's name `RT.F A` and leaves `map` applied, and Lean's `×` on objects carries spaces the note closes up
 13.4.3b/party-absorb#1           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, drawn with `=` where the generator draws a triangle — the author's call
 13.4.3b/party-absorb#2           | -                                                          | -    # `Freyd.Alg.Λ_absorption`, as above
 #
