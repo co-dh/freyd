@@ -189,6 +189,17 @@ public theorem laxNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G 
     LaxNatural (Relator.comp K F) (Relator.comp K G) (fun C => φ (K.obj C)) :=
   fun {_ _} R => h (K.map R)
 
+/-- **Composition CLOSES**, at the arrow `R`: `comp_slides` with the chord the two squares share
+    spelled as the relator-moved `G(R)` and not left a plain variable.  Vertical composition of two
+    lax naturals is this at every `R` (`laxNaturalCat`); the PICTURE is the pair of squares, and a
+    chord no relator moved is one the drawing cannot stand upright, which is why the note's own
+    instance is stated here rather than read off `comp_slides`. -/
+public theorem laxNatural_comp_slide {F G H : Relator 𝒜 ℬ} {ψ : ∀ A : 𝒜, H.obj A ⟶ G.obj A}
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {A B : 𝒜} {R : A ⟶ B}
+    (hψ : H.map R ≫ ψ B ⊑ ψ A ≫ G.map R) (hφ : G.map R ≫ φ B ⊑ φ A ≫ F.map R) :
+    H.map R ≫ (ψ B ≫ φ B) ⊑ (ψ A ≫ φ A) ≫ F.map R :=
+  comp_slides hψ hφ
+
 /-- A relator on the OUTSIDE carries a lax natural transformation to a lax natural one:
     `K ∘ φ : K ∘ G ⟶ K ∘ F`, with `K` running last.  `map_mono` on `φ`'s own inequation at `R`,
     read through `map_comp` on both sides — `Relator.map_slides` at `Ta, Tb := G.map R, F.map R`
