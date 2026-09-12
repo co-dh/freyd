@@ -787,6 +787,31 @@ public theorem prod_ni_proj_slide :
       = (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
   rprodMap_id_snd _
 
+/-- The note's `subseq-EW-join` fourth row: **`(𝟙×∋)cons ∪ (𝟙×∋)π₂ = (𝟙×∋)cons ∪ π₂∋`** —
+    `prod_ni_proj_slide` inside the union's second operand, the first being untouched. -/
+public theorem prod_ni_union_slide :
+    (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ graph fun p : A × ConsList Unit A => p.2)
+      = (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+            ≫ ∋ (dList A)) := by
+  rw [prod_ni_proj_slide]
+
+/-- The note's `subseq-EW-join` fifth row: **`((𝟙×∋)cons ∪ π₂∋)%∋ = ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup`**
+    — the transpose of a union is the fork of the transposes followed by the power object's
+    union (`Λ_union`). -/
+public theorem Λ_prod_ni_union :
+    Λ ((rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
+        ∪ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+            ≫ ∋ (dList A)))
+      = rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR))
+          (Λ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+            ≫ ∋ (dList A)))
+        ≫ cup (relProd (PowerAllegory.powerObj (dList A))
+            (PowerAllegory.powerObj (dList A))) := by
+  rw [Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
+    (PowerAllegory.powerObj (dList A))), pair_eq_rpair]
+
 /-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
     second arm of `subseq`'s algebra under the power transpose.  Composition distributes over the
     `∪`, `(𝟙×∋)π₂ = π₂∋` slides the membership past the projection (`rprodMap_id_snd`), `Λ` of a
@@ -827,6 +852,47 @@ public theorem Λ_nil_singleton :
   have h := Λ_fusion (graph_map (ConsList.wrap : Unit → ConsList Unit A)) (Cat.id (dList A))
   rw [Cat.comp_id] at h
   exact h
+
+/-- The note's `subseq-EW-case` fourth row: **`[nil,(𝟙×∋)(cons ∪ π₂)]%∋ = [nil%∋,((𝟙×∋)(cons ∪
+    π₂))%∋]`** — the transpose of a junction is the junction of the transposes (`Λ_junc`). -/
+public theorem subseq_alg_Λ_junc :
+    Λ (junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+        (rprodMap (𝟙 (dE A)) (∋ (dList A))
+          ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          (Λ (wrapR : dL Unit ⟶ dList A))
+          (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) :=
+  Λ_junc _ _ _
+
+/-- The note's `subseq-EW-case` last row: **`[nil%∋,…] = [nil 𝟙%∋,…]`** — `Λ_nil_singleton` in the
+    leaf arm, the cons arm untouched. -/
+public theorem subseq_alg_Λ_nil :
+    junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+        (Λ (wrapR : dL Unit ⟶ dList A))
+        (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+          ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap)
+          (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
+  rw [Λ_nil_singleton]
+
+/-- The note's `subseq-alg`: **`[nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋] = [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩
+    cup]`** — `subseq_alg_join` in the cons arm, which is the whole of `subseq`'s algebra under
+    the power transpose. -/
+public theorem subseq_alg_transpose :
+    junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+        (wrapR ≫ singletonMap)
+        (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+          ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap)
+          (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
+              (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+            ≫ cup (relProd (PowerAllegory.powerObj (dList A))
+              (PowerAllegory.powerObj (dList A)))) := by
+  rw [subseq_alg_join]
 
 /-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
     display draws: on the leaf, `nil`; on a head and a tail-prefix, either discard and stop with

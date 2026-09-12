@@ -225,6 +225,11 @@ def ctorName? (e : Expr) : MetaM (Option String) := do
 def declName? (e : Expr) : MetaM (Option String) := do
   let .const n _ := e.getAppFn | return none
   if ((← getEnv).find? n).isNone then return none
+  -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
+  -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
+  -- drops the namespace chose nothing, so the constant's own last component stands.
+  if let some h := stxHead (← PrettyPrinter.delab e) then
+    if h.getString! != n.getString! then return some h.getString!
   return some n.getString!
 
 mutual

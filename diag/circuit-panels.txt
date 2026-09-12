@@ -32,15 +32,15 @@
 # wrong picture.
 Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
 Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs | <subseq-EW-case> | F(∋)[nil,cons ∪ π₂]
-- | <subseq-EW-case> | [nil,(𝟙×∋)(cons ∪ π₂)]
-- | <subseq-EW-case> | [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]
-- | <subseq-EW-case> | [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]
-- | <subseq-EW-join> | (𝟙×∋)(cons ∪ π₂)
-- | <subseq-EW-join> | (𝟙×∋)cons ∪ (𝟙×∋)π₂
-- | <subseq-EW-join> | (𝟙×∋)cons ∪ π₂∋
-- | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
-- | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
-- | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
+Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs | <subseq-EW-case> | [nil,(𝟙×∋)(cons ∪ π₂)]
+Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs | <subseq-EW-case> | [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]
+Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs | <subseq-EW-case> | [nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋]
+Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs.inr | <subseq-EW-join> | (𝟙×∋)(cons ∪ π₂)
+Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs | <subseq-EW-join> | (𝟙×∋)cons ∪ (𝟙×∋)π₂
+Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs | <subseq-EW-join> | (𝟙×∋)cons ∪ π₂∋
+Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs | <subseq-EW-join> | ⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup
+Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs | <subseq-EW-join> | ⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup
+Freyd.Alg.RelSet.ListRel.subseq_alg_transpose.rhs | <subseq-alg> | [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]
 Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R R
 Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R
 Freyd.Alg.RelSet.ListRel.prefAlg | <prefix-defn> | [nil,⊸ nil ∪ cons]
@@ -87,8 +87,8 @@ Freyd.Alg.RelSet.Filter.filter_step4.rhs | <filter-step> | [nil,(π₁p→cons,�
 Freyd.Alg.RelSet.Filter.filter_greedy.lhs | <filter-deriv> | ⦇S%∋ est(R°)⦈
 Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs | <filter-deriv> | ⦇[nil,(π₁p→cons,π₂)]⦈
 Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×(R;H))old
-- | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
-- | <van-mono> | new (R∩H) ∪ old (R∩H)
+Freyd.Alg.RelSet.Van.van_mono_step1.rhs | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩H))old
+Freyd.Alg.RelSet.Van.van_mono_step2.rhs | <van-mono> | new (R∩H) ∪ old (R∩H)
 Freyd.Alg.RelSet.Van.van_mono.rhs | <van-mono> | (new ∪ old)(R;H)
 Freyd.Alg.RelSet.Van.van_laws.rhs | <van-laws> | (partition list(secure))%∋ est(R)
 Freyd.Alg.RelSet.Van.van_laws_step3.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
@@ -105,7 +105,7 @@ Freyd.Alg.thinRel_comp_est_step4.rhs | <thin-intro> | Q°R°
 Freyd.Alg.thinRel_comp_est_step5.rhs | <thin-intro> | R°R°
 Freyd.Alg.thinRel_comp_est_step6.rhs | <thin-intro> | R°
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
-- | <thin-cor> | (⦇S⦈)%∋ thin(Q) est(R)
+Freyd.Alg.thinning_est_step1.rhs | <thin-cor> | (⦇S⦈)%∋ thin(Q) est(R)
 Freyd.Alg.thinning_est.rhs | <thin-cor> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinningList.rhs | <thinlist-thm82> | (⦇S⦈)%∋ est(R)
 Freyd.Alg.thinning_est.lhs | <thinlist-thm82> | ⦇(F(∋)S)%∋ thin(Q)⦈est(R)
