@@ -118,7 +118,7 @@ Freyd.Alg.RelSet.thin_summand_le.lhs | <dp-laws> | (Vᵢ°)%∋ thin(Qᵢ) P(F�
 Freyd.Alg.RelSet.Bracket.mct_laws.rhs | <mct-laws> | (flatten°)%∋ est(R)
 Freyd.Alg.RelSet.Bracket.mct_laws.lhs | <mct-laws> | ([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)
 Freyd.Alg.RelSet.Bracket.mct_branch.lhs | <mct-laws> | (cat°)%∋ P((X×X)bin) est(R)
-- | <mct-laws> | splits list((mct×mct)bin)minlist R
+Freyd.Alg.RelSet.Bracket.mct_prog.lhs | <mct-laws> | splits list((mct×mct)bin)minlist R
 Freyd.Alg.RelSet.Code.code_laws.rhs | <code-laws> | (decode°)%∋ est(R)
 Freyd.Alg.RelSet.Code.code_laws.lhs | <code-laws> | ([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)
 Freyd.Alg.RelSet.Code.code_branch.lhs | <code-laws> | (extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)

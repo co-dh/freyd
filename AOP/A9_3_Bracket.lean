@@ -36,6 +36,10 @@ module
 public import AOP.A9_1
 public import AOP.A6_TreeTip
 public import AOP.A5_6_ListCombinators
+-- The fourth row is the PROGRAM: `minlist R` (8.7's list minimum, `AOP.A8_3`) standing in for
+-- `est(R)`, and `setify`'s lax naturality (`AOP.A5_7_ListBeads`) shunting `list(f)` to `P(f)`.
+public import AOP.A8_3
+public import AOP.A5_7_ListBeads
 
 namespace Freyd.Alg.RelSet.Bracket
 
@@ -347,6 +351,129 @@ public theorem mct_branch (X : dNE A ⟶ dTree A) :
   · rintro (a | q) p y hp hw
     · exact absurd (hp.symm.trans hw) (cat_ne_wrap p.1 p.2 a)
     · exact ⟨q, rfl⟩
+
+/-! ## `mct-laws`, fourth row: the recursive program -/
+
+/-- `cons a` on the LEFT half of every split — what `splits` does to the splits of the tail when
+    one more element arrives at the front. -/
+@[expose] public def consSplits (a : A) :
+    CL.ConsList Unit (NEList A × NEList A) → CL.ConsList Unit (NEList A × NEList A)
+  | CL.ConsList.wrap u => CL.ConsList.wrap u
+  | CL.ConsList.cons p ps => CL.ConsList.cons (CL.ConsList.cons a p.1, p.2) (consSplits a ps)
+
+/-- **mct-laws**, fourth row: `splits≜⟨inits⁺,tails⁺⟩ zip`, every way of cutting a non-empty list
+    into two non-empty pieces.  The zip is performed as the list is built — `inits⁺` and `tails⁺`
+    are only ever paired — so `splits` is one structural recursion with no side condition. -/
+@[expose] public def splitsFn : NEList A → CL.ConsList Unit (NEList A × NEList A)
+  | CL.ConsList.wrap _ => CL.ConsList.wrap ()
+  | CL.ConsList.cons a x => CL.ConsList.cons (CL.ConsList.wrap a, x) (consSplits a (splitsFn x))
+
+/-- `splits : list⁺ A⟶[list⁺ A×list⁺ A]`, the map the note's panel draws. -/
+@[expose] public def splits : dNE A ⟶ dList (NEList A × NEList A) := graph splitsFn
+
+public theorem inlistP_consSplits (a : A) (p : NEList A × NEList A) :
+    ∀ ps : CL.ConsList Unit (NEList A × NEList A),
+      inlistP (consSplits a ps) p ↔ ∃ q, p = (CL.ConsList.cons a q.1, q.2) ∧ inlistP ps q := by
+  intro ps
+  induction ps with
+  | wrap _ => exact ⟨fun (h : False) => h.elim, fun ⟨_, _, hq⟩ => (hq : False).elim⟩
+  | cons q qs ih =>
+      show (p = (CL.ConsList.cons a q.1, q.2) ∨ inlistP (consSplits a qs) p) ↔ _
+      rw [ih]
+      constructor
+      · rintro (h | ⟨r, hr, hm⟩)
+        · exact ⟨q, h, Or.inl rfl⟩
+        · exact ⟨r, hr, Or.inr hm⟩
+      · rintro ⟨r, hr, (rfl | hm)⟩
+        · exact Or.inl hr
+        · exact Or.inr ⟨r, hr, hm⟩
+
+/-- `splits` LISTS the splits: `(u,v)` occurs in `splits x` exactly when `cat u v = x`.  This is
+    the row's content — `splits` implements `cat°` — and the induction is the one `cat` itself
+    runs on, with `cat_ne_wrap` (Proposition 9.1) closing the singleton. -/
+public theorem mem_splits : ∀ (x : NEList A) (p : NEList A × NEList A),
+    inlistP (splitsFn x) p ↔ x = cat p.1 p.2 := by
+  intro x
+  induction x with
+  | wrap b =>
+      exact fun p => ⟨fun (h : False) => h.elim, fun h => (cat_ne_wrap p.1 p.2 b h.symm).elim⟩
+  | cons a x ih =>
+      intro p
+      show (p = (CL.ConsList.wrap a, x) ∨ inlistP (consSplits a (splitsFn x)) p) ↔ _
+      rw [inlistP_consSplits]
+      constructor
+      · rintro (rfl | ⟨q, rfl, hm⟩)
+        · rfl
+        · exact congrArg (CL.ConsList.cons a) ((ih q).mp hm)
+      · intro h
+        obtain ⟨u, v⟩ := p
+        cases u with
+        | wrap b =>
+            left
+            injection h with hab hxv
+            subst hab; subst hxv; rfl
+        | cons b u =>
+            right
+            refine ⟨(u, v), ?_, ?_⟩
+            · injection h with hab _
+              subst hab; rfl
+            · injection h with _ hxv
+              exact (ih (u, v)).mpr hxv
+
+/-- `AOP.A8_3`'s `setifyCL` and `AOP.A5_6_ListCombinators`' `setify` are the SAME arrow — one is
+    written with `clMem`, the other with `inlistP`, and the two memberships are the same
+    predicate read in the two argument orders. -/
+public theorem clMem_iff_inlistP {B : Type} (w : B) :
+    ∀ xs : CL.ConsList Unit B, CL.clMem w xs ↔ inlistP xs w
+  | CL.ConsList.wrap _ => Iff.rfl
+  | CL.ConsList.cons _ xs => or_congr Iff.rfl (clMem_iff_inlistP w xs)
+
+public theorem setifyCL_eq_setify {B : Type} : (CL.setifyCL : dList B ⟶ _) = setify := by
+  show graph (fun xs => fun w => CL.clMem w xs) = graph (inlistP (A := B))
+  exact congrArg graph (funext fun xs => funext fun w => propext (clMem_iff_inlistP w xs))
+
+/-- `minlist Q ≜ setify est(Q)`, in the note's own `setify`. -/
+public theorem minlist_eq_setify_comp_est {B : Type} (Q : CL.dE B ⟶ CL.dE B) :
+    CL.minlist Q = setify ≫ est Q := by
+  show CL.setifyCL ≫ est Q = setify ≫ est Q
+  rw [setifyCL_eq_setify]
+
+/-- **mct-laws**, fourth row (B&dM p.232): `splits list((mct×mct)bin)minlist R` refines the body
+    `(cat°)%∋ P((X×X)bin)est(R)` of the fixed point — `splits` implements `cat°` (`mem_splits`)
+    and `minlist R` implements `est(R)`, the list standing in for the set it `setify`s to.  The
+    one inequality is `setify`'s lax naturality (`AOP.A5_7_ListBeads.setify_lax_natural`): a list
+    of `f`-images of the splits has, as a SET, an `P(f)`-image of the set of splits.  Exponential,
+    since the segments of one list overlap — the tabulation (9.7)-(9.10) is what fixes that, and
+    it relates arrays of trees, outside the relational picture. -/
+public theorem mct_prog (mct : dNE A ⟶ dTree A) :
+    splits ≫ list (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
+        ≫ CL.minlist (R st sb cb)
+      ⊑ Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
+              : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)°)
+          ≫ powerRel (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
+          ≫ est (R st sb cb) := by
+  have hmem : ∀ x : NEList A, (fun p => inlistP (splitsFn x) p)
+      = fun p : NEList A × NEList A => x = cat p.1 p.2 :=
+    fun x => funext fun p => propext (mem_splits x p)
+  have hsplit : splits ≫ setify
+      = Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
+              : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)°) := by
+    rw [Λ_eq_classifier]
+    funext x S
+    refine propext ⟨?_, ?_⟩
+    · rintro ⟨_, rfl, hS⟩
+      exact (hS : S = fun p => inlistP (splitsFn x) p).trans (hmem x)
+    · intro hS
+      exact ⟨splitsFn x, rfl,
+        (hS : S = fun p => x = cat p.1 p.2).trans (hmem x).symm⟩
+  have hnat : list (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
+        ≫ setify ≫ est (R st sb cb)
+      ⊑ setify ≫ powerRel (rprodMap mct mct
+          ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) ≫ est (R st sb cb) := by
+    rw [← Cat.assoc, ← Cat.assoc]
+    exact comp_mono_right (setify_lax_natural _) _
+  rw [minlist_eq_setify_comp_est, ← hsplit, Cat.assoc]
+  exact comp_mono_left splits hnat
 
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.
