@@ -646,13 +646,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- operator takes and its operand is a term of the note's, respelled here — the same clause `P(R)`
   -- has, one line up, for the same reason.
   | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
-  -- The TRANSPOSE is drawn as the two arrows `labelRun` splits it into, so it is spelled as those
-  -- two as well: one picture, one label.  `Λ 𝟙` is the unit itself and stays one factor.
-  | (``Freyd.Alg.Λ, _) => do
-    let ts ← labelRun e
-    let mut s := ""
-    for t in ts do s := juxt s t
-    return wrap (if ts.size == 1 then 2 else 1) s
+  -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
+  -- `⦇F(∋)R%∋⦈`, `𝟙%∋`, the numerator at composition's own precedence so a composite carries no
+  -- brackets of its own.  The TWO-ARROW form `𝟙%∋ E(R)` is `labelRun`'s, because it is the two
+  -- beads a PICTURE splits the transpose into and not a spelling of the term; a label nested inside
+  -- another operator has no picture to split and takes the fraction, written flat.
+  | (``Freyd.Alg.Λ, args) => un 1 1 "" "%∋" args
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.
   | (``Freyd.Alg.junc, args) => do
