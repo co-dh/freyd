@@ -17,7 +17,6 @@ string-diagram panel, a circuit, a picture of a set — draws no `ar` and is not
 import json, os, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NOTE = "diag/allegory-axioms.typ"
 
 
 def query(*args):

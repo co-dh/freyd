@@ -10,9 +10,9 @@ note does not read.  This caches the query's own output, keyed by the CONTENT of
 note reads (not by mtime, not by the argument list alone), so a byte-identical source tree answers
 from disk instead of re-running typst.
 
-Cache file: .lake/build/note-meta/<sha256 of the argument list joined by NUL>.json — one file per
-distinct argument list, holding {"args": [...], "deps": {path: sha256}, "meta": <parsed query
-output>}.  A hit requires every recorded path to still exist with the same hash; anything else
+Cache file: .lake/build/note-meta/<sha256 of `typst --version` and the argument list, joined by
+NUL>.json — one file per typst and argument list, holding {"args": [...], "typst": <version>,
+"deps": {path: sha256}, "meta": <parsed query output>}.  A hit requires every recorded path to still exist with the same hash; anything else
 (missing file, changed hash, no cache file) is a miss and reruns typst, atomically rewriting the
 cache so concurrent gates never see a half-written file.
 """
@@ -22,6 +22,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTE = "diag/allegory-axioms.typ"
@@ -51,7 +52,9 @@ def cache_hit(entry):
 
 def main(argv):
     args = list(argv)
-    cpath = cache_path(args)
+    # The typst binary answers the query too: an upgrade changes the output with no source changed.
+    ver = subprocess.run(["typst", "--version"], capture_output=True, text=True, check=True).stdout
+    cpath = cache_path([ver, *args])
     if os.path.exists(cpath):
         with open(cpath) as f:
             entry = json.load(f)
@@ -59,6 +62,7 @@ def main(argv):
             print(json.dumps(entry["meta"]))
             return 0
 
+    t0 = time.time_ns()
     with tempfile.TemporaryDirectory() as tmpdir:
         query_cmd = ["typst", "query", "--root", ".", *args, NOTE, "metadata", "--field", "value"]
         deps_path = os.path.join(tmpdir, "deps.json")
@@ -81,12 +85,14 @@ def main(argv):
             deps_list = json.load(f)["inputs"]
         deps = {p: sha256_file(os.path.join(ROOT, p)) for p in deps_list}
 
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    entry = {"args": args, "deps": deps, "meta": meta}
-    fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, suffix=".json.tmp")
-    with os.fdopen(fd, "w") as f:
-        json.dump(entry, f)
-    os.replace(tmp_path, cpath)
+    # A source written while typst ran would pair its NEW hash with the OLD answer; the second of margin
+    # covers the coarse clock the kernel stamps mtimes with (git's racy-clean rule). Such a run answers, uncached.
+    if all(os.stat(os.path.join(ROOT, p)).st_mtime_ns < t0 - 10**9 for p in deps):
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, suffix=".json.tmp")
+        with os.fdopen(fd, "w") as f:
+            json.dump({"args": args, "typst": ver, "deps": deps, "meta": meta}, f)
+        os.replace(tmp_path, cpath)
     print(json.dumps(meta))
     return 0
 
