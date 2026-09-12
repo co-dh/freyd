@@ -13,4 +13,7 @@ root=${LEAN_REFACTOR_ROOT:-$HOME/repo/lean-refactor}
   echo "               or point LEAN_REFACTOR_ROOT at your checkout." >&2
   exit 1
 }
+# `index` rewrites the one sqlite file every lookup reads, and diag-export refreshes it on each run, so
+# two writers at once are routine: they take turns.
+[ "$1" = index ] && exec flock .lake/build/refactor-index.lock "$root/scripts/lean-refactor" "$@"
 exec "$root/scripts/lean-refactor" "$@"
