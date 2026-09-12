@@ -1267,6 +1267,29 @@ def flipEq? (e : Expr) : MetaM (Option Expr) := do
   let some (_, l, r) := e.eq? | return none
   return some (← Meta.mkEq r l)
 
+/-- Each closed goal `findAnyProof` found no proof of, with the deepest fuel it was searched at.
+    Held for the life of the process, like `headBuckets`: the environment does not grow. -/
+initialize unprovable : IO.Ref (ExprMap Nat) ← IO.mkRef {}
+
+/-- The three naturality classes, the only propositions unfolded to their square. -/
+def natClass (h : Name) : Bool :=
+  h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural || h == ``Freyd.Alg.OpLaxNatural
+
+/-- Whether a head may be searched with NO filter: a DEFINED predicate (`StrictNatural`,
+    `PreservesRecip`, `Map`), whose bucket is the theorems about it.  A type former or a class
+    operation (`=`, `↔`, `∈`) concludes every library's theorems (33k for `=`), and a defined
+    RELATION between two terms of one type (`⊑`) every inclusion of the repo — and a hypothesis of
+    one of those is a relation again, so an unfiltered scan there nests `FUEL` deep. -/
+def unfiltered (h : Name) : MetaM Bool := do
+  let env ← getEnv
+  let some ci := env.find? h | throwError "the search head `{h}` is no constant of the environment"
+  unless ci matches .defnInfo _ do return false
+  if env.isProjectionFn h then return false
+  Meta.forallTelescope ci.type fun xs _ => do
+    let ex ← xs.filterM fun x => return (← x.fvarId!.getBinderInfo).isExplicit
+    if ex.size < 2 then return true
+    return !(← Meta.isDefEq (← Meta.inferType ex[ex.size - 2]!) (← Meta.inferType ex[ex.size - 1]!))
+
 mutual
 
 /-- Is `want` PROVED by some declaration of the environment — and what is the proof?  Candidates
@@ -1275,8 +1298,11 @@ mutual
     conclusion and `want` are normalised through the spelling bridges, and the two are unified.
     Every argument the unification left open must then be answered in its own right, and what comes
     back is the candidate applied to those arguments — a term, checked before it is believed. -/
-partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat) :
-    MetaM (Option (Name × Expr)) := do
+partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat)
+    (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
+  -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
+  -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
+  if must.isEmpty && !(← unfiltered head) then return none
   let env ← getEnv
   let rw ← bridge br want
   let mut hit : Option (Name × Expr) := none
@@ -1306,7 +1332,7 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
       unless ← Core.withCurrHeartbeats (withTheReader Core.Context
         (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
         (Meta.isDefEq rc.expr rw.expr)) do return none
-      unless ← discharge br args bis fuel do return none
+      unless ← discharge br args bis fuel (seen.push want) do return none
       checked want rw rc n (mkAppN (.const n lvls) args)
     -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
     -- `try`/`catch` in `MetaM` rethrows those, so the budget above would end the panel instead of
@@ -1321,8 +1347,8 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
     family's square out of its factors' squares, so this is what makes a compound bead's dot
     exactly its factors' dots and never more.  An instance argument is synthesised; a non-`Prop`
     argument left open means the match itself pinned nothing down, and is a refusal. -/
-partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat) :
-    MetaM Bool := do
+partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat)
+    (seen : Array Expr) : MetaM Bool := do
   for i in [0 : args.size] do
     let .mvar id := args[i]! | continue
     if ← id.isAssigned then continue
@@ -1340,7 +1366,7 @@ partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array 
       unless ← Meta.isDefEq args[i]! (.fvar fv) do return false
       continue
     if fuel == 0 then return false
-    let some (_, pf) ← findAnyProof br t (fuel - 1) | return false
+    let some (_, pf) ← findAnyProof br t (fuel - 1) seen | return false
     unless ← Meta.isDefEq args[i]! pf do return false
   return true
 
@@ -1348,20 +1374,34 @@ partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array 
     of the SQUARE it unfolds to.  `StrictNatural`/`LaxNatural` are exposed definitions, so
     unfolding one and opening its binders gives the very equation (or inclusion) a hand-written
     declaration states, and its own head is what to search under. -/
-partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
+partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (seen : Array Expr) :
     MetaM (Option (Name × Expr)) := do
   let some h := want.getAppFn.constName? | return none
-  -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
-  -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
-  -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
-  -- so the filter buys nothing there; the SQUARE search, headed by `=` or `⊑`, keeps it.
-  if let some r ← findProof br want h {} fuel then return some r
-  -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
-  -- like `False`, which every refutation in the environment matches with its own hypotheses left
-  -- to be found — a search that answers the question it was not asked.
-  unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
-      || h == ``Freyd.Alg.OpLaxNatural do return none
-  findSquare br want (← mustOf br want) fuel
+  -- A GOAL AMONG ITS OWN ANCESTORS IS NO NEW GOAL: `strictNatural_recip` twice asks again for the
+  -- family it started from (`φ°° ≡ φ`), and a proof through that loop has a shorter one without it.
+  if ← seen.anyM fun s => Meta.withNewMCtxDepth (Meta.isDefEq s want) then return none
+  -- A CLOSED GOAL SEARCHED IN VAIN at this fuel or more is not searched again: the `lax` and
+  -- `oplax` steps of one bead reach the `strict` step's goal through their closure theorems.
+  let key ← instantiateMVars want
+  let closed := !key.hasMVar && !key.hasFVar
+  if closed then
+    if let some f := (← unprovable.get)[key]? then
+      if fuel ≤ f then return none
+  let r ← id do
+    -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
+    -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
+    -- declarations a compound bead's verdict comes from.  Few declarations conclude in the class,
+    -- so the filter buys nothing there, nor at any other defined predicate (`PreservesRecip`); any
+    -- other hypothesis (`=`, `⊑`, `↔`) is asked for by the constants it names, as a square is.
+    let must ← if ← unfiltered h then pure {} else mustOfFamily br want
+    if let some r ← findProof br want h must fuel seen then return some r
+    -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
+    -- like `False`, which every refutation in the environment matches with its own hypotheses
+    -- left to be found — a search that answers the question it was not asked.
+    unless natClass h do return none
+    findSquare br want (← mustOf br want) fuel (seen.push want)
+  if r.isNone && closed then unprovable.modify fun m => m.insert key (max fuel ((m[key]?).getD 0))
+  return r
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
     The binders are opened as FREE VARIABLES, not metavariables: the square is then the very
@@ -1370,21 +1410,21 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) :
     the other way round is the SAME square: `Eq.symm` is a proof term like any other, so the
     mirrored form is searched for too rather than the direction a declaration happens to be
     written in deciding whether a bead has a dot. -/
-partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (fuel : Nat) :
-    MetaM (Option (Name × Expr)) := do
+partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (fuel : Nat)
+    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let some body ← Meta.unfoldDefinition? prop | return none
-  findTelescoped br body must fuel
+  findTelescoped br body must fuel seen
 
 /-- The same search for a square GIVEN as its own `∀`-statement rather than reached by unfolding a
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
-partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat) :
-    MetaM (Option (Name × Expr)) := do
+partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat)
+    (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
   Meta.forallTelescope body fun xs sq => do
     let .const h _ := sq.getAppFn | return none
-    if let some (n, pf) ← findProof br sq h must fuel then
+    if let some (n, pf) ← findProof br sq h must fuel seen then
       return some (n, ← Meta.mkLambdaFVars xs pf)
     let some sqm ← flipEq? sq | return none
-    let some (n, pf) ← findProof br sqm h must fuel | return none
+    let some (n, pf) ← findProof br sqm h must fuel seen | return none
     return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
 
 end
