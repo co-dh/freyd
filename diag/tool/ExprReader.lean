@@ -882,11 +882,20 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
       Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
         Meta.mkForallFVars #[x, y, f, hf] sq
 
-/-- The two ends of an arrow. -/
+/-- The two ends of an arrow.
+
+    A CONCRETE REGION'S HOM IS A FUNCTION TYPE, so an arrow built from a core combinator — the
+    product bifunctor's arrow part `Prod.map f g`, `id`, anything else typed before the category
+    was — carries `α → β` and no `Cat.Hom` for `homObjs?` to read.  Its ends are then the function
+    type's, and only where that type IS the region's own hom: the `Cat` instance decides, by
+    `isDefEq` against `Cat.Hom`, so every such arrow answers rather than a listed few. -/
 def homEnds (e : Expr) : MetaM (Expr × Expr) := do
-  let some p := homObjs? (← Meta.inferType e)
-    | throwError "not an arrow of a category: {← Meta.ppExpr e}"
-  return p
+  let t ← Meta.inferType e
+  if let some p := homObjs? t then return p
+  if let .forallE _ a b _ := t then
+    if !b.hasLooseBVars && (← isObjType (← Meta.inferType a)) then
+      if ← Meta.isDefEq t (← Meta.mkAppM ``Cat.Hom #[a, b]) then return (a, b)
+  throwError "not an arrow of a category: {← Meta.ppExpr e}"
 
 /-- A declaration's binders and its STATEMENT — `Meta.forallTelescopeReducing`, stopped at an arrow.
     A hom of `RelSet` is definitionally `A → B → Prop`, so reducing walks straight through the arrow
