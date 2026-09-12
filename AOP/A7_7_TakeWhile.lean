@@ -374,65 +374,203 @@ theorem spec_iff (p : A → Bool) (u : ConsList Unit A) (ws : List A) :
             · rw [← hyx]; exact hpy
             · rw [hyx]
 
-/-! ### The chain, one theorem per row of the note's `takewhile-laws` table -/
+/-! ### The chain, one theorem per row of the note's `takewhile-alg` table -/
 
-/-- The `takewhile-alg` display's headline: `α prefix list(p) = F(prefix list(p)) S` — building
-    the list and then keeping a `p`-passing prefix of it is keeping one of the tail first, and
-    then building with `S`.  (Fusion cannot derive this — `list(p)` is not entire and no algebra
-    meets the side condition — so it is proved pointwise and fed to @cata-defining below.) -/
-public theorem takewhile_alg_comm (p : A → Bool) :
+/-- `list(p)` at `nil` is `nil` — the fold's computation rule on the `wrap` summand. -/
+public theorem listP_wrap (p : A → Bool) (D : Unit) (ws : List A) :
+    listP p (ConsList.wrap D) ws ↔ ws = [] := listPAlg_inl p D ws
+
+/-- `list(p)` at a `cons`: the head must pass `p`, and what is left is a `list(p)` of the tail —
+    the fold's computation rule on the `cons` summand. -/
+public theorem listP_cons (p : A → Bool) (x : A) (t : ConsList Unit A) (ws : List A) :
+    listP p (ConsList.cons x t) ws ↔ p x = true ∧ ∃ w', listP p t w' ∧ ws = x :: w' := by
+  constructor
+  · rintro ⟨w', hw', hstep⟩
+    obtain ⟨hp, hws⟩ := (listPAlg_inr p x w' ws).mp hstep
+    exact ⟨hp, w', hw', hws⟩
+  · rintro ⟨hp, w', hw', hws⟩
+    exact ⟨w', hw', (listPAlg_inr p x w' ws).mpr ⟨hp, hws⟩⟩
+
+/-- `[nil, ⊸ nil ∪ (p×X) cons]` — `prefix`'s algebra with `list(p)`'s own `p` on the head it keeps
+    and the strand `X` the chain has already pushed onto the tail.  `X ≜ list(p)` is the third row
+    of the note's `takewhile-alg`, `X ≜ prefix list(p)` its fourth. -/
+@[expose] public def prefConsAlg (p : A → Bool) {C : RelSet.{0}}
+    (X : C ⟶ (⟨List A⟩ : RelSet.{0})) : Fobj Unit A C ⟶ (⟨List A⟩ : RelSet.{0}) :=
+  junc (sumCop (dL Unit) ⟨A × C.carrier⟩)
+    (graph (fun _ => ([] : List A)) : dL Unit ⟶ (⟨List A⟩ : RelSet.{0}))
+    ((graph (fun _ => ([] : List A)) : (⟨A × C.carrier⟩ : RelSet.{0}) ⟶ ⟨List A⟩)
+      ∪ (rprodMap (pcor p) X ≫ graph fun q => q.1 :: q.2))
+
+/-- The `nil` arm of `[nil, ⊸ nil ∪ (p×X) cons]`. -/
+public theorem prefConsAlg_inl (p : A → Bool) {C : RelSet.{0}}
+    (X : C ⟶ (⟨List A⟩ : RelSet.{0})) (D : Unit) (ws : List A) :
+    prefConsAlg p X (Sum.inl D) ws ↔ ws = [] := junc_inl _ _ _ _
+
+/-- The `cons` arm of `[nil, ⊸ nil ∪ (p×X) cons]`: stop with `nil`, or keep a `p`-passing head on
+    an `X` of the tail. -/
+public theorem prefConsAlg_inr (p : A → Bool) {C : RelSet.{0}}
+    (X : C ⟶ (⟨List A⟩ : RelSet.{0})) (x : A) (t : C.carrier) (ws : List A) :
+    prefConsAlg p X (Sum.inr (x, t)) ws
+      ↔ ws = [] ∨ (p x = true ∧ ∃ w', X t w' ∧ ws = x :: w') := by
+  refine (junc_inr _ _ _ _).trans ?_
+  constructor
+  · rintro (h | ⟨⟨x', w'⟩, ⟨⟨hx, hp⟩, hX⟩, hws⟩)
+    · exact Or.inl h
+    · cases hx; exact Or.inr ⟨hp, w', hX, hws⟩
+  · rintro (h | ⟨hp, w', hX, hws⟩)
+    · exact Or.inl h
+    · exact Or.inr ⟨(x, w'), ⟨⟨rfl, hp⟩, hX⟩, hws⟩
+
+/-- Row 2 of `takewhile-alg`: `α prefix list(p) = F(prefix)[nil,⊸ nil ∪ cons] list(p)` — the fold's
+    computation rule at `prefix ≜ ⦇[nil,⊸ nil ∪ cons]⦈`, with `list(p)` carried along. -/
+public theorem takewhile_alg_step1 (p : A → Bool) :
     (initial Unit A).α ≫ (prefixR ≫ listP p)
-      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
+      = (F Unit A).map prefixR ≫ prefAlg ≫ listP p := by
   apply hom_ext; intro u ws
   constructor
-  · rintro ⟨m, hm, hX⟩
-    have hm' : m = con u := hm
-    subst hm'
+  · rintro ⟨m, hm, ys, hpre, hlp⟩
+    subst hm
     cases u with
-    | inl D =>
-        obtain ⟨ys, hpre, hlp⟩ := hX
-        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
-        subst hys
-        exact ⟨Sum.inl D, rfl, (Salg_inl p D ws).mpr ((listPAlg_inl p () ws).mp hlp)⟩
+    | inl D => exact ⟨Sum.inl D, rfl, ys, hpre, hlp⟩
     | inr q =>
         obtain ⟨x, t⟩ := q
-        obtain ⟨ys, hpre, hlp⟩ := hX
-        obtain ⟨r', hr', hstep⟩ := hpre
-        rcases (prefAlg_inr x r' ys).mp hstep with hwrap | hcons
-        · subst hwrap
-          have hws : ws = [] := (listPAlg_inl p () ws).mp hlp
-          exact ⟨Sum.inr (x, []), ⟨rfl, ConsList.wrap (), prefix_wrap t,
-            (listPAlg_inl p () _).mpr rfl⟩, (Salg_inr p x [] ws).mpr (Or.inl hws)⟩
-        · subst hcons
-          obtain ⟨w', hw', hstep2⟩ := hlp
-          obtain ⟨hp, hws⟩ := (listPAlg_inr p x w' ws).mp hstep2
-          exact ⟨Sum.inr (x, w'), ⟨rfl, r', hr', hw'⟩,
-            (Salg_inr p x w' ws).mpr (Or.inr ⟨hp, hws⟩)⟩
-  · rintro ⟨v, hv, hS⟩
+        obtain ⟨r, hr, hstep⟩ := hpre
+        exact ⟨Sum.inr (x, r), ⟨rfl, hr⟩, ys, hstep, hlp⟩
+  · rintro ⟨v, hv, ys, hstep, hlp⟩
     cases u with
     | inl D =>
         cases v with
-        | inl d' =>
-            exact ⟨ConsList.wrap D, rfl, ConsList.wrap (), (prefAlg_inl D _).mpr rfl,
-              (listPAlg_inl p () _).mpr ((Salg_inl p d' ws).mp hS)⟩
+        | inl D' =>
+            obtain rfl : D = D' := hv
+            exact ⟨ConsList.wrap D, rfl, ys, hstep, hlp⟩
         | inr q => exact hv.elim
     | inr q =>
         obtain ⟨x, t⟩ := q
         cases v with
-        | inl d' => exact hv.elim
+        | inl D' => exact hv.elim
+        | inr q' =>
+            obtain ⟨x', r⟩ := q'
+            obtain ⟨hx, hr⟩ := hv
+            cases hx
+            exact ⟨ConsList.cons x t, rfl, ys, ⟨r, hr, hstep⟩, hlp⟩
+
+/-- `[nil,⊸ nil ∪ cons] list(p) = [nil,⊸ nil ∪ (p×list(p)) cons]` — `list(p)` after `prefix`'s
+    algebra is `list(p)` on the tail it conses to and one `p` on the head it keeps. -/
+public theorem prefAlg_comp_listP (p : A → Bool) :
+    prefAlg ≫ listP p = prefConsAlg p (listP p) := by
+  apply hom_ext; intro v ws
+  cases v with
+  | inl D =>
+      rw [prefConsAlg_inl]
+      constructor
+      · rintro ⟨ys, hpre, hlp⟩
+        obtain rfl : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
+        exact (listP_wrap p () ws).mp hlp
+      · intro hws
+        exact ⟨ConsList.wrap (), (prefAlg_inl D _).mpr rfl, (listP_wrap p () ws).mpr hws⟩
+  | inr q =>
+      obtain ⟨x, t⟩ := q
+      rw [prefConsAlg_inr]
+      constructor
+      · rintro ⟨ys, hpre, hlp⟩
+        rcases (prefAlg_inr x t ys).mp hpre with h | h
+        · subst h; exact Or.inl ((listP_wrap p () ws).mp hlp)
+        · subst h; exact Or.inr ((listP_cons p x t ws).mp hlp)
+      · rintro (hws | hc)
+        · exact ⟨ConsList.wrap (), (prefAlg_inr x t _).mpr (Or.inl rfl),
+            (listP_wrap p () ws).mpr hws⟩
+        · exact ⟨ConsList.cons x t, (prefAlg_inr x t _).mpr (Or.inr rfl),
+            (listP_cons p x t ws).mpr hc⟩
+
+/-- Row 3 of `takewhile-alg`: `F(prefix)[nil,⊸ nil ∪ cons] list(p)
+    = F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]` — `list(p)` moves through the algebra. -/
+public theorem takewhile_alg_step2 (p : A → Bool) :
+    (F Unit A).map prefixR ≫ prefAlg ≫ listP p
+      = (F Unit A).map prefixR ≫ prefConsAlg p (listP p) := by
+  rw [prefAlg_comp_listP]
+
+/-- Row 4 of `takewhile-alg`: `F(prefix)[nil,⊸ nil ∪ (p×list(p)) cons]
+    = [nil,⊸ nil ∪ (p×(prefix list(p))) cons]` — the relator's tape joins the strand it runs
+    alongside, `prefix` landing on the tail `list(p)` already holds.  `⊸ nil` swallows it because
+    `nil` prefixes every list. -/
+public theorem takewhile_alg_step3 (p : A → Bool) :
+    (F Unit A).map prefixR ≫ prefConsAlg p (listP p)
+      = prefConsAlg p (prefixR ≫ listP p) := by
+  apply hom_ext; intro u ws
+  cases u with
+  | inl D =>
+      rw [prefConsAlg_inl]
+      constructor
+      · rintro ⟨v, hv, h⟩
+        cases v with
+        | inl D' => exact (prefConsAlg_inl p (listP p) D' ws).mp h
+        | inr q => exact hv.elim
+      · intro hws
+        exact ⟨Sum.inl D, rfl, (prefConsAlg_inl p (listP p) D ws).mpr hws⟩
+  | inr q =>
+      obtain ⟨x, t⟩ := q
+      rw [prefConsAlg_inr]
+      constructor
+      · rintro ⟨v, hv, h⟩
+        cases v with
+        | inl D' => exact hv.elim
+        | inr q' =>
+            obtain ⟨x', r⟩ := q'
+            obtain ⟨hx, hr⟩ := hv
+            cases hx
+            rcases (prefConsAlg_inr p (listP p) x r ws).mp h with hws | ⟨hp, w', hw', hws⟩
+            · exact Or.inl hws
+            · exact Or.inr ⟨hp, w', ⟨r, hr, hw'⟩, hws⟩
+      · rintro (hws | ⟨hp, w', ⟨r, hr, hw'⟩, hws⟩)
+        · exact ⟨Sum.inr (x, ConsList.wrap ()), ⟨rfl, prefix_wrap t⟩,
+            (prefConsAlg_inr p (listP p) x (ConsList.wrap ()) ws).mpr (Or.inl hws)⟩
+        · exact ⟨Sum.inr (x, r), ⟨rfl, hr⟩,
+            (prefConsAlg_inr p (listP p) x r ws).mpr (Or.inr ⟨hp, w', hw', hws⟩)⟩
+
+/-- Row 5 of `takewhile-alg`: `[nil,⊸ nil ∪ (p×(prefix list(p))) cons] = F(prefix list(p)) S` —
+    `prefix list(p)` leaves the algebra for the relator's tape, and `S` is what is left. -/
+public theorem takewhile_alg_step4 (p : A → Bool) :
+    prefConsAlg p (prefixR ≫ listP p)
+      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
+  apply hom_ext; intro u ws
+  cases u with
+  | inl D =>
+      rw [prefConsAlg_inl]
+      constructor
+      · intro hws; exact ⟨Sum.inl D, rfl, (Salg_inl p D ws).mpr hws⟩
+      · rintro ⟨v, hv, hS⟩
+        cases v with
+        | inl D' => exact (Salg_inl p D' ws).mp hS
+        | inr q => exact hv.elim
+  | inr q =>
+      obtain ⟨x, t⟩ := q
+      rw [prefConsAlg_inr]
+      constructor
+      · rintro (hws | ⟨hp, w', hX, hws⟩)
+        · exact ⟨Sum.inr (x, []), ⟨rfl, ConsList.wrap (), prefix_wrap t,
+            (listPAlg_inl p () _).mpr rfl⟩, (Salg_inr p x [] ws).mpr (Or.inl hws)⟩
+        · exact ⟨Sum.inr (x, w'), ⟨rfl, hX⟩, (Salg_inr p x w' ws).mpr (Or.inr ⟨hp, hws⟩)⟩
+      · rintro ⟨v, hv, hS⟩
+        cases v with
+        | inl D' => exact hv.elim
         | inr q' =>
             obtain ⟨x', w'⟩ := q'
-            obtain ⟨hx, hXw⟩ := hv
+            obtain ⟨hx, hX⟩ := hv
             cases hx
             rcases (Salg_inr p x w' ws).mp hS with hws | ⟨hp, hws⟩
-            · subst hws
-              exact ⟨ConsList.cons x t, rfl, ConsList.wrap (), prefix_wrap _,
-                (listPAlg_inl p () _).mpr rfl⟩
-            · subst hws
-              obtain ⟨ys', hys', hlp'⟩ := hXw
-              exact ⟨ConsList.cons x t, rfl, ConsList.cons x ys',
-                ⟨ys', hys', (prefAlg_inr x ys' _).mpr (Or.inr rfl)⟩,
-                w', hlp', (listPAlg_inr p x w' _).mpr ⟨hp, rfl⟩⟩
+            · exact Or.inl hws
+            · exact Or.inr ⟨hp, w', hX, hws⟩
+
+/-- The `takewhile-alg` display's headline: `α prefix list(p) = F(prefix list(p)) S` — building
+    the list and then keeping a `p`-passing prefix of it is keeping one of the tail first, and
+    then building with `S`.  (Fusion cannot derive this — `list(p)` is not entire and no algebra
+    meets the side condition — so the display's four steps are proved pointwise and composed
+    here, and the result is fed to @cata-defining below.) -/
+public theorem takewhile_alg_comm (p : A → Bool) :
+    (initial Unit A).α ≫ (prefixR ≫ listP p)
+      = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p :=
+  (takewhile_alg_step1 p).trans ((takewhile_alg_step2 p).trans
+    ((takewhile_alg_step3 p).trans (takewhile_alg_step4 p)))
 
 /-- The `takewhile-alg` row: `prefix list(p) = ⦇S⦈`, read off the defining equation above by
     @cata-defining (the Eilenberg–Wright universal property). -/

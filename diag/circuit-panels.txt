@@ -45,9 +45,9 @@ Freyd.Alg.greedy#htrans.lhs | <greedy-thm72> | R R
 Freyd.Alg.greedy#htrans.rhs | <greedy-thm72> | R
 Freyd.Alg.RelSet.ListRel.prefAlg | <prefix-defn> | [nil,⊸ nil ∪ cons]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.lhs | <takewhile-alg> | α prefix list(p)
-- | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
-- | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]
-- | <takewhile-alg> | [nil,⊸ nil ∪ (p×(prefix list(p))) cons]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ cons] list(p)
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs | <takewhile-alg> | F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]
+Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs | <takewhile-alg> | [nil,⊸ nil ∪ (p×(prefix list(p))) cons]
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm.rhs | <takewhile-alg> | F(prefix list(p))S
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs | <takewhile-mono> | (𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)
 Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs | <takewhile-mono> | (𝟙×R°)⊸ nil ∪ (p×R°) cons
