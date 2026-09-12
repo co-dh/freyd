@@ -394,6 +394,14 @@ theorem best_dominates :
       subst hP0'
       exact ((est_apply _ _ _).mp hest).2 qi g1
 
+/-- **party-laws, last row** (`include` branch): `include ⊑ Λ(include) est(R°)` — `include` is a
+    map, so it is already its own best output, and `est(R°)` may be pushed into the branch for
+    free.  The `include` half of what `exclude_step` states for `exclude`. -/
+public theorem include_step :
+    (includeR : dBranch A ⟶ dList A) ⊑ Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°) :=
+  graph_le_Λ_est includeFn (by
+    have h := recip_mono (R_refl rating); rwa [recip_id] at h)
+
 /-- **party-laws, last row** (`exclude` branch): `est(R°)` pushed into each subtree's choice —
     `π₂ list(Λ(choose) est(R°)) concat ⊑ Λ(exclude) est(R°)`: the best root-out party is the
     concatenation of each subtree's best of its two parties. -/
