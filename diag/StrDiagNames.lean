@@ -331,6 +331,9 @@ open Lean PrettyPrinter in
 -- taken from the DEFINITION rather than from a name of its own: an unexpander would have to spell
 -- the meet as Lean's own notation prints it, spaced, and `R ∩ H` is not what the note draws.
 attribute [diag_unfold] RelSet.Van.RinterH
+-- §7.5's algebra the same way: the note draws the arms, `⦇[nil,(ok→glue,new)]⦈`, and `progAlg` is
+-- a Lean name for them — a name in the label says nothing the picture can be read against.
+attribute [diag_unfold] RelSet.Van.progAlg
 
 open Lean PrettyPrinter in
 /-- §7.5's ordering and its prefix condition are the note's `R` and `H`; the object they are taken

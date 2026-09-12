@@ -906,12 +906,13 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- TYPE.  A family with a NOTATION of its own is the clause below: there the letter stands alone
     -- and the index is what the notation dropped.
     if ← isComponent e then
-      -- Built from the head and its indices and not from the printer's string: squeezing the spaces
-      -- out of `χ (GA)` leaves the parentheses the formatter put round the index.  Each index is an
-      -- object of the note's, spelled by its own rule, and closes up flat (`χGA`).
-      let mut l : Lbl := .text (← plain e.getAppFn)
-      for a in e.getAppArgs do l := l ++ (← labelTree 0 a)
-      return l
+      -- A BEAD'S INDEX IS THE OBJECT WIRE UNDER IT, so the string label writes the letter ALONE and
+      -- the index goes BENEATH, the shape a family with a notation of its own gets above: a label
+      -- that writes it too spells one object twice and lets the two drift (`est(R)` over `[m + 1]`,
+      -- never `est(R(m+1))`).  The commutative panel, having no wire to read it off, keeps the
+      -- subscript, which is what `Lbl.sub` is: the index is dropped by `flat` and by nothing else.
+      let ix ← e.getAppArgs.toList.mapM (labelTree 0)
+      return .sub (.text (← plain e.getAppFn)) (Lbl.join "," ix.toArray)
     else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
