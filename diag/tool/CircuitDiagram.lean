@@ -173,6 +173,20 @@ partial def objOf (o : Expr) : MetaM Obj := do
     match args.back? with
     | some b => do let a ← objOf b; return .mk (objApply "E" a) .opaq #[] (applyJoin "E")
     | none => opaqObj o
+  -- A RELATIONAL PRODUCT IS A PRODUCT, whatever object carries it.  `Pr.p` is a FIELD — nothing to
+  -- unfold and no carrier to read — so its strands come from the two objects `RelProd` says it is
+  -- the product of, exactly as `A×B`'s do; read as an atom it drew one wire labelled `l × l` and
+  -- put the arrow after the fork on a single strand.
+  | (``Freyd.Alg.RelProd.p, args) =>
+    match args.back? with
+    | some pr =>
+      match (← Meta.whnfR (← Meta.inferType pr)).getAppFnArgs with
+      | (``Freyd.Alg.RelProd, ps) =>
+        match StrDiag.lastTwo ps with
+        | some (a, b) => return prodObj #[← objOf a, ← objOf b]
+        | none => opaqObj o
+      | _ => opaqObj o
+    | none => opaqObj o
   -- A RELATOR APPLIED TO AN OBJECT is named by the relator and its argument — `F(c)`, whatever the
   -- carrier reduces to, and for however many summands.  Counting the carrier's summands answers a
   -- DIFFERENT question and gets `F` wrong wherever the base functor has two real summands
