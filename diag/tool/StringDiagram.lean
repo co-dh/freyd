@@ -131,9 +131,6 @@ structure Row where
   unit  : Bool := false
   deriving Inhabited
 
-/-- What LEAN says the bead is an arrow between, in the note's notation. -/
-def Row.sig (r : Row) : MetaM String := return (← cutText r.src) ++ "⟶" ++ (← cutText r.tgt)
-
 /-- A PICTURE, with an open top and bottom edge — the value `⟦f⟧` is, so that `⟦f≫g⟧ = ⟦f⟧⋆⟦g⟧` and
     `⟦φ×ψ⟧ = ×▹(⟦φ⟧∥⟦ψ⟧)` are composites of pictures and not a second walk over the term. -/
 structure Diagram where
@@ -375,15 +372,17 @@ def emit (p : Diagram) (declName : String) (frame topRow scale : Option Nat) : M
   return fileOf declName ("#let panels = (" ++ (← panelCode p declName frame topRow scale)
     ++ ",)\n#let pic = panels.at(0)\n")
 
-/-- `--string --sigs`: what LEAN says each bead is an arrow between, one line
-    `<panel>\t<label>\t<src>⟶<tgt>` per bead, the panels numbered as the file emits them.  Nothing
-    is written into the picture: `scripts/scanline` asks this at check time, so the types it holds
-    the ink to are the environment's and cannot go stale in a file. -/
-def sigLines (ps : Array Diagram) : MetaM String := do
+/-- `--string --sigs`: what LEAN says each bead of `sel`'s panels is an arrow between, one JSON
+    object per bead — `selector`, `panel` (numbered as the file emits them), `label`, `src`, `tgt`
+    — so a reader takes FIELDS and never cuts a type at a separator the type may itself spell.
+    Nothing is written into the picture: `scripts/scanline` asks this at check time, so the types
+    it holds the ink to are the environment's and cannot go stale in a file. -/
+def sigLines (sel : String) (ps : Array Diagram) : MetaM String := do
   let mut out := ""
   for i in [0 : ps.size] do
     for r in ps[i]!.rows do
-      out := out ++ toString (i + 1) ++ "\t" ++ r.label ++ "\t" ++ (← r.sig) ++ "\n"
+      out := out ++ (Json.mkObj [("selector", sel), ("panel", toJson (i + 1)), ("label", r.label),
+        ("src", ← cutText r.src), ("tgt", ← cutText r.tgt)]).compress ++ "\n"
   return out
 
 /-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
@@ -959,7 +958,7 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     deep the other one is.  The path names the statement, so `.lhs` on an `↔` draws the whole left
     statement and only a trailing name on a relation picks a side. -/
 def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
-    (frame topRow scale : Option Nat) (sigsOnly : Bool := false) : MetaM String :=
+    (frame topRow scale : Option Nat) (sigsOf : Option String := none) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1034,7 +1033,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
     withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
-      if sigsOnly then return ← sigLines (ps.map (·.2))
+      if let some s := sigsOf then return ← sigLines s (ps.map (·.2))
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
