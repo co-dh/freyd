@@ -198,12 +198,23 @@ open Lean PrettyPrinter in
     is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
 @[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
 
+open Lean PrettyPrinter in
+/-- `thin Q` — B&dM (8.1), and the name the note writes on the box.  The definition is an
+    intersection, so without a spelling of its own the picture opened it into the cap of
+    `subsetRel` with a residual, which is the operator the name exists to hide. -/
+@[app_unexpander thinRel] def unexpandThinRel : Unexpander
+  | `($_ $q) => `($(mkIdent `thin) $q)
+  | _ => `($(mkIdent `thin))
+
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
 -- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
+-- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
+-- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
+attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
