@@ -206,7 +206,22 @@ mutual
 partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
   -- WHAT THE MAP DOES, not how it was written: an arm reconstructed from a `match` arrives as the
   -- alternative applied to the summand's factors.  The fallback still prints what was written.
-  let body := betaHead body₀
+  let body₁ := betaHead body₀
+  -- A FUNCTION APPLIED TO A CONSTRUCTOR BUILT FROM THE INPUT IS THAT CASE OF IT, so the case is
+  -- taken: `arm₂` restricts an algebra to `Sum.inr` and the arm the note names is what is left.
+  -- Only a constructor built from the INPUT fires this, and only the head is unfolded, so a numeral
+  -- — a constructor behind one delta, with no input in it — is untouched, as `betaHead` says.
+  let isCtorApp (x : Expr) : MetaM Bool := do
+    let .const n _ := x.getAppFn | return false
+    match (← getEnv).find? n with
+    | some (.ctorInfo _) => return true
+    | _ => return false
+  let body ←
+    if ← body₁.getAppArgs.anyM (fun a => do return (← isCtorApp a) && a.containsFVar s) then
+      match ← Meta.unfoldDefinition? body₁ with
+      | some v => Meta.whnfCore v
+      | none => pure body₁
+    else pure body₁
   match projIndex body with
   | some 0 => return "π₁"
   | some _ => return "π₂"
@@ -230,7 +245,12 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     -- `nil` IS THE STRUCTURE MAP OUT OF `𝟏`, and whether the constructor was written with the unit
     -- value in it (`wrap s`) or without it is a spelling: `𝟏` carries no strand either way, which is
     -- the same test `mapLabel` asks before it writes a `⊸`.
-    if isCtor && (!body.containsFVar s || !(← hasStrands (← s.getType))) then return "nil"
+    -- A SOURCE WITH NO STRANDS CARRIES NOTHING TO BUILD FROM, so every map out of it is the
+    -- carrier's empty structure, whatever term writes it: a constructor (`wrap s`, `wrap ()` — the
+    -- unit value in it or not is a spelling) or a quotient of one (`nilBag`), which is why the test
+    -- is on the SOURCE and not on the body's head.
+    if !(← hasStrands (← s.getType)) then return "nil"
+    if isCtor && !body.containsFVar s then return "nil"
     if isCtor && (body.find? fun x => projIndex x == some 0).isSome
         && (body.find? fun x => projIndex x == some 1).isSome then
       -- WHICH FACTOR RECURSES NAMES THE MAP: the constructor is fed both factors of the input pair
@@ -316,7 +336,7 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
-  let e' ← openNoted e
+  let e' ← openNotedAll e
   if e' != e then return ← labelAt prec e'
   let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
@@ -460,6 +480,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
       | none => plain e
     | none => plain e
   | (c, args) =>
+    -- A HEAD THE LABEL HAS NO SPELLING OF is rewritten along the note's own equations first, and
+    -- ONLY here: `arm₂` of an algebra is the arm the note names, while every head with a clause
+    -- above is already written as the note writes it — `Λ R` is the `𝟙%∋ E(R)` its clause writes,
+    -- not the composite the PICTURE splits it into, and rewriting it here loops through
+    -- `singletonMap` and back.
+    if let some r ← rewriteHead? e then return ← labelAt prec r
     if tightHeads.contains c then return (← plain e).replace " " "" else do
     -- A COMPONENT OF A FAMILY the statement BINDS is set tight for the same reason a relator's
     -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
@@ -502,7 +528,7 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     FLAT is the whole point of the array: the split makes one factor of a run into two, and
     juxtaposition is associative, so a bracket round them would say a grouping the note does not. -/
 partial def labelRun (e : Expr) : MetaM (Array String) := do
-  let e' ← openNoted e
+  let e' ← openNotedAll e
   if e' != e then return ← labelRun e'
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>

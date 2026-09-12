@@ -506,6 +506,10 @@ partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
     for n in [``Freyd.Alg.RelSet.graph, ``Cat.id, ``Freyd.Alg.Λ, ``Cat.comp,
               ``Freyd.Alg.RelSet.rprodMap] do
       if let some e' ← Meta.whnfUntil e n then return ← isMapOf e' (fuel - 1)
+    -- AND AN EQUATION THE NOTE REWRITES ALONG answers this too: `arm₂` of a map is a map, and the
+    -- label already writes the arm by its own name (`snoc`), so the box has to be that map's
+    -- rectangle — the name and the shape are read off the same rewritten term or they disagree.
+    if let some r ← StrDiag.rewriteHead? e then return ← isMapOf r (fuel - 1)
     return false
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/

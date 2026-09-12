@@ -293,10 +293,17 @@ attribute [diag_unfold] RelSet.MSS.zeroPlus RelSet.MSS.mssPre
 -- `nilR` is the same story one step down: the note's `nil` is read off the CONSTANT the map creates
 -- (`diag/tool/Label.lean`), and the arrow's own Lean name says nothing a picture of `𝟏⟼[E]` does not.
 attribute [diag_unfold] RelSet.SL.nilR
+-- The bag's algebra is the coproduct the note writes out, `[nil,snag]`, never its Lean name: the
+-- arms are read off the `match` by `diag/tool/Label.lean` once the name is opened, and `arm₂` of it
+-- is then the arm alone.
+attribute [diag_unfold] RelSet.Tardy.bagAlg
 -- `Λ S` is drawn as the unit bead and `E(S)` (13.3.2a, 13.4.4a): the spine is rewritten by the
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
 attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
+-- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
+-- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
+attribute [diag_rewrite] RelSet.SL.arm₂_graph
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 

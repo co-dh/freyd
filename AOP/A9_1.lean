@@ -851,6 +851,12 @@ public theorem con_eq_junc : graph (con (L := Unit) (E := E)) = junc (sumCop _ _
     summand.  The note writes the arm by that name, never as the algebra restricted. -/
 public theorem arm₂_con : arm₂ (graph (con (L := L) (E := E))) = snocR := rfl
 
+/-- THE ARM OF A MAP IS A MAP — `arm₂` of a graph is the graph of the function restricted to the
+    summand — so the note's name for the arm is read off that function, exactly as every other
+    map's is; `arm₂_con` is this equation at `con`, where the restriction leaves `snoc`. -/
+public theorem arm₂_graph (f : ((F L E).obj b).carrier → c.carrier) :
+    arm₂ (graph f) = graph (fun p => f (Sum.inr p)) := rfl
+
 /-- The second arm of `F(X)·h` is the note's `(X×𝟙)U₂`: `F(X)` keeps the `E` component. -/
 public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
     arm₂ ((F L E).map X ≫ U) = rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U := by
