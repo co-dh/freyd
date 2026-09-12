@@ -238,6 +238,14 @@ public theorem party_absorb :
     Λ (⦇S⦈ ≫ choose (A := A)) = Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose :=
   (Λ_absorption _ _).symm
 
+/-- **party-laws, the opening row**: `frac(party,∋) est(R°) = frac(⦇S⦈,∋) E(choose) est(R°)` —
+    `party` opened by its definition and the absorption law, the two sides the note's first two
+    panels draw.  The step of the chain, so that each panel is one side of one statement. -/
+public theorem party_open :
+    Λ (party (A := A)) ≫ est((R rating)°)
+      = Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
+  rw [party_eq, party_absorb, Cat.assoc]
+
 /-! ### The two leaves of `party-mono-branch` (B&dM's exercises: `cost` is a sum) -/
 
 /-- `cost` adds over append. -/

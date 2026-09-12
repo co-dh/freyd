@@ -311,11 +311,13 @@ public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
 /-- Step 3: Corollary 8.1 (`thinning_est`) at the union algebra — the union of two `Q`-monotonic
     algebras is `Q`-monotonic, which is the only hypothesis of it the union has to earn. -/
 public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
+    {f₁ f₂ S : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hm₁ : MonotonicAlg (f₁ ≫ p₁) Q) (hm₂ : MonotonicAlg (f₂ ≫ p₂) Q) :
-    relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ est R
-      ⊑ Λ (relCata ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ est R := by
+    (hm₁ : MonotonicAlg (f₁ ≫ p₁) Q) (hm₂ : MonotonicAlg (f₂ ≫ p₂) Q)
+    (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
+    relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
+      ⊑ Λ (relCata S) ≫ est R := by
+  subst hS
   have hmonoS : MonotonicAlg ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) Q := by
     show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
@@ -361,7 +363,7 @@ public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
   exact le_trans
     (thinningList_step1 I hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86 hg₁ hg₂)
     (le_trans (thinningList_step2 I h87)
-      (thinningList_step3 hFr I hQR hreflQ htransQ htransR hm₁ hm₂))
+      (thinningList_step3 hFr I hQR hreflQ htransQ htransR hm₁ hm₂ rfl))
 
 /-! ## The note's `thinlist-laws`: (8.7), (8.8) and (8.9) discharged
 

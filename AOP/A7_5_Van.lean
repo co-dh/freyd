@@ -211,11 +211,16 @@ public theorem RH_eq : RH A = R A ∩ ((R A)° ⇨ Hrel A) := by
   · refine le_iff.mpr fun p q h => ⟨h.1, fun hle => ?_⟩
     exact le_iff.mp (impl_cancel ((R A)°) (Hrel A)) p q ⟨h.2, hle⟩
 
+-- THE ONE-POINT OBJECT IS THE NOTE'S `𝟏`, and an object a picture labels has to be written the
+-- way the picture writes it.  A NOTATION and not an abbreviation: `𝟏` is a bold digit, which is
+-- no Lean identifier.
+notation:max "𝟏" => Freyd.Alg.RelSet.CL.dL Unit
+
 /-- `H = (head prefix° head°)∪(nil° nil)`, point-free — `nil` being `wrapR` out of the one
-    point `dL Unit`, so `nil° nil` is the coreflexive on the empty schedule. -/
+    point `𝟏`, so `nil° nil` is the coreflexive on the empty schedule. -/
 public theorem H_eq :
     Hrel A = (headR A ≫ (prefixR : dList A ⟶ dList A)° ≫ (headR A)°)
-      ∪ ((wrapR : dL Unit ⟶ dSched A)° ≫ wrapR) := by
+      ∪ ((wrapR : 𝟏 ⟶ dSched A)° ≫ wrapR) := by
   apply hom_ext; intro p q
   constructor
   · rintro (⟨s, t, s', t', hp, hq, hpre⟩ | ⟨hp, hq⟩)
