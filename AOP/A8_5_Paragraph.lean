@@ -453,9 +453,13 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
   have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
     (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := okW len w)
     (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
+    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
+    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
+    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (minlist := fun _ => minlist)
     (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
     hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
-    h86 h87 rfl
+    h86 h87 rfl rfl rfl
   rw [Cat.comp_id (graph (newAlgFn (Word := Word)))] at key
   exact key
 

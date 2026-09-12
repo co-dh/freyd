@@ -418,8 +418,13 @@ public theorem tour_laws {l lF : RelSet.{0}}
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
     (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
+    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
+    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
+    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (minlist := fun _ => minlist)
     (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R Qc_refl Qc_trans R_recip_trans
-    hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87 rfl
+    hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
+    rfl rfl rfl
   rw [Cat.comp_id (graph (droplAlgFn (City := City))),
     Cat.comp_id (graph (droprAlgFn (City := City)))] at key
   exact key

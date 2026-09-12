@@ -312,6 +312,42 @@ public theorem mct_laws (hassoc : Assoc sb) :
     (R_recip_trans st sb cb) (R_recip_refl st sb cb)
   simp only [H] at key; rwa [hH] at key
 
+/-- `cat` ALWAYS RETURNS A `cons`: joining two non-empty lists never gives a one-element list.
+    That is the disjointness the summand law asks for — at a list `cat` reaches, `[wrap,cat]`
+    reaches it through the `cat` summand and no other. -/
+public theorem cat_ne_wrap (x y : NEList A) (a : A) : cat x y ≠ CL.ConsList.wrap a := by
+  cases x with
+  | wrap b => exact fun h => nomatch (show CL.ConsList.cons b y = CL.ConsList.wrap a from h)
+  | cons b x =>
+    exact fun h => nomatch (show CL.ConsList.cons b (cat x y) = CL.ConsList.wrap a from h)
+
+/-- **mct-laws**, third row: the `cat` ARM of the body, `(cat°)%∋ P((X×X)bin)est(R)` refining
+    `([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)`.  Proposition 9.1 at one summand
+    (`RelSet.pow_summand_le`) along `ι ≜ inr`, its disjointness discharged by `cat_ne_wrap`; the
+    summand relator is the SQUARE `X ↦ X×X`, which is what makes the arm's algebra `(X×X)bin`. -/
+public theorem mct_branch (X : dNE A ⟶ dTree A) :
+    Λ ((graph (fun p : NEList A × NEList A => cat p.1 p.2)
+          : (⟨NEList A × NEList A⟩ : RelSet.{0}) ⟶ dNE A)°)
+        ≫ powerRel (rprodMap X X
+            ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) ≫ est (R st sb cb)
+      ⊑ Λ (Allegory.recip (graph wrapCatFn : (TT.F A).obj (dNE A) ⟶ dNE A))
+          ≫ powerRel ((TT.F A).map X ≫ graph (con (A := A))) ≫ est (R st sb cb) := by
+  -- The square relator's action IS the pointwise `X×X` (`prodMap_eq_rprodMap`), so the arm the
+  -- note draws and the summand the law quantifies over are the same arrow.
+  have hmap : (Relator.prod (Relator.idRelator RelSet.{0})
+      (Relator.idRelator RelSet.{0})).map X = rprodMap X X := prodMap_eq_rprodMap X X
+  rw [← hmap]
+  refine RelSet.pow_summand_le (A := dNE A) (B := dTree A) (F := TT.F A)
+    (Fᵢ := Relator.prod (Relator.idRelator RelSet.{0}) (Relator.idRelator RelSet.{0}))
+    Sum.inr (graph_map _) ?_ ?_ ?_
+  · exact fun _ _ => Iff.rfl
+  · intro p z
+    rw [hmap, Fmap_comp_con X]
+    exact (junc_sum_inr _ _ p z).symm
+  · rintro (a | q) p y hp hw
+    · exact absurd (hp.symm.trans hw) (cat_ne_wrap p.1 p.2 a)
+    · exact ⟨q, rfl⟩
+
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.
 open Lean PrettyPrinter in

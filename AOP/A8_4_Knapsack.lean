@@ -392,9 +392,13 @@ public theorem knap_laws_step1 {l lF : RelSet.{0}}
   have key := thinningList (F := F Unit Item) (F_preservesRecip Unit Item) (initial Unit Item)
     (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within wt w) (p₂ := 𝟙 (dList Item))
     (P := R vol) (Q := Q vol wt) (R := R vol)
+    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
+    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
+    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (minlist := fun _ => minlist)
     (graph_map con) (graph_map dropFn) Q_le_R Q_refl Q_trans R_recip_trans
     knap_mono_cons hm₂ hsortF knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
-    rfl
+    rfl rfl rfl
   rw [Cat.comp_id (graph dropFn)] at key
   exact key
 
