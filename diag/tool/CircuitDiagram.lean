@@ -223,13 +223,32 @@ def endsOf (e : Expr) : MetaM (Obj × Obj) := do
 Spelled the way the BOOK spells it, and read off the TERM: `est(R)` is the `est` of the note,
 `∋` the epsiloff, `cons` the arrow whose graph is `List.cons`, `𝟙` the identity. -/
 
-/-- Whether the labeller has a spelling of its own for this arrow: those keep their name and are
-    never unfolded, because the name IS what the note writes on the box. -/
-def isNamed (e : Expr) : Bool :=
+/-- The head IDENTIFIER the printer writes an application under. -/
+partial def stxHead : Syntax → Option Name
+  | .ident _ _ n _ => some n
+  | .node _ _ args => args[0]?.bind stxHead
+  | _ => none
+
+/-- Whether the arrow has a SPELLING OF ITS OWN: those keep their name and are never unfolded,
+    because the name IS what the note writes on the box.  Two ways a constant gets one — a clause
+    of `diag/tool/Label.lean`, and an `app_unexpander` beside the declaration that writes it under
+    a DIFFERENT name (`thinRel` as `thin`, `editFn` as `edit`), which is the same statement made
+    where the constant lives.  Read off the PRINTER: an unexpander that only drops a namespace
+    leaves the name alone and says nothing, so it does not count, and a constant given a name of
+    its own tomorrow stops being opened without a line being added here. -/
+def isNamed (e : Expr) : MetaM Bool := do
   match e.getAppFnArgs.1 with
   | ``Cat.id | ``Freyd.Alg.PowerAllegory.eps | ``Freyd.Alg.est | ``Freyd.Alg.Λ
-  | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => true
-  | _ => false
+  | ``Freyd.Alg.Allegory.recip | ``Freyd.Alg.RelSet.graph => return true
+  | .str _ s =>
+    let some h := stxHead (← PrettyPrinter.delab e) | return false
+    -- A name of its own is one the DECLARATION chose.  A head that is one of the term's own
+    -- BINDERS chose nothing — `F(R)` prints under the relator variable `F`, and that relator is
+    -- exactly what has to open for the fork inside it to be drawn — and an unexpander that only
+    -- drops a namespace leaves the name alone, so neither counts.
+    if ((← getLCtx).findFromUserName? h).isSome then return false
+    return h.getString! != s
+  | _ => return false
 
 /-- Whether the term is built from an operator this functor draws — the test for unfolding a
     defined arrow: a body that is not one of these is a relation given pointwise, which has no
@@ -395,11 +414,14 @@ def matchArms (fw : Expr) : MetaM (Option (Array Expr)) := do
     never opened, and a body with no clause has no circuit inside it.  Every clause that matches on
     a factor's HEAD must go through this, or a rule fires on `[f,g]` written out and misses the same
     junction under the name a `def` gave it. -/
-def openDef (e : Expr) : MetaM Expr := do
-  if isNamed e then return e
+def openBody (e : Expr) : MetaM Expr := do
   match ← Meta.unfoldDefinition? e with
   | some v => let b := v.headBeta; return (if hasClause b then b else e)
   | none => return e
+
+def openDef (e : Expr) : MetaM Expr := do
+  if ← isNamed e then return e
+  openBody e
 
 /-- Whether `f` is a FOLD-FORMER, read off its own polymorphic type: `f : (a(C) ⟶ C) → (b ⟶ C)`,
     where the carrier `C` is one of `f`'s parameters, the argument is an algebra ON it, and the
@@ -586,7 +608,7 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
     gets and not the chamfered box its name alone would have produced.  An arrow the labeller
     names — `est(R)`, `Λ(R)`, `∋` — is never unfolded: its own spelling is the picture's. -/
 partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
-  if !(isNamed e) then
+  if !(← isNamed e) then
     if let some v ← Meta.unfoldDefinition? e then
       if hasClause v then
         let p ← draw v
@@ -660,8 +682,11 @@ partial def armParts (br : Expr) (src s : Obj) (fuse : Option Expr) (opened : Bo
     functor whose tape fuses into it, and every factor after the fork stays on the arm. -/
 partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
   let fs := if e.isAppOf ``Cat.comp then factorList e else #[e]
-  let head ← openDef fs[0]!
-  let nxt ← if fs.size > 1 then openDef fs[1]! else pure head
+  -- `openBody`, not `openDef`: naming an ARM is the statement that this panel draws the inside of
+  -- the fork, so a name that keeps itself everywhere else opens here — the same `S` the note sets
+  -- as one box where the panel is the whole algebra.
+  let head ← openBody fs[0]!
+  let nxt ← if fs.size > 1 then openBody fs[1]! else pure head
   let (j, fuse) :=
     if head.isAppOf ``Freyd.Alg.junc then (0, none)
     else if fs.size > 1 && fs[0]!.isAppOf ``Freyd.Functor.map && nxt.isAppOf ``Freyd.Alg.junc then
@@ -670,7 +695,7 @@ partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
   if j ≥ fs.size then
     throwError "`.inl`/`.inr` draws one arm of a fork, and this side has none at the head of its \
       run: it starts with {← StrDiag.label fs[0]!}"
-  let some (u, v) := lastTwo (← openDef fs[j]!).getAppArgs
+  let some (u, v) := lastTwo (← openBody fs[j]!).getAppArgs
     | throwError "a junction with no arms: {← StrDiag.label fs[j]!}"
   let (src, _) ← endsOf fs[0]!
   let ss := src.parts

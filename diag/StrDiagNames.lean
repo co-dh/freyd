@@ -176,6 +176,14 @@ open Lean PrettyPrinter in
     is, is the panel's region, and `big` says nothing a picture of `E(E A) ⟶ E A` does not. -/
 @[app_unexpander bigUnion] def unexpandBigUnion : Unexpander | _ => `($(mkIdent `union))
 
+open Lean PrettyPrinter in
+/-- `thin Q` — B&dM (8.1), and the name the note writes on the box.  The definition is an
+    intersection, so without a spelling of its own the picture opened it into the cap of
+    `subsetRel` with a residual, which is the operator the name exists to hide. -/
+@[app_unexpander thinRel] def unexpandThinRel : Unexpander
+  | `($_ $q) => `($(mkIdent `thin) $q)
+  | _ => `($(mkIdent `thin))
+
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
 -- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
