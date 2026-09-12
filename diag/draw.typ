@@ -523,6 +523,14 @@
 
 // The hues STILL FREE: every ring point clear of the beads, the object hues and every declared lane,
 // thinned so two of them are themselves apart.  Pure, so Typst memoises it — one sweep per document.
+//
+// THE FREE LIST CANNOT CARRY `SEPPANEL`, AND WIDENING `RINGS` DOES NOT MAKE IT.  Which hue a name
+// falls to is its hash, so any unnamed lane can turn up beside any declared lane and beside any
+// other unnamed one; the property `lanecheck` asks for would therefore have to be the THINNING's,
+// at `SEPPANEL` and not `SEPPAIR`.  Filtering there empties the band — the muted rings have no set
+// that far apart left once the fixed obstacles and `FCOL`'s own entries have taken their
+// neighbourhoods — so an unnamed lane that clashes is answered by NAMING it, which is what the
+// assertion says, and never by tuning `RINGS` until the hashes land elsewhere.
 #let freehues() = {
   let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, TCOL, BCOL, CCOL, GCOL)
   let out = ()

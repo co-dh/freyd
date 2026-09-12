@@ -821,6 +821,39 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       return (#[(Wire.rel R, inner)] ++ cs, o)
   return (#[], X)
 
+/-- A CUT ALREADY READ: the object it was read FROM, its wire stack with the object under each
+    wire, and the object under them all — what `peelCuts` answered, kept beside the question. -/
+structure Peeled where
+  obj   : Expr
+  cuts  : Array (Wire × Expr)
+  under : Expr
+  deriving Inhabited
+
+/-- ONE CUT, ONE READING.  `X` peeled, except that where `X` IS the object `expect` was read from,
+    `expect`'s reading stands.  An object has more than one peel: a catalogue entry with parameters
+    is instantiated by `isDefEq` against whatever spelling of the object the caller happens to hold,
+    and `Unit ⊕ [Char]×Char` answers `(F Unit Char).obj [Char]` and `(F Unit [Char]).obj Char`
+    alike — so two factors either side of one cut, holding different spellings of it, read different
+    stacks off the same object and the composite came apart at a cut both sides agreed the type of.
+    The cut therefore belongs to the composite: it is read once, by the factor above, and handed to
+    the factor below.  Where the two are NOT the same object there is nothing to hand down, the free
+    peel stands, and `Diagram.vcomp` refuses the composite naming both readings. -/
+def peelCutsAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name)
+    (regionTy X : Expr) : MetaM (Array (Wire × Expr) × Expr) := do
+  if let some p := expect then
+    let s ← Meta.saveState
+    if ← Meta.isDefEq X p.obj then return (p.cuts, p.under)
+    s.restore
+  peelCuts objVars cat regionTy X
+
+/-- The expectation UNDER the `n` lanes a factor merely runs past — `F(R)` is read at the cut `R`
+    is read at, with `F`'s own wires taken off the front.  `none` where the stack handed down is
+    shorter than those lanes, which is no cut of this factor at all. -/
+def Peeled.inner (p? : Option Peeled) (n : Nat) (x : Expr) : Option Peeled := do
+  let p ← p?
+  guard (n ≤ p.cuts.size)
+  return { obj := x, cuts := p.cuts.extract n p.cuts.size, under := p.under }
+
 /-- An OBJECT read as a RELATOR in `v` — the one reader every naturality statement is built from.
 
     A bead's naturality is a statement about the family `fun v => core`, so its two relators are
