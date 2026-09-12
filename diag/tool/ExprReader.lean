@@ -114,14 +114,35 @@ def namedProj? (e : Expr) : MetaM (Option Expr) := do
   unless (← Meta.whnf (← Meta.inferType x)).isAppOf s do return none
   return some (← Meta.mkProjection x fi)
 
-/-- A BUNDLE BUILT OUT OF BUNDLES OF ITS OWN KIND HAS NO NAME.  `relatorName?` writes a relator's
-    printed head and drops its arguments, because they are the TYPES the picture already draws on
-    the wires — but an argument that is ITSELF A RELATOR is another lane of the same picture, so
-    `Relator.prod G G'` and `Relator.prod F F'` both come out `prod` and one label stands for two
-    different arrows.  Read off the TYPE, so it holds of every combinator and names none. -/
-def builtOfItsOwnKind (s : Expr) : MetaM Bool := do
-  let some c := (← Meta.whnfD (← Meta.inferType s)).getAppFn.constName? | return false
-  s.getAppArgs.anyM fun a => return (← Meta.whnfD (← Meta.inferType a)).isAppOf c
+/-- The head IDENTIFIER the printer writes an application under, and `none` where the printer's own
+    notation DELIMITS the operand instead (`est(R)`, `⦇S⦈`) — those open with an ATOM, which is what
+    a bracket is. -/
+partial def stxHead : Syntax → Option Name
+  | .ident _ _ n _ => some n
+  | .node _ _ args => args[0]?.bind stxHead
+  | _ => none
+
+/-- A BUNDLE ASSEMBLED FROM BUNDLES THAT CARRY THE FIELD HAS NO NAME OF ITS OWN.  `relatorName?`
+    writes a relator's printed head and drops its arguments, because they are the TYPES the picture
+    already draws on the wires — but an argument that is ITSELF A BUNDLE WITH THAT FIELD is another
+    lane of the same picture, so `Relator.prod G G'` and `Relator.prod F F'` both come out `prod`,
+    and `BiRelator.appl F A` comes out `appl` where the note writes what `F` does.  The test is the
+    FIELD, not the kind: the assembled bundle need not be of its parts' type (a bifunctor at a fixed
+    argument is a unary relator), only built from something the field could have come from. -/
+def builtOfFieldCarrier (fld : Name) (s : Expr) : MetaM Bool := do
+  s.getAppArgs.anyM fun a => do
+    let some c := (← Meta.whnfD (← Meta.inferType a)).getAppFn.constName? | return false
+    return (findField? (← getEnv) c fld).isSome
+
+/-- WHETHER THE PRINTER GAVE THE BUNDLE A NAME OF ITS OWN.  An unexpander that writes
+    `BiRelator.toRelator F` as `F` chose the lane's name and a field of that bundle is drawn under
+    it; a head that is only the constant's own last component chose nothing, and a bundle the
+    statement BINDS wears its own letter.  The same test `declName?` makes on a box's name. -/
+def printerNamed (s : Expr) : MetaM Bool := do
+  let some c := s.getAppFn.constName? | return true
+  match stxHead (← PrettyPrinter.delab s) with
+  | some h => return h.getString! != c.getString!
+  | none => return true
 
 /-- THE BUNDLE ITSELF, under the PARENT projections Lean writes to reach an inherited field: a
     relator and its `toFunctor` are one lane, and only the relator says what it was built from. -/
@@ -153,18 +174,34 @@ partial def builtCtor? (s : Expr) : MetaM (Option Expr) := do
     `G(R)×G'(R)`, which is the note's own row.  Only where the field is APPLIED — the exact case
     `concreteProj?` excludes, and there because a relator with a NAME (`T`, `E`, `list`) is drawn by
     it and never by the object map inside it; a bundle with an argument of its own type has none. -/
-def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
+partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
   let .const n _ := e.getAppFn | return none
   let some pi := (← getEnv).getProjectionFnInfo? n | return none
   let args := e.getAppArgs
   unless args.size > pi.numParams + 1 do return none
   let s := args[pi.numParams]!
-  unless ← builtOfItsOwnKind (← bundleCore s) do return none
+  let some (.ctorInfo ci) := (← getEnv).find? pi.ctorName | return none
+  let some fld := (getStructureFields (← getEnv) ci.induct)[pi.i]? | return none
+  let core ← bundleCore s
+  unless ← builtOfFieldCarrier fld core do return none
+  if ← printerNamed core then return none
   -- The DEFINITION is taken off the constructor and nothing further is reduced: `whnf` would go on
   -- to unfold the object or arrow the field lands on and print its implementation.
   let some c ← builtCtor? s | return none
   let some v ← Meta.project? c pi.i | return none
-  return some (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
+  pointwise (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
+where
+  /-- THE OPENED FIELD READ AT ITS ARGUMENTS.  A field written POINT-FREE — `Relator.comp`'s
+      `obj := L.obj ∘ G.obj` — is the same function written pointwise, and only the pointwise form
+      says `L(GA)`; the composition is unfolded because `∘` is an ABBREVIATION (reducible) and the
+      picture draws no abbreviation, while a `def` the author named stands.  Stops at a FIELD
+      ACCESS, which is what the picture draws by the bundle's own name. -/
+  pointwise (x : Expr) : MetaM (Option Expr) := do
+    let .const c _ := x.getAppFn | return some x
+    if ((← getEnv).getProjectionFnInfo? c).isSome then return some x
+    unless ← isReducible c do return some x
+    let some v ← Meta.unfoldDefinition? x | return some x
+    pointwise v.headBeta
 
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
