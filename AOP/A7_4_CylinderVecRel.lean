@@ -153,6 +153,21 @@ public theorem genFold_lax_natural (S : A ⟶ B) : ∀ m : Nat,
       subst hV'eq
       exact ⟨genFold (m + 1) q, rfl, hres⟩
 
+/-- **`paths` is lax natural**: `Vec(m+1)(Vec(n)(S)) paths ⊑ paths Vec(n·3^m)(Vec(m+1)(S))`.
+    `paths ≜ ⦇gen⦈concat` and `concat` is strictly natural, so the whole of the slack is `⦇gen⦈`'s:
+    lax, and no better, for the reason `moves` is. -/
+public theorem paths_lax_natural (S : A ⟶ B) :
+    tupleP (m + 1) (tupleP n S) ≫ RelSet.graph paths
+      ⊑ RelSet.graph paths ≫ tupleP (n * pow3 m) (tupleP (m + 1) S) := by
+  refine le_iff.mpr fun q V h => ?_
+  obtain ⟨w, hw, hV⟩ := h
+  have hVeq : V = paths w := hV
+  subst hVeq
+  obtain ⟨z, hz, hstep⟩ := le_iff.mp (genFold_lax_natural S m) q (genFold m w) ⟨w, hw, rfl⟩
+  have hzeq : z = genFold m q := hz
+  subst hzeq
+  exact ⟨paths q, rfl, fun _ _ => hstep _ _ _⟩
+
 /-! ## `tupleP`'s laws
 
   The relator laws of `Vec(n)` on relations.  They live here rather than beside `tupleP` because
