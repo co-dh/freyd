@@ -226,6 +226,10 @@ partial def typeObj (t : Expr) : MetaM Obj := do
   if let (``Freyd.Alg.RelSet.carrier, #[o]) := t.getAppFnArgs then return ← objOf o
   -- The DECOMPOSITION is `StrDiag.wiringOf`'s, the one the `⊸` of a label asks too; only the
   -- LABELS are this functor's, so a type read one way here and another way there cannot happen.
+  -- WHAT THE ATOM IS CALLED IS READ OFF THE TYPE AS WRITTEN, not off what it reduces to: the
+  -- decomposition below reduces (`Dec` has to reach the list it is), and an atom whose reduct has
+  -- no spelling of its own would then wear the reduct's name — `Digit` drawn as `Fin(10)`.  So the
+  -- STRUCTURE comes from the reduct and, where the reduct is a bare atom, the NAME from `t`.
   match ← StrDiag.wiringOf t with
   | .prod a b => do
     let (oa, ob) := (← typeObj a, ← typeObj b)
@@ -237,8 +241,8 @@ partial def typeObj (t : Expr) : MetaM Obj := do
     let (oa, ob) := (← typeObj a, ← typeObj b)
     return .mk (oa.label ++ "+" ++ ob.label) .sum #[oa, ob] .other
   | .one => return .mk "𝟏" .one #[] .name
-  | .atom t =>
-    match t.getAppFnArgs with
+  | .atom red =>
+    match red.getAppFnArgs with
     | (``List, #[a]) => return .mk ("[" ++ (← typeObj a).label ++ "]") .opaq #[] .bracket
     | _ =>
       -- A TYPE THE PRINTER CLOSED IN ITS OWN BRACKETS (`ConsList Unit A` as `[A]`) is a container,
@@ -250,14 +254,14 @@ partial def typeObj (t : Expr) : MetaM Obj := do
       -- LAST type-valued one, as it is for a functor's action (`functorObj?`): `ConsList Unit A`
       -- carries its index type first, and an element in another slot comes out visibly wrong on
       -- the label rather than silently.
-      let stx ← PrettyPrinter.delab t
+      let stx ← PrettyPrinter.delab red
       if stxJoin stx != .bracket then opaqObj t else
-      match (← t.getAppArgs.filterM fun a => return (← Meta.inferType a).isSort).back? with
+      match (← red.getAppArgs.filterM fun a => return (← Meta.inferType a).isSort).back? with
       | none => opaqObj t
       | some a => do
         let inner ← typeObj a
         let s ← Meta.withLocalDeclD (Name.mkSimple inner.label) (← Meta.inferType a) fun x =>
-          plain (t.replace fun u => if u == a then some x else none)
+          plain (red.replace fun u => if u == a then some x else none)
         return .mk s .opaq #[] .bracket
 
 end
@@ -603,6 +607,14 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
         (powLabel rs) (powLabel rt) true]
     | none => return #[← draw e]
   | (``Cat.id, _) => return #[]
+  -- A LEAST FIXPOINT IS ITS BODY (`draw`'s `mu` clause costs no box), and a factor whose picture is
+  -- a RUN splices into the run above it — `≫` under the binder is the same composition as `≫`
+  -- outside, so nesting it would record a bracketing the picture does not have and would leave the
+  -- body's seams numbered from its own first item instead of the panel's.
+  | (``Freyd.Alg.mu, args) =>
+    match args.back? with
+    | some φ => Meta.lambdaTelescope φ fun _ b => drawItems b
+    | none => return #[← draw e]
   | _ => return #[← draw e]
 
 /-- A run: its factors and the objects between them, which is what the seam rule reads. -/
