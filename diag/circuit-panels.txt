@@ -132,8 +132,7 @@ Freyd.Alg.RelSet.Detab.entab_branch.lhs | <entab-laws> | (expand°)%∋ est(V×U
 Freyd.Alg.RelSet.Tardy.tardy_laws.rhs | <tardy-laws> | (bagify°)%∋ est(R)
 Freyd.Alg.RelSet.Tardy.tardy_laws.lhs | <tardy-laws> | ([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]
 Freyd.Alg.RelSet.Tardy.tardy_branch.lhs | <tardy-laws> | (snag°)%∋ est(Q')(X×𝟙)snoc
-# missing: `pick`, a MAP choosing a least-penalty job out of a bag, so it must be shown well defined on the permutation quotient before `schedule` can be written; `tardy_laws` says so in its own doc.
-- | <tardy-laws> | pick (schedule×𝟙)snoc
+Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs | <tardy-laws> | pick (schedule×𝟙)snoc
 Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs | <tex-laws> | (intern°)%∋ est(R)
 Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs | <tex-laws> | interval (inrange val°)%∋ est(R)
 Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs | <tex-laws> | interval H%∋ est(R)
