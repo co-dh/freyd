@@ -516,6 +516,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- the object `E[A]`, and a projection Lean wrote only because `×` is a type former is not a step
   -- of the algebra.  Each peel strictly shrinks the term, so the two cannot loop through each other.
   if let some x ← unprojRecord? e then return ← labelAt prec x
+  -- A FIELD LEAN LEFT AS A POSITION is written through the field's own name, or the notation keyed
+  -- on it — `RelProd.p`'s `a×b` — never fires and the label prints `inst✝.1`.
+  if let some x ← namedProj? e then return ← labelAt prec x
+  -- …and a field of a bundle with no name of its own is the field's DEFINITION at that bundle: the
+  -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
+  if let some x ← openBuiltField? e then return ← labelAt prec x
   let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every

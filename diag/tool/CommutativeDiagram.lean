@@ -491,12 +491,20 @@ where
     it is still the arrow the statement handed over. -/
 def imageOf (f : Expr) : MetaM (Option Expr) := do
   let (a, b) ← StrDiag.homEnds f
+  let mut gs : Array Expr := #[]
   for g in f.getAppArgs do
     if (← Meta.inferType g).isAppOf ``Cat.Hom then
       let (c, d) ← StrDiag.homEnds g
-      unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
-        return some g
-  return none
+      -- AN IDENTITY SLOT IS THE BIFUNCTOR APPLIED AT THAT OBJECT — `𝟙×∋` is `A×−` acting on `∋`,
+      -- `F(𝟙,f)` is `F(A,−)` acting on `f` — and not a second source.  The head CONSTANT, not the
+      -- two ends: an ordering `R : A⟶A` is an endo and is the source arrow of its own image.
+      unless g.isAppOf ``Cat.id do
+        unless ← [(a, c), (a, d), (b, c), (b, d)].anyM fun (x, y) => Meta.isDefEq x y do
+          gs := gs.push g
+  -- AN IMAGE HAS ONE SOURCE ARROW.  An arrow built from TWO that stand elsewhere — `φ×ψ`, the
+  -- product of two transformations — is the image of NEITHER, and calling it `φ` moved makes the
+  -- lax square it sits in read as being about carrying `φ` across.
+  return if gs.size == 1 then gs[0]! else none
 
 /-- THE ARROWS THE PICTURE IS HANDED, as the sub-expressions that carry them: the statement's free
     arrow VARIABLES, and — where it binds none — the arrow ITSELF, when it is a closed one no functor
