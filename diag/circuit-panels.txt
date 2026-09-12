@@ -91,10 +91,10 @@ Freyd.Alg.RelSet.Van.van_mono.lhs | <van-mono> | (𝟙×|R|)old ∪ (𝟙×(R∩
 Freyd.Alg.RelSet.Van.RH_eq_strict.lhs | <van-mono> | new (R∩H) ∪ old (R∩H)
 Freyd.Alg.RelSet.Van.van_mono.rhs | <van-mono> | (new ∪ old)(R;H)
 Freyd.Alg.RelSet.Van.van_laws.rhs | <van-laws> | (partition list(secure))%∋ est(R)
-Freyd.Alg.greedy.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
-Freyd.Alg.RelSet.Van.van_spec.lhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
+Freyd.Alg.RelSet.Van.van_laws_step3.rhs | <van-laws> | (⦇S⦈)%∋ est(R)
+Freyd.Alg.RelSet.Van.van_laws_step2.rhs | <van-laws> | (⦇S⦈)%∋ est(R;H)
 Freyd.Alg.RelSet.Van.van_laws_step1.rhs | <van-laws> | ⦇S%∋ est(R;H)⦈
-Freyd.Alg.RelSet.Van.van_mono_new.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
+Freyd.Alg.RelSet.Van.van_laws_step1.lhs | <van-laws> | ⦇[nil,(ok→glue,new)]⦈
 Freyd.Alg.thinning_est.lhs | <thin-cor> | ⦇(F(∋)S)%∋ thin Q⦈est(R)
 Freyd.Alg.thinning_est.lhs | <thin-cor> | (⦇S⦈)%∋ thin Q est(R)
 - | <thin-cor> | (⦇S⦈)%∋ est(R)
