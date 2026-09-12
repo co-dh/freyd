@@ -178,11 +178,39 @@ def unmatched(xs, ys):
     return out
 
 
+def differs(x, y):
+    return abs(x - y) > TOL if isinstance(x, float) and isinstance(y, float) else x != y
+
+
+def prefixlen(v, w):
+    """How far two primitives agree slot for slot — what says which of the leftovers is the same
+    wire drawn differently, where equal LENGTH does not (one extra knee lengthens the tuple)."""
+    n = 0
+    while n < len(v) and n < len(w) and not differs(v[n], w[n]):
+        n += 1
+    return n
+
+
 def report(name, xs, ys):
     only_a, only_b = unmatched(xs, ys), unmatched(ys, xs)
+    # A tuple cut at eight slots prints two DIFFERENT primitives as the SAME line, and a wire that
+    # only grew reads as a phantom — unmatched, yet identical on both sides.  So each leftover is
+    # paired with the nearest same-shape one on the other side and the line names the first slot
+    # they actually disagree on; only a leftover with no partner keeps the bare form.
+    left = list(only_b)
     for k, v in only_a:
-        print(f"  only in OLD  {name} {k} {v[:8]}")
-    for k, v in only_b:
+        cands = [(prefixlen(v, b[1]), i) for i, b in enumerate(left) if b[0] == k]
+        if not cands:
+            print(f"  only in OLD  {name} {k} {v[:8]}")
+            continue
+        n, j = max(cands)
+        w = left.pop(j)[1]
+        if n < len(v) and n < len(w):
+            print(f"  moved        {name} {k} slot {n}: {v[n]} -> {w[n]}   OLD {v[:8]}")
+        else:
+            print(f"  resized      {name} {k} {len(v)} -> {len(w)} slots, agreeing to {n}"
+                  f"   OLD {v[:8]}")
+    for k, v in left:
         print(f"  only in NEW  {name} {k} {v[:8]}")
     return len(only_a) + len(only_b)
 

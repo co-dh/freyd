@@ -357,16 +357,27 @@ def hasMapHyp (e : Expr) : MetaM Bool := do
   return false
 
 /-- Whether an arrow is a MAP, which is the whole of the chamfer decision.  Read off the term:
-    a graph and an identity are maps, a transpose is a map, and a hypothesis in scope says so for
-    a variable. -/
-partial def isMapOf (e : Expr) : MetaM Bool := do
+    a graph and an identity are maps, a transpose is a map, a composite and a product of maps are
+    maps, and a hypothesis in scope says so for a variable.
+
+    A NAMED map is a map.  `cons`, `nil`, `new`, the initial algebra `α` are `graph`s behind their
+    own names, so stopping at the head constant draws every named FUNCTION as a relation; the last
+    clause is one delta step — the same step `drawDecl` draws a def's body with — and the fuel is
+    what a def spelled in terms of itself would otherwise cost. -/
+partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
   match e.getAppFnArgs with
   | (``Freyd.Alg.RelSet.graph, _) | (``Cat.id, _) | (``Freyd.Alg.Λ, _) => return true
-  | (``Cat.comp, args) =>
+  | (``Cat.comp, args) | (``Freyd.Alg.RelSet.rprodMap, args) =>
     match lastTwo args with
-    | some (f, g) => return (← isMapOf f) && (← isMapOf g)
+    | some (f, g) => return (← isMapOf f fuel) && (← isMapOf g fuel)
     | none => hasMapHyp e
-  | _ => hasMapHyp e
+  | _ =>
+    if ← hasMapHyp e then return true
+    if fuel == 0 then return false
+    for n in [``Freyd.Alg.RelSet.graph, ``Cat.id, ``Freyd.Alg.Λ, ``Cat.comp,
+              ``Freyd.Alg.RelSet.rprodMap] do
+      if let some e' ← Meta.whnfUntil e n then return ← isMapOf e' (fuel - 1)
+    return false
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
 def powLabel (a : Obj) : Obj := .mk (applyLabel "E" a) .opaq #[] true
