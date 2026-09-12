@@ -487,6 +487,10 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
   -- category of sets IS the set `X`, so the wrapper must come off HERE too or the clause below
   -- dispatches on `RelSet.mk` and the operator inside — a product, a sum — is never seen.
   if let some x ← unwrapRecord? e then return ← labelAt prec x
+  -- …and its FIELD is that record, the same identification read the other way: `E[A].carrier` is
+  -- the object `E[A]`, and a projection Lean wrote only because `×` is a type former is not a step
+  -- of the algebra.  Each peel strictly shrinks the term, so the two cannot loop through each other.
+  if let some x ← unprojRecord? e then return ← labelAt prec x
   let wrap (p : Nat) (s : String) : String := if prec > p then "(" ++ s ++ ")" else s
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every

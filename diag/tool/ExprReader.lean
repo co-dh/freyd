@@ -56,6 +56,29 @@ def unwrapRecord? (x : Expr) : MetaM (Option Expr) := do
   if args.size != ci.numParams + 1 then return none
   return some args[args.size - 1]!
 
+/-- The INVERSE peel: the one FIELD of a one-field record IS that record.  `⟨X⟩.carrier` is the
+    object `X`, so a product of carriers is the product of the objects the picture draws
+    (`A×E[A]`, never `A×E([A])`), and a projection Lean wrote only because `×` is a type former
+    says nothing a reader can use.  Both spellings of a projection — the `proj` node and the
+    projection FUNCTION — because either can reach a label. -/
+def unprojRecord? (e : Expr) : MetaM (Option Expr) := do
+  let oneField (ctor : Name) : MetaM Bool := do
+    let some (.ctorInfo ci) := (← getEnv).find? ctor | return false
+    if ci.numFields != 1 then return false
+    let some (.inductInfo ii) := (← getEnv).find? ci.induct | return false
+    return ii.ctors.length == 1
+  match e with
+  | .proj s _ x =>
+    let some (.inductInfo ii) := (← getEnv).find? s | return none
+    let some c := ii.ctors.head? | return none
+    return if (← oneField c) then some x else none
+  | _ =>
+    let .const n _ := e.getAppFn | return none
+    let some pi := (← getEnv).getProjectionFnInfo? n | return none
+    unless ← oneField pi.ctorName do return none
+    let args := e.getAppArgs
+    return if h : args.size > pi.numParams then some args[pi.numParams] else none
+
 partial def unwrapRecords (e : Expr) : MetaM Expr :=
   Meta.transform e (post := fun x => do
     match ← unwrapRecord? x with
