@@ -16,6 +16,7 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
 STRSEL := .lake/build/string-selectors
+STRREC := .lake/build/string-records.jsonl
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
@@ -118,14 +119,14 @@ scan-strict:
 # obligation instead of failing.  `string-check --selectors` is the manifest's ONE reader, so the
 # two gates cannot come to disagree about what it names.  Each panel's `cert: lean:` is its
 # certificate: `scanline` asks `diag-export --string --sigs` for its bead types at check time, so a
-# picture the declaration no longer draws fails here.  One `diag-export` and one `scanline` for all
-# of them — each pays its import once per process.
+# picture the declaration no longer draws fails here.  `diag-export --records` draws every panel AND
+# prints its bead types in one run, so `scanline --records` reads them back instead of starting the
+# exporter a second time — one Lean process for the whole target, the way `string-check` already does.
 scan-generated: $(STAMP)
 	./scripts/string-check --selectors > $(STRSEL)
 	@test -s $(STRSEL) || { echo "$(STRSEL): diag/string-panels.txt names no selector to draw"; exit 1; }
-	tr '\n' '\0' < $(STRSEL) | xargs -0 ./scripts/diag-export --string
-	sed 's|.*|diag/generated/string/&.typ|' $(STRSEL) | tr '\n' '\0' \
-	  | xargs -0 ./scripts/scanline --strict
+	tr '\n' '\0' < $(STRSEL) | xargs -0 ./scripts/diag-export --string --records > $(STRREC)
+	./scripts/scanline --strict --records $(STRREC)
 
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
 # note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
