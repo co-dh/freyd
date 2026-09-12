@@ -43,6 +43,7 @@ import os, sys
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTE = os.path.join("diag", "allegory-axioms.typ")
+NOTES = (NOTE, os.path.join("diag", "allegory2.typ"))   # the laws, and the proofs that work them
 PRELUDE = os.path.join("diag", "note-prelude.typ")
 CHDIR = os.path.join("diag", "ch")
 
@@ -443,32 +444,32 @@ def sections_of(n=None, root_dir=None):
 
 
 def generated_imports(root_dir=None):
-    """Every picture under diag/generated/ that a .typ in diag/ imports, named as the exporter takes
+    """Every picture under diag/generated/ that one of the NOTES imports, named as the exporter takes
     it — the list `scripts/diag-regen` redraws.
 
+    The notes' own files are the list — each root with its chapters, and the prelude the split
+    moved the root's `#import` lines into — and nothing else under `diag/`: a walk over the
+    directory read a scratch slice `scanline` left behind as if the note had imported its picture,
+    and the redraw failed on a name only the string exporter can take.
     Each import is RESOLVED AS A PATH from the file that makes it, so the note's own
     `generated/x.typ` and a chapter's `../generated/x.typ` are one name.  A pattern matching the
     note's spelling alone went blind to every chapter the split created and redrew fewer pictures
     while exiting 0; a path resolution needs no edit at the next directory a file moves to."""
     root_dir = root_dir or ROOT_DIR
-    diag = os.path.join(root_dir, "diag")
-    gen = os.path.join(diag, "generated")
+    gen = os.path.join(root_dir, "diag", "generated")
     out = []
-    for d, subs, names in os.walk(diag):
-        subs[:] = [s for s in subs if os.path.join(d, s) != gen]   # a picture's own imports are not the list
-        for name in sorted(names):
-            if not name.endswith(".typ"):
+    files = [os.path.join(root_dir, PRELUDE)] + [p for n in NOTES for p in note_files(n, root_dir)]
+    for path in files:
+        d = os.path.dirname(path)
+        for ln in read(path).split("\n"):
+            if ln[:1] + "".join(takewhile_alpha(ln[1:])) != "#import":
                 continue
-            path = os.path.join(d, name)
-            for ln in read(path).split("\n"):
-                if ln[:1] + "".join(takewhile_alpha(ln[1:])) != "#import":
-                    continue
-                s = typst_string(ln)
-                if s is None or s.startswith("@") or s.startswith("/"):
-                    continue
-                tgt = os.path.normpath(os.path.join(d, s))
-                if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
-                    out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
+            s = typst_string(ln)
+            if s is None or s.startswith("@") or s.startswith("/"):
+                continue
+            tgt = os.path.normpath(os.path.join(d, s))
+            if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
+                out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
     return sorted(set(out))
 
 
