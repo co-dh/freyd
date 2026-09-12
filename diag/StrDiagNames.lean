@@ -307,6 +307,10 @@ attribute [diag_rewrite] RelSet.SL.arm₂_graph
 -- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
 -- second arm carries the `X`, never a box `F(X)` in front of the junction.
 attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
+-- The same slide at the tip-tree, where the relator is `𝟙+X²`: `F(X)[tip,bin] = [tip,(X×X)bin]`.
+-- The RULE is the generator's — rewrite at a composite — and each polynomial functor states the
+-- equation for its OWN shape, because the shape is what says which slots the `X` lands in.
+attribute [diag_rewrite] RelSet.TT.Fmap_comp_con
 -- The unit bead is `singletonMap = Λ 𝟙`; opened, the `Λ` label case prints it `𝟙%∋`.
 attribute [diag_unfold] singletonMap
 

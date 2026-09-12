@@ -13,6 +13,9 @@
 module
 
 public import AOP.A6_1_RelSet
+-- The junction's two injection laws (`ListRel.junc_sum_inl`/`_inr`) are stated once, over any
+-- `sumCop`, and the slide `F(X)[tip,bin] = [tip,(X×X)bin]` below is proved from them.
+public import AOP.A5_6_ListCombinators
 
 set_option linter.unusedVariables false
 
@@ -126,6 +129,32 @@ public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
 @[expose] public def con : (TFobj A (dTree A)).carrier → Tree A
   | Sum.inl a => Tree.tip a
   | Sum.inr (l, r) => Tree.bin l r
+
+/-- **mct-defn**, the relator SLIDES INTO THE BRACKET: `F(X)[tip,bin] = [tip,(X×X)bin]` — one tape
+    whose second arm carries the `X` in both slots, never a box `F(X)` in front of the junction. -/
+public theorem Fmap_comp_con {b : RelSet.{0}} (X : b ⟶ dTree A) :
+    (F A).map X ≫ graph (con (A := A))
+      = junc (sumCop (dA A) (⟨b.carrier × b.carrier⟩ : RelSet.{0}))
+          (graph (Tree.tip (A := A)))
+          (rprodMap X X ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) := by
+  apply hom_ext; intro u y
+  cases u with
+  | inl a =>
+    rw [ListRel.junc_sum_inl]
+    constructor
+    · rintro ⟨w, hw, hc⟩
+      cases w with
+      | inl a' => have h : a = a' := hw; subst h; exact hc
+      | inr q => exact (hw : False).elim
+    · intro h; exact ⟨Sum.inl a, rfl, h⟩
+  | inr p =>
+    rw [ListRel.junc_sum_inr]
+    constructor
+    · rintro ⟨w, hw, hc⟩
+      cases w with
+      | inl a' => exact (hw : False).elim
+      | inr q => exact ⟨q, hw, hc⟩
+    · rintro ⟨q, hq, hb⟩; exact ⟨Sum.inr q, hq, hb⟩
 
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
 @[expose] public def cataTreeFold {C : RelSet.{0}} (f : TFobj A C ⟶ C) : Tree A → C.carrier → Prop

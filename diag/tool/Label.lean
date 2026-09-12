@@ -219,6 +219,14 @@ def ctorName? (e : Expr) : MetaM (Option String) := do
   | some (.ctorInfo _) => return some n.getString!
   | _ => return none
 
+/-- The same answer for ANY declaration, for the one place a box writes a declaration by name and
+    nothing else.  A namespace is what a resolver needs, and nothing inside a picture resolves a
+    name, so `cat` is what the box says wherever `cat` is what was declared. -/
+def declName? (e : Expr) : MetaM (Option String) := do
+  let .const n _ := e.getAppFn | return none
+  if ((← getEnv).find? n).isNone then return none
+  return some n.getString!
+
 mutual
 
 /-- The BODY of a map, named as an arrow out of the input `s`: a body that does not mention `s` is
@@ -298,10 +306,16 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     let paths := deps.toList.filterMap (projPath s)
     if !deps.isEmpty && paths.length == deps.size
         && (paths == [[]] || paths == (List.range deps.size).map ([·])) then
-      -- A CONSTRUCTOR'S NAMESPACE IS ITS TYPE, which the wire beside the box already shows, so the
-      -- box writes the constructor's own last name (`wrap`, not `ConsList.wrap`) — the printer's
-      -- qualification is about resolving the name, and nothing in a picture has to resolve it.
+      -- A CONSTRUCTOR'S NAMESPACE IS ITS TYPE, which the wire beside the box already shows.
       if let some n ← ctorName? body then return n
+      -- AND WHERE EVERY EXPLICIT ARGUMENT WAS THE INPUT'S OWN FACTORS the box writes a declaration
+      -- by name and nothing else, so it writes the name the DECLARATION chose (`cat`): a namespace
+      -- is what a resolver needs, and nothing inside a picture resolves a name.  The implicits are
+      -- not printed either way, so they do not count as something left to write.
+      let fi ← Meta.getFunInfoNArgs body.getAppFn args.size
+      if (List.range args.size).all fun i =>
+          !(fi.paramInfo[i]?.map (·.isExplicit) |>.getD true) || args[i]!.containsFVar s then
+        if let some n ← declName? body then return n
       return ← plain (mkAppN body.getAppFn (args.filter fun a => !a.containsFVar s))
     if body₀.containsFVar s then plain f else plain body₀
 
@@ -344,7 +358,9 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   match f.getAppFnArgs with
   | (``Prod.fst, _) => return "π₁"
   | (``Prod.snd, _) => return "π₂"
-  | _ => plain f
+  -- A CONSTRUCTOR HANDED THE INPUT WHOLE is the same box as one handed its factors, so it gets the
+  -- same name: `tip`, never `Tree.tip`.  One rule, both spellings.
+  | _ => do if let some n ← ctorName? f then return n else plain f
 
 end
 
