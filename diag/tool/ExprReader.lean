@@ -265,7 +265,12 @@ def isObjType (ty : Expr) : MetaM Bool := do
 def isComponent (e : Expr) : MetaM Bool := do
   unless e.isApp && e.getAppFn.isFVar do return false
   unless (homObjs? (← Meta.inferType e)).isSome do return false
-  e.getAppArgs.allM fun a => do isObjType (← Meta.inferType a)
+  e.getAppArgs.allM fun a => do
+    let ty ← Meta.inferType a
+    -- AN ARROW IS NEVER AN OBJECT INDEX, whatever instance its hom type carries: `sort P` is `sort`
+    -- applied to a relation, which takes the brackets of every application, so the hom test comes
+    -- first and `isObjType` never gets to answer for it.
+    if (homObjs? ty).isSome then return false else isObjType ty
 
 /-- The last two arguments of an application. -/
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
