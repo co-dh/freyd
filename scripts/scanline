@@ -689,7 +689,7 @@ EXPORT = "./scripts/diag-export"
 LEANSIG = {}             # (declaration, panel id) → [(label, src, tgt)] in the order the panel draws
 
 
-def leansigs(per, recs=None):
+def leansigs(per, records=None):
     """The bead types a `lean:` cert stands for, read from LEAN at CHECK TIME.  A generated panel
     stores no `sigs:` of its own: `diag-export --string --sigs` prints one JSON object per bead —
     selector, panel, label, src, tgt — in the order the panel draws them, so the sweep holds the ink
@@ -697,7 +697,7 @@ def leansigs(per, recs=None):
     of every file `per` holds: the exporter's panel k is the k-th panel citing the declaration IN
     ITS FILE, so the key carries the declaration and the table serves the whole run.
 
-    `recs` names a file of `diag-export --string --records` records instead: the run that DREW the
+    `records` names a file of `diag-export --string --records` records instead: the run that DREW the
     pictures already read those types, and asking again starts Lean a second time for the same
     statements.  Every (declaration, panel) key the files need must be one its record drew."""
     num = {}
@@ -712,13 +712,13 @@ def leansigs(per, recs=None):
                              f" another file's {r['id']} is its panel {num[c['lean'], r['id']]}")
     if not num:
         return {}
-    if recs:
-        rs = {o["selector"]: o for o in map(json.loads, open(recs, encoding="utf-8").read()
+    if records:
+        rs = {o["selector"]: o for o in map(json.loads, open(records, encoding="utf-8").read()
                                             .splitlines())}
         drew = lambda n, k: "file" in rs.get(n, {}) and k <= rs[n]["panels"]
         lack = sorted({(n, k) for (n, _), k in num.items() if not drew(n, k)})
         if lack:
-            sys.exit(f"scanline: {recs} holds no record drawing (declaration, panel) "
+            sys.exit(f"scanline: {records} holds no record drawing (declaration, panel) "
                      + ", ".join(f"({n}, {k})" for n, k in lack))
         out = [o for n in dict.fromkeys(n for n, _ in num) for o in rs[n]["sigs"]]
     else:
