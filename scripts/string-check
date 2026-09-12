@@ -126,6 +126,14 @@ def why(n, g):
     ver = lambda xs: [x[5] if len(x) > 5 else "strict" for x in xs or []]
     if ver(n.get("beads")) != ver(g.get("beads")):
         out.append(f"marks {ver(n.get('beads'))} vs {ver(g.get('beads'))}")
+    # A UNIT IS A BEAD TOO, and it is the one bead that is not in `beads`: the wire it is born on
+    # carries it, so its name and its mark are the LANE's 5th and 6th elements.  Reading `beads`
+    # alone left `𝟙%∋` drawn lax against a `singletonMap_natural` the export cites as strict, on
+    # the very panel whose object wire the gate did catch — the same hole, one tuple over.
+    unit = lambda xs: [(x[4], x[5] if len(x) > 5 else "strict")
+                       for x in xs or [] if len(x) > 4 and x[4] is not None]
+    if unit(n.get("lanes")) != unit(g.get("lanes")):
+        out.append(f"units {unit(n.get('lanes'))} vs {unit(g.get('lanes'))}")
     return "; ".join(out)
 
 
