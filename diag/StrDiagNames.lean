@@ -114,6 +114,18 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 
+-- THE LEAF TYPE SAYS WHICH LIST A CONS-LIST IS, and a leaf carrying an ELEMENT is a one-element
+-- list: `ConsList A A` is the note's `list⁺(A)`, where `ConsList Unit A` is its `[A]`
+-- (`AOP.A6_ConsList`).  A DELABORATOR, because the two differ only in a TYPE the syntax repeats
+-- and an unexpander comparing the two spellings would compare names, not types; and it reaches the
+-- object too, because a wire's label is read off the carrier the elaborator reduced to.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.ConsList] def delabNEList : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size != 2 then failure
+  unless ← Meta.isDefEq args[0]! args[1]! do failure
+  `($(mkIdent (Name.mkSimple "list⁺")) $(← withAppArg delab))
+
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q

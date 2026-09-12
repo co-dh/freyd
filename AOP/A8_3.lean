@@ -135,11 +135,10 @@ public theorem sortRel_comp_thinlist_le
 
 variable {F : Relator 𝒜 𝒜}
 
--- The list object `[G(A)]` that the cartesian product `listcp(G)` lands in, as a family over the
--- RELATOR: `listcp` is an operator on relators — the book writes `listcp(F)`, never a bare name —
--- so the arrow and its target are indexed by the same `G`, which keeps the theorem instantiable at
--- the real list functor (`lF G ≜ [G(A)]`).
-variable {lF : Relator 𝒜 𝒜 → 𝒜}
+-- The list object `[F(A)]` that the cartesian product `listcp` lands in.  It is indexed by the
+-- section's own `F` and not by a relator argument: §8.4-8.6 instantiate this chapter at one
+-- relator each, and an arrow indexed by a relator would make every one of them carry the family.
+variable {lF : 𝒜}
 
 /-- **Lemma 8.1** (book p.202): one sorted list built from sorted arguments, instead of a set
     built and then sorted —
@@ -150,16 +149,16 @@ variable {lF : Relator 𝒜 𝒜 → 𝒜}
 public theorem map_sort_comp_listcp_le
     {f : F.obj A ⟶ A} (hf : Map f) {p P : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ l)}
-    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF F)}
-    {listcp : (G : Relator 𝒜 𝒜) → G.obj l ⟶ lF G} {listf : lF F ⟶ l} {filterp : l ⟶ l}
+    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf : lF ⟶ l} {filterp : l ⟶ l}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
     (hmono : MonotonicAlg f P)
     (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
     (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp F ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp F ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
+    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
+    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
   -- (8.11): the sort goes under `F`
-  have s1 : F.map (sort P) ≫ listcp F ≫ listf ≫ filterp
+  have s1 : F.map (sort P) ≫ listcp ≫ listf ≫ filterp
       ⊑ cpMap F A ≫ sortF (F.map P) ≫ listf ≫ filterp := by
     rw [← Cat.assoc, ← Cat.assoc (cpMap F A)]
     exact comp_mono_right h811 _
@@ -203,8 +202,8 @@ public theorem map_sort_comp_listcp_le
 public theorem sortedAlg_fusion
     {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ l)}
-    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF F)}
-    {listcp : (G : Relator 𝒜 𝒜) → G.obj l ⟶ lF G} {listf₁ listf₂ : lF F ⟶ l}
+    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
     {filterp₁ filterp₂ : l ⟶ l} {thinlist : (A ⟶ A) → (l ⟶ l)}
     {Pr : RelProd l l}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
@@ -215,28 +214,28 @@ public theorem sortedAlg_fusion
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
     (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp F ⊑ cpMap F A ≫ sortF (F.map P))
+    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
     (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
     (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P) :
-    F.map (sort P) ≫ listcp F ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
+    F.map (sort P) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
         ≫ merge P ≫ thinlist Q
       ⊑ Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q ≫ sort P := by
-  have l1 : (F.map (sort P) ≫ listcp F) ≫ (listf₁ ≫ filterp₁)
+  have l1 : (F.map (sort P) ≫ listcp) ≫ (listf₁ ≫ filterp₁)
       ⊑ Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort P := by
     rw [Cat.assoc]
     exact map_sort_comp_listcp_le hf₁ hsortF hmono₁ h88₁ h89₁ h811
-  have l2 : (F.map (sort P) ≫ listcp F) ≫ (listf₂ ≫ filterp₂)
+  have l2 : (F.map (sort P) ≫ listcp) ≫ (listf₂ ≫ filterp₂)
       ⊑ Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort P := by
     rw [Cat.assoc]
     exact map_sort_comp_listcp_le hf₂ hsortF hmono₂ h88₂ h89₂ h811
   -- Lemma 8.1 under the common prefix `F(sort P)·listcp(F)`, at each `fᵢ`, `pᵢ`
-  have pre : F.map (sort P) ≫ listcp F ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
+  have pre : F.map (sort P) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
         ≫ merge P ≫ thinlist Q
       ⊑ Pr.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort P) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort P)
         ≫ merge P ≫ thinlist Q := by
-    rw [← Cat.assoc (F.map (sort P)) (listcp F)
+    rw [← Cat.assoc (F.map (sort P)) (listcp)
           (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ merge P ≫ thinlist Q),
-        ← Cat.assoc (F.map (sort P) ≫ listcp F)
+        ← Cat.assoc (F.map (sort P) ≫ listcp)
           (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)) (merge P ≫ thinlist Q)]
     exact comp_mono_right
       (le_trans (RelProd.comp_pair_le _ _ _) (RelProd.pair_mono l1 l2)) _
@@ -274,8 +273,8 @@ public theorem sortedAlg_fusion
 public theorem thinningList_step1 (I : InitialAlgebra F)
     {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ l)}
-    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF F)}
-    {listcp : (G : Relator 𝒜 𝒜) → G.obj l ⟶ lF G} {listf₁ listf₂ g₁ g₂ : lF F ⟶ l}
+    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf₁ listf₂ g₁ g₂ : lF ⟶ l}
     {filterp₁ filterp₂ : l ⟶ l} {thinlist : (A ⟶ A) → (l ⟶ l)}
     {minlist : (A ⟶ A) → (l ⟶ A)} {Pr : RelProd l l}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
@@ -286,11 +285,11 @@ public theorem thinningList_step1 (I : InitialAlgebra F)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
     (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp F ⊑ cpMap F A ≫ sortF (F.map P))
+    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
     (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
     (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P)
     (hg₁ : g₁ = listf₁ ≫ filterp₁) (hg₂ : g₂ = listf₂ ≫ filterp₂) :
-    relCata (listcp F ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
+    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
       ⊑ (relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ sort P)
         ≫ minlist R := by
   subst hg₁
@@ -335,8 +334,8 @@ public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F
 public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ l)}
-    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF F)}
-    {listcp : (G : Relator 𝒜 𝒜) → G.obj l ⟶ lF G} {listf₁ listf₂ g₁ g₂ : lF F ⟶ l}
+    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ lF)}
+    {listcp : F.obj l ⟶ lF} {listf₁ listf₂ g₁ g₂ : lF ⟶ l}
     {filterp₁ filterp₂ : l ⟶ l} {thinlist : (A ⟶ A) → (l ⟶ l)}
     {minlist : (A ⟶ A) → (l ⟶ A)} {Pr : RelProd l l}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
@@ -349,13 +348,13 @@ public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
     (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp F ⊑ cpMap F A ≫ sortF (F.map P))
+    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
     (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
     (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P)
     (h87 : sort P ≫ minlist R ⊑ est R)
     (hg₁ : g₁ = listf₁ ≫ filterp₁) (hg₂ : g₂ = listf₂ ≫ filterp₂) {S : F.obj A ⟶ A}
     (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
-    relCata (listcp F ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
+    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
       ⊑ Λ (relCata S) ≫ est R := by
   subst hS
   exact le_trans

@@ -423,14 +423,18 @@ public theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
 -- `L` and `E` are which `F`, not arguments of the application — and `dE` names no former at all:
 -- it is the object the element type already is (`glue:Int×[[Int]]⟶[[Int]]`).  They change no
 -- statement and no `stmt_key`.
+-- THE LEAF TYPE SAYS WHICH LIST IT IS, and `[E]` is the one at the EMPTY leaf: `ConsList Unit E`
+-- has one leaf carrying nothing, which is the note's `nil`, while a leaf carrying an ELEMENT is a
+-- one-element list and makes `ConsList E E` the note's `list⁺(E)` (`diag/StrDiagNames.lean`).  The
+-- leaf is matched for the same reason `nil` is matched below: one constant, two of the note's names.
 open Lean PrettyPrinter in
 @[app_unexpander ConsList] public meta def unexpandConsListObj : Unexpander
-  | `($_ $_ $E) => `([$E])
+  | `($_ Unit $E) => `([$E])
   | _ => throw ()
 
 open Lean PrettyPrinter in
 @[app_unexpander dCL] public meta def unexpandDCL : Unexpander
-  | `($_ $_ $E) => `([$E])
+  | `($_ Unit $E) => `([$E])
   | _ => throw ()
 
 open Lean PrettyPrinter in

@@ -992,6 +992,45 @@ public theorem _root_.Freyd.Alg.RelSet.thin_summand_le {A B : RelSet.{0}} {Fᵢ 
       obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
       exact ⟨ι t, ⟨t, ht, rfl⟩, (harm t u).mp hgt⟩
 
+/-- THINNING UNDER THE IDENTITY ORDER DISCARDS NOTHING: `thin(𝟙)` relates a set only to itself,
+    since one half of it makes the answer a subset and the other puts every element back.  That is
+    what lets the thinning-free law below BE the thinning one at `Q ≜ 𝟙` rather than a second proof
+    of the same disjointness argument. -/
+public theorem _root_.Freyd.Alg.RelSet.thinRel_id {A : RelSet.{0}} :
+    thinRel (𝟙 A) = 𝟙 (PowerAllegory.powerObj A) := by
+  apply hom_ext
+  intro S Y
+  constructor
+  · rintro ⟨h1, h2⟩
+    have : S = Y := by
+      funext w
+      refine propext ⟨fun hs => ?_, fun hy => h1 w hy⟩
+      obtain ⟨w', hw', hY'⟩ := h2 w hs
+      exact hw' ▸ hY'
+    exact this
+  · intro hSY
+    obtain rfl : S = Y := hSY
+    exact ⟨fun _ hw => hw, fun z hz => ⟨z, rfl, hz⟩⟩
+
+/-- **Proposition 9.1 at one summand**, thinning-free form: the note's @mct-laws third row
+    `(Vᵢ°)%∋ P(Fᵢ(X)Uᵢ)est(R)` refines `(T°)%∋ P(F(X)h)est(R)`.  A problem whose decompositions are
+    never preferable to one another has no thinning step, and `thin(𝟙)` is exactly that step doing
+    nothing, so this is `thin_summand_le` at `Qᵢ ≜ 𝟙`, `Q ≜ 𝟙` — the disjointness argument is
+    written once. -/
+public theorem _root_.Freyd.Alg.RelSet.pow_summand_le {A B : RelSet.{0}}
+    {Fᵢ F : Relator RelSet.{0} RelSet.{0}}
+    {T : F.obj A ⟶ A} {X : A ⟶ B} {h : F.obj B ⟶ B} {R : B ⟶ B}
+    {Vᵢ : Fᵢ.obj A ⟶ A} {Uᵢ : Fᵢ.obj B ⟶ B}
+    (ι : (Fᵢ.obj A).carrier → (F.obj A).carrier) (hUᵢ : Map Uᵢ)
+    (hV : ∀ p y, Vᵢ p y ↔ T (ι p) y)
+    (harm : ∀ p z, (Fᵢ.map X ≫ Uᵢ) p z ↔ (F.map X ≫ h) (ι p) z)
+    (hdisj : ∀ w p y, Vᵢ p y → T w y → ∃ p', w = ι p') :
+    Λ (Vᵢ°) ≫ powerRel (Fᵢ.map X ≫ Uᵢ) ≫ est R
+      ⊑ Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R := by
+  have key := RelSet.thin_summand_le (Qᵢ := 𝟙 (Fᵢ.obj A)) (Q := 𝟙 (F.obj A)) (R := R) ι hUᵢ hV
+    (fun p p' hp => congrArg ι hp) harm hdisj
+  rwa [RelSet.thinRel_id, RelSet.thinRel_id, Cat.id_comp, Cat.id_comp] at key
+
 /-- **Proposition 9.1**, greedy form, second arm: the note's @greedy-laws third row
     `(V₂°)%∋ est(Q₂)(X×𝟙)U₂` refines the body `(T°)%∋ est(Q)F(X)h`. -/
 public theorem est_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
