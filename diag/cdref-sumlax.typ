@@ -1,0 +1,30 @@
+// cdref-sumlax.typ — the note's OWN coproduct row of `<lax-closure>`, standing alone, so
+// `scripts/cd-check` can hold the generated panel to it.  This is `diag/allegory-axioms.typ`'s
+// `laxsq((`GA+G'A`, `FA+F'A`, `GB+G'B`, `FB+F'B`), (`φA+ψA`, `φB+ψB`, `G(R)+G'(R)`, `F(R)+F'(R)`))`
+// expanded mark for mark: same `ar`/`node`/`lab`, same `SQW`/`SQH`, same `length: 0.8cm`.
+// `Freyd.Alg.laxNatural_sum` IS that square — `φ : G⇒F` and `ψ : G'⇒F'` give `φ+ψ : G+G'⇒F+F'`.
+// The component labels are the note's `` `φ` ``#sub[`` `A` ``] set as the one raw name the panel
+// writes, `φA`: a generated label is one `raw`, and `raw` carries no subscript.
+//
+// The two SIDE labels are `lab` beside the edge, not the note's `node` ON it, for the reason
+// `cdref-prodlax.typ` gives: a vertex mark on an edge cuts the square into four diagrams when the
+// drawing is read back.  The note's own line is reported as a defect rather than edited.
+//
+//   typst compile --root . --format svg diag/cdref-sumlax.typ diag/cdref-sumlax.svg
+//   ./scripts/diag-export --commutative Freyd.Alg.laxNatural_sum
+#import "draw.typ": GIVEN1, GIVEN2, SLACK, ar, cetz, lab, node
+
+#set page(width: auto, height: auto, margin: 12pt, fill: white)
+
+#cetz.canvas(length: 0.8cm, {
+  let (SQW, SQH) = (2.2, 0.95)
+  let (l, r) = (-SQW, SQW)
+  ar((l, SQH), (r, SQH), GIVEN1, s0: 0.5, s1: 0.5); ar((l, -SQH), (r, -SQH), GIVEN1, s0: 0.5, s1: 0.5)
+  ar((l, SQH), (l, -SQH), GIVEN2, s0: 0.5, s1: 0.5); ar((r, SQH), (r, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
+  lab(0, SQH + 0.62, GIVEN1)[`φA+ψA`]
+  lab(0, -SQH - 0.62, GIVEN1)[`φB+ψB`]
+  lab(l - 0.8, 0, GIVEN2)[`G(R)+G'(R)`]; lab(r + 0.8, 0, GIVEN2)[`F(R)+F'(R)`]
+  lab(0, 0, SLACK, rot: -45deg)[`⊑`]
+  node(l, SQH, black, `GA+G'A`); node(r, SQH, black, `FA+F'A`)
+  node(l, -SQH, black, `GB+G'B`); node(r, -SQH, black, `FB+F'B`)
+})

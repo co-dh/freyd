@@ -738,10 +738,12 @@ def Face.isFan (fc : Face) : Bool :=
 
 /-- A PASTED PAIR OF SQUARES: each face, opened at the chord, runs the chord's source, two interior
     vertices and the chord's target — four vertices, three edges.  Two squares cannot be folded
-    into one square's boundary the way two two-edge sides can, so the chord is drawn HORIZONTALLY
-    between the two ends it joins, with one square above it and one below: the two components are
-    symmetric about the arrow they induce, and the picture says so.  `(R×S)π₁⊑π₁R ∧ (R×S)π₂⊑π₂S`
-    is this shape; `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)`, two two-edge sides, is the diagonal-chord square. -/
+    into one square's boundary the way two two-edge sides can, so the chord is drawn straight between
+    the two ends it joins with one square on each side of it: the two components are symmetric about
+    the arrow they induce, and the picture says so.  Which way it runs is `imageOf` on the chord, the
+    test `Face.transposed` uses — flat when the chord is nobody's image, upright when a relator moved
+    it.  `(R×S)π₁⊑π₁R ∧ (R×S)π₂⊑π₂S` is this shape; `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)`, two two-edge sides,
+    is the diagonal-chord square. -/
 def Face.isPastedSquares (fc : Face) : Bool :=
   fc.chord.isSome && fc.lhs.edges.size == 3 && fc.rhs.edges.size == 3
 
@@ -811,12 +813,27 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
   if fc.isPastedSquares then
-    -- Two columns, three rows: the chord along the middle row, the `lhs` square's interior on the
-    -- row above and the `rhs` square's on the row below.  Each side runs left, along, right.
-    let place (p : Path) (gy : Float) (mid : String) (comp : Option Nat)
+    let some (c, sym) := fc.chord | throwError "a pasted pair of squares is a paste and has a chord"
+    -- WHICH WAY THE CHORD RUNS is the question `Face.transposed` asks of an unpasted face, and the
+    -- same test answers it here: the note hangs an arrow a relator has MOVED on a VERTICAL side, so
+    -- a chord that is some relator's image (`G(R)`, between the note's two lax squares) stands
+    -- UPRIGHT with one square left of it and one right, and a chord that is nobody's image (`R×S`,
+    -- built from two arrows and the image of neither) lies along the middle row with one square
+    -- above it and one below.  A paste is still not free to turn otherwise: the `lhs` face keeps the
+    -- side the chord's label is set in, whichever way the chord lies.
+    let upright := (← imageOf c).isSome
+    -- Two columns and three rows, or three columns and two rows: the chord along the middle row or
+    -- down the middle column, `lhs` on the `+1` side of it and `rhs` on the `-1` side.  Each path
+    -- runs the chord's source, across to its own far side, along it, and back to the chord's target.
+    let place (p : Path) (side : Float) (comp : Option Nat)
         : MetaM (Array Node × Array Edge) := do
-      let cell : Array (Float × Float) := #[(0.0, -1.0), (0.0, gy), (1.0, gy), (1.0, -1.0)]
-      let sides : Array String := #["left", mid, "right"]
+      let cell : Array (Float × Float) :=
+        if upright then #[(1.0, 0.0), (1.0 - side, 0.0), (1.0 - side, -1.0), (1.0, -1.0)]
+        else #[(0.0, -1.0), (0.0, -1.0 + side), (1.0, -1.0 + side), (1.0, -1.0)]
+      let far := if upright then (if side > 0 then "left" else "right")
+                 else (if side > 0 then "top" else "bottom")
+      let sides : Array String :=
+        if upright then #["top", far, "bottom"] else #["left", far, "right"]
       let mut ns : Array Node := #[]
       let mut es : Array Edge := #[]
       for i in [0:4] do
@@ -827,13 +844,13 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         es := es.push { src, tgt, label := (← labelParts f), side := sides[i]!,
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
       return (ns, es)
-    let (ln, le) ← place fc.lhs 0.0 "top" (comps.map (·.1.idx))
-    let (rn, re) ← place fc.rhs (-2.0) "bottom" (comps.map (·.2.idx))
+    let (ln, le) ← place fc.lhs 1.0 (comps.map (·.1.idx))
+    let (rn, re) ← place fc.rhs (-1.0) (comps.map (·.2.idx))
     let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
-    let some (c, sym) := fc.chord | throwError "a pasted pair of squares is a paste and has a chord"
-    -- The chord's own label is set ABOVE it, inside the face the `lhs` square bounds, which is where
-    -- the note puts it: a chord lies between two faces and its label has to be inside one of them.
-    let edges := le ++ re ++ #[← fc.chordEdge c "top"]
+    -- The chord's own label is set inside the face the `lhs` square bounds — above the chord when it
+    -- lies flat, left of it when it stands up: a chord lies between two faces and its label has to
+    -- be inside one of them.
+    let edges := le ++ re ++ #[← fc.chordEdge c (if upright then "left" else "top")]
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes edges
