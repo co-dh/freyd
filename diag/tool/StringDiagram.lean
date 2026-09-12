@@ -254,7 +254,10 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let t0n := topRow.getD n
   let t0 := t0n.toFloat
   let ys : Array Float := Array.mk ((List.range n).map fun i => (t0 - i.toFloat) * DY)
-  let xo := roundTo 2 (maxA (ls.map (·.x)) X0 + DX)
+  -- WITH NO LANE THERE IS NOTHING TO STAND EAST OF, so the object wire IS the first column.  The
+  -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
+  -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
+  let xo := roundTo 2 (if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0 + DX)
   -- A DIVISION `x%∋` is one token of the note's, `frac(x, ∋)` (`note-style.typ`'s `plain` reads it
   -- back as this very spelling), so a label that IS one is written as the note draws it — the unit
   -- `𝟙%∋` above all — where a division inside a composite label stays in the composite's text.
@@ -478,6 +481,13 @@ def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
     over the whole environment at every step, so each step multiplies the scan. -/
 def FUEL : Nat := 3
 
+/-- What ONE BEAD's verdict may cost.  The read itself runs with heartbeats off (`drawString`),
+    because a budget shared with the drawing dies naming whatever ran last; the SEARCH is where the
+    cost is unbounded — a goal nothing proves is scanned for over the whole environment, once per
+    step of `discharge` — so it is bounded here, from its own start, and spending the bound is the
+    spider `verdict` already draws where nothing is proved. -/
+def SEARCH_HEARTBEATS : Nat := 200000000
+
 /-- What the environment says about a bead: the mark it draws — `"strict"`, `"lax"`, `"spider"`
     where nothing is proved either way, or none where the family is REFUTED and the bead rides the
     object wire — and the declaration that says so, which a spider has none of. -/
@@ -513,7 +523,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
   -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
   -- and not from `verdict`.
   let br ← bridges
-  let found : Option Verdict ← id do
+  let search : MetaM (Option Verdict) := id do
       if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
         return some { mark := some .strict, lean := n }
       if let some (n, _) ← findSquare br strict must FUEL then
@@ -534,6 +544,16 @@ def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdic
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
         return some { mark := none, lean := n }
       return none
+  -- A SEARCH THAT CANNOT FINISH IS A BEAD NOTHING PROVES, SAID OUT LOUD.  The bound is measured
+  -- from the search's own start and the handler runs outside it, so the message is not itself cut
+  -- short; the answer is the spider below, and the line names the family so a bead that lost its
+  -- dot to a budget is not silent about it.
+  let bounded : MetaM (Option Verdict) := Core.withCurrHeartbeats <| withTheReader Core.Context
+    (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) search
+  let found : Option Verdict ← tryCatchRuntimeEx bounded fun _ => do
+    IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} spent its \
+      {SEARCH_HEARTBEATS} heartbeats and stopped: the bead draws as a spider"
+    return none
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.

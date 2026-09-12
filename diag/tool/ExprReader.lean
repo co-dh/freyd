@@ -952,6 +952,12 @@ partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must
   let mut hit : Option (Name × Expr) := none
   for (n, ci) in env.constants do
     if hit.isSome then break
+    -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
+    -- `tryCatchRuntimeEx` below: a budget spent inside one candidate is caught as that candidate's
+    -- failure and the scan walks on to the next, so this loop is the only place a whole search can
+    -- end.  Without it a goal nothing proves is a full scan of the environment at every step of
+    -- `discharge`, which is the environment cubed and never returns (`Freyd.Alg.Cylinder.Q`).
+    Core.checkMaxHeartbeats "the naturality search"
     if n.isInternal || ci.isUnsafe || concHead ci.type != head then continue
     let has := consts ci.type
     if must.any (fun m => !has.contains m) then continue
