@@ -728,7 +728,12 @@ partial def labelAt (prec : Nat) (e : Expr) : MetaM String := do
     -- action on an object is: the note writes `φ`'s component at `A` as `φA`, one name, where
     -- Lean's formatter sets the object off from the head.  Its head is a free variable and has no
     -- constant for `tightHeads`, so the test is `isComponent`'s, on the TYPE.
-    if ← isComponent e then return (← plain e).replace " " "" else do
+    if ← isComponent e then
+      -- ONE NAME, built from the head and its indices and not from the printer's string: squeezing
+      -- the spaces out of `χ (GA)` leaves the parentheses the formatter put round the index, where
+      -- the note writes `χGA`.  Each index is an object of the note's, spelled by its own rule.
+      return (← plain e.getAppFn) ++ String.join (← e.getAppArgs.mapM (labelAt 0)).toList
+    else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.

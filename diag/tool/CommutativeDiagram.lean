@@ -191,9 +191,12 @@ def Path.comp (p q : Path) : MetaM Path := do
 /-- A term read as a path.  Composition is the ONLY structural case — that is the functor law; `𝟙`
     is the empty path, and any other expression is one edge, whatever it is made of. -/
 partial def interp (e : Expr) : MetaM Path := do
-  -- A COMPONENT OF A FAMILY THE STATEMENT ITSELF BUILT is a redex — `(fun A => χ (G A) ≫ K(φ A)) B`
-  -- — and a redex is not an arrow expression: read it reduced, or the composition stays hidden under
-  -- the lambda and the picture draws ONE edge where the term composes two.
+  -- A COMPONENT OF A FAMILY THE STATEMENT ITSELF BUILT is ONE EDGE, whatever that component is made
+  -- of.  The redex `(fun A => χ(GA) ≫ K(φA)) B` is the TRANSFORMATION's value at `B`, and a lax
+  -- square's two sides are its component — the type says so, where the term's shape says only how
+  -- the component was built.  The composite inside it is the LABEL's business, not the path's.
+  if e.getAppFn.isLambda then
+    if (StrDiag.homObjs? (← Meta.inferType e)).isSome then return ← Path.arrow e.headBeta
   let e := e.headBeta
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>

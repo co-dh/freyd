@@ -195,13 +195,12 @@ partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
 where
   /-- THE OPENED FIELD READ AT ITS ARGUMENTS.  A field written POINT-FREE — `Relator.comp`'s
       `obj := L.obj ∘ G.obj` — is the same function written pointwise, and only the pointwise form
-      says `L(GA)`; the composition is unfolded because `∘` is an ABBREVIATION (reducible) and the
-      picture draws no abbreviation, while a `def` the author named stands.  Stops at a FIELD
-      ACCESS, which is what the picture draws by the bundle's own name. -/
+      names the two lanes: `L(GA)`, where the composition itself says `(Functor.obj L ∘ Functor.obj
+      G) A`.  `∘` is APPLICATION COMPOSED and the picture draws applications, so it is read through;
+      every other head stands, because unfolding it would print the implementation the note draws by
+      name. -/
   pointwise (x : Expr) : MetaM (Option Expr) := do
-    let .const c _ := x.getAppFn | return some x
-    if ((← getEnv).getProjectionFnInfo? c).isSome then return some x
-    unless ← isReducible c do return some x
+    unless x.getAppFn.isConstOf ``Function.comp do return some x
     let some v ← Meta.unfoldDefinition? x | return some x
     pointwise v.headBeta
 
