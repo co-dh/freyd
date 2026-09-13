@@ -89,6 +89,12 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The path count is the note's `3^m`; `pow3` is only the spelling that makes the index reduce. -/
+@[app_unexpander Vec.pow3] def unexpandPow3 : Unexpander
+  | `($_ $m) => `(3 ^ $m)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The pairing that packs a bifunctor's two arguments is the note's lane `⟨𝟙,T⟩` — what it does
     to an arrow, `R ↦ (R,T(R))`, IS its name; which initial algebras `T` comes from is not. -/
 @[app_unexpander typePair] def unexpandTypePair : Unexpander

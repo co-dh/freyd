@@ -785,10 +785,12 @@ def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
       let hi ← Meta.isDefEq c[1]! regionTy
       return lo && hi
     let some (R, _) ← instCatalogue n ends | s.restore; return none
+    -- A lane with a parameter — `tupleRelator ?n` — is fixed by the bead it matches, so the test
+    -- for an unknown comes AFTER the match, as in `peelWith?`; before it, `[n]` never peels.
+    let some r ← mapOfFunctor? (← laneFunctor R) regionTy e | s.restore; return none
     let R ← instantiateMVars R
     if R.hasExprMVar || objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
-    if let some r ← mapOfFunctor? (← laneFunctor R) regionTy e then return some (R, r)
-    s.restore; return none
+    return some (R, r)
   catch _ => s.restore; return none
 
 /-- The first catalogue lane `e` is the action of, and the arrow underneath. -/
