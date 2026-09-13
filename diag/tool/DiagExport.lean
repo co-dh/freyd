@@ -492,9 +492,10 @@ partial def runLaneGaps (cells : Array Cell) : Array Float := Id.run do
 
 end
 
-/-- Typst string literal: only `\` and `"` can end it early. -/
+/-- Typst string literal: `\` and `"` end it early, and a raw newline ends the LINE the generated
+    call sits on — an error message carries all three. -/
 def typstString (s : String) : String :=
-  "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\""
+  "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"" |>.replace "\n" "\\n") ++ "\""
 
 /-- Labels are set at 9pt monospace, which is what `boxWidth`'s per-character figure measures.  Keep
     the two in step: raising one without the other either overflows the box or pads it. -/
@@ -1320,27 +1321,22 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type] [--records]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type]\n\
      <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
+   a selector the exporter cannot draw still gets its file — a red box holding the error, so the\n\
+     note compiles and the defect is on the page — and the run exits nonzero naming every one\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
-   --string draws the STRING DIAGRAM of a statement, to diag/generated/string/<name>.typ\n\
+   --string draws the STRING DIAGRAM of a statement, to diag/generated/<name>.typ — what the\n\
+     note's own `#lean(\"<name>\")` imports\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
    --commutative draws the COMMUTATIVE DIAGRAM of a statement, to\n\
      diag/generated/commutative/<name>.typ; `<decl>.lhs`/`.rhs` is one side of an `↔`, and\n\
      `<a>+<b>` two statements drawn as one page — pasted along the edge they share, or side by side\n\
-   --records prints, instead of each path, ONE JSON object per declaration argument, in argument\n\
-     order: `selector`, then `file` (the path it wrote) — or `error` (why it drew none); a gate\n\
-     matches its selectors by that field and never searches the run's text (not with --sig)\n\
    --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
      categories a relator runs between; no side or branch selector applies\n\
-   --string --sigs writes NO file: it prints what each bead of each panel is an arrow between,\n\
-     one JSON object per bead (selector, panel, label, src, tgt), read by `scripts/scanline`\n\
-   --string --records adds to each drawn record `panels` (how many it drew) and `sigs` (the\n\
-     objects --sigs prints for it); `scripts/string-check` hands them to `scanline --records`,\n\
-     so Lean is started once\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
@@ -1349,46 +1345,15 @@ def usage : String :=
        union or meet (--string) at that side's head\n\
    `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too, and has\n\
      sides of its own: `<name>#h.lhs` (--circuit, --string)\n\
-   --frame N is a ROW COUNT, the box a display's panels share; --top is one row count PER\n\
-     PANEL, in panel order, `-` for a panel the exporter places itself (--top 3,-) — where\n\
-     its first bead sits, which the note chooses panel by panel.  With no --top the deepest\n\
-     part's last bead lands on row 1 and extra frame is headroom above the picture.\n\
-   --suffix S names the OUTPUT — <name>S.typ instead of <name>.typ.  The frame and the top are\n\
-     a DISPLAY's, so one statement two displays draw is two pictures, and a caller that draws\n\
-     both says which file each goes to rather than letting the second overwrite the first.\n\
-     --scale N is the per-panel display scale the note picks (`s: N%`) — all three --string only"
+   THE EXPORTER DECIDES EVERY MARK, TYPE, LABEL AND ROW: there is no frame, top, scale or\n\
+     suffix to give it, because the note writes a name and nothing else"
 
-/-- One `--frame N` style option's RAW value, and the arguments with it removed.  Raw, because a
-    value the flag cannot read is reported by the caller: read here, an unreadable one would come
-    back indistinguishable from a flag nobody passed and the picture would be drawn at a depth or a
-    row nobody asked for. -/
-def takeOpt (args : List String) (flag : String) : Option String × List String :=
-  match args with
-  | a :: b :: rest =>
-    if a == flag then (some b, rest)
-    else let (v, r) := takeOpt (b :: rest) flag; (v, a :: r)
-  | rest => (none, rest)
-
-/-- A `--frame N` style option as a count: absent stays absent, a value that is not a count is no
-    reading at all. -/
-def natArg : Option String → Option (Option Nat)
-  | none => some none
-  | some s => s.toNat?.map some
-
-/-- `--top`'s value: ONE ROW COUNT PER PANEL of the statement, in panel order, `-` for a panel the
-    exporter places itself — `--top 3,-`.  The top is the note's per-panel choice, like the frame,
-    so a statement whose two panels want different tops says both. -/
-def topsArg : Option String → Option (Array (Option Nat))
-  | none => some #[]
-  | some s => (s.splitOn ",").foldl (fun a t => do
-      let a ← a
-      if t == "-" then return a.push none else return a.push (some (← t.toNat?))) (some #[])
-
-/-- What a flag whose value could not be read says: the flag, the form it takes, and the value it
-    was given — never a silent fallback to the default. -/
-def optErr (flag what v : String) : IO UInt32 := do
-  IO.eprintln s!"diag-export: {flag} takes {what}, not `{v}`\n{usage}"
-  return 2
+/-- The picture a selector the exporter could not draw gets: a red box holding the selector and the
+    error, so the note still compiles and the defect is ON THE PAGE rather than in a log nobody
+    reads.  The run exits nonzero all the same. -/
+def stubFile (sel err : String) : String :=
+  s!"#let pic = block(stroke: red + 0.6pt, inset: 6pt, radius: 2pt,\n  \
+     text(8pt, red, raw({typstString s!"{sel}: {err}"})))\n"
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
@@ -1396,34 +1361,13 @@ def main (args : List String) : IO UInt32 := do
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
   let stringMode := args.contains "--string"
-  let sigsMode := args.contains "--sigs"
-  let recordsMode := args.contains "--records"
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
   let commutativeMode := args.contains "--commutative"
-  let (frameRaw, args) := takeOpt args "--frame"
-  let (topRaw, args) := takeOpt args "--top"
-  let (scaleRaw, args) := takeOpt args "--scale"
-  let (suffixRaw, args) := takeOpt args "--suffix"
-  -- A suffix NAMES A FILE beside its siblings; one holding a separator would write somewhere else.
-  let suffix := suffixRaw.getD ""
-  if suffix.any (fun c => c == '/') then
-    return ← optErr "--suffix" "a name to put before `.typ`, with no `/` in it" suffix
-  let some frame := natArg frameRaw | return ← optErr "--frame" "a row count" (frameRaw.getD "")
-  let some tops := topsArg topRaw
-    | return ← optErr "--top" "one row count per panel, in panel order, `-` for the exporter's own \
-        placement (`--top 3,-`)" (topRaw.getD "")
-  let some scale := natArg scaleRaw | return ← optErr "--scale" "a percentage" (scaleRaw.getD "")
   let args := args.filter (fun a =>
-    a != "--proof" && a != "--sig" && a != "--sigs" && a != "--records" && a != "--string"
+    a != "--proof" && a != "--sig" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--commutative")
   if args.isEmpty then IO.eprintln usage; return 2
-  -- Bead types are read off a STRING panel; any other route has none to report.
-  if sigsMode && !stringMode then IO.eprintln s!"diag-export: --sigs needs --string\n{usage}"; return 2
-  -- A record names the file its selector drew, and `--sig` draws none.
-  if recordsMode && sigMode then
-    IO.eprintln s!"diag-export: --records names the file each selector drew, and --sig draws none\n{usage}"
-    return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1440,9 +1384,9 @@ def main (args : List String) : IO UInt32 := do
     else [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
   let exts ← scopedEnvExtensionsRef.get
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
-  -- Each route writes under its own directory: the four functors are four pictures of one name.
-  let outDir := if stringMode then "diag/generated/string"
-    else if circuitMode then "diag/generated/circuit"
+  -- Each route writes under its own directory, except the string one: its panel IS the picture the
+  -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
+  let outDir := if circuitMode then "diag/generated/circuit"
     else if commutativeMode then "diag/generated/commutative"
     else if typeMode then "diag/generated/type" else "diag/generated"
   unless sigMode do IO.FS.createDirAll outDir
@@ -1510,59 +1454,48 @@ def main (args : List String) : IO UInt32 := do
     -- statement's neighbourhood.
     let ctx := StrDiag.declCtx env opts scopes <| if commutativeMode
       then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1 else base.toName
-    -- Every route answers with a `Drawn`; only a string panel has bead types to put in it.
-    let text (m : MetaM String) : MetaM StrDiag.Drawn := return { text := ← m, sigs := #[] }
-    let run : CoreM StrDiag.Drawn :=
-      Meta.MetaM.run' (if sigMode then text (sig arg.toName)
-        else if stringMode then
-          StrDiag.drawString base.toName sides binder branch frame tops scale
-            (if sigsMode || recordsMode then some arg else none)
+    let run : CoreM String :=
+      Meta.MetaM.run' (if sigMode then sig arg.toName
+        else if stringMode then StrDiag.drawString base.toName sides binder branch
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
           if branch.contains .body then
             throwError "`.body` opens a least fixed point's binder as a WIRE, which only the string \
               route draws"
-          else text (Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
-            (branch.map fun s => if s == .inl then 0 else 1))
-        else text (if commutativeMode then Freyd.CommutativeDiagram.draw arg
+          else Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
+            (branch.map fun s => if s == .inl then 0 else 1)
+        else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if typeMode then Freyd.TypeRender.file arg.toName
-        else if proofMode then drawProof arg.toName else draw arg.toName))
+        else if proofMode then drawProof arg.toName else draw arg.toName)
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
-  let mut status : UInt32 := 0
+  let mut failed : Array String := #[]
   for (arg, t) in args.zip tasks do
+    let path := if circuitMode || commutativeMode || typeMode
+      then System.FilePath.mk s!"{outDir}/{arg}.typ"
+      else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+    -- The header names the EXACT command that wrote this file — the argv it was run with, minus
+    -- the other selectors — so a flag added later is in it without anyone remembering to add it.
+    let cmd := " ".intercalate (argv.filter fun a => a == arg || !args.contains a)
+    let write (body : String) : IO Unit := do
+      IO.FS.writeFile path s!"// GENERATED by `diag-export` — do not edit; regenerate with\n\
+        //   ./scripts/diag-export {cmd}\n{body}"
+      IO.println path.toString
     -- The exception is REPORTED, not swallowed: "cannot draw" says nothing a reader can act on,
     -- and a bead whose naturality nobody proved has a message naming the three statements it
-    -- looked for.
-    -- Under --records the answer, file or error, is the selector's RECORD, so a caller matches it
-    -- by the selector field and never searches the run's text for the name.
+    -- looked for.  THE DEFECT ALSO GOES ON THE PAGE: the note imports this file by name, so a
+    -- selector that drew nothing still gets one — a red box holding the error — and the run fails.
     match ← IO.wait t with
     | .error ex =>
-      -- Records mode still reports the failure on stderr, one line per selector: the JSON record on
-      -- stdout is for `scanline --records` to read back, and `make` shows no reason for its own
-      -- failure without a line here.
       IO.eprintln s!"diag-export: {arg}: {ex}"
-      if recordsMode then IO.println (Json.mkObj [("selector", arg), ("error", toString ex)]).compress
-      status := 1
-    | .ok d =>
-      if sigMode then IO.println d.text
-      else if sigsMode then d.sigs.flatten.forM fun o => IO.println o.compress
-      else
-      let path := if stringMode || circuitMode || commutativeMode || typeMode
-        then System.FilePath.mk s!"{outDir}/{arg}{suffix}.typ"
-        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}{suffix}.typ"
-      -- The header names the EXACT command that wrote this file — the argv it was run with, minus
-      -- the other selectors — so a flag added later is in it without anyone remembering to add it.
-      let cmd := " ".intercalate (argv.filter fun a => a == arg || !args.contains a)
-      IO.FS.writeFile path s!"// GENERATED by `diag-export` — do not edit; regenerate with\n\
-        //   ./scripts/diag-export {cmd}\n{d.text}"
-      -- Only a string panel has beads, so only its record carries their count and types.
-      IO.println <| if !recordsMode then path.toString else
-        (Json.mkObj <| [("selector", toJson arg), ("file", toJson path.toString)] ++
-          if stringMode then [("panels", toJson d.sigs.size), ("sigs", toJson d.sigs.flatten)]
-          else []).compress
-  return status
+      unless sigMode do write (stubFile arg (toString ex))
+      failed := failed.push arg
+    | .ok text => if sigMode then IO.println text else write text
+  unless failed.isEmpty do
+    IO.eprintln s!"diag-export: drew a red stub for {failed.size} selector(s): \
+      {" ".intercalate failed.toList}"
+  return if failed.isEmpty then 0 else 1
 
 end Freyd.DiagExport
 

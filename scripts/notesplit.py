@@ -21,10 +21,9 @@ chapter's position among the level-1 headings, which is the number its displays 
 (`13.4.3c` is in chapter 13).  Working on chapter 13:
 
     make ch N=13                    # the chapter's own pdf, diag/ch/13-optimisation.pdf
-    make c CH=13                    # circuit, pairs, labels, cite, spell, scan-strict, hm-sigs
+    make c CH=13                    # panels, circuit, pairs, labels, cite, spell, scan-strict, hm-sigs
     make cite CH=13                 # the markers in that chapter alone
-    make scan-generated CH=13       # the generated pictures its panels name
-    CH=13 ./scripts/string-check    # or ./scripts/string-check --ch 13
+    make panels CH=13               # draw the pictures its `#lean(...)` names and has none of
     CH=13 ./scripts/cd-check        # or ./scripts/cd-check --ch 13
     CH=13 ./scripts/circuit-check
     ./scripts/diagram --write diag/ch/13-optimisation.typ     # a rewrite lands in the chapter file
@@ -443,9 +442,39 @@ def sections_of(n=None, root_dir=None):
     return {d.get("label") or d["id"] for d in ms if d.get("kind") == "disp"}
 
 
+def lean_panels(root_dir=None):
+    """Every `#lean(...)` selector the NOTES draw, read off the note's own `<lean-panel>` metadata.
+
+    THE NOTE IS ASKED, never matched: `lean("x")` is a typst call, and a pattern over the source
+    would miss one written in a variable, in a loop or across two lines, and find one inside a
+    comment.  `--input list=1` makes the prelude's `lean` emit its metadata and draw nothing, so
+    the listing runs before any picture exists — which is what `diag-regen --missing` needs.
+
+    THE HEAD OF EACH NOTE'S FILE LIST IS QUERIED, and its includes with it: the appendix and the
+    chapters cite each other's labels (`@mon-thm71`), so a chapter compiles alone only because
+    `note_files` hands back the whole list when no `CH` names one, and asking the appendix on its
+    own fails with `label <mon-thm71> does not exist`.  `CH=13` narrows that list to the chapter,
+    and this then pays one chapter's layout instead of the book's."""
+    import json
+    import subprocess
+    root_dir = root_dir or ROOT_DIR
+    out = []
+    for n in NOTES:
+        path = note_files(n, root_dir)[0]
+        rel = os.path.relpath(path, root_dir)
+        cmd = ["typst", "query", "--root", ".", "--input", "list=1", rel, "<lean-panel>",
+               "--field", "value"]
+        p = subprocess.run(cmd, cwd=root_dir, capture_output=True, text=True, encoding="utf-8")
+        if p.returncode:
+            die("%s: the pictures it draws are unknown — `%s` failed:\n%s"
+                % (rel, " ".join(cmd), p.stderr.strip()))
+        out += json.loads(p.stdout)
+    return sorted(set(out))
+
+
 def generated_imports(root_dir=None):
-    """Every picture under diag/generated/ that one of the NOTES imports, named as the exporter takes
-    it — the list `scripts/diag-regen` redraws.
+    """Every picture under diag/generated/ that one of the NOTES draws — each `#lean(...)` selector
+    and each surviving `#import`, named as the exporter takes it — the list `diag-regen` redraws.
 
     The notes' own files are the list — each root with its chapters, and the prelude the split
     moved the root's `#import` lines into — and nothing else under `diag/`: a walk over the
@@ -470,7 +499,7 @@ def generated_imports(root_dir=None):
             tgt = os.path.normpath(os.path.join(d, s))
             if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
                 out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
-    return sorted(set(out))
+    return sorted(set(out) | set(lean_panels(root_dir)))
 
 
 def note_text(root=None, root_dir=None):
@@ -642,6 +671,9 @@ def cmd_files(argv):
         return
     if "--generated" in argv:
         print(*generated_imports(), sep="\n")
+        return
+    if "--lean" in argv:
+        print(*lean_panels(), sep="\n")
         return
     argv = take_chapter(argv)
     for p in note_files(argv[0] if argv else None):
