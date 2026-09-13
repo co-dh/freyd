@@ -40,12 +40,16 @@ public import AOP.A7_4_Horner
 public import AOP.A7_2
 public import AOP.A6_ConsList
 public import AOP.A6_GenFold
+public import AOP.A5_7_ListBeads
 
 set_option linter.unusedVariables false
 
 namespace Freyd.Alg.RelSet.GCTakeWhile
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL
+-- `prefix` is ListRel's arrow, not a second copy: the note's bead finds its naturality by the
+-- head constant.  Opened by name because this section's `listP p` clashes with ListRel's `listP`.
+open Freyd.Alg.RelSet.ListRel (prefixR prefAlg prefixP prefix_cata)
 
 variable {A : Type}
 
@@ -208,14 +212,6 @@ public theorem lenLE_recip_trans : (lenLE (A := A))° ≫ lenLE° ⊑ lenLE° :=
     obtain ⟨ys, h1, h2⟩ := h
     exact Nat.le_trans h2 h1
 
-/-- `prefix`'s algebra `[nil, ⊸ nil ∪ cons]`, on the carrier `[A]` itself. -/
-@[expose] public def prefAlg : Fobj Unit A (dCL Unit A) ⟶ dCL Unit A :=
-  junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
-    ((graph fun _ => ConsList.wrap ()) ∪ consR)
-
-/-- `prefix ≜ ⦇[nil, ⊸ nil ∪ cons]⦈` — at each `cons`, stop or keep the head. -/
-@[expose] public def prefixR : dCL Unit A ⟶ dCL Unit A := cataR prefAlg
-
 /-- `(p×𝟙) cons : A×[A] ⟶ [A]` — keep a head that passes `p` onto the folded tail. -/
 @[expose] public def pcons (p : A → Bool) :
     (⟨A × List A⟩ : RelSet.{0}) ⟶ (⟨List A⟩ : RelSet.{0}) :=
@@ -310,13 +306,7 @@ theorem Salg_inr (p : A → Bool) (x : A) (c ws : List A) :
     · exact Or.inl h
     · exact Or.inr ((pcons_apply p x c ws).mpr h)
 
-/-! ### Supporting facts: `nil` prefixes everything, prefixes of equal length agree -/
-
-/-- `nil` is a prefix of every list — the entire half of `prefix`. -/
-theorem prefix_wrap : ∀ xs : ConsList Unit A, prefixR xs (ConsList.wrap ())
-  | ConsList.wrap _ => (prefAlg_inl _ _).mpr rfl
-  | ConsList.cons _ t =>
-      ⟨ConsList.wrap (), prefix_wrap t, (prefAlg_inr _ _ _).mpr (Or.inl rfl)⟩
+/-! ### Supporting facts: prefixes of equal length agree -/
 
 /-- Two prefixes of one list of equal length are equal. -/
 theorem pre_eq_of_length : ∀ {a b v : List A}, Pre a v → Pre b v → a.length = b.length → a = b
@@ -337,39 +327,40 @@ theorem spec_iff (p : A → Bool) (u : ConsList Unit A) (ws : List A) :
   | wrap D =>
       constructor
       · rintro ⟨ys, hpre, hlp⟩
-        have hys : ys = ConsList.wrap () := (prefAlg_inl D ys).mp hpre
-        subst hys
-        have hws : ws = [] := (listPAlg_inl p () ws).mp hlp
-        subst hws
-        exact ⟨trivial, trivial⟩
+        cases ys with
+        | wrap E =>
+            have hws : ws = [] := (listPAlg_inl p E ws).mp hlp
+            subst hws
+            exact ⟨trivial, trivial⟩
+        | cons b y => exact False.elim hpre
       · rintro ⟨hpre, -⟩
         cases ws with
         | nil =>
-            exact ⟨ConsList.wrap (), (prefAlg_inl D _).mpr rfl, (listPAlg_inl p () _).mpr rfl⟩
+            exact ⟨ConsList.wrap (), prefixP.nil _, (listPAlg_inl p () _).mpr rfl⟩
         | cons y ys => exact hpre.elim
   | cons x t ih =>
       constructor
       · rintro ⟨ys, hpre, hlp⟩
-        obtain ⟨r', hr', hstep⟩ := hpre
-        rcases (prefAlg_inr x r' ys).mp hstep with hwrap | hcons
-        · subst hwrap
-          have hws : ws = [] := (listPAlg_inl p () ws).mp hlp
-          subst hws
-          exact ⟨trivial, trivial⟩
-        · subst hcons
-          obtain ⟨w', hw', hstep2⟩ := hlp
-          obtain ⟨hp, hws⟩ := (listPAlg_inr p x w' ws).mp hstep2
-          subst hws
-          obtain ⟨hPre, hAll⟩ := (ih w').mp ⟨r', hr', hw'⟩
-          exact ⟨⟨rfl, hPre⟩, hp, hAll⟩
+        cases ys with
+        | wrap E =>
+            have hws : ws = [] := (listPAlg_inl p E ws).mp hlp
+            subst hws
+            exact ⟨trivial, trivial⟩
+        | cons b y =>
+            have hpre' : b = x ∧ prefixP y t := hpre
+            obtain ⟨w', hw', hstep2⟩ := hlp
+            obtain ⟨hp, hws⟩ := (listPAlg_inr p b w' ws).mp hstep2
+            subst hws
+            obtain ⟨hPre, hAll⟩ := (ih w').mp ⟨y, hpre'.2, hw'⟩
+            exact ⟨⟨hpre'.1, hPre⟩, hp, hAll⟩
       · rintro ⟨hpre, hall⟩
         cases ws with
-        | nil => exact ⟨ConsList.wrap (), prefix_wrap _, (listPAlg_inl p () _).mpr rfl⟩
+        | nil => exact ⟨ConsList.wrap (), prefixP.nil _, (listPAlg_inl p () _).mpr rfl⟩
         | cons y ws' =>
             obtain ⟨hyx, hpre'⟩ := hpre
             obtain ⟨hpy, hall'⟩ := hall
             obtain ⟨ys', hys', hlp'⟩ := (ih ws').mpr ⟨hpre', hall'⟩
-            refine ⟨ConsList.cons x ys', ⟨ys', hys', (prefAlg_inr x ys' _).mpr (Or.inr rfl)⟩,
+            refine ⟨ConsList.cons x ys', ⟨rfl, hys'⟩,
               ws', hlp', (listPAlg_inr p x ws' _).mpr ⟨?_, ?_⟩⟩
             · rw [← hyx]; exact hpy
             · rw [hyx]
@@ -426,33 +417,9 @@ public theorem prefConsAlg_inr (p : A → Bool) {C : RelSet.{0}}
 public theorem takewhile_alg_step1 (p : A → Bool) :
     (initial Unit A).α ≫ (prefixR ≫ listP p)
       = (F Unit A).map prefixR ≫ prefAlg ≫ listP p := by
-  apply hom_ext; intro u ws
-  constructor
-  · rintro ⟨m, hm, ys, hpre, hlp⟩
-    subst hm
-    cases u with
-    | inl D => exact ⟨Sum.inl D, rfl, ys, hpre, hlp⟩
-    | inr q =>
-        obtain ⟨x, t⟩ := q
-        obtain ⟨r, hr, hstep⟩ := hpre
-        exact ⟨Sum.inr (x, r), ⟨rfl, hr⟩, ys, hstep, hlp⟩
-  · rintro ⟨v, hv, ys, hstep, hlp⟩
-    cases u with
-    | inl D =>
-        cases v with
-        | inl D' =>
-            obtain rfl : D = D' := hv
-            exact ⟨ConsList.wrap D, rfl, ys, hstep, hlp⟩
-        | inr q => exact hv.elim
-    | inr q =>
-        obtain ⟨x, t⟩ := q
-        cases v with
-        | inl D' => exact hv.elim
-        | inr q' =>
-            obtain ⟨x', r⟩ := q'
-            obtain ⟨hx, hr⟩ := hv
-            cases hx
-            exact ⟨ConsList.cons x t, rfl, ys, ⟨r, hr, hstep⟩, hlp⟩
+  have h : (initial Unit A).α ≫ prefixR = (F Unit A).map prefixR ≫ prefAlg :=
+    (relCata_UP (initial Unit A) prefAlg prefixR).mpr prefix_cata
+  rw [← Cat.assoc, h, Cat.assoc]
 
 /-- `[nil,⊸ nil ∪ cons] list(p) = [nil,⊸ nil ∪ (p×list(p)) cons]` — `list(p)` after `prefix`'s
     algebra is `list(p)` on the tail it conses to and one `p` on the head it keeps. -/
@@ -522,7 +489,7 @@ public theorem takewhile_alg_step3 (p : A → Bool) :
             · exact Or.inl hws
             · exact Or.inr ⟨hp, w', ⟨r, hr, hw'⟩, hws⟩
       · rintro (hws | ⟨hp, w', ⟨r, hr, hw'⟩, hws⟩)
-        · exact ⟨Sum.inr (x, ConsList.wrap ()), ⟨rfl, prefix_wrap t⟩,
+        · exact ⟨Sum.inr (x, ConsList.wrap ()), ⟨rfl, prefixP.nil t⟩,
             (prefConsAlg_inr p (listP p) x (ConsList.wrap ()) ws).mpr (Or.inl hws)⟩
         · exact ⟨Sum.inr (x, r), ⟨rfl, hr⟩,
             (prefConsAlg_inr p (listP p) x r ws).mpr (Or.inr ⟨hp, w', hw', hws⟩)⟩
@@ -547,7 +514,7 @@ public theorem takewhile_alg_step4 (p : A → Bool) :
       rw [prefConsAlg_inr]
       constructor
       · rintro (hws | ⟨hp, w', hX, hws⟩)
-        · exact ⟨Sum.inr (x, []), ⟨rfl, ConsList.wrap (), prefix_wrap t,
+        · exact ⟨Sum.inr (x, []), ⟨rfl, ConsList.wrap (), prefixP.nil t,
             (listPAlg_inl p () _).mpr rfl⟩, (Salg_inr p x [] ws).mpr (Or.inl hws)⟩
         · exact ⟨Sum.inr (x, w'), ⟨rfl, hX⟩, (Salg_inr p x w' ws).mpr (Or.inr ⟨hp, hws⟩)⟩
       · rintro ⟨v, hv, hS⟩
@@ -868,12 +835,6 @@ public theorem takewhile_eq_cata (p : A → Bool) :
 public theorem takewhile_entire (p : A → Bool) : Entire (takewhile p) := by
   rw [takewhile_eq_cata p, ← takeWhile_emerges p]
   exact graph_entire _
-
--- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
-open Lean PrettyPrinter in
-@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
-  | `($_:ident) => `($(mkIdent `prefix))
-  | _ => throw ()
 
 -- printing-only: the note calls the algebra `S` and the element-wise lift `list(p)`.  The predicate
 -- is an argument of the lift — it is what the lift lifts — but not of the algebra's name.
