@@ -121,7 +121,11 @@
 #let FCOL = (
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
   "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
-  "bag": rgb("#a29366"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
+  // §16.3's bag relator stands beside `F` in the tardy panels, where the khaki it had was ΔE76 28.7
+  // from it — two FIXED entries, which no allocation can separate.  This pink is the ring point
+  // furthest from every other entry (ΔE76 11.8 at the nearest, `[Char]×−`, which no panel draws with
+  // it) and ≥ 29 from `F`, `E`, `list`, `list⁺`, `tree` and `−×Job`, the lanes its panels do draw.
+  "bag": rgb("#de879d"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
   "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),
   "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"),
   // IntroString p.48's three monads, for the panels that redraw Cheng's commuting diagram.
@@ -554,28 +558,41 @@
 // fixed obstacles have taken their neighbourhoods.
 #let RINGS = ((38, 30), (50, 30), (62, 30), (44, 42), (56, 42), (66, 36))
 
-// The hues STILL FREE: every ring point clear of the beads, the object hues and every declared lane,
-// thinned so two of them are themselves apart.  Pure, so Typst memoises it — one sweep per document.
-//
-// THE FREE LIST CANNOT CARRY `SEPPANEL`, AND WIDENING `RINGS` DOES NOT MAKE IT.  Which hue a name
-// falls to is its hash, so any unnamed lane can turn up beside any declared lane and beside any
-// other unnamed one; the property `lanecheck` asks for would therefore have to be the THINNING's,
-// at `SEPPANEL` and not `SEPPAIR`.  Filtering there empties the band — the muted rings have no set
-// that far apart left once the fixed obstacles and `FCOL`'s own entries have taken their
-// neighbourhoods — so an unnamed lane that clashes is answered by NAMING it, which is what the
-// assertion says, and never by tuning `RINGS` until the hashes land elsewhere.
-#let freehues() = {
+// THE POOL A LANE MAY BE MOVED TO: every in-gamut ring point clear of the bead hues and of the object
+// bands, the two things a wire is read beside wherever it is drawn.  It carries NO note-wide thinning,
+// because what a panel needs is separation from the lanes IT draws and two lanes that never share a
+// panel may reuse a band.  Pure, so Typst memoises it — one sweep per document.
+#let ringhues() = {
   let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, ..OBANDS)
   let out = ()
   for (L, C) in RINGS {
     for i in range(90) {
       let c = labcol(L, C * calc.cos(i * 4deg), C * calc.sin(i * 4deg))
-      if (c != none and obst.all(o => dE76(c, o) >= SEPFIX)
-          and FCOL.values().all(o => dE76(c, o) >= SEPPAIR)
-          and out.all(o => dE76(c, o) >= SEPPAIR + 1)) { out.push(c) }
+      if c != none and obst.all(o => dE76(c, o) >= SEPFIX) { out.push(c) }
     }
   }
   out
+}
+// THE HUE A NAME PREFERS: the pool clear of every declared lane by the note-wide floor and thinned so
+// two of them are themselves apart — that thinning is what makes the hash's answer a hue of this
+// name's own, note-wide.  It is a PREFERENCE and not the whole pool: a name whose preferred hue lands
+// on a lane of the panel it is drawn in is WALKED off it by `fcol`, over `ringhues`, so this list
+// staying short (the muted rings are crowded once `FCOL`'s own entries have taken their
+// neighbourhoods) no longer decides whether a panel can be drawn.
+#let freehues() = {
+  let out = ()
+  for c in ringhues() {
+    if (FCOL.values().all(o => dE76(c, o) >= SEPPAIR)
+        and out.all(o => dE76(c, o) >= SEPPAIR + 1)) { out.push(c) }
+  }
+  out
+}
+// The lane of `placed` — `(name, colour)` pairs — NEAREST to `c`, and how far: the one measurement
+// both the walk and the message it fails with are made of.
+#let nearlane(c, placed) = {
+  let (bn, bd) = (none, 1e9)
+  for p in placed { let d = dE76(c, p.at(1)); if d < bd { bd = d; bn = p.at(0) } }
+  (bn, bd)
 }
 // A LANE'S COLOUR.  `FCOL`'s entry where it has one — so no panel in the note moves — and otherwise
 // the free hue the name's own number picks, which is why a new functor draws without an edit here.
@@ -597,14 +614,16 @@
     let ax = e.replace(regex("[^a-zA-Z]+"), "")
     "[" + (if ax == "" { e } else { ax }) + "]" }
 }
-// A LANE'S COLOUR, PLACED AGAINST THE HUES THE PANEL ALREADY HOLDS.  `FCOL`'s entry where it has
-// one — so a functor the note names everywhere reads the same colour in every panel — and otherwise
-// the free hue the name's own number picks, WALKED ON until it clears `placed` by `SEPPANEL`.  The
-// walk is the whole rule: which free hue a name hashes to says nothing about who it stands beside,
-// so an undeclared lane landed ΔE76 17 from `list` and the only cure on offer was one more `FCOL`
-// entry — one per lane name, for ever.  `placed` empty is the standalone caller, who has no panel.
-// A free hue is already `SEPFIX` clear of every bead hue and of every `OBANDS` band (they are
-// `freehues`' own obstacles), so only the panel's other LANES enter the walk.
+// A LANE'S COLOUR, PLACED AGAINST THE HUES THE PANEL ALREADY HOLDS (`placed`: `(name, colour)` pairs).
+// `FCOL`'s entry where it has one — so a functor the note names everywhere reads the same colour in
+// every panel — and otherwise the hue the name's own number prefers, kept where it clears the panel
+// and otherwise MOVED to the ring point furthest from every lane the panel holds.  The farthest-point
+// move is the whole rule: which hue a name hashes to says nothing about who it stands beside, so an
+// undeclared lane landed ΔE76 12 from `tree` and the only cure on offer was one more `FCOL` entry —
+// one per lane name, for ever.  Preferring the hash keeps every lane that is NOT in a clash exactly
+// where it was.  `placed` empty is the standalone caller, who has no panel.  A ring point is already
+// `SEPFIX` clear of every bead hue and of every `OBANDS` band (they are `ringhues`' own obstacles),
+// so only the panel's other LANES enter the walk.
 #let fcol(nm, placed: ()) = {
   let n = faxis(nm)
   if n in FCOL { FCOL.at(n) } else {
@@ -612,12 +631,24 @@
     assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
       + " within ΔE76 " + str(SEPFIX) + " of a bead or object hue, or " + str(SEPPAIR) + " of a lane"
       + " `FCOL` already names — widen `RINGS` (diag/draw.typ)")
-    let k = calc.rem(namehash(n), free.len())
-    let ord = range(free.len()).map(i => free.at(calc.rem(k + i, free.len())))
-    let ok = ord.filter(c => placed.all(o => dE76(c, o) >= SEPPANEL))
-    // No hue at the floor is a ring set too narrow for this panel, not a hue to guess at: keep the
-    // hash's own answer, and `lanecheck` reports it with the lane it collides with.
-    if ok.len() > 0 { ok.first() } else { ord.first() }
+    let c0 = free.at(calc.rem(namehash(n), free.len()))
+    if nearlane(c0, placed).at(1) >= SEPPANEL { c0 } else {
+      let (best, bestd) = (none, -1)
+      for c in ringhues() {
+        let d = nearlane(c, placed).at(1)
+        if d > bestd { bestd = d; best = c }
+      }
+      // Nothing at the floor is a panel the muted band cannot colour, NOT a hue to guess at: a
+      // silent fallback here is a wire the reader reads as its neighbour, so it fails naming the
+      // pair and the measurement.
+      let (bn, bd) = nearlane(best, placed)
+      assert(bestd >= SEPPANEL, message: "no hue for the lane `" + n + "`: the furthest ring point"
+        + " from the lanes this panel already draws is still ΔE76 " + str(calc.round(bd, digits: 1))
+        + " from `" + str(bn) + "`, under " + str(SEPPANEL) + " — the panel holds "
+        + str(placed.len()) + " lanes and the muted rings have no point that far from all of them,"
+        + " so widen `RINGS` or draw fewer lanes in one panel (diag/draw.typ)")
+      best
+    }
   }
 }
 // AN OBJECT BAND, PLACED THE SAME WAY.  The bands of one wire must differ — the wire changes hue
@@ -648,6 +679,20 @@
   let ns = lanes.map(faxis)
   let lc = (:)
   for n in ns { if n in FCOL and not (n in lc) { lc.insert(n, FCOL.at(n)) } }
+  // TWO NAMED LANES IN ONE PANEL ARE BOTH FIXED — a lane that changed hue from one panel of a display
+  // to the next would be read as a different functor — so this is the one clash no allocation can
+  // answer, and the walk below must not be blamed for it.  It is a `FCOL` edit: move the hue of
+  // whichever of the two appears in fewer displays.
+  let fx = lc.pairs()
+  for (i, a) in fx.enumerate() {
+    for b in fx.slice(i + 1) {
+      let d = dE76(a.at(1), b.at(1))
+      assert(d >= SEPPANEL, message: "this panel draws the named lanes `" + a.at(0) + "` and `"
+        + b.at(0) + "` ΔE76 " + str(calc.round(d, digits: 1)) + " apart, under " + str(SEPPANEL)
+        + " — `FCOL` fixes both hues, so no allocation can separate them: change one of the two"
+        + " entries (diag/draw.typ)")
+    }
+  }
   let (oc, bands) = ((:), ())
   for o in objs {
     let n = plain(o)
@@ -656,7 +701,7 @@
     oc.insert(n, c)
     bands.push(c)
   }
-  for n in ns { if not (n in lc) { lc.insert(n, fcol(n, placed: lc.values())) } }
+  for n in ns { if not (n in lc) { lc.insert(n, fcol(n, placed: lc.pairs())) } }
   (lane: lc, obj: oc)
 }
 // Reading the allocation back.  A label the allocator was never given is a panel drawing a wire it
@@ -684,9 +729,9 @@
       // and share a hue by the rule above, so the separation rule cannot be put to them.
       assert(faxis(a.at(0)) == faxis(b.at(0)) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
         + a.at(0) + "` and `" + b.at(0) + "` are ΔE76 " + str(calc.round(d, digits: 1)) + " apart,"
-        + " under " + str(SEPPANEL) + " — `panelpal` had no hue further out: either `RINGS` is too"
-        + " narrow for this panel, or both are fixed `FCOL` entries and one of those must move"
-        + " (diag/draw.typ)")
+        + " under " + str(SEPPANEL) + " — `panelpal` places two named lanes at that floor or refuses,"
+        + " and moves an unnamed one until it clears, so a pair measured HERE is a hue that reached"
+        + " the panel without it: check the labels `panelpal` was given (diag/dpanel.typ)")
     }
     for o in obst {
       let d = dE76(a.at(1), o.at(1))
