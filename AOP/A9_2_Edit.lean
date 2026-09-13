@@ -35,9 +35,10 @@
     `DistributiveAllegory`, thinning in `UnguardedPowerLCDA`, and no `𝒜` instantiates both).
   * `edit-laws` rows 5-7 (the tabulation, `column`/`nextcol`) are curried functions on lists,
     which the note itself marks as outside the relational picture.
-  * `unstep` is defined and proved SOUND (everything it returns is a decomposition,
-    `unstep_sound`); "unstep implements `frac(step°,∋) thin(U×V)`" as a relational inequality
-    is not proved.
+  * `edit-laws` row 4 IS proved (`edit_prog`), but `unstep_complete` is completeness up to the
+    thinning order, not on the nose: where the two heads agree `unstep` keeps the `cpy` alone, and
+    the `del`/`ins` it drops are the ones that `cpy` beats under `V`.  That is what a thinning is,
+    and it is all `thinRel` asks for — it is NOT `mem_reduce`'s iff.
 -/
 module
 
