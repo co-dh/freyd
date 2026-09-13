@@ -1354,6 +1354,9 @@ def usage : String :=
      PANEL, in panel order, `-` for a panel the exporter places itself (--top 3,-) — where\n\
      its first bead sits, which the note chooses panel by panel.  With no --top the deepest\n\
      part's last bead lands on row 1 and extra frame is headroom above the picture.\n\
+   --suffix S names the OUTPUT — <name>S.typ instead of <name>.typ.  The frame and the top are\n\
+     a DISPLAY's, so one statement two displays draw is two pictures, and a caller that draws\n\
+     both says which file each goes to rather than letting the second overwrite the first.\n\
      --scale N is the per-panel display scale the note picks (`s: N%`) — all three --string only"
 
 /-- One `--frame N` style option's RAW value, and the arguments with it removed.  Raw, because a
@@ -1401,6 +1404,11 @@ def main (args : List String) : IO UInt32 := do
   let (frameRaw, args) := takeOpt args "--frame"
   let (topRaw, args) := takeOpt args "--top"
   let (scaleRaw, args) := takeOpt args "--scale"
+  let (suffixRaw, args) := takeOpt args "--suffix"
+  -- A suffix NAMES A FILE beside its siblings; one holding a separator would write somewhere else.
+  let suffix := suffixRaw.getD ""
+  if suffix.any (fun c => c == '/') then
+    return ← optErr "--suffix" "a name to put before `.typ`, with no `/` in it" suffix
   let some frame := natArg frameRaw | return ← optErr "--frame" "a row count" (frameRaw.getD "")
   let some tops := topsArg topRaw
     | return ← optErr "--top" "one row count per panel, in panel order, `-` for the exporter's own \
@@ -1542,8 +1550,8 @@ def main (args : List String) : IO UInt32 := do
       else if sigsMode then d.sigs.flatten.forM fun o => IO.println o.compress
       else
       let path := if stringMode || circuitMode || commutativeMode || typeMode
-        then System.FilePath.mk s!"{outDir}/{arg}.typ"
-        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+        then System.FilePath.mk s!"{outDir}/{arg}{suffix}.typ"
+        else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}{suffix}.typ"
       IO.FS.writeFile path d.text
       -- Only a string panel has beads, so only its record carries their count and types.
       IO.println <| if !recordsMode then path.toString else
