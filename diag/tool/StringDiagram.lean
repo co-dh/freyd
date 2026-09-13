@@ -998,6 +998,160 @@ def muArg? (e : Expr) : Option Expr :=
   | (``Freyd.Alg.mu, args) => args.back?
   | _ => none
 
+/-! ### One component of a side
+
+  A SELECTOR STEP NAMES A COMPONENT BY THE TYPE OF THE TERM IT DESCENDS INTO, never by where on the
+  side the branching happens to sit.  `branchOf` answers the one position whose arm is NOT an
+  in-place substitution — the coproduct left open at the run's source, where the injection has to
+  slide through every factor before the junction into that summand's own action — and the walk below
+  asks the same question of the whole SPINE: the constructors the picture's own reader walks, which
+  are composition's factors, a relator's action on an arrow however it is spelled, and a converse's
+  argument.  A fraction needs no case of its own: `rewriteSpine` has already opened `Λ(R)` into the
+  unit bead and `E(R)`, a relator's action like any other, and that is the same opening the panel is
+  drawn from.  THE WALK STOPS AT THE FIRST BRANCHING NODE on each path, so a junction's arms and a
+  union's operands belong to the NEXT step of the chain and not to this one.
+
+  A JUNCTION'S ARM IS FORCED ACROSS THE WHOLE RUN; A UNION'S OPERAND IS A LOCAL CHOICE.  The
+  coproduct object is carried ALONG the run — `[f,g]° ≫ … ≫ [h,k]` hands it from one end to the
+  other — so a picture at one summand is at that summand wherever a junction stands over it, and the
+  step takes arm `i` at every junction the spine reaches: the rule is the OBJECT they stand over,
+  not how many of them there are, and taking a different arm at two of them does not type-check,
+  which is why the result is CHECKED rather than counted.  Two unions on one spine name four
+  combinations and `.inl`/`.inr` names none of them, so that is reported with both nodes rather than
+  settled by picking the last. -/
+
+/-- AN APPLICATION with one argument REPLACED, its IMPLICIT arguments solved afresh.  An arm does
+    not start where the junction it replaces did, so the objects the implicit arguments pin are
+    exactly what has to move with it: keeping them is what had `E(g)` checked at `E`'s old source and
+    refused.  Only the EXPLICIT arguments are passed on, so the objects are re-solved from them. -/
+def reapp (e : Expr) (k : Nat) (a : Expr) : MetaM Expr := do
+  let .const n _ := e.getAppFn
+    | throwError "`{← plain e}` is no constant applied to arguments, so the component has nothing \
+        to go into"
+  let some ci := (← getEnv).find? n
+    | throwError "`{n}` heads `{← plain e}` and is in no environment, so the component cannot be \
+        put back into it"
+  let args := e.getAppArgs
+  let mut expl : Array Expr := #[]
+  let mut ty := ci.type
+  for j in [0 : args.size] do
+    let .forallE _ _ b bi := ty
+      | throwError "`{n}` takes fewer arguments than `{← plain e}` gives it, so its implicit \
+          arguments cannot be solved again"
+    unless bi.isExplicit || j != k do
+      throwError "the component sits at an implicit argument of `{← plain e}`, which the \
+        application does not take back"
+    if bi.isExplicit then expl := expl.push (if j == k then a else args[j]!)
+    ty := b
+  try Meta.mkAppM n expl
+  catch err => throwError "{err.toMessageData}\n  — `{← plain e}` does not take the component back"
+
+/-- A JUNCTION over a coproduct and its arms, whether it is written as one or as an arrow built from
+    a MAP THAT BRANCHES ON ITS INPUT: `graph [f,g]` is the junction `[graph f, graph g]`, the branch
+    living in the map, so the arm is the same wrapper at the arm map.  `sumArms` reads the arms off
+    the elaborated `match` and the coproduct off the discriminant's type, so no `def`'s name appears
+    here and the arm is found wherever the junction is spelled that way. -/
+def juncArm? (e : Expr) (i : Nat) : MetaM (Option Expr) := do
+  if let some (_, X, Y) ← juncOf? e then return some (if i == 0 then X else Y)
+  unless e.getAppFn.isConst do return none
+  let args := e.getAppArgs
+  for k in [0 : args.size] do
+    -- A MAP, by its TYPE: an argument that is not a function branches on nothing.
+    if (← Meta.inferType args[k]!).isForall then
+      if let some fw ← branchForm? args[k]! then
+        if let some arms ← sumArms fw then
+          -- ONLY the arm asked for is built: the other one is a different summand's arrow and a
+          -- failure to build it says nothing about this one.
+          let some a := arms[i]?
+            | throwError "`{← plain e}` branches into {arms.size} arms, so it has no {i + 1}-th one"
+          return some (← reapp e k a)
+  return none
+
+/-- The branching nodes the SPINE of `e` reaches — each with whether it is a junction, so a union
+    among them can be reported — and `e` with component `i` of every one of them in its place. -/
+partial def branchWalk (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (i : Nat)
+    (e : Expr) : MetaM (Array (Bool × Expr) × Option (Expr × Expr) × Expr) := do
+  if let some (l, r) ← binOperands? e then
+    return (#[(false, e)], none, if i == 0 then l else r)
+  if let some arm ← juncArm? e i then
+    return (#[(true, e)], some ((← homEnds e).1, (← homEnds arm).1), arm)
+  let fs := factors e
+  if fs.size > 1 then
+    let mut found : Array (Bool × Expr) := #[]
+    let mut obj? : Option (Expr × Expr) := none
+    let mut parts : Array Expr := #[]
+    for f in fs do
+      let (g, o, f') ← branchWalk regionTy cat objVars i f
+      found := found ++ g
+      if obj?.isNone then obj? := o
+      parts := parts.push f'
+    if found.isEmpty then return (#[], none, e)
+    -- THE PICTURE IS AT ONE SUMMAND, SO THE WHOLE RUN IS: the coproduct object the arm restricts is
+    -- substituted in every factor, because a factor above the junction runs FROM that object and
+    -- names it wherever it likes — `𝟙%∋` is `Λ(𝟙 a)`, the object nested two deep — and only the
+    -- object itself says which occurrences are the cut's.  A union's operand restricts no object,
+    -- and then there is nothing to substitute.
+    if let some (old, new) := obj? then
+      unless ← Meta.isDefEq old new do
+        for k in [0 : parts.size] do
+          parts := parts.set! k ((← Meta.kabstract parts[k]! old).instantiate1 new)
+    return (found, obj?, ← compose parts)
+  -- A RELATOR'S ACTION AND A CONVERSE ARE FUNCTORIAL IN THE OBJECT THE BRANCHING IS OVER, so the
+  -- component goes inside and the wrapper stands: `E([f,g])` is `E(g)` at the second arm and
+  -- `[f,g]°` is `g°`.  The action is recognised the way `interp` recognises it — by the head, then
+  -- by the catalogue — so a relator written as `powerRel` is entered like one written `E.map`.
+  let inner? : Option Expr ←
+    if e.isAppOf ``Freyd.Alg.Allegory.recip then pure e.getAppArgs.back?
+    else match functorMap? e with
+      | some (_, r) => pure (some r)
+      | none => pure ((← peelMap? cat objVars regionTy e).map (·.2))
+  let some r := inner? | return (#[], none, e)
+  let (found, obj?, r') ← branchWalk regionTy cat objVars i r
+  if found.isEmpty then return (#[], none, e)
+  let args := e.getAppArgs
+  let mut slot : Option Nat := none
+  for k in [0 : args.size] do
+    if slot.isNone && args[k]! == r then slot := some k
+  let some k := slot
+    | throwError "the branching is inside `{← plain r}`, which is no argument of `{← plain e}` as \
+        it stands, so the component has nothing to go back into"
+  return (found, obj?, ← reapp e k r')
+
+/-- `.inl`/`.inr`: ONE COMPONENT of a side, `i` naming which.  `branchOf`'s position is tried first,
+    being the only one whose answer is not an in-place substitution; its refusal is a SHAPE test and
+    not a failure, so it is carried into whatever the spine walk then has to say rather than
+    dropped. -/
+def branchSel (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (e : Expr) (i : Nat) :
+    MetaM Expr := do
+  let slid : Except Exception Expr ←
+    try pure (Except.ok (← branchOf regionTy e i)) catch err => pure (Except.error err)
+  match slid with
+  | .ok x => return x
+  | .error err =>
+    let (found, _, e') ← branchWalk regionTy cat objVars i (← rewriteSpine e)
+    if found.isEmpty then
+      throwError "{err.toMessageData}, and its spine reaches no junction and no binary operation \
+        either, so `.inl`/`.inr` names nothing in it"
+    if found.size > 1 && found.any (fun p => !p.1) then
+      let mut names : Array String := #[]
+      for (_, n) in found do names := names.push (← plain n)
+      throwError "`.inl`/`.inr` names ONE component, and the spine of `{← plain e}` reaches \
+        {found.size}: {String.intercalate ", " names.toList}.  A junction's arm is the same arm at \
+        every junction the run carries its coproduct through, but a union's operand is a choice \
+        local to that union, so this step names none of them"
+    try Meta.check e'
+    catch terr =>
+      throwError "{terr.toMessageData}\n  — component {i + 1} of `{← plain e}` is \
+        `{← plain e'}`, so what holds the branching is not functorial in the object it is over; \
+        {err.toMessageData}"
+    let out ← instantiateMVars e'
+    -- An object nothing determines is a wire with nothing under it, so it is reported here rather
+    -- than drawn as a metavariable.
+    if out.hasExprMVar then
+      throwError "component {i + 1} of `{← plain e}` came out as `{← plain out}`, whose objects \
+        nothing in the statement determines"
+    return out
+
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be.  A SIDE IS REWRITTEN ONCE, HERE, along its spine and before the read:
     `Λ S` is drawn as the note draws it — the unit bead and `S` on the `E` lane — and a side is what
@@ -1013,19 +1167,19 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
     the picture draws that local as a wire and prints it by that name — so the panel has to be built
     while the local is still in scope, which is why this takes a continuation instead of handing an
     expression back. -/
-partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (sel : List Sel) (e : Expr)
-    (k : Expr → MetaM α) : MetaM α := do
+partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Name)
+    (objVars : Array Expr) (sel : List Sel) (e : Expr) (k : Expr → MetaM α) : MetaM α := do
   match sel with
   | [] => k e
-  | .inl :: rest => withSel regionTy rest (← branchOf regionTy e 0) k
-  | .inr :: rest => withSel regionTy rest (← branchOf regionTy e 1) k
+  | .inl :: rest => withSel regionTy cat objVars rest (← branchSel regionTy cat objVars e 0) k
+  | .inr :: rest => withSel regionTy cat objVars rest (← branchSel regionTy cat objVars e 1) k
   | .body :: rest =>
     let some φ := muArg? e
       | throwError "`.body` names the body of a least fixed point, and `{← plain e}` is not one"
     Meta.lambdaBoundedTelescope φ 1 fun xs b => do
       unless xs.size == 1 do
         throwError "`{← plain φ}` binds no arrow, so `.body` opens no wire to draw the body on"
-      withSel regionTy rest b k
+      withSel regionTy cat objVars rest b k
 
 /-- Every part of the statement drawn, each under its own selectors' locals, and the file emitted
     inside all of them: a bead's ends are printed from the `Expr`, so a local opened for one part is
@@ -1036,7 +1190,7 @@ partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array 
   match drawn with
   | [] => k acc
   | (sym, e) :: rest =>
-    withSel regionTy sel e fun e' => do
+    withSel regionTy cat objVars sel e fun e' => do
       withParts regionTy cat objVars sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars)) k
 
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
