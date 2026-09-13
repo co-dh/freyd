@@ -470,4 +470,11 @@ attribute [diag_join "∪"] DistributiveAllegory.union
 -- the only thing that tells the two algebras of one naturality square apart.
 attribute [diag_indexed] alphaT InitialAlgebra.α
 
+-- A RE-BRACKETING DRAWS NOTHING.  `×` is flat in both calculi — the picture is the lanes `A×−`,
+-- `B×−` over the rest, whichever way the product was bracketed — so an arrow that only moves the
+-- brackets runs between two ends the peel reads as the ONE stack and there is no bead for it.
+-- Tagged and never matched, like the join above: an arrow between two equal stacks is a bead like
+-- any other, and only the constant says which arrows are the coherence of `×`.
+attribute [diag_coherence] RelSet.Van.assoclR
+
 end Freyd.Alg

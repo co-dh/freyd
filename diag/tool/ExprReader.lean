@@ -52,6 +52,15 @@ register_label_attr diag_rewrite
     module and not the drawer. -/
 register_label_attr diag_defines
 
+/-- WHICH ARROWS ONLY RE-BRACKET A PRODUCT.  `×` is FLAT in the picture — a lane `A×−` per factor,
+    so `(A×B)×Y` and `A×(B×Y)` are the one stack — and an arrow between two ends that peel to that
+    one stack therefore has nothing to draw: it is the identity as far as the geometry is concerned
+    (the note, `diag/ch/13-optimisation.typ`: "`assocl` draws nothing").  WHICH constants those are
+    is a convention and not a shape, so it is TAGGED, like `diag_unfold` and `diag_rewrite`, and
+    tagged in `diag/StrDiagNames.lean`; a converse of one is one, which `coherenceId?` reads off the
+    term.  Any OTHER arrow between two equal stacks is a bead like any other. -/
+register_label_attr diag_coherence
+
 /-- WHICH BINARY OPERATION ON ONE HOM IS A JOIN, and the symbol that stands between the panels it
     draws.  An assertion about a JOIN is ONE PANEL PER OPERAND — the note's `∪` row of
     `<lax-closure>` is two squares with `∪` between them — where a MEET is one bead and one panel,
@@ -487,32 +496,6 @@ inductive Wire where
 def Wire.mentions (v : FVarId) : Wire → Bool
   | .rel r | .timesL r => r.containsFVar v
 
-/-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
-    pairing, an identity, a composite and the product bifunctor have no name of their own, so they
-    are written structurally — `⟨𝟙,T⟩`, `𝟙`, `list list`, `×` — and the length of that string is
-    what reserves the lane's room, which is why it cannot be left to `Relator.comp list list`.
-    Every head here is matched as an `Expr` head, so nothing rests on how a name prints.
-    A composite is juxtaposition in DIAGRAM order — `comp F G` is `F` then `G` — and it is read off
-    `wiresOf`, which is what drops the identity factors and flattens the nesting. -/
-partial def relLabel (r : Expr) : MetaM String := do
-  match r.getAppFnArgs with
-  | (``Freyd.Alg.Relator.pair, args) =>
-    match lastTwo args with
-    | some (f, g) => return "⟨" ++ (← relLabel f) ++ "," ++ (← relLabel g) ++ "⟩"
-    | none => plain r
-  | (``Freyd.Alg.Relator.prod, args) =>
-    match lastTwo args with
-    | some (f, g) => return (← relLabel f) ++ "×" ++ (← relLabel g)
-    | none => plain r
-  | (``Freyd.Alg.Relator.comp, _) =>
-    -- `wiresOf` is OUTERMOST first; juxtaposition is diagram order, so it is read back to front.
-    let ws := wiresOf r
-    if ws.isEmpty then return "𝟙"
-    return " ".intercalate (← ws.toList.reverse.mapM relLabel)
-  | (``Freyd.Alg.timesRel, _) => return "×"
-  | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
-  | _ => plain r
-
 /-- `n` applied to fresh universe and argument metavariables, the LAST arguments unified with the
     ones given and the instance arguments synthesised afterwards, when the category they mention is
     known.  `mkAppM` cannot do this: it refuses a result that still holds a metavariable, and a peel
@@ -638,6 +621,13 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
     the same rule the apex's delaborator prints by, so a statement quantified over `P : RelProd a b`
     reads as a product square everywhere rather than only where the chosen product was written. -/
 def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+  -- A REGION WHOSE OBJECTS ARE TYPES HAS LEAN'S `Prod` FOR ITS PRODUCT — the same reading
+  -- `wiringOf` gives a carrier, and the only one there is: §1.241's function category is a `Cat`
+  -- and no allegory, so no `relProd` apex unifies with its product object and the whole of `A×−`,
+  -- of `φ×ψ` and of the interchange was invisible there.  The objects' type is what says so.
+  if regionTy.isSort then
+    if let (``Prod, #[a, b]) := X.getAppFnArgs then return some (a, b)
+    return none
   if X.isAppOfArity ``Freyd.Alg.RelProd.p 5 then
     let t ← Meta.whnf (← Meta.inferType X.appArg!)
     if t.isAppOfArity ``Freyd.Alg.RelProd 4 then
@@ -656,14 +646,20 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
     s.restore; return none
   catch _ => s.restore; return none
 
-def Wire.label : Wire → MetaM String
-  | .rel r => relLabel r
-  -- `(A×B)×−`, never `A×B×−`: a left factor that is itself a product must be bracketed or the
-  -- label names a different lane.  The test is the product READER, not the printed string.
-  | .timesL l => do
-    let s ← plain l
-    let par := (← splitTimes? (← Meta.inferType l) l).isSome
-    return (if par then "(" ++ s ++ ")" else s) ++ "×−"
+/-- The region's product object BUILT — the inverse of `splitTimes?`, and read off the same two
+    conventions: Lean's `Prod` where the objects are types, the region's chosen apex otherwise.
+    `none` where the region has no CHOSEN product: an apex the statement merely hands over
+    (`P : RelProd a b`) cannot be rebuilt at other objects, and there the flat reading below simply
+    does not fire. -/
+def mkTimes? (regionTy a b : Expr) : MetaM (Option Expr) := do
+  if regionTy.isSort then return some (← Meta.mkAppM ``Prod #[a, b])
+  let s ← Meta.saveState
+  try
+    let (prod, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[a, b]
+    let (apex, _) ← mkAppMeta ``Freyd.Alg.RelProd.p #[prod]
+    let apex ← instantiateMVars apex
+    if apex.hasExprMVar then s.restore; return none else return some apex
+  catch _ => s.restore; return none
 
 /-- The constants of the environment that ARE one `head` — a relator, a functor — and are a thing of
     the region rather than a COMBINATOR over the region: one that takes a `head` as an argument is
@@ -825,6 +821,14 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       return (acc.reverse ++ cs, o)
   | _ => pure ()
   if let some (a, b) ← splitTimes? regionTy X then
+    -- `×` IS FLAT: `(A×B)×Y` is the lanes `A×−`, `B×−` over the lanes of `Y`, which is the stack
+    -- `A×(B×Y)` gives too, so a LEFT factor that is itself a product is peeled as well — read by
+    -- RE-ASSOCIATING against the region's own product, so one reading answers at every depth and a
+    -- re-bracketing between the two spellings has nothing left to draw.
+    if let some (a₁, a₂) ← splitTimes? regionTy a then
+      if let some inner ← mkTimes? regionTy a₂ b then
+        if let some whole ← mkTimes? regionTy a₁ inner then
+          return ← peelCuts objVars cat regionTy whole
     let (cs, o) ← peelCuts objVars cat regionTy b
     return (#[(Wire.timesL a, b)] ++ cs, o)
   for n in cat do
@@ -988,13 +992,17 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
     was — carries `α → β` and no `Cat.Hom` for `homObjs?` to read.  Its ends are then the function
     type's, and only where that type IS the region's own hom: the `Cat` instance decides, by
     `isDefEq` against `Cat.Hom`, so every such arrow answers rather than a listed few. -/
-def homEnds (e : Expr) : MetaM (Expr × Expr) := do
+def homEnds? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let t ← Meta.inferType e
-  if let some p := homObjs? t then return p
+  if let some p := homObjs? t then return some p
   if let .forallE _ a b _ := t then
     if !b.hasLooseBVars && (← isObjType (← Meta.inferType a)) then
-      if ← Meta.isDefEq t (← Meta.mkAppM ``Cat.Hom #[a, b]) then return (a, b)
-  throwError "not an arrow of a category: {← Meta.ppExpr e}"
+      if ← Meta.isDefEq t (← Meta.mkAppM ``Cat.Hom #[a, b]) then return some (a, b)
+  return none
+
+def homEnds (e : Expr) : MetaM (Expr × Expr) := do
+  let some p ← homEnds? e | throwError "not an arrow of a category: {← Meta.ppExpr e}"
+  return p
 
 /-- A declaration's binders and its STATEMENT — `Meta.forallTelescopeReducing`, stopped at an arrow.
     A hom of `RelSet` is definitionally `A → B → Prop`, so reducing walks straight through the arrow
@@ -1013,23 +1021,41 @@ partial def stmtTelescope [Inhabited α] (ty : Expr) (k : Array Expr → Expr �
     Meta.withLocalDecl n bi d fun x => stmtTelescope (b.instantiate1 x) k (xs.push x)
   | _ => k xs ty
 
+/-- A composite flattened into its factors, in diagram order. -/
+partial def factors (e : Expr) : Array Expr :=
+  match e.getAppFnArgs with
+  | (``Cat.comp, args) => match lastTwo args with
+    | some (f, g) => factors f ++ factors g
+    | none => #[e]
+  | _ => #[e]
+
 /-- Is this arrow an identity? -/
 def isIdArrow (e : Expr) : MetaM Bool := do
   let (x, y) ← homEnds e
   if !(← Meta.isDefEq x y) then return false
   Meta.isDefEq e (← Meta.mkAppM ``Cat.id #[x])
 
-/-- A PRODUCT MAP, recognised by its TYPE and nothing else: a constant applied to exactly two
-    arrows `φ : a ⟶ a'`, `ψ : b ⟶ b'` whose own two ends are the products of those ends.  That
+/-- A PRODUCT MAP, recognised by its TYPE and nothing else: a constant applied to two arrows
+    `φ : a ⟶ a'`, `ψ : b ⟶ b'` whose own two ends are the products of those ends.  That
     type has only one inhabitant a picture can mean, so no name is needed — and it is what says
     which lanes the factor touches, where comparing the two wire stacks cannot: `cons` and
     `secure×𝟙` have the same stacks below them and eat wholly different wires. -/
-def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Expr)) := do
-  let .const _ _ := e.getAppFn | return none
+partial def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  let .const n _ := e.getAppFn | return none
   let args := e.getAppArgs
   let mut arrows : Array Expr := #[]
+  -- WHAT MAKES AN ARGUMENT AN ARROW IS THE REGION'S `Cat` INSTANCE, not the `Cat.Hom` head
+  -- (`homEnds?`): a concrete region's hom is a FUNCTION TYPE, so `Prod.map f g` in §1.241's
+  -- function category carried two arrows the head test could not see and the whole product map
+  -- came out as one bead.
   for a in args do
-    if (homObjs? (← Meta.inferType a)).isSome then arrows := arrows.push a
+    if (← homEnds? a).isSome then arrows := arrows.push a
+  -- AN IDENTITY ON A PRODUCT IS THE PRODUCT OF THE IDENTITIES, and has to say so here, or the
+  -- `𝟙×ψ` of a bracketed left end keeps a lane no peel of an object ever produces.
+  if arrows.isEmpty then
+    unless ← isIdArrow e do return none
+    let some (a, b) ← splitTimes? regionTy (← homEnds e).1 | return none
+    return some (← Meta.mkAppM ``Cat.id #[a], ← Meta.mkAppM ``Cat.id #[b])
   unless arrows.size == 2 do return none
   let (x, y) ← homEnds e
   let some (a, b) ← splitTimes? regionTy x | return none
@@ -1038,6 +1064,17 @@ def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Expr)) := d
   let (ψb, ψb') ← homEnds arrows[1]!
   unless (← Meta.isDefEq a φa) && (← Meta.isDefEq a' φa')
       && (← Meta.isDefEq b ψb) && (← Meta.isDefEq b' ψb') do return none
+  -- ONE LANE IS ONE FACTOR, because `×` is flat in the picture and an object peels to its factors
+  -- one at a time.  So a left factor standing on a BRACKET re-associates — `(φ₁×φ₂)×ψ` is
+  -- `φ₁×(φ₂×ψ)` — and a left factor that is no product map at all though its ends are products
+  -- (`cons×𝟙`) is not a lane's arrow: it SPANS those lanes, which the read below it draws.
+  if (← splitTimes? regionTy φa).isSome || (← splitTimes? regionTy φa').isSome then
+    if let some (φ₁, φ₂) ← asProdMap? regionTy arrows[0]! then
+      return some (φ₁, ← Meta.mkAppM n #[φ₂, arrows[1]!])
+    -- Interchange and functoriality still apply — `(φ₁φ₂)×𝟙` is two of these — so the pair is
+    -- handed back while there is a split left in it.  With none left the arrow is no lane's: it
+    -- SPANS the factors of its bracketed end, which the plain read of its two ends draws.
+    if (factors arrows[0]!).size == 1 && (← isIdArrow arrows[1]!) then return none
   return some (arrows[0]!, arrows[1]!)
 
 /-- A factor with the relators it runs UNDER stripped off: `F.map (G.map R)` is `R` with the wires
@@ -1056,7 +1093,7 @@ partial def peelMap (e : Expr) : Array Expr × Expr :=
     is not one, its own ends being the two OUTER objects rather than either factor's. -/
 def binOperands? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let t ← Meta.inferType e
-  if (homObjs? t).isNone || e.isAppOf ``Cat.comp then return none
+  if (← homEnds? e).isNone || e.isAppOf ``Cat.comp then return none
   let some (l, r) := lastTwo e.getAppArgs | return none
   unless (← Meta.isDefEq (← Meta.inferType l) t) && (← Meta.isDefEq (← Meta.inferType r) t) do
     return none
@@ -1071,14 +1108,6 @@ def joinOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
   let some sym := (diagJoinExt.getState (← getEnv)).find? n | return none
   let some (l, r) ← binOperands? e | return none
   return some (sym, l, r)
-
-/-- A composite flattened into its factors, in diagram order. -/
-partial def factors (e : Expr) : Array Expr :=
-  match e.getAppFnArgs with
-  | (``Cat.comp, args) => match lastTwo args with
-    | some (f, g) => factors f ++ factors g
-    | none => #[e]
-  | _ => #[e]
 
 /-- A term whose head the NOTE writes as its BODY, opened; anything else unchanged.  Which heads is
     `@[diag_unfold]`'s answer — set beside the declaration, or in `diag/StrDiagNames.lean` where the
@@ -1131,6 +1160,50 @@ def rewriteHead? (e : Expr) : MetaM (Option Expr) := do
     if let some x := out then return some x
   return none
 
+/-- The PRODUCT FACTORS of an object, flat, and the object left under them — the product part of
+    the stack `peelCuts` reads, and read by the same `splitTimes?`, so the two cannot disagree about
+    what `×` does. -/
+partial def timesFactors (regionTy X : Expr) : MetaM (Array Expr × Expr) := do
+  let some (a, b) ← splitTimes? regionTy X | return (#[], X)
+  let (fa, ta) ← timesFactors regionTy a
+  let (fb, tb) ← timesFactors regionTy b
+  return (fa.push ta ++ fb, tb)
+
+/-- A COHERENCE ISO AS THE IDENTITY IT DRAWS AS.  `×` is flat in the picture, so an arrow that only
+    re-brackets a product runs between two ends peeling to the ONE stack and has nothing to draw;
+    turning it into `𝟙` here is what makes the drawer's own identity clause draw it as bare wires,
+    so no picture carries a second rule for it.  WHICH constants re-bracket is `@[diag_coherence]`'s
+    answer and never a printed name, and the CONVERSE of one is one — read off the term, since the
+    converse of a tagged arrow is not itself a tagged constant.  A tagged arrow whose ends peel to
+    DIFFERENT stacks is a mis-tag and says so, rather than quietly dropping an arrow that moves
+    something. -/
+partial def coherenceId? (e : Expr) : MetaM (Option Expr) := do
+  unless ← tagged e do return none
+  let (x, y) ← homEnds e
+  let regionTy ← Meta.inferType x
+  let (fx, tx) ← timesFactors regionTy x
+  let (fy, ty) ← timesFactors regionTy y
+  let sameTail ← Meta.isDefEq tx ty
+  unless fx.size == fy.size && sameTail do
+    throwError "{← Meta.ppExpr e} is tagged `diag_coherence`, but its two ends \
+      {← Meta.ppExpr x} and {← Meta.ppExpr y} peel to different stacks, so it moves something and \
+      is no re-bracketing"
+  for i in [0 : fx.size] do
+    unless ← Meta.isDefEq fx[i]! fy[i]! do
+      throwError "{← Meta.ppExpr e} is tagged `diag_coherence`, but the product factor \
+        {← Meta.ppExpr fx[i]!} of its source is {← Meta.ppExpr fy[i]!} in its target, so it moves \
+        something and is no re-bracketing"
+  return some (← Meta.mkAppM ``Cat.id #[x])
+where
+  tagged (e : Expr) : MetaM Bool := do
+    if e.isAppOf ``Freyd.Alg.Allegory.recip then
+      match e.getAppArgs.back? with
+      | some r => tagged r
+      | none => return false
+    else
+      let some n := e.getAppFn.constName? | return false
+      return (← Lean.labelled `diag_coherence).contains n
+
 /-- A side rewritten along its composite SPINE by the `diag_rewrite` equations: `Λ S` is drawn as the
     unit bead `𝟙%∋` and `S` on the `E` lane, but a `Λ` inside a fold's body is that bead's own label
     and stays.  The spine is what `Cat.comp` joins; a fold's body, a junction's arms and an `est(R)`
@@ -1150,6 +1223,9 @@ partial def rewriteSpine (e : Expr) (fuel : Nat := 8) : MetaM Expr := do
         pure (mkAppN e.getAppFn ((args.extract 0 (args.size - 2)).push f' |>.push g'))
       else pure e
     | _ => pure e
+  -- A RE-BRACKETING IS `𝟙` ON THE SPINE, at whatever depth: the factors either side of it are
+  -- already rewritten, so the identity it becomes is what the drawer sees in their place.
+  if let some i ← coherenceId? e then return i
   match ← rewriteHead? e with
   | none => return e
   | some r =>
@@ -1223,7 +1299,7 @@ def asSumMap? (e : Expr) : MetaM (Option (Expr × Expr)) := do
   let mut cops : Array Expr := #[]
   for a in e.getAppArgs do
     let t ← Meta.inferType a
-    if (homObjs? t).isSome then arrows := arrows.push a
+    if (← homEnds? a).isSome then arrows := arrows.push a
     else if t.isAppOf ``Freyd.Alg.Coproduct then cops := cops.push a
   unless arrows.size == 2 && cops.size == 2 do return none
   let some (_, a₁, a₂) ← summands? cops[0]! | return none
