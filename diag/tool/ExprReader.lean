@@ -888,9 +888,8 @@ def Peeled.inner (p? : Option Peeled) (n : Nat) (x : Expr) : Option Peeled := do
     `Relator`s, a bare category's are `Freyd.Functor`s, and the two compose by their own `comp`.
     `Vec n` is a functor of §1.241's function category and no relator, so a reading fixed to
     `Relator.comp` failed on `(Vec n).obj A` and demoted every `Vec` family to an object-wire bead.
-    Only `𝟙` and composition are named in the functor algebra — the repo has no constant or product
-    functor — so a constant or product end has no reading THERE, exactly as an end no relator spells
-    has none here.
+    A CONSTANT end has no reading in the functor algebra — the repo has no constant functor — but a
+    PRODUCT one has, §1.424's `functorProd`, so `v×[v]` is read in either algebra.
 
     Anything else mentioning `v` has no reading, and the bead it belongs to gets no verdict: it is
     refused here rather than being silently read as something it is not. -/
@@ -907,11 +906,15 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
   -- back rebuilt from its projection (`⟨a.f⟩`), which is `a` only up to eta.
   if ← Meta.isDefEq X v then return ← alg.id regionTy
   if let some (a, b) ← splitTimes? regionTy X then
-    unless alg == .relator do
-      throwError "the end {← Meta.ppExpr X} is a product and {← Meta.ppExpr regionTy} is no \
-        allegory, so there is no product lane to read it as"
-    return ← Meta.mkAppM ``Freyd.Alg.Relator.prod
-      #[← relatorOfObj alg cat regionTy v a, ← relatorOfObj alg cat regionTy v b]
+    -- THE PRODUCT LANE IS THE ALGEBRA'S OWN, and BOTH algebras have one: `Relator.prod` in an
+    -- allegory, §1.424's `functorProd` in a category.  Refusing the functor algebra a product end
+    -- left every family whose end is one — `cons : v×[v]⟶[v]`, `zip`, `cp` — with no statement to
+    -- look for, while the squares their factors are written with sat proved in the environment.
+    let fa ← relatorOfObj alg cat regionTy v a
+    let fb ← relatorOfObj alg cat regionTy v b
+    return ← match alg with
+      | .relator => Meta.mkAppM ``Freyd.Alg.Relator.prod #[fa, fb]
+      | .functor => Meta.mkAppM ``Freyd.functorProd #[fa, fb]
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
