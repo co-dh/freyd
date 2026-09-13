@@ -51,8 +51,10 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.SL
 /-- **code-defn**: `String=[Char]`, a snoc-list of characters. -/
 @[expose] public abbrev Str : Type := SnocList Unit Char
 
-/-- The object carrying `String`. -/
-@[expose] public abbrev dStr : RelSet.{0} := dSL Unit Char
+-- The object carrying `String`.  NOTATION, not a `def`: a constant AT `RelSet` is an OBJECT the
+-- picture draws as one opaque wire, and `String` IS `[Char]` — the term has to stay structural so
+-- every panel peels it into the list lane over `Char`.
+macro:max "dStr" : term => `(dSL Unit Char)
 
 /-- **code-defn**: `Code::=sym Char∣ptr (String,String⁺)`.  `String⁺` is the guard `zs≠nil`
     inside `extend`, not a second datatype. -/
@@ -60,11 +62,13 @@ public inductive Code where
   | sym : Char → Code
   | ptr : Str → Str → Code
 
-/-- The object carrying `Code`. -/
-@[expose] public abbrev dCode : RelSet.{0} := (⟨Code⟩ : RelSet.{0})
+-- The object carrying `Code`: ATOMIC, so it keeps a name — one name, the carrier's, in every
+-- panel.  As a constant at `RelSet` it printed `dCode` on the cuts written with it and `Code` on
+-- the cuts written `⟨Code⟩`, which is one object under two labels in one display.
+macro:max "dCode" : term => `(RelSet.mk Code)
 
-/-- The object carrying `[Code]`, the code sequences. -/
-@[expose] public abbrev dCodes : RelSet.{0} := dSL Unit Code
+-- The object carrying `[Code]`, the code sequences — structural for the same reason as `dStr`.
+macro:max "dCodes" : term => `(dSL Unit Code)
 
 /-- **code-defn**: `⧺` on snoc-strings. -/
 @[expose] public def sappend (x : Str) : Str → Str
