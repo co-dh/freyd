@@ -43,7 +43,7 @@
   `H ∪ 𝟘 = H`, `hstrict` is the `⊑` half of the hylomorphism fixed-point equation and `hτ`
   is trivial — the statement degenerates to Theorem 9.1, so this strictly generalizes B&dM.
 
-  Setting and proof skeleton: `UnguardedPowerLCDA`, mirroring `dp_prefixed`'s min-universal-
+  Setting and proof skeleton: `TabularUnitaryUnguardedPowerLCDA`, mirroring `dp_prefixed`'s min-universal-
   property argument (`AOP.A9_1`).  Composition is diagram order (B&dM `X·Y` = Freyd
   `Y ≫ X`).  The instantiation re-deriving `leet.L322`'s `coinSpec` correctness from this
   theorem is `leet.L322_dp`.
@@ -56,7 +56,7 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
 /-- The ∞-DP recursion body: decompose in all ways (`Λ (T°)`), solve subproblems and refold
     (`powerRel (F.map X ≫ h)`), then keep an `R°`-minimum of the candidates — OR the fallback

@@ -20,7 +20,7 @@
   - rule (9.4) `min R·PX ⊆ (X·∈) ∩ ((R·X)/∋)` is `AOP.A7_1`'s `powerRel_comp_est_le`;
     `ΛT°·T ⊆ ∋` is `AOP.A8_1`'s `recip_comp_Λ_le_recip_eps` at `T°`.
 
-  Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7 and 8.
+  Setting: `TabularUnitaryUnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7 and 8.
 -/
 module
 
@@ -38,7 +38,7 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-- **`H≜⦇T⦈°⦇h⦈ : A⟶B`** (B&dM p.220): decompose through the coalgebra `T°` and reassemble
     through the algebra `h`.  It is the arrow the optimisation problem `H%∋ est(R)` is taken of,
@@ -512,7 +512,7 @@ end Prop9_3
 
 /-! ## Proposition 9.4 (B&dM pp.223-224) — bifunctor conditions
 
-  Back in the file's ambient `UnguardedPowerLCDA` setting.  B&dM's monotonicity/thinning
+  Back in the file's ambient `TabularUnitaryUnguardedPowerLCDA` setting.  B&dM's monotonicity/thinning
   conditions for Theorems 9.1/9.2 are often checked through a BIFUNCTOR `G` (e.g. `G(X,Y) :=
   X × Y` or a coproduct) with the algebra `h` living over `G` applied to a distinguished
   extra argument `e` — Prop 9.4 packages sufficient conditions on `G` alone.  No existing
@@ -786,7 +786,7 @@ public theorem dynamic_programming_context (hFr : F.PreservesRecip) (I : Initial
     lives in `AOP.A5_3`, under `[DistributiveAllegory 𝒜]` (needs Boolean negation `∼` on
     coreflexives, `AOP.A4_5`).
   * All of chapters 6-8 (`est`, `powerRel`, `thinRel`, hylomorphisms, and hence this whole
-    file) live under `[UnguardedPowerLCDA 𝒜]` (`AOP.A6_2`), the power/division bundle.
+    file) live under `[TabularUnitaryUnguardedPowerLCDA 𝒜]` (`AOP.A6_2`), the power/division bundle.
   * No section of the repo currently instantiates BOTH classes on the same `𝒜` (no combined
     "distributive + unguarded power" class, and none of the `UnguardedPowerLCDA` model
     instances built elsewhere are known to also satisfy `DistributiveAllegory`). Proposition

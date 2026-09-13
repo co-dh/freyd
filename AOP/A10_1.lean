@@ -28,7 +28,7 @@
   Proposition 9.1") is DROPPED for the same setting reason as Proposition 9.1/Ex 9.5 — see the
   drop note at the end of `AOP.A9_1`.
 
-  Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7-9.
+  Setting: `TabularUnitaryUnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7-9.
 -/
 module
 
@@ -38,7 +38,7 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-! ## Theorem 10.1 (B&dM p.245) — the greedy theorem, as extreme dynamic programming -/
 

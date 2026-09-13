@@ -478,4 +478,11 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent (Name.mkSimple "⊤")))
 
 end RelSet
+
+/-- `Rel(Set)` is the setting of chapters 7-8: both halves of the tabular merge are instances
+    above, so the thinning and path calculi apply to the concrete case studies. -/
+@[expose] public instance : TabularUnitaryUnguardedPowerLCDA RelSet.{u} :=
+  { (inferInstance : TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
+    (inferInstance : LocallyCompleteDistributiveAllegory RelSet) with }
+
 end Freyd.Alg

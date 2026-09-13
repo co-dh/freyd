@@ -46,36 +46,6 @@ universe u
 
 namespace Freyd.Alg
 
-/-- The setting for §8.2-§8.3: `AOP.A5_6`'s tabular/unitary + unguarded-power merge (which
-    gives `RelProd`, `cup` and `cpMap` alongside `Λ`) TOGETHER with local completeness (which
-    gives `relCata`, `thinRel` and `est`).  Both parents already share `Allegory`, so this is
-    the same diamond-safe structure merge as `AOP.A6_2`'s `UnguardedPowerLCDA`.  §8.2 needs
-    the tabular half only for `AOP.A5_4`'s `powerRel_comp` (`P` functorial on ALL relations,
-    not just maps), which is proved there under `TabularUnitaryUnguardedPowerAllegory`. -/
-public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
-    TabularUnitaryUnguardedDivisionPowerAllegory 𝒜, LocallyCompleteDistributiveAllegory 𝒜
-
-/-- The power/local-completeness side of the merge, so `AOP.A8_1`'s thinning calculus fires
-    here unchanged. -/
-@[expose] public instance (priority := 100) TabularUnitaryUnguardedPowerLCDA.toUnguardedPowerLCDA
-    {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] : UnguardedPowerLCDA 𝒜 :=
-  { inst with }
-
-/-- `AOP.A5_4`'s hard half of `P`-functoriality is stated over `Freyd.S2_41b`'s tabular merge,
-    which the division merge above implies (`DivisionAllegory` brings `DistributiveAllegory`);
-    the two are not related by inheritance, so the bridge is given here. -/
-@[expose] public instance (priority := 100)
-    TabularUnitaryUnguardedPowerLCDA.toTabularUnitaryUnguardedPowerAllegory
-    {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] :
-    TabularUnitaryUnguardedPowerAllegory 𝒜 :=
-  { inst with }
-
-/-- `Rel(Set)` is the setting: both halves of the merge are already instances (`AOP.A6_1_RelSet`),
-    so §8.2's and §8.3's theorems apply to the concrete case studies of §8.4-§8.6. -/
-@[expose] public instance : TabularUnitaryUnguardedPowerLCDA RelSet.{u} :=
-  { (inferInstance : Freyd.Alg.TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
-    (inferInstance : LocallyCompleteDistributiveAllegory RelSet) with }
-
 /-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
     every candidate list counts as sorted. -/
 public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
