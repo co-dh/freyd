@@ -133,6 +133,17 @@ def stxShow (s : Syntax) : MetaM String := do
   let t := (toString (← PrettyPrinter.ppTerm ⟨stxPeel s⟩)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
 
+/-- A HEAD IS WRITTEN BY ITS LAST COMPONENT.  A qualifier — the record it is a field of, the
+    namespace it was declared in — is the PRINTER disambiguating, and the note draws no `TT`: what
+    it writes beside the picture is `F(A)`, so `TT.F A` reading as a composite of `TT.F` and `A` is
+    the qualifier leaking into the name.  This is `relatorName?`'s rule for a wire, kept for the
+    heads a wire's name is built out of, so a lane and the label above it cannot be spelled two
+    ways.  On the IDENT only: a head that is a notation delimits its own operand and has no name to
+    shorten. -/
+def headShown (h : Syntax) : MetaM String := do
+  if h.isIdent then return h.getId.getString!
+  stxShow h
+
 /-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
     rule: ONE operand goes through `applyLabel`, so a ONE-LETTER head juxtaposes with it (`TA`,
     `PA`, `E[A]`) and a longer name applies with parentheses (`thin(Q)`, `bag(Job)`, `list⁺(A)`),
@@ -140,13 +151,15 @@ def stxShow (s : Syntax) : MetaM String := do
     and the operand's own join decide it, never a list of names — the next one-letter functor
     declared draws right with no line added here.  SEVERAL operands are the note's comma list, which
     no juxtaposition can be read as.  A head whose own notation already delimits its operands
-    (`est(R)`, `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote. -/
+    (`est(R)`, `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote.
+
+    THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
 def appShow (e : Expr) : MetaM String := do
   match appParts (← PrettyPrinter.delab e) with
   | some (h, ops) =>
     match ops with
-    | #[a] => return applyLabel (← stxShow h) (← stxShow a) (stxJoin (stxPeel a))
-    | _ => return (← stxShow h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+    | #[a] => return applyLabel (← headShown h) (← stxShow a) (stxJoin (stxPeel a))
+    | _ => return (← headShown h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
   | none => plain e
 
 /-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
@@ -190,7 +203,9 @@ def tightHeads : Array Name :=
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
     `⦇hf⦈` for `⦇f⦈`. -/
 def homArgs (args : Array Expr) : MetaM (Array Expr) :=
-  args.filterM fun a => return (homObjs? (← Meta.inferType a)).isSome
+  -- The region's `Cat` instance decides, not the `Cat.Hom` head (`homEnds?`): a concrete region's
+  -- hom is a FUNCTION TYPE, and its arrows are terms of the note's like any other.
+  args.filterM fun a => return (← homEnds? a).isSome
 
 /-! ### A MAP, named from its own function
 
@@ -1017,5 +1032,46 @@ partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
 /-- …and each part flat, for the pictures that write one string. -/
 def labelParts (e : Expr) : MetaM (Array String) :=
   return (← labelPartsT e).map Lbl.flat
+
+/-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
+    pairing, an identity, a composite and the product bifunctor have no name of their own, so they
+    are written structurally — `⟨𝟙,T⟩`, `𝟙`, `list list`, `×` — and the length of that string is
+    what reserves the lane's room, which is why it cannot be left to `Relator.comp list list`.
+    Every head here is matched as an `Expr` head, so nothing rests on how a name prints.
+    A composite is juxtaposition in DIAGRAM order — `comp F G` is `F` then `G` — and it is read off
+    `wiresOf`, which is what drops the identity factors and flattens the nesting.
+
+    EVERY OTHER LANE IS SPELLED BY THE ONE LABEL PRINTER — which is why this lives here and not
+    beside the peel: a lane written with the raw printer came out `tree A`, `Op Char`, `TT.F A`,
+    with the spacing of Lean's juxtaposition, beside an object wire the printer of this file had
+    already set as `Op(Char)` in the SAME panel. -/
+partial def relLabel (r : Expr) : MetaM String := do
+  match r.getAppFnArgs with
+  | (``Freyd.Alg.Relator.pair, args) =>
+    match lastTwo args with
+    | some (f, g) => return "⟨" ++ (← relLabel f) ++ "," ++ (← relLabel g) ++ "⟩"
+    | none => label r
+  | (``Freyd.Alg.Relator.prod, args) =>
+    match lastTwo args with
+    | some (f, g) => return (← relLabel f) ++ "×" ++ (← relLabel g)
+    | none => label r
+  | (``Freyd.Alg.Relator.comp, _) =>
+    -- `wiresOf` is OUTERMOST first; juxtaposition is diagram order, so it is read back to front.
+    let ws := wiresOf r
+    if ws.isEmpty then return "𝟙"
+    return " ".intercalate (← ws.toList.reverse.mapM relLabel)
+  | (``Freyd.Alg.timesRel, _) => return "×"
+  | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
+  | _ => label r
+
+/-- A WIRE'S NAME, by the same printer as the object wire beside it. -/
+def Wire.label : Wire → MetaM String
+  | .rel r => relLabel r
+  -- `(A×B)×−`, never `A×B×−`: a left factor that is itself a product must be bracketed or the
+  -- label names a different lane.  The test is the product READER, not the printed string.
+  | .timesL l => do
+    let s ← _root_.Freyd.StrDiag.label l
+    let par := (← splitTimes? (← Meta.inferType l) l).isSome
+    return (if par then "(" ++ s ++ ")" else s) ++ "×−"
 
 end Freyd.StrDiag
