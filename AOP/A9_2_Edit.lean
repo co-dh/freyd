@@ -43,6 +43,7 @@ module
 
 public import AOP.A9_1
 public import AOP.A5_6_ListCombinators
+public import AOP.A8_3
 
 namespace Freyd.Alg.RelSet.Edit
 
@@ -172,39 +173,102 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
     `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, and
     `unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`
     — the thinned decompositions, a copy beating a delete and an insert where available. -/
-@[expose] public def unstep [DecidableEq Char] :
+@[expose] public def unstepFn [DecidableEq Char] :
     ConsList Unit Char × ConsList Unit Char →
-      List (Op Char × (ConsList Unit Char × ConsList Unit Char))
-  | (ConsList.wrap _, ConsList.wrap _) => []
-  | (ConsList.cons a xs, ConsList.wrap _) => [(Op.del a, (xs, ConsList.wrap ()))]
-  | (ConsList.wrap _, ConsList.cons b ys) => [(Op.ins b, (ConsList.wrap (), ys))]
+      ConsList Unit (Op Char × (ConsList Unit Char × ConsList Unit Char))
+  | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
+  | (ConsList.cons a xs, ConsList.wrap _) =>
+      ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ())
+  | (ConsList.wrap _, ConsList.cons b ys) =>
+      ConsList.cons (Op.ins b, (ConsList.wrap (), ys)) (ConsList.wrap ())
   | (ConsList.cons a xs, ConsList.cons b ys) =>
-      if a = b then [(Op.cpy a, (xs, ys))]
-      else [(Op.del a, (xs, ConsList.cons b ys)), (Op.ins b, (ConsList.cons a xs, ys))]
+      if a = b then ConsList.cons (Op.cpy a, (xs, ys)) (ConsList.wrap ())
+      else ConsList.cons (Op.del a, (xs, ConsList.cons b ys))
+            (ConsList.cons (Op.ins b, (ConsList.cons a xs, ys)) (ConsList.wrap ()))
+
+-- The note's `[·]` is `ConsList Unit`, so the program returns one of THOSE: the panel's
+-- `list((𝟙×mle)cons)` is the list relator at the same list type its `minlist(R)` reads, and a
+-- Lean `List` here would put a second list type on the one wire.
+/-- **edit-laws**, fourth row: `unstep : [Char]×[Char]⟶[Op×([Char]×[Char])]`, the arrow the
+    panel draws. -/
+@[expose] public def unstep [DecidableEq Char] :
+    dPair Char ⟶ dList (Op Char × (dPair Char).carrier) := graph unstepFn
 
 /-- **edit-laws**, the sound half of `unstep` implementing `frac(step°,∋) thin(U×V)`:
     everything `unstep` returns really is a decomposition, `step (unstep p) = p`. -/
 public theorem unstep_sound [DecidableEq Char]
     (p : ConsList Unit Char × ConsList Unit Char)
-    (q : Op Char × (ConsList Unit Char × ConsList Unit Char)) (h : q ∈ unstep p) :
+    (q : Op Char × (ConsList Unit Char × ConsList Unit Char)) (h : inlistP (unstepFn p) q) :
     baseStepFn (Sum.inr q) = p := by
   obtain ⟨xs, ys⟩ := p
   cases xs with
   | wrap _ =>
     cases ys with
-    | wrap _ => simp [unstep] at h
-    | cons b ys => simp only [unstep, List.mem_cons, List.not_mem_nil, or_false] at h; subst h; rfl
+    | wrap _ => exact (h : False).elim
+    | cons b ys =>
+      obtain rfl | hf := (h : q = (Op.ins b, (ConsList.wrap (), ys)) ∨ False)
+      · rfl
+      · exact hf.elim
   | cons a xs =>
     cases ys with
     | wrap _ =>
-      simp only [unstep, List.mem_cons, List.not_mem_nil, or_false] at h; subst h; rfl
+      obtain rfl | hf := (h : q = (Op.del a, (xs, ConsList.wrap ())) ∨ False)
+      · rfl
+      · exact hf.elim
     | cons b ys =>
       by_cases hab : a = b
       · subst hab
-        simp only [unstep, if_pos, List.mem_cons, List.not_mem_nil, or_false] at h
+        simp only [unstepFn, if_pos, inlistP, or_false] at h
         subst h; rfl
-      · simp only [unstep, if_neg hab, List.mem_cons, List.not_mem_nil, or_false] at h
+      · simp only [unstepFn, if_neg hab, inlistP, or_false] at h
         rcases h with rfl | rfl <;> rfl
+
+/-- **edit-laws**, the COMPLETE half of the same implementation: what `unstep` drops, a returned
+    decomposition beats.  For every `q` with `step q = p` there is a returned `q'` whose pair of
+    strings is `V`-below `q`'s — where the two heads agree the copy is returned alone, and the
+    `del` and `ins` it hides leave behind a LONGER pair, one operation more to spend; where they
+    differ both survivors are returned, so nothing is dropped at all. -/
+public theorem unstep_complete [DecidableEq Char]
+    (p : ConsList Unit Char × ConsList Unit Char)
+    (q : Op Char × (ConsList Unit Char × ConsList Unit Char))
+    (h : baseStepFn (Sum.inr q) = p) :
+    ∃ q', inlistP (unstepFn p) q' ∧ V Char q'.2 q.2 := by
+  obtain ⟨op, x, y⟩ := q
+  cases op with
+  | cpy a =>
+    subst h
+    refine ⟨(Op.cpy a, (x, y)), ?_, ⟨suffixP.refl x, suffixP.refl y⟩⟩
+    simp [baseStepFn, unstepFn, inlistP]
+  | del a =>
+    cases y with
+    | wrap u =>
+      subst h
+      exact ⟨(Op.del a, (x, ConsList.wrap ())), Or.inl rfl, ⟨suffixP.refl x, rfl⟩⟩
+    | cons b ys =>
+      by_cases hab : a = b
+      · subst hab
+        subst h
+        refine ⟨(Op.cpy a, (x, ys)), ?_, ⟨suffixP.refl x, Or.inr (suffixP.refl ys)⟩⟩
+        simp [baseStepFn, unstepFn, inlistP]
+      · subst h
+        refine ⟨(Op.del a, (x, ConsList.cons b ys)), ?_,
+          ⟨suffixP.refl x, suffixP.refl (ConsList.cons b ys)⟩⟩
+        simp [baseStepFn, unstepFn, inlistP, if_neg hab]
+  | ins b =>
+    cases x with
+    | wrap u =>
+      subst h
+      exact ⟨(Op.ins b, (ConsList.wrap (), y)), Or.inl rfl, ⟨rfl, suffixP.refl y⟩⟩
+    | cons a xs =>
+      by_cases hab : a = b
+      · subst hab
+        subst h
+        refine ⟨(Op.cpy a, (xs, y)), ?_, ⟨Or.inr (suffixP.refl xs), suffixP.refl y⟩⟩
+        simp [baseStepFn, unstepFn, inlistP]
+      · subst h
+        refine ⟨(Op.ins b, (ConsList.cons a xs, y)), ?_,
+          ⟨suffixP.refl (ConsList.cons a xs), suffixP.refl y⟩⟩
+        simp [baseStepFn, unstepFn, inlistP, if_neg hab]
 
 /-! ## `edit-laws` — monotonicity, Proposition 9.2 at `length` -/
 
@@ -487,5 +551,25 @@ public theorem edit_branch (X : dPair Char ⟶ dEdit Char) :
         exact absurd hy (step_ne_base p)
       | inr q => exact ⟨q, rfl⟩)
   rwa [hmap] at key
+
+/-! ## edit-laws, fourth row: `unstep` IS the thinned decomposition -/
+
+/-- **edit-laws**, fourth row: `unstep` implements `frac(step°,∋) thin(U×V)` — the note's own
+    claim for that row, and the two halves of `thinRel` are exactly `unstep`'s two.  Read as a
+    set: `setify(unstep p)` is a subset of `p`'s decompositions (`unstep_sound`) that still
+    dominates all of them (`unstep_complete`), which is what a thinning is.  `U≜⊤` on the
+    operation leaves the three comparable and `V` orders the two strings. -/
+public theorem unstep_thins [DecidableEq Char] :
+    unstep ≫ setify
+      ⊑ Λ ((step (Char := Char))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char)) := by
+  rw [le_iff]
+  rintro p Y ⟨L, rfl, rfl⟩
+  refine ⟨fun q => step q p, by rw [Λ_eq_classifier]; rfl, ?_, ?_⟩
+  · intro q hq
+    exact (unstep_sound p q hq).symm
+  · intro q hq
+    obtain ⟨q', hq', hV⟩ := unstep_complete p q (hq : p = baseStepFn (Sum.inr q)).symm
+    exact ⟨q', ⟨topMor_apply q'.1 q.1, hV⟩, hq'⟩
 
 end Freyd.Alg.RelSet.Edit
