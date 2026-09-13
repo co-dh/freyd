@@ -300,9 +300,9 @@ N(cp P(α))(that)
 // The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is
 // OUTSIDE `F` on the left and INSIDE it on the right — that is all the recursion there is.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
-  lean("Freyd.Alg.Cylinder.gen_cata_comm@1"),
+  lean("Freyd.Alg.Cylinder.gen_cata_comm.lhs"),
   EQ,
-  lean("Freyd.Alg.Cylinder.gen_cata_comm@2"),
+  lean("Freyd.Alg.Cylinder.gen_cata_comm.rhs"),
 
   src[`α` puts the column back on the list, then the fold reads all of it],
   [],
@@ -487,8 +487,8 @@ N(α)(that)
 
 // ---- Chain B, generated.  `est(R)` is the one bead BOTH sides carry, and the base functor's own
 // bead travels past it: `gen` above it on the left, `Q` below it on the right.
-#let cb1 = lean("Freyd.Alg.Cylinder.cyl_fusion@2")
-#let cb2 = lean("Freyd.Alg.Cylinder.cyl_fusion@1")
+#let cb1 = lean("Freyd.Alg.Cylinder.cyl_fusion.rhs")
+#let cb2 = lean("Freyd.Alg.Cylinder.cyl_fusion.lhs")
 
 // B&dM §7.4, p. 183.  `gen` kills the base functor before the minimum is taken inside the
 // tuple; the right-hand side kills it after, and that swap is the whole step.

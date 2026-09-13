@@ -132,8 +132,11 @@ def fileliterals(text, glic):
         # `top:` is the pair's knob and the ONE licence to stand off the floor; `frame:` is not — it
         # is the shared BOX, and a panel can keep its partner's frame with its own beads at the foot.
         lic = glic or (cert >= 0 and "top:" in arg[cert:])
+        # TWO BANDS, because the two passes can read two different things: where the INK stops, lane
+        # ends counted, which is what a panel standing off the floor is; and where the lowest BEAD
+        # is, which is all the ink pass can see on the page.
         out.append((line, name.group(1) if name else "dpanel", arg_expect(arg),
-                    round(min(ys + ends) / dg.DY, 3), h, lic))
+                    round(min(ys + ends) / dg.DY, 3), round(min(ys) / dg.DY, 3), h, lic))
     return out
 
 
@@ -188,11 +191,17 @@ def main(argv):
     lits = literals(typ)
     bad = [f"{typ}:{line}  {name} `{exp}`: {rows:g} rows under the last bead, expected {ONE:g}"
            f" — declare `top:` in its `cert:` if a step pair lifts it"
-           for line, name, exp, rows, h, lic in lits if rows > ONE + 1e-9 and not lic]
+           for line, name, exp, rows, brows, h, lic in lits if rows > ONE + 1e-9 and not lic]
     # What the ink is allowed to show: the deepest band any literal states, as a fraction of its own
     # frame.  This is where the ink pass earns its keep — a HAND-LAID panel writes its heights as
     # bound names and the literal pass cannot read it, so the generated panels set the bar for it.
-    cap = max([rows * dg.DY / h for _, _, _, rows, h, _ in lits], default=ONE * dg.DY / 2)
+    # MEASURED THE WAY THE INK IS, or the bar is a fraction of another box: the page shows BEADS and
+    # not lane ends, and the region it shows them in runs one row BELOW the panel's floor, where the
+    # ports are — `h` is the wires' own height and the drawn box is `h + DY`.  A bar taken off `h`
+    # alone reads every panel shallower than the page draws it, which a note whose panels are all
+    # generated then fails against its own drawings.
+    cap = max([(brows + 1) * dg.DY / (h + dg.DY) for _, _, _, _, brows, h, _ in lits],
+              default=ONE * dg.DY / 2)
     n = int(re.search(r"Pages:\s+(\d+)", subprocess.run(
         ["pdfinfo", pdf], capture_output=True, text=True).stdout)[1])
     ink = []

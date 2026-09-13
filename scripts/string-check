@@ -274,6 +274,24 @@ def route(sel):
     return base, (int(k) - 1 if k else 0)
 
 
+def leansel(sel):
+    """THE SELECTOR THE EXPORTER READS for what the manifest writes as `<base>@<k>`.  `@k` is the
+    manifest's own panel numbering and dies with the manifest; the exporter's grammar
+    (`diag/tool/DiagExport.lean`) has no `@` at all — it has the side selectors `.lhs`/`.rhs`, which
+    chain — and the file drawn for a statement holds its two sides IN THAT ORDER, so `@1` is the
+    base's `.lhs` and `@2` its `.rhs`.  A statement has two sides and no third, so any other `k`
+    names no side and is said with the selector, never guessed at; whether the base is a statement
+    at all is the exporter's own question, which it answers by name and not by drawing something
+    else.  Routed through `route`, so `@` is parsed in one place."""
+    if "@" not in sel:
+        return sel
+    base, w = route(sel)
+    if w not in (0, 1):
+        sys.exit(f"string-check: {sel}: a statement draws its two sides and nothing else, so"
+                 f" `@{w + 1}` names no panel of `{base}` the exporter can read")
+    return base + (".lhs" if w == 0 else ".rhs")
+
+
 def picks(want, addr):
     """WHAT A PREFIX NAMES IS A ROW — `<number>/<display>.<k>`, the line the report prints — so `14`
     takes a chapter, `14.1.2e/thin-thm81` a display and `14.1.2e/thin-thm81.3` one panel of it.  The
@@ -832,9 +850,30 @@ def lean_convert(want):
     addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
     hasdisp, _ = picks(want, addr)
     texts = note_texts()
-    atlit, bad = sources(texts, live)
+    atlit, bad, group = sources(texts, live)
     db = sqlite3.connect(f"file:{citecheck.DB}?mode=ro", uri=True)
     edits, plan, refused, nodecl, stale, done, merged, cut = {}, [], [], [], [], 0, 0, 0
+    # A `#let` PANEL IS CONVERTED AT ITS USES.  One literal drawing SEVERAL of the note's panels is
+    # one picture standing for several statements — the exporter is a functor of the `Expr`, so two
+    # statements whose side is the same expression draw the same picture and nothing is duplicated
+    # by naming each at its own use.  The binding then has no one name to carry and goes; which
+    # panels those are is the question `sources` could not answer, asked of the whole drawing.
+    sel_at = {}
+    for n, sels in rows:
+        ids = [p.get("id") for p in live[n]] if n in live and hasdisp(n) else []
+        if len(sels) == len(ids):
+            sel_at.update({i: leansel(s) for i, s in zip(ids, sels) if s != "-"})
+    binds, inlkey = {}, {}
+    for ids, spans in {g[0]: g for g in group.values()}.values():
+        ss = [sel_at.get(i) for i in ids]
+        if None in ss or not (len(spans) == 1 and len(set(ss)) > 1
+                              or len(spans) not in (1, len(ids))):
+            continue
+        bs = [binding(texts[sp[0]][1], sp) for sp in spans]
+        if any(nm is None for nm, _ in bs) or len({sp[0] for sp in spans}) > 1:
+            continue          # not `#let`-bound: no use site to write at, so the old refusal stands
+        binds[ids] = bs
+        inlkey.update(dict.fromkeys(ids, ids))
     for n, sels in rows:
         if n not in live or not hasdisp(n):
             continue
@@ -848,13 +887,13 @@ def lean_convert(want):
         if len(sels) != len(ids):
             refused.append((addr(n), f"{PANELS} names {len(sels)} selector(s) for {len(ids)} panel(s)"))
             continue
-        k = next((x for x, s in enumerate(spans) if s is None), None)
+        k = next((x for x, s in enumerate(spans) if s is None and ids[x] not in inlkey), None)
         if k is not None:
             refused.append((addr(n), f"panel {k + 1}: " + (bad.get(ids[k]) or
                             f"the note draws it by `{live[n][k].get('helper')}`, which is no"
                             f" `dpanel(` literal")))
             continue
-        if len({s[0] for s in spans}) > 1:
+        if len({s[0] for s in spans if s}) > 1:
             refused.append((addr(n), "its panels are written in two files, so the display is not one"
                                      " block and its markers have no home"))
             continue
@@ -865,18 +904,24 @@ def lean_convert(want):
                 nodecl.append(f"{addr(n)}.{x + 1}")
                 x += 1
                 continue
+            if ids[x] in inlkey:
+                fi, ls, _ = binds[inlkey[ids[x]]][0][1]
+                mine.append(((fi, ls, ls), leansel(s), f"{addr(n)}.{x + 1}", False))
+                x += 1
+                continue
             b, w = route(s)
-            nxt = route(sels[x + 1]) if x + 1 < len(sels) and sels[x + 1] != "-" else None
+            nxt = (route(sels[x + 1]) if x + 1 < len(sels) and sels[x + 1] != "-"
+                   and ids[x + 1] not in inlkey else None)
             # TWO SIDES AND THE SYMBOL BETWEEN THEM ARE ONE STATEMENT: `lean("N")` draws the whole
             # of it, relation symbol included, so the note keeps no cell of its own to say it.
             if (w, nxt) == (0, (b, 1)) and cellonly(texts[spans[x][0]][1], spans[x][2],
                                                     spans[x + 1][1]):
                 mine.append(((spans[x][0], spans[x][1], spans[x + 1][2]), b,
-                             f"{addr(n)}.{x + 1}+{x + 2}"))
+                             f"{addr(n)}.{x + 1}+{x + 2}", True))
                 merged += 1
                 x += 2
                 continue
-            mine.append((spans[x], s, f"{addr(n)}.{x + 1}"))
+            mine.append((spans[x], leansel(s), f"{addr(n)}.{x + 1}", True))
             x += 1
         if mine:
             plan.append((n, mine))
@@ -886,8 +931,9 @@ def lean_convert(want):
     # came first leaves the other silently drawing a statement nobody wrote it for.
     seen = {}
     for n, mine in plan:
-        for sp, s, t in mine:
-            seen.setdefault(sp, {}).setdefault(s, []).append((n, t))
+        for sp, s, t, w in mine:
+            if w:
+                seen.setdefault(sp, {}).setdefault(s, []).append((n, t))
     clash = {n for byt in seen.values() if len(byt) > 1 for v in byt.values() for n, _ in v}
     for sp, byt in sorted(seen.items()):
         if len(byt) > 1:
@@ -899,18 +945,26 @@ def lean_convert(want):
     for n, mine in plan:
         if n in clash:
             continue
-        drawn = {d for sp, s, t in mine for d in [declof(db, s)] if d}
-        dels, why = markerlines(texts[mine[0][0][0]][1], mine[0][0][0], [sp for sp, _, _ in mine],
+        drawn = {d for sp, s, t, w in mine for d in [declof(db, s)] if d}
+        dels, why = markerlines(texts[mine[0][0][0]][1], mine[0][0][0], [m[0] for m in mine],
                                 n, num(n) != n, drawn, db)
         # A DISPLAY STILL CONVERTS WITH ITS MARKERS IN PLACE: the pictures are the payload and the
         # markers a second reading of the same declaration, so a block not found is said, not fatal.
         if why:
             stale.append((addr(n), why))
-        for sp, s, t in mine:
-            edits[sp] = (f'lean("{s}")', t)
+        for sp, s, t, w in mine:
+            if w:
+                edits[sp] = (f'lean("{s}")', t)
         for sp in dels:
             edits[sp] = ("", f"{addr(n)}'s marker")
         cut += len(dels)
+    # THE BINDING GOES, and its uses are written where the compiler finds them, after the splice.
+    work = []
+    for ids in sorted(binds, key=lambda k: binds[k][0][1]):
+        for nm, sp in binds[ids]:
+            edits[sp] = ("", f"the `#let {nm}` binding")
+        work.append((texts[binds[ids][0][1][0]][0], [nm for nm, _ in binds[ids]],
+                     [sel_at[i] for i in ids]))
     # NO EDIT MAY EAT ANOTHER: a merged span reaches across the cell between two panels, and a `#let`
     # literal two displays share is one span reached twice, so two edits that overlap are two
     # readings of one piece of the note — reported, and neither written.
@@ -920,6 +974,7 @@ def lean_convert(want):
             refused.append((edits[a][1], f"its span overlaps {edits[b][1]}'s, so neither is written"))
             edits[a], edits[b] = (None, edits[a][1]), (None, edits[b][1])
     splice(texts, edits)
+    inline_write(work)
     for name, why in refused:
         print(f"{name}: REFUSED — {why}")
     for name, why in stale:
@@ -927,7 +982,9 @@ def lean_convert(want):
     for t in nodecl:
         print(f"{t}: NO-DECL — the manifest names no declaration, so the literal stands")
     print(f"string-check --lean: {sum(1 for v in edits.values() if v[0])} span(s) written"
-          f" ({merged} merged from two sides), {cut} marker(s) cut, {done} display(s) already"
+          f" ({merged} merged from two sides), {sum(len(w[2]) for w in work)} use(s) of"
+          f" {sum(len(w[1]) for w in work)} `#let` panel(s) written at the use site, {cut}"
+          f" marker(s) cut, {done} display(s) already"
           f" converted, {len(refused)} refused, {len(stale)} with markers left, {len(nodecl)} with"
           f" no declaration")
     return 1 if refused or stale else 0
@@ -964,9 +1021,10 @@ def sources(texts, live):
             c = m.get("cert") or {}
             if m.get("helper") == "dpanel" and all(c.get(f) for f in ("expect", "src", "tgt")):
                 ps.setdefault(drawing(c), []).append(m["id"])
-    at, bad = {}, {}
+    at, bad, group = {}, {}, {}
     for d, ids in ps.items():
         spans = byc.get(d, [])
+        group.update(dict.fromkeys(ids, (tuple(ids), spans)))
         if len(spans) == 1:
             at.update(dict.fromkeys(ids, spans[0]))
         elif len(spans) == len(ids):
@@ -978,7 +1036,77 @@ def sources(texts, live):
                 if not spans else
                 f"the note draws {len(ids)} panel(s) from this `cert:` and {NOTE} holds"
                 f" {len(spans)} literal(s) of it, so which one is this panel's cannot be said")))
-    return at, bad
+    return at, bad, group
+
+
+def binding(text, sp):
+    """THE `#let <name> = dpanel(…)` A LITERAL IS THE BODY OF, as the name and the span of the whole
+    binding — the line, and the blank left where its call ended.  A literal written anywhere else is
+    a panel's own place in the note and has no name; this says so rather than guessing one."""
+    fi, i, j = sp
+    ls = text.rfind("\n", 0, i) + 1
+    head = text[ls:i].strip()
+    if not head.startswith("#let ") or not head.endswith("="):
+        return None, None
+    name = head[5:-1].strip()
+    nl = text.find("\n", j)
+    if nl >= 0 and not text[j:nl].strip():
+        j = nl + 1
+    return (name, (fi, ls, j)) if name and " " not in name else (None, None)
+
+
+def inline_write(work):
+    """A DELETED `#let`'s USES, each given the selector of the panel drawn THERE.  A binding used by
+    several displays is ONE drawing standing for several statements, so the picture belongs at the
+    use and not at the binding; which use is which panel is ORDER — the manifest lists a display's
+    selectors in its panel order and the note draws them in that order — and WHERE the uses are is
+    the COMPILER's answer, not a search of the source: with the binding gone typst names each one
+    `unknown variable: <name>` at its own line and column, one per compile, so the file is compiled
+    until it names none of ours.  A column that does not land on the name stops the run."""
+    byfile = {}
+    for k, (path, names, sels) in enumerate(work):
+        byfile.setdefault(path, []).append((k, names, sels))
+    # EVERY DELETED NAME OF THE FILE AT ONCE: the bindings all went in one splice, so the next use
+    # the compiler names is whichever it reaches first, and a loop waiting for one drawing's names
+    # stops at another's.
+    for path, items in byfile.items():
+        own = {nm: k for k, names, _ in items for nm in names}
+        text, holes = open(path, encoding="utf-8").read(), {k: [] for k, _, _ in items}
+        while True:
+            p = run("typst", "compile", "--root", ROOT, "--input", "list=1", "-f", "pdf",
+                    path, "/dev/null")
+            if not p.returncode:
+                break
+            ls = p.stderr.splitlines()
+            at = next((x for x, l in enumerate(ls) if l.startswith("error: unknown variable: ")
+                       and l[25:].strip() in own), None)
+            if at is None:
+                sys.exit(f"string-check: {path} does not compile and names no use of"
+                         f" {', '.join(own)}; typst said:\n{p.stderr}")
+            name, loc = ls[at][25:].strip(), ls[at + 1].rsplit(":", 2)
+            rows = text.split("\n")
+            row, base = rows[int(loc[1]) - 1], sum(len(l) + 1 for l in rows[:int(loc[1]) - 1])
+            # THE NAME, NOT THE COLUMN: `hy-cata` occurs inside `hy-cataR` too, so a use is where
+            # the WHOLE identifier stands, and the column only says which of that line's uses.
+            idc = lambda c: c.isalnum() or c in "_-"
+            hits = [x for x in range(len(row)) if row.startswith(name, x)
+                    and not (x and idc(row[x - 1])) and not idc(row[x + len(name):][:1] or " ")]
+            if not hits:
+                sys.exit(f"string-check: {path}:{loc[1]} is the line typst puts the use of"
+                         f" `{name}` on, and the note writes no such identifier there: {row}")
+            i = base + min(hits, key=lambda x: abs(x - int(loc[2]) + 1))
+            k = own[name]
+            ph = f"§{k}§{len(holes[k])}"
+            text = text[:i] + f'lean("{ph}")' + text[i + len(name):]
+            holes[k].append(ph)
+            open(path, "w", encoding="utf-8").write(text)
+        for k, names, sels in items:
+            if len(holes[k]) != len(sels):
+                sys.exit(f"string-check: {path}: {', '.join(names)} is used {len(holes[k])} time(s)"
+                         f" and {PANELS} names {len(sels)} panel(s) drawn from it")
+            for ph, s in zip(sorted(holes[k], key=lambda h: text.find(f'"{h}"')), sels):
+                text = text.replace(f'"{ph}"', f'"{s}"')
+        open(path, "w", encoding="utf-8").write(text)
 
 
 def rewrite(want, drawing):
