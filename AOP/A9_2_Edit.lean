@@ -572,4 +572,29 @@ public theorem unstep_thins [DecidableEq Char] :
     obtain ⟨q', hq', hV⟩ := unstep_complete p q (hq : p = baseStepFn (Sum.inr q)).symm
     exact ⟨q', ⟨topMor_apply q'.1 q.1, hV⟩, hq'⟩
 
+/-- **edit-laws**, fourth row (B&dM p.228): `unstep list((𝟙×mle)cons)minlist(R)` refines the branch
+    `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` — `unstep` implements `(step°)%∋ thin(U×V)`
+    (`unstep_thins`) and `minlist(R)` implements `est(R)`, the list standing in for the set it
+    `setify`s to (`CL.list_comp_minlist_le`, `setify`'s lax naturality). -/
+public theorem edit_prog [DecidableEq Char] (mle : dPair Char ⟶ dEdit Char) :
+    unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minlist(R Char)
+      ⊑ Λ ((step (Char := Char))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
+  calc unstep ≫ ListRel.list (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ minlist(R Char)
+      ⊑ unstep ≫ ListRel.setify
+          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
+        comp_mono_left unstep (CL.list_comp_minlist_le _ _)
+    _ = (unstep ≫ ListRel.setify)
+          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
+        rw [← Cat.assoc]
+    _ ⊑ (Λ ((step (Char := Char))°)
+            ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char)))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) :=
+        comp_mono_right unstep_thins _
+    _ = Λ ((step (Char := Char))°)
+          ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
+          ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
+        rw [Cat.assoc]
+
 end Freyd.Alg.RelSet.Edit

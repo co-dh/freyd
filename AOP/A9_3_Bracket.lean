@@ -418,29 +418,11 @@ public theorem mem_splits : ∀ (x : NEList A) (p : NEList A × NEList A),
             · injection h with _ hxv
               exact (ih (u, v)).mpr hxv
 
-/-- `AOP.A8_3`'s `setifyCL` and `AOP.A5_6_ListCombinators`' `setify` are the SAME arrow — one is
-    written with `clMem`, the other with `inlistP`, and the two memberships are the same
-    predicate read in the two argument orders. -/
-public theorem clMem_iff_inlistP {B : Type} (w : B) :
-    ∀ xs : CL.ConsList Unit B, CL.clMem w xs ↔ inlistP xs w
-  | CL.ConsList.wrap _ => Iff.rfl
-  | CL.ConsList.cons _ xs => or_congr Iff.rfl (clMem_iff_inlistP w xs)
-
-public theorem setifyCL_eq_setify {B : Type} : (CL.setifyCL : dList B ⟶ _) = setify := by
-  show graph (fun xs => fun w => CL.clMem w xs) = graph (inlistP (A := B))
-  exact congrArg graph (funext fun xs => funext fun w => propext (clMem_iff_inlistP w xs))
-
-/-- `minlist Q ≜ setify est(Q)`, in the note's own `setify`. -/
-public theorem minlist_eq_setify_comp_est {B : Type} (Q : CL.dE B ⟶ CL.dE B) :
-    CL.minlist Q = setify ≫ est Q := by
-  show CL.setifyCL ≫ est Q = setify ≫ est Q
-  rw [setifyCL_eq_setify]
-
 /-- **mct-laws**, fourth row (B&dM p.232): `splits list((mct×mct)bin)minlist R` refines the body
     `(cat°)%∋ P((X×X)bin)est(R)` of the fixed point — `splits` implements `cat°` (`mem_splits`)
     and `minlist R` implements `est(R)`, the list standing in for the set it `setify`s to.  The
-    one inequality is `setify`'s lax naturality (`AOP.A5_7_ListBeads.setify_lax_natural`): a list
-    of `f`-images of the splits has, as a SET, an `P(f)`-image of the set of splits.  Exponential,
+    one inequality is `CL.list_comp_minlist_le`, `setify`'s lax naturality: a list of `f`-images of
+    the splits has, as a SET, an `P(f)`-image of the set of splits.  Exponential,
     since the segments of one list overlap — the tabulation (9.7)-(9.10) is what fixes that, and
     it relates arrays of trees, outside the relational picture. -/
 public theorem mct_prog (mct : dNE A ⟶ dTree A) :
@@ -464,14 +446,8 @@ public theorem mct_prog (mct : dNE A ⟶ dTree A) :
     · intro hS
       exact ⟨splitsFn x, rfl,
         (hS : S = fun p => x = cat p.1 p.2).trans (hmem x).symm⟩
-  have hnat : list (rprodMap mct mct ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2))
-        ≫ setify ≫ est (R st sb cb)
-      ⊑ setify ≫ powerRel (rprodMap mct mct
-          ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) ≫ est (R st sb cb) := by
-    rw [← Cat.assoc, ← Cat.assoc]
-    exact comp_mono_right (setify_lax_natural _) _
-  rw [minlist_eq_setify_comp_est, ← hsplit, Cat.assoc]
-  exact comp_mono_left splits hnat
+  rw [← hsplit, Cat.assoc]
+  exact comp_mono_left splits (CL.list_comp_minlist_le _ _)
 
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.

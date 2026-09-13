@@ -36,6 +36,10 @@ public import AOP.A8_2
 -- pointwise reading.
 public import AOP.A6_ConsList
 public import AOP.A7_4_Horner
+-- `minlist Q` is `setify est(Q)`, and every §9 program step pushes a `list g` past it, so the
+-- cons-list `setify` must be reconciled with `ListRel`'s and its lax naturality available here.
+public import AOP.A5_6_ListCombinators
+public import AOP.A5_7_ListBeads
 
 universe u
 
@@ -566,6 +570,33 @@ public theorem clMem_cons {w c : A} {d : ConsList Unit A} :
     what keeps the arrow ONE box in a circuit: a constant printed under its own bare name is opened
     and drawn by its body, and `minlist`'s body is the `setify est(Q)` the step exists to replace. -/
 notation:max "minlist(" Q ")" => Freyd.Alg.RelSet.CL.minlist Q
+
+/-- `clMem` and `AOP.A5_6_ListCombinators`' `inlistP` are the same predicate read in the two
+    argument orders. -/
+public theorem clMem_iff_inlistP (w : A) :
+    ∀ xs : ConsList Unit A, clMem w xs ↔ ListRel.inlistP xs w
+  | ConsList.wrap _ => Iff.rfl
+  | ConsList.cons _ xs => or_congr Iff.rfl (clMem_iff_inlistP w xs)
+
+/-- `setifyCL` and `AOP.A5_6_ListCombinators`' `setify` are the SAME arrow — one is written with
+    `clMem`, the other with `inlistP`. -/
+public theorem setifyCL_eq_setify : (setifyCL : ListRel.dList A ⟶ _) = ListRel.setify := by
+  show graph (fun xs => fun w => clMem w xs) = graph (ListRel.inlistP (A := A))
+  exact congrArg graph (funext fun xs => funext fun w => propext (clMem_iff_inlistP w xs))
+
+/-- `minlist Q ≜ setify est(Q)`, in the note's own `setify`. -/
+public theorem minlist_eq_setify_comp_est (Q : dE A ⟶ dE A) :
+    minlist Q = ListRel.setify ≫ est Q := by
+  show setifyCL ≫ est Q = ListRel.setify ≫ est Q
+  rw [setifyCL_eq_setify]
+
+/-- The one step every §9 program shares (B&dM pp.232, 242): `list(g)minlist(R) ⊑ setify P(g)est(R)`
+    — a list of `g`-images has, as a SET, a `P(g)`-image of the set, which is `setify`'s lax
+    naturality, and `est(R)` reads the least member off either. -/
+public theorem list_comp_minlist_le {B : Type} (g : dE A ⟶ dE B) (R : dE B ⟶ dE B) :
+    ListRel.list g ≫ minlist R ⊑ ListRel.setify ≫ powerRel g ≫ est R := by
+  rw [minlist_eq_setify_comp_est, ← Cat.assoc, ← Cat.assoc]
+  exact comp_mono_right (ListRel.setify_lax_natural g) _
 
 public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
     minlist Q xs w ↔ clMem w xs ∧ ∀ z, clMem z xs → Q w z := by
