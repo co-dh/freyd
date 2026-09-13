@@ -296,6 +296,47 @@ public theorem cons_monotonic :
 
 /-! ### `party-mono-branch`: one branch `(𝟙×(list(g) concat)) h`, then the two instances -/
 
+/-- **party-mono-branch, step 1**: the `g` row takes the `(R×R)°` bead from above `g` to below
+    it, under the `list` the branch applies to `g`. -/
+public theorem branch_step1 {g : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    {h : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    (hg : (rprodMap (R rating) (R rating))° ≫ g ⊑ g ≫ (R rating)°) :
+    rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°))
+        ≫ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h)
+      ⊑ rprodMap (𝟙 (dE A)) (list (g ≫ (R rating)°) ≫ concatR) ≫ h := by
+  have e1 : rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°))
+        ≫ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h)
+      = rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))° ≫ g) ≫ concatR) ≫ h := by
+    rw [← Cat.assoc, rprodMap_comp, Cat.id_comp,
+      ← Cat.assoc (list ((rprodMap (R rating) (R rating))°)) (list g) concatR, ← list_comp]
+  exact le_trans (le_of_eq e1)
+    (comp_mono_right (rprodMap_mono (le_refl _) (comp_mono_right (list_mono hg) concatR)) h)
+
+/-- **party-mono-branch, step 2**: `concat_monotonic` takes the `R°` bead from above `concat` to
+    below it, inside the `list`-lane of the branch. -/
+public theorem branch_step2 {g : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    {h : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A} :
+    rprodMap (𝟙 (dE A)) (list (g ≫ (R rating)°) ≫ concatR) ≫ h
+      ⊑ rprodMap (𝟙 (dE A)) (list g ≫ (concatR ≫ (R rating)°)) ≫ h := by
+  have e2 : rprodMap (𝟙 (dE A)) (list (g ≫ (R rating)°) ≫ concatR) ≫ h
+      = rprodMap (𝟙 (dE A)) (list g ≫ (list ((R rating)°) ≫ concatR)) ≫ h := by
+    rw [list_comp, Cat.assoc]
+  exact le_trans (le_of_eq e2)
+    (comp_mono_right (rprodMap_mono (le_refl _) (comp_mono_left _ (concat_monotonic rating))) h)
+
+/-- **party-mono-branch, step 3**: the `h` row takes the `R°` bead from above `h` to below it,
+    where it is the whole branch's own `R°`. -/
+public theorem branch_step3 {g : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    {h : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    (hh : rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h ⊑ h ≫ (R rating)°) :
+    rprodMap (𝟙 (dE A)) (list g ≫ (concatR ≫ (R rating)°)) ≫ h
+      ⊑ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h) ≫ (R rating)° := by
+  have e3 : rprodMap (𝟙 (dE A)) (list g ≫ (concatR ≫ (R rating)°)) ≫ h
+      = rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ (rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h) := by
+    rw [← Cat.assoc (list g) concatR ((R rating)°), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
+  exact le_trans (le_of_eq e3)
+    (le_trans (comp_mono_left _ hh) (le_of_eq (Cat.assoc _ _ _).symm))
+
 /-- **party-mono-branch**: a branch `(𝟙×(list(g) concat)) h` is monotonic on `(R×R)°` given its
     `g` row (`(R×R)°g ⊑ gR°`) and its `h` row (`(𝟙×R°)h ⊑ hR°`); the `concat` leaf and the
     `list` relator laws supply the middle. -/
@@ -305,28 +346,8 @@ public theorem branch_monotonic {g : (⟨ConsList Unit A × ConsList Unit A⟩ :
     (hh : rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h ⊑ h ≫ (R rating)°) :
     rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°))
         ≫ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h)
-      ⊑ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h) ≫ (R rating)° := by
-  have e1 : rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°))
-        ≫ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h)
-      = rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))° ≫ g) ≫ concatR) ≫ h := by
-    rw [← Cat.assoc, rprodMap_comp, Cat.id_comp,
-      ← Cat.assoc (list ((rprodMap (R rating) (R rating))°)) (list g) concatR, ← list_comp]
-  have s1 : rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))° ≫ g) ≫ concatR) ≫ h
-      ⊑ rprodMap (𝟙 (dE A)) (list (g ≫ (R rating)°) ≫ concatR) ≫ h :=
-    comp_mono_right (rprodMap_mono (le_refl _) (comp_mono_right (list_mono hg) concatR)) h
-  have e2 : rprodMap (𝟙 (dE A)) (list (g ≫ (R rating)°) ≫ concatR) ≫ h
-      = rprodMap (𝟙 (dE A)) (list g ≫ (list ((R rating)°) ≫ concatR)) ≫ h := by
-    rw [list_comp, Cat.assoc]
-  have s2 : rprodMap (𝟙 (dE A)) (list g ≫ (list ((R rating)°) ≫ concatR)) ≫ h
-      ⊑ rprodMap (𝟙 (dE A)) (list g ≫ (concatR ≫ (R rating)°)) ≫ h :=
-    comp_mono_right (rprodMap_mono (le_refl _) (comp_mono_left _ (concat_monotonic rating))) h
-  have e3 : rprodMap (𝟙 (dE A)) (list g ≫ (concatR ≫ (R rating)°)) ≫ h
-      = rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ (rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h) := by
-    rw [← Cat.assoc (list g) concatR ((R rating)°), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
-  have s3 : rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ (rprodMap (𝟙 (dE A)) ((R rating)°) ≫ h)
-      ⊑ rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ (h ≫ (R rating)°) := comp_mono_left _ hh
-  exact le_trans (le_of_eq e1) (le_trans s1 (le_trans (le_of_eq e2) (le_trans s2
-    (le_trans (le_of_eq e3) (le_trans s3 (le_of_eq (Cat.assoc _ _ _).symm))))))
+      ⊑ (rprodMap (𝟙 (dE A)) (list g ≫ concatR) ≫ h) ≫ (R rating)° :=
+  le_trans (branch_step1 rating hg) (le_trans (branch_step2 rating) (branch_step3 rating hh))
 
 /-- **party-mono-branch, `include` row**: `(𝟙×list((R×R)°)) include ⊑ include R°` —
     `g := π₂` (laws 1 and 4 of the product calculus, concretely) and `h := cons`. -/
