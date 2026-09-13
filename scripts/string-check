@@ -389,6 +389,146 @@ def sameband(note, gen):
     return False
 
 
+EPS = 1e-6
+Y = lambda v: round(float(v), 6)        # a row, as `dpanel` wrote it and `scanline` reads it
+
+
+class Ill(Exception):
+    """A record whose beads and strands do not make a graph.  The message names the panel's own
+    primitive — which strand, at which x, at which row — so such a panel is REPORTED rather than
+    passed as the same diagram or dropped from the count."""
+
+
+def port(rec, side, x):
+    """WHICH PORT a strand reaching an edge is: the edge's ports left to right, and this one's place
+    among them with its label.  Boundary order is invariant under isotopy where a row number is not,
+    so a port is identified by that place and never by its x."""
+    ps = sorted((float(p[0]), p[1]) for p in rec.get(side) or [])
+    for i, (px, lab) in enumerate(ps):
+        if abs(px - x) < EPS:
+            return (side, i, lab)
+    raise Ill(f"the strand at x={x:g} reaches the {side} edge, where the panel writes no port")
+
+
+def only(at, y, what, end):
+    """The one bead at a row.  Two beads there — or none — leave the strand's end naming no node,
+    which is the graph the comparison cannot be read off."""
+    ks = at.get(y) or []
+    if len(ks) != 1:
+        raise Ill(f"{what} is {end} at row {y:g}, where the panel draws {len(ks)} bead(s)")
+    return ks[0]
+
+
+def graph(rec):
+    """THE PANEL AS A PLANAR GRAPH — its beads the nodes, its strands the edges — off the ONE record
+    `dpanel` emits, the same the status line is read from.  A bead's ARMS are the strands ending at
+    its row and its LEGS those starting there (IntroString Ex 2.13: a bead's arms are its source's
+    functors, its legs its target's).  A unit is a bead too, and the one bead the record writes on
+    the lane it is born on rather than in `beads`.  A bead with no dot x of its own (`dpanel`'s 5th
+    element) rides the OBJECT wire, the one strand alive the panel's whole height: it eats the
+    segment above it and makes the one below, so two beads on it share a strand and do not commute.
+
+    TOTALITY: every strand's two ends and every bead land in the graph, or `Ill` names the one that
+    did not."""
+    ns = [{"y": Y(b[0]), "lab": b[1], "unit": False, "obj": len(b) < 5 or b[4] is None,
+           "arms": [], "legs": []} for b in rec.get("beads") or []]
+    lanes = rec.get("lanes") or []
+    unit = {}
+    for k, l in enumerate(lanes):
+        if len(l) > 4 and l[4] is not None:
+            unit[k] = len(ns)
+            ns.append({"y": Y(l[1]), "lab": l[4], "unit": True, "obj": False,
+                       "arms": [], "legs": []})
+    at = {}
+    for i, n in enumerate(ns):        # a unit is born on its own lane and eats nothing, so it is
+        if not n["unit"]:             # never what a strand's row names
+            at.setdefault(n["y"], []).append(i)
+    src, dst = {}, {}
+    for k, l in enumerate(lanes):
+        x = float(l[0])
+        what = f"the strand at x={x:g}"
+        if l[1] == "top":
+            if k in unit:
+                raise Ill(f"{what} carries the unit {l[4]} and is born at the top edge as well")
+            s = port(rec, "top", x)
+        else:
+            s = ("bead", unit[k] if k in unit else only(at, Y(l[1]), what, "born"))
+        e = port(rec, "bot", x) if l[2] == "bot" else ("bead", only(at, Y(l[2]), what, "eaten"))
+        src[k], dst[k] = s, e
+        if s[0] == "bead":
+            ns[s[1]]["legs"].append(k)
+        if e[0] == "bead":
+            ns[e[1]]["arms"].append(k)
+    xo = float(rec["xo"])
+    ride = sorted((i for i, n in enumerate(ns) if n["obj"]), key=lambda i: -ns[i]["y"])
+    chain = [port(rec, "top", xo)] + [("bead", i) for i in ride] + [port(rec, "bot", xo)]
+    for j, i in enumerate(ride):
+        ns[i]["oarm"], ns[i]["oleg"] = chain[j], chain[j + 2]
+    for n in ns:
+        if not n["arms"] and not n["legs"] and not n["obj"]:
+            raise Ill(f"the bead {n['lab']} at row {n['y']:g} is on no strand the panel draws")
+    return ns, src, dst
+
+
+def nform(rec):
+    """THE PANEL'S NORMAL FORM — what two panels must share to be the SAME DIAGRAM.  These are
+    progressive planar string diagrams (every wire runs top to bottom, none turns back), so by
+    Joyal–Street the isotopy class IS this combinatorial graph, and the row a bead is drawn on is
+    not part of it: two beads sharing no strand commute, so the record's row order is layout.
+
+    A bead's LAYER is 1 + the greatest layer among the beads whose legs it eats, an edge port
+    counting 0; within one layer beads stand in the left-to-right order of their leftmost strand,
+    which is the planar order at one height and so invariant.  In that order each bead is written
+    with its label and its strands' STRUCTURAL identities — the place in this order of the bead that
+    made each arm and of the bead that eats each leg, an edge strand naming its port instead — plus
+    the object labels down the object wire and the two port lists.  A bead's MARK is not here: `why`
+    holds the verdicts, and a mark difference is a difference of the diagram it always was."""
+    ns, src, dst = graph(rec)
+    lanes, xo = rec.get("lanes") or [], float(rec["xo"])
+    lx = lambda k: float(lanes[k][0])
+    up = lambda i: [src[k][1] for k in ns[i]["arms"] if src[k][0] == "bead"] + \
+        ([ns[i]["oarm"][1]] if ns[i]["obj"] and ns[i]["oarm"][0] == "bead" else [])
+    lay = {}
+    # A strand is born above where it dies, so descending row order is already a topological one.
+    for i in sorted(range(len(ns)), key=lambda i: -ns[i]["y"]):
+        lay[i] = 1 + max([0] + [lay[j] for j in up(i)])
+    left = lambda i: min([lx(k) for k in ns[i]["arms"] + ns[i]["legs"]]
+                         + ([xo] if ns[i]["obj"] else []))
+    canon = sorted(range(len(ns)), key=lambda i: (lay[i], left(i), ns[i]["lab"]))
+    pos = {i: r for r, i in enumerate(canon)}
+    ref = lambda e: f"#{pos[e[1]]}" if e[0] == "bead" else f"{e[0]}{e[1]}:{e[2]}"
+    def side(i, ks, end, o):
+        xs = [(lx(k), ref(end[k])) for k in ks] + ([(xo, ref(ns[i][o]))] if ns[i]["obj"] else [])
+        return ",".join(r for _, r in sorted(xs))
+    entry = lambda i: (f"{ns[i]['lab']}({side(i, ns[i]['arms'], src, 'oarm')}"
+                       f"|{side(i, ns[i]['legs'], dst, 'oleg')})")
+    edge = lambda s: "[" + ",".join(p[1] for p in sorted(rec.get(s) or [],
+                                                         key=lambda p: float(p[0]))) + "]"
+    obj = "[" + ",".join(o[1] for o in sorted(rec.get("obj") or [],
+                                              key=lambda o: -float(o[0]))) + "]"
+    return f"top{edge('top')} " + " ".join(entry(i) for i in canon) + f" obj{obj} bot{edge('bot')}"
+
+
+def layout(recs, panel, drew, note, gen):
+    """WHAT THE TWO PICTURES DIFFER BY, once the normal forms have already said they are the same
+    diagram.  It decides nothing — the author, 2026-09-13: "isotopic diagrams should be deemed
+    equal" — and is printed so a layout drift stays visible: the row shift where one band of heights
+    explains every primitive (`sameband`), and otherwise the primitives `svg-diff` could not pair."""
+    if sameband(note, gen):
+        c = rowshift(panel, drew)
+        if c is not None:
+            box = "" if panel["rows"] == drew["rows"] else \
+                f", box {panel['rows']:g} vs {drew['rows']:g}"
+            # `+ 0` because a shift of none comes out of the subtraction as `-0.0`, which prints as
+            # a direction it does not have.
+            return f"dy {c + 0:+g} row{'' if abs(c) == 1 else 's'}{box}"
+    n = [r for r in recs if r["layer"] == "geometry"]
+    kinds = sorted({r["kind"] for r in n})
+    m = [r for r in recs if r["layer"] == "glyph"]
+    return (f"{len(n)} primitive(s){' ' + '/'.join(kinds) if kinds else ''}"
+            + (f", {len(m)} glyph box(es)" if m else ""))
+
+
 def fields(g):
     """A `cert:` group's top-level fields.  Depth-aware and quote-aware, because a value holds both
     brackets and commas of its own (`expect: "⦇[nil,(π₁p→cons,⊸nil)]⦈"`), and a split on every
@@ -541,16 +681,17 @@ def main(argv):
     save_recs(recs)
     # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
     # waiting on its selector's drawing and on the sweep of its picture.
-    done = lambda line, failed: lambda: (line, failed)
+    done = lambda line, failed, st: lambda: (line, failed, st)
 
     def pending(head, sel, i, gen):
         def verdict():
-            end, v, ok = drew[sel].result()[i]
+            end, v, ok, st = drew[sel].result()[i]
             if not end:
                 r = swept.result()[gen]
                 fs = r["failures"] + r["unhandled"] + ["the picture was never drawn"] * r["missing"]
-                end = f"SWEEP {len(fs)} failure(s); the first: {fs[0]}" if fs else None
-            return f"{head}: {end or v}", bool(end) or not ok
+                if fs:
+                    end, st = f"SWEEP {len(fs)} failure(s); the first: {fs[0]}", "SWEEP"
+            return f"{head}: {end or v}", bool(end) or not ok, st
         return verdict
 
     slots, groups = [], {}
@@ -560,17 +701,18 @@ def main(argv):
         ps = live[n]
         if len(sels) != len(ps):
             slots.append(done(f"{addr(n)}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for"
-                              f" {len(ps)} panels", True))
+                              f" {len(ps)} panels", True, "MISCOUNT"))
             continue
         for k, (sel, panel) in enumerate(zip(sels, ps), 1):
             tag = f"{addr(n)}.{k}"
             if sel == "-":
-                slots.append(done(f"{tag}: NO-DECL — no declaration is cited for this panel", False))
+                slots.append(done(f"{tag}: NO-DECL — no declaration is cited for this panel", False,
+                                  "NO-DECL"))
                 continue
             base, which = route(sel)
             gen, err = answer(recs, base)
             if err:
-                slots.append(done(f"{tag} {sel}: CANNOT-DRAW {err}", True))
+                slots.append(done(f"{tag} {sel}: CANNOT-DRAW {err}", True, "CANNOT-DRAW"))
                 continue
             g = groups.setdefault(sel, [])
             slots.append(pending(f"{tag} {sel}", sel, len(g), gen))
@@ -581,10 +723,17 @@ def main(argv):
         # wrapper files, so they are drawn one after the other as a serial run drew them.
         drew = {s: pool.submit(lambda s, g: [compare(s, *x) for x in g], s, g)
                 for s, g in groups.items()}
+        tally = {}
         for slot in slots:
-            line, failed = slot()
+            line, failed, st = slot()
             print(line)
+            tally[st] = tally.get(st, 0) + 1
             rc |= failed
+    # THE SUMMARY COUNTS THE OBLIGATIONS, one per panel line above, and each line's status is the
+    # one the verdict NAMED rather than one cut back out of its text.  Every status that occurred is
+    # listed, so a status added here is counted without an edit and none can go unreported.
+    print("string-check: " + ", ".join(f"{n} {s}" for s, n in sorted(tally.items()))
+          + f" over {sum(tally.values())} panel(s)")
     # An export that answered every selector with a file and still exited nonzero is reported by NO
     # line above, so it would leave the gate green on a failure; nor has a selector with no record a
     # reason of its own.  Both are answered by the exporter's stderr — the re-draw pass's runs too,
@@ -597,58 +746,64 @@ def main(argv):
 
 def compare(sel, panel, which, gen):
     """One panel drawn from LEAN and from its `cert:`, and the two compared: the failure that ends
-    it, or none and `svg-diff`'s verdict — which stands only once the sweep of `gen` passes.  The
-    third field is whether the panel PASSES, because a verdict now names the row shift it accepted
-    and a test of the verdict's own text would have read `ok (dy …)` as a failure."""
+    it, or none and the verdict — which stands only once the sweep of `gen` passes.  The third field
+    is whether the panel PASSES, because a verdict now names the layout shift it accepted and a test
+    of the verdict's own text would have read `ok (layout: …)` as a failure; the fourth is the
+    STATUS the summary counts, named here rather than cut back out of the line's text."""
     gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
     wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
     drew, err = content(gwrap)
     if err:
-        return f"CANNOT-DRAW {err}", None, False
+        return f"CANNOT-DRAW {err}", None, False, "CANNOT-DRAW"
     cert = panel.get("cert") or {}
     if not all(cert.get(f) for f in ("expect", "src", "tgt")):
         return (f"UNCERTIFIED — the note's panel's `cert:` names no"
                 f" {', '.join(f for f in ('expect', 'src', 'tgt') if not cert.get(f))}, so"
-                f" there is nothing to rebuild it from"), None, False
+                f" there is nothing to rebuild it from"), None, False, "UNCERTIFIED"
     p = run("./scripts/diagram", *diagram_args(cert))
     if p.returncode or not p.stdout.strip():
-        return f"NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}", None, False
+        return (f"NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}", None, False,
+                "NOTE-UNDRAWABLE")
     # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
     # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
     wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n' + p.stdout)
     e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
     if e:
-        return f"CANNOT-DRAW typst {e}", None, False
+        return f"CANNOT-DRAW typst {e}", None, False, "CANNOT-DRAW"
     v = run("./scripts/svg-diff", "--records", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
     if v.returncode > 1:
         last = (v.stderr.strip().splitlines() or ["no stderr"])[-1]
-        return f"CANNOT-CHECK ./scripts/svg-diff exited {v.returncode}: {last}", None, False
+        return (f"CANNOT-CHECK ./scripts/svg-diff exited {v.returncode}: {last}", None, False,
+                "CANNOT-CHECK")
     # EVERY OBLIGATION `why` ENUMERATES DECIDES, and the ink is one more of them rather than
     # the gate: a bead's mark is a handful of points (a filled dot against a hollow ring)
     # that `svg-diff` pairs off with each other, so a panel whose one defect was a lax bead
     # drawn strict came back `ok` and the verdict decided nothing.  Either side failing fails.
     d = why(panel, drew)
-    # THE ROW THE BEADS SIT ON INSIDE THE BOX IS NOT A DIFFERENCE, and the shift is named rather
-    # than swallowed: `sameband` says the two are the same drawing with one band of heights moved,
-    # and the panels' own records say by how many ROWS.  Both must answer — a geometry shift no row
-    # record states, or a row record no geometry bears out, is the DIFF it always was.
-    if v.returncode and not d and sameband(f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg"):
-        c = rowshift(panel, drew)
-        if c is not None:
-            box = "" if panel["rows"] == drew["rows"] else \
-                f", box {panel['rows']:g} vs {drew['rows']:g}"
-            # `+ 0` because a shift of none comes out of the subtraction as `-0.0`, which prints as
-            # a direction it does not have.
-            return None, (f"ok (dy {c + 0:+g} row{'' if abs(c) == 1 else 's'}{box})"), True
-    if v.returncode or d:
-        recs = [json.loads(l) for l in v.stdout.splitlines() if l.strip()]
+    # WHAT THE GATE DECIDES IS THE DIAGRAM, NOT THE PICTURE — the author, 2026-09-13: "isotopic
+    # diagrams should be deemed equal".  The two normal forms are the two panels' isotopy classes,
+    # so a panel drawn a row lower, at another scale or with its independent beads in the other
+    # order is the SAME diagram and passes; what `svg-diff` and `sameband` found is then reported on
+    # the `ok` line as layout and never as a difference.  A panel neither of them can be read out of
+    # is CANNOT-CHECK, named by the strand or bead that did not land in the graph.
+    form = []
+    for side, rec in (("the note's panel", panel), ("the generated panel", drew)):
+        try:
+            form.append(nform(rec))
+        except Ill as x:
+            return f"CANNOT-CHECK {side}: {x}", None, False, "CANNOT-CHECK"
+    recs = [json.loads(l) for l in v.stdout.splitlines() if l.strip()]
+    if d or form[0] != form[1]:
         n = [r for r in recs if r["layer"] == "geometry"]
         kinds = sorted({r["kind"] for r in n})
         m = [r for r in recs if r["layer"] == "glyph"]
         return None, (f"DIFF {len(n)} unmatched primitive(s)"
                        f"{' ' + '/'.join(kinds) if kinds else ''}"
-                       f"{f'; {len(m)} glyph box(es) differ' if m else ''}; {d}"), False
-    return None, "ok", True
+                       f"{f'; {len(m)} glyph box(es) differ' if m else ''}; {d}"), False, "DIFF"
+    if not v.returncode:
+        return None, "ok", True, "ok"
+    lay = layout(recs, panel, drew, f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
+    return None, f"ok (layout: {lay})", True, "ok (layout)"
 
 
 def sweep(gens):
