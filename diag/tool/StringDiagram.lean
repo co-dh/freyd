@@ -235,9 +235,17 @@ def columns (p : Diagram) : Array Lane := Id.run do
     sits below.  A statement's frame is the deepest of its parts' — see `emitStatement`. -/
 def framex (p : Diagram) : Nat := max p.rows.size 1 + 1
 
+/-- THE BOX A PANEL IS DRAWN IN: the depth the caller asks for, but never shallower than the
+    picture.  HEADROOM ONLY is `emitStatement`'s rule for a statement's parts, and it is the panel's
+    for the same reason — a box shallower than `framex` puts the last bead ON the floor, where its
+    legs have no row to run in, and the sweep then reads the object wire as one of the wires that
+    bead joins.  A note asking for a box the picture does not fit in gets the picture, and the
+    difference is reported by the gate, not drawn. -/
+def frameRows (p : Diagram) (frame : Option Nat) : Nat := max (frame.getD 0) (framex p)
+
 /-- The frame's height in cetz units.  The panel and the gate in `emitStatement` both read THIS,
     so the gate measures the box that is drawn and not a second copy of the rule. -/
-def frameHeight (p : Diagram) (frame : Option Nat) : Float := (frame.getD (framex p)).toFloat * DY
+def frameHeight (p : Diagram) (frame : Option Nat) : Float := (frameRows p frame).toFloat * DY
 
 /-- WHICH LANES THE DRAWING ALREADY HOLDS.  A lane reaching an edge is held by the panel's own
     ports, and one touching a bead that RIDES the object wire (`nat := none`, whose dot is drawn at
@@ -264,7 +272,7 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     MetaM String := do
   let n := p.rows.size
   let ls := columns p
-  let nr := frame.getD (framex p)
+  let nr := frameRows p frame
   let hh := frameHeight p frame
   let t0n := topRow.getD n
   let t0 := t0n.toFloat
