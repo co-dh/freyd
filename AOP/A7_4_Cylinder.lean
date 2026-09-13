@@ -22,7 +22,7 @@
                    coproduct of `Q`'s definition opened.
 
   THE SETTING.  `A7_2`'s `MonotonicAlg`/`Distributes` and `A8_2`'s tabular power merge, with
-  `H` the base functor `F(A,−)` of non-empty cons-lists (initial algebra `I`, so `I.t = L A`),
+  `G` the base functor `F(A,−)` of non-empty cons-lists (initial algebra `I`, so `I.t = L A`),
   `G` the same functor at the tuple element type, `F(NA,−)` (initial algebra `J`, so
   `J.t = L N A`), and `N` the `n`-tuple relator.
 
@@ -57,17 +57,17 @@ universe u
 namespace Freyd.Alg.Cylinder
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
-  {N F H : Relator 𝒜 𝒜} (I : InitialAlgebra H) (J : InitialAlgebra F)
+  {N F G : Relator 𝒜 𝒜} (I : InitialAlgebra G) (J : InitialAlgebra F)
   (moves : ∀ x : 𝒜, N.obj x ⟶ PowerAllegory.powerObj (N.obj x))
   (trans : ∀ x : 𝒜, PowerAllegory.powerObj (N.obj x) ⟶ N.obj (PowerAllegory.powerObj x))
-  (zip : ∀ x : 𝒜, F.obj (N.obj x) ⟶ N.obj (H.obj x))
+  (zip : ∀ x : 𝒜, F.obj (N.obj x) ⟶ N.obj (G.obj x))
   (setify : ∀ x : 𝒜, N.obj x ⟶ PowerAllegory.powerObj x)
 
 /-! ## `cyl-defn` -/
 
 /-- **cp-diag**: `cp = 𝟙%∋ E(F(𝟙,∋))` — the cross product at the cylinder's own base functor is
     the power transpose of `F(𝟙,∋)`: pick one path out of each row's set, collect the results. -/
-public theorem cyl_cp : cpMap H I.t = Λ (H.map (∋ I.t)) := rfl
+public theorem cyl_cp : cpMap G I.t = Λ (G.map (∋ I.t)) := rfl
 
 /-- **cp-diag**, the `A×−` summand of `F(A,−)=A+A×−`: `cp = 𝟙%∋ E(𝟙×∋)` — the new square is
     carried untouched and `∋` picks one path out of the set beside it. -/
@@ -86,7 +86,7 @@ public theorem cyl_cp_const (A B : 𝒜) : cpMap (Relator.const (𝒜 := 𝒜) A
     F.obj (N.obj (PowerAllegory.powerObj I.t)) ⟶ N.obj (PowerAllegory.powerObj I.t) :=
   F.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
       ≫ N.map (bigUnion (a := I.t)))
-    ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (cpMap H I.t ≫ existsImage I.α)
+    ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (cpMap G I.t ≫ existsImage I.α)
 
 /-- **cyl-defn**: `paths ≜ ⦇gen⦈ setify union`, of type `L N Nat⟶E(L Nat)` — every path
     across the cylinder. -/
@@ -114,13 +114,13 @@ public theorem gen_cata_comm :
     (`distributes_of_monotonicAlg`) at the map `α`, with `Λ(F(𝟙,∋)α) = cp P(α)`
     (`Λ_absorption`, `cp = Λ(F(𝟙,∋))`).  The book's "the monotonicity condition is that `α` is
     monotonic on `R` and is easy to verify" is the hypothesis `hmono`. -/
-public theorem cyl_7_13 (hHr : H.PreservesRecip) (R : I.t ⟶ I.t)
+public theorem cyl_7_13 (hGr : G.PreservesRecip) (R : I.t ⟶ I.t)
     (hmono : MonotonicAlg I.α R°) :
-    H.map (est R) ≫ I.α ⊑ cpMap H I.t ≫ existsImage I.α ≫ est R := by
-  have hcp : cpMap H I.t ≫ existsImage I.α = Λ (H.map (∋ I.t) ≫ I.α) := Λ_absorption _ _
-  have hd : Distributes I.α R := distributes_of_monotonicAlg I.α_map hHr hmono
-  calc H.map (est R) ≫ I.α ⊑ Λ (H.map (∋ I.t) ≫ I.α) ≫ est R := hd
-    _ = cpMap H I.t ≫ existsImage I.α ≫ est R := by rw [← hcp, Cat.assoc]
+    G.map (est R) ≫ I.α ⊑ cpMap G I.t ≫ existsImage I.α ≫ est R := by
+  have hcp : cpMap G I.t ≫ existsImage I.α = Λ (G.map (∋ I.t) ≫ I.α) := Λ_absorption _ _
+  have hd : Distributes I.α R := distributes_of_monotonicAlg I.α_map hGr hmono
+  calc G.map (est R) ≫ I.α ⊑ Λ (G.map (∋ I.t) ≫ I.α) ≫ est R := hd
+    _ = cpMap G I.t ≫ existsImage I.α ≫ est R := by rw [← hcp, Cat.assoc]
 
 /-- **cyl-fusion** (book pp.182-183): `gen N(est(R)) ⊒ F(𝟙,N(est(R)))Q` — the fusion
     condition of `cyl-laws`' last step.  `gen` kills the base functor before the minimum
@@ -131,13 +131,13 @@ public theorem cyl_7_13 (hHr : H.PreservesRecip) (R : I.t ⟶ I.t)
     and (7.11) distribution over union, which is `powerRel_est_le_bigUnion` at the transitive
     `R`. -/
 public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
-    (h713 : H.map (est R) ≫ I.α ⊑ cpMap H I.t ≫ existsImage I.α ≫ est R)
+    (h713 : G.map (est R) ≫ I.α ⊑ cpMap G I.t ≫ existsImage I.α ≫ est R)
     (hmoves : N.map (est R) ≫ moves I.t
       ⊑ moves (PowerAllegory.powerObj I.t) ≫ powerRel (N.map (est R)))
     (htransN : powerRel (N.map (est R)) ≫ trans I.t
       ⊑ trans (PowerAllegory.powerObj I.t) ≫ N.map (powerRel (est R)))
     (hzip : F.map (N.map (est R)) ≫ zip I.t
-      ⊑ zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R))) :
+      ⊑ zip (PowerAllegory.powerObj I.t) ≫ N.map (G.map (est R))) :
     F.map (N.map (est R)) ≫ Q I moves trans zip R
       ⊑ gen I moves trans zip ≫ N.map (est R) := by
   -- the tuple-side chain: `N(est R)` slides through `moves`, `trans` and (7.11) to the front
@@ -165,11 +165,11 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
             ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R) := by
           rw [N.map_comp]; simp only [Cat.assoc]
   -- the base-functor side: `zip` lax natural, then (7.13)
-  have houter : N.map (H.map (est R)) ≫ N.map I.α
-      ⊑ N.map (cpMap H I.t ≫ existsImage I.α) ≫ N.map (est R) := by
-    calc N.map (H.map (est R)) ≫ N.map I.α = N.map (H.map (est R) ≫ I.α) := by rw [N.map_comp]
-      _ ⊑ N.map (cpMap H I.t ≫ existsImage I.α ≫ est R) := N.map_mono h713
-      _ = N.map (cpMap H I.t ≫ existsImage I.α) ≫ N.map (est R) := by
+  have houter : N.map (G.map (est R)) ≫ N.map I.α
+      ⊑ N.map (cpMap G I.t ≫ existsImage I.α) ≫ N.map (est R) := by
+    calc N.map (G.map (est R)) ≫ N.map I.α = N.map (G.map (est R) ≫ I.α) := by rw [N.map_comp]
+      _ ⊑ N.map (cpMap G I.t ≫ existsImage I.α ≫ est R) := N.map_mono h713
+      _ = N.map (cpMap G I.t ≫ existsImage I.α) ≫ N.map (est R) := by
           rw [← N.map_comp, Cat.assoc]
   calc F.map (N.map (est R)) ≫ Q I moves trans zip R
       = F.map (N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R))
@@ -184,16 +184,16 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
         rw [F.map_comp]; simp only [Cat.assoc]
     _ ⊑ F.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
           ≫ N.map (bigUnion (a := I.t)))
-          ≫ (zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R))) ≫ N.map I.α :=
+          ≫ (zip (PowerAllegory.powerObj I.t) ≫ N.map (G.map (est R))) ≫ N.map I.α :=
         comp_mono_left _ (comp_mono_right hzip _)
     _ = F.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
           ≫ N.map (bigUnion (a := I.t)))
-          ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (H.map (est R)) ≫ N.map I.α := by
+          ≫ zip (PowerAllegory.powerObj I.t) ≫ N.map (G.map (est R)) ≫ N.map I.α := by
         simp only [Cat.assoc]
     _ ⊑ F.map (moves (PowerAllegory.powerObj I.t) ≫ trans (PowerAllegory.powerObj I.t)
           ≫ N.map (bigUnion (a := I.t)))
           ≫ zip (PowerAllegory.powerObj I.t)
-          ≫ N.map (cpMap H I.t ≫ existsImage I.α) ≫ N.map (est R) :=
+          ≫ N.map (cpMap G I.t ≫ existsImage I.α) ≫ N.map (est R) :=
         comp_mono_left _ (comp_mono_left _ houter)
     _ = gen I moves trans zip ≫ N.map (est R) := by
         rw [gen]; simp only [Cat.assoc]
@@ -290,7 +290,7 @@ public theorem cyl_laws (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
 public theorem cyl_step {p₀ q₀ q : 𝒜} (R : I.t ⟶ I.t)
     (C : Coproduct (F.obj (N.obj I.t)) (N.obj p₀) q)
     {pm : q ⟶ q} {zip' : q ⟶ N.obj q₀}
-    {inlA : p₀ ⟶ H.obj I.t} {inrA : q₀ ⟶ H.obj I.t}
+    {inlA : p₀ ⟶ G.obj I.t} {inrA : q₀ ⟶ G.obj I.t}
     {wrapA : p₀ ⟶ I.t} {consA : q₀ ⟶ I.t}
     (hGmap : F.map (moves I.t ≫ trans I.t ≫ N.map (est R)) = junc C C.u₁ (pm ≫ C.u₂))
     (hzip : zip I.t = junc C (N.map inlA) (zip' ≫ N.map inrA))
@@ -314,19 +314,19 @@ namespace OneRow
     every lax-naturality hypothesis of `cyl_fusion` and `cyl_laws` is discharged, by
     `singletonMap_powerRel_lax` and by the unit laws.  So those hypotheses are consistent, and
     `cyl_laws` is not vacuous. -/
-public theorem oneRow_laws (I : InitialAlgebra H) (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
-    (h713 : H.map (est R) ≫ I.α ⊑ cpMap H I.t ≫ existsImage I.α ≫ est R) :
-    ⦇Q (N := Relator.idRelator 𝒜) (F := H) I (fun _ => singletonMap)
-        (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (H.obj x)) R⦈
+public theorem oneRow_laws (I : InitialAlgebra G) (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
+    (h713 : G.map (est R) ≫ I.α ⊑ cpMap G I.t ≫ existsImage I.α ≫ est R) :
+    ⦇Q (N := Relator.idRelator 𝒜) (F := G) I (fun _ => singletonMap)
+        (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (G.obj x)) R⦈
         ≫ singletonMap ≫ est R
-      ⊑ paths (N := Relator.idRelator 𝒜) (F := H) I I (fun _ => singletonMap)
-        (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (H.obj x))
+      ⊑ paths (N := Relator.idRelator 𝒜) (F := G) I I (fun _ => singletonMap)
+        (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (G.obj x))
         (fun _ => singletonMap) ≫ est R := by
-  refine cyl_laws (N := Relator.idRelator 𝒜) (F := H) I I (fun _ => singletonMap)
-    (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (H.obj x)) (fun _ => singletonMap)
+  refine cyl_laws (N := Relator.idRelator 𝒜) (F := G) I I (fun _ => singletonMap)
+    (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (G.obj x)) (fun _ => singletonMap)
     R htrans
-    (cyl_fusion (N := Relator.idRelator 𝒜) (F := H) I (fun _ => singletonMap)
-      (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (H.obj x)) R htrans h713
+    (cyl_fusion (N := Relator.idRelator 𝒜) (F := G) I (fun _ => singletonMap)
+      (fun x => 𝟙 (PowerAllegory.powerObj x)) (fun x => 𝟙 (G.obj x)) R htrans h713
       (singletonMap_powerRel_lax (est R))
       (le_of_eq ((Cat.comp_id _).trans (Cat.id_comp _).symm))
       (le_of_eq ((Cat.comp_id _).trans (Cat.id_comp _).symm))) ?_

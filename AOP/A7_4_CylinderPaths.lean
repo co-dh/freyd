@@ -1,7 +1,7 @@
 /-
   Bird & de Moor, *Algebra of Programming* §7.4 (book pp. 180-184) — the four cylinder beads that
   are natural in the ELEMENT TYPE, which is the index `AOP.A7_4_Cylinder` does not have: it fixes
-  one `H` and one `I : InitialAlgebra H`, so `gen`'s tail `N(cp P(α))` is an algebra at the
+  one `G` and one `I : InitialAlgebra G`, so `gen`'s tail `N(cp P(α))` is an algebra at the
   single carrier `LA` and no square in the element type can be stated there.  Here `L` is the
   repo's list relator, which has an initial algebra at EVERY object, and the three beads are
   concrete relations, as in `AOP.A7_4_CylinderBeads`:

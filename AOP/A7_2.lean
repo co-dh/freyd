@@ -257,39 +257,39 @@ public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra
   have hB : (S° ≫ f) ≫ R° ⊑ R° ≫ R° := comp_mono_right hSf _
   exact le_trans hA (le_trans hB htrans)
 
-/-- **Ex 7.38 (B&dM p.174)**, in the arrow form §7.3's derivation consumes: for `T : a ⟶ b`
-    with `Q ≫ T ⊑ T ≫ R'` and `R'` transitive, a `Q`-best input followed by an `R'`-best
-    `T`-output of it is an `R'`-best output over the whole input set:
-    `est(Q) ≫ Λ(T) ≫ est(R') ⊑ E(T) ≫ est(R')`.  (An earlier note here thought this out of
-    reach of `le_Λ_comp_est_iff`; it is not — `E(T) = Λ(∋ ≫ T)` already puts the right side
+/-- **Ex 7.38 (B&dM p.174)**, in the arrow form §7.3's derivation consumes: for `S : a ⟶ b`
+    with `Q ≫ S ⊑ S ≫ R'` and `R'` transitive, a `Q`-best input followed by an `R'`-best
+    `S`-output of it is an `R'`-best output over the whole input set:
+    `est(Q) ≫ Λ(S) ≫ est(R') ⊑ E(S) ≫ est(R')`.  (An earlier note here thought this out of
+    reach of `le_Λ_comp_est_iff`; it is not — `E(S) = Λ(∋ ≫ S)` already puts the right side
     in the `Λ_ ≫ est` shape the universal property wants.) -/
-public theorem est_Λ_est_le {B : 𝒜} {Q : A ⟶ A} {T : A ⟶ B} {R' : B ⟶ B}
-    (hQT : Q ≫ T ⊑ T ≫ R') (htrans : R' ≫ R' ⊑ R') :
-    est(Q) ≫ Λ T ≫ est(R') ⊑ existsImage T ≫ est(R') := by
-  show est(Q) ≫ Λ T ≫ est(R') ⊑ Λ (∋ A ≫ T) ≫ est(R')
+public theorem est_Λ_est_le {B : 𝒜} {Q : A ⟶ A} {S : A ⟶ B} {R' : B ⟶ B}
+    (hQS : Q ≫ S ⊑ S ≫ R') (htrans : R' ≫ R' ⊑ R') :
+    est(Q) ≫ Λ S ≫ est(R') ⊑ existsImage S ≫ est(R') := by
+  show est(Q) ≫ Λ S ≫ est(R') ⊑ Λ (∋ A ≫ S) ≫ est(R')
   apply le_Λ_comp_est_iff.mpr
-  have hΛest : Λ T ≫ est(R') ⊑ T ∩ (T° \ R'°) := le_of_eq (Λ_comp_est T R')
+  have hΛest : Λ S ≫ est(R') ⊑ S ∩ (S° \ R'°) := le_of_eq (Λ_comp_est S R')
   constructor
   · exact le_trans (comp_mono_left _ (le_trans hΛest (inter_lb_left _ _)))
-      (comp_mono_right (show est(Q) ⊑ ∋ A from inter_lb_left _ _) T)
-  · -- (∋ ≫ T)° ≫ est(Q) ≫ ΛT ≫ est(R') ⊑ T°Q°(ΛT est R') ⊑ R'°T°(ΛT est R') ⊑ R'°R'° ⊑ R'°
-    have hrecip : (∋ A ≫ T)° = T° ≫ (∋ A)° := Allegory.recip_comp _ _
-    have hQT' : T° ≫ Q° ⊑ R'° ≫ T° := by
-      have h := recip_mono hQT
+      (comp_mono_right (show est(Q) ⊑ ∋ A from inter_lb_left _ _) S)
+  · -- (∋ ≫ S)° ≫ est(Q) ≫ ΛT ≫ est(R') ⊑ S°Q°(ΛT est R') ⊑ R'°S°(ΛT est R') ⊑ R'°R'° ⊑ R'°
+    have hrecip : (∋ A ≫ S)° = S° ≫ (∋ A)° := Allegory.recip_comp _ _
+    have hQS' : S° ≫ Q° ⊑ R'° ≫ S° := by
+      have h := recip_mono hQS
       rwa [Allegory.recip_comp, Allegory.recip_comp] at h
-    have hTbest : T° ≫ (Λ T ≫ est(R')) ⊑ R'° :=
+    have hSbest : S° ≫ (Λ S ≫ est(R')) ⊑ R'° :=
       le_trans (comp_mono_left _ (le_trans hΛest (inter_lb_right _ _))) (leftDiv_comp_le _ _)
-    have h1 : (∋ A ≫ T)° ≫ (est(Q) ≫ Λ T ≫ est(R'))
-        ⊑ T° ≫ Q° ≫ (Λ T ≫ est(R')) := by
-      rw [hrecip, Cat.assoc, ← Cat.assoc (∋ A)° (est(Q)) (Λ T ≫ est(R'))]
+    have h1 : (∋ A ≫ S)° ≫ (est(Q) ≫ Λ S ≫ est(R'))
+        ⊑ S° ≫ Q° ≫ (Λ S ≫ est(R')) := by
+      rw [hrecip, Cat.assoc, ← Cat.assoc (∋ A)° (est(Q)) (Λ S ≫ est(R'))]
       exact comp_mono_left _ (comp_mono_right (recip_eps_comp_est_le Q) _)
-    have h2 : T° ≫ Q° ≫ (Λ T ≫ est(R')) ⊑ R'° ≫ T° ≫ (Λ T ≫ est(R')) := by
-      rw [← Cat.assoc T° Q° (Λ T ≫ est(R')), ← Cat.assoc R'° T° (Λ T ≫ est(R'))]
-      exact comp_mono_right hQT' _
-    have h3 : R'° ≫ T° ≫ (Λ T ≫ est(R')) ⊑ R'° := by
+    have h2 : S° ≫ Q° ≫ (Λ S ≫ est(R')) ⊑ R'° ≫ S° ≫ (Λ S ≫ est(R')) := by
+      rw [← Cat.assoc S° Q° (Λ S ≫ est(R')), ← Cat.assoc R'° S° (Λ S ≫ est(R'))]
+      exact comp_mono_right hQS' _
+    have h3 : R'° ≫ S° ≫ (Λ S ≫ est(R')) ⊑ R'° := by
       have htrans' : R'° ≫ R'° ⊑ R'° := by
         have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
-      exact le_trans (comp_mono_left _ hTbest) htrans'
+      exact le_trans (comp_mono_left _ hSbest) htrans'
     exact le_trans h1 (le_trans h2 h3)
 
 /- **Ex 7.33** (pointwise translation of the greedy theorem into a componentwise/relational
