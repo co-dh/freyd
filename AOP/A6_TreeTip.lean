@@ -400,6 +400,19 @@ public theorem treeP_mono {B : Type} {R S : dA A ⟶ dA B} (h : ∀ a b, R a b �
 public theorem tree_mono {B : Type} {R S : dA A ⟶ dA B} (h : R ⊑ S) : tree R ⊑ tree S :=
   le_iff.mpr (treeP_mono (le_iff.mp h))
 
+public theorem treeP_recip {B : Type} (R : dA A ⟶ dA B) :
+    ∀ (y : Tree B) (x : Tree A), treeP R° y x ↔ treeP R x y
+  | Tree.tip _, Tree.tip _ => Iff.rfl
+  | Tree.tip _, Tree.bin _ _ => Iff.rfl
+  | Tree.bin _ _, Tree.tip _ => Iff.rfl
+  | Tree.bin l r, Tree.bin l' r' =>
+      ⟨fun h => ⟨(treeP_recip R l l').mp h.1, (treeP_recip R r r').mp h.2⟩,
+       fun h => ⟨(treeP_recip R l l').mpr h.1, (treeP_recip R r r').mpr h.2⟩⟩
+
+/-- `tree(R°) = tree(R)°` — `tree` preserves converse. -/
+public theorem tree_recip {B : Type} (R : dA A ⟶ dA B) : tree R° = (tree R)° :=
+  hom_ext (treeP_recip R)
+
 /-- `tree` BUNDLED as a relator, the lane the bracketing section's pictures draw over their label
     wire — one wire `tree`, one object `A`, where `tree A` alone is an object with no reading. -/
 @[expose] public def treeRelator : Relator RelSet.{0} RelSet.{0} where
