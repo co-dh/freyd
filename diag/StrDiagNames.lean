@@ -124,7 +124,7 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.dNE] def unexpandDNE : Unexpander
+@[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 
@@ -132,7 +132,7 @@ open Lean PrettyPrinter in
 -- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
 -- declared objects is labelled from the carrier and would print the Lean name.
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.NEList] def unexpandNEListType : Unexpander
+@[app_unexpander RelSet.ListRel.NEList] def unexpandNEListType : Unexpander
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
 

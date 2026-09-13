@@ -50,11 +50,8 @@ variable {A S : Type} (st : A → S) (sb : S × S → S) (cb : S × S → Int)
 
 /-! ## `mct-defn` -/
 
-/-- **mct-defn**: `list⁺ A`, the non-empty lists — `wrap a` is `[a]`, `cons a x` is `[a]⧺x`. -/
-@[expose] public abbrev NEList (A : Type) : Type := CL.ConsList A A
-
-/-- The object carrying `list⁺ A`. -/
-@[expose] public abbrev dNE (A : Type) : RelSet.{0} := ⟨NEList A⟩
+-- **mct-defn**: `list⁺ A` and the object carrying it are `AOP.A5_6_ListCombinators`'s, the one
+-- non-empty-list object the `list⁺` relator's action is taken over.
 
 /-- **mct-defn**: `cat`, the append of two non-empty lists. -/
 @[expose] public def cat : NEList A → NEList A → NEList A
