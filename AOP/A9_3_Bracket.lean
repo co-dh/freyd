@@ -449,6 +449,138 @@ public theorem mct_prog (mct : dNE A ⟶ dTree A) :
   rw [← hsplit, Cat.assoc]
   exact comp_mono_left splits (CL.list_comp_minlist_le _ _)
 
+/-! ## What the panels' beads claim: the naturality of `splits`, `bin` and `flatten°` -/
+
+/-- `list⁺(R)` respects `cat`: a related list splits exactly where the original does. -/
+public theorem nelistP_cat {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x u : NEList A) (y : NEList B),
+      nelistP R (cat x u) y ↔ ∃ v w, y = cat v w ∧ nelistP R x v ∧ nelistP R u w := by
+  intro x
+  induction x with
+  | wrap a =>
+      intro u y
+      constructor
+      · intro h
+        cases y with
+        | wrap _ => exact h.elim
+        | cons b z => exact ⟨CL.ConsList.wrap b, z, rfl, h.1, h.2⟩
+      · rintro ⟨v, w, rfl, hv, hw⟩
+        cases v with
+        | wrap _ => exact ⟨hv, hw⟩
+        | cons _ _ => exact hv.elim
+  | cons a x ih =>
+      intro u y
+      constructor
+      · intro h
+        cases y with
+        | wrap _ => exact h.elim
+        | cons b z =>
+            obtain ⟨v, w, rfl, hv, hw⟩ := (ih u z).mp h.2
+            exact ⟨CL.ConsList.cons b v, w, rfl, ⟨h.1, hv⟩, hw⟩
+      · rintro ⟨v, w, rfl, hv, hw⟩
+        cases v with
+        | wrap _ => exact hv.elim
+        | cons b v => exact ⟨hv.1, (ih u (cat v w)).mpr ⟨v, w, rfl, hv.2, hw⟩⟩
+
+/-- **mct-defn**: `flatten` commutes with relabelling — `tree(R) flatten = flatten list⁺(R)`,
+    pointwise: a tree's flattening is related exactly to the flattenings of the related trees. -/
+public theorem flattenP_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (t : Tree A) (y : NEList B),
+      nelistP R (flattenFn t) y ↔ ∃ u, treeP R t u ∧ y = flattenFn u := by
+  intro t
+  induction t with
+  | tip a =>
+      intro y
+      constructor
+      · intro h
+        cases y with
+        | wrap b => exact ⟨Tree.tip b, h, rfl⟩
+        | cons _ _ => exact h.elim
+      · rintro ⟨u, hu, rfl⟩
+        cases u with
+        | tip _ => exact hu
+        | bin _ _ => exact hu.elim
+  | bin l r ihl ihr =>
+      intro y
+      constructor
+      · intro h
+        obtain ⟨v, w, rfl, hv, hw⟩ := (nelistP_cat R (flattenFn l) (flattenFn r) y).mp h
+        obtain ⟨ul, hul, rfl⟩ := (ihl v).mp hv
+        obtain ⟨ur, hur, rfl⟩ := (ihr w).mp hw
+        exact ⟨Tree.bin ul ur, ⟨hul, hur⟩, rfl⟩
+      · rintro ⟨u, hu, rfl⟩
+        cases u with
+        | tip _ => exact hu.elim
+        | bin ul ur =>
+            exact (nelistP_cat R (flattenFn l) (flattenFn r) _).mpr
+              ⟨flattenFn ul, flattenFn ur, rfl, (ihl _).mpr ⟨ul, hu.1, rfl⟩,
+                (ihr _).mpr ⟨ur, hu.2, rfl⟩⟩
+
+/-- **mct-laws**, second row: the `flatten°` bead is STRICTLY natural,
+    `list⁺(R) flatten° = flatten° tree(R)` — the converse of `flatten`'s own square, read at `R°`
+    through `list⁺` and `tree` preserving converse. -/
+public theorem flatten_recip_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (graph (flattenFn (A := B)))° = (graph (flattenFn (A := A)))° ≫ tree R := by
+  apply hom_ext
+  intro x t
+  constructor
+  · rintro ⟨y, hxy, rfl⟩
+    obtain ⟨u, hu, hx⟩ := (flattenP_natural R° t x).mp ((nelistP_recip R (flattenFn t) x).mpr hxy)
+    exact ⟨u, hx, (treeP_recip R t u).mp hu⟩
+  · rintro ⟨s, rfl, hst⟩
+    exact ⟨flattenFn t, (flattenP_natural R s (flattenFn t)).mpr ⟨t, hst, rfl⟩, rfl⟩
+
+/-- **mct-laws**, fourth row: the `bin` bead is the initial algebra's constructor, so its square
+    is an EQUALITY — relating the two subtrees is relating the node they build. -/
+public theorem bin_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    rprodMap (tree R) (tree R) ≫ graph (fun p : Tree B × Tree B => Tree.bin p.1 p.2)
+      = graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2) ≫ tree R := by
+  apply hom_ext
+  intro p t
+  constructor
+  · rintro ⟨q, hq, rfl⟩
+    exact ⟨Tree.bin p.1 p.2, rfl, hq.1, hq.2⟩
+  · rintro ⟨u, rfl, h⟩
+    cases t with
+    | tip _ => exact h.elim
+    | bin t₁ t₂ => exact ⟨(t₁, t₂), ⟨h.1, h.2⟩, rfl⟩
+
+/-- `consSplits` transports along `list⁺(R)`: one more element at the front of both lists leaves
+    the two split lists position for position related. -/
+public theorem listP_consSplits {B : Type} {R : CL.dE A ⟶ CL.dE B} {a : A} {b : B} (hab : R a b) :
+    ∀ (ps : CL.ConsList Unit (NEList A × NEList A)) (qs : CL.ConsList Unit (NEList B × NEList B)),
+      listP (rprodMap (nelist R) (nelist R)) ps qs →
+        listP (rprodMap (nelist R) (nelist R)) (consSplits a ps) (consSplits b qs)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => h
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ ps, CL.ConsList.cons _ qs, h =>
+      ⟨⟨⟨hab, h.1.1⟩, h.1.2⟩, listP_consSplits hab ps qs h.2⟩
+
+/-- **mct-laws**, fourth row: the `splits` bead is LAX natural — relating the elements relates the
+    two split lists position by position, so every split of the related list is the related split.
+    Only `⊑`: the other inclusion would have to rebuild a list from an arbitrary list of pairs. -/
+public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ splits (A := B) ⊑ splits (A := A) ≫ list (rprodMap (nelist R) (nelist R)) := by
+  have key : ∀ (x : NEList A) (y : NEList B), nelistP R x y →
+      listP (rprodMap (nelist R) (nelist R)) (splitsFn x) (splitsFn y) := by
+    intro x
+    induction x with
+    | wrap a =>
+        intro y hxy
+        cases y with
+        | wrap _ => trivial
+        | cons _ _ => exact hxy.elim
+    | cons a x ih =>
+        intro y hxy
+        cases y with
+        | wrap _ => exact hxy.elim
+        | cons b y =>
+            exact ⟨⟨hxy.1, hxy.2⟩, listP_consSplits hxy.1 _ _ (ih y hxy.2)⟩
+  rw [le_iff]
+  rintro x zs ⟨y, hxy, rfl⟩
+  exact ⟨splitsFn x, rfl, key x y hxy⟩
+
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.
 open Lean PrettyPrinter in

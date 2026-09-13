@@ -663,6 +663,19 @@ public theorem listP_recip {B : Type} (R : dE A ⟶ dE B) :
 public theorem list_recip {B : Type} (R : dE A ⟶ dE B) : list R° = (list R)° :=
   hom_ext (listP_recip R)
 
+public theorem nelistP_recip {B : Type} (R : dE A ⟶ dE B) :
+    ∀ (y : NEList B) (x : NEList A), nelistP R° y x ↔ nelistP R x y
+  | ConsList.wrap _, ConsList.wrap _ => Iff.rfl
+  | ConsList.wrap _, ConsList.cons _ _ => Iff.rfl
+  | ConsList.cons _ _, ConsList.wrap _ => Iff.rfl
+  | ConsList.cons _ y, ConsList.cons _ x =>
+      ⟨fun h => ⟨h.1, (nelistP_recip R y x).mp h.2⟩,
+       fun h => ⟨h.1, (nelistP_recip R y x).mpr h.2⟩⟩
+
+/-- `list⁺(R°) = list⁺(R)°` — `list⁺` preserves converse, as `list` does. -/
+public theorem nelist_recip {B : Type} (R : dE A ⟶ dE B) : nelist R° = (nelist R)° :=
+  hom_ext (nelistP_recip R)
+
 /-! ### The free theorems of `cons` and `concat`
 
   A polymorphic combinator's type names two relators, and the free theorem is the lax naturality
