@@ -51,11 +51,27 @@ variable {Word : Type} {len : Word → Int} {w : Int}
 /-! ## `para-defn` -/
 
 /-- `Line = list⁺ Word`. -/
-@[expose] public abbrev Line (Word : Type) : Type := ConsList Word Word
+@[expose] public abbrev Line (Word : Type) : Type := NEList Word
 /-- `Para = list⁺ Line`. -/
-@[expose] public abbrev Para (Word : Type) : Type := ConsList (Line Word) (Line Word)
+@[expose] public abbrev Para (Word : Type) : Type := NEList (Line Word)
 /-- The object carrying `Para`. -/
-@[expose] public abbrev dPara (Word : Type) : RelSet.{0} := dCL (Line Word) (Line Word)
+@[expose] public abbrev dPara (Word : Type) : RelSet.{0} := dNE (Line Word)
+
+-- A LINE AND A PARAGRAPH ARE THE ONE NON-EMPTY-LIST OBJECT, so the picture writes the note's
+-- `list⁺(list⁺(Word))` and not this section's abbreviation for it: an abbreviation keeps its own
+-- name in the term, so `AOP.A5_6_ListCombinators`'s `dNE` clause never sees it.
+open Lean PrettyPrinter in
+@[app_unexpander Line] public meta def unexpandLine : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) $W)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Para] public meta def unexpandPara : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) ($(mkIdent (Name.mkSimple "list⁺")) $W))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander dPara] public meta def unexpandDPara : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) ($(mkIdent (Name.mkSimple "list⁺")) $W))
+  | _ => throw ()
 
 /-- **para-defn**: `width ≜ ⦇[length,(length×𝟙) plus succ]⦈` — the words' lengths plus one
     space between neighbours. -/
