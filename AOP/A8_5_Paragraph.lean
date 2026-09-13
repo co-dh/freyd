@@ -212,6 +212,131 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 
 @[expose] public def partition : dCL Word Word ⟶ dPara Word := ⦇partAlg⦈
 
+/-! ### `partition`'s computation rules and its naturality square
+
+  The paragraph `partition` is NOT `AOP.A5_6_ListCombinators`'s: that one cuts a possibly-empty
+  list into segments, this one cuts a NON-EMPTY list into non-empty lines, so it is its own arrow
+  and carries its own naturality square. -/
+
+/-- `partition` at a one-word list: the one-line paragraph. -/
+theorem partition_wrap (a : Word) (q : Para Word) :
+    partition (ConsList.wrap a) q ↔ q = ConsList.wrap (ConsList.wrap a) := by
+  unfold partition
+  rw [← cataR_eq_relCata]
+  exact ⟨fun h => h.elim id id, Or.inl⟩
+
+/-- `partition` at a `cons`: partition the tail, then either open a new line or glue. -/
+theorem partition_cons (a : Word) (x : NEList Word) (q : Para Word) :
+    partition (ConsList.cons a x) q ↔ ∃ p, partition x p ∧ (q = new a p ∨ q = glue a p) := by
+  unfold partition
+  rw [← cataR_eq_relCata]
+  all_goals exact Iff.rfl
+
+section Natural
+variable {A B : Type}
+
+/-- `glue` is invisible to the lift: gluing `R`-related words onto `list⁺(list⁺(R))`-related
+    paragraphs leaves them related. -/
+theorem nelistP_glue_of (R : dE A ⟶ dE B) (a : A) (b : B) (p : Para A) (q : Para B)
+    (hab : R a b) (h : nelistP (nelist R) p q) :
+    nelistP (nelist R) (glue a p) (glue b q) := by
+  cases p with
+  | wrap l =>
+      cases q with
+      | wrap m => exact ⟨hab, h⟩
+      | cons m q' => exact False.elim h
+  | cons l p' =>
+      cases q with
+      | wrap m => exact False.elim h
+      | cons m q' => exact ⟨⟨hab, h.1⟩, h.2⟩
+
+/-- A `list⁺(list⁺(R))`-image of a glued paragraph is itself a glue — the lift passes back
+    through `glue`, which only reshapes. -/
+theorem nelistP_glue_split (R : dE A ⟶ dE B) (a : A) (p : Para A) (q : Para B)
+    (h : nelistP (nelist R) (glue a p) q) :
+    ∃ b q', R a b ∧ nelistP (nelist R) p q' ∧ q = glue b q' := by
+  cases p with
+  | wrap l =>
+      cases q with
+      | wrap m =>
+          cases m with
+          | wrap b => exact False.elim h
+          | cons b m' => exact ⟨b, ConsList.wrap m', h.1, h.2, rfl⟩
+      | cons m q' => exact False.elim h
+  | cons l p' =>
+      cases q with
+      | wrap m => exact False.elim h
+      | cons m q' =>
+          cases m with
+          | wrap b => exact False.elim h.1
+          | cons b m' => exact ⟨b, ConsList.cons m' q', h.1.1, ⟨h.1.2, h.2⟩, rfl⟩
+
+/-- **`partition` is STRICTLY natural**: `list⁺(R) partition = partition list⁺(list⁺(R))` —
+    neither `new` nor `glue` looks at a word, so a partition of an `R`-image of a word list is
+    the image of a partition of the list, and conversely. -/
+public theorem partition_natural (R : dE A ⟶ dE B) :
+    nelist R ≫ (partition : dNE B ⟶ dPara B)
+      = (partition : dNE A ⟶ dPara A) ≫ nelist (nelist R) := by
+  apply hom_ext
+  intro x q
+  induction x generalizing q with
+  | wrap a =>
+      constructor
+      · rintro ⟨y, hxy, hyq⟩
+        cases y with
+        | wrap b =>
+            rw [(partition_wrap b q).mp hyq]
+            exact ⟨ConsList.wrap (ConsList.wrap a), (partition_wrap a _).mpr rfl, hxy⟩
+        | cons b y' => exact False.elim hxy
+      · rintro ⟨p, hxp, hpq⟩
+        rw [(partition_wrap a p).mp hxp] at hpq
+        cases q with
+        | wrap m =>
+            cases m with
+            | wrap b => exact ⟨ConsList.wrap b, hpq, (partition_wrap b _).mpr rfl⟩
+            | cons b m' => exact False.elim hpq
+        | cons m q' => exact False.elim hpq
+  | cons a x' ih =>
+      constructor
+      · rintro ⟨y, hxy, hyq⟩
+        cases y with
+        | wrap b => exact False.elim hxy
+        | cons b y' =>
+            obtain ⟨q', hq', harm⟩ := (partition_cons b y' q).mp hyq
+            obtain ⟨p', hp', hp'q'⟩ := (ih q').mp ⟨y', hxy.2, hq'⟩
+            cases harm with
+            | inl h =>
+                subst h
+                exact ⟨new a p', (partition_cons a x' _).mpr ⟨p', hp', Or.inl rfl⟩,
+                  hxy.1, hp'q'⟩
+            | inr h =>
+                subst h
+                exact ⟨glue a p', (partition_cons a x' _).mpr ⟨p', hp', Or.inr rfl⟩,
+                  nelistP_glue_of R a b p' q' hxy.1 hp'q'⟩
+      · rintro ⟨p, hxp, hpq⟩
+        obtain ⟨p', hp', harm⟩ := (partition_cons a x' p).mp hxp
+        cases harm with
+        | inl h =>
+            subst h
+            cases q with
+            | wrap m => exact False.elim hpq
+            | cons m q'' =>
+                cases m with
+                | wrap b =>
+                    obtain ⟨y', hxy', hy'q''⟩ := (ih q'').mpr ⟨p', hp', hpq.2⟩
+                    exact ⟨ConsList.cons b y', ⟨hpq.1, hxy'⟩,
+                      (partition_cons b y' _).mpr ⟨q'', hy'q'', Or.inl rfl⟩⟩
+                | cons b m' => exact False.elim hpq.1
+        | inr h =>
+            subst h
+            obtain ⟨b, q'', hab, hp'q'', hq⟩ := nelistP_glue_split R a p' q hpq
+            subst hq
+            obtain ⟨y', hxy', hy'q''⟩ := (ih q'').mpr ⟨p', hp', hp'q''⟩
+            exact ⟨ConsList.cons b y', ⟨hab, hxy'⟩,
+              (partition_cons b y' _).mpr ⟨q'', hy'q'', Or.inr rfl⟩⟩
+
+end Natural
+
 /-- **para-defn**: the specification's algebra `S ≜ [wrap wrap,new] ∪ ([wrap wrap,glue](ok w))`,
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
 @[expose] public def Salg (len : Word → Int) (w : Int) :
