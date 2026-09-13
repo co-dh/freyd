@@ -31,12 +31,15 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+-- The allegory class is per section, not per file: Theorem 7.1's chain runs over a TABULAR power
+-- allegory, where `E` is a relator, and two allegory instances in one statement do not elaborate.
+variable {𝒜 : Type u}
 
 /-! ## Monotonic algebras (B&dM p.172) -/
 
 section MonotonicAlg
 
+variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **B&dM p.172**: `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
@@ -93,6 +96,7 @@ end MonotonicAlg
 
 section Distributes
 
+variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R°`: `f·F(min R°) ⊆ min R°·Λ(f·F∈)`, mirrored. -/
@@ -104,6 +108,15 @@ variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 public theorem Fmap_est_comp_le_Fmap_eps_comp (f : F.obj A ⟶ A) (R : A ⟶ A) :
     F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f :=
   comp_mono_right (F.map_mono (show est R ⊑ ∋ A from inter_lb_left _ _)) f
+
+end Distributes
+
+-- `E` is a relator only over a TABULAR power allegory, and that reading is what `∈`'s oplax
+-- naturality (`mem_oplaxNatural`) — hence the chain's picture — needs.
+section Thm71
+
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 
 /-- **Theorem 7.1, step 1**: a bound by `Λ X ≫ est R` is exactly a bound by `X` together with
     `X° ≫ (−) ⊑ R°`, and `hFr` moves `(F(∋)f)°` across as `f° F(∈)`. -/
@@ -167,7 +180,7 @@ theorem monotonicAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
   (monotonicAlg_iff_conj hf).mpr
     ((mon_thm71_step3 hpair).mp (mon_thm71_step2.mp ((mon_thm71_step1 hFr).mp hdist)))
 
-end Distributes
+end Thm71
 
 /-! ## Theorem 7.2 — THE GREEDY THEOREM (B&dM p.173)
 
@@ -177,6 +190,7 @@ end Distributes
 
 section Greedy
 
+variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S : F.obj A ⟶ A}
 
 /-- Step 1 of the greedy chain: `S°F(R°)(`#frc(S)` est(R)) ⊑ R°S°(`#frc(S)` est(R))` — the
@@ -229,6 +243,7 @@ end Greedy
 
 section Exercises
 
+variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map
