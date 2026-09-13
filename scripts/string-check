@@ -610,6 +610,72 @@ def setnat(lit, nat):
     return lit[:k + 7] + ", ".join(fs) + lit[e - 1:]
 
 
+def generated(gen):
+    """One generated file's panels' `cert:`s, in the order it drew them — by the same reader
+    `drawn_geom` reads the frame with.  A verdict is read off THE DRAWING the exporter wrote, not
+    off a second compile of it: `nat:` is a field of that `cert:`, so the file itself answers, and
+    the count of panels in it is what the note's `@k` must fall inside."""
+    return [c for _, _, _, c in diagram.literals(open(gen, encoding="utf-8").read(),
+                                                 drawable=False)]
+
+
+def drawing(c):
+    """A `cert:` as THE DRAWING IT SPECIFIES, which is what a `dpanel(` literal in the note is:
+    every field but `nat`, the one field this writes.  A count is normalised to a number, because
+    the two readers spell `frame: 4` as `4` and as `4.0` and the same drawing must not read as
+    two."""
+    num = lambda v: float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
+    return json.dumps({k: num(v) for k, v in (c or {}).items() if k != "nat"},
+                      ensure_ascii=False, sort_keys=True)
+
+
+def sources(text, live):
+    """EVERY NOTE PANEL'S OWN `dpanel(` LITERAL — the place a verdict for it is written, keyed by
+    the panel's own `id` (`<display>.<k>`), which `hm-meta` stamps on every panel it emits.  A
+    `#dpanel(` call is exactly what emits a panel stamped `helper: "dpanel"`; a `dpan` or a
+    hand-laid panel emits another helper's name and is not asked for here.
+
+    A PANEL IS FOUND BY ITS DRAWING, and where one drawing is written out several times, by ORDER
+    WITHIN THOSE.  Position alone cannot do it: §11.6.4b binds its panels with `#let` and draws
+    each of them two and three times, so the source's literals and the document's panels are
+    neither the same list nor the same length.  Two cases, and nothing else is answered:
+      one literal, any number of panels — the note draws them all from that one `#let`, so they
+                   share the literal, and a verdict they do not agree on is a defect of the note's
+                   own reuse, reported by the writer rather than settled by picking one;
+      as many literals as panels — they pair in order, the panels in document order and the
+                   literals in source order, which is how §14.1.1a.6, §14.1.2d.4 and §14.1.2e.5
+                   are told apart: their `cert:`s differ in `nat` alone, which is what is written.
+    Anything else is named, panel by panel, in the `bad` returned beside the spans."""
+    # THE CERT GROUP ALONE, cut at the end `literals` hands back: `literals` parses from `cert: (`
+    # to the end of the whole `dpanel(` call, so a `, s: 100%)` written after the group comes back
+    # as a field `s` no compiled panel has — which matched §11's literals against nothing at all.
+    byc = {}
+    for i, e, j, _ in diagram.literals(text):
+        k = text.rfind("cert: (", i, e)
+        byc.setdefault(drawing(diagram.certof(text[k:e])), []).append((i, j))
+    ps = {}
+    for ms in live.values():
+        for m in ms:
+            c = m.get("cert") or {}
+            if m.get("helper") == "dpanel" and all(c.get(f) for f in ("expect", "src", "tgt")):
+                ps.setdefault(drawing(c), []).append(m["id"])
+    at, bad = {}, {}
+    for d, ids in ps.items():
+        spans = byc.get(d, [])
+        if len(spans) == 1:
+            at.update(dict.fromkeys(ids, spans[0]))
+        elif len(spans) == len(ids):
+            at.update(zip(ids, spans))
+        else:
+            bad.update(dict.fromkeys(ids, (
+                f"no `dpanel(` literal of {NOTE} carries this panel's `cert:`, so the note draws it"
+                f" from a file the split does not hold and there is nowhere to write a verdict"
+                if not spans else
+                f"the note draws {len(ids)} panel(s) from this `cert:` and {NOTE} holds"
+                f" {len(spans)} literal(s) of it, so which one is this panel's cannot be said")))
+    return at, bad
+
+
 def marks(want):
     """WHERE A BEAD'S MARK COMES FROM.  `diag/hm-sigs.json` holds one `nat` per bead LABEL, and a
     verdict belongs to a bead in a REGION: the same `𝟙%∋` is strict on §14.1's `E` and lax on
@@ -619,9 +685,9 @@ def marks(want):
     behind it — into the note's own `cert:`, through the SAME pairing the gate checks by, so the
     note's mark and Lean's verdict cannot come from two different readings.
 
-    The note's panels are matched to its source literals by their `cert:` — expect, src and tgt,
-    the fields that say which arrow the panel draws — and never by position, so a `dpan` or a
-    hand-laid panel between two generated ones cannot shift the whole file by one."""
+    THE OBLIGATIONS ARE THE NOTE'S PANELS, one loop over them, and each is answered from the
+    drawing made for IT: `obligations()` gives a display its selector per panel, `route` which
+    panel of that drawing answers it, and `sources` that note panel's own literal."""
     live, number, _ = note_panels()
     rows, num = obligations(), lambda n: number.get(n, n)
     sel_of = [(n, sels) for n, sels in rows if n in live and num(n).startswith(want)]
@@ -632,14 +698,18 @@ def marks(want):
     # unwritten.
     recs, p = export(todo)
     save_recs(recs)
-    nat, miss = {}, 0
+    text = note_source(NOTE)
+    at, bad = sources(text, live)
+    edits, carried, miss, ungraded = {}, 0, 0, 0
     for n, sels in sel_of:
         ps = live[n]
         if len(sels) != len(ps):
-            print(f"{n}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)} panels")
+            print(f"{num(n)}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)}"
+                  f" panels")
             miss += 1
             continue
-        for sel, panel in zip(sels, ps):
+        for k, (sel, panel) in enumerate(zip(sels, ps), 1):
+            tag = f"{num(n)}.{k}"
             if sel == "-":
                 continue
             base, which = route(sel)
@@ -648,41 +718,52 @@ def marks(want):
             # per display — hence no per-(display, selector) records to answer from.
             gen, err = answer(recs, {}, n, base)
             if err:
-                print(f"{n} {sel}: CANNOT-DRAW {err}")
+                print(f"{tag} {sel}: CANNOT-DRAW {err}")
                 miss += 1
                 continue
-            gwrap = f"{OUT}/{sel}.gen.typ"
-            wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
-            drew, err = content(gwrap)
-            if err:
-                print(f"{n} {sel}: CANNOT-DRAW {err}")
+            drawn = generated(gen)
+            if which >= len(drawn):
+                print(f"{tag} {sel}: MISCOUNT — {gen} draws {len(drawn)} panel(s) and this panel"
+                      f" asks for its {which + 1}")
                 miss += 1
                 continue
-            c = panel.get("cert") or {}
-            if not all(c.get(f) for f in ("expect", "src", "tgt")):
-                print(f"{n} {sel}: UNCERTIFIED — the note's panel names no expect/src/tgt")
+            span = at.get(panel.get("id"))
+            if span is None:
+                print(f"{tag} {sel}: NO-LITERAL — " + (bad.get(panel.get("id")) or
+                      f"the note draws this panel by `{panel.get('helper')}`, which carries no"
+                      f" `cert:` for a verdict to be written into"))
                 miss += 1
                 continue
-            nat.setdefault((c["expect"], c["src"], c["tgt"]), []).append(
-                [list(t) for t in (drew.get("cert") or {}).get("nat") or []])
-    text = note_source(NOTE)
-    wrote = 0
-    # LAST TO FIRST, so an earlier literal's offsets are still the ones this read; and the note's
-    # panels were collected in document order, so a formula drawn twice takes its verdicts from the
-    # panel at the same place in that order.
-    for i, _, j, c in reversed(diagram.literals(text)):
-        got = nat.get((c.get("expect"), c.get("src"), c.get("tgt")))
-        if not got:
+            v = [list(t) for t in drawn[which].get("nat") or []]
+            if not v:
+                ungraded += 1
+                continue
+            # ONE LITERAL, ONE VERDICT: a `#let` panel the note draws in two places is ONE `cert:`,
+            # so two displays Lean grades apart is a defect of the note's own reuse — reported, and
+            # the literal left as it stands, rather than settled by writing whichever came last.
+            was = edits.get(span)
+            if was is not None and was[0] != v:
+                print(f"{tag} {sel}: SHARED — this panel and {was[1]} are drawn from one `cert:`"
+                      f" and Lean grades them apart, so neither verdict is written")
+                miss += 1
+                edits[span] = (None, was[1])
+                continue
+            edits[span] = (v, tag)
+            carried += 1
+    # THE KEY IS (DISPLAY, SELECTOR), NEVER THE FORMULA: two panels of one display may draw one
+    # `(expect, src, tgt)`, and one selector may be drawn by two displays, so a verdict looked up
+    # by the formula lands on whichever panel spells the same arrow rather than on the one it was
+    # drawn for.  Each edit carries its own panel's span, so ONE FORWARD pass places them all.
+    out, end = [], 0
+    for (i, j), (v, _) in sorted(edits.items()):
+        if v is None:
             continue
-        v = got.pop()
-        if v:
-            text = text[:i] + setnat(text[i:j], v) + text[j:]
-            wrote += 1
-    left = sum(len(v) for v in nat.values())
-    note_write(NOTE, text)
-    print(f"string-check --marks: {wrote} panel(s) carry Lean's verdicts; {left} panel(s) the note"
-          f" draws no `dpanel(` literal for; {miss} not drawn")
-    return 1 if unanswered(recs, todo, p) or miss or left else 0
+        out += [text[end:i], setnat(text[i:j], v)]
+        end = j
+    note_write(NOTE, "".join(out + [text[end:]]))
+    print(f"string-check --marks: {carried} panel(s) carry Lean's verdicts; {ungraded} panel(s)"
+          f" Lean grades no bead in; {miss} not drawn")
+    return 1 if unanswered(recs, todo, p) or miss else 0
 
 
 def main(argv):
