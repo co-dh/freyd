@@ -952,11 +952,11 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     the one rule above.
 
     NO TRANSPOSE IS OPENED HERE.  `Λ S` IS drawn as the unit bead `𝟙%∋` and `S` on the `E` lane, and
-    the term the picture draws is rewritten to that shape along its SPINE before anything is
-    labelled (`ExprReader.rewriteSpine`, `Λ_eq_singleton_existsImage`) — which is the one place that
-    rule belongs, because only the spine has the two beads to split into.  A second copy of it here
-    fired where the spine rewrite deliberately does not go, inside a fold's body and a relator's
-    argument, and wrote `⦇𝟙%∋ E(S)est(R°)⦈` where the note writes `⦇S%∋ est(R°)⦈`.
+    the term the picture draws is rewritten to that shape along every SPINE it draws, at every lane
+    depth, before anything is labelled (`StringDiagram.interp`, `ExprReader.rewriteSpine`,
+    `Λ_eq_singleton_existsImage`) — which is the one place that rule belongs, because only a spine
+    has the two beads to split into.  A second copy of it here fired where no spine goes, inside a
+    fold's body and an `est(R)` argument, and wrote `⦇𝟙%∋ E(S)est(R°)⦈` for the note's `⦇S%∋ est(R°)⦈`.
 
     FLAT is the whole point of the array: juxtaposition is associative, so a bracket round the
     factors would say a grouping the note does not. -/

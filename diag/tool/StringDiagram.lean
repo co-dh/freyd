@@ -183,13 +183,14 @@ def columns (p : Diagram) : Array Lane := Id.run do
       continue
     let oth := live.filter fun j => !r.arms.contains j
     let othx := Array.mk (oth.map (fun j => (xs[j]!).get!))
-    let lo := maxA (othx.filter (· < minA arms c)) (-1e9)
-    let hi := minA (othx.filter (· > maxA arms c)) 1e9
+    -- THE BAND THE LEGS TAKE MUST HOLD NO OTHER LIVE LANE — asked of each candidate, not of `c`:
+    -- a lane exactly AT `c` is neither west of it nor east of it, so a test that brackets `c` reads
+    -- the column as free and lays the new wire straight down the old one.
     let mut got : Array Float := #[]
     for d in SLIDE do
       got := Array.mk ((List.range r.legs.size).map fun j =>
         c + d + (j.toFloat - (r.legs.size.toFloat - 1.0) / 2.0) * DX)
-      if lo + 1e-6 < got[0]! && got[got.size - 1]! < hi - 1e-6 then break
+      if othx.all fun x => x < got[0]! - 1e-6 || got[got.size - 1]! + 1e-6 < x then break
     for j in [0 : r.legs.size] do xs := xs.set! r.legs[j]! (some got[j]!)
   -- A lane OPENED at the bead that eats it has no row of legs to space it: it takes the free column
   -- beside the neighbour creation order already puts it next to.
@@ -864,20 +865,27 @@ mutual
     does not.  What separates them is the factor's own form, which is what is read here. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
+  -- THE LANES A RELATOR'S ACTION RUNS PAST, and the arrow it acts on drawn under them.  One helper,
+  -- so the three spellings that reach it cannot drift apart.
+  let lane (ws : Array Wire) (r : Expr) : MetaM Diagram := do
+    let d ← interp regionTy cat objVars (vpass ++ ws)
+      (Peeled.inner expect ws.size (← homEnds r).1) r
+    (← Diagram.id ws d.otop).beside d
   -- A constant the note draws OPENED is opened first, so the picture is of the body the note
   -- writes and not of one bead carrying the name Lean prints.
   let e' ← openNoted e
   if e' != e then return ← interp regionTy cat objVars vpass expect e'
+  -- EVERY ARROW THIS DRAWS IS A SPINE, at whatever lane depth, so the `diag_rewrite` step is taken
+  -- HERE and not on the side alone: a `Λ` under `E(−)` splits into the unit and its nested `E` lane
+  -- exactly as one at the top does.  AFTER the opening, because `openNoted` opens `𝟙%∋` back to the
+  -- `Λ 𝟙` the rewrite has just built, and the two chase each other for ever the other way round.
+  let e ← rewriteSpine e
   let fs := factors e
   if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
-      let ws := (wiresOf args[4]!).map Wire.rel
-      let r := args[args.size - 1]!
-      let d ← interp regionTy cat objVars (vpass ++ ws)
-        (Peeled.inner expect ws.size (← homEnds r).1) r
-      return ← (← Diagram.id ws d.otop).beside d
+      return ← lane ((wiresOf args[4]!).map Wire.rel) args[args.size - 1]!
   -- AN IDENTITY IS NO BEAD: `𝟙` is the bare wire, so its picture is the lanes it runs on with
   -- nothing drawn on them.  On the HEAD, so every identity of every object goes the same way.
   | (``Cat.id, _) =>
@@ -895,11 +903,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let (b, _) ← homEnds ψ
     -- `𝟙×ψ` IS `(A×−).map ψ`: the left factor is one lane and `ψ` runs under it, so this is the
     -- `F.map` route and the verdict of `ψ` closes through the same chain as any `F(R)`.
-    if ← isIdArrow φ then
-      let l := Wire.timesL a
-      let d ← interp regionTy cat objVars (vpass.push l)
-        (Peeled.inner expect 1 (← homEnds ψ).1) ψ
-      return ← (← Diagram.id #[l] d.otop).beside d
+    if ← isIdArrow φ then return ← lane #[Wire.timesL a] ψ
     let one ← Meta.mkAppM ``Cat.id #[b]
     -- Interchange, `φ×ψ = (φ×𝟙)(𝟙×ψ)`, and functoriality, `(φ₁φ₂)×𝟙 = (φ₁×𝟙)(φ₂×𝟙)`: both split
     -- the map into product maps this same case then draws, one bead each.
@@ -923,10 +927,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- composite drawn under the `list` wire, two beads, not one bead nobody can read the run inside
   -- of.  Last, so a factor the reader already has a form for keeps it.
   if let some (R, r) ← peelMap? cat objVars regionTy e then
-    let ws := (wiresOf R).map Wire.rel
-    let d ← interp regionTy cat objVars (vpass ++ ws)
-      (Peeled.inner expect ws.size (← homEnds r).1) r
-    return ← (← Diagram.id ws d.otop).beside d
+    return ← lane ((wiresOf R).map Wire.rel) r
   let (x, y) ← homEnds e
   let (cx, ox) ← peelReadAt expect objVars cat regionTy x
   let (cy, oy) ← peelRead objVars cat regionTy y
@@ -1153,12 +1154,12 @@ def branchSel (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (e : E
     return out
 
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
-    picture turned out to be.  A SIDE IS REWRITTEN ONCE, HERE, along its spine and before the read:
-    `Λ S` is drawn as the note draws it — the unit bead and `S` on the `E` lane — and a side is what
-    a rewrite is a statement about, so it is applied at the top and never inside `interp`. -/
+    picture turned out to be.  The rewrite that draws `Λ S` as the note draws it — the unit bead and
+    `S` on the `E` lane — is `interp`'s, taken at every spine it draws and so at every lane depth;
+    a side is one such spine and gets no copy of it here. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← interp regionTy cat objVars #[] none (← instantiateMVars (← rewriteSpine side))
+  let d ← interp regionTy cat objVars #[] none (← instantiateMVars side)
   let n : Int := d.rows.size
   return { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
 
