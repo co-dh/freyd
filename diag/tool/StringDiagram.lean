@@ -450,9 +450,20 @@ def fileOf (body : String) (nat : String := "") : String :=
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
-    re-splitting the picture. -/
-def emit (p : Diagram) : MetaM String := do
-  return fileOf ("#let panels = (" ++ (← panelCode p none none)
+    re-splitting the picture.
+
+    IT IS DRAWN IN THE DECLARATION'S BOX, NOT ITS OWN: the two sides of one equation are two files,
+    and a side that took its own depth came out shorter than the side across the `=` from it.  The
+    extra depth is HEADROOM — no `topRow`, so every bead keeps the row it had and the wires simply
+    enter from higher up. -/
+def emit (p : Diagram) (frame : Nat) : MetaM String := do
+  -- THE OBLIGATION, not the record: the part drawn must be one the frame was taken over.  A part
+  -- deeper than the frame is one `declParts` did not reach, and it would come out taller than its
+  -- siblings rather than be clipped (`frameRows` never draws a picture short).
+  unless frameRows p (some frame) == frame do
+    throwError "a part {p.rows.size} beads deep is drawn in a frame of {frame} rows: the frame is \
+      the DECLARATION's, so every part of it must be among the ones it was taken over"
+  return fileOf ("#let panels = (" ++ (← panelCode p (some frame) none)
     ++ ",)\n#let pic = panels.at(0)\n") (← natLines #[p])
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
@@ -506,10 +517,13 @@ def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftT
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
     never the part's — the deepest part sets it and every shorter one is lined up inside it. -/
-def emitStatement (declName : String) (parts : Array (String × Diagram)) : MetaM String := do
+def emitStatement (declName : String) (parts : Array (String × Diagram)) (frame : Nat) :
+    MetaM String := do
   let ps := parts.map (·.2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  let fr := frameOf ref ps
+  -- NEVER SHALLOWER THAN THE DECLARATION'S BOX: a statement drawn whole and one of its parts drawn
+  -- alone are two files of one declaration, so they stand at one height too.
+  let fr := max (frameOf ref ps) frame
   -- THE FLOOR, NOT THE CEILING: the deepest part's last bead lands on row 1 and every other part
   -- keeps its `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no
   -- bead.  Hanging the reference one row under the top of the box instead (`fr - maxShift - 1`)
@@ -1279,6 +1293,32 @@ partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array 
     withSel regionTy cat objVars sel e fun e' => do
       withParts regionTy cat objVars sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars)) k
 
+/-- HOW DEEP A BOX ONE PART OF A DECLARATION NEEDS, in rows: its own depth, and the depth of every
+    part the rest of the selector chain reaches inside it.  BOTH operands are taken at a branch step
+    and a least fixed point's body is opened at a `.body` step, so `.inl` and `.inr` — like `.lhs`
+    and `.rhs` — are files of one height however few of them a note asks for.
+
+    A step the expression does not admit names no part and adds nothing: that refusal is the same
+    SHAPE test `branchSel` makes of `branchOf`, and a part no selector reaches is a part no note can
+    ask for.  A part that fails to DRAW is not caught — its error is the one asking for it gives. -/
+partial def declFrame (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
+    (sel : List Sel) (e : Expr) : MetaM Nat := do
+  let n := framex (← panelOf regionTy cat e objVars)
+  match sel with
+  | [] => return n
+  | .body :: rest =>
+    match muArg? e with
+    | none => return n
+    | some φ => Meta.lambdaBoundedTelescope φ 1 fun xs b => do
+        if xs.size == 1 then return max n (← declFrame regionTy cat objVars rest b) else return n
+  | _ :: rest => do
+    let mut m := n
+    for i in [0 : 2] do
+      let step : MetaM (Option Expr) :=
+        try pure (some (← branchSel regionTy cat objVars e i)) catch _ => pure none
+      if let some e' ← step then m := max m (← declFrame regionTy cat objVars rest e')
+    return m
+
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
     and every label prints as `Cat.comp` — the picture then comes out with no lanes at all and no
@@ -1382,14 +1422,16 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
+    -- THE BOX IS THE DECLARATION'S, NOT THE PART'S — computed here, once, over EVERY part of the
+    -- statement, and not over the one this file happens to draw.  The two sides of an equation are
+    -- two files, and a part that took its own depth came out shorter than the part across the
+    -- relation symbol from it.
+    let mut frame := 2
+    for (_, e) in parts do frame := max frame (← declFrame regionTy cat objVars sel e)
     withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      -- A PART EMITTED ALONE STANDS BESIDE NOTHING, so it takes its OWN depth.  The shared frame
-      -- exists to hold the parts a relation symbol joins in ONE grid to one box and one bead
-      -- height; a calc-table row holding only `.rhs` has no such neighbour, and giving it the whole
-      -- statement's frame drew it taller than the picture beside it.
-      if ps.size == 1 then emit ps[0]!.2 else emitStatement nm ps
+      if ps.size == 1 then emit ps[0]!.2 frame else emitStatement nm ps frame
 
 end Freyd.StrDiag
