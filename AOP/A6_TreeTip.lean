@@ -326,4 +326,87 @@ public theorem cataR_con : cataR (graph (con (A := A))) = 𝟙 (dTree A) := by
     · intro (h : Tree.bin l r = res)
       exact ⟨l, r, (ihl l).mpr rfl, (ihr r).mpr rfl, h.symm⟩
 
+/-! ## The datatype as a relator: `tree(R)`
+
+  `tree A` is a datatype in its LABEL, so it is the object part of a relator and not merely an
+  object at each `A` — the same reading `AOP.A6_RoseTree.roseRelator` gives the rose tree.  Bundled
+  here, the picture of a statement over `tree A` draws ONE lane `tree` over the label wire, where an
+  unbundled `dTree A` leaves the reader an object nothing peels. -/
+
+/-- Elementwise lifting on tip trees: the same shape, each TIP's label related by `R` — a node
+    carries nothing, so it contributes no condition of its own. -/
+@[expose] public def treeP {B : Type} (R : dA A ⟶ dA B) : Tree A → Tree B → Prop
+  | Tree.tip a, Tree.tip b => R a b
+  | Tree.tip _, Tree.bin _ _ => False
+  | Tree.bin _ _, Tree.tip _ => False
+  | Tree.bin l r, Tree.bin l' r' => treeP R l l' ∧ treeP R r r'
+
+/-- The relator's action `tree(R) : tree A⟶tree B`. -/
+@[expose] public def tree {B : Type} (R : dA A ⟶ dA B) : dTree A ⟶ dTree B := treeP R
+
+public theorem treeP_id : ∀ x y : Tree A, treeP (𝟙 (dA A)) x y ↔ x = y
+  | Tree.tip a, Tree.tip b =>
+      ⟨fun h => by rw [show a = b from h], fun h => by cases h; rfl⟩
+  | Tree.tip _, Tree.bin _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.bin _ _, Tree.tip _ => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.bin l r, Tree.bin l' r' =>
+      ⟨fun h => by rw [(treeP_id l l').mp h.1, (treeP_id r r').mp h.2],
+       fun h => by cases h; exact ⟨(treeP_id l l).mpr rfl, (treeP_id r r).mpr rfl⟩⟩
+
+/-- `tree(𝟙) = 𝟙`. -/
+public theorem tree_id : tree (𝟙 (dA A)) = 𝟙 (dTree A) := hom_ext treeP_id
+
+public theorem treeP_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    ∀ (x : Tree A) (z : Tree C), treeP (R ≫ S) x z ↔ ∃ y, treeP R x y ∧ treeP S y z
+  | Tree.tip _, Tree.tip _ =>
+      ⟨fun ⟨b, hR, hS⟩ => ⟨Tree.tip b, hR, hS⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | tip b => exact ⟨b, h1, h2⟩
+        | bin _ _ => exact h1.elim⟩
+  | Tree.tip _, Tree.bin _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | tip _ => exact h2
+        | bin _ _ => exact h1⟩
+  | Tree.bin _ _, Tree.tip _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | tip _ => exact h1
+        | bin _ _ => exact h2⟩
+  | Tree.bin l r, Tree.bin l' r' => by
+      constructor
+      · rintro ⟨hl, hr⟩
+        obtain ⟨m, hm, hm'⟩ := (treeP_comp R S l l').mp hl
+        obtain ⟨n, hn, hn'⟩ := (treeP_comp R S r r').mp hr
+        exact ⟨Tree.bin m n, ⟨hm, hn⟩, hm', hn'⟩
+      · rintro ⟨y, h1, h2⟩
+        cases y with
+        | tip _ => exact h1.elim
+        | bin m n =>
+            exact ⟨(treeP_comp R S l l').mpr ⟨m, h1.1, h2.1⟩,
+                   (treeP_comp R S r r').mpr ⟨n, h1.2, h2.2⟩⟩
+
+/-- `tree(RS) = tree(R) tree(S)`. -/
+public theorem tree_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    tree (R ≫ S) = tree R ≫ tree S := hom_ext (treeP_comp R S)
+
+public theorem treeP_mono {B : Type} {R S : dA A ⟶ dA B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, treeP R x y → treeP S x y
+  | Tree.tip a, Tree.tip b, hxy => h a b hxy
+  | Tree.tip _, Tree.bin _ _, hxy => hxy.elim
+  | Tree.bin _ _, Tree.tip _, hxy => hxy.elim
+  | Tree.bin l r, Tree.bin l' r', hxy =>
+      ⟨treeP_mono h l l' hxy.1, treeP_mono h r r' hxy.2⟩
+
+/-- `R ⊑ S ⟹ tree(R) ⊑ tree(S)` — `tree` is monotonic. -/
+public theorem tree_mono {B : Type} {R S : dA A ⟶ dA B} (h : R ⊑ S) : tree R ⊑ tree S :=
+  le_iff.mpr (treeP_mono (le_iff.mp h))
+
+/-- `tree` BUNDLED as a relator, the lane the bracketing section's pictures draw over their label
+    wire — one wire `tree`, one object `A`, where `tree A` alone is an object with no reading. -/
+@[expose] public def treeRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dTree a.carrier
+  map R := tree R
+  map_id _ := tree_id
+  map_comp R S := tree_comp R S
+  map_mono h := tree_mono h
+
 end Freyd.Alg.RelSet.TT
