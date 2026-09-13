@@ -16,7 +16,9 @@
   - The UP `X ⊑ thin Q°·ΛS ⟺ ∈·X ⊑ S ∧ X·S° ⊑ ∋·Q°` mirrors to
     `X ⊑ Λ S ≫ thinRel Q ⟺ X ≫ ∋ a ⊑ S ∧ S° ≫ X ⊑ Q° ≫ (∋ a)°`.
 
-  Setting: `UnguardedPowerLCDA` (`AOP.A6_2`), continuing chapter 7's `AOP.A7_1`.  The
+  Setting: `TabularUnitaryUnguardedPowerLCDA` (`AOP.A6_2`), continuing chapter 7's `AOP.A7_1`.
+  Tabular because B&dM assume it wherever `P` is a relator (§5.4, book p.119), and this chapter's
+  `P` is: `powerRel_comp` needs `TabularAllegory.tabular`.  The
   thinning theorem (THEOREM 8.1) additionally uses `AOP.A7_2`'s monotonic-algebra calculus and
   `AOP.A6_3`'s hylomorphism theorem (both pulled in transitively via `import AOP.A7_2`).
 -/
@@ -28,7 +30,7 @@ universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
 /-- `ΛW·subset = W/∋` mirrored: `Λ W ≫ subsetRel a = W / (∋ a)` — the transpose of `W`
     followed by shrinking is exactly "all members come from `W`".  (Ex 7.2's

@@ -440,7 +440,7 @@
     "thin": {
       "src": "E(x)",
       "tgt": "E(x)",
-      "lean": "AOP.A8_1.thinRel@14d13c27"
+      "lean": "AOP.A8_1.thinRel@36232ebe"
     },
     "moves": {
       "src": "N(x)",

@@ -24,6 +24,9 @@ module
 public import AOP.A4_4
 public import AOP.A4_5
 public import AOP.A5_5
+-- the tabular half of the chapter-6 setting: `AOP.A5_4`'s `powerRel_comp` (`P` a relator on ALL
+-- relations) is what chapters 7-8 need, and it is stated over `AOP.A5_6`'s tabular merge.
+public import AOP.A5_6
 
 universe u
 
@@ -114,6 +117,30 @@ public class UnguardedPowerLCDA (𝒜 : Type u) extends
     lets `AOP.A4_5`'s division/LCDA lemmas fire in the chapter-6 setting. -/
 @[expose] public instance (priority := 100) UnguardedPowerLCDA.toDivisionLCDA [inst : UnguardedPowerLCDA 𝒜] :
     DivisionLCDA 𝒜 := { inst with }
+
+/-- The setting from §7 on: `AOP.A5_6`'s tabular/unitary + unguarded-power merge (which
+    gives `RelProd`, `cup` and `cpMap` alongside `Λ`) TOGETHER with local completeness (which
+    gives `relCata`, `thinRel` and `est`).  Both parents already share `Allegory`, so this is
+    the same diamond-safe structure merge as `UnguardedPowerLCDA` above.  The tabular half is
+    what makes `P` a RELATOR (`AOP.A5_4`'s `powerRel_comp`, functorial on all relations and not
+    just maps), which B&dM assume wherever they write `P` (§5.4, book p.119). -/
+public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
+    TabularUnitaryUnguardedDivisionPowerAllegory 𝒜, LocallyCompleteDistributiveAllegory 𝒜
+
+/-- The power/local-completeness side of the merge, so the plain-`UnguardedPowerLCDA` calculus
+    fires in the tabular setting unchanged. -/
+@[expose] public instance (priority := 100) TabularUnitaryUnguardedPowerLCDA.toUnguardedPowerLCDA
+    {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] : UnguardedPowerLCDA 𝒜 :=
+  { inst with }
+
+/-- `AOP.A5_4`'s hard half of `P`-functoriality is stated over `Freyd.S2_41b`'s tabular merge,
+    which the division merge above implies (`DivisionAllegory` brings `DistributiveAllegory`);
+    the two are not related by inheritance, so the bridge is given here. -/
+@[expose] public instance (priority := 100)
+    TabularUnitaryUnguardedPowerLCDA.toTabularUnitaryUnguardedPowerAllegory
+    {𝒜 : Type u} [inst : TabularUnitaryUnguardedPowerLCDA 𝒜] :
+    TabularUnitaryUnguardedPowerAllegory 𝒜 :=
+  { inst with }
 
 /-! ## Lambek's lemma for `InitialAlgebra` (B&dM Ex 6.5's subject)
 
