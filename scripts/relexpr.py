@@ -562,10 +562,10 @@ def norm(e):
 # panel may name it either way.  They differ as RELATIONS — B&dM p.119 symmetrises `P`'s second
 # conjunct, and only on maps do they agree (p.202) — so the panel keeps the letter it was drawn with
 # and the quotient is taken at the comparison alone.
-# Declared in `diag/hm-sigs.json`, beside the signatures, because which two letters draw one lane is
-# a fact about the NOTE, not about the sweep.
+# Declared in `diag/circuit-sigs.json`, beside the circuit signatures — `scripts/circuit` is the
+# only remaining reader of this table, since the Python string-diagram drawer/reader are retired.
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
-                    "hm-sigs.json")
+                    "circuit-sigs.json")
 _ALIAS = None
 
 

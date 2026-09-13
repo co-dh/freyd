@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""note-view — one section of the note compiled alone, for the edit loop, because a whole-book
+layout costs 26s and the author only wants to see the section just edited.
+
+    ./scripts/note-view diag/allegory-axioms.typ 13.3
+
+Writes `diag/.view-slice.typ` (the prelude, every declaration in the note, and the named section
+verbatim, with the heading counter seeded so its panel ids come out exactly as in the whole note)
+and compiles it to `diag/.view.pdf`.  `make v SEC=13.3` is this with `NOTESRC` resolved by `CH`.
+"""
+import json, os, re, subprocess, sys, time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_source
+from relexpr import opt, help_if
+
+HEAD = re.compile(r'(={1,6}) ')
+DECL = re.compile(r'#(?:let|show|set|import)\b')
+TOP = re.compile(r'[#=]|//')
+
+
+def parts(path):
+    """The note cut into (prelude, sections) — an EXACT line partition, asserted below.
+
+    A heading opens a section and its numbers ARE the ids of the panels it draws: `13.3.4` draws
+    `13.3.4a.1`.  A top-level `#let`/`#show`/`#set`/`#import` (column 0) runs to the line before the
+    next column-0 `#`, `=` or `//`, and is held apart from the body: a slice needs EVERY declaration
+    in the note — the section it draws may use any of them — but only ONE section's displays."""
+    lines = note_source(path).splitlines(keepends=True)
+    pre, secs, nums, i = [], [], [], 0
+    while i < len(lines):
+        head = HEAD.match(lines[i])
+        if head:
+            d = len(head.group(1))
+            nums = (nums + [0] * d)[:d]
+            nums[d - 1] += 1
+            secs.append({"num": ".".join(map(str, nums)), "text": [], "body": [], "decls": []})
+        j = i + 1
+        if DECL.match(lines[i]) and not head:
+            while j < len(lines) and not TOP.match(lines[j]):
+                j += 1
+        blk = "".join(lines[i:j])
+        if not secs:
+            pre.append(blk)
+        else:
+            secs[-1]["text"].append(blk)
+            (secs[-1]["decls"] if DECL.match(lines[i]) else secs[-1]["body"]).append(blk)
+        i = j
+    assert "".join(pre) + "".join(b for s in secs for b in s["text"]) \
+        == note_source(path), f"note-view: {path} did not partition"
+    return pre, secs
+
+
+def sliced(pre, secs, sel):
+    """The prelude, every declaration in the note, and the selected (consecutive) sections' bodies —
+    with the heading counter seeded from the FIRST selected section, so the panel ids come out exactly
+    as they do in the whole note (the display counter and the panel counter reset at every heading and
+    display, so those need nothing). `#show ref: it => []`: the sections a slice drops take their
+    labels with them.
+
+    Only the declarations BEFORE the first selected section, in source order, and the selected
+    sections themselves VERBATIM, in source order: one name is bound twice in the note — `mss-pic` at
+    :5011 and :5428, both inside §13.3.4 — and every use sees the binding that precedes IT, so hoisting
+    a section's own declarations over its own body would let the second definition answer for the
+    first's call sites."""
+    n = [int(x) for x in sel[0]["num"].split(".")]
+    return ("".join(pre) + "#show ref: it => []\n"
+            + "".join(b for s in secs[:secs.index(sel[0])] for b in s["decls"])
+            + "#counter(heading).update((%s,))\n" % ", ".join(map(str, n[:-1] + [n[-1] - 1]))
+            + "".join(b for s in sel for b in s["text"]))
+
+
+def main(argv):
+    help_if(argv, __doc__, __doc__)
+    if len(argv) < 2:
+        sys.exit("usage: note-view <note.typ> <section>")
+    path, view = argv[0], argv[1]
+    pre, secs = parts(path)
+    sel = [s for s in secs if s["num"] == view or s["num"].startswith(view + ".")]
+    if not sel:
+        sys.exit(f"note-view: no section {view} in {path}")
+    out = "diag/.view-slice.typ"
+    open(out, "w", encoding="utf-8").write(sliced(pre, secs, sel))
+    t0 = time.time()
+    r = subprocess.run(["typst", "compile", out, "diag/.view.pdf"], capture_output=True, text=True)
+    if r.returncode:
+        sys.exit(r.stderr.strip())
+    elapsed = time.time() - t0
+    info = subprocess.run(["pdfinfo", "diag/.view.pdf"], capture_output=True, text=True)
+    pages = next((l.split()[-1] for l in info.stdout.splitlines() if l.startswith("Pages:")), "?")
+    print(f"note-view: {view} → diag/.view.pdf  {pages} pages  {elapsed:.2f}s")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
