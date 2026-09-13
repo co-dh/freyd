@@ -812,7 +812,7 @@ end Freyd.Alg
 
 namespace Freyd.Alg.RelSet.SL
 
-variable {L E : Type} {b c : RelSet.{0}}
+variable {L W : Type} {b c : RelSet.{0}}
 
 -- `Λ R` in `Rel(Set)` IS the classifier `x↦{y∣R x y}`, by `Λ`'s uniqueness; private because
 -- `AOP.A7_4_Horner` already exports the same lemma, on a branch of the import graph this file
@@ -820,17 +820,17 @@ variable {L E : Type} {b c : RelSet.{0}}
 private theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
   (Λ_unique R (classifier R) (graph_map _) (classifier_comp_eps R)).symm
 
-/-- The `L` arm `V₁` of a relation out of `F L E`. -/
-@[expose] public def arm₁ (T : (F L E).obj b ⟶ c) : dL L ⟶ c := fun d y => T (Sum.inl d) y
+/-- The `L` arm `V₁` of a relation out of `F L W`. -/
+@[expose] public def arm₁ (T : (F L W).obj b ⟶ c) : dL L ⟶ c := fun d y => T (Sum.inl d) y
 
-/-- The `X×E` arm `V₂` of a relation out of `F L E`. -/
-@[expose] public def arm₂ (T : (F L E).obj b ⟶ c) : (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ c :=
+/-- The `X×W` arm `V₂` of a relation out of `F L W`. -/
+@[expose] public def arm₂ (T : (F L W).obj b ⟶ c) : (⟨b.carrier × W⟩ : RelSet.{0}) ⟶ c :=
   fun p y => T (Sum.inr p) y
 
 /-- **`α = [nil,snoc]`** — the initial algebra as the JUNCTION the note writes, at the one label
     where `wrap` carries nothing.  Every §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this
     equation and then the relator sliding into the bracket. -/
-public theorem con_eq_junc : graph (con (L := Unit) (E := E)) = junc (sumCop _ _) nilR snocR := by
+public theorem con_eq_junc : graph (con (L := Unit) (E := W)) = junc (sumCop _ _) nilR snocR := by
   apply hom_ext; intro u r
   constructor
   · intro h
@@ -842,27 +842,27 @@ public theorem con_eq_junc : graph (con (L := Unit) (E := E)) = junc (sumCop _ _
     | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
     | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
 
-/-- The `L` arm `Q₁` of a preorder on `F L E X`. -/
-@[expose] public def armQ₁ (Q : (F L E).obj b ⟶ (F L E).obj b) : dL L ⟶ dL L :=
+/-- The `L` arm `Q₁` of a preorder on `F L W X`. -/
+@[expose] public def armQ₁ (Q : (F L W).obj b ⟶ (F L W).obj b) : dL L ⟶ dL L :=
   fun d d' => Q (Sum.inl d) (Sum.inl d')
 
-/-- The `X×E` arm `Q₂` of a preorder on `F L E X`. -/
-@[expose] public def armQ₂ (Q : (F L E).obj b ⟶ (F L E).obj b) :
-    (⟨b.carrier × E⟩ : RelSet.{0}) ⟶ ⟨b.carrier × E⟩ := fun p q => Q (Sum.inr p) (Sum.inr q)
+/-- The `X×W` arm `Q₂` of a preorder on `F L W X`. -/
+@[expose] public def armQ₂ (Q : (F L W).obj b ⟶ (F L W).obj b) :
+    (⟨b.carrier × W⟩ : RelSet.{0}) ⟶ ⟨b.carrier × W⟩ := fun p q => Q (Sum.inr p) (Sum.inr q)
 
-/-- The second arm of the constructor algebra is `snoc` — what `[nil,snoc]` does on its `X×E`
+/-- The second arm of the constructor algebra is `snoc` — what `[nil,snoc]` does on its `X×W`
     summand.  The note writes the arm by that name, never as the algebra restricted. -/
-public theorem arm₂_con : arm₂ (graph (con (L := L) (E := E))) = snocR := rfl
+public theorem arm₂_con : arm₂ (graph (con (L := L) (E := W))) = snocR := rfl
 
 /-- THE ARM OF A MAP IS A MAP — `arm₂` of a graph is the graph of the function restricted to the
     summand — so the note's name for the arm is read off that function, exactly as every other
     map's is; `arm₂_con` is this equation at `con`, where the restriction leaves `snoc`. -/
-public theorem arm₂_graph (f : ((F L E).obj b).carrier → c.carrier) :
+public theorem arm₂_graph (f : ((F L W).obj b).carrier → c.carrier) :
     arm₂ (graph f) = graph (fun p => f (Sum.inr p)) := rfl
 
-/-- The second arm of `F(X)·h` is the note's `(X×𝟙)U₂`: `F(X)` keeps the `E` component. -/
-public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
-    arm₂ ((F L E).map X ≫ U) = rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U := by
+/-- The second arm of `F(X)·h` is the note's `(X×𝟙)U₂`: `F(X)` keeps the `W` component. -/
+public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L W).obj c ⟶ d) :
+    arm₂ ((F L W).map X ≫ U) = rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ arm₂ U := by
   apply hom_ext; intro p y
   constructor
   · rintro ⟨w, hw, hU⟩
@@ -876,9 +876,9 @@ public theorem arm₂_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶
     the pair arm picks up `X×𝟙` in front.  `arm₁_comp` and `arm₂_comp` are its two arms, and every
     §9–§10 row whose tape is `[nil,(X×𝟙)snoc]` is this step. -/
 public theorem Fmap_comp_junc {d : RelSet.{0}} (X : b ⟶ c) (T : dL L ⟶ d)
-    (U : (⟨c.carrier × E⟩ : RelSet.{0}) ⟶ d) :
-    (F L E).map X ≫ junc (sumCop (dL L) ⟨c.carrier × E⟩) T U
-      = junc (sumCop (dL L) ⟨b.carrier × E⟩) T (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ U) := by
+    (U : (⟨c.carrier × W⟩ : RelSet.{0}) ⟶ d) :
+    (F L W).map X ≫ junc (sumCop (dL L) ⟨c.carrier × W⟩) T U
+      = junc (sumCop (dL L) ⟨b.carrier × W⟩) T (rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ U) := by
   apply hom_ext; intro u y
   cases u with
   | inl d' =>
@@ -900,8 +900,8 @@ public theorem Fmap_comp_junc {d : RelSet.{0}} (X : b ⟶ c) (T : dL L ⟶ d)
       exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, (ListRel.junc_sum_inr T U q y).mpr hU⟩
 
 /-- The first arm of `F(X)·h` is `U₁` alone: `F(X)` is the identity on the `L` summand. -/
-public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶ d) :
-    arm₁ ((F L E).map X ≫ U) = arm₁ U := by
+public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L W).obj c ⟶ d) :
+    arm₁ ((F L W).map X ≫ U) = arm₁ U := by
   apply hom_ext; intro e y
   constructor
   · rintro ⟨w, hw, hU⟩
@@ -925,14 +925,14 @@ public theorem arm₁_comp {d : RelSet.{0}} (X : b ⟶ c) (U : (F L E).obj c ⟶
   there.  `hdisj` is the whole content — at a point `Vᵢ` reaches, `T` reaches it only through that
   summand — and it is what lets the `est`/`thin` over the summand answer for the `est`/`thin` over
   everything.  The two shapes below are the note's @greedy-laws and @dp-laws third rows; the snoc
-  arms are them at `Fᵢ = −×E`, `ι = Sum.inr`, where `hV`, `hQ` and `harm` hold by the coproduct's
+  arms are them at `Fᵢ = −×W`, `ι = Sum.inr`, where `hV`, `hQ` and `harm` hold by the coproduct's
   own `arm₂`/`arm₂_comp`.
 
   `Map Uᵢ` is not used by either proof: it is the fact the PICTURE draws, the summand's algebra
   being a map is what makes its box a rectangle and not a chamfered relation. -/
 
 -- The relator binders are INLINE and not `variable`s: this section's `F` is the whole algebra's,
--- where the file's own `F L E` is the snoc list's, and a `variable F` would shadow it below.
+-- where the file's own `F L W` is the snoc list's, and a `variable F` would shadow it below.
 -- The NAMES are `_root_`'s: nothing here is the snoc list's, and a general law under `SL` is what
 -- gets cloned at the next functor.  The proofs sit inside the namespace for its `Λ_eq_classifier`.
 
@@ -1033,12 +1033,12 @@ public theorem _root_.Freyd.Alg.RelSet.pow_summand_le {A B : RelSet.{0}}
 
 /-- **Proposition 9.1**, greedy form, second arm: the note's @greedy-laws third row
     `(V₂°)%∋ est(Q₂)(X×𝟙)U₂` refines the body `(T°)%∋ est(Q)F(X)h`. -/
-public theorem est_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
-    {X : b ⟶ c} {U : (F L E).obj c ⟶ c}
-    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+public theorem est_arm₂_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (F L W).obj b}
+    {X : b ⟶ c} {U : (F L W).obj c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False) :
-    Λ ((arm₂ T)°) ≫ est (armQ₂ Q) ≫ rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U
-      ⊑ Λ (T°) ≫ est Q ≫ (F L E).map X ≫ U := by
+    Λ ((arm₂ T)°) ≫ est (armQ₂ Q) ≫ rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ arm₂ U
+      ⊑ Λ (T°) ≫ est Q ≫ (F L W).map X ≫ U := by
   rw [le_iff]
   rintro y a ⟨S, hS, p, hp, q, hq, hU⟩
   rw [Λ_eq_classifier] at hS
@@ -1051,11 +1051,11 @@ public theorem est_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F
     · exact hp.2 z hz
 
 /-- **Proposition 9.1**, greedy form, first arm: the `L` branch of the same body. -/
-public theorem est_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
-    {X : b ⟶ c} {U : (F L E).obj c ⟶ c}
-    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+public theorem est_arm₁_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (F L W).obj b}
+    {X : b ⟶ c} {U : (F L W).obj c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False) :
-    Λ ((arm₁ T)°) ≫ est (armQ₁ Q) ≫ arm₁ U ⊑ Λ (T°) ≫ est Q ≫ (F L E).map X ≫ U := by
+    Λ ((arm₁ T)°) ≫ est (armQ₁ Q) ≫ arm₁ U ⊑ Λ (T°) ≫ est Q ≫ (F L W).map X ≫ U := by
   rw [le_iff]
   rintro y a ⟨S, hS, d, hd, hU⟩
   rw [Λ_eq_classifier] at hS
@@ -1069,12 +1069,12 @@ public theorem est_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F
 
 /-- **Proposition 9.1**, thinning form, second arm: the note's @dp-laws third row
     `(V₂°)%∋ thin(Q₂)P((X×𝟙)U₂)est(R)` refines `(T°)%∋ thin(Q)P(F(X)h)est(R)`. -/
-public theorem thin_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
-    {X : b ⟶ c} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
-    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+public theorem thin_arm₂_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (F L W).obj b}
+    {X : b ⟶ c} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False) :
-    Λ ((arm₂ T)°) ≫ thinRel (armQ₂ Q) ≫ powerRel (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R
-      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L E).map X ≫ U) ≫ est R := by
+    Λ ((arm₂ T)°) ≫ thinRel (armQ₂ Q) ≫ powerRel (rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L W).map X ≫ U) ≫ est R := by
   rw [le_iff]
   rintro y a ⟨S, hS, Y, hY, Z, hZ, hest⟩
   rw [Λ_eq_classifier] at hS
@@ -1092,18 +1092,18 @@ public theorem thin_arm₂_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (
   · refine ⟨?_, ?_⟩
     · rintro w ⟨q, hq, rfl⟩
       obtain ⟨u, hu, hZu⟩ := hZ.1 q hq
-      exact ⟨u, (arm₂_comp X U ▸ hu : arm₂ ((F L E).map X ≫ U) q u), hZu⟩
+      exact ⟨u, (arm₂_comp X U ▸ hu : arm₂ ((F L W).map X ≫ U) q u), hZu⟩
     · intro u hu
       obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
-      exact ⟨Sum.inr t, ⟨t, ht, rfl⟩, (arm₂_comp X U ▸ hgt : arm₂ ((F L E).map X ≫ U) t u)⟩
+      exact ⟨Sum.inr t, ⟨t, ht, rfl⟩, (arm₂_comp X U ▸ hgt : arm₂ ((F L W).map X ≫ U) t u)⟩
 
 /-- **Proposition 9.1**, thinning form, first arm: the `L` branch of the same body. -/
-public theorem thin_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
-    {X : b ⟶ c} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
-    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+public theorem thin_arm₁_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (F L W).obj b}
+    {X : b ⟶ c} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
+    (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False) :
     Λ ((arm₁ T)°) ≫ thinRel (armQ₁ Q) ≫ powerRel (arm₁ U) ≫ est R
-      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L E).map X ≫ U) ≫ est R := by
+      ⊑ Λ (T°) ≫ thinRel Q ≫ powerRel ((F L W).map X ≫ U) ≫ est R := by
   rw [le_iff]
   rintro y a ⟨S, hS, Y, hY, Z, hZ, hest⟩
   rw [Λ_eq_classifier] at hS
@@ -1121,29 +1121,29 @@ public theorem thin_arm₁_le {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (
   · refine ⟨?_, ?_⟩
     · rintro w ⟨d, hd, rfl⟩
       obtain ⟨u, hu, hZu⟩ := hZ.1 d hd
-      exact ⟨u, (arm₁_comp X U ▸ hu : arm₁ ((F L E).map X ≫ U) d u), hZu⟩
+      exact ⟨u, (arm₁_comp X U ▸ hu : arm₁ ((F L W).map X ≫ U) d u), hZu⟩
     · intro u hu
       obtain ⟨t, ht, hgt⟩ := hZ.2 u hu
-      exact ⟨Sum.inl t, ⟨t, ht, rfl⟩, (arm₁_comp X U ▸ hgt : arm₁ ((F L E).map X ≫ U) t u)⟩
+      exact ⟨Sum.inl t, ⟨t, ht, rfl⟩, (arm₁_comp X U ▸ hgt : arm₁ ((F L W).map X ≫ U) t u)⟩
 
 /-- **Theorem 9.2 in coproduct form** — the note's @dp-laws, third row: at `T=[V₁,V₂]`,
     `h=[U₁,U₂]`, `Q=Q₁+Q₂` and `V₂V₁°=⊥`, the recursion that runs the two branches separately
     still refines the optimisation spec.  `AOP.A9_1.dynamic_programming_thin` at the snoc-list
     functor, with the body replaced by the union of the two arms `thin_arm₁_le`/`thin_arm₂_le`
     draw. -/
-public theorem dynamic_programming_thin_arms {T : (F L E).obj b ⟶ b}
-    {Q : (F L E).obj b ⟶ (F L E).obj b} {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
+public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
+    {Q : (F L W).obj b ⟶ (F L W).obj b} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
     (hh : Map U) (hmono : MonotonicAlg U R°) (htrans : R° ≫ R° ⊑ R°)
-    (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
+    (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
-    (hQ : Q ≫ (F L E).map ((relCata T)° ≫ relCata U) ≫ U
-        ⊑ (F L E).map ((relCata T)° ≫ relCata U) ≫ U ≫ R) :
+    (hQ : Q ≫ (F L W).map ((relCata T)° ≫ relCata U) ≫ U
+        ⊑ (F L W).map ((relCata T)° ≫ relCata U) ≫ U ≫ R) :
     mu (fun X : b ⟶ c =>
         (Λ ((arm₁ T)°) ≫ thinRel (armQ₁ Q) ≫ powerRel (arm₁ U) ≫ est R)
           ∪ (Λ ((arm₂ T)°) ≫ thinRel (armQ₂ Q)
-              ≫ powerRel (rprodMap X (𝟙 (⟨E⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R))
+              ≫ powerRel (rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R))
       ⊑ Λ ((relCata T)° ≫ relCata U) ≫ est R :=
   le_trans (mu_le_mu fun X => union_lub (thin_arm₁_le (X := X) hdisj) (thin_arm₂_le hdisj))
-    (dynamic_programming_thin (F := F L E) (F_preservesRecip L E) (initial L E) hh hmono htrans hQ)
+    (dynamic_programming_thin (F := F L W) (F_preservesRecip L W) (initial L W) hh hmono htrans hQ)
 
 end Freyd.Alg.RelSet.SL

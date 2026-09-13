@@ -226,8 +226,10 @@ public theorem shift_lt_iff (d : Int) (r b : Real.carrier) :
     because the note draws ONE wire from `[0,2¹⁶)` to `Decimal` and never opens the list. -/
 @[expose] public def Dec : Type := ConsList Unit Digit
 
-/-- **tex-defn**: the object `Decimal`. -/
-@[expose] public def Decimal : RelSet.{0} := ⟨Dec⟩
+-- **tex-defn**: the object `Decimal`.  NOTATION over the list relator's object, not a `def` at
+-- `RelSet`: a named object draws as one opaque wire, and `Decimal` IS a list of digits, so the
+-- term stays structural and every panel peels it into the list lane over `Digit`.
+macro:max "Decimal" : term => `(Freyd.Alg.RelSet.ListRel.dList Digit)
 
 /-- **tex-defn**: the object `[0,2¹⁶)`. -/
 @[expose] public def Ix : RelSet.{0} := ⟨Fin 65536⟩
