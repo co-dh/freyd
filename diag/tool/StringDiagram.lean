@@ -452,12 +452,6 @@ def natLines (ps : Array Diagram) : MetaM String := do
       throwError "the bead `{r.label}` draws the mark `{word}` and cites no declaration: a mark is \
         the ink of a proof term the search assembled, so every one but the spider names the \
         declaration it rests on (`Verdict.lean`)"
-    -- `unread` is thrown HERE and not in the bead constructor: a throw there is caught by the term
-    -- walk, which reads the factor another way and draws the panel coarser with exit 0.
-    if word == "unread" then
-      throwError "the bead `{r.label}` is a family whose ends no lane spells, so nothing was searched \
-        and it would draw as a spider that never looked: extend `relatorOfObj` (`ExprReader.lean`) \
-        to read the end it refused"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
