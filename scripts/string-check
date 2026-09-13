@@ -65,15 +65,21 @@ RECS = f"{OUT}/records.jsonl"
 run = lambda *a, **k: subprocess.run(a, capture_output=True, text=True, **k)
 
 
-def export(sels, frame=None):
+def export(sels, frame=None, tops=()):
     """ONE `diag-export --string --records` over `sels`: each selector's record — the file it drew,
     its panels and every bead's types, or why it drew none — keyed by the selector field, and the
     run.  `save_recs` keeps the merged records in `RECS`, which `scanline --records` reads for the
-    bead types, so the sweep does not start Lean again to re-read the statements this run drew."""
+    bead types, so the sweep does not start Lean again to re-read the statements this run drew.
+
+    `frame` is the box every selector of the run is drawn in and `tops` the row each PANEL's first
+    bead sits on (`-` for one the exporter places itself), so one run holds only the selectors whose
+    note panels ask for the same pair."""
     if not sels:
         return {}, None                   # nothing to draw starts no Lean
     os.makedirs(OUT, exist_ok=True)
     opt = [] if frame is None else ["--frame", str(frame)]
+    if any(t is not None for t in tops):
+        opt += ["--top", ",".join("-" if t is None else str(t) for t in tops)]
     p = run("./scripts/diag-export", "--string", "--records", *opt, *sels)
     return {o["selector"]: o for o in map(json.loads, p.stdout.splitlines())}, p
 
@@ -87,31 +93,37 @@ def save_recs(recs):
         "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in recs.values()))
 
 
-def drawn_frames(recs, bases):
-    """Each selector's panels' FRAME row counts, in panel order, off the file it drew — the `frame`
-    the exporter wrote into each panel's own `cert:`, read by `scripts/diagram`'s reader and not by
-    a pattern of this script's."""
+def rowcount(v):
+    """A row count as the NUMBER it is, which the readers hand back as a float: `frame: 3` comes
+    back `3.0`, and `--frame`/`--top` take integer counts.  Anything else is no count at all."""
+    return int(v) if isinstance(v, (int, float)) else None
+
+
+def drawn_geom(recs, bases):
+    """Each selector's panels' FRAME and TOP row counts, in panel order, off the file it drew — the
+    pair the exporter wrote into each panel's own `cert:`, read by `scripts/diagram`'s reader and
+    not by a pattern of this script's."""
     out = {}
     for b in bases:
         r = recs.get(b)
         if not r or "file" not in r or not os.path.exists(r["file"]):
             continue
         text = open(r["file"], encoding="utf-8").read()
-        # `certof` reads a row count as the NUMBER it is, which is a float: `frame: 3` comes back
-        # `3.0`, and `--frame` takes an integer count.
-        out[b] = [int(c["frame"]) if isinstance(c.get("frame"), (int, float)) else None
+        out[b] = [(rowcount(c.get("frame")), rowcount(c.get("top")))
                   for _, _, _, c in diagram.literals(text, drawable=False)]
     return out
 
 
-def reframe(recs, rows, live, num, want):
-    """THE FRAME IS GEOMETRY AND THE NOTE STATES IT.  How deep a panel's box is says nothing about
-    which arrow it draws — it is how a display lines its panels up — so the note's own `cert: frame`
-    is the box, and a panel Lean draws one row shallower is the same picture in the wrong box.  Each
-    selector is therefore re-drawn at the frame the note's panel for it names (`diag-export
-    --frame N`, one `--frame` per run, hence one run per distinct depth), and only where the two
-    differ.  The re-exported records REPLACE the first pass's, and the runs are returned so a
-    failure in one is reported like the first pass's.
+def redraw_as_noted(recs, rows, live, num, want):
+    """THE FRAME AND THE TOP ARE GEOMETRY AND THE NOTE STATES BOTH.  How deep a panel's box is, and
+    which row inside it the first bead sits on, say nothing about which arrow it draws — they are
+    how a display lines its panels up — so the note's own `cert: frame` is the box, its `cert: top`
+    the bead height, and a panel Lean draws one row shallower or one row higher is the same picture
+    in the wrong place.  Each selector is therefore re-drawn at the frame and the tops the note's
+    panels for it name (`diag-export --frame N --top t,t`, both per run, hence one run per distinct
+    (frame, tops) pair), and only where the two differ.  A panel the note gives no top passes `-`
+    and keeps the exporter's own placement.  The re-exported records REPLACE the first pass's, and
+    the runs are returned so a failure in one is reported like the first pass's.
 
     A selector answering two note panels must find one frame in both: the two sides of a statement
     share one box by construction, and two frames there is a defect of the note's own pair, reported
@@ -123,32 +135,47 @@ def reframe(recs, rows, live, num, want):
     and asking only the panels that declare one enumerated the records instead of the obligations:
     the undeclared panel went unreported and was then compared against the box its PARTNER
     declared (`13.3.2a`'s second panel, drawn 2 deep, against its partner's 6)."""
-    fr = drawn_frames(recs, sorted(recs))
-    want_at, clash = {}, []
+    geom = drawn_geom(recs, sorted(recs))
+    want_at, tops_at, clash, high = {}, {}, [], []
     for n, sels in rows:
         if n not in live or not num(n).startswith(want) or len(sels) != len(live[n]):
             continue
         for sel, panel in zip(sels, live[n]):
             if sel == "-":
                 continue
-            b, _ = route(sel)
-            f = panel.get("rows")
-            if b not in fr or not isinstance(f, (int, float)):
+            b, k = route(sel)
+            f = rowcount(panel.get("rows"))
+            if b not in geom or f is None:
                 continue
-            f = int(f)
             if want_at.setdefault(b, f) != f:
                 clash.append((n, sel, want_at[b], f))
+            # THE TOP IS PER PANEL, so it is kept per panel and never folded into one value: the two
+            # sides of a statement share one box by construction and pick their bead heights apart.
+            # Per panel INDEX, though, there is one drawing and so one top: a selector two displays
+            # both answer must find the same row in both, and two rows there is a defect of the
+            # note's own pair — reported, like two frames, rather than resolved by picking one.
+            t = rowcount((panel.get("cert") or {}).get("top"))
+            seen = tops_at.setdefault(b, {})
+            if t is not None and seen.setdefault(k, t) != t:
+                high.append((n, sel, seen[k], t))
     for n, sel, a, b in clash:
         print(f"{n} {sel}: FRAME — the note's panels for one selector are drawn {a} and {b} rows"
               f" deep, so there is no one box to redraw it in")
         want_at.pop(route(sel)[0], None)
+        tops_at.pop(route(sel)[0], None)
+    for n, sel, a, b in high:
+        print(f"{n} {sel}: TOP — the note's panels for one selector put its first bead on rows {a}"
+              f" and {b}, so there is no one height to redraw it at")
+        tops_at.get(route(sel)[0], {}).pop(route(sel)[1], None)
     by = {}
     for b, m in want_at.items():
-        if any(f is not None and f != m for f in fr[b]):
-            by.setdefault(m, []).append(b)
+        ts = tuple(tops_at[b].get(k) for k in range(len(geom[b])))
+        if any(f is not None and f != m or ts[k] is not None and ts[k] != t
+               for k, (f, t) in enumerate(geom[b])):
+            by.setdefault((m, ts), []).append(b)
     runs = []
-    for m, bs in sorted(by.items()):
-        again, p = export(sorted(bs), frame=m)
+    for (m, ts), bs in sorted(by.items(), key=repr):
+        again, p = export(sorted(bs), frame=m, tops=ts)
         recs.update(again)
         runs.append((again, sorted(bs), p))
     return runs
@@ -536,8 +563,9 @@ def main(argv):
         if os.path.exists(f"diag/generated/string/{s}.typ"):
             os.remove(f"diag/generated/string/{s}.typ")
     recs, exp = export(todo)
-    # SECOND PASS: a display whose panels came out at different depths is re-drawn at one.
-    again = reframe(recs, rows, live, num, want)
+    # SECOND PASS: a display whose panels came out in a box or at a bead height the note does not
+    # ask for is re-drawn at the note's own.
+    again = redraw_as_noted(recs, rows, live, num, want)
     save_recs(recs)
     # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
     # waiting on its selector's drawing and on the sweep of its picture.

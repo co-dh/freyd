@@ -1350,16 +1350,43 @@ def usage : String :=
        union or meet (--string) at that side's head\n\
    `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too, and has\n\
      sides of its own: `<name>#h.lhs` (--circuit, --string)\n\
-   --frame N / --top N are ROW COUNTS lining a short panel up with a tall one, --scale N\n\
-     the per-panel display scale the note picks (`s: N%`) — all three --string only"
+   --frame N is a ROW COUNT, the box a display's panels share; --top is one row count PER\n\
+     PANEL, in panel order, `-` for a panel the exporter places itself (--top 3,-) — where\n\
+     its first bead sits, which the note chooses panel by panel.  With no --top the deepest\n\
+     part's last bead lands on row 1 and extra frame is headroom above the picture.\n\
+     --scale N is the per-panel display scale the note picks (`s: N%`) — all three --string only"
 
-/-- One `--frame N` style option, and the arguments with it removed. -/
-def takeOpt (args : List String) (flag : String) : Option Nat × List String :=
+/-- One `--frame N` style option's RAW value, and the arguments with it removed.  Raw, because a
+    value the flag cannot read is reported by the caller: read here, an unreadable one would come
+    back indistinguishable from a flag nobody passed and the picture would be drawn at a depth or a
+    row nobody asked for. -/
+def takeOpt (args : List String) (flag : String) : Option String × List String :=
   match args with
   | a :: b :: rest =>
-    if a == flag then (b.toNat?, rest)
+    if a == flag then (some b, rest)
     else let (v, r) := takeOpt (b :: rest) flag; (v, a :: r)
   | rest => (none, rest)
+
+/-- A `--frame N` style option as a count: absent stays absent, a value that is not a count is no
+    reading at all. -/
+def natArg : Option String → Option (Option Nat)
+  | none => some none
+  | some s => s.toNat?.map some
+
+/-- `--top`'s value: ONE ROW COUNT PER PANEL of the statement, in panel order, `-` for a panel the
+    exporter places itself — `--top 3,-`.  The top is the note's per-panel choice, like the frame,
+    so a statement whose two panels want different tops says both. -/
+def topsArg : Option String → Option (Array (Option Nat))
+  | none => some #[]
+  | some s => (s.splitOn ",").foldl (fun a t => do
+      let a ← a
+      if t == "-" then return a.push none else return a.push (some (← t.toNat?))) (some #[])
+
+/-- What a flag whose value could not be read says: the flag, the form it takes, and the value it
+    was given — never a silent fallback to the default. -/
+def optErr (flag what v : String) : IO UInt32 := do
+  IO.eprintln s!"diag-export: {flag} takes {what}, not `{v}`\n{usage}"
+  return 2
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
@@ -1371,9 +1398,14 @@ def main (args : List String) : IO UInt32 := do
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
   let commutativeMode := args.contains "--commutative"
-  let (frame, args) := takeOpt args "--frame"
-  let (topRow, args) := takeOpt args "--top"
-  let (scale, args) := takeOpt args "--scale"
+  let (frameRaw, args) := takeOpt args "--frame"
+  let (topRaw, args) := takeOpt args "--top"
+  let (scaleRaw, args) := takeOpt args "--scale"
+  let some frame := natArg frameRaw | return ← optErr "--frame" "a row count" (frameRaw.getD "")
+  let some tops := topsArg topRaw
+    | return ← optErr "--top" "one row count per panel, in panel order, `-` for the exporter's own \
+        placement (`--top 3,-`)" (topRaw.getD "")
+  let some scale := natArg scaleRaw | return ← optErr "--scale" "a percentage" (scaleRaw.getD "")
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--sigs" && a != "--records" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--commutative")
@@ -1475,7 +1507,7 @@ def main (args : List String) : IO UInt32 := do
     let run : CoreM StrDiag.Drawn :=
       Meta.MetaM.run' (if sigMode then text (sig arg.toName)
         else if stringMode then
-          StrDiag.drawString base.toName sides binder branch frame topRow scale
+          StrDiag.drawString base.toName sides binder branch frame tops scale
             (if sigsMode || recordsMode then some arg else none)
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
