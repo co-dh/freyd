@@ -927,9 +927,16 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     while k < ax.size && k < ay.size do
       unless ← Wire.beq ax[ax.size - 1 - k]! ay[ay.size - 1 - k]! do break
       k := k + 1
+    -- A BEAD THAT TOUCHES NO LANE MAY NOT STAND OVER ONE.  Where the shared stack is the WHOLE of
+    -- both cuts, the abstraction is a family `Id ⇒ Id` at the composite object, and every lane
+    -- would run past a bead with no arms and no legs — the picture of `K(φ_A)`, the functor applied
+    -- OUTSIDE, which is a different arrow from `φ` AT `K(A)`.  Such a bead SPANS its object
+    -- instead: the fall-through gives it every lane of the ends as an arm and again as a leg, so
+    -- they die at the bar and are reborn below, by the mechanics a bead with arms already has.
+    let spans := 0 < k && k == ax.size && k == ay.size
     let x' := if k == ax.size then x else cx[ax.size - k - 1]!.2
     let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
-    if (← Meta.isDefEq (← Meta.inferType x') regionTy) && (← Meta.isDefEq x' y') then
+    if !spans && (← Meta.isDefEq (← Meta.inferType x') regionTy) && (← Meta.isDefEq x' y') then
       let e' ← Meta.kabstract e x'
       if e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) then
         -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too,
