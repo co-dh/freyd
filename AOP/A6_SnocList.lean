@@ -13,6 +13,8 @@
 module
 
 public import AOP.A6_1_RelSet
+-- §5.7's `StrictNatural`: the constructor's naturality square is stated here, where `con` is.
+public import AOP.A5_7
 
 set_option linter.unusedVariables false
 
@@ -427,6 +429,33 @@ public theorem slist_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
   map_id _ := slist_id
   map_comp R S := slist_comp R S
   map_mono h := slist_mono h
+
+/-- **`snoc` IS STRICTLY NATURAL**: `list(R)×R` then `snoc` is `snoc` then `list(R)`.  Both sides
+    relate `(xs,a)` to `snoc(ys,b)` exactly when `list(R)` relates `xs` to `ys` and `R` relates `a`
+    to `b` — `slistP`'s own `snoc` clause, read as a square. -/
+public theorem snoc_strictNatural :
+    StrictNatural (snocRelator L) (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0}))
+      (fun A => graph (fun p : (dSL L A.carrier).carrier × A.carrier => con (Sum.inr p))) := by
+  intro A B R
+  rw [show (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0})).map R
+      = rprodMap (slist R) R from prodMap_eq_rprodMap _ _]
+  apply hom_ext
+  intro p y
+  constructor
+  · rintro ⟨q, ⟨h1, h2⟩, rfl⟩
+    exact ⟨con (Sum.inr p), rfl, h1, h2⟩
+  · rintro ⟨x, rfl, hx⟩
+    cases y with
+    | wrap _ => exact hx.elim
+    | snoc y b => exact ⟨(y, b), ⟨hx.1, hx.2⟩, rfl⟩
+
+/-- `snoc°`, the bead the §9–§10 pictures actually carry: `Rel(Set)` is tabular, so both lanes
+    preserve `°` and the square turns round. -/
+public theorem snoc_recip_strictNatural :
+    StrictNatural (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0})) (snocRelator L)
+      (fun A => (graph (fun p : (dSL L A.carrier).carrier × A.carrier => con (Sum.inr p)))°) :=
+  strictNatural_recip (Relator.preservesRecip_of_tabular _)
+    (Relator.preservesRecip_of_tabular _) snoc_strictNatural
 
 -- printing-only unexpanders: the note's spelling, the same ones `AOP.A6_ConsList` gives the cons
 -- list.  A snoc list IS a list — the note writes `[Char]`, `[Code]`, `[Job]` — and which leaf type

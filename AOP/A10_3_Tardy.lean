@@ -787,4 +787,104 @@ public theorem bag_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : bagRe
   map_comp R S := bag_comp R S
   map_mono h := bag_mono h
 
+/-- Adding one job to a bag SPLITS `bag(R)`: the added jobs are related and the rest are related.
+    The matching a `bagP` hands over is on some representative; `elemsP_perm` re-orders it onto
+    `j :: ps`, which is where the split can be read off. -/
+public theorem bagP_snag {A B : Type} (R : dE A ⟶ dE B) (u : (Bag A).carrier) (j : A)
+    (w : (Bag B).carrier) :
+    bagP R (snag (u, j)) w ↔ ∃ v k, bagP R u v ∧ R j k ∧ snag (v, k) = w := by
+  obtain ⟨ps, rfl⟩ := exists_rep u
+  constructor
+  · rintro ⟨xs, ys, hxs, rfl, hel⟩
+    obtain ⟨ys', hel', hp⟩ := elemsP_perm R (Quotient.exact hxs.symm) hel
+    cases ys' with
+    | nil => exact hel'.elim
+    | cons k vs =>
+      exact ⟨Quotient.mk (permSetoid B) vs, k, ⟨ps, vs, rfl, rfl, hel'.2⟩, hel'.1,
+        Quotient.sound hp⟩
+  · rintro ⟨v, k, ⟨ps', vs, hps, hvs, hel⟩, hjk, rfl⟩
+    obtain ⟨vs', hel', hp⟩ := elemsP_perm R (Quotient.exact hps.symm) hel
+    subst hvs
+    exact ⟨j :: ps, k :: vs', rfl, Quotient.sound (hp.cons k), hjk, hel'⟩
+
+/-- **`snag` IS STRICTLY NATURAL**: `bag(R)×R` then `snag` is `snag` then `bag(R)` — the square
+    `bagP_snag` states, with the two composites spelled out. -/
+public theorem snag_strictNatural :
+    StrictNatural bagRelator (Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+      (fun A => arm₂ (bagAlg (Job := A.carrier))) := by
+  intro A B R
+  rw [show (Relator.prod bagRelator (Relator.idRelator RelSet.{0})).map R
+      = rprodMap (bagRel R) R from prodMap_eq_rprodMap _ _]
+  apply hom_ext
+  intro p z
+  constructor
+  · rintro ⟨q, ⟨hb, hR⟩, rfl⟩
+    exact ⟨snag p, rfl, (bagP_snag R p.1 p.2 _).mpr ⟨q.1, q.2, hb, hR, rfl⟩⟩
+  · rintro ⟨y, rfl, hb⟩
+    obtain ⟨v, k, hb', hR, rfl⟩ := (bagP_snag R p.1 p.2 z).mp hb
+    exact ⟨(v, k), ⟨hb', hR⟩, rfl⟩
+
+/-- `snag°`, the bead the tardy pictures carry: `Rel(Set)` is tabular, so the square turns round. -/
+public theorem snag_recip_strictNatural :
+    StrictNatural (Relator.prod bagRelator (Relator.idRelator RelSet.{0})) bagRelator
+      (fun A => (arm₂ (bagAlg (Job := A.carrier)))°) :=
+  strictNatural_recip (Relator.preservesRecip_of_tabular _)
+    (Relator.preservesRecip_of_tabular _) snag_strictNatural
+
+/-- The elementwise lifting on a schedule IS the elementwise lifting on its list of jobs. -/
+public theorem elemsP_blist {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ {s : SnocList Unit A} {t : SnocList Unit B}, slistP R s t → elemsP R (blist s) (blist t)
+  | SnocList.wrap _, SnocList.wrap _, _ => trivial
+  | SnocList.wrap _, SnocList.snoc _ _, h => h.elim
+  | SnocList.snoc _ _, SnocList.wrap _, h => h.elim
+  | SnocList.snoc _ _, SnocList.snoc _ _, h => ⟨h.2, elemsP_blist R h.1⟩
+
+/-- A list related elementwise to a schedule's jobs IS a schedule's jobs, at the same shape — the
+    converse of `elemsP_blist`, which is what makes `bagify`'s square an equality and not an
+    inclusion. -/
+public theorem blist_elemsP {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ (s : SnocList Unit A) {zs : List B}, elemsP R (blist s) zs →
+      ∃ t : SnocList Unit B, slistP R s t ∧ blist t = zs
+  | SnocList.wrap u, [], _ => ⟨SnocList.wrap u, rfl, rfl⟩
+  | SnocList.wrap _, _ :: _, h => h.elim
+  | SnocList.snoc _ _, [], h => h.elim
+  | SnocList.snoc x _, _ :: _, h => by
+      obtain ⟨t, ht, hb⟩ := blist_elemsP R x h.2
+      exact ⟨SnocList.snoc t _, ⟨ht, h.1⟩, congrArg _ hb⟩
+
+/-- `bag(R)` out of a schedule's bag is `list(R)` out of the schedule, the order forgotten after. -/
+public theorem bagP_bagify {A B : Type} (R : dE A ⟶ dE B) (s : SnocList Unit A)
+    (w : (Bag B).carrier) :
+    bagP R (bagifyFn s) w ↔ ∃ t : SnocList Unit B, slistP R s t ∧ bagifyFn t = w := by
+  constructor
+  · rintro ⟨xs, ys, hxs, rfl, hel⟩
+    obtain ⟨ys', hel', hp⟩ := elemsP_perm R (Quotient.exact hxs.symm) hel
+    obtain ⟨t, ht, hb⟩ := blist_elemsP R s hel'
+    exact ⟨t, ht, Quotient.sound (hb ▸ hp)⟩
+  · rintro ⟨t, ht, rfl⟩
+    exact ⟨blist s, blist t, rfl, rfl, elemsP_blist R ht⟩
+
+/-- **`bagify` IS STRICTLY NATURAL**: relating job by job then forgetting the order is forgetting
+    it then `bag(R)` — a re-ordering of the jobs carries the matching with it. -/
+public theorem bagify_strictNatural :
+    StrictNatural bagRelator (snocRelator Unit) (fun A => bagify (Job := A.carrier)) := by
+  intro A B R
+  apply hom_ext
+  intro s w
+  constructor
+  · rintro ⟨t, ht, rfl⟩
+    exact ⟨bagifyFn s, rfl, (bagP_bagify R s _).mpr ⟨t, ht, rfl⟩⟩
+  · rintro ⟨y, rfl, hb⟩
+    obtain ⟨t, ht, rfl⟩ := (bagP_bagify R s w).mp hb
+    exact ⟨t, ht, rfl⟩
+
+/-- `H = bagify°`, the bead the tardy pictures carry: `Rel(Set)` is tabular, so the square turns
+    round and `H` is strictly natural too. -/
+public theorem bagify_recip_strictNatural :
+    StrictNatural (snocRelator Unit) bagRelator (fun A => (bagify (Job := A.carrier))°) :=
+  strictNatural_recip (F := bagRelator) (G := snocRelator Unit)
+    (φ := fun A => bagify (Job := A.carrier))
+    (Relator.preservesRecip_of_tabular _) (Relator.preservesRecip_of_tabular _)
+    bagify_strictNatural
+
 end Freyd.Alg.RelSet.Tardy
