@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """circuit — the CIRCUIT picture a formula denotes, drawn mechanically.
 
-`scripts/diagram` runs the note's formula through the Hinze–Marsden reading; this runs it through
-the MONOIDAL one.  Same input — the formula in the note's notation plus the source and target
-objects, which a formula alone does not fix — and the same self-certifying `cert:`, but the picture
-downstream is the other language: a WIRE is an object, a BOX is a morphism, composition runs left to
-right, and a product is TWO wires, never one wire labelled `A×B`.  A `#cpanel(...)` call goes out,
+This runs the note's formula through the MONOIDAL reading — a wire is an object, a box a morphism,
+composition runs left to right, and a product is TWO wires, never one wire labelled `A×B` — taking
+the formula in the note's notation plus the source and target objects, which a formula alone does
+not fix, and stamping the picture with a self-certifying `cert:`.  A `#cpanel(...)` call goes out,
 ready to paste beside the row it draws; once pasted, `--compare` rebuilds every literal the note
 holds from its own `cert:` and fails on any drift, and `--write` splices the rebuilt ones over them.
 
@@ -31,8 +30,8 @@ import difflib, functools, json, os, re, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 # ONLY the notation, not the other convention's geometry: `relexpr.py` is the note's relation
-# language, which `scripts/diagram` and `scripts/scanline` read to draw and sweep Hinze–Marsden
-# panels and this file reads to draw a circuit.  Nothing else crosses between the two.
+# language, and this file is now its only reader, to draw a circuit.  Nothing else crosses between
+# the two conventions.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import relexpr as rx
 from relexpr import Unhandled, norm, parse, spell

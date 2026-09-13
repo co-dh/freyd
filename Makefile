@@ -42,7 +42,7 @@ endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict panels types cd-check circuit-check cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite panels types cd-check circuit-check cover slice circuit books v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -54,13 +54,12 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) panels slice circuit pairs cite spell scan-strict hm-sigs
+p: $(STAMP) panels slice circuit cite
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
-	./scripts/framefit
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
 
@@ -76,22 +75,14 @@ slice:
 circuit:
 	./scripts/circuit --compare $(NOTESRC)
 
-# Two panels either side of a step sign are one statement: unequal boxes read as different arrows,
-# and a bead they share must sit at the same height or the picture claims it moved.  BEFORE the
-# compile, next to `circuit`, so a misaligned pair never produces a PDF that looks fine.
-pairs:
-	./scripts/diagram --pairs $(NOTESRC)
-
-# No two labels inside one panel may touch, measured off the COMPILED page — the check that makes
-# `scripts/diagram`'s vertical unit a measured number instead of a guess, and keeps it one.  It
-# needs the PDF, so unlike its neighbours it pays a typst compile when the note is newer; `p` calls
-# it straight after its own compile instead, and pays nothing extra.
-# The three read `CH` themselves, so they measure the CHAPTER's pages when one is named: the page
+# No two labels inside one panel may touch, and ink stays inside its frame, measured off the
+# COMPILED page.  It needs the PDF, so unlike its neighbours it pays a typst compile when the note
+# is newer; `p` calls it straight after its own compile instead, and pays nothing extra.
+# Both read `CH` themselves, so they measure the CHAPTER's pages when one is named: the page
 # numbers they report are then the chapter pdf's, which is the file the author has open.
 labels: $(NOTEPDF)
 	./scripts/labelfit
 	./scripts/inkfit
-	./scripts/framefit
 
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.
@@ -102,14 +93,6 @@ $(NOTEPDF): $(NOTESRC) $(wildcard diag/*.typ)
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
 	./scripts/cite-check $(CITESRC)
-
-# Every string a `cert:` states, parsed and written back: `spell(parse(x)) == x`.  BESIDE `cite`
-# and before the compile for the same reason — a formula the parser cannot reproduce is a formula
-# `scanline` is only guessing at, and a hand-spaced alias is how that drift gets in.  It pays a
-# `typst query`, which `scan` refuses to; this one reads the note's STRINGS, not its geometry, and
-# the strings are what every other check quotes.
-spell:
-	./scripts/scanline --spell $(NOTESRC)
 
 # The displays that carry NO `lean:` marker, each with the statements worth reading against it.
 # A PROMPT, not a check: it never passes or fails and nothing depends on it, because what it asks
@@ -125,21 +108,6 @@ cover: $(DB)
 books:
 	./scripts/book ingest
 	./scripts/book embed
-
-# The scan line over every panel that emits its lists as metadata.  Cached on a hash of every
-# `dpanel`/`cpanel`/`tpan` call: unchanged since the last clean pass skips the `typst query`
-# that dominates its cost; `scan-full` bypasses the cache.
-scan:
-	./scripts/scanline $(NOTESRC)
-
-scan-full:
-	./scripts/scanline $(NOTESRC) --full
-
-# The same sweep with crossings fatal, and the one `p` runs.  A wire is a functor and horizontal
-# composition has no swap, so a crossing claims a symmetry that is not there and there is no
-# acceptable one.  `--strict` never reads the literal cache, so `p` pays one `typst query` a build.
-scan-strict:
-	./scripts/scanline $(NOTESRC) --strict
 
 # Every picture the notes draw and have no file for — a `#lean(...)` selector, or an `#import` — drawn
 # from LEAN.  The NOTE is the list of obligations, so adding a picture is writing its name in the note
@@ -174,34 +142,12 @@ types: $(STAMP)
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: panels circuit pairs labels cite spell scan-strict hm-sigs
+c: panels circuit labels cite
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
 v:
-	./scripts/scanline $(NOTESRC) --view $(SEC)
-
-# `scan` run backwards: the panel a formula denotes.  The target is the ROUND TRIP — every panel
-# whose `cert:` states an `expect` is redrawn from that formula alone and swept again, and the
-# composite must come back the same.  A generator that cannot reproduce the note's own pictures is
-# a generator no one should paste from.  `./scripts/diagram --show` prints the calls it makes,
-# `--compare` puts each beside the note's own, and `--src`/`--tgt` draw one formula by hand.
-diagram:
-	./scripts/diagram --roundtrip $(NOTESRC)
-
-# `diagram` run against the BOOK: each fixture in `diag/pairs/` is one of IntroString's own
-# formula/picture pairs, and the panel our generator draws for the formula must have the book's port
-# graph — boundary order, and every bead's arms and legs.  `--verify-fixtures` is NOT in the target:
-# it shells out to pdftocairo to count the page's strokes and dots against the fixture, which is the
-# check on the TRANSCRIPTION and only needs running when a fixture is written or edited.
-hm-check:
-	./scripts/hm-check
-	./scripts/hm-check --laws
-
-# The bead signatures `scripts/diagram` draws from, against the Lean declarations they were read
-# off.  A SEPARATE target for the same reason `--verify-fixtures` is one: it needs the index.
-hm-sigs: $(DB)
-	./scripts/hm-check --verify-sigs
+	./scripts/note-view $(NOTESRC) $(SEC)
 
 # `make w` — recompile on every save, with the viewer following along.  `typst watch` follows the
 # note's imports, so a redrawn picture in diag/generated rebuilds too, and zathura reloads a file

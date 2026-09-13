@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """labelfit — no two labels inside one panel touch, measured off the COMPILED page.
 
-The vertical unit a panel is drawn on (`DY` in `scripts/diagram`) is only as small as the labels
+The vertical unit a panel is drawn on (`DY` in `diag/dpanel.typ`) is only as small as the labels
 allow: shrink the rows past the point where a bead's name runs into the name a row below it and the
 picture stops being readable, with nothing in the sweep or the pair check to say so.  This is that
 check, so the unit is a measured number and not a guess.

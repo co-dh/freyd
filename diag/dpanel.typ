@@ -5,8 +5,6 @@
 // never touch the same file.
 //
 //   typst compile --root . diag/allegory-axioms.typ diag/allegory-axioms.pdf
-//   ./scripts/diagram --pairs diag/allegory-axioms.typ   // rebuild every panel from its own `cert:`
-//   ./scripts/scanline diag/allegory-axioms.typ --strict // sweep what these calls emit
 #import "note-style.typ": P, dispnum, plain
 #import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
 #import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
@@ -28,9 +26,9 @@
 // The panel every Hinze–Marsden column in this note draws — §@sec-hylo's, §13.3.1's, `tw-hm`,
 // `party-hm`, §13.4.4's two.  A wire is a FUNCTOR, a bead an arrow, a region a category: `Rel` left
 // of the object wire, `𝟏` right of it.
-// One ROW — `scripts/diagram`'s own `DY`, respelled so a panel can report its size as the COMPLEXITY
-// it was drawn from: `rows` beads deep and `wires` wide.  A pair's `cert.frame` is a row count for
-// that reason, so re-measuring the row (`./scripts/labelfit`) moves no number in this file.
+// One ROW, respelled so a panel can report its size as the COMPLEXITY it was drawn from: `rows`
+// beads deep and `wires` wide.  A pair's `cert.frame` is a row count for that reason, so
+// re-measuring the row (`./scripts/labelfit`) moves no number in this file.
 #let DY = 1.1
 // IntroString.pdf (2.5), p. 46: an arrow of a composite is a bead on the OBJECT line, which runs
 // STRAIGHT through it; the functor wires that composite is made of bend in to the bead and out again.
@@ -113,8 +111,8 @@
     if plain(s.at(1)) != bs.last().at(1) { bs.push((s.at(0), plain(s.at(1)))) }
   }
   // A panel the generator did not TYPE still ends at a named port, and a bottom port the bands do
-  // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, which is the
-  // same guess `scanline` makes when a panel says nothing, so the ink and the sweep agree.
+  // not reach is a rename nobody recorded: seam it at the lowest bead riding the wire, the same
+  // guess made when a panel says nothing.
   if plain(bot) != bs.last().at(1) and ride != () { bs.push((calc.min(..ride), plain(bot))) }
   bs
 }
@@ -153,8 +151,8 @@
             k: ok, straight: straight)
   hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
             k: ok, straight: straight)
-  // A SLOPED edge is drawn as ONE bow whose ink `scanline` re-models from `opath`; cutting it into
-  // two bows would move the ink without moving the model, so a sloped edge keeps a single hue.
+  // A SLOPED edge is drawn as ONE bow whose ink is re-modelled from `opath`; cutting it into two
+  // bows would move the ink without moving the model, so a sloped edge keeps a single hue.
   for seg in obroken(op, obreak) {
     let cuts = if opath == none and obnd.len() > 1 { obnd.slice(1).map(b => b.at(0)) } else { () }
     for part in ocut(seg, cuts) {
@@ -188,7 +186,7 @@
 // left of `xo`, no `opath`, and no unit lane born at an object-bead height with a lane born left of
 // it.
 // A drawn name is 9pt mono, so one line of it stands 0.2573cm tall — in `dpan`'s own `length: 0.8cm`
-// unit, which every coordinate here is in.  `scanline`'s `LLH` is the same number.
+// unit, which every coordinate here is in.
 #let LLH = 0.2573 / 0.8
 // A LANE THAT CARRIES ITS OWN NAME MUST HOLD IT: the name is written in the straight run between the
 // lane's two bends, so the two knees may not eat that run.  `0.5 * gap` each leaves NOTHING — the
@@ -213,7 +211,7 @@
           else if s == "b" and i + 1 < es.len() { es.at(i + 1).at(0) }
         let c = if nb == none { 0.55 * room }
           else { 0.5 * (calc.abs(nb - y) - (if nmd.contains(li) { NMH } else { 0 })) }
-        // 1e-6 is `scanline`'s `EPS`: ONE tolerance, so the two `dknees` are one function.
+        // 1e-6 is the shared `EPS`, so the two `dknees` are one function.
         let o = bys.filter(z => if s == "d" { z > y + 1e-6 } else { z < y - 1e-6 })
         if o != () {
           c = calc.min(c, 0.5 * calc.abs(
@@ -379,8 +377,8 @@
   // The two PORTS' hues, read off the same bands the wire is drawn in, so a port and the ink that
   // leaves it are one colour by construction.
   let (otc, obc) = (ocolat(obnd, h), ocolat(obnd, 0))
-  // 1e-6 is `scanline`'s `EPS` and the FIRST match wins, as it does there: at a segment boundary both
-  // sides match, so taking the last one would make `xat` two functions in two languages, not one.
+  // 1e-6 is the shared `EPS` and the FIRST match wins: at a segment boundary both sides match, so
+  // taking the last one would make `xat` two functions instead of one.
   let ok = if opath == none or ostraight { 0 } else { oknee(opath) }
   let xat = if opath == none { y => xo } else { y => {
     let r = none
@@ -469,8 +467,8 @@
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight, obnd: obnd,
      key: cert.at("expect", default: "dpanel"))
-  // `knees` is what the ink was DRAWN with: `scanline` re-models the same rule, and a panel whose
-  // two knees disagree is a crossing the sweep would call clean while the page still braids.
+  // `knees` is what the ink was DRAWN with, so a panel whose two knees disagree is a crossing
+  // that would otherwise pass while the page still braids.
   // The panel's COMPLEXITY, so a display is laid out from what is in the picture and not by eye:
   // `rows` is how many bead heights deep the frame is, `wires` how many lines cross it — the lanes
   // plus the object edge.  A pair's `cert.frame` is one panel's `rows` written into the other.

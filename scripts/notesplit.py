@@ -21,12 +21,11 @@ chapter's position among the level-1 headings, which is the number its displays 
 (`13.4.3c` is in chapter 13).  Working on chapter 13:
 
     make ch N=13                    # the chapter's own pdf, diag/ch/13-optimisation.pdf
-    make c CH=13                    # panels, circuit, pairs, labels, cite, spell, scan-strict, hm-sigs
+    make c CH=13                    # panels, circuit, labels, cite
     make cite CH=13                 # the markers in that chapter alone
     make panels CH=13               # draw the pictures its `#lean(...)` names and has none of
     CH=13 ./scripts/cd-check        # or ./scripts/cd-check --ch 13
     CH=13 ./scripts/circuit-check
-    ./scripts/diagram --write diag/ch/13-optimisation.typ     # a rewrite lands in the chapter file
 
 and the patch an agent hands back is a patch against the chapter file, or against the monolith
 `note-join` prints.  With `CH` unset every gate is the whole note, exactly as it was.  A gate told a
@@ -478,7 +477,7 @@ def generated_imports(root_dir=None):
 
     The notes' own files are the list — each root with its chapters, and the prelude the split
     moved the root's `#import` lines into — and nothing else under `diag/`: a walk over the
-    directory read a scratch slice `scanline` left behind as if the note had imported its picture,
+    directory read a scratch slice `note-view` left behind as if the note had imported its picture,
     and the redraw failed on a name only the string exporter can take.
     Each import is RESOLVED AS A PATH from the file that makes it, so the note's own
     `generated/x.typ` and a chapter's `../generated/x.typ` are one name.  A pattern matching the
