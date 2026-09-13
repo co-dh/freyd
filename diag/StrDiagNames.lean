@@ -102,6 +102,26 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- The tip-tree relator is the note's lane `tree` as much as the rose tree's is: which of the two
+    datatypes a section's trees are is the section's business, not the wire's. -/
+@[app_unexpander RelSet.TT.treeRelator] def unexpandTreeRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `unexpandDSL` already
+    writes every snoc list `[E]`, and this is that object's wire. -/
+@[app_unexpander RelSet.SL.snocRelator] def unexpandSnocRelator : Unexpander
+  | `($_ $_) => `($(mkIdent `list))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The bag relator is the note's lane `bag`; `bag(Job)` is that lane over the `Job` wire. -/
+@[app_unexpander RelSet.Tardy.bagRelator] def unexpandBagRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `bag))
+  | _ => throw ()
+
 -- A DATATYPE'S CARRIER IS THE NOTE'S OBJECT, under the note's own name for it: `tree(A)`,
 -- `list⁺(A)`.  The unexpander writes the NAME, applied; the BRACKETS are the label printer's
 -- (`appShow`), which puts them round the operand of every juxtaposed application, because

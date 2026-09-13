@@ -32,7 +32,7 @@ public inductive SnocList (L E : Type) where
 /-- The object carrying the leaf type `L`. -/
 @[expose] public abbrev dL (L : Type) : RelSet.{0} := ⟨L⟩
 /-- The object carrying the element type `E`. -/
-abbrev dE (E : Type) : RelSet.{0} := ⟨E⟩
+public abbrev dE (E : Type) : RelSet.{0} := ⟨E⟩
 
 /-! ## The functor `F X = L + (X × E)` -/
 
@@ -346,6 +346,87 @@ theorem cata_converse_eq {C : RelSet.{0}} (φ : Fobj L E C ⟶ C) :
         · rw [hda]; exact hcata
         · have hpd : pd = dig := hpq.trans hdd.symm
           rw [hpd] at hp; exact hp
+
+/-! ## The datatype as a relator: `list(R)`
+
+  A snoc list is a datatype in its ELEMENT type, so it is the object part of a relator — the note's
+  lane `list`, the same wire `AOP.A5_6_ListCombinators.listRelator` is for the cons list.  The LEAF
+  type is the datatype's other parameter and stays fixed along the lane, exactly as `unexpandDSL`
+  already has it: `[E]` whatever the leaf. -/
+
+/-- Elementwise lifting on snoc lists: the same shape, the same leaf, each element related by `R`. -/
+@[expose] public def slistP {A B : Type} (R : dE A ⟶ dE B) : SnocList L A → SnocList L B → Prop
+  | SnocList.wrap l, SnocList.wrap l' => l = l'
+  | SnocList.wrap _, SnocList.snoc _ _ => False
+  | SnocList.snoc _ _, SnocList.wrap _ => False
+  | SnocList.snoc x a, SnocList.snoc y b => slistP R x y ∧ R a b
+
+/-- The relator's action `list(R) : [A]⟶[B]`. -/
+@[expose] public def slist {A B : Type} (R : dE A ⟶ dE B) : dSL L A ⟶ dSL L B := slistP R
+
+public theorem slistP_id {A : Type} : ∀ x y : SnocList L A, slistP (𝟙 (dE A)) x y ↔ x = y
+  | SnocList.wrap l, SnocList.wrap l' =>
+      ⟨fun h => by rw [show l = l' from h], fun h => by cases h; rfl⟩
+  | SnocList.wrap _, SnocList.snoc _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | SnocList.snoc _ _, SnocList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | SnocList.snoc x a, SnocList.snoc y b =>
+      ⟨fun h => by rw [(slistP_id x y).mp h.1, show a = b from h.2],
+       fun h => by cases h; exact ⟨(slistP_id x x).mpr rfl, rfl⟩⟩
+
+/-- `list(𝟙) = 𝟙`. -/
+public theorem slist_id {A : Type} : slist (L := L) (𝟙 (dE A)) = 𝟙 (dSL L A) := hom_ext slistP_id
+
+public theorem slistP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (x : SnocList L A) (z : SnocList L C),
+      slistP (R ≫ S) x z ↔ ∃ y, slistP R x y ∧ slistP S y z
+  | SnocList.wrap l, SnocList.wrap n =>
+      ⟨fun h => ⟨SnocList.wrap l, rfl, h⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap m => exact (h1 : l = m).trans h2
+        | snoc _ _ => exact h1.elim⟩
+  | SnocList.wrap _, SnocList.snoc _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h2
+        | snoc _ _ => exact h1⟩
+  | SnocList.snoc _ _, SnocList.wrap _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1
+        | snoc _ _ => exact h2⟩
+  | SnocList.snoc x a, SnocList.snoc z c => by
+      constructor
+      · rintro ⟨hxz, ⟨b, hR, hS⟩⟩
+        obtain ⟨y, hy1, hy2⟩ := (slistP_comp R S x z).mp hxz
+        exact ⟨SnocList.snoc y b, ⟨hy1, hR⟩, hy2, hS⟩
+      · rintro ⟨y, h1, h2⟩
+        cases y with
+        | wrap _ => exact h1.elim
+        | snoc ys b =>
+            exact ⟨(slistP_comp R S x z).mpr ⟨ys, h1.1, h2.1⟩, b, h1.2, h2.2⟩
+
+/-- `list(RS) = list(R) list(S)`. -/
+public theorem slist_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    slist (L := L) (R ≫ S) = slist R ≫ slist S := hom_ext (slistP_comp R S)
+
+public theorem slistP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ (x : SnocList L A) (y : SnocList L B), slistP R x y → slistP S x y
+  | SnocList.wrap _, SnocList.wrap _, hxy => hxy
+  | SnocList.wrap _, SnocList.snoc _ _, hxy => hxy.elim
+  | SnocList.snoc _ _, SnocList.wrap _, hxy => hxy.elim
+  | SnocList.snoc x a, SnocList.snoc y b, hxy =>
+      ⟨slistP_mono h x y hxy.1, h a b hxy.2⟩
+
+/-- `R ⊑ S ⟹ list(R) ⊑ list(S)` — `list` is monotonic. -/
+public theorem slist_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
+    slist (L := L) R ⊑ slist S := le_iff.mpr (slistP_mono (le_iff.mp h))
+
+/-- `list` BUNDLED as a relator, at one leaf type: the note's lane over `[Job]`, `[Char]` and every
+    other snoc list, where the object alone leaves the reader a point nothing peels. -/
+@[expose] public def snocRelator (L : Type) : Relator RelSet.{0} RelSet.{0} where
+  obj a := dSL L a.carrier
+  map R := slist R
+  map_id _ := slist_id
+  map_comp R S := slist_comp R S
+  map_mono h := slist_mono h
 
 -- printing-only unexpanders: the note's spelling, the same ones `AOP.A6_ConsList` gives the cons
 -- list.  A snoc list IS a list — the note writes `[Char]`, `[Code]`, `[Job]` — and which leaf type

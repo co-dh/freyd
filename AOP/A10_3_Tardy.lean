@@ -654,4 +654,137 @@ public theorem schedule_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : �
 
 end Pick
 
+/-! ## The datatype as a relator: `bag(R)`
+
+  A bag is a datatype in its ELEMENT type, so `bag` is a lane and `bag(Job)` that lane over the
+  `Job` wire — where the object alone leaves the picture a point nothing peels.  Two bags are
+  related when they have REPRESENTATIVES related element by element: the list lifting, made blind
+  to the order by the choice of representative rather than by a side condition. -/
+
+/-- Elementwise lifting on lists — the relation `bag(R)` is read through. -/
+@[expose] public def elemsP {A B : Type} (R : dE A ⟶ dE B) : List A → List B → Prop
+  | [], [] => True
+  | [], _ :: _ => False
+  | _ :: _, [] => False
+  | a :: xs, b :: ys => R a b ∧ elemsP R xs ys
+
+public theorem elemsP_id {A : Type} :
+    ∀ xs ys : List A, elemsP (𝟙 (dE A)) xs ys ↔ xs = ys
+  | [], [] => ⟨fun _ => rfl, fun _ => trivial⟩
+  | [], _ :: _ => ⟨False.elim, fun h => nomatch h⟩
+  | _ :: _, [] => ⟨False.elim, fun h => nomatch h⟩
+  | a :: xs, b :: ys =>
+      ⟨fun h => by rw [show a = b from h.1, (elemsP_id xs ys).mp h.2],
+       fun h => by cases h; exact ⟨rfl, (elemsP_id xs xs).mpr rfl⟩⟩
+
+public theorem elemsP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (xs : List A) (zs : List C), elemsP (R ≫ S) xs zs ↔ ∃ ys, elemsP R xs ys ∧ elemsP S ys zs
+  | [], [] => ⟨fun _ => ⟨[], trivial, trivial⟩, fun _ => trivial⟩
+  | [], _ :: _ =>
+      ⟨False.elim, fun ⟨ys, h1, h2⟩ => by cases ys with
+        | nil => exact h2
+        | cons _ _ => exact h1⟩
+  | _ :: _, [] =>
+      ⟨False.elim, fun ⟨ys, h1, h2⟩ => by cases ys with
+        | nil => exact h1
+        | cons _ _ => exact h2⟩
+  | a :: xs, c :: zs => by
+      constructor
+      · rintro ⟨⟨b, hR, hS⟩, hxz⟩
+        obtain ⟨ys, hy1, hy2⟩ := (elemsP_comp R S xs zs).mp hxz
+        exact ⟨b :: ys, ⟨hR, hy1⟩, hS, hy2⟩
+      · rintro ⟨ys, h1, h2⟩
+        cases ys with
+        | nil => exact h1.elim
+        | cons b ys =>
+            exact ⟨⟨b, h1.1, h2.1⟩, (elemsP_comp R S xs zs).mpr ⟨ys, h1.2, h2.2⟩⟩
+
+public theorem elemsP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ xs ys, elemsP R xs ys → elemsP S xs ys
+  | [], [], hxy => hxy
+  | [], _ :: _, hxy => hxy.elim
+  | _ :: _, [], hxy => hxy.elim
+  | a :: xs, b :: ys, hxy => ⟨h a b hxy.1, elemsP_mono h xs ys hxy.2⟩
+
+/-- A PERMUTATION OF THE SOURCE CARRIES THE LIFTING WITH IT: re-ordering one list re-orders its
+    partner the same way.  This is what makes `bag(R)` independent of the representatives, and it
+    is proved by recursion on the permutation itself — no choice, no decidable equality. -/
+public theorem elemsP_perm {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ {xs xs' : List A}, List.Perm xs xs' → ∀ {zs : List B}, elemsP R xs' zs →
+      ∃ zs', elemsP R xs zs' ∧ List.Perm zs' zs := by
+  intro xs xs' hp
+  induction hp with
+  | nil =>
+      intro zs hz
+      cases zs with
+      | nil => exact ⟨[], trivial, List.Perm.nil⟩
+      | cons _ _ => exact hz.elim
+  | @cons x l₁ l₂ _ ih =>
+      intro zs hz
+      cases zs with
+      | nil => exact hz.elim
+      | cons c zt =>
+          obtain ⟨zt', h1, h2⟩ := ih hz.2
+          exact ⟨c :: zt', ⟨hz.1, h1⟩, h2.cons c⟩
+  | @swap x y l =>
+      intro zs hz
+      cases zs with
+      | nil => exact hz.elim
+      | cons c zs =>
+          cases zs with
+          | nil => exact hz.2.elim
+          | cons d zt => exact ⟨d :: c :: zt, ⟨hz.2.1, hz.1, hz.2.2⟩, List.Perm.swap c d zt⟩
+  | @trans l₁ l₂ l₃ _ _ ih₁ ih₂ =>
+      intro zs hz
+      obtain ⟨ws, hw1, hw2⟩ := ih₂ hz
+      obtain ⟨vs, hv1, hv2⟩ := ih₁ hw1
+      exact ⟨vs, hv1, hv2.trans hw2⟩
+
+/-- **tardy-defn**: `bag(R)` relates two bags that have representatives related element by element. -/
+@[expose] public def bagP {A B : Type} (R : dE A ⟶ dE B)
+    (u : (Bag A).carrier) (v : (Bag B).carrier) : Prop :=
+  ∃ xs ys, Quotient.mk (permSetoid A) xs = u ∧ Quotient.mk (permSetoid B) ys = v ∧ elemsP R xs ys
+
+/-- The relator's action `bag(R) : bag(A)⟶bag(B)`. -/
+@[expose] public def bagRel {A B : Type} (R : dE A ⟶ dE B) : Bag A ⟶ Bag B := bagP R
+
+/-- `bag(𝟙) = 𝟙`. -/
+public theorem bag_id {A : Type} : bagRel (𝟙 (dE A)) = 𝟙 (Bag A) := by
+  apply hom_ext
+  intro u v
+  constructor
+  · rintro ⟨xs, ys, rfl, rfl, h⟩
+    exact congrArg (Quotient.mk (permSetoid A)) ((elemsP_id xs ys).mp h)
+  · intro (h : u = v)
+    cases h
+    induction u using Quotient.ind with
+    | _ xs => exact ⟨xs, xs, rfl, rfl, (elemsP_id xs xs).mpr rfl⟩
+
+/-- `bag(RS) = bag(R) bag(S)` — the middle bag is the image of ONE representative, and a second
+    representative of it is reached by `elemsP_perm`. -/
+public theorem bag_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    bagRel (R ≫ S) = bagRel R ≫ bagRel S := by
+  apply hom_ext
+  intro u w
+  constructor
+  · rintro ⟨xs, zs, rfl, rfl, h⟩
+    obtain ⟨ys, h1, h2⟩ := (elemsP_comp R S xs zs).mp h
+    exact ⟨Quotient.mk (permSetoid B) ys, ⟨xs, ys, rfl, rfl, h1⟩, ⟨ys, zs, rfl, rfl, h2⟩⟩
+  · rintro ⟨v, ⟨xs, ys, rfl, hv, h1⟩, ⟨ys', zs, hv', rfl, h2⟩⟩
+    obtain ⟨zs', h3, h4⟩ := elemsP_perm S (Quotient.exact (hv.trans hv'.symm)) h2
+    exact ⟨xs, zs', rfl, Quotient.sound h4, (elemsP_comp R S xs zs').mpr ⟨ys, h1, h3⟩⟩
+
+/-- `R ⊑ S ⟹ bag(R) ⊑ bag(S)` — `bag` is monotonic. -/
+public theorem bag_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : bagRel R ⊑ bagRel S :=
+  le_iff.mpr fun _ _ ⟨xs, ys, hu, hv, hxy⟩ =>
+    ⟨xs, ys, hu, hv, elemsP_mono (le_iff.mp h) xs ys hxy⟩
+
+/-- `bag` BUNDLED as a relator, the lane the tardy-jobs pictures draw over the `Job` wire. -/
+@[expose] public def bagRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := Bag a.carrier
+  map R := bagRel R
+  map_id _ := bag_id
+  map_comp R S := bag_comp R S
+  map_mono h := bag_mono h
+
 end Freyd.Alg.RelSet.Tardy
