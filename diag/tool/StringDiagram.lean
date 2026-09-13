@@ -452,6 +452,12 @@ def natLines (ps : Array Diagram) : MetaM String := do
       throwError "the bead `{r.label}` draws the mark `{word}` and cites no declaration: a mark is \
         the ink of a proof term the search assembled, so every one but the spider names the \
         declaration it rests on (`Verdict.lean`)"
+    -- `unread` is thrown HERE and not in the bead constructor: a throw there is caught by the term
+    -- walk, which reads the factor another way and draws the panel coarser with exit 0.
+    if word == "unread" then
+      throwError "the bead `{r.label}` is a family whose ends no lane spells, so nothing was searched \
+        and it would draw as a spider that never looked: extend `relatorOfObj` (`ExprReader.lean`) \
+        to read the end it refused"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
@@ -604,14 +610,16 @@ def relatorsOf (alg : LaneAlg) (cat : Array Name) (regionTy φ : Expr) : MetaM (
 
     ABSTRACTABLE over the object, not merely MENTIONING it: `S° : b⟶F(b)` names `b` only through
     the type of the local `S : F(b)⟶b`, so `fun b => S°` is ill-typed and `S` is one arrow. -/
-def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
+def familyVar (core : Expr) (objVars : Array Expr) (spelled : Expr → MetaM Bool) :
+    MetaM (Option Expr) :=
   objVars.findM? fun v => do
     unless core.containsFVar v.fvarId! do return false
-    -- WHETHER THE ENDS ARE OBJECTS A RELATOR SPELLS IS `verdict`'S QUESTION, asked of the statement
-    -- itself and answered with a spider where they are not.  A test on the LANES here refuses the
-    -- whole product family `[v]×[[v]]⟶[[v]]` on account of a label, and it is a second reading of
-    -- the same thing, which is what let the two disagree.
-    try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false
+    -- A TEST ON THE LANE LABELS here would refuse the whole product family `[v]×[[v]]⟶[[v]]` on
+    -- account of a label, and is a second reading of the same thing, which is what let the two
+    -- disagree.  `spelled` is the ONE reader, `relatorOfObj`, asked of this very family.
+    unless ← (try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false) do
+      return false
+    spelled v
 
 /-- THE FAMILY A BEAD IS, WHERE THE STATEMENT BINDS NO OBJECT TO ABSTRACT.  A bead stands at the
     object its own WIRE carries, and that object is a family's index whether or not the statement
@@ -631,6 +639,25 @@ def familyAt? (regionTy core : Expr) (os : Array Expr) : MetaM (Option Expr) := 
       if ← (try Meta.isTypeCorrect φ catch _ => pure false) then return some φ else return none
     if φ?.isSome then return φ?
   return none
+
+/-- THE TWO ENDS OF A FAMILY, READ AS LANES, and in WHICH algebra — the REGION'S, not the bead's.
+    §1.241's function category is a `Cat` and no allegory, so its lanes are functors and its
+    naturality is the plain square; and one region carries BOTH kinds, since `E`, the existential
+    image, is a FUNCTOR in an allegory and no relator (its `powerRelator` needs tabularity), so a
+    family under it is read a second time in the functor algebra rather than being called a bead
+    nothing can be said about.  Same reader both times.
+
+    `none` is a reading that FAILED — an end no lane spells — so there is a naturality to state and
+    no way to state it: that is `unread`, and neither a verdict nor the spider's "looked and found
+    nothing".  It is also what says a statement BINDER is not the index this picture shows. -/
+def readEnds (regionTy : Expr) (cat : Array Name) (φ : Expr) :
+    MetaM (Option (LaneAlg × Expr × Expr)) := do
+  let alg0 ← laneAlgOf regionTy
+  let read : LaneAlg → MetaM (Option (LaneAlg × Expr × Expr)) := fun a =>
+    (some <$> (do let (G, F) ← relatorsOf a cat regionTy φ; return (a, G, F))) <|> pure none
+  match ← read alg0 with
+  | some r => return some r
+  | none => if alg0 == .relator then read .functor else return none
 
 /-- How deep a chain of CLOSURE theorems a compound bead's verdict may be read through:
     `strictNatural_prod` over `strictNatural_recip` over the square `cons_natural` states — the
@@ -673,20 +700,10 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- their squares sat proved in the environment.  NOT an error: a factor the reader throws on is
   -- read ANOTHER way by the term walk, so a throw here redraws the panel coarser instead of
   -- stopping it (it cost `prefix ⊑ prefix`'s `cons` its dot and its peeled `list` wire).
-  -- WHICH ALGEBRA THE STATEMENT IS IN IS THE REGION'S, not the bead's: §1.241's function category
-  -- is a `Cat` and no allegory, so its lanes are functors and its naturality is the plain square.
-  -- THE LANES DECIDE WHICH NATURALITY THERE IS TO STATE, and a region can carry both kinds.  An
-  -- allegory's lanes are RELATORS and a family between them is graded by `⊑`; but `E`, the
-  -- existential image, is a FUNCTOR there and no relator (its `powerRelator` needs tabularity), so
-  -- a family under it states the plain SQUARE — read the ends a second time in the functor algebra
-  -- rather than calling a bead nothing can be said about.  Same reader both times.
+  -- `alg0` is the REGION's algebra and `alg` the one its ends were read in: an allegory's functor
+  -- lane (`E`) is read in the functor algebra while the region still has maps to restrict to.
   let alg0 ← laneAlgOf regionTy
-  let read : LaneAlg → MetaM (Option (LaneAlg × Expr × Expr)) := fun a =>
-    (some <$> (do let (G, F) ← relatorsOf a cat regionTy φ; return (a, G, F))) <|> pure none
-  let some (alg, G, F) ← (do match ← read alg0 with
-      | some r => pure (some r)
-      | none => if alg0 == .relator then read .functor else pure none)
-    | return { mark := none, lean := #[] }
+  let some (alg, G, F) ← readEnds regionTy cat φ | return { mark := none, lean := #[] }
   -- THE FILTER IS THE FAMILY'S CONSTANTS, NOT THE TERM'S AT ITS OBJECT.  A bead taken at an initial
   -- algebra's carrier carries `InitialAlgebra.t` into `core`, and no naturality theorem mentions a
   -- projection of the region's own structure, so filtering on it dropped every candidate there is.
@@ -831,7 +848,12 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
   -- away a naturality the environment proves.
-  let v? ← familyVar core objVars
+  -- THE INDEX A DOT CLAIMS IS ONE THE PICTURE SHOWS: the object the bead's own WIRE carries, or —
+  -- where the statement binds another object of the region — one the bead's ends are spelled from
+  -- by LANES.  `est(R Char)` over an `Op(Char)` wire varies with a `Char` no lane draws, so it is
+  -- one arrow at one object, exactly as the `est(R)` whose `R` is pinned already is.
+  let v? ← familyVar core objVars fun v =>
+    return (← readEnds regionTy cat (← familyOf regionTy v core)).isSome
   let φ ← match v? with
     | some v => some <$> familyOf regionTy v core
     | none => familyAt? regionTy core #[oy, ox]
@@ -1028,7 +1050,9 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- Where `φ` cannot vary with it — `secure amount N`, whose `amount` pins the object — the whole
     -- `φ×𝟙` is ONE arrow, it rides the object wire like `α` and `⦇R⦈`, and its arrow is every lane
     -- its bar spans, which is what the tail below types it as.
-    if (← familyVar e objVars).isSome then
+    -- THE QUESTION HERE IS THE SHAPE, not the dot: whether the bar is one bead on the left lane at
+    -- all.  Its ends are read by the `Diagram.bead` below, which is where a dot is claimed.
+    if (← familyVar e objVars fun _ => pure true).isSome then
       let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
       return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
