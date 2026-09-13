@@ -74,6 +74,13 @@ public theorem recip_eps_comp_thinRel_le (Q : A ⟶ A) :
     (∋ A)° ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   le_trans (comp_mono_left _ (inter_lb_right _ _)) (leftDiv_comp_le _ _)
 
+/-- The converse of `recip_eps_comp_thinRel_le`, the form 14.1.1b's second statement draws:
+    `thin(Q)° ∋ ⊑ ∋ Q`. -/
+public theorem recip_thinRel_comp_eps_le (Q : A ⟶ A) :
+    (thinRel Q)° ≫ ∋ A ⊑ ∋ A ≫ Q := by
+  have h := recip_mono (recip_eps_comp_thinRel_le Q)
+  simpa only [Allegory.recip_comp, Allegory.recip_recip] using h
+
 /-- The (7.5)-analogue for thinning: `thin Q·ΛS = (S/∋... )`-mirrored,
     `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°))`. -/
 public theorem Λ_comp_thinRel (S : B ⟶ A) (Q : A ⟶ A) :
