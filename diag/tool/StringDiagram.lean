@@ -183,13 +183,14 @@ def columns (p : Diagram) : Array Lane := Id.run do
       continue
     let oth := live.filter fun j => !r.arms.contains j
     let othx := Array.mk (oth.map (fun j => (xs[j]!).get!))
-    let lo := maxA (othx.filter (· < minA arms c)) (-1e9)
-    let hi := minA (othx.filter (· > maxA arms c)) 1e9
+    -- THE BAND THE LEGS TAKE MUST HOLD NO OTHER LIVE LANE — asked of each candidate, not of `c`:
+    -- a lane exactly AT `c` is neither west of it nor east of it, so a test that brackets `c` reads
+    -- the column as free and lays the new wire straight down the old one.
     let mut got : Array Float := #[]
     for d in SLIDE do
       got := Array.mk ((List.range r.legs.size).map fun j =>
         c + d + (j.toFloat - (r.legs.size.toFloat - 1.0) / 2.0) * DX)
-      if lo + 1e-6 < got[0]! && got[got.size - 1]! < hi - 1e-6 then break
+      if othx.all fun x => x < got[0]! - 1e-6 || got[got.size - 1]! + 1e-6 < x then break
     for j in [0 : r.legs.size] do xs := xs.set! r.legs[j]! (some got[j]!)
   -- A lane OPENED at the bead that eats it has no row of legs to space it: it takes the free column
   -- beside the neighbour creation order already puts it next to.
