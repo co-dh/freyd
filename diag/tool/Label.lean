@@ -238,24 +238,27 @@ def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM St
     if let some n ← declName? f then return n
   plain (mkAppN f keep)
 
-/-- The name of a value computed FROM THE INPUT, in diagram order: `p(π₁ s)` is `π₁p` — first the
-    projection, then the test.  The input itself is the identity and contributes nothing, and an
-    argument that does not mention the input is a PARAMETER of the function, not a step of the
-    computation, so it stays inside the function's own name. -/
-partial def valLabel (s : FVarId) (x : Expr) : MetaM String := do
-  if x == .fvar s then return ""
+/-- THE STEPS a value computed FROM THE INPUT is made of, in diagram order: `p(π₁ s)` is `π₁`, `p` —
+    first the projection, then the test.  The input itself is the identity and contributes nothing,
+    and an argument that does not mention the input is a PARAMETER of the function, not a step of the
+    computation, so it stays inside the function's own name.  `none` where the walk does not reach the
+    input: the term is then no chain of steps and whoever asked prints it whole. -/
+partial def valSteps (s : FVarId) (x : Expr) : MetaM (Option (Array String)) := do
+  if x == .fvar s then return some #[]
+  let step (st : Expr) (h : String) : MetaM (Option (Array String)) := do
+    return (← valSteps s st).map (·.push h)
   match x with
-  | .proj ``Prod i st => return (← valLabel s st) ++ (if i == 0 then "π₁" else "π₂")
+  | .proj ``Prod i st => step st (if i == 0 then "π₁" else "π₂")
   | _ =>
     let args := x.getAppArgs
     match x.getAppFnArgs.1, args.back? with
-    | ``Prod.fst, some st => return (← valLabel s st) ++ "π₁"
-    | ``Prod.snd, some st => return (← valLabel s st) ++ "π₂"
+    | ``Prod.fst, some st => step st "π₁"
+    | ``Prod.snd, some st => step st "π₂"
     | _, _ =>
       let deps := args.filter fun a => a.containsFVar s
       if deps.size == 1 then
-        return (← valLabel s deps[0]!) ++ (← headShow x.getAppFn args fun a => !a.containsFVar s)
-      plain x
+        step deps[0]! (← headShow x.getAppFn args fun a => !a.containsFVar s)
+      else return none
 
 /-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
     peeled the way a tuple pattern binds it. -/
@@ -531,6 +534,10 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
           !(fi.paramInfo[i]?.map (·.isExplicit) |>.getD true) || args[i]!.containsFVar s then
         if let some n ← declName? body then return n
       return ← headShow body.getAppFn args fun a => !a.containsFVar s
+    -- A BODY THAT PIPES THE INPUT THROUGH ONE ARROW AFTER ANOTHER IS THEIR COMPOSITE, which the note
+    -- writes by juxtaposition in diagram order: `fun s => wrap (wrap s)` is `wrap wrap`.
+    if let some steps ← valSteps s body then
+      if !steps.isEmpty then return " ".intercalate steps.toList
     if body₀.containsFVar s then plain f else plain body₀
 
 /-- A `match` on a BOOLEAN test wires nothing — both arms leave on the same strands — so the note
@@ -549,7 +556,12 @@ partial def guardLabel (s : FVarId) (body₀ : Expr) : MetaM (Option String) := 
   let arm (v : Name) : MetaM String := do
     let b ← Meta.whnfCore (mkAppN hd (#[ma.motive, mkConst v] ++ ma.alts))
     mapLabel (← Meta.mkLambdaFVars #[.fvar s] b) false
-  return some ("(" ++ (← valLabel s ma.discrs[0]!) ++ "→" ++ (← arm ``Bool.true) ++ ","
+  -- The test is a value computed from the input and named as ONE word — it labels no wire of its
+  -- own, so its steps are written with nothing between them (`π₁p`), where a composite wants a space.
+  let discr ← match ← valSteps s ma.discrs[0]! with
+    | some steps => pure (String.join steps.toList)
+    | none => plain ma.discrs[0]!
+  return some ("(" ++ discr ++ "→" ++ (← arm ``Bool.true) ++ ","
     ++ (← arm ``Bool.false) ++ ")")
 
 /-- The label of a MAP given by its function.  A cons cell is `cons`, a projection its `π`, a

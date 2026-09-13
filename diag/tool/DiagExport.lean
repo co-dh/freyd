@@ -1455,7 +1455,10 @@ def main (args : List String) : IO UInt32 := do
     let ctx := StrDiag.declCtx env opts scopes <| if commutativeMode
       then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1 else base.toName
     let run : CoreM String :=
-      Meta.MetaM.run' (if sigMode then sig arg.toName
+      -- THE UNIFIER THAT CHECKED THE THEOREMS IS THE ONE THAT LOOKS THEM UP: the command elaborator
+      -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
+      Meta.MetaM.run' <| Meta.withConfig (fun c => { c with foApprox := true, ctxApprox := true }) <|
+        (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
