@@ -246,13 +246,13 @@ public theorem est_eq (S : A ⟶ A) : (est S : dTuple k A ⟶ A) = mem ∩ (mem�
 
 /-! ## The greedy algebra and its fold -/
 
-/-- **`Q(S) ≜ F(𝟙,moves trans Vec(n)(est(S))) zip Vec(n)(cons)`** — `gen` with the choice made:
+/-- **`Q(R) ≜ F(𝟙,moves trans Vec(n)(est(R))) zip Vec(n)(cons)`** — `gen` with the choice made:
     each square keeps ONE cheapest of the three paths offered by its neighbours, and the square
     goes in front of it. -/
-@[expose] public def Q {n m : Nat} (S : dTuple m A ⟶ dTuple m A) :
+@[expose] public def Q {n m : Nat} (R : dTuple m A ⟶ dTuple m A) :
     (⟨(dTuple n A).carrier × (dTuple n (dTuple m A)).carrier⟩ : RelSet.{0})
       ⟶ dTuple n (dTuple (m + 1) A) :=
-  rprodMap (𝟙 (dTuple n A)) (RelSet.graph moves ≫ RelSet.graph trans ≫ tupleP n (est S))
+  rprodMap (𝟙 (dTuple n A)) (RelSet.graph moves ≫ RelSet.graph trans ≫ tupleP n (est R))
     ≫ RelSet.graph zip ≫ tupleP n (RelSet.graph cons)
 
 /-- **`⦇Q⦈`** — the greedy fold: one cheapest path per square, extended a column at a time.  The
