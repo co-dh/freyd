@@ -48,6 +48,14 @@ diagram = importlib.util.module_from_spec(importlib.util.spec_from_loader(
     "diagram", importlib.machinery.SourceFileLoader("diagram", os.path.join(ROOT, "scripts",
                                                                             "diagram"))))
 diagram.__loader__.exec_module(diagram)
+# `scripts/svg-diff` IS the primitive matcher, and the band rule below is one more of its matches
+# rather than a second reader of SVG: `collect`, `best_offset`, `shift`, `unmatched`, `differs` and
+# `NPOS` all come from there, so the two cannot come to disagree about what a primitive is.  It has
+# no `.py` either, hence the same loader.
+svgdiff = importlib.util.module_from_spec(importlib.util.spec_from_loader(
+    "svgdiff", importlib.machinery.SourceFileLoader("svgdiff", os.path.join(ROOT, "scripts",
+                                                                           "svg-diff"))))
+svgdiff.__loader__.exec_module(svgdiff)
 os.chdir(ROOT)
 sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
 PANELS = "diag/string-panels.txt"
@@ -264,13 +272,121 @@ def why(n, g):
 
 
 def wrap(path, body):
+    # A BOX IS HEADROOM ONLY, so the box is not drawn.  The page is auto-sized to the panel, so a
+    # page FILL is a rectangle of the box's own depth, and comparing two panels that state different
+    # `cert: frame`s then reported the box as the difference — which says nothing about which arrow
+    # the panel draws (the author, 2026-09-13: "bead floor or roof: doesn't matter").  Nothing looks
+    # at these files; they are compiled for `svg-diff` and `typst query` alone.
     open(path, "w", encoding="utf-8").write(
-        '#set page(width: auto, height: auto, margin: 0.3cm, fill: white)\n' + body)
+        '#set page(width: auto, height: auto, margin: 0.3cm, fill: none)\n' + body)
 
 
 def svg(src, dst):
     p = run("typst", "compile", "--root", ".", "--format", "svg", src, dst)
     return None if not p.returncode else p.stderr.strip().splitlines()[-1:] or ["compile failed"]
+
+
+def heights(rec):
+    """Every height the panel's own record names — its beads' and its object wire's — as a row
+    counted DOWN FROM THE TOP of the box (`h` is `rows` rows of `dpanel`'s own `DY`, measured up).
+    From the top because that is the end a display lines its panels up on and what `cert: top`
+    states: a box one row deeper with the drawing hanging from its floor has moved the drawing down
+    by a row, which measuring up from the floor calls no move at all."""
+    dy = rec["h"] / rec["rows"] if rec.get("rows") else None
+    ys = [b[0] for b in (rec.get("beads") or [])] + [o[0] for o in (rec.get("obj") or [])]
+    return None if not dy or not ys else [rec["rows"] - y / dy for y in ys]
+
+
+def rowshift(a, b):
+    """HOW FAR ONE PANEL'S ROWS SIT ABOVE THE OTHER'S, or None where no ONE number says it: the two
+    records name different numbers of heights, or heights that do not all differ by the same amount.
+    Which row a bead sits on inside its box is not part of which arrow the panel draws — the author,
+    2026-09-13: "bead floor or roof: doesn't matter, they need to align bead with other diagram if
+    there is an (in)equation" — and the panels of one display align on the row the DISPLAY gives
+    them, which is why the two sides of this comparison legitimately differ by it."""
+    p, q = heights(a), heights(b)
+    if p is None or q is None or len(p) != len(q):
+        return None
+    ds = {round(x - y, 6) for x, y in zip(p, q)}
+    return ds.pop() if len(ds) == 1 else None
+
+
+def ymatch(kind, v, w, dy):
+    """The heights of `w` that `v` reads as, where every height either stayed or moved by `dy` — or
+    None where the two primitives are not the same shape drawn at the same x.  A HEIGHT chooses, not
+    a slot: the wire a bead sits on is ONE wire drawn as two segments, so their shared joint moves
+    with the bead while each segment's other end, at the panel's edge, does not."""
+    n = svgdiff.NPOS[kind]
+    n = len(v) if n is None else n
+    if len(v) != len(w):
+        return None
+    m = {}
+    for i, (a, b) in enumerate(zip(v, w)):
+        if i >= n or i % 2 == 0:      # a size or a name, or an x: a sideways offset is a difference
+            if svgdiff.differs(a, b):
+                return None
+        elif not svgdiff.differs(a, b):
+            m[b] = b
+        elif not svgdiff.differs(a, b + dy):
+            m[b] = a
+        else:
+            return None
+    return m
+
+
+def band(xs, ys, dy):
+    """Every primitive of `xs` paired with one of `ys` under the one shift `dy`, and the height map
+    the pairing read — None where anything is left over on either side, or where two primitives read
+    one height two ways."""
+    left, m = list(ys), {}
+    for k, v in xs:
+        for i, (j, w) in enumerate(left):
+            mm = ymatch(k, v, w, dy) if j == k else None
+            if mm is None or any(svgdiff.differs(m[y], z) for y, z in mm.items() if y in m):
+                continue
+            m.update(mm)
+            del left[i]
+            break
+        else:
+            return None
+    return None if left else m
+
+
+def rising(m):
+    """The height map keeps the ORDER of the heights.  Without this a free choice per height would
+    let one wire end where another's did — a wire drawn short against a wire drawn long reads as the
+    shift that happens to span them — where an order-keeping map can only say that one BAND of rows
+    slid and the rest stayed."""
+    ks = sorted(m)
+    return all(m[a] < m[b] for a, b in zip(ks, ks[1:]))
+
+
+def yvals(xs):
+    """Every height a bag of primitives names, once each."""
+    return {v[i] for k, v in xs
+            for i in range(1, len(v) if svgdiff.NPOS[k] is None else svgdiff.NPOS[k], 2)}
+
+
+def sameband(note, gen):
+    """A PANEL'S ROWS MAY SIT ANYWHERE IN ITS BOX: true where the two compiled panels are the same
+    drawing with one band of its heights moved.  The shift is the one that explains the most heights
+    the two do not already share, and the panel is accepted only if it then explains ALL of them —
+    every primitive of each side paired with one of the other at the same x, every height either
+    stayed or moved by that one shift, and the height map keeping the order.  The horizontal offset
+    removed is the one `svg-diff` itself removes and nothing more, so a sideways shift stays a
+    difference."""
+    ga, gb = svgdiff.collect(note)[0], svgdiff.collect(gen)[0]
+    # `best_offset`'s VERTICAL component is deliberately dropped: it anchors on whichever band holds
+    # the more primitives, so keeping it would make the verdict depend on which side of the shift
+    # happened to be larger, where this rule must read the same either way.
+    gb = svgdiff.shift(gb, (-svgdiff.best_offset(ga, gb)[0], 0.0))
+    la, lb = yvals(svgdiff.unmatched(ga, gb)), yvals(svgdiff.unmatched(gb, ga))
+    seen = lambda d: sum(any(not svgdiff.differs(a, b + d) for a in la) for b in lb)
+    for dy in sorted({a - b for a in la for b in lb}, key=lambda d: (-seen(d), d)):
+        m = band(ga, gb, dy)
+        if m is not None and rising(m):
+            return True
+    return False
 
 
 def fields(g):
@@ -429,12 +545,12 @@ def main(argv):
 
     def pending(head, sel, i, gen):
         def verdict():
-            end, v = drew[sel].result()[i]
+            end, v, ok = drew[sel].result()[i]
             if not end:
                 r = swept.result()[gen]
                 fs = r["failures"] + r["unhandled"] + ["the picture was never drawn"] * r["missing"]
                 end = f"SWEEP {len(fs)} failure(s); the first: {fs[0]}" if fs else None
-            return f"{head}: {end or v}", bool(end) or v != "ok"
+            return f"{head}: {end or v}", bool(end) or not ok
         return verdict
 
     slots, groups = [], {}
@@ -481,35 +597,49 @@ def main(argv):
 
 def compare(sel, panel, which, gen):
     """One panel drawn from LEAN and from its `cert:`, and the two compared: the failure that ends
-    it, or none and `svg-diff`'s verdict — which stands only once the sweep of `gen` passes."""
+    it, or none and `svg-diff`'s verdict — which stands only once the sweep of `gen` passes.  The
+    third field is whether the panel PASSES, because a verdict now names the row shift it accepted
+    and a test of the verdict's own text would have read `ok (dy …)` as a failure."""
     gwrap, nwrap = f"{OUT}/{sel}.gen.typ", f"{OUT}/{sel}.note.typ"
     wrap(gwrap, f'#import "/{gen}": panels\n#panels.at({which})\n')
     drew, err = content(gwrap)
     if err:
-        return f"CANNOT-DRAW {err}", None
+        return f"CANNOT-DRAW {err}", None, False
     cert = panel.get("cert") or {}
     if not all(cert.get(f) for f in ("expect", "src", "tgt")):
         return (f"UNCERTIFIED — the note's panel's `cert:` names no"
                 f" {', '.join(f for f in ('expect', 'src', 'tgt') if not cert.get(f))}, so"
-                f" there is nothing to rebuild it from"), None
+                f" there is nothing to rebuild it from"), None, False
     p = run("./scripts/diagram", *diagram_args(cert))
     if p.returncode or not p.stdout.strip():
-        return f"NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}", None
+        return f"NOTE-UNDRAWABLE {p.stderr.strip().splitlines()[-1:]}", None, False
     # `frc` too: a `%∋` in a label is drawn as the note's own fraction, and `scripts/diagram`
     # emits the call — so the wrapper needs what the NOTE imports, not `dpanel` alone.
     wrap(nwrap, '#import "/diag/dpanel.typ": *\n#import "/diag/circuit.typ": frc\n' + p.stdout)
     e = svg(gwrap, f"{OUT}/{sel}.gen.svg") or svg(nwrap, f"{OUT}/{sel}.note.svg")
     if e:
-        return f"CANNOT-DRAW typst {e}", None
+        return f"CANNOT-DRAW typst {e}", None, False
     v = run("./scripts/svg-diff", "--records", f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg")
     if v.returncode > 1:
         last = (v.stderr.strip().splitlines() or ["no stderr"])[-1]
-        return f"CANNOT-CHECK ./scripts/svg-diff exited {v.returncode}: {last}", None
+        return f"CANNOT-CHECK ./scripts/svg-diff exited {v.returncode}: {last}", None, False
     # EVERY OBLIGATION `why` ENUMERATES DECIDES, and the ink is one more of them rather than
     # the gate: a bead's mark is a handful of points (a filled dot against a hollow ring)
     # that `svg-diff` pairs off with each other, so a panel whose one defect was a lax bead
     # drawn strict came back `ok` and the verdict decided nothing.  Either side failing fails.
     d = why(panel, drew)
+    # THE ROW THE BEADS SIT ON INSIDE THE BOX IS NOT A DIFFERENCE, and the shift is named rather
+    # than swallowed: `sameband` says the two are the same drawing with one band of heights moved,
+    # and the panels' own records say by how many ROWS.  Both must answer — a geometry shift no row
+    # record states, or a row record no geometry bears out, is the DIFF it always was.
+    if v.returncode and not d and sameband(f"{OUT}/{sel}.note.svg", f"{OUT}/{sel}.gen.svg"):
+        c = rowshift(panel, drew)
+        if c is not None:
+            box = "" if panel["rows"] == drew["rows"] else \
+                f", box {panel['rows']:g} vs {drew['rows']:g}"
+            # `+ 0` because a shift of none comes out of the subtraction as `-0.0`, which prints as
+            # a direction it does not have.
+            return None, (f"ok (dy {c + 0:+g} row{'' if abs(c) == 1 else 's'}{box})"), True
     if v.returncode or d:
         recs = [json.loads(l) for l in v.stdout.splitlines() if l.strip()]
         n = [r for r in recs if r["layer"] == "geometry"]
@@ -517,8 +647,8 @@ def compare(sel, panel, which, gen):
         m = [r for r in recs if r["layer"] == "glyph"]
         return None, (f"DIFF {len(n)} unmatched primitive(s)"
                        f"{' ' + '/'.join(kinds) if kinds else ''}"
-                       f"{f'; {len(m)} glyph box(es) differ' if m else ''}; {d}")
-    return None, "ok"
+                       f"{f'; {len(m)} glyph box(es) differ' if m else ''}; {d}"), False
+    return None, "ok", True
 
 
 def sweep(gens):
