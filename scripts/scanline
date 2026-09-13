@@ -480,8 +480,8 @@ def sweep(p):
 
 # ---------------------------------------------------------------- the ink's own graph
 # The sweep reads the LANE TABLE, so a panel can type perfectly and still be DRAWN in pieces: a
-# strand stopping in mid-air, a bead covering a column nothing bends onto, a group of wires joined
-# to nothing.  These ask the same questions of the ink the adapters build instead of of the table.
+# strand stopping in mid-air, a bead covering a column nothing bends onto, an end anchored to
+# nothing.  These ask the same questions of the ink the adapters build instead of of the table.
 def arms(p, b):
     """The strands that MEET the dot — one that ends there, and a lane that bends down to it.
     Nothing else counts: an arm is ink the WIRE makes, not a line drawn beside it."""
@@ -492,44 +492,26 @@ def arms(p, b):
 
 
 def pieces(p):
-    """Reachability.  A component that reaches an edge is a wire the panel's own ports account for
-    — p. 17's `F f` runs straight past, and §13.3.1's unit opens one that runs to the bottom.  A
-    component that reaches no edge and joins nothing is a fragment, and a panel drawn in fragments
-    is not one arrow however well it types."""
-    up = {id(w): id(w) for w in p.wires}
-
-    def find(k):
-        while up[k] != k:
-            up[k] = k = up[k]
-        return k
-
-    for b in p.beads:
-        ws = arms(p, b) + [w for w in p.wires
-              if abs(w.x - p.col(b)) < EPS and w.ybot < b.y < w.ytop]
-        for w in ws[1:]:
-            up[find(id(w))] = find(id(ws[0]))
-    comps = {}
-    for w in p.wires:
-        comps.setdefault(find(id(w)), []).append(w)
-    home = find(id(next(w for w in p.wires if abs(w.x - p.xo) < EPS and w.ytop > p.h - EPS)))
-    return [f"{p.id}: the {', '.join(sorted(w.label or '?' for w in ws))} wire"
-            f"{'s' * (len(ws) > 1)} reach neither an edge nor the object wire — one arrow is one"
-            f" drawing"
-            for k, ws in comps.items()
-            if k != home and not any(w.ytop > p.h - EPS or w.ybot < EPS for w in ws)]
+    """Anchorage.  Every wire END is accounted for: it sits on a panel EDGE, where the panel's own
+    ports answer for it — p. 17's `F f` runs straight past, §13.3.1's unit opens one that runs to
+    the bottom — or on the bead that MAKES or KILLS it, the bead whose `arms` that end is.  An end
+    anchored to neither is a fragment, and a panel drawn in fragments is not one arrow however well
+    it types."""
+    # The obligation is the END, not the COMPONENT: a lane born at a unit and killed at a counit,
+    # both nested inside other functors' scopes, reaches no edge and no object wire and is still one
+    # drawing, so a rule enumerating components rejects it while an end it leaves loose stays loose.
+    return [f"{p.id}: the {w.label or '?'} wire {end} in mid-air at ({q[0]:g}, {q[1]:g}) — an end"
+            f" sits on a panel edge, or on the bead that makes or kills it, nowhere else"
+            for w in p.wires
+            for q, end in ((w.pts[0], 'starts'), (w.pts[-1], 'ends'))
+            if EPS < q[1] < p.h - EPS
+            and not any(abs(b.y - q[1]) < EPS and w in arms(p, b) for b in p.beads)]
 
 
 def connect(p):
-    """Continuity, degree and reachability, of the ink.  `sweep` runs first: its cuts are what say
-    what a bead's boundary IS, and these say whether the drawing has it."""
+    """Degree and anchorage, of the ink.  `sweep` runs first: its cuts are what say what a bead's
+    boundary IS, and these say whether the drawing has it."""
     bad = []
-    for w in p.wires:
-        for q, end in ((w.pts[0], 'starts'), (w.pts[-1], 'ends')):
-            if EPS < q[1] < p.h - EPS \
-                    and not any(abs(q[0] - b.ink[0]) < EPS and abs(q[1] - b.ink[1]) < EPS
-                                for b in p.beads):
-                bad.append(f"{p.id}: the {w.label} wire {end} in mid-air at ({q[0]:g}, {q[1]:g})"
-                           f" — a strand ends on a bead or on an edge, nowhere else")
     for b in p.beads:
         i = next((k for k in range(len(p.levels)) if abs(p.levels[k] - b.y) < EPS), None)
         if i is None:
