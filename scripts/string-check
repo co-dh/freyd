@@ -8,6 +8,7 @@ other.
     ./scripts/string-check --selectors  # the manifest's selectors, one per line, for `make`
     ./scripts/string-check --marks 14.1 # write Lean's per-panel verdicts into the note's `cert:`s
     ./scripts/string-check --write 14.1 # and Lean's own drawing into every panel graded DIFF
+    ./scripts/string-check --lean       # every panel becomes `lean("<selector>")` and nothing else
 
 THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
   every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
@@ -34,6 +35,7 @@ import importlib.machinery
 import importlib.util
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -43,7 +45,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import panels                                    # noqa: E402  — the manifests' one reader
 # The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
 # stands for, and write back through the split so a rewritten `cert:` lands in the chapter holding it.
-from notesplit import note_root, note_source, note_write, take_chapter    # noqa: E402
+from notesplit import note_files, note_root, take_chapter    # noqa: E402
 # `scripts/diagram` is the note's reader as well as its generator: `literals` and `close` are how a
 # `dpanel(` and its `cert:` are cut out of the source, and --marks writes into that same cut rather
 # than pattern-matching the note a second time.  It has no `.py`, hence the loader.
@@ -59,6 +61,13 @@ svgdiff = importlib.util.module_from_spec(importlib.util.spec_from_loader(
     "svgdiff", importlib.machinery.SourceFileLoader("svgdiff", os.path.join(ROOT, "scripts",
                                                                            "svg-diff"))))
 svgdiff.__loader__.exec_module(svgdiff)
+# `scripts/cite-check` is the note's MARKER reader: `MARK` cuts one out of a line and `resolve` turns
+# the name it carries into the declaration the index knows, which is the only way a marker and a
+# `lean()` selector can be held to name one thing rather than to spell alike.  No `.py`, same loader.
+citecheck = importlib.util.module_from_spec(importlib.util.spec_from_loader(
+    "citecheck", importlib.machinery.SourceFileLoader("citecheck", os.path.join(ROOT, "scripts",
+                                                                               "cite-check"))))
+citecheck.__loader__.exec_module(citecheck)
 os.chdir(ROOT)
 sys.stdout.reconfigure(line_buffering=True)   # a long run's report must be readable while it runs
 PANELS = "diag/string-panels.txt"
@@ -675,7 +684,224 @@ def redrawn(lit, glit):
     return glit[:k] + ", ".join(mine) + glit[diagram.close(glit, k + 6) + 1:]
 
 
-def sources(text, live):
+def note_texts():
+    """THE FILES A NOTE PANEL'S LITERAL CAN BE WRITTEN IN: the root and every file it `#include`s, in
+    order, through `notesplit`'s own include reader.  Reading the JOIN instead misses
+    `diag/allegory-appendix.typ` — a chapter includes it and the join does not inline it, so its
+    panels were in the query and their literals nowhere, and every §17.3 panel read as NO-LITERAL."""
+    return [[p, open(p, encoding="utf-8").read()] for p in note_files()]
+
+
+def splice(texts, edits):
+    """Every edit placed in the file it was cut from, one forward pass per file.  A span carries its
+    file, so a note that is one file and a note that is sixteen take the same pass."""
+    for fi, (path, text) in enumerate(texts):
+        es = sorted((sp, new) for sp, (new, _) in edits.items() if sp[0] == fi and new is not None)
+        if not es:
+            continue
+        out, end = [], 0
+        for (_, i, j), new in es:
+            out += [text[end:i], new]
+            end = j
+        open(path, "w", encoding="utf-8").write("".join(out + [text[end:]]))
+
+
+def cellonly(text, aj, bi):
+    """THE ONE THING A MERGE MAY SWALLOW between two panels of one statement: the grid cell the note
+    writes its relation symbol in, with the commas either side and the `#` of the second call where
+    the cell sits in content.  Anything else between them is the display saying something the
+    statement does not, so the two panels are not one drawing and the merge does not happen."""
+    s = text[aj:bi].rstrip()
+    s = (s[:-1] if s.endswith("#") else s).lstrip()
+    if not s.startswith(","):
+        return False
+    s = s[1:].lstrip()
+    if not s.startswith("["):
+        return False
+    t = s[diagram.close(s, 0) + 1:].lstrip()
+    return t.startswith(",") and not t[1:].strip()
+
+
+def declof(db, name):
+    """THE DECLARATION A NAME STANDS FOR, through `cite-check`'s own resolver.  A marker names a
+    module and a suffix (`AOP.A8_1.thinRel_comp_eps_le`), a selector the full Lean name with a side
+    (`@2`), a binder (`#h`) and a path into the statement (`.lhs.inr`) after it.  Dropping trailing
+    components until the INDEX knows the name is what makes the two comparable — a rule of my own
+    about which suffixes are paths would guess where the index already answers."""
+    n = name.split("@")[0].split("#")[0]
+    while n:
+        hits = citecheck.resolve(db, n)
+        if hits:
+            return hits[0][:2] if len(hits) == 1 else None
+        n = n.rpartition(".")[0]
+    return None
+
+
+def dispblock(text, name, labelled, spans):
+    """THE `#disp[` … `]<label>` BLOCK a display's markers are written in, as (start, end).
+
+    FOUND BY THE DISPLAY'S LABEL, which is its name: the `#disp[` whose closing `]` is the one that
+    label is written after.  Neither the nearest `#disp[` before its panels nor the innermost block
+    around them answers in general — §11.6.4b binds its panels with `#let` ahead of the block, and
+    another display's block closes in between — so a display the note leaves UNLABELLED, having no
+    label to be found by, falls back to the innermost block that does hold its panels."""
+    ends = {}
+    k = text.find("#disp[")
+    while k >= 0:
+        ends[diagram.close(text, k + 5)] = k
+        k = text.find("#disp[", k + 6)
+    if labelled:
+        at = text.find(f"<{name}>")
+        while at >= 0:
+            j = text.rfind("]", 0, at)
+            if j in ends and not text[j + 1:at].strip():
+                return ends[j], j + 1
+            at = text.find(f"<{name}>", at + 1)
+        return None, None
+    i, j = min(s[1] for s in spans), max(s[2] for s in spans)
+    inner = [(s, e + 1) for e, s in ends.items() if s < i and e >= j]
+    return max(inner) if inner else (None, None)
+
+
+def markerlines(text, fi, spans, name, labelled, drawn, db):
+    """THE MARKERS A CONVERTED DISPLAY NO LONGER NEEDS, as the line spans to cut, and why not.  A
+    `lean:` marker inside the `#disp[` block holding the display's panels cites a declaration; where
+    that declaration is one the display's `lean()` calls now DRAW, the picture is the citation and
+    the comment repeats it.  A marker citing anything else — a reason, not a drawing — is kept."""
+    k, end = dispblock(text, name, labelled, spans)
+    if k is None:
+        return [], ("no `#disp[` block is written round its panels, so which markers are the"
+                    " display's own cannot be said and every one of them stands")
+    out, at = [], text.find("\n", k)
+    while 0 <= at < end:
+        nxt = text.find("\n", at + 1)
+        line = text[at + 1:nxt if 0 <= nxt < end else end]
+        ms = citecheck.MARK.findall(line)
+        if line.lstrip().startswith("//") and ms and all(declof(db, m.rstrip(".")) in drawn
+                                                         for m, _ in ms):
+            out.append((fi, at, nxt))         # the line, cut with the newline that starts it
+        at = nxt
+    return out, None
+
+
+def lean_convert(want):
+    """THE NOTE'S STRING PANELS AS LEAN NAMES.  Every `dpanel(` literal of a display the manifest
+    names becomes `lean("<selector>")` — a declaration and nothing else, no `cert:`, no `frame:`, no
+    `top:` — and a `lean:` marker the display's own pictures now draw goes with it.
+
+    THE OBLIGATIONS ARE THE MANIFEST'S DISPLAYS, and each is answered from the same three readers the
+    gate answers it from: `obligations()` gives a display its selector per panel, `sources` that
+    panel's own literal, `route` which side of a statement it draws.  A display the pairing cannot
+    settle is REFUSED by name and left byte for byte; the run converts every other one and exits
+    non-zero listing the refusals, because a shape converted by hand is a shape the next note change
+    breaks again."""
+    live, number, _ = note_panels()
+    rows, num = obligations(), lambda n: number.get(n, n)
+    addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    hasdisp, _ = picks(want, addr)
+    texts = note_texts()
+    atlit, bad = sources(texts, live)
+    db = sqlite3.connect(f"file:{citecheck.DB}?mode=ro", uri=True)
+    edits, plan, refused, nodecl, stale, done, merged, cut = {}, [], [], [], [], 0, 0, 0
+    for n, sels in rows:
+        if n not in live or not hasdisp(n):
+            continue
+        ids = [p.get("id") for p in live[n]]
+        spans = [atlit.get(i) for i in ids]
+        # ALREADY A `lean()`: the display draws panels and not one of them is a `dpanel(` literal
+        # the note holds, and none was reported ill — a second run over it changes nothing.
+        if not any(spans) and not any(i in bad for i in ids):
+            done += 1
+            continue
+        if len(sels) != len(ids):
+            refused.append((addr(n), f"{PANELS} names {len(sels)} selector(s) for {len(ids)} panel(s)"))
+            continue
+        k = next((x for x, s in enumerate(spans) if s is None), None)
+        if k is not None:
+            refused.append((addr(n), f"panel {k + 1}: " + (bad.get(ids[k]) or
+                            f"the note draws it by `{live[n][k].get('helper')}`, which is no"
+                            f" `dpanel(` literal")))
+            continue
+        if len({s[0] for s in spans}) > 1:
+            refused.append((addr(n), "its panels are written in two files, so the display is not one"
+                                     " block and its markers have no home"))
+            continue
+        mine, x = [], 0
+        while x < len(sels):
+            s = sels[x]
+            if s == "-":
+                nodecl.append(f"{addr(n)}.{x + 1}")
+                x += 1
+                continue
+            b, w = route(s)
+            nxt = route(sels[x + 1]) if x + 1 < len(sels) and sels[x + 1] != "-" else None
+            # TWO SIDES AND THE SYMBOL BETWEEN THEM ARE ONE STATEMENT: `lean("N")` draws the whole
+            # of it, relation symbol included, so the note keeps no cell of its own to say it.
+            if (w, nxt) == (0, (b, 1)) and cellonly(texts[spans[x][0]][1], spans[x][2],
+                                                    spans[x + 1][1]):
+                mine.append(((spans[x][0], spans[x][1], spans[x + 1][2]), b,
+                             f"{addr(n)}.{x + 1}+{x + 2}"))
+                merged += 1
+                x += 2
+                continue
+            mine.append((spans[x], s, f"{addr(n)}.{x + 1}"))
+            x += 1
+        if mine:
+            plan.append((n, mine))
+    # ONE LITERAL, ONE NAME.  A `#let` panel two displays draw is ONE span reached twice, so a
+    # manifest naming the two apart would have that span drawing one display's declaration inside
+    # the other's picture: both displays are refused and NEITHER is written, where writing whichever
+    # came first leaves the other silently drawing a statement nobody wrote it for.
+    seen = {}
+    for n, mine in plan:
+        for sp, s, t in mine:
+            seen.setdefault(sp, {}).setdefault(s, []).append((n, t))
+    clash = {n for byt in seen.values() if len(byt) > 1 for v in byt.values() for n, _ in v}
+    for sp, byt in sorted(seen.items()):
+        if len(byt) > 1:
+            ns = sorted({addr(n) for v in byt.values() for n, _ in v})
+            ts = sorted(t for v in byt.values() for _, t in v)
+            refused.append((" and ".join(ns), f"{' and '.join(ts)} are drawn from ONE `dpanel(`"
+                                              f" literal and {PANELS} names them apart, so neither"
+                                              f" display is written"))
+    for n, mine in plan:
+        if n in clash:
+            continue
+        drawn = {d for sp, s, t in mine for d in [declof(db, s)] if d}
+        dels, why = markerlines(texts[mine[0][0][0]][1], mine[0][0][0], [sp for sp, _, _ in mine],
+                                n, num(n) != n, drawn, db)
+        # A DISPLAY STILL CONVERTS WITH ITS MARKERS IN PLACE: the pictures are the payload and the
+        # markers a second reading of the same declaration, so a block not found is said, not fatal.
+        if why:
+            stale.append((addr(n), why))
+        for sp, s, t in mine:
+            edits[sp] = (f'lean("{s}")', t)
+        for sp in dels:
+            edits[sp] = ("", f"{addr(n)}'s marker")
+        cut += len(dels)
+    # NO EDIT MAY EAT ANOTHER: a merged span reaches across the cell between two panels, and a `#let`
+    # literal two displays share is one span reached twice, so two edits that overlap are two
+    # readings of one piece of the note — reported, and neither written.
+    keys = sorted(edits)
+    for a, b in zip(keys, keys[1:]):
+        if a[0] == b[0] and a[2] > b[1]:
+            refused.append((edits[a][1], f"its span overlaps {edits[b][1]}'s, so neither is written"))
+            edits[a], edits[b] = (None, edits[a][1]), (None, edits[b][1])
+    splice(texts, edits)
+    for name, why in refused:
+        print(f"{name}: REFUSED — {why}")
+    for name, why in stale:
+        print(f"{name}: MARKERS — {why}")
+    for t in nodecl:
+        print(f"{t}: NO-DECL — the manifest names no declaration, so the literal stands")
+    print(f"string-check --lean: {sum(1 for v in edits.values() if v[0])} span(s) written"
+          f" ({merged} merged from two sides), {cut} marker(s) cut, {done} display(s) already"
+          f" converted, {len(refused)} refused, {len(stale)} with markers left, {len(nodecl)} with"
+          f" no declaration")
+    return 1 if refused or stale else 0
+
+
+def sources(texts, live):
     """EVERY NOTE PANEL'S OWN `dpanel(` LITERAL — the place a verdict for it is written, keyed by
     the panel's own `id` (`<display>.<k>`), which `hm-meta` stamps on every panel it emits.  A
     `#dpanel(` call is exactly what emits a panel stamped `helper: "dpanel"`; a `dpan` or a
@@ -696,9 +922,10 @@ def sources(text, live):
     # to the end of the whole `dpanel(` call, so a `, s: 100%)` written after the group comes back
     # as a field `s` no compiled panel has — which matched §11's literals against nothing at all.
     byc = {}
-    for i, e, j, _ in diagram.literals(text):
-        k = text.rfind("cert: (", i, e)
-        byc.setdefault(drawing(diagram.certof(text[k:e])), []).append((i, j))
+    for fi, (_, text) in enumerate(texts):
+        for i, e, j, _ in diagram.literals(text):
+            k = text.rfind("cert: (", i, e)
+            byc.setdefault(drawing(diagram.certof(text[k:e])), []).append((fi, i, j))
     ps = {}
     for ms in live.values():
         for m in ms:
@@ -757,8 +984,8 @@ def rewrite(want, drawing):
     # re-draw, where `--write` is held to the very picture the gate compares the note against.
     again, at = redraw_as_noted(recs, rows, live, hasdisp) if drawing else ([], {})
     save_recs(recs)
-    text = note_source(NOTE)
-    atlit, bad = sources(text, live)
+    texts = note_texts()
+    atlit, bad = sources(texts, live)
     jobs, edits, carried, kept, miss, ungraded = [], {}, 0, 0, 0, 0
     for n, sels in sel_of:
         ps = live[n]
@@ -799,7 +1026,7 @@ def rewrite(want, drawing):
     # read is a defect written into the note, where a MARK is a word the exporter read off Lean.
     swept = sweep(sorted({j[4] for j in jobs})) if drawing else {}
     for tag, sel, panel, which, gen, (glit, gcert), span in jobs:
-        lit, v = text[span[0]:span[1]], [list(t) for t in gcert.get("nat") or []]
+        lit, v = texts[span[0]][1][span[1]:span[2]], [list(t) for t in gcert.get("nat") or []]
         if drawing:
             stop, _, _, st = compare(sel, panel, which, gen)
             if not stop:
@@ -838,13 +1065,7 @@ def rewrite(want, drawing):
     # `(expect, src, tgt)`, and one selector may be drawn by two displays, so a verdict looked up
     # by the formula lands on whichever panel spells the same arrow rather than on the one it was
     # drawn for.  Each edit carries its own panel's span, so ONE FORWARD pass places them all.
-    out, end = [], 0
-    for (i, j), (new, _) in sorted(edits.items()):
-        if new is None:
-            continue
-        out += [text[end:i], new]
-        end = j
-    note_write(NOTE, "".join(out + [text[end:]]))
+    splice(texts, edits)
     print(f"string-check --{'write' if drawing else 'marks'}: {carried} panel(s) carry Lean's "
           + (f"drawing; {kept} panel(s) the gate already reads as Lean's own diagram; "
              if drawing else
@@ -857,6 +1078,10 @@ def rewrite(want, drawing):
 
 def main(argv):
     argv = take_chapter(argv)
+    # THE LAST WRITE THIS SCRIPT MAKES: every panel of the note becomes the Lean name it draws, and
+    # this file and `diag/string-panels.txt` go with the last `dpanel(` literal (see `lean_convert`).
+    if "--lean" in argv:
+        return lean_convert(next((a for a in argv if not a.startswith("-")), ""))
     # ONE WRITER, TWO PAYLOADS — the panel's mark, or its drawing and its mark (see `rewrite`).
     if "--marks" in argv or "--write" in argv:
         return rewrite(next((a for a in argv if not a.startswith("-")), ""), "--write" in argv)
