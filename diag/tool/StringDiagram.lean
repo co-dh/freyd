@@ -473,14 +473,14 @@ def fileOf (body : String) (nat : String := "") : String :=
     panels in order, so a caller holding the note to ONE of them names it by index instead of
     re-splitting the picture.
 
-    IT IS DRAWN IN THE DECLARATION'S BOX, NOT ITS OWN: the two sides of one equation are two files,
-    and a side that took its own depth came out shorter than the side across the `=` from it.  The
-    extra depth is HEADROOM — no `topRow`, so every bead keeps the row it had and the wires simply
-    enter from higher up. -/
+    IT IS DRAWN IN THE BOX ITS PEERS SHARE, NOT ITS OWN: the two sides of one equation are two
+    files, and a side that took its own depth came out shorter than the side across the `=` from it.
+    Asked for alone it has no peers and the box IS its own.  The extra depth is HEADROOM — no
+    `topRow`, so every bead keeps the row it had and the wires simply enter from higher up. -/
 def emit (p : Diagram) (frame : Nat) : MetaM String := do
   -- THE OBLIGATION, not the record: the part drawn must be one the frame was taken over.  A part
-  -- deeper than the frame is one `declParts` did not reach, and it would come out taller than its
-  -- siblings rather than be clipped (`frameRows` never draws a picture short).
+  -- deeper than the frame is one the peer list did not reach, and it would come out taller than the
+  -- parts beside it rather than be clipped (`frameRows` never draws a picture short).
   unless frameRows p (some frame) == frame do
     throwError "a part {p.rows.size} beads deep is drawn in a frame of {frame} rows: the frame is \
       the DECLARATION's, so every part of it must be among the ones it was taken over"
@@ -542,8 +542,8 @@ def emitStatement (declName : String) (parts : Array (String × Diagram)) (frame
     MetaM String := do
   let ps := parts.map (·.2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  -- NEVER SHALLOWER THAN THE DECLARATION'S BOX: a statement drawn whole and one of its parts drawn
-  -- alone are two files of one declaration, so they stand at one height too.
+  -- NEVER SHALLOWER THAN THE BOX ITS PEERS SHARE: a statement drawn whole beside another part of
+  -- the same declaration stands at that part's height too.
   let fr := max (frameOf ref ps) frame
   -- THE FLOOR, NOT THE CEILING: the deepest part's last bead lands on row 1 and every other part
   -- keeps its `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no
@@ -1317,32 +1317,6 @@ partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array 
     withSel regionTy cat objVars sel e fun e' => do
       withParts regionTy cat objVars sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars)) k
 
-/-- HOW DEEP A BOX ONE PART OF A DECLARATION NEEDS, in rows: its own depth, and the depth of every
-    part the rest of the selector chain reaches inside it.  BOTH operands are taken at a branch step
-    and a least fixed point's body is opened at a `.body` step, so `.inl` and `.inr` — like `.lhs`
-    and `.rhs` — are files of one height however few of them a note asks for.
-
-    A step the expression does not admit names no part and adds nothing: that refusal is the same
-    SHAPE test `branchSel` makes of `branchOf`, and a part no selector reaches is a part no note can
-    ask for.  A part that fails to DRAW is not caught — its error is the one asking for it gives. -/
-partial def declFrame (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
-    (sel : List Sel) (e : Expr) : MetaM Nat := do
-  let n := framex (← panelOf regionTy cat e objVars)
-  match sel with
-  | [] => return n
-  | .body :: rest =>
-    match muArg? e with
-    | none => return n
-    | some φ => Meta.lambdaBoundedTelescope φ 1 fun xs b => do
-        if xs.size == 1 then return max n (← declFrame regionTy cat objVars rest b) else return n
-  | _ :: rest => do
-    let mut m := n
-    for i in [0 : 2] do
-      let step : MetaM (Option Expr) :=
-        try pure (some (← branchSel regionTy cat objVars e i)) catch _ => pure none
-      if let some e' ← step then m := max m (← declFrame regionTy cat objVars rest e')
-    return m
-
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
     and every label prints as `Cat.comp` — the picture then comes out with no lanes at all and no
@@ -1360,12 +1334,13 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
 
-    A statement is drawn WHOLE — both sides in one frame — or one side at a time; either way every
-    side is read, because the frame is a property of the statement and a side alone cannot know how
-    deep the other one is.  The path names the statement, so `.lhs` on an `↔` draws the whole left
-    statement and only a trailing name on a relation picks a side. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel) :
-    MetaM String :=
+    A statement is drawn WHOLE — both sides in one frame — or one side at a time.  `peers` is every
+    request for THIS declaration in the same run, this one among them: the parts drawn beside each
+    other share a frame, so a `.lhs` asked for with its `.rhs` is as deep as it, and one asked for
+    alone is as deep as its own picture.  The path names the statement, so `.lhs` on an `↔` draws
+    the whole left statement and only a trailing name on a relation picks a side. -/
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
+    (peers : List (List String × List Sel)) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1408,19 +1383,28 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- in one frame — and `.lhs.lhs` goes on to that inequation's left part alone.  A step descends
     -- while what it lands on is still a statement built from statements (`conn?`); the first step
     -- that is not names a part, and nothing can follow it.
-    let mut body := body
-    let mut side : Option String := none
-    for s in path do
-      match side, conn? body with
-      | none, some (l, r) => body := if s == "lhs" then l else r
-      | none, none => side := some s
-      | some p, _ =>
-        throwError "`.{s}` follows `.{p}`, which already names a part of \
-          {← Meta.ppExpr body}: a part has no sides of its own"
-    -- The statement's PARTS: the two sides a relation symbol joins, or the arrow itself.
-    let parts : Array (String × Expr) := match split body with
-      | some (sym, l, r) => #[("", l), (sym, r)]
-      | none => #[("", body)]
+    -- The statement's own PARTS and the ones ONE REQUEST draws: the two sides a relation symbol
+    -- joins, or the arrow itself, and then the side the request's trailing name picks out of them.
+    -- Every request of this declaration is resolved through here, its own and its peers' alike.
+    let reqParts (path : List String) : MetaM (Array (String × Expr) × Array (String × Expr)) := do
+      let mut body := body
+      let mut side : Option String := none
+      for s in path do
+        match side, conn? body with
+        | none, some (l, r) => body := if s == "lhs" then l else r
+        | none, none => side := some s
+        | some p, _ =>
+          throwError "`.{s}` follows `.{p}`, which already names a part of \
+            {← Meta.ppExpr body}: a part has no sides of its own"
+      let parts : Array (String × Expr) := match split body with
+        | some (sym, l, r) => #[("", l), (sym, r)]
+        | none => #[("", body)]
+      match side with
+      | none => return (parts, parts)
+      | some s =>
+        if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
+        else return (parts, #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)])
+    let (parts, drawn) ← reqParts path
     let arrow := parts[0]!.2
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
@@ -1441,17 +1425,16 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    let drawn : Array (String × Expr) ← match side with
-      | none => pure parts
-      | some s =>
-        if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
-        else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
-    -- THE BOX IS THE DECLARATION'S, NOT THE PART'S — computed here, once, over EVERY part of the
-    -- statement, and not over the one this file happens to draw.  The two sides of an equation are
-    -- two files, and a part that took its own depth came out shorter than the part across the
-    -- relation symbol from it.
+    -- THE BOX IS SHARED BY THE PARTS DRAWN TOGETHER.  The two sides of an equation are two files,
+    -- and a side that took its own depth came out shorter than the side across the relation symbol
+    -- from it; the ARGUMENT LIST is what says which parts stand beside each other, so a part asked
+    -- for alone keeps its own depth and nothing is read from the note.
     let mut frame := 2
-    for (_, e) in parts do frame := max frame (← declFrame regionTy cat objVars sel e)
+    for (p, s) in peers do
+      let (_, d) ← reqParts p
+      for (_, e) in d do
+        frame := max frame (← withSel regionTy cat objVars s e fun e' =>
+          return framex (← panelOf regionTy cat e' objVars))
     withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""

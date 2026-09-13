@@ -1345,7 +1345,8 @@ def usage : String :=
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
-       in that same statement-wide frame\n\
+       as deep as the deepest part of that declaration asked for in the SAME run — so a\n\
+       side named beside its other side matches it, and one named alone keeps its own depth\n\
      `<name>.lhs.inl` / `.inr` draws ONE ARM of the fork (--circuit) or ONE OPERAND of the\n\
        union or meet (--string) at that side's head\n\
    `<name>#<binder>` draws that BINDER's type — a hypothesis is a statement too, and has\n\
@@ -1359,6 +1360,52 @@ def usage : String :=
 def stubFile (sel err : String) : String :=
   s!"#let pic = block(stroke: red + 0.6pt, inset: 6pt, radius: 2pt,\n  \
      text(8pt, red, raw({typstString s!"{sel}: {err}"})))\n"
+
+/-- ONE COMMAND-LINE SELECTOR, taken apart: the declaration, the binder whose type is drawn, the
+    SIDES named from the outside in, and the branch selectors that go inside the side.
+
+    `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
+    string and circuit routes read a side, the others take the name whole, which is what `sel` says.
+    `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork, the
+    panel draws when the other carries none of the law's content.  The selectors go LAST, after the
+    side they select inside, and they CHAIN: `.inr.inr` is the arm and then that arm's operand, each
+    applied to what the one before it left.  Outermost first, so the list is built by consing as the
+    suffixes come off the end.
+    A SIDE SELECTOR CHAINS TOO: a statement can be built from statements (`↔`, `∧`), so `.lhs.lhs`
+    is the left equation and then its left side, and one loop comes off the end.
+    `<Name>.lhs.body` is the BODY of a least fixed point, its binder instantiated by a local whose
+    wire the panel draws: one more step of the same chain, so it comes off the end with the rest and
+    keeps its place among them (`.body.inr` is the body, then that body's operand). -/
+def parseArg (arg : String) (sel : Bool) :
+    String × Option String × List String × List StrDiag.Sel := Id.run do
+  let mut stem : String.Slice := arg
+  let mut branch : List StrDiag.Sel := []
+  let mut sides : List String := []
+  let mut more := sel
+  while more do
+    if stem.endsWith ".inl" then
+      stem := stem.dropEnd 4
+      branch := .inl :: branch
+    else if stem.endsWith ".inr" then
+      stem := stem.dropEnd 4
+      branch := .inr :: branch
+    else if stem.endsWith ".body" then
+      stem := stem.dropEnd 5
+      branch := .body :: branch
+    else if stem.endsWith ".lhs" then
+      stem := stem.dropEnd 4
+      sides := "lhs" :: sides
+    else if stem.endsWith ".rhs" then
+      stem := stem.dropEnd 4
+      sides := "rhs" :: sides
+    else more := false
+  -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
+  -- statement too.  Split before `toName`: `#` is not an identifier character, so
+  -- `String.toName` returns the anonymous name for a name that still carries one.
+  let (base, binder) := match stem.toString.splitOn "#" with
+    | [b, h] => (b, some h)
+    | _ => (stem.toString, none)
+  return (base, binder, sides, branch)
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
@@ -1416,47 +1463,13 @@ def main (args : List String) : IO UInt32 := do
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
   -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
-  let tasks ← args.mapM fun (arg : String) => do
-    -- `<Name>.lhs` / `<Name>.rhs` is ONE side of the statement, not a declaration of its own; the
-    -- string and circuit routes read a side, the others take the name whole.
-    -- `<Name>.lhs.inr` is ONE BRANCH of that side — the operand of a union, or the arm of a fork,
-    -- the panel draws when the other carries none of the law's content.  The selectors go LAST,
-    -- after the side they select inside, and they CHAIN: `.inr.inr` is the arm and then that arm's
-    -- operand, each applied to what the one before it left.  Outermost first, so the list is built
-    -- by consing as the suffixes come off the end.
-    -- A SIDE SELECTOR CHAINS TOO: a statement can be built from statements (`↔`, `∧`), so
-    -- `.lhs.lhs` is the left equation and then its left side, and one loop comes off the end.
-    -- `<Name>.lhs.body` is the BODY of a least fixed point, its binder instantiated by a local whose
-    -- wire the panel draws: one more step of the same chain, so it comes off the end with the rest
-    -- and keeps its place among them (`.body.inr` is the body, then that body's operand).
-    let mut stem : String.Slice := arg
-    let mut branch : List StrDiag.Sel := []
-    let mut sides : List String := []
-    let mut more := circuitMode || stringMode
-    while more do
-      if stem.endsWith ".inl" then
-        stem := stem.dropEnd 4
-        branch := .inl :: branch
-      else if stem.endsWith ".inr" then
-        stem := stem.dropEnd 4
-        branch := .inr :: branch
-      else if stem.endsWith ".body" then
-        stem := stem.dropEnd 5
-        branch := .body :: branch
-      else if stem.endsWith ".lhs" then
-        stem := stem.dropEnd 4
-        sides := "lhs" :: sides
-      else if stem.endsWith ".rhs" then
-        stem := stem.dropEnd 4
-        sides := "rhs" :: sides
-      else more := false
-    let base := stem
-    -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
-    -- statement too.  Split before `toName`: `#` is not an identifier character, so
-    -- `String.toName` returns the anonymous name for a name that still carries one.
-    let (base, binder) := match base.toString.splitOn "#" with
-      | [b, h] => (b, some h)
-      | _ => (base.toString, none)
+  -- THE ARGUMENT LIST SAYS WHICH PARTS STAND BESIDE EACH OTHER, and a frame is shared by exactly
+  -- those: every selector is taken apart once, here, so a task can find its declaration's others.
+  let parsed := args.map fun a => parseArg a (circuitMode || stringMode)
+  let tasks ← (args.zip parsed).mapM fun (arg, base, binder, sides, branch) => do
+    -- The other parts of THIS declaration the run was asked for, this one among them.
+    let peers := (parsed.filter fun (b, h, _, _) => b == base && h == binder).map
+      fun (_, _, s, br) => (s, br)
     -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
     -- per declaration, and not once for the whole command line.
     -- A commutative page's first part names it, and the parts of one page are the faces of one
@@ -1468,7 +1481,7 @@ def main (args : List String) : IO UInt32 := do
       -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
       Meta.MetaM.run' <| Meta.withConfig (fun c => { c with foApprox := true, ctxApprox := true }) <|
         (if sigMode then sig arg.toName
-        else if stringMode then StrDiag.drawString base.toName sides binder branch
+        else if stringMode then StrDiag.drawString base.toName sides binder branch peers
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
