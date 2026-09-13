@@ -7,6 +7,7 @@ other.
     ./scripts/string-check 13.6       # only the displays whose number starts so
     ./scripts/string-check --selectors  # the manifest's selectors, one per line, for `make`
     ./scripts/string-check --marks 14.1 # write Lean's per-panel verdicts into the note's `cert:`s
+    ./scripts/string-check --write 14.1 # and Lean's own drawing into every panel graded DIFF
 
 THREE OBLIGATIONS, each enumerated from what MUST have an answer rather than from what has one:
   every display   the note draws (`typst query`, `kind == "scanline"`) has a line in the file — a
@@ -121,7 +122,7 @@ def drawn_geom(recs, bases):
     return out
 
 
-def redraw_as_noted(recs, rows, live, num, want):
+def redraw_as_noted(recs, rows, live, hasdisp):
     """THE FRAME AND THE TOP ARE THE DISPLAY'S, AND THE NOTE STATES BOTH.  How deep a panel's box
     is, and which row inside it the first bead sits on, say nothing about which arrow it draws —
     they are how A DISPLAY lines its panels up — so the note's own drawn height is the box, its
@@ -153,7 +154,7 @@ def redraw_as_noted(recs, rows, live, num, want):
     geom = drawn_geom(recs, sorted(recs))
     want_at, tops_at, clash, high = {}, {}, [], []
     for n, sels in rows:
-        if n not in live or not num(n).startswith(want) or len(sels) != len(live[n]):
+        if n not in live or not hasdisp(n) or len(sels) != len(live[n]):
             continue
         for sel, panel in zip(sels, live[n]):
             if sel == "-":
@@ -262,6 +263,17 @@ def route(sel):
     the statement's and not the part's — so one selector then answers for several note panels."""
     base, _, k = sel.partition("@")
     return base, (int(k) - 1 if k else 0)
+
+
+def picks(want, addr):
+    """WHAT A PREFIX NAMES IS A ROW — `<number>/<display>.<k>`, the line the report prints — so `14`
+    takes a chapter, `14.1.2e/thin-thm81` a display and `14.1.2e/thin-thm81.3` one panel of it.  The
+    gate, `--marks` and `--write` all select by this one rule, because a mode with a prefix rule of
+    its own answers for a different set of panels than the report it is read beside.  Two tests: a
+    DISPLAY is live when the prefix reaches into it or past it — a row prefix names a display it is
+    longer than — and a ROW when the prefix starts it."""
+    return (lambda n: addr(n).startswith(want) or want.startswith(addr(n)),
+            lambda n, k: f"{addr(n)}.{k}".startswith(want))
 
 
 def diagram_args(cert):
@@ -600,23 +612,28 @@ def fields(g):
 def setnat(lit, nat):
     """One `dpanel(` literal with Lean's verdicts written into its `cert:`, replacing whatever `nat`
     it carried.  Only the CERT is touched: the picture itself is rebuilt from it by
-    `./scripts/diagram --write`, which is the one place a panel is drawn."""
+    `./scripts/diagram --write`, which is the one place a panel is drawn.  A panel Lean grades no
+    bead in carries NO `nat` field, rather than an empty one that would read as a reading made and
+    nothing found."""
     k = lit.rfind("cert: (")
     e = diagram.close(lit, k + 6) + 1
     fs = [f for f in fields(lit[k + 7:e - 1]) if not f.startswith("nat: ")]
     q = lambda s: '"' + s.replace("\\", "\\\\") + '"'
-    fs.append("nat: (" + ", ".join("(" + ", ".join(q(x) for x in t) + ")" for t in nat)
-              + ("," if len(nat) == 1 else "") + ")")
+    if nat:
+        fs.append("nat: (" + ", ".join("(" + ", ".join(q(x) for x in t) + ")" for t in nat)
+                  + ("," if len(nat) == 1 else "") + ")")
     return lit[:k + 7] + ", ".join(fs) + lit[e - 1:]
 
 
 def generated(gen):
-    """One generated file's panels' `cert:`s, in the order it drew them — by the same reader
-    `drawn_geom` reads the frame with.  A verdict is read off THE DRAWING the exporter wrote, not
-    off a second compile of it: `nat:` is a field of that `cert:`, so the file itself answers, and
-    the count of panels in it is what the note's `@k` must fall inside."""
-    return [c for _, _, _, c in diagram.literals(open(gen, encoding="utf-8").read(),
-                                                 drawable=False)]
+    """One generated file's panels, in the order it drew them, each as (its own `dpanel(` LITERAL,
+    its `cert:`) — by the same reader `drawn_geom` reads the frame with.  BOTH payloads a note panel
+    is written from are read here and in one place: the verdict is `nat:`, a field of that `cert:`,
+    and the drawing is the literal itself, so neither is a second compile of the picture and the two
+    cannot come off two different drawings.  The count of panels is what the note's `@k` must fall
+    inside."""
+    text = open(gen, encoding="utf-8").read()
+    return [(text[i:j], c) for i, _, j, c in diagram.literals(text, drawable=False)]
 
 
 def drawing(c):
@@ -627,6 +644,35 @@ def drawing(c):
     num = lambda v: float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
     return json.dumps({k: num(v) for k, v in (c or {}).items() if k != "nat"},
                       ensure_ascii=False, sort_keys=True)
+
+
+def args(lit):
+    """One `dpanel(` call's arguments, by the same depth- and quote-aware reader a `cert:` group's
+    fields are cut by — a positional tuple carries brackets and commas of its own."""
+    i = lit.index("(")
+    return fields(lit[i + 1:diagram.close(lit, i)])
+
+
+def argname(f):
+    """An argument's NAME, or None where it is positional: an identifier and a colon before any
+    bracket or quote of the argument's own, which is what Typst's call syntax allows and what tells
+    `obj:` from the tuple it takes."""
+    k = 0
+    while k < len(f) and (f[k].isalnum() or f[k] == "_"):
+        k += 1
+    return f[:k] if k and k < len(f) and f[k] == ":" else None
+
+
+def redrawn(lit, glit):
+    """One note `dpanel(` literal carrying THE GENERATED PANEL'S DRAWING.  What the generator emits
+    IS the drawing — the lanes, beads and ports it passes positionally, the object wire it passes as
+    `obj:` — so the generated call is kept WHOLE, its formatting with it, and the one argument of it
+    that is not a drawing is dropped: `cert:` is the author's formula and signatures, and so is
+    every argument of the note's own call the generator writes none of (`s:`, `names:`)."""
+    k = glit.rfind("cert: (")
+    made = {argname(a) for a in args(glit)}
+    mine = [f for f in args(lit) if argname(f) == "cert" or argname(f) and argname(f) not in made]
+    return glit[:k] + ", ".join(mine) + glit[diagram.close(glit, k + 6) + 1:]
 
 
 def sources(text, live):
@@ -676,7 +722,7 @@ def sources(text, live):
     return at, bad
 
 
-def marks(want):
+def rewrite(want, drawing):
     """WHERE A BEAD'S MARK COMES FROM.  `diag/hm-sigs.json` holds one `nat` per bead LABEL, and a
     verdict belongs to a bead in a REGION: the same `𝟙%∋` is strict on §14.1's `E` and lax on
     §13.6.7a's, so a global row draws one of them wrong whatever it says.  The exporter already
@@ -687,36 +733,49 @@ def marks(want):
 
     THE OBLIGATIONS ARE THE NOTE'S PANELS, one loop over them, and each is answered from the
     drawing made for IT: `obligations()` gives a display its selector per panel, `route` which
-    panel of that drawing answers it, and `sources` that note panel's own literal."""
+    panel of that drawing answers it, and `sources` that note panel's own literal.
+
+    ONE WRITER, TWO PAYLOADS — `--marks` writes the generated panel's VERDICTS, `--write` its
+    DRAWING and its verdicts — because they are one pairing: which generated panel answers a note
+    panel is the question both ask, and a second writer asking it again is how a panel's mark and
+    its picture come to be taken off two different drawings.  `--write` adds the gate's verdict to
+    it and nothing else: the author's isotopic layout stands, so only a `DIFF` panel is redrawn."""
     live, number, _ = note_panels()
     rows, num = obligations(), lambda n: number.get(n, n)
-    sel_of = [(n, sels) for n, sels in rows if n in live and num(n).startswith(want)]
-    todo = sorted({route(s)[0] for _, sels in sel_of for s in sels if s != "-"})
+    addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    hasdisp, hasrow = picks(want, addr)
+    sel_of = [(n, sels) for n, sels in rows if n in live and hasdisp(n)]
+    todo = sorted({route(s)[0] for n, sels in sel_of
+                   for k, s in enumerate(sels, 1) if s != "-" and hasrow(n, k)})
     # A selector the exporter REFUSES is one panel's failure, not the run's: it exits non-zero for
     # the whole batch, and the reason its record names is reported against the panel that wanted
     # it, below, the way the gate reports it.  Stopping here would leave every other panel's mark
     # unwritten.
     recs, p = export(todo)
+    # THE BOX IS THE DISPLAY'S, and only a drawing about to be SPLICED into the note must sit in it:
+    # a verdict is not geometry, so `--marks` reads the one drawing per selector and asks for no
+    # re-draw, where `--write` is held to the very picture the gate compares the note against.
+    again, at = redraw_as_noted(recs, rows, live, hasdisp) if drawing else ([], {})
     save_recs(recs)
     text = note_source(NOTE)
-    at, bad = sources(text, live)
-    edits, carried, miss, ungraded = {}, 0, 0, 0
+    atlit, bad = sources(text, live)
+    jobs, edits, carried, kept, miss, ungraded = [], {}, 0, 0, 0, 0
     for n, sels in sel_of:
         ps = live[n]
         if len(sels) != len(ps):
-            print(f"{num(n)}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)}"
+            print(f"{addr(n)}: MISCOUNT — {PANELS} names {len(sels)} selector(s) for {len(ps)}"
                   f" panels")
             miss += 1
             continue
         for k, (sel, panel) in enumerate(zip(sels, ps), 1):
-            tag = f"{num(n)}.{k}"
-            if sel == "-":
+            tag = f"{addr(n)}.{k}"
+            if sel == "-" or not hasrow(n, k):
                 continue
             base, which = route(sel)
             # A VERDICT IS NOT GEOMETRY: what a bead's mark is does not move with the box or the
-            # bead height, so marks are read off the one drawing per selector and want no re-draw
-            # per display — hence no per-(display, selector) records to answer from.
-            gen, err = answer(recs, {}, n, base)
+            # bead height, so `--marks` reads them off the one drawing per selector and wants no
+            # re-draw per display — `at` is empty there, and the first pass's record answers.
+            gen, err = answer(recs, at, n, base)
             if err:
                 print(f"{tag} {sel}: CANNOT-DRAW {err}")
                 miss += 1
@@ -727,49 +786,80 @@ def marks(want):
                       f" asks for its {which + 1}")
                 miss += 1
                 continue
-            span = at.get(panel.get("id"))
+            span = atlit.get(panel.get("id"))
             if span is None:
                 print(f"{tag} {sel}: NO-LITERAL — " + (bad.get(panel.get("id")) or
                       f"the note draws this panel by `{panel.get('helper')}`, which carries no"
                       f" `cert:` for a verdict to be written into"))
                 miss += 1
                 continue
-            v = [list(t) for t in drawn[which].get("nat") or []]
+            jobs.append((tag, sel, panel, which, gen, drawn[which], span))
+    # THE PICTURE A DRAWING COMES FROM IS SWEPT FIRST — one `scanline --strict` over every file the
+    # jobs draw from, the same sweep the gate stands its verdicts on — because a drawing no cut can
+    # read is a defect written into the note, where a MARK is a word the exporter read off Lean.
+    swept = sweep(sorted({j[4] for j in jobs})) if drawing else {}
+    for tag, sel, panel, which, gen, (glit, gcert), span in jobs:
+        lit, v = text[span[0]:span[1]], [list(t) for t in gcert.get("nat") or []]
+        if drawing:
+            stop, _, _, st = compare(sel, panel, which, gen)
+            if not stop:
+                r = swept[gen]
+                fs = r["failures"] + r["unhandled"] + ["the picture was never drawn"] * r["missing"]
+                if fs:
+                    stop = f"SWEEP {len(fs)} failure(s); the first: {fs[0]}"
+            if stop:
+                print(f"{tag} {sel}: {stop}")
+                miss += 1
+                continue
+            # THE AUTHOR'S LAYOUT STANDS: `ok` and `ok (layout: …)` are Lean's own diagram drawn
+            # elsewhere on the page, so that panel is left byte for byte as it is.
+            if st != "DIFF":
+                kept += 1
+                continue
+            new = setnat(redrawn(lit, glit), v)
+        else:
             if not v:
                 ungraded += 1
                 continue
-            # ONE LITERAL, ONE VERDICT: a `#let` panel the note draws in two places is ONE `cert:`,
-            # so two displays Lean grades apart is a defect of the note's own reuse — reported, and
-            # the literal left as it stands, rather than settled by writing whichever came last.
-            was = edits.get(span)
-            if was is not None and was[0] != v:
-                print(f"{tag} {sel}: SHARED — this panel and {was[1]} are drawn from one `cert:`"
-                      f" and Lean grades them apart, so neither verdict is written")
-                miss += 1
-                edits[span] = (None, was[1])
-                continue
-            edits[span] = (v, tag)
-            carried += 1
+            new = setnat(lit, v)
+        # ONE LITERAL, ONE PANEL: a `#let` panel the note draws in two places is ONE `cert:`, so two
+        # displays Lean writes apart is a defect of the note's own reuse — reported, and the literal
+        # left as it stands, rather than settled by writing whichever came last.
+        was = edits.get(span)
+        if was is not None and was[0] != new:
+            print(f"{tag} {sel}: SHARED — this panel and {was[1]} are drawn from one `cert:` and"
+                  f" Lean writes them apart, so neither is written")
+            miss += 1
+            edits[span] = (None, was[1])
+            continue
+        edits[span] = (new, tag)
+        carried += 1
     # THE KEY IS (DISPLAY, SELECTOR), NEVER THE FORMULA: two panels of one display may draw one
     # `(expect, src, tgt)`, and one selector may be drawn by two displays, so a verdict looked up
     # by the formula lands on whichever panel spells the same arrow rather than on the one it was
     # drawn for.  Each edit carries its own panel's span, so ONE FORWARD pass places them all.
     out, end = [], 0
-    for (i, j), (v, _) in sorted(edits.items()):
-        if v is None:
+    for (i, j), (new, _) in sorted(edits.items()):
+        if new is None:
             continue
-        out += [text[end:i], setnat(text[i:j], v)]
+        out += [text[end:i], new]
         end = j
     note_write(NOTE, "".join(out + [text[end:]]))
-    print(f"string-check --marks: {carried} panel(s) carry Lean's verdicts; {ungraded} panel(s)"
-          f" Lean grades no bead in; {miss} not drawn")
-    return 1 if unanswered(recs, todo, p) or miss else 0
+    print(f"string-check --{'write' if drawing else 'marks'}: {carried} panel(s) carry Lean's "
+          + (f"drawing; {kept} panel(s) the gate already reads as Lean's own diagram; "
+             if drawing else
+             f"verdicts; {ungraded} panel(s) Lean grades no bead in; ") + f"{miss} not written")
+    rc = miss or unanswered(recs, todo, p)
+    for r, bs, q in again:
+        rc |= unanswered(r, bs, q)
+    return 1 if rc else 0
 
 
 def main(argv):
     argv = take_chapter(argv)
-    if "--marks" in argv:
-        return marks(next((a for a in argv if not a.startswith("-")), ""))
+    # ONE WRITER, TWO PAYLOADS — the panel's mark, or its drawing and its mark (see `rewrite`).
+    if "--marks" in argv or "--write" in argv:
+        return rewrite(next((a for a in argv if not a.startswith("-")), ""), "--write" in argv)
     # `make scan-generated`'s obligations are these, and they are read by the SAME reader as this
     # gate's, so the two cannot come to disagree about what the manifest names.
     if "--selectors" in argv:
@@ -785,9 +875,10 @@ def main(argv):
     # manifest keys by.  `want` therefore filters the NUMBER, not the name.
     num = lambda n: number.get(n, n)
     addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"
+    hasdisp, hasrow = picks(want, addr)
     # A section the scoped note does not hold is a MISTAKE, never an empty report: with `CH` naming
     # one chapter, `13.4` asked of chapter 12 would otherwise check nothing and exit 0.
-    if want and not any(num(n).startswith(want) for n in live):
+    if want and not any(hasdisp(n) for n in live):
         sys.exit(f"string-check: no display {want} in {NOTE} — it draws "
                  + ", ".join(sorted({num(n) for n in live})[:8]) + ", …")
     rc, named = 0, {n for n, _ in rows}
@@ -804,8 +895,8 @@ def main(argv):
         print(f"{n}: UNLABELLED — the note's display carries no `#disp` label, so {PANELS} keys it"
               f" by its number, which the next heading change moves")
 
-    todo = sorted({route(s)[0] for n, sels in rows if n in live and num(n).startswith(want)
-                   for s in sels if s != "-"})
+    todo = sorted({route(s)[0] for n, sels in rows if n in live and hasdisp(n)
+                   for k, s in enumerate(sels, 1) if s != "-" and hasrow(n, k)})
     # The RECORD answers "did it draw"; the pictures about to be drawn are still deleted first, so a
     # selector the exporter refuses leaves no LAST run's picture on disk for another sweep to pass.
     for s in todo:
@@ -815,7 +906,7 @@ def main(argv):
     # SECOND PASS: a display whose panels came out in a box or at a bead height the note does not
     # ask for is re-drawn at the note's own — per (display, selector), since the box is the
     # display's, so `at` and not `recs` says which picture a given display's panel is held to.
-    again, at = redraw_as_noted(recs, rows, live, num, want)
+    again, at = redraw_as_noted(recs, rows, live, hasdisp)
     save_recs(recs)
     # Each slot answers one line of the report, in DOCUMENT order: a verdict already decided, or one
     # waiting on its selector's drawing and on the sweep of its picture.
@@ -834,7 +925,7 @@ def main(argv):
 
     slots, groups = [], {}
     for n, sels in rows:
-        if n not in live or not num(n).startswith(want):
+        if n not in live or not hasdisp(n):
             continue
         ps = live[n]
         if len(sels) != len(ps):
@@ -843,6 +934,8 @@ def main(argv):
             continue
         for k, (sel, panel) in enumerate(zip(sels, ps), 1):
             tag = f"{addr(n)}.{k}"
+            if not hasrow(n, k):
+                continue
             if sel == "-":
                 slots.append(done(f"{tag}: NO-DECL — no declaration is cited for this panel", False,
                                   "NO-DECL"))
