@@ -57,6 +57,7 @@ import diag.S2_124
 import diag.tool.Label
 import diag.tool.StringDiagram
 import diag.tool.TypeRender
+import diag.tool.Cite
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
 import AOP.A4_5
@@ -1328,6 +1329,10 @@ def usage : String :=
      note compiles and the defect is on the page — and the run exits nonzero naming every one\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
+   --cite <note.typ>... checks the notes' `lean:<decl>@<key>` markers against the index and needs\n\
+     no environment at all; `--ch N` narrows it to one chapter (./scripts/cite-check)\n\
+   --cover <note.typ>... ranks the index's statements against each labelled display, so a display\n\
+     with no marker gets a reading task (./scripts/cite-cover)\n\
    --string draws the STRING DIAGRAM of a statement, to diag/generated/<name>.typ — what the\n\
      note's own `#lean(\"<name>\")` imports\n\
    --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
@@ -1357,6 +1362,10 @@ def stubFile (sel err : String) : String :=
 
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
+  -- The citation routes read the INDEX and no environment, so they answer before the import of
+  -- `Freyd` + every `diag.*`/`AOP.*` module that every drawing route needs.
+  if args.contains "--cite" then return ← Cite.citeMain (args.filter (· != "--cite"))
+  if args.contains "--cover" then return ← Cite.coverMain (args.filter (· != "--cover"))
   let argv := args
   let proofMode := args.contains "--proof"
   let sigMode := args.contains "--sig"
