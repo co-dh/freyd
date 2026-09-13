@@ -778,9 +778,9 @@ public theorem mem_reduce (w : Str) (q : Str × Code) :
 /-- **code-laws**, fourth row (B&dM p.242): `reduce list((encode×𝟙)snoc)minlist(R)` refines the
     branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((encode×𝟙)snoc)est(R)` — `reduce` implements
     `extend°` (`mem_reduce`) and `minlist R` implements `est(R)`, the list standing in for the set
-    it `setify`s to.  The one inequality is `setify`'s lax naturality
-    (`AOP.A5_7_ListBeads.setify_lax_natural`): a list of `f`-images of the splits has, as a SET, a
-    `P(f)`-image of the set of splits.  Thinning is free on the way in — `prefix°×(⊤+⊤)` is
+    it `setify`s to.  The one inequality is `CL.list_comp_minlist_le`, `setify`'s lax naturality: a
+    list of `f`-images of the splits has, as a SET, a `P(f)`-image of the set of splits.  Thinning
+    is free on the way in — `prefix°×(⊤+⊤)` is
     reflexive, so keeping every split is a legal thinning — and it is what an efficient `reduce`
     would exploit. -/
 public theorem code_prog (encode : dStr ⟶ dCodes) :
@@ -797,10 +797,6 @@ public theorem code_prog (encode : dStr ⟶ dCodes) :
       exact (hS : S = fun q => ListRel.inlistP (reduceFn w) q).trans (hmem w)
     · intro hS
       exact ⟨reduceFn w, rfl, (hS : S = fun q => extendP q w).trans (hmem w).symm⟩
-  have hnat : ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ ListRel.setify ≫ est (R c p)
-      ⊑ ListRel.setify ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
-    rw [← Cat.assoc, ← Cat.assoc]
-    exact comp_mono_right (ListRel.setify_lax_natural _) _
   have hrefl : 𝟙 (⟨Str × Code⟩ : RelSet.{0}) ⊑ rprodMap (prefixR°) U :=
     le_iff.mpr fun s t hst => by
       obtain rfl := (hst : s = t)
@@ -810,12 +806,9 @@ public theorem code_prog (encode : dStr ⟶ dCodes) :
       | sym _ => exact trivial
       | ptr _ _ => exact trivial
   calc reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ minlist(R c p)
-      = reduce ≫ ListRel.list (rprodMap encode (𝟙 dCode) ≫ snocR)
-          ≫ ListRel.setify ≫ est (R c p) := by
-        rw [Bracket.minlist_eq_setify_comp_est]
-    _ ⊑ reduce ≫ ListRel.setify
+      ⊑ reduce ≫ ListRel.setify
           ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) :=
-        comp_mono_left reduce hnat
+        comp_mono_left reduce (CL.list_comp_minlist_le _ _)
     _ = Λ (extend°) ≫ powerRel (rprodMap encode (𝟙 dCode) ≫ snocR) ≫ est (R c p) := by
         rw [← Cat.assoc, hred]
     _ ⊑ Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
