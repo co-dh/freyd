@@ -60,6 +60,12 @@ variable {A : Type} {amount : A → Int} {N : Int}
 /-- The object carrying schedules. -/
 @[expose] public abbrev dSched (A : Type) : RelSet.{0} := ⟨Sched A⟩
 
+/-- The WIRE STACK a schedule rides, `list list`, as one relator: `schedRelator.obj a` is
+    `dSched a.carrier` and `schedRelator.map S` is `list(list S)`.  Spelled with the identity
+    relator at the bottom, which is how the picture reads the stack off a panel's lanes. -/
+@[expose] public def schedRelator : Relator RelSet.{0} RelSet.{0} :=
+  ((Relator.idRelator RelSet.{0}).comp listRelator).comp listRelator
+
 /-- **van-defn**: `ceiling ≜ Λ(prefix sum) est(≥)`, the highest the balance reaches over the
     stretch — as the book's own fold `⦇[zero,omax plus]⦈` (p.188), `omax a = bmax(a,0)`.  The
     empty prefix counts, so `ceiling` is never negative. -/
@@ -342,6 +348,24 @@ public theorem old_not_map (a : A) : ¬ Map (oldR amount N) := by
     a product being flat there. -/
 @[expose] public def assoclR (A B C : Type) :
     (⟨A × B × C⟩ : RelSet.{0}) ⟶ ⟨(A × B) × C⟩ := graph fun p => ((p.1, p.2.1), p.2.2)
+
+/-- **`assocl` is STRICTLY natural** in all three arguments: `(S×(list S×list(list S))) assocl =
+    assocl ((S×list S)×list(list S))`.  Re-bracketing looks at no element and discards none, so
+    both sides relate `(a,(s,x))` to `((b,t),y)` exactly when `S a b`, `list S s t` and
+    `list(list S) x y`. -/
+public theorem assocl_natural :
+    StrictNatural
+      (Relator.prod (Relator.prod (Relator.idRelator RelSet.{0}) listRelator) schedRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.prod listRelator schedRelator))
+      (fun a => assoclR a.carrier (Seg a.carrier) (Sched a.carrier)) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; rintro ⟨a, s, u⟩ q
+  constructor
+  · rintro ⟨⟨a', s', u'⟩, ⟨hS, hs, hu⟩, rfl⟩
+    exact ⟨((a, s), u), rfl, ⟨hS, hs⟩, hu⟩
+  · rintro ⟨m, rfl, hm⟩
+    exact ⟨(q.1.1, q.1.2, q.2), ⟨hm.1.1, hm.1.2, hm.2⟩, rfl⟩
 
 /-- **van-defn**: `new = (wrap×𝟙) cons` (book p.185) — the transaction becomes a segment of its
     own, and that segment is consed onto the schedule. -/
