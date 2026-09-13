@@ -69,6 +69,15 @@ public theorem concat_natural (S : A ⟶ B) :
     · funext l
       exact congrArg W (Fin.eq_of_val_eq (Nat.div_add_mod' l.val p)).symm
 
+/-- **`concat` is natural at the step-3 lanes**: the same square with the row count `pow3 m` and
+    the entry `Vec(m+1)(A)`, which is where `cyl_laws_step3` takes the bead.  Stated as well as
+    proved from the general one because a naturality theorem is found by the constants it NAMES,
+    and the theorem general in the row count never writes `pow3`. -/
+public theorem concat_pow3_natural (S : A ⟶ B) :
+    tupleP n (tupleP (pow3 m) (tupleP (m + 1) S)) ≫ RelSet.graph concat
+      = RelSet.graph concat ≫ tupleP (n * pow3 m) (tupleP (m + 1) S) :=
+  concat_natural (tupleP (m + 1) S)
+
 /-- **`zip` is natural**: `F(Vec(n)(S),Vec(n)(T)) zip = zip Vec(n)(F(S,T))`.  `graph zip` IS
     `AOP.A7_4_CylinderBeads`'s `zipT`, so this is that square, restated for the `Vec` bead. -/
 public theorem zip_natural (S : A ⟶ B) (T : C ⟶ D) :
