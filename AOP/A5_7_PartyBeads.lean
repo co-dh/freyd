@@ -19,7 +19,7 @@ public import AOP.A7_3_Party
 namespace Freyd.Alg.RelSet.Party
 
 open Freyd CL ListRel
-open RT (Rose dRose cataFold cataFoldList cataFoldList_eq_listP)
+open RT (Rose dRose tree roseP roseListP cataFold cataFoldList cataFoldList_eq_listP)
 
 variable {A B : Type}
 
@@ -38,7 +38,7 @@ public theorem listP_cmap_snd {A₁ A₂ B₁ B₂ : Type} (R : dE A₁ ⟶ dE B
     root is passed through by `R`, and the concatenated second components are `list(R)`-related
     because `list(R)` cannot move an element across a segment boundary (`listP_cconcat`). -/
 public theorem include_lax_natural (R : dE A ⟶ dE B) :
-    branch R ≫ (includeR : dBranch B ⟶ dList B)
+    rprodMap R (list (rprodMap (list R) (list R))) ≫ (includeR : dBranch B ⟶ dList B)
       ⊑ (includeR : dBranch A ⟶ dList A) ≫ list R := by
   refine le_iff.mpr fun u w h => ?_
   obtain ⟨v, ⟨h1, h2⟩, rfl⟩ := h
@@ -79,7 +79,7 @@ public theorem listP_choose_transfer (R : dE A ⟶ dE B) :
 
 /-- **`exclude` is lax natural**: `(R×list(list R×list R)) exclude ⊑ exclude list(R)`. -/
 public theorem exclude_lax_natural (R : dE A ⟶ dE B) :
-    branch R ≫ (excludeR : dBranch B ⟶ dList B)
+    rprodMap R (list (rprodMap (list R) (list R))) ≫ (excludeR : dBranch B ⟶ dList B)
       ⊑ (excludeR : dBranch A ⟶ dList A) ≫ list R := by
   refine le_iff.mpr fun u y h => ?_
   obtain ⟨v, ⟨-, h2⟩, qs, hqs, rfl⟩ := h
@@ -92,141 +92,70 @@ public theorem exclude_lax_natural (R : dE A ⟶ dE B) :
     (`exclude` runs `choose` on every subtree), so an equality was never on the table; the two
     components are `include_lax_natural` and `exclude_lax_natural`, paired as in `party_mono`. -/
 public theorem S_lax_natural (R : dE A ⟶ dE B) :
-    branch R ≫ S ⊑ S ≫ rprodMap (list R) (list R) := by
+    rprodMap R (list (rprodMap (list R) (list R))) ≫ S
+      ⊑ S ≫ rprodMap (list R) (list R) := by
   refine le_iff.mpr fun u p h => ?_
   obtain ⟨v, hv, hi, he⟩ := h
   obtain ⟨z1, hz1, hR1⟩ := le_iff.mp (include_lax_natural R) u p.1 ⟨v, hv, hi⟩
   obtain ⟨z2, hz2, hR2⟩ := le_iff.mp (exclude_lax_natural R) u p.2 ⟨v, hv, he⟩
   exact ⟨(z1, z2), ⟨hz1, hz2⟩, hR1, hR2⟩
 
-/-! ## The tree relator `tree(R)` -/
-
-mutual
-  /-- `tree(R)`: same shape, roots related by `R`, subtrees elementwise.  Defined with its own
-      list-of-subtrees copy so the nested recursion stays structural (as `cataFold` is). -/
-  @[expose] public def roseP (R : dE A ⟶ dE B) : Rose A → Rose B → Prop
-    | Rose.node a ts => fun t => ∃ b us, t = Rose.node b us ∧ R a b ∧ roseListP R ts us
-  /-- `list(tree(R))`, unrolled. -/
-  @[expose] public def roseListP (R : dE A ⟶ dE B) :
-      ConsList Unit (Rose A) → ConsList Unit (Rose B) → Prop
-    | ConsList.wrap _ => fun us => us = ConsList.wrap ()
-    | ConsList.cons t ts => fun us =>
-        ∃ u us', roseP R t u ∧ roseListP R ts us' ∧ us = ConsList.cons u us'
-end
-
-/-- The unrolled copy IS `list(tree(R))`. -/
-public theorem roseListP_eq_listP (R : dE A ⟶ dE B) :
-    ∀ (ts : ConsList Unit (Rose A)) (us : ConsList Unit (Rose B)),
-      roseListP R ts us ↔ listP (roseP R) ts us
-  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => trivial, fun _ => rfl⟩
-  | ConsList.wrap _, ConsList.cons _ _ => ⟨(fun h => nomatch h), False.elim⟩
-  | ConsList.cons _ _, ConsList.wrap _ => ⟨(fun ⟨_, _, _, _, h⟩ => nomatch h), False.elim⟩
-  | ConsList.cons t ts, ConsList.cons u us => by
-      constructor
-      · rintro ⟨u', us', h1, h2, heq⟩
-        obtain ⟨rfl, rfl⟩ : u = u' ∧ us = us' :=
-          ⟨(ConsList.cons.inj heq).1, (ConsList.cons.inj heq).2⟩
-        exact ⟨h1, (roseListP_eq_listP R ts us).mp h2⟩
-      · rintro ⟨h1, h2⟩
-        exact ⟨u, us, h1, (roseListP_eq_listP R ts us).mpr h2, rfl⟩
-
-/-- `tree(R)` is the relator of the base functor `F(A,X) = A × [X]`, one layer at a time:
-    `node(a,ts) tree(R) node(b,us)` iff `R a b` and `list(tree(R)) ts us`. -/
-public theorem roseP_node (R : dE A ⟶ dE B) (a : A) (b : B)
-    (ts : ConsList Unit (Rose A)) (us : ConsList Unit (Rose B)) :
-    roseP R (Rose.node a ts) (Rose.node b us) ↔ R a b ∧ listP (roseP R) ts us := by
-  constructor
-  · rintro ⟨b', us', heq, hab, hus⟩
-    obtain ⟨rfl, rfl⟩ : b = b' ∧ us = us' :=
-      ⟨(Rose.node.inj heq).1, (Rose.node.inj heq).2⟩
-    exact ⟨hab, (roseListP_eq_listP R ts us).mp hus⟩
-  · rintro ⟨hab, hus⟩
-    exact ⟨b, us, rfl, hab, (roseListP_eq_listP R ts us).mpr hus⟩
-
-/-- `tree(R) : tree A ⟶ tree B`. -/
-@[expose] public def rose (R : dE A ⟶ dE B) : dRose A ⟶ dRose B := roseP R
-
-mutual
-  /-- `tree(𝟙) = 𝟙`, pointwise — the relator law that pins `rose` down (and shows the lax
-      square below is not vacuous: `rose(𝟙)` relates every tree to itself). -/
-  public theorem roseP_id : ∀ t t' : Rose A, roseP (𝟙 (dE A)) t t' ↔ t = t'
-    | Rose.node a ts, Rose.node b us => by
-        constructor
-        · rintro ⟨b', us', heq, hab, hus⟩
-          obtain ⟨rfl, rfl⟩ : b = b' ∧ us = us' :=
-            ⟨(Rose.node.inj heq).1, (Rose.node.inj heq).2⟩
-          rw [(show a = b from hab), (roseListP_id ts us).mp hus]
-        · rintro heq
-          obtain ⟨rfl, rfl⟩ : a = b ∧ ts = us :=
-            ⟨(Rose.node.inj heq).1, (Rose.node.inj heq).2⟩
-          exact ⟨a, ts, rfl, rfl, (roseListP_id ts ts).mpr rfl⟩
-  /-- `list(tree(𝟙)) = 𝟙`, pointwise. -/
-  public theorem roseListP_id : ∀ ts us : ConsList Unit (Rose A),
-      roseListP (𝟙 (dE A)) ts us ↔ ts = us
-    | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => rfl, fun _ => rfl⟩
-    | ConsList.wrap _, ConsList.cons _ _ => ⟨(fun h => nomatch h), (fun h => nomatch h)⟩
-    | ConsList.cons _ _, ConsList.wrap _ =>
-        ⟨(fun ⟨_, _, _, _, h⟩ => nomatch h), (fun h => nomatch h)⟩
-    | ConsList.cons t ts, ConsList.cons u us => by
-        constructor
-        · rintro ⟨u', us', htu, hts, heq⟩
-          obtain ⟨rfl, rfl⟩ : u = u' ∧ us = us' :=
-            ⟨(ConsList.cons.inj heq).1, (ConsList.cons.inj heq).2⟩
-          rw [(roseP_id t u).mp htu, (roseListP_id ts us).mp hts]
-        · rintro heq
-          obtain ⟨rfl, rfl⟩ : t = u ∧ ts = us :=
-            ⟨(ConsList.cons.inj heq).1, (ConsList.cons.inj heq).2⟩
-          exact ⟨t, ts, (roseP_id t t).mpr rfl, (roseListP_id ts ts).mpr rfl, rfl⟩
-end
-
-/-- `tree(𝟙) = 𝟙`. -/
-public theorem rose_id : rose (𝟙 (dE A)) = 𝟙 (dRose A) := hom_ext roseP_id
-
 /-! ## `party = ⦇S⦈ choose` -/
 
 mutual
-  /-- The catamorphism half: `tree(R) ⦇S⦈ ⊑ ⦇S⦈ (list R×list R)`, by tree induction from
-      `S_lax_natural` (fold fusion, done structurally on `cataFold`). -/
-  public theorem cataS_lax_natural (R : dE A ⟶ dE B) :
+  /-- The catamorphism half POINTWISE: a `tree(R)`-related tree folds to a `(list R×list R)`-related
+      pair, by tree induction from `S_lax_natural` (fold fusion, structurally on `cataFold`). -/
+  public theorem cataFoldS_lax (R : dE A ⟶ dE B) :
       ∀ (t : Rose A) (t' : Rose B) (w : ConsList Unit B × ConsList Unit B),
         roseP R t t' → cataFold S t' w →
         ∃ w₀, cataFold S t w₀ ∧ rprodMap (list R) (list R) w₀ w
-    | Rose.node a ts, _, w, ht, hw => by
-        obtain ⟨b, us, rfl, hab, hus⟩ := ht
+    | Rose.node a ts, Rose.node b us, w, ht, hw => by
+        obtain ⟨hab, hus⟩ := ht
         obtain ⟨rs, hrs, hS⟩ := hw
         obtain ⟨rs₀, hrs₀, hrel⟩ :=
-          cataSList_lax_natural R ts us rs hus ((cataFoldList_eq_listP S us rs).mp hrs)
+          cataFoldSList_lax R ts us rs hus ((cataFoldList_eq_listP S us rs).mp hrs)
         obtain ⟨w₀, hw₀, hw₀rel⟩ :=
           le_iff.mp (S_lax_natural R) (a, rs₀) w ⟨(b, rs), ⟨hab, hrel⟩, hS⟩
         exact ⟨w₀, ⟨rs₀, (cataFoldList_eq_listP S ts rs₀).mpr hrs₀, hw₀⟩, hw₀rel⟩
   /-- The same, one list of subtrees at a time. -/
-  public theorem cataSList_lax_natural (R : dE A ⟶ dE B) :
+  public theorem cataFoldSList_lax (R : dE A ⟶ dE B) :
       ∀ (ts : ConsList Unit (Rose A)) (us : ConsList Unit (Rose B))
         (rs : ConsList Unit (ConsList Unit B × ConsList Unit B)),
         roseListP R ts us → listP (cataFold S) us rs →
         ∃ rs₀, listP (cataFold S) ts rs₀ ∧ listP (rprodMap (list R) (list R)) rs₀ rs
-    | ConsList.wrap _, _, rs, ht, hr => by
-        subst ht
+    | ConsList.wrap _, ConsList.wrap _, rs, _, hr => by
         cases rs with
         | wrap _ => exact ⟨ConsList.wrap (), trivial, trivial⟩
         | cons _ _ => exact hr.elim
-    | ConsList.cons t ts, _, rs, ht, hr => by
-        obtain ⟨u, us', htu, hts, rfl⟩ := ht
+    | ConsList.wrap _, ConsList.cons _ _, _, ht, _ => ht.elim
+    | ConsList.cons _ _, ConsList.wrap _, _, ht, _ => ht.elim
+    | ConsList.cons t ts, ConsList.cons u us', rs, ht, hr => by
         cases rs with
         | wrap _ => exact hr.elim
         | cons r rs' =>
-            obtain ⟨w₀, hw₀, hrel⟩ := cataS_lax_natural R t u r htu hr.1
-            obtain ⟨rs₀, hrs₀, hrel'⟩ := cataSList_lax_natural R ts us' rs' hts hr.2
+            obtain ⟨w₀, hw₀, hrel⟩ := cataFoldS_lax R t u r ht.1 hr.1
+            obtain ⟨rs₀, hrs₀, hrel'⟩ := cataFoldSList_lax R ts us' rs' ht.2 hr.2
             exact ⟨ConsList.cons w₀ rs₀, ⟨hw₀, hrs₀⟩, hrel, hrel'⟩
 end
 
+/-- **the fold is lax natural**: `tree(R) ⦇S⦈ ⊑ ⦇S⦈ (list R×list R)` — the square of the `⦇S⦈`
+    bead, the pointwise fold above read as one inequation (`cataR_eq_relCata`). -/
+public theorem cataS_lax_natural (R : dE A ⟶ dE B) :
+    tree R ≫ (⦇S⦈ : dRose B ⟶ _)
+      ⊑ (⦇S⦈ : dRose A ⟶ _) ≫ rprodMap (list R) (list R) := by
+  have h : tree R ≫ RT.cataR (S (A := B)) ⊑ RT.cataR (S (A := A)) ≫ rprodMap (list R) (list R) :=
+    le_iff.mpr fun t w hh => by
+      obtain ⟨t', ht, hw⟩ := hh
+      exact cataFoldS_lax R t t' w ht hw
+  rwa [RT.cataR_eq_relCata, RT.cataR_eq_relCata] at h
+
 /-- **`party` is lax natural**: `tree(R) party ⊑ party list(R)` for every `R` — the fold half is
-    `cataS_lax_natural`, the tail is `chooseR_lax_natural`. -/
+    `cataFoldS_lax`, the tail is `chooseR_lax_natural`. -/
 public theorem party_lax_natural (R : dE A ⟶ dE B) :
-    rose R ≫ party ⊑ party ≫ list R := by
+    tree R ≫ party ⊑ party ≫ list R := by
   refine le_iff.mpr fun t y h => ?_
   obtain ⟨t', ht, w, hw, hy⟩ := h
-  obtain ⟨w₀, hw₀, hrel⟩ := cataS_lax_natural R t t' w ht hw
+  obtain ⟨w₀, hw₀, hrel⟩ := cataFoldS_lax R t t' w ht hw
   rcases (show y = w.1 ∨ y = w.2 from hy) with rfl | rfl
   · exact ⟨w₀.1, ⟨w₀, hw₀, Or.inl rfl⟩, hrel.1⟩
   · exact ⟨w₀.2, ⟨w₀, hw₀, Or.inr rfl⟩, hrel.2⟩
@@ -251,8 +180,9 @@ public theorem Rtt_no_image : ∀ y, ¬ listP Rtt (ConsList.cons false (ConsList
   (true, ConsList.cons (ConsList.cons false (ConsList.wrap ()), ConsList.wrap ())
     (ConsList.wrap ()))
 
-/-- `branch Rtt` relates `uEx` to nothing. -/
-public theorem branch_Rtt_empty : ∀ v, ¬ branch Rtt uEx v
+/-- The branch lane `R×list(list R×list R)` at `Rtt` relates `uEx` to nothing. -/
+public theorem branch_Rtt_empty :
+    ∀ v, ¬ rprodMap Rtt (list (rprodMap (list Rtt) (list Rtt))) uEx v
   | (_, ConsList.wrap _), h => h.2.elim
   | (_, ConsList.cons p _), h => Rtt_no_image p.1 h.2.1.1
 
@@ -261,7 +191,8 @@ public theorem branch_Rtt_empty : ∀ v, ¬ branch Rtt uEx v
     sees it. -/
 public theorem include_not_strict :
     ¬ ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt
-        ⊑ branch Rtt ≫ (includeR : dBranch Bool ⟶ dList Bool)) := by
+        ⊑ rprodMap Rtt (list (rprodMap (list Rtt) (list Rtt)))
+            ≫ (includeR : dBranch Bool ⟶ dList Bool)) := by
   intro hle
   have hrhs : ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt) uEx
       (ConsList.cons true (ConsList.wrap ())) :=
@@ -272,7 +203,8 @@ public theorem include_not_strict :
 /-- **`S` is not strict**: it inherits `include_not_strict` in its first component. -/
 public theorem S_not_strict :
     ¬ ((S : dBranch Bool ⟶ ⟨ConsList Unit Bool × ConsList Unit Bool⟩)
-        ≫ rprodMap (list Rtt) (list Rtt) ⊑ branch Rtt ≫ S) := by
+        ≫ rprodMap (list Rtt) (list Rtt)
+      ⊑ rprodMap Rtt (list (rprodMap (list Rtt) (list Rtt))) ≫ S) := by
   intro hle
   have hrhs : ((S : dBranch Bool ⟶ ⟨ConsList Unit Bool × ConsList Unit Bool⟩)
       ≫ rprodMap (list Rtt) (list Rtt)) uEx
@@ -288,17 +220,15 @@ public theorem S_not_strict :
   Rose.node true (ConsList.cons (Rose.node false (ConsList.wrap ())) (ConsList.wrap ()))
 
 /-- `tree(Rtt)` relates `tEx` to nothing. -/
-public theorem rose_Rtt_empty : ∀ t', ¬ roseP Rtt tEx t' := by
-  rintro _ ⟨_, _, rfl, -, hus⟩
-  obtain ⟨_, _, hu, -, rfl⟩ := hus
-  obtain ⟨_, _, rfl, hb, -⟩ := hu
-  exact Bool.noConfusion hb.1
+public theorem rose_Rtt_empty : ∀ t', ¬ roseP Rtt tEx t'
+  | Rose.node _ (ConsList.wrap _), h => h.2.elim
+  | Rose.node _ (ConsList.cons (Rose.node _ _) _), h => Bool.noConfusion h.2.1.1.1
 
 /-- **`party` is not strict**: `party list(R) ⊑ tree(R) party` fails at `Rtt`.  `party tEx`
     still returns `[true]` — the subordinate is simply not invited — but no tree is
     `tree(Rtt)`-related to `tEx`, because `Rtt` relates `false` to nothing. -/
 public theorem party_not_strict :
-    ¬ ((party : dRose Bool ⟶ dList Bool) ≫ list Rtt ⊑ rose Rtt ≫ party) := by
+    ¬ ((party : dRose Bool ⟶ dList Bool) ≫ list Rtt ⊑ tree Rtt ≫ party) := by
   intro hle
   have hleaf : cataFold S (Rose.node false (ConsList.wrap ()))
       (ConsList.cons false (ConsList.wrap ()), ConsList.wrap ()) :=

@@ -154,10 +154,9 @@ public theorem RR_recip_trans :
 public abbrev dBranch (A : Type) : RelSet.{0} :=
   (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
 
-/-- The relator of `x×[[x]×[x]]`: `R × list(list(R) × list(R))`. -/
-@[expose] public def branch {A B : Type} (R : dE A ⟶ dE B) : dBranch A ⟶ dBranch B :=
-  rprodMap R (list (rprodMap (list R) (list R)))
-
+-- The lane `x×[[x]×[x]]` acts by its relators' own maps — `rprodMap R (list (rprodMap (list R)
+-- (list R)))`, the product's and the list's — and a `branch R` naming that action was a second
+-- definition of it that the exporter's square could not unify against.
 /-- **party-defn**: `include ≜ (𝟙×(list(π₂) concat)) cons`, concretely — the party that invites
     the root, which puts every immediate subtree's root out.  A map (`include_eq` is the
     point-free form). -/
