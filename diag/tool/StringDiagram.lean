@@ -581,7 +581,7 @@ structure Verdict where
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
     spider"). -/
-def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdict := do
+def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := do
   -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
   -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
@@ -733,7 +733,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     | none => familyAt? regionTy core #[oy, ox]
   let vd ← match φ with
     | none => pure none
-    | some φ => some <$> verdict regionTy cat core φ
+    | some φ => some <$> verdict regionTy cat φ
   let ar := Array.mk (List.range arms.size)
   let ov := Array.mk (List.range' arms.size over.size)
   let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
