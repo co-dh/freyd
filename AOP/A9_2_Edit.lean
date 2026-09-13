@@ -421,4 +421,71 @@ public theorem edit_laws :
     (by simp only [H]; rw [hH]; exact edit_thin_condition)
   simp only [H] at key; rwa [hH] at key
 
+/-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
+
+  `base` returns `([],[])` and no `step` returns it, so the body's thinning splits and the third
+  row is the `step` arm alone.  That is `AOP.A9_1`'s `thin_summand_le` at `ι ≜ Sum.inr`, the one
+  summand lemma the snoc-direction rows also use: its arm relator `Fᵢ` is whichever side of the
+  product the recursion sits on — `−×E` there, the element-first `E×−` here. -/
+
+/-- **edit-defn**: `step`, the second arm of `[base,step]`.  The note writes the third row at
+    this arm alone, so the arm has the name the note gives it. -/
+@[expose] public def step : (⟨Op Char × (dPair Char).carrier⟩ : RelSet.{0}) ⟶ dPair Char :=
+  graph (fun q => baseStepFn (Sum.inr q))
+
+/-- `step` never returns the empty pair — `cpy` and `del` put a character on the left string,
+    `ins` one on the right — and `base` returns nothing else.  This is Proposition 9.1's
+    disjointness hypothesis at `[base,step]`. -/
+public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
+    baseStepFn (Sum.inr q) ≠ ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) := by
+  obtain ⟨op, p⟩ := q
+  cases op with
+  | cpy a => intro h; injection h with h1 _; cases h1
+  | del a => intro h; injection h with h1 _; cases h1
+  | ins a => intro h; injection h with _ h2; cases h2
+
+/-- The `step` arm of `F(X)[nil,cons]` is the note's `(𝟙×X)cons`: `F(X)` keeps the operation and
+    recurses in the second component. -/
+public theorem arm_Fmap_con (X : dPair Char ⟶ dEdit Char)
+    (p : Op Char × (dPair Char).carrier) (z : (dEdit Char).carrier) :
+    (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) p z
+      ↔ ((F Unit (Op Char)).map X ≫ graph con) (Sum.inr p) z := by
+  constructor
+  · rintro ⟨q, hq, hz⟩
+    exact ⟨Sum.inr q, ⟨hq.1, hq.2⟩, hz⟩
+  · rintro ⟨w, hw, hz⟩
+    cases w with
+    | inl d => exact hw.elim
+    | inr q => exact ⟨q, ⟨hw.1, hw.2⟩, hz⟩
+
+/-- **edit-laws**, third row (Proposition 9.1): the branch
+    `(step°)%∋ thin(U×V)P((𝟙×X)cons)est(R)` refines `edit_laws`' body
+    `([base,step]°)%∋ thin(Q)P([nil,(𝟙×X)cons])est(R)` — `AOP.A9_1.thin_summand_le` at
+    `ι ≜ Sum.inr`, whose `Qᵢ` at `Q ≜ 𝟙+(U×V)` is `U×V` with `U ≜ ⊤`. -/
+public theorem edit_branch (X : dPair Char ⟶ dEdit Char) :
+    Λ ((step (Char := Char))°)
+        ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
+        ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) X ≫ consR) ≫ est (R Char)
+      ⊑ Λ ((editAlg (Char := Char))°) ≫ thinRel (Q Char)
+          ≫ powerRel ((F Unit (Op Char)).map X ≫ graph con) ≫ est (R Char) := by
+  have hmap : (Relator.prod (Relator.const (dE (Op Char)))
+      (Relator.idRelator RelSet.{0})).map X = rprodMap (𝟙 (dE (Op Char))) X :=
+    prodMap_eq_rprodMap _ _
+  have key := RelSet.thin_summand_le
+    (Fᵢ := Relator.prod (Relator.const (dE (Op Char))) (Relator.idRelator RelSet.{0}))
+    (F := F Unit (Op Char)) (T := editAlg (Char := Char)) (Q := Q Char) (X := X)
+    (h := graph con) (R := R Char) (Vᵢ := step) (Uᵢ := consR)
+    (Qᵢ := rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
+    Sum.inr (graph_map _) (fun _ _ => Iff.rfl) (fun _ _ h => h.2)
+    (fun p z => by rw [hmap]; exact arm_Fmap_con X p z)
+    (fun w p y hstep hT => by
+      cases w with
+      | inl d =>
+        have hy : baseStepFn (Sum.inr p)
+            = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) :=
+          Eq.trans (Eq.symm hstep) hT
+        exact absurd hy (step_ne_base p)
+      | inr q => exact ⟨q, rfl⟩)
+  rwa [hmap] at key
+
 end Freyd.Alg.RelSet.Edit

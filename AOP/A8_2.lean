@@ -34,6 +34,9 @@ module
 
 public import AOP.A8_1
 public import AOP.A5_6
+-- §8.2's algebra IS a bifunctor at `∋` and the structure map, so the binary relator of §5.5 is
+-- what states it; the split of the algebra's source is that bifunctor's interchange.
+public import AOP.A5_5_TypeFunctor
 public import AOP.A6_1_RelSet
 -- the layered network's paths are `ConsList V V`, whose base relator `X ↦ (V→Prop)+(V→Prop)×X`
 -- is what `thinning_paths`'s `F` is instantiated to below.
@@ -117,27 +120,71 @@ public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
   rw [powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q)
 
-variable {F : Relator 𝒜 𝒜}
+/-! ## The layered network's algebra is a BIFUNCTOR at `∋` and the structure map
+
+  The p.198 derivation reads the algebra as a binary relator `F(−,−)` — the layers in the first
+  argument, the recursion in the second — applied to `∋` and to the structure map `α`.  The fold's
+  own relator is then `F(E A,−)`, its specification algebra `F(∋,𝟙)α`, and the split of the
+  algebra's source that §8.2 needs is INTERCHANGE, `F(∋,𝟙)F(𝟙,∋) = F(∋,∋) = F(𝟙,∋)F(∋,𝟙)`, a
+  theorem of the bifunctor rather than a hypothesis about an unnamed `V·S`. -/
+
+section Layered
+
+variable {B : 𝒜} {F : BiRelator 𝒜}
+
+/-- **Corollary 8.1 at the layered network** (book p.198, the step the thinning theorem makes):
+    the specification is above the thinned fold —
+    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇thin Q·Λ(α·F(∈,∈))⦈`, mirrored
+    `relCata (Λ (F(∋,∋)α) ≫ thin Q) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`.
+    `thinning_est` is stated at `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose
+    action on `∋` is `F(𝟙,∋)`; `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange. -/
+public theorem thinning_paths_step (hFr : F.PreservesRecip)
+    (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
+    {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hmono : MonotonicAlg
+      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q) :
+    relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
+      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
+  have hFr' : (F.appl (PowerAllegory.powerObj A)).PreservesRecip := by
+    intro a₁ a₂ S
+    show F.map (𝟙 (PowerAllegory.powerObj A)) S° = (F.map (𝟙 (PowerAllegory.powerObj A)) S)°
+    rw [← hFr (𝟙 (PowerAllegory.powerObj A)) S, recip_id]
+  have e : (F.appl (PowerAllegory.powerObj A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
+      = F.map (∋ A) (∋ B) ≫ α := by
+    show F.map (𝟙 (PowerAllegory.powerObj A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
+    rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
+  rw [← e]
+  exact thinning_est hFr' I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —
-    `min R·Λ⦇Sspec⦈ ⊒ min R·Λ⦇ΛV·P(ΛS·min R)⦈`, mirrored
-    `relCata (Λ V ≫ P (Λ S ≫ est R)) ≫ est R ⊑ Λ (relCata Sspec) ≫ est R`,
-    for any split `F(∈)·Sspec = V·S` of the algebra's source (`hbif`) with
-    `R ∩ (S°S) ⊑ Q`.  At `Sspec = α·F(∈,id)`, `V = F(∈,id)` and `S = α·F(id,∈)` the algebra
-    `ΛV·P(ΛS·min R)` is the book's `[P wrap, cpl·P step]`.  Corollary 8.1 (`thinning_est`)
-    supplies the fold, `thinAlg_elim` the algebra. -/
-public theorem thinning_paths (hFr : F.PreservesRecip) (I : InitialAlgebra F)
-    {Sspec : F.obj A ⟶ A} {V : F.obj (PowerAllegory.powerObj A) ⟶ w} {S : w ⟶ A} {Q R : A ⟶ A}
-    (hbif : F.map (∋ A) ≫ Sspec = V ≫ S)
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hmono : MonotonicAlg Sspec Q) (hQ : R ∩ (S° ≫ S) ⊑ Q) :
-    relCata (Λ V ≫ powerRel (Λ S ≫ est R)) ≫ est R ⊑ Λ (relCata Sspec) ≫ est R := by
-  have halg : Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (F.map (∋ A) ≫ Sspec) ≫ thinRel Q := by
-    rw [hbif]
-    exact thinAlg_elim V S hQ
+    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored
+    `relCata (Λ F(∋,𝟙) ≫ P (Λ (F(𝟙,∋)α) ≫ est R)) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`,
+    at `R ∩ ((F(𝟙,∋)α)°(F(𝟙,∋)α)) ⊑ Q`.  `thinning_paths_step` supplies the fold and
+    `thinAlg_elim` the algebra; the source `F(∋,∋)α` of the thinned algebra splits as
+    `F(∋,𝟙)` followed by `F(𝟙,∋)α` by interchange.  At the book's `α = [wrap,cons]` the algebra
+    `ΛF(∈,id)·P(min R·Λ(α·F(id,∈)))` is the printed `[P wrap, cpl·P step]`. -/
+public theorem thinning_paths (hFr : F.PreservesRecip)
+    (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
+    {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hmono : MonotonicAlg
+      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q)
+    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
+    relCata (Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
+      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
+  have halg : Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+      ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+    have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+      (F.map (𝟙 A) (∋ B) ≫ α) hQ
+    rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
   exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))
-    (thinning_est hFr I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono)
+    (thinning_paths_step hFr I hQR hreflQ htransQ htransR hmono)
+
+end Layered
 
 /-! ## The note's `path-mono`: the two laws `thinning_paths` assumes, discharged
 
