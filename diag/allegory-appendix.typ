@@ -162,12 +162,12 @@
 
   [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
-   // lean:AOP.A7_4_Cylinder.gen@4bd0bafd
+   // lean:AOP.A7_4_Cylinder.gen@8b0342f5
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [`paths≜⦇gen⦈ setify union` #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@dbba0e86
+  // lean:AOP.A7_4_Cylinder.paths@3bf920c4
   [`L N Nat⟶E(L Nat)`],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
@@ -247,7 +247,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
   src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
-   // lean:AOP.A7_4_Cylinder.cyl_cp@a2bae65e
+   // lean:AOP.A7_4_Cylinder.cyl_cp@afabc416
    // lean:AOP.A7_4_Cylinder.cyl_cp_prod@7f182a1e
    // lean:AOP.A7_4_Cylinder.cyl_cp_const@94a6c342
 
@@ -343,7 +343,7 @@ N(cp P(α))(that)
   [],
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
-   // lean:AOP.A7_4_Cylinder.gen_cata_comm@80403de2
+   // lean:AOP.A7_4_Cylinder.gen_cata_comm@ce6d0770
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
 
@@ -512,7 +512,7 @@ N(α)(that)
     #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
      front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
      step folds]],
-    // lean:AOP.A7_4_Cylinder.cyl_step@4930da05
+    // lean:AOP.A7_4_Cylinder.cyl_step@a85b5dc8
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Q,)), s: 88%), [])],
@@ -521,7 +521,7 @@ N(α)(that)
   [#vstep(EQ, cyp(cyrun([`F(NA,N(LA))`], [`N(LA)`], (cb-Fmtn, cb-zip, cb-Nal)), s: 74%),
     [#src[the fusion condition @cyl-fusion read as a definition,
  ]])],
-     // lean:AOP.A7_4_Cylinder.Q@2b4dd374
+     // lean:AOP.A7_4_Cylinder.Q@43c35af1
   [#cc2],
 
   [#vstep(EQ, cyp(cyfork((cb-Nwrap,), (cb-moves, cb-trans, cb-Nest), cb-zipp, (cb-Ncons,)), s: 78%),
@@ -540,7 +540,7 @@ N(α)(that)
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_laws@4bbb7420
+    // lean:AOP.A7_4_Cylinder.cyl_laws@e3bcc391
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, est-R-box))), [])],
@@ -590,7 +590,7 @@ N(α)(that)
   Thm[`gen N(est(R))⊒F(𝟙,N(est(R)))Q` \
     #src[fusion: the condition for fusion in @cyl-laws's last step, used to derive a definition of `Q`.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_fusion@10671cc3
+    // lean:AOP.A7_4_Cylinder.cyl_fusion@d68a1eb8
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`F(NA,N(E(LA)))`], [`N(LA)`], (cb-gen, cb-Nest)), s: 88%),
@@ -605,7 +605,7 @@ N(α)(that)
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
  ]])
-  // lean:AOP.A7_4_Cylinder.cyl_7_13@5224efdc
+  // lean:AOP.A7_4_Cylinder.cyl_7_13@b9f04099
 ]<cyl-fusion>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
