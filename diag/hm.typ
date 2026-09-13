@@ -110,12 +110,21 @@
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
 /// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
-/// round, a different claim and so not the same mark.  `spider` draws none at all (IntroString
-/// §2.2.4), for a family no declaration says anything about.  A fourth verdict is a branch HERE.
+/// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
+/// proved for every map and nothing proved at a relation, which is half of what the filled dot
+/// claims.  `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
+/// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg) = {
   if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "maps" {
+    // The filled half goes down FIRST and the outline LAST, as a region does under a wire: a
+    // stroked half-disc would draw the diameter across the middle of the dot.
+    d.circle(p, radius: HMR, fill: bg, stroke: none)
+    d.arc(p, start: 90deg, stop: 270deg, radius: HMR, anchor: "origin", mode: "PIE",
+          fill: col, stroke: none)
+    d.circle(p, radius: HMR, fill: none, stroke: col + lw)
   } else if nat != "spider" {
     d.circle(p, radius: HMR, fill: if nat == "lax" { bg } else { col },
              stroke: if nat == "lax" { col + lw } else { none })

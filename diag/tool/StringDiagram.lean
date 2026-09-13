@@ -15,6 +15,9 @@
 import diag.tool.ExprReader
 -- The note's spelling of a term, shared with the circuit and commutative pictures.
 import diag.tool.Label
+-- The `lean:<Module>.<decl>@<key>` marker, computed exactly once in the exe: `cite-check` verifies
+-- the notes' citations with it and the panels' `nat:` trace is written with the same function.
+import diag.tool.Cite
 
 open Lean
 
@@ -96,16 +99,22 @@ def cutText (c : Cut) : MetaM String := do
   return String.intercalate "|" (ls.push (← label c.o)).toList
 
 /-- WHAT THE ENVIRONMENT PROVED ABOUT A BEAD, as a type and not a string.  The emitter matches on
-    these four, so a verdict added here is a compile error until the mark it draws is decided —
-    where a default branch silently drew the new one as an old one (`oplax` as `lax`). -/
+    these five, so a verdict added here is a compile error until the mark it draws is decided —
+    where a default branch silently drew the new one as an old one (`oplax` as `lax`).
+
+    `maps` is the square proved for every MAP `f` and nothing proved at a relation.  It is a
+    WEAKER claim than `strict`, which a filled dot would state of every arrow of the region, so it
+    gets ink of its own; where the region is a CATEGORY every arrow is a map and the two coincide,
+    and there the verdict is `strict`. -/
 inductive Mark where
-  | strict | lax | oplax | spider
+  | strict | lax | oplax | maps | spider
   deriving Inhabited, DecidableEq
 
 /-- The word the drawing side reads the mark by.  One spelling, here: the panel's `nat:` row cites
     the same word the bead's 6th element carries. -/
 def Mark.key : Mark → String
-  | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .spider => "spider"
+  | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .maps => "maps"
+  | .spider => "spider"
 
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
     declaration says it is natural. -/
@@ -120,9 +129,11 @@ structure Row where
   src   : Cut
   tgt   : Cut
   nat   : Option Mark := none
-  /-- The declaration the verdict was read off — the panel's own citation for its dots, and for a
-      bead the environment REFUTES, which draws no dot and is a claim all the same. -/
-  natLean : Option Name := none
+  /-- The declarations the verdict was assembled from — the panel's own citation for its dots, and
+      for a bead the environment REFUTES, which draws no dot and is a claim all the same.  More
+      than one where the claim is a proved EQUIVALENCE away from what was found (Theorem 5.2), so
+      the reader auditing the dot sees every step it rests on and not only the last. -/
+  natLean : Array Name := #[]
   /-- The lanes the bead STANDS OVER: the object it is a family at, `F A` for `𝟙%∋` taken there.
       They run past it inside, and a bead with no arms opens its leg WEST of them. -/
   over  : Array Nat := #[]
@@ -309,7 +320,8 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
     let mark := match r.nat with
       | none | some .strict => ""
-      | some .lax => key .lax | some .oplax => key .oplax | some .spider => key .spider
+      | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
+      | some .spider => key .spider
     -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
     if r.unit then
       objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
@@ -375,18 +387,64 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
     -- the bead types and the verdicts beside it is a second source of truth for a gate to read.
     ++ ",\n  obj: " ++ tup objs ++ ")"
 
-/-- The file `--string` writes: the panel library and the picture.  The header naming how to
-    regenerate it is `DiagExport`'s, written from the argv it was run with. -/
-def fileOf (body : String) : String :=
+/-- The `lean:<Module>.<decl>@<key>` marker of each declaration a verdict leaned on, in ONE index
+    query: the key is `decl_info.stmt_key`'s low half, `Freyd.Cite.keyHex`, the very number
+    `scripts/cite-check` recomputes — so a statement that moves invalidates a panel's trace the
+    same way it invalidates a note's citation.
+    A NAME THE INDEX DOES NOT HOLD IS AN ERROR, never a blank citation: every name here came from
+    the index's own candidate list, so a miss says the index is behind the environment the dot was
+    read in, and a trace citing nothing would hide exactly that. -/
+def natKeys (ns : Array Name) : MetaM (Std.HashMap Name String) := do
+  let want := ns.toList.eraseDups
+  if want.isEmpty then return {}
+  let lits := want.map fun n => Freyd.Cite.sqlLit (toString n)
+  let rows ← indexRows ("select i.user_name, i.module, i.stmt_key from decl_info i where \
+    i.internal = 0 and i.user_name in (" ++ String.intercalate ", " lits ++ ")")
+  let mut m : Std.HashMap Name String := {}
+  for row in rows do
+    let u ← cell row "user_name"
+    let md ← cell row "module"
+    let k := (← Freyd.Cite.numCell row "stmt_key").getD 0
+    m := m.insert u.toName
+      ("lean:" ++ md ++ "." ++ Freyd.Cite.lastComp u ++ "@" ++ Freyd.Cite.keyHex k)
+  for n in want do
+    unless m.contains n do
+      throwError "the naturality search leaned on `{n}`, which `.lake/build/refactor-index.db` has \
+        no row for: the index is behind the environment this panel was drawn in — run \
+        `./scripts/lean-refactor index`"
+  return m
+
+/-- THE TRACE: one `nat:` comment per bead or unit the environment answered about, naming the mark
+    drawn and every declaration the proof term leaned on.  A dot nobody can audit is a claim
+    without a citation, and the panel IS the declaration's own drawing, so the citation belongs in
+    the file the exporter writes — a comment, so the `dpanel` call and the note are unchanged by it
+    (the note carries `#lean("<selector>")` and nothing else).
+
+    A bead that is no family gets no line: neither mark nor declaration means nothing was looked at
+    and nothing claimed, which is not the spider's "looked and found nothing". -/
+def natLines (ps : Array Diagram) : MetaM String := do
+  let rows := ps.flatMap fun p => p.rows.filter fun r => r.nat.isSome || !r.natLean.isEmpty
+  let keys ← natKeys (rows.flatMap (·.natLean))
+  let mut out := ""
+  for r in rows do
+    let word := match r.nat with | none => "none" | some m => m.key
+    let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
+    out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
+  return out
+
+/-- The file `--string` writes: the panel library, the picture, and the `nat:` trace of every dot
+    the picture draws.  The header naming how to regenerate it is `DiagExport`'s, written from the
+    argv it was run with. -/
+def fileOf (body : String) (nat : String := "") : String :=
   "#import \"../dpanel.typ\": *\n\
-   #import \"../circuit.typ\": frc\n\n" ++ body
+   #import \"../circuit.typ\": frc\n\n" ++ body ++ nat
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
     re-splitting the picture. -/
 def emit (p : Diagram) : MetaM String := do
   return fileOf ("#let panels = (" ++ (← panelCode p none none)
-    ++ ",)\n#let pic = panels.at(0)\n")
+    ++ ",)\n#let pic = panels.at(0)\n") (← natLines #[p])
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
@@ -467,7 +525,7 @@ def emitStatement (declName : String) (parts : Array (String × Diagram)) : Meta
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n")
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines ps)
 
 /-! ### The functor: an arrow of the allegory as a panel
 
@@ -554,7 +612,10 @@ def SEARCH_HEARTBEATS : Nat := 200000000
     object wire — and the declaration that says so, which a spider has none of. -/
 structure Verdict where
   mark : Option Mark
-  lean : Option Name
+  /-- Every declaration the proof term leaned on, in the order it was assembled: the square the
+      search found, then the equivalence that carried it to the mark drawn.  Empty is "nothing was
+      looked at", which is not the same as "nothing was found" (the spider). -/
+  lean : Array Name
   deriving Inhabited
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
@@ -588,7 +649,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   let some (alg, G, F) ← (do match ← read alg0 with
       | some r => pure (some r)
       | none => if alg0 == .relator then read .functor else pure none)
-    | return { mark := none, lean := none }
+    | return { mark := none, lean := #[] }
   -- THE FILTER IS THE FAMILY'S CONSTANTS, NOT THE TERM'S AT ITS OBJECT.  A bead taken at an initial
   -- algebra's carrier carries `InitialAlgebra.t` into `core`, and no naturality theorem mentions a
   -- projection of the region's own structure, so filtering on it dropped every candidate there is.
@@ -603,15 +664,20 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   let search : MetaM (Option Verdict) := match alg with
     | .functor => id do
       if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ) must FUEL then
-        return some { mark := some .strict, lean := n }
+        return some { mark := some .strict, lean := #[n] }
       -- THE SQUARE OVER THE MAPS, where the region HAS maps to restrict to.  `𝟙%∋ : 𝟙 ⟹ E` is
       -- natural there and at no relation (`singletonMap_natural`, whose `Map f` this square binds
       -- and `discharge` reads back), and so is every other family of maps between functor lanes of
       -- an allegory; asking only the unrestricted square left all of them with no claim at all.
+      -- AND IT IS NOT THE FILLED DOT.  In an ALLEGORY the maps are a sub-category of the arrows,
+      -- so a square proved only over them says nothing at any relation, where the filled dot says
+      -- it of every arrow — `∋` drew solid here while the same `∋` elsewhere drew hollow off
+      -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a region that is a
+      -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
       if alg0 == .relator then
         if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ .strict true)
             must FUEL then
-          return some { mark := some .strict, lean := n }
+          return some { mark := some .maps, lean := #[n] }
       return none
     | .relator => id do
       let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
@@ -622,18 +688,18 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- not even well typed unless the bead happens to end where it starts.
       let nolax ← Meta.mkAppM ``Not #[lax]
       if let some (n, _) ← findProof br strict ``Freyd.Alg.StrictNatural {} FUEL then
-        return some { mark := some .strict, lean := n }
+        return some { mark := some .strict, lean := #[n] }
       -- THE SQUARE IS BUILT, NOT REACHED BY UNFOLDING THE CLASS, for the reason `laneSquare` gives:
       -- `LaxNatural F G φ` spells the lane stack's action as the COMPOSITE relator's `map`, and
       -- every hand-written square in the repo spells it wire by wire (`tupleP 3 (tupleP n S)`), so
       -- the unfolded class matched none of them and every `RelSet.graph` bead of the cylinder came
       -- back a spider.  Same builder as the functor algebra's, one grade apart.
       if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ) must FUEL then
-        return some { mark := some .strict, lean := n }
+        return some { mark := some .strict, lean := #[n] }
       if let some (n, _) ← findProof br lax ``Freyd.Alg.LaxNatural {} FUEL then
-        return some { mark := some .lax, lean := n }
+        return some { mark := some .lax, lean := #[n] }
       if let some (n, _) ← findTelescoped br (← laneSquare alg regionTy F G φ .lax) must FUEL then
-        return some { mark := some .lax, lean := n }
+        return some { mark := some .lax, lean := #[n] }
       -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
       -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot
       -- whose square points the other way, and the `nat:` row is where the direction is written.
@@ -642,9 +708,28 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- ever produces — and that closure's own hypothesis IS searched as a square, through
       -- `discharge`.  A whole extra sweep per bead is what the H panels' budget cannot pay.
       if let some (n, _) ← findProof br oplax ``Freyd.Alg.OpLaxNatural {} FUEL then
-        return some { mark := some .oplax, lean := n }
+        return some { mark := some .oplax, lean := #[n] }
       if let some (n, _) ← findProof br nolax ``Not must FUEL then
-        return some { mark := none, lean := n }
+        return some { mark := none, lean := #[n] }
+      -- THEOREM 5.2 IS A BRIDGE, AND IT IS CROSSED WITH A TERM.  A family whose only square in the
+      -- repo is the one over the MAPS was a spider here, and it is not: on a TABULAR allegory that
+      -- square IS lax naturality (`laxNatural_iff_strict_on_maps`), so the honest mark is the
+      -- hollow dot.  `.mpr` applied to the square's own proof is BUILT and `Meta.check`ed, so the
+      -- equivalence's `TabularAllegory 𝒜` has to synthesise for this region and its two ends have
+      -- to be the very relators the bead runs between; where either fails there is no term and the
+      -- bead keeps `maps` — what was proved over the maps, and nothing claimed at a relation.
+      -- BOTH NAMES ARE RECORDED: the dot rests on the square AND on the theorem that carried it.
+      if let some (n, pf) ← findTelescoped br (← laneSquare alg regionTy F G φ .strict true)
+          must FUEL then
+        let carried ← observing? do
+          let e ← Meta.mkAppM ``Freyd.Alg.laxNatural_iff_strict_on_maps #[F, G, φ]
+          let t ← Meta.mkAppM ``Iff.mpr #[e, pf]
+          Meta.check t
+          pure t
+        if carried.isSome then
+          return some { mark := some .lax,
+                        lean := #[n, ``Freyd.Alg.laxNatural_iff_strict_on_maps] }
+        return some { mark := some .maps, lean := #[n] }
       return none
   -- A SEARCH THAT CANNOT FINISH IS A BEAD NOTHING PROVES, SAID OUT LOUD.  The bound is measured
   -- from the search's own start and the handler runs outside it, so the message is not itself cut
@@ -659,7 +744,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
-  return found.getD { mark := some .spider, lean := none }
+  return found.getD { mark := some .spider, lean := #[] }
 
 /-! ### The four constructors — nothing else builds a `Diagram` -/
 
@@ -724,15 +809,17 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- state — heading a lane with it claims the transformation IS the unit, which is the dot the
   -- spider exists to withhold.  `∈ ≜ ∋°` is that bead: the same shape as the singleton `𝟙%∋`, and
   -- only the verdict tells them apart.
+  -- `maps` IS a proved family — the square over every map of the region — so it heads a lane like
+  -- the other three; what it withholds is the claim at a relation, which is the ink, not the shape.
   let proved := match vd.bind (·.mark) with
-    | some .strict | some .lax | some .oplax => true
+    | some .strict | some .lax | some .oplax | some .maps => true
     | some .spider | none => false
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
     { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
-      nat := vd.bind (·.mark), natLean := vd.bind (·.lean) }
+      nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[] }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
