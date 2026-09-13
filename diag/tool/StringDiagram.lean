@@ -427,7 +427,16 @@ def natLines (ps : Array Diagram) : MetaM String := do
   let keys ← natKeys (rows.flatMap (·.natLean))
   let mut out := ""
   for r in rows do
-    let word := match r.nat with | none => "none" | some m => m.key
+    let word : String := match r.nat with | none => "none" | some m => m.key
+    -- THE OBLIGATION IS THE MARK, AND THE RECORD IS THE CITATION: every bead the picture draws a
+    -- mark on is looped over here, and one with no declaration under it is the failure — a mark
+    -- is ink for a proof term the search assembled, so a verdict added without a citation stops
+    -- the panel instead of drawing an uncheckable dot.  The spider is the one mark that cites
+    -- nothing, because it says the tool looked and found nothing.
+    if r.nat != some .spider && r.natLean.isEmpty then
+      throwError "the bead `{r.label}` draws the mark `{word}` and cites no declaration: a mark is \
+        the ink of a proof term the search assembled, so every one but the spider names the \
+        declaration it rests on (`Verdict.lean`)"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
