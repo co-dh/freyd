@@ -134,6 +134,11 @@ structure Row where
       than one where the claim is a proved EQUIVALENCE away from what was found (Theorem 5.2), so
       the reader auditing the dot sees every step it rests on and not only the last. -/
   natLean : Array Name := #[]
+  /-- IS THE BEAD A FAMILY IN AN OBJECT AT ALL?  One that is not is an arrow at this one object and
+      has no naturality to be asked about; one that IS, carrying neither mark nor citation, is a
+      family whose ends no lane of the region spells — and the trace says which, rather than
+      leaving the bead out of it. -/
+  family : Bool := false
   /-- The lanes the bead STANDS OVER: the object it is a family at, `F A` for `𝟙%∋` taken there.
       They run past it inside, and a bead with no arms opens its leg WEST of them. -/
   over  : Array Nat := #[]
@@ -420,20 +425,30 @@ def natKeys (ns : Array Name) : MetaM (Std.HashMap Name String) := do
     the file the exporter writes — a comment, so the `dpanel` call and the note are unchanged by it
     (the note carries `#lean("<selector>")` and nothing else).
 
-    A bead that is no family gets no line: neither mark nor declaration means nothing was looked at
-    and nothing claimed, which is not the spider's "looked and found nothing". -/
+    ONE LINE PER BEAD DRAWN, and the word is the verdict: a mark, `none` for a refuted family, or
+    `arrow` for a bead that is no family — an arrow of the base category at this one object, which
+    is not the spider's "looked and found nothing" either. -/
 def natLines (ps : Array Diagram) : MetaM String := do
-  let rows := ps.flatMap fun p => p.rows.filter fun r => r.nat.isSome || !r.natLean.isEmpty
+  -- THE OBLIGATION IS THE BEAD THE PANEL DRAWS, NOT THE VERDICT RECORD.  Looping over the beads the
+  -- environment happened to answer about cannot find the one it was never asked about, which is how
+  -- `zip`, `cp` and `cons` came out with no row at all; deleting a record shortens no obligation
+  -- here, because the obligations ARE the rows the picture is drawn from.
+  let rows := ps.flatMap (·.rows)
   let keys ← natKeys (rows.flatMap (·.natLean))
   let mut out := ""
   for r in rows do
-    let word : String := match r.nat with | none => "none" | some m => m.key
-    -- THE OBLIGATION IS THE MARK, AND THE RECORD IS THE CITATION: every bead the picture draws a
-    -- mark on is looped over here, and one with no declaration under it is the failure — a mark
-    -- is ink for a proof term the search assembled, so a verdict added without a citation stops
-    -- the panel instead of drawing an uncheckable dot.  The spider is the one mark that cites
-    -- nothing, because it says the tool looked and found nothing.
-    if r.nat != some .spider && r.natLean.isEmpty then
+    -- A bead that is NO FAMILY is an arrow of the base category at this one object (`est(R)`, a
+    -- fold): there is no naturality to state, and the row says that rather than leaving the bead
+    -- out.  A refuted family cites the refutation and draws no dot; a family whose ends no lane
+    -- spells is `unread` — nothing claimed, and the reader, not the environment, is why.
+    let word : String := match r.nat with
+      | none => if !r.natLean.isEmpty then "none" else if r.family then "unread" else "arrow"
+      | some m => m.key
+    -- EVERY MARK BUT THE SPIDER CITES: a mark is ink for a proof term the search assembled, so a
+    -- verdict added without a citation stops the panel instead of drawing an uncheckable dot.  The
+    -- spider cites nothing because it says the tool looked and found nothing, and `arrow` because
+    -- there was nothing to look at.
+    if r.nat.isSome && r.nat != some .spider && r.natLean.isEmpty then
       throwError "the bead `{r.label}` draws the mark `{word}` and cites no declaration: a mark is \
         the ink of a proof term the search assembled, so every one but the spider names the \
         declaration it rests on (`Verdict.lean`)"
@@ -652,13 +667,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
   -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
   -- can disagree with it, and did.
-  -- AN END NO RELATOR SPELLS IS NO FAMILY AT ALL, so it is not a spider either.  A spider says the
-  -- tool looked at a naturality statement and found no proof; where one end is `F Unit A`, or the
-  -- lane over it is a FUNCTOR and not a relator of the region (`E` under `UnguardedPowerLCDA`,
-  -- whose `powerRelator` needs tabularity), there is no statement to look at, and what the bead IS
-  -- is an arrow of the base category at this one object — the plain dot on the object wire every
-  -- other such bead gets (`Q°`, `est(R)`), and no `nat:` row, because nothing was claimed either
-  -- way.  Naming it an error would fail the whole panel over one bead.
+  -- AN END NO LANE SPELLS IS A READING THAT FAILED, AND A FAILED READING IS NO VERDICT: the bead IS
+  -- a family, so there is a naturality to state and nothing was claimed about it.  The `nat:` row
+  -- says `unread` — `zip`, `cp` and `cons` over the peeled product lane had no row at all, while
+  -- their squares sat proved in the environment.  NOT an error: a factor the reader throws on is
+  -- read ANOTHER way by the term walk, so a throw here redraws the panel coarser instead of
+  -- stopping it (it cost `prefix ⊑ prefix`'s `cons` its dot and its peeled `list` wire).
   -- WHICH ALGEBRA THE STATEMENT IS IN IS THE REGION'S, not the bead's: §1.241's function category
   -- is a `Cat` and no allegory, so its lanes are functors and its naturality is the plain square.
   -- THE LANES DECIDE WHICH NATURALITY THERE IS TO STATE, and a region can carry both kinds.  An
@@ -821,9 +835,13 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let φ ← match v? with
     | some v => some <$> familyOf regionTy v core
     | none => familyAt? regionTy core #[oy, ox]
+  -- THE BEAD IS NAMED IN ITS OWN FAILURE: a verdict that cannot be reached is this bead's error,
+  -- and a message holding only the family's term leaves the reader matching it back to a label.
   let vd ← match φ with
     | none => pure none
-    | some φ => some <$> verdict regionTy cat φ
+    | some φ => some <$> (try verdict regionTy cat φ catch e =>
+        throwError "the bead `{← beadLabel core (#[ox, oy] ++ v?.toArray)}`: \
+          {← e.toMessageData.toString}")
   let ar := Array.mk (List.range arms.size)
   let ov := Array.mk (List.range' arms.size over.size)
   let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
@@ -842,7 +860,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
-      nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[] }
+      nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], family := φ.isSome }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
