@@ -216,6 +216,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.R] def unexpandCodeR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.R] def unexpandTourR : Unexpander | _ => `($(mkIdent `R))
 
 -- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
 -- and the note draws `R` on that box and `est(R°)` on the greedy step.

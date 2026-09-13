@@ -386,23 +386,23 @@ public theorem tour_laws {l lF : RelSet.{0}}
     {sortP : PowerAllegory.powerObj (dTour City) ⟶ l}
     {sortF : ((F (City × City) City).obj (dTour City) ⟶ (F (City × City) City).obj (dTour City)) →
       (PowerAllegory.powerObj ((F (City × City) City).obj (dTour City)) ⟶ lF)}
-    {listcp : (F (City × City) City).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
+    {listcp : (F (City × City) City).obj l ⟶ lF} {g₁ g₂ : lF ⟶ l}
     {thinlist : l ⟶ l} {minlist : l ⟶ dTour City} {Pr : RelProd l l}
     {Pr' : RelProd (PowerAllegory.powerObj (dTour City)) (PowerAllegory.powerObj (dTour City))}
-    {mergeP : Pr.p ⟶ l}
+    {cat : Pr.p ⟶ l}
     (hsortF : ∀ {X Y : (F (City × City) City).obj (dTour City)
         ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph droplAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droplAlgFn)°)
-      ≫ listf₁ ⊑ powerRel (graph (droplAlgFn (City := City))) ≫ sortP)
+      ≫ g₁ ⊑ powerRel (graph (droplAlgFn (City := City))) ≫ sortP)
     (h88₂ : sortF (graph droprAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droprAlgFn)°)
-      ≫ listf₂ ⊑ powerRel (graph (droprAlgFn (City := City))) ≫ sortP)
+      ≫ g₂ ⊑ powerRel (graph (droprAlgFn (City := City))) ≫ sortP)
     (h811 : (F (City × City) City).map sortP ≫ listcp
       ⊑ cpMap (F (City × City) City) (dTour City)
         ≫ sortF ((F (City × City) City).map (topMor (dTour City) (dTour City))))
-    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h810 : prodMap Pr' Pr sortP sortP ≫ cat ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Qc tc) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R tc)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ 𝟙 l) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+    ⦇listcp ≫ Pr.pair g₁ g₂ ≫ cat ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
   have hm₁ : MonotonicAlg (F := F (City × City) City)
       (graph (droplAlgFn (City := City)) ≫ 𝟙 (dTour City)) (Qc tc) := by
@@ -420,13 +420,15 @@ public theorem tour_laws {l lF : RelSet.{0}}
     (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
-    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (sort := fun _ => sortP) (merge := fun _ => cat) (thinlist := fun _ => thinlist)
     (minlist := fun _ => minlist)
     (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R Qc_refl Qc_trans R_recip_trans
     hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
     rfl rfl rfl
+  -- The note's program is the fold of ITS OWN arrows: `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`, so the
+  -- `p₁ = p₂ = 𝟙` Theorem 8.2 was taken at leave no `≫ 𝟙` behind in the statement drawn.
   rw [Cat.comp_id (graph (droplAlgFn (City := City))),
-    Cat.comp_id (graph (droprAlgFn (City := City)))] at key
+    Cat.comp_id (graph (droprAlgFn (City := City))), Cat.comp_id g₁, Cat.comp_id g₂] at key
   exact key
 
 end Freyd.Alg.RelSet.Tour
