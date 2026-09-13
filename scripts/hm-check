@@ -883,9 +883,15 @@ def drawn(tbl):
         that as a row like any other;
       · a BRANCH of a bracket algebra is still the ALGEBRA's arrow and keys the bracket (`[,]`) —
         the panel's `cert: branch:` names the arm drawn, which the label alone cannot say."""
-    out, bad = [], []
+    out, bad, free = [], [], []
     for r in sl.panels(NOTE, None):
         p = sl.Panel(r)
+        # THE EXPORTER'S OWN PANEL OWES NO ROW.  A `#lean(…)` panel's beads were typed from the Lean
+        # statement when it was drawn, and `diag/hm-sigs.json` is a table of the NOTE's letters: a
+        # bead Lean names `minlist` has an arrow, it simply has no row here, and none is wanted.
+        if p.lean:
+            free.append(p.id)
+            continue
         c = p.cert
         own = c.get("sigs") or {}
         t = sl.typed(tbl, own)
@@ -913,6 +919,8 @@ def drawn(tbl):
                 bad.append(f"{p.id}: the bead {lab} is drawn with no signature row — every bead"
                            f" drawn is an arrow between two things, and the row is where that is"
                            f" stated and cited [{type(ex).__name__}: {ex}]")
+    print(f"hm-check: {len(free)} panel(s) the exporter drew and typed from Lean, so no row here"
+          f" answers for them")
     return out, bad
 
 

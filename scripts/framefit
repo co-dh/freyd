@@ -74,9 +74,39 @@ def tuples(args, i):
     return [e for e in dg.split_args(t[1:-1] if t.startswith("(") else t) if e.strip()]
 
 
+def panelsources(path):
+    """THE FILES A PANEL OF THIS NOTE IS WRITTEN IN, each with whether its bands are LICENSED: the
+    note itself, and every `diag/generated/…` its `#lean(...)` names, through `scripts/note-files
+    --lean` — the one list, the same one `diag-regen` draws from.
+
+    A GENERATED band is licensed by construction.  The exporter draws a whole statement in ONE box:
+    the deepest side sets the frame and the shallower side keeps it with its first bead sunk so the
+    shared bead lines up, which is exactly the standing-off-the-floor a note literal's `top:` used to
+    license by hand.  There is no `cert:` in a generated file to say it, and none is wanted."""
+    out = [(note_source(path), False)]
+    p = subprocess.run(["./scripts/note-files", "--lean"], capture_output=True, text=True)
+    if p.returncode:
+        sys.exit(f"framefit: scripts/note-files --lean failed:\n{p.stderr}")
+    for sel in p.stdout.split("\n"):
+        if not sel.strip():
+            continue
+        g = os.path.join("diag", "generated", sel + ".typ")
+        if not os.path.exists(g):
+            sys.exit(f"framefit: {g}: the note draws it and nothing has — run `make panels`")
+        out.append((open(g, encoding="utf-8").read(), True))
+    return out
+
+
 def literals(path):
-    """(line, name, expect, rows below the last bead, licensed) for every `#dpanel` in the note."""
-    text = note_source(path)
+    """(line, name, expect, rows below the last bead, frame, licensed) for every `#dpanel` the note
+    draws — its own, and every one in a generated file its `#lean(...)` names."""
+    out = []
+    for text, glic in panelsources(path):
+        out += fileliterals(text, glic)
+    return out
+
+
+def fileliterals(text, glic):
     out = []
     for m in re.finditer(r"\bdpanel\(", text):
         popen = m.end() - 1
@@ -101,7 +131,7 @@ def literals(path):
         cert = arg.find("cert: (")
         # `top:` is the pair's knob and the ONE licence to stand off the floor; `frame:` is not — it
         # is the shared BOX, and a panel can keep its partner's frame with its own beads at the foot.
-        lic = cert >= 0 and "top:" in arg[cert:]
+        lic = glic or (cert >= 0 and "top:" in arg[cert:])
         out.append((line, name.group(1) if name else "dpanel", arg_expect(arg),
                     round(min(ys + ends) / dg.DY, 3), h, lic))
     return out

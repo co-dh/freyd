@@ -4,6 +4,7 @@
 #import "circuit.typ": wire, gbox, boxrun, boxrun-w, tape, tape-join, LEAD, frc, TAPEEDGE, est-R-box, union-box
 #import "dpanel.typ": dpanel, hm-meta
 #import "cetz-nodraw.typ" as cetz
+#import "note-prelude.typ": lean
 
 = Appendix <sec-appendix>
 

@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 import panels                                    # noqa: E402  — the manifests' one reader
 # The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
 # stands for, and write back through the split so a rewritten `cert:` lands in the chapter holding it.
-from notesplit import note_files, note_root, take_chapter    # noqa: E402
+from notesplit import note_files, note_root, take_chapter, typst_string    # noqa: E402
 # `scripts/diagram` is the note's reader as well as its generator: `literals` and `close` are how a
 # `dpanel(` and its `cert:` are cut out of the source, and --marks writes into that same cut rather
 # than pattern-matching the note a second time.  It has no `.py`, hence the loader.
@@ -692,6 +692,31 @@ def note_texts():
     return [[p, open(p, encoding="utf-8").read()] for p in note_files()]
 
 
+def leanimport(path, text):
+    """`lean` PUT IN SCOPE of a file that draws with it, as the file's new text or None when it is
+    there already.  A chapter takes the prelude whole (`#import "../note-prelude.typ": *`);
+    `diag/allegory-appendix.typ` is `#include`d into a scope it does not share and re-imports every
+    helper by name, so a `lean(` written into it draws nothing until this one is named too."""
+    lines, last = text.split("\n"), -1
+    for k, ln in enumerate(lines):
+        if not ln.startswith("#import "):
+            continue
+        last, inc = k, typst_string(ln)
+        if inc and os.path.basename(inc) == "note-prelude.typ":
+            got = ln.rpartition(":")[2].strip()
+            if got == "*" or "lean" in [s.strip() for s in got.split(",")]:
+                return None
+            sys.exit(f"string-check: {path} imports the prelude as `{got}`, which brings no `lean`;"
+                     f" add it there and re-run")
+    if last < 0:
+        sys.exit(f"string-check: {path} draws a panel and imports nothing, so there is no import"
+                 f" list to name `lean` in")
+    rel = os.path.relpath(os.path.join(os.path.dirname(NOTE), "note-prelude.typ"),
+                          os.path.dirname(path) or ".")
+    lines.insert(last + 1, f'#import "{rel}": lean')
+    return "\n".join(lines)
+
+
 def splice(texts, edits):
     """Every edit placed in the file it was cut from, one forward pass per file.  A span carries its
     file, so a note that is one file and a note that is sixteen take the same pass."""
@@ -795,6 +820,13 @@ def lean_convert(want):
     settle is REFUSED by name and left byte for byte; the run converts every other one and exits
     non-zero listing the refusals, because a shape converted by hand is a shape the next note change
     breaks again."""
+    # BEFORE THE QUERY: a file already holding a `lean(` it cannot resolve compiles to nothing, so
+    # `note-meta` would answer `unknown variable: lean` for the whole note and name no display.
+    for f in note_texts():
+        new = leanimport(*f) if "lean(" in f[1] else None
+        if new:
+            open(f[0], "w", encoding="utf-8").write(new)
+            print(f"{f[0]}: `lean` imported — the file draws with it")
     live, number, _ = note_panels()
     rows, num = obligations(), lambda n: number.get(n, n)
     addr = lambda n: n if num(n) == n else f"{num(n)}/{n}"

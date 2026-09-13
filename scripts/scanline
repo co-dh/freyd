@@ -128,6 +128,7 @@ class Panel:
         self.id, self.helper, self.h, self.xo = r['id'], r['helper'], r['h'], r['xo']
         self.rec = r                       # the raw record, for checks over ink no `Wire` holds
         self.cert = r.get('cert') or {}
+        self.lean = r.get('lean')          # the `#lean(…)` stamp: this panel is the exporter's
         self.top = [tuple(p) for p in r['top']]
         self.bot = [tuple(p) for p in r['bot']]
         # `strands` are the drawn curves no `Wire` stands for — `tw-hm`'s split, which the
@@ -653,7 +654,10 @@ def natframe(p):
     # `layout`'s rule, so only what `layout` laid out: a panel that declares its own frame is one
     # half of a pair sharing a box (`--pairs` checks that), and a panel whose beads stand OFF the
     # row grid — §13.4.3c's `party-hm`, on its own `HMY` heights — states its own geometry.
-    if not bs or p.helper != "dpanel" or p.cert.get("frame") is not None \
+    # A GENERATED panel's box is the STATEMENT's: `emitStatement` draws both sides in one frame, the
+    # deepest side setting it and the shallower side's first bead sinking so the shared bead lines
+    # up — the licence a note literal's `frame:`/`top:` used to give, here true by construction.
+    if not bs or p.helper != "dpanel" or p.lean or p.cert.get("frame") is not None \
        or p.cert.get("top") is not None \
        or any(abs(b.y / (DY / 2) - round(b.y / (DY / 2))) > EPS for b in p.beads):
         return []
@@ -728,11 +732,15 @@ def leansigs(per, records=None):
         seen = {}
         for r in recs:
             c = r.get("cert") or {}
-            if c.get("lean") and not c.get("sigs"):
-                k = seen[c["lean"]] = seen.get(c["lean"], 0) + 1
-                if num.setdefault((c["lean"], r["id"]), k) != k:
-                    sys.exit(f"scanline: {path}: panel {r['id']} is panel {k} of {c['lean']}, and"
-                             f" another file's {r['id']} is its panel {num[c['lean'], r['id']]}")
+            # A `#lean(…)` panel is NOT asked for here: its beads were typed from the environment
+            # when it was drawn, so there is nothing left to hold it to.  This is the old `cert:
+            # lean:` route, for a panel the note still draws itself.
+            sel = c["lean"] if c.get("lean") and not c.get("sigs") else None
+            if sel:
+                k = seen[sel] = seen.get(sel, 0) + 1
+                if num.setdefault((sel, r["id"]), k) != k:
+                    sys.exit(f"scanline: {path}: panel {r['id']} is panel {k} of {sel}, and"
+                             f" another file's {r['id']} is its panel {num[sel, r['id']]}")
     if not num:
         return {}
     if records:
@@ -1050,7 +1058,7 @@ def crosscheck(ps):
     a label is polymorphic in is read off its arrow.  The one GAP is a label with no arrow to
     resolve, the `branch` arm of a bracket algebra, which is counted and named rather than passed
     over in silence."""
-    dg, wlab, bad, gap = diagram(), {}, [], []
+    dg, wlab, bad, gap, free = diagram(), {}, [], [], 0
     for p in ps:
         c = p.cert
         own = c.get("sigs") or {}
@@ -1080,14 +1088,22 @@ def crosscheck(ps):
                          for cut in (p.cuts[i], p.cuts[i + 1]))
             # A `lean:` panel's types are LEAN's, bead by bead in drawing order: the label is the
             # checksum on that alignment, so a picture the declaration no longer draws says so.
-            ls = LEANSIG.get((c.get("lean"), p.id))
+            # THE EXPORTER'S OWN PANEL HAS NO SIGNATURE OBLIGATION.  Its beads, their labels and
+            # their types were read off the Lean statement when it was drawn; holding them to
+            # `diag/hm-sigs.json` asks a table written for the note's letters to answer for Lean's,
+            # and there is no `cert:` in a generated file for the table to be instantiated at.
+            if p.lean:
+                free += 1
+                continue
+            sel = c.get("lean")
+            ls = LEANSIG.get((sel, p.id))
             if ls is None:
                 say = beadrow(dg, lab, rows, c, str(n))
             elif rank[n] >= len(ls) or ls[rank[n]][0] != b.label:
                 m = rank[n]
-                bad.append(f"{p.id}: bead {m + 1} is drawn {b.label} where {c['lean']} types"
+                bad.append(f"{p.id}: bead {m + 1} is drawn {b.label} where {sel} types"
                            f" {ls[m][0] if m < len(ls) else 'nothing — it draws only ' + str(len(ls))}"
-                           f" — regenerate it with {EXPORT} --string {c['lean']}")
+                           f" — regenerate it with {EXPORT} --string {sel}")
                 continue
             else:
                 # Lean types the bead ALONE, so the drawn cut is narrowed to the wires it TOUCHES:
@@ -1108,7 +1124,7 @@ def crosscheck(ps):
                     bad.append(f"{p.id}: the bead {b.label} is drawn "
                                + ("reaching a lane" if b.reach is not None
                                   else "on the object wire alone")
-                               + f", but {c['lean']} types it {' '.join(slanes)}⟶"
+                               + f", but {sel} types it {' '.join(slanes)}⟶"
                                + ' '.join(tlanes))
             if say is None:
                 gap.append(f"{p.id}: {lab}")
@@ -1129,6 +1145,8 @@ def crosscheck(ps):
     if gap:
         print(f"scanline: {len(gap)} bead{'s' * (len(gap) > 1)} whose label names no arrow of its"
               f" own — the branch arm of a bracket algebra ({', '.join(gap)})")
+    print(f"scanline: {free} bead(s) typed by Lean when the exporter drew them, so nothing here"
+          f" types them again")
     return bad
 
 
@@ -1243,7 +1261,42 @@ def query(path, kinds=("scanline",), name=None):
                           "--field", "value"], capture_output=True, text=True)
     if out.returncode:
         sys.exit(f"scanline: typst query {name or path}: {out.stderr.strip()}")
-    return [v for v in json.loads(out.stdout) if isinstance(v, dict) and v.get("kind") in kinds]
+    # `#lean(sel)` stamps the SELECTOR into the metadata as a bare string, right before the picture
+    # it imports — the one place the note says which Lean statement a generated panel draws, since
+    # the generated file carries no `cert:` of its own.  The stamp covers exactly the panels that
+    # file holds, so it is spent on that many and the record carries which panel of them it is.
+    recs, sel, left, k = [], None, 0, 0
+    sels = leanpanels(path, name)
+    for v in json.loads(out.stdout):
+        if isinstance(v, str) and sels and v == sels[0]:
+            sel, left, k = sels.pop(0), npanels(v), 0
+        elif isinstance(v, dict) and v.get("kind") in kinds:
+            if v.get("kind") == "scanline" and left:
+                left, k = left - 1, k + 1
+                v = dict(v, lean=sel, leank=k)
+            recs.append(v)
+    return recs
+
+
+def leanpanels(path, name=None):
+    """The `#lean(…)` selectors this file draws, in document order.  Picked out by the `<lean-panel>`
+    LABEL, because a bare metadata value alone cannot be told from any other string the note stamps
+    (`definition`), and `--field value` drops the label.  `list=1` makes the helper stamp without
+    importing, so this answers before the pictures are drawn."""
+    out = subprocess.run(["typst", "query", "--root", ".", "--input", "nodraw=1", "--input",
+                          "list=1", path, "<lean-panel>", "--field", "value"],
+                         capture_output=True, text=True)
+    if out.returncode:
+        sys.exit(f"scanline: typst query <lean-panel> {name or path}: {out.stderr.strip()}")
+    return json.loads(out.stdout)
+
+
+def npanels(sel):
+    """How many panels `diag/generated/<sel>.typ` holds — how far a `#lean(sel)` stamp reaches."""
+    g = os.path.join("diag", "generated", sel + ".typ")
+    if not os.path.exists(g):
+        sys.exit(f"scanline: {g}: the note draws it and nothing has — run `make panels`")
+    return len(diagram().literals(open(g, encoding="utf-8").read(), drawable=False))
 
 
 def owns(num):
