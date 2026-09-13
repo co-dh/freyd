@@ -235,9 +235,17 @@ def columns (p : Diagram) : Array Lane := Id.run do
     sits below.  A statement's frame is the deepest of its parts' — see `emitStatement`. -/
 def framex (p : Diagram) : Nat := max p.rows.size 1 + 1
 
+/-- THE BOX A PANEL IS DRAWN IN: the depth the caller asks for, but never shallower than the
+    picture.  HEADROOM ONLY is `emitStatement`'s rule for a statement's parts, and it is the panel's
+    for the same reason — a box shallower than `framex` puts the last bead ON the floor, where its
+    legs have no row to run in, and the sweep then reads the object wire as one of the wires that
+    bead joins.  A note asking for a box the picture does not fit in gets the picture, and the
+    difference is reported by the gate, not drawn. -/
+def frameRows (p : Diagram) (frame : Option Nat) : Nat := max (frame.getD 0) (framex p)
+
 /-- The frame's height in cetz units.  The panel and the gate in `emitStatement` both read THIS,
     so the gate measures the box that is drawn and not a second copy of the rule. -/
-def frameHeight (p : Diagram) (frame : Option Nat) : Float := (frame.getD (framex p)).toFloat * DY
+def frameHeight (p : Diagram) (frame : Option Nat) : Float := (frameRows p frame).toFloat * DY
 
 /-- WHICH LANES THE DRAWING ALREADY HOLDS.  A lane reaching an edge is held by the panel's own
     ports, and one touching a bead that RIDES the object wire (`nat := none`, whose dot is drawn at
@@ -264,7 +272,7 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
     MetaM String := do
   let n := p.rows.size
   let ls := columns p
-  let nr := frame.getD (framex p)
+  let nr := frameRows p frame
   let hh := frameHeight p frame
   let t0n := topRow.getD n
   let t0 := t0n.toFloat
@@ -417,17 +425,32 @@ structure Drawn where
   sigs : Array (Array Json)
   deriving Inhabited
 
+/-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
+    A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
+    them, so two parts pinned there have their lanes at one height; a bead that eats lanes is tied
+    to where they die; a bead with neither rides the object wire, where the note's own `place` lets
+    it sit at any height (IntroString (1.16): two such placements are the SAME diagram). -/
+def Row.pin (r : Row) : Nat := if r.nat.isSome then 2 else if r.arms.isEmpty then 0 else 1
+
 /-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
     SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
-    landmark is the reference's HIGHEST shared bead: a lower one would be read first by a part that
-    leads with it (`F(f)α` leads with `f`, which is `αT(f)`'s last) and would hang the part off the
-    bottom of the box.  Labels are compared whole, as that gate compares them: a bead is the same
-    bead when it is the same 2-cell. -/
+    landmark is the reference's most lane-bound shared bead (`Row.pin`), its highest where several
+    are equally bound.  Taking the highest shared bead outright pinned `F(R)φ ⊑ φR` at `R`, which
+    rides the object wire in both parts, and left `φ` — where the `F` lane dies — at two heights;
+    the note pins `φ`, and `secure prefix = prefix secure` likewise pins the natural `prefix` over
+    the plain arrow `secure`.  Labels are compared whole, as that gate compares them: a bead is the
+    same bead when it is the same 2-cell. -/
 def shiftTo (ref p : Diagram) : Int := Id.run do
+  -- `pin + 1`, so `0` is "no shared bead yet" and a strictly better pin is needed to move the
+  -- landmark down: equal pins keep the reference's highest, which is where the old rule stood.
+  let mut best : Nat := 0
+  let mut sh : Int := 0
   for i in [0 : ref.rows.size] do
     for j in [0 : p.rows.size] do
-      if ref.rows[i]!.label == p.rows[j]!.label then return (j : Int) - (i : Int)
-  return 0
+      if ref.rows[i]!.label == p.rows[j]!.label && ref.rows[i]!.pin + 1 > best then
+        best := ref.rows[i]!.pin + 1
+        sh := (j : Int) - (i : Int)
+  return sh
 
 /-- How far the most-shifted part slides below the reference's first bead. -/
 def maxShift (ref : Diagram) (ps : Array Diagram) : Nat :=
@@ -581,7 +604,7 @@ structure Verdict where
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
     spider"). -/
-def verdict (regionTy : Expr) (cat : Array Name) (core φ : Expr) : MetaM Verdict := do
+def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := do
   -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
   -- type-checks by construction; a stack of lane labels is a second spelling of the same thing that
@@ -733,7 +756,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     | none => familyAt? regionTy core #[oy, ox]
   let vd ← match φ with
     | none => pure none
-    | some φ => some <$> verdict regionTy cat core φ
+    | some φ => some <$> verdict regionTy cat φ
   let ar := Array.mk (List.range arms.size)
   let ov := Array.mk (List.range' arms.size over.size)
   let lg := Array.mk (List.range' (arms.size + over.size) legs.size)

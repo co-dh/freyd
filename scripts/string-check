@@ -107,7 +107,14 @@ def reframe(recs, rows, live, num, want):
 
     A selector answering two note panels must find one frame in both: the two sides of a statement
     share one box by construction, and two frames there is a defect of the note's own pair, reported
-    rather than resolved by picking one."""
+    rather than resolved by picking one.
+
+    EVERY NOTE PANEL THE SELECTOR ANSWERS NEEDS A FRAME DECISION, so the box is read off the panel's
+    own DRAWN height (`rows`, which `dpanel` emits for every panel) and not off its `cert: frame`.
+    A panel that declares none still HAS a box — `place`'s default, one row deeper than the panel —
+    and asking only the panels that declare one enumerated the records instead of the obligations:
+    the undeclared panel went unreported and was then compared against the box its PARTNER
+    declared (`13.3.2a`'s second panel, drawn 2 deep, against its partner's 6)."""
     fr = drawn_frames(recs, sorted(recs))
     want_at, clash = {}, []
     for n, sels in rows:
@@ -117,15 +124,15 @@ def reframe(recs, rows, live, num, want):
             if sel == "-":
                 continue
             b, _ = route(sel)
-            f = (panel.get("cert") or {}).get("frame")
+            f = panel.get("rows")
             if b not in fr or not isinstance(f, (int, float)):
                 continue
             f = int(f)
             if want_at.setdefault(b, f) != f:
                 clash.append((n, sel, want_at[b], f))
     for n, sel, a, b in clash:
-        print(f"{n} {sel}: FRAME — the note's panels for one selector name boxes {a} and {b}, so"
-              f" there is no one box to redraw it in")
+        print(f"{n} {sel}: FRAME — the note's panels for one selector are drawn {a} and {b} rows"
+              f" deep, so there is no one box to redraw it in")
         want_at.pop(route(sel)[0], None)
     by = {}
     for b, m in want_at.items():
