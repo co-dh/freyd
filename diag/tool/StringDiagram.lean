@@ -417,17 +417,32 @@ structure Drawn where
   sigs : Array (Array Json)
   deriving Inhabited
 
+/-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
+    A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
+    them, so two parts pinned there have their lanes at one height; a bead that eats lanes is tied
+    to where they die; a bead with neither rides the object wire, where the note's own `place` lets
+    it sit at any height (IntroString (1.16): two such placements are the SAME diagram). -/
+def Row.pin (r : Row) : Nat := if r.nat.isSome then 2 else if r.arms.isEmpty then 0 else 1
+
 /-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
     SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
-    landmark is the reference's HIGHEST shared bead: a lower one would be read first by a part that
-    leads with it (`F(f)α` leads with `f`, which is `αT(f)`'s last) and would hang the part off the
-    bottom of the box.  Labels are compared whole, as that gate compares them: a bead is the same
-    bead when it is the same 2-cell. -/
+    landmark is the reference's most lane-bound shared bead (`Row.pin`), its highest where several
+    are equally bound.  Taking the highest shared bead outright pinned `F(R)φ ⊑ φR` at `R`, which
+    rides the object wire in both parts, and left `φ` — where the `F` lane dies — at two heights;
+    the note pins `φ`, and `secure prefix = prefix secure` likewise pins the natural `prefix` over
+    the plain arrow `secure`.  Labels are compared whole, as that gate compares them: a bead is the
+    same bead when it is the same 2-cell. -/
 def shiftTo (ref p : Diagram) : Int := Id.run do
+  -- `pin + 1`, so `0` is "no shared bead yet" and a strictly better pin is needed to move the
+  -- landmark down: equal pins keep the reference's highest, which is where the old rule stood.
+  let mut best : Nat := 0
+  let mut sh : Int := 0
   for i in [0 : ref.rows.size] do
     for j in [0 : p.rows.size] do
-      if ref.rows[i]!.label == p.rows[j]!.label then return (j : Int) - (i : Int)
-  return 0
+      if ref.rows[i]!.label == p.rows[j]!.label && ref.rows[i]!.pin + 1 > best then
+        best := ref.rows[i]!.pin + 1
+        sh := (j : Int) - (i : Int)
+  return sh
 
 /-- How far the most-shifted part slides below the reference's first bead. -/
 def maxShift (ref : Diagram) (ps : Array Diagram) : Nat :=
