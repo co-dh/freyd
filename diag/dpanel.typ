@@ -449,9 +449,9 @@
     }
   }
   // A bead's 6th element is the verdict its row states, and `hm-mark` is where that word becomes a
-  // glyph — hollow marks punched out in `fb-ALLC`, the region behind every dot.  The word is the
-  // only thing passed: a panel that decided the shape here would drift from the lane above and from
-  // the exporter, which name the same three verdicts.  Absent, it is `"strict"`.
+  // glyph — hollow and half-filled marks punched out in `fb-ALLC`, the region behind every dot.
+  // The word is the only thing passed: a panel that decided the shape here would drift from the
+  // lane above and from the exporter, which name the same verdicts.  Absent, it is `"strict"`.
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
                            bg: fb-ALLC, nat: b.at(5, default: "strict")) }
   for (x, l) in top {
