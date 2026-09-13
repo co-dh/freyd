@@ -15,14 +15,12 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 # One file standing for all of diag/generated: `diag-regen` deletes and rewrites the pictures
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
-STRSEL := .lake/build/string-selectors
-STRREC := .lake/build/string-records.jsonl
 DB    := .lake/build/refactor-index.db
 SLICE := diag/circuit-slice.typ
 
-# ONE CHAPTER, ONE VARIABLE: `make c CH=13`, `make cite CH=13`, `make scan-generated CH=13` compile,
+# ONE CHAPTER, ONE VARIABLE: `make c CH=13`, `make cite CH=13`, `make panels CH=13` compile,
 # query and scan chapter 13's file and nothing else — the whole note costs about 13 GiB and 40s of
-# layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/string-check`, `cd-check`,
+# layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/cd-check`,
 # `circuit-check` and every python gate resolve the same chapter from the environment and need no
 # flag of their own; `scripts/notesplit.py`'s `note_root` is the one resolution behind all of them.
 # `make ch N=13` is the same variable under the name that target has always taken.
@@ -44,7 +42,7 @@ endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)
 
-.PHONY: p c w labels cite spell scan scan-full scan-strict scan-generated types cd-check circuit-check string-check cover diagram slice circuit books hm-check hm-sigs v
+.PHONY: p c w labels cite spell scan scan-full scan-strict panels types cd-check circuit-check cover diagram slice circuit books hm-check hm-sigs v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -56,7 +54,7 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) slice circuit pairs cite spell scan-strict scan-generated hm-sigs
+p: $(STAMP) panels slice circuit pairs cite spell scan-strict hm-sigs
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
@@ -143,20 +141,11 @@ scan-full:
 scan-strict:
 	./scripts/scanline $(NOTESRC) --strict
 
-# Every picture `diag/string-panels.txt` names, drawn from LEAN and swept against it.  The
-# manifest's SELECTORS are the obligations, never the files on disk: diag/generated is gitignored,
-# so a fresh clone had nothing to sweep and this passed, and deleting a picture dropped an
-# obligation instead of failing.  `string-check --selectors` is the manifest's ONE reader, so the
-# two gates cannot come to disagree about what it names.  Each panel's `cert: lean:` is its
-# certificate: `scanline` asks `diag-export --string --sigs` for its bead types at check time, so a
-# picture the declaration no longer draws fails here.  `diag-export --records` draws every panel AND
-# prints its bead types in one run, so `scanline --records` reads them back instead of starting the
-# exporter a second time — one Lean process for the whole target, the way `string-check` already does.
-scan-generated: $(STAMP)
-	./scripts/string-check --selectors > $(STRSEL)
-	@test -s $(STRSEL) || { echo "$(STRSEL): diag/string-panels.txt names no selector to draw"; exit 1; }
-	tr '\n' '\0' < $(STRSEL) | xargs -0 ./scripts/diag-export --string --records > $(STRREC)
-	./scripts/scanline --strict --records $(STRREC)
+# Every picture the notes draw and have no file for — a `#lean(...)` selector, or an `#import` — drawn
+# from LEAN.  The NOTE is the list of obligations, so adding a picture is writing its name in the note
+# and nothing else; a name already drawn is left alone, which is what keeps this in the edit loop.
+panels:
+	./scripts/diag-regen --missing
 
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
 # note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
@@ -169,12 +158,6 @@ cd-check: $(STAMP)
 # `diag/circuit-panels.txt` must answer one for one.
 circuit-check: $(STAMP)
 	./scripts/circuit-check
-
-# Every string panel of `diag/string-panels.txt` — that is, every Hinze–Marsden panel the note draws
-# — redrawn from LEAN and held to the note's own panel by SVG.  The DISPLAYS are the obligations:
-# one the file does not name fails here rather than going unchecked.
-string-check: $(STAMP)
-	./scripts/string-check
 
 # Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
 # obligations and each one's basename IS the declaration it renders, so a cell whose declaration
@@ -191,7 +174,7 @@ types: $(STAMP)
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: circuit pairs labels cite spell scan-strict hm-sigs
+c: panels circuit pairs labels cite spell scan-strict hm-sigs
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.

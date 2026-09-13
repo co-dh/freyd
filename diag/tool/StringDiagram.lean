@@ -268,11 +268,9 @@ def heldLanes (p : Diagram) : Array Bool :=
     lining a short panel up with a tall one: the frame gives them one box, the top one bead
     height.  Left off, the frame is one row deeper than the panel and the first bead sits at the
     top of it. -/
-def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat) :
-    MetaM String := do
+def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
   let n := p.rows.size
   let ls := columns p
-  let nr := frameRows p frame
   let hh := frameHeight p frame
   let t0n := topRow.getD n
   let t0 := t0n.toFloat
@@ -287,12 +285,10 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   let cell (s : String) : String :=
     let top := (s.dropEnd 2).toString
     if s.endsWith "%∋" && !top.contains '%' then "frc([`" ++ top ++ "`])" else "[`" ++ s ++ "`]"
-  let str (s : String) : String := "\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\""
   let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
   let held := heldLanes p
   let mut beads : Array String := #[]
   let mut objs : Array String := #[]
-  let mut nats : Array String := #[]
   for i in [0 : n] do
     let r := p.rows[i]!
     -- THE BAR SPANS THE ARMS, THE DOT SITS ON WHAT THE BEAD TOUCHES.  A bead with NO arms stands on
@@ -332,12 +328,6 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
           "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
             ++ mark ++ ")"
       objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
-    -- Every FAMILY the tool looked at gets a row, the spider included: a reader must be able to
-    -- see that the search ran and came back empty, which an absent row cannot say.
-    if r.nat.isSome || r.natLean.isSome then
-      nats := nats.push
-        ("(" ++ str r.label ++ ", " ++ str ((r.nat.map Mark.key).getD "not-lax") ++ ", "
-          ++ str ((r.natLean.map Name.toString).getD "") ++ ")")
   let lanecode : Lane → String := fun l =>
     -- A lane born at a UNIT carries the unit as its own birth: half a row below the unit's row, the
     -- unit's label as the 5th element and its verdict as the 6th — `dlane` draws the mark there.
@@ -381,62 +371,22 @@ def panelCode (p : Diagram) (declName : String) (frame topRow scale : Option Nat
   return "dpanel(" ++ num hh ++ ", " ++ num (roundTo 2 (xo + PAD)) ++ ", " ++ num xo ++ ",\n  "
     ++ tup (made.map fun i => lanecode ls[i]!) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top
     ++ ",\n  " ++ tup bot
-    ++ ",\n  obj: " ++ tup objs
-    -- A dot is a theorem, so the panel CITES the declaration each of its verdicts came from —
-    -- including a refuted one, which draws no dot and is a claim all the same.  The frame and the
-    -- top go in with them: they are the statement's, not this panel's, and `diagram --pairs` reads
-    -- them back to hold the two sides of one display to one box.
-    ++ ",\n  cert: (lean: \"" ++ declName ++ "\""
-    ++ (if nats.isEmpty then "" else ", nat: " ++ tup nats)
-    ++ ", frame: " ++ toString nr ++ ", top: " ++ toString t0n ++ ")"
-    ++ (match scale with | some v => ", s: " ++ toString v ++ "%" | none => "") ++ ")"
-
-/-- WHICH ROW EACH PART'S FIRST BEAD SITS ON, as the note gives it: `--top` names one entry per
-    part of the statement, in panel order, and `-` leaves a part to the exporter's own placement.
-    The top is the author's per-panel choice, like the frame, so a statement whose two panels want
-    different tops states both.  A list naming a different number of parts is an ERROR naming both
-    counts: a top quietly dropped draws a panel at a row nobody chose. -/
-def partTops (declName : String) (tops : Array (Option Nat)) (n : Nat) :
-    MetaM (Array (Option Nat)) :=
-  if tops.isEmpty then return (List.replicate n none).toArray
-  else if tops.size == n then return tops
-  else throwError "{declName}: --top names {tops.size} panel(s) and the statement draws {n} \
-    — one entry per panel, in panel order, `-` for the exporter's own placement"
+    -- NO CERTIFICATE: the panel is the declaration's own drawing, so a copy of the statement,
+    -- the bead types and the verdicts beside it is a second source of truth for a gate to read.
+    ++ ",\n  obj: " ++ tup objs ++ ")"
 
 /-- The file `--string` writes: the panel library and the picture.  The header naming how to
     regenerate it is `DiagExport`'s, written from the argv it was run with. -/
 def fileOf (body : String) : String :=
-  "#import \"../../dpanel.typ\": *\n\
-   #import \"../../circuit.typ\": frc\n\n" ++ body
+  "#import \"../dpanel.typ\": *\n\
+   #import \"../circuit.typ\": frc\n\n" ++ body
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
-    panels in order, so a caller holding the note to ONE of them — `scripts/string-check`, where the
-    note draws the parts itself and the frame belongs to the statement — names it by index instead
-    of re-splitting the picture. -/
-def emit (p : Diagram) (declName : String) (frame : Option Nat) (tops : Array (Option Nat))
-    (scale : Option Nat) : MetaM String := do
-  let ts ← partTops declName tops 1
-  return fileOf ("#let panels = (" ++ (← panelCode p declName frame ts[0]! scale)
+    panels in order, so a caller holding the note to ONE of them names it by index instead of
+    re-splitting the picture. -/
+def emit (p : Diagram) : MetaM String := do
+  return fileOf ("#let panels = (" ++ (← panelCode p none none)
     ++ ",)\n#let pic = panels.at(0)\n")
-
-/-- `--string --sigs`: what LEAN says each bead of `sel`'s panels is an arrow between, one JSON
-    object per bead — `selector`, `panel` (numbered as the file emits them), `label`, `src`, `tgt`
-    — so a reader takes FIELDS and never cuts a type at a separator the type may itself spell.
-    Grouped by panel, so a panel with no bead is still one entry and a reader can tell it from a
-    panel nobody answered for.  Nothing is written into the picture: `scripts/scanline` asks this at
-    check time, so the types it holds the ink to are the environment's and cannot go stale. -/
-def sigRecords (sel : String) (ps : Array Diagram) : MetaM (Array (Array Json)) :=
-  ps.zipIdx.mapM fun (p, i) => p.rows.mapM fun r => do
-    return Json.mkObj [("selector", sel), ("panel", toJson (i + 1)), ("label", r.label),
-      ("src", ← cutText r.src), ("tgt", ← cutText r.tgt)]
-
-/-- What one `--string` selector draws: the picture file's text and, when its bead types were
-    asked for, `sigRecords` of its panels — both from ONE read of the statement, so a caller that
-    needs the two does not pay the read twice. -/
-structure Drawn where
-  text : String
-  sigs : Array (Array Json)
-  deriving Inhabited
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
@@ -489,32 +439,22 @@ def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftT
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
     never the part's — the deepest part sets it and every shorter one is lined up inside it. -/
-def emitStatement (declName : String) (parts : Array (String × Diagram))
-    (frame : Option Nat) (tops : Array (Option Nat)) (scale : Option Nat) : MetaM String := do
+def emitStatement (declName : String) (parts : Array (String × Diagram)) : MetaM String := do
   let ps := parts.map (·.2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  -- A frame given from outside is extra HEADROOM, so the reference drops with it and the slides
-  -- below it are unchanged: the alignment is what the frame exists to hold.  HEADROOM ONLY, never
-  -- less: a box shallower than `frameOf` lands the deepest part's last bead ON THE FLOOR, where its
-  -- legs have no row to run in — and the sweep then reads the object wire as one of the wires that
-  -- bead joins and reports its dot off the midpoint (§13.5.2a's `⦇gen⦈`).  A note asking for a box
-  -- the picture does not fit in gets the picture, and the difference is reported, not drawn.
-  let fr := max (frame.getD 0) (frameOf ref ps)
+  let fr := frameOf ref ps
   -- THE FLOOR, NOT THE CEILING: the deepest part's last bead lands on row 1 and every other part
   -- keeps its `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no
   -- bead.  Hanging the reference one row under the top of the box instead (`fr - maxShift - 1`)
-  -- made every bead of the display move whenever the note asked for a deeper box.  Where the note
-  -- wants a part's first bead somewhere else, it says so — that is `--top`, per panel.
+  -- made every bead of the display move whenever the box got deeper.
   let tr := topRefOf ref ps
-  let ts ← partTops declName tops parts.size
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
-  for ((sym, p), i) in parts.zipIdx do
+  for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
     cells := cells.push ("panels.at(" ++ toString panels.size ++ ")")
-    panels := panels.push
-      (← panelCode p declName (some fr) (some (ts[i]!.getD (topOf tr ref p))) scale)
+    panels := panels.push (← panelCode p (some fr) (some (topOf tr ref p)))
     hs := hs.push (frameHeight p (some fr))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
   -- different heights, which reads as two displays rather than one statement.
@@ -1257,9 +1197,8 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     side is read, because the frame is a property of the statement and a side alone cannot know how
     deep the other one is.  The path names the statement, so `.lhs` on an `↔` draws the whole left
     statement and only a trailing name on a relation picks a side. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
-    (frame : Option Nat) (tops : Array (Option Nat)) (scale : Option Nat)
-    (sigsOf : Option String := none) : MetaM Drawn :=
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel) :
+    MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1341,7 +1280,6 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
     withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
-      let sigs ← match sigsOf with | some s => sigRecords s (ps.map (·.2)) | none => pure #[]
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
@@ -1349,8 +1287,6 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       -- exists to hold the parts a relation symbol joins in ONE grid to one box and one bead
       -- height; a calc-table row holding only `.rhs` has no such neighbour, and giving it the whole
       -- statement's frame drew it taller than the picture beside it.
-      let text ← if ps.size == 1 then emit ps[0]!.2 nm frame tops scale
-        else emitStatement nm ps frame tops scale
-      return Drawn.mk text sigs
+      if ps.size == 1 then emit ps[0]!.2 else emitStatement nm ps
 
 end Freyd.StrDiag
