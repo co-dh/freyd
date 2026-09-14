@@ -468,7 +468,9 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
     if word == "spider" then
       throwError "the bead `{r.label}` is a family and the environment proves neither its naturality \
         nor a refutation: state `StrictNatural`/`LaxNatural`/`OplaxNatural` or `¬ LaxNatural` at the \
-        spelling the line `the naturality search for … stopped on …` printed, then regenerate"
+        spelling the line `the naturality search for … found nothing: state …` printed — its \
+        `dropped …: lacks …` and `tried …: no unification` lines name the declarations that were \
+        about this family and were not taken — then regenerate"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
       ++ (match r.natHyp with
           | some hn => " " ++ keys[decl]! ++ " hyp:" ++ toString hn
@@ -808,6 +810,10 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- and not from `verdict`.
   let br ← bridges
   let must ← mustOfFamily br φ
+  -- The spider's message is what the next proving agent reads, so the scan records what it passed
+  -- over as it goes: re-running the search to explain it would pay for it twice.
+  spineRef.set must
+  passedRef.set #[]
   -- A CATEGORY HAS ONE NATURALITY STATEMENT, THE SQUARE, and no `⊑` to grade it by: there is no
   -- lax, no oplax and no refutation to look for, so a family between functor lanes is the solid
   -- dot its square proves or the spider below — never the object-wire bead a failed RELATOR
@@ -901,9 +907,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
   -- THE SPELLING IS PRINTED, not left for the reader to reconstruct: the statement to write is the
   -- one that was looked for, at the relators this bead actually runs between.
-  IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} found nothing: state \
+  -- AND WHAT IT PASSED OVER, so a theorem that IS about this family but was filtered out or failed
+  -- to unify is named here rather than left for the next agent to rediscover.
+  let passed ← passedRef.get
+  IO.eprintln (s!"diag-export: the naturality search for {← Meta.ppExpr φ} found nothing: state \
     `LaxNatural ({← Meta.ppExpr F}) ({← Meta.ppExpr G}) ({← Meta.ppExpr φ})`, one of its two \
-    siblings, or its refutation"
+    siblings, or its refutation" ++ String.join (passed.toList.map ("\n  " ++ ·)))
   return { mark := some .spider, lean := #[] }
 
 /-! ### The four constructors — nothing else builds a `Diagram` -/

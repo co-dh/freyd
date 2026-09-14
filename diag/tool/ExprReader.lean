@@ -1436,6 +1436,30 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
+/-- The same, but only where the family SPEAKS: the head of each application spine and its EXPLICIT
+    arguments.  An implicit or instance argument is the elaborator's spelling of something the
+    statement is general in — the panel wrote `thinRel`'s object `(F Unit (Op a.carrier)).obj
+    (dPair a.carrier)` where the theorem's elaboration wrote `pairF.obj a`, one object, two
+    spellings — so requiring it drops the very declaration that proves or refutes the family. -/
+partial def explicitConsts (e : Expr) (acc : NameSet := {}) : MetaM NameSet := do
+  match e with
+  | .lam _ t b _ | .forallE _ t b _ => explicitConsts b (← explicitConsts t acc)
+  | .mdata _ b | .proj _ _ b => explicitConsts b acc
+  | .letE _ t v b _ => explicitConsts b (← explicitConsts v (← explicitConsts t acc))
+  | .const n _ => return acc.insert n
+  | .app .. =>
+    let f := e.getAppFn
+    let args := e.getAppArgs
+    let info ← Meta.getFunInfoNArgs f args.size
+    let mut out ← explicitConsts f acc
+    for i in [0 : args.size] do
+      -- A position the function's type does not reach is kept: an unknown binder is not an excuse
+      -- to drop a name the statement does write.
+      if (info.paramInfo[i]?.map (·.binderInfo.isExplicit)).getD true then
+        out ← explicitConsts args[i]! out
+    return out
+  | _ => return acc
+
 /-- THE INDEX the candidates are enumerated from.  `./scripts/lean-refactor index` writes a row per
     repository declaration and one per constant its statement uses (`dep … in_type = 1`), from the
     oleans this process imports; Lean core, which it does not cover, concludes no naturality.
@@ -1593,11 +1617,13 @@ def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.
     85M heartbeats for the first level and 91M for the second, past the budget before the third.
     A conclusion that is a CLASS is the resolution path, which each declaration takes its own way;
     a conclusion that is no constant at all is a type former, carried in types a statement never
-    prints.  Everything else a theorem can be asked for by name. -/
+    prints.  Everything else a theorem can be asked for by name.  Read off the SPINE
+    (`explicitConsts`): an implicit object the panel and the theorem spell differently is the
+    unifier's business, and requiring it drops the declaration that settles the family. -/
 def mustOfFamily (br : Meta.Simp.Context) (φ : Expr) : MetaM NameSet := do
   let env ← getEnv
   let mut out : NameSet := {}
-  for n in (consts (← bridge br φ).expr).toList do
+  for n in (← explicitConsts (← bridge br φ).expr).toList do
     if let some ci := env.find? n then
       let h := concHead ci.type
       if h.isAnonymous || Lean.isClass env h then continue
@@ -1662,6 +1688,18 @@ initialize failedRef : IO.Ref (Std.HashMap Failed Nat) ← IO.mkRef {}
     goal `findAnyProof` cut as a loop, and `0` for a candidate a heartbeat budget cut short. -/
 initialize leanedOn : IO.Ref Nat ← IO.mkRef 0
 
+/-- The bead currently being searched for, as its spine constants, and the candidates the TOP-LEVEL
+    scan passed over.  Printed only where the search ends in a spider, so the next proving agent
+    reads why its theorem was not taken instead of guessing at the spelling. -/
+initialize spineRef : IO.Ref NameSet ← IO.mkRef {}
+initialize passedRef : IO.Ref (Array String) ← IO.mkRef #[]
+
+/-- One candidate not taken, kept only where it is ABOUT this family — its statement names every
+    spine constant — because the whole bucket is every theorem of the repo with that conclusion. -/
+def passedOver (has : NameSet) (line : String) : IO Unit := do
+  unless (← spineRef.get).any (fun c => !has.contains c) do
+    passedRef.modify fun a => if a.contains line then a else a.push line
+
 /-- `search`, not run again once it has found nothing.  One refuted family is asked for over and
     over: `laxNatural_of_strictNatural` re-asks the strict class `verdict` just refuted,
     `strictNatural_recip` the converse's, `recip_oplax` the lax one — on `fun a => assocl` that was
@@ -1708,6 +1746,7 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
   let env ← getEnv
   let rw ← bridge br want
   let mut hit : Option (Name × Expr) := none
+  let ms := must.toList
   for (n, has) in ← candidates head do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
@@ -1716,7 +1755,9 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
     -- end.  Without it a goal nothing proves is a full scan of the environment at every step of
     -- `discharge`, which is the environment cubed and never returns (`Freyd.Alg.Cylinder.Q`).
     Core.checkMaxHeartbeats "the naturality search"
-    if must.any (fun m => !has.contains m) then continue
+    if let some m := ms.find? (fun m => !has.contains m) then
+      if seen.isEmpty then passedOver has s!"dropped {n}: lacks {m}"
+      continue
     let some ci := env.find? n | continue
     let s ← Meta.saveState
     let attempt : MetaM (Option (Name × Expr)) := do
@@ -1733,7 +1774,9 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
       -- assembled term — is more searching, and a budget there is a dot lost to a timeout.
       unless ← Core.withCurrHeartbeats (withTheReader Core.Context
         (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
-        (Meta.isDefEq rc.expr rw.expr)) do return none
+        (Meta.isDefEq rc.expr rw.expr)) do
+        if seen.isEmpty then passedOver has s!"tried {n}: no unification"
+        return none
       unless ← discharge br args bis fuel (seen.push want) do return none
       checked want rw rc n (mkAppN (.const n lvls) args)
     -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
