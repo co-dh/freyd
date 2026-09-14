@@ -25,6 +25,9 @@
 module
 
 public import AOP.A7_2
+-- `thinRel_pt`, the pointwise reading every Rel(Set) user of `thinRel` needs, is stated beside the
+-- definition it reads rather than re-derived in each of them.
+public import AOP.A6_1_RelSet
 
 universe u
 
@@ -62,6 +65,13 @@ public theorem Λ_comp_subsetRel (W : B ⟶ A) : Λ W ≫ subsetRel A = W / (∋
     bounds for any of its members. -/
 @[expose] public def thinRel (Q : A ⟶ A) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A :=
   subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
+
+/-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
+    and every member of `P` has a `Q`-lower bound in `Y`.  Stated here, beside the definition it
+    reads, because the thinning beads of §9.2 need it as much as `rel.AutoDeriveThin`'s driver
+    does — which runs it at `Q := Qm°`, so the kept `w` satisfies `Qm z w`, the min convention. -/
+public theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (RelSet.pow α).carrier) :
+    thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
 
 /-- Thinning only shrinks: `thin Q ≫ ∋ ⊑ ∋` (members of the output were members of the
     input). -/
