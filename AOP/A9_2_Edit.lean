@@ -45,6 +45,9 @@ module
 public import AOP.A9_1
 public import AOP.A5_6_ListCombinators
 public import AOP.A8_3
+-- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
+-- naturality here, and it is stated once, for the schedules.
+public import AOP.A7_5_VanBeads
 
 namespace Freyd.Alg.RelSet.Edit
 
@@ -661,5 +664,27 @@ public theorem edit_prog [DecidableEq Char] (mle : dPair Char ⟶ dEdit Char) :
           ≫ thinRel (rprodMap (topMor (dE (Op Char)) (dE (Op Char))) (V Char))
           ≫ powerRel (rprodMap (𝟙 (dE (Op Char))) mle ≫ consR) ≫ est (R Char) := by
         rw [Cat.assoc]
+
+/-! ## The beads of the `edit` panels, and what the environment says about them -/
+
+/-- **`est(R)` is LAX natural** in the alphabet: `E(list(Op(S)))est(R) ⊑ est(R)list(Op(S))`.
+    `R` compares LENGTHS and `Op(S)` relates an operation only to one of the same shape, so
+    `list(Op(S))` relates sequences of equal length: a shortest sequence of the image comes from a
+    member of the set, and that member is shortest there.  Not STRICT — the right side asks every
+    member of the set for an image, which a relation that is not entire need not give. -/
+public theorem est_R_laxNatural :
+    LaxNatural (opRelator.comp listRelator) ((opRelator.comp listRelator).comp powerRelator)
+      (fun a => est (R a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun es r => ?_
+  rintro ⟨fs, hxy, hest⟩
+  obtain ⟨hfs, hmin⟩ := (est_apply _ _ _).mp hest
+  obtain ⟨hfwd, hbwd⟩ := (powerRel_apply _ _ _).mp hxy
+  obtain ⟨w, hw, hwr⟩ := hbwd r hfs
+  refine ⟨w, (est_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
+  obtain ⟨v, hzv, hv⟩ := hfwd z hz
+  show clen w ≤ clen z
+  rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]
+  exact hmin v hv
 
 end Freyd.Alg.RelSet.Edit
