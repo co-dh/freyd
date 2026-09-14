@@ -53,6 +53,92 @@ variable {City : Type} {tc : City × City → Int}
 /-- The object carrying `Tour`. -/
 @[expose] public abbrev dTour (City : Type) : RelSet.{0} := ⟨Tour City⟩
 
+/-! ### A journey is a relator
+
+  A journey is a cons-list whose LEAF carries a pair of cities, so both of its type arguments are
+  built from the one alphabet of cities: `Journey` is a functor of `City` and every end of this
+  section — `Journey`, `Tour = Journey×Journey`, `F(City×City,City)` — is one too.  Bundled as a
+  lane, that is what lets `⦇tourAlg⦈` state a naturality; without it the pictures had `City` varying
+  inside an end no lane spelled. -/
+
+/-- `Journey(R)` pointwise: the same shape, each city related by `R`, the leaf's two cities
+    included. -/
+@[expose] public def journeyP {A B : Type} (R : dE A ⟶ dE B) : Journey A → Journey B → Prop
+  | ConsList.wrap p, ConsList.wrap q => R p.1 q.1 ∧ R p.2 q.2
+  | ConsList.wrap _, ConsList.cons _ _ => False
+  | ConsList.cons _ _, ConsList.wrap _ => False
+  | ConsList.cons a x, ConsList.cons b y => R a b ∧ journeyP R x y
+
+/-- `Journey(R) : Journey A ⟶ Journey B`, the relator's action. -/
+@[expose] public def journeyRel {A B : Type} (R : dE A ⟶ dE B) :
+    (⟨Journey A⟩ : RelSet.{0}) ⟶ (⟨Journey B⟩ : RelSet.{0}) := journeyP R
+
+public theorem journeyP_id {A : Type} : ∀ x y : Journey A, journeyP (𝟙 (dE A)) x y ↔ x = y
+  | ConsList.wrap p, ConsList.wrap q =>
+      ⟨fun h => by
+        obtain ⟨a, b⟩ := p; obtain ⟨c, d⟩ := q
+        rw [show a = c from h.1, show b = d from h.2],
+       fun h => by cases h; exact ⟨rfl, rfl⟩⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons a x, ConsList.cons b y =>
+      ⟨fun h => by rw [show a = b from h.1, (journeyP_id x y).mp h.2],
+       fun h => by cases h; exact ⟨rfl, (journeyP_id x x).mpr rfl⟩⟩
+
+/-- `Journey(𝟙) = 𝟙`. -/
+public theorem journey_id {A : Type} :
+    journeyRel (𝟙 (dE A)) = 𝟙 (⟨Journey A⟩ : RelSet.{0}) := hom_ext journeyP_id
+
+public theorem journeyP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (x : Journey A) (z : Journey C),
+      journeyP (R ≫ S) x z ↔ ∃ y, journeyP R x y ∧ journeyP S y z
+  | ConsList.wrap p, ConsList.wrap r =>
+      ⟨fun ⟨⟨b1, h1, h2⟩, ⟨b2, h3, h4⟩⟩ => ⟨ConsList.wrap (b1, b2), ⟨h1, h3⟩, h2, h4⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap q => exact ⟨⟨q.1, h1.1, h2.1⟩, ⟨q.2, h1.2, h2.2⟩⟩
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.wrap _, ConsList.cons _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h2.elim
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.cons _ _, ConsList.wrap _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons _ _ => exact h2.elim⟩
+  | ConsList.cons a x, ConsList.cons c z =>
+      ⟨fun ⟨⟨b, hR, hS⟩, hxz⟩ =>
+        have ⟨y, hy1, hy2⟩ := (journeyP_comp R S x z).mp hxz
+        ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons b ys =>
+            exact ⟨⟨b, h1.1, h2.1⟩, (journeyP_comp R S x z).mpr ⟨ys, h1.2, h2.2⟩⟩⟩
+
+/-- `Journey(RS) = Journey(R) Journey(S)`. -/
+public theorem journey_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    journeyRel (R ≫ S) = journeyRel R ≫ journeyRel S := hom_ext (journeyP_comp R S)
+
+public theorem journeyP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, journeyP R x y → journeyP S x y
+  | ConsList.wrap p, ConsList.wrap q, hxy => ⟨h p.1 q.1 hxy.1, h p.2 q.2 hxy.2⟩
+  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
+  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
+  | ConsList.cons a x, ConsList.cons b y, hxy =>
+      ⟨h a b hxy.1, journeyP_mono h x y hxy.2⟩
+
+/-- `R ⊑ S ⟹ Journey(R) ⊑ Journey(S)`. -/
+public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
+    journeyRel R ⊑ journeyRel S :=
+  le_iff.mpr (journeyP_mono (le_iff.mp h))
+
+/-- `Journey` BUNDLED as a relator: the lane the tour pictures run the cities along. -/
+@[expose] public def journeyRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := ⟨Journey a.carrier⟩
+  map R := journeyRel R
+  map_id _ := journey_id
+  map_comp R S := journey_comp R S
+  map_mono h := journey_mono h
+
 /-- `head` of a journey. -/
 @[expose] public def hd : Journey City → City
   | ConsList.wrap p => p.1
