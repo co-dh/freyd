@@ -646,6 +646,22 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
     s.restore; return none
   catch _ => s.restore; return none
 
+/-- The two SUMMANDS of a coproduct object, read the way `splitTimes?` reads a product: Lean's `Sum`
+    where the objects ARE types, and where they are a one-field structure over types, the object
+    whose CARRIER is one.  The region has no chosen coproduct apex to unify with — `Coproduct s a b`
+    is a hypothesis and its apex an arbitrary object — so the carrier is the only thing that says a
+    coproduct is there, which is what left every base functor `𝟏 + X×E` unread. -/
+def splitPlus? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
+  if regionTy.isSort then
+    if let (``Sum, #[a, b]) := X.getAppFnArgs then return some (a, b) else return none
+  let some f ← regionField? regionTy | return none
+  let .const n us := regionTy.getAppFn | return none
+  unless Lean.isStructure (← getEnv) n do return none
+  let ctor := mkConst (Lean.getStructureCtor (← getEnv) n).name us
+  let (``Sum, #[a, b]) := (← Meta.whnf (← Meta.mkProjection X f)).getAppFnArgs | return none
+  let obj := fun (c : Expr) => mkAppN ctor (regionTy.getAppArgs.push c)
+  return some (obj a, obj b)
+
 /-- The region's product object BUILT — the inverse of `splitTimes?`, and read off the same two
     conventions: Lean's `Prod` where the objects are types, the region's chosen apex otherwise.
     `none` where the region has no CHOSEN product: an apex the statement merely hands over
@@ -915,6 +931,15 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
     return ← match alg with
       | .relator => Meta.mkAppM ``Freyd.Alg.Relator.prod #[fa, fb]
       | .functor => Meta.mkAppM ``Freyd.functorProd #[fa, fb]
+  -- A BASE FUNCTOR'S SOURCE IS A COPRODUCT, and `Relator.sum` is the lane for it: `𝟏 + X×E` read
+  -- summand by summand is what lets an initial algebra's structure map state a naturality at all.
+  if let some (a, b) ← splitPlus? regionTy X then
+    let fa ← relatorOfObj alg cat regionTy v a
+    let fb ← relatorOfObj alg cat regionTy v b
+    unless alg == .relator do
+      throwError "the coproduct {← Meta.ppExpr X} has no lane in {← Meta.ppExpr regionTy}: the \
+        repo has `Relator.sum` and no coproduct FUNCTOR, so a family under one is read nowhere"
+    return ← Meta.mkAppM ``Freyd.Alg.Relator.sum #[fa, fb]
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
@@ -936,6 +961,11 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
     if let some (R, src, inner) ← peelWith? n #[v] regionTy X then
       unless (← Meta.inferType R).isAppOf alg.head do continue
       return ← alg.comp (← relatorOfObj alg cat src v inner) R
+  -- A DEFINITION NO LANE SPELLS IS UNFOLDED AND READ AGAIN, one delta step at a time: an abbreviation
+  -- for an object (`dEdit A` for `dList (Op A)`) is the same object, and the reading stops at the
+  -- first form the catalogue does spell rather than at the carrier.
+  if let some X' ← Meta.unfoldDefinition? X then
+    return ← relatorOfObj alg cat regionTy v X'
   throwError "the object {← Meta.ppExpr X} varies with {← Meta.ppExpr v} in a way no lane of \
     {← Meta.ppExpr regionTy} spells, so the bead over it states no naturality"
 

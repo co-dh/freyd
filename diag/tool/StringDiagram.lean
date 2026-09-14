@@ -610,16 +610,15 @@ def relatorsOf (alg : LaneAlg) (cat : Array Name) (regionTy φ : Expr) : MetaM (
 
     ABSTRACTABLE over the object, not merely MENTIONING it: `S° : b⟶F(b)` names `b` only through
     the type of the local `S : F(b)⟶b`, so `fun b => S°` is ill-typed and `S` is one arrow. -/
-def familyVar (core : Expr) (objVars : Array Expr) (spelled : Expr → MetaM Bool) :
-    MetaM (Option Expr) :=
+def familyVar (core : Expr) (objVars : Array Expr) : MetaM (Option Expr) :=
   objVars.findM? fun v => do
     unless core.containsFVar v.fvarId! do return false
     -- A TEST ON THE LANE LABELS here would refuse the whole product family `[v]×[[v]]⟶[[v]]` on
     -- account of a label, and is a second reading of the same thing, which is what let the two
-    -- disagree.  `spelled` is the ONE reader, `relatorOfObj`, asked of this very family.
-    unless ← (try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false) do
-      return false
-    spelled v
+    -- disagree.  TYPE-CORRECTNESS IS THE WHOLE TEST, and the READER is asked nowhere in it: folding
+    -- a reading that failed into "no family at all" drew the bead as `arrow` with exit 0, which is
+    -- the obligation deleted rather than answered (`[nil,cons]`, `snoc` at an inductive alphabet).
+    try Meta.isTypeCorrect (← Meta.mkLambdaFVars #[v] core) catch _ => pure false
 
 /-- THE FAMILY A BEAD IS, WHERE THE STATEMENT BINDS NO OBJECT TO ABSTRACT.  A bead stands at the
     object its own WIRE carries, and that object is a family's index whether or not the statement
@@ -629,16 +628,65 @@ def familyVar (core : Expr) (objVars : Array Expr) (spelled : Expr → MetaM Boo
     So the object is `kabstract`ed out of the term, and TYPE-CORRECTNESS is the filter, exactly as
     it is for a binder: abstracting the object out of `est(R)` strands `R : x⟶x` at the old one and
     the lambda does not type-check, so an arrow AT one object stays an arrow at one object. -/
-def familyAt? (regionTy core : Expr) (os : Array Expr) : MetaM (Option Expr) := do
-  for o in os do
-    unless ← (try Meta.isDefEq (← Meta.inferType o) regionTy catch _ => pure false) do continue
-    let body ← Meta.kabstract core o
-    unless body.hasLooseBVars do continue
-    let φ? ← Meta.withLocalDeclD `a regionTy fun a => do
-      let φ ← instantiateMVars (← Meta.mkLambdaFVars #[a] (body.instantiate1 a))
-      if ← (try Meta.isTypeCorrect φ catch _ => pure false) then return some φ else return none
-    if φ?.isSome then return φ?
-  return none
+def familyAtIndex? (regionTy core t : Expr) : MetaM (Option Expr) := do
+  let ty ← Meta.inferType t
+  -- An index is an OBJECT of the region or the TYPE one is read from, and the two differ only in
+  -- what goes back in its place: `a` itself, or `a`'s one field — the same family read through the
+  -- structure's constructor, which is what `familyOf` does for a binder.
+  let mk? : Option (Expr → MetaM Expr) ←
+    if ← (try Meta.isDefEq ty regionTy catch _ => pure false) then pure (some pure) else do
+      let some ity ← regionIndexType? regionTy | pure none
+      let some f ← regionField? regionTy | pure none
+      if ← (try Meta.isDefEq ty ity catch _ => pure false) then pure (some (Meta.mkProjection · f))
+      else pure none
+  let some mk := mk? | return none
+  let body ← Meta.kabstract core t
+  unless body.hasLooseBVars do return none
+  Meta.withLocalDeclD `a regionTy fun a => do
+    let φ ← instantiateMVars (← Meta.mkLambdaFVars #[a] (body.instantiate1 (← mk a)))
+    if ← (try Meta.isTypeCorrect φ catch _ => pure false) then return some φ else return none
+
+/-- THE INDICES A BEAD ITSELF NAMES: the object and `Type` arguments of the constants its term is
+    applied from, outermost first.  A bead's index is the argument its OWN declaration takes —
+    `@moves n X` is a family in `X` however deep the object standing at `X` is, and reading the
+    index off a binder INSIDE that object cut the lanes of `X` at the bead's row and reborn them
+    under it.  Read off the spine and the constant's own argument types, never off a name. -/
+partial def indexArgs (regionTy e : Expr) (out : Array Expr) : MetaM (Array Expr) := do
+  let mut out := out
+  let args := e.getAppArgs
+  if e.getAppFn.isConst then
+    -- LAST ARGUMENT FIRST: a declaration's earlier object arguments are the parameters its later
+    -- ones are taken over — `@snocR L E` is a family in the alphabet `E`, `L` being fixed before it
+    -- — so the innermost argument is the index the picture varies.
+    for a in args.reverse do
+      unless out.contains a || a.hasLooseBVars do
+        let ty ← instantiateMVars (← Meta.inferType a)
+        let isTy := match ty with | .sort (.succ _) => true | _ => false
+        if isTy || (← (try Meta.isDefEq ty regionTy catch _ => pure false)) then out := out.push a
+  -- ONLY THROUGH THE BEAD'S OWN ARROWS.  A compound bead is the arrows it is built from — `graph con`
+  -- is `con`, `[nil,cons]` is its two arms — so their arguments are its indices too; a RELATOR or an
+  -- algebra handed to it is the region's furniture, and digging an index out of one made `α` at an
+  -- abstract carrier a family in a type its own ends never show.
+  for a in args do
+    if (← instantiateMVars (← Meta.inferType a)).isAppOf ``Cat.Hom then
+      out ← indexArgs regionTy a out
+  return out
+
+/-- THE TYPES AN OBJECT IS BUILT FROM, nearest first: every `Type` reachable from it through the
+    arguments of what it is applied from and one delta step at a time.  A bead's index need not be
+    named by its term at all — `est(R Char)` runs over an `Op(Char)` wire, and it is a family in
+    `Op Char`, at which `F Unit −` is a lane and `dPair Char` a constant one, where at the `Char`
+    its term names the base functor varies and no end reads.  `fuel` bounds the walk, which is over
+    whole types and would otherwise follow a carrier down to its constructors. -/
+partial def indexTypes : Nat → List Expr → Array Expr → MetaM (Array Expr)
+  | 0, _, out => return out
+  | _, [], out => return out
+  | fuel + 1, e :: es, out => do
+    let ty ← instantiateMVars (← Meta.inferType e)
+    let isTy := match ty with | .sort (.succ _) => true | _ => false
+    let out := if isTy && !out.contains e then out.push e else out
+    let next := e.getAppArgs.toList.filter (!·.hasLooseBVars)
+    indexTypes fuel (es ++ next ++ (← Meta.unfoldDefinition? e).toList) out
 
 /-- THE TWO ENDS OF A FAMILY, READ AS LANES, and in WHICH algebra — the REGION'S, not the bead's.
     §1.241's function category is a `Cat` and no allegory, so its lanes are functors and its
@@ -848,22 +896,57 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- The two ends need NOT be the same object.  `nil : 𝟏⟶[[x]]` starts at a constant and ends at a
   -- family, and `Relator.const` is a relator like any other, so demanding `ox` and `oy` agree threw
   -- away a naturality the environment proves.
-  -- THE INDEX A DOT CLAIMS IS ONE THE PICTURE SHOWS: the object the bead's own WIRE carries, or —
-  -- where the statement binds another object of the region — one the bead's ends are spelled from
-  -- by LANES.  `est(R Char)` over an `Op(Char)` wire varies with a `Char` no lane draws, so it is
-  -- one arrow at one object, exactly as the `est(R)` whose `R` is pinned already is.
-  let v? ← familyVar core objVars fun v =>
-    return (← readEnds regionTy cat (← familyOf regionTy v core)).isSome
-  let φ ← match v? with
-    | some v => some <$> familyOf regionTy v core
-    | none => familyAt? regionTy core #[oy, ox]
+  -- THE INDEX IS THE ARGUMENT THE BEAD'S OWN DECLARATION TAKES — `@moves n X` is a family in `X`,
+  -- and reading it off a binder inside `X` cut that object's lanes at the bead's row — then a
+  -- binder of the statement, then the object its wire carries.  The READER only CHOOSES among the
+  -- indices that abstract type-correctly and rules none of them out: a family whose ends no lane
+  -- spells is `unread` (`natLines`), never the `arrow` that says there was nothing to look at.
+  let mut cands : Array (Expr × Expr) := #[]
+  for t in (← indexArgs regionTy core #[]) do
+    if let some φ ← familyAtIndex? regionTy core t then cands := cands.push (t, φ)
+  -- THE TYPE THE WIRE IS BUILT FROM is an index no term need name: `est(R Char)` over an `Op(Char)`
+  -- wire is a family in `Op Char` and in nothing its own spine holds.
+  let mut typs : Array (Expr × Expr) := #[]
+  for t in ← indexTypes 64 [oy, ox] #[] do
+    if let some φ ← familyAtIndex? regionTy core t then typs := typs.push (t, φ)
+  -- The object the bead's own WIRE carries comes LAST, as the `familyAt?` it replaces did: it is the
+  -- index of a bead whose term names none — `𝟙%∋` at an initial algebra's carrier — and reading it
+  -- ahead of a binder the ends are lanes in took `nil`'s square off the board.
+  let mut wire : Array (Expr × Expr) := #[]
+  for t in #[oy, ox] do
+    if let some φ ← familyAtIndex? regionTy core t then wire := wire.push (t, φ)
+  -- A STATEMENT BINDER IS NOT THE BEAD'S OWN INDEX, so it is kept only where the ends ARE lanes in
+  -- it: `α : F(T)⟶T` at an abstract carrier names the module's `A` through its algebra and nothing
+  -- else, and abstracting one out of the other is type-correct without the picture showing any of
+  -- it.  For an index the bead's term itself takes, the term is the whole evidence.
+  let mut bound : Array (Expr × Expr) := #[]
+  for v in objVars do
+    if let some φ ← familyAtIndex? regionTy core v then
+      if (← readEnds regionTy cat φ).isSome then bound := bound.push (v, φ)
+  let all := cands ++ typs ++ bound ++ wire
+  -- WHICH of them the dot is at is the ENVIRONMENT'S answer and not the reader's: `nil` is a family
+  -- in its own alphabet AND in the object its wire carries, both of them read, and only one has a
+  -- square — taking the first that merely READS drew a spider beside the theorem that proves it.
+  -- The first readable index stands where none of them is spoken about, so the row is the spider.
   -- THE BEAD IS NAMED IN ITS OWN FAILURE: a verdict that cannot be reached is this bead's error,
   -- and a message holding only the family's term leaves the reader matching it back to a label.
-  let vd ← match φ with
-    | none => pure none
-    | some φ => some <$> (try verdict regionTy cat φ catch e =>
-        throwError "the bead `{← beadLabel core (#[ox, oy] ++ v?.toArray)}`: \
-          {← e.toMessageData.toString}")
+  -- AN INDEX NOTHING NAMES NEEDS THE ENVIRONMENT TO CONFIRM IT.  The `Type` a wire is built from is
+  -- the weakest evidence there is — every object is built from some type — so it is admitted only
+  -- where a square is stated at it: a family nothing is proved about at an index no term names is
+  -- the object-wire arrow `α` already is, and drawing it as a spider claims a search nobody asked.
+  let mut pick : Option (Expr × Expr × Verdict) := none
+  for i in [0 : all.size + typs.size] do
+    if (pick.map fun p => !p.2.2.lean.isEmpty).getD false then break
+    let named := i < all.size
+    let c := if named then all[i]! else typs[i - all.size]!
+    unless (← readEnds regionTy cat c.2).isSome do continue
+    let vd ← try verdict regionTy cat c.2 catch e =>
+      throwError "the bead `{← beadLabel core #[ox, oy, c.1]}`: {← e.toMessageData.toString}"
+    if named && pick.isNone then pick := some (c.1, c.2, vd)
+    unless vd.lean.isEmpty do pick := some (c.1, c.2, vd)
+  let v? := pick.map (·.1)
+  let φ := (pick.map (·.2.1)) <|> (all[0]?.map (·.2))
+  let vd := pick.map (·.2.2)
   let ar := Array.mk (List.range arms.size)
   let ov := Array.mk (List.range' arms.size over.size)
   let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
@@ -1052,7 +1135,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- its bar spans, which is what the tail below types it as.
     -- THE QUESTION HERE IS THE SHAPE, not the dot: whether the bar is one bead on the left lane at
     -- all.  Its ends are read by the `Diagram.bead` below, which is where a dot is claimed.
-    if (← familyVar e objVars fun _ => pure true).isSome then
+    if (← familyVar e objVars).isSome then
       let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
       return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
