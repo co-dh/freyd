@@ -142,6 +142,8 @@ structure Row where
       family whose ends no lane of the region spells — and the trace says which, rather than
       leaving the bead out of it. -/
   family : Bool := false
+  /-- A MAP (`isMapOf`): the bead a display lines up on next after a natural one — `Row.pin`. -/
+  map   : Bool := false
   /-- The lanes the bead STANDS OVER: the object it is a family at, `F A` for `𝟙%∋` taken there.
       They run past it inside, and a bead with no arms opens its leg WEST of them. -/
   over  : Array Nat := #[]
@@ -485,30 +487,14 @@ def fileOf (body : String) (nat : String := "") : String :=
   "#import \"../dpanel.typ\": *\n\
    #import \"../circuit.typ\": frc\n\n" ++ body ++ nat
 
-/-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
-    panels in order, so a caller holding the note to ONE of them names it by index instead of
-    re-splitting the picture.
-
-    IT IS DRAWN IN THE BOX ITS PEERS SHARE, NOT ITS OWN: the two sides of one equation are two
-    files, and a side that took its own depth came out shorter than the side across the `=` from it.
-    Asked for alone it has no peers and the box IS its own.  The extra depth is HEADROOM — no
-    `topRow`, so every bead keeps the row it had and the wires simply enter from higher up. -/
-def emit (decl : Name) (p : Diagram) (frame : Nat) : MetaM String := do
-  -- THE OBLIGATION, not the record: the part drawn must be one the frame was taken over.  A part
-  -- deeper than the frame is one the peer list did not reach, and it would come out taller than the
-  -- parts beside it rather than be clipped (`frameRows` never draws a picture short).
-  unless frameRows p (some frame) == frame do
-    throwError "a part {p.rows.size} beads deep is drawn in a frame of {frame} rows: the frame is \
-      the DECLARATION's, so every part of it must be among the ones it was taken over"
-  return fileOf ("#let panels = (" ++ (← panelCode p (some frame) none)
-    ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
-
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
-    them, so two parts pinned there have their lanes at one height; a bead that eats lanes is tied
-    to where they die; a bead with neither rides the object wire, where the note's own `place` lets
-    it sit at any height (IntroString (1.16): two such placements are the SAME diagram). -/
-def Row.pin (r : Row) : Nat := if r.nat.isSome then 2 else if r.arms.isEmpty then 0 else 1
+    them, so two parts pinned there have their lanes at one height; next a MAP, the note's own
+    order — the lax bead first, then the function; a bead that eats lanes is tied to where they
+    die; a bead with none of these rides the object wire, where the note's own `place` lets it sit
+    at any height (IntroString (1.16): two such placements are the SAME diagram). -/
+def Row.pin (r : Row) : Nat :=
+  if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1
 
 /-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
     SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
@@ -551,29 +537,59 @@ def frameOf (ref : Diagram) (ps : Array Diagram) : Nat :=
 /-- Where a part's first bead sits, in rows: the reference's, plus its own slide. -/
 def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftTo ref p) 1 |>.toNat
 
+/-- WHERE A STATEMENT'S PARTS STAND, decided ONCE over every part of it the run draws — the two
+    sides a relation symbol joins, asked for whole or one file at a time, or the branches of them
+    the note pairs.  The reference is the deepest
+    part; THE FLOOR, NOT THE CEILING: its last bead lands on row 1 and every other part keeps its
+    `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no bead
+    (hanging the reference one row under the top of the box instead made every bead of the display
+    move whenever the box got deeper).  A side that took its own row put the `R` of `f°F(R)f ⊑ R`
+    a row above the `R` across the symbol from it: the two files lined up on nothing. -/
+structure Placement where
+  ref    : Diagram
+  frame  : Nat
+  topRef : Nat
+
+def placement (ps : Array Diagram) : Placement :=
+  let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
+  { ref, frame := frameOf ref ps, topRef := topRefOf ref ps }
+
+/-- The row a part's first bead sits on. -/
+def Placement.top (pl : Placement) (p : Diagram) : Nat := topOf pl.topRef pl.ref p
+
+/-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
+    panels in order, so a caller holding the note to ONE of them names it by index instead of
+    re-splitting the picture.
+
+    IT IS DRAWN IN THE BOX ITS PEERS SHARE AND ON THE ROW THAT BOX GIVES IT, NOT ITS OWN: the two
+    sides of one equation are two files, and a side that took its own depth came out shorter than the
+    side across the `=` from it, one that took its own row put the bead they share at two heights.
+    Asked for alone it has no peers and the box and the row are its own. -/
+def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
+  -- THE OBLIGATION, not the record: the part drawn must be one the placement was taken over.  A
+  -- part the peer list did not reach can start above the box or reach below its floor, and
+  -- `frameRows` would then draw it taller than the parts beside it rather than clip it.
+  let t := pl.top p
+  unless t < pl.frame && p.rows.size ≤ t do
+    throwError "a part {p.rows.size} beads deep sits on row {t} of a frame of {pl.frame} rows: the \
+      placement is the DECLARATION's, so every part of it must be among the ones it was taken over"
+  return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some t))
+    ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
+
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
-    never the part's — the deepest part sets it and every shorter one is lined up inside it. -/
-def emitStatement (decl : Name) (declName : String) (parts : Array (String × Diagram)) (frame : Nat) :
-    MetaM String := do
-  let ps := parts.map (·.2)
-  let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  -- NEVER SHALLOWER THAN THE BOX ITS PEERS SHARE: a statement drawn whole beside another part of
-  -- the same declaration stands at that part's height too.
-  let fr := max (frameOf ref ps) frame
-  -- THE FLOOR, NOT THE CEILING: the deepest part's last bead lands on row 1 and every other part
-  -- keeps its `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no
-  -- bead.  Hanging the reference one row under the top of the box instead (`fr - maxShift - 1`)
-  -- made every bead of the display move whenever the box got deeper.
-  let tr := topRefOf ref ps
+    never the part's — the placement's deepest part sets it and every shorter one is lined up
+    inside it. -/
+def emitStatement (decl : Name) (declName : String) (parts : Array (String × Diagram))
+    (pl : Placement) : MetaM String := do
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
   for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
     cells := cells.push ("panels.at(" ++ toString panels.size ++ ")")
-    panels := panels.push (← panelCode p (some fr) (some (topOf tr ref p)))
-    hs := hs.push (frameHeight p (some fr))
+    panels := panels.push (← panelCode p (some pl.frame) (some (pl.top p)))
+    hs := hs.push (frameHeight p (some pl.frame))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
   -- different heights, which reads as two displays rather than one statement.
   for i in [1 : hs.size] do
@@ -585,7 +601,7 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines decl ps)
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines decl (parts.map (·.2)))
 
 /-! ### The functor: an arrow of the allegory as a panel
 
@@ -1033,7 +1049,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
-      family := φ.isSome }
+      family := φ.isSome, map := ← isMapOf core }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
@@ -1572,12 +1588,16 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- The statement's own PARTS and the ones ONE REQUEST draws: the two sides a relation symbol
     -- joins, or the arrow itself, and then the side the request's trailing name picks out of them.
     -- Every request of this declaration is resolved through here, its own and its peers' alike.
-    let reqParts (path : List String) : MetaM (Array (String × Expr) × Array (String × Expr)) := do
+    -- The steps that named the STATEMENT come back first: two requests with the same ones draw parts
+    -- of one statement, and those are the parts that line up on a bead they share.
+    let reqParts (path : List String) :
+        MetaM (List String × Array (String × Expr) × Array (String × Expr)) := do
       let mut body := body
       let mut side : Option String := none
+      let mut stmt : List String := []
       for s in path do
         match side, conn? body with
-        | none, some (l, r) => body := if s == "lhs" then l else r
+        | none, some (l, r) => body := if s == "lhs" then l else r; stmt := stmt ++ [s]
         | none, none => side := some s
         | some p, _ =>
           throwError "`.{s}` follows `.{p}`, which already names a part of \
@@ -1586,11 +1606,11 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         | some (sym, l, r) => #[("", l), (sym, r)]
         | none => #[("", body)]
       match side with
-      | none => return (parts, parts)
+      | none => return (stmt, parts, parts)
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
-        else return (parts, #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)])
-    let (parts, drawn) ← reqParts path
+        else return (stmt, parts, #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)])
+    let (stmtPath, parts, drawn) ← reqParts path
     let arrow := parts[0]!.2
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
@@ -1611,20 +1631,32 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    -- THE BOX IS SHARED BY THE PARTS DRAWN TOGETHER.  The two sides of an equation are two files,
-    -- and a side that took its own depth came out shorter than the side across the relation symbol
-    -- from it; the ARGUMENT LIST is what says which parts stand beside each other, so a part asked
-    -- for alone keeps its own depth and nothing is read from the note.
-    let mut frame := 2
+    -- THE BOX IS SHARED BY THE PARTS DRAWN TOGETHER, THE ROWS BY THE PARTS OF ONE STATEMENT.  The
+    -- two sides of an equation are two files, and a side that took its own depth came out shorter
+    -- than the side across the relation symbol from it, one that took its own row put the bead
+    -- they share at two heights; the ARGUMENT LIST is what says which parts stand beside each
+    -- other, so a part asked for alone keeps its own depth and row and nothing is read from the
+    -- note.  The rows are the STATEMENT's: slid to the deepest part of every peer alike, the sides
+    -- of `f°F(R°)f ⊑ R°` were each lined up with a part of the other inequation of its `↔` and so
+    -- with nothing across their own symbol.
+    let mut groups : Array (List String × Array Diagram) := #[]
     for (p, s) in peers do
-      let (_, d) ← reqParts p
+      let (sp, _, d) ← reqParts p
+      let mut qs : Array Diagram := #[]
       for (_, e) in d do
-        frame := max frame (← withSel regionTy cat objVars s e fun e' =>
-          return framex (← panelOf regionTy cat e' objVars))
-    withParts regionTy cat objVars sel drawn.toList #[] fun ps => do
+        qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+      match groups.findIdx? (·.1 == sp) with
+      | some i => groups := groups.modify i fun (k, v) => (k, v ++ qs)
+      | none => groups := groups.push (sp, qs)
+    let pls := groups.map fun (k, qs) => (k, placement qs)
+    let frame := pls.foldl (fun a (_, pl) => max a pl.frame) 2
+    let some (_, pl) := pls.find? (·.1 == stmtPath)
+      | throwError "{declName}: the request is not among its own peers"
+    let pl := { pl with frame }
+    withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      if ps.size == 1 then emit declName ps[0]!.2 frame else emitStatement declName nm ps frame
+      if parts.size == 1 then emit declName parts[0]!.2 pl else emitStatement declName nm parts pl
 
 end Freyd.StrDiag

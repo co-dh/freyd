@@ -468,44 +468,6 @@ partial def factorList (e : Expr) : Array Expr :=
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
-/-- Whether the local context carries a `Map` hypothesis for this arrow, exactly as the reader of
-    the Lean statement reads it. -/
-def hasMapHyp (e : Expr) : MetaM Bool := do
-  unless e.isFVar do return false
-  for d in ← getLCtx do
-    if d.isImplementationDetail then continue
-    match d.type.getAppFnArgs with
-    | (``Freyd.Alg.Map, args) => if args.back? == some e then return true
-    | _ => pure ()
-  return false
-
-/-- Whether an arrow is a MAP, which is the whole of the chamfer decision.  Read off the term:
-    a graph and an identity are maps, a transpose is a map, a composite and a product of maps are
-    maps, and a hypothesis in scope says so for a variable.
-
-    A NAMED map is a map.  `cons`, `nil`, `new`, the initial algebra `α` are `graph`s behind their
-    own names, so stopping at the head constant draws every named FUNCTION as a relation; the last
-    clause is one delta step — the same step `drawDecl` draws a def's body with — and the fuel is
-    what a def spelled in terms of itself would otherwise cost. -/
-partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.RelSet.graph, _) | (``Cat.id, _) | (``Freyd.Alg.Λ, _) => return true
-  | (``Cat.comp, args) | (``Freyd.Alg.RelSet.rprodMap, args) =>
-    match lastTwo args with
-    | some (f, g) => return (← isMapOf f fuel) && (← isMapOf g fuel)
-    | none => hasMapHyp e
-  | _ =>
-    if ← hasMapHyp e then return true
-    if fuel == 0 then return false
-    for n in [``Freyd.Alg.RelSet.graph, ``Cat.id, ``Freyd.Alg.Λ, ``Cat.comp,
-              ``Freyd.Alg.RelSet.rprodMap] do
-      if let some e' ← Meta.whnfUntil e n then return ← isMapOf e' (fuel - 1)
-    -- AND AN EQUATION THE NOTE REWRITES ALONG answers this too: `arm₂` of a map is a map, and the
-    -- label already writes the arm by its own name (`snoc`), so the box has to be that map's
-    -- rectangle — the name and the shape are read off the same rewritten term or they disagree.
-    if let some r ← StrDiag.rewriteHead? e then return ← isMapOf r (fuel - 1)
-    return false
-
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
 def powLabel (a : Obj) : Obj := .mk (objApply "E" a) .opaq #[] (applyJoin "E")
 
@@ -768,7 +730,7 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
         if p.val.kindOf == some "box" then
           return { p with val := p.val.set "label" (.s (← StrDiag.label e)) }
         return p
-  return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← isMapOf e)
+  return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← StrDiag.isMapOf e)
 
 partial def lane (p : Pic) : MetaM Pic := return { p with val := laneVal p }
 
