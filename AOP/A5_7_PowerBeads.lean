@@ -44,6 +44,39 @@ public theorem mem_oplaxNatural :
 
 end EpsLax
 
+/-! ## `cp` is lax natural -/
+
+section CpLax
+
+-- `cpMap` lives over `TabularUnitaryUnguardedDivisionPowerAllegory` and `powerRelator` over
+-- `TabularUnitaryUnguardedPowerAllegory`; only the class BELOW both carries one `Allegory` path
+-- for the two, and it is the one §7.4's cylinder is stated over.
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
+/-- **B&dM p.126, `cp ≜ Λ(F(∋))` is LAX natural** `F∘P ⟶ P∘F`: distributing `F` over a tuple of
+    sets and then taking one element out of each beats taking the elements out first and then
+    collecting the results, because the collected sets need not be a `F`-shape of sets.
+
+    STRICT it is not: at `F = Δ` (`A ↦ A×A`) `cp` is the cross product `(X,Y) ↦ X×Y`, and over
+    the full relation on a two-element set the Egli–Milner right-hand side admits the diagonal
+    `{(1,1),(2,2)}`, which is no rectangle `X'×Y'`, so nothing on the left reaches it.
+
+    Theorem 5.2 (`laxNatural_iff_strict_on_maps`) carries it: on a map `f` the power relator IS
+    the existential image (`powerRel_map`), and there the square is the transpose's own
+    absorption/fusion pair. -/
+public theorem cpMap_laxNatural (F : Relator 𝒜 𝒜) :
+    LaxNatural (Relator.comp F powerRelator) (Relator.comp powerRelator F)
+      (fun A => cpMap F A) :=
+  (laxNatural_iff_strict_on_maps (Relator.comp F powerRelator) (Relator.comp powerRelator F)
+      (fun A => cpMap F A)).mpr fun f hf => by
+    show F.map (powerRel f) ≫ cpMap F _ = cpMap F _ ≫ powerRel (F.map f)
+    rw [powerRel_map hf, powerRel_map (F.map_is_map hf)]
+    show F.map (existsImage f) ≫ Λ (F.map (∋ _)) = Λ (F.map (∋ _)) ≫ existsImage (F.map f)
+    have hE : Map (F.map (existsImage f)) := F.map_is_map (Λ_is_map' _)
+    rw [← Λ_fusion hE, Λ_absorption, ← F.map_comp, ← F.map_comp, existsImage_eps]
+
+end CpLax
+
 /-! ## The singleton's two spellings -/
 
 section SingletonSpelling
