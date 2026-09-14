@@ -391,6 +391,18 @@ def functorName (f : Expr) : MetaM String := do
   | some n => return n
   | none => plain f
 
+/-- Whether the printer wrote a field access AS ITSELF — `(Vec n).obj A`, `Functor.obj (Vec n) A` —
+    with no notation of its own, read off the syntax it built: the field's identifier at a
+    projection node, or the projection function's own name at the head.  Where a delaborator keyed
+    on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax. -/
+def printsAsField (e : Expr) : MetaM Bool := do
+  let .const n _ := e.getAppFn | return false
+  let fld := Name.mkSimple n.getString!
+  let stx ← PrettyPrinter.delab e
+  return (stx.raw.find? fun s =>
+    (s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent && s[2].getId.eraseMacroScopes == fld)
+      || (s.isIdent && s.getId.eraseMacroScopes == n)).isSome
+
 /-- How an OBJECT's label joins under a functor's name.  A functor's action heads with THAT
     functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
     answer, read off the syntax it built. -/
@@ -920,7 +932,32 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- comma list inside that bracket (`F(A,C)`), which is `BiRelator.map`'s `F(𝟙,f)` on objects.
     -- AFTER the spellings above: a head the note writes ITSELF (`E A`, an unexpander's own
     -- notation) is that spelling, and the action rule answers where the printer wrote none.
+    -- THE OPERANDS RESPELLED HERE AND HANDED BACK TO THE PRINTER as locals of their own labels: what
+    -- turns the operand of a head with no clause from Lean's `≫` into juxtaposition, under whatever
+    -- brackets the head already writes.  APPLYING TAKES PARENTHESES (`appShow`), because
+    -- juxtaposition is composition.  Those brackets are what separates an operand from the head, so
+    -- where they are coming the operand is respelled at the TOP of its own precedence:
+    -- `thin(prefix°×(⊤+⊤))`, not a second pair inside.  SOMETHING ALREADY DELIMITS IT in two ways,
+    -- and both count: the brackets `appShow` is about to write, and a head whose OWN NOTATION
+    -- delimits its operand — which is exactly a syntax with no identifier head, `stxHead`'s test,
+    -- since a notation opens with an atom.  THE HEAD'S OWN PRINTER TAKES A NAME, so an operand handed
+    -- back to it is its FLAT spelling: a shape set inside a notation nobody here wrote has nowhere
+    -- to be set.
+    let stx ← PrettyPrinter.delab e
+    let paren := (appParts stx).isSome || (stxHead stx).isNone
+    let rec respell : List Expr → Expr → MetaM Lbl
+      | [], t => return .text (← appShow t)
+      | a :: rest, t => do
+        let nm := Name.mkSimple (← labelTree (if paren then 0 else 4) a).flat
+        Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
+          respell rest (t.replace fun s => if s == a then some x else none)
     if let some (f, xs) ← functorObj? e then
+      -- THE PRINTER'S OWN NOTATION FOR AN ACTION STANDS: a delaborator keyed on the field writes the
+      -- note's spelling of the object (`A[n]` for `Vec(n)` at `A`), and only the bare field access
+      -- `F.obj A`, the printer's default, is re-set by the join rule below.  Closed up like a tight
+      -- head, and NOT respelled operand by operand: an operand handed back as a local is an
+      -- identifier the notation cannot open, so `A[n][3]` came out `A[3][n]`, the indices reversed.
+      unless ← printsAsField e do return (← plain e).replace " " ""
       let parts ← xs.mapM (labelTree 0)
       let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
       return applyLabelL (← functorName f) (Lbl.join "," parts) j
@@ -956,24 +993,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
     -- the printer as a local of that name.  That is what turns the operand of a head with no clause
     -- from Lean's `≫` into juxtaposition, under whatever brackets the head already writes.
-    let hom ← arrows args
-    -- and then APPLYING TAKES PARENTHESES (`appShow`), because juxtaposition is composition.  Those
-    -- brackets are what separates an operand from the head, so where they are coming the operand is
-    -- respelled at the TOP of its own precedence: `thin(prefix°×(⊤+⊤))`, not a second pair inside.
-    -- SOMETHING ALREADY DELIMITS IT in two ways, and both count: the brackets `appShow` is about to
-    -- write, and a head whose OWN NOTATION delimits its operand — which is exactly a syntax with no
-    -- identifier head, `stxHead`'s test, since a notation opens with an atom.
-    let stx ← PrettyPrinter.delab e
-    let paren := (appParts stx).isSome || (stxHead stx).isNone
-    -- THE HEAD'S OWN PRINTER TAKES A NAME, so an operand handed back to it is its FLAT spelling:
-    -- a shape set inside a notation nobody here wrote has nowhere to be set.
-    let rec go : List Expr → Expr → MetaM Lbl
-      | [], t => return .text (← appShow t)
-      | a :: rest, t => do
-        let nm := Name.mkSimple (← labelTree (if paren then 0 else 4) a).flat
-        Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
-          go rest (t.replace fun s => if s == a then some x else none)
-    go hom.toList e
+    respell (← arrows args).toList e
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
     the one rule above.

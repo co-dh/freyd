@@ -412,6 +412,16 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let inner ← withNaryArg 1 delab
   spliceIndex inner i
 
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- `Vec(n)`'s object is the same `A[n]`: the object the lane `[n]` carries is spelled like the
+    tuple object, or a product wire over it prints `Vec(A)×−` with the index gone. -/
+@[delab app.Freyd.Functor.obj] def delabVecObj : Delab := do
+  let e ← getExpr
+  guard (e.getAppNumArgs == 6 && (e.getArg! 4).isAppOfArity ``Freyd.Alg.Vec 1)
+  let i ← withNaryArg 4 (withNaryArg 0 delab)
+  let inner ← withNaryArg 5 delab
+  spliceIndex inner i
+
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
 -- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
