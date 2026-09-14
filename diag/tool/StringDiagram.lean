@@ -134,6 +134,9 @@ structure Row where
       than one where the claim is a proved EQUIVALENCE away from what was found (Theorem 5.2), so
       the reader auditing the dot sees every step it rests on and not only the last. -/
   natLean : Array Name := #[]
+  /-- THE BINDER THE VERDICT WAS READ OFF, where no declaration proves it: the drawn statement
+      ASSUMES the square, so the panel's citation is the panel's own declaration and this name. -/
+  natHyp : Option Name := none
   /-- IS THE BEAD A FAMILY IN AN OBJECT AT ALL?  One that is not is an arrow at this one object and
       has no naturality to be asked about; one that IS, carrying neither mark nor citation, is a
       family whose ends no lane of the region spells — and the trace says which, rather than
@@ -428,13 +431,15 @@ def natKeys (ns : Array Name) : MetaM (Std.HashMap Name String) := do
     ONE LINE PER BEAD DRAWN, and the word is the verdict: a mark, `none` for a refuted family, or
     `arrow` for a bead that is no family — an arrow of the base category at this one object, which
     is not the spider's "looked and found nothing" either. -/
-def natLines (ps : Array Diagram) : MetaM String := do
+def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
   -- THE OBLIGATION IS THE BEAD THE PANEL DRAWS, NOT THE VERDICT RECORD.  Looping over the beads the
   -- environment happened to answer about cannot find the one it was never asked about, which is how
   -- `zip`, `cp` and `cons` came out with no row at all; deleting a record shortens no obligation
   -- here, because the obligations ARE the rows the picture is drawn from.
   let rows := ps.flatMap (·.rows)
-  let keys ← natKeys (rows.flatMap (·.natLean))
+  -- The panel's OWN declaration is cited too where a bead's verdict is one of its hypotheses.
+  let keys ← natKeys (rows.flatMap (·.natLean)
+    ++ (if rows.any (·.natHyp.isSome) then #[decl] else #[]))
   let mut out := ""
   for r in rows do
     -- A bead that is NO FAMILY is an arrow of the base category at this one object (`est(R)`, a
@@ -448,7 +453,7 @@ def natLines (ps : Array Diagram) : MetaM String := do
     -- verdict added without a citation stops the panel instead of drawing an uncheckable dot.  The
     -- spider cites nothing because it says the tool looked and found nothing, and `arrow` because
     -- there was nothing to look at.
-    if r.nat.isSome && r.nat != some .spider && r.natLean.isEmpty then
+    if r.nat.isSome && r.nat != some .spider && r.natLean.isEmpty && r.natHyp.isNone then
       throwError "the bead `{r.label}` draws the mark `{word}` and cites no declaration: a mark is \
         the ink of a proof term the search assembled, so every one but the spider names the \
         declaration it rests on (`Verdict.lean`)"
@@ -465,6 +470,9 @@ def natLines (ps : Array Diagram) : MetaM String := do
         nor a refutation: state `StrictNatural`/`LaxNatural`/`OplaxNatural` or `¬ LaxNatural` at the \
         spelling the line `the naturality search for … stopped on …` printed, then regenerate"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
+      ++ (match r.natHyp with
+          | some hn => " " ++ keys[decl]! ++ " hyp:" ++ toString hn
+          | none => "")
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
 
@@ -483,7 +491,7 @@ def fileOf (body : String) (nat : String := "") : String :=
     files, and a side that took its own depth came out shorter than the side across the `=` from it.
     Asked for alone it has no peers and the box IS its own.  The extra depth is HEADROOM — no
     `topRow`, so every bead keeps the row it had and the wires simply enter from higher up. -/
-def emit (p : Diagram) (frame : Nat) : MetaM String := do
+def emit (decl : Name) (p : Diagram) (frame : Nat) : MetaM String := do
   -- THE OBLIGATION, not the record: the part drawn must be one the frame was taken over.  A part
   -- deeper than the frame is one the peer list did not reach, and it would come out taller than the
   -- parts beside it rather than be clipped (`frameRows` never draws a picture short).
@@ -491,7 +499,7 @@ def emit (p : Diagram) (frame : Nat) : MetaM String := do
     throwError "a part {p.rows.size} beads deep is drawn in a frame of {frame} rows: the frame is \
       the DECLARATION's, so every part of it must be among the ones it was taken over"
   return fileOf ("#let panels = (" ++ (← panelCode p (some frame) none)
-    ++ ",)\n#let pic = panels.at(0)\n") (← natLines #[p])
+    ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
@@ -544,7 +552,7 @@ def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftT
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
     never the part's — the deepest part sets it and every shorter one is lined up inside it. -/
-def emitStatement (declName : String) (parts : Array (String × Diagram)) (frame : Nat) :
+def emitStatement (decl : Name) (declName : String) (parts : Array (String × Diagram)) (frame : Nat) :
     MetaM String := do
   let ps := parts.map (·.2)
   let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
@@ -575,7 +583,7 @@ def emitStatement (declName : String) (parts : Array (String × Diagram)) (frame
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines ps)
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines decl ps)
 
 /-! ### The functor: an arrow of the allegory as a panel
 
@@ -660,7 +668,11 @@ def familyAtIndex? (regionTy core t : Expr) : MetaM (Option Expr) := do
 partial def indexArgs (regionTy e : Expr) (out : Array Expr) : MetaM (Array Expr) := do
   let mut out := out
   let args := e.getAppArgs
-  if e.getAppFn.isConst then
+  -- A BINDER IS A DECLARATION TOO.  §7.4's `moves`, `trans`, `zip` are families of the SETTING, so
+  -- their head is an fvar of the drawn statement and not a constant; reading an index off the spine
+  -- only where the head is a constant left every such bead to be indexed by the object its wire
+  -- happened to carry — `fun a => moves (E a)`, a family nothing states anything about.
+  if e.getAppFn.isConst || e.getAppFn.isFVar then
     -- LAST ARGUMENT FIRST: a declaration's earlier object arguments are the parameters its later
     -- ones are taken over — `@snocR L E` is a family in the alphabet `E`, `L` being fixed before it
     -- — so the innermost argument is the index the picture varies.
@@ -735,7 +747,38 @@ structure Verdict where
       search found, then the equivalence that carried it to the mark drawn.  Empty is "nothing was
       looked at", which is not the same as "nothing was found" (the spider). -/
   lean : Array Name
+  /-- The binder of the drawn statement the verdict was read off instead — see `hypVerdict`. -/
+  hyp : Option Name := none
   deriving Inhabited
+
+/-- WAS THE BEAD SPOKEN ABOUT AT ALL — by a declaration or by the drawn statement's own binder?
+    An index whose verdict cites neither is one nothing was found at, and the reader goes on to the
+    next; the two kinds of citation answer the question equally. -/
+def Verdict.cited (v : Verdict) : Bool := !v.lean.isEmpty || v.hyp.isSome
+
+/-- The three naturality predicates, as the mark each one draws.  A hypothesis is admitted by its
+    HEAD CONSTANT and then by `isDefEq` on the arguments, never by the binder's name. -/
+def markOfNatPredicate : Name → Option Mark
+  | ``Freyd.Alg.StrictNatural => some .strict
+  | ``Freyd.Alg.LaxNatural => some .lax
+  | ``Freyd.Alg.OpLaxNatural => some .oplax
+  | _ => none
+
+/-- THE DRAWN STATEMENT'S OWN BINDERS ARE EVIDENCE.  A family the SETTING assumes natural — §7.4's
+    `moves`, `trans`, `zip`, `setify`, abstract arrows of which the book states lax naturality and
+    Lean can prove none — is spoken about by no declaration, so the environment search comes back a
+    spider while the panel is drawn from a statement that ASSUMES the very square.  The hypothesis
+    is found at the bead's own relators (`isDefEq`), and the citation is then the panel declaration
+    plus the binder, so `cite-check` re-verifies the statement the assumption lives in. -/
+def hypVerdict (F G φ : Expr) : MetaM (Option (Mark × Name)) := do
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    let ty ← instantiateMVars d.type
+    let .const h _ := ty.getAppFn | continue
+    let some m := markOfNatPredicate h | continue
+    let some want ← observing? (Meta.mkAppM h #[F, G, φ]) | continue
+    if ← Meta.isDefEq ty want then return some (m, ← d.fvarId.getUserName)
+  return none
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
     a hollow one, a refuted `LaxNatural` the object wire — each of them a proof term the search
@@ -849,10 +892,19 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
     IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} stopped on \
       `{← e.toMessageData.toString}`: the bead draws as a spider"
     return none
+  if let some v := found then return v
+  -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
+  -- after the environment: a family something PROVES natural cites the proof, never the binder.
+  if let some (m, n) ← hypVerdict F G φ then return { mark := some m, lean := #[], hyp := some n }
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
-  return found.getD { mark := some .spider, lean := #[] }
+  -- THE SPELLING IS PRINTED, not left for the reader to reconstruct: the statement to write is the
+  -- one that was looked for, at the relators this bead actually runs between.
+  IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} found nothing: state \
+    `LaxNatural ({← Meta.ppExpr F}) ({← Meta.ppExpr G}) ({← Meta.ppExpr φ})`, one of its two \
+    siblings, or its refutation"
+  return { mark := some .spider, lean := #[] }
 
 /-! ### The four constructors — nothing else builds a `Diagram` -/
 
@@ -942,14 +994,14 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- the object-wire arrow `α` already is, and drawing it as a spider claims a search nobody asked.
   let mut pick : Option (Expr × Expr × Verdict) := none
   for i in [0 : all.size + typs.size] do
-    if (pick.map fun p => !p.2.2.lean.isEmpty).getD false then break
+    if (pick.map fun p => p.2.2.cited).getD false then break
     let named := i < all.size
     let c := if named then all[i]! else typs[i - all.size]!
     unless (← readEnds regionTy cat c.2).isSome do continue
     let vd ← try verdict regionTy cat c.2 catch e =>
       throwError "the bead `{← beadLabel core #[ox, oy, c.1]}`: {← e.toMessageData.toString}"
     if named && pick.isNone then pick := some (c.1, c.2, vd)
-    unless vd.lean.isEmpty do pick := some (c.1, c.2, vd)
+    if vd.cited then pick := some (c.1, c.2, vd)
   let v? := pick.map (·.1)
   let φ := (pick.map (·.2.1)) <|> (all[0]?.map (·.2))
   let vd := pick.map (·.2.2)
@@ -971,7 +1023,8 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
-      nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], family := φ.isSome }
+      nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
+      family := φ.isSome }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
@@ -1563,6 +1616,6 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      if ps.size == 1 then emit ps[0]!.2 frame else emitStatement nm ps frame
+      if ps.size == 1 then emit declName ps[0]!.2 frame else emitStatement declName nm ps frame
 
 end Freyd.StrDiag
