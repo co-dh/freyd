@@ -793,4 +793,23 @@ public theorem edit_laxNatural :
   obtain ⟨h1, h2⟩ := editFn_rel S es fs hfs
   exact ⟨editFn es, rfl, h1, h2⟩
 
+/-- **`minlist(R)` is LAX natural**: `list(list(Op(S)))minlist(R) ⊑ minlist(R)list(Op(S))`.  The
+    argument of `est_R_laxNatural` with the LIST standing in for the set it `setify`s to: a shortest
+    member of the image list comes from a member of the original, of the same length, and every
+    other member of the original has an image of its own length. -/
+public theorem minlist_R_laxNatural :
+    LaxNatural (opRelator.comp listRelator) ((opRelator.comp listRelator).comp listRelator)
+      (fun a => CL.minlist (R a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun ess r => ?_
+  rintro ⟨fss, hff, hmin⟩
+  obtain ⟨hr, hleast⟩ := (minlist_apply _ _ _).mp hmin
+  obtain ⟨hfwd, hbwd⟩ := listP_inlistP_split (list (opRel S)) ess fss hff
+  obtain ⟨w, hw, hwr⟩ := hbwd r ((clMem_iff_inlistP _ _).mp hr)
+  refine ⟨w, (minlist_apply _ _ _).mpr ⟨(clMem_iff_inlistP _ _).mpr hw, fun z hz => ?_⟩, hwr⟩
+  obtain ⟨v, hzv, hv⟩ := hfwd z ((clMem_iff_inlistP _ _).mp hz)
+  show clen w ≤ clen z
+  rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]
+  exact hleast v ((clMem_iff_inlistP _ _).mpr hv)
+
 end Freyd.Alg.RelSet.Edit
