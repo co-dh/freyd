@@ -517,11 +517,14 @@ def components(diff):
             "-connected-components", "8", "null:")
     out, big = [], []
     for ln in r.stdout.splitlines():
-        m = re.match(r"\s*\d+:\s+(\d+)x(\d+)([+-]\d+)([+-]\d+)\s+[\d.,-]+\s+(\S+)", ln)
+        # id: bounding-box centroid area mean-color — the area sits between centroid and colour, and a
+        # match that stopped one column short read the area as the colour, so the black background was
+        # never skipped and every crop came out as one page-wide box.
+        m = re.match(r"\s*\d+:\s+(\d+)x(\d+)([+-]\d+)([+-]\d+)\s+[\d.,-]+\s+\d+\s+(\S+)", ln)
         if not m:
             continue
         w, h, x, y = (int(v) for v in m.groups()[:4])
-        if m.group(5).startswith(("gray(0)", "srgb(0,0,0)")):
+        if m.group(5).startswith(("gray(0)", "srgb(0,0,0)", "srgba(0,0,0,")):
             continue             # the unchanged black background, not an edit
         (big if w > 1200 and w * h > 600000 else out).append((x, y, x + w, y + h))
     return out or big
