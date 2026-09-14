@@ -1436,27 +1436,56 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
+/-- The CATEGORIES a family is indexed over: the binder type of each leading lambda, up to the first
+    that is not closed — a domain with a loose bvar is no type to compare an argument against. -/
+partial def objectTypes : Expr → Array Expr → Array Expr
+  | .lam _ t b _, acc => if t.hasLooseBVars then acc else objectTypes b (acc.push t)
+  | _, acc => acc
+
+/-- Is this argument an OBJECT — a term of one of the categories the family is indexed over? -/
+def isObject (objTys : Array Expr) (e : Expr) : MetaM Bool := do
+  let t ← Meta.inferType e
+  objTys.anyM fun o => Meta.withNewMCtxDepth (Meta.isDefEq t o)
+
 /-- The same, but only where the family SPEAKS: the head of each application spine and its EXPLICIT
-    arguments.  An implicit or instance argument is the elaborator's spelling of something the
-    statement is general in — the panel wrote `thinRel`'s object `(F Unit (Op a.carrier)).obj
-    (dPair a.carrier)` where the theorem's elaboration wrote `pairF.obj a`, one object, two
-    spellings — so requiring it drops the very declaration that proves or refutes the family. -/
-partial def explicitConsts (e : Expr) (acc : NameSet := {}) : MetaM NameSet := do
+    arguments, minus the OBJECTS among them — an argument whose type is one of `objTys`.  A
+    naturality theorem is GENERAL IN ITS OBJECTS, so an object's spelling is the unifier's business
+    and never the filter's: the panel wrote `thinRel`'s object `(F Unit (Op a.carrier)).obj
+    (dPair a.carrier)` where the theorem's elaboration wrote `pairF.obj a`, one object and two
+    spellings.  Explicit-or-implicit was only a proxy for that, and a bridge breaks it —
+    `prodMap_eq_rprodMap` rewrites `rprodMap R S` into `prodMap (relProd A B) … R S`, where the
+    objects `rprodMap` left implicit come back as explicit arguments of `relProd`.
+    The binders are opened as FREE VARIABLES because `isObject` infers a type, which a loose bvar
+    has none of; the binder's own fvar carries no constants, so nothing is lost. -/
+partial def explicitConsts (objTys : Array Expr) (e : Expr) (acc : NameSet := {}) :
+    MetaM NameSet := do
   match e with
-  | .lam _ t b _ | .forallE _ t b _ => explicitConsts b (← explicitConsts t acc)
-  | .mdata _ b | .proj _ _ b => explicitConsts b acc
-  | .letE _ t v b _ => explicitConsts b (← explicitConsts v (← explicitConsts t acc))
+  | .lam .. => Meta.lambdaTelescope e fun xs b => do
+    let mut out := acc
+    for x in xs do out ← explicitConsts objTys (← Meta.inferType x) out
+    explicitConsts objTys b out
+  | .forallE .. => Meta.forallTelescope e fun xs b => do
+    let mut out := acc
+    for x in xs do out ← explicitConsts objTys (← Meta.inferType x) out
+    explicitConsts objTys b out
+  | .mdata _ b | .proj _ _ b => explicitConsts objTys b acc
+  -- The body is INSTANTIATED rather than walked under its binder: `isObject` cannot infer the type
+  -- of a term still carrying the let's loose bvar.
+  | .letE _ t v b _ =>
+    let out ← explicitConsts objTys v (← explicitConsts objTys t acc)
+    explicitConsts objTys (b.instantiate1 v) out
   | .const n _ => return acc.insert n
   | .app .. =>
     let f := e.getAppFn
     let args := e.getAppArgs
     let info ← Meta.getFunInfoNArgs f args.size
-    let mut out ← explicitConsts f acc
+    let mut out ← explicitConsts objTys f acc
     for i in [0 : args.size] do
       -- A position the function's type does not reach is kept: an unknown binder is not an excuse
       -- to drop a name the statement does write.
       if (info.paramInfo[i]?.map (·.binderInfo.isExplicit)).getD true then
-        out ← explicitConsts args[i]! out
+        unless ← isObject objTys args[i]! do
+          out ← explicitConsts objTys args[i]! out
     return out
   | _ => return acc
 
@@ -1594,19 +1623,57 @@ def bridges : MetaM Meta.Simp.Context := do
     the one asked for. -/
 def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.fst <$> Meta.simp e br
 
+/-- The bridge table, computed once — the bridges do not change while the exporter draws, and
+    walking them per candidate would pay for them thousands of times. -/
+initialize aliasRef : IO.Ref (Option (Std.HashMap Name (Array Name))) ← IO.mkRef none
+
+/-- WHAT A REWRITE CAN INTRODUCE: for each constant of some bridge lemma's TARGET side, every
+    constant of its SOURCE side.  `scan` reads `must` across the bridges and a candidate's constants
+    off the index UNBRIDGED, so a candidate whose bridged statement would carry `m` carries, in
+    source spelling, either `m` itself or one of these — the sound over-approximation of bridging
+    every candidate, which a bucket of thousands cannot pay for. -/
+def bridgeAliases : MetaM (Std.HashMap Name (Array Name)) := do
+  if let some a ← aliasRef.get then return a
+  let env ← getEnv
+  let some ext ← Meta.getSimpExtension? `diag_bridge
+    | throwError "no `diag_bridge` simp set — the spelling bridges are declared by that attribute \
+        (`register_simp_attr diag_bridge`, AOP/A5_1.lean)"
+  let mut acc : Std.HashMap Name NameSet := {}
+  for o in (← ext.getTheorems).lemmaNames.toList do
+    let .decl n _ inv := o
+      | throwError "the `diag_bridge` entry `{o.key}` is no declaration, so the two spellings it \
+          bridges cannot be read off a type; every bridge is a theorem carrying the attribute"
+    let some ci := env.find? n
+      | throwError "`diag_bridge` names `{n}`, which this process does not import"
+    let (cs, ct) ← Meta.forallTelescope ci.type fun _ concl => do
+      let (l, r) ← match concl.eq?, concl.iff? with
+        | some (_, l, r), _ => pure (l, r)
+        | _, some (l, r) => pure (l, r)
+        | _, _ => throwError "the bridge `{n}` concludes in neither `Eq` nor `Iff` ({concl}), so \
+            which spelling it rewrites into which cannot be read"
+      -- An `←` attribute rewrites right to left, so the side a rewrite PRODUCES is then the lhs.
+      return if inv then (consts r, consts l) else (consts l, consts r)
+    for c in ct.toList do
+      acc := acc.insert c (cs.toList.foldl (fun t k => t.insert k) (acc.getD c {}))
+  let a := acc.fold (fun m c t => m.insert c t.toList.toArray) {}
+  aliasRef.set (some a)
+  return a
+
 /-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
-    about, ACROSS THE BRIDGES — the same normal form the two propositions are compared in, because
-    a filter read in the panel's spelling (`Λ 𝟙`) and a candidate written in the theorem's
-    (`singletonMap`) never overlap, and the candidate is dropped before the comparison that would
-    have seen through them. The region's own projections and every INSTANCE go: a term carries the
+    about, ACROSS THE BRIDGES — the normal form the two propositions are compared in, because a
+    filter read in the panel's spelling (`Λ 𝟙`) and a candidate written in the theorem's
+    (`singletonMap`) never overlap.  The index spells a candidate's own constants UNBRIDGED, so
+    `scan` does not test containment directly: it reads each constant here through `bridgeAliases`,
+    the source spellings a bridge could have rewritten into it.
+    The region's own projections and every INSTANCE go: a term carries the
     path typeclass resolution took to the region's structure and a theorem's context takes another,
     so requiring either is requiring what no theorem can have.
 
-    KEEPING THE OBJECTS IS WHAT MAKES THE SEARCH FINITE IN PRACTICE.  Narrowing this to the ARROWS
-    of the family — dropping the objects they are taken at, which is what a naturality theorem is
-    general in — is the reading the statement wants, and it opens the square search to every
-    equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
-    under (`scripts/cap`) and the process dies.
+    THE OBJECTS GO, THE ARROWS STAY.  A naturality theorem is general in the objects its family is
+    taken at, so an object's spelling is the unifier's business and never the filter's; the arrows
+    and relators the family names are what keep the scan short.  Dropping MORE than the objects is
+    what opened the square search to every equation of the environment: on `prefix_cancel.lhs` that
+    reaches the 12 GB the exporter runs under (`scripts/cap`) and the process dies.
 
     WHAT IS DROPPED IS DECIDED BY THE CONSTANT'S OWN CONCLUSION, NOT BY ITS KIND.  Dropping every
     PROJECTION dropped the field that names the arrow along with the path: `∋` is the three
@@ -1618,12 +1685,13 @@ def bridge (br : Meta.Simp.Context) (e : Expr) : MetaM Meta.Simp.Result := Prod.
     A conclusion that is a CLASS is the resolution path, which each declaration takes its own way;
     a conclusion that is no constant at all is a type former, carried in types a statement never
     prints.  Everything else a theorem can be asked for by name.  Read off the SPINE
-    (`explicitConsts`): an implicit object the panel and the theorem spell differently is the
-    unifier's business, and requiring it drops the declaration that settles the family. -/
+    (`explicitConsts`), whose object rule the categories the family is indexed over decide: the
+    binder type of each leading lambda of the bridged family. -/
 def mustOfFamily (br : Meta.Simp.Context) (φ : Expr) : MetaM NameSet := do
   let env ← getEnv
+  let bφ := (← bridge br φ).expr
   let mut out : NameSet := {}
-  for n in (← explicitConsts (← bridge br φ).expr).toList do
+  for n in (← explicitConsts (objectTypes bφ #[]) bφ).toList do
     if let some ci := env.find? n then
       let h := concHead ci.type
       if h.isAnonymous || Lean.isClass env h then continue
@@ -1684,21 +1752,37 @@ structure Failed where
     recurses, so a search that found nothing with `f` finds nothing with less. -/
 initialize failedRef : IO.Ref (Std.HashMap Failed Nat) ← IO.mkRef {}
 
-/-- What the failures below the current search LEANED ON, as the lowest `seen` index plus one of a
-    goal `findAnyProof` cut as a loop, and `0` for a candidate a heartbeat budget cut short. -/
-initialize leanedOn : IO.Ref Nat ← IO.mkRef 0
+/-- A lambda's innermost body: a family is `fun a => core`, and the core is where its head sits. -/
+partial def lamCore : Expr → Expr
+  | .lam _ _ b _ => lamCore b
+  | .mdata _ b => lamCore b
+  | e => e
 
-/-- The bead currently being searched for, as its spine constants, and the candidates the TOP-LEVEL
-    scan passed over.  Printed only where the search ends in a spider, so the next proving agent
-    reads why its theorem was not taken instead of guessing at the spelling. -/
-initialize spineRef : IO.Ref NameSet ← IO.mkRef {}
-initialize passedRef : IO.Ref (Array String) ← IO.mkRef #[]
+/-- The bridged family's own head constant — `thinRel` for `fun a => thinRel …`. -/
+def familyHead (br : Meta.Simp.Context) (φ : Expr) : MetaM (Option Name) := do
+  return (lamCore (← bridge br φ).expr).getAppFn.constName?
 
-/-- One candidate not taken, kept only where it is ABOUT this family — its statement names every
-    spine constant — because the whole bucket is every theorem of the repo with that conclusion. -/
-def passedOver (has : NameSet) (line : String) : IO Unit := do
-  unless (← spineRef.get).any (fun c => !has.contains c) do
-    passedRef.modify fun a => if a.contains line then a else a.push line
+/-- The state of ONE top-level search, created per `verdict` and threaded down: the exporter runs
+    a task per panel in one process, so a process-global ref mixes the panels' searches. -/
+structure Search where
+  /-- What the failures below the current goal LEANED ON, as the lowest `seen` index plus one of a
+      goal `findAnyProof` cut as a loop, and `0` for a candidate a heartbeat budget cut short. -/
+  leanedOn : IO.Ref Nat
+  /-- The head constant of the family (`familyHead`); a passed-over candidate is reported only when
+      its statement names it, because the whole bucket is every theorem with that conclusion. -/
+  head : Option Name
+  /-- Candidates the top-level scan dropped or failed to unify, for the spider message. -/
+  passed : IO.Ref (Array String)
+
+/-- A search at its start. -/
+def Search.new (head : Option Name) : IO Search := do
+  return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[] }
+
+/-- One candidate not taken, kept only where it is ABOUT this family — its statement names the
+    family's head — because the whole bucket is every theorem of the repo with that conclusion. -/
+def Search.passOver (s : Search) (has : NameSet) (line : String) : IO Unit := do
+  if s.head.any has.contains then
+    s.passed.modify fun a => if a.contains line then a else a.push line
 
 /-- `search`, not run again once it has found nothing.  One refuted family is asked for over and
     over: `laxNatural_of_strictNatural` re-asks the strict class `verdict` just refuted,
@@ -1709,19 +1793,19 @@ def passedOver (has : NameSet) (line : String) : IO Unit := do
     ancestors that goal is searched, and may be proved), and none by a heartbeat budget.  A question
     with metavariables, in the goal or a hypothesis, is no key.  Remembering a failure proves
     nothing, so no dot can come of it. -/
-def remembered (square : Bool) (goal : Expr) (must : List Name) (fuel : Nat) (seen : Array Expr)
-    (search : MetaM (Option (Name × Expr))) : MetaM (Option (Name × Expr)) := do
+def remembered (s : Search) (square : Bool) (goal : Expr) (must : List Name) (fuel : Nat)
+    (seen : Array Expr) (search : MetaM (Option (Name × Expr))) : MetaM (Option (Name × Expr)) := do
   -- The pure `LocalContext.mkForall`, not `Meta.mkForallFVars`: that one reverts an unassigned
   -- metavariable, assigning it (or throwing) before the test below could decline the key.
   let lctx ← instantiateLCtxMVars (← getLCtx)
   let key : Failed := { square, must, goal := lctx.mkForall lctx.getFVars (← instantiateMVars goal) }
   if key.goal.hasMVar || key.goal.hasFVar then return ← search
   if (← failedRef.get)[key]?.any (fuel ≤ ·) then return none
-  let outer ← leanedOn.get
-  leanedOn.set (seen.size + 1)
+  let outer ← s.leanedOn.get
+  s.leanedOn.set (seen.size + 1)
   let r ← search
-  let below ← leanedOn.get
-  leanedOn.set (min outer below)
+  let below ← s.leanedOn.get
+  s.leanedOn.set (min outer below)
   if r.isNone && below > seen.size then failedRef.modify fun m => m.insert key (max fuel (m.getD key 0))
   return r
 
@@ -1733,18 +1817,19 @@ mutual
     conclusion and `want` are normalised through the spelling bridges, and the two are unified.
     Every argument the unification left open must then be answered in its own right, and what comes
     back is the candidate applied to those arguments — a term, checked before it is believed. -/
-partial def findProof (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat)
-    (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
+partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name)
+    (must : NameSet) (fuel : Nat) (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
-  remembered false want must.toList fuel seen (scan br want head must fuel seen)
+  remembered s false want must.toList fuel seen (scan br s want head must fuel seen)
 
 /-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn. -/
-partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : NameSet) (fuel : Nat)
-    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name) (must : NameSet)
+    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let env ← getEnv
   let rw ← bridge br want
+  let al ← bridgeAliases
   let mut hit : Option (Name × Expr) := none
   let ms := must.toList
   for (n, has) in ← candidates head do
@@ -1755,11 +1840,13 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
     -- end.  Without it a goal nothing proves is a full scan of the environment at every step of
     -- `discharge`, which is the environment cubed and never returns (`Freyd.Alg.Cylinder.Q`).
     Core.checkMaxHeartbeats "the naturality search"
-    if let some m := ms.find? (fun m => !has.contains m) then
-      if seen.isEmpty then passedOver has s!"dropped {n}: lacks {m}"
+    -- The candidate is spelled as the INDEX stores it and `must` as the bridges rewrite it, so a
+    -- constant is also met by any source spelling a bridge could have rewritten into it.
+    if let some m := ms.find? (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then
+      if seen.isEmpty then s.passOver has s!"dropped {n}: lacks {m}"
       continue
     let some ci := env.find? n | continue
-    let s ← Meta.saveState
+    let saved ← Meta.saveState
     let attempt : MetaM (Option (Name × Expr)) := do
       -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
       -- parameters are rigid, so a polymorphic closure theorem could never match a concrete
@@ -1775,9 +1862,9 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
       unless ← Core.withCurrHeartbeats (withTheReader Core.Context
         (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
         (Meta.isDefEq rc.expr rw.expr)) do
-        if seen.isEmpty then passedOver has s!"tried {n}: no unification"
+        if seen.isEmpty then s.passOver has s!"tried {n}: no unification"
         return none
-      unless ← discharge br args bis fuel (seen.push want) do return none
+      unless ← discharge br s args bis fuel (seen.push want) do return none
       checked want rw rc n (mkAppN (.const n lvls) args)
     -- `tryCatchRuntimeEx`, not `try`: a heartbeat timeout is a RUNTIME exception, and plain
     -- `try`/`catch` in `MetaM` rethrows those, so the budget above would end the panel instead of
@@ -1785,9 +1872,9 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
     let ok : Option (Name × Expr) ← tryCatchRuntimeEx attempt fun e => do
       -- A candidate a heartbeat budget cut short is not refuted — it may unify on a warmer cache —
       -- so no failure above it is remembered.
-      if e.isRuntime then leanedOn.set 0
+      if e.isRuntime then s.leanedOn.set 0
       pure none
-    if ok.isSome then hit := ok else s.restore
+    if ok.isSome then hit := ok else saved.restore
   return hit
 
 /-- Every argument the match left open has to be ANSWERED — and answered with a term, which is
@@ -1796,8 +1883,8 @@ partial def scan (br : Meta.Simp.Context) (want : Expr) (head : Name) (must : Na
     family's square out of its factors' squares, so this is what makes a compound bead's dot
     exactly its factors' dots and never more.  An instance argument is synthesised; a non-`Prop`
     argument left open means the match itself pinned nothing down, and is a refusal. -/
-partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array BinderInfo) (fuel : Nat)
-    (seen : Array Expr) : MetaM Bool := do
+partial def discharge (br : Meta.Simp.Context) (s : Search) (args : Array Expr)
+    (bis : Array BinderInfo) (fuel : Nat) (seen : Array Expr) : MetaM Bool := do
   for i in [0 : args.size] do
     let .mvar id := args[i]! | continue
     if ← id.isAssigned then continue
@@ -1815,7 +1902,7 @@ partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array 
       unless ← Meta.isDefEq args[i]! (.fvar fv) do return false
       continue
     if fuel == 0 then return false
-    let some (_, pf) ← findAnyProof br t (fuel - 1) seen | return false
+    let some (_, pf) ← findAnyProof br s t (fuel - 1) seen | return false
     unless ← Meta.isDefEq args[i]! pf do return false
   return true
 
@@ -1823,15 +1910,15 @@ partial def discharge (br : Meta.Simp.Context) (args : Array Expr) (bis : Array 
     of the SQUARE it unfolds to.  `StrictNatural`/`LaxNatural` are exposed definitions, so
     unfolding one and opening its binders gives the very equation (or inclusion) a hand-written
     declaration states, and its own head is what to search under. -/
-partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (seen : Array Expr) :
-    MetaM (Option (Name × Expr)) := do
+partial def findAnyProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (fuel : Nat)
+    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let some h := want.getAppFn.constName? | return none
   -- A GOAL AMONG ITS OWN ANCESTORS IS NO NEW GOAL: `strictNatural_recip` twice asks again for the
   -- family it started from (`φ°° ≡ φ`), and a proof through that loop has a shorter one without it.
   -- A failure below this cut leaned on that ancestor, so it is not remembered as one.
   for i in [0 : seen.size] do
     if ← Meta.withNewMCtxDepth (Meta.isDefEq seen[i]! want) then
-      leanedOn.modify (min · (i + 1))
+      s.leanedOn.modify (min · (i + 1))
       return none
   -- The CLASS-headed search takes no `must`: a closure theorem names `prodMap` where the bead
   -- names `rprodMap`, so a filter drawn from the bead's own constants would drop exactly the
@@ -1839,13 +1926,13 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (se
   -- so the filter buys nothing there, nor at any other defined predicate (`PreservesRecip`); any
   -- other hypothesis (`=`, `⊑`, `↔`) is asked for by the constants it names, as a square is.
   let must ← if ← unfiltered h then pure {} else mustOfFamily br want
-  if let some r ← findProof br want h must fuel seen then return some r
+  if let some r ← findProof br s want h must fuel seen then return some r
   -- Only a naturality CLASS is unfolded to its square.  Unfolding anything else lands on a head
   -- like `False`, which every refutation in the environment matches with its own hypotheses
   -- left to be found — a search that answers the question it was not asked.
   unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
       || h == ``Freyd.Alg.OpLaxNatural do return none
-  findSquare br want (← mustOf br want) fuel (seen.push want)
+  findSquare br s want (← mustOf br want) fuel (seen.push want)
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
     The binders are opened as FREE VARIABLES, not metavariables: the square is then the very
@@ -1854,22 +1941,22 @@ partial def findAnyProof (br : Meta.Simp.Context) (want : Expr) (fuel : Nat) (se
     the other way round is the SAME square: `Eq.symm` is a proof term like any other, so the
     mirrored form is searched for too rather than the direction a declaration happens to be
     written in deciding whether a bead has a dot. -/
-partial def findSquare (br : Meta.Simp.Context) (prop : Expr) (must : NameSet) (fuel : Nat)
-    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+partial def findSquare (br : Meta.Simp.Context) (s : Search) (prop : Expr) (must : NameSet)
+    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let some body ← Meta.unfoldDefinition? prop | return none
-  findTelescoped br body must fuel seen
+  findTelescoped br s body must fuel seen
 
 /-- The same search for a square GIVEN as its own `∀`-statement rather than reached by unfolding a
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
-partial def findTelescoped (br : Meta.Simp.Context) (body : Expr) (must : NameSet) (fuel : Nat)
-    (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
-  remembered true body must.toList fuel seen <|
+partial def findTelescoped (br : Meta.Simp.Context) (s : Search) (body : Expr) (must : NameSet)
+    (fuel : Nat) (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
+  remembered s true body must.toList fuel seen <|
     Meta.forallTelescope body fun xs sq => do
       let .const h _ := sq.getAppFn | return none
-      if let some (n, pf) ← findProof br sq h must fuel seen then
+      if let some (n, pf) ← findProof br s sq h must fuel seen then
         return some (n, ← Meta.mkLambdaFVars xs pf)
       let some sqm ← flipEq? sq | return none
-      let some (n, pf) ← findProof br sqm h must fuel seen | return none
+      let some (n, pf) ← findProof br s sqm h must fuel seen | return none
       return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
 
 end
