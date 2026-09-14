@@ -67,6 +67,70 @@ public inductive Op (Char : Type) where
 @[expose] public abbrev dPair (Char : Type) : RelSet.{0} :=
   ⟨ConsList Unit Char × ConsList Unit Char⟩
 
+/-! ### `Op` is a relator
+
+  `Op` is an operation on the ALPHABET, so every end of this section — `[Op]`, `F(Op,[Char]×[Char])`,
+  `Op×([Char]×[Char])` — is a functor of `Char` and states a naturality.  It is that functor only
+  once `Op` is bundled as a lane; until then the pictures had `Op Char` varying with the index and
+  no relator to read it as. -/
+
+/-- `Op(R)` pointwise: the SAME operation, its character related by `R`. -/
+@[expose] public def opP {A B : Type} (R : dE A ⟶ dE B) : Op A → Op B → Prop
+  | Op.cpy a, Op.cpy b => R a b
+  | Op.del a, Op.del b => R a b
+  | Op.ins a, Op.ins b => R a b
+  | _, _ => False
+
+/-- `Op(R) : Op A ⟶ Op B`, the relator's action. -/
+@[expose] public def opRel {A B : Type} (R : dE A ⟶ dE B) : dE (Op A) ⟶ dE (Op B) := opP R
+
+public theorem opP_id {A : Type} : ∀ x y : Op A, opP (𝟙 (dE A)) x y ↔ x = y
+  | Op.cpy a, Op.cpy b => ⟨fun h => by rw [show a = b from h], fun h => by cases h; exact rfl⟩
+  | Op.del a, Op.del b => ⟨fun h => by rw [show a = b from h], fun h => by cases h; exact rfl⟩
+  | Op.ins a, Op.ins b => ⟨fun h => by rw [show a = b from h], fun h => by cases h; exact rfl⟩
+  | Op.cpy _, Op.del _ | Op.cpy _, Op.ins _ | Op.del _, Op.cpy _
+  | Op.del _, Op.ins _ | Op.ins _, Op.cpy _ | Op.ins _, Op.del _ =>
+      ⟨False.elim, fun h => nomatch h⟩
+
+/-- `Op(𝟙) = 𝟙`. -/
+public theorem op_id {A : Type} : opRel (𝟙 (dE A)) = 𝟙 (dE (Op A)) := hom_ext opP_id
+
+public theorem opP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (x : Op A) (z : Op C), opP (R ≫ S) x z ↔ ∃ y, opP R x y ∧ opP S y z
+  | Op.cpy a, Op.cpy c => ⟨fun ⟨b, hR, hS⟩ => ⟨Op.cpy b, hR, hS⟩,
+      fun ⟨y, h1, h2⟩ => by cases y <;> first | exact ⟨_, h1, h2⟩ | exact h1.elim | exact h2.elim⟩
+  | Op.del a, Op.del c => ⟨fun ⟨b, hR, hS⟩ => ⟨Op.del b, hR, hS⟩,
+      fun ⟨y, h1, h2⟩ => by cases y <;> first | exact ⟨_, h1, h2⟩ | exact h1.elim | exact h2.elim⟩
+  | Op.ins a, Op.ins c => ⟨fun ⟨b, hR, hS⟩ => ⟨Op.ins b, hR, hS⟩,
+      fun ⟨y, h1, h2⟩ => by cases y <;> first | exact ⟨_, h1, h2⟩ | exact h1.elim | exact h2.elim⟩
+  | Op.cpy _, Op.del _ | Op.cpy _, Op.ins _ | Op.del _, Op.cpy _
+  | Op.del _, Op.ins _ | Op.ins _, Op.cpy _ | Op.ins _, Op.del _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y <;> first | exact h1.elim | exact h2.elim⟩
+
+/-- `Op(RS) = Op(R) Op(S)`. -/
+public theorem op_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    opRel (R ≫ S) = opRel R ≫ opRel S := hom_ext (opP_comp R S)
+
+public theorem opP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, opP R x y → opP S x y
+  | Op.cpy a, Op.cpy b, hxy => h a b hxy
+  | Op.del a, Op.del b, hxy => h a b hxy
+  | Op.ins a, Op.ins b, hxy => h a b hxy
+  | Op.cpy _, Op.del _, hxy | Op.cpy _, Op.ins _, hxy | Op.del _, Op.cpy _, hxy
+  | Op.del _, Op.ins _, hxy | Op.ins _, Op.cpy _, hxy | Op.ins _, Op.del _, hxy => hxy.elim
+
+/-- `R ⊑ S ⟹ Op(R) ⊑ Op(S)`. -/
+public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel R ⊑ opRel S :=
+  le_iff.mpr (opP_mono (le_iff.mp h))
+
+/-- `Op` BUNDLED as a relator: the lane the edit pictures run the alphabet along. -/
+@[expose] public def opRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dE (Op a.carrier)
+  map R := opRel R
+  map_id _ := op_id
+  map_comp R S := op_comp R S
+  map_mono h := op_mono h
+
 /-- **edit-defn**: `base` returning `([],[])`, and `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`,
     `step (del a,(xs,ys))=([a]⧺xs,ys)`, `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
 @[expose] public def baseStepFn :
