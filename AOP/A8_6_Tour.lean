@@ -285,6 +285,70 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
 
 @[expose] public def tour : dCL (City × City) City ⟶ dTour City := ⦇tourAlg⦈
 
+/-! ## The `⦇tourAlg⦈` bead -/
+
+/-- `[start,dropl∪dropr]` pointwise: a step is one of the two functions, nothing else. -/
+public theorem tourAlg_apply (u : (((F (City × City) City).obj (dTour City))).carrier)
+    (t : Tour City) : tourAlg u t = (t = droplAlgFn u ∨ t = droprAlgFn u) := by
+  simp only [tourAlg, union_apply]; rfl
+
+/-- Replacing the head on both sides keeps a journey `Journey(R)`-related. -/
+public theorem journeyP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b) :
+    ∀ (x : Journey A) (y : Journey B), journeyP R x y →
+      journeyP R (replaceHead a x) (replaceHead b y)
+  | ConsList.wrap _, ConsList.wrap _, h => ⟨hab, h.2⟩
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ _, ConsList.cons _ _, h => ⟨hab, h.2⟩
+
+/-- The fold POINTWISE: a `Journey(R)`-related journey folds to a `Tour(R)`-related tour.  One
+    direction only — `dropl` writes its one city into BOTH journeys, so an image pair whose two
+    heads differ is reached by no journey at all. -/
+public theorem cataFoldTour_lax {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x : Journey A) (x' : Journey B) (t : Tour B),
+      journeyP R x x' → cataFold (tourAlg (City := B)) x' t →
+      ∃ t₀, cataFold (tourAlg (City := A)) x t₀ ∧ journeyP R t₀.1 t.1 ∧ journeyP R t₀.2 t.2
+  | ConsList.wrap p, ConsList.wrap q, t, h, hf => by
+      rw [cataFold_wrap, tourAlg_apply] at hf
+      obtain rfl : t = (ConsList.wrap q, ConsList.wrap q) := hf.elim id id
+      refine ⟨(ConsList.wrap p, ConsList.wrap p), ?_, h, h⟩
+      rw [cataFold_wrap, tourAlg_apply]
+      exact Or.inl rfl
+  | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
+  | ConsList.cons a x, ConsList.cons b y, t, h, hf => by
+      rw [cataFold_cons] at hf
+      obtain ⟨r, hr, hstep⟩ := hf
+      rw [tourAlg_apply] at hstep
+      obtain ⟨r₀, hr₀, hrel₁, hrel₂⟩ := cataFoldTour_lax R x y r h.2 hr
+      rcases hstep with rfl | rfl
+      · refine ⟨droplFn a r₀, ?_, journeyP_replaceHead R h.1 r₀.1 r.1 hrel₁, h.1, hrel₂⟩
+        rw [cataFold_cons]
+        exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inl rfl⟩
+      · refine ⟨droprFn a r₀, ?_, ⟨h.1, hrel₁⟩, journeyP_replaceHead R h.1 r₀.2 r.2 hrel₂⟩
+        rw [cataFold_cons]
+        exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inr rfl⟩
+
+/-- **the `⦇tourAlg⦈` bead is LAX**: `Journey(R) ⦇tourAlg⦈ ⊑ ⦇tourAlg⦈ (Journey(R)×Journey(R))`.
+    Strictness fails for the reason p.215 gives the thinning order: `dropl` writes its one city
+    into BOTH journeys, so an image pair whose two heads differ is reached by no journey. -/
+public theorem tour_lax_natural :
+    LaxNatural (Relator.prod journeyRelator journeyRelator) journeyRelator
+      (fun a : RelSet.{0} =>
+        (⦇tourAlg⦈ : dCL (a.carrier × a.carrier) a.carrier ⟶ dTour a.carrier)) := by
+  intro a b R
+  have h : journeyRel R ≫ cataR (tourAlg (City := b.carrier))
+      ⊑ cataR (tourAlg (City := a.carrier))
+        ≫ prodMap (relProd (⟨Journey a.carrier⟩ : RelSet.{0}) ⟨Journey a.carrier⟩)
+            (relProd (⟨Journey b.carrier⟩ : RelSet.{0}) ⟨Journey b.carrier⟩)
+            (journeyRel R) (journeyRel R) := by
+    rw [prodMap_eq_rprodMap]
+    exact le_iff.mpr fun x t hh => by
+      obtain ⟨x', hx, ht⟩ := hh
+      obtain ⟨t₀, ht₀, h₁, h₂⟩ := cataFoldTour_lax R x x' t hx ht
+      exact ⟨t₀, ht₀, h₁, h₂⟩
+  rwa [cataR_eq_relCata, cataR_eq_relCata] at h
+
 /-! ## `tour-mono` -/
 
 /-! The four refutations share one pair of GENUINE tours — each has its own two heads equal, as
