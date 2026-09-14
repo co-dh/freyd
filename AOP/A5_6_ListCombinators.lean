@@ -17,6 +17,9 @@
 module
 
 public import AOP.A6_ConsList
+-- `StrictNatural` and the lane combinators `Relator.sum`/`prod`/`const`, which `α`'s square below
+-- is stated in; §5.7 is upstream of every chapter-6 engine, so this adds no cycle.
+public import AOP.A5_7
 
 namespace Freyd.Alg.RelSet.ListRel
 
@@ -793,12 +796,23 @@ public theorem alphaR_natural (R : dE A ⟶ dE B) :
       | inl e => exact hv.elim
       | inr q => obtain ⟨b, y⟩ := q; exact ⟨ConsList.cons a x, rfl, hv.1, hv.2⟩
 
-/-- The same square AT THE INITIAL ALGEBRA'S OWN FIELD, `(initial Unit A).α`, which is how every
-    panel of the note writes the bead: a candidate must mention everything the family mentions, and
-    a statement spelled `alphaR` names neither `initial` nor `InitialAlgebra.α`. -/
-public theorem initial_alpha_natural {B : Type} (R : dE A ⟶ dE B) :
-    (initial Unit A).α ≫ list R = Fbimap Unit R (list R) ≫ (initial Unit B).α :=
-  alphaR_natural R
+/-- The same square AT THE LANES THE PICTURE DRAWS: the source of `α` is the coproduct
+    `𝟏 + A×[A]`, read summand by summand as `Relator.sum` of the constant lane at `𝟏` and the
+    product lane `𝟙×list`, and the target is `list`.  The panels state `α` as the initial algebra's
+    own field, so the family is spelled that way here too. -/
+public theorem alphaR_strictNatural :
+    StrictNatural listRelator
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.idRelator RelSet.{0}) listRelator))
+      (fun a => (initial Unit a.carrier).α) := by
+  intro a b R
+  have hmap : (Relator.sum (Relator.const (dL Unit))
+      (Relator.prod (Relator.idRelator RelSet.{0}) listRelator)).map R
+        = Fbimap Unit R (list R) := by
+    rw [Fbimap_eq_sumMap]
+    exact congrArg (fun Y => sumMap _ _ (𝟙 (dL Unit)) Y) (prodMap_eq_rprodMap R (list R))
+  rw [hmap]
+  exact (alphaR_natural R).symm
 
 /-- **The free theorem of `concat`**, and it is STRICT: `list(list R) concat = concat list(R)`.
     `⊑` is `listP_cconcat`, `⊒` is `listP_cconcat_split`. -/

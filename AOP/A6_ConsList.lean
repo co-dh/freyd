@@ -170,6 +170,28 @@ public theorem Fmap_comp_junc (L E : Type) {C c' D : RelSet.{0}} (S : C ⟶ c')
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
     | _, _ => False
 
+/-- **`F(R,S) = 𝟙 + R×S`** as a `sumMap`, which is how the lane reading spells the source of `α`:
+    a coproduct end is read summand by summand.  `Fmap_eq_sumMap` is the `R=𝟙` case, and its proof
+    verbatim — the two relations differ only in the leaf arm, which neither side moves. -/
+public theorem Fbimap_eq_sumMap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R : dE E ⟶ dE E')
+    (S : C ⟶ c') :
+    Fbimap L R S = sumMap (sumCop (dL L) ⟨E × C.carrier⟩) (sumCop (dL L) ⟨E' × c'.carrier⟩)
+      (𝟙 (dL L)) (rprodMap R S) := by
+  apply hom_ext; intro u v
+  constructor
+  · intro h
+    cases u with
+    | inl d => cases v with
+      | inl d' => exact Or.inl ⟨d, rfl, d', h, rfl⟩
+      | inr q => exact h.elim
+    | inr p => cases v with
+      | inl d' => exact h.elim
+      | inr q => exact Or.inr ⟨p, rfl, q, h, rfl⟩
+  · intro h
+    cases h with
+    | inl h => obtain ⟨d, h1, e, h2, h3⟩ := h; subst h1; subst h3; exact h2
+    | inr h => obtain ⟨p, h1, q, h2, h3⟩ := h; subst h1; subst h3; exact h2
+
 /-! ## `ConsList L E` is the initial algebra of `F` -/
 
 /-- The constructor map `[wrap, cons] : F (ConsList L E) → ConsList L E`. -/
