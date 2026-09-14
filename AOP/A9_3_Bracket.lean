@@ -482,6 +482,53 @@ public theorem nelistP_cat {B : Type} (R : CL.dE A ⟶ CL.dE B) :
         | wrap _ => exact hv.elim
         | cons b v => exact ⟨hv.1, (ih u (cat v w)).mpr ⟨v, w, rfl, hv.2, hw⟩⟩
 
+/-- **`[wrap,cat]` IS STRICTLY NATURAL** — the initial algebra read lane by lane: the source is the
+    coproduct `A + [A]⁺×[A]⁺`, whose leaf arm is the object itself and whose pair arm is
+    `list⁺(R)×list⁺(R)`.  The leaf arm is `wrap`, the pair arm is `nelistP_cat`. -/
+public theorem wrapCat_strictNatural :
+    StrictNatural nelistRelator
+      (Relator.sum (Relator.idRelator RelSet.{0})
+        (Relator.prod nelistRelator nelistRelator))
+      (fun a => graph (wrapCatFn (A := a.carrier))) := by
+  intro a b R
+  rw [show (Relator.sum (Relator.idRelator RelSet.{0})
+        (Relator.prod nelistRelator nelistRelator)).map R
+      = sumMap (sumCop a ⟨(dNE a.carrier).carrier × (dNE a.carrier).carrier⟩)
+          (sumCop b ⟨(dNE b.carrier).carrier × (dNE b.carrier).carrier⟩)
+          R (rprodMap (nelist R) (nelist R)) from prodMap_eq_rprodMap _ _ ▸ rfl]
+  apply hom_ext
+  intro u y
+  constructor
+  · rintro ⟨w, hw, rfl⟩
+    refine ⟨wrapCatFn u, rfl, ?_⟩
+    cases hw with
+    | inl h => obtain ⟨e, rfl, e', he, rfl⟩ := h; exact he
+    | inr h =>
+      obtain ⟨p, rfl, q, hq, rfl⟩ := h
+      obtain ⟨p₁, p₂⟩ := p; obtain ⟨q₁, q₂⟩ := q
+      exact (nelistP_cat R p₁ p₂ (cat q₁ q₂)).mpr ⟨q₁, q₂, rfl, hq.1, hq.2⟩
+  · rintro ⟨x, rfl, hx⟩
+    cases u with
+    | inl e =>
+      cases y with
+      | wrap e' => exact ⟨Sum.inl e', Or.inl ⟨e, rfl, e', hx, rfl⟩, rfl⟩
+      | cons _ _ => exact hx.elim
+    | inr p =>
+      obtain ⟨p₁, p₂⟩ := p
+      obtain ⟨v, w, rfl, hv, hw⟩ := (nelistP_cat R p₁ p₂ y).mp hx
+      exact ⟨Sum.inr (v, w), Or.inr ⟨(p₁, p₂), rfl, (v, w), ⟨hv, hw⟩, rfl⟩, rfl⟩
+
+/-- `[wrap,cat]°`, the bead the §9.3 picture carries: both lanes preserve `°` on a tabular
+    allegory, so the square turns round. -/
+public theorem wrapCat_recip_strictNatural :
+    StrictNatural
+      (Relator.sum (Relator.idRelator RelSet.{0})
+        (Relator.prod nelistRelator nelistRelator))
+      nelistRelator
+      (fun a => (graph (wrapCatFn (A := a.carrier)))°) :=
+  strictNatural_recip (Relator.preservesRecip_of_tabular _)
+    (Relator.preservesRecip_of_tabular _) wrapCat_strictNatural
+
 /-- **mct-defn**: `flatten` commutes with relabelling — `tree(R) flatten = flatten list⁺(R)`,
     pointwise: a tree's flattening is related exactly to the flattenings of the related trees. -/
 public theorem flattenP_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
