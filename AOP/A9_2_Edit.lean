@@ -687,4 +687,110 @@ public theorem est_R_laxNatural :
   rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]
   exact hmin v hv
 
+/-- The `F` lane of the edit panels, spelled as the sum and product of the lanes its two summands
+    are — `𝟏 + Op×[Op]` — which is what `[nil,cons]`'s two ends read as.  `F Unit (Op Char)` holds
+    the alphabet FIXED, so its own `map` moves the tail alone and states no naturality in `Char`. -/
+@[expose] public def opF : Relator RelSet.{0} RelSet.{0} :=
+  Relator.sum (Relator.const (dL Unit)) (Relator.prod opRelator (opRelator.comp listRelator))
+
+/-- `F(Op(S),list(Op(S)))` is the lane stack's own action: the leaf arm untouched, the pair arm
+    moving the operation and the tail together.  `Fbimap` is the action `alphaR_natural` is
+    written in, and the two agree pointwise. -/
+public theorem opF_map {x y : RelSet.{0}} (S : x ⟶ y) :
+    opF.map S = Fbimap Unit (opRel S) (list (opRel S)) := by
+  apply hom_ext; intro u v
+  cases u <;> cases v <;>
+    simp [opF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap,
+      junc, RelProd.pair, prodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      opRelator, listRelator] <;> first | grind | exact Subsingleton.elim _ _
+
+/-- **`[nil,cons]` is STRICTLY natural** in the alphabet: `F(Op(S),list(Op(S)))[nil,cons] =
+    [nil,cons]list(Op(S))`.  `ListRel.alphaR_natural` at the alphabet `Op(Char)`, with the lane
+    stack's action put in place of `Fbimap`'s — the canonical home is `A5_6_ListCombinators`, and
+    this specialisation belongs beside it once that file is free. -/
+public theorem con_strictNatural :
+    StrictNatural (opRelator.comp listRelator) opF
+      (fun a => (graph con : (F Unit (Op a.carrier)).obj (dEdit a.carrier) ⟶ dEdit a.carrier)) := by
+  intro x y S
+  rw [opF_map]
+  exact (ListRel.alphaR_natural (opRel S)).symm
+
+/-- The `F` lane at the PAIR carrier: `𝟏 + Op×([Char]×[Char])`, the source of `[base,step]`. -/
+@[expose] public def pairF : Relator RelSet.{0} RelSet.{0} :=
+  Relator.sum (Relator.const (dL Unit))
+    (Relator.prod opRelator (Relator.prod listRelator listRelator))
+
+public theorem pairF_map {x y : RelSet.{0}} (S : x ⟶ y) :
+    pairF.map S = Fbimap Unit (opRel S) (rprodMap (list S) (list S)) := by
+  apply hom_ext; intro u v
+  cases u <;> cases v <;>
+    simp [pairF, Relator.sum, Relator.prod, Relator.const, Relator.comp, sumMap, junc,
+      RelProd.pair, prodMap, rprodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      opRelator, listRelator] <;> first | grind | exact Subsingleton.elim _ _
+
+/-- **`[base,step]` is LAX natural** in the alphabet: `F(Op(S),S×S)[base,step] ⊑
+    [base,step](list(S)×list(S))`.  Not STRICT — `cpy a` writes ONE character into BOTH outputs, so
+    the right side may send the two copies to two different characters of the new alphabet where
+    the left side, which chooses the operation first, can only send them to one. -/
+public theorem editAlg_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) pairF
+      (fun a => editAlg (Char := a.carrier)) := by
+  intro x y S
+  rw [pairF_map]
+  refine le_iff.mpr fun u q => ?_
+  rintro ⟨v, hv, rfl⟩
+  rcases u with d | ⟨op, xs, ys⟩ <;> rcases v with d' | ⟨op', xs', ys'⟩
+  · simp_all [Fbimap, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+      instHasRelProd, rprodMap, listRelator, list, listP]
+  · exact (hv : False).elim
+  · exact (hv : False).elim
+  · rcases op with a | a | a <;> rcases op' with b | b | b <;>
+      simp_all [Fbimap, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+        instHasRelProd, rprodMap, opRel, opP, listRelator, list, listP]
+
+/-- **`step` is LAX natural** — the `inr` arm of `editAlg_laxNatural`, at the arm's own lane
+    `Op×([Char]×[Char])`, which is the relator `edit-laws`' third row draws. -/
+public theorem step_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator)
+      (Relator.prod opRelator (Relator.prod listRelator listRelator))
+      (fun a => step (Char := a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun u q => ?_
+  rintro ⟨v, hv, rfl⟩
+  obtain ⟨op, xs, ys⟩ := u
+  obtain ⟨op', xs', ys'⟩ := v
+  rcases op with a | a | a <;> rcases op' with b | b | b <;>
+    simp_all [step, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair, instHasRelProd,
+      rprodMap, opRelator, opRel, opP, listRelator, list, listP]
+
+/-- An edit sequence and one it is `Op(S)`-related to reconstitute `S`-related strings: every
+    operation puts its own character where the related operation puts the related one. -/
+public theorem editFn_rel {x y : RelSet.{0}} (S : x ⟶ y) :
+    ∀ (es : ConsList Unit (Op x.carrier)) (fs : ConsList Unit (Op y.carrier)),
+      listP (opRel S) es fs →
+      listP S (editFn es).1 (editFn fs).1 ∧ listP S (editFn es).2 (editFn fs).2 := by
+  intro es
+  induction es with
+  | wrap u => rintro (fs | ⟨op', fs⟩) h <;> simp_all [opRel, opP, listP]
+  | cons op es ih =>
+    rintro (fs | ⟨op', fs⟩) h
+    · simp_all [opRel, opP, listP]
+    · obtain ⟨h1, h2⟩ := ih fs h.2
+      rcases op with a | a | a <;> rcases op' with b | b | b <;>
+        simp_all [opRel, opP, listP]
+
+/-- **`edit` is LAX natural**: `list(Op(S))edit ⊑ edit(list(S)×list(S))`.  Not STRICT — a `cpy`
+    writes ONE character into BOTH strings, so a pair whose two copies of it are sent to different
+    characters of the new alphabet is reached by no edit sequence. -/
+public theorem edit_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (opRelator.comp listRelator)
+      (fun a => graph (editFn (Char := a.carrier))) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _]
+  refine le_iff.mpr fun es p => ?_
+  rintro ⟨fs, hfs, rfl⟩
+  obtain ⟨h1, h2⟩ := editFn_rel S es fs hfs
+  exact ⟨editFn es, rfl, h1, h2⟩
+
 end Freyd.Alg.RelSet.Edit
