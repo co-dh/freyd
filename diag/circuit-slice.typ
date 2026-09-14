@@ -133,7 +133,7 @@
 // ⦇⦈ (13.4.4a)  ⦇S⦈   [tree(A) ⟶ [A]×[A]]
 #cpanel((k: "cata", nin: 1, nout: 2, body: (k: "seq", nin: 2, nout: 2, items: (
       (k: "box", nin: 2, nout: 2, label: "S", chamfer: true, frac: false, flip: false),
-    ), seams: ()), label: none, port: ("A", "[[A]²]", ), src: ("tree A", ), tgt: ("[A]", "[A]", )),
+    ), seams: ()), label: none, port: ("A", "[[A]²]", ), src: ("tree(A)", ), tgt: ("[A]", "[A]", )),
   cert: (expect: "⦇S⦈", src: "tree(A)", tgt: "[A]×[A]"))
 
 // ⟨⟩ (12.1e)  [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup]   [F(E[A]) ⟶ E[A]]
@@ -192,7 +192,7 @@
   ), seams: (
     (
       0,
-      ("E tree A", ),
+      ("E(tree(A))", ),
     ),
     (
       1,
@@ -202,7 +202,7 @@
       2,
       ("E[A]", ),
     ),
-  ), src: ("tree A", ), tgt: ("[A]", )),
+  ), src: ("tree(A)", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // 13.4.4a r4  𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)   [tree(A) ⟶ [A]]
@@ -216,7 +216,7 @@
   ), seams: (
     (
       0,
-      ("E tree A", ),
+      ("E(tree(A))", ),
     ),
     (
       1,
@@ -226,7 +226,7 @@
       4,
       ("E[A]", ),
     ),
-  ), src: ("tree A", ), tgt: ("[A]", )),
+  ), src: ("tree(A)", ), tgt: ("[A]", )),
   cert: (expect: "𝟙%∋ E(⦇S⦈)est((R×R)°)𝟙%∋ E(choose)est(R°)", src: "tree(A)", tgt: "[A]"))
 
 // subseq :2932 sbA4  [nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]   [F(E[A]) ⟶ E[A]]
