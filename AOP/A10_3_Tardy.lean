@@ -831,6 +831,68 @@ public theorem snag_recip_strictNatural :
   strictNatural_recip (Relator.preservesRecip_of_tabular _)
     (Relator.preservesRecip_of_tabular _) snag_strictNatural
 
+/-- `bag(R)` relates the empty bag to the empty bag and to nothing else: a representative of `nil`
+    is a permutation of `[]`, hence `[]`, and `[]` lifts only to `[]`. -/
+public theorem bagP_nil {A B : Type} (R : dE A ⟶ dE B) (w : (Bag B).carrier) :
+    bagP R nilBag w ↔ w = nilBag := by
+  constructor
+  · rintro ⟨xs, ys, h1, rfl, hel⟩
+    obtain ⟨zs', hel', hp⟩ := elemsP_perm R (Quotient.exact h1).symm hel
+    cases zs' with
+    | nil => exact Quotient.sound hp.symm
+    | cons _ _ => exact hel'.elim
+  · rintro rfl
+    exact ⟨[], [], rfl, rfl, trivial⟩
+
+/-- **`[nil,snag]` IS STRICTLY NATURAL** — the whole algebra, not only its `snag` arm: the source is
+    the coproduct `𝟏 + bag(Job)×Job` read summand by summand, the leaf arm the constant lane at `𝟏`
+    and the pair arm `snag_strictNatural`'s. -/
+public theorem bagAlg_strictNatural :
+    StrictNatural bagRelator
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+      (fun A => bagAlg (Job := A.carrier)) := by
+  intro A B R
+  rw [show (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod bagRelator (Relator.idRelator RelSet.{0}))).map R
+      = sumMap (sumCop (dL Unit) ⟨(Bag A.carrier).carrier × A.carrier⟩)
+          (sumCop (dL Unit) ⟨(Bag B.carrier).carrier × B.carrier⟩)
+          (𝟙 (dL Unit)) (rprodMap (bagRel R) R) from prodMap_eq_rprodMap _ _ ▸ rfl]
+  apply hom_ext
+  intro u z
+  constructor
+  · rintro ⟨w, hw, rfl⟩
+    refine ⟨bagAlgFn u, rfl, ?_⟩
+    cases hw with
+    | inl h =>
+      obtain ⟨d, rfl, d', _, rfl⟩ := h
+      exact (bagP_nil R nilBag).mpr rfl
+    | inr h =>
+      obtain ⟨p, rfl, q, hq, rfl⟩ := h
+      exact (bagP_snag R p.1 p.2 _).mpr ⟨q.1, q.2, hq.1, hq.2, rfl⟩
+  · rintro ⟨x, rfl, hb⟩
+    cases u with
+    | inl d =>
+      obtain rfl := (bagP_nil R z).mp hb
+      exact ⟨Sum.inl d, Or.inl ⟨d, rfl, d, rfl, rfl⟩, rfl⟩
+    | inr p =>
+      obtain ⟨v, k, hb', hR, rfl⟩ := (bagP_snag R p.1 p.2 z).mp hb
+      exact ⟨Sum.inr (v, k), Or.inr ⟨p, rfl, (v, k), ⟨hb', hR⟩, rfl⟩, rfl⟩
+
+/-- `[nil,snag]°`, the bead the tardy picture carries: `Rel(Set)` is tabular, so both lanes preserve
+    `°` and the square turns round. -/
+public theorem bagAlg_recip_strictNatural :
+    StrictNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+      bagRelator
+      (fun A => (bagAlg (Job := A.carrier))°) :=
+  strictNatural_recip (F := bagRelator)
+    (G := Relator.sum (Relator.const (dL Unit))
+      (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+    (Relator.preservesRecip_of_tabular _) (Relator.preservesRecip_of_tabular _)
+    bagAlg_strictNatural
+
 /-- The elementwise lifting on a schedule IS the elementwise lifting on its list of jobs. -/
 public theorem elemsP_blist {A B : Type} (R : dE A ⟶ dE B) :
     ∀ {s : SnocList Unit A} {t : SnocList Unit B}, slistP R s t → elemsP R (blist s) (blist t)

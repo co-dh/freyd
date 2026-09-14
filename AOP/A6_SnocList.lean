@@ -457,6 +457,50 @@ public theorem snoc_recip_strictNatural :
   strictNatural_recip (Relator.preservesRecip_of_tabular _)
     (Relator.preservesRecip_of_tabular _) snoc_strictNatural
 
+/-- **`[nil,snoc]` IS STRICTLY NATURAL** — the whole initial algebra, not only its `snoc` arm.  The
+    source is the coproduct `𝟏 + [A]×A` read summand by summand: the leaf arm is the constant lane
+    at `𝟏`, which both sides carry across untouched, and the pair arm is `snoc_strictNatural`'s. -/
+public theorem snocAlg_strictNatural :
+    StrictNatural (snocRelator L)
+      (Relator.sum (Relator.const (dL L))
+        (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0})))
+      (fun A => graph (con (L := L) (E := A.carrier))) := by
+  intro A B R
+  rw [show (Relator.sum (Relator.const (dL L))
+        (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0}))).map R
+      = sumMap (sumCop (dL L) ⟨(dSL L A.carrier).carrier × A.carrier⟩)
+          (sumCop (dL L) ⟨(dSL L B.carrier).carrier × B.carrier⟩)
+          (𝟙 (dL L)) (rprodMap (slist R) R) from prodMap_eq_rprodMap _ _ ▸ rfl]
+  apply hom_ext
+  intro u y
+  constructor
+  · rintro ⟨w, hw, rfl⟩
+    refine ⟨con u, rfl, ?_⟩
+    cases hw with
+    | inl h => obtain ⟨d, rfl, d', hd, rfl⟩ := h; exact hd
+    | inr h => obtain ⟨p, rfl, q, hq, rfl⟩ := h; exact ⟨hq.1, hq.2⟩
+  · rintro ⟨x, rfl, hx⟩
+    cases u with
+    | inl d =>
+      cases y with
+      | wrap d' => exact ⟨Sum.inl d', Or.inl ⟨d, rfl, d', hx, rfl⟩, rfl⟩
+      | snoc _ _ => exact hx.elim
+    | inr p =>
+      cases y with
+      | wrap _ => exact hx.elim
+      | snoc y b => exact ⟨Sum.inr (y, b), Or.inr ⟨p, rfl, (y, b), ⟨hx.1, hx.2⟩, rfl⟩, rfl⟩
+
+/-- `[nil,snoc]°`, the bead the §10 pictures carry: both lanes preserve `°` on a tabular allegory,
+    so the square turns round. -/
+public theorem snocAlg_recip_strictNatural :
+    StrictNatural
+      (Relator.sum (Relator.const (dL L))
+        (Relator.prod (snocRelator L) (Relator.idRelator RelSet.{0})))
+      (snocRelator L)
+      (fun A => (graph (con (L := L) (E := A.carrier)))°) :=
+  strictNatural_recip (Relator.preservesRecip_of_tabular _)
+    (Relator.preservesRecip_of_tabular _) snocAlg_strictNatural
+
 -- printing-only unexpanders: the note's spelling, the same ones `AOP.A6_ConsList` gives the cons
 -- list.  A snoc list IS a list — the note writes `[Char]`, `[Code]`, `[Job]` — and which leaf type
 -- it is built over is the datatype's parameter, not part of the object's name.  On the TYPE FORMER,
