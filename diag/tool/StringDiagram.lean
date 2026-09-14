@@ -458,6 +458,12 @@ def natLines (ps : Array Diagram) : MetaM String := do
       throwError "the bead `{r.label}` is a family whose ends no lane spells, so nothing was searched \
         and it would draw as a spider that never looked: extend `relatorOfObj` (`ExprReader.lean`) \
         to read the end it refused"
+    -- The spider is fatal too: a family the environment neither proves nor refutes is a claim nobody
+    -- checked, and a picture that exits 0 with one is how `cons` and `moves` went unproved for weeks.
+    if word == "spider" then
+      throwError "the bead `{r.label}` is a family and the environment proves neither its naturality \
+        nor a refutation: state `StrictNatural`/`LaxNatural`/`OplaxNatural` or `¬ LaxNatural` at the \
+        spelling the line `the naturality search for … stopped on …` printed, then regenerate"
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
