@@ -812,4 +812,141 @@ public theorem minlist_R_laxNatural :
   rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]
   exact hleast v ((clMem_iff_inlistP _ _).mpr hv)
 
+/-! ## The two thinning beads are not even lax natural
+
+  `V` orders the two strings by SUFFIX, and a suffix is a claim about the CHARACTERS that an
+  alphabet map need not reflect.  Over `Bool` `[false]` is no suffix of `[true,true]`, so the two
+  candidates are incomparable and a thinning must keep both; over `Unit` their images `[()]` and
+  `[(),()]` ARE comparable and a thinning drops the longer.  So the left side of the square thins
+  the IMAGE and reaches a one-element set, while the right side thins first, keeps both, and its
+  image has two members. -/
+
+/-- The alphabet map that identifies every character. -/
+@[expose] public def toU : dE Bool ⟶ dE Unit := graph (fun _ : Bool => ())
+
+/-- `[false]`, and `[true,true]`, of which it is no suffix. -/
+@[expose] public def shortB : ConsList Unit Bool := ConsList.cons false (ConsList.wrap ())
+
+@[expose] public def longB : ConsList Unit Bool :=
+  ConsList.cons true (ConsList.cons true (ConsList.wrap ()))
+
+/-- Their `toU`-images: `[()]` IS a suffix of `[(),()]`. -/
+@[expose] public def shortU : ConsList Unit Unit := ConsList.cons () (ConsList.wrap ())
+
+@[expose] public def longU : ConsList Unit Unit :=
+  ConsList.cons () (ConsList.cons () (ConsList.wrap ()))
+
+/-- A candidate decomposition: one `del`, the given first string, the second string empty. -/
+@[expose] public def cand (a : Char) (xs : ConsList Unit Char) : Op Char × (dPair Char).carrier :=
+  (Op.del a, (xs, ConsList.wrap ()))
+
+/-- `V` pointwise: each string of `p` is a suffix of the corresponding string of `q`. -/
+public theorem V_apply (p q : (dPair Char).carrier) :
+    V Char p q ↔ suffixP p.1 q.1 ∧ suffixP p.2 q.2 := Iff.rfl
+
+/-- `Op×([Char]×[Char])`'s action pointwise, the lane `edit-branch`'s thinning bead runs on. -/
+public theorem stepF_apply {x y : RelSet.{0}} (S : x ⟶ y)
+    (p : Op x.carrier × (dPair x.carrier).carrier)
+    (q : Op y.carrier × (dPair y.carrier).carrier) :
+    (Relator.prod opRelator (Relator.prod listRelator listRelator)).map S p q
+      ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
+  simp [Relator.prod, prodMap, RelProd.pair, instHasRelProd, opRelator, listRelator,
+    opRel, list, graph]
+
+/-- `F(Op(S),S×S)`'s action on the `step` summand, the lane `edit-laws`' thinning bead runs on. -/
+public theorem pairF_apply_inr {x y : RelSet.{0}} (S : x ⟶ y)
+    (p : Op x.carrier × (dPair x.carrier).carrier)
+    (q : Op y.carrier × (dPair y.carrier).carrier) :
+    pairF.map S (Sum.inr p) (Sum.inr q)
+      ↔ opP S p.1 q.1 ∧ listP S p.2.1 q.2.1 ∧ listP S p.2.2 q.2.2 := by
+  rw [pairF_map]
+  simp [Fbimap, rprodMap, opRel, list]
+
+public theorem toU_short : listP toU shortB shortU := ⟨rfl, trivial⟩
+
+public theorem toU_long : listP toU longB longU := ⟨rfl, rfl, trivial⟩
+
+/-- `[true,true]` has no `list(toU)`-image of length one. -/
+public theorem toU_long_not_short : ¬ listP toU longB shortU := fun h => h.2.elim
+
+/-- `[false]` is no suffix of `[true,true]`: it is neither the whole list nor a suffix of `[true]`. -/
+public theorem short_not_suffix_long : ¬ suffixP shortB longB := by
+  simp [suffixP, shortB, longB]
+
+/-- `[()]` IS a suffix of `[(),()]` — the thinning the alphabet map opens up. -/
+public theorem shortU_suffix_longU : suffixP shortU longU := Or.inr (Or.inl rfl)
+
+/-- **`thin(Q)` is not even lax natural**: `E(F(Op(S),S×S))thin(Q) ⊑ thin(Q)E(F(Op(S),S×S))`
+    fails at `S := toU` on the set of the two `del` candidates.  Over `Bool` neither `V`-dominates
+    the other, so the right side keeps both and its image has two members; over `Unit` the shorter
+    dominates, so the left side reaches the one-element set. -/
+public theorem thin_Q_not_lax_natural :
+    ¬ LaxNatural (pairF.comp powerRelator) (pairF.comp powerRelator)
+      (fun a : RelSet.{0} => thinRel (Q a.carrier)) := by
+  intro hlax
+  obtain ⟨W, hthin, hpow⟩ :=
+    le_iff.mp (hlax toU)
+      (fun z => z = Sum.inr (cand true shortB) ∨ z = Sum.inr (cand true longB))
+      (fun z => z = Sum.inr (cand () shortU))
+      ⟨fun z => z = Sum.inr (cand () shortU) ∨ z = Sum.inr (cand () longU),
+        (powerRel_apply _ _ _).mpr
+          ⟨fun p hp => by
+              rcases hp with rfl | rfl
+              · exact ⟨Sum.inr (cand () shortU), (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
+              · exact ⟨Sum.inr (cand () longU), (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
+           fun q hq => by
+              rcases hq with rfl | rfl
+              · exact ⟨Sum.inr (cand true shortB), Or.inl rfl, (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
+              · exact ⟨Sum.inr (cand true longB), Or.inr rfl, (pairF_apply_inr _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
+        (thinRel_pt _ _ _).mpr
+          ⟨fun y hy => Or.inl hy,
+           fun z hz => by
+             rcases hz with rfl | rfl
+             · exact ⟨Sum.inr (cand () shortU), ⟨suffixP.refl _, rfl⟩, rfl⟩
+             · exact ⟨Sum.inr (cand () shortU), ⟨shortU_suffix_longU, rfl⟩, rfl⟩⟩⟩
+  obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp hthin
+  obtain ⟨w, hwQ, hwW⟩ := hdom (Sum.inr (cand true longB)) (Or.inr rfl)
+  obtain ⟨hfwd, -⟩ := (powerRel_apply _ _ _).mp hpow
+  rcases hsub w hwW with rfl | rfl
+  · exact short_not_suffix_long (hwQ : V Bool _ _).1
+  · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
+    exact toU_long_not_short ((pairF_apply_inr _ _ _).mp hq).2.1
+
+/-- **`thin(⊤×V)` is not even lax natural** — `edit-branch`'s thinning bead, at the same witness:
+    the operations are `⊤`-comparable either way, so the whole verdict rests on `V`, which is the
+    one of `thin(Q)` with the sum injection dropped. -/
+public theorem thin_UV_not_lax_natural :
+    ¬ LaxNatural ((Relator.prod opRelator (Relator.prod listRelator listRelator)).comp powerRelator)
+      ((Relator.prod opRelator (Relator.prod listRelator listRelator)).comp powerRelator)
+      (fun a : RelSet.{0} =>
+        thinRel (rprodMap (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier))) := by
+  intro hlax
+  obtain ⟨W, hthin, hpow⟩ :=
+    le_iff.mp (hlax toU)
+      (fun z => z = cand true shortB ∨ z = cand true longB)
+      (fun z => z = cand () shortU)
+      ⟨fun z => z = cand () shortU ∨ z = cand () longU,
+        (powerRel_apply _ _ _).mpr
+          ⟨fun p hp => by
+              rcases hp with rfl | rfl
+              · exact ⟨cand () shortU, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, trivial⟩, Or.inl rfl⟩
+              · exact ⟨cand () longU, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, trivial⟩, Or.inr rfl⟩,
+           fun q hq => by
+              rcases hq with rfl | rfl
+              · exact ⟨cand true shortB, Or.inl rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_short, trivial⟩⟩
+              · exact ⟨cand true longB, Or.inr rfl, (stepF_apply _ _ _).mpr ⟨rfl, toU_long, trivial⟩⟩⟩,
+        (thinRel_pt _ _ _).mpr
+          ⟨fun y hy => Or.inl hy,
+           fun z hz => by
+             rcases hz with rfl | rfl
+             · exact ⟨cand () shortU, ⟨topMor_apply _ _, suffixP.refl _, rfl⟩, rfl⟩
+             · exact ⟨cand () shortU, ⟨topMor_apply _ _, shortU_suffix_longU, rfl⟩, rfl⟩⟩⟩
+  obtain ⟨hsub, hdom⟩ := (thinRel_pt _ _ _).mp hthin
+  obtain ⟨w, hwQ, hwW⟩ := hdom (cand true longB) (Or.inr rfl)
+  obtain ⟨hfwd, -⟩ := (powerRel_apply _ _ _).mp hpow
+  rcases hsub w hwW with rfl | rfl
+  · exact short_not_suffix_long hwQ.2.1
+  · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
+    exact toU_long_not_short ((stepF_apply _ _ _).mp hq).2.1
+
 end Freyd.Alg.RelSet.Edit

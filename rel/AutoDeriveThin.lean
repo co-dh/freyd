@@ -58,12 +58,6 @@ theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow 
     Λ W u G ↔ G = fun y => W u y := by
   rw [Λ_eq_classifier]; exact Iff.rfl
 
-/-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
-    and every member of `P` has a `Q`-lower bound in `Y`.  The driver runs it at `Q := Qm°`,
-    so the kept `w` satisfies `Qm z w` — "`w` at least as good as `z`", the min convention. -/
-theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (pow α).carrier) :
-    thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
-
 /-! ## The generic Pareto prune on candidate lists
 
   `thinList q` implements §8.3's `thinlist`: insert each candidate, dropping it if a kept one
