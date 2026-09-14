@@ -97,6 +97,7 @@ theorem Salg_inr (p : A → Bool) (a : A) (c ws : ConsList Unit A) :
 public theorem filter_alg_comm (p : A → Bool) :
     (initial Unit A).α ≫ (subseq ≫ listP p)
       = (F Unit A).map (subseq ≫ listP p) ≫ Salg p := by
+  rw [listP_cata]
   refine (cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩
   · constructor
     · rintro ⟨ys, hs, hl⟩
@@ -383,14 +384,14 @@ theorem subseqP_eq_of_clen_le : ∀ {x y : ConsList Unit A}, subseqP x y → cle
 /-- Achievability: `filtCL p u` is itself a `p`-passing subsequence of `u`. -/
 public theorem filt_sound (p : A → Bool) :
     ∀ u : ConsList Unit A, (subseq ≫ listP p) u (filtCL p u)
-  | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listPAlg_inl p () _).mpr (filtCL_wrap p D)⟩
+  | ConsList.wrap D => ⟨ConsList.wrap (), subseqP.nil _, (listP_wrap p () _).mpr (filtCL_wrap p D)⟩
   | ConsList.cons a t => by
       obtain ⟨ys, hs, hl⟩ := filt_sound p t
       rw [filtCL_cons]
       cases hpa : p a with
       | true =>
-          refine ⟨ConsList.cons a ys, Or.inl ⟨rfl, hs⟩, filtCL p t, hl, ?_⟩
-          exact (listPAlg_inr p a (filtCL p t) _).mpr ⟨hpa, fStep_pos hpa _⟩
+          exact ⟨ConsList.cons a ys, Or.inl ⟨rfl, hs⟩,
+            (listP_cons p a ys _).mpr ⟨hpa, filtCL p t, hl, fStep_pos hpa _⟩⟩
       | false =>
           exact ⟨ys, subseqP.weaken hs, by rw [fStep_neg hpa]; exact hl⟩
 
@@ -401,25 +402,24 @@ public theorem filt_best (p : A → Bool) :
   | ConsList.wrap D, ws, ⟨ys, hs, hl⟩ => by
       cases ys with
       | wrap v =>
-          have hws : ws = ConsList.wrap () := (listPAlg_inl p v ws).mp hl
+          have hws : ws = ConsList.wrap () := (listP_wrap p v ws).mp hl
           subst hws; exact subseqP.nil _
       | cons b z => exact hs.elim
   | ConsList.cons a t, ws, ⟨ys, hs, hl⟩ => by
       rw [filtCL_cons]
       cases ys with
       | wrap v =>
-          have hws : ws = ConsList.wrap () := (listPAlg_inl p v ws).mp hl
+          have hws : ws = ConsList.wrap () := (listP_wrap p v ws).mp hl
           subst hws; exact subseqP.nil _
       | cons b z =>
-          obtain ⟨y, hzy, hstep⟩ := hl
-          obtain ⟨hpb, hws⟩ := (listPAlg_inr p b y ws).mp hstep
+          obtain ⟨hpb, y, hzy, hws⟩ := (listP_cons p b z ws).mp hl
           subst hws
           rcases hs with ⟨hba, hzt⟩ | hsub
           · rw [fStep_pos (hba ▸ hpb : p a = true)]
             exact Or.inl ⟨hba, filt_best p t y ⟨z, hzt, hzy⟩⟩
           · have htail : subseqP (ConsList.cons b y) (filtCL p t) :=
-              filt_best p t (ConsList.cons b y) ⟨ConsList.cons b z, hsub, y, hzy,
-                (listPAlg_inr p b y _).mpr ⟨hpb, rfl⟩⟩
+              filt_best p t (ConsList.cons b y) ⟨ConsList.cons b z, hsub,
+                (listP_cons p b z _).mpr ⟨hpb, y, hzy, rfl⟩⟩
             cases hpa : p a with
             | true => rw [fStep_pos hpa]; exact Or.inr htail
             | false => rw [fStep_neg hpa]; exact htail

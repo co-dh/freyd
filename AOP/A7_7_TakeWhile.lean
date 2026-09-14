@@ -212,8 +212,14 @@ public theorem lenLE_recip_trans : (lenLE (A := A))° ≫ lenLE° ⊑ lenLE° :=
     (F Unit A).obj (dList A) ⟶ dList A :=
   junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (pcons p)
 
-/-- `list(p) ≜ ⦇[nil, (p×𝟙) cons]⦈` — the coreflexive "every element passes `p`" (not entire). -/
-@[expose] public def listP (p : A → Bool) : dList A ⟶ dList A := cataR (listPAlg p)
+/-- `list(p)` — the relator `list` AT the coreflexive `p`, which is what the name says and what a
+    picture must draw: `p` on the object wire, `list` running past it untouched. -/
+@[expose] public def listP (p : A → Bool) : dList A ⟶ dList A := ListRel.list (pcor p)
+
+/-- `list(p) = ⦇[nil, (p×𝟙) cons]⦈` — `list_cata` at the coreflexive; every §7.7 proof below reads
+    `list(p)` through this fold, so it is rewritten in before the algebra is destructured. -/
+public theorem listP_cata (p : A → Bool) : listP p = cataR (listPAlg p) := by
+  rw [cataR_eq_relCata]; unfold listP listPAlg pcons; exact ListRel.list_cata (pcor p)
 
 /-- `⊸ nil : A×[A] ⟶ [A]` — discard the pair, return `nil`; `S`'s `stop` operand. -/
 @[expose] public def discNil : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
@@ -295,6 +301,7 @@ theorem prefixP_eq_of_clen : ∀ {x y v : ConsList Unit A},
     `p`-passing prefix of `x`. -/
 theorem spec_iff (p : A → Bool) (u : ConsList Unit A) (ws : ConsList Unit A) :
     (prefixR ≫ listP p) u ws ↔ prefixP ws u ∧ AllP p ws := by
+  rw [listP_cata]
   induction u generalizing ws with
   | wrap D =>
       constructor
@@ -341,13 +348,15 @@ theorem spec_iff (p : A → Bool) (u : ConsList Unit A) (ws : ConsList Unit A) :
 
 /-- `list(p)` at `nil` is `nil` — the fold's computation rule on the `wrap` summand. -/
 public theorem listP_wrap (p : A → Bool) (D : Unit) (ws : ConsList Unit A) :
-    listP p (ConsList.wrap D) ws ↔ ws = ConsList.wrap () := listPAlg_inl p D ws
+    listP p (ConsList.wrap D) ws ↔ ws = ConsList.wrap () := by
+  rw [listP_cata]; exact listPAlg_inl p D ws
 
 /-- `list(p)` at a `cons`: the head must pass `p`, and what is left is a `list(p)` of the tail —
     the fold's computation rule on the `cons` summand. -/
 public theorem listP_cons (p : A → Bool) (a : A) (t : ConsList Unit A) (ws : ConsList Unit A) :
     listP p (ConsList.cons a t) ws
       ↔ p a = true ∧ ∃ w', listP p t w' ∧ ws = ConsList.cons a w' := by
+  rw [listP_cata]
   constructor
   · rintro ⟨w', hw', hstep⟩
     obtain ⟨hp, hws⟩ := (listPAlg_inr p a w' ws).mp hstep
@@ -473,6 +482,7 @@ public theorem takewhile_alg_step3 (p : A → Bool) :
 public theorem takewhile_alg_step4 (p : A → Bool) :
     prefConsAlg p (prefixR ≫ listP p)
       = (F Unit A).map (prefixR ≫ listP p) ≫ Salg p := by
+  rw [listP_cata]
   apply hom_ext; intro u ws
   cases u with
   | inl D =>
