@@ -1436,27 +1436,56 @@ partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
   | .letE _ t v b _ => consts b (consts v (consts t acc))
   | _ => acc
 
+/-- The CATEGORIES a family is indexed over: the binder type of each leading lambda, up to the first
+    that is not closed — a domain with a loose bvar is no type to compare an argument against. -/
+partial def objectTypes : Expr → Array Expr → Array Expr
+  | .lam _ t b _, acc => if t.hasLooseBVars then acc else objectTypes b (acc.push t)
+  | _, acc => acc
+
+/-- Is this argument an OBJECT — a term of one of the categories the family is indexed over? -/
+def isObject (objTys : Array Expr) (e : Expr) : MetaM Bool := do
+  let t ← Meta.inferType e
+  objTys.anyM fun o => Meta.withNewMCtxDepth (Meta.isDefEq t o)
+
 /-- The same, but only where the family SPEAKS: the head of each application spine and its EXPLICIT
-    arguments.  An implicit or instance argument is the elaborator's spelling of something the
-    statement is general in — the panel wrote `thinRel`'s object `(F Unit (Op a.carrier)).obj
-    (dPair a.carrier)` where the theorem's elaboration wrote `pairF.obj a`, one object, two
-    spellings — so requiring it drops the very declaration that proves or refutes the family. -/
-partial def explicitConsts (e : Expr) (acc : NameSet := {}) : MetaM NameSet := do
+    arguments, minus the OBJECTS among them — an argument whose type is one of `objTys`.  A
+    naturality theorem is GENERAL IN ITS OBJECTS, so an object's spelling is the unifier's business
+    and never the filter's: the panel wrote `thinRel`'s object `(F Unit (Op a.carrier)).obj
+    (dPair a.carrier)` where the theorem's elaboration wrote `pairF.obj a`, one object and two
+    spellings.  Explicit-or-implicit was only a proxy for that, and a bridge breaks it —
+    `prodMap_eq_rprodMap` rewrites `rprodMap R S` into `prodMap (relProd A B) … R S`, where the
+    objects `rprodMap` left implicit come back as explicit arguments of `relProd`.
+    The binders are opened as FREE VARIABLES because `isObject` infers a type, which a loose bvar
+    has none of; the binder's own fvar carries no constants, so nothing is lost. -/
+partial def explicitConsts (objTys : Array Expr) (e : Expr) (acc : NameSet := {}) :
+    MetaM NameSet := do
   match e with
-  | .lam _ t b _ | .forallE _ t b _ => explicitConsts b (← explicitConsts t acc)
-  | .mdata _ b | .proj _ _ b => explicitConsts b acc
-  | .letE _ t v b _ => explicitConsts b (← explicitConsts v (← explicitConsts t acc))
+  | .lam .. => Meta.lambdaTelescope e fun xs b => do
+    let mut out := acc
+    for x in xs do out ← explicitConsts objTys (← Meta.inferType x) out
+    explicitConsts objTys b out
+  | .forallE .. => Meta.forallTelescope e fun xs b => do
+    let mut out := acc
+    for x in xs do out ← explicitConsts objTys (← Meta.inferType x) out
+    explicitConsts objTys b out
+  | .mdata _ b | .proj _ _ b => explicitConsts objTys b acc
+  -- The body is INSTANTIATED rather than walked under its binder: `isObject` cannot infer the type
+  -- of a term still carrying the let's loose bvar.
+  | .letE _ t v b _ =>
+    let out ← explicitConsts objTys v (← explicitConsts objTys t acc)
+    explicitConsts objTys (b.instantiate1 v) out
   | .const n _ => return acc.insert n
   | .app .. =>
     let f := e.getAppFn
     let args := e.getAppArgs
     let info ← Meta.getFunInfoNArgs f args.size
-    let mut out ← explicitConsts f acc
+    let mut out ← explicitConsts objTys f acc
     for i in [0 : args.size] do
       -- A position the function's type does not reach is kept: an unknown binder is not an excuse
       -- to drop a name the statement does write.
       if (info.paramInfo[i]?.map (·.binderInfo.isExplicit)).getD true then
-        out ← explicitConsts args[i]! out
+        unless ← isObject objTys args[i]! do
+          out ← explicitConsts objTys args[i]! out
     return out
   | _ => return acc
 
@@ -1640,11 +1669,11 @@ def bridgeAliases : MetaM (Std.HashMap Name (Array Name)) := do
     path typeclass resolution took to the region's structure and a theorem's context takes another,
     so requiring either is requiring what no theorem can have.
 
-    KEEPING THE OBJECTS IS WHAT MAKES THE SEARCH FINITE IN PRACTICE.  Narrowing this to the ARROWS
-    of the family — dropping the objects they are taken at, which is what a naturality theorem is
-    general in — is the reading the statement wants, and it opens the square search to every
-    equation of the environment: on `prefix_cancel.lhs` that reaches the 12 GB the exporter runs
-    under (`scripts/cap`) and the process dies.
+    THE OBJECTS GO, THE ARROWS STAY.  A naturality theorem is general in the objects its family is
+    taken at, so an object's spelling is the unifier's business and never the filter's; the arrows
+    and relators the family names are what keep the scan short.  Dropping MORE than the objects is
+    what opened the square search to every equation of the environment: on `prefix_cancel.lhs` that
+    reaches the 12 GB the exporter runs under (`scripts/cap`) and the process dies.
 
     WHAT IS DROPPED IS DECIDED BY THE CONSTANT'S OWN CONCLUSION, NOT BY ITS KIND.  Dropping every
     PROJECTION dropped the field that names the arrow along with the path: `∋` is the three
@@ -1656,12 +1685,13 @@ def bridgeAliases : MetaM (Std.HashMap Name (Array Name)) := do
     A conclusion that is a CLASS is the resolution path, which each declaration takes its own way;
     a conclusion that is no constant at all is a type former, carried in types a statement never
     prints.  Everything else a theorem can be asked for by name.  Read off the SPINE
-    (`explicitConsts`): an implicit object the panel and the theorem spell differently is the
-    unifier's business, and requiring it drops the declaration that settles the family. -/
+    (`explicitConsts`), whose object rule the categories the family is indexed over decide: the
+    binder type of each leading lambda of the bridged family. -/
 def mustOfFamily (br : Meta.Simp.Context) (φ : Expr) : MetaM NameSet := do
   let env ← getEnv
+  let bφ := (← bridge br φ).expr
   let mut out : NameSet := {}
-  for n in (← explicitConsts (← bridge br φ).expr).toList do
+  for n in (← explicitConsts (objectTypes bφ #[]) bφ).toList do
     if let some ci := env.find? n then
       let h := concHead ci.type
       if h.isAnonymous || Lean.isClass env h then continue
