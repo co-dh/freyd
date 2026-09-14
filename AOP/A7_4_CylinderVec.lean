@@ -184,10 +184,16 @@ public theorem cons_genFold {n m : Nat} {A : Type} :
   genFold m ≫ concat
 
 /-- **`gen` is natural**: acting on the squares before generating is acting on them after.  Only
-    `cons` needs an argument — every other bead of `gen` is natural by `rfl`. -/
-public theorem gen_natural {n p m : Nat} (f : A ⟶ B) :
-    Prod.map ((Vec n).map f) ((Vec n).map ((Vec p).map ((Vec m).map f))) ≫ gen
-      = gen ≫ (Vec n).map ((Vec (3 * p)).map ((Vec (m + 1)).map f)) := by
+    `cons` needs an argument — every other bead of `gen` is natural by `rfl`.
+
+    THE INDEX IS THE FOLD'S OWN, `p = 3^m`, and that is what makes this the square the picture
+    shows: the bead of `cons_genFold`'s right side is `gen` at `p = pow3 m`, so the family names
+    `pow3` and a candidate general in `p` does not — the exporter asks for a declaration whose
+    statement mentions everything the family mentions, and a statement with no `pow3` in it is
+    never a candidate.  The argument below does not use the index. -/
+public theorem gen_natural {n m j : Nat} (f : A ⟶ B) :
+    Prod.map ((Vec n).map f) ((Vec n).map ((Vec (pow3 j)).map ((Vec m).map f))) ≫ gen
+      = gen ≫ (Vec n).map ((Vec (3 * pow3 j)).map ((Vec (m + 1)).map f)) := by
   funext q i k
   exact congrFun (cons_natural (m := m) f) (q.1 i, concat (trans (moves q.2) i) k)
 
@@ -210,7 +216,7 @@ public theorem genFold_natural {n : Nat} (f : A ⟶ B) : ∀ m : Nat,
                 (genFold m (fun l => q l.succ))) := by rw [ih]
         _ = (genFold (m + 1)
               ≫ (Vec n).map ((Vec (pow3 (m + 1))).map ((Vec (m + 1 + 1)).map f))) q :=
-              congrFun (gen_natural (n := n) (p := pow3 m) (m := m + 1) f)
+              congrFun (gen_natural (n := n) (j := m) (m := m + 1) f)
                 (q 0, genFold m (fun l => q l.succ))
 
 /-- **`paths` is natural**: `Vec(m+1)(Vec(n)(f)) paths = paths Vec(n3^m)(Vec(m+1)(f))` — acting on
