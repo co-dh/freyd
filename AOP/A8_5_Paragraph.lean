@@ -51,11 +51,27 @@ variable {Word : Type} {len : Word → Int} {w : Int}
 /-! ## `para-defn` -/
 
 /-- `Line = list⁺ Word`. -/
-@[expose] public abbrev Line (Word : Type) : Type := ConsList Word Word
+@[expose] public abbrev Line (Word : Type) : Type := NEList Word
 /-- `Para = list⁺ Line`. -/
-@[expose] public abbrev Para (Word : Type) : Type := ConsList (Line Word) (Line Word)
+@[expose] public abbrev Para (Word : Type) : Type := NEList (Line Word)
 /-- The object carrying `Para`. -/
-@[expose] public abbrev dPara (Word : Type) : RelSet.{0} := dCL (Line Word) (Line Word)
+@[expose] public abbrev dPara (Word : Type) : RelSet.{0} := dNE (Line Word)
+
+-- A LINE AND A PARAGRAPH ARE THE ONE NON-EMPTY-LIST OBJECT, so the picture writes the note's
+-- `list⁺(list⁺(Word))` and not this section's abbreviation for it: an abbreviation keeps its own
+-- name in the term, so `AOP.A5_6_ListCombinators`'s `dNE` clause never sees it.
+open Lean PrettyPrinter in
+@[app_unexpander Line] public meta def unexpandLine : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) $W)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Para] public meta def unexpandPara : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) ($(mkIdent (Name.mkSimple "list⁺")) $W))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander dPara] public meta def unexpandDPara : Unexpander
+  | `($_ $W) => `($(mkIdent (Name.mkSimple "list⁺")) ($(mkIdent (Name.mkSimple "list⁺")) $W))
+  | _ => throw ()
 
 /-- **para-defn**: `width ≜ ⦇[length,(length×𝟙) plus succ]⦈` — the words' lengths plus one
     space between neighbours. -/
@@ -70,12 +86,12 @@ variable {Word : Type} {len : Word → Int} {w : Int}
 
 /-- **para-defn**: `glue (a,xs)=[[a]⧺head xs]⧺tail xs` — put the word at the front of the
     first line. -/
-@[expose] public def glueFn (a : Word) : Para Word → Para Word
+@[expose] public def glue (a : Word) : Para Word → Para Word
   | ConsList.wrap l => ConsList.wrap (ConsList.cons a l)
   | ConsList.cons l p => ConsList.cons (ConsList.cons a l) p
 
 public theorem headLine_glue (a : Word) (p : Para Word) :
-    headLine (glueFn a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
+    headLine (glue a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
 
 /-- **para-defn**: `sqr`, the summand of `collect ≜ list(sqr) sum`. -/
 @[expose] public def sqr (n : Int) : Int := n * n
@@ -105,19 +121,21 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
   | ConsList.wrap l => widthFn len l ≤ w
   | ConsList.cons l p => widthFn len l ≤ w ∧ allFitP len w p
 
+-- The line-length function is the SECTION'S data, not part of the names the note writes
+-- (`fits(w)`, `ok(w)`), so it is an implicit binder supplied by name where a use site pins it.
 /-- **para-defn**: `list⁺(fits w)`, the coreflexive on paragraphs all of whose lines fit. -/
-@[expose] public def allFit (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
+@[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word :=
   fun p q => p = q ∧ allFitP len w p
 
 /-- **para-defn**: `ok w`, the coreflexive on `[x]⧺xs` with `width x ≤ w` — only the FIRST
     line is tested. -/
-@[expose] public def okW (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
+@[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word :=
   fun p q => p = q ∧ widthFn len (headLine p) ≤ w
 
-public theorem allFit_coreflexive : Coreflexive (allFit len w) :=
+public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
-public theorem okW_coreflexive : Coreflexive (okW len w) :=
+public theorem ok_coreflexive : Coreflexive (ok (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-- **para-defn**: `R ≜ (waste w) ≤ (waste w)°`. -/
@@ -171,16 +189,21 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 
 /-! ## The two algebras `[wrap wrap,new]` and `[wrap wrap,glue]` -/
 
+/-- **para-defn**: `new (a,xs)=[[a]]⧺xs` — open a new line for the word.  Named for the same
+    reason `glue` is: it is one arm of the algebra the note draws, and an arm is written by its
+    own name. -/
+@[expose] public def new (a : Word) (p : Para Word) : Para Word := ConsList.cons (ConsList.wrap a) p
+
 /-- **para-defn**: `[wrap wrap,new]` — a single word becomes a one-word paragraph, and
     `new (a,xs)=[[a]]⧺xs` opens a new line. -/
 @[expose] public def newAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
   | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => ConsList.cons (ConsList.wrap q.1) q.2
+  | Sum.inr q => new q.1 q.2
 
 /-- **para-defn**: `[wrap wrap,glue]`. -/
 @[expose] public def glueAlgFn : ((F Word Word).obj (dPara Word)).carrier → Para Word
   | Sum.inl a => ConsList.wrap (ConsList.wrap a)
-  | Sum.inr q => glueFn q.1 q.2
+  | Sum.inr q => glue q.1 q.2
 
 /-- **para-defn**: `partition ≜ ⦇[wrap wrap,new∪glue]⦈` — every way of breaking the words into
     lines. -/
@@ -189,11 +212,136 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 
 @[expose] public def partition : dCL Word Word ⟶ dPara Word := ⦇partAlg⦈
 
+/-! ### `partition`'s computation rules and its naturality square
+
+  The paragraph `partition` is NOT `AOP.A5_6_ListCombinators`'s: that one cuts a possibly-empty
+  list into segments, this one cuts a NON-EMPTY list into non-empty lines, so it is its own arrow
+  and carries its own naturality square. -/
+
+/-- `partition` at a one-word list: the one-line paragraph. -/
+theorem partition_wrap (a : Word) (q : Para Word) :
+    partition (ConsList.wrap a) q ↔ q = ConsList.wrap (ConsList.wrap a) := by
+  unfold partition
+  rw [← cataR_eq_relCata]
+  exact ⟨fun h => h.elim id id, Or.inl⟩
+
+/-- `partition` at a `cons`: partition the tail, then either open a new line or glue. -/
+theorem partition_cons (a : Word) (x : NEList Word) (q : Para Word) :
+    partition (ConsList.cons a x) q ↔ ∃ p, partition x p ∧ (q = new a p ∨ q = glue a p) := by
+  unfold partition
+  rw [← cataR_eq_relCata]
+  all_goals exact Iff.rfl
+
+section Natural
+variable {A B : Type}
+
+/-- `glue` is invisible to the lift: gluing `R`-related words onto `list⁺(list⁺(R))`-related
+    paragraphs leaves them related. -/
+theorem nelistP_glue_of (R : dE A ⟶ dE B) (a : A) (b : B) (p : Para A) (q : Para B)
+    (hab : R a b) (h : nelistP (nelist R) p q) :
+    nelistP (nelist R) (glue a p) (glue b q) := by
+  cases p with
+  | wrap l =>
+      cases q with
+      | wrap m => exact ⟨hab, h⟩
+      | cons m q' => exact False.elim h
+  | cons l p' =>
+      cases q with
+      | wrap m => exact False.elim h
+      | cons m q' => exact ⟨⟨hab, h.1⟩, h.2⟩
+
+/-- A `list⁺(list⁺(R))`-image of a glued paragraph is itself a glue — the lift passes back
+    through `glue`, which only reshapes. -/
+theorem nelistP_glue_split (R : dE A ⟶ dE B) (a : A) (p : Para A) (q : Para B)
+    (h : nelistP (nelist R) (glue a p) q) :
+    ∃ b q', R a b ∧ nelistP (nelist R) p q' ∧ q = glue b q' := by
+  cases p with
+  | wrap l =>
+      cases q with
+      | wrap m =>
+          cases m with
+          | wrap b => exact False.elim h
+          | cons b m' => exact ⟨b, ConsList.wrap m', h.1, h.2, rfl⟩
+      | cons m q' => exact False.elim h
+  | cons l p' =>
+      cases q with
+      | wrap m => exact False.elim h
+      | cons m q' =>
+          cases m with
+          | wrap b => exact False.elim h.1
+          | cons b m' => exact ⟨b, ConsList.cons m' q', h.1.1, ⟨h.1.2, h.2⟩, rfl⟩
+
+/-- **`partition` is STRICTLY natural**: `list⁺(R) partition = partition list⁺(list⁺(R))` —
+    neither `new` nor `glue` looks at a word, so a partition of an `R`-image of a word list is
+    the image of a partition of the list, and conversely. -/
+public theorem partition_natural (R : dE A ⟶ dE B) :
+    nelist R ≫ (partition : dNE B ⟶ dPara B)
+      = (partition : dNE A ⟶ dPara A) ≫ nelist (nelist R) := by
+  apply hom_ext
+  intro x q
+  induction x generalizing q with
+  | wrap a =>
+      constructor
+      · rintro ⟨y, hxy, hyq⟩
+        cases y with
+        | wrap b =>
+            rw [(partition_wrap b q).mp hyq]
+            exact ⟨ConsList.wrap (ConsList.wrap a), (partition_wrap a _).mpr rfl, hxy⟩
+        | cons b y' => exact False.elim hxy
+      · rintro ⟨p, hxp, hpq⟩
+        rw [(partition_wrap a p).mp hxp] at hpq
+        cases q with
+        | wrap m =>
+            cases m with
+            | wrap b => exact ⟨ConsList.wrap b, hpq, (partition_wrap b _).mpr rfl⟩
+            | cons b m' => exact False.elim hpq
+        | cons m q' => exact False.elim hpq
+  | cons a x' ih =>
+      constructor
+      · rintro ⟨y, hxy, hyq⟩
+        cases y with
+        | wrap b => exact False.elim hxy
+        | cons b y' =>
+            obtain ⟨q', hq', harm⟩ := (partition_cons b y' q).mp hyq
+            obtain ⟨p', hp', hp'q'⟩ := (ih q').mp ⟨y', hxy.2, hq'⟩
+            cases harm with
+            | inl h =>
+                subst h
+                exact ⟨new a p', (partition_cons a x' _).mpr ⟨p', hp', Or.inl rfl⟩,
+                  hxy.1, hp'q'⟩
+            | inr h =>
+                subst h
+                exact ⟨glue a p', (partition_cons a x' _).mpr ⟨p', hp', Or.inr rfl⟩,
+                  nelistP_glue_of R a b p' q' hxy.1 hp'q'⟩
+      · rintro ⟨p, hxp, hpq⟩
+        obtain ⟨p', hp', harm⟩ := (partition_cons a x' p).mp hxp
+        cases harm with
+        | inl h =>
+            subst h
+            cases q with
+            | wrap m => exact False.elim hpq
+            | cons m q'' =>
+                cases m with
+                | wrap b =>
+                    obtain ⟨y', hxy', hy'q''⟩ := (ih q'').mpr ⟨p', hp', hpq.2⟩
+                    exact ⟨ConsList.cons b y', ⟨hpq.1, hxy'⟩,
+                      (partition_cons b y' _).mpr ⟨q'', hy'q'', Or.inl rfl⟩⟩
+                | cons b m' => exact False.elim hpq.1
+        | inr h =>
+            subst h
+            obtain ⟨b, q'', hab, hp'q'', hq⟩ := nelistP_glue_split R a p' q hpq
+            subst hq
+            obtain ⟨y', hxy', hy'q''⟩ := (ih q'').mpr ⟨p', hp', hp'q''⟩
+            exact ⟨ConsList.cons b y', ⟨hab, hxy'⟩,
+              (partition_cons b y' _).mpr ⟨q'', hy'q'', Or.inr rfl⟩⟩
+
+end Natural
+
 /-- **para-defn**: the specification's algebra `S ≜ [wrap wrap,new] ∪ ([wrap wrap,glue](ok w))`,
     the note's `ab-split` row at `p₁ ≜ 𝟙`. -/
 @[expose] public def Salg (len : Word → Int) (w : Int) :
     (F Word Word).obj (dPara Word) ⟶ dPara Word :=
-  graph (newAlgFn (Word := Word)) ∪ (graph glueAlgFn ≫ okW len w)
+  graph (newAlgFn (Word := Word)) ∪ (graph glueAlgFn ≫ ok (len := len) w)
 
 /-! ## `para-mono` -/
 
@@ -201,8 +349,8 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
     the step that lets the fusion below test only the FIRST line.  Needs `0 ≤ len a`: a glued
     line is wider than the line it was glued to. -/
 public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para Word) :
-    allFitP len w (glueFn a p)
-      ↔ allFitP len w p ∧ widthFn len (headLine (glueFn a p)) ≤ w := by
+    allFitP len w (glue a p)
+      ↔ allFitP len w p ∧ widthFn len (headLine (glue a p)) ≤ w := by
   have hgrow : ∀ l : Line Word, widthFn len l ≤ widthFn len (ConsList.cons a l) := by
     intro l
     have := hlen a
@@ -250,7 +398,7 @@ public theorem para_mono_new :
 /-- **para-mono**, second row: `(𝟙×Q)(glue (ok w)) ⊑ glue (ok w)Q` — `Q` pins the first line,
     which is the only thing `glue` changes and the only thing `waste` reads about it. -/
 public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
-    MonotonicAlg (F := F Word Word) (graph glueAlgFn ≫ okW len w) (Q len w) :=
+    MonotonicAlg (F := F Word Word) (graph glueAlgFn ≫ ok (len := len) w) (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, s, hs, hsr, hok⟩ := h
     obtain rfl : s = glueAlgFn v := hs
@@ -274,14 +422,14 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
         have hwaste : wasteFn len w x ≤ wasteFn len w y := hQ.1
         have hhead : headLine x = headLine y := hQ.2
         -- the two glued paragraphs have the same first line, so `ok w` transfers
-        have hokx : widthFn len (headLine (glueFn a x)) ≤ w := by
+        have hokx : widthFn len (headLine (glue a x)) ≤ w := by
           rw [headLine_glue, hhead, ← headLine_glue a y]
           exact hok
-        refine ⟨glueFn a x, ⟨glueFn a x, rfl, rfl, hokx⟩, ?_, ?_⟩
+        refine ⟨glue a x, ⟨glue a x, rfl, rfl, hokx⟩, ?_, ?_⟩
         · -- the waste of a glued paragraph is that of its tail plus one term fixed by the head
           cases x with
           | wrap lx =>
-            show (0 : Int) ≤ wasteFn len w (glueFn a y)
+            show (0 : Int) ≤ wasteFn len w (glue a y)
             exact wasteFn_nonneg _
           | cons lx x' =>
             cases y with
@@ -309,7 +457,7 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
               have hx : sqr (w - widthFn len ly) + wasteFn len w x'
                 ≤ sqr (w - widthFn len ly) + wasteFn len w y' := hwaste
               omega
-        · show headLine (glueFn a x) = headLine (glueFn a y)
+        · show headLine (glue a x) = headLine (glue a y)
           rw [headLine_glue, headLine_glue, hhead]
 
 /-- **para-mono**, the FALSE row (B&dM p.209, "the obvious greedy algorithm does not solve this
@@ -362,7 +510,7 @@ public theorem para_sort_glue :
     of the result is the same as testing the first line at every step, given that every word
     fits on a line by itself and that gluing only widens a line. -/
 public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partAlg ≫ allFit len w = (F Word Word).map (allFit len w) ≫ Salg len w := by
+    partAlg ≫ fits (len := len) w = (F Word Word).map (fits (len := len) w) ≫ Salg len w := by
   apply hom_ext; intro u r
   cases u with
   | inl a =>
@@ -394,9 +542,9 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
         obtain rfl : s = ConsList.cons (ConsList.wrap a) x := hs
         exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfitS.2⟩, Or.inl rfl⟩
       | inr hs =>
-        obtain rfl : s = glueFn a x := hs
+        obtain rfl : s = glue a x := hs
         obtain ⟨hfx, hok⟩ := (allFitP_glue_iff hlen a x).mp hfitS
-        exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfx⟩, Or.inr ⟨glueFn a x, rfl, rfl, hok⟩⟩
+        exact ⟨Sum.inr (a, x), ⟨rfl, rfl, hfx⟩, Or.inr ⟨glue a x, rfl, rfl, hok⟩⟩
     · rintro ⟨v, hFv, hS⟩
       cases v with
       | inl a' => exact (hFv : False).elim
@@ -411,13 +559,62 @@ public theorem para_alg_fusion (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
           exact ⟨ConsList.cons (ConsList.wrap a) x, Or.inl rfl, rfl, ⟨hfit a, hfy⟩⟩
         | inr hS =>
           obtain ⟨s, hs, hsr, hok⟩ := hS
-          obtain rfl : s = glueFn a x := hs
-          obtain rfl : glueFn a x = r := hsr
-          exact ⟨glueFn a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
+          obtain rfl : s = glue a x := hs
+          obtain rfl : glue a x = r := hsr
+          exact ⟨glue a x, Or.inr rfl, rfl, (allFitP_glue_iff hlen a x).mpr ⟨hfy, hok⟩⟩
 
 public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
-    partition ≫ allFit len w = ⦇Salg len w⦈ :=
+    partition ≫ fits (len := len) w = ⦇Salg len w⦈ :=
   relCata_fusion (initial Word Word) (para_alg_fusion hlen hfit)
+
+/-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
+    `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
+    fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
+public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
+    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ l}
+    {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
+      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶ lF)}
+    {listcp : (F Word Word).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
+    {filterp₂ thinlist : l ⟶ l} {minlist : l ⟶ dPara Word} {Pr : RelProd l l}
+    {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
+    {mergeP : Pr.p ⟶ l}
+    (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
+      X ⊑ Y → sortF X ⊑ sortF Y)
+    (h88₁ : sortF (graph newAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph newAlgFn)°)
+      ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
+    (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
+      ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
+    (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
+      ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
+    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
+    (h87 : sortP ≫ minlist ⊑ est (R len w)) :
+    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+      ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
+  have hm₁ : MonotonicAlg (F := F Word Word)
+      (graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) (Q len w) := by
+    rw [Cat.comp_id]; exact para_mono_new
+  have h89₁ : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
+    rw [Cat.comp_id, existsImage_id, Cat.id_comp]
+    exact le_refl _
+  have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
+    (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := ok (len := len) w)
+    (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
+    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
+    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
+    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (minlist := fun _ => minlist)
+    (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
+    hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
+    h86 h87 rfl rfl rfl
+  rw [Cat.comp_id (graph (newAlgFn (Word := Word)))] at key
+  exact key
+
+/-- **para-laws**, the specification step: `para_spec` under `Λ(−) est(R)`. -/
+public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
+    Λ ⦇Salg len w⦈ ≫ est (R len w) = Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
+  rw [para_spec hlen hfit]
 
 /-- **para-laws** (B&dM §8.5, p.210): a paragraph laid out as a fold that thins the layouts
     kept at each word —
@@ -439,28 +636,15 @@ public theorem para_laws {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a) (hfit :
       ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
     (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
       ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
-    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (okW len w) ≫ sortP)
+    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
     (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
       ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R len w)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist⦈ ≫ minlist
-      ⊑ Λ (partition ≫ allFit len w) ≫ est (R len w) := by
-  have hm₁ : MonotonicAlg (F := F Word Word)
-      (graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) (Q len w) := by
-    rw [Cat.comp_id]; exact para_mono_new
-  have h89₁ : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
-    rw [Cat.comp_id, existsImage_id, Cat.id_comp]
-    exact le_refl _
-  have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
-    (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := okW len w)
-    (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
-    (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
-    hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
-    h86 h87
-  rw [Cat.comp_id (graph (newAlgFn (Word := Word)))] at key
-  rw [para_spec hlen hfit]
-  exact key
+      ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
+  rw [← para_laws_step2 hlen hfit]
+  exact para_laws_step1 hlen hsortF h88₁ h88₂ h89₂ h811 h810 h86 h87
 
 end Freyd.Alg.RelSet.Paragraph

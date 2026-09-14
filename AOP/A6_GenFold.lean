@@ -108,14 +108,20 @@ namespace Freyd.Alg.RelSet.CL
 
 open Freyd
 
+/-- The case split itself, as a function of its own.  A `match` written INSIDE the algebra's body
+    makes the matcher one of the algebra's own constants, and a name whose body is made of one is
+    never opened by the picture, so the algebra printed as its Lean name instead of the junction. -/
+@[expose] public def consScalarFn {L E C : Type} (g : L → C) (st : E → C → C) :
+    (Fobj L E (⟨C⟩ : RelSet.{0})).carrier → C
+  | Sum.inl d      => g d
+  | Sum.inr (e, c) => st e c
+
 /-- A scalar cons-list algebra `[g, st] : F C → C` over a bare carrier `C` (`F X = L + E×X`); the
     graph of the case split.  Cons-list analogue of `SL.scalarAlg`; note the step `st : E → C → C`
     takes the head element FIRST, then the folded tail (the `ConsList.cons e xs` order). -/
 @[expose] public def consScalarAlg {L E C : Type} (g : L → C) (st : E → C → C) :
     Fobj L E (⟨C⟩ : RelSet.{0}) ⟶ (⟨C⟩ : RelSet.{0}) :=
-  graph (fun u => match u with
-    | Sum.inl d      => g d
-    | Sum.inr (e, c) => st e c)
+  graph (consScalarFn g st)
 
 /-- The scalar cons-list algebra is a `Map` (it is a graph). -/
 theorem consScalarAlg_map {L E C : Type} (g : L → C) (st : E → C → C) :

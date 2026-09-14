@@ -3,7 +3,7 @@
 
   A bead the note draws OFF the object wire claims a naturality square — `G(S) φ ⊑ φ F(S)` for
   EVERY relation `S`, not only for the maps.  `Sched` is `list∘list` and `Seg` is `list` as
-  functors of the transaction type `Tx`, so each of the six families of `AOP.A7_5_Van` gets its
+  functors of the transaction type `X`, so each of the six families of `AOP.A7_5_Van` gets its
   square at an arbitrary `S : dE A ⟶ dE B`.  The verdicts:
 
   * `new` is STRICTLY natural (`new_natural`).  It is `(wrap×𝟙) cons`, and both factors are
@@ -23,7 +23,7 @@
   * `glue` is STRICTLY natural (`glue_natural`) and so is `nil` (`nil_natural`).  `glue` moves
     the transaction onto the front of the first segment and passes every other element along
     untouched, and `nil` looks at no element at all, so both squares are equalities.
-  * `R∩H` and `⊤` are NOT EVEN LAX (`RH_inter_not_lax_natural`, `top_not_lax_natural`), for the
+  * `R∩H` and `⊤` are NOT EVEN LAX (`RinterH_not_lax_natural`, `top_not_lax_natural`), for the
     same reason `R` and `H` are not: the left side of the square constrains only the SOURCE
     schedule while the right side demands a `list(list S)`-preimage of the TARGET.
 
@@ -54,25 +54,6 @@ public theorem new_natural (S : dE A ⟶ dE B) :
   rw [new_eq, new_eq, ← Cat.assoc, rprodMap_comp, Cat.comp_id, ← wrap_natural S, Cat.assoc,
     ← cons_natural (list S), ← Cat.assoc, rprodMap_comp, Cat.id_comp]
 
-/-- **`wrap×𝟙` is STRICTLY natural**: `(S×list(list S))(wrap×𝟙) = (wrap×𝟙)(list S×list(list S))`.
-    The bead the note draws between `new`'s two factors, and it is `strictNatural_prod` at `wrap`
-    and the identity family — `×` closes in the strict theory, so nothing is computed here.  The
-    four `prodMap_eq_rprodMap` rewrites are the concrete model's product read as the allegory's. -/
-public theorem wrapProd_natural (S : dE A ⟶ dE B) :
-    rprodMap S (list (list S)) ≫ rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B)))
-      = rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A)))
-        ≫ rprodMap (list S) (list (list S)) := by
-  rw [← RelSet.prodMap_eq_rprodMap S (list (list S)),
-    ← RelSet.prodMap_eq_rprodMap (singleR () : dE B ⟶ dList B) (𝟙 (dE (Sched B))),
-    ← RelSet.prodMap_eq_rprodMap (singleR () : dE A ⟶ dList A) (𝟙 (dE (Sched A))),
-    ← RelSet.prodMap_eq_rprodMap (list S) (list (list S))]
-  exact strictNatural_prod (F := listRelator) (F' := Relator.comp listRelator listRelator)
-    (G := Relator.idRelator RelSet.{0}) (G' := Relator.comp listRelator listRelator)
-    (φ := fun a => (singleR () : dE a.carrier ⟶ dList a.carrier))
-    (ψ := fun a => 𝟙 ((Relator.comp listRelator listRelator).obj a))
-    (fun {_ _} R => (wrap_natural R).symm)
-    (fun {_ _} _ => by rw [Cat.comp_id, Cat.id_comp]) S
-
 /-! ## `head` is lax only -/
 
 /-- **`head` is lax natural**: `list(list S) head ⊑ head list(S)`.  A `list(list S)`-image of a
@@ -91,8 +72,12 @@ public theorem head_lax_natural (S : dE A ⟶ dE B) :
   `ListRel.falseOne` is the segment `[false]` and `ListRel.trueOnly` the coreflexive
   `{(true,true)}`; `ListRel.trueOnly_no_image` says `[false]` has no `list(trueOnly)`-image. -/
 
+/-- The one-visit schedule `[[a]]` — one segment holding the one transaction `a`. -/
+@[expose] public def schedOne (a : Bool) : Sched Bool :=
+  ConsList.cons (ConsList.cons a (ConsList.wrap ())) (ConsList.wrap ())
+
 /-- The schedule `[[false]]` — one segment holding the one transaction `false`. -/
-@[expose] public def schedFalse : Sched Bool := ConsList.cons falseOne (ConsList.wrap ())
+@[expose] public def schedFalse : Sched Bool := schedOne false
 
 /-- The schedule `[[]]` — one empty segment.  It is `list(list(trueOnly))`-related to itself. -/
 @[expose] public def schedNil : Sched Bool :=
@@ -140,9 +125,9 @@ public theorem head_not_strict :
 /-- **`R` is not even lax natural**: `list(list S) R ⊑ R list(list S)` fails.  The left side
     relates `[]` to `[[false]]` — `[]` is its own image and `0 ≤ 1` — while the right side would
     need a `list(list(trueOnly))`-preimage of `[[false]]`. -/
-public theorem R_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool, ¬ (list (list S) ≫ R Bool ⊑ R Bool ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
+public theorem R_not_lax_natural : ¬ LaxNatural schedRelator schedRelator (fun a => R a.carrier) := by
+  intro hlax
+  have h : list (list trueOnly) ≫ R Bool ⊑ R Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), trivial, Nat.zero_le _⟩
   exact trueOnly_no_preimage r hr
@@ -150,8 +135,9 @@ public theorem R_not_lax_natural :
 /-- **`|R|` is not even lax natural**: `list(list S) |R| ⊑ |R| list(list S)` fails on the same
     witness, `0 < 1` in place of `0 ≤ 1`. -/
 public theorem strict_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool, ¬ (list (list S) ≫ strictR Bool ⊑ strictR Bool ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
+    ¬ LaxNatural schedRelator schedRelator (fun a => strictR a.carrier) := by
+  intro hlax
+  have h : list (list trueOnly) ≫ strictR Bool ⊑ strictR Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), trivial, Nat.zero_lt_succ _⟩
   exact trueOnly_no_preimage r hr
@@ -159,8 +145,9 @@ public theorem strict_not_lax_natural :
 /-- **`R;H` is not even lax natural**: same witness again — `[]` is strictly shorter than
     `[[false]]`, so the `H` half of `R∩(R°⇒H)` is vacuous. -/
 public theorem RH_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool, ¬ (list (list S) ≫ RH Bool ⊑ RH Bool ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
+    ¬ LaxNatural schedRelator schedRelator (fun a => RH a.carrier) := by
+  intro hlax
+  have h : list (list trueOnly) ≫ RH Bool ⊑ RH Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h (ConsList.wrap ()) schedFalse
       ⟨ConsList.wrap (), trivial, Nat.zero_le _, fun hle => absurd hle (by decide)⟩
@@ -170,8 +157,9 @@ public theorem RH_not_lax_natural :
     first segment `[]` is a prefix of `[false]`, so the left side reaches `[[false]]`; the right
     side would again need a `list(list(trueOnly))`-preimage of `[[false]]`. -/
 public theorem H_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool, ¬ (list (list S) ≫ Hrel Bool ⊑ Hrel Bool ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
+    ¬ LaxNatural schedRelator schedRelator (fun a => Hrel a.carrier) := by
+  intro hlax
+  have h : list (list trueOnly) ≫ Hrel Bool ⊑ Hrel Bool ≫ list (list trueOnly) := hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h schedNil schedFalse
       ⟨schedNil, schedNil_related,
@@ -215,10 +203,14 @@ public theorem glue_natural (S : dE A ⟶ dE B) :
     side relates `[[]]` to `[[false]]` — `[[]]` is its own `list(list(trueOnly))`-image, the two
     schedules have the same length, and `[]` is a prefix of `[false]` — while the right side
     would need a `list(list(trueOnly))`-preimage of `[[false]]`, and `false` has none. -/
-public theorem RH_inter_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool,
-      ¬ (list (list S) ≫ (R Bool ∩ Hrel Bool) ⊑ (R Bool ∩ Hrel Bool) ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
+-- The MEET, not `RinterH`: the panels spell the bead `R ∩ H`, and a verdict is looked up by the
+-- constants the family names, so the refutation has to name the same ones.
+public theorem RinterH_not_lax_natural :
+    ¬ LaxNatural schedRelator schedRelator
+      (fun a => (R a.carrier ∩ Hrel a.carrier : dSched a.carrier ⟶ dSched a.carrier)) := by
+  intro hlax
+  have h : list (list trueOnly) ≫ RinterH Bool ⊑ RinterH Bool ≫ list (list trueOnly) :=
+    hlax trueOnly
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h schedNil schedFalse
       ⟨schedNil, schedNil_related, Nat.le_refl _,
@@ -226,22 +218,105 @@ public theorem RH_inter_not_lax_natural :
           prefixP.nil falseOne⟩⟩
   exact trueOnly_no_preimage r hr
 
-/-- **`⊤` is not even lax natural**: `list(list S) ⊤ ⊑ ⊤ list(list S)` fails.  The left side
-    relates a schedule that HAS an image to everything, the right side relates everything to a
-    schedule that HAS a preimage — so the empty schedule, whose image is itself, reaches
-    `[[false]]` on the left and nothing on the right. -/
+/-- **`⊤` is not even lax natural**: `S ⊤ ⊑ ⊤ S` fails, at the OBJECT wire the panel draws it on —
+    `⊤` is a family between the identity lanes, `⊤ : a ⟶ a` at every object.  The left side relates
+    a point that HAS an `S`-image to everything, the right side relates everything to a point that
+    HAS an `S`-preimage, so `{(true,true)}` relates `true` to `false` on the left and to nothing on
+    the right. -/
 public theorem top_not_lax_natural :
-    ∃ S : dE Bool ⟶ dE Bool,
-      ¬ (list (list S) ≫ relTop (dSched Bool) (dSched Bool)
-          ⊑ relTop (dSched Bool) (dSched Bool) ≫ list (list S)) := by
-  refine ⟨trueOnly, fun h => ?_⟩
-  obtain ⟨r, -, hr⟩ :=
-    le_iff.mp h (ConsList.wrap ()) schedFalse ⟨ConsList.wrap (), trivial, trivial⟩
-  exact trueOnly_no_preimage r hr
+    ¬ LaxNatural (Relator.idRelator RelSet.{0}) (Relator.idRelator RelSet.{0})
+      (fun a => relTop a a) := by
+  intro hlax
+  have h : trueOnly ≫ relTop (dE Bool) (dE Bool) ⊑ relTop (dE Bool) (dE Bool) ≫ trueOnly :=
+    hlax trueOnly
+  obtain ⟨z, -, hz⟩ := le_iff.mp h true false ⟨true, ⟨rfl, rfl⟩, trivial⟩
+  exact Bool.noConfusion hz.2
+
+/-! ## `est(R)` is lax natural over the schedule lanes
+
+  `R` compares LENGTHS, and `list(list S)` relates only schedules of the same length, so the
+  `list(list S)`-image of a set of schedules has the same lengths in it: a least member of the
+  image is the image of a least member. -/
+
+/-- `list(P)` relates lists of the SAME length: it matches `cons` against `cons` and the empty
+    list against the empty list, and looks at the elements only through `P`. -/
+public theorem listP_clen {X Y : Type} {P : X → Y → Prop} :
+    ∀ {x : ConsList Unit X} {y : ConsList Unit Y}, listP P x y → clen x = clen y
+  | ConsList.wrap _, ConsList.wrap _, _ => rfl
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ _, ConsList.cons _ _, h => congrArg (· + 1) (listP_clen h.2)
+
+/-- **`est(R)` is LAX natural**: `E(list(list S)) est(R) ⊑ est(R) list(list S)`.  A shortest
+    schedule `r` of the image has a source `w` in the set, of the same length; every other member
+    `z` of the set has an image `v`, also of its own length, and `r` is no longer than `v`, so `w`
+    is a shortest member of the set.  Not STRICT: the right side asks every member of the set for
+    an image, which a relation that is not entire need not give. -/
+public theorem est_R_lax_natural :
+    LaxNatural schedRelator (schedRelator.comp powerRelator) (fun a => est (R a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun xs r => ?_
+  rintro ⟨ys, hxy, hest⟩
+  obtain ⟨hys, hmin⟩ := (est_apply _ _ _).mp hest
+  obtain ⟨hfwd, hbwd⟩ := (powerRel_apply _ _ _).mp hxy
+  obtain ⟨w, hw, hwr⟩ := hbwd r hys
+  refine ⟨w, (est_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
+  obtain ⟨v, hzv, hv⟩ := hfwd z hz
+  show clen w ≤ clen z
+  rw [listP_clen (P := list S) hwr, listP_clen (P := list S) hzv]
+  exact hmin v hv
+
+/-! ## `est(R;H)` is not even lax natural
+
+  `R;H` refines `R` by the PREFIX of the first segment, and a prefix is a claim about the
+  ELEMENTS, which an arbitrary relation does not carry: `[[false]]` and `[[true]]` are
+  incomparable, their common `⊤`-image `[[true]]` is its own least, and the set they form has no
+  least member for that image to come from. -/
+
+/-- `[[a]]` is `H`-below `[[b]]` only when `a = b`: the first segments are `[a]` and `[b]`, and a
+    one-element list is a prefix of another only if the elements agree. -/
+public theorem Hrel_schedOne {a b : Bool} (h : Hrel Bool (schedOne a) (schedOne b)) : a = b := by
+  rcases h with ⟨s, t, s', t', hs, hs', hp⟩ | ⟨hn, -⟩
+  · injection hs with h1 h2
+    injection hs' with h3 h4
+    subst h1; subst h3
+    exact hp.1
+  · cases hn
+
+/-- **`est(R;H)` is not even lax natural**: `E(list(list S)) est(R;H) ⊑ est(R;H) list(list S)`
+    fails at `S = ⊤` on the set `{[[false]],[[true]]}`.  Both schedules have one visit and neither
+    first segment is a prefix of the other, so the set has NO `R;H`-least member; its `⊤`-image
+    `{[[true]]}` has one, itself, so the left side reaches `[[true]]` and the right side reaches
+    nothing. -/
+-- `dSched`, not the lane stack's own spelling of the same object: a verdict is looked up by the
+-- constants the family names, and the panels name the schedules through `dSched`.
+public theorem est_RH_not_lax_natural :
+    ¬ LaxNatural schedRelator (schedRelator.comp powerRelator)
+      (fun a => (est (RH a.carrier) :
+        PowerAllegory.powerObj (dSched a.carrier) ⟶ dSched a.carrier)) := by
+  intro hlax
+  have h : powerRel (list (list (relTop (dE Bool) (dE Bool)))) ≫ est (RH Bool)
+      ⊑ est (RH Bool) ≫ list (list (relTop (dE Bool) (dE Bool))) :=
+    hlax (relTop (dE Bool) (dE Bool))
+  have himg : ∀ a b : Bool, list (list (relTop (dE Bool) (dE Bool))) (schedOne a) (schedOne b) :=
+    fun _ _ => ⟨⟨trivial, trivial⟩, trivial⟩
+  obtain ⟨w, hw, -⟩ :=
+    le_iff.mp h (fun p => p = schedOne false ∨ p = schedOne true) (schedOne true)
+      ⟨fun q => q = schedOne true,
+        (powerRel_apply _ _ _).mpr
+          ⟨fun p hp => ⟨schedOne true, by rcases hp with rfl | rfl <;> exact himg _ _, rfl⟩,
+            fun q hq => ⟨schedOne true, Or.inr rfl, by subst hq; exact himg _ _⟩⟩,
+        (est_apply _ _ _).mpr ⟨rfl, fun z hz => by
+          subst hz
+          exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨_, _, _, _, rfl, rfl, prefixP.refl _⟩⟩⟩⟩
+  obtain ⟨hmem, hmin⟩ := (est_apply _ _ _).mp hw
+  rcases hmem with rfl | rfl
+  · exact Bool.noConfusion (Hrel_schedOne ((hmin (schedOne true) (Or.inr rfl)).2 (Nat.le_refl _)))
+  · exact Bool.noConfusion (Hrel_schedOne ((hmin (schedOne false) (Or.inl rfl)).2 (Nat.le_refl _)))
 
 /-! ## `nil` is strictly natural
 
-  The note's `nil : 𝟏 ⟶ [[Tx]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched Tx` —
+  The note's `nil : 𝟏 ⟶ [[X]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched X` —
   the same relation `H_eq` already writes there — so no new definition is made for it. -/
 
 /-- **`nil` is STRICTLY natural**: `𝟙 nil = nil list(list S)`.  `nil` produces the empty schedule
@@ -262,14 +337,14 @@ public theorem nil_natural (S : dE A ⟶ dE B) :
 
 /-! ## The greedy fold is not even lax natural -/
 
-variable {Tx : Type} {amount : Tx → Int} {N : Int}
+variable {X : Type} {amount : X → Int} {N : Int}
 
 /-- The fold `⦇S%∋ est(R;H)⦈` read one transaction at a time: the empty stretch has only the
     empty schedule to answer with. -/
-public theorem greedyFold_wrap (r : Sched Tx) :
+public theorem greedyFold_wrap (r : Sched X) :
     greedyFold amount N (ConsList.wrap ()) r ↔ r = ConsList.wrap () := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH Tx) (Sum.inl ()) r) ?_
+  refine Iff.trans (Λ_comp_est_apply (Salg amount N) (RH X) (Sum.inl ()) r) ?_
   constructor
   · rintro ⟨hmem, -⟩
     rw [Salg, junc_sum_inl] at hmem
@@ -283,14 +358,14 @@ public theorem greedyFold_wrap (r : Sched Tx) :
 
 /-- The fold `⦇S%∋ est(R;H)⦈` at a `cons`: the tail's answer `y` is extended by `new∪old`, and
     the answer kept is one of those extensions that is `R;H`-below every one of them. -/
-public theorem greedyFold_cons (a : Tx) (x : Seg Tx) (r : Sched Tx) :
+public theorem greedyFold_cons (a : X) (x : Seg X) (r : Sched X) :
     greedyFold amount N (ConsList.cons a x) r
-      ↔ ∃ y, greedyFold amount N x y ∧ (newR Tx ∪ oldR amount N) (a, y) r
-          ∧ ∀ z, (newR Tx ∪ oldR amount N) (a, y) z → RH Tx r z := by
+      ↔ ∃ y, greedyFold amount N x y ∧ (newR X ∪ oldR amount N) (a, y) r
+          ∧ ∀ z, (newR X ∪ oldR amount N) (a, y) z → RH X r z := by
   rw [greedyFold, ← cataR_eq_relCata]
-  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH Tx)) (ConsList.cons a x) r
-      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH Tx)) x y
-          ∧ (Λ (Salg amount N) ≫ est (RH Tx)) (Sum.inr (a, y)) r).trans ?_
+  refine (Iff.rfl : cataR (Λ (Salg amount N) ≫ est (RH X)) (ConsList.cons a x) r
+      ↔ ∃ y, cataR (Λ (Salg amount N) ≫ est (RH X)) x y
+          ∧ (Λ (Salg amount N) ≫ est (RH X)) (Sum.inr (a, y)) r).trans ?_
   constructor
   · rintro ⟨y, hy, hmem⟩
     rw [Λ_comp_est_apply] at hmem

@@ -68,7 +68,7 @@ public inductive TyE (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Type (max u₁ 
   /-- The variable — the object the combinator is polymorphic in. -/
   | var
   /-- A constant object, not touched by the substitution. -/
-  | const (b : 𝒜)
+  | const (B : 𝒜)
   /-- Product of two type expressions, on `relProd`'s chosen product. -/
   | prod (σ τ : TyE 𝒜)
   /-- The action of a relator: `F(σ)`. -/
@@ -80,17 +80,17 @@ public inductive TyE (𝒜 : Type u₁) [Allegory.{v₁} 𝒜] : Type (max u₁ 
     induction below has nothing to prove about them. -/
 @[expose] public def TyE.rel : TyE 𝒜 → Relator 𝒜 𝒜
   | .var => Relator.idRelator 𝒜
-  | .const b => Relator.const b
+  | .const B => Relator.const B
   | .prod σ τ => Relator.prod σ.rel τ.rel
   | .app F σ => Relator.comp σ.rel F
 
 -- The three relator laws for every `⟦σ⟧R`, free from `TyE.rel` landing in `Relator`.
-example (σ : TyE 𝒜) (a : 𝒜) : σ.rel.map (𝟙 a) = 𝟙 (σ.rel.obj a) := σ.rel.map_id a
+example (σ : TyE 𝒜) (A : 𝒜) : σ.rel.map (𝟙 A) = 𝟙 (σ.rel.obj A) := σ.rel.map_id A
 
-example (σ : TyE 𝒜) {a b c : 𝒜} (R : a ⟶ b) (S : b ⟶ c) :
+example (σ : TyE 𝒜) {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
     σ.rel.map (R ≫ S) = σ.rel.map R ≫ σ.rel.map S := σ.rel.map_comp R S
 
-example (σ : TyE 𝒜) {a b : 𝒜} {R S : a ⟶ b} (h : R ⊑ S) : σ.rel.map R ⊑ σ.rel.map S :=
+example (σ : TyE 𝒜) {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : σ.rel.map R ⊑ σ.rel.map S :=
   σ.rel.map_mono h
 
 /-! ## The combinator language -/
@@ -112,20 +112,20 @@ public inductive PE {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] : TyE 𝒜 → TyE
   | map {σ τ : TyE 𝒜} (F : Relator 𝒜 𝒜) : PE σ τ → PE (.app F σ) (.app F τ)
   /-- A membership `m : F ⟶ 𝟙`, i.e. `∋` for `F` — the one constructor that carries its own
       lax naturality, since nothing in the syntax could prove it. -/
-  | mem {σ : TyE 𝒜} (F : Relator 𝒜 𝒜) (m : ∀ a : 𝒜, F.obj a ⟶ a)
+  | mem {σ : TyE 𝒜} (F : Relator 𝒜 𝒜) (m : ∀ A : 𝒜, F.obj A ⟶ A)
       (h : LaxNatural (Relator.idRelator 𝒜) F m) : PE (.app F σ) σ
 
 /-- **The interpreter.**  Each constructor is evaluated by the corresponding operation of the
     proven instances, so a term denotes a family of arrows `⟦σ⟧ a ⟶ ⟦τ⟧ a`, one per object. -/
-@[expose] public def PE.eval : {σ τ : TyE 𝒜} → PE σ τ → (∀ a : 𝒜, σ.rel.obj a ⟶ τ.rel.obj a)
-  | σ, _, .id _, a => 𝟙 (σ.rel.obj a)
-  | _, _, .comp s t, a => s.eval a ≫ t.eval a
-  | .prod σ τ, _, .outl, a => (relProd (σ.rel.obj a) (τ.rel.obj a)).outl
-  | .prod σ τ, _, .outr, a => (relProd (σ.rel.obj a) (τ.rel.obj a)).outr
-  | _, .prod τ υ, .pair s t, a =>
-      (relProd (τ.rel.obj a) (υ.rel.obj a)).pair (s.eval a) (t.eval a)
-  | _, _, .map F t, a => F.map (t.eval a)
-  | .app _ σ, _, .mem _ m _, a => m (σ.rel.obj a)
+@[expose] public def PE.eval : {σ τ : TyE 𝒜} → PE σ τ → (∀ A : 𝒜, σ.rel.obj A ⟶ τ.rel.obj A)
+  | σ, _, .id _, A => 𝟙 (σ.rel.obj A)
+  | _, _, .comp s t, A => s.eval A ≫ t.eval A
+  | .prod σ τ, _, .outl, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).outl
+  | .prod σ τ, _, .outr, A => (relProd (σ.rel.obj A) (τ.rel.obj A)).outr
+  | _, .prod τ υ, .pair s t, A =>
+      (relProd (τ.rel.obj A) (υ.rel.obj A)).pair (s.eval A) (t.eval A)
+  | _, _, .map F t, A => F.map (t.eval A)
+  | .app _ σ, _, .mem _ m _, A => m (σ.rel.obj A)
 
 /-! ## The free theorem -/
 
@@ -152,8 +152,8 @@ public theorem PE.free : ∀ {σ τ : TyE 𝒜} (t : PE σ τ), LaxNatural τ.re
     `∀`-quantified relation of a System F free theorem at a function's graph buys; here the
     general `R` is already a relation, so the lax square is the general case and this is the
     specialisation. -/
-public theorem PE.free_on_maps {σ τ : TyE 𝒜} (t : PE σ τ) {a b : 𝒜} (f : a ⟶ b) (hf : Map f) :
-    σ.rel.map f ≫ t.eval b = t.eval a ≫ τ.rel.map f :=
+public theorem PE.free_on_maps {σ τ : TyE 𝒜} (t : PE σ τ) {A B : 𝒜} (f : A ⟶ B) (hf : Map f) :
+    σ.rel.map f ≫ t.eval B = t.eval A ≫ τ.rel.map f :=
   (laxNatural_iff_strict_on_maps τ.rel σ.rel t.eval).mp t.free f hf
 
 /-! ## Splitting `Map`: which half of it each constructor actually spends
@@ -171,7 +171,7 @@ public theorem PE.free_on_maps {σ τ : TyE 𝒜} (t : PE σ τ) {a b : 𝒜} (f
     `dom` factor (5.6)/(5.7) leaves on the discarded leg is `𝟙` exactly when `R` is ENTIRE;
     `pair` DUPLICATES, and `R` distributes over the meet defining the fork exactly when `R` is
     SIMPLE; `id`, `comp` and `map` spend nothing and only propagate. -/
-public inductive PE.Strict {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] {a b : 𝒜} (R : a ⟶ b) :
+public inductive PE.Strict {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] {A B : 𝒜} (R : A ⟶ B) :
     {σ τ : TyE 𝒜} → PE σ τ → Prop where
   | id {σ : TyE 𝒜} : PE.Strict R (PE.id σ)
   | comp {σ τ υ : TyE 𝒜} {s : PE σ τ} {t : PE τ υ} :
@@ -191,21 +191,21 @@ public inductive PE.Strict {𝒜 : Type u₁} [Allegory.{v₁} 𝒜] {a b : 𝒜
     The induction is the same one as `PE.free`; what each case now needs of `R` is what its
     `PE.Strict` rule carries, transported along the type expression by `Relator.entire_map` and
     `Relator.simple_map` — `⟦σ⟧R R` is entire (simple) whenever `R` is. -/
-public theorem PE.free_strict {a b : 𝒜} {R : a ⟶ b} : ∀ {σ τ : TyE 𝒜} {t : PE σ τ},
-    PE.Strict R t → σ.rel.map R ≫ t.eval b = t.eval a ≫ τ.rel.map R
+public theorem PE.free_strict {A B : 𝒜} {R : A ⟶ B} : ∀ {σ τ : TyE 𝒜} {t : PE σ τ},
+    PE.Strict R t → σ.rel.map R ≫ t.eval B = t.eval A ≫ τ.rel.map R
   | σ, _, _, .id => by
-      show σ.rel.map R ≫ 𝟙 (σ.rel.obj b) = 𝟙 (σ.rel.obj a) ≫ σ.rel.map R
+      show σ.rel.map R ≫ 𝟙 (σ.rel.obj B) = 𝟙 (σ.rel.obj A) ≫ σ.rel.map R
       rw [Cat.comp_id, Cat.id_comp]
   | σ, υ, _, .comp (τ := τ) (s := s) (t := t) hs ht => by
       have ihs := PE.free_strict hs
       have iht := PE.free_strict ht
-      show σ.rel.map R ≫ (s.eval b ≫ t.eval b) = (s.eval a ≫ t.eval a) ≫ υ.rel.map R
-      calc σ.rel.map R ≫ (s.eval b ≫ t.eval b)
-          = (σ.rel.map R ≫ s.eval b) ≫ t.eval b := (Cat.assoc _ _ _).symm
-        _ = (s.eval a ≫ τ.rel.map R) ≫ t.eval b := by rw [ihs]
-        _ = s.eval a ≫ (τ.rel.map R ≫ t.eval b) := Cat.assoc _ _ _
-        _ = s.eval a ≫ (t.eval a ≫ υ.rel.map R) := by rw [iht]
-        _ = (s.eval a ≫ t.eval a) ≫ υ.rel.map R := (Cat.assoc _ _ _).symm
+      show σ.rel.map R ≫ (s.eval B ≫ t.eval B) = (s.eval A ≫ t.eval A) ≫ υ.rel.map R
+      calc σ.rel.map R ≫ (s.eval B ≫ t.eval B)
+          = (σ.rel.map R ≫ s.eval B) ≫ t.eval B := (Cat.assoc _ _ _).symm
+        _ = (s.eval A ≫ τ.rel.map R) ≫ t.eval B := by rw [ihs]
+        _ = s.eval A ≫ (τ.rel.map R ≫ t.eval B) := Cat.assoc _ _ _
+        _ = s.eval A ≫ (t.eval A ≫ υ.rel.map R) := by rw [iht]
+        _ = (s.eval A ≫ t.eval A) ≫ υ.rel.map R := (Cat.assoc _ _ _).symm
   | .prod _ τ, _, _, .outl hR =>
       prodMap_outl_eq_of_entire _ _ _ (Relator.entire_map τ.rel hR)
   | .prod σ _, _, _, .outr hR =>
@@ -213,27 +213,27 @@ public theorem PE.free_strict {a b : 𝒜} {R : a ⟶ b} : ∀ {σ τ : TyE 𝒜
   | σ, .prod τ υ, _, .pair (s := s) (t := t) hR hs ht => by
       have ihs := PE.free_strict hs
       have iht := PE.free_strict ht
-      show σ.rel.map R ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).pair (s.eval b) (t.eval b)
-          = (relProd (τ.rel.obj a) (υ.rel.obj a)).pair (s.eval a) (t.eval a)
-            ≫ prodMap (relProd (τ.rel.obj a) (υ.rel.obj a)) (relProd (τ.rel.obj b) (υ.rel.obj b))
+      show σ.rel.map R ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).pair (s.eval B) (t.eval B)
+          = (relProd (τ.rel.obj A) (υ.rel.obj A)).pair (s.eval A) (t.eval A)
+            ≫ prodMap (relProd (τ.rel.obj A) (υ.rel.obj A)) (relProd (τ.rel.obj B) (υ.rel.obj B))
                 (τ.rel.map R) (υ.rel.map R)
       rw [RelProd.pair_prodMap, ← ihs, ← iht]
-      show σ.rel.map R ≫ (s.eval b ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outl°
-            ∩ t.eval b ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outr°)
-          = (σ.rel.map R ≫ s.eval b) ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outl°
-            ∩ (σ.rel.map R ≫ t.eval b) ≫ (relProd (τ.rel.obj b) (υ.rel.obj b)).outr°
+      show σ.rel.map R ≫ (s.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outl°
+            ∩ t.eval B ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outr°)
+          = (σ.rel.map R ≫ s.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outl°
+            ∩ (σ.rel.map R ≫ t.eval B) ≫ (relProd (τ.rel.obj B) (υ.rel.obj B)).outr°
       rw [simple_dist_inter (Relator.simple_map σ.rel hR), Cat.assoc, Cat.assoc]
   | .app _ σ, .app _ τ, _, .map F (t := u) hu => by
       have ih := PE.free_strict hu
-      show F.map (σ.rel.map R) ≫ F.map (u.eval b) = F.map (u.eval a) ≫ F.map (τ.rel.map R)
+      show F.map (σ.rel.map R) ≫ F.map (u.eval B) = F.map (u.eval A) ≫ F.map (τ.rel.map R)
       rw [← F.map_comp, ← F.map_comp, ih]
 
 -- The split, pinned: a PROJECTION is strict under entireness alone, a FORK under simplicity
 -- alone.  Neither asks for `Map`, and the two conditions are not the same condition.
-example {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) (σ τ : TyE 𝒜) :
+example {A B : 𝒜} {R : A ⟶ B} (hR : Entire R) (σ τ : TyE 𝒜) :
     PE.Strict R (PE.outr (σ := σ) (τ := τ)) := .outr hR
 
-example {a b : 𝒜} {R : a ⟶ b} (hR : Simple R) (σ : TyE 𝒜) :
+example {A B : 𝒜} {R : A ⟶ B} (hR : Simple R) (σ : TyE 𝒜) :
     PE.Strict R (PE.pair (PE.id σ) (PE.id σ)) := .pair hR .id .id
 
 /-! ## Cashing it out: the already-proved instances as corollaries of the induction -/
@@ -242,22 +242,22 @@ example {a b : 𝒜} {R : a ⟶ b} (hR : Simple R) (σ : TyE 𝒜) :
     `outr : var × var ⟶ var`, whose interpretation is `(relProd a a).outr` and whose source
     type expression interprets as `Δ 𝒜 = Relator.prod (idRelator) (idRelator)`. -/
 public theorem outr_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun a => (relProd a a).outr) :=
+    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outr) :=
   PE.free (PE.outr (σ := TyE.var) (τ := TyE.var))
 
 /-- `outl` likewise (`outl_lax_natural`, A5_7). -/
 public theorem outl_lax_natural_free :
-    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun a => (relProd a a).outl) :=
+    LaxNatural (Relator.idRelator 𝒜) (Δ 𝒜) (fun A => (relProd A A).outl) :=
   PE.free (PE.outl (σ := TyE.var) (τ := TyE.var))
 
 /-- **B&dM p.149**, `compMembership`'s `lax` field (A6_5) DERIVED: `member(F·G)` is
     `member(G)·member(F)`.  It is `PE.free` at `mem G ≫ mem F`, typed
     `G(F(var)) ⟶ F(var) ⟶ var`; the composite's lax naturality is the `comp` case, so the
     hand calculation in A6_5 is an instance of the induction. -/
-public theorem comp_mem_lax_free {F G : Relator 𝒜 𝒜} {mF : ∀ a : 𝒜, F.obj a ⟶ a}
-    {mG : ∀ a : 𝒜, G.obj a ⟶ a} (hF : LaxNatural (Relator.idRelator 𝒜) F mF)
+public theorem comp_mem_lax_free {F G : Relator 𝒜 𝒜} {mF : ∀ A : 𝒜, F.obj A ⟶ A}
+    {mG : ∀ A : 𝒜, G.obj A ⟶ A} (hF : LaxNatural (Relator.idRelator 𝒜) F mF)
     (hG : LaxNatural (Relator.idRelator 𝒜) G mG) :
-    LaxNatural (Relator.idRelator 𝒜) (Relator.comp F G) (fun a => mG (F.obj a) ≫ mF a) :=
+    LaxNatural (Relator.idRelator 𝒜) (Relator.comp F G) (fun A => mG (F.obj A) ≫ mF A) :=
   PE.free (PE.comp (PE.mem (σ := TyE.app F TyE.var) G mG hG) (PE.mem (σ := TyE.var) F mF hF))
 
 /-- The `map` case cashed out: `F(π₂)` is lax natural `F·Δ ⟶ F·𝟙`, i.e.
@@ -265,7 +265,7 @@ public theorem comp_mem_lax_free {F G : Relator 𝒜 𝒜} {mF : ∀ a : 𝒜, F
     than reapplied by hand. -/
 public theorem map_outr_lax_natural_free (F : Relator 𝒜 𝒜) :
     LaxNatural (Relator.comp (Relator.idRelator 𝒜) F) (Relator.comp (Δ 𝒜) F)
-      (fun a => F.map ((relProd a a).outr)) :=
+      (fun A => F.map ((relProd A A).outr)) :=
   PE.free (PE.map F (PE.outr (σ := TyE.var) (τ := TyE.var)))
 
 -- The corollaries are the hand proofs, not merely something like them: proof irrelevance makes

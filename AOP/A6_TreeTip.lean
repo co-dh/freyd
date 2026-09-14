@@ -13,6 +13,9 @@
 module
 
 public import AOP.A6_1_RelSet
+-- The junction's two injection laws (`ListRel.junc_sum_inl`/`_inr`) are stated once, over any
+-- `sumCop`, and the slide `F(X)[tip,bin] = [tip,(X×X)bin]` below is proved from them.
+public import AOP.A5_6_ListCombinators
 
 set_option linter.unusedVariables false
 
@@ -35,25 +38,25 @@ public inductive Tree (A : Type) where
 /-! ## The functor `F X = A + X²` -/
 
 /-- Carrier of `F X`. -/
-@[expose] public def TFobj (A : Type) (c : RelSet.{0}) : RelSet.{0} :=
-  ⟨A ⊕ (c.carrier × c.carrier)⟩
+@[expose] public def TFobj (A : Type) (C : RelSet.{0}) : RelSet.{0} :=
+  ⟨A ⊕ (C.carrier × C.carrier)⟩
 
 /-- **mct-defn**: `F(R)=𝟙+R²` — the identity on the label summand, `R` in both slots of a node. -/
-@[expose] public def Fmap (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') : TFobj A c ⟶ TFobj A c' :=
+@[expose] public def Fmap (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : TFobj A C ⟶ TFobj A c' :=
   fun u v => match u, v with
     | Sum.inl a, Sum.inl a' => a = a'
     | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ R p.2 q.2
     | _, _ => False
 
-@[simp] public theorem Fmap_ll (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (a a' : A) :
+@[simp] public theorem Fmap_ll (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (a a' : A) :
     Fmap A R (Sum.inl a) (Sum.inl a') = (a = a') := rfl
-@[simp] public theorem Fmap_rr (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c')
-    (p : c.carrier × c.carrier) (q : c'.carrier × c'.carrier) :
+@[simp] public theorem Fmap_rr (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c')
+    (p : C.carrier × C.carrier) (q : c'.carrier × c'.carrier) :
     Fmap A R (Sum.inr p) (Sum.inr q) = (R p.1 q.1 ∧ R p.2 q.2) := rfl
-@[simp] public theorem Fmap_lr (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c') (a : A)
+@[simp] public theorem Fmap_lr (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (a : A)
     (q : c'.carrier × c'.carrier) : Fmap A R (Sum.inl a) (Sum.inr q) = False := rfl
-@[simp] public theorem Fmap_rl (A : Type) {c c' : RelSet.{0}} (R : c ⟶ c')
-    (p : c.carrier × c.carrier) (a : A) : Fmap A R (Sum.inr p) (Sum.inl a) = False := rfl
+@[simp] public theorem Fmap_rl (A : Type) {C c' : RelSet.{0}} (R : C ⟶ c')
+    (p : C.carrier × C.carrier) (a : A) : Fmap A R (Sum.inr p) (Sum.inl a) = False := rfl
 
 /-- `F` is a relator (monotone functor) on `Rel(Set)`. -/
 @[expose] public def F (A : Type) : Relator RelSet.{0} RelSet.{0} where
@@ -61,7 +64,7 @@ public inductive Tree (A : Type) where
   map R := Fmap A R
   -- constructive (no `grind`): `grind` drags in Classical.choice, which would taint every
   -- catamorphism over `F` (the repo bar is axioms ⊆ {propext, Quot.sound})
-  map_id c := hom_ext fun u v => by
+  map_id C := hom_ext fun u v => by
     cases u <;> cases v
     · exact ⟨congrArg Sum.inl, Sum.inl.inj⟩
     · next a q => exact ⟨False.elim, fun h => nomatch (show Sum.inl a = Sum.inr q from h)⟩
@@ -104,7 +107,7 @@ public inductive Tree (A : Type) where
             obtain ⟨m1, m2⟩ := md
             rw [Fmap_rr] at hw1 hw2
             exact ⟨⟨m1, hw1.1, hw2.1⟩, ⟨m2, hw1.2, hw2.2⟩⟩
-  map_mono {c c' R S} h := le_iff.mpr fun u v => by
+  map_mono {C c' R S} h := le_iff.mpr fun u v => by
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
       first
         | exact id
@@ -113,7 +116,7 @@ public inductive Tree (A : Type) where
 
 /-- `F` preserves converse. -/
 public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
-  intro c c' R
+  intro C c' R
   apply hom_ext; intro u v
   cases u <;> cases v <;> simp only [F, Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
     first
@@ -127,19 +130,45 @@ public theorem F_preservesRecip (A : Type) : (F A).PreservesRecip := by
   | Sum.inl a => Tree.tip a
   | Sum.inr (l, r) => Tree.bin l r
 
+/-- **mct-defn**, the relator SLIDES INTO THE BRACKET: `F(X)[tip,bin] = [tip,(X×X)bin]` — one tape
+    whose second arm carries the `X` in both slots, never a box `F(X)` in front of the junction. -/
+public theorem Fmap_comp_con {b : RelSet.{0}} (X : b ⟶ dTree A) :
+    (F A).map X ≫ graph (con (A := A))
+      = junc (sumCop (dA A) (⟨b.carrier × b.carrier⟩ : RelSet.{0}))
+          (graph (Tree.tip (A := A)))
+          (rprodMap X X ≫ graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)) := by
+  apply hom_ext; intro u y
+  cases u with
+  | inl a =>
+    rw [ListRel.junc_sum_inl]
+    constructor
+    · rintro ⟨w, hw, hc⟩
+      cases w with
+      | inl a' => have h : a = a' := hw; subst h; exact hc
+      | inr q => exact (hw : False).elim
+    · intro h; exact ⟨Sum.inl a, rfl, h⟩
+  | inr p =>
+    rw [ListRel.junc_sum_inr]
+    constructor
+    · rintro ⟨w, hw, hc⟩
+      cases w with
+      | inl a' => exact (hw : False).elim
+      | inr q => exact ⟨q, hw, hc⟩
+    · rintro ⟨q, hq, hb⟩; exact ⟨Sum.inr q, hq, hb⟩
+
 /-- The structural fold, defined DIRECTLY from the algebra-relation `f` (no choice). -/
-@[expose] public def cataTreeFold {c : RelSet.{0}} (f : TFobj A c ⟶ c) : Tree A → c.carrier → Prop
+@[expose] public def cataTreeFold {C : RelSet.{0}} (f : TFobj A C ⟶ C) : Tree A → C.carrier → Prop
   | Tree.tip a => fun r => f (Sum.inl a) r
   | Tree.bin l r => fun res =>
       ∃ rl rr, cataTreeFold f l rl ∧ cataTreeFold f r rr ∧ f (Sum.inr (rl, rr)) res
 
-@[simp] public theorem cataTreeFold_tip {c : RelSet.{0}} (f : TFobj A c ⟶ c) (a : A)
-    (r : c.carrier) : cataTreeFold f (Tree.tip a) r = f (Sum.inl a) r := rfl
-@[simp] public theorem cataTreeFold_bin {c : RelSet.{0}} (f : TFobj A c ⟶ c) (l r : Tree A)
-    (res : c.carrier) : cataTreeFold f (Tree.bin l r) res =
+@[simp] public theorem cataTreeFold_tip {C : RelSet.{0}} (f : TFobj A C ⟶ C) (a : A)
+    (r : C.carrier) : cataTreeFold f (Tree.tip a) r = f (Sum.inl a) r := rfl
+@[simp] public theorem cataTreeFold_bin {C : RelSet.{0}} (f : TFobj A C ⟶ C) (l r : Tree A)
+    (res : C.carrier) : cataTreeFold f (Tree.bin l r) res =
       ∃ rl rr, cataTreeFold f l rl ∧ cataTreeFold f r rr ∧ f (Sum.inr (rl, rr)) res := rfl
 
-public theorem cataTree_total {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
+public theorem cataTree_total {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
     ∀ t : Tree A, ∃ r, cataTreeFold f t r
   | Tree.tip a => entire_total hf.1 (Sum.inl a)
   | Tree.bin l r => by
@@ -148,8 +177,8 @@ public theorem cataTree_total {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f
     obtain ⟨res, hres⟩ := entire_total hf.1 (Sum.inr (rl, rr))
     exact ⟨res, rl, rr, hrl, hrr, hres⟩
 
-public theorem cataTree_functional {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
-    ∀ (t : Tree A) (r r' : c.carrier), cataTreeFold f t r → cataTreeFold f t r' → r = r'
+public theorem cataTree_functional {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
+    ∀ (t : Tree A) (r r' : C.carrier), cataTreeFold f t r → cataTreeFold f t r' → r = r'
   | Tree.tip a, r, r', h1, h2 => simple_uniq hf.2 h1 h2
   | Tree.bin l r, res, res', h1, h2 => by
     obtain ⟨rl, rr, hl, hr, hf1⟩ := h1
@@ -158,8 +187,8 @@ public theorem cataTree_functional {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : 
     obtain rfl : rr = rr' := cataTree_functional f hf r rr rr' hr hr'
     exact simple_uniq hf.2 hf1 hf2
 
-public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) :
-    Map (a := dTree A) (b := c) (cataTreeFold f) := by
+public theorem cataTree_map {C : RelSet.{0}} (f : TFobj A C ⟶ C) (hf : Map f) :
+    Map (a := dTree A) (b := C) (cataTreeFold f) := by
   refine ⟨?_, ?_⟩
   · show dom (cataTreeFold f) = Cat.id (dTree A)
     apply hom_ext; intro t t'
@@ -246,10 +275,10 @@ public theorem cataTree_map {c : RelSet.{0}} (f : TFobj A c ⟶ c) (hf : Map f) 
         exact hh
 
 /-- The catamorphism (fold) of `φ` as a genuine morphism `dTree A ⟶ c`. -/
-@[expose] public def cataR {c : RelSet.{0}} (φ : TFobj A c ⟶ c) : dTree A ⟶ c := cataTreeFold φ
+@[expose] public def cataR {C : RelSet.{0}} (φ : TFobj A C ⟶ C) : dTree A ⟶ C := cataTreeFold φ
 
 /-- The catamorphism computation rule for ANY algebra-relation `φ` (not just maps). -/
-public theorem cataTreeFold_comm {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
+public theorem cataTreeFold_comm {C : RelSet.{0}} (φ : TFobj A C ⟶ C) :
     graph con ≫ cataTreeFold φ = (F A).map (cataTreeFold φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -277,7 +306,7 @@ public theorem cataTreeFold_comm {c : RelSet.{0}} (φ : TFobj A c ⟶ c) :
         exact ⟨Tree.bin pl pr, rfl, ql, qr, hv.1, hv.2, hfv⟩
 
 /-- The structural tree fold IS the relational catamorphism `relCata I φ` (Eilenberg–Wright). -/
-public theorem cataR_eq_relCata {c : RelSet.{0}} (φ : (F A).obj c ⟶ c) :
+public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataTreeFold_comm φ)
 
@@ -296,5 +325,101 @@ public theorem cataR_con : cataR (graph (con (A := A))) = 𝟙 (dTree A) := by
       exact (hcon : res = Tree.bin l r).symm
     · intro (h : Tree.bin l r = res)
       exact ⟨l, r, (ihl l).mpr rfl, (ihr r).mpr rfl, h.symm⟩
+
+/-! ## The datatype as a relator: `tree(R)`
+
+  `tree A` is a datatype in its LABEL, so it is the object part of a relator and not merely an
+  object at each `A` — the same reading `AOP.A6_RoseTree.roseRelator` gives the rose tree.  Bundled
+  here, the picture of a statement over `tree A` draws ONE lane `tree` over the label wire, where an
+  unbundled `dTree A` leaves the reader an object nothing peels. -/
+
+/-- Elementwise lifting on tip trees: the same shape, each TIP's label related by `R` — a node
+    carries nothing, so it contributes no condition of its own. -/
+@[expose] public def treeP {B : Type} (R : dA A ⟶ dA B) : Tree A → Tree B → Prop
+  | Tree.tip a, Tree.tip b => R a b
+  | Tree.tip _, Tree.bin _ _ => False
+  | Tree.bin _ _, Tree.tip _ => False
+  | Tree.bin l r, Tree.bin l' r' => treeP R l l' ∧ treeP R r r'
+
+/-- The relator's action `tree(R) : tree A⟶tree B`. -/
+@[expose] public def tree {B : Type} (R : dA A ⟶ dA B) : dTree A ⟶ dTree B := treeP R
+
+public theorem treeP_id : ∀ x y : Tree A, treeP (𝟙 (dA A)) x y ↔ x = y
+  | Tree.tip a, Tree.tip b =>
+      ⟨fun h => by rw [show a = b from h], fun h => by cases h; rfl⟩
+  | Tree.tip _, Tree.bin _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.bin _ _, Tree.tip _ => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.bin l r, Tree.bin l' r' =>
+      ⟨fun h => by rw [(treeP_id l l').mp h.1, (treeP_id r r').mp h.2],
+       fun h => by cases h; exact ⟨(treeP_id l l).mpr rfl, (treeP_id r r).mpr rfl⟩⟩
+
+/-- `tree(𝟙) = 𝟙`. -/
+public theorem tree_id : tree (𝟙 (dA A)) = 𝟙 (dTree A) := hom_ext treeP_id
+
+public theorem treeP_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    ∀ (x : Tree A) (z : Tree C), treeP (R ≫ S) x z ↔ ∃ y, treeP R x y ∧ treeP S y z
+  | Tree.tip _, Tree.tip _ =>
+      ⟨fun ⟨b, hR, hS⟩ => ⟨Tree.tip b, hR, hS⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | tip b => exact ⟨b, h1, h2⟩
+        | bin _ _ => exact h1.elim⟩
+  | Tree.tip _, Tree.bin _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | tip _ => exact h2
+        | bin _ _ => exact h1⟩
+  | Tree.bin _ _, Tree.tip _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | tip _ => exact h1
+        | bin _ _ => exact h2⟩
+  | Tree.bin l r, Tree.bin l' r' => by
+      constructor
+      · rintro ⟨hl, hr⟩
+        obtain ⟨m, hm, hm'⟩ := (treeP_comp R S l l').mp hl
+        obtain ⟨n, hn, hn'⟩ := (treeP_comp R S r r').mp hr
+        exact ⟨Tree.bin m n, ⟨hm, hn⟩, hm', hn'⟩
+      · rintro ⟨y, h1, h2⟩
+        cases y with
+        | tip _ => exact h1.elim
+        | bin m n =>
+            exact ⟨(treeP_comp R S l l').mpr ⟨m, h1.1, h2.1⟩,
+                   (treeP_comp R S r r').mpr ⟨n, h1.2, h2.2⟩⟩
+
+/-- `tree(RS) = tree(R) tree(S)`. -/
+public theorem tree_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    tree (R ≫ S) = tree R ≫ tree S := hom_ext (treeP_comp R S)
+
+public theorem treeP_mono {B : Type} {R S : dA A ⟶ dA B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, treeP R x y → treeP S x y
+  | Tree.tip a, Tree.tip b, hxy => h a b hxy
+  | Tree.tip _, Tree.bin _ _, hxy => hxy.elim
+  | Tree.bin _ _, Tree.tip _, hxy => hxy.elim
+  | Tree.bin l r, Tree.bin l' r', hxy =>
+      ⟨treeP_mono h l l' hxy.1, treeP_mono h r r' hxy.2⟩
+
+/-- `R ⊑ S ⟹ tree(R) ⊑ tree(S)` — `tree` is monotonic. -/
+public theorem tree_mono {B : Type} {R S : dA A ⟶ dA B} (h : R ⊑ S) : tree R ⊑ tree S :=
+  le_iff.mpr (treeP_mono (le_iff.mp h))
+
+public theorem treeP_recip {B : Type} (R : dA A ⟶ dA B) :
+    ∀ (y : Tree B) (x : Tree A), treeP R° y x ↔ treeP R x y
+  | Tree.tip _, Tree.tip _ => Iff.rfl
+  | Tree.tip _, Tree.bin _ _ => Iff.rfl
+  | Tree.bin _ _, Tree.tip _ => Iff.rfl
+  | Tree.bin l r, Tree.bin l' r' =>
+      ⟨fun h => ⟨(treeP_recip R l l').mp h.1, (treeP_recip R r r').mp h.2⟩,
+       fun h => ⟨(treeP_recip R l l').mpr h.1, (treeP_recip R r r').mpr h.2⟩⟩
+
+/-- `tree(R°) = tree(R)°` — `tree` preserves converse. -/
+public theorem tree_recip {B : Type} (R : dA A ⟶ dA B) : tree R° = (tree R)° :=
+  hom_ext (treeP_recip R)
+
+/-- `tree` BUNDLED as a relator, the lane the bracketing section's pictures draw over their label
+    wire — one wire `tree`, one object `A`, where `tree A` alone is an object with no reading. -/
+@[expose] public def treeRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dTree a.carrier
+  map R := tree R
+  map_id _ := tree_id
+  map_comp R S := tree_comp R S
+  map_mono h := tree_mono h
 
 end Freyd.Alg.RelSet.TT

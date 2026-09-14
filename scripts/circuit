@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """circuit — the CIRCUIT picture a formula denotes, drawn mechanically.
 
-`scripts/diagram` runs the note's formula through the Hinze–Marsden reading; this runs it through
-the MONOIDAL one.  Same input — the formula in the note's notation plus the source and target
-objects, which a formula alone does not fix — and the same self-certifying `cert:`, but the picture
-downstream is the other language: a WIRE is an object, a BOX is a morphism, composition runs left to
-right, and a product is TWO wires, never one wire labelled `A×B`.  A `#cpanel(...)` call goes out,
+This runs the note's formula through the MONOIDAL reading — a wire is an object, a box a morphism,
+composition runs left to right, and a product is TWO wires, never one wire labelled `A×B` — taking
+the formula in the note's notation plus the source and target objects, which a formula alone does
+not fix, and stamping the picture with a self-certifying `cert:`.  A `#cpanel(...)` call goes out,
 ready to paste beside the row it draws; once pasted, `--compare` rebuilds every literal the note
 holds from its own `cert:` and fails on any drift, and `--write` splices the rebuilt ones over them.
 
@@ -31,11 +30,14 @@ import difflib, functools, json, os, re, sys
 
 sys.dont_write_bytecode = True                 # no `scripts/__pycache__` beside the other scripts
 # ONLY the notation, not the other convention's geometry: `relexpr.py` is the note's relation
-# language, which `scripts/diagram` and `scripts/scanline` read to draw and sweep Hinze–Marsden
-# panels and this file reads to draw a circuit.  Nothing else crosses between the two.
+# language, and this file is now its only reader, to draw a circuit.  Nothing else crosses between
+# the two conventions.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import relexpr as rx
 from relexpr import Unhandled, norm, parse, spell
+# The note is one file per chapter (`scripts/note-split`): read a split root as the one document it
+# stands for, and write back through the split so a rebuilt literal lands in the chapter holding it.
+from notesplit import note_source, note_write
 
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
                     "circuit-sigs.json")
@@ -219,8 +221,9 @@ def head(e):
 
 
 def lshow(e):
-    """A type label: application is juxtaposition, spaced only beside a multi-letter name (`E tree A`,
-    `EF[A]`, `FA`); n equal ×-factors are a power (`E[A]²`); `F(A,B)`, `F(A×B)` keep the parentheses."""
+    """A type label: only a chain of one-letter functors on one name juxtaposes (`FA`, `EFA`, `E[A]`);
+    every other application keeps its parentheses (`tree(A)`, `E(tree(A))`, `F(A,B)`, `F(A×B)`), the
+    CLAUDE.md rule; n equal ×-factors are a power (`E[A]²`)."""
     if e[0] == 'prod':
         if any(x != e[1][0] for x in e[1]):
             return '×'.join(lshow(x) for x in e[1])
@@ -233,7 +236,9 @@ def lshow(e):
         return f"[{s}]"
     if e[2][0] == 'atom' and ',' in s or e[2][0] == 'prod' and '×' in s:
         return f"{e[1]}({s})"
-    return e[1] + ('' if s[0] == '[' or len(e[1]) == 1 == len(head(e[2])) else ' ') + s
+    if s[0] == '[' or len(e[1]) == 1 == len(head(e[2])):
+        return e[1] + s
+    return f"{e[1]}({s})"
 
 
 def wires(X):
@@ -445,8 +450,11 @@ def leaf(e, tbl, src, tgt):
     key = e[1] if e[0] in ('atom', 'app') else None
     # A whole-spelling row is ONE opaque box only when the head has no `arg` row: `listcp(F)` applies
     # an operator to a FUNCTOR, where `E(…)`/`P(…)`/`thin` state an ARROW and must type their argument.
+    # A row the PANEL ITSELF declares is such a row whatever the file says of the head, by `merged`'s
+    # own-over-file rule: a section that types `minlist(R)` at its own objects — §8.3's abstract list
+    # object `L`, not a `[a]` — is saying what ITS box is, and says nothing of `minlist` elsewhere.
     if (e[0] == 'app' and rows(tbl, spell(e))
-            and not any('arg' in r for r in rows(tbl, e[1]))):
+            and (spell(e) in OWN or not any('arg' in r for r in rows(tbl, e[1])))):
         e, key = ('atom', spell(e)), spell(e)
     # A letter may be both a preorder and an operator (`P`, `P(f)`): an application takes the rows
     # with an `arg` scheme and an atom the rows without, so neither ever reads the other's.
@@ -825,7 +833,7 @@ def literals(text):
 def regen(path, write):
     """Each literal rebuilt from its own `cert:` and held against the text: `--compare` prints the
     drift as a diff and fails, `--write` splices the rebuilt literal over it, last to first."""
-    text = open(path, encoding="utf-8").read()
+    text = note_source(path)
     lits = [x for x in literals(text) if all(x[2].get(k) for k in ("expect", "src", "tgt"))]
     fail, drift, msgs = 0, 0, []
     for i, j, c in reversed(lits):
@@ -845,7 +853,7 @@ def regen(path, write):
             msgs.append("\n".join([head] + list(difflib.unified_diff(
                 text[i:j].splitlines(), new.splitlines(), "note", "generated", lineterm=""))))
     if write:
-        open(path, "w", encoding="utf-8").write(text)
+        note_write(path, text)
     if msgs:
         print(*reversed(msgs), sep="\n")
     print(f"circuit: {len(lits)} literals in {path}, {len(lits) - drift - fail} verbatim, {drift}"

@@ -33,6 +33,26 @@
 /// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
 #let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
 
+// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
+// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
+// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
+// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
+// ABOVE the template: a `#let` is in scope only after it is bound, and the display's own show rule
+// spells its number with this.
+#let plain(c) = {
+  if type(c) == color { c.to-hex() } else if type(c) != content { c }
+  else if c == [ ] or c.func() == linebreak { " " }
+  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
+  else if c.has("text") { c.text }
+  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
+  else if c.has("children") { c.children.map(plain).join("") }
+  else if c.has("body") { plain(c.body) }
+  // `styled` is what a `src` side note in a step's caption is; a `ref` reads as its label.
+  else if c.has("child") { plain(c.child) }
+  else if c.func() == ref { repr(c.target) }
+  else { repr(c) }
+}
+
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let PAGEW = 25cm
 #let MARGIN = 1.5cm
@@ -80,6 +100,20 @@
   // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
   // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
+    // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
+    // belongs to the figure, and only a show rule holds the element it is attached to.
+    if cetz.CDSCAN {
+      metadata((kind: "cd", el: "disp",
+        label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
+    }
+    // THE DISPLAY'S NAME AND ITS NUMBER, TOGETHER, for every display and not only a scan: a panel's
+    // `hm-meta` can address itself only by the NUMBER it stands under, and a number moves with every
+    // heading, so `diag/string-panels.txt` names a display by its LABEL and the gate reads the pair
+    // off here.  Same reason as the line above — a label belongs to the figure, and only a show rule
+    // holds the element it is attached to.
+    context metadata((kind: "disp",
+      id: plain(dispnum(counter(heading).get(), it.counter.at(here()).first())),
+      label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
     context {
       let n = text(9pt, luma(130), it.counter.display(it.numbering))
       place(top + right, dx: measure(n).width + NUMGAP, n)
@@ -92,44 +126,55 @@
   body
 }
 
+/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
+/// `#include`, so a chapter can tell whether it is the document or one file of it.
+#let NOTEROOT = state("note-root", false)
+
+/// A CHAPTER COMPILED ALONE — its file starts `#show: note-chapter.with(N)` — must look like its
+/// pages in the book, and a whole-note compile costs about 13 GiB, which every gate paid.  Same
+/// rules as `conf`; the heading counter set to N-1 so §13 numbers as §13; and a reference to a
+/// label in another chapter rendered as its `names` entry, or as the label's own text, instead of
+/// stopping the compile.  Inside the whole book the root has already applied `conf` and the counter
+/// already stands at N-1, so there the chapter's own rules are skipped and nothing changes.
+#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { doc } else {
+  conf(title: title, {
+    counter(heading).update(N - 1)
+    // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
+    // never reaches `it.element`: reading that is what turns a cross-chapter reference into an error.
+    show ref: it => context {
+      let t = str(it.target)
+      let present = query(it.target).len() > 0
+      if t in names { if present { link(it.target, names.at(t)) } else { names.at(t) } }
+      else if present { it } else { [#t] }
+    }
+    doc
+  })
+}
+
 /// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
-// ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
-// `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
-// A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
-// lane tuple maps elementwise.  `frac(x, ∋)` is the note's division, spelled `x%∋` as one token.
-#let plain(c) = {
-  if type(c) == color { c.to-hex() } else if type(c) != content { c }
-  else if c == [ ] or c.func() == linebreak { " " }
-  // `raw`, `text` and a math `symbol` all carry their glyphs in `text`; `∋` is the third.
-  else if c.has("text") { c.text }
-  else if c.func() == math.frac { plain(c.num) + "%" + plain(c.denom) }
-  else if c.has("children") { c.children.map(plain).join("") }
-  else if c.has("body") { plain(c.body) }
-  // `styled` is what a `src` side note in a step's caption is; a `ref` reads as its label.
-  else if c.has("child") { plain(c.child) }
-  else if c.func() == ref { repr(c.target) }
-  else { repr(c) }
-}
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
 // `query(heading.before(here()))` per picture is quadratic in the note (650 pictures × 600 headings).
-#let pic-meta(key, body, width: auto) = if NODRAW { none } else { context {
+// `disp: true` only from `disp` below: a picture INSIDE a display reports a crop box of its own, so
+// without the flag a gate grouping marks by the preceding `pic` would file a display's arrows under
+// whichever inner picture came last.
+#let pic-meta(key, body, width: auto, disp: false) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
     numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
   let (sz, pos) = (measure(body, width: width), here().position())
   // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
   [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
-    x: pos.x.pt(), y: pos.y.pt(),
+    x: pos.x.pt(), y: pos.y.pt(), disp: disp,
     w: sz.width.pt(), h: sz.height.pt()))<pic>]
 } }
 #let disp(body) = figure(kind: "disp", supplement: none, {
   // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
   context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
-    body, width: PAGEW - 2 * MARGIN)
+    body, width: PAGEW - 2 * MARGIN, disp: true)
   body
 })
 

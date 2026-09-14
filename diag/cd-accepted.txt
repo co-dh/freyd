@@ -1,0 +1,14 @@
+# Wiring differences between a generated panel and the drawing in the note it answers that are
+# ACCEPTED, one per line, `<selector> | <check> — <detail>`, a difference as `scripts/svg-check --records`
+# reports it.
+# `./scripts/cd-check` fails unless a panel's differences are EXACTLY these, so a line deleted here
+# is a difference nobody has agreed to and turns the gate red just as a new one does.
+#
+# A difference is accepted only when the note's drawing says something the STATEMENT does not, or
+# lays out corners of its own.  A wrong direction, an arrow through a label, a chord that is not
+# straight — none of those can be accepted: they are the drawer's bug, and the drawer is fixed.
+#
+# COLOUR is no exception, and the eight lines that once stood here are gone: the note's own
+# `<banana-split>` hues turned out to be a rule the STATEMENT determines — a chord an induced
+# constructor built out of one arrow per side of the paste makes the two sides the two components —
+# so the generator applies it and there is nothing left to accept.  The list is EMPTY.

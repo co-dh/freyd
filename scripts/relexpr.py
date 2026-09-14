@@ -179,9 +179,14 @@ def p_prod(s, i, obj=False):
                 i += 1
             x = ('atom', squeeze(s[j0:i]))
         xs.append(x)
-        if i >= len(s) or s[i] != '×':
+        # Space around `×` is spelling, not structure: Lean's pretty-printer writes `secure × 𝟙`
+        # where the note writes `secure×𝟙`, and both name the one arrow on the pair.
+        j = i
+        while j < len(s) and s[j] in " \t":
+            j += 1
+        if j >= len(s) or s[j] != '×':
             return (xs[0] if len(xs) == 1 else ('prod', xs)), i
-        i += 1
+        i = j + 1
 
 
 def p_prim(s, i, obj=False):
@@ -189,6 +194,11 @@ def p_prim(s, i, obj=False):
     LEFTMOST bracket is the OUTERMOST functor and the chain is built from the right; the nodes carry
     no context spelling, which is what makes `spell` write the whole chain back in one go."""
     x, i = p_base(s, i, obj)
+    # AN IDENTITY PRINTED WITH ITS OBJECT is still the identity: Lean writes `𝟙[[X]]`, `𝟙A`, and
+    # the object is redundant in a cut reading — it names the very lanes running past the bead.
+    if (x[0] == 'app' and x[1] == UNIT) \
+            or (x[0] == 'atom' and x[1].startswith(UNIT) and x[1][len(UNIT):].isalnum()):
+        x = ('atom', UNIT)
     bs = []
     while i < len(s) and s[i] == '[' and not INTERVAL.match(s, i):
         j = matching(s, i)
@@ -552,10 +562,10 @@ def norm(e):
 # panel may name it either way.  They differ as RELATIONS — B&dM p.119 symmetrises `P`'s second
 # conjunct, and only on maps do they agree (p.202) — so the panel keeps the letter it was drawn with
 # and the quotient is taken at the comparison alone.
-# Declared in `diag/hm-sigs.json`, beside the signatures, because which two letters draw one lane is
-# a fact about the NOTE, not about the sweep.
+# Declared in `diag/circuit-sigs.json`, beside the circuit signatures — `scripts/circuit` is the
+# only remaining reader of this table, since the Python string-diagram drawer/reader are retired.
 SIGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "diag",
-                    "hm-sigs.json")
+                    "circuit-sigs.json")
 _ALIAS = None
 
 
@@ -640,16 +650,48 @@ def act(label, e, obj=False):
         return ('app', head, e,
                 head + '(' + ','.join('−' if b == '−' else (b if obj else UNIT) for b in bs) + ')')
     if '−' in label:
-        return ('prod', [e if p == '−' else ('atom', p if obj else UNIT) for p in label.split('×')])
+        # The named slot is PARSED, like the object wire's own label in `fold_cut`: `A[n]×−` names
+        # the object `A[n]`, and left as an atom spelling it the cut would differ from the very src
+        # it spells the same.
+        # `split_top`, never `split`: a bracketed factor — `(A×B)×−`, the lane a re-bracketing
+        # makes — holds a `×` of its own, and a naive cut hands `parse` half a bracket.
+        return ('prod', [e if p == '−' else (norm(parse(p, True)) if obj else ('atom', UNIT))
+                         for p in split_top(label, '×')])
     if label == 'Δ':
         return ('prod', [e, e])
     return ('app', label, e)
 
 
+def peelobj(name):
+    """An object NAME as (how many `list` sugars wrap it, the name inside).  `[[A]]` is `list` twice
+    over `A`; `[nil,new]` is a junc and peels to nothing, which is what the comma test says.  The
+    inverse of the `[…]` `spell` writes, and the one reader a carrier rename may go through — a
+    slice or a `find('[')` would take the junc apart too and put a carrier where a case arm is."""
+    d = 0
+    while len(name) > 2 and name[0] == '[' and name[-1] == ']' \
+            and len(split_top(name[1:-1], ',')) == 1:
+        name, d = name[1:-1], d + 1
+    return d, name
+
+
+def recarrier(e, old, new):
+    """Every occurrence of the carrier `old` in a parsed expression renamed to `new`, under the
+    `[…]` sugar as well.  Structural: a name that merely CONTAINS the letters is left alone, which
+    is why this cannot be a textual substitution."""
+    if isinstance(e, tuple) and e and e[0] == 'atom':
+        d, inner = peelobj(e[1])
+        return ('atom', '[' * d + new + ']' * d) if inner == old else e
+    if isinstance(e, tuple):
+        return tuple(recarrier(x, old, new) for x in e)
+    if isinstance(e, list):
+        return [recarrier(x, old, new) for x in e]
+    return e
+
+
 def fill(wire, bead, inner):
     """A bead ON a context wire, at the same height as the one inside it (13.3.5b's `p×𝟙` beside
     `p`): the wire's hole takes the inner factor and the bead supplies the other slots."""
-    ps, bs = wire.split('×'), bead.split('×')
+    ps, bs = split_top(wire, '×'), split_top(bead, '×')
     if '−' not in ps or len(ps) != len(bs) or bs[ps.index('−')] != UNIT:
         raise Unhandled(f"the bead {bead} does not fit the wire {wire}")
     return ('prod', [inner if p == '−' else parse(b) for p, b in zip(ps, bs)])

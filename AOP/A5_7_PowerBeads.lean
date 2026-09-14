@@ -29,10 +29,68 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     Egli–Milner definition — read at `LaxNatural`'s definition; `AOP.A5_7`'s `eps_lax_natural`
     is the same fact before the power relator is bundled. -/
 public theorem eps_laxNatural :
-    LaxNatural (Relator.idRelator 𝒜) (powerRelator (𝒜 := 𝒜)) (fun a => ∋ a) :=
+    LaxNatural (Relator.idRelator 𝒜) (powerRelator (𝒜 := 𝒜)) (fun A => ∋ A) :=
   fun R => powerRel_eps_lax R
 
+/-- The identity relator preserves converse: its action on arrows is the identity. -/
+public theorem idRelator_preservesRecip : (Relator.idRelator 𝒜).PreservesRecip :=
+  fun _ => rfl
+
+/-- **`∈ ≜ ∋°` is OP-lax**, the converse verdict `recip_oplax` turns `eps_laxNatural` into; lax it
+    is not (`mem_not_laxNatural`), so op-lax is the strongest reading its bead may carry. -/
+public theorem mem_oplaxNatural :
+    OpLaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.idRelator 𝒜) (fun A => (∋ A)°) :=
+  recip_oplax idRelator_preservesRecip powerRelator_preservesRecip eps_laxNatural
+
 end EpsLax
+
+/-! ## `cp` is lax natural -/
+
+section CpLax
+
+-- `cpMap` lives over `TabularUnitaryUnguardedDivisionPowerAllegory` and `powerRelator` over
+-- `TabularUnitaryUnguardedPowerAllegory`; only the class BELOW both carries one `Allegory` path
+-- for the two, and it is the one §7.4's cylinder is stated over.
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
+/-- **B&dM p.126, `cp ≜ Λ(F(∋))` is LAX natural** `F∘P ⟶ P∘F`: distributing `F` over a tuple of
+    sets and then taking one element out of each beats taking the elements out first and then
+    collecting the results, because the collected sets need not be a `F`-shape of sets.
+
+    STRICT it is not: at `F = Δ` (`A ↦ A×A`) `cp` is the cross product `(X,Y) ↦ X×Y`, and over
+    the full relation on a two-element set the Egli–Milner right-hand side admits the diagonal
+    `{(1,1),(2,2)}`, which is no rectangle `X'×Y'`, so nothing on the left reaches it.
+
+    Theorem 5.2 (`laxNatural_iff_strict_on_maps`) carries it: on a map `f` the power relator IS
+    the existential image (`powerRel_map`), and there the square is the transpose's own
+    absorption/fusion pair. -/
+public theorem cpMap_laxNatural (F : Relator 𝒜 𝒜) :
+    LaxNatural (Relator.comp F powerRelator) (Relator.comp powerRelator F)
+      (fun A => cpMap F A) :=
+  (laxNatural_iff_strict_on_maps (Relator.comp F powerRelator) (Relator.comp powerRelator F)
+      (fun A => cpMap F A)).mpr fun f hf => by
+    show F.map (powerRel f) ≫ cpMap F _ = cpMap F _ ≫ powerRel (F.map f)
+    rw [powerRel_map hf, powerRel_map (F.map_is_map hf)]
+    show F.map (existsImage f) ≫ Λ (F.map (∋ _)) = Λ (F.map (∋ _)) ≫ existsImage (F.map f)
+    have hE : Map (F.map (existsImage f)) := F.map_is_map (Λ_is_map' _)
+    rw [← Λ_fusion hE, Λ_absorption, ← F.map_comp, ← F.map_comp, existsImage_eps]
+
+end CpLax
+
+/-! ## The singleton's two spellings -/
+
+section SingletonSpelling
+
+variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
+
+/-- `𝟙%∋` IS `singletonMap`.  §2.415 defines the singleton as `Λ 𝟙`, and that is the spelling a
+    picture is drawn in — `Λ W = 𝟙%∋ E(W)` splits the transpose and leaves `Λ 𝟙` standing — while
+    every theorem about it is written with the name.  The bridge is what makes the two ONE
+    statement to `diag-export`'s naturality search, which filters candidates by the constants the
+    bead is built from and so never reached `singletonMap_natural` from a panel drawn as `Λ 𝟙`. -/
+@[diag_bridge] public theorem Λ_id_eq_singletonMap (a : 𝒜) : Λ (𝟙 a) = singletonMap := rfl
+
+end SingletonSpelling
 
 /-! ## `𝟙%∋` is lax natural, bundled -/
 
@@ -63,31 +121,31 @@ end SingletonLax
 
 /-- `powerRel` in `Rel(Set)`, pointwise: `X (P R) Y` iff every element of `X` `R`-reaches into
     `Y` (term₁) and every element of `Y` is `R`-reachable from `X` (term₂). -/
-public theorem powerRel_apply {a b : RelSet.{u}} (R : a ⟶ b)
-    (X : (PowerAllegory.powerObj a).carrier) (Y : (PowerAllegory.powerObj b).carrier) :
+public theorem powerRel_apply {A B : RelSet.{u}} (R : A ⟶ B)
+    (X : (PowerAllegory.powerObj A).carrier) (Y : (PowerAllegory.powerObj B).carrier) :
     powerRel R X Y ↔ (∀ x, X x → ∃ y, R x y ∧ Y y) ∧ (∀ y, Y y → ∃ x, X x ∧ R x y) :=
   Iff.rfl
 
 /-- `bigUnion` in `Rel(Set)`, pointwise: `⋃` relates the family `F` to exactly one set, the set
     of the elements of the members of `F`.  `⋃` is a map (`Λ_is_map'`) with `⋃ ≫ ∋ = ∋∋`
     (`Λ_eps_eq'`); simplicity pins the set, entireness produces it. -/
-public theorem bigUnion_apply {a : RelSet.{u}}
-    (F : (PowerAllegory.powerObj (PowerAllegory.powerObj a)).carrier)
-    (U : (PowerAllegory.powerObj a).carrier) :
-    bigUnion (a := a) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
-  have hmap : Map (bigUnion (a := a)) := by
-    show Map (Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a)); exact Λ_is_map' _
-  have heq : bigUnion (a := a) ≫ ∋ a = ∋ (PowerAllegory.powerObj a) ≫ ∋ a := Λ_eps_eq' _
-  have fwd : ∀ V : (PowerAllegory.powerObj a).carrier, bigUnion (a := a) F V →
+public theorem bigUnion_apply {A : RelSet.{u}}
+    (F : (PowerAllegory.powerObj (PowerAllegory.powerObj A)).carrier)
+    (U : (PowerAllegory.powerObj A).carrier) :
+    bigUnion (a := A) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
+  have hmap : Map (bigUnion (a := A)) := by
+    show Map (Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A)); exact Λ_is_map' _
+  have heq : bigUnion (a := A) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ ∋ A := Λ_eps_eq' _
+  have fwd : ∀ V : (PowerAllegory.powerObj A).carrier, bigUnion (a := A) F V →
       ∀ x, (V x ↔ ∃ X, F X ∧ X x) := by
     intro V hFV x
     constructor
     · intro hVx
-      have h1 : (bigUnion (a := a) ≫ ∋ a) F x := ⟨V, hFV, hVx⟩
+      have h1 : (bigUnion (a := A) ≫ ∋ A) F x := ⟨V, hFV, hVx⟩
       rw [heq] at h1
       exact h1
     · intro hx
-      have h2 : (bigUnion (a := a) ≫ ∋ a) F x := by rw [heq]; exact hx
+      have h2 : (bigUnion (a := A) ≫ ∋ A) F x := by rw [heq]; exact hx
       obtain ⟨V', hFV', hV'x⟩ := h2
       exact RelSet.simple_uniq hmap.2 hFV' hFV ▸ hV'x
   refine ⟨fwd U, fun hdesc => ?_⟩
@@ -107,7 +165,7 @@ public theorem bigUnion_apply {a : RelSet.{u}}
     empty at `{true,false}`, because term₁ demands that EVERY member `R`-reach into the output
     and the member `false` reaches nothing. -/
 public theorem eps_not_strict :
-    ∃ (a : RelSet.{0}) (R : a ⟶ a), ¬ (∋ a ≫ R ⊑ powerRel R ≫ ∋ a) := by
+    ∃ (A : RelSet.{0}) (R : A ⟶ A), ¬ (∋ A ≫ R ⊑ powerRel R ≫ ∋ A) := by
   refine ⟨⟨Bool⟩, boolTip, fun h => ?_⟩
   obtain ⟨T, hT, -⟩ := RelSet.le_iff.mp h (fun _ => True) true ⟨true, trivial, rfl, rfl⟩
   obtain ⟨y, hy, -⟩ :=
@@ -127,7 +185,7 @@ public theorem eps_not_strict :
     `∈` has no declaration of its own — the note's convention reads it as `∋` backwards. -/
 public theorem mem_not_laxNatural :
     ¬ LaxNatural (powerRelator (𝒜 := RelSet.{0})) (Relator.idRelator RelSet.{0})
-        (fun a => (∋ a)°) := by
+        (fun A => (∋ A)°) := by
   intro h
   have hsq : boolTip ≫ (∋ (⟨Bool⟩ : RelSet.{0}))°
       ⊑ (∋ (⟨Bool⟩ : RelSet.{0}))° ≫ powerRel boolTip := h boolTip
@@ -148,16 +206,16 @@ public theorem mem_not_laxNatural :
 
     The abstract statement stays lax: `powerRel_est_lt_bigUnion` (`AOP.A6_1_OrdRelSet`) is the
     neighbouring square that genuinely fails. -/
-public theorem bigUnion_strict_relSet {a b : RelSet.{u}} (R : a ⟶ b) :
+public theorem bigUnion_strict_relSet {A B : RelSet.{u}} (R : A ⟶ B) :
     powerRel (powerRel R) ≫ bigUnion = bigUnion ≫ powerRel R := by
-  have hlax : powerRel (powerRel R) ≫ bigUnion (a := b) ⊑ bigUnion (a := a) ≫ powerRel R :=
+  have hlax : powerRel (powerRel R) ≫ bigUnion (a := B) ⊑ bigUnion (a := A) ≫ powerRel R :=
     bigUnion_lax_natural R
   refine le_antisymm hlax (RelSet.le_iff.mpr fun F Y hFY => ?_)
   obtain ⟨U, hFU, hUY⟩ := hFY
   have hU := (bigUnion_apply F U).mp hFU
   have hEM := (powerRel_apply R U Y).mp hUY
   -- Each member `X` of `F` is `P R`-related to the part of `Y` it reaches.
-  have hkey : ∀ X : (PowerAllegory.powerObj a).carrier, F X →
+  have hkey : ∀ X : (PowerAllegory.powerObj A).carrier, F X →
       powerRel R X (fun y => Y y ∧ ∃ x, X x ∧ R x y) := by
     intro X hFX
     refine (powerRel_apply R X _).mpr ⟨fun x hXx => ?_, ?_⟩

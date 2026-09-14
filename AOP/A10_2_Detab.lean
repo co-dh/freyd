@@ -106,6 +106,26 @@ def detab : dSL Unit Char ⟶ (⟨List Char⟩ : RelSet.{0}) :=
   | Sum.inl _ => SnocList.wrap ()
   | Sum.inr (x, a) => expandFn n tb nl blank x a
 
+/-- **entab-defn**: `expand : String×Char⟶String` as an arrow of its own — the note's box, and the
+    second arm of `[nil,expand]`. -/
+@[expose] public def expand (n : Nat) (tb nl blank : Char) :
+    (⟨Str × Char⟩ : RelSet.{0}) ⟶ dSL Unit Char :=
+  graph (fun p => expandFn n tb nl blank p.1 p.2)
+
+/-- **entab-defn**: the algebra IS the junction `[nil,expand]` the note writes. -/
+public theorem expandAlg_eq_junc (n : Nat) (tb nl blank : Char) :
+    graph (expandAlgFn n tb nl blank) = junc (sumCop _ _) nilR (expand n tb nl blank) := by
+  apply hom_ext; intro u r
+  constructor
+  · intro h
+    cases u with
+    | inl d => exact Or.inl ⟨d, rfl, h⟩
+    | inr p => exact Or.inr ⟨p, rfl, h⟩
+  · intro h
+    cases h with
+    | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
+    | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
+
 /-- **entab-defn**: the catamorphism of `[nil,expand]` IS `detabFn`. -/
 public theorem detab_cata (n : Nat) (tb nl blank : Char) :
     cataR (graph (expandAlgFn n tb nl blank))
@@ -445,10 +465,11 @@ public theorem entab_thin_condition (n : Nat) (tb nl blank : Char) (hn : 0 < n)
     (`AOP.A6_SnocList.cataR_con`). -/
 public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
     mu (fun X : dSL Unit Char ⟶ dSL Unit Char =>
-        Λ (Allegory.recip (graph (expandAlgFn n tb nl blank)
-            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char))
-          ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ graph (con (L := Unit) (E := Char)))
+        Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
+          ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR)
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
+  rw [← expandAlg_eq_junc, ← con_eq_junc]
   have hH : (relCata (F := F Unit Char) (graph (expandAlgFn n tb nl blank)))°
         ≫ relCata (F := F Unit Char) (I := initial Unit Char)
             (graph (con (L := Unit) (E := Char)))
@@ -458,7 +479,45 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
   have key := greedy_dp (F := F Unit Char) (F_preservesRecip Unit Char) (initial Unit Char)
     (h := graph (con (L := Unit) (E := Char))) (T := graph (expandAlgFn n tb nl blank))
     (R := R) (Q := Q n tb nl blank) (graph_map con) entab_mono R_trans
-    (by rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
-  rwa [hH] at key
+    (by simp only [H]; rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
+  simp only [H] at key; rwa [hH] at key
+
+/-- `expand` never returns the empty string: on a tab it fills at least one blank (the column is
+    `< n` after `%`), on any other character it snocs.  This is B&dM's Proposition 10.1
+    hypothesis `nil` and `expand` have disjoint ranges. -/
+public theorem expand_ne_nil (n : Nat) (tb nl blank : Char) (hn : 0 < n) (x : Str) (a : Char) :
+    expandFn n tb nl blank x a ≠ SnocList.wrap () := by
+  unfold expandFn
+  split
+  · unfold fillFn
+    obtain ⟨k, hk⟩ : ∃ k, n - colFn nl x % n = k + 1 :=
+      ⟨n - colFn nl x % n - 1, by have := Nat.mod_lt (colFn nl x) hn; omega⟩
+    rw [hk]
+    show SnocList.snoc (pad blank x k) blank ≠ SnocList.wrap ()
+    intro h; cases h
+  · intro h; cases h
+
+/-- **entab-laws**, third row (Proposition 10.1): with `nil` and `expand` of disjoint ranges the
+    branch `(expand°)%∋ est(V×U)(X×𝟙)snoc` refines `entab_laws`' body
+    `([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]` — `AOP.A9_1.est_arm₂_le` at `[nil,expand]`, whose
+    `Q₂` at `Q≜𝟙+(V×U)` is `V×U`. -/
+public theorem entab_branch (n : Nat) (tb nl blank : Char) (hn : 0 < n)
+    (X : dSL Unit Char ⟶ dSL Unit Char) :
+    Λ ((expand n tb nl blank)°) ≫ est (rprodMap (V n nl blank) (U tb))
+        ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ snocR
+      ⊑ Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+            : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°) ≫ est (Q n tb nl blank)
+          ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR := by
+  rw [← expandAlg_eq_junc, ← con_eq_junc]
+  exact est_arm₂_le (X := X) (Q := Q n tb nl blank)
+    (T := graph (expandAlgFn n tb nl blank)) (U := graph (con (L := Unit) (E := Char)))
+    fun _d p y h1 h2 =>
+      expand_ne_nil n tb nl blank hn p.1 p.2 (Eq.trans (Eq.symm (h2 : y = _)) (h1 : y = _))
+
+-- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
+open Lean PrettyPrinter in
+@[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
+  | `($_:ident) => `($(mkIdent `prefix))
+  | _ => throw ()
 
 end Freyd.Alg.RelSet.Detab

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""note-meta — the note's metadata query, cached against every file it reads.
+
+    ./scripts/note-meta [--ch N] [--input KEY=VAL]...
+
+Prints exactly what `typst query --root . [--input KEY=VAL]... <root> metadata --field value`
+prints, where `<root>` is `scripts/notesplit.py`'s `note_root()`: the whole note, or chapter N's
+file when `--ch N`/`CH=N` names one — so a gate reading this query is chapter-scoped by saying
+nothing, and the chapter's answer caches under its own key beside the book's.  string-check, circuit-check and cd-obligations each ran that query
+themselves — about 22s per run, paid even when the only thing that changed was Lean, which the
+note does not read.  This caches the query's own output, keyed by the CONTENT of every file the
+note reads (not by mtime, not by the argument list alone), so a byte-identical source tree answers
+from disk instead of re-running typst.
+
+Cache file: .lake/build/note-meta/<sha256 of `typst --version` and the argument list, joined by
+NUL>.json — one file per typst and argument list, holding {"args": [...], "typst": <version>,
+"deps": {path: sha256}, "meta": <parsed query output>}.  A hit requires every recorded path to still exist with the same hash; anything else
+(missing file, changed hash, no cache file) is a miss and reruns typst, atomically rewriting the
+cache so concurrent gates never see a half-written file.
+"""
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import time
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# `CH=13` queries the CHAPTER's root instead of the note's, and caches it under its own key: one
+# chapter is a quarter of the note's layout, and every gate that reads this query gets that for free.
+from notesplit import note_root, take_chapter     # noqa: E402
+CACHE_DIR = os.path.join(ROOT, ".lake", "build", "note-meta")
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def cache_path(args):
+    key = hashlib.sha256(b"\0".join(a.encode() for a in args)).hexdigest()
+    return os.path.join(CACHE_DIR, f"{key}.json")
+
+
+def cache_hit(entry):
+    for path, digest in entry["deps"].items():
+        full = os.path.join(ROOT, path)
+        if not os.path.exists(full) or sha256_file(full) != digest:
+            return False
+    return True
+
+
+def main(argv):
+    args = take_chapter(argv)
+    note = note_root()
+    # The typst binary answers the query too: an upgrade changes the output with no source changed.
+    ver = subprocess.run(["typst", "--version"], capture_output=True, text=True, check=True).stdout
+    # The root is part of the key: a chapter's answer and the book's must not overwrite each other.
+    cpath = cache_path([ver, note, *args])
+    if os.path.exists(cpath):
+        with open(cpath) as f:
+            entry = json.load(f)
+        if cache_hit(entry):
+            print(json.dumps(entry["meta"]))
+            return 0
+
+    t0 = time.time_ns()
+    with tempfile.TemporaryDirectory() as tmpdir:
+        query_cmd = ["typst", "query", "--root", ".", *args, note, "metadata", "--field", "value"]
+        deps_path = os.path.join(tmpdir, "deps.json")
+        pdf_path = os.path.join(tmpdir, "note.pdf")
+        # `typst query` has no `--deps`, and a compile of the same world reads the same files.  One after
+        # the other: each lays out the whole note (13 GB, `--pages` saves none), and two at once exhaust RAM.
+        compile_cmd = ["typst", "compile", "--root", ".", *args, note, pdf_path,
+                       "--deps", deps_path, "--deps-format", "json"]
+        q = subprocess.run(query_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        if q.returncode:
+            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{q.stderr}")
+        c = subprocess.run(compile_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        if c.returncode:
+            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{c.stderr}")
+        meta = json.loads(q.stdout)
+        with open(deps_path) as f:
+            deps_list = json.load(f)["inputs"]
+        deps = {p: sha256_file(os.path.join(ROOT, p)) for p in deps_list}
+
+    # A source written while typst ran would pair its NEW hash with the OLD answer; the second of margin
+    # covers the coarse clock the kernel stamps mtimes with (git's racy-clean rule). Such a run answers, uncached.
+    if all(os.stat(os.path.join(ROOT, p)).st_mtime_ns < t0 - 10**9 for p in deps):
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        fd, tmp_path = tempfile.mkstemp(dir=CACHE_DIR, suffix=".json.tmp")
+        with os.fdopen(fd, "w") as f:
+            json.dump({"args": args, "typst": ver, "deps": deps, "meta": meta}, f)
+        os.replace(tmp_path, cpath)
+    print(json.dumps(meta))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

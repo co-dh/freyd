@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """labelfit — no two labels inside one panel touch, measured off the COMPILED page.
 
-The vertical unit a panel is drawn on (`DY` in `scripts/diagram`) is only as small as the labels
+The vertical unit a panel is drawn on (`DY` in `diag/dpanel.typ`) is only as small as the labels
 allow: shrink the rows past the point where a bead's name runs into the name a row below it and the
 picture stops being readable, with nothing in the sweep or the pair check to say so.  This is that
 check, so the unit is a measured number and not a guess.
@@ -19,7 +19,11 @@ import importlib.util, os, re, subprocess, sys, tempfile
 from importlib.machinery import SourceFileLoader
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NOTE = os.path.join(ROOT, "diag", "allegory-axioms.pdf")
+# The pdf swept is the chapter's when `CH`/`--ch` names one (`scripts/notesplit.py`), so the pages
+# this reports are the pages of the file the author has open.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_pdf
+NOTE = os.path.join(ROOT, note_pdf())
 BAND = 0.6      # a fill wider or taller than this much of the page is a rule or a page band, not a panel
 PAD = 2.0       # a panel's own labels sit ON its frame edge, so the box is grown before a label is placed
 HIT = 0.5       # boxes must OVERLAP by this much to conflict — a shared edge is not a collision

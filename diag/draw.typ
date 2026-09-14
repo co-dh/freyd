@@ -49,14 +49,19 @@
 
 // ------------------------------------- a wire's colour is its type (`typed: true`): ONE HUE PER OBJECT
 // Off the note's ARROW palette, since a bead's colour says which arrow; `C` gold not olive, too near `α_C`'s green.
-// FOUR HUES, named by hue and no longer by a letter: which object wears which is `OCOL` below.  They
-// are spread by HUE ANGLE — 35°, 70°, 142°, 234° — because two objects on one wire read as the same
+// FIVE HUES, named by hue and no longer by a letter: which object wears which is `OCOL` below.  They
+// are spread by HUE ANGLE — 35°, 70°, 142°, 234°, 306° — because two objects on one wire read as the same
 // object when their angles are close, whatever ΔE says: red against amber is 35° apart and was the
 // pair the note kept getting wrong, so no display now puts those two on one wire.
 #let TCOL = rgb("#b91c1c")      // red
 #let BCOL = rgb("#0e7490")      // teal
 #let CCOL = rgb("#a16207")      // amber
 #let GCOL = rgb("#00932d")      // green, the fourth: §16.4b runs four types down one wire
+// The fifth, for the same reason the fourth exists: §13.5.1a's `gen` renames its object FIVE times
+// down one wire, and four bands cannot draw five objects.  Picked by the rule above — the widest hue
+// angle left, 306° and 72° from the nearest band where red and amber's fatal pair was 35° — ΔE76 25
+// or more from every bead hue and every lane `FCOL` names, so no lane's hash has to move for it.
+#let VCOL = rgb("#a17af8")      // violet
 
 // ONE OBJECT, ONE HUE, NOTE-WIDE.  Bands assigned by POSITION made `C` amber in one panel of §11.4.2a
 // and teal in the next, which is the one thing the colour is there to prevent.  Two objects share a
@@ -65,9 +70,19 @@
 // object name belongs here — `obands` reads it with no default, so an unlisted one is a compile
 // error, not a wrong hue.
 #let OCOL = (
-  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL, "TA": TCOL, "TB": TCOL,
+  "A": GCOL, "B": BCOL, "C": GCOL, "T": TCOL, "[A]": TCOL, "TA": TCOL, "TB": BCOL,
   "Int": TCOL, "Nat": TCOL, "LA": TCOL, "Job": TCOL, "Item": TCOL, "Word": TCOL, "City": TCOL,
+  // `TA` and `TB` are the two ends of §11.5.1c's wire and `𝟏` is the summand §13.6.4a's wire ends
+  // at: each stands beside the object above it, so it cannot wear that object's band.  `𝟏` takes a
+  // wire hue, not the grey the REGION reserves — a grey object wire would vanish into that strip.
+  "𝟏": BCOL,
   "Char": TCOL, "Code": BCOL, "Op": GCOL,
+  // The objects the SORT and THIN displays rename along one wire: `A` is green, so the list it is
+  // folded into and that list's `F`-image take the other two bands, and the wire's three names read
+  // as three objects.  A hash band is only a starting point and it put all three on green.
+  "L": BCOL, "LF": TCOL,
+  // §16's coder and paragraph objects, each beside the object it is built from on one wire.
+  "dStr": BCOL, "[Code]": TCOL, "dPara Word": BCOL,
   "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
 
 // A NAME'S OWN NUMBER — FNV over its bytes, with the round's `+` where FNV-1a has an exclusive or,
@@ -82,8 +97,13 @@
 // are: take the band from the name, so a new object is drawn before anyone declares it and always in
 // the same band.  DELIBERATE sharing stays in `OCOL` above — a derived band is only a starting point,
 // and two objects that must be told apart in one panel are what an entry there is for.
-#let OBANDS = (TCOL, BCOL, CCOL, GCOL)
-#let objcol(l) = OCOL.at(plain(l), default: OBANDS.at(calc.rem(namehash(plain(l)), OBANDS.len())))
+#let OBANDS = (TCOL, BCOL, CCOL, GCOL, VCOL)
+// THE BAND A NAME PREFERS, which is where the allocator starts walking and never where it must
+// stop: `OCOL`'s entry when the note names the object, and otherwise the band its name hashes to,
+// so an object draws before anyone declares it and always in the same band when it is free.
+#let oband0(n) = OCOL.at(n, default: OBANDS.at(calc.rem(namehash(n), OBANDS.len())))
+// A HAND-LAID panel has no band list to allocate against, so it takes the preferred band.
+#let objcol(l) = oband0(plain(l))
 
 // `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
 // a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
@@ -101,7 +121,11 @@
 #let FCOL = (
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
   "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
-  "bag": rgb("#a29366"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
+  // §16.3's bag relator stands beside `F` in the tardy panels, where the khaki it had was ΔE76 28.7
+  // from it — two FIXED entries, which no allocation can separate.  This pink is the ring point
+  // furthest from every other entry (ΔE76 11.8 at the nearest, `[Char]×−`, which no panel draws with
+  // it) and ≥ 29 from `F`, `E`, `list`, `list⁺`, `tree` and `−×Job`, the lanes its panels do draw.
+  "bag": rgb("#de879d"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
   "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),
   "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"),
   // IntroString p.48's three monads, for the panels that redraw Cheng's commuting diagram.
@@ -119,16 +143,48 @@
   "G": rgb("#babd56"),
   // §13.5.4's index functors `[k] : X ↦ X[k]`, one per AXIS of the matrix (`fcol` maps `[3p]`
   // to `[p]` and `[m+1]` to `[m]`).  All four share one panel with `A×−`: pairwise ΔE76 ≥ 36 there.
-  "[n]": rgb("#4f7fd0"), "[p]": rgb("#c5893e"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
+  // `[p]` is a sand, not the amber it was: `#c5893e` was ΔE76 15.9 from `CCOL`, the object hue
+  // §13.5.1's `[n] A × [n]([p]([m] A))` band is drawn in, so the lane and the object under it read
+  // as one colour.  ΔE76 29 from `CCOL` and ≥ 29 from every axis and product context it stands with.
+  "[n]": rgb("#4f7fd0"), "[p]": rgb("#bf9b61"), "[3]": rgb("#2e9aa0"), "[m]": rgb("#7a8f25"),
   // `concat` glues the `[n]` and `[p]` axes into the one axis `[np]`, which stands beside both of
   // them in `⦇gen⦈concat est(R)`: its own hue, ΔE76 ≥ 50 from each.
   "[np]": rgb("#cb677e"),
+  // §13.5's cons context: the product with the ROW `A[n]`, a different functor from `A×−` under the
+  // index and drawn beside it, so it takes a brown of its own — ΔE76 ≥ 32 from `A×−` and every axis.
+  "A[n]×−": rgb("#605b28"),
   // The interval panel's `Digit×−`, in the `×−` browns: it shared its panel with `E` on a free hue
   // that the four entries above moved to ΔE76 12 from `E`, which is what an unnamed lane risks.
   "Digit×−": rgb("#a58a6e"),
   // §13.6.1's `[Int]×−`, the segment `new`, `glue` and `old` build: it stands beside `Int×−` and
   // `list` in every one of their panels, hence ΔE76 43 and 40 from those two.
-  "[Int]×−": rgb("#613a56"))
+  "[Int]×−": rgb("#613a56"),
+  // §13.5.1's cylinder, generated: the relator `H` of `cpMap H T` is a LANE beside `E`, `N`, `G`, `T`;
+  // violet is ΔE76 37 from the nearest FCOL entry (the free hue it fell to was 12 from `E`).
+  "H": rgb("#5b2e91"),
+  // §13.4's party: the segment `[A]×−` is a LANE beside `list` (ΔE76 17 on the free hue it fell to);
+  // this red is ΔE76 35 from every FCOL entry.
+  "[A]×−": rgb("#d2492a"),
+  // §13.6.1's van, generated: the product bifunctor `×` and the four pairings that feed it.  All
+  // five stand in the one panel with `list`, so all six are pairwise ΔE76 ≥ 29 (29.3 at the
+  // closest; to `list`: 54, 49, 34, 71, 69) — which is why they are picked TOGETHER, and picked
+  // from hues already rounded to 8 bits, the rounding being worth ΔE76 1 on its own.
+  "×": rgb("#5f3f32"), "⟨𝟙,list list⟩": rgb("#1f4e48"), "⟨list,list list⟩": rgb("#454460"),
+  "⟨𝟙,⟨list,list list⟩ ×⟩": rgb("#3d4c14"), "⟨⟨𝟙,list⟩ ×,list list⟩": rgb("#8a1831"),
+  // §13.6.1's van again, now that the left factor of a product is a lane: the three product
+  // contexts its panels draw beside `list`.  Picked TOGETHER, pairwise ΔE76 ≥ 33 and ≥ 29 from
+  // `list`, because naming any one of them moves the free hues the other two would take.
+  "X×−": rgb("#d09369"), "[X]×−": rgb("#a66378"), "(X × [X])×−": rgb("#74691d"),
+  // The same two product contexts at the objects LEAN names them at — §15.2's `[Char]×−` beside
+  // `list` and `E`, §13.6.2's `(A × [A])×−` beside `list`.  Each concrete context is its own entry,
+  // as `[A]×−`, `[Int]×−`, `Op×−` and `−×Char` already are; ΔE76 33 and 74 from `list`, and ≥ 29
+  // from every other lane their panels draw.
+  "[Char]×−": rgb("#c383a2"), "(A × [A])×−": rgb("#587028"),
+  // §13.5.4's cylinder axes, spelled by the arithmetic Lean carries.  `[n * pow3 m]` is `concat`'s
+  // glue of two axes and so an axis of ITS OWN, the way `[np]` is — not a length of either factor —
+  // so the shared-hue rule for one axis at two lengths does not reach it and both are named here.
+  // ΔE76 62 apart, and ≥ 29 from `[n]`, `[m]`, `[p]` and the product contexts beside them.
+  "[powm]": rgb("#af89b8"), "[npowm]": rgb("#48b19b"))
 
 // ------------------------------------------------ the regions, Remark 2.1 (p. 36); grey is `𝟏` alone
 // The book's own yellow (diagram (3.6), p. 77) kept far paler: a ground under running text, not a plate.
@@ -502,20 +558,41 @@
 // fixed obstacles have taken their neighbourhoods.
 #let RINGS = ((38, 30), (50, 30), (62, 30), (44, 42), (56, 42), (66, 36))
 
-// The hues STILL FREE: every ring point clear of the beads, the object hues and every declared lane,
-// thinned so two of them are themselves apart.  Pure, so Typst memoises it — one sweep per document.
-#let freehues() = {
-  let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, TCOL, BCOL, CCOL, GCOL)
+// THE POOL A LANE MAY BE MOVED TO: every in-gamut ring point clear of the bead hues and of the object
+// bands, the two things a wire is read beside wherever it is drawn.  It carries NO note-wide thinning,
+// because what a panel needs is separation from the lanes IT draws and two lanes that never share a
+// panel may reuse a band.  Pure, so Typst memoises it — one sweep per document.
+#let ringhues() = {
+  let obst = (GIVEN1, GIVEN2, INDUCED, SLACK, black, ..OBANDS)
   let out = ()
   for (L, C) in RINGS {
     for i in range(90) {
       let c = labcol(L, C * calc.cos(i * 4deg), C * calc.sin(i * 4deg))
-      if (c != none and obst.all(o => dE76(c, o) >= SEPFIX)
-          and FCOL.values().all(o => dE76(c, o) >= SEPPAIR)
-          and out.all(o => dE76(c, o) >= SEPPAIR + 1)) { out.push(c) }
+      if c != none and obst.all(o => dE76(c, o) >= SEPFIX) { out.push(c) }
     }
   }
   out
+}
+// THE HUE A NAME PREFERS: the pool clear of every declared lane by the note-wide floor and thinned so
+// two of them are themselves apart — that thinning is what makes the hash's answer a hue of this
+// name's own, note-wide.  It is a PREFERENCE and not the whole pool: a name whose preferred hue lands
+// on a lane of the panel it is drawn in is WALKED off it by `fcol`, over `ringhues`, so this list
+// staying short (the muted rings are crowded once `FCOL`'s own entries have taken their
+// neighbourhoods) no longer decides whether a panel can be drawn.
+#let freehues() = {
+  let out = ()
+  for c in ringhues() {
+    if (FCOL.values().all(o => dE76(c, o) >= SEPPAIR)
+        and out.all(o => dE76(c, o) >= SEPPAIR + 1)) { out.push(c) }
+  }
+  out
+}
+// The lane of `placed` — `(name, colour)` pairs — NEAREST to `c`, and how far: the one measurement
+// both the walk and the message it fails with are made of.
+#let nearlane(c, placed) = {
+  let (bn, bd) = (none, 1e9)
+  for p in placed { let d = dE76(c, p.at(1)); if d < bd { bd = d; bn = p.at(0) } }
+  (bn, bd)
 }
 // A LANE'S COLOUR.  `FCOL`'s entry where it has one — so no panel in the note moves — and otherwise
 // the free hue the name's own number picks, which is why a new functor draws without an edit here.
@@ -537,15 +614,109 @@
     let ax = e.replace(regex("[^a-zA-Z]+"), "")
     "[" + (if ax == "" { e } else { ax }) + "]" }
 }
-#let fcol(nm) = {
+// A LANE'S COLOUR, PLACED AGAINST THE HUES THE PANEL ALREADY HOLDS (`placed`: `(name, colour)` pairs).
+// `FCOL`'s entry where it has one — so a functor the note names everywhere reads the same colour in
+// every panel — and otherwise the hue the name's own number prefers, kept where it clears the panel
+// and otherwise MOVED to the ring point furthest from every lane the panel holds.  The farthest-point
+// move is the whole rule: which hue a name hashes to says nothing about who it stands beside, so an
+// undeclared lane landed ΔE76 12 from `tree` and the only cure on offer was one more `FCOL` entry —
+// one per lane name, for ever.  Preferring the hash keeps every lane that is NOT in a clash exactly
+// where it was.  `placed` empty is the standalone caller, who has no panel.  A ring point is already
+// `SEPFIX` clear of every bead hue and of every `OBANDS` band (they are `ringhues`' own obstacles),
+// so only the panel's other LANES enter the walk.
+#let fcol(nm, placed: ()) = {
   let n = faxis(nm)
   if n in FCOL { FCOL.at(n) } else {
     let free = freehues()
     assert(free.len() > 0, message: "no hue for the functor `" + n + "`: every muted ring point is"
       + " within ΔE76 " + str(SEPFIX) + " of a bead or object hue, or " + str(SEPPAIR) + " of a lane"
-      + " `FCOL` already names — give `" + n + "` an entry in `FCOL` (diag/draw.typ) or widen `RINGS`")
-    free.at(calc.rem(namehash(n), free.len()))
+      + " `FCOL` already names — widen `RINGS` (diag/draw.typ)")
+    let c0 = free.at(calc.rem(namehash(n), free.len()))
+    if nearlane(c0, placed).at(1) >= SEPPANEL { c0 } else {
+      let (best, bestd) = (none, -1)
+      for c in ringhues() {
+        let d = nearlane(c, placed).at(1)
+        if d > bestd { bestd = d; best = c }
+      }
+      // Nothing at the floor is a panel the muted band cannot colour, NOT a hue to guess at: a
+      // silent fallback here is a wire the reader reads as its neighbour, so it fails naming the
+      // pair and the measurement.
+      let (bn, bd) = nearlane(best, placed)
+      assert(bestd >= SEPPANEL, message: "no hue for the lane `" + n + "`: the furthest ring point"
+        + " from the lanes this panel already draws is still ΔE76 " + str(calc.round(bd, digits: 1))
+        + " from `" + str(bn) + "`, under " + str(SEPPANEL) + " — the panel holds "
+        + str(placed.len()) + " lanes and the muted rings have no point that far from all of them,"
+        + " so widen `RINGS` or draw fewer lanes in one panel (diag/draw.typ)")
+      best
+    }
   }
+}
+// AN OBJECT BAND, PLACED THE SAME WAY.  The bands of one wire must differ — the wire changes hue
+// where it changes object — and `OCOL` deliberately gives two objects one hue wherever no display
+// put them on one wire, which §15.4b's `dStr`/`Code` then did.  So a NAMED object is a preference
+// too, not a fixture: the preferred band first, then round the ring to the first that no band of
+// this wire has taken and that clears the panel's named lanes by `SEPFIX`.  Any two `OBANDS` are
+// ≥ ΔE76 42 apart, so distinctness of band is already distinctness of colour.
+#let ohue(n, bands, lanecols) = {
+  let b0 = oband0(n)
+  let k = OBANDS.position(b => repr(b) == repr(b0))
+  assert(k != none, message: "`OCOL` gives the object `" + n + "` a hue that is not one of `OBANDS`"
+    + " — the object wire is drawn in the bands, so the entry must name one (diag/draw.typ)")
+  let ord = range(OBANDS.len()).map(i => OBANDS.at(calc.rem(k + i, OBANDS.len())))
+  let ok = ord.filter(c => not bands.any(o => repr(o) == repr(c))
+    and lanecols.all(o => dE76(c, o) >= SEPFIX))
+  // Five bands and a wire that renames its object more often is a palette too small for the panel,
+  // not a hue to guess at: keep the preferred band and let the sweep report the pair.
+  if ok.len() > 0 { ok.first() } else { b0 }
+}
+// ONE PANEL, ONE ALLOCATOR.  EVERY hue a panel draws is placed here — a lane `FCOL` names, a lane it
+// does not, and each band of the object wire — each against every hue already placed in the SAME
+// panel.  Three rules that could not see each other is what let two of them collide, and the error
+// then asked for one more `FCOL` entry, which is a patch per lane name.  Order: the named lanes
+// (fixed, so no panel in the note moves), then the bands (clear of those), then the unnamed lanes
+// (clear of every lane placed; clear of the bands by `freehues`' construction).
+#let panelpal(lanes, objs) = {
+  let ns = lanes.map(faxis)
+  let lc = (:)
+  for n in ns { if n in FCOL and not (n in lc) { lc.insert(n, FCOL.at(n)) } }
+  // TWO NAMED LANES IN ONE PANEL ARE BOTH FIXED — a lane that changed hue from one panel of a display
+  // to the next would be read as a different functor — so this is the one clash no allocation can
+  // answer, and the walk below must not be blamed for it.  It is a `FCOL` edit: move the hue of
+  // whichever of the two appears in fewer displays.
+  let fx = lc.pairs()
+  for (i, a) in fx.enumerate() {
+    for b in fx.slice(i + 1) {
+      let d = dE76(a.at(1), b.at(1))
+      assert(d >= SEPPANEL, message: "this panel draws the named lanes `" + a.at(0) + "` and `"
+        + b.at(0) + "` ΔE76 " + str(calc.round(d, digits: 1)) + " apart, under " + str(SEPPANEL)
+        + " — `FCOL` fixes both hues, so no allocation can separate them: change one of the two"
+        + " entries (diag/draw.typ)")
+    }
+  }
+  let (oc, bands) = ((:), ())
+  for o in objs {
+    let n = plain(o)
+    if n in oc { continue }
+    let c = ohue(n, bands, lc.values())
+    oc.insert(n, c)
+    bands.push(c)
+  }
+  for n in ns { if not (n in lc) { lc.insert(n, fcol(n, placed: lc.pairs())) } }
+  (lane: lc, obj: oc)
+}
+// Reading the allocation back.  A label the allocator was never given is a panel drawing a wire it
+// did not declare, so it names that rather than falling back to a hue nobody placed.
+#let palf(pal, nm) = {
+  let n = faxis(nm)
+  assert(n in pal.lane, message: "the panel's allocator was not given the lane `" + n + "` — every"
+    + " label a panel draws a wire or a brace for goes in `panelpal`'s lane list (diag/dpanel.typ)")
+  pal.lane.at(n)
+}
+#let palo(pal, n) = {
+  let o = plain(n)
+  assert(o in pal.obj, message: "the panel's allocator was not given the object `" + o + "` — every"
+    + " band of the object wire goes in `panelpal`'s object list (diag/dpanel.typ)")
+  pal.obj.at(o)
 }
 // THE PALETTE'S RULE IS ONLY TRUE PANEL BY PANEL — two lanes that never share a picture may reuse a
 // band — so this is where it is checked: every pair of lanes drawn together, and every lane against
@@ -558,13 +729,17 @@
       // and share a hue by the rule above, so the separation rule cannot be put to them.
       assert(faxis(a.at(0)) == faxis(b.at(0)) or d >= SEPPANEL, message: "panel `" + id + "`: the lanes `"
         + a.at(0) + "` and `" + b.at(0) + "` are ΔE76 " + str(calc.round(d, digits: 1)) + " apart,"
-        + " under " + str(SEPPANEL) + " — give one of them its own entry in `FCOL` (diag/draw.typ)")
+        + " under " + str(SEPPANEL) + " — `panelpal` places two named lanes at that floor or refuses,"
+        + " and moves an unnamed one until it clears, so a pair measured HERE is a hue that reached"
+        + " the panel without it: check the labels `panelpal` was given (diag/dpanel.typ)")
     }
     for o in obst {
       let d = dE76(a.at(1), o.at(1))
       assert(d >= SEPFIX, message: "panel `" + id + "`: the lane `" + a.at(0) + "` is ΔE76 "
         + str(calc.round(d, digits: 1)) + " from " + o.at(0) + " drawn on it, under " + str(SEPFIX)
-        + " — give the lane its own entry in `FCOL` (diag/draw.typ)")
+        + " — `panelpal` places every lane and every band at that floor, so the pair it could not"
+        + " move is a fixed `FCOL` entry against a bead hue, or a band with no free ring left"
+        + " (diag/draw.typ)")
     }
   }
 }
@@ -620,19 +795,35 @@
 // A square's SMALLER side is always drawn down the left then across the bottom, so its `⊑` is `-45deg`.
 #let lab(x, y, col, w, rot: 0deg) = d.content((x, y), rotate(rot, text(10pt, col)[#w]))
 
+// Under `--input cdscan=1` every `ar` and every `node` drops a queryable mark, so `scripts/cd-check`
+// enumerates the note's commutative diagrams from the VOCABULARY THAT DRAWS THEM — a canvas whose
+// nodes are joined by `ar` arrows — instead of reading the note's source as text.
+#let CDSCAN = "cdscan" in sys.inputs
+#let cdmark(el, p) = if CDSCAN { d.content(p, [#metadata((kind: "cd", el: el))]) }
+
 // `ar` pulls both ends back off the node centres: a head drawn at a centre is buried under that node's
 // own white box.  `s0`/`s1` are the clearances — 0.95 leaving `A × B` sideways, 0.55 entering vertically.
-#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45) = {
+// `bow` bends the arrow that far off its chord, towards the chord's LEFT normal (negative for the
+// right): two arrows between ONE pair of nodes are drawn on top of each other otherwise.
+#let ar(a, b, col, dash: none, s0: 0.45, s1: 0.45, bow: 0) = {
+  cdmark("ar", a)
   let (dx, dy) = (b.at(0) - a.at(0), b.at(1) - a.at(1))
   let n = calc.sqrt(dx * dx + dy * dy)
-  d.line((a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy),
-    (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy),
-    mark: (end: ">", scale: 0.5), stroke: (thickness: 0.75pt, paint: col, dash: dash))
+  let p = (a.at(0) + s0 / n * dx, a.at(1) + s0 / n * dy)
+  let q = (b.at(0) - s1 / n * dx, b.at(1) - s1 / n * dy)
+  let st = (thickness: 0.75pt, paint: col, dash: dash)
+  if bow == 0 { d.line(p, q, mark: (end: ">", scale: 0.5), stroke: st) } else {
+    d.bezier(p, q, ((p.at(0) + q.at(0)) / 2 - bow / n * dy, (p.at(1) + q.at(1)) / 2 + bow / n * dx),
+      mark: (end: ">", scale: 0.5), stroke: st)
+  }
 }
 
 // Nodes are drawn last, with a white fill, so an edge may start at the node's centre and let the box
 // cover the stub — every edge then ends the same distance from its label, whatever its width.
-#let node(x, y, c, w) = d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
+#let node(x, y, c, w) = {
+  cdmark("node", (x, y))
+  d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
+}
 
 // A column of nodes at x; a row is (y, label, the people it names).
 #let nodes(x, rows) = for (k, row) in rows.enumerate() { node(x, row.at(0), (INDUCED, SLACK).at(k), row.at(1)) }

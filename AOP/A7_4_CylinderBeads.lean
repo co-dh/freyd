@@ -34,16 +34,16 @@ open Freyd
 -- Everything is indexed by RelSet OBJECTS, not by the carrier types: `powerObj a` is an object,
 -- and a `dE`-shaped index would leave the elaborator to solve `dE ?A =?= powerObj a` at every
 -- `N(P(R))`.
-variable {a b : RelSet.{0}} {n : Nat}
+variable {A B : RelSet.{0}} {n : Nat}
 
 /-! ## The `n`-tuple relator `N` -/
 
 /-- `N A = Aⁿ`, B&dM's `n`-tuple: one component per row of the cylinder (book p.180). -/
-@[expose] public abbrev dTuple (n : Nat) (a : RelSet.{0}) : RelSet.{0} := ⟨Fin n → a.carrier⟩
+@[expose] public abbrev dTuple (n : Nat) (A : RelSet.{0}) : RelSet.{0} := ⟨Fin n → A.carrier⟩
 
 /-- The tuple relator's action `N(R)`: one `R` per component, the length untouched.  The
     elementwise shape `listP` has for lists, with the shape fixed by `n`. -/
-@[expose] public def tupleP (n : Nat) (R : a ⟶ b) : dTuple n a ⟶ dTuple n b :=
+@[expose] public def tupleP (n : Nat) (R : A ⟶ B) : dTuple n A ⟶ dTuple n B :=
   fun t u => ∀ k, R (t k) (u k)
 
 /-! ## The four beads (book pp. 180-181) -/
@@ -54,26 +54,26 @@ variable {a b : RelSet.{0}} {n : Nat}
 
 /-- **`moves(t) = {t, rot(t), rot²(t), …}`** (book p.180): the tuple rotated up, unrotated and
     down — every rotation of it, since a path may step up, straight or down. -/
-@[expose] public def moves : dTuple n a ⟶ PowerAllegory.powerObj (dTuple n a) :=
+@[expose] public def moves : dTuple n A ⟶ PowerAllegory.powerObj (dTuple n A) :=
   graph fun t => fun u => ∃ j, rot j t = u
 
 /-- **`trans{(a,b,c),(x,y,z)} = ({a,x},{b,y},{c,z})`** (book p.180): component `k` of the result
     is the set of the `k`-th components. -/
 @[expose] public def transT :
-    PowerAllegory.powerObj (dTuple n a) ⟶ dTuple n (PowerAllegory.powerObj a) :=
+    PowerAllegory.powerObj (dTuple n A) ⟶ dTuple n (PowerAllegory.powerObj A) :=
   graph fun S => fun k => fun x => ∃ t, S t ∧ t k = x
 
 /-- **`setify(1,2,3,4) = {1,2,3,4}`** (book p.181): the components of a tuple as a set — which
     row a component came from is forgotten. -/
-@[expose] public def setify : dTuple n a ⟶ PowerAllegory.powerObj a :=
+@[expose] public def setify : dTuple n A ⟶ PowerAllegory.powerObj A :=
   graph fun t => fun x => ∃ k, t k = x
 
 /-- **`zip((a₁,…,aₙ),(x₁,…,xₙ)) = ((a₁,x₁),…,(aₙ,xₙ))`** (book p.181): the product half of the
     book's `zip = 𝟙 + zip'`, which is the only half `cyl-step` names (`AOP.A7_4_Cylinder`'s
     `cyl_step` hypothesis `hzip`); on the `𝟙` summand `zip` is `N(inl)` and carries no content. -/
 @[expose] public def zipT :
-    (⟨(Fin n → a.carrier) × (Fin n → b.carrier)⟩ : RelSet.{0})
-      ⟶ dTuple n ⟨a.carrier × b.carrier⟩ :=
+    (⟨(Fin n → A.carrier) × (Fin n → B.carrier)⟩ : RelSet.{0})
+      ⟶ dTuple n ⟨A.carrier × B.carrier⟩ :=
   graph fun p => fun k => (p.1 k, p.2 k)
 
 /-! ## Lax naturality -/
@@ -84,7 +84,7 @@ variable {a b : RelSet.{0}} {n : Nat}
 
     Not an equality: at `n = 1` the right side relates `(a)` to any `{b,c}` with `R a b`,
     `R a c`, while `setify` of a one-tuple is always a singleton. -/
-public theorem setify_lax_natural (R : a ⟶ b) :
+public theorem setify_lax_natural (R : A ⟶ B) :
     tupleP n R ≫ setify ⊑ setify ≫ powerRel R := by
   refine le_iff.mpr fun t S h => ?_
   obtain ⟨u, hRu, hS⟩ := h
@@ -100,7 +100,7 @@ public theorem setify_lax_natural (R : a ⟶ b) :
 /-- **`moves` is lax natural**: `N(R) moves ⊑ moves P(N(R))`.  Rotating commutes with acting on
     every component — `rot j` of an `N(R)`-image is the `N(R)`-image of `rot j` — so the two sets
     of rotations correspond rotation by rotation, which is both Egli-Milner halves at once. -/
-public theorem moves_lax_natural (R : a ⟶ b) :
+public theorem moves_lax_natural (R : A ⟶ B) :
     tupleP n R ≫ moves ⊑ moves ≫ powerRel (tupleP n R) := by
   refine le_iff.mpr fun t S h => ?_
   obtain ⟨u, hRu, hS⟩ := h
@@ -115,7 +115,7 @@ public theorem moves_lax_natural (R : a ⟶ b) :
 /-- **`trans` is lax natural**: `P(N(R)) trans ⊑ trans N(P(R))`.  Transposing and then relating
     componentwise is beaten by relating the sets of tuples first: each of the two Egli-Milner
     halves at component `k` is the corresponding half of `P(N(R))` read at `k`. -/
-public theorem trans_lax_natural (R : a ⟶ b) :
+public theorem trans_lax_natural (R : A ⟶ B) :
     powerRel (tupleP n R) ≫ transT ⊑ transT ≫ tupleP n (powerRel R) := by
   refine le_iff.mpr fun S q h => ?_
   obtain ⟨S', ⟨h1, h2⟩, hq⟩ := h
@@ -134,7 +134,7 @@ public theorem trans_lax_natural (R : a ⟶ b) :
     `zip` is a bijection, so the tuple of pairs the right side names is the pair of tuples the
     left side names.  Compare `cons_natural` (`AOP.A5_6_ListCombinators`), the same verdict for
     the same reason. -/
-public theorem zip_natural (R : a ⟶ b) {c d : RelSet.{0}} (S : c ⟶ d) :
+public theorem zip_natural (R : A ⟶ B) {C D : RelSet.{0}} (S : C ⟶ D) :
     rprodMap (tupleP n R) (tupleP n S) ≫ zipT = zipT ≫ tupleP n (rprodMap R S) := by
   apply hom_ext; intro p w
   constructor
@@ -145,7 +145,7 @@ public theorem zip_natural (R : a ⟶ b) {c d : RelSet.{0}} (S : c ⟶ d) :
     exact funext fun k => rfl
 
 /-- **`zip` is lax natural** — the lax half of the STRICT `zip_natural`. -/
-public theorem zip_lax_natural (R : a ⟶ b) {c d : RelSet.{0}} (S : c ⟶ d) :
+public theorem zip_lax_natural (R : A ⟶ B) {C D : RelSet.{0}} (S : C ⟶ D) :
     rprodMap (tupleP n R) (tupleP n S) ≫ zipT ⊑ zipT ≫ tupleP n (rprodMap R S) :=
   le_of_eq (zip_natural R S)
 

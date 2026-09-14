@@ -132,8 +132,8 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
     itself the catamorphism of `ψ`: `cata φ ≫ h = cata ψ`.  Derived from `relCata_cancel`
     (the catamorphism's own defining equation) and functoriality (`F.map_comp`), each `calc`
     line justified by exactly ONE law; then closed by the universal property `relCata_UP`. -/
-public theorem cata_fusion (I : InitialAlgebra F) {c d : 𝒜}
-    (φ : F.obj c ⟶ c) (h : c ⟶ d) (ψ : F.obj d ⟶ d)
+public theorem cata_fusion (I : InitialAlgebra F) {C D : 𝒜}
+    (φ : F.obj C ⟶ C) (h : C ⟶ D) (ψ : F.obj D ⟶ D)
     (hcond : φ ≫ h = F.map h ≫ ψ) :
     relCata φ ≫ h = relCata ψ :=
   (relCata_UP I ψ (relCata φ ≫ h)).mp <| by
@@ -149,8 +149,8 @@ end Fusion
 
 /-- Fold fusion specialised to SnocLists over `Unit`/`Int` and to the structural fold `cataR`
     (via `cataR_eq_relCata`), ready for the concrete Part-3 calculation. -/
-public theorem cataR_fusion {c d : RelSet.{0}} (φ : Fobj Unit Int c ⟶ c) (h : c ⟶ d)
-    (ψ : Fobj Unit Int d ⟶ d) (hcond : φ ≫ h = (F Unit Int).map h ≫ ψ) :
+public theorem cataR_fusion {C D : RelSet.{0}} (φ : Fobj Unit Int C ⟶ C) (h : C ⟶ D)
+    (ψ : Fobj Unit Int D ⟶ D) (hcond : φ ≫ h = (F Unit Int).map h ≫ ψ) :
     cataR φ ≫ h = cataR ψ := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact cata_fusion (initial Unit Int) φ h ψ hcond

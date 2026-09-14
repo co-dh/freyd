@@ -30,7 +30,7 @@ public import Freyd.S2_30
 public import AOP.A4_2
 public import AOP.A5_1
 
-universe v₂ u₂ u
+universe v v₂ v₃ u₂ u₃ u
 
 namespace Freyd.Alg
 
@@ -137,6 +137,12 @@ public theorem inter_comp_topMor_eq_dom_comp {a b c : 𝒜} (R : c ⟶ a) (S : c
       have h3 : S ≫ (S° ≫ R) ⊑ S ≫ topMor b a := comp_mono_left S (topMor_max (S° ≫ R))
       rw [h2] at h1; exact le_trans h1 h3
 
+-- THE PICTURES' OWN LETTERS.  The note draws the fork `⟨R,S⟩ : C⟶A×B` and the product square
+-- `R×S : C×D⟶A×B`, so a statement it draws binds its SOURCES `C`,`D` and its TARGETS `A`,`B`.  The
+-- file's shared `a b a' b' c` cannot spell both: `a` is a TARGET in the fork and a SOURCE in the
+-- square, so one letter would have to mean both.
+variable {A B C D : 𝒜}
+
 /-! ## (5.1)  Pairing -/
 
 /-- **(5.1)**: `⟨R,S⟩ = (outl°R) ∩ (outr°S)`, mirrored: `pair R S = (R≫outl°) ∩ (S≫outr°)`. -/
@@ -177,6 +183,20 @@ public theorem RelProd.pair_outr {P : RelProd a b} (R : c ⟶ a) (S : c ⟶ b) :
   show (R ≫ P.outl° ∩ S ≫ P.outr°) ≫ P.outr = dom R ≫ S
   rw [simple_modular_eq P.outr_map.2 (R ≫ P.outl°) S, Cat.assoc, P.eq_topMor, Allegory.inter_comm]
   exact inter_comp_topMor_eq_dom_comp S R
+
+/-- **(5.6) relaxed**: a domain is coreflexive, so the fork's left triangle closes only up to `⊑`.
+    Equality is `pair_outl` with `S` entire — the `dom` factor (5.6) leaves behind sits on the
+    OTHER leg, the one the projection discards. -/
+public theorem RelProd.pair_outl_le {P : RelProd A B} (R : C ⟶ A) (S : C ⟶ B) :
+    P.pair R S ≫ P.outl ⊑ R := by
+  rw [pair_outl (P := P) R S]
+  have h := comp_mono_right (dom_coreflexive S) R; rwa [Cat.id_comp] at h
+
+/-- **(5.7) relaxed**, the mirror: `⟨R,S⟩ ≫ outr ⊑ S`, equality with `R` entire. -/
+public theorem RelProd.pair_outr_le {P : RelProd A B} (R : C ⟶ A) (S : C ⟶ B) :
+    P.pair R S ≫ P.outr ⊑ S := by
+  rw [pair_outr (P := P) R S]
+  have h := comp_mono_right (dom_coreflexive R) S; rwa [Cat.id_comp] at h
 
 /-! ## The pairing Galois connection
 
@@ -257,7 +277,7 @@ public theorem prodMap_recip {P : RelProd a b} {Q : RelProd a' b'} (R : a ⟶ a'
 
 /-- Book p.115 claim: `outr·(R×S) ⊑ S·outr`, mirrored: `(R×S) ≫ Q.outr ⊑ P.outr ≫ S`.
     From (5.7) and `dom ⊑ id`. -/
-public theorem prodMap_outr_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem prodMap_outr_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     prodMap P Q R S ≫ Q.outr ⊑ P.outr ≫ S := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr ⊑ P.outr ≫ S
   rw [RelProd.pair_outr]
@@ -268,13 +288,13 @@ public theorem prodMap_outr_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
     is `𝟙` as soon as that leg's relation is ENTIRE: `(R×S) ≫ outr = outr ≫ S`.
     `prodMap_id_outr` is the case `R = 𝟙`; the inclusion is STRICT without the hypothesis
     (`outr_not_strictNatural`, A6_1_OrdRelSet). -/
-public theorem prodMap_outr_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') {R : a ⟶ a'}
-    (S : b ⟶ b') (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
+public theorem prodMap_outr_eq_of_entire (P : RelProd C D) (Q : RelProd A B) {R : C ⟶ A}
+    (S : D ⟶ B) (hR : Entire R) : prodMap P Q R S ≫ Q.outr = P.outr ≫ S := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outr = P.outr ≫ S
   rw [RelProd.pair_outr, entire_comp P.outl_map.1 hR, Cat.id_comp]
 
 /-- Mirror of the previous claim on the left leg: `(R×S) ≫ Q.outl ⊑ P.outl ≫ R`. -/
-public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem prodMap_outl_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     prodMap P Q R S ≫ Q.outl ⊑ P.outl ≫ R := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl ⊑ P.outl ≫ R
   rw [RelProd.pair_outl]
@@ -284,42 +304,42 @@ public theorem prodMap_outl_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ 
 /-- **(5.6) sharpened**, the mirror of `prodMap_outr_eq_of_entire`: the `dom` factor (5.6) leaves
     behind sits on the DISCARDED leg, so it is `𝟙` as soon as that leg's relation is ENTIRE:
     `(R×S) ≫ outl = outl ≫ R`.  `prodMap_id_outl` is the case `S = 𝟙`. -/
-public theorem prodMap_outl_eq_of_entire (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a')
-    {S : b ⟶ b'} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
+public theorem prodMap_outl_eq_of_entire (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A)
+    {S : D ⟶ B} (hS : Entire S) : prodMap P Q R S ≫ Q.outl = P.outl ≫ R := by
   show Q.pair (P.outl ≫ R) (P.outr ≫ S) ≫ Q.outl = P.outl ≫ R
   rw [RelProd.pair_outl, entire_comp P.outr_map.1 hS, Cat.id_comp]
 
 /-- Book p.115 claim: `outl·(R×id) = R·outl` — with the identity in the second slot the
     `dom` factor of (5.6) is the identity (`outr` is entire), so the bound sharpens to an
     equality.  Mirrored: `(R×id) ≫ Q.outl = P.outl ≫ R`. -/
-public theorem prodMap_id_outl (P : RelProd a b) (Q : RelProd a' b) (R : a ⟶ a') :
-    prodMap P Q R (Cat.id b) ≫ Q.outl = P.outl ≫ R :=
-  prodMap_outl_eq_of_entire P Q R (id_is_map_local b).1
+public theorem prodMap_id_outl (P : RelProd C D) (Q : RelProd A D) (R : C ⟶ A) :
+    prodMap P Q R (Cat.id D) ≫ Q.outl = P.outl ≫ R :=
+  prodMap_outl_eq_of_entire P Q R (id_is_map_local D).1
 
 /-- Mirror on the right leg: `(id×S) ≫ Q.outr = P.outr ≫ S`. -/
-public theorem prodMap_id_outr (P : RelProd a b) (Q : RelProd a b') (S : b ⟶ b') :
-    prodMap P Q (Cat.id a) S ≫ Q.outr = P.outr ≫ S :=
-  prodMap_outr_eq_of_entire P Q S (id_is_map_local a).1
+public theorem prodMap_id_outr (P : RelProd C D) (Q : RelProd C B) (S : D ⟶ B) :
+    prodMap P Q (Cat.id C) S ≫ Q.outr = P.outr ≫ S :=
+  prodMap_outr_eq_of_entire P Q S (id_is_map_local C).1
 
 /-- Claim 1 reciprocated: `R ≫ Q.outl° = P.outl° ≫ (R×id)` — the rewrite that pushes a
     relation across the products' left legs in (5.4)'s proof. -/
-public theorem outl_recip_prodMap (P : RelProd a b) (Q : RelProd a' b) (R : a ⟶ a') :
-    R ≫ Q.outl° = P.outl° ≫ prodMap P Q R (Cat.id b) := by
+public theorem outl_recip_prodMap (P : RelProd C D) (Q : RelProd A D) (R : C ⟶ A) :
+    R ≫ Q.outl° = P.outl° ≫ prodMap P Q R (Cat.id D) := by
   have h := congrArg Allegory.recip (prodMap_id_outl Q P R°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, recip_id,
     Allegory.recip_recip] at h
   exact h.symm
 
 /-- Mirror: `S ≫ Q.outr° = P.outr° ≫ (id×S)`. -/
-public theorem outr_recip_prodMap (P : RelProd a b) (Q : RelProd a b') (S : b ⟶ b') :
-    S ≫ Q.outr° = P.outr° ≫ prodMap P Q (Cat.id a) S := by
+public theorem outr_recip_prodMap (P : RelProd C D) (Q : RelProd C B) (S : D ⟶ B) :
+    S ≫ Q.outr° = P.outr° ≫ prodMap P Q (Cat.id C) S := by
   have h := congrArg Allegory.recip (prodMap_id_outr Q P S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, recip_id,
     Allegory.recip_recip] at h
   exact h.symm
 
 /-- Claim 2 reciprocated: `P.outr° ≫ (R×S) ⊑ S ≫ Q.outr°`. -/
-public theorem recip_outr_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem recip_outr_prodMap_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     P.outr° ≫ prodMap P Q R S ⊑ S ≫ Q.outr° := by
   have h := recip_mono (prodMap_outr_le Q P R° S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, Allegory.recip_recip,
@@ -327,7 +347,7 @@ public theorem recip_outr_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : 
   exact h
 
 /-- Mirror: `P.outl° ≫ (R×S) ⊑ R ≫ Q.outl°`. -/
-public theorem recip_outl_prodMap_le (P : RelProd a b) (Q : RelProd a' b') (R : a ⟶ a') (S : b ⟶ b') :
+public theorem recip_outl_prodMap_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
     P.outl° ≫ prodMap P Q R S ⊑ R ≫ Q.outl° := by
   have h := recip_mono (prodMap_outl_le Q P R° S°)
   rw [Allegory.recip_comp, Allegory.recip_comp, prodMap_recip, Allegory.recip_recip,
@@ -475,6 +495,51 @@ variable [HasRelProd 𝒜]
     simp only [F.map_comp, G.map_comp]; exact (prodMap_comp _ _ _ _ _ _ _).symm
   map_mono h := prodMap_mono (F.map_mono h) (G.map_mono h)
 
+/-- The PAIRING of two relators into the PRODUCT allegory: `x ↦ (F x, G x)`, `R ↦ (F R, G R)`.
+    Its own `𝒜`, not the section's: pairing needs the product ALLEGORY and nothing else, and a
+    signature carrying the section's `TabularUnitaryDivisionAllegory` projection instead would not
+    typecheck beside a relator whose allegory instance reached `𝒜` by another route. -/
+@[expose] public def Relator.pair {𝒜 : Type u} [Allegory.{v} 𝒜] {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    (F G : Relator 𝒮 𝒜) : Relator 𝒮 (𝒜 × 𝒜) where
+  obj x := (F.obj x, G.obj x)
+  map R := (F.map R, G.map R)
+  map_id x := Prod.ext (F.map_id x) (G.map_id x)
+  map_comp R S := Prod.ext (F.map_comp R S) (G.map_comp R S)
+  map_mono h := Prod.ext (F.map_mono h) (G.map_mono h)
+
+/-- The product bifunctor AS A RELATOR `𝒜 × 𝒜 ⟶ 𝒜`, on the same `relProd` apex `Relator.prod`
+    takes.  Splitting `F×G` through it is what makes a product TWO NESTED WIRES in a picture —
+    the pairing inside the region `𝒜×𝒜`, this one outside it — and not two parallel wires. -/
+@[expose] public def timesRel : Relator (𝒜 × 𝒜) 𝒜 where
+  obj p := (relProd p.1 p.2).p
+  map R := prodMap (relProd _ _) (relProd _ _) R.1 R.2
+  map_id p := prodMap_id (relProd p.1 p.2)
+  map_comp _ _ := (prodMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := prodMap_mono (congrArg Prod.fst h) (congrArg Prod.snd h)
+
+/-- `F×G` IS the pairing followed by the product bifunctor, on the nose.  A SPELLING BRIDGE: a
+    picture packs the two arguments (`⟨F,G⟩` then the bifunctor) where the library writes one
+    product relator, and the `←` orientation rewrites the picture's spelling into the library's,
+    which is the one a closure theorem states its conclusion in. -/
+@[diag_bridge ←] public theorem Relator.prod_eq_comp_pair {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+    Relator.prod F G = Relator.comp (Relator.pair F G) timesRel := rfl
+
+/-- A relator on the INSIDE distributes over a product: running `K` first and then `F×G` is
+    running `K F` and `K G` and taking their product, on the same apex.  A SPELLING BRIDGE: a
+    closure theorem reindexed along `K` (`laxNatural_inside`, `strictNatural_inside`) states its
+    conclusion with the `K` OUTSIDE the product, where a panel's own lane stack has it
+    distributed — one arrow, two spellings, and the search has to see them as one. -/
+@[diag_bridge] public theorem Relator.comp_prod {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) (F G : Relator 𝒮 𝒜) :
+    Relator.comp K (Relator.prod F G) = Relator.prod (Relator.comp K F) (Relator.comp K G) := rfl
+
+/-- The identity relator composed on is no relator at all.  A SPELLING BRIDGE for the same
+    reason as the last: a lane stack of one wire IS that wire, where a closure theorem
+    instantiated at the identity leaves the `comp` standing. -/
+@[diag_bridge] public theorem Relator.comp_id {𝒮 : Type u₂} [Allegory.{v₂} 𝒮]
+    {𝒯 : Type u₃} [Allegory.{v₃} 𝒯] (K : Relator 𝒯 𝒮) :
+    Relator.comp K (Relator.idRelator 𝒮) = K := rfl
+
 /-- The DUPLICATION relator `X ↦ X×X`: the object diagonal `X ↦ (X,X)` followed by the product
     relator, i.e. `Relator.prod` of two identities.  Not the copy relation `◁ : A ⟶ A⊗A`. -/
 @[expose] public def Δ (𝒜 : Type u) [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜] :
@@ -505,5 +570,74 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
   prodMap_outr_eq_of_entire _ _ _ (hF R)
 
 end ProdRelator
+
+-- printing-only unexpander: the note's spelling.  `R×S` is what (5.2) is called, and the two
+-- products it is taken over are the objects' own, which the sign already says.  Changes no
+-- statement and no `stmt_key`.
+open Lean PrettyPrinter in
+@[app_unexpander prodMap] public meta def unexpandProdMap : Unexpander
+  | `($_ $_ $_ $R $S) => `($R × $S)
+  | _ => throw ()
+
+-- printing-only: the fork (5.1) is the note's `⟨R,S⟩`, the same brackets the category's `pair`
+-- prints — `⟨R,S⟩` IS what the tabulation of `⊤` gives from `R` and `S`, and WHICH tabulation is
+-- the `RelProd` argument, which the picture's own apex already names.
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.pair] public meta def unexpandPair : Unexpander
+  | `($_ $_ $R $S) => `(⟨$R, $S⟩)
+  | _ => throw ()
+
+-- printing-only: a product's two projections are the note's `π₁`/`π₂`.  WHICH product they are
+-- taken over is the `RelProd` argument, and that is what the picture's own wires already say, so
+-- the label names the arrow alone.
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outl] public meta def unexpandOutl : Unexpander
+  | _ => `($(mkIdent `π₁))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelProd.outr] public meta def unexpandOutr : Unexpander
+  | _ => `($(mkIdent `π₂))
+
+/-! ## The adjoint triple `𝓓 ⊣ ·⊤ ⊣ 𝟙∩·/⊤`
+
+  `⊤` read as an operator on hom-sets rather than as one arrow.  Between the COREFLEXIVES on
+  `c` and the hom-set `c ⟶ b` there are three operators — `𝓓`, `·⊤`, `𝟙∩·/⊤` — and each
+  consecutive pair is an adjunction, so `·⊤` is a right adjoint by the first and a left adjoint
+  by the second.  Both halves are stated as the iff an adjunction IS: the left adjoint's value
+  is below `X` exactly when the argument is below the right adjoint's value.  Only two universal
+  properties are spent, `dom_coref_comp` (§2.10) and `le_div_iff` (§2.31); coreflexivity of `X`
+  is what makes the two poset ends line up, and the chain stops at three (`·⊤` preserves neither
+  all meets nor all joins in general). -/
+
+/-- `𝓓 ⊣ ·⊤`: `𝓓S ⊑ X ≡ S ⊑ X⊤`, for a COREFLEXIVE `X : c ⟶ c` and `S : c ⟶ b`.  Taking the
+    domain is LEFT adjoint to composing with `⊤`.  Left to right is `S = (𝓓S)S ⊑ XS ⊑ X⊤`;
+    right to left is monotonicity of `𝓓` followed by `𝓓(XT) = X ∩ 𝓓T ⊑ X`. -/
+public theorem dom_adj_comp_topMor {b c : 𝒜} (S : c ⟶ b) {X : c ⟶ c} (hX : Coreflexive X) :
+    dom S ⊑ X ↔ S ⊑ X ≫ topMor c b := by
+  -- a coreflexive is its own domain: `𝓓X = 𝟙∩XX° = 𝟙∩X = X`, by symmetry and idempotence.
+  have hdomX : dom X = X := by
+    obtain ⟨hsym, hidem⟩ := coreflexive_symmetric_idempotent hX
+    show Cat.id c ∩ (X ≫ X°) = X
+    rw [symmetric_eq hsym, hidem, Allegory.inter_comm]; exact hX
+  constructor
+  · intro h
+    calc S ⊑ dom S ≫ S := le_dom_comp S
+      _ ⊑ X ≫ S := comp_mono_right h S
+      _ ⊑ X ≫ topMor c b := comp_mono_left X (topMor_max S)
+  · intro h
+    have hS : X ≫ S = S := by
+      rw [← hdomX, ← inter_comp_topMor_eq_dom_comp S X]; exact h
+    exact (dom_UP hX).mpr (by rw [hS]; exact le_refl S)
+
+/-- `·⊤ ⊣ 𝟙∩·/⊤`: `X⊤ ⊑ R ≡ X ⊑ 𝟙∩R/⊤`, for a COREFLEXIVE `X : c ⟶ c` and `R : c ⟶ b`.
+    Composing with `⊤` is LEFT adjoint to `R ↦ 𝟙∩R/⊤`, the third link of the triple.  Right to
+    left is the division UP alone; left to right adds `X ⊑ 𝟙`, which is coreflexivity — the
+    `𝟙∩` is exactly what lands the right adjoint back in the coreflexives. -/
+public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X : c ⟶ c}
+    (hX : Coreflexive X) :
+    X ≫ topMor c b ⊑ R ↔ X ⊑ Cat.id c ∩ (R / topMor c b) := by
+  constructor
+  · intro h; exact le_inter hX ((le_div_iff X R (topMor c b)).mpr h)
+  · intro h; exact (le_div_iff X R (topMor c b)).mp (le_trans h (inter_lb_right _ _))
 
 end Freyd.Alg

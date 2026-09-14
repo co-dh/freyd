@@ -35,13 +35,20 @@ public structure FAlg (F : Relator 𝒜 𝒜) where
 
 
 
-/-- An `F`-ALGEBRA HOMOMORPHISM: an arrow of `𝒜` between the carriers making the square
-    `X.α ≫ h = F(h) ≫ Y.α` commute.  This square is the homomorphism condition; it is the
-    very condition that fails for a general arrow, and requiring it is what makes `α`
-    natural below. -/
+/-- The HOMOMORPHISM CONDITION, UNBUNDLED: `h : A ⟶ B` carries the algebra `f : F(A) ⟶ A` to
+    `g : F(B) ⟶ B` when `f h = F(h) g`.  Free in all three arrows — which is what the square
+    says, and what a picture of it draws: three named arrows, none of them a projection of a
+    bundled pair.  `FHom.comm` below IS this predicate, so the equation is written once.
+    Reducible because the name is all it adds: `rw [φ.comm]` has to see the `Eq` through it. -/
+@[reducible, expose] public def IsFHom {F : Relator 𝒜 𝒜} {A B : 𝒜}
+    (f : F.obj A ⟶ A) (g : F.obj B ⟶ B) (h : A ⟶ B) : Prop := f ≫ h = F.map h ≫ g
+
+/-- An `F`-ALGEBRA HOMOMORPHISM: an arrow of `𝒜` between the carriers satisfying `IsFHom`.
+    That square is the homomorphism condition; it is the very condition that fails for a
+    general arrow, and requiring it is what makes `α` natural below. -/
 public structure FHom {F : Relator 𝒜 𝒜} (X Y : FAlg F) where
   h : X.carrier ⟶ Y.carrier
-  comm : X.α ≫ h = F.map h ≫ Y.α
+  comm : IsFHom X.α Y.α h
 
 /-- Two homomorphisms with the same underlying arrow are equal: `comm` is a `Prop`, so
     proof irrelevance settles the second field. -/
@@ -53,36 +60,14 @@ public theorem FHom.ext {F : Relator 𝒜 𝒜} {X Y : FAlg F} {f g : FHom X Y} 
     `F.map_comp`.  The three category axioms are the `𝒜` ones under `FHom.ext`. -/
 public instance instCatFAlg {F : Relator 𝒜 𝒜} : Cat.{v₁} (FAlg F) where
   Hom X Y := FHom X Y
-  id X := ⟨𝟙 X.carrier, by rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
+  -- `unfold`: `rw` matches on the goal as written, and `IsFHom` names the equation rather than
+  -- being one, so the first rewrite has nothing to find until the name is gone.
+  id X := ⟨𝟙 X.carrier, by unfold IsFHom; rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
   comp f g := ⟨f.h ≫ g.h, by
+    unfold IsFHom
     rw [← Cat.assoc, f.comm, Cat.assoc, g.comm, ← Cat.assoc, ← F.map_comp]⟩
   id_comp f := FHom.ext (Cat.id_comp f.h)
   comp_id f := FHom.ext (Cat.comp_id f.h)
   assoc f g h := FHom.ext (Cat.assoc f.h g.h h.h)
-
-/-- The LIFT of `F` to `Alg(F)`: `F̃(X) = ⟨F(X.carrier), F(X.α)⟩` on objects, `F̃(f) = F(f.h)`
-    on arrows.  The `comm` obligation of `F̃(f)` is `F` applied to `f.comm`, so it is exactly
-    `F.map_comp` on both sides of that square.
-
-    The repo's `Freyd.Functor` structure is used as-is: its class signature asks only for a
-    `Cat` on either side, which `instCatFAlg` supplies — it does not demand an allegory. -/
-@[expose] public def liftRelator (F : Relator 𝒜 𝒜) : Freyd.Functor (FAlg F) (FAlg F) where
-  obj X := ⟨F.obj X.carrier, F.map X.α⟩
-  map := fun {X Y} f => ⟨F.map f.h, by rw [← F.map_comp X.α f.h, f.comm, F.map_comp]⟩
-  map_id X := FHom.ext (F.map_id X.carrier)
-  map_comp f g := FHom.ext (F.map_comp f.h g.h)
-
-/-- The COMPONENT of `α` at `X`, as an arrow `F̃(X) ⟶ X` of `Alg(F)`.  Its `comm` obligation
-    is `F.map X.α ≫ X.α = F.map X.α ≫ X.α`: the structure map is a homomorphism from the
-    lifted algebra to the algebra itself, on the nose. -/
-@[expose] public def alphaComp {F : Relator 𝒜 𝒜} (X : FAlg F) : (liftRelator F).obj X ⟶ X :=
-  ⟨X.α, rfl⟩
-
-/-- NATURALITY of `α` on `Alg(F)`: `α_X ≫ f = F̃(f) ≫ α_Y` for every homomorphism `f`.
-    The proof is `f.comm` under `FHom.ext` — the square holds by construction of `Alg(F)`'s
-    arrows, which is the whole content of the statement. -/
-public theorem alpha_natural_alg {F : Relator 𝒜 𝒜} {X Y : FAlg F} (f : X ⟶ Y) :
-    alphaComp X ≫ f = (liftRelator F).map f ≫ alphaComp Y :=
-  FHom.ext f.comm
 
 end Freyd.Alg

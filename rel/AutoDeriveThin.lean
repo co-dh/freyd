@@ -58,12 +58,6 @@ theorem Λ_apply_iff {b c : RelSet.{0}} (W : c ⟶ b) (u : c.carrier) (G : (pow 
     Λ W u G ↔ G = fun y => W u y := by
   rw [Λ_eq_classifier]; exact Iff.rfl
 
-/-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
-    and every member of `P` has a `Q`-lower bound in `Y`.  The driver runs it at `Q := Qm°`,
-    so the kept `w` satisfies `Qm z w` — "`w` at least as good as `z`", the min convention. -/
-theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (pow α).carrier) :
-    thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
-
 /-! ## The generic Pareto prune on candidate lists
 
   `thinList q` implements §8.3's `thinlist`: insert each candidate, dropping it if a kept one
@@ -424,8 +418,12 @@ theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
   have hQrefl : Cat.id (⟨St⟩ : RelSet.{0}) ⊑ P.Qm° := by
     have h0 := recip_mono P.Qm_refl_le
     rwa [recip_id] at h0
+  -- `thinning_est` takes its order's transitivity unconversed, and here that order is `Rm°`.
+  have hRtrans : P.Rm° ≫ P.Rm° ⊑ P.Rm° := by
+    have h0 := recip_mono P.Rm_trans_le
+    rwa [Allegory.recip_comp] at h0
   have Hcore := thinning_est (R := P.Rm°) (F_preservesRecip L E) (initial L E)
-    (recip_mono P.Qm_le_Rm) hQrefl hQtrans P.Rm_trans_le P.gen_mono
+    (recip_mono P.Qm_le_Rm) hQrefl hQtrans hRtrans P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore
   have hminb : est P.Rm° (fun s => s ∈ P.foldFn xs) b :=

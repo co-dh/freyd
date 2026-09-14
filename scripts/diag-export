@@ -10,4 +10,9 @@
 # than invoking this per declaration.  The cap is here for the same reason as in lean-refactor:
 # every long-running Lean process in this repo runs under it — see scripts/cap.
 cd "$(dirname "$0")/.." || exit 1
+# The naturality search takes its candidates from the index and exits on one older than a module the
+# exe imports, so the build `lake exe` would do is done first and the index refreshed after it.  Both
+# go to stderr: stdout is the records a caller parses.
+./scripts/cap lake build diag-export >&2 || exit 1
+./scripts/lean-refactor index >&2 || exit 1
 exec ./scripts/cap lake exe diag-export "$@"

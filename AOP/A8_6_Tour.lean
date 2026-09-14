@@ -53,6 +53,92 @@ variable {City : Type} {tc : City × City → Int}
 /-- The object carrying `Tour`. -/
 @[expose] public abbrev dTour (City : Type) : RelSet.{0} := ⟨Tour City⟩
 
+/-! ### A journey is a relator
+
+  A journey is a cons-list whose LEAF carries a pair of cities, so both of its type arguments are
+  built from the one alphabet of cities: `Journey` is a functor of `City` and every end of this
+  section — `Journey`, `Tour = Journey×Journey`, `F(City×City,City)` — is one too.  Bundled as a
+  lane, that is what lets `⦇tourAlg⦈` state a naturality; without it the pictures had `City` varying
+  inside an end no lane spelled. -/
+
+/-- `Journey(R)` pointwise: the same shape, each city related by `R`, the leaf's two cities
+    included. -/
+@[expose] public def journeyP {A B : Type} (R : dE A ⟶ dE B) : Journey A → Journey B → Prop
+  | ConsList.wrap p, ConsList.wrap q => R p.1 q.1 ∧ R p.2 q.2
+  | ConsList.wrap _, ConsList.cons _ _ => False
+  | ConsList.cons _ _, ConsList.wrap _ => False
+  | ConsList.cons a x, ConsList.cons b y => R a b ∧ journeyP R x y
+
+/-- `Journey(R) : Journey A ⟶ Journey B`, the relator's action. -/
+@[expose] public def journeyRel {A B : Type} (R : dE A ⟶ dE B) :
+    (⟨Journey A⟩ : RelSet.{0}) ⟶ (⟨Journey B⟩ : RelSet.{0}) := journeyP R
+
+public theorem journeyP_id {A : Type} : ∀ x y : Journey A, journeyP (𝟙 (dE A)) x y ↔ x = y
+  | ConsList.wrap p, ConsList.wrap q =>
+      ⟨fun h => by
+        obtain ⟨a, b⟩ := p; obtain ⟨c, d⟩ := q
+        rw [show a = c from h.1, show b = d from h.2],
+       fun h => by cases h; exact ⟨rfl, rfl⟩⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun h => nomatch h⟩
+  | ConsList.cons a x, ConsList.cons b y =>
+      ⟨fun h => by rw [show a = b from h.1, (journeyP_id x y).mp h.2],
+       fun h => by cases h; exact ⟨rfl, (journeyP_id x x).mpr rfl⟩⟩
+
+/-- `Journey(𝟙) = 𝟙`. -/
+public theorem journey_id {A : Type} :
+    journeyRel (𝟙 (dE A)) = 𝟙 (⟨Journey A⟩ : RelSet.{0}) := hom_ext journeyP_id
+
+public theorem journeyP_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    ∀ (x : Journey A) (z : Journey C),
+      journeyP (R ≫ S) x z ↔ ∃ y, journeyP R x y ∧ journeyP S y z
+  | ConsList.wrap p, ConsList.wrap r =>
+      ⟨fun ⟨⟨b1, h1, h2⟩, ⟨b2, h3, h4⟩⟩ => ⟨ConsList.wrap (b1, b2), ⟨h1, h3⟩, h2, h4⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap q => exact ⟨⟨q.1, h1.1, h2.1⟩, ⟨q.2, h1.2, h2.2⟩⟩
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.wrap _, ConsList.cons _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h2.elim
+        | cons _ _ => exact h1.elim⟩
+  | ConsList.cons _ _, ConsList.wrap _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons _ _ => exact h2.elim⟩
+  | ConsList.cons a x, ConsList.cons c z =>
+      ⟨fun ⟨⟨b, hR, hS⟩, hxz⟩ =>
+        have ⟨y, hy1, hy2⟩ := (journeyP_comp R S x z).mp hxz
+        ⟨ConsList.cons b y, ⟨hR, hy1⟩, hS, hy2⟩,
+       fun ⟨y, h1, h2⟩ => by cases y with
+        | wrap _ => exact h1.elim
+        | cons b ys =>
+            exact ⟨⟨b, h1.1, h2.1⟩, (journeyP_comp R S x z).mpr ⟨ys, h1.2, h2.2⟩⟩⟩
+
+/-- `Journey(RS) = Journey(R) Journey(S)`. -/
+public theorem journey_comp {A B C : Type} (R : dE A ⟶ dE B) (S : dE B ⟶ dE C) :
+    journeyRel (R ≫ S) = journeyRel R ≫ journeyRel S := hom_ext (journeyP_comp R S)
+
+public theorem journeyP_mono {A B : Type} {R S : dE A ⟶ dE B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, journeyP R x y → journeyP S x y
+  | ConsList.wrap p, ConsList.wrap q, hxy => ⟨h p.1 q.1 hxy.1, h p.2 q.2 hxy.2⟩
+  | ConsList.wrap _, ConsList.cons _ _, hxy => hxy.elim
+  | ConsList.cons _ _, ConsList.wrap _, hxy => hxy.elim
+  | ConsList.cons a x, ConsList.cons b y, hxy =>
+      ⟨h a b hxy.1, journeyP_mono h x y hxy.2⟩
+
+/-- `R ⊑ S ⟹ Journey(R) ⊑ Journey(S)`. -/
+public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
+    journeyRel R ⊑ journeyRel S :=
+  le_iff.mpr (journeyP_mono (le_iff.mp h))
+
+/-- `Journey` BUNDLED as a relator: the lane the tour pictures run the cities along. -/
+@[expose] public def journeyRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := ⟨Journey a.carrier⟩
+  map R := journeyRel R
+  map_id _ := journey_id
+  map_comp R S := journey_comp R S
+  map_mono h := journey_mono h
+
 /-- `head` of a journey. -/
 @[expose] public def hd : Journey City → City
   | ConsList.wrap p => p.1
@@ -198,6 +284,70 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
   graph (droplAlgFn (City := City)) ∪ graph droprAlgFn
 
 @[expose] public def tour : dCL (City × City) City ⟶ dTour City := ⦇tourAlg⦈
+
+/-! ## The `⦇tourAlg⦈` bead -/
+
+/-- `[start,dropl∪dropr]` pointwise: a step is one of the two functions, nothing else. -/
+public theorem tourAlg_apply (u : (((F (City × City) City).obj (dTour City))).carrier)
+    (t : Tour City) : tourAlg u t = (t = droplAlgFn u ∨ t = droprAlgFn u) := by
+  simp only [tourAlg, union_apply]; rfl
+
+/-- Replacing the head on both sides keeps a journey `Journey(R)`-related. -/
+public theorem journeyP_replaceHead {A B : Type} (R : dE A ⟶ dE B) {a : A} {b : B} (hab : R a b) :
+    ∀ (x : Journey A) (y : Journey B), journeyP R x y →
+      journeyP R (replaceHead a x) (replaceHead b y)
+  | ConsList.wrap _, ConsList.wrap _, h => ⟨hab, h.2⟩
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ _, ConsList.cons _ _, h => ⟨hab, h.2⟩
+
+/-- The fold POINTWISE: a `Journey(R)`-related journey folds to a `Tour(R)`-related tour.  One
+    direction only — `dropl` writes its one city into BOTH journeys, so an image pair whose two
+    heads differ is reached by no journey at all. -/
+public theorem cataFoldTour_lax {A B : Type} (R : dE A ⟶ dE B) :
+    ∀ (x : Journey A) (x' : Journey B) (t : Tour B),
+      journeyP R x x' → cataFold (tourAlg (City := B)) x' t →
+      ∃ t₀, cataFold (tourAlg (City := A)) x t₀ ∧ journeyP R t₀.1 t.1 ∧ journeyP R t₀.2 t.2
+  | ConsList.wrap p, ConsList.wrap q, t, h, hf => by
+      rw [cataFold_wrap, tourAlg_apply] at hf
+      obtain rfl : t = (ConsList.wrap q, ConsList.wrap q) := hf.elim id id
+      refine ⟨(ConsList.wrap p, ConsList.wrap p), ?_, h, h⟩
+      rw [cataFold_wrap, tourAlg_apply]
+      exact Or.inl rfl
+  | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
+  | ConsList.cons a x, ConsList.cons b y, t, h, hf => by
+      rw [cataFold_cons] at hf
+      obtain ⟨r, hr, hstep⟩ := hf
+      rw [tourAlg_apply] at hstep
+      obtain ⟨r₀, hr₀, hrel₁, hrel₂⟩ := cataFoldTour_lax R x y r h.2 hr
+      rcases hstep with rfl | rfl
+      · refine ⟨droplFn a r₀, ?_, journeyP_replaceHead R h.1 r₀.1 r.1 hrel₁, h.1, hrel₂⟩
+        rw [cataFold_cons]
+        exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inl rfl⟩
+      · refine ⟨droprFn a r₀, ?_, ⟨h.1, hrel₁⟩, journeyP_replaceHead R h.1 r₀.2 r.2 hrel₂⟩
+        rw [cataFold_cons]
+        exact ⟨r₀, hr₀, by rw [tourAlg_apply]; exact Or.inr rfl⟩
+
+/-- **the `⦇tourAlg⦈` bead is LAX**: `Journey(R) ⦇tourAlg⦈ ⊑ ⦇tourAlg⦈ (Journey(R)×Journey(R))`.
+    Strictness fails for the reason p.215 gives the thinning order: `dropl` writes its one city
+    into BOTH journeys, so an image pair whose two heads differ is reached by no journey. -/
+public theorem tour_lax_natural :
+    LaxNatural (Relator.prod journeyRelator journeyRelator) journeyRelator
+      (fun a : RelSet.{0} =>
+        (⦇tourAlg⦈ : dCL (a.carrier × a.carrier) a.carrier ⟶ dTour a.carrier)) := by
+  intro a b R
+  have h : journeyRel R ≫ cataR (tourAlg (City := b.carrier))
+      ⊑ cataR (tourAlg (City := a.carrier))
+        ≫ prodMap (relProd (⟨Journey a.carrier⟩ : RelSet.{0}) ⟨Journey a.carrier⟩)
+            (relProd (⟨Journey b.carrier⟩ : RelSet.{0}) ⟨Journey b.carrier⟩)
+            (journeyRel R) (journeyRel R) := by
+    rw [prodMap_eq_rprodMap]
+    exact le_iff.mpr fun x t hh => by
+      obtain ⟨x', hx, ht⟩ := hh
+      obtain ⟨t₀, ht₀, h₁, h₂⟩ := cataFoldTour_lax R x x' t hx ht
+      exact ⟨t₀, ht₀, h₁, h₂⟩
+  rwa [cataR_eq_relCata, cataR_eq_relCata] at h
 
 /-! ## `tour-mono` -/
 
@@ -386,23 +536,23 @@ public theorem tour_laws {l lF : RelSet.{0}}
     {sortP : PowerAllegory.powerObj (dTour City) ⟶ l}
     {sortF : ((F (City × City) City).obj (dTour City) ⟶ (F (City × City) City).obj (dTour City)) →
       (PowerAllegory.powerObj ((F (City × City) City).obj (dTour City)) ⟶ lF)}
-    {listcp : (F (City × City) City).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
+    {listcp : (F (City × City) City).obj l ⟶ lF} {g₁ g₂ : lF ⟶ l}
     {thinlist : l ⟶ l} {minlist : l ⟶ dTour City} {Pr : RelProd l l}
     {Pr' : RelProd (PowerAllegory.powerObj (dTour City)) (PowerAllegory.powerObj (dTour City))}
-    {mergeP : Pr.p ⟶ l}
+    {cat : Pr.p ⟶ l}
     (hsortF : ∀ {X Y : (F (City × City) City).obj (dTour City)
         ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph droplAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droplAlgFn)°)
-      ≫ listf₁ ⊑ powerRel (graph (droplAlgFn (City := City))) ≫ sortP)
+      ≫ g₁ ⊑ powerRel (graph (droplAlgFn (City := City))) ≫ sortP)
     (h88₂ : sortF (graph droprAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droprAlgFn)°)
-      ≫ listf₂ ⊑ powerRel (graph (droprAlgFn (City := City))) ≫ sortP)
+      ≫ g₂ ⊑ powerRel (graph (droprAlgFn (City := City))) ≫ sortP)
     (h811 : (F (City × City) City).map sortP ≫ listcp
       ⊑ cpMap (F (City × City) City) (dTour City)
         ≫ sortF ((F (City × City) City).map (topMor (dTour City) (dTour City))))
-    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
+    (h810 : prodMap Pr' Pr sortP sortP ≫ cat ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Qc tc) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R tc)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ 𝟙 l) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+    ⦇listcp ≫ Pr.pair g₁ g₂ ≫ cat ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
   have hm₁ : MonotonicAlg (F := F (City × City) City)
       (graph (droplAlgFn (City := City)) ≫ 𝟙 (dTour City)) (Qc tc) := by
@@ -418,10 +568,17 @@ public theorem tour_laws {l lF : RelSet.{0}}
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
     (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
+    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
+    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
+    (sort := fun _ => sortP) (merge := fun _ => cat) (thinlist := fun _ => thinlist)
+    (minlist := fun _ => minlist)
     (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R Qc_refl Qc_trans R_recip_trans
     hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
+    rfl rfl rfl
+  -- The note's program is the fold of ITS OWN arrows: `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`, so the
+  -- `p₁ = p₂ = 𝟙` Theorem 8.2 was taken at leave no `≫ 𝟙` behind in the statement drawn.
   rw [Cat.comp_id (graph (droplAlgFn (City := City))),
-    Cat.comp_id (graph (droprAlgFn (City := City)))] at key
+    Cat.comp_id (graph (droprAlgFn (City := City))), Cat.comp_id g₁, Cat.comp_id g₂] at key
   exact key
 
 end Freyd.Alg.RelSet.Tour
