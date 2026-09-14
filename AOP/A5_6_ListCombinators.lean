@@ -793,6 +793,13 @@ public theorem alphaR_natural (R : dE A ⟶ dE B) :
       | inl e => exact hv.elim
       | inr q => obtain ⟨b, y⟩ := q; exact ⟨ConsList.cons a x, rfl, hv.1, hv.2⟩
 
+/-- The same square AT THE INITIAL ALGEBRA'S OWN FIELD, `(initial Unit A).α`, which is how every
+    panel of the note writes the bead: a candidate must mention everything the family mentions, and
+    a statement spelled `alphaR` names neither `initial` nor `InitialAlgebra.α`. -/
+public theorem initial_alpha_natural {B : Type} (R : dE A ⟶ dE B) :
+    (initial Unit A).α ≫ list R = Fbimap Unit R (list R) ≫ (initial Unit B).α :=
+  alphaR_natural R
+
 /-- **The free theorem of `concat`**, and it is STRICT: `list(list R) concat = concat list(R)`.
     `⊑` is `listP_cconcat`, `⊒` is `listP_cconcat_split`. -/
 public theorem concat_natural {B : Type} (R : dE A ⟶ dE B) :
