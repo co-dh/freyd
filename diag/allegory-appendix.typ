@@ -163,12 +163,12 @@
 
   [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
-   // lean:AOP.A7_4_Cylinder.gen@8b0342f5
+   // lean:AOP.A7_4_Cylinder.gen@45b06f1c
   [`F(NA,N(E(LA)))⟶N(E(LA))`],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [`paths≜⦇gen⦈ setify union` #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@3bf920c4
+  // lean:AOP.A7_4_Cylinder.paths@07e87d35
   [`L N Nat⟶E(L Nat)`],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
@@ -308,7 +308,7 @@ N(cp P(α))(that)
   [],
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
-   // lean:AOP.A7_4_Cylinder.gen_cata_comm@ce6d0770
+   // lean:AOP.A7_4_Cylinder.gen_cata_comm@dea58a1e
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
 
@@ -461,7 +461,7 @@ N(α)(that)
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_laws@e3bcc391
+    // lean:AOP.A7_4_Cylinder.cyl_laws@0700e8ef
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, est-R-box))), [])],
