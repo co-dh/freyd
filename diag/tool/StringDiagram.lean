@@ -1150,38 +1150,55 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let (cy, oy) ← peelRead objVars cat regionTy y
   let ax := cx.map (·.1)
   let ay := cy.map (·.1)
-  -- THE LANES UNDER A BEAD RUN PAST IT INSIDE.  A family `φ : G a ⟶ H a` taken at `a := F' A` acts
-  -- on `G` alone, and `F'` is the object it is taken at: the inner stack the two ends share is what
-  -- the bead stands over, when the bead depends on the statement's objects through that object
-  -- ONLY — `𝟙%∋` at `F A` opens the `E` lane beside `F` and eats nothing, where `cons` at `A`, a
-  -- family in `A` itself, eats every lane of `[A]×[[A]]`.
-  -- With NO lane shared the object itself is what the bead may be a family in: `𝟙%∋` at the
-  -- type functor's carrier `T`, an object no wire spells, is the same unit as at `F A`.
+  -- THE LANES UNDER A BEAD RUN PAST IT INSIDE, AND THE OBJECT THEY SPELL IS THE ARGUMENT THE BEAD'S
+  -- OWN DECLARATION TAKES.  `@moves n X` is a family in `X` however deep the object standing at `X`
+  -- is, so every lane `X` peels into runs past it.  The stack the two ends merely SHARE reaches
+  -- further — `moves`' own `[n]` trails both ends — and the abstraction there fails outright, which
+  -- is how `[p][m]` came to be eaten at the `moves` row and reborn under it.  The shared stack stays
+  -- as the LAST candidate: `𝟙%∋` at `F A` names no argument of its own and is a family all the same.
   if ← Meta.isDefEq ox oy then
-    let mut k := 0
-    while k < ax.size && k < ay.size do
-      unless ← Wire.beq ax[ax.size - 1 - k]! ay[ay.size - 1 - k]! do break
-      k := k + 1
-    -- A BEAD THAT TOUCHES NO LANE MAY NOT STAND OVER ONE.  Where the shared stack is the WHOLE of
-    -- both cuts, the abstraction is a family `Id ⇒ Id` at the composite object, and every lane
-    -- would run past a bead with no arms and no legs — the picture of `K(φ_A)`, the functor applied
-    -- OUTSIDE, which is a different arrow from `φ` AT `K(A)`.  Such a bead SPANS its object
-    -- instead: the fall-through gives it every lane of the ends as an arm and again as a leg, so
-    -- they die at the bar and are reborn below, by the mechanics a bead with arms already has.
-    let spans := 0 < k && k == ax.size && k == ay.size
-    let x' := if k == ax.size then x else cx[ax.size - k - 1]!.2
-    let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
-    if !spans && (← Meta.isDefEq (← Meta.inferType x') regionTy) && (← Meta.isDefEq x' y') then
+    -- ONE candidate split: `k` trailing lanes run past the bead, the rest are its arms and legs.
+    let split : Nat → MetaM (Option Diagram) := fun k => do
+      -- A BEAD THAT TOUCHES NO LANE MAY NOT STAND OVER ONE.  Where the stack is the WHOLE of both
+      -- cuts, the abstraction is a family `Id ⇒ Id` at the composite object, and every lane would
+      -- run past a bead with no arms and no legs — the picture of `K(φ_A)`, the functor applied
+      -- OUTSIDE, which is a different arrow from `φ` AT `K(A)`.  Such a bead SPANS its object
+      -- instead: the fall-through gives it every lane of the ends as an arm and again as a leg, so
+      -- they die at the bar and are reborn below, by the mechanics a bead with arms already has.
+      if 0 < k && k == ax.size && k == ay.size then return none
+      if k > ax.size || k > ay.size then return none
+      -- The lanes running past are ONE stack, drawn once, so both ends have to spell them alike.
+      for j in [0 : k] do
+        unless ← Wire.beq ax[ax.size - 1 - j]! ay[ay.size - 1 - j]! do return none
+      let x' := if k == ax.size then x else cx[ax.size - k - 1]!.2
+      let y' := if k == ay.size then y else cy[ay.size - k - 1]!.2
+      unless ← Meta.isDefEq (← Meta.inferType x') regionTy do return none
+      unless ← Meta.isDefEq x' y' do return none
       let e' ← Meta.kabstract e x'
-      if e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) then
-        -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too,
-        -- but `S : F A ⟶ A` pins it, and the result is no arrow of any object.
-        let d? ← Meta.withLocalDeclD `a regionTy fun a => do
-          let ea := e'.instantiate1 a
-          unless ← Meta.isTypeCorrect ea do return none
-          some <$> Diagram.bead regionTy cat #[a] (ax.extract 0 (ax.size - k))
-            (ay.extract 0 (ay.size - k)) ox oy ea (over := ax.extract (ax.size - k) ax.size)
-        if let some d := d? then return d
+      unless e'.hasLooseBVars && !objVars.any (fun v => e'.containsFVar v.fvarId!) do return none
+      -- A family only where the abstraction TYPE-CHECKS: `S°` at `A` abstracts its `A` too, but
+      -- `S : F A ⟶ A` pins it, and the result is no arrow of any object.
+      Meta.withLocalDeclD `a regionTy fun a => do
+        let ea := e'.instantiate1 a
+        unless ← Meta.isTypeCorrect ea do return none
+        some <$> Diagram.bead regionTy cat #[a] (ax.extract 0 (ax.size - k))
+          (ay.extract 0 (ay.size - k)) ox oy ea (over := ax.extract (ax.size - k) ax.size)
+    -- How deep an end already holds `t`: the trailing lanes are the ones `t` itself peels into.
+    let depth : Expr → MetaM (Option Nat) := fun t => do
+      for i in [0 : cx.size] do
+        if ← Meta.isDefEq cx[i]!.2 t then return some (cx.size - i - 1)
+      return none
+    -- LARGEST FIRST — `X = [p][m]A` before `A` — because the index a declaration takes stands for
+    -- every lane the object at it peels into, and a shallower one cuts the rest at the bead's row.
+    let mut ks : Array Nat := #[]
+    for t in ← indexArgs regionTy e #[] do
+      if let some k ← depth t then if 0 < k then ks := ks.push k
+    let mut kmax := 0
+    while kmax < ax.size && kmax < ay.size do
+      unless ← Wire.beq ax[ax.size - 1 - kmax]! ay[ay.size - 1 - kmax]! do break
+      kmax := kmax + 1
+    for k in (ks.qsort (· > ·)).push kmax do
+      if let some d ← split k then return d
   Diagram.bead regionTy cat objVars ax ay ox oy e
 
 /-- THE FACTORS STACKED, each read at the cut the factor above it ENDED at.  A cut belongs to the
