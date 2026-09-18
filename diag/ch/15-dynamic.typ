@@ -255,14 +255,20 @@ both lists empty.
   // The program is the branch above with each box replaced by a function computing it, so the wires
   // and the beads are the same picture: only the labels change.
   [#lean("Freyd.Alg.RelSet.Edit.edit_prog.lhs")],
+)]<edit-laws>
+
+// No picture: a curried function on lists is not a relation between the objects the panels carry.
+// Its own display, because `#disp` cannot break across pages and the panel rows above already fill one.
+#disp[#table(
+  columns: (1fr,),
+  align: (left + horizon,),
+  inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190),
 
   [#vstep(EQ, [],
     [`mle(xs,ys)=head(column(xs,ys))`, #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
      `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=list(del) tails` \
      #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
-  // No picture: a curried function on lists is not a relation between the objects the panels carry.
-  [],
 
   [#vstep(EQ, [],
     [`column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` \
@@ -270,7 +276,6 @@ both lists empty.
      `xus=zip(xs,zip(init(us),tail(us)))` \
      #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the
       column to its right]])],
-  [],
 
   [#vstep(EQ, [],
     [`base(b,u)=[[ins(b)]⧺u]` \ `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,`
@@ -278,8 +283,7 @@ both lists empty.
      #src[`w=head(ws)`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
       (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
       the two lengths]])],
-  [],
-)]<edit-laws>
+)]<edit-tabulation>
 
 == Optimal bracketing
 
