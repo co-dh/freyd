@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""dispfit — every page's ink stays inside its text frame.
+
+A `#disp` block cannot break across pages: when one is too tall, typst silently drops its last rows
+and the compile still exits 0, so content vanishes with nothing red.  This checks the prior question
+of the whole PAGE, not of any one display: is every page's ink — words and drawn primitives alike —
+inside the frame `diag/note-style.typ`'s `conf` sets?  Looping over displays could miss the dropped
+rows entirely (the missing rows are exactly what a display-level loop cannot see); looping over pages
+catches them because the page still ends short of where its own last display should have put ink.
+
+    ./scripts/dispfit                     # the note, every page
+    ./scripts/dispfit some.pdf --page 78
+
+Geometry, in two passes because the SVG pass is too slow for the whole book on its own:
+  1. words, every page — `pdftotext -bbox`, unioned.
+  2. drawn primitives, only on pages whose word union comes within EDGE of the frame — `pdftocairo
+     -svg` composed the way `figgeom.elements` already does it.  Reused, not re-derived.
+A page fails if either union crosses the frame `note-style.typ`'s `conf` declares: PAGE HEIGHT and
+the TOP/BOTTOM MARGIN, read out of that file, never a number measured off today's render — a constant
+lifted from the current pdf is a record of one compile, not the obligation, and would pass a page
+whose every render has overflowed.
+"""
+import importlib.util, os, re, subprocess, sys, tempfile
+from importlib.machinery import SourceFileLoader
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import note_pdf
+NOTE = os.path.join(ROOT, note_pdf())
+CM = 28.346456693  # pt
+EDGE = 12.0   # a word union this close to a frame edge earns the page the (slow) SVG pass too
+TOL = 5.0     # glyph-ink overshoot past its own nominal line box (ascender/descender bleed) — the
+              # same kind of slack `labelfit`/`inkfit` keep (their HIT/BURY/SAME), not a fudge on the frame
+DISP = re.compile(r"^\(\d+(?:\.\d+)*[a-z]\)$")  # a display's own margin number, e.g. "(15.2b)"
+
+_spec = importlib.util.spec_from_loader(
+    "figgeom", SourceFileLoader("figgeom", os.path.join(ROOT, "scripts", "figgeom")))
+figgeom = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(figgeom)
+
+
+def frame():
+    """(top, bottom) of the text frame, in pt from the page's top edge — from `note-style.typ`'s
+    `conf`, which every page (whole-book or single-chapter, `note-chapter` defers to `conf`) obeys."""
+    style = open(os.path.join(ROOT, "diag", "note-style.typ")).read()
+    margin_cm = float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1])
+    height_cm = float(re.search(r"set page\(width: PAGEW, height: ([\d.]+)cm, margin: MARGIN\)", style)[1])
+    margin, height = margin_cm * CM, height_cm * CM
+    return margin, height - margin
+
+
+def union(bbs):
+    xs0 = [b[0] for b in bbs]; ys0 = [b[1] for b in bbs]
+    xs1 = [b[2] for b in bbs]; ys1 = [b[3] for b in bbs]
+    return min(xs0), min(ys0), max(xs1), max(ys1)
+
+
+def furniture(words, pno, top):
+    """dvdtyp's own running header and typst's own page-number footer — both drawn INSIDE the
+    margin on purpose (`header:` in note-style.typ's `conf`, `numbering: "1"` in dvd.typ) — are not
+    the obligation this gate checks and would swamp it with a false positive on every page if left
+    in the union.  Both are identified structurally, not by their wording: the header is whatever
+    sits entirely above the frame's own top edge (nothing else legitimately does — a first line's
+    ascender only grazes it, within TOL); the footer is the one word that IS the page's own printed
+    number, wherever on the page it falls."""
+    nums = [bb for t, _, bb in words if t == str(pno)]
+    footer = max(nums, key=lambda bb: bb[1]) if nums else None  # the BOTTOM-most match is the
+    # footer: a page can also spell its own number in running prose (a section "§1.", a display "(1a)")
+    return {bb for _, _, bb in words if bb[3] < top - TOL or bb == footer}
+
+
+def page(pdf, pno, top, bottom, td):
+    words = list(figgeom.labels(pdf, pno))
+    if not words:
+        return None
+    skip = furniture(words, pno, top)
+    kept = [bb for _, _, bb in words if bb not in skip]
+    if not kept:
+        return None
+    wbb = union(kept)
+    if wbb[1] - top > EDGE and bottom - wbb[3] > EDGE:
+        bb = wbb  # comfortably inside on both edges: the slow SVG pass would only confirm it
+    else:
+        svgf = os.path.join(td, "p.svg")
+        subprocess.run(["pdftocairo", "-svg", "-f", str(pno), "-l", str(pno), pdf, svgf], check=True)
+        # The header's own rule (the `box(stroke: (bottom: ...))` under the running title) is drawn
+        # ink too, entirely above the frame — chrome, same as the header text itself, excluded the
+        # same way: anything that never reaches down to the frame's top edge is not body content.
+        ebbs = [e[3] for e in figgeom.elements(open(svgf).read()) if e[3][3] >= top - TOL]
+        bb = union([wbb] + ebbs) if ebbs else wbb
+    over_top = (top - TOL) - bb[1]
+    over_bottom = bb[3] - (bottom + TOL)
+    if over_top <= 0 and over_bottom <= 0:
+        return None
+    labels = [t for t, _, _ in words if DISP.match(t)]
+    who = " ".join(labels) if labels else "no display number on the page"
+    out = []
+    if over_top > 0:
+        out.append(f"p.{pno} {over_top:.1f}pt past the TOP of the text frame — {who}")
+    if over_bottom > 0:
+        out.append(f"p.{pno} {over_bottom:.1f}pt past the BOTTOM of the text frame — {who}")
+    return out
+
+
+def check(pdf, one=0):
+    top, bottom = frame()
+    info = subprocess.run(["pdfinfo", pdf], capture_output=True, text=True).stdout
+    n = int(re.search(r"Pages:\s+(\d+)", info)[1])
+    bad = []
+    with tempfile.TemporaryDirectory() as td:
+        for p in ([one] if one else range(1, n + 1)):
+            r = page(pdf, p, top, bottom, td)
+            if r:
+                bad += r
+    for line in bad:
+        print("dispfit: " + line)
+    print(f"dispfit: {os.path.basename(pdf)}, {n} pages, frame [{top:.1f}, {bottom:.1f}]pt,"
+          f" {len(bad)} pages past the frame")
+    return 1 if bad else 0
+
+
+def main(argv):
+    pdf = next((a for a in argv if a.endswith(".pdf")), NOTE)
+    if not os.path.exists(pdf):
+        sys.exit(f"dispfit: no {pdf} — compile the note first")
+    one = int(argv[argv.index("--page") + 1]) if "--page" in argv else 0
+    return check(pdf, one)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

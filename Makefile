@@ -60,6 +60,7 @@ p: $(STAMP) panels slice circuit cite
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
+	./scripts/dispfit
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
 
@@ -83,6 +84,7 @@ circuit:
 labels: $(NOTEPDF)
 	./scripts/labelfit
 	./scripts/inkfit
+	./scripts/dispfit
 
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.
