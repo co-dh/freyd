@@ -1536,13 +1536,12 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
 
-    A statement is drawn WHOLE — both sides in one frame — or one side at a time.  `peers` is every
-    request for THIS declaration in the same run, this one among them: the parts drawn beside each
-    other share a frame, so a `.lhs` asked for with its `.rhs` is as deep as it, and one asked for
-    alone is as deep as its own picture.  The path names the statement, so `.lhs` on an `↔` draws
+    A statement is drawn WHOLE — both sides in one frame — or one side at a time, and the frame is
+    as deep as THIS FILE's picture either way: the parts of one canvas slide to the bead they share,
+    a lone side is as deep as its own beads.  The path names the statement, so `.lhs` on an `↔` draws
     the whole left statement and only a trailing name on a relation picks a side. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
-    (peers : List (List String × List Sel)) : MetaM String :=
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel) :
+    MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1587,9 +1586,8 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- that is not names a part, and nothing can follow it.
     -- The statement's own PARTS and the ones ONE REQUEST draws: the two sides a relation symbol
     -- joins, or the arrow itself, and then the side the request's trailing name picks out of them.
-    -- Every request of this declaration is resolved through here, its own and its peers' alike.
-    -- The steps that named the STATEMENT come back first: two requests with the same ones draw parts
-    -- of one statement, and those are the parts that line up on a bead they share.
+    -- The steps that named the STATEMENT come back first, and the parts they leave are the ones
+    -- this file draws — the parts that line up, in its one canvas, on a bead they share.
     let reqParts (path : List String) :
         MetaM (List String × Array (String × Expr) × Array (String × Expr)) := do
       let mut body := body
@@ -1610,7 +1608,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       | some s =>
         if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
         else return (stmt, parts, #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)])
-    let (stmtPath, parts, drawn) ← reqParts path
+    let (_, parts, drawn) ← reqParts path
     let arrow := parts[0]!.2
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
@@ -1631,29 +1629,15 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    -- THE BOX IS SHARED BY THE PARTS DRAWN TOGETHER, THE ROWS BY THE PARTS OF ONE STATEMENT.  The
-    -- two sides of an equation are two files, and a side that took its own depth came out shorter
-    -- than the side across the relation symbol from it, one that took its own row put the bead
-    -- they share at two heights; the ARGUMENT LIST is what says which parts stand beside each
-    -- other, so a part asked for alone keeps its own depth and row and nothing is read from the
-    -- note.  The rows are the STATEMENT's: slid to the deepest part of every peer alike, the sides
-    -- of `f°F(R°)f ⊑ R°` were each lined up with a part of the other inequation of its `↔` and so
-    -- with nothing across their own symbol.
-    let mut groups : Array (List String × Array Diagram) := #[]
-    for (p, s) in peers do
-      let (sp, _, d) ← reqParts p
-      let mut qs : Array Diagram := #[]
-      for (_, e) in d do
-        qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
-      match groups.findIdx? (·.1 == sp) with
-      | some i => groups := groups.modify i fun (k, v) => (k, v ++ qs)
-      | none => groups := groups.push (sp, qs)
-    let pls := groups.map fun (k, qs) => (k, placement qs)
-    let frame := pls.foldl (fun a (_, pl) => max a pl.frame) 2
-    let some (_, pl) := pls.find? (·.1 == stmtPath)
-      | throwError "{declName}: the request is not among its own peers"
-    let pl := { pl with frame }
+    -- THE BOX IS THE ONE WHAT IS DRAWN IN IT NEEDS — a row per bead, and the row above the first of
+    -- them that its arms and any lane born over it run in.  The parts of ONE CANVAS share a slid
+    -- box, so the bead they both carry stands at one height: that is the whole reason a statement is
+    -- drawn whole.  A part drawn into a FILE OF ITS OWN has nothing beside it to line up with, so it
+    -- takes its own box and its own row; a box carrying a PEER's depth is blank rows the picture does
+    -- not draw — half the panel of them wherever the shared bead is one side's first bead and the
+    -- other's last, which is what "unnecessary vertical space" named in (14.3f).
     withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+      let pl := placement (parts.map (·.2))
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""

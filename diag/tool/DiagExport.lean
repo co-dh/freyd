@@ -1452,8 +1452,8 @@ def main (args : List String) : IO UInt32 := do
   -- comes out as `inst✝.delta a`.  The instance is anonymous inside a `forallTelescope`, so that is
   -- worse than useless in a picture; off, it prints `CartBicat.delta a` and the strip in `plain`
   -- takes the namespace.
-  -- A statement's frame is the deepest of its SIDES, so one file costs a walk of every side and not
-  -- just of the part drawn; the default budget was set for one panel.  Wall clock is `scripts/cap`'s.
+  -- A statement drawn WHOLE costs a walk of every side it puts in the one canvas, and the default
+  -- budget was set for one panel.  Wall clock is `scripts/cap`'s.
   -- The commutative functor prints a functor's action by its letter, `F X`, which field notation
   -- (`F.obj X`) is tried before; and a bundled object as a constructor, which an unexpander reaches.
   let opts : Options := if commutativeMode then
@@ -1463,13 +1463,10 @@ def main (args : List String) : IO UInt32 := do
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
   -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
-  -- THE ARGUMENT LIST SAYS WHICH PARTS STAND BESIDE EACH OTHER, and a frame is shared by exactly
-  -- those: every selector is taken apart once, here, so a task can find its declaration's others.
+  -- A FILE'S FRAME IS ITS OWN PICTURE'S, so an argument needs nothing of the arguments beside it:
+  -- every selector is taken apart once, here, and each task then stands alone.
   let parsed := args.map fun a => parseArg a (circuitMode || stringMode)
   let tasks ← (args.zip parsed).mapM fun (arg, base, binder, sides, branch) => do
-    -- The other parts of THIS declaration the run was asked for, this one among them.
-    let peers := (parsed.filter fun (b, h, _, _) => b == base && h == binder).map
-      fun (_, _, s, br) => (s, br)
     -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
     -- per declaration, and not once for the whole command line.
     -- A commutative page's first part names it, and the parts of one page are the faces of one
@@ -1481,7 +1478,7 @@ def main (args : List String) : IO UInt32 := do
       -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
       Meta.MetaM.run' <| Meta.withConfig (fun c => { c with foApprox := true, ctxApprox := true }) <|
         (if sigMode then sig arg.toName
-        else if stringMode then StrDiag.drawString base.toName sides binder branch peers
+        else if stringMode then StrDiag.drawString base.toName sides binder branch
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
