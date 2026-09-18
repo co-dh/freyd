@@ -1536,12 +1536,14 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
 
-    A statement is drawn WHOLE — both sides in one frame — or one side at a time, and the frame is
-    as deep as THIS FILE's picture either way: the parts of one canvas slide to the bead they share,
-    a lone side is as deep as its own beads.  The path names the statement, so `.lhs` on an `↔` draws
-    the whole left statement and only a trailing name on a relation picks a side. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel) :
-    MetaM String :=
+    A statement is drawn WHOLE — both sides in one frame — or one side at a time.  `peers` is THE
+    CALL: the selectors one `#lean(…)` names, this one among them, which are the panels that stand
+    beside each other on the page.  They slide to the bead they share and come out in one box, at one
+    height; a selector that arrived in a call of its own shares with nothing and is as deep as its own
+    beads, whatever the declaration says.  The path names the statement, so `.lhs` on an `↔` draws the
+    whole left statement and only a trailing name on a relation picks a side. -/
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
+    (peers : List (List String × List Sel)) : MetaM String :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1629,15 +1631,41 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
     -- `branchOf`, and the object variables are the statement's own either way.
-    -- THE BOX IS THE ONE WHAT IS DRAWN IN IT NEEDS — a row per bead, and the row above the first of
-    -- them that its arms and any lane born over it run in.  The parts of ONE CANVAS share a slid
-    -- box, so the bead they both carry stands at one height: that is the whole reason a statement is
-    -- drawn whole.  A part drawn into a FILE OF ITS OWN has nothing beside it to line up with, so it
-    -- takes its own box and its own row; a box carrying a PEER's depth is blank rows the picture does
-    -- not draw — half the panel of them wherever the shared bead is one side's first bead and the
-    -- other's last, which is what "unnecessary vertical space" named in (14.3f).
+    -- THE BOX IS THE ONE THE CALL NEEDS — a row per bead, and the row above the first of them that
+    -- its arms and any lane born over it run in.  The selectors of ONE `#lean(…)` call are the
+    -- panels that stand beside each other, so they slide to the bead they share and take one box, as
+    -- deep as the deeper of them; a call naming one selector shares with nothing.  Grouping by the
+    -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
+    -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
+    -- "unnecessary vertical space" named in (14.3f).
+    let mut qs : Array Diagram := #[]
+    for (p, s) in peers do
+      let (_, _, d) ← reqParts p
+      for (_, e) in d do
+        qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+    let pl := placement qs
+    -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
+    -- one file this run writes, which is a record and would drop out of the count by being deleted.
+    -- A pair owes two things and this is where both are answered: ONE HEIGHT, so the parts stand in
+    -- the one box, and ONE ROW for every bead two of them carry, so the reader sees which bead moved
+    -- instead of re-aligning them by eye.
+    for i in [0 : qs.size] do
+      let a := qs[i]!
+      if framex a > pl.frame then
+        throwError "{declName}: one part of this call needs {framex a} rows where the call's box is \
+          {pl.frame}: every panel of one `#lean(…)` call is drawn at ONE height, the deepest part's"
+      for j in [i + 1 : qs.size] do
+        let b := qs[j]!
+        for ra in [0 : a.rows.size] do
+          for rb in [0 : b.rows.size] do
+            if a.rows[ra]!.label == b.rows[rb]!.label then
+              let ya := (pl.top a : Int) - ra
+              let yb := (pl.top b : Int) - rb
+              unless ya == yb do
+                throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
+                  this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
+                  side by side, so a bead they SHARE is drawn at one height in both"
     withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
-      let pl := placement (parts.map (·.2))
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""

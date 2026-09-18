@@ -442,7 +442,9 @@ def sections_of(n=None, root_dir=None):
 
 
 def lean_panels(root_dir=None):
-    """Every `#lean(...)` selector the NOTES draw, read off the note's own `<lean-panel>` metadata.
+    """Every `#lean(...)` CALL the NOTES make, read off the note's own `<lean-panel>` metadata — the
+    selectors of one call joined by `+`, because one call is one box and the exporter is told the
+    call, not the selector: a pair drawn as two calls comes out as two boxes of different depths.
 
     THE NOTE IS ASKED, never matched: `lean("x")` is a typst call, and a pattern over the source
     would miss one written in a variable, in a loop or across two lines, and find one inside a
@@ -498,7 +500,15 @@ def generated_imports(root_dir=None):
             tgt = os.path.normpath(os.path.join(d, s))
             if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
                 out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
-    return sorted(set(out) | set(lean_panels(root_dir)))
+    return sorted(set(out) | set(lean_names(root_dir)))
+
+
+def lean_names(root_dir=None):
+    """One FILE per selector, the calls taken apart: `lean(a, b)` is one call and two pictures.
+
+    The call is what decides a box (see `lean_panels`), and it is the exporter that must hear it;
+    every list of FILES — what is missing, what is imported — wants the selectors themselves."""
+    return sorted({n for call in lean_panels(root_dir) for n in call.split("+")})
 
 
 def note_text(root=None, root_dir=None):

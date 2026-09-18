@@ -14,9 +14,21 @@
 #import "dpanel.typ": dpanel, hm-meta
 // A picture is a Lean declaration's name and nothing else: the exporter draws it into diag/generated/
 // and decides every mark, type and row.  `--input list=1` lists the names instead of drawing them.
-#let lean(sel) = {
-  [#metadata(sel)<lean-panel>]
-  if "list" not in sys.inputs { import "generated/" + sel + ".typ": pic; pic }
+// ONE CALL IS ONE BOX: `lean(a, b)` names a PAIR — the two panels that stand beside each other, with
+// the relation symbol between them — and the exporter draws the selectors of one call to one depth,
+// so both sides of the equation come out the same height and line up on the bead they share.  Two
+// separate calls share nothing, which is what keeps a calc-table's cells as short as their own
+// pictures.
+#let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
+#let lean(..sels) = {
+  let ns = sels.pos()
+  [#metadata(ns.join("+"))<lean-panel>]
+  if "list" not in sys.inputs {
+    let pics = ns.map(n => { import "generated/" + n + ".typ": pic; pic })
+    if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics) } else {
+      panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()))
+    }
+  }
 }
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
@@ -115,7 +127,6 @@
 )
 #let IMP = text(SLACK)[$arrow.l.double$]
 #let TH = 1.2   // a fraction box is two lines tall
-#let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
 #let IFF = text(SLACK)[$arrow.l.r.double$]
 #let thin-Q-box = ([`thin(Q)`], 1.9, true)
 #let So-box = ([`S°`], 0.85, true)

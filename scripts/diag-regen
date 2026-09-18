@@ -22,11 +22,16 @@ missing=
 [ $# -eq 0 ] || { echo "usage: diag-regen [--missing]" >&2; exit 2; }
 
 # Only the names with no picture on disk, under --missing; the name IS the file's stem, `.proof` and
-# all, so one test answers for every route.
+# all, so one test answers for every route.  A `#lean(a, b)` call arrives as one `a+b` line and is
+# redrawn WHOLE when either of its pictures is missing: the two share a box, so drawing one of them
+# alone would give it a depth of its own and leave the pair standing at two heights.
 filter() {
   if [ -z "$missing" ]; then cat; else
     while IFS= read -r n; do
-      [ -n "$n" ] && [ ! -f "diag/generated/$n.typ" ] && printf '%s\n' "$n"
+      [ -n "$n" ] || continue
+      for p in $(printf '%s\n' "$n" | tr '+' ' '); do
+        [ -f "diag/generated/$p.typ" ] || { printf '%s\n' "$n"; break; }
+      done
     done
     return 0
   fi
@@ -39,7 +44,10 @@ lean=$(./scripts/note-files --lean) || exit 1
 if [ -n "$lean" ]; then
   tmp=$(mktemp) || exit 1
   trap 'rm -f "$tmp"' EXIT
-  printf '%s\n' "$lean" > "$tmp"
+  # The SELECTORS, one per line: the difference is over files, and a `#lean(a, b)` call is two of
+  # them.  Left joined, `a+b` matched no line of the full list and both pictures were drawn twice,
+  # once by the string route and once as an import that does not exist.
+  printf '%s\n' "$lean" | tr '+' '\n' > "$tmp"
   imports=$(printf '%s\n' "$all" | grep -Fxv -f "$tmp")
 else
   imports=$all

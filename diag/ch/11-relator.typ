@@ -1225,7 +1225,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
      satisfies the associated recursion inequation]],
   [#hchain(
-    (none, trow(lean("Freyd.Alg.hylo_le_of_prefixed.lhs"), lean("Freyd.Alg.hylo_le_of_prefixed.rhs")),
+    (none, lean("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs"),
      src[the conclusion]),
     (IFF, trow(hy-cataR, lean("Freyd.Alg.hylo_le_of_prefixed_step1.rhs")),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),

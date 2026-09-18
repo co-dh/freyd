@@ -722,13 +722,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
     trow(ma-Fest-ni, ma-Fni),
     [and],
-    trow(lean("Freyd.Alg.mon_thm71_step2.rhs.lhs"), lean("Freyd.Alg.mon_thm71_step2.rhs.rhs")),
+    lean("Freyd.Alg.mon_thm71_step2.rhs.lhs", "Freyd.Alg.mon_thm71_step2.rhs.rhs"),
   ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
   [#hchain(
-    (IFF, trow(lean("Freyd.Alg.mon_thm71_step3.lhs.lhs"), lean("Freyd.Alg.mon_thm71_step3.lhs.rhs")),
+    (IFF, lean("Freyd.Alg.mon_thm71_step3.lhs.lhs", "Freyd.Alg.mon_thm71_step3.lhs.rhs"),
       src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
     (IFF, trow(ma-Ro, ma-Rbare-Ro),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
