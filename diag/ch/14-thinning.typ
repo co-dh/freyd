@@ -456,38 +456,40 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     // algebra row: B&dM §8.2, p. 198
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
-  table.header([*circuit* — the algebra alone, `F(EA,E(LA))` to `E(LA)`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], pa-pic((pb-alg, thin-Q-box)),
+  [#vstep([], leanc("Freyd.Alg.thinning_paths_alg.rhs"),
     [#src[the algebra of @path-laws row 2]])],
   [#lean("Freyd.Alg.thinning_paths_alg.rhs")],
 
-  [#vstep(EQ, pa-pic((pb-out, pb-Pa, union-box, thin-Q-box)),
+  [#vstep(EQ, leanc("Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs"),
     [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
  P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@3b58c96c
   [#lean("Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs")],
 
-  [#vstep(RQ, pa-pic((pb-out, pb-Pat, union-box)),
+  [#vstep(RQ, leanc("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs"),
     [#src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws.
  ]])],
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@57742f7b
   [#lean("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs")],
 
-  [#vstep(RQ, pa-pic((pb-out, pb-Pae, union-box)),
+  [#vstep(RQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs"),
     [#src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
  `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
       // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@bac7360f
       // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@03155579
   [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs")],
 
-  [#vstep(EQ, pa-pic((pb-out, pb-Pas)),
+  [#vstep(EQ, leanc("Freyd.Alg.thinning_paths_alg.lhs"),
     [#src[`P(`#frc([`𝟙`])`) union=𝟙`. ]])],
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@0d6a3843
   [#lean("Freyd.Alg.thinning_paths_alg.lhs")],
 
-  [#vstep(EQ, pa-pic((pb-out, pb-Pws)),
+  [#vstep(EQ, leanc("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs"),
     [#src[`α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`; #h(3pt)
  #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn. ]])],
       // lean:AOP.A4_6.Λ_absorption@e87bd8f2

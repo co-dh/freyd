@@ -20,16 +20,22 @@
 // separate calls share nothing, which is what keeps a calc-table's cells as short as their own
 // pictures.
 #let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
-#let lean(..sels) = {
-  let ns = sels.pos()
-  [#metadata(ns.join("+"))<lean-panel>]
+// One body, two routes: `dir` is the exporter's output directory and `label` the metadata the
+// listing queries, because a second copy of this would drift from the first at the next change.
+#let lean-call(dir, label, ns) = {
+  [#metadata(ns.join("+"))#label]
   if "list" not in sys.inputs {
-    let pics = ns.map(n => { import "generated/" + n + ".typ": pic; pic })
+    let pics = ns.map(n => { import dir + n + ".typ": pic; pic })
     if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics) } else {
       panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()))
     }
   }
 }
+#let lean(..sels) = lean-call("generated/", <lean-panel>, sels.pos())
+// The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
+// walks the same Expr under the monoidal reading.  `scripts/circuit` reads the note's own formula
+// string instead, so its `cert:` says only that the picture matches the text beside it.
+#let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top

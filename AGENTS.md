@@ -132,12 +132,19 @@ in a `//` comment in the drawing file.
 Adding a picture, fixing wrong wording, or cutting text is fine — adding explanation nobody asked for
 is not.
 
-**NEVER HAND-DRAW A PICTURE. Every panel in the note is emitted by `scripts/diagram` or
-`scripts/circuit` from its formula and carries the `cert:` they write.** A hand-laid drawing has no
-`cert:`, so `scripts/scanline` cannot read it back, `--compare` cannot catch it drifting from the
-formula, and its port types are checked by nobody — which is how a bead ends up on a wire that is not
-its source. When the generator cannot draw a panel, extend the generator (parser, `hm-sigs.json`,
-`dpanel.typ`) first and then generate; a one-off `cetz` file is never the answer.
+**NEVER HAND-DRAW A PICTURE. Every panel in the note is drawn from a LEAN DECLARATION by
+`diag-export`, named by `#lean("<sel>")` (Hinze–Marsden) or `#leanc("<sel>")` (circuit).** A
+hand-laid drawing's port types are checked by nobody — which is how a bead ends up on a wire that is
+not its source. When the exporter cannot draw a panel it writes a red stub and exits nonzero; extend
+the exporter then, and never a one-off `cetz` file. `scripts/circuit` reads the note's own formula
+string, so its `cert:` says only that the picture matches the text beside it and nothing about the
+theorem — it is the route being retired, not a second source of truth.
+
+**A ROW'S TWO PICTURES ARE ONE THEOREM.** In any table whose columns are the circuit and the
+Hinze–Marsden reading, the two cells of a row name the SAME declaration — `#leanc("<sel>")` beside
+`#lean("<sel>")` — because two cells drawn from different declarations make the reader derive a
+correspondence nobody checked. It follows that such a column has no one pair of ports: each row is
+its own law in that law's own letters, so its `table.header` must not claim a source and target.
 
 **ALWAYS PROVE IT IN LEAN.** A type the note writes, the naturality a bead's dot claims, the equation
 a table row states — each is backed by a Lean declaration cited by its `lean:` marker (a signature row

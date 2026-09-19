@@ -4,8 +4,9 @@
 #     ./scripts/diag-regen              redraw all of them
 #     ./scripts/diag-regen --missing    draw only the ones with no file in diag/generated/
 #
-# The notes THEMSELVES are the list: `scripts/notesplit.py` reads every `#lean(...)` selector out of
-# the note's own metadata and every surviving `#import` as a path from the file making it.  A second
+# The notes THEMSELVES are the list: `diag-export --list` reads every `#lean(...)`/`#leanc(...)`
+# selector out of the note's own metadata, and `note-files --generated` every surviving `#import`
+# as a path from the file making it.  A second
 # copy of that list in a header comment is how the two drifted — three declarations were renamed and
 # the comment went on naming the old ones — and a pattern written for the note's own
 # `generated/x.typ` never saw a chapter's `../generated/x.typ` and redrew fewer pictures, exiting 0.
@@ -13,9 +14,10 @@
 # BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
 # and a picture named by only one of them is still a picture that has to be redrawn.
 #
-# ONE LEAN PROCESS PER ROUTE, three at most: a `#lean(...)` name is drawn by `--string` (the panel
-# the note imports), a `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is
-# not a property of the name, so the two lists are asked for separately rather than guessed at here.
+# ONE LEAN PROCESS PER ROUTE, four at most: a `#lean(...)` name is drawn by `--string` (the panel
+# the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
+# reading), a `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is not a
+# property of the name, so the lists are asked for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
 [ "$1" = "--missing" ] && { missing=1; shift; }
@@ -25,12 +27,15 @@ missing=
 # all, so one test answers for every route.  A `#lean(a, b)` call arrives as one `a+b` line and is
 # redrawn WHOLE when either of its pictures is missing: the two share a box, so drawing one of them
 # alone would give it a depth of its own and leave the pair standing at two heights.
+# `$1` is the route's output directory: the string route writes diag/generated/, the circuit route
+# one level down, and a test against the wrong one reports every picture missing.
 filter() {
+  dir=$1
   if [ -z "$missing" ]; then cat; else
     while IFS= read -r n; do
       [ -n "$n" ] || continue
       for p in $(printf '%s\n' "$n" | tr '+' ' '); do
-        [ -f "diag/generated/$p.typ" ] || { printf '%s\n' "$n"; break; }
+        [ -f "$dir/$p.typ" ] || { printf '%s\n' "$n"; break; }
       done
     done
     return 0
@@ -38,26 +43,21 @@ filter() {
 }
 
 all=$(./scripts/note-files --generated) || exit 1
-lean=$(./scripts/note-files --lean) || exit 1
-# The `#import`ed pictures: the whole list less the ones the note draws with `#lean`.  An empty
-# pattern file matches every line, so with no `#lean` at all the difference is the whole list.
-if [ -n "$lean" ]; then
-  tmp=$(mktemp) || exit 1
-  trap 'rm -f "$tmp"' EXIT
-  # The SELECTORS, one per line: the difference is over files, and a `#lean(a, b)` call is two of
-  # them.  Left joined, `a+b` matched no line of the full list and both pictures were drawn twice,
-  # once by the string route and once as an import that does not exist.
-  printf '%s\n' "$lean" | tr '+' '\n' > "$tmp"
-  imports=$(printf '%s\n' "$all" | grep -Fxv -f "$tmp")
-else
-  imports=$all
-fi
+# The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
+# keeps the route and its list in one place.
+lean=$(./scripts/diag-export --list lean-panel) || exit 1
+circuit=$(./scripts/diag-export --list lean-circuit) || exit 1
+# The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
+# `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
+# drew a picture twice, once by its own route and once as an import that does not exist.
 
 # Unquoted on purpose: the names carry no spaces, and quoting would pass a whole list as one word.
-leans=$(printf '%s\n' "$lean" | filter)
-plain=$(printf '%s\n' "$imports" | grep -v '\.proof$' | filter)
-proofs=$(printf '%s\n' "$imports" | filter | sed -n 's|\.proof$||p')
+leans=$(printf '%s\n' "$lean" | filter diag/generated)
+circuits=$(printf '%s\n' "$circuit" | filter diag/generated/circuit)
+plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter diag/generated)
+proofs=$(printf '%s\n' "$all" | filter diag/generated | sed -n 's|\.proof$||p')
 [ -n "$plain" ] && { ./scripts/diag-export $plain || exit 1; }
 [ -n "$proofs" ] && { ./scripts/diag-export --proof $proofs || exit 1; }
 [ -n "$leans" ] && { ./scripts/diag-export --string $leans || exit 1; }
+[ -n "$circuits" ] && { ./scripts/diag-export --circuit $circuits || exit 1; }
 exit 0

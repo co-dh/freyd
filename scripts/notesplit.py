@@ -441,41 +441,12 @@ def sections_of(n=None, root_dir=None):
     return {d.get("label") or d["id"] for d in ms if d.get("kind") == "disp"}
 
 
-def lean_panels(root_dir=None):
-    """Every `#lean(...)` CALL the NOTES make, read off the note's own `<lean-panel>` metadata — the
-    selectors of one call joined by `+`, because one call is one box and the exporter is told the
-    call, not the selector: a pair drawn as two calls comes out as two boxes of different depths.
-
-    THE NOTE IS ASKED, never matched: `lean("x")` is a typst call, and a pattern over the source
-    would miss one written in a variable, in a loop or across two lines, and find one inside a
-    comment.  `--input list=1` makes the prelude's `lean` emit its metadata and draw nothing, so
-    the listing runs before any picture exists — which is what `diag-regen --missing` needs.
-
-    THE HEAD OF EACH NOTE'S FILE LIST IS QUERIED, and its includes with it: the appendix and the
-    chapters cite each other's labels (`@mon-thm71`), so a chapter compiles alone only because
-    `note_files` hands back the whole list when no `CH` names one, and asking the appendix on its
-    own fails with `label <mon-thm71> does not exist`.  `CH=13` narrows that list to the chapter,
-    and this then pays one chapter's layout instead of the book's."""
-    import json
-    import subprocess
-    root_dir = root_dir or ROOT_DIR
-    out = []
-    for n in NOTES:
-        path = note_files(n, root_dir)[0]
-        rel = os.path.relpath(path, root_dir)
-        cmd = ["typst", "query", "--root", ".", "--input", "list=1", rel, "<lean-panel>",
-               "--field", "value"]
-        p = subprocess.run(cmd, cwd=root_dir, capture_output=True, text=True, encoding="utf-8")
-        if p.returncode:
-            die("%s: the pictures it draws are unknown — `%s` failed:\n%s"
-                % (rel, " ".join(cmd), p.stderr.strip()))
-        out += json.loads(p.stdout)
-    return sorted(set(out))
-
-
 def generated_imports(root_dir=None):
-    """Every picture under diag/generated/ that one of the NOTES draws — each `#lean(...)` selector
-    and each surviving `#import`, named as the exporter takes it — the list `diag-regen` redraws.
+    """Every picture under diag/generated/ that one of the NOTES draws BY `#import`, named as the
+    exporter takes it — the older of the two routes `diag-regen` redraws.
+
+    The `#lean(...)`/`#leanc(...)` calls are NOT here: those are the note's own metadata and
+    `diag-export --list` reads them, which is the one place a route and its list live together.
 
     The notes' own files are the list — each root with its chapters, and the prelude the split
     moved the root's `#import` lines into — and nothing else under `diag/`: a walk over the
@@ -500,15 +471,7 @@ def generated_imports(root_dir=None):
             tgt = os.path.normpath(os.path.join(d, s))
             if tgt.startswith(gen + os.sep) and tgt.endswith(".typ"):
                 out.append(os.path.relpath(tgt, gen)[:-len(".typ")])
-    return sorted(set(out) | set(lean_names(root_dir)))
-
-
-def lean_names(root_dir=None):
-    """One FILE per selector, the calls taken apart: `lean(a, b)` is one call and two pictures.
-
-    The call is what decides a box (see `lean_panels`), and it is the exporter that must hear it;
-    every list of FILES — what is missing, what is imported — wants the selectors themselves."""
-    return sorted({n for call in lean_panels(root_dir) for n in call.split("+")})
+    return sorted(set(out))
 
 
 def note_text(root=None, root_dir=None):
@@ -680,9 +643,6 @@ def cmd_files(argv):
         return
     if "--generated" in argv:
         print(*generated_imports(), sep="\n")
-        return
-    if "--lean" in argv:
-        print(*lean_panels(), sep="\n")
         return
     argv = take_chapter(argv)
     for p in note_files(argv[0] if argv else None):

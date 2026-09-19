@@ -1335,7 +1335,10 @@ def usage : String :=
      with no marker gets a reading task (./scripts/cite-cover)\n\
    --string draws the STRING DIAGRAM of a statement, to diag/generated/<name>.typ — what the\n\
      note's own `#lean(\"<name>\")` imports\n\
-   --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ\n\
+   --circuit draws the CIRCUIT of a statement, to diag/generated/circuit/<name>.typ — what the\n\
+     note's own `#leanc(\"<name>\")` imports\n\
+   --list <label> prints the note's `#lean`/`#leanc` CALLS under that metadata label, one per\n\
+     line, selectors of one call joined by `+`: `--list lean-panel`, `--list lean-circuit`\n\
    --commutative draws the COMMUTATIVE DIAGRAM of a statement, to\n\
      diag/generated/commutative/<name>.typ; `<decl>.lhs`/`.rhs` is one side of an `↔`, and\n\
      `<a>+<b>` two statements drawn as one page — pasted along the edge they share, or side by side\n\
@@ -1407,8 +1410,55 @@ def parseArg (arg : String) (sel : Bool) :
     | _ => (stem.toString, none)
   return (base, binder, sides, branch)
 
+/-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
+def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
+
+/-- Every `#lean`/`#leanc` CALL the notes make, read off the note's own metadata under `label` —
+    the selectors of one call joined by `+`, because one call is one box and the exporter is told
+    the call, not the selector: a pair drawn as two calls comes out as two boxes of different depths.
+
+    THE NOTE IS ASKED, never matched: `leanc("x")` is a typst call, and a pattern over the source
+    would miss one written in a variable, in a loop or across two lines, and find one inside a
+    comment.  `--input list=1` makes the prelude's helper emit its metadata and draw nothing, so
+    the listing runs before any picture exists — which is what `diag-regen --missing` needs. -/
+def listMain (label : String) : IO UInt32 := do
+  let mut out : Array String := #[]
+  for root in noteRoots do
+    let args := #["query", "--root", ".", "--input", "list=1", root,
+                  "<" ++ label ++ ">", "--field", "value"]
+    let cmdline := "typst " ++ String.intercalate " " args.toList
+    let r ← IO.Process.output { cmd := "typst", args := args }
+    if r.exitCode != 0 then
+      IO.eprintln s!"diag-export --list: `{cmdline}` exited {r.exitCode}: {r.stderr.trimAscii}"
+      return 1
+    match Json.parse r.stdout >>= (·.getArr?) with
+    | .error e =>
+      IO.eprintln s!"diag-export --list: `{cmdline}` printed no JSON array of selectors: {e}"
+      return 1
+    | .ok xs =>
+      for x in xs do
+        match x.getStr? with
+        | .error e =>
+          IO.eprintln s!"diag-export --list: `{cmdline}`: a selector is not a string: {e}"
+          return 1
+        | .ok s => out := out.push s
+  -- Sorted, and adjacent duplicates dropped: the same picture named by both notes is one job.
+  let mut prev := ""
+  for s in out.qsort (· < ·) do
+    if s != prev then IO.println s
+    prev := s
+  return 0
+
 def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
+  -- The listing route reads the NOTE and no environment, so it answers before the import below.
+  match args with
+  | ["--list", label] => return ← listMain label
+  | "--list" :: _ =>
+    IO.eprintln "diag-export --list takes exactly one metadata label, \
+      e.g. `--list lean-panel` or `--list lean-circuit`"
+    return 2
+  | _ => pure ()
   -- The citation routes read the INDEX and no environment, so they answer before the import of
   -- `Freyd` + every `diag.*`/`AOP.*` module that every drawing route needs.
   if args.contains "--cite" then return ← Cite.citeMain (args.filter (· != "--cite"))
