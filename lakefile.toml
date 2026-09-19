@@ -1,7 +1,7 @@
 name = "freyd"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["Freyd", "AOP", "leet", "rel", "diag"]
+defaultTargets = ["Freyd", "AOP", "diag"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -18,13 +18,10 @@ name = "Freyd"           # book core: curated aggregator Freyd.lean stays the si
 name = "AOP"             # Algebra-of-Programming layer; glob so every AOP/*.lean is in the default build
 globs = ["AOP.+"]
 
-[[lean_lib]]
-name = "leet"            # LeetCode case studies
-globs = ["leet.+"]
-
-[[lean_lib]]
-name = "rel"             # the relation-algebra interpreter + case studies + auto-derivation drivers
-globs = ["rel.+"]
+# `leet` (LeetCode case studies) and `rel` (the relation-algebra interpreter, its auto-derivation
+# drivers and the LeetRun studies) are OUT of the default build: nothing in `Freyd` or `AOP` imports
+# them, and rebuilding them on every AOP edit was the bulk of a build.  Their sources stay in the
+# tree; declare a lean_lib again to bring either back.
 
 [[lean_lib]]
 name = "diag"            # diagrammatic-calculus tower (cartesian bicategory → tapes → fo-bicategory)
