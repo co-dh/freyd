@@ -776,7 +776,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[the left conjunct; @est-75, and `⦇−⦈` is monotone]])],
   [],
 
-  [#vstep(IMP, leanc("Freyd.Alg.greedy_step1.lhs", "Freyd.Alg.greedy_step3.rhs"),
+  // TWO CALLS, not one `leanc(…)` naming both: a two-name call shares ONE box, which is what makes
+  // the two sides of an equation stand at the same height, and these are two statements.
+  [#vstep(IMP, trow(leanc("Freyd.Alg.greedy_step1.lhs"), leanc("Freyd.Alg.greedy_step3.rhs")),
     [#src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
       `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[@hylo-mu] #h(4pt) — so Knaster–Tarski
       leaves this one inequation] \
