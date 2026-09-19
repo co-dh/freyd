@@ -41,6 +41,9 @@ public import AOP.A6_1_RelSet
 -- the layered network's paths are `ConsList V V`, whose base relator `X ↦ (V→Prop)+(V→Prop)×X`
 -- is what `thinning_paths`'s `F` is instantiated to below.
 public import AOP.A6_ConsList
+-- `est`'s pointwise form at Rel(Set), `Λ_comp_est_apply`, is proved with §7.4's Horner example;
+-- the `path-defn` rows at the end read the two transposes off it rather than re-proving it.
+public import AOP.A7_4_Horner
 
 universe u
 
@@ -55,6 +58,14 @@ public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A 
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 
+/-- **The power transpose of a composition** (book p.198, the first step of the calculation):
+    `Λ(S·V) = union·P(ΛS)·ΛV`, mirrored `Λ (V ≫ S) = Λ V ≫ P(Λ S) ≫ union`.
+    `Λ V` absorbs the existential image of `S`, and an existential image is the transpose's own
+    image followed by `union`. -/
+public theorem Λ_comp_eq_Λ_comp_powerRel_bigUnion (V : C ⟶ w) (S : w ⟶ A) :
+    Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
+  rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
+
 /-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
     eliminated"): split the thinning algebra's source as `V ≫ S`, and the `thin Q` at its end
     collapses to a `min R` under the power functor —
@@ -67,9 +78,6 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
     (hQ : R ∩ (S° ≫ S) ⊑ Q) :
     Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thinRel Q := by
-  -- the power transpose of a composition (book p.198)
-  have hsplit : Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
-    rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
   have hmapτ : Map (singletonMap : A ⟶ PowerAllegory.powerObj A) := Λ_is_map' (𝟙 A)
   -- `P τ ≫ union = id` (`union·Pτ = id`, the monad law)
   have hτ : powerRel (singletonMap : A ⟶ PowerAllegory.powerObj A) ≫ bigUnion
@@ -85,7 +93,7 @@ public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
       rw [powerRel_comp, Cat.assoc, hτ, Cat.comp_id]
     rw [← e1]
     exact comp_mono_right (powerRel_mono h83) bigUnion
-  rw [hsplit, Cat.assoc, Cat.assoc]
+  rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion V S, Cat.assoc, Cat.assoc]
   refine comp_mono_left (Λ V) (le_trans hstep ?_)
   rw [powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q)
@@ -127,6 +135,21 @@ public theorem thinning_paths_step (hFr : F.PreservesRecip)
   rw [← e]
   exact thinning_est hFr' I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
+/-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
+    one the program runs —
+    `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
+    `Λ (F(∋,𝟙)) ≫ P(Λ (F(𝟙,∋)α) ≫ est R) ⊑ Λ (F(∋,∋)α) ≫ thin Q`, at `R ∩ (S°S) ⊑ Q` for
+    `S ≜ F(𝟙,∋)α`.  It is `thinAlg_elim` at the split `V ≜ F(∋,𝟙)`, `S`, whose composite `V·S`
+    is `F(∋,∋)α` by interchange. -/
+public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
+    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+  have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    (F.map (𝟙 A) (∋ B) ≫ α) hQ
+  rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
+
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —
     `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored
@@ -145,13 +168,8 @@ public theorem thinning_paths (hFr : F.PreservesRecip)
     relCata (Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have halg : Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-      ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-    have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-      (F.map (𝟙 A) (∋ B) ≫ α) hQ
-    rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
-  exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))
+  exact le_trans
+    (comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R))
     (thinning_paths_step hFr I hQR hreflQ htransQ htransR hmono)
 
 end Layered
@@ -293,6 +311,135 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
   refine le_iff.mpr ?_
   rintro p q ⟨hcost, x, hx, hq⟩
   exact ⟨hcost, hx ▸ hq⟩
+
+/-! ### The note's `path-defn`: the transposes computed on the coproduct
+
+  The last two steps of p.198 leave the thinning alone: they compute the two transposes
+  `ΛF(∋,𝟙)` and `ΛF(𝟙,∋)` at `F(A,X) = A + A×X` and read the printed program off the summands.
+  Both are `Λ_junc` — a transpose taken one summand at a time. -/
+
+/-- **`ΛF(∋,𝟙) = 𝟙+cpl`** (book p.198, the note's `path-defn`): the cross product of a SUM of
+    relators is the junc of the summands' own cross products, each followed by its injection.
+    At `F(A,X) = A + A×X` the left summand's relator is the identity, whose cross product is
+    `Λ(∋) = 𝟙`, and the right one's is `−×X`, whose cross product is `cpl`. -/
+public theorem cpMap_sum_eq_junc (G H : Relator RelSet.{0} RelSet.{0}) (A : RelSet.{0}) :
+    cpMap (Relator.sum G H) A
+      = junc (sumCop (G.obj (pow A)) (H.obj (pow A)))
+          (cpMap G A ≫ powerRel ((sumCop (G.obj A) (H.obj A)).u₁))
+          (cpMap H A ≫ powerRel ((sumCop (G.obj A) (H.obj A)).u₂)) := by
+  have h₁ : Map ((sumCop (G.obj A) (H.obj A)).u₁) := graph_map _
+  have h₂ : Map ((sumCop (G.obj A) (H.obj A)).u₂) := graph_map _
+  simp only [cpMap]
+  show Λ (junc (sumCop (G.obj (pow A)) (H.obj (pow A)))
+      (G.map (∋ A) ≫ (sumCop (G.obj A) (H.obj A)).u₁)
+      (H.map (∋ A) ≫ (sumCop (G.obj A) (H.obj A)).u₂)) = _
+  rw [Λ_junc, powerRel_map h₁, powerRel_map h₂, Λ_absorption, Λ_absorption]
+
+/-- `step ≜ cpr P(cons) est(R)` (book p.198): the vertex distributes over the SET of tails, `cons`
+    goes on each of them, and `est R` keeps a cheapest one. -/
+@[expose] public def pathStep (wt : V → V → Nat) :
+    (⟨V × (pow (dCL V V)).carrier⟩ : RelSet.{0}) ⟶ dCL V V :=
+  cpMap (Relator.prod (Relator.const (dE V)) (Relator.idRelator RelSet.{0})) (dCL V V)
+    ≫ powerRel consR ≫ est (pathR wt)
+
+/-- `S ≜ F(𝟙,∋)α` (book p.198): what `pathSplit`'s definition says in words — the bifunctor at
+    `∋` in the recursion argument, followed by the constructor. -/
+public theorem pathSplit_eq_Fmap_comp_alphaR :
+    (pathSplit (V := V)) = (CL.F V V).map (∋ (dCL V V)) ≫ alphaR := by
+  apply hom_ext
+  intro u p
+  cases u with
+  | inl v =>
+    constructor
+    · intro h
+      exact ⟨Sum.inl v, rfl, h⟩
+    · rintro ⟨u', hu, hp⟩
+      cases u' with
+      | inl v' =>
+        have hv : v = v' := hu
+        subst hv
+        exact hp
+      | inr r => exact hu.elim
+  | inr q =>
+    obtain ⟨a, S⟩ := q
+    constructor
+    · rintro ⟨t, ht, rfl⟩
+      exact ⟨Sum.inr (a, t), ⟨rfl, ht⟩, rfl⟩
+    · rintro ⟨u', hu, hp⟩
+      cases u' with
+      | inl v' => exact hu.elim
+      | inr r =>
+        obtain ⟨b, t⟩ := r
+        obtain ⟨h1, h2⟩ := hu
+        have h1' : a = b := h1
+        subst h1'
+        exact ⟨t, h2, hp⟩
+
+/-- **`F(𝟙,∋) P(α) est(R) = [wrap,step]`** (book p.198, the note's `path-defn`): the second
+    transpose, computed on the same coproduct.  On the leaf summand there is no set to distribute,
+    so the transpose is the singleton and `est R` gives `wrap` back; on the `A×X` summand it is
+    `cpr`, and consing onto each tail and keeping a cheapest one is `step`. -/
+public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : V → V → Nat) :
+    cpMap (CL.F V V) (dCL V V)
+        ≫ powerRel (alphaR : (CL.F V V).obj (dCL V V) ⟶ dCL V V) ≫ est (pathR wt)
+      = junc (sumCop (dL V) (⟨V × (pow (dCL V V)).carrier⟩ : RelSet.{0})) wrapR (pathStep wt) := by
+  have hα : Map (alphaR : (CL.F V V).obj (dCL V V) ⟶ dCL V V) := graph_map _
+  have hc : Map (consR : (⟨V × ConsList V V⟩ : RelSet.{0}) ⟶ dCL V V) := graph_map _
+  have hL : cpMap (CL.F V V) (dCL V V)
+      ≫ powerRel (alphaR : (CL.F V V).obj (dCL V V) ⟶ dCL V V) = Λ (pathSplit (V := V)) := by
+    simp only [cpMap]
+    rw [powerRel_map hα, Λ_absorption, ← pathSplit_eq_Fmap_comp_alphaR]
+  have hS : pathStep wt
+      = Λ (rprodMap (𝟙 (dE V)) (∋ (dCL V V)) ≫ consR) ≫ est (pathR wt) := by
+    simp only [pathStep, cpMap, Relator.prod, Relator.const, Relator.idRelator]
+    rw [prodMap_eq_rprodMap, ← Cat.assoc, powerRel_map hc, Λ_absorption]
+    rfl
+  have hstep : ∀ (q : V × (pow (dCL V V)).carrier) (z : ConsList V V),
+      pathSplit (V := V) (Sum.inr q) z
+        ↔ (rprodMap (𝟙 (dE V)) (∋ (dCL V V)) ≫ consR) q z := by
+    rintro ⟨a, S⟩ z
+    constructor
+    · rintro ⟨t, ht, rfl⟩
+      exact ⟨(a, t), ⟨rfl, ht⟩, rfl⟩
+    · rintro ⟨r, ⟨h1, h2⟩, hr⟩
+      obtain ⟨b, t⟩ := r
+      have h1' : a = b := h1
+      subst h1'
+      exact ⟨t, h2, hr⟩
+  rw [← Cat.assoc, hL, hS]
+  apply hom_ext
+  intro u p
+  rw [Λ_comp_est_apply]
+  cases u with
+  | inl v =>
+    constructor
+    · rintro ⟨h, -⟩
+      exact Or.inl ⟨v, rfl, h⟩
+    · rintro (⟨x, hx, hw⟩ | ⟨y, hy, -⟩)
+      · have hxv : v = x := Sum.inl.inj hx
+        subst hxv
+        have hp : p = ConsList.wrap v := hw
+        subst hp
+        refine ⟨rfl, ?_⟩
+        intro z hz
+        have hz' : z = ConsList.wrap v := hz
+        subst hz'
+        exact Nat.le_refl _
+      · exact (nomatch hy)
+  | inr q =>
+    constructor
+    · rintro ⟨h, hmin⟩
+      refine Or.inr ⟨q, rfl, (Λ_comp_est_apply _ _ _ _).mpr ⟨(hstep q p).mp h, ?_⟩⟩
+      intro z hz
+      exact hmin z ((hstep q z).mpr hz)
+    · rintro (⟨x, hx, -⟩ | ⟨y, hy, hy2⟩)
+      · exact (nomatch hx)
+      · have hyq : q = y := Sum.inr.inj hy
+        subst hyq
+        obtain ⟨h, hmin⟩ := (Λ_comp_est_apply _ _ _ _).mp hy2
+        refine ⟨(hstep q p).mpr h, ?_⟩
+        intro z hz
+        exact hmin z ((hstep q z).mp hz)
 
 end Paths
 
