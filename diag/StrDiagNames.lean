@@ -488,9 +488,8 @@ attribute [diag_indexed] alphaT InitialAlgebra.α
 -- any other, and only the constant says which arrows are the coherence of `×`.
 attribute [diag_coherence] RelSet.Van.assoclR
 
--- THE ALGEBRA OF `thinning_paths` STANDING ALONE: the `have halg` inside it, lifted to a statement
--- so the note can draw what sits inside the `⦇ ⦈` rather than the whole fold.  Its source is the
--- bifunctor at two DIFFERENT arguments, which is what the picture has to answer for.
+-- THE VERDICT THE ALGEBRA OF `AOP.A8_2.thinning_paths_alg` NEEDS: the note draws what sits inside
+-- the `⦇ ⦈` rather than the whole fold, so its source is the bifunctor at two DIFFERENT arguments.
 section
 universe u
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜} {F : BiRelator 𝒜}
@@ -509,15 +508,6 @@ theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
       ⊑ F.map (∋ a) (∋ B) ≫ F.map R (𝟙 B)
   rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
   exact F.map_mono (powerRel_eps_lax R) (le_refl _)
-
-theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-  have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-    (F.map (𝟙 A) (∋ B) ≫ α) hQ
-  rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
 
 end
 
