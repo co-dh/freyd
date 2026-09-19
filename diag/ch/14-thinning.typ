@@ -413,7 +413,6 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #let pb-Pa = ([`P(`#frc([`F(𝟙,∋)α`])`)`], 3.6, false)
 #let pb-Pat = ([`P(`#frc([`F(𝟙,∋)α`])` thin(Q))`], 5.5, true)
 #let pb-Pae = ([`P(`#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`)`], 7.0, true)
-#let pb-Pea = ([`P(`#frc([`F(𝟙,∋)`])` P(α) est(R))`], 6.3, true)
 #let pb-Pws = ([`P([wrap,step])`], 3.9, true)
 #let pb-prog = ([`[P(wrap),cpl P(step)]`], 6.3, true)
 #let pb-pic(alg, tail) = thpic([`L(EA)`], [`LA`], alg, tail)
@@ -438,40 +437,71 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
       // lean:AOP.A8_2.thinAlg_elim@c87607a7
   [#lean("Freyd.Alg.thinning_paths_step.lhs")],
 
-  [#vstep(EQ, pb-pic((pb-out, pb-Pa, union-box, thin-Q-box), (est-R-box,)),
-    [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
- P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
-      // lean:AOP.A8_2.thinAlg_elim@c87607a7
-  // Empty from here down: every step rewrites the ALGEBRA, and the outer panel is row 2's.  The
-  // algebra's source is the bifunctor at two DIFFERENT arguments, which is a square, not a wire.
-  [],
-
-  [#vstep(RQ, pb-pic((pb-out, pb-Pat, union-box), (est-R-box,)),
-    [#src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws.
- ]])],
-      // lean:AOP.A8_2.thinAlg_elim@c87607a7
-  [],
-
-  [#vstep(RQ, pb-pic((pb-out, pb-Pae, union-box), (est-R-box,)),
-    [#src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
- `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
-      // lean:AOP.A8_2.thinAlg_elim@c87607a7
-  [],
-
-  [#vstep(EQ, pb-pic((pb-out, pb-Pea), (est-R-box,)),
-    [#src[`P(`#frc([`𝟙`])`) union=𝟙`; #h(3pt) `α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`.
- ]])],
-      // lean:AOP.A8_2.thinAlg_elim@c87607a7
-  [],
-
-  [#vstep(EQ, pb-pic((pb-out, pb-Pws), (est-R-box,)),
-    [#src[#frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]])],
-  [],
-
-  [#vstep(EQ, pb-pic((pb-prog,), (est-R-box,)),
-    [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
+  [#vstep(RQ, pb-pic((pb-prog,), (est-R-box,)),
+    [#src[@path-alg under #box[`⦇ ⦈`] monotonic: the whole chain runs inside the reduce, and the
+ `est(R)` behind it never moves. ]])],
+      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
+  // No panel: the program's fold is the path instance, and `thinning_paths` states this step over a
+  // general `F`, whose algebra is @path-alg's row 5 rather than this row's `[P(wrap),cpl P(step)]`.
   [],
 )]<path-laws>
+
+// B&dM §8.2, p. 198, rows 3–8.  Every step rewrites the ALGEBRA, so the chain is stated about the
+// algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.  Its source is the bifunctor at two
+// DIFFERENT arguments — one `F` lane over a pair object wire.
+#let pb-Pas = ([`P(`#frc([`F(𝟙,∋)α`])` est(R))`], 5.5, true)
+#let pa-pic(alg) = thpic([`F(EA,E(LA))`], [`E(LA)`], none, alg)
+#disp[#calc-table(
+  Thm[#frc([`F(∋,∋)α`])` thin(Q)⊒[P(wrap),cpl P(step)]` \
+    // algebra row: B&dM §8.2, p. 198
+    #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
+     // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
+  table.header([*circuit* — the algebra alone, `F(EA,E(LA))` to `E(LA)`], [*Hinze–Marsden*]),
+
+  [#vstep([], pa-pic((pb-alg, thin-Q-box)),
+    [#src[the algebra of @path-laws row 2]])],
+  [#lean("Freyd.Alg.thinning_paths_alg.rhs")],
+
+  [#vstep(EQ, pa-pic((pb-out, pb-Pa, union-box, thin-Q-box)),
+    [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
+ P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
+      // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
+      // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@3b58c96c
+  [#lean("Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs")],
+
+  [#vstep(RQ, pa-pic((pb-out, pb-Pat, union-box)),
+    [#src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws.
+ ]])],
+      // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@57742f7b
+  [#lean("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs")],
+
+  [#vstep(RQ, pa-pic((pb-out, pb-Pae, union-box)),
+    [#src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
+ `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
+      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@bac7360f
+      // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@03155579
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs")],
+
+  [#vstep(EQ, pa-pic((pb-out, pb-Pas)),
+    [#src[`P(`#frc([`𝟙`])`) union=𝟙`. ]])],
+      // lean:AOP.A4_6.bigUnion_existsImage_singleton@0d6a3843
+  [#lean("Freyd.Alg.thinning_paths_alg.lhs")],
+
+  [#vstep(EQ, pa-pic((pb-out, pb-Pws)),
+    [#src[`α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`; #h(3pt)
+ #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn. ]])],
+      // lean:AOP.A4_6.Λ_absorption@e87bd8f2
+      // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@8bf8624f
+      // lean:AOP.A8_2.pathStep@5253071f
+  [#lean("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs")],
+
+  [#vstep(EQ, pa-pic((pb-prog,)),
+    [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
+      // lean:AOP.A8_2.cpMap_sum_eq_junc@4e375ef6
+  // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
+  // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
+  [],
+)]<path-alg>
 
 // Same reason as the hand-placed breaks in §@sec-opt: `sticky` cannot hold a heading to a BREAKABLE
 // figure, so this heading stranded itself at the foot of the page.
