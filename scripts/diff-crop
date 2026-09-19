@@ -539,6 +539,22 @@ def components(diff):
     return out or big
 
 
+def snap(y0, y1, spans, H):
+    """The crop's edges pushed out of any line of text they land inside.  A fixed margin lands wherever
+    it lands, and an edge through a word cuts in half the very formula the reader is being asked to
+    compare — measured on the page's own word boxes, not guessed from the ink."""
+    # The slack for ink the text box does not cover goes on FIRST: added after the snap it puts the edge
+    # back inside the next line, which is the word the last pass still cut in half.
+    y0, y1 = y0 - 4, y1 + 4
+    for _ in range(8):
+        lo = min([a for a, b in spans if a < y0 < b], default=y0)
+        hi = max([b for a, b in spans if a < y1 < b], default=y1)
+        if (lo, hi) == (y0, y1):
+            break
+        y0, y1 = lo, hi
+    return max(0, int(y0)), min(H, int(y1) + 1)
+
+
 def merge(boxes):
     boxes, again = list(boxes), True
     while again:
@@ -693,6 +709,7 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
     emit("pdftoppm", "-r", str(DPI), "-png", after_pdf, tmp + "/a/p")
     bs, as_ = sorted(os.listdir(tmp + "/b")), sorted(os.listdir(tmp + "/a"))
     pairs, lb, la = align(page_texts(before_pdf), page_texts(after_pdf))
+    wb, wa = words(before_pdf), words(after_pdf)
     for i in lb:
         print(f"{tag_}before page {i + 1} has no match in the after PDF — not diffed")
     for j in la:
@@ -712,7 +729,10 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
         # a picture the reader cannot place.  Merging again after widening keeps two changes inside one
         # display from arriving as two nearly identical pictures.
         wide = merge([(0, max(0, b[1] - VPAD), W, min(H, b[3] + VPAD)) for b in merge(components(d))])
+        spans = [(w[2] * DPI / 72, w[4] * DPI / 72) for w in wb if w[0] == i + 1]
+        spans += [(w[2] * DPI / 72, w[4] * DPI / 72) for w in wa if w[0] == j + 1]
         for k, (x0, y0, x1, y1) in enumerate(wide, 1):
+            y0, y1 = snap(y0, y1, spans, H)
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
             emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
             emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
