@@ -603,7 +603,7 @@ public theorem para_laws_step1 (L : Relator RelSet.{0} RelSet.{0}) (hlen : ∀ a
   have h89₁ : sortP ≫ 𝟙 (L.obj (dPara Word)) ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
-  have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
+  have key := thinningList (L := L) (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
     (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := ok (len := len) w)
     (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes

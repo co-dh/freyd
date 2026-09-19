@@ -568,7 +568,7 @@ public theorem tour_laws (L : Relator RelSet.{0} RelSet.{0})
   have h89 : sortP ≫ 𝟙 (L.obj (dTour City)) ⊑ existsImage (𝟙 (dTour City)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
-  have key := thinningList (F := F (City × City) City)
+  have key := thinningList (L := L) (F := F (City × City) City)
     (F_preservesRecip (City × City) City) (initial (City × City) City)
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
