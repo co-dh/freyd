@@ -12,11 +12,6 @@
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
-#let gb-estQ = ([`est(Q)`], 1.90, true)
-#let gb-FXh = ([`F(X)h`], 1.85, true)
-#let gb-estQi = ([`est(Qᵢ)`], 2.15, true)
-#let gb-Ui = ([`Fᵢ(X)Uᵢ`], 2.20, true)
-
 #disp[#calc-table(
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
@@ -29,31 +24,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
   [#lean("Freyd.Alg.greedy_dp_step1.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(T°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "F(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "h", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      1,
-      ("EFA", ),
-    ),
-    (
-      2,
-      ("FA", ),
-    ),
-    (
-      3,
-      ("FB", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(T°)%∋ est(Q)F(X)h", src: "A", tgt: "B", polys: "F:", sigs: "T:F(A)⟶A h:F(B)⟼B X:A⟶B"))],
+  [#vstep(RQ, leanc("Freyd.Alg.greedy_dp.lhs.body"),
     // dp-shrink row: Theorem 10.1
     [#src[]])],
   // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
@@ -113,42 +84,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      shorter does]])],
   [#lean("Freyd.Alg.RelSet.Detab.entab_laws.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E([nil,expand]°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
-    (k: "case", nin: 1, nout: 1, bodies: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 0),
-            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 2),
-            (k: "stack", nin: 2, nout: 2, lanes: (
-                (k: "seq", nin: 1, nout: 1, items: (
-                    (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
-                  ), seams: ()),
-                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-              )),
-            (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
-          ), seams: (
-            (
-              0,
-              ("[Char]", "Char", ),
-            ),
-          )),
-      )),
-  ), seams: (
-    (
-      0,
-      ("E[Char]", ),
-    ),
-    (
-      1,
-      ("EF[Char]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Char]", )),
-  cert: (expect: "([nil,expand]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "[Char]", tgt: "[Char]", polys: "F:𝟏+x×Char", sigs: "nil:𝟏⟼[Char] expand:[Char]×Char⟶[Char] snoc:[Char]×Char⟼[Char] X:[Char]⟶[Char]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Detab.entab_laws.lhs.body"),
     [
      // entab-thin row: Theorem 10.1
      #src[at `Q≜𝟙+(V×U)`
@@ -237,42 +173,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     [#src[the specification — @tardy-defn]])],
   [#lean("Freyd.Alg.RelSet.Tardy.tardy_laws.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E([nil,snag]°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(Q)", chamfer: true, frac: false, flip: false),
-    (k: "case", nin: 1, nout: 1, bodies: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 0),
-            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 2),
-            (k: "stack", nin: 2, nout: 2, lanes: (
-                (k: "seq", nin: 1, nout: 1, items: (
-                    (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
-                  ), seams: ()),
-                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-              )),
-            (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
-          ), seams: (
-            (
-              0,
-              ("bag(Job)", "Job", ),
-            ),
-          )),
-      )),
-  ), seams: (
-    (
-      0,
-      ("E(bag(Job))", ),
-    ),
-    (
-      1,
-      ("EF(bag(Job))", ),
-    ),
-  ), src: ("bag(Job)", ), tgt: ("[Job]", )),
-  cert: (expect: "([nil,snag]°)%∋ est(Q)[nil,(X×𝟙)snoc]", src: "bag(Job)", tgt: "[Job]", polys: "F:𝟏+x×Job", sigs: "nil:𝟏⟼[Job] nil:𝟏⟼bag(Job) snag:bag(Job)×Job⟼bag(Job) snoc:[Job]×Job⟼[Job] X:bag(Job)⟶[Job]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body"),
     // job-schedule row: Theorem 10.1
     [#src[No greedy *reduce* exists — one would also
       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
