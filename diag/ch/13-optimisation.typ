@@ -686,10 +686,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let convrun-end(items) = conv-w(w: boxrun-w(items)) - SPLIT
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
 // what carries it back.
-#let mb-est = ([`est(R)`], 1.7, true)
-#let mb-FRo = ([`F(R°)`], 1.4, true)
-#let mb-Ro = ([`R°`], 0.8, true)
-#let mb-R = ([`R`], 0.7, true)
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
 // into the column and the `Thm` cell's fill — drawn after it — paints over it; `pad` returns that strip.
 // The monotonic-alg panels, emitted by `./scripts/diagram --sigs "f:F(A)⟶A" --src … --tgt … "<formula>"`
@@ -745,24 +741,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #pagebreak(weak: true)
 === `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R, F preserving °, and R transitive` <sec-greedy-thm72>
 
-#let mb-S = ([`S`], 0.7, true)
-#let mb-LamS = (frc([`S`]), 0.9, false)
 // `inner` conversed, `after` above, `⊑ rhs` if given: rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
-#let gterm(inner, after, rhs: none) = {
-  let rise = 1.9
-  convrun(0, 0, inner)
-  let x = convrun-end(inner)
-  boxrun(x, rise, after, h: TH)
-  let xe = x + boxrun-w(after)
-  lab(-0.42, 0, black)[`A`]
-  if rhs == none { lab(xe + 0.42, rise, black)[`A`] } else {
-    lab(xe + 0.95, rise, SLACK)[`⊑`]
-    boxrun(xe + 1.5, rise, rhs)
-    lab(xe + 1.5 + boxrun-w(rhs) + 0.42, rise, black)[`A`]
-  }
-}
 // The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
 // `s: 100%`, so the labels print at the size the note sets them in.
 #let gr-mon = lean("Freyd.Alg.greedy_step1.lhs")
@@ -795,7 +776,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[the left conjunct; @est-75, and `⦇−⦈` is monotone]])],
   [],
 
-  [#vstep(IMP, mbp(gterm((mb-S,), (mb-FRo, mb-LamS, mb-est), rhs: (mb-Ro,))),
+  [#vstep(IMP, leanc("Freyd.Alg.greedy_step1.lhs", "Freyd.Alg.greedy_step3.rhs"),
     [#src[the right conjunct; `⦇S⦈°⦇`#frc([`S`])` est(R)⦈` is the least `X` with
       `X=S°F(X)(`#frc([`S`])` est(R))` #h(4pt) #src[@hylo-mu] #h(4pt) — so Knaster–Tarski
       leaves this one inequation] \
@@ -804,77 +785,33 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
   [#trow(gr-mon, gr-Rbare)],
 
-  [#vstep(SQ, mbp(gterm((mb-S, mb-R), (mb-LamS, mb-est))),
+  [#vstep(SQ, leanc("Freyd.Alg.greedy_step1.rhs"),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
   // `R°` leaves the `F` span and lands above `S°`; the three beads that did not move keep their height.
   [#gr-slid],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", ), tgt: ("A", )),
-  cert: (expect: "R R", src: "A", tgt: "A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.greedy_step2.rhs"),
     [#src[`S°(`#frc([`S`])` est(R))⊑S°(S°\R°)⊑R°` — @est-75, @div-laws]])],
   // The collapsed group's bead sits at the middle of the span it replaces.
   [#gr-RR],
 
-  [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false, src: ("A", ), tgt: ("A", )),
-  cert: (expect: "R", src: "A", tgt: "A"))], [#src[`R` transitive]])],
+  [#vstep(SQ, leanc("Freyd.Alg.greedy_step3.rhs"), [#src[`R` transitive]])],
   [#gr-R],
 )]<greedy-thm72>
 
 // The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
 #let UIP = 0.4  // the pair's half-height, at the fork and inside the `∪` copies
 #let UOP = 0.3  // a `∪` copy's output port
-#let UHH = 0.7  // a `∪` copy's half-height
-#let UM = 0.2  // region edge to the deepest box inside a copy — a strand box is taller than a wire
-
-// ---- takewhile's own circuits.  A box is `(label, width, chamfer)`; the pair is TWO strands, the
 // head above and the tail below, so a coreflexive `p` is a box on the head strand alone.
 #let TBH = 0.6  // circuit.typ's default box height, which it does not export
 #let PBH = 0.5  // a box sitting on ONE strand of the pair, low enough to clear the other
 #let twbox(x, y, b, h: PBH) = gbox((x, y), b.at(0), w: b.at(1), h: h, chamfer: b.at(2))
 // The `cons` branch of a `∪`: `a` restricts the head and `l` acts on the tail — drawn to one shared
 // width so `cons` stays upright — then `cons`, then `post`.  `w` is the copy's run.
-#let tw-cons(w, a: none, l: none, post: none, types: false) = {
-  let pw = calc.max(if a == none { 0.0 } else { a.at(1) }, if l == none { 0.0 } else { l.at(1) })
-  // The fan hands the pair over unlabelled, so `types` says which of the two strands is which; it
-  // buys the room for those labels by starting the boxes 0.87 further in — add that to `w` too.
-  let lead = if types { 1.15 } else { 0.28 }
-  let x = if pw > 0 { lead + 0.28 + pw } else { 0.0 }
-  if types { lab(lead / 2, UIP + 0.34, black)[`A`]; lab(lead / 2, -UIP + 0.34, black)[`[A]`] }
-  if pw > 0 {
-    for (s, b) in ((1, a), (-1, l)) {
-      wire((0, s * UIP), (lead, s * UIP))
-      if b != none { twbox(lead, s * UIP, b) }
-      wire((lead + (if b == none { 0.0 } else { b.at(1) }), s * UIP), (x, s * UIP))
-    }
-  }
-  gbox((x, 0), [`cons`], w: 1.3, h: 2 * UIP + 0.35, chamfer: false)
-  let xe = x + 1.3
-  if post != none {
-    wire((xe, 0), (xe + 0.28, 0))
-    twbox(xe + 0.28, 0, post, h: TBH); xe = xe + 0.28 + post.at(1)
-  }
-  bend((xe, 0), (w, -UOP))
-}
 
 // ONE wire while `S` is still inside a division: a run of boxes on it.
 // `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
 // rather than `F([A])`, and its cata rows never open `E[A]` at all.
-#let twrun(items, from: [`F([A])`], mid: [`E[A]`], mid-at: 0) = {
-  lab(-1.1, 0, black, from)
-  let x = 0.0
-  for (i, b) in items.enumerate() {
-    wire((x, 0), (x + 0.34, 0)); twbox(x + 0.34, 0, b, h: TH); x = x + 0.34 + b.at(1)
-    if i == mid-at and mid != none {
-      // 2.26, not 0.34: `E[A]`'s white fill is 1.94 wide and was painting out both boxes' edges.
-      wire((x, 0), (x + 2.26, 0)); node(x + 1.3, 0, black, mid); x = x + 2.26
-    }
-  }
-  wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
-}
-#let twp(body, s: 100%) = P(cetz.canvas(length: 0.8cm, body), s: s)
 
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3's last page.
@@ -1008,7 +945,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
    ],
 )]<prefix-defn>
 
-#let bx-p = ([`p`], 0.65, true)
 // HINZE–MARSDEN (IntroString.pdf §1.4.2), @party-mono-branch's second column at this section's data:
 // a wire is a FUNCTOR, a bead an arrow, a region a category, gray `𝟏`.  ONLY the `(p×𝟙) cons` operand
 // is drawn — `∪` has no geometry here, and the other operand `⊸ nil` creates a constant and draws
@@ -1036,12 +972,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "box", nin: 2, nout: 1, label: "α", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "α prefix list(p)", src: "F([A])", tgt: "[A]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.lhs"),
     [`α prefix list(p)`])],
   [#tw-pfx1 \
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
@@ -1180,7 +1111,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // One law to a step: `R°` starts on the tail strand, is copied into both operands of the `∪`,
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
-#let bx-Ro = ([`R°`], 0.85, true)
 #disp[#calc-table(cols: (1fr, 6.0cm), al: (center + horizon, left + horizon), pr: 0pt, 
   Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
@@ -1482,65 +1412,24 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@31b3dec9
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(prefix list(p))", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      1,
-      ("E[A]", ),
-    ),
-  ), src: ("[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(prefix list(p))%∋ est(R°)", src: "[A]", tgt: "[A]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs"),
     [#src[the specification — @est-defn's `est(R°)`.
  ]])],
      // lean:AOP.A7_7_TakeWhile.takewhile@77395e5e
   [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs"))],
 
-  [#vstep(EQ, twp(twrun((LS-box, est-Rc-box), from: [`[A]`]), s: 70%),
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs"),
  [#src[@takewhile-alg]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
   [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs"))],
 
-  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
-      (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-    ), seams: (
-      (
-        0,
-        ("EF[A]", ),
-      ),
-      (
-        1,
-        ("E[A]", ),
-      ),
-    )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs"),
     [#src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
      for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
  collected and one chosen at the end. ]])],
   [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs"))],
 
-  [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
-      (k: "case", nin: 1, nout: 1, bodies: (
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 0),
-              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-            ), seams: ()),
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 2),
-              (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,⊸ nil)", chamfer: false, frac: false, flip: false),
-            ), seams: (
-              (
-                0,
-                ("A", "[A]", ),
-              ),
-            )),
-        )),
-    ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⦇[nil,(π₁p→cons,⊸ nil)]⦈", src: "[A]", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs"),
  [#src[@takewhile-step]])],
     // lean:AOP.A7_7_TakeWhile.takewhile_step@a0403ffd
   [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs"))],
@@ -1681,39 +1570,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "case", nin: 1, nout: 1, bodies: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 0),
-            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 2),
-            (k: "union", nin: 2, nout: 1, bodies: (
-                (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                          (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                        ), seams: ())),
-                  ), seams: ()),
-                (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-                  ), seams: ()),
-              )),
-          ), seams: (
-            (
-              0,
-              ("A", "[A]", ),
-            ),
-          )),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("[A]", ),
-    ),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[nil,⊸ nil ∪ cons] sum", src: "F([A])", tgt: "A"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs"),
     [`[nil,⊸ nil ∪ cons] sum`])],
   [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
@@ -1764,37 +1621,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "stack", nin: 2, nout: 2, lanes: (
-                    (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-                      ), seams: ()),
-                  )),
-                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[zero,⊸ zero ∪ (𝟙×sum) plus]", src: "F([A])", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs"),
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs") \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
@@ -1966,27 +1793,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let mss-tgt(x) = lab(x + 0.62, 0, black)[`A`]
 // Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `est(≥)` is partial — no greatest of
 // the empty set — and is the one chamfered box here.  `h` is shared down a run: a fraction is two lines.
-#let mss-est = ([`est(≥)`], 2.1, true)
 #let mss-alg = $frac(#[`[zero,⊸ zero ∪ plus]`], ∋)$
 #let mss-zero = $frac(#[`zero`], ∋)$
 #let mss-plus = $frac(#[`⊸ zero ∪ plus`], ∋)$
 #let mss-run(items, h: 0.6) = { mss-src; boxrun(0, 0, items, h: h); mss-tgt(boxrun-w(items)) }
 // @coprod-laws' tape at this algebra: `[X,Y]` is ONE BRANCH PER SUMMAND, each opening with the
 // injection's converse — `𝟏` above, `A×Int` below.  The shorter branch is padded to the same join.
-#let mss-tape(up, dn, h: 0.6, y: 1.35) = {
-  let hh = y + h / 2 + 0.45
-  let xr = 2.18 + calc.max(boxrun-w(up), boxrun-w(dn)) + 1.2
-  mss-src; wire((0, 0), (0.34, 0))
-  tape((0.34, -hh), (xr, hh))
-  tape-fork((0.56, 0), sp: y, len: 0.7)
-  for (s, inj, run) in ((1, [`l`], up), (-1, [`r`], dn)) {
-    gbox((1.26, s * y), inj, flip: true, fill: TINT)
-    boxrun(2.18, s * y, run, h: h)
-    wire((2.18 + boxrun-w(run), s * y), (xr - 1.0, s * y))
-  }
-  tape-join((xr - 0.3, 0), sp: y, len: 0.7)
-  wire((xr, 0), (xr + 0.34, 0)); mss-tgt(xr + 0.34)
-}
 #let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
 
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
@@ -1999,51 +1811,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
-  [#vstep([], mss-pic(mss-run(((mss-alg, 5.4, false), mss-est), h: 1.25)), [#mss-alg ` est(≥)`])],
+  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.mss_step1.lhs"), [#mss-alg ` est(≥)`])],
   [#mh-alg-est \ #src[the `zero` arm of the bracket]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(zero)", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          1,
-          ("E𝟏", ),
-        ),
-        (
-          2,
-          ("EA", ),
-        ),
-      )),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(⊸ zero ∪ plus)", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "A", ),
-        ),
-        (
-          1,
-          ("EA²", ),
-        ),
-        (
-          2,
-          ("EA", ),
-        ),
-      )),
-  ), src: ("FA", ), tgt: ("A", )),
-  cert: (expect: "[zero%∋ est(≥),(⊸ zero ∪ plus)%∋ est(≥)]", src: "F(A)", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs"),
     [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
   [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
 
-  [#vstep(EQ, mss-pic(mss-tape((([`zero`], 1.3, false),), (([`⊕`], 0.9, false),))), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step2.rhs.inl"), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
   [#mh-alg],
 )
@@ -2076,15 +1852,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
-#let bx-Eg = ([`E(⦇[zero,⊕]⦈)`], 3.6, false)
-#let bx-fold = ([`⦇k⦈`], 1.5, false)
-#let bx-p2 = ([`π₂`], 1.0, false)
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
-#let mss-line(items) = {
-  lab(-0.62, 0, black)[`[A]`]; boxrun(0, 0, items, h: TH)
-  lab(boxrun-w(items) + 0.55, 0, black)[`A`]
-}
 #disp[#calc-table(
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
@@ -2100,53 +1869,24 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
   // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
   // collapses a pair puts its one bead midway between the two it replaces.
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(segment sum)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", ),
-    ),
-    (
-      1,
-      ("EA", ),
-    ),
-  ), src: ("[A]", ), tgt: ("A", )),
-  cert: (expect: "(segment sum)%∋ est(≥)", src: "[A]", tgt: "A"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.mss_shape.lhs"),
     [#src[`mss` is the greatest of the segment sums — @mss-defn]])],
   [#mh-segsum],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(suffix)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(𝟙%∋ E(prefix sum)est(≥))", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(≥)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      1,
-      ("E[A]", ),
-    ),
-    (
-      2,
-      ("EA", ),
-    ),
-  ), src: ("[A]", ), tgt: ("A", )),
-  cert: (expect: "suffix%∋ E((prefix sum)%∋ est(≥))est(≥)", src: "[A]", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_shape.rhs"),
     [#src[@mss-shape]])],
   // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
   // `E` runs past it, and `prefix sum` is where the `list` wire dies.
   [#mh-shape],
 
-  [#vstep(EQ, mbp(mss-line((bx-sf, bx-Eg, est-Rc-box))),
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs"),
     [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
      #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
       entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
   [#mh-greedy],
 
-  [#vstep(EQ, mbp(mss-line((bx-fold, bx-p2, est-Rc-box))),
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs"),
     [`⦇k⦈ π₂ est(≥)` \
      #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
       ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
@@ -2480,22 +2220,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // B&dM Ex 7.41, p. 174, assembled: the four displays above are the four steps, and the `E[A]` the
 // transpose births is what the greedy step moves inside the reduce.
-#let bx-slp = (frc([`subseq list(p)`]), 2.9, false)
-#let bx-cS = (frc([`⦇S⦈`]), 1.6, false)
 // ONE WIRE, `[A]` to `[A]`, its type written along it; `mid: none` once `E[A]` has gone inside the
 // reduce.  Its own run and not @takewhile-step's, which starts at `F([A])` and belongs to §13.3.3.
-#let fpic(items, mid: [`E[A]`]) = P(cetz.canvas(length: 0.8cm, {
-  lab(-1.1, 0, black)[`[A]`]
-  let x = 0.0
-  for (i, b) in items.enumerate() {
-    wire((x, 0), (x + 0.34, 0))
-    gbox((x + 0.34, 0), b.at(0), w: b.at(1), h: TH, chamfer: b.at(2)); x = x + 0.34 + b.at(1)
-    if i == 0 and mid != none {
-      wire((x, 0), (x + 0.34, 0)); node(x + 0.9, 0, black, mid); x = x + 1.46
-    }
-  }
-  wire((x, 0), (x + 0.34, 0)); lab(x + 0.9, 0, black)[`[A]`]
-}), s: 80%)
 // `S` is defined in @filter-defn, three pages back, and every row below reads it: the definition is
 // repeated here rather than looked up, in that table's own five columns.
 #disp[#align(center, block(width: 21cm)[
@@ -2521,30 +2247,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_eq_cata@0882803d
   table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
 
-  [#vstep([], fpic((bx-slp, est-Rc-box)),
+  [#vstep([], leanc("Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs"),
  [#src[@comb-fns]])],
     // lean:AOP.A7_7_Filter.filter@8a5f6aed
   [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs"))],
 
-  [#vstep(EQ, fpic((bx-cS, est-Rc-box)),
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs"),
     [#src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
   [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs"))],
 
-  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
-      (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-    ), seams: (
-      (
-        0,
-        ("EF[A]", ),
-      ),
-      (
-        1,
-        ("E[A]", ),
-      ),
-    )), label: none, port: ("A", "[A]", ), src: ("[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⦇S%∋ est(R°)⦈", src: "[A]", tgt: "[A]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Filter.filter_greedy.lhs"),
     [#src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
  @filter-mono]])],
   // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
@@ -2875,10 +2587,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
 // per row is a width that drifts.  No chamfer is a map — `concat` is one, `list(g)` is not (`choose`).
-#let box-ro = ([`R°`], 1.1, true)
-#let box-lrro = ([`list((R×R)°)`], 3.2, true)
-#let box-lg = ([`list(g)`], 2.2, true)
-#let box-lgro = ([`list(gR°)`], 2.6, true)
 
 // A PRODUCT IS TWO WIRES.  `F([A]×[A])=A×[[A]×[A]]` enters as two, `[A]×[A]` leaves as two, and
 // `𝟙×list((R×R)°)` is the root's wire running straight past a box that sits on the other one — `×` costs no
@@ -2891,20 +2599,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 }
 // A branch's shape: the root straight through the upper wire, the subtrees' pairs down the lower
 // one, both entering the box that spans them — `h` once `include`/`exclude` is unfolded.
-#let tallpic(items, head, hw, hc: false, post: ()) = {
-  let (y, w) = (0.8, boxrun-w(items))
-  pairin(y, items)
-  gbox((w, 0), head, w: hw, h: 2 * y + 0.4, chamfer: hc)
-  boxrun(w + hw, 0, post)
-  lab(w + hw + boxrun-w(post) + 0.45, 0, black)[`[A]`]
-}
 // Every row's picture is drawn at ONE length and ONE scale, and a scale typed per cell is a scale
 // that drifts — both times this one changed, it had to change in every cell.
-#let party-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 90%)
-#let TREE = [`tree`]
-#let OBJ = [`A`]
 #let EW = [`E`]
-#let UNIT = frc([`𝟙`])
 
 // Only the three `⊑` steps are rows: the five `=` steps are `F(RS)=F(R)F(S)`, `(R×S)(U×V)=(RU)×(SV)`
 // and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
@@ -2930,16 +2627,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@92dade83
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#step([])[#party-pic(tallpic((box-lrro, box-lg, concat-box), [`h`], 0.95))][]],
+  [#step([], leanc("Freyd.Alg.RelSet.Party.branch_step1.lhs"))[]],
   [#lean("Freyd.Alg.RelSet.Party.branch_step1.lhs")],
 
-  [#step(SQ)[#party-pic(tallpic((box-lgro, concat-box), [`h`], 0.95))][]],
+  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step1.rhs"))[]],
   [#lean("Freyd.Alg.RelSet.Party.branch_step1.rhs")],
 
-  [#step(SQ)[#party-pic(tallpic((box-lg, concat-box, box-ro), [`h`], 0.95))][]],
+  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step2.rhs"))[]],
   [#lean("Freyd.Alg.RelSet.Party.branch_step2.rhs")],
 
-  [#step(SQ)[#party-pic(tallpic((box-lg, concat-box), [`h`], 0.95, post: (box-ro,)))][]],
+  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step3.rhs"))[]],
   [#lean("Freyd.Alg.RelSet.Party.branch_step3.rhs")],
 )
 
@@ -3040,68 +2737,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 }
 #let lsrc = { lab(-1.32, 0, black)[`tree A`]; wire((-0.45, 0), (0, 0)) }
 
-#let lrun(items) = {
-  lsrc; boxrun(0, 0, items, h: LH)
-  lab(boxrun-w(items) + 0.5, 0, black)[`[A]`]
-}
 // `13.4.4a`'s row: the only one where the type actually changes mid-run, so it is the only one
 // that gets the wire types spelled out — `E([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
 // each of the two strands it opens into (a PRODUCT is two wires, never one wire marked `×`).
-#let lopen(items) = {
-  lsrc; boxrun(0, 0, items, h: LH)
-  let w = boxrun-w(items)
-  wire((w, 0), (w + TGW, 0)); lab(w + TGW / 2, TY, black)[`E([A]×[A])`]
-  gbox((w + TGW, 0), [`est((R×R)°)`], w: 3.3, h: LPH)
-  let w2 = w + TGW + 3.3
-  wire((w2, LSP), (w2 + TG, LSP)); lab(w2 + TG / 2, LSP + TY, black)[`[A]`]
-  wire((w2, -LSP), (w2 + TG, -LSP)); lab(w2 + TG / 2, -LSP - TY, black)[`[A]`]
-  ltail(w2 + TG, LSP, midlabel: [`E[A]`])
-}
 
 // `⦇−⦈` drawn as MELLIÈS' functorial box: the body's own circuit, inside brackets.  A bar is where
 // the type changes, so nothing crosses the LEFT one — the tree arrives at it and the algebra's two
 // strands start there, which is the recursion — while the body's output IS the fold's and runs on.
-#let lfold(yh, bw, sp, body) = {
-  lsrc; banana(0, yh)
-  wire((0.13, LSP), (0.4, LSP)); wire((0.13, -LSP), (0.4, -LSP))
-  body
-  let x1 = 0.8 + bw
-  banana(x1, yh, right: true)
-  wire((0.4 + bw, sp), (x1 + LD, sp)); wire((0.4 + bw, -sp), (x1 + LD, -sp))
-  ltail(x1 + LD, sp)
-}
 
-#let lbody5 = {
-  wire((0.4, LSP), (0.4 + LD, LSP)); wire((0.4, -LSP), (0.4 + LD, -LSP))
-  gbox((0.4 + LD, 0), frc([`S`]), w: 1.0, h: LPH, chamfer: false)
-  wire((1.74, 0), (1.74 + LD, 0))
-  gbox((1.74 + LD, 0), [`est((R×R)°)`], w: 3.3, h: LPH)
-}
-#let LBW5 = 2 * LD + 1.0 + 3.3
-// The pair is COPIED into the two branches and the middle strands cross, as in §@sec-party-mono:
-// each branch keeps one copy of the root and one of the subtree list.
-#let lshuffle = {
-  wiredot((0.4, LSP)); bend((0.4, LSP), (1.3, LBA)); bend((0.4, LSP), (1.3, -LBB))
-  wiredot((0.4, -LSP)); bend((0.4, -LSP), (1.3, LBB)); bend((0.4, -LSP), (1.3, -LBA))
-}
-#let lbody6 = {
-  lshuffle
-  for (yh, yl, head) in ((LBA, LBB, frc([`include`])), (-LBB, -LBA, frc([`exclude`]))) {
-    gbox((1.3, (yh + yl) / 2), head, w: 2.3, h: yh - yl + 0.55, chamfer: false)
-    boxrun(3.6, (yh + yl) / 2, (lb-est,), h: LH)
-  }
-}
-#let LBW6 = 0.9 + 2.3 + boxrun-w((lb-est,))
-#let lbody7 = {
-  lshuffle
-  gbox((1.3, LBY), [`include`], w: 2.2, h: LBA - LBB + 0.55, chamfer: false)
-  // `π₂` throws the root away, so the lower branch runs on the subtree list alone.
-  wiredot((1.3, -LBB))
-  boxrun(1.3, -LBA, (lb-lcm, concat-box), h: LH)
-  let xe = 1.3 + boxrun-w((lb-lcm, concat-box))
-  wire((3.5, LBY), (xe + 0.6, LBY)); bend((xe, -LBA), (xe + 0.6, -LBY))
-}
-#let LBW7 = 0.9 + boxrun-w((lb-lcm, concat-box)) + 0.6
 
 // ---- The two Hinze-Marsden panels: what surrounds the `⦇ ⦈`, and what sits inside it.  A wire is
 // a FUNCTOR and a bead an arrow, so SUGAR IS UNDONE BEFORE DRAWING and at the ends too: `[A]` is the
@@ -3113,18 +2756,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // The lanes, outermost functor LEFTMOST: the composite reads across applicatively, `𝟏` at the right.
 // Two of these panels stack in ONE cell from the greedy step on, and the seven rows are a page
 // exactly: this is the scale that buys the last row its reason line.
-#let DS = 70%
-#let DXE = 0.55                  // `E`, outside everything
-#let DXL = 2.85                  // `tree` down to the bead that eats it, `list` from there on
-#let DXO = 4.00                  // the object wire, `A`
-#let DW = DXO + 2.85
-#let DIE = 0.55                  // `E`, when the transpose is applied OUTSIDE the list
-#let DIM = 1.70                  // `A×−`, the base functor's own factor
-#let DIL = 2.85                  // `list`, the algebra's argument
-#let DID = 5.15                  // `Δ`
-#let DIl = 6.30                  // `list`, inside the pair
-#let DIO = 7.45                  // the object wire, `A`
-#let DIW = DIO + 2.85
 
 // The panel pair a row shows.  `none` is a panel the row above already drew — the outside is fixed
 // from the greedy step on, and the inside does not exist before it.
@@ -3132,7 +2763,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // Every row writes one fraction where its panel draws two beads: the unit `H%∋=(𝟙%∋)E(H)` opens
 // `E` outside `H`.  One law, instantiated at the numerator each row names.
-#let DUN(h) = h + "%∋ = 𝟙%∋ E(" + h + ")"
 
 // `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
 // bead that eats the `tree` wire, and where the `E` it opens is closed.
@@ -3156,8 +2786,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
 // seven rows are a page exactly — the scale below is what those two insets bought.
-#let laws-pic(body) = align(center, box(
-  scale(x: 84%, y: 84%, reflow: true, cetz.canvas(length: 0.8cm, body))))
 
 // The reason rides UNDER the formula, in the picture's own column: a column of its own cost the
 // circuits 3.8cm, and the two laws that would not fit it are now written out in full.  `vstep`, not
@@ -3177,19 +2805,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit*],
     [*Hinze–Marsden* — outside the `⦇ ⦈`]),
 
-  [#vstep([], laws-pic(lrun(((frc([`party`]), 1.7, false), lb-est))),
+  [#vstep([], dcell(leanc("Freyd.Alg.RelSet.Party.party_open.lhs"), none),
     [#src[the specification — @party-defn]])],
   [#dcell(d-out1, none)],
 
-  [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈ choose`]), 3.0, false), lb-est))),
+  [#vstep(EQ, dcell(leanc("Freyd.Alg.RelSet.Party.party_open.rhs"), none),
     [#src[`party≜⦇S⦈ choose` — @party-defn]])],
   [#dcell(lean("Freyd.Alg.RelSet.Party.party_open.rhs"), none)],
 
-  [#vstep(EQ, laws-pic(lrun(((frc([`⦇S⦈`]), 1.3, false), ([`E(choose)`], 2.7, true), lb-est))),
+  [#vstep(EQ, dcell(leanc("Freyd.Alg.est_Λ_est_le.lhs"), none),
     [#src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]])],
   [#dcell(lean("Freyd.Alg.est_Λ_est_le.lhs"), none)],
 
-  [#vstep(RQ, laws-pic(lopen(((frc([`⦇S⦈`]), 1.3, false),))),
+  [#vstep(RQ, dcell(leanc("Freyd.Alg.est_Λ_est_le.rhs"), none),
     // party-branch row: Ex 7.38
     [#src[`(R×R)°choose⊑choose R°` — @party-mono-branch's `g` row,
  ]])],
@@ -3203,7 +2831,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit*],
     [*Hinze–Marsden* — inside the `⦇ ⦈`; a fork drawn at one branch]),
 
-  [#vstep(RQ, laws-pic(lfold(1.18, LBW5, LSP, lbody5)),
+  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.party_pair_step.rhs")),
     [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
       // greedy row: Theorem 7.2
       `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono,
@@ -3211,14 +2839,14 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
       // lean:AOP.A7_2.greedy@21400acf
   [#dcell(none, d-in5)],
 
-  [#vstep(RQ, laws-pic(lfold(2.05, LBW6, LBY, lbody6)),
+  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.include_step.rhs")),
     // pair_est_le row: Ex 7.15
     [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`,
  ]])],
       // lean:AOP.A7_3_Party.pair_est_le@75a48598
   [#dcell(none, d-in6)],
 
-  [#vstep(RQ, laws-pic(lfold(2.05, LBW7, LBY, lbody7)),
+  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.exclude_step.lhs")),
     [#src[`include` a map, `est(R°)` into each branch,
  ]])],
       // lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d lean:AOP.A7_3_Party.exclude_step@963c1784
@@ -3437,23 +3065,9 @@ zip(that)                                         each row: its square, and the 
 
 // This section's own box vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
 // corner for a relation and a square box for a map.
-#let cv-paths = ([`paths`], 1.9, false)
-#let cv-fold = ([`⦇gen⦈`], 3.6, false)
-#let cv-concat = ([`concat`], 2.0, false)
-#let cv-Nest = ([`Vec(n)(est(R))`], 4.3, true)
-#let cv-foldQ = ([`⦇Q⦈`], 1.5, true)
-#let cv-gen = ([`gen`], 2.7, false)
-#let cv-FNest = ([`F(𝟙,Vec(n)(est(R)))`], 5.7, true)
-#let cv-Q = ([`Q`], 0.8, true)
 
-#let cvp(body, s: 92%) = P(cetz.canvas(length: 0.8cm, body), s: s)
 // The end names are ANCHORED, not centred at a hand-measured x: one of them is `F(A[n],A[n][p][m])`
 // and every row would otherwise need its own offset.
-#let cvrun(lft, rgt, items) = {
-  d.content((-0.2, 0), text(10pt)[#lft], anchor: "east")
-  boxrun(0, 0, items)
-  d.content((boxrun-w(items) + 0.2, 0), text(10pt)[#rgt], anchor: "west")
-}
 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
@@ -3465,18 +3079,18 @@ zip(that)                                         each row: its square, and the 
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-paths, est-R-box))), [])],
+  [#vstep([], leanc("Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs"), [])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs")],
 
-  [#vstep(EQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-concat, est-R-box))),
+  [#vstep(EQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs"),
     [#src[@vec-defn-cyl at `paths`]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs")],
 
-  [#vstep(RQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-fold, cv-Nest, est-R-box))),
+  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs"),
     [#src[a cheapest of each of the `n` rows, then a cheapest of those; `R` transitive]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs")],
 
-  [#vstep(RQ, cvp(cvrun([`Nat[m][n]`], [`Nat[m]`], (cv-foldQ, est-R-box))),
+  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs"),
     [#src[@cata-fusion at @vec-cyl-fusion]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs")],
 
@@ -3502,10 +3116,10 @@ zip(that)                                         each row: its square, and the 
  ]],
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], cvp(cvrun([`F(A[n],A[n][p][m])`], [`A[n][m+1]`], (cv-gen, cv-Nest)), s: 88%), [])],
+  [#vstep([], leanc("Freyd.Alg.Vec.Rel.cyl_fusion.rhs"), [])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_fusion.rhs")],
 
-  [#vstep(RQ, cvp(cvrun([`F(A[n],A[n][p][m])`], [`A[n][m+1]`], (cv-FNest, cv-Q)), s: 88%),
+  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_fusion.lhs"),
     [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_fusion.lhs")],
 
@@ -3776,16 +3390,7 @@ zip(that)                                         each row: its square, and the 
      // lean:AOP.A7_5_Van.van_mono@5f456bbf
   table.header([*circuit* — the `old` branch of each union], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "old", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "[[A]]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(𝟙×(R;H))old", src: "A×[[A]]", tgt: "[[A]]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Van.van_mono_step1.lhs"),
     [])],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.lhs") \ #src[the `old` operand of `new ∪ old`, in every row]],
 
@@ -3887,105 +3492,32 @@ zip(that)                                         each row: its square, and the 
      // lean:AOP.A7_5_Van.van_laws@400440f3
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(partition list(secure))", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", ),
-    ),
-    (
-      1,
-      ("E[[A]]", ),
-    ),
-  ), src: ("[A]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(partition list(secure))%∋ est(R)", src: "[A]", tgt: "[[A]]", sigs: "partition:[A]⟶[[A]] secure:[A]⟶[A]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Van.van_laws_step4.rhs"),
     [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
   [#lean("Freyd.Alg.RelSet.Van.van_laws_step4.rhs")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", ),
-    ),
-    (
-      1,
-      ("E[[A]]", ),
-    ),
-  ), src: ("[A]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(⦇S⦈)%∋ est(R)", src: "[A]", tgt: "[[A]]", sigs: "S:F([[A]])⟶[[A]]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step4.lhs"),
     [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
  #h(4pt) — @van-defn, @cata-fusion at
      // lean:AOP.A7_5_Van.van_spec@79d2f560
      `secure prefix⊑prefix secure`]])],
   [#lean("Freyd.Alg.RelSet.Van.van_laws_step4.lhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(⦇S⦈)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R;H)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", ),
-    ),
-    (
-      1,
-      ("E[[A]]", ),
-    ),
-  ), src: ("[A]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(⦇S⦈)%∋ est(R;H)", src: "[A]", tgt: "[[A]]", sigs: "S:F([[A]])⟶[[A]]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step3.lhs"),
     [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new ∪ old)R` is FALSE, the
      shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds,
  ]])],
      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
   [#lean("Freyd.Alg.RelSet.Van.van_laws_step3.lhs")],
 
-  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 2, nout: 1, items: (
-      (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
-      (k: "box", nin: 1, nout: 1, label: "est(R;H)", chamfer: true, frac: false, flip: false),
-    ), seams: (
-      (
-        0,
-        ("EF[[A]]", ),
-      ),
-      (
-        1,
-        ("E[[A]]", ),
-      ),
-    )), label: none, port: ("A", "[[A]]", ), src: ("[A]", ), tgt: ("[[A]]", )),
-  cert: (expect: "⦇S%∋ est(R;H)⦈", src: "[A]", tgt: "[[A]]", sigs: "S:F([[A]])⟶[[A]]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step2.lhs"),
     [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
      the `old` half (7.17) — @van-mono — and the `new` half (7.16) — @van-716 — which rests on
  (7.18) `(𝟙×⊤)new⊑new H` — @van-718]])],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
   [#lean("Freyd.Alg.RelSet.Van.van_laws_step2.lhs")],
 
-  [#vstep(RQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
-      (k: "case", nin: 1, nout: 1, bodies: (
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 0),
-              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-            ), seams: ()),
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 2),
-              (k: "box", nin: 2, nout: 1, label: "(ok→glue,new)", chamfer: false, frac: false, flip: false),
-            ), seams: (
-              (
-                0,
-                ("A", "[[A]]", ),
-              ),
-            )),
-        )),
-    ), seams: ()), label: none, port: ("F[[A]]", ), src: ("[A]", ), tgt: ("[[A]]", )),
-  cert: (expect: "⦇[nil,(ok→glue,new)]⦈", src: "[A]", tgt: "[[A]]", sigs: "nil:𝟏⟼[[A]] glue:A×[[A]]⟼[[A]] ok:A×[[A]]⟼A×[[A]]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step1.lhs"),
     [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
  returns one, and `ok` is where it does]])],
      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
