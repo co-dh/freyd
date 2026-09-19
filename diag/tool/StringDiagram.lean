@@ -1307,23 +1307,6 @@ partial def vstack (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
 
 end
 
-/-- ONE STEP OF THE SELECTOR CHAIN that goes inside a side: an operand of a binary operation, an arm
-    of a junction, or the BODY of a least fixed point.  `.body` opens a BINDER, so the chain cannot
-    be a list of operand indices: the bound arrow is a wire of the picture, and a number says
-    nothing about where in the chain that wire is opened. -/
-inductive Sel where | inl | inr | body
-  deriving Inhabited, DecidableEq
-
-/-- The suffix the selector is written with — what `diag-export` parses and names the file by. -/
-def Sel.suffix : Sel → String
-  | .inl => ".inl" | .inr => ".inr" | .body => ".body"
-
-/-- The function a least fixed point is taken of, `mu φ`, by the HEAD CONSTANT. -/
-def muArg? (e : Expr) : Option Expr :=
-  match e.getAppFnArgs with
-  | (``Freyd.Alg.mu, args) => args.back?
-  | _ => none
-
 /-! ### One component of a side
 
   A SELECTOR STEP NAMES A COMPONENT BY THE TYPE OF THE TERM IT DESCENDS INTO, never by where on the

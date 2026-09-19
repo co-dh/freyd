@@ -1133,4 +1133,25 @@ partial def isMapOf (e : Expr) (fuel : Nat := 8) : MetaM Bool := do
     if let some r ← rewriteHead? e then return ← isMapOf r (fuel - 1)
     return false
 
+/-- ONE STEP OF THE SELECTOR CHAIN that goes inside a side: an operand of a binary operation, an arm
+    of a junction, or the BODY of a least fixed point.  `.body` opens a BINDER, so the chain cannot
+    be a list of operand indices: the bound arrow is a wire of the picture, and a number says
+    nothing about where in the chain that wire is opened.
+
+    It lives HERE, beside the label clause that opens the same binder, because BOTH routes walk a
+    chain — the string route draws the bound arrow as a wire, the circuit route as a box — and a
+    second spelling of the chain is what let one of them accept a selector the other refused. -/
+inductive Sel where | inl | inr | body
+  deriving Inhabited, DecidableEq
+
+/-- The suffix the selector is written with — what `diag-export` parses and names the file by. -/
+def Sel.suffix : Sel → String
+  | .inl => ".inl" | .inr => ".inr" | .body => ".body"
+
+/-- The function a least fixed point is taken of, `mu φ`, by the HEAD CONSTANT. -/
+def muArg? (e : Expr) : Option Expr :=
+  match e.getAppFnArgs with
+  | (``Freyd.Alg.mu, args) => args.back?
+  | _ => none
+
 end Freyd.StrDiag

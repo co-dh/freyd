@@ -1546,11 +1546,7 @@ def main (args : List String) : IO UInt32 := do
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
         -- naming the statement rather than drawing a side nobody asked for.
         else if circuitMode then
-          if branch.contains .body then
-            throwError "`.body` opens a least fixed point's binder as a WIRE, which only the string \
-              route draws"
-          else Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder
-            (branch.map fun s => if s == .inl then 0 else 1)
+          Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
