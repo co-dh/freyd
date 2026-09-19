@@ -121,6 +121,7 @@
   "cata-fusion": [fusion],
   "hylo-mu": [hylomorphism theorem],
   "greedy-thm72": [greedy theorem],
+  "thin-83": [thin-elimination variant],
   "thin-thm81": [thinning theorem],
   "thinlist-thm82": [binary thinning theorem],
   "dp-laws": [dynamic programming theorem],

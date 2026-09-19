@@ -532,14 +532,19 @@ public theorem tour_sort_dropr :
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [start,dropl]`, `f₂ ≜ [start,dropr]`,
     `p₁ = p₂ ≜ 𝟙`, `P ≜ ⊤`.  The thinning order is `Qc`, NOT the note's `Q`: see
     `tour_mono_dropl_Q_false`. -/
-public theorem tour_laws {l lF : RelSet.{0}}
-    {sortP : PowerAllegory.powerObj (dTour City) ⟶ l}
+public theorem tour_laws
+    {sortP : PowerAllegory.powerObj (dTour City) ⟶ listRelator.obj (dTour City)}
     {sortF : ((F (City × City) City).obj (dTour City) ⟶ (F (City × City) City).obj (dTour City)) →
-      (PowerAllegory.powerObj ((F (City × City) City).obj (dTour City)) ⟶ lF)}
-    {listcp : (F (City × City) City).obj l ⟶ lF} {g₁ g₂ : lF ⟶ l}
-    {thinlist : l ⟶ l} {minlist : l ⟶ dTour City} {Pr : RelProd l l}
+      (PowerAllegory.powerObj ((F (City × City) City).obj (dTour City)) ⟶
+        listRelator.obj ((F (City × City) City).obj (dTour City)))}
+    {listcp : (F (City × City) City).obj (listRelator.obj (dTour City)) ⟶
+      listRelator.obj ((F (City × City) City).obj (dTour City))}
+    {g₁ g₂ : listRelator.obj ((F (City × City) City).obj (dTour City)) ⟶ listRelator.obj (dTour City)}
+    {thinlist : listRelator.obj (dTour City) ⟶ listRelator.obj (dTour City)}
+    {minlist : listRelator.obj (dTour City) ⟶ dTour City}
+    {Pr : RelProd (listRelator.obj (dTour City)) (listRelator.obj (dTour City))}
     {Pr' : RelProd (PowerAllegory.powerObj (dTour City)) (PowerAllegory.powerObj (dTour City))}
-    {cat : Pr.p ⟶ l}
+    {cat : Pr.p ⟶ listRelator.obj (dTour City)}
     (hsortF : ∀ {X Y : (F (City × City) City).obj (dTour City)
         ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph droplAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droplAlgFn)°)
@@ -560,10 +565,10 @@ public theorem tour_laws {l lF : RelSet.{0}}
   have hm₂ : MonotonicAlg (F := F (City × City) City)
       (graph (droprAlgFn (City := City)) ≫ 𝟙 (dTour City)) (Qc tc) := by
     rw [Cat.comp_id]; exact tour_mono_dropr
-  have h89 : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dTour City)) ≫ sortP := by
+  have h89 : sortP ≫ 𝟙 (listRelator.obj (dTour City)) ⊑ existsImage (𝟙 (dTour City)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
-  have key := thinningList (F := F (City × City) City)
+  have key := thinningList (L := listRelator) (F := F (City × City) City)
     (F_preservesRecip (City × City) City) (initial (City × City) City)
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
