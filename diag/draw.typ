@@ -77,10 +77,6 @@
   // wire hue, not the grey the REGION reserves — a grey object wire would vanish into that strip.
   "𝟏": BCOL,
   "Char": TCOL, "Code": BCOL, "Op": GCOL,
-  // The objects the SORT and THIN displays rename along one wire: `A` is green, so the list it is
-  // folded into and that list's `F`-image take the other two bands, and the wire's three names read
-  // as three objects.  A hash band is only a starting point and it put all three on green.
-  "L": BCOL, "LF": TCOL,
   // §16's coder and paragraph objects, each beside the object it is built from on one wire.
   "dStr": BCOL, "[Code]": TCOL, "dPara Word": BCOL,
   "[0,2¹⁶)": CCOL, "Interval": BCOL, "Real": TCOL, "Decimal": GCOL)
@@ -120,7 +116,7 @@
 // `lanecheck` measures every panel's lanes against its beads, so nothing here rests on a hand count.
 #let FCOL = (
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
-  "L": rgb("#7e668d"), "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
+  "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
   // §16.3's bag relator stands beside `F` in the tardy panels, where the khaki it had was ΔE76 28.7
   // from it — two FIXED entries, which no allocation can separate.  This pink is the ring point
   // furthest from every other entry (ΔE76 11.8 at the nearest, `[Char]×−`, which no panel draws with

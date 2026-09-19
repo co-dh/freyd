@@ -483,7 +483,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #disp[#definition[
 `setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
 `listcp : F(L)⟶LF`, #h(4pt) `sort(P)≜setify° ordered P` #src[]
-// lean:AOP.A8_3.sortRel@f1ae9750
+// lean:AOP.A8_3.sortRel@7cf6d184
 for `P` a connected preorder.
 
 `thinlist(Q)` is any `thinlist(Q)⊑subseq` with #h(4pt) `thinlist(Q) setify⊑setify thin(Q)`; #h(4pt)
@@ -515,7 +515,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [merging two sorted lists sorts their union],
   [`F(sort(P)) listcp⊑cp(F) sort(FP)` \ #src[(8.11), `F` linear]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  // lean:AOP.A8_3.sortRel_comp_thinlist_le@b2256bf2 lean:AOP.A8_3.sortRel_comp_le@adf4dd1a lean:AOP.A8_3.sortRel_comp_minlist_le@d139d32c lean:AOP.A8_3.sortRel_comp_listMap_le@1cce8a22 lean:AOP.A8_3.sortRel_comp_filter_le@a9c17710 lean:AOP.A8_3.prodMap_sortRel_comp_merge_le@ce26ce41 lean:AOP.A8_3.map_sortRel_comp_listcp_le@90ab490e
+  // lean:AOP.A8_3.sortRel_comp_thinlist_le@849100a7 lean:AOP.A8_3.sortRel_comp_le@e0ee4e2c lean:AOP.A8_3.sortRel_comp_minlist_le@7295dd0c lean:AOP.A8_3.sortRel_comp_listMap_le@87e1117e lean:AOP.A8_3.sortRel_comp_filter_le@d0b5bf14 lean:AOP.A8_3.prodMap_sortRel_comp_merge_le@4fd30ab5 lean:AOP.A8_3.map_sortRel_comp_listcp_le@1ae9442c
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -530,7 +530,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
  preorder, `thinlist(Q)⊑subseq`. ]],
-     // lean:AOP.A8_3.sortRel_comp_thinlist_le@b2256bf2
+     // lean:AOP.A8_3.sortRel_comp_thinlist_le@849100a7
   table.header([*circuit* — one wire, `EA` to `[A]`], [*Hinze–Marsden*]),
 
   [#vstep([], tl-pic((sort-P-box, thinlist-Q-box)), [])],
@@ -626,7 +626,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // thinningList row: Theorem 8.2, p. 203
      at @thinlist-defn's binary thinning data.
  ]],
-     // lean:AOP.A8_3.thinningList@ffcea661
+     // lean:AOP.A8_3.thinningList@06fe93ac
   table.header([*circuit* — one wire, `T` to `A`], [*Hinze–Marsden*]),
 
   [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
@@ -840,7 +840,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@ce80ae40
+     // lean:AOP.A8_4_Knapsack.knap_laws@b5c3e088
   table.header([*circuit* — one wire, `[Item]` to `[Item]`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
@@ -933,7 +933,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist(Q)]⦈ minlist(R)` \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@a1f96226
+     // lean:AOP.A8_5_Paragraph.para_laws@531e56ea
   table.header([*circuit* — one wire, `list⁺ Word` to `Para`; the algebra inside the functorial box],
     [*Hinze–Marsden*]),
 
