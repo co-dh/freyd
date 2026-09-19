@@ -21,23 +21,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
  carried and the recursion runs on values alone #h(4pt) ]],
-  table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(H)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      1,
-      ("EB", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: "H:A⟶B"))],
+  [#vstep([], leanc("Freyd.Alg.greedy_dp_step1.rhs"),
     [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
   [#lean("Freyd.Alg.greedy_dp_step1.rhs")],
 
@@ -72,31 +60,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
   [#lean("Freyd.Alg.greedy_dp.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(Vᵢ°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(Qᵢ)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "Fᵢ(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "Uᵢ", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      1,
-      ("E(Fᵢ(A))", ),
-    ),
-    (
-      2,
-      ("Fᵢ(A)", ),
-    ),
-    (
-      3,
-      ("Fᵢ(B)", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(Vᵢ°)%∋ est(Qᵢ)Fᵢ(X)Uᵢ", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟼B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.est_arm₂_le.lhs"),
     // lean:AOP.A9_1.est_summand_le@1efecafb
     [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
@@ -140,19 +104,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[the shortest input `detab` expands to the given output is one pass along that output,
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
      tab stop]],
-  table.header([*circuit* — one wire, `String` to `String`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(detab°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      1,
-      ("E[Char]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Char]", )),
-  cert: (expect: "(detab°)%∋ est(R)", src: "[Char]", tgt: "[Char]", sigs: "detab:[Char]⟶[Char]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Detab.entab_laws.rhs"),
     [#src[the specification — @entab-defn; `detab entab=𝟙` and nothing
      shorter does]])],
   [#lean("Freyd.Alg.RelSet.Detab.entab_laws.rhs")],
@@ -217,28 +173,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
   [#lean("Freyd.Alg.RelSet.Detab.entab_laws.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(expand°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 2, label: "est(V×U)", chamfer: true, frac: false, flip: false),
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[Char]", ),
-    ),
-    (
-      1,
-      ("E([Char]×Char)", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Char]", )),
-  cert: (expect: "(expand°)%∋ est(V×U)(X×𝟙)snoc", src: "[Char]", tgt: "[Char]", sigs: "expand:[Char]×Char⟶[Char] snoc:[Char]×Char⟼[Char] X:[Char]⟶[Char] V:[Char]⟶[Char] U:Char⟶Char"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Detab.entab_branch.lhs"),
     [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
   [#lean("Freyd.Alg.RelSet.Detab.entab_branch.lhs")],
@@ -294,23 +229,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@e2c381dc lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
-  table.header([*circuit* — one wire, `Bag Job` to `[Job]`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(bagify°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E(bag(Job))", ),
-    ),
-    (
-      1,
-      ("E[Job]", ),
-    ),
-  ), src: ("bag(Job)", ), tgt: ("[Job]", )),
-  cert: (expect: "(bagify°)%∋ est(R)", src: "bag(Job)", tgt: "[Job]", sigs: "bagify:[Job]⟶bag(Job)"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Tardy.tardy_laws.rhs"),
     [#src[the specification — @tardy-defn]])],
   [#lean("Freyd.Alg.RelSet.Tardy.tardy_laws.rhs")],
 
@@ -358,42 +281,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   // theorem it feeds and it would otherwise both be `h` in one table.
   [#lean("Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(snag°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 2, label: "est(Q')", chamfer: true, frac: false, flip: false),
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "X", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E(bag(Job))", ),
-    ),
-    (
-      1,
-      ("E(bag(Job)×Job)", ),
-    ),
-  ), src: ("bag(Job)", ), tgt: ("[Job]", )),
-  cert: (expect: "(snag°)%∋ est(Q')(X×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: "snag:bag(Job)×Job⟼bag(Job) snoc:[Job]×Job⟼[Job] X:bag(Job)⟶[Job] Q':bag(Job)×Job⟶bag(Job)×Job"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tardy.tardy_branch.lhs"),
     [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
   [#lean("Freyd.Alg.RelSet.Tardy.tardy_branch.lhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 2, label: "pick", chamfer: true, frac: false, flip: false),
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "schedule", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "snoc", chamfer: false, frac: false, flip: false),
-  ), seams: (), src: ("bag(Job)", ), tgt: ("[Job]", )),
-  cert: (expect: "pick (schedule×𝟙)snoc", src: "bag(Job)", tgt: "[Job]", sigs: "pick:bag(Job)⟶bag(Job)×Job schedule:bag(Job)⟶[Job] snoc:[Job]×Job⟼[Job]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs"),
     // lean:AOP.A10_3_Tardy.pick_branch_le@e50eb5ea lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
     [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
   // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
@@ -436,97 +328,26 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
-  table.header([*circuit* — one wire, `[0,2¹⁶)` to `Decimal`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(intern°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E([0,2¹⁶))", ),
-    ),
-    (
-      1,
-      ("E(Decimal)", ),
-    ),
-  ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
-  cert: (expect: "(intern°)%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "intern:Decimal⟶[0,2¹⁶)"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs"),
     [#src[the specification — @tex-defn]])],
   [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(inrange val°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("Interval", ),
-    ),
-    (
-      1,
-      ("E(Interval)", ),
-    ),
-    (
-      2,
-      ("E(Decimal)", ),
-    ),
-  ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
-  cert: (expect: "interval (inrange val°)%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟼Interval inrange:Interval⟶Real val:Decimal⟶Real"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs"),
     [#src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
   // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
   // the unit: the set the transpose opens starts on its target.
   [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(H)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("Interval", ),
-    ),
-    (
-      1,
-      ("E(Interval)", ),
-    ),
-    (
-      2,
-      ("E(Decimal)", ),
-    ),
-  ), src: ("[0,2¹⁶)", ), tgt: ("Decimal", )),
-  cert: (expect: "interval H%∋ est(R)", src: "[0,2¹⁶)", tgt: "Decimal", sigs: "interval:[0,2¹⁶)⟼Interval H:Interval⟶Decimal"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs"),
     [#src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
       reduce on cons-lists]])],
   [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "interval", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E([arb,step]°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 2, label: "est(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 2, label: "F(X)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 1, label: "α", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("Interval", ),
-    ),
-    (
-      1,
-      ("E(Interval)", ),
-    ),
-    (
-      2,
-      ("EF(Interval)", ),
-    ),
-  ), src: ("[0,2¹⁶)", ), tgt: ("[Digit]", )),
-  cert: (expect: "interval ([arb,step]°)%∋ est(Q)F(X)α", src: "[0,2¹⁶)", tgt: "[Digit]", polys: "F:𝟏+Digit×x", sigs: "interval:[0,2¹⁶)⟼Interval arb:𝟏⟶Interval step:Digit×Interval⟼Interval X:Interval⟶[Digit] α:F([Digit])⟼[Digit]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_body.lhs"),
     // interval row: Theorem 10.1
     [#src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
