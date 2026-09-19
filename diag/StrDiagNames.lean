@@ -19,6 +19,7 @@ import AOP.A7_5_Van
 import AOP.A7_7_MSS
 import AOP.A7_7_TakeWhile
 import AOP.A8_1
+import AOP.A8_2
 import AOP.A8_4_Knapsack
 import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
@@ -486,5 +487,38 @@ attribute [diag_indexed] alphaT InitialAlgebra.α
 -- Tagged and never matched, like the join above: an arrow between two equal stacks is a bead like
 -- any other, and only the constant says which arrows are the coherence of `×`.
 attribute [diag_coherence] RelSet.Van.assoclR
+
+-- THE ALGEBRA OF `thinning_paths` STANDING ALONE: the `have halg` inside it, lifted to a statement
+-- so the note can draw what sits inside the `⦇ ⦈` rather than the whole fold.  Its source is the
+-- bifunctor at two DIFFERENT arguments, which is what the picture has to answer for.
+section
+universe u
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜} {F : BiRelator 𝒜}
+
+/-- `F(∋,∋)` IS LAX NATURAL in the first argument, for EVERY binary relator and every second
+    argument: `F.map_comp` collapses the two composites to `F` of one relation, and what is left
+    is `E(R)∋⊑∋R` under `F`.  The exporter needs a verdict for the family it cannot split, and
+    `laxNatural_outside` only covers the one-argument steps `F(∋,𝟙)`, `F(𝟙,∋)`. -/
+theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
+    LaxNatural (Relator.comp (Relator.idRelator 𝒜) (F.appr B))
+      (Relator.comp (Relator.comp (Relator.idRelator 𝒜) powerRelator)
+        (F.appr (PowerAllegory.powerObj B)))
+      (fun a => F.map (∋ a) (∋ B)) := by
+  intro a b R
+  show F.map (powerRel R) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (∋ b) (∋ B)
+      ⊑ F.map (∋ a) (∋ B) ≫ F.map R (𝟙 B)
+  rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
+  exact F.map_mono (powerRel_eps_lax R) (le_refl _)
+
+theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
+    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+  have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    (F.map (𝟙 A) (∋ B) ≫ α) hQ
+  rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
+
+end
 
 end Freyd.Alg
