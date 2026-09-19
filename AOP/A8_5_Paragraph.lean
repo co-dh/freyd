@@ -570,14 +570,18 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
 /-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
-public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
-    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ l}
+public theorem para_laws_step1 (L : Relator RelSet.{0} RelSet.{0}) (hlen : ∀ a, 0 ≤ len a)
+    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ L.obj (dPara Word)}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
-      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶ lF)}
-    {listcp : (F Word Word).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
-    {filterp₂ thinlist : l ⟶ l} {minlist : l ⟶ dPara Word} {Pr : RelProd l l}
+      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
+        L.obj ((F Word Word).obj (dPara Word)))}
+    {listcp : (F Word Word).obj (L.obj (dPara Word)) ⟶ L.obj ((F Word Word).obj (dPara Word))}
+    {listf₁ listf₂ : L.obj ((F Word Word).obj (dPara Word)) ⟶ L.obj (dPara Word)}
+    {filterp₂ thinlist : L.obj (dPara Word) ⟶ L.obj (dPara Word)}
+    {minlist : L.obj (dPara Word) ⟶ dPara Word}
+    {Pr : RelProd (L.obj (dPara Word)) (L.obj (dPara Word))}
     {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
-    {mergeP : Pr.p ⟶ l}
+    {mergeP : Pr.p ⟶ L.obj (dPara Word)}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph newAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph newAlgFn)°)
@@ -590,12 +594,13 @@ public theorem para_laws_step1 {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a)
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R len w)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 (L.obj (dPara Word))) (listf₂ ≫ filterp₂)
+        ≫ mergeP ≫ thinlist⦈ ≫ minlist
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
   have hm₁ : MonotonicAlg (F := F Word Word)
       (graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) (Q len w) := by
     rw [Cat.comp_id]; exact para_mono_new
-  have h89₁ : sortP ≫ 𝟙 l ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
+  have h89₁ : sortP ≫ 𝟙 (L.obj (dPara Word)) ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
   have key := thinningList (F := F Word Word) (F_preservesRecip Word Word) (initial Word Word)
@@ -622,14 +627,19 @@ public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`, `p₁ ≜ 𝟙`,
     `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`, with `para-mono` discharging the
     monotonicity conditions and `para_spec` the specification. -/
-public theorem para_laws {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
-    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ l}
+public theorem para_laws (L : Relator RelSet.{0} RelSet.{0}) (hlen : ∀ a, 0 ≤ len a)
+    (hfit : ∀ a, len a ≤ w)
+    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ L.obj (dPara Word)}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
-      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶ lF)}
-    {listcp : (F Word Word).obj l ⟶ lF} {listf₁ listf₂ : lF ⟶ l}
-    {filterp₂ thinlist : l ⟶ l} {minlist : l ⟶ dPara Word} {Pr : RelProd l l}
+      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
+        L.obj ((F Word Word).obj (dPara Word)))}
+    {listcp : (F Word Word).obj (L.obj (dPara Word)) ⟶ L.obj ((F Word Word).obj (dPara Word))}
+    {listf₁ listf₂ : L.obj ((F Word Word).obj (dPara Word)) ⟶ L.obj (dPara Word)}
+    {filterp₂ thinlist : L.obj (dPara Word) ⟶ L.obj (dPara Word)}
+    {minlist : L.obj (dPara Word) ⟶ dPara Word}
+    {Pr : RelProd (L.obj (dPara Word)) (L.obj (dPara Word))}
     {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
-    {mergeP : Pr.p ⟶ l}
+    {mergeP : Pr.p ⟶ L.obj (dPara Word)}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph newAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph newAlgFn)°)
@@ -642,9 +652,10 @@ public theorem para_laws {l lF : RelSet.{0}} (hlen : ∀ a, 0 ≤ len a) (hfit :
     (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
     (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
     (h87 : sortP ≫ minlist ⊑ est (R len w)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 l) (listf₂ ≫ filterp₂) ≫ mergeP ≫ thinlist⦈ ≫ minlist
+    ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 (L.obj (dPara Word))) (listf₂ ≫ filterp₂)
+        ≫ mergeP ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [← para_laws_step2 hlen hfit]
-  exact para_laws_step1 hlen hsortF h88₁ h88₂ h89₂ h811 h810 h86 h87
+  exact para_laws_step1 L hlen hsortF h88₁ h88₂ h89₂ h811 h810 h86 h87
 
 end Freyd.Alg.RelSet.Paragraph
