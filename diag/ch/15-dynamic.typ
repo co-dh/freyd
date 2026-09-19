@@ -49,23 +49,11 @@ in @mu-defn.
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
  optimum #h(4pt) ]],
-  table.header([*circuit* — one wire, `A` to `B`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(H)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      1,
-      ("EB", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "H%∋ est(R)", src: "A", tgt: "B", sigs: "H:A⟶B"))],
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step1.rhs"),
     [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
   // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
   // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
@@ -105,27 +93,7 @@ in @mu-defn.
   // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
   [#lean("Freyd.Alg.dynamic_programming_thin.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(Vᵢ°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "thin(Qᵢ)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P(Fᵢ(X)Uᵢ)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      2,
-      ("E(Fᵢ(A))", ),
-    ),
-    (
-      3,
-      ("EB", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(Vᵢ°)%∋ thin(Qᵢ) P(Fᵢ(X)Uᵢ) est(R)", src: "A", tgt: "B", sigs: "Vᵢ:Fᵢ(A)⟶A Uᵢ:Fᵢ(B)⟼B X:A⟶B Qᵢ:Fᵢ(A)⟶Fᵢ(A)"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.thin_arm₂_le.lhs"),
     // lean:AOP.A9_1.thin_summand_le@ac202517
     [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
@@ -192,9 +160,7 @@ both lists empty.
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
-#let eb-thinUV = ([`thin(U×V)`], 3.15, true)
 #let eb-PX = ([`P([nil,(𝟙×X)cons])`], 5.95, true)
-#let eb-PXb = ([`P((𝟙×X)cons)`], 4.10, true)
 #let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
 #let eb-min = ([`minlist(R)`], 3.08, false)
 #disp[#calc-table(
@@ -202,9 +168,11 @@ both lists empty.
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
-  table.header([*circuit* — two wires, one per string], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`edit°`]), 2.15, (est-R-box,)),
+  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_laws.rhs"),
     [#src[the specification — @edit-defn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
   // `est(R) : E([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
@@ -238,8 +206,7 @@ both lists empty.
   // loop between them.  `thin(Q) : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body")],
 
-  [#vstep(EQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`step°`]), 2.15,
-      (eb-thinUV, eb-PXb, est-R-box)),
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_branch.lhs"),
     [#src[Proposition 9.1: `base` and `step` have disjoint ranges, so the fixed point splits into
       one branch per summand — `empty`, the coreflexive on `(xs,ys)` with both lists empty, is where
       `base` returns]])],
@@ -320,23 +287,11 @@ both lists empty.
   Thm[#frc([`flatten°`])` est(R)⊒mct`, #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
     #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
      non-empty segment, each entry built from the column to its left and the row below it]],
-  table.header([*circuit* — one wire, `list⁺ A` to `tree A`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(flatten°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E(list⁺(A))", ),
-    ),
-    (
-      1,
-      ("E(tree(A))", ),
-    ),
-  ), src: ("list⁺(A)", ), tgt: ("tree(A)", )),
-  cert: (expect: "(flatten°)%∋ est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "flatten:tree(A)⟶list⁺(A)"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_laws.rhs"),
     [#src[the specification — @mct-defn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
@@ -406,21 +361,7 @@ both lists empty.
   // shape of its own; the panel above already draws the `cat` branch.
   [],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "splits", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "list((mct×mct)bin)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "minlist(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("[list⁺(A)²]", ),
-    ),
-    (
-      1,
-      ("[tree(A)]", ),
-    ),
-  ), src: ("list⁺(A)", ), tgt: ("tree(A)", )),
-  cert: (expect: "splits list((mct×mct)bin)minlist(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "splits:list⁺(A)⟼[list⁺(A)×list⁺(A)] mct:list⁺(A)⟶tree(A) bin:tree(A)×tree(A)⟶tree(A)"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Bracket.mct_prog.lhs"),
     [#src[`splits≜⟨inits⁺,tails⁺⟩ zip` implements #frc([`cat°`]) and `minlist(R)` implements
       `est(R)`. Exponential, since the segments of one list overlap]])],
   [#lean("Freyd.Alg.RelSet.Bracket.mct_prog.lhs")],
@@ -484,23 +425,11 @@ the longest repeated tail; #h(4pt)
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
-  table.header([*circuit* — one wire, `String` to `[Code]`], [*Hinze–Marsden*]),
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(decode°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[Char]", ),
-    ),
-    (
-      1,
-      ("E[Code]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Code]", )),
-  cert: (expect: "(decode°)%∋ est(R)", src: "[Char]", tgt: "[Code]", sigs: "decode:[Code]⟶[Char]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_laws.rhs"),
     [#src[the specification — @code-defn]])],
   [#lean("Freyd.Alg.RelSet.Code.code_laws.rhs")],
 
@@ -537,47 +466,13 @@ the longest repeated tail; #h(4pt)
   // closes it; `list` dies and is remade at both beads, so it runs as a loop between them.
   [#lean("Freyd.Alg.RelSet.Code.code_laws.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(extend°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "thin(prefix°×(⊤+⊤))", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P((X×𝟙)snoc)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[Char]", ),
-    ),
-    (
-      2,
-      ("E([Char]×Code)", ),
-    ),
-    (
-      3,
-      ("E[Code]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Code]", )),
-  cert: (expect: "(extend°)%∋ thin(prefix°×(⊤+⊤)) P((X×𝟙)snoc) est(R)", src: "[Char]", tgt: "[Code]", sigs: "extend:[Char]×Code⟶[Char] snoc:[Code]×Code⟼[Code] X:[Char]⟶[Code] prefix:[Char]⟶[Char] ⊤+⊤:Code⟶Code"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_branch.lhs"),
     [#src[Proposition 9.1: `nil` and `extend` have disjoint ranges. The decompositions of one string
       are #frc([`extend°`])` (ws⧺[a])={(ws,sym a)} ∪ {(xs,ptr (ys,zs))∣xs⧺zs=ws⧺[a]`, `ys⧺zs` a
       proper prefix of `ws}` — take the last character as a symbol, or end with a pointer]])],
   [#lean("Freyd.Alg.RelSet.Code.code_branch.lhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "reduce", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "list((encode×𝟙)snoc)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "minlist(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("[[Char]×Code]", ),
-    ),
-    (
-      1,
-      ("[[Code]]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Code]", )),
-  cert: (expect: "reduce list((encode×𝟙)snoc)minlist(R)", src: "[Char]", tgt: "[Code]", sigs: "reduce:[Char]⟼[[Char]×Code] encode:[Char]⟶[Code] snoc:[Code]×Code⟼[Code]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Code.code_prog.lhs"),
     [#src[`reduce` implements #frc([`extend°`])` thin(prefix°×(⊤+⊤))`: thinning leaves at most two,
       the symbol and the pointer of the longest repeated tail `lrt`. Again exponential; the book
       gives no tabulation for it]])],
