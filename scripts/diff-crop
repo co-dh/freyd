@@ -40,6 +40,7 @@ import difflib, hashlib, math, os, re, shutil, subprocess, sys, tempfile
 import xml.etree.ElementTree as ET
 
 DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
+VPAD = 180                       # a display's worth of context above and below a changed band
 MINAREA = 40                     # ignore antialiasing specks
 GAP = 90                         # change regions closer than this are one edit
 KEYPAD = 9                       # pt of white kept around a display's measured ink, white permitting
@@ -511,7 +512,9 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
 def components(diff):
     """Bounding boxes of the changed blobs in an `compare -metric AE` difference image, and, when every
     blob was page-wide, those instead: a page that changed all over is still worth showing, whole."""
-    r = run("magick", diff, "-fuzz", "20%", "-fill", "white", "-opaque", "red", "-threshold", "50%",
+    W, H = size(diff)
+    r = run("magick", diff, "-alpha", "off",
+            "-fuzz", "20%", "-fill", "white", "-opaque", "red", "-threshold", "50%",
             "-define", "connected-components:verbose=true",
             "-define", f"connected-components:area-threshold={MINAREA}",
             "-connected-components", "8", "null:")
@@ -524,8 +527,14 @@ def components(diff):
         if not m:
             continue
         w, h, x, y = (int(v) for v in m.groups()[:4])
-        if m.group(5).startswith(("gray(0)", "srgb(0,0,0)", "srgba(0,0,0,")):
-            continue             # the unchanged black background, not an edit
+        # THE BACKGROUND IS THE PAGE-SIZED BLOB, NOT THE BLACK ONE.  `compare` marks the change red
+        # over a faded original, and after `-opaque red -threshold` a change comes out WHITE where it
+        # fell on paper and BLACK where it fell on ink — so a colour test keeps whichever half of an
+        # edit happened to land on paper and drops the other, and drops the edit entirely when none
+        # of it did, writing no picture and exiting 0.  Every blob that is not the whole page is a
+        # difference.
+        if w >= W and h >= H:
+            continue
         (big if w > 1200 and w * h > 600000 else out).append((x, y, x + w, y + h))
     return out or big
 
@@ -698,8 +707,12 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
             continue
         n = f"{j + 1}" if i == j else f"b{i + 1}a{j + 1}"
         W, H = size(b)
-        for k, (x0, y0, x1, y1) in enumerate(merge(components(d)), 1):
-            x0, y0, x1, y1 = max(0, x0 - PAD), max(0, y0 - PAD), min(W, x1 + PAD), min(H, y1 + PAD)
+        # A CHANGED PANEL IS READ AGAINST THE ROW IT SITS IN, so a crop takes the page's full width and
+        # the changed band with a display's worth of margin either side: a box cut to the ink alone shows
+        # a picture the reader cannot place.  Merging again after widening keeps two changes inside one
+        # display from arriving as two nearly identical pictures.
+        wide = merge([(0, max(0, b[1] - VPAD), W, min(H, b[3] + VPAD)) for b in merge(components(d))])
+        for k, (x0, y0, x1, y1) in enumerate(wide, 1):
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
             emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
             emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
