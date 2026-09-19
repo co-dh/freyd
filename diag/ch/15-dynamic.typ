@@ -61,27 +61,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.dynamic_programming_thin_step1.rhs")],
 
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(T°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P(F(X)h)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-    (
-      2,
-      ("EFA", ),
-    ),
-    (
-      3,
-      ("EB", ),
-    ),
-  ), src: ("A", ), tgt: ("B", )),
-  cert: (expect: "(T°)%∋ thin(Q) P(F(X)h) est(R)", src: "A", tgt: "B", sigs: "T:F(A)⟶A h:F(B)⟶B X:A⟶B"))],
+  [#vstep(RQ, leanc("Freyd.Alg.dynamic_programming_thin.lhs.body"),
     // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
     [#src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin(Q)` as in
       @thin-laws. This is the same with the thinning step dropped — `𝟙⊑thin(Q)`, so the body and
@@ -160,7 +140,6 @@ both lists empty.
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
-#let eb-PX = ([`P([nil,(𝟙×X)cons])`], 5.95, true)
 #let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
 #let eb-min = ([`minlist(R)`], 3.08, false)
 #disp[#calc-table(
@@ -178,8 +157,7 @@ both lists empty.
   // `est(R) : E([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.rhs")],
 
-  [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], frc([`[base,step]°`]), 4.30,
-      (thin-Q-box, eb-PX, est-R-box)),
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body"),
     [
      // edit_mono row: Theorem 9.2
      #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
@@ -297,26 +275,7 @@ both lists empty.
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E([wrap,cat]°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P([tip,(X×X)bin])", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E(list⁺(A))", ),
-    ),
-    (
-      1,
-      ("EF(list⁺(A))", ),
-    ),
-    (
-      2,
-      ("E(tree(A))", ),
-    ),
-  ), src: ("list⁺(A)", ), tgt: ("tree(A)", )),
-  cert: (expect: "([wrap,cat]°)%∋ P([tip,(X×X)bin])est(R)", src: "list⁺(A)", tgt: "tree(A)", polys: "F:A+x×x", sigs: "wrap:A⟼list⁺(A) cat:list⁺(A)×list⁺(A)⟼list⁺(A) tip:A⟼tree(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Bracket.mct_laws.lhs.body"),
     [
      // mct_laws row: Theorem 9.1
      #src[split the list in every way, bracket both halves, join. The condition is
@@ -433,27 +392,7 @@ the longest repeated tail; #h(4pt)
     [#src[the specification — @code-defn]])],
   [#lean("Freyd.Alg.RelSet.Code.code_laws.rhs")],
 
-  [#vstep(RQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E([nil,extend]°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P([nil,(X×𝟙)snoc])", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[Char]", ),
-    ),
-    (
-      2,
-      ("EF[Char]", ),
-    ),
-    (
-      3,
-      ("E[Code]", ),
-    ),
-  ), src: ("[Char]", ), tgt: ("[Code]", )),
-  cert: (expect: "([nil,extend]°)%∋ thin(Q)P([nil,(X×𝟙)snoc])est(R)", src: "[Char]", tgt: "[Code]", polys: "F:𝟏+x×Code", sigs: "nil:𝟏⟼[Code] nil:𝟏⟼[Char] extend:[Char]×Code⟶[Char] snoc:[Code]×Code⟼[Code] X:[Char]⟶[Code]"))],
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Code.code_laws.lhs.body"),
     // entab row: Theorem 9.2
     [#src[at `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the two `⊤` on symbols and on
       pointers. Monotonicity `F(R)α⊑αR` is routine, the two costs being constants:
