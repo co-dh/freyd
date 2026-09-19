@@ -55,6 +55,14 @@ public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A 
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 
+/-- **The power transpose of a composition** (book p.198, the first step of the calculation):
+    `Λ(S·V) = union·P(ΛS)·ΛV`, mirrored `Λ (V ≫ S) = Λ V ≫ P(Λ S) ≫ union`.
+    `Λ V` absorbs the existential image of `S`, and an existential image is the transpose's own
+    image followed by `union`. -/
+public theorem Λ_comp_eq_Λ_comp_powerRel_bigUnion (V : C ⟶ w) (S : w ⟶ A) :
+    Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
+  rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
+
 /-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
     eliminated"): split the thinning algebra's source as `V ≫ S`, and the `thin Q` at its end
     collapses to a `min R` under the power functor —
@@ -67,9 +75,6 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
     (hQ : R ∩ (S° ≫ S) ⊑ Q) :
     Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thinRel Q := by
-  -- the power transpose of a composition (book p.198)
-  have hsplit : Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
-    rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
   have hmapτ : Map (singletonMap : A ⟶ PowerAllegory.powerObj A) := Λ_is_map' (𝟙 A)
   -- `P τ ≫ union = id` (`union·Pτ = id`, the monad law)
   have hτ : powerRel (singletonMap : A ⟶ PowerAllegory.powerObj A) ≫ bigUnion
@@ -85,7 +90,7 @@ public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
       rw [powerRel_comp, Cat.assoc, hτ, Cat.comp_id]
     rw [← e1]
     exact comp_mono_right (powerRel_mono h83) bigUnion
-  rw [hsplit, Cat.assoc, Cat.assoc]
+  rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion V S, Cat.assoc, Cat.assoc]
   refine comp_mono_left (Λ V) (le_trans hstep ?_)
   rw [powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q)
@@ -127,6 +132,21 @@ public theorem thinning_paths_step (hFr : F.PreservesRecip)
   rw [← e]
   exact thinning_est hFr' I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
+/-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
+    one the program runs —
+    `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
+    `Λ (F(∋,𝟙)) ≫ P(Λ (F(𝟙,∋)α) ≫ est R) ⊑ Λ (F(∋,∋)α) ≫ thin Q`, at `R ∩ (S°S) ⊑ Q` for
+    `S ≜ F(𝟙,∋)α`.  It is `thinAlg_elim` at the split `V ≜ F(∋,𝟙)`, `S`, whose composite `V·S`
+    is `F(∋,∋)α` by interchange. -/
+public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
+    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+  have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    (F.map (𝟙 A) (∋ B) ≫ α) hQ
+  rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
+
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —
     `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored
@@ -145,13 +165,8 @@ public theorem thinning_paths (hFr : F.PreservesRecip)
     relCata (Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have halg : Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-      ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-    have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-      (F.map (𝟙 A) (∋ B) ≫ α) hQ
-    rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
-  exact le_trans (comp_mono_right (relCata_le_relCata I (comp_mono_left _ halg)) (est R))
+  exact le_trans
+    (comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R))
     (thinning_paths_step hFr I hQR hreflQ htransQ htransR hmono)
 
 end Layered
