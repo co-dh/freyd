@@ -42,6 +42,11 @@
 // walks the same Expr under the monoidal reading.  `scripts/circuit` reads the note's own formula
 // string instead, so its `cert:` says only that the picture matches the text beside it.
 #let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
+// The COMMUTATIVE DIAGRAM route: `diag-export --commutative` draws the statement as a graph rather
+// than a term walk.  Unlike `lean`/`leanc`, a `+` inside ONE selector is not a pair of boxes but two
+// DIFFERENT statements drawn on one page (`diag/cd-panels.txt`'s `A+B`), so it stays one string and
+// `leancd` takes exactly one selector, never `..sels`.
+#let leancd(sel) = lean-call("generated/commutative/", <lean-cd>, (sel,))
 // A FORMULA GENERATED FROM THE SAME DECLARATION a row's picture is drawn from, so the words beside
 // a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
 // `diag-export --formula` writes is one inline `raw` value and nothing else — no `pic` binding —

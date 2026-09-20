@@ -52,18 +52,7 @@
 // The square is the product's universal property at `T`, the string diagram the row above it: one
 // fold bead, the algebra falling past it, exactly as in @cata-defining.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    // The fan is ±4.6 wide only so that `⟨⦇h⦈,⦇k⦈⟩` fits between the induced arrow and `⦇h⦈`'s leg.
-    let (T, A, AB, B) = ((0, 2.2), (-4.6, -1.9), (0, -1.9), (4.6, -1.9))
-    ar(T, A, GIVEN1, s0: 0.5, s1: 0.5); ar(T, B, GIVEN2, s0: 0.5, s1: 0.5)
-    ar(T, AB, INDUCED, dash: "dashed", s0: 0.45, s1: 0.55)
-    ar(AB, A, GIVEN1, s0: 0.95, s1: 0.5); ar(AB, B, GIVEN2, s0: 0.95, s1: 0.5)
-    lab(-2.6, 0.45, GIVEN1)[`⦇h⦈`]; lab(2.6, 0.45, GIVEN2)[`⦇k⦈`]
-    lab(-1.45, -0.85, INDUCED)[`⟨⦇h⦈,⦇k⦈⟩`]
-    lab(-2.4, -2.45, GIVEN1)[`π₁`]; lab(2.4, -2.45, GIVEN2)[`π₂`]
-    node(T.at(0), T.at(1), black, `T`); node(A.at(0), A.at(1), GIVEN1, `A`)
-    node(AB.at(0), AB.at(1), INDUCED, `A×B`); node(B.at(0), B.at(1), GIVEN2, `B`)
-  }),
+  leancd("Freyd.Alg.relCata_pair_beta"),
   homeq(`F`, `T`, [`α`], [`⟨⦇h⦈,⦇k⦈⟩`], [`⟨F(π₁)h,F(π₂)k⟩`], `A×B`,
     ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, typed: true, gap: 3.2, regions: auto),
   [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈` #h(6pt) #src[banana split]],
@@ -92,28 +81,7 @@
 // B&dM Ex 3.8 (p. 58), ONE SQUARE PER CONJUNCT: `h` and `k` leave `F(A × B)` for different corners,
 // so a single square cannot carry both.  Dashed blue as in @cata-defining — the arrows uniqueness gives.
 #disp[#capbox(
-  grid(columns: 2, align: horizon, column-gutter: 34pt,
-    cetz.canvas(length: 0.8cm, {
-      let (FT, T, FAB, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, A, GIVEN1, s0: 1.35, s1: 0.55)
-      ar(FT, FAB, INDUCED, s0: 0.5, s1: 0.5)
-      ar(T, A, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
-      lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`h`]
-      lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`f`]
-      node(FT.at(0), FT.at(1), black, `FT`); node(FAB.at(0), FAB.at(1), GIVEN1, `F(A×B)`)
-      node(T.at(0), T.at(1), black, `T`); node(A.at(0), A.at(1), GIVEN1, `A`)
-    }),
-    cetz.canvas(length: 0.8cm, {
-      let (FT, T, FAB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FAB, B, GIVEN1, s0: 1.35, s1: 0.55)
-      ar(FT, FAB, INDUCED, s0: 0.5, s1: 0.5)
-      ar(T, B, INDUCED, dash: "dashed", s0: 0.5, s1: 0.5)
-      lab(0, 1.9, GIVEN2)[`α`]; lab(0.4, -1.9, GIVEN1)[`k`]
-      lab(-4.15, 0, INDUCED)[`F(⟨f,g⟩)`]; lab(3.0, 0, INDUCED)[`g`]
-      node(FT.at(0), FT.at(1), black, `FT`); node(FAB.at(0), FAB.at(1), GIVEN1, `F(A×B)`)
-      node(T.at(0), T.at(1), black, `T`); node(B.at(0), B.at(1), GIVEN1, `B`)
-    }),
-  ),
+  leancd("Freyd.Alg.pair_eq_relCata_pair_iff.lhs"),
   [`αf=F(⟨f,g⟩)h∧αg=F(⟨f,g⟩)k≡⟨f,g⟩=⦇⟨h,k⟩⦈`],
 )]<fokkinga>
 
@@ -146,16 +114,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 // The book's top arrow points LEFT because it composes applicatively, so mirroring it into diagram
 // order swaps the legs: `⦇g⦈` post-composes `tri(f)`, hence leaves the RIGHT `T A` (B&dM p. 59).
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (TL, TR, A) = ((-2.2, 1.25), (2.2, 1.25), (0, -1.25))
-    ar(TL, TR, GIVEN2, s0: 0.6, s1: 0.6)
-    ar(TL, A, INDUCED, dash: "dashed", s0: 0.6, s1: 0.6)
-    ar(TR, A, INDUCED, dash: "dashed", s0: 0.6, s1: 0.6)
-    lab(0, 1.8, GIVEN2)[`tri(f)`]
-    lab(-3.1, -0.35, INDUCED)[`⦇F(𝟙,f)g⦈`]; lab(2.0, -0.35, INDUCED)[`⦇g⦈`]
-    node(TL.at(0), TL.at(1), black, `TA`); node(TR.at(0), TR.at(1), black, `TA`)
-    node(A.at(0), A.at(1), GIVEN1, `A`)
-  }),
+  leancd("Freyd.Alg.tri_cata_fusion"),
   row((
     lean("Freyd.Alg.tri_cata_fusion"),
   )),

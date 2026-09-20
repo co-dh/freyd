@@ -66,18 +66,8 @@ where `(π₁,π₂)` is the tabulation of `⊤`
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
-#disp[#row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
-  let (C, A, AB, B) = ((0, 2.2), (-3.4, -1.9), (0, -1.9), (3.4, -1.9))
-  ar(C, A, GIVEN1, s0: 0.5, s1: 0.5); ar(C, B, GIVEN2, s0: 0.5, s1: 0.5)
-  ar(C, AB, INDUCED, dash: "dashed", s0: 0.45, s1: 0.55)
-  ar(AB, A, GIVEN1, s0: 0.95, s1: 0.5); ar(AB, B, GIVEN2, s0: 0.95, s1: 0.5)
-  lab(-2.0, 0.45, GIVEN1)[`R`]; lab(2.0, 0.45, GIVEN2)[`S`]
-  lab(-0.95, -0.85, INDUCED)[`⟨R,S⟩`]
-  lab(-1.8, -2.45, GIVEN1)[`π₁`]; lab(1.8, -2.45, GIVEN2)[`π₂`]
-  lab(-1.6, -1.35, SLACK)[`⊑`]; lab(1.3, -0.85, SLACK)[`⊑`]
-  node(C.at(0), C.at(1), black, `C`); node(A.at(0), A.at(1), GIVEN1, `A`)
-  node(AB.at(0), AB.at(1), INDUCED, `A×B`); node(B.at(0), B.at(1), GIVEN2, `B`)
-})), pairstr()))]<fork-pic>
+#disp[#row((box(inset: (right: 18pt),
+  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), pairstr()))]<fork-pic>
 
 A domain is coreflexive, so `⟨R,S⟩π₁⊑R`, with equality exactly when `S` is entire; for maps both
 triangles commute and `⟨f,g⟩` is unique. In `Rel`, `c ⟨R,S⟩ (a,b)` iff `c R a` and `c S b` — copy `c`, then
@@ -120,23 +110,8 @@ the monoid's unit law:
 
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
 // become two squares, and the copy dot goes away — `R × S` is the two strands side by side.
-#disp[#row((box(inset: (right: 18pt), cetz.canvas(length: 0.8cm, {
-  let (C, CD, D) = ((-2.7, 1.7), (-2.7, 0), (-2.7, -1.7))
-  let (A, AB, B) = ((2.7, 1.7), (2.7, 0), (2.7, -1.7))
-  ar(CD, C, GIVEN1, s0: 0.55); ar(CD, D, GIVEN2, s0: 0.55)
-  ar(AB, A, GIVEN1, s0: 0.55); ar(AB, B, GIVEN2, s0: 0.55)
-  ar(C, A, GIVEN1); ar(D, B, GIVEN2)
-  ar(CD, AB, INDUCED, dash: "dashed", s0: 0.95, s1: 0.95)
-  lab(-3.1, 0.85, GIVEN1)[`π₁`]; lab(-3.1, -0.85, GIVEN2)[`π₂`]
-  lab(3.1, 0.85, GIVEN1)[`π₁`]; lab(3.1, -0.85, GIVEN2)[`π₂`]
-  lab(0, 2.0, GIVEN1)[`R`]; lab(0, -1.4, GIVEN2)[`S`]
-  lab(-1.2, 0.32, INDUCED)[`R×S`]
-  lab(1.2, 0.85, SLACK, rot: -135deg)[`⊑`]; lab(1.2, -0.85, SLACK, rot: 135deg)[`⊑`]
-  node(C.at(0), C.at(1), GIVEN1, `C`); node(D.at(0), D.at(1), GIVEN2, `D`)
-  node(CD.at(0), CD.at(1), INDUCED, `C×D`)
-  node(A.at(0), A.at(1), GIVEN1, `A`); node(B.at(0), B.at(1), GIVEN2, `B`)
-  node(AB.at(0), AB.at(1), INDUCED, `A×B`)
-})), cetz.canvas(length: 0.8cm, {
+#disp[#row((box(inset: (right: 18pt),
+  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), cetz.canvas(length: 0.8cm, {
   let y = 0.85
   wire((0, y), (0.5, y)); gbox((0.5, y), [R]); wire((1.42, y), (2.0, y))
   wire((0, -y), (0.5, -y)); gbox((0.5, -y), [S]); wire((1.42, -y), (2.0, -y))
@@ -750,29 +725,12 @@ every F-algebra `f`
   // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
   // paint the same carrier red in the row below and cyan in the row above.
   #pair(
-    cetz.canvas(length: 0.8cm, {
-      let (FA, A, FB, B) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-      ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-      ar(FA, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(A, B, GIVEN2, s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN1)[`f`]; lab(0, -1.9, GIVEN1)[`g`]
-      lab(-3.55, 0, GIVEN2)[`F(h)`]; lab(3.2, 0, GIVEN2)[`h`]
-      node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-      node(FB.at(0), FB.at(1), black, `FB`); node(B.at(0), B.at(1), black, `B`)
-    }),
+    leancd("Freyd.Alg.IsFHom"),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
     [`f h=F(h)g , h:f->g in Alg(F)`],
   )
   #pair(
-    cetz.canvas(length: 0.8cm, {
-      let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-      ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-      ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
-      ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-      lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`f`]
-      lab(-3.95, 0, INDUCED)[`F(⦇f⦈)`]; lab(3.45, 0, INDUCED)[`⦇f⦈`]
-      node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-      node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
-    }),
+    leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
     [`α⦇f⦈=F(⦇f⦈)f,  ⦇f⦈:α->f in Alg(F)`],
   )
@@ -789,16 +747,7 @@ every F-algebra `f`
 #let ia-refl-r = lean("Freyd.Alg.relCata_alpha.rhs")
 
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FT2, T2) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FT2, T2, GIVEN2, s0: 0.55, s1: 0.55)
-    ar(FT, FT2, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, T2, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN2)[`α`]
-    lab(-4.0, 0, INDUCED)[`F(𝟙)`]; lab(3.4, 0, INDUCED)[`𝟙`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(FT2.at(0), FT2.at(1), black, `FT`)
-    node(T.at(0), T.at(1), black, `T`); node(T2.at(0), T2.at(1), black, `T`)
-  }),
+  leancd("Freyd.Alg.relCata_alpha"),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
  [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
 )]<cata-reflection>
@@ -823,23 +772,7 @@ then applying `S` is folding with `Q`.
 #let ia-fuse-cr = lean("Freyd.Alg.relCata_fusion.rhs")
 
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T) = ((-2.6, 2.5), (2.6, 2.5))
-    let (FB, B) = ((-2.6, 0), (2.6, 0))
-    let (FC, C) = ((-2.6, -2.5), (2.6, -2.5))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FC, C, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FB, INDUCED, s0: 0.55, s1: 0.55)
-    ar(FB, FC, GIVEN2, s0: 0.55, s1: 0.55)
-    ar(T, B, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(B, C, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(-3.95, 1.25, INDUCED)[`F(⦇R⦈)`]; lab(3.45, 1.25, INDUCED)[`⦇R⦈`]
-    lab(-3.55, -1.25, GIVEN2)[`F(S)`]; lab(3.1, -1.25, GIVEN2)[`S`]
-    lab(0, 3.05, GIVEN2)[`α`]; lab(0, 0.55, GIVEN1)[`R`]; lab(0, -1.95, GIVEN1)[`Q`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-    node(FB.at(0), FB.at(1), black, `FB`); node(B.at(0), B.at(1), black, `B`)
-    node(FC.at(0), FC.at(1), black, `FC`); node(C.at(0), C.at(1), black, `C`)
-  }),
+  leancd("Freyd.Alg.relCata_fusion"),
   grid(
     columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
     src[the side condition],

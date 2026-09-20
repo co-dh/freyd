@@ -14,11 +14,12 @@
 # BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
 # and a picture named by only one of them is still a picture that has to be redrawn.
 #
-# ONE LEAN PROCESS PER ROUTE, five at most: a `#lean(...)` name is drawn by `--string` (the panel
+# ONE LEAN PROCESS PER ROUTE, six at most: a `#lean(...)` name is drawn by `--string` (the panel
 # the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
-# reading), a `#leanf(...)` name by `--formula` (the statement in the note's spelling), a
-# `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is not a property of
-# the name, so the lists are asked for separately rather than guessed at here.
+# reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leanf(...)`
+# name by `--formula` (the statement in the note's spelling), a `<decl>.proof` by `--proof`, and
+# what is left by the term walk.  The route is not a property of the name, so the lists are asked
+# for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
 [ "$1" = "--missing" ] && { missing=1; shift; }
@@ -30,14 +31,21 @@ missing=
 # alone would give it a depth of its own and leave the pair standing at two heights.
 # `$1` is the route's output directory: the string route writes diag/generated/, the circuit route
 # one level down, and a test against the wrong one reports every picture missing.
+# `$2` = `whole` keeps a `+`-joined name as ONE file to test: the commutative route's `+` joins two
+# DIFFERENT statements on one page (not a shared box like the string route's `#lean(a, b)`), and its
+# output file is named after the whole selector, `A+B.typ`, never split into `A.typ`/`B.typ`.
 filter() {
   dir=$1
   if [ -z "$missing" ]; then cat; else
     while IFS= read -r n; do
       [ -n "$n" ] || continue
-      for p in $(printf '%s\n' "$n" | tr '+' ' '); do
-        [ -f "$dir/$p.typ" ] || { printf '%s\n' "$n"; break; }
-      done
+      if [ "$2" = "whole" ]; then
+        [ -f "$dir/$n.typ" ] || printf '%s\n' "$n"
+      else
+        for p in $(printf '%s\n' "$n" | tr '+' ' '); do
+          [ -f "$dir/$p.typ" ] || { printf '%s\n' "$n"; break; }
+        done
+      fi
     done
     return 0
   fi
@@ -48,6 +56,7 @@ all=$(./scripts/note-files --generated) || exit 1
 # keeps the route and its list in one place.
 lean=$(./scripts/diag-export --list lean-panel) || exit 1
 circuit=$(./scripts/diag-export --list lean-circuit) || exit 1
+cd=$(./scripts/diag-export --list lean-cd) || exit 1
 formula=$(./scripts/diag-export --list lean-formula) || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
@@ -56,6 +65,7 @@ formula=$(./scripts/diag-export --list lean-formula) || exit 1
 # Unquoted on purpose: the names carry no spaces, and quoting would pass a whole list as one word.
 leans=$(printf '%s\n' "$lean" | filter diag/generated)
 circuits=$(printf '%s\n' "$circuit" | filter diag/generated/circuit)
+cds=$(printf '%s\n' "$cd" | filter diag/generated/commutative whole)
 formulas=$(printf '%s\n' "$formula" | filter diag/generated/formula)
 plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter diag/generated)
 proofs=$(printf '%s\n' "$all" | filter diag/generated | sed -n 's|\.proof$||p')
@@ -63,5 +73,6 @@ proofs=$(printf '%s\n' "$all" | filter diag/generated | sed -n 's|\.proof$||p')
 [ -n "$proofs" ] && { ./scripts/diag-export --proof $proofs || exit 1; }
 [ -n "$leans" ] && { ./scripts/diag-export --string $leans || exit 1; }
 [ -n "$circuits" ] && { ./scripts/diag-export --circuit $circuits || exit 1; }
+[ -n "$cds" ] && { ./scripts/diag-export --commutative $cds || exit 1; }
 [ -n "$formulas" ] && { ./scripts/diag-export --formula $formulas || exit 1; }
 exit 0
