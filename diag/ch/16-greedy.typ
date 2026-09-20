@@ -71,7 +71,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let nb-Lexp = (frc([`expand°`]), 2.75, false)
 #let nb-estVU = ([`est(V×U)`], 2.55, true)
 #disp[#calc-table(
-  Thm[#frc([`detab°`])` est(R)⊒entab`, #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
+  Thm[#leanf("Freyd.Alg.RelSet.Detab.entab_laws"), #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
     #src[the shortest input `detab` expands to the given output is one pass along that output,
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
      tab stop]],
@@ -161,7 +161,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let tb-pick = ([`pick`], 1.50, false)
 #let tb-sch = ([`(schedule×𝟙)snoc`], 4.90, true)
 #disp[#calc-table(
-  Thm[#frc([`bagify°`])` est(R)⊒schedule`, #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@e2c381dc lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
@@ -225,7 +225,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 #let xb-Linv = (frc([`inrange val°`]), 4.30, false)
 
 #disp[#calc-table(
-  Thm[#frc([`intern°`])` est(R)⊒extern`, #h(6pt) `extern(n)=f(2n−1,2n+1)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
