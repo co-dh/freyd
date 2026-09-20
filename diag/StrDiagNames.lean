@@ -117,6 +117,14 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The rose tree's BASE relator is the note's `F`, the letter §13.4.3 writes on both objects of
+    `party-mono` — which datatype's base it is, and at which leaf type, is the section's context and
+    not part of the name, exactly as `typeRelator`'s `T` is. -/
+@[app_unexpander RelSet.RT.F] def unexpandRTF : Unexpander
+  | `($_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `unexpandDSL` already
     writes every snoc list `[E]`, and this is that object's wire. -/
 @[app_unexpander RelSet.SL.snocRelator] def unexpandSnocRelator : Unexpander

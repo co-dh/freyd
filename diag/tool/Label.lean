@@ -874,6 +874,14 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- operator takes and its operand is a term of the note's, respelled here — the same clause `P(R)`
   -- has, one line up, for the same reason.
   | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
+  -- THE POWER OBJECT is that same `E` at an OBJECT, and its operand is a term of the note's for
+  -- the same reason the arrow's is: the printer sets a product off from its factors (`E ([A] ×
+  -- [A])`) where the note writes `E([A]×[A])`, and how the letter joins is the note's own rule —
+  -- `E[A]` against the brackets the printer closed, `EA` against a name, parentheses otherwise.
+  | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
+    match args.back? with
+    | some x => return applyLabelL "E" (← labelTree 0 x) (← objJoin x)
+    | none => txt e
   -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
   -- `S%∋`, `(F(∋)S)%∋`, `𝟙%∋`.  The NUMERATOR carries the brackets, at juxtaposition's own
   -- precedence, because the `%` binds tighter than composition: `F(∋)S%∋ thin(Q)` would read as
