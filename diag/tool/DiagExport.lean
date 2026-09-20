@@ -57,6 +57,7 @@ import diag.S2_124
 import diag.tool.Label
 import diag.tool.StringDiagram
 import diag.tool.TypeRender
+import diag.tool.FormulaRender
 import diag.tool.Cite
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
@@ -1322,7 +1323,7 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type | --formula]\n\
      <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    a selector the exporter cannot draw still gets its file — a red box holding the error, so the\n\
@@ -1345,6 +1346,9 @@ def usage : String :=
    --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
      categories a relator runs between; no side or branch selector applies\n\
+   --formula writes the declaration's STATEMENT as a note cell, to\n\
+     diag/generated/formula/<name>.typ, in the note's own spelling (`label`) — `<name>` alone is\n\
+     `<lhs> <sym> <rhs>`, `<name>.lhs`/`.rhs` one side; no `.inl`/`.inr` branch selector applies\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\
@@ -1469,10 +1473,11 @@ def main (args : List String) : IO UInt32 := do
   let stringMode := args.contains "--string"
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
+  let formulaMode := args.contains "--formula"
   let commutativeMode := args.contains "--commutative"
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--string"
-      && a != "--circuit" && a != "--type" && a != "--commutative")
+      && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative")
   if args.isEmpty then IO.eprintln usage; return 2
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
@@ -1494,7 +1499,8 @@ def main (args : List String) : IO UInt32 := do
   -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
   let outDir := if circuitMode then "diag/generated/circuit"
     else if commutativeMode then "diag/generated/commutative"
-    else if typeMode then "diag/generated/type" else "diag/generated"
+    else if typeMode then "diag/generated/type"
+    else if formulaMode then "diag/generated/formula" else "diag/generated"
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
@@ -1520,13 +1526,13 @@ def main (args : List String) : IO UInt32 := do
   let jobs : List (String × String) := if stringMode
     then args.flatMap fun a => (a.splitOn "+").map fun n => (n, a)
     else args.map fun a => (a, a)
-  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode)
+  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
     -- naming two declarations has no one statement to slide to a shared bead, so it is refused
     -- here rather than drawn as two boxes that only look like a pair.
     let peers ← (call.splitOn "+").mapM fun n => do
-      let (b, h, s, br) := parseArg n (circuitMode || stringMode)
+      let (b, h, s, br) := parseArg n (circuitMode || stringMode || formulaMode)
       unless b == base && h == binder do
         throw <| IO.userError s!"`{call}`: one `#lean(…)` call draws parts of ONE statement — \
           {b} is not {base} — because sharing a box is sliding to a bead they both carry"
@@ -1549,12 +1555,13 @@ def main (args : List String) : IO UInt32 := do
           Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if typeMode then Freyd.TypeRender.file arg.toName
+        else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if proofMode then drawProof arg.toName else draw arg.toName)
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut failed : Array String := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := if circuitMode || commutativeMode || typeMode
+    let path := if circuitMode || commutativeMode || typeMode || formulaMode
       then System.FilePath.mk s!"{outDir}/{arg}.typ"
       else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
