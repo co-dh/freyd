@@ -1621,136 +1621,17 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_step@504b7851
   table.header([*formula*], [*reason*]),
 
-  [#step([])[#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(S)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EF[A]", ),
-    ),
-    (
-      1,
-      ("E[A]", ),
-    ),
-  ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "S%∋ est(R°)", src: "F([A])", tgt: "[A]"))][]], [],
+  [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
 
-  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          1,
-          ("E𝟏", ),
-        ),
-        (
-          2,
-          ("E[A]", ),
-        ),
-      )),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙)cons)", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-        (
-          1,
-          ("E(A×[A])", ),
-        ),
-        (
-          2,
-          ("E[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil%∋ est(R°),(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn] #h(4pt) — and the `%∋` of a coproduct of maps
    is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
 
-  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(π₂ ∪ (p×𝟙)cons)", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-        (
-          1,
-          ("E(A×[A])", ),
-        ),
-        (
-          2,
-          ("E[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₂ ∪ (p×𝟙)cons)%∋ est(R°)]", src: "F([A])", tgt: "[A]"))][`[nil,` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][`[nil,` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
   [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
    reflexive #h(4pt) #src[@est-defn]],
 
-  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "fork", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-                (k: "box", nin: 1, nout: 1, label: "E(π₂)", chamfer: false, frac: false, flip: false),
-              ), seams: (
-                (
-                  0,
-                  ("E(A×[A])", ),
-                ),
-              )),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-                (k: "box", nin: 1, nout: 1, label: "E((p×𝟙)cons)", chamfer: false, frac: false, flip: false),
-              ), seams: (
-                (
-                  0,
-                  ("E(A×[A])", ),
-                ),
-              )),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "est(R°)", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-        (
-          1,
-          ("E[A]", "E[A]", ),
-        ),
-        (
-          2,
-          ("E[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,⟨π₂%∋,((p×𝟙) cons)%∋⟩ cup est(R°)]", src: "F([A])", tgt: "[A]"))][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step3.rhs")][]],
   [#frc([`π₂ ∪ (p×𝟙) cons`])` =⟨`#frc([`π₂`])`,`#frc([`(p×𝟙) cons`])`⟩ cup` #h(4pt) #src[@cup-defn]],
 
   [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
