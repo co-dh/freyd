@@ -990,27 +990,36 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- The two regions coincide for endofunctor lanes, which is every lane before one crossed
   -- categories.  READ OFF THE WIRE, never off the statement: the wire is what the bead stands on.
   let idxTy ← Meta.inferType oy
+  -- ASKED OF BOTH, THE ARROW'S REGION FIRST: an index of the region the arrow lives in is what
+  -- every endofunctor lane's family is indexed by, and it keeps its answer; the wire's own region
+  -- answers where the two differ, which is where the lanes CROSS categories.  Neither is a
+  -- fallback for a failure — they are two places an index can live, and the ENVIRONMENT picks
+  -- between the readings below by which one has a square.
+  let famAt : Expr → MetaM (Option Expr) := fun t => do
+    match ← familyAtIndex? regionTy core t with
+    | some φ => return some φ
+    | none => familyAtIndex? idxTy core t
   let mut cands : Array (Expr × Expr) := #[]
-  for t in (← indexArgs idxTy core #[]) do
-    if let some φ ← familyAtIndex? idxTy core t then cands := cands.push (t, φ)
+  for t in (← indexArgs idxTy core (← indexArgs regionTy core #[])) do
+    if let some φ ← famAt t then cands := cands.push (t, φ)
   -- THE TYPE THE WIRE IS BUILT FROM is an index no term need name: `est(R Char)` over an `Op(Char)`
   -- wire is a family in `Op Char` and in nothing its own spine holds.
   let mut typs : Array (Expr × Expr) := #[]
   for t in ← indexTypes 64 [oy, ox] #[] do
-    if let some φ ← familyAtIndex? idxTy core t then typs := typs.push (t, φ)
+    if let some φ ← famAt t then typs := typs.push (t, φ)
   -- The object the bead's own WIRE carries comes LAST, as the `familyAt?` it replaces did: it is the
   -- index of a bead whose term names none — `𝟙%∋` at an initial algebra's carrier — and reading it
   -- ahead of a binder the ends are lanes in took `nil`'s square off the board.
   let mut wire : Array (Expr × Expr) := #[]
   for t in #[oy, ox] do
-    if let some φ ← familyAtIndex? idxTy core t then wire := wire.push (t, φ)
+    if let some φ ← famAt t then wire := wire.push (t, φ)
   -- A STATEMENT BINDER IS NOT THE BEAD'S OWN INDEX, so it is kept only where the ends ARE lanes in
   -- it: `α : F(T)⟶T` at an abstract carrier names the module's `A` through its algebra and nothing
   -- else, and abstracting one out of the other is type-correct without the picture showing any of
   -- it.  For an index the bead's term itself takes, the term is the whole evidence.
   let mut bound : Array (Expr × Expr) := #[]
   for v in objVars do
-    if let some φ ← familyAtIndex? idxTy core v then
+    if let some φ ← famAt v then
       if (← readEnds regionTy cat φ).isSome then bound := bound.push (v, φ)
   let all := cands ++ typs ++ bound ++ wire
   -- WHICH of them the dot is at is the ENVIRONMENT'S answer and not the reader's: `nil` is a family
@@ -1570,7 +1579,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
   -- body, where the first walk cannot reach them, and the arrow still carried them and was refused
   -- as no arrow.  Re-quantifying over what has been entered and walking once more lands on the
   -- statement whichever side of the definition its binders sit.
-  let stmt ← stmtTelescope ci.type fun xs body => do
+  let stmt ← stmtTelescope ci.type fun xs body0 => do
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -1582,15 +1591,25 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       | none =>
         let isDef := match ci with | .defnInfo _ => true | _ => false
         match (if isDef then ci.value? else none) with
-        | none => pure body
+        | none => pure body0
         | some v =>
           let opened := (mkAppN v xs).headBeta
           -- ... UNLESS OPENING LOSES A LANE, in which case the declaration APPLIED TO ITS OWN
           -- BINDERS is the arrow drawn, and its type is what the picture reads its cuts off.
-          if ← opensFewerLanes cat body opened then
+          if ← opensFewerLanes cat body0 opened then
             pure (mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs)
           else pure opened
-    Meta.mkForallFVars xs body
+    -- A PREDICATE STATES ITS OWN SQUARE.  Drawing `LaxNatural F G φ` opens its definition, so the
+    -- square on the page IS the claim about `φ` — and `φ` is bound by the predicate itself, so no
+    -- declaration in the environment can speak about it and the search comes back a spider.
+    -- Re-quantifying the body under the predicate APPLIED TO ITS OWN BINDERS puts that claim where
+    -- `hypVerdict` already looks, and it is the same evidence a theorem's `(h : LaxNatural F G φ)`
+    -- binder is.  `isSort`: only a declaration whose type ENDS in a sort is a predicate, so a
+    -- partially applied telescope that stopped at a hom states nothing about itself.
+    if (markOfNatPredicate declName).isSome && body0.isSort then
+      let self := mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs
+      Meta.withLocalDeclD declName self fun h => Meta.mkForallFVars (xs.push h) body
+    else Meta.mkForallFVars xs body
   stmtTelescope stmt fun xs body => do
     -- A PATH NAMES A STATEMENT; a TRAILING SIDE NAME picks one part of it.  `relCata_UP` is an `↔`
     -- between two inequations, so `.lhs` names the left inequation and draws it whole — both parts

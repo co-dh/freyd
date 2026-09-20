@@ -844,11 +844,7 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       -- `wiresOf` is outermost first, so the objects are built from the inside out: under the
       -- innermost wire is `x`, under the next is that wire applied to it.
       let ws := wiresOf f
-      -- AND THE PEEL GOES ON IN THE REGION THE INNERMOST WIRE COMES FROM, the same rule
-      -- `peelWith?` already follows: `Δᴛ.obj A` peels to the `Δᴛ` lane over an ALGEBRA, and
-      -- reading `A` on in `𝒜` would ask the wrong region's lanes about it.
-      let src ← match ws.back? with | some w => laneSource regionTy w | none => pure regionTy
-      let (cs, o) ← peelCuts objVars cat src x
+      let (cs, o) ← peelCuts objVars cat regionTy x
       let mut under := x
       let mut acc : Array (Wire × Expr) := #[]
       for i in [0 : ws.size] do
@@ -942,7 +938,11 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
       #[some regionTy, some regionTy, some inst, some inst, some X]
   -- `isDefEq`, not `==`: where the region is a one-field structure over an index, the object comes
   -- back rebuilt from its projection (`⟨a.f⟩`), which is `a` only up to eta.
-  if ← Meta.isDefEq X v then return ← alg.id regionTy
+  -- THE IDENTITY LANE IS AT THE REGION THE INDEX LIVES IN, which is not always the one the ARROW
+  -- does: `Δᴛ.obj A ⟶ carrier(A)` is an arrow of `𝒜` whose index is an ALGEBRA, and taking the
+  -- identity at `𝒜` there built `𝟙 ∘ Δᴛ` out of two lanes that do not compose, so the fold read
+  -- as no family at all.  For an endofunctor lane the two regions are the one region.
+  if ← Meta.isDefEq X v then return ← alg.id (← Meta.inferType v)
   if let some (a, b) ← splitTimes? regionTy X then
     -- THE PRODUCT LANE IS THE ALGEBRA'S OWN, and BOTH algebras have one: `Relator.prod` in an
     -- allegory, §1.424's `functorProd` in a category.  Refusing the functor algebra a product end
@@ -969,12 +969,7 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
       if ws.any (·.containsFVar vid) then
         throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no lane \
           of the region and {← Meta.ppExpr X} has no reading"
-      -- THE READING CONTINUES IN THE REGION THE INNERMOST WIRE COMES FROM.  A lane need not be an
-      -- endofunctor, and the index is an object of its SOURCE: `Δᴛ.obj A` reads as the `Δᴛ` lane
-      -- over the identity lane of `Algebra F`, where fixing the region to `𝒜` asked for an
-      -- identity relator of `𝒜` at an algebra and the whole family went unread.
-      let src ← match ws.back? with | some w => laneSource regionTy w | none => pure regionTy
-      let mut acc ← relatorOfObj alg cat src v x
+      let mut acc ← relatorOfObj alg cat regionTy v x
       for i in [0 : ws.size] do
         acc ← alg.comp acc ws[ws.size - 1 - i]!
       return acc
