@@ -1,12 +1,10 @@
 // cdref-comp.typ — the note's OWN composition row of `<lax-closure>`, standing alone, so
 // `scripts/cd-check` can hold the generated panel to it.  This is `diag/allegory-axioms.typ`'s
-//   laxsq((`HA`,`GA`,`HB`,`GB`), (`ψA`, `ψB`, `H(R)`, none), x: -SQW)
-//   laxsq((`GA`,`FA`,`GB`,`FB`), (`φA`, `φB`, `G(R)`, `F(R)`), x: SQW)
+//   laxsq((`HA`, `GA`, `HB`, `GB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`H(R)`], none), x: -SQW)
+//   laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW)
 // expanded mark for mark: same `ar`/`node`/`lab`, same `SQW`/`SQH`, same `length: 0.8cm`.
 // `Freyd.Alg.laxNatural_comp_slide` IS the pair — `comp_slides` at the note's own chord, the
 // relator-moved `G(R)`, which is what stands it upright between the two squares.
-// The component labels are the note's `` `ψ` ``#sub[`` `A` ``] set as the one raw name the panel
-// writes, `ψA`: a generated label is one `raw`, and `raw` carries no subscript.
 //
 // The shared edge is drawn ONCE here.  `laxsq` draws it twice — once as the first square's right
 // side and once as the second's left — and two `ar`s on one segment read back as one edge anyway;
@@ -25,8 +23,8 @@
   ar((m, SQH), (r, SQH), GIVEN1, s0: 0.5, s1: 0.5); ar((m, -SQH), (r, -SQH), GIVEN1, s0: 0.5, s1: 0.5)
   ar((l, SQH), (l, -SQH), GIVEN2, s0: 0.5, s1: 0.5); ar((m, SQH), (m, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
   ar((r, SQH), (r, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
-  lab(-SQW, SQH + 0.62, GIVEN1)[`ψA`]; lab(-SQW, -SQH - 0.62, GIVEN1)[`ψB`]
-  lab(SQW, SQH + 0.62, GIVEN1)[`φA`]; lab(SQW, -SQH - 0.62, GIVEN1)[`φB`]
+  lab(-SQW, SQH + 0.62, GIVEN1)[`ψ`#sub[`A`]]; lab(-SQW, -SQH - 0.62, GIVEN1)[`ψ`#sub[`B`]]
+  lab(SQW, SQH + 0.62, GIVEN1)[`φ`#sub[`A`]]; lab(SQW, -SQH - 0.62, GIVEN1)[`φ`#sub[`B`]]
   lab(l - 0.8, 0, GIVEN2)[`H(R)`]; lab(m - 0.8, 0, GIVEN2)[`G(R)`]
   lab(r + 0.8, 0, GIVEN2)[`F(R)`]
   lab(-SQW, 0, SLACK, rot: -45deg)[`⊑`]; lab(SQW, 0, SLACK, rot: -45deg)[`⊑`]

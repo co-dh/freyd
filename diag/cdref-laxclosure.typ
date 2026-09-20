@@ -3,8 +3,6 @@
 // `diag/allegory-axioms.typ`'s `<lax-closure>` — `K(G(R))K(φʙ)⊑K(φᴀ)K(F(R))` — copied mark for
 // mark: same `laxsq` corners and labels, same `ar`/`lab`, same `length: 0.8cm`.
 // `Freyd.Alg.Relator.map_slides` IS that statement, its binders named in the note's letters.
-// The component labels are the note's `` `φ` ``#sub[`` `A` ``] set as the one raw name a generated
-// label can write, `φA`: a generated label is one `raw`, and `raw` carries no subscript.
 //
 //   typst compile --root . --format svg diag/cdref-laxclosure.typ diag/cdref-laxclosure.svg
 //   ./scripts/diag-export --commutative Freyd.Alg.Relator.map_slides
@@ -16,7 +14,7 @@
   let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
   ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
   ar(GT, GB, GIVEN2, s0: 0.55, s1: 0.55); ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55)
-  lab(0, 1.8, GIVEN1)[`K(φA)`]; lab(0, -1.8, GIVEN1)[`K(φB)`]
+  lab(0, 1.8, GIVEN1)[`K(φ`#sub[`A`]`)`]; lab(0, -1.8, GIVEN1)[`K(φ`#sub[`B`]`)`]
   lab(-3.8, 0, GIVEN2)[`K(G(R))`]; lab(3.8, 0, GIVEN2)[`K(F(R))`]
   lab(0, 0, SLACK, rot: -45deg)[`⊑`]
   node(GT.at(0), GT.at(1), black, `KGA`); node(FT.at(0), FT.at(1), black, `KFA`)
