@@ -177,6 +177,124 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A)
     relCata (F.map f ≫ g) ≫ f = relCata (g ≫ f) :=
   relCata_fusion I (Cat.assoc (F.map f) g f)
 
+/-! ## The category of `F`-algebras, and `⦇·⦈` as a family natural in the ALGEBRA
+
+  `relCata_fusion` above is stated arrow by arrow.  Read instead as a statement about the
+  CATEGORY whose objects are the algebras `R : F A ⟶ A` and whose arrows are the
+  homomorphisms, it says that the fold is a natural transformation
+
+      `⦇·⦈ : Δᴛ ⟹ U`,   `Δᴛ` constant at the initial carrier `t`, `U` the forgetful functor,
+
+  which is what lets a picture draw it as a BEAD where the algebra region closes, rather than
+  as an opaque label (IntroString p. 147, (5.8), middle: `UΣ∘ϵ : UΣ FreeΣ ⟹ UΣ`, read here at
+  initiality instead of at a free algebra — `Δᴛ` factors through the terminal category, so its
+  leg enters from the region's boundary where (5.8)'s `FreeΣ` wire passes through from the top).
+
+  WHICH CONDITION ON THE ARROWS.  Both candidates compose and both carry the identity:
+  `R S = F(S) Q` (strict) and `R S ⊑ F(S) Q` (lax) are each preserved by `≫`, the lax one
+  because `≫` is monotone in both arguments.  They differ in what the fold then satisfies:
+
+  - STRICT arrows: `relCata_fusion` gives `⦇R⦈S = ⦇Q⦈` — an EQUALITY, so the family is
+    STRICTLY natural, and it holds in this file's `UnguardedPowerAllegory`, from the universal
+    property `relCata_UP` alone.  That is the form stated below.
+  - LAX arrows: the best available is `comp_le_relCata` (`AOP.A6_2`), `⦇R⦈S ⊑ ⦇Q⦈`.  Note the
+    DIRECTION: with `φ A ≜ ⦇A.alg⦈ : t ⟶ A` the square runs `φ A ≫ U(S) ⊑ Δᴛ(S) ≫ φ B`, the
+    reverse of `LaxNatural`'s `G(R) ≫ φ B ⊑ φ A ≫ F(R)` — so over the lax category the fold is
+    OPLAX, not lax.  It also costs local completeness (`UnguardedPowerLCDA`), because it is
+    proved from the least-fixed-point reading of `⦇·⦈` and not from `relCata_UP`.
+
+  So the strict category is what the proof gives, and it is the cheaper one; the lax category's
+  statement is `comp_le_relCata` and is not restated here. -/
+
+/-- An `F`-ALGEBRA (B&dM p. 121): a carrier with an algebra — a RELATION, not necessarily a
+    map — on it.  The objects of the category the fold is natural over. -/
+public structure Algebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
+  carrier : 𝒜
+  alg : F.obj carrier ⟶ carrier
+
+/-- A HOMOMORPHISM of `F`-algebras: `R S = F(S) Q`, the arrows of the STRICT algebra category
+    (see the section note for why the lax condition is not the one taken). -/
+public structure AlgHom {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+    (A B : Algebra F) where
+  hom : A.carrier ⟶ B.carrier
+  comm : A.alg ≫ hom = F.map hom ≫ B.alg
+
+/-- Two homomorphisms with the same underlying arrow are equal: `comm` is a proof. -/
+public theorem AlgHom.ext {A B : Algebra F} : ∀ {S T : AlgHom A B}, S.hom = T.hom → S = T
+  | ⟨_, _⟩, ⟨_, _⟩, rfl => rfl
+
+/-- Homomorphisms COMPOSE: the two squares glue, `F` turning the two arrows into one. -/
+public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom B C) :
+    A.alg ≫ (S.hom ≫ T.hom) = F.map (S.hom ≫ T.hom) ≫ C.alg := by
+  rw [← Cat.assoc, S.comm, Cat.assoc, T.comm, ← Cat.assoc, ← F.map_comp]
+
+/-- The CATEGORY of `F`-algebras.  NOT an allegory: the homomorphism condition is closed under
+    neither `°` (converse turns `R S = F(S) Q` into `S° R° = Q° F(S)°`, which is not a
+    homomorphism condition) nor `∩` (it would need `F(S)Q ∩ F(S')Q ⊑ F(S∩S')Q`, and a relator
+    preserves `∩` only on coreflexives, Ex 5.2) — so `U` and `Δᴛ` below are `Freyd.Functor`s
+    and not `Relator`s, and the fold's naturality is `=`, not `⊑`. -/
+@[expose] public instance instCatAlgebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
+    (F : Relator 𝒜 𝒜) : Cat (Algebra F) where
+  Hom A B := AlgHom A B
+  id A := ⟨𝟙 A.carrier, by rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
+  comp S T := ⟨S.hom ≫ T.hom, S.comm_comp T⟩
+  id_comp S := AlgHom.ext (Cat.id_comp S.hom)
+  comp_id S := AlgHom.ext (Cat.comp_id S.hom)
+  assoc S T U := AlgHom.ext (Cat.assoc S.hom T.hom U.hom)
+
+/-- `U`, the FORGETFUL functor: an algebra to its carrier, a homomorphism to its arrow. -/
+@[expose] public def algU {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
+    Freyd.Functor (Algebra F) 𝒜 where
+  obj A := A.carrier
+  map S := S.hom
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+/-- `Δᴛ`, the CONSTANT functor at the initial algebra's carrier `t`.  It factors through the
+    terminal category, which is why the fold's source leg enters a panel from the region's
+    boundary instead of passing through it from the top. -/
+@[expose] public def algDelta [I : InitialAlgebra F] : Freyd.Functor (Algebra F) 𝒜 where
+  obj _ := I.t
+  map _ := 𝟙 I.t
+  map_id _ := rfl
+  map_comp _ _ := (Cat.id_comp (𝟙 I.t)).symm
+
+/-- **THE FOLD AS A FAMILY** over the algebras: `⦇·⦈ A = ⦇A.alg⦈ : t ⟶ A`, a component of
+    `Δᴛ ⟹ U` at each algebra. -/
+@[expose] public def fold [I : InitialAlgebra F] (A : Algebra F) :
+    (algDelta (F := F)).obj A ⟶ (algU F).obj A := relCata A.alg
+
+/-- The note's name for the constant functor at the initial carrier. -/
+notation:max "Δᴛ" => algDelta
+
+open Lean PrettyPrinter in
+/-- THE LANE IS THE FUNCTOR, NOT ITS PARAMETER: `F` is which algebra category the panel is in —
+    the region — so the wire's name is the letter `U` alone. -/
+@[app_unexpander algU] public meta def unexpandAlgU : Unexpander
+  -- `mkIdent`, not a quoted `U`: a quotation's identifier carries macro scopes and the lane's
+  -- label comes out `U✝`.
+  | `($_ $_F) => `($(mkIdent `U))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- THE FOLD WEARS THE BOOK'S BANANA, with the ALGEBRA inside it: `⦇A⦈`, where `A` is the object
+    of the algebra category and `⦇R⦈` the same arrow written at that algebra's own structure.  The
+    index is what the object wire under the bead already says, and the skill would strip it — but
+    `shiftTo` (`diag/tool/StringDiagram.lean`) decides that two beads are ONE 2-CELL by comparing
+    their LABELS, so a component whose index is stripped reads as the same bead at both ends of a
+    naturality square and the panel is refused for aligning two shared beads that swap. -/
+@[app_unexpander fold] public meta def unexpandFold : Unexpander
+  | `($_ $A) => `(⦇$A⦈)
+  | _ => throw ()
+
+/-- **THE FOLD IS STRICTLY NATURAL IN ITS ALGEBRA**: `Δᴛ(S) ⦇B⦈ = ⦇A⦈ U(S)` for every
+    homomorphism `S : A ⟶ B`.  `Δᴛ(S)` is the identity, so this is `relCata_fusion` read as one
+    square of a natural transformation — an EQUALITY, in `UnguardedPowerAllegory`. -/
+public theorem fold_natural [I : InitialAlgebra F] {A B : Algebra F} (S : A ⟶ B) :
+    (algDelta (F := F)).map S ≫ fold B = fold A ≫ (algU F).map S := by
+  show 𝟙 I.t ≫ relCata B.alg = relCata A.alg ≫ S.hom
+  rw [Cat.id_comp, relCata_fusion I S.comm]
+
 /-!
   ## Ex 5.19 — dropped
 
