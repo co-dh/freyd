@@ -1047,11 +1047,15 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
 def typstArr (rows : List String) (close : String) : String :=
   "(\n" ++ String.join (rows.map fun r => s!"  {r},\n") ++ ")" ++ close
 
-/-- A LABEL AS TYPST CONTENT.  A tree with no shape in it is ONE `raw(…)`, byte for byte the string
-    the panel always carried; an index is set UNDER its head and a symmetric division as the note's
-    fraction, neither of which a string can hold.  This is the one place the tree is written out:
-    every other picture takes the flat spelling. -/
+/-- A LABEL AS TYPST CONTENT.  A label the note writes as ONE NAME is ONE `raw(…)`, byte for byte
+    the name — a component's index included, set beside its head and not beneath it, because a
+    `raw` carries no subscript and the note's own drawing writes `φA`.  Only a symmetric division
+    has a shape no name can hold, and it alone is written out in parts.  This is the one place the
+    tree is written out: every other picture takes the flat spelling. -/
 partial def typstLbl (l : StrDiag.Lbl) : String :=
+  match (l.norm).name? with
+  | some s => "raw(" ++ typstString s ++ ")"
+  | none =>
   match l.norm with
   | .text s => "raw(" ++ typstString s ++ ")"
   | .sub b i => "[#" ++ typstLbl b ++ "#sub[#" ++ typstLbl i ++ "]]"

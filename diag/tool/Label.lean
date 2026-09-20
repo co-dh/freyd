@@ -55,6 +55,12 @@ def mate : String → Option String
   | "‹" => some "›" | "«" => some "»" | "⌊" => some "⌋" | "⌈" => some "⌉"
   | _ => none
 
+/-- ONE LETTER, PRIMES AND ALL: the test every juxtaposition rule below asks of a name.  A prime is
+    a letter's DECORATION and not a second letter — the note writes `G'A` and `FA×F'A` exactly as it
+    writes `GA` — so counting characters called `G'` a two-letter name and parenthesised it alone
+    among its family.  One rule, so the functor's half and the operand's half can never disagree. -/
+def oneChar (s : String) : Bool := !s.isEmpty && (s.drop 1).all (· == '\'')
+
 /-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
     the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
     token `[A]`, so the term's argument count answers a different question, and the finished string
@@ -69,8 +75,8 @@ partial def stxJoin : Syntax → Join
   -- is `tree` then `A` — so it takes parentheses exactly as an application does.  This is the
   -- length test `scripts/circuit`'s `lshow` writes as `len(e[1]) == 1 == len(head(e[2]))`; only
   -- the functor's half of it lived here, in `applyJoin`.
-  | .ident _ _ n _ => if n.toString.length == 1 then .name else .other
-  | .atom _ s => if s.length == 1 then .name else .other
+  | .ident _ _ n _ => if oneChar n.toString then .name else .other
+  | .atom _ s => if oneChar s then .name else .other
   | .node _ _ args =>
     match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
     -- A BRACKET IS A MATCHING PAIR OF TOKENS WITH NO NAME IN THEM.  `bag(Job)` and `list⁺(A)` open
@@ -93,14 +99,14 @@ partial def stxJoin : Syntax → Join
 
     THE ARGUMENT'S JOIN IS THE ARGUMENT'S, never re-read off the finished name. -/
 def applyLabel (f : String) (a : String) (j : Join) : String :=
-  if j == .bracket || (f.length == 1 && j == .name) then f ++ a
+  if j == .bracket || (oneChar f && j == .name) then f ++ a
   else f ++ "(" ++ a ++ ")"
 
 /-- The join of what `applyLabel f` builds, which is decided by the label's OWN HEAD and nothing
     else: a one-letter functor heads what it builds, so `E(bag(Job))` juxtaposes under the next one
     exactly as `EA` does (`EF(bag(Job))`), while a longer name heads an application the next functor
     parenthesises. -/
-def applyJoin (f : String) : Join := if f.length == 1 then .name else .other
+def applyJoin (f : String) : Join := if oneChar f then .name else .other
 
 /-- A JUXTAPOSED application as THE PRINTER wrote it: the identifier it opens with and the operands
     beside it, `none` for everything else — a bare name, an infix, a notation that delimits its own
@@ -662,6 +668,17 @@ partial def Lbl.flat : Lbl → String
   | .frac n d => n.flat ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
 
+/-- THE WHOLE LABEL AS ONE NAME, INDEX AND ALL — `none` where a fraction is in the way, that being
+    the one shape a name cannot hold.  A COMPONENT'S INDEX IS WRITTEN BESIDE ITS HEAD: the note sets
+    `φ`#sub[`A`] and the picture writes the one name `φA`, because a drawn label is one run of text
+    and a run carries no subscript.  It is the `sub` constructor that says where the index goes,
+    never a slice of the string, so a head and an index of any shape close up the same way. -/
+partial def Lbl.name? : Lbl → Option String
+  | .text s => some s
+  | .sub b i => return (← b.name?) ++ (← i.name?)
+  | .frac _ _ => none
+  | .seq ps => ps.foldlM (fun acc p => return acc ++ (← p.name?)) ""
+
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
 partial def Lbl.norm (l : Lbl) : Lbl :=
@@ -700,7 +717,7 @@ def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
 /-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
     spelling exactly as the string rule reads it. -/
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
-  if j == .bracket || (f.length == 1 && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
+  if j == .bracket || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
 
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, and `∋°` makes the
     reader undo one level of indirection to get back to it.  Decided by the OPERAND's head constant,
@@ -962,7 +979,12 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       -- `F.obj A`, the printer's default, is re-set by the join rule below.  Closed up like a tight
       -- head, and NOT respelled operand by operand: an operand handed back as a local is an
       -- identifier the notation cannot open, so `A[n][3]` came out `A[3][n]`, the indices reversed.
-      unless ← printsAsField e do return (← plain e).replace " " ""
+      -- …AND JUXTAPOSITION IS NOT SUCH A NOTATION.  Where the printer wrote the action by
+      -- juxtaposition, the only brackets it set are Lean's own GROUPING of a nested operand, which
+      -- say nothing about how the NOTE brackets it: cutting the spaces out of the printed string
+      -- kept them, and `L (G A)` came out `L(GA)` where the note writes the chain `LGA`.  The join
+      -- rule below answers for it, as it does for the field access.
+      unless (← printsAsField e) || (appParts stx).isSome do return (← plain e).replace " " ""
       let parts ← xs.mapM (labelTree 0)
       let j ← if xs.size == 1 then objJoin xs[0]! else pure Join.other
       return applyLabelL (← functorName f) (Lbl.join "," parts) j
