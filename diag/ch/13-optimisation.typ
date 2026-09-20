@@ -908,31 +908,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#row((pfx-def-l, [#h(7pt) = #h(7pt)], pfx-def-r)) \
    #src[the `cons` operand of `⊸ nil ∪ cons`; `⊸ nil` makes a constant and draws nothing]],
 
-  [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,⊸ nil ∪ cons]", src: "F([A])", tgt: "[A]")) \
+  [#leanc("Freyd.Alg.RelSet.ListRel.prefAlg") \
    #src[the algebra `[nil,⊸ nil ∪ cons] : F([A])⟶[A]` as a circuit: `nil` on the `𝟏` branch; on a pair
      `(a,ys′)` two outputs, `nil` and `cons(a,ys′)`]],
   [#src[`nil prefix ys⟺ys=nil`] \
@@ -979,127 +955,19 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#tw-pfx1 \
     #src[the `cons` branch alone, without `𝟏+` or `⊸ nil`]],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "case", nin: 1, nout: 1, bodies: (
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 0),
-            (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "open", nin: 1, nout: 2),
-            (k: "stack", nin: 2, nout: 2, lanes: (
-                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-                (k: "seq", nin: 1, nout: 1, items: (
-                    (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
-                  ), seams: ()),
-              )),
-            (k: "union", nin: 2, nout: 1, bodies: (
-                (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                          (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                        ), seams: ())),
-                  ), seams: ()),
-                (k: "seq", nin: 2, nout: 1, items: (
-                    (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-                  ), seams: ()),
-              )),
-          ), seams: (
-            (
-              0,
-              ("A", "[A]", ),
-            ),
-          )),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "F(prefix) [nil,⊸ nil ∪ cons] list(p)", src: "F([A])", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs"),
     [`F(prefix) [nil,⊸ nil ∪ cons] list(p)` \ #src[defining equation]])],
   [#tw-pfx2 \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "stack", nin: 2, nout: 2, lanes: (
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                  )),
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]", src: "F([A])", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs"),
     [`F(prefix) [nil,⊸ nil ∪ (p×list(p)) cons]` \ #src[`list(p)` through `cons`]])],
   [#tw-pfx3 \ #src[the `(p×list(p)) cons` operand of `⊸ nil ∪ (p×list(p)) cons`]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "stack", nin: 2, nout: 2, lanes: (
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "prefix", chamfer: true, frac: false, flip: false),
-                        (k: "box", nin: 1, nout: 1, label: "list(p)", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                  )),
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,⊸ nil ∪ (p×(prefix list(p))) cons]", src: "F([A])", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs"),
     [`[nil,⊸ nil ∪ (p×(prefix list(p))) cons]` \ #src[relator, `prefix` entire]])],
   [#tw-pfx4],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "box", nin: 2, nout: 2, label: "F(prefix list(p))", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 2, nout: 1, label: "S", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "F(prefix list(p))S", src: "F([A])", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step4.rhs"),
     [`F(prefix list(p))S` \ #src[`prefix list(p)` entire]])], [],
 )
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
