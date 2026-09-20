@@ -878,7 +878,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 //   ./scripts/circuit --src "F([A])" --tgt "[A]" "[nil,⊸ nil ∪ cons]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
 #let pfx-def-l = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.lhs")
-#let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs.inr.inr")
+#let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
   Thm[`prefix≜⦇[nil,⊸ nil ∪ cons]⦈` \
@@ -959,9 +959,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // source IS the generator's output, so a redraw is a re-run of that line and never a hand edit.
 // Bead colour is WHICH ARROW: `cons` is the structure map and stays black.
 #let tw-pfx1 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.lhs")
-#let tw-pfx2 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs.inr.inr")
-#let tw-pfx3 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs.inr.inr")
-#let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs.inr.inr")
+#let tw-pfx2 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step1.rhs", branch: "inr.inr")
+#let tw-pfx3 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step2.rhs", branch: "inr.inr")
+#let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
   Thm[`α prefix list(p)=F(prefix list(p))S` \
@@ -1548,7 +1548,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
 #let mh-cons-sum = lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs")
 #let mh-alg-est = lean("Freyd.Alg.RelSet.MSS.mss_step1.lhs")
-#let mh-alg = lean("Freyd.Alg.RelSet.MSS.mss_step2.rhs.inl")
+#let mh-alg = lean("Freyd.Alg.RelSet.MSS.mss_step2.rhs", branch: "inr")
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
 // `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×A⟶A"`.
 #let mh-alg-plus = lean("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs")
@@ -1821,7 +1821,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @coprod-laws, composition over `∪`]])],
   [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step2.rhs.inl"), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step2.rhs"), [#src[singleton, `≥` reflexive — @est-laws's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
   [#mh-alg],
 )
@@ -3304,8 +3304,8 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
 // coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
-#let van-h-l = lean("Freyd.Alg.RelSet.Van.H_eq.rhs.inl")
-#let van-h-r = lean("Freyd.Alg.RelSet.Van.H_eq.rhs.inr")
+#let van-h-l = lean("Freyd.Alg.RelSet.Van.H_eq.rhs", branch: "inl")
+#let van-h-r = lean("Freyd.Alg.RelSet.Van.H_eq.rhs", branch: "inr")
 
 #disp[#capbox(
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
@@ -3342,7 +3342,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.rhs")],
 
   [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
-  [#row((lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs.inl"), [#h(7pt) ∩ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs.inr")))],
+  [#row((lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs", branch: "inl"), [#h(7pt) ∩ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs", branch: "inr")))],
 
   [#EQ #h(5pt) `new (R∩H)` \ #src[`new` is a map, and a map distributes over `∩`]],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step3.rhs")],
@@ -3427,7 +3427,7 @@ zip(that)                                         each row: its square, and the 
     [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
-  [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.rhs.inl")],
+  [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.rhs", branch: "inl")],
 
   [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (
@@ -3457,7 +3457,7 @@ zip(that)                                         each row: its square, and the 
     [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
  on `R∩H` — @van-721]])],
      // lean:AOP.A7_5_Van.van_strict_old@80a35936 lean:AOP.A7_5_Van.van_7_21@302aa148
-  [#lean("Freyd.Alg.RelSet.Van.van_mono_step2.rhs.inr")],
+  [#lean("Freyd.Alg.RelSet.Van.van_mono_step2.rhs", branch: "inr")],
 
   [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
     (k: "union", nin: 2, nout: 1, bodies: (
@@ -3472,7 +3472,7 @@ zip(that)                                         each row: its square, and the 
   ), seams: (), src: ("A", "[[A]]", ), tgt: ("[[A]]", )),
   cert: (expect: "(new ∪ old)(R;H)", src: "A×[[A]]", tgt: "[[A]]"))],
     [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
-  [#lean("Freyd.Alg.RelSet.Van.van_mono_step3.rhs.inr")],
+  [#lean("Freyd.Alg.RelSet.Van.van_mono_step3.rhs", branch: "inr")],
 )]<van-mono>
 
 === The derivation <sec-van-deriv>

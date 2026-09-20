@@ -133,7 +133,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
 // object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
 // `sb-hm-born` adds the `E` the transpose opens.
-#let sb-hm = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs.inl")
+#let sb-hm = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inl")
 #let sb-hm-born = lean("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_cons.lhs")
 // @subseq-EW-case draws the `π₂` operand of `cons ∪ π₂` in every row, never `cons`: the derivation
 // rewrites only `π₂` (@subseq-outr-square, then `∋%∋=𝟙`); `(𝟙×∋)cons` stays as `sb-hm` draws it.
@@ -142,7 +142,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 #let sb-hm-p2 = lean("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_proj.lhs")
 // @subseq-EW-join's `π₂` operand at three steps, each the `∪` cut to `π₂` by hand (`rank` would pick
 // `cons`): after the distribution, after @relprod-pic slides the `∋` past `π₂`, and bare at the end.
-#let sb-hm-p2-slid = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs.inr")
+#let sb-hm-p2-slid = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs", branch: "inr")
 #let sb-hm-p2-bare = lean("Freyd.Alg.RelSet.ListRel.Λ_proj_ni.rhs")
 
 #disp[#calc-table(
@@ -190,7 +190,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
       )),
   ), src: ("FE[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(∋)[nil,cons ∪ π₂]", src: "F(E[A])", tgt: "[A]"))], [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
-  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs.inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
 
   // `+` is not in the generator's grammar: `𝟙+𝟙×∋` is drawn as the `F(∋)` it unfolds (`F(X)=𝟏+A×X`).
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
@@ -223,7 +223,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   ), src: ("FE[A]", ), tgt: ("[A]", )),
   cert: (expect: "F(∋)[nil,cons ∪ π₂]", src: "F(E[A])", tgt: "[A]"))], [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
     // lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
-  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs.inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -255,7 +255,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   ), src: ("FE[A]", ), tgt: ("[A]", )),
   cert: (expect: "[nil,(𝟙×∋)(cons ∪ π₂)]", src: "F(E[A])", tgt: "[A]"))], [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
     #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
-  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs.inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
 
   [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
     (k: "seq", nin: 1, nout: 1, items: (
@@ -383,7 +383,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   ), src: ("A", "E[A]", ), tgt: ("[A]", )),
   cert: (expect: "(𝟙×∋)cons ∪ (𝟙×∋)π₂", src: "A×E[A]", tgt: "[A]"))],
     [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross]])],
-  [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs.inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
+  [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
 
   [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
     (k: "seq", nin: 2, nout: 1, items: (

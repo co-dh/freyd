@@ -31,7 +31,13 @@
     }
   }
 }
-#let lean(..sels) = lean-call("generated/", <lean-panel>, sels.pos())
+// A COPRODUCT STAYS ONE WIRE THAT THE HINZE–MARSDEN ROUTE CANNOT OPEN, so a panel of a side that
+// branches is drawn at ONE branch, and `branch:` names which — `.inl`/`.inr`, innermost last.  It is
+// an argument of THIS route and not part of the selector because the circuit draws the fork itself
+// and takes the WHOLE side: the row's two cells then name one declaration and one side, and the
+// restriction sits where it belongs, on the picture that has it.
+#let lean(..sels, branch: none) = lean-call("generated/", <lean-panel>,
+  sels.pos().map(n => if branch == none { n } else { n + "." + branch }))
 // The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
 // walks the same Expr under the monoidal reading.  `scripts/circuit` reads the note's own formula
 // string instead, so its `cert:` says only that the picture matches the text beside it.
