@@ -260,9 +260,16 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
   map_comp _ _ := (Cat.id_comp (𝟙 I.t)).symm
 
 /-- **THE FOLD AS A FAMILY** over the algebras: `⦇·⦈ A = ⦇A.alg⦈ : t ⟶ A`, a component of
-    `Δᴛ ⟹ U` at each algebra. -/
+    `Δᴛ ⟹ U` at each algebra.
+
+    THE TARGET IS THE CARRIER AND THE SOURCE IS `Δᴛ` APPLIED, which is IntroString (5.8)'s middle
+    diagram: its `ϵ` has the composite `Free(A)` above it and the bare algebra `(A,a)` below, so the
+    region between the functor wire and the object wire CLOSES at the bead.  Here the wire that dies
+    is `Δᴛ` and the object wire passes from the algebra category into `𝒜` — spelling the target
+    `U(A)` instead puts a second lane under the bead and the two wires run past each other rather
+    than meeting.  `U(A)` and `A.carrier` are the same object, so `fold_natural` reads either way. -/
 @[expose] public def fold [I : InitialAlgebra F] (A : Algebra F) :
-    (algDelta (F := F)).obj A ⟶ (algU F).obj A := relCata A.alg
+    (algDelta (F := F)).obj A ⟶ A.carrier := relCata A.alg
 
 /-- The note's name for the constant functor at the initial carrier. -/
 notation:max "Δᴛ" => algDelta
@@ -287,11 +294,20 @@ open Lean PrettyPrinter in
   | `($_ $A) => `(⦇$A⦈)
   | _ => throw ()
 
-/-- **THE FOLD IS STRICTLY NATURAL IN ITS ALGEBRA**: `Δᴛ(S) ⦇B⦈ = ⦇A⦈ U(S)` for every
-    homomorphism `S : A ⟶ B`.  `Δᴛ(S)` is the identity, so this is `relCata_fusion` read as one
-    square of a natural transformation — an EQUALITY, in `UnguardedPowerAllegory`. -/
+open Lean PrettyPrinter in
+/-- A HOMOMORPHISM AND ITS UNDERLYING ARROW WEAR ONE NAME, the book's own practice: `U(S)` is the
+    forgetful functor applied, and a functor applied to an arrow is drawn by the arrow's own bead
+    with the functor wire running past, so a second name at the bead would spell `U` twice. -/
+@[app_unexpander AlgHom.hom] public meta def unexpandAlgHom : Unexpander
+  | `($_ $S) => `($S)
+  | _ => throw ()
+
+/-- **THE FOLD IS STRICTLY NATURAL IN ITS ALGEBRA**: `Δᴛ(S) ⦇B⦈ = ⦇A⦈ S` for every homomorphism
+    `S : A ⟶ B`, `S` below the fold being `U(S)`, the underlying arrow.  `Δᴛ(S)` is the identity,
+    so this is `relCata_fusion` read as one square of a natural transformation — an EQUALITY, in
+    `UnguardedPowerAllegory`. -/
 public theorem fold_natural [I : InitialAlgebra F] {A B : Algebra F} (S : A ⟶ B) :
-    (algDelta (F := F)).map S ≫ fold B = fold A ≫ (algU F).map S := by
+    (algDelta (F := F)).map S ≫ fold B = fold A ≫ S.hom := by
   show 𝟙 I.t ≫ relCata B.alg = relCata A.alg ≫ S.hom
   rw [Cat.id_comp, relCata_fusion I S.comm]
 
