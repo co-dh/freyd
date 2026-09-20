@@ -1234,49 +1234,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`[nil,⊸ nil ∪ cons] sum`])],
   [#mh-cons-sum \ #src[the `cons` operand of `⊸ nil ∪ cons`]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-      ), seams: (
-        (
-          1,
-          ("[A]", ),
-        ),
-      )),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-              ), seams: (
-                (
-                  0,
-                  ("[A]", ),
-                ),
-              )),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-              ), seams: (
-                (
-                  0,
-                  ("[A]", ),
-                ),
-              )),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[nil sum,⊸ nil sum ∪ cons sum]", src: "F([A])", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step1.rhs"),
     [`[nil sum,⊸ nil sum ∪ cons sum]` \ #src[coproduct of maps, composition over `∪`]])],
   // Empty: composing `sum` into each branch is re-bracketing, which draws the row above again.
   [],
@@ -1285,73 +1243,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
   [#lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs") \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "[zero,(𝟙×sum)(⊸ zero ∪ plus)]", src: "F([A])", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs"),
     [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
   // Empty: the last two steps rewrite the bracket and the `⊸ zero` branch, and leave the drawn
   // `(𝟙×sum)plus` exactly as the row above has it.
   [],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "sum", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                      (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-                    ), seams: ())),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("A", )),
-  cert: (expect: "F(sum) [zero,⊸ zero ∪ plus]", src: "F([A])", tgt: "A"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step4.rhs"),
     [`F(sum) [zero,⊸ zero ∪ plus]` \ #src[relator]])],
   [],
 ))
