@@ -161,7 +161,9 @@
     w: measure(box(s.at(1))).width))
   if fill {
     let lanes = ss.len() - if ss.first().op == none { 1 } else { 0 }
-    let k = (sz.width - lanes * (OPW + 2 * gut)) / ss.map(s => s.w).sum()
+    // `--list` renders the panels as bare metadata, so every width is zero and there is no slack to spend
+    let tot = ss.map(s => s.w).sum(default: 0pt)
+    let k = if tot == 0pt { 1.0 } else { (sz.width - lanes * (OPW + 2 * gut)) / tot }
     ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k))
   }
   let (lines, cur, used) = ((), (), 0pt)

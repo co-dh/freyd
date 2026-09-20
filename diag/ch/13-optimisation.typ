@@ -1269,79 +1269,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`]),
 
   [#hchain(fill: true,
-    (none, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                  (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-                ), seams: ())),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-      )),
-  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(𝟙×≥)(⊸ zero ∪ plus)", src: "A×A", tgt: "A"))],
+    (none, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.lhs")],
       [], [`(𝟙×≥)(⊸ zero ∪ plus)`]),
-    (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-              (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-            ), seams: ())),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus", src: "A×A", tgt: "A"))],
+    (EQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs")],
       src[relator, composition over `∪`], [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]),
-    (SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-              (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-            ), seams: ())),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "⊸ zero ∪ plus ≥", src: "A×A", tgt: "A"))],
+    (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs")],
       src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
        written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
        together, which carries it to `≥`.], [`⊸ zero ∪ plus≥`]),
-    (SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "konst", nin: 2, nout: 1, body: (k: "seq", nin: 0, nout: 1, items: (
-                  (k: "box", nin: 0, nout: 1, label: "zero", chamfer: false, frac: false, flip: false),
-                ), seams: ())),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "plus", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "≥", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "A", ), tgt: ("A", )),
-  cert: (expect: "(⊸ zero ∪ plus)≥", src: "A×A", tgt: "A"))],
+    (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs")],
       src[`≥` reflexive], [`(⊸ zero ∪ plus)≥`]),
   )],
 )]<mss-mono>
@@ -1499,113 +1435,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
-  (none, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-          ), seams: ()),
-      )),
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "stack", nin: 2, nout: 2, lanes: (
-                (k: "seq", nin: 1, nout: 1, items: (
-                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                  ), seams: ()),
-                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-              )),
-            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-      )),
-  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)(π₂ ∪ (p×𝟙) cons)", src: "A×[A]", tgt: "[A]"))], [],
+  (none, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")], [],
    [`(𝟙×R°)(π₂ ∪ (p×𝟙) cons)`]),
 
-  (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-              ), seams: ()),
-          )),
-        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×R°)π₂ ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
+  (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.rhs")],
    [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]], [`(𝟙×R°)π₂ ∪ (p×R°) cons`]),
 
-  (EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "π₂R° ∪ (p×R°) cons", src: "A×[A]", tgt: "[A]"))],
+  (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step2.rhs")],
    [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]], [`π₂R° ∪ (p×R°) cons`]),
 
-  (SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-      ), seams: ()),
-  ), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "π₂R° ∪ (p×𝟙) cons R°", src: "A×[A]", tgt: "[A]"))],
+  (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step3.rhs")],
    [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]], [`π₂R° ∪ (p×𝟙) cons R°`]),
 
-  (SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "stack", nin: 2, nout: 2, lanes: (
-                (k: "seq", nin: 1, nout: 1, items: (
-                    (k: "box", nin: 1, nout: 1, label: "p", chamfer: true, frac: false, flip: false),
-                  ), seams: ()),
-                (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-              )),
-            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-  ), seams: (), src: ("A", "[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(π₂ ∪ (p×𝟙) cons)R°", src: "A×[A]", tgt: "[A]"))],
+  (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_cons.rhs")],
    [#src[@adj-all]], [`(π₂ ∪ (p×𝟙) cons)R°`]),
   )],
 )
@@ -1634,22 +1476,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step3.rhs")][]],
   [#frc([`π₂ ∪ (p×𝟙) cons`])` =⟨`#frc([`π₂`])`,`#frc([`(p×𝟙) cons`])`⟩ cup` #h(4pt) #src[@cup-defn]],
 
-  [#step(EQ)[#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "[A]", ),
-        ),
-      )),
-  ), src: ("F[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(π₁p→cons,π₂)]", src: "F([A])", tgt: "[A]"))][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step4.rhs")][]],
   [`𝟙⊑π₂R cons°` #h(4pt) #src[@filter-defn] #h(4pt) — `xs R cons(a,xs)`, so `est(R°)` returns the
    `cons` where `p a` puts it in the set and `xs` where the set is `{xs}` #h(4pt) #src[@est-defn]],
 )
@@ -1702,24 +1529,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // unchanged, so they are drawn where the two panels above draw them.
   [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_greedy.lhs"))],
 
-  [#vstep(EQ, [#cpanel((k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
-      (k: "case", nin: 1, nout: 1, bodies: (
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 0),
-              (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-            ), seams: ()),
-          (k: "seq", nin: 1, nout: 1, items: (
-              (k: "open", nin: 1, nout: 2),
-              (k: "box", nin: 2, nout: 1, label: "(π₁p→cons,π₂)", chamfer: false, frac: false, flip: false),
-            ), seams: (
-              (
-                0,
-                ("A", "[A]", ),
-              ),
-            )),
-        )),
-    ), seams: ()), label: none, port: ("F[A]", ), src: ("[A]", ), tgt: ("[A]", )),
-  cert: (expect: "⦇[nil,(π₁p→cons,π₂)]⦈", src: "[A]", tgt: "[A]"))],
+  [#vstep(EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs")],
     [#src[@filter-step]])],
   // Empty: the step only renames the algebra, and the picture above already draws the reduce.
   [],
@@ -2833,81 +2643,19 @@ zip(that)                                         each row: its square, and the 
     [])],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.lhs") \ #src[the `old` operand of `new ∪ old`, in every row]],
 
-  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "|R|", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: true, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "cap", nin: 1, nout: 1, lanes: (
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                    (k: "seq", nin: 1, nout: 1, items: (
-                        (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-                      ), seams: ()),
-                  )),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: true, frac: false, flip: false),
-      ), seams: ()),
-  ), src: ("A", "[[A]]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(𝟙×|R|)old ∪ (𝟙×(R∩H))old", src: "A×[[A]]", tgt: "[[A]]"))],
+  [#vstep(EQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step1.rhs")],
     [`(𝟙×|R|)old ∪ (𝟙×(R∩H))old` \ #src[`R;H=|R| ∪ (R∩H)` — @van-defn, `∪` distributes,
  ]])],
      // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step1.rhs", branch: "inl")],
 
-  [#vstep(SQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
-        (k: "cap", nin: 1, nout: 1, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "box", nin: 2, nout: 1, label: "old", chamfer: true, frac: false, flip: false),
-        (k: "cap", nin: 1, nout: 1, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "H", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-      ), seams: ()),
-  ), src: ("A", "[[A]]", ), tgt: ("[[A]]", )),
-  cert: (expect: "new (R∩H) ∪ old (R∩H)", src: "A×[[A]]", tgt: "[[A]]"))],
+  [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step2.rhs")],
     [`new (R∩H) ∪ old (R∩H)` \ #src[(7.19) and (7.20) on `|R|` — @van-719, @van-720 — and (7.21)
  on `R∩H` — @van-721]])],
      // lean:AOP.A7_5_Van.van_strict_old@80a35936 lean:AOP.A7_5_Van.van_7_21@302aa148
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step2.rhs", branch: "inr")],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "new", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "old", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 1, nout: 1, label: "R;H", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("A", "[[A]]", ), tgt: ("[[A]]", )),
-  cert: (expect: "(new ∪ old)(R;H)", src: "A×[[A]]", tgt: "[[A]]"))],
+  [#vstep(SQ, [#leanc("Freyd.Alg.RelSet.Van.van_mono_step4.rhs")],
     [`(new ∪ old)(R;H)` \ #src[`X∩Y⊑X;Y`, converses]])],
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step3.rhs", branch: "inr")],
 )]<van-mono>
