@@ -2,8 +2,6 @@
 // --against` can hold the generated panel to it.  This is the first `#pair` of
 // `diag/allegory-axioms.typ`'s `<lax-str>` — `G(R)φʙ⊑φᴀF(R)` — copied mark for mark: same
 // `ar`/`node`/`lab`, same corners, same `length: 0.8cm`.  `Freyd.Alg.LaxNatural` IS that property.
-// The two component labels are the note's `` `φ` ``#sub[`` `A` ``] set as the one raw name the
-// panel writes, `φA`: a generated label is one `raw`, and `raw` carries no subscript.
 //
 //   typst compile --root . --format svg diag/cdref-lax.typ diag/cdref-lax.svg
 //   ./scripts/diag-export --commutative Freyd.Alg.LaxNatural
@@ -15,7 +13,7 @@
   let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
   ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
   ar(GT, GB, GIVEN2, s0: 0.55, s1: 0.55); ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55)
-  lab(0, 1.8, GIVEN1)[`φA`]; lab(0, -1.8, GIVEN1)[`φB`]
+  lab(0, 1.8, GIVEN1)[`φ`#sub[`A`]]; lab(0, -1.8, GIVEN1)[`φ`#sub[`B`]]
   lab(-3.8, 0, GIVEN2)[`G(R)`]; lab(3.8, 0, GIVEN2)[`F(R)`]
   lab(0, 0, SLACK, rot: -45deg)[`⊑`]
   node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)

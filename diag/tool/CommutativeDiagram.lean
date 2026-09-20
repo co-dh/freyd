@@ -1055,15 +1055,15 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
 def typstArr (rows : List String) (close : String) : String :=
   "(\n" ++ String.join (rows.map fun r => s!"  {r},\n") ++ ")" ++ close
 
-/-- A LABEL AS TYPST CONTENT.  A label the note writes as ONE NAME is ONE `raw(…)`, byte for byte
-    the name — a component's index included, set beside its head and not beneath it, because a
-    `raw` carries no subscript and the note's own drawing writes `φA`.  Only a symmetric division
-    has a shape no name can hold, and it alone is written out in parts.  This is the one place the
-    tree is written out: every other picture takes the flat spelling. -/
+/-- A LABEL AS TYPST CONTENT, SHAPE AND ALL.  EVERY shape is written out in its parts, and a
+    `raw(…)` is only what is left when there is none — `norm` merges a tree with no shape in it into
+    the one `text`, byte for byte the name.  So a component's index is set BENEATH its head the way
+    the note sets it (`` `φ` ``#sub[`` `A` ``]) wherever the `sub` sits: bare, inside a functor's
+    brackets, or one factor of a composite, because the shape is read off the CONSTRUCTOR and the
+    parts around it are written out either side of it.  Closing the index up into its head's run
+    instead — the one name `φA` — is what a `raw` forces, and it is what the note does not write.
+    This is the one place the tree is written out: every other picture takes the flat spelling. -/
 partial def typstLbl (l : StrDiag.Lbl) : String :=
-  match (l.norm).name? with
-  | some s => "raw(" ++ typstString s ++ ")"
-  | none =>
   match l.norm with
   | .text s => "raw(" ++ typstString s ++ ")"
   | .sub b i => "[#" ++ typstLbl b ++ "#sub[#" ++ typstLbl i ++ "]]"

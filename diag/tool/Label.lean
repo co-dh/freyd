@@ -668,17 +668,6 @@ partial def Lbl.flat : Lbl → String
   | .frac n d => n.flat ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
 
-/-- THE WHOLE LABEL AS ONE NAME, INDEX AND ALL — `none` where a fraction is in the way, that being
-    the one shape a name cannot hold.  A COMPONENT'S INDEX IS WRITTEN BESIDE ITS HEAD: the note sets
-    `φ`#sub[`A`] and the picture writes the one name `φA`, because a drawn label is one run of text
-    and a run carries no subscript.  It is the `sub` constructor that says where the index goes,
-    never a slice of the string, so a head and an index of any shape close up the same way. -/
-partial def Lbl.name? : Lbl → Option String
-  | .text s => some s
-  | .sub b i => return (← b.name?) ++ (← i.name?)
-  | .frac _ _ => none
-  | .seq ps => ps.foldlM (fun acc p => return acc ++ (← p.name?)) ""
-
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
 partial def Lbl.norm (l : Lbl) : Lbl :=
