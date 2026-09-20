@@ -202,6 +202,15 @@ partial def objOf (o : Expr) : MetaM Obj := do
       return .mk (objApply n a) ob.kind ob.parts (applyJoin n)
     | none => opaqObj o
   | _ => do
+    -- AN OBJECT REACHED THROUGH A STRUCTURE FIELD IS NAMED BY THE FIELD, NOT BY ITSELF.  The initial
+    -- algebra's carrier is `InitialAlgebra.t` and prints `T A`, where one definition step on is the
+    -- declaration the note names (`tree(A)`) — so a display whose two panels reach the same object by
+    -- different routes spelled it two ways.  Only an instance with a DEFINITION unfolds: a generic
+    -- panel's instance is a local, nothing unfolds, and its `T A` stands.
+    if let .const n _ := o.getAppFn then
+      if (← getProjectionFnInfo? n).isSome then
+        if let some u ← Meta.unfoldDefinition? o then
+          return ← objOf (← Meta.whnfCore u)
     let (ob, named) ← carrierObj o
     if ob.kind == .sum then
       -- A coproduct whose functor the statement never names — the carrier `Fobj L E C` written
