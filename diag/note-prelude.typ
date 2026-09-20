@@ -42,6 +42,14 @@
 // walks the same Expr under the monoidal reading.  `scripts/circuit` reads the note's own formula
 // string instead, so its `cert:` says only that the picture matches the text beside it.
 #let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
+// A FORMULA GENERATED FROM THE SAME DECLARATION a row's picture is drawn from, so the words beside
+// a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
+// `diag-export --formula` writes is one inline `raw` value and nothing else — no `pic` binding —
+// so it is `#include`d directly rather than imported.
+#let leanf(sel) = {
+  [#metadata(sel)<lean-formula>]
+  if "list" not in sys.inputs { include "generated/formula/" + sel + ".typ" }
+}
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top

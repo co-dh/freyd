@@ -13,7 +13,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
 #disp[#calc-table(
-  Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` est(Q) F(X)h)` \
+  Thm[#leanf("Freyd.Alg.greedy_dp") \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
  carried and the recursion runs on values alone #h(4pt) ]],
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
