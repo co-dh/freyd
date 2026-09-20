@@ -49,4 +49,22 @@
 [X] add string diagram of H as 2 string diagram for each branch of U of algprog.pdf P186 as 13.6.3. lean proof. mark.
 [X] add string diagram of 7.16 and 7.17 algprog.pdf P187 as 13.6.4. lean proof. mark.
 [X] add string diagram of 7.19, 20, 21 of algprog.pdf P187 as 13.6.5. plus the derive on P188. lean proof. mark.
-
+[ ] add 8.2 of algprog.pdf P194
+[ ] 14.1.2d need to add "given R∩(S°S)⊑Q ) in the title, and remove "keeping one ..."
+[ ] add string diagram of  the first formulas after 8.3 op algprog.pdf P194. prove the second with our table format like 14.1.2d.
+[ ] 3 circuit cells in ch12 are still hand-laid `#cpanel` literals (ch13, ch14, ch15 are done).
+    One is the `(𝟙+𝟙×∋)` step, which no declaration states and which the generator's grammar has
+    no `+` for — extend the grammar and write the step rather than keeping the literal. The other
+    two are nil-arm differences: the generator makes one `𝟙%∋` box where the note draws `nil` and
+    then a fraction box `𝟙`.
+[ ] 13 commutative canvases still differ from what Lean draws, and 4 name no declaration at all
+    (ch7, ch10, ch11's remaining rows are converted and `ok`). Three root causes: ch11's bifunctor
+    cluster draws `F(A,TA)` where Lean states unary `F(TA)`; the `LaxNatural` cluster (13.2b and
+    13.2c's six); and 12.1c, 13.4.3a, 13.4.3b on their own.
+[ ] formulas outside ch14/15/16 are still typed by hand — `Thm[...]`, `#frc(...)`, a `cert:`'s
+    `expect`. `lean:<decl>@<key>` pins the declaration, not the transcription, so nothing checks
+    that the words beside a picture say what the declaration says. `#leanf` is wired; convert the
+    remaining chapters.
+[ ] `cd-check` runs in neither `make c` nor `make p`, which is how it sat red without anyone seeing
+    it. Put it in the routine gate once its thirteen differences are gone — a gate nobody runs is
+    not a gate. `circuit-check` and `types` are outside too; decide the same for them.
