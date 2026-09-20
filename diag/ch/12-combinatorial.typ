@@ -161,35 +161,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // general rule is the other way round (AGENTS.md); §12.1 is its exception and stays as it is.
   // Rows 1–3 draw the NUMERATOR, `F(E[A]) ⟶ [A]`: the transpose is still outside the bracket there,
   // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust (CIRCUIT-GEN §1.4).
-  [#vstep([], [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "E[A]", ),
-        ),
-      )),
-  ), src: ("FE[A]", ), tgt: ("[A]", )),
-  cert: (expect: "F(∋)[nil,cons ∪ π₂]", src: "F(E[A])", tgt: "[A]"))], [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
+  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
 
   // `+` is not in the generator's grammar: `𝟙+𝟙×∋` is drawn as the `F(∋)` it unfolds (`F(X)=𝟏+A×X`).
@@ -225,65 +197,11 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
     // lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "nil", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "union", nin: 2, nout: 1, bodies: (
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-              ), seams: ()),
-            (k: "seq", nin: 2, nout: 1, items: (
-                (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-              ), seams: ()),
-          )),
-      ), seams: (
-        (
-          0,
-          ("A", "E[A]", ),
-        ),
-      )),
-  ), src: ("FE[A]", ), tgt: ("[A]", )),
-  cert: (expect: "[nil,(𝟙×∋)(cons ∪ π₂)]", src: "F(E[A])", tgt: "[A]"))], [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
     #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
 
-  [#vstep(EQ, [#cpanel((k: "case", nin: 1, nout: 1, bodies: (
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 0),
-        (k: "box", nin: 0, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E(nil)", chamfer: false, frac: false, flip: false),
-      ), seams: (
-        (
-          1,
-          ("E𝟏", ),
-        ),
-      )),
-    (k: "seq", nin: 1, nout: 1, items: (
-        (k: "open", nin: 1, nout: 2),
-        (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-        (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)(cons ∪ π₂))", chamfer: false, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("A", "E[A]", ),
-        ),
-        (
-          1,
-          ("E(A×E[A])", ),
-        ),
-      )),
-  ), src: ("FE[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "[nil%∋,((𝟙×∋)(cons ∪ π₂))%∋]", src: "F(E[A])", tgt: "E[A]"))], [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons ∪ π₂)]`]])],
     // lean:AOP.A5_3.Λ_junc@d392c2aa
   [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
@@ -341,136 +259,25 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   table.header([*circuit*],
     [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "stack", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-        (k: "seq", nin: 1, nout: 1, items: (
-            (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-          ), seams: ()),
-      )),
-    (k: "union", nin: 2, nout: 1, bodies: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-          ), seams: ()),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-          ), seams: ()),
-      )),
-  ), seams: (), src: ("A", "E[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×∋)(cons ∪ π₂)", src: "A×E[A]", tgt: "[A]"))],
+  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.lhs"),
     [#frc([`(𝟙×∋)(cons ∪ π₂)`]) \ #src[@subseq-EW-case's second branch]])],
   [#sb-hm \ #src[the `cons` operand of `cons ∪ π₂`]],
 
-  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-      ), seams: ()),
-  ), src: ("A", "E[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×∋)cons ∪ (𝟙×∋)π₂", src: "A×E[A]", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs"),
     [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross]])],
   [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
 
-  [#vstep(EQ, [#cpanel((k: "union", nin: 2, nout: 1, bodies: (
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "stack", nin: 2, nout: 2, lanes: (
-            (k: "seq", nin: 1, nout: 1, items: (), seams: ()),
-            (k: "seq", nin: 1, nout: 1, items: (
-                (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-              ), seams: ()),
-          )),
-        (k: "box", nin: 2, nout: 1, label: "cons", chamfer: false, frac: false, flip: false),
-      ), seams: ()),
-    (k: "seq", nin: 2, nout: 1, items: (
-        (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-        (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-      ), seams: (
-        (
-          0,
-          ("E[A]", ),
-        ),
-      )),
-  ), src: ("A", "E[A]", ), tgt: ("[A]", )),
-  cert: (expect: "(𝟙×∋)cons ∪ π₂∋", src: "A×E[A]", tgt: "[A]"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
     [#frc([`(𝟙×∋)cons ∪ π₂∋`]) \
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
     // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@d3755d54
   [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "fork", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-            (k: "box", nin: 1, nout: 1, label: "E((𝟙×∋)cons)", chamfer: false, frac: false, flip: false),
-          ), seams: (
-            (
-              0,
-              ("E(A×E[A])", ),
-            ),
-          )),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-            (k: "box", nin: 1, nout: 1, label: "E(π₂ ∋)", chamfer: false, frac: false, flip: false),
-          ), seams: (
-            (
-              0,
-              ("E(A×E[A])", ),
-            ),
-          )),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", "E[A]", ),
-    ),
-  ), src: ("A", "E[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "⟨((𝟙×∋)cons)%∋,(π₂∋)%∋⟩ cup", src: "A×E[A]", tgt: "E[A]"))], [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
     #src[#frc([`R ∪ S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
   [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 2, nout: 1, items: (
-    (k: "fork", nin: 2, nout: 2, lanes: (
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "box", nin: 2, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-            (k: "box", nin: 1, nout: 1, label: "E(𝟙×∋)", chamfer: false, frac: false, flip: false),
-            (k: "box", nin: 1, nout: 1, label: "E(cons)", chamfer: false, frac: false, flip: false),
-          ), seams: (
-            (
-              0,
-              ("E(A×E[A])", ),
-            ),
-            (
-              1,
-              ("E(A×[A])", ),
-            ),
-          )),
-        (k: "seq", nin: 2, nout: 1, items: (
-            (k: "proj", nin: 2, nout: 1, at: 1, label: "π₂", keep: (1, 1, )),
-          ), seams: ()),
-      )),
-    (k: "box", nin: 2, nout: 1, label: "cup", chamfer: false, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E[A]", "E[A]", ),
-    ),
-  ), src: ("A", "E[A]", ), tgt: ("E[A]", )),
-  cert: (expect: "⟨(𝟙×∋)%∋ E(cons),π₂⟩ cup", src: "A×E[A]", tgt: "E[A]"))], [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
