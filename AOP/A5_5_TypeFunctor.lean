@@ -293,17 +293,10 @@ open Lean PrettyPrinter in
   | `($_ $_ $R) => `($(mkIdent `T) $R)
   | _ => throw ()
 
--- A bifunctor prints on its second argument only, as the endofunctor `F(A,−)` it is at a fixed
--- parameter: juxtaposing both, `F R (T R)`, reads as a composite under the book's convention.
-open Lean PrettyPrinter in
-@[app_unexpander BiRelator.obj] public meta def unexpandBiRelatorObj : Unexpander
-  | `($_ $F $_ $b) => `($F $b)
-  | _ => throw ()
-
-open Lean PrettyPrinter in
-@[app_unexpander BiRelator.map] public meta def unexpandBiRelatorMap : Unexpander
-  | `($_ $F $_ $S) => `($F $S)
-  | _ => throw ()
+-- A BIFUNCTOR STANDS AT BOTH ITS ARGUMENTS, `F(A,TA)` and `F(f,𝟙)`: the note writes them that way
+-- and an unexpander that dropped the first spelled `F(A,TA)` and `F(A,TB)` alike, two corners of
+-- one square as one label.  The field access is left as itself and the label printer supplies the
+-- brackets, exactly as it does for a unary relator's `F(A)`.
 
 /-! ## §3.2  Ruby triangles and Horner's rule
 

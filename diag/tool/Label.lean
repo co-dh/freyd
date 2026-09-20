@@ -394,14 +394,19 @@ def functorName (f : Expr) : MetaM String := do
 /-- Whether the printer wrote a field access AS ITSELF — `(Vec n).obj A`, `Functor.obj (Vec n) A` —
     with no notation of its own, read off the syntax it built: the field's identifier at a
     projection node, or the projection function's own name at the head.  Where a delaborator keyed
-    on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax. -/
+    on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax.
+
+    THE HEAD'S NAME IS MATCHED AS A SUFFIX, never for equality: the printer writes a constant at
+    whatever prefix the open namespaces leave it — `BiRelator.obj` for `Freyd.Alg.BiRelator.obj` —
+    so an equality test calls its own default spelling a foreign notation and drops the whole label
+    into the generic printer (`BiRelator.objFA(TA)` for `F(A,TA)`). -/
 def printsAsField (e : Expr) : MetaM Bool := do
   let .const n _ := e.getAppFn | return false
   let fld := Name.mkSimple n.getString!
   let stx ← PrettyPrinter.delab e
   return (stx.raw.find? fun s =>
     (s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent && s[2].getId.eraseMacroScopes == fld)
-      || (s.isIdent && s.getId.eraseMacroScopes == n)).isSome
+      || (s.isIdent && s.getId.eraseMacroScopes.isSuffixOf n)).isSome
 
 /-- How an OBJECT's label joins under a functor's name.  A functor's action heads with THAT
     functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
