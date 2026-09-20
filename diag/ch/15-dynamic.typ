@@ -45,7 +45,7 @@ in @mu-defn.
 #let db-thini = ([`thin(Qᵢ)`], 2.45, true)
 #let db-PU = ([`P(Fᵢ(X)Uᵢ)`], 2.95, true)
 #disp[#calc-table(
-  Thm[#frc([`H`])` est(R)⊒(μX : `#frc([`T°`])` thin(Q) P(F(X)h) est(R))` \
+  Thm[#leanf("Freyd.Alg.dynamic_programming_thin") \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
  optimum #h(4pt) ]],
@@ -143,7 +143,7 @@ both lists empty.
 #let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
 #let eb-min = ([`minlist(R)`], 3.08, false)
 #disp[#calc-table(
-  Thm[#frc([`edit°`])` est(R)⊒mle`, #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))` \
+  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_laws"), #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))` \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -262,7 +262,7 @@ both lists empty.
 #let mb-Lcat = (frc([`cat°`]), 1.80, false)
 #let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
 #disp[#calc-table(
-  Thm[#frc([`flatten°`])` est(R)⊒mct`, #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_laws"), #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
     #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
      non-empty segment, each entry built from the column to its left and the row below it]],
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
@@ -360,7 +360,7 @@ the longest repeated tail; #h(4pt)
 #let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
 #let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
 #disp[#calc-table(
-  Thm[#frc([`decode°`])` est(R)⊒encode`, #h(6pt)
+  Thm[#leanf("Freyd.Alg.RelSet.Code.code_laws"), #h(6pt)
     `encode=(null→nil,reduce list((encode×𝟙)snoc) minlist(R))` \
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already

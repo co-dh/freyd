@@ -169,7 +169,7 @@ row((
 #let eb-tau = (frc([`𝟙`]), 1.0, false)
 #let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
 #disp[#calc-table(
-  Thm[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) \
+  Thm[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
     #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
      // thinning row: (8.3), p. 194
      values `S` gives one argument — `R∩(S°S)⊑Q`, `Q` a preorder
@@ -214,7 +214,7 @@ row((
 // `thin(Q) : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
 #disp[#calc-table(
-  Thm[`⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑`#frc([`⦇S⦈`])` thin(Q)` \
+  Thm[#leanf("Freyd.Alg.thinning") \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
      // thinning-of-reduce row: Theorem 8.1, p. 195
      `S` monotonic on `Q`, `Q` a preorder
@@ -258,7 +258,7 @@ row((
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
 #let tb-fold = ([`⦇`#frc([`F(∋)S`])` thin(Q)⦈`], 4.2, false)
 #disp[#calc-table(
-  Thm[`⦇`#frc([`F(∋)S`])` thin(Q)⦈ est(R)⊑`#frc([`⦇S⦈`])` est(R)` \
+  Thm[#leanf("Freyd.Alg.thinning_est") \
     #src[the thinning fold refines the optimisation problem itself —
      // thinning-est row: Corollary 8.1
      `S` monotonic on `Q`, `Q⊑R`, both preorders
@@ -325,7 +325,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
 #disp[#calc-table(
-  Thm[#frc([`⦇F(∋,𝟙)α⦈`])` est(R)⊒⦇[P(wrap),cpl P(step)]⦈ est(R)` \
+  Thm[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@bfee1a14
@@ -359,7 +359,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #let pb-Pas = ([`P(`#frc([`F(𝟙,∋)α`])` est(R))`], 5.5, true)
 #let pa-pic(alg) = thpic([`F(EA,E(LA))`], [`E(LA)`], none, alg)
 #disp[#calc-table(
-  Thm[#frc([`F(∋,∋)α`])` thin(Q)⊒[P(wrap),cpl P(step)]` \
+  Thm[#leanf("Freyd.Alg.thinning_paths_alg") \
     // algebra row: B&dM §8.2, p. 198
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
@@ -462,7 +462,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
 #disp[#calc-table(
-  Thm[`sort(P) thinlist(Q)⊑thin(Q) sort(P)` \
+  Thm[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
  preorder, `thinlist(Q)⊑subseq`. ]],
@@ -511,7 +511,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // `sort(P) : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp[#calc-table(
-  Thm[#frc([`F(∋)fp`])` sort(P)⊒F(sort(P)) listcp list(f) filter(p)` \
+  Thm[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      // map_sort row: Lemma 8.1, p. 202
      `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
@@ -561,7 +561,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // LIST, and that swap — `E` killed by `est(R)`, `list` by `minlist(R)` — is what rows 3 and 4 draw.
 #let sb-prog = ([`⦇listcp ⟨g₁,g₂⟩ merge(P) thinlist(Q)⦈`], 10.4, false)
 #disp[#calc-table(
-  Thm[#frc([`⦇S⦈`])` est(R)⊒⦇listcp ⟨g₁,g₂⟩ merge(P) thinlist(Q)⦈ minlist(R)` \
+  Thm[#leanf("Freyd.Alg.thinningList") \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
      // thinningList row: Theorem 8.2, p. 203
      at @thinlist-defn's binary thinning data.
@@ -600,7 +600,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let qb-pic(tail) = thpic([`F(EA)`], [`[A]`], none, tail)
 // The panel `lb-pan` draws, with `S` for `f` and no `p`: same source, same two ports killed.
 #disp[#calc-table(
-  Thm[#frc([`F(∋)S`])` thin(Q) sort(P)⊒F(sort(P)) listcp ⟨g₁,g₂⟩ merge(P) thinlist(Q)` \
+  Thm[#leanf("Freyd.Alg.sortedAlg_fusion") \
     #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
      // sortedAlg-fusion row: B&dM p. 203
      the side condition of @thinlist-thm82's last step.
@@ -696,7 +696,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 #let kb-prog = ([`[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]`], 10.5, true)
 #let kb-pic(alg, tail) = thpic([`[Item]`], [`[Item]`], alg, tail)
 #disp[#calc-table(
-  Thm[#frc([`subseq (within w)`])` est(R)⊒⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
      // lean:AOP.A8_4_Knapsack.knap_laws@0f259407
@@ -790,7 +790,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
 #let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
 #disp[#calc-table(
-  Thm[#frc([`partition list⁺(fits w)`])` est(R)⊒⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist(Q)]⦈ minlist(R)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
      // lean:AOP.A8_5_Paragraph.para_laws@0147808d
@@ -877,7 +877,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #let ub-prog = ([`[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]`], 16.1, true)
 #let ub-pic(alg, tail) = thpic([`[City]`], [`[City]×[City]`], alg, tail)
 #disp[#calc-table(
-  Thm[#frc([`tour`])` est(R)⊒⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]⦈ minlist(R)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Tour.tour_laws") \
     // tour row: B&dM §8.6, p. 215
     #src[a least-cost bitonic tour, as a fold that thins the tours kept at each city]],
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
