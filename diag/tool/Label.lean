@@ -207,6 +207,16 @@ def homArgs (args : Array Expr) : MetaM (Array Expr) :=
   -- hom is a FUNCTION TYPE, and its arrows are terms of the note's like any other.
   args.filterM fun a => return (← homEnds? a).isSome
 
+/-- The arguments a label RESPELLS under a head it has no clause for: the arrows AND the objects.
+    An object is a term of the note's exactly as an arrow is — the note sets a product tight where
+    Lean's formatter sets it off (`E([A]×[A])`, which came out `E([A] × [A])` while only the arrows
+    were handed back respelled) — and which of the two an argument is, is its TYPE: a hom, or an
+    object of some category (`isObjType`). -/
+def noteArgs (args : Array Expr) : MetaM (Array Expr) :=
+  args.filterM fun a => do
+    if (← homEnds? a).isSome then return true
+    isObjType (← Meta.inferType a)
+
 /-! ### A MAP, named from its own function
 
 A relation given as the graph of a function has no operator inside it, so no clause of `labelTree`
@@ -989,11 +999,12 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if let some (φ, ψ) ← asSumMap? e then
       return wrap 1 ((← labelTree 2 φ) ++ "+" ++ (← labelTree 2 ψ))
     -- EVERY OTHER HEAD KEEPS THE PRINTER'S SPELLING — a delimited notation (`thin(Q)`) is the
-    -- constant's own business, and a clause here would be a second copy of it — but its ARROW
-    -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
-    -- the printer as a local of that name.  That is what turns the operand of a head with no clause
-    -- from Lean's `≫` into juxtaposition, under whatever brackets the head already writes.
-    respell (← arrows args).toList e
+    -- constant's own business, and a clause here would be a second copy of it — but its OPERANDS
+    -- are terms of the note's like any other, so each is respelled HERE and handed back to the
+    -- printer as a local of that name.  That is what turns the operand of a head with no clause
+    -- from Lean's `≫` into juxtaposition, and an object operand from the formatter's `[A] × [A]`
+    -- into the note's `[A]×[A]`, under whatever brackets the head already writes.
+    respell (← noteArgs args).toList e
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
     the one rule above.

@@ -435,16 +435,24 @@ partial def eqSides : Expr → Option (Expr × Expr)
     | (``Eq, #[_, l, r]) => some (l, r)
     | _ => none
 
-/-- Whether a constant NAMES ONE ARROW: its declaration stands at a `Cat.Hom` and takes no arrow of
-    its own, so it is an arrow with a name rather than an operator ON arrows (`≫`, `∩`, `°`, a
-    relator's action).  An equation about such a constant says what that arrow IS. -/
+/-- Whether a constant NAMES ONE ARROW: its declaration stands at a `Cat.Hom`, takes no arrow of
+    its own, and every argument it DOES take stands in the type — so the name is one arrow at each
+    place it is written, rather than an operator ON arrows (`≫`, `∩`, `°`, a relator's action) or a
+    FORMER built from data (`graph f`, `mu φ`, `greedyFold amount N`).  An equation about such a
+    constant says what that arrow IS; an equation about ONE VALUE of a former —
+    `Λ(π₂∋)=graph(fun q => q.2)` — says nothing about its other values, and reading it as the
+    constant's definition dashed every `graph` in every picture.  The objects a name stands at are
+    no such data: they are what the type says, so `diag A : A ⟶ A×A` and `cpMap F A` are names. -/
 def arrowName (env : Environment) (n : Name) : Bool :=
-  match env.find? n with | some ci => go ci.type | none => false
+  match env.find? n with | some ci => go ci.type 0 #[] | none => false
 where
-  go : Expr → Bool
-    | .forallE _ t b _ => !t.isAppOf ``Cat.Hom && go b
-    | .mdata _ b => go b
-    | t => t.isAppOf ``Cat.Hom
+  /-- `d` binders passed and `xs` the depths of the EXPLICIT ones, so the binder at depth `i` is
+      loose bvar `d - 1 - i` where the conclusion stands. -/
+  go : Expr → Nat → Array Nat → Bool
+    | .forallE _ t b bi, d, xs =>
+      !t.isAppOf ``Cat.Hom && go b (d + 1) (if bi.isExplicit then xs.push d else xs)
+    | .mdata _ b, d, xs => go b d xs
+    | t, d, xs => t.isAppOf ``Cat.Hom && xs.all fun i => t.hasLooseBVar (d - 1 - i)
 
 /-- THE ARROWS THE ENVIRONMENT DEFINES BY A UNIVERSAL CONSTRUCTION: a named arrow `c` some theorem
     states `c … = <induced former> …` of.  This is how a CLOSED statement says which of its constants
