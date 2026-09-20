@@ -283,13 +283,15 @@ open Lean PrettyPrinter in
   | `($_ $_F) => `($(mkIdent `U))
   | _ => throw ()
 
+/-- THE BARE FOLD IS A BARE BANANA: `⦇·⦈`, the rule beside the constant that lets a picture drop
+    the index, since the object wire under the bead already says which algebra it is taken at. -/
+notation:max "⦇·⦈" => fold
+
 open Lean PrettyPrinter in
 /-- THE FOLD WEARS THE BOOK'S BANANA, with the ALGEBRA inside it: `⦇A⦈`, where `A` is the object
-    of the algebra category and `⦇R⦈` the same arrow written at that algebra's own structure.  The
-    index is what the object wire under the bead already says, and the skill would strip it — but
-    `shiftTo` (`diag/tool/StringDiagram.lean`) decides that two beads are ONE 2-CELL by comparing
-    their LABELS, so a component whose index is stripped reads as the same bead at both ends of a
-    naturality square and the panel is refused for aligning two shared beads that swap. -/
+    of the algebra category and `⦇R⦈` the same arrow written at that algebra's own structure.  This
+    is the spelling a FORMULA takes, which has no wire to read the index off; a picture strips it
+    down to the `⦇·⦈` above. -/
 @[app_unexpander fold] public meta def unexpandFold : Unexpander
   | `($_ $A) => `(⦇$A⦈)
   | _ => throw ()

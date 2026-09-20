@@ -120,6 +120,9 @@ def Mark.key : Mark → String
     declaration says it is natural. -/
 structure Row where
   label : String
+  /-- THE BEAD'S OWN TERM (`beadKey`), which is what says two beads are ONE 2-CELL — the label is
+      a rendering and a rendering is the printing rules' business, not the picture's identity. -/
+  key   : String
   arms  : Array Nat
   legs  : Array Nat
   obj   : String
@@ -502,8 +505,9 @@ def Row.pin (r : Row) : Nat :=
     are equally bound.  Taking the highest shared bead outright pinned `F(R)φ ⊑ φR` at `R`, which
     rides the object wire in both parts, and left `φ` — where the `F` lane dies — at two heights;
     the note pins `φ`, and `secure prefix = prefix secure` likewise pins the natural `prefix` over
-    the plain arrow `secure`.  Labels are compared whole, as that gate compares them: a bead is the
-    same bead when it is the same 2-cell. -/
+    the plain arrow `secure`.  Beads are compared by their KEY (`beadKey`), as that gate compares
+    them: a bead is the same bead when it is the same 2-cell, which is a question about the term and
+    not about how the printing rules render it. -/
 def shiftTo (ref p : Diagram) : Int := Id.run do
   -- `pin + 1`, so `0` is "no shared bead yet" and a strictly better pin is needed to move the
   -- landmark down: equal pins keep the reference's highest, which is where the old rule stood.
@@ -511,7 +515,7 @@ def shiftTo (ref p : Diagram) : Int := Id.run do
   let mut sh : Int := 0
   for i in [0 : ref.rows.size] do
     for j in [0 : p.rows.size] do
-      if ref.rows[i]!.label == p.rows[j]!.label && ref.rows[i]!.pin + 1 > best then
+      if ref.rows[i]!.key == p.rows[j]!.key && ref.rows[i]!.pin + 1 > best then
         best := ref.rows[i]!.pin + 1
         sh := (j : Int) - (i : Int)
   return sh
@@ -946,24 +950,50 @@ def Diagram.id (ws : Array Wire) (o : Expr) : MetaM Diagram := do
     and lets the two drift (`skills/string-diagram`: "a bead's index is the object wire under it").
     A bead that is no family in the object has no index to drop.
 
-    ONLY WHERE THE HEAD IS A BINDER.  A CONSTANT's spelling is its own unexpander's business, and
-    that unexpander matches the term as APPLIED — cutting the object argument out from under it
-    stops it firing, and the label comes out worse than the one it was meant to fix (`prefixR A`
-    became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`).  A constant that wants its index
-    dropped drops it in its own rule, beside itself.
-
     THE OBJECT IS WHATEVER THE WIRE UNDER THE BEAD CARRIES, not only a binder of the statement.
     `moves I.t` in an abstract module is taken at the initial type, which is no binder of the
     region, and the label came out `movesT` — the object wire's own `T` spelled a second time. So
     the objects stripped are the bead's own two ends as well as the family variable, compared up to
     `isDefEq` because the end comes back rebuilt from its projection. -/
-def beadLabel (core : Expr) (vs : Array Expr) : MetaM String := do
-  label (← Meta.transform core (post := fun x => match x with
+def beadCore (core : Expr) (vs : Array Expr) : MetaM Expr :=
+  Meta.transform core (post := fun x => match x with
     | .app f a =>
       if f.getAppFn.isFVar then
         return if ← vs.anyM (Meta.isDefEq a) then .done f else .continue
       else return .continue
-    | _ => return .continue))
+    | _ => return .continue)
+
+/-- A BEAD'S IDENTITY IS ITS TERM, NOT ITS RENDERING — the key two parts of one display are told
+    the same 2-cell by (`shiftTo`, and the one-height obligation `drawString` holds a call to).
+    Comparing the LABEL instead tied identity to the printing rules: a constant whose index the
+    rules drop reads as one bead at both ends of its own naturality square, and the two beads that
+    swap across it can then be at one height in neither panel.
+
+    THE TERM, SPELLED WITH ITS INDEX — never the `Expr` itself.  One `#lean(…)` call draws panels
+    of TWO DECLARATIONS side by side (`thinRel_comp_eps_le` beside its reciprocal), and the same
+    object is a different free variable in each, so a structural key makes every bead of such a
+    pair a bead of its own and the two panels line up on nothing.  What is stable across the pair
+    is the note's own spelling of the family AT its index, which is what this is. -/
+def beadKey (core : Expr) (vs : Array Expr) : MetaM String := do
+  label (← beadCore core vs)
+
+/-- A CONSTANT'S INDEX COMES OFF AT THE BEAD'S OWN HEAD, and ONLY WHERE THE BARE CONSTANT HAS A
+    PRINTING RULE BESIDE ITSELF.  An unexpander matches the term as APPLIED, so cutting the object
+    argument out from under it stops it firing and the label comes out worse than the one the strip
+    was meant to fix — `prefixR A` became `@ListRel.prefixR`, `𝟙 (dSched X)` became `𝟙dSched`.  The
+    guard is that failure itself and not a list of names: the stripped term is offered to the
+    printer, and a term that comes back wearing its own CONSTANT'S NAME (`printsItsName`) is a rule
+    that did not fire, so the index stays.  A constant that wants its index dropped drops it in its
+    own rule, beside itself — `notation:max "⦇·⦈" => fold`. -/
+private def bareIndex (e : Expr) (vs : Array Expr) : MetaM Expr := do
+  let .app f a := e | return e
+  unless f.getAppFn.isConst do return e
+  unless ← vs.anyM (Meta.isDefEq a) do return e
+  if ← printsItsName f then return e
+  return f
+
+def beadLabel (core : Expr) (vs : Array Expr) : MetaM String := do
+  label (← bareIndex (← beadCore core vs) vs)
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
@@ -1060,7 +1090,8 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     | some .spider | none => false
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
-    { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
+    { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)),
+      key := (← beadKey core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
@@ -1687,7 +1718,7 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
         let b := qs[j]!
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
-            if a.rows[ra]!.label == b.rows[rb]!.label then
+            if a.rows[ra]!.key == b.rows[rb]!.key then
               let ya := (pl.top a : Int) - ra
               let yb := (pl.top b : Int) - rb
               unless ya == yb do

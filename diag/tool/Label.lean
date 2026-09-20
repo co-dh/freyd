@@ -397,22 +397,31 @@ def functorName (f : Expr) : MetaM String := do
   | some n => return n
   | none => plain f
 
-/-- Whether the printer wrote a field access AS ITSELF — `(Vec n).obj A`, `Functor.obj (Vec n) A` —
-    with no notation of its own, read off the syntax it built: the field's identifier at a
-    projection node, or the projection function's own name at the head.  Where a delaborator keyed
-    on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax.
+/-- Whether the printer wrote the head constant AS ITSELF — its own name standing in the syntax it
+    built — rather than through a rule of its own, a notation or an `app_unexpander`.  That is the
+    test for "has this constant a spelling beside itself", and it is asked wherever a label may only
+    be rewritten when one fired.
 
     THE HEAD'S NAME IS MATCHED AS A SUFFIX, never for equality: the printer writes a constant at
     whatever prefix the open namespaces leave it — `BiRelator.obj` for `Freyd.Alg.BiRelator.obj` —
     so an equality test calls its own default spelling a foreign notation and drops the whole label
     into the generic printer (`BiRelator.objFA(TA)` for `F(A,TA)`). -/
+def printsItsName (e : Expr) : MetaM Bool := do
+  let .const n _ := e.getAppFn | return false
+  return ((← PrettyPrinter.delab e).raw.find? fun s =>
+    s.isIdent && s.getId.eraseMacroScopes.isSuffixOf n).isSome
+
+/-- Whether the printer wrote a field access AS ITSELF — `(Vec n).obj A`, `Functor.obj (Vec n) A` —
+    with no notation of its own, read off the syntax it built: the field's identifier at a
+    projection node, or the projection function's own name at the head.  Where a delaborator keyed
+    on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax. -/
 def printsAsField (e : Expr) : MetaM Bool := do
   let .const n _ := e.getAppFn | return false
   let fld := Name.mkSimple n.getString!
-  let stx ← PrettyPrinter.delab e
-  return (stx.raw.find? fun s =>
-    (s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent && s[2].getId.eraseMacroScopes == fld)
-      || (s.isIdent && s.getId.eraseMacroScopes.isSuffixOf n)).isSome
+  if ((← PrettyPrinter.delab e).raw.find? fun s =>
+      s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent
+        && s[2].getId.eraseMacroScopes == fld).isSome then return true
+  printsItsName e
 
 /-- How an OBJECT's label joins under a functor's name.  A functor's action heads with THAT
     functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
