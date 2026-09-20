@@ -294,26 +294,7 @@ both lists empty.
   // `list⁺` dies and is remade at both, so it runs as a loop between them.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.lhs.body")],
 
-  [#vstep(EQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "E(cat°)", chamfer: false, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "P((X×X)bin)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("E(list⁺(A))", ),
-    ),
-    (
-      1,
-      ("E(list⁺(A)²)", ),
-    ),
-    (
-      2,
-      ("E(tree(A))", ),
-    ),
-  ), src: ("list⁺(A)", ), tgt: ("tree(A)", )),
-  cert: (expect: "(cat°)%∋ P((X×X)bin) est(R)", src: "list⁺(A)", tgt: "tree(A)", sigs: "cat:list⁺(A)×list⁺(A)⟼list⁺(A) bin:tree(A)×tree(A)⟼tree(A) X:list⁺(A)⟶tree(A)"))],
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_branch.lhs"),
     [#src[Proposition 9.1: `wrap` and `cat` have disjoint ranges, and `single` is the coreflexive on
       singleton lists, where `wrap` returns]])],
   // No picture: the disjointness of the two ranges is a case split on a coproduct, which has no

@@ -114,15 +114,10 @@ row((
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
      // lean:AOP.A8_1.thinRel_comp_est_step1@45085b64
 
-  [#vstep([], [#cpanel((k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false, src: ("EA", ), tgt: ("A", )),
-  cert: (expect: "est(R)", src: "E(A)", tgt: "A", sigs: "R:A⟶A"))],
+  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step1.lhs"),
     [])],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("EA", ), tgt: ("A", )),
-  cert: (expect: "thin(Q) est(R)", src: "E(A)", tgt: "A", sigs: "Q:A⟶A R:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step1.rhs"),
     [#src[`𝟙⊑thin(Q)` — @thin-laws, `Q` reflexive]])],
 
 )
@@ -133,22 +128,13 @@ row((
     #src[the `⊒` half, first condition of the UP of `est` at `X≜thin(Q) est(R)` — @est-up]],
      // lean:AOP.A8_1.thinRel_comp_est_cond1@edcd4448
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("EA", ), tgt: ("A", )),
-  cert: (expect: "thin(Q) est(R)", src: "E(A)", tgt: "A", sigs: "Q:A⟶A R:A⟶A"))],
+  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step2.lhs"),
     [])],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false),
-  ), seams: (), src: ("EA", ), tgt: ("A", )),
-  cert: (expect: "thin(Q)∋", src: "E(A)", tgt: "A", sigs: "Q:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step2.rhs"),
     [#src[`est(R)⊑∋` — @est-laws first row at `X≜est(R)`]])],
 
-  [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "∋", chamfer: true, frac: false, flip: false, src: ("EA", ), tgt: ("A", )),
-  cert: (expect: "∋", src: "E(A)", tgt: "A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_eps_le.rhs"),
     [#src[`thin(Q)∋⊑∋` — @thin-up at `S≜∋`, `X≜thin(Q)`: `∋%∋=𝟙`, so the left side is `thin(Q)⊑thin(Q)`]])],
 
 )
@@ -160,48 +146,19 @@ row((
     #src[the `⊒` half, second condition — `Q⊑R`, `R` transitive]],
      // lean:AOP.A8_1.thinRel_comp_est_cond2@ffc2b689
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "∈", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      1,
-      ("EA", ),
-    ),
-  ), src: ("A", ), tgt: ("A", )),
-  cert: (expect: "∈ thin(Q) est(R)", src: "A", tgt: "A", sigs: "Q:A⟶A R:A⟶A"))],
+  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step3.lhs"),
     [])],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "Q", chamfer: true, frac: false, flip: true),
-    (k: "box", nin: 1, nout: 1, label: "∈", chamfer: true, frac: false, flip: false),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      1,
-      ("EA", ),
-    ),
-  ), src: ("A", ), tgt: ("A", )),
-  cert: (expect: "Q° ∈ est(R)", src: "A", tgt: "A", sigs: "Q:A⟶A R:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step3.rhs"),
     [#src[`∈ thin(Q)⊑Q°∈` — @thin-up at `S≜∋`, `X≜thin(Q)`, second half]])],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "Q", chamfer: true, frac: false, flip: true),
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-  ), seams: (), src: ("A", ), tgt: ("A", )),
-  cert: (expect: "Q°R°", src: "A", tgt: "A", sigs: "Q:A⟶A R:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step4.rhs"),
     [#src[`∈ est(R)⊑R°` — @est-laws first row at `X≜est(R)`, second half, conversed]])],
 
-  [#vstep(SQ, [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-    (k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true),
-  ), seams: (), src: ("A", ), tgt: ("A", )),
-  cert: (expect: "R°R°", src: "A", tgt: "A", sigs: "R:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step5.rhs"),
     [#src[`Q⊑R`, conversed]])],
 
-  [#vstep(SQ, [#cpanel((k: "box", nin: 1, nout: 1, label: "R", chamfer: true, frac: false, flip: true, src: ("A", ), tgt: ("A", )),
-  cert: (expect: "R°", src: "A", tgt: "A", sigs: "R:A⟶A"))],
+  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step6.rhs"),
     [#src[`R` transitive, conversed]])],
 )]<thin-intro-up2>
 
@@ -311,25 +268,7 @@ row((
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [#cpanel((k: "seq", nin: 1, nout: 1, items: (
-    (k: "cata", nin: 1, nout: 1, body: (k: "seq", nin: 1, nout: 1, items: (
-          (k: "box", nin: 1, nout: 1, label: "𝟙", chamfer: false, frac: true, flip: false),
-          (k: "box", nin: 1, nout: 1, label: "E(F(∋)S)", chamfer: false, frac: false, flip: false),
-          (k: "box", nin: 1, nout: 1, label: "thin(Q)", chamfer: true, frac: false, flip: false),
-        ), seams: (
-          (
-            0,
-            ("EFEA", ),
-          ),
-        )), label: none, port: ("FEA", )),
-    (k: "box", nin: 1, nout: 1, label: "est(R)", chamfer: true, frac: false, flip: false),
-  ), seams: (
-    (
-      0,
-      ("EA", ),
-    ),
-  ), src: ("T", ), tgt: ("A", )),
-  cert: (expect: "⦇(F(∋)S)%∋ thin(Q)⦈est(R)", src: "T", tgt: "A", mu: "F:T⟶E(A)", polys: "F:", sigs: "S:F(A)⟶A"))],
+  [#vstep([], leanc("Freyd.Alg.thinning_est_step1.lhs"),
     [])],
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   [#lean("Freyd.Alg.thinning_est_step1.lhs")],
