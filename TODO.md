@@ -65,6 +65,15 @@
     `expect`. `lean:<decl>@<key>` pins the declaration, not the transcription, so nothing checks
     that the words beside a picture say what the declaration says. `#leanf` is wired; convert the
     remaining chapters.
+[ ] Delete the typst a conversion orphaned, in the same change that converts. Every route moved to
+    Lean leaves its hand-drawing behind — the `cetz.canvas` helper no row calls, the `#cpanel`
+    literal's argument shape, the `lab`/`node` wrapper only the deleted panels used. A drawing path
+    left in the file is one somebody reaches for again, which is how a hand-laid panel came back
+    after the generator already drew it. Find them from the note's own files, not from memory: a
+    helper no chapter calls is dead.
+[ ] Same for the python. `scripts/` still carries the feed scripts the Lean routes replaced — the
+    ones that read the note's formula string and handed it to a drawing command. `labelfit`,
+    `inkfit` and `note-files` stay; what the exporter now does itself goes.
 [ ] `cd-check` runs in neither `make c` nor `make p`, which is how it sat red without anyone seeing
     it. Put it in the routine gate once its thirteen differences are gone — a gate nobody runs is
     not a gate. `circuit-check` and `types` are outside too; decide the same for them.
