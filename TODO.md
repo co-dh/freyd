@@ -77,3 +77,10 @@
 [ ] `cd-check` runs in neither `make c` nor `make p`, which is how it sat red without anyone seeing
     it. Put it in the routine gate once its thirteen differences are gone — a gate nobody runs is
     not a gate. `circuit-check` and `types` are outside too; decide the same for them.
+[ ] `diff-crop --key` reads the display table of the WHOLE note, so against a per-chapter pdf it
+    crops the wrong page and says nothing is wrong: `--key 13.2a` on `diag/ch/13-optimisation.pdf`
+    cut page 32 at the anchor `(13.6.5b)`, and `--key 13.2b` called the one display that HAD changed
+    pixel-identical. Both exit 0, which is how a review ships a picture of unrelated content. Since
+    the note is split by chapter, the key must be resolved against the pdf it is handed. The
+    whole-pdf mode has the same fault — `diff-crop BEFORE.pdf AFTER.pdf OUT` on two chapter pdfs
+    whose page 3 differs wrote nothing and exited 0.
