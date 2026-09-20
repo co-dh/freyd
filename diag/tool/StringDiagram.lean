@@ -984,27 +984,33 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- binder of the statement, then the object its wire carries.  The READER only CHOOSES among the
   -- indices that abstract type-correctly and rules none of them out: a family whose ends no lane
   -- spells is `unread` (`natLines`), never the `arrow` that says there was nothing to look at.
+  -- AN INDEX IS AN OBJECT OF THE REGION THE OBJECT WIRE RUNS IN, which is not always the region
+  -- the ARROW lives in: `Δᴛ`, `U : Algebra F ⟶ 𝒜` stand over an ALGEBRA while the arrow they carry
+  -- is one of `𝒜`, so asking for an index of `𝒜` found none and the fold drew as a plain arrow.
+  -- The two regions coincide for endofunctor lanes, which is every lane before one crossed
+  -- categories.  READ OFF THE WIRE, never off the statement: the wire is what the bead stands on.
+  let idxTy ← Meta.inferType oy
   let mut cands : Array (Expr × Expr) := #[]
-  for t in (← indexArgs regionTy core #[]) do
-    if let some φ ← familyAtIndex? regionTy core t then cands := cands.push (t, φ)
+  for t in (← indexArgs idxTy core #[]) do
+    if let some φ ← familyAtIndex? idxTy core t then cands := cands.push (t, φ)
   -- THE TYPE THE WIRE IS BUILT FROM is an index no term need name: `est(R Char)` over an `Op(Char)`
   -- wire is a family in `Op Char` and in nothing its own spine holds.
   let mut typs : Array (Expr × Expr) := #[]
   for t in ← indexTypes 64 [oy, ox] #[] do
-    if let some φ ← familyAtIndex? regionTy core t then typs := typs.push (t, φ)
+    if let some φ ← familyAtIndex? idxTy core t then typs := typs.push (t, φ)
   -- The object the bead's own WIRE carries comes LAST, as the `familyAt?` it replaces did: it is the
   -- index of a bead whose term names none — `𝟙%∋` at an initial algebra's carrier — and reading it
   -- ahead of a binder the ends are lanes in took `nil`'s square off the board.
   let mut wire : Array (Expr × Expr) := #[]
   for t in #[oy, ox] do
-    if let some φ ← familyAtIndex? regionTy core t then wire := wire.push (t, φ)
+    if let some φ ← familyAtIndex? idxTy core t then wire := wire.push (t, φ)
   -- A STATEMENT BINDER IS NOT THE BEAD'S OWN INDEX, so it is kept only where the ends ARE lanes in
   -- it: `α : F(T)⟶T` at an abstract carrier names the module's `A` through its algebra and nothing
   -- else, and abstracting one out of the other is type-correct without the picture showing any of
   -- it.  For an index the bead's term itself takes, the term is the whole evidence.
   let mut bound : Array (Expr × Expr) := #[]
   for v in objVars do
-    if let some φ ← familyAtIndex? regionTy core v then
+    if let some φ ← familyAtIndex? idxTy core v then
       if (← readEnds regionTy cat φ).isSome then bound := bound.push (v, φ)
   let all := cands ++ typs ++ bound ++ wire
   -- WHICH of them the dot is at is the ENVIRONMENT'S answer and not the reader's: `nil` is a family
@@ -1515,6 +1521,21 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
     unless pre.isAnonymous do ns := .simple pre [] :: ns
   withTheReader Core.Context (fun c => { c with openDecls := c.openDecls ++ ns }) k
 
+/-- DOES OPENING THIS `def` LOSE A LANE?  A `def` is drawn by its body so the picture shows what it
+    IS, and a body that is a composite shows more wires and more beads than the name does.  But a
+    body whose own type spells FEWER wires than the declaration's type has thrown the picture away
+    rather than opened it: `fold A : Δᴛ(A) ⟶ carrier(A)` unfolds to `⦇alg(A)⦈ : t ⟶ carrier(A)`,
+    where `Δᴛ` — the lane the whole 2-cell stands on — is gone, and with it the object wire's
+    region.  Counted with the very peel the panel's cuts are read by, so what is compared is the
+    wire stack the picture WOULD draw and not the shape the term happens to have. -/
+def opensFewerLanes (cat : Array Name) (declTy opened : Expr) : MetaM Bool := do
+  let some (x, y) := homObjs? declTy | return false
+  let some (x', y') ← homEnds? opened | return false
+  let lanes (t : Expr) : MetaM Nat := do
+    let (cs, _) ← peelRead #[] cat (← Meta.inferType t) t
+    return cs.size
+  return (← lanes x) > (← lanes x') || (← lanes y) > (← lanes y')
+
 /-- `--string <Name>[#<binder>][.lhs|.rhs][.inl|.inr…]`.  A `def` is drawn by its BODY unfolded one
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
@@ -1536,6 +1557,9 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     withDeclScope declName do
   let env ← getEnv
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
+  -- ONE SWEEP.  The catalogue is the ENVIRONMENT's lanes and not the statement's, so it is read
+  -- once and threaded: the def-opening test below peels cuts with it, and so does every panel.
+  let cat ← catalogue
   -- `stmtTelescope`, not `forallTelescopeReducing`: in a CONCRETE region a hom reduces to a
   -- function type, so the reducing walk goes straight through the arrow an arrow-valued `def` IS
   -- and hands back the codomain with the arrow's own elements as extra binders — the def's body
@@ -1557,11 +1581,15 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
             {String.intercalate ", " names.toList}"
       | none =>
         let isDef := match ci with | .defnInfo _ => true | _ => false
-        pure <| if isDef then
-            match ci.value? with
-            | some v => (mkAppN v xs).headBeta
-            | none => body
-          else body
+        match (if isDef then ci.value? else none) with
+        | none => pure body
+        | some v =>
+          let opened := (mkAppN v xs).headBeta
+          -- ... UNLESS OPENING LOSES A LANE, in which case the declaration APPLIED TO ITS OWN
+          -- BINDERS is the arrow drawn, and its type is what the picture reads its cuts off.
+          if ← opensFewerLanes cat body opened then
+            pure (mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs)
+          else pure opened
     Meta.mkForallFVars xs body
   stmtTelescope stmt fun xs body => do
     -- A PATH NAMES A STATEMENT; a TRAILING SIDE NAME picks one part of it.  `relCata_UP` is an `↔`
@@ -1602,7 +1630,6 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- two readings are one family and `StrictNatural F G φ` is a statement about it after all.
     let (src, _) ← homEnds arrow
     let regionTy ← Meta.inferType src
-    let cat ← catalogue
     let idxTy ← regionIndexType? regionTy
     let mut objVars : Array Expr := #[]
     for x in xs do

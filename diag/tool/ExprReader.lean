@@ -527,6 +527,14 @@ def laneFunctor (R : Expr) : MetaM Expr := do
     return (← mkAppMeta ``Freyd.Alg.Relator.toFunctor #[R]).1
   return R
 
+/-- The region a lane comes FROM, read off its TYPE — `Relator src tgt`, `Functor src tgt` — and
+    never off a name.  A wire is a functor BETWEEN regions and only an endofunctor's two ends are
+    the same one: `Δᴛ`, `U : Algebra F ⟶ 𝒜` carry the reading of an object on into the algebra
+    category, which is where their family's index lives.  `dflt` answers for a lane whose type
+    names no region (an identity stack, which is no wire at all). -/
+def laneSource (dflt R : Expr) : MetaM Expr := do
+  return ((← Meta.inferType R).getAppArgs)[0]?.getD dflt
+
 /-- Two lanes are one wire when they have the same OBJECT ACTION — or the same left factor, that
     lane being pinned to its object.  A lane's geometry is its object action, so the power relator
     and the existential-image functor, which agree on objects (`E A`) and differ only on arrows,
@@ -692,11 +700,21 @@ def catalogueOf (head : Name) (excluded : Array Name) : MetaM (Array Name) := do
       let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
       let (args, _, concl) ← Meta.forallMetaTelescope
         (ci.type.instantiateLevelParams ci.levelParams lvls)
-      let mut good := true
-      for a in args do
-        let ty ← instantiateMVars (← Meta.inferType a)
-        if excluded.any ty.isAppOf then good := false
-      pure (good && concl.getAppArgs.size ≥ 2)
+      let cargs := concl.getAppArgs
+      let mut good : Bool := cargs.size ≥ 2
+      if good then
+        for a in args do
+          let ty ← instantiateMVars (← Meta.inferType a)
+          unless excluded.any ty.isAppOf do continue
+          -- A LANE PARAMETER THE REGION DETERMINES IS NO UNKNOWN.  `algU F : Algebra F ⟶ 𝒜` holds
+          -- its relator in the SOURCE REGION's own name, so matching the region fixes it, where
+          -- `comp`'s two lanes are free whatever the regions are and peeling with it would eat two
+          -- wires as one.  The test is therefore whether the argument OCCURS in the conclusion's
+          -- regions — not whether it is a lane at all, which excluded every functor OUT OF a
+          -- region built from one, and left `U` off the catalogue with the fold's target unread.
+          unless (cargs[0]!.find? (· == a)).isSome || (cargs[1]!.find? (· == a)).isSome do
+            good := false
+      pure good
     catch _ => pure false
     s.restore
     if ok then out := out.push n
@@ -823,10 +841,14 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
-      let (cs, o) ← peelCuts objVars cat regionTy x
       -- `wiresOf` is outermost first, so the objects are built from the inside out: under the
       -- innermost wire is `x`, under the next is that wire applied to it.
       let ws := wiresOf f
+      -- AND THE PEEL GOES ON IN THE REGION THE INNERMOST WIRE COMES FROM, the same rule
+      -- `peelWith?` already follows: `Δᴛ.obj A` peels to the `Δᴛ` lane over an ALGEBRA, and
+      -- reading `A` on in `𝒜` would ask the wrong region's lanes about it.
+      let src ← match ws.back? with | some w => laneSource regionTy w | none => pure regionTy
+      let (cs, o) ← peelCuts objVars cat src x
       let mut under := x
       let mut acc : Array (Wire × Expr) := #[]
       for i in [0 : ws.size] do
@@ -947,7 +969,12 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
       if ws.any (·.containsFVar vid) then
         throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no lane \
           of the region and {← Meta.ppExpr X} has no reading"
-      let mut acc ← relatorOfObj alg cat regionTy v x
+      -- THE READING CONTINUES IN THE REGION THE INNERMOST WIRE COMES FROM.  A lane need not be an
+      -- endofunctor, and the index is an object of its SOURCE: `Δᴛ.obj A` reads as the `Δᴛ` lane
+      -- over the identity lane of `Algebra F`, where fixing the region to `𝒜` asked for an
+      -- identity relator of `𝒜` at an algebra and the whole family went unread.
+      let src ← match ws.back? with | some w => laneSource regionTy w | none => pure regionTy
+      let mut acc ← relatorOfObj alg cat src v x
       for i in [0 : ws.size] do
         acc ← alg.comp acc ws[ws.size - 1 - i]!
       return acc
@@ -1006,7 +1033,12 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
     let mut acc := f
     for i in [0 : ws.size] do acc ← act ws[ws.size - 1 - i]! acc
     return acc
-  Meta.withLocalDeclD `x regionTy fun x => Meta.withLocalDeclD `y regionTy fun y => do
+  -- THE SQUARE IS QUANTIFIED OVER THE LANES' OWN SOURCE REGION, which is where the index lives:
+  -- `⦇·⦈ : Δᴛ ⟹ U` is natural in an ALGEBRA, so its `f` is a homomorphism and not an arrow of the
+  -- base category the two lanes land in.  The two regions coincide for an endofunctor lane, which
+  -- is every lane the note drew before one crossed categories.
+  let idxTy ← laneSource regionTy F
+  Meta.withLocalDeclD `x idxTy fun x => Meta.withLocalDeclD `y idxTy fun y => do
     Meta.withLocalDeclD `f (← Meta.mkAppM ``Cat.Hom #[x, y]) fun f => do
       let l ← Meta.mkAppM ``Cat.comp #[← apply (wiresOf G) f, (mkApp φ y).headBeta]
       let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
