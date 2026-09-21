@@ -764,6 +764,19 @@ def unprojNoted? (e : Expr) : MetaM (Option Expr) := do
       if (fi.paramInfo[pi.numParams]?.map (·.isInstImplicit)).getD false then return none
   unprojRecord? e
 
+/-- THE CARRIER OF A COPRODUCT IS THE SUM ITSELF: an object that some `Coproduct s a b` in scope is
+    the coproduct of is the note's `a+b`.  Read off the structure's TYPE and not by a delaborator,
+    because the carrier is a BINDER and there is no application to delaborate — the mirror of
+    `RelProd.p`, where the apex IS the application and its two objects stand in its type. -/
+def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
+  for d in ← getLCtx do
+    unless d.isImplementationDetail do
+      let t ← Meta.whnf d.type
+      let args := t.getAppArgs
+      if t.isAppOf ``Freyd.Alg.Coproduct && args.size == 5 then
+        if ← Meta.isDefEqGuarded args[2]! e then return some (args[3]!, args[4]!)
+  return none
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -799,6 +812,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
   if let some x ← openBuiltField? e then return ← labelTree prec x
   let wrap (p : Nat) (s : Lbl) : Lbl := if prec > p then "(" ++ s ++ ")" else s
+  -- …and an object that is a COPRODUCT'S CARRIER is that coproduct: `A+B`, never the letter the
+  -- statement bound it by, which names the sum to nobody.  `Prod`'s `a×b` read the other way round.
+  if let some (a, b) ← coprodCarrier? e then
+    return wrap 1 ((← labelTree 2 a) ++ "+" ++ (← labelTree 2 b))
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
   -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
@@ -815,6 +832,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     | none => txt e
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
+  -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
+  -- field names and `u₁(Cop)` spells the bundle, which is a thing no picture draws.
+  | (``Freyd.Alg.Coproduct.u₁, _) => return "l"
+  | (``Freyd.Alg.Coproduct.u₂, _) => return "r"
   -- A MAP is named from its own function, wherever it is spelled: the box the circuit draws for it
   -- and the `E(…)` of a label are the same name, so the rule sits here and not beside the drawing.
   | (``Freyd.Alg.RelSet.graph, args) =>
