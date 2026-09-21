@@ -875,12 +875,11 @@ theorem scanFn_snd : ∀ (s : ConsList Unit A) (v : A),
         · exact Or.inl (by rw [hvy]; show mssPreFn (ConsList.cons a x) = _; rw [scanFn_fst x]; rfl)
         · exact Or.inr ((scanFn_snd x v).mpr ((suffix_mssPre_apply x v).mpr ⟨y, hy, hvy⟩))
 
-/-- Step 2 of `mss-deriv` (its first step is `mss_shape`): the inner `Λ(prefix sum) est(≥)` under
-    the `E` is the fold the greedy row produced, `⦇[zero,⊕]⦈`. -/
-public theorem mss_eq_scan_step2 :
-    suffixR%∋ ≫ existsImage (mssPre (A := A)) ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
-          zero oplus)) ≫ est(geq) := by
+/-- `mssPre_eq_cata` with the algebra written as the note writes it, `[zero,⊕]`: the note's `g`,
+    and the one spelling both the derivation's step 2 and the scan's defining equation read. -/
+public theorem mssPre_eq_oplus_cata :
+    mssPre (A := A) = cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+      (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus) := by
   have halg : consScalarAlg (fun _ : Unit => (0 : A)) oplusFn
       = junc (sumCop (dL Unit) ⟨A × A⟩) zero oplus := by
     rw [oplus_eq]
@@ -890,6 +889,93 @@ public theorem mss_eq_scan_step2 :
     | inr q => rw [junc_sum_inr]; exact Iff.rfl
   rw [mssPre_eq_cata, halg]
 
+/-- Step 2 of `mss-deriv` (its first step is `mss_shape`): the inner `Λ(prefix sum) est(≥)` under
+    the `E` is the fold the greedy row produced, `⦇[zero,⊕]⦈`. -/
+public theorem mss_eq_scan_step2 :
+    suffixR%∋ ≫ existsImage (mssPre (A := A)) ≫ est(geq)
+      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+          zero oplus)) ≫ est(geq) := by
+  rw [mssPre_eq_oplus_cata]
+
+/-- `⦇k⦈` is the program `scanFn`: `Kalg_eq_prog` is `k`'s recursion and `scan_emerges` the fold
+    law that produced the program from it. -/
+public theorem cata_Kalg_eq_graph :
+    ⦇Kalg⦈ = (graph scanFn : dCL Unit A ⟶ ⟨A × (A → Prop)⟩) := by
+  rw [scan_emerges, ← Kalg_eq_prog, ← cataR_eq_relCata]
+
+/-- The scan's second component IS `Λ(suffix)E(Λ(prefix sum) est(≥))`: the set of the greatest
+    prefix sums of all the suffixes (`scanFn_snd`, in the power object). -/
+public theorem scan_snd_eq :
+    (graph scanFn : dCL Unit A ⟶ ⟨A × (A → Prop)⟩)
+      ≫ (graph (fun p : A × (A → Prop) => p.2)
+          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩)
+      = suffixR%∋ ≫ existsImage mssPre := by
+  rw [Λ_absorption, Λ_eq_classifier]
+  apply hom_ext; intro s P
+  constructor
+  · rintro ⟨q, hq, hP⟩
+    rw [show q = scanFn s from hq] at hP
+    rw [show P = (scanFn s).2 from hP]
+    exact funext fun v => propext (scanFn_snd s v)
+  · intro hP
+    refine ⟨scanFn s, rfl, ?_⟩
+    show P = (scanFn s).2
+    rw [show P = fun v => (suffixR ≫ mssPre) s v from hP]
+    exact funext fun v => propext (scanFn_snd s v).symm
+
+/-- **The fold `⦇k⦈` IS the pair `⟨g,Λ(suffix)E(g)⟩`**, `g ≜ ⦇[zero,⊕]⦈`: `π₁` carries the value at
+    the whole list (`scanFn_fst`) and `π₂` the set of the values at its suffixes (`scan_snd_eq`). -/
+public theorem scan_pair_eq_cata :
+    rpair (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+          (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus))
+        (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+          (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)))
+      = ⦇Kalg⦈ := by
+  rw [← mssPre_eq_oplus_cata, cata_Kalg_eq_graph]
+  apply hom_ext; intro s q
+  constructor
+  · rintro ⟨h1, h2⟩
+    have h1' : q.1 = mssPreFn s := by rw [mssPre_eq_graph] at h1; exact h1
+    have h2' : q.2 = (scanFn s).2 := by
+      rw [← scan_snd_eq] at h2
+      obtain ⟨p, hp, hq2⟩ := h2
+      rw [show p = scanFn s from hp] at hq2
+      exact hq2
+    show q = scanFn s
+    exact Prod.ext (h1'.trans (scanFn_fst s).symm) h2'
+  · intro hq
+    have hq' : q = scanFn s := hq
+    refine ⟨?_, ?_⟩
+    · show mssPre s q.1
+      rw [mssPre_eq_graph]
+      show q.1 = mssPreFn s
+      rw [hq']
+      exact scanFn_fst s
+    · rw [← scan_snd_eq]
+      exact ⟨scanFn s, rfl, by rw [hq']; rfl⟩
+
+/-- **@cata-defining at `k`**: the pair `⟨g,Λ(suffix)E(g)⟩` satisfies the initial algebra's
+    equation for `k`, which is what makes it the fold `⦇k⦈` above. -/
+public theorem scan_pair_comm :
+    (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR consR
+        : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)
+      ≫ rpair (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+            (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus))
+          (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+            (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)))
+      = (F Unit A).map (rpair (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+            (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus))
+          (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+            (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)))) ≫ Kalg := by
+  have hcon : (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR consR
+      : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A) = graph con := by
+    apply hom_ext; intro u y
+    cases u with
+    | inl d => rw [junc_sum_inl]; exact Iff.rfl
+    | inr p => rw [junc_sum_inr]; exact Iff.rfl
+  rw [hcon, scan_pair_eq_cata, ← cataR_eq_relCata]
+  exact cataFold_comm (L := Unit) (E := A) Kalg
+
 /-- Step 3 of `mss-deriv`: `𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥) = ⦇k⦈ π₂ est(≥)` — the suffixes and
     the inner fold fuse into the ONE fold `k`, whose carrier keeps the running maximum beside the
     set, and `π₂` reads the set back. -/
@@ -898,26 +984,8 @@ public theorem mss_eq_scan_step3 :
         (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)) ≫ est(geq)
       = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
           : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩) ≫ est(geq) := by
-  have hcata : ⦇Kalg⦈ = (graph scanFn : dCL Unit A ⟶ ⟨A × (A → Prop)⟩) := by
-    rw [scan_emerges, ← Kalg_eq_prog, ← cataR_eq_relCata]
-  have hsnd : (graph scanFn : dCL Unit A ⟶ ⟨A × (A → Prop)⟩)
-      ≫ (graph (fun p : A × (A → Prop) => p.2)
-          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩)
-      = suffixR%∋ ≫ existsImage mssPre := by
-    rw [Λ_absorption, Λ_eq_classifier]
-    apply hom_ext; intro s P
-    constructor
-    · rintro ⟨q, hq, hP⟩
-      rw [show q = scanFn s from hq] at hP
-      rw [show P = (scanFn s).2 from hP]
-      exact funext fun v => propext (scanFn_snd s v)
-    · intro hP
-      refine ⟨scanFn s, rfl, ?_⟩
-      show P = (scanFn s).2
-      rw [show P = fun v => (suffixR ≫ mssPre) s v from hP]
-      exact funext fun v => propext (scanFn_snd s v).symm
-  rw [← mss_eq_scan_step2, hcata]
-  conv => rhs; rw [← Cat.assoc, hsnd, Cat.assoc]
+  rw [← mss_eq_scan_step2, cata_Kalg_eq_graph]
+  conv => rhs; rw [← Cat.assoc, scan_snd_eq, Cat.assoc]
 
 /-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
     of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/

@@ -899,6 +899,13 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- operator takes and its operand is a term of the note's, respelled here — the same clause `P(R)`
   -- has, one line up, for the same reason.
   | (``Freyd.Alg.existsImage, args) => un 4 0 "E(" ")" args
+  -- THE FORK DELIMITS ITS TWO OPERANDS exactly as `⦇…⦈` and `E(…)` delimit their one, so each is a
+  -- term of the note's spelled at the loosest precedence: `⟨g,suffix%∋ E(g)⟩`, never the
+  -- `⟨g, suffix%∋ ≫ E (g)⟩` the printer hands back for the whole application at a tight precedence.
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+    match lastTwo (← arrows args) with
+    | some (f, g) => return "⟨" ++ (← labelTree 0 f) ++ ", " ++ (← labelTree 0 g) ++ "⟩"
+    | none => txt e
   -- THE POWER OBJECT is that same `E` at an OBJECT, and its operand is a term of the note's for
   -- the same reason the arrow's is: the printer sets a product off from its factors (`E ([A] ×
   -- [A])`) where the note writes `E([A]×[A])`, and how the letter joins is the note's own rule —

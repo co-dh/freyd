@@ -1250,7 +1250,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // components are `k`'s two output wires.  No circuit — the carrier is a PRODUCT, and a fork needs
 // the product bifunctor, which is not a wire (as in @subseq-EW-join's Hinze-Marsden column).
 #disp[#calc-table(cols: (1.5fr, 1fr), al: (left + horizon, left + horizon), 
-  Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.scan_pair_comm") \
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
