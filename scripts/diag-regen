@@ -14,11 +14,11 @@
 # BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
 # and a picture named by only one of them is still a picture that has to be redrawn.
 #
-# SIX ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
+# SEVEN ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
 # the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
 # reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leanf(...)`
-# name by `--formula` (the statement in the note's spelling), a `<decl>.proof` by `--proof`, and
-# what is left by the term walk.  The route is not a property of the name, so the lists are asked
+# name by `--formula` (the statement in the note's spelling), a `#leant(...)` name by `--type` (the
+# hom its arrows share), a `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is not a property of the name, so the lists are asked
 # for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
@@ -80,6 +80,7 @@ lean=$(./scripts/diag-export --list lean-panel) || exit 1
 circuit=$(./scripts/diag-export --list lean-circuit) || exit 1
 cd=$(./scripts/diag-export --list lean-cd) || exit 1
 formula=$(./scripts/diag-export --list lean-formula) || exit 1
+type=$(./scripts/diag-export --list lean-type) || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.
@@ -92,4 +93,5 @@ draw "$leans" --string
 draw "$circuits" --circuit
 draw "$cds" --commutative
 draw "$formulas" --formula
+draw "$(printf '%s\n' "$type" | filter diag/generated/type)" --type
 exit 0

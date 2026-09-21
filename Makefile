@@ -18,7 +18,7 @@ STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
 
 # ONE CHAPTER, ONE VARIABLE: `make c CH=13`, `make cite CH=13`, `make panels CH=13` compile,
-# query and scan chapter 13's file and nothing else — the whole note costs about 13 GiB and 40s of
+# query and scan chapter 13's file and nothing else — the whole note costs about 24 GiB and 35s of
 # layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/cd-check` and every python gate
 # resolve the same chapter from the environment and need no flag of their own;
 # `scripts/notesplit.py`'s `note_root` is the one resolution behind all of them.
@@ -41,7 +41,13 @@ endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)
 
-.PHONY: p c w labels cite panels types cd-check cover books v
+# A LAYOUT IS THE MEMORY: one chapter peaks at 7 GiB and the whole note at 24, on a machine with 30.
+# Chapters share the lock and the whole note takes it alone, so three agents' chapter gates run side
+# by side and none of them meets a whole-note compile.  HERE and not in the caller: a second `flock`
+# wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
+LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
+
+.PHONY: p c w labels cite panels cd-check cover books v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -59,7 +65,7 @@ p: $(STAMP) panels cite cd-check
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
 # nothing draws from can be broken with all of them green.
 	./scripts/cap lake build
-	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
+	for t in $(TYP); do $(LOCK) typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit
 	./scripts/dispfit
@@ -79,7 +85,7 @@ labels: $(NOTEPDF)
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.
 $(NOTEPDF): $(NOTESRC) $(wildcard diag/*.typ)
-	typst compile --root . $(NOTESRC) $@
+	$(LOCK) typst compile --root . $(NOTESRC) $@
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
@@ -116,19 +122,6 @@ panels:
 cd-check: panels
 	./scripts/cd-check
 
-# Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
-# obligations and each one's basename IS the declaration it renders, so a cell whose declaration
-# changed type is regenerated here rather than staying at what it said when it was first written.
-# One exe run for all of them: the environment is imported once per process.
-# No name reaches the shell through make's own splice: `Freyd.Alg.Λ_eps_eq'` carries a prime and a
-# guillemet name carries whatever it likes, so `find`/`xargs -0` hands them over byte for byte.
-types: $(STAMP)
-	@n=$$(find diag/generated/type -maxdepth 1 -name '*.typ' 2>/dev/null | wc -l); \
-	  test "$$n" -gt 0 || \
-	  { echo "no diag/generated/type/*.typ — write one with ./scripts/diag-export --type"; exit 1; }
-	find diag/generated/type -maxdepth 1 -name '*.typ' -print0 | xargs -0 basename -a -s .typ \
-	  | tr '\n' '\0' | xargs -0 ./scripts/diag-export --type
-
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
 c: panels labels cite cd-check
@@ -153,7 +146,7 @@ NOTE ?= diag/allegory-axioms.typ
 # thing that turns it into a file, so a renamed heading needs no edit here.
 ch:
 	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the chapter's number among the level-1 headings"; exit 1; }
-	typst compile --root . $(NOTESRC) $(NOTEPDF)
+	$(LOCK) typst compile --root . $(NOTESRC) $(NOTEPDF)
 
 w: p
 	@zathura $(NOTE:.typ=.pdf) & \

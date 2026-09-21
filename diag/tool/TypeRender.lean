@@ -66,6 +66,12 @@ def hex8 (k : UInt64) : String :=
 
 /-! ### The type -/
 
+/-- A hom in the note's spelling: each end through `label`, the rule every route's text goes
+    through, and the arrow set tight as the note sets it, `[A]⟶[B]`. -/
+private def hom? (t : Expr) : MetaM (Option String) := do
+  let some (a, b) := homObjs? t | return none
+  return some ((← label a) ++ "⟶" ++ (← label b))
+
 /-- The declaration's type in the note's spelling.  Run under `withDeclScope` and printed by
     `plain`, so the same delaborator, namespaces and unexpanders the string route draws its labels
     with print this cell. -/
@@ -79,17 +85,17 @@ def render (declName : Name) : MetaM String := withDeclScope declName do
     match ← splitM body with
     | some (sym, l, r) =>
       let t ← Meta.inferType l
-      if (homObjs? t).isNone then
+      let some s ← hom? t |
         throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
           {← Meta.ppExpr t} and not arrows of a category — it has no hom type to render"
-      plain t
+      return s
     | none =>
-      if (homObjs? body).isSome then plain body else
+      if let some s ← hom? body then return s else
       match body.getAppFnArgs with
       -- A relator is a 1-cell like an arrow is, and the note writes it with the same `⟶`: the two
       -- categories it runs between, source first, as `Relator`'s own parameters order them.
       | (``Freyd.Alg.Relator, args) =>
-        if h : args.size ≥ 2 then return (← plain args[0]) ++ " ⟶ " ++ (← plain args[1])
+        if h : args.size ≥ 2 then return (← plain args[0]) ++ "⟶" ++ (← plain args[1])
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied relator"
       | _ => throwError "{declName} : {← Meta.ppExpr body} is neither an arrow's hom type, a \
           relator between two categories, nor an (in)equation between arrows — it has no one type \

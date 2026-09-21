@@ -50,10 +50,14 @@
 // a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
 // `diag-export --formula` writes is one inline `raw` value and nothing else — no `pic` binding —
 // so it is `#include`d directly rather than imported.
-#let leanf(sel) = {
-  [#metadata(sel)<lean-formula>]
-  if "list" not in sys.inputs { include "generated/formula/" + sel + ".typ" }
+#let lean-text(dir, label, sel) = {
+  [#metadata(sel)#label]
+  if "list" not in sys.inputs { include dir + sel + ".typ" }
 }
+#let leanf(sel) = lean-text("generated/formula/", <lean-formula>, sel)
+// A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
+// spelling, so a table's type column is read off the declaration its row already cites.
+#let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
 // EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
 // `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
 #import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
