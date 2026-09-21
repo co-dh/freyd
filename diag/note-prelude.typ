@@ -153,7 +153,6 @@
 #let IMP = text(SLACK)[$arrow.l.double$]
 #let TH = 1.2   // a fraction box is two lines tall
 #let IFF = text(SLACK)[$arrow.l.r.double$]
-#let thin-Q-box = ([`thin(Q)`], 1.9, true)
 #let So-box = ([`S°`], 0.85, true)
 // A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
 // between it and the step before, the formula above, the reason underneath both.  Steps pack
@@ -197,9 +196,6 @@
       ..if py == 1 { fr } else { () }, ..pr, ..rr)
   }))
 })
-#let in-box = ([`∈`], 0.75, true)
-#let mbp(body) = P(cetz.canvas(length: 0.8cm, body), s: 72%)
-#let Qo-box = ([`Q°`], 0.85, true)
 // The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
 // PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
@@ -221,12 +217,9 @@
 })
 #let sort-P-box = ([`sort(P)`], 2.23, true)
 #let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
-#let LS-box = (frc([`⦇S⦈`]), 1.5, false)
 #let est-Rc-box = ([`est(R°)`], 2.2, true)
 #let listcp-F-box = ([`listcp`], 1.87, false)
 #let pair-g-box = ([`⟨g₁,g₂⟩`], 2.2, false)
-#let concat-box = ([`concat`], 1.9, false)
 #let minlist-R-box = ([`minlist(R)`], 2.93, true)
-#let cat-box = ([`cat`], 1.4, false)
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

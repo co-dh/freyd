@@ -168,8 +168,8 @@ def appShow (e : Expr) : MetaM String := do
     | _ => return (← headShown h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
   | none => plain e
 
-/-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
-    generator writes back with): a bracket already separates two factors, so `F(∋)S` and `π₂R°`
+/-- The note's juxtaposition spacing, the same rule the note's own generator writes back with:
+    a bracket already separates two factors, so `F(∋)S` and `π₂R°`
     close up where `prefix list(p)` and `S%∋ est(R°)` cannot.  A factor OPENING with `(` keeps its
     space — `pick (schedule×𝟙)snoc` closed up would read as an application of `pick`. -/
 def juxt (a b : String) : String :=
@@ -836,8 +836,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if lastTwo args |>.isNone then txt e else do
       let mut s : Lbl := .text ""
       for t in (← labelRunT e) do s := juxtL s t
-      -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS, as `relexpr.py`'s own `spell` sets
-      -- them: `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
+      -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
+      -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
       return wrap 1 s
   | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args

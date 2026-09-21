@@ -70,8 +70,6 @@
   for y in ys { pts += ((x, y + k), (xo, y), (x, y - k)) }
   pts
 }
-#let lwire(x, xo, ys, ytop, ybot, k: NKN) = hm-wire(
-  ((x, ytop),) + nodepts(x, xo, ys, k: k) + ((x, ybot),))
 // `s` scales the LABELS with the geometry, so a panel that must lose height lowers `length:`, never
 // `s`; §@sec-hylo passes 100% and prints its labels at the size `tw-hm` does.
 // A strand STOPS SHORT of the dot it lands on, by 0.06cm measured along its own direction — the gap

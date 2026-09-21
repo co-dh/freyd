@@ -1066,8 +1066,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 
 
-#let snoc-box = ([`(X×𝟙)snoc`], 2.85, true)
-#let LH-box = (frc([`H`]), 0.95, false)
 
 // Otherwise the heading lands alone at the foot of the reduce-of-maps page.
 #pagebreak(weak: true)

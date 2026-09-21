@@ -27,7 +27,6 @@
 #let THM = 2.65                                   // the datatype under it
 #let THN = 3.40                                   // a second one, inside the first
 #let THO = 5.40                                   // the object wire
-#let THW = 11.4
 == Thinning
 
 // B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
@@ -256,7 +255,6 @@ row((
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
-#let tb-fold = ([`⦇`#frc([`F(∋)S`])` thin(Q)⦈`], 4.2, false)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.thinning_est") \
     #src[the thinning fold refines the optimisation problem itself —
@@ -313,13 +311,6 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
 // B&dM §8.2, p. 198.  The `E` the transpose opens is born OUTSIDE the reduce in the specification
 // and INSIDE it from the thinning theorem on; that is what rows 1 and 2 differ by.
-#let pb-spec = (frc([`⦇F(∋,𝟙)α⦈`]), 3.1, false)
-#let pb-alg = (frc([`F(∋,∋)α`]), 2.6, false)
-#let pb-out = (frc([`F(∋,𝟙)`]), 2.4, false)
-#let pb-Pa = ([`P(`#frc([`F(𝟙,∋)α`])`)`], 3.6, false)
-#let pb-Pat = ([`P(`#frc([`F(𝟙,∋)α`])` thin(Q))`], 5.5, true)
-#let pb-Pae = ([`P(`#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`)`], 7.0, true)
-#let pb-Pws = ([`P([wrap,step])`], 3.9, true)
 #let pb-prog = ([`[P(wrap),cpl P(step)]`], 6.3, true)
 #let pb-pic(alg, tail) = thpic([`L(EA)`], [`LA`], alg, tail)
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
@@ -356,7 +347,6 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // B&dM §8.2, p. 198, rows 3–8.  Every step rewrites the ALGEBRA, so the chain is stated about the
 // algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.  Its source is the bifunctor at two
 // DIFFERENT arguments — one `F` lane over a pair object wire.
-#let pb-Pas = ([`P(`#frc([`F(𝟙,∋)α`])` est(R))`], 5.5, true)
 #let pa-pic(alg) = thpic([`F(EA,E(LA))`], [`E(LA)`], none, alg)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.thinning_paths_alg") \
@@ -497,7 +487,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
-#let lb-Lam = (frc([`F(∋)fp`]), 2.3, false)
 #let lb-cp = ([`cp(F)`], 1.7, false)
 #let lb-Efp = ([`E(fp)`], 1.7, false)
 #let lb-Pf = ([`P(f)`], 1.4, false)
@@ -559,7 +548,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
 // LIST, and that swap — `E` killed by `est(R)`, `list` by `minlist(R)` — is what rows 3 and 4 draw.
-#let sb-prog = ([`⦇listcp ⟨g₁,g₂⟩ merge(P) thinlist(Q)⦈`], 10.4, false)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.thinningList") \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
@@ -690,9 +678,6 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 // B&dM §8.4, p. 206.  The set the transpose opens becomes a LIST at the binary thinning step, and
 // that swap — `E` killed by `est(R)`, `list` killed by `minlist(R)` — is what the right column draws.
-#let kb-spec = (frc([`subseq (within w)`]), 4.3, false)
-#let kb-fus = (frc([`⦇[nil,cons](within w) ∪ [nil,π₂]⦈`]), 7.2, false)
-#let kb-mg = ([`merge R`], 2.3, true)
 #let kb-prog = ([`[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]`], 10.5, true)
 #let kb-pic(alg, tail) = thpic([`[Item]`], [`[Item]`], alg, tail)
 #disp[#calc-table(
@@ -780,15 +765,11 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
 // bead on the object wire with three list wires at it, and the candidate set is a fourth.
-#let ab-spec = (frc([`partition list⁺(fits w)`]), 5.6, false)
-#let ab-fus = (frc([`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`]), 7.4, false)
 #let ab-split = (frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`]), 10.6, false)
 #let ab-prog = ([`[start,cpr ⟨h₁,h₂⟩ cat thinlist(Q)]`], 9.9, true)
 #let ab-pic(alg, tail) = thpic([`list⁺ Word`], [`Para`], alg, tail)
 // The source is ONE `list⁺`; `partition` births the paragraph's, and the reduce of the last two rows
 // births a third — the list of candidate paragraphs `minlist(R)` reads back down.
-#let ab-out = (((THO, 2.60), (THM, 2.60 - KNEE), (THM, 0)), ((THO, 2.60), (THN, 2.60 - KNEE), (THN, 0)))
-#let ab-bot = ((THM, [`list⁺`], 0.90), (THN, [`list⁺`]), (THO, [`Word`]))
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
@@ -872,7 +853,6 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
 // B&dM §8.6, p. 215.  A tour is a PAIR of lists, so `[City]×[City]` is the one unary functor
 // `X↦[X]×[X]` — a bifunctor is never a wire, and this one is partially applied before it is drawn.
-#let ub-tour = (frc([`tour`], ), 1.7, false)
 #let ub-fold = (frc([`⦇[start,dropl ∪ dropr]⦈`]), 5.6, false)
 #let ub-prog = ([`[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]`], 16.1, true)
 #let ub-pic(alg, tail) = thpic([`[City]`], [`[City]×[City]`], alg, tail)

@@ -15,7 +15,6 @@
 #import "note-style.typ": P, TYCOL
 
 #let UIP = 0.4          // the pair's half-height — one strand of a product to the next
-#let UOP = 0.3          // a `∪` copy's output port
 #let UHH = 0.7          // a `∪` copy's half-height
 #let UDY = UHH + 0.55   // copy separation, wider than the strands inside one copy
 #let UM = 0.2           // region edge to the deepest box inside a copy
