@@ -74,6 +74,10 @@
     outside too; decide the same for it.
 [X] `diff-crop --key` resolves the key against the pdf it is handed (a chapter pdf renumbers from
     1), and the whole-pdf mode exits nonzero when pages differ and nothing was written.
+[ ] `diff-crop --key` anchors on the FIRST `(key)` a pdf prints, which for 13.2.1a and 13.3.1b is a
+    cross-reference on an earlier page, so both halves came out as the same unrelated text and the
+    pair was refused as pixel-identical. The display's own number is the one set in the margin
+    column; anchor on that occurrence.
 [ ] Chapters 1–10 are still drawn by hand. They hold 52 canvases (ch2 11, ch3 2, ch4 6, ch5 4, ch6 2,
     ch7 7, ch8 16, ch9 1, ch10 3) and only five of them come from a declaration — ch7's one `#lean`
     and three `#leancd`, ch10's one `#leancd`. The rest are laid out through typst helpers, so their
