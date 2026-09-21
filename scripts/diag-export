@@ -13,7 +13,9 @@ cd "$(dirname "$0")/.." || exit 1
 # The naturality search takes its candidates from the index and exits on one older than a module the
 # exe imports, so the build `lake exe` would do is done first and the index refreshed after it.  Both
 # go to stderr: stdout is the records a caller parses.
-./scripts/cap lake build diag-export >&2 || exit 1
+# `diag.StrDiagNames` is loaded at RUN time, so the exe's build does not reach it: left stale it
+# prints the previous spelling of every label and exits 0.
+./scripts/cap lake build diag-export diag.StrDiagNames >&2 || exit 1
 # `--list` asks TYPST what the note draws: it imports no environment, needs no index, and the
 # note's own layout costs far more than the cap an exporter run is held to, which the child
 # inherits.  Routed here rather than raising the cap for every route.
