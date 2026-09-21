@@ -270,16 +270,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #let lax-hm-r = lean("Freyd.Alg.LaxNatural.rhs")
 
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-    ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
-    ar(GT, GB, GIVEN2, s0: 0.55, s1: 0.55); ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`φ`#sub[`A`]]; lab(0, -1.8, GIVEN1)[`φ`#sub[`B`]]
-    lab(-3.8, 0, GIVEN2)[`G(R)`]; lab(3.8, 0, GIVEN2)[`F(R)`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)
-    node(GB.at(0), GB.at(1), black, `GB`); node(FB.at(0), FB.at(1), black, `FB`)
-  }),
+  leancd("Freyd.Alg.LaxNatural"),
   row((lax-hm-l, [#h(7pt) #SQ #h(7pt)], lax-hm-r)),
  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
 )]<lax-str>
@@ -334,10 +325,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   table.header([*closed under*], [*commutative diagram*], [*string diagram*]),
 
   [composition \ `ψφ`],
-  [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`HA`, `GA`, `HB`, `GB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`H(R)`], none), x: -SQW)
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW)
-  }), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_comp_slide"), s: 74%)
    `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
   latpic(
@@ -350,10 +338,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [horizontal composition \ `χ∘φ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`LGA`, `KFA`, `LGB`, `KFB`),
-    ([`χ`#sub[`GA`] `K(φ`#sub[`A`]`)`], [`χ`#sub[`GB`] `K(φ`#sub[`B`]`)`], `L(G(R))`, `K(F(R))`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_hcomp_outer_first"), s: 74%)
    `φ : G⇒F` with `G,F : 𝒞⟶𝓓` and `χ : L⇒K` with `L,K : 𝓓⟶𝓔` give
    `χ∘φ : L∘G⇒K∘F`, the family `A ↦ χ`#sub[`GA`]`K(φ`#sub[`A`]`)` \
    #src[`L(G(R))χ`#sub[`GB`]`⊑χ`#sub[`GA`]`K(G(R))` is `χ` lax at `G(R)`; then
@@ -376,11 +361,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [union \ `φ ∪ ψ`],
-  [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: -(SQW + 1.4))
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW + 1.4)
-    lab(0, 0, black)[`∪`]
-  }), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_union"), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]` ∪ ψ`#sub[`B`]`)⊑(φ`#sub[`A`]` ∪ ψ`#sub[`A`]`)F(R)`
  #h(4pt) #src[]],
@@ -402,19 +383,13 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   )),
 
   [a relator `K` \ `K(φ)`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`KGA`, `KFA`, `KGB`, `KFB`),
-    ([`K(φ`#sub[`A`]`)`], [`K(φ`#sub[`B`]`)`], [`K(G(R))`], [`K(F(R))`]),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.Relator.map_laxNatural"), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) gives #h(4pt)
    `K(G(R))K(φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`)K(F(R))`],
   [],
 
   [product \ `φ×ψ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`GA×G'A`, `FA×F'A`, `GB×G'B`, `FB×F'B`),
-    ([`φ`#sub[`A`]`×ψ`#sub[`A`]], [`φ`#sub[`B`]`×ψ`#sub[`B`]], `G(R)×G'(R)`, `F(R)×F'(R)`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_prod"), s: 74%)
    `φ : G⇒F` and `ψ : G'⇒F'` give `φ×ψ : G×G'⇒F×F'` \
    #src[`(R×S)(U×V)=(RU)×(SV)` and monotonicity in both slots — the row above's `K` applied to the
    inequation, run on a bifunctor; the fork is the derived case `⟨φ,ψ⟩=◁(φ×ψ)`, and its ONE cost is
@@ -431,10 +406,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [coproduct \ `φ+ψ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`GA+G'A`, `FA+F'A`, `GB+G'B`, `FB+F'B`),
-    ([`φ`#sub[`A`]`+ψ`#sub[`A`]], [`φ`#sub[`B`]`+ψ`#sub[`B`]], `G(R)+G'(R)`, `F(R)+F'(R)`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_sum"), s: 74%)
    `φ : G⇒F` and `ψ : G'⇒F'` give `φ+ψ : G+G'⇒F+F'` \
    #src[`(R+S)(U+V)=(RU)+(SV)` and monotonicity in both slots; the co-fork is the derived case
    `[φ,ψ]=(φ+ψ)▿`, and `▿` costs nothing]],
@@ -604,16 +576,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-    ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
-    ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`φ`]; lab(0, -1.8, GIVEN1)[`φ`]
-    lab(-3.75, 0, GIVEN2)[`F(R)`]; lab(3.35, 0, GIVEN2)[`R`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
-    node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
-  }),
+  leancd("Freyd.Alg.MonotonicAlg"),
   row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
 )]<mon-str>
@@ -642,16 +605,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
 #disp[#align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
   pair(
-    cetz.canvas(length: 0.8cm, {
-      let (FEA, EA, FA, A) = ((-3.6, 1.25), (3.6, 1.25), (-3.6, -1.25), (3.6, -1.25))
-      ar(FEA, EA, GIVEN1, s0: 1.05, s1: 0.65); ar(FA, A, GIVEN1, s0: 0.65, s1: 0.45)
-      ar(FEA, FA, GIVEN2, s0: 0.55, s1: 0.55); ar(EA, A, GIVEN2, s0: 0.55, s1: 0.55)
-      lab(0, 2.1, GIVEN1)[$frac(#[`F(∋)f`], ∋)$]; lab(0, -1.8, GIVEN1)[`f`]
-      lab(-4.75, 0, GIVEN2)[`F(est(R))`]; lab(4.4, 0, GIVEN2)[`est(R)`]
-      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-      node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
-      node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-    }),
+    leancd("Freyd.Alg.Distributes"),
     row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
  [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
     s: 74%,
@@ -891,17 +845,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       take a prefix, or take a prefix of the tail and then rebuild with the algebra],
     [*Hinze–Marsden*]),
 
-  [#cetz.canvas(length: 0.8cm, {
-    // The same 5.2 × 2.7 square as @cata-defining, `prefix` in the induced arrow's place.
-    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`[nil,⊸ nil ∪ cons]`]
-    lab(-4.2, 0, INDUCED)[`F(prefix)`]; lab(3.7, 0, INDUCED)[`prefix`]
-    node(FT.at(0), FT.at(1), black, `F[A]`); node(T.at(0), T.at(1), black, `[A]`)
-    node(FA.at(0), FA.at(1), GIVEN1, `F[A]`); node(A.at(0), A.at(1), GIVEN1, `[A]`)
-  }) \
+  [#leancd("Freyd.Alg.RelSet.ListRel.prefix_cancel") \
   #src[`F=𝟏+A×−`, so `F(prefix)=𝟙+𝟙×prefix`: the head passes, the fold recurses on the tail alone]
   // lean:AOP.A6_ConsList.F@61b71616
   ],
@@ -1792,16 +1736,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`; @lax-defn at
 // `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FB, B) = ((-4.2, 1.25), (4.2, 1.25), (-4.2, -1.25), (4.2, -1.25))
-    ar(FT, T, GIVEN1, s0: 1.9, s1: 1.5); ar(FB, B, GIVEN1, s0: 1.9, s1: 1.5)
-    ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`S`]; lab(0, -1.8, GIVEN1)[`S`]
-    lab(-6.4, 0, GIVEN2)[`𝟙×list((R×R)°)`]; lab(5.2, 0, GIVEN2)[`(R×R)°`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(FT.at(0), FT.at(1), black, `F([A]×[A])`); node(T.at(0), T.at(1), black, `[A]×[A]`)
-    node(FB.at(0), FB.at(1), black, `F([A]×[A])`); node(B.at(0), B.at(1), black, `[A]×[A]`)
-  }),
+  leancd("Freyd.Alg.RelSet.Party.party_mono"),
   // `length` up from the file's 0.95cm: the port labels do not scale with it, and at 0.95cm the two
   // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
   homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
@@ -1813,21 +1748,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
 // produces, and the factorisation it runs through is that picture's GIVEN2 path.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (T, EB) = ((-2.9, 0), (2.9, 0))
-    ar(T, EB, INDUCED, dash: "dashed", s0: 1.05, s1: 0.8)
-    lab(0, 0.85, INDUCED)[$frac(#[`⦇S⦈choose`], ∋)$]
-    node(T.at(0), T.at(1), black, `tree(A)`); node(EB.at(0), EB.at(1), black, `E[A]`)
-  }),
-  cetz.canvas(length: 0.8cm, {
-    lab(-6.8, 0, black)[$=$]
-    let (T, EM, EB) = ((-5.0, 0), (0, 0), (5.0, 0))
-    ar(T, EM, INDUCED, dash: "dashed", s0: 1.05, s1: 1.6); ar(EM, EB, GIVEN2, s0: 1.6, s1: 0.8)
-    lab(-2.5, 0.85, INDUCED)[$frac(#[`⦇S⦈`], ∋)$]
-    lab(2.5, 0.62, GIVEN2)[`E(choose)`]
-    node(T.at(0), T.at(1), black, `tree(A)`); node(EM.at(0), EM.at(1), black, `E([A]×[A])`)
-    node(EB.at(0), EB.at(1), black, `E[A]`)
-  }),
+  leancd("Freyd.Alg.RelSet.Party.party_absorb.lhs"),
+  leancd("Freyd.Alg.RelSet.Party.party_absorb.rhs"),
   [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
  ]],
    // lean:AOP.A4_6.Λ_absorption@e87bd8f2

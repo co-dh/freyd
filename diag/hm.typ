@@ -198,6 +198,10 @@
 /// Where `hm-row` put its first `=`, for a caption that has to line up with it; `none` when the
 /// picture is not one row (two of them in a grid), where there is no single sign to line up with.
 #let hm-sepx(pic) = {
-  let m = if pic.has("children") { pic.children.find(c => c.func() == metadata) } else { none }
+  // A sign's offset is a LENGTH: `lean`/`leancd` ride their SELECTOR along as metadata too, and a
+  // picture carrying one is not a row this can line a caption up on.
+  let m = if pic.has("children") {
+    pic.children.find(c => c.func() == metadata and type(c.value) == length)
+  } else { none }
   if m != none { m.value }
 }
