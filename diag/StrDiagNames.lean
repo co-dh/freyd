@@ -42,8 +42,10 @@ namespace Freyd.Alg
 -- is: `⟨R,S⟩` is what the tabulation of `⊤` gives from `R` and `S`, and `R×S` is that fork taken
 -- at the two projections.  A statement about `R×S` against a projection is therefore a statement
 -- about ITS TWO COMPONENTS, which is what `Face.components` reads off an induced head.
+-- The type functor's action is the fold `T(R) = ⦇F(R,𝟙)α⦈` (`typeMap_defn`), so the initial
+-- algebra's universal property produces it exactly as it produces any other fold.
 attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pair Λ
-  RelProd.pair prodMap
+  RelProd.pair prodMap typeMap
 
 -- WHICH EQUATION PRODUCED ONE.  `relCata_cancel` IS the initial algebra's universal property read
 -- as a square, so a picture that has to say what produced a fold draws it; the drawer instantiates

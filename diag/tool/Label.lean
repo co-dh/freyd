@@ -656,11 +656,16 @@ which sets typst content, reads the tree.  Every clause of the labeller therefor
 and the two ways of writing it can never disagree. -/
 
 /-- A label's shape.  `sub` is an index set under its head, `frac` the note's symmetric division,
-    `seq` two parts written one after the other. -/
+    `seq` two parts written one after the other.
+
+    A FRACTION'S BAR DELIMITS ITS NUMERATOR, so `num` is held at the LOOSEST precedence wherever the
+    fraction stands — `⦇`$frac(F(∋)R, ∋)$`⦈` and not `⦇`$frac((F(∋)R), ∋)$`⦈`.  The inline spelling
+    has no bar and needs the brackets precedence would have put there, and `tight` is whether it
+    does: asked of the printer at both precedences, never of the spelling of the answer. -/
 inductive Lbl where
   | text (s : String)
   | sub (base index : Lbl)
-  | frac (num den : Lbl)
+  | frac (num den : Lbl) (tight : Bool)
   | seq (parts : Array Lbl)
   deriving Inhabited, BEq
 
@@ -674,7 +679,7 @@ inductive Lbl where
 partial def Lbl.flat : Lbl → String
   | .text s => s
   | .sub b _ => b.flat
-  | .frac n d => n.flat ++ "%" ++ d.flat
+  | .frac n d t => (if t then "(" ++ n.flat ++ ")" else n.flat) ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
 
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
@@ -689,7 +694,7 @@ where
     | .text s => #[.text s]
     | .seq ps => ps.foldl (fun acc p => (go p).foldl push acc) #[]
     | .sub b i => #[.sub b.norm i.norm]
-    | .frac n d => #[.frac n.norm d.norm]
+    | .frac n d t => #[.frac n.norm d.norm t]
   push (acc : Array Lbl) (x : Lbl) : Array Lbl :=
     match acc.back?, x with
     | some (.text a), .text b => acc.pop.push (.text (a ++ b))
@@ -881,14 +886,18 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     | some x => return applyLabelL "E" (← labelTree 0 x) (← objJoin x)
     | none => txt e
   -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
-  -- `S%∋`, `(F(∋)S)%∋`, `𝟙%∋`.  The NUMERATOR carries the brackets, at juxtaposition's own
-  -- precedence, because the `%` binds tighter than composition: `F(∋)S%∋ thin(Q)` would read as
-  -- `F(∋)` composed with `S%∋`, and a bracket round the whole fraction says a grouping of the
-  -- composite instead.  The TWO-ARROW form `𝟙%∋ E(R)` is the PICTURE's, written by the spine
-  -- rewrite before anything is labelled (`labelRunT`); a label has no picture to split.
+  -- `S%∋`, `(F(∋)S)%∋`, `𝟙%∋`.  The `%` binds tighter than composition, so the inline numerator
+  -- carries brackets at juxtaposition's own precedence: `F(∋)S%∋ thin(Q)` would otherwise read as
+  -- `F(∋)` composed with `S%∋`.  SET AS A FRACTION the bar delimits it and those brackets come off,
+  -- so the tree holds the numerator loose and says whether the inline form wants them — which is
+  -- the printer's own answer at the two precedences, not a test on the spelling it returned.
+  -- The TWO-ARROW form `𝟙%∋ E(R)` is the PICTURE's, written by the spine rewrite before anything
+  -- is labelled (`labelRunT`); a label has no picture to split.
   | (``Freyd.Alg.Λ, args) => do
     match (← arrows args).back? with
-    | some r => return .frac (← labelTree 2 r) (.text "∋")
+    | some r =>
+      let loose ← labelTree 0 r
+      return .frac loose (.text "∋") ((← labelTree 2 r) != loose)
     | none => txt e
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.

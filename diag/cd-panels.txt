@@ -61,6 +61,6 @@
 - | Freyd.Alg.alpha_natural                          | -
 - | Freyd.Alg.RelSet.ListRel.list_id                 | -
 - | Freyd.Alg.RelSet.ListRel.prefix_lax_natural      | -
-- | Freyd.Alg.RelSet.Party.rose_id                   | -
+- | Freyd.Alg.RelSet.RT.tree_id                     | -
 - | Freyd.Alg.RelSet.Van.glue_eq                     | -
 - | Freyd.Alg.Vec.Rel.tupleP_id                      | -

@@ -624,6 +624,15 @@ def Face.handed (fc : Face) (f : Expr) : MetaM (Array Expr) := do
   if (← imageOf f).isSome || (← fc.produces f) || (← structureArrow f) then return #[]
   return #[f]
 
+/-- Whether the picture was handed THIS ARROW ITSELF and not only the variables inside it: it
+    carries handed data, and neither a relator moved it nor a universal property produced it.
+    `F(f,𝟙)h` is such an arrow; `T(f)` mentions `f` and is what the initial algebra produced, so it
+    is where the structure lives.  `structureArrow` is not asked — every composite is headed by
+    `Cat.comp`, whose class argument would answer yes for all of them. -/
+def Face.handedArrow (fc : Face) (f : Expr) : MetaM Bool := do
+  if (← arrowVars f).isEmpty then return false
+  return !((← imageOf f).isSome || (← fc.produces f))
+
 /-- Whether an arrow is one the statement HANDED over. -/
 def Face.given (fc : Face) (f : Expr) : MetaM Bool := return !(← fc.handed f).isEmpty
 
@@ -650,8 +659,18 @@ def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
       | some h => Meta.isDefEq h f
       | none => return false
 
+/-- WHETHER THE ARROW IS ONLY THE SPELLING OF A NAME THE PICTURE ALREADY CARRIES: it stands inside
+    the VALUE a statement pinned a named arrow to (`Naming`), so the face draws it to say what that
+    name is and not because the property gives it a role.  `f = Λ(F(∋)R)` puts `F(∋)`, `∋` and `R`
+    inside `f`'s value, and the note draws those three black while `α` and `⦇f⦈` — which the value
+    does not mention — keep their roles.  The named arrow itself is excluded: it is the one line the
+    statement named, and it wears the role it plays. -/
+def Face.spells (fc : Face) (f : Expr) : Bool :=
+  !fc.named.any (fun (x, _) => x == f) &&
+    fc.named.any fun (_, v) => (v.find? (· == f)).isSome
+
 /-- WHICH ROLE an arrow plays, hence which of the note's hues it is drawn in (`diag/draw.typ`:
-    `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue).
+    `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue, `BLACK` the spelling of a name).
 
     `INDUCED` is what a universal property PRODUCES: every arrow the dash rule marks, and a
     functor's image of a PRODUCED one — `F(⦇f⦈)` and `F(X)` under `αX=F(X)f ⟺ X=⦇f⦈` are induced
@@ -665,6 +684,7 @@ def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
     statement handing it over. -/
 def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   if ← fc.dashes f then return "INDUCED"
+  if fc.spells f then return "BLACK"
   match ← imageOf f with
   | some g => return if ← fc.produces g then "INDUCED" else "GIVEN2"
   | none => return if (← fc.given f) && !(← fc.transports f) then "GIVEN1" else "GIVEN2"
@@ -737,8 +757,14 @@ def Face.givenNodes (fc : Face) : MetaM (Array String) := do
   let arrows := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2) ++ (fc.chord.map (·.1)).toArray
   let mut objs : Array Expr := #[]
   for f in arrows do
-    for x in ← fc.handed f do
+    let hs ← fc.handed f
+    for x in hs do
       let (a, b) ← StrDiag.homEnds x
+      objs := (objs.push a).push b
+    -- AN ARROW THE PICTURE WAS HANDED ITSELF hands over the objects IT stands between as well:
+    -- `F(f,𝟙)h` runs from `F(A,C)`, which is an end of neither `f` nor `h`.
+    if ← fc.handedArrow f then
+      let (a, b) ← StrDiag.homEnds f
       objs := (objs.push a).push b
   let mut ids : Array String := #[]
   for (id, o) in fc.lhs.nodes ++ fc.rhs.nodes do
@@ -778,15 +804,18 @@ def faceMark (ns : Array Node) (sym : String) (ids : Array String) : Array FaceM
 /-! ### The grid
 
 A path of `n` edges from the top-left corner to the bottom-right one runs along two legs, and the
-HORIZONTAL leg takes the odd edge: `2` is `1,1`, `3` is `2,1`, `4` is `2,2`.  `n = 1` has no corner
-to turn, so it is the chord — the pair `(1, 0)`, whose zero second leg every reader of these numbers
-below takes to mean "straight to the far corner". -/
+VERTICAL leg takes the odd edge: `2` is `1,1`, `3` is `1,2`, `4` is `2,2`.  The note stands the
+extra edge UP — a side with a factor more than its partner is read as one descent through an extra
+object, not as a longer walk across the page — which is the same choice `Face.transposed` makes when
+it hangs a moved arrow on a vertical side.  `n = 1` has no corner to turn, so it is the chord — the
+pair `(1, 0)`, whose zero second leg every reader of these numbers below takes to mean "straight to
+the far corner". -/
 def legs (k : Nat) (mirror : Bool) : Nat × Nat :=
   if k ≤ 1 then (k, 0)
   else
     -- Clockwise leaves along the top and arrives down the right; counter-clockwise leaves DOWN the
     -- left and arrives along the bottom, so its two legs are the other's in the other order.
-    if mirror then (k / 2, (k + 1) / 2) else ((k + 1) / 2, k / 2)
+    if mirror then ((k + 1) / 2, k / 2) else (k / 2, (k + 1) / 2)
 
 /-- Where the `i`-th vertex of a path sits, given its leg split and the grid's extent. -/
 def vertexAt (first second : Nat) (nx ny : Float) (mirror : Bool) (i : Nat) : Float × Float :=
@@ -850,9 +879,15 @@ def Face.isFan (fc : Face) : Bool :=
     the arrow they induce, and the picture says so.  Which way it runs is `imageOf` on the chord, the
     test `Face.transposed` uses — flat when the chord is nobody's image, upright when a relator moved
     it.  `(R×S)π₁⊑π₁R ∧ (R×S)π₂⊑π₂S` is this shape; `Λ(R)∋=R ∧ Λ(R)=(𝟙%∋)E(R)`, two two-edge sides,
-    is the diagonal-chord square. -/
+    is the diagonal-chord square.
+
+    A SIDE OF TWO EDGES pasted onto one of three is the same shape with one square replaced by an
+    apex — the fold's defining square pasted onto the fusion triangle — so it is drawn here too, and
+    only two two-edge sides, which fold into one square's boundary, are left to the general grid. -/
 def Face.isPastedSquares (fc : Face) : Bool :=
-  fc.chord.isSome && fc.lhs.edges.size == 3 && fc.rhs.edges.size == 3
+  fc.chord.isSome && (fc.lhs.edges.size == 3 || fc.rhs.edges.size == 3) &&
+    2 ≤ fc.lhs.edges.size && fc.lhs.edges.size ≤ 3 &&
+    2 ≤ fc.rhs.edges.size && fc.rhs.edges.size ≤ 3
 
 /-- A TRIANGLE: one side turns a corner, the other is a chord that cannot.  Three nodes, so the grid
     has a free column, and the note spends it on SYMMETRY — the two sides leave the shared source at
@@ -945,25 +980,34 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- built from two arrows and the image of neither) lies along the middle row with one square
     -- above it and one below.  A paste is still not free to turn otherwise: the `lhs` face keeps the
     -- side the chord's label is set in, whichever way the chord lies.
-    let upright := (← imageOf c).isSome
+    -- An APEX has nowhere to go on a flat chord but half a column, so a side of two edges stands the
+    -- chord up beside it the way `Face.isFan` does, and the chord then spans TWO rows so the apex
+    -- sits at a cell and not between two.
+    let uneven := fc.lhs.edges.size != fc.rhs.edges.size
+    let upright := (← imageOf c).isSome || uneven
+    let h : Float := if uneven then 2.0 else 1.0
     -- Two columns and three rows, or three columns and two rows: the chord along the middle row or
     -- down the middle column, `lhs` on the `+1` side of it and `rhs` on the `-1` side.  Each path
     -- runs the chord's source, across to its own far side, along it, and back to the chord's target.
     let place (p : Path) (side : Float) (comp : Option Nat)
         : MetaM (Array Node × Array Edge) := do
+      let k := p.edges.size
       let cell : Array (Float × Float) :=
-        if upright then #[(1.0, 0.0), (1.0 - side, 0.0), (1.0 - side, -1.0), (1.0, -1.0)]
+        if upright then
+          if k == 2 then #[(1.0, 0.0), (1.0 - side, -h / 2.0), (1.0, -h)]
+          else #[(1.0, 0.0), (1.0 - side, 0.0), (1.0 - side, -h), (1.0, -h)]
         else #[(0.0, -1.0), (0.0, -1.0 + side), (1.0, -1.0 + side), (1.0, -1.0)]
       let far := if upright then (if side > 0 then "left" else "right")
                  else (if side > 0 then "top" else "bottom")
       let sides : Array String :=
-        if upright then #["top", far, "bottom"] else #["left", far, "right"]
+        if upright then (if k == 2 then #[far, far] else #["top", far, "bottom"])
+        else #["left", far, "right"]
       let mut ns : Array Node := #[]
       let mut es : Array Edge := #[]
-      for i in [0:4] do
+      for i in [0:k+1] do
         let (id, o) := p.nodes[i]!
         ns := ns.push { id, gx := cell[i]!.1, gy := cell[i]!.2, label := (← labelT o) }
-      for i in [0:3] do
+      for i in [0:k] do
         let (src, tgt, f) := p.edges[i]!
         es := es.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sides[i]!,
                         dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
@@ -1067,7 +1111,7 @@ partial def typstLbl (l : StrDiag.Lbl) : String :=
   match l.norm with
   | .text s => "raw(" ++ typstString s ++ ")"
   | .sub b i => "[#" ++ typstLbl b ++ "#sub[#" ++ typstLbl i ++ "]]"
-  | .frac n d => "$frac(#" ++ typstLbl n ++ ", #" ++ typstLbl d ++ ")$"
+  | .frac n d _ => "$frac(#" ++ typstLbl n ++ ", #" ++ typstLbl d ++ ")$"
   | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ typstLbl p) ++ "]"
 
 def typstNodes (ns : Array Node) (close := "\n") : String :=
