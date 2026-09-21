@@ -270,16 +270,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #let lax-hm-r = lean("Freyd.Alg.LaxNatural.rhs")
 
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (GT, FT, GB, FB) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-    ar(GT, FT, GIVEN1, s0: 0.75, s1: 0.75); ar(GB, FB, GIVEN1, s0: 0.75, s1: 0.75)
-    ar(GT, GB, GIVEN2, s0: 0.55, s1: 0.55); ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`φ`#sub[`A`]]; lab(0, -1.8, GIVEN1)[`φ`#sub[`B`]]
-    lab(-3.8, 0, GIVEN2)[`G(R)`]; lab(3.8, 0, GIVEN2)[`F(R)`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(GT.at(0), GT.at(1), black, `GA`); node(FT.at(0), FT.at(1), black, `FA`)
-    node(GB.at(0), GB.at(1), black, `GB`); node(FB.at(0), FB.at(1), black, `FB`)
-  }),
+  leancd("Freyd.Alg.LaxNatural"),
   row((lax-hm-l, [#h(7pt) #SQ #h(7pt)], lax-hm-r)),
  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
 )]<lax-str>
@@ -334,10 +325,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   table.header([*closed under*], [*commutative diagram*], [*string diagram*]),
 
   [composition \ `ψφ`],
-  [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`HA`, `GA`, `HB`, `GB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`H(R)`], none), x: -SQW)
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW)
-  }), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_comp_slide"), s: 74%)
    `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
   latpic(
@@ -350,10 +338,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [horizontal composition \ `χ∘φ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`LGA`, `KFA`, `LGB`, `KFB`),
-    ([`χ`#sub[`GA`] `K(φ`#sub[`A`]`)`], [`χ`#sub[`GB`] `K(φ`#sub[`B`]`)`], `L(G(R))`, `K(F(R))`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_hcomp_outer_first"), s: 74%)
    `φ : G⇒F` with `G,F : 𝒞⟶𝓓` and `χ : L⇒K` with `L,K : 𝓓⟶𝓔` give
    `χ∘φ : L∘G⇒K∘F`, the family `A ↦ χ`#sub[`GA`]`K(φ`#sub[`A`]`)` \
    #src[`L(G(R))χ`#sub[`GB`]`⊑χ`#sub[`GA`]`K(G(R))` is `χ` lax at `G(R)`; then
@@ -376,11 +361,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [union \ `φ ∪ ψ`],
-  [#P(cetz.canvas(length: 0.8cm, {
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`φ`#sub[`A`]], [`φ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: -(SQW + 1.4))
-    laxsq((`GA`, `FA`, `GB`, `FB`), ([`ψ`#sub[`A`]], [`ψ`#sub[`B`]], [`G(R)`], [`F(R)`]), x: SQW + 1.4)
-    lab(0, 0, black)[`∪`]
-  }), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_union"), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]` ∪ ψ`#sub[`B`]`)⊑(φ`#sub[`A`]` ∪ ψ`#sub[`A`]`)F(R)`
  #h(4pt) #src[]],
@@ -402,19 +383,13 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   )),
 
   [a relator `K` \ `K(φ)`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`KGA`, `KFA`, `KGB`, `KFB`),
-    ([`K(φ`#sub[`A`]`)`], [`K(φ`#sub[`B`]`)`], [`K(G(R))`], [`K(F(R))`]),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.Relator.map_laxNatural"), s: 74%)
    `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) gives #h(4pt)
    `K(G(R))K(φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`)K(F(R))`],
   [],
 
   [product \ `φ×ψ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`GA×G'A`, `FA×F'A`, `GB×G'B`, `FB×F'B`),
-    ([`φ`#sub[`A`]`×ψ`#sub[`A`]], [`φ`#sub[`B`]`×ψ`#sub[`B`]], `G(R)×G'(R)`, `F(R)×F'(R)`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_prod"), s: 74%)
    `φ : G⇒F` and `ψ : G'⇒F'` give `φ×ψ : G×G'⇒F×F'` \
    #src[`(R×S)(U×V)=(RU)×(SV)` and monotonicity in both slots — the row above's `K` applied to the
    inequation, run on a bifunctor; the fork is the derived case `⟨φ,ψ⟩=◁(φ×ψ)`, and its ONE cost is
@@ -431,10 +406,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   ),
 
   [coproduct \ `φ+ψ`],
-  [#P(cetz.canvas(length: 0.8cm, laxsq(
-    (`GA+G'A`, `FA+F'A`, `GB+G'B`, `FB+F'B`),
-    ([`φ`#sub[`A`]`+ψ`#sub[`A`]], [`φ`#sub[`B`]`+ψ`#sub[`B`]], `G(R)+G'(R)`, `F(R)+F'(R)`),
-  )), s: 74%)
+  [#P(leancd("Freyd.Alg.laxNatural_sum"), s: 74%)
    `φ : G⇒F` and `ψ : G'⇒F'` give `φ+ψ : G+G'⇒F+F'` \
    #src[`(R+S)(U+V)=(RU)+(SV)` and monotonicity in both slots; the co-fork is the derived case
    `[φ,ψ]=(φ+ψ)▿`, and `▿` costs nothing]],
@@ -604,16 +576,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FB, B) = ((-3, 1.25), (3, 1.25), (-3, -1.25), (3, -1.25))
-    ar(FT, T, GIVEN1, s0: 0.75, s1: 0.55); ar(FB, B, GIVEN1, s0: 0.75, s1: 0.55)
-    ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`φ`]; lab(0, -1.8, GIVEN1)[`φ`]
-    lab(-3.75, 0, GIVEN2)[`F(R)`]; lab(3.35, 0, GIVEN2)[`R`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(FT.at(0), FT.at(1), black, `FA`); node(T.at(0), T.at(1), black, `A`)
-    node(FB.at(0), FB.at(1), black, `FA`); node(B.at(0), B.at(1), black, `A`)
-  }),
+  leancd("Freyd.Alg.MonotonicAlg"),
   row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
 )]<mon-str>
@@ -642,16 +605,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
 #disp[#align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
   pair(
-    cetz.canvas(length: 0.8cm, {
-      let (FEA, EA, FA, A) = ((-3.6, 1.25), (3.6, 1.25), (-3.6, -1.25), (3.6, -1.25))
-      ar(FEA, EA, GIVEN1, s0: 1.05, s1: 0.65); ar(FA, A, GIVEN1, s0: 0.65, s1: 0.45)
-      ar(FEA, FA, GIVEN2, s0: 0.55, s1: 0.55); ar(EA, A, GIVEN2, s0: 0.55, s1: 0.55)
-      lab(0, 2.1, GIVEN1)[$frac(#[`F(∋)f`], ∋)$]; lab(0, -1.8, GIVEN1)[`f`]
-      lab(-4.75, 0, GIVEN2)[`F(est(R))`]; lab(4.4, 0, GIVEN2)[`est(R)`]
-      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-      node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
-      node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
-    }),
+    leancd("Freyd.Alg.Distributes"),
     row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
  [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
     s: 74%,
@@ -676,14 +630,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ),
 ))]<dist-str>
 
-// ---- Theorem 7.1's own drawing vocabulary.  A converse is the cup–cap FRAME of @conv-defn, so
-// `f°Xf` is `f` bumped up over `X`; what the chain does is shrink that frame from `(F(∋)f)°` to `f°`.
-#let convrun(x, y, items, rise: 1.9) = {
-  conv-frame((x, y), w: boxrun-w(items), rise: rise)
-  let b = conv-body((x, y), rise: rise)
-  boxrun(b.at(0), b.at(1), items)
-}
-#let convrun-end(items) = conv-w(w: boxrun-w(items)) - SPLIT
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
 // what carries it back.
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
@@ -801,20 +747,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#gr-R],
 )]<greedy-thm72>
 
-// The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
-#let UIP = 0.4  // the pair's half-height, at the fork and inside the `∪` copies
-#let UOP = 0.3  // a `∪` copy's output port
-// head above and the tail below, so a coreflexive `p` is a box on the head strand alone.
-#let TBH = 0.6  // circuit.typ's default box height, which it does not export
-#let PBH = 0.5  // a box sitting on ONE strand of the pair, low enough to clear the other
-#let twbox(x, y, b, h: PBH) = gbox((x, y), b.at(0), w: b.at(1), h: h, chamfer: b.at(2))
-// The `cons` branch of a `∪`: `a` restricts the head and `l` acts on the tail — drawn to one shared
-// width so `cons` stays upright — then `cons`, then `post`.  `w` is the copy's run.
-
-// ONE wire while `S` is still inside a division: a run of boxes on it.
-// `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
-// rather than `F([A])`, and its cata rows never open `E[A]` at all.
-
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3's last page.
 #pagebreak(weak: true)
@@ -881,7 +813,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
-  Thm[`prefix≜⦇[nil,⊸ nil ∪ cons]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
     #src[the fold whose algebra, at each `cons`, stops with `nil` or keeps the head:
       `xs prefix ys⟺∃zs. xs=ys⧺zs`]
     // lean:AOP.A5_6_ListCombinators.prefix_cata@b8d861c4
@@ -891,17 +823,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       take a prefix, or take a prefix of the tail and then rebuild with the algebra],
     [*Hinze–Marsden*]),
 
-  [#cetz.canvas(length: 0.8cm, {
-    // The same 5.2 × 2.7 square as @cata-defining, `prefix` in the induced arrow's place.
-    let (FT, T, FA, A) = ((-2.6, 1.35), (2.6, 1.35), (-2.6, -1.35), (2.6, -1.35))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FA, A, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FT, FA, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, A, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    lab(0, 1.9, GIVEN2)[`α`]; lab(0, -1.9, GIVEN1)[`[nil,⊸ nil ∪ cons]`]
-    lab(-4.2, 0, INDUCED)[`F(prefix)`]; lab(3.7, 0, INDUCED)[`prefix`]
-    node(FT.at(0), FT.at(1), black, `F[A]`); node(T.at(0), T.at(1), black, `[A]`)
-    node(FA.at(0), FA.at(1), GIVEN1, `F[A]`); node(A.at(0), A.at(1), GIVEN1, `[A]`)
-  }) \
+  [#leancd("Freyd.Alg.RelSet.ListRel.prefix_cancel") \
   #src[`F=𝟏+A×−`, so `F(prefix)=𝟙+𝟙×prefix`: the head passes, the fold recurses on the tail alone]
   // lean:AOP.A6_ConsList.F@61b71616
   ],
@@ -940,7 +862,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
-  Thm[`α prefix list(p)=F(prefix list(p))S` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm") \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
     #src[this same diagram is `subseq`'s: algebra `[nil,π₂ ∪ cons]`, type `[A]⟶[A]`]
@@ -982,7 +904,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
 #disp[#calc-table(cols: (1fr, 6.0cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
@@ -1022,7 +944,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // the coproduct of maps has opened it.
 #let step = step.with(pw: 340pt)
 #disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,⊸ nil)]` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
      `nil` where it does not]],
   table.header([*formula*], [*reason*]),
@@ -1171,7 +1093,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt, 
   // B&dM p.174, Ex 7.40: "The maximum segment sum problem … is specified by mss = max·Λ(sum·segment) …
   // Using segment = prefix·suffix, express this problem in the form mss = max·P(max·Λ(sum·prefix))·Λsuffix."
-  Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
     // lean:AOP.A7_7_MSS.mss_shape@9c38ad6f
@@ -1298,7 +1220,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
 #disp[#calc-table(
- Thm[#mss-alg ` est(≥)=[zero,⊕]` \
+ Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_step") \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
   // lean:AOP.A7_7_MSS.mss_step@28267eec lean:AOP.A7_7_MSS.mss_step_plus@b71cc592
@@ -1351,7 +1273,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
-  Thm[`mss=⦇k⦈ π₂ est(≥)` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") \
     #src[maximum segment sum problem: #frc([`suffix`])` E(⦇[zero,⊕]⦈)` expressed as the catamorphism `⦇k⦈`,
      // mss-scan row: Ex 7.40
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
@@ -1457,7 +1379,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let step = step.with(pw: 340pt)
 // §13.3.4 rebound `est-Rc-box` to `est(≥)`, which is what the pictures below were drawing.
 #disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
+  Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
      // lean:AOP.A7_7_Filter.filter_step@504b7851
@@ -1505,7 +1427,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr, 6.3cm), 
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
-  Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") \
     // filter-simple row: Ex 7.41
     #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
@@ -1792,16 +1714,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`; @lax-defn at
 // `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T, FB, B) = ((-4.2, 1.25), (4.2, 1.25), (-4.2, -1.25), (4.2, -1.25))
-    ar(FT, T, GIVEN1, s0: 1.9, s1: 1.5); ar(FB, B, GIVEN1, s0: 1.9, s1: 1.5)
-    ar(FT, FB, GIVEN2, s0: 0.55, s1: 0.55); ar(T, B, GIVEN2, s0: 0.55, s1: 0.55)
-    lab(0, 1.8, GIVEN1)[`S`]; lab(0, -1.8, GIVEN1)[`S`]
-    lab(-6.4, 0, GIVEN2)[`𝟙×list((R×R)°)`]; lab(5.2, 0, GIVEN2)[`(R×R)°`]
-    lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-    node(FT.at(0), FT.at(1), black, `F([A]×[A])`); node(T.at(0), T.at(1), black, `[A]×[A]`)
-    node(FB.at(0), FB.at(1), black, `F([A]×[A])`); node(B.at(0), B.at(1), black, `[A]×[A]`)
-  }),
+  leancd("Freyd.Alg.RelSet.Party.party_mono"),
   // `length` up from the file's 0.95cm: the port labels do not scale with it, and at 0.95cm the two
   // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
   homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
@@ -1813,21 +1726,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // @adj-E-bend's shapes at this instance: a transpose is the dashed INDUCED arrow the adjunction
 // produces, and the factorisation it runs through is that picture's GIVEN2 path.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-    let (T, EB) = ((-2.9, 0), (2.9, 0))
-    ar(T, EB, INDUCED, dash: "dashed", s0: 1.05, s1: 0.8)
-    lab(0, 0.85, INDUCED)[$frac(#[`⦇S⦈choose`], ∋)$]
-    node(T.at(0), T.at(1), black, `tree(A)`); node(EB.at(0), EB.at(1), black, `E[A]`)
-  }),
-  cetz.canvas(length: 0.8cm, {
-    lab(-6.8, 0, black)[$=$]
-    let (T, EM, EB) = ((-5.0, 0), (0, 0), (5.0, 0))
-    ar(T, EM, INDUCED, dash: "dashed", s0: 1.05, s1: 1.6); ar(EM, EB, GIVEN2, s0: 1.6, s1: 0.8)
-    lab(-2.5, 0.85, INDUCED)[$frac(#[`⦇S⦈`], ∋)$]
-    lab(2.5, 0.62, GIVEN2)[`E(choose)`]
-    node(T.at(0), T.at(1), black, `tree(A)`); node(EM.at(0), EM.at(1), black, `E([A]×[A])`)
-    node(EB.at(0), EB.at(1), black, `E[A]`)
-  }),
+  leancd("Freyd.Alg.RelSet.Party.party_absorb.lhs"),
+  leancd("Freyd.Alg.RelSet.Party.party_absorb.rhs"),
   [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
  ]],
    // lean:AOP.A4_6.Λ_absorption@e87bd8f2
@@ -1956,36 +1856,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // The pictures are ONE WIRE from `tree A` to `[A]`, a box per factor; `[A]×[A]` is where it runs as
 // TWO — `est((R×R)°)` opens the strand into a pair and `choose/∋` closes it again.  Every `R/∋` is a
 // MAP (@pow-laws), so every fraction box is square and every other box chamfered.
-#let LD = 0.34               // circuit.typ's lead, which it does not export
-#let LH = 1.25               // a box on the wire: two lines tall, because a `/∋` label is a fraction
-#let LSP = 0.62              // half the gap between the two strands of `[A]×[A]`
-#let LPH = 2 * LSP + 0.62    // a box that spans the pair
-#let LBA = 1.5               // inside the fold, a branch's root strand ...
-#let LBB = 0.55              // ... and its subtree-list strand
-#let LBY = (LBA + LBB) / 2   // ... and the single strand the branch leaves on
-#let TG = 1.7                // a lead wide enough to carry a TYPE label, not just join two boxes
-#let TGW = 3.0                // ... and wide enough for the longest of them, `E([A]×[A])`
-#let TY = 0.34                // how far above (or, mirrored, below) its wire a type label floats
-
-#let lb-est = ([`est(R°)`], 2.2, true)
-#let lb-lcm = ([`list(`#frc([`choose`])` est(R°))`], 5.5, true)
-
-// The tail every row ends with, `choose/∋ est(R°)`: `choose` takes TWO wires, so the pair closes
-// there, and `est(R°)` reads the set back down to one list.  `sp` is the height the pair arrives at.
-// `midlabel`: `13.4.4a`'s row is the only caller that names the type between `choose/∋` and `est(R°)`
-// — every other row shares this same tail, so the label stays off unless asked for.
-#let ltail(x, sp, midlabel: none) = {
-  gbox((x, 0), frc([`choose`]), w: 2.0, h: 2 * sp + 0.62, chamfer: false)
-  let g = if midlabel == none { LD } else { TG }
-  wire((x + 2.0, 0), (x + 2.0 + g, 0))
-  if midlabel != none { lab(x + 2.0 + g / 2, TY, black)[#midlabel] }
-  gbox((x + 2.0 + g, 0), lb-est.at(0), w: lb-est.at(1), h: LH, chamfer: lb-est.at(2))
-  let xe = x + 2.0 + g + lb-est.at(1)
-  wire((xe, 0), (xe + LD, 0))
-  lab(xe + LD + 0.5, 0, black)[`[A]`]
-}
-#let lsrc = { lab(-1.32, 0, black)[`tree A`]; wire((-0.45, 0), (0, 0)) }
-
 // `13.4.4a`'s row: the only one where the type actually changes mid-run, so it is the only one
 // that gets the wire types spelled out — `E([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
 // each of the two strands it opens into (a PRODUCT is two wires, never one wire marked `×`).
@@ -2321,7 +2191,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
 #disp[#calc-table(
-  Thm[`paths est(R)⊒⦇Q⦈ est(R)` \
+  Thm[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
@@ -2528,7 +2398,7 @@ zip(that)                                         each row: its square, and the 
 // @van-deriv is where that costs the refinement of `R` to `R;H`.  `R` sits on the two schedule
 // wires and `new` on the product context, so the chain is those two beads swapping height.
 #disp[#calc-table(
-  Thm[`(𝟙×R)new⊑(new ∪ old)R` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_7_14") \
     #src[calling the van for the transaction on a no-longer schedule gets no further than calling
      it on this one and shortening the schedule afterwards]],
      // lean:AOP.A7_5_Van.van_7_14@31454849
@@ -2672,7 +2542,7 @@ zip(that)                                         each row: its square, and the 
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
 #disp[#calc-table(
-  Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_laws") \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
