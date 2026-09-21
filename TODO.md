@@ -78,10 +78,15 @@
     cross-reference on an earlier page, so both halves came out as the same unrelated text and the
     pair was refused as pixel-identical. The display's own number is the one set in the margin
     column; anchor on that occurrence.
-[ ] Chapters 1–10: most pictures already come from a declaration (`note-prelude.typ` imports
-    `generated/Freyd.Diag.CartBicat.*`; ch7 and ch10 use `#lean`/`#leancd`). Seven are still laid
-    by hand: the two circuits of 5b/dom-collapse and of 5.1a/dom-slide (`cetz.canvas` + `domstr`),
-    7b/banana-split's `homeq(...)` panel, 10.1a's two `snake(...)` panels, and the two pictures of
-    named people, 8.1a/div-comp-pic and 9c/syq-pic, which no route draws — a finite relation
-    between named elements is neither a string, a circuit nor a commutative diagram. None of the
-    chapters' formulas is a `#leanf`.
+[X] Chapters 1–10: 5b/dom-collapse, 5.1a/dom-slide, 7b/banana-split and 10.1a's two panels are
+    drawn from declarations (`Freyd.Diag.dom_cd`, `Freyd.Diag.dom_comp_le`,
+    `pair_relCata_eq_relCata_pair`, `singletonMap_comp_eps`, `Λ_eps_reflection`); `snake` and
+    `domstr` are deleted.
+[ ] Two pictures of named people, 8.1a/div-comp-pic and 9c/syq-pic, are the last hand-laid
+    canvases of chapters 1–10 and no route draws them: a finite relation between named elements
+    is neither a string, a circuit nor a commutative diagram. None of those chapters' formulas
+    is a `#leanf`.
+[ ] `diag-regen --missing` cannot draw a NEW `#import "generated/<decl>.typ"` of
+    `diag/note-prelude.typ`: it lists the obligations by `typst query`, which fails on the very
+    import that is missing, so the first panel of a new declaration has to be written by hand
+    with `./scripts/diag-export <decl>`.
