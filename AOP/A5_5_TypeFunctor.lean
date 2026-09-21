@@ -21,7 +21,7 @@
     functor, so the bundle's extra obligation is monotonicity, not converse: the book's
     "sufficient to preserve converse" is Theorem 5.1(b), dropped in `A5_1` (see the blocker
     there), and monotonicity comes instead from the least-fixed-point reading of `⦇·⦈`
-    (`relCata_mono`, ch. 6) — hence this A5 file imports `AOP.A6_2` (Lambek + `relCata_mono`).
+    (`relCata_mono`, ch. 6) — hence this A5 file imports `AOP.A6_2` (`α` is an iso, and `relCata_mono`).
 -/
 module
 
@@ -206,7 +206,7 @@ public theorem alpha_natural_split {A B : 𝒜} (f : A ⟶ B) :
 /-- **B&dM p. 122 (type relators)**: `T(R)° = T(R°)` — a datatype acts on relations, and the
     map of the converse is the converse of the map.  Needs `F` converse-preserving; the
     book's chain (converse the naturality square, cancel the invertible `α` on both sides)
-    with Lambek's `α°≫α = 𝟙`, `α≫α° = 𝟙` from `AOP.A6_2`. -/
+    with `α` an iso, `α°≫α = 𝟙`, `α≫α° = 𝟙` from `AOP.A6_2`. -/
 public theorem typeMap_recip (hF : F.PreservesRecip) {A B : 𝒜} (R : A ⟶ B) :
     (typeMap I R)° = typeMap I R° := by
   have hrec : (typeMap I R)° ≫ (I A).α° = (I B).α° ≫ (F.map R (typeMap I R))° := by

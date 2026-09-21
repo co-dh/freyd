@@ -1073,7 +1073,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let hy-body = lean("Freyd.Alg.hylo_fixed_step1.lhs")
 #let hy-split = lean("Freyd.Alg.hylo_fixed_step1.rhs")
 #let hy-alg = lean("Freyd.Alg.hylo_fixed_step2.rhs")
-#let hy-lambek = lean("Freyd.Alg.hylo_fixed_step3.rhs")
+#let hy-alpha-iso = lean("Freyd.Alg.hylo_fixed_step3.rhs")
 #let hy-cataR = lean("Freyd.Alg.hylo_le_of_prefixed_step1.lhs")
 #let hy-rec = lean("Freyd.Alg.hylo_le_of_prefixed_step2.lhs")
 #let hy-adj = lean("Freyd.Alg.hylo_le_of_prefixed_step3.lhs")
@@ -1095,9 +1095,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
     (EQ, hy-split, src[`F(RS)=F(R)F(S)` — @relator-defn]),
     (EQ, hy-alg, src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
-    (EQ, hy-lambek, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
+    (EQ, hy-alpha-iso, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
      `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
-    (EQ, lean("Freyd.Alg.hylo_fixed_step4.rhs"), src[`α°α=𝟙`, Lambek]),
+    (EQ, lean("Freyd.Alg.hylo_fixed_step4.rhs"), src[`α°α=𝟙`: `α` is an iso]),
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
   )],
 )]<hylo-fix>

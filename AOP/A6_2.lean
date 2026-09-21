@@ -10,7 +10,7 @@
   recursion body `φX = R·FX·α°` therefore mirrors to `φX = α° ≫ F.map X ≫ R`
   (`≫` is right-associative).
 
-  Lambek's lemma (the initial algebra `α` is invertible, with inverse the catamorphism
+  `α` is an iso (the initial algebra `α` is invertible, with inverse the fold
   of `F.map α`; B&dM Ex 6.5 connects it to the fixed-point view) is proved here because
   (6.2)/(6.3) need `α° ≫ α = id` and `α ≫ α° = id`.
 
@@ -142,21 +142,21 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
     TabularUnitaryUnguardedPowerAllegory 𝒜 :=
   { inst with }
 
-/-! ## Lambek's lemma for `InitialAlgebra` (B&dM Ex 6.5's subject)
+/-! ## `α` is an iso, for `InitialAlgebra` (B&dM Ex 6.5's subject)
 
   The inverse of `α` is the (map) catamorphism of the algebra `F.map α`; the standard
   argument runs entirely inside the map subcategory, then `recip_of_comp_id` (Prop 4.1,
   `AOP.A4_2`) identifies the inverse with `α°`. -/
 
-section Lambek
+section AlphaIso
 
 variable [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 
-/-- Lambek inverse: `cata (F.map α)`. -/
+/-- The inverse of `α`: `cata (F.map α)`. -/
 @[expose] public def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
   I.cata (F.map I.α) (F.map_is_map I.α_map)
 
-/-- **Lambek**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
+/-- **`α` is an iso**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
 public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
     I.alphaInv ≫ I.α = Cat.id I.t := by
   have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
@@ -169,13 +169,13 @@ public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
   have h2 := I.cata_unique I.α I.α_map _ (id_is_map_local I.t) hid
   rw [h1, ← h2]
 
-/-- **Lambek**: `α ≫ alphaInv = id`. -/
+/-- **`α` is an iso**: `α ≫ alphaInv = id`. -/
 public theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
     I.α ≫ I.alphaInv = Cat.id (F.obj I.t) := by
   have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
   rw [hk, ← F.map_comp, I.alphaInv_alpha, F.map_id]
 
-/-- The Lambek inverse IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
+/-- The inverse of `α` IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
 public theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
   (recip_of_comp_id (by rw [I.alpha_alphaInv]; exact le_refl _)
     (by rw [I.alphaInv_alpha]; exact le_refl _)).1
@@ -190,7 +190,7 @@ public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
     I.α ≫ I.α° = Cat.id (F.obj I.t) := by
   rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
 
-end Lambek
+end AlphaIso
 
 /-! ## §6.2  Catamorphisms as least (and greatest) fixed points: (6.2) and (6.3)
 
@@ -246,7 +246,7 @@ end CataFix
 /-! ## §6.2  Fusion inclusion laws (6.4)/(6.5), and Ex 6.7 (book p.141)
 
   These strengthen (6.2)/(6.3) to compose with an arbitrary `S` on the right, using
-  `α°≫α = id` (Lambek) to cancel the catamorphism recursion. -/
+  `α°≫α = id` (`α` is an iso) to cancel the catamorphism recursion. -/
 
 section Fusion
 
