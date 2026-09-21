@@ -58,10 +58,9 @@
 [X] Nothing in the note gates ran the whole-repository `lake build`: a rename left
     `AOP/A5_7_PartyBeads.lean` broken and `make p` stayed green, because the gates build only what
     `diag-export` imports. `make p` now runs `./scripts/cap lake build` first.
-[ ] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). Each
-    needs a new Lean declaration and a generator feature: node value labels; opening an `∃` at its
-    witness plus a `⋢` face mark; three records on one canvas with bowed arrows; `Face.paste` as a
-    fold over four faces.
+[X] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). All
+    four are drawn from Lean and every `cd-check` row is ok with `cd-accepted.txt` empty. 13.2.1a
+    lost the four element traces `(0,1) ↦ {0} ⋢ ∅`: they are points, which no arrow equation names.
 [X] ch13's last four formula headers are `#leanf`. ch11's formulas (`#frc(...)`, canvas labels) are
     untouched.
 [X] Delete the typst a conversion orphaned, in the same change that converts: a helper no chapter
@@ -69,9 +68,9 @@
 [X] The python feed route is deleted (`scripts/circuit`, `relexpr.py`, `panels.py`,
     `circuit-check`, `circuit-panels.txt`, `circuit-slice.typ`); a circuit comes only from
     `diag-export --circuit`.
-[ ] `cd-check` runs in neither `make c` nor `make p`. Put it in the routine gate once 11.5.1b and
-    the four undeclared canvases above are settled — a gate nobody runs is not a gate. `types` is
-    outside too; decide the same for it.
+[X] `cd-check` runs in `make c` and `make p`; it hangs on `panels`, not on the full redraw, and a
+    chapter with no commutative canvas passes. `types` stays outside: no `--type` cell exists yet,
+    the note's type column is still hand-typed.
 [X] `diff-crop --key` resolves the key against the pdf it is handed (a chapter pdf renumbers from
     1), and the whole-pdf mode exits nonzero when pages differ and nothing was written.
 [X] `diff-crop --key` anchors on the FIRST `(key)` a pdf prints, which for 13.2.1a and 13.3.1b is a

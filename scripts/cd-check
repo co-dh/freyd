@@ -150,6 +150,9 @@ diff -u "$OUT/canvases" "$OUT/claimed" || {
     "with no record, a plus line a record for a canvas the note no longer draws" >&2
   exit 1
 }
+# A chapter that draws no commutative canvas has no obligation here, and the steps below take an
+# empty list for a mistake: the exporter prints its usage and the svg glob matches nothing.
+[ -s "$OUT/panels" ] || { echo "cd-check: no commutative canvas to check"; exit 0; }
 
 # One `diag-export` run for all of them: the exe holds ONE imported environment for its whole life,
 # so a second invocation pays for the whole `Freyd` import again.  Its RECORDS say what drew: one

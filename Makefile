@@ -53,7 +53,7 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) panels cite
+p: $(STAMP) panels cite cd-check
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
@@ -131,7 +131,7 @@ types: $(STAMP)
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: panels labels cite
+c: panels labels cite cd-check
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
