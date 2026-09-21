@@ -13,8 +13,10 @@
   symbol read off the statement's OWN HEAD CONSTANT (`ExprReader.split`), never guessed from a
   printed string.  `<decl>.lhs` / `.rhs` is one side alone, chaining through a connective
   (`↔`, `∧`) exactly as `StrDiag.drawString`'s `reqParts` does, so `.lhs.lhs` is the left
-  statement's own left side.  A statement that is not a relation between two arrows still prints
-  what `label` can make of it — a `def`'s body, a bound hypothesis — and never crashes; a term
+  statement's own left side.  A declaration whose type is NOT a proposition defines rather than
+  states, and prints as its definition — `<name>(<args>)≜<body>`, the head applied to its own
+  binders and the value beside it.  A statement that is not a relation between two arrows still
+  prints what `label` can make of it — a bound hypothesis — and never crashes; a term
   `label` cannot read fails naming the declaration and the sub-term, and the run exits nonzero
   through the same stub-file machinery every other route already uses.
 -/
@@ -78,6 +80,17 @@ def render (declName : Name) (binder : Option String) (path : List String)
   withDeclScope declName do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescope ci.type fun xs body => do
+    -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
+    -- the definition itself: the name under its own arguments, `≜`, and the VALUE.  Read off the
+    -- type, so every `def` a table heads with prints this way and none is named here.
+    if binder.isNone && !(← Meta.isProp body) then
+      unless path.isEmpty do
+        throwError "{declName}: `.{path.head!}` takes a side of a statement, and a definition has \
+          none — its formula is `<name>≜<body>`"
+      let some val := ci.value? | throwError "{declName}: a definition with no value — \
+        --formula writes `<name>≜<body>` and there is no body to write"
+      let head ← label (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
+      return ← withBody declName branch (val.beta xs) fun v => return head ++ "≜" ++ (← label v)
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with

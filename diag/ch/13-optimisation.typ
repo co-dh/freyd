@@ -985,7 +985,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#calc-table(cols: (1fr, 7.9cm), 
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
-  Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile") \
+    #leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata") \
     // takewhile-cata row: Ex 7.39
     #src[takewhile: `takewhile(p)(x)` returns the longest prefix of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard implementation.
@@ -1144,7 +1145,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   stroke: 0.4pt + luma(190),
   // B&dM p.174, Ex 7.40: "Express prefix as a catamorphism on cons-lists, and use fusion to express
   // sum·prefix as a catamorphism."
-  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.prefAlg_comp_sum") \
     #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
      the fusion condition that expresses `prefix sum` as a catamorphism]],
   table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
@@ -1764,10 +1765,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // One shape instantiated three times, so the three `⊑` stand in a column.
   Thm[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
     align: (right + horizon, center + horizon, left + horizon),
-    grid.cell(colspan: 3, align: center)[`S≜⟨include,exclude⟩`],
-    [`(𝟙×list((R×R)°))S`], SQ, [`S(R×R)°`],
-    [`(𝟙×list((R×R)°))include`], SQ, [`include R°`],
-    [`(𝟙×list((R×R)°))exclude`], SQ, [`exclude R°`],
+    // THREE DECLARATIONS, NOT ONE CONJUNCTION: each row is a law with its own proof and its own
+    // citation, so the next such header is written the same way and needs nothing of the printer.
+    grid.cell(colspan: 3, align: center)[#leanf("Freyd.Alg.RelSet.Party.S")],
+    [#leanf("Freyd.Alg.RelSet.Party.party_mono.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.party_mono.rhs")],
+    [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.rhs")],
+    [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.rhs")],
   ))
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
    running it first and bettering the two parties it returns,
