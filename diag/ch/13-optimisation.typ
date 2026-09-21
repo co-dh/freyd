@@ -630,14 +630,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   ),
 ))]<dist-str>
 
-// ---- Theorem 7.1's own drawing vocabulary.  A converse is the cup–cap FRAME of @conv-defn, so
-// `f°Xf` is `f` bumped up over `X`; what the chain does is shrink that frame from `(F(∋)f)°` to `f°`.
-#let convrun(x, y, items, rise: 1.9) = {
-  conv-frame((x, y), w: boxrun-w(items), rise: rise)
-  let b = conv-body((x, y), rise: rise)
-  boxrun(b.at(0), b.at(1), items)
-}
-#let convrun-end(items) = conv-w(w: boxrun-w(items)) - SPLIT
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
 // what carries it back.
 // The display number is 1.2cm wide but placed only 1.0cm into the margin, so it reaches ~6pt back
@@ -755,20 +747,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#gr-R],
 )]<greedy-thm72>
 
-// The fork is the bracket's case split `F([A])=𝟏+A×[A]`; `⊸` discards.
-#let UIP = 0.4  // the pair's half-height, at the fork and inside the `∪` copies
-#let UOP = 0.3  // a `∪` copy's output port
-// head above and the tail below, so a coreflexive `p` is a box on the head strand alone.
-#let TBH = 0.6  // circuit.typ's default box height, which it does not export
-#let PBH = 0.5  // a box sitting on ONE strand of the pair, low enough to clear the other
-#let twbox(x, y, b, h: PBH) = gbox((x, y), b.at(0), w: b.at(1), h: h, chamfer: b.at(2))
-// The `cons` branch of a `∪`: `a` restricts the head and `l` acts on the tail — drawn to one shared
-// width so `cons` stays upright — then `cons`, then `post`.  `w` is the copy's run.
-
-// ONE wire while `S` is still inside a division: a run of boxes on it.
-// `from`/`mid` are the two type labels the run is not free to guess: @takewhile-laws starts at `[A]`
-// rather than `F([A])`, and its cata rows never open `E[A]` at all.
-
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3's last page.
 #pagebreak(weak: true)
@@ -835,7 +813,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
-  Thm[`prefix≜⦇[nil,⊸ nil ∪ cons]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
     #src[the fold whose algebra, at each `cons`, stops with `nil` or keeps the head:
       `xs prefix ys⟺∃zs. xs=ys⧺zs`]
     // lean:AOP.A5_6_ListCombinators.prefix_cata@b8d861c4
@@ -884,7 +862,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let tw-pfx4 = lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_step3.rhs", branch: "inr.inr")
 
 #disp[#calc-table(cols: (1fr, 5.6cm), pr: 0pt, 
-  Thm[`α prefix list(p)=F(prefix list(p))S` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_alg_comm") \
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
     #src[this same diagram is `subseq`'s: algebra `[nil,π₂ ∪ cons]`, type `[A]⟶[A]`]
@@ -926,7 +904,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // dies against `⊸` on one and slides through `cons` on the other, and leaves past the join.
 #let step = step.with(pw: 300pt)
 #disp[#calc-table(cols: (1fr, 6.0cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)⊑(⊸ nil ∪ (p×𝟙) cons)R°` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
@@ -966,7 +944,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // the coproduct of maps has opened it.
 #let step = step.with(pw: 340pt)
 #disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,⊸ nil)]` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
      `nil` where it does not]],
   table.header([*formula*], [*reason*]),
@@ -1115,7 +1093,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt, 
   // B&dM p.174, Ex 7.40: "The maximum segment sum problem … is specified by mss = max·Λ(sum·segment) …
   // Using segment = prefix·suffix, express this problem in the form mss = max·P(max·Λ(sum·prefix))·Λsuffix."
-  Thm[#frc([`segment sum`])` est(≥)=`#frc([`suffix`])` E(`#frc([`prefix sum`])` est(≥)) est(≥)` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
     // lean:AOP.A7_7_MSS.mss_shape@9c38ad6f
@@ -1242,7 +1220,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
 #disp[#calc-table(
- Thm[#mss-alg ` est(≥)=[zero,⊕]` \
+ Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_step") \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
   // lean:AOP.A7_7_MSS.mss_step@28267eec lean:AOP.A7_7_MSS.mss_step_plus@b71cc592
@@ -1295,7 +1273,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
-  Thm[`mss=⦇k⦈ π₂ est(≥)` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") \
     #src[maximum segment sum problem: #frc([`suffix`])` E(⦇[zero,⊕]⦈)` expressed as the catamorphism `⦇k⦈`,
      // mss-scan row: Ex 7.40
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
@@ -1401,7 +1379,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let step = step.with(pw: 340pt)
 // §13.3.4 rebound `est-Rc-box` to `est(≥)`, which is what the pictures below were drawing.
 #disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
-  Thm[$frac(#[`S`], ∋)$ ` est(R°)=[nil,(π₁p→cons,π₂)]` \
+  Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
      // lean:AOP.A7_7_Filter.filter_step@504b7851
@@ -1449,7 +1427,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr, 6.3cm), 
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
-  Thm[`filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") \
     // filter-simple row: Ex 7.41
     #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
@@ -1878,36 +1856,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // The pictures are ONE WIRE from `tree A` to `[A]`, a box per factor; `[A]×[A]` is where it runs as
 // TWO — `est((R×R)°)` opens the strand into a pair and `choose/∋` closes it again.  Every `R/∋` is a
 // MAP (@pow-laws), so every fraction box is square and every other box chamfered.
-#let LD = 0.34               // circuit.typ's lead, which it does not export
-#let LH = 1.25               // a box on the wire: two lines tall, because a `/∋` label is a fraction
-#let LSP = 0.62              // half the gap between the two strands of `[A]×[A]`
-#let LPH = 2 * LSP + 0.62    // a box that spans the pair
-#let LBA = 1.5               // inside the fold, a branch's root strand ...
-#let LBB = 0.55              // ... and its subtree-list strand
-#let LBY = (LBA + LBB) / 2   // ... and the single strand the branch leaves on
-#let TG = 1.7                // a lead wide enough to carry a TYPE label, not just join two boxes
-#let TGW = 3.0                // ... and wide enough for the longest of them, `E([A]×[A])`
-#let TY = 0.34                // how far above (or, mirrored, below) its wire a type label floats
-
-#let lb-est = ([`est(R°)`], 2.2, true)
-#let lb-lcm = ([`list(`#frc([`choose`])` est(R°))`], 5.5, true)
-
-// The tail every row ends with, `choose/∋ est(R°)`: `choose` takes TWO wires, so the pair closes
-// there, and `est(R°)` reads the set back down to one list.  `sp` is the height the pair arrives at.
-// `midlabel`: `13.4.4a`'s row is the only caller that names the type between `choose/∋` and `est(R°)`
-// — every other row shares this same tail, so the label stays off unless asked for.
-#let ltail(x, sp, midlabel: none) = {
-  gbox((x, 0), frc([`choose`]), w: 2.0, h: 2 * sp + 0.62, chamfer: false)
-  let g = if midlabel == none { LD } else { TG }
-  wire((x + 2.0, 0), (x + 2.0 + g, 0))
-  if midlabel != none { lab(x + 2.0 + g / 2, TY, black)[#midlabel] }
-  gbox((x + 2.0 + g, 0), lb-est.at(0), w: lb-est.at(1), h: LH, chamfer: lb-est.at(2))
-  let xe = x + 2.0 + g + lb-est.at(1)
-  wire((xe, 0), (xe + LD, 0))
-  lab(xe + LD + 0.5, 0, black)[`[A]`]
-}
-#let lsrc = { lab(-1.32, 0, black)[`tree A`]; wire((-0.45, 0), (0, 0)) }
-
 // `13.4.4a`'s row: the only one where the type actually changes mid-run, so it is the only one
 // that gets the wire types spelled out — `E([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
 // each of the two strands it opens into (a PRODUCT is two wires, never one wire marked `×`).
@@ -2243,7 +2191,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
 #disp[#calc-table(
-  Thm[`paths est(R)⊒⦇Q⦈ est(R)` \
+  Thm[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
@@ -2450,7 +2398,7 @@ zip(that)                                         each row: its square, and the 
 // @van-deriv is where that costs the refinement of `R` to `R;H`.  `R` sits on the two schedule
 // wires and `new` on the product context, so the chain is those two beads swapping height.
 #disp[#calc-table(
-  Thm[`(𝟙×R)new⊑(new ∪ old)R` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_7_14") \
     #src[calling the van for the transaction on a no-longer schedule gets no further than calling
      it on this one and shortening the schedule afterwards]],
      // lean:AOP.A7_5_Van.van_7_14@31454849
@@ -2594,7 +2542,7 @@ zip(that)                                         each row: its square, and the 
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
 #disp[#calc-table(
-  Thm[#frc([`partition list(secure)`])` est(R)⊒⦇[nil,(ok→glue,new)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_laws") \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
