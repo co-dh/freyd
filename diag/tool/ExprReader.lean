@@ -246,17 +246,22 @@ partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
   -- to unfold the object or arrow the field lands on and print its implementation.
   let some c ← builtCtor? s | return none
   let some v ← Meta.project? c pi.i | return none
-  unless (← builtOfFieldCarrier fld core) || (← ignoresItsArgs v) do return none
-  pointwise (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
+  let rest := args.extract (pi.numParams + 1) args.size
+  let some r ← pointwise (mkAppN v rest).headBeta | return none
+  -- A FIELD THAT IS THE IDENTITY HAS NO NAME OF ITS OWN EITHER: the identity relator's `obj := id`
+  -- lands on its own argument, so `idRelator(A)` writes an application the definition does not make.
+  unless (← builtOfFieldCarrier fld core) || (← ignoresItsArgs v) || rest.back? == some r do
+    return none
+  return r
 where
   /-- THE OPENED FIELD READ AT ITS ARGUMENTS.  A field written POINT-FREE — `Relator.comp`'s
       `obj := L.obj ∘ G.obj` — is the same function written pointwise, and only the pointwise form
       names the two lanes: `L(GA)`, where the composition itself says `(Functor.obj L ∘ Functor.obj
-      G) A`.  `∘` is APPLICATION COMPOSED and the picture draws applications, so it is read through;
-      every other head stands, because unfolding it would print the implementation the note draws by
-      name. -/
+      G) A`.  `∘` is APPLICATION COMPOSED and `id` is APPLICATION OMITTED; the picture draws
+      applications, so both are read through; every other head stands, because unfolding it would
+      print the implementation the note draws by name. -/
   pointwise (x : Expr) : MetaM (Option Expr) := do
-    unless x.getAppFn.isConstOf ``Function.comp do return some x
+    unless x.getAppFn.isConstOf ``Function.comp || x.getAppFn.isConstOf ``id do return some x
     let some v ← Meta.unfoldDefinition? x | return some x
     pointwise v.headBeta
 
@@ -1200,7 +1205,7 @@ def openNoted (e : Expr) : MetaM Expr := do
 def openNotedAll (e : Expr) : MetaM Expr :=
   Meta.transform e (pre := fun x => do
     let x' ← openNoted x
-    return if x' == x then .continue else .done x')
+    return if x' == x then .continue else .visit x')
 
 /-- One `diag_rewrite` step: `e` rewritten to the right side of the first equation whose left side it
     IS, or `none`; the state is threaded by the caller.  THE HEAD TEST IS THE TERMINATION ARGUMENT:

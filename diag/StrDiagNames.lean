@@ -65,11 +65,6 @@ attribute [diag_unfold] RelSet.Tour.tour
 -- draws by (`openBuiltField?`).
 attribute [diag_unfold] Δ
 
--- …and the IDENTITY RELATOR IS NO OPERATOR AT ALL: its action on an object is that object and on an
--- arrow that arrow, which is what the note writes — `A×A`, `R×R`, never `idRelator(R)`.  The same
--- spelling bridge `Relator.comp_id` is (`AOP.A5_2`), read by the picture instead of by a rewrite.
-attribute [diag_unfold] Relator.idRelator
-
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- A `RelProd a b`'s apex IS the product of `a` and `b` — that is what tabulating `⊤ : a ⟶ b`
     says — so the note writes it `a×b`, never by the field's own name.  A DELABORATOR and not an
