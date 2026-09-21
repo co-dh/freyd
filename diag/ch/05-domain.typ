@@ -10,22 +10,13 @@ The *domain* `Dom(R)≜𝟙∩RR°` #src[] and the *range* `Ran R≜Dom(R°)`.
 
 // THE MEET FIRST, then the stub: the stub alone does not look like `𝟙 ∩ R R°` — one strand carries no
 // box and the return leg is gone — so the definition is drawn beside it and the chain shows the collapse.
-#disp[#chain((cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (4.4, y))
-  wire((1.55, -y), (1.7, -y)); gbox((1.7, -y), [R])
-  wire((2.62, -y), (2.85, -y)); gbox((2.85, -y), [R], flip: true)
-  wire((3.77, -y), (4.4, -y))
-  bend((4.4, y), (5.05, 0), k: 0.4); bend((4.4, -y), (5.05, 0), k: 0.4); wiredot((5.05, 0))
-  wire((5.05, 0), (5.6, 0))
-  lab(-0.35, 0, black)[$A$]; lab(5.95, 0, black)[$A$]
-}), domstr(rel: [$=$])),
-  // Broken by hand: `chain` sizes its column to the hint, so an unbroken line of this length pushes
-  // the two pictures a third of the page apart.
-  ("", [`▷` lands the return leg back on the value `◁` handed out, \
-   so `R°▷` cuts to `⊸` — Frobenius]), s: 100%)]<dom-collapse>
+#disp[#chain((p-dom-cd,),
+  // Broken by hand: the hint is this column's width, so an unbroken line of this length stretches
+  // the row far past the picture.
+  ([`▷` lands the return leg back on the value `◁` handed out, \
+   so `R°▷` cuts to `⊸` — Frobenius #src[]
+   // lean:Freyd.Diag.dom_cd@55211659
+],), s: 62%)]<dom-collapse>
 
 Running `R` and throwing the result away leaves only the fact that `R` could fire, and `Ran R` is the
 same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R b}`.
@@ -57,20 +48,12 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
 `Dom(RS)⊑Dom(R)`, and a single glyph for `Dom` would have nothing to slide: with the box and the
 discard drawn apart, the law is one dot walking back along the lower strand.
 
-#disp[#chain((cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (4.6, y))
-  wire((1.55, -y), (1.7, -y)); gbox((1.7, -y), [R])
-  wire((2.62, -y), (2.85, -y)); gbox((2.85, -y), [S])
-  wire((3.77, -y), (4.15, -y)); wiredot((4.15, -y))
-  lab(-0.35, 0, black)[$A$]; lab(4.95, y, black)[$A$]
-}), domstr(rel: [`⊑`])),
-  ("", [`S⊸⊑⊸`, the lax axiom for `⊸` in the first section \
+#disp[#chain((p-dom-comp-le,),
+  ([`S⊸⊑⊸`, the lax axiom for `⊸` in the first section \
  — the discard slides back past `S` #src[]
    // lean:Freyd.S2_10.dom_comp_le@a99434dd
-]), s: 100%)]<dom-slide>
+   // lean:Freyd.Diag.dom_comp_le@4f75b0f2
+],), s: 62%)]<dom-slide>
 
 Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` entire.
 

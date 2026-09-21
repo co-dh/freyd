@@ -954,19 +954,6 @@
 
 // ==== named whole pictures — bound because each is drawn more than once ==========================
 
-// The collapsed domain, bound rather than drawn in place: it is the right-hand step of both chains
-// below.  `rel` draws the symbol at the picture's LEFT EDGE — beside a canvas it sits on the baseline.
-#let domstr(rel: none) = cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  if rel != none { lab(-1.2, 0, black)[#rel] }
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (3.75, y))
-  wire((1.55, -y), (1.9, -y)); gbox((1.9, -y), [R]); wire((2.82, -y), (3.3, -y))
-  wiredot((3.3, -y))
-  lab(-0.35, 0, black)[$A$]; lab(4.1, y, black)[$A$]
-})
-
 // `◁` then `R ⊗ S`, bound because it is also the last step of the collapse chain below.  `eq` draws the
 // `=` at the LEFT EDGE, as `./scripts/diag-export` does: beside the canvas it would sit on the baseline.
 #let pairstr(eq: false) = cetz.canvas(length: 0.8cm, {
