@@ -1354,6 +1354,36 @@ def joinSplit? (body : Expr) : MetaM (Option (String × Expr × Expr)) := do
   | none => return none
   | some sym => return some (sym, b₀, ← sub 1)
 
+/-- THE LETTERS A RENAMED BINDER MAY TAKE, picked by what the binder IS and never by the name it
+    came with: an OBJECT of a category takes `X Y Z W`, an ARROW `R S U V` — the note's own letters
+    for a thing the statement did not name.  A binder that is neither (a proof, an instance) carries
+    no label any picture prints and keeps whatever it had. -/
+def binderPool (x : Expr) : MetaM (Array Name) := do
+  if (← StrDiag.homEnds? x).isSome then return #[`R, `S, `U, `V]
+  if ← StrDiag.isObjType (← Meta.inferType x) then return #[`X, `Y, `Z, `W]
+  return #[]
+
+/-- A TELESCOPE OPENED WITH ITS NAMES FREE.  A binder whose name is already taken SHADOWS it, and
+    the printer then daggers the OUTER one (`A✝`) wherever the statement still stands at it — and a
+    `✝` never reaches a picture.  The NEWLY opened binder is the one renamed, to the first free
+    letter of its pool; the outer name is kept, being the one the statement was written in. -/
+def withFreeNames {α : Type} (xs : Array Expr) (k : MetaM α) : MetaM α := do
+  let lctx0 ← getLCtx
+  let inner := xs.filterMap (·.fvarId?)
+  let mut taken : Array Name := #[]
+  for d in lctx0 do
+    unless d.isImplementationDetail || inner.contains d.fvarId do taken := taken.push d.userName
+  let mut lctx := lctx0
+  for x in xs do
+    let some fid := x.fvarId? | continue
+    let some d := lctx.find? fid | continue
+    if taken.contains d.userName then
+      match (← binderPool x).find? (!taken.contains ·) with
+      | some fresh => lctx := lctx.setUserName fid fresh; taken := taken.push fresh
+      | none => taken := taken.push d.userName
+    else taken := taken.push d.userName
+  Meta.withLCtx lctx (← Meta.getLocalInstances) k
+
 /-- The FACES a statement asserts.  An equation or inequation is one; a CONJUNCTION is one per
     conjunct, each drawn on its own grid unless the two paste; an `↔` is the side `side` names,
     because the two sides of an equivalence are two claims and not two paths.  What is not yet any
@@ -1392,7 +1422,7 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
   -- objects and arrows it is about — `∀ {X Y} (R : X ⟶ Y), φ Y ⊑ φ X`, a side of an `↔` — states
   -- its face at those binders, and the face is read at the bottom of the telescope like every other.
   if body.isForall then
-    Meta.forallTelescopeReducing body fun _ b => faces what b side fuel induced k
+    Meta.forallTelescopeReducing body fun xs b => withFreeNames xs (faces what b side fuel induced k)
   else
   match ← joinSplit? body with
   | some (sep, b₀, b₁) =>
@@ -1422,7 +1452,8 @@ partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side :
       let some v := ci.value?
         | throwError "{what}: `{n}` heads the statement and has no definition to open"
       let body := (mkAppN (v.instantiateLevelParams ci.levelParams us) body.getAppArgs).headBeta
-      Meta.forallTelescopeReducing body fun _ b => faces what b side (fuel - 1) induced k
+      Meta.forallTelescopeReducing body fun xs b =>
+        withFreeNames xs (faces what b side (fuel - 1) induced k)
 
 /-! ### The hypotheses a statement is handed -/
 
