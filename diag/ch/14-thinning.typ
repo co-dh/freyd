@@ -62,7 +62,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
    // lean:AOP.A8_1.thinRel_comp_est@e5ad7ecb
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
- #src[(8.2)]],
+ #src[(8.2) — @thin-82]],
    // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@6a9d3796
   [*thin-elimination*: keeping one element is a thinning, but its domain is the sets `est(Q)` is
    defined on],
@@ -161,6 +161,43 @@ row((
     [#src[`R` transitive, conversed]])],
 )]<thin-intro-up2>
 
+// B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
+// the first cancels the singleton against the `∋`, the second is the chain.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.est_comp_singletonMap_le_thinRel") \
+    #src[the singleton holding a `Q`-least member of a set is a thinning of that set
+     // thin-elimination row: (8.2), p. 194
+ #h(4pt) ]],
+     // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@6a9d3796
+  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
+  // law's own letters, so the column has no one pair of ports.
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep(IMP, leanc("Freyd.Alg.est_comp_singletonMap_cond1.lhs"),
+    [#src[the `∋/∋` half of @thin-defn at `X≜est(Q) `#frc([`𝟙`])]])],
+     // lean:AOP.A8_1.est_comp_singletonMap_cond1@3c083e37
+  [#lean("Freyd.Alg.est_comp_singletonMap_cond1.lhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.est_comp_singletonMap_cond1.rhs"),
+    [#src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then `est(Q)⊑∋` — @est-laws]])],
+  [#lean("Freyd.Alg.est_comp_singletonMap_cond1.rhs")],
+
+  [#vstep(IMP, leanc("Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs"),
+    [#src[the `∈\(Q°∈)` half of @thin-defn, `−⊑Q°∈`]])],
+     // lean:AOP.A8_1.est_comp_singletonMap_cond2@0b3ab216
+  [#lean("Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.est_comp_singletonMap_cond2_step1.rhs"),
+    [#src[`∈ est(Q)⊑Q°` — @est-up at `X≜est(Q)`, conversed]])],
+     // lean:AOP.A8_1.est_comp_singletonMap_cond2_step1@dab28250
+  [#lean("Freyd.Alg.est_comp_singletonMap_cond2_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.recip_comp_singletonMap_le.rhs"),
+    [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
+     // lean:AOP.A8_1.recip_comp_singletonMap_le@a290eae1
+  [#lean("Freyd.Alg.recip_comp_singletonMap_le.rhs")],
+)]<thin-82>
+
 // B&dM (8.3), p. 194, mirrored.  The first of the two conditions cancels the singleton against `∋`;
 // the second is the chain, and the context row is where the side condition enters.
 #let eb-LamS = (frc([`S`]), 1.0, false)
@@ -169,43 +206,47 @@ row((
 #let eb-pic(tail) = thpic([`A`], [`EA`], none, tail)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
-    #src[keeping one `R`-least of the `S`-values is a thinning, once `R` refines `Q` between the
+    #src[given `R∩(S°S)⊑Q`, `Q` a preorder
      // thinning row: (8.3), p. 194
-     values `S` gives one argument — `R∩(S°S)⊑Q`, `Q` a preorder
  #h(4pt) ]],
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@bac7360f
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], [],
-    [#frc([`S`])` est(R) `#frc([`𝟙`])`∋⊑S` #h(10pt) and #h(10pt)
-     `S°`#frc([`S`])` est(R) `#frc([`𝟙`])`⊑Q°∈` \
-     #src[@thin-laws at `X≜`#frc([`S`])` est(R) `#frc([`𝟙`])]])],
-  // A conjunction has no shape in either calculus.
-  [],
+  [#vstep(IMP, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs"),
+    [#src[the first of @thin-laws' two conditions at `X≜`#frc([`S`])` est(R) `#frc([`𝟙`])]])],
+     // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond1@29aa52d6
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs")],
 
-  [#vstep(IMP, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.lhs"),
-    [#src[the first is #frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` —
-      @est-laws; the second is this chain, `−⊑Q°∈`]])],
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.lhs")],
+  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs"),
+    [#src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` — @est-laws]])],
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs")],
+
+  [#vstep(IMP, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs"),
+    [#src[the second condition, `−⊑Q°∈`]])],
+     // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2@29665c3e
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs")],
 
   [#vstep(EQ, eb-pic((So-box, eb-LamS, eb-estc, eb-tau)),
     [#src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
   // Empty: the wiring is the row above's, with one bead renamed.
   [],
 
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.rhs"),
+  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs"),
     [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step1.rhs")],
+     // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step1@4ac3fc82
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs")],
 
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step2.rhs"),
+  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs"),
     [#src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step2.rhs")],
+     // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step2@48c5c1ff
+  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs")],
 
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step3.rhs"),
+  [#vstep(SQ, leanc("Freyd.Alg.recip_comp_singletonMap_le.rhs"),
     [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel_step3.rhs")],
+     // lean:AOP.A8_1.recip_comp_singletonMap_le@a290eae1
+  [#lean("Freyd.Alg.recip_comp_singletonMap_le.rhs")],
 )]<thin-83>
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal

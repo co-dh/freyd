@@ -300,24 +300,44 @@ public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id
     (htrans : R ≫ R ⊑ R) : est R = thinRel Q ≫ est R :=
   le_antisymm (thinRel_comp_est_step1 hreflQ) (thinRel_comp_est_le hQR htrans)
 
+/-! ### The (8.2) chain
+
+  `thin Q` is `(∋/∋) ∩ (∈\(Q°∈))`, so `est Q ≫ τ ⊑ thin Q` is two conditions; the second is the
+  chain `∋° est Q ≫ τ ⊑ Q° ≫ τ ⊑ Q° ∈`, one theorem per step. -/
+
+/-- The `∋/∋` half of `thin`: what the singleton keeps of a minimum was a member of the set. -/
+public theorem est_comp_singletonMap_cond1 (Q : A ⟶ A) :
+    (est Q ≫ singletonMap) ≫ ∋ A ⊑ ∋ A := by
+  rw [Cat.assoc, singletonMap_comp_eps, Cat.comp_id]
+  exact inter_lb_left _ _
+
+/-- Step 1: `∈ ≫ est Q ⊑ Q°`, the `∈\Q°` half of `est`. -/
+public theorem est_comp_singletonMap_cond2_step1 (Q : A ⟶ A) :
+    (∋ A)° ≫ est Q ≫ singletonMap ⊑ Q° ≫ singletonMap := by
+  rw [← Cat.assoc]
+  exact comp_mono_right (recip_eps_comp_est_le Q) singletonMap
+
+/-- Step 2, shared with the (8.3) chain: the singleton map is contained in `∈`, since `Λ𝟙 ≫ ∋ = 𝟙`
+    with `Λ𝟙` a map. -/
+public theorem recip_comp_singletonMap_le {Q : A ⟶ A} :
+    Q° ≫ (singletonMap : A ⟶ PowerAllegory.powerObj A) ⊑ Q° ≫ (∋ A)° :=
+  comp_mono_left Q° singletonMap_le_recip_eps
+
+/-- The `∈\(Q°∈)` half of `thin`, the chain end to end: the one member kept is a `Q`-lower bound
+    of every member. -/
+public theorem est_comp_singletonMap_cond2 (Q : A ⟶ A) :
+    (∋ A)° ≫ est Q ≫ singletonMap ⊑ Q° ≫ (∋ A)° :=
+  le_trans (est_comp_singletonMap_cond2_step1 Q) recip_comp_singletonMap_le
+
 /-- **(8.2)**, thin-elimination: `min Q ≫ τ ⊑ thin Q` — a minimum, viewed as a singleton, is a
     thinning. -/
-theorem est_comp_singletonMap_le_thinRel (Q : A ⟶ A) :
+public theorem est_comp_singletonMap_le_thinRel (Q : A ⟶ A) :
     est Q ≫ singletonMap ⊑ thinRel Q := by
   show est Q ≫ singletonMap ⊑ subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
   refine le_inter ?_ ?_
   · show est Q ≫ singletonMap ⊑ (∋ A) / (∋ A)
-    apply (le_div_iff _ _ _).mpr
-    rw [Cat.assoc, singletonMap_comp_eps, Cat.comp_id]
-    exact inter_lb_left _ _
-  · apply (le_leftDiv_iff _ _ _).mpr
-    rw [← Cat.assoc]
-    have hbnd : (∋ A)° ≫ est Q ⊑ Q° :=
-      le_trans (comp_mono_left _ (show est Q ⊑ (((∋ A)°) \ Q°) from inter_lb_right _ _))
-        (leftDiv_comp_le _ Q°)
-    have s1 : ((∋ A)° ≫ est Q) ≫ singletonMap ⊑ Q° ≫ singletonMap :=
-      comp_mono_right hbnd singletonMap
-    exact le_trans s1 (comp_mono_left Q° singletonMap_le_recip_eps)
+    exact (le_div_iff _ _ _).mpr (est_comp_singletonMap_cond1 Q)
+  · exact (le_leftDiv_iff _ _ _).mpr (est_comp_singletonMap_cond2 Q)
 
 /-- **Ex 8.5**: `min R = thin R ≫ τ°` — thinning followed by "pick the singleton member" recovers
     the minimum. -/
@@ -347,13 +367,14 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : A ⟶ A} :
         exact le_refl _
       exact le_trans s1 s2
 
-/-! ### The (8.3) chain (note §14.1.1b)
+/-! ### The (8.3) chain
 
-  `S° S%∋ est(R)𝟙%∋ ⊑ ∈ est(R∩S°S)𝟙%∋ ⊑ Q° 𝟙%∋ ⊑ Q° ∈`, one theorem per step; the second half
-  of `Λ_comp_est_comp_singletonMap_le_thinRel`'s universal property is their composition. -/
+  `S° S%∋ est(R)𝟙%∋ ⊑ ∈ est(R∩S°S)𝟙%∋ ⊑ Q° 𝟙%∋ ⊑ Q° ∈`, one theorem per step; the second
+  condition of `Λ_comp_est_comp_singletonMap_le_thinRel`'s universal property is their
+  composition. -/
 
 /-- Step 1: the context rule (7.6) renames the bead, then `S°·ΛS ⊑ ∈` swallows the transpose. -/
-public theorem Λ_comp_est_comp_singletonMap_le_thinRel_step1 {S : B ⟶ A} {R : A ⟶ A} :
+public theorem Λ_comp_est_comp_singletonMap_cond2_step1 {S : B ⟶ A} {R : A ⟶ A} :
     S° ≫ Λ S ≫ est R ≫ singletonMap
       ⊑ (∋ A)° ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap := by
   rw [← Cat.assoc (Λ S) (est R) singletonMap, (Λ_comp_est_context S R).symm,
@@ -362,7 +383,7 @@ public theorem Λ_comp_est_comp_singletonMap_le_thinRel_step1 {S : B ⟶ A} {R :
   exact comp_mono_right (recip_comp_Λ_le_recip_eps S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)
 
 /-- Step 2: `∈ est(X) ⊑ X°` at `X ≜ R∩S°S`, then the hypothesis `R∩(S°S)⊑Q` conversed. -/
-public theorem Λ_comp_est_comp_singletonMap_le_thinRel_step2 {S : B ⟶ A} {Q R : A ⟶ A}
+public theorem Λ_comp_est_comp_singletonMap_cond2_step2 {S : B ⟶ A} {Q R : A ⟶ A}
     (h : R ∩ (S° ≫ S) ⊑ Q) :
     (∋ A)° ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap ⊑ Q° ≫ singletonMap := by
   rw [← Cat.assoc (∋ A)° (est (R ∩ (S° ≫ S))) singletonMap]
@@ -374,28 +395,30 @@ public theorem Λ_comp_est_comp_singletonMap_le_thinRel_step2 {S : B ⟶ A} {Q R
     rwa [Allegory.recip_inter, Allegory.recip_comp, Allegory.recip_recip] at h0
   exact comp_mono_right (le_trans hbndM h') singletonMap
 
-/-- Step 3: the singleton map is contained in `∈`, since `Λ𝟙·∋ = 𝟙` with `Λ𝟙` a map. -/
-public theorem Λ_comp_est_comp_singletonMap_le_thinRel_step3 {Q : A ⟶ A} :
-    Q° ≫ (singletonMap : A ⟶ PowerAllegory.powerObj A) ⊑ Q° ≫ (∋ A)° :=
-  comp_mono_left Q° singletonMap_le_recip_eps
+/-- The UP's first condition: everything kept is an `S`-value — the singleton cancels against the
+    `∋`, and `ΛS ≫ est R ⊑ ΛS ≫ ∋ = S`. -/
+public theorem Λ_comp_est_comp_singletonMap_cond1 {S : B ⟶ A} {R : A ⟶ A} :
+    (Λ S ≫ est R ≫ singletonMap) ≫ ∋ A ⊑ S := by
+  rw [Cat.assoc (Λ S) (est R ≫ singletonMap) (∋ A),
+      Cat.assoc (est R) singletonMap (∋ A), singletonMap_comp_eps, Cat.comp_id]
+  have h := comp_mono_left (Λ S) (show est R ⊑ ∋ A from inter_lb_left _ _)
+  rwa [Λ_eps_eq'] at h
+
+/-- The UP's second condition, the chain end to end: every `S`-value is `Q`-above the one kept. -/
+public theorem Λ_comp_est_comp_singletonMap_cond2 {S : B ⟶ A} {Q R : A ⟶ A}
+    (h : R ∩ (S° ≫ S) ⊑ Q) :
+    S° ≫ Λ S ≫ est R ≫ singletonMap ⊑ Q° ≫ (∋ A)° :=
+  le_trans Λ_comp_est_comp_singletonMap_cond2_step1
+    (le_trans (Λ_comp_est_comp_singletonMap_cond2_step2 h) recip_comp_singletonMap_le)
 
 /-- **(8.3)**, thin-elimination with context: `ΛS ≫ min R ≫ τ ⊑ ΛS ≫ thin Q` whenever `R`
     restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal
     property (`le_Λ_comp_thinRel_iff`), the context rule (7.6) `Λ_comp_est_context`, and the
     shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound). -/
 public theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : B ⟶ A} {Q R : A ⟶ A}
-    (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
-  apply le_Λ_comp_thinRel_iff.mpr
-  refine ⟨?_, ?_⟩
-  · -- `(ΛS ≫ min R° ≫ τ) ≫ ∈ ⊑ S`
-    rw [Cat.assoc (Λ S) (est R ≫ singletonMap) (∋ A),
-        Cat.assoc (est R) singletonMap (∋ A), singletonMap_comp_eps, Cat.comp_id]
-    have h := comp_mono_left (Λ S) (show est R ⊑ ∋ A from inter_lb_left _ _)
-    rwa [Λ_eps_eq'] at h
-  · -- `S° ≫ (ΛS ≫ min R° ≫ τ) ⊑ Q° ≫ ∋`
-    exact le_trans Λ_comp_est_comp_singletonMap_le_thinRel_step1
-      (le_trans (Λ_comp_est_comp_singletonMap_le_thinRel_step2 h)
-        Λ_comp_est_comp_singletonMap_le_thinRel_step3)
+    (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q :=
+  le_Λ_comp_thinRel_iff.mpr
+    ⟨Λ_comp_est_comp_singletonMap_cond1, Λ_comp_est_comp_singletonMap_cond2 h⟩
 
 /-! ## THEOREM 8.1 — the thinning theorem (book p.195) -/
 

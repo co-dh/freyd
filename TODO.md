@@ -49,9 +49,9 @@
 [X] add string diagram of H as 2 string diagram for each branch of U of algprog.pdf P186 as 13.6.3. lean proof. mark.
 [X] add string diagram of 7.16 and 7.17 algprog.pdf P187 as 13.6.4. lean proof. mark.
 [X] add string diagram of 7.19, 20, 21 of algprog.pdf P187 as 13.6.5. plus the derive on P188. lean proof. mark.
-[ ] add 8.2 of algprog.pdf P194
-[ ] 14.1.2d need to add "given R∩(S°S)⊑Q ) in the title, and remove "keeping one ..."
-[ ] add string diagram of  the first formulas after 8.3 op algprog.pdf P194. prove the second with our table format like 14.1.2d.
+[X] add 8.2 of algprog.pdf P194
+[X] 14.1.2d need to add "given R∩(S°S)⊑Q ) in the title, and remove "keeping one ..."
+[X] add string diagram of  the first formulas after 8.3 op algprog.pdf P194. prove the second with our table format like 14.1.2d.
 [X] 3 circuit cells in ch12 were hand-laid `#cpanel` literals; every circuit in ch12–16 is a `#leanc`.
 [ ] 11.5.1b is the one commutative canvas that still differs from what Lean draws: the note has six
     arrows, the declaration `alpha_natural_split` states five (no diagonal). Either the note drops
