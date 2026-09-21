@@ -1547,7 +1547,10 @@ def indexFail (msg : String) : IO α := do
 /-- The rows of one read-only query against `INDEX`, through the `sqlite3` CLI as lean-refactor
     drives it, read by `Json.parse`.  `-json` prints nothing at all for an empty result, not `[]`. -/
 def indexRows (sql : String) : IO (Array Json) := do
-  let out ← IO.Process.output { cmd := "sqlite3", args := #["-readonly", "-json", INDEX.toString, sql] }
+  -- `.timeout`: a redraw starts a dozen readers at once, and the first of them after an index write
+  -- checkpoints the WAL; without it the rest exit on `database is locked` instead of waiting it out.
+  let out ← IO.Process.output { cmd := "sqlite3", args :=
+    #["-readonly", "-json", "-cmd", ".timeout 30000", INDEX.toString, sql] }
   unless out.exitCode == 0 do
     indexFail s!"sqlite3 -readonly {INDEX} exited {out.exitCode}: {out.stderr}\
       write the index with `./scripts/lean-refactor index`"
