@@ -193,6 +193,15 @@ def builtOfFieldCarrier (fld : Name) (s : Expr) : MetaM Bool := do
     -- on anything else panics and answers from an empty default instead of saying so.
     return isStructure (← getEnv) c && (findField? (← getEnv) c fld).isSome
 
+/-- A FIELD THAT IGNORES ITS ARGUMENT HAS NO NAME OF ITS OWN EITHER.  A constant relator's `obj` is
+    `fun _ => A` and its `map` is `fun _ => 𝟙 A`, so `const(X)` writes a dependence on `X` that the
+    definition does not have — the picture draws the object the relator IS at, `A` and `𝟙`.  The
+    test is the DEFINITION and not the head: any bundle whose field drops every argument is drawn
+    by what the field is, and one whose field uses an argument (`list`, `E`, `T`) keeps its name. -/
+def ignoresItsArgs (v : Expr) : MetaM Bool :=
+  Meta.lambdaTelescope v fun xs body =>
+    return xs.size > 0 && xs.all fun x => !body.containsFVar x.fvarId!
+
 /-- THE BUNDLE ITSELF, under the PARENT projections Lean writes to reach an inherited field: a
     relator and its `toFunctor` are one lane, and only the relator says what it was built from. -/
 partial def bundleCore (s : Expr) : MetaM Expr := do
@@ -233,11 +242,11 @@ partial def openBuiltField? (e : Expr) : MetaM (Option Expr) := do
   let some fld := (getStructureInfo? (← getEnv) ci.induct).bind (·.fieldNames[pi.i]?) | return none
   let core ← bundleCore s
   unless ← isLaneBundle core do return none
-  unless ← builtOfFieldCarrier fld core do return none
   -- The DEFINITION is taken off the constructor and nothing further is reduced: `whnf` would go on
   -- to unfold the object or arrow the field lands on and print its implementation.
   let some c ← builtCtor? s | return none
   let some v ← Meta.project? c pi.i | return none
+  unless (← builtOfFieldCarrier fld core) || (← ignoresItsArgs v) do return none
   pointwise (mkAppN v (args.extract (pi.numParams + 1) args.size)).headBeta
 where
   /-- THE OPENED FIELD READ AT ITS ARGUMENTS.  A field written POINT-FREE — `Relator.comp`'s
