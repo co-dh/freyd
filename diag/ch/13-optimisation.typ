@@ -728,11 +728,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A7_7_TakeWhile.lenLE@e922b2d4
   [`xs R ys⟺length(xs)≤length(ys)`],
 
-  [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`], [`A×[A]⟶[A]`],
+  [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.discNil")],
   [`(⊸ nil)(3,[1,2])=nil`],
   [drop the pair, return `nil`],
 
-  [`prefix`], [`⦇[nil,⊸ nil ∪ cons]⦈` #h(4pt) #src[@comb-fns]], [`[A]⟶[A]`],
+  [`prefix`], [`⦇[nil,⊸ nil ∪ cons]⦈` #h(4pt) #src[@comb-fns]],
+  [#leant("Freyd.Alg.RelSet.ListRel.prefixR")],
   [`[3,1,2] prefix [3,1]`],
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
@@ -1453,7 +1455,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [The preorder the guest list is maximised over.],
 
   [`choose≜π₁ ∪ π₂`],
-  [`[A]×[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.choose")],
   [Takes one of the two parties a subtree returns.],
 
   [`include≜(𝟙×(list(π₂) concat)) cons`],
@@ -1474,7 +1476,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Every guest list the president's ruling allows.],
 
   [the specification \ $frac(#[`party`], ∋)$ `est(R°)`],
-  [`tree(A)⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.party_open")],
   [A guest list of greatest total conviviality.],
 )]<party-defn>
 
@@ -2229,24 +2231,24 @@ zip(that)                                         each row: its square, and the 
   [`secure` keeps `[a]` exactly when `−N≤a≤N`.],
 
   [`ok` \ the coreflexive on `(a,xs)` with `xs` non-empty and `[a]⧺head(xs)` secure],
-  [`A×[[A]]` \ `⟶A×[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.okR")],
   [`ok` keeps `(a,[[b],[c]])` exactly when `[a,b]` is secure.],
 
   [`new≜(wrap×𝟙) cons`],
-  [`A×[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.newR")],
   [`new(a,[[b],[c]])=[[a],[b],[c]]`.],
 
   [`glue≜(𝟙×cons°) assocl (cons×𝟙) cons`],
-  [`A×[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.glueR")],
   [`glue(a,[[b],[c]])=[[a,b],[c]]`.],
 
   [`old≜(𝟙×cons°) assocl` \
    `((cons secure)×𝟙) cons`],
-  [`A×[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.oldR")],
   [`old(a,[[b],[c]])=[[a,b],[c]]` when `[a,b]` is secure, and nothing otherwise.],
 
   [`partition=⦇[nil,new ∪ glue]⦈`],
-  [`[A]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.partition")],
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
   [`S≜[nil,new ∪ old]`],
@@ -2260,12 +2262,12 @@ zip(that)                                         each row: its square, and the 
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
   // lean:AOP.A7_5_Van.H_eq@b1cf5141
-  [`[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.H_eq")],
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
  [`R;H≜R∩(R°⇒H)` #src[]],
   // lean:AOP.A7_5_Van.RH_eq@ddc8b9dc
-  [`[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.RH_eq")],
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`, and `[[a],[b,c]]` to `[[a,b],[c]]` by `R∩H`.],
 
   [`|R|≜R∩¬R°`],
