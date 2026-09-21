@@ -498,6 +498,15 @@ attribute [diag_indexed] alphaT InitialAlgebra.α
 -- any other, and only the constant says which arrows are the coherence of `×`.
 attribute [diag_coherence] RelSet.Van.assoclR
 
+-- THE VECTOR RELATOR IS THE NOTE'S `Vec(n)`, and its action on an arrow is that operator APPLIED:
+-- `Vec(n)(cons)`, curried, because the length is the operator's own parameter and the arrow is what
+-- it acts on — `Vec(n,cons)` would read as one operator of two arguments.  The printer's own
+-- brackets say the currying and the label spells them by its one application rule.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tuple.tupleP] public meta def unexpandTupleP : Unexpander
+  | `($_ $n $R) => `(($(mkIdent `Vec) $n) $R)
+  | _ => throw ()
+
 -- THE VERDICT THE ALGEBRA OF `AOP.A8_2.thinning_paths_alg` NEEDS: the note draws what sits inside
 -- the `⦇ ⦈` rather than the whole fold, so its source is the bifunctor at two DIFFERENT arguments.
 section

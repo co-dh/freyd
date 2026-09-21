@@ -160,14 +160,15 @@ public abbrev dBranch (A : Type) : RelSet.{0} :=
 /-- **party-defn**: `include ≜ (𝟙×(list(π₂) concat)) cons`, concretely — the party that invites
     the root, which puts every immediate subtree's root out.  A map (`include_eq` is the
     point-free form). -/
-@[expose] public def includeFn :
+@[expose] public def «include» :
     A × ConsList Unit (ConsList Unit A × ConsList Unit A) → ConsList Unit A :=
   fun u => ConsList.cons u.1 (cconcat (cmap Prod.snd u.2))
 
-/-- `include` as an ARROW of the note's region — the graph of `includeFn`, which is a Lean
-    function and no arrow at all.  Spelled `x×[[x]×[x]]⟶[x]` through `dBranch`, the source the
+/-- `include` as an ARROW of the note's region — the graph of the map `include`, which is a Lean
+    function and no arrow at all.  The name is the NOTE's, quoted because Lean reserves the word:
+    a label drops the `«»` the formatter writes, as it does for `prefix`.  Spelled `x×[[x]×[x]]⟶[x]` through `dBranch`, the source the
     note's panels draw open. -/
-@[expose] public def includeR : dBranch A ⟶ dList A := graph includeFn
+@[expose] public def includeR : dBranch A ⟶ dList A := graph «include»
 
 /-- `include = (𝟙×(list(π₂) concat)) cons`, point-free. -/
 public theorem include_eq :
@@ -179,7 +180,7 @@ public theorem include_eq :
     exact ⟨(u.1, cconcat (cmap Prod.snd u.2)),
       ⟨rfl, ⟨cmap Prod.snd u.2, (listP_graph _ _ _).mpr rfl, rfl⟩⟩, h⟩
   · rintro ⟨v, ⟨hv1, zs, hzs, hv2⟩, hy⟩
-    show y = includeFn u
+    show y = «include» u
     rw [(show y = ConsList.cons v.1 v.2 from hy), ← (show u.1 = v.1 from hv1),
       (show v.2 = cconcat zs from hv2), (listP_graph _ _ _).mp hzs]
     rfl
@@ -427,7 +428,7 @@ theorem best_dominates :
     free.  The `include` half of what `exclude_step` states for `exclude`. -/
 public theorem include_step :
     (includeR : dBranch A ⟶ dList A) ⊑ Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°) :=
-  graph_le_Λ_est includeFn (by
+  graph_le_Λ_est «include» (by
     have h := recip_mono (R_refl rating); rwa [recip_id] at h)
 
 /-- **party-laws, last row** (`exclude` branch): `est(R°)` pushed into each subtree's choice —
@@ -472,7 +473,7 @@ public theorem party_pair_step :
     handing up its best party with its boss in and its best with the boss out, and `choose`
     taking the better of the two at the root. -/
 public theorem party_laws :
-    ⦇(rpair (graph includeFn)
+    ⦇(rpair (graph «include»)
         ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
           ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
@@ -483,10 +484,10 @@ public theorem party_laws :
   -- last row: the program's algebra refines ⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩
   have hRrefl : 𝟙 (dList A) ⊑ (R rating)° := by
     have h := recip_mono (R_refl rating); rwa [recip_id] at h
-  have row7 := rpair_mono (graph_le_Λ_est includeFn hRrefl) (exclude_step rating)
+  have row7 := rpair_mono (graph_le_Λ_est «include» hRrefl) (exclude_step rating)
   -- Ex 7.15 row: `⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩ ⊑ Λ(S) est((R×R)°)`
   have row6 := party_pair_step rating
-  have hcata : ⦇(rpair (graph includeFn)
+  have hcata : ⦇(rpair (graph «include»)
         ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
             ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
           ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
