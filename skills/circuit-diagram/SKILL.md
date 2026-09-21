@@ -1,6 +1,6 @@
 ---
 name: circuit-diagram
-description: Drawing or reading the note's CIRCUIT pictures — a wire is an object, a box a morphism, a product two wires — plus the generator scripts/circuit, the cpanel/circuit Typst files, type labels, and cetz mechanics.
+description: Drawing or reading the note's CIRCUIT pictures — a wire is an object, a box a morphism, a product two wires — plus ./scripts/diag-export --circuit, the cpanel/circuit Typst files, type labels, and cetz mechanics.
 ---
 
 # Circuit diagrams
@@ -57,8 +57,8 @@ a region, every arrow becomes a wire — and it still looks like a plausible pic
 - Application in a type label is juxtaposition — `F[A]`, `EF[A]`, `E[A]`, `E tree A`, `tree A` — a
   space only beside a multi-letter name, nothing between one-letter functors or before `[`; n equal
   factors print as a power, `[A]²`, `E[A]²`; binary `F(A,B)` keeps its parentheses. That is the LABEL
-  PRINTER only (`lshow` in `scripts/circuit`) — the canonical object printer, the signature table and
-  the `cert:` strings are unchanged.
+  PRINTER only, `diag/tool/Label.lean` — the object itself comes straight off `Meta.inferType`, so
+  there is no separate signature table to keep in step with it.
 
 ## Some steps have no picture. Leave the cell empty.
 
@@ -76,33 +76,36 @@ work, and let the caption name the branch it is.
 
 ## Which tool draws which
 
-| convention    | generator         | emits                    | signatures                |
-|---------------|-------------------|--------------------------|---------------------------|
-| circuit       | `scripts/circuit` | one `#cpanel(...)` call  | `diag/circuit-sigs.json`  |
-| Hinze–Marsden | `scripts/diagram` | one `#dpanel(...)` call  | `diag/hm-sigs.json`       |
+| convention    | generator                          | emits                    | reads                |
+|---------------|-------------------------------------|--------------------------|-----------------------|
+| circuit       | `./scripts/diag-export --circuit`  | one `#cpanel(...)` call  | its elaborated `Expr` |
+| Hinze–Marsden | `./scripts/diag-export --string`   | one `#dpanel(...)` call  | its elaborated `Expr` |
 
-`scripts/circuit` reads the formula in the note's own notation and needs `--src`/`--tgt`, because a
-formula alone does not fix the ports. It emits a `cert:` recording the input, so a pasted picture
-certifies itself, and it has `--compare` (rebuild every `#cpanel` literal in the note from its own
-`cert:` and fail on drift) and `--write` (splice the rebuild over it).
+`diag-export` is a FUNCTOR, not a transcription: it never reads a formula string, a signature table
+or the note. The source and target object of every subterm is `Meta.inferType` of it, and the wire
+count of an object is its own product structure (`diag/tool/CircuitDiagram.lean`, `StringDiagram.lean`)
+— so there is nothing to keep in sync by hand and no `cert:`/`--compare`/`--write` step: the picture
+IS the statement, read once, every time it is regenerated.
 
-Run `./scripts/circuit -h` for its flags, its modes and one runnable line per mode. That help is the
-flag list; it is not copied here, and it is where to look before reading the source.
+Run `./scripts/diag-export` with no arguments for its usage, its modes (`--string`, `--circuit`,
+`--commutative`, `--formula`, `--proof`, `--sig`, `--type`) and the selector grammar. That usage text
+is the flag list; it is not copied here, and it is where to look before reading the source.
 
 ## Where the code lives
 
-| file                   | holds                                                                    |
-|------------------------|--------------------------------------------------------------------------|
-| `diag/circuit.typ`     | the primitives: `wire`, `bend`, `gbox`, `delta`/`nabla`, `tape`, `conv`   |
-| `diag/cpanel.typ`      | `cpanel`, the panel a generated `cert:` renders through                   |
-| `diag/cetz-nodraw.typ` | cetz with the `nodraw` switch, and `d`/`lw` — the pen BOTH conventions use |
-| `scripts/circuit`      | the generator                                                             |
-| `scripts/relexpr.py`   | the note's relation notation — `parse`, `spell`, `norm` — read by both     |
-| `diag/circuit-sigs.json` | what each atom is an arrow between, and whether it is a map              |
+| file                             | holds                                                                     |
+|----------------------------------|----------------------------------------------------------------------------|
+| `diag/circuit.typ`               | the primitives: `wire`, `bend`, `gbox`, `delta`/`nabla`, `tape`, `conv`     |
+| `diag/cpanel.typ`                 | `cpanel`, the panel the exporter's Typst dictionary renders through        |
+| `diag/cetz-nodraw.typ`            | cetz with the `nodraw` switch, and `d`/`lw` — the pen BOTH conventions use  |
+| `diag/tool/CircuitDiagram.lean`   | the CIRCUIT functor — `Expr` in, a `cpanel` tree out                       |
+| `diag/tool/ExprReader.lean`       | the shared term reader — what every picture functor asks of an `Expr`      |
+| `diag/tool/Label.lean`            | the shared spelling — how a factor is written on a box, bead or arrow      |
 
 `circuit.typ` and `cpanel.typ` import nothing from the Hinze–Marsden files, and those import nothing
-from these. The one shared place is `cetz-nodraw.typ` (the pen) and `relexpr.py` (the notation): a
-helper wanted by both goes there, never copied into both.
+from these. The shared place is Lean, not Typst: `ExprReader.lean` (reading the term) and `Label.lean`
+(spelling it) are imported by both `CircuitDiagram.lean` and `StringDiagram.lean`, so a helper wanted
+by both goes there, never copied into both; `cetz-nodraw.typ` is the one shared Typst file, the pen.
 
 **IMPORT BY NAME, NOT WITH `*`.** `delta`, `nabla`, `cap`, `cup` and `dot` are also Typst math symbols
 (δ, ∇, ∩, ∪, ⋅). A wildcard import shadows them and `$nabla$` then silently typesets a drawing function
@@ -124,9 +127,12 @@ at that stage.
 - Where a cut is not a well-formed object, or a box's source is not what the cut says, write down the
   failing cut's wire list. That list is the diagnosis; nothing further is needed.
 
-The mechanical form of this check is `./scripts/circuit --compare diag/allegory-axioms.typ`: it
-rebuilds every `#cpanel` literal from its `cert:` — the formula plus `--src`/`--tgt` — so a picture
-that no longer denotes its stated arrow cannot survive a rebuild. It must end `0 drifted`.
+There is no separate drift check to run: the picture is drawn straight off the declaration's
+elaborated type every time (`./scripts/diag-export --circuit <sel>`, or `./scripts/diag-regen` for
+every panel the note names), so it cannot denote a different arrow than the statement does. What the
+scan line still catches is a bug in the EXPORTER's own layout — walk it by hand when a rendered panel
+looks wrong; when the exporter cannot draw a selector at all it writes a red stub and exits nonzero,
+naming the selector, and the fix is to extend `diag/tool/CircuitDiagram.lean`, never a one-off picture.
 
 ## Composition order — where translations get silently reversed
 
@@ -234,7 +240,8 @@ would go wrong otherwise.
 ## A drawing fix lands with a check that fails on the old render
 
 Every fix to how a picture is drawn — a port split, a chamfer capped, a colour shared across a row —
-ships in the same change with a `circuit --compare` / gate check that goes red on the picture as it was
-before the fix, and stays green after. He asked for it twice on 2026-09-04 ("add test for these 2, make
-sure the test can catch current bottom", "add test to catch this, and fix"): the generator is regenerated
-from a statement, so a fix without a check is undone by the next regeneration and nobody sees it go.
+ships in the same change with something that goes red on the picture as it was before the fix and stays
+green after: `make cd-check` for a commutative panel, and for a plain circuit panel a rendered
+before/after (`./scripts/diff-crop`) reviewed against the fix, since the exporter regenerates the
+picture from the statement on every run and a fix left unchecked is undone by the next regeneration
+with nobody seeing it go.
