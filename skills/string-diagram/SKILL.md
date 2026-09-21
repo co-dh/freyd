@@ -1,6 +1,6 @@
 ---
 name: string-diagram
-description: Drawing or reading the note's HINZE–MARSDEN pictures — a wire is a functor, a bead a natural transformation, a region a category — plus the generator scripts/diagram, the scan-line check, regions and colour, composition order, cetz mechanics.
+description: Drawing or reading the note's HINZE–MARSDEN pictures — a wire is a functor, a bead a natural transformation, a region a category — plus ./scripts/diag-export --string, reading a panel by scan line, regions and colour, composition order, cetz mechanics.
 ---
 
 # String diagrams (Hinze & Marsden)
@@ -35,10 +35,10 @@ the switch, say in one line that the convention has changed and why.
   reversing the earlier "the banana must carry its carrier"). `α` bare over a `B` wire is `α_B`, and
   `⦇α⦈` with `A` under it is `⦇αᴀ⦈` — the carrier is the fold's target, which IS that wire, so writing
   it in the label as well spells one object twice and lets the two drift. Two folds that read alike on
-  a display are told apart by their wires: §11.4.2a's `⦇α⦈` over `B` and over `C`. Enforced both ways —
-  `scripts/diagram` strips an index written anyway (and raises if it disagrees with the wire), and
-  `scripts/scanline --strict` refuses one a hand-laid panel keeps. The formula captioning the row and
-  the commutative square beside it keep the subscript: neither has a wire to read it off.
+  a display are told apart by their wires: §11.4.2a's `⦇α⦈` over `B` and over `C`. Enforced by
+  construction — the exporter (`diag/tool/StringDiagram.lean`) never writes the index into a bead's
+  label, so it can only be read off the wire beneath. The formula captioning the row and the
+  commutative square beside it keep the subscript: neither has a wire to read it off.
 - **One set of letters across the whole row.** The formula, the commutative square and the string
   diagram beside each other must use the SAME names; generalising the formula's letters without
   redrawing is how the square ends up saying `X` where the picture says `φ`.
@@ -172,15 +172,14 @@ on the object wire claims `A` is in its source. The (2.5) node is for a bead who
 contain the object: a component `α X`, or an arrow like `guard p`.
 
 **A composite object like `[A]` is ALWAYS two wires, `list` beside `A`, for the whole height of the
-panel** — the default in `scripts/diagram` (`DEFSPLIT = "list"`), not a local widening. `prefix`,
-`subseq`, an ordering `R : [A]⟶[A]` — every arrow ON the object — is a plain bead straddling both wires,
-same as any other bead on a split object.
+panel** — the exporter's default (`StrDiag.split`, `diag/tool/ExprReader.lean`), not a local widening.
+`prefix`, `subseq`, an ordering `R : [A]⟶[A]` — every arrow ON the object — is a plain bead straddling
+both wires, same as any other bead on a split object.
 
-The generator's `split:` field on a panel's `cert:` overrides the default per panel, and `--fold-list`
-on the command line turns the split off; a panel that declares `split: ""` keeps the composite folded
-as one wire. The folded form is the declared exception, not the norm — §13.4.3c (`party-hm`) is the one
-panel in the note that takes it, because `R : [A]⟶[A]` there is an ordering on parties and splitting
-would need more than twice the available column width.
+A composite that must stay folded as one wire is the declared exception, not the norm, and it is
+declared in the exporter, never by a note-side flag: nothing hand-laid in the note can override how a
+picture is drawn. Extend `diag/tool/ExprReader.lean`/`StringDiagram.lean` for the case, the same way any
+other undrawable selector is fixed.
 
 Two constraints on how the spider is drawn, both from the book, both easy to violate:
 
@@ -233,42 +232,42 @@ Two constraints on how the spider is drawn, both from the book, both easy to vio
   - Partial application (`F(A,−)`) is the WRONG move here: it pins `A` in the lane's name, so `f : A⟶B`
     forces a second bead `F(f,𝟙) : F(A,−)⇒F(B,−)` beside the object bead, and those two beads are only
     the two components of the one arrow `F(f,T(f))` (Lean: `Freyd.prod_map_split`, `Freyd/S1_38.lean`).
-  - `scripts/scanline`'s parser takes a bracketed fork as an application head, so `F(⟨𝟙,T⟩(A))` and
-    `F(⟨𝟙,T⟩(f))α` go straight into `--src`/`--tgt`/`--sigs`. Give the new lane an `FCOL` entry.
+  - `F(⟨𝟙,T⟩(A))` and `F(⟨𝟙,T⟩(f))α` are ordinary Lean application, so the exporter reads them like any
+    other term — nothing to special-case. Give the new lane an `FCOL` entry.
   - `P` is the powerset relator in this repo — never reuse it for the packing functor.
 
 ## Which tool draws which
 
-| convention    | generator         | emits                    | signatures                |
-|---------------|-------------------|--------------------------|---------------------------|
-| Hinze–Marsden | `scripts/diagram` | one `#dpanel(...)` call  | `diag/hm-sigs.json`       |
-| circuit       | `scripts/circuit` | one `#cpanel(...)` call  | `diag/circuit-sigs.json`  |
+| convention    | generator                          | emits                    | reads                 |
+|---------------|-------------------------------------|--------------------------|------------------------|
+| Hinze–Marsden | `./scripts/diag-export --string`   | one `#dpanel(...)` call  | its elaborated `Expr` |
+| circuit       | `./scripts/diag-export --circuit`  | one `#cpanel(...)` call  | its elaborated `Expr` |
 
-`scripts/diagram` reads the formula in the note's own notation and needs `--src`/`--tgt`, because a formula
-alone does not fix the ports. It emits a `cert:` recording the input, so a pasted picture certifies itself,
-and it has `--compare` (rebuild every `#dpanel` literal in the note from its own `cert:` and fail on drift)
-and `--write` (splice the rebuild over it). `scripts/scanline` reads a panel back and prints the composite
-it denotes — the check, not a third convention.
+`diag-export` is a FUNCTOR, not a transcription: it never reads a formula string, a signature table or
+the note. A wire is decided by the object's own product structure and a bead by whether the environment
+holds a naturality proof for it — so there is nothing to keep in sync by hand and no `cert:`/`--compare`/
+`--write` step: the picture IS the statement, read once, every time it is regenerated.
 
-Run `-h` on either for its flags, its modes and one runnable line per mode. That help is the flag list; it
-is not copied here, and it is where to look before reading the source.
+Run `./scripts/diag-export` with no arguments for its usage, its modes (`--string`, `--circuit`,
+`--commutative`, `--formula`, `--proof`, `--sig`, `--type`) and the selector grammar. That usage text is
+the flag list; it is not copied here, and it is where to look before reading the source.
 
 ## Where the code lives
 
-| file                   | holds                                                                       |
-|------------------------|-----------------------------------------------------------------------------|
-| `diag/hm.typ`          | the primitives: `hm-wire`, `hm-bead`, `hm-region`, `hm-port`, `hm-panel`     |
-| `diag/dpanel.typ`      | `dpanel`/`dpan`, the note's panel, and `hm-meta`, which emits the sweep list |
-| `diag/draw.typ`        | the note's finished pictures and its palettes — `FCOL`, `OCOL`, `BCOL`       |
-| `diag/cetz-nodraw.typ` | cetz with the `nodraw` switch, and `d`/`lw` — the pen BOTH conventions use   |
-| `scripts/diagram`      | the generator                                                               |
-| `scripts/scanline`     | the sweep                                                                   |
-| `scripts/relexpr.py`   | the note's relation notation — `parse`, `spell`, `norm` — read by both        |
-| `diag/hm-sigs.json`    | one signature per bead label, checked across every panel of a display        |
+| file                            | holds                                                                     |
+|----------------------------------|----------------------------------------------------------------------------|
+| `diag/hm.typ`                    | the primitives: `hm-wire`, `hm-bead`, `hm-region`, `hm-port`, `hm-panel`    |
+| `diag/dpanel.typ`                 | `dpanel`/`dpan`, the note's panel, and `hm-meta`, its own metadata          |
+| `diag/draw.typ`                   | the note's finished pictures and its palettes — `FCOL`, `OCOL`, `BCOL`      |
+| `diag/cetz-nodraw.typ`            | cetz with the `nodraw` switch, and `d`/`lw` — the pen BOTH conventions use  |
+| `diag/tool/StringDiagram.lean`    | the STRING-DIAGRAM functor — `Expr` in, a `dpanel` call out                |
+| `diag/tool/ExprReader.lean`       | the shared term reader — what every picture functor asks of an `Expr`      |
+| `diag/tool/Label.lean`            | the shared spelling — how a factor is written on a box, bead or arrow      |
 
 `hm.typ` and `dpanel.typ` import nothing from the circuit files, and those import nothing from these. The
-one shared place is `cetz-nodraw.typ` (the pen) and `relexpr.py` (the notation): a helper wanted by both
-goes there, never copied into both.
+shared place is Lean, not Typst: `ExprReader.lean` (reading the term) and `Label.lean` (spelling it) are
+imported by both `StringDiagram.lean` and `CircuitDiagram.lean`, so a helper wanted by both goes there,
+never copied into both; `cetz-nodraw.typ` is the one shared Typst file, the pen.
 
 ## Check a whole panel by SCAN LINE — mechanical, and it needs no rendering
 
@@ -290,61 +289,40 @@ must spell the object the composite is at, at that step. The book's own version 
 Run the sweep on the drawing code, not on a rendering: the wire list at a height is the panel's port list
 minus the wires consumed above it, which is `x` constants and bead heights and nothing else.
 
-### `make scan` runs that sweep for you, over the whole note
+### There is no separate drift check to run
 
-`make scan` (`scripts/scanline`) pulls every panel's lanes, beads and ports from `typst query
-diag/allegory-axioms.typ metadata --field value` (`kind == "scanline"`) and sweeps all of them. Read the
-counts off the run itself — a number written down here is a snapshot and rots; what must hold is
-`0 unhandled, 0 failures`, and the certified count only rises as hand-laid panels are replaced by
-generated ones. `dpanel` emits its own lists as `#metadata`, and `tw-hm` emits by hand from
-the same bindings it draws with — the emitted list IS the list that draws, so it cannot drift from the
-picture (`dpan` alone stays unchecked: it only ever sees an opaque drawing closure). A `cert:` dict
-(`expect`, `src`, `tgt`, `branch`, `alias`) certifies a panel; `branch:` names the case-split arm drawn,
-and a fired `alias:` prints `AGREE modulo <alias>` rather than hiding the residual. It caught a unit bead
-moved onto the object wire and a top cut answering the wrong statement — and one error only IT catches: a
-bead moved from the object wire onto a functor wire spells the same either way when nothing sits to its
-left, so expression comparison alone is blind to it; only the cross-panel signature check sees it.
-Run it after any panel edit, and before arguing from a
-rendering — cheaper than looking, and it checks what looking cannot.
+Every panel is drawn straight off the declaration's elaborated type, every time
+(`./scripts/diag-export --string <sel>`, or `./scripts/diag-regen` for every panel the note names), so
+it cannot denote a different arrow than the statement does, and there is nothing hand-laid left for a
+signature table to hold to. What the scan line above still catches is a bug in the EXPORTER's own
+layout — walk it by hand when a rendered panel looks wrong. When the exporter cannot draw a selector at
+all it writes a red stub and exits nonzero, naming the selector, and the fix is to extend
+`diag/tool/StringDiagram.lean`, never a one-off picture. The gates that exist now are `make c CH=<n>`
+(one chapter's panels, labels and citations), `make p` (the whole note), and `make cd-check` (every
+commutative panel against its reference drawing).
 
-The sweep is this convention's only: it reads the `kind == "scanline"` metadata that `dpanel`
-emits, and a circuit panel emits `kind == "circuit"` instead and is checked by its own generator's
-`--compare`.
+## Crossings are zero — one knee per bead and side
 
-## Crossings are zero and gated — one knee per bead and side
+A crossing shows up two ways — cut order (a wire born or killed off its own column has passed every
+live lane between: says a crossing is *wrong*) and ink (bezier intersections: says one is *there*) — and
+the note holds at zero of both, every panel, by construction: `dknees` (`diag/dpanel.typ`) is now the
+only place this geometry is computed, so there is no second copy it could drift from.
 
-`scanline` reports crossings two ways — cut order (a wire born or killed off its own column has passed
-every live lane between: says a crossing is *wrong*) and ink (bezier intersections: says one is *there*)
-— and `make p` runs `scan-strict`, so either kind is a build failure. The note is at 0/0, every panel.
-
-The cause of the old 201 was never the lane order: a lane's x is its instance index in `made`
-(`scripts/diagram`), and `made` is already a linear extension of every cut, so no permutation removed
-a single hit. It was UNEQUAL KNEES — the knee grew with the horizontal run, so strands converging on one
-bead braided, the longer one turning early and overtaking the shorter one still falling vertically.
-The cure (2026-09-02): for each bead height and side, every strand — arms, legs, dips — shares one knee
+UNEQUAL KNEES is what crossings come from — the knee grows with the horizontal run, so strands
+converging on one bead braid, the longer one turning early and overtaking the shorter one still falling
+vertically; permuting the lane order does not fix it, since a lane's x is already a linear extension of
+every cut. The cure: for each bead height and side, every strand — arms, legs, dips — shares one knee
 `K = min(0.45 + 0.25·maxrun, 0.5·gap)`, `gap` being the distance to the neighbouring bending event or
 bead height, unit rows excluded. Equal drops into one point with the same bezier family keep nested arcs
 nested; the half-gap cap keeps one bead's band from overlapping the next. **The 0.5 is load-bearing, not
-a tuning knob:** 0.5 → 0 ink, 0.7 → 188, 0.85 → 244.
+a tuning knob** — raising it reintroduces ink.
 
 Given up: a per-strand knee whose aspect grows with the run. (The arrival *tangent* is vertical for any
-knee, before and after — the old comment claiming "one angle" was wrong about that.)
-
-The rule is implemented twice, Typst `dknees` in `diag/dpanel.typ` and Python `dknees` in
-`scripts/scanline`, so a green sweep would not by itself prove the ink. That gap is closed: `dpanel`
-emits the computed knees as `knees:` in `hm-meta` and `a_dpanel` compares them (`Panel.kdrift`). Change
-one side and the other must move with it.
-
-Two earlier cures were built and compared beside the original (bead sits on its own lane; algebra beads
-drawn as a bar, which cannot intersect a wire) — **rejected on appearance ("both are worse than current",
-2026-08-30).**
-
-**Superseded 2026-09-03 — "Book is better."** The 2026-08-30 attempt moved the bead off the object
-column but changed nothing else, so it kept asymmetric arms and still swept out and back to reach the
-next bead. The book's geometry above is one package, and half of it looks worse than none: a merge is a
+knee, before and after.) Also given up, on appearance: the bead on its own lane, and algebra beads drawn
+as a bar. **The book's own geometry (above) is one package, not separable fixes** — a merge is a
 symmetric cup at the MIDPOINT of the wires it joins with the survivor dropping vertically from it, a
 1→1 bead sits on its wire with no bend at all, and the object wire is one line that no polymorphic bead
-touches. Rebuild in that shape, not in the 2026-08-30 shape.
+touches; half that package looks worse than none.
 
 ## Read by scan line before arguing about a bead's position
 
@@ -637,7 +615,8 @@ wrong otherwise.
 ## A drawing fix lands with a check that fails on the old render
 
 Every fix to how a picture is drawn — a bead moved off the object wire, an `αᴛ` where `α` stood, a colour
-shared across a row — ships in the same change with a `scanline`/gate check that goes red on the picture as
-it was before the fix, and stays green after. He asked for it twice on 2026-09-04 ("add test for these 2,
-make sure the test can catch current bottom", "add test to catch this, and fix"): the generator is regenerated
-from a statement, so a fix without a check is undone by the next regeneration and nobody sees it go.
+shared across a row — ships in the same change with something that goes red on the picture as it was
+before the fix and stays green after: `make cd-check` for a commutative panel, and for a plain
+Hinze–Marsden panel a rendered before/after (`./scripts/diff-crop`) reviewed against the fix, since the
+exporter regenerates the picture from the statement on every run and a fix left unchecked is undone by
+the next regeneration with nobody seeing it go.
