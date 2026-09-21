@@ -1,4 +1,4 @@
-// cpanel.typ — the walker `scripts/circuit` emits into: a layout tree in, the CIRCUIT picture out.
+// cpanel.typ — the walker `diag-export --circuit` emits into: a layout tree in, the CIRCUIT picture out.
 // The exact analogue of the note's `dpanel` for the OTHER picture language (diag/CIRCUIT-GEN.md §2):
 // a wire is an object, a box a morphism, composition runs left to right, and a product is two wires.
 // The primitives are circuit.typ's — this file only places them.
@@ -204,8 +204,8 @@
     // then sits on a wire, not between the bars.
     let x0 = CGAP + CBAR + ld
     let xr = x0 + p.w + CBAR
-    // The carrier labels the fold's single OUTPUT wire on its stub; `scripts/circuit` sends `none`
-    // when the carrier is a product (already drawn as its wires) or is that wire's own label.
+    // The carrier labels the fold's single OUTPUT wire on its stub; `diag-export --circuit` sends
+    // `none` when the carrier is a product (already drawn as its wires) or is that wire's own label.
     let og = if t.label == none { CGAP } else { cu(measure(tx(t.label)).width, length) + 2 * CLEAD }
     let body = {
       for y in ys(t.nin) { wire((0, y), (CGAP, y)) }

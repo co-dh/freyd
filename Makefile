@@ -16,13 +16,12 @@ BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.
 # themselves, so nothing in there can be a prerequisite by name.
 STAMP := diag/generated/.drawn
 DB    := .lake/build/refactor-index.db
-SLICE := diag/circuit-slice.typ
 
 # ONE CHAPTER, ONE VARIABLE: `make c CH=13`, `make cite CH=13`, `make panels CH=13` compile,
 # query and scan chapter 13's file and nothing else — the whole note costs about 13 GiB and 40s of
-# layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/cd-check`,
-# `circuit-check` and every python gate resolve the same chapter from the environment and need no
-# flag of their own; `scripts/notesplit.py`'s `note_root` is the one resolution behind all of them.
+# layout and every gate paid it.  `CH` is EXPORTED, so `./scripts/cd-check` and every python gate
+# resolve the same chapter from the environment and need no flag of their own;
+# `scripts/notesplit.py`'s `note_root` is the one resolution behind all of them.
 # `make ch N=13` is the same variable under the name that target has always taken.
 # A chapter that does not exist STOPS make here, naming it: a gate that fell back to the whole book
 # would check something else and exit 0.
@@ -42,7 +41,7 @@ endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)
 
-.PHONY: p c w labels cite panels types cd-check circuit-check cover slice circuit books v
+.PHONY: p c w labels cite panels types cd-check cover books v
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -54,7 +53,7 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) panels slice circuit cite
+p: $(STAMP) panels cite
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
@@ -63,18 +62,6 @@ p: $(STAMP) panels slice circuit cite
 	./scripts/dispfit
 	./scripts/book ingest diag/allegory-axioms.pdf
 	./scripts/book pics
-
-# The circuit generator's acceptance render.  `--slice` writes the whole .typ itself — header,
-# import, rows — so nothing in it is hand-kept, and the compile is the check that it still parses.
-slice:
-	./scripts/circuit --slice
-	typst compile $(SLICE) $(SLICE:.typ=.pdf)
-
-# The note's own `#cpanel(…)` literals, each rebuilt from its `cert:` and diffed against the text.
-# BEFORE the compile and without typst: a pasted circuit the generator no longer draws is drift,
-# and `./scripts/circuit --write` splices the rebuilt one over it.
-circuit:
-	./scripts/circuit --compare $(NOTESRC)
 
 # No two labels inside one panel may touch, and ink stays inside its frame, measured off the
 # COMPILED page.  It needs the PDF, so unlike its neighbours it pays a typst compile when the note
@@ -123,12 +110,6 @@ panels:
 cd-check: $(STAMP)
 	./scripts/cd-check
 
-# Every CIRCUIT panel the note draws, redrawn from LEAN and held to the note's own picture.  The
-# note's panels are the obligations — read back from its `cpanel` metadata, not from its text — and
-# `diag/circuit-panels.txt` must answer one for one.
-circuit-check: $(STAMP)
-	./scripts/circuit-check
-
 # Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the
 # obligations and each one's basename IS the declaration it renders, so a cell whose declaration
 # changed type is regenerated here rather than staying at what it said when it was first written.
@@ -144,7 +125,7 @@ types: $(STAMP)
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: panels circuit labels cite
+c: panels labels cite
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.

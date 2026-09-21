@@ -39,8 +39,7 @@
 #let lean(..sels, branch: none) = lean-call("generated/", <lean-panel>,
   sels.pos().map(n => if branch == none { n } else { n + "." + branch }))
 // The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
-// walks the same Expr under the monoidal reading.  `scripts/circuit` reads the note's own formula
-// string instead, so its `cert:` says only that the picture matches the text beside it.
+// walks the same Expr under the monoidal reading.
 #let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
 // The COMMUTATIVE DIAGRAM route: `diag-export --commutative` draws the statement as a graph rather
 // than a term walk.  Unlike `lean`/`leanc`, a `+` inside ONE selector is not a pair of boxes but two

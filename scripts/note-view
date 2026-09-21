@@ -12,7 +12,13 @@ import json, os, re, subprocess, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from notesplit import note_source
-from relexpr import opt, help_if
+
+
+def help_if(argv, doc, body):
+    """`-h` prints the module docstring and the caller's own flag/example block."""
+    if "-h" in argv or "--help" in argv:
+        print(doc.strip() + "\n\n" + body.strip()); sys.exit(0)
+
 
 HEAD = re.compile(r'(={1,6}) ')
 DECL = re.compile(r'#(?:let|show|set|import)\b')

@@ -807,7 +807,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // panels either side of the `=`, and the algebra's circuit.  Panels emitted verbatim by
 //   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" --sigs "α:F([A])⟶[A]" "α prefix"
 //   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
-//   ./scripts/circuit --src "F([A])" --tgt "[A]" "[nil,⊸ nil ∪ cons]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
 #let pfx-def-l = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.lhs")
 #let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs", branch: "inr.inr")
@@ -2359,7 +2358,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.185.  The three algebras are arrows out of a PRODUCT, so their panels are a stack of
 // context wires: `A×−` carries the transaction the algebra is handed, `[A]×−` the segment being
 // built, and the two `list` wires the schedule.  `assocl` draws nothing — `×` is flat in both
-// calculi, so a re-bracketing is the identity and there is no bead for it (`scripts/relexpr.py`).
+// calculi, so a re-bracketing is the identity and there is no bead for it.
 #disp[#calc-table(
   table.header([*definition*], [*Hinze–Marsden*]),
 
