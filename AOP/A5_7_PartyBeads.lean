@@ -42,7 +42,7 @@ public theorem include_lax_natural (R : dE A ⟶ dE B) :
       ⊑ (includeR : dBranch A ⟶ dList A) ≫ list R := by
   refine le_iff.mpr fun u w h => ?_
   obtain ⟨v, ⟨h1, h2⟩, rfl⟩ := h
-  exact ⟨includeFn u, rfl, h1,
+  exact ⟨«include» u, rfl, h1,
     listP_cconcat R _ _ (listP_cmap_snd (list R) (list R) u.2 v.2 h2)⟩
 
 /-! ## `choose` and `exclude` -/
@@ -196,7 +196,7 @@ public theorem include_not_strict :
   intro hle
   have hrhs : ((includeR : dBranch Bool ⟶ dList Bool) ≫ list Rtt) uEx
       (ConsList.cons true (ConsList.wrap ())) :=
-    ⟨includeFn uEx, rfl, ⟨rfl, rfl⟩, trivial⟩
+    ⟨«include» uEx, rfl, ⟨rfl, rfl⟩, trivial⟩
   obtain ⟨v, hv, -⟩ := le_iff.mp hle _ _ hrhs
   exact branch_Rtt_empty v hv
 
@@ -209,7 +209,7 @@ public theorem S_not_strict :
   have hrhs : ((S : dBranch Bool ⟶ ⟨ConsList Unit Bool × ConsList Unit Bool⟩)
       ≫ rprodMap (list Rtt) (list Rtt)) uEx
       (ConsList.cons true (ConsList.wrap ()), ConsList.wrap ()) :=
-    ⟨(includeFn uEx, ConsList.wrap ()),
+    ⟨(«include» uEx, ConsList.wrap ()),
      ⟨rfl, ConsList.cons (ConsList.wrap ()) (ConsList.wrap ()), ⟨Or.inr rfl, trivial⟩, rfl⟩,
      ⟨⟨rfl, rfl⟩, trivial⟩, trivial⟩
   obtain ⟨v, hv, -⟩ := le_iff.mp hle _ _ hrhs
