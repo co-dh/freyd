@@ -1916,11 +1916,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // Four rows here and three in the next display: at the book's own panel metric the seven no longer
   // fit one page, and the cut is where the fold is opened — outside the `⦇ ⦈` here, inside it there.
   inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
-  Thm[#frc([`party`])` est(R°)⊒⦇⟨include,π₂ list(`#frc([`choose`])` est(R°)) concat⟩⦈ `#frc([`choose`])` est(R°)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
-     // lean:AOP.A7_3_Party.party_laws@58495bd5
+     // lean:AOP.A7_3_Party.party_laws@00692234
   table.header([*circuit*],
     [*Hinze–Marsden* — outside the `⦇ ⦈`]),
 
@@ -2213,13 +2213,13 @@ zip(that)                                         each row: its square, and the 
     [#src[@cata-fusion at @vec-cyl-fusion]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs")],
 
-  Thm[`Vec(j)(est(R)) est(R)⊑concat est(R)`, `R` transitive \
+  Thm[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
     #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
      `jk` entries laid end to end.
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_concat@8fdae89e
 
-  Thm[`⦇Q⦈⊑⦇gen⦈ Vec(n)(est(R))`, `R` reflexive, transitive and monotonic \
+  Thm[#leanf("Freyd.Alg.Vec.Rel.Qfold_le_genFold"), `R` reflexive, transitive and monotonic \
     #src[the one path per row the greedy fold keeps is one of the `p` that `⦇gen⦈` generates for
      that row, and a cheapest of them.
  ]],
@@ -2229,7 +2229,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
 // column; the right-hand side kills the `[p]` before, and that swap is the whole step.
 #disp[#calc-table(
-  Thm[`gen Vec(n)(est(R))⊒(𝟙×Vec(n)(est(R)))Q` \
+  Thm[#leanf("Freyd.Alg.Vec.Rel.cyl_fusion") \
     #src[choosing a cheapest of each square's `p` paths before the column is extended is no better
      than extending first and choosing among the `3p`.
  ]],
@@ -2242,7 +2242,7 @@ zip(that)                                         each row: its square, and the 
     [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
   [#lean("Freyd.Alg.Vec.Rel.cyl_fusion.lhs")],
 
-  Thm[(7.13) on `Vec`: `F(𝟙,est(R))⊑cp est(R)`, `R` monotonic \
+  Thm[(7.13) on `Vec`: #leanf("Freyd.Alg.Vec.Rel.cyl_7_13"), `R` monotonic \
     #src[putting the new square in front of every one of the `p` candidates and then choosing a
      cheapest is beaten by choosing a cheapest first and putting the square in front of that one.
  ]],
@@ -2445,7 +2445,7 @@ zip(that)                                         each row: its square, and the 
 )]<van-718>
 
 #disp[#calc-table(
-  Thm[`(𝟙×(R;H))new⊑(new ∪ old)(R;H)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono_new") \
     #src[calling the van for the transaction on a `R;H`-better schedule gets no further than calling
      it on this one and bettering the whole schedule afterwards]],
      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
@@ -2502,7 +2502,7 @@ zip(that)                                         each row: its square, and the 
 )]<van-721>
 
 #disp[#calc-table(
-  Thm[`(𝟙×(R;H))old⊑(new ∪ old)(R;H)` \
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono") \
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
      on, or calling the van, and bettering the whole schedule after,
  ]],

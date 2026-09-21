@@ -61,6 +61,15 @@ def mate : String → Option String
     among its family.  One rule, so the functor's half and the operand's half can never disagree. -/
 def oneChar (s : String) : Bool := !s.isEmpty && (s.drop 1).all (· == '\'')
 
+/-- ONE TOKEN OF THE NOTE'S LANGUAGE: what a factor of a composite has to be, juxtaposition being
+    invisible.  A name spelled out of name characters is one (`old`, `π₂`, `est`); so is one the
+    printer's own brackets close (`⟨ceiling,ceiling−floor⟩`), `stxJoin`'s bracket rule read off a
+    name.  A name with an OPERATOR inside it is neither — `R;H` juxtaposed reads as `R` composed
+    with `H` — so it keeps the brackets its precedence asks for wherever it is a factor. -/
+def oneToken (s : String) : Bool :=
+  s.isEmpty || s.all (fun c => Lean.isIdFirst c || Lean.isIdRest c)
+    || mate (String.singleton s.front) == some (String.singleton s.back)
+
 /-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
     the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
     token `[A]`, so the term's argument count answers a different question, and the finished string
@@ -118,7 +127,11 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
     if k != ``Lean.Parser.Term.app then none else
     match (args[0]? : Option Syntax), (args[1]? : Option Syntax) with
     | some f, some (.node _ _ ops) =>
+      -- A HEAD THE PRINTER PARENTHESISED IS A HEAD, never a factor to flatten into the operands:
+      -- the note's curried `Vec(n)(R)` says the operator is `Vec(n)` and `R` is what it is applied
+      -- to, where flattening would spell one application of three parts.
       if f matches .ident .. then some (f, ops)
+      else if f.isOfKind ``Lean.Parser.Term.paren then some (f, ops)
       else (appParts f).map fun (h, prev) => (h, prev ++ ops)
     | _, _ => none
   | _ => none
@@ -146,8 +159,20 @@ def stxShow (s : Syntax) : MetaM String := do
     heads a wire's name is built out of, so a lane and the label above it cannot be spelled two
     ways.  On the IDENT only: a head that is a notation delimits its own operand and has no name to
     shorten. -/
-def headShown (h : Syntax) : MetaM String := do
+def appSpell (h : String) (ops : Array Syntax) : MetaM String := do
+  match ops with
+  | #[a] => return applyLabel h (← stxShow a) (stxJoin (stxPeel a))
+  | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+
+partial def headShown (h : Syntax) : MetaM String := do
   if h.isIdent then return h.getId.getString!
+  -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
+  -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
+  -- application is looked for among the paren's OWN children — `Term.paren` carries the optional
+  -- tuple tail beside the term, so the three-token peel `stxPeel` does never reaches it.
+  if h.isOfKind ``Lean.Parser.Term.paren then
+    if let some (f, ops) := h.getArgs.findSome? fun a => appParts (stxPeel a) then
+      return ← appSpell (← headShown f) ops
   stxShow h
 
 /-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
@@ -162,10 +187,7 @@ def headShown (h : Syntax) : MetaM String := do
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
 def appShow (e : Expr) : MetaM String := do
   match appParts (← PrettyPrinter.delab e) with
-  | some (h, ops) =>
-    match ops with
-    | #[a] => return applyLabel (← headShown h) (← stxShow a) (stxJoin (stxPeel a))
-    | _ => return (← headShown h) ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+  | some (h, ops) => appSpell (← headShown h) ops
   | none => plain e
 
 /-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
@@ -1026,7 +1048,15 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
     -- the printer as a local of that name.  That is what turns the operand of a head with no clause
     -- from Lean's `≫` into juxtaposition, under whatever brackets the head already writes.
-    respell (← arrows args).toList e
+    -- A NAME THE PRINTER WROTE AN OPERATOR INSIDE keeps its brackets wherever it is a factor of a
+    -- composite: `(new ∪ old)R;H` reads as `((new ∪ old)R);H` where the note means
+    -- `(new ∪ old)(R;H)`.  ON THE IDENT ALONE, the one label built by no rule of this file —
+    -- everything else is bracketed by whatever rule builds it.  At composition's own precedence,
+    -- which is what every operator looser than juxtaposition is set at.
+    let out ← respell (← arrows args).toList e
+    match stxPeel stx with
+    | .ident _ _ nm _ => return if oneToken nm.getString! then out else wrap 1 out
+    | _ => return out
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
     the one rule above.
