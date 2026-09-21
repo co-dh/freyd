@@ -3,10 +3,11 @@
 // `diag/ch/11-relator.typ`'s `<coprod-square>` drew — copied mark for mark: same `ar`/`arc`/`node`/
 // `lab`, same coordinates, same `length: 0.8cm`.  `Freyd.Alg.u_junc_Λ_eps` IS that statement.
 //
-// THE ONE CHANGE FROM THE NOTE: its five node labels were set in MATH (`$A$`, `$A + B$`, `$E C$`)
-// where every other commutative panel of the note sets its labels raw, so `scripts/cd-labels`
-// tokenises `A + B` as three words against the panel's one.  They are raw here; the note's own
-// lines are reported as a defect rather than edited.
+// THE CHANGES FROM THE NOTE, all of them the note's MATH set raw as every other commutative panel
+// sets its labels, because `scripts/cd-labels` tokenises the two spellings apart — `A + B` as three
+// words against the panel's one, and a fraction whose bar is math as two words against the panel's
+// one.  The five node labels (`$A$`, `$A + B$`, `$E C$`) and every `∋` under a fraction bar are raw
+// here; the note's own lines are reported as a defect rather than edited.
 //
 //   typst compile --root . --format svg diag/cdref-coprod.typ diag/cdref-coprod.svg
 //   ./scripts/diag-export --commutative Freyd.Alg.u_junc_Λ_eps
@@ -31,8 +32,8 @@
   ar(B, C, GIVEN2, s0: 0.5, s1: 0.5, bow: -3.4)
   lab(0.6, 3.41, GIVEN1)[`R`]; lab(0.6, -3.41, GIVEN2)[`S`]
   lab(-5.18, 1.55, black)[`l`]; lab(-5.18, -1.55, black)[`r`]
-  lab(-1.23, 1.62, GIVEN1)[$frac(#[`R`], ∋)$]; lab(-1.23, -1.62, GIVEN2)[$frac(#[`S`], ∋)$]
-  lab(-3.0, 0.5, INDUCED)[`[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]`]
+  lab(-1.23, 1.62, GIVEN1)[$frac(#[`R`], #[`∋`])$]; lab(-1.23, -1.62, GIVEN2)[$frac(#[`S`], #[`∋`])$]
+  lab(-3.0, 0.5, INDUCED)[`[`$frac(#[`R`], #[`∋`])$`,`$frac(#[`S`], #[`∋`])$`]`]
   lab(2.5, 0.45, black)[`∋`]
   node(A.at(0), A.at(1), GIVEN1, `A`); node(B.at(0), B.at(1), GIVEN2, `B`)
   node(AB.at(0), AB.at(1), black, `A+B`)
