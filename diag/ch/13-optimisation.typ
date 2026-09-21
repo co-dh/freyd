@@ -720,11 +720,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [`F([A])⟶[A]`], [],
   [both constructors as one map],
 
- [`p`], [a coreflexive #src[]], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
+ [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
   // lean:AOP.A7_7_TakeWhile.pcor@62cb073c
   [`{(a,a)∣a` passes the test`}`],
 
- [`R`], [`length≤length°`, a preorder #src[]], [`[A]⟶[A]`], [`[1] R [1,2]`],
+ [`R`], [`length≤length°`, a preorder #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [`[1] R [1,2]`],
   // lean:AOP.A7_7_TakeWhile.lenLE@e922b2d4
   [`xs R ys⟺length(xs)≤length(ys)`],
 
@@ -1279,7 +1279,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`π₂`], [`π₂` where @takewhile-defn has `⊸ nil`], [`A×[A]⟶[A]`], [`π₂(3,[1,2])=[1,2]`],
   [drop the head, keep the tail],
 
-  [`subseq`], [`⦇[nil,π₂ ∪ cons]⦈` #h(4pt) #src[@comb-fns]], [`[A]⟶[A]`],
+  [`subseq`], [`⦇[nil,π₂ ∪ cons]⦈` #h(4pt) #src[@comb-fns]], [#leant("Freyd.Alg.RelSet.ListRel.subseq")],
   [`[3,1,2] subseq [3,2]`],
   [`xs subseq ys⟺ys` is `xs` with elements dropped #h(4pt) — at each `cons`, drop the head or
    keep it],
@@ -1449,7 +1449,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
  [`R≜cost≤cost°` #src[]],
   // lean:AOP.A7_3_Party.R_eq@9fa61324
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.R_eq")],
   [The preorder the guest list is maximised over.],
 
   [`choose≜π₁ ∪ π₂`],
@@ -2213,7 +2213,7 @@ zip(that)                                         each row: its square, and the 
 
  [`R≜length≤length°` #src[]],
   // lean:AOP.A7_5_Van.R_eq@fa26242d
-  [`[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.R_eq")],
   [`[[a,b,c]]` to `[[a],[b,c]]`, and not back: `1≤2`.],
 
   [`ceiling≜` $frac(#[`prefix sum`], ∋)$ `est(≥)`],
@@ -2225,7 +2225,7 @@ zip(that)                                         each row: its square, and the 
   [`floor[a,b]` is the smallest of `0`, `a`, `a+b`, so `[a,b]` carries `ceiling−floor` cash.],
 
   [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`],
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Van.secure")],
   [`secure` keeps `[a]` exactly when `−N≤a≤N`.],
 
   [`ok` \ the coreflexive on `(a,xs)` with `xs` non-empty and `[a]⧺head(xs)` secure],
@@ -2255,7 +2255,7 @@ zip(that)                                         each row: its square, and the 
 
  [`partition list(secure)=⦇S⦈` #src[]],
   // lean:AOP.A7_5_Van.van_spec@79d2f560
-  [`[A]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.van_spec")],
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
