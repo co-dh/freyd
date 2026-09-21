@@ -77,16 +77,18 @@ theorem «meet_?» {a : Word O} (L : a ⟶ (𝕀 : Word O)) :
     `Dom P = 𝟙 ∩ P P°` names `P` twice; this form names it once and throws its output away.  The
     collapse is `𝟙 ∩ P P° = 𝟙 ∩ P⊤`: one direction is `P° ≤ ⊤`, and the other is the only place in
     this file where the modular law is spent — `modular_right` at `S := ⊤` turns the discarded
-    strand back into `P°`, because `⊤ ∩ P° = P°`. -/
+    strand back into `P°`, because `⊤ ∩ P° = P°`.
+
+    `Dom` is written out rather than named: a constant has no shape in the picture language and
+    would draw as one opaque box, where the meet is the whole content of this equation. -/
 theorem dom_cd {a b : Word O} (P : a ⟶ b) :
-    Dom P = ◁ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) := by
+    meet (𝟙 a) (P ≫ conv P) = ◁ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) := by
   have hshape : ◁ ≫ (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) = meet (𝟙 a) (P ≫ top b a) := by
     have hsplit : (𝟙 a ⊗ₕ P) ≫ (𝟙 a ⊗ₕ ⊸) = (𝟙 a ⊗ₕ (P ≫ ⊸)) := by
       rw [← SymMonCat.tensHom_comp, Cat.comp_id]
     dsimp [top]
     rw [← Cat.assoc P (⊸) (⟜), «meet_?» (P ≫ ⊸), ← hsplit]
   rw [hshape]
-  dsimp [Dom]
   refine OrderedCat.«≤_antisymm» ?_ ?_
   · exact meet_mono (OrderedCat.«≤_refl» _)
       (OrderedCat.comp_mono (OrderedCat.«≤_refl» P) («≤_top» (conv P)))
@@ -141,6 +143,7 @@ theorem left_eq_W {a b : Word O} (R S : a ⟶ b) : meet (𝟙 a) (S ≫ conv R) 
 /-- Right side: `Dom (R ∩ S) = W`.  Lemma 1 at `R ∩ S`, then `▷;! = cap` unfolds the meet into the
     picture's cap, and `Δ_assoc` — coassociativity (8) — identifies the two copy trees. -/
 theorem right_eq_W {a b : Word O} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
+  dsimp only [Dom]
   rw [dom_cd (meet R S)]
   dsimp [W]
   calc ◁ ≫ (𝟙 a ⊗ₕ meet R S) ≫ (𝟙 a ⊗ₕ ⊸)
@@ -162,6 +165,20 @@ theorem right_eq_W {a b : Word O} (R S : a ⟶ b) : Dom (meet R S) = W R S := by
 theorem dom_inter_diag {a b : Word O} (R S : a ⟶ b) :
     meet (𝟙 a) (S ≫ conv R) = Dom (meet R S) :=
   (left_eq_W R S).trans (right_eq_W R S).symm
+
+/-! ### The discard slides back -/
+
+/-- **`Dom(RS) ⊑ Dom(R)`**, both sides in the form `dom_cd` gives them: the discard walks back along
+    the lower strand past `S`.  The one `≤` spent is `lax_!`, `S⊸ ≤ ⊸`; everything else is the
+    functoriality of `⊗`.  `Freyd.Alg.dom_comp_le` (`Freyd/S2_10.lean`) is the allegory statement. -/
+theorem dom_comp_le {a b c : Word O} (R : a ⟶ b) (S : b ⟶ c) :
+    ◁ ≫ (𝟙 a ⊗ₕ (R ≫ S)) ≫ (𝟙 a ⊗ₕ ⊸) ≤ ◁ ≫ (𝟙 a ⊗ₕ R) ≫ (𝟙 a ⊗ₕ ⊸) := by
+  have hsplit : ∀ {d : Word O} (T : a ⟶ d), (𝟙 a ⊗ₕ T) ≫ (𝟙 a ⊗ₕ ⊸) = (𝟙 a ⊗ₕ (T ≫ ⊸)) := by
+    intro d T; rw [← SymMonCat.tensHom_comp, Cat.comp_id]
+  rw [hsplit (R ≫ S), hsplit R, Cat.assoc R S (⊸)]
+  exact OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+    (SymMonCat.tensHom_mono (OrderedCat.«≤_refl» _)
+      (OrderedCat.comp_mono (OrderedCat.«≤_refl» R) (lax_! S)))
 
 /-! ### §2.13 — what §2.124 is repeatedly used FOR -/
 
