@@ -739,6 +739,16 @@ def juxtL (a b : Lbl) : Lbl :=
 def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
   ps.foldl (fun acc p => if acc == Lbl.text "" then p else acc ++ sep ++ p) (Lbl.text "")
 
+/-- OPERANDS SEPARATED BY COMMAS — a fork, a co-fork, a bifunctor's two arrows, a pair's value —
+    set the way the note sets them: TIGHT, `⟨R,S⟩` and `(xs,ys)`, because the comma already
+    separates them.  A space goes after the comma only where an operand is ITSELF written with one
+    (a composite by juxtaposition, `⟨listf₁ filterp₁, listf₂⟩`), where it is the space that says
+    where the operand ends.  Decided on the operands' own label trees, so one rule answers for every
+    comma list. -/
+def commaL (l r : String) (ps : Array Lbl) : Lbl :=
+  let sep := if ps.any (fun p => p.flat.any (· == ' ')) then ", " else ","
+  l ++ Lbl.join sep ps ++ r
+
 /-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
     spelling exactly as the string rule reads it. -/
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
@@ -925,7 +935,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- `⟨g, suffix%∋ ≫ E (g)⟩` the printer hands back for the whole application at a tight precedence.
   | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
     match lastTwo (← arrows args) with
-    | some (f, g) => return "⟨" ++ (← labelTree 0 f) ++ ", " ++ (← labelTree 0 g) ++ "⟩"
+    | some (f, g) => return commaL "⟨" "⟩" #[← labelTree 0 f, ← labelTree 0 g]
     | none => txt e
   -- THE POWER OBJECT is that same `E` at an OBJECT, and its operand is a term of the note's for
   -- the same reason the arrow's is: the printer sets a product off from its factors (`E ([A] ×
@@ -953,7 +963,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- precedence inside, nothing after the comma, as the note sets it.
   | (``Freyd.Alg.junc, args) => do
     match lastTwo (← arrows args) with
-    | some (f, g) => return "[" ++ (← labelTree 0 f) ++ "," ++ (← labelTree 0 g) ++ "]"
+    | some (f, g) => return commaL "[" "]" #[← labelTree 0 f, ← labelTree 0 g]
     | none => txt e
   -- The TYPE FUNCTOR's action on an arrow is a relator's action like any other, so it takes the same
   -- brackets as `F(R)`: `T(f)`, never `T f`, juxtaposition being composition and nothing else.  The
@@ -978,6 +988,9 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
   | (``Prod, #[a, b]) => return wrap 1 ((← labelTree 2 a) ++ "×" ++ (← labelTree 2 b))
+  -- A PAIR'S VALUE is a comma list like the fork's and is set the same way: `(xs,ys)`, each factor
+  -- a term of the note's — the printer writes `(xs, ys)` and welds nothing.
+  | (``Prod.mk, #[_, _, a, b]) => return commaL "(" ")" #[← labelTree 0 a, ← labelTree 0 b]
   | (``Freyd.Functor.map, _) =>
     -- A RELATOR WHOSE ACTION THE NOTE WRITES OUT is rewritten to that spelling first, the same
     -- `diag_rewrite` step the composite takes and for the same reason: the note keeps the letter on
@@ -1000,7 +1013,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     | some (x, y) => do
       let fns ← args.filterM fun a => return (← Meta.inferType a).isAppOf ``Freyd.Alg.BiRelator
       match fns.back? with
-      | some fn => return (← labelTree 4 fn) ++ "(" ++ (← labelTree 0 x) ++ "," ++ (← labelTree 0 y) ++ ")"
+      | some fn => return (← labelTree 4 fn) ++ commaL "(" ")" #[← labelTree 0 x, ← labelTree 0 y]
       | none => txt e
     | none => txt e
   | (c, args) =>
