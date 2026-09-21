@@ -82,8 +82,8 @@ partial def stxJoin : Syntax → Join
   -- ONE CHARACTER is what a one-letter functor may close up against (`EA`, `E𝟏`, `FEA`).  A LONGER
   -- name closed up reads as two factors of a composite — `EDecimal` is `E` then `Decimal`, `treeA`
   -- is `tree` then `A` — so it takes parentheses exactly as an application does.  This is the
-  -- length test `scripts/circuit`'s `lshow` writes as `len(e[1]) == 1 == len(head(e[2]))`; only
-  -- the functor's half of it lived here, in `applyJoin`.
+  -- length test: a functor name closes up only when it and its argument's head are each one
+  -- character; only the functor's half of it lives here, in `applyJoin`.
   | .ident _ _ n _ => if oneChar n.toString then .name else .other
   | .atom _ s => if oneChar s then .name else .other
   | .node _ _ args =>
@@ -190,8 +190,8 @@ def appShow (e : Expr) : MetaM String := do
   | some (h, ops) => appSpell (← headShown h) ops
   | none => plain e
 
-/-- The note's juxtaposition spacing (`scripts/relexpr.py`'s `spell`, the same rule the note's own
-    generator writes back with): a bracket already separates two factors, so `F(∋)S` and `π₂R°`
+/-- The note's juxtaposition spacing, the same rule the note's own generator writes back with:
+    a bracket already separates two factors, so `F(∋)S` and `π₂R°`
     close up where `prefix list(p)` and `S%∋ est(R°)` cannot.  A factor OPENING with `(` keeps its
     space — `pick (schedule×𝟙)snoc` closed up would read as an application of `pick`. -/
 def juxt (a b : String) : String :=
@@ -858,8 +858,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if lastTwo args |>.isNone then txt e else do
       let mut s : Lbl := .text ""
       for t in (← labelRunT e) do s := juxtL s t
-      -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS, as `relexpr.py`'s own `spell` sets
-      -- them: `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
+      -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
+      -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
       return wrap 1 s
   | (``Freyd.Diag.LinearBicat.bcomp, args) => bin 0 " ⨟• " args

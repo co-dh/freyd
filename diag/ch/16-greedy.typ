@@ -67,9 +67,6 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
 // `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
-#let nb-Ldet = (frc([`detab°`]), 2.45, false)
-#let nb-Lexp = (frc([`expand°`]), 2.75, false)
-#let nb-estVU = ([`est(V×U)`], 2.55, true)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Detab.entab_laws"), #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
     #src[the shortest input `detab` expands to the given output is one pass along that output,
@@ -155,11 +152,6 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
 // `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
 // set at all.
-#let tb-Lbag = (frc([`bagify°`]), 2.75, false)
-#let tb-estQp = ([`est(Q')`], 2.20, true)
-#let tb-Lsnag = (frc([`snag°`]), 2.15, false)
-#let tb-pick = ([`pick`], 1.50, false)
-#let tb-sch = ([`(schedule×𝟙)snoc`], 4.90, true)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
@@ -221,8 +213,6 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // `list`.  `interval` sits ABOVE the singleton in every row from the second on: it is the map
 // pulled out of the transpose, and holding it at one height is what says the rest of the chain
 // moved past it.
-#let xb-Lint = (frc([`intern°`]), 2.75, false)
-#let xb-Linv = (frc([`inrange val°`]), 4.30, false)
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \

@@ -6,8 +6,9 @@
 Prints exactly what `typst query --root . [--input KEY=VAL]... <root> metadata --field value`
 prints, where `<root>` is `scripts/notesplit.py`'s `note_root()`: the whole note, or chapter N's
 file when `--ch N`/`CH=N` names one — so a gate reading this query is chapter-scoped by saying
-nothing, and the chapter's answer caches under its own key beside the book's.  string-check, circuit-check and cd-obligations each ran that query
-themselves — about 22s per run, paid even when the only thing that changed was Lean, which the
+nothing, and the chapter's answer caches under its own key beside the book's.  string-check and
+cd-obligations each ran that query themselves — about 22s per run, paid even when the only thing
+that changed was Lean, which the
 note does not read.  This caches the query's own output, keyed by the CONTENT of every file the
 note reads (not by mtime, not by the argument list alone), so a byte-identical source tree answers
 from disk instead of re-running typst.

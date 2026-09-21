@@ -14,7 +14,7 @@
 # WHY THE SELECTOR IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST
 # COMMENT, which the compiler discards before anything can query it, so no typed reader can see it
 # and the canvas → declaration mapping cannot be computed; it is written here by hand, the way
-# `diag/circuit-panels.txt` and `diag/string-panels.txt` name theirs.  The candidates in the
+# `diag/string-panels.txt` names theirs.  The candidates in the
 # comments come from `./scripts/cite-cover`, which reads the markers through `cite-check`'s own
 # reader.  Everything the gate then does is typed: the canvas list from `typst query`, the panel
 # from the elaborated Lean statement, the comparison from SVG path data and `pdftotext -bbox`.

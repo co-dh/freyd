@@ -39,11 +39,6 @@ in @mu-defn.
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
 // chamfered.
-#let db-LT = (frc([`T°`]), 1.20, false)
-#let db-PFX = ([`P(F(X)h)`], 2.55, true)
-#let db-LV = (frc([`Vᵢ°`]), 1.50, false)
-#let db-thini = ([`thin(Qᵢ)`], 2.45, true)
-#let db-PU = ([`P(Fᵢ(X)Uᵢ)`], 2.95, true)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.dynamic_programming_thin") \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
@@ -259,8 +254,6 @@ both lists empty.
 
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
-#let mb-Lcat = (frc([`cat°`]), 1.80, false)
-#let mb-Pbin = ([`P((X×X)bin)`], 3.50, true)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_laws"), #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
     #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
@@ -356,9 +349,6 @@ the longest repeated tail; #h(4pt)
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
-#let cb-Lext = (frc([`extend°`]), 2.75, false)
-#let cb-thinp = ([`thin(prefix°×(⊤+⊤))`], 5.95, true)
-#let cb-Pb = ([`P((X×𝟙)snoc)`], 3.80, true)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Code.code_laws"), #h(6pt)
     `encode=(null→nil,reduce list((encode×𝟙)snoc) minlist(R))` \

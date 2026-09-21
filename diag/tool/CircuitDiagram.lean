@@ -73,7 +73,7 @@ inductive OKind where
   deriving Inhabited, BEq
 
 -- How a label JOINS under a functor's name, recorded WHERE THE LABEL IS BUILT — the note's own
--- rule (`lshow` in `scripts/circuit`), one copy for all three pictures in `diag/tool/Label.lean`.
+-- rule, one copy for all three pictures in `diag/tool/Label.lean`.
 export Freyd.StrDiag (Join stxJoin applyLabel applyJoin)
 
 inductive Obj where

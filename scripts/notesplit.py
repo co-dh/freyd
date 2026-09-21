@@ -21,11 +21,10 @@ chapter's position among the level-1 headings, which is the number its displays 
 (`13.4.3c` is in chapter 13).  Working on chapter 13:
 
     make ch N=13                    # the chapter's own pdf, diag/ch/13-optimisation.pdf
-    make c CH=13                    # panels, circuit, labels, cite
+    make c CH=13                    # panels, labels, cite
     make cite CH=13                 # the markers in that chapter alone
     make panels CH=13               # draw the pictures its `#lean(...)` names and has none of
     CH=13 ./scripts/cd-check        # or ./scripts/cd-check --ch 13
-    CH=13 ./scripts/circuit-check
 
 and the patch an agent hands back is a patch against the chapter file, or against the monolith
 `note-join` prints.  With `CH` unset every gate is the whole note, exactly as it was.  A gate told a
@@ -92,7 +91,7 @@ def typst_string(line):
 def typst_label(s):
     """A display's label as its NAME: `<thin-up>` is typst's own spelling of the label `thin-up`.
 
-    The manifests write it both ways — `diag/string-panels.txt` bare, `diag/circuit-panels.txt` as
+    The manifests write it both ways — `diag/string-panels.txt` bare, `diag/cd-panels.txt` as
     typst writes it — and a label's identity is its name, which is what the note's metadata carries.
     The delimiters are read off as the syntax they are, not compared as text."""
     s = s.strip()

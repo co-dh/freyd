@@ -136,9 +136,8 @@ is not.
 `diag-export`, named by `#lean("<sel>")` (Hinze–Marsden) or `#leanc("<sel>")` (circuit).** A
 hand-laid drawing's port types are checked by nobody — which is how a bead ends up on a wire that is
 not its source. When the exporter cannot draw a panel it writes a red stub and exits nonzero; extend
-the exporter then, and never a one-off `cetz` file. `scripts/circuit` reads the note's own formula
-string, so its `cert:` says only that the picture matches the text beside it and nothing about the
-theorem — it is the route being retired, not a second source of truth.
+the exporter then, and never a one-off `cetz` file. The python route that read the note's own
+formula string is deleted; a circuit comes only from `diag-export --circuit`.
 
 **A ROW'S TWO PICTURES ARE ONE THEOREM.** In any table whose columns are the circuit and the
 Hinze–Marsden reading, the two cells of a row name the SAME declaration — `#leanc("<sel>")` beside
