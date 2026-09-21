@@ -59,6 +59,17 @@ attribute [diag_defines] relCata_cancel
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
 
+-- THE DUPLICATION RELATOR IS WRITTEN OUT AS THE PRODUCT IT IS: the note's corner is `A×A` and its
+-- side `R×R`, never `Δ(A)` — `Δ` is `Relator.prod` of two identities (`AOP.A5_2`), and a bundle
+-- built out of bundles has no name of its own, which is what every other product relator already
+-- draws by (`openBuiltField?`).
+attribute [diag_unfold] Δ
+
+-- …and the IDENTITY RELATOR IS NO OPERATOR AT ALL: its action on an object is that object and on an
+-- arrow that arrow, which is what the note writes — `A×A`, `R×R`, never `idRelator(R)`.  The same
+-- spelling bridge `Relator.comp_id` is (`AOP.A5_2`), read by the picture instead of by a rewrite.
+attribute [diag_unfold] Relator.idRelator
+
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- A `RelProd a b`'s apex IS the product of `a` and `b` — that is what tabulating `⊤ : a ⟶ b`
     says — so the note writes it `a×b`, never by the field's own name.  A DELABORATOR and not an
@@ -225,6 +236,16 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.excludeR] def unexpandExcludeR : Unexpander
   | _ => `($(mkIdent `exclude))
+
+-- AN ARITHMETIC RELATION IS WRITTEN BY ITS OWN OPERATOR, the way the note writes it: `+` for the
+-- addition's graph, `≤` for the ordering, so `est(leRel)` reads `est(≤)`.  The `Rel` the Lean name
+-- carries tells the relation from the function and is no part of what the note spells.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.plusRel] def unexpandPlusRel : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "+")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.leRel] def unexpandLeRel : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 
 -- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
 -- the line width, the due dates — is the section's context and not part of the name, exactly as
