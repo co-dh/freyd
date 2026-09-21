@@ -57,10 +57,11 @@
     no `+` for — extend the grammar and write the step rather than keeping the literal. The other
     two are nil-arm differences: the generator makes one `𝟙%∋` box where the note draws `nil` and
     then a fraction box `𝟙`.
-[ ] 13 commutative canvases still differ from what Lean draws, and 4 name no declaration at all
-    (ch7, ch10, ch11's remaining rows are converted and `ok`). Three root causes: ch11's bifunctor
-    cluster draws `F(A,TA)` where Lean states unary `F(TA)`; the `LaxNatural` cluster (13.2b and
-    13.2c's six); and 12.1c, 13.4.3a, 13.4.3b on their own.
+[ ] 3 commutative canvases still differ from what Lean draws (11.5.1b, 11.5.1c, 11.6.2a — layout
+    and colour: `legs` gives the odd edges to horizontal legs where the note gives them to vertical
+    ones, the 3+2-edge paste has no case in `isPastedSquares`, `Face.hue` has no black branch), 4
+    name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b), and `Party.rose_id`'s record
+    names a declaration that no longer exists.
 [ ] formulas outside ch14/15/16 are still typed by hand — `Thm[...]`, `#frc(...)`, a `cert:`'s
     `expect`. `lean:<decl>@<key>` pins the declaration, not the transcription, so nothing checks
     that the words beside a picture say what the declaration says. `#leanf` is wired; convert the
