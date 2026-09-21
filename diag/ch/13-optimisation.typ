@@ -450,21 +450,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #align(center, strong[counterexample — `φ,ψ : G⇒F` lax natural does NOT give `φ∩ψ` lax natural])
 #v(4pt)
 #capbox(
-  P(cetz.canvas(length: 0.9cm, {
-    let (TL, TR, BL, BR) = ((-3.4, 1.3), (3.4, 1.3), (-3.4, -1.3), (3.4, -1.3))
-    ar(TL, TR, GIVEN1, s0: 0.75, s1: 0.55); ar(TR, BR, GIVEN1, s0: 0.5, s1: 0.5)
-    ar(TL, BL, GIVEN2, s0: 0.5, s1: 0.5); ar(BL, BR, GIVEN2, s0: 0.75, s1: 0.55)
-    lab(0, 1.75, GIVEN1)[`π₁∩π₂`]; lab(3.95, 0, GIVEN1)[`R`]
-    lab(-4.15, 0, GIVEN2)[`R×R`]; lab(0, -1.75, GIVEN2)[`π₁∩π₂`]
-    lab(0, 0, TCOL, rot: -45deg)[$subset.eq.sq.not$]
-    node(TL.at(0), TL.at(1), black, `A×A`); node(TR.at(0), TR.at(1), black, `A`)
-    node(BL.at(0), BL.at(1), black, `B×B`); node(BR.at(0), BR.at(1), black, `B`)
-    // The trace: `(0,1)` in at the top left, out as `{0}` down-then-across and as `∅` the other way.
-    lab(-3.4, 2.1, luma(110))[`(0,1)`]; lab(3.4, 2.1, GIVEN1)[`∅`]
-    lab(-3.4, -2.1, GIVEN2)[`(0,0)`]
-    lab(2.85, -2.1, GIVEN2)[`{0}`]; lab(3.6, -2.1, TCOL)[$subset.eq.sq.not$]
-    lab(4.25, -2.1, GIVEN1)[`∅`]
-  }), s: 88%),
+  leancd("Freyd.Alg.inter_not_laxNatural_square"),
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` \
    `π₁,π₂ : Δ⇒Id` are both LaTs #h(4pt) #src[@party-mono-branch's `g` row] #h(4pt) and
  `π₁∩π₂={((x,x),x)}` #h(4pt) #src[]],
@@ -611,21 +597,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     s: 74%,
   ),
   capbox(
-    P(cetz.canvas(length: 0.8cm, {
-      // Each corner carries its VALUE under its type, inside the node's own white box: an annotation
-      // set loose beside the node would land on the vertical edge it hangs off.
-      let val(s) = { show raw: set text(size: 8.5pt); text(luma(110), s) }
-      let vnode(p, ty, el) = node(p.at(0), p.at(1), black,
-        grid(align: center, row-gutter: 2.5pt, ty, val(el)))
-      let (FEA, EA, FA, A) = ((-4.8, 1.9), (4.8, 1.9), (-4.8, -1.9), (4.8, -1.9))
-      ar(FEA, EA, GIVEN1, s0: 2.0, s1: 3.2); ar(FA, A, GIVEN1, s0: 2.15, s1: 2.05)
-      ar(FEA, FA, GIVEN2, s0: 1.0, s1: 1.0); ar(EA, A, GIVEN2, s0: 1.0, s1: 1.0)
-      lab(0, 2.75, GIVEN1)[$frac(#[`(∋×∋)+`], ∋)$]; lab(0, -2.5, GIVEN1)[`+`]
-      lab(-6.75, 0, GIVEN2)[`est(≤)×est(≤)`]; lab(5.75, 0, GIVEN2)[`est(≤)`]
-      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-      vnode(FEA, `E Nat×E Nat`, `(xs,ys)`); vnode(EA, `E Nat`, `{x+y∣x∈xs∧y∈ys}`)
-      vnode(FA, `Nat×Nat`, `(min(xs),min(ys))`); vnode(A, `Nat`, `min(xs)+min(ys)`)
-    }), s: 74%),
+    leancd("Freyd.Alg.RelSet.plus_distributes_le"),
     [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
   ),
 ))]<dist-str>

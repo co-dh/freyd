@@ -106,9 +106,19 @@
   calc.min(tx, ty)
 }
 
+// A corner's own content: its object, and under it the VALUE the statement pinned there, inside the
+// node's white box — a value set loose beside the node lands on the edge it hangs off.
+#let nlbl(n) = {
+  let v = n.at("value", default: none)
+  if v == none { lbl(n.label) } else {
+    grid(align: center, row-gutter: 2.5pt, lbl(n.label),
+      text(luma(110), size: 8.5pt, lbl(v)))
+  }
+}
+
 #let cdbody(nodes, edges, faces, length) = {
   let ext = (:)
-  for n in nodes { ext.insert(n.id, hext(lbl(n.label), NPAD, length)) }
+  for n in nodes { ext.insert(n.id, hext(nlbl(n), NPAD, length)) }
   let cols = nodes.map(n => n.at.at(0)).dedup().sorted()
   let rows = nodes.map(n => n.at.at(1)).dedup().sorted()
   let colh = cols.map(c => calc.max(
@@ -160,7 +170,7 @@
       lab(mid.at(0) - nm.at(0) * voff, mid.at(1) - nm.at(1) * voff, hue(e), lbl(v))
     }
   }
-  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), hue(n), lbl(n.label)) }
+  for n in nodes { node(at.at(n.id).at(0), at.at(n.id).at(1), hue(n), nlbl(n)) }
   for f in faces {
     let p = pos(f.at)
     d.content(p, text(SYMSIZE)[#f.sym])

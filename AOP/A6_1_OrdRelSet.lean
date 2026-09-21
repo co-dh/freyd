@@ -75,14 +75,35 @@ public theorem merge_not_monotonic :
   for a counterexample. -/
 
 /-- `Δ`'s action is the pointwise `R×R` — `prodMap_eq_rprodMap` read at a pair of points. -/
-private theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
+public theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
     (p : A.carrier × A.carrier) (q : B.carrier × B.carrier) :
     (Δ RelSet.{0}).map R p q ↔ (R p.1 q.1 ∧ R p.2 q.2) := by
   rw [show (Δ RelSet.{0}).map R = RelSet.rprodMap R R from RelSet.prodMap_eq_rprodMap R R]
   exact Iff.rfl
 
+/-- The relation `{(0,0),(1,0)}` on `{0,1}` — spelled `0,1 = false,true` — which merges BOTH
+    elements onto one.  The witness both refutations below are stated at. -/
+@[expose, reducible] public def boolMerge : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) :=
+  fun _ y => y = false
+
 -- Same shape as `inter_not_monotonic`: two DISTINCT elements improve to the SAME one, and the
 -- meet is exactly what forbids the two components from being routed there independently.
+
+/-- **THE FAILING SQUARE, at the witnesses `laxNatural_inter_false` is proved from.**  `(0,1)` lies
+    in `(R×R)(π₁∩π₂)` — route both components to `0`, where the diagonal accepts them — and not in
+    `(π₁∩π₂)R`, which already needs `0=1`.  Stated as its own theorem because the existential
+    below names nothing a picture could stand at: the corners and the four sides are here. -/
+public theorem inter_not_laxNatural_square :
+    ¬ ((Δ RelSet.{0}).map boolMerge
+          ≫ ((relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outl
+              ∩ (relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outr)
+        ⊑ ((relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outl
+              ∩ (relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outr) ≫ boolMerge) := by
+  intro h
+  obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
+    RelSet.le_iff.mp h (false, true) false
+      ⟨(false, false), (delta_map_apply boolMerge _ _).mpr ⟨rfl, rfl⟩, rfl, rfl⟩
+  exact absurd (hl.symm.trans hr) (by decide)
 /-- **The `∩` case of `union_slides` is FALSE in its LAX NATURALITY reading too.**  The two
     projections `π₁, π₂ : Δ ⟶ 1` are both lax natural (`outl_lax_natural`, `outr_lax_natural`) and
     their meet is the diagonal `{((x,x),x)}`.  At `R = {(false,false),(true,false)}`, which merges
@@ -92,15 +113,10 @@ private theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
     `(π₁ ≫ R) ∩ (π₂ ≫ R) ⊑ (π₁ ∩ π₂) ≫ R` is semi-distributivity BACKWARDS. -/
 public theorem laxNatural_inter_false :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ A, G.obj A ⟶ F.obj A),
-      LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) := by
-  refine ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
-    fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural, ?_⟩
-  intro h
-  let R : (⟨Bool⟩ : RelSet.{0}) ⟶ (⟨Bool⟩ : RelSet.{0}) := fun _ y => y = false
-  obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
-    RelSet.le_iff.mp (h R) (false, true) false
-      ⟨(false, false), (delta_map_apply R _ _).mpr ⟨rfl, rfl⟩, rfl, rfl⟩
-  exact absurd (hl.symm.trans hr) (by decide)
+      LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) :=
+  ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
+    fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural,
+    fun h => inter_not_laxNatural_square (h boolMerge)⟩
 
 /-- **The converse of a lax natural transformation need not be lax natural**, so `recip_oplax`
     (A5_7) is the whole truth about `φ°`.  `φ = π₂ : Δ ⟶ 1` and the same merging
