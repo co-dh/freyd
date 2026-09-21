@@ -5,20 +5,28 @@
 #   ./scripts/diag-export Freyd.Diag.dom_cd Freyd.Diag.cv_merge
 #   typst compile diag/generated/Freyd.Diag.dom_cd.typ
 #
-# The exe imports `Freyd` plus every `diag.*` module in ONE environment (importModules retains it
-# for the life of the process), so name as many declarations as you like in a single run rather
-# than invoking this per declaration.  The cap is here for the same reason as in lean-refactor:
-# every long-running Lean process in this repo runs under it — see scripts/cap.
+# A handful of declarations go in ONE run: each process imports `Freyd` plus every `diag.*` module,
+# about a second.  A whole route does NOT: the exe draws its arguments as tasks over one shared
+# environment, and hundreds of them contend on it — the circuits cost eleven times the CPU they
+# cost as a process each — so `diag-regen` is what redraws a route.  The cap is here for the same
+# reason as in lean-refactor: every long-running Lean process in this repo runs under it — see
+# scripts/cap.
 cd "$(dirname "$0")/.." || exit 1
 # The naturality search takes its candidates from the index and exits on one older than a module the
 # exe imports, so the build `lake exe` would do is done first and the index refreshed after it.  Both
 # go to stderr: stdout is the records a caller parses.
 # `diag.StrDiagNames` is loaded at RUN time, so the exe's build does not reach it: left stale it
 # prints the previous spelling of every label and exits 0.
-./scripts/cap lake build diag-export diag.StrDiagNames >&2 || exit 1
-# `--list` asks TYPST what the note draws: it imports no environment, needs no index, and the
-# note's own layout costs far more than the cap an exporter run is held to, which the child
-# inherits.  Routed here rather than raising the cap for every route.
-case " $* " in *" --list "*) exec lake exe diag-export "$@" ;; esac
-./scripts/lean-refactor index >&2 || exit 1
+# `--prepare` does those two and draws nothing; `--prepared` as the first word says they are done.
+# `diag-regen` spreads a route over many processes, and the index is refreshed under a lock, so a
+# refresh per process would queue them behind each other to learn nothing changed.
+if [ "$1" = "--prepared" ]; then shift; else
+  ./scripts/cap lake build diag-export diag.StrDiagNames >&2 || exit 1
+  # `--list` asks TYPST what the note draws: it imports no environment, needs no index, and the
+  # note's own layout costs far more than the cap an exporter run is held to, which the child
+  # inherits.  Routed here rather than raising the cap for every route.
+  case " $* " in *" --list "*) exec lake exe diag-export "$@" ;; esac
+  ./scripts/lean-refactor index >&2 || exit 1
+  [ "$1" = "--prepare" ] && exit 0
+fi
 exec ./scripts/cap lake exe diag-export "$@"

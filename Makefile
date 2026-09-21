@@ -110,7 +110,10 @@ panels:
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
 # note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
 # that no panel names fails here rather than sitting unchecked.
-cd-check: $(STAMP)
+# `panels`, NOT `$(STAMP)`: the gate exports its own commutative panels and only COMPILES the note, so
+# it needs every import to exist and none to be fresh — the stamp redrew all 500 pictures of every
+# route, five minutes under the note lock, in front of a check that takes thirteen seconds.
+cd-check: panels
 	./scripts/cd-check
 
 # Every type cell `diag-export --type` has written, rewritten from LEAN.  The FILES are the

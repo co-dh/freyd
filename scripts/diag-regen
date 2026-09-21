@@ -14,7 +14,7 @@
 # BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
 # and a picture named by only one of them is still a picture that has to be redrawn.
 #
-# ONE LEAN PROCESS PER ROUTE, six at most: a `#lean(...)` name is drawn by `--string` (the panel
+# SIX ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
 # the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
 # reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leanf(...)`
 # name by `--formula` (the statement in the note's spelling), a `<decl>.proof` by `--proof`, and
@@ -51,13 +51,28 @@ filter() {
   fi
 }
 
+# ONE PROCESS PER CALL, half the cores at a time.  The exe draws its arguments as tasks over one
+# shared environment, and a whole route in one process contends on it: 176 circuits cost 2011 CPU
+# seconds that way and 184 as a process each, the strings 3301 against 1201.  Half the cores because
+# a panel with a long naturality search holds 1.6 GiB.  The build and the index are done ONCE, before
+# the first picture and only when there is one: the index is refreshed under a lock.
+# `$1` is the list, a call to a line; the rest is the route's flag.
+draw() {
+  names=$1; shift
+  [ -n "$names" ] || return 0
+  [ -n "$prepared" ] || ./scripts/diag-export --prepare || exit 1
+  prepared=1
+  printf '%s\n' "$names" \
+    | xargs -d '\n' -n 1 -P "$(( ($(nproc) + 1) / 2 ))" ./scripts/diag-export --prepared "$@" || exit 1
+}
+
 all=$(./scripts/note-files --generated) || exit 1
 # The `#import`s are drawn BEFORE the metadata is asked for: the listings below compile the note, and
 # a note whose import has no file yet does not compile, so a new import could never be drawn.
 plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter diag/generated)
 proofs=$(printf '%s\n' "$all" | filter diag/generated | sed -n 's|\.proof$||p')
-[ -n "$plain" ] && { ./scripts/diag-export $plain || exit 1; }
-[ -n "$proofs" ] && { ./scripts/diag-export --proof $proofs || exit 1; }
+draw "$plain"
+draw "$proofs" --proof
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
@@ -69,13 +84,12 @@ formula=$(./scripts/diag-export --list lean-formula) || exit 1
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.
 
-# Unquoted on purpose: the names carry no spaces, and quoting would pass a whole list as one word.
 leans=$(printf '%s\n' "$lean" | filter diag/generated)
 circuits=$(printf '%s\n' "$circuit" | filter diag/generated/circuit)
 cds=$(printf '%s\n' "$cd" | filter diag/generated/commutative whole)
 formulas=$(printf '%s\n' "$formula" | filter diag/generated/formula)
-[ -n "$leans" ] && { ./scripts/diag-export --string $leans || exit 1; }
-[ -n "$circuits" ] && { ./scripts/diag-export --circuit $circuits || exit 1; }
-[ -n "$cds" ] && { ./scripts/diag-export --commutative $cds || exit 1; }
-[ -n "$formulas" ] && { ./scripts/diag-export --formula $formulas || exit 1; }
+draw "$leans" --string
+draw "$circuits" --circuit
+draw "$cds" --commutative
+draw "$formulas" --formula
 exit 0
