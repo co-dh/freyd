@@ -53,9 +53,12 @@
 [X] 14.1.2d need to add "given R∩(S°S)⊑Q ) in the title, and remove "keeping one ..."
 [X] add string diagram of  the first formulas after 8.3 op algprog.pdf P194. prove the second with our table format like 14.1.2d.
 [X] 3 circuit cells in ch12 were hand-laid `#cpanel` literals; every circuit in ch12–16 is a `#leanc`.
-[ ] 11.5.1b is the one commutative canvas that still differs from what Lean draws: the note has six
-    arrows, the declaration `alpha_natural_split` states five (no diagonal). Either the note drops
-    the diagonal or the exporter learns to draw a composite beside its factors — his decision.
+[X] 11.5.1b follows the declaration `alpha_natural_split`: five arrows, no chord `F(f,𝟙)α`, drawn
+    by `#leancd` (his decision).
+[ ] Nothing in the note gates runs the whole-repository `lake build`: a rename left
+    `AOP/A5_7_PartyBeads.lean` broken and `make p` stayed green, because the gates build only what
+    `diag-export` imports. Run `./scripts/cap lake build` before every merge to master, or put it
+    in `make p`.
 [ ] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). Each
     needs a new Lean declaration and a generator feature: node value labels; opening an `∃` at its
     witness plus a `⋢` face mark; three records on one canvas with bowed arrows; `Face.paste` as a
