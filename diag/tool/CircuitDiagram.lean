@@ -533,6 +533,18 @@ def isFold (fn : Expr) : MetaM Bool := do
 
 mutual
 
+/-- `(R+S)[f,g] = [Rf,Sg]` (`sumMap_junc`): a SUM before a junction is the one tape whose arms are
+    the operands composed with the branches — the same fusion `F(R)[f,g]` gets, and for the same
+    reason.  The sum is read off its TYPE (`asSumMap?`: two arrows between matching summands of two
+    coproducts), so every constant that spells a sum fuses, not the one this step happens to use. -/
+partial def sumJunc? (l r : Expr) : MetaM (Option Pic) := do
+  unless r.isAppOf ``Freyd.Alg.junc do return none
+  let some (f, g) ← StrDiag.asSumMap? l | return none
+  let some (u, v) := lastTwo r.getAppArgs | return none
+  let (s, _) ← endsOf l
+  let (_, t) ← endsOf r
+  return some (← casePic (← StrDiag.compose #[f, u]) (← StrDiag.compose #[g, v]) s t (fuse := none))
+
 /-- §3 row 5: a composite is its factors' pictures, ports glued.  The factors are flattened, so a
     nested composite splices in rather than nesting, and an identity contributes NO factor — it is
     the bare wire the run already draws. -/
@@ -548,6 +560,7 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
       -- two in series.  Without it the picture is a correct but uglier equal.
       let fused ← if i + 1 < fs.size then do
           let nxt ← openDef fs[i + 1]!
+          if let some p ← sumJunc? fs[i]! nxt then pure (some p) else
           match fs[i]!.getAppFnArgs, nxt.getAppFnArgs with
           | (``Freyd.Functor.map, fa), (``Freyd.Alg.junc, ja) =>
             match fa.back?, lastTwo ja with
@@ -680,6 +693,9 @@ partial def draw (e : Expr) : MetaM Pic := do
     | some φ => Meta.lambdaTelescope φ fun _ b => drawRun b
     | none => leaf e src tgt
   | _ => do
+    -- §3 row 13 at a SUM of arrows: `R+S` is the tape whose two arms are the operands, one per
+    -- summand.  Recognised by TYPE, so it draws whatever constant spells the sum.
+    if let some (f, g) ← StrDiag.asSumMap? e then return ← casePic f g src tgt (fuse := none)
     if e.isApp then
       if ← isFold e.appFn! then return ← cataPic e.appArg! src tgt
     leaf e src tgt

@@ -422,6 +422,13 @@ public theorem topMor_apply {A B : RelSet.{u}} (x : A.carrier) (y : B.carrier) :
     C ⟶ (⟨A.carrier × B.carrier⟩ : RelSet.{u}) :=
   fun x p => R x p.1 ∧ S x p.2
 
+-- printing-only: the pointwise fork IS the abstract `⟨R,S⟩` of (5.1) on this product
+-- (`pair_eq_rpair`), so it prints with the brackets the note writes and `RelProd.pair` already uses.
+open Lean PrettyPrinter in
+@[app_unexpander rpair] public meta def unexpandRpair : Unexpander
+  | `($_ $R $S) => `(⟨$R, $S⟩)
+  | _ => throw ()
+
 /-- `rpair` is monotonic in both arguments. -/
 public theorem rpair_mono {C A B : RelSet.{u}} {R R' : C ⟶ A} {S S' : C ⟶ B}
     (hR : R ⊑ R') (hS : S ⊑ S') : rpair R S ⊑ rpair R' S' :=
