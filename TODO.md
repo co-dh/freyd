@@ -74,10 +74,12 @@
     outside too; decide the same for it.
 [X] `diff-crop --key` resolves the key against the pdf it is handed (a chapter pdf renumbers from
     1), and the whole-pdf mode exits nonzero when pages differ and nothing was written.
-[ ] `diff-crop --key` anchors on the FIRST `(key)` a pdf prints, which for 13.2.1a and 13.3.1b is a
+[X] `diff-crop --key` anchors on the FIRST `(key)` a pdf prints, which for 13.2.1a and 13.3.1b is a
     cross-reference on an earlier page, so both halves came out as the same unrelated text and the
     pair was refused as pixel-identical. The display's own number is the one set in the margin
     column; anchor on that occurrence.
+    `find_anchor` takes the occurrence furthest right; an unverified seed runs down from the label by
+    the row's `h`, and the window opens at the label so the section heading stays out.
 [X] Chapters 1–10: 5b/dom-collapse, 5.1a/dom-slide, 7b/banana-split and 10.1a's two panels are
     drawn from declarations (`Freyd.Diag.dom_cd`, `Freyd.Diag.dom_comp_le`,
     `pair_relCata_eq_relCata_pair`, `singletonMap_comp_eps`, `Λ_eps_reflection`); `snake` and

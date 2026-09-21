@@ -56,6 +56,7 @@ KEYPAD = 9                       # pt of white kept around a display's measured 
 GUT = 15                         # pt: a wider gap than this is the gutter the display ends at
 NEAR = 4                         # pt: ink this close is the display's own, whatever the growth budget
 GROWMAX = 45                     # pt the band may run past the declared box before it stops chaining
+LABELOFF = 3                     # pt: a margin label sits 1.1 pt above its display's box; slack for the word box's ascent
 MARG = 3                         # pt the crop must clear the ink by, or the run aborts
 STRIP = 6                        # px checked blank at the top and bottom of every crop
 MINSIM = 0.5                     # below this two pages are different pages, not an edited one
@@ -468,10 +469,12 @@ class Refuse(Exception):
 def find_anchor(pdf, key, page=None):
     """The word `(key)` — the note's own printed label for the display — searched in `pdf`'s own
     text; `page` narrows the search to one page (a cheap re-check of a db hit), omitted searches
-    every page.  Returns the `words()` tuple, or `None`."""
+    every page.  Returns the `words()` tuple, or `None`.
+    A cross-reference prints the same word, often on an earlier page: the display's OWN number is the
+    one `note-style.typ` sets in the margin column, so the hit furthest right is taken, never the first."""
     label = f"({key})"
-    return next((w for w in words(pdf, page, page) if w[5] == label), None) if page is not None \
-        else next((w for w in words(pdf) if w[5] == label), None)
+    hits = [w for w in (words(pdf, page, page) if page is not None else words(pdf)) if w[5] == label]
+    return max(hits, key=lambda w: w[3], default=None)
 
 
 def db_row(key):
@@ -486,23 +489,36 @@ def resolve(key, pdf):
     page numbering, right only for the pdf `book-index.db` indexed — a chapter pdf renumbers from 1,
     so trusting it blindly cut the page THAT NUMBER names in a different pdf under a different
     display's anchor entirely.  It is used as a fast path only once VERIFIED to carry `key`'s own
-    anchor label on that very page of `pdf`; otherwise every page of `pdf` is searched for the anchor
-    directly.  Returns (page, sy, sh, verified)."""
+    anchor label on that very page of `pdf` AT THE ROW'S OWN HEIGHT ON THE PAGE — the same page
+    number of another pdf can print `(key)` too; otherwise every page of `pdf` is searched for the
+    anchor directly.  Returns (page, sy, sh, verified).
+    The margin label is set on the display's FIRST line, so an unverified seed runs DOWN from the
+    label: by the row's `h` when the key has one, because a seed of the label's own height stops at
+    the first gutter under a title row and never reaches the picture.  `h` is a seed and no more —
+    `band` measures the ink in `pdf` — so a display that changed height is still cut whole."""
     r = db_row(key)
-    if r and find_anchor(pdf, key, r[0]):
+    hit = find_anchor(pdf, key, r[0]) if r else None
+    if hit and abs(hit[2] - r[1]) < LABELOFF:
         return r[0], r[1], r[2], True
     hit = find_anchor(pdf, key)
     if hit is None:
         raise Refuse(f"{key}: no anchor '({key})' found anywhere in {pdf} — the index is behind the "
                      f"note (`make p` re-indexes it), the key is wrong, or {pdf} does not draw it")
-    return hit[0], hit[2], hit[4] - hit[2], False
+    return hit[0], hit[2], r[2] if r else hit[4] - hit[2], False
+
+
+def window(nb, y0, y1, labelled):
+    """How far `band` may grow.  A seed that starts AT the display's own margin label starts on its
+    first line, so nothing above it is the display's: the window opens there, not GROWMAX higher,
+    where the section heading 11 pt above a title row chains in."""
+    return max(nb[0], y0 - (LABELOFF if labelled else GROWMAX)), min(nb[1], y1 + GROWMAX)
 
 
 def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     ap, sy, sh, verified = resolve(key, after_pdf)
     W, H, boxes = svg_ink(after_pdf, ap, tmp)
     nb = neighbours(after_pdf, ap, key, sy, sh, H, verified)
-    got = band(boxes, sy, sy + sh, (max(nb[0], sy - GROWMAX), min(nb[1], sy + sh + GROWMAX)))
+    got = band(boxes, sy, sy + sh, window(nb, sy, sy + sh, not verified))
     if got is None:
         sys.exit(f"diff-crop {key}: no ink on page {ap} of {after_pdf} near y {sy:.1f}..{sy + sh:.1f}")
     aink, apads, agaps = got
@@ -526,7 +542,7 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
     # style helper name) falls back to the fuzzy band-word match `anchor()` already did for reflow.
     try:
         bp, by0, bh0, bverified = resolve(key, before_pdf)
-        by1, txt = by0 + bh0, f"({key})"
+        by1, txt, blab = by0 + bh0, f"({key})", not bverified
     except Refuse:
         aw = [w for w in words(after_pdf, ap, ap) if aink[1] <= (w[2] + w[4]) / 2 <= aink[3]]
         txt, ay, bp, by = anchor(aw, words(before_pdf))
@@ -535,10 +551,10 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
                          f"{before_pdf}; tried {by[:5]} — refusing to crop the after PDF's page number",
                          after_only=True)
         up, down = ay - aink[1], aink[3] - ay
-        by0, by1, bverified = by - up, by + down, False
+        by0, by1, bverified, blab = by - up, by + down, False, False
     bW, bH, bboxes = svg_ink(before_pdf, bp, tmp)
     bnb = neighbours(before_pdf, bp, key, by0, by1 - by0, bH, bverified)
-    got = band(bboxes, by0, by1, (max(bnb[0], by0 - GROWMAX), min(bnb[1], by1 + GROWMAX)))
+    got = band(bboxes, by0, by1, window(bnb, by0, by1, blab))
     if got is None:
         raise Refuse(f"{key}: anchor '{txt}' found on page {bp} of {before_pdf} but no ink around it",
                      after_only=True)
