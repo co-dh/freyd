@@ -25,8 +25,11 @@
   ar(PC, C, black, s0: 0.6, s1: 0.5)
   ar(A, PC, GIVEN1, s0: 0.5, s1: 0.6)
   ar(B, PC, GIVEN2, s0: 0.5, s1: 0.6)
-  arc(A, C, 1, [`R`], col: GIVEN1, h: 4.0, cx: 3)
-  arc(B, C, -1, [`S`], col: GIVEN2, h: 4.0, cx: 3)
+  // BOWED, not `arc`: `arc` sets its label in a white BOX, which `scripts/svg-check` reads back as
+  // a node — the two arcs then stood as two one-node diagrams of their own beside the polygon.
+  ar(A, C, GIVEN1, s0: 0.5, s1: 0.5, bow: 3.4)
+  ar(B, C, GIVEN2, s0: 0.5, s1: 0.5, bow: -3.4)
+  lab(0.6, 3.41, GIVEN1)[`R`]; lab(0.6, -3.41, GIVEN2)[`S`]
   lab(-5.18, 1.55, black)[`l`]; lab(-5.18, -1.55, black)[`r`]
   lab(-1.23, 1.62, GIVEN1)[$frac(#[`R`], ∋)$]; lab(-1.23, -1.62, GIVEN2)[$frac(#[`S`], ∋)$]
   lab(-3.0, 0.5, INDUCED)[`[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]`]

@@ -776,13 +776,18 @@ structure Component where
   /-- The two vertices that argument's own arrow joins, by id: the objects THIS component is
       between, which is what tells a node of one component from one every component shares. -/
   ends : Array String
+  /-- THE COMPONENT'S OWN EDGE, where no side draws it already: a chord that is a WALK arrives at an
+      object INSIDE the polygon, so the arrow the universal property cancels to — `l[Λ(R),Λ(S)]`,
+      which IS `Λ(R)` — joins the corner this side owns to that object and is drawn here. -/
+  add : Option (String × String × Expr) := none
   deriving Inhabited
 
 def Face.components (fc : Face) : MetaM (Option (Component × Component)) := do
   let some (cp, _) := fc.chord | return none
-  -- A chord of several edges induces no ONE arrow, so it has no components to follow down the
-  -- sides — the same `none` a chord no induced constructor heads gives.
-  let #[(_, _, c)] := cp.edges | return none
+  -- THE INDUCED ARROW IS THE CHORD'S FIRST EDGE, whether the chord stops there or walks on: a walk
+  -- is the induced arrow followed by what the statement does with it (`[Λ(R),Λ(S)]` then `∋`), and
+  -- the components are still the arguments that arrow was built out of.
+  let some (_, ct, c) := cp.edges[0]? | return none
   unless isInduced (← inducedHeads) c do return none
   let mut args : Array Expr := #[]
   for a in c.getAppArgs do
@@ -795,6 +800,15 @@ def Face.components (fc : Face) : MetaM (Option (Component × Component)) := do
     for i in [0 : args.size] do
       for (s, t, f) in p.edges do
         if ← Meta.isDefEq f args[i]! then out := out.push { idx := i, ends := #[s, t] }
+      -- A COMPONENT THE SIDE DOES NOT DRAW, where the induced arrow's own target is no CORNER of
+      -- the polygon: it runs from the corner this side owns to that object, and the picture draws
+      -- it rather than leave the reader to compose the injection with the chord.
+      unless out.any (·.idx == i) || (fc.lhs.nodes ++ fc.rhs.nodes).any (·.1 == ct) do
+        let (a, _) ← StrDiag.homEnds args[i]!
+        for (id, o) in p.nodes do
+          if id != cp.src && id != cp.tgt then
+            if ← Meta.isDefEq o a then
+              out := out.push { idx := i, ends := #[id, ct], add := some (id, ct, args[i]!) }
     return out
   let (l, r) := (← carries fc.lhs, ← carries fc.rhs)
   unless l.size == 1 && r.size == 1 && l[0]!.idx != r[0]!.idx do return none
@@ -807,6 +821,16 @@ def Face.hueOn (fc : Face) (comp : Option Nat) (f : Expr) : MetaM String := do
   match comp with
   | some i => return s!"GIVEN{i + 1}"
   | none => fc.hue f
+
+/-- The hue where the chord is a WALK — the induced arrow and then what the statement does with it.
+    The picture then carries that arrow's own target inside it, and what tells the two halves apart
+    is the DATA: the arrow the statement hands over and the component built out of it wear the
+    side's colour, while the structure both halves run through — the injection into the chord's
+    source, the `∋` along it — is the same on either side and stays black. -/
+def Face.hueWalk (fc : Face) (comp : Option Nat) (f : Expr) : MetaM String := do
+  if ← fc.dashes f then return "INDUCED"
+  unless ← fc.given f do return "BLACK"
+  fc.hueOn comp f
 
 /-- The nodes of a face drawn BY COMPONENT, read off the objects each COMPONENT'S OWN ARROW is
     between: a node one component alone is an end of belongs to it and wears its hue; a node EVERY
@@ -822,6 +846,18 @@ def componentNodeHues (l r : Component) (ns : Array Node) : Array Node :=
     | true, true => { v with hue := "BLACK" }
     | true, false => { v with hue := s!"GIVEN{l.idx + 1}" }
     | false, true => { v with hue := s!"GIVEN{r.idx + 1}" }
+    | false, false => { v with hue := "INDUCED" }
+
+/-- The corners where the chord is a WALK: the induced arrow lands on an object INSIDE the polygon,
+    so no corner is the induced one and the same question is asked of the SIDES — a corner exactly
+    one side owns wears that side's hue, a corner both sides share belongs to neither and is black,
+    and what is on neither side is what the universal property produced. -/
+def walkNodeHues (l r : Component) (ls rs : Array String) (ns : Array Node) : Array Node :=
+  ns.map fun v =>
+    match ls.contains v.id, rs.contains v.id with
+    | true, false => { v with hue := s!"GIVEN{l.idx + 1}" }
+    | false, true => { v with hue := s!"GIVEN{r.idx + 1}" }
+    | true, true => { v with hue := "BLACK" }
     | false, false => { v with hue := "INDUCED" }
 
 /-- The nodes the statement HANDS the picture: those standing at an END of one of the arrows it
@@ -876,7 +912,8 @@ def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array 
 def Face.chordEdges (fc : Face) (c : Path) (side : String) : MetaM (Array Edge) :=
   c.edges.mapM fun (src, tgt, f) => do
     let dash ← fc.induces f
-    let hue ← if dash then pure "INDUCED" else fc.hue f
+    let hue ← if dash then pure "INDUCED"
+              else if c.edges.size > 1 then fc.hueWalk none f else fc.hue f
     return { src, tgt, label := ← edgeLabel fc.named f, value := ← namedValue? fc.named f, side,
              dash, hue }
 
@@ -889,10 +926,17 @@ def chordNodes (c : Path) (ns : Array Node) : MetaM (Array Node) := do
   let some b := ns.find? (·.id == c.tgt)
     | throwError "the chord arrives at {c.tgt}, which is not a corner of the polygon"
   let k := c.edges.size.toFloat
+  -- A CHORD WITH MORE ROOM THAN EDGES leaves the extra room to its FIRST edge: the induced arrow
+  -- passes the column the polygon's other corners stand in before reaching the first object ON the
+  -- chord, so each of those objects takes a column of its own at the target end.  Even spacing
+  -- otherwise — a chord no wider than its walk, or one on a diagonal, has no column to spare.
+  let room := (b.gx - a.gx).abs > k + 0.5 && (b.gy - a.gy).abs < 0.5
   let mut out : Array Node := #[]
   for i in [1 : c.edges.size] do
     let s := i.toFloat / k
-    out := out.push { id := c.nodes[i]!.1, gx := a.gx + s * (b.gx - a.gx),
+    let back := (k - i.toFloat) * (if b.gx > a.gx then 1.0 else -1.0)
+    out := out.push { id := c.nodes[i]!.1,
+                      gx := if room then b.gx - back else a.gx + s * (b.gx - a.gx),
                       gy := a.gy + s * (b.gy - a.gy), label := ← labelT c.nodes[i]!.2 }
   return out
 
@@ -1088,31 +1132,45 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
   if fc.isCofan then
-    -- Three columns, three rows: the chord across the middle from its source to its target, the
-    -- `lhs` apex over the column between them and the `rhs` apex under it.
-    let place (p : Path) (side₀ : String) (gy : Float) (comp : Option Nat)
+    -- Three rows, and one column per step of the chord past the apexes': the chord across the
+    -- middle from its source to its target, the `lhs` apex over the column between them and the
+    -- `rhs` apex under it.  A chord that WALKS puts each object it passes through in a column of
+    -- its own beyond that one, so its target stands as far out as the walk is long.
+    let some (c, sym) := fc.chord | throwError "a cofan is a pasted pair and has a chord"
+    let walk := c.edges.size > 1
+    let far := c.edges.size.toFloat + 1.0
+    let place (p : Path) (side₀ : String) (gy : Float) (cm : Option Component)
         : MetaM (Array Node × Array Edge) := do
+      let comp := cm.map (·.idx)
+      let hue (f : Expr) : MetaM String := if walk then fc.hueWalk comp f else fc.hueOn comp f
       let mut ns : Array Node := #[]
       let mut es : Array Edge := #[]
       for i in [0:3] do
         let (id, o) := p.nodes[i]!
-        let q := if i == 0 then (0.0, -1.0) else if i == 1 then (1.0, gy) else (2.0, -1.0)
+        let q := if i == 0 then (0.0, -1.0) else if i == 1 then (1.0, gy) else (far, -1.0)
         ns := ns.push { id, gx := q.1, gy := q.2, label := (← labelT o) }
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
         es := es.push { src, tgt, label := (← edgeLabel fc.named f),
                         value := (← namedValue? fc.named f), side := side₀,
-                        dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
+                        dash := ← fc.dashes f, hue := ← hue f }
+      -- THE COMPONENT THE SIDE DOES NOT DRAW, drawn: it leaves this side's own corner for the
+      -- object the induced arrow arrives at, which a walking chord carries inside the polygon.
+      if let some ⟨idx, _, some (src, tgt, f)⟩ := cm then
+        es := es.push { src, tgt, label := (← edgeLabel fc.named f),
+                        value := (← namedValue? fc.named f), side := side₀,
+                        dash := ← fc.dashes f, hue := s!"GIVEN{idx + 1}" }
       return (ns, es)
-    let (ln, le) ← place fc.lhs "top" 0.0 (comps.map (·.1.idx))
-    let (rn, re) ← place fc.rhs "bottom" (-2.0) (comps.map (·.2.idx))
+    let (ln, le) ← place fc.lhs "top" 0.0 (comps.map (·.1))
+    let (rn, re) ← place fc.rhs "bottom" (-2.0) (comps.map (·.2))
     let corners := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
-    let some (c, sym) := fc.chord | throwError "a cofan is a pasted pair and has a chord"
     let nodes := corners ++ (← chordNodes c corners)
     -- The chord's own label is set above it, inside the face the `lhs` apex bounds.
     let edges := le ++ re ++ (← fc.chordEdges c "top")
     let hued := match comps with
-      | some (l, r) => componentNodeHues l r nodes
+      | some (l, r) =>
+        if walk then walkNodeHues l r (fc.lhs.nodes.map (·.1)) (fc.rhs.nodes.map (·.1)) nodes
+        else componentNodeHues l r nodes
       | none => nodeHues given nodes edges
     return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
       faceMark nodes sym (fc.rhs.nodes.map (·.1)))
