@@ -18,28 +18,28 @@
 
  [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[]],
   // lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6
-  [`[A]⟶[B]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.list_cata")],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
  [`subseq≜⦇[nil,cons ∪ π₂]⦈` #src[]],
   // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.subseq_cata")],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
   [`prefix≜⦇[nil,nil ∪ cons]⦈` \
  `=cat° π₁=init*` #src[]],
    // lean:AOP.A5_6_ListCombinators.prefix_cata@b8d861c4 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
  [`suffix≜cat° π₂=tail*` #src[]],
   // lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
  [`segment≜suffix prefix` #src[]],
   // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
  [`partition≜concat°` #src[]],
@@ -49,7 +49,7 @@
 
  [`concat≜⦇[nil,cat]⦈` #src[]],
   // lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3
-  [`[[A]]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
   [Joins the segments back up, which is why its converse splits a list.],
 
   [`inits`],
@@ -61,7 +61,7 @@
   [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
 
   [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Filter.filter")],
   [The longest subsequence of `xs` whose every element passes `p`.
    // filter row: Ex 7.41
    #h(4pt) #src[`est(R°)` is @est-defn]],
@@ -72,13 +72,13 @@
    #h(4pt) #src[`≥≜≤°`]],
 
   [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
   [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
    // takewhile row: Ex 7.39
    #h(4pt) #src[]],
 
   [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
-  [`[A]⟶A`],
+  [#leant("Freyd.Alg.RelSet.MSS.mss")],
   [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
    // mss row: Ex 7.40
    on each suffix. #h(4pt) #src[]],

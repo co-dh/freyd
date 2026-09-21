@@ -35,7 +35,7 @@
 
   [what it reduces to \
    `α⟨⦇h⦈,⦇k⦈⟩=F(⟨⦇h⦈,⦇k⦈⟩)⟨F(π₁)h,F(π₂)k⟩`],
-  [`FT⟶A×B`],
+  [#leant("Freyd.Alg.pair_relCata_hom")],
   [All that @cata-defining leaves to check: the fork satisfies the defining equation.],
 
   [the instance \
