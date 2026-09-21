@@ -1151,7 +1151,11 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
         ns := ns.push { id, gx := q.1, gy := q.2, label := (← labelT o) }
       for i in [0:2] do
         let (src, tgt, f) := p.edges[i]!
-        es := es.push { src, tgt, label := (← edgeLabel fc.named f),
+        -- THE FAR EDGE BOWS OUT where this side also draws a component: the two leave the apex for
+        -- two different objects ON the chord, so the one that reaches past the other runs outside
+        -- the polygon rather than through the nearer one's label.
+        let bow := if i == 1 && (cm.bind (·.add)).isSome then 2.4 else 0.0
+        es := es.push { src, tgt, label := (← edgeLabel fc.named f), bow,
                         value := (← namedValue? fc.named f), side := side₀,
                         dash := ← fc.dashes f, hue := ← hue f }
       -- THE COMPONENT THE SIDE DOES NOT DRAW, drawn: it leaves this side's own corner for the

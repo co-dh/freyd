@@ -48,7 +48,6 @@ The reference numbers are `diag/cdref.typ`'s — the note's own `<initial-defn>`
 trusting the constants below.
 """
 
-import itertools
 import json
 import math
 import os
@@ -341,28 +340,6 @@ def components(nodes, edges):
     return list(out.values())
 
 
-def cycle_through(n, pairs):
-    """The closed walk visiting each of `n` nodes once, or `None` if `pairs` are not one."""
-    if len(pairs) != n:
-        return None
-    adj = {i: [] for i in range(n)}
-    for a, b in pairs:
-        adj[a].append(b)
-        adj[b].append(a)
-    if any(len(v) != 2 for v in adj.values()):
-        return None
-    order, prev, cur = [0], None, 0
-    while True:
-        nxt = adj[cur][0] if adj[cur][0] != prev else adj[cur][1]
-        if nxt == 0:
-            break
-        order.append(nxt)
-        prev, cur = cur, nxt
-        if len(order) > n:
-            return None
-    return order if len(order) == n else None
-
-
 def path_through(n, pairs):
     """Whether `pairs` are ONE OPEN walk visiting each of `n` nodes once — a path.  A path bounds no
     region: one SIDE of a statement is drawn as one (the note's two canvases either side of an `=`),
@@ -388,57 +365,12 @@ def path_through(n, pairs):
     return len(order) == n
 
 
-def cut(face, a, b):
-    """A face cut by the chord `a`–`b`: the two arcs of its walk between them, each closed by it."""
-    i, j = sorted((face.index(a), face.index(b)))
-    return [face[i:j + 1], face[j:] + face[:i + 1]]
-
-
-def chords_of(pairs, rest, cyc, n):
-    """The arrows off the closed walk `cyc`, read as its CHORDS — each a PATH from one node of the
-    walk to another, through nodes that lie off it.  A chord carries interior objects of its own: a
-    pasted pair shares a RUN, not always a single arrow, and that run is drawn as the one straight
-    line those objects stand on, so a chord is still the segment between its two ends.  `None` when
-    the arrows off the walk are no such paths."""
-    off = set(range(n)) - set(cyc)
-    adj = {}
-    for i in rest:
-        a, b = pairs[i]
-        adj.setdefault(a, []).append((b, i))
-        adj.setdefault(b, []).append((a, i))
-    # A node off the walk is INTERIOR to exactly one chord, so exactly two of those arrows meet it.
-    if any(len(adj.get(v, ())) != 2 for v in off):
-        return None
-    out, seen = [], set()
-    for i in rest:
-        if i in seen:
-            continue
-        for start, nxt in ((pairs[i][0], pairs[i][1]), (pairs[i][1], pairs[i][0])):
-            if start in off:
-                continue
-            cur, e, walk = nxt, i, [i]
-            while cur in off:
-                step = [(w, j) for w, j in adj[cur] if j != e]
-                if len(step) != 1:
-                    return None
-                cur, e = step[0]
-                walk.append(e)
-            if cur == start:
-                return None
-            seen.update(walk)
-            out.append((start, cur))
-            break
-    if len(seen) != len(rest):
-        return None
-    return out
-
-
 def faces_of(nodes, edges):
-    """The regions the arrows bound, each with the number of CHORDS that bound it.  With three
-    nodes or more the arrows are one closed walk, possibly with chords — the induced arrow a pasted
-    pair draws dashed across the polygon — and each chord cuts the region holding its two ends in
-    two, bounding BOTH halves.  With two nodes the one region is the box the parallel arcs sweep.
-    `None` when the arrows are no such walk."""
+    """The regions the arrows bound, each with the number of CHORDS that bound it — an arrow off the
+    outer boundary, which cuts the picture rather than closing it.  With three nodes or more the
+    regions are the faces of the drawing read as a planar graph, so a polygon with a chord across it
+    and a polygon with an object INSIDE it are the same question asked once.  With two nodes the one
+    region is the box the parallel arcs sweep.  `None` when the arrows bound nothing."""
     if len(nodes) == 2:
         xs = [p[0] for e in edges for p in e.pts]
         ys = [p[1] for e in edges for p in e.pts]
@@ -458,35 +390,49 @@ def faces_of(nodes, edges):
         return [] if path_through(n, pairs) else None
     if n < 3 or len(pairs) < n:
         return None
-    # WHICH arrows are the walk is not written in the SVG, so every closed walk the arrows hold is
-    # tried, longest first, and the one whose remaining arrows are chords of it wins.  The walk need
-    # NOT visit every node: a chord is a path, and the objects it runs through stand inside the
-    # polygon rather than on it.
-    for m in range(n, 2, -1):
-        for sel in itertools.combinations(range(len(pairs)), m):
-            ring = [pairs[i] for i in sel]
-            vs = sorted({v for p in ring for v in p})
-            if len(vs) != m:
-                continue
-            at = {v: i for i, v in enumerate(vs)}
-            walk = cycle_through(m, [(at[a], at[b]) for a, b in ring])
-            if walk is None:
-                continue
-            cyc = [vs[i] for i in walk]
-            chords = chords_of(pairs, [i for i in range(len(pairs)) if i not in sel], cyc, n)
-            # One chord per arrow beyond the walk, less one per node the chords pass through.
-            if chords is None or len(chords) != len(pairs) - n:
-                continue
-            fs = [(cyc, 0)]
-            for a, b in chords:
-                k = next((j for j, (f, _) in enumerate(fs) if a in f and b in f), None)
-                if k is None:
-                    break
-                f, c = fs[k]
-                fs = fs[:k] + [(arc, c + 1) for arc in cut(f, a, b)] + fs[k + 1:]
-            else:
-                return [([nodes[i].centre for i in f], c) for f, c in fs]
-    return None
+    # THE REGIONS ARE THE DRAWING'S OWN, read off the planar embedding rather than searched for as a
+    # walk with chords: at each node the arrows stand in the order they LEAVE it, and a region is
+    # the orbit that keeps taking the next one round.  That is one rule for every shape — a polygon
+    # with one chord across it, and a polygon with an object INSIDE it, which is what a chord that
+    # WALKS arrives at and where several arrows meet.
+    darts = {}
+    for i, (a, b) in enumerate(pairs):
+        p = edges[i].pts
+        # The direction the ink leaves in, not the straight line to the other node: a bowed arrow
+        # sits in the fan at the angle it actually leaves at.
+        darts[(a, b, i)] = (p[1][0] - p[0][0], p[1][1] - p[0][1])
+        darts[(b, a, i)] = (p[-2][0] - p[-1][0], p[-2][1] - p[-1][1])
+    fan = {v: [] for v in range(n)}
+    for (u, v, i), d in darts.items():
+        fan[u].append((math.atan2(d[1], d[0]), v, i))
+    for v in fan:
+        fan[v].sort()
+    orbits, seen = [], set()
+    for start in darts:
+        if start in seen:
+            continue
+        orbit, cur = [], start
+        while cur not in seen:
+            seen.add(cur)
+            orbit.append(cur)
+            u, v, i = cur
+            ring = fan[v]
+            k = next(j for j, (_, w, e) in enumerate(ring) if w == u and e == i)
+            _, w, e = ring[(k - 1) % len(ring)]
+            cur = (v, w, e)
+        orbits.append(orbit)
+    def area(orbit):
+        ps = [nodes[u].centre for u, _, _ in orbit]
+        return sum(a[0] * b[1] - b[0] * a[1] for a, b in zip(ps, ps[1:] + ps[:1])) / 2
+    if not orbits:
+        return None
+    # THE OUTER BOUNDARY is the orbit that goes round the whole picture — its area is every other
+    # orbit's added up — and every arrow on it bounds the picture rather than cutting it: the rest
+    # are the chords.
+    outer = max(orbits, key=lambda o: abs(area(o)))
+    rim = {i for _, _, i in outer}
+    return [([nodes[u].centre for u, _, _ in o], sum(1 for _, _, i in o if i not in rim))
+            for o in orbits if o is not outer]
 
 
 def caliper(pts):
