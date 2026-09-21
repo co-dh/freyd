@@ -1352,6 +1352,7 @@ def usage : String :=
    --formula writes the declaration's STATEMENT as a note cell, to\n\
      diag/generated/formula/<name>.typ, in the note's own spelling (`label`) — `<name>` alone is\n\
      `<lhs> <sym> <rhs>`, `<name>.lhs`/`.rhs` one side; no `.inl`/`.inr` branch selector applies\n\
+     a DEFINITION — a declaration whose type is not a proposition — prints as `<name>(<args>)≜<body>`\n\
      a whole statement is drawn WHOLE (--string): both sides in one frame, the relation\n\
        symbol between them, every panel as deep as the deepest side\n\
      `<name>.lhs` / `<name>.rhs` draws one side of an equation or inequation (both routes),\n\

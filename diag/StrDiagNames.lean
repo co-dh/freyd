@@ -217,6 +217,15 @@ open Lean PrettyPrinter in
   | `($_ $p) => `($p)
   | _ => throw ()
 
+-- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
+-- two apart: the note's region has only the arrow, and `consR`/`concatR` already print that way.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.includeR] def unexpandIncludeR : Unexpander
+  | _ => `($(mkIdent `«include»))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.excludeR] def unexpandExcludeR : Unexpander
+  | _ => `($(mkIdent `exclude))
+
 -- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
 -- the line width, the due dates — is the section's context and not part of the name, exactly as
 -- `AOP.A9_3_Bracket.R`'s own unexpander already has it.  One per constant: the attribute keys on one.
