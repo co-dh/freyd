@@ -52,39 +52,28 @@
 [ ] add 8.2 of algprog.pdf P194
 [ ] 14.1.2d need to add "given R∩(S°S)⊑Q ) in the title, and remove "keeping one ..."
 [ ] add string diagram of  the first formulas after 8.3 op algprog.pdf P194. prove the second with our table format like 14.1.2d.
-[ ] 3 circuit cells in ch12 are still hand-laid `#cpanel` literals (ch13, ch14, ch15 are done).
-    One is the `(𝟙+𝟙×∋)` step, which no declaration states and which the generator's grammar has
-    no `+` for — extend the grammar and write the step rather than keeping the literal. The other
-    two are nil-arm differences: the generator makes one `𝟙%∋` box where the note draws `nil` and
-    then a fraction box `𝟙`.
-[ ] 3 commutative canvases still differ from what Lean draws (11.5.1b, 11.5.1c, 11.6.2a — layout
-    and colour: `legs` gives the odd edges to horizontal legs where the note gives them to vertical
-    ones, the 3+2-edge paste has no case in `isPastedSquares`, `Face.hue` has no black branch), 4
-    name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b), and `Party.rose_id`'s record
-    names a declaration that no longer exists.
-[ ] formulas outside ch14/15/16 are still typed by hand — `Thm[...]`, `#frc(...)`, a `cert:`'s
-    `expect`. `lean:<decl>@<key>` pins the declaration, not the transcription, so nothing checks
-    that the words beside a picture say what the declaration says. `#leanf` is wired; convert the
-    remaining chapters.
-[ ] Delete the typst a conversion orphaned, in the same change that converts. Every route moved to
-    Lean leaves its hand-drawing behind — the `cetz.canvas` helper no row calls, the `#cpanel`
-    literal's argument shape, the `lab`/`node` wrapper only the deleted panels used. A drawing path
-    left in the file is one somebody reaches for again, which is how a hand-laid panel came back
-    after the generator already drew it. Find them from the note's own files, not from memory: a
-    helper no chapter calls is dead.
-[ ] Same for the python. `scripts/` still carries the feed scripts the Lean routes replaced — the
-    ones that read the note's formula string and handed it to a drawing command. `labelfit`,
-    `inkfit` and `note-files` stay; what the exporter now does itself goes.
-[ ] `cd-check` runs in neither `make c` nor `make p`, which is how it sat red without anyone seeing
-    it. Put it in the routine gate once its thirteen differences are gone — a gate nobody runs is
-    not a gate. `circuit-check` and `types` are outside too; decide the same for them.
-[ ] `diff-crop --key` reads the display table of the WHOLE note, so against a per-chapter pdf it
-    crops the wrong page and says nothing is wrong: `--key 13.2a` on `diag/ch/13-optimisation.pdf`
-    cut page 32 at the anchor `(13.6.5b)`, and `--key 13.2b` called the one display that HAD changed
-    pixel-identical. Both exit 0, which is how a review ships a picture of unrelated content. Since
-    the note is split by chapter, the key must be resolved against the pdf it is handed. The
-    whole-pdf mode has the same fault — `diff-crop BEFORE.pdf AFTER.pdf OUT` on two chapter pdfs
-    whose page 3 differs wrote nothing and exited 0.
+[X] 3 circuit cells in ch12 were hand-laid `#cpanel` literals; every circuit in ch12–16 is a `#leanc`.
+[ ] 11.5.1b is the one commutative canvas that still differs from what Lean draws: the note has six
+    arrows, the declaration `alpha_natural_split` states five (no diagonal). Either the note drops
+    the diagonal or the exporter learns to draw a composite beside its factors — his decision.
+[ ] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). Each
+    needs a new Lean declaration and a generator feature: node value labels; opening an `∃` at its
+    witness plus a `⋢` face mark; three records on one canvas with bowed arrows; `Face.paste` as a
+    fold over four faces.
+[ ] 4 formula cells in ch13 are still typed by hand because no single declaration states them: the
+    `takewhile(p)≜…` definition line, `[nil,⊸ nil ∪ cons] sum=…`, the `MSS.Kalg` cell, and the
+    three-inequation party-monotonic grid. ch11's formulas (`#frc(...)`, canvas labels) are
+    untouched. Everything else in ch12–16 is a `#leanf`.
+[X] Delete the typst a conversion orphaned, in the same change that converts: a helper no chapter
+    calls is dead. Swept for ch11–16 and the shared helper files; the rule stands for ch1–10.
+[X] The python feed route is deleted (`scripts/circuit`, `relexpr.py`, `panels.py`,
+    `circuit-check`, `circuit-panels.txt`, `circuit-slice.typ`); a circuit comes only from
+    `diag-export --circuit`.
+[ ] `cd-check` runs in neither `make c` nor `make p`. Put it in the routine gate once 11.5.1b and
+    the four undeclared canvases above are settled — a gate nobody runs is not a gate. `types` is
+    outside too; decide the same for it.
+[X] `diff-crop --key` resolves the key against the pdf it is handed (a chapter pdf renumbers from
+    1), and the whole-pdf mode exits nonzero when pages differ and nothing was written.
 [ ] Chapters 1–10 are still drawn by hand. They hold 52 canvases (ch2 11, ch3 2, ch4 6, ch5 4, ch6 2,
     ch7 7, ch8 16, ch9 1, ch10 3) and only five of them come from a declaration — ch7's one `#lean`
     and three `#leancd`, ch10's one `#leancd`. The rest are laid out through typst helpers, so their
