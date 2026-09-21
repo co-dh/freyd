@@ -67,7 +67,7 @@
    #h(4pt) #src[`est(R°)` is @est-defn]],
 
   [`R≜length≤length°`],
-  [`[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
   [The preorder `filter` and `takewhile` maximise over: the longer list wins.
    #h(4pt) #src[`≥≜≤°`]],
 
