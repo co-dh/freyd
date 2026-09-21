@@ -196,6 +196,12 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
 
+-- THE SET OF SUMS IS SPELLED AS THE SET IT IS.  `sums xs ys` is the note's `{x+y∣x∈xs∧y∈ys}`,
+-- built from the two arguments the term carries; a name says what the point is called and the
+-- set-builder says what is IN it, which is what the corner of a distributivity square is read for.
+-- A NOTATION for the reason `thin(` is one: no term prints its own brackets.
+notation:max "{x+y∣x∈" xs "∧y∈" ys "}" => RelSet.sums xs ys
+
 -- A DATATYPE'S OBJECT IS SPELLED THE WAY THE NOTE'S OBJECT LANGUAGE SPELLS IT: lower case, and
 -- bracketed where the argument is applied — `tree A`, `list⁺ A`, `bag(Job)`.  A NOTATION and not an
 -- unexpander, for the reason `thin(` is one above: no term prints its own brackets.

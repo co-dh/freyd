@@ -18,6 +18,6 @@
   lab(0, 2.75, GIVEN1)[$frac(#[`(∋×∋)+`], ∋)$]; lab(0, -2.5, GIVEN1)[`+`]
   lab(-6.75, 0, GIVEN2)[`est(≤)×est(≤)`]; lab(5.75, 0, GIVEN2)[`est(≤)`]
   lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-  vnode(FEA, `E Nat×E Nat`, `(xs,ys)`); vnode(EA, `E Nat`, `{x+y∣x∈xs∧y∈ys}`)
-  vnode(FA, `Nat×Nat`, `(min(xs),min(ys))`); vnode(A, `Nat`, `min(xs)+min(ys)`)
+  vnode(FEA, `E(Nat)×E(Nat)`, `(xs,ys)`); vnode(EA, `E(Nat)`, `{x+y∣x∈xs∧y∈ys}`)
+  vnode(FA, `Nat×Nat`, `(a,b)`); vnode(A, `Nat`, `a+b`)
 })
