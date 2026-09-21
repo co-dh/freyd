@@ -362,6 +362,15 @@ def Face.paste (f g : Face) : MetaM (Option Face) := do
   unless fwd || bwd do return none
   let gstart := if fwd then j₀ else (j₀ + kg - len + 1) % kg
   let c := Face.chordPath fn fe i len
+  -- A CHORD IS A COMPOSITE, so every edge of the shared run points the same way along it: what two
+  -- faces share is ONE arrow, and a run of several edges is that arrow factored through the objects
+  -- it passes.  Two faces sharing a SPAN share no arrow — `pair_eq_relCata_pair_iff`'s two squares
+  -- share `α` and `F(⟨f,g⟩)`, both LEAVING `FT`, and their other sides never meet again — so there
+  -- is nothing to draw across a polygon and the caller sets them side by side.
+  let mut chain := true
+  for d in [0 : c.edges.size - 1] do
+    unless c.edges[d]!.2.1 == c.edges[d + 1]!.1 do chain := false
+  unless chain do return none
   let p := Face.opened fn fe i len
   let q := Face.opened gn ge gstart len
   -- Each side runs from the chord's source to its target: the two faces name their corners apart,
@@ -838,11 +847,18 @@ def Face.givenNodes (fc : Face) : MetaM (Array String) := do
 
 /-- A node's hue: `GIVEN1` when the statement hands the picture that object (`Face.givenNodes`) and
     no GIVEN2 edge touches it — an object the picture is handed, as against one where the structure
-    the property is about already lives (`T` and `FT` are ends of `α`, so they stay black). -/
+    the property is about already lives (`T` and `FT` are ends of `α`, so they stay black).
+
+    A HUE EVERY NODE CARRIES SAYS NOTHING, so where the test separates none of them they are all
+    black: `GIVEN1` marks the objects the statement hands the picture AGAINST the ones where the
+    structure lives, and a panel whose every corner is handed — the collapse of a lax square to two
+    arrows — has no such contrast to draw.  The same rule `Face.hue` paints a square by AXIS under. -/
 def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array Node :=
-  ns.map fun v =>
-    let touches (h : String) := es.any fun e => (e.src == v.id || e.tgt == v.id) && e.hue == h
-    if given.contains v.id && !touches "GIVEN2" then { v with hue := "GIVEN1" } else v
+  let isGiven (v : Node) :=
+    given.contains v.id
+      && !es.any fun e => (e.src == v.id || e.tgt == v.id) && e.hue == "GIVEN2"
+  if ns.all isGiven then ns
+  else ns.map fun v => if isGiven v then { v with hue := "GIVEN1" } else v
 
 /-- THE CHORD'S OWN EDGE.  A chord is dashed and INDUCED when the two faces PRODUCE it — `⟨f,g⟩`,
     `Λ(R)`, the arrow their pasting determines.  Two HYPOTHESES pasted along an arrow the statement

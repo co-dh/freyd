@@ -394,6 +394,45 @@ def cut(face, a, b):
     return [face[i:j + 1], face[j:] + face[:i + 1]]
 
 
+def chords_of(pairs, rest, cyc, n):
+    """The arrows off the closed walk `cyc`, read as its CHORDS — each a PATH from one node of the
+    walk to another, through nodes that lie off it.  A chord carries interior objects of its own: a
+    pasted pair shares a RUN, not always a single arrow, and that run is drawn as the one straight
+    line those objects stand on, so a chord is still the segment between its two ends.  `None` when
+    the arrows off the walk are no such paths."""
+    off = set(range(n)) - set(cyc)
+    adj = {}
+    for i in rest:
+        a, b = pairs[i]
+        adj.setdefault(a, []).append((b, i))
+        adj.setdefault(b, []).append((a, i))
+    # A node off the walk is INTERIOR to exactly one chord, so exactly two of those arrows meet it.
+    if any(len(adj.get(v, ())) != 2 for v in off):
+        return None
+    out, seen = [], set()
+    for i in rest:
+        if i in seen:
+            continue
+        for start, nxt in ((pairs[i][0], pairs[i][1]), (pairs[i][1], pairs[i][0])):
+            if start in off:
+                continue
+            cur, e, walk = nxt, i, [i]
+            while cur in off:
+                step = [(w, j) for w, j in adj[cur] if j != e]
+                if len(step) != 1:
+                    return None
+                cur, e = step[0]
+                walk.append(e)
+            if cur == start:
+                return None
+            seen.update(walk)
+            out.append((start, cur))
+            break
+    if len(seen) != len(rest):
+        return None
+    return out
+
+
 def faces_of(nodes, edges):
     """The regions the arrows bound, each with the number of CHORDS that bound it.  With three
     nodes or more the arrows are one closed walk, possibly with chords — the induced arrow a pasted
@@ -419,21 +458,34 @@ def faces_of(nodes, edges):
         return [] if path_through(n, pairs) else None
     if n < 3 or len(pairs) < n:
         return None
-    # WHICH arrows are the chords is not written in the SVG, so every choice of the right number of
-    # them is tried and the one leaving a single walk through every node wins.
-    for chords in itertools.combinations(range(len(pairs)), len(pairs) - n):
-        walk = cycle_through(n, [p for i, p in enumerate(pairs) if i not in chords])
-        if walk is None:
-            continue
-        fs = [(walk, 0)]
-        for i in chords:
-            a, b = pairs[i]
-            k = next((j for j, (f, _) in enumerate(fs) if a in f and b in f), None)
-            if k is None:
-                return None
-            f, c = fs[k]
-            fs = fs[:k] + [(arc, c + 1) for arc in cut(f, a, b)] + fs[k + 1:]
-        return [([nodes[i].centre for i in f], c) for f, c in fs]
+    # WHICH arrows are the walk is not written in the SVG, so every closed walk the arrows hold is
+    # tried, longest first, and the one whose remaining arrows are chords of it wins.  The walk need
+    # NOT visit every node: a chord is a path, and the objects it runs through stand inside the
+    # polygon rather than on it.
+    for m in range(n, 2, -1):
+        for sel in itertools.combinations(range(len(pairs)), m):
+            ring = [pairs[i] for i in sel]
+            vs = sorted({v for p in ring for v in p})
+            if len(vs) != m:
+                continue
+            at = {v: i for i, v in enumerate(vs)}
+            walk = cycle_through(m, [(at[a], at[b]) for a, b in ring])
+            if walk is None:
+                continue
+            cyc = [vs[i] for i in walk]
+            chords = chords_of(pairs, [i for i in range(len(pairs)) if i not in sel], cyc, n)
+            # One chord per arrow beyond the walk, less one per node the chords pass through.
+            if chords is None or len(chords) != len(pairs) - n:
+                continue
+            fs = [(cyc, 0)]
+            for a, b in chords:
+                k = next((j for j, (f, _) in enumerate(fs) if a in f and b in f), None)
+                if k is None:
+                    break
+                f, c = fs[k]
+                fs = fs[:k] + [(arc, c + 1) for arc in cut(f, a, b)] + fs[k + 1:]
+            else:
+                return [([nodes[i].centre for i in f], c) for f, c in fs]
     return None
 
 
