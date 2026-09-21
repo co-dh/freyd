@@ -218,10 +218,13 @@ def juxt (a b : String) : String :=
     AN ACTION ON AN ARROW IS NOT ONE OF THESE, however tight its object action sets.  `E(R)` is an
     operator APPLIED to a term of the note's, so its operand is respelled here (the `existsImage`
     clause below) where a tight head hands the whole application to the printer and the operand
-    keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition. -/
+    keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition.
+
+    A FORK IS NOT ONE OF THESE either, in whichever product it is taken: it applies to ARROWS, so
+    the fork clause below respells them, where a tight head handed `pair (F.map fst ≫ h) …` to the
+    printer whole and kept Lean's `≫` inside it. -/
 def tightHeads : Array Name :=
-  #[``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
-    ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair,
+  #[``Freyd.HasBinaryProducts.prod, ``Freyd.Alg.RelProd.p,
     -- A COPRODUCT OBJECT sets as tight as a product apex: the note writes `GA+G'A`.  The sum of two
     -- ARROWS is not here for the reason the paragraph above gives — it welded `F(R)+F'(R)` shut to
     -- `FR+F'R` — and is read off the type instead, beside the product map (`asSumMap?`).
@@ -902,9 +905,11 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- THE FORK DELIMITS ITS TWO OPERANDS exactly as `⦇…⦈` and `E(…)` delimit their one, so each is a
   -- term of the note's spelled at the loosest precedence: `⟨g,suffix%∋ E(g)⟩`, never the
   -- `⟨g, suffix%∋ ≫ E (g)⟩` the printer hands back for the whole application at a tight precedence.
-  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args)
+  | (``Freyd.HasBinaryProducts.pair, args) =>
     match lastTwo (← arrows args) with
-    | some (f, g) => return "⟨" ++ (← labelTree 0 f) ++ ", " ++ (← labelTree 0 g) ++ "⟩"
+    -- Nothing after the comma, as the note sets a delimited list (`junc`'s `[nil,cons]`).
+    | some (f, g) => return "⟨" ++ (← labelTree 0 f) ++ "," ++ (← labelTree 0 g) ++ "⟩"
     | none => txt e
   -- THE POWER OBJECT is that same `E` at an OBJECT, and its operand is a term of the note's for
   -- the same reason the arrow's is: the printer sets a product off from its factors (`E ([A] ×

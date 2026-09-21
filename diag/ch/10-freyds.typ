@@ -87,23 +87,14 @@ subscript.
   leancd("Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage"),
   // `𝟙/∋` opens the `i E` pair and `∋` closes it again, so the strand running in and out of a panel is
   // the one functor; the panel beside it draws that same functor as the plain wire the law equates it to.
-  context {
-    let g = grid(columns: 2, column-gutter: 14pt, align: horizon,
-      snake(`i`, `E`, false), snake(`E`, `i`, true))
-    let w = measure(g).width
-    grid(columns: 1, row-gutter: 8pt, align: center, g,
-      box(width: w, grid(columns: (1fr, 1fr), align: (center + horizon, center + horizon),
- [$frac(#[`𝟙`], ∋)$ `∋=𝟙` #src[]],
-        // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
- [$frac(#[`∋`], ∋)$ `=𝟙` #src[]])))
-        // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
-  },
+  grid(columns: 2, column-gutter: 14pt, align: horizon,
+    lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
   [$frac(#[`R`], ∋)$ `∋=R` #h(1.4cm)
    #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
  already the relator `P(R)`. ]],
    // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
    // B&dM write `PA` for the powerset.
-  // The two snakes are four panels wide, so the pair only clears the 22cm text block scaled down.
+  // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>
 

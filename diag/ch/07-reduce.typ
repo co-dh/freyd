@@ -53,8 +53,9 @@
 // fold bead, the algebra falling past it, exactly as in @cata-defining.
 #disp[#pair(
   leancd("Freyd.Alg.relCata_pair_beta"),
-  homeq(`F`, `T`, [`α`], [`⟨⦇h⦈,⦇k⦈⟩`], [`⟨F(π₁)h,F(π₂)k⟩`], `A×B`,
-    ctop: GIVEN2, cmid: INDUCED, cbot: GIVEN1, typed: true, gap: 3.2, regions: auto),
+  row((
+    lean("Freyd.Alg.pair_relCata_eq_relCata_pair"),
+  )),
   [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈` #h(6pt) #src[banana split]],
 )]<banana-split>
 

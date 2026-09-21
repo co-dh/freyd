@@ -6,7 +6,7 @@
 #import "circuit.typ": conv, conv-frame, conv-body, conv-w, SPLIT, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, lw, frc, banana, TAPEEDGE, est-R-box, union-box
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": snake, homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, lanecheck, hm-bead, hm-name, hm-port, hm-region, hm-wire, SQ, RQ
+#import "draw.typ": homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, domstr, pairstr, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, lanecheck, hm-bead, hm-name, hm-port, hm-region, hm-wire, SQ, RQ
 // The two panel helpers, one per convention: `cpanel` draws a circuit (wire = object, box = a
 // morphism), `dpanel` a Hinze–Marsden panel (wire = functor, bead = an arrow).  Neither file
 // imports the other.
