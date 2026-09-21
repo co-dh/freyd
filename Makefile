@@ -56,6 +56,9 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 p: $(STAMP) panels cite
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
+# The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
+# nothing draws from can be broken with all of them green.
+	./scripts/cap lake build
 	for t in $(TYP); do typst compile $$t $${t%.typ}.pdf || exit 1; done
 	./scripts/labelfit
 	./scripts/inkfit

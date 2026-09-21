@@ -55,10 +55,9 @@
 [X] 3 circuit cells in ch12 were hand-laid `#cpanel` literals; every circuit in ch12–16 is a `#leanc`.
 [X] 11.5.1b follows the declaration `alpha_natural_split`: five arrows, no chord `F(f,𝟙)α`, drawn
     by `#leancd` (his decision).
-[ ] Nothing in the note gates runs the whole-repository `lake build`: a rename left
+[X] Nothing in the note gates ran the whole-repository `lake build`: a rename left
     `AOP/A5_7_PartyBeads.lean` broken and `make p` stayed green, because the gates build only what
-    `diag-export` imports. Run `./scripts/cap lake build` before every merge to master, or put it
-    in `make p`.
+    `diag-export` imports. `make p` now runs `./scripts/cap lake build` first.
 [ ] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). Each
     needs a new Lean declaration and a generator feature: node value labels; opening an `∃` at its
     witness plus a `⋢` face mark; three records on one canvas with bowed arrows; `Face.paste` as a
