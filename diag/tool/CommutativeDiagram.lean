@@ -650,8 +650,18 @@ def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
       | some h => Meta.isDefEq h f
       | none => return false
 
+/-- WHETHER THE ARROW IS ONLY THE SPELLING OF A NAME THE PICTURE ALREADY CARRIES: it stands inside
+    the VALUE a statement pinned a named arrow to (`Naming`), so the face draws it to say what that
+    name is and not because the property gives it a role.  `f = Λ(F(∋)R)` puts `F(∋)`, `∋` and `R`
+    inside `f`'s value, and the note draws those three black while `α` and `⦇f⦈` — which the value
+    does not mention — keep their roles.  The named arrow itself is excluded: it is the one line the
+    statement named, and it wears the role it plays. -/
+def Face.spells (fc : Face) (f : Expr) : Bool :=
+  !fc.named.any (fun (x, _) => x == f) &&
+    fc.named.any fun (_, v) => (v.find? (· == f)).isSome
+
 /-- WHICH ROLE an arrow plays, hence which of the note's hues it is drawn in (`diag/draw.typ`:
-    `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue).
+    `GIVEN1` green, `GIVEN2` purple, `INDUCED` blue, `BLACK` the spelling of a name).
 
     `INDUCED` is what a universal property PRODUCES: every arrow the dash rule marks, and a
     functor's image of a PRODUCED one — `F(⦇f⦈)` and `F(X)` under `αX=F(X)f ⟺ X=⦇f⦈` are induced
@@ -665,6 +675,7 @@ def Face.transports (fc : Face) (f : Expr) : MetaM Bool :=
     statement handing it over. -/
 def Face.hue (fc : Face) (f : Expr) : MetaM String := do
   if ← fc.dashes f then return "INDUCED"
+  if fc.spells f then return "BLACK"
   match ← imageOf f with
   | some g => return if ← fc.produces g then "INDUCED" else "GIVEN2"
   | none => return if (← fc.given f) && !(← fc.transports f) then "GIVEN1" else "GIVEN2"
@@ -778,15 +789,18 @@ def faceMark (ns : Array Node) (sym : String) (ids : Array String) : Array FaceM
 /-! ### The grid
 
 A path of `n` edges from the top-left corner to the bottom-right one runs along two legs, and the
-HORIZONTAL leg takes the odd edge: `2` is `1,1`, `3` is `2,1`, `4` is `2,2`.  `n = 1` has no corner
-to turn, so it is the chord — the pair `(1, 0)`, whose zero second leg every reader of these numbers
-below takes to mean "straight to the far corner". -/
+VERTICAL leg takes the odd edge: `2` is `1,1`, `3` is `1,2`, `4` is `2,2`.  The note stands the
+extra edge UP — a side with a factor more than its partner is read as one descent through an extra
+object, not as a longer walk across the page — which is the same choice `Face.transposed` makes when
+it hangs a moved arrow on a vertical side.  `n = 1` has no corner to turn, so it is the chord — the
+pair `(1, 0)`, whose zero second leg every reader of these numbers below takes to mean "straight to
+the far corner". -/
 def legs (k : Nat) (mirror : Bool) : Nat × Nat :=
   if k ≤ 1 then (k, 0)
   else
     -- Clockwise leaves along the top and arrives down the right; counter-clockwise leaves DOWN the
     -- left and arrives along the bottom, so its two legs are the other's in the other order.
-    if mirror then (k / 2, (k + 1) / 2) else ((k + 1) / 2, k / 2)
+    if mirror then ((k + 1) / 2, k / 2) else (k / 2, (k + 1) / 2)
 
 /-- Where the `i`-th vertex of a path sits, given its leg split and the grid's extent. -/
 def vertexAt (first second : Nat) (nx ny : Float) (mirror : Bool) (i : Nat) : Float × Float :=
