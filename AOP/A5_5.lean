@@ -433,4 +433,11 @@ public theorem pair_relCata_eq_relCata_pair [HasBinaryProducts 𝒜] (I : Initia
     ⟨by rw [relCata_cancel I h, ← Cat.assoc, ← F.map_comp, fst_pair],
      by rw [relCata_cancel I k, ← Cat.assoc, ← F.map_comp, snd_pair]⟩
 
+/-- The fork of two folds is a HOMOMORPHISM from `α` to the product algebra
+    `⟨F(π₁)h, F(π₂)k⟩`: the square the banana-split picture draws, `α` on its top edge. -/
+public theorem pair_relCata_hom [HasBinaryProducts 𝒜] (I : InitialAlgebra F)
+    {A B : 𝒜} (h : F.obj A ⟶ A) (k : F.obj B ⟶ B) :
+    I.α ≫ pair ⦇h⦈ ⦇k⦈ = F.map (pair ⦇h⦈ ⦇k⦈) ≫ pair (F.map fst ≫ h) (F.map snd ≫ k) := by
+  rw [pair_relCata_eq_relCata_pair]; exact relCata_cancel I _
+
 end Freyd.Alg

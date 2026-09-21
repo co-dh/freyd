@@ -54,7 +54,7 @@
 #disp[#pair(
   leancd("Freyd.Alg.relCata_pair_beta"),
   row((
-    lean("Freyd.Alg.pair_relCata_eq_relCata_pair"),
+    lean("Freyd.Alg.pair_relCata_hom"),
   )),
   [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈` #h(6pt) #src[banana split]],
 )]<banana-split>
