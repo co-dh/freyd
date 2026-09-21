@@ -218,10 +218,13 @@ def juxt (a b : String) : String :=
     AN ACTION ON AN ARROW IS NOT ONE OF THESE, however tight its object action sets.  `E(R)` is an
     operator APPLIED to a term of the note's, so its operand is respelled here (the `existsImage`
     clause below) where a tight head hands the whole application to the printer and the operand
-    keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition. -/
+    keeps whatever Lean wrote — which is how `E(mssPre)` stood where the note opens the definition.
+
+    A FORK IS NOT ONE OF THESE either, in whichever product it is taken: it applies to ARROWS, so
+    the fork clause below respells them, where a tight head handed `pair (F.map fst ≫ h) …` to the
+    printer whole and kept Lean's `≫` inside it. -/
 def tightHeads : Array Name :=
-  #[``Freyd.HasBinaryProducts.prod, ``Freyd.HasBinaryProducts.pair,
-    ``Freyd.Alg.RelProd.p, ``Freyd.Alg.RelProd.pair,
+  #[``Freyd.HasBinaryProducts.prod, ``Freyd.Alg.RelProd.p,
     -- A COPRODUCT OBJECT sets as tight as a product apex: the note writes `GA+G'A`.  The sum of two
     -- ARROWS is not here for the reason the paragraph above gives — it welded `F(R)+F'(R)` shut to
     -- `FR+F'R` — and is read off the type instead, beside the product map (`asSumMap?`).
@@ -740,14 +743,11 @@ def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
   ps.foldl (fun acc p => if acc == Lbl.text "" then p else acc ++ sep ++ p) (Lbl.text "")
 
 /-- OPERANDS SEPARATED BY COMMAS — a fork, a co-fork, a bifunctor's two arrows, a pair's value —
-    set the way the note sets them: TIGHT, `⟨R,S⟩` and `(xs,ys)`, because the comma already
-    separates them.  A space goes after the comma only where an operand is ITSELF written with one
-    (a composite by juxtaposition, `⟨listf₁ filterp₁, listf₂⟩`), where it is the space that says
-    where the operand ends.  Decided on the operands' own label trees, so one rule answers for every
-    comma list. -/
-def commaL (l r : String) (ps : Array Lbl) : Lbl :=
-  let sep := if ps.any (fun p => p.flat.any (· == ' ')) then ", " else ","
-  l ++ Lbl.join sep ps ++ r
+    set the way the note sets a delimited list: NOTHING AFTER THE COMMA, `⟨R,S⟩`, `[nil,cons]`,
+    `(xs,ys)`, because the comma already separates the operands and the brackets already end the
+    list.  ONE rule for every comma list, whatever the operands are written with, so no reader has
+    to tell a separating space from a juxtaposition's. -/
+def commaL (l r : String) (ps : Array Lbl) : Lbl := l ++ Lbl.join "," ps ++ r
 
 /-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
     spelling exactly as the string rule reads it. -/
@@ -933,7 +933,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- THE FORK DELIMITS ITS TWO OPERANDS exactly as `⦇…⦈` and `E(…)` delimit their one, so each is a
   -- term of the note's spelled at the loosest precedence: `⟨g,suffix%∋ E(g)⟩`, never the
   -- `⟨g, suffix%∋ ≫ E (g)⟩` the printer hands back for the whole application at a tight precedence.
-  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args) =>
+  | (``Freyd.Alg.RelSet.rpair, args) | (``Freyd.Alg.RelProd.pair, args)
+  | (``Freyd.HasBinaryProducts.pair, args) =>
     match lastTwo (← arrows args) with
     | some (f, g) => return commaL "⟨" "⟩" #[← labelTree 0 f, ← labelTree 0 g]
     | none => txt e

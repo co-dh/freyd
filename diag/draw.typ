@@ -1204,59 +1204,6 @@
   gap: 1.2,
 )
 
-// `snake` — ONE triangle identity of `i ⊣ E`, on `unitlaw`'s geometry: the incoming wire, both turns
-// and the outgoing one are one strand.  `flip` puts the opened pair left of it instead of right.
-#let snake(name, other, flip) = {
-  let (xin, xmid, xout) = if flip { (X.at(2), X.at(1), X.at(0)) } else { (X.at(0), X.at(1), X.at(2)) }
-  let (cl, cr) = (calc.min(xin, xmid), calc.max(xin, xmid))
-  let (ul, ur) = (calc.min(xmid, xout), calc.max(xmid, xout))
-  // A wire's hue is the functor it carries, so a turn is half of each and changes over at the apex,
-  // where its bead already sits: `xmid` is `other`'s column, and the two ends are `name`'s.
-  let (cn, co) = (ADJC.at(name.text), ADJC.at(other.text))
-  let hue(x) = if x == xmid { co } else { cn }
-  // ONE rise for the wire and for the region under it — hm-turn's default, respelled so the fill
-  // below can be handed the same number instead of hand-fitting a curve to it.
-  let rise = 0.62
-  let arch(xa, xb, y, dir) = {
-    let hh = dir * rise * calc.abs(xb - xa)
-    d.bezier((xa, y), (xb, y), (xa, y + hh), (xb, y + hh))
-  }
-  // The strand cuts the panel in two: `𝒜` is the side the counit lands in, `Map(𝒜)` the side the unit
-  // opens out of, and `xc` is whichever bottom corner `𝒜` reaches.
-  let xc = if flip { W3 } else { 0 }
-  hm-row(
-    (
-      hm-panel(W3, HMON, fill: fb-MAPC, {
-        d.merge-path(close: true, fill: fb-ALLC, stroke: none, {
-          d.line((xc, HMON), (xin, HMON), (xin, YM))
-          arch(xin, xmid, YM, -1)
-          d.line((xmid, YM), (xmid, YU))
-          arch(xmid, xout, YU, 1)
-          d.line((xout, YU), (xout, 0), (xc, 0))
-        })
-        hm-wire(((xin, HMON), (xin, YM)), col: cn)
-        hm-turn-split(cl, cr, YM, hue(cl), hue(cr), dir: -1, rise: rise)
-        hm-wire(((xmid, YM), (xmid, YU)), col: co)
-        hm-turn-split(ul, ur, YU, hue(ul), hue(ur), rise: rise)
-        hm-wire(((xout, YU), (xout, 0)), col: cn)
-        hm-bead(hm-apex(ul, ur, YU, rise: rise), $frac(#[`𝟙`], ∋)$, col: GIVEN2, dx: 0, dy: GAPN, anchor: "south")
-        hm-bead(hm-apex(cl, cr, YM, dir: -1, rise: rise), `∋`, col: GIVEN1,
-          dx: 0, dy: -GAPN, anchor: "north")
-        // The middle strand carries no port, so it is named where it runs, on the incoming wire's side.
-        d.content((xmid + if flip { 0.28 } else { -0.28 }, (YM + YU) / 2), text(9pt, co)[#other],
-          anchor: if flip { "west" } else { "east" })
-        hm-port((xin, HMON), name, col: cn); hm-port((xout, 0), name, dir: -1, col: cn)
-      }),
-      hm-panel(W1, HMON, fill: if flip { fb-MAPC } else { fb-ALLC }, {
-        d.rect((PADX, 0), (W1, HMON), fill: if flip { fb-ALLC } else { fb-MAPC }, stroke: none)
-        hm-wire(((PADX, HMON), (PADX, 0)), col: cn)
-        hm-port((PADX, HMON), name, col: cn); hm-port((PADX, 0), name, dir: -1, col: cn)
-      }),
-    ),
-    gap: 1.2,
-  )
-}
-
 // `snaketri` — the same identity as a commutative triangle, `f` the functor that survives and `comp`
 // the composite the unit opens.  `𝟙` is SOLID: dashed is what a universal property produces.
 // `unit`/`counit` are PASSED, not the bare `𝟙%∋`/`∋`: the nodes here are FUNCTORS, so the arrows are
