@@ -896,6 +896,13 @@ def chordNodes (c : Path) (ns : Array Node) : MetaM (Array Node) := do
                       gy := a.gy + s * (b.gy - a.gy), label := ← labelT c.nodes[i]!.2 }
   return out
 
+/-- THE RELATION A FACE SETS IN ITS MIDDLE AND ITS STRUCK FORM, one table read both ways: `negSym`
+    takes a denied claim's symbol to the glyph that says so, `isStruck` asks of a face whether it
+    denies its claim.  Two lists would drift the moment a relation is added to one of them. -/
+def struckSyms : List (String × String) := [("⊑", "⋢"), ("⊒", "⋣"), ("=", "≠")]
+
+def isStruck (s : String) : Bool := struckSyms.any (·.2 == s)
+
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
     takes that side's corners alone.  A face commutes unless marked, so an equation carries none. -/
@@ -1196,10 +1203,18 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   -- are `GIVEN2`.  That is how `lax-str`, `mon-str`, `party-mono`, `dist-str` and `subseq-outr` are
   -- already drawn, their roles agreeing with their axes — the components across, the relation the
   -- square carries them along down.
-  let byAxis ← do
+  -- …and where the roles are GIVEN throughout, they have separated nothing a reader can follow
+  -- either: which of two GIVEN kinds an edge is says nothing about the square, so the square is
+  -- painted by its own geometry instead.  A REFUTED face (`isStruck`) is painted by PATH, not by
+  -- axis: what it denies is that one composite is under the other, so each PATH wears one hue —
+  -- the statement's right-hand composite `GIVEN1`, its left-hand one `GIVEN2` — and the reader
+  -- follows the two terms being compared.  Every other such square is painted by AXIS.
+  let squarely ← do
     if n != 2 || m != 2 || fc.chord.isSome || comps.isSome then pure false else do
       let hs ← (fc.lhs.edges ++ fc.rhs.edges).mapM fun (_, _, f) => fc.hue f
-      pure (hs.all (· == hs[0]!) && hs[0]!.startsWith "GIVEN")
+      pure (hs.all (·.startsWith "GIVEN"))
+  let byPath := squarely && isStruck fc.sym
+  let byAxis := squarely && !byPath
   let mut nodes : Array Node := #[]
   let mut edges : Array Edge := #[]
   -- The two paths share their end vertices, so the second contributes only its interior.
@@ -1217,17 +1232,23 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     let sd := sideAt lfst lsnd flip i
     edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← if byAxis then pure (axisHue sd)
+                          hue := ← if byPath then pure "GIVEN2"
+                                   else if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.1.idx)) f }
   for j in [0:m] do
     let (src, tgt, f) := fc.rhs.edges[j]!
     let sd := sideAt rfst rsnd (!flip) j
     edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f), side := sd,
                           bow := if bowed then 0.9 else 0.0, dash := ← fc.dashes f,
-                          hue := ← if byAxis then pure (axisHue sd)
+                          hue := ← if byPath then pure "GIVEN1"
+                                   else if byAxis then pure (axisHue sd)
                                    else fc.hueOn (comps.map (·.2.idx)) f }
   match fc.chord with
-  | none => return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
+  -- A SQUARE PAINTED BY ITS GEOMETRY HAS NO ROLE CONTRAST FOR ITS CORNERS TO INHERIT: `nodeHues`
+  -- reads a corner's hue off the edges' roles, and where the edges no longer carry a role that
+  -- reading says nothing, so every corner stays black.
+  | none => return ((if squarely then nodes else nodeHues given nodes edges), edges,
+      faceMark nodes fc.sym (nodes.map (·.id)))
   | some (c, sym) =>
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
@@ -1325,11 +1346,7 @@ def cdPage (sel : String) (ps : Array Panel) (seps : Array (Option String) := #[
 
 /-- THE SYMBOL A DENIED CLAIM SETS IN ITS FACE: the relation's own, struck through.  `none` where
     the glyph has no struck form, which is an error and not a face drawn with the wrong symbol. -/
-def negSym : String → Option String
-  | "⊑" => some "⋢"
-  | "⊒" => some "⋣"
-  | "=" => some "≠"
-  | _ => none
+def negSym (s : String) : Option String := (struckSyms.find? (·.1 == s)).map (·.2)
 
 /-- AN ASSERTION ABOUT A JOIN IS ONE CLAIM PER OPERAND.  Every `@[diag_join]` application in the
     statement is replaced by its `i`-th operand — `Meta.transform`, so the replacement happens
@@ -1648,6 +1665,6 @@ def draw (sel : String) : MetaM String := do
     spellings. -/
 def openNs : List Name :=
   [`Freyd, `Freyd.Alg, `Freyd.Alg.RelSet, `Freyd.Alg.RelSet.CL, `Freyd.Alg.RelSet.ListRel,
-    `Freyd.Alg.RelSet.Van, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
+    `Freyd.Alg.RelSet.Van, `Freyd.Alg.MeetCounterex, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
 
 end Freyd.CommutativeDiagram

@@ -89,16 +89,29 @@ public theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
 -- Same shape as `inter_not_monotonic`: two DISTINCT elements improve to the SAME one, and the
 -- meet is exactly what forbids the two components from being routed there independently.
 
+-- THE SQUARE'S OWN LETTERS.  The two objects are the same set and the arrow between them is
+-- `boolMerge`, but a picture drawn from the statement can only write what the statement names, and
+-- `Bool` at all four corners says nothing about which end of `R` a corner is.  Named here, each
+-- corner is `A×A`, `A`, `B×B`, `B` and each side is `R×R`, `R`, `π₁∩π₂`.
+namespace MeetCounterex
+
+public def A : RelSet.{0} := ⟨Bool⟩
+public def B : RelSet.{0} := ⟨Bool⟩
+public def R : A ⟶ B := boolMerge
+
+end MeetCounterex
+
 /-- **THE FAILING SQUARE, at the witnesses `laxNatural_inter_false` is proved from.**  `(0,1)` lies
     in `(R×R)(π₁∩π₂)` — route both components to `0`, where the diagonal accepts them — and not in
     `(π₁∩π₂)R`, which already needs `0=1`.  Stated as its own theorem because the existential
     below names nothing a picture could stand at: the corners and the four sides are here. -/
 public theorem inter_not_laxNatural_square :
-    ¬ ((Δ RelSet.{0}).map boolMerge
-          ≫ ((relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outl
-              ∩ (relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outr)
-        ⊑ ((relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outl
-              ∩ (relProd (⟨Bool⟩ : RelSet.{0}) (⟨Bool⟩ : RelSet.{0})).outr) ≫ boolMerge) := by
+    ¬ ((Δ RelSet.{0}).map MeetCounterex.R
+          ≫ ((relProd MeetCounterex.B MeetCounterex.B).outl
+              ∩ (relProd MeetCounterex.B MeetCounterex.B).outr)
+        ⊑ ((relProd MeetCounterex.A MeetCounterex.A).outl
+              ∩ (relProd MeetCounterex.A MeetCounterex.A).outr) ≫ MeetCounterex.R) := by
+  unfold MeetCounterex.R MeetCounterex.A MeetCounterex.B
   intro h
   obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
     RelSet.le_iff.mp h (false, true) false

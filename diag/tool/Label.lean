@@ -69,6 +69,10 @@ def oneChar (s : String) : Bool := !s.isEmpty && (s.drop 1).all (· == '\'')
 def oneToken (s : String) : Bool :=
   s.isEmpty || s.all (fun c => Lean.isIdFirst c || Lean.isIdRest c)
     || mate (String.singleton s.front) == some (String.singleton s.back)
+    -- A NAME OF ONE CHARACTER HAS NOTHING INSIDE IT to read as a composite, whatever character it
+    -- is: the arrow the note writes `+` is one factor of `(∋×∋)+` exactly as `R` is one of `π₂R°`,
+    -- where the brackets a longer operator name needs wrote `(∋×∋)(+)`, which reads as applying.
+    || oneChar s
 
 /-- How the printer's own spelling of a term JOINS under a functor's name.  The SYNTAX decides, not
     the term: an unexpander is exactly what turns the two-argument `ConsList Unit A` into the single
@@ -186,9 +190,20 @@ partial def headShown (h : Syntax) : MetaM String := do
 
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
 def appShow (e : Expr) : MetaM String := do
-  match appParts (← PrettyPrinter.delab e) with
+  let stx ← PrettyPrinter.delab e
+  match appParts stx with
   | some (h, ops) => appSpell (← headShown h) ops
-  | none => plain e
+  -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
+  -- already applies to the head of an application: a qualifier is what the printer adds to keep a
+  -- short name unambiguous against every other `A` in the environment, which is Lean's business,
+  -- where a corner and a side are read inside the one statement that names them.  AN OBJECT OR AN
+  -- ARROW only, decided by the TYPE: that is what a picture writes, and a datum's spelling — a
+  -- numeral, a list, a proof term — is its own.  AFTER the delaborator, so an unexpander's own
+  -- spelling is what gets shortened and never what gets skipped.
+  | none =>
+    if (stxPeel stx).isIdent && ((← isObjType (← Meta.inferType e)) || (← homEnds? e).isSome) then
+      headShown (stxPeel stx)
+    else plain e
 
 /-- The note's juxtaposition spacing, the same rule the note's own generator writes back with:
     a bracket already separates two factors, so `F(∋)S` and `π₂R°`
@@ -228,7 +243,10 @@ def tightHeads : Array Name :=
     -- A COPRODUCT OBJECT sets as tight as a product apex: the note writes `GA+G'A`.  The sum of two
     -- ARROWS is not here for the reason the paragraph above gives — it welded `F(R)+F'(R)` shut to
     -- `FR+F'R` — and is read off the type instead, beside the product map (`asSumMap?`).
-    ``Freyd.Alg.PositiveAllegory.coprod]
+    ``Freyd.Alg.PositiveAllegory.coprod,
+    -- A SUM OF VALUES is the same spacing at a corner's point: the note writes `a+b` and `min{x+y∣
+    -- x∈xs}`, and only `∪` keeps its spaces.
+    ``HAdd.hAdd]
 
 /-- The ARROW arguments of an application, picked by their TYPE and not by their position:
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
@@ -1024,7 +1042,6 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- not the composite the PICTURE splits it into, and rewriting it here loops through
     -- `singletonMap` and back.
     if let some r ← rewriteHead? e then return ← labelTree prec r
-    if tightHeads.contains c then return (← plain e).replace " " "" else do
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
     -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
     -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
@@ -1046,12 +1063,28 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- to be set.
     let stx ← PrettyPrinter.delab e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
-    let rec respell : List Expr → Expr → MetaM Lbl
-      | [], t => return .text (← appShow t)
-      | a :: rest, t => do
-        let nm := Name.mkSimple (← labelTree (if paren then 0 else 4) a).flat
+    let rec respell (p : Nat) (as : List Expr) (t : Expr) : MetaM Lbl := do
+      match as with
+      | [] => return .text (← appShow t)
+      | a :: rest =>
+        let nm := Name.mkSimple (← labelTree p a).flat
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
-          respell rest (t.replace fun s => if s == a then some x else none)
+          -- ONE LOCAL PER DISTINCT OPERAND: the replacement below takes every occurrence at once,
+          -- so a second local of the same name has nothing left to replace and only shadows the
+          -- first, which the printer then marks inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
+          respell p (rest.filter (· != a)) (t.replace fun s => if s == a then some x else none)
+    -- A HEAD THE NOTE SETS TIGHT closes up the space the FORMATTER wrote around the operator's own
+    -- atom (`A × B` is `A×B`), and that space alone: a space INSIDE an operand belongs to that
+    -- operand's own application, and cutting it welds two factors into one name — `E Nat × E Nat`
+    -- came out `ENat×ENat` where the note writes `E(Nat)×E(Nat)`.  So the operands are respelled
+    -- first, each by the rule above, and only the notation's own spaces are left to cut.  WHICH
+    -- arguments those are is the TYPE's answer — an argument living in the very type the head
+    -- BUILDS, which is what a product apex, a coproduct and `a+b` alike are made of — never a
+    -- position or a count, which differ from head to head.
+    if tightHeads.contains c then
+      let ty ← Meta.inferType e
+      let ops ← args.filterM fun a => do Meta.isDefEqGuarded (← Meta.inferType a) ty
+      return wrap 1 (.text ((← respell 2 ops.toList e).flat.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- THE PRINTER'S OWN NOTATION FOR AN ACTION STANDS: a delaborator keyed on the field writes the
       -- note's spelling of the object (`A[n]` for `Vec(n)` at `A`), and only the bare field access
@@ -1104,7 +1137,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- `(new ∪ old)(R;H)`.  ON THE IDENT ALONE, the one label built by no rule of this file —
     -- everything else is bracketed by whatever rule builds it.  At composition's own precedence,
     -- which is what every operator looser than juxtaposition is set at.
-    let out ← respell (← arrows args).toList e
+    let out ← respell (if paren then 0 else 4) (← arrows args).toList e
     match stxPeel stx with
     | .ident _ _ nm _ => return if oneToken nm.getString! then out else wrap 1 out
     | _ => return out
