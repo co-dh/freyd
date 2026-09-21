@@ -163,6 +163,13 @@ public theorem Λ_junc {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) (R : a
   (Λ_unique _ _ (junc_map C (Λ_is_map' R) (Λ_is_map' S))
     (by rw [junc_comp, Λ_eps_eq', Λ_eps_eq'])).symm
 
+/-- **B&dM pp. 117–118** (the coproduct's universal property in the power allegory): the induced
+    map `[Λ(R),Λ(S)] : s ⟶ E c`, read back through `∋`, cancels each injection to the arrow it was
+    built from.  One conjunction, because the two cancellations share the induced arrow and `∋`. -/
+public theorem u_junc_Λ_eps {s A B C : 𝒜} (Cop : Coproduct s A B) (R : A ⟶ C) (S : B ⟶ C) :
+    Cop.u₁ ≫ junc Cop (Λ R) (Λ S) ≫ ∋ C = R ∧ Cop.u₂ ≫ junc Cop (Λ R) (Λ S) ≫ ∋ C = S :=
+  ⟨by rw [← Cat.assoc, u₁_junc, Λ_comp_eps], by rw [← Cat.assoc, u₂_junc, Λ_comp_eps]⟩
+
 end ΛJunc
 
 /-! ## §3  `sumMap` (B&dM 5.10) -/

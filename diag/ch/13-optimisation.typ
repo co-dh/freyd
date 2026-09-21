@@ -276,23 +276,6 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 )]<lax-str>
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
-// @lax-str's square at table size: `ns` are its four corners (top-left, top-right, bottom-left,
-// bottom-right), `es` its four edges (top, bottom, left, right).  A vertical edge's name sits ON the
-// edge, so two squares sharing one carry it once and a long name cannot reach into the next square.
-#let SQW = 2.2
-#let SQH = 0.95
-#let laxsq(ns, es, x: 0) = {
-  let (l, r) = (x - SQW, x + SQW)
-  ar((l, SQH), (r, SQH), GIVEN1, s0: 0.5, s1: 0.5); ar((l, -SQH), (r, -SQH), GIVEN1, s0: 0.5, s1: 0.5)
-  ar((l, SQH), (l, -SQH), GIVEN2, s0: 0.5, s1: 0.5); ar((r, SQH), (r, -SQH), GIVEN2, s0: 0.5, s1: 0.5)
-  if es.at(0) != none { lab(x, SQH + 0.62, GIVEN1)[#es.at(0)] }
-  if es.at(1) != none { lab(x, -SQH - 0.62, GIVEN1)[#es.at(1)] }
-  if es.at(2) != none { lab(l - 0.8, 0, GIVEN2)[#es.at(2)] }
-  if es.at(3) != none { lab(r + 0.8, 0, GIVEN2)[#es.at(3)] }
-  lab(x, 0, SLACK, rot: -45deg)[`⊑`]
-  node(l, SQH, black, ns.at(0)); node(r, SQH, black, ns.at(1))
-  node(l, -SQH, black, ns.at(2)); node(r, -SQH, black, ns.at(3))
-}
 
 // Hinze–Marsden at the 2-category level: a REGION is an allegory, a WIRE a relator, a BEAD a
 // LaT.  Regions are `LATP` wide, so the wire carrying the bead stands at the same pitch in every cell.
@@ -521,18 +504,10 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 // relators, then with the identity verticals gone.  Identity verticals are what turn a square into a
 // comparison of its two horizontals, so the collapse is drawn, not asserted.
 #disp[#capbox(
-  P(cetz.canvas(length: 0.8cm, {
-    laxsq((`GX`, `FX`, `GY`, `FY`), ([`φ`#sub[`X`]], [`φ`#sub[`Y`]], `G(R)`, `F(R)`), x: -7.4)
-    lab(-3.7, 0, black)[#sym.arrow.r.double.long]
-    laxsq((`A`, `B`, `A`, `B`),
-      ([`φ`#sub[`X`]], [`φ`#sub[`Y`]], [`𝟙`#sub[`A`]], [`𝟙`#sub[`B`]]), x: 0)
-    lab(3.7, 0, black)[#sym.arrow.r.double.long]
-    arc((5.2, 0), (9.6, 0), 1, [`φ`#sub[`X`]], col: GIVEN1, h: 1.6, cx: 3)
-    arc((5.2, 0), (9.6, 0), -1, [`φ`#sub[`Y`]], col: GIVEN1, h: 1.6, cx: 3)
-    // -45deg, the note's own tilt: a `⊑` turned the full -90deg is read as a `⊔`.
-    lab(7.4, 0, SLACK, rot: -45deg)[`⊑`]
-    node(5.2, 0, black, `A`); node(9.6, 0, black, `B`)
-  }), s: 98%),
+  row((leancd("Freyd.Alg.LaxNatural"), [#h(9pt) #sym.arrow.r.double.long #h(9pt)],
+       leancd("Freyd.Alg.laxNatural_const_iff.lhs"),
+       [#h(9pt) #sym.arrow.r.double.long #h(9pt)],
+       leancd("Freyd.Alg.laxNatural_const_iff.rhs"))),
   [`G≜const A`, #h(4pt) `F≜const B` #h(4pt) — the relators `X↦A` and `X↦B`, each sending every arrow
    to `𝟙` #h(4pt) #src[@lax-defn] \
    with `𝒞` two objects and one non-identity arrow `X⟶Y`, a LaT `const A⇒const B` is the pair

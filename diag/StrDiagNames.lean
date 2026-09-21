@@ -45,7 +45,7 @@ namespace Freyd.Alg
 -- The type functor's action is the fold `T(R) = ⦇F(R,𝟙)α⦈` (`typeMap_defn`), so the initial
 -- algebra's universal property produces it exactly as it produces any other fold.
 attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pair Λ
-  RelProd.pair prodMap typeMap
+  RelProd.pair prodMap typeMap junc
 
 -- WHICH EQUATION PRODUCED ONE.  `relCata_cancel` IS the initial algebra's universal property read
 -- as a square, so a picture that has to say what produced a fold draws it; the drawer instantiates
