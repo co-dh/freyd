@@ -86,7 +86,7 @@
     canvases of chapters 1–10 and no route draws them: a finite relation between named elements
     is neither a string, a circuit nor a commutative diagram. None of those chapters' formulas
     is a `#leanf`.
-[ ] `diag-regen --missing` cannot draw a NEW `#import "generated/<decl>.typ"` of
+[X] `diag-regen --missing` could not draw a NEW `#import "generated/<decl>.typ"` of
     `diag/note-prelude.typ`: it lists the obligations by `typst query`, which fails on the very
     import that is missing, so the first panel of a new declaration has to be written by hand
-    with `./scripts/diag-export <decl>`.
+    with `./scripts/diag-export <decl>`. The imports are now drawn before the listings run.
