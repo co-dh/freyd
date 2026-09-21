@@ -990,6 +990,21 @@ public theorem subseq_alg_sum_junc :
       (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) (∋ (dList A))) ≫ _ = _
   rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap]
 
+/-- The note's `subseq-EW-case` second row: **`(𝟙+𝟙×∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
+    the same step with the relator written out as the sum it is (`F_eq_sum_prod`), which is the form
+    the circuit draws: a sum before a junction is the junction of the branches (`sumMap_junc`), the
+    leaf arm's `𝟙` cancelling. -/
+public theorem subseq_alg_sum_map :
+    sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+        (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
+        (rprodMap (𝟙 (dE A)) (∋ (dList A)))
+      ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+          (consR ∪ graph fun p : A × ConsList Unit A => p.2)
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+          (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
+  rw [sumMap_junc, Cat.id_comp]
+
 /-- The note's `subseq-EW-case` last row: **`nil%∋ = nil 𝟙%∋`** — the leaf arm alone.  `nil` is a
     map, so `Λ` fuses out of it (`Λ_fusion` at `𝟙`), leaving the singleton `𝟙%∋ = Λ(𝟙)`. -/
 public theorem Λ_nil_singleton :
@@ -1022,6 +1037,19 @@ public theorem subseq_alg_Λ_nil :
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
   rw [Λ_nil_singleton]
+
+/-- The note's `subseq-EW-case` header: **`(F(∋)[nil,cons ∪ π₂])%∋ = [nil 𝟙%∋,((𝟙×∋)(cons ∪
+    π₂))%∋]`** — the whole of that table, the relator sliding into the bracket, the transpose
+    splitting over the junction and the leaf arm's `Λ` fusing into the singleton. -/
+public theorem subseq_alg_Λ :
+    Λ ((F Unit A).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            (consR ∪ graph fun p : A × ConsList Unit A => p.2))
+      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap)
+          (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
+  rw [subseq_alg_sum_junc, subseq_alg_Λ_junc, Λ_nil_singleton]
 
 /-- The note's `subseq-alg`: **`[nil 𝟙%∋,((𝟙×∋)(cons ∪ π₂))%∋] = [nil 𝟙%∋,⟨(𝟙×∋)%∋ E(cons),π₂⟩
     cup]`** — `subseq_alg_join` in the cons arm, which is the whole of `subseq`'s algebra under
