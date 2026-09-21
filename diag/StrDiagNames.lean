@@ -12,6 +12,7 @@ import AOP.A5_5_TypeFunctor
 import AOP.A5_5
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
+import AOP.A7_2_RelSet
 import AOP.A7_3_Party
 import AOP.A7_4_Cylinder
 import AOP.A7_4_CylinderVecRel
