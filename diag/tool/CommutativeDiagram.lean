@@ -250,15 +250,15 @@ partial def interp (e : Expr) (atoms : Array Expr := #[]) (whole : Bool := true)
 
 /-- A face: two paths with the SAME two ends, and the relation asserted between them.
 
-    `chord` is what PASTING leaves: two faces sharing exactly one edge are one polygon — the two
-    faces' other sides, as one closed walk — with that edge drawn straight across it.  `sym` is then
-    the relation the `lhs` side of the chord asserts and the chord's second component the `rhs`
-    side's; with no chord `sym` is the whole face's. -/
+    `chord` is what PASTING leaves: two faces sharing a RUN of consecutive edges are one polygon —
+    the two faces' other sides, as one closed walk — with that run drawn straight across it.  `sym`
+    is then the relation the `lhs` side of the chord asserts and the chord's second component the
+    `rhs` side's; with no chord `sym` is the whole face's. -/
 structure Face where
   sym : String
   lhs : Path
   rhs : Path
-  chord : Option (Expr × String) := none
+  chord : Option (Path × String) := none
   /-- Arrows the statement's OTHER side, across an `↔`, says this one produces — see `inducedIn`.
       Empty for a statement that is a single claim, where the head constant says it instead. -/
   induced : Array Expr := #[]
@@ -297,39 +297,95 @@ def Face.cycle (fc : Face) : Array (String × Expr) × Array (String × String �
   (fc.lhs.nodes.pop ++ (fc.rhs.nodes.extract 1 fc.rhs.nodes.size).reverse,
    fc.lhs.edges ++ fc.rhs.edges.reverse)
 
-/-- One face's boundary OPENED at its `i`-th edge: the rest of the walk, laid out so that it runs
-    from that edge's SOURCE to its target — the direction the chord itself points, which is how the
-    two sides of a paste agree on which corner is which. -/
-def Face.opened (ns : Array (String × Expr)) (es : Array (String × String × Expr)) (i : Nat)
+/-- One face's boundary OPENED along the RUN of `len` edges from its `i`-th: the rest of the walk,
+    from the run's far end back round to its near one.  Which end is the chord's SOURCE is settled
+    by the caller, against the chord itself — the direction the chord points is how the two sides of
+    a paste agree on which corner is which. -/
+def Face.opened (ns : Array (String × Expr)) (es : Array (String × String × Expr)) (i len : Nat)
     : Path :=
   let k := ns.size
-  let ns' := ns.extract (i + 1) k ++ ns.extract 0 (i + 1)
-  let es' := (es.extract (i + 1) k ++ es.extract 0 (i + 1)).pop
-  let w : Path := { nodes := ns', edges := es', src := ns'[0]!.1, tgt := ns'[k - 1]!.1 }
-  -- The opened edge joins `ns'[k-1]` back to `ns'[0]`, so the walk leaves the edge's source already
-  -- exactly when that source is `ns'[0]`.
-  if es[i]!.1 == w.src then w else w.mirror
+  let r := (i + len) % k
+  let ns' := (ns.extract r k ++ ns.extract 0 r).extract 0 (k - len + 1)
+  let es' := (es.extract r k ++ es.extract 0 r).extract 0 (k - len)
+  { nodes := ns', edges := es', src := ns'[0]!.1, tgt := ns'[k - len]!.1 }
 
-/-- Two faces pasted along the ONE edge they share: the union is one polygon — their other sides, as
-    a closed walk — with that edge as a chord.  `none` when they share no edge or more than one,
-    which is the pair the caller sets SIDE BY SIDE instead; that is the whole rule, and it is what
-    makes the note's own two choices fall out of the terms rather than out of a table. -/
+/-- THE SHARED RUN ITSELF, as the path it is: the `len` edges from `ns[i]`, oriented the way their
+    own arrows point — the first edge leaving `ns[i]` puts the chord's source there, and a run read
+    against its arrows is the same walk backwards.  Its interior vertices are named apart from
+    either side's, because they are corners of neither. -/
+def Face.chordPath (ns : Array (String × Expr)) (es : Array (String × String × Expr))
+    (i len : Nat) : Path :=
+  let k := ns.size
+  let ns' := (ns.extract i k ++ ns.extract 0 i).extract 0 (len + 1)
+  let es' := (es.extract i k ++ es.extract 0 i).extract 0 len
+  let w : Path := { nodes := ns', edges := es', src := ns'[0]!.1, tgt := ns'[len]!.1 }
+  let w := if es[i]!.1 == ns[i]!.1 then w else w.mirror
+  w.rename fun j => if j == 0 then "s" else if j == len then "t" else s!"c{j}"
+
+/-- Two faces pasted along the MAXIMAL PATH they share: the union is one polygon — their other
+    sides, as a closed walk — with that run of consecutive edges drawn straight across it.  `none`
+    when they share no edge, when the shared edges do not form ONE run in each boundary (two faces
+    glued along two separate arcs are no polygon), or when one of them is a paste already, a second
+    chord being a shape no layout here draws.  That pair the caller sets SIDE BY SIDE instead; the
+    whole rule falls out of the terms and not out of a table. -/
 def Face.paste (f g : Face) : MetaM (Option Face) := do
+  if f.chord.isSome || g.chord.isSome then return none
   let (fn, fe) := f.cycle
   let (gn, ge) := g.cycle
-  let mut hits : Array (Nat × Nat) := #[]
-  for i in [0 : fe.size] do
-    for j in [0 : ge.size] do
-      if ← Meta.isDefEq fe[i]!.2.2 ge[j]!.2.2 then hits := hits.push (i, j)
-  unless hits.size == 1 do return none
-  let (i, j) := hits[0]!
-  let p := Face.opened fn fe i
-  let q := Face.opened gn ge j
+  let (kf, kg) := (fe.size, ge.size)
+  -- One partner per edge: an arrow standing twice on one boundary is matched once, so the run
+  -- below is a walk and not a set.
+  let mut part : Array (Option Nat) := Array.replicate kf none
+  let mut used : Array Bool := Array.replicate kg false
+  for i in [0 : kf] do
+    for j in [0 : kg] do
+      if part[i]!.isNone && !used[j]! then
+        if ← Meta.isDefEq fe[i]!.2.2 ge[j]!.2.2 then
+          part := part.set! i (some j); used := used.set! j true
+  let len := (part.filter (·.isSome)).size
+  if len == 0 || len ≥ kf || len ≥ kg then return none
+  -- The run starts at the shared edge whose predecessor is not shared; there is exactly one such
+  -- edge when the shared edges are one run, and more than one otherwise.
+  let starts := (List.range kf).toArray.filter fun i =>
+    (part[i]!.isSome) && (part[(i + kf - 1) % kf]!.isNone)
+  unless starts.size == 1 do return none
+  let i := starts[0]!
+  let some j₀ := part[i]! | return none
+  -- The same run on `g`'s boundary, forwards or backwards: anything else is two faces meeting along
+  -- one walk on one side and a different walk on the other.
+  let mut fwd := true
+  let mut bwd := true
+  for d in [0 : len] do
+    let some j := part[(i + d) % kf]! | return none
+    unless j == (j₀ + d) % kg do fwd := false
+    unless j == (j₀ + kg - d) % kg do bwd := false
+  unless fwd || bwd do return none
+  let gstart := if fwd then j₀ else (j₀ + kg - len + 1) % kg
+  let c := Face.chordPath fn fe i len
+  let p := Face.opened fn fe i len
+  let q := Face.opened gn ge gstart len
+  -- Each side runs from the chord's source to its target: the two faces name their corners apart,
+  -- so which end is which is read off the OBJECTS the chord stands between.
+  let csrc ← c.objAt c.src
+  let p ← do if ← Meta.isDefEq csrc (← p.objAt p.src) then pure p else pure p.mirror
+  let q ← do if ← Meta.isDefEq csrc (← q.objAt q.src) then pure q else pure q.mirror
   -- Both faces' produced arrows come along: the paste IS the two statements, so an arrow either of
   -- them determines is one the picture determines.
   return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
-                chord := some (fe[i]!.2.2, g.sym), induced := f.induced ++ g.induced,
+                chord := some (c, g.sym), induced := f.induced ++ g.induced,
                 named := f.named ++ g.named }
+
+/-- A LIST of faces pasted into one, left to right: the conjunction of `n` claims is one picture
+    whenever each claim in turn glues onto what is built so far.  `none` at the first pair that does
+    not, which is what sets the panels side by side. -/
+def Face.pasteAll (fs : Array Face) : MetaM (Option Face) := do
+  let some f₀ := fs[0]? | return none
+  if fs.size < 2 then return none
+  let mut acc := f₀
+  for g in fs.extract 1 fs.size do
+    let some fc ← Face.paste acc g | return none
+    acc := fc
+  return some acc
 
 /-! ### Which arrow the statement PRODUCES -/
 
@@ -536,8 +592,12 @@ def Face.produces (fc : Face) (f : Expr) : MetaM Bool := do
     other law produced and this picture is handed. -/
 def Face.chordArgs (fc : Face) : MetaM (Array Expr) := do
   let some (c, _) := fc.chord | return #[]
-  unless isInduced (← inducedHeads) c do return #[]
-  c.getAppArgs.filterM fun a => return (← Meta.inferType a).isAppOf ``Cat.Hom
+  let heads ← inducedHeads
+  let mut out : Array Expr := #[]
+  for (_, _, f) in c.edges do
+    if isInduced heads f then
+      out := out ++ (← f.getAppArgs.filterM fun a => return (← Meta.inferType a).isAppOf ``Cat.Hom)
+  return out
 
 /-- WHICH ARROWS THIS STATEMENT PRODUCES, hence which are drawn dashed.  An arrow is produced when
     an induced constructor heads it (`α⦇f⦈=F(⦇f⦈)f` produces `⦇f⦈`) or when the other side of the
@@ -643,7 +703,7 @@ def Face.claims (fc : Face) : Array (Array Expr) :=
   let es (p : Path) := p.edges.map (·.2.2)
   match fc.chord with
   | none => #[es fc.lhs ++ es fc.rhs]
-  | some (c, _) => #[(es fc.lhs).push c, (es fc.rhs).push c]
+  | some (c, _) => #[es fc.lhs ++ es c, es fc.rhs ++ es c]
 
 /-- Whether ONE CLAIM of the face names both this arrow and its image under a relator — `F(R)` drawn
     beside `R`.  A claim carrying an arrow BOTH ways is ABOUT that transport, so the arrow is the
@@ -706,7 +766,10 @@ structure Component where
   deriving Inhabited
 
 def Face.components (fc : Face) : MetaM (Option (Component × Component)) := do
-  let some (c, _) := fc.chord | return none
+  let some (cp, _) := fc.chord | return none
+  -- A chord of several edges induces no ONE arrow, so it has no components to follow down the
+  -- sides — the same `none` a chord no induced constructor heads gives.
+  let #[(_, _, c)] := cp.edges | return none
   unless isInduced (← inducedHeads) c do return none
   let mut args : Array Expr := #[]
   for a in c.getAppArgs do
@@ -754,7 +817,8 @@ def componentNodeHues (l r : Component) (ns : Array Node) : Array Node :=
     their carrier `A` — so the question is asked of the OBJECTS, never of the edges that happen to be
     drawn, which is what an "end of a GIVEN1 edge" test could only answer for the ones that are. -/
 def Face.givenNodes (fc : Face) : MetaM (Array String) := do
-  let arrows := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2) ++ (fc.chord.map (·.1)).toArray
+  let arrows := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2)
+    ++ (fc.chord.map fun (c, _) => c.edges.map (·.2.2)).getD #[]
   let mut objs : Array Expr := #[]
   for f in arrows do
     let hs ← fc.handed f
@@ -784,12 +848,33 @@ def nodeHues (given : Array String) (ns : Array Node) (es : Array Edge) : Array 
     `Λ(R)`, the arrow their pasting determines.  Two HYPOTHESES pasted along an arrow the statement
     handed them both share a given edge instead (`T(b)` between the two slides), and it is drawn in
     its own role, solid: dashing it would say a universal property built an arrow the statement was
-    handed. -/
-def Face.chordEdge (fc : Face) (c : Expr) (side : String) : MetaM Edge := do
-  let dash ← fc.induces c
-  let hue ← if dash then pure "INDUCED" else fc.hue c
-  return { src := "s", tgt := "t", label := ← edgeLabel fc.named c, value := ← namedValue? fc.named c, side, dash,
-           hue }
+    handed.
+
+    A chord of several edges is that same straight line with its interior objects ON it, one edge
+    apiece: the run two faces share is a WALK, and drawing it as one arrow would drop the objects it
+    passes through. -/
+def Face.chordEdges (fc : Face) (c : Path) (side : String) : MetaM (Array Edge) :=
+  c.edges.mapM fun (src, tgt, f) => do
+    let dash ← fc.induces f
+    let hue ← if dash then pure "INDUCED" else fc.hue f
+    return { src, tgt, label := ← edgeLabel fc.named f, value := ← namedValue? fc.named f, side,
+             dash, hue }
+
+/-- THE CHORD'S INTERIOR CORNERS, spaced evenly along the straight line between its two ends: the
+    chord is drawn across the polygon, so an object it passes through stands on that line.  Empty
+    for a one-edge chord, which is every picture drawn before pasting learnt to glue along a run. -/
+def chordNodes (c : Path) (ns : Array Node) : MetaM (Array Node) := do
+  let some a := ns.find? (·.id == c.src)
+    | throwError "the chord leaves {c.src}, which is not a corner of the polygon"
+  let some b := ns.find? (·.id == c.tgt)
+    | throwError "the chord arrives at {c.tgt}, which is not a corner of the polygon"
+  let k := c.edges.size.toFloat
+  let mut out : Array Node := #[]
+  for i in [1 : c.edges.size] do
+    let s := i.toFloat / k
+    out := out.push { id := c.nodes[i]!.1, gx := a.gx + s * (b.gx - a.gx),
+                      gy := a.gy + s * (b.gy - a.gy), label := ← labelT c.nodes[i]!.2 }
+  return out
 
 /-- Where a face's symbol is set, once its corners are placed: the average of ITS OWN corners, which
     for a convex polygon is inside it — and a chord splits the polygon in two, so each side's symbol
@@ -871,6 +956,16 @@ def Face.transposed (fc : Face) : MetaM Bool := do
 def Face.isFan (fc : Face) : Bool :=
   fc.chord.isSome && fc.lhs.edges.size == 2 && fc.rhs.edges.size == 2 &&
     (fc.lhs.edges ++ fc.rhs.edges).all fun (s, _, _) => s == "s" || s == "t"
+
+/-- A COFAN, the fan turned round: every arrow of the polygon ARRIVES at an end of the chord, so the
+    chord's two ends are one pair of targets the two apexes point into, and the chord runs between
+    them with an apex on each side.  The coproduct's universal property is this shape — both
+    injections arrive at the junction's source and both cancelled composites at its target — where
+    the general grid would lay the chord on the diagonal of a square and run one of the four arrows
+    across another's label. -/
+def Face.isCofan (fc : Face) : Bool :=
+  fc.chord.isSome && fc.lhs.edges.size == 2 && fc.rhs.edges.size == 2 &&
+    (fc.lhs.edges ++ fc.rhs.edges).all fun (_, t, _) => t == "s" || t == "t"
 
 /-- A PASTED PAIR OF SQUARES: each face, opened at the chord, runs the chord's source, two interior
     vertices and the chord's target — four vertices, three edges.  Two squares cannot be folded
@@ -961,11 +1056,41 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       return (ns, es)
     let (ln, le) ← place fc.lhs "left" 0.0 (comps.map (·.1.idx))
     let (rn, re) ← place fc.rhs "right" 2.0 (comps.map (·.2.idx))
-    let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let corners := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
     let some (c, sym) := fc.chord | throwError "a fan is a pasted pair and has a chord"
+    let nodes := corners ++ (← chordNodes c corners)
     -- The chord drops from the apex to the target below it, its label set to the LEFT, on the side
     -- of the face the `lhs` bounds.
-    let edges := le ++ re ++ #[← fc.chordEdge c "left"]
+    let edges := le ++ re ++ (← fc.chordEdges c "left")
+    let hued := match comps with
+      | some (l, r) => componentNodeHues l r nodes
+      | none => nodeHues given nodes edges
+    return (hued, edges, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
+      faceMark nodes sym (fc.rhs.nodes.map (·.1)))
+  if fc.isCofan then
+    -- Three columns, three rows: the chord across the middle from its source to its target, the
+    -- `lhs` apex over the column between them and the `rhs` apex under it.
+    let place (p : Path) (side₀ : String) (gy : Float) (comp : Option Nat)
+        : MetaM (Array Node × Array Edge) := do
+      let mut ns : Array Node := #[]
+      let mut es : Array Edge := #[]
+      for i in [0:3] do
+        let (id, o) := p.nodes[i]!
+        let q := if i == 0 then (0.0, -1.0) else if i == 1 then (1.0, gy) else (2.0, -1.0)
+        ns := ns.push { id, gx := q.1, gy := q.2, label := (← labelT o) }
+      for i in [0:2] do
+        let (src, tgt, f) := p.edges[i]!
+        es := es.push { src, tgt, label := (← edgeLabel fc.named f),
+                        value := (← namedValue? fc.named f), side := side₀,
+                        dash := ← fc.dashes f, hue := ← fc.hueOn comp f }
+      return (ns, es)
+    let (ln, le) ← place fc.lhs "top" 0.0 (comps.map (·.1.idx))
+    let (rn, re) ← place fc.rhs "bottom" (-2.0) (comps.map (·.2.idx))
+    let corners := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let some (c, sym) := fc.chord | throwError "a cofan is a pasted pair and has a chord"
+    let nodes := corners ++ (← chordNodes c corners)
+    -- The chord's own label is set above it, inside the face the `lhs` apex bounds.
+    let edges := le ++ re ++ (← fc.chordEdges c "top")
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes edges
@@ -984,7 +1109,7 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     -- chord up beside it the way `Face.isFan` does, and the chord then spans TWO rows so the apex
     -- sits at a cell and not between two.
     let uneven := fc.lhs.edges.size != fc.rhs.edges.size
-    let upright := (← imageOf c).isSome || uneven
+    let upright := (← c.edges.allM fun (_, _, f) => return (← imageOf f).isSome) || uneven
     let h : Float := if uneven then 2.0 else 1.0
     -- Two columns and three rows, or three columns and two rows: the chord along the middle row or
     -- down the middle column, `lhs` on the `+1` side of it and `rhs` on the `-1` side.  Each path
@@ -1014,11 +1139,12 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
       return (ns, es)
     let (ln, le) ← place fc.lhs 1.0 (comps.map (·.1.idx))
     let (rn, re) ← place fc.rhs (-1.0) (comps.map (·.2.idx))
-    let nodes := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let corners := ln ++ rn.filter fun v => !ln.any (·.id == v.id)
+    let nodes := corners ++ (← chordNodes c corners)
     -- The chord's own label is set inside the face the `lhs` square bounds — above the chord when it
     -- lies flat, left of it when it stands up: a chord lies between two faces and its label has to
     -- be inside one of them.
-    let edges := le ++ re ++ #[← fc.chordEdge c (if upright then "left" else "top")]
+    let edges := le ++ re ++ (← fc.chordEdges c (if upright then "left" else "top"))
     let hued := match comps with
       | some (l, r) => componentNodeHues l r nodes
       | none => nodeHues given nodes edges
@@ -1085,12 +1211,13 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
   | some (c, sym) =>
     -- The chord runs straight between the two shared ends, dashed: it is the arrow the two faces
     -- induce, and its label is set above it, the one label the outer polygon may hold.
-    let withChord := edges.push (← fc.chordEdge c "top")
+    let withChord := edges ++ (← fc.chordEdges c "top")
+    let all := nodes ++ (← chordNodes c nodes)
     let hued := match comps with
-      | some (l, r) => componentNodeHues l r nodes
-      | none => nodeHues given nodes withChord
-    return (hued, withChord, faceMark nodes fc.sym (fc.lhs.nodes.map (·.1)) ++
-      faceMark nodes sym (fc.rhs.nodes.map (·.1)))
+      | some (l, r) => componentNodeHues l r all
+      | none => nodeHues given all withChord
+    return (hued, withChord, faceMark all fc.sym (fc.lhs.nodes.map (·.1)) ++
+      faceMark all sym (fc.rhs.nodes.map (·.1)))
 
 /-! ### Emitting the page -/
 
@@ -1357,9 +1484,8 @@ partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs
     (i : Nat) (fs : Array Face) : MetaM String := do
   if i ≥ parts.size then
     let fs ← withHyps fs xs
-    if let #[f, g] := fs then
-      if let some fc ← Face.paste f g then
-        return cdPage sel #[← layout fc]
+    if let some fc ← Face.pasteAll fs then
+      return cdPage sel #[← layout fc]
     -- One separator per GAP: the operator a face is joined to its predecessor by.
     return cdPage sel (← fs.mapM layout) ((fs.extract 1 fs.size).map (·.sep))
   else
