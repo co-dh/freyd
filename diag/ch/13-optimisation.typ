@@ -717,7 +717,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`cons(3,[1,2])=[3,1,2]`],
   [the empty list; a head onto a tail],
 
-  [`α`], [`[nil,cons]`], [`F([A])⟶[A]`], [],
+  [`α`], [`[nil,cons]`], [`F[A]⟶[A]`], [],
   [both constructors as one map],
 
  [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
@@ -736,7 +736,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`[3,1,2] prefix [3,1]`],
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
- [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[]], [`F([A])⟶[A]`],
+ [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
   // lean:AOP.A7_7_TakeWhile.Salg@8ccdcfd1
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
@@ -924,7 +924,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
 
-  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #h(4pt) #src[@takewhile-defn]], [`F([A])⟶[A]`],
+  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #h(4pt) #src[@takewhile-defn]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 )])]
@@ -1284,7 +1284,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`xs subseq ys⟺ys` is `xs` with elements dropped #h(4pt) — at each `cons`, drop the head or
    keep it],
 
- [`S`], [`[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[]], [`F([A])⟶[A]`],
+ [`S`], [`[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[]], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
   // lean:AOP.A7_7_Filter.Salg@a0accc65
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
@@ -1366,7 +1366,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
 
-  [`S`], [`[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn]], [`F([A])⟶[A]`],
+  [`S`], [`[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn]], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 )])]
@@ -1470,11 +1470,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
  [`party≜⦇S⦈ choose` #src[]],
   // lean:AOP.A7_3_Party.party_eq@cb4fab14
-  [`tree A⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.party_eq")],
   [Every guest list the president's ruling allows.],
 
   [the specification \ $frac(#[`party`], ∋)$ `est(R°)`],
-  [`tree A⟶[A]`],
+  [`tree(A)⟶[A]`],
   [A guest list of greatest total conviviality.],
 )]<party-defn>
 

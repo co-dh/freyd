@@ -30,7 +30,7 @@
 
   [banana-split law \
    `⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈`],
-  [`T⟶A×B`],
+  [#leant("Freyd.Alg.pair_relCata_eq_relCata_pair")],
   [Any fork of folds is a single fold, hence one traversal — `F` the base functor.],
 
   [what it reduces to \

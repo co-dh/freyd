@@ -84,7 +84,9 @@ labels: $(NOTEPDF)
 
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.
-$(NOTEPDF): $(NOTESRC) $(wildcard diag/*.typ)
+# `| panels`: a name just written into the note has no file until `panels` draws it, and under a
+# parallel make the compile started first and failed on the missing include.
+$(NOTEPDF): $(NOTESRC) $(wildcard diag/*.typ) | panels
 	$(LOCK) typst compile --root . $(NOTESRC) $@
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
