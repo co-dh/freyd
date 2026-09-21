@@ -55,18 +55,15 @@
 [X] 3 circuit cells in ch12 were hand-laid `#cpanel` literals; every circuit in ch12–16 is a `#leanc`.
 [X] 11.5.1b follows the declaration `alpha_natural_split`: five arrows, no chord `F(f,𝟙)α`, drawn
     by `#leancd` (his decision).
-[ ] Nothing in the note gates runs the whole-repository `lake build`: a rename left
+[X] Nothing in the note gates ran the whole-repository `lake build`: a rename left
     `AOP/A5_7_PartyBeads.lean` broken and `make p` stayed green, because the gates build only what
-    `diag-export` imports. Run `./scripts/cap lake build` before every merge to master, or put it
-    in `make p`.
+    `diag-export` imports. `make p` now runs `./scripts/cap lake build` first.
 [ ] 4 commutative canvases name no declaration at all (11.2.1b, 13.2.1a, 13.2.3a, 13.3.1b#2). Each
     needs a new Lean declaration and a generator feature: node value labels; opening an `∃` at its
     witness plus a `⋢` face mark; three records on one canvas with bowed arrows; `Face.paste` as a
     fold over four faces.
-[ ] 4 formula cells in ch13 are still typed by hand because no single declaration states them: the
-    `takewhile(p)≜…` definition line, `[nil,⊸ nil ∪ cons] sum=…`, the `MSS.Kalg` cell, and the
-    three-inequation party-monotonic grid. ch11's formulas (`#frc(...)`, canvas labels) are
-    untouched. Everything else in ch12–16 is a `#leanf`.
+[X] ch13's last four formula headers are `#leanf`. ch11's formulas (`#frc(...)`, canvas labels) are
+    untouched.
 [X] Delete the typst a conversion orphaned, in the same change that converts: a helper no chapter
     calls is dead. Swept for ch11–16 and the shared helper files; the rule stands for ch1–10.
 [X] The python feed route is deleted (`scripts/circuit`, `relexpr.py`, `panels.py`,

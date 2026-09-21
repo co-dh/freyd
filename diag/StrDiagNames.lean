@@ -12,6 +12,7 @@ import AOP.A5_5_TypeFunctor
 import AOP.A5_5
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
+import AOP.A7_2_RelSet
 import AOP.A7_3_Party
 import AOP.A7_4_Cylinder
 import AOP.A7_4_CylinderVecRel
@@ -215,6 +216,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.GCTakeWhile.pcor] def unexpandPcor : Unexpander
   | `($_ $p) => `($p)
   | _ => throw ()
+
+-- A RELATION NAMED AFTER THE MAP IT IS THE GRAPH OF drops the `R` the Lean name needs to tell the
+-- two apart: the note's region has only the arrow, and `consR`/`concatR` already print that way.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.includeR] def unexpandIncludeR : Unexpander
+  | _ => `($(mkIdent `«include»))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.excludeR] def unexpandExcludeR : Unexpander
+  | _ => `($(mkIdent `exclude))
 
 -- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
 -- the line width, the due dates — is the section's context and not part of the name, exactly as

@@ -433,21 +433,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #align(center, strong[counterexample — `φ,ψ : G⇒F` lax natural does NOT give `φ∩ψ` lax natural])
 #v(4pt)
 #capbox(
-  P(cetz.canvas(length: 0.9cm, {
-    let (TL, TR, BL, BR) = ((-3.4, 1.3), (3.4, 1.3), (-3.4, -1.3), (3.4, -1.3))
-    ar(TL, TR, GIVEN1, s0: 0.75, s1: 0.55); ar(TR, BR, GIVEN1, s0: 0.5, s1: 0.5)
-    ar(TL, BL, GIVEN2, s0: 0.5, s1: 0.5); ar(BL, BR, GIVEN2, s0: 0.75, s1: 0.55)
-    lab(0, 1.75, GIVEN1)[`π₁∩π₂`]; lab(3.95, 0, GIVEN1)[`R`]
-    lab(-4.15, 0, GIVEN2)[`R×R`]; lab(0, -1.75, GIVEN2)[`π₁∩π₂`]
-    lab(0, 0, TCOL, rot: -45deg)[$subset.eq.sq.not$]
-    node(TL.at(0), TL.at(1), black, `A×A`); node(TR.at(0), TR.at(1), black, `A`)
-    node(BL.at(0), BL.at(1), black, `B×B`); node(BR.at(0), BR.at(1), black, `B`)
-    // The trace: `(0,1)` in at the top left, out as `{0}` down-then-across and as `∅` the other way.
-    lab(-3.4, 2.1, luma(110))[`(0,1)`]; lab(3.4, 2.1, GIVEN1)[`∅`]
-    lab(-3.4, -2.1, GIVEN2)[`(0,0)`]
-    lab(2.85, -2.1, GIVEN2)[`{0}`]; lab(3.6, -2.1, TCOL)[$subset.eq.sq.not$]
-    lab(4.25, -2.1, GIVEN1)[`∅`]
-  }), s: 88%),
+  leancd("Freyd.Alg.inter_not_laxNatural_square"),
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` \
    `π₁,π₂ : Δ⇒Id` are both LaTs #h(4pt) #src[@party-mono-branch's `g` row] #h(4pt) and
  `π₁∩π₂={((x,x),x)}` #h(4pt) #src[]],
@@ -586,21 +572,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     s: 74%,
   ),
   capbox(
-    P(cetz.canvas(length: 0.8cm, {
-      // Each corner carries its VALUE under its type, inside the node's own white box: an annotation
-      // set loose beside the node would land on the vertical edge it hangs off.
-      let val(s) = { show raw: set text(size: 8.5pt); text(luma(110), s) }
-      let vnode(p, ty, el) = node(p.at(0), p.at(1), black,
-        grid(align: center, row-gutter: 2.5pt, ty, val(el)))
-      let (FEA, EA, FA, A) = ((-4.8, 1.9), (4.8, 1.9), (-4.8, -1.9), (4.8, -1.9))
-      ar(FEA, EA, GIVEN1, s0: 2.0, s1: 3.2); ar(FA, A, GIVEN1, s0: 2.15, s1: 2.05)
-      ar(FEA, FA, GIVEN2, s0: 1.0, s1: 1.0); ar(EA, A, GIVEN2, s0: 1.0, s1: 1.0)
-      lab(0, 2.75, GIVEN1)[$frac(#[`(∋×∋)+`], ∋)$]; lab(0, -2.5, GIVEN1)[`+`]
-      lab(-6.75, 0, GIVEN2)[`est(≤)×est(≤)`]; lab(5.75, 0, GIVEN2)[`est(≤)`]
-      lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-      vnode(FEA, `E Nat×E Nat`, `(xs,ys)`); vnode(EA, `E Nat`, `{x+y∣x∈xs∧y∈ys}`)
-      vnode(FA, `Nat×Nat`, `(min(xs),min(ys))`); vnode(A, `Nat`, `min(xs)+min(ys)`)
-    }), s: 74%),
+    leancd("Freyd.Alg.RelSet.plus_distributes_le"),
     [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
   ),
 ))]<dist-str>
@@ -960,7 +932,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#calc-table(cols: (1fr, 7.9cm), 
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
-  Thm[`takewhile(p)≜` #frc([`prefix list(p)`]) ` est(R°)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` \
+  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile") \
+    #leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata") \
     // takewhile-cata row: Ex 7.39
     #src[takewhile: `takewhile(p)(x)` returns the longest prefix of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard implementation.
@@ -1119,7 +1092,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   stroke: 0.4pt + luma(190),
   // B&dM p.174, Ex 7.40: "Express prefix as a catamorphism on cons-lists, and use fusion to express
   // sum·prefix as a catamorphism."
-  Thm[`[nil,⊸ nil ∪ cons] sum=F(sum)[zero,⊸ zero ∪ plus]` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.prefAlg_comp_sum") \
     #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
      the fusion condition that expresses `prefix sum` as a catamorphism]],
   table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
@@ -1224,7 +1197,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // components are `k`'s two output wires.  No circuit — the carrier is a PRODUCT, and a fork needs
 // the product bifunctor, which is not a wire (as in @subseq-EW-join's Hinze-Marsden column).
 #disp[#calc-table(cols: (1.5fr, 1fr), al: (left + horizon, left + horizon), 
-  Thm[`[nil,cons]⟨g,`#frc([`suffix`])` E(g)⟩=F(⟨g,`#frc([`suffix`])` E(g)⟩)k` \
+  Thm[#leanf("Freyd.Alg.RelSet.MSS.scan_pair_comm") \
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
@@ -1739,10 +1712,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   // One shape instantiated three times, so the three `⊑` stand in a column.
   Thm[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
     align: (right + horizon, center + horizon, left + horizon),
-    grid.cell(colspan: 3, align: center)[`S≜⟨include,exclude⟩`],
-    [`(𝟙×list((R×R)°))S`], SQ, [`S(R×R)°`],
-    [`(𝟙×list((R×R)°))include`], SQ, [`include R°`],
-    [`(𝟙×list((R×R)°))exclude`], SQ, [`exclude R°`],
+    // THREE DECLARATIONS, NOT ONE CONJUNCTION: each row is a law with its own proof and its own
+    // citation, so the next such header is written the same way and needs nothing of the printer.
+    grid.cell(colspan: 3, align: center)[#leanf("Freyd.Alg.RelSet.Party.S")],
+    [#leanf("Freyd.Alg.RelSet.Party.party_mono.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.party_mono.rhs")],
+    [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.rhs")],
+    [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.rhs")],
   ))
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
    running it first and bettering the two parties it returns,

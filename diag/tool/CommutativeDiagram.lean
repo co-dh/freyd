@@ -79,6 +79,10 @@ structure Node where
   gx : Float
   gy : Float
   label : StrDiag.Lbl
+  /-- THE VALUE THIS CORNER CARRIES, under its object and in the same printer: the point the
+      statement pinned at this object's elements.  Empty for a corner the statement pins nothing
+      at, which is every corner of an abstract law — see `Face.cornerValues`. -/
+  value : Array StrDiag.Lbl := #[]
   /-- The note's hue its object is drawn in, named by the ROLE it plays — see `nodeHues`. -/
   hue : String := "BLACK"
 
@@ -1260,6 +1264,8 @@ partial def typstLbl (l : StrDiag.Lbl) : String :=
 def typstNodes (ns : Array Node) (close := "\n") : String :=
   typstArr (ns.toList.map fun v =>
     s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: {typstLbl v.label}, \
+       {if v.value.isEmpty then "" else
+          s!"value: ({String.join (v.value.toList.map fun p => s!"{typstLbl p}, ")}), "}\
        hue: {typstString v.hue})")
     close
 
@@ -1317,6 +1323,14 @@ def cdPage (sel : String) (ps : Array Panel) (seps : Array (Option String) := #[
       ++ "#let pic = cdrow(panels, seps: seps, cert: cert)\n"
       ++ tail ++ "#cdrow(panels, seps: seps, s: 100%, cert: cert)\n"
 
+/-- THE SYMBOL A DENIED CLAIM SETS IN ITS FACE: the relation's own, struck through.  `none` where
+    the glyph has no struck form, which is an error and not a face drawn with the wrong symbol. -/
+def negSym : String → Option String
+  | "⊑" => some "⋢"
+  | "⊒" => some "⋣"
+  | "=" => some "≠"
+  | _ => none
+
 /-- AN ASSERTION ABOUT A JOIN IS ONE CLAIM PER OPERAND.  Every `@[diag_join]` application in the
     statement is replaced by its `i`-th operand — `Meta.transform`, so the replacement happens
     wherever the operator stands and under whatever binders — and the two claims are drawn as the
@@ -1354,6 +1368,14 @@ def joinSplit? (body : Expr) : MetaM (Option (String × Expr × Expr)) := do
 partial def faces {α : Type} [Inhabited α] (what : Name) (body : Expr) (side : Option String)
     (fuel : Nat) (induced : Array Expr) (k : Array Face → MetaM α) : MetaM α := do
   match body.getAppFnArgs with
+  | (``Not, #[b]) =>
+    -- A DENIAL IS A FACE LIKE ANY OTHER.  `¬` heads the statement, so the claim under it bounds the
+    -- same polygon — same corners, same sides — and the negation lands in the centre mark alone.
+    faces what b side fuel induced fun fs => do k (← fs.mapM fun f => do
+      let some s := negSym f.sym
+        | throwError "{what}: the statement denies `{f.sym}`, which has no struck form to set in \
+            the face — add it to `negSym`"
+      return { f with sym := s })
   | (``And, #[l, r]) =>
     faces what l side fuel induced fun fl =>
       faces what r side fuel induced fun fr => k (fl ++ fr)
@@ -1410,6 +1432,33 @@ def Face.objs (fc : Face) : Array Expr := (fc.lhs.nodes ++ fc.rhs.nodes).map (·
 /-- The arrows a face is made of. -/
 def Face.edges (fc : Face) : Array Expr := (fc.lhs.edges ++ fc.rhs.edges).map (·.2.2)
 
+/-- THE ELEMENTS OF AN OBJECT, where the category's objects are a structure carrying them: the one
+    field of `o`'s own structure whose value is a `Sort`.  Read off the ENVIRONMENT and not a name
+    list, so the next concrete category answers unchanged and an abstract one simply has no
+    elements, hence no corner values. -/
+def elemType? (o : Expr) : MetaM (Option Expr) := do
+  let .const n _ := (← Meta.whnf (← Meta.inferType o)).getAppFn | return none
+  unless isStructure (← getEnv) n do return none
+  for f in getStructureFields (← getEnv) n do
+    let p ← Meta.mkProjection o f
+    if (← Meta.inferType p).isSort then return some p
+  return none
+
+/-- THE VALUE A CORNER CARRIES: the point the statement pinned at that corner's own elements, set
+    under the object in the same printer as every other label.  It comes from a HYPOTHESIS and not
+    from an attribute because the term mentions the statement's own binders — `(xs,ys)` is a term of
+    the declaration's context and of nothing else — and an attribute is elaborated outside it. -/
+def Face.cornerValues (fc : Face) : Panel → MetaM Panel
+  | (ns, es, ms) => do
+    let objs := fc.lhs.nodes ++ fc.rhs.nodes
+    let ns ← ns.mapM fun n => do
+      let some (_, o) := objs.find? (·.1 == n.id) | return n
+      let some el ← elemType? o | return n
+      for (x, v) in fc.named do
+        if ← Meta.isDefEq (← Meta.inferType x) el then return { n with value := ← labelPartsT v }
+      return n
+    return (ns, es, ms)
+
 /-- What a hypothesis contributes to the picture: a FACE it hands the conclusion, or a NAMING of one
     of the statement's own arrows. -/
 inductive Hyp where
@@ -1421,7 +1470,12 @@ inductive Hyp where
     `LaxNatural F G φ` or an equation between objects is a property with no square of its own. -/
 def hypRead (h : Expr) : MetaM (Option Hyp) := do
   let some (sym, l, r) := StrDiag.split (← Meta.inferType h) | return none
-  unless (← Meta.inferType l).isAppOf ``Cat.Hom do return none
+  unless (← Meta.inferType l).isAppOf ``Cat.Hom do
+    -- A POINT IS PINNED THE WAY AN ARROW IS.  An equation whose sides are NOT arrows, one of them
+    -- a variable the statement bound, says what the picture writes under the corner whose elements
+    -- that variable's type is — `Face.cornerValues`.
+    if sym == "=" && l.isFVar && !r.isFVar then return some (.naming l r)
+    return none
   let (p, q) := (← interp l, ← interp r)
   -- A HYPOTHESIS THAT NAMES AN ARROW IS NOT A FACE.  An equation between two arrows that are ONE
   -- EDGE each bounds no polygon — the two spellings are one arrow and the picture draws it once —
@@ -1501,9 +1555,10 @@ partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs
   if i ≥ parts.size then
     let fs ← withHyps fs xs
     if let some fc ← Face.pasteAll fs then
-      return cdPage sel #[← layout fc]
+      return cdPage sel #[← fc.cornerValues (← layout fc)]
     -- One separator per GAP: the operator a face is joined to its predecessor by.
-    return cdPage sel (← fs.mapM layout) ((fs.extract 1 fs.size).map (·.sep))
+    return cdPage sel (← fs.mapM fun f => do f.cornerValues (← layout f))
+      ((fs.extract 1 fs.size).map (·.sep))
   else
       let (n, s) := parts[i]!
       let some c := (← getEnv).find? n | throwError "no such declaration: {n}"
@@ -1541,11 +1596,20 @@ def draw (sel : String) : MetaM String := do
   let (n₀, s₀) := parts[0]!
   let some ci := (← getEnv).find? n₀ | throwError "no such declaration: {n₀}"
   Meta.forallTelescopeReducing ci.type fun xs body => do
+    -- A STATEMENT THAT ENDS IN `False` DENIES WHAT IT WAS HANDED LAST.  `¬ X` is `X → False`, and
+    -- the telescope opens that like any other implication, so the claim is the last hypothesis and
+    -- the picture is its own face with the struck symbol (`negSym`) in the middle.
+    let mut tel := xs
+    let mut claim := body
+    if claim.isConstOf ``False then
+      if let some h := tel.back? then
+        claim := mkApp (.const ``Not []) (← Meta.inferType h)
+        tel := tel.pop
     -- A DECLARATION WHOSE TYPE ENDS IN A SORT IS A PREDICATE, not a proof, so its claim is in its
     -- VALUE: what it states is itself APPLIED to its own binders, which `faces` opens with the same
     -- delta step it takes on a predicate a theorem names (`MonotonicAlg φ R`, `LaxNatural F G φ`).
-    let body := if body.isSort then mkAppN (.const n₀ (ci.levelParams.map .param)) xs else body
-    faces n₀ body s₀ 3 #[] fun fs => drawParts sel parts xs 1 fs
+    let stmt := if claim.isSort then mkAppN (.const n₀ (ci.levelParams.map .param)) tel else claim
+    faces n₀ stmt s₀ 3 #[] fun fs => drawParts sel parts tel 1 fs
 
 /-- The namespaces whose `scoped` notations a label is written in — opened for name shortening AND
     activated for printing (`DiagExport.main`, under `--commutative`).  `Freyd` carries `𝟙`, `≫`,
