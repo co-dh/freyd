@@ -85,3 +85,9 @@
     the note is split by chapter, the key must be resolved against the pdf it is handed. The
     whole-pdf mode has the same fault — `diff-crop BEFORE.pdf AFTER.pdf OUT` on two chapter pdfs
     whose page 3 differs wrote nothing and exited 0.
+[ ] Chapters 1–10 are still drawn by hand. They hold 52 canvases (ch2 11, ch3 2, ch4 6, ch5 4, ch6 2,
+    ch7 7, ch8 16, ch9 1, ch10 3) and only five of them come from a declaration — ch7's one `#lean`
+    and three `#leancd`, ch10's one `#leancd`. The rest are laid out through typst helpers, so their
+    port types and labels are checked by nobody, and none of their formulas is a `#leanf`. Convert
+    them the way ch11–16 were: name the declaration, draw with `#lean`/`#leanc`/`#leancd`, delete the
+    helper the conversion orphans. `./scripts/cd-obligations --all` lists every canvas by display.
