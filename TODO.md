@@ -78,9 +78,10 @@
     cross-reference on an earlier page, so both halves came out as the same unrelated text and the
     pair was refused as pixel-identical. The display's own number is the one set in the margin
     column; anchor on that occurrence.
-[ ] Chapters 1–10 are still drawn by hand. They hold 52 canvases (ch2 11, ch3 2, ch4 6, ch5 4, ch6 2,
-    ch7 7, ch8 16, ch9 1, ch10 3) and only five of them come from a declaration — ch7's one `#lean`
-    and three `#leancd`, ch10's one `#leancd`. The rest are laid out through typst helpers, so their
-    port types and labels are checked by nobody, and none of their formulas is a `#leanf`. Convert
-    them the way ch11–16 were: name the declaration, draw with `#lean`/`#leanc`/`#leancd`, delete the
-    helper the conversion orphans. `./scripts/cd-obligations --all` lists every canvas by display.
+[ ] Chapters 1–10: most pictures already come from a declaration (`note-prelude.typ` imports
+    `generated/Freyd.Diag.CartBicat.*`; ch7 and ch10 use `#lean`/`#leancd`). Seven are still laid
+    by hand: the two circuits of 5b/dom-collapse and of 5.1a/dom-slide (`cetz.canvas` + `domstr`),
+    7b/banana-split's `homeq(...)` panel, 10.1a's two `snake(...)` panels, and the two pictures of
+    named people, 8.1a/div-comp-pic and 9c/syq-pic, which no route draws — a finite relation
+    between named elements is neither a string, a circuit nor a commutative diagram. None of the
+    chapters' formulas is a `#leanf`.
