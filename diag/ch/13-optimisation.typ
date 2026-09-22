@@ -2363,13 +2363,13 @@ zip(that)                                         each row: its square, and the 
    the cuts whose every segment is secure]],
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.lhs")],
 
-  // The middle step `⦇[nil,new ∪ glue]⦈ list(secure)` (`van_spec_step1.rhs`) has no panel:
-  // `⦇[nil,new ∪ glue]⦈` is a family the environment gives no naturality verdict for, so
-  // diag-export refuses it and draws a red stub.  Its content is the row's `#src` and the
-  // condition above, both of which ARE drawn.
-  [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: `partition` is the fold `[nil,new ∪ glue]`, and
-   the condition above moves `list(secure)` inside it, which is what turns `glue` into `old`]],
+  [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ list(secure)` \ #src[`partition` is the fold that either opens a
+   segment for the transaction in hand or puts it on the front of the segment already open]],
      // lean:AOP.A7_5_Van.partition_cata@bbe49948
+  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs")],
+
+  [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `list(secure)` inside
+   that fold, which is what turns `glue` into `old`]],
      // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step2.rhs")],
 )]<van-fusion-steps>
