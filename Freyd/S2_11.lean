@@ -187,14 +187,14 @@ section Division
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
 /-- **§2.351**: `R/ₛR` is characterised among SYMMETRIC morphisms by
-    `T ⊑ R/ₛR ↔ T R ⊑ R`.  (The general `le_symmDiv_iff` adds the condition
-    `T° R ⊑ R`, which collapses to `T R ⊑ R` once `T° = T`.) -/
-theorem symmetric_le_symmDiv_self_iff {a b : 𝒜} (T : a ⟶ a) (R : a ⟶ b)
-    (hT : Symmetric T) : T ⊑ R /ₛ R ↔ T ≫ R ⊑ R := by
+    `X ⊑ R/ₛR ↔ X R ⊑ R`.  (The general `le_symmDiv_iff` adds the condition
+    `X° R ⊑ R`, which collapses to `X R ⊑ R` once `X° = X`.) -/
+public theorem symmetric_le_symmDiv_self_iff {a b : 𝒜} (X : a ⟶ a) (R : a ⟶ b)
+    (hX : Symmetric X) : X ⊑ R /ₛ R ↔ X ≫ R ⊑ R := by
   rw [le_symmDiv_iff]
   constructor
   · exact fun h => h.1
-  · intro h; exact ⟨h, by rw [symmetric_eq hT]; exact h⟩
+  · intro h; exact ⟨h, by rw [symmetric_eq hX]; exact h⟩
 
 /-- **§2.357**: the simple part is reconstructible from its domain of simplicity,
     `R/ₛ1 = (Dom R/ₛ1)·R`.  This is the converse half of §2.357 that makes `R/ₛ1`

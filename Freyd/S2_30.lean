@@ -210,30 +210,31 @@ public theorem heyting_adj_coref {a : 𝒜} {A B C : a ⟶ a}
 infixl:70 " /ₛ " => symmDiv
 
 /-- Characterizing property of symmetric division (§2.35). -/
-public theorem le_symmDiv_iff {a b c : 𝒜} (T : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
-    T ⊑ R /ₛ S ↔ T ≫ S ⊑ R ∧ T° ≫ R ⊑ S := by
+-- `X` for the arrow being bounded, as in `le_div_iff` and `le_leftDiv_iff`.
+public theorem le_symmDiv_iff {a b c : 𝒜} (X : a ⟶ b) (R : a ⟶ c) (S : b ⟶ c) :
+    X ⊑ R /ₛ S ↔ X ≫ S ⊑ R ∧ X° ≫ R ⊑ S := by
   dsimp [symmDiv]
   constructor
   · intro h
-    have h1 : T ⊑ R / S := le_trans h (inter_lb_left _ _)
-    have h2 : T ⊑ (S / R)° := le_trans h (inter_lb_right _ _)
+    have h1 : X ⊑ R / S := le_trans h (inter_lb_left _ _)
+    have h2 : X ⊑ (S / R)° := le_trans h (inter_lb_right _ _)
     constructor
     · exact ((le_div_iff _ _ _).mp h1)
-    · -- T ⊑ (S/R)° → T° ⊑ S/R → T°R ⊑ S
-      have h2' : T° ⊑ S / R := by
-        -- T ⊑ (S/R)° → T° ⊑ (S/R)°° = S/R
+    · -- X ⊑ (S/R)° → X° ⊑ S/R → X°R ⊑ S
+      have h2' : X° ⊑ S / R := by
+        -- X ⊑ (S/R)° → X° ⊑ (S/R)°° = S/R
         calc
-          T° ⊑ ((S / R)°)° := recip_mono h2
+          X° ⊑ ((S / R)°)° := recip_mono h2
           _ = S / R := by rw [Allegory.recip_recip]
       exact ((le_div_iff _ _ _).mp h2')
-  · intro ⟨hTS, hTR⟩
+  · intro ⟨hXS, hXR⟩
     apply le_inter
-    · exact ((le_div_iff _ _ _).mpr hTS)
-    · -- T ⊑ (S/R)° ↔ T° ⊑ S/R
-      have hTR_div : T° ⊑ S / R := (le_div_iff _ _ _).mpr hTR
+    · exact ((le_div_iff _ _ _).mpr hXS)
+    · -- X ⊑ (S/R)° ↔ X° ⊑ S/R
+      have hXR_div : X° ⊑ S / R := (le_div_iff _ _ _).mpr hXR
       calc
-        T = (T°)° := by rw [Allegory.recip_recip]
-        _ ⊑ (S / R)° := recip_mono hTR_div
+        X = (X°)° := by rw [Allegory.recip_recip]
+        _ ⊑ (S / R)° := recip_mono hXR_div
 
 /-! ### Properties of symmetric division (§2.35) -/
 
@@ -272,6 +273,10 @@ public theorem symmDiv_comp {a b c d : 𝒜} (R : a ⟶ d) (S : b ⟶ d) (W : c 
     have h_rs_rec : (R /ₛ S)° ≫ R ⊑ S := hRS.2
     exact le_trans (comp_mono_left _ h_rs_rec) hSW.2
 
+/-- Symmetric division cancels on the right: `(R/ₛS)S ⊑ R` (§2.35). -/
+public theorem symmDiv_comp_le {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
+    (R /ₛ S) ≫ S ⊑ R := ((le_symmDiv_iff (R /ₛ S) R S).mp (le_refl _)).1
+
 -- Note: "R/ₛS ⊑ R" is listed in the book as a containment (§2.35) but only for the
 -- case where the objects match (S = 1), i.e. simplePart R ⊑ R. See simplePart_le.
 -- For general S the containment R/ₛS ⊑ R does not hold (R and R/ₛS have different types
@@ -305,7 +310,7 @@ public theorem symmDiv_self_reflexive {a b : 𝒜} (R : a ⟶ b) : Reflexive (R 
 
 /-- In a division allegory, (R/ₛR)R = R (§2.314).
     The book's list has only `(R/ₛR)R ⊑ R`; it is an equality because 1 ⊑ R/ₛR. -/
-theorem symmDiv_self_comp {a b : 𝒜} (R : a ⟶ b) : (R /ₛ R) ≫ R = R := by
+public theorem symmDiv_self_comp {a b : 𝒜} (R : a ⟶ b) : (R /ₛ R) ≫ R = R := by
   apply le_antisymm
   · -- (R/ₛR)R ⊑ (R/R)R = R, since R/ₛR is an intersection with R/R as its left factor
     have h : (R /ₛ R) ≫ R ⊑ (R / R) ≫ R :=
@@ -316,6 +321,15 @@ theorem symmDiv_self_comp {a b : 𝒜} (R : a ⟶ b) : (R /ₛ R) ≫ R = R := b
     calc
       R = (Cat.id a) ≫ R := by rw [Cat.id_comp]
       _ ⊑ (R /ₛ R) ≫ R := comp_mono_right (symmDiv_self_reflexive R) R
+
+/-- `R/ₛR` is idempotent: `(R/ₛR)(R/ₛR) = R/ₛR` (§2.351).  Transitivity gives `⊑`,
+    reflexivity `⊒`, so *admires the same people* is an equivalence relation. -/
+public theorem symmDiv_self_idem {a b : 𝒜} (R : a ⟶ b) :
+    (R /ₛ R) ≫ (R /ₛ R) = R /ₛ R := by
+  apply le_antisymm (symmDiv_comp R R R)
+  calc
+    R /ₛ R = (Cat.id a) ≫ (R /ₛ R) := by rw [Cat.id_comp]
+    _ ⊑ (R /ₛ R) ≫ (R /ₛ R) := comp_mono_right (symmDiv_self_reflexive R) _
 
 /-! ## §2.312  Left division
 
@@ -884,7 +898,7 @@ theorem one_inter_eq_one_inter_recip {a : 𝒜} (M : a ⟶ a) :
 
 /-- **§2.357**: `Dom(R/ₛS) = 1 ∩ (R/S)(S/R)`.  Unfold `R/ₛS = (R/S) ∩ (S/R)°`, apply `dom_inter`,
     then `(S/R)°(R/S)° = ((R/S)(S/R))°` (`recip_comp`) and `1 ∩ X° = 1 ∩ X`. -/
-theorem dom_symmDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
+public theorem dom_symmDiv {a b c : 𝒜} (R : a ⟶ c) (S : b ⟶ c) :
     dom (R /ₛ S) = Cat.id a ∩ (R / S) ≫ (S / R) := by
   dsimp only [symmDiv]
   rw [dom_inter, ← Allegory.recip_comp, ← one_inter_eq_one_inter_recip]
