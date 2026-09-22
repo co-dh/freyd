@@ -94,19 +94,60 @@ public theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
 -- `boolMerge`, but a picture drawn from the statement can only write what the statement names, and
 -- `Bool` at all four corners says nothing about which end of `R` a corner is.  Named here, each
 -- corner is `A×A`, `A`, `B×B`, `B` and each side is `R×R`, `R`, `π₁∩π₂`.
+/-- A SUBSET OF AN OBJECT of `Rel(Set)` — what a relation sends a point to, and so what a trace
+    through a square carries at every corner after its first.  Its own type, and not the bare
+    predicate, so `∅` and `{x}` are the spellings a trace is written and drawn in. -/
+@[expose] public def RelSet.Sub (α : Type u) : Type u := α → Prop
+
+public instance (α : Type u) : EmptyCollection (RelSet.Sub α) := ⟨fun _ => False⟩
+public instance (α : Type u) : Singleton α (RelSet.Sub α) := ⟨fun a x => x = a⟩
+
+/-- THE SUBSET A RELATION REACHES from one: the elements `R` relates a member of `s` to.  One step
+    of a trace, from the corner `s` stands at to the corner along `R` from it.  The relation comes
+    FIRST because it is what says which two objects the step is between. -/
+@[expose] public def RelSet.img {A B : RelSet.{u}} (R : A ⟶ B) (s : RelSet.Sub A.carrier) :
+    RelSet.Sub B.carrier := fun y => ∃ x, s x ∧ R x y
+
 namespace MeetCounterex
 
-public def A : RelSet.{0} := ⟨Bool⟩
-public def B : RelSet.{0} := ⟨Bool⟩
-public def R : A ⟶ B := boolMerge
+-- `expose`: the trace below is pinned at `Bool` and its values are elaborated against these, so
+-- their definitions have to cross the module boundary.
+@[expose] public def A : RelSet.{0} := ⟨Bool⟩
+@[expose] public def B : RelSet.{0} := ⟨Bool⟩
+@[expose] public def R : A ⟶ B := boolMerge
+
+/-- The note's `A=B≜{0,1}`: `Bool`'s two elements written the way the note writes them, so a value
+    this file pins is also the value a picture drawn from it sets under a corner. -/
+public instance : OfNat Bool 0 := ⟨false⟩
+public instance : OfNat Bool 1 := ⟨true⟩
 
 end MeetCounterex
+
+-- The rest of the file writes the trace in the note's `0`, `1` for `Bool`'s two elements.
+open MeetCounterex
 
 /-- **THE FAILING SQUARE, at the witnesses `laxNatural_inter_false` is proved from.**  `(0,1)` lies
     in `(R×R)(π₁∩π₂)` — route both components to `0`, where the diagonal accepts them — and not in
     `(π₁∩π₂)R`, which already needs `0=1`.  Stated as its own theorem because the existential
-    below names nothing a picture could stand at: the corners and the four sides are here. -/
-public theorem inter_not_laxNatural_square :
+    below names nothing a picture could stand at: the corners and the four sides are here.
+
+    THE ELEMENT TRACE, corner by corner: `_at` says what a corner carries, `_step` which edge
+    carried it there — the two routes out of `(0,1)`, so the corner `B` carries `{0}` across-then-
+    down and `∅` down-then-across.  Hypotheses, because the trace is what the refutation HANDS this
+    square; `laxNatural_inter_false` below discharges every one of them, so no value here is
+    assumed. -/
+public theorem inter_not_laxNatural_square
+    {aa : Bool × Bool} (_at_aa : aa = (0, 1))
+    {bb : Bool × Bool} (_at_bb : bb = (0, 0))
+    (_step_aa_bb : (Δ RelSet.{0}).map MeetCounterex.R aa bb)
+    {b₁ : RelSet.Sub Bool} (_at_b₁ : b₁ = {(0 : Bool)})
+    (_step_bb_b₁ : b₁ = RelSet.img ((relProd MeetCounterex.B MeetCounterex.B).outl
+      ∩ (relProd MeetCounterex.B MeetCounterex.B).outr) {bb})
+    {a₁ : RelSet.Sub Bool} (_at_a₁ : a₁ = ∅)
+    (_step_aa_a₁ : a₁ = RelSet.img ((relProd MeetCounterex.A MeetCounterex.A).outl
+      ∩ (relProd MeetCounterex.A MeetCounterex.A).outr) {aa})
+    {b₂ : RelSet.Sub Bool} (_at_b₂ : b₂ = ∅)
+    (_step_a₁_b₂ : b₂ = RelSet.img MeetCounterex.R a₁) :
     ¬ ((Δ RelSet.{0}).map MeetCounterex.R
           ≫ ((relProd MeetCounterex.B MeetCounterex.B).outl
               ∩ (relProd MeetCounterex.B MeetCounterex.B).outr)
@@ -118,19 +159,37 @@ public theorem inter_not_laxNatural_square :
     RelSet.le_iff.mp h (false, true) false
       ⟨(false, false), (delta_map_apply boolMerge _ _).mpr ⟨rfl, rfl⟩, rfl, rfl⟩
   exact absurd (hl.symm.trans hr) (by decide)
+open MeetCounterex in
 /-- **The `∩` case of `union_slides` is FALSE in its LAX NATURALITY reading too.**  The two
     projections `π₁, π₂ : Δ ⟶ 1` are both lax natural (`outl_lax_natural`, `outr_lax_natural`) and
     their meet is the diagonal `{((x,x),x)}`.  At `R = {(false,false),(true,false)}`, which merges
     both elements onto one, `((false,true),false)` lies in `(R×R) ≫ (π₁∩π₂)` — route both components
     to `false`, where the diagonal accepts them — but not in `(π₁∩π₂) ≫ R`, which already needs
     `false = true`.  The step that fails is the last one of `union_slides`'s calculation:
-    `(π₁ ≫ R) ∩ (π₂ ≫ R) ⊑ (π₁ ∩ π₂) ≫ R` is semi-distributivity BACKWARDS. -/
+    `(π₁ ≫ R) ∩ (π₂ ≫ R) ⊑ (π₁ ∩ π₂) ≫ R` is semi-distributivity BACKWARDS.
+
+    The trace the square is stated with is DISCHARGED here, step by step: every value it pins is
+    computed, so a picture drawn from that square draws four values this proof checked. -/
 public theorem laxNatural_inter_false :
     ∃ (F G : Relator RelSet.{0} RelSet.{0}) (φ ψ : ∀ A, G.obj A ⟶ F.obj A),
       LaxNatural F G φ ∧ LaxNatural F G ψ ∧ ¬ LaxNatural F G (fun A => φ A ∩ ψ A) :=
   ⟨Relator.idRelator RelSet.{0}, Δ RelSet.{0}, fun A => (relProd A A).outl,
     fun A => (relProd A A).outr, outl_lax_natural, outr_lax_natural,
-    fun h => inter_not_laxNatural_square (h boolMerge)⟩
+    fun h => inter_not_laxNatural_square rfl rfl
+      ((delta_map_apply boolMerge _ _).mpr ⟨rfl, rfl⟩)
+      rfl (funext fun _ => propext (by
+        constructor
+        · intro hy; exact ⟨((0, 0) : Bool × Bool), rfl, hy, hy⟩
+        · intro ⟨x, hx, hl, _⟩; subst hx; exact hl))
+      rfl (funext fun _ => propext (by
+        constructor
+        · intro hy; exact hy.elim
+        · intro ⟨x, hx, hl, hr⟩; subst hx; exact Bool.noConfusion (hl.symm.trans hr)))
+      rfl (funext fun _ => propext (by
+        constructor
+        · intro hy; exact hy.elim
+        · intro ⟨_, hx, _⟩; exact hx.elim))
+      (h boolMerge)⟩
 
 /-- **The converse of a lax natural transformation need not be lax natural**, so `recip_oplax`
     (A5_7) is the whole truth about `φ°`.  `φ = π₂ : Δ ⟶ 1` and the same merging

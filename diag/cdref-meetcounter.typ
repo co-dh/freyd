@@ -17,7 +17,13 @@
   lab(0, 0, TCOL, rot: -45deg)[$subset.eq.sq.not$]
   node(TL.at(0), TL.at(1), black, `A×A`); node(TR.at(0), TR.at(1), black, `A`)
   node(BL.at(0), BL.at(1), black, `B×B`); node(BR.at(0), BR.at(1), black, `B`)
-  // The trace `(0,1) ↦ {0} ⋢ ∅` stood outside the corners here: four POINTS, which no arrow
-  // equation names and no exported node carries, so the panel cannot draw them and the gate counted
-  // each one a difference.  The square itself is what this row says: `∩` is ONE bead on it.
+  // THE TRACE, back at the corners it belongs to: the statement pins each value and names the edge
+  // that carried it (`inter_not_laxNatural_square`), so the panel stands them under the corners and
+  // this drawing does too.  Each wears its route's colour, and `(0,1)`, which both routes leave, is
+  // black; the corner `B` carries the two routes' two answers.
+  lab(TL.at(0), TL.at(1) - 0.62, black)[`(0,1)`]
+  lab(BL.at(0), BL.at(1) - 0.62, GIVEN2)[`(0,0)`]
+  lab(TR.at(0), TR.at(1) - 0.62, GIVEN1)[`∅`]
+  lab(BR.at(0), BR.at(1) - 0.62, GIVEN2)[`{0}`]
+  lab(BR.at(0), BR.at(1) - 1.12, GIVEN1)[`∅`]
 })

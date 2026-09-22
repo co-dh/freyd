@@ -434,9 +434,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 #v(4pt)
 #capbox(
   leancd("Freyd.Alg.inter_not_laxNatural_square"),
-  [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` \
-   `π₁,π₂ : Δ⇒Id` are both LaTs #h(4pt) #src[@party-mono-branch's `g` row] #h(4pt) and
- `π₁∩π₂={((x,x),x)}` #h(4pt) #src[]],
+  [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
    // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
 )]]<meet-counterex>
 
