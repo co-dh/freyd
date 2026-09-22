@@ -70,6 +70,8 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart cod
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
   RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive MonotonicAlg
   RelSet.CL.ConsList.cons RelSet.Tour.Qc
+  RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
+  RelSet.ListRel.zeros RelSet.ListRel.pluss
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,

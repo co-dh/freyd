@@ -326,6 +326,16 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
   let ods ← getOpenDecls
   let lctx ← getLCtx
   let used := e.getUsedConstants
+  -- A `fun` THE PRINTER COULD NOT REWRITE IS LEAN'S LAMBDA ON THE PAGE.  `graph fun q => q.1 + q.2`
+  -- came out `⦇[nil,fst]⦈` — a cell naming a projection where the law adds two numbers, which no
+  -- gate downstream can tell from a right one.  What the note writes there is the algebra's NAME,
+  -- which the book already has (`[zero,plus]`), so the fix is a `def` in the Lean source and never
+  -- a spelling here.
+  if let some f := stx.find? (·.isOfKind ``Lean.Parser.Term.fun) then
+    throwError "the label of `{← Meta.ppExpr e}` writes the lambda `{f}` as Lean spells it: a \
+      binder has no name the note can write and no port a reader can check.  Give the algebra a \
+      `def` of its own under the book's word for it — `zero`, `plus`, `div` — beside the \
+      declaration it is folded with, and tag it `diag_noted` in diag/StrDiagNames.lean"
   for n in stxIdents stx do
     if (lctx.findFromUserName? n).isSome then continue
     -- A NAME THE TERM DOES NOT CONTAIN IS NOT A CONSTANT THE LABEL WROTE: a binder the printer
