@@ -783,6 +783,24 @@ public theorem wrap_natural {B : Type} (R : dE A ⟶ dE B) :
   · rintro ⟨b, hab, rfl⟩
     exact ⟨ConsList.cons a (ConsList.wrap ()), rfl, hab, trivial⟩
 
+/-- **`α = [nil,cons]`** (note `takewhile`): the initial list algebra IS the junction of its two
+    constructors, which is what the note's `α` cell claims and nothing else states. -/
+public theorem alphaR_eq_junc :
+    (alphaR : (F Unit A).obj (dList A) ⟶ dList A)
+      = junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR consR := by
+  apply hom_ext; intro u w
+  cases u with
+  | inl d =>
+    refine ⟨fun h => Or.inl ⟨d, rfl, h⟩, fun h => ?_⟩
+    rcases h with ⟨z, hz, hw⟩ | ⟨_, hq, _⟩
+    · cases Sum.inl.inj hz; exact hw
+    · exact nomatch hq
+  | inr p =>
+    refine ⟨fun h => Or.inr ⟨p, rfl, h⟩, fun h => ?_⟩
+    rcases h with ⟨_, hz, _⟩ | ⟨q, hq, hw⟩
+    · exact nomatch hz
+    · cases Sum.inr.inj hq; exact hw
+
 /-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is
     STRICT: `α list(R) = F(R,list R) α`.  The `nil` branch is the leaf identity, the `cons` branch is
     `cons_natural` read off the constructors — so the note's `α` bead is a natural transformation
@@ -867,6 +885,28 @@ public theorem list_graph {B : Type} (f : A → B) :
   apply hom_ext; intro x y
   show listP (graph f) x y ↔ y = cmap f x
   exact listP_graph f x y
+
+/-! ### `inits` and `tails` (B&dM §5.6 p.130), the two listings of prefixes and suffixes -/
+
+/-- **`inits`** (note `comb-fns`): the prefixes of a list, by INCREASING length — `nil` first, the
+    whole list last.  Stated after `cmap`, which the `cons a` onto every prefix of the tail needs. -/
+@[expose] public def initsFn : ConsList Unit A → ConsList Unit (ConsList Unit A)
+  | ConsList.wrap _ => ConsList.cons (ConsList.wrap ()) (ConsList.wrap ())
+  | ConsList.cons a x => ConsList.cons (ConsList.wrap ()) (cmap (ConsList.cons a) (initsFn x))
+
+/-- `inits : [A] ⟶ [[A]]`, the graph of `initsFn`. -/
+@[expose] public def initsR : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
+  graph initsFn
+
+/-- **`tails`** (note `comb-fns`): the suffixes of a list, by DECREASING length — the whole list
+    first, `nil` last, the opposite order to `inits`. -/
+@[expose] public def tailsFn : ConsList Unit A → ConsList Unit (ConsList Unit A)
+  | ConsList.wrap _ => ConsList.cons (ConsList.wrap ()) (ConsList.wrap ())
+  | ConsList.cons a x => ConsList.cons (ConsList.cons a x) (tailsFn x)
+
+/-- `tails : [A] ⟶ [[A]]`, the graph of `tailsFn`. -/
+@[expose] public def tailsR : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
+  graph tailsFn
 
 /-! ### `total f = sum·list f`, the shape every case study's cost has -/
 
