@@ -10,6 +10,7 @@
 module
 
 public import AOP.A6_1_RelSet
+public import AOP.A5_5_TypeFunctor
 -- for `F_eq_sum_prod`: the `+` half of the generic relator combination lives in §5.3.
 public import AOP.A5_3
 
@@ -50,12 +51,20 @@ public inductive ConsList (L E : Type) where
 /-- Carrier of `F X`. -/
 @[expose] public def Fobj (L E : Type) (C : RelSet.{0}) : RelSet.{0} := ⟨L ⊕ (E × C.carrier)⟩
 
-/-- Action of `F` on a relation: identity on the `L` summand, `id × R` on `E × X`. -/
-@[expose] public def Fmap (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj L E C ⟶ Fobj L E c' :=
+/-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
+    on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
+    square needs the action that moves it. -/
+@[expose] public def Fbimap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R : dE E ⟶ dE E')
+    (S : C ⟶ c') : Fobj L E C ⟶ Fobj L E' c' :=
   fun u v => match u, v with
     | Sum.inl d, Sum.inl d' => d = d'
-    | Sum.inr p, Sum.inr q => p.1 = q.1 ∧ R p.2 q.2
+    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
     | _, _ => False
+
+/-- Action of `F` on a relation: identity on the `L` summand, `id × R` on `E × X` — the binary
+    action with the element type held still, which is the ONE definition either reads. -/
+@[expose] public def Fmap (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj L E C ⟶ Fobj L E c' :=
+  Fbimap L (𝟙 (dE E)) R
 
 @[simp] theorem Fmap_ll (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') (d d' : L) :
     Fmap L E R (Sum.inl d) (Sum.inl d') = (d = d') := rfl
@@ -107,6 +116,54 @@ public inductive ConsList (L E : Type) where
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
       first | exact id | exact fun hh => ⟨hh.1, le_iff.mp h _ _ hh.2⟩ | exact False.elim
 
+/-- **The cons-list base BIFUNCTOR `F(A,X) = L + A×X`** — B&dM §7.4's `F`, the one the cylinder
+    is folded over: the element type is an ARGUMENT, not a parameter, because `AOP.A7_4_Cylinder`
+    fixes `A` in one slot and the `n`-tuple `N(A)` in the other and needs both partial
+    applications of the SAME functor.  `Fbimap` is its action, so `F L E` above is its partial
+    application and nothing is defined twice (`F_eq_appl`). -/
+@[expose] public def FB (L : Type) : BiRelator RelSet.{0} where
+  obj a x := Fobj L a.carrier x
+  map R S := Fbimap L R S
+  map_id A B := (F L A.carrier).map_id B
+  map_comp R R' S S' := by
+    apply hom_ext; intro u w
+    constructor
+    · intro h
+      cases u with
+      | inl d => cases w with
+        | inl d' => exact ⟨Sum.inl d, rfl, h⟩
+        | inr q => exact h.elim
+      | inr p => cases w with
+        | inl d' => exact h.elim
+        | inr q =>
+            obtain ⟨⟨e, h1, h2⟩, ⟨x, h3, h4⟩⟩ := h
+            exact ⟨Sum.inr (e, x), ⟨h1, h3⟩, ⟨h2, h4⟩⟩
+    · rintro ⟨v, hv, hw⟩
+      cases u with
+      | inl d => cases v with
+        | inl d' => cases w with
+          | inl d'' => exact hv.trans hw
+          | inr q => exact hw.elim
+        | inr q => exact hv.elim
+      | inr p => cases v with
+        | inl d => exact hv.elim
+        | inr q => cases w with
+          | inl d => exact hw.elim
+          | inr r => exact ⟨⟨q.1, hv.1, hw.1⟩, ⟨q.2, hv.2, hw.2⟩⟩
+  map_mono h1 h2 := le_iff.mpr fun u v hu => by
+    cases u with
+    | inl d => cases v with
+      | inl d' => exact hu
+      | inr q => exact hu.elim
+    | inr p => cases v with
+      | inl d => exact hu.elim
+      | inr q => exact ⟨le_iff.mp h1 _ _ hu.1, le_iff.mp h2 _ _ hu.2⟩
+
+/-- **`F(A,−) = F L A`**: the unary relator the list's initial algebra is taken over IS the
+    bifunctor with its first argument fixed, definitionally — which is what lets `CL.initial`
+    stand as the `I` and `J` of `AOP.A7_4_Cylinder`'s setting. -/
+public theorem F_eq_appl (L E : Type) : (FB L).appl (dE E) = F L E := rfl
+
 /-- `F` preserves converse. -/
 public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
   intro C c' R
@@ -127,7 +184,7 @@ public theorem F_eq_sum_prod (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
       = (F L E).map R := by
   apply hom_ext; intro u v
   cases u <;> cases v <;>
-    simp [F, Fmap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
+    simp [F, Fmap, Fbimap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
       RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> grind
 
 /-- **`F(R) = 𝟙 + 𝟙×R`** in the coproduct calculus: `F`'s action as a `sumMap` over the concrete
@@ -159,16 +216,6 @@ public theorem Fmap_comp_junc (L E : Type) {C c' D : RelSet.{0}} (S : C ⟶ c')
     (F L E).map S ≫ junc (sumCop (dL L) ⟨E × c'.carrier⟩) T U
       = junc (sumCop (dL L) ⟨E × C.carrier⟩) T (rprodMap (𝟙 (dE E)) S ≫ U) := by
   rw [Fmap_eq_sumMap, sumMap_junc, Cat.id_comp]
-
-/-- The BINARY action `F(R,S)` of the bifunctor `F(E,X) = L+E×X`: the identity on the leaf, `R×S`
-    on the pair.  `Fmap` is its `R=𝟙` case — the element type is what `α` is natural in, so the
-    square needs the action that moves it. -/
-@[expose] public def Fbimap (L : Type) {E E' : Type} {C c' : RelSet.{0}} (R : dE E ⟶ dE E')
-    (S : C ⟶ c') : Fobj L E C ⟶ Fobj L E' c' :=
-  fun u v => match u, v with
-    | Sum.inl d, Sum.inl d' => d = d'
-    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
-    | _, _ => False
 
 /-- **`F(R,S) = 𝟙 + R×S`** as a `sumMap`, which is how the lane reading spells the source of `α`:
     a coproduct end is read summand by summand.  `Fmap_eq_sumMap` is the `R=𝟙` case, and its proof
