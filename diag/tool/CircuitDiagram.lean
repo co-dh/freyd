@@ -195,6 +195,10 @@ partial def objOf (o : Expr) : MetaM Obj := do
   | (``Freyd.Functor.obj, args) =>
     match StrDiag.lastTwo args with
     | some (f, b) => do
+      -- A CONSTANT RELATOR'S ACTION IS THE OBJECT IT IS CONSTANTLY (`constRelatorObj?`): the wire
+      -- carries `EV`, not `EV(X)`.  INSTANTIATED first, because a lane the reader BUILT carries
+      -- metavariables and a head test on the raw expression reads `?m`.
+      if let some v := StrDiag.constRelatorObj? (← instantiateMVars f) then return ← objOf v
       -- The RELATOR NAMES ITSELF and its type parameters name nothing: `F(list⁺(A))`, never
       -- `TT.F A(list⁺(A))`, because those parameters are the types the wires already carry.
       let n ← do pure ((← StrDiag.relatorName? f).getD (← plain f))
