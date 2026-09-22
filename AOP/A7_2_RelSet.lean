@@ -29,12 +29,12 @@ namespace Freyd.Alg.RelSet
 @[expose] public def sums (xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier) :
     (pow (⟨Nat⟩ : RelSet.{0})).carrier := fun n => ∃ x y, xs x ∧ ys y ∧ Nat.add x y = n
 
-/-- `min(xs)` — the least member of `xs`, the point `est(≤)` sends `xs` to.  A FUNCTION OF THE SET,
-    as the corner it labels is: a set of naturals is `Nat → Prop` and undecidable, so no search
-    computes its least member and `Classical.choose` names the one `est leRel xs` asserts; `0` where
-    `xs` has none, which the `est leRel xs min(xs)` of `plus_distributes_le` rules out. -/
-@[expose] public noncomputable def minOf (xs : (pow (⟨Nat⟩ : RelSet.{0})).carrier) : Nat :=
-  open Classical in if h : ∃ a, est leRel xs a then Classical.choose h else 0
+/-- `min(xs)` — the least member of `xs`, the point `est(≤)` sends `xs` to; `xs` stays explicit
+    because it is what the printed corner shows.  The witness is a binder, not `Classical.choose`:
+    a set of naturals is `Nat → Prop`, nothing computes its least member, and the statement is about
+    sets that have one. -/
+@[expose] public def minOf (xs : (pow (⟨Nat⟩ : RelSet.{0})).carrier)
+    (m : {a // est leRel xs a}) : Nat := m.val
 
 /-- **`+` distributes over `≤`** — `Distributes` (§7.2) at `Rel(Set)`'s `+` and `est(≤)`: the
     smallest sum of a member of `xs` and a member of `ys` is the sum of the smallest of each.
@@ -44,12 +44,13 @@ namespace Freyd.Alg.RelSet
     context — `(xs,ys)` names binders of it — where an attribute is elaborated outside it. -/
 public theorem plus_distributes_le
     {xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
-    (_ha : est leRel xs (minOf xs)) (_hb : est leRel ys (minOf ys))
+    (mx : {a // est leRel xs a}) (my : {a // est leRel ys a})
     {fea : ((Δ RelSet.{0}).obj (pow (⟨Nat⟩ : RelSet.{0}))).carrier} (_hfea : fea = (xs, ys))
     {ea : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
     (_hea : ea = sums xs ys)
-    {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier} (_hfa : fa = (minOf xs, minOf ys))
-    {c : Nat} (_hc : c = minOf xs + minOf ys) :
+    {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier}
+    (_hfa : fa = (minOf xs mx, minOf ys my))
+    {c : Nat} (_hc : c = minOf xs mx + minOf ys my) :
     Distributes (F := Δ RelSet.{0}) plusRel leRel := by
   refine RelSet.le_iff.mpr ?_
   rintro p w ⟨q, hq, hw⟩
