@@ -8,7 +8,7 @@
 
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; B&dM `R/S` = Freyd `(S \ R)`;
   B&dM `S\R` = Freyd `R / S`):
-  - B&dM `∈\∈` is `subset` (= Freyd's `subset`, `AOP.A7_1`).
+  - B&dM `∈\∈` is Freyd's `subset` (§2.442, `Freyd.S2_40`).
   - like `est R` (= B&dM `min R°`), `thinRel Q` folds the `°` into the argument — it is B&dM's
     `thin Q°` — so the direction is carried by the relation's name and the `est`/`thin` laws
     share their letters.  B&dM `∋·Q°` is `Q° ≫ (∋ a)°`, and `(∋·Q°)/∋` is

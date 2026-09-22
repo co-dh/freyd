@@ -309,7 +309,7 @@ public theorem subset_comp_eps_le : subset ≫ ∋ A ⊑ ∋ A := by
   exact div_self_comp_le (∋ A)
 
 /-- **Ex 7.1** mirrored: `∋°\(R/∋)` is unaffected by intersecting with the subset order,
-    `(subset)°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ subset°≫lb` (`id ⊑
+    `subset°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ subset°≫lb` (`id ⊑
     subset`).  `⊑`: `∋°≫subset°≫lb = (subset≫∋)°≫lb ⊑ ∋°≫lb ⊑ R` (`subset_comp_eps_le`). -/
 theorem recip_subset_comp_lb (R : A ⟶ A) :
     subset° ≫ (((∋ A)°) \ R) = (((∋ A)°) \ R) := by
