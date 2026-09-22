@@ -10,6 +10,9 @@
 -/
 import AOP.A5_5_TypeFunctor
 import AOP.A5_5
+-- `laxNatural_birel_eps_eps`, the verdict the exporter reads for the bifunctor family at `(∋,∋)`:
+-- proved beside the other power beads, in scope here because the exporter looks it up by name.
+import AOP.A5_7_PowerBeads
 -- The case studies whose beads the note names in its own words: each is here only because an
 -- unexpander below keys on one of its constants.
 import AOP.A7_2_RelSet
@@ -624,28 +627,5 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tuple.tupleP] public meta def unexpandTupleP : Unexpander
   | `($_ $n $R) => `(($(mkIdent `Vec) $n) $R)
   | _ => throw ()
-
--- THE VERDICT THE ALGEBRA OF `AOP.A8_2.thinning_paths_alg` NEEDS: the note draws what sits inside
--- the `⦇ ⦈` rather than the whole fold, so its source is the bifunctor at two DIFFERENT arguments.
-section
-universe u
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜} {F : BiRelator 𝒜}
-
-/-- `F(∋,∋)` IS LAX NATURAL in the first argument, for EVERY binary relator and every second
-    argument: `F.map_comp` collapses the two composites to `F` of one relation, and what is left
-    is `E(R)∋⊑∋R` under `F`.  The exporter needs a verdict for the family it cannot split, and
-    `laxNatural_outside` only covers the one-argument steps `F(∋,𝟙)`, `F(𝟙,∋)`. -/
-theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
-    LaxNatural (Relator.comp (Relator.idRelator 𝒜) (F.appr B))
-      (Relator.comp (Relator.comp (Relator.idRelator 𝒜) powerRelator)
-        (F.appr (PowerAllegory.powerObj B)))
-      (fun a => F.map (∋ a) (∋ B)) := by
-  intro a b R
-  show F.map (powerRel R) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (∋ b) (∋ B)
-      ⊑ F.map (∋ a) (∋ B) ≫ F.map R (𝟙 B)
-  rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
-  exact F.map_mono (powerRel_eps_lax R) (le_refl _)
-
-end
 
 end Freyd.Alg

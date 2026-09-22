@@ -34,7 +34,9 @@
 module
 
 public import AOP.A6_SnocList
-public import AOP.A7_2
+-- `Λ`/`est`/`E` read pointwise at Rel(Set), where §7.1's `est` and §6.1's set model first meet;
+-- the packaging below reads the greedy conclusion off them rather than re-proving them.
+public import AOP.A7_2_RelSet
 
 set_option linter.unusedVariables false
 
@@ -62,89 +64,7 @@ public theorem greedy_of_refinement_mono (hFr : F.PreservesRecip) (I : InitialAl
 
 end Abstract
 
-/-! ## Concrete Rel(Set) helpers: `Λ` is the classifier, and `est` pointwise -/
-
 namespace RelSet
-
-/-- In Rel(Set) the transpose `Λ` is the concrete `classifier` (graph of `x ↦ {y | R x y}`):
-    both are maps whose composition with `∋` is `R`, and that map is unique. -/
-public theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classifier R :=
-  ((Λ_UP R (f := classifier R) (graph_map _)).mpr (classifier_comp_eps R)).symm
-
-/-- Pointwise form of `est` in Rel(Set): `w` is a `est R`-choice of the set `P` iff
-    `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
-public theorem est_apply {A : RelSet.{0}} (R : A ⟶ A)
-    (P : (PowerAllegory.powerObj A).carrier) (w : A.carrier) :
-    (est R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
-
-/-- Pointwise form of `Λ T ≫ est R` ((7.5) unbundled): `w` is an `est R`-choice over the
-    `T`-image of `x` iff `T x w` and `w` `R`-dominates every `T`-image `z` of `x`. -/
-public theorem Λ_comp_est_apply {B A : RelSet.{0}} (T : B ⟶ A) (R : A ⟶ A) (x : B.carrier)
-    (w : A.carrier) : (Λ T ≫ est R) x w ↔ T x w ∧ ∀ z, T x z → R w z := by
-  rw [Λ_eq_classifier]
-  constructor
-  · rintro ⟨P, hP, hest⟩
-    have hPeq : P = fun v => T x v := hP
-    subst hPeq
-    exact (est_apply R _ w).mp hest
-  · rintro ⟨hT, hall⟩
-    exact ⟨fun v => T x v, rfl, (est_apply R _ w).mpr ⟨hT, hall⟩⟩
-
-/-- Pointwise form of `E R` in Rel(Set): the `E R`-image of a set `P` is the set of all
-    `R`-images of its members. -/
-public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) : existsImage R P Q ↔ Q = fun w => ∃ s, P s ∧ R s w := by
-  show Λ (epsRel A ≫ R) P Q ↔ _
-  rw [Λ_eq_classifier]
-  exact Iff.rfl
-
-/-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
-    of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/
-public theorem existsImage_comp_est_apply {A B : RelSet.{0}} (T : A ⟶ B) (R : B ⟶ B)
-    (P : (pow A).carrier) (w : B.carrier) :
-    (existsImage T ≫ est R) P w
-      ↔ (∃ s, P s ∧ T s w) ∧ ∀ z, (∃ s, P s ∧ T s z) → R w z := by
-  constructor
-  · rintro ⟨Q, hQ, hest⟩
-    have hQeq : Q = fun v => ∃ s, P s ∧ T s v := (existsImage_apply T P Q).mp hQ
-    subst hQeq
-    exact (est_apply R _ w).mp hest
-  · intro h
-    exact ⟨_, (existsImage_apply T P _).mpr rfl, (est_apply R _ w).mpr h⟩
-
-/-! ## Honest headline: a deterministic solver IS `Λspec ≫ est D`
-
-  This is the bridge that lets an optimization case study state its headline as the actual
-  morphism equation `solve = Λ spec ≫ est D` (§7.5's `max D · Λ spec`), instead of only in
-  prose.  It consumes exactly the two halves the case study already proves — achievability
-  (`hsound`) and domination (`hbest`) — plus antisymmetry of the preference order `D`, which
-  pins the maximum uniquely so `solve` (a map) equals it. -/
-
-/-- **Morphism-equation headline for a maximization solver.**  If `solveFn` always produces a
-    `spec`-value (`hsound`) that `D`-dominates every `spec`-value (`hbest`), and the preference
-    order `D` is antisymmetric, then `graph solveFn = Λ spec ≫ est D` — the program is exactly
-    `max D · Λ spec` as a relation, not merely pointwise.  For a `≤`-maximum take `D w z := z ≤ w`;
-    for a `≤`-minimum take `D w z := w ≤ z` (`est` of the reversed order). -/
-public theorem eq_Λ_comp_est {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet.{0}) ⟶ ⟨V⟩)
-    (hanti : ∀ x y : V, D x y → D y x → x = y)
-    (solveFn : d.carrier → V) (spec : d ⟶ (⟨V⟩ : RelSet.{0}))
-    (hsound : ∀ xs, spec xs (solveFn xs))
-    (hbest : ∀ xs v, spec xs v → D (solveFn xs) v) :
-    (graph solveFn : d ⟶ (⟨V⟩ : RelSet.{0})) = Λ spec ≫ est D := by
-  apply hom_ext; intro xs w
-  rw [comp_apply]
-  constructor
-  · intro hw
-    have hwe : w = solveFn xs := hw
-    subst hwe
-    refine ⟨fun v => spec xs v, ?_, (est_apply D _ _).mpr ⟨hsound xs, hbest xs⟩⟩
-    rw [Λ_eq_classifier]; rfl
-  · rintro ⟨P, hAP, hmax⟩
-    rw [Λ_eq_classifier] at hAP
-    have hPeq : P = fun v => spec xs v := hAP
-    subst hPeq
-    obtain ⟨hmem, hdomw⟩ := (est_apply D _ _).mp hmax
-    exact hanti w (solveFn xs) (hdomw (solveFn xs) (hsound xs)) (hbest xs w hmem)
 
 /-! ## The Horner correctness packaging over snoc-lists -/
 
