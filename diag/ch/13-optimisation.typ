@@ -713,7 +713,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [nothing, or a head and a tail],
 
   [`nil`, `cons`], [`[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns]],
-  [`𝟏⟶[A]`, #h(4pt) `A×[A]⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.nilAtUnit"), #h(4pt) #leant("Freyd.Alg.RelSet.ListRel.consAtUnit")],
   [`cons(3,[1,2])=[3,1,2]`],
   [the empty list; a head onto a tail],
 

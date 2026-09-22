@@ -4,7 +4,7 @@
 #import "circuit.typ": wire, gbox, boxrun, boxrun-w, tape, tape-join, LEAD, frc, TAPEEDGE, est-R-box, union-box
 #import "dpanel.typ": dpanel, hm-meta
 #import "cetz-nodraw.typ" as cetz
-#import "note-prelude.typ": lean
+#import "note-prelude.typ": lean, leant
 
 = Appendix <sec-appendix>
 
@@ -122,58 +122,58 @@
   table.header([*definition*], [*type*], [*note*]),
 
   [`F(A,X)=A+A×X`],
-  [`𝒜×𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.RelSet.CL.F")],
   [The base functor: one square of the new column, alone or in front of the path so far.],
 
   [`L=list⁺`],
-  [`𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.RelSet.ListRel.nelistRelator")],
   [A path is a non-empty list of squares, one per column crossed.],
 
   [`α` the initial algebra],
-  [`F(A,LA)⟶LA`],
+  [#leant("Freyd.Alg.RelSet.CL.alphaR")],
   [`α(5)=[5]` and `α(1,[5])=[1,5]`: a path is started by one square, or extended by one.],
 
   [`N` \ the `n`-tuple relator],
-  [`𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.Vec.Rel.tupleRelator")],
   [One component per row of a column, so the fold carries `n` answers at once.],
 
   [`R≜sum≤sum°`],
-  [`L Nat⟶L Nat`],
+  [#leant("Freyd.Alg.RelSet.Tuple.costLE")],
   [The cost of a path, which the cheapest minimises.],
 
   [`setify`],
-  [`NA⟶EA`],
+  [#leant("Freyd.Alg.RelSet.Tuple.setify")],
   [`setify(1,2,3,4)={1,2,3,4}` — which row a component came from is forgotten.],
 
   [`moves`],
-  [`NA⟶E(NA)`],
+  [#leant("Freyd.Alg.RelSet.Tuple.moves")],
   [`moves(x)={up(x),x,down(x)}` — rotated up, unrotated, rotated down.],
 
   [`trans`],
-  [`E(NA)⟶N(EA)`],
+  [#leant("Freyd.Alg.RelSet.Tuple.transT")],
   [`trans{(a,b,c),(x,y,z)}=({a,x},{b,y},{c,z})` — component `k` of the result is the set of the `k`-th components.],
 
   [`zip`],
-  [`F(NA,NB)⟶NF(A,B)`],
+  [#leant("Freyd.Alg.RelSet.Tuple.zipF")],
   [`zip((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))=((1,{[5]}),(2,{[6]}),(3,{[7]}),(4,{[8]}))`.],
 
   [`cp≜` $frac(#[`F(𝟙,∋)`], ∋)$],
-  [`F(A,EB)⟶E(F(A,B))`],
+  [#leant("Freyd.Alg.RelSet.Tuple.cp")],
   [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`.],
 
   [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
    // lean:AOP.A7_4_Cylinder.gen@45b06f1c
-  [`F(NA,N(E(LA)))⟶N(E(LA))`],
+  [#leant("Freyd.Alg.Cylinder.gen")],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [`paths≜⦇gen⦈ setify union` #src[]],
   // lean:AOP.A7_4_Cylinder.paths@07e87d35
-  [`L N Nat⟶E(L Nat)`],
+  [#leant("Freyd.Alg.RelSet.Tuple.pathsRel")],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
   [the specification \ `paths est(R)`],
-  [`L N Nat⟶L Nat`],
+  [#leant("Freyd.Alg.RelSet.Tuple.cheapest")],
   [A cheapest path from the entry side to the exit side.],
 )]<cyl-defn>
 

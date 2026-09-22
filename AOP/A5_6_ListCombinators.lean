@@ -801,6 +801,11 @@ public theorem alphaR_eq_junc :
     · exact nomatch hz
     · cases Sum.inr.inj hq; exact hw
 
+/-- `nil` and `cons` at the EMPTY leaf — the two factors of `alphaR_eq_junc`'s junction, named so
+    the note's `nil`,`cons` row takes its type cell from Lean instead of typing one by hand. -/
+@[expose] public def nilAtUnit : dL Unit ⟶ dList A := wrapR
+@[expose] public def consAtUnit : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := consR
+
 /-- **The free theorem of the initial list algebra `α=[nil,cons]`**, in the ELEMENT type, and it is
     STRICT: `α list(R) = F(R,list R) α`.  The `nil` branch is the leaf identity, the `cons` branch is
     `cons_natural` read off the constructors — so the note's `α` bead is a natural transformation
