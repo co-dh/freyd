@@ -327,6 +327,9 @@ public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : Corefl
 /-- The DOMAIN of R, denoted %mR in the book: 1 ∩ RR° (§2.122). -/
 @[expose] public def dom {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := Cat.id a ∩ R ≫ R°
 
+/-- The RANGE of R: the domain of the converse, `ran R = dom R°` (§2.122). -/
+@[expose] public def ran {a b : 𝒜} (R : a ⟶ b) : b ⟶ b := dom R°
+
 /-- Domain is coreflexive (§2.122). -/
 public theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : Coreflexive (dom R) :=
   inter_lb_left (Cat.id a) (R ≫ R°)
@@ -424,6 +427,10 @@ public theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a 
 
 /-- R is a MAP if it is entire and simple (§2.13). -/
 @[expose] public def Map {a b : 𝒜} (R : a ⟶ b) : Prop := Entire R ∧ Simple R
+
+/-- A map is entire, in the inequality form `1 ⊑ ff°` (§2.13). -/
+public theorem map_entire_le {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : 𝟙 a ⊑ f ≫ f° :=
+  entire_id_le hf.1
 
 /-! ## §2.133  Order on maps is discrete -/
 

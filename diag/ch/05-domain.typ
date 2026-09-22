@@ -4,8 +4,9 @@
 = Domain and range
 
 #disp[#definition[
-The *domain* #leanf("Freyd.Alg.dom") #src[] and the *range* `ran(R)≜dom(R°)`.
+The *domain* #leanf("Freyd.Alg.dom") #src[] and the *range* #leanf("Freyd.Alg.ran") #src[].
 // lean:Freyd.S2_10.dom@9e0aed7a
+// lean:Freyd.S2_10.ran@f86cb6e9
 ]]<dom-defn>
 
 // THE MEET FIRST, then the stub: the stub alone does not look like `𝟙 ∩ R R°` — one strand carries no

@@ -107,20 +107,20 @@ public theorem powerRel_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : powerR
     "`Pid = id` is the antisymmetry of subset" — here it is definitional via `symmDiv` plus
     Freyd's `Λ_eps_reflection` (§2.412 reflection law `Λ(∋) = id`).  With `R = id_a` the
     definition collapses to `((∋a)° \ (∋a)°) ∩ (∋a/∋a)`; the first term equals
-    `powerOrder°` on the nose (`(S \ R)` unfolds to `(R° / S°)°`, and `(∋a)°° = ∋a`), so the
-    whole meet is `powerOrder° ∩ powerOrder = powerOrder ∩ powerOrder°`, which is exactly
+    `subset°` on the nose (`(S \ R)` unfolds to `(R° / S°)°`, and `(∋a)°° = ∋a`), so the
+    whole meet is `subset° ∩ subset = subset ∩ subset°`, which is exactly
     the unfolding of `Λ (∋ a) = ∋a /ₛ ∋a`. -/
 public theorem powerRel_id {A : 𝒜} : powerRel (Cat.id A) = Cat.id (PowerAllegory.powerObj A) := by
-  have hterm1 : ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) = (powerOrder (a := A))° := by
+  have hterm1 : ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) = (subset (a := A))° := by
     have e : Cat.id A ≫ (∋ A)° = (∋ A)° := Cat.id_comp _
     rw [e]
-    show ((((∋ A)°)°) / (((∋ A)°)°))° = (powerOrder (a := A))°
+    show ((((∋ A)°)°) / (((∋ A)°)°))° = (subset (a := A))°
     rw [Allegory.recip_recip]
     rfl
   show ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) ∩ ((∋ A ≫ Cat.id A) / ∋ A)
       = Cat.id (PowerAllegory.powerObj A)
   rw [hterm1, Cat.comp_id]
-  show (powerOrder (a := A))° ∩ powerOrder (a := A) = Cat.id (PowerAllegory.powerObj A)
+  show (subset (a := A))° ∩ subset (a := A) = Cat.id (PowerAllegory.powerObj A)
   rw [Allegory.inter_comm]
   exact Λ_eps_reflection
 
