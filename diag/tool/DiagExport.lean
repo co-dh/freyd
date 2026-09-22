@@ -897,7 +897,7 @@ partial def toCell (e : Expr) : MetaM Cell := do
   -- `le_div_iff` are one Galois statement.  One picture for one operation.
   | (``Freyd.Diag.ClosedLinearBicat.residual, args) =>
     match lastTwo args with
-    | some (r, sd) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) false
+    | some (r, sd) => return .divbox (← labelAt StrDiag.Prec.factor r) (← labelAt StrDiag.Prec.factor sd) false
     | none => return .box (← label e)
   -- Division draws as LONG DIVISION.  `div` has no definition to unfold — it is a field of
   -- `DivisionAllegory` — but that is a reason to draw the universal property, not a reason to print
@@ -906,11 +906,11 @@ partial def toCell (e : Expr) : MetaM Cell := do
   -- `leftDiv` is the mirror, chamfer and divisor tile together, since `S \ R` lays `S` down first.
   | (``Freyd.Alg.DivisionAllegory.div, args) =>
     match lastTwo args with
-    | some (r, sd) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) false
+    | some (r, sd) => return .divbox (← labelAt StrDiag.Prec.factor r) (← labelAt StrDiag.Prec.factor sd) false
     | none => return .box (← label e)
   | (``Freyd.Alg.leftDiv, args) =>
     match lastTwo args with
-    | some (sd, r) => return .divbox (← labelAt 2 r) (← labelAt 2 sd) true
+    | some (sd, r) => return .divbox (← labelAt StrDiag.Prec.factor r) (← labelAt StrDiag.Prec.factor sd) true
     | none => return .box (← label e)
   -- Still dashed: no definition to unfold at any layer, and no quotient metaphor either.  `impl`
   -- and `symmDiv` are `Sup`s and `thenRel` is built from `impl`; a meet of two converses is not a

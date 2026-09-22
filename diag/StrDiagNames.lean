@@ -35,6 +35,10 @@ import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
+-- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
+-- row it cannot draw.
+import Freyd.S2_50
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
 import diag.tool.ExprReader
 
@@ -56,6 +60,18 @@ attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pai
 -- as a square, so a picture that has to say what produced a fold draws it; the drawer instantiates
 -- it by unifying its `⦇R⦈` with the fold in hand, never by this name.
 attribute [diag_defines] relCata_cancel
+
+-- WHICH NAMES THE NOTE WRITES AS LEAN DECLARES THEM.  A predicate the note names in its own tables
+-- (`R` entire, `R` a map, `R` symmetric), the domain and range operators, and a case study's own
+-- relation are already the note's words, so there is nothing for a printing rule to rewrite — the
+-- tag says so once per name, where an identity unexpander would say it in five lines each.  A
+-- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
+attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart codBox
+  BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
+  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive MonotonicAlg
+  RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
+  RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
+  RelSet.ListRel.zeros RelSet.ListRel.pluss
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,

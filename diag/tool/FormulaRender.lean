@@ -100,11 +100,38 @@ def render (declName : Name) (binder : Option String) (path : List String)
           throwError "{declName} has no binder `{h}`; its binders are \
             {String.intercalate ", " names.toList}"
       | none => pure body
+    -- EVERY EXPLICIT HYPOTHESIS PRINTS, joined by `∧` and followed by `⟹`.  A conditional law with
+    -- its condition dropped is a DIFFERENT law — `dom(R S)=𝟙` for `R,S` entire came out as the
+    -- claim that every composite is entire — and no gate downstream can tell that cell from a right
+    -- one.  EXPLICITNESS IS THE TEST: an instance, a `Decidable` and a typeclass reach the
+    -- telescope as instance binders, and an object or an arrow is not a `Prop`.  The conjunction is
+    -- built as a TERM and handed to the label, so the `∧`, its spacing and the brackets round an
+    -- operand are the one table's and not a second spelling here.
+    let cond ← if binder.isNone && path.isEmpty && branch.isEmpty then do
+        let hyps ← xs.filterM fun x => do
+          return (← x.fvarId!.getDecl).binderInfo.isExplicit
+            && (← Meta.isProp (← Meta.inferType x))
+        let tys ← hyps.mapM fun x => Meta.inferType x
+        pure (tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none)
+      else pure none
+    let ante ← match cond with
+      | some c => pure ((← labelAt (Prec.impl + 1) c) ++ implArrow)
+      | none => pure ""
     let target ← descend declName path body
     withBody declName branch target fun target' => do
-      match ← splitM target' with
-      | some (sym, l, r) => return (← label l) ++ sym ++ (← label r)
-      | none => label target'
+      -- A PREDICATE THE NOTE WRITES BY NAME IS NOT UNFOLDED HERE.  `splitM`'s delta step is there so
+      -- a statement with no sides still has two ends to DRAW; a formula has the note's own word for
+      -- it, and unfolding wrote `dom(R S)=𝟙` as the conclusion of a hypothesis that said
+      -- `Entire(R)` — one predicate in two vocabularies inside one cell.  `diag_noted` is the
+      -- declaration that the name IS the note's, so it is also the declaration that there is
+      -- nothing under it to open.
+      let noted ← Lean.labelled `diag_noted
+      let sides ← match target'.getAppFn.constName? with
+        | some c => if noted.contains c then pure (split target') else splitM target'
+        | none => splitM target'
+      match sides with
+      | some (sym, l, r) => return ante ++ (← label l) ++ sym ++ (← label r)
+      | none => return ante ++ (← label target')
 
 /-- The file a note cell `#include`s: the statement as typst inline raw.  The `lean:<decl>@<key>`
     marker above it is `DiagExport.certLine`'s, written for every route at the one place the file

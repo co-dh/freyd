@@ -323,11 +323,37 @@ public theorem suffixP_iff_append :
 /-- The length as a morphism `length : list A ⟶ Nat`. -/
 @[expose] public def lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}) := graph clen
 
+/-! ### The algebras the folds below are taken over, each under the book's own word for it.  An
+    anonymous `fun` is a name the note cannot write and a port nobody can check — `⦇[nil,fst]⦈` is
+    what `⦇[zero,plus]⦈` came out as — so the algebra gets a `def` here and the picture beside it
+    gets the word. -/
+
+/-- `zero`: what the empty list contributes to a total or a count. -/
+@[expose] public def zero [OfNat A 0] : dL Unit ⟶ (⟨A⟩ : RelSet.{0}) := graph fun _ => (0 : A)
+
+/-- `plus`: the head added to the tail's total. -/
+@[expose] public def plus [Add A] : (⟨A × A⟩ : RelSet.{0}) ⟶ (⟨A⟩ : RelSet.{0}) :=
+  graph fun q => q.1 + q.2
+
+/-- `succ`: one more, the head itself dropped by the `π₂` it is composed after. -/
+@[expose] public def succ : (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}) := graph fun n => n + 1
+
+/-- `div`: the total divided by the count. -/
+@[expose] public def div : (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+  graph fun p => p.1 / p.2
+
+/-- `zeros = (0,0)`: the empty list's total and count at once. -/
+@[expose] public def zeros : dL Unit ⟶ (⟨Nat × Nat⟩ : RelSet.{0}) :=
+  graph fun _ => ((0, 0) : Nat × Nat)
+
+/-- `pluss(a,(b,n)) = (a+b, n+1)`: the total and the count run in step. -/
+@[expose] public def pluss : (⟨Nat × (Nat × Nat)⟩ : RelSet.{0}) ⟶ (⟨Nat × Nat⟩ : RelSet.{0}) :=
+  graph fun q => (q.1 + q.2.1, q.2.2 + 1)
+
 /-- **`average ≜ ⟨sum,length⟩ div`**: fork the total with the count, then divide.  The codomain is
     `Nat`, not the book's `Real`: the repo is Mathlib-free, and Lean's `Nat` division already has
     the book's `div(0,0) = 0`, which is what makes `average` total on the empty list. -/
-@[expose] public def averageR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}) :=
-  rpair sumR lengthR ≫ graph (fun p => p.1 / p.2)
+@[expose] public def averageR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}) := rpair sumR lengthR ≫ div
 
 /-- `preds n = [n, n−1, …, 1]`, and `preds 0 = nil`. -/
 @[expose] public def predsFn : Nat → ConsList Unit Nat
@@ -1263,8 +1289,8 @@ public theorem concat_cata :
     onto the total of the tail, `nil` contributing `zero`. -/
 public theorem sum_cata [Add A] [OfNat A 0] :
     (sumR : dList A ⟶ (⟨A⟩ : RelSet.{0}))
-      = ⦇(junc (sumCop (dL Unit) ⟨A × A⟩) (graph fun _ => (0 : A))
-          (graph fun q => q.1 + q.2) : (F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)⦈ := by
+      = ⦇(junc (sumCop (dL Unit) ⟨A × A⟩) zero plus
+            : (F Unit A).obj (⟨A⟩ : RelSet.{0}) ⟶ ⟨A⟩)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
@@ -1274,12 +1300,13 @@ public theorem sum_cata [Add A] [OfNat A 0] :
     `π₂` and one added by `succ` for it, `nil` contributing `zero`. -/
 public theorem length_cata :
     (lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
-      = ⦇(junc (sumCop (dL Unit) ⟨A × Nat⟩) (graph fun _ => (0 : Nat))
-          (graph fun q => q.2 + 1) : (F Unit A).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := by
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Nat⟩) zero ((graph fun q : A × Nat => q.2) ≫ succ)
+            : (F Unit A).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
-  show r = clen x + 1 ↔ ∃ y, y = clen x ∧ r = y + 1
-  exact ⟨fun h => ⟨clen x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
+  show r = clen x + 1 ↔ ∃ y, y = clen x ∧ ∃ n, n = y ∧ r = n + 1
+  exact ⟨fun h => ⟨clen x, rfl, clen x, rfl, h⟩,
+    fun ⟨y, hy, n, hn, hr⟩ => by rw [hr, hn, hy]⟩
 
 /-- **`⟨sum,length⟩ = ⦇[zeros, pluss]⦈`** (note `cata-examples`), the banana-split law's instance
     that makes `average` one traversal: `zeros = (0,0)` and `pluss(a,(b,n)) = (a+b, n+1)` run the
@@ -1288,8 +1315,7 @@ public theorem length_cata :
     `HasBinaryProducts` one the general law is stated over. -/
 public theorem pair_sum_length_cata :
     rpair (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0})) lengthR
-      = ⦇(junc (sumCop (dL Unit) ⟨Nat × (Nat × Nat)⟩) (graph fun _ => ((0, 0) : Nat × Nat))
-          (graph fun q => (q.1 + q.2.1, q.2.2 + 1))
+      = ⦇(junc (sumCop (dL Unit) ⟨Nat × (Nat × Nat)⟩) zeros pluss
             : (F Unit Nat).obj (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat × Nat⟩)⦈ := by
   refine (relCata_UP (initial Unit Nat) _ _).mp
     ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)

@@ -26,7 +26,7 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
   [#leanf("Freyd.Alg.dom")],
- [`dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[]],
+ [#leanf("Freyd.Alg.dom_UP") #src[]],
   // lean:AOP.A4_2.dom_UP@9eaee77f
  [#leanf("Freyd.Alg.dom_comp_le") #src[]],
   // lean:Freyd.S2_10.dom_comp_le@a99434dd
@@ -38,12 +38,12 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
   // lean:Freyd.S2_10.Simple@ed507d14
   [`R` a map #leanf("Freyd.Alg.Map")],
   // lean:Freyd.S2_10.Map@33a3127d
-  [`R,S` entire `⟹RS` entire — likewise simple, likewise maps
- #src[,
+  [#leanf("Freyd.Alg.entire_comp") \
+   #leanf("Freyd.Alg.simple_comp") \
+   #leanf("Freyd.Alg.map_comp") #src[]],
    // lean:Freyd.S2_10.entire_comp@2dfbf431 lean:Freyd.S2_10.simple_comp@c3c56ec3
- ]],
    // lean:Freyd.S2_10.map_comp@841b047c
- [`RS` entire `⟹R` entire #src[]],
+ [#leanf("Freyd.Alg.entire_of_comp_entire") #src[]],
   // lean:Freyd.S2_10.entire_of_comp_entire@ad998fc1
 )]<dom-laws>
 

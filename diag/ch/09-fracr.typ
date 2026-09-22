@@ -94,7 +94,7 @@ In `Rel` `x` and `y` has the same image:
   // lean:Freyd.S2_30.symmDiv_self_idem@8b70dcc5
   [So the relation *admires the same people* is an equivalence relation.],
 
-  [#leanf("Freyd.Alg.symmetric_le_symmDiv_self_iff"), for symmetric `X`
+  [#leanf("Freyd.Alg.symmetric_le_symmDiv_self_iff")
  #src[a symmetric `X` sits inside the matching exactly when following it by `R` adds nothing to `R`.]],
    // lean:Freyd.S2_11.symmetric_le_symmDiv_self_iff@a5fc04b4
   [The largest symmetric arrow that leaves `R` alone.],
