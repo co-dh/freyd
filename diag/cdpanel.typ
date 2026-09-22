@@ -106,13 +106,16 @@
   calc.min(tx, ty)
 }
 
-// A corner's own content: its object, and under it the VALUE the statement pinned there, inside the
-// node's white box — a value set loose beside the node lands on the edge it hangs off.
+// A corner's own content: its object, and under it the VALUES the statement pinned there, inside
+// the node's white box — a value set loose beside the node lands on the edge it hangs off.  Each
+// value wears the hue of the route that reached it, and the empty hue is the neutral one: a value
+// both routes carry, and every value of a statement that pins its points without tracing them.
 #let nlbl(n) = {
-  let v = n.at("value", default: none)
-  if v == none { lbl(n.label) } else {
+  let vs = n.at("value", default: ())
+  if vs.len() == 0 { lbl(n.label) } else {
     grid(align: center, row-gutter: 2.5pt, lbl(n.label),
-      text(luma(110), size: 8.5pt, lbl(v)))
+      ..vs.map(v => text(if v.hue == "" { luma(110) } else { HUES.at(v.hue) },
+        size: 8.5pt, lbl(v.parts))))
   }
 }
 

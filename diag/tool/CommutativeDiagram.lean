@@ -73,16 +73,24 @@ open StrDiag (plain label labelT labelParts labelPartsT)
 
 /-! ### The graph -/
 
+/-- A VALUE SET UNDER A CORNER, in the hue of the ROUTE that reached it.  The empty hue is the
+    neutral one a corner's value has always been drawn in: the value a statement pins without
+    saying which route reaches it, and the one both routes carry — a trace's start. -/
+structure NodeValue where
+  parts : Array StrDiag.Lbl
+  hue : String := ""
+
 /-- A node: its identity, its place on the grid, and the object it stands for. -/
 structure Node where
   id : String
   gx : Float
   gy : Float
   label : StrDiag.Lbl
-  /-- THE VALUE THIS CORNER CARRIES, under its object and in the same printer: the point the
-      statement pinned at this object's elements.  Empty for a corner the statement pins nothing
-      at, which is every corner of an abstract law — see `Face.cornerValues`. -/
-  value : Array StrDiag.Lbl := #[]
+  /-- THE VALUES THIS CORNER CARRIES, under its object and in the same printer: the points the
+      statement pinned there, each in the hue of the route that reached it — TWO of them where the
+      two routes reach one corner with different values.  Empty for a corner the statement pins
+      nothing at, which is every corner of an abstract law — see `Face.cornerValues`. -/
+  value : Array NodeValue := #[]
   /-- The note's hue its object is drawn in, named by the ROLE it plays — see `nodeHues`. -/
   hue : String := "BLACK"
 
@@ -122,6 +130,14 @@ structure FaceMark where
     Carried BY THE FACE and never in process state — one process draws many statements, so a table
     beside them would write one statement's names onto another's arrows. -/
 abbrev Naming := Array (Expr × Expr)
+
+/-- THE STEPS A STATEMENT TRACES: `(where a value comes from, where it arrives, the arrow between)`.
+    A hypothesis that mentions an EDGE of the face and two of the values the statement pinned says
+    the second is the first's image along that edge — however that category spells "the image of a
+    point": `R x y`, `s' = img R s`, `p ≫ R ⊑ q`.  The two are told apart by the ORDER the statement
+    pins them in, the only thing that separates them where a square's two ends have one element type
+    (`A×A` and `B×B` over one set), which is exactly when a trace is worth drawing. -/
+abbrev Trace := Array (Expr × Expr × Expr)
 
 /-- WHAT THIS ARROW WAS NAMED AS, empty where the statement spelled it out.  Asked by every place
     that makes an `Edge`, so a named arrow carries its value wherever the layout puts it. -/
@@ -276,6 +292,9 @@ structure Face where
   /-- The arrows this statement NAMED — see `Naming`.  Stamped on by `withHyps`, which is where the
       hypotheses that name them are read. -/
   named : Naming := #[]
+  /-- The steps this statement TRACES — see `Trace`.  Stamped on beside `named`, from the same
+      hypotheses. -/
+  steps : Trace := #[]
 
 /-- The face of an equation.  GATE: the two sides must start at one object and end at one object.
     A side with NO edge becomes the single edge `𝟙` — a face needs two vertices and a loop is not
@@ -386,7 +405,7 @@ def Face.paste (f g : Face) : MetaM (Option Face) := do
   -- them determines is one the picture determines.
   return some { sym := f.sym, lhs := p.endName "u", rhs := q.endName "v",
                 chord := some (c, g.sym), induced := f.induced ++ g.induced,
-                named := f.named ++ g.named }
+                named := f.named ++ g.named, steps := f.steps ++ g.steps }
 
 /-- A LIST of faces pasted into one, left to right: the conjunction of `n` claims is one picture
     whenever each claim in turn glues onto what is built so far.  `none` at the first pair that does
@@ -756,6 +775,11 @@ def Face.spells (fc : Face) (f : Expr) : Bool :=
     and a relator's image of a given arrow, `E(R)`, which the relator determines rather than the
     statement handing it over. -/
 def Face.hue (fc : Face) (f : Expr) : MetaM String := do
+  -- A STATEMENT THAT TRACES ITS VALUES IS ABOUT ITS TWO ROUTES, and colour is what tells them
+  -- apart: each side in one hue, and every value those edges carried in the same one.
+  unless fc.steps.isEmpty do
+    if fc.lhs.edges.any (·.2.2 == f) then return "GIVEN1"
+    if fc.rhs.edges.any (·.2.2 == f) then return "GIVEN2"
   if ← fc.dashes f then return "INDUCED"
   if fc.spells f then return "BLACK"
   match ← imageOf f with
@@ -1348,7 +1372,9 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
   typstArr (ns.toList.map fun v =>
     s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: {typstLbl v.label}, \
        {if v.value.isEmpty then "" else
-          s!"value: ({String.join (v.value.toList.map fun p => s!"{typstLbl p}, ")}), "}\
+          s!"value: ({String.join (v.value.toList.map fun w =>
+            s!"(parts: ({String.join (w.parts.toList.map fun p => s!"{typstLbl p}, ")}), \
+               hue: {typstString w.hue}), ")}), "}\
        hue: {typstString v.hue})")
     close
 
@@ -1554,20 +1580,82 @@ def elemType? (o : Expr) : MetaM (Option Expr) := do
     if (← Meta.inferType p).isSort then return some p
   return none
 
-/-- THE VALUE A CORNER CARRIES: the point the statement pinned at that corner's own elements, set
-    under the object in the same printer as every other label.  It comes from a HYPOTHESIS and not
-    from an attribute because the term mentions the statement's own binders — `(xs,ys)` is a term of
-    the declaration's context and of nothing else — and an attribute is elaborated outside it. -/
+/-- WHAT A PIN IS WORTH, as against WHERE IT LIES: of the values a statement pins one variable to,
+    the one mentioning neither an edge of the face nor another pinned value.  The others are the
+    STEPS that say which corner it stands at, and a step is no label. -/
+def Face.labelValue? (fc : Face) (x : Expr) : Option Expr :=
+  (fc.named.find? fun (y, v) =>
+      y == x && !(fc.edges.any fun e => (v.find? (· == e)).isSome)
+             && !(fc.named.any fun (z, _) => z != x && (v.find? (· == z)).isSome)).map (·.2)
+
+/-- THE HUE A STEP'S VALUES WEAR: the hue of the drawn edge that carried them.  A face's walk
+    traverses one of its two sides backwards, so the edge's ends are matched either way round. -/
+def edgeHue? (es : Array Edge) (s t : String) : Option String :=
+  (es.find? fun e => (e.src == s && e.tgt == t) || (e.src == t && e.tgt == s)).map (·.hue)
+
+/-- THE VALUES A CORNER CARRIES: the points the statement pinned at it, set under the object in the
+    same printer as every other label.  They come from HYPOTHESES and not from an attribute because
+    the terms mention the statement's own binders — `(xs,ys)` is a term of the declaration's context
+    and of nothing else — and an attribute is elaborated outside it. -/
 def Face.cornerValues (fc : Face) : Panel → MetaM Panel
   | (ns, es, ms) => do
     let objs := fc.lhs.nodes ++ fc.rhs.nodes
+    -- ROUTE FIRST: a step names the edge that carried a value, so its two values stand at that
+    -- edge's two ends — which is the only thing that tells two corners of one element type apart.
+    let mut placed : Array (String × Expr × String) := #[]
+    for (x, y, e) in fc.steps do
+      for p in #[fc.lhs, fc.rhs] do
+        for (s, t, f) in p.edges do
+          if f == e then
+            let h := (edgeHue? es s t).getD ""
+            placed := placed.push (s, x, h)
+            placed := placed.push (t, y, h)
     let ns ← ns.mapM fun n => do
-      let some (_, o) := objs.find? (·.1 == n.id) | return n
-      let some el ← elemType? o | return n
-      for (x, v) in fc.named do
-        if ← Meta.isDefEq (← Meta.inferType x) el then return { n with value := ← labelPartsT v }
-      return n
+      let here := placed.filter (·.1 == n.id)
+      if here.isEmpty then
+        -- A STATEMENT THAT PINS ITS POINTS WITHOUT TRACING THEM has only the ELEMENT TYPE to say
+        -- which corner each belongs to, and that is what it is matched by.
+        let some (_, o) := objs.find? (·.1 == n.id) | return n
+        let some el ← elemType? o | return n
+        for (x, v) in fc.named do
+          if ← Meta.isDefEq (← Meta.inferType x) el then
+            return { n with value := #[{ parts := ← labelPartsT v }] }
+        return n
+      -- ONE ENTRY PER VALUE: a value carried by edges of ONE side wears that side's hue, and one
+      -- carried by both — a trace's start, which belongs to neither route — is drawn neutral.
+      let mut acc : Array (Expr × String) := #[]
+      for (_, x, h) in here do
+        match acc.findIdx? (fun (y, _) => y == x) with
+        | some i => if acc[i]!.2 != h then acc := acc.set! i (x, "")
+        | none => acc := acc.push (x, h)
+      let vs ← acc.filterMapM fun (x, h) => do
+        let some v := fc.labelValue? x | return none
+        return some ({ parts := ← labelPartsT v, hue := h } : NodeValue)
+      return { n with value := vs }
     return (ns, es, ms)
+
+/-- THE SUBTERMS BUILT FROM ONE HEAD, whole applications only and none under a binder: the
+    candidates for being a given arrow, gathered so nothing else is ever compared against it. -/
+partial def headApps (hd : Expr) (t : Expr) : Array Expr :=
+  let here := if t.getAppFn == hd && !t.hasLooseBVars then #[t] else #[]
+  here ++ (match t with
+    | .app f a => headApps hd f ++ headApps hd a
+    | .lam _ d b _ => headApps hd d ++ headApps hd b
+    | .forallE _ d b _ => headApps hd d ++ headApps hd b
+    | .letE _ d v b _ => headApps hd d ++ headApps hd v ++ headApps hd b
+    | .mdata _ b => headApps hd b
+    | .proj _ _ b => headApps hd b
+    | _ => #[])
+
+/-- WHETHER A HYPOTHESIS NAMES THIS ARROW.  Up to REDUCIBLE defeq: one arrow written in two
+    statements is elaborated with its own instance arguments, so `π₁∩π₂` inside a hypothesis and
+    `π₁∩π₂` on the square are equal without being the same term — and no further, because a square's
+    two ends are told apart by the NAMES the statement gives them (`A` and `B`, one set between
+    them) and unfolding those makes every corner the same corner.  Only the subterms built from the
+    arrow's own head are compared, so nothing else is unfolded. -/
+def mentionsArrow (t e : Expr) : MetaM Bool :=
+  (headApps e.getAppFn t).anyM fun s =>
+    Meta.withNewMCtxDepth (Meta.withReducible (Meta.isDefEq s e))
 
 /-- What a hypothesis contributes to the picture: a FACE it hands the conclusion, or a NAMING of one
     of the statement's own arrows. -/
@@ -1617,10 +1705,28 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
     | some (.face h) => hyps := hyps.push h
     | some (.naming a v) => named := named.push (a, v)
     | none => pure ()
+  -- THE STEPS A TRACE IS MADE OF: a hypothesis mentioning an EDGE of the claim and TWO of the
+  -- values the statement pinned.  The edge is the BIGGEST one it mentions — an arrow standing
+  -- inside another arrow (`R` inside `R×R`) is not what carried the value — and only ELEMENT pins
+  -- count, because a statement names its arrows the same way and an arrow is drawn on a line.
+  let mut pins : Array Expr := #[]
+  for (x, _) in named do
+    unless (← Meta.inferType x).isAppOf ``Cat.Hom do
+      unless pins.any (· == x) do pins := pins.push x
+  let allEdges := fs₀.foldl (fun acc f => acc ++ f.edges) #[]
+  let mut steps : Trace := #[]
+  for x in xs do
+    let t ← Meta.inferType x
+    let ps := pins.filter fun p => (t.find? (· == p)).isSome
+    if ps.size == 2 then
+      let mentioned ← allEdges.filterM (mentionsArrow t ·)
+      for e in mentioned do
+        unless mentioned.any fun e' => e' != e && (e'.find? (· == e)).isSome do
+          steps := steps.push (ps[0]!, ps[1]!, e)
   -- EVERY FACE OF THIS STATEMENT CARRIES ITS NAMES, whichever of them the rules below keep: an
   -- arrow named once is named on every face it stands on.
-  let fs := fs₀.map fun f => { f with named := f.named ++ named }
-  hyps := hyps.map fun f => { f with named := f.named ++ named }
+  let fs := fs₀.map fun f => { f with named := f.named ++ named, steps := f.steps ++ steps }
+  hyps := hyps.map fun f => { f with named := f.named ++ named, steps := f.steps ++ steps }
   let shared (h : Face) : MetaM Nat := do
     let mut k := 0
     for e in h.edges do
@@ -1642,7 +1748,7 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
       for e in f.edges do
         if ds.isEmpty then
           if let some d ← definingFace e then ds := ds.push d
-  ds := ds.map fun f => { f with named := f.named ++ named }
+  ds := ds.map fun f => { f with named := f.named ++ named, steps := f.steps ++ steps }
   let stands (o : Expr) (gs : Array Face) : MetaM Bool :=
     gs.anyM fun g => g.objs.anyM (Meta.isDefEq o)
   let touching ← (ds ++ hyps).filterM fun h => h.objs.anyM (stands · fs)
