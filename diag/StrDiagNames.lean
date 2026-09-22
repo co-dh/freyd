@@ -84,6 +84,14 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The bifunctor with its FIRST argument fixed is the lane `F(A,−)`, the slot that still varies
+    marked as CLAUDE.md marks it in `B×−`: two such lanes over one region (`F(A,−)`, `F(NA,−)`)
+    differ by the argument, which the one letter `F` would hide. -/
+@[app_unexpander BiRelator.appl] def unexpandAppl : Unexpander
+  | `($_ $F $A) => `($F $A $(mkIdent (Name.mkSimple "−")))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The CHOSEN COPRODUCT OBJECT is the note's `a+b`, never the class field's own name — `RelProd.p`'s
     `a×b` mirrored.  An unexpander and not a delaborator: both objects are arguments here, where a
     product apex has to read them off its `RelProd`'s type. -/

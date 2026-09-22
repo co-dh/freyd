@@ -569,6 +569,7 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
                                                     f"{tmp}/kd.png").stderr.strip()):
         raise Refuse(f"{key}: the before and after crops are pixel-identical — this display did not "
                      f"change, and a pair the reader cannot tell apart costs him the whole review")
+    rings(cb, ca, tmp, key)
     label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
     pair = os.path.join(out, f"key-{slug(key)}.png")
@@ -644,6 +645,37 @@ def merge(boxes):
                 res.append(b)
         boxes = res
     return sorted(boxes, key=lambda b: (b[1], b[0]))
+
+
+def ring(src, boxes, out):
+    """Each changed blob ringed in red: a label that grew a bracket is a few pixels in a full-width crop,
+    and the reader asked for the difference to be circled rather than hunted for."""
+    draw = []
+    for x0, y0, x1, y1 in boxes:
+        rx, ry = (x1 - x0) / 2 * 1.2 + 14, (y1 - y0) / 2 * 1.2 + 14
+        draw += ["-draw", f"ellipse {(x0 + x1) / 2:.0f},{(y0 + y1) / 2:.0f} {rx:.0f},{ry:.0f} 0,360"]
+    emit("magick", src, "-stroke", "red", "-strokewidth", "3", "-fill", "none", *draw, out)
+
+
+def rings(cb, ca, tmp, key):
+    """The two crops of one display, each ringed where they differ, IN PLACE.  Padded to one size first,
+    since a reflowed crop is a few pixels taller and `compare` refuses unequal images.  A ring round
+    most of the crop says nothing — that is a reflow, and the reader sees the shift himself."""
+    (wb, hb), (wa, ha) = size(cb), size(ca)
+    W, H = max(wb, wa), max(hb, ha)
+    pb, pa, d = f"{tmp}/rb.png", f"{tmp}/ra.png", f"{tmp}/rd.png"
+    for src, dst in ((cb, pb), (ca, pa)):
+        emit("magick", src, "-background", "white", "-gravity", "northwest", "-extent", f"{W}x{H}", dst)
+    run("compare", "-metric", "AE", pb, pa, d)
+    boxes = merge(components(d))
+    if not boxes:
+        print(f"{key}: no changed blob above {MINAREA} px to ring")
+        return
+    if max(b[3] - b[1] for b in boxes) > 0.7 * H:
+        print(f"{key}: the change spans the crop — a reflow, not ringed")
+        return
+    ring(pb, boxes, cb)
+    ring(pa, boxes, ca)
 
 
 _BOX = {}
@@ -810,6 +842,7 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
             emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
             emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
+            rings(f"{tmp}/cb.png", f"{tmp}/ca.png", tmp, f"{tag_}p{n}-{k}")
             scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
             label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
             label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag_}p{j + 1} AFTER", tmp, scale)
