@@ -557,12 +557,6 @@ public theorem straight_cancel_simple {a b c : 𝒜} {S : a ⟶ b} (hS : Straigh
       exact comp_mono_left _ (le_trans h3 h4)
     exact le_trans s1 s2
 
-/-- Helper: from map f, 1 ⊑ f ≫ f° (entireness unfold). -/
-private theorem map_entire_le {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : Cat.id a ⊑ f ≫ f° := by
-  have := hf.1
-  dsimp [Entire, dom] at this
-  exact this ▸ inter_lb_right _ _
-
 /-- If S is straight and f, g are maps with fS = gS then f = g (§2.352). -/
 theorem straight_cancel {a b c : 𝒜} {S : a ⟶ b} (hS : Straight S)
     {f g : c ⟶ a} (hf : Map f) (hg : Map g) (h : f ≫ S = g ≫ S) : f = g := by

@@ -794,11 +794,6 @@ public theorem map_to_unit_unique_alg {a : A}
   Pullback of f : a → c, g : b → c in Map(𝒜) = tabulation of f ≫ g°.
   By `tab_pullback_UMP` (proved above) this cone has the universal property. -/
 
--- Helper: Map e ⟹ id_p ⊑ e≫e° (Entire e)
-private theorem map_entire_le {A : Type u} [Allegory A] {p b : A} {e : p ⟶ b}
-    (he : Map e) : Cat.id p ⊑ e ≫ e° := by
-  have := he.1; rw [Entire, dom] at this; exact this ▸ inter_lb_right _ _
-
 /-- A map `u` with a map retraction (`w ≫ u = id`, `w` a map) is RELATIONALLY a split mono:
     `u° ≫ u = id`.  Proof: `w ⊑ u°` (since `u` entire: `w ⊑ w(uu°) = (wu)u° = u°`), so
     `id = wu ⊑ u°u`; combined with `u°u ⊑ id` (`u` simple). -/

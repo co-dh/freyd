@@ -125,17 +125,15 @@ diagrams.
 
   [`𝓡⊣⊤·`], [`(A⟶B)⟶` \ `Cor B`], [`R↦⊤(𝓡R)`], [`R⊑⊤(𝓡R)`], [`𝓡(⊤A)⊑A`], [`𝓡(R ∪ S)=` \ `𝓡R ∪ 𝓡S`], [`⊤(A∩B)=` \ `⊤A∩⊤B`], [`𝓡(⊤(𝓡R))` \ `=𝓡R`], [`⊤(𝓡(⊤A))` \ `=⊤A`],
 
- [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[]], [`f°f⊑𝟙`],
-  // `map_entire_le` is private in `Freyd.S2_30` and cannot be opened: `Freyd.S2_147_MapCat` declares
-  // its own, so the name would clash.  Hand-typed until one of the two copies survives the other.
-  // lean:Freyd.S2_30.map_entire_le@833e9621
+ [`·f⊣·f°`], [`(A⟶B)⟶` \ `(A⟶C)`], [`ff°`], [#leanf("Freyd.Alg.map_entire_le") #src[]], [`f°f⊑𝟙`],
+  // lean:Freyd.S2_10.map_entire_le@e6d0fe89
  [#leanf("Freyd.Alg.union_comp_distrib") #src[]],
     // lean:Freyd.S2_20.union_comp_distrib@0025430d
  [#leanf("Freyd.Alg.simple_dist_inter_recip") #src[]], [`ff°f=f`], [`f°ff°=f°`],
     // lean:AOP.A4_2.simple_dist_inter_recip@9d565a77
 
- [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [`𝟙⊑ff°` #src[]], [`f°f⊑𝟙`],
-  // lean:Freyd.S2_30.map_entire_le@833e9621
+ [`f°·⊣f·`], [`(A⟶C)⟶` \ `(B⟶C)`], [`ff°`], [#leanf("Freyd.Alg.map_entire_le") #src[]], [`f°f⊑𝟙`],
+  // lean:Freyd.S2_10.map_entire_le@e6d0fe89
  [#leanf("Freyd.Alg.DistributiveAllegory.comp_union_distrib") #src[]],
     // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
     [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],

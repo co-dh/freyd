@@ -428,6 +428,10 @@ public theorem entire_id_le {a b : 𝒜} {R : a ⟶ b} (hR : Entire R) : 𝟙 a 
 /-- R is a MAP if it is entire and simple (§2.13). -/
 @[expose] public def Map {a b : 𝒜} (R : a ⟶ b) : Prop := Entire R ∧ Simple R
 
+/-- A map is entire, in the inequality form `1 ⊑ ff°` (§2.13). -/
+public theorem map_entire_le {a b : 𝒜} {f : a ⟶ b} (hf : Map f) : 𝟙 a ⊑ f ≫ f° :=
+  entire_id_le hf.1
+
 /-! ## §2.133  Order on maps is discrete -/
 
 /-- An ENTIRE relation below a SIMPLE one equals it — §2.133's engine, which never uses the
