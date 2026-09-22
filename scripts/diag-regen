@@ -36,9 +36,13 @@ missing=
 # The arguments are the ROUTE'S FLAGS, exactly as `draw` takes them: the exporter owns the output
 # path and the `+` rule (the string route's `#lean(a, b)` is two files sharing a box, the
 # commutative route's `A+B` one file drawn from two declarations), so neither is guessed at here.
+# The BLANK LINES GO FIRST: `printf '%s\n' "$list"` writes one empty line for an EMPTY list, and
+# `xargs -d '\n'` hands that on as an empty ARGUMENT — a selector naming no declaration, which ends
+# the run.  A chapter with no panel of some route (`CH=16` has no commutative one) is exactly that.
 filter() {
   if [ -z "$missing" ]; then cat; else
-    xargs -d '\n' -r ./scripts/diag-export --prepared --stale "$@" || exit 1
+    grep -v '^[[:space:]]*$' | xargs -d '\n' -r ./scripts/diag-export --prepared --stale "$@" \
+      || exit 1
   fi
 }
 
