@@ -17,29 +17,35 @@
   [The cons-lists over `A`, the datatype every row below folds.],
 
   [`sum≜⦇[zero,plus]⦈`],
+  // lean:AOP.A5_6_ListCombinators.sum_cata@f08e44f1
   [#leant("Freyd.Alg.RelSet.ListRel.sumR")],
   [`plus(a,b)=a+b`.],
 
   [`length≜⦇[zero,π₂ succ]⦈`],
+  // lean:AOP.A5_6_ListCombinators.length_cata@4862a11d
   [#leant("Freyd.Alg.RelSet.ListRel.length_cata")],
   [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
   [`average≜⟨sum,length⟩ div`],
+  // lean:AOP.A5_6_ListCombinators.averageR@e77533b3
   [#leant("Freyd.Alg.RelSet.ListRel.averageR")],
   [`div(m,n)=m/n`, with `div(0,0)=0` so `average` is total. Traverses the list twice.],
 
   [banana-split law \
-   `⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈`],
+   #leanf("Freyd.Alg.pair_relCata_eq_relCata_pair")],
+  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@8e98edce
   [#leant("Freyd.Alg.pair_relCata_eq_relCata_pair")],
   [Any fork of folds is a single fold, hence one traversal — `F` the base functor.],
 
   [what it reduces to \
-   `α⟨⦇h⦈,⦇k⦈⟩=F(⟨⦇h⦈,⦇k⦈⟩)⟨F(π₁)h,F(π₂)k⟩`],
+   #leanf("Freyd.Alg.pair_relCata_hom")],
+  // lean:AOP.A5_5.pair_relCata_hom@93cbc99a
   [#leant("Freyd.Alg.pair_relCata_hom")],
   [All that @cata-defining leaves to check: the fork satisfies the defining equation.],
 
   [the instance \
    `⟨sum,length⟩=⦇[zeros,pluss]⦈`],
+  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@7be7a261
   [#leant("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
@@ -56,7 +62,8 @@
   row((
     lean("Freyd.Alg.pair_relCata_hom"),
   )),
-  [`⟨⦇h⦈,⦇k⦈⟩=⦇⟨F(π₁)h,F(π₂)k⟩⦈` #h(6pt) #src[banana split]],
+  [#leanf("Freyd.Alg.pair_relCata_eq_relCata_pair") #h(6pt) #src[banana split]],
+  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@8e98edce
 )]<banana-split>
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
@@ -84,6 +91,7 @@
 #disp[#capbox(
   leancd("Freyd.Alg.pair_eq_relCata_pair_iff.lhs"),
   [`αf=F(⟨f,g⟩)h∧αg=F(⟨f,g⟩)k≡⟨f,g⟩=⦇⟨h,k⟩⦈`],
+  // lean:AOP.A5_5.pair_eq_relCata_pair_iff@beb351af
 )]<fokkinga>
 
 == Ruby triangles
@@ -107,7 +115,8 @@
   [`F(A,B)=1+A×B`, `α=[nil,cons]`, so `tri(f)=⦇F(𝟙,listr(f))α⦈`],
 
   [abstractly],
-  [`F` a bifunctor with initial type `(α,T)`: `tri(f)=⦇F(𝟙,T(f))α⦈`],
+  [`F` a bifunctor with initial type `(α,T)`: #leanf("Freyd.Alg.tri_defn")],
+  // lean:AOP.A5_5_TypeFunctor.tri_defn@b4b44137
 )]<tri-evolution>
 
 For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA⟶TA`.
@@ -119,7 +128,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
   row((
     lean("Freyd.Alg.tri_cata_fusion"),
   )),
-  [`tri(f) ⦇g⦈=⦇F(𝟙,f)g⦈` #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
+  [#leanf("Freyd.Alg.tri_cata_fusion") #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
   // lean:AOP.A5_5_TypeFunctor.tri_cata_fusion@d3864107 lean:AOP.A5_5_TypeFunctor.tri@864792f0
 )]<horner>
 

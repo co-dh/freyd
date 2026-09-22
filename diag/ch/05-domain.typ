@@ -4,7 +4,7 @@
 = Domain and range
 
 #disp[#definition[
-The *domain* `Dom(R)≜𝟙∩RR°` #src[] and the *range* `Ran R≜Dom(R°)`.
+The *domain* #leanf("Freyd.Alg.dom") #src[] and the *range* `ran(R)≜dom(R°)`.
 // lean:Freyd.S2_10.dom@9e0aed7a
 ]]<dom-defn>
 
@@ -18,22 +18,25 @@ The *domain* `Dom(R)≜𝟙∩RR°` #src[] and the *range* `Ran R≜Dom(R°)`.
    // lean:Freyd.Diag.dom_cd@55211659
 ],), s: 62%)]<dom-collapse>
 
-Running `R` and throwing the result away leaves only the fact that `R` could fire, and `Ran R` is the
+Running `R` and throwing the result away leaves only the fact that `R` could fire, and `ran(R)` is the
 same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R b}`.
 
 #disp[#table(
   columns: 1, inset: 9pt, stroke: 0.4pt + luma(190),
 
-  [`Dom(R)≜𝟙∩RR°`],
- [`Dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[]],
+  [#leanf("Freyd.Alg.dom")],
+ [`dom(R)⊑A⟺R⊑AR`, for `A` coreflexive #src[]],
   // lean:AOP.A4_2.dom_UP@9eaee77f
- [`Dom(RS)⊑Dom(R)` #src[]],
+ [#leanf("Freyd.Alg.dom_comp_le") #src[]],
   // lean:Freyd.S2_10.dom_comp_le@a99434dd
- [`Dom(R∩S)=𝟙∩SR°` #src[]],
+ [#leanf("Freyd.Alg.dom_inter") #src[]],
   // lean:Freyd.S2_10.dom_inter@e702a791
-  [`R` entire `⟺Dom(R)=𝟙⟺𝟙⊑RR°`],
-  [`R` simple `⟺R°R⊑𝟙`],
-  [`R` a map `⟺R` entire and simple],
+  [`R` entire #leanf("Freyd.Alg.Entire")],
+  // lean:Freyd.S2_10.Entire@6d4b735b
+  [`R` simple #leanf("Freyd.Alg.Simple")],
+  // lean:Freyd.S2_10.Simple@ed507d14
+  [`R` a map #leanf("Freyd.Alg.Map")],
+  // lean:Freyd.S2_10.Map@33a3127d
   [`R,S` entire `⟹RS` entire — likewise simple, likewise maps
  #src[,
    // lean:Freyd.S2_10.entire_comp@2dfbf431 lean:Freyd.S2_10.simple_comp@c3c56ec3
@@ -45,7 +48,7 @@ same picture with the box mirrored. In `Rel` both steps are `{(a,a) : ∃b. a R 
 
 == Sliding the discard
 
-`Dom(RS)⊑Dom(R)`, and a single glyph for `Dom` would have nothing to slide: with the box and the
+`dom(RS)⊑dom(R)`, and a single glyph for `dom` would have nothing to slide: with the box and the
 discard drawn apart, the law is one dot walking back along the lower strand.
 
 #disp[#chain((p-dom-comp-le,),
@@ -55,6 +58,6 @@ discard drawn apart, the law is one dot walking back along the lower strand.
    // lean:Freyd.Diag.dom_comp_le@4f75b0f2
 ],), s: 62%)]<dom-slide>
 
-Equality is `S` entire, which is the same picture read as `Dom(R)=𝟙⟺R` entire.
+Equality is `S` entire, which is the same picture read as `dom(R)=𝟙⟺R` entire.
 
 #pagebreak(weak: true)

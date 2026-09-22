@@ -23,7 +23,7 @@
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*picture*]),
 
- [`F(R∩S)=FR∩FS` \ #v(2pt) #src[`F` single valued]],
+ [#leanf("Freyd.Alg.simple_dist_inter") \ #v(2pt) #src[`F` single valued]],
   // lean:Freyd.S2_10.simple_dist_inter@46ef7904
   grid(columns: 3, align: horizon, column-gutter: 10pt,
     [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
