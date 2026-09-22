@@ -1425,6 +1425,21 @@ def parseArg (arg : String) (sel : Bool) :
 /-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
 def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
 
+/-- THE ROOTS THIS RUN LISTS: both notes, or the ONE chapter file `CH` names.  Every gate takes its
+    chapter from that variable (the Makefile exports it), and a listing that answered for the whole
+    note under `CH=13` hands a chapter's gate every other chapter's selectors — checking something
+    else and exiting 0.  `note-files --ch` is the one resolver, so a `CH` naming no chapter ENDS the
+    run with its message rather than falling back to the note. -/
+def rootsToList : IO (List String) := do
+  let ch := ((← IO.getEnv "CH").getD "").trim
+  if ch.isEmpty then return noteRoots
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
+  let files := (r.stdout.splitOn "\n").map String.trim |>.filter (!·.isEmpty)
+  if r.exitCode != 0 || files.length != 1 then
+    throw <| IO.userError s!"diag-export --list: CH={ch}: `./scripts/note-files --ch {ch}` named \
+      {files.length} chapter file(s) and exited {r.exitCode}: {r.stderr.trimAscii}"
+  return files
+
 /-- Every `#lean`/`#leanc` CALL the notes make, read off the note's own metadata under `label` —
     the selectors of one call joined by `+`, because one call is one box and the exporter is told
     the call, not the selector: a pair drawn as two calls comes out as two boxes of different depths.
@@ -1433,22 +1448,6 @@ def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"
     would miss one written in a variable, in a loop or across two lines, and find one inside a
     comment.  `--input list=1` makes the prelude's helper emit its metadata and draw nothing, so
     the listing runs before any picture exists — which is what `diag-regen --missing` needs. -/
-/-- THE ROOTS THIS RUN LISTS: the whole note, or the ONE chapter file `CH` names.  Every gate takes
-    its chapter from that variable (the Makefile exports it), and a listing that answered for the
-    whole note under `CH=13` would hand a chapter's gate every other chapter's selectors — which is
-    checking something else and exiting 0.  `note-files --ch` is the one resolver, so a `CH` naming
-    no chapter ENDS the run with its message rather than falling back to the note. -/
-def rootsToList : IO (List String) := do
-  let some ch := (← IO.getEnv "CH").map String.trim | return noteRoots
-  if ch.isEmpty then return noteRoots
-  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
-  let files := r.stdout.splitOn "\n" |>.map String.trim |>.filter (!·.isEmpty)
-  if r.exitCode != 0 || files.length != 1 then
-    throw <| IO.userError s!"diag-export --list: CH={ch}: \
-      `./scripts/note-files --ch {ch}` named {files.length} chapter file(s) and exited \
-      {r.exitCode}: {r.stderr.trimAscii}"
-  return files
-
 def listMain (label : String) : IO UInt32 := do
   let mut out : Array String := #[]
   for root in ← rootsToList do

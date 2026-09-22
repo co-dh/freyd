@@ -1480,6 +1480,14 @@ partial def conclusionOf : Expr → Expr
   | .mdata _ b => conclusionOf b
   | e => e
 
+/-- How many EXPLICIT binders a statement takes: a theorem that states a bead's naturality outright
+    takes none, where one that DERIVES it takes the naturality it derives it from (`recip_oplax`,
+    `strictNatural_prod`).  The objects and the instances are implicit, so they are not counted. -/
+partial def explicitBinders : Expr → Nat
+  | .forallE _ _ b bi => (if bi.isExplicit then 1 else 0) + explicitBinders b
+  | .mdata _ b => explicitBinders b
+  | _ => 0
+
 /-- How many components a name has: `Freyd.Alg.singleton_laxNatural` three, and the case study's
     `Freyd.Alg.Cylinder.OneRow.setify_natural_one` five. -/
 partial def nameDepth : Name → Nat
@@ -1929,13 +1937,18 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
     | some h => cs.partition fun (c : Name × NameSet) =>
         c.2.contains h || (al.getD h #[]).any c.2.contains
     | none => (#[], cs)
-  let rank (n : Name) : Nat × Nat := match env.find? n with
-    | some ci => (exprSize (conclusionOf ci.type), nameDepth n)
-    | none => (0, 0)
+  -- STATED BEFORE DERIVED: a theorem taking the bead's naturality as a hypothesis and handing back
+  -- another (`recip_oplax`, `strictNatural_prod`) is about the family too, and its conclusion is
+  -- the shorter one, so without this it would be cited wherever the family's own theorem exists.
+  -- It is an ORDER and not a filter: a compound bead, whose verdict only a closure theorem gives,
+  -- reaches it as before.
+  let rank (n : Name) : Nat × Nat × Nat := match env.find? n with
+    | some ci => (explicitBinders ci.type, exprSize (conclusionOf ci.type), nameDepth n)
+    | none => (0, 0, 0)
   let about := about.qsort fun (x : Name × NameSet) (y : Name × NameSet) =>
-    let (a, b) := rank x.1
-    let (c, d) := rank y.1
-    a < c || (a == c && b < d)
+    let (a, b, c) := rank x.1
+    let (d, e, f) := rank y.1
+    a < d || (a == d && (b < e || (b == e && c < f)))
   for (n, has) in about ++ rest do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
