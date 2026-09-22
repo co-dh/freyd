@@ -121,6 +121,17 @@ def applyLabel (f : String) (a : String) (j : Join) : String :=
     parenthesises. -/
 def applyJoin (f : String) : Join := if oneChar f then .name else .other
 
+/-- THE OBJECT A CONSTANT RELATOR'S ACTION REDUCES TO — `(const V).obj X` IS `V` — and `none` for
+    every other relator, whose `F(X)`/`FX` stands.  Spelling the relator and applying it to the
+    argument (`V(list⁺(V))`, `EV(list⁺(V))`) writes an action nothing performs.  BY THE HEAD
+    CONSTANT, never by the name the relator prints, and asked in every place a picture spells an
+    object action — here for a label, in the circuit's own wire stack, and in the delaborator
+    beside `Relator.const` (`diag/StrDiagNames.lean`) for what the printer writes — so a wire and
+    the label above it cannot disagree. -/
+def constRelatorObj? (f : Expr) : Option Expr :=
+  let r := if f.isAppOf ``Freyd.Alg.Relator.toFunctor then f.appArg! else f
+  if r.isAppOf ``Freyd.Alg.Relator.const then some r.appArg! else none
+
 /-- A JUXTAPOSED application as THE PRINTER wrote it: the identifier it opens with and the operands
     beside it, `none` for everything else — a bare name, an infix, a notation that delimits its own
     operand.  The printer's operands, never the term's arguments: an unexpander that drops arguments
@@ -1224,6 +1235,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       let ops ← args.filterM fun a => do Meta.isDefEqGuarded (← Meta.inferType a) ty
       return wrap Prec.juxt (.text ((← respell Prec.factor ops.toList e).flat.replace " " ""))
     if let some (f, xs) ← functorObj? e then
+      -- A CONSTANT RELATOR'S ACTION IS THE OBJECT IT IS CONSTANTLY (`constRelatorObj?`).
+      if let some v := constRelatorObj? (← instantiateMVars f) then return ← labelTree prec v
       -- THE PRINTER'S OWN NOTATION FOR AN ACTION STANDS: a delaborator keyed on the field writes the
       -- note's spelling of the object (`A[n]` for `Vec(n)` at `A`), and only the bare field access
       -- `F.obj A`, the printer's default, is re-set by the join rule below.  Closed up like a tight
