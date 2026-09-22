@@ -2244,7 +2244,10 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.oldR")],
   [`old(a,[[b],[c]])=[[a,b],[c]]` when `[a,b]` is secure, and nothing otherwise.],
 
-  [`partition=⦇[nil,new ∪ glue]⦈`],
+ [#leanf("Freyd.Alg.RelSet.Van.partition_cata") \
+   #src[cutting the transactions into non-empty segments is one pass along them that either opens
+    a segment for the transaction in hand or puts it on the front of the segment already open]],
+  // lean:AOP.A7_5_Van.partition_cata@bbe49948
   [#leant("Freyd.Alg.RelSet.ListRel.partition")],
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
@@ -2252,7 +2255,9 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.Salg")],
   [`S(a,[[b],[c]])` gives `[[a],[b],[c]]`, and `[[a,b],[c]]` when `[a,b]` is secure.],
 
- [`partition list(secure)=⦇S⦈` #src[]],
+ [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
+   #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
+    every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
   // lean:AOP.A7_5_Van.van_spec@79d2f560
   [#leant("Freyd.Alg.RelSet.Van.van_spec")],
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
@@ -2330,6 +2335,45 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.old_eq.rhs")],
 )]<van-algebras>
 
+// B&dM p.185's "appeal to fusion" needs the fold law's side condition `R S=(F S)Q`, and this is
+// it: the two panels are the algebra's stack of context wires with `secure` moved across it, and
+// `glue` is what it turns into `old` on the way.
+#let van-cond-l = lean("Freyd.Alg.RelSet.Van.van_fusion_cond.lhs")
+#let van-cond-r = lean("Freyd.Alg.RelSet.Van.van_fusion_cond.rhs")
+
+#disp[#capbox(
+  row((van-cond-l, [#h(7pt) = #h(7pt)], van-cond-r)),
+  // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
+ [#leanf("Freyd.Alg.RelSet.Van.van_fusion_cond") \
+   #src[testing every segment for security after the algebra has run is testing it before it ran:
+    a segment `glue` has extended is secure exactly where `old` would have let it be, and the one
+    transaction `new` sets out on its own is secure whatever it is]],
+)]<van-fusion-cond>
+
+// The chain the book runs on p.185: `partition` is a fold, and the fold law absorbs
+// `list(secure)` into that fold's algebra.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Van.van_spec") \
+    #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
+     every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
+     // lean:AOP.A7_5_Van.van_spec@79d2f560
+  table.header([*step*], [*Hinze–Marsden*]),
+
+  [`partition list(secure)` \ #src[the specification: cut the transactions every way, then keep
+   the cuts whose every segment is secure]],
+  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.lhs")],
+
+  // The middle step `⦇[nil,new ∪ glue]⦈ list(secure)` (`van_spec_step1.rhs`) has no panel:
+  // `⦇[nil,new ∪ glue]⦈` is a family the environment gives no naturality verdict for, so
+  // diag-export refuses it and draws a red stub.  Its content is the row's `#src` and the
+  // condition above, both of which ARE drawn.
+  [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: `partition` is the fold `[nil,new ∪ glue]`, and
+   the condition above moves `list(secure)` inside it, which is what turns `glue` into `old`]],
+     // lean:AOP.A7_5_Van.partition_cata@bbe49948
+     // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
+  [#lean("Freyd.Alg.RelSet.Van.van_spec_step2.rhs")],
+)]<van-fusion-steps>
+
 // One wire in, two out, both sides: the fold is ONE bead where the left panel has the two the
 // specification writes, and `secure` is what the fusion has moved inside it.
 #let van-fus-l = lean("Freyd.Alg.RelSet.Van.van_spec.lhs")
@@ -2337,7 +2381,8 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-fus-l, [#h(7pt) = #h(7pt)], van-fus-r)),
- [`partition list(secure)=⦇[nil,new ∪ old]⦈` \
+  // lean:AOP.A7_5_Van.van_spec@79d2f560
+ [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions every way and then keeping the cuts whose every segment is secure
     is one pass along them that either calls the van or extends the open segment while it stays
     secure]],
