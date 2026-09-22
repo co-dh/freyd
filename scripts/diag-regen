@@ -2,7 +2,9 @@
 # diag-regen — redraw every picture the notes draw, and nothing else.
 #
 #     ./scripts/diag-regen              redraw all of them
-#     ./scripts/diag-regen --missing    draw only the ones with no file in diag/generated/
+#     ./scripts/diag-regen --missing    draw only the ones that need it: no file in
+#                                       diag/generated/, or a file drawn from a statement the
+#                                       declaration no longer has (`diag-export --stale`)
 #
 # The notes THEMSELVES are the list: `diag-export --list` reads every `#lean(...)`/`#leanc(...)`
 # selector out of the note's own metadata, and `note-files --generated` every surviving `#import`
@@ -25,29 +27,22 @@ missing=
 [ "$1" = "--missing" ] && { missing=1; shift; }
 [ $# -eq 0 ] || { echo "usage: diag-regen [--missing]" >&2; exit 2; }
 
-# Only the names with no picture on disk, under --missing; the name IS the file's stem, `.proof` and
-# all, so one test answers for every route.  A `#lean(a, b)` call arrives as one `a+b` line and is
-# redrawn WHOLE when either of its pictures is missing: the two share a box, so drawing one of them
-# alone would give it a depth of its own and leave the pair standing at two heights.
-# `$1` is the route's output directory: the string route writes diag/generated/, the circuit route
-# one level down, and a test against the wrong one reports every picture missing.
-# `$2` = `whole` keeps a `+`-joined name as ONE file to test: the commutative route's `+` joins two
-# DIFFERENT statements on one page (not a shared box like the string route's `#lean(a, b)`), and its
-# output file is named after the whole selector, `A+B.typ`, never split into `A.typ`/`B.typ`.
+# Only the names that NEED DRAWING, under --missing — and a picture whose Lean statement has changed
+# needs it as much as one that was never drawn: every generated file carries the `cert:` key it was
+# drawn from, and `diag-export --stale` prints the selectors whose key is no longer the
+# declaration's.  A file test here could only see the file's ABSENCE, so a panel of a statement
+# somebody had since edited kept its old drawing until the next whole redraw (minutes, under the
+# note lock) and every gate in between passed on a picture of something else.
+# The arguments are the ROUTE'S FLAGS, exactly as `draw` takes them: the exporter owns the output
+# path and the `+` rule (the string route's `#lean(a, b)` is two files sharing a box, the
+# commutative route's `A+B` one file drawn from two declarations), so neither is guessed at here.
+# The BLANK LINES GO FIRST: `printf '%s\n' "$list"` writes one empty line for an EMPTY list, and
+# `xargs -d '\n'` hands that on as an empty ARGUMENT — a selector naming no declaration, which ends
+# the run.  A chapter with no panel of some route (`CH=16` has no commutative one) is exactly that.
 filter() {
-  dir=$1
   if [ -z "$missing" ]; then cat; else
-    while IFS= read -r n; do
-      [ -n "$n" ] || continue
-      if [ "$2" = "whole" ]; then
-        [ -f "$dir/$n.typ" ] || printf '%s\n' "$n"
-      else
-        for p in $(printf '%s\n' "$n" | tr '+' ' '); do
-          [ -f "$dir/$p.typ" ] || { printf '%s\n' "$n"; break; }
-        done
-      fi
-    done
-    return 0
+    grep -v '^[[:space:]]*$' | xargs -d '\n' -r ./scripts/diag-export --prepared --stale "$@" \
+      || exit 1
   fi
 }
 
@@ -57,20 +52,30 @@ filter() {
 # a panel with a long naturality search holds 1.6 GiB.  The build and the index are done ONCE, before
 # the first picture and only when there is one: the index is refreshed under a lock.
 # `$1` is the list, a call to a line; the rest is the route's flag.
+prepare() {
+  [ -n "$prepared" ] || ./scripts/diag-export --prepare || exit 1
+  prepared=1
+}
+
 draw() {
   names=$1; shift
   [ -n "$names" ] || return 0
-  [ -n "$prepared" ] || ./scripts/diag-export --prepare || exit 1
-  prepared=1
+  prepare
   printf '%s\n' "$names" \
     | xargs -d '\n' -n 1 -P "$(( ($(nproc) + 1) / 2 ))" ./scripts/diag-export --prepared "$@" || exit 1
 }
 
 all=$(./scripts/note-files --generated) || exit 1
+# The STALENESS TEST reads the index, so under --missing the build and the index come first: a test
+# against an index older than the sources would keep a picture whose statement has changed, and exit
+# 0.  Without --missing nothing is tested and `draw` prepares on its own, before the first picture.
+[ -z "$missing" ] || prepare
 # The `#import`s are drawn BEFORE the metadata is asked for: the listings below compile the note, and
 # a note whose import has no file yet does not compile, so a new import could never be drawn.
-plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter diag/generated)
-proofs=$(printf '%s\n' "$all" | filter diag/generated | sed -n 's|\.proof$||p')
+# The `.proof` suffix comes off FIRST: it is the route's, not the selector's, and `--proof` is what
+# puts it back — on the file the exporter writes and on the one `--stale` reads.
+plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter) || exit 1
+proofs=$(printf '%s\n' "$all" | sed -n 's|\.proof$||p' | filter --proof) || exit 1
 draw "$plain"
 draw "$proofs" --proof
 
@@ -85,13 +90,14 @@ type=$(./scripts/diag-export --list lean-type) || exit 1
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.
 
-leans=$(printf '%s\n' "$lean" | filter diag/generated)
-circuits=$(printf '%s\n' "$circuit" | filter diag/generated/circuit)
-cds=$(printf '%s\n' "$cd" | filter diag/generated/commutative whole)
-formulas=$(printf '%s\n' "$formula" | filter diag/generated/formula)
+leans=$(printf '%s\n' "$lean" | filter --string) || exit 1
+circuits=$(printf '%s\n' "$circuit" | filter --circuit) || exit 1
+cds=$(printf '%s\n' "$cd" | filter --commutative) || exit 1
+formulas=$(printf '%s\n' "$formula" | filter --formula) || exit 1
+types=$(printf '%s\n' "$type" | filter --type) || exit 1
 draw "$leans" --string
 draw "$circuits" --circuit
 draw "$cds" --commutative
 draw "$formulas" --formula
-draw "$(printf '%s\n' "$type" | filter diag/generated/type)" --type
+draw "$types" --type
 exit 0

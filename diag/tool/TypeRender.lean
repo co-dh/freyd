@@ -101,12 +101,9 @@ def render (declName : Name) : MetaM String := withDeclScope declName do
           relator between two categories, nor an (in)equation between arrows — it has no one type \
           to render"
 
-/-- The file a note cell `#include`s: the type as typst inline raw, under the same
-    `lean:<decl>@<key>` marker the row citing that declaration carries. -/
+/-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
+    above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
 def file (declName : Name) : MetaM String := do
-  let ty ← render declName
-  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  return "// cert: (lean: \"" ++ declName.toString ++ "@" ++ hex8 (← stmtKey ci) ++ "\")\n`"
-    ++ ty ++ "`\n"
+  return "`" ++ (← render declName) ++ "`\n"
 
 end Freyd.TypeRender
