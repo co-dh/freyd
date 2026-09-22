@@ -260,9 +260,7 @@ diagrams.
   // lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af
  [#leanf("Freyd.Alg.DistributiveAllegory.zero_comp") #src[]], [#leanf("Freyd.Alg.DistributiveAllegory.comp_zero") #src[]],
     // lean:Freyd.Alg.DistributiveAllegory.zero_comp@77e0792c lean:Freyd.Alg.DistributiveAllegory.comp_zero@ee8988af
- [`T∩𝟘=𝟘` #src[]],
-  // `inter_zero` lives in `Freyd.S2_50`, which `diag-export`'s environment does not import, so the
-  // formula cannot be generated from it yet.
+ [#leanf("Freyd.Alg.inter_zero") #src[]],
     // lean:Freyd.S2_50.inter_zero@d458c7d7
  [#leanf("Freyd.Alg.recip_zero") #src[]], [], [],
     // lean:Freyd.S2_20.recip_zero@49eaea12

@@ -45,7 +45,7 @@ subscript.
  [#leanf("Freyd.Alg.Λ_eps_eq'")], [#src[reading the chosen set back through `∋` returns the relation.]],
   // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
 
-  [#leanf("Freyd.Alg.simple_le_Λ_eps"), `F` simple],
+  [#leanf("Freyd.Alg.simple_le_Λ_eps")],
  [A partial choice of sets is inside the total one. #src[]],
   // lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe
 
@@ -58,13 +58,13 @@ subscript.
  [Make the set of a set, then read it back one level down. #src[]],
   // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
 
-  [*fusion:* #leanf("Freyd.Alg.Λ_fusion"), `f` a map],
+  [*fusion:* #leanf("Freyd.Alg.Λ_fusion")],
   [Naturality of the unit, #leanf("Freyd.Alg.singletonMap_natural").
  #src[renaming a point and then taking its one-person set is taking the set and renaming inside it.]],
    // lean:AOP.A4_6.Λ_fusion@9d7bda13
    // lean:AOP.A4_6.singletonMap_natural@9214d7f0
 
-  [#leanf("Freyd.Alg.Λ_of_map"), `f` a map],
+  [#leanf("Freyd.Alg.Λ_of_map")],
   [Rename first or take singletons first — the fusion row above at `R=𝟙`.],
   // lean:Freyd.S2_40.Λ_of_map@9ddca812
 
