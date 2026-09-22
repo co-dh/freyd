@@ -990,7 +990,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 `FX=𝟏+A×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
 `sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns.
 #h(4pt) #src[]
-// lean:AOP.A5_6_ListCombinators.sum_cata@f08e44f1
+// lean:AOP.A5_6_ListCombinators.sum_cata@9396e206
 
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
