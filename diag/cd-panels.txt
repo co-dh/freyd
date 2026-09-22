@@ -65,4 +65,4 @@
 - | Freyd.Alg.RelSet.ListRel.prefix_lax_natural      | -
 - | Freyd.Alg.RelSet.RT.tree_id                     | -
 - | Freyd.Alg.RelSet.Van.glue_eq                     | -
-- | Freyd.Alg.Vec.Rel.tupleP_id                      | -
+- | Freyd.Alg.RelSet.Tuple.tupleP_id                 | -
