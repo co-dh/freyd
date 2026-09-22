@@ -205,6 +205,13 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The rose-tree relator's action on an arrow is the note's `tree(f)` (ch. 7): the head is the
+    note's word and the label rule brackets the operand of a longer-named operator. -/
+@[app_unexpander RelSet.RT.tree] def unexpandRTTree : Unexpander
+  | `($_ $args*) => `($(mkIdent `tree) $args*)
+  | _ => `($(mkIdent `tree))
+
+open Lean PrettyPrinter in
 /-- The bag relator is the note's lane `bag`; `bag(Job)` is that lane over the `Job` wire. -/
 @[app_unexpander RelSet.Tardy.bagRelator] def unexpandBagRelator : Unexpander
   | `($_:ident) => `($(mkIdent `bag))
