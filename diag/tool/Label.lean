@@ -273,6 +273,13 @@ inductive Assoc | left | right | non
     `ClosedLinearBicat.residual`, `Biprod.union`, all plain `def`s — take the column of the operator
     whose symbol they share, as they already take its precedence.
 
+    ASSOCIATIVITY DROPS A BRACKET ONLY ON A CHAIN OF ONE OPERATOR: the operand on the associative
+    side is set at the operator's own precedence only when its own head prints the SAME SYMBOL —
+    the symbol column, not the constant, since `Allegory.inter` and `Diag.meet` both print `∩` —
+    and every other operand, at the same precedence or not, stays one level above, because the note
+    never asks its reader to know that `∩`, `/` and `\` share a level (`R∩R'/S` is Lean's parse and
+    nobody else's).
+
     SPACING IS ONE RULE AND NOT A COLUMN: an operator closes up against its operands, and `∪` alone
     keeps its spaces, because what it joins is the composites the note sets off (`cons ∪ π₂`). -/
 def binOps : Array (Name × Nat × Assoc × String) := #[
@@ -293,6 +300,14 @@ def binOps : Array (Name × Nat × Assoc × String) := #[
   -- a label that met one had no clause and fell back to the raw printer, which wrote
   -- `dom R ⊑ X ↔ R ⊑ X ≫ R` — Lean's vocabulary, in a cell of the note.
   (``And, 35, .right, "∧"), (``Or, 30, .right, "∨"), (``Iff, 20, .non, "⟺")]
+
+/-- THE PRECEDENCE AN OPERAND ON THE ASSOCIATIVE SIDE IS SET AT: the operator's own — which leaves
+    it unbracketed — only when the operand's own head prints the SAME symbol, one level above for
+    everything else. -/
+def chainPrec (op : String) (p : Nat) (x : Expr) : Nat :=
+  match binOps.find? (·.1 == x.getAppFnArgs.1) with
+  | some (_, _, _, op') => if op' == op then p else p + 1
+  | none => p + 1
 
 /-- The note's spacing for a binary operator: closed up, `∪` alone set off. -/
 def spaced (op : String) : String := if op == "∪" then " ∪ " else op
@@ -934,14 +949,14 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- stands between two arrows and `∧` between two statements, and one table spells both.
   let opnds (args : Array Expr) : MetaM (Array Expr) :=
     args.filterM fun a => return (← homEnds? a).isSome || (← Meta.isProp a)
-  -- THE OPERANDS SIT WHERE THE NOTATION PUTS THEM: the side the operator associates on parses at
-  -- the operator's own precedence, the other one above, so a chain prints flat exactly where Lean
-  -- reads it as a chain and brackets exactly where it does not.
+  -- THE OPERANDS SIT WHERE THE NOTATION PUTS THEM, and a bracket goes only where the note's reader
+  -- needs it: the side the operator associates on drops its bracket when it is MORE OF THE SAME
+  -- OPERATOR (`chainPrec`), everything else stays one level above.
   let bin (p : Nat) (a : Assoc) (op : String) (args : Array Expr) : MetaM Lbl := do
     match lastTwo (← opnds args) with
     | some (f, g) =>
-      let (pl, pr) := match a with
-        | .left => (p, p + 1) | .right => (p + 1, p) | .non => (p + 1, p + 1)
+      let pl := if a == .left then chainPrec op p f else p + 1
+      let pr := if a == .right then chainPrec op p g else p + 1
       return wrap p ((← labelTree pl f) ++ spaced op ++ (← labelTree pr g))
     | none => txt e
   -- The one argument of a unary operator, at the precedence its operand is set at.
