@@ -106,14 +106,11 @@ def render (declName : Name) (binder : Option String) (path : List String)
       | some (sym, l, r) => return (← label l) ++ sym ++ (← label r)
       | none => label target'
 
-/-- The file a note cell `#include`s: the statement as typst inline raw, under the same
-    `lean:<decl>@<key>` marker `TypeRender.file` writes — one key computation, shared. -/
+/-- The file a note cell `#include`s: the statement as typst inline raw.  The `lean:<decl>@<key>`
+    marker above it is `DiagExport.certLine`'s, written for every route at the one place the file
+    is. -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
-  let text ← render declName binder path branch
-  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  return "// cert: (lean: \"" ++ declName.toString ++ "@"
-    ++ Freyd.TypeRender.hex8 (← Freyd.TypeRender.stmtKey ci) ++ "\")\n`"
-    ++ text ++ "`\n"
+  return "`" ++ (← render declName binder path branch) ++ "`\n"
 
 end Freyd.FormulaRender

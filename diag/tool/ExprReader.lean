@@ -1866,11 +1866,26 @@ partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head 
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
-  remembered s false want must.toList fuel seen (scan br s want head must fuel seen)
+  -- THE CITED THEOREM MUST BE ABOUT THE BEAD'S OWN SPELLING, and the transparency is what says so.
+  -- `Cylinder.OneRow.moves_natural_one` states the singleton's lax naturality with its source
+  -- relator written `Relator.comp (idRelator 𝒜) powerRelator`, which the DEFAULT unifier unfolds
+  -- into the bead's own `powerRelator`: the two conclusions are then defeq, so whichever the bucket
+  -- offered first won and ten panels cited a OneRow theorem for a plain `𝟙%∋`, whose naturality is
+  -- `singleton_laxNatural`.  So the candidates are scanned REDUCIBLE first — where only a candidate
+  -- stating the bead's own spelling matches — and the default pass runs only when nothing does: a
+  -- dot that genuinely needs unfolding is still found, and one that does not is never taken from a
+  -- narrower theorem that merely unfolds to it.
+  remembered s false want must.toList fuel seen do
+    match ← scan br s want head must fuel seen .reducible with
+    | some r => return some r
+    | none => scan br s want head must fuel seen .default
 
-/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn. -/
+/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn, at ONE
+    transparency: `tr` is what the candidate's conclusion and the wanted proposition are matched
+    under, and nothing else in the search reads it.  See `findProof` for why there are two passes. -/
 partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name) (must : NameSet)
-    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+    (fuel : Nat) (seen : Array Expr) (tr : Meta.TransparencyMode) :
+    MetaM (Option (Name × Expr)) := do
   let env ← getEnv
   let rw ← bridge br want
   let al ← bridgeAliases
@@ -1905,8 +1920,11 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
       -- assembled term — is more searching, and a budget there is a dot lost to a timeout.
       unless ← Core.withCurrHeartbeats (withTheReader Core.Context
         (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
-        (Meta.isDefEq rc.expr rw.expr)) do
-        if seen.isEmpty then s.passOver has s!"tried {n}: no unification"
+        (Meta.withTransparency tr (Meta.isDefEq rc.expr rw.expr))) do
+        -- Only the pass that settles it reports: a candidate the reducible pass passed over is
+        -- still tried at the default one, and naming it there would be a spider message for a
+        -- candidate that may yet prove the bead.
+        if seen.isEmpty && tr == .default then s.passOver has s!"tried {n}: no unification"
         return none
       unless ← discharge br s args bis fuel (seen.push want) do return none
       checked want rw rc n (mkAppN (.const n lvls) args)
