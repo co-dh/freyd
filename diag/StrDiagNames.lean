@@ -255,6 +255,10 @@ notation:max "thin(" Q ")" => thinRel Q
 -- A NOTATION for the reason `thin(` is one: no term prints its own brackets.
 notation:max "{x+y∣x∈" xs "∧y∈" ys "}" => RelSet.sums xs ys
 
+-- THE LEAST MEMBER IS SPELLED AS THE OPERATOR IT IS — an operator applied takes brackets, so
+-- `minOf xs` is the note's `min(xs)`, the same device as `thin(` and `est(` above.
+notation:max "min(" xs ")" => RelSet.minOf xs
+
 -- A DATATYPE'S OBJECT IS SPELLED THE WAY THE NOTE'S OBJECT LANGUAGE SPELLS IT: lower case, and
 -- bracketed where the argument is applied — `tree A`, `list⁺ A`, `bag(Job)`.  A NOTATION and not an
 -- unexpander, for the reason `thin(` is one above: no term prints its own brackets.

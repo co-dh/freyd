@@ -29,6 +29,13 @@ namespace Freyd.Alg.RelSet
 @[expose] public def sums (xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier) :
     (pow (⟨Nat⟩ : RelSet.{0})).carrier := fun n => ∃ x y, xs x ∧ ys y ∧ Nat.add x y = n
 
+/-- `min(xs)` — the least member of `xs`, the point `est(≤)` sends `xs` to.  A FUNCTION OF THE SET,
+    as the corner it labels is: a set of naturals is `Nat → Prop` and undecidable, so no search
+    computes its least member and `Classical.choose` names the one `est leRel xs` asserts; `0` where
+    `xs` has none, which the `est leRel xs min(xs)` of `plus_distributes_le` rules out. -/
+@[expose] public noncomputable def minOf (xs : (pow (⟨Nat⟩ : RelSet.{0})).carrier) : Nat :=
+  open Classical in if h : ∃ a, est leRel xs a then Classical.choose h else 0
+
 /-- **`+` distributes over `≤`** — `Distributes` (§7.2) at `Rel(Set)`'s `+` and `est(≤)`: the
     smallest sum of a member of `xs` and a member of `ys` is the sum of the smallest of each.
 
@@ -36,13 +43,13 @@ namespace Freyd.Alg.RelSet
     under each object, and they are hypotheses because the terms are of this statement's own
     context — `(xs,ys)` names binders of it — where an attribute is elaborated outside it. -/
 public theorem plus_distributes_le
-    {xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier} {a b : Nat}
-    (_ha : est leRel xs a) (_hb : est leRel ys b)
+    {xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
+    (_ha : est leRel xs (minOf xs)) (_hb : est leRel ys (minOf ys))
     {fea : ((Δ RelSet.{0}).obj (pow (⟨Nat⟩ : RelSet.{0}))).carrier} (_hfea : fea = (xs, ys))
     {ea : (pow (⟨Nat⟩ : RelSet.{0})).carrier}
     (_hea : ea = sums xs ys)
-    {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier} (_hfa : fa = (a, b))
-    {c : Nat} (_hc : c = a + b) :
+    {fa : ((Δ RelSet.{0}).obj (⟨Nat⟩ : RelSet.{0})).carrier} (_hfa : fa = (minOf xs, minOf ys))
+    {c : Nat} (_hc : c = minOf xs + minOf ys) :
     Distributes (F := Δ RelSet.{0}) plusRel leRel := by
   refine RelSet.le_iff.mpr ?_
   rintro p w ⟨q, hq, hw⟩
