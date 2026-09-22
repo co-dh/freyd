@@ -467,6 +467,56 @@ def isComponent (e : Expr) : MetaM Bool := do
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
+/-- THE RELATOR ALGEBRA'S COMBINATORS: the `def`s that BUILD a relator out of parts, where a NAMED
+    relator (`E`, `list⁺`, `F`, `bag`) is a declaration of its own and a lane variable is no
+    constant at all.  ONE LIST, because the label, the wire stack and the printer all ask the same
+    question of it (`relatorObj?`) and two copies of it drift. -/
+def relatorCombinators : Array Name :=
+  #[``Freyd.Alg.Relator.const, ``Freyd.Alg.Relator.idRelator, ``Freyd.Alg.Relator.comp,
+    ``Freyd.Alg.Relator.sum, ``Freyd.Alg.Relator.prod, ``Freyd.Alg.Relator.pair,
+    ``Freyd.Alg.timesRel]
+
+/-- LEAN'S PLUMBING INSIDE A COMBINATOR'S BODY, and nothing else: the identity relator's action is
+    written `id` and the composite's `∘`, neither of which is an object.  They are unfolded as the
+    combinator itself is, and the first head that is NOT one of them IS the object — a product
+    apex, a coproduct, a named relator's own action — where the reduction stops. -/
+def relatorPlumbing : Array Name := #[``id, ``Function.comp]
+
+/-- THE OBJECT AN ACTION REDUCES TO, at REDUCIBLE transparency and one unfolding of the plumbing at
+    a time: at the default transparency `whnf` unfolds the allegory's own product past `RelProd.p`
+    into an instance's implementation, which is not an object the note writes. -/
+partial def reduceObjAction (e : Expr) : MetaM Expr := do
+  let v ← Meta.withTransparency .reducible (Meta.whnf e)
+  let .const c _ := v.getAppFn | return v
+  unless relatorPlumbing.contains c do return v
+  let some v' ← Meta.unfoldDefinition? v | return v
+  reduceObjAction v'
+
+/-- THE OBJECT A COMBINATOR RELATOR'S ACTION REDUCES TO — `(const V).obj X` is `V`, `𝟙.obj X` is
+    `X`, `(V×𝟙).obj X` is `V×X` — and `none` for every other relator, whose `F(X)`/`FX` stands.
+    The note writes the OBJECT the action is, never the combinator applied to it: `(V×𝟙)(X)` and
+    the `EV(list⁺(V))` it seams into write an action nothing performs.
+
+    BY LEAN'S OWN UNFOLDING, never by building the product or the sum here — the combinator's `def`
+    is unfolded and the projection and beta steps are `reduceObjAction`'s, so what comes back is the
+    very `Expr` Lean holds for the object and it prints by whatever rule already prints one.
+
+    THE WHOLE ACTION, not the relator alone: a binary relator's action stands at two arguments and
+    an action reached through another field is still that field's, so what is reduced is the
+    application in hand.  BY THE HEAD CONSTANT, never by the name the relator prints, and asked in
+    every place a picture spells an object action — the label, the circuit's own wire stack, and
+    the delaborator (`diag/StrDiagNames.lean`) for what the printer writes — so a wire and the
+    label above it cannot disagree. -/
+def relatorObj? (f e : Expr) : MetaM (Option Expr) := do
+  let f ← instantiateMVars f
+  let r := if f.isAppOf ``Freyd.Alg.Relator.toFunctor then f.appArg! else f
+  let .const c _ := r.getAppFn | return none
+  unless relatorCombinators.contains c do return none
+  let some r' ← Meta.unfoldDefinition? r | return none
+  let e ← instantiateMVars e
+  let v ← reduceObjAction (e.replace fun s => if s == r then some r' else none)
+  return if v == e then none else some v
+
 /-- The WIRES a functor expression is: `Relator.comp F G` is not one wire but two NESTED, `G`
     outside `F`, and the identity relator is no wire at all.  Outermost first, as a wire stack is
     read left to right in the picture. -/

@@ -121,17 +121,6 @@ def applyLabel (f : String) (a : String) (j : Join) : String :=
     parenthesises. -/
 def applyJoin (f : String) : Join := if oneChar f then .name else .other
 
-/-- THE OBJECT A CONSTANT RELATOR'S ACTION REDUCES TO — `(const V).obj X` IS `V` — and `none` for
-    every other relator, whose `F(X)`/`FX` stands.  Spelling the relator and applying it to the
-    argument (`V(list⁺(V))`, `EV(list⁺(V))`) writes an action nothing performs.  BY THE HEAD
-    CONSTANT, never by the name the relator prints, and asked in every place a picture spells an
-    object action — here for a label, in the circuit's own wire stack, and in the delaborator
-    beside `Relator.const` (`diag/StrDiagNames.lean`) for what the printer writes — so a wire and
-    the label above it cannot disagree. -/
-def constRelatorObj? (f : Expr) : Option Expr :=
-  let r := if f.isAppOf ``Freyd.Alg.Relator.toFunctor then f.appArg! else f
-  if r.isAppOf ``Freyd.Alg.Relator.const then some r.appArg! else none
-
 /-- A JUXTAPOSED application as THE PRINTER wrote it: the identifier it opens with and the operands
     beside it, `none` for everything else — a bare name, an infix, a notation that delimits its own
     operand.  The printer's operands, never the term's arguments: an unexpander that drops arguments
@@ -359,6 +348,21 @@ def tightHeads : Array Name :=
     -- A SUM OF VALUES is the same spacing at a corner's point: the note writes `a+b` and `min{x+y∣
     -- x∈xs}`, and only `∪` keeps its spaces.
     ``HAdd.hAdd]
+
+/-- The RELATOR arguments of an application, picked by their TYPE as `homArgs` picks the arrows: a
+    relator is a term of the note's like an arrow is, so the note's own spelling of it is written
+    HERE and handed back to the head's printer — `cp(V×𝟙,list⁺(V))`, where the formatter's spacing
+    round the printed `V × 𝟙` is the formatter's and not the note's. -/
+def relatorArgs (args : Array Expr) : MetaM (Array Expr) :=
+  args.filterM fun a => do
+    let ty ← Meta.inferType a
+    unless ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor do return false
+    -- AN ARGUMENT ITS NEIGHBOUR'S TYPE IS TAKEN AT cannot be handed back as a local: the
+    -- replacement takes every occurrence, so the neighbour (`I : InitialAlgebra F`) is left standing
+    -- at a relator the term no longer has, and the printer refuses the ill-typed application.  An
+    -- arrow is never a neighbour's type, which is why `homArgs` asks nothing of the kind.
+    args.allM fun b => do
+      return b == a || ((← Meta.inferType b).find? (· == a)).isNone
 
 /-- The ARROW arguments of an application, picked by their TYPE and not by their position:
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
@@ -1156,6 +1160,15 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
   | (``Prod, #[a, b]) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "×" ++ (← labelTree Prec.factor b))
+  -- A PRODUCT OF RELATORS is that same `×`, one level up — `(F×G)(X)` is `F(X)×G(X)` — so it is
+  -- spelled the same way, closed up: `V×𝟙`, never the printed `V × 𝟙`.  The coproduct below is the
+  -- object `+` for the same reason.
+  | (``Freyd.Alg.Relator.prod, args) => match lastTwo args with
+    | some (a, b) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "×" ++ (← labelTree Prec.factor b))
+    | none => txt e
+  | (``Freyd.Alg.Relator.sum, args) => match lastTwo args with
+    | some (a, b) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "+" ++ (← labelTree Prec.factor b))
+    | none => txt e
   -- A PAIR'S VALUE is a comma list like the fork's and is set the same way: `(xs,ys)`, each factor
   -- a term of the note's — the printer writes `(xs, ys)` and welds nothing.
   | (``Prod.mk, #[_, _, a, b]) => return commaL "(" ")" #[← labelTree 0 a, ← labelTree 0 b]
@@ -1235,8 +1248,9 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       let ops ← args.filterM fun a => do Meta.isDefEqGuarded (← Meta.inferType a) ty
       return wrap Prec.juxt (.text ((← respell Prec.factor ops.toList e).flat.replace " " ""))
     if let some (f, xs) ← functorObj? e then
-      -- A CONSTANT RELATOR'S ACTION IS THE OBJECT IT IS CONSTANTLY (`constRelatorObj?`).
-      if let some v := constRelatorObj? (← instantiateMVars f) then return ← labelTree prec v
+      -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
+      -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.
+      if let some v ← relatorObj? f e then return ← labelTree prec v
       -- THE PRINTER'S OWN NOTATION FOR AN ACTION STANDS: a delaborator keyed on the field writes the
       -- note's spelling of the object (`A[n]` for `Vec(n)` at `A`), and only the bare field access
       -- `F.obj A`, the printer's default, is re-set by the join rule below.  Closed up like a tight
@@ -1288,7 +1302,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- `(new ∪ old)(R;H)`.  ON THE IDENT ALONE, the one label built by no rule of this file —
     -- everything else is bracketed by whatever rule builds it.  At composition's own precedence,
     -- which is what every operator looser than juxtaposition is set at.
-    let out ← respell (if paren then Prec.loose else Prec.atom) (← arrows args).toList e
+    let out ← respell (if paren then Prec.loose else Prec.atom)
+      ((← arrows args) ++ (← relatorArgs args)).toList e
     match stxPeel stx with
     | .ident _ _ nm _ => return if oneToken nm.getString! then out else wrap Prec.juxt out
     | _ => return out
