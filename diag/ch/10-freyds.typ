@@ -120,12 +120,12 @@ monad `iE`.]]
 #leanf("Freyd.Alg.existsImage"), #h(4pt) $frac(#[`𝟙`], ∋)$ ` : A⟶EA`, #h(4pt)
 #leanf("Freyd.Alg.bigUnion_eq_existsImage_eps") ` : E(EA)⟶EA`
 
-`f⋄g≜f E(g) union : A⟶EC`, #h(4pt) for `f : A⟶EB` and `g : B⟶EC`
+#leanf("Freyd.Alg.kleisliComp"), #h(4pt) for `f : A⟶EB` and `g : B⟶EC`
 
 #src[the monad is on `Map(𝒜)`, not on the allegory: `E` is a relator on all relations, but
 $frac(#[`𝟙`], ∋)$,
 `union` and `f E(g) union` are maps, and the Kleisli construction happens where they live.]
-// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@889637e4
+// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@889637e4 lean:AOP.A4_6.kleisliComp@449ff4f9
 ]]]<kleisli-defn>
 
 #disp[

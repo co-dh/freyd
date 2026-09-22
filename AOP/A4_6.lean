@@ -267,6 +267,16 @@ public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
     existsImage R = existsImage (Λ R) ≫ bigUnion := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, Λ_eps_eq']
 
+/-! ## Kleisli composition for the monad `E` -/
+
+/-- KLEISLI COMPOSITION `f⋄g ≜ f E(g) union`, for `f : A ⟶ EB` and `g : B ⟶ EC` — the
+    composition of `Kleisli(E)`, which `Λ` carries the allegory's own composition to. -/
+@[expose] public def kleisliComp {A B C : 𝒜} (f : A ⟶ PowerAllegory.powerObj B)
+    (g : B ⟶ PowerAllegory.powerObj C) : A ⟶ PowerAllegory.powerObj C :=
+  f ≫ existsImage g ≫ bigUnion
+
+@[inherit_doc] infixl:70 " ⋄ " => kleisliComp
+
 end PowerCalculus
 
 -- Printing-only: B&dM's `E R`, with the bracket the note puts round an operator's argument
