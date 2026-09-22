@@ -966,19 +966,17 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($A)
   | _ => throw ()
 open Lean PrettyPrinter Delaborator SubExpr in
-/-- A CONSTANT RELATOR'S ACTION ON AN OBJECT IS THAT OBJECT: `(const V).obj X` REDUCES to `V`, so
-    the label is `V` and the wire is `E(list⁺(V))`.  Spelling the relator and applying it to the
-    argument (`V(list⁺(V))`) writes an action nothing performs, and `EV(list⁺(V))` reads as two
-    functors composed.  BY THE HEAD CONSTANT, so every other relator keeps its `F(X)`/`FX`. -/
-@[delab app.Freyd.Functor.obj] def delabConstRelatorObj : Delab := do
+/-- A COMBINATOR RELATOR'S ACTION ON AN OBJECT IS THE OBJECT IT REDUCES TO: `(const V).obj X` is
+    `V` and `(V×𝟙).obj X` is `V×X`, so the label is that object and the wire is `E(V×list⁺(V))`.
+    Spelling the relator and applying it to the argument (`V(list⁺(V))`, `(V×𝟙)(list⁺(V))`) writes
+    an action nothing performs, and `EV(list⁺(V))` reads as two functors composed.  The reduction
+    and the list of combinators are `StrDiag.relatorObj?`'s, the one the label and the wire stack
+    ask too, so every other relator keeps its `F(X)`/`FX` in all three. -/
+@[delab app.Freyd.Functor.obj] def delabRelatorObj : Delab := do
   let e ← getExpr
   guard (e.getAppNumArgs == 6)
-  let f := e.getArg! 4
-  -- A relator reaches its object action through the functor it extends, and a `Functor` argument
-  -- is already the relator: one peel, so both spellings of the same action go the same way.
-  let r := if f.isAppOfArity ``Relator.toFunctor 5 then f.getArg! 4 else f
-  guard (r.isAppOfArity ``Relator.const 5)
-  PrettyPrinter.delab (r.getArg! 4)
+  let some v ← StrDiag.relatorObj? (e.getArg! 4) e | failure
+  PrettyPrinter.delab v
 -- THE PRODUCT OF TWO RELATORS IS THE NOTE'S `F×G`, the coproduct's `F+G` mirrored.
 open Lean PrettyPrinter in
 @[app_unexpander Relator.prod] def unexpandRelatorProd : Unexpander
