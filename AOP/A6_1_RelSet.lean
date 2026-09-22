@@ -188,8 +188,24 @@ theorem graph_id (A : RelSet.{u}) : graph (fun x : A.carrier => x) = 𝟙 A :=
 
 /-! ### Power objects: `[b]` = the powerset `b → Prop`, `∋` = membership -/
 
-/-- The power object of `b`: its carrier is the powerset `b.carrier → Prop`. -/
-@[expose] public def pow (B : RelSet.{u}) : RelSet.{u} := ⟨B.carrier → Prop⟩
+-- `reducible`: `pow B` IS this type, so every proof that unfolds a power object to a function
+-- type must keep seeing through it.
+/-- A SUBSET OF AN OBJECT of `Rel(Set)` — what a relation sends a point to, and so what a trace
+    through a square carries at every corner after its first.  Its own name, and not the bare
+    predicate, so `∅` and `{x}` are the spellings a subset is written and drawn in. -/
+@[expose, reducible] public def Sub (α : Type u) : Type u := α → Prop
+
+public instance (α : Type u) : EmptyCollection (Sub α) := ⟨fun _ => False⟩
+public instance (α : Type u) : Singleton α (Sub α) := ⟨fun a x => x = a⟩
+
+/-- THE SUBSET A RELATION REACHES from one: the elements `R` relates a member of `s` to — the
+    function underlying the existential image of a subset, which `powerRel R` is the relation of.
+    The relation comes FIRST because it is what says which two objects the step is between. -/
+@[expose] public def img {A B : RelSet.{u}} (R : A ⟶ B) (s : Sub A.carrier) : Sub B.carrier :=
+  fun y => ∃ x, s x ∧ R x y
+
+/-- The power object of `b`: its carrier is the subsets of `b.carrier`. -/
+@[expose] public def pow (B : RelSet.{u}) : RelSet.{u} := ⟨Sub B.carrier⟩
 
 /-- Membership `∋_b : [b] ⟶ b` in `Rel(Set)`: `P ∋ y` iff `y ∈ P`. -/
 @[expose] public def epsRel (B : RelSet.{u}) : pow B ⟶ B := fun P y => P y

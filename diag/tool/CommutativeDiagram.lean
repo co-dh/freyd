@@ -1604,12 +1604,19 @@ def Face.cornerValues (fc : Face) : Panel → MetaM Panel
     -- edge's two ends — which is the only thing that tells two corners of one element type apart.
     let mut placed : Array (String × Expr × String) := #[]
     for (x, y, e) in fc.steps do
+      let mut ends : Array (String × String) := #[]
       for p in #[fc.lhs, fc.rhs] do
         for (s, t, f) in p.edges do
           if f == e then
-            let h := (edgeHue? es s t).getD ""
-            placed := placed.push (s, x, h)
-            placed := placed.push (t, y, h)
+            unless ends.any (fun q => q == (s, t)) do ends := ends.push (s, t)
+      -- ONE STEP, ONE EDGE: a step matching two edges would stand its two values at four corners,
+      -- and a value drawn where no route carried it is the error that exits 0 — so it is reported.
+      if ends.size > 1 then
+        throwError "the step carrying {x} to {y} matches {ends.size} edges of this face — {String.intercalate ", " (ends.map (fun (s, t) => s ++ "→" ++ t)).toList} — so neither value has a corner.  Give the objects the edge runs between names that do not unfold to one another at reducible transparency."
+      for (s, t) in ends do
+        let h := (edgeHue? es s t).getD ""
+        placed := placed.push (s, x, h)
+        placed := placed.push (t, y, h)
     let ns ← ns.mapM fun n => do
       let here := placed.filter (·.1 == n.id)
       if here.isEmpty then
@@ -1720,9 +1727,16 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
     let ps := pins.filter fun p => (t.find? (· == p)).isSome
     if ps.size == 2 then
       let mentioned ← allEdges.filterM (mentionsArrow t ·)
+      let mut maximal : Array Expr := #[]
       for e in mentioned do
         unless mentioned.any fun e' => e' != e && (e'.find? (· == e)).isSome do
-          steps := steps.push (ps[0]!, ps[1]!, e)
+          unless maximal.any (· == e) do maximal := maximal.push e
+      -- ONE HYPOTHESIS, ONE EDGE: two edges matching it carry its two values to two pairs of
+      -- corners, so every corner of their type gets the value and none of them was traced there.
+      if maximal.size > 1 then
+        throwError "the hypothesis pinning {ps[0]!} and {ps[1]!} names {maximal.size} edges of the claim: {maximal.toList}.  It traces neither, since two edges up to reducible defeq are two objects that unfold to one — name them so they do not."
+      for e in maximal do
+        steps := steps.push (ps[0]!, ps[1]!, e)
   -- EVERY FACE OF THIS STATEMENT CARRIES ITS NAMES, whichever of them the rules below keep: an
   -- arrow named once is named on every face it stands on.
   let fs := fs₀.map fun f => { f with named := f.named ++ named, steps := f.steps ++ steps }
