@@ -608,18 +608,12 @@ def LaneAlg.head : LaneAlg → Name
 
 /-- Two lanes composed, in DIAGRAM order — `comp F G` is `F` then `G`, so `(comp F G).obj A` is
     `G.obj (F.obj A)` in both algebras. -/
-def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr := do
-  -- A LANE COMPOSED WITH THE IDENTITY IS THAT LANE, and it is written as that lane.  `wiresOf`
-  -- already reads an identity as NO wire, so the composite was a spelling nothing drew: it made a
-  -- bead's obligation `LaxNatural (Relator.comp (idRelator 𝒜) E) …` where the theorem about the
-  -- bead (`singleton_laxNatural`) states it for `E`, so the general theorem matched only by
-  -- unfolding — a unification the search's budget ends — and the panel took whichever corollary
-  -- happened to be written in the composite spelling.
-  let isId (e : Expr) : Bool := match e.getAppFn.constName? with
-    | some n => n == ``Freyd.Alg.Relator.idRelator || n == ``Freyd.idFunctor
-    | none => false
-  if isId F then return G
-  if isId G then return F
+def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr :=
+  -- THE IDENTITY LANE IS NOT DROPPED HERE.  It reads as no wire, so dropping it looks free, and it
+  -- would put a singleton bead's obligation in the lane's own name; but the repo's own naturality
+  -- theorems are written in the composite spelling the stack builds (`Vec.cp_natural` states `cp`'s
+  -- square for `compFunctor (functorProd idFunctor [m]) [3 * p]`), and a dropped identity leaves
+  -- them unmatched — the bead's own theorem lost, which is worse than a corollary cited for it.
   Meta.mkAppM (match alg with
     | .relator => ``Freyd.Alg.Relator.comp
     | .functor => ``Freyd.compFunctor) #[F, G]
