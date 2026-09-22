@@ -85,21 +85,23 @@ public theorem delta_map_apply {A B : RelSet.{0}} (R : A ⟶ B)
 -- Same shape as `inter_not_monotonic`: two DISTINCT elements improve to the SAME one, and the
 -- meet is exactly what forbids the two components from being routed there independently.
 
--- THE SQUARE'S OWN LETTERS.  The two objects are the same set and the arrow between them is
--- `boolMerge`, but a picture drawn from the statement can only write what the statement names, and
--- `Fin 2` at all four corners says nothing about which end of `R` a corner is.  Named here, each
--- corner is `A×A`, `A`, `B×B`, `B` and each side is `R×R`, `R`, `π₁∩π₂`.
+-- THE SQUARE'S OWN LETTERS.  The two objects are the same set and the arrow between them is `R`,
+-- but a picture drawn from the statement can only write what the statement names, and `Fin 2` at
+-- all four corners says nothing about which end of `R` a corner is.  Named here, each corner is
+-- `A×A`, `A`, `B×B`, `B` and each side is `R×R`, `R`, `π₁∩π₂`.
 namespace MeetCounterex
 
--- `expose`, `reducible`: the trace below is pinned at `Fin 2` and its values are elaborated and
--- decided against these, so their definitions have to cross the module boundary.
+-- NOT `reducible`: the panel tells the two corners apart only up to reducible defeq, so a
+-- reducible `A` and `B` collapse to one object and every traced value lands on both corners.
+-- `expose`: the trace below is elaborated against these across the module boundary.
 /-- The note's `A=B≜{0,1}`. -/
-@[expose, reducible] public def A : RelSet.{0} := ⟨Fin 2⟩
-@[expose, reducible] public def B : RelSet.{0} := ⟨Fin 2⟩
+@[expose] public def A : RelSet.{0} := ⟨Fin 2⟩
+@[expose] public def B : RelSet.{0} := ⟨Fin 2⟩
 
 /-- The relation `{(0,0),(1,0)}` on `{0,1}`, which merges BOTH elements onto one.  The witness
-    both refutations below are stated at. -/
-@[expose, reducible] public def R : A ⟶ B := fun _ y => y = 0
+    both refutations below are stated at.  The binder is spelled `Fin 2` because `B` is not
+    reducible, so the numeral cannot be typed through `B.carrier`. -/
+@[expose] public def R : A ⟶ B := fun _ (y : Fin 2) => y = 0
 
 end MeetCounterex
 
@@ -137,7 +139,7 @@ public theorem inter_not_laxNatural_square
   obtain ⟨y, ⟨hl, hr⟩, -⟩ :=
     RelSet.le_iff.mp h (((0 : Fin 2), (1 : Fin 2))) (0 : Fin 2)
       ⟨((0 : Fin 2), (0 : Fin 2)), (delta_map_apply MeetCounterex.R _ _).mpr ⟨rfl, rfl⟩, rfl, rfl⟩
-  exact absurd (hl.symm.trans hr) (by decide)
+  exact absurd (hl.symm.trans hr) (show ¬ ((0 : Fin 2) = 1) by decide)
 open MeetCounterex in
 /-- **The `∩` case of `union_slides` is FALSE in its LAX NATURALITY reading too.**  The two
     projections `π₁, π₂ : Δ ⟶ 1` are both lax natural (`outl_lax_natural`, `outr_lax_natural`) and
@@ -163,7 +165,7 @@ public theorem laxNatural_inter_false :
       rfl (funext fun _ => propext (by
         constructor
         · intro hy; exact hy.elim
-        · intro ⟨x, hx, hl, hr⟩; subst hx; exact absurd (hl.symm.trans hr) (by decide)))
+        · intro ⟨x, hx, hl, hr⟩; subst hx; exact absurd (hl.symm.trans hr) (show ¬ ((0 : Fin 2) = 1) by decide)))
       rfl (funext fun _ => propext (by
         constructor
         · intro hy; exact hy.elim
