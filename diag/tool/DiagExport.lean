@@ -1341,6 +1341,10 @@ def usage : String :=
    --records prints one JSON object per selector — `selector` with either the `file` it wrote or\n\
      the `error` it failed with — instead of the list of paths, for a caller that must pair a\n\
      selector with its outcome and cannot, from a list of paths, see which one is missing\n\
+   --stale prints, of the selectors given, the ones whose picture is OUT OF DATE — no file, no\n\
+     `cert:` line it can read, or a key the declaration no longer has — for `diag-regen --missing`\n\
+     to draw; it takes the same route flag the drawing takes, and reads the index, not the\n\
+     environment.  A selector the index no longer has a declaration for ends the run\n\
    --list <label> prints the note's `#lean`/`#leanc` CALLS under that metadata label, one per\n\
      line, selectors of one call joined by `+`: `--list lean-panel`, `--list lean-circuit`\n\
    --commutative draws the COMMUTATIVE DIAGRAM of a statement, to\n\
@@ -1421,6 +1425,21 @@ def parseArg (arg : String) (sel : Bool) :
 /-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
 def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
 
+/-- THE ROOTS THIS RUN LISTS: both notes, or the ONE chapter file `CH` names.  Every gate takes its
+    chapter from that variable (the Makefile exports it), and a listing that answered for the whole
+    note under `CH=13` hands a chapter's gate every other chapter's selectors — checking something
+    else and exiting 0.  `note-files --ch` is the one resolver, so a `CH` naming no chapter ENDS the
+    run with its message rather than falling back to the note. -/
+def rootsToList : IO (List String) := do
+  let ch := ((← IO.getEnv "CH").getD "").trim
+  if ch.isEmpty then return noteRoots
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
+  let files := (r.stdout.splitOn "\n").map String.trim |>.filter (!·.isEmpty)
+  if r.exitCode != 0 || files.length != 1 then
+    throw <| IO.userError s!"diag-export --list: CH={ch}: `./scripts/note-files --ch {ch}` named \
+      {files.length} chapter file(s) and exited {r.exitCode}: {r.stderr.trimAscii}"
+  return files
+
 /-- Every `#lean`/`#leanc` CALL the notes make, read off the note's own metadata under `label` —
     the selectors of one call joined by `+`, because one call is one box and the exporter is told
     the call, not the selector: a pair drawn as two calls comes out as two boxes of different depths.
@@ -1431,7 +1450,7 @@ def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"
     the listing runs before any picture exists — which is what `diag-regen --missing` needs. -/
 def listMain (label : String) : IO UInt32 := do
   let mut out : Array String := #[]
-  for root in noteRoots do
+  for root in ← rootsToList do
     let args := #["query", "--root", ".", "--input", "list=1", root,
                   "<" ++ label ++ ">", "--field", "value"]
     let cmdline := "typst " ++ String.intercalate " " args.toList
@@ -1455,6 +1474,101 @@ def listMain (label : String) : IO UInt32 := do
   for s in out.qsort (· < ·) do
     if s != prev then IO.println s
     prev := s
+  return 0
+
+/-! ### Where a picture goes, and what it was drawn from -/
+
+/-- THE ROUTE'S DIRECTORY, and the PATH of one selector's picture in it — one rule, read by the
+    writer and by `--stale`, because a path computed twice is a staleness check reporting every
+    picture missing. -/
+def outDirOf (circuit commutative type formula : Bool) : String :=
+  if circuit then "diag/generated/circuit"
+  else if commutative then "diag/generated/commutative"
+  else if type then "diag/generated/type"
+  else if formula then "diag/generated/formula" else "diag/generated"
+
+def outPath (circuit commutative type formula proof : Bool) (arg : String) : System.FilePath :=
+  System.FilePath.mk
+    s!"{outDirOf circuit commutative type formula}/{arg}{if proof then ".proof" else ""}.typ"
+
+/-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
+    `+` joins two different statements on one page — so its picture goes stale when either does. -/
+def selDecls (commutative : Bool) (arg base : String) : List Name :=
+  if commutative then (arg.splitOn "+").map fun p => (Freyd.CommutativeDiagram.part p).1
+  else [base.toName]
+
+/-- The `cert:` line EVERY generated file carries, under the two header lines: the declarations the
+    picture was drawn from, each with the key of the statement it was drawn from — `stmtKey`, the
+    number the index stores and `cite-check` re-verifies.  One form for all seven routes, so one
+    reader (`--stale`) answers for all of them and a panel whose Lean statement changed is redrawn
+    by `diag-regen --missing` instead of waiting for the next whole redraw. -/
+def certLine (names : List Name) : MetaM String := do
+  let env ← getEnv
+  let parts ← names.mapM fun n => do
+    let some ci := env.find? n | throwError "no such declaration: {n}"
+    return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 (← Freyd.TypeRender.stmtKey ci)
+      ++ "\")"
+  return "// cert: " ++ " ".intercalate parts ++ "\n"
+
+/-- The marks of a generated file's own `cert:` line, `(<declaration>, <key>)` each.  Parsing it is
+    the exporter reading ITS OWN output format — the one string read in the tool — and a line it
+    cannot read at all yields none of them, which is a redraw and never a silent pass. -/
+def certMarks (txt : String) : List (String × String) :=
+  match (txt.splitOn "\n").find? (·.startsWith "// cert: ") with
+  | none => []
+  | some l => ((l.splitOn "(lean: \"").drop 1).filterMap fun p =>
+      match (p.splitOn "\")").head?.map (·.splitOn "@") with
+      | some [d, k] => some (d, k)
+      | _ => none
+
+/-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `cert:` line it can
+    read, or a key that is no longer the declaration's — printed one per line, in the order given,
+    for `diag-regen --missing` to draw.  The route flags come with the selectors, because the path
+    and the `+` rule are the route's.
+
+    It reads the INDEX and no environment, as `--cite` does: `decl_info.stmt_key` is the very number
+    the drawing wrote, so the comparison costs a sqlite query and not an import.
+
+    THE SELECTORS ARE THE OBLIGATIONS, not the files: a selector whose file is missing is stale, and
+    one naming a declaration THE INDEX NO LONGER HAS ends the run — a picture of a statement that no
+    longer exists is not a picture to keep. -/
+def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode proofMode : Bool)
+    (args : List String) : IO UInt32 := do
+  -- ONE CALL, ITS FILES, AND THE DECLARATIONS EACH FILE IS DRAWN FROM.  The string route's `+`
+  -- names two pictures sharing a box, so each is its own file and either one stale redraws the
+  -- call; the commutative route's `+` is one file drawn from two declarations.
+  let jobs : List (String × List (String × List Name)) := args.map fun a =>
+    (a, (if stringMode then a.splitOn "+" else [a]).map fun n =>
+      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      (n, selDecls commutativeMode n base))
+  let names := (jobs.flatMap fun j => j.2.flatMap fun f => f.2.map toString)
+  if names.isEmpty then return 0
+  let rows ← Cite.rowsOf (Cite.Q ++ "i.user_name in ("
+    ++ ", ".intercalate (names.map Cite.sqlLit) ++ ")")
+  let keys : Std.HashMap String String :=
+    rows.foldl (fun m r => m.insert r.user (Cite.keyHex r.key)) {}
+  let mut gone : List String := []
+  for n in names do
+    unless keys.contains n do gone := gone ++ [n]
+  unless gone.isEmpty do
+    IO.eprintln s!"diag-export --stale: the index has no declaration named \
+      {" ".intercalate gone} — a picture drawn from it is a picture of a statement that no longer \
+      exists.  Rename the note's selector, or refresh the index with `./scripts/lean-refactor index`"
+    return 1
+  for (call, files) in jobs do
+    let mut stale := false
+    for (n, decls) in files do
+      if stale then break
+      let path := outPath circuitMode commutativeMode typeMode formulaMode proofMode n
+      if !(← path.pathExists) then stale := true
+      else
+        -- EVERY declaration the picture is drawn from must be marked with its CURRENT key, and the
+        -- marks must be exactly those: a mark naming another declaration is a picture drawn from
+        -- something else, which is as stale as a changed key, and a file with no mark at all — a
+        -- red stub, or one written before the routes recorded a key — is redrawn.
+        let wanted := decls.map fun d => (toString d, keys.getD (toString d) "")
+        unless certMarks (← IO.FS.readFile path) == wanted do stale := true
+    if stale then IO.println call
   return 0
 
 def main (args : List String) : IO UInt32 := do
@@ -1484,11 +1598,15 @@ def main (args : List String) : IO UInt32 := do
   -- `--records` prints one object per selector instead, carrying the file it wrote or the error it
   -- failed with — every mode, because the question is the run's, not any one route's.
   let recordsMode := args.contains "--records"
+  let staleMode := args.contains "--stale"
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative"
-      && a != "--records")
+      && a != "--records" && a != "--stale")
   if args.isEmpty then IO.eprintln usage; return 2
+  -- The staleness route reads the INDEX and no environment, so it answers before the import below.
+  if staleMode then
+    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode proofMode args
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1507,10 +1625,7 @@ def main (args : List String) : IO UInt32 := do
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
   -- Each route writes under its own directory, except the string one: its panel IS the picture the
   -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
-  let outDir := if circuitMode then "diag/generated/circuit"
-    else if commutativeMode then "diag/generated/commutative"
-    else if typeMode then "diag/generated/type"
-    else if formulaMode then "diag/generated/formula" else "diag/generated"
+  let outDir := outDirOf circuitMode commutativeMode typeMode formulaMode
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
@@ -1558,7 +1673,10 @@ def main (args : List String) : IO UInt32 := do
     let run : CoreM String :=
       -- THE UNIFIER THAT CHECKED THE THEOREMS IS THE ONE THAT LOOKS THEM UP: the command elaborator
       -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
-      Meta.MetaM.run' <| Meta.withConfig (fun c => { c with foApprox := true, ctxApprox := true }) <|
+      Meta.MetaM.run' <| Meta.withConfig (fun c => { c with foApprox := true, ctxApprox := true }) <| do
+      -- EVERY ROUTE RECORDS THE KEY IT DREW FROM, here and not in the routes: one writer, one
+      -- reader (`--stale`), and a route that records none is a picture nobody can tell is stale.
+      let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
         -- A circuit reads ONE side; a chained selector leaves it the outer one, where it fails
@@ -1569,13 +1687,13 @@ def main (args : List String) : IO UInt32 := do
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if proofMode then drawProof arg.toName else draw arg.toName)
+      if sigMode then return body
+      return (← certLine (selDecls commutativeMode arg base)) ++ body
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut failed : Array String := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := if circuitMode || commutativeMode || typeMode || formulaMode
-      then System.FilePath.mk s!"{outDir}/{arg}.typ"
-      else System.FilePath.mk s!"diag/generated/{arg}{if proofMode then ".proof" else ""}.typ"
+    let path := outPath circuitMode commutativeMode typeMode formulaMode proofMode arg
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
     -- the other selectors — so a flag added later is in it without anyone remembering to add it.
     -- The WHOLE CALL is named, peers and all: a side redrawn without them comes out in a box of its

@@ -609,6 +609,11 @@ def LaneAlg.head : LaneAlg → Name
 /-- Two lanes composed, in DIAGRAM order — `comp F G` is `F` then `G`, so `(comp F G).obj A` is
     `G.obj (F.obj A)` in both algebras. -/
 def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr :=
+  -- THE IDENTITY LANE IS NOT DROPPED HERE.  It reads as no wire, so dropping it looks free, and it
+  -- would put a singleton bead's obligation in the lane's own name; but the repo's own naturality
+  -- theorems are written in the composite spelling the stack builds (`Vec.cp_natural` states `cp`'s
+  -- square for `compFunctor (functorProd idFunctor [m]) [3 * p]`), and a dropped identity leaves
+  -- them unmatched — the bead's own theorem lost, which is worse than a corollary cited for it.
   Meta.mkAppM (match alg with
     | .relator => ``Freyd.Alg.Relator.comp
     | .functor => ``Freyd.compFunctor) #[F, G]
@@ -1466,6 +1471,38 @@ def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
   binders, is one of the three propositions the bead could satisfy, unified against the wanted one.
   Filtering first on the constants the family mentions keeps it to a handful of candidates. -/
 
+/-- What a declaration CONCLUDES, its `∀`-telescope stripped: the proposition it is about, which is
+    what says how much it pins down.  The binders are the context it needs to say it — a class, an
+    object, a hypothesis — and counting those would call a theorem stated over a richer context the
+    more special one. -/
+partial def conclusionOf : Expr → Expr
+  | .forallE _ _ b _ => conclusionOf b
+  | .mdata _ b => conclusionOf b
+  | e => e
+
+/-- How many EXPLICIT binders a statement takes: a theorem that states a bead's naturality outright
+    takes none, where one that DERIVES it takes the naturality it derives it from (`recip_oplax`,
+    `strictNatural_prod`).  The objects and the instances are implicit, so they are not counted. -/
+partial def explicitBinders : Expr → Nat
+  | .forallE _ _ b bi => (if bi.isExplicit then 1 else 0) + explicitBinders b
+  | .mdata _ b => explicitBinders b
+  | _ => 0
+
+/-- How many components a name has: `Freyd.Alg.singleton_laxNatural` three, and the case study's
+    `Freyd.Alg.Cylinder.OneRow.setify_natural_one` five. -/
+partial def nameDepth : Name → Nat
+  | .str p _ | .num p _ => 1 + nameDepth p
+  | _ => 0
+
+/-- A term's SIZE, one for every node: how much a statement pins down, and so the order the
+    candidates are offered in — the shorter statement is the more general one. -/
+partial def exprSize : Expr → Nat
+  | .app f a => 1 + exprSize f + exprSize a
+  | .lam _ t b _ | .forallE _ t b _ => 1 + exprSize t + exprSize b
+  | .letE _ t v b _ => 1 + exprSize t + exprSize v + exprSize b
+  | .mdata _ b | .proj _ _ b => 1 + exprSize b
+  | _ => 1
+
 /-- Every constant a term is built from — the cheap filter that says which declarations could
     possibly be about this bead. -/
 partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
@@ -1868,7 +1905,8 @@ partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head 
   if must.isEmpty && !(← unfiltered head) then return none
   remembered s false want must.toList fuel seen (scan br s want head must fuel seen)
 
-/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn. -/
+/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn.  THE
+    FIRST THAT CHECKS WINS, and `candidates` is what makes that the most general of them. -/
 partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name) (must : NameSet)
     (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let env ← getEnv
@@ -1876,7 +1914,42 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   let al ← bridgeAliases
   let mut hit : Option (Name × Expr) := none
   let ms := must.toList
-  for (n, has) in ← candidates head do
+  -- THE THEOREM CITED FOR A BEAD IS ONE ABOUT THE BEAD'S OWN CONSTANT, and every other candidate
+  -- is tried only after those.  The bucket is every theorem with this conclusion, so it holds both
+  -- the family's own naturality and the closure theorems (`strictNatural_recip`) that conclude it
+  -- for ANY family: those match a bead of any spelling, and first-hit-wins cited one of them for
+  -- `snoc`.  Ordered by `candidates`, the ones about the family come shortest-statement first —
+  -- `singleton_laxNatural` before `Cylinder.OneRow.moves_natural_one`, which states the same lax
+  -- naturality of `𝟙%∋` with the one source relator `Relator.comp (idRelator 𝒜) powerRelator` and
+  -- so unifies with the bead's own lane where the general theorem needs an unfolding.
+  -- `s.head` is the bridged family's head, and a candidate's constants come UNBRIDGED off the
+  -- index, so a source spelling a bridge could have rewritten into it counts as naming it.
+  -- AND THE MOST GENERAL OF THOSE FIRST: every structure a statement pins down is a term in its
+  -- conclusion, so the theorem fixing fewer of them is the shorter one.  Two whose conclusions are
+  -- the same size are two names for one theorem, and the shallower name is the library's where the
+  -- deeper is a case study's restatement of it — which is the whole difference between
+  -- `Freyd.Alg.singleton_laxNatural` and `Freyd.Alg.Cylinder.OneRow.setify_natural_one`, whose
+  -- statements are letter for letter the same.  Only the candidates ABOUT the family are ordered:
+  -- a closure theorem's conclusion is the shortest there is (`StrictNatural G F (fun A => (φ A)°)`,
+  -- every part of it bound), so ordering the whole bucket would cite one of those for every bead.
+  let cs ← candidates head
+  let (about, rest) := match s.head with
+    | some h => cs.partition fun (c : Name × NameSet) =>
+        c.2.contains h || (al.getD h #[]).any c.2.contains
+    | none => (#[], cs)
+  -- STATED BEFORE DERIVED: a theorem taking the bead's naturality as a hypothesis and handing back
+  -- another (`recip_oplax`, `strictNatural_prod`) is about the family too, and its conclusion is
+  -- the shorter one, so without this it would be cited wherever the family's own theorem exists.
+  -- It is an ORDER and not a filter: a compound bead, whose verdict only a closure theorem gives,
+  -- reaches it as before.
+  let rank (n : Name) : Nat × Nat × Nat := match env.find? n with
+    | some ci => (explicitBinders ci.type, exprSize (conclusionOf ci.type), nameDepth n)
+    | none => (0, 0, 0)
+  let about := about.qsort fun (x : Name × NameSet) (y : Name × NameSet) =>
+    let (a, b, c) := rank x.1
+    let (d, e, f) := rank y.1
+    a < d || (a == d && (b < e || (b == e && c < f)))
+  for (n, has) in about ++ rest do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
     -- `tryCatchRuntimeEx` below: a budget spent inside one candidate is caught as that candidate's
