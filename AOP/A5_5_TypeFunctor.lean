@@ -293,6 +293,28 @@ open Lean PrettyPrinter in
   | `($_ $_ $R) => `($(mkIdent `T) $R)
   | _ => throw ()
 
+-- THE CARRIER OF THE INITIAL ALGEBRA OF A PARTIAL APPLICATION IS THE TYPE FUNCTOR AT THAT
+-- ARGUMENT: `typeRelator`'s `obj A := (I A).t` is that equation, so `T` is written back on
+-- whichever operand carries the index — the relator `F.appl A`, or the algebra `I A` when the
+-- family is applied first — and on neither when the algebra is one fixed algebra.  A delaborator
+-- and not an unexpander because the question is which relator, which is a head CONSTANT of the
+-- Expr; the printed name is a spelling and answers nothing.
+open Lean Meta PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.InitialAlgebra.t] public meta def delabInitialAlgebraT : Delab := do
+  let e ← getExpr
+  let n := e.getAppNumArgs
+  let T := mkIdent `T
+  if n < 2 then return T
+  let self := e.appArg!
+  unless (← whnf (← inferType self)).isAppOf ``InitialAlgebra do return T
+  if (e.getArg! (n - 2)).isAppOf ``BiRelator.appl then
+    let a ← withNaryArg (n - 2) (withAppArg delab)
+    `($T $a)
+  else if self.isApp then
+    let a ← withNaryArg (n - 1) (withAppArg delab)
+    `($T $a)
+  else return T
+
 -- A BIFUNCTOR STANDS AT BOTH ITS ARGUMENTS, `F(A,TA)` and `F(f,𝟙)`: the note writes them that way
 -- and an unexpander that dropped the first spelled `F(A,TA)` and `F(A,TB)` alike, two corners of
 -- one square as one label.  The field access is left as itself and the label printer supplies the

@@ -350,17 +350,11 @@ public theorem fold_natural [I : InitialAlgebra F] {A B : Algebra F} (S : A ⟶ 
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
 -- it as; these change no statement and no `stmt_key`.
--- The carrier and the algebra of an initial algebra are `T` and `α` — the letters `<initial-defn>`
--- and B&dM §2.6 draw them with — and the relator argument is not part of either name.  When that
--- relator is itself a PARTIAL APPLICATION (`F.appl a`, `CL.F Unit A`, …) the initial algebra is one
--- member of a family and its last argument is the index, so it is written back on: `T A`, `α A`.
--- The index is the LAST argument of whichever operand is itself an application: the family `I`
--- taken at `a` (`(I a).t`, how field notation prints it) and the partial relator `F.appl a` are the
--- same indexing, so both spellings answer `a`.  An operand that is not an application is one
--- initial algebra, not a family, and carries no index.
--- Which member of the family, read off whichever operand is an application: `F.appl a`, `(I a)` and
--- `CL.F Unit a` all answer `a`, whether the printer put the relator or the algebra in front.  An
--- operand that is a plain name is one initial algebra, not a family, and has no index.
+-- The algebra of an initial algebra is `α` — the letter `<initial-defn>` and B&dM §2.6 draw it
+-- with — and the relator argument is not part of the name.  When the algebra is one member of a
+-- family, `(I a).α`, that index IS part of it: which bead, not which relator, so it is written
+-- back on as `α a`.  The CARRIER asks a different question — which type functor, answered from the
+-- relator's head constant — and its rule lives with `BiRelator`, in `A5_5_TypeFunctor`.
 open Lean in
 public meta def lastArg : Term → Option Term
   | `($_ $_ $a) => some a
@@ -373,12 +367,6 @@ open Lean in
 public meta def familyIndex : Term → Option Term
   | `($_ $x) => lastArg x
   | _ => none
-
-open Lean PrettyPrinter in
-@[app_unexpander InitialAlgebra.t] public meta def unexpandInitialAlgebraT : Unexpander := fun stx =>
-  match familyIndex ⟨stx⟩ with
-  | some a => `($(mkIdent `T) $a)
-  | none => `($(mkIdent `T))
 
 open Lean PrettyPrinter in
 @[app_unexpander InitialAlgebra.α] public meta def unexpandInitialAlgebraAlpha : Unexpander :=
