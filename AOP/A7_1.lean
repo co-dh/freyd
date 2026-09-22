@@ -293,44 +293,42 @@ theorem est_simple_of_antisymmetric {R : A ⟶ A} (h : AntiSymmetric R) : Simple
     rwa [Allegory.recip_comp, Allegory.recip_recip, Allegory.recip_recip] at hr
   exact le_trans (le_trans hE (inter_mono hfirst hsecond)) h
 
-/-! ## Ex 7.1/7.2: the subset relation (book p.169) -/
+/-! ## Ex 7.1/7.2: the subset relation (book p.169)
 
-/-- **B&dM p.169**: `subset = ∈\∈`, mirrored `(∋ a) / (∋ a)` — which is LITERALLY Freyd's
-    `subset` (§2.442, `Freyd.S2_4`); `subsetRel` is the B&dM-facing alias for it, kept
-    definitional so every lemma transfers both ways for free. -/
-@[expose] public def subsetRel (A : 𝒜) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A := subset
+  B&dM's `subset = ∈\∈` mirrors to `(∋ a) / (∋ a)`, which IS Freyd's `subset` (§2.442,
+  `Freyd.S2_40`), so the book's relation is written with Freyd's name and no alias of its own. -/
 
-public theorem id_le_subsetRel : Cat.id (PowerAllegory.powerObj A) ⊑ subsetRel A := by
+public theorem id_le_subset : Cat.id (PowerAllegory.powerObj A) ⊑ subset := by
   show Cat.id (PowerAllegory.powerObj A) ⊑ (∋ A) / (∋ A)
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
 
-public theorem subsetRel_comp_eps_le : subsetRel A ≫ ∋ A ⊑ ∋ A := by
+public theorem subset_comp_eps_le : subset ≫ ∋ A ⊑ ∋ A := by
   show ((∋ A) / (∋ A)) ≫ ∋ A ⊑ ∋ A
   exact div_self_comp_le (∋ A)
 
 /-- **Ex 7.1** mirrored: `∋°\(R/∋)` is unaffected by intersecting with the subset order,
-    `(subsetRel a)°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ subset°≫lb` (`id ⊑
-    subset`).  `⊑`: `∋°≫subset°≫lb = (subset≫∋)°≫lb ⊑ ∋°≫lb ⊑ R` (`subsetRel_comp_eps_le`). -/
-theorem recip_subsetRel_comp_lb (R : A ⟶ A) :
-    (subsetRel A)° ≫ (((∋ A)°) \ R) = (((∋ A)°) \ R) := by
+    `subset°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ subset°≫lb` (`id ⊑
+    subset`).  `⊑`: `∋°≫subset°≫lb = (subset≫∋)°≫lb ⊑ ∋°≫lb ⊑ R` (`subset_comp_eps_le`). -/
+theorem recip_subset_comp_lb (R : A ⟶ A) :
+    subset° ≫ (((∋ A)°) \ R) = (((∋ A)°) \ R) := by
   apply le_antisymm
   · apply (le_leftDiv_iff _ _ _).mpr
-    have hstep2 : (subsetRel A ≫ ∋ A)° ⊑ (∋ A)° := recip_mono subsetRel_comp_eps_le
-    have heq : (∋ A)° ≫ ((subsetRel A)° ≫ (((∋ A)°) \ R))
-        = (subsetRel A ≫ ∋ A)° ≫ (((∋ A)°) \ R) := by
+    have hstep2 : (subset ≫ ∋ A)° ⊑ (∋ A)° := recip_mono subset_comp_eps_le
+    have heq : (∋ A)° ≫ (subset° ≫ (((∋ A)°) \ R))
+        = (subset ≫ ∋ A)° ≫ (((∋ A)°) \ R) := by
       rw [← Cat.assoc, Allegory.recip_comp]
     rw [heq]
     exact le_trans (comp_mono_right hstep2 _) (leftDiv_comp_le _ _)
-  · have hid : Cat.id (PowerAllegory.powerObj A) ⊑ (subsetRel A)° := by
-      have h := recip_mono (id_le_subsetRel (A := A)); rwa [recip_id] at h
+  · have hid : Cat.id (PowerAllegory.powerObj A) ⊑ subset° := by
+      have h := recip_mono (id_le_subset (A := A)); rwa [recip_id] at h
     have h2 := comp_mono_right hid (((∋ A)°) \ R)
     rwa [Cat.id_comp] at h2
 
-/-- **Ex 7.2** mirrored, the `⊑` half: `existsImage R ≫ subsetRel b ⊑ (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subsetRel_le (R : A ⟶ B) :
-    existsImage R ≫ subsetRel B ⊑ (∋ A ≫ R) / (∋ B) := by
+/-- **Ex 7.2** mirrored, the `⊑` half: `existsImage R ≫ subset ⊑ (∋a≫R)/∋b`. -/
+theorem existsImage_comp_subset_le (R : A ⟶ B) :
+    existsImage R ≫ subset ⊑ (∋ A ≫ R) / (∋ B) := by
   show existsImage R ≫ ((∋ B) / (∋ B)) ⊑ (∋ A ≫ R) / (∋ B)
   apply (le_div_iff _ _ _).mpr
   calc (existsImage R ≫ ((∋ B) / (∋ B))) ≫ ∋ B
@@ -338,14 +336,14 @@ theorem existsImage_comp_subsetRel_le (R : A ⟶ B) :
     _ ⊑ existsImage R ≫ ∋ B := comp_mono_left _ (div_self_comp_le (∋ B))
     _ = ∋ A ≫ R := existsImage_eps R
 
-/-- **Ex 7.2** mirrored, the `⊒` half: `(∋a≫R)/∋b ⊑ existsImage R ≫ subsetRel b`.  Shunts
+/-- **Ex 7.2** mirrored, the `⊒` half: `(∋a≫R)/∋b ⊑ existsImage R ≫ subset`.  Shunts
     across the map `existsImage R` (`map_shunt_left`), reducing to `(existsImage R)°≫((∋a≫R)/∋b)
-    ⊑ subsetRel b`, then unfolds `subsetRel b = ∋b/∋b` via `le_div_iff`: the numerator bound
+    ⊑ subset`, then unfolds `subset = ∋b/∋b` via `le_div_iff`: the numerator bound
     `((∋a≫R)/∋b)≫∋b ⊑ ∋a≫R` (`DivisionAllegory.div_comp_le`) composed with `(existsImage R)°`
     lands on `(existsImage R)°≫(∋a≫R) = (existsImage R)°≫(existsImage R≫∋b) ⊑ id≫∋b = ∋b`
     (`existsImage_eps` + `Simple (existsImage R)`). -/
-theorem existsImage_comp_subsetRel_ge (R : A ⟶ B) :
-    (∋ A ≫ R) / (∋ B) ⊑ existsImage R ≫ subsetRel B := by
+theorem existsImage_comp_subset_ge (R : A ⟶ B) :
+    (∋ A ≫ R) / (∋ B) ⊑ existsImage R ≫ subset := by
   have hEMap : Map (existsImage R) := Λ_is_map' _
   apply (map_shunt_left hEMap _ _).mp
   show (existsImage R)° ≫ ((∋ A ≫ R) / (∋ B)) ⊑ (∋ B) / (∋ B)
@@ -363,10 +361,10 @@ theorem existsImage_comp_subsetRel_ge (R : A ⟶ B) :
     rwa [Cat.id_comp] at h
   exact le_trans hb1 hb2
 
-/-- **Ex 7.2** mirrored (full equality): `existsImage R ≫ subsetRel b = (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subsetRel (R : A ⟶ B) :
-    existsImage R ≫ subsetRel B = (∋ A ≫ R) / (∋ B) :=
-  le_antisymm (existsImage_comp_subsetRel_le R) (existsImage_comp_subsetRel_ge R)
+/-- **Ex 7.2** mirrored (full equality): `existsImage R ≫ subset = (∋a≫R)/∋b`. -/
+theorem existsImage_comp_subset (R : A ⟶ B) :
+    existsImage R ≫ subset = (∋ A ≫ R) / (∋ B) :=
+  le_antisymm (existsImage_comp_subset_le R) (existsImage_comp_subset_ge R)
 
 /-! ## (7.10)/(7.11): fusion with the power functor and distribution over union
 

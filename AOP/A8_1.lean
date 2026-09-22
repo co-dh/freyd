@@ -8,7 +8,7 @@
 
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`; B&dM `R/S` = Freyd `(S \ R)`;
   B&dM `S\R` = Freyd `R / S`):
-  - B&dM `∈\∈` is `subsetRel a` (= Freyd's `subset`, `AOP.A7_1`).
+  - B&dM `∈\∈` is Freyd's `subset` (§2.442, `Freyd.S2_40`).
   - like `est R` (= B&dM `min R°`), `thinRel Q` folds the `°` into the argument — it is B&dM's
     `thin Q°` — so the direction is carried by the relation's name and the `est`/`thin` laws
     share their letters.  B&dM `∋·Q°` is `Q° ≫ (∋ a)°`, and `(∋·Q°)/∋` is
@@ -35,14 +35,14 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
-/-- `ΛW·subset = W/∋` mirrored: `Λ W ≫ subsetRel a = W / (∋ a)` — the transpose of `W`
+/-- `ΛW·subset = W/∋` mirrored: `Λ W ≫ subset = W / (∋ a)` — the transpose of `W`
     followed by shrinking is exactly "all members come from `W`".  (Ex 7.2's
-    `existsImage_comp_subsetRel` is the instance `W := ∋ ≫ R`.) -/
-public theorem Λ_comp_subsetRel (W : B ⟶ A) : Λ W ≫ subsetRel A = W / (∋ A) := by
+    `existsImage_comp_subset` is the instance `W := ∋ ≫ R`.) -/
+public theorem Λ_comp_subset (W : B ⟶ A) : Λ W ≫ subset = W / (∋ A) := by
   apply le_antisymm
   · apply (le_div_iff _ _ _).mpr
-    have h1 : subsetRel A ≫ ∋ A ⊑ ∋ A := subsetRel_comp_eps_le
-    have h2 : Λ W ≫ (subsetRel A ≫ ∋ A) ⊑ Λ W ≫ ∋ A := comp_mono_left _ h1
+    have h1 : subset ≫ ∋ A ⊑ ∋ A := subset_comp_eps_le
+    have h2 : Λ W ≫ (subset ≫ ∋ A) ⊑ Λ W ≫ ∋ A := comp_mono_left _ h1
     rw [Λ_eps_eq'] at h2
     rwa [Cat.assoc]
   · apply (map_shunt_left (Λ_is_map' W) _ _).mp
@@ -64,7 +64,7 @@ public theorem Λ_comp_subsetRel (W : B ⟶ A) : Λ W ≫ subsetRel A = W / (∋
 /-- **(8.1)** at the folded `°` (B&dM's `thin Q°`): shrink a set without losing `Q`-lower
     bounds for any of its members. -/
 @[expose] public def thinRel (Q : A ⟶ A) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A :=
-  subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
+  subset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
 
 /-- Pointwise form of `thinRel` in Rel(Set): `Y` is a `thin Q`-refinement of `P` iff `Y ⊆ P`
     and every member of `P` has a `Q`-lower bound in `Y`.  Stated here, beside the definition it
@@ -76,7 +76,7 @@ public theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (RelSet.pow �
 /-- Thinning only shrinks: `thin Q ≫ ∋ ⊑ ∋` (members of the output were members of the
     input). -/
 public theorem thinRel_comp_eps_le (Q : A ⟶ A) : thinRel Q ≫ ∋ A ⊑ ∋ A :=
-  le_trans (comp_mono_right (inter_lb_left _ _) (∋ A)) subsetRel_comp_eps_le
+  le_trans (comp_mono_right (inter_lb_left _ _) (∋ A)) subset_comp_eps_le
 
 /-- Thinning keeps lower bounds: `∋·thin Q° ⊑ Q°·∋`-mirrored, `(∋ a)° ≫ thinRel Q ⊑
     Q° ≫ (∋ a)°` (every input member has a `Q`-lower bound among the output members). -/
@@ -95,8 +95,8 @@ public theorem recip_thinRel_comp_eps_le (Q : A ⟶ A) :
     `Λ S ≫ thinRel Q = (S / ∋ a) ∩ (S° \ (Q° ≫ (∋ a)°))`. -/
 public theorem Λ_comp_thinRel (S : B ⟶ A) (Q : A ⟶ A) :
     Λ S ≫ thinRel Q = (S / ∋ A) ∩ (S° \ (Q° ≫ (∋ A)°)) := by
-  show Λ S ≫ (subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))) = _
-  rw [simple_dist_inter (Λ_is_map' S).2, Λ_comp_subsetRel, Λ_comp_lb]
+  show Λ S ≫ (subset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))) = _
+  rw [simple_dist_inter (Λ_is_map' S).2, Λ_comp_subset, Λ_comp_lb]
 
 /-- **The universal property of `thin`** (book p.193): `X ⊑ thin Q·ΛS ⟺ ∈·X ⊑ S ∧
     X·S° ⊑ ∋·Q`, mirrored.  Like (7.5)'s UP, this is the workhorse of every calculation
@@ -175,15 +175,15 @@ public theorem recip_comp_Λ_le_recip_eps (T : B ⟶ A) : T° ≫ Λ T ⊑ (∋ 
 
 /-- `thin` is monotone (B&dM p.194): `Q ⊑ R → thin Q ⊑ thin R`. -/
 public theorem thinRel_mono {Q R : A ⟶ A} (h : Q ⊑ R) : thinRel Q ⊑ thinRel R := by
-  show thinRel Q ⊑ subsetRel A ∩ (((∋ A)°) \ (R° ≫ (∋ A)°))
+  show thinRel Q ⊑ subset ∩ (((∋ A)°) \ (R° ≫ (∋ A)°))
   exact le_inter (inter_lb_left _ _)
     (le_trans (inter_lb_right _ _) (leftDiv_mono_right _ (comp_mono_right (recip_mono h) ((∋ A)°))))
 
 /-- Reflexive half of **Ex 8.2**: `id ⊑ Q → id ⊑ thin Q`. -/
 public theorem id_le_thinRel {Q : A ⟶ A} (hrefl : Cat.id A ⊑ Q) :
     Cat.id (PowerAllegory.powerObj A) ⊑ thinRel Q := by
-  show Cat.id (PowerAllegory.powerObj A) ⊑ subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
-  refine le_inter id_le_subsetRel ?_
+  show Cat.id (PowerAllegory.powerObj A) ⊑ subset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
+  refine le_inter id_le_subset ?_
   apply (le_leftDiv_iff _ _ _).mpr
   rw [Cat.comp_id]
   have hrefl' : Cat.id A ⊑ Q° := by
@@ -198,9 +198,9 @@ theorem thinRel_trans {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
   have htrans' : Q° ≫ Q° ⊑ Q° := by
     have h0 := recip_mono htrans
     rwa [Allegory.recip_comp] at h0
-  show thinRel Q ≫ thinRel Q ⊑ subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
+  show thinRel Q ≫ thinRel Q ⊑ subset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
   refine le_inter ?_ ?_
-  · -- component 1: `⊑ subsetRel a = (∋a)/(∋a)`
+  · -- component 1: `⊑ subset = (∋a)/(∋a)`
     show thinRel Q ≫ thinRel Q ⊑ (∋ A) / (∋ A)
     apply (le_div_iff _ _ _).mpr
     rw [Cat.assoc]
@@ -221,7 +221,7 @@ theorem thinRel_trans {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
     exact le_trans s1 s2
 
 /-- **Ex 8.1** (one direction): `id ⊑ thin id`.  The full Ex 8.1 asks for `thin id = id`; the
-    reverse `thin id ⊑ id` is power-object EXTENSIONALITY (antisymmetry of the `subsetRel`
+    reverse `thin id ⊑ id` is power-object EXTENSIONALITY (antisymmetry of the `subset`
     order), which needs a tabular unitary power allegory — a capability the `UnguardedPowerLCDA`
     setting of this file does NOT have (recorded as a dropped item in the chapter-4
     formalization).  Only the reflexive half is proved here. -/
@@ -333,7 +333,7 @@ public theorem est_comp_singletonMap_cond2 (Q : A ⟶ A) :
     thinning. -/
 public theorem est_comp_singletonMap_le_thinRel (Q : A ⟶ A) :
     est Q ≫ singletonMap ⊑ thinRel Q := by
-  show est Q ≫ singletonMap ⊑ subsetRel A ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
+  show est Q ≫ singletonMap ⊑ subset ∩ (((∋ A)°) \ (Q° ≫ (∋ A)°))
   refine le_inter ?_ ?_
   · show est Q ≫ singletonMap ⊑ (∋ A) / (∋ A)
     exact (le_div_iff _ _ _).mpr (est_comp_singletonMap_cond1 Q)

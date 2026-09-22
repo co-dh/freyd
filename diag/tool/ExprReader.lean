@@ -1936,6 +1936,28 @@ def remembered (s : Search) (square : Bool) (goal : Expr) (must : List Name) (fu
   if r.isNone && below > seen.size then failedRef.modify fun m => m.insert key (max fuel (m.getD key 0))
   return r
 
+/-- Does a statement STATE the naturality square of the family headed by `fam`?  The square's two
+    sides are composites, each carrying the family at one of the two indices, so a theorem that
+    states it is an equation or an inclusion of that shape.  `Λ(R)%∋ = R` is not one: its right side
+    is a bare arrow, and it only YIELDS the square once `E(R)` unfolds to `Λ(∋%R)` — so a search
+    that unifies first cites it for `∋` in place of the square's own theorem.  Hence the shape is
+    read SYNTACTICALLY, at reducible transparency, before anything is unified.  A family whose
+    bridged core is no constant application has no head to ask for, and is not filtered. -/
+def statesSquare (al : Std.HashMap Name (Array Name)) (fam : Name) (ty : Expr) : MetaM Bool :=
+  Meta.forallTelescopeReducing ty fun _ concl => do
+    let some (l, r) := (match concl.getAppFnArgs with
+      | (``Eq, #[_, l, r]) => some (l, r)
+      | (``Freyd.Alg.le, args) => lastTwo args
+      | _ => none) | return false
+    -- The family is met by any spelling a bridge could have rewritten into it, as in `must`.
+    let names (e : Expr) : Bool :=
+      let cs := consts e
+      cs.contains fam || (al.getD fam #[]).any cs.contains
+    for side in [l, r] do
+      unless (← Meta.whnfR side).isAppOf ``Cat.comp do return false
+      unless names side do return false
+    return true
+
 mutual
 
 /-- Is `want` PROVED by some declaration of the environment — and what is the proof?  Candidates
@@ -1945,16 +1967,18 @@ mutual
     Every argument the unification left open must then be answered in its own right, and what comes
     back is the candidate applied to those arguments — a term, checked before it is believed. -/
 partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name)
-    (must : NameSet) (fuel : Nat) (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
+    (must : NameSet) (fuel : Nat) (seen : Array Expr := #[]) (fam : Option Name := none) :
+    MetaM (Option (Name × Expr)) := do
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
-  remembered s false want must.toList fuel seen (scan br s want head must fuel seen)
+  remembered s false want must.toList fuel seen (scan br s want head must fuel seen fam)
 
 /-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn.  THE
     FIRST THAT CHECKS WINS, and `candidates` is what makes that the most general of them. -/
 partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name) (must : NameSet)
-    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+    (fuel : Nat) (seen : Array Expr) (fam : Option Name := none) :
+    MetaM (Option (Name × Expr)) := do
   let env ← getEnv
   let rw ← bridge br want
   let al ← bridgeAliases
@@ -2009,6 +2033,14 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
       if seen.isEmpty then s.passOver has s!"dropped {n}: lacks {m}"
       continue
     let some ci := env.find? n | continue
+    -- STATED, NOT MERELY IMPLIED: the theorem a square is proved by is one SHAPED like that square.
+    -- A theorem the square follows from unifies with it wherever a definition of the goal's own
+    -- spelling unfolds into the candidate's, and being the shorter statement it is then offered
+    -- first — which is how `Λ(R)%∋ = R` was cited for `∋` in place of `E(R)%∋ = ∋%R`.
+    if let some f := fam then
+      if !(← statesSquare al f ci.type) then
+        if seen.isEmpty then s.passOver has s!"dropped {n}: states no naturality square of {f}"
+        continue
     let saved ← Meta.saveState
     let attempt : MetaM (Option (Name × Expr)) := do
       -- Fresh LEVEL metavariables, as `mkAppMeta` takes them: a candidate's own universe
@@ -2095,7 +2127,13 @@ partial def findAnyProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (fu
   -- left to be found — a search that answers the question it was not asked.
   unless h == ``Freyd.Alg.StrictNatural || h == ``Freyd.Alg.LaxNatural
       || h == ``Freyd.Alg.OpLaxNatural do return none
-  findSquare br s want (← mustOf br want) fuel (seen.push want)
+  -- THE SQUARE'S OWN FAMILY, not the search's: a closure theorem asks for the naturality of a
+  -- FACTOR, and the shape a candidate for that square must have is that factor's, not the compound
+  -- bead's.  The class's last argument is the family, as `mustOf` reads it.
+  let fam ← match want.getAppArgs.back? with
+    | some φ => familyHead br φ
+    | none => pure none
+  findSquare br s want (← mustOf br want) fam fuel (seen.push want)
 
 /-- The same search, for a naturality stated as the SQUARE ITSELF rather than through the class.
     The binders are opened as FREE VARIABLES, not metavariables: the square is then the very
@@ -2105,21 +2143,22 @@ partial def findAnyProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (fu
     mirrored form is searched for too rather than the direction a declaration happens to be
     written in deciding whether a bead has a dot. -/
 partial def findSquare (br : Meta.Simp.Context) (s : Search) (prop : Expr) (must : NameSet)
-    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+    (fam : Option Name) (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let some body ← Meta.unfoldDefinition? prop | return none
-  findTelescoped br s body must fuel seen
+  findTelescoped br s body must fam fuel seen
 
 /-- The same search for a square GIVEN as its own `∀`-statement rather than reached by unfolding a
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
 partial def findTelescoped (br : Meta.Simp.Context) (s : Search) (body : Expr) (must : NameSet)
-    (fuel : Nat) (seen : Array Expr := #[]) : MetaM (Option (Name × Expr)) := do
+    (fam : Option Name) (fuel : Nat) (seen : Array Expr := #[]) :
+    MetaM (Option (Name × Expr)) := do
   remembered s true body must.toList fuel seen <|
     Meta.forallTelescope body fun xs sq => do
       let .const h _ := sq.getAppFn | return none
-      if let some (n, pf) ← findProof br s sq h must fuel seen then
+      if let some (n, pf) ← findProof br s sq h must fuel seen fam then
         return some (n, ← Meta.mkLambdaFVars xs pf)
       let some sqm ← flipEq? sq | return none
-      let some (n, pf) ← findProof br s sqm h must fuel seen | return none
+      let some (n, pf) ← findProof br s sqm h must fuel seen fam | return none
       return some (n, ← Meta.mkLambdaFVars xs (← Meta.mkEqSymm pf))
 
 end
