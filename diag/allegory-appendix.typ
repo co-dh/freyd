@@ -134,7 +134,7 @@
   [`α(5)=[5]` and `α(1,[5])=[1,5]`: a path is started by one square, or extended by one.],
 
   [`N` \ the `n`-tuple relator],
-  [#leant("Freyd.Alg.Vec.Rel.tupleRelator")],
+  [#leant("Freyd.Alg.RelSet.Tuple.tupleRelator")],
   [One component per row of a column, so the fold carries `n` answers at once.],
 
   [`R≜sum≤sum°`],
@@ -158,7 +158,7 @@
   [`zip((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))=((1,{[5]}),(2,{[6]}),(3,{[7]}),(4,{[8]}))`.],
 
   [`cp≜` $frac(#[`F(𝟙,∋)`], ∋)$],
-  [#leant("Freyd.Alg.RelSet.Tuple.cp")],
+  [#leant("Freyd.Alg.cpMap")],
   [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`.],
 
   [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`

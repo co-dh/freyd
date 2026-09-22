@@ -14,7 +14,7 @@ public import AOP.A7_4_CylinderPaths
 namespace Freyd.Alg.Vec.Rel
 
 open Freyd RelSet
-open Freyd.Alg.RelSet.Tuple (dTuple tupleP)
+open Freyd.Alg.RelSet.Tuple (dTuple tupleP tupleP_id tupleP_comp tupleP_mono tupleRelator)
 
 variable {A B C D : RelSet.{0}} {n m k j p : Nat}
 
@@ -176,42 +176,6 @@ public theorem paths_lax_natural (S : A ⟶ B) :
   have hzeq : z = genFold m q := hz
   subst hzeq
   exact ⟨paths q, rfl, fun _ _ => hstep _ _ _⟩
-
-/-! ## `tupleP`'s laws
-
-  The relator laws of `Vec(n)` on relations.  They live here rather than beside `tupleP` because
-  only the derivation below composes with them. -/
-
-/-- `Vec(n)(𝟙) = 𝟙`: agreeing entry by entry is being the same tuple. -/
-public theorem tupleP_id : tupleP n (𝟙 A) = 𝟙 (dTuple n A) := by
-  apply hom_ext; intro t u
-  exact ⟨fun h => funext fun i => h i, fun h i => congrFun h i⟩
-
-/-- `Vec(n)(S) Vec(n)(T) = Vec(n)(ST)`: the intermediate tuple is chosen entry by entry. -/
-public theorem tupleP_comp (S : A ⟶ B) (T : B ⟶ C) :
-    tupleP n (S ≫ T) = tupleP n S ≫ tupleP n T := by
-  apply hom_ext; intro t w
-  constructor
-  · intro h
-    obtain ⟨u, hu⟩ := Tuple.tuple_of_forall_exists (fun i => h i)
-    exact ⟨u, fun i => (hu i).1, fun i => (hu i).2⟩
-  · rintro ⟨u, h1, h2⟩ i
-    exact ⟨u i, h1 i, h2 i⟩
-
-/-- `Vec(n)` is monotonic. -/
-public theorem tupleP_mono {S T : A ⟶ B} (h : S ⊑ T) : tupleP n S ⊑ tupleP n T :=
-  le_iff.mpr fun _ _ hS i => le_iff.mp h _ _ (hS i)
-
-/-- **`Vec(n)` BUNDLED as a relator** — the note's lane `[n]`.  A lane IS a relator, so the three
-    laws above have to be ONE value before a panel can draw `[n]` as a wire: unbundled they are
-    three theorems, and an object `X[n]` then peels off no wire at all and is drawn as one lane
-    carrying the whole nest. -/
-@[expose] public def tupleRelator (n : Nat) : Relator RelSet.{0} RelSet.{0} where
-  obj := dTuple n
-  map := tupleP n
-  map_id _ := tupleP_id
-  map_comp := tupleP_comp
-  map_mono := tupleP_mono
 
 /-- `Vec(n)` of a function's graph is the graph of `Vec(n)`'s action on it. -/
 public theorem tupleP_graph (f : A.carrier → B.carrier) :
