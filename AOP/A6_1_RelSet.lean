@@ -508,4 +508,10 @@ end RelSet
   { (inferInstance : TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
     (inferInstance : LocallyCompleteDistributiveAllegory RelSet) with }
 
+/-- The Ex 5.20 merge with chosen coproducts (`AOP.A5_6`), so `cpMap_sum_eq_junc` applies in
+    `Rel(Set)`: both halves are instances above, and `has_coproduct` is `sumCop`. -/
+@[expose] public instance : PositiveTabularUnitaryUnguardedDivisionPowerAllegory RelSet.{u} :=
+  { (inferInstance : TabularUnitaryUnguardedDivisionPowerAllegory RelSet),
+    (inferInstance : PositiveAllegory RelSet) with }
+
 end Freyd.Alg

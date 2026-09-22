@@ -147,6 +147,25 @@ public theorem junc_map {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {f : 
     rw [junc_recip_junc]
     exact union_lub hf.2 hg.2
 
+/-- An injection is a MAP: entirety is the equation `u₁u₁° = 1`, simplicity is one summand of
+    `u₁°u₁ ∪ u₂°u₂ = 1`.  The five equations alone give it, so no hypothesis records it. -/
+public theorem Coproduct.u₁_map {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) : Map C.u₁ := by
+  refine ⟨(entire_iff_one_le _).mpr ?_, ?_⟩
+  · calc Cat.id a₁ = C.u₁ ≫ C.u₁° := C.u₁_self_comp_recip.symm
+      _ ⊑ C.u₁ ≫ C.u₁° := le_refl _
+  · show C.u₁° ≫ C.u₁ ⊑ Cat.id s
+    calc C.u₁° ≫ C.u₁ ⊑ (C.u₁° ≫ C.u₁) ∪ (C.u₂° ≫ C.u₂) := le_union_left _ _
+      _ = Cat.id s := C.recip_union_eq_id
+
+/-- The mirror of `Coproduct.u₁_map`, on the other summand. -/
+public theorem Coproduct.u₂_map {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) : Map C.u₂ := by
+  refine ⟨(entire_iff_one_le _).mpr ?_, ?_⟩
+  · calc Cat.id a₂ = C.u₂ ≫ C.u₂° := C.u₂_self_comp_recip.symm
+      _ ⊑ C.u₂ ≫ C.u₂° := le_refl _
+  · show C.u₂° ≫ C.u₂ ⊑ Cat.id s
+    calc C.u₂° ≫ C.u₂ ⊑ (C.u₁° ≫ C.u₁) ∪ (C.u₂° ≫ C.u₂) := le_union_right _ _
+      _ = Cat.id s := C.recip_union_eq_id
+
 end Junc
 
 /-! ## §2b  The power transpose of a junction (B&dM §5.3, p.118) -/

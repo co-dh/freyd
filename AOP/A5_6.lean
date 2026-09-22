@@ -18,6 +18,9 @@ public import AOP.A5_2
 public import Freyd.S2_40
 public import AOP.A4_6
 public import Freyd.S2_41b
+-- the cp-pattern at a SUM of relators: `Relator.sum`/`junc` (§5.3) and `P` on a map (§5.4).
+public import AOP.A5_3
+public import AOP.A5_4
 
 universe u
 
@@ -105,5 +108,43 @@ theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
   Λ (F.map (∋ A))
 
 public theorem cpMap_is_map (F : Relator 𝒜 𝒜) (A : 𝒜) : Map (cpMap F A) := Λ_is_map' _
+
+/-! ## The cp-pattern at a SUM of relators (B&dM p.126, used at p.198)
+
+  `Relator.sum` asks the ambient allegory to CHOOSE a coproduct for each pair of objects
+  (`PositiveAllegory`), which the Ex 5.20 setting above does not carry.  Merging the two
+  classes by structure inheritance — the same move as `TabularUnitaryUnguardedDivisionPowerAllegory`
+  itself — keeps a single `Allegory 𝒜` underneath. -/
+
+/-- The Ex 5.20 setting with CHOSEN coproducts, so `Relator.sum` and `cpMap` speak of one
+    allegory. -/
+public class PositiveTabularUnitaryUnguardedDivisionPowerAllegory (𝒜 : Type u) extends
+    TabularUnitaryUnguardedDivisionPowerAllegory 𝒜, PositiveAllegory 𝒜
+
+section
+variable {𝒜 : Type u} [PositiveTabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
+
+/-- **`Λ(F+G)(∋) = [ΛF(∋)·Pu₁, ΛG(∋)·Pu₂]`**: the cross product of a SUM of relators is the
+    junc of the summands' own cross products, each followed by its injection.  `Λ[R,S] =
+    [ΛR,ΛS]` (`Λ_junc`) splits the transpose; an injection is a map (`Coproduct.u₁_map`), so
+    `P` on it is `E` (`powerRel_map`) and absorption (`Λ_absorption`) pulls it back inside its
+    own `Λ`.  At B&dM p.198's `F(A,X) = A + A×X` this is the `path-defn` step `ΛF(∋,𝟙) =
+    𝟙+cpl`: the left summand's relator is the identity, whose cross product is `Λ(∋) = 𝟙`, and
+    the right one's is `−×X`, whose cross product is `cpl`. -/
+public theorem cpMap_sum_eq_junc (G H : Relator 𝒜 𝒜) (A : 𝒜) :
+    cpMap (Relator.sum G H) A
+      = junc (PositiveAllegory.has_coproduct
+                (G.obj (PowerAllegory.powerObj A)) (H.obj (PowerAllegory.powerObj A)))
+          (cpMap G A ≫ powerRel (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₁)
+          (cpMap H A ≫ powerRel (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₂) := by
+  simp only [cpMap]
+  show Λ (junc (PositiveAllegory.has_coproduct
+        (G.obj (PowerAllegory.powerObj A)) (H.obj (PowerAllegory.powerObj A)))
+      (G.map (∋ A) ≫ (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₁)
+      (H.map (∋ A) ≫ (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₂)) = _
+  rw [Λ_junc, powerRel_map (Coproduct.u₁_map _), powerRel_map (Coproduct.u₂_map _),
+    Λ_absorption, Λ_absorption]
+
+end
 
 end Freyd.Alg
