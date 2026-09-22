@@ -529,28 +529,29 @@ public theorem eq_nil_of_cconcat_nil : ∀ r : Sched A,
     | wrap _ => exact False.elim hn.1
     | cons b s' => simp [cconcat, cappend] at h
 
-/-- **van-defn** / **van-laws**, second row (book p.185, "appeal to fusion"):
-    `partition list(secure) = ⦇[nil,new∪old]⦈` — keeping only secure segments is what turns
-    `glue` into `old`.  The forward direction peels the head transaction off the first segment
-    and needs the rest of it secure (`secureP_tail`); the backward direction needs the book's
-    standing assumption that a single transaction is never larger than `N` (`hsingle`). -/
-public theorem van_spec
-    (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
-    partition ≫ list (secure amount N) = ⦇Salg amount N⦈ := by
+-- The algebra `[nil,new ∪ glue]` is spelled out at each of its three occurrences instead of being
+-- named: a name prints as the name, and the note's fusion row is about WHAT the fold folds.
+/-- **`partition = ⦇[nil,new ∪ glue]⦈`** (book p.185): cutting the transactions into non-empty
+    segments is the fold that either opens a segment of its own for the head transaction (`new`)
+    or puts it on the front of the segment already there (`glue`). -/
+public theorem partition_cata :
+    (partition : dList A ⟶ dSched A)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+            (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈ := by
   refine (relCata_UP (initial Unit A) _ _).mp ((cata_square_junc_iff _ _ _).mpr ⟨?_, ?_⟩)
   · intro D r
-    rw [partSecure_apply]
+    show (cconcat r = ConsList.wrap D ∧ allNonempty r) ↔ r = ConsList.wrap D
     constructor
-    · rintro ⟨hcat, hne, -⟩
-      show r = ConsList.wrap D
+    · rintro ⟨hcat, hne⟩
       exact eq_nil_of_cconcat_nil r hcat hne
     · intro h
       obtain rfl : r = ConsList.wrap D := h
-      exact ⟨rfl, trivial, trivial⟩
+      exact ⟨rfl, trivial⟩
   · intro a x r
-    simp only [partSecure_apply]
+    show (cconcat r = ConsList.cons a x ∧ allNonempty r)
+      ↔ ∃ y, (cconcat y = x ∧ allNonempty y) ∧ (newR A ∪ glueR A) (a, y) r
     constructor
-    · rintro ⟨hcat, hne, hall⟩
+    · rintro ⟨hcat, hne⟩
       cases r with
       | wrap _ => simp [cconcat] at hcat
       | cons s p =>
@@ -562,29 +563,114 @@ public theorem van_spec
           subst hba
           cases s' with
           | wrap _ =>
-            refine ⟨p, ⟨hcat', hne.2, hall.2⟩, Or.inl ?_⟩
+            refine ⟨p, ⟨hcat', hne.2⟩, Or.inl ?_⟩
             show ConsList.cons (ConsList.cons b (ConsList.wrap ())) p = newFn (b, p)
             rfl
           | cons c s'' =>
-            exact ⟨ConsList.cons (ConsList.cons c s'') p,
-              ⟨hcat', ⟨trivial, hne.2⟩, secureP_tail hall.1, hall.2⟩,
-              Or.inr ⟨ConsList.cons c s'', p, rfl, rfl, hall.1⟩⟩
-    · rintro ⟨y, ⟨hcat, hne, hall⟩, hS⟩
+            exact ⟨ConsList.cons (ConsList.cons c s'') p, ⟨hcat', trivial, hne.2⟩,
+              Or.inr ⟨ConsList.cons c s'', p, rfl, rfl⟩⟩
+    · rintro ⟨y, ⟨hcat, hne⟩, hS⟩
       cases hS with
       | inl hS =>
         obtain rfl : r = newFn (a, y) := hS
-        refine ⟨?_, ⟨trivial, hne⟩, hsingle a, hall⟩
+        refine ⟨?_, trivial, hne⟩
         show cappend (ConsList.cons a (ConsList.wrap ())) (cconcat y) = ConsList.cons a x
         simp only [cappend]
         rw [hcat]
       | inr hS =>
-        obtain ⟨s, t, hy, hr, hsec⟩ := hS
+        obtain ⟨s, t, hy, hr⟩ := hS
         subst hy
         subst hr
-        refine ⟨?_, ⟨trivial, hne.2⟩, hsec, hall.2⟩
+        refine ⟨?_, trivial, hne.2⟩
         show cappend (ConsList.cons a s) (cconcat t) = ConsList.cons a x
         simp only [cappend]
         rw [show cappend s (cconcat t) = x from hcat]
+
+/-- **The fusion condition** (book p.185, `R S = (F S) Q` at `R = [nil,new ∪ glue]`,
+    `S = list(secure)`, `Q = [nil,new ∪ old]`): testing every segment for security AFTER the
+    algebra is testing it BEFORE — `glue` becomes `old` because a segment the head is glued onto
+    is secure once the longer one is (`secureP_tail`), and the one-transaction segment `new`
+    opens is secure by the book's standing assumption (`hsingle`). -/
+public theorem van_fusion_cond
+    (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
+    (junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+          (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)
+        ≫ list (secure amount N)
+      = (F Unit A).map (list (secure amount N)) ≫ Salg amount N := by
+  have hnil : (wrapR : dL Unit ⟶ dSched A) ≫ list (secure amount N) = wrapR := by
+    apply hom_ext; intro d r
+    constructor
+    · rintro ⟨s, hs, hlist⟩
+      obtain rfl : s = ConsList.wrap d := hs
+      show r = ConsList.wrap d
+      exact ((listP_secure_iff (ConsList.wrap d) r).mp hlist).1.symm
+    · intro h
+      obtain rfl : r = ConsList.wrap d := h
+      exact ⟨ConsList.wrap d, rfl, (listP_secure_iff _ _).mpr ⟨rfl, trivial⟩⟩
+  have hstep : (newR A ∪ glueR A) ≫ list (secure amount N)
+      = rprodMap (𝟙 (dE A)) (list (secure amount N)) ≫ (newR A ∪ oldR amount N) := by
+    apply hom_ext; rintro ⟨a, y⟩ r
+    constructor
+    · rintro ⟨z, hz, hlist⟩
+      cases hz with
+      | inl hz =>
+        obtain rfl : z = newFn (a, y) := hz
+        obtain ⟨rfl, hall⟩ := (listP_secure_iff _ r).mp hlist
+        exact ⟨(a, y), ⟨rfl, (listP_secure_iff y y).mpr ⟨rfl, hall.2⟩⟩, Or.inl rfl⟩
+      | inr hz =>
+        obtain ⟨s, t, hy, hr⟩ := hz
+        subst hy
+        subst hr
+        obtain ⟨rfl, hall⟩ := (listP_secure_iff _ r).mp hlist
+        exact ⟨(a, ConsList.cons s t),
+          ⟨rfl, (listP_secure_iff _ _).mpr ⟨rfl, secureP_tail hall.1, hall.2⟩⟩,
+          Or.inr ⟨s, t, rfl, rfl, hall.1⟩⟩
+    · rintro ⟨⟨b, y'⟩, ⟨hab, hy'⟩, hS⟩
+      obtain rfl : a = b := hab
+      obtain ⟨rfl, hall⟩ := (listP_secure_iff y y').mp hy'
+      cases hS with
+      | inl hS =>
+        obtain rfl : r = newFn (a, y) := hS
+        exact ⟨newFn (a, y), Or.inl rfl,
+          (listP_secure_iff _ _).mpr ⟨rfl, hsingle a, hall⟩⟩
+      | inr hS =>
+        obtain ⟨s, t, hy, hr, hsec⟩ := hS
+        subst hy
+        subst hr
+        exact ⟨ConsList.cons (ConsList.cons a s) t, Or.inr ⟨s, t, rfl, rfl⟩,
+          (listP_secure_iff _ _).mpr ⟨rfl, hsec, hall.2⟩⟩
+  have hS : Salg amount N
+      = junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+          (newR A ∪ oldR amount N) := rfl
+  rw [junc_comp, hS, Fmap_comp_junc, hnil, hstep]
+
+/-- **van-laws**, the fusion row's first step: `partition` replaced by the fold it is. -/
+public theorem van_spec_step1 :
+    partition ≫ list (secure amount N)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+            (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
+          ≫ list (secure amount N) := by
+  rw [partition_cata]
+
+/-- **van-laws**, the fusion row's second step: the fold law `(|R|) S = (|Q|) ⟸ R S = (F S) Q`
+    (`relCata_fusion`) at the condition above absorbs `list(secure)` into the algebra. -/
+public theorem van_spec_step2
+    (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
+    ⦇(junc (sumCop (dL Unit) ⟨A × Sched A⟩) (wrapR : dL Unit ⟶ dSched A)
+          (newR A ∪ glueR A) : (F Unit A).obj (dSched A) ⟶ dSched A)⦈
+        ≫ list (secure amount N)
+      = ⦇Salg amount N⦈ :=
+  relCata_fusion (initial Unit A) (van_fusion_cond hsingle)
+
+/-- **van-defn** / **van-laws**, second row (book p.185, "appeal to fusion"):
+    `partition list(secure) = ⦇[nil,new∪old]⦈` — keeping only secure segments is what turns
+    `glue` into `old`.  The forward direction peels the head transaction off the first segment
+    and needs the rest of it secure (`secureP_tail`); the backward direction needs the book's
+    standing assumption that a single transaction is never larger than `N` (`hsingle`). -/
+public theorem van_spec
+    (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
+    partition ≫ list (secure amount N) = ⦇Salg amount N⦈ :=
+  van_spec_step1.trans (van_spec_step2 hsingle)
 
 /-! ## `van-mono`: (7.14) holds, (7.15) is FALSE, (7.16) and (7.17) hold on `R;H` -/
 
