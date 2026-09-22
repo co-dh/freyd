@@ -13,19 +13,19 @@
 
   // cons-lists definition: B&dM p. 55
   [`listr A::=nil|cons(A,listr A)`],
-  [`𝒮et⟶𝒮et`],
+  [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   [The cons-lists over `A`, the datatype every row below folds.],
 
   [`sum≜⦇[zero,plus]⦈`],
-  [`listr Nat⟶Nat`],
+  [#leant("Freyd.Alg.RelSet.ListRel.sumR")],
   [`plus(a,b)=a+b`.],
 
   [`length≜⦇[zero,π₂ succ]⦈`],
-  [`listr A⟶Nat`],
+  [#leant("Freyd.Alg.RelSet.ListRel.length_cata")],
   [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
   [`average≜⟨sum,length⟩ div`],
-  [`listr Nat⟶Real`],
+  [#leant("Freyd.Alg.RelSet.ListRel.averageR")],
   [`div(m,n)=m/n`, with `div(0,0)=0` so `average` is total. Traverses the list twice.],
 
   [banana-split law \
@@ -40,12 +40,12 @@
 
   [the instance \
    `⟨sum,length⟩=⦇[zeros,pluss]⦈`],
-  [`listr Nat⟶Nat×Nat`],
+  [#leant("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
   // preds row: B&dM Ex 3.6 (p. 57); uses Ex 3.4
   [`preds n=[n,n−1,…,1]`],
-  [`Nat⟶[Nat]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.predsR")],
   [apply the earlier special case to write `preds` as `⦇k⦈π₁`.],
 )]<cata-examples>
 

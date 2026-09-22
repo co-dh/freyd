@@ -318,6 +318,25 @@ public theorem suffixP_iff_append :
 /-- The sum as a morphism `sum : list A ⟶ A`. -/
 @[expose] public def sumR [Add A] [OfNat A 0] : dList A ⟶ (⟨A⟩ : RelSet.{0}) := graph csum
 
+/-! ## Length, average and `preds` (the note's `cata-examples` rows) -/
+
+/-- The length as a morphism `length : list A ⟶ Nat`. -/
+@[expose] public def lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}) := graph clen
+
+/-- **`average ≜ ⟨sum,length⟩ div`**: fork the total with the count, then divide.  The codomain is
+    `Nat`, not the book's `Real`: the repo is Mathlib-free, and Lean's `Nat` division already has
+    the book's `div(0,0) = 0`, which is what makes `average` total on the empty list. -/
+@[expose] public def averageR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+  rpair sumR lengthR ≫ graph (fun p => p.1 / p.2)
+
+/-- `preds n = [n, n−1, …, 1]`, and `preds 0 = nil`. -/
+@[expose] public def predsFn : Nat → ConsList Unit Nat
+  | 0 => ConsList.wrap ()
+  | n + 1 => ConsList.cons (n + 1) (predsFn n)
+
+/-- `preds` as a morphism `preds : Nat ⟶ list Nat`. -/
+@[expose] public def predsR : (⟨Nat⟩ : RelSet.{0}) ⟶ dList Nat := graph predsFn
+
 /-! ## The two orders on `Int` the optimisation case studies compare costs by -/
 
 /-- `≤` on `Int` as a relation — the order every `cost ≤ cost°` is built from. -/
@@ -1206,6 +1225,37 @@ public theorem sum_cata [Add A] [OfNat A 0] :
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
+/-- **`length = ⦇[zero, π₂ succ]⦈`** (note `cata-examples`): fold the list, the head dropped by
+    `π₂` and one added by `succ` for it, `nil` contributing `zero`. -/
+public theorem length_cata :
+    (lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = ⦇(junc (sumCop (dL Unit) ⟨A × Nat⟩) (graph fun _ => (0 : Nat))
+          (graph fun q => q.2 + 1) : (F Unit A).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := by
+  refine (relCata_UP (initial Unit A) _ _).mp
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => Iff.rfl, fun a x r => ?_⟩)
+  show r = clen x + 1 ↔ ∃ y, y = clen x ∧ r = y + 1
+  exact ⟨fun h => ⟨clen x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
+
+/-- **`⟨sum,length⟩ = ⦇[zeros, pluss]⦈`** (note `cata-examples`), the banana-split law's instance
+    that makes `average` one traversal: `zeros = (0,0)` and `pluss(a,(b,n)) = (a+b, n+1)` run the
+    total and the count in step.  Proved where `sum_cata` and `length_cata` are, by the same
+    universal property, since `Rel(Set)`'s product is the pointwise `⟨-,-⟩` and not the abstract
+    `HasBinaryProducts` one the general law is stated over. -/
+public theorem pair_sum_length_cata :
+    rpair (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0})) lengthR
+      = ⦇(junc (sumCop (dL Unit) ⟨Nat × (Nat × Nat)⟩) (graph fun _ => ((0, 0) : Nat × Nat))
+          (graph fun q => (q.1 + q.2.1, q.2.2 + 1))
+            : (F Unit Nat).obj (⟨Nat × Nat⟩ : RelSet.{0}) ⟶ ⟨Nat × Nat⟩)⦈ := by
+  refine (relCata_UP (initial Unit Nat) _ _).mp
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show (r.1 = 0 ∧ r.2 = 0) ↔ r = (0, 0)
+    exact ⟨fun h => Prod.ext_iff.mpr h, fun h => Prod.ext_iff.mp h⟩
+  · show (r.1 = a + csum x ∧ r.2 = clen x + 1)
+        ↔ ∃ y : Nat × Nat, (y.1 = csum x ∧ y.2 = clen x) ∧ r = (a + y.1, y.2 + 1)
+    exact ⟨fun h => ⟨(csum x, clen x), ⟨rfl, rfl⟩, Prod.ext_iff.mpr h⟩,
+      fun ⟨⟨_, _⟩, ⟨hy1, hy2⟩, hr⟩ => by
+        subst hy1; subst hy2; exact Prod.ext_iff.mp hr⟩
+
 -- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
 -- the name; `listRelator` is its lane `list`; `prefixR` is `prefix`, a Lean keyword, which the
 -- printer escapes as `«prefix»` and the label emitter (`diag/tool/ExprReader`) unescapes.
@@ -1249,6 +1299,18 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander sumR] public meta def unexpandSumR : Unexpander
   | `($_:ident) => `($(mkIdent `sum))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander lengthR] public meta def unexpandLengthR : Unexpander
+  | `($_:ident) => `($(mkIdent `length))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander averageR] public meta def unexpandAverageR : Unexpander
+  | `($_:ident) => `($(mkIdent `average))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander predsR] public meta def unexpandPredsR : Unexpander
+  | `($_:ident) => `($(mkIdent `preds))
   | _ => throw ()
 
 /-- The list relator's action on an arrow, with its own brackets like every other relator's `F(R)`,
