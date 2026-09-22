@@ -840,7 +840,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- reading used to demote it to.
   let search : MetaM (Option Verdict) := match alg with
     | .functor => id do
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must FUEL then
+      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must s.head FUEL then
         return some { mark := some .strict, lean := #[n] }
       -- THE SQUARE OVER THE MAPS, where the region HAS maps to restrict to.  `𝟙%∋ : 𝟙 ⟹ E` is
       -- natural there and at no relation (`singletonMap_natural`, whose `Map f` this square binds
@@ -853,7 +853,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
       if alg0 == .relator then
         if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .strict true)
-            must FUEL then
+            must s.head FUEL then
           return some { mark := some .maps, lean := #[n] }
       return none
     | .relator => id do
@@ -871,11 +871,11 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- every hand-written square in the repo spells it wire by wire (`tupleP 3 (tupleP n S)`), so
       -- the unfolded class matched none of them and every `RelSet.graph` bead of the cylinder came
       -- back a spider.  Same builder as the functor algebra's, one grade apart.
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must FUEL then
+      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must s.head FUEL then
         return some { mark := some .strict, lean := #[n] }
       if let some (n, _) ← findProof br s lax ``Freyd.Alg.LaxNatural {} FUEL then
         return some { mark := some .lax, lean := #[n] }
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .lax) must FUEL then
+      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .lax) must s.head FUEL then
         return some { mark := some .lax, lean := #[n] }
       -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
       -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot
@@ -897,7 +897,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- bead keeps `maps` — what was proved over the maps, and nothing claimed at a relation.
       -- BOTH NAMES ARE RECORDED: the dot rests on the square AND on the theorem that carried it.
       if let some (n, pf) ← findTelescoped br s (← laneSquare alg regionTy F G φ .strict true)
-          must FUEL then
+          must s.head FUEL then
         let carried ← observing? do
           let e ← Meta.mkAppM ``Freyd.Alg.laxNatural_iff_strict_on_maps #[F, G, φ]
           let t ← Meta.mkAppM ``Iff.mpr #[e, pf]
