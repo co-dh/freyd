@@ -66,7 +66,10 @@ exe:
 # its own copy of those, so nothing reaches above diag/ any more.
 # The note is indexed RIGHT AFTER its compile (`book grep -b axioms`, `book pic`), so the index never
 # lags the PDF; `embed` stays in `books` — nobody `sim`s the note between two edits of it.
-p: $(STAMP) panels cite cd-check
+# `.WAIT`: the stamp's redraw DELETES and rewrites every picture, and under `-j` `cd-check` compiled the
+# note while that was half done — an old-format panel beside a new `cdpanel.typ` — and `panels` redrew
+# a file the full redraw had just deleted.  Everything right of the stamp waits for it.
+p: $(STAMP) .WAIT panels cite cd-check
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
