@@ -1431,10 +1431,10 @@ def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"
     else and exiting 0.  `note-files --ch` is the one resolver, so a `CH` naming no chapter ENDS the
     run with its message rather than falling back to the note. -/
 def rootsToList : IO (List String) := do
-  let ch := ((← IO.getEnv "CH").getD "").trim
+  let ch := ((← IO.getEnv "CH").getD "").trimAscii.toString
   if ch.isEmpty then return noteRoots
   let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
-  let files := (r.stdout.splitOn "\n").map String.trim |>.filter (!·.isEmpty)
+  let files := (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
   if r.exitCode != 0 || files.length != 1 then
     throw <| IO.userError s!"diag-export --list: CH={ch}: `./scripts/note-files --ch {ch}` named \
       {files.length} chapter file(s) and exited {r.exitCode}: {r.stderr.trimAscii}"
