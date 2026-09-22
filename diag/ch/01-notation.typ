@@ -278,8 +278,8 @@ content: `∃_f⊣f*⊣∀_f` along a map `f`, once on each side of the composit
 #disp[#block(inset: (y: 6pt))[
   `·f⊣·f°⊣/f°` \
   `f°·⊣f·⊣f\`
-  // The four cited statements are `↔`s between inclusions; `diag-export --formula` prints those with
-  // Lean's own `≫`/`⊑`, not the note's juxtaposition, so the chain stays hand-typed for now.
+  // An adjoint chain names three adjunctions in one line and each link is its own `↔` statement;
+  // `diag-export --formula` prints one declaration, so the chain stays hand-typed and cites all four.
   // lean:AOP.A4_2.map_shunt_right@789b4e7c lean:AOP.A4_2.map_shunt_left@9ab4e095 lean:Freyd.S2_30.le_div_iff@bb6a7930 lean:Freyd.S2_30.le_leftDiv_iff@6b879927
 ]]<triple-chains>
 
@@ -308,8 +308,7 @@ are the image triple:
 altogether, and the third link is `R↦𝟙∩R/⊤={(a,a) : ∀b. aRb}`.
 
 #disp[#block(inset: (y: 6pt))[`𝓓⊣·⊤⊣𝟙∩·/⊤`
-  // Both cited statements are `↔`s between inclusions, which `diag-export --formula` prints in Lean's
-  // own spelling, so this chain stays hand-typed too.
+  // The same: two links, two `↔` statements, one hand-typed chain citing both.
   // lean:AOP.A5_2.dom_adj_comp_topMor@874d1a3e lean:AOP.A5_2.comp_topMor_adj_id_inter_div_topMor@794c6795
 ]]<triple-dom>
 

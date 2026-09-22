@@ -28,6 +28,13 @@ namespace Freyd.FormulaRender
 
 open Freyd.StrDiag
 
+/-- THE LINE'S BREAK OPPORTUNITY, after the statement's relation: the raw closes, a zero-width space
+    stands outside it, and the raw reopens.  A raw is one unbreakable word, so a cell too narrow for
+    a closed-up statement is CUT by the paper edge where a hand-typed neighbour breaks after its
+    relation symbol; `#sym.zws` is invisible when the line does not break, and `#h(0pt, weak: true)`
+    in its place gives no break opportunity at all. -/
+def relBreak : String := "`#sym.zws`"
+
 /-- Chase `.lhs`/`.rhs` down through statements built from statements (`↔`, `∧`), the same walk
     `StrDiag.drawString`'s `reqParts` does: a step lands on a CONNECTIVE and keeps chasing, or on a
     RELATION and picks a side there, after which nothing may follow — a side has no sides of its
@@ -130,12 +137,12 @@ def render (declName : Name) (binder : Option String) (path : List String)
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return ante ++ (← label l) ++ sym ++ (← label r)
+      | some (sym, l, r) => return ante ++ (← label l) ++ sym ++ relBreak ++ (← label r)
       | none => return ante ++ (← label target')
 
-/-- The file a note cell `#include`s: the statement as typst inline raw.  The `lean:<decl>@<key>`
-    marker above it is `DiagExport.certLine`'s, written for every route at the one place the file
-    is. -/
+/-- The file a note cell `#include`s: the statement as typst inline raw, cut after its relation by
+    `relBreak` so the cell has somewhere to wrap.  The `lean:<decl>@<key>` marker above it is
+    `DiagExport.certLine`'s, written for every route at the one place the file is. -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
   return "`" ++ (← render declName binder path branch) ++ "`\n"

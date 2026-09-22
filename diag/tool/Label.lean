@@ -256,26 +256,43 @@ end Prec
     arrows and closes up. -/
 def implArrow : String := " ⟹ "
 
-/-- THE BINARY OPERATORS, ONE TABLE: the head constant, the precedence ITS NOTATION declares, and
-    the symbol the note writes it with.  A clause per operator is how `/` came out `R / S` beside
-    `S\R`, and how two operators of different precedence came to print as one.
+/-- THE SIDE AN OPERATOR'S NOTATION LETS BIND AT ITS OWN LEVEL: `infixl` parses its LEFT operand at
+    the operator's precedence and its right one above, `infixr` the mirror, `infix` neither.  Read
+    off the notation like the precedence, never chosen here. -/
+inductive Assoc | left | right | non
+  deriving BEq, Inhabited
+
+/-- THE BINARY OPERATORS, ONE TABLE: the head constant, the precedence ITS NOTATION declares, the
+    ASSOCIATIVITY that notation declares too, and the symbol the note writes it with.  A clause per
+    operator is how `/` came out `R / S` beside `S\R`, and how two operators of different precedence
+    came to print as one.
+
+    THE ASSOCIATIVITY COLUMN IS THE NOTATION'S OWN, exactly as the precedence column is: an
+    `infixr` chain the note writes flat (`A∧B∧C∧D`) came out `A∧(B∧(C∧D))` while both operands were
+    set one above the operator.  The three heads with no notation of their own — `Freyd.Diag.meet`,
+    `ClosedLinearBicat.residual`, `Biprod.union`, all plain `def`s — take the column of the operator
+    whose symbol they share, as they already take its precedence.
 
     SPACING IS ONE RULE AND NOT A COLUMN: an operator closes up against its operands, and `∪` alone
     keeps its spaces, because what it joins is the composites the note sets off (`cons ∪ π₂`). -/
-def binOps : Array (Name × Nat × String) := #[
-  (``Freyd.Alg.Allegory.inter, 70, "∩"), (``Freyd.Diag.meet, 70, "∩"),
-  (``Freyd.Alg.DivisionAllegory.div, 70, "/"), (``Freyd.Diag.ClosedLinearBicat.residual, 70, "/"),
-  (``Freyd.Alg.leftDiv, 70, "\\"),
-  (``Freyd.Alg.symmDiv, 70, "/ₛ"),
-  (``Freyd.Alg.DistributiveAllegory.union, 65, "∪"), (``Freyd.Diag.Biprod.union, 65, "∪"),
-  (``Freyd.Alg.thenRel, 62, "⨾"),
-  (``Freyd.Alg.impl, 58, "⇨"),
-  -- The tape layer's own two, at their own notations' precedences (`diag/FO.lean`).
-  (``Freyd.Diag.SymMonCat.tensHom, 70, "⊗"), (``Freyd.Diag.LinearBicat.bcomp, 80, "⨟•"),
+def binOps : Array (Name × Nat × Assoc × String) := #[
+  (``Freyd.Alg.Allegory.inter, 70, .left, "∩"), (``Freyd.Diag.meet, 70, .left, "∩"),
+  (``Freyd.Alg.DivisionAllegory.div, 70, .left, "/"),
+  (``Freyd.Diag.ClosedLinearBicat.residual, 70, .left, "/"),
+  (``Freyd.Alg.leftDiv, 70, .left, "\\"),
+  (``Freyd.Alg.symmDiv, 70, .left, "/ₛ"),
+  (``Freyd.Alg.DistributiveAllegory.union, 65, .left, "∪"),
+  (``Freyd.Diag.Biprod.union, 65, .left, "∪"),
+  (``Freyd.Alg.thenRel, 62, .left, "⨾"),
+  (``Freyd.Alg.impl, 58, .right, "⇨"),
+  -- The tape layer's own two, at their own notations' precedences (`diag/FO.lean`,
+  -- `diag/Monoidal.lean`), both right-associative.
+  (``Freyd.Diag.SymMonCat.tensHom, 70, .right, "⊗"),
+  (``Freyd.Diag.LinearBicat.bcomp, 80, .right, "⨟•"),
   -- THE STATEMENT CONNECTIVES are binary operators like the rest, at Lean core's own precedences:
   -- a label that met one had no clause and fell back to the raw printer, which wrote
   -- `dom R ⊑ X ↔ R ⊑ X ≫ R` — Lean's vocabulary, in a cell of the note.
-  (``And, 35, "∧"), (``Or, 30, "∨"), (``Iff, 20, "⟺")]
+  (``And, 35, .right, "∧"), (``Or, 30, .right, "∨"), (``Iff, 20, .non, "⟺")]
 
 /-- The note's spacing for a binary operator: closed up, `∪` alone set off. -/
 def spaced (op : String) : String := if op == "∪" then " ∪ " else op
@@ -917,10 +934,15 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- stands between two arrows and `∧` between two statements, and one table spells both.
   let opnds (args : Array Expr) : MetaM (Array Expr) :=
     args.filterM fun a => return (← homEnds? a).isSome || (← Meta.isProp a)
-  let bin (p : Nat) (op : String) (args : Array Expr) : MetaM Lbl := do
+  -- THE OPERANDS SIT WHERE THE NOTATION PUTS THEM: the side the operator associates on parses at
+  -- the operator's own precedence, the other one above, so a chain prints flat exactly where Lean
+  -- reads it as a chain and brackets exactly where it does not.
+  let bin (p : Nat) (a : Assoc) (op : String) (args : Array Expr) : MetaM Lbl := do
     match lastTwo (← opnds args) with
     | some (f, g) =>
-      return wrap p ((← labelTree (p + 1) f) ++ spaced op ++ (← labelTree (p + 1) g))
+      let (pl, pr) := match a with
+        | .left => (p, p + 1) | .right => (p + 1, p) | .non => (p + 1, p + 1)
+      return wrap p ((← labelTree pl f) ++ spaced op ++ (← labelTree pr g))
     | none => txt e
   -- The one argument of a unary operator, at the precedence its operand is set at.
   let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM Lbl := do
@@ -945,8 +967,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
             ++ (← labelTree Prec.loose body))
         | none => txt e
   -- A BINARY OPERATOR IS THE TABLE'S, spelling and precedence together, for every head alike.
-  if let some (_, p, op) := binOps.find? (·.1 == e.getAppFnArgs.1) then
-    return ← bin p op e.getAppArgs
+  if let some (_, p, a, op) := binOps.find? (·.1 == e.getAppFnArgs.1) then
+    return ← bin p a op e.getAppArgs
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
