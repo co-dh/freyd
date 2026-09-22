@@ -61,6 +61,16 @@ attribute [diag_induced] relCata InitialAlgebra.cata Freyd.HasBinaryProducts.pai
 -- it by unifying its `⦇R⦈` with the fold in hand, never by this name.
 attribute [diag_defines] relCata_cancel
 
+-- WHICH NAMES THE NOTE WRITES AS LEAN DECLARES THEM.  A predicate the note names in its own tables
+-- (`R` entire, `R` a map, `R` symmetric), the domain and range operators, and a case study's own
+-- relation are already the note's words, so there is nothing for a printing rule to rewrite — the
+-- tag says so once per name, where an identity unexpander would say it in five lines each.  A
+-- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
+attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart codBox
+  BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
+  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive MonotonicAlg
+  RelSet.CL.ConsList.cons RelSet.Tour.Qc
+
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that

@@ -26,6 +26,15 @@ open Lean
     that imports the one declaring it, so the tags go in `diag/StrDiagNames.lean`. -/
 register_label_attr diag_unfold
 
+/-- WHICH CONSTANTS THE NOTE WRITES BY THEIR OWN NAME.  `checkSpelled` refuses a label that carries
+    a constant no printing rule rewrote, because a page would then make its claim in Lean's
+    vocabulary; but a name the note writes UNCHANGED — `dom`, `Entire`, `Map`, a case study's own
+    `secureP` — has nothing to rewrite, and an identity unexpander per constant is that fact written
+    fifteen times.  The tag is the declaration that this name IS the note's, one word per name, and
+    an untagged constant is refused exactly as before.  Registered here, tagged in
+    `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
+register_label_attr diag_noted
+
 /-- WHICH FAMILIES WRITE THEIR INDEX BENEATH THEIR LETTER.  A family the theory DECLARES wears a
     notation of its own, and that notation spells the letter alone — `α` for the algebra of a
     parametrised initial algebra — so the object it is taken at is missing from the label and the
@@ -311,6 +320,7 @@ def hasPrintRule (env : Environment) (c : Name) : Bool :=
     back is that rule's business, not this one's. -/
 def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
   let env ← getEnv
+  let noted ← Lean.labelled `diag_noted
   let opts ← getOptions
   let ns ← getCurrNamespace
   let ods ← getOpenDecls
@@ -326,7 +336,7 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
     match cs with
     | [] => continue
     | c :: _ =>
-      if cs.any (hasPrintRule env ·) then continue
+      if cs.any (fun c => hasPrintRule env c || noted.contains c) then continue
       throwError "the label of `{← Meta.ppExpr e}` writes `{c}` under its own Lean name: no \
         printing rule rewrote it, so the page would carry Lean's vocabulary where the note writes \
         its own.  Give it an `app_unexpander {c}` — or a `delab app.{c}` where the spelling needs \
