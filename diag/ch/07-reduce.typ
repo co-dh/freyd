@@ -16,18 +16,18 @@
   [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   [The cons-lists over `A`, the datatype every row below folds.],
 
-  [`sum≜⦇[zero,plus]⦈`],
-  // lean:AOP.A5_6_ListCombinators.sum_cata@f08e44f1
+  [#leanf("Freyd.Alg.RelSet.ListRel.sum_cata")],
+  // lean:AOP.A5_6_ListCombinators.sum_cata@9396e206
   [#leant("Freyd.Alg.RelSet.ListRel.sumR")],
   [`plus(a,b)=a+b`.],
 
-  [`length≜⦇[zero,π₂ succ]⦈`],
-  // lean:AOP.A5_6_ListCombinators.length_cata@4862a11d
+  [#leanf("Freyd.Alg.RelSet.ListRel.length_cata")],
+  // lean:AOP.A5_6_ListCombinators.length_cata@0cd685fc
   [#leant("Freyd.Alg.RelSet.ListRel.length_cata")],
   [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
-  [`average≜⟨sum,length⟩ div`],
-  // lean:AOP.A5_6_ListCombinators.averageR@e77533b3
+  [#leanf("Freyd.Alg.RelSet.ListRel.averageR")],
+  // lean:AOP.A5_6_ListCombinators.averageR@1af775cf
   [#leant("Freyd.Alg.RelSet.ListRel.averageR")],
   [`div(m,n)=m/n`, with `div(0,0)=0` so `average` is total. Traverses the list twice.],
 
@@ -44,8 +44,8 @@
   [All that @cata-defining leaves to check: the fork satisfies the defining equation.],
 
   [the instance \
-   `⟨sum,length⟩=⦇[zeros,pluss]⦈`],
-  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@7be7a261
+   #leanf("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
+  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@820d9011
   [#leant("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
@@ -90,7 +90,7 @@
 // so a single square cannot carry both.  Dashed blue as in @cata-defining — the arrows uniqueness gives.
 #disp[#capbox(
   leancd("Freyd.Alg.pair_eq_relCata_pair_iff.lhs"),
-  [`αf=F(⟨f,g⟩)h∧αg=F(⟨f,g⟩)k≡⟨f,g⟩=⦇⟨h,k⟩⦈`],
+  [#leanf("Freyd.Alg.pair_eq_relCata_pair_iff")],
   // lean:AOP.A5_5.pair_eq_relCata_pair_iff@beb351af
 )]<fokkinga>
 
@@ -128,7 +128,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
   row((
     lean("Freyd.Alg.tri_cata_fusion"),
   )),
-  [#leanf("Freyd.Alg.tri_cata_fusion") #h(1.6cm) `⟸` #h(1.6cm) `gf=F(f,f)g`],
+  [#leanf("Freyd.Alg.tri_cata_fusion")],
   // lean:AOP.A5_5_TypeFunctor.tri_cata_fusion@d3864107 lean:AOP.A5_5_TypeFunctor.tri@864792f0
 )]<horner>
 

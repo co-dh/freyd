@@ -194,7 +194,7 @@ private theorem le_zero {a b : 𝒜} {X : a ⟶ b} (h : X ⊑ (𝟘 : a ⟶ b)) 
   le_antisymm h (zero_le X)
 
 /-- `R ∩ 𝟘 = 𝟘`. -/
-theorem inter_zero {a b : 𝒜} (R : a ⟶ b) : R ∩ (𝟘 : a ⟶ b) = (𝟘 : a ⟶ b) := by
+public theorem inter_zero {a b : 𝒜} (R : a ⟶ b) : R ∩ (𝟘 : a ⟶ b) = (𝟘 : a ⟶ b) := by
   rw [Allegory.inter_comm]; exact zero_le R
 
 /-- SCHRÖDER disjointness (§2.11, modular law): `(R≫S) ∩ T = 𝟘 ↔ (T≫S°) ∩ R = 𝟘`.
