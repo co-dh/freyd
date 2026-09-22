@@ -151,9 +151,17 @@ partial def stxPeel (s : Syntax) : Syntax :=
   | #[inner] => if s.isOfKind nullKind then stxPeel inner else s
   | _ => s
 
-/-- One operand as the printer writes it, peeled. -/
-def stxShow (s : Syntax) : MetaM String := do
-  let t := (toString (← PrettyPrinter.ppTerm ⟨stxPeel s⟩)).replace "«" "" |>.replace "»" ""
+mutual
+
+/-- One operand as the printer writes it, peeled — and AN OPERAND THAT IS ITSELF A JUXTAPOSED
+    APPLICATION is re-set by the same rule as the one it stands in, because `T (N A)` and the
+    `F(NA,…)` beside it are one application each and the note spells an application one way; the
+    space is the PRINTER's, not the note's, and left in it spelled the same operand two ways in
+    two cells of one row. -/
+partial def stxShow (s : Syntax) : MetaM String := do
+  let p := stxPeel s
+  if let some (h, ops) := appParts p then return ← appSpell (← headShown h) ops
+  let t := (toString (← PrettyPrinter.ppTerm ⟨p⟩)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
 
 /-- A HEAD IS WRITTEN BY ITS LAST COMPONENT.  A qualifier — the record it is a field of, the
@@ -163,7 +171,7 @@ def stxShow (s : Syntax) : MetaM String := do
     heads a wire's name is built out of, so a lane and the label above it cannot be spelled two
     ways.  On the IDENT only: a head that is a notation delimits its own operand and has no name to
     shorten. -/
-def appSpell (h : String) (ops : Array Syntax) : MetaM String := do
+partial def appSpell (h : String) (ops : Array Syntax) : MetaM String := do
   match ops with
   | #[a] => return applyLabel h (← stxShow a) (stxJoin (stxPeel a))
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
@@ -178,6 +186,8 @@ partial def headShown (h : Syntax) : MetaM String := do
     if let some (f, ops) := h.getArgs.findSome? fun a => appParts (stxPeel a) then
       return ← appSpell (← headShown f) ops
   stxShow h
+
+end
 
 /-- The printer's spelling of a term, with a JUXTAPOSED application re-set by the note's own join
     rule: ONE operand goes through `applyLabel`, so a ONE-LETTER head juxtaposes with it (`TA`,
