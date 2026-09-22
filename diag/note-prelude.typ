@@ -48,8 +48,10 @@
 #let leancd(sel) = lean-call("generated/commutative/", <lean-cd>, (sel,))
 // A FORMULA GENERATED FROM THE SAME DECLARATION a row's picture is drawn from, so the words beside
 // a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
-// `diag-export --formula` writes is one inline `raw` value and nothing else — no `pic` binding —
-// so it is `#include`d directly rather than imported.
+// `diag-export --formula` writes is inline `raw` and nothing else — no `pic` binding — so it is
+// `#include`d directly rather than imported.  A raw is one unbreakable word, so the statement's
+// relation closes its raw and a `#sym.zws` stands between the two, giving the cell the place to
+// wrap that a hand-typed formula's `\` gives it.
 #let lean-text(dir, label, sel) = {
   [#metadata(sel)#label]
   if "list" not in sys.inputs { include dir + sel + ".typ" }
