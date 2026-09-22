@@ -145,7 +145,7 @@ theorem topHom_impl {A B : 𝒜} (R : A ⟶ B) : (topHom A B ⇨ R) = R := by
   rw [le_impl_iff, inter_eq_left (show X ⊑ topHom A B from le_Sup trivial)]
 
 /-- Currying: `R ⇨ (S ⇨ T) = (R∩S) ⇨ T` (Ex 4.32). -/
-theorem impl_curry {A B : 𝒜} (R S T : A ⟶ B) : (R ⇨ (S ⇨ T)) = ((R ∩ S) ⇨ T) := by
+public theorem impl_curry {A B : 𝒜} (R S T : A ⟶ B) : (R ⇨ (S ⇨ T)) = ((R ∩ S) ⇨ T) := by
   apply antisymm_of_le_iff
   intro X
   calc X ⊑ R ⇨ (S ⇨ T) ↔ X ∩ R ⊑ S ⇨ T := le_impl_iff X R (S ⇨ T)
@@ -164,7 +164,7 @@ theorem union_impl {A B : 𝒜} (R S T : A ⟶ B) : ((R ∪ S) ⇨ T) = ((R ⇨ 
     · exact le_trans (inter_mono (inter_lb_right (R ⇨ T) (S ⇨ T)) (le_refl S)) (impl_cancel S T)
 
 /-- `R ⇨ (S∩T) = (R⇨S) ∩ (R⇨T)` (Ex 4.32). -/
-theorem impl_inter {A B : 𝒜} (R S T : A ⟶ B) : (R ⇨ (S ∩ T)) = ((R ⇨ S) ∩ (R ⇨ T)) := by
+public theorem impl_inter {A B : 𝒜} (R S T : A ⟶ B) : (R ⇨ (S ∩ T)) = ((R ⇨ S) ∩ (R ⇨ T)) := by
   apply le_antisymm
   · exact le_inter (impl_mono_right (inter_lb_left S T)) (impl_mono_right (inter_lb_right S T))
   · apply (le_impl_iff _ _ _).mpr

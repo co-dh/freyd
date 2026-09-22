@@ -20,17 +20,17 @@ Rel is a poset-enriched category with ($times.o$, °) where $times.o$ is commuta
   // step after the first, so dropping the first step would leave a dangling `=` in front.
   [#row(frobb.at(0).steps.slice(0, 2), s: 42%) #v(-7pt) \ #src[Frobenius, one half — the other is
    its `°`]],
-  [#P(p-lax-delta, s: 60%) #v(-7pt) \ #src[`R◁≤◁(R⊗R)`]],
-  [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[`R⊸≤⊸`]],
+  [#P(p-lax-delta, s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_Δ")]],
+  [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_!")]],
 )]<rel-monoid>
 
 == $forall$ object A, `(A,◁,⊸)⊣(A,▷,⟜)`
 
 #disp[#grid(columns: (1fr, 1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(p-37, s: 52%) #v(-7pt) \ #src[`▷◁≤𝟙`]],
-  [#P(p-38, s: 52%) #v(-7pt) \ #src[`𝟙≤◁▷`]],
-  [#P(p-39, s: 52%) #v(-7pt) \ #src[`⟜⊸≤𝟙`]],
-  [#P(p-40, s: 52%) #v(-7pt) \ #src[`𝟙≤⊸⟜`]],
+  [#P(p-37, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«∇Δ≤𝟙»")]],
+  [#P(p-38, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤Δ∇»")]],
+  [#P(p-39, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«?!≤𝟙»")]],
+  [#P(p-40, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤!?»")]],
 )]<rel-adj>
 
 The last of these is the only one that makes a picture *bigger*, and it is worth a name: *a wire is
