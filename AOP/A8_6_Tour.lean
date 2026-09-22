@@ -267,16 +267,21 @@ public theorem R_recip_trans : (R tc)° ≫ (R tc)° ⊑ (R tc)° :=
 
 /-! ## The two algebras `[start,dropl]` and `[start,dropr]` -/
 
+/-- **tour-defn**: `start (a,b)=([a,b],[a,b])`, the one-edge tour both algebras begin at.  A `def`
+    because a picture of either algebra draws this arm, and a `fun` has no name a label can write. -/
+@[expose] public def start : City × City → Tour City :=
+  fun p => (ConsList.wrap p, ConsList.wrap p)
+
 /-- **tour-defn**: `[start,dropl]` with `start (a,b)=([a,b],[a,b])`. -/
 @[expose] public def droplAlgFn :
     (((F (City × City) City).obj (dTour City))).carrier → Tour City
-  | Sum.inl p => (ConsList.wrap p, ConsList.wrap p)
+  | Sum.inl p => start p
   | Sum.inr q => droplFn q.1 q.2
 
 /-- **tour-defn**: `[start,dropr]`. -/
 @[expose] public def droprAlgFn :
     (((F (City × City) City).obj (dTour City))).carrier → Tour City
-  | Sum.inl p => (ConsList.wrap p, ConsList.wrap p)
+  | Sum.inl p => start p
   | Sum.inr q => droprFn q.1 q.2
 
 /-- **tour-defn**: `tour ≜ ⦇[start,dropl∪dropr]⦈`. -/
