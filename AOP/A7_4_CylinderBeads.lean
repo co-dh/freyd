@@ -46,6 +46,59 @@ variable {A B : RelSet.{0}} {n : Nat}
 @[expose] public def tupleP (n : Nat) (R : A ⟶ B) : dTuple n A ⟶ dTuple n B :=
   fun t u => ∀ k, R (t k) (u k)
 
+/-- Choice over a FINITE index is constructive — the tuple is assembled one row at a time — so
+    every square below rests on no `Classical.choice`. -/
+public theorem tuple_of_forall_exists {Z : Type} {m : Nat} {P : Fin m → Z → Prop}
+    (h : ∀ k, ∃ z, P k z) : ∃ v : Fin m → Z, ∀ k, P k (v k) := by
+  induction m with
+  | zero => exact ⟨fun k => k.elim0, fun k => k.elim0⟩
+  | succ m ih =>
+      obtain ⟨z, hz⟩ := h 0
+      obtain ⟨v, hv⟩ := ih (fun k => h k.succ)
+      refine ⟨Fin.cases z v, fun k => ?_⟩
+      induction k using Fin.cases with
+      | zero => exact hz
+      | succ i => exact hv i
+
+/-- `N(𝟙) = 𝟙`: agreeing entry by entry is being the same tuple. -/
+public theorem tupleP_id : tupleP n (𝟙 A) = 𝟙 (dTuple n A) := by
+  apply hom_ext; intro t u
+  exact ⟨fun h => funext fun i => h i, fun h i => congrFun h i⟩
+
+/-- `N(S) N(T) = N(ST)`: the intermediate tuple is chosen entry by entry. -/
+public theorem tupleP_comp {C : RelSet.{0}} (S : A ⟶ B) (T : B ⟶ C) :
+    tupleP n (S ≫ T) = tupleP n S ≫ tupleP n T := by
+  apply hom_ext; intro t w
+  constructor
+  · intro h
+    obtain ⟨u, hu⟩ := tuple_of_forall_exists (fun i => h i)
+    exact ⟨u, fun i => (hu i).1, fun i => (hu i).2⟩
+  · rintro ⟨u, h1, h2⟩ i
+    exact ⟨u i, h1 i, h2 i⟩
+
+/-- `N` is monotonic. -/
+public theorem tupleP_mono {S T : A ⟶ B} (h : S ⊑ T) : tupleP n S ⊑ tupleP n T :=
+  le_iff.mpr fun _ _ hS i => le_iff.mp h _ _ (hS i)
+
+/-- **`N` BUNDLED as a relator** — the note's lane `[n]`, and the `N` of `AOP.A7_4_Cylinder`'s
+    setting.  A lane IS a relator, so the three laws above have to be ONE value before a panel
+    can draw `[n]` as a wire: unbundled they are three theorems, and an object `X[n]` then peels
+    off no wire at all and is drawn as one lane carrying the whole nest. -/
+@[expose] public def tupleRelator (n : Nat) : Relator RelSet.{0} RelSet.{0} where
+  obj := dTuple n
+  map := tupleP n
+  map_id _ := tupleP_id
+  map_comp := tupleP_comp
+  map_mono := tupleP_mono
+
+/-- **Every row is reachable from every row by a rotation**: `k+(i-k) = i` on `Fin n`, which is
+    why `moves trans N(union)` unions ALL the rows into each one. -/
+public theorem exists_rot_index {n : Nat} (k i : Fin n) : ∃ j : Fin n, k + j = i := by
+  refine ⟨i - k, Fin.eq_of_val_eq ?_⟩
+  have hk : k.val ≤ n := Nat.le_of_lt k.isLt
+  rw [Fin.val_add, Fin.val_sub, Nat.add_mod_mod, ← Nat.add_assoc, Nat.add_sub_cancel' hk,
+    Nat.add_mod_left, Nat.mod_eq_of_lt i.isLt]
+
 /-! ## The four beads (book pp. 180-181) -/
 
 /-- `rot j t` is `t` rotated up by `j` rows, the top row glued to the bottom (`+` on `Fin n` is

@@ -503,7 +503,7 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 /-- `Vec(n)` on relations is the same lane `[n]`, for the same reason. -/
-@[app_unexpander Vec.Rel.tupleRelator] def unexpandTupleRelator : Unexpander
+@[app_unexpander RelSet.Tuple.tupleRelator] def unexpandTupleRelator : Unexpander
   | `($_ $n) => `([$n])
   | _ => throw ()
 
