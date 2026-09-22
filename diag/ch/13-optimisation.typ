@@ -13,7 +13,7 @@ For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`X⊑�
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[the same predicate under the same
 letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 ]
-// lean:AOP.A7_4_Horner.est_apply@91dc1299
+// lean:AOP.A7_2_RelSet.est_apply@91dc1299
 // B&dM's `min R` has `R : A⟵A` reading `x R y` as the arrow `y⟶x`, ours `R : A⟶A` reading `x⟶y`.
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
