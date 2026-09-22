@@ -509,6 +509,19 @@ open Lean PrettyPrinter Delaborator SubExpr in
   spliceIndex inner i
 
 open Lean PrettyPrinter Delaborator SubExpr in
+/-- THE INDEXED OBJECT'S CARRIER IS THE INDEXED OBJECT.  `dTuple n A` is `⟨Fin n → A⟩`, so a TYPE
+    that is a pi over `Fin n` whose codomain does not use the index IS that object's carrier and has
+    to print the way the object does — `Fin n → X` is `X[n]`, through `spliceIndex` and not a second
+    rule, so a numeric index, a compound one and a nest `Fin m → Fin n → X` all come out as the
+    object forms do.  A pi whose codomain USES its argument indexes nothing and is left alone. -/
+@[delab forallE] def delabFinPi : Delab := do
+  let .forallE _ d b _ ← getExpr | failure
+  guard (d.isAppOfArity ``Fin 1 && !b.hasLooseBVars)
+  let i ← withBindingDomain (withNaryArg 0 delab)
+  let inner ← withBindingBody `i delab
+  spliceIndex inner i
+
+open Lean PrettyPrinter Delaborator SubExpr in
 /-- `Vec(n)`'s object is the same `A[n]`: the object the lane `[n]` carries is spelled like the
     tuple object, or a product wire over it prints `Vec(A)×−` with the index gone. -/
 @[delab app.Freyd.Functor.obj] def delabVecObj : Delab := do
