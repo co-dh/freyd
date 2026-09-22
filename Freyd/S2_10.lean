@@ -327,6 +327,9 @@ public theorem coreflexive_comp_eq_inter {a : 𝒜} {A B : a ⟶ a} (hA : Corefl
 /-- The DOMAIN of R, denoted %mR in the book: 1 ∩ RR° (§2.122). -/
 @[expose] public def dom {a b : 𝒜} (R : a ⟶ b) : a ⟶ a := Cat.id a ∩ R ≫ R°
 
+/-- The RANGE of R: the domain of the converse, `ran R = dom R°` (§2.122). -/
+@[expose] public def ran {a b : 𝒜} (R : a ⟶ b) : b ⟶ b := dom R°
+
 /-- Domain is coreflexive (§2.122). -/
 public theorem dom_coreflexive {a b : 𝒜} (R : a ⟶ b) : Coreflexive (dom R) :=
   inter_lb_left (Cat.id a) (R ≫ R°)
