@@ -163,12 +163,12 @@
 
   [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
  #src[]],
-   // lean:AOP.A7_4_Cylinder.gen@a74f43af
+   // lean:AOP.A7_4_Cylinder.gen@07f901a6
   [#leant("Freyd.Alg.Cylinder.gen")],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [`paths≜⦇gen⦈ setify union` #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@88627eaa
+  // lean:AOP.A7_4_Cylinder.paths@e6d14f30
   [#leant("Freyd.Alg.Cylinder.paths")],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
@@ -230,7 +230,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
   src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
-   // lean:AOP.A7_4_Cylinder.cyl_cp@f553ee24
+   // lean:AOP.A7_4_Cylinder.cyl_cp@d2f022d7
    // lean:AOP.A7_4_Cylinder.cyl_cp_prod@7f182a1e
    // lean:AOP.A7_4_Cylinder.cyl_cp_const@94a6c342
 
@@ -308,7 +308,7 @@ N(cp P(α))(that)
   [],
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
-   // lean:AOP.A7_4_Cylinder.gen_cata_comm@1a716551
+   // lean:AOP.A7_4_Cylinder.gen_cata_comm@1297cc13
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
    // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
 
@@ -461,7 +461,7 @@ N(α)(that)
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_laws@cccc5e9a
+    // lean:AOP.A7_4_Cylinder.cyl_laws@d824dc1f
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], cyp(cyrun([`L N Nat`], [`L Nat`], (cb-paths, est-R-box))), [])],
@@ -513,7 +513,7 @@ N(α)(that)
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
  ]])
-  // lean:AOP.A7_4_Cylinder.cyl_7_13@c3459e32
+  // lean:AOP.A7_4_Cylinder.cyl_7_13@41e3cf5d
 ]<cyl-fusion>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
