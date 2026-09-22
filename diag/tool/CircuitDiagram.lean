@@ -195,6 +195,14 @@ partial def objOf (o : Expr) : MetaM Obj := do
   | (``Freyd.Functor.obj, args) =>
     match StrDiag.lastTwo args with
     | some (f, b) => do
+      -- A CONSTANT RELATOR'S ACTION IS THE OBJECT IT IS CONSTANTLY: `(const V).obj X` REDUCES to
+      -- `V`, so the wire carries `EV`, where naming the relator and applying it (`EV(X)`) writes
+      -- an action nothing performs.  BY THE HEAD CONSTANT, so every other relator keeps its
+      -- `F(X)`; read here AND in the delaborator beside `Relator.const`
+      -- (`diag/StrDiagNames.lean`), the two places a picture spells an object action, so a wire
+      -- and the label above it cannot disagree.
+      let fr := if f.isAppOfArity ``Freyd.Alg.Relator.toFunctor 5 then f.getArg! 4 else f
+      if fr.isAppOfArity ``Freyd.Alg.Relator.const 5 then return ← objOf (fr.getArg! 4)
       -- The RELATOR NAMES ITSELF and its type parameters name nothing: `F(list⁺(A))`, never
       -- `TT.F A(list⁺(A))`, because those parameters are the types the wires already carry.
       let n ← do pure ((← StrDiag.relatorName? f).getD (← plain f))

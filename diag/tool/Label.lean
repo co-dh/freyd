@@ -216,15 +216,19 @@ def appShow (e : Expr) : MetaM String := do
       headShown (stxPeel stx)
     else plain e
 
-/-- The note's juxtaposition spacing, the same rule the note's own generator writes back with:
-    a bracket already separates two factors, so `F(∋)S` and `π₂R°`
-    close up where `prefix list(p)` and `S%∋ est(R°)` cannot.  A factor OPENING with `(` keeps its
-    space — `pick (schedule×𝟙)snoc` closed up would read as an application of `pick`. -/
+/-- The note's juxtaposition spacing, the same rule the note's own generator writes back with.
+    `a` IS ONE FACTOR — `juxtL` folds the run from the right so it always is — and the space is
+    there for ONE reason: two factors run together read as one name.  A FACTOR OF ONE CHARACTER
+    (`oneChar`, whatever the character) cannot, so it closes up against whatever follows it —
+    `RR°`, `π₂R°`, `R◁`, `▷◁`, `⟜⊸`, and `◁(R⊗R)` and `S(S\T)` against an opening bracket too.
+    A WORD of two characters or more keeps its space (`cons R`, `prefix list(p)`,
+    `S%∋ est(R°)`, `pick (schedule×𝟙)snoc`, which closed up would read as an application of
+    `pick`), unless a bracket or a `°` already separates it from what follows (`F(∋)S`). -/
 def juxt (a b : String) : String :=
   if a.isEmpty || b.isEmpty then a ++ b
   -- `°` is a POSTFIX: it terminates its operand exactly as a closer does, so `est(R∩S°S)` must not
   -- come out `est(R∩S° S)`.
-  else if ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
+  else if oneChar a || ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
   else a ++ " " ++ b
 
 /-! ### THE PRECEDENCES ARE THE NOTATIONS' OWN.  A number invented here is a second copy of a precedence
@@ -291,6 +295,7 @@ def binOps : Array (Name × Nat × Assoc × String) := #[
   (``Freyd.Alg.DistributiveAllegory.union, 65, .left, "∪"),
   (``Freyd.Diag.Biprod.union, 65, .left, "∪"),
   (``Freyd.Alg.thenRel, 62, .left, "⨾"),
+  (``Freyd.Alg.kleisliComp, 70, .left, "⋄"),
   (``Freyd.Alg.impl, 58, .right, "⇨"),
   -- The tape layer's own two, at their own notations' precedences (`diag/FO.lean`,
   -- `diag/Monoidal.lean`), both right-associative.
@@ -848,7 +853,10 @@ instance : HAppend Lbl String Lbl := ⟨fun a b => .seq #[a, .text b]⟩
 def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
 
 /-- The note's juxtaposition spacing between two labels, decided on their flat spelling (`juxt`), so
-    one rule answers for the string and for the tree alike. -/
+    one rule answers for the string and for the tree alike.  `a` IS ONE FACTOR and `b` the rest of
+    the run, which is why the run is folded from the RIGHT: the spacing is the LEFT factor's own
+    (a one-character factor closes up, a word does not), and a left fold hands `juxt` a whole run
+    whose last factor it cannot see — `R◁` then `▷` came out `R◁ ▷`. -/
 def juxtL (a b : Lbl) : Lbl :=
   if juxt a.flat b.flat == a.flat ++ b.flat then a ++ b else a ++ " " ++ b
 
@@ -1032,7 +1040,9 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if let some r ← rewriteHead? e then return ← labelTree prec r
     if lastTwo args |>.isNone then txt e else do
       let mut s : Lbl := .text ""
-      for t in (← labelRunT e) do s := juxtL s t
+      -- FROM THE RIGHT, so `juxtL`'s left operand is ONE factor and the spacing between two
+      -- factors is decided by the left one of THEM, not by the run built so far.
+      for t in (← labelRunT e).reverse do s := juxtL t s
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
       -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.

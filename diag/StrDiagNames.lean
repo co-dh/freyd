@@ -766,9 +766,14 @@ def delabVecCons : Delab := `($(mkIdent `cons))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.Vec.concat, delab const.Freyd.Alg.Vec.concat]
 def delabVecConcat : Delab := `($(mkIdent `concat))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Freyd.Alg.Vec.Rel.est, delab const.Freyd.Alg.Vec.Rel.est]
-def delabVecRelEst : Delab := `($(mkIdent `est))
+open Lean PrettyPrinter in
+/-- §7.13's cylinder `est` IS §7.1's operator (`AOP.A7_1`) at a tuple, so it is written the way
+    every DELIMITED operator is — `est(R)`, `thin(Q)`, `P(R)` — WITH ITS OPERAND: an operator
+    applied to nothing is a constant, and dropping the relation left the cell claiming one where
+    the statement has an argument.  The length is implicit and no factor of the name. -/
+@[app_unexpander Freyd.Alg.Vec.Rel.est] def unexpandVecRelEst : Unexpander
+  | `($_ $S) => `(est($S))
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Interval] def unexpandTexIntervalType : Unexpander
   | `($_ $args*) => `($(mkIdent `Interval) $args*)
@@ -953,6 +958,20 @@ open Lean PrettyPrinter in
 @[app_unexpander Relator.const] def unexpandRelatorConst : Unexpander
   | `($_ $A) => `($A)
   | _ => throw ()
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- A CONSTANT RELATOR'S ACTION ON AN OBJECT IS THAT OBJECT: `(const V).obj X` REDUCES to `V`, so
+    the label is `V` and the wire is `E(list⁺(V))`.  Spelling the relator and applying it to the
+    argument (`V(list⁺(V))`) writes an action nothing performs, and `EV(list⁺(V))` reads as two
+    functors composed.  BY THE HEAD CONSTANT, so every other relator keeps its `F(X)`/`FX`. -/
+@[delab app.Freyd.Functor.obj] def delabConstRelatorObj : Delab := do
+  let e ← getExpr
+  guard (e.getAppNumArgs == 6)
+  let f := e.getArg! 4
+  -- A relator reaches its object action through the functor it extends, and a `Functor` argument
+  -- is already the relator: one peel, so both spellings of the same action go the same way.
+  let r := if f.isAppOfArity ``Relator.toFunctor 5 then f.getArg! 4 else f
+  guard (r.isAppOfArity ``Relator.const 5)
+  PrettyPrinter.delab (r.getArg! 4)
 -- THE PRODUCT OF TWO RELATORS IS THE NOTE'S `F×G`, the coproduct's `F+G` mirrored.
 open Lean PrettyPrinter in
 @[app_unexpander Relator.prod] def unexpandRelatorProd : Unexpander
