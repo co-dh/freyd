@@ -111,6 +111,21 @@ public theorem singleton_laxNatural :
     LaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.idRelator 𝒜) (fun _ => singletonMap) :=
   fun R => singletonMap_powerRel_lax R
 
+/-- `F(∋,∋)` IS LAX NATURAL in the first argument, for EVERY binary relator and every second
+    argument: `F.map_comp` collapses the two composites to `F` of one relation, and what is left
+    is `E(R)∋⊑∋R` under `F`.  The exporter needs a verdict for the family it cannot split, and
+    `laxNatural_outside` only covers the one-argument steps `F(∋,𝟙)`, `F(𝟙,∋)`. -/
+public theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
+    LaxNatural (Relator.comp (Relator.idRelator 𝒜) (F.appr B))
+      (Relator.comp (Relator.comp (Relator.idRelator 𝒜) powerRelator)
+        (F.appr (PowerAllegory.powerObj B)))
+      (fun a => F.map (∋ a) (∋ B)) := by
+  intro a b R
+  show F.map (powerRel R) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (∋ b) (∋ B)
+      ⊑ F.map (∋ a) (∋ B) ≫ F.map R (𝟙 B)
+  rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
+  exact F.map_mono (powerRel_eps_lax R) (le_refl _)
+
 end SingletonLax
 
 /-! ## The set model read pointwise, and the witness
