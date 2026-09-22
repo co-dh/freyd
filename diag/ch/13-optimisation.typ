@@ -709,7 +709,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
 
-  [`F`], [`FX=𝟏+A×X`], [`𝒜⟶𝒜`], [],
+  [`F`], [`FX=𝟏+A×X`], [#leant("Freyd.Alg.RelSet.CL.F")], [],
   [nothing, or a head and a tail],
 
   [`nil`, `cons`], [`[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns]],
@@ -1432,21 +1432,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
  [`tree A::=node (A,[tree A])` #src[]],
   // lean:AOP.A6_RoseTree.Rose@1e5d7a7f
-  [`𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.RelSet.RT.roseRelator")],
   [The company hierarchy: an employee, and the list of subtrees under them.],
 
  [`F(A,B)=A×[B]` #src[]],
   // lean:AOP.A6_RoseTree.F@bd6da71e
-  [`𝒜×𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.RelSet.RT.F")],
   [The base functor `tree` folds: an employee beside the recursive position, one layer deep.],
 
   [`rating`],
-  [`A⟶Real`],
+  [`A⟶Int`],
   [What one employee is worth as a guest.],
 
  [`cost≜list(rating) sum` #src[]],
   // lean:AOP.A7_3_Party.cost_eq@6d5c7097
-  [`[A]⟶Real`],
+  [#leant("Freyd.Alg.RelSet.Party.cost_eq")],
   [What a guest list is worth.],
 
  [`R≜cost≤cost°` #src[]],
@@ -1459,15 +1459,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Takes one of the two parties a subtree returns.],
 
   [`include≜(𝟙×(list(π₂) concat)) cons`],
-  [`F(A,[A]×[A])⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.includeR")],
   [The party that invites the root, which puts every immediate subtree's root out. A map.],
 
   [`exclude≜(𝟙×(list(choose) concat))π₂`],
-  [`F(A,[A]×[A])⟶[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.excludeR")],
   [The party that leaves the root out, so each subtree is free to choose. Not a map.],
 
   [`S≜⟨include,exclude⟩`],
-  [`F(A,[A]×[A])⟶[A]×[A]`],
+  [#leant("Freyd.Alg.RelSet.Party.S")],
   [The algebra: one step returns both parties of a subtree at once.],
 
  [`party≜⦇S⦈ choose` #src[]],
@@ -2252,7 +2252,7 @@ zip(that)                                         each row: its square, and the 
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
   [`S≜[nil,new ∪ old]`],
-  [`1+A×[[A]]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.Van.Salg")],
   [`S(a,[[b],[c]])` gives `[[a],[b],[c]]`, and `[[a,b],[c]]` when `[a,b]` is secure.],
 
  [`partition list(secure)=⦇S⦈` #src[]],

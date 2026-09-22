@@ -1,8 +1,8 @@
 /-
   `TypeRender` — a declaration's TYPE, written the way the note writes it.
 
-  The note's tables carry a *type* column beside every definition, hand-typed today: `[[Int]]⟶[[Int]]`
-  beside `R≜length≤length°`.  A hand-typed cell is a claim nobody checks, and it is exactly the claim
+  The note's tables carry a *type* column beside every definition, written by `#leant`:
+  `[[Int]]⟶[[Int]]` beside `R≜length≤length°`.  A hand-typed cell is a claim nobody checks, and it is exactly the claim
   the environment can settle — `R X`'s hom type IS `dSched X ⟶ dSched X`, and the printing-only
   unexpanders of `AOP` are what turn that into the note's brackets.  So the cell is GENERATED from the
   declaration the row already cites, and carries a `lean:<decl>@<key>` marker of its own: a statement
