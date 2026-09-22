@@ -33,7 +33,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.est_arm₂_le.lhs"),
     // lean:AOP.A9_1.est_summand_le@1efecafb
-    [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`]])],
+    [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`]])],
   // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
   // the object wire.
   [#lean("Freyd.Alg.RelSet.SL.est_arm₂_le.lhs")],

@@ -70,7 +70,7 @@ in @mu-defn.
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.thin_arm₂_le.lhs"),
     // lean:AOP.A9_1.thin_summand_le@ac202517
-    [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=⊥`: `FA` is usually a
+    [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`: `FA` is usually a
       coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
       // uniqueness fact: Theorem 6.3
       point is unique and entire — `T°` followed by `F`'s membership relation

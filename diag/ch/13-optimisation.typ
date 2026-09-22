@@ -51,7 +51,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [`P(S) est(R)⊑(∋S)∩(∈\(SR°))`], [the half of the row above that costs nothing],
   [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` transitive]],
   [a minimum in each set, then a minimum of those],
-  [`P(est(R)) est(R)=P(Dom(est(R))) union est(R)` \ #src[`R` transitive]],
+  [`P(est(R)) est(R)=P(dom(est(R))) union est(R)` \ #src[`R` transitive]],
   [the same as an equality, once empty sets are dropped],
 )]<est-laws>
 
@@ -718,7 +718,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")], [],
   [both constructors as one map],
 
- [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
+ [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
   // lean:AOP.A7_7_TakeWhile.pcor@62cb073c
   [`{(a,a)∣a` passes the test`}`],
 
@@ -1066,7 +1066,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 )
 // mirrored from `max(P(max(Λ(sum prefix))))Λsuffix`.
 #align(center, block(inset: (y: 4pt))[#src[The
-  `union` step is @est-laws's `P(est(R)) est(R)=P(Dom(est(R))) union est(R)` — every suffix has the
+  `union` step is @est-laws's `P(est(R)) est(R)=P(dom(est(R))) union est(R)` — every suffix has the
   empty prefix, so `Dom` is `𝟙` here — and `P(f)=E(f)` at the map it is applied to (@powrel-laws).]])
 ]<mss-shape>
 
@@ -1747,10 +1747,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1.7cm, auto),
   row-gutter: 3.5pt, align: (left, left),
   [`g`],
-  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(Dom(π₁R°))π₂R°⊑π₂R°`
+  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(dom(π₁R°))π₂R°⊑π₂R°`
  #src[], `g:=π₁` its mirror
    // lean:AOP.A7_3_Party.include_monotonic@226b6fb6
-   `(Dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `Dom⊑𝟙`; `g:=choose≜π₁ ∪ π₂` is the union
+   `(dom(π₂R°))π₁R°⊑π₁R°` — 1 and 4 of @bdm-prod-laws, then `dom⊑𝟙`; `g:=choose≜π₁ ∪ π₂` is the union
  of the two #h(4pt) #src[@lax-closure].
    // lean:AOP.A7_3_Party.chooseR_monotonic@c712a88d
    `list` monotonic, @relator-defn],
@@ -1763,10 +1763,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
  makes a cheaper list. #src[]
    // lean:AOP.A7_3_Party.cons_monotonic@e5288fc0  — B&dM's exercise
-   For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(Dom(π₁))π₂R°`
+   For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(dom(π₁))π₂R°`
  `=π₂R°` #src[]: `π₁` is a map, hence entire, so
    // lean:AOP.A6_1_RelSet.rprodMap_id_snd@dc93a451
-   `Dom(π₁)=𝟙` — @dom-laws],
+   `dom(π₁)=𝟙` — @dom-laws],
 )]])
 
 #v(3pt)
@@ -1781,7 +1781,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ))
 ]<party-mono-branch>
 
-// The `⊑` is STRICT, and the witness says where: the `g` row's one inequality is `Dom⊑𝟙`.
+// The `⊑` is STRICT, and the witness says where: the `g` row's one inequality is `dom⊑𝟙`.
 #disp[#table(
   columns: (auto, 1fr),
   align: (left + horizon, left + horizon),
@@ -1798,8 +1798,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  #h(4pt) #src[]],
    // lean:AOP.A7_3_ChooseStrict.choose_monotonic_strict@2b446ff0
 
-  [`(R×R)choose=choose R`], [iff `R` is entire — `Dom⊑𝟙` is the `g` row's only inequality step,
-   and it is an equality iff `Dom(R)=𝟙`],
+  [`(R×R)choose=choose R`], [iff `R` is entire — `dom⊑𝟙` is the `g` row's only inequality step,
+   and it is an equality iff `dom(R)=𝟙`],
 )]<choose-strict>
 
 === The derivation <sec-party-deriv>

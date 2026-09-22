@@ -62,34 +62,34 @@
 )
 ]<est-79-pow>
 
-== `P(est(R)) est(R)=P(Dom(est(R))) union est(R)`
+== `P(est(R)) est(R)=P(dom(est(R))) union est(R)`
 
 // B&dM (7.12), `R` a preorder.  `⊑` puts the domain in for free; `⊒` is @est-79 at `S := est(R)`
 // and then the two halves the book leaves as exercises.
 #disp[
 #zline(
   zsqc(`P(est(R)) est(R)`, none),
-  zstep(op: sym.eq, under: true)[`Dom(est(R)) est(R)=est(R)`],
-  zsqc(`P(Dom(est(R)) est(R)) est(R)`, none),
+  zstep(op: sym.eq, under: true)[`dom(est(R)) est(R)=est(R)`],
+  zsqc(`P(dom(est(R)) est(R)) est(R)`, none),
 )
 #zline(
   zstep(op: sym.eq, under: true)[`P` a relator],
-  zsqc(`P(Dom(est(R)))P(est(R)) est(R)`, none),
+  zsqc(`P(dom(est(R)))P(est(R)) est(R)`, none),
   zstep(op: sym.subset.eq.sq, under: true)[@est-711],
-  zsqc(`P(Dom(est(R))) union est(R)`, none),
+  zsqc(`P(dom(est(R))) union est(R)`, none),
 )
 ]<est-712>
 
 #disp[
 #zline(
-  zsqc(`P(Dom(est(R))) union est(R)`, `P(est(R)) est(R)`),
+  zsqc(`P(dom(est(R))) union est(R)`, `P(est(R)) est(R)`),
   zstep(op: sym.arrow.l.double, under: true)[@est-79 at `S:=est(R)`, `Δ⊣∩`, `T·⊣T\`],
-  zpair(zsqc(`P(Dom(est(R))) union est(R)`, `∋est(R)`),
-        zsqc(`∈P(Dom(est(R))) union est(R)`, `est(R)R°`)),
+  zpair(zsqc(`P(dom(est(R))) union est(R)`, `∋est(R)`),
+        zsqc(`∈P(dom(est(R))) union est(R)`, `est(R)R°`)),
 )
 #zline(
-  zsqc(`P(Dom(est(R))) union est(R)`, `∋est(R)`),
-  zstep(op: sym.arrow.l.double, under: true)[`P(Dom(est(R)))⊑𝟙`],
+  zsqc(`P(dom(est(R))) union est(R)`, `∋est(R)`),
+  zstep(op: sym.arrow.l.double, under: true)[`P(dom(est(R)))⊑𝟙`],
   zsqc(`union est(R)`, `∋est(R)`),
 )
 #zline(
@@ -99,12 +99,12 @@
   zsqc(`∋(∋∩(∈(∈\(∈\R°))))`, `∋(∋∩(∈\R°))`, name: "counit of T·⊣T\\"),
 )
 #zline(
-  zsqc(`∈P(Dom(est(R))) union est(R)`, `est(R)R°`),
+  zsqc(`∈P(dom(est(R))) union est(R)`, `est(R)R°`),
   zstep(op: sym.arrow.l.double, under: true)[`∈` lax natural],
-  zsqc(`Dom(est(R))∈union est(R)`, `est(R)R°`),
+  zsqc(`dom(est(R))∈union est(R)`, `est(R)R°`),
 )
 #zline(
-  zstep(op: sym.arrow.l.double, under: true)[`Dom(est(R))⊑est(R) est(R)°`],
+  zstep(op: sym.arrow.l.double, under: true)[`dom(est(R))⊑est(R) est(R)°`],
   zsqc(`est(R) est(R)°∈union est(R)`, `est(R)R°`),
   zstep(op: sym.arrow.l.double, under: true)[`est(R)°⊑∈`, `∈∈union⊑∈`],
   zsqc(`est(R)∈est(R)`, `est(R)R°`, name: "UP of est"),

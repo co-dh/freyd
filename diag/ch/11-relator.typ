@@ -41,7 +41,7 @@ the 2-category.
  // F(R∩S) row: Ex 5.2, the restriction
  [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [`F(Dom(R))=Dom(F(R))` for `F` preserving `°`. #src[]],
+ [`F(dom(R))=dom(F(R))` for `F` preserving `°`. #src[]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
@@ -60,9 +60,9 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
- `⟨R,S⟩π₁=Dom(S)R` #src[] #h(1.4cm)
+ `⟨R,S⟩π₁=dom(S)R` #src[] #h(1.4cm)
   // lean:AOP.A5_2.pair_outl@18c8ddee
- `⟨R,S⟩π₂=Dom(R)S` #src[]
+ `⟨R,S⟩π₂=dom(R)S` #src[]
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
@@ -203,7 +203,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
   }), s: 74%),
 
- [`⟨R,S⟩π₁=Dom(S)R` \ #src[@fork-proj]],
+ [`⟨R,S⟩π₁=dom(S)R` \ #src[@fork-proj]],
   // lean:AOP.A5_2.pair_outl@18c8ddee
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
@@ -214,7 +214,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(3.0, y, black)[$A$]
   }), s: 74%),
 
- [`⟨R,S⟩π₂=Dom(R)S` \ #src[@fork-proj]],
+ [`⟨R,S⟩π₂=dom(R)S` \ #src[@fork-proj]],
   // lean:AOP.A5_2.pair_outr@ce99887d
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.72
@@ -341,7 +341,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
     lab(4.55, 0, black)[$A$]; wire((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$A$]
   }), s: 85%),
 
-  [`lr°=⊥=rl°`],
+  [`lr°=𝟘=rl°`],
   P(cetz.canvas(length: 0.8cm, {
     wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
     wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`r`], flip: true, fill: TINT)
@@ -474,7 +474,7 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     gbox((7.10, -y), [S]); wire((8.02, -y), (8.12, -y))
     tape-join((8.54, 0), sp: y, len: 0.42)
     wire((8.76, 0), (9.10, 0)); lab(9.45, 0, black)[$D$]
-    // `ll°=𝟙` and `lr°=⊥` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
+    // `ll°=𝟙` and `lr°=𝟘` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
     lab(10.1, 0, black)[$=$]
     lab(10.75, 0, black)[$C$]
     wire((11.05, 0), (11.39, 0))
@@ -488,8 +488,8 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
     wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
   }), s: 68%),
 
-  // X≜[𝟙,⊥]=l° and Y≜[⊥,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
-  [`X≜[𝟙,⊥]=l°` and `Y≜[⊥,𝟙]=r°`, \ so `(Xl) ∪ (Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
+  // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
+  [`X≜[𝟙,𝟘]=l°` and `Y≜[𝟘,𝟙]=r°`, \ so `(Xl) ∪ (Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
   P(cetz.canvas(length: 0.8cm, {
     let y = 0.62
     lab(-1.0, 0, black)[$A + B$]
