@@ -959,8 +959,10 @@ def main(argv):
     shutil.rmtree(out, ignore_errors=True)
     made = []
     for note in NOTES:
+        # A note that is not there is a wrong cwd, not a note with no changes: run from the scratchpad
+        # this answered "nothing changed since HEAD" with exit 0.
         if not os.path.exists(note):
-            continue
+            sys.exit(f"diff-crop: {note} not found from {os.getcwd()} — run it from the repository root")
         old = head_copy(note)
         if old:
             made += crops(old, note, out, tag_=os.path.basename(note).replace(".pdf", "") + "-")
