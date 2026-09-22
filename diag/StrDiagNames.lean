@@ -22,6 +22,7 @@ import AOP.A7_4_CylinderVecRel
 import AOP.A7_5_Van
 import AOP.A7_7_MSS
 import AOP.A7_7_TakeWhile
+import AOP.A7_7_Filter
 import AOP.A8_1
 import AOP.A8_2
 import AOP.A8_4_Knapsack
@@ -627,5 +628,358 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tuple.tupleP] public meta def unexpandTupleP : Unexpander
   | `($_ $n $R) => `(($(mkIdent `Vec) $n) $R)
   | _ => throw ()
+
+-- EVERY CONSTANT A LABEL MAY BE MADE OF IS REGISTERED HERE, spelling included.  `checkSpelled`
+-- (`diag/tool/ExprReader.lean`) refuses a label carrying a constant no printing rule rewrote, so
+-- the note's vocabulary is this file and nothing else: a constant added to a case study draws
+-- nothing until its spelling is written down.  THE HEAD IS THE NAME, THE OPERANDS ARE THE
+-- PRINTER'S — the clause keeps `$args*` where `gen` and `Q` above drop theirs, because a section
+-- parameter is the panel's region and an ARGUMENT is part of what the arrow is.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.party] def unexpandPartyParty : Unexpander
+  | `($_ $args*) => `($(mkIdent `party) $args*)
+  | _ => `($(mkIdent `party))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.choose] def unexpandPartyChoose : Unexpander
+  | `($_ $args*) => `($(mkIdent `choose) $args*)
+  | _ => `($(mkIdent `choose))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.interval] def unexpandTexInterval : Unexpander
+  | `($_ $args*) => `($(mkIdent `interval) $args*)
+  | _ => `($(mkIdent `interval))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.intern] def unexpandTexIntern : Unexpander
+  | `($_ $args*) => `($(mkIdent `intern) $args*)
+  | _ => `($(mkIdent `intern))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.bagify] def unexpandTardyBagify : Unexpander
+  | `($_ $args*) => `($(mkIdent `bagify) $args*)
+  | _ => `($(mkIdent `bagify))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.arm₂] def unexpandSLArm2 : Unexpander
+  | `($_ $args*) => `($(mkIdent `arm₂) $args*)
+  | _ => `($(mkIdent `arm₂))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.subseq] def unexpandListRelSubseq : Unexpander
+  | `($_ $args*) => `($(mkIdent `subseq) $args*)
+  | _ => `($(mkIdent `subseq))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.MSS.mss] def unexpandMSSmss : Unexpander
+  | `($_ $args*) => `($(mkIdent `mss) $args*)
+  | _ => `($(mkIdent `mss))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.partition] def unexpandParagraphPartition : Unexpander
+  | `($_ $args*) => `($(mkIdent `partition) $args*)
+  | _ => `($(mkIdent `partition))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.splits] def unexpandBracketSplits : Unexpander
+  | `($_ $args*) => `($(mkIdent `splits) $args*)
+  | _ => `($(mkIdent `splits))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op] def unexpandEditOp : Unexpander
+  | `($_ $args*) => `($(mkIdent `Op) $args*)
+  | _ => `($(mkIdent `Op))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.step] def unexpandEditStep : Unexpander
+  | `($_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
+-- The tip-tree section's own bifunctor is the note's `F`, the letter every `F(R,S)` beside the
+-- picture already uses; `RelSet.RT.F` above is the rose tree's, spelled the same for the same
+-- reason.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.F] def unexpandTTF : Unexpander
+  | `($_ $args*) => `($(mkIdent `F) $args*)
+  | _ => `($(mkIdent `F))
+-- A SECTION'S STEP ALGEBRA IS THE NOTE'S `S`, the letter its `#leant` row is headed by — `Salg` is
+-- only the Lean name, as `Kalg` is for the maximum-segment-sum step's `k`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.Salg] def unexpandParagraphSalg : Unexpander
+  | _ => `($(mkIdent `S))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Knapsack.Salg] def unexpandKnapsackSalg : Unexpander
+  | _ => `($(mkIdent `S))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.S] def unexpandPartyS : Unexpander
+  | _ => `($(mkIdent `S))
+-- The note's `cp` is the copy-and-pair map; `cpMap` is the Lean name.
+open Lean PrettyPrinter in
+@[app_unexpander cpMap] def unexpandCpMap : Unexpander
+  | `($_ $args*) => `($(mkIdent `cp) $args*)
+  | _ => `($(mkIdent `cp))
+-- THE NAMES THE NOTE NEVER WRITES ITSELF keep the spelling the panel is drawn with today: the
+-- suffix is Lean's disambiguator (`Fn`, `Rel`, `Relator`, as `editFn` is `edit` above), and which
+-- shorter word the note wants is the note's decision, not one to be made here.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.wrapCatFn] def unexpandBracketWrapCat : Unexpander
+  | `($_ $args*) => `($(mkIdent `wrapCatFn) $args*)
+  | _ => `($(mkIdent `wrapCatFn))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.opRelator] def unexpandEditOpRelator : Unexpander
+  | `($_ $args*) => `($(mkIdent `opRelator) $args*)
+  | _ => `($(mkIdent `opRelator))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.editAlg] def unexpandEditAlg : Unexpander
+  | `($_ $args*) => `($(mkIdent `editAlg) $args*)
+  | _ => `($(mkIdent `editAlg))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
+  | `($_ $args*) => `($(mkIdent `journeyRelator) $args*)
+  | _ => `($(mkIdent `journeyRelator))
+open Lean PrettyPrinter in
+@[app_unexpander sortRel] def unexpandSortRel : Unexpander
+  | `($_ $args*) => `($(mkIdent `sortRel) $args*)
+  | _ => `($(mkIdent `sortRel))
+-- The note's word for the arrow is `path`; the `R` is Lean's, as `detabR`'s is.
+open Lean PrettyPrinter in
+@[app_unexpander pathR] def unexpandPathR : Unexpander
+  | `($_ $args*) => `($(mkIdent `path) $args*)
+  | _ => `($(mkIdent `path))
+open Lean PrettyPrinter in
+@[app_unexpander pathStep] def unexpandPathStep : Unexpander
+  | `($_ $args*) => `($(mkIdent `pathStep) $args*)
+  | _ => `($(mkIdent `pathStep))
+-- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
+-- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
+-- fires on.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.moves, delab const.Freyd.Alg.Vec.moves]
+def delabVecMoves : Delab := `($(mkIdent `moves))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.cons, delab const.Freyd.Alg.Vec.cons]
+def delabVecCons : Delab := `($(mkIdent `cons))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.concat, delab const.Freyd.Alg.Vec.concat]
+def delabVecConcat : Delab := `($(mkIdent `concat))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.Rel.est, delab const.Freyd.Alg.Vec.Rel.est]
+def delabVecRelEst : Delab := `($(mkIdent `est))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Interval] def unexpandTexIntervalType : Unexpander
+  | `($_ $args*) => `($(mkIdent `Interval) $args*)
+  | _ => `($(mkIdent `Interval))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.armQ₂] def unexpandSLArmQ2 : Unexpander
+  | `($_ $args*) => `($(mkIdent `armQ₂) $args*)
+  | _ => `($(mkIdent `armQ₂))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Knapsack.within] def unexpandKnapsackWithin : Unexpander
+  | `($_ $args*) => `($(mkIdent `within) $args*)
+  | _ => `($(mkIdent `within))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.tour] def unexpandTourTour : Unexpander
+  | `($_ $args*) => `($(mkIdent `tour) $args*)
+  | _ => `($(mkIdent `tour))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.pow] def unexpandRelSetPow : Unexpander
+  | `($_ $args*) => `($(mkIdent `pow) $args*)
+  | _ => `($(mkIdent `pow))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.ok] def unexpandParagraphOk : Unexpander
+  | `($_ $args*) => `($(mkIdent `ok) $args*)
+  | _ => `($(mkIdent `ok))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.fits] def unexpandParagraphFits : Unexpander
+  | `($_ $args*) => `($(mkIdent `fits) $args*)
+  | _ => `($(mkIdent `fits))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.unstep] def unexpandEditUnstep : Unexpander
+  | `($_ $args*) => `($(mkIdent `unstep) $args*)
+  | _ => `($(mkIdent `unstep))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.reduce] def unexpandCodeReduce : Unexpander
+  | `($_ $args*) => `($(mkIdent `reduce) $args*)
+  | _ => `($(mkIdent `reduce))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.decode] def unexpandCodeDecode : Unexpander
+  | `($_ $args*) => `($(mkIdent `decode) $args*)
+  | _ => `($(mkIdent `decode))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.Code] def unexpandCodeType : Unexpander
+  | `($_ $args*) => `($(mkIdent `Code) $args*)
+  | _ => `($(mkIdent `Code))
+-- The edit section's thinning preorder joins `Code`'s, `Detab`'s and `Tardy`'s above: the note's
+-- `Q`, stated over the section's own data.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Q] def unexpandEditQ : Unexpander | _ => `($(mkIdent `Q))
+-- The section's GRAPH OF THE SNOC LIST'S EMPTY CASE is the note's `nil`; the `R` is Lean's, as
+-- `detabR`'s is.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.nilR] def unexpandSLNilR : Unexpander
+  | `($_ $args*) => `($(mkIdent `nil) $args*)
+  | _ => `($(mkIdent `nil))
+-- THE TOP RELATION IS THE NOTE'S `⊤` — `thin(prefix°×(⊤+⊤))` is how its tables write it, and
+-- `topMor` is the Lean name.  No Lean identifier, so it goes through the same escape `⊕` does.
+open Lean PrettyPrinter in
+@[app_unexpander topMor] def unexpandTopMor : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊤")))
+-- The concrete cylinder's transition, beside its `moves` and `cons`.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.trans, delab const.Freyd.Alg.Vec.trans]
+def delabVecTrans : Delab := `($(mkIdent `trans))
+
+-- A SECTION'S RELATION, ORDER AND HELPER wear the note's letters, as `Party.R`, `Detab.V` and
+-- `Van.Hrel` above do: which relation it is, is the definition line over the table.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.R] def unexpandTexR : Unexpander | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.H] def unexpandTexH : Unexpander | _ => `($(mkIdent `H))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Q] def unexpandTexQ : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Real] def unexpandTexReal : Unexpander
+  | `($_ $args*) => `($(mkIdent `Real) $args*)
+  | _ => `($(mkIdent `Real))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.V] def unexpandEditV : Unexpander | _ => `($(mkIdent `V))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.inrange] def unexpandTexInrange : Unexpander
+  | `($_ $args*) => `($(mkIdent `inrange) $args*)
+  | _ => `($(mkIdent `inrange))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.val] def unexpandTexVal : Unexpander
+  | `($_ $args*) => `($(mkIdent `val) $args*)
+  | _ => `($(mkIdent `val))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.step] def unexpandTexStep : Unexpander
+  | `($_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.arb] def unexpandTexArb : Unexpander
+  | `($_ $args*) => `($(mkIdent `arb) $args*)
+  | _ => `($(mkIdent `arb))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
+  | `($_ $args*) => `($(mkIdent `tourAlg) $args*)
+  | _ => `($(mkIdent `tourAlg))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.zip, delab const.Freyd.Alg.Vec.zip]
+def delabVecZip : Delab := `($(mkIdent `zip))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Vec.cp, delab const.Freyd.Alg.Vec.cp]
+def delabVecCp : Delab := `($(mkIdent `cp))
+-- THE PRODUCT OF TWO MAPS IS THE NOTE'S `f×g`, the same spelling the allegory's own `prodMap`
+-- wears; `Prod.map` is the underlying function's Lean name.  No fallback: a shape this clause does
+-- not match is one nobody has written a spelling for, and the label gate says so.
+open Lean PrettyPrinter in
+@[app_unexpander Prod.map] def unexpandCoreProdMap : Unexpander
+  | `($_ $f $g) => `($f × $g)
+  | _ => throw ()
+
+-- THE BIFUNCTOR ON OBJECTS is the note's `F(A,B)`, the brackets the label printer's own comma
+-- list — `BiRelator.appl` above writes the one-argument lane the same way.
+open Lean PrettyPrinter in
+@[app_unexpander BiRelator.obj] def unexpandBiRelObj : Unexpander
+  | `($_ $F $A $B) => `($F $A $B)
+  | _ => throw ()
+-- A DATATYPE'S OWN Lean carrier is the note's object, as its `d…` wrapper above already is: the
+-- rose tree is the note's `tree`, and which of the two tree datatypes a section uses is the
+-- section's business.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.RT.Rose] def unexpandRoseType : Unexpander
+  | `($_ $args*) => `($(mkIdent `tree) $args*)
+  | _ => `($(mkIdent `tree))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.Journey] def unexpandJourneyType : Unexpander
+  | `($_ $args*) => `($(mkIdent `Journey) $args*)
+  | _ => `($(mkIdent `Journey))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Iv] def unexpandTexIv : Unexpander
+  | `($_ $args*) => `($(mkIdent `Iv) $args*)
+  | _ => `($(mkIdent `Iv))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Digit] def unexpandTexDigit : Unexpander
+  | `($_ $args*) => `($(mkIdent `Digit) $args*)
+  | _ => `($(mkIdent `Digit))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sub] def unexpandRelSetSub : Unexpander
+  | `($_ $args*) => `($(mkIdent `Sub) $args*)
+  | _ => `($(mkIdent `Sub))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.segment] def unexpandListRelSegment : Unexpander
+  | `($_ $args*) => `($(mkIdent `segment) $args*)
+  | _ => `($(mkIdent `segment))
+-- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME, as `edit` does above: one
+-- arrow, drawn as a map in one panel and as a relation in another.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.reduceFn] def unexpandCodeReduceFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `reduce) $args*)
+  | _ => `($(mkIdent `reduce))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.splitsFn] def unexpandBracketSplitsFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `splits) $args*)
+  | _ => `($(mkIdent `splits))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Filter.filter] def unexpandFilterFilter : Unexpander
+  | `($_ $args*) => `($(mkIdent `filter) $args*)
+  | _ => `($(mkIdent `filter))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.GCTakeWhile.takewhile] def unexpandTakewhile : Unexpander
+  | `($_ $args*) => `($(mkIdent `takewhile) $args*)
+  | _ => `($(mkIdent `takewhile))
+-- The party section's two branches are the note's `include` and `exclude`; `includeR` above is the
+-- same arrow taken as a relation.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.include] def unexpandPartyInclude : Unexpander
+  | `($_ $args*) => `($(mkIdent `include) $args*)
+  | _ => `($(mkIdent `include))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.intervalFn] def unexpandTexIntervalFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `interval) $args*)
+  | _ => `($(mkIdent `interval))
+-- THE IDENTITY LANE IS THE NOTE'S `𝟙`, the same letter the identity arrow wears; which category
+-- it is the identity of is the region the lane runs in.
+open Lean PrettyPrinter in
+@[app_unexpander Relator.idRelator] def unexpandIdRelator : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "𝟙")))
+-- A CONSTANT LANE IS THE OBJECT IT IS CONSTANTLY: the wire carries `𝟏`, and `Relator.const` is
+-- only how Lean says the wire does not vary.
+open Lean PrettyPrinter in
+@[app_unexpander Relator.const] def unexpandRelatorConst : Unexpander
+  | `($_ $A) => `($A)
+  | _ => throw ()
+-- THE PRODUCT OF TWO RELATORS IS THE NOTE'S `F×G`, the coproduct's `F+G` mirrored.
+open Lean PrettyPrinter in
+@[app_unexpander Relator.prod] def unexpandRelatorProd : Unexpander
+  | `($_ $F $G) => `($F × $G)
+  | _ => throw ()
+-- The bag's quotient is taken of the note's `perm`, the permutation relation `16-greedy` defines
+-- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.permSetoid] def unexpandPermSetoid : Unexpander
+  | `($_ $args*) => `($(mkIdent `perm) $args*)
+  | _ => `($(mkIdent `perm))
+
+-- THE CORE TYPES THE NOTE WRITES AS LEAN DOES — `[[Int]]⟶[[Int]]` is a type cell, not a Lean
+-- spelling that leaked.  They are registered here for the same reason every other name is: the
+-- vocabulary is this file, and a type nobody wrote down draws nothing.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Int, delab const.Int] def delabIntName : Delab := `($(mkIdent `Int))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Char, delab const.Char] def delabCharName : Delab := `($(mkIdent `Char))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Nat, delab const.Nat] def delabNatName : Delab := `($(mkIdent `Nat))
+-- The counterexample's objects and relation are the note's `A`, `B`, `R`; which sets they are, is
+-- the paragraph above the panel.  Delaborators, because they take no explicit argument.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.MeetCounterex.A, delab const.Freyd.Alg.MeetCounterex.A]
+def delabMeetCounterexA : Delab := `($(mkIdent `A))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.MeetCounterex.B, delab const.Freyd.Alg.MeetCounterex.B]
+def delabMeetCounterexB : Delab := `($(mkIdent `B))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.MeetCounterex.R, delab const.Freyd.Alg.MeetCounterex.R]
+def delabMeetCounterexR : Delab := `($(mkIdent `R))
+open Lean PrettyPrinter Delaborator in
+@[delab app.Unit, delab const.Unit] def delabUnitName : Delab := `($(mkIdent `Unit))
+open Lean PrettyPrinter in
+@[app_unexpander Quotient] def unexpandQuotientName : Unexpander
+  | `($_ $args*) => `($(mkIdent `Quotient) $args*)
+  | _ => `($(mkIdent `Quotient))
+-- `Fin` KEEPS ITS ARGUMENT — `Fin n` is the object, where `Int` and `Char` are whole names; an
+-- unexpander and not a delaborator, so the index the printer already wrote stands.
+open Lean PrettyPrinter in
+@[app_unexpander Fin] def unexpandFinName : Unexpander
+  | `($_ $args*) => `($(mkIdent `Fin) $args*)
+  | _ => `($(mkIdent `Fin))
 
 end Freyd.Alg

@@ -201,6 +201,7 @@ end
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
 def appShow (e : Expr) : MetaM String := do
   let stx ← PrettyPrinter.delab e
+  checkSpelled e stx
   match appParts stx with
   | some (h, ops) => appSpell (← headShown h) ops
   -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
