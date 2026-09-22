@@ -287,6 +287,51 @@ def unlabelled? (e : Expr) : MetaM (Option String) := do
     if n.isInternal then return some s!"the internal name `{n}`"
   return none
 
+/-- The identifiers the printer wrote, anywhere in what it wrote — a head, an operand, an index. -/
+private partial def stxIdents (s : Syntax) : Array Name :=
+  if s.isIdent then #[s.getId] else s.getArgs.foldl (init := #[]) fun acc a => acc ++ stxIdents a
+
+open PrettyPrinter.Delaborator in
+/-- Whether the printer has a rule of its own for `c`: an `app_unexpander`, or a `delab` keyed on
+    the application or on the bare constant.  `notation`/`infix` register an unexpander of their
+    own, so a constant the repo gave a token to answers here too. -/
+def hasPrintRule (env : Environment) (c : Name) : Bool :=
+  !(appUnexpanderAttribute.getEntries env c).isEmpty
+    || !(delabAttribute.getEntries env (`app ++ c)).isEmpty
+    || !(delabAttribute.getEntries env (`const ++ c)).isEmpty
+
+/-- A LABEL IS THE NOTE'S VOCABULARY, SO A RAW LEAN NAME IN IT IS REFUSED.  A head no printing rule
+    rewrote comes out as the constant Lean declared — `appl(F,NA)` for `BiRelator.appl` — and the
+    page then makes a claim in a vocabulary the note's tables never use, which no gate downstream
+    can tell from a label that is right.  The test is the ENVIRONMENT's and never the spelling:
+    every identifier the printer wrote is resolved back to the constant it names — `delabConst`
+    shortens a name only when the short form resolves back, and avoids the locals — and refused
+    when that constant has no rule.  A LOCAL AND A BOUND VARIABLE resolve to no constant and pass,
+    which is what `moves`, `zip`, `N` and `F` are.  A constant WITH a rule that wrote its own name
+    back is that rule's business, not this one's. -/
+def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
+  let env ← getEnv
+  let opts ← getOptions
+  let ns ← getCurrNamespace
+  let ods ← getOpenDecls
+  let lctx ← getLCtx
+  let used := e.getUsedConstants
+  for n in stxIdents stx do
+    if (lctx.findFromUserName? n).isSome then continue
+    -- A NAME THE TERM DOES NOT CONTAIN IS NOT A CONSTANT THE LABEL WROTE: a binder the printer
+    -- named `head` resolves to whatever `head` the surrounding namespace has, and refusing that
+    -- would report the exporter's own declarations as the note's vocabulary.
+    let cs : List Name :=
+      ((ResolveName.resolveGlobalName env opts ns ods n).map Prod.fst).filter used.contains
+    match cs with
+    | [] => continue
+    | c :: _ =>
+      if cs.any (hasPrintRule env ·) then continue
+      throwError "the label of `{← Meta.ppExpr e}` writes `{c}` under its own Lean name: no \
+        printing rule rewrote it, so the page would carry Lean's vocabulary where the note writes \
+        its own.  Give it an `app_unexpander {c}` — or a `delab app.{c}` where the spelling needs \
+        an implicit argument — in diag/StrDiagNames.lean, beside its kin"
+
 /-- Lean's pretty printer on one line, the repo's own namespaces off — and the KINDS a label may
     never be made of refused rather than printed.  A matcher, an auxiliary recursor, an internal
     name and a local bound as an instance are Lean's own compilation artefacts: `cons.match_1` and
@@ -306,6 +351,7 @@ def plain (e : Expr) : MetaM String := do
   if let some k ← unlabelled? e then
     throwError "a label is the note's own spelling of an arrow, and `{← Meta.ppExpr e}` is made of \
       {k}, which is Lean's own elaboration and names no arrow the note writes"
+  checkSpelled e (← PrettyPrinter.delab e).raw
   -- A label is the note's spelling, not Lean syntax: a name the parser would need escaped (`prefix`
   -- is a keyword) prints bare, so the `«»` the formatter wraps it in are dropped.
   let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""

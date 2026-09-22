@@ -117,6 +117,7 @@ repo's own algebra.  The book's own spellings (`cons`, `nil`, `[A]`) are structu
 the term, never a table of strings: `cons` is the arrow whose graph is `List.cons`. -/
 
 def plain (e : Expr) : MetaM String := do
+  StrDiag.checkSpelled e (← PrettyPrinter.delab e).raw
   let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
 
