@@ -35,6 +35,10 @@ import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
+-- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
+-- row it cannot draw.
+import Freyd.S2_50
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
 import diag.tool.ExprReader
 
