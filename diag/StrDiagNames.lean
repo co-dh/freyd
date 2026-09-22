@@ -126,12 +126,48 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The category of relations on sets is the note's REGION `𝒜`, the letter every panel over it is
+    drawn in.  An `app_unexpander` and not a `notation`: a token would make every binder the repo
+    already names `𝒜` (`AOP.A5_3`'s `{s A B : 𝒜}`) print escaped. -/
+@[app_unexpander RelSet] def unexpandRelSet : Unexpander
+  | `($_:ident) => `($(mkIdent `𝒜))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The rose tree's BASE relator is the note's `F`, the letter §13.4.3 writes on both objects of
     `party-mono` — which datatype's base it is, and at which leaf type, is the section's context and
     not part of the name, exactly as `typeRelator`'s `T` is. -/
 @[app_unexpander RelSet.RT.F] def unexpandRTF : Unexpander
   | `($_ $_) => `($(mkIdent `F))
   | _ => throw ()
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- THE LEAF TYPE IS AN ARGUMENT WHERE THE NOTE WRITES IT: §13.4.3's `F(A,B) = A×[B]` is a
+    two-argument functor and Lean's `RT.F A` is that functor at the leaf `A`, so its ACTION ON AN
+    OBJECT writes both — `F(A,[A]×[A])`.  The LANE keeps the one letter (`unexpandRTF`): a panel
+    carries its leaf type in the section's context, where a type cell states it. -/
+@[delab app.Freyd.Functor.obj] def delabRoseFObj : Delab := do
+  let e ← getExpr
+  guard (e.getAppNumArgs == 6)
+  let f := e.getArg! 4
+  guard (f.isAppOfArity ``Freyd.Alg.Relator.toFunctor 5
+    && (f.getArg! 4).isAppOfArity ``Freyd.Alg.RelSet.RT.F 1)
+  `($(mkIdent `F) $(← withNaryArg 4 (withNaryArg 4 (withNaryArg 0 delab)))
+      $(← withNaryArg 5 delab))
+
+/-- THE NOTE SETS A PRODUCT TIGHT — `[A]×[A]`, `A×[B]` — and an ATOM carries its own spacing into
+    the printer: core's `" × "` writes the formatter's spaces wherever a label is read off the
+    SYNTAX (`F(A,[A]×[A])`) rather than built from the term, where `labelTree`'s own product clause
+    closes them up. -/
+infixr:35 "×" => Prod
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- The abbreviation is a SEAM, the one `unexpandNEListType` names: `dBranch A` keeps its own
+    constant in every statement, so the object action above never sees it and a cell would print
+    the Lean name.  Delaborate what it abbreviates, which IS that action. -/
+@[delab app.Freyd.Alg.RelSet.Party.dBranch] def delabDBranch : Delab := do
+  let some e ← Meta.unfoldDefinition? (← getExpr) | failure
+  PrettyPrinter.delab e
 
 open Lean PrettyPrinter in
 /-- The snoc-list relator is the note's lane `list`, at whatever leaf type — `unexpandDSL` already
@@ -184,13 +220,30 @@ open Lean PrettyPrinter in
 -- list: `ConsList A A` is the note's `list⁺(A)`, where `ConsList Unit A` is its `[A]`
 -- (`AOP.A6_ConsList`).  A DELABORATOR, because the two differ only in a TYPE the syntax repeats
 -- and an unexpander comparing the two spellings would compare names, not types; and it reaches the
--- object too, because a wire's label is read off the carrier the elaborator reduced to.
+-- object too, because a wire's label is read off the carrier the elaborator reduced to.  The OBJECT
+-- `dCL L E` is an `abbrev` and keeps its own constant, so it is keyed here as well.
 open Lean PrettyPrinter Delaborator SubExpr in
-@[delab app.Freyd.Alg.RelSet.CL.ConsList] def delabNEList : Delab := do
+@[delab app.Freyd.Alg.RelSet.CL.ConsList, delab app.Freyd.Alg.RelSet.CL.dCL]
+def delabConsList : Delab := do
   let args := (← getExpr).getAppArgs
   if args.size != 2 then failure
-  unless ← Meta.isDefEq args[0]! args[1]! do failure
-  `($(mkIdent (Name.mkSimple "list⁺")) $(← withAppArg delab))
+  -- The EMPTY leaf decides first: at `ConsList Unit Unit` both tests hold, and a leaf carrying
+  -- nothing is a list of units and not a non-empty list of them.
+  if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `([$(← withAppArg delab)])
+  else if ← Meta.isDefEq args[0]! args[1]! then
+    `($(mkIdent (Name.mkSimple "list⁺")) $(← withAppArg delab))
+  else failure
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- The LEAF object is the leaf type itself — `dL L` names no former — and the EMPTY leaf is the
+    note's terminal object `𝟏`, the source `nil` comes out of.  `isDefEq` and not a syntactic
+    `Unit`, for the reason the cons-list delaborator above gives. -/
+@[delab app.Freyd.Alg.RelSet.CL.dL] def delabDL : Delab := do
+  let args := (← getExpr).getAppArgs
+  if args.size != 1 then failure
+  -- `Name.mkSimple`: `𝟏` is a digit to Lean's parser, so no name literal can spell it.
+  if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `($(mkIdent (Name.mkSimple "𝟏")))
+  else withAppArg delab
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.

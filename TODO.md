@@ -69,8 +69,7 @@
     `circuit-check`, `circuit-panels.txt`, `circuit-slice.typ`); a circuit comes only from
     `diag-export --circuit`.
 [X] `cd-check` runs in `make c` and `make p`; it hangs on `panels`, not on the full redraw, and a
-    chapter with no commutative canvas passes. `types` stays outside: no `--type` cell exists yet,
-    the note's type column is still hand-typed.
+    chapter with no commutative canvas passes.
 [X] `diff-crop --key` resolves the key against the pdf it is handed (a chapter pdf renumbers from
     1), and the whole-pdf mode exits nonzero when pages differ and nothing was written.
 [X] `diff-crop --key` anchors on the FIRST `(key)` a pdf prints, which for 13.2.1a and 13.3.1b is a
