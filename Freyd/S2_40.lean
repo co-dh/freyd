@@ -305,7 +305,7 @@ public theorem Λ_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a 
     `Λ(1_b)∋ = 1_b`).  Book: "For any map p →ᶠ a, Λ(f) = f Λ(1) since f Λ(1) is a map and
     f Λ(1) ∋ = f."  Relies on `Λ_eps_eq` and uniqueness of Λ(R) [Λ_unique].
     Note `Λ f` need not itself be a map here — `Λ_unique` only needs the witness a map. -/
-theorem Λ_of_map {a b : 𝒜} [PowerAllegory 𝒜] (f : a ⟶ b) (hf : Map f)
+public theorem Λ_of_map {a b : 𝒜} [PowerAllegory 𝒜] (f : a ⟶ b) (hf : Map f)
     (hbox1 : codBox (Cat.id b) = codBox (∋ b)) :
     Λ f = f ≫ singletonMap (a := b) := by
   -- F := f ≫ singletonMap is a map (composition of maps) with F∋ = f, so F = Λ f by uniqueness.
@@ -317,7 +317,7 @@ theorem Λ_of_map {a b : 𝒜} [PowerAllegory 𝒜] (f : a ⟶ b) (hf : Map f)
     Book: "Indeed, if F is simple then F ⊂ Λ(F∋)."
     Proof: need F ⊑ (F∋)/ₛ∋, i.e. F∋ ⊑ F∋ (trivial) and F°(F∋) ⊑ ∋,
     which follows from F°F ⊑ 1 and Λ(R)∋ = R. -/
-theorem simple_le_Λ_eps {a b : 𝒜} [PowerAllegory 𝒜] (F : a ⟶ PowerAllegory.powerObj b)
+public theorem simple_le_Λ_eps {a b : 𝒜} [PowerAllegory 𝒜] (F : a ⟶ PowerAllegory.powerObj b)
     (hF : Simple F) : F ⊑ Λ (F ≫ ∋ b) := by
   -- Λ (F ≫ ∋ b) = (F ≫ ∋ b) /ₛ ∋ b. By le_symmDiv_iff, F ⊑ (F∋)/ₛ∋ iff
   -- (1) F ≫ ∋ ⊑ F ≫ ∋ (trivial) and (2) F° ≫ (F ≫ ∋) ⊑ ∋.

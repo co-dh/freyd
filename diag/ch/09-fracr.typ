@@ -4,7 +4,8 @@
 = $frac(R, S)$
 
 #disp[#definition[
-$frac(R, S)$ `≜(R/S)∩(S/R)°` #src[]. In `Rel` `x` and `y` has the same image:
+#leanf("Freyd.Alg.symmDiv") #src[what `R` sends `x` to and nothing else is what `S` sends `y` to.]
+In `Rel` `x` and `y` has the same image:
 // lean:Freyd.S2_30.symmDiv@7e3fc41a
 `∀p. (x R p⟺y S p)`
 ]]<syq-defn>
@@ -57,48 +58,55 @@ $frac(R, S)$ `≜(R/S)∩(S/R)°` #src[]. In `Rel` `x` and `y` has the same imag
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the reading*]),
 
- [$X ⊑ frac(R, S) ⟺ X S ⊑ R$ and `X°R⊑S` #src[]],
+ [#leanf("Freyd.Alg.le_symmDiv_iff") #src[`X` sits inside the matching exactly when it carries `S` back
+   inside `R` and, reversed, carries `R` back inside `S`.]],
   // lean:Freyd.S2_30.le_symmDiv_iff@b1cfe4dc
   [`X` may pair `x` with `y` only when `x` admires exactly whom `y` hates. Both halves must typecheck,
    so the operation is *partial*.],
 
- [$(frac(R, S))^circle.small = frac(S, R)$ #src[]],
+ [#leanf("Freyd.Alg.symmDiv_recip") #src[reversing the matching swaps the two relations.]],
   // lean:Freyd.S2_30.symmDiv_recip@b93b9076
   [Matching is symmetric.],
 
- [$frac(R, S) frac(S, W) ⊑ frac(R, W)$ #src[]],
+ [#leanf("Freyd.Alg.symmDiv_comp") #src[a match from `R` to `S` followed by one from `S` to `W` is a
+   match from `R` to `W`.]],
   // lean:Freyd.S2_30.symmDiv_comp@5930c455
   [And transitive.],
 
-  [$frac(R, S) S ⊑ R$],
+  [#leanf("Freyd.Alg.symmDiv_comp_le") #src[following the matching by `S` lands inside `R`.]],
+  // lean:Freyd.S2_30.symmDiv_comp_le@82f653bd
   [$(∃ y. thin x (frac(R, S)) y ∧ y S p) → x R p$ \
    `x only admires whom y hates` \
    $frac(R, S) S = "Dom"(frac(R, S)) R$],
 
- [$frac(R, R) R = R$ #src[]],
+ [#leanf("Freyd.Alg.symmDiv_self_comp") #src[matching `R` against itself and then following `R` gives
+   `R` back.]],
   // lean:Freyd.S2_30.symmDiv_self_comp@2b447963
   [$(∃ y. thin x (frac(R, R)) y ∧ y R p) ⟺ x R p$ \
    `x and y admire the same people` \
    `y=x always qualifies (𝟙⊑R%R below)`],
 
- [$𝟙 ⊑ frac(R, R)$ #src[]],
+ [#leanf("Freyd.Alg.symmDiv_self_reflexive") #src[every `x` matches itself.]],
   // lean:Freyd.S2_30.symmDiv_self_reflexive@9e2af20e
   [$x (frac(R, R)) y$ if `x` and `y` admires the same peoples.],
 
-  [$(frac(R, R))^2 = frac(R, R)$],
+  [#leanf("Freyd.Alg.symmDiv_self_idem") #src[matching twice matches no more pairs than matching once.]],
+  // lean:Freyd.S2_30.symmDiv_self_idem@8b70dcc5
   [So the relation *admires the same people* is an equivalence relation.],
 
-  [$X ⊑ frac(R, R) ⟺ X R ⊑ R$, for symmetric `X`
- #src[]],
+  [#leanf("Freyd.Alg.symmetric_le_symmDiv_self_iff"), for symmetric `X`
+ #src[a symmetric `X` sits inside the matching exactly when following it by `R` adds nothing to `R`.]],
    // lean:Freyd.S2_11.symmetric_le_symmDiv_self_iff@a5fc04b4
   [The largest symmetric arrow that leaves `R` alone.],
 
- [$frac(R, 𝟙)$ is the *simple part* of `R` #src[]],
+ [#leanf("Freyd.Alg.simplePart") #src[matching `R` against the identity keeps the `x` whose image is a
+   single point.]],
   // lean:Freyd.S2_30.simplePart@3779ee66
   [The people who admire exactly one person and nobody else. It equals `R` only when `R` is simple, unlike
    `R/𝟙=R`.],
 
- [`Dom` $frac(R, S)$ `=𝟙∩(R/S)(S/R)` #src[]],
+ [#leanf("Freyd.Alg.dom_symmDiv") #src[the `x` that match something are those the two one-sided
+   divisions take round the loop back to `x`.]],
   // lean:Freyd.S2_30.dom_symmDiv@0ef1aa31
   [Its domain is the *domain of simplicity* of `R`.],
 )]<syq-readings>
