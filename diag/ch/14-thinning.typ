@@ -437,7 +437,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
   [#vstep(EQ, pa-pic((pb-prog,)),
     [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
-      // lean:AOP.A8_2.cpMap_sum_eq_junc@4e375ef6
+      // lean:AOP.A5_6.cpMap_sum_eq_junc@fde8662f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
   [],

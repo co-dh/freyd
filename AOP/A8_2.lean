@@ -318,23 +318,6 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
   `ΛF(∋,𝟙)` and `ΛF(𝟙,∋)` at `F(A,X) = A + A×X` and read the printed program off the summands.
   Both are `Λ_junc` — a transpose taken one summand at a time. -/
 
-/-- **`ΛF(∋,𝟙) = 𝟙+cpl`** (book p.198, the note's `path-defn`): the cross product of a SUM of
-    relators is the junc of the summands' own cross products, each followed by its injection.
-    At `F(A,X) = A + A×X` the left summand's relator is the identity, whose cross product is
-    `Λ(∋) = 𝟙`, and the right one's is `−×X`, whose cross product is `cpl`. -/
-public theorem cpMap_sum_eq_junc (G H : Relator RelSet.{0} RelSet.{0}) (A : RelSet.{0}) :
-    cpMap (Relator.sum G H) A
-      = junc (sumCop (G.obj (pow A)) (H.obj (pow A)))
-          (cpMap G A ≫ powerRel ((sumCop (G.obj A) (H.obj A)).u₁))
-          (cpMap H A ≫ powerRel ((sumCop (G.obj A) (H.obj A)).u₂)) := by
-  have h₁ : Map ((sumCop (G.obj A) (H.obj A)).u₁) := graph_map _
-  have h₂ : Map ((sumCop (G.obj A) (H.obj A)).u₂) := graph_map _
-  simp only [cpMap]
-  show Λ (junc (sumCop (G.obj (pow A)) (H.obj (pow A)))
-      (G.map (∋ A) ≫ (sumCop (G.obj A) (H.obj A)).u₁)
-      (H.map (∋ A) ≫ (sumCop (G.obj A) (H.obj A)).u₂)) = _
-  rw [Λ_junc, powerRel_map h₁, powerRel_map h₂, Λ_absorption, Λ_absorption]
-
 /-- `step ≜ cpr P(cons) est(R)` (book p.198): the vertex distributes over the SET of tails, `cons`
     goes on each of them, and `est R` keeps a cheapest one. -/
 @[expose] public def pathStep (wt : V → V → Nat) :
