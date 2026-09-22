@@ -82,11 +82,9 @@ subscript.
  $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
    // lean:AOP.A4_6.Λ_absorption@e87bd8f2
 
-  // NOT `#leanf`: the declaration is named `powerOrder`, and a generated definition line leads with
-  // that Lean name, which the note never uses.  Rename the Lean constant to `subset` and convert.
-  [`subset≜∋/∋ : EA⟶EA`],
+  [#leanf("Freyd.Alg.subset")],
   [`xs subset ys⟺∀a. ys∋a→xs∋a`, that is `ys⊆xs`, not `xs⊆ys`.],
-  // lean:Freyd.S2_40.powerOrder@51b103bf
+  // lean:Freyd.S2_40.subset@51b103bf
 )]<pow-laws>
 
 == `i⊣E` Power Allegory defined as adjunction <sec-adj-E>

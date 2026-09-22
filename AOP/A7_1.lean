@@ -296,9 +296,9 @@ theorem est_simple_of_antisymmetric {R : A ⟶ A} (h : AntiSymmetric R) : Simple
 /-! ## Ex 7.1/7.2: the subset relation (book p.169) -/
 
 /-- **B&dM p.169**: `subset = ∈\∈`, mirrored `(∋ a) / (∋ a)` — which is LITERALLY Freyd's
-    `powerOrder` (§2.442, `Freyd.S2_4`); `subsetRel` is the B&dM-facing alias for it, kept
+    `subset` (§2.442, `Freyd.S2_4`); `subsetRel` is the B&dM-facing alias for it, kept
     definitional so every lemma transfers both ways for free. -/
-@[expose] public def subsetRel (A : 𝒜) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A := powerOrder
+@[expose] public def subsetRel (A : 𝒜) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A := subset
 
 public theorem id_le_subsetRel : Cat.id (PowerAllegory.powerObj A) ⊑ subsetRel A := by
   show Cat.id (PowerAllegory.powerObj A) ⊑ (∋ A) / (∋ A)
