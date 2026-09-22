@@ -608,7 +608,18 @@ def LaneAlg.head : LaneAlg → Name
 
 /-- Two lanes composed, in DIAGRAM order — `comp F G` is `F` then `G`, so `(comp F G).obj A` is
     `G.obj (F.obj A)` in both algebras. -/
-def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr :=
+def LaneAlg.comp (alg : LaneAlg) (F G : Expr) : MetaM Expr := do
+  -- A LANE COMPOSED WITH THE IDENTITY IS THAT LANE, and it is written as that lane.  `wiresOf`
+  -- already reads an identity as NO wire, so the composite was a spelling nothing drew: it made a
+  -- bead's obligation `LaxNatural (Relator.comp (idRelator 𝒜) E) …` where the theorem about the
+  -- bead (`singleton_laxNatural`) states it for `E`, so the general theorem matched only by
+  -- unfolding — a unification the search's budget ends — and the panel took whichever corollary
+  -- happened to be written in the composite spelling.
+  let isId (e : Expr) : Bool := match e.getAppFn.constName? with
+    | some n => n == ``Freyd.Alg.Relator.idRelator || n == ``Freyd.idFunctor
+    | none => false
+  if isId F then return G
+  if isId G then return F
   Meta.mkAppM (match alg with
     | .relator => ``Freyd.Alg.Relator.comp
     | .functor => ``Freyd.compFunctor) #[F, G]
@@ -1466,6 +1477,30 @@ def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
   binders, is one of the three propositions the bead could satisfy, unified against the wanted one.
   Filtering first on the constants the family mentions keeps it to a handful of candidates. -/
 
+/-- What a declaration CONCLUDES, its `∀`-telescope stripped: the proposition it is about, which is
+    what says how much it pins down.  The binders are the context it needs to say it — a class, an
+    object, a hypothesis — and counting those would call a theorem stated over a richer context the
+    more special one. -/
+partial def conclusionOf : Expr → Expr
+  | .forallE _ _ b _ => conclusionOf b
+  | .mdata _ b => conclusionOf b
+  | e => e
+
+/-- How many components a name has: `Freyd.Alg.singleton_laxNatural` three, and the case study's
+    `Freyd.Alg.Cylinder.OneRow.setify_natural_one` five. -/
+partial def nameDepth : Name → Nat
+  | .str p _ | .num p _ => 1 + nameDepth p
+  | _ => 0
+
+/-- A term's SIZE, one for every node: how much a statement pins down, and so the order the
+    candidates are offered in — the shorter statement is the more general one. -/
+partial def exprSize : Expr → Nat
+  | .app f a => 1 + exprSize f + exprSize a
+  | .lam _ t b _ | .forallE _ t b _ => 1 + exprSize t + exprSize b
+  | .letE _ t v b _ => 1 + exprSize t + exprSize v + exprSize b
+  | .mdata _ b | .proj _ _ b => 1 + exprSize b
+  | _ => 1
+
 /-- Every constant a term is built from — the cheap filter that says which declarations could
     possibly be about this bead. -/
 partial def consts (e : Expr) (acc : NameSet := {}) : NameSet :=
@@ -1866,32 +1901,48 @@ partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head 
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
-  -- THE CITED THEOREM MUST BE ABOUT THE BEAD'S OWN SPELLING, and the transparency is what says so.
-  -- `Cylinder.OneRow.moves_natural_one` states the singleton's lax naturality with its source
-  -- relator written `Relator.comp (idRelator 𝒜) powerRelator`, which the DEFAULT unifier unfolds
-  -- into the bead's own `powerRelator`: the two conclusions are then defeq, so whichever the bucket
-  -- offered first won and ten panels cited a OneRow theorem for a plain `𝟙%∋`, whose naturality is
-  -- `singleton_laxNatural`.  So the candidates are scanned REDUCIBLE first — where only a candidate
-  -- stating the bead's own spelling matches — and the default pass runs only when nothing does: a
-  -- dot that genuinely needs unfolding is still found, and one that does not is never taken from a
-  -- narrower theorem that merely unfolds to it.
-  remembered s false want must.toList fuel seen do
-    match ← scan br s want head must fuel seen .reducible with
-    | some r => return some r
-    | none => scan br s want head must fuel seen .default
+  remembered s false want must.toList fuel seen (scan br s want head must fuel seen)
 
-/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn, at ONE
-    transparency: `tr` is what the candidate's conclusion and the wanted proposition are matched
-    under, and nothing else in the search reads it.  See `findProof` for why there are two passes. -/
+/-- `findProof`'s scan over the candidates, each unified, discharged and checked in turn.  THE
+    FIRST THAT CHECKS WINS, and `candidates` is what makes that the most general of them. -/
 partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name) (must : NameSet)
-    (fuel : Nat) (seen : Array Expr) (tr : Meta.TransparencyMode) :
-    MetaM (Option (Name × Expr)) := do
+    (fuel : Nat) (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
   let env ← getEnv
   let rw ← bridge br want
   let al ← bridgeAliases
   let mut hit : Option (Name × Expr) := none
   let ms := must.toList
-  for (n, has) in ← candidates head do
+  -- THE THEOREM CITED FOR A BEAD IS ONE ABOUT THE BEAD'S OWN CONSTANT, and every other candidate
+  -- is tried only after those.  The bucket is every theorem with this conclusion, so it holds both
+  -- the family's own naturality and the closure theorems (`strictNatural_recip`) that conclude it
+  -- for ANY family: those match a bead of any spelling, and first-hit-wins cited one of them for
+  -- `snoc`.  Ordered by `candidates`, the ones about the family come shortest-statement first —
+  -- `singleton_laxNatural` before `Cylinder.OneRow.moves_natural_one`, which states the same lax
+  -- naturality of `𝟙%∋` with the one source relator `Relator.comp (idRelator 𝒜) powerRelator` and
+  -- so unifies with the bead's own lane where the general theorem needs an unfolding.
+  -- `s.head` is the bridged family's head, and a candidate's constants come UNBRIDGED off the
+  -- index, so a source spelling a bridge could have rewritten into it counts as naming it.
+  -- AND THE MOST GENERAL OF THOSE FIRST: every structure a statement pins down is a term in its
+  -- conclusion, so the theorem fixing fewer of them is the shorter one.  Two whose conclusions are
+  -- the same size are two names for one theorem, and the shallower name is the library's where the
+  -- deeper is a case study's restatement of it — which is the whole difference between
+  -- `Freyd.Alg.singleton_laxNatural` and `Freyd.Alg.Cylinder.OneRow.setify_natural_one`, whose
+  -- statements are letter for letter the same.  Only the candidates ABOUT the family are ordered:
+  -- a closure theorem's conclusion is the shortest there is (`StrictNatural G F (fun A => (φ A)°)`,
+  -- every part of it bound), so ordering the whole bucket would cite one of those for every bead.
+  let cs ← candidates head
+  let (about, rest) := match s.head with
+    | some h => cs.partition fun (c : Name × NameSet) =>
+        c.2.contains h || (al.getD h #[]).any c.2.contains
+    | none => (#[], cs)
+  let rank (n : Name) : Nat × Nat := match env.find? n with
+    | some ci => (exprSize (conclusionOf ci.type), nameDepth n)
+    | none => (0, 0)
+  let about := about.qsort fun (x : Name × NameSet) (y : Name × NameSet) =>
+    let (a, b) := rank x.1
+    let (c, d) := rank y.1
+    a < c || (a == c && b < d)
+  for (n, has) in about ++ rest do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
     -- `tryCatchRuntimeEx` below: a budget spent inside one candidate is caught as that candidate's
@@ -1920,11 +1971,8 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
       -- assembled term — is more searching, and a budget there is a dot lost to a timeout.
       unless ← Core.withCurrHeartbeats (withTheReader Core.Context
         (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
-        (Meta.withTransparency tr (Meta.isDefEq rc.expr rw.expr))) do
-        -- Only the pass that settles it reports: a candidate the reducible pass passed over is
-        -- still tried at the default one, and naming it there would be a spider message for a
-        -- candidate that may yet prove the bead.
-        if seen.isEmpty && tr == .default then s.passOver has s!"tried {n}: no unification"
+        (Meta.isDefEq rc.expr rw.expr)) do
+        if seen.isEmpty then s.passOver has s!"tried {n}: no unification"
         return none
       unless ← discharge br s args bis fuel (seen.push want) do return none
       checked want rw rc n (mkAppN (.const n lvls) args)
