@@ -195,6 +195,24 @@ public theorem glue_natural (S : dE A ⟶ dE B) :
         | cons b s' =>
             exact ⟨(b, ConsList.cons s' v), ⟨hrw.1.1, hrw.1.2, hrw.2⟩, s', v, rfl, rfl⟩
 
+/-! ## The fold `⦇[nil,new ∪ glue]⦈` is strictly natural -/
+
+/-- **`⦇[nil,new ∪ glue]⦈` is STRICTLY natural**: `list(S) partition = partition list(list S)`.
+    The fold IS `partition` (`partition_cata`), which cuts the transactions into segments without
+    looking at one of them, so the square is `ListRel.partition_natural` and nothing is proved
+    pointwise here.  The ends are the wire stacks the panel reads: `list` below the bead and
+    `schedRelator`, the `list list` stack, above it. -/
+public theorem partition_cata_natural :
+    StrictNatural schedRelator ((Relator.idRelator RelSet.{0}).comp listRelator)
+      (fun a => ⦇(junc (sumCop (dL Unit) ⟨a.carrier × Sched a.carrier⟩)
+            (wrapR : dL Unit ⟶ dSched a.carrier) (newR a.carrier ∪ glueR a.carrier) :
+          (F Unit a.carrier).obj (dSched a.carrier) ⟶ dSched a.carrier)⦈) := by
+  intro x y S
+  have h : list S ≫ (partition : dList y.carrier ⟶ dSched y.carrier)
+      = (partition : dList x.carrier ⟶ dSched x.carrier) ≫ list (list S) := partition_natural S
+  rw [partition_cata, partition_cata] at h
+  exact h
+
 /-! ## `R∩H` and `⊤` are not even lax
 
   The same witness as `R` and `H`: `[[]]` on the left, `[[false]]` on the right. -/
