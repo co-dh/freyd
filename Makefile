@@ -47,7 +47,14 @@ NOTEPDF := $(NOTESRC:.typ=.pdf)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels cite panels cd-check cover books v
+.PHONY: p c w labels cite panels cd-check cover books v exe
+
+# ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
+# their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
+# the other was replacing: "no such file or directory: .lake/build/bin/diag-export".  Order-only
+# (`| exe`) so the exe's timestamp never makes the others rebuild.
+exe:
+	./scripts/cap lake build diag-export diag.StrDiagNames
 
 # The typst compile is UNCONDITIONAL, and only the redraw behind it is gated.  An edit that lands in
 # the same second as the last build is invisible to make's mtime comparison, and `make p` answering
@@ -112,7 +119,7 @@ books:
 # Every picture the notes draw and have no file for — a `#lean(...)` selector, or an `#import` — drawn
 # from LEAN.  The NOTE is the list of obligations, so adding a picture is writing its name in the note
 # and nothing else; a name already drawn is left alone, which is what keeps this in the edit loop.
-panels:
+panels: | exe
 	./scripts/diag-regen --missing
 
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
@@ -161,13 +168,12 @@ w: p
 # import and the typst compile says which file is missing.
 # `$(BOOK)` too, and not `$(LEAN)` alone: the statements drawn are the library's — AOP, Freyd, rel
 # — so an edit to the declaration a picture is exported FROM left the picture at what it said.
-$(STAMP): $(LEAN) $(BOOK)
-	./scripts/cap lake build diag-export
+$(STAMP): $(LEAN) $(BOOK) | exe
 	./scripts/diag-regen
 	@touch $@
 
 # The index carries the statement keys the markers are checked against, so it is stale the moment any
 # Lean source is.  Re-extraction is per module — one edited file costs seconds, not the full 84.
-$(DB): $(BOOK) $(LEAN)
+$(DB): $(BOOK) $(LEAN) | exe
 	./scripts/cap lake build
 	./scripts/lean-refactor index

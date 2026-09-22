@@ -33,9 +33,10 @@ namespace Freyd.Alg
 public theorem inter_not_monotonic :
     ∃ (A B : OrdObj RelSet.{0}) (X Y : MonoHom A B),
       ¬ (A.ord ≫ (X.val ∩ Y.val) ⊑ (X.val ∩ Y.val) ≫ B.ord) := by
+  -- `_root_`: inside `Freyd.Alg` the bare name is the §5.3 conditional `Freyd.Alg.cond`, not `Bool`'s.
   refine ⟨⟨⟨Bool⟩, fun x y => x = false ∧ y = true⟩, ordMerge,
-    ⟨fun x y => y = cond x (some true) none, ?_⟩,
-    ⟨fun x y => y = cond x (some true) (some false), ?_⟩, ?_⟩
+    ⟨fun x y => y = _root_.cond x (some true) none, ?_⟩,
+    ⟨fun x y => y = _root_.cond x (some true) (some false), ?_⟩, ?_⟩
   · refine RelSet.le_iff.mpr ?_
     rintro x z ⟨y, ⟨rfl, rfl⟩, rfl⟩
     exact ⟨none, rfl, by decide, rfl⟩

@@ -378,7 +378,7 @@ theorem guard_map {s A : 𝒜} {C : Coproduct s A A} {X : A ⟶ A} (hX : Corefle
 
 /-- **Ex 5.17**: the conditional `cond C X R S` runs `R` when `X` holds, `S` when `corNeg X`
     holds. -/
-def cond {s A B : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) (R S : A ⟶ B) : A ⟶ B :=
+public def cond {s A B : 𝒜} (C : Coproduct s A A) (X : A ⟶ A) (R S : A ⟶ B) : A ⟶ B :=
   guard C X ≫ junc C R S
 
 /-- `cond` unfolds to the explicit union form `(X≫R) ∪ (corNeg X≫S)`, via the (5.11)
