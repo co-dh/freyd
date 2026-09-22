@@ -12,7 +12,7 @@
   table.header([*definition*], [*type*], [*note*]),
 
   [`[A]::=nil|cons(A,[A])`],
-  [`𝒜⟶𝒜`],
+  [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   // list type note: B&dM's `listr`, renamed here from p. 125 on
   [The list type, under the short name it keeps.],
 
@@ -44,7 +44,7 @@
 
  [`partition≜concat°` #src[]],
   // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
-  [`[A]⟶[[A]⁺]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
  [`concat≜⦇[nil,cat]⦈` #src[]],
@@ -53,11 +53,11 @@
   [Joins the segments back up, which is why its converse splits a list.],
 
   [`inits`],
-  [`[A]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.initsR")],
   [Implements $frac(#[`prefix`], ∋)$, listing the prefixes by increasing length.],
 
   [`tails`],
-  [`[A]⟶[[A]]`],
+  [#leant("Freyd.Alg.RelSet.ListRel.tailsR")],
   [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
 
   [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],

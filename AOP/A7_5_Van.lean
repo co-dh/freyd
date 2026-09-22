@@ -79,6 +79,14 @@ variable {A : Type} {amount : A → Int} {N : Int}
   | ConsList.wrap _ => 0
   | ConsList.cons a x => min (amount a + floorFn amount x) 0
 
+/-- `ceiling : [A] ⟶ Int` as an arrow, the graph of `ceilingFn` — the note's `ceiling` cell. -/
+@[expose] public def ceilingR (amount : A → Int) : dList A ⟶ (⟨Int⟩ : RelSet.{0}) :=
+  graph (ceilingFn amount)
+
+/-- `floor : [A] ⟶ Int` as an arrow, the graph of `floorFn`. -/
+@[expose] public def floorR (amount : A → Int) : dList A ⟶ (⟨Int⟩ : RelSet.{0}) :=
+  graph (floorFn amount)
+
 public theorem ceilingFn_nonneg : ∀ x : Seg A, 0 ≤ ceilingFn amount x
   | ConsList.wrap _ => Int.le_refl 0
   | ConsList.cons a x => by simp only [ceilingFn]; omega
@@ -1163,6 +1171,14 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander ceilSpread] public meta def unexpandCeilSpread : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "⟨ceiling,ceiling−floor⟩")))
+
+open Lean PrettyPrinter in
+@[app_unexpander ceilingR] public meta def unexpandCeilingR : Unexpander
+  | _ => `($(mkIdent `ceiling))
+
+open Lean PrettyPrinter in
+@[app_unexpander floorR] public meta def unexpandFloorR : Unexpander
+  | _ => `($(mkIdent `floor))
 
 -- THE SECTION'S ALGEBRA IS THE NOTE'S BEAD `S`, as it is in every other §13.4 case study
 -- (`A7_7_TakeWhile`, `A7_7_Filter`, `A7_7_MSS` each unexpand their own `Salg` to `S`): what it is

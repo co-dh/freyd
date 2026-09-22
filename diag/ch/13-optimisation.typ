@@ -717,7 +717,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`cons(3,[1,2])=[3,1,2]`],
   [the empty list; a head onto a tail],
 
-  [`α`], [`[nil,cons]`], [`F[A]⟶[A]`], [],
+  [`α`], [`[nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")], [],
   [both constructors as one map],
 
  [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉Dom(p)`],
@@ -2219,11 +2219,11 @@ zip(that)                                         each row: its square, and the 
   [`[[a,b,c]]` to `[[a],[b,c]]`, and not back: `1≤2`.],
 
   [`ceiling≜` $frac(#[`prefix sum`], ∋)$ `est(≥)`],
-  [`[A]⟶Int`],
+  [#leant("Freyd.Alg.RelSet.Van.ceilingR")],
   [`ceiling[a,b]` is the largest of `0`, `a`, `a+b`.],
 
   [`floor≜` $frac(#[`prefix sum`], ∋)$ `est(≤)`],
-  [`[A]⟶Int`],
+  [#leant("Freyd.Alg.RelSet.Van.floorR")],
   [`floor[a,b]` is the smallest of `0`, `a`, `a+b`, so `[a,b]` carries `ceiling−floor` cash.],
 
   [`secure` \ the coreflexive on `x` with \ `bmax(ceiling x,ceiling x−floor x)≤N`],
