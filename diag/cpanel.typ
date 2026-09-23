@@ -192,6 +192,29 @@
     }
     return (w: x1 + CSP, hh: sp + mh, body: body)
   }
+  // ---- `⟨x,y⟩°`: row 20 mirrored.  The stacked inputs bend apart to the two lanes, which run the
+  // converses and MERGE — the fork's copy read backwards, as `cap` ends.
+  if t.k == "cofork" {
+    let ps = t.lanes.map(l => pic(l, length))
+    let mw = calc.max(..ps.map(p => p.w))
+    let mh = calc.max(..ps.map(p => p.hh))
+    let sp = mh + 0.22
+    let x1 = CSP + mw + CSP
+    let ins = ys(t.nin)
+    let body = {
+      for (i, p) in ps.enumerate() {
+        let (s, l) = (if i == 0 { 1 } else { -1 }, t.lanes.at(i))
+        let o = if i == 0 { 0 } else { t.lanes.at(0).nin }
+        for (j, y) in ys(l.nin).enumerate() { bend((0, ins.at(o + j)), (CSP, s * sp + y), k: 0.5) }
+        d.group({
+          d.translate((CSP, s * sp)); p.body
+          for y in ys(l.nout) { wire((p.w, y), (mw, y)) }
+        })
+      }
+      for y in ys(t.nout) { nabla((x1, y), li: CSP, lo: 0, sp: sp) }
+    }
+    return (w: x1, hh: sp + mh, body: body)
+  }
   // ---- §3 row 17: `⦇α⦈` as MELLIÈS' FUNCTORIAL BOX.  Nothing crosses the LEFT pair of bars: the
   // input arrives at them and the algebra's own strands start inside, and that break IS the
   // recursion.  The algebra's output is the fold's, so it runs out through the right pair.

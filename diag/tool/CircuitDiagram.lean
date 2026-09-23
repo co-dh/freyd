@@ -678,7 +678,7 @@ partial def draw (e : Expr) : MetaM Pic := do
   -- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.
   | (``Freyd.Alg.junc, args) =>
     match lastTwo args with
-    | some (f, g) => casePic f g src tgt (fuse := none)
+    | some (f, g) => casePic f g src tgt (fuse := none) (e := some e)
     | none => leaf e src tgt
   -- §3 rows 7/8: the `°`.  Written on an ATOM it is the same box mirrored; over a product it
   -- distributes, one flipped box per wire; on a composite it is the cup/cap frame, which `cpanel`
@@ -700,7 +700,7 @@ partial def draw (e : Expr) : MetaM Pic := do
   | _ => do
     -- §3 row 13 at a SUM of arrows: `R+S` is the tape whose two arms are the operands, one per
     -- summand.  Recognised by TYPE, so it draws whatever constant spells the sum.
-    if let some (f, g) ← StrDiag.asSumMap? e then return ← casePic f g src tgt (fuse := none)
+    if let some (f, g) ← StrDiag.asSumMap? e then return ← casePic f g src tgt (fuse := none) (e := some e)
     if e.isApp then
       if ← isFold e.appFn! then return ← cataPic e.appArg! src tgt
     leaf e src tgt
@@ -717,6 +717,25 @@ partial def cataPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
     #[("body", body.val), ("label", if named then .s tgt.label else .nul),
       ("port", .arr (body.ins.map fun o => .s o.label))]
 
+/-- `°` pushed ONE level into an arrow that draws as more than one box, by the allegory's own laws
+    — `R°°=R`, `(XY)°=Y°X°`, `(X∪Y)°=X°∪Y°` — and a defined arrow (`[U,V]`) opened by its
+    definition first.  The circuit then reads backwards with every box mirrored, which is what the
+    converse IS; only an arrow that draws as ONE box keeps the mirrored-box reading. -/
+partial def pushRecip? (r : Expr) : MetaM (Option Expr) := do
+  let rc (x : Expr) := Meta.mkAppM ``Freyd.Alg.Allegory.recip #[x]
+  match r.getAppFnArgs with
+  | (``Freyd.Alg.Allegory.recip, args) => return args.back?
+  | (``Cat.comp, args) => match lastTwo args with
+    | some (x, y) => return some (← StrDiag.compose #[← rc y, ← rc x])
+    | none => return none
+  | (``Freyd.Alg.DistributiveAllegory.union, args) => match lastTwo args with
+    | some (x, y) => return some (← Meta.mkAppM ``Freyd.Alg.DistributiveAllegory.union #[← rc x, ← rc y])
+    | none => return none
+  | _ =>
+    match ← Meta.unfoldDefinition? r with
+    | some v => if hasClause v then return some (← rc v) else return none
+    | none => return none
+
 /-- `(R×S)° = R°×S°`: over a PRODUCT the `°` distributes, one flipped box per wire. -/
 partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
   match r.getAppFnArgs with
@@ -730,9 +749,21 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
       let outs := ls.foldl (fun a l => a ++ l.outs) #[]
       return mkPic "stack" ins outs src tgt false #[("lanes", .arr (ls.map (·.val)))]
     | none => leaf r src tgt
+  -- §3 row 20 read backwards: `⟨R,S⟩°` takes the pair in, runs `R°` and `S°` on its two halves and
+  -- MERGES them — the fork's copy conversed is `∇=Δ°`, so the converse needs no cup/cap frame.
+  | (``Freyd.Alg.RelSet.rpair, ra) | (``Freyd.Alg.RelProd.pair, ra) =>
+    match lastTwo ra with
+    | some (f, g) => do
+      let ls ← #[f, g].mapM fun x => do
+        let (xs, xt) ← endsOf x
+        lane (← recipPic x xt xs)
+      return mkPic "cofork" (ls.foldl (fun a l => a ++ l.ins) #[]) ls[0]!.outs src tgt false
+        #[("lanes", .arr (ls.map (·.val)))]
+    | none => leaf r src tgt
   | _ =>
     let p ← draw r
     if p.val.kindOf != some "box" then
+      if let some r' ← pushRecip? r then return ← draw r'
       throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame of \
         CIRCUIT-GEN §3 row 8 — `cpanel` has no node for it"
     -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
@@ -770,9 +801,30 @@ partial def stackPic (fs : Array Expr) (src tgt : Obj) : MetaM Pic := do
   let outs := ls.foldl (fun a l => a ++ l.outs) #[]
   return mkPic "stack" ins outs src tgt (ls.all (·.isMap)) #[("lanes", .arr (ls.map (·.val)))]
 
+/-- A COPRODUCT THE CARRIER DOES NOT SHOW is still a sum: `s` in `Coproduct s a₁ a₂` is a local
+    whose carrier names nothing, and its summands are the ones the term's own `Coproduct` witness
+    states.  The witness is found by TYPE among the term's arguments and matched to the end by
+    `isDefEq`, so `R+S`'s two witnesses open its source and its target each by its own. -/
+partial def sumAt (e o : Expr) (ob : Obj) : MetaM Obj := do
+  if ob.parts.size == 2 then return ob
+  for a in e.getAppArgs do
+    match (← Meta.whnfR (← Meta.inferType a)).getAppFnArgs with
+    | (``Freyd.Alg.Coproduct, ps) =>
+      if h : ps.size ≥ 3 then
+        if ← Meta.isDefEq ps[ps.size - 3] o then
+          return .mk ob.label .sum #[← objOf ps[ps.size - 2], ← objOf ps[ps.size - 1]] ob.join
+    | _ => pure ()
+  return ob
+
 /-- §3 row 13.  The coproduct arrives as ONE wire, the fork being what opens it; each arm opens
     that wire into its summand's strands, and the seam after the generator names them. -/
-partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) : MetaM Pic :=
+partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) (e : Option Expr := none) :
+    MetaM Pic := do
+  let (src, tgt) ← match e with
+    | some e => match StrDiag.lastTwo (← Meta.inferType e).getAppArgs with
+      | some (x, y) => pure (← sumAt e x src, ← sumAt e y tgt)
+      | none => pure (src, tgt)
+    | none => pure (src, tgt)
   tapePic src tgt fun i s =>
     armParts (if i == 0 then f else g) src s (if i == 1 then fuse else none) (opened := true)
 
@@ -1005,20 +1057,24 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
         | none => pure tybody
       else pure tybody
     let body ← toRelation body
-    let e ← match StrDiag.split body, side with
-      | some (_, l, _), some "lhs" => pure l
-      | some (_, _, r), some "rhs" => pure r
-      | some (sym, _, _), _ =>
-        throwError "`{declName}` states `_ {sym} _`: name the side to draw, \
-          `{declName}.lhs` or `{declName}.rhs`"
-      | none, some s => throwError "`{declName}` is not an equation or containment: no `.{s}`"
-      | none, _ => pure body
-    let tree ← withSel branch e
-    let name := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
-      ++ (match side with | some s => "." ++ s | none => "")
+    let name (s : Option String) := declName.toString
+      ++ (match binder with | some h => "#" ++ h | none => "") ++ (match s with | some s => "." ++ s | none => "")
       ++ String.join (branch.map (·.suffix))
+    let panel (e : Expr) (s : Option String) : MetaM String := do
+      return "cpanel(" ++ (← withSel branch e).render ++ ",\n  cert: (lean: " ++ tstr (name s) ++ "))"
+    -- An unnamed side draws the WHOLE statement, both sides with its relation between, as the
+    -- Hinze–Marsden route does: a law's circuit is the law, not one half of it.
+    let pic ← match StrDiag.split body, side with
+      | some (_, l, _), some "lhs" => panel l side
+      | some (_, _, r), some "rhs" => panel r side
+      | some (_, _, _), some s => throwError "`{declName}` has sides `.lhs` and `.rhs`, not `.{s}`"
+      | some (sym, l, r), none =>
+        pure ("grid(columns: 3, align: horizon, column-gutter: 6pt,\n  " ++ (← panel l (some "lhs"))
+          ++ ",\n  text(" ++ tstr s!"{sym}" ++ "),\n  " ++ (← panel r (some "rhs")) ++ ")")
+      | none, some s => throwError "`{declName}` is not an equation or containment: no `.{s}`"
+      | none, none => panel body none
     return "#import \"../../cpanel.typ\": *\n\n\
-      #let pic = cpanel(" ++ tree.render ++ ",\n  cert: (lean: " ++ tstr name ++ "))\n\n\
+      #let pic = " ++ pic ++ "\n\n\
       #set page(width: auto, height: auto, margin: 12pt)\n\
       #set text(size: 10pt)\n\n\
       #pic\n"
