@@ -791,15 +791,32 @@ def markOfNatPredicate : Name → Option Mark
     Lean can prove none — is spoken about by no declaration, so the environment search comes back a
     spider while the panel is drawn from a statement that ASSUMES the very square.  The hypothesis
     is found at the bead's own relators (`isDefEq`), and the citation is then the panel declaration
-    plus the binder, so `cite-check` re-verifies the statement the assumption lives in. -/
-def hypVerdict (F G φ : Expr) : MetaM (Option (Mark × Name)) := do
+    plus the binder, so `cite-check` re-verifies the statement the assumption lives in.
+    The binder may state the class or the family's SQUARE at an arrow of the statement
+    (`laxNatural_comp_slide`'s `hψ`), graded by the square's relation. -/
+def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark × Name)) := do
+  -- A category has only the equation to grade a square by (`laneSquare`).
+  let grades := match alg with
+    | .relator => #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)]
+    | .functor => #[(Grade.strict, Mark.strict)]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     let ty ← instantiateMVars d.type
-    let .const h _ := ty.getAppFn | continue
-    let some m := markOfNatPredicate h | continue
-    let some want ← observing? (Meta.mkAppM h #[F, G, φ]) | continue
-    if ← Meta.isDefEq ty want then return some (m, ← d.fvarId.getUserName)
+    if let .const h _ := ty.getAppFn then
+      if let some m := markOfNatPredicate h then
+        let some want ← observing? (Meta.mkAppM h #[F, G, φ]) | continue
+        if ← Meta.isDefEq ty want then return some (m, ← d.fvarId.getUserName)
+        continue
+    -- THE SQUARE AT ONE ARROW IS EVIDENCE FOR THE PICTURE OF THAT ARROW: a statement assuming
+    -- `G(R) φ_B ⊑ φ_A F(R)` for the `R` it draws assumes all the bead's naturality the picture
+    -- uses, so the binder is matched against the family's square with its arrow left open.
+    unless ← Meta.isProp ty do continue
+    for (g, m) in grades do
+      let sq ← laneSquare alg regionTy F G φ g
+      let hit ← Meta.withNewMCtxDepth do
+        let (_, _, body) ← Meta.forallMetaTelescope sq
+        Meta.isDefEq ty body
+      if hit then return some (m, ← d.fvarId.getUserName)
   return none
 
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
@@ -921,7 +938,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   if let some v := found then return v
   -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
   -- after the environment: a family something PROVES natural cites the proof, never the binder.
-  if let some (m, n) ← hypVerdict F G φ then return { mark := some m, lean := #[], hyp := some n }
+  if let some (m, n) ← hypVerdict alg regionTy F G φ then return { mark := some m, lean := #[], hyp := some n }
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
@@ -1193,57 +1210,6 @@ def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name
     s.restore
   peelRead objVars cat regionTy X
 
-/-- The arguments `ms` of a rebuilt product map that the new arrows' ends did not fix: each is the
-    argument of the original `args` whose type it has, else a hypothesis already made for that type,
-    else a new hypothesis of it, which `k` runs under. -/
-partial def fillArgs {α : Type} (args : Array Expr) (ms : List Expr) (hyps : Array Expr)
-    (k : Array Expr → MetaM α) : MetaM α := do
-  match ms with
-  | [] => k hyps
-  | m :: rest =>
-    unless (← instantiateMVars m).isMVar do return ← fillArgs args rest hyps k
-    let ty ← instantiateMVars (← Meta.inferType m)
-    if ty.hasExprMVar then
-      throwError "the product map's argument of type `{← Meta.ppExpr ty}` is fixed by neither the \
-        new arrows' ends nor any argument of the original"
-    for c in args ++ hyps do
-      let s ← Meta.saveState
-      if (← Meta.isDefEq ty (← Meta.inferType c)) && (← Meta.isDefEq m c) then
-        return ← fillArgs args rest hyps k
-      s.restore
-    -- `assign`, not `isDefEq`: the metavariable was made before `h`, whose scope it cannot see, and
-    -- everything that reads the assignment runs inside that scope.
-    Meta.withLocalDeclD `P ty fun h => do
-      m.mvarId!.assign h
-      fillArgs args rest (hyps.push h) k
-
-/-- THE PRODUCT MAP `e` AT OTHER ARROWS, one per pair of `ps`, for interchange and functoriality to
-    split it into.  Rebuilt from the head's own telescope, never from the two arrows alone:
-    `prodMap P Q R S` names its products explicitly, and `mkAppM` on `R`, `S` fed them to `P`, `Q`.
-    The arrows' ends fix the objects; an argument whose type the original already has an argument
-    at is that argument; the product at a cut no argument states — `a'×b` between `R×𝟙` and `𝟙×S` —
-    is a hypothesis of that type, the one the interchange law itself assumes, shared by the two
-    parts that meet at it. -/
-partial def withProdMapsAt {α : Type} (e : Expr) (ps : List (Expr × Expr)) (hyps acc : Array Expr)
-    (k : Array Expr → MetaM α) : MetaM α := do
-  match ps with
-  | [] => k acc
-  | (f, g) :: rest =>
-    let fn := e.getAppFn
-    let args := e.getAppArgs
-    let mut ix : Array Nat := #[]
-    for i in [0 : args.size] do
-      if (← homEnds? args[i]!).isSome then ix := ix.push i
-    let (ms, _, _) ← Meta.forallMetaTelescope (← Meta.inferType fn)
-    unless ix.size == 2 && ms.size == args.size do
-      throwError "the product map `{← Meta.ppExpr e}` is no head applied to exactly its parameters \
-        with two arrows among them"
-    unless (← Meta.isDefEq ms[ix[0]!]! f) && (← Meta.isDefEq ms[ix[1]!]! g) do
-      throwError "the product map `{← Meta.ppExpr e}` does not take `{← Meta.ppExpr f}` and \
-        `{← Meta.ppExpr g}`"
-    fillArgs args ms.toList hyps fun hyps => do
-      withProdMapsAt e rest hyps (acc.push (← instantiateMVars (mkAppN fn ms))) k
-
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -1298,12 +1264,14 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let pairLane ← do
     let (cx, _) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
     pure (match cx[0]? with | some (.rel f, _) => f.isAppOf ``Freyd.Alg.Relator.prod | _ => false)
-  if let some (φ, ψ) ← (if pairLane then pure none else asProdMap? regionTy e) then
+  -- `none` from the product-map reading is "not drawn here": the tail below reads the factor.
+  let prod (φψ : Option (Expr × Expr)) : MetaM (Option Diagram) := do
+    let some (φ, ψ) := φψ | return none
     let (a, a') ← homEnds φ
     let (b, _) ← homEnds ψ
     -- `𝟙×ψ` IS `(A×−).map ψ`: the left factor is one lane and `ψ` runs under it, so this is the
     -- `F.map` route and the verdict of `ψ` closes through the same chain as any `F(R)`.
-    if ← isIdArrow φ then return ← lane #[Wire.timesL a] ψ
+    if ← isIdArrow φ then return some (← lane #[Wire.timesL a] ψ)
     let one ← Meta.mkAppM ``Cat.id #[b]
     -- Interchange, `φ×ψ = (φ×𝟙)(𝟙×ψ)`, and functoriality, `(φ₁φ₂)×𝟙 = (φ₁×𝟙)(φ₂×𝟙)`: both split
     -- the map into product maps this same case then draws, one bead each.
@@ -1312,8 +1280,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       let mut ps : Array (Expr × Expr) := fφ.map (·, one)
       unless ← isIdArrow ψ do ps := ps.push (← Meta.mkAppM ``Cat.id #[a'], ψ)
       if ps.size > 1 then
-        return ← withProdMapsAt e ps.toList #[] #[] fun parts =>
-          vstack regionTy cat objVars vpass expect parts
+        return some (← withProdMapsAt e ps.toList #[] #[] fun parts =>
+          vstack regionTy cat objVars vpass expect parts)
     -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`, ONLY where it is a family in the
     -- statement's own object: the lanes east of it are then what that object is, and only run past.
     -- Where `φ` cannot vary with it — `secure amount N`, whose `amount` pins the object — the whole
@@ -1324,8 +1292,11 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     if (← familyVar e objVars).isSome then
       let (cx, ox) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
       let (_, oy) ← peelRead objVars cat regionTy (← homEnds e).2
-      return ← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
-        (over := (cx.extract 1 cx.size).map (·.1))
+      return some (← Diagram.bead regionTy cat objVars #[Wire.timesL a] #[Wire.timesL a'] ox oy e
+        (over := (cx.extract 1 cx.size).map (·.1)))
+    return none
+  unless pairLane do
+    if let some d ← asProdMap? regionTy e prod then return d
   -- A RELATOR'S ACTION IS THE `F.map` ROUTE WHATEVER IT IS SPELLED: `list (Λ(R) est(Q))` is that
   -- composite drawn under the `list` wire, two beads, not one bead nobody can read the run inside
   -- of.  Last, so a factor the reader already has a form for keeps it.

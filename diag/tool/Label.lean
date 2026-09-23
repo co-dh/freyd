@@ -1289,8 +1289,12 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.
     if let some (x, _) := homObjs? (← Meta.inferType e) then
-      if let some (φ, ψ) ← asProdMap? (← Meta.inferType x) e then
-        return wrap Prec.juxt ((← labelTree Prec.factor φ) ++ "×" ++ (← labelTree Prec.factor ψ))
+      let pm ← asProdMap? (← Meta.inferType x) e fun
+        | some (φ, ψ) => do
+          return some (wrap Prec.juxt
+            ((← labelTree Prec.factor φ) ++ "×" ++ (← labelTree Prec.factor ψ)))
+        | none => return none
+      if let some s := pm then return s
     -- A SUM OF ARROWS the same way, and for the same reason: the two coproducts `sumMap` runs
     -- between are the objects the picture already draws at the edge's ends.
     if let some (φ, ψ) ← asSumMap? e then

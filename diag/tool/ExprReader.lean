@@ -1273,13 +1273,68 @@ def isIdArrow (e : Expr) : MetaM Bool := do
   if !(← Meta.isDefEq x y) then return false
   Meta.isDefEq e (← Meta.mkAppM ``Cat.id #[x])
 
+/-- The arguments `ms` of a rebuilt product map that the new arrows' ends did not fix: each is the
+    argument of the original `args` whose type it has, else a hypothesis already made for that type,
+    else a new hypothesis of it, which `k` runs under. -/
+partial def fillArgs {α : Type} (args : Array Expr) (ms : List Expr) (hyps : Array Expr)
+    (k : Array Expr → MetaM α) : MetaM α := do
+  match ms with
+  | [] => k hyps
+  | m :: rest =>
+    unless (← instantiateMVars m).isMVar do return ← fillArgs args rest hyps k
+    let ty ← instantiateMVars (← Meta.inferType m)
+    if ty.hasExprMVar then
+      throwError "the product map's argument of type `{← Meta.ppExpr ty}` is fixed by neither the \
+        new arrows' ends nor any argument of the original"
+    for c in args ++ hyps do
+      let s ← Meta.saveState
+      if (← Meta.isDefEq ty (← Meta.inferType c)) && (← Meta.isDefEq m c) then
+        return ← fillArgs args rest hyps k
+      s.restore
+    -- `assign`, not `isDefEq`: the metavariable was made before `h`, whose scope it cannot see, and
+    -- everything that reads the assignment runs inside that scope.
+    Meta.withLocalDeclD `P ty fun h => do
+      m.mvarId!.assign h
+      fillArgs args rest (hyps.push h) k
+
+/-- THE PRODUCT MAP `e` AT OTHER ARROWS, one per pair of `ps`, for interchange, functoriality and
+    re-association to split it into.  Rebuilt from the head's own telescope, never from the two
+    arrows alone: `prodMap P Q R S` names its products explicitly, and `mkAppM` on `R`, `S` fed them
+    to `P`, `Q`.  The arrows' ends fix the objects; an argument whose type the original already has
+    an argument at is that argument; the product at a cut no argument states — `a'×b` between `R×𝟙`
+    and `𝟙×S` — is a hypothesis of that type, the one the interchange law itself assumes, shared by
+    the two parts that meet at it. -/
+partial def withProdMapsAt {α : Type} (e : Expr) (ps : List (Expr × Expr)) (hyps acc : Array Expr)
+    (k : Array Expr → MetaM α) : MetaM α := do
+  match ps with
+  | [] => k acc
+  | (f, g) :: rest =>
+    let fn := e.getAppFn
+    let args := e.getAppArgs
+    let mut ix : Array Nat := #[]
+    for i in [0 : args.size] do
+      if (← homEnds? args[i]!).isSome then ix := ix.push i
+    let (ms, _, _) ← Meta.forallMetaTelescope (← Meta.inferType fn)
+    unless ix.size == 2 && ms.size == args.size do
+      throwError "the product map `{← Meta.ppExpr e}` is no head applied to exactly its parameters \
+        with two arrows among them"
+    unless (← Meta.isDefEq ms[ix[0]!]! f) && (← Meta.isDefEq ms[ix[1]!]! g) do
+      throwError "the product map `{← Meta.ppExpr e}` does not take `{← Meta.ppExpr f}` and \
+        `{← Meta.ppExpr g}`"
+    fillArgs args ms.toList hyps fun hyps => do
+      withProdMapsAt e rest hyps (acc.push (← instantiateMVars (mkAppN fn ms))) k
+
 /-- A PRODUCT MAP, recognised by its TYPE and nothing else: a constant applied to two arrows
     `φ : a ⟶ a'`, `ψ : b ⟶ b'` whose own two ends are the products of those ends.  That
     type has only one inhabitant a picture can mean, so no name is needed — and it is what says
     which lanes the factor touches, where comparing the two wire stacks cannot: `cons` and
-    `secure×𝟙` have the same stacks below them and eat wholly different wires. -/
-partial def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Expr)) := do
-  let .const n _ := e.getAppFn | return none
+    `secure×𝟙` have the same stacks below them and eat wholly different wires.
+
+    `k` runs under the hypotheses a re-associated factor's rebuild made (`withProdMapsAt`), so the
+    two arrows it is handed are well scoped only inside it. -/
+partial def asProdMap? {α : Type} (regionTy : Expr) (e : Expr)
+    (k : Option (Expr × Expr) → MetaM α) : MetaM α := do
+  let .const _ _ := e.getAppFn | return ← k none
   let args := e.getAppArgs
   let mut arrows : Array Expr := #[]
   -- WHAT MAKES AN ARGUMENT AN ARROW IS THE REGION'S `Cat` INSTANCE, not the `Cat.Hom` head
@@ -1291,29 +1346,31 @@ partial def asProdMap? (regionTy : Expr) (e : Expr) : MetaM (Option (Expr × Exp
   -- AN IDENTITY ON A PRODUCT IS THE PRODUCT OF THE IDENTITIES, and has to say so here, or the
   -- `𝟙×ψ` of a bracketed left end keeps a lane no peel of an object ever produces.
   if arrows.isEmpty then
-    unless ← isIdArrow e do return none
-    let some (a, b) ← splitTimes? regionTy (← homEnds e).1 | return none
-    return some (← Meta.mkAppM ``Cat.id #[a], ← Meta.mkAppM ``Cat.id #[b])
-  unless arrows.size == 2 do return none
+    unless ← isIdArrow e do return ← k none
+    let some (a, b) ← splitTimes? regionTy (← homEnds e).1 | return ← k none
+    return ← k (some (← Meta.mkAppM ``Cat.id #[a], ← Meta.mkAppM ``Cat.id #[b]))
+  unless arrows.size == 2 do return ← k none
   let (x, y) ← homEnds e
-  let some (a, b) ← splitTimes? regionTy x | return none
-  let some (a', b') ← splitTimes? regionTy y | return none
+  let some (a, b) ← splitTimes? regionTy x | return ← k none
+  let some (a', b') ← splitTimes? regionTy y | return ← k none
   let (φa, φa') ← homEnds arrows[0]!
   let (ψb, ψb') ← homEnds arrows[1]!
   unless (← Meta.isDefEq a φa) && (← Meta.isDefEq a' φa')
-      && (← Meta.isDefEq b ψb) && (← Meta.isDefEq b' ψb') do return none
+      && (← Meta.isDefEq b ψb) && (← Meta.isDefEq b' ψb') do return ← k none
   -- ONE LANE IS ONE FACTOR, because `×` is flat in the picture and an object peels to its factors
   -- one at a time.  So a left factor standing on a BRACKET re-associates — `(φ₁×φ₂)×ψ` is
   -- `φ₁×(φ₂×ψ)` — and a left factor that is no product map at all though its ends are products
   -- (`cons×𝟙`) is not a lane's arrow: it SPANS those lanes, which the read below it draws.
   if (← splitTimes? regionTy φa).isSome || (← splitTimes? regionTy φa').isSome then
-    if let some (φ₁, φ₂) ← asProdMap? regionTy arrows[0]! then
-      return some (φ₁, ← Meta.mkAppM n #[φ₂, arrows[1]!])
-    -- Interchange and functoriality still apply — `(φ₁φ₂)×𝟙` is two of these — so the pair is
-    -- handed back while there is a split left in it.  With none left the arrow is no lane's: it
-    -- SPANS the factors of its bracketed end, which the plain read of its two ends draws.
-    if (factors arrows[0]!).size == 1 && (← isIdArrow arrows[1]!) then return none
-  return some (arrows[0]!, arrows[1]!)
+    return ← asProdMap? regionTy arrows[0]! fun
+      | some (φ₁, φ₂) => withProdMapsAt e [(φ₂, arrows[1]!)] #[] #[] fun ps => k (some (φ₁, ps[0]!))
+      -- Interchange and functoriality still apply — `(φ₁φ₂)×𝟙` is two of these — so the pair is
+      -- handed back while there is a split left in it.  With none left the arrow is no lane's: it
+      -- SPANS the factors of its bracketed end, which the plain read of its two ends draws.
+      | none => do
+        if (factors arrows[0]!).size == 1 && (← isIdArrow arrows[1]!) then k none
+        else k (some (arrows[0]!, arrows[1]!))
+  k (some (arrows[0]!, arrows[1]!))
 
 /-- A factor with the relators it runs UNDER stripped off: `F.map (G.map R)` is `R` with the wires
     `F`, `G` running past it.  Outermost first. -/
