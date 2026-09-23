@@ -278,97 +278,27 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   table.header([*the law*], [*picture*]),
 
   // [R,S]=(l°R) ∪ (r°S): B&dM (5.9)
-  [`[R,S]=(l°R) ∪ (r°S)` \ #src[@coprod-laws's first row]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.9, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (4.24, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [R]); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [S]); wire((3.16, -y), (3.60, -y))
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(4.93, 0, black)[$C$]
-  }), s: 82%),
+  [#src[@coprod-laws's first row]],
+  // lean:AOP.A5_3.junc@da022f10
+  P(lean("Freyd.Alg.junc"), s: 82%),
 
   // R+S=[Rl,Sr]: B&dM (5.10)
-  [`R+S=[Rl,Sr]`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.9, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (5.16, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [R]); wire((3.16, y), (3.50, y))
-    gbox((3.50, y), [`l`], chamfer: false); wire((4.42, y), (4.52, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [S]); wire((3.16, -y), (3.50, -y))
-    gbox((3.50, -y), [`r`], chamfer: false); wire((4.42, -y), (4.52, -y))
-    tape-join((4.94, 0), sp: y, len: 0.42)
-    wire((5.16, 0), (5.50, 0))
-    lab(6.25, 0, black)[$C + D$]
-  }), s: 82%),
+  [],
+  // lean:AOP.A5_3.sumMap@eb035ed1
+  P(lean("Freyd.Alg.sumMap"), s: 82%),
 
   // [U,V]°[R,S]=(U°R) ∪ (V°S): B&dM (5.11)
-  [`[U,V]°[R,S]=(U°R) ∪ (V°S)` \ #src[@coprod-laws's last row;
+  [#src[@coprod-laws's last row;
  ]],
    // lean:AOP.A5_3.junc_recip_junc@838f4abc
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.3, 0, black)[$C$]
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -1.05), (3.90, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [U], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.26, y))
-    gbox((0.98, -y), [V], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.26, -y))
-    tape-join((3.68, 0), sp: y, len: 0.42)
-    wire((3.90, 0), (5.20, 0)); lab(4.55, 0.42, black)[$A + B$]
-    tape((5.20, -1.05), (8.76, 1.05))
-    tape-fork((5.42, 0), sp: y, len: 0.42)
-    gbox((5.84, y), [`l`], flip: true, fill: TINT); wire((6.76, y), (7.10, y))
-    gbox((7.10, y), [R]); wire((8.02, y), (8.12, y))
-    gbox((5.84, -y), [`r`], flip: true, fill: TINT); wire((6.76, -y), (7.10, -y))
-    gbox((7.10, -y), [S]); wire((8.02, -y), (8.12, -y))
-    tape-join((8.54, 0), sp: y, len: 0.42)
-    wire((8.76, 0), (9.10, 0)); lab(9.45, 0, black)[$D$]
-    // `ll°=𝟙` and `lr°=𝟘` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
-    lab(10.1, 0, black)[$=$]
-    lab(10.75, 0, black)[$C$]
-    wire((11.05, 0), (11.39, 0))
-    tape((11.39, -1.05), (14.95, 1.05))
-    tape-fork((11.61, 0), sp: y, len: 0.42)
-    gbox((12.03, y), [U], flip: true, fill: TINT); wire((12.95, y), (13.29, y))
-    gbox((13.29, y), [R]); wire((14.21, y), (14.31, y))
-    gbox((12.03, -y), [V], flip: true, fill: TINT); wire((12.95, -y), (13.29, -y))
-    gbox((13.29, -y), [S]); wire((14.21, -y), (14.31, -y))
-    tape-join((14.73, 0), sp: y, len: 0.42)
-    wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
-  }), s: 68%),
+  P(lean("Freyd.Alg.junc_recip_junc"), s: 68%),
 
   // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
-  [`X≜[𝟙,𝟘]=l°` and `Y≜[𝟘,𝟙]=r°`, \ so `(Xl) ∪ (Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-1.0, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (4.24, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(5.30, 0, black)[$A + B$]
-    lab(6.40, 0, black)[$=$]
-    lab(7.40, 0, black)[$A + B$]; wire((8.10, 0), (9.30, 0)); lab(10.0, 0, black)[$A + B$]
-  }), s: 78%),
+  [#leanf("Freyd.Alg.junc_id_zero"), #leanf("Freyd.Alg.junc_zero_id") \
+   #leanf("Freyd.Alg.junc_injections") \ #src[which is (5.9)]],
+  // lean:AOP.A5_3.junc_id_zero@28919704 lean:AOP.A5_3.junc_zero_id@328e3c31
+  // lean:AOP.A5_3.junc_injections@11d515bf lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
+  P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
 
   // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
   [#src[prove (5.11), and say why duality does not carry it over from the product law]],

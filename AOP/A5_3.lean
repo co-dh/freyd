@@ -69,7 +69,7 @@ public theorem junc_unique {s a₁ a₂ c : 𝒜} (C : Coproduct s a₁ a₂) {R
   rw [huniq T h₁ h₂, huniq (junc C R S) (u₁_junc C R S) (u₂_junc C R S)]
 
 /-- The injections case-split to the identity: `[u₁,u₂] = 1_s`. -/
-theorem junc_injections {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
+public theorem junc_injections {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
     junc C C.u₁ C.u₂ = Cat.id s :=
   (junc_unique C (Cat.comp_id C.u₁) (Cat.comp_id C.u₂)).symm
 
@@ -303,10 +303,16 @@ variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
 
 /-- **Ex 5.12**: `[1,0] = u₁°`.  (`DistributiveAllegory.zero_comp`/`comp_zero` are primitive
     axioms of the class here, not derived facts, so no extra hypotheses are needed.) -/
-theorem junc_id_zero {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
+public theorem junc_id_zero {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
     junc C (Cat.id a₁) (𝟘 : a₂ ⟶ a₁) = C.u₁° := by
   show (C.u₁° ≫ Cat.id a₁) ∪ (C.u₂° ≫ (𝟘 : a₂ ⟶ a₁)) = C.u₁°
   rw [Cat.comp_id, DistributiveAllegory.comp_zero, union_zero]
+
+/-- **Ex 5.12**, the second injection: `[0,1] = u₂°`. -/
+public theorem junc_zero_id {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) :
+    junc C (𝟘 : a₁ ⟶ a₂) (Cat.id a₂) = C.u₂° := by
+  show (C.u₁° ≫ (𝟘 : a₁ ⟶ a₂)) ∪ (C.u₂° ≫ Cat.id a₂) = C.u₂°
+  rw [Cat.comp_id, DistributiveAllegory.comp_zero, DistributiveAllegory.zero_union]
 
 end Ex512
 
