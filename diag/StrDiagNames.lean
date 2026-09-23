@@ -729,25 +729,25 @@ open Lean PrettyPrinter in
 @[app_unexpander cpMap] def unexpandCpMap : Unexpander
   | `($_ $args*) => `($(mkIdent `cp) $args*)
   | _ => `($(mkIdent `cp))
--- THE NAMES THE NOTE NEVER WRITES ITSELF keep the spelling the panel is drawn with today: the
--- suffix is Lean's disambiguator (`Fn`, `Rel`, `Relator`, as `editFn` is `edit` above), and which
--- shorter word the note wants is the note's decision, not one to be made here.
+-- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
+-- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): the algebras and
+-- `sortRel` keep the Lean name; a bundled relator prints as the type it bundles (`op`, `Journey`).
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.wrapCatFn] def unexpandBracketWrapCat : Unexpander
   | `($_ $args*) => `($(mkIdent `wrapCatFn) $args*)
   | _ => `($(mkIdent `wrapCatFn))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.opRelator] def unexpandEditOpRelator : Unexpander
-  | `($_ $args*) => `($(mkIdent `opRelator) $args*)
-  | _ => `($(mkIdent `opRelator))
+  | `($_ $args*) => `($(mkIdent `op) $args*)
+  | _ => `($(mkIdent `op))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.editAlg] def unexpandEditAlg : Unexpander
   | `($_ $args*) => `($(mkIdent `editAlg) $args*)
   | _ => `($(mkIdent `editAlg))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
-  | `($_ $args*) => `($(mkIdent `journeyRelator) $args*)
-  | _ => `($(mkIdent `journeyRelator))
+  | `($_ $args*) => `($(mkIdent `Journey) $args*)
+  | _ => `($(mkIdent `Journey))
 open Lean PrettyPrinter in
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
   | `($_ $args*) => `($(mkIdent `sortRel) $args*)
@@ -757,10 +757,11 @@ open Lean PrettyPrinter in
 @[app_unexpander pathR] def unexpandPathR : Unexpander
   | `($_ $args*) => `($(mkIdent `path) $args*)
   | _ => `($(mkIdent `path))
+-- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
 open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander
-  | `($_ $args*) => `($(mkIdent `pathStep) $args*)
-  | _ => `($(mkIdent `pathStep))
+  | `($_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
