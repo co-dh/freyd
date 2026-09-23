@@ -68,7 +68,7 @@ attribute [diag_defines] relCata_cancel
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
-  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive MonotonicAlg
+  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive Monotonic MonotonicAlg
   RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss

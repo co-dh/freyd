@@ -954,19 +954,6 @@
 
 // ==== named whole pictures — bound because each is drawn more than once ==========================
 
-// `◁` then `R ⊗ S`, bound because it is also the last step of the collapse chain below.  `eq` draws the
-// `=` at the LEFT EDGE, as `./scripts/diag-export` does: beside the canvas it would sit on the baseline.
-#let pairstr(eq: false) = cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  if eq { lab(-1.2, 0, black)[$=$] }
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (1.9, y)); wire((1.55, -y), (1.9, -y))
-  gbox((1.9, y), [R]); gbox((1.9, -y), [S])
-  wire((2.82, y), (3.4, y)); wire((2.82, -y), (3.4, -y))
-  lab(-0.35, 0, black)[$C$]; lab(3.75, y, GIVEN1)[$A$]; lab(3.75, -y, GIVEN2)[$B$]
-})
-
 // The `Λ` family's geometry, one copy for all three pictures: wider and taller than §14's monads,
 // three beads down one wire and a loop that has to hold two names inside it.  `LAMY` are its rows.
 #let LAMPAD = 0.6

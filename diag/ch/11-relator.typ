@@ -27,7 +27,7 @@ the 2-category.
   table.header([*the statement*]),
 
  // F(f) map preserving row: Lemma 5.1
- [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
   [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.],
@@ -36,12 +36,12 @@ the 2-category.
   // relators-agree-on-maps row: Corollary 5.1
   [Two relators agreeing on maps are equal.],
  // F(X∩Y) row: Ex 5.2
- [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[]],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
  // F(R∩S) row: Ex 5.2, the restriction
- [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [`F(dom(R))=dom(F(R))` for `F` preserving `°`. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_dom") #src[]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
@@ -60,14 +60,14 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
- `⟨R,S⟩π₁=dom(S)R` #src[] #h(1.4cm)
+ #leanf("Freyd.Alg.RelProd.pair_outl") #src[] #h(1.4cm)
   // lean:AOP.A5_2.pair_outl@18c8ddee
- `⟨R,S⟩π₂=dom(R)S` #src[]
+ #leanf("Freyd.Alg.RelProd.pair_outr") #src[]
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), pairstr()))]<fork-pic>
+  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), lean("Freyd.Alg.RelProd.pair")))]<fork-pic>
 
 A domain is coreflexive, so `⟨R,S⟩π₁⊑R`, with equality exactly when `S` is entire; for maps both
 triangles commute and `⟨f,g⟩` is unique. In `Rel`, `c ⟨R,S⟩ (a,b)` iff `c R a` and `c S b` — copy `c`, then
@@ -78,25 +78,8 @@ No `°` survives the translation. `π₁=𝟙⊗⊸` discards the second compone
 the two dots with no left end, and the crossing they force — are merged against real ones, which is
 the monoid's unit law:
 
-// The chain at FULL size: `chain`'s 62% is calibrated for the exported pictures, which are drawn on a
-// bigger canvas than these two.
-#disp[#chain((cetz.canvas(length: 0.8cm, {
-  wire((0, 0), (0.8, 0)); wiredot((0.8, 0))
-  bend((0.8, 0), (1.4, 1.5)); bend((0.8, 0), (1.4, -1.5))
-  wire((1.4, 1.5), (1.6, 1.5)); gbox((1.6, 1.5), [R]); wire((2.52, 1.5), (3.7, 1.5))
-  wire((1.4, -1.5), (1.6, -1.5)); gbox((1.6, -1.5), [S]); wire((2.52, -1.5), (3.7, -1.5))
-  // `π₁°=𝟙⊗⟜` is a PAIR: `R`'s wire and the created one beside it.  Merging the pairs componentwise
-  // is what crosses.
-  wiredot((2.7, 0.9)); wire((2.7, 0.9), (3.7, 0.9))
-  wiredot((2.7, -0.9)); wire((2.7, -0.9), (3.7, -0.9))
-  bend((3.7, 1.5), (5.4, 0.3), k: 0.4); bend((3.7, -0.9), (5.4, 0.3), k: 0.4); wiredot((5.4, 0.3))
-  bend((3.7, 0.9), (5.4, -0.3), k: 0.4); bend((3.7, -1.5), (5.4, -0.3), k: 0.4)
-  wiredot((5.4, -0.3))
-  wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
-  lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
-}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[]
+#disp[#leanc("Freyd.Alg.RelProd.pair") #src[`⟜▷=𝟙` on each half]]<fork-collapse>
 // lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
-]), s: 100%)]<fork-collapse>
 
 
 === Relational product `R×S`
@@ -111,13 +94,7 @@ the monoid's unit law:
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
 // become two squares, and the copy dot goes away — `R × S` is the two strands side by side.
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, y), (0.5, y)); gbox((0.5, y), [R]); wire((1.42, y), (2.0, y))
-  wire((0, -y), (0.5, -y)); gbox((0.5, -y), [S]); wire((1.42, -y), (2.0, -y))
-  lab(-0.35, y, GIVEN1)[$C$]; lab(-0.35, -y, GIVEN2)[$D$]
-  lab(2.35, y, GIVEN1)[$A$]; lab(2.35, -y, GIVEN2)[$B$]
-})))]<relprod-pic>
+  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), leanc("Freyd.Alg.prodMap")))]<relprod-pic>
 
 Right-then-up is `(R×S)π₁`, up-then-right is `π₁R`, and `(R×S)π₁⊑π₁R`, equality when `S` is
 entire. In `Rel`, `(c,d) (R×S) (a,b)` iff `c R a` and `d S b` — two strands side by side, no copy
@@ -129,19 +106,10 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#box(cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (1.9, y)); wire((1.55, -y), (1.9, -y))
-  gbox((1.9, y), [X]); gbox((1.9, -y), [Y])
-  wire((2.82, y), (3.2, y)); wire((2.82, -y), (3.2, -y))
-  gbox((3.2, y), [R]); gbox((3.2, -y), [S])
-  wire((4.12, y), (4.7, y)); wire((4.12, -y), (4.7, -y))
-  lab(-0.35, 0, black)[$E$]; lab(5.05, y, GIVEN1)[$A$]; lab(5.05, -y, GIVEN2)[$B$]
-}))]<absorption-pic>
+#disp[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
+// lean:AOP.A5_2.pair_prodMap@8861fda2
 
-// One run of boxes on one strand, for the two book tables below: `"r"` a relation (chamfered), `"m"` a
+// One run of boxes on one strand, for the book tables below: `"r"` a relation (chamfered), `"m"` a
 // map (square), `"c"` a converse (mirrored and tinted).  Twenty inline copies is twenty chances to drift.
 #let BOXW = 0.92
 #let BOXG = 0.34
@@ -169,105 +137,37 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  [`R×S=⟨π₁R,π₂S⟩`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    let (a, b) = (1.35, 0.62)
-    lab(-0.35, y, black)[$C$]; lab(-0.35, -y, black)[$D$]
-    brun(0, y, (([R], "r"),)); brun(0, -y, (([S], "r"),))
-    lab(1.95, y, black)[$A$]; lab(1.95, -y, black)[$B$]
-    lab(2.6, 0, black)[$=$]
-    lab(3.0, 1.0, black)[$C$]; lab(3.0, -1.0, black)[$D$]
-    // The fork copies the WHOLE pair, and each branch discards the component it does not use.
-    wire((3.35, 1.0), (3.9, 1.0)); wiredot((3.9, 1.0))
-    bend((3.9, 1.0), (4.7, a)); bend((3.9, 1.0), (4.7, -b))
-    wire((3.35, -1.0), (3.9, -1.0)); wiredot((3.9, -1.0))
-    bend((3.9, -1.0), (4.7, b)); bend((3.9, -1.0), (4.7, -a))
-    brun(4.7, a, (([R], "r"),)); brun(4.7, -a, (([S], "r"),))
-    wire((4.7, b), (5.3, b)); wiredot((5.3, b))
-    wire((4.7, -b), (5.3, -b)); wiredot((5.3, -b))
-    lab(6.65, a, black)[$A$]; lab(6.65, -a, black)[$B$]
-  }), s: 74%),
+  [], P(lean("Freyd.Alg.prodMap"), s: 74%),
+  // lean:AOP.A5_2.prodMap@28e34ad0
 
-  [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
+  [#src[both sides are the same strokes — @absorption-pic. Its `⊑`
 // R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
    half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
    this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
  ]],
    // lean:AOP.A5_2.pair_prodMap@8861fda2
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "r"))); brun(1.05, -y, (([Y], "r"), ([S], "r")))
-    lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
 
- [`⟨R,S⟩π₁=dom(S)R` \ #src[@fork-proj]],
+ [#src[@fork-proj]],
   // lean:AOP.A5_2.pair_outl@18c8ddee
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$C$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([R], "r"),))
-    brun(1.05, -y, (([S], "r"),)); wiredot((2.65, -y))
-    lab(3.0, y, black)[$A$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_outl"), s: 74%),
 
- [`⟨R,S⟩π₂=dom(R)S` \ #src[@fork-proj]],
+ [#src[@fork-proj]],
   // lean:AOP.A5_2.pair_outr@ce99887d
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$C$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([R], "r"),)); wiredot((2.65, y))
-    brun(1.05, -y, (([S], "r"),))
-    lab(3.0, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_outr"), s: 74%),
 
- [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[]],
+ [#src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "c"))); brun(1.05, -y, (([Y], "r"), ([S], "c")))
-    wmerge((4.46, 0), li: 0.55, lo: 0.5, sp: y)
-    lab(5.3, 0, black)[$C$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
 
-  [`⟨R,S⟩°⟨P,Q⟩⊑(R°P)×(S°Q)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, y, black)[$A$]; lab(-0.35, -y, black)[$B$]
-    brun(0, y, (([R], "c"),)); brun(0, -y, (([S], "c"),))
-    wmerge((2.15, 0), li: 0.55, lo: 0.5, sp: y)
-    lab(2.65, 0.4, black)[$C$]
-    wcopy((3.15, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(3.7, y, (([P], "r"),)); brun(3.7, -y, (([Q], "r"),))
-    lab(5.65, y, black)[$A'$]; lab(5.65, -y, black)[$B'$]
-    lab(6.4, 0, black)[`⊑`]
-    lab(7.15, y, black)[$A$]; lab(7.15, -y, black)[$B$]
-    brun(7.5, y, (([R], "c"), ([P], "r"))); brun(7.5, -y, (([S], "c"), ([Q], "r")))
-    lab(10.7, y, black)[$A'$]; lab(10.7, -y, black)[$B'$]
-  }), s: 74%),
+  [#src[]],
+  // lean:AOP.A5_2.recip_pair_pair_le@3e24af96
+  P(lean("Freyd.Alg.RelProd.recip_pair_pair_le"), s: 74%),
 
-  [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow;
+  [#leanf("Freyd.Alg.RelProd.map_comp_pair") \ #src[`f` a map; it fails for an arbitrary arrow;
  ]],
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$D$]
-    brun(0, 0, (([`f`], "m"),))
-    wcopy((2.15, 0), li: 0.55, lo: 0.55, sp: y)
-    brun(2.7, y, (([R], "r"),)); brun(2.7, -y, (([S], "r"),))
-    lab(4.65, y, black)[$A$]; lab(4.65, -y, black)[$B$]
-    lab(5.3, 0, black)[$=$]
-    lab(5.95, 0, black)[$D$]
-    wcopy((6.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(7.05, y, (([`f`], "m"), ([R], "r"))); brun(7.05, -y, (([`f`], "m"), ([S], "r")))
-    lab(10.25, y, black)[$A$]; lab(10.25, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
 
   [`F(R×S)unzip(F)=unzip(F)(F(R)×F(S))` \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`, a map]],
   P(cetz.canvas(length: 0.8cm, {
@@ -302,74 +202,35 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [`[R,S]≜l°R ∪ r°S` \ #src[The tape is the union — a particle entering at `A+B` takes exactly
+  [#src[The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
-    wire((0, 0), (0.34, 0))
-    // 1.57 = y + 0.95, the clearance §@sec-comb's tapes leave above a branch they label.
-    tape((0.34, -1.57), (4.24, 1.57))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    // Mirrored and tinted: this file draws a converse by flipping the box, so these are `l°` and `r°`.
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
-    wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
-    wire((3.16, -y), (3.60, -y))
-    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(-0.9, 0, black)[$A + B$]; lab(4.93, 0, black)[$C$]
-  }), s: 85%),
+  // lean:AOP.A5_3.junc@da022f10
+  P(lean("Freyd.Alg.junc"), s: 85%),
 
-  [`[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], [],
-  [`R+S≜[Rl,Sr]`], [],
-  [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow
+  [#src[]], P(lean("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
+  // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
+  [], P(lean("Freyd.Alg.sumMap"), s: 85%),
+  // lean:AOP.A5_3.sumMap@eb035ed1
+  [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
    // lean:AOP.A5_3.u₁_junc@a01a115a lean:AOP.A5_3.u₂_junc@e692ee94
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
 
-  // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
-  // by shape as well as by the tint, and a round trip reads as one box undoing the other.
-  [`ll°=𝟙=rr°`],
-  P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`l`], flip: true, fill: TINT)
-    wire((2.52, 0), (2.86, 0))
-    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$A$]
-    lab(4.00, 0, black)[$=$]
-    lab(4.55, 0, black)[$A$]; wire((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$A$]
-  }), s: 85%),
+  [], P(row((lean("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
+    lean("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.u₁_self_comp_recip@6cd82772
+  // lean:Freyd.S2_20.Coproduct.u₂_self_comp_recip@53e6991d
 
-  [`lr°=𝟘=rl°`],
-  P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`r`], flip: true, fill: TINT)
-    wire((2.52, 0), (2.86, 0))
-    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$B$]
-    lab(4.00, 0, black)[$=$]
-    lab(4.55, 0, black)[$A$]; blocked((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$B$]
-  }), s: 85%),
+  // `rl°=𝟘` stays a formula: the exporter finds no naturality for the `𝟘` family on `B⟶A`.
+  [#leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")], P(lean("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.u₁_u₂_recip@ade7327c lean:Freyd.S2_20.Coproduct.u₂_u₁_recip@61def7d7
 
-  [`l°l ∪ r°r=𝟙`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -1.57), (4.24, 1.57))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
-    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(-1.05, 0, black)[$A + B$]; lab(5.60, 0, black)[$A + B$]
-    lab(6.90, 0, black)[$=$]
-    lab(7.85, 0, black)[$A + B$]; wire((8.55, 0), (9.95, 0)); lab(10.75, 0, black)[$A + B$]
-  }), s: 85%),
+  [], P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 
-  [`[U,V]°[R,S]=U°R ∪ V°S`], [],
+  [], P(lean("Freyd.Alg.junc_recip_junc"), s: 85%),
+  // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
 === `[R,S]≜[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`
@@ -415,97 +276,27 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   table.header([*the law*], [*picture*]),
 
   // [R,S]=(l°R) ∪ (r°S): B&dM (5.9)
-  [`[R,S]=(l°R) ∪ (r°S)` \ #src[@coprod-laws's first row]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.9, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (4.24, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [R]); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [S]); wire((3.16, -y), (3.60, -y))
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(4.93, 0, black)[$C$]
-  }), s: 82%),
+  [#src[@coprod-laws's first row]],
+  // lean:AOP.A5_3.junc@da022f10
+  P(lean("Freyd.Alg.junc"), s: 82%),
 
   // R+S=[Rl,Sr]: B&dM (5.10)
-  [`R+S=[Rl,Sr]`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.9, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (5.16, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [R]); wire((3.16, y), (3.50, y))
-    gbox((3.50, y), [`l`], chamfer: false); wire((4.42, y), (4.52, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [S]); wire((3.16, -y), (3.50, -y))
-    gbox((3.50, -y), [`r`], chamfer: false); wire((4.42, -y), (4.52, -y))
-    tape-join((4.94, 0), sp: y, len: 0.42)
-    wire((5.16, 0), (5.50, 0))
-    lab(6.25, 0, black)[$C + D$]
-  }), s: 82%),
+  [],
+  // lean:AOP.A5_3.sumMap@eb035ed1
+  P(lean("Freyd.Alg.sumMap"), s: 82%),
 
   // [U,V]°[R,S]=(U°R) ∪ (V°S): B&dM (5.11)
-  [`[U,V]°[R,S]=(U°R) ∪ (V°S)` \ #src[@coprod-laws's last row;
+  [#src[@coprod-laws's last row;
  ]],
    // lean:AOP.A5_3.junc_recip_junc@838f4abc
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-0.3, 0, black)[$C$]
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -1.05), (3.90, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [U], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.26, y))
-    gbox((0.98, -y), [V], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.26, -y))
-    tape-join((3.68, 0), sp: y, len: 0.42)
-    wire((3.90, 0), (5.20, 0)); lab(4.55, 0.42, black)[$A + B$]
-    tape((5.20, -1.05), (8.76, 1.05))
-    tape-fork((5.42, 0), sp: y, len: 0.42)
-    gbox((5.84, y), [`l`], flip: true, fill: TINT); wire((6.76, y), (7.10, y))
-    gbox((7.10, y), [R]); wire((8.02, y), (8.12, y))
-    gbox((5.84, -y), [`r`], flip: true, fill: TINT); wire((6.76, -y), (7.10, -y))
-    gbox((7.10, -y), [S]); wire((8.02, -y), (8.12, -y))
-    tape-join((8.54, 0), sp: y, len: 0.42)
-    wire((8.76, 0), (9.10, 0)); lab(9.45, 0, black)[$D$]
-    // `ll°=𝟙` and `lr°=𝟘` (@coprod-laws): the two cross branches are cut, the two straight ones fuse.
-    lab(10.1, 0, black)[$=$]
-    lab(10.75, 0, black)[$C$]
-    wire((11.05, 0), (11.39, 0))
-    tape((11.39, -1.05), (14.95, 1.05))
-    tape-fork((11.61, 0), sp: y, len: 0.42)
-    gbox((12.03, y), [U], flip: true, fill: TINT); wire((12.95, y), (13.29, y))
-    gbox((13.29, y), [R]); wire((14.21, y), (14.31, y))
-    gbox((12.03, -y), [V], flip: true, fill: TINT); wire((12.95, -y), (13.29, -y))
-    gbox((13.29, -y), [S]); wire((14.21, -y), (14.31, -y))
-    tape-join((14.73, 0), sp: y, len: 0.42)
-    wire((14.95, 0), (15.29, 0)); lab(15.64, 0, black)[$D$]
-  }), s: 68%),
+  P(lean("Freyd.Alg.junc_recip_junc"), s: 68%),
 
   // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
-  [`X≜[𝟙,𝟘]=l°` and `Y≜[𝟘,𝟙]=r°`, \ so `(Xl) ∪ (Yr)=[l,r]=𝟙` \ #src[which is (5.9)]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    lab(-1.0, 0, black)[$A + B$]
-    wire((-0.3, 0), (0.34, 0))
-    tape((0.34, -1.05), (4.24, 1.05))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(5.30, 0, black)[$A + B$]
-    lab(6.40, 0, black)[$=$]
-    lab(7.40, 0, black)[$A + B$]; wire((8.10, 0), (9.30, 0)); lab(10.0, 0, black)[$A + B$]
-  }), s: 78%),
+  [#leanf("Freyd.Alg.junc_id_zero"), #leanf("Freyd.Alg.junc_zero_id") \
+   #leanf("Freyd.Alg.junc_injections") \ #src[which is (5.9)]],
+  // lean:AOP.A5_3.junc_id_zero@28919704 lean:AOP.A5_3.junc_zero_id@328e3c31
+  // lean:AOP.A5_3.junc_injections@11d515bf lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
+  P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
 
   // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
   [#src[prove (5.11), and say why duality does not carry it over from the product law]],
@@ -571,7 +362,7 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 #disp[#definition[
 For `R : A⟶B`,
 #grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
- [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB` #src[]],
+ [], [#leanf("Freyd.Alg.powerRel") #src[]],
   // lean:AOP.A5_4.powerRel@80c5b402
  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[]],
   // lean:AOP.A4_6.existsImage@db266886
@@ -661,19 +452,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
  Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[].],
    // lean:AOP.A5_4.powerRel_mono@00de2d62
 
-  [`P(𝟙)=` $frac(∋, ∋)$ `=𝟙`],
+  [#leanf("Freyd.Alg.powerRel_id")],
   [The straightness axiom verbatim: extensionality *is* `P`'s unit law.
  #src[]],
    // lean:AOP.A5_4.powerRel_id@4ada24f9
 
-  [`P(f)=` $frac(∋ f, ∋)$, for `f` a map],
+  [#leanf("Freyd.Alg.powerRel_map")],
   [In `Rel`, `xs P(f) ys⟺ys={f(a)|a∈xs}`. The half at `f°` says every `a∈xs` has its `f(a)` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
  #src[]],
    // lean:AOP.A5_4.powerRel_map@2bf77d9f
 
-  [`P(RS)=P(R)P(S)`],
+  [#leanf("Freyd.Alg.powerRel_comp")],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
  calculation: it needs a tabulation of `P(RS)`. #src[]],
    // lean:AOP.A5_4.powerRel_comp@06364064
@@ -711,7 +502,7 @@ every F-algebra `f`
   #pair(
     leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
-    [`α⦇f⦈=F(⦇f⦈)f,  ⦇f⦈:α->f in Alg(F)`],
+    [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -728,7 +519,7 @@ every F-algebra `f`
 #disp[#pair(
   leancd("Freyd.Alg.relCata_alpha"),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
- [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
+ [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
@@ -759,7 +550,7 @@ then applying `S` is folding with `Q`.
     src[the conclusion],
     row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
   ),
-  [`⦇R⦈S=⦇Q⦈⟸R S=F(S)Q` #h(6pt)
+  [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
  #src[(2.12)]],
   s: 92%,
 )]<cata-fusion>
@@ -774,7 +565,7 @@ Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor
 action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce section. For every object
 `A` the initial algebra is `α : F(A,TA)⟶TA`, among the maps. `T` acts on an arrow `R : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(R)=⦇F(R,𝟙)α⦈ : TA⟶TB` #h(4pt)
+  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap_defn") #h(4pt)
  #src[]])
     // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0 lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 ]]<tf-defn>
@@ -789,19 +580,19 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   table.header([*name*], [*law*], [*what it says*]),
 
   [the defining equation],
-  [`T(R)=⦇F(R,𝟙)α⦈`],
+  [#leanf("Freyd.Alg.typeMap_defn")],
   [Rebuild the structure with `α`, applying `R` to the parameter on the way.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 
   [functor],
-  [`T(𝟙)=𝟙` and `T(R)T(S)=T(RS)`],
+  [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
   [Acting by the identity changes nothing, and two actions in a row are one action.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1 lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd
 
   [type functor fusion],
-  [`T(R)⦇Q⦈=⦇F(R,𝟙)Q⦈`],
+  [#leanf("Freyd.Alg.typeMap_fusion")],
   [A relator action followed by a fold is a single fold — the intermediate structure is never built.
    The side condition holds because `F` is a bifunctor —
    `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
@@ -809,14 +600,14 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
 
   [naturality of `α`],
-  [`αT(R)=F(R,T(R))α`],
+  [#leanf("Freyd.Alg.alpha_natural")],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 
   [type relator],
-  [`T(R)°=T(R°)`, for `F` preserving `°`],
+  [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
  #h(4pt) #src[]],
@@ -833,7 +624,7 @@ Let `F` be a bifunctor taking both the parameter `A` and the recursive position 
 algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
 `f : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB` #h(4pt)
+  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
  #src[]])
     // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0
 ]]<tfun-defn>
@@ -850,7 +641,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 #disp[#pair(
   leancd("Freyd.Alg.alpha_natural_split"),
   row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
-  [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
+  [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
  #src[]],
 )]<tfun-sq>
 
@@ -867,26 +658,11 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 // The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
 // bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-  let (FA, TA) = ((-3, 2.0), (3, 2.0))
-  let TB = (5.6, 0)
-  let (FC, C) = ((-3, -2.0), (3, -2.0))
-  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FC, C, GIVEN1, s0: 1.45, s1: 0.5)
-  ar(FA, FC, INDUCED, s0: 0.55, s1: 0.55)
-  ar(TA, C, INDUCED, dash: "dashed", s0: 0.55, s1: 0.5)
-  ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.6)
-  ar(TB, C, INDUCED, dash: "dashed", s0: 0.6, s1: 0.55)
-  lab(0.4, 2.55, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -2.55, GIVEN1)[`F(f,𝟙)h`]
-  lab(-5.15, 0, INDUCED)[`F(𝟙,⦇F(f,𝟙)h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
-  lab(4.67, 1.47, INDUCED)[`T(f)`]; lab(4.67, -1.47, INDUCED)[`⦇h⦈`]
-  node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
-  node(TB.at(0), TB.at(1), black, `TB`)
-  node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
-  }),
+  leancd("Freyd.Alg.typeMap_fusion_cancel"),
   row((
     lean("Freyd.Alg.typeMap_fusion"),
   )),
-  [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
+  [#leanf("Freyd.Alg.typeMap_fusion") #h(6pt)
  #src[]],
 )]<tfun-fusion>
 
@@ -912,7 +688,7 @@ let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcatego
 #disp[#pair(
   leancd("Freyd.Alg.relCata_UP.lhs"),
   row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
-  [`X=⦇f⦈⟺αX=F(X)f` #h(6pt)
+  [#leanf("Freyd.Alg.relCata_UP") #h(6pt)
  #src[]],
 )]<cata-defining>
 
@@ -968,30 +744,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let cata-map-r = lean("Freyd.Alg.Λ_relCata.rhs")
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T) = ((-2.6, 1.5), (2.6, 1.5))
-    let (FE, E) = ((-2.6, -1.2), (2.6, -1.2))
-    let (FA, A) = ((-2.6, -3.9), (2.6, -3.9))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FA, A, black, s0: 0.55, s1: 0.55)
-    ar(FT, FE, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FE, FA, black, s0: 0.55, s1: 0.55)
-    ar(E, A, black, s0: 0.55, s1: 0.55)
-    lab(0, 2.05, GIVEN2)[`α`]
-    lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)`]
-    lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`]
-    lab(0, -0.65, GIVEN1)[`f`]
-    lab(0, -1.95, GIVEN1)[$frac(#[`F(∋)R`], ∋)$]
-    lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
-    lab(0, -4.45, black)[`R`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-    node(FE.at(0), FE.at(1), GIVEN1, `F(EA)`); node(E.at(0), E.at(1), GIVEN1, `EA`)
-    node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
-  }),
+  leancd("Freyd.Alg.relCata_mapAlg_cancel"),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
   row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
-  [`α⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
+  [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 )]<cata-map-square>
@@ -1086,7 +842,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.
 #disp[#calc-table(cols: (1fr,), al: auto, 
   // hylo-fixed row: Theorem 6.2
-  Thm(cols: 1)[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
  #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
      decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
      recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
@@ -1106,7 +862,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
 #disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-least row: Theorem 6.2
- Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
+ Thm(cols: 1)[#leanf("Freyd.Alg.hylo_le_of_prefixed") \
     #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
      satisfies the associated recursion inequation]],
   [#hchain(
@@ -1131,7 +887,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
 #disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-fusion-eq row: Theorem 6.2
- Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
+ Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   [#hchain(

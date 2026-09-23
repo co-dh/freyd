@@ -236,12 +236,12 @@ theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     in `P R ∩ P S` while `R ∩ S = ∅` makes it absent from `P (R ∩ S)`.  Equality needs
     either coreflexivity (`map_inter_coreflexive` below) or the stronger
     `AllegoryFunctor.map_inter` (S2_147). -/
-theorem Relator.map_inter_le {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem Relator.map_inter_le {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R S : A ⟶ B) :
     F.map (R ∩ S) ⊑ F.map R ∩ F.map S :=
   le_inter (F.map_mono (inter_lb_left R S)) (F.map_mono (inter_lb_right R S))
 
-theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
     {A : 𝒜} {X Y : A ⟶ A} (hX : Coreflexive X) (hY : Coreflexive Y) :
     F.map (X ∩ Y) = F.map X ∩ F.map Y := by
@@ -258,7 +258,7 @@ theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂}
   `F.map R ⊑ F.map(dom R)≫F.map R`, which is the image of `R ⊑ dom R≫R` (`le_dom_comp`,
   S2_1) under `F.map`. -/
 
-theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
+public theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
     [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) (hc : F.PreservesRecip)
     {A B : 𝒜} (R : A ⟶ B) : F.map (dom R) = dom (F.map R) := by
   have hcoref : Coreflexive (F.map (dom R)) := by
