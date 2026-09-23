@@ -4,7 +4,9 @@
 #     ./scripts/diag-regen              redraw all of them
 #     ./scripts/diag-regen --missing    draw only the ones that need it: no file in
 #                                       diag/generated/, or a file drawn from a statement the
-#                                       declaration no longer has (`diag-export --stale`)
+#                                       declaration no longer has, citing a `lean:` key the
+#                                       index no longer has, or drawn by another build of the
+#                                       exporter (`diag-export --stale`)
 #
 # The notes THEMSELVES are the list: `diag-export --list` reads every `#lean(...)`/`#leanc(...)`
 # selector out of the note's own metadata, and `note-files --generated` every surviving `#import`
@@ -32,7 +34,9 @@ missing=
 # drawn from, and `diag-export --stale` prints the selectors whose key is no longer the
 # declaration's.  A file test here could only see the file's ABSENCE, so a panel of a statement
 # somebody had since edited kept its old drawing until the next whole redraw (minutes, under the
-# note lock) and every gate in between passed on a picture of something else.
+# note lock) and every gate in between passed on a picture of something else.  The same holds for
+# the EXPORTER and for the theorems a dot cites: a chapter gate after an exporter change otherwise
+# kept every red stub and old dot of the chapter it was meant to check.
 # The arguments are the ROUTE'S FLAGS, exactly as `draw` takes them: the exporter owns the output
 # path and the `+` rule (the string route's `#lean(a, b)` is two files sharing a box, the
 # commutative route's `A+B` one file drawn from two declarations), so neither is guessed at here.

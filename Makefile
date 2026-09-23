@@ -121,7 +121,8 @@ books:
 
 # Every picture the notes draw and have no file for — a `#lean(...)` selector, or an `#import` — drawn
 # from LEAN.  The NOTE is the list of obligations, so adding a picture is writing its name in the note
-# and nothing else; a name already drawn is left alone, which is what keeps this in the edit loop.
+# and nothing else; a name already drawn is left alone unless its statement, a theorem it cites or
+# the exporter changed since (`diag-export --stale`), which is what keeps this in the edit loop.
 panels: | exe
 	./scripts/diag-regen --missing
 

@@ -1342,7 +1342,9 @@ def usage : String :=
      the `error` it failed with — instead of the list of paths, for a caller that must pair a\n\
      selector with its outcome and cannot, from a list of paths, see which one is missing\n\
    --stale prints, of the selectors given, the ones whose picture is OUT OF DATE — no file, no\n\
-     `cert:` line it can read, or a key the declaration no longer has — for `diag-regen --missing`\n\
+     `cert:` line it can read, a key the declaration no longer has, a `lean:` citation whose\n\
+     key the index no longer has, or drawn by another build of this exporter — for\n\
+     `diag-regen --missing`\n\
      to draw; it takes the same route flag the drawing takes, and reads the index, not the\n\
      environment.  A selector the index no longer has a declaration for ends the run\n\
    --list <label> prints the note's `#lean`/`#leanc` CALLS under that metadata label, one per\n\
@@ -1497,6 +1499,15 @@ def selDecls (commutative : Bool) (arg base : String) : List Name :=
   if commutative then (arg.splitOn "+").map fun p => (Freyd.CommutativeDiagram.part p).1
   else [base.toName]
 
+/-- THE EXPORTER A PICTURE WAS DRAWN BY, as the modification time of this binary: a picture drawn
+    by an older exporter is as stale as one of an older statement, and `make exe` relinks the binary
+    exactly when the exporter or a module it imports changed. -/
+def exeStamp : IO String := do
+  let t := (← (← IO.appPath).metadata).modified
+  return s!"{t.sec}.{t.nsec}"
+
+def EXE_PREFIX : String := "// exe: "
+
 /-- The `cert:` line EVERY generated file carries, under the two header lines: the declarations the
     picture was drawn from, each with the key of the statement it was drawn from — `stmtKey`, the
     number the index stores and `cite-check` re-verifies.  One form for all seven routes, so one
@@ -1508,7 +1519,7 @@ def certLine (names : List Name) : MetaM String := do
     let some ci := env.find? n | throwError "no such declaration: {n}"
     return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 (← Freyd.TypeRender.stmtKey ci)
       ++ "\")"
-  return "// cert: " ++ " ".intercalate parts ++ "\n"
+  return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← exeStamp) ++ "\n"
 
 /-- The marks of a generated file's own `cert:` line, `(<declaration>, <key>)` each.  Parsing it is
     the exporter reading ITS OWN output format — the one string read in the tool — and a line it
@@ -1547,6 +1558,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode proof
     ++ ", ".intercalate (names.map Cite.sqlLit) ++ ")")
   let keys : Std.HashMap String String :=
     rows.foldl (fun m r => m.insert r.user (Cite.keyHex r.key)) {}
+  let exe ← exeStamp
   let mut gone : List String := []
   for n in names do
     unless keys.contains n do gone := gone ++ [n]
@@ -1567,7 +1579,17 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode proof
         -- something else, which is as stale as a changed key, and a file with no mark at all — a
         -- red stub, or one written before the routes recorded a key — is redrawn.
         let wanted := decls.map fun d => (toString d, keys.getD (toString d) "")
-        unless certMarks (← IO.FS.readFile path) == wanted do stale := true
+        let txt ← IO.FS.readFile path
+        let lines := txt.splitOn "\n"
+        unless certMarks txt == wanted && lines.contains (EXE_PREFIX ++ exe) do stale := true
+        -- THE DECLARATIONS THE PICTURE READ, not only the one it draws: a dot cites the theorem its
+        -- naturality came from (`lean:<mark>@<key>`), and a changed or vanished one is a changed dot.
+        let cited := (lines.toArray.flatMap Cite.marksOf).filterMap fun (m, k) => k.map (m, ·)
+        if !stale && !cited.isEmpty then
+          let rows ← Cite.rowsOf (Cite.candidateSql (cited.map (·.1)))
+          if cited.any (fun (m, k) => match Cite.resolve rows m with
+              | #[r] => Cite.keyHex r.key != k
+              | _ => true) then stale := true
     if stale then IO.println call
   return 0
 
