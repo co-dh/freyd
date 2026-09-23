@@ -4,7 +4,7 @@
 #import "circuit.typ": wire, gbox, boxrun, boxrun-w, tape, tape-join, LEAD, frc, TAPEEDGE, est-R-box, union-box
 #import "dpanel.typ": dpanel, hm-meta
 #import "cetz-nodraw.typ" as cetz
-#import "note-prelude.typ": lean, leant
+#import "note-prelude.typ": lean, leant, leanf
 
 = Appendix <sec-appendix>
 
@@ -161,13 +161,13 @@
   [#leant("Freyd.Alg.cpMap")],
   [`cp(1,{[5],[6],[8]})={(1,[5]),(1,[6]),(1,[8])}`.],
 
-  [`gen≜F(𝟙,moves trans N(union)) zip N(cp P(α))`
+  [#leanf("Freyd.Alg.Cylinder.gen")
  #src[]],
    // lean:AOP.A7_4_Cylinder.gen@07f901a6
   [#leant("Freyd.Alg.Cylinder.gen")],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
- [`paths≜⦇gen⦈ setify union` #src[]],
+ [#leanf("Freyd.Alg.Cylinder.paths") #src[]],
   // lean:AOP.A7_4_Cylinder.paths@e6d14f30
   [#leant("Freyd.Alg.Cylinder.paths")],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
