@@ -364,7 +364,7 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 #disp[#definition[
 For `R : A⟶B`,
 #grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
- [`P(R)≜`], [`((∋R)/∋)∩((∋R°)/∋)° : EA⟶EB` #src[]],
+ [], [#leanf("Freyd.Alg.powerRel") #src[]],
   // lean:AOP.A5_4.powerRel@80c5b402
  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[]],
   // lean:AOP.A4_6.existsImage@db266886
@@ -454,19 +454,19 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
  Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[].],
    // lean:AOP.A5_4.powerRel_mono@00de2d62
 
-  [`P(𝟙)=` $frac(∋, ∋)$ `=𝟙`],
+  [#leanf("Freyd.Alg.powerRel_id")],
   [The straightness axiom verbatim: extensionality *is* `P`'s unit law.
  #src[]],
    // lean:AOP.A5_4.powerRel_id@4ada24f9
 
-  [`P(f)=` $frac(∋ f, ∋)$, for `f` a map],
+  [#leanf("Freyd.Alg.powerRel_map")],
   [In `Rel`, `xs P(f) ys⟺ys={f(a)|a∈xs}`. The half at `f°` says every `a∈xs` has its `f(a)` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
  #src[]],
    // lean:AOP.A5_4.powerRel_map@2bf77d9f
 
-  [`P(RS)=P(R)P(S)`],
+  [#leanf("Freyd.Alg.powerRel_comp")],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
  calculation: it needs a tabulation of `P(RS)`. #src[]],
    // lean:AOP.A5_4.powerRel_comp@06364064
@@ -504,7 +504,7 @@ every F-algebra `f`
   #pair(
     leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
-    [`α⦇f⦈=F(⦇f⦈)f,  ⦇f⦈:α->f in Alg(F)`],
+    [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
 ]]<initial-defn>
@@ -521,7 +521,7 @@ every F-algebra `f`
 #disp[#pair(
   leancd("Freyd.Alg.relCata_alpha"),
   row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
- [`⦇α⦈=𝟙` #h(6pt) #src[(2.11)]],
+ [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
 )]<cata-reflection>
 
 // `relCata_alpha`, AOP/A6_3.lean:40.
@@ -552,7 +552,7 @@ then applying `S` is folding with `Q`.
     src[the conclusion],
     row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
   ),
-  [`⦇R⦈S=⦇Q⦈⟸R S=F(S)Q` #h(6pt)
+  [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
  #src[(2.12)]],
   s: 92%,
 )]<cata-fusion>
@@ -567,7 +567,7 @@ Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor
 action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce section. For every object
 `A` the initial algebra is `α : F(A,TA)⟶TA`, among the maps. `T` acts on an arrow `R : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(R)=⦇F(R,𝟙)α⦈ : TA⟶TB` #h(4pt)
+  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap_defn") #h(4pt)
  #src[]])
     // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0 lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 ]]<tf-defn>
@@ -582,19 +582,19 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   table.header([*name*], [*law*], [*what it says*]),
 
   [the defining equation],
-  [`T(R)=⦇F(R,𝟙)α⦈`],
+  [#leanf("Freyd.Alg.typeMap_defn")],
   [Rebuild the structure with `α`, applying `R` to the parameter on the way.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
 
   [functor],
-  [`T(𝟙)=𝟙` and `T(R)T(S)=T(RS)`],
+  [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
   [Acting by the identity changes nothing, and two actions in a row are one action.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1 lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd
 
   [type functor fusion],
-  [`T(R)⦇Q⦈=⦇F(R,𝟙)Q⦈`],
+  [#leanf("Freyd.Alg.typeMap_fusion")],
   [A relator action followed by a fold is a single fold — the intermediate structure is never built.
    The side condition holds because `F` is a bifunctor —
    `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
@@ -602,14 +602,14 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
 
   [naturality of `α`],
-  [`αT(R)=F(R,T(R))α`],
+  [#leanf("Freyd.Alg.alpha_natural")],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
 
   [type relator],
-  [`T(R)°=T(R°)`, for `F` preserving `°`],
+  [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
  #h(4pt) #src[]],
@@ -626,7 +626,7 @@ Let `F` be a bifunctor taking both the parameter `A` and the recursive position 
 algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
 `f : A⟶B` by
 
-  #align(center, block(inset: (y: 6pt))[`T(f)≜⦇F(f,𝟙)α`#sub[`B`]`⦈ : TA⟶TB` #h(4pt)
+  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
  #src[]])
     // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0
 ]]<tfun-defn>
@@ -643,7 +643,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 #disp[#pair(
   leancd("Freyd.Alg.alpha_natural_split"),
   row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
-  [`α`#sub[`A`]` T(f)=F(f,T(f))α`#sub[`B`] #h(6pt)
+  [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
  #src[]],
 )]<tfun-sq>
 
@@ -660,26 +660,11 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 // The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
 // bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.
 #disp[#pair(
-  cetz.canvas(length: 0.8cm, {
-  let (FA, TA) = ((-3, 2.0), (3, 2.0))
-  let TB = (5.6, 0)
-  let (FC, C) = ((-3, -2.0), (3, -2.0))
-  ar(FA, TA, GIVEN2, s0: 1.45, s1: 0.65); ar(FC, C, GIVEN1, s0: 1.45, s1: 0.5)
-  ar(FA, FC, INDUCED, s0: 0.55, s1: 0.55)
-  ar(TA, C, INDUCED, dash: "dashed", s0: 0.55, s1: 0.5)
-  ar(TA, TB, INDUCED, dash: "dashed", s0: 0.55, s1: 0.6)
-  ar(TB, C, INDUCED, dash: "dashed", s0: 0.6, s1: 0.55)
-  lab(0.4, 2.55, GIVEN2)[`α`#sub[`A`]]; lab(0.4, -2.55, GIVEN1)[`F(f,𝟙)h`]
-  lab(-5.15, 0, INDUCED)[`F(𝟙,⦇F(f,𝟙)h⦈)`]; lab(1.25, 0, INDUCED)[`⦇F(f,𝟙)h⦈`]
-  lab(4.67, 1.47, INDUCED)[`T(f)`]; lab(4.67, -1.47, INDUCED)[`⦇h⦈`]
-  node(FA.at(0), FA.at(1), black, `F(A,TA)`); node(TA.at(0), TA.at(1), black, `TA`)
-  node(TB.at(0), TB.at(1), black, `TB`)
-  node(FC.at(0), FC.at(1), GIVEN1, `F(A,C)`); node(C.at(0), C.at(1), GIVEN1, `C`)
-  }),
+  leancd("Freyd.Alg.typeMap_fusion_cancel"),
   row((
     lean("Freyd.Alg.typeMap_fusion"),
   )),
-  [`T(f)⦇h⦈=⦇F(f,𝟙)h⦈` #h(6pt)
+  [#leanf("Freyd.Alg.typeMap_fusion") #h(6pt)
  #src[]],
 )]<tfun-fusion>
 
@@ -705,7 +690,7 @@ let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcatego
 #disp[#pair(
   leancd("Freyd.Alg.relCata_UP.lhs"),
   row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
-  [`X=⦇f⦈⟺αX=F(X)f` #h(6pt)
+  [#leanf("Freyd.Alg.relCata_UP") #h(6pt)
  #src[]],
 )]<cata-defining>
 
@@ -761,30 +746,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let cata-map-r = lean("Freyd.Alg.Λ_relCata.rhs")
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
-  cetz.canvas(length: 0.8cm, {
-    let (FT, T) = ((-2.6, 1.5), (2.6, 1.5))
-    let (FE, E) = ((-2.6, -1.2), (2.6, -1.2))
-    let (FA, A) = ((-2.6, -3.9), (2.6, -3.9))
-    ar(FT, T, GIVEN2, s0: 0.55, s1: 0.55); ar(FE, E, GIVEN1, s0: 0.55, s1: 0.55)
-    ar(FA, A, black, s0: 0.55, s1: 0.55)
-    ar(FT, FE, INDUCED, s0: 0.55, s1: 0.55)
-    ar(T, E, INDUCED, dash: "dashed", s0: 0.55, s1: 0.55)
-    ar(FE, FA, black, s0: 0.55, s1: 0.55)
-    ar(E, A, black, s0: 0.55, s1: 0.55)
-    lab(0, 2.05, GIVEN2)[`α`]
-    lab(-4.6, 0.15, INDUCED)[`F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)`]
-    lab(4.2, 0.15, INDUCED)[`⦇`$frac(#[`F(∋)R`], ∋)$`⦈`]
-    lab(0, -0.65, GIVEN1)[`f`]
-    lab(0, -1.95, GIVEN1)[$frac(#[`F(∋)R`], ∋)$]
-    lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
-    lab(0, -4.45, black)[`R`]
-    node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-    node(FE.at(0), FE.at(1), GIVEN1, `F(EA)`); node(E.at(0), E.at(1), GIVEN1, `EA`)
-    node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
-  }),
+  leancd("Freyd.Alg.relCata_mapAlg_cancel"),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
   row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
-  [`α⦇`$frac(#[`F(∋)R`], ∋)$`⦈=F(⦇`$frac(#[`F(∋)R`], ∋)$`⦈)` $frac(#[`F(∋)R`], ∋)$
+  [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 )]<cata-map-square>
