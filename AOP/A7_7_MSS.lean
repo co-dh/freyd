@@ -597,6 +597,46 @@ public theorem mss_shape : mss (A := A) = suffixR%∋ ≫ existsImage mssPre ≫
   show (segment ≫ sumR)%∋ ≫ est(geq) = _
   rw [segment_eq, Cat.assoc, ← Λ_absorption, Cat.assoc, mss_shape_union]
 
+/-! The `mss-shape` chain, one theorem per row of the note's table, so each row's circuit is drawn
+    from the declaration that proves it. -/
+
+/-- `segment=suffix prefix`. -/
+public theorem mss_shape_step1 :
+    ((segment : dList A ⟶ dList A) ≫ sumR)%∋ ≫ est(geq)
+      = (suffixR ≫ (prefixR : dList A ⟶ dList A) ≫ sumR)%∋ ≫ est(geq) := by
+  rw [segment_eq, Cat.assoc]
+
+/-- absorption: `Λ(S) E(R)=Λ(SR)` at `S:=suffix`, `R:=prefix sum`. -/
+public theorem mss_shape_step2 :
+    (suffixR ≫ (prefixR : dList A ⟶ dList A) ≫ sumR)%∋ ≫ est(geq)
+      = suffixR%∋ ≫ existsImage ((prefixR : dList A ⟶ dList A) ≫ sumR) ≫ est(geq) := by
+  rw [← Λ_absorption, Cat.assoc]
+
+/-- `E(R)=E(Λ(R)) union` at `R:=prefix sum`. -/
+public theorem mss_shape_step3 :
+    suffixR%∋ ≫ existsImage ((prefixR : dList A ⟶ dList A) ≫ sumR) ≫ est(geq)
+      = suffixR%∋ ≫ existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋) ≫ bigUnion
+          ≫ est(geq) := by
+  rw [existsImage_eq_Λ_bigUnion ((prefixR : dList A ⟶ dList A) ≫ sumR), Cat.assoc]
+
+/-- `union est(≥)=E(est(≥)) est(≥)` on the sets `E(Λ(prefix sum))` yields, which are non-empty. -/
+public theorem mss_shape_step4 :
+    suffixR%∋ ≫ existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋) ≫ bigUnion ≫ est(geq)
+      = suffixR%∋ ≫ existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋)
+          ≫ existsImage est(geq) ≫ est(geq) := by
+  have h : existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋) ≫ existsImage est(geq) ≫ est(geq)
+      = existsImage ((prefixR : dList A ⟶ dList A) ≫ sumR) ≫ est(geq) := by
+    rw [← Cat.assoc, ← existsImage_comp, mss_shape_union]; rfl
+  rw [h]; exact mss_shape_step3.symm
+
+/-- `E` is a relator: `E(R)E(S)=E(RS)`. -/
+public theorem mss_shape_step5 :
+    suffixR%∋ ≫ existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋)
+        ≫ existsImage est(geq) ≫ est(geq)
+      = suffixR%∋ ≫ existsImage (((prefixR : dList A ⟶ dList A) ≫ sumR)%∋ ≫ est(geq))
+          ≫ est(geq) := by
+  rw [existsImage_comp, Cat.assoc]
+
 end
 
 /-! ## Why `mss-scan` keeps the list

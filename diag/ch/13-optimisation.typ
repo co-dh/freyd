@@ -1002,38 +1002,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // lean:AOP.A7_7_MSS.oplus@e876f97f lean:AOP.A7_7_MSS.oplus_eq@8819d3f7
 ]]<mss-defn>
 
-// ONE WIRE, `[A]` to `A`: this chain never forks, so a row is a run of boxes and the picture's whole
-// content is the TYPE the wire carries — where `E(EA)` is born, and which box collapses it again.
-// A type sits ON its strand (`node`'s white ground masks the wire): a gap is that white ground (text
-// plus its insets) plus a wire stub either side, so the strand visibly runs into each label.  `X/∋`
-// and `E(X)` are fractions, hence maps (@pow-laws), so their boxes are square; `est(≥)` is the chain's
-// one relation and its only chamfered box.  Widths are measured at the note's text sizes.
-#let TH = 1.2   // a fraction box is two lines tall
-#let ty-l = ([`[A]`], 1.25)
-#let ty-el = ([`E[A]`], 2.0)
-#let ty-ea = ([`EA`], 1.0)
-#let ty-eea = ([`E(EA)`], 1.75)
-#let ty-a = ([`A`], 0.75)
-#let bx-mss = (frc([`segment sum`]), 2.2, false)
-#let bx-spp = (frc([`suffix (prefix sum)`]), 3.6, false)
-#let bx-sf = (frc([`suffix`]), 1.3, false)
-#let bx-eps = ([`E(prefix sum)`], 3.5, false)
-#let bx-ep = ([`E(`#frc([`prefix sum`])`)`], 2.8, false)
-#let bx-un = ([`union`], 1.45, false)
-#let bx-eest = ([`E(est(≥))`], 2.65, false)
-#let bx-epest = ([`E(`#frc([`prefix sum`])` est(≥))`], 4.8, false)
-#let mss-run(tys, items) = {
-  let x = 0.0
-  for (i, it) in items.enumerate() {
-    let (tl, tw) = tys.at(i)
-    wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
-    gbox((x + tw, 0), it.at(0), w: it.at(1), h: TH, chamfer: it.at(2))
-    x = x + tw + it.at(1)
-  }
-  let (tl, tw) = tys.at(items.len())
-  wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
-}
-#let mss-pic(tys, items, s: 100%) = P(cetz.canvas(length: 0.8cm, mss-run(tys, items)), s: s)
 
 #let step = step.with(pw: 303pt)
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt, 
@@ -1045,23 +1013,23 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     // lean:AOP.A7_7_MSS.mss_shape@9c38ad6f
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
-  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, est-Rc-box))][]], [],
+  [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, est-Rc-box))][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.rhs")][]],
   [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, est-Rc-box), s: 94%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step2.rhs")][]],
   [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, est-Rc-box), s: 95%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step3.rhs")][]],
   [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
    `E(R)≜frac(∋R,∋)`; @est-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
    `F(RS)=F(R)F(S)` at `F:=E`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, est-Rc-box), s: 85%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step4.rhs")][]],
   [@est-laws, the sets non-empty],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, est-Rc-box), s: 92%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step5.rhs")][]],
   [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
 // mirrored from `max(P(max(Λ(sum prefix))))Λsuffix`.
@@ -1150,18 +1118,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   )],
 )]<mss-mono>
 
-// Every row is ONE WIRE, `𝟏+A×A` to `A` — `F(A)` — so its two ends are drawn once.
-#let mss-src = { lab(-1.62, 0, black)[`𝟏+A×A`]; wire((-0.45, 0), (0, 0)) }
-#let mss-tgt(x) = lab(x + 0.62, 0, black)[`A`]
-// Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `est(≥)` is partial — no greatest of
-// the empty set — and is the one chamfered box here.  `h` is shared down a run: a fraction is two lines.
 #let mss-alg = $frac(#[`[zero,⊸ zero ∪ plus]`], ∋)$
 #let mss-zero = $frac(#[`zero`], ∋)$
 #let mss-plus = $frac(#[`⊸ zero ∪ plus`], ∋)$
-#let mss-run(items, h: 0.6) = { mss-src; boxrun(0, 0, items, h: h); mss-tgt(boxrun-w(items)) }
-// @coprod-laws' tape at this algebra: `[X,Y]` is ONE BRANCH PER SUMMAND, each opening with the
-// injection's converse — `𝟏` above, `A×Int` below.  The shorter branch is padded to the same join.
-#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
 
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
@@ -1527,64 +1486,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   takes 17.]]])
 ]<party-example>
 
-// `list(π₂)` is ONE box, not the `⊸ ⊗ 𝟙` inside the relator: the picture is here for the shape of
-// `include`, and opening `π₂` up costs a discard stub per list element that says nothing about it.
-// Both pictures share every stage's x: the boxes are right-aligned at 9.2, so the two read one under
-// the other and a wire's type is found at the same place in each.
-// The BOUNDARY of a circuit: nothing in `circuit.typ` or `draw.typ` draws one — `capbox` frames a
-// picture and its caption, `gbox` frames a single relation — so one helper serves both algebras.
-// The frame is 1.9pt, well over the 1.1pt of a wire and of a box edge: at wire weight it reads as
-// one more wire.  Dark grey, not black, so the boxes ON the wires stay the darkest ink in the picture.
-#let portbox(a, b, ports) = {
-  d.rect(a, b, stroke: 1.9pt + luma(55), radius: 0.14)
-  for (x, y, l) in ports { lab(x, y, black, l) }
-}
-
-#disp[#P(cetz.canvas(length: 0.8cm, {
-  let y = 0.8
-  portbox((-0.9, -1.8), (22.4, 1.8),
-    ((-3.2, y, [`a:A`]), (-3.2, -y, [`[[A]×[A]]`]), (24.2, 0, [`adef:[A]`])))
-  lab(-3.2, 2.5, black)[`include`$=$]
-  wire((-1.5, y), (19.9, y))                 // the root, straight through: the `𝟙` of `𝟙 × (…)`
-  wire((-1.5, -y), (6.6, -y))
-  gbox((6.6, -y), [`list(π₂)`], w: 2.6, h: 0.75, chamfer: false)
-  wire((9.2, -y), (13.8, -y))
-  gbox((13.8, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
-  wire((15.7, -y), (18.9, -y))
-  gbox((18.9, 0), [`cons`], w: 1.4, h: 2 * y + 0.35, chamfer: false)
-  wire((20.3, 0), (22.9, 0))
-  lab(3.7, -y + 0.5, black)[`b`]; lab(4.9, -y + 0.5, black)[`c`]
-  lab(3.7, -y - 0.5, black)[`de`]; lab(4.9, -y - 0.5, black)[`f`]
-  lab(10.2, -y + 0.5, black)[`[[A]]`]
-  lab(11.7, -y - 0.5, black)[`de`]; lab(12.9, -y - 0.5, black)[`f`]
-  lab(16.5, -y + 0.5, black)[`[A]`]
-  lab(17.8, -y - 0.5, black)[`def`]
-}), s: 80%)
+#disp[#leanc("Freyd.Alg.RelSet.Party.include_eq.rhs")
 #align(center, src[])
 // lean:AOP.A7_3_Party.include_eq@afb11121
 ]<include-pic>
 
-// The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
-// `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
-#disp[#P(cetz.canvas(length: 0.8cm, {
-  let y = 0.8
-  portbox((-0.9, -1.8), (22.4, 1.8),
-    ((-3.2, y, [`a:A`]), (-3.2, -y, [`[[A]×[A]]`]), (24.2, -y, [`bf:[A]`])))
-  lab(-3.2, 2.5, black)[`exclude`$=$]
-  wire((-1.5, y), (18.9, y))                 // the root, thrown away by the `⊸` of `π₂`
-  wiredot((18.9, y))
-  wire((-1.5, -y), (5.9, -y))
-  gbox((5.9, -y), [`list(choose)`], w: 3.3, h: 0.75)
-  wire((9.2, -y), (13.8, -y))
-  gbox((13.8, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
-  wire((15.7, -y), (22.9, -y))
-  lab(3.7, -y + 0.5, black)[`b`]; lab(4.9, -y + 0.5, black)[`c`]
-  lab(3.7, -y - 0.5, black)[`de`]; lab(4.9, -y - 0.5, black)[`f`]
-  lab(10.2, -y + 0.5, black)[`[[A]]`]
-  lab(11.7, -y + 0.5, black)[`b`]; lab(12.9, -y - 0.5, black)[`f`]
-  lab(16.5, -y + 0.5, black)[`[A]`]
-  lab(17.8, -y - 0.5, black)[`bf`]
-}), s: 80%)
+#disp[#leanc("Freyd.Alg.RelSet.Party.exclude_eq.rhs")
 #align(center, src[])
 // lean:AOP.A7_3_Party.exclude_eq@52820610
 ]<exclude-pic>
