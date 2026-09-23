@@ -53,3 +53,18 @@ Frobenius.pdf
 # lean-refactor's index lives in /.lake; this is the empty file it touches at the repository root.
 /refactor-index.db
 __pycache__/
+# the user's shell and editor dotfiles and the Claude Code config live here but are not the book's
+/.bash_profile
+/.bashrc
+/.profile
+/.zprofile
+/.zshrc
+/.gitconfig
+/.gitmodules
+/.ripgreprc
+/.idea
+/.vscode
+/.mcp.json
+/.claude/
+# third-party reference PDFs: book-index.db indexes them, their licences keep them out of the repo
+/*.pdf
