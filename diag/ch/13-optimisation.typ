@@ -277,28 +277,6 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
 
-// Hinze–Marsden at the 2-category level: a REGION is an allegory, a WIRE a relator, a BEAD a
-// LaT.  Regions are `LATP` wide, so the wire carrying the bead stands at the same pitch in every cell.
-#let LATP = 1.15
-#let LATH = 2.5
-#let LATB = 1.35
-#let latcol(i, j) = ((i * LATP, LATH), (j * LATP, LATH), (j * LATP, 0), (i * LATP, 0))
-#let latpic(regions, wires, beads: (), ports: (), marks: (), names: (), s: 74%) = P(
-  cetz.canvas(length: 0.8cm, {
-    for (f, pts) in regions { hm-region(pts, f) }
-    for pts in wires { hm-wire(pts) }
-    // `side` is which way the name hangs off the dot, `dy` lifts it clear of a strand leaving there.
-    for (p, l, side, dy) in beads {
-      hm-bead(p, l, dx: side * 0.32, dy: dy, anchor: if side > 0 { "west" } else { "east" })
-    }
-    for (p, l, dir) in ports { hm-port(p, l, dir: dir) }
-    // A relator between two beads has no box edge to be named at, so its name goes beside the wire.
-    for (p, l) in marks { d.content((p.at(0) + 0.3, p.at(1)), text(black)[#l], anchor: "west") }
-    for (p, l) in names { hm-name(p, l) }
-  }),
-  s: s,
-)
-
 #disp[#table(
   columns: (4.8cm, 10.6cm, 6.6cm),
   align: (left + horizon, center + horizon, center + horizon),
@@ -327,14 +305,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `⊑`; this row is the first]],
   // Two wires side by side, a bead on each; an identity 2-cell is a bare wire, so dropping the left
   // bead leaves `K(φ)` and dropping the right one leaves `χG` — the two cases that had rows of their own.
-  latpic(
-    ((fb-MAPC, latcol(0, 1)), (fb-ALLC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((LATP, LATB), [`χ`], 1, 0), ((2 * LATP, LATB), [`φ`], 1, 0)),
-    ports: (((LATP, LATH), [`L`], 1), ((LATP, 0), [`K`], -1),
-      ((2 * LATP, LATH), [`G`], 1), ((2 * LATP, 0), [`F`], -1)),
-    names: (((0.5 * LATP, 0.3), [`𝓔`]), ((1.5 * LATP, 0.3), [`𝓓`]), ((2.5 * LATP, 0.3), [`𝒞`])),
-  ),
+  P(lean("Freyd.Alg.laxNatural_hcomp_outer_first_slide"), s: 74%),
 
   [union \ `φ ∪ ψ`],
   [#P(leancd("Freyd.Alg.laxNatural_union"), s: 74%)
@@ -342,21 +313,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]` ∪ ψ`#sub[`B`]`)⊑(φ`#sub[`A`]` ∪ ψ`#sub[`A`]`)F(R)`
  #h(4pt) #src[]],
    // lean:AOP.A5_7.union_slides@f7484fb4
-  align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
-    latpic(
-      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-      (((LATP, LATH), (LATP, 0)),),
-      beads: (((LATP, LATB), [`φ`], 1, 0),),
-      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
-    ),
-    [`∪`],
-    latpic(
-      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-      (((LATP, LATH), (LATP, 0)),),
-      beads: (((LATP, LATB), [`ψ`], 1, 0),),
-      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
-    ),
-  )),
+  P(lean("Freyd.Alg.laxNatural_union_slide"), s: 74%),
 
   [a relator `K` \ `K(φ)`],
   [#P(leancd("Freyd.Alg.Relator.map_laxNatural"), s: 74%)
@@ -372,14 +329,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    the lax copy law `R◁⊑◁(R×R)` — @rel-monoid]],
   // `G×G'=×∘⟨G,G'⟩`: two UNARY functors, so the split is typed — `⟨G,G'⟩ : 𝒞⟶𝓓×𝓓` then `× : 𝓓×𝓓⟶𝓓`.
   // The bead is the PAIR in `𝓓×𝓓`, written `(φ,ψ)`: the fork `⟨φ,ψ⟩=◁(φ×ψ)` is a different arrow, in `𝓓`.
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-MAPC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((2 * LATP, LATB), [`(φ,ψ)`], 1, 0),),
-    ports: (((LATP, LATH), [`×`], 1), ((LATP, 0), [`×`], -1),
-      ((2 * LATP, LATH), [`⟨G,G'⟩`], 1), ((2 * LATP, 0), [`⟨F,F'⟩`], -1)),
-    names: (((1.5 * LATP, 0.3), [`𝓓×𝓓`]),),
-  ),
+  P(lean("Freyd.Alg.laxNatural_prod_slide"), s: 74%),
 
   [coproduct \ `φ+ψ`],
   [#P(leancd("Freyd.Alg.laxNatural_sum"), s: 74%)
@@ -387,14 +337,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    #src[`(R+S)(U+V)=(RU)+(SV)` and monotonicity in both slots; the co-fork is the derived case
    `[φ,ψ]=(φ+ψ)▿`, and `▿` costs nothing]],
   // `+`, like `×`, is a functor `𝓓×𝓓⟶𝓓`, so the picture is the one above with `+` on the left wire.
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-MAPC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((2 * LATP, LATB), [`(φ,ψ)`], 1, 0),),
-    ports: (((LATP, LATH), [`+`], 1), ((LATP, 0), [`+`], -1),
-      ((2 * LATP, LATH), [`⟨G,G'⟩`], 1), ((2 * LATP, 0), [`⟨F,F'⟩`], -1)),
-    names: (((1.5 * LATP, 0.3), [`𝓓×𝓓`]),),
-  ),
+  P(lean("Freyd.Alg.laxNatural_sum_slide"), s: 74%),
 
   [meet — *fails* \ `φ∩ψ`],
   [#src[the step it would need is
