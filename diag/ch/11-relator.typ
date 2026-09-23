@@ -67,7 +67,7 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), lean("Freyd.Alg.RelProd.pair")))]<fork-pic>
+  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), leanc("Freyd.Alg.RelProd.pair")))]<fork-pic>
 
 A domain is coreflexive, so `⟨R,S⟩π₁⊑R`, with equality exactly when `S` is entire; for maps both
 triangles commute and `⟨f,g⟩` is unique. In `Rel`, `c ⟨R,S⟩ (a,b)` iff `c R a` and `c S b` — copy `c`, then
@@ -137,37 +137,37 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  [], P(lean("Freyd.Alg.prodMap"), s: 74%),
+  [#leanf("Freyd.Alg.prodMap")], P(leanc("Freyd.Alg.prodMap"), s: 74%),
   // lean:AOP.A5_2.prodMap@28e34ad0
 
-  [#src[both sides are the same strokes — @absorption-pic. Its `⊑`
+  [#leanf("Freyd.Alg.RelProd.pair_prodMap") \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
 // R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
    half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
    this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
  ]],
    // lean:AOP.A5_2.pair_prodMap@8861fda2
-  P(lean("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
 
- [#src[@fork-proj]],
+ [#leanf("Freyd.Alg.RelProd.pair_outl") \ #src[@fork-proj]],
   // lean:AOP.A5_2.pair_outl@18c8ddee
-  P(lean("Freyd.Alg.RelProd.pair_outl"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.pair_outl"), s: 74%),
 
- [#src[@fork-proj]],
+ [#leanf("Freyd.Alg.RelProd.pair_outr") \ #src[@fork-proj]],
   // lean:AOP.A5_2.pair_outr@ce99887d
-  P(lean("Freyd.Alg.RelProd.pair_outr"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.pair_outr"), s: 74%),
 
- [#src[]],
+ [#leanf("Freyd.Alg.RelProd.pair_recip_pair") #src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
-  P(lean("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
 
-  [#src[]],
+  [#leanf("Freyd.Alg.RelProd.recip_pair_pair_le") #src[]],
   // lean:AOP.A5_2.recip_pair_pair_le@3e24af96
-  P(lean("Freyd.Alg.RelProd.recip_pair_pair_le"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.recip_pair_pair_le"), s: 74%),
 
   [#leanf("Freyd.Alg.RelProd.map_comp_pair") \ #src[`f` a map; it fails for an arbitrary arrow;
  ]],
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
-  P(lean("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
+  P(leanc("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
 
   [`F(R×S)unzip(F)=unzip(F)(F(R)×F(S))` \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`, a map]],
   P(cetz.canvas(length: 0.8cm, {
@@ -202,14 +202,14 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [#src[The tape is the union — a particle entering at `A+B` takes exactly
+  [#leanf("Freyd.Alg.junc") \ #src[The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
   // lean:AOP.A5_3.junc@da022f10
-  P(lean("Freyd.Alg.junc"), s: 85%),
+  P(leanc("Freyd.Alg.junc"), s: 85%),
 
-  [#src[]], P(lean("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
+  [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
   // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
-  [], P(lean("Freyd.Alg.sumMap"), s: 85%),
+  [#leanf("Freyd.Alg.sumMap")], P(leanc("Freyd.Alg.sumMap"), s: 85%),
   // lean:AOP.A5_3.sumMap@eb035ed1
   [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
@@ -217,19 +217,21 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
 
-  [], P(row((lean("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
-    lean("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
+  [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip")],
+  P(row((leanc("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
+    leanc("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_self_comp_recip@6cd82772
   // lean:Freyd.S2_20.Coproduct.u₂_self_comp_recip@53e6991d
 
   // `rl°=𝟘` stays a formula: the exporter finds no naturality for the `𝟘` family on `B⟶A`.
-  [#leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")], P(lean("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
+  [#leanf("Freyd.Alg.Coproduct.u₁_u₂_recip"), #leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")],
+  P(leanc("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_u₂_recip@ade7327c lean:Freyd.S2_20.Coproduct.u₂_u₁_recip@61def7d7
 
-  [], P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
+  [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id")], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 
-  [], P(lean("Freyd.Alg.junc_recip_junc"), s: 85%),
+  [#leanf("Freyd.Alg.junc_recip_junc")], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
   // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
@@ -276,27 +278,27 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   table.header([*the law*], [*picture*]),
 
   // [R,S]=(l°R) ∪ (r°S): B&dM (5.9)
-  [#src[@coprod-laws's first row]],
+  [#leanf("Freyd.Alg.junc") \ #src[@coprod-laws's first row]],
   // lean:AOP.A5_3.junc@da022f10
-  P(lean("Freyd.Alg.junc"), s: 82%),
+  P(leanc("Freyd.Alg.junc"), s: 82%),
 
   // R+S=[Rl,Sr]: B&dM (5.10)
-  [],
+  [#leanf("Freyd.Alg.sumMap")],
   // lean:AOP.A5_3.sumMap@eb035ed1
-  P(lean("Freyd.Alg.sumMap"), s: 82%),
+  P(leanc("Freyd.Alg.sumMap"), s: 82%),
 
   // [U,V]°[R,S]=(U°R) ∪ (V°S): B&dM (5.11)
-  [#src[@coprod-laws's last row;
+  [#leanf("Freyd.Alg.junc_recip_junc") \ #src[@coprod-laws's last row;
  ]],
    // lean:AOP.A5_3.junc_recip_junc@838f4abc
-  P(lean("Freyd.Alg.junc_recip_junc"), s: 68%),
+  P(leanc("Freyd.Alg.junc_recip_junc"), s: 68%),
 
   // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
   [#leanf("Freyd.Alg.junc_id_zero"), #leanf("Freyd.Alg.junc_zero_id") \
    #leanf("Freyd.Alg.junc_injections") \ #src[which is (5.9)]],
   // lean:AOP.A5_3.junc_id_zero@28919704 lean:AOP.A5_3.junc_zero_id@328e3c31
   // lean:AOP.A5_3.junc_injections@11d515bf lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
-  P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
+  P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
 
   // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
   [#src[prove (5.11), and say why duality does not carry it over from the product law]],

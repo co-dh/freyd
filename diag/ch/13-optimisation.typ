@@ -790,29 +790,29 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][]],
+  [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@99fa663b
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@0142ae2e
 
-  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][]],
+  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6237fa76
 
-  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][]],
+  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@51fc70a5
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
@@ -833,10 +833,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs")][]], [],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")]],
   [coproduct of maps],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs")]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs")][]],
@@ -1042,15 +1042,15 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#hchain(fill: true,
     (none, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.lhs")],
-      []),
+      [], [#leanf("Freyd.Alg.RelSet.MSS.mss_mono_fork.lhs")]),
     (EQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs")],
-      src[relator, composition over `∪`]),
+      src[relator, composition over `∪`], [#leanf("Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs")]),
     (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs")],
       src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
        written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
-       together, which carries it to `≥`.]),
+       together, which carries it to `≥`.], [#leanf("Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs")]),
     (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs")],
-      src[`≥` reflexive]),
+      src[`≥` reflexive], [#leanf("Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs")]),
   )],
 )]<mss-mono>
 
@@ -1198,19 +1198,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
-  (none, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")], []),
+  (none, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")], [],
+   [#leanf("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")]),
 
   (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.rhs")],
-   [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]]),
+   [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]], [#leanf("Freyd.Alg.RelSet.Filter.filter_mono_step1.rhs")]),
 
   (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step2.rhs")],
-   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]]),
+   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]], [#leanf("Freyd.Alg.RelSet.Filter.filter_mono_step2.rhs")]),
 
   (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step3.rhs")],
-   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]]),
+   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]],
+   [#leanf("Freyd.Alg.RelSet.Filter.filter_mono_step3.rhs")]),
 
   (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_cons.rhs")],
-   [#src[@adj-all]]),
+   [#src[@adj-all]], [#leanf("Freyd.Alg.RelSet.Filter.filter_mono_cons.rhs")]),
   )],
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch: `nil⊑nil R°`.]])
@@ -1227,11 +1229,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step1.rhs")]],
   [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn] #h(4pt) — and the `%∋` of a coproduct of maps
    is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step2.rhs")]],
   [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
    reflexive #h(4pt) #src[@est-defn]],
 
