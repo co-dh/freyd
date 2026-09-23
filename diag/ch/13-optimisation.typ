@@ -41,17 +41,17 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°`],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
   // lean:AOP.A7_1.singletonMap_comp_est@06b2ed05
-  [$frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`], [an `S`-value that points to every `S`-value],
-  [$frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`], [only `R` between values `S` gives one argument counts — context],
+  [#leanf("Freyd.Alg.Λ_comp_est")], [an `S`-value that points to every `S`-value],
+  [#leanf("Freyd.Alg.Λ_comp_est_context")], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)`],
   [the same for the image of a set \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=∋S`]],
-  [`P(f) est(R)=est(fRf°) f`], [shunt a function through a minimum],
+  [#leanf("Freyd.Alg.powerRel_map_comp_est")], [shunt a function through a minimum],
   [`P(S) est(R)=(∋S)∩(∈\(SR°))` \ #src[`R` reflexive]],
   [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
   [`P(S) est(R)⊑(∋S)∩(∈\(SR°))`], [the half of the row above that costs nothing],
   [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` transitive]],
   [a minimum in each set, then a minimum of those],
-  [`P(est(R)) est(R)=P(dom(est(R))) union est(R)` \ #src[`R` transitive]],
+  [#leanf("Freyd.Alg.powerRel_est_eq_bigUnion")],
   [the same as an equality, once empty sets are dropped],
 )]<est-laws>
 
