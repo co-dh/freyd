@@ -797,6 +797,22 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
 def splitPlus? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
   if regionTy.isSort then
     if let (``Sum, #[a, b]) := X.getAppFnArgs then return some (a, b) else return none
+  -- A POSITIVE ALLEGORY HAS A CHOSEN COPRODUCT, and its apex is read by unifying with it, as
+  -- `splitTimes?` reads the chosen product's: `R+S` over `has_coproduct` lands on that apex.
+  let s ← Meta.saveState
+  try
+    let a ← Meta.mkFreshExprMVar (some regionTy)
+    let b ← Meta.mkFreshExprMVar (some regionTy)
+    let (C, _) ← mkAppMeta ``Freyd.Alg.PositiveAllegory.has_coproduct #[a, b]
+    let (``Freyd.Alg.Coproduct, cargs) := (← Meta.whnfR (← Meta.inferType C)).getAppFnArgs
+      | s.restore; throwError "has_coproduct is no Coproduct"
+    if cargs.size ≥ 3 then
+      if ← Meta.isDefEq cargs[cargs.size - 3]! X then
+        let a ← instantiateMVars a
+        let b ← instantiateMVars b
+        if !a.hasExprMVar && !b.hasExprMVar then return some (a, b)
+    s.restore
+  catch _ => s.restore
   let some f ← regionField? regionTy | return none
   let .const n us := regionTy.getAppFn | return none
   unless Lean.isStructure (← getEnv) n do return none
@@ -970,9 +986,33 @@ def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     A PRODUCT `A×Y` is the ONE lane `A×−` over the lanes of `Y`, whatever `A` is.  `×` is a functor
     out of `𝒜×𝒜` and Hinze–Marsden has no wire for one, so the left factor cannot be drawn as a
     bundle beside its sibling; it is pinned into the endofunctor `A×−` at that object, and only the
-    right factor goes on being peeled. -/
+    right factor goes on being peeled.
+
+    EXCEPT WHERE BOTH FACTORS ARE LANES OVER ONE OBJECT: `F(A)×G(A)` is `(F×G)(A)`, the one lane
+    `F×G` over `A` — the lane a family `φ×ψ : G×G' ⇒ F×F'` has its naturality at and a
+    `Relator.prod` action runs on.  Read as `F(A)×−` over `G|A` the one cut had two spellings. -/
 partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array (Wire × Expr) × Expr) := do
+  let pairLane? (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (op : Name)
+      (a b : Expr) : MetaM (Option (Array (Wire × Expr) × Expr)) := do
+    let (ca, oa) ← peelCuts objVars cat regionTy a
+    let (cb, ob) ← peelCuts objVars cat regionTy b
+    if ca.isEmpty || cb.isEmpty then return none
+    unless ← Meta.isDefEq oa ob do return none
+    -- The composite lane of a (non-empty) stack, innermost first.  No identity in front: this is
+    -- a wire's NAME, and `Wire.beq` compares lanes by what they do to an object, where `𝟙` is free.
+    let lane (cs : Array (Wire × Expr)) : MetaM (Option Expr) := do
+      unless (← laneAlgOf regionTy) == .relator do return none
+      let ws ← cs.reverse.mapM fun (w, _) => match w with | .rel f => pure (some f) | _ => pure none
+      let some f₀ := ws[0]! | return none
+      let mut acc := f₀
+      for w in ws.extract 1 ws.size do
+        let some f := w | return none
+        acc ← LaneAlg.relator.comp acc f
+      return some acc
+    let some fa ← lane ca | return none
+    let some fb ← lane cb | return none
+    return some (#[(Wire.rel (← Meta.mkAppM op #[fa, fb]), oa)], oa)
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
@@ -998,8 +1038,11 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       if let some inner ← mkTimes? regionTy a₂ b then
         if let some whole ← mkTimes? regionTy a₁ inner then
           return ← peelCuts objVars cat regionTy whole
+    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.prod a b then return r
     let (cs, o) ← peelCuts objVars cat regionTy b
     return (#[(Wire.timesL a, b)] ++ cs, o)
+  if let some (a, b) ← splitPlus? regionTy X then
+    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.sum a b then return r
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then
       let (cs, o) ← peelCuts objVars cat src inner

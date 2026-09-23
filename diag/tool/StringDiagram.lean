@@ -1193,6 +1193,57 @@ def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name
     s.restore
   peelRead objVars cat regionTy X
 
+/-- The arguments `ms` of a rebuilt product map that the new arrows' ends did not fix: each is the
+    argument of the original `args` whose type it has, else a hypothesis already made for that type,
+    else a new hypothesis of it, which `k` runs under. -/
+partial def fillArgs {α : Type} (args : Array Expr) (ms : List Expr) (hyps : Array Expr)
+    (k : Array Expr → MetaM α) : MetaM α := do
+  match ms with
+  | [] => k hyps
+  | m :: rest =>
+    unless (← instantiateMVars m).isMVar do return ← fillArgs args rest hyps k
+    let ty ← instantiateMVars (← Meta.inferType m)
+    if ty.hasExprMVar then
+      throwError "the product map's argument of type `{← Meta.ppExpr ty}` is fixed by neither the \
+        new arrows' ends nor any argument of the original"
+    for c in args ++ hyps do
+      let s ← Meta.saveState
+      if (← Meta.isDefEq ty (← Meta.inferType c)) && (← Meta.isDefEq m c) then
+        return ← fillArgs args rest hyps k
+      s.restore
+    -- `assign`, not `isDefEq`: the metavariable was made before `h`, whose scope it cannot see, and
+    -- everything that reads the assignment runs inside that scope.
+    Meta.withLocalDeclD `P ty fun h => do
+      m.mvarId!.assign h
+      fillArgs args rest (hyps.push h) k
+
+/-- THE PRODUCT MAP `e` AT OTHER ARROWS, one per pair of `ps`, for interchange and functoriality to
+    split it into.  Rebuilt from the head's own telescope, never from the two arrows alone:
+    `prodMap P Q R S` names its products explicitly, and `mkAppM` on `R`, `S` fed them to `P`, `Q`.
+    The arrows' ends fix the objects; an argument whose type the original already has an argument
+    at is that argument; the product at a cut no argument states — `a'×b` between `R×𝟙` and `𝟙×S` —
+    is a hypothesis of that type, the one the interchange law itself assumes, shared by the two
+    parts that meet at it. -/
+partial def withProdMapsAt {α : Type} (e : Expr) (ps : List (Expr × Expr)) (hyps acc : Array Expr)
+    (k : Array Expr → MetaM α) : MetaM α := do
+  match ps with
+  | [] => k acc
+  | (f, g) :: rest =>
+    let fn := e.getAppFn
+    let args := e.getAppArgs
+    let mut ix : Array Nat := #[]
+    for i in [0 : args.size] do
+      if (← homEnds? args[i]!).isSome then ix := ix.push i
+    let (ms, _, _) ← Meta.forallMetaTelescope (← Meta.inferType fn)
+    unless ix.size == 2 && ms.size == args.size do
+      throwError "the product map `{← Meta.ppExpr e}` is no head applied to exactly its parameters \
+        with two arrows among them"
+    unless (← Meta.isDefEq ms[ix[0]!]! f) && (← Meta.isDefEq ms[ix[1]!]! g) do
+      throwError "the product map `{← Meta.ppExpr e}` does not take `{← Meta.ppExpr f}` and \
+        `{← Meta.ppExpr g}`"
+    fillArgs args ms.toList hyps fun hyps => do
+      withProdMapsAt e rest hyps (acc.push (← instantiateMVars (mkAppN fn ms))) k
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -1227,6 +1278,10 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let e ← rewriteSpine e
   let fs := factors e
   if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
+  -- A BUILT BUNDLE'S ACTION OPENS AS ITS OBJECTS DO: `(F×F')(R)` is `F(R)×F'(R)`, the product map
+  -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
+  if let some r ← openBuiltField? e then
+    if r != e then return ← interp regionTy cat objVars vpass expect r
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
@@ -1238,12 +1293,12 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let (cx, ox) ← peelReadAt expect objVars cat regionTy x
     return ← Diagram.id (cx.map (·.1)) ox
   | _ => pure ()
-  if let some (φ, ψ) ← asProdMap? regionTy e then
-    -- The head constant is how a factor of `φ` is paired back with `𝟙` — the notation the
-    -- declaration is written in, and no string surgery.
-    let .const n _ := e.getAppFn
-      | throwError "the product map `{← plain e}` is headed by no constant, so its left factor \
-          cannot be paired back with `𝟙`"
+  -- A PRODUCT MAP WHOSE SOURCE IS ONE PAIR LANE (`G×G'` over `B`, `peelCuts`) is no pair of lanes
+  -- to split it across: it is ONE bead on that lane, `φ×ψ : G×G' ⇒ F×F'`, read by the tail below.
+  let pairLane ← do
+    let (cx, _) ← peelReadAt expect objVars cat regionTy (← homEnds e).1
+    pure (match cx[0]? with | some (.rel f, _) => f.isAppOf ``Freyd.Alg.Relator.prod | _ => false)
+  if let some (φ, ψ) ← (if pairLane then pure none else asProdMap? regionTy e) then
     let (a, a') ← homEnds φ
     let (b, _) ← homEnds ψ
     -- `𝟙×ψ` IS `(A×−).map ψ`: the left factor is one lane and `ψ` runs under it, so this is the
@@ -1254,10 +1309,11 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     -- the map into product maps this same case then draws, one bead each.
     let fφ := factors φ
     if !(← isIdArrow ψ) || fφ.size > 1 then
-      let mut parts : Array Expr := #[]
-      for f in fφ do parts := parts.push (← Meta.mkAppM n #[f, one])
-      unless ← isIdArrow ψ do parts := parts.push (← Meta.mkAppM n #[← Meta.mkAppM ``Cat.id #[a'], ψ])
-      if parts.size > 1 then return ← vstack regionTy cat objVars vpass expect parts
+      let mut ps : Array (Expr × Expr) := fφ.map (·, one)
+      unless ← isIdArrow ψ do ps := ps.push (← Meta.mkAppM ``Cat.id #[a'], ψ)
+      if ps.size > 1 then
+        return ← withProdMapsAt e ps.toList #[] #[] fun parts =>
+          vstack regionTy cat objVars vpass expect parts
     -- `φ×𝟙` is ONE bead on the left factor's lane, `A×− ⇒ A'×−`, ONLY where it is a family in the
     -- statement's own object: the lanes east of it are then what that object is, and only run past.
     -- Where `φ` cannot vary with it — `secure amount N`, whose `amount` pins the object — the whole
@@ -1716,13 +1772,21 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
           {pl.frame}: every panel of one `#lean(…)` call is drawn at ONE height, the deepest part's"
       for j in [i + 1 : qs.size] do
         let b := qs[j]!
+        -- The beads the two parts share, as (row in `a`, row in `b`, level in both).
+        let mut shared : Array (Nat × Nat × Bool) := #[]
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
             if a.rows[ra]!.key == b.rows[rb]!.key then
-              let ya := (pl.top a : Int) - ra
-              let yb := (pl.top b : Int) - rb
-              unless ya == yb do
-                throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
+              shared := shared.push (ra, rb, (pl.top a : Int) - ra == (pl.top b : Int) - rb)
+        -- A BEAD THAT MOVED PAST A LEVEL ONE IS THE STATEMENT, not a misplacement: a slide
+        -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.
+        -- So a shared bead may stand at two heights only where its order against a level bead
+        -- differs between the parts; kept in order, two heights are the misplacement this refuses.
+        for (ra, rb, level) in shared do
+          unless level || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
+            let ya := (pl.top a : Int) - ra
+            let yb := (pl.top b : Int) - rb
+            throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
     withParts regionTy cat objVars sel drawn.toList #[] fun parts => do

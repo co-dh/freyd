@@ -903,6 +903,15 @@ open Lean PrettyPrinter in
 @[app_unexpander Prod.map] def unexpandCoreProdMap : Unexpander
   | `($_ $f $g) => `($f × $g)
   | _ => throw ()
+-- THE SUM OF TWO ARROWS IS THE NOTE'S `R+S` (B&dM 5.10).  A delaborator, not an unexpander: the two
+-- coproducts `sumMap` runs between are explicit arguments, and only the last two are the arrows.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.sumMap] def delabSumMap : Delab := do
+  let n := (← SubExpr.getExpr).getAppNumArgs
+  guard (n ≥ 4)
+  let r ← SubExpr.withNaryArg (n - 2) delab
+  let s ← SubExpr.withNaryArg (n - 1) delab
+  `($r + $s)
 
 -- THE BIFUNCTOR ON OBJECTS is the note's `F(A,B)`, the brackets the label printer's own comma
 -- list — `BiRelator.appl` above writes the one-argument lane the same way.
