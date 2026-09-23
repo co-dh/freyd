@@ -193,7 +193,7 @@ public theorem id_le_thinRel {Q : A ⟶ A} (hrefl : Cat.id A ⊑ Q) :
   rwa [Cat.id_comp] at h
 
 /-- Transitive half of **Ex 8.2**: `Q ≫ Q ⊑ Q → thin Q ≫ thin Q ⊑ thin Q`. -/
-theorem thinRel_trans {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
+public theorem thinRel_trans {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
     thinRel Q ≫ thinRel Q ⊑ thinRel Q := by
   have htrans' : Q° ≫ Q° ⊑ Q° := by
     have h0 := recip_mono htrans

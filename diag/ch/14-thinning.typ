@@ -46,19 +46,19 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt
 
   [`X⊑` $frac(#[`S`], ∋)$ `thin(Q)⟺X∋⊑S` and `S°X⊑Q°∈`],
   [everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound among the kept ones],
-  [`thin(Q)∋⊑∋`],
+  [#leanf("Freyd.Alg.thinRel_comp_eps_le")],
   [everything a thinning keeps was in the set],
    // lean:AOP.A8_1.thinRel_comp_eps_le@632f425f
-  [`thin(Q)° ∋⊑∋ Q`],
+  [#leanf("Freyd.Alg.recip_thinRel_comp_eps_le")],
   [every element of the set has a `Q`-lower bound among the kept ones],
    // lean:AOP.A8_1.recip_thinRel_comp_eps_le@8b2f6525
-  [`Q⊑R⟹thin(Q)⊑thin(R)`],
+  [#leanf("Freyd.Alg.thinRel_mono")],
   [the fewer pairs `Q` relates, the fewer subsets count as thinnings],
-  [`𝟙⊑thin(Q)` if `𝟙⊑Q`, and `thin(Q)` is a preorder if `Q` is],
+  [#leanf("Freyd.Alg.id_le_thinRel") \ #leanf("Freyd.Alg.thinRel_trans")],
    // lean:AOP.A8_1.id_le_thinRel@41729458
    // lean:AOP.A8_1.thinRel_trans@6f2b3a18
   [keeping everything is always a legal thinning],
-  [`est(R)=thin(Q) est(R)` #h(4pt) #src[`Q⊑R`, `𝟙⊑Q`, `RR⊑R` — @thin-intro; weaker than the book’s "both preorders": `Q` transitive is never used and `𝟙⊑R` follows]],
+  [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[`Q⊑R`, `𝟙⊑Q`, `RR⊑R` — @thin-intro; weaker than the book’s "both preorders": `Q` transitive is never used and `𝟙⊑R` follows]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
    // lean:AOP.A8_1.thinRel_comp_est@e5ad7ecb
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
@@ -69,7 +69,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt
   [$frac(#[`S`], ∋)$ `thin(Q)⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
    #src[(8.3), `R∩(S°S)⊑Q` — @thin-83]],
   [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
-  [`union thin(Q)⊒P(thin(Q)) union` #h(6pt) #src[(8.4)]],
+  [#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le") #h(6pt) #src[(8.4)]],
   [thinning each member set is a thinning of the union],
 )]<thin-laws>
 
