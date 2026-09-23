@@ -1210,6 +1210,25 @@ def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name
     s.restore
   peelRead objVars cat regionTy X
 
+/-- THE CUT BELOW `d` AS `d` DREW IT, which is what "read once, by the factor above" means.  An
+    object `a×b` has two readings — the pair lane `peelCuts` prefers where both factors are lanes
+    over one object, and `a×−` over `b` — and a product map split across its lanes (`wrap×𝟙`)
+    draws the second; the factor below is then handed that one, not the free peel. -/
+def cutAsDrawn (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (d : Diagram)
+    (y : Expr) : MetaM (Array (Wire × Expr) × Expr) := do
+  let drawn := d.bot.map fun i => d.lanes[i]!.wire
+  let same (cs : Array (Wire × Expr)) : MetaM Bool := do
+    unless cs.size == drawn.size do return false
+    for (w, _) in cs, v in drawn do unless ← Wire.beq w v do return false
+    return true
+  let free ← peelRead objVars cat regionTy y
+  if ← same free.1 then return free
+  if let some (a, b) ← splitTimes? regionTy y then
+    let (cb, ob) ← peelRead objVars cat regionTy b
+    let flat := #[(Wire.timesL a, b)] ++ cb
+    if ← same flat then return (flat, ob)
+  return free
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -1246,8 +1265,11 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
   -- A BUILT BUNDLE'S ACTION OPENS AS ITS OBJECTS DO: `(F×F')(R)` is `F(R)×F'(R)`, the product map
   -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
+  -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
+  -- clause reads, and there the `F.map` route below draws it under its own lane.
   if let some r ← openBuiltField? e then
-    if r != e then return ← interp regionTy cat objVars vpass expect r
+    if r != e && ((← asProdMap? regionTy r fun p => pure p.isSome) || (← asSumMap? r).isSome) then
+      return ← interp regionTy cat objVars vpass expect r
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
@@ -1369,7 +1391,7 @@ partial def vstack (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let mut d ← interp regionTy cat objVars vpass expect fs[0]!
   for i in [1 : fs.size] do
     let y := (← homEnds fs[i-1]!).2
-    let (cy, oy) ← peelRead objVars cat regionTy y
+    let (cy, oy) ← cutAsDrawn objVars cat regionTy d y
     -- A cut mismatch is between TWO FACTORS, and the cut text alone does not say which pair, so
     -- the factors either side of it are added here rather than left for the reader to count out.
     d ← try d.vcomp (← interp regionTy cat objVars vpass

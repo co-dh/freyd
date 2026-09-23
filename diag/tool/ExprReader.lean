@@ -1012,7 +1012,18 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       return some acc
     let some fa ← lane ca | return none
     let some fb ← lane cb | return none
-    return some (#[(Wire.rel (← Meta.mkAppM op #[fa, fb]), oa)], oa)
+    -- THE PAIR LANE IS `op F G`, so it exists only where the region carries the instances `op`
+    -- asks for: a statement over a local `Pr : RelProd` (`sortedAlg_fusion`) has no chosen product.
+    let c ← Meta.mkConstWithFreshMVarLevels op
+    let (ms, bis, _) ← Meta.forallMetaTelescope (← Meta.inferType c)
+    unless ms.size ≥ 2 && (← Meta.isDefEq ms[ms.size - 2]! fa) && (← Meta.isDefEq ms[ms.size - 1]! fb) do
+      return none
+    for (m, bi) in ms.zip bis do
+      if bi.isInstImplicit then
+        let some inst ← Meta.synthInstance? (← instantiateMVars (← Meta.inferType m)) | return none
+        unless ← Meta.isDefEq m inst do return none
+    let w ← instantiateMVars (mkAppN c ms)
+    return some (#[(Wire.rel w, oa)], oa)
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
