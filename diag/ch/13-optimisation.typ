@@ -41,17 +41,17 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°`],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
   // lean:AOP.A7_1.singletonMap_comp_est@06b2ed05
-  [$frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`], [an `S`-value that points to every `S`-value],
-  [$frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`], [only `R` between values `S` gives one argument counts — context],
+  [#leanf("Freyd.Alg.Λ_comp_est")], [an `S`-value that points to every `S`-value],
+  [#leanf("Freyd.Alg.Λ_comp_est_context")], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)`],
   [the same for the image of a set \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=∋S`]],
-  [`P(f) est(R)=est(fRf°) f`], [shunt a function through a minimum],
+  [#leanf("Freyd.Alg.powerRel_map_comp_est")], [shunt a function through a minimum],
   [`P(S) est(R)=(∋S)∩(∈\(SR°))` \ #src[`R` reflexive]],
   [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
   [`P(S) est(R)⊑(∋S)∩(∈\(SR°))`], [the half of the row above that costs nothing],
   [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` transitive]],
   [a minimum in each set, then a minimum of those],
-  [`P(est(R)) est(R)=P(dom(est(R))) union est(R)` \ #src[`R` transitive]],
+  [#leanf("Freyd.Alg.powerRel_est_eq_bigUnion")],
   [the same as an equality, once empty sets are dropped],
 )]<est-laws>
 
@@ -277,28 +277,6 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
 
-// Hinze–Marsden at the 2-category level: a REGION is an allegory, a WIRE a relator, a BEAD a
-// LaT.  Regions are `LATP` wide, so the wire carrying the bead stands at the same pitch in every cell.
-#let LATP = 1.15
-#let LATH = 2.5
-#let LATB = 1.35
-#let latcol(i, j) = ((i * LATP, LATH), (j * LATP, LATH), (j * LATP, 0), (i * LATP, 0))
-#let latpic(regions, wires, beads: (), ports: (), marks: (), names: (), s: 74%) = P(
-  cetz.canvas(length: 0.8cm, {
-    for (f, pts) in regions { hm-region(pts, f) }
-    for pts in wires { hm-wire(pts) }
-    // `side` is which way the name hangs off the dot, `dy` lifts it clear of a strand leaving there.
-    for (p, l, side, dy) in beads {
-      hm-bead(p, l, dx: side * 0.32, dy: dy, anchor: if side > 0 { "west" } else { "east" })
-    }
-    for (p, l, dir) in ports { hm-port(p, l, dir: dir) }
-    // A relator between two beads has no box edge to be named at, so its name goes beside the wire.
-    for (p, l) in marks { d.content((p.at(0) + 0.3, p.at(1)), text(black)[#l], anchor: "west") }
-    for (p, l) in names { hm-name(p, l) }
-  }),
-  s: s,
-)
-
 #disp[#table(
   columns: (4.8cm, 10.6cm, 6.6cm),
   align: (left + horizon, center + horizon, center + horizon),
@@ -311,14 +289,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   [#P(leancd("Freyd.Alg.laxNatural_comp_slide"), s: 74%)
    `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-    (((LATP, LATH), (LATP, 0)),),
-    beads: (((LATP, 1.75), [`ψ`], 1, 0), ((LATP, 0.75), [`φ`], 1, 0)),
-    ports: (((LATP, LATH), [`H`], 1), ((LATP, 0), [`F`], -1)),
-    marks: (((LATP, 1.25), [`G`]),),
-    names: (((0.5 * LATP, 0.3), [`𝓓`]), ((1.5 * LATP, 0.3), [`𝒞`])),
-  ),
+  P(lean("Freyd.Alg.laxNatural_comp_slide"), s: 74%),
 
   [horizontal composition \ `χ∘φ`],
   [#P(leancd("Freyd.Alg.laxNatural_hcomp_outer_first"), s: 74%)
@@ -334,14 +305,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    `⊑`; this row is the first]],
   // Two wires side by side, a bead on each; an identity 2-cell is a bare wire, so dropping the left
   // bead leaves `K(φ)` and dropping the right one leaves `χG` — the two cases that had rows of their own.
-  latpic(
-    ((fb-MAPC, latcol(0, 1)), (fb-ALLC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((LATP, LATB), [`χ`], 1, 0), ((2 * LATP, LATB), [`φ`], 1, 0)),
-    ports: (((LATP, LATH), [`L`], 1), ((LATP, 0), [`K`], -1),
-      ((2 * LATP, LATH), [`G`], 1), ((2 * LATP, 0), [`F`], -1)),
-    names: (((0.5 * LATP, 0.3), [`𝓔`]), ((1.5 * LATP, 0.3), [`𝓓`]), ((2.5 * LATP, 0.3), [`𝒞`])),
-  ),
+  P(lean("Freyd.Alg.laxNatural_hcomp_outer_first_slide"), s: 74%),
 
   [union \ `φ ∪ ψ`],
   [#P(leancd("Freyd.Alg.laxNatural_union"), s: 74%)
@@ -349,21 +313,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]` ∪ ψ`#sub[`B`]`)⊑(φ`#sub[`A`]` ∪ ψ`#sub[`A`]`)F(R)`
  #h(4pt) #src[]],
    // lean:AOP.A5_7.union_slides@f7484fb4
-  align(center, grid(columns: 3, align: horizon, column-gutter: 2pt,
-    latpic(
-      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-      (((LATP, LATH), (LATP, 0)),),
-      beads: (((LATP, LATB), [`φ`], 1, 0),),
-      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
-    ),
-    [`∪`],
-    latpic(
-      ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-      (((LATP, LATH), (LATP, 0)),),
-      beads: (((LATP, LATB), [`ψ`], 1, 0),),
-      ports: (((LATP, LATH), [`G`], 1), ((LATP, 0), [`F`], -1)),
-    ),
-  )),
+  P(lean("Freyd.Alg.laxNatural_union_slide"), s: 74%),
 
   [a relator `K` \ `K(φ)`],
   [#P(leancd("Freyd.Alg.Relator.map_laxNatural"), s: 74%)
@@ -379,14 +329,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    the lax copy law `R◁⊑◁(R×R)` — @rel-monoid]],
   // `G×G'=×∘⟨G,G'⟩`: two UNARY functors, so the split is typed — `⟨G,G'⟩ : 𝒞⟶𝓓×𝓓` then `× : 𝓓×𝓓⟶𝓓`.
   // The bead is the PAIR in `𝓓×𝓓`, written `(φ,ψ)`: the fork `⟨φ,ψ⟩=◁(φ×ψ)` is a different arrow, in `𝓓`.
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-MAPC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((2 * LATP, LATB), [`(φ,ψ)`], 1, 0),),
-    ports: (((LATP, LATH), [`×`], 1), ((LATP, 0), [`×`], -1),
-      ((2 * LATP, LATH), [`⟨G,G'⟩`], 1), ((2 * LATP, 0), [`⟨F,F'⟩`], -1)),
-    names: (((1.5 * LATP, 0.3), [`𝓓×𝓓`]),),
-  ),
+  P(lean("Freyd.Alg.laxNatural_prod_slide"), s: 74%),
 
   [coproduct \ `φ+ψ`],
   [#P(leancd("Freyd.Alg.laxNatural_sum"), s: 74%)
@@ -394,14 +337,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    #src[`(R+S)(U+V)=(RU)+(SV)` and monotonicity in both slots; the co-fork is the derived case
    `[φ,ψ]=(φ+ψ)▿`, and `▿` costs nothing]],
   // `+`, like `×`, is a functor `𝓓×𝓓⟶𝓓`, so the picture is the one above with `+` on the left wire.
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-MAPC, latcol(1, 2)), (fb-ZC, latcol(2, 3))),
-    (((LATP, LATH), (LATP, 0)), ((2 * LATP, LATH), (2 * LATP, 0))),
-    beads: (((2 * LATP, LATB), [`(φ,ψ)`], 1, 0),),
-    ports: (((LATP, LATH), [`+`], 1), ((LATP, 0), [`+`], -1),
-      ((2 * LATP, LATH), [`⟨G,G'⟩`], 1), ((2 * LATP, 0), [`⟨F,F'⟩`], -1)),
-    names: (((1.5 * LATP, 0.3), [`𝓓×𝓓`]),),
-  ),
+  P(lean("Freyd.Alg.laxNatural_sum_slide"), s: 74%),
 
   [meet — *fails* \ `φ∩ψ`],
   [#src[the step it would need is
@@ -854,29 +790,29 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      shortening the result]],
   table.header([*circuit* — the `cons` branch of `F(R°)S⊑SR°`], [*reason*]),
 
-  [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][`(𝟙×R°)(⊸ nil ∪ (p×𝟙) cons)`]],
+  [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][]],
   [],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@99fa663b
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][`(𝟙×R°)⊸ nil ∪ (p×R°) cons`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][]],
   [each operand is reached on its own #h(4pt) #src[@adj-all] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@0142ae2e
 
-  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][`⊸ nil ∪ (p×R°) cons`]],
+  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_disc@6237fa76
 
-  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][`⊸ nil ∪ (p×𝟙) cons R°`]],
+  [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@51fc70a5
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][`⊸ nil R° ∪ (p×𝟙) cons R°`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn] #h(4pt) — so the constant branch may carry the `R°`
    the other one already has],
   // lean:AOP.A7_7_TakeWhile.takewhile_mono_nil@17a53619
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")][`(⊸ nil ∪ (p×𝟙) cons)R°`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.rhs")][]],
   [one `R°` past the join is the two inside it #h(4pt) #src[@adj-all]],
   // lean:Freyd.S2_20.union_comp_distrib@0025430d
 )
@@ -897,10 +833,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs")][]], [],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")][]],
   [coproduct of maps],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs")][`[nil,` $frac(#[`⊸ nil ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step2.rhs")][]],
   [singleton, `R°` reflexive],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step3.rhs")][]],
@@ -1002,38 +938,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // lean:AOP.A7_7_MSS.oplus@e876f97f lean:AOP.A7_7_MSS.oplus_eq@8819d3f7
 ]]<mss-defn>
 
-// ONE WIRE, `[A]` to `A`: this chain never forks, so a row is a run of boxes and the picture's whole
-// content is the TYPE the wire carries — where `E(EA)` is born, and which box collapses it again.
-// A type sits ON its strand (`node`'s white ground masks the wire): a gap is that white ground (text
-// plus its insets) plus a wire stub either side, so the strand visibly runs into each label.  `X/∋`
-// and `E(X)` are fractions, hence maps (@pow-laws), so their boxes are square; `est(≥)` is the chain's
-// one relation and its only chamfered box.  Widths are measured at the note's text sizes.
-#let TH = 1.2   // a fraction box is two lines tall
-#let ty-l = ([`[A]`], 1.25)
-#let ty-el = ([`E[A]`], 2.0)
-#let ty-ea = ([`EA`], 1.0)
-#let ty-eea = ([`E(EA)`], 1.75)
-#let ty-a = ([`A`], 0.75)
-#let bx-mss = (frc([`segment sum`]), 2.2, false)
-#let bx-spp = (frc([`suffix (prefix sum)`]), 3.6, false)
-#let bx-sf = (frc([`suffix`]), 1.3, false)
-#let bx-eps = ([`E(prefix sum)`], 3.5, false)
-#let bx-ep = ([`E(`#frc([`prefix sum`])`)`], 2.8, false)
-#let bx-un = ([`union`], 1.45, false)
-#let bx-eest = ([`E(est(≥))`], 2.65, false)
-#let bx-epest = ([`E(`#frc([`prefix sum`])` est(≥))`], 4.8, false)
-#let mss-run(tys, items) = {
-  let x = 0.0
-  for (i, it) in items.enumerate() {
-    let (tl, tw) = tys.at(i)
-    wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
-    gbox((x + tw, 0), it.at(0), w: it.at(1), h: TH, chamfer: it.at(2))
-    x = x + tw + it.at(1)
-  }
-  let (tl, tw) = tys.at(items.len())
-  wire((x, 0), (x + tw, 0)); node(x + tw / 2, 0, black, tl)
-}
-#let mss-pic(tys, items, s: 100%) = P(cetz.canvas(length: 0.8cm, mss-run(tys, items)), s: s)
 
 #let step = step.with(pw: 303pt)
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt, 
@@ -1045,23 +949,23 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     // lean:AOP.A7_7_MSS.mss_shape@9c38ad6f
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
-  [#step([])[#mss-pic((ty-l, ty-ea, ty-a), (bx-mss, est-Rc-box))][]], [],
+  [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-ea, ty-a), (bx-spp, est-Rc-box))][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.rhs")][]],
   [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-eps, est-Rc-box), s: 94%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step2.rhs")][]],
   [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-un, est-Rc-box), s: 95%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step3.rhs")][]],
   [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
    `E(R)≜frac(∋R,∋)`; @est-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
    `F(RS)=F(R)F(S)` at `F:=E`]],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-eea, ty-ea, ty-a), (bx-sf, bx-ep, bx-eest, est-Rc-box), s: 85%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step4.rhs")][]],
   [@est-laws, the sets non-empty],
 
-  [#step(EQ)[#mss-pic((ty-l, ty-el, ty-ea, ty-a), (bx-sf, bx-epest, est-Rc-box), s: 92%)][]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step5.rhs")][]],
   [relator \ #src[@relator-defn — `F(RS)=F(R)F(S)` at `F:=E`]],
 )
 // mirrored from `max(P(max(Λ(sum prefix))))Λsuffix`.
@@ -1138,30 +1042,21 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#hchain(fill: true,
     (none, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.lhs")],
-      [], [`(𝟙×≥)(⊸ zero ∪ plus)`]),
+      []),
     (EQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_fork.rhs")],
-      src[relator, composition over `∪`], [`(𝟙×≥)⊸ zero ∪ (𝟙×≥) plus`]),
+      src[relator, composition over `∪`]),
     (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step3.rhs")],
       src[@dom-slide, `(≥×≥) plus⊑plus≥`; `(≤×≤) plus⊑plus≤` is @mon-defn,
        written `+` there, and `plus` is a map, so it is monotonic on an order and on its opposite
-       together, which carries it to `≥`.], [`⊸ zero ∪ plus≥`]),
+       together, which carries it to `≥`.]),
     (SQ, [#leanc("Freyd.Alg.RelSet.MSS.mss_mono_step4.rhs")],
-      src[`≥` reflexive], [`(⊸ zero ∪ plus)≥`]),
+      src[`≥` reflexive]),
   )],
 )]<mss-mono>
 
-// Every row is ONE WIRE, `𝟏+A×A` to `A` — `F(A)` — so its two ends are drawn once.
-#let mss-src = { lab(-1.62, 0, black)[`𝟏+A×A`]; wire((-0.45, 0), (0, 0)) }
-#let mss-tgt(x) = lab(x + 0.62, 0, black)[`A`]
-// Every `R/∋` is a MAP (@pow-laws), so a fraction box is square; `est(≥)` is partial — no greatest of
-// the empty set — and is the one chamfered box here.  `h` is shared down a run: a fraction is two lines.
 #let mss-alg = $frac(#[`[zero,⊸ zero ∪ plus]`], ∋)$
 #let mss-zero = $frac(#[`zero`], ∋)$
 #let mss-plus = $frac(#[`⊸ zero ∪ plus`], ∋)$
-#let mss-run(items, h: 0.6) = { mss-src; boxrun(0, 0, items, h: h); mss-tgt(boxrun-w(items)) }
-// @coprod-laws' tape at this algebra: `[X,Y]` is ONE BRANCH PER SUMMAND, each opening with the
-// injection's converse — `𝟏` above, `A×Int` below.  The shorter branch is padded to the same join.
-#let mss-pic(body) = P(cetz.canvas(length: 0.8cm, body), s: 78%)
 
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
@@ -1303,20 +1198,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
-  (none, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")], [],
-   [`(𝟙×R°)(π₂ ∪ (p×𝟙) cons)`]),
+  (none, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.lhs")], []),
 
   (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step1.rhs")],
-   [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]], [`(𝟙×R°)π₂ ∪ (p×R°) cons`]),
+   [`(𝟙×R°)(p×𝟙)=p×R°` #h(4pt) #src[@adj-all]]),
 
   (EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step2.rhs")],
-   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]], [`π₂R° ∪ (p×R°) cons`]),
+   [`(𝟙×R°)π₂=π₂R°` #h(4pt) #src[@subseq-outr-square]]),
 
   (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_step3.rhs")],
-   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]], [`π₂R° ∪ (p×𝟙) cons R°`]),
+   [`(p×R°) cons⊑(p×𝟙) cons R°` #h(4pt) #src[@takewhile-mono]]),
 
   (SQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_mono_cons.rhs")],
-   [#src[@adj-all]], [`(π₂ ∪ (p×𝟙) cons)R°`]),
+   [#src[@adj-all]]),
   )],
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch: `nil⊑nil R°`.]])
@@ -1333,11 +1227,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][`[`$frac(#[`nil`], ∋)$` est(R°),` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][]],
   [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn] #h(4pt) — and the `%∋` of a coproduct of maps
    is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
 
-  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][`[nil,` $frac(#[`π₂ ∪ (p×𝟙) cons`], ∋)$` est(R°)]`]],
+  [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][]],
   [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
    reflexive #h(4pt) #src[@est-defn]],
 
@@ -1441,33 +1335,33 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`A⟶Int`],
   [What one employee is worth as a guest.],
 
- [`cost≜list(rating) sum` #src[]],
+ [#leanf("Freyd.Alg.RelSet.Party.cost_eq") #src[]],
   // lean:AOP.A7_3_Party.cost_eq@6d5c7097
   [#leant("Freyd.Alg.RelSet.Party.cost_eq")],
   [What a guest list is worth.],
 
- [`R≜cost≤cost°` #src[]],
+ [#leanf("Freyd.Alg.RelSet.Party.R_eq") #src[]],
   // lean:AOP.A7_3_Party.R_eq@9fa61324
   [#leant("Freyd.Alg.RelSet.Party.R_eq")],
   [The preorder the guest list is maximised over.],
 
-  [`choose≜π₁ ∪ π₂`],
+  [#leanf("Freyd.Alg.RelSet.Party.choose")],
   [#leant("Freyd.Alg.RelSet.Party.choose")],
   [Takes one of the two parties a subtree returns.],
 
-  [`include≜(𝟙×(list(π₂) concat)) cons`],
+  [#leanf("Freyd.Alg.RelSet.Party.include_eq")],
   [#leant("Freyd.Alg.RelSet.Party.includeR")],
   [The party that invites the root, which puts every immediate subtree's root out. A map.],
 
-  [`exclude≜(𝟙×(list(choose) concat))π₂`],
+  [#leanf("Freyd.Alg.RelSet.Party.exclude_eq")],
   [#leant("Freyd.Alg.RelSet.Party.excludeR")],
   [The party that leaves the root out, so each subtree is free to choose. Not a map.],
 
-  [`S≜⟨include,exclude⟩`],
+  [#leanf("Freyd.Alg.RelSet.Party.S")],
   [#leant("Freyd.Alg.RelSet.Party.S")],
   [The algebra: one step returns both parties of a subtree at once.],
 
- [`party≜⦇S⦈ choose` #src[]],
+ [#leanf("Freyd.Alg.RelSet.Party.party_eq") #src[]],
   // lean:AOP.A7_3_Party.party_eq@cb4fab14
   [#leant("Freyd.Alg.RelSet.Party.party_eq")],
   [Every guest list the president's ruling allows.],
@@ -1527,64 +1421,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   takes 17.]]])
 ]<party-example>
 
-// `list(π₂)` is ONE box, not the `⊸ ⊗ 𝟙` inside the relator: the picture is here for the shape of
-// `include`, and opening `π₂` up costs a discard stub per list element that says nothing about it.
-// Both pictures share every stage's x: the boxes are right-aligned at 9.2, so the two read one under
-// the other and a wire's type is found at the same place in each.
-// The BOUNDARY of a circuit: nothing in `circuit.typ` or `draw.typ` draws one — `capbox` frames a
-// picture and its caption, `gbox` frames a single relation — so one helper serves both algebras.
-// The frame is 1.9pt, well over the 1.1pt of a wire and of a box edge: at wire weight it reads as
-// one more wire.  Dark grey, not black, so the boxes ON the wires stay the darkest ink in the picture.
-#let portbox(a, b, ports) = {
-  d.rect(a, b, stroke: 1.9pt + luma(55), radius: 0.14)
-  for (x, y, l) in ports { lab(x, y, black, l) }
-}
-
-#disp[#P(cetz.canvas(length: 0.8cm, {
-  let y = 0.8
-  portbox((-0.9, -1.8), (22.4, 1.8),
-    ((-3.2, y, [`a:A`]), (-3.2, -y, [`[[A]×[A]]`]), (24.2, 0, [`adef:[A]`])))
-  lab(-3.2, 2.5, black)[`include`$=$]
-  wire((-1.5, y), (19.9, y))                 // the root, straight through: the `𝟙` of `𝟙 × (…)`
-  wire((-1.5, -y), (6.6, -y))
-  gbox((6.6, -y), [`list(π₂)`], w: 2.6, h: 0.75, chamfer: false)
-  wire((9.2, -y), (13.8, -y))
-  gbox((13.8, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
-  wire((15.7, -y), (18.9, -y))
-  gbox((18.9, 0), [`cons`], w: 1.4, h: 2 * y + 0.35, chamfer: false)
-  wire((20.3, 0), (22.9, 0))
-  lab(3.7, -y + 0.5, black)[`b`]; lab(4.9, -y + 0.5, black)[`c`]
-  lab(3.7, -y - 0.5, black)[`de`]; lab(4.9, -y - 0.5, black)[`f`]
-  lab(10.2, -y + 0.5, black)[`[[A]]`]
-  lab(11.7, -y - 0.5, black)[`de`]; lab(12.9, -y - 0.5, black)[`f`]
-  lab(16.5, -y + 0.5, black)[`[A]`]
-  lab(17.8, -y - 0.5, black)[`def`]
-}), s: 80%)
+#disp[#leanc("Freyd.Alg.RelSet.Party.include_eq.rhs")
 #align(center, src[])
 // lean:AOP.A7_3_Party.include_eq@afb11121
 ]<include-pic>
 
-// The trailing `π₂` is `⊸ ⊗ 𝟙`, and here the discard IS the step, so it is drawn and not boxed.
-// `list(choose)` keeps the chamfer: `choose` is a relation, where `include`'s `π₂` is a map.
-#disp[#P(cetz.canvas(length: 0.8cm, {
-  let y = 0.8
-  portbox((-0.9, -1.8), (22.4, 1.8),
-    ((-3.2, y, [`a:A`]), (-3.2, -y, [`[[A]×[A]]`]), (24.2, -y, [`bf:[A]`])))
-  lab(-3.2, 2.5, black)[`exclude`$=$]
-  wire((-1.5, y), (18.9, y))                 // the root, thrown away by the `⊸` of `π₂`
-  wiredot((18.9, y))
-  wire((-1.5, -y), (5.9, -y))
-  gbox((5.9, -y), [`list(choose)`], w: 3.3, h: 0.75)
-  wire((9.2, -y), (13.8, -y))
-  gbox((13.8, -y), [`concat`], w: 1.9, h: 0.75, chamfer: false)
-  wire((15.7, -y), (22.9, -y))
-  lab(3.7, -y + 0.5, black)[`b`]; lab(4.9, -y + 0.5, black)[`c`]
-  lab(3.7, -y - 0.5, black)[`de`]; lab(4.9, -y - 0.5, black)[`f`]
-  lab(10.2, -y + 0.5, black)[`[[A]]`]
-  lab(11.7, -y + 0.5, black)[`b`]; lab(12.9, -y - 0.5, black)[`f`]
-  lab(16.5, -y + 0.5, black)[`[A]`]
-  lab(17.8, -y - 0.5, black)[`bf`]
-}), s: 80%)
+#disp[#leanc("Freyd.Alg.RelSet.Party.exclude_eq.rhs")
 #align(center, src[])
 // lean:AOP.A7_3_Party.exclude_eq@52820610
 ]<exclude-pic>

@@ -229,6 +229,15 @@ public theorem laxNatural_hcomp_outer_first {𝒞 : Type u₃} [Allegory.{v₃} 
     LaxNatural (Relator.comp F K) (Relator.comp G L) (fun A => χ (G.obj A) ≫ K.map (φ A)) :=
   fun {_ _} R => comp_slides (laxNatural_inside G hχ R) (K.map_slides (hφ R))
 
+/-- Horizontal composition closes in LaT, at the arrow `R`: `χ` at `G(R)`, then `K` applied to `φ`.
+    Stated at `R` so no binder is left for the picture to name. -/
+public theorem laxNatural_hcomp_outer_first_slide {𝒞 : Type u₃} [Allegory.{v₃} 𝒞]
+    {F G : Relator 𝒜 ℬ} {K L : Relator ℬ 𝒞} {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A}
+    {χ : ∀ B : ℬ, L.obj B ⟶ K.obj B} (hχ : LaxNatural K L χ) (hφ : LaxNatural F G φ)
+    {A B : 𝒜} (R : A ⟶ B) :
+    L.map (G.map R) ≫ (χ (G.obj B) ≫ K.map (φ B)) ⊑ (χ (G.obj A) ≫ K.map (φ A)) ≫ K.map (F.map R) :=
+  laxNatural_hcomp_outer_first hχ hφ R
+
 /-- HORIZONTAL composition with the INNER 2-cell first: `L` applied to `φ` on the outside, then
     `χ` reindexed along `F` on the inside.  Same source, same target, same type as
     `laxNatural_hcomp_outer_first` — and a DIFFERENT family, below it by `hχ (φ a)`. -/
@@ -562,6 +571,17 @@ public theorem laxNatural_prod {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : �
         (φ x) (ψ x)) :=
   fun {_ _} R => prodMap_slides _ _ _ _ (hφ R) (hψ R)
 
+/-- `×` closes in LaT, at the arrow `R`: `prodMap_slides` on the two squares at `R`.
+    Stated at `R` so no binder is left for the picture to name. -/
+public theorem laxNatural_prod_slide {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    {ψ : ∀ x : 𝒮, G'.obj x ⟶ F'.obj x} (hφ : LaxNatural F G φ) (hψ : LaxNatural F' G' ψ)
+    {A B : 𝒮} (R : A ⟶ B) :
+    (Relator.prod G G').map R
+        ≫ prodMap (relProd (G.obj B) (G'.obj B)) (relProd (F.obj B) (F'.obj B)) (φ B) (ψ B)
+      ⊑ prodMap (relProd (G.obj A) (G'.obj A)) (relProd (F.obj A) (F'.obj A)) (φ A) (ψ A)
+        ≫ (Relator.prod F F').map R :=
+  laxNatural_prod hφ hψ R
+
 /-- **And `×` closes STRICTLY too** — unlike the fork, whose `outl` already fails to cancel
     (`laxNatural_pair_outl`), the product map creates no slack: `prodMap_comp` flattens each side
     to ONE `prodMap`, and the two components are then the two hypotheses verbatim. -/
@@ -640,6 +660,19 @@ public theorem laxNatural_sum {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮
       (fun x => sumMap (PositiveAllegory.has_coproduct (G.obj x) (G'.obj x))
         (PositiveAllegory.has_coproduct (F.obj x) (F'.obj x)) (φ x) (ψ x)) :=
   fun {_ _} R => sumMap_slides _ _ _ _ (hφ R) (hψ R)
+
+/-- `+` closes in LaT, at the arrow `R`: `sumMap_slides` on the two squares at `R`.
+    Stated at `R` so no binder is left for the picture to name. -/
+public theorem laxNatural_sum_slide {F F' G G' : Relator 𝒮 𝒜} {φ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    {ψ : ∀ x : 𝒮, G'.obj x ⟶ F'.obj x} (hφ : LaxNatural F G φ) (hψ : LaxNatural F' G' ψ)
+    {A B : 𝒮} (R : A ⟶ B) :
+    (Relator.sum G G').map R
+        ≫ sumMap (PositiveAllegory.has_coproduct (G.obj B) (G'.obj B))
+          (PositiveAllegory.has_coproduct (F.obj B) (F'.obj B)) (φ B) (ψ B)
+      ⊑ sumMap (PositiveAllegory.has_coproduct (G.obj A) (G'.obj A))
+          (PositiveAllegory.has_coproduct (F.obj A) (F'.obj A)) (φ A) (ψ A)
+        ≫ (Relator.sum F F').map R :=
+  laxNatural_sum hφ hψ R
 
 /-! ### `Relator.sum` is a BIPRODUCT of relators and lax natural transformations
 
@@ -728,6 +761,13 @@ variable {𝒮 : Type u₁} {𝒜 : Type u₂} [Allegory.{v₁} 𝒮] [Distribut
 public theorem laxNatural_union {F G : Relator 𝒮 𝒜} {φ ψ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
     (hφ : LaxNatural F G φ) (hψ : LaxNatural F G ψ) : LaxNatural F G (fun x => φ x ∪ ψ x) :=
   fun {_ _} R => union_slides (hφ R) (hψ R)
+
+/-- `∪` closes in LaT, at the arrow `R`: `union_slides` on the two squares at `R`.
+    Stated at `R` so no binder is left for the picture to name. -/
+public theorem laxNatural_union_slide {F G : Relator 𝒮 𝒜} {φ ψ : ∀ x : 𝒮, G.obj x ⟶ F.obj x}
+    (hφ : LaxNatural F G φ) (hψ : LaxNatural F G ψ) {A B : 𝒮} (R : A ⟶ B) :
+    G.map R ≫ (φ B ∪ ψ B) ⊑ (φ A ∪ ψ A) ≫ F.map R :=
+  laxNatural_union hφ hψ R
 
 end LaxNaturalUnion
 
