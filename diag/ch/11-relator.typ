@@ -27,7 +27,7 @@ the 2-category.
   table.header([*the statement*]),
 
  // F(f) map preserving row: Lemma 5.1
- [For `f` a map, `F(f)` is a map and `F(f°)=F(f)°`. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
   [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.],
@@ -36,12 +36,12 @@ the 2-category.
   // relators-agree-on-maps row: Corollary 5.1
   [Two relators agreeing on maps are equal.],
  // F(X∩Y) row: Ex 5.2
- [`F(X∩Y)=F(X)∩F(Y)` for `X,Y` coreflexive. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[]],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
  // F(R∩S) row: Ex 5.2, the restriction
- [`F(R∩S)⊑F(R)∩F(S)`, and strictly. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [`F(dom(R))=dom(F(R))` for `F` preserving `°`. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_dom") #src[]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
@@ -60,9 +60,9 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
- `⟨R,S⟩π₁=dom(S)R` #src[] #h(1.4cm)
+ #leanf("Freyd.Alg.RelProd.pair_outl") #src[] #h(1.4cm)
   // lean:AOP.A5_2.pair_outl@18c8ddee
- `⟨R,S⟩π₂=dom(R)S` #src[]
+ #leanf("Freyd.Alg.RelProd.pair_outr") #src[]
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
@@ -78,8 +78,6 @@ No `°` survives the translation. `π₁=𝟙⊗⊸` discards the second compone
 the two dots with no left end, and the crossing they force — are merged against real ones, which is
 the monoid's unit law:
 
-// The chain at FULL size: `chain`'s 62% is calibrated for the exported pictures, which are drawn on a
-// bigger canvas than these two.
 #disp[#leanc("Freyd.Alg.RelProd.pair") #src[`⟜▷=𝟙` on each half]]<fork-collapse>
 // lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 
@@ -844,7 +842,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.
 #disp[#calc-table(cols: (1fr,), al: auto, 
   // hylo-fixed row: Theorem 6.2
-  Thm(cols: 1)[`S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
  #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
      decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
      recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
@@ -864,7 +862,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
 #disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-least row: Theorem 6.2
- Thm(cols: 1)[`S°F(X)R⊑X⟹⦇S⦈°⦇R⦈⊑X` \
+ Thm(cols: 1)[#leanf("Freyd.Alg.hylo_le_of_prefixed") \
     #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
      satisfies the associated recursion inequation]],
   [#hchain(
@@ -889,7 +887,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
 #disp[#calc-table(cols: (1fr,), al: auto, 
  // hylo-fusion-eq row: Theorem 6.2
- Thm(cols: 1)[`⦇S⦈°⦇R⦈=(μX : S°F(X)R)` \
+ Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
   [#hchain(
