@@ -311,14 +311,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   [#P(leancd("Freyd.Alg.laxNatural_comp_slide"), s: 74%)
    `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
    #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
-  latpic(
-    ((fb-ALLC, latcol(0, 1)), (fb-ZC, latcol(1, 2))),
-    (((LATP, LATH), (LATP, 0)),),
-    beads: (((LATP, 1.75), [`ψ`], 1, 0), ((LATP, 0.75), [`φ`], 1, 0)),
-    ports: (((LATP, LATH), [`H`], 1), ((LATP, 0), [`F`], -1)),
-    marks: (((LATP, 1.25), [`G`]),),
-    names: (((0.5 * LATP, 0.3), [`𝓓`]), ((1.5 * LATP, 0.3), [`𝒞`])),
-  ),
+  P(lean("Freyd.Alg.laxNatural_comp_slide"), s: 74%),
 
   [horizontal composition \ `χ∘φ`],
   [#P(leancd("Freyd.Alg.laxNatural_hcomp_outer_first"), s: 74%)
