@@ -475,6 +475,21 @@ public theorem RelProd.pair_recip_pair {P : RelProd a b} {d : 𝒜}
     (X ≫ R°) ∩ (Y ≫ S°)
   rw [simple_dist_inter_recip hdel.2, hleg1, hleg2]
 
+/-- **B&dM §5.2, p. 116**: `⟨R,S⟩°⟨U,V⟩ ⊑ (R°U)×(S°V)` — each leg of `⟨R,S⟩` is below `Rπ₁°`,
+    `Sπ₂°`, so after the converse only the legs survive, and composition is lax over the meet. -/
+public theorem RelProd.recip_pair_pair_le {P : RelProd a b} {Q : RelProd a' b'}
+    (R : c ⟶ a) (S : c ⟶ b) (U : c ⟶ a') (V : c ⟶ b') :
+    (P.pair R S)° ≫ Q.pair U V ⊑ prodMap P Q (R° ≫ U) (S° ≫ V) := by
+  have hl : (P.pair R S)° ⊑ P.outl ≫ R° := by
+    have h := recip_mono (inter_lb_left (R ≫ P.outl°) (S ≫ P.outr°))
+    rwa [Allegory.recip_comp, Allegory.recip_recip] at h
+  have hr : (P.pair R S)° ⊑ P.outr ≫ S° := by
+    have h := recip_mono (inter_lb_right (R ≫ P.outl°) (S ≫ P.outr°))
+    rwa [Allegory.recip_comp, Allegory.recip_recip] at h
+  refine le_trans (Q.comp_pair_le _ U V) (Q.pair_mono ?_ ?_)
+  · rw [← Cat.assoc]; exact comp_mono_right hl U
+  · rw [← Cat.assoc]; exact comp_mono_right hr V
+
 /-! ## Relators are closed under product; B&dM p.133's `outr` example of lax naturality -/
 
 section ProdRelator

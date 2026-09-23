@@ -189,6 +189,12 @@ public theorem u_junc_Λ_eps {s A B C : 𝒜} (Cop : Coproduct s A B) (R : A ⟶
     Cop.u₁ ≫ junc Cop (Λ R) (Λ S) ≫ ∋ C = R ∧ Cop.u₂ ≫ junc Cop (Λ R) (Λ S) ≫ ∋ C = S :=
   ⟨by rw [← Cat.assoc, u₁_junc, Λ_comp_eps], by rw [← Cat.assoc, u₂_junc, Λ_comp_eps]⟩
 
+/-- **B&dM p. 118**: `[R,S] = [ΛR,ΛS]∋` — the junction of arrows factors through the junction of
+    their power transposes, which is a coproduct of maps. -/
+public theorem junc_eq_Λ_junc_eps {s A B C : 𝒜} (Cop : Coproduct s A B) (R : A ⟶ C) (S : B ⟶ C) :
+    junc Cop R S = junc Cop (Λ R) (Λ S) ≫ ∋ C := by
+  rw [junc_comp, Λ_comp_eps, Λ_comp_eps]
+
 end ΛJunc
 
 /-! ## §3  `sumMap` (B&dM 5.10) -/

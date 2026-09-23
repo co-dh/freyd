@@ -67,7 +67,7 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-proj>
 
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), pairstr()))]<fork-pic>
+  leancd("Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le")), lean("Freyd.Alg.RelProd.pair")))]<fork-pic>
 
 A domain is coreflexive, so `⟨R,S⟩π₁⊑R`, with equality exactly when `S` is entire; for maps both
 triangles commute and `⟨f,g⟩` is unique. In `Rel`, `c ⟨R,S⟩ (a,b)` iff `c R a` and `c S b` — copy `c`, then
@@ -80,23 +80,8 @@ the monoid's unit law:
 
 // The chain at FULL size: `chain`'s 62% is calibrated for the exported pictures, which are drawn on a
 // bigger canvas than these two.
-#disp[#chain((cetz.canvas(length: 0.8cm, {
-  wire((0, 0), (0.8, 0)); wiredot((0.8, 0))
-  bend((0.8, 0), (1.4, 1.5)); bend((0.8, 0), (1.4, -1.5))
-  wire((1.4, 1.5), (1.6, 1.5)); gbox((1.6, 1.5), [R]); wire((2.52, 1.5), (3.7, 1.5))
-  wire((1.4, -1.5), (1.6, -1.5)); gbox((1.6, -1.5), [S]); wire((2.52, -1.5), (3.7, -1.5))
-  // `π₁°=𝟙⊗⟜` is a PAIR: `R`'s wire and the created one beside it.  Merging the pairs componentwise
-  // is what crosses.
-  wiredot((2.7, 0.9)); wire((2.7, 0.9), (3.7, 0.9))
-  wiredot((2.7, -0.9)); wire((2.7, -0.9), (3.7, -0.9))
-  bend((3.7, 1.5), (5.4, 0.3), k: 0.4); bend((3.7, -0.9), (5.4, 0.3), k: 0.4); wiredot((5.4, 0.3))
-  bend((3.7, 0.9), (5.4, -0.3), k: 0.4); bend((3.7, -1.5), (5.4, -0.3), k: 0.4)
-  wiredot((5.4, -0.3))
-  wire((5.4, 0.3), (6.0, 0.3)); wire((5.4, -0.3), (6.0, -0.3))
-  lab(-0.35, 0, black)[$C$]; lab(6.35, 0.3, GIVEN1)[$A$]; lab(6.35, -0.3, GIVEN2)[$B$]
-}), pairstr(eq: true)), ("", [`⟜▷=𝟙` on each half #src[]
+#disp[#leanc("Freyd.Alg.RelProd.pair") #src[`⟜▷=𝟙` on each half]]<fork-collapse>
 // lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
-]), s: 100%)]<fork-collapse>
 
 
 === Relational product `R×S`
@@ -111,13 +96,7 @@ the monoid's unit law:
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
 // become two squares, and the copy dot goes away — `R × S` is the two strands side by side.
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, y), (0.5, y)); gbox((0.5, y), [R]); wire((1.42, y), (2.0, y))
-  wire((0, -y), (0.5, -y)); gbox((0.5, -y), [S]); wire((1.42, -y), (2.0, -y))
-  lab(-0.35, y, GIVEN1)[$C$]; lab(-0.35, -y, GIVEN2)[$D$]
-  lab(2.35, y, GIVEN1)[$A$]; lab(2.35, -y, GIVEN2)[$B$]
-})))]<relprod-pic>
+  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), leanc("Freyd.Alg.prodMap")))]<relprod-pic>
 
 Right-then-up is `(R×S)π₁`, up-then-right is `π₁R`, and `(R×S)π₁⊑π₁R`, equality when `S` is
 entire. In `Rel`, `(c,d) (R×S) (a,b)` iff `c R a` and `d S b` — two strands side by side, no copy
@@ -129,19 +108,10 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#box(cetz.canvas(length: 0.8cm, {
-  let y = 0.85
-  wire((0, 0), (0.9, 0)); wiredot((0.9, 0))
-  bend((0.9, 0), (1.55, y)); bend((0.9, 0), (1.55, -y))
-  wire((1.55, y), (1.9, y)); wire((1.55, -y), (1.9, -y))
-  gbox((1.9, y), [X]); gbox((1.9, -y), [Y])
-  wire((2.82, y), (3.2, y)); wire((2.82, -y), (3.2, -y))
-  gbox((3.2, y), [R]); gbox((3.2, -y), [S])
-  wire((4.12, y), (4.7, y)); wire((4.12, -y), (4.7, -y))
-  lab(-0.35, 0, black)[$E$]; lab(5.05, y, GIVEN1)[$A$]; lab(5.05, -y, GIVEN2)[$B$]
-}))]<absorption-pic>
+#disp[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
+// lean:AOP.A5_2.pair_prodMap@8861fda2
 
-// One run of boxes on one strand, for the two book tables below: `"r"` a relation (chamfered), `"m"` a
+// One run of boxes on one strand, for the book tables below: `"r"` a relation (chamfered), `"m"` a
 // map (square), `"c"` a converse (mirrored and tinted).  Twenty inline copies is twenty chances to drift.
 #let BOXW = 0.92
 #let BOXG = 0.34
@@ -169,105 +139,37 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  [`R×S=⟨π₁R,π₂S⟩`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    let (a, b) = (1.35, 0.62)
-    lab(-0.35, y, black)[$C$]; lab(-0.35, -y, black)[$D$]
-    brun(0, y, (([R], "r"),)); brun(0, -y, (([S], "r"),))
-    lab(1.95, y, black)[$A$]; lab(1.95, -y, black)[$B$]
-    lab(2.6, 0, black)[$=$]
-    lab(3.0, 1.0, black)[$C$]; lab(3.0, -1.0, black)[$D$]
-    // The fork copies the WHOLE pair, and each branch discards the component it does not use.
-    wire((3.35, 1.0), (3.9, 1.0)); wiredot((3.9, 1.0))
-    bend((3.9, 1.0), (4.7, a)); bend((3.9, 1.0), (4.7, -b))
-    wire((3.35, -1.0), (3.9, -1.0)); wiredot((3.9, -1.0))
-    bend((3.9, -1.0), (4.7, b)); bend((3.9, -1.0), (4.7, -a))
-    brun(4.7, a, (([R], "r"),)); brun(4.7, -a, (([S], "r"),))
-    wire((4.7, b), (5.3, b)); wiredot((5.3, b))
-    wire((4.7, -b), (5.3, -b)); wiredot((5.3, -b))
-    lab(6.65, a, black)[$A$]; lab(6.65, -a, black)[$B$]
-  }), s: 74%),
+  [], P(lean("Freyd.Alg.prodMap"), s: 74%),
+  // lean:AOP.A5_2.prodMap@28e34ad0
 
-  [`⟨X,Y⟩(R×S)=⟨XR,YS⟩` \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
+  [#src[both sides are the same strokes — @absorption-pic. Its `⊑`
 // R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
    half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
    this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
  ]],
    // lean:AOP.A5_2.pair_prodMap@8861fda2
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "r"))); brun(1.05, -y, (([Y], "r"), ([S], "r")))
-    lab(4.25, y, black)[$A$]; lab(4.25, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
 
- [`⟨R,S⟩π₁=dom(S)R` \ #src[@fork-proj]],
+ [#src[@fork-proj]],
   // lean:AOP.A5_2.pair_outl@18c8ddee
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$C$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([R], "r"),))
-    brun(1.05, -y, (([S], "r"),)); wiredot((2.65, -y))
-    lab(3.0, y, black)[$A$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_outl"), s: 74%),
 
- [`⟨R,S⟩π₂=dom(R)S` \ #src[@fork-proj]],
+ [#src[@fork-proj]],
   // lean:AOP.A5_2.pair_outr@ce99887d
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$C$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([R], "r"),)); wiredot((2.65, y))
-    brun(1.05, -y, (([S], "r"),))
-    lab(3.0, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_outr"), s: 74%),
 
- [`⟨X,Y⟩⟨R,S⟩°=(XR°)∩(YS°)` #src[]],
+ [#src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$E$]
-    wcopy((0.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(1.05, y, (([X], "r"), ([R], "c"))); brun(1.05, -y, (([Y], "r"), ([S], "c")))
-    wmerge((4.46, 0), li: 0.55, lo: 0.5, sp: y)
-    lab(5.3, 0, black)[$C$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
 
-  [`⟨R,S⟩°⟨P,Q⟩⊑(R°P)×(S°Q)`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, y, black)[$A$]; lab(-0.35, -y, black)[$B$]
-    brun(0, y, (([R], "c"),)); brun(0, -y, (([S], "c"),))
-    wmerge((2.15, 0), li: 0.55, lo: 0.5, sp: y)
-    lab(2.65, 0.4, black)[$C$]
-    wcopy((3.15, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(3.7, y, (([P], "r"),)); brun(3.7, -y, (([Q], "r"),))
-    lab(5.65, y, black)[$A'$]; lab(5.65, -y, black)[$B'$]
-    lab(6.4, 0, black)[`⊑`]
-    lab(7.15, y, black)[$A$]; lab(7.15, -y, black)[$B$]
-    brun(7.5, y, (([R], "c"), ([P], "r"))); brun(7.5, -y, (([S], "c"), ([Q], "r")))
-    lab(10.7, y, black)[$A'$]; lab(10.7, -y, black)[$B'$]
-  }), s: 74%),
+  [#src[]],
+  // lean:AOP.A5_2.recip_pair_pair_le@3e24af96
+  P(lean("Freyd.Alg.RelProd.recip_pair_pair_le"), s: 74%),
 
-  [`f⟨R,S⟩=⟨fR,fS⟩` \ #src[`f` a map; it fails for an arbitrary arrow;
+  [#leanf("Freyd.Alg.RelProd.map_comp_pair") \ #src[`f` a map; it fails for an arbitrary arrow;
  ]],
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.72
-    lab(-0.35, 0, black)[$D$]
-    brun(0, 0, (([`f`], "m"),))
-    wcopy((2.15, 0), li: 0.55, lo: 0.55, sp: y)
-    brun(2.7, y, (([R], "r"),)); brun(2.7, -y, (([S], "r"),))
-    lab(4.65, y, black)[$A$]; lab(4.65, -y, black)[$B$]
-    lab(5.3, 0, black)[$=$]
-    lab(5.95, 0, black)[$D$]
-    wcopy((6.5, 0), li: 0.5, lo: 0.55, sp: y)
-    brun(7.05, y, (([`f`], "m"), ([R], "r"))); brun(7.05, -y, (([`f`], "m"), ([S], "r")))
-    lab(10.25, y, black)[$A$]; lab(10.25, -y, black)[$B$]
-  }), s: 74%),
+  P(lean("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
 
   [`F(R×S)unzip(F)=unzip(F)(F(R)×F(S))` \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`, a map]],
   P(cetz.canvas(length: 0.8cm, {
@@ -302,74 +204,35 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [`[R,S]≜l°R ∪ r°S` \ #src[The tape is the union — a particle entering at `A+B` takes exactly
+  [#src[The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62                  // the tape's two branches, at the exported pictures' half-spacing
-    wire((0, 0), (0.34, 0))
-    // 1.57 = y + 0.95, the clearance §@sec-comb's tapes leave above a branch they label.
-    tape((0.34, -1.57), (4.24, 1.57))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    // Mirrored and tinted: this file draws a converse by flipping the box, so these are `l°` and `r°`.
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y)); gbox((2.24, y), [R])
-    wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y)); gbox((2.24, -y), [S])
-    wire((3.16, -y), (3.60, -y))
-    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(-0.9, 0, black)[$A + B$]; lab(4.93, 0, black)[$C$]
-  }), s: 85%),
+  // lean:AOP.A5_3.junc@da022f10
+  P(lean("Freyd.Alg.junc"), s: 85%),
 
-  [`[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], [],
-  [`R+S≜[Rl,Sr]`], [],
-  [`l[R,S]=R`, `r[R,S]=S`, and `[R,S]` is the only such arrow
+  [#src[]], P(lean("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
+  // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
+  [], P(lean("Freyd.Alg.sumMap"), s: 85%),
+  // lean:AOP.A5_3.sumMap@eb035ed1
+  [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
    // lean:AOP.A5_3.u₁_junc@a01a115a lean:AOP.A5_3.u₂_junc@e692ee94
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
 
-  // A map is the UNCHAMFERED box (`chamfer: false`), so the injection and its converse are told apart
-  // by shape as well as by the tint, and a round trip reads as one box undoing the other.
-  [`ll°=𝟙=rr°`],
-  P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`l`], flip: true, fill: TINT)
-    wire((2.52, 0), (2.86, 0))
-    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$A$]
-    lab(4.00, 0, black)[$=$]
-    lab(4.55, 0, black)[$A$]; wire((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$A$]
-  }), s: 85%),
+  [], P(row((lean("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
+    lean("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.u₁_self_comp_recip@6cd82772
+  // lean:Freyd.S2_20.Coproduct.u₂_self_comp_recip@53e6991d
 
-  [`lr°=𝟘=rl°`],
-  P(cetz.canvas(length: 0.8cm, {
-    wire((0, 0), (0.34, 0)); gbox((0.34, 0), [`l`], chamfer: false)
-    wire((1.26, 0), (1.60, 0)); gbox((1.60, 0), [`r`], flip: true, fill: TINT)
-    wire((2.52, 0), (2.86, 0))
-    lab(-0.35, 0, black)[$A$]; lab(1.43, 0.66, black)[$A + B$]; lab(3.21, 0, black)[$B$]
-    lab(4.00, 0, black)[$=$]
-    lab(4.55, 0, black)[$A$]; blocked((4.90, 0), (6.30, 0)); lab(6.65, 0, black)[$B$]
-  }), s: 85%),
+  // `rl°=𝟘` stays a formula: the exporter finds no naturality for the `𝟘` family on `B⟶A`.
+  [#leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")], P(lean("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.u₁_u₂_recip@ade7327c lean:Freyd.S2_20.Coproduct.u₂_u₁_recip@61def7d7
 
-  [`l°l ∪ r°r=𝟙`],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    wire((0, 0), (0.34, 0))
-    tape((0.34, -1.57), (4.24, 1.57))
-    tape-fork((0.56, 0), sp: y, len: 0.42)
-    gbox((0.98, y), [`l`], flip: true, fill: TINT); wire((1.90, y), (2.24, y))
-    gbox((2.24, y), [`l`], chamfer: false); wire((3.16, y), (3.60, y))
-    gbox((0.98, -y), [`r`], flip: true, fill: TINT); wire((1.90, -y), (2.24, -y))
-    gbox((2.24, -y), [`r`], chamfer: false); wire((3.16, -y), (3.60, -y))
-    lab(2.07, 1.24, black)[$A$]; lab(2.07, 0, black)[$B$]
-    tape-join((4.02, 0), sp: y, len: 0.42)
-    wire((4.24, 0), (4.58, 0))
-    lab(-1.05, 0, black)[$A + B$]; lab(5.60, 0, black)[$A + B$]
-    lab(6.90, 0, black)[$=$]
-    lab(7.85, 0, black)[$A + B$]; wire((8.55, 0), (9.95, 0)); lab(10.75, 0, black)[$A + B$]
-  }), s: 85%),
+  [], P(lean("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
+  // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 
-  [`[U,V]°[R,S]=U°R ∪ V°S`], [],
+  [], P(lean("Freyd.Alg.junc_recip_junc"), s: 85%),
+  // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
 === `[R,S]≜[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`
