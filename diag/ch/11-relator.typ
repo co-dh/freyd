@@ -775,6 +775,32 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
  // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 ]<cata-map-calc>
 
+// B&dM (5.12), p.121, the proof above one row per step, each row drawn from the theorem proving it.
+#disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt,
+  Thm[#leanf("Freyd.Alg.relCata_UP") \
+    #src[a relation `X` out of `T` satisfies the defining equation of the fold of `f` exactly when it is `⦇f⦈`]],
+    // lean:AOP.A5_5.relCata_UP@e4a4905f
+  table.header([*formula* — each equation of the chain], [*reason*]),
+
+  [#step([])[#row((lean("Freyd.Alg.relCata_UP_step1.lhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.lhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.lhs")]], [],
+
+  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step1.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.rhs")]],
+  [$frac(#box(width: 8pt), ∋)$ is an isomorphism \ #src[@pow-laws — `frac(X,∋)∋=X`]],
+
+  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step2.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step2.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step2.rhs")]],
+  [cancellation, backwards \ #src[@pow-laws — `X=frac(X,∋)∋`]],
+
+  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step3.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step3.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step3.rhs")]],
+  [relator; fusion, backwards, twice \ #src[@relator-defn — `F(RS)=F(R)F(S)`; @pow-laws's fusion at the
+   maps `α` and `F(`$frac(#[`X`], ∋)$`)`]],
+
+  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step4.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step4.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step4.rhs")]],
+  [the fold of a map algebra \ #src[@initial-defn — the unique map satisfying its defining equation]],
+
+  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step5.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step5.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step5.rhs")]],
+  [cancellation \ #src[@pow-laws — `frac(X,∋)∋=X`]],
+)]<cata-map-proof>
+
 // The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
 // binds only below its line.  The step's relation sits at the LEFT EDGE of formula AND picture, so
 // both read as chains: `⊑`/`⊒` takes `SLACK` where the proof loses information, `=` stays grey.

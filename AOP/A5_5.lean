@@ -69,42 +69,46 @@ open Lean PrettyPrinter in
 public theorem relCata_unfold (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     relCata R = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := rfl
 
+/-! The proof of (5.12), B&dM p.121, one theorem per step so each row of the note's table is drawn
+    from the declaration that proves it; `relCata_UP` below is their composite. -/
+
+/-- `Λ` is an isomorphism. -/
+public theorem relCata_UP_step1 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    I.α ≫ X = F.map X ≫ R ↔ Λ (I.α ≫ X) = Λ (F.map X ≫ R) :=
+  ⟨congrArg Λ, fun h => by rw [← Λ_eps_eq' (I.α ≫ X), h, Λ_eps_eq']⟩
+
+/-- `Λ` cancellation, backwards: `X = Λ(X)∋`. -/
+public theorem relCata_UP_step2 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    Λ (I.α ≫ X) = Λ (F.map X ≫ R) ↔ Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R) := by
+  rw [Λ_eps_eq' X]
+
+/-- Relators, and `Λ` fusion backwards twice, at the maps `α` and `F(Λ(X))`. -/
+public theorem relCata_UP_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R)
+      ↔ I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+  rw [Λ_fusion I.α_map, F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
+
+/-- The fold of a map algebra is the unique map satisfying its defining equation. -/
+public theorem relCata_UP_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R)
+      ↔ Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  ⟨I.cata_unique _ _ _ (Λ_is_map' X), fun h => by rw [h]; exact I.cata_comm _ _⟩
+
+/-- `Λ` cancellation: `Λ(X)∋ = X`, and `Λ(u∋) = u` at the map `u`. -/
+public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)
+      ↔ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A :=
+  ⟨fun h => by rw [← h, Λ_eps_eq'],
+   fun h => by rw [h]; exact ((Λ_UP _ (I.cata_map _ _)).mpr rfl).symm⟩
+
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
     of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ A`
     (not just maps). -/
 public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    (I.α ≫ X = F.map X ≫ f) ↔ X = relCata f := by
-  constructor
-  · intro h
-    -- `Λ X` is a map, so `X = Λ X ≫ ∋ A`; rewrite both sides of `h` through this map
-    -- and transport the equation to `Λ (F.map (∋ A) ≫ R)` via `Λ_fusion`.
-    have hX_eps : Λ X ≫ ∋ A = X := Λ_eps_eq' X
-    have hFX : F.map X = F.map (Λ X) ≫ F.map (∋ A) := by
-      -- rewrite the LARGER pattern `Λ X ≫ ∋ A` (not bare `X`) so the `Λ X` inside it
-      -- does not spuriously get rewritten too.
-      have hcomp : F.map (Λ X ≫ ∋ A) = F.map (Λ X) ≫ F.map (∋ A) := F.map_comp _ _
-      rwa [hX_eps] at hcomp
-    have hRHS : Λ (F.map X ≫ f) = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ f) := by
-      rw [hFX, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
-    have hLHS : Λ (I.α ≫ X) = I.α ≫ Λ X := Λ_fusion I.α_map X
-    have heq : I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ f) := by
-      rw [← hLHS, h, hRHS]
-    have hAX_eq_u : Λ X = I.cata (Λ (F.map (∋ A) ≫ f)) (Λ_is_map' _) :=
-      I.cata_unique _ (Λ_is_map' _) (Λ X) (Λ_is_map' X) heq
-    rw [relCata_unfold, ← hAX_eq_u, hX_eps]
-  · intro h
-    rw [h, relCata_unfold]
-    generalize hu_def : I.cata (Λ (F.map (∋ A) ≫ f)) (Λ_is_map' _) = u
-    have hu_comm : I.α ≫ u = F.map u ≫ Λ (F.map (∋ A) ≫ f) := by
-      rw [← hu_def]; exact I.cata_comm _ _
-    calc I.α ≫ (u ≫ ∋ A)
-        = (I.α ≫ u) ≫ ∋ A := by rw [Cat.assoc]
-      _ = (F.map u ≫ Λ (F.map (∋ A) ≫ f)) ≫ ∋ A := by rw [hu_comm]
-      _ = F.map u ≫ (Λ (F.map (∋ A) ≫ f) ≫ ∋ A) := by rw [Cat.assoc]
-      _ = F.map u ≫ (F.map (∋ A) ≫ f) := by rw [Λ_eps_eq']
-      _ = (F.map u ≫ F.map (∋ A)) ≫ f := by rw [Cat.assoc]
-      _ = F.map (u ≫ ∋ A) ≫ f := by rw [F.map_comp]
+    (I.α ≫ X = F.map X ≫ f) ↔ X = relCata f :=
+  (relCata_UP_step1 I f X).trans <| (relCata_UP_step2 I f X).trans <|
+    (relCata_UP_step3 I f X).trans <| (relCata_UP_step4 I f X).trans (relCata_UP_step5 I f X)
 
 /-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
 public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
