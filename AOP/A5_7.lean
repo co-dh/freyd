@@ -893,6 +893,12 @@ section LaTZero
 
 variable {𝒜 : Type u₁} {ℬ : Type u₂} [Allegory.{v₁} 𝒜] [DistributiveAllegory ℬ]
 
+/-- `𝟘` is STRICTLY natural between ANY two relators: both sides of the square at `R` are `𝟘`, by
+    the two absorption laws.  This is the dot on a `𝟘` bead wherever the statement varies its ends. -/
+public theorem strictNatural_zero (F G : Relator 𝒜 ℬ) :
+    StrictNatural F G (fun A => (𝟘 : G.obj A ⟶ F.obj A)) :=
+  fun {_ _} _ => by rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_comp]
+
 /-- `Relator.const z` is TERMINAL: exactly one lax natural transformation `F ⟶ const z`, namely
     `𝟘` at every object.  Every `X : F(a) ⟶ z` is `X ≫ 𝟙 z = X ≫ 𝟘 = 𝟘`. -/
 public theorem const_zero_terminal {z : ℬ} (hz : 𝟙 z = (𝟘 : z ⟶ z)) (F : Relator 𝒜 ℬ) :
