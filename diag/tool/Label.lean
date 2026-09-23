@@ -228,7 +228,10 @@ def juxt (a b : String) : String :=
   if a.isEmpty || b.isEmpty then a ++ b
   -- `°` is a POSTFIX: it terminates its operand exactly as a closer does, so `est(R∩S°S)` must not
   -- come out `est(R∩S° S)`.
-  else if oneChar a || ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front then a ++ b
+  -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
+  -- blocks) cannot continue a name either, so `cost≤cost°` and `plus≥` close up as the note sets them.
+  else if oneChar a || ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front
+      || (0x2190 ≤ b.front.val && b.front.val ≤ 0x22FF) then a ++ b
   else a ++ " " ++ b
 
 /-! ### THE PRECEDENCES ARE THE NOTATIONS' OWN.  A number invented here is a second copy of a precedence

@@ -365,6 +365,16 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.R] def unexpandCodeR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.R] def unexpandPartyR : Unexpander | _ => `($(mkIdent `R))
+-- The party's `cost` drops its `rating` for the same reason `R` does: it is the section's context.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.costFn] def unexpandPartyCostFn : Unexpander | _ => `($(mkIdent `cost))
+-- The list sum is the note's `sum`; the `c` only tells the cons-list function from the relation.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.csum] def unexpandCsum : Unexpander | _ => `($(mkIdent `sum))
+-- The section's own integer ordering is written by its operator, as `leRel` is.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Party.leq] def unexpandPartyLeq : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.R] def unexpandTourR : Unexpander | _ => `($(mkIdent `R))
 
