@@ -844,6 +844,35 @@ partial def Lbl.flat : Lbl → String
   | .frac n d t => (if t then "(" ++ n.flat ++ ")" else n.flat) ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
 
+/-- The tree with every component's index dropped — `flat`'s rule, kept in the tree so a picture
+    that sets the label as typst content still gets its fractions. -/
+partial def Lbl.bare : Lbl → Lbl
+  | .sub b _ => b.bare
+  | .frac n d t => .frac n.bare d.bare t
+  | .seq ps => .seq (ps.map Lbl.bare)
+  | l => l
+
+/-- Whether a fraction stands anywhere in the tree: its bar makes the label two lines tall. -/
+partial def Lbl.hasFrac : Lbl → Bool
+  | .text _ => false
+  | .sub b i => b.hasFrac || i.hasFrac
+  | .frac .. => true
+  | .seq ps => ps.any Lbl.hasFrac
+
+/-- A LABEL AS TYPST CONTENT, SHAPE AND ALL — a typst CODE expression.  EVERY shape is written out
+    in its parts, and a `raw(…)` is only what is left when there is none — `norm` merges a tree with
+    no shape in it into the one `text`, byte for byte the name.  A division is the FRACTION wherever
+    it stands, because the shape is read off the CONSTRUCTOR: `[`$frac(R, ∋)$`,…]` inside a
+    coproduct's brackets, `⦇`$frac(F(∋)R, ∋)$`⦈` inside a fold's.  A component's index is set
+    beneath its head (`φ`#sub[`A`]); a picture that drops it passes `bare` first.  This is the one
+    writer of the tree: bead, box, formula and commutative arrow all set a label through it. -/
+partial def Lbl.typst (l : Lbl) : String :=
+  match l.norm with
+  | .text s => "raw(\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\")"
+  | .sub b i => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
+  | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
+  | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
+
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
 partial def Lbl.norm (l : Lbl) : Lbl :=

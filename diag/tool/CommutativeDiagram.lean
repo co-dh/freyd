@@ -1353,27 +1353,13 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
 def typstArr (rows : List String) (close : String) : String :=
   "(\n" ++ String.join (rows.map fun r => s!"  {r},\n") ++ ")" ++ close
 
-/-- A LABEL AS TYPST CONTENT, SHAPE AND ALL.  EVERY shape is written out in its parts, and a
-    `raw(…)` is only what is left when there is none — `norm` merges a tree with no shape in it into
-    the one `text`, byte for byte the name.  So a component's index is set BENEATH its head the way
-    the note sets it (`` `φ` ``#sub[`` `A` ``]) wherever the `sub` sits: bare, inside a functor's
-    brackets, or one factor of a composite, because the shape is read off the CONSTRUCTOR and the
-    parts around it are written out either side of it.  Closing the index up into its head's run
-    instead — the one name `φA` — is what a `raw` forces, and it is what the note does not write.
-    This is the one place the tree is written out: every other picture takes the flat spelling. -/
-partial def typstLbl (l : StrDiag.Lbl) : String :=
-  match l.norm with
-  | .text s => "raw(" ++ typstString s ++ ")"
-  | .sub b i => "[#" ++ typstLbl b ++ "#sub[#" ++ typstLbl i ++ "]]"
-  | .frac n d _ => "$frac(#" ++ typstLbl n ++ ", #" ++ typstLbl d ++ ")$"
-  | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ typstLbl p) ++ "]"
 
 def typstNodes (ns : Array Node) (close := "\n") : String :=
   typstArr (ns.toList.map fun v =>
-    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: {typstLbl v.label}, \
+    s!"(id: {typstString v.id}, at: ({fmt v.gx}, {fmt v.gy}), label: {v.label.typst}, \
        {if v.value.isEmpty then "" else
           s!"value: ({String.join (v.value.toList.map fun w =>
-            s!"(parts: ({String.join (w.parts.toList.map fun p => s!"{typstLbl p}, ")}), \
+            s!"(parts: ({String.join (w.parts.toList.map fun p => s!"{p.typst}, ")}), \
                hue: {typstString w.hue}), ")}), "}\
        hue: {typstString v.hue})")
     close
@@ -1384,9 +1370,9 @@ def typstNodes (ns : Array Node) (close := "\n") : String :=
 def typstEdges (es : Array Edge) (close := "\n") : String :=
   typstArr (es.toList.map fun e =>
     s!"(from: {typstString e.src}, to: {typstString e.tgt}, \
-       label: ({String.join (e.label.toList.map fun p => s!"{typstLbl p}, ")}), \
+       label: ({String.join (e.label.toList.map fun p => s!"{p.typst}, ")}), \
        {if e.value.isEmpty then "" else
-          s!"value: ({String.join (e.value.toList.map fun p => s!"{typstLbl p}, ")}), "}\
+          s!"value: ({String.join (e.value.toList.map fun p => s!"{p.typst}, ")}), "}\
        side: {typstString e.side}, bow: {fmt e.bow}, \
        hue: {typstString e.hue}{if e.dash then ", dash: true" else ""})")
     close

@@ -46,6 +46,8 @@ inductive Val where
   | nul
   | arr (xs : Array Val)
   | dict (kvs : Array (String × Val))
+  /-- Typst CODE, written as it stands: a label's content, fractions and all (`Lbl.typst`). -/
+  | code (c : String)
   deriving Inhabited
 
 /-- Typst string literal: only `\` and `"` can end it early. -/
@@ -57,6 +59,7 @@ partial def Val.render : Val → String
   | .n v => toString v
   | .b v => if v then "true" else "false"
   | .nul => "none"
+  | .code c => c
   -- Trailing comma always: in Typst `(x)` is `x` and only `(x,)` is a one-element array, and a
   -- tree whose one-lane stack collapsed to its lane is a different picture.
   | .arr xs => "(" ++ String.join (xs.toList.map fun x => x.render ++ ", ") ++ ")"
@@ -369,12 +372,17 @@ def mkPic (kind : String) (ins outs : Array Obj) (src tgt : Obj) (isMap : Bool)
     (extra : Array (String × Val)) : Pic :=
   { val := nodeOf kind ins.size outs.size extra, ins, outs, src, tgt, isMap }
 
+/-- A box's label: `label` the flat spelling (a key, a message), `shape` the content `cpanel` sets
+    — a division the fraction wherever it stands in the label — and `tall` whether a bar is in it. -/
+def labelVals (l : StrDiag.Lbl) : Array (String × Val) :=
+  #[("label", .s l.flat), ("shape", .code l.bare.typst), ("tall", .b l.hasFrac)]
+
 /-- A box spanning the strands its ports carry.  A relation's chamfer says which way it runs; a
     map is a plain rectangle, having only one direction to run in. -/
-def boxPic (label : String) (ins outs : Array Obj) (src tgt : Obj) (isMap : Bool)
+def boxPic (label : StrDiag.Lbl) (ins outs : Array Obj) (src tgt : Obj) (isMap : Bool)
     (frac flip : Bool := false) : Pic :=
   mkPic "box" ins outs src tgt isMap
-    #[("label", .s label), ("chamfer", .b (!isMap)), ("frac", .b frac), ("flip", .b flip)]
+    (labelVals label ++ #[("chamfer", .b (!isMap)), ("frac", .b frac), ("flip", .b flip)])
 
 /-- The node kind a picture is, for the clauses that ask (a `°` flips a BOX and frames anything
     else; a run splices into the run above it). -/
@@ -606,7 +614,7 @@ partial def drawItems (e : Expr) : MetaM (Array Pic) := do
       let ws ← wiresOf rs
       let frac := boxPic "𝟙" ws #[powLabel rs] rs (powLabel rs) true (frac := true)
       if r.getAppFnArgs.1 == ``Cat.id then return #[{ frac with tgt := a }]
-      return #[frac, boxPic ("E(" ++ (← StrDiag.label r) ++ ")") #[powLabel rs] #[powLabel rt]
+      return #[frac, boxPic ("E(" ++ (← StrDiag.labelT r) ++ ")") #[powLabel rs] #[powLabel rt]
         (powLabel rs) (powLabel rt) true]
     | none => return #[← draw e]
   | (``Cat.id, _) => return #[]
@@ -769,7 +777,7 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
     -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
     -- is a primitive of `circuit-sigs.json`, so mirroring `∋` would chamfer it the wrong way.
     let named := StrDiag.namedRecip r
-    let lbl ← match named with | some n => pure n | none => StrDiag.label r
+    let lbl ← match named with | some n => pure (StrDiag.Lbl.text n) | none => StrDiag.labelT r
     let flip := if named.isSome then p.val.flag "flip" else !(p.val.flag "flip")
     return boxPic lbl p.outs p.ins src tgt false (frac := p.val.flag "frac") (flip := flip)
 
@@ -789,9 +797,9 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
         -- body that draws as ONE box is that one arrow, and the note writes it by the name the
         -- definition gave it (`plus`, `glue`), not by the lambda the body happens to be.
         if p.val.kindOf == some "box" then
-          return { p with val := p.val.set "label" (.s (← StrDiag.label e)) }
+          return { p with val := (labelVals (← StrDiag.labelT e)).foldl (fun v (k, x) => v.set k x) p.val }
         return p
-  return boxPic (← StrDiag.label e) (← wiresOf src) (← wiresOf tgt) src tgt (← StrDiag.isMapOf e)
+  return boxPic (← StrDiag.labelT e) (← wiresOf src) (← wiresOf tgt) src tgt (← StrDiag.isMapOf e)
 
 partial def lane (p : Pic) : MetaM Pic := return { p with val := laneVal p }
 

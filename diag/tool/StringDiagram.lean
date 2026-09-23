@@ -119,7 +119,8 @@ def Mark.key : Mark → String
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
     declaration says it is natural. -/
 structure Row where
-  label : String
+  /-- The bead's label, shape and all: a division stays a fraction inside any composite. -/
+  shape : Lbl
   /-- THE BEAD'S OWN TERM (`beadKey`), which is what says two beads are ONE 2-CELL — the label is
       a rendering and a rendering is the printing rules' business, not the picture's identity. -/
   key   : String
@@ -154,6 +155,9 @@ structure Row where
       note's unit lane, born half a row below the row it stands on with its own mark, not a bead. -/
   unit  : Bool := false
   deriving Inhabited
+
+/-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
+def Row.label (r : Row) : String := r.shape.flat
 
 /-- A PICTURE, with an open top and bottom edge — the value `⟦f⟧` is, so that `⟦f≫g⟧ = ⟦f⟧⋆⟦g⟧` and
     `⟦φ×ψ⟧ = ×▹(⟦φ⟧∥⟦ψ⟧)` are composites of pictures and not a second walk over the term. -/
@@ -303,12 +307,9 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
   -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
   -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
   let xo := roundTo 2 (if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0 + DX)
-  -- A DIVISION `x%∋` is one token of the note's, `frac(x, ∋)` (`note-style.typ`'s `plain` reads it
-  -- back as this very spelling), so a label that IS one is written as the note draws it — the unit
-  -- `𝟙%∋` above all — where a division inside a composite label stays in the composite's text.
-  let cell (s : String) : String :=
-    let top := (s.dropEnd 2).toString
-    if s.endsWith "%∋" && !top.contains '%' then "frc([`" ++ top ++ "`])" else "[`" ++ s ++ "`]"
+  -- A label is set from its TREE (`Lbl.typst`), so a division is the fraction the note draws
+  -- wherever it stands — the unit `𝟙%∋`, and one nested in a composite (`[R%∋,S%∋]`) alike.
+  let cell (l : Lbl) : String := l.bare.typst
   let key (m : Mark) : String := ", \"" ++ m.key ++ "\""
   let held := heldLanes p
   let mut beads : Array String := #[]
@@ -344,13 +345,13 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
       -- riding the object wire has exactly as much as one standing in its own column.
       beads := beads.push <| match reach, dot with
         | none, none =>
-          if mark.isEmpty then "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ")"
-          else "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, none" ++ mark ++ ")"
+          if mark.isEmpty then "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ")"
+          else "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, none" ++ mark ++ ")"
         | none, some d =>
-          "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, none, " ++ num d ++ mark ++ ")"
-        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ")"
+          "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, " ++ num d ++ mark ++ ")"
+        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ")"
         | some rc, some d =>
-          "(" ++ num ys[i]! ++ ", " ++ cell r.label ++ ", black, " ++ num rc ++ ", " ++ num d
+          "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ", " ++ num d
             ++ mark ++ ")"
       objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
   let lanecode : Lane → String := fun l =>
@@ -365,7 +366,7 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
     let nm := if l.born < 0 || l.dies >= (n : Int) then "none" else cell l.label
     let tail := match un with
       | none => "none"
-      | some r => cell r.label ++ match r.nat with
+      | some r => cell r.shape ++ match r.nat with
         | some .strict => ""
         | some m => key m
         -- A refuted unit draws no mark, as a refuted bead draws no dot; the `nat:` row says which.
@@ -487,8 +488,7 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
     the picture draws.  The header naming how to regenerate it is `DiagExport`'s, written from the
     argv it was run with. -/
 def fileOf (body : String) (nat : String := "") : String :=
-  "#import \"../dpanel.typ\": *\n\
-   #import \"../circuit.typ\": frc\n\n" ++ body ++ nat
+  "#import \"../dpanel.typ\": *\n\n" ++ body ++ nat
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about
@@ -1009,8 +1009,8 @@ private def bareIndex (e : Expr) (vs : Array Expr) : MetaM Expr := do
   if ← printsItsName f then return e
   return f
 
-def beadLabel (core : Expr) (vs : Array Expr) : MetaM String := do
-  label (← bareIndex (← beadCore core vs) vs)
+def beadLabel (core : Expr) (vs : Array Expr) : MetaM Lbl := do
+  labelT (← bareIndex (← beadCore core vs) vs)
 
 /-- ONE bead: `arms` born at the top edge and eaten by it, `legs` made by it and live to the bottom.
     The VERDICT is searched HERE, off the bead's own family — the lanes it runs under and the lanes
@@ -1107,7 +1107,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     | some .spider | none => false
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
-    { label := (← beadLabel core (#[ox, oy] ++ v?.toArray)),
+    { shape := (← beadLabel core (#[ox, oy] ++ v?.toArray)),
       key := (← beadKey core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },

@@ -28,12 +28,12 @@ namespace Freyd.FormulaRender
 
 open Freyd.StrDiag
 
-/-- THE LINE'S BREAK OPPORTUNITY, after the statement's relation: the raw closes, a zero-width space
-    stands outside it, and the raw reopens.  A raw is one unbreakable word, so a cell too narrow for
+/-- THE LINE'S BREAK OPPORTUNITY, after the statement's relation: a zero-width space stands between the
+    statement's two parts.  A raw is one unbreakable word, so a cell too narrow for
     a closed-up statement is CUT by the paper edge where a hand-typed neighbour breaks after its
     relation symbol; `#sym.zws` is invisible when the line does not break, and `#h(0pt, weak: true)`
     in its place gives no break opportunity at all. -/
-def relBreak : String := "`#sym.zws`"
+def relBreak : String := "#sym.zws"
 
 /-- Chase `.lhs`/`.rhs` down through statements built from statements (`↔`, `∧`), the same walk
     `StrDiag.drawString`'s `reqParts` does: a step lands on a CONNECTIVE and keeps chasing, or on a
@@ -61,8 +61,8 @@ partial def descend (declName : Name) (path : List String) (body : Expr) : MetaM
     ARM of a fork or an OPERAND of a union or meet, which is a restriction of the PICTURE the
     formula has no counterpart of: the statement itself has no such part to print, so this fails
     rather than guess at what the fork's other side would have said. -/
-partial def withBody (declName : Name) (branch : List StrDiag.Sel) (e : Expr)
-    (k : Expr → MetaM String) : MetaM String := do
+partial def withBody {α : Type} [Inhabited α] (declName : Name) (branch : List StrDiag.Sel) (e : Expr)
+    (k : Expr → MetaM α) : MetaM α := do
   match branch with
   | [] => k e
   | .body :: rest =>
@@ -83,7 +83,7 @@ partial def withBody (declName : Name) (branch : List StrDiag.Sel) (e : Expr)
     write every box and bead with, so this prints from the same place their pictures are drawn
     from. -/
 def render (declName : Name) (binder : Option String) (path : List String)
-    (branch : List StrDiag.Sel) : MetaM String :=
+    (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
   withDeclScope declName do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescope ci.type fun xs body => do
@@ -96,8 +96,8 @@ def render (declName : Name) (binder : Option String) (path : List String)
           none — its formula is `<name>≜<body>`"
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
-      let head ← label (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
-      return ← withBody declName branch (val.beta xs) fun v => return head ++ "≜" ++ (← label v)
+      let head ← labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
+      return ← withBody declName branch (val.beta xs) fun v => return #[head ++ "≜" ++ (← labelT v)]
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -122,8 +122,8 @@ def render (declName : Name) (binder : Option String) (path : List String)
         pure (tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none)
       else pure none
     let ante ← match cond with
-      | some c => pure ((← labelAt (Prec.impl + 1) c) ++ implArrow)
-      | none => pure ""
+      | some c => pure ((← labelTree (Prec.impl + 1) c) ++ implArrow)
+      | none => pure (Lbl.text "")
     let target ← descend declName path body
     withBody declName branch target fun target' => do
       -- A PREDICATE THE NOTE WRITES BY NAME IS NOT UNFOLDED HERE.  `splitM`'s delta step is there so
@@ -137,14 +137,15 @@ def render (declName : Name) (binder : Option String) (path : List String)
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return ante ++ (← label l) ++ sym ++ relBreak ++ (← label r)
-      | none => return ante ++ (← label target')
+      | some (sym, l, r) => return #[ante ++ (← labelT l) ++ sym, ← labelT r]
+      | none => return #[ante ++ (← labelT target')]
 
-/-- The file a note cell `#include`s: the statement as typst inline raw, cut after its relation by
+/-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
+    fraction wherever it stands), cut after its relation by
     `relBreak` so the cell has somewhere to wrap.  The `lean:<decl>@<key>` marker above it is
     `DiagExport.certLine`'s, written for every route at the one place the file is. -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
-  return "`" ++ (← render declName binder path branch) ++ "`\n"
+  return relBreak.intercalate ((← render declName binder path branch).toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
 end Freyd.FormulaRender
