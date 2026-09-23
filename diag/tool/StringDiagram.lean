@@ -1086,7 +1086,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let c := if named then all[i]! else typs[i - all.size]!
     unless (← readEnds regionTy cat c.2).isSome do continue
     let vd ← try verdict regionTy cat c.2 catch e =>
-      throwError "the bead `{← beadLabel core #[ox, oy, c.1]}`: {← e.toMessageData.toString}"
+      throwError "the bead `{(← beadLabel core #[ox, oy, c.1]).flat}`: {← e.toMessageData.toString}"
     if named && pick.isNone then pick := some (c.1, c.2, vd)
     if vd.cited then pick := some (c.1, c.2, vd)
   let v? := pick.map (·.1)

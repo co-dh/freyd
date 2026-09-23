@@ -859,20 +859,6 @@ partial def Lbl.hasFrac : Lbl → Bool
   | .frac .. => true
   | .seq ps => ps.any Lbl.hasFrac
 
-/-- A LABEL AS TYPST CONTENT, SHAPE AND ALL — a typst CODE expression.  EVERY shape is written out
-    in its parts, and a `raw(…)` is only what is left when there is none — `norm` merges a tree with
-    no shape in it into the one `text`, byte for byte the name.  A division is the FRACTION wherever
-    it stands, because the shape is read off the CONSTRUCTOR: `[`$frac(R, ∋)$`,…]` inside a
-    coproduct's brackets, `⦇`$frac(F(∋)R, ∋)$`⦈` inside a fold's.  A component's index is set
-    beneath its head (`φ`#sub[`A`]); a picture that drops it passes `bare` first.  This is the one
-    writer of the tree: bead, box, formula and commutative arrow all set a label through it. -/
-partial def Lbl.typst (l : Lbl) : String :=
-  match l.norm with
-  | .text s => "raw(\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\")"
-  | .sub b i => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
-  | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
-  | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
-
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
 partial def Lbl.norm (l : Lbl) : Lbl :=
@@ -890,6 +876,44 @@ where
     match acc.back?, x with
     | some (.text a), .text b => acc.pop.push (.text (a ++ b))
     | _, _ => acc.push x
+
+/-- A LABEL AS TYPST CONTENT, SHAPE AND ALL — a typst CODE expression.  EVERY shape is written out
+    in its parts, and a `raw(…)` is only what is left when there is none — `norm` merges a tree with
+    no shape in it into the one `text`, byte for byte the name.  A division is the FRACTION wherever
+    it stands, because the shape is read off the CONSTRUCTOR: `[`$frac(R, ∋)$`,…]` inside a
+    coproduct's brackets, `⦇`$frac(F(∋)R, ∋)$`⦈` inside a fold's.  A component's index is set
+    beneath its head (`φ`#sub[`A`]); a picture that drops it passes `bare` first.  This is the one
+    writer of the tree: bead, box, formula and commutative arrow all set a label through it. -/
+partial def Lbl.typst (l : Lbl) : String :=
+  match l.norm with
+  | .text s => "raw(\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\")"
+  | .sub b i => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
+  | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
+  | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
+
+/-- The name of the `i`th local an operand is handed to the printer as: a token no printer writes
+    and no label contains, so the printed head can be cut at exactly the places the operands went. -/
+def holeName (i : Nat) : String := "⟪" ++ toString i ++ "⟫"
+
+/-- The PRINTER'S TEXT with each operand put back as its own TREE.  A head with no clause is spelled
+    by the printer, which takes a NAME for each operand and hands back a string; cutting that string
+    at the operand's own local puts the operand's shape back — a division inside
+    `list(choose%∋ est(R°))` is the fraction it was — with no reading of the operand's spelling. -/
+partial def Lbl.fill (s : String) (holes : Array Lbl) : Lbl :=
+  (List.range holes.size).foldl (fun acc i => put acc (holeName i) holes[i]!) (Lbl.text s)
+where
+  put (l : Lbl) (h : String) (x : Lbl) : Lbl :=
+    match l with
+    | .text t => .seq (((t.splitOn h).map Lbl.text).intersperse x).toArray
+    | .seq ps => .seq (ps.map (put · h x))
+    | l => l
+
+/-- Every TEXT leaf rewritten by `f`, the shape left alone. -/
+partial def Lbl.mapText (f : String → String) : Lbl → Lbl
+  | .text s => .text (f s)
+  | .sub b i => .sub (b.mapText f) (i.mapText f)
+  | .frac n d t => .frac (n.mapText f) (d.mapText f) t
+  | .seq ps => .seq (ps.map (Lbl.mapText f))
 
 instance : Coe String Lbl := ⟨Lbl.text⟩
 instance : HAppend Lbl Lbl Lbl := ⟨fun a b => .seq #[a, b]⟩
@@ -1252,21 +1276,23 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- `thin(prefix°×(⊤+⊤))`, not a second pair inside.  SOMETHING ALREADY DELIMITS IT in two ways,
     -- and both count: the brackets `appShow` is about to write, and a head whose OWN NOTATION
     -- delimits its operand — which is exactly a syntax with no identifier head, `stxHead`'s test,
-    -- since a notation opens with an atom.  THE HEAD'S OWN PRINTER TAKES A NAME, so an operand handed
-    -- back to it is its FLAT spelling: a shape set inside a notation nobody here wrote has nowhere
-    -- to be set.
+    -- since a notation opens with an atom.  THE HEAD'S OWN PRINTER TAKES A NAME, so each operand
+    -- goes in as a HOLE (`holeName`) and comes back as its own tree (`Lbl.fill`): a division inside
+    -- the operand of a head nobody here wrote is still the fraction.
     let stx ← PrettyPrinter.delab e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
-    let rec respell (p : Nat) (as : List Expr) (t : Expr) : MetaM Lbl := do
+    let rec respell (p : Nat) (as : List Expr) (holes : Array Lbl) (t : Expr) : MetaM Lbl := do
       match as with
-      | [] => return .text (← appShow t)
+      | [] => return Lbl.fill (← appShow t) holes
       | a :: rest =>
-        let nm := Name.mkSimple (← labelTree p a).flat
+        let nm := Name.mkSimple (holeName holes.size)
+        let l ← labelTree p a
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
           -- ONE LOCAL PER DISTINCT OPERAND: the replacement below takes every occurrence at once,
           -- so a second local of the same name has nothing left to replace and only shadows the
           -- first, which the printer then marks inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
-          respell p (rest.filter (· != a)) (t.replace fun s => if s == a then some x else none)
+          respell p (rest.filter (· != a)) (holes.push l)
+            (t.replace fun s => if s == a then some x else none)
     -- A HEAD THE NOTE SETS TIGHT closes up the space the FORMATTER wrote around the operator's own
     -- atom (`A × B` is `A×B`), and that space alone: a space INSIDE an operand belongs to that
     -- operand's own application, and cutting it welds two factors into one name — `E Nat × E Nat`
@@ -1278,7 +1304,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if tightHeads.contains c then
       let ty ← Meta.inferType e
       let ops ← args.filterM fun a => do Meta.isDefEqGuarded (← Meta.inferType a) ty
-      return wrap Prec.juxt (.text ((← respell Prec.factor ops.toList e).flat.replace " " ""))
+      return wrap Prec.juxt ((← respell Prec.factor ops.toList #[] e).mapText (·.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
       -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.
@@ -1339,7 +1365,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- everything else is bracketed by whatever rule builds it.  At composition's own precedence,
     -- which is what every operator looser than juxtaposition is set at.
     let out ← respell (if paren then Prec.loose else Prec.atom)
-      ((← arrows args) ++ (← relatorArgs args)).toList e
+      ((← arrows args) ++ (← relatorArgs args)).toList #[] e
     match stxPeel stx with
     | .ident _ _ nm _ => return if oneToken nm.getString! then out else wrap Prec.juxt out
     | _ => return out
