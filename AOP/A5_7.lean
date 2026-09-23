@@ -196,10 +196,10 @@ public theorem laxNatural_inside {𝒞 : Type u₃} [Allegory.{v₃} 𝒞] {F G 
     chord no relator moved is one the drawing cannot stand upright, which is why the note's own
     instance is stated here rather than read off `comp_slides`. -/
 public theorem laxNatural_comp_slide {F G H : Relator 𝒜 ℬ} {ψ : ∀ A : 𝒜, H.obj A ⟶ G.obj A}
-    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} (hψ : LaxNatural G H ψ) (hφ : LaxNatural F G φ)
-    {A B : 𝒜} (R : A ⟶ B) :
+    {φ : ∀ A : 𝒜, G.obj A ⟶ F.obj A} {A B : 𝒜} {R : A ⟶ B}
+    (hψ : H.map R ≫ ψ B ⊑ ψ A ≫ G.map R) (hφ : G.map R ≫ φ B ⊑ φ A ≫ F.map R) :
     H.map R ≫ (ψ B ≫ φ B) ⊑ (ψ A ≫ φ A) ≫ F.map R :=
-  comp_slides (hψ R) (hφ R)
+  comp_slides hψ hφ
 
 /-- A relator on the OUTSIDE carries a lax natural transformation to a lax natural one:
     `K ∘ φ : K ∘ G ⟶ K ∘ F`, with `K` running last.  `map_mono` on `φ`'s own inequation at `R`,
