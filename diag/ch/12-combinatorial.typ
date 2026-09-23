@@ -16,38 +16,38 @@
   // list type note: B&dM's `listr`, renamed here from p. 125 on
   [The list type, under the short name it keeps.],
 
- [`list(R)≜⦇[nil,(R⊗𝟙) cons]⦈` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.list_cata") #src[]],
   // lean:AOP.A5_6_ListCombinators.list_cata@83b2fcc6
   [#leant("Freyd.Alg.RelSet.ListRel.list_cata")],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
- [`subseq≜⦇[nil,cons ∪ π₂]⦈` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata") #src[]],
   // lean:AOP.A5_6_ListCombinators.subseq_cata@97265f47
   [#leant("Freyd.Alg.RelSet.ListRel.subseq_cata")],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
-  [`prefix≜⦇[nil,nil ∪ cons]⦈` \
- `=cat° π₁=init*` #src[]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
+ #leanf("Freyd.Alg.RelSet.ListRel.prefix_cat")`=init*` #src[]],
    // lean:AOP.A5_6_ListCombinators.prefix_cata@b8d861c4 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
   [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
- [`suffix≜cat° π₂=tail*` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.suffix_cat")`=tail*` #src[]],
   // lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e
   [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
- [`segment≜suffix prefix` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
   // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
   [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
   [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
 
- [`partition≜concat°` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.partition_concat") #src[]],
   // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
   [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
- [`concat≜⦇[nil,cat]⦈` #src[]],
+ [#leanf("Freyd.Alg.RelSet.ListRel.concat_cata") #src[]],
   // lean:AOP.A5_6_ListCombinators.concat_cata@7345ecd3
   [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
   [Joins the segments back up, which is why its converse splits a list.],

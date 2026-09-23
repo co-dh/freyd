@@ -927,6 +927,16 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.segment] def unexpandListRelSegment : Unexpander
   | `($_ $args*) => `($(mkIdent `segment) $args*)
   | _ => `($(mkIdent `segment))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.catR] def unexpandListRelCatR : Unexpander
+  | `($_ $args*) => `($(mkIdent `cat) $args*)
+  | _ => `($(mkIdent `cat))
+-- The note writes `partition≜concat°` and says in the row beside it that this `concat` is the one
+-- restricted to non-empty segments, so the restriction is the note's words, not a second name.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.concatNE] def unexpandListRelConcatNE : Unexpander
+  | `($_ $args*) => `($(mkIdent `concat) $args*)
+  | _ => `($(mkIdent `concat))
 -- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME, as `edit` does above: one
 -- arrow, drawn as a map in one panel and as a relation in another.
 open Lean PrettyPrinter in
