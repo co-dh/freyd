@@ -138,12 +138,6 @@ def decT {L E S : Type} (baseP : L → S → Prop) (stepP : E → S → S → Pr
   | CL.ConsList.wrap l => baseP l
   | CL.ConsList.cons c t => fun v => ∃ w, decT baseP stepP t w ∧ stepP c w v
 
-/-- `foldA hbase hstep ℓ` — the value of the decomposition `ℓ` under the refold algebra
-    (pointwise `cataFold h`, `foldA_pt`). -/
-def foldA {L E W : Type} (hbase : L → W) (hstep : E → W → W) : CL.ConsList L E → W
-  | CL.ConsList.wrap l => hbase l
-  | CL.ConsList.cons c t => hstep c (foldA hbase hstep t)
-
 /-! ## The bundle of creative inputs -/
 
 /-- The creative inputs of a greedy-as-extreme-DP derivation (B&dM Theorem 10.1 over the
@@ -192,7 +186,7 @@ structure GreedyDP (L E S W : Type) where
   /-- The greedy-exchange property (Prop 9.4's `hV`, pointwise): a `Vp`-better state admits,
       for every decomposition of the worse one, a decomposition of no worse value. -/
   exch : ∀ {w u}, Vp w u → ∀ ℓ, decT baseP stepP ℓ w →
-    ∃ ℓ', decT baseP stepP ℓ' u ∧ Rp (foldA hbase hstep ℓ) (foldA hbase hstep ℓ')
+    ∃ ℓ', decT baseP stepP ℓ' u ∧ Rp (CL.cfold hbase hstep ℓ) (CL.cfold hbase hstep ℓ')
 
 namespace GreedyDP
 
@@ -233,7 +227,7 @@ theorem decT_pt (P : GreedyDP L E S W) : ∀ (ℓ : CL.ConsList L E) (v : S),
      fun ⟨w, hw, hs⟩ => ⟨w, (decT_pt P t w).mpr hw, hs⟩⟩
 
 theorem foldA_pt (P : GreedyDP L E S W) : ∀ (ℓ : CL.ConsList L E) (x : W),
-    CL.cataFold P.hAlg ℓ x ↔ x = foldA P.hbase P.hstep ℓ
+    CL.cataFold P.hAlg ℓ x ↔ x = CL.cfold P.hbase P.hstep ℓ
   | CL.ConsList.wrap l, x => Iff.rfl
   | CL.ConsList.cons c t, x => by
     constructor
@@ -245,7 +239,7 @@ theorem foldA_pt (P : GreedyDP L E S W) : ∀ (ℓ : CL.ConsList L E) (x : W),
 
 /-- The hylomorphism identified: `H v x` iff `x` is the value of some decomposition of `v`. -/
 theorem specH_pt (P : GreedyDP L E S W) (v : S) (x : W) :
-    P.specH v x ↔ ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ x = foldA P.hbase P.hstep ℓ := by
+    P.specH v x ↔ ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ x = CL.cfold P.hbase P.hstep ℓ := by
   show ((relCata P.TRel)° ≫ relCata P.hAlg) v x ↔ _
   rw [← CL.cataR_eq_relCata, ← CL.cataR_eq_relCata]
   constructor
@@ -293,8 +287,8 @@ theorem hV (P : GreedyDP L E S W) : P.Vp° ≫ P.specH ⊑ P.specH ≫ P.Rp° :=
   rw [le_iff]; rintro u x ⟨w, hVwu, hH⟩
   obtain ⟨ℓ, hd, hx⟩ := (P.specH_pt w x).mp hH
   obtain ⟨ℓ', hd', hR⟩ := P.exch hVwu ℓ hd
-  refine ⟨foldA P.hbase P.hstep ℓ', (P.specH_pt u _).mpr ⟨ℓ', hd', rfl⟩, ?_⟩
-  show P.Rp x (foldA P.hbase P.hstep ℓ')
+  refine ⟨CL.cfold P.hbase P.hstep ℓ', (P.specH_pt u _).mpr ⟨ℓ', hd', rfl⟩, ?_⟩
+  show P.Rp x (CL.cfold P.hbase P.hstep ℓ')
   rw [hx]
   exact hR
 
@@ -433,8 +427,8 @@ theorem run_mem_mu (P : GreedyDP L E S W) (v : S) : mu P.body v (P.run v) := by
 /-- **Auto-derived extremum correctness**: the greedy result is the value of SOME
     decomposition, and it `Rp`-dominates the value of EVERY decomposition. -/
 theorem correct (P : GreedyDP L E S W) (v : S) :
-    (∃ ℓ, decT P.baseP P.stepP ℓ v ∧ foldA P.hbase P.hstep ℓ = P.run v)
-    ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (foldA P.hbase P.hstep ℓ) (P.run v) := by
+    (∃ ℓ, decT P.baseP P.stepP ℓ v ∧ CL.cfold P.hbase P.hstep ℓ = P.run v)
+    ∧ ∀ ℓ, decT P.baseP P.stepP ℓ v → P.Rp (CL.cfold P.hbase P.hstep ℓ) (P.run v) := by
   obtain ⟨Pset, hPset, hmin⟩ := le_iff.mp P.greedy_refine v (P.run v) (P.run_mem_mu v)
   have hmem : ∀ z, Pset z ↔ P.specH v z := fun z => CL.Λ_pt P.specH hPset z
   obtain ⟨hm, hlb⟩ := (est_apply P.Rp° Pset (P.run v)).mp hmin
@@ -442,15 +436,15 @@ theorem correct (P : GreedyDP L E S W) (v : S) :
   · obtain ⟨ℓ, hd, hx⟩ := (P.specH_pt v (P.run v)).mp ((hmem _).mp hm)
     exact ⟨ℓ, hd, hx.symm⟩
   · intro ℓ hd
-    exact hlb (foldA P.hbase P.hstep ℓ)
+    exact hlb (CL.cfold P.hbase P.hstep ℓ)
       ((hmem _).mpr ((P.specH_pt v _).mpr ⟨ℓ, hd, rfl⟩))
 
 /-- `correct`, transported along a problem-level specification: given the (problem-specific)
     characterisation "spec = value of some decomposition", the greedy result satisfies the
     spec and `Rp`-dominates every spec value. -/
 theorem correct_spec (P : GreedyDP L E S W) (spec : S → W → Prop)
-    (dec_spec : ∀ v ℓ, decT P.baseP P.stepP ℓ v → spec v (foldA P.hbase P.hstep ℓ))
-    (spec_dec : ∀ v y, spec v y → ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ foldA P.hbase P.hstep ℓ = y)
+    (dec_spec : ∀ v ℓ, decT P.baseP P.stepP ℓ v → spec v (CL.cfold P.hbase P.hstep ℓ))
+    (spec_dec : ∀ v y, spec v y → ∃ ℓ, decT P.baseP P.stepP ℓ v ∧ CL.cfold P.hbase P.hstep ℓ = y)
     (v : S) : spec v (P.run v) ∧ ∀ y, spec v y → P.Rp y (P.run v) := by
   obtain ⟨⟨ℓ, hd, hx⟩, hlb⟩ := P.correct v
   refine ⟨hx ▸ dec_spec v ℓ hd, fun y hy => ?_⟩
@@ -520,7 +514,7 @@ theorem pick15_lo {v : Nat} (h0 : v ≠ 0) (h5 : ¬ 5 ≤ v) : pick15 v = Sum.in
 /-- LOWER BOUND: every decomposition of `u` uses at least `cnt u` coins (each coin is worth
     at most 5). -/
 theorem dec15_lb : ∀ (ℓ : CL.ConsList Unit Nat) (u : Nat),
-    decT base15 step15 ℓ u → cnt u ≤ foldA hbase15 hstep15 ℓ
+    decT base15 step15 ℓ u → cnt u ≤ CL.cfold hbase15 hstep15 ℓ
   | CL.ConsList.wrap l, u, h => by
     have hu : u = 0 := h
     subst hu
@@ -530,15 +524,15 @@ theorem dec15_lb : ∀ (ℓ : CL.ConsList Unit Nat) (u : Nat),
     obtain ⟨w, hw, hc, hu⟩ := h
     have ih := dec15_lb t w hw
     subst hu
-    show cnt (w + c) ≤ foldA hbase15 hstep15 t + 1
+    show cnt (w + c) ≤ CL.cfold hbase15 hstep15 t + 1
     simp only [cnt] at ih ⊢
     rcases hc with rfl | rfl <;> omega
 
 /-- ACHIEVABILITY: the greedy decomposition of `u` uses exactly `cnt u` coins. -/
 theorem dec15_greedy (u : Nat) : ∃ ℓ : CL.ConsList Unit Nat,
-    decT base15 step15 ℓ u ∧ foldA hbase15 hstep15 ℓ = cnt u := by
+    decT base15 step15 ℓ u ∧ CL.cfold hbase15 hstep15 ℓ = cnt u := by
   have haux : ∀ (n u : Nat), u ≤ n →
-      ∃ ℓ, decT base15 step15 ℓ u ∧ foldA hbase15 hstep15 ℓ = cnt u := by
+      ∃ ℓ, decT base15 step15 ℓ u ∧ CL.cfold hbase15 hstep15 ℓ = cnt u := by
     intro n
     induction n with
     | zero =>
@@ -554,13 +548,13 @@ theorem dec15_greedy (u : Nat) : ∃ ℓ : CL.ConsList Unit Nat,
           exact ⟨CL.ConsList.wrap (), rfl, rfl⟩
         · obtain ⟨ℓ, hd, hf⟩ := ih (u - 1) (by omega)
           refine ⟨CL.ConsList.cons 1 ℓ, ⟨u - 1, hd, Or.inl rfl, by omega⟩, ?_⟩
-          show foldA hbase15 hstep15 ℓ + 1 = cnt u
+          show CL.cfold hbase15 hstep15 ℓ + 1 = cnt u
           rw [hf]
           simp only [cnt]
           omega
       · obtain ⟨ℓ, hd, hf⟩ := ih (u - 5) (by omega)
         refine ⟨CL.ConsList.cons 5 ℓ, ⟨u - 5, hd, Or.inr rfl, by omega⟩, ?_⟩
-        show foldA hbase15 hstep15 ℓ + 1 = cnt u
+        show CL.cfold hbase15 hstep15 ℓ + 1 = cnt u
         rw [hf]
         simp only [cnt]
         omega
@@ -649,7 +643,7 @@ def coins15 : GreedyDP Unit Nat Nat Nat where
     have hV' : cnt u ≤ cnt w := hV
     have hlb := dec15_lb ℓ w hd
     refine ⟨ℓ', hd', ?_⟩
-    show foldA hbase15 hstep15 ℓ' ≤ foldA hbase15 hstep15 ℓ
+    show CL.cfold hbase15 hstep15 ℓ' ≤ CL.cfold hbase15 hstep15 ℓ
     omega
 
 /-! ### The auto-derived results -/
@@ -658,7 +652,7 @@ def coins15 : GreedyDP Unit Nat Nat Nat where
 def spendable (v n : Nat) : Prop := ∃ a b, v = a + 5 * b ∧ n = a + b
 
 theorem dec15_spendable : ∀ (ℓ : CL.ConsList Unit Nat) (v : Nat),
-    decT base15 step15 ℓ v → spendable v (foldA hbase15 hstep15 ℓ)
+    decT base15 step15 ℓ v → spendable v (CL.cfold hbase15 hstep15 ℓ)
   | CL.ConsList.wrap l, v, h => by
     have hv : v = 0 := h
     exact ⟨0, 0, by omega, rfl⟩
@@ -666,11 +660,11 @@ theorem dec15_spendable : ∀ (ℓ : CL.ConsList Unit Nat) (v : Nat),
     obtain ⟨w, hw, hc, hv⟩ := h
     obtain ⟨a, b, hab, hn⟩ := dec15_spendable t w hw
     rcases hc with rfl | rfl
-    · exact ⟨a + 1, b, by omega, by show foldA hbase15 hstep15 t + 1 = a + 1 + b; omega⟩
-    · exact ⟨a, b + 1, by omega, by show foldA hbase15 hstep15 t + 1 = a + (b + 1); omega⟩
+    · exact ⟨a + 1, b, by omega, by show CL.cfold hbase15 hstep15 t + 1 = a + 1 + b; omega⟩
+    · exact ⟨a, b + 1, by omega, by show CL.cfold hbase15 hstep15 t + 1 = a + (b + 1); omega⟩
 
 theorem spendable_dec15 : ∀ (a b v : Nat), v = a + 5 * b →
-    ∃ ℓ, decT base15 step15 ℓ v ∧ foldA hbase15 hstep15 ℓ = a + b := by
+    ∃ ℓ, decT base15 step15 ℓ v ∧ CL.cfold hbase15 hstep15 ℓ = a + b := by
   intro a
   induction a with
   | zero =>
@@ -684,13 +678,13 @@ theorem spendable_dec15 : ∀ (a b v : Nat), v = a + 5 * b →
       intro v hv
       obtain ⟨ℓ, hd, hf⟩ := ihb (5 * b) (by omega)
       refine ⟨CL.ConsList.cons 5 ℓ, ⟨5 * b, hd, Or.inr rfl, by omega⟩, ?_⟩
-      show foldA hbase15 hstep15 ℓ + 1 = 0 + (b + 1)
+      show CL.cfold hbase15 hstep15 ℓ + 1 = 0 + (b + 1)
       omega
   | succ a iha =>
     intro b v hv
     obtain ⟨ℓ, hd, hf⟩ := iha b (a + 5 * b) rfl
     refine ⟨CL.ConsList.cons 1 ℓ, ⟨a + 5 * b, hd, Or.inl rfl, by omega⟩, ?_⟩
-    show foldA hbase15 hstep15 ℓ + 1 = (a + 1) + b
+    show CL.cfold hbase15 hstep15 ℓ + 1 = (a + 1) + b
     omega
 
 /-- **Auto-derived correctness of the {1, 5} greedy coin changer**: the derived program
@@ -709,9 +703,9 @@ theorem coins15_correct (v : Nat) :
 theorem run_eq_cnt (v : Nat) : coins15.run v = cnt v := by
   obtain ⟨⟨ℓ, hd, hf⟩, hlb⟩ := coins15.correct v
   obtain ⟨ℓ', hd', hf'⟩ := dec15_greedy v
-  have h1 : coins15.run v ≤ foldA hbase15 hstep15 ℓ' := hlb ℓ' hd'
-  have h2 : cnt v ≤ foldA hbase15 hstep15 ℓ := dec15_lb ℓ v hd
-  have hf2 : foldA hbase15 hstep15 ℓ = coins15.run v := hf
+  have h1 : coins15.run v ≤ CL.cfold hbase15 hstep15 ℓ' := hlb ℓ' hd'
+  have h2 : cnt v ≤ CL.cfold hbase15 hstep15 ℓ := dec15_lb ℓ v hd
+  have hf2 : CL.cfold hbase15 hstep15 ℓ = coins15.run v := hf
   omega
 
 /-- **The §7.5-style morphism headline, auto-derived**: the greedy program IS `min R·ΛH` as a

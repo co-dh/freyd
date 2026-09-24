@@ -563,4 +563,9 @@ open Lean PrettyPrinter Delaborator SubExpr in
   unless ← Meta.isDefEq args[0]! (mkConst ``Unit) do failure
   `($(mkIdent `nil))
 
+/-- The cons-list fold `⦇[g,st]⦈` as a function; `CL.cfold_cata` says it is the fold. -/
+@[expose] public def cfold {L E C : Type} (g : L → C) (st : E → C → C) : ConsList L E → C
+  | ConsList.wrap d => g d
+  | ConsList.cons e x => st e (cfold g st x)
+
 end Freyd.Alg.RelSet.CL

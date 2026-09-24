@@ -988,15 +988,6 @@ public instance instInhabitedCL : Inhabited (ConsList Unit A) := ⟨ConsList.wra
   | ConsList.cons _ _, ConsList.wrap _ => ConsList.wrap ()
   | ConsList.cons a x, ConsList.cons b y => ConsList.cons (a, b) (zip x y)
 
-/-- The cons-list fold `⦇[g,st]⦈` as a function; `fold_cata` says it is the catamorphism. -/
-@[expose] public def fold {L E C : Type} (g : L → C) (st : E → C → C) : ConsList L E → C
-  | ConsList.wrap d => g d
-  | ConsList.cons e x => st e (fold g st x)
-
-public theorem fold_cata {L E C : Type} (g : L → C) (st : E → C → C) :
-    (graph (fold g st) : dCL L E ⟶ ⟨C⟩) = cataR (consScalarAlg g st) :=
-  consFold_unique g st _ (fun _ => rfl) (fun _ _ => rfl)
-
 /-- `bmin(Q) : A×A → A`, B&dM's `bmin R = (R → outl, outr)`: the left one when it is `Q`-below the
     right one, the right one otherwise. -/
 @[expose] public def bmin {X : RelSet.{0}} (Q : X ⟶ X) [∀ a b, Decidable (Q a b)]
@@ -1055,7 +1046,7 @@ end Tab
 @[expose] public def nextcol (xs : ConsList Unit Char)
     (p : Char × ConsList Unit (ConsList Unit (Op Char))) :
     ConsList Unit (ConsList Unit (Op Char)) :=
-  fold (fun _ => Tab.base (p.1, last p.2)) (Tab.step p.1) (zip xs (zip (init p.2) (tail p.2)))
+  cfold (fun _ => Tab.base (p.1, last p.2)) (Tab.step p.1) (zip xs (zip (init p.2) (tail p.2)))
 
 theorem nextcol_cons (a b : Char) (x : ConsList Unit Char) (u v : ConsList Unit (Op Char))
     (t : ConsList Unit (ConsList Unit (Op Char))) :

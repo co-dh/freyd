@@ -152,4 +152,9 @@ public theorem consFold_unique {L E C : Type} (g : L → C) (st : E → C → C)
         rw [hr'eq] at hstep
         exact hstep
 
+/-- `cfold g st` is the fold `⦇[g,st]⦈`. -/
+public theorem cfold_cata {L E C : Type} (g : L → C) (st : E → C → C) :
+    (graph (cfold g st) : dCL L E ⟶ ⟨C⟩) = cataR (consScalarAlg g st) :=
+  consFold_unique g st _ (fun _ => rfl) (fun _ _ => rfl)
+
 end Freyd.Alg.RelSet.CL
