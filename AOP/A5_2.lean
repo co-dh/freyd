@@ -584,6 +584,24 @@ public theorem outr_strict_of_entire {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (
       = (relProd (F.obj x) (G.obj x)).outr ≫ G.map R :=
   prodMap_outr_eq_of_entire _ _ _ (hF R)
 
+/-- **B&dM Ex 5.10**: `unzip(F) ≜ ⟨F(π₁),F(π₂)⟩ : F(C×D) ⟶ FC×FD`, where a relator's image of a
+    product becomes the product of the images. -/
+@[expose] public def unzip (F : Relator 𝒜 𝒜) (C D : 𝒜) :
+    F.obj (relProd C D).p ⟶ (relProd (F.obj C) (F.obj D)).p :=
+  (relProd (F.obj C) (F.obj D)).pair (F.map (relProd C D).outl) (F.map (relProd C D).outr)
+
+/-- **B&dM Ex 5.10**: `F(R×S)unzip(F) ⊑ unzip(F)(F(R)×F(S))`.  Only lax: composing `F(R×S)` into
+    the pairing is `comp_pair_le`, and `(R×S)π₁ ⊑ π₁R` is `prodMap_outl_le`, both inclusions. -/
+public theorem unzip_lax (F : Relator 𝒜 𝒜) {C D A B : 𝒜} (R : C ⟶ A) (S : D ⟶ B) :
+    F.map (prodMap (relProd C D) (relProd A B) R S) ≫ unzip F A B
+      ⊑ unzip F C D ≫ prodMap (relProd _ _) (relProd _ _) (F.map R) (F.map S) := by
+  unfold unzip
+  rw [RelProd.pair_prodMap, ← F.map_comp, ← F.map_comp]
+  refine le_trans (RelProd.comp_pair_le _ _ _) ?_
+  rw [← F.map_comp, ← F.map_comp]
+  exact RelProd.pair_mono (F.map_mono (prodMap_outl_le _ _ _ _))
+    (F.map_mono (prodMap_outr_le _ _ _ _))
+
 end ProdRelator
 
 -- printing-only unexpander: the note's spelling.  `R×S` is what (5.2) is called, and the two

@@ -127,6 +127,12 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- B&dM Ex 5.10's `unzip(F)`: the two objects are the wires' own, so the label names the relator. -/
+@[app_unexpander unzip] def unexpandUnzip : Unexpander
+  | `($_ $F $_ $_) => `($(mkIdent `unzip) $F)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The path count is the note's `3^m`; `pow3` is only the spelling that makes the index reduce. -/
 @[app_unexpander Vec.pow3] def unexpandPow3 : Unexpander
   | `($_ $m) => `(3 ^ $m)
