@@ -373,12 +373,17 @@ theorem est_eq_thinRel_comp_recip_singletonMap {R : A ⟶ A} :
   condition of `Λ_comp_est_comp_singletonMap_le_thinRel`'s universal property is their
   composition. -/
 
+/-- Step 1's first half: the context rule (7.6) renames the bead `est(R)` to `est(R∩S°S)`. -/
+public theorem Λ_comp_est_comp_singletonMap_cond2_context {S : B ⟶ A} {R : A ⟶ A} :
+    S° ≫ Λ S ≫ est R ≫ singletonMap = S° ≫ Λ S ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap := by
+  rw [← Cat.assoc (Λ S) (est R) singletonMap, (Λ_comp_est_context S R).symm,
+      Cat.assoc (Λ S) (est (R ∩ (S° ≫ S))) singletonMap]
+
 /-- Step 1: the context rule (7.6) renames the bead, then `S°·ΛS ⊑ ∈` swallows the transpose. -/
 public theorem Λ_comp_est_comp_singletonMap_cond2_step1 {S : B ⟶ A} {R : A ⟶ A} :
     S° ≫ Λ S ≫ est R ≫ singletonMap
       ⊑ (∋ A)° ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap := by
-  rw [← Cat.assoc (Λ S) (est R) singletonMap, (Λ_comp_est_context S R).symm,
-      Cat.assoc (Λ S) (est (R ∩ (S° ≫ S))) singletonMap,
+  rw [Λ_comp_est_comp_singletonMap_cond2_context,
       ← Cat.assoc S° (Λ S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)]
   exact comp_mono_right (recip_comp_Λ_le_recip_eps S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)
 

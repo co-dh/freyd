@@ -394,6 +394,9 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.editFn] def unexpandEditFn : Unexpander | _ => `($(mkIdent `edit))
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.unstepFn] def unexpandEditUnstepFn : Unexpander
+  | _ => `($(mkIdent `unstep))
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.detabR] def unexpandDetabFn : Unexpander | _ => `($(mkIdent `detab))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.flattenFn] def unexpandFlattenFn : Unexpander

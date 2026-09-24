@@ -3,19 +3,8 @@
 // note-split: chapter 15 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Dynamic Programming <sec-dp>
 
-// ---- §15's and §16's own vocabulary, built on §14's.  CIRCUIT: one wire, a box per factor
-// (`thpic`); a PRODUCT source is TWO wires, both entering the first box (`gpair`).
 // A `(μX : …)` row draws the BODY of the recursion: a fixed point has no circuit of its own, and
 // what moves from row to row is a box inside that body.
-#let gpair(l1, l2, rgt, head, hw, tail, hc: false, s: 74%) = P(cetz.canvas(length: 0.8cm, {
-  let sp = 0.62
-  d.content((-0.36, sp), text(10pt)[#l1], anchor: "east")
-  d.content((-0.36, -sp), text(10pt)[#l2], anchor: "east")
-  wire((-0.30, sp), (0, sp)); wire((-0.30, -sp), (0, -sp))
-  gbox((0, 0), head, w: hw, h: 2 * sp + 0.62, chamfer: hc)
-  boxrun(hw, 0, tail, h: TH)
-  d.content((hw + boxrun-w(tail) + 0.30, 0), text(10pt)[#rgt], anchor: "west")
-}), s: s)
 
 // ---- HINZE–MARSDEN: §14's own lanes, so the two chapters' panels stack, with one lane added.
 // Outermost functor LEFTMOST and `𝟏` at the right; `E` takes `THU` because the transpose is taken of
@@ -135,8 +124,6 @@ both lists empty.
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
-#let eb-lst = ([`list((𝟙×mle)cons)`], 5.65, true)
-#let eb-min = ([`minlist(R)`], 3.08, false)
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_laws"), #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))` \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
@@ -187,7 +174,7 @@ both lists empty.
   // draw.  `Op×−` is the summand `step°` opens.
   [#lean("Freyd.Alg.RelSet.Edit.edit_branch.lhs")],
 
-  [#vstep(RQ, gpair([`[Char]`], [`[Char]`], [`[Op]`], [`unstep`], 2.00, (eb-lst, eb-min)),
+  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_prog.lhs"),
     [#src[`unstep` implements #frc([`step°`])` thin(U×V)` — at most two decompositions survive, a
       copy beating a delete or an insert wherever it is available — and `minlist(R)` implements
       `est(R)`. The same subproblem is solved many times over, so the running time is exponential in
