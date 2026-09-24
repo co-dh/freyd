@@ -163,8 +163,8 @@ public theorem H_not_lax_natural :
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h schedNil schedFalse
       ⟨schedNil, schedNil_related,
-        Or.inl ⟨ConsList.wrap (), ConsList.wrap (), falseOne, ConsList.wrap (), rfl, rfl,
-          prefixP.nil falseOne⟩⟩
+        Hrel_apply.mpr (Or.inl ⟨ConsList.wrap (), ConsList.wrap (), falseOne, ConsList.wrap (),
+          rfl, rfl, prefixP.nil falseOne⟩)⟩
   exact trueOnly_no_preimage r hr
 
 /-! ## `glue` is strictly natural -/
@@ -232,8 +232,8 @@ public theorem RinterH_not_lax_natural :
   obtain ⟨r, -, hr⟩ :=
     le_iff.mp h schedNil schedFalse
       ⟨schedNil, schedNil_related, Nat.le_refl _,
-        Or.inl ⟨ConsList.wrap (), ConsList.wrap (), falseOne, ConsList.wrap (), rfl, rfl,
-          prefixP.nil falseOne⟩⟩
+        Hrel_apply.mpr (Or.inl ⟨ConsList.wrap (), ConsList.wrap (), falseOne, ConsList.wrap (),
+          rfl, rfl, prefixP.nil falseOne⟩)⟩
   exact trueOnly_no_preimage r hr
 
 /-- **`⊤` is not even lax natural**: `S ⊤ ⊑ ⊤ S` fails, at the OBJECT wire the panel draws it on —
@@ -294,7 +294,7 @@ public theorem est_R_lax_natural :
 /-- `[[a]]` is `H`-below `[[b]]` only when `a = b`: the first segments are `[a]` and `[b]`, and a
     one-element list is a prefix of another only if the elements agree. -/
 public theorem Hrel_schedOne {a b : Bool} (h : Hrel Bool (schedOne a) (schedOne b)) : a = b := by
-  rcases h with ⟨s, t, s', t', hs, hs', hp⟩ | ⟨hn, -⟩
+  rcases Hrel_apply.mp h with ⟨s, t, s', t', hs, hs', hp⟩ | ⟨hn, -⟩
   · injection hs with h1 h2
     injection hs' with h3 h4
     subst h1; subst h3
@@ -326,7 +326,7 @@ public theorem est_RH_not_lax_natural :
             fun q hq => ⟨schedOne true, Or.inr rfl, by subst hq; exact himg _ _⟩⟩,
         (est_apply _ _ _).mpr ⟨rfl, fun z hz => by
           subst hz
-          exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨_, _, _, _, rfl, rfl, prefixP.refl _⟩⟩⟩⟩
+          exact ⟨Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inl ⟨_, _, _, _, rfl, rfl, prefixP.refl _⟩)⟩⟩⟩
   obtain ⟨hmem, hmin⟩ := (est_apply _ _ _).mp hw
   rcases hmem with rfl | rfl
   · exact Bool.noConfusion (Hrel_schedOne ((hmin (schedOne true) (Or.inr rfl)).2 (Nat.le_refl _)))
@@ -335,7 +335,7 @@ public theorem est_RH_not_lax_natural :
 /-! ## `nil` is strictly natural
 
   The note's `nil : 𝟏 ⟶ [[X]]` is `AOP.A6_ConsList`'s `wrapR` read at `dL Unit ⟶ dSched X` —
-  the same relation `H_eq` already writes there — so no new definition is made for it. -/
+  the same relation `Hrel` is defined with — so no new definition is made for it. -/
 
 /-- **`nil` is STRICTLY natural**: `𝟙 nil = nil list(list S)`.  `nil` produces the empty schedule
     out of the one point and looks at no transaction, and `list(list S)` relates the empty
