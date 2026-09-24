@@ -907,14 +907,11 @@ def coverMain (args : List String) : IO UInt32 := do
     let nt := mkNote p (← readFileOr p)
     let (lines, marked, plausible, silent, nUn, unmatched) ← coverOne nt rows idx ar
     unless ar.summary do IO.println ("\n".intercalate lines.toList)
-    let inDisp := nt.displays.foldl (fun acc (_, a, b) =>
-      acc + ((slice nt.cs a b).splitOn "\n").foldl (fun n l => n + (marksOf l).size) 0) 0
-    let stripped := String.join ((← readFileOr p).splitOn "\n" |>.map fun l =>
-      (l.splitOn "//").head! ++ "\n")
-    -- An Int: a display's own `//` comments carry markers that the comment-stripped sweep does
-    -- not, so the count goes negative, and a Nat's truncation would report that as none loose.
-    let loose : Int :=
-      ((stripped.splitOn "\n").foldl (fun n l => n + (marksOf l).size) 0 : Nat) - (inDisp : Int)
+    -- Counted directly, line by line: a marker is loose when its line is in no display's line range.
+    let spans := nt.displays.map fun (_, a, b) => (nt.line a, nt.line b)
+    let loose := (((← readFileOr p).splitOn "\n").foldl (fun (n, ln) l =>
+      (if spans.any (fun (lo, hi) => lo ≤ ln && ln ≤ hi) then n else n + (marksOf l).size, ln + 1))
+      (0, 1)).1
     IO.println s!"\n{p}: {marked + plausible + nUn + silent} labelled displays — {marked} \
       certified, {plausible} unmarked with a candidate to read, {nUn} unmarked with nothing above \
       {fmtG ar.thresh}, {silent} stating no formula.  {loose} markers outside a display."

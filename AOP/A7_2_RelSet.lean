@@ -66,6 +66,18 @@ public theorem existsImage_comp_est_apply {A B : RelSet.{0}} (T : A ⟶ B) (R : 
   · intro h
     exact ⟨_, (existsImage_apply T P _).mpr rfl, (est_apply R _ w).mpr h⟩
 
+/-- **(7.9)**, `R` reflexive: `P(S) est(R) = (∋S)∩(∈\(SR°))`.  `⊑` is `powerRel_comp_est_le`; `⊒`
+    needs the set `y` the right-hand side only describes, which the set model has: the `S`-images
+    of `X` that `a` `R`-dominates, `a` among them because `R` is reflexive. -/
+public theorem powerRel_comp_est {B A : RelSet.{0}} (S : B ⟶ A) (R : A ⟶ A) (hrefl : 𝟙 A ⊑ R) :
+    powerRel S ≫ est R = (∋ B ≫ S) ∩ (((∋ B)°) \ (S ≫ R°)) := by
+  refine le_antisymm (powerRel_comp_est_le S R) (le_iff.mpr ?_)
+  rintro X a ⟨⟨b, hb, hSb⟩, hdiv⟩
+  refine ⟨fun a' => (∃ b, X b ∧ S b a') ∧ R a a',
+    ⟨fun b' hb' => ?_, fun a' ha' => ha'.1⟩, ⟨⟨b, hb, hSb⟩, le_iff.mp hrefl a a rfl⟩, fun _ hz => hz.2⟩
+  obtain ⟨a', hS', hR'⟩ := hdiv b' hb'
+  exact ⟨a', hS', ⟨b', hb', hS'⟩, hR'⟩
+
 /-! ## Honest headline: a deterministic solver IS `Λspec ≫ est D`
 
   This is the bridge that lets an optimization case study state its headline as the actual
