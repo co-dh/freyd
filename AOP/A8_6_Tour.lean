@@ -531,6 +531,12 @@ public theorem tour_sort_dropr :
 
 /-! ## `tour-laws` -/
 
+/-- **tour-laws**, the specification step: `tour ≜ ⦇[start,dropl ∪ dropr]⦈` unfolded under
+    `Λ(−) est(R)`. -/
+public theorem tour_laws_defn :
+    Λ (tour (City := City)) ≫ est (R tc)
+      = Λ ⦇graph (droplAlgFn (City := City)) ∪ graph droprAlgFn⦈ ≫ est (R tc) := rfl
+
 /-- **tour-laws** (B&dM §8.6, p.215): a least-cost bitonic tour as a fold that thins the tours
     kept at each city —
     `Λ(tour) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge ⊤ thinlist Qc⦈ minlist R`.

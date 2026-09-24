@@ -621,6 +621,14 @@ public theorem para_laws_step2 (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a 
     Λ ⦇Salg len w⦈ ≫ est (R len w) = Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [para_spec hlen hfit]
 
+/-- **para-laws**, the algebra read as `(f₁p₁) ∪ (f₂p₂)` at `p₁ ≜ 𝟙` — the shape Theorem 8.2
+    takes it in. -/
+public theorem para_laws_split :
+    Λ ⦇Salg len w⦈ ≫ est (R len w)
+      = Λ ⦇(graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) ∪ (graph glueAlgFn ≫ ok (len := len) w)⦈
+          ≫ est (R len w) := by
+  rw [Cat.comp_id]; rfl
+
 /-- **para-laws** (B&dM §8.5, p.210): a paragraph laid out as a fold that thins the layouts
     kept at each word —
     `Λ(partition list⁺(fits w)) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge ⊤ thinlist Q⦈ minlist R`.
