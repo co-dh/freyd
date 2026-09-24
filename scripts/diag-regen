@@ -18,7 +18,7 @@
 # BOTH notes are scanned.  allegory-axioms.typ states the laws and allegory2.typ works the proofs,
 # and a picture named by only one of them is still a picture that has to be redrawn.
 #
-# SEVEN ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
+# EIGHT ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
 # the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
 # reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leang(...)` name by `--graph`
 # (a concrete relation decided pair by pair), a `#leanf(...)`
