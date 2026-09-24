@@ -269,6 +269,22 @@ public theorem sumMap_recip {s a₁ a₂ t b₁ b₂ : 𝒜} (C : Coproduct s a�
   rw [junc_recip, Allegory.recip_comp, Allegory.recip_comp, Cat.assoc, Cat.assoc]
   rfl
 
+/-- **B&dM Ex 5.14**: `(R+S)∩([P,Q][U,V]°) = (R∩(PU°))+(S∩(QV°))`.  `[P,Q][U,V]°` is a full 2×2
+    of composites and `R+S` is diagonal, so the meet keeps only the diagonal branches: on each
+    injection the meet is `simple_modular_eq` against that injection. -/
+public theorem sumMap_inter_junc_recip {s a₁ a₂ t b₁ b₂ c : 𝒜} (C : Coproduct s a₁ a₂)
+    (D : Coproduct t b₁ b₂) (R : a₁ ⟶ b₁) (S : a₂ ⟶ b₂) (P : a₁ ⟶ c) (Q : a₂ ⟶ c) (U : b₁ ⟶ c)
+    (V : b₂ ⟶ c) :
+    sumMap C D R S ∩ (junc C P Q ≫ (junc D U V)°) = sumMap C D (R ∩ P ≫ U°) (S ∩ Q ≫ V°) := by
+  have h₁ : (junc D U V)° ≫ D.u₁° = U° := by rw [← Allegory.recip_comp, u₁_junc]
+  have h₂ : (junc D U V)° ≫ D.u₂° = V° := by rw [← Allegory.recip_comp, u₂_junc]
+  unfold sumMap
+  refine junc_unique C ?_ ?_
+  · rw [simple_dist_inter C.u₁_map.2, u₁_junc, ← Cat.assoc, u₁_junc,
+      ← simple_modular_eq D.u₁_map.2 R, Cat.assoc, h₁]
+  · rw [simple_dist_inter C.u₂_map.2, u₂_junc, ← Cat.assoc, u₂_junc,
+      ← simple_modular_eq D.u₂_map.2 S, Cat.assoc, h₂]
+
 end SumMap
 
 /-! ## Relators are closed under coproduct -/

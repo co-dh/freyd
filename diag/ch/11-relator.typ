@@ -169,23 +169,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
   P(leanc("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
 
-  [`F(R×S)unzip(F)=unzip(F)(F(R)×F(S))` \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`, a map]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.75
-    lab(-1.4, 0, black)[`F(C×D)`]
-    wire((-0.45, 0), (0, 0)); gbox((0, 0), [`F(R×S)`], w: 1.9); wire((1.9, 0), (2.25, 0))
-    // ONE box with two wires out: `unzip(F)` is where a relator's `F(C×D)` becomes the pair `F C×F D`.
-    gbox((2.25, 0), [`unzip(F)`], w: 2.2, h: 2 * y + 0.5, chamfer: false)
-    wire((4.45, y), (4.85, y)); wire((4.45, -y), (4.85, -y))
-    lab(5.3, y, black)[`FA`]; lab(5.3, -y, black)[`FB`]
-    lab(5.95, 0, black)[$=$]
-    lab(7.0, 0, black)[`F(C×D)`]
-    wire((7.85, 0), (8.2, 0))
-    gbox((8.2, 0), [`unzip(F)`], w: 2.2, h: 2 * y + 0.5, chamfer: false)
-    wire((10.4, y), (10.8, y)); gbox((10.8, y), [`FR`], w: 1.2); wire((12.0, y), (12.35, y))
-    wire((10.4, -y), (10.8, -y)); gbox((10.8, -y), [`FS`], w: 1.2); wire((12.0, -y), (12.35, -y))
-    lab(12.8, y, black)[`FA`]; lab(12.8, -y, black)[`FB`]
-  }), s: 70%),
+  [#leanf("Freyd.Alg.unzip_lax") \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`; only `⊑` for an arbitrary `R`, `S`]],
+  P(leanc("Freyd.Alg.unzip_lax"), s: 74%),
 
   [`g=curry(f)⟺(g×𝟙)eval=f` \ #src[reading `×` as the relational product, does `Rel`
    have exponentials?]],
@@ -305,53 +290,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   [],
 
   // row: Ex 5.14
-  [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
+  [#leanf("Freyd.Alg.sumMap_inter_junc_recip") \ #src[`[P,Q][U,V]°` is a full 2×2 of
    composites; `R+S` is diagonal, so the meet cuts the two off-diagonal branches]],
-  P(cetz.canvas(length: 0.8cm, {
-    let y = 0.62
-    let t = 1.5
-    wcopy((0.6, 0), li: 0.5, lo: 0.8, sp: t)
-    tape((1.4, t - 1.05), (6.22, t + 1.05))
-    tape-fork((1.62, t), sp: y, len: 0.42)
-    gbox((2.04, t + y), [`l`], flip: true, fill: TINT); wire((2.96, t + y), (3.30, t + y))
-    gbox((3.30, t + y), [R]); wire((4.22, t + y), (4.56, t + y))
-    gbox((4.56, t + y), [`l`], chamfer: false); wire((5.48, t + y), (5.58, t + y))
-    gbox((2.04, t - y), [`r`], flip: true, fill: TINT); wire((2.96, t - y), (3.30, t - y))
-    gbox((3.30, t - y), [S]); wire((4.22, t - y), (4.56, t - y))
-    gbox((4.56, t - y), [`r`], chamfer: false); wire((5.48, t - y), (5.58, t - y))
-    tape-join((6.00, t), sp: y, len: 0.42)
-    wire((6.22, t), (9.16, t))
-    tape((1.4, -t - 1.05), (4.96, -t + 1.05))
-    tape-fork((1.62, -t), sp: y, len: 0.42)
-    gbox((2.04, -t + y), [`l`], flip: true, fill: TINT); wire((2.96, -t + y), (3.30, -t + y))
-    gbox((3.30, -t + y), [P]); wire((4.22, -t + y), (4.32, -t + y))
-    gbox((2.04, -t - y), [`r`], flip: true, fill: TINT); wire((2.96, -t - y), (3.30, -t - y))
-    gbox((3.30, -t - y), [Q]); wire((4.22, -t - y), (4.32, -t - y))
-    tape-join((4.74, -t), sp: y, len: 0.42)
-    wire((4.96, -t), (5.60, -t))
-    tape((5.60, -t - 1.05), (9.16, -t + 1.05))
-    tape-fork((5.82, -t), sp: y, len: 0.42)
-    gbox((6.24, -t + y), [U], flip: true, fill: TINT); wire((7.16, -t + y), (7.50, -t + y))
-    gbox((7.50, -t + y), [`l`], chamfer: false); wire((8.42, -t + y), (8.52, -t + y))
-    gbox((6.24, -t - y), [V], flip: true, fill: TINT); wire((7.16, -t - y), (7.50, -t - y))
-    gbox((7.50, -t - y), [`r`], chamfer: false); wire((8.42, -t - y), (8.52, -t - y))
-    tape-join((8.94, -t), sp: y, len: 0.42)
-    wmerge((9.96, 0), li: 0.8, lo: 0.5, sp: t)
-    lab(11.2, 0, black)[$=$]
-    wire((11.66, 0), (12.0, 0))
-    tape((12.0, -2.25), (20.3, 2.25))
-    tape-fork((12.22, 0), sp: 1.1, len: 0.42)
-    for (b, u, fwd, cnv, i) in ((1.1, [R], [P], [U], [`l`]), (-1.1, [S], [Q], [V], [`r`])) {
-      gbox((12.64, b), i, flip: true, fill: TINT)
-      wcopy((14.0, b), li: 0.44, lo: 0.5, sp: y)
-      brun(14.5, b + y, ((u, "r"),)); wire((16.1, b + y), (17.36, b + y))
-      brun(14.5, b - y, ((fwd, "r"), (cnv, "c")))
-      wmerge((17.86, b), li: 0.5, lo: 0.44, sp: y)
-      gbox((18.30, b), i, chamfer: false); wire((19.22, b), (19.32, b))
-    }
-    tape-join((19.74, 0), sp: 1.1, len: 0.42)
-    wire((20.3, 0), (20.64, 0))
-  }), s: 62%),
+  P(leanc("Freyd.Alg.sumMap_inter_junc_recip"), s: 62%),
 )]<bdm-coprod-laws>
 
 // B&dM §5.4, p. 119.  The heading gets its own page: the definition, the paragraph that explains its
