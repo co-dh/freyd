@@ -24,8 +24,10 @@
 
 #let CGAP = 0.34        // wire stub before the first box, between two boxes, and after the last
 #let CPAD = 0.34        // label to box edge, each side
-#let CPORT = 0.4        // how far a wire runs INTO its type label, as a fraction of one mono advance: where
-                        // the ink of `[`/`]` starts (measured); `A`/`E`/`F` are wider there and hide the rest
+// A wire STOPS this far short of the type label it ends at, measured from the label's advance box.
+// Glyph ink never leaves its advance box, so no first letter is overdrawn — a wire run INTO the box
+// (by `[`'s bearing) cleared `[` and struck the stem of `N`, `F`, `E`.
+#let CLGAP = 0.08
 #let CLEAD = 0.34       // wire run past each side of a label sitting above it, so it clears the bar and the box
 #let CABOVE = 0.25      // a label sitting above its wire: text centre to the stroke
 // A run carrying a two-line fraction label is raised WHOLE — one shared height, or the wire steps
@@ -40,24 +42,17 @@
 #let lb(it) = if it.at("frac", default: false) { frc(it.shape) } else { it.shape }
 #let tall(it) = it.at("frac", default: false) or it.tall
 #let tx(s) = text(10pt, raw(s))
-#let into(length) = CPORT * cu(measure(tx("[")).width, length)  // `measure` is the advance box, not the ink
 
-// The dashed fan into and out of a region holding alternatives, one arm per height in `ss`, after
-// a straight `lead` at each port (see `pic`).
-#let fan(nin, nout, x0, x1, ss, lead: 0) = {
+// The dashed fan into and out of a region holding alternatives, one arm per height in `ss`;
+// the panel's port stubs (`cbody`) give each port its straight run.
+#let fan(nin, nout, x0, x1, ss) = {
   for s in ss {
-    for y in ys(nin) { bend((lead, y), (x0 + CHPAD, s + y), stroke: FAN) }
-    for y in ys(nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN - lead, y), stroke: FAN) }
-  }
-  if lead > 0 {
-    for y in ys(nin) { wire((0, y), (lead, y)) }
-    for y in ys(nout) { wire((x1 + CHFAN - lead, y), (x1 + CHFAN, y)) }
+    for y in ys(nin) { bend((0, y), (x0 + CHPAD, s + y), stroke: FAN) }
+    for y in ys(nout) { bend((x1 - CHPAD, s + y), (x1 + CHFAN, y), stroke: FAN) }
   }
 }
 
-// `lead` is a straight run at every port for whoever places the node: the panel's labels run `into`
-// a port, and a fan leaving the port itself would cross their ink.
-#let pic(t, length, lead: 0) = {
+#let pic(t, length) = {
   // ---- §3 rows 1-2, 7, 10, 15-16: one box.  A box spanning several strands is as tall as they are.
   if t.k == "box" {
     let n = calc.max(t.nin, t.nout)
@@ -83,10 +78,10 @@
       if str(i) in seam {
         // one label per strand, each wire broken round its own ink; the column is as wide as the widest
         let ws = seam.at(str(i)).map(s => cu(measure(tx(s)).width, length))
-        let (w, o) = (calc.max(..ws), into(length))
+        let (w, o) = (calc.max(..ws), CLGAP)
         for ((s, wi), y) in seam.at(str(i)).zip(ws).zip(ys(n)) {
-          body.push(wire((x, y), (x + CGAP + (w - wi) / 2 + o, y)))
-          body.push(wire((x + CGAP + (w + wi) / 2 - o, y), (x + 2 * CGAP + w, y)))
+          body.push(wire((x, y), (x + CGAP + (w - wi) / 2 - o, y)))
+          body.push(wire((x + CGAP + (w + wi) / 2 + o, y), (x + 2 * CGAP + w, y)))
           body.push(lab(x + CGAP + w / 2, y, TYCOL, tx(s)))
         }
         x = x + 2 * CGAP + w
@@ -239,7 +234,7 @@
         let s = if i == 0 { 1 } else { -1 }
         d.group({ d.translate((x0 + CHPAD, s * UDY)); p.body; wire((p.w, 0), (mw, 0)) })
       }
-      fan(t.nin, t.nout, x0, x1, (UDY, -UDY), lead: lead)
+      fan(t.nin, t.nout, x0, x1, (UDY, -UDY))
     }
     return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
   }
@@ -272,15 +267,20 @@
 
 // The panel: the tree's own picture, with the ports named at both ends.  `src`/`tgt` are one label
 // per STRAND — a product is two wires, so it is two labels, never one reading `A×[A]`.
+// EVERY PORT GETS ITS OWN STUB here, whatever node the tree starts or ends with: a bare box has none
+// of its own, and a label placed at its edge was struck by that edge.  The label then stands
+// `CLGAP` past the stub's end, measured on its own width.
 #let cbody(t, length) = {
-  let o = into(length)
-  let p = pic(t, length, lead: o)
-  p.body
+  let p = pic(t, length)
+  d.group({ d.translate((CGAP, 0)); p.body })
+  let xr = p.w + 2 * CGAP
   for (i, y) in ys(t.nin).enumerate() {
-    lab(o - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
+    wire((0, y), (CGAP, y))
+    lab(-CLGAP - cu(measure(tx(t.src.at(i))).width, length) / 2, y, TYCOL, tx(t.src.at(i)))
   }
   for (i, y) in ys(t.nout).enumerate() {
-    lab(p.w - o + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
+    wire((p.w + CGAP, y), (xr, y))
+    lab(xr + CLGAP + cu(measure(tx(t.tgt.at(i))).width, length) / 2, y, TYCOL, tx(t.tgt.at(i)))
   }
 }
 

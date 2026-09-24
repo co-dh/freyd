@@ -10,6 +10,7 @@
 -/
 import AOP.A5_5_TypeFunctor
 import AOP.A5_5
+import AOP.A5_5_AlgCat
 -- `laxNatural_birel_eps_eps`, the verdict the exporter reads for the bifunctor family at `(∋,∋)`:
 -- proved beside the other power beads, in scope here because the exporter looks it up by name.
 import AOP.A5_7_PowerBeads
@@ -446,6 +447,13 @@ open Lean PrettyPrinter in
     which is what a TYPE ASCRIPTION already spells, so no new notation is needed for the brackets. -/
 @[app_unexpander mu] def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the
+    algebra `f` to the algebra `g`, which a type ascription already spells. -/
+@[app_unexpander IsFHom] def unexpandIsFHom : Unexpander
+  | `($_ $f $g $h) => `(($h : $f ⟶ $g))
   | _ => throw ()
 
 open Lean PrettyPrinter in

@@ -78,6 +78,35 @@ partial def withBody {α : Type} [Inhabited α] (declName : Name) (branch : List
     throwError "{declName}: --formula draws no `.inl`/`.inr` branch of a side — the statement has \
       no such part to print"
 
+/-- A FIELD'S STRUCTURE ARGUMENT under the name the library gives a value of that structure.  Lean
+    calls it `self`, which is no word of the note's (`self(R)` for `F(R)`); the structure's own
+    namespace is where its values are named, so the binder takes the name its sibling declarations
+    give an argument of that type most often.  A type is no string: the binder is found by the
+    projection's parameter count and the siblings by their binder type's head constant. -/
+def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
+  let env ← getEnv
+  let some pi := env.getProjectionFnInfo? declName | return ty
+  let some s := env.getProjectionStructureName? declName | return ty
+  let rec binderNames : Expr → Array Name
+    | .forallE n t b _ =>
+      let rest := binderNames b
+      if t.getAppFn.constName? == some s && !n.isAnonymous && !n.hasMacroScopes && n != `self
+        then rest.push n else rest
+    | _ => #[]
+  let counts := env.constants.fold (init := (∅ : Std.HashMap Name Nat)) fun m c ci =>
+    if c.getPrefix != s || (env.getProjectionFnInfo? c).isSome then m
+    else (binderNames ci.type).foldl (fun m n => m.insert n (m.getD n 0 + 1)) m
+  let some (best, _) := counts.toList.foldl (fun acc (n, k) => match acc with
+      | some (b, kb) => if k > kb || (k == kb && n.toString < b.toString) then some (n, k) else acc
+      | none => some (n, k)) none
+    | throwError "{declName}: no declaration in `{s}` binds an argument of type `{s}`, so its \
+        field's `self` has no library name to print under"
+  let rec go : Nat → Expr → Expr
+    | 0, .forallE _ t b bi => .forallE best t b bi
+    | k + 1, .forallE n t b bi => .forallE n t (go k b) bi
+    | _, e => e
+  return go pi.numParams ty
+
 /-- The declaration's statement, or the one side `path`/`branch` names, in the note's own
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
@@ -86,7 +115,7 @@ def render (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
   withDeclScope declName do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  Meta.forallTelescope ci.type fun xs body => do
+  Meta.forallTelescope (← nameSelf declName ci.type) fun xs body => do
     -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
     -- the definition itself: the name under its own arguments, `≜`, and the VALUE.  Read off the
     -- type, so every `def` a table heads with prints this way and none is named here.

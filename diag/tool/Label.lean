@@ -1253,12 +1253,20 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- The LEAST FIXED POINT is the note's `(μX : S°F(X)R)`.  Its body is a term of the note's like any
   -- other — the binder is an arrow the picture draws a wire for — so its composition is
   -- juxtaposition, where the printer's own `≫` survived because the label was the raw printer's.
+  -- A BODY THAT IS NO LAMBDA (`mu φ`, φ a variable) is the same bead with its binder opened by
+  -- eta: `(μX : φ(X))`, `X` being B&dM's letter for it, freshened against the names in scope.
   | (``Freyd.Alg.mu, args) =>
     match args.back? with
-    | some φ => Meta.lambdaBoundedTelescope φ 1 fun xs b => do
-      match xs[0]? with
-      | some x => return "(μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b) ++ ")"
-      | none => txt e
+    | some φ => do
+      let φ ← if φ.isLambda then pure φ else do
+        let .forallE _ dom _ _ ← Meta.whnf (← Meta.inferType φ)
+          | throwError "mu's body {← Meta.ppExpr φ} is no function, so `(μX : …)` has no X to bind"
+        let n := (← getLCtx).getUnusedName `X
+        pure (.lam n dom (mkApp φ (.bvar 0)) .default)
+      Meta.lambdaBoundedTelescope φ 1 fun xs b => do
+        match xs[0]? with
+        | some x => return "(μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b) ++ ")"
+        | none => txt e
     | none => txt e
   -- A relator's action on an ARROW is the ONE bracket no term carries: `F(⦇R⦈)`, the note's way of
   -- saying the argument is applied and not composed.
