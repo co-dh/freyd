@@ -486,8 +486,10 @@ def branchesOnInput (f : Expr) : MetaM Bool := do
     -- ONE ALTERNATIVE IS NO BRANCH.  A match on a single-constructor type is the elaborator's
     -- spelling of taking the input apart — `fun (a,v) => Fin.cases a v` — so there is no second arm
     -- to name and opening the map's name reaches a matcher that names no arrow at all (`cons`).  A
-    -- junction and a guard both have two, which is what the two shapes above are.
-    unless ma.alts.size ≥ 2 do return false
+    -- junction and a guard both have two, which is what the two shapes above are.  MORE THAN TWO is
+    -- no branch the picture draws either: `unstep`'s four cases on a pair of lists are its
+    -- implementation, so its name stands, as a recursive map's does.
+    unless ma.alts.size == 2 do return false
     return ma.discrs.any (·.containsFVar x.fvarId!)
 
 /-- A MAP GIVEN BY A `match` ON ITS INPUT IS WRITTEN BY WHAT IT DOES, so a NAME standing for one is
