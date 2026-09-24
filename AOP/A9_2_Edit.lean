@@ -33,8 +33,9 @@
   * `edit-laws` row 3 (the `empty→nil` split) is **Proposition 9.1**, dropped for the whole
     repo by the setting-mismatch note at the end of `AOP.A9_1` (coreflexive negation lives in
     `DistributiveAllegory`, thinning in `UnguardedPowerLCDA`, and no `𝒜` instantiates both).
-  * `edit-laws` rows 5-7 (the tabulation, `column`/`nextcol`) are curried functions on lists,
-    which the note itself marks as outside the relational picture.
+  * `edit-tabulation` (`column`/`nextcol`) is curried functions on lists, outside the relational
+    picture, so it is proved as function equations at the end of the file, `mle` taken as the
+    recursive characterisation B&dM derive from the program on p.228.
   * `edit-laws` row 4 IS proved (`edit_prog`), but `unstep_complete` is completeness up to the
     thinning order, not on the nose: where the two heads agree `unstep` keeps the `cpy` alone, and
     the `del`/`ins` it drops are the ones that `cpy` beats under `V`.  That is what a thinning is,
@@ -45,6 +46,7 @@ module
 public import AOP.A9_1
 public import AOP.A5_6_ListCombinators
 public import AOP.A8_3
+public import AOP.A6_GenFold
 -- `listP_clen` — `list(P)` relates lists of one length — is the whole content of `est(R)`'s
 -- naturality here, and it is stated once, for the schedules.
 public import AOP.A7_5_VanBeads
@@ -948,5 +950,176 @@ public theorem thin_UV_not_lax_natural :
   · exact short_not_suffix_long hwQ.2.1
   · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
     exact toU_long_not_short ((stepF_apply _ _ _).mp hq).2.1
+
+/-! ## `edit-tabulation` (B&dM pp.227-229): `mle` computed column by column -/
+
+section Tabulation
+
+variable {A : Type}
+
+public instance instInhabitedCL : Inhabited (ConsList Unit A) := ⟨ConsList.wrap ()⟩
+
+/-- `head : [A] → A`; the tabulation only takes it of a non-empty column. -/
+@[expose] public def head [Inhabited A] : ConsList Unit A → A
+  | ConsList.wrap _ => default
+  | ConsList.cons a _ => a
+
+/-- `tail : [A] → [A]`. -/
+@[expose] public def tail : ConsList Unit A → ConsList Unit A
+  | ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons _ x => x
+
+/-- `init : [A] → [A]`, the list without its last element. -/
+@[expose] public def init : ConsList Unit A → ConsList Unit A
+  | ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons _ (ConsList.wrap _) => ConsList.wrap ()
+  | ConsList.cons a (ConsList.cons b x) => ConsList.cons a (init (ConsList.cons b x))
+
+/-- `last : [A] → A`; the tabulation only takes it of a non-empty column. -/
+@[expose] public def last [Inhabited A] : ConsList Unit A → A
+  | ConsList.wrap _ => default
+  | ConsList.cons a (ConsList.wrap _) => a
+  | ConsList.cons _ (ConsList.cons b x) => last (ConsList.cons b x)
+
+/-- `zip : [A]×[B] → [A×B]`, cut to the shorter list. -/
+@[expose] public def zip {B : Type} : ConsList Unit A → ConsList Unit B → ConsList Unit (A × B)
+  | ConsList.wrap _, ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.wrap _, ConsList.cons _ _ => ConsList.wrap ()
+  | ConsList.cons _ _, ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons a x, ConsList.cons b y => ConsList.cons (a, b) (zip x y)
+
+/-- The cons-list fold `⦇[g,st]⦈` as a function; `fold_cata` says it is the catamorphism. -/
+@[expose] public def fold {L E C : Type} (g : L → C) (st : E → C → C) : ConsList L E → C
+  | ConsList.wrap d => g d
+  | ConsList.cons e x => st e (fold g st x)
+
+public theorem fold_cata {L E C : Type} (g : L → C) (st : E → C → C) :
+    (graph (fold g st) : dCL L E ⟶ ⟨C⟩) = cataR (consScalarAlg g st) :=
+  consFold_unique g st _ (fun _ => rfl) (fun _ _ => rfl)
+
+/-- `bmin(Q) : A×A → A`, B&dM's `bmin R = (R → outl, outr)`: the left one when it is `Q`-below the
+    right one, the right one otherwise. -/
+@[expose] public def bmin {X : RelSet.{0}} (Q : X ⟶ X) [∀ a b, Decidable (Q a b)]
+    (p : X.carrier × X.carrier) : X.carrier :=
+  if Q p.1 p.2 then p.1 else p.2
+
+public instance instDecR (es fs : (dEdit Char).carrier) : Decidable (R Char es fs) :=
+  inferInstanceAs (Decidable (clen es ≤ clen fs))
+
+end Tabulation
+
+variable [DecidableEq Char]
+
+/-- **edit-tabulation**: `mle`, the recursive characterisation of the program `edit-laws` states
+    (B&dM p.228): a copy where the heads agree, otherwise the `R`-better of a delete and an
+    insert. -/
+@[expose] public def mle : ConsList Unit Char × ConsList Unit Char → ConsList Unit (Op Char)
+  | (ConsList.wrap _, ConsList.wrap _) => ConsList.wrap ()
+  | (ConsList.cons a xs, ConsList.wrap _) => ConsList.cons (Op.del a) (mle (xs, ConsList.wrap ()))
+  | (ConsList.wrap _, ConsList.cons b ys) => ConsList.cons (Op.ins b) (mle (ConsList.wrap (), ys))
+  | (ConsList.cons a xs, ConsList.cons b ys) =>
+      if a = b then ConsList.cons (Op.cpy a) (mle (xs, ys))
+      else bmin (R Char) (ConsList.cons (Op.del a) (mle (xs, ConsList.cons b ys)),
+                          ConsList.cons (Op.ins b) (mle (ConsList.cons a xs, ys)))
+termination_by p => clen p.1 + clen p.2
+decreasing_by all_goals (simp only [clen]; omega)
+
+/-- **edit-tabulation**: `column(xs)(ys)=[mle(u,ys)∣u←tails(xs)]`. -/
+@[expose] public def column (xs ys : ConsList Unit Char) : ConsList Unit (ConsList Unit (Op Char)) :=
+  cmap (fun u => mle (u, ys)) (tailsFn xs)
+
+/-- **edit-tabulation**: `fstcol=list(del) tails`, the rightmost column. -/
+@[expose] public def fstcol (xs : ConsList Unit Char) : ConsList Unit (ConsList Unit (Op Char)) :=
+  tailsFn (cmap Op.del xs)
+
+namespace Tab
+
+/-- **edit-tabulation**: `base(b,u)=[[ins(b)]⧺u]`, the bottom entry of the next column. -/
+@[expose] public def base (p : Char × ConsList Unit (Op Char)) :
+    ConsList Unit (ConsList Unit (Op Char)) :=
+  ConsList.cons (ConsList.cons (Op.ins p.1) p.2) (ConsList.wrap ())
+
+/-- **edit-tabulation**: `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,[bmin(R)([del(a)]⧺w,[ins(b)]⧺u)]⧺ws)`
+    with `w=head(ws)`: the entry above `ws` in the next column. -/
+@[expose] public def step (b : Char)
+    (q : Char × (ConsList Unit (Op Char) × ConsList Unit (Op Char)))
+    (ws : ConsList Unit (ConsList Unit (Op Char))) : ConsList Unit (ConsList Unit (Op Char)) :=
+  if q.1 = b then ConsList.cons (ConsList.cons (Op.cpy q.1) q.2.2) ws
+  else ConsList.cons (bmin (R Char) (ConsList.cons (Op.del q.1) (head ws),
+                                     ConsList.cons (Op.ins b) q.2.1)) ws
+
+end Tab
+
+/-- **edit-tabulation**: `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`,
+    `xus=zip(xs,zip(init(us),tail(us)))`. -/
+@[expose] public def nextcol (xs : ConsList Unit Char)
+    (p : Char × ConsList Unit (ConsList Unit (Op Char))) :
+    ConsList Unit (ConsList Unit (Op Char)) :=
+  fold (fun _ => Tab.base (p.1, last p.2)) (Tab.step p.1) (zip xs (zip (init p.2) (tail p.2)))
+
+theorem nextcol_cons (a b : Char) (x : ConsList Unit Char) (u v : ConsList Unit (Op Char))
+    (t : ConsList Unit (ConsList Unit (Op Char))) :
+    nextcol (ConsList.cons a x) (b, ConsList.cons u (ConsList.cons v t))
+      = Tab.step b (a, (u, v)) (nextcol x (b, ConsList.cons v t)) := by
+  cases t <;> rfl
+
+/-- The top entry of `column(xs)(ys)` is `mle(xs,ys)`. -/
+theorem column_top (xs ys : ConsList Unit Char) :
+    ∃ t, column xs ys = ConsList.cons (mle (xs, ys)) t := by
+  cases xs with
+  | wrap u => cases u; exact ⟨_, rfl⟩
+  | cons _ _ => exact ⟨_, rfl⟩
+
+/-- **edit-tabulation**: `mle(xs,ys)=head(column(xs,ys))`. -/
+public theorem mle_head_column (xs ys : ConsList Unit Char) :
+    mle (xs, ys) = head (column xs ys) := by
+  obtain ⟨t, ht⟩ := column_top xs ys
+  rw [ht]; rfl
+
+theorem mle_nil_right (u : Unit) : ∀ xs : ConsList Unit Char,
+    mle (xs, ConsList.wrap u) = cmap Op.del xs
+  | ConsList.wrap _ => by rw [mle]; rfl
+  | ConsList.cons a xs => by rw [mle, mle_nil_right () xs]; rfl
+
+theorem tails_cmap {A B : Type} (f : A → B) : ∀ xs : ConsList Unit A,
+    tailsFn (cmap f xs) = cmap (cmap f) (tailsFn xs)
+  | ConsList.wrap _ => rfl
+  | ConsList.cons a xs => by
+      show ConsList.cons _ (tailsFn (cmap f xs)) = _
+      rw [tails_cmap f xs]; rfl
+
+/-- **edit-tabulation**: the rightmost column is `fstcol(xs)`. -/
+public theorem column_nil (xs : ConsList Unit Char) (u : Unit) :
+    column xs (ConsList.wrap u) = fstcol xs := by
+  show cmap _ (tailsFn xs) = tailsFn (cmap Op.del xs)
+  rw [tails_cmap, show (fun v => mle (v, ConsList.wrap u)) = cmap Op.del from
+    funext (mle_nil_right u)]
+
+/-- **edit-tabulation**: `column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` — each column is
+    built from the one to its right. -/
+public theorem column_cons (b : Char) (ys : ConsList Unit Char) : ∀ xs : ConsList Unit Char,
+    column xs (ConsList.cons b ys) = nextcol xs (b, column xs ys)
+  | ConsList.wrap u => by
+      cases u
+      show ConsList.cons (mle (ConsList.wrap (), ConsList.cons b ys)) (ConsList.wrap ()) = _
+      rw [mle]; rfl
+  | ConsList.cons a x => by
+      obtain ⟨t, ht⟩ := column_top x ys
+      obtain ⟨t', ht'⟩ := column_top x (ConsList.cons b ys)
+      have ih := column_cons b ys x
+      show ConsList.cons (mle (ConsList.cons a x, ConsList.cons b ys)) (column x (ConsList.cons b ys))
+        = nextcol (ConsList.cons a x) (b, ConsList.cons (mle (ConsList.cons a x, ys)) (column x ys))
+      rw [ht] at ih ⊢
+      rw [nextcol_cons, ← ih, ht', mle]
+      by_cases h : a = b
+      · subst h; simp only [Tab.step, if_true]
+      · simp only [Tab.step, h, if_false]; rfl
+
+/-- **edit-tabulation**: `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈` — the columns are built right to
+    left. -/
+public theorem column_cata (xs : ConsList Unit Char) :
+    (graph (column xs) : dList Char ⟶ ⟨ConsList Unit (ConsList Unit (Op Char))⟩)
+      = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
+  consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
 
 end Freyd.Alg.RelSet.Edit

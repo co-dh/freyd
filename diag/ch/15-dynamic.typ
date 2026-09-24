@@ -194,12 +194,15 @@ both lists empty.
 
   [#vstep(EQ, [],
     [`mle(xs,ys)=head(column(xs,ys))`, #h(4pt) `column(xs,ys)=[mle(u,ys)∣u←tails(xs)]` \
+     // lean:AOP.A9_2_Edit.mle@9c01e9fc lean:AOP.A9_2_Edit.mle_head_column@c8a15220 lean:AOP.A9_2_Edit.column@87907e0c
      `column(xs)=⦇[fstcol(xs),nextcol(xs)]⦈`, #h(4pt) `fstcol=list(del) tails` \
+     // lean:AOP.A9_2_Edit.column_cata@06a76bd9 lean:AOP.A9_2_Edit.fstcol@e72647f8 lean:AOP.A9_2_Edit.column_nil@63c24991
      #src[the tabulation: `mle(xs,ys)` needs `mle(u,v)` for every tail `u` of `xs` and `v` of
       `ys`, so the columns are built right to left]])],
 
   [#vstep(EQ, [],
     [`column(xs)([b]⧺ys)=nextcol(xs)(b,column(xs)(ys))` \
+     // lean:AOP.A9_2_Edit.column_cons@bc563c5b lean:AOP.A9_2_Edit.nextcol@fafff527
      `nextcol(xs)(b,us)=⦇[base(b,last(us)),step(b)]⦈(xus)`, #h(4pt)
      `xus=zip(xs,zip(init(us),tail(us)))` \
      #src[each column is a fold built bottom to top, over `xs` zipped with the adjacent pairs of the
@@ -207,6 +210,7 @@ both lists empty.
 
   [#vstep(EQ, [],
     [`base(b,u)=[[ins(b)]⧺u]` \ `step(b)((a,(u,v)),ws)=(a=b→[[cpy(a)]⧺v]⧺ws,`
+     // lean:AOP.A9_2_Edit.Tab.base@5520a210 lean:AOP.A9_2_Edit.Tab.step@ace9b1b6
      `[bmin(R)([del(a)]⧺w,[ins(b)]⧺u)]⧺ws)` \
      #src[`w=head(ws)`; these `base`, `step` are not `edit`'s. An entry depends on the one below it
       (a delete), the one to its right (an insert), and the one below that (a copy) — quadratic in
