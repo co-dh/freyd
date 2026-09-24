@@ -12,8 +12,7 @@ from `R` to `S` IS `R⊑S`. A *relator* `F : 𝒞⟶𝓓` is a 2-functor between
     // lean:Freyd.S1_18.map_id@1cd85d8e
  `F(RS)=F(R)F(S)` #src[] #h(1cm)
     // lean:Freyd.S1_18.map_comp@ab212d4e
- `R⊑S⟹F(R)⊑F(S)` #src[]]
-    // lean:AOP.A5_1.map_mono@308d5798
+ #leanf("Freyd.Alg.Relator.map_mono") #src[]]
   ])
 
 Preserving `°` is *not* asked for — `°` is an identity-on-objects involution `𝒞ᵒᵖ⟶𝒞`, no part of
@@ -416,7 +415,7 @@ every F-algebra `f`
   #pair(
     leancd("Freyd.Alg.IsFHom"),
     row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
-    [`f h=F(h)g , h:f->g in Alg(F)`],
+    [#leanf("Freyd.Alg.IsFHom")],
   )
   #pair(
     leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
@@ -754,13 +753,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   table.header([*the law*], [*what it says*]),
 
  // μX upper bound row: Theorem 6.1
- [`φ(Y)⊑Y⟹(μX : φ(X))⊑Y` \ #src[]],
-  // lean:AOP.A6_2.mu_le@9918bd39
+ [#leanf("Freyd.Alg.mu_le") \ #src[]],
   [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
    and every chapter after it uses],
  // μX fixed point row: Theorem 6.1
- [`φ((μX : φ(X)))=(μX : φ(X))` \ #src[]],
-  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
+ [#leanf("Freyd.Alg.mu_fixed") \ #src[]],
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
 )]<mu-laws>

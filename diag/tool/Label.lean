@@ -158,9 +158,9 @@ mutual
     `F(NA,…)` beside it are one application each and the note spells an application one way; the
     space is the PRINTER's, not the note's, and left in it spelled the same operand two ways in
     two cells of one row. -/
-partial def stxShow (s : Syntax) : MetaM String := do
+partial def stxShow (s : Syntax) (brk : Array Name := #[]) : MetaM String := do
   let p := stxPeel s
-  if let some (h, ops) := appParts p then return ← appSpell (← headShown h) ops
+  if let some (h, ops) := appParts p then return ← appSpell (← headShown h brk) ops brk
   let t := (toString (← PrettyPrinter.ppTerm ⟨p⟩)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
 
@@ -171,12 +171,18 @@ partial def stxShow (s : Syntax) : MetaM String := do
     heads a wire's name is built out of, so a lane and the label above it cannot be spelled two
     ways.  On the IDENT only: a head that is a notation delimits its own operand and has no name to
     shorten. -/
-partial def appSpell (h : String) (ops : Array Syntax) : MetaM String := do
+partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[]) : MetaM String := do
   match ops with
-  | #[a] => return applyLabel h (← stxShow a) (stxJoin (stxPeel a))
-  | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM stxShow) ++ ")"
+  -- AN OPERAND HANDED IN AS A HOLE joins as the TREE it stands for: `brk` names the holes whose
+  -- label closes itself in its own brackets (`Lbl.delimited`), which the hole's name cannot show.
+  | #[a] =>
+    let j := match stxPeel a with
+      | .ident _ _ n _ => if brk.contains n then .bracket else stxJoin (stxPeel a)
+      | p => stxJoin p
+    return applyLabel h (← stxShow a brk) j
+  | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
-partial def headShown (h : Syntax) : MetaM String := do
+partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
   if h.isIdent then return h.getId.getString!
   -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
   -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
@@ -184,8 +190,8 @@ partial def headShown (h : Syntax) : MetaM String := do
   -- tuple tail beside the term, so the three-token peel `stxPeel` does never reaches it.
   if h.isOfKind ``Lean.Parser.Term.paren then
     if let some (f, ops) := h.getArgs.findSome? fun a => appParts (stxPeel a) then
-      return ← appSpell (← headShown f) ops
-  stxShow h
+      return ← appSpell (← headShown f brk) ops brk
+  stxShow h brk
 
 end
 
@@ -199,11 +205,11 @@ end
     (`est(R)`, `⦇S⦈`, `F(f)`) has no juxtaposition to re-set and keeps what the printer wrote.
 
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
-def appShow (e : Expr) : MetaM String := do
+def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   let stx ← PrettyPrinter.delab e
   checkSpelled e stx
   match appParts stx with
-  | some (h, ops) => appSpell (← headShown h) ops
+  | some (h, ops) => appSpell (← headShown h brk) ops brk
   -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
   -- already applies to the head of an application: a qualifier is what the printer adds to keep a
   -- short name unambiguous against every other `A` in the environment, which is Lean's business,
@@ -866,6 +872,9 @@ inductive Lbl where
   | sub (base index : Lbl)
   | frac (num den : Lbl) (tight : Bool)
   | seq (parts : Array Lbl)
+  /-- A form CLOSED IN ITS OWN BRACKETS, `o` and `c` a mating pair with no name in them
+      (`(μX : φ(X))`, `⟨R,S⟩`, `⦇R⦈`): applied to, it takes no second pair (`φ(μX : φ(X))`). -/
+  | delim (o c : String) (body : Lbl)
   deriving Inhabited, BEq
 
 /-- THE FLAT SPELLING, which is what a string label always was: a division writes the note's inline
@@ -880,6 +889,7 @@ partial def Lbl.flat : Lbl → String
   | .sub b _ => b.flat
   | .frac n d t => (if t then "(" ++ n.flat ++ ")" else n.flat) ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
+  | .delim o c b => o ++ b.flat ++ c
 
 /-- The tree with every component's index dropped — `flat`'s rule, kept in the tree so a picture
     that sets the label as typst content still gets its fractions. -/
@@ -887,6 +897,7 @@ partial def Lbl.bare : Lbl → Lbl
   | .sub b _ => b.bare
   | .frac n d t => .frac n.bare d.bare t
   | .seq ps => .seq (ps.map Lbl.bare)
+  | .delim o c b => .delim o c b.bare
   | l => l
 
 /-- Whether a fraction stands anywhere in the tree: its bar makes the label two lines tall. -/
@@ -895,6 +906,7 @@ partial def Lbl.hasFrac : Lbl → Bool
   | .sub b i => b.hasFrac || i.hasFrac
   | .frac .. => true
   | .seq ps => ps.any Lbl.hasFrac
+  | .delim _ _ b => b.hasFrac
 
 /-- Nested sequences opened out and adjacent text merged, so a tree with no shape in it is ONE
     `text` and is written exactly as the string label was. -/
@@ -909,6 +921,8 @@ where
     | .seq ps => ps.foldl (fun acc p => (go p).foldl push acc) #[]
     | .sub b i => #[.sub b.norm i.norm]
     | .frac n d t => #[.frac n.norm d.norm t]
+    -- The brackets are the JOIN's business and no shape of the writer's: they are written as text.
+    | .delim o c b => go (.seq #[.text o, b, .text c])
   push (acc : Array Lbl) (x : Lbl) : Array Lbl :=
     match acc.back?, x with
     | some (.text a), .text b => acc.pop.push (.text (a ++ b))
@@ -927,6 +941,7 @@ partial def Lbl.typst (l : Lbl) : String :=
   | .sub b i => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
   | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
   | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
+  | .delim o c b => (Lbl.seq #[.text o, b, .text c]).typst
 
 /-- The name of the `i`th local an operand is handed to the printer as: a token no printer writes
     and no label contains, so the printed head can be cut at exactly the places the operands went. -/
@@ -943,6 +958,7 @@ where
     match l with
     | .text t => .seq (((t.splitOn h).map Lbl.text).intersperse x).toArray
     | .seq ps => .seq (ps.map (put · h x))
+    | .delim o c b => .delim o c (put b h x)
     | l => l
 
 /-- Every TEXT leaf rewritten by `f`, the shape left alone. -/
@@ -951,11 +967,19 @@ partial def Lbl.mapText (f : String → String) : Lbl → Lbl
   | .sub b i => .sub (b.mapText f) (i.mapText f)
   | .frac n d t => .frac (n.mapText f) (d.mapText f) t
   | .seq ps => .seq (ps.map (Lbl.mapText f))
+  | .delim o c b => .delim (f o) (f c) (b.mapText f)
 
 instance : Coe String Lbl := ⟨Lbl.text⟩
 instance : HAppend Lbl Lbl Lbl := ⟨fun a b => .seq #[a, b]⟩
 instance : HAppend String Lbl Lbl := ⟨fun a b => .seq #[.text a, b]⟩
 instance : HAppend Lbl String Lbl := ⟨fun a b => .seq #[a, .text b]⟩
+
+/-- Whether the label is closed in its own brackets as a WHOLE — read off the constructor, never
+    off the spelling. -/
+partial def Lbl.delimited : Lbl → Bool
+  | .delim .. => true
+  | .seq #[x] => x.delimited
+  | _ => false
 
 /-- A term's printed spelling as a leaf of the tree — the printer's answer has no shape in it. -/
 def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
@@ -977,12 +1001,12 @@ def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
     `(xs,ys)`, because the comma already separates the operands and the brackets already end the
     list.  ONE rule for every comma list, whatever the operands are written with, so no reader has
     to tell a separating space from a juxtaposition's. -/
-def commaL (l r : String) (ps : Array Lbl) : Lbl := l ++ Lbl.join "," ps ++ r
+def commaL (l r : String) (ps : Array Lbl) : Lbl := .delim l r (Lbl.join "," ps)
 
 /-- `applyLabel` with the operand already a tree: the join is the OPERAND's, read off its flat
     spelling exactly as the string rule reads it. -/
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
-  if j == .bracket || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
+  if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
 
 /-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, and `∋°` makes the
     reader undo one level of indirection to get back to it.  Decided by the OPERAND's head constant,
@@ -1199,7 +1223,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- the same brackets as `F(R)` and `T(R)`; its definition is an intersection of two divisions,
   -- which is the relator's PROOF and not its picture.
   | (``Freyd.Alg.powerRel, args) => un Prec.atom Prec.loose "P(" ")" args
-  | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) => un Prec.atom Prec.loose "⦇" "⦈" args
+  | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) =>
+    match (← opnds args).back? with
+    | some r => return .delim "⦇" "⦈" (← labelTree Prec.loose r)
+    | none => txt e
   -- The EXISTENTIAL IMAGE is a relator's action on an arrow, so it takes the brackets every applied
   -- operator takes and its operand is a term of the note's, respelled here — the same clause `P(R)`
   -- has, one line up, for the same reason.
@@ -1265,7 +1292,9 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
         pure (.lam n dom (mkApp φ (.bvar 0)) .default)
       Meta.lambdaBoundedTelescope φ 1 fun xs b => do
         match xs[0]? with
-        | some x => return "(μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b) ++ ")"
+        | some x =>
+          let body : Lbl := "μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b)
+          return .delim "(" ")" body
         | none => txt e
     | none => txt e
   -- A relator's action on an ARROW is the ONE bracket no term carries: `F(⦇R⦈)`, the note's way of
@@ -1341,7 +1370,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     let paren := (appParts stx).isSome || (stxHead stx).isNone
     let rec respell (p : Nat) (as : List Expr) (holes : Array Lbl) (t : Expr) : MetaM Lbl := do
       match as with
-      | [] => return Lbl.fill (← appShow t) holes
+      | [] => return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
+          (Name.mkSimple ∘ holeName)).toArray) holes
       | a :: rest =>
         let nm := Name.mkSimple (holeName holes.size)
         let l ← labelTree p a
