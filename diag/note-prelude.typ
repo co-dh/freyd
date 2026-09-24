@@ -6,12 +6,13 @@
 #import "circuit.typ": conv, LEAD, meet, wire, bend, gbox, boxrun, boxrun-w, dot as wiredot, tape, tape-fork, tape-join, TINT, delta as wcopy, nabla as wmerge, frc, banana, TAPEEDGE, est-R-box, union-box
 // draw.typ owns the Hinze–Marsden geometry (Reduce) and every helper this note draws with:
 // it is also the standalone PNG of those laws, and one geometry drawn in two files is one that drifts.
-#import "draw.typ": homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, ADMIRES, HATES, WORKS, ADMIRERS, HATERS, PEOPLE, lab, ar, node, nodes, ings, edges, arc, head, e, syqnode, syqedge, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, lanecheck, hm-bead, hm-name, hm-port, hm-region, hm-wire, SQ, RQ
+#import "draw.typ": homeq, TCOL, BCOL, objcol, GIVEN1, GIVEN2, INDUCED, SLACK, lab, ar, node, arc, e, zw, zsq, zsqc, zstep, znamed, zderiv, zline, zpair, skel, capbox, pair, blocked, fb-ALLC, fb-MAPC, fb-ZC, KNEE, lanecheck, hm-bead, hm-name, hm-port, hm-region, hm-wire, SQ, RQ
 // The two panel helpers, one per convention: `cpanel` draws a circuit (wire = object, box = a
 // morphism), `dpanel` a Hinze–Marsden panel (wire = functor, bead = an arrow).  Neither file
 // imports the other.
 #import "cpanel.typ": cpanel
 #import "dpanel.typ": dpanel, hm-meta
+#import "gpanel.typ": gpanel
 // A picture is a Lean declaration's name and nothing else: the exporter draws it into diag/generated/
 // and decides every mark, type and row.  `--input list=1` lists the names instead of drawing them.
 // ONE CALL IS ONE BOX: `lean(a, b)` names a PAIR — the two panels that stand beside each other, with
@@ -49,6 +50,12 @@
 // A DATA VALUE drawn as a tree, from `diag-export --value`: a tree-valued `def` read off its value,
 // so an example tree in the note is the one its theorems run on.
 #let leanv(sel) = lean-call("generated/value/", <lean-value>, (sel,))
+// The ELEMENT-GRAPH route: `diag-export --graph` decides a concrete relation between finite types
+// pair by pair, and `gpanel` draws it; the call adds only the layout (`gpanel.typ`'s header), never a pair.
+#let leang(sel, ..layout) = {
+  [#metadata(sel)<lean-graph>]
+  if "list" not in sys.inputs { import "generated/graph/" + sel + ".typ": graph; gpanel(graph, ..layout) }
+}
 // A FORMULA GENERATED FROM THE SAME DECLARATION a row's picture is drawn from, so the words beside
 // a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
 // `diag-export --formula` writes is inline `raw` and nothing else — no `pic` binding — so it is

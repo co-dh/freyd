@@ -336,19 +336,11 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
 // where `a₁,a₂,a₃` is the source, not the target. Only this one has the empty image `R(2) = ∅`.
 #disp[#block(breakable: false)[
-#align(center, box(cetz.canvas(length: 0.8cm, {
-  let (L, RC) = (0, 3.2)
-  let ys = (1.0, 0, -1.0)
-  ar((L, ys.at(0)), (RC, ys.at(0)), GIVEN1, s0: 0.22, s1: 0.3)
-  ar((L, ys.at(0)), (RC, ys.at(1)), GIVEN1, s0: 0.22, s1: 0.3)
-  ar((L, ys.at(2)), (RC, ys.at(2)), GIVEN1, s0: 0.22, s1: 0.3)
-  for (k, y) in ys.enumerate() {
-    wiredot((L, y)); lab(L - 0.42, y, black)[#raw(str(k + 1))]
-    wiredot((RC, y)); lab(RC + 0.42, y, black)[#raw(("a", "b", "c").at(k))]
-  }
-  lab((L + RC) / 2, 1.5, GIVEN1)[`R`]
-  lab(L, -1.7, black)[`A`]; lab(RC, -1.7, black)[`B`]
-})))
+#align(center, leang("Freyd.Alg.ImageExample.R",
+  cols: ((type: "A", x: 0, ys: ("1": 1.0, "2": 0, "3": -1.0), node: "dot", lab: (-0.42, 0)),
+    (type: "B", x: 3.2, ys: (a: 1.0, b: 0, c: -1.0), node: "dot", lab: (0.42, 0))),
+  rels: (R: (col: GIVEN1, s0: 0.22, s1: 0.3)),
+  notes: (((1.6, 1.5), text(10pt, GIVEN1)[`R`]), ((0, -1.7), text(10pt)[`A`]), ((3.2, -1.7), text(10pt)[`B`]))))
 
 #align(center, table(
   columns: 6,
