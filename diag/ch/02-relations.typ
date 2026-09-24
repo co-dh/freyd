@@ -10,6 +10,7 @@ Rel is a poset-enriched category with ($times.o$, °) where $times.o$ is commuta
     #src[C:] `(▷ : A⊗A⟶A,⟜ : 𝕀⟶A)` a commutative monoid with `C°⊣C`.
     We write `C°` as `(◁ : A⟶A⊗A,⊸ : A⟶𝕀)`
   ])
+// lean:diag.CB.CartBicat@acc5575a
 ]]<rel-defn>
 
 #disp[#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,

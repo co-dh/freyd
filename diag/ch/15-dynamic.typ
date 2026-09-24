@@ -22,6 +22,7 @@
 
 `H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` as
 in @mu-defn.
+// lean:AOP.A9_1.H@2beea1fa
 ]]<dp-defn>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -342,6 +343,7 @@ the longest repeated tail; #h(4pt)
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
+  // lean:AOP.A9_4_Code.code_laws@a53670d5
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),

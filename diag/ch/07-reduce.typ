@@ -169,6 +169,10 @@ For the definition to make sense `f : A‚ü∂A` is required, and then `tri(f) : TA‚
 
   [`depth`],
   [`depth=depths max`],
+  // lean:AOP.A6_TreeTip.Tree@f171e5c9
+  // lean:AOP.A6_TreeTip.cataTreeFold_tip@5e91d534
+  // lean:AOP.A6_TreeTip.cataTreeFold_bin@3f0eb419
+  // lean:AOP.A6_TreeTip.tree@192697f6
 )]<tree-depth>
 
 #pagebreak(weak: true)

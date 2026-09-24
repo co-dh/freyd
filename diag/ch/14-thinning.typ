@@ -317,6 +317,12 @@ row((
 
 `Q≜R∩(head head°)`, #h(4pt) `S≜F(𝟙,∋)α`, #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
 $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
+// lean:AOP.A8_2.pathAlg@111b43a5
+// lean:AOP.A8_2.costOf@dfe994f6
+// lean:AOP.A8_2.pathR@747ec06c
+// lean:AOP.A8_2.pathQ@69a8dcfb
+// lean:AOP.A8_2.headRel@32b2507f
+// lean:AOP.A8_2.pathStep@5253071f
 ]]<path-defn>
 
 #disp[#table(
