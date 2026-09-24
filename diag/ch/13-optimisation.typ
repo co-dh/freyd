@@ -189,7 +189,6 @@ directly.
 
 // B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
 // modular law, and it needs `f` simple — the only such step in §@sec-est.
-// No marker: (7.8) is one of the statements AOP/A7_1.lean drops (its closing block note).
 #disp[
 #zline(
   zsqc(`P(f) est(R)`, none, name: "f a map"),
@@ -206,6 +205,7 @@ directly.
   zstep(op: sym.eq, under: true)[`·f⊣·f°`, `°`, `est`],
   zsqc(`est(fRf°) f`, none),
 )
+// lean:AOP.A7_1.powerRel_map_comp_est@864a344c
 ]<est-78>
 
 === `P(S) est(R)⊑(∋S)∩(∈\(SR°))`
@@ -273,7 +273,9 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   leancd("Freyd.Alg.LaxNatural"),
   row((lax-hm-l, [#h(7pt) #SQ #h(7pt)], lax-hm-r)),
  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
-)]<lax-str>
+)
+// lean:AOP.A5_1.LaxNatural@ba661fee
+]<lax-str>
 
 // Not in B&dM §5.7, which stops at Theorem 5.2.
 
@@ -474,7 +476,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   leancd("Freyd.Alg.MonotonicAlg"),
   row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
-)]<mon-str>
+)
+// lean:AOP.A7_2.MonotonicAlg@26944450
+]<mon-str>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
 
@@ -509,7 +513,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     leancd("Freyd.Alg.RelSet.plus_distributes_le"),
     [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
   ),
-))]<dist-str>
+))
+// lean:AOP.A7_2.Distributes@e061e29e
+// lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
+]<dist-str>
 
 // B&dM Theorem 7.1, p. 172.  The mirrored chain lands on `R°`, and the last step, `f` a map, is
 // what carries it back.
@@ -1434,7 +1441,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#h(1em)`2nd item`], grid.cell(colspan: 4, align: left)[`([e],[])  choose↦[e]  or  []`],
   [#h(1em)`2×2=4 combinations:`], [`[[d],[e]]`], [`[[d],[]]`], [`[[],[e]]`], [`[[],[]]`],
   [#h(1em)`concat flattens:`], [`[d,e]`], [`[d]`], [`[e]`], [`[]`],
-))]<party-list-choose>
+))
+// lean:AOP.A7_3_Party.party_list_choose_example@cb7ee147
+]<party-list-choose>
 
 === `list((R×R)°)` <sec-party-listrr>
 
@@ -1899,8 +1908,9 @@ Vec(n)(cp)(that)                                  cp pairs the square with each 
    = 1 6   2 7   3 8   4 5                        row k of that is the k-th 3×2 block, left
      1 5   2 6   3 7   4 8                        to right; each line a two-square path
      1 8   2 5   3 6   4 7                      : A[n][3][2]
-```]]<vec-step>
-   // lean:AOP.A7_4_CylinderVec.Vec.gen_run@47a0e44e
+```]
+// lean:AOP.A7_4_CylinderVec.Vec.gen_run@47a0e44e
+]<vec-step>
 
 === `gen` is an `F`-algebra; `⦇gen⦈`: `cons ⦇gen⦈=(𝟙×⦇gen⦈)gen` <sec-cyl-vec-fold>
 
@@ -1928,7 +1938,9 @@ xs = 1 2 3 4                                    : A[m][n], m=2
      6
      7
      8                                          : A[n][1][1]
-```]]<vec-fold-step>
+```]
+// lean:AOP.A7_4_CylinderVec.Vec.genFold_run@9b806c9b
+]<vec-fold-step>
 
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @vec-step: the tail
   folds to the column `5 6 7 8`, one path per row and each of them one square long, and `gen` on it
@@ -1965,7 +1977,9 @@ zip(that)                                         each row: its square, and the 
      2 5
      3 6
      4 5                                        : A[n][m+1]
-```]]<vec-q-step>
+```]
+// lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q_run@c3d869b1
+]<vec-q-step>
 
 === `paths est(R)⊒⦇Q⦈ est(R)` <sec-cyl-vec-deriv>
 
@@ -2131,7 +2145,9 @@ zip(that)                                         each row: its square, and the 
  [`secure⟨ceiling,ceiling−floor⟩bmax=⟨ceiling,ceiling−floor⟩bmax(≤N)` \
    #src[a stretch passes `secure` before the test exactly where the test's own value passes `≤N`
     after it, which is @van-defn's `bmax(ceiling x,ceiling x−floor x)≤N`]],
-)]<van-secure>
+)
+// lean:AOP.A7_5_Van.secure_bmax@ddf3c4a7
+]<van-secure>
 
 // The two panels differ only in the ORDER of the two beads, so they share `prefix`'s height and
 // `secure` is the one that moves: above `prefix` on the left, below it on the right.  `prefix` is
@@ -2144,7 +2160,9 @@ zip(that)                                         each row: its square, and the 
  [`secure prefix⊑prefix secure` \
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
-)]<van-prefix>
+)
+// lean:AOP.A7_5_Van.secure_prefix@572206f0
+]<van-prefix>
 
 === `partition list(secure)=⦇[nil,new ∪ old]⦈` <sec-van-fusion>
 
@@ -2169,7 +2187,11 @@ zip(that)                                         each row: its square, and the 
    #src[`glue` with `secure` on the segment the transaction has just joined: the van stays away
     only where the longer segment still passes]],
   [#lean("Freyd.Alg.RelSet.Van.old_eq.rhs")],
-)]<van-algebras>
+)
+// lean:AOP.A7_5_Van.new_eq@e9699c4a
+// lean:AOP.A7_5_Van.glue_eq@f4301628
+// lean:AOP.A7_5_Van.old_eq@b9c3949e
+]<van-algebras>
 
 // B&dM p.185's "appeal to fusion" needs the fold law's side condition `R S=(F S)Q`, and this is
 // it: the two panels are the algebra's stack of context wires with `secure` moved across it, and
@@ -2260,7 +2282,9 @@ zip(that)                                         each row: its square, and the 
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
  [`H≜(head prefix° head°) ∪ (nil° nil)` \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
-)]<van-h>
+)
+// lean:AOP.A7_5_Van.H_eq@b1cf5141
+]<van-h>
 
 === `(𝟙×(R;H))new⊑(new ∪ old)(R;H)` <sec-van-716>
 
@@ -2274,7 +2298,9 @@ zip(that)                                         each row: its square, and the 
  [`(𝟙×⊤)new⊑new H` \
    #src[whatever schedule the van is called on, the result's first segment is the one transaction
     `[a]`, so any two results of `new` on that transaction stand in `H`]],
-)]<van-718>
+)
+// lean:AOP.A7_5_Van.van_7_18@767da25f
+]<van-718>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono_new") \
@@ -2317,21 +2343,27 @@ zip(that)                                         each row: its square, and the 
    #src[`old` leaves the transaction `[a]` at the front of the first segment, and `[a]` is what
     `new` makes that segment, so the two first segments are `prefix`-related whatever the schedules
     were]],
-)]<van-719>
+)
+// lean:AOP.A7_5_Van.van_7_19@78e3274f
+]<van-719>
 
 #disp[#capbox(
   row((van-720-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_20.rhs"))),
  [`(𝟙×|R|)old⊑new R` \
    #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
     the one the van's own segment lengthens]],
-)]<van-720>
+)
+// lean:AOP.A7_5_Van.van_7_20@b29be38c
+]<van-720>
 
 #disp[#capbox(
   row((van-721-l, [#h(7pt) #SQ #h(7pt)], van-721-r)),
  [`(𝟙×(R∩H))old⊑old (R∩H)` \
    #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
     @van-prefix — lets `old` fire on this side too, and it keeps both the length and the prefix]],
-)]<van-721>
+)
+// lean:AOP.A7_5_Van.van_7_21@302aa148
+]<van-721>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono") \

@@ -433,4 +433,22 @@ public theorem cyl_laws {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat
     _ ⊑ _ := cyl_laws_step2 htrans
     _ = _ := cyl_laws_step3
 
+/-- The note's run of `Q` at `n=4`, `m=1`, `R` comparing the one square: row `k` is offered squares
+    `k+1`, `k`, `k-1` of the column `5 6 7 8`, `est(R)` keeps the cheapest `5 5 6 5`, and the row's
+    own square `1 2 3 4` goes in front. -/
+public theorem Q_run :
+    Q (n := 4) (m := 1) (A := (⟨Nat⟩ : RelSet.{0})) (fun x y => x 0 ≤ y 0)
+      (fun i : Fin 4 => i.val + 1, fun (i : Fin 4) (_ : Fin 1) => i.val + 5)
+      (fun i : Fin 4 => cons (i.val + 1, fun _ : Fin 1 => [5, 5, 6, 5].getD i.val 0)) := by
+  have h : ∀ i : Fin 4,
+      (∃ k : Fin 3, trans (moves (fun (i : Fin 4) (_ : Fin 1) => i.val + 5)) i k 0
+          = [5, 5, 6, 5].getD i.val 0)
+      ∧ ∀ k : Fin 3, [5, 5, 6, 5].getD i.val 0
+          ≤ trans (moves (fun (i : Fin 4) (_ : Fin 1) => i.val + 5)) i k 0 := by decide
+  refine ⟨(fun i : Fin 4 => i.val + 1, fun (i : Fin 4) (_ : Fin 1) => [5, 5, 6, 5].getD i.val 0),
+    ⟨rfl, moves _, rfl, trans (moves _), rfl, fun i => ⟨?_, fun k => (h i).2 k⟩⟩,
+    zip _, rfl, fun _ => rfl⟩
+  obtain ⟨k, hk⟩ := (h i).1
+  exact ⟨k, funext fun j => match j with | ⟨0, _⟩ => hk⟩
+
 end Freyd.Alg.Vec.Rel
