@@ -248,6 +248,17 @@ public theorem gen_run :
     = [[[1, 6], [1, 5], [1, 8]], [[2, 7], [2, 6], [2, 5]],
        [[3, 8], [3, 7], [3, 6]], [[4, 5], [4, 8], [4, 7]]] := by decide
 
+/-- The note's run of `⦇gen⦈` on `xs = (1,2,3,4),(5,6,7,8)` at `n=4`, `m=1`: the tail folds to the
+    column `5 6 7 8`, each square its own one-square path, and `gen` on it is `gen_run`'s result. -/
+public theorem genFold_run :
+    ([0, 1, 2, 3] : List (Fin 4)).map
+        (genFold (n := 4) 0 (fun (_ : Fin 1) (i : Fin 4) => i.val + 5) · (0 : Fin 1) 0) = [5, 6, 7, 8]
+    ∧ ([0, 1, 2, 3] : List (Fin 4)).map (fun i => ([0, 1, 2] : List (Fin 3)).map (fun k =>
+      ([0, 1] : List (Fin 2)).map (genFold (n := 4) 1
+        (fun (r : Fin 2) (i : Fin 4) => r.val * 4 + i.val + 1) i k)))
+    = [[[1, 6], [1, 5], [1, 8]], [[2, 7], [2, 6], [2, 5]],
+       [[3, 8], [3, 7], [3, 6]], [[4, 5], [4, 8], [4, 7]]] := by decide
+
 end Vec
 
 end Freyd.Alg
