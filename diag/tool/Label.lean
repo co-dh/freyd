@@ -53,6 +53,8 @@ def mate : String → Option String
   | "(" => some ")" | "[" => some "]" | "{" => some "}" | "⦃" => some "⦄"
   | "⟨" => some "⟩" | "⟦" => some "⟧" | "⟪" => some "⟫" | "⦇" => some "⦈"
   | "‹" => some "›" | "«" => some "»" | "⌊" => some "⌋" | "⌈" => some "⌉"
+  -- A BAR is its own mate: `|R|` closes where its second `|` says, exactly as `[A]` does.
+  | "|" => some "|" | "‖" => some "‖"
   | _ => none
 
 /-- ONE LETTER, PRIMES AND ALL: the test every juxtaposition rule below asks of a name.  A prime is
@@ -981,6 +983,15 @@ partial def Lbl.delimited : Lbl → Bool
   | .seq #[x] => x.delimited
   | _ => false
 
+/-- Whether the label's FIRST factor is closed in its own brackets — the one a factor to its left
+    meets, read off the constructor like `delimited`. -/
+partial def Lbl.leadsDelim : Lbl → Bool
+  | .delim .. => true
+  | .seq ps => match ps.find? (· != .text "") with
+    | some x => x.leadsDelim
+    | none => false
+  | _ => false
+
 /-- A term's printed spelling as a leaf of the tree — the printer's answer has no shape in it. -/
 def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
 
@@ -990,7 +1001,7 @@ def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
     (a one-character factor closes up, a word does not), and a left fold hands `juxt` a whole run
     whose last factor it cannot see — `R◁` then `▷` came out `R◁ ▷`. -/
 def juxtL (a b : Lbl) : Lbl :=
-  if juxt a.flat b.flat == a.flat ++ b.flat then a ++ b else a ++ " " ++ b
+  if b.leadsDelim || juxt a.flat b.flat == a.flat ++ b.flat then a ++ b else a ++ " " ++ b
 
 /-- `sep` between the parts. -/
 def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
@@ -1457,7 +1468,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     let out ← respell (if paren then Prec.loose else Prec.atom)
       ((← arrows args) ++ (← relatorArgs args)).toList #[] e
     match stxPeel stx with
-    | .ident _ _ nm _ => if oneToken nm.getString! then return out else return wrap (← Prec.juxt) out
+    -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
+    -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
+    | .ident _ _ nm _ =>
+      if oneToken nm.getString! || prec ≤ (← Prec.juxt) then return out else return .delim "(" ")" out
     | _ => return out
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
