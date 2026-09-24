@@ -330,12 +330,19 @@ def isNamed (e : Expr) : MetaM Bool := do
     -- NO IDENTIFIER HEAD AT ALL means the printer wrote it under its own NOTATION (`thin(Q)`,
     -- `⦇S⦈`), which is a spelling of its own by the same test: the head it prints is not the
     -- constant's name.  A notation DELIMITS its operand, so the syntax opens with an atom.
-    let some h := StrDiag.stxHead (← PrettyPrinter.delab e) | return true
+    let stx ← PrettyPrinter.delab e
+    let some h := StrDiag.stxHead stx | return true
     -- A name of its own is one the DECLARATION chose.  A head that is one of the term's own
     -- BINDERS chose nothing — `F(R)` prints under the relator variable `F`, and that relator is
     -- exactly what has to open for the fork inside it to be drawn — and an unexpander that only
     -- drops a namespace leaves the name alone, so neither counts.
     if ((← getLCtx).findFromUserName? h).isSome then return false
+    -- An application the printer writes as its BARE NAME had its explicit arguments dropped by an
+    -- unexpander (`Q`, `paths`): the declaration named the whole arrow, so opening it would erase
+    -- the very step — `paths = ⦇gen⦈ setify ∪` — whose two sides differ only by that name.
+    if stx.raw.isIdent then
+      let fi ← Meta.getFunInfoNArgs e.getAppFn e.getAppNumArgs
+      if fi.paramInfo.any (·.binderInfo.isExplicit) then return true
     return h.getString! != s
   | _ => return false
 
