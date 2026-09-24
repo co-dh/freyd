@@ -146,10 +146,13 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
     and its null wrappers with them — the brackets of `f(…)` already separate it, and
     `thin((prefix°×(⊤+⊤)))` doubles them.  ONE peel, because the string an operand is written as
     and the join it is read at must be the same syntax: reading the join off the unpeeled `(A × B)`
-    calls it self-delimiting and juxtaposes `E` against the string the peel already opened. -/
+    calls it self-delimiting and juxtaposes `E` against the string the peel already opened.
+    A TUPLE is not peeled: its brackets are its own, and peeling `(xs, ys)` left a bare comma list
+    that `mle` bracketed a second time. -/
 partial def stxPeel (s : Syntax) : Syntax :=
   match s.getArgs with
-  | #[.atom _ "(", inner, .atom _ ")"] => stxPeel inner
+  | #[.atom _ "(", inner, .atom _ ")"] =>
+    if s.isOfKind ``Lean.Parser.Term.tuple then s else stxPeel inner
   | #[inner] => if s.isOfKind nullKind then stxPeel inner else s
   | _ => s
 
@@ -1465,8 +1468,11 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- `(new ∪ old)(R;H)`.  ON THE IDENT ALONE, the one label built by no rule of this file —
     -- everything else is bracketed by whatever rule builds it.  At composition's own precedence,
     -- which is what every operator looser than juxtaposition is set at.
+    -- A PAIR OPERAND is respelled too, FIRST, so the pair's own clause writes it whole — `(xs,ys)`,
+    -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
-      ((← arrows args) ++ (← relatorArgs args)).toList #[] e
+      (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)).toList
+      #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
     -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
