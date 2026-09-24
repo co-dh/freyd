@@ -20,7 +20,8 @@
 #
 # SEVEN ROUTES: a `#lean(...)` name is drawn by `--string` (the panel
 # the note imports), a `#leanc(...)` name by `--circuit` (the same declaration under the monoidal
-# reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leanf(...)`
+# reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leang(...)` name by `--graph`
+# (a concrete relation decided pair by pair), a `#leanf(...)`
 # name by `--formula` (the statement in the note's spelling), a `#leant(...)` name by `--type` (the
 # hom its arrows share), a `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is not a property of the name, so the lists are asked
 # for separately rather than guessed at here.
@@ -88,6 +89,7 @@ draw "$proofs" --proof
 lean=$(./scripts/diag-export --list lean-panel) || exit 1
 circuit=$(./scripts/diag-export --list lean-circuit) || exit 1
 cd=$(./scripts/diag-export --list lean-cd) || exit 1
+graph=$(./scripts/diag-export --list lean-graph) || exit 1
 formula=$(./scripts/diag-export --list lean-formula) || exit 1
 type=$(./scripts/diag-export --list lean-type) || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
@@ -97,11 +99,13 @@ type=$(./scripts/diag-export --list lean-type) || exit 1
 leans=$(printf '%s\n' "$lean" | filter --string) || exit 1
 circuits=$(printf '%s\n' "$circuit" | filter --circuit) || exit 1
 cds=$(printf '%s\n' "$cd" | filter --commutative) || exit 1
+graphs=$(printf '%s\n' "$graph" | filter --graph) || exit 1
 formulas=$(printf '%s\n' "$formula" | filter --formula) || exit 1
 types=$(printf '%s\n' "$type" | filter --type) || exit 1
 draw "$leans" --string
 draw "$circuits" --circuit
 draw "$cds" --commutative
+draw "$graphs" --graph
 draw "$formulas" --formula
 draw "$types" --type
 exit 0

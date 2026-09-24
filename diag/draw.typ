@@ -758,22 +758,6 @@
 
 // ==== coordinate and data tables — the cast of the set-theoretic pictures, and where it stands ==
 
-#let IY = (a: 2.4, b: 0.8, c: -0.8, d: -2.4)
-
-#let ADMIRES = ((1.6, `x`, ("a", "b", "c")),
-              (-1.6, `x'`, ("a", "b")))
-
-#let HATES = ((1.6, `y`, ("a", "b", "c")),
-              (-1.6, `y'`, ("a", "b", "d")))
-
-#let WORKS = ((0, `z`, ("a", "b")),)
-
-// The cast and the numbers are the division section's, read for equality instead of containment.
-#let ADMIRERS = (x1: (-5.2, 1.8), x2: (-5.2, -1.8))
-
-#let HATERS = (y1: (5.2, 1.8), y2: (5.2, -1.8))
-
-#let PEOPLE = (a: (0, 2.4), b: (0, 0.8), c: (0, -0.8), d: (0, -2.4))
 
 // The lists keep their coordinates across §10's three pictures, so the reader compares them by looking
 // at the same place twice; `P(R)`'s two lists are the top and bottom one, whose arcs then sweep clear.
@@ -821,32 +805,20 @@
   d.content((x, y), box(inset: 4pt, fill: white)[#text(10pt, c)[#w]])
 }
 
-// A column of nodes at x; a row is (y, label, the people it names).
-#let nodes(x, rows) = for (k, row) in rows.enumerate() { node(x, row.at(0), (INDUCED, SLACK).at(k), row.at(1)) }
 
-#let ings(x) = for (it, y) in IY { node(x, y, black, raw(it)) }
-
-// Every arrow from column x into the shared-pool column xi, stopping on the side it comes from.
-#let edges(x, xi, rows) = {
-  let dir = if x < xi { -1 } else { 1 }
-  for (k, row) in rows.enumerate() { for it in row.at(2) {
-    d.line((x, row.at(0)), (xi + 1.05 * dir, IY.at(it)), mark: (end: ">", scale: 0.5),
-      stroke: 0.75pt + (INDUCED, SLACK).at(k)) } }
-}
 
 // The label goes on the curve's own midpoint (`0.75h` from the axis, not `h`), or it floats off a deep
 // arc.  `cx` shortens the controls' reach: how a bottom arc clears a column without diving twice as far.
-#let arc(a, b, up, lab, col: GIVEN2, h: 3.8, cx: 4) = {
+#let arc(a, b, up, lab, col: GIVEN2, h: 3.8, cx: 4, ly: none) = {
   let (x0, y0) = (a.at(0), a.at(1) + 0.45 * up)
   let (x1, y1) = (b.at(0), b.at(1) + 0.45 * up)
   let c = (x1 - x0) / cx
   d.bezier((x0, y0), (x1, y1), (x0 + c, h * up), (x1 - c, h * up),
     mark: (end: ">", scale: 0.55), stroke: 0.9pt + col)
-  d.content(((x0 + x1) / 2, 0.125 * y0 + 0.75 * h * up + 0.125 * y1),
+  d.content(((x0 + x1) / 2, if ly == none { 0.125 * y0 + 0.75 * h * up + 0.125 * y1 } else { ly }),
     box(inset: 3pt, fill: white)[#text(9.5pt, col)[#lab]])
 }
 
-#let head(x, lab) = d.content((x, 3.9), text(9.5pt, luma(60))[#lab])
 
 // `∋` is a large operator, so a plain `∋_R` sets the `R` UNDERNEATH it; `attach(.., br: ..)` puts it
 // where Freyd has it.  Out here, not inside the block, because the table below subscripts `∋` too.
@@ -898,18 +870,7 @@
 // reason `𝟙%∋` may be moved past another box while `∋` may not.
 #let fb-sing(p) = gbox(p, $frac(#[`𝟙`], ∋)$, chamfer: false, w: 1.0, h: 1.2)
 
-// WEIGHT, NOT HUE, carries the comparison: the heavy fans are the pair claimed to match, the washed-out
-// ones the pairs that fail, so hue is left to the family — blue for `A`, pink for `H`, as everywhere.
-#let syqnode(p, c, fill, w, ring: none) = d.content(p,
-  box(inset: 4pt, fill: fill, radius: 3pt, stroke: ring)[#text(10pt, c)[#w]])
 
-// Every arrow stops short of the dot it names, on the side it comes from, so the two columns' heads
-// meet over the person instead of piling onto it.
-#let syqedge(from, to, col, w) = {
-  let dir = if from.at(0) < to.at(0) { -1 } else { 1 }
-  d.line(from, (to.at(0) + 0.42 * dir, to.at(1)),
-    mark: (end: ">", scale: if w > 0.9 { 0.55 } else { 0.4 }), stroke: w * 1pt + col)
-}
 
 // `choose ≜ π₁ ∪ π₂` as ONE region: the tape this note draws every `∪` with, holding TWO STACKED
 // CIRCUITS — `upper` is the whole `π₁` branch, `lower` the whole `π₂` branch, each an ordinary black

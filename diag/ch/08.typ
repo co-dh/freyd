@@ -16,16 +16,23 @@
 == `(R/S)(S/W)⊑R/W`
 
 
-#disp[#box(cetz.canvas(length: 0.8cm, {
-  edges(-9.6, -4.8, ADMIRES); edges(0, -4.8, HATES); edges(0, 4.8, HATES); edges(9.6, 4.8, WORKS)
-  arc((-9.6, 1.6), (-0.8, 1.6), 1, [`A/H` admires all])
-  arc((0.8, 1.6), (9.6, 0), 1, [`H/W` hates all])
-  arc((-9.6, 1.6), (9.6, 0), -1, [`A/W` admires all], col: GIVEN1, h: 5.4, cx: 8)
-  arc((-9.6, -1.6), (9.6, 0), -1, [`A/W` admires all], col: GIVEN1, h: 7.0, cx: 8)
-  nodes(-9.6, ADMIRES); ings(-4.8); nodes(0, HATES); ings(4.8); nodes(9.6, WORKS)
-  head(-9.6, [`A` — `x` admires]); head(0, [`H` — `y` hates])
-  head(9.6, [`W` — `z` works for])
-}))]<div-comp-pic>
+#disp[#leang("Freyd.S2_30.Example.A+Freyd.S2_30.Example.H+Freyd.S2_30.Example.W+Freyd.S2_30.Example.AH+Freyd.S2_30.Example.HW+Freyd.S2_30.Example.AW",
+  cols: (
+    (type: "Admirer", x: -9.6, ys: (x: 1.6, "x'": -1.6), col: (INDUCED, SLACK)),
+    (type: "Person", x: -4.8, ys: (a: 2.4, b: 0.8, c: -0.8, d: -2.4)),
+    (type: "Hater", x: 0, ys: (y: 1.6, "y'": -1.6), col: (INDUCED, SLACK), pad: 0.8),
+    (type: "Person", x: 4.8, ys: (a: 2.4, b: 0.8, c: -0.8, d: -2.4)),
+    (type: "Worker", x: 9.6, ys: (z: 0), col: INDUCED)),
+  rels: (
+    A: (on: ((0, 1),), col: (INDUCED, SLACK), s1: 1.05),
+    H: (on: ((2, 1), (2, 3)), col: (INDUCED, SLACK), s1: 1.05),
+    W: (on: ((4, 3),), col: INDUCED, s1: 1.05),
+    AH: (arc: 1, label: [`A/H` admires all]),
+    HW: (arc: 1, label: [`H/W` hates all]),
+    AW: (arc: -1, label: [`A/W` admires all], col: GIVEN1, h: 5.4, cx: 8)),
+  notes: (((-9.6, 3.9), text(9.5pt, luma(60))[`A` — `x` admires]),
+    ((0, 3.9), text(9.5pt, luma(60))[`H` — `y` hates]),
+    ((9.6, 3.9), text(9.5pt, luma(60))[`W` — `z` works for])))]<div-comp-pic>
 
 // The whole of each quotient in one line of English, laid out as the law reads: the two legs of the
 // path first, the arrow they are contained in last.

@@ -134,6 +134,7 @@ import Freyd.S2_43
 import Freyd.S2_433_SplEqInstance2
 import Freyd.S2_42
 import Freyd.S2_30
+import Freyd.S2_30_Example
 import Freyd.S2_31
 import Freyd.S2_313
 import Freyd.S2_11
