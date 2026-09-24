@@ -2113,8 +2113,8 @@ zip(that)                                         each row: its square, and the 
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
  [`H≜(head prefix° head°) ∪ (nil° nil)` #src[]],
-  // lean:AOP.A7_5_Van.H_eq@b1cf5141
-  [#leant("Freyd.Alg.RelSet.Van.H_eq")],
+  // lean:AOP.A7_5_Van.Hrel@9b25c946
+  [#leant("Freyd.Alg.RelSet.Van.Hrel")],
   [`[[a],[b,c]]` to `[[a,b],[c]]`: `[a]` is a prefix of `[a,b]`.],
 
  [`R;H≜R∩(R°⇒H)` #src[]],
@@ -2275,15 +2275,15 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
 // coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
-#let van-h-l = lean("Freyd.Alg.RelSet.Van.H_eq.rhs", branch: "inl")
-#let van-h-r = lean("Freyd.Alg.RelSet.Van.H_eq.rhs", branch: "inr")
+#let van-h-l = lean("Freyd.Alg.RelSet.Van.Hrel", branch: "inl")
+#let van-h-r = lean("Freyd.Alg.RelSet.Van.Hrel", branch: "inr")
 
 #disp[#capbox(
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
- [#leanf("Freyd.Alg.RelSet.Van.H_eq") \
+ [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
-// lean:AOP.A7_5_Van.H_eq@b1cf5141
+// lean:AOP.A7_5_Van.Hrel@9b25c946
 ]<van-h>
 
 === `(𝟙×(R;H))new⊑(new ∪ old)(R;H)` <sec-van-716>

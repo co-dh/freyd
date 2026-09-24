@@ -206,11 +206,27 @@ public theorem R_eq :
 @[expose] public def headR (A : Type) : dSched A ⟶ (⟨Seg A⟩ : RelSet.{0}) :=
   fun p s => ∃ t, p = ConsList.cons s t
 
-/-- **van-defn**: `H ≜ (head prefix° head°)∪(nil° nil)` — one schedule's first segment is a
-    prefix of the other's, or both are empty. -/
-@[expose] public def Hrel (A : Type) : dSched A ⟶ dSched A := fun p q =>
-  (∃ s t s' t', p = ConsList.cons s t ∧ q = ConsList.cons s' t' ∧ prefixP s s')
-    ∨ (p = ConsList.wrap () ∧ q = ConsList.wrap ())
+-- THE ONE-POINT OBJECT IS THE NOTE'S `𝟏`, and an object a picture labels has to be written the
+-- way the picture writes it.  A NOTATION and not an abbreviation: `𝟏` is a bold digit, which is
+-- no Lean identifier.
+notation:max "𝟏" => Freyd.Alg.RelSet.CL.dL Unit
+
+/-- **van-defn**: `H ≜ (head prefix° head°)∪(nil° nil)` — `nil` being `wrapR` out of the one
+    point `𝟏`, so `nil° nil` is the coreflexive on the empty schedule. -/
+@[expose] public def Hrel (A : Type) : dSched A ⟶ dSched A :=
+  (headR A ≫ (prefixR : dList A ⟶ dList A)° ≫ (headR A)°) ∪ ((wrapR : 𝟏 ⟶ dSched A)° ≫ wrapR)
+
+/-- `H` pointwise: one schedule's first segment is a prefix of the other's, or both are empty. -/
+public theorem Hrel_apply {p q : Sched A} :
+    Hrel A p q ↔ (∃ s t s' t', p = ConsList.cons s t ∧ q = ConsList.cons s' t' ∧ prefixP s s')
+      ∨ (p = ConsList.wrap () ∧ q = ConsList.wrap ()) := by
+  constructor
+  · rintro (⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩ | ⟨u, hp, hq⟩)
+    · exact Or.inl ⟨s, t, s', t', hp, hq, hpre⟩
+    · exact Or.inr ⟨hp, hq⟩
+  · rintro (⟨s, t, s', t', hp, hq, hpre⟩ | ⟨hp, hq⟩)
+    · exact Or.inl ⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩
+    · exact Or.inr ⟨(), hp, hq⟩
 
 /-- **van-defn**: `R;H ≜ R∩(R°⇒H)` — strictly shorter, or the same length with the first
     segment a prefix of the other's. -/
@@ -224,25 +240,6 @@ public theorem RH_eq : RH A = R A ∩ ((R A)° ⇨ Hrel A) := by
     exact le_iff.mpr fun p q h => h.1.2 h.2
   · refine le_iff.mpr fun p q h => ⟨h.1, fun hle => ?_⟩
     exact le_iff.mp (impl_cancel ((R A)°) (Hrel A)) p q ⟨h.2, hle⟩
-
--- THE ONE-POINT OBJECT IS THE NOTE'S `𝟏`, and an object a picture labels has to be written the
--- way the picture writes it.  A NOTATION and not an abbreviation: `𝟏` is a bold digit, which is
--- no Lean identifier.
-notation:max "𝟏" => Freyd.Alg.RelSet.CL.dL Unit
-
-/-- `H = (head prefix° head°)∪(nil° nil)`, point-free — `nil` being `wrapR` out of the one
-    point `𝟏`, so `nil° nil` is the coreflexive on the empty schedule. -/
-public theorem H_eq :
-    Hrel A = (headR A ≫ (prefixR : dList A ⟶ dList A)° ≫ (headR A)°)
-      ∪ ((wrapR : 𝟏 ⟶ dSched A)° ≫ wrapR) := by
-  apply hom_ext; intro p q
-  constructor
-  · rintro (⟨s, t, s', t', hp, hq, hpre⟩ | ⟨hp, hq⟩)
-    · exact Or.inl ⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩
-    · exact Or.inr ⟨(), hp, hq⟩
-  · rintro (⟨s, ⟨t, hp⟩, s', hpre, ⟨t', hq⟩⟩ | ⟨u, hp, hq⟩)
-    · exact Or.inl ⟨s, t, s', t', hp, hq, hpre⟩
-    · exact Or.inr ⟨hp, hq⟩
 
 /-- **van-defn**: `|R| ≜ R∩¬R°`, the strict part `R` splits into. -/
 @[expose] public def strictR (A : Type) : dSched A ⟶ dSched A := fun p q => clen p < clen q
@@ -273,8 +270,8 @@ public theorem RH_refl : 𝟙 (dSched A) ⊑ RH A :=
     obtain rfl : p = q := h
     refine ⟨Nat.le_refl _, fun _ => ?_⟩
     cases p with
-    | wrap u => exact Or.inr ⟨rfl, rfl⟩
-    | cons s t => exact Or.inl ⟨s, t, s, t, rfl, rfl, prefixP.refl s⟩
+    | wrap u => exact Hrel_apply.mpr (Or.inr ⟨rfl, rfl⟩)
+    | cons s t => exact Hrel_apply.mpr (Or.inl ⟨s, t, s, t, rfl, rfl, prefixP.refl s⟩)
 
 public theorem RH_trans : RH A ≫ RH A ⊑ RH A :=
   le_iff.mpr fun p r h => by
@@ -282,17 +279,17 @@ public theorem RH_trans : RH A ≫ RH A ⊑ RH A :=
     refine ⟨Nat.le_trans h1 h2, fun hle => ?_⟩
     have e1 : clen q ≤ clen p := Nat.le_trans h2 hle
     have e2 : clen r ≤ clen q := Nat.le_trans hle h1
-    rcases hH1 e1 with ⟨s, t, s', t', hp, hq, hpr⟩ | ⟨hp, hq⟩
-    · rcases hH2 e2 with ⟨u, v, u', v', hq', hr, hpr'⟩ | ⟨hq', -⟩
+    rcases Hrel_apply.mp (hH1 e1) with ⟨s, t, s', t', hp, hq, hpr⟩ | ⟨hp, hq⟩
+    · rcases Hrel_apply.mp (hH2 e2) with ⟨u, v, u', v', hq', hr, hpr'⟩ | ⟨hq', -⟩
       · rw [hq] at hq'
         injection hq' with hsu htv
         subst hsu
         subst htv
-        exact Or.inl ⟨s, t, u', v', hp, hr, prefixP.trans hpr hpr'⟩
+        exact Hrel_apply.mpr (Or.inl ⟨s, t, u', v', hp, hr, prefixP.trans hpr hpr'⟩)
       · rw [hq] at hq'; nomatch hq'
-    · rcases hH2 e2 with ⟨u, v, u', v', hq', -, -⟩ | ⟨-, hr⟩
+    · rcases Hrel_apply.mp (hH2 e2) with ⟨u, v, u', v', hq', -, -⟩ | ⟨-, hr⟩
       · rw [hq] at hq'; nomatch hq'
-      · exact Or.inr ⟨hp, hr⟩
+      · exact Hrel_apply.mpr (Or.inr ⟨hp, hr⟩)
 
 public theorem R_recip_trans : (R A)° ≫ (R A)° ⊑ (R A)° :=
   le_iff.mpr fun p r h => by
@@ -786,9 +783,9 @@ public theorem van_7_18 :
     obtain ⟨b, y⟩ := v
     obtain rfl : r = newFn (b, y) := hnew
     obtain rfl : a = b := hab
-    exact ⟨newFn (a, x), rfl, Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
+    exact ⟨newFn (a, x), rfl, Hrel_apply.mpr (Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
       ConsList.cons a (ConsList.wrap ()), y, rfl, rfl,
-      prefixP.refl (ConsList.cons a (ConsList.wrap ()))⟩⟩
+      prefixP.refl (ConsList.cons a (ConsList.wrap ()))⟩)⟩
 
 /-- **(7.19)** (book p.187): `(𝟙×⊤)old ⊑ new H` — `old` leaves `[a]` at the front of the first
     segment it lengthens, and `[a]` is what `new` makes that segment, so `[a]` is a prefix of
@@ -802,8 +799,8 @@ public theorem van_7_19 :
     obtain ⟨b, y⟩ := v
     obtain rfl : a = b := hab
     subst hr
-    exact ⟨newFn (a, x), rfl, Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
-      ConsList.cons a s, t, rfl, rfl, ⟨rfl, prefixP.nil s⟩⟩⟩
+    exact ⟨newFn (a, x), rfl, Hrel_apply.mpr (Or.inl ⟨ConsList.cons a (ConsList.wrap ()), x,
+      ConsList.cons a s, t, rfl, rfl, ⟨rfl, prefixP.nil s⟩⟩)⟩
 
 /-- **(7.20)** (book p.187): `(𝟙×|R|)old ⊑ new R` — `old` keeps the schedule's length, so a
     STRICTLY shorter schedule stays no longer than the one `new` builds, which is one segment
@@ -835,7 +832,7 @@ public theorem van_7_21 :
     obtain rfl : a = b := hab
     subst hv
     subst hr
-    rcases hH with ⟨s₀, t₀, s', t', hx, hy', hpre⟩ | ⟨-, hy'⟩
+    rcases Hrel_apply.mp hH with ⟨s₀, t₀, s', t', hx, hy', hpre⟩ | ⟨-, hy'⟩
     · subst hx
       injection hy' with hs ht
       subst hs
@@ -844,7 +841,7 @@ public theorem van_7_21 :
         secureP_prefix (show prefixP (ConsList.cons a s₀) (ConsList.cons a s) from
           ⟨rfl, hpre⟩) hsec
       exact ⟨ConsList.cons (ConsList.cons a s₀) t₀, ⟨s₀, t₀, rfl, rfl, hsec₀⟩, hle,
-        Or.inl ⟨ConsList.cons a s₀, t₀, ConsList.cons a s, t, rfl, rfl, ⟨rfl, hpre⟩⟩⟩
+        Hrel_apply.mpr (Or.inl ⟨ConsList.cons a s₀, t₀, ConsList.cons a s, t, rfl, rfl, ⟨rfl, hpre⟩⟩)⟩
     · nomatch hy'
 
 /-- **(7.19) and (7.20) intersected** (book p.187): `(𝟙×|R|)old ⊑ new (R∩H)` — `new` is a
@@ -997,7 +994,7 @@ public theorem van_mono_alg :
       | inl d' =>
         rw [Salg, junc_sum_inl] at hS
         obtain rfl : r = ConsList.wrap d' := hS
-        refine ⟨ConsList.wrap D, ?_, Nat.le_refl _, fun _ => Or.inr ⟨rfl, rfl⟩⟩
+        refine ⟨ConsList.wrap D, ?_, Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inr ⟨rfl, rfl⟩)⟩
         rw [Salg, junc_sum_inl]
         rfl
       | inr q => exact False.elim hFv
@@ -1057,7 +1054,7 @@ public theorem prog_le_greedy :
       rw [progAlg, junc_sum_inl] at hprog
       obtain rfl : r = ConsList.wrap D := hS'
       obtain rfl : r' = ConsList.wrap D := hprog
-      exact ⟨Nat.le_refl _, fun _ => Or.inr ⟨rfl, rfl⟩⟩
+      exact ⟨Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inr ⟨rfl, rfl⟩)⟩
     | inr p =>
       rw [Salg, junc_sum_inr] at hS'
       rw [progAlg, junc_sum_inr] at hprog
@@ -1073,9 +1070,9 @@ public theorem prog_le_greedy :
             obtain ⟨s, t, hx, -, -⟩ := hold
             nomatch hx
         subst hr
-        exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨ConsList.cons a (ConsList.wrap ()),
+        exact ⟨Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inl ⟨ConsList.cons a (ConsList.wrap ()),
           ConsList.wrap u, ConsList.cons a (ConsList.wrap ()), ConsList.wrap u, rfl, rfl,
-          prefixP.refl _⟩⟩
+          prefixP.refl _⟩)⟩
       | cons s t =>
         refine Decidable.byCases (p := secureP amount N (ConsList.cons a s))
           (fun hs => ?_) (fun hs => ?_)
@@ -1090,8 +1087,8 @@ public theorem prog_le_greedy :
             subst h1
             subst h2
             subst hr
-            exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨ConsList.cons a s, t, ConsList.cons a s, t,
-              rfl, rfl, prefixP.refl _⟩⟩
+            exact ⟨Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inl ⟨ConsList.cons a s, t,
+              ConsList.cons a s, t, rfl, rfl, prefixP.refl _⟩)⟩
         · rw [progFn_neg hs]
           have hr : r = newFn (a, ConsList.cons s t) := by
             cases hS' with
@@ -1102,9 +1099,9 @@ public theorem prog_le_greedy :
               subst h1
               exact absurd hsec hs
           subst hr
-          exact ⟨Nat.le_refl _, fun _ => Or.inl ⟨ConsList.cons a (ConsList.wrap ()),
+          exact ⟨Nat.le_refl _, fun _ => Hrel_apply.mpr (Or.inl ⟨ConsList.cons a (ConsList.wrap ()),
             ConsList.cons s t, ConsList.cons a (ConsList.wrap ()), ConsList.cons s t,
-            rfl, rfl, prefixP.refl _⟩⟩
+            rfl, rfl, prefixP.refl _⟩)⟩
 
 /-- **@van-laws' last step, drawn first**: `⦇[nil,(ok→glue,new)]⦈ ⊑ ⦇S%∋ est(R;H)⦈` — the fold
     is monotonic in its algebra, and `prog_le_greedy` is the algebra's refinement. -/
