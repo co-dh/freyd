@@ -274,7 +274,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   [],
 
   // row: Ex 5.14
-  [#leanf("Freyd.Alg.sumMap_inter_junc_recip") \ #src[`[P,Q][U,V]°` is a full 2×2 of
+  // the literal formula, not `#leanf`: the formula printer drops the brackets around `R+S` and
+  // `[P,Q][U,V]°`, which changes how the left side reads.
+  [`(R+S)∩([P,Q][U,V]°)` \ `=(R∩(PU°))+(S∩(QV°))` \ #src[`[P,Q][U,V]°` is a full 2×2 of
    composites; `R+S` is diagonal, so the meet cuts the two off-diagonal branches]],
   P(leanc("Freyd.Alg.sumMap_inter_junc_recip"), s: 62%),
 )]<bdm-coprod-laws>
