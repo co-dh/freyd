@@ -848,7 +848,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
     (SQ, lean("Freyd.Alg.hylo_eq_mu_step2.rhs"),
      src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
-     `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's #leanf("Freyd.Alg.mu_fixed");
+     `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
  ]),
      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
   )],
