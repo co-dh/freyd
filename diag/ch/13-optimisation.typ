@@ -2142,7 +2142,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-sec-l, [#h(7pt) = #h(7pt)], van-sec-r)),
- [`secure⟨ceiling,ceiling−floor⟩bmax=⟨ceiling,ceiling−floor⟩bmax(≤N)` \
+ [#leanf("Freyd.Alg.RelSet.Van.secure_bmax") \
    #src[a stretch passes `secure` before the test exactly where the test's own value passes `≤N`
     after it, which is @van-defn's `bmax(ceiling x,ceiling x−floor x)≤N`]],
 )
@@ -2157,7 +2157,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-pre-l, [#h(7pt) #SQ #h(7pt)], van-pre-r)),
- [`secure prefix⊑prefix secure` \
+ [#leanf("Freyd.Alg.RelSet.Van.secure_prefix") \
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
 )
@@ -2280,7 +2280,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
- [`H≜(head prefix° head°) ∪ (nil° nil)` \
+ [#leanf("Freyd.Alg.RelSet.Van.H_eq") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
 // lean:AOP.A7_5_Van.H_eq@b1cf5141
@@ -2295,7 +2295,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-718-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_18.rhs"))),
- [`(𝟙×⊤)new⊑new H` \
+ [#leanf("Freyd.Alg.RelSet.Van.van_7_18") \
    #src[whatever schedule the van is called on, the result's first segment is the one transaction
     `[a]`, so any two results of `new` on that transaction stand in `H`]],
 )
@@ -2339,7 +2339,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-719-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_19.rhs"))),
- [`(𝟙×⊤)old⊑new H` \
+ [#leanf("Freyd.Alg.RelSet.Van.van_7_19") \
    #src[`old` leaves the transaction `[a]` at the front of the first segment, and `[a]` is what
     `new` makes that segment, so the two first segments are `prefix`-related whatever the schedules
     were]],
@@ -2349,7 +2349,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-720-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_20.rhs"))),
- [`(𝟙×|R|)old⊑new R` \
+ [#leanf("Freyd.Alg.RelSet.Van.van_7_20") \
    #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
     the one the van's own segment lengthens]],
 )
@@ -2358,7 +2358,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   row((van-721-l, [#h(7pt) #SQ #h(7pt)], van-721-r)),
- [`(𝟙×(R∩H))old⊑old (R∩H)` \
+ [#leanf("Freyd.Alg.RelSet.Van.van_7_21") \
    #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
     @van-prefix — lets `old` fire on this side too, and it keeps both the length and the prefix]],
 )
