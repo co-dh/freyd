@@ -181,6 +181,8 @@ $(STAMP): $(LEAN) $(BOOK) | exe
 
 # The index carries the statement keys the markers are checked against, so it is stale the moment any
 # Lean source is.  Re-extraction is per module — one edited file costs seconds, not the full 84.
-$(DB): $(BOOK) $(LEAN) | exe
+# UNCONDITIONAL: `scripts/diag-export` re-indexes after building only the exe's imports, so the db's
+# mtime says nothing about a module nothing draws from; lake and the index each skip what is current.
+$(DB): FORCE | exe
 	./scripts/cap lake build
 	./scripts/lean-refactor index
