@@ -206,6 +206,17 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r) ∪ 𝟙` #h(4pt)
 #src[`l`, `r` are @coprod-laws's injections into `FX=1+(Digit×X)`, so `l : 1⟶F(Interval)` and
  `r : Digit×Interval⟶F(Interval)`], #h(4pt) `w≜2¹⁷`.
+// lean:AOP.A10_4_Tex.intern@56deb4eb
+// lean:AOP.A10_4_Tex.val@5187abdb
+// lean:AOP.A10_4_Tex.shift@80f781e1
+// lean:AOP.A10_4_Tex.round@81382467
+// lean:AOP.A10_4_Tex.interval@9dc05d20
+// lean:AOP.A10_4_Tex.inrange@d4f92d7a
+// lean:AOP.A10_4_Tex.round_recip@8787573e
+// lean:AOP.A10_4_Tex.R@393e9bb8
+// lean:AOP.A10_4_Tex.Legal@5b60045f
+// lean:AOP.A10_4_Tex.step@1b245185
+// lean:AOP.A10_4_Tex.H@f5c2c294
 ]]<tex-defn>
 
 // ONE WIRE, `[0,2¹⁶)` to `Decimal`, in every row: `interval`, `H` and `[arb,step]°` are relations

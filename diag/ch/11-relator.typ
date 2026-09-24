@@ -330,6 +330,9 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
     [—],
     [every `x` and every `y` \ has a partner],
+  // lean:AOP.A7_2_RelSet.powrel_readings@c6a80634
+  // lean:AOP.A7_2_RelSet.existsImage_apply@df0c21b6
+  // lean:AOP.A5_7_PowerBeads.powerRel_apply@ebfffd38
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
@@ -355,6 +358,8 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   [`{1,3}`],    [all 8 subsets of `abc`], [`abc`], [`abc`], [`ac`, `bc`, `abc`], [`ac`, `bc`, `abc`],
   [`{2,3}`],    [`∅`, `c`],               [`c`, `ac`, `bc`, `abc`], [`c`], [none], [none],
   [`{1,2,3}`],  [all 8 subsets of `abc`], [`abc`], [`abc`], [none], [none],
+  // lean:AOP.A5_4_ImageExample.E_column@fcf876cf
+  // lean:AOP.A5_4_ImageExample.P_column@7adea435
 ))
 
 ]]<powrel-vs-erel>
@@ -760,6 +765,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
  [#leanf("Freyd.Alg.mu_fixed") \ #src[]],
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
+ // lean:AOP.A6_2.mu_le@9918bd39
+ // lean:AOP.A6_2.mu_fixed@2d3d1a8a
 )]<mu-laws>
 
 === `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` <sec-hylo>
@@ -841,7 +848,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
     (SQ, lean("Freyd.Alg.hylo_eq_mu_step2.rhs"),
      src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
-     `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's `φ((μX : φ(X)))=(μX : φ(X))`;
+     `S°F((μX : S°F(X)R))R⊑(μX : S°F(X)R)` is @mu-laws's #leanf("Freyd.Alg.mu_fixed");
  ]),
      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
   )],

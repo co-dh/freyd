@@ -10,6 +10,7 @@
 #align(center, `example: A admires,H hates,W works for`)
 #align(center, `x (A/H) y — x admires everyone y hates.`)
 #align(center, `x (H\A) y — everyone who hates x admires y.`)
+// lean:Freyd.S2_30_Example.over@fb2a984b
 ]]<div-defn>
 
 

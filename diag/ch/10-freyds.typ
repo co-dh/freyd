@@ -15,6 +15,7 @@ subject to
   [$𝟙 ⊑ (R slash #e[R])(#e[R] slash R)$], [$#e[R]$ is *thick*],
   [$frac(#e[R], #e[R]) = 𝟙$], [$#e[R]$ is *straight*],
 ))
+// lean:Freyd.S2_40.PowerAllegory@b05084c6
 
 `R□` is `R`'s target, an identity arrow. For `R : A⟶B` write `∋ : EB⟶B`, dropping the
 subscript.

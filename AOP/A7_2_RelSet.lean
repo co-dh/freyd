@@ -52,6 +52,16 @@ public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).c
   rw [Λ_eq_classifier]
   exact Iff.rfl
 
+/-- The pointwise readings of the three relations between subsets that `P(R)` and `E(R)` are
+    built from: every member of `Q` is reached, every reached element is in `Q`, every member of
+    `P` reaches into `Q`. -/
+public theorem powrel_readings {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) :
+    (((∋ A ≫ R) / ∋ B) P Q ↔ ∀ w, Q w → ∃ s, P s ∧ R s w) ∧
+    ((∋ B / (∋ A ≫ R))° P Q ↔ ∀ w, (∃ s, P s ∧ R s w) → Q w) ∧
+    (((∋ B ≫ R°) / ∋ A)° P Q ↔ ∀ s, P s → ∃ w, Q w ∧ R s w) :=
+  ⟨Iff.rfl, Iff.rfl, Iff.rfl⟩
+
 /-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
     of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/
 public theorem existsImage_comp_est_apply {A B : RelSet.{0}} (T : A ⟶ B) (R : B ⟶ B)
