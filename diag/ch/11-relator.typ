@@ -109,22 +109,6 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 #disp[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
 // lean:AOP.A5_2.pair_prodMap@8861fda2
 
-// One run of boxes on one strand, for the book tables below: `"r"` a relation (chamfered), `"m"` a
-// map (square), `"c"` a converse (mirrored and tinted).  Twenty inline copies is twenty chances to drift.
-#let BOXW = 0.92
-#let BOXG = 0.34
-#let brun(x, y, items, w: BOXW) = {
-  let cx = x + BOXG
-  wire((x, y), (cx, y))
-  for (i, it) in items.enumerate() {
-    gbox((cx, y), it.at(0), w: w, chamfer: it.at(1) != "m", flip: it.at(1) == "c",
-      fill: if it.at(1) == "c" { TINT } else { none })
-    cx = cx + w
-    if i + 1 < items.len() { wire((cx, y), (cx + BOXG, y)); cx = cx + BOXG }
-  }
-  wire((cx, y), (cx + BOXG, y))
-}
-
 // A `#disp` block does NOT break across a page — it overflows and the last row is lost — so the rows
 // below are kept short enough that the whole table fits one.
 // B&dM §5.2, pp. 114–117, MIRRORED: the book writes `h·f` for first `f`, this note `f h`.  Five rows are
