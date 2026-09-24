@@ -67,6 +67,7 @@ import AOP.A4_5
 import diag.tool.CircuitDiagram
 -- `--commutative`'s functor, which draws a statement as a graph rather than as a term walk.
 import diag.tool.CommutativeDiagram
+import diag.tool.ValueTree
 
 open Lean
 
@@ -1323,7 +1324,8 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type | --formula]\n\
+  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --type | --formula\n\
+     | --value]\n\
      <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    a selector the exporter cannot draw still gets its file — a red box holding the error, so the\n\
@@ -1355,6 +1357,10 @@ def usage : String :=
    --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
      categories a relator runs between; no side or branch selector applies\n\
+   --value draws a DATA VALUE that is a tree — a `def` of an inductive type — as a tree, to\n\
+     diag/generated/value/<name>.typ, what the note's `#leanv(\"<name>\")` imports: its value is\n\
+     reduced constructor by constructor, a field of the same type is a child, one whose type\n\
+     contains it a container of children, and every other field a node label; no selector applies\n\
    --formula writes the declaration's STATEMENT as a note cell, to\n\
      diag/generated/formula/<name>.typ, in the note's own spelling (`label`) — `<name>` alone is\n\
      `<lhs> <sym> <rhs>`, `<name>.lhs`/`.rhs` one side; no `.inl`/`.inr` branch selector applies\n\
@@ -1483,15 +1489,17 @@ def listMain (label : String) : IO UInt32 := do
 /-- THE ROUTE'S DIRECTORY, and the PATH of one selector's picture in it — one rule, read by the
     writer and by `--stale`, because a path computed twice is a staleness check reporting every
     picture missing. -/
-def outDirOf (circuit commutative type formula : Bool) : String :=
+def outDirOf (circuit commutative type formula value : Bool) : String :=
   if circuit then "diag/generated/circuit"
+  else if value then "diag/generated/value"
   else if commutative then "diag/generated/commutative"
   else if type then "diag/generated/type"
   else if formula then "diag/generated/formula" else "diag/generated"
 
-def outPath (circuit commutative type formula proof : Bool) (arg : String) : System.FilePath :=
+def outPath (circuit commutative type formula value proof : Bool) (arg : String) :
+    System.FilePath :=
   System.FilePath.mk
-    s!"{outDirOf circuit commutative type formula}/{arg}{if proof then ".proof" else ""}.typ"
+    s!"{outDirOf circuit commutative type formula value}/{arg}{if proof then ".proof" else ""}.typ"
 
 /-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
     `+` joins two different statements on one page — so its picture goes stale when either does. -/
@@ -1543,7 +1551,7 @@ def certMarks (txt : String) : List (String × String) :=
     THE SELECTORS ARE THE OBLIGATIONS, not the files: a selector whose file is missing is stale, and
     one naming a declaration THE INDEX NO LONGER HAS ends the run — a picture of a statement that no
     longer exists is not a picture to keep. -/
-def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode proofMode : Bool)
+def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode valueMode proofMode : Bool)
     (args : List String) : IO UInt32 := do
   -- ONE CALL, ITS FILES, AND THE DECLARATIONS EACH FILE IS DRAWN FROM.  The string route's `+`
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
@@ -1571,7 +1579,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode proof
     let mut stale := false
     for (n, decls) in files do
       if stale then break
-      let path := outPath circuitMode commutativeMode typeMode formulaMode proofMode n
+      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode proofMode n
       if !(← path.pathExists) then stale := true
       else
         -- EVERY declaration the picture is drawn from must be marked with its CURRENT key, and the
@@ -1614,6 +1622,7 @@ def main (args : List String) : IO UInt32 := do
   let circuitMode := args.contains "--circuit"
   let typeMode := args.contains "--type"
   let formulaMode := args.contains "--formula"
+  let valueMode := args.contains "--value"
   let commutativeMode := args.contains "--commutative"
   -- A CALLER THAT HAS TO PAIR A SELECTOR WITH ITS OUTCOME CANNOT READ A LIST OF PATHS: a refusal
   -- leaves no path at all, so the selector it belonged to is the one thing the list does not say.
@@ -1624,11 +1633,11 @@ def main (args : List String) : IO UInt32 := do
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative"
-      && a != "--records" && a != "--stale")
+      && a != "--value" && a != "--records" && a != "--stale")
   if args.isEmpty then IO.eprintln usage; return 2
   -- The staleness route reads the INDEX and no environment, so it answers before the import below.
   if staleMode then
-    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode proofMode args
+    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode proofMode args
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1647,7 +1656,7 @@ def main (args : List String) : IO UInt32 := do
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
   -- Each route writes under its own directory, except the string one: its panel IS the picture the
   -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
-  let outDir := outDirOf circuitMode commutativeMode typeMode formulaMode
+  let outDir := outDirOf circuitMode commutativeMode typeMode formulaMode valueMode
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
@@ -1708,6 +1717,7 @@ def main (args : List String) : IO UInt32 := do
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if typeMode then Freyd.TypeRender.file arg.toName
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
+        else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
       if sigMode then return body
       return (← certLine (selDecls commutativeMode arg base)) ++ body
@@ -1715,7 +1725,7 @@ def main (args : List String) : IO UInt32 := do
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut failed : Array String := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := outPath circuitMode commutativeMode typeMode formulaMode proofMode arg
+    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode proofMode arg
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
     -- the other selectors — so a flag added later is in it without anyone remembering to add it.
     -- The WHOLE CALL is named, peers and all: a side redrawn without them comes out in a box of its

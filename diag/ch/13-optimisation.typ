@@ -1375,17 +1375,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 === `include` and `exclude` <sec-party-algebras>
 
-// Coordinates are literal: `d` is cetz.draw here and `e` is draw.typ's `∋`, so the six nodes cannot
-// be named after the letters they carry.
-#disp[#block(breakable: false)[#P(cetz.canvas(length: 0.8cm, {
-  for (p, q) in (((0, 2.2), (-2, 0)), ((0, 2.2), (2, 0)), ((-2, 0), (-3, -2.2)),
-                 ((-2, 0), (-1, -2.2)), ((2, 0), (3, -2.2))) { d.line(p, q, stroke: 0.75pt + black) }
-  // Ratings deliberately not 1–6 in node order: as a run they read as indices, not as values.
-  for (x, y, n, r) in ((0, 2.2, "a", "3"), (-2, 0, "b", "7"), (2, 0, "c", "2"),
-                       (-3, -2.2, "d", "5"), (-1, -2.2, "e", "1"), (3, -2.2, "f", "8")) {
-    node(x, y, black, [#raw(n) #text(9pt, luma(105))[#r]])
-  }
-}), s: 100%)
+#disp[#block(breakable: false)[#leanv("Freyd.Alg.RelSet.Party.exStaff")
+// lean:AOP.A7_3_Party.exStaff_ratings@85a7f8dd
 #align(center, src[the small grey number is the employee's rating])]]<party-example-tree>
 
 // The fold on that tree, bottom-up; the last row reads its two cells off the rows for `b` and `c`.
@@ -1421,6 +1412,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   `est(R°)` keeps `([b]=7,[d,e]=6)` at `b`, where `include` wins, and `([c]=2,[f]=8)` at `c`, where
   `exclude` wins, so at the root `include=[a,d,e,f]=17` beats `exclude=[b,f]=15`, and `choose`
   takes 17.]]])
+// lean:AOP.A7_3_Party.party_example_costs@5c33e66d
 ]<party-example>
 
 #disp[#leanc("Freyd.Alg.RelSet.Party.include_eq.rhs")

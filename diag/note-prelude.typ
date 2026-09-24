@@ -46,6 +46,9 @@
 // DIFFERENT statements drawn on one page (`diag/cd-panels.txt`'s `A+B`), so it stays one string and
 // `leancd` takes exactly one selector, never `..sels`.
 #let leancd(sel) = lean-call("generated/commutative/", <lean-cd>, (sel,))
+// A DATA VALUE drawn as a tree, from `diag-export --value`: a tree-valued `def` read off its value,
+// so an example tree in the note is the one its theorems run on.
+#let leanv(sel) = lean-call("generated/value/", <lean-value>, (sel,))
 // A FORMULA GENERATED FROM THE SAME DECLARATION a row's picture is drawn from, so the words beside
 // a `#lean`/`#leanc` panel are checked against the declaration and not typed by hand: the file
 // `diag-export --formula` writes is inline `raw` and nothing else — no `pic` binding — so it is

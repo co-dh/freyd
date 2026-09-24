@@ -520,6 +520,25 @@ public theorem party_laws :
     [Rose.node 7 (ofList [Rose.node 5 (ofList []), Rose.node 1 (ofList [])]),
      Rose.node 2 (ofList [Rose.node 8 (ofList [])])])
 
+/-- **party-example-tree** as the note draws it: each employee `a`…`f` named beside its rating. -/
+@[expose] public def exStaff : Rose (Char × Int) :=
+  Rose.node ('a', 3) (ofList
+    [Rose.node ('b', 7) (ofList [Rose.node ('d', 5) (ofList []), Rose.node ('e', 1) (ofList [])]),
+     Rose.node ('c', 2) (ofList [Rose.node ('f', 8) (ofList [])])])
+
+/-- The fold runs on the ratings of the drawn tree: `tree(snd)` relates `exStaff` to `exTree`. -/
+public theorem exStaff_ratings :
+    RT.tree (graph Prod.snd : dE (Char × Int) ⟶ dE Int) exStaff exTree := by
+  simp [RT.tree, RT.roseP, RT.roseListP, graph, exStaff, exTree, ofList]
+
+/-- **party-example**'s totals: `[b]=7` against `[d,e]=6`, `[c]=2` against `[f]=8`, and at the
+    root `include=[a,d,e,f]=17` against `exclude=[b,f]=15`. -/
+public theorem party_example_costs :
+    costFn id (ofList [7]) = 7 ∧ costFn id (ofList [5, 1]) = 6 ∧ costFn id (ofList [2]) = 2 ∧
+      costFn id (ofList [8]) = 8 ∧ costFn id (ofList [3, 5, 1, 8]) = 17 ∧
+      costFn id (ofList [7, 8]) = 15 := by
+  decide
+
 /-- **party-listrr / party-rr**: `list((R×R)°)` relates the fold's two child pairs to what
     `est(R°)` keeps of them, elementwise and componentwise — `(7≥7, 6≥5)` and `(2≥2, 8≥0)`. -/
 public theorem party_listrr_example :
