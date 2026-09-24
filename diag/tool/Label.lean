@@ -245,10 +245,6 @@ namespace Prec
 def loose : Nat := 0
 /-- A statement's own relation, `⊑`/`≤`/`=` — `infix:50`. -/
 def rel : Nat := 50
-/-- Composition, written by juxtaposition: Lean's `≫` is `infixr:80`. -/
-def juxt : Nat := 80
-/-- ONE FACTOR of a composite, which is what juxtaposition's operands are set at. -/
-def factor : Nat := juxt + 1
 /-- The transpose's `%`: tighter than juxtaposition (`F(∋)S%∋ thin(Q)` would otherwise read as
     `F(∋)` composed with `S%∋`), looser than `°`. -/
 def frac : Nat := 90
@@ -269,16 +265,56 @@ def implArrow : String := " ⟹ "
 inductive Assoc | left | right | non
   deriving BEq, Inhabited
 
-/-- THE BINARY OPERATORS, ONE TABLE: the head constant, the precedence ITS NOTATION declares, the
-    ASSOCIATIVITY that notation declares too, and the symbol the note writes it with.  A clause per
-    operator is how `/` came out `R / S` beside `S\R`, and how two operators of different precedence
-    came to print as one.
+/-- THE LEVEL AND SIDE A SYNTAX KIND'S OWN NOTATION DECLARES, read off its `ParserDescr`:
+    `infixl:65 " + "` is `trailingNode k 65 65 (… (cat term 66))`, so the level is the node's, and
+    the side is whichever operand is parsed AT it.  `none` for a kind no notation declares. -/
+def kindLevel (k : SyntaxNodeKind) : MetaM (Option (Nat × Assoc)) := do
+  let some v := ((← getEnv).find? k).bind (·.value?) | return none
+  let (``ParserDescr.trailingNode, #[_, p, l, body]) := v.getAppFnArgs | return none
+  let (``ParserDescr.cat, #[_, r]) := body.getAppArgs.back?.getD body |>.getAppFnArgs | return none
+  let (some p, some l, some r) := (← Meta.evalNat p, ← Meta.evalNat l, ← Meta.evalNat r)
+    | throwError "kindLevel: the precedences of `{k}` are not numerals: {v}"
+  return some (p, if l == p && r == p + 1 then .left else if l == p + 1 && r == p then .right else .non)
 
-    THE ASSOCIATIVITY COLUMN IS THE NOTATION'S OWN, exactly as the precedence column is: an
-    `infixr` chain the note writes flat (`A∧B∧C∧D`) came out `A∧(B∧(C∧D))` while both operands were
-    set one above the operator.  The three heads with no notation of their own — `Freyd.Diag.meet`,
-    `ClosedLinearBicat.residual`, `Biprod.union`, all plain `def`s — take the column of the operator
-    whose symbol they share, as they already take its precedence.
+/-- The level of the syntax the printer built, `kindLevel` of its kind; a `choice` node answers
+    only when every alternative agrees, since the reader cannot tell which one parsed. -/
+def stxLevel (stx : Syntax) : MetaM (Option (Nat × Assoc)) := do
+  unless stx.isOfKind choiceKind do return ← kindLevel stx.getKind
+  let ls ← stx.getArgs.mapM fun a => kindLevel a.getKind
+  match ls[0]? with
+  | some (some l) => if ls.all (· == some l) then return some l else
+      throwError "stxLevel: the notations {stx.getArgs.map (·.getKind)} share a token at different levels"
+  | _ => return none
+
+/-- THE LEVEL AN INFIX TOKEN BINDS AT, asked of the PARSER: `x tok y` is parsed as a term and the
+    notation that parsed it says its level and side.  A scoped notation (`≫`) is live only in its
+    namespace, so every namespace the operator's head constant `h` sits in is opened first. -/
+def notationLevel (tok : String) (h : Name := .anonymous) : MetaM (Nat × Assoc) :=
+  withoutModifyingEnv do
+    let rec opens : Name → MetaM Unit
+      | .str p s => do opens p; activateScoped (.str p s)
+      | _ => pure ()
+    opens h.getPrefix
+    match Parser.runParserCategory (← getEnv) `term ("x " ++ tok ++ " y") with
+    | .error err => throwError "notationLevel: `x {tok} y` does not parse as a term: {err}"
+    | .ok stx =>
+      let some l ← stxLevel stx
+        | throwError "notationLevel: `x {tok} y` parsed as `{stx.getKind}`, which declares no infix level"
+      return l
+
+namespace Prec
+/-- Composition, written by juxtaposition: the level of Lean's own `≫`. -/
+def juxt : MetaM Nat := return (← notationLevel "≫" ``Cat.comp).1
+/-- ONE FACTOR of a composite, which is what juxtaposition's operands are set at. -/
+def factor : MetaM Nat := return (← juxt) + 1
+end Prec
+
+/-- THE BINARY OPERATORS, ONE TABLE: the head constant, the Lean TOKEN whose notation says its
+    level and side (`notationLevel`, asked of the parser — a number written here drifted from the
+    notation), and the symbol the note writes it with.  A clause per operator is how `/` came out
+    `R / S` beside `S\R`, and how two operators of different precedence came to print as one.
+    The three heads with no notation of their own — `Freyd.Diag.meet`,
+    `ClosedLinearBicat.residual`, `Biprod.union`, all plain `def`s — take the token they share.
 
     ASSOCIATIVITY DROPS A BRACKET ONLY ON A CHAIN OF ONE OPERATOR: the operand on the associative
     side is set at the operator's own precedence only when its own head prints the SAME SYMBOL —
@@ -289,32 +325,31 @@ inductive Assoc | left | right | non
 
     SPACING IS ONE RULE AND NOT A COLUMN: an operator closes up against its operands, and `∪` alone
     keeps its spaces, because what it joins is the composites the note sets off (`cons ∪ π₂`). -/
-def binOps : Array (Name × Nat × Assoc × String) := #[
-  (``Freyd.Alg.Allegory.inter, 70, .left, "∩"), (``Freyd.Diag.meet, 70, .left, "∩"),
-  (``Freyd.Alg.DivisionAllegory.div, 70, .left, "/"),
-  (``Freyd.Diag.ClosedLinearBicat.residual, 70, .left, "/"),
-  (``Freyd.Alg.leftDiv, 70, .left, "\\"),
-  (``Freyd.Alg.symmDiv, 70, .left, "/ₛ"),
-  (``Freyd.Alg.DistributiveAllegory.union, 65, .left, "∪"),
-  (``Freyd.Diag.Biprod.union, 65, .left, "∪"),
-  (``Freyd.Alg.thenRel, 62, .left, "⨾"),
-  (``Freyd.Alg.kleisliComp, 70, .left, "⋄"),
-  (``Freyd.Alg.impl, 58, .right, "⇨"),
-  -- The tape layer's own two, at their own notations' precedences (`diag/FO.lean`,
-  -- `diag/Monoidal.lean`), both right-associative.
-  (``Freyd.Diag.SymMonCat.tensHom, 70, .right, "⊗"),
-  (``Freyd.Diag.LinearBicat.bcomp, 80, .right, "⨟•"),
-  -- THE STATEMENT CONNECTIVES are binary operators like the rest, at Lean core's own precedences:
+def binOps : Array (Name × String × String) := #[
+  (``Freyd.Alg.Allegory.inter, "∩", "∩"), (``Freyd.Diag.meet, "∩", "∩"),
+  (``Freyd.Alg.DivisionAllegory.div, "/", "/"),
+  (``Freyd.Diag.ClosedLinearBicat.residual, "/", "/"),
+  (``Freyd.Alg.leftDiv, "\\", "\\"),
+  (``Freyd.Alg.symmDiv, "/ₛ", "/ₛ"),
+  (``Freyd.Alg.DistributiveAllegory.union, "∪", "∪"),
+  (``Freyd.Diag.Biprod.union, "∪", "∪"),
+  (``Freyd.Alg.thenRel, "⨾", "⨾"),
+  (``Freyd.Alg.kleisliComp, "⋄", "⋄"),
+  (``Freyd.Alg.impl, "⇨", "⇨"),
+  -- The tape layer's own two (`diag/FO.lean`, `diag/Monoidal.lean`).
+  (``Freyd.Diag.SymMonCat.tensHom, "⊗", "⊗"),
+  (``Freyd.Diag.LinearBicat.bcomp, "⨟•", "⨟•"),
+  -- THE STATEMENT CONNECTIVES are binary operators like the rest, at Lean core's own notations:
   -- a label that met one had no clause and fell back to the raw printer, which wrote
   -- `dom R ⊑ X ↔ R ⊑ X ≫ R` — Lean's vocabulary, in a cell of the note.
-  (``And, 35, .right, "∧"), (``Or, 30, .right, "∨"), (``Iff, 20, .non, "⟺")]
+  (``And, "∧", "∧"), (``Or, "∨", "∨"), (``Iff, "↔", "⟺")]
 
 /-- THE PRECEDENCE AN OPERAND ON THE ASSOCIATIVE SIDE IS SET AT: the operator's own — which leaves
     it unbracketed — only when the operand's own head prints the SAME symbol, one level above for
     everything else. -/
 def chainPrec (op : String) (p : Nat) (x : Expr) : Nat :=
   match binOps.find? (·.1 == x.getAppFnArgs.1) with
-  | some (_, _, _, op') => if op' == op then p else p + 1
+  | some (_, _, op') => if op' == op then p else p + 1
   | none => p + 1
 
 /-- The note's spacing for a binary operator: closed up, `∪` alone set off. -/
@@ -1017,10 +1052,18 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
   if let some x ← openBuiltField? e then return ← labelTree prec x
   let wrap (p : Nat) (s : Lbl) : Lbl := if prec > p then "(" ++ s ++ ")" else s
+  -- A SUM AND A PRODUCT, of objects or of arrows, are written with Lean's own `+` and `×`, so they
+  -- bind at those notations' levels: `(R+S)∩T`, where the level juxtaposition binds at wrote
+  -- `R+S∩T`.  Their operands stay one factor each, as the note sets them (`(R∩PU°)+(S∩QV°)`).
+  let infixL (tok : String) (a b : Expr) : MetaM Lbl := do
+    let f ← Prec.factor
+    return wrap (← notationLevel tok).1 ((← labelTree f a) ++ tok ++ (← labelTree f b))
+  let sumL := infixL "+"
+  let prodL := infixL "×"
   -- …and an object that is a COPRODUCT'S CARRIER is that coproduct: `A+B`, never the letter the
   -- statement bound it by, which names the sum to nobody.  `Prod`'s `a×b` read the other way round.
   if let some (a, b) ← coprodCarrier? e then
-    return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "+" ++ (← labelTree Prec.factor b))
+    return ← sumL a b
   -- `cp` is the precedence the OPERANDS are set at, which is not always one above the operator's:
   -- composition is written by juxtaposition, so it has no symbol to separate its operands and every
   -- operand that is itself an operator has to carry brackets or `R (S ∩ T)` comes out reading as
@@ -1063,7 +1106,12 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
             ++ (← labelTree Prec.loose body))
         | none => txt e
   -- A BINARY OPERATOR IS THE TABLE'S, spelling and precedence together, for every head alike.
-  if let some (_, p, a, op) := binOps.find? (·.1 == e.getAppFnArgs.1) then
+  if let some (h, tok, op) := binOps.find? (·.1 == e.getAppFnArgs.1) then
+    -- THE HEAD'S OWN NOTATION first, as the printer chose it: a token two notations share (`\`)
+    -- parses ambiguously, and only a head with no notation of its own asks the token.
+    let (p, a) ← match ← stxLevel (stxPeel (← PrettyPrinter.delab e)) with
+      | some l => pure l
+      | none => notationLevel tok h
     return ← bin p a op e.getAppArgs
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
@@ -1119,7 +1167,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
       -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
-      return wrap Prec.juxt s
+      return wrap (← Prec.juxt) s
   -- The NEGATION of a statement, the one connective with a single operand.
   | (``Not, args) => un Prec.atom Prec.atom "¬" "" args
   -- A STATEMENT ABOUT SOME ARROW: `∃x. …`, the note's own spelling (`∃zs. xs=ys⧺zs`).
@@ -1187,7 +1235,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       -- THE BAR IS AN OPERATOR LIKE ANY OTHER, so the fraction takes the brackets its own
       -- precedence asks for wherever it stands: `(𝟙%∋)°`, never the `𝟙%∋°` that reads as the
       -- transpose of `∋°`.
-      return wrap Prec.frac (.frac loose (.text "∋") ((← labelTree Prec.factor r) != loose))
+      return wrap Prec.frac (.frac loose (.text "∋") ((← labelTree (← Prec.factor) r) != loose))
     | none => txt e
   -- The junction's own brackets delimit its operands (`[nil,⊸ nil ∪ cons]`, 13.3.3b): loosest
   -- precedence inside, nothing after the comma, as the note sets it.
@@ -1217,15 +1265,15 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- AN OBJECT'S PRODUCT is the note's `×` between its two factors, each spelled HERE: a factor the
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
-  | (``Prod, #[a, b]) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "×" ++ (← labelTree Prec.factor b))
+  | (``Prod, #[a, b]) => prodL a b
   -- A PRODUCT OF RELATORS is that same `×`, one level up — `(F×G)(X)` is `F(X)×G(X)` — so it is
   -- spelled the same way, closed up: `V×𝟙`, never the printed `V × 𝟙`.  The coproduct below is the
   -- object `+` for the same reason.
   | (``Freyd.Alg.Relator.prod, args) => match lastTwo args with
-    | some (a, b) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "×" ++ (← labelTree Prec.factor b))
+    | some (a, b) => prodL a b
     | none => txt e
   | (``Freyd.Alg.Relator.sum, args) => match lastTwo args with
-    | some (a, b) => return wrap Prec.juxt ((← labelTree Prec.factor a) ++ "+" ++ (← labelTree Prec.factor b))
+    | some (a, b) => sumL a b
     | none => txt e
   -- A PAIR'S VALUE is a comma list like the fork's and is set the same way: `(xs,ys)`, each factor
   -- a term of the note's — the printer writes `(xs, ys)` and welds nothing.
@@ -1306,7 +1354,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if tightHeads.contains c then
       let ty ← Meta.inferType e
       let ops ← args.filterM fun a => do Meta.isDefEqGuarded (← Meta.inferType a) ty
-      return wrap Prec.juxt ((← respell Prec.factor ops.toList #[] e).mapText (·.replace " " ""))
+      -- …at the level of the notation the printer wrote it with: `A×B` binds as Lean's `×` does.
+      let some (p, _) ← stxLevel (stxPeel stx)
+        | throwError "labelTree: the tight head `{c}` printed `{stx}`, which is no infix notation"
+      return wrap p ((← respell (← Prec.factor) ops.toList #[] e).mapText (·.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
       -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.
@@ -1348,14 +1399,13 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if let some (x, _) := homObjs? (← Meta.inferType e) then
       let pm ← asProdMap? (← Meta.inferType x) e fun
         | some (φ, ψ) => do
-          return some (wrap Prec.juxt
-            ((← labelTree Prec.factor φ) ++ "×" ++ (← labelTree Prec.factor ψ)))
+          return some (← prodL φ ψ)
         | none => return none
       if let some s := pm then return s
     -- A SUM OF ARROWS the same way, and for the same reason: the two coproducts `sumMap` runs
     -- between are the objects the picture already draws at the edge's ends.
     if let some (φ, ψ) ← asSumMap? e then
-      return wrap Prec.juxt ((← labelTree Prec.factor φ) ++ "+" ++ (← labelTree Prec.factor ψ))
+      return ← sumL φ ψ
     -- EVERY OTHER HEAD KEEPS THE PRINTER'S SPELLING — a delimited notation (`thin(Q)`) is the
     -- constant's own business, and a clause here would be a second copy of it — but its ARROW
     -- arguments are terms of the note's like any other, so each is respelled HERE and handed back to
@@ -1369,7 +1419,7 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     let out ← respell (if paren then Prec.loose else Prec.atom)
       ((← arrows args) ++ (← relatorArgs args)).toList #[] e
     match stxPeel stx with
-    | .ident _ _ nm _ => return if oneToken nm.getString! then out else wrap Prec.juxt out
+    | .ident _ _ nm _ => if oneToken nm.getString! then return out else return wrap (← Prec.juxt) out
     | _ => return out
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
@@ -1389,11 +1439,11 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
   if e' != e then return ← labelRunT e'
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
-    if (lastTwo args).isNone then return #[← labelTree Prec.factor e]
+    if (lastTwo args).isNone then return #[← labelTree (← Prec.factor) e]
     let mut out := #[]
     for f in factors e do out := out ++ (← labelRunT f)
     return out
-  | _ => return #[← labelTree Prec.factor e]
+  | _ => return #[← labelTree (← Prec.factor) e]
 
 end
 
