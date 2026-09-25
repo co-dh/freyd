@@ -183,12 +183,15 @@
 #let divbox(p, num, den, w: 2.4, h: BH, denw: 0.72, flip: false, invert: false) = d.get-ctx(ctx => {
   let (x, y) = p
   let ink = if invert { white } else { black }
-  let c = CHAMFER * h
+  // The tile keeps the height its label needs (`h` less 0.22) and the box grows round it by `pad`.
   let pad = CFRAME / ctx.length
+  let th = h - 0.22
+  let h = th + 2 * pad
+  let c = CHAMFER * h
   d.line(..chamfer-pts(x, y, w, h, c, flip), close: true, fill: DIVNUM, stroke: (thickness: lw, paint: ink))
   let t0 = if flip { x + pad } else { x + w - pad - denw }
   let t1 = t0 + denw
-  d.line(..chamfer-pts(t0, y, denw, h - 2 * pad, c - (2 - calc.sqrt(2)) * pad, flip), close: true,
+  d.line(..chamfer-pts(t0, y, denw, th, c - (2 - calc.sqrt(2)) * pad, flip), close: true,
     fill: DIVDEN, stroke: (thickness: 0.9pt, paint: ink, dash: "dashed"))
   // The numerator sits in whatever the tile leaves, which is the other end of the box.
   let nx = if flip { (t1 + x + w) / 2 } else { (x + t0) / 2 }
