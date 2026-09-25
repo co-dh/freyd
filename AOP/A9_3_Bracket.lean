@@ -927,14 +927,15 @@ public theorem neLen_splits {x : NEList A} {p : NEList A × NEList A} (hp : inli
   have hl := congrArg neLen ((mem_splits x p).mp hp)
   rw [neLen_cat] at hl
   have h1 := neLen_pos p.1; have h2 := neLen_pos p.2
-  omega
+  -- one `omega` per conjunct: on the `∧` goal it negates by `Classical.byContradiction`
+  exact ⟨by omega, by omega⟩
 
 /-- Any depth past the length gives the same tree. -/
 public theorem mctN_stable [Inhabited A] : ∀ (n m : Nat) (x : NEList A),
     neLen x ≤ n + 1 → neLen x ≤ m + 1 → mctN st sb cb n x = mctN st sb cb m x
   | n, m, CL.ConsList.wrap _, _, _ => by cases n <;> cases m <;> rfl
-  | 0, _, CL.ConsList.cons _ z, h, _ => by have := neLen_pos z; simp only [neLen] at h; omega
-  | _ + 1, 0, CL.ConsList.cons _ z, _, h => by have := neLen_pos z; simp only [neLen] at h; omega
+  | 0, _, CL.ConsList.cons _ z, h, _ => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
+  | _ + 1, 0, CL.ConsList.cons _ z, _, h => by have := neLen_pos z; simp only [neLen] at h; exact absurd h (by omega)
   | n + 1, m + 1, CL.ConsList.cons a z, hn, hm => by
       show minlistFn _ (cmap _ _) = minlistFn _ (cmap _ _)
       refine congrArg _ (cmap_congr _ fun p hp => ?_)
@@ -1482,7 +1483,7 @@ public theorem row_rec :
 
 /-- `array≜inits list(row)`. -/
 @[expose] public def array : dNE A ⟶ dList (CL.ConsList Unit (Tree A)) :=
-  (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (row mct)
+  (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (row st sb cb)
 
 /-- `process≜(tip wrap×𝟙) loop(next)`. -/
 @[expose] public def process :
@@ -1490,12 +1491,14 @@ public theorem row_rec :
   rprodMap (tipG ≫ CL.singleR ()) (𝟙 (dList (CL.ConsList Unit (Tree A))))
     ≫ loop (X := dList (Tree A)) (next st sb cb)
 
+omit [Inhabited A] in
 /-- `u++[b]++v = u++(b:v)`. -/
 public theorem cat_cons (b : A) (v : NEList A) :
     ∀ u : NEList A, cat u (CL.ConsList.cons b v) = cat (cat u (CL.ConsList.wrap b)) v
   | CL.ConsList.wrap _ => rfl
   | CL.ConsList.cons a u => congrArg (CL.ConsList.cons a) (cat_cons b v u)
 
+omit [Inhabited A] in
 /-- `init(a:(u++[b]))=a:u`. -/
 public theorem initFn_cons_cat (b : A) :
     ∀ (a : A) (u : NEList A), initFn (CL.ConsList.cons a (cat u (CL.ConsList.wrap b))) = CL.ConsList.cons a u
@@ -1504,6 +1507,7 @@ public theorem initFn_cons_cat (b : A) :
       show CL.ConsList.cons a (initFn (CL.ConsList.cons c (cat u (CL.ConsList.wrap b)))) = _
       rw [initFn_cons_cat b c u]
 
+omit [Inhabited A] in
 /-- **Exercise 9.13**, on `list⁺`: a map `k` that meets the loop's two equations along `snoc` —
     `k(a,[b])=f(g(a),h([b]))` and `k(a,u++[b])=f(k(a,u),h(u++[b]))` — is `(g×inits list(h)) loop(f)`. -/
 public theorem loop_char {X Z W : Type} {Y : Type} (k : X × NEList Y → Z) (g : X → Z) (h : NEList Y → W)
@@ -1558,14 +1562,11 @@ public theorem loop_char {X Z W : Type} {Y : Type} (k : X × NEList Y → Z) (g 
 /-- (9.8) read pointwise: on a list of two or more, `next` of the column of its `init` and the
     row of its `tail` is its column. -/
 public theorem col_rec_at
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb))
     (a : A) (z : NEList A) (w : CL.ConsList Unit (Tree A)) :
-    next st sb cb (cmap mct (neInitsFn (initFn (CL.ConsList.cons a z))),
-        cmap mct (neTailsFn (tailFn (CL.ConsList.cons a z)))) w
-      ↔ w = cmap mct (neInitsFn (CL.ConsList.cons a z)) := by
-  have e := col_rec st sb cb mct hmct
+    next st sb cb (cmap (mct st sb cb) (neInitsFn (initFn (CL.ConsList.cons a z))),
+        cmap (mct st sb cb) (neTailsFn (tailFn (CL.ConsList.cons a z)))) w
+      ↔ w = cmap (mct st sb cb) (neInitsFn (CL.ConsList.cons a z)) := by
+  have e := col_rec st sb cb
   simp only [col, row, list_graph, graph_comp, rpair_graph] at e
   have e' := congrArg (fun M : dNE A ⟶ dList (Tree A) => M (CL.ConsList.cons a z) w) e
   constructor
@@ -1578,54 +1579,46 @@ public theorem col_rec_at
 
 /-- (9.9), first step: Exercise 9.13 with `k≜cons col`, `g≜tip wrap`, `h≜row`, `f≜next`, its two
     equations being (9.8). -/
-public theorem col_cons_step1
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb))
-    (htip : ∀ a, mct (CL.ConsList.wrap a) = Tree.tip a) :
-    (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col mct
-      = rprodMap (tipG ≫ CL.singleR ()) (array mct) ≫ loop (X := dList (Tree A)) (next st sb cb) := by
+public theorem col_cons_step1 :
+    (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col st sb cb
+      = rprodMap (tipG ≫ CL.singleR ()) (array st sb cb) ≫ loop (X := dList (Tree A)) (next st sb cb) := by
   simp only [col, array, row, CL.consR, CL.singleR, list_graph, graph_comp]
-  refine (loop_char (fun p : A × NEList A => cmap mct (neInitsFn (CL.ConsList.cons p.1 p.2)))
-    (fun a => CL.ConsList.cons (Tree.tip a) (CL.ConsList.wrap ())) (fun y => cmap mct (neTailsFn y))
+  refine (loop_char (fun p : A × NEList A => cmap (mct st sb cb) (neInitsFn (CL.ConsList.cons p.1 p.2)))
+    (fun a => CL.ConsList.cons (Tree.tip a) (CL.ConsList.wrap ())) (fun y => cmap (mct st sb cb) (neTailsFn y))
     (next st sb cb) (fun a b w => ?_) (fun a u b w => ?_)).symm
-  · have := col_rec_at st sb cb mct hmct a (CL.ConsList.wrap b) w
+  · have := col_rec_at st sb cb a (CL.ConsList.wrap b) w
     rw [tailFn_cons] at this
-    simp only [← htip a]; exact this
-  · have := col_rec_at st sb cb mct hmct a (cat u (CL.ConsList.wrap b)) w
+    exact this
+  · have := col_rec_at st sb cb a (cat u (CL.ConsList.wrap b)) w
     rwa [tailFn_cons, initFn_cons_cat] at this
 
 /-- (9.9), second step: products. -/
 public theorem col_cons_step2 :
-    rprodMap (tipG ≫ CL.singleR ()) (array mct) ≫ loop (X := dList (Tree A)) (next st sb cb)
-      = rprodMap (𝟙 (dA A)) (array mct)
+    rprodMap (tipG ≫ CL.singleR ()) (array st sb cb) ≫ loop (X := dList (Tree A)) (next st sb cb)
+      = rprodMap (𝟙 (dA A)) (array st sb cb)
           ≫ rprodMap (tipG ≫ CL.singleR ()) (𝟙 (dList (CL.ConsList Unit (Tree A))))
           ≫ loop (X := dList (Tree A)) (next st sb cb) := by
   rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
 
 /-- (9.9), third step: definition of `process`. -/
 public theorem col_cons_step3 :
-    rprodMap (𝟙 (dA A)) (array mct)
+    rprodMap (𝟙 (dA A)) (array st sb cb)
         ≫ rprodMap (tipG ≫ CL.singleR ()) (𝟙 (dList (CL.ConsList Unit (Tree A))))
         ≫ loop (X := dList (Tree A)) (next st sb cb)
-      = rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb := rfl
+      = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb := rfl
 
 /-- **(9.9)**: `cons col=(𝟙×array) process` — the column of `a:x` is `process` of `a` and the
     array of `x`. -/
-public theorem col_cons
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb))
-    (htip : ∀ a, mct (CL.ConsList.wrap a) = Tree.tip a) :
-    (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col mct
-      = rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb :=
-  calc (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col mct
-      _ = rprodMap (tipG ≫ CL.singleR ()) (array mct) ≫ loop (X := dList (Tree A)) (next st sb cb) :=
-        col_cons_step1 st sb cb mct hmct htip
-      _ = rprodMap (𝟙 (dA A)) (array mct)
+public theorem col_cons :
+    (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col st sb cb
+      = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb :=
+  calc (CL.consR : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dNE A) ≫ col st sb cb
+      _ = rprodMap (tipG ≫ CL.singleR ()) (array st sb cb) ≫ loop (X := dList (Tree A)) (next st sb cb) :=
+        col_cons_step1 st sb cb
+      _ = rprodMap (𝟙 (dA A)) (array st sb cb)
           ≫ rprodMap (tipG ≫ CL.singleR ()) (𝟙 (dList (CL.ConsList Unit (Tree A))))
-          ≫ loop (X := dList (Tree A)) (next st sb cb) := col_cons_step2 st sb cb mct
-      _ = rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb := col_cons_step3 st sb cb mct
+          ≫ loop (X := dList (Tree A)) (next st sb cb) := col_cons_step2 st sb cb
+      _ = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb := col_cons_step3 st sb cb
 
 /-! ### `addcol`: `array` as a fold over `cons` -/
 
@@ -1667,6 +1660,7 @@ public theorem graph_rpair {C D P Q : RelSet.{0}} (f : C.carrier → D.carrier) 
     obtain rfl := hm; obtain rfl := hm'
     exact ⟨_, rfl, hU, hV⟩
 
+omit [Inhabited A] in
 /-- The `⟨π₁ wrap,cons inits tail⟩` bead is lax natural. -/
 public theorem outlWrap_consInitsTail_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     rprodMap R (nelist R)
@@ -1737,12 +1731,12 @@ local notation "listConsT" => list (consAtUnit
 
 /-- `addcol`, first step: definition of `array`. -/
 public theorem array_cons_step1 :
-    consNE ≫ array mct = consNE ≫ initsG ≫ list (row mct) := rfl
+    consNE ≫ array st sb cb = consNE ≫ initsG ≫ list (row st sb cb) := rfl
 
 /-- `addcol`, second step: `cons inits=⟨π₁ wrap,cons inits tail⟩ cons`. -/
 public theorem array_cons_step2 :
-    consNE ≫ initsG ≫ list (row mct)
-      = rpair (outlN ≫ wrapNE) (consNE ≫ initsG ≫ tailNG) ≫ consN ≫ list (row mct) := by
+    consNE ≫ initsG ≫ list (row st sb cb)
+      = rpair (outlN ≫ wrapNE) (consNE ≫ initsG ≫ tailNG) ≫ consN ≫ list (row st sb cb) := by
   simp only [row, CL.consR, CL.wrapR, consAtUnit, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
@@ -1750,32 +1744,32 @@ public theorem array_cons_step2 :
 
 /-- `addcol`, third step: `cons list(f)=(f×list f) cons`. -/
 public theorem array_cons_step3 :
-    rpair (outlN ≫ wrapNE) (consNE ≫ initsG ≫ tailNG) ≫ consN ≫ list (row mct)
-      = rpair (outlN ≫ wrapNE ≫ row mct) (consNE ≫ initsG ≫ tailNG ≫ list (row mct)) ≫ consC := by
+    rpair (outlN ≫ wrapNE) (consNE ≫ initsG ≫ tailNG) ≫ consN ≫ list (row st sb cb)
+      = rpair (outlN ≫ wrapNE ≫ row st sb cb) (consNE ≫ initsG ≫ tailNG ≫ list (row st sb cb)) ≫ consC := by
   simp only [row, CL.consR, CL.wrapR, consAtUnit, list_graph, graph_comp, rpair_graph]
   rfl
 
 /-- `addcol`, fourth step: (9.10), and `row` of a singleton is `tip wrap`. -/
-public theorem array_cons_step4 (htip : ∀ a, mct (CL.ConsList.wrap a) = Tree.tip a) :
-    rpair (outlN ≫ wrapNE ≫ row mct) (consNE ≫ initsG ≫ tailNG ≫ list (row mct)) ≫ consC
+public theorem array_cons_step4 :
+    rpair (outlN ≫ wrapNE ≫ row st sb cb) (consNE ≫ initsG ≫ tailNG ≫ list (row st sb cb)) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
           (consNE ≫ initsG ≫ tailNG
-            ≫ list (rpair (graph mct : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct)
+            ≫ list (rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
               ≫ consT)) ≫ consC := by
   simp only [row, CL.consR, CL.wrapR, CL.singleR, consAtUnit, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
-  simp only [neInitsFn, neTailsFn, listTailFn_cons, cmap_cmap, cmap, tailFn_cons, htip]
+  simp only [neInitsFn, neTailsFn, listTailFn_cons, cmap_cmap, cmap, tailFn_cons] <;> rfl
 
 /-- `addcol`, fifth step: `list⟨f,g⟩=⟨list f,list g⟩ zip`. -/
 public theorem array_cons_step5 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
         (consNE ≫ initsG ≫ tailNG
-          ≫ list (rpair (graph mct : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct)
+          ≫ list (rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
             ≫ consT)) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
           (consNE ≫ initsG ≫ tailNG
-            ≫ rpair (list (graph mct : dNE A ⟶ dTree A)) (list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+            ≫ rpair (list (graph (mct st sb cb) : dNE A ⟶ dTree A)) (list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
             ≫ zipC ≫ listConsT) ≫ consC := by
   simp only [row, CL.consR, CL.singleR, consAtUnit, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
@@ -1785,68 +1779,64 @@ public theorem array_cons_step5 :
 public theorem array_cons_step6 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
         (consNE ≫ initsG ≫ tailNG
-          ≫ rpair (list (graph mct : dNE A ⟶ dTree A)) (list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+          ≫ rpair (list (graph (mct st sb cb) : dNE A ⟶ dTree A)) (list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
           ≫ zipC ≫ listConsT) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
-          (rpair (consNE ≫ initsG ≫ tailNG ≫ list (graph mct : dNE A ⟶ dTree A))
-              (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+          (rpair (consNE ≫ initsG ≫ tailNG ≫ list (graph (mct st sb cb) : dNE A ⟶ dTree A))
+              (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
             ≫ zipC ≫ listConsT) ≫ consC := by
   simp only [row, CL.consR, CL.singleR, consAtUnit, list_graph, graph_comp, rpair_graph]
 
 /-- `addcol`, seventh step: `tail list(f)=list(f) tail`, and definition of `col`. -/
 public theorem array_cons_step7 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
-        (rpair (consNE ≫ initsG ≫ tailNG ≫ list (graph mct : dNE A ⟶ dTree A))
-            (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+        (rpair (consNE ≫ initsG ≫ tailNG ≫ list (graph (mct st sb cb) : dNE A ⟶ dTree A))
+            (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
           ≫ zipC ≫ listConsT) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
-          (rpair (consNE ≫ col mct ≫ tailTG)
-              (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+          (rpair (consNE ≫ col st sb cb ≫ tailTG)
+              (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
             ≫ zipC ≫ listConsT) ≫ consC := by
   simp only [col, row, CL.consR, CL.singleR, consAtUnit, list_graph, graph_comp, rpair_graph, cmap_listTail]
 
 /-- `addcol`, eighth step: `cons inits tail list(tail)=π₂ inits`, and definition of `array`. -/
 public theorem array_cons_step8 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
-        (rpair (consNE ≫ col mct ≫ tailTG)
-            (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct))
+        (rpair (consNE ≫ col st sb cb ≫ tailTG)
+            (consNE ≫ initsG ≫ tailNG ≫ list ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb))
           ≫ zipC ≫ listConsT) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
-          (rpair (consNE ≫ col mct ≫ tailTG) (outrN ≫ array mct) ≫ zipC ≫ listConsT) ≫ consC := by
+          (rpair (consNE ≫ col st sb cb ≫ tailTG) (outrN ≫ array st sb cb) ≫ zipC ≫ listConsT) ≫ consC := by
   simp only [array, col, row, CL.consR, CL.singleR, consAtUnit, list_graph, graph_comp, rpair_graph]
   refine congrArg graph (funext fun p => ?_)
   obtain ⟨a, x⟩ := p
   simp only [neInitsFn, listTailFn_cons, cmap_cmap, tailFn_cons]
 
 /-- `addcol`, ninth step: (9.9). -/
-public theorem array_cons_step9
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb))
-    (htip : ∀ a, mct (CL.ConsList.wrap a) = Tree.tip a) :
+public theorem array_cons_step9 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
-        (rpair (consNE ≫ col mct ≫ tailTG) (outrN ≫ array mct) ≫ zipC ≫ listConsT) ≫ consC
+        (rpair (consNE ≫ col st sb cb ≫ tailTG) (outrN ≫ array st sb cb) ≫ zipC ≫ listConsT) ≫ consC
       = rpair (outlN ≫ tipG ≫ CL.singleR ())
-          (rpair (rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb ≫ tailTG) (outrN ≫ array mct)
+          (rpair (rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb ≫ tailTG) (outrN ≫ array st sb cb)
             ≫ zipC ≫ listConsT) ≫ consC := by
-  rw [show consNE ≫ col mct ≫ tailTG
-      = rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb ≫ tailTG by
-    rw [← Cat.assoc, col_cons st sb cb mct hmct htip, Cat.assoc]]
+  rw [show consNE ≫ col st sb cb ≫ tailTG
+      = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb ≫ tailTG by
+    rw [← Cat.assoc, col_cons st sb cb, Cat.assoc]]
 
 /-- `addcol`, tenth step: products. -/
 public theorem array_cons_step10 :
     rpair (outlN ≫ tipG ≫ CL.singleR ())
-        (rpair (rprodMap (𝟙 (dA A)) (array mct) ≫ process st sb cb ≫ tailTG) (outrN ≫ array mct)
+        (rpair (rprodMap (𝟙 (dA A)) (array st sb cb) ≫ process st sb cb ≫ tailTG) (outrN ≫ array st sb cb)
           ≫ zipC ≫ listConsT) ≫ consC
-      = rprodMap (𝟙 (dA A)) (array mct)
+      = rprodMap (𝟙 (dA A)) (array st sb cb)
           ≫ rpair (outlA ≫ tipG ≫ CL.singleR ())
             (rpair (process st sb cb ≫ tailTG) outrA ≫ zipC ≫ listConsT) ≫ consC := by
-  have harr : array mct
-      = graph (fun x : NEList A => cmap (fun y => cmap mct (neTailsFn y)) (neInitsFn x)) := by
+  have harr : array st sb cb
+      = graph (fun x : NEList A => cmap (fun y => cmap (mct st sb cb) (neTailsFn y)) (neInitsFn x)) := by
     simp only [array, row, list_graph, graph_comp]; rfl
-  have hp : rprodMap (𝟙 (dA A)) (graph (fun x : NEList A => cmap (fun y => cmap mct (neTailsFn y))
+  have hp : rprodMap (𝟙 (dA A)) (graph (fun x : NEList A => cmap (fun y => cmap (mct st sb cb) (neTailsFn y))
         (neInitsFn x)) : dNE A ⟶ dList (CL.ConsList Unit (Tree A)))
-      = graph (fun p : A × NEList A => (p.1, cmap (fun y => cmap mct (neTailsFn y)) (neInitsFn p.2))) :=
+      = graph (fun p : A × NEList A => (p.1, cmap (fun y => cmap (mct st sb cb) (neTailsFn y)) (neInitsFn p.2))) :=
     hom_ext fun _ _ => ⟨fun h => Prod.ext h.1.symm h.2,
       fun h => ⟨(congrArg Prod.fst h).symm, congrArg Prod.snd h⟩⟩
   rw [harr, hp]
@@ -1854,25 +1844,21 @@ public theorem array_cons_step10 :
 
 /-- `addcol`, eleventh step: definition of `step` and `addcol`. -/
 public theorem array_cons_step11 :
-    rprodMap (𝟙 (dA A)) (array mct)
+    rprodMap (𝟙 (dA A)) (array st sb cb)
         ≫ rpair (outlA ≫ tipG ≫ CL.singleR ())
           (rpair (process st sb cb ≫ tailTG) outrA ≫ zipC ≫ listConsT) ≫ consC
-      = rprodMap (𝟙 (dA A)) (array mct) ≫ addcol st sb cb := rfl
+      = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ addcol st sb cb := rfl
 
 /-- **`addcol`**: `cons array=(𝟙×array) addcol` — the array of `a:x` is `addcol` of `a` and the
     array of `x`, so `array=⦇[fstcol,addcol]⦈`. -/
-public theorem array_cons
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb))
-    (htip : ∀ a, mct (CL.ConsList.wrap a) = Tree.tip a) :
-    consNE ≫ array mct = rprodMap (𝟙 (dA A)) (array mct) ≫ addcol st sb cb := by
+public theorem array_cons :
+    consNE ≫ array st sb cb = rprodMap (𝟙 (dA A)) (array st sb cb) ≫ addcol st sb cb := by
   -- the ten hints chained in order; each intermediate formula is its step theorem's statement
-  exact (array_cons_step1 mct).trans <| (array_cons_step2 mct).trans <| (array_cons_step3 mct).trans <|
-    (array_cons_step4 mct htip).trans <| (array_cons_step5 mct).trans <| (array_cons_step6 mct).trans <|
-    (array_cons_step7 mct).trans <| (array_cons_step8 mct).trans <|
-    (array_cons_step9 st sb cb mct hmct htip).trans <| (array_cons_step10 st sb cb mct).trans <|
-    array_cons_step11 st sb cb mct
+  exact (array_cons_step1 st sb cb).trans <| (array_cons_step2 st sb cb).trans <| (array_cons_step3 st sb cb).trans <|
+    (array_cons_step4 st sb cb).trans <| (array_cons_step5 st sb cb).trans <| (array_cons_step6 st sb cb).trans <|
+    (array_cons_step7 st sb cb).trans <| (array_cons_step8 st sb cb).trans <|
+    (array_cons_step9 st sb cb).trans <| (array_cons_step10 st sb cb).trans <|
+    array_cons_step11 st sb cb
 
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.

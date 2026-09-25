@@ -874,7 +874,7 @@ both lists empty.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.col_cons") \
     #src[the column of `a` consed onto `x` is what `process` makes of `a` and the array of `x`]],
-     // lean:AOP.A9_3_Bracket.col_cons@e1d0705e
+     // lean:AOP.A9_3_Bracket.col_cons@c6b5beca
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs"), [])],
@@ -883,17 +883,17 @@ both lists empty.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs"),
     [#src[Exercise 9.13 with `k≜cons col`, `g≜tip wrap`, `h≜row`, `f≜next`: its two equations are
      (9.8) — @col-rec — at `a:[b]` and at `a:(u++[b])`, with `[a] col=[tip(a)]`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step1@1c25ff72
+     // lean:AOP.A9_3_Bracket.col_cons_step1@e278817f
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs"),
     [#src[products]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step2@d781ecf8
+     // lean:AOP.A9_3_Bracket.col_cons_step2@ef9df3eb
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs"),
     [#src[definition of `process`]])],
-     // lean:AOP.A9_3_Bracket.col_cons_step3@835933e1
+     // lean:AOP.A9_3_Bracket.col_cons_step3@06b6dc0a
   [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs")],
 )]<col-cons>
 
@@ -901,7 +901,7 @@ both lists empty.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.array_cons") \
     #src[the array of `a` consed onto `x` is what `addcol` makes of `a` and the array of `x`]],
-     // lean:AOP.A9_3_Bracket.array_cons@4bfd3aa1
+     // lean:AOP.A9_3_Bracket.array_cons@f952f1b1
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.lhs"), [])],
@@ -909,34 +909,34 @@ both lists empty.
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs"),
     [#src[definition of `array`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step1@88408a8c
+     // lean:AOP.A9_3_Bracket.array_cons_step1@8ccbea69
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs"),
     [#src[`cons inits=⟨π₁ wrap,cons inits tail⟩ cons`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step2@5560257a
+     // lean:AOP.A9_3_Bracket.array_cons_step2@cfbd8fee
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs"),
     [#src[`cons list(f)=(f×list(f)) cons`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step3@4f08e459
+     // lean:AOP.A9_3_Bracket.array_cons_step3@9c717f33
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs"),
     [#src[(9.10) — @row-rec — on the non-singletons `cons inits tail` lists, and `wrap row=tip wrap`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step4@fe29e7b1
+     // lean:AOP.A9_3_Bracket.array_cons_step4@4f7da05b
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step4.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs"),
     [#src[`list⟨f,g⟩=⟨list(f),list(g)⟩ zip`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step5@53e466e7
+     // lean:AOP.A9_3_Bracket.array_cons_step5@0e4b6b1b
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs")],
 )]<array-cons>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.array_cons") \
     #src[@array-cons continued]],
-     // lean:AOP.A9_3_Bracket.array_cons@4bfd3aa1
+     // lean:AOP.A9_3_Bracket.array_cons@f952f1b1
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.array_cons_step5.rhs"), [])],
@@ -944,32 +944,32 @@ both lists empty.
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step6.rhs"),
     [#src[products]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step6@9f67e2a4
+     // lean:AOP.A9_3_Bracket.array_cons_step6@f22ac954
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step7.rhs"),
     [#src[`tail list(f)=list(f) tail`; definition of `col`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step7@47a52a51
+     // lean:AOP.A9_3_Bracket.array_cons_step7@66dfcf1e
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step7.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step8.rhs"),
     [#src[`cons inits tail list(tail)=π₂ inits`; definition of `array`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step8@d4e495aa
+     // lean:AOP.A9_3_Bracket.array_cons_step8@f5679159
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step8.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step9.rhs"),
     [#src[(9.9) — @col-cons]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step9@f99a525b
+     // lean:AOP.A9_3_Bracket.array_cons_step9@258cc384
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step9.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step10.rhs"),
     [#src[products]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step10@c8d7670d
+     // lean:AOP.A9_3_Bracket.array_cons_step10@f6142ddf
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step10.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step11.rhs"),
     [#src[definition of `step` and `addcol`]])],
-     // lean:AOP.A9_3_Bracket.array_cons_step11@c6e01906
+     // lean:AOP.A9_3_Bracket.array_cons_step11@129b8cef
   [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step11.rhs")],
 )]<array-cons-2>
 
