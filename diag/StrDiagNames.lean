@@ -1015,6 +1015,9 @@ open Lean PrettyPrinter in
 -- §9.3's tabulation: the list functions by the book's names, `row`/`col` without the `mct` they
 -- are taken of, `mix`/`next` without the leaf map, split cost and combine cost, as `R` does.
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.nonsingle] def unexpandBracketNonsingle : Unexpander
+  | _ => `($(mkIdent `nonsingle))
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.initFn] def unexpandBracketInitFn : Unexpander
   | _ => `($(mkIdent `init))
 open Lean PrettyPrinter in
@@ -1050,6 +1053,9 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.next] def unexpandBracketNext : Unexpander
   | _ => `($(mkIdent `next))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
+  | _ => `($(mkIdent `cons))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Filter.filter] def unexpandFilterFilter : Unexpander
   | `($_ $args*) => `($(mkIdent `filter) $args*)

@@ -804,14 +804,32 @@ public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
 @[expose] public def nonsingle : dNE A ⟶ dNE A :=
   fun x y => x = y ∧ ∃ a z, x = CL.ConsList.cons a z
 
+/-- The `nonsingle` bead is STRICTLY natural: `list⁺(R)` keeps the length, so relating the
+    elements and then testing for two or more is testing first. -/
+public theorem nonsingle_strictNatural :
+    StrictNatural nelistRelator nelistRelator
+      (fun a => (nonsingle : dNE a.carrier ⟶ dNE a.carrier)) := by
+  intro a b R
+  apply hom_ext; intro x y
+  constructor
+  · rintro ⟨m, h, rfl, c, z, rfl⟩
+    cases x with
+    | wrap _ => exact h.elim
+    | cons a' z' => exact ⟨_, ⟨rfl, a', z', rfl⟩, h⟩
+  · rintro ⟨m, ⟨rfl, a', z', rfl⟩, h⟩
+    cases y with
+    | wrap _ => exact h.elim
+    | cons c w => exact ⟨_, h, rfl, c, w, rfl⟩
+
 /-- `init`, all but the last element. -/
 @[expose] public def initFn : NEList A → NEList A
   | CL.ConsList.wrap a => CL.ConsList.wrap a
   | CL.ConsList.cons a (CL.ConsList.wrap _) => CL.ConsList.wrap a
   | CL.ConsList.cons a (CL.ConsList.cons b x) => CL.ConsList.cons a (initFn (CL.ConsList.cons b x))
 
-/-- `tail`, all but the first element. -/
-@[expose] public def tailFn : NEList A → NEList A
+/-- `tail`, all but the first element.  Irreducible, as is `tailsPFn`: a non-recursive match is
+    unfolded by the exporter into the matcher, which names no arrow the note writes. -/
+@[expose, irreducible] public def tailFn : NEList A → NEList A
   | CL.ConsList.wrap a => CL.ConsList.wrap a
   | CL.ConsList.cons _ x => x
 
@@ -833,9 +851,16 @@ public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
       CL.ConsList.cons (CL.ConsList.wrap a) (cmap (CL.ConsList.cons a) (initsPFn x))
 
 /-- `tails⁺`, the PROPER non-empty suffixes. -/
-@[expose] public def tailsPFn : NEList A → CL.ConsList Unit (NEList A)
+@[expose, irreducible] public def tailsPFn : NEList A → CL.ConsList Unit (NEList A)
   | CL.ConsList.wrap _ => CL.ConsList.wrap ()
   | CL.ConsList.cons _ x => neTailsFn x
+
+public theorem tailFn_cons (a : A) (z : NEList A) : tailFn (CL.ConsList.cons a z) = z := by
+  unfold tailFn; rfl
+
+public theorem tailsPFn_cons (a : A) (z : NEList A) :
+    tailsPFn (CL.ConsList.cons a z) = neTailsFn z := by
+  unfold tailsPFn; rfl
 
 /-- `zip`, pairing two lists position by position, cut to the shorter. -/
 @[expose] public def zipFn {X Y : Type} : CL.ConsList Unit X × CL.ConsList Unit Y → CL.ConsList Unit (X × Y)
@@ -936,8 +961,8 @@ public theorem consSplits_zip (a : A) :
       simp only [zipFn, cmap, consSplits]; rw [consSplits_zip a xs ys]
 
 public theorem neTails_eq : ∀ x : NEList A, neTailsFn x = CL.ConsList.cons x (tailsPFn x)
-  | CL.ConsList.wrap _ => rfl
-  | CL.ConsList.cons _ _ => rfl
+  | CL.ConsList.wrap _ => by unfold tailsPFn; rfl
+  | CL.ConsList.cons _ _ => by rw [tailsPFn_cons]; rfl
 
 /-- `splits≜⟨inits⁺,tails⁺⟩ zip`: the definition the note states, of `splitsFn`. -/
 public theorem splitsFn_eq : ∀ x : NEList A, splitsFn x = zipFn (initsPFn x, tailsPFn x)
@@ -962,6 +987,159 @@ public theorem inits_snoc (a : A) :
   | CL.ConsList.cons b z => by
       show CL.ConsList.cons _ (cmap _ (neInitsFn (CL.ConsList.cons b z))) = _
       rw [inits_snoc b z, cmap_snoc]; rfl
+
+/-! ### What the tabulation's beads claim: each list function is lax natural -/
+
+/-- A square of two maps closes pointwise: related inputs give related outputs. -/
+public theorem graph_lax {X Y X' Y' : RelSet.{0}} (F : X ⟶ X') (G : Y ⟶ Y') (f : X.carrier → Y.carrier)
+    (f' : X'.carrier → Y'.carrier) (h : ∀ x x', F x x' → G (f x) (f' x')) :
+    F ≫ graph f' ⊑ graph f ≫ G :=
+  le_iff.mpr fun x z ⟨x', hx, hz⟩ => ⟨f x, rfl, by rw [hz]; exact h x x' hx⟩
+
+public theorem listP_cmap_cons {B : Type} {R : CL.dE A ⟶ CL.dE B} {a : A} {b : B} (hab : R a b) :
+    ∀ (I : CL.ConsList Unit (NEList A)) (J : CL.ConsList Unit (NEList B)),
+      listP (nelist R) I J → listP (nelist R) (cmap (CL.ConsList.cons a) I) (cmap (CL.ConsList.cons b) J)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => h
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ I, CL.ConsList.cons _ J, h => ⟨⟨hab, h.1⟩, listP_cmap_cons hab I J h.2⟩
+
+public theorem listP_inits {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (neInitsFn x) (neInitsFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h =>
+      ⟨h.1, listP_cmap_cons h.1 _ _ (listP_inits R x y h.2)⟩
+
+public theorem listP_tails {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (neTailsFn x) (neTailsFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => ⟨h, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h => ⟨h, listP_tails R x y h.2⟩
+
+public theorem listP_initsP {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (initsPFn x) (initsPFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => trivial
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h =>
+      ⟨h.1, listP_cmap_cons h.1 _ _ (listP_initsP R x y h.2)⟩
+
+public theorem listP_tailsP {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → listP (nelist R) (tailsPFn x) (tailsPFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => by unfold tailsPFn; trivial
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ x, CL.ConsList.cons _ y, h => by
+      rw [tailsPFn_cons, tailsPFn_cons]; exact listP_tails R x y h.2
+
+public theorem nelistP_init {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → nelistP R (initFn x) (initFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => h
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ (CL.ConsList.wrap _), CL.ConsList.cons _ (CL.ConsList.wrap _), h => h.1
+  | CL.ConsList.cons _ (CL.ConsList.wrap _), CL.ConsList.cons _ (CL.ConsList.cons _ _), h => h.2.elim
+  | CL.ConsList.cons _ (CL.ConsList.cons _ _), CL.ConsList.cons _ (CL.ConsList.wrap _), h => h.2.elim
+  | CL.ConsList.cons _ (CL.ConsList.cons a' x), CL.ConsList.cons _ (CL.ConsList.cons b' y), h =>
+      ⟨h.1, nelistP_init R (CL.ConsList.cons a' x) (CL.ConsList.cons b' y) h.2⟩
+
+public theorem nelistP_tail {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    ∀ (x : NEList A) (y : NEList B), nelistP R x y → nelistP R (tailFn x) (tailFn y)
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, h => by unfold tailFn; exact h
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.cons _ _, h => by rw [tailFn_cons, tailFn_cons]; exact h.2
+
+public theorem listP_zip {X X' Y Y' : Type} (R : CL.dE X ⟶ CL.dE X') (S : CL.dE Y ⟶ CL.dE Y') :
+    ∀ (xs : CL.ConsList Unit X) (xs' : CL.ConsList Unit X') (ys : CL.ConsList Unit Y)
+      (ys' : CL.ConsList Unit Y'), listP R xs xs' → listP S ys ys' →
+        listP (rprodMap R S) (zipFn (xs, ys)) (zipFn (xs', ys'))
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _, _, _, _ => by simp only [zipFn]; trivial
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, _, _, h, _ => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, _, _, h, _ => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.cons _ _, CL.ConsList.wrap _, CL.ConsList.wrap _, _, _ => by
+      simp only [zipFn]; trivial
+  | CL.ConsList.cons _ _, CL.ConsList.cons _ _, CL.ConsList.wrap _, CL.ConsList.cons _ _, _, k =>
+      k.elim
+  | CL.ConsList.cons _ _, CL.ConsList.cons _ _, CL.ConsList.cons _ _, CL.ConsList.wrap _, _, k =>
+      k.elim
+  | CL.ConsList.cons _ xs, CL.ConsList.cons _ xs', CL.ConsList.cons _ ys, CL.ConsList.cons _ ys',
+      h, k => by
+      simp only [zipFn]; exact ⟨⟨h.1, k.1⟩, listP_zip R S xs xs' ys ys' h.2 k.2⟩
+
+public theorem listP_snoc {X X' : Type} (R : CL.dE X ⟶ CL.dE X') {a : X} {a' : X'} (ha : R a a') :
+    ∀ (xs : CL.ConsList Unit X) (xs' : CL.ConsList Unit X'), listP R xs xs' →
+      listP R (snocFn (xs, a)) (snocFn (xs', a'))
+  | CL.ConsList.wrap _, CL.ConsList.wrap _, _ => ⟨ha, trivial⟩
+  | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+  | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+  | CL.ConsList.cons _ xs, CL.ConsList.cons _ xs', h => ⟨h.1, listP_snoc R ha xs xs' h.2⟩
+
+/-- The `inits` bead is lax natural. -/
+public theorem inits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (graph neInitsFn : dNE B ⟶ dList (NEList B))
+      ⊑ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (nelist R) :=
+  graph_lax _ _ _ _ (listP_inits R)
+
+/-- The `tails` bead is lax natural. -/
+public theorem tails_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (graph neTailsFn : dNE B ⟶ dList (NEList B))
+      ⊑ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (nelist R) :=
+  graph_lax _ _ _ _ (listP_tails R)
+
+/-- The `⟨inits⁺,tails⁺⟩` bead is lax natural. -/
+public theorem initsP_tailsP_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (graph initsPFn : dNE B ⟶ dList (NEList B))
+        (graph tailsPFn : dNE B ⟶ dList (NEList B))
+      ⊑ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
+          (graph tailsPFn : dNE A ⟶ dList (NEList A))
+        ≫ rprodMap (list (nelist R)) (list (nelist R)) := by
+  simp only [rpair_graph]
+  exact graph_lax _ _ _ _ fun x y h => ⟨listP_initsP R x y h, listP_tailsP R x y h⟩
+
+/-- The `⟨init inits,𝟙⟩` bead is lax natural. -/
+public theorem initInits_id_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair ((graph initFn : dNE B ⟶ dNE B) ≫ (graph neInitsFn : dNE B ⟶ dList (NEList B)))
+        (𝟙 (dNE B))
+      ⊑ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)))
+          (𝟙 (dNE A))
+        ≫ rprodMap (list (nelist R)) (nelist R) := by
+  simp only [id_eq_graph, graph_comp, rpair_graph]
+  exact graph_lax _ _ _ _ fun x y h => ⟨listP_inits R _ _ (nelistP_init R x y h), h⟩
+
+/-- The `⟨𝟙,tail tails⟩` bead is lax natural. -/
+public theorem id_tailTails_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ rpair (𝟙 (dNE B))
+        ((graph tailFn : dNE B ⟶ dNE B) ≫ (graph neTailsFn : dNE B ⟶ dList (NEList B)))
+      ⊑ rpair (𝟙 (dNE A))
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
+        ≫ rprodMap (nelist R) (list (nelist R)) := by
+  simp only [id_eq_graph, graph_comp, rpair_graph]
+  exact graph_lax _ _ _ _ fun x y h => ⟨h, listP_tails R _ _ (nelistP_tail R x y h)⟩
+
+/-- The `zip` bead is lax natural. -/
+public theorem zip_lax_natural {X X' Y Y' : Type} (R : CL.dE X ⟶ CL.dE X') (S : CL.dE Y ⟶ CL.dE Y') :
+    rprodMap (list R) (list S)
+        ≫ (graph zipFn : (⟨CL.ConsList Unit X' × CL.ConsList Unit Y'⟩ : RelSet.{0}) ⟶ dList (X' × Y'))
+      ⊑ (graph zipFn : (⟨CL.ConsList Unit X × CL.ConsList Unit Y⟩ : RelSet.{0}) ⟶ dList (X × Y))
+        ≫ list (rprodMap R S) :=
+  graph_lax _ _ _ _ fun p q h => listP_zip R S p.1 q.1 p.2 q.2 h.1 h.2
+
+/-- The `snoc` bead is lax natural. -/
+public theorem snoc_lax_natural {X X' : Type} (R : CL.dE X ⟶ CL.dE X') :
+    rprodMap (list R) R
+        ≫ (graph snocFn : (⟨CL.ConsList Unit X' × X'⟩ : RelSet.{0}) ⟶ dList X')
+      ⊑ (graph snocFn : (⟨CL.ConsList Unit X × X⟩ : RelSet.{0}) ⟶ dList X) ≫ list R :=
+  graph_lax _ _ _ _ fun p q h => listP_snoc R h.2 p.1 q.1 h.1
+
+/-- The `cons` bead is lax natural. -/
+public theorem consAtUnit_lax_natural {X X' : Type} (R : CL.dE X ⟶ CL.dE X') :
+    rprodMap R (list R) ≫ (consAtUnit : _ ⟶ dList X') ⊑ (consAtUnit : _ ⟶ dList X) ≫ list R := by
+  simp only [consAtUnit, CL.consR]
+  exact graph_lax _ _ _ _ fun p q h => ⟨h.1, h.2⟩
 
 /-! ### (9.7): `mct` in terms of `row` and `col` -/
 
@@ -1016,7 +1194,7 @@ public theorem mct_rec_step4 :
           ≫ mix st sb cb := by
   simp only [list_graph, graph_comp, rpair_graph]
   refine nonsingle_graph_comp _ fun a z => ?_
-  rw [initsP_eq]; rfl
+  rw [initsP_eq, tailsPFn_cons, tailFn_cons]
 
 /-- (9.7), fifth step: definition of `row` and `col`. -/
 public theorem mct_rec_step5 :
@@ -1172,7 +1350,7 @@ public theorem row_rec_step2 :
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
           ≫ consAtUnit ≫ list (graph mct) := by
   simp only [consAtUnit, CL.consR, id_eq_graph, list_graph, graph_comp, rpair_graph]
-  exact nonsingle_graph fun a z => rfl
+  exact nonsingle_graph fun a z => by rw [tailFn_cons]; rfl
 
 /-- (9.10), third step: `list(f) cons=cons (f×list f)`, and definition of `row`. -/
 public theorem row_rec_step3 :
@@ -1182,7 +1360,7 @@ public theorem row_rec_step3 :
       = nonsingle ≫ rpair (graph mct : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct)
           ≫ consAtUnit := by
   simp only [row, consAtUnit, CL.consR, id_eq_graph, list_graph, graph_comp, rpair_graph]
-  exact nonsingle_graph fun a z => rfl
+  exact nonsingle_graph fun a z => by rw [tailFn_cons]; rfl
 
 /-- **(9.10)**: `row=(single→wrap tip head,⟨mct,tail row⟩ cons)`, its recursive case — on a list
     of two or more, the row is `mct` of the whole list in front of the row of its tail. -/
