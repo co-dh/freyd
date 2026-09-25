@@ -275,6 +275,75 @@ both lists empty.
 `process≜((tip wrap)×𝟙) loop(next)`.
 ]]<mct-defn>
 
+// B&dM (9.5), p. 232: the book's five hints, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_cost_alg") \
+    #src[pairing each subtree with its cost and its flattening and then applying `g` gives what
+     building the tree by `[tip,bin]` and taking its `cost` gives]],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg@00000000
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
+    [#src[definition of `g`; coproducts and products — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
+    [#src[`flatten sz=size`, since `sb` is associative — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs"),
+    [#src[`⟨cost,size⟩≜⦇[opt,opb]⦈`, at a node `bin⟨cost,size⟩=⟨cost,size⟩² opb`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step3@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs"),
+    [#src[`tip cost=zero`; products, `⟨cost,size⟩π₁=cost`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step4@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs"),
+    [#src[coproducts, `[tip cost,bin cost]=[tip,bin] cost`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step5@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs")],
+)]<mct-cost>
+
+// B&dM (9.6), p. 232: the book's four hints, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_g_mono") \
+    #src[raising the cost of either subtree (`≤×𝟙` in both slots) and then applying `g` returns a
+     value at least what `g` returns on the costs before raising (`g≤`)]],
+     // lean:AOP.A9_3_Bracket.mct_g_mono@00000000
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
+    [#src[definition of `g` — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs"),
+    [#src[definition of `opb`, and `+` monotonic]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step2@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs"),
+    [#src[`≤` reflexive, so `zero⊑zero ≤`; coproducts]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step3@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs"),
+    [#src[definition of `g` — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step4@00000000
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
+)]<mct-g-mono>
+
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #disp[#calc-table(

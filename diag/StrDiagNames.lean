@@ -403,6 +403,25 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.flattenFn] def unexpandFlattenFn : Unexpander
   | _ => `($(mkIdent `flatten))
+-- §9.3's fold components and `g` drop the leaf map, split cost and combine cost, as `R` does.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.costFn] def unexpandBracketCostFn : Unexpander
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.sizeFn] def unexpandBracketSizeFn : Unexpander
+  | _ => `($(mkIdent `size))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.szFn] def unexpandBracketSzFn : Unexpander
+  | _ => `($(mkIdent `sz))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.zeroFn] def unexpandBracketZeroFn : Unexpander
+  | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
+  | _ => `($(mkIdent `opb))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.gFn] def unexpandBracketGFn : Unexpander
+  | _ => `($(mkIdent `g))
 
 open Lean PrettyPrinter in
 /-- The maximum-segment-sum step is the note's `⊕`, which is no Lean identifier: the formatter
