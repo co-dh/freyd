@@ -234,7 +234,11 @@
 // and spent in every other, and the picture it starves overflows its own column — both pictures are
 // centred, so they grow towards each other and a label of one lands on a label of the other
 // (`./scripts/labelfit`), which no per-panel geometry can prevent.
-#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+// A ROW IS NEVER SPLIT at a page break: its cells are pictures, which cannot be cut, so a row split
+// there overran the page foot and drew its panels over the row above (`<edit-mono>`'s last rows).
+#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = {
+  set table.cell(breakable: false)
+  pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows)) }
 
 #let EQ = text(luma(140))[$=$]
 
