@@ -73,6 +73,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart cod
   RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
+  RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
@@ -403,6 +404,33 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.flattenFn] def unexpandFlattenFn : Unexpander
   | _ => `($(mkIdent `flatten))
+-- §9.3's fold components and `g` drop the leaf map, split cost and combine cost, as `R` does.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.costFn] def unexpandBracketCostFn : Unexpander
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.sizeFn] def unexpandBracketSizeFn : Unexpander
+  | _ => `($(mkIdent `size))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.szFn] def unexpandBracketSzFn : Unexpander
+  | _ => `($(mkIdent `sz))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.zeroFn] def unexpandBracketZeroFn : Unexpander
+  | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
+  | _ => `($(mkIdent `opb))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.gR] def unexpandBracketGR : Unexpander
+  | _ => `($(mkIdent `g))
+-- The label summand of `F X = A + X²` is the label type itself; `≤` on `Int` is its operator.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.dA] def unexpandTTdA : Unexpander
+  | `($_ $a) => `($a)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.leq] def unexpandListRelLeq : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 
 open Lean PrettyPrinter in
 /-- The maximum-segment-sum step is the note's `⊕`, which is no Lean identifier: the formatter

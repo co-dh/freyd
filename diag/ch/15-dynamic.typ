@@ -423,6 +423,75 @@ both lists empty.
 `process≜((tip wrap)×𝟙) loop(next)`.
 ]]<mct-defn>
 
+// B&dM (9.5), p. 232: the book's five hints, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_cost_alg") \
+    #src[pairing each subtree with its cost and its flattening and then applying `g` gives what
+     building the tree by `[tip,bin]` and taking its `cost` gives]],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg@a8bdfa31
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
+    [#src[definition of `g`; coproducts and products — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@45921a50
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
+    [#src[`flatten sz=size`, since `sb` is associative — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@4e428835
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs"),
+    [#src[`⟨cost,size⟩≜⦇[opt,opb]⦈`, at a node `bin⟨cost,size⟩=⟨cost,size⟩² opb`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step3@7809a574
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs"),
+    [#src[`tip cost=zero`; products, `⟨cost,size⟩π₁=cost`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step4@a9886b38
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step4.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs"),
+    [#src[coproducts, `[tip cost,bin cost]=[tip,bin] cost`]])],
+     // lean:AOP.A9_3_Bracket.mct_cost_alg_step5@43028133
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step5.rhs")],
+)]<mct-cost>
+
+// B&dM (9.6), p. 232: the book's four hints, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_g_mono") \
+    #src[raising the cost of either subtree (`≤×𝟙` in both slots) and then applying `g` returns a
+     value at least what `g` returns on the costs before raising (`g≤`)]],
+     // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
+    [#src[definition of `g` — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bfddbbdc
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs"),
+    [#src[definition of `opb`, and `+` monotonic]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step2@43f63ff6
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs"),
+    [#src[`≤` reflexive, so `zero⊑zero ≤`; coproducts]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step3@5fae54f1
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs"),
+    [#src[definition of `g` — @mct-defn]])],
+     // lean:AOP.A9_3_Bracket.mct_g_mono_step4@cb9454b8
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
+)]<mct-g-mono>
+
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #disp[#calc-table(
@@ -448,11 +517,11 @@ both lists empty.
       // lean:AOP.A9_3_Bracket.mct_mono@a3daf2b8
       are compared — which is Proposition 9.3 at `H°=flatten`, a map, with (9.5)
  `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` #src[]
-      // lean:AOP.A9_3_Bracket.mct_cost_alg@984a2c56
+      // lean:AOP.A9_3_Bracket.mct_cost_alg@a8bdfa31
       (the cost of a node reads only the cost and the
       flattening of its two subtrees) and (9.6) `(𝟙+(≤×𝟙)²)g⊑g≤`
  #src[] (`g` monotonic on `≤` in its two
-      // lean:AOP.A9_3_Bracket.mct_g_mono@6a5a7e62
+      // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
   // `list⁺` dies and is remade at both, so it runs as a loop between them.

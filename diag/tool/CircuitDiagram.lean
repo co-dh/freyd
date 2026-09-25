@@ -967,7 +967,7 @@ partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none) : M
       let bx := boxPic (← StrDiag.mapLabel f true) #[] (← wiresOf tgt) src tgt true
       if ws.isEmpty then return bx
       return mkPic "konst" ws (← wiresOf tgt) src tgt true #[("body", (← lane bx).val)]
-    match StrDiag.projIndex body with
+    match StrDiag.projIndex (.bvar 0) body with
     | some i =>
       if src.kind != .prod || i ≥ src.parts.size then
         throwError "a projection out of {src.label}, which is not a product of {i + 1} factors"

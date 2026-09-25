@@ -173,81 +173,219 @@ public theorem R_recip_refl : 𝟙 (dTree A) ⊑ (R st sb cb)° :=
 @[expose] public abbrev P (A : Type) : RelProd (⟨Int⟩ : RelSet.{0}) (dNE A) :=
   relProd (⟨Int⟩ : RelSet.{0}) (dNE A)
 
+/-- **mct-defn**: `size`, the second component of the tupled fold. -/
+@[expose] public def sizeFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) (t : Tree A) : S :=
+  (costSizeFn st sb cb t).2
+
+/-- **mct-defn**: `zero`, the cost of a leaf. -/
+@[expose] public def zeroFn (_ : A) : Int := 0
+
+/-- **mct-defn**: `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`, the node half of the
+    tupled fold's algebra. -/
+@[expose] public def opbFn (sb : S × S → S) (cb : S × S → Int) (p : (Int × S) × (Int × S)) :
+    Int × S :=
+  (cb (p.1.2, p.2.2) + p.1.1 + p.2.1, sb (p.1.2, p.2.2))
+
+/-- **mct-defn**: `g`, the relation drawn as one bead — the graph of `gFn`, whose two summands a
+    picture would otherwise open. -/
+@[expose] public def gR (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
+    (TT.F A).obj (⟨Int × NEList A⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}) :=
+  graph (gFn st sb cb)
+
+/-- `⟨R,S⟩(U×V)=⟨RU,SV⟩` — a pair followed by a product action acts on each component. -/
+public theorem rpair_comp_rprodMap {C A B a' b' : RelSet.{0}} (R : C ⟶ A) (S : C ⟶ B)
+    (U : A ⟶ a') (V : B ⟶ b') : rpair R S ≫ rprodMap U V = rpair (R ≫ U) (S ≫ V) :=
+  hom_ext fun _ _ => ⟨fun ⟨m, ⟨hR, hS⟩, hU, hV⟩ => ⟨⟨m.1, hR, hU⟩, ⟨m.2, hS, hV⟩⟩,
+    fun ⟨⟨y, hR, hU⟩, ⟨z, hS, hV⟩⟩ => ⟨(y, z), ⟨hR, hS⟩, hU, hV⟩⟩
+
+/-- A pair of graphs is the graph of the paired function. -/
+public theorem rpair_graph {C A B : RelSet.{0}} (f : C.carrier → A.carrier)
+    (g : C.carrier → B.carrier) :
+    rpair (graph f) (graph g)
+      = (graph (fun x => (f x, g x)) : C ⟶ (⟨A.carrier × B.carrier⟩ : RelSet.{0})) :=
+  hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
+    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
+
+set_option hygiene false in
+local notation "costG" => (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "sizeG" => (graph (sizeFn st sb cb) : dTree A ⟶ (⟨S⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "szG" => (graph (szFn st sb) : dNE A ⟶ (⟨S⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "flattenG" => (graph flattenFn : dTree A ⟶ dNE A)
+set_option hygiene false in
+local notation "zeroG" => (graph (zeroFn (A := A)) : dA A ⟶ (⟨Int⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "opbG" => (graph (opbFn sb cb)
+  : (⟨(Int × S) × (Int × S)⟩ : RelSet.{0}) ⟶ (⟨Int × S⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "outlG" => (graph (Prod.fst : Int × S → Int)
+  : (⟨Int × S⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}))
+set_option hygiene false in
+local notation "binG" => (graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)
+  : (⟨Tree A × Tree A⟩ : RelSet.{0}) ⟶ dTree A)
+set_option hygiene false in
+local notation "tipG" => (graph (Tree.tip (A := A)) : dA A ⟶ dTree A)
+set_option hygiene false in
+local notation "gG" => (gR st sb cb
+  : TFobj A (⟨Int × NEList A⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}))
+
+/-- **mct-defn**: `g≜[zero,(𝟙×sz)² opb π₁]` — the note's definition of `g` is `gFn`. -/
+public theorem g_eq :
+    gG = junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+      (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+        ≫ opbG ≫ outlG) := by
+  apply hom_ext; intro u n
+  cases u with
+  | inl a => rw [ListRel.junc_sum_inl]; exact Iff.rfl
+  | inr p =>
+    rw [ListRel.junc_sum_inr]
+    constructor
+    · intro h
+      exact ⟨((p.1.1, szFn st sb p.1.2), (p.2.1, szFn st sb p.2.2)), ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩,
+        _, rfl, h⟩
+    · rintro ⟨m, ⟨⟨h1, h2⟩, ⟨h3, h4⟩⟩, m', hm', hn⟩
+      obtain ⟨⟨c1, s1⟩, ⟨c2, s2⟩⟩ := m
+      obtain rfl : p.1.1 = c1 := h1
+      obtain rfl : s1 = szFn st sb p.1.2 := h2
+      obtain rfl : p.2.1 = c2 := h3
+      obtain rfl : s2 = szFn st sb p.2.2 := h4
+      obtain rfl := hm'
+      exact hn
+
 /-! ## `mct-laws` — Proposition 9.3's two equations -/
 
-/-- **mct-laws** (9.5): `[tip,bin] cost=(𝟙+⟨cost,flatten⟩²)g` — the cost of a node reads only
-    the cost and the flattening of its two subtrees.  `sb` associative enters here, through
+/-- (9.5), first step: definition of `g`, then coproducts and products —
+    `F(⟨cost,flatten⟩)g = [zero,⟨cost,flatten sz⟩² opb π₁]`. -/
+public theorem mct_cost_alg_step1 :
+    (TT.F A).map ((P A).pair costG flattenG) ≫ gG
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (rprodMap (rpair costG (flattenG ≫ szG)) (rpair costG (flattenG ≫ szG))
+            ≫ opbG ≫ outlG) := by
+  rw [g_eq]
+  refine (Fmap_comp_junc _ _ _).trans ?_
+  rw [pair_eq_rpair, ← Cat.assoc (rprodMap _ _) (rprodMap _ _), rprodMap_comp,
+    rpair_comp_rprodMap, Cat.comp_id]
+
+/-- (9.5), second step: `size=flatten sz` (`size_eq_sz_flatten`, where `sb` associative enters). -/
+public theorem mct_cost_alg_step2 (hassoc : Assoc sb) :
+    junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+        (rprodMap (rpair costG (flattenG ≫ szG)) (rpair costG (flattenG ≫ szG)) ≫ opbG ≫ outlG)
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (rprodMap (rpair costG sizeG) (rpair costG sizeG) ≫ opbG ≫ outlG) := by
+  have h : flattenG ≫ szG = sizeG := by
+    rw [graph_comp]
+    exact congrArg graph (funext fun t => (size_eq_sz_flatten st sb cb hassoc t).symm)
+  rw [h]
+
+/-- (9.5), third step: `⟨cost,size⟩≜⦇[opt,opb]⦈`, at its node: `bin⟨cost,size⟩=⟨cost,size⟩² opb`. -/
+public theorem mct_cost_alg_step3 :
+    junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+        (rprodMap (rpair costG sizeG) (rpair costG sizeG) ≫ opbG ≫ outlG)
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (binG ≫ rpair costG sizeG ≫ outlG) := by
+  simp only [rpair_graph, graph_comp]
+  refine congrArg (junc _ _) (hom_ext fun p n => ⟨?_, fun h => ⟨((costFn st sb cb p.1,
+    sizeFn st sb cb p.1), (costFn st sb cb p.2, sizeFn st sb cb p.2)), ⟨rfl, rfl⟩, h⟩⟩)
+  rintro ⟨⟨m1, m2⟩, ⟨h1, h2⟩, h⟩
+  subst h1 h2
+  exact h
+
+/-- (9.5), fourth step: `tip cost=zero`, and `⟨cost,size⟩π₁=cost`. -/
+public theorem mct_cost_alg_step4 :
+    junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG (binG ≫ rpair costG sizeG ≫ outlG)
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) (tipG ≫ costG) (binG ≫ costG) := by
+  simp only [rpair_graph, graph_comp]
+  rfl
+
+/-- (9.5), fifth step: coproducts, `[tip cost,bin cost]=[tip,bin] cost`. -/
+public theorem mct_cost_alg_step5 :
+    junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) (tipG ≫ costG) (binG ≫ costG)
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG := by
+  exact (junc_comp _ _ _ _).symm
+
+/-- **mct-laws** (9.5): `(𝟙+⟨cost,flatten⟩²)g=[tip,bin] cost` — the cost of a node reads only
+    the cost and the flattening of its two subtrees.  `sb` associative enters at step 2, through
     `size=flatten sz`. -/
 public theorem mct_cost_alg (hassoc : Assoc sb) :
-    graph con ≫ (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0}))
-      = (TT.F A).map ((P A).pair (graph (costFn st sb cb)) (graph flattenFn))
-        ≫ graph (gFn st sb cb) := by
-  apply hom_ext; intro u n
-  rw [pair_eq_rpair]
-  constructor
-  · rintro ⟨t, ht, hn⟩
-    obtain rfl : t = con u := ht
-    cases u with
-    | inl a => exact ⟨Sum.inl a, rfl, hn⟩
-    | inr p =>
-      obtain ⟨l, r⟩ := p
-      refine ⟨Sum.inr ((costFn st sb cb l, flattenFn l), (costFn st sb cb r, flattenFn r)),
-        ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩, ?_⟩
-      show n = cb (szFn st sb (flattenFn l), szFn st sb (flattenFn r))
-        + costFn st sb cb l + costFn st sb cb r
-      rw [← size_eq_sz_flatten st sb cb hassoc l, ← size_eq_sz_flatten st sb cb hassoc r]
-      exact hn
-  · rintro ⟨w, hw, hn⟩
-    cases u with
-    | inl a =>
-      cases w with
-      | inl a' => obtain rfl : a = a' := hw; exact ⟨Tree.tip a, rfl, hn⟩
-      | inr _ => exact hw.elim
-    | inr p =>
-      cases w with
-      | inl _ => exact hw.elim
-      | inr q =>
-        obtain ⟨l, r⟩ := p
-        obtain ⟨pl, pr⟩ := q
-        obtain ⟨plc, plf⟩ := pl
-        obtain ⟨prc, prf⟩ := pr
-        obtain ⟨⟨hc1, hf1⟩, ⟨hc2, hf2⟩⟩ := hw
-        obtain rfl : plc = costFn st sb cb l := hc1
-        obtain rfl : plf = flattenFn l := hf1
-        obtain rfl : prc = costFn st sb cb r := hc2
-        obtain rfl : prf = flattenFn r := hf2
-        refine ⟨Tree.bin l r, rfl, ?_⟩
-        show n = cb ((costSizeFn st sb cb l).2, (costSizeFn st sb cb r).2)
-          + costFn st sb cb l + costFn st sb cb r
-        rw [size_eq_sz_flatten st sb cb hassoc l, size_eq_sz_flatten st sb cb hassoc r]
-        exact hn
+    (TT.F A).map ((P A).pair costG flattenG) ≫ gG = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG :=
+  calc (TT.F A).map ((P A).pair costG flattenG) ≫ gG
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (rprodMap (rpair costG (flattenG ≫ szG)) (rpair costG (flattenG ≫ szG))
+            ≫ opbG ≫ outlG) := mct_cost_alg_step1 st sb cb
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (rprodMap (rpair costG sizeG) (rpair costG sizeG) ≫ opbG ≫ outlG) :=
+        mct_cost_alg_step2 st sb cb hassoc
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
+          (binG ≫ rpair costG sizeG ≫ outlG) := mct_cost_alg_step3 st sb cb
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) (tipG ≫ costG) (binG ≫ costG) :=
+        mct_cost_alg_step4 st sb cb
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG := mct_cost_alg_step5 st sb cb
+
+/-- (9.6), first step: definition of `g` — `F(≤×𝟙)g=[zero,(≤×sz)² opb π₁]`. -/
+public theorem mct_g_mono_step1 :
+    (TT.F A).map (prodMap (P A) (P A) leq (𝟙 (dNE A))) ≫ gG
+      = junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap leq szG) (rprodMap leq szG) ≫ opbG ≫ outlG) := by
+  rw [g_eq]
+  refine (Fmap_comp_junc _ _ _).trans ?_
+  rw [prodMap_eq_rprodMap, ← Cat.assoc (rprodMap _ _) (rprodMap _ _), rprodMap_comp,
+    rprodMap_comp, Cat.comp_id, Cat.id_comp]
+  rfl
+
+/-- (9.6), second step: definition of `opb`, and `+` monotonic — `(≤×sz)² opb π₁⊑(𝟙×sz)² opb π₁≤`. -/
+public theorem mct_g_mono_step2 :
+    junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+        (rprodMap (rprodMap leq szG) (rprodMap leq szG) ≫ opbG ≫ outlG)
+      ⊑ junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+            ≫ opbG ≫ outlG ≫ leq) := by
+  refine junc_mono _ (le_refl _) (le_iff.mpr fun p n h => ?_)
+  obtain ⟨m, ⟨⟨hc1, hs1⟩, ⟨hc2, hs2⟩⟩, m', hm', hn⟩ := h
+  obtain ⟨⟨c1, s1⟩, ⟨c2, s2⟩⟩ := m
+  obtain rfl : s1 = szFn st sb p.1.2 := hs1
+  obtain rfl : s2 = szFn st sb p.2.2 := hs2
+  obtain rfl := hm'
+  obtain rfl := hn
+  exact ⟨((p.1.1, szFn st sb p.1.2), (p.2.1, szFn st sb p.2.2)), ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩,
+    _, rfl, _, rfl,
+    Int.add_le_add (Int.add_le_add (Int.le_refl _) (hc1 : p.1.1 ≤ c1)) (hc2 : p.2.1 ≤ c2)⟩
+
+/-- (9.6), third step: `≤` reflexive (`zero⊑zero ≤`), then coproducts. -/
+public theorem mct_g_mono_step3 :
+    junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+        (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+          ≫ opbG ≫ outlG ≫ leq)
+      ⊑ junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+            ≫ opbG ≫ outlG) ≫ leq := by
+  rw [junc_comp, Cat.assoc, Cat.assoc]
+  exact junc_mono _ (le_iff.mpr fun _ n h => ⟨n, h, Int.le_refl n⟩) (le_refl _)
+
+/-- (9.6), fourth step: definition of `g`. -/
+public theorem mct_g_mono_step4 :
+    junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+        (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+          ≫ opbG ≫ outlG) ≫ leq
+      = gG ≫ leq := by
+  rw [g_eq]
 
 /-- **mct-laws** (9.6): `(𝟙+(≤×𝟙)²)g⊑g≤` — `g` is monotonic on `≤` in its two cost arguments,
     the flattenings being held fixed. -/
 public theorem mct_g_mono :
-    (TT.F A).map (prodMap (P A) (P A) leq (𝟙 (dNE A))) ≫ graph (gFn st sb cb)
-      ⊑ graph (gFn st sb cb) ≫ leq := by
-  rw [prodMap_eq_rprodMap]
-  refine le_iff.mpr fun u n h => ?_
-  obtain ⟨w, hw, hn⟩ := h
-  cases u with
-  | inl a =>
-    cases w with
-    | inl a' => exact ⟨0, rfl, Int.le_of_eq (hn : n = 0).symm⟩
-    | inr _ => exact hw.elim
-  | inr p =>
-    cases w with
-    | inl _ => exact hw.elim
-    | inr q =>
-      obtain ⟨⟨plc, plf⟩, ⟨prc, prf⟩⟩ := p
-      obtain ⟨⟨qlc, qlf⟩, ⟨qrc, qrf⟩⟩ := q
-      obtain ⟨⟨hc1, hf1⟩, ⟨hc2, hf2⟩⟩ := hw
-      obtain rfl : plf = qlf := hf1
-      obtain rfl : prf = qrf := hf2
-      refine ⟨cb (szFn st sb plf, szFn st sb prf) + plc + prc, rfl, ?_⟩
-      show cb (szFn st sb plf, szFn st sb prf) + plc + prc ≤ n
-      rw [(hn : n = cb (szFn st sb plf, szFn st sb prf) + qlc + qrc)]
-      exact Int.add_le_add (Int.add_le_add (Int.le_refl _) (hc1 : plc ≤ qlc)) (hc2 : prc ≤ qrc)
+    (TT.F A).map (prodMap (P A) (P A) leq (𝟙 (dNE A))) ≫ gG ⊑ gG ≫ leq :=
+  calc (TT.F A).map (prodMap (P A) (P A) leq (𝟙 (dNE A))) ≫ gG
+      _ = junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap leq szG) (rprodMap leq szG) ≫ opbG ≫ outlG) :=
+        mct_g_mono_step1 st sb cb
+      _ ⊑ junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+            ≫ opbG ≫ outlG ≫ leq) := mct_g_mono_step2 st sb cb
+      _ ⊑ junc (sumCop (dA A) (⟨(Int × NEList A) × (Int × NEList A)⟩ : RelSet.{0})) zeroG
+          (rprodMap (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG) (rprodMap (𝟙 (⟨Int⟩ : RelSet.{0})) szG)
+            ≫ opbG ≫ outlG) ≫ leq := mct_g_mono_step3 st sb cb
+      _ = gG ≫ leq := mct_g_mono_step4 st sb cb
 
 /-- (9.6) at the mirrored order, which is the one Theorem 9.1 consumes. -/
 public theorem mct_g_mono_geq :
@@ -282,14 +420,14 @@ public theorem mct_mono (hassoc : Assoc sb) :
     (TT.F A).map (R st sb cb ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ R st sb cb :=
   monotonicAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2 (R_eq st sb cb)
-    (mct_cost_alg st sb cb hassoc) (mct_g_mono st sb cb)
+    ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono st sb cb)
 
 /-- The same at the mirrored order, which is what `dynamic_programming_context` consumes. -/
 public theorem mct_mono_recip (hassoc : Assoc sb) :
     (TT.F A).map ((R st sb cb)° ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ (R st sb cb)° :=
   monotonicAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
-    (R_recip_eq st sb cb) (mct_cost_alg st sb cb hassoc) (mct_g_mono_geq st sb cb)
+    (R_recip_eq st sb cb) ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono_geq st sb cb)
 
 /-- **mct-laws**, second row (B&dM p.231): a least-cost bracketing is the least fixed point of
     `(μX : [wrap,cat]° P([tip,(X×X)bin]) est(R))` — split the list in every way, bracket both
@@ -591,6 +729,32 @@ public theorem bin_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     cases t with
     | tip _ => exact h.elim
     | bin t₁ t₂ => exact ⟨(t₁, t₂), ⟨h.1, h.2⟩, rfl⟩
+
+/-- **`[tip,bin]` IS STRICTLY NATURAL** — the constructors of `tree`, read lane by lane: the leaf
+    arm relates two tips exactly when `R` relates their labels, the node arm is `bin_natural`. -/
+public theorem tipBin_strictNatural :
+    StrictNatural treeRelator
+      (Relator.sum (Relator.idRelator RelSet.{0}) (Relator.prod treeRelator treeRelator))
+      (fun a => junc (sumCop a (⟨Tree a.carrier × Tree a.carrier⟩ : RelSet.{0}))
+        (graph (Tree.tip (A := a.carrier)) : a ⟶ dTree a.carrier)
+        (graph (fun p : Tree a.carrier × Tree a.carrier => Tree.bin p.1 p.2)
+          : (⟨Tree a.carrier × Tree a.carrier⟩ : RelSet.{0}) ⟶ dTree a.carrier)) := by
+  intro a b R
+  rw [show (Relator.sum (Relator.idRelator RelSet.{0})
+        (Relator.prod treeRelator treeRelator)).map R
+      = sumMap (sumCop a ⟨Tree a.carrier × Tree a.carrier⟩)
+          (sumCop b ⟨Tree b.carrier × Tree b.carrier⟩)
+          R (rprodMap (tree R) (tree R)) from prodMap_eq_rprodMap _ _ ▸ rfl,
+    sumMap_junc, junc_comp]
+  congr 1
+  · apply hom_ext; intro x t
+    constructor
+    · rintro ⟨y, hy, rfl⟩; exact ⟨Tree.tip x, rfl, hy⟩
+    · rintro ⟨u, rfl, h⟩
+      cases t with
+      | tip y => exact ⟨y, h, rfl⟩
+      | bin _ _ => exact h.elim
+  · exact bin_natural R
 
 /-- `consSplits` transports along `list⁺(R)`: one more element at the front of both lists leaves
     the two split lists position for position related. -/
