@@ -104,37 +104,138 @@ in @mu-defn.
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step1.rhs"),
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin.rhs"),
     [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
   // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
   // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
   // it draws the same panel; the regions are named only in the first.
-  [#lean("Freyd.Alg.dynamic_programming_thin_step1.rhs")],
+  [#lean("Freyd.Alg.dynamic_programming_thin.rhs")],
 
   // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
   [#vstep(RQ, leanc("Freyd.Alg.dynamic_programming_thin.lhs.body"),
     // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
     [#src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin(Q)` as in
-      @thin-laws. This is the same with the thinning step dropped — `𝟙⊑thin(Q)`, so the body and
-      with it the fixed point only shrink. Knaster–Tarski leaves (9.1) #frc([`T°`])` P(F(M)h)
-      est(R)⊑M`; `M=H∩(H°\R°)` splits that into (9.2) #frc([`T°`])` P(F(M)h) est(R)⊑H` and
-      (9.3) `H°`#frc([`T°`])` P(F(M)h) est(R)⊑R°`, and both use only (9.4) = (7.10)
-      `P(X)est(R)⊑(∋X)∩(∈\(XR°))` — @est-710]])],
+      @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin(Q)`. Knaster–Tarski
+      leaves (9.1): the body at `M` is `⊑M`; `M=H∩(H°\R°)` splits that into (9.2) and (9.3) below
+      — @est-up. The fixed point is unique and entire when `T°` followed by `F`'s membership
+      relation is inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
   // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
   // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
   [#lean("Freyd.Alg.dynamic_programming_thin.lhs.body")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.thin_arm₂_le.lhs"),
-    // lean:AOP.A9_1.thin_summand_le@ac202517
-    [#src[Proposition 9.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`: `FA` is usually a
-      coproduct, and disjoint ranges split the fixed point into one branch per summand. The fixed
-      // uniqueness fact: Theorem 6.3
-      point is unique and entire — `T°` followed by `F`'s membership relation
-      inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
-  // One branch of the `→`, not both: it is a union of two restricted branches with the one shape, so
-  // the second adds no shape the first does not already show.
-  [#lean("Freyd.Alg.RelSet.SL.thin_arm₂_le.lhs")],
 )]<dp-laws>
+
+// (9.2): the book's four hints of Theorem 9.1 with `thin(Q)∋⊑∋` added.  Its own display: a `#disp`
+// cannot break across a page, and the rows above already fill one.
+#disp[#calc-table(
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([],leanc("Freyd.Alg.dynamic_programming_thin_lower.lhs"), [#src[(9.2)]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_lower.lhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step1.rhs"),
+    [#src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(M)h` — @est-710]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step2.rhs"),
+    [#src[`thin(Q)∋⊑∋` — @thin-laws]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_lower_step2.rhs"),
+    [#src[#frc([`T°`])`∋=T°` — @pow-laws]])],
+  [#lean("Freyd.Alg.dynamic_programming_lower_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_lower_step3.rhs"),
+    [#src[`M⊑`#frc([`H`])`∋=H` — @est-up]])],
+  [#lean("Freyd.Alg.dynamic_programming_lower_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_thin_lower.rhs"),
+    [#src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_lower.rhs")],
+)]<dp-laws-92>
+
+// (9.3), the second half of the same proof: a `#disp` does not break across a page.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
+    #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
+     answer of `H` to the same input]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step3.lhs"), [])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step3.lhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step3.rhs"),
+    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(M)h` — @est-710]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_thin_step4.rhs"),
+    [#src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step5.rhs"),
+    [#src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step5.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"),
+    [#src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
+)]<dp-laws-93>
+
+// (9.3) continued from the last row above: the ten rows overflow one page.
+#disp[#calc-table(
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"), [])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step7.rhs"),
+    [#src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step7.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step8.rhs"),
+    [#src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step8.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step9.rhs"),
+    [#src[`H°M⊑R°` under `F` — @est-up]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step9.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step10.rhs"),
+    [#src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step10.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step11.rhs"),
+    [#src[`R` transitive, twice]])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step11.rhs")],
+)]<dp-laws-93b>
+
+// B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
+// the union below: off `ran V₁ ∪ ran V₂` both are empty.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
+    #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
+     inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs"),
+    [#src[off `ran V₁ ∪ ran V₂` the set is empty and `est(R)` of it is nothing; not a tabulated row]])],
+  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs"),
+    [#src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
+      have disjoint ranges]])],
+  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs"),
+    [#src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)` \ `=thin(Q₁)P(inl)`]])],
+  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs"),
+    [#src[`P` a relator and `inl[U₁,U₂]=U₁`]])],
+  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs")],
+)]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp[#calc-table(

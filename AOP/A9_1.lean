@@ -190,146 +190,162 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
   only matter for `dynamic_programming_of_thin`, Ex 9.1, which recovers Theorem 9.1 at `Q :=
   id`, where reflexivity IS needed to discharge `hQ`). -/
 
-/-- **Core of Theorem 9.2**: `M = min R°·ΛH` is a prefixed point of the THINNING
-    dynamic-programming body `min R°·P(h·FX)·thin Q·ΛT°` (mirrored), for any `H` satisfying the
-    hylomorphism fixed-point equation, given the thinning-compatibility hypothesis `hQ` (B&dM
-    p.221's unlabelled preorder condition connecting `Q` to `H` through `h`).  Same skeleton
-    as `dp_prefixed`, with a `thinRel Q` factor threaded through both halves of the min
-    universal property. -/
-theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
-    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+/-! ### Exercise 9.3: the proof of Theorem 9.1 with `thin(Q)` added, one theorem per step
+
+  `M≜Λ(H) est(R)` throughout.  Steps 1–2 and then `dynamic_programming_lower_step2/3` and the
+  fixed-point equation are (9.2) `body(M)⊑H`; steps 3–11 are (9.3) `H°body(M)⊑R°`. -/
+
+/-- (9.2) with thinning, step 1: rule (9.4) `P(X) est(R) ⊑ ∋X` at `X≜F(M)h`, after `thin(Q)`. -/
+public theorem dynamic_programming_thin_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (comp_mono_left _ (le_trans (powerRel_comp_est_le _ R) (inter_lb_left _ _)))
+
+/-- (9.2) with thinning, step 2: `thin(Q)∋⊑∋` — a thinned set is a subset. -/
+public theorem dynamic_programming_thin_step2 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (by simpa only [Cat.assoc] using (comp_mono_right (thinRel_comp_eps_le Q)
+    (F.map (Λ H ≫ est R) ≫ h)))
+
+/-- **(9.2) with thinning**: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`, mirrored — steps 1–2, then the
+    thinning-free (9.2)'s Λ cancellation, `M⊑H` and the fixed-point equation. -/
+public theorem dynamic_programming_thin_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ H :=
+  calc Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        dynamic_programming_thin_step1
+      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_thin_step2
+      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step2
+      _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
+      _ = H := hHfix
+
+/-- (9.3) with thinning, step 3: rule (9.4) `P(X) est(R) ⊑ ∈\(XR°)` at `X≜F(M)h`. -/
+public theorem dynamic_programming_thin_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  comp_mono_left _ (comp_mono_left _ (comp_mono_left _
+    (le_trans (powerRel_comp_est_le _ R) (inter_lb_right _ _))))
+
+/-- (9.3) with thinning, step 4: `H°=h°F(H°)T`, the converse of the fixed-point equation. -/
+public theorem dynamic_programming_thin_step4 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+          ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
+  have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
+    have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+    rw [← h1, hHfix]
+  conv => lhs; rw [hHrec]
+  simp only [Cat.assoc]
+
+/-- (9.3) with thinning, step 5: `TΛ(T°)⊑∈` — cancellation of the transpose, conversed. -/
+public theorem dynamic_programming_thin_step5 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
+  have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
+    simpa only [Allegory.recip_recip] using recip_comp_Λ_le_recip_eps (T°)
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using (comp_mono_right hTA
+    (thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))))))
+
+/-- (9.3) with thinning, step 6: `∈ thin(Q)⊑Q°∈` — every discarded candidate is `Q`-below a kept
+    one. -/
+public theorem dynamic_programming_thin_step6 {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right (recip_eps_comp_thinRel_le Q)
+      (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))))
+
+/-- (9.3) with thinning, step 7: division cancels, `∈(∈\Y)⊑Y`. -/
+public theorem dynamic_programming_thin_step7 {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
+  comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (leftDiv_comp_le ((∋ (F.obj A))°) ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))))
+
+/-- (9.3) with thinning, step 8: the thinning condition `QF(H)h⊑F(H)hR`, conversed. -/
+public theorem dynamic_programming_thin_step8 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
-  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
-  have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
-  apply le_Λ_comp_est_iff.mpr
-  constructor
-  · -- (9.2)-with-thin: `min R°·P(h·FM)·thin Q·ΛT° ⊆ H`
-    have step1 : Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h) :=
-      comp_mono_left _ (comp_mono_left _ (le_trans h94 (inter_lb_left _ _)))
-    have step2 : Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h)
-        ⊑ T° ≫ F.map (Λ H ≫ est R) ≫ h := by
-      have e1 : Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h)
-          = (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h := by
-        simp only [Cat.assoc]
-      rw [e1]
-      have e2 : (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h
-          ⊑ (Λ (T°) ≫ ∋ (F.obj A)) ≫ F.map (Λ H ≫ est R) ≫ h :=
-        comp_mono_right (comp_mono_left _ (thinRel_comp_eps_le Q)) _
-      have e3 : (Λ (T°) ≫ ∋ (F.obj A)) ≫ F.map (Λ H ≫ est R) ≫ h
-          = T° ≫ F.map (Λ H ≫ est R) ≫ h := by rw [Λ_eps_eq']
-      rwa [e3] at e2
-    have step3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
-      comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
-    rw [hHfix] at step3
-    exact le_trans step1 (le_trans step2 step3)
-  · -- (9.3)-with-thin: `H°·min R°·P(h·FM)·thin Q·ΛT° ⊆ R°`
-    have hL := le_trans h94 (inter_lb_right _ _)
-    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
-      have h0 := recip_comp_Λ_le_recip_eps (T°)
-      rwa [Allegory.recip_recip] at h0
-    have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
-      have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      rw [← h1, hHfix]
-    -- the tail bound: peel `T·ΛT°` down to `∋°`, then `thin Q` down to `Q°·∋°`
-    have t1 : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) :=
-      comp_mono_left _ (comp_mono_left _ (comp_mono_left _ hL))
-    have t2 : T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))
-        ⊑ (∋ (F.obj A))° ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) := by
-      rw [← Cat.assoc T (Λ (T°)) _]
-      exact comp_mono_right hTA _
-    have t3 : (∋ (F.obj A))° ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))
-        ⊑ (Q° ≫ (∋ (F.obj A))°) ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
-      rw [← Cat.assoc]
-      exact comp_mono_right (recip_eps_comp_thinRel_le Q) _
-    have t4 : (Q° ≫ (∋ (F.obj A))°) ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
-        ⊑ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      rw [Cat.assoc]
-      exact comp_mono_left _ (leftDiv_comp_le _ _)
-    have htail : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      le_trans t1 (le_trans t2 (le_trans t3 t4))
-    -- split `H°` in front and reassociate (backward-rewrite trick, cf. `dp_prefixed`'s `c1`)
-    have c1 : H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°) ≫ T)
-            ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      rw [← hHrec]
-    have c2 : (h° ≫ F.map (H°) ≫ T)
-          ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°))
-            ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      simp only [Cat.assoc]
-    have hbound : (h° ≫ F.map (H°))
-          ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      comp_mono_left _ htail
-    -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q° ⊑ R°·h°·FH°`
-    have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
-      have hrm := recip_mono hQ
-      have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        = (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      simp only [Cat.assoc]
-    rw [hre1] at hbound
-    have step6 : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      comp_mono_right hQrec _
-    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      simp only [Cat.assoc]
-    rw [hre2] at step6
-    -- collapse: `F(M·H°) ⊆ FR` then conjugated monotonicity and transitivity
-    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
-        rw [← F.map_comp]
-        exact F.map_mono hHMR
-      have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
-        rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
-        exact comp_mono_left _ (comp_mono_right hFRM h)
-      exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
-    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° ≫ R° ≫ R° :=
-      comp_mono_left R° (comp_mono_right hinner R°)
-    have hRRR : R° ≫ R° ≫ R° ⊑ R° := le_trans (comp_mono_left R° htrans) htrans
-    have hchain : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° :=
-      le_trans step6 (le_trans step7 hRRR)
-    rw [c1, c2]
-    exact le_trans hbound hchain
+    h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R°
+      ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° := by
+  have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
+    have hrm := recip_mono hQ
+    have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+    have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+    rwa [eL, eR] at hrm
+  simpa only [Cat.assoc] using comp_mono_right hQrec (F.map (Λ H ≫ est R) ≫ h ≫ R°)
 
-/-! ### The optimisation chain (note §15.1b)
+/-- (9.3) with thinning, step 9: `H°M⊑R°`, the second component of the universal property of
+    `est` at `M`, under `F`. -/
+public theorem dynamic_programming_thin_step9 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° ⊑ R° ≫ h° ≫ F.map R° ≫ h ≫ R° := by
+  have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
+    rw [← F.map_comp]
+    exact F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right hFRM (h ≫ R°))))
 
-  `H%∋ est(R) ⊒ (T°)%∋ thin(Q)P(F(X)h)est(R)`: the note draws the spec as the single bead `X`
-  sitting inside the body, so the step abstracts that abbreviation out of `dp_thin_prefixed`. -/
+/-- (9.3) with thinning, step 10: `h` monotonic on `R`, in the conjugated form `h°F(R°)h⊑R°`. -/
+public theorem dynamic_programming_thin_step10 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : MonotonicAlg h R°) :
+    R° ≫ h° ≫ F.map R° ≫ h ≫ R° ⊑ R° ≫ R° ≫ R° :=
+  comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right ((monotonicAlg_iff_conj hh).mp hmono) R°))
 
-/-- Step 1: at `X≜H%∋ est(R)` the thinning body is below the spec — the prefixed point
-    Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
-public theorem dynamic_programming_thin_step1 (hFr : F.PreservesRecip)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
-    {X : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
-    (hX : X = Λ H ≫ est R) :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
-  subst hX
-  exact dp_thin_prefixed hFr hh hmono htrans hHfix hQ
+/-- (9.3) with thinning, step 11: `R` transitive, used twice. -/
+public theorem dynamic_programming_thin_step11 {R : B ⟶ B} (htrans : R° ≫ R° ⊑ R°) :
+    R° ≫ R° ≫ R° ⊑ R° :=
+  le_trans (comp_mono_left R° htrans) htrans
+
+/-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored — steps 3–11. -/
+public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
+    (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
+  calc H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step3
+      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step4 hFr hHfix
+      _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step5
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step6
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° := dynamic_programming_thin_step7
+      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
+        dynamic_programming_thin_step8 hFr hQ
+      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h ≫ R° := dynamic_programming_thin_step9
+      _ ⊑ R° ≫ R° ≫ R° := dynamic_programming_thin_step10 hh hmono
+      _ ⊑ R° := dynamic_programming_thin_step11 htrans
 
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
     recursion — provided `Q` interacts correctly with `H := ⦇h⦈·⦇T⦈°` and `h` (hypothesis
     `hQ`).  Ex 9.1 (`dynamic_programming_of_thin`) recovers Theorem 9.1 as the instance
-    `Q := id`. By Knaster–Tarski via `dp_thin_prefixed`. -/
+    `Q := id`.  Knaster–Tarski reduces it to (9.1) `body(M)⊑M`, which the universal property of
+    `est` splits into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
@@ -337,8 +353,9 @@ public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlg
         ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (dynamic_programming_thin_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
+    ⟨dynamic_programming_thin_lower (hylo_fixed hFr I h T),
+     dynamic_programming_thin_upper hFr hh hmono htrans (hylo_fixed hFr I h T) hQ⟩))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 
@@ -1190,5 +1207,262 @@ public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
       ⊑ Λ ((relCata T)° ≫ relCata U) ≫ est R :=
   le_trans (mu_le_mu fun X => union_lub (thin_arm₁_le (X := X) hdisj) (thin_arm₂_le hdisj))
     (dynamic_programming_thin (F := F L W) (F_preservesRecip L W) (initial L W) hh hmono htrans hQ)
+
+/-! ## Proposition 9.1 (B&dM p.222) along Exercise 9.5
+
+  `T=[V₁,V₂] : α+β⟶A`, `[U₁,U₂] : α+β⟶B`, `Q₁+Q₂`, and `hdisj` says `V₁` and `V₂` have disjoint
+  ranges.  The book's conclusion `(ran V₁ → W₁, W₂)` is written `ran(V₁)W₁ ∪ ran(V₂)W₂`: off
+  `ran V₁ ∪ ran V₂` both are empty, since there `Λ(T°)` is the empty set and `est` of it is
+  nothing. -/
+
+section Prop91
+
+variable {α β A B : RelSet.{0}}
+
+/-- **Ex 9.5**, second claim, first branch: on `ran V₁` the transpose of `[V₁,V₂]°` is
+    `Λ(V₁°)` followed by `P(inl)` — no candidate comes from the `β` summand. -/
+public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inl {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+      = Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁ := by
+  apply hom_ext; intro y S
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  constructor
+  · rintro ⟨y', ⟨rfl, a₀, ha₀, -⟩, hS⟩
+    subst hS
+    refine ⟨y, ⟨rfl, a₀, ha₀, ha₀⟩, fun a => V₁ a y, rfl, ?_, ?_⟩
+    · intro a ha; exact ⟨Sum.inl a, rfl, (ListRel.junc_sum_inl V₁ V₂ a y).mpr ha⟩
+    · rintro (a | b) hu
+      · exact ⟨a, (ListRel.junc_sum_inl V₁ V₂ a y).mp hu, rfl⟩
+      · exact (hdisj a₀ b y ha₀ ((ListRel.junc_sum_inr V₁ V₂ b y).mp hu)).elim
+  · rintro ⟨y', ⟨rfl, a₀, ha₀, -⟩, S', hS', hP⟩
+    subst hS'
+    refine ⟨y, ⟨rfl, a₀, ha₀, ha₀⟩, ?_⟩
+    show S = fun w => junc (sumCop α β) V₁ V₂ w y
+    funext w
+    refine propext (Iff.symm ?_)
+    cases w with
+    | inl a =>
+      rw [ListRel.junc_sum_inl]
+      refine ⟨fun ha => ?_, fun hs => ?_⟩
+      · obtain ⟨u, rfl, hu⟩ := hP.1 a ha; exact hu
+      · obtain ⟨a', ha', he⟩ := hP.2 _ hs
+        obtain rfl : a = a' := Sum.inl.inj he
+        exact ha'
+    | inr b =>
+      rw [ListRel.junc_sum_inr]
+      refine ⟨fun hb => (hdisj a₀ b y ha₀ hb).elim, fun hs => ?_⟩
+      obtain ⟨a', -, he⟩ := hP.2 _ hs
+      exact nomatch he
+
+/-- **Ex 9.5**, second claim, second branch: on `ran V₂` it is `Λ(V₂°)` followed by `P(inr)`. -/
+public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inr {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+      = Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂ := by
+  apply hom_ext; intro y S
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  constructor
+  · rintro ⟨y', ⟨rfl, b₀, hb₀, -⟩, hS⟩
+    subst hS
+    refine ⟨y, ⟨rfl, b₀, hb₀, hb₀⟩, fun b => V₂ b y, rfl, ?_, ?_⟩
+    · intro b hb; exact ⟨Sum.inr b, rfl, (ListRel.junc_sum_inr V₁ V₂ b y).mpr hb⟩
+    · rintro (a | b) hu
+      · exact (hdisj a b₀ y ((ListRel.junc_sum_inl V₁ V₂ a y).mp hu) hb₀).elim
+      · exact ⟨b, (ListRel.junc_sum_inr V₁ V₂ b y).mp hu, rfl⟩
+  · rintro ⟨y', ⟨rfl, b₀, hb₀, -⟩, S', hS', hP⟩
+    subst hS'
+    refine ⟨y, ⟨rfl, b₀, hb₀, hb₀⟩, ?_⟩
+    show S = fun w => junc (sumCop α β) V₁ V₂ w y
+    funext w
+    refine propext (Iff.symm ?_)
+    cases w with
+    | inl a =>
+      rw [ListRel.junc_sum_inl]
+      refine ⟨fun ha => (hdisj a b₀ y ha hb₀).elim, fun hs => ?_⟩
+      obtain ⟨b', -, he⟩ := hP.2 _ hs
+      exact nomatch he
+    | inr b =>
+      rw [ListRel.junc_sum_inr]
+      refine ⟨fun hb => ?_, fun hs => ?_⟩
+      · obtain ⟨u, rfl, hu⟩ := hP.1 b hb; exact hu
+      · obtain ⟨b', hb', he⟩ := hP.2 _ hs
+        obtain rfl : b = b' := Sum.inr.inj he
+        exact hb'
+
+/-- **Ex 9.5**, third claim, first summand: thinning the `inl`-image by `Q₁+Q₂` is thinning by
+    `Q₁` and then taking the image, `P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`. -/
+public theorem _root_.Freyd.Alg.RelSet.powerRel_inl_thinRel (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₁ ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = thinRel Q₁ ≫ powerRel (sumCop α β).u₁ := by
+  apply hom_ext; intro S Y
+  constructor
+  · rintro ⟨S', hP, hY⟩
+    refine ⟨fun a => Y (Sum.inl a), ⟨fun a ha => ?_, fun a ha => ?_⟩, ?_, ?_⟩
+    · obtain ⟨t, ht, he⟩ := hP.2 _ (hY.1 _ ha)
+      obtain rfl : a = t := Sum.inl.inj he
+      exact ht
+    · obtain ⟨u, rfl, hu⟩ := hP.1 a ha
+      obtain ⟨w', hQ, hw'⟩ := hY.2 _ hu
+      cases w' with
+      | inl w =>
+        obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          w (Sum.inl a)).mp hQ
+        obtain rfl : a = c := Sum.inl.inj he
+        exact ⟨w, hc, hw'⟩
+      | inr b =>
+        obtain ⟨c, -, he⟩ := (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          b (Sum.inl a)).mp hQ
+        exact nomatch he
+    · intro a ha; exact ⟨Sum.inl a, rfl, ha⟩
+    · intro u hu
+      obtain ⟨t, -, rfl⟩ := hP.2 _ (hY.1 _ hu)
+      exact ⟨t, hu, rfl⟩
+  · rintro ⟨Y', hY', hP⟩
+    refine ⟨fun u => ∃ a, S a ∧ u = Sum.inl a, ⟨fun t ht => ⟨Sum.inl t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, fun u hu => ?_, ?_⟩
+    · obtain ⟨a, ha, rfl⟩ := hP.2 u hu
+      exact ⟨a, hY'.1 a ha, rfl⟩
+    · rintro u ⟨a, ha, rfl⟩
+      obtain ⟨w, hQ, hw⟩ := hY'.2 a ha
+      obtain ⟨u', rfl, hu'⟩ := hP.1 w hw
+      exact ⟨Sum.inl w, (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+        w (Sum.inl a)).mpr ⟨a, hQ, rfl⟩, hu'⟩
+
+/-- **Ex 9.5**, third claim, second summand: `P(inr)thin(Q₁+Q₂)=thin(Q₂)P(inr)`. -/
+public theorem _root_.Freyd.Alg.RelSet.powerRel_inr_thinRel (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₂ ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = thinRel Q₂ ≫ powerRel (sumCop α β).u₂ := by
+  apply hom_ext; intro S Y
+  constructor
+  · rintro ⟨S', hP, hY⟩
+    refine ⟨fun b => Y (Sum.inr b), ⟨fun b hb => ?_, fun b hb => ?_⟩, ?_, ?_⟩
+    · obtain ⟨t, ht, he⟩ := hP.2 _ (hY.1 _ hb)
+      obtain rfl : b = t := Sum.inr.inj he
+      exact ht
+    · obtain ⟨u, rfl, hu⟩ := hP.1 b hb
+      obtain ⟨w', hQ, hw'⟩ := hY.2 _ hu
+      cases w' with
+      | inl a =>
+        obtain ⟨c, -, he⟩ := (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          a (Sum.inr b)).mp hQ
+        exact nomatch he
+      | inr w =>
+        obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          w (Sum.inr b)).mp hQ
+        obtain rfl : b = c := Sum.inr.inj he
+        exact ⟨w, hc, hw'⟩
+    · intro b hb; exact ⟨Sum.inr b, rfl, hb⟩
+    · intro u hu
+      obtain ⟨t, -, rfl⟩ := hP.2 _ (hY.1 _ hu)
+      exact ⟨t, hu, rfl⟩
+  · rintro ⟨Y', hY', hP⟩
+    refine ⟨fun u => ∃ b, S b ∧ u = Sum.inr b, ⟨fun t ht => ⟨Sum.inr t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, fun u hu => ?_, ?_⟩
+    · obtain ⟨b, hb, rfl⟩ := hP.2 u hu
+      exact ⟨b, hY'.1 b hb, rfl⟩
+    · rintro u ⟨b, hb, rfl⟩
+      obtain ⟨w, hQ, hw⟩ := hY'.2 b hb
+      obtain ⟨u', rfl, hu'⟩ := hP.1 w hw
+      exact ⟨Sum.inr w, (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+        w (Sum.inr b)).mpr ⟨b, hQ, rfl⟩, hu'⟩
+
+/-- Proposition 9.1, step 1: the result is empty off `ran V₁ ∪ ran V₂` — an `est` of the empty
+    set is nothing — so the body splits by where the input lies. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step1 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
+      = (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+            ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+            ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  apply hom_ext; intro y z
+  constructor
+  · intro hb
+    obtain ⟨S, hS, Y, hY, W, hW, hest⟩ := hb
+    obtain ⟨t, ht, -⟩ := hW.2 z hest.1
+    have hT : junc (sumCop α β) V₁ V₂ t y := by
+      rw [Λ_eq_classifier] at hS
+      subst hS
+      exact hY.1 t ht
+    cases t with
+    | inl a =>
+      have ha := (ListRel.junc_sum_inl V₁ V₂ a y).mp hT
+      exact Or.inl ⟨y, ⟨rfl, a, ha, ha⟩, S, hS, Y, hY, W, hW, hest⟩
+    | inr b =>
+      have hb := (ListRel.junc_sum_inr V₁ V₂ b y).mp hT
+      exact Or.inr ⟨y, ⟨rfl, b, hb, hb⟩, S, hS, Y, hY, W, hW, hest⟩
+  · rintro (⟨y', ⟨rfl, -⟩, h⟩ | ⟨y', ⟨rfl, -⟩, h⟩) <;> exact h
+
+/-- Proposition 9.1, step 2: Ex 9.5's second claim on each branch. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step2 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  rw [← Cat.assoc (Freyd.Alg.ran V₁), RelSet.ran_Λ_junc_recip_inl hdisj,
+    ← Cat.assoc (Freyd.Alg.ran V₂), RelSet.ran_Λ_junc_recip_inr hdisj]
+  simp only [Cat.assoc]
+
+/-- Proposition 9.1, step 3: Ex 9.5's third claim on each branch. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step3 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel (sumCop α β).u₂
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel,
+    ← Cat.assoc (powerRel (sumCop α β).u₂), RelSet.powerRel_inr_thinRel]
+  simp only [Cat.assoc]
+
+/-- Proposition 9.1, step 4: `P(inl)P([U₁,U₂])=P(U₁)` and `P(inr)P([U₁,U₂])=P(U₂)` — `P` is a
+    relator and `inl[U₁,U₂]=U₁`, `inr[U₁,U₂]=U₂`. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step4 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel (sumCop α β).u₂
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) := by
+  rw [← Cat.assoc (powerRel (sumCop α β).u₁), ← powerRel_comp, u₁_junc,
+    ← Cat.assoc (powerRel (sumCop α β).u₂), ← powerRel_comp, u₂_junc]
+
+/-- **Proposition 9.1 (B&dM p.222)**, in `Rel(Set)`: when `V₁` and `V₂` have disjoint ranges,
+    thinning by `Q₁+Q₂` over the decompositions `[V₁,V₂]°` and assembling by `[U₁,U₂]` runs, on
+    `ran V₁`, the `V₁` problem `W₁≜Λ(V₁°)thin(Q₁)P(U₁)est(R)` and, on `ran V₂`, the `V₂` one. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
+    (hdisj : V₂ ≫ V₁° = 𝟘) :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) := by
+  -- `V₂V₁°=𝟘` read at a point: no `y` is reached by both
+  have hd : ∀ a b y, V₁ a y → V₂ b y → False := fun a b y h1 h2 =>
+    cast (congrFun (congrFun hdisj b) a) ⟨y, h2, h1⟩
+  exact (RelSet.dp_disjoint_ranges_step1.trans (RelSet.dp_disjoint_ranges_step2 hd)).trans
+    (RelSet.dp_disjoint_ranges_step3.trans RelSet.dp_disjoint_ranges_step4)
+
+end Prop91
 
 end Freyd.Alg.RelSet.SL
