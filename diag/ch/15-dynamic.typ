@@ -34,7 +34,7 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_lower_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step1.rhs",
-      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(M)h` — @est-710]),
+      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_lower_step1@9d770398
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
      // lean:AOP.A9_1.dynamic_programming_lower_step2@3449c959
@@ -57,7 +57,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.dynamic_programming_upper_step1.lhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step1.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(M)h` — @est-710]])],
+    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
   [#lean("Freyd.Alg.dynamic_programming_upper_step1.rhs")],
 
@@ -133,7 +133,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.dynamic_programming_thin_lower.lhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step1.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(M)h` — @est-710]])],
+    [#src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
   [#lean("Freyd.Alg.dynamic_programming_thin_step1.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step2.rhs"),
@@ -164,7 +164,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.dynamic_programming_thin_step3.lhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step3.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(M)h` — @est-710]])],
+    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
   [#lean("Freyd.Alg.dynamic_programming_thin_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_thin_step4.rhs"),
