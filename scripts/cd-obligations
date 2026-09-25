@@ -17,19 +17,33 @@ string-diagram panel, a circuit, a picture of a set — draws no `ar` and is not
 import json, os, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from notesplit import NOTE, chapter_env, includes     # noqa: E402
 
 
-def query(*args):
-    p = subprocess.run([os.path.join(ROOT, "scripts", "note-meta"), *args], cwd=ROOT,
-                       capture_output=True, text=True, encoding="utf-8")
-    if p.returncode:
-        sys.exit(f"cd-obligations: note-meta {' '.join(args)} failed:\n{p.stderr}")
-    return json.loads(p.stdout)
+def queries(*argsets):
+    """`note-meta` once per argument list, all at once, the answers in the lists' order."""
+    ps = [(args, subprocess.Popen([os.path.join(ROOT, "scripts", "note-meta"), *args], cwd=ROOT,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                  encoding="utf-8")) for args in argsets]
+    out = []
+    for args, p in ps:
+        so, se = p.communicate()
+        if p.returncode:
+            sys.exit(f"cd-obligations: note-meta {' '.join(args)} failed:\n{se}")
+        out.append(json.loads(so))
+    return out
 
 
 def canvases():
     """Every canvas of the note, in document order: (display number, [labels], el counts)."""
-    marks = query("--input", "cdscan=1")
+    # THE BOOK IS ITS CHAPTERS' STREAMS END TO END, each queried in a process of its own: one typst
+    # query of the whole note lays every page out at once and takes minutes, the chapters in parallel
+    # the slowest one's seconds.  The chapter files are the root's includes, in the root's order.
+    scan = ["--input", "cdscan=1"]
+    chs = [scan] if chapter_env() is not None else \
+        [["--ch", str(n), *scan] for n in range(1, len(includes(os.path.join(ROOT, NOTE))) + 1)]
+    marks = [m for ms in queries(*chs) for m in ms]
     out, disp, lab = [], "(before the first display)", "(unlabelled)"
     for m in marks:
         if not isinstance(m, dict):

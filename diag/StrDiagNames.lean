@@ -1073,9 +1073,15 @@ open Lean PrettyPrinter in
   | _ => throw ()
 -- The constructor `wrap` as a relation is `wrap`, as `consR` is `cons`; a delaborator, since
 -- `wrapR` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
-open Lean PrettyPrinter Delaborator in
+-- Out of the EMPTY leaf `𝟏` it is the list's `nil`, the name `Label.lean` gives every map out of a
+-- source with no strands; `isDefEq`, as `delabDL` above tests the same leaf.
+open Lean PrettyPrinter Delaborator SubExpr in
 @[delab app.Freyd.Alg.RelSet.CL.wrapR, delab const.Freyd.Alg.RelSet.CL.wrapR]
-def delabCLWrapR : Delab := `($(mkIdent `wrap))
+def delabCLWrapR : Delab := do
+  let args := (← getExpr).getAppArgs
+  if let some l := args[0]? then
+    if ← Meta.isDefEq l (mkConst ``Unit) then return ← `($(mkIdent `nil))
+  `($(mkIdent `wrap))
 -- The book's `tic≜cons inits tail` (p. 235), implicit-only like `wrapR`.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
