@@ -1290,6 +1290,31 @@ public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inr {V₁ : α ⟶ A} {
         obtain rfl : b = b' := Sum.inr.inj he
         exact hb'
 
+/-- `inl` into `α+a` is natural in the summand `a` that varies, from the constant relator `α` —
+    the dot on `P(inl)` in Proposition 9.1. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inl_right_strictNatural :
+    StrictNatural (Relator.sum (Relator.const α) (Relator.idRelator RelSet.{0})) (Relator.const α)
+      (fun a => (sumCop α a).u₁) :=
+  (strictNatural_sum_structure (F := Relator.const α) (F' := Relator.idRelator RelSet.{0})).1
+
+/-- `inr` into `α+a` is natural in `a`, from the identity relator. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inr_right_strictNatural :
+    StrictNatural (Relator.sum (Relator.const α) (Relator.idRelator RelSet.{0}))
+      (Relator.idRelator RelSet.{0}) (fun a => (sumCop α a).u₂) :=
+  (strictNatural_sum_structure (F := Relator.const α) (F' := Relator.idRelator RelSet.{0})).2.1
+
+/-- `inl` into `a+β` is natural in `a`, from the identity relator. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inl_left_strictNatural :
+    StrictNatural (Relator.sum (Relator.idRelator RelSet.{0}) (Relator.const β))
+      (Relator.idRelator RelSet.{0}) (fun a => (sumCop a β).u₁) :=
+  (strictNatural_sum_structure (F := Relator.idRelator RelSet.{0}) (F' := Relator.const β)).1
+
+/-- `inr` into `a+β` is natural in `a`, from the constant relator `β`. -/
+public theorem _root_.Freyd.Alg.RelSet.sumCop_inr_left_strictNatural :
+    StrictNatural (Relator.sum (Relator.idRelator RelSet.{0}) (Relator.const β)) (Relator.const β)
+      (fun a => (sumCop a β).u₂) :=
+  (strictNatural_sum_structure (F := Relator.idRelator RelSet.{0}) (F' := Relator.const β)).2.1
+
 /-- **Ex 9.5**, third claim, first summand: thinning the `inl`-image by `Q₁+Q₂` is thinning by
     `Q₁` and then taking the image, `P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`. -/
 public theorem _root_.Freyd.Alg.RelSet.powerRel_inl_thinRel (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :

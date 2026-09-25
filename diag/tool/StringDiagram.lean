@@ -1742,7 +1742,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- joins, or the arrow itself, and then the side the request's trailing name picks out of them.
     -- The steps that named the STATEMENT come back first, and the parts they leave are the ones
     -- this file draws — the parts that line up, in its one canvas, on a bead they share.
-    let reqParts (path : List String) :
+    let reqParts (path : List String) (sel : List Sel) :
         MetaM (List String × Array (String × Expr) × Array (String × Expr)) := do
       let mut body := body
       let mut side : Option String := none
@@ -1757,12 +1757,16 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       let parts : Array (String × Expr) := match split body with
         | some (sym, l, r) => #[("", l), (sym, r)]
         | none => #[("", body)]
-      match side with
-      | none => return (stmt, parts, parts)
-      | some s =>
-        if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
-        else return (stmt, parts, #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)])
-    let (_, parts, drawn) ← reqParts path
+      let drawn ← match side with
+        | none => pure parts
+        | some s =>
+          if parts.size < 2 then throwError "{declName} has no two sides to draw one of"
+          else pure #[("", if s == "lhs" then parts[0]!.2 else parts[1]!.2)]
+      -- A JOIN IS NO WIRING: `∪` is drawn as a sign between its operands' panels, so a part whose
+      -- head is one is its operands — unless a selector already names one operand of it.
+      if !sel.isEmpty then return (stmt, parts, drawn)
+      return (stmt, parts, ← drawn.flatMapM fun (sym, e) => joinParts sym e)
+    let (_, parts, drawn) ← reqParts path sel
     let arrow := parts[0]!.2
     -- The OBJECT VARIABLES of the statement: a factor mentioning one is a family, and only a
     -- family can carry a dot.  A binder counts when it is an object of the region — or, where the
@@ -1795,7 +1799,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     let mut qs : Array Diagram := #[]
     for (b, h, p, s) in peers do
       if b.toName == declName && h == binder then
-        let (_, _, d) ← reqParts p
+        let (_, _, d) ← reqParts p s
         for (_, e) in d do
           qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
       else qs := qs ++ (← drawWith b.toName p h s [] false).2

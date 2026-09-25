@@ -1415,6 +1415,13 @@ def joinOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
   let some (l, r) ← binOperands? e | return none
   return some (sym, l, r)
 
+/-- A side as the PANELS it is drawn as: a join at its head is its operands with the join's symbol
+    between them, all the way down, and anything else is one panel.  `sym` is the symbol before the
+    first panel.  One reader for both picture routes, so a union is two panels in either column. -/
+partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr)) := do
+  let some (s, l, r) ← joinOperands? e | return #[(sym, e)]
+  return (← joinParts sym l) ++ (← joinParts s r)
+
 /-- A term whose head the NOTE writes as its BODY, opened; anything else unchanged.  Which heads is
     `@[diag_unfold]`'s answer — set beside the declaration, or in `diag/StrDiagNames.lean` where the
     declaration is not the diagram's to edit — so no picture functor carries a list of names.  The
