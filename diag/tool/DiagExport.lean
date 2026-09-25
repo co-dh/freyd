@@ -1731,6 +1731,14 @@ def main (args : List String) : IO UInt32 := do
         else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
       if sigMode then return body
+      -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
+      let head := StrDiag.fileHead "../"
+      let body ← if call == arg then pure body
+        else if body.startsWith head then
+          pure (StrDiag.fileHead (String.join ((call.splitOn "+").map fun _ => "../") ++ "../")
+            ++ (body.drop head.length).toString)
+        else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
+          cannot be moved into the call's directory"
       return (← certLine (selDecls commutativeMode graphMode arg base)) ++ body
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
