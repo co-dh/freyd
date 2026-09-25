@@ -31,7 +31,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # `CH=13` queries the CHAPTER's root instead of the note's, and caches it under its own key: one
 # chapter is a quarter of the note's layout, and every gate that reads this query gets that for free.
-from notesplit import note_root, take_chapter     # noqa: E402
+from notesplit import NOTE, note_root, take_chapter     # noqa: E402
 CACHE_DIR = os.path.join(ROOT, ".lake", "build", "note-meta")
 
 
@@ -75,17 +75,25 @@ def main(argv):
         query_cmd = ["typst", "query", "--root", ".", *args, note, "metadata", "--field", "value"]
         deps_path = os.path.join(tmpdir, "deps.json")
         pdf_path = os.path.join(tmpdir, "note.pdf")
-        # `typst query` has no `--deps`, and a compile of the same world reads the same files.  One after
-        # the other: each lays out the whole note (13 GB, `--pages` saves none), and two at once exhaust RAM.
+        # `typst query` has no `--deps`, and a compile of the same world reads the same files.  The
+        # whole note one after the other: each lays it all out (13 GB, `--pages` saves none), and two
+        # at once exhaust RAM; a chapter is a fraction of that, so its two run side by side.
         compile_cmd = ["typst", "compile", "--root", ".", *args, note, pdf_path,
                        "--deps", deps_path, "--deps-format", "json"]
-        q = subprocess.run(query_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+        # Output to files, not pipes: a pipe nobody drains while the other process is waited on stalls it.
+        out = lambda n: open(os.path.join(tmpdir, n), "w+", encoding="utf-8")
+        qo, qe, ce = out("q.out"), out("q.err"), out("c.err")
+        q = subprocess.Popen(query_cmd, cwd=ROOT, stdout=qo, stderr=qe)
+        if note == NOTE:
+            q.wait()
+        c = subprocess.Popen(compile_cmd, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=ce)
+        q.wait(); c.wait()
+        read = lambda f: (f.seek(0), f.read())[1]
         if q.returncode:
-            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{q.stderr}")
-        c = subprocess.run(compile_cmd, cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
+            sys.exit(f"note-meta: typst query {' '.join(query_cmd)} failed:\n{read(qe)}")
         if c.returncode:
-            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{c.stderr}")
-        meta = json.loads(q.stdout)
+            sys.exit(f"note-meta: typst compile {' '.join(compile_cmd)} failed:\n{read(ce)}")
+        meta = json.loads(read(qo))
         with open(deps_path) as f:
             deps_list = json.load(f)["inputs"]
         deps = {p: sha256_file(os.path.join(ROOT, p)) for p in deps_list}
