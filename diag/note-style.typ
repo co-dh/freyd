@@ -99,6 +99,9 @@
   // after the `place` and covers the overrun.  `(13.4.4a)` printed `3.4.4a`.  Measuring makes the
   // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
   // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
+  // The figure's OWN block, which the show rule below sits inside: breakable there too, or a table
+  // taller than a page loses its last rows past the foot, silently (`<edit-mono>`'s last row).
+  show figure.where(kind: "disp"): set block(breakable: true)
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
