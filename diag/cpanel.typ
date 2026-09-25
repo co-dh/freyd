@@ -253,7 +253,10 @@
   if t.k == "union" {
     let ps = t.bodies.map(b => pic(b, length))
     let mw = calc.max(..ps.map(p => p.w))
-    let x0 = CHFAN; let x1 = CHFAN + mw + 2 * CHPAD; let hh = UDY + UHH + UM
+    // The region is drawn round what the copies REACH, as the bracket's tape is: a copy taller than
+    // `UHH` would otherwise set the region's stroke on its boxes.
+    let x0 = CHFAN; let x1 = CHFAN + mw + 2 * CHPAD
+    let hh = UDY + calc.max(UHH + UM, ..ps.map(p => p.hh + CHPAD))
     let body = {
       tape((x0, -hh), (x1, hh))
       lab((x0 + x1) / 2, hh + 0.3, TAPEEDGE)[`∪`]
@@ -273,10 +276,10 @@
   let mw = calc.max(..ps.map(p => p.w))
   let xf = 1.26; let xj = xf + mw + 0.7
   // The tape is drawn round what the branches actually reach, top and bottom apart: the `𝟏` summand
-  // is one small box where the pair below it carries a whole `∪` region.  `UM` is the clearance the
-  // `∪` region keeps too: any smaller and the tape's stroke lands on a box's top edge.
-  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + UM
-  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - UM
+  // is one small box where the pair below it carries a whole `∪` region.  `CHPAD`, the `∪` region's
+  // edge-to-body pad: any less and a panel scaled below 74% sets the tape's stroke on a box's edge.
+  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + CHPAD
+  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - CHPAD
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
   let body = {
     tape((CGAP, bot), (xj, top))

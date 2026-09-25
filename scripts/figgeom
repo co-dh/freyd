@@ -131,6 +131,14 @@ def framed(svg):
     return [bb for fill, stroke, _, bb, closed in paths(svg) if closed and "none" not in (fill, stroke)]
 
 
+def glyphs(svg):
+    """(x, y, colour) for every glyph origin: pdftocairo sets each run of one fill as one `<g>`."""
+    body = svg.split("</defs>", 1)[1] if "</defs>" in svg else svg
+    for g in re.finditer(r'<g fill="([^"]*)"[^>]*>(.*?)</g>', body, re.S):
+        for u in re.finditer(r'<use\b[^>]*\bx="(-?[\d.]+)" y="(-?[\d.]+)"', g[2]):
+            yield float(u[1]), float(u[2]), hexcol(g[1])
+
+
 def elements(svg):
     """(kind, colour, subpaths-in-page-coords) for every drawn path, text excluded."""
     for fill, stroke, sub, (x0, y0, x1, y1), closed in paths(svg):
