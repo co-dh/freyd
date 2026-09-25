@@ -460,13 +460,38 @@ def declName? (e : Expr) : MetaM (Option String) := do
     a name; with no explicit argument left the head is written by its own declared name. -/
 def headShow (f : Expr) (args : Array Expr) (keepArg : Expr → Bool) : MetaM String := do
   let fi ← Meta.getFunInfoNArgs f args.size
+  let expl (i : Nat) : Bool := (fi.paramInfo[i]?.map (·.isExplicit)).getD true
   let mut keep : Array Expr := #[]
   for i in [0 : args.size] do
-    if ((fi.paramInfo[i]?.map (·.isExplicit)).getD true) && keepArg args[i]! then
+    if expl i && keepArg args[i]! then
       keep := keep.push args[i]!
   if keep.isEmpty then
     if let some n ← declName? f then return n
+  -- AN OPERATOR WITH A DRAWN OPERAND TAKEN OUT IS A SECTION, the operator marking its own gap:
+  -- `x+1` with `x` drawn is `(+1)`.  `mkAppN f keep` below would hand the printer `HAdd.hAdd 1`,
+  -- which it can only write as `@HAdd.hAdd 1`.  The notation is read off the printer's own tree.
+  let gap := (List.range args.size).filter fun i => expl i && !keepArg args[i]!
+  if !gap.isEmpty then
+    if let some s ← sectionShow f args gap then return s
   plain (mkAppN f keep)
+where
+  /-- The application with each taken-out operand a hole, spelled from the printer's syntax tree
+      when that tree is a NOTATION (it holds a token): the hole is written as nothing, every other
+      child as the note spells it.  An ordinary application has no token and is left to the caller. -/
+  sectionShow (f : Expr) (args : Array Expr) (gap : List Nat) : MetaM (Option String) := do
+    let hole := `sectionHole
+    let some i0 := gap.head? | return none
+    Meta.withLocalDeclD hole (← Meta.inferType args[i0]!) fun x => do
+      let full := mkAppN f (args.mapIdx fun i a => if gap.contains i then x else a)
+      let stx := stxPeel (← PrettyPrinter.delab full)
+      let kids := stx.getArgs
+      unless kids.any (· matches .atom ..) do return none
+      let parts ← kids.toList.mapM fun k => do
+        match stxPeel k with
+        | .atom _ v => pure v.trimAscii.toString
+        | .ident _ _ n _ => if n == hole then pure "" else stxShow k
+        | _ => stxShow k
+      return some ("(" ++ String.join parts ++ ")")
 
 /-- THE STEPS a value computed FROM THE INPUT is made of, in diagram order: `p(π₁ s)` is `π₁`, `p` —
     first the projection, then the test.  The input itself is the identity and contributes nothing,

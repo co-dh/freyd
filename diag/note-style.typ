@@ -99,6 +99,9 @@
   // after the `place` and covers the overrun.  `(13.4.4a)` printed `3.4.4a`.  Measuring makes the
   // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
   // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
+  // The figure's OWN block, which the show rule below sits inside: breakable there too, or a table
+  // taller than a page loses its last rows past the foot, silently (`<edit-mono>`'s last row).
+  show figure.where(kind: "disp"): set block(breakable: true)
   show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
@@ -234,7 +237,11 @@
 // and spent in every other, and the picture it starves overflows its own column — both pictures are
 // centred, so they grow towards each other and a label of one lands on a label of the other
 // (`./scripts/labelfit`), which no per-panel geometry can prevent.
-#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows))
+// A ROW IS NEVER SPLIT at a page break: its cells are pictures, which cannot be cut, so a row split
+// there overran the page foot and drew its panels over the row above (`<edit-mono>`'s last rows).
+#let calc-table(..rows, cols: (1fr, auto), al: (left + horizon, center + horizon), pr: 10pt) = {
+  set table.cell(breakable: false)
+  pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows)) }
 
 #let EQ = text(luma(140))[$=$]
 
