@@ -1184,4 +1184,258 @@ public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
   le_trans (mu_le_mu fun X => union_lub (thin_arm₁_le (X := X) hdisj) (thin_arm₂_le hdisj))
     (dynamic_programming_thin (F := F L W) (F_preservesRecip L W) (initial L W) hh hmono htrans hQ)
 
+/-! ## Proposition 9.1 (B&dM p.222) along Exercise 9.5
+
+  `T=[V₁,V₂] : α+β⟶A`, `[U₁,U₂] : α+β⟶B`, `Q₁+Q₂`, and `hdisj` says `V₁` and `V₂` have disjoint
+  ranges.  The book's conclusion `(ran V₁ → W₁, W₂)` is written `ran(V₁)W₁ ∪ ran(V₂)W₂`: off
+  `ran V₁ ∪ ran V₂` both are empty, since there `Λ(T°)` is the empty set and `est` of it is
+  nothing. -/
+
+section Prop91
+
+variable {α β A B : RelSet.{0}}
+
+/-- **Ex 9.5**, second claim, first branch: on `ran V₁` the transpose of `[V₁,V₂]°` is
+    `Λ(V₁°)` followed by `P(inl)` — no candidate comes from the `β` summand. -/
+public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inl {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+      = Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁ := by
+  apply hom_ext; intro y S
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  constructor
+  · rintro ⟨y', ⟨rfl, a₀, ha₀, -⟩, hS⟩
+    subst hS
+    refine ⟨y, ⟨rfl, a₀, ha₀, ha₀⟩, fun a => V₁ a y, rfl, ?_, ?_⟩
+    · intro a ha; exact ⟨Sum.inl a, rfl, (ListRel.junc_sum_inl V₁ V₂ a y).mpr ha⟩
+    · rintro (a | b) hu
+      · exact ⟨a, (ListRel.junc_sum_inl V₁ V₂ a y).mp hu, rfl⟩
+      · exact (hdisj a₀ b y ha₀ ((ListRel.junc_sum_inr V₁ V₂ b y).mp hu)).elim
+  · rintro ⟨y', ⟨rfl, a₀, ha₀, -⟩, S', hS', hP⟩
+    subst hS'
+    refine ⟨y, ⟨rfl, a₀, ha₀, ha₀⟩, ?_⟩
+    show S = fun w => junc (sumCop α β) V₁ V₂ w y
+    funext w
+    refine propext (Iff.symm ?_)
+    cases w with
+    | inl a =>
+      rw [ListRel.junc_sum_inl]
+      refine ⟨fun ha => ?_, fun hs => ?_⟩
+      · obtain ⟨u, rfl, hu⟩ := hP.1 a ha; exact hu
+      · obtain ⟨a', ha', he⟩ := hP.2 _ hs
+        obtain rfl : a = a' := Sum.inl.inj he
+        exact ha'
+    | inr b =>
+      rw [ListRel.junc_sum_inr]
+      refine ⟨fun hb => (hdisj a₀ b y ha₀ hb).elim, fun hs => ?_⟩
+      obtain ⟨a', -, he⟩ := hP.2 _ hs
+      exact nomatch he
+
+/-- **Ex 9.5**, second claim, second branch: on `ran V₂` it is `Λ(V₂°)` followed by `P(inr)`. -/
+public theorem _root_.Freyd.Alg.RelSet.ran_Λ_junc_recip_inr {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+      = Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂ := by
+  apply hom_ext; intro y S
+  rw [Λ_eq_classifier, Λ_eq_classifier]
+  constructor
+  · rintro ⟨y', ⟨rfl, b₀, hb₀, -⟩, hS⟩
+    subst hS
+    refine ⟨y, ⟨rfl, b₀, hb₀, hb₀⟩, fun b => V₂ b y, rfl, ?_, ?_⟩
+    · intro b hb; exact ⟨Sum.inr b, rfl, (ListRel.junc_sum_inr V₁ V₂ b y).mpr hb⟩
+    · rintro (a | b) hu
+      · exact (hdisj a b₀ y ((ListRel.junc_sum_inl V₁ V₂ a y).mp hu) hb₀).elim
+      · exact ⟨b, (ListRel.junc_sum_inr V₁ V₂ b y).mp hu, rfl⟩
+  · rintro ⟨y', ⟨rfl, b₀, hb₀, -⟩, S', hS', hP⟩
+    subst hS'
+    refine ⟨y, ⟨rfl, b₀, hb₀, hb₀⟩, ?_⟩
+    show S = fun w => junc (sumCop α β) V₁ V₂ w y
+    funext w
+    refine propext (Iff.symm ?_)
+    cases w with
+    | inl a =>
+      rw [ListRel.junc_sum_inl]
+      refine ⟨fun ha => (hdisj a b₀ y ha hb₀).elim, fun hs => ?_⟩
+      obtain ⟨b', -, he⟩ := hP.2 _ hs
+      exact nomatch he
+    | inr b =>
+      rw [ListRel.junc_sum_inr]
+      refine ⟨fun hb => ?_, fun hs => ?_⟩
+      · obtain ⟨u, rfl, hu⟩ := hP.1 b hb; exact hu
+      · obtain ⟨b', hb', he⟩ := hP.2 _ hs
+        obtain rfl : b = b' := Sum.inr.inj he
+        exact hb'
+
+/-- **Ex 9.5**, third claim, first summand: thinning the `inl`-image by `Q₁+Q₂` is thinning by
+    `Q₁` and then taking the image, `P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`. -/
+public theorem _root_.Freyd.Alg.RelSet.powerRel_inl_thinRel (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₁ ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = thinRel Q₁ ≫ powerRel (sumCop α β).u₁ := by
+  apply hom_ext; intro S Y
+  constructor
+  · rintro ⟨S', hP, hY⟩
+    refine ⟨fun a => Y (Sum.inl a), ⟨fun a ha => ?_, fun a ha => ?_⟩, ?_, ?_⟩
+    · obtain ⟨t, ht, he⟩ := hP.2 _ (hY.1 _ ha)
+      obtain rfl : a = t := Sum.inl.inj he
+      exact ht
+    · obtain ⟨u, rfl, hu⟩ := hP.1 a ha
+      obtain ⟨w', hQ, hw'⟩ := hY.2 _ hu
+      cases w' with
+      | inl w =>
+        obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          w (Sum.inl a)).mp hQ
+        obtain rfl : a = c := Sum.inl.inj he
+        exact ⟨w, hc, hw'⟩
+      | inr b =>
+        obtain ⟨c, -, he⟩ := (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          b (Sum.inl a)).mp hQ
+        exact nomatch he
+    · intro a ha; exact ⟨Sum.inl a, rfl, ha⟩
+    · intro u hu
+      obtain ⟨t, -, rfl⟩ := hP.2 _ (hY.1 _ hu)
+      exact ⟨t, hu, rfl⟩
+  · rintro ⟨Y', hY', hP⟩
+    refine ⟨fun u => ∃ a, S a ∧ u = Sum.inl a, ⟨fun t ht => ⟨Sum.inl t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, fun u hu => ?_, ?_⟩
+    · obtain ⟨a, ha, rfl⟩ := hP.2 u hu
+      exact ⟨a, hY'.1 a ha, rfl⟩
+    · rintro u ⟨a, ha, rfl⟩
+      obtain ⟨w, hQ, hw⟩ := hY'.2 a ha
+      obtain ⟨u', rfl, hu'⟩ := hP.1 w hw
+      exact ⟨Sum.inl w, (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+        w (Sum.inl a)).mpr ⟨a, hQ, rfl⟩, hu'⟩
+
+/-- **Ex 9.5**, third claim, second summand: `P(inr)thin(Q₁+Q₂)=thin(Q₂)P(inr)`. -/
+public theorem _root_.Freyd.Alg.RelSet.powerRel_inr_thinRel (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₂ ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = thinRel Q₂ ≫ powerRel (sumCop α β).u₂ := by
+  apply hom_ext; intro S Y
+  constructor
+  · rintro ⟨S', hP, hY⟩
+    refine ⟨fun b => Y (Sum.inr b), ⟨fun b hb => ?_, fun b hb => ?_⟩, ?_, ?_⟩
+    · obtain ⟨t, ht, he⟩ := hP.2 _ (hY.1 _ hb)
+      obtain rfl : b = t := Sum.inr.inj he
+      exact ht
+    · obtain ⟨u, rfl, hu⟩ := hP.1 b hb
+      obtain ⟨w', hQ, hw'⟩ := hY.2 _ hu
+      cases w' with
+      | inl a =>
+        obtain ⟨c, -, he⟩ := (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          a (Sum.inr b)).mp hQ
+        exact nomatch he
+      | inr w =>
+        obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+          w (Sum.inr b)).mp hQ
+        obtain rfl : b = c := Sum.inr.inj he
+        exact ⟨w, hc, hw'⟩
+    · intro b hb; exact ⟨Sum.inr b, rfl, hb⟩
+    · intro u hu
+      obtain ⟨t, -, rfl⟩ := hP.2 _ (hY.1 _ hu)
+      exact ⟨t, hu, rfl⟩
+  · rintro ⟨Y', hY', hP⟩
+    refine ⟨fun u => ∃ b, S b ∧ u = Sum.inr b, ⟨fun t ht => ⟨Sum.inr t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, fun u hu => ?_, ?_⟩
+    · obtain ⟨b, hb, rfl⟩ := hP.2 u hu
+      exact ⟨b, hY'.1 b hb, rfl⟩
+    · rintro u ⟨b, hb, rfl⟩
+      obtain ⟨w, hQ, hw⟩ := hY'.2 b hb
+      obtain ⟨u', rfl, hu'⟩ := hP.1 w hw
+      exact ⟨Sum.inr w, (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+        w (Sum.inr b)).mpr ⟨b, hQ, rfl⟩, hu'⟩
+
+/-- Proposition 9.1, step 1: the result is empty off `ran V₁ ∪ ran V₂` — an `est` of the empty
+    set is nothing — so the body splits by where the input lies. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step1 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
+      = (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+            ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+            ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  apply hom_ext; intro y z
+  constructor
+  · intro hb
+    obtain ⟨S, hS, Y, hY, W, hW, hest⟩ := hb
+    obtain ⟨t, ht, -⟩ := hW.2 z hest.1
+    have hT : junc (sumCop α β) V₁ V₂ t y := by
+      rw [Λ_eq_classifier] at hS
+      subst hS
+      exact hY.1 t ht
+    cases t with
+    | inl a =>
+      have ha := (ListRel.junc_sum_inl V₁ V₂ a y).mp hT
+      exact Or.inl ⟨y, ⟨rfl, a, ha, ha⟩, S, hS, Y, hY, W, hW, hest⟩
+    | inr b =>
+      have hb := (ListRel.junc_sum_inr V₁ V₂ b y).mp hT
+      exact Or.inr ⟨y, ⟨rfl, b, hb, hb⟩, S, hS, Y, hY, W, hW, hest⟩
+  · rintro (⟨y', ⟨rfl, -⟩, h⟩ | ⟨y', ⟨rfl, -⟩, h⟩) <;> exact h
+
+/-- Proposition 9.1, step 2: Ex 9.5's second claim on each branch. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step2 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  rw [← Cat.assoc (Freyd.Alg.ran V₁), RelSet.ran_Λ_junc_recip_inl hdisj,
+    ← Cat.assoc (Freyd.Alg.ran V₂), RelSet.ran_Λ_junc_recip_inr hdisj]
+  simp only [Cat.assoc]
+
+/-- Proposition 9.1, step 3: Ex 9.5's third claim on each branch. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step3 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel (sumCop α β).u₂
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
+  rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel,
+    ← Cat.assoc (powerRel (sumCop α β).u₂), RelSet.powerRel_inr_thinRel]
+  simp only [Cat.assoc]
+
+/-- Proposition 9.1, step 4: `P(inl)P([U₁,U₂])=P(U₁)` and `P(inr)P([U₁,U₂])=P(U₂)` — `P` is a
+    relator and `inl[U₁,U₂]=U₁`, `inr[U₁,U₂]=U₂`. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step4 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel (sumCop α β).u₂
+          ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) := by
+  rw [← Cat.assoc (powerRel (sumCop α β).u₁), ← powerRel_comp, u₁_junc,
+    ← Cat.assoc (powerRel (sumCop α β).u₂), ← powerRel_comp, u₂_junc]
+
+/-- **Proposition 9.1 (B&dM p.222)**, in `Rel(Set)`: when `V₁` and `V₂` have disjoint ranges,
+    thinning by `Q₁+Q₂` over the decompositions `[V₁,V₂]°` and assembling by `[U₁,U₂]` runs, on
+    `ran V₁`, the `V₁` problem `W₁≜Λ(V₁°)thin(Q₁)P(U₁)est(R)` and, on `ran V₂`, the `V₂` one. -/
+public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) :=
+  (RelSet.dp_disjoint_ranges_step1.trans (RelSet.dp_disjoint_ranges_step2 hdisj)).trans
+    (RelSet.dp_disjoint_ranges_step3.trans RelSet.dp_disjoint_ranges_step4)
+
+end Prop91
+
 end Freyd.Alg.RelSet.SL
