@@ -906,6 +906,33 @@ both lists empty.
   [#lean("Freyd.Alg.RelSet.Bracket.row_rec_step3.rhs")],
 )]<row-rec>
 
+// B&dM (9.9), p. 234, by Exercise 9.13, p. 237: `col` as a loop, then the book's equivalent form.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Bracket.col_cons") \
+    #src[the column of `a` consed onto `x` is what `process` makes of `a` and the array of `x`]],
+     // lean:AOP.A9_3_Bracket.col_cons@e1d0705e
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs"),
+    [#src[Exercise 9.13 with `k≜cons col`, `g≜tip wrap`, `h≜row`, `f≜next`: its two equations are
+     (9.8) — @col-rec — at `a:[b]` and at `a:(u++[b])`, with `[a] col=[tip(a)]`]])],
+     // lean:AOP.A9_3_Bracket.col_cons_step1@1c25ff72
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs"),
+    [#src[products]])],
+     // lean:AOP.A9_3_Bracket.col_cons_step2@d781ecf8
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs"),
+    [#src[definition of `process`]])],
+     // lean:AOP.A9_3_Bracket.col_cons_step3@835933e1
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step3.rhs")],
+)]<col-cons>
+
 == Data compression
 
 // B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
