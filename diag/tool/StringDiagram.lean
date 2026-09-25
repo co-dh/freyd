@@ -550,16 +550,28 @@ def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftT
     move whenever the box got deeper).  A side that took its own row put the `R` of `f°F(R)f ⊑ R`
     a row above the `R` across the symbol from it: the two files lined up on nothing. -/
 structure Placement where
-  ref    : Diagram
+  parts  : Array (Diagram × Int)   -- each part with its slide below the reference's first bead
   frame  : Nat
   topRef : Nat
 
-def placement (ps : Array Diagram) : Placement :=
-  let ref := ps.foldl (fun a p => if p.rows.size > a.rows.size then p else a) ps[0]!
-  { ref, frame := frameOf ref ps, topRef := topRefOf ref ps }
+/-- The parts stand IN A ROW, so each slides to its NEIGHBOUR, outward from the reference: a pair
+    is the old slide to the reference, and a chain `a ⊑ b = c` lines up every step on the bead its
+    two sides share, where sliding all to the reference aligned only the beads the reference has. -/
+def placement (ps : Array Diagram) : Placement := Id.run do
+  let r := (List.range ps.size).foldl (fun a i => if ps[i]!.rows.size > ps[a]!.rows.size then i else a) 0
+  let mut s : Array Int := Array.replicate ps.size 0
+  for i in [r + 1 : ps.size] do s := s.set! i (s[i - 1]! + shiftTo ps[i - 1]! ps[i]!)
+  for k in [0 : r] do
+    let i := r - 1 - k
+    s := s.set! i (s[i + 1]! + shiftTo ps[i + 1]! ps[i]!)
+  let topRef := ((List.range ps.size).foldl (fun a i => max a ((ps[i]!.rows.size : Int) - s[i]!)) 1).toNat
+  return { parts := ps.zip s, topRef, frame := max (topRef + (s.foldl max 0).toNat + 1) 2 }
 
-/-- The row a part's first bead sits on. -/
-def Placement.top (pl : Placement) (p : Diagram) : Nat := topOf pl.topRef pl.ref p
+/-- The row a part's first bead sits on; a part is found by its beads, and two parts with the same
+    beads are drawn alike. -/
+def Placement.top (pl : Placement) (p : Diagram) : Nat :=
+  let sh := (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).map (·.2)
+  max ((pl.topRef : Int) + sh.getD 0) 1 |>.toNat
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
@@ -1635,8 +1647,11 @@ def opensFewerLanes (cat : Array Name) (declTy opened : Expr) : MetaM Bool := do
     height; a selector that arrived in a call of its own shares with nothing and is as deep as its own
     beads, whatever the declaration says.  The path names the statement, so `.lhs` on an `↔` draws the
     whole left statement and only a trailing name on a relation picks a side. -/
-def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
-    (peers : List (List String × List Sel)) : MetaM String :=
+-- A PEER MAY BE ANOTHER DECLARATION: a chain `a ⊑ b = c` spreads its steps over several theorems,
+-- and its panels stand in one row, so `draw := false` reads a peer's parts in its OWN telescope.
+partial def drawWith (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
+    (peers : List (String × Option String × List String × List Sel)) (draw : Bool) :
+    MetaM (String × Array Diagram) :=
     -- THE BUDGET COVERS THE WHOLE READ, not the search inside it.  A budget lifted only around the
     -- searches lapses the moment they return, and what the panel does NEXT — printing each bead's
     -- ends — then runs on an allowance the searches have already spent, so the read dies naming an
@@ -1736,6 +1751,9 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       if ← Meta.isDefEq t regionTy then objVars := objVars.push x
       else if let some it := idxTy then
         if ← Meta.isDefEq t it then objVars := objVars.push x
+    unless draw do
+      return ("", ← drawn.mapM fun (_, e) =>
+        withSel regionTy cat objVars sel e fun e' => panelOf regionTy cat e' objVars)
     -- `.inl`/`.inr` is ONE BRANCH of the side, and the selectors CHAIN: each names an operand of
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
@@ -1748,10 +1766,12 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
     let mut qs : Array Diagram := #[]
-    for (p, s) in peers do
-      let (_, _, d) ← reqParts p
-      for (_, e) in d do
-        qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+    for (b, h, p, s) in peers do
+      if b.toName == declName && h == binder then
+        let (_, _, d) ← reqParts p
+        for (_, e) in d do
+          qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+      else qs := qs ++ (← drawWith b.toName p h s [] false).2
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
@@ -1763,7 +1783,9 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       if framex a > pl.frame then
         throwError "{declName}: one part of this call needs {framex a} rows where the call's box is \
           {pl.frame}: every panel of one `#lean(…)` call is drawn at ONE height, the deepest part's"
-      for j in [i + 1 : qs.size] do
+      -- NEIGHBOURS ONLY: a chain's step is the two panels either side of its symbol, and a bead
+      -- may move over several steps, so panels two steps apart owe each other nothing.
+      for j in [i + 1 : min (i + 2) qs.size] do
         let b := qs[j]!
         -- The beads the two parts share, as (row in `a`, row in `b`, level in both).
         let mut shared : Array (Nat × Nat × Bool) := #[]
@@ -1786,6 +1808,11 @@ def drawString (declName : Name) (path : List String) (binder : Option String) (
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      if parts.size == 1 then emit declName parts[0]!.2 pl else emitStatement declName nm parts pl
+      return (← if parts.size == 1 then emit declName parts[0]!.2 pl
+        else emitStatement declName nm parts pl, #[])
+
+def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
+    (peers : List (String × Option String × List String × List Sel)) : MetaM String :=
+  return (← drawWith declName path binder sel peers true).1
 
 end Freyd.StrDiag

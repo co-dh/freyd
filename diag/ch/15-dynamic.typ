@@ -25,35 +25,24 @@ in @mu-defn.
 // lean:AOP.A9_1.H@2beea1fa
 ]]<dp-defn>
 
-// B&dM (9.2), p. 220: the book's four hints, one row each.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.dynamic_programming_lower") \
+// B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
      // lean:AOP.A9_1.dynamic_programming_lower@38a2b134
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_lower_step1.lhs"), [])],
-  [#lean("Freyd.Alg.dynamic_programming_lower_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_lower_step1.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(M)h` — @est-710]])],
+  lean-chain(
+    (none, "Freyd.Alg.dynamic_programming_lower_step1.lhs", []),
+    (SQ, "Freyd.Alg.dynamic_programming_lower_step1.rhs",
+      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(M)h` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_lower_step1@9d770398
-  [#lean("Freyd.Alg.dynamic_programming_lower_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_lower_step2.rhs"),
-    [#src[#frc([`T°`])`∋=T°` — @pow-laws]])],
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
      // lean:AOP.A9_1.dynamic_programming_lower_step2@3449c959
-  [#lean("Freyd.Alg.dynamic_programming_lower_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_lower_step3.rhs"),
-    [#src[`M≜`#frc([`H`])` est(R)⊑`#frc([`H`])`∋=H` — @est-up]])],
+    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs",
+      src[`M≜`#frc([`H`])` est(R)⊑`#frc([`H`])`∋=H` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_lower_step3@c6f95aaf
-  [#lean("Freyd.Alg.dynamic_programming_lower_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_lower.rhs"),
-    [#src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]])],
-  [#lean("Freyd.Alg.dynamic_programming_lower.rhs")],
+    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+  ),
 )]<dp-lower>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
