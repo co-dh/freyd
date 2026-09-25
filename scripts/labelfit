@@ -28,6 +28,11 @@ BAND = 0.6      # a fill wider or taller than this much of the page is a rule or
 PAD = 2.0       # a panel's own labels sit ON its frame edge, so the box is grown before a label is placed
 HIT = 0.5       # boxes must OVERLAP by this much to conflict — a shared edge is not a collision
 SAME = 6.0      # two boxes whose tops are this close are one label: a base and its subscript
+NEAR = 2.0      # a glyph's origin is inside its own word's box up to this slack
+PORT = 10.0     # a port label's centre off its panel's frame: `hm-port`'s 0.28 gap plus half a line
+# A circuit frame's stroke closer than this to a box inside it reads as the box's own edge; the
+# frames pad by `CHPAD`/`UM` in `diag/cpanel.typ`, 3.4pt and more at the note's 74%.
+FRAME = 3.0
 
 _spec = importlib.util.spec_from_loader(
     "figgeom", SourceFileLoader("figgeom", os.path.join(ROOT, "scripts", "figgeom")))
@@ -80,6 +85,27 @@ def page(pdf, pno, td):
                 put[i].append((t, bb))
                 break
     bad, near = [], []
+    # TWO LABELS SET TOUCHING ARE ONE WORD to `pdftotext`, so the pair test below never sees them —
+    # nor does the panel test, for a port label stands outside the fills, `PORT` off the frame.  A
+    # label is set in one colour, so a word there whose glyphs carry two is two labels run together.
+    # Prose is left out: a link or a display number is a second colour inside one word on purpose.
+    gl = list(figgeom.glyphs(svg))
+    for t, c, bb in figgeom.labels(pdf, pno):
+        if not any(p[0] - PORT <= c[0] <= p[2] + PORT and p[1] - PORT <= c[1] <= p[3] + PORT for p in ps):
+            continue
+        cs = {c for x, y, c in gl if bb[0] - NEAR <= x <= bb[2] and bb[1] <= y <= bb[3] + NEAR}
+        if len(cs) > 1:
+            bad.append(f"p.{pno} {t!r} at ({bb[0]:.0f},{bb[1]:.0f}) is {len(cs)} labels in "
+                       f"{len(cs)} colours set into one word — they touch")
+    # A FRAME CLEARS WHAT IT HOLDS: a stroked shape inside another stroked shape — a box in a tape —
+    # keeps `FRAME` from every edge of it, or the two strokes read as one line.
+    fr = figgeom.framed(svg)
+    for a in fr:
+        for b in fr:
+            gap = min(a[0] - b[0], a[1] - b[1], b[2] - a[2], b[3] - a[3])
+            if a != b and gap > -HIT and gap < FRAME and (b[2] - b[0]) * (b[3] - b[1]) > (a[2] - a[0]) * (a[3] - a[1]):
+                bad.append(f"p.{pno} box x[{a[0]:.1f},{a[2]:.1f}] y[{a[1]:.1f},{a[3]:.1f}] stands {gap:.1f}pt "
+                           f"inside the frame x[{b[0]:.1f},{b[2]:.1f}] y[{b[1]:.1f},{b[3]:.1f}], under {FRAME}pt")
     for i, ls in put.items():
         for j in range(len(ls)):
             for k in range(j + 1, len(ls)):
