@@ -277,7 +277,7 @@ both lists empty.
      // edit_mono row: Theorem 9.2
      #src[at `Q≜𝟙+(U×V)`. Monotonicity `F(R)α⊑αR`
  #src[] is Proposition 9.2 at
-      // lean:AOP.A9_2_Edit.edit_mono@089b97ab
+      // lean:AOP.A9_2_Edit.edit_mono@02093686
       `length≜⦇[zero,π₂ succ]⦈` with `succ` monotonic on `≤`, so `cons` is monotonic on `R`. The
       thinning condition `QF(𝟙,edit°)α⊑F(𝟙,edit°)αR`
  #src[] over `F(Op,[Char]×[Char])` is
@@ -316,6 +316,151 @@ both lists empty.
   // and the beads are the same picture: only the labels change.
   [#lean("Freyd.Alg.RelSet.Edit.edit_prog.lhs")],
 )]<edit-laws>
+
+// B&dM p.226, "immediate from Proposition 9.2": the proposition's argument at `length`, one row
+// per fact.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_mono") \
+    #src[comparing the tails by `R` and then putting an operation in front (`F(R)α`) relates only
+     sequences that `R` also relates once the operation is in front (`αR`)]],
+     // lean:AOP.A9_2_Edit.edit_mono@02093686
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
+    [#src[`R≜length≤length°` — @edit-defn; `F` preserves composition]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step1@bc06a294
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs"),
+    [#src[`length` is a map, so entire: `𝟙⊑length length°`]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step2@31a5bbaf
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
+    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @edit-defn]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step3@f2d71928
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs"),
+    [#src[`length` is a map, so simple, and `F` is monotonic: `F(length°)F(length)⊑F(𝟙)=𝟙`]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step4@758407c4
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs"),
+    [#src[`succ` is monotonic on `≤`: `F(≤)[zero,π₂ succ]⊑[zero,π₂ succ]≤`]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step5@66ce5aee
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs"),
+    [#src[`F(length)[zero,π₂ succ]=α length` again]])],
+     // lean:AOP.A9_2_Edit.edit_mono_step6@52788976
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
+    [#src[`R≜length≤length°` — @edit-defn]])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
+)]<edit-mono>
+
+// B&dM p.226, "it is sufficient to show that": Proposition 9.4's argument at `Q≜F(⊤,V)`.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_thin_condition") \
+    #src[every edit sequence built from a decomposition `Q` puts above a given one — any operation,
+     each string lengthened at the front — is at least as long as one built from the given one]],
+     // lean:AOP.A9_2_Edit.edit_thin_condition@e22f4fe4
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
+    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step1@1f625262
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
+    [#src[the bifunctor `F` preserves composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step2@b4d4a652 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
+    [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step3@fa716636
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
+    [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step4@cf285d6c
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step5.rhs"),
+    [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
+      adds one to both lengths whatever the two operations are]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step5@d0f1f0c6
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step5.rhs")],
+)]<edit-thin>
+
+// B&dM p.226: the second condition of Proposition 9.4, split at `V°=(suffix×𝟙)(𝟙×suffix)`.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_Vrecip") \
+    #src[cutting a front off either string an edit sequence produces (`edit V°`) leaves a pair that
+     a sequence no longer produces (`R° edit`)]],
+     // lean:AOP.A9_2_Edit.edit_Vrecip@1d49fb2e
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs"),
+    [#src[`V≜suffix°×suffix°`, and `×` preserves composition]])],
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step1@0604c8cb
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
+    [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
+      `cpy` to an `ins`. Proved by induction at `suffix` directly, not through `suffix=tail*` and
+      `BA⊑CB⟹BA*⊑C*B` as the book does]])],
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step2@5adf6ffd lean:AOP.A9_2_Edit.edit_suffix_left@dda69ad1
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs"),
+    [#src[`edit (𝟙×suffix)⊑R° edit`, the mirror image: `cpy` weakens to a `del`]])],
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step3@9062388e lean:AOP.A9_2_Edit.edit_suffix_right@6e4ee2a2
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step3.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs"),
+    [#src[`R°` is transitive, `≤` being so]])],
+     // lean:AOP.A9_2_Edit.edit_Vrecip_step4@12b537e9
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step4.rhs")],
+)]<edit-V>
+
+// B&dM p.227, "base and step have disjoint ranges": Proposition 9.1's hypothesis.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
+    #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@3b1de06b lean:AOP.A9_2_Edit.empty@ff28cd4c
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs"),
+    [#src[`base` returns only `([],[])`, so `base°=empty base°`]])],
+     // lean:AOP.A9_2_Edit.edit_disj_step1@3739ccad
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step2.rhs"),
+    [#src[`step empty=𝟘`: `cpy` and `del` put a character on the left string, `ins` one on the
+      right]])],
+     // lean:AOP.A9_2_Edit.edit_disj_step2@642314c2
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj.rhs"),
+    [#src[`𝟘` composed with anything is `𝟘`]])],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj.rhs")],
+)]<edit-disj>
 
 // No picture: a curried function on lists is not a relation between the objects the panels carry.
 // Its own display, because `#disp` cannot break across pages and the panel rows above already fill one.
@@ -513,5 +658,73 @@ the longest repeated tail; #h(4pt)
       gives no tabulation for it]])],
   [#lean("Freyd.Alg.RelSet.Code.code_prog.lhs")],
 )]<code-laws>
+
+// B&dM p.240, "By Proposition 9.4 we have to check that": the proposition's argument at
+// `Q≜F(⊤+⊤,prefix°)`, its two conditions one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Code.code_thin_condition") \
+    #src[every code sequence built from a decomposition `Q` puts above a given one — a code element
+     of the same kind, a longer front string — costs at least as much as one built from the given
+     one]],
+     // lean:AOP.A9_4_Code.code_thin_condition@00aae404
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_thin_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step1.rhs"),
+    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @code-defn]])],
+     // lean:AOP.A9_4_Code.code_thin_step1@c5eac63a lean:AOP.A9_4_Code.Fbimap@f45fdcce
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step2.rhs"),
+    [#src[the bifunctor `F` preserves composition: `F(U,prefix°)F(𝟙,decode°)=F(U,prefix° decode°)`]])],
+     // lean:AOP.A9_4_Code.code_thin_step2@d3e2e959 lean:AOP.A9_4_Code.Fbimap_Fmap@1408119d
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step3.rhs"),
+    [#src[Proposition 9.4's second condition `prefix° decode°⊑decode° R`: dropping the last
+      character drops the last `sym`, or shortens or drops the last pointer. Proved at `prefix`
+      directly by induction, not through `init`]])],
+     // lean:AOP.A9_4_Code.code_thin_step3@9c774e54 lean:AOP.A9_4_Code.code_V@3407acb5
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step4.rhs"),
+    [#src[`F` preserves composition: `F(U,decode° R)=F(𝟙,decode°)F(U,R)`]])],
+     // lean:AOP.A9_4_Code.code_thin_step4@ff2b0d68 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step5.rhs"),
+    [#src[Proposition 9.4's first condition `F(⊤+⊤,R)α⊑αR`, left as an exercise in the book: `snoc`
+      adds the cost of the last element to both sides, and `[c,p](⊤+⊤)=[c,p]`]])],
+     // lean:AOP.A9_4_Code.code_thin_step5@2bc8116d lean:AOP.A9_4_Code.bytes_U@953e99c3
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step5.rhs")],
+)]<code-thin>
+
+// B&dM p.240, "Since nil and extend have disjoint ranges": Proposition 9.1's hypothesis.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Code.code_disj") \
+    #src[no string is both a result of `extend` and the result `[]` of `nil`]],
+     // lean:AOP.A9_4_Code.code_disj@80dbea26 lean:AOP.A9_4_Code.null@2ab49554
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_disj_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step1.rhs"),
+    [#src[`nil` returns only `[]`, so `nil°=null nil°`]])],
+     // lean:AOP.A9_4_Code.code_disj_step1@9698e2de
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step2.rhs"),
+    [#src[`extend null=𝟘`: a symbol ends the string with a character, a pointer with its non-empty
+      `zs`]])],
+     // lean:AOP.A9_4_Code.code_disj_step2@49ebf5ab lean:AOP.A9_4_Code.extend_ne_nil@4f36ac2c
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj.rhs"),
+    [#src[`𝟘` composed with anything is `𝟘`]])],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj.rhs")],
+)]<code-disj>
 
 #pagebreak(weak: true)
