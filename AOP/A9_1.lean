@@ -1428,12 +1428,15 @@ public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges_step4 {V₁ : α ⟶ A
     `ran V₁`, the `V₁` problem `W₁≜Λ(V₁°)thin(Q₁)P(U₁)est(R)` and, on `ran V₂`, the `V₂` one. -/
 public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
     {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} {R : B ⟶ B}
-    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    (hdisj : V₂ ≫ V₁° = 𝟘) :
     Λ ((junc (sumCop α β) V₁ V₂)°) ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
         ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R
       = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel U₁ ≫ est R)
-        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) :=
-  (RelSet.dp_disjoint_ranges_step1.trans (RelSet.dp_disjoint_ranges_step2 hdisj)).trans
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel U₂ ≫ est R) := by
+  -- `V₂V₁°=𝟘` read at a point: no `y` is reached by both
+  have hd : ∀ a b y, V₁ a y → V₂ b y → False := fun a b y h1 h2 =>
+    cast (congrFun (congrFun hdisj b) a) ⟨y, h2, h1⟩
+  exact (RelSet.dp_disjoint_ranges_step1.trans (RelSet.dp_disjoint_ranges_step2 hd)).trans
     (RelSet.dp_disjoint_ranges_step3.trans RelSet.dp_disjoint_ranges_step4)
 
 end Prop91
