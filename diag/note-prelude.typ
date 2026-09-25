@@ -23,13 +23,15 @@
 #let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
 // One body, two routes: `dir` is the exporter's output directory and `label` the metadata the
 // listing queries, because a second copy of this would drift from the first at the next change.
+// `lean-pics` is the call's metadata and its panels one by one, for a layout that puts something
+// between them — a chain's steps in `hchain` — while the call stays ONE box.
+#let lean-pics(dir, label, ns) = ([#metadata(ns.join("+"))#label],
+  if "list" in sys.inputs { ns.map(n => []) } else { ns.map(n => { import dir + n + ".typ": pic; pic }) })
 #let lean-call(dir, label, ns) = {
-  [#metadata(ns.join("+"))#label]
-  if "list" not in sys.inputs {
-    let pics = ns.map(n => { import dir + n + ".typ": pic; pic })
-    if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics) } else {
-      panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()))
-    }
+  let (m, pics) = lean-pics(dir, label, ns)
+  m
+  if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics) } else {
+    panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()) + "; a chain is lean-chain(…)")
   }
 }
 // A COPRODUCT STAYS ONE WIRE THAT THE HINZE–MARSDEN ROUTE CANNOT OPEN, so a panel of a side that
@@ -178,14 +180,17 @@
 // widens its columns — or, `fill`, ONE line, the pictures scaled by the factor that spends it all.
 #let hchain(..steps, fill: false) = layout(sz => {
   let gut = 4pt
+  // `u`, a second picture UNDER the first — the step's circuit under its Hinze–Marsden panel.
   let ss = steps.pos().map(s => (op: s.at(0), pic: box(s.at(1)), why: s.at(2), f: s.at(3, default: none),
-    w: measure(box(s.at(1))).width))
+    u: s.at(4, default: none), w: calc.max(measure(box(s.at(1))).width,
+      if s.at(4, default: none) == none { 0pt } else { measure(box(s.at(4))).width })))
   if fill {
     let lanes = ss.len() - if ss.first().op == none { 1 } else { 0 }
     // `--list` renders the panels as bare metadata, so every width is zero and there is no slack to spend
     let tot = ss.map(s => s.w).sum(default: 0pt)
     let k = if tot == 0pt { 1.0 } else { (sz.width - lanes * (OPW + 2 * gut)) / tot }
-    ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k))
+    ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k,
+      u: if s.u == none { none } else { scale(k * 100%, reflow: true, box(s.u)) }))
   }
   let (lines, cur, used) = ((), (), 0pt)
   for s in ss {
@@ -198,26 +203,38 @@
     let extra = calc.max(0pt, (sz.width - line.map(s => s.w).sum()
       - (line.len() - if li == 0 and line.first().op == none { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
     let py = if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
-    let (cols, fr, pr, rr) = ((), (), (), ())
+    let under = ss.any(s => s.u != none)
+    let (cols, fr, pr, ur, rr) = ((), (), (), (), ())
     for (i, s) in line.enumerate() {
       let op = not (li == 0 and i == 0 and s.op == none)
-      if op { cols.push(OPW); pr.push(s.op) }
+      if op { cols.push(OPW); pr.push(s.op); ur.push([]) }
       cols.push(s.w + extra)
       pr.push({ pic-meta(plain(if s.f == none { s.why } else { s.f }), s.pic); s.pic })
+      ur.push(if s.u == none { [] } else { pic-meta(plain(if s.f == none { s.why } else { s.f }), s.u); s.u })
       let span = grid.cell.with(colspan: if op { 2 } else { 1 })
       let wide = box.with(width: s.w + extra + if op { OPW + gut } else { 0pt })
       fr.push(span(wide(if s.f == none { [] } else { s.f })))
       rr.push(span(wide(s.why)))
     }
     grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
-      align: (x, y) => if y == py { center + horizon } else { left + top },
-      ..if py == 1 { fr } else { () }, ..pr, ..rr)
+      // the reason right under its op, and the picture `u` under that, so no picture parts them
+      align: (x, y) => if y == py { center + horizon } else if under and y == py + 2 { center + top } else { left + top },
+      ..if py == 1 { fr } else { () }, ..pr, ..rr, ..if under { ur } else { () })
   }))
 })
 // The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
 // PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
 // flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
+// A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
+// `#lean` call, so every step stands in one box at one height, each step's circuit under its panel
+// and its reason under the op it justifies.
+#let lean-chain(..steps, fill: false) = {
+  let ss = steps.pos()
+  let (m, pics) = lean-pics("generated/", <lean-panel>, ss.map(s => s.at(1)))
+  m
+  hchain(fill: fill, ..ss.zip(pics).map(((s, p)) => (s.at(0), p, s.at(2), none, leanc(s.at(1)))))
+}
 #let step(op, pic, f, pw: none) = layout(sz => {
   let gut = 6pt
   // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.

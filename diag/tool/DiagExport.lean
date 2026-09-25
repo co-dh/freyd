@@ -1695,16 +1695,12 @@ def main (args : List String) : IO UInt32 := do
   let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
-    -- naming two declarations has no one statement to slide to a shared bead, so it is refused
-    -- here rather than drawn as two boxes that only look like a pair.
+    -- may name SEVERAL declarations — the steps of one chain, drawn in one row — and each peer is
+    -- then read in its own declaration's telescope.
     -- ONLY THE STRING ROUTE SHARES A BOX, so only it has peers: `--commutative`'s `+` joins two
-    -- DIFFERENT statements drawn on one page, and the same-declaration test would refuse them.
-    let peers ← (if stringMode then call.splitOn "+" else []).mapM fun n => do
-      let (b, h, s, br) := parseArg n (circuitMode || stringMode || formulaMode)
-      unless b == base && h == binder do
-        throw <| IO.userError s!"`{call}`: one `#lean(…)` call draws parts of ONE statement — \
-          {b} is not {base} — because sharing a box is sliding to a bead they both carry"
-      return (s, br)
+    -- DIFFERENT statements drawn on one page, which share no box.
+    let peers := (if stringMode then call.splitOn "+" else []).map fun n =>
+      parseArg n (circuitMode || stringMode || formulaMode)
     -- A LABEL IS PRINTED AS THE DRAWN DECLARATION'S OWN FILE READS IT, so the context is built here,
     -- per declaration, and not once for the whole command line.
     -- A commutative page's first part names it, and the parts of one page are the faces of one
