@@ -1071,6 +1071,11 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.minlistFn] def unexpandBracketMinlistFn : Unexpander
   | `($_ $q) => `(minlist($q))
   | _ => throw ()
+-- The constructor `wrap` as a relation is `wrap`, as `consR` is `cons`; a delaborator, since
+-- `wrapR` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.CL.wrapR, delab const.Freyd.Alg.RelSet.CL.wrapR]
+def delabCLWrapR : Delab := `($(mkIdent `wrap))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.mix] def unexpandBracketMix : Unexpander
   | _ => `($(mkIdent `mix))
