@@ -82,6 +82,79 @@ public theorem dynamic_programming_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
       _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
       _ = H := hHfix
 
+/-- (9.3), first step: rule (9.4) `P(X) est(R) ⊑ ∈\(XR°)` (`powerRel_comp_est_le`, right meet
+    component) at `X ≜ F(M)h`. -/
+public theorem dynamic_programming_upper_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  comp_mono_left _ (comp_mono_left _ (le_trans (powerRel_comp_est_le _ R) (inter_lb_right _ _)))
+
+/-- (9.3), second step: the definition of `H` and the hylomorphism theorem, conversed:
+    `H° = h° F(H°) T`. -/
+public theorem dynamic_programming_upper_step2 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
+  have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
+    have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+    rw [← h1, hHfix]
+  have e := congrArg
+    (fun Y => Y ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) hHrec
+  simpa only [Cat.assoc] using e
+
+/-- (9.3), third step: `T Λ(T°) ⊑ ∈` (`recip_comp_Λ_le_recip_eps`), division cancels against
+    `∈` (`leftDiv_comp_le`), and functors. -/
+public theorem dynamic_programming_upper_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := by
+  have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
+    have h0 := recip_comp_Λ_le_recip_eps (T°)
+    rwa [Allegory.recip_recip] at h0
+  have ht : T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
+    rw [← Cat.assoc T (Λ (T°)) _]
+    exact le_trans (comp_mono_right hTA _) (leftDiv_comp_le _ _)
+  have e2 : F.map (H°) ≫ F.map (Λ H ≫ est R) = F.map (H° ≫ Λ H ≫ est R) := by
+    rw [← F.map_comp]
+  have e := comp_mono_left h° (comp_mono_left (F.map (H°)) ht)
+  simp only [Cat.assoc] at e ⊢
+  rwa [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)), e2] at e
+
+/-- (9.3), fourth step: `H° M ⊑ R°`, the second component of the universal property of `est`
+    (`le_Λ_comp_est_iff`) at `M ≜ Λ(H) est(R)`, under `F`. -/
+public theorem dynamic_programming_upper_step4 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° ⊑ h° ≫ F.map (R°) ≫ h ≫ R° :=
+  comp_mono_left _ (comp_mono_right
+    (F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2) _)
+
+/-- (9.3), fifth step: the assumption that `h` is monotonic on `R°`, in its conjugated form
+    `h° F(R°) h ⊑ R°` (`monotonicAlg_iff_conj`). -/
+public theorem dynamic_programming_upper_step5 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : MonotonicAlg h R°) :
+    h° ≫ F.map (R°) ≫ h ≫ R° ⊑ R° ≫ R° := by
+  have e := comp_mono_right ((monotonicAlg_iff_conj hh).mp hmono) (R°)
+  simpa only [Cat.assoc] using e
+
+/-- **(9.3)** (B&dM p.221): `min R·P(h·FM)·ΛT°·H° ⊆ R`, mirrored — with `M ≜ Λ(H) est(R)`,
+    whatever the dynamic-programming step returns is `R`-related to everything `H` returns from
+    the same input.  The book's five hints are steps 1–5, then transitivity `htrans`. -/
+public theorem dynamic_programming_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
+    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
+  calc H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_upper_step1
+      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_upper_step2 hFr hHfix
+      _ ⊑ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := dynamic_programming_upper_step3
+      _ ⊑ h° ≫ F.map (R°) ≫ h ≫ R° := dynamic_programming_upper_step4
+      _ ⊑ R° ≫ R° := dynamic_programming_upper_step5 hh hmono
+      _ ⊑ R° := htrans
+
 /-- **Core of Theorem 9.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the dynamic-programming body, for ANY `H` satisfying the hylomorphism fixed-point equation
     `H = h·FH·T°` (mirrored `T° ≫ F.map H ≫ h = H`) — Theorems 9.1/9.2 and the exercise
@@ -90,71 +163,9 @@ public theorem dynamic_programming_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
 public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
-    Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
-  -- the two min-UP components of `M ⊑ min R°·ΛH`: `M ⊑ H` and `M·H° ⊑ R°` (mirrored)
-  obtain ⟨-, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
-  -- rule (9.4) at `X := h·FM`
-  have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
-  apply le_Λ_comp_est_iff.mpr
-  constructor
-  · exact dynamic_programming_lower hHfix
-  · -- (9.3): `min R°·P(h·FM)·ΛT°·H° ⊆ R°`
-    -- the lower-bound component of (9.4)
-    have hL : powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-      le_trans h94 (inter_lb_right _ _)
-    -- `ΛT°·T ⊆ ∋` mirrored
-    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
-      have h0 := recip_comp_Λ_le_recip_eps (T°)
-      rwa [Allegory.recip_recip] at h0
-    -- `H° = T·FH°·h°` conversed to diagram order: `H° = h° ≫ F.map H° ≫ T`
-    have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
-      have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H,
-          Cat.assoc]
-      rw [← h1, hHfix]
-    -- the tail after peeling `h° ≫ F.map H°`: division cancels against `∋`
-    have htail : T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      have t1 : T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-          ⊑ T ≫ Λ (T°) ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        comp_mono_left _ (comp_mono_left _ hL)
-      have t2 : T ≫ Λ (T°) ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
-          ⊑ (∋ (F.obj A))° ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
-        rw [← Cat.assoc T (Λ (T°)) _]
-        exact comp_mono_right hTA _
-      exact le_trans t1 (le_trans t2 (leftDiv_comp_le _ _))
-    -- split `H°` in front and reassociate
-    have c1 : H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°) ≫ T)
-            ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      rw [← hHrec]
-    have c2 : (h° ≫ F.map (H°) ≫ T)
-          ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°))
-            ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      simp only [Cat.assoc]
-    have hbound : (h° ≫ F.map (H°))
-          ≫ T ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      comp_mono_left _ htail
-    -- collapse: `F(M·H°) ⊆ FR` then conjugated monotonicity and transitivity
-    have hcollapse : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° ≫ R° := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
-        rw [← F.map_comp]
-        exact F.map_mono hHMR
-      have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° := by
-        have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
-          rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
-          exact comp_mono_left _ (comp_mono_right hFRM h)
-        exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
-      have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-          = (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-        simp only [Cat.assoc]
-      rw [hre]
-      exact comp_mono_right hinner R°
-    rw [c1, c2]
-    exact le_trans (le_trans hbound hcollapse) htrans
+    Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R :=
+  le_Λ_comp_est_iff.mpr
+    ⟨dynamic_programming_lower hHfix, dynamic_programming_upper hFr hh hmono htrans hHfix⟩
 
 /-- **Theorem 9.1 (B&dM p.220)**, the basic theorem of DYNAMIC PROGRAMMING:
     `(μX : min R°·P(h·FX)·ΛT°) ⊆ min R°·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — if the algebra `h`
@@ -368,53 +379,55 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
+/-- Proposition 9.2, first step: the assumption `h cost = F(cost) k`. -/
+public theorem monotonicAlg_of_cost_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+    {cost : A ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
+    F.map R ≫ h ≫ cost = F.map R ≫ F.map cost ≫ k := by
+  rw [hch]
+
+/-- Proposition 9.2, second step: `R cost ⊑ cost leq` (`cost` a map, `R ≜ cost leq cost°`),
+    under `F`; functors. -/
+public theorem monotonicAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶ C}
+    {leq : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ leq ≫ cost°) :
+    F.map R ≫ F.map cost ≫ k ⊑ F.map cost ≫ F.map leq ≫ k := by
+  have eB : R ≫ cost ⊑ cost ≫ leq := by
+    have e := comp_mono_left cost (comp_mono_left leq hcost.2)
+    rw [Cat.comp_id] at e
+    rw [hR]; simpa only [Cat.assoc] using e
+  rw [← Cat.assoc, ← Cat.assoc, ← F.map_comp, ← F.map_comp]
+  exact comp_mono_right (F.map_mono eB) k
+
+/-- Proposition 9.2, third step: the assumption that `k` is monotonic on `leq`. -/
+public theorem monotonicAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {leq : C ⟶ C}
+    {k : F.obj C ⟶ C} (hk : F.map leq ≫ k ⊑ k ≫ leq) :
+    F.map cost ≫ F.map leq ≫ k ⊑ F.map cost ≫ k ≫ leq :=
+  comp_mono_left _ hk
+
+/-- Proposition 9.2, fourth step: the assumption `h cost = F(cost) k` again. -/
+public theorem monotonicAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+    {leq : C ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
+    F.map cost ≫ k ≫ leq = h ≫ cost ≫ leq := by
+  rw [← Cat.assoc, ← hch, Cat.assoc]
+
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on the order `R := cost·leq·cost°`
     (induced on `a` by pulling the order `leq` on `c` back along a "cost" function) whenever `h`
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
-    monotonic on `leq` — i.e. checking monotonicity of `h` on `R` reduces to checking
-    monotonicity of the simpler algebra `k` on `leq`. -/
+    monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
+    `F(R)h cost ⊑ h cost leq`, which steps 1–4 prove. -/
 public theorem monotonicAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {leq : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ leq ≫ cost°)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map leq ≫ k ⊑ k ≫ leq) :
     MonotonicAlg h R := by
   show F.map R ≫ h ⊑ h ≫ R
-  rw [hR]
-  have hassoc : h ≫ cost ≫ leq ≫ cost° = (h ≫ cost ≫ leq) ≫ cost° := by simp only [Cat.assoc]
-  rw [hassoc]
+  have hsh : h ≫ R = (h ≫ cost ≫ leq) ≫ cost° := by rw [hR]; simp only [Cat.assoc]
+  rw [hsh]
   apply (map_shunt_right hcost _ _).mp
-  -- goal: (F.map (cost ≫ leq ≫ cost°) ≫ h) ≫ cost ⊑ h ≫ cost ≫ leq
-  have eLHS1 : (F.map (cost ≫ leq ≫ cost°) ≫ h) ≫ cost
-      = F.map (cost ≫ leq ≫ cost°) ≫ (h ≫ cost) := by rw [Cat.assoc]
-  have eLHS2 : F.map (cost ≫ leq ≫ cost°) ≫ (h ≫ cost)
-      = F.map (cost ≫ leq ≫ cost°) ≫ (F.map cost ≫ k) := by rw [hch]
-  have eLHS3 : F.map (cost ≫ leq ≫ cost°) ≫ (F.map cost ≫ k)
-      = (F.map (cost ≫ leq ≫ cost°) ≫ F.map cost) ≫ k := by rw [Cat.assoc]
-  have eFold : F.map (cost ≫ leq ≫ cost°) ≫ F.map cost = F.map ((cost ≫ leq ≫ cost°) ≫ cost) := by
-    rw [← F.map_comp]
-  have eBound : (cost ≫ leq ≫ cost°) ≫ cost ⊑ cost ≫ leq := by
-    have e1 : (cost ≫ leq ≫ cost°) ≫ cost = cost ≫ leq ≫ (cost° ≫ cost) := by
-      simp only [Cat.assoc]
-    rw [e1]
-    have e2 : cost ≫ leq ≫ (cost° ≫ cost) ⊑ cost ≫ leq ≫ Cat.id C :=
-      comp_mono_left _ (comp_mono_left _ hcost.2)
-    rwa [Cat.comp_id] at e2
-  have eStep : F.map ((cost ≫ leq ≫ cost°) ≫ cost) ⊑ F.map (cost ≫ leq) := F.map_mono eBound
-  have step1 : (F.map (cost ≫ leq ≫ cost°) ≫ F.map cost) ≫ k ⊑ F.map (cost ≫ leq) ≫ k := by
-    rw [eFold]; exact comp_mono_right eStep k
-  have step2 : F.map (cost ≫ leq) ≫ k = F.map cost ≫ (F.map leq ≫ k) := by
-    rw [F.map_comp, Cat.assoc]
-  have step3 : F.map cost ≫ (F.map leq ≫ k) ⊑ F.map cost ≫ (k ≫ leq) := comp_mono_left _ hk
-  have step4 : F.map cost ≫ (k ≫ leq) = (F.map cost ≫ k) ≫ leq := by rw [Cat.assoc]
-  have step5 : (F.map cost ≫ k) ≫ leq = (h ≫ cost) ≫ leq := by rw [← hch]
-  have step6 : (h ≫ cost) ≫ leq = h ≫ cost ≫ leq := by rw [Cat.assoc]
-  have eLHS : (F.map (cost ≫ leq ≫ cost°) ≫ h) ≫ cost
-      = (F.map (cost ≫ leq ≫ cost°) ≫ F.map cost) ≫ k := eLHS1.trans (eLHS2.trans eLHS3)
-  rw [eLHS]
-  have step1' : (F.map (cost ≫ leq ≫ cost°) ≫ F.map cost) ≫ k
-      ⊑ F.map cost ≫ (F.map leq ≫ k) := by rw [← step2]; exact step1
-  have step3' : F.map cost ≫ (F.map leq ≫ k) ⊑ h ≫ cost ≫ leq := by
-    rw [← step6, ← step5, ← step4]; exact step3
-  exact le_trans step1' step3'
+  rw [Cat.assoc]
+  exact calc F.map R ≫ h ≫ cost
+      _ = F.map R ≫ F.map cost ≫ k := monotonicAlg_of_cost_step1 hch
+      _ ⊑ F.map cost ≫ F.map leq ≫ k := monotonicAlg_of_cost_step2 hcost hR
+      _ ⊑ F.map cost ≫ k ≫ leq := monotonicAlg_of_cost_step3 hk
+      _ = h ≫ cost ≫ leq := monotonicAlg_of_cost_step4 hch
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 

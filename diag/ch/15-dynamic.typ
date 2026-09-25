@@ -56,6 +56,52 @@ in @mu-defn.
   [#lean("Freyd.Alg.dynamic_programming_lower.rhs")],
 )]<dp-lower>
 
+// B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.dynamic_programming_upper") \
+    #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
+     from that input only `b'` with `R` relating `b'` to `b`]],
+     // lean:AOP.A9_1.dynamic_programming_upper@2afe998a
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_upper_step1.lhs"), [])],
+  [#lean("Freyd.Alg.dynamic_programming_upper_step1.lhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step1.rhs"),
+    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(M)h` — @est-710]])],
+     // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
+  [#lean("Freyd.Alg.dynamic_programming_upper_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_upper_step2.rhs"),
+    [#src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]])],
+     // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
+  [#lean("Freyd.Alg.dynamic_programming_upper_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step3.rhs"),
+    [#src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]])],
+     // lean:AOP.A9_1.dynamic_programming_upper_step3@0b07a2e4
+  [#lean("Freyd.Alg.dynamic_programming_upper_step3.rhs")],
+)]<dp-upper>
+
+// (9.3) continued: a `#disp` cannot break across a page, and seven rows do not fit on one.
+#disp[#calc-table(
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step4.rhs"),
+    [#src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]])],
+     // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
+  [#lean("Freyd.Alg.dynamic_programming_upper_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step5.rhs"),
+    [#src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]])],
+     // lean:AOP.A9_1.dynamic_programming_upper_step5@7faf3348
+  [#lean("Freyd.Alg.dynamic_programming_upper_step5.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper.rhs"),
+    [#src[`R°R°⊑R°`: `R` transitive]])],
+  [#lean("Freyd.Alg.dynamic_programming_upper.rhs")],
+)]<dp-upper-end>
+
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
@@ -100,6 +146,39 @@ in @mu-defn.
   // the second adds no shape the first does not already show.
   [#lean("Freyd.Alg.RelSet.SL.thin_arm₂_le.lhs")],
 )]<dp-laws>
+
+// B&dM Proposition 9.2, p. 222: the book's hints, one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.monotonicAlg_of_cost") \
+    #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
+     equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`]],
+     // lean:AOP.A9_1.monotonicAlg_of_cost@f97d27af
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.monotonicAlg_of_cost_step1.lhs"),
+    [#src[`F(R)h⊑hR` iff `F(R)h cost⊑h cost ≤`: definition of `R` and shunting]])],
+  [#lean("Freyd.Alg.monotonicAlg_of_cost_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step1.rhs"),
+    [#src[assumption `h cost=F(cost)k`]])],
+     // lean:AOP.A9_1.monotonicAlg_of_cost_step1@633bfed2
+  [#lean("Freyd.Alg.monotonicAlg_of_cost_step1.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step2.rhs"),
+    [#src[`R cost⊑cost ≤`, as `cost` is a map; functors]])],
+     // lean:AOP.A9_1.monotonicAlg_of_cost_step2@0d9c17f8
+  [#lean("Freyd.Alg.monotonicAlg_of_cost_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step3.rhs"),
+    [#src[assumption `F(≤)k⊑k≤`: `k` monotonic on `≤`]])],
+     // lean:AOP.A9_1.monotonicAlg_of_cost_step3@87ddc29e
+  [#lean("Freyd.Alg.monotonicAlg_of_cost_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step4.rhs"),
+    [#src[assumption `h cost=F(cost)k`]])],
+     // lean:AOP.A9_1.monotonicAlg_of_cost_step4@501ca466
+  [#lean("Freyd.Alg.monotonicAlg_of_cost_step4.rhs")],
+)]<dp-cost>
 
 #disp[#table(
   columns: (1fr, 1fr),
