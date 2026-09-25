@@ -56,6 +56,9 @@
 #let Rh = 0.088         // hollow dot radius — larger, or the ring closes up at `lw`
 #let BW = 0.92          // default box width
 #let BH = 0.60          // default box height
+// A stroked shape to the frame round it, before the panel is scaled: `scripts/labelfit`'s 3pt on the
+// page at the least scale a circuit is set at (`cpanel`'s 74%), so no scale can close it up.
+#let CFRAME = 3.2pt / 0.74
 #let LEAD = 0.34        // wire stub before the first box of a chain and after the last
 #let TAPEFILL = rgb("#f6cfcf")
 #let TAPEEDGE = rgb("#c25b5b")
@@ -173,22 +176,25 @@
 /// the divisor down FIRST.  Transcribed, in the sense that matters — the interior is a metaphor for
 /// the universal property, not a composite of the generators, and it is the one account of `/` in
 /// this file that needs no complement.
-#let divbox(p, num, den, w: 2.4, h: BH, denw: 0.72, slack: 0.09, flip: false, invert: false) = {
+///
+/// The hairline is `CFRAME` on the PAGE, whatever canvas `length` the panel draws at: any less and
+/// the tile's stroke reads as the frame's own (`scripts/labelfit`'s `FRAME`).  The tile's corner is
+/// cut parallel to the frame's chamfer at that same distance, or it would poke through the cut.
+#let divbox(p, num, den, w: 2.4, h: BH, denw: 0.72, flip: false, invert: false) = d.get-ctx(ctx => {
   let (x, y) = p
   let ink = if invert { white } else { black }
   let c = CHAMFER * h
-  let pts = chamfer-pts(x, y, w, h, c, flip)
-  d.line(..pts, close: true, fill: DIVNUM, stroke: (thickness: lw, paint: ink))
-  let ty = h / 2 - 0.11
-  let t0 = if flip { x + slack } else { x + w - slack - denw }
+  let pad = CFRAME / ctx.length
+  d.line(..chamfer-pts(x, y, w, h, c, flip), close: true, fill: DIVNUM, stroke: (thickness: lw, paint: ink))
+  let t0 = if flip { x + pad } else { x + w - pad - denw }
   let t1 = t0 + denw
-  d.rect((t0, y - ty), (t1, y + ty), fill: DIVDEN,
-    stroke: (thickness: 0.9pt, paint: ink, dash: "dashed"))
+  d.line(..chamfer-pts(t0, y, denw, h - 2 * pad, c - (2 - calc.sqrt(2)) * pad, flip), close: true,
+    fill: DIVDEN, stroke: (thickness: 0.9pt, paint: ink, dash: "dashed"))
   // The numerator sits in whatever the tile leaves, which is the other end of the box.
   let nx = if flip { (t1 + x + w) / 2 } else { (x + t0) / 2 }
   d.content((nx, y), text(9pt, fill: ink, num))
   d.content(((t0 + t1) / 2, y), text(8pt, fill: ink, den))
-}
+})
 
 // ---------------------------------------------------- the four Frobenius generators
 
