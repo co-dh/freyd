@@ -1076,6 +1076,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.process] def unexpandBracketProcess : Unexpander
   | _ => `($(mkIdent `process))
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.addcol] def unexpandBracketAddcol : Unexpander
+  | _ => `($(mkIdent `addcol))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.step] def unexpandBracketStep : Unexpander
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.listTailFn] def unexpandBracketListTailFn : Unexpander
+  | _ => `($(mkIdent `tail))
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.loop] def unexpandBracketLoop : Unexpander
   | `($_ $f) => `($(mkIdent `loop) $f)
   | _ => `($(mkIdent `loop))
