@@ -143,17 +143,17 @@ in @mu-defn.
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"),
     [#src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]])],
   [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step7.rhs"),
-    [#src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step7.rhs")],
 )]<dp-laws-93>
 
 // (9.3) continued from the last row above: the ten rows overflow one page.
 #disp[#calc-table(
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step7.rhs"), [])],
+  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"), [])],
+  [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step7.rhs"),
+    [#src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]])],
   [#lean("Freyd.Alg.dynamic_programming_thin_step7.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step8.rhs"),
@@ -194,7 +194,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs"),
-    [#src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`]])],
+    [#src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)` \ `=thin(Q₁)P(inl)`]])],
   [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs"),
