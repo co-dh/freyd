@@ -1076,6 +1076,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.CL.wrapR, delab const.Freyd.Alg.RelSet.CL.wrapR]
 def delabCLWrapR : Delab := `($(mkIdent `wrap))
+-- The book's `tic≜cons inits tail` (p. 235), implicit-only like `wrapR`.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.Bracket.tic, delab const.Freyd.Alg.RelSet.Bracket.tic]
+def delabBracketTic : Delab := `($(mkIdent `tic))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.mix] def unexpandBracketMix : Unexpander
   | _ => `($(mkIdent `mix))
