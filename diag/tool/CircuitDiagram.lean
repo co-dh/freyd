@@ -798,7 +798,13 @@ partial def leaf (e : Expr) (src tgt : Obj) : MetaM Pic := do
   if !(← isNamed e) then
     if let some v ← Meta.unfoldDefinition? e then
       if hasClause v then
-        let p ← draw v
+        -- A `def` that is one map's graph opens for its wiring only; its box is labelled by the
+        -- def's NAME, so the body's lambda (`step` is a `match` on its argument) is never spelled.
+        let p ← match v.getAppFnArgs with
+          | (``Freyd.Alg.RelSet.graph, ga) => match ga.back? with
+            | some f => graphPic f src tgt (name := some e)
+            | none => draw v
+          | _ => draw v
         -- THE LABEL IS THE TERM AS IT STOOD BEFORE OPENING.  Opening a `def` gives the WIRING —
         -- whether the box is a map's rectangle, how many strands it spans — and never the name: a
         -- body that draws as ONE box is that one arrow, and the note writes it by the name the
@@ -942,7 +948,11 @@ partial def fusedStack (s : Obj) (r : Expr) : MetaM Pic := do
 /-- §3 rows 2/3/14: a map given by a function.  A constant DISCARDS every input strand at a dot
     and creates its value; a projection ends the factors it drops at a dot and crosses the one it
     keeps, costing no box at all; anything else is a rectangle. -/
-partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none) : MetaM Pic := do
+partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none)
+    (name : Option Expr := none) : MetaM Pic := do
+  let lbl : MetaM StrDiag.Lbl := match name with
+    | some n => StrDiag.labelT n
+    | none => StrDiag.mapLabel f true
   let fw ← Meta.whnfD f
   -- §3 row 13 AT A MAP: a `match` on the input at a coproduct is the SAME tape `[f,g]` draws — the
   -- junction is the same object, written the other way round — so it forks here rather than
@@ -975,8 +985,8 @@ partial def graphPic (f : Expr) (src tgt : Obj) (fuse : Option Expr := none) : M
       return mkPic "proj" ws (← wiresOf tgt) src tgt true
         #[("at", .n i), ("label", .s (if i == 0 then "π₁" else "π₂")),
           ("keep", .arr (keep.map .n))]
-    | none => return boxPic (← StrDiag.mapLabel f true) ws (← wiresOf tgt) src tgt true
-  | _ => return boxPic (← StrDiag.mapLabel f true) ws (← wiresOf tgt) src tgt true
+    | none => return boxPic (← lbl) ws (← wiresOf tgt) src tgt true
+  | _ => return boxPic (← lbl) ws (← wiresOf tgt) src tgt true
 
 end
 

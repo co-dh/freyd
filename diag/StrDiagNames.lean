@@ -74,7 +74,8 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart cod
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
-  RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head
+  RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
+  RelSet.Edit.empty RelSet.Code.null
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
@@ -289,6 +290,9 @@ open Lean PrettyPrinter Delaborator SubExpr in
   if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `($(mkIdent (Name.mkSimple "𝟏")))
   else withAppArg delab
 
+-- The snoc-list leaf object is the same object as the cons-list one, so it prints by the same rule.
+attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
+
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
@@ -380,6 +384,18 @@ open Lean PrettyPrinter in
 -- The list sum is the note's `sum`; the `c` only tells the cons-list function from the relation.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.csum] def unexpandCsum : Unexpander | _ => `($(mkIdent `sum))
+-- The list length is the note's `length`, for the reason `csum` is `sum`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.clen] def unexpandClen : Unexpander | _ => `($(mkIdent `length))
+-- The edit lanes are the base functor `F` of the section; the carrier is the wire under it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.opF] def unexpandEditOpF : Unexpander | _ => `($(mkIdent `F))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.pairF] def unexpandEditPairF : Unexpander | _ => `($(mkIdent `F))
+-- The section's order on lengths is written by its operator, as `leRel` is.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.leqN] def unexpandEditLeqN : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 -- The section's own integer ordering is written by its operator, as `leRel` is.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.leq] def unexpandPartyLeq : Unexpander
