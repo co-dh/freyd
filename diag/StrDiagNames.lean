@@ -1064,6 +1064,14 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.col] def unexpandBracketCol : Unexpander
   | _ => `($(mkIdent `col))
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.mct] def unexpandBracketMct : Unexpander
+  | _ => `($(mkIdent `mct))
+-- B&dM's `minlist(R)`, the function folded from `bmin`, in `CL.minlist`'s own spelling.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.minlistFn] def unexpandBracketMinlistFn : Unexpander
+  | `($_ $q) => `(minlist($q))
+  | _ => throw ()
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.mix] def unexpandBracketMix : Unexpander
   | _ => `($(mkIdent `mix))
 open Lean PrettyPrinter in
