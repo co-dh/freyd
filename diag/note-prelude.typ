@@ -26,7 +26,11 @@
 // `lean-pics` is the call's metadata and its panels one by one, for a layout that puts something
 // between them — a chain's steps in `hchain` — while the call stays ONE box.
 #let lean-pics(dir, label, ns) = ([#metadata(ns.join("+"))#label],
-  if "list" in sys.inputs { ns.map(n => []) } else { ns.map(n => { import dir + n + ".typ": pic; pic }) })
+  // a call of several selectors is its own directory, the exporter's `outPath`: a selector drawn in
+  // a shared box and drawn alone are two pictures
+  if "list" in sys.inputs { ns.map(n => []) } else {
+    let sub = if ns.len() > 1 { ns.join("/") + "/" } else { "" }
+    ns.map(n => { import dir + sub + n + ".typ": pic; pic }) })
 #let lean-call(dir, label, ns) = {
   let (m, pics) = lean-pics(dir, label, ns)
   m
