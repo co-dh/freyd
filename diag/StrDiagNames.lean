@@ -1070,6 +1070,29 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.next] def unexpandBracketNext : Unexpander
   | _ => `($(mkIdent `next))
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.array] def unexpandBracketArray : Unexpander
+  | _ => `($(mkIdent `array))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.process] def unexpandBracketProcess : Unexpander
+  | _ => `($(mkIdent `process))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.addcol] def unexpandBracketAddcol : Unexpander
+  | _ => `($(mkIdent `addcol))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.step] def unexpandBracketStep : Unexpander
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.listTailFn] def unexpandBracketListTailFn : Unexpander
+  | _ => `($(mkIdent `tail))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.loop] def unexpandBracketLoop : Unexpander
+  | `($_ $f) => `($(mkIdent `loop) $f)
+  | _ => `($(mkIdent `loop))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.Tree.tip] def unexpandTreeTip : Unexpander
+  | `($_ $a) => `($(mkIdent `tip) $a)
+  | _ => `($(mkIdent `tip))
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
   | _ => `($(mkIdent `cons))
 open Lean PrettyPrinter in
