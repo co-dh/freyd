@@ -1502,10 +1502,13 @@ def outDirOf (circuit commutative type formula value graph : Bool) : String :=
   else if type then "diag/generated/type"
   else if formula then "diag/generated/formula" else "diag/generated"
 
-def outPath (circuit commutative type formula value graph proof : Bool) (arg : String) :
+-- A panel is keyed by its CALL: a selector drawn in a chain or pair carries that call's shared box,
+-- so under its own name it would race the same selector drawn alone (15.1f against 15.1b).
+def outPath (circuit commutative type formula value graph proof : Bool) (call arg : String) :
     System.FilePath :=
+  let sub := if call == arg then "" else "/".intercalate (call.splitOn "+") ++ "/"
   System.FilePath.mk
-    s!"{outDirOf circuit commutative type formula value graph}/{arg}{if proof then ".proof" else ""}.typ"
+    s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{if proof then ".proof" else ""}.typ"
 
 /-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
     `+` joins two different statements on one page — so its picture goes stale when either does. -/
@@ -1587,7 +1590,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
     let mut stale := false
     for (n, decls) in files do
       if stale then break
-      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode n
+      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
       if !(← path.pathExists) then stale := true
       else
         -- EVERY declaration the picture is drawn from must be marked with its CURRENT key, and the
@@ -1728,12 +1731,21 @@ def main (args : List String) : IO UInt32 := do
         else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
       if sigMode then return body
+      -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
+      let head := StrDiag.fileHead "../"
+      let body ← if call == arg then pure body
+        else if body.startsWith head then
+          pure (StrDiag.fileHead (String.join ((call.splitOn "+").map fun _ => "../") ++ "../")
+            ++ (body.drop head.length).toString)
+        else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
+          cannot be moved into the call's directory"
       return (← certLine (selDecls commutativeMode graphMode arg base)) ++ body
     IO.asTask (Prod.fst <$> run.toIO ctx { env })
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut failed : Array String := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode arg
+    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
+    unless sigMode do if let some p := path.parent then IO.FS.createDirAll p
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
     -- the other selectors — so a flag added later is in it without anyone remembering to add it.
     -- The WHOLE CALL is named, peers and all: a side redrawn without them comes out in a box of its

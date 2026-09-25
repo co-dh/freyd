@@ -512,8 +512,12 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
 /-- The file `--string` writes: the panel library, the picture, and the `nat:` trace of every dot
     the picture draws.  The header naming how to regenerate it is `DiagExport`'s, written from the
     argv it was run with. -/
+def fileHead (up : String) : String := s!"#import \"{up}dpanel.typ\": *\n\n"
+
+/-- `fileHead`'s argument: the panel library's path up from the file, deeper for a panel of a chain
+    (`DiagExport.outPath`). -/
 def fileOf (body : String) (nat : String := "") : String :=
-  "#import \"../dpanel.typ\": *\n\n" ++ body ++ nat
+  fileHead "../" ++ body ++ nat
 
 /-- HOW FAR A BEAD IS TIED TO THE LANES, and so how much of the picture lining up ON it lines up.
     A bead the environment calls natural stands among the FUNCTOR wires and its dot is a claim about

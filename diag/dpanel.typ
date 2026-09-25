@@ -353,7 +353,7 @@
 #let dcovers(defn, y, x) = defn.any(d => calc.abs(d.at(2) - y) < 1e-6
   and x >= d.at(0) - 1e-6 and x <= d.at(1) + 1e-6)
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
-            obreak: (), ostraight: false, obj: (), defn: (), cert: (:)) = {
+            obreak: (), ostraight: false, obj: (), defn: (), cert: (:)) = context {
   // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
   // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
   // on the wire, reads the same list back off `hm-meta`.
@@ -398,6 +398,10 @@
   let dotx = (:)
   for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
+  // THE FRAME HOLDS EVERY BEAD LABEL: `hm-bead` sets it 0.32 east of the dot, and the generator's
+  // width is a fixed pad east of the object wire, which a long label (a `∪` of two terms) runs out of.
+  let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
+    + measure(text(b.at(2, default: black))[#b.at(1)]).width / 0.8cm))
   let nmd = dnamed(lanes, top, bot)
   let gk = dknees(dx, h, lanes, beads, nmd)
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
