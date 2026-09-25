@@ -125,8 +125,7 @@ in @mu-defn.
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.monotonicAlg_in_context") \
-    #src[improving each part by `R` among the parts with the same `S`-context (`F(R∩SS°)`) and then
-     assembling by `h` gives only what assembling by `h` and then improving by `R` gives (`hR`)]],
+    #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monotonicAlg_in_context@f0a1b13c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
@@ -176,7 +175,7 @@ in @mu-defn.
     #src[thinning the parts by `U` in the first argument and by `V` in the second (`G(U,V)`), then
      solving by `H` and assembling by `h`, gives only what solving and assembling and then improving
      by `R` gives (`G(𝟙,H)hR`)]],
-     // lean:AOP.A9_1.birelator_thin_condition@13d1e400
+     // lean:AOP.A9_1.birelator_thin_condition@178e7cca
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.birelator_thin_condition_step1.lhs"), [])],
@@ -184,22 +183,22 @@ in @mu-defn.
 
   [#vstep(EQ, leanc("Freyd.Alg.birelator_thin_condition_step1.rhs"),
     [#src[taking `Q≜G(U,V)`; bifunctors: `G(U,V)G(𝟙,H)=G(U,VH)` — @relator-laws]])],
-     // lean:AOP.A9_1.birelator_thin_condition_step1@3b29bbce
+     // lean:AOP.A9_1.birelator_thin_condition_step1@5cb3fde0
   [#lean("Freyd.Alg.birelator_thin_condition_step1.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.birelator_thin_condition_step2.rhs"),
     [#src[assumption on `V`: `VH⊑HR`]])],
-     // lean:AOP.A9_1.birelator_thin_condition_step2@d93a9edb
+     // lean:AOP.A9_1.birelator_thin_condition_step2@8990dc41
   [#lean("Freyd.Alg.birelator_thin_condition_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.birelator_thin_condition_step3.rhs"),
     [#src[bifunctors: `G(U,HR)=G(𝟙,H)G(U,R)` — @relator-laws]])],
-     // lean:AOP.A9_1.birelator_thin_condition_step3@e063da44
+     // lean:AOP.A9_1.birelator_thin_condition_step3@920f9952
   [#lean("Freyd.Alg.birelator_thin_condition_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.birelator_thin_condition_step4.rhs"),
     [#src[assumption on `h`: `G(U,R)h⊑hR`]])],
-     // lean:AOP.A9_1.birelator_thin_condition_step4@84cc2fb5
+     // lean:AOP.A9_1.birelator_thin_condition_step4@988df7b4
   [#lean("Freyd.Alg.birelator_thin_condition_step4.rhs")],
 )]<dp-bifunctor-thin>
 

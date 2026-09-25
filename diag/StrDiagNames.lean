@@ -122,19 +122,6 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-/-- A BIRELATOR's action on a pair of arrows is B&dM's `F(U,V)` (Proposition 9.4), one application
-    to the pair, never the structure field's own name. -/
-@[app_unexpander Birelator.map] def unexpandBirelatorMap : Unexpander
-  | `($_ $G $U $V) => `($G ($U, $V))
-  | _ => throw ()
-
-open Lean PrettyPrinter in
-/-- The same birelator on a pair of objects, `F(e,w)`, spelled as its action on arrows is. -/
-@[app_unexpander Birelator.obj] def unexpandBirelatorObj : Unexpander
-  | `($_ $G $a $b) => `($G ($a, $b))
-  | _ => throw ()
-
-open Lean PrettyPrinter in
 /-- The type functor AS A RELATOR is the note's lane `T`, the same letter its action on arrows
     already prints with (`T(R)`); which initial algebras it is built from is not part of the name. -/
 @[app_unexpander typeRelator] def unexpandTypeRelator : Unexpander
