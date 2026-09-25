@@ -292,17 +292,15 @@ def heldLanes (p : Diagram) : Array Bool :=
     -- reaches the bottom edge either by outliving every row or by never having been given a death.
     (p.lanes.map fun l => l.born < 0 || l.dies < 0 || l.dies >= (n : Int))
 
-/-- The `dpanel(...)` call this panel is.  `frame` and `top` are ROW COUNTS, the two halves of
-    lining a short panel up with a tall one: the frame gives them one box, the top one bead
-    height.  Left off, the frame is one row deeper than the panel and the first bead sits at the
-    top of it. -/
-def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
+/-- The `dpanel(...)` call this panel is.  `frame` and `levels` are ROW COUNTS, the two halves of
+    lining a short panel up with a tall one: the frame gives them one box, `levels` each bead's
+    row in it (`placement`).  Left off, the frame is one row deeper than the panel and the beads
+    stand on consecutive rows under its headroom. -/
+def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) : MetaM String := do
   let n := p.rows.size
   let ls := columns p
   let hh := frameHeight p frame
-  let t0n := topRow.getD n
-  let t0 := t0n.toFloat
-  let ys : Array Float := Array.mk ((List.range n).map fun i => (t0 - i.toFloat) * DY)
+  let ys : Array Float := (levels.getD (Array.mk ((List.range n).map (n - ·)))).map (·.toFloat * DY)
   -- WITH NO LANE THERE IS NOTHING TO STAND EAST OF, so the object wire IS the first column.  The
   -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
   -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
@@ -499,62 +497,77 @@ def fileOf (body : String) (nat : String := "") : String :=
 def Row.pin (r : Row) : Nat :=
   if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1
 
-/-- How many rows LOWER than the reference part's a part's first bead sits, so that a bead the two
-    SHARE stands at the one height — the alignment `diagram --pairs` holds a display to.  The
-    landmark is the reference's most lane-bound shared bead (`Row.pin`), its highest where several
-    are equally bound.  Taking the highest shared bead outright pinned `F(R)φ ⊑ φR` at `R`, which
-    rides the object wire in both parts, and left `φ` — where the `F` lane dies — at two heights;
-    the note pins `φ`, and `secure prefix = prefix secure` likewise pins the natural `prefix` over
-    the plain arrow `secure`.  Beads are compared by their KEY (`beadKey`), as that gate compares
-    them: a bead is the same bead when it is the same 2-cell, which is a question about the term and
-    not about how the printing rules render it. -/
-def shiftTo (ref p : Diagram) : Int := Id.run do
-  -- `pin + 1`, so `0` is "no shared bead yet" and a strictly better pin is needed to move the
-  -- landmark down: equal pins keep the reference's highest, which is where the old rule stood.
-  let mut best : Nat := 0
-  let mut sh : Int := 0
-  for i in [0 : ref.rows.size] do
-    for j in [0 : p.rows.size] do
-      if ref.rows[i]!.key == p.rows[j]!.key && ref.rows[i]!.pin + 1 > best then
-        best := ref.rows[i]!.pin + 1
-        sh := (j : Int) - (i : Int)
-  return sh
-
 
 /-- WHERE A STATEMENT'S PARTS STAND, decided ONCE over every part of it the run draws — the two
     sides a relation symbol joins, asked for whole or one file at a time, or the branches of them
-    the note pairs.  The reference is the deepest
-    part; THE FLOOR, NOT THE CEILING: its last bead lands on row 1 and every other part keeps its
-    `shiftTo` slide from there, so extra frame is headroom ABOVE the picture and moves no bead
+    the note pairs.  THE FLOOR, NOT THE CEILING: the lowest level is row 1, so extra frame is
+    headroom ABOVE the picture and moves no bead
     (hanging the reference one row under the top of the box instead made every bead of the display
     move whenever the box got deeper).  A side that took its own row put the `R` of `f°F(R)f ⊑ R`
     a row above the `R` across the symbol from it: the two files lined up on nothing. -/
 structure Placement where
-  parts  : Array (Diagram × Int)   -- each part with its slide below the reference's first bead
-  frame  : Nat
-  topRef : Nat
+  parts : Array (Diagram × Array Nat)   -- each part with the frame row of each of its beads
+  frame : Nat
 
-/-- The parts stand IN A ROW, so each slides to its NEIGHBOUR, outward from the reference: a pair
-    is the old slide to the reference, and a chain `a ⊑ b = c` lines up every step on the bead its
-    two sides share, where sliding all to the reference aligned only the beads the reference has.
-    The reference's first bead sits as high as the part reaching deepest below it demands, and the
-    frame adds the most-slid part's rows and one of headroom: the max of the parts' OWN frames
-    would clamp a slide and put a shared bead at two heights. -/
+/-- ONE COLUMN OF LEVELS FOR THE WHOLE CALL, and every bead of every part on one of them.  Parts
+    are taken left to right; each lays its beads, in order, on the levels the earlier parts made,
+    matching the most shared beads it can (an order-keeping alignment, `Row.pin`-weighted) and
+    opening a new level only where a bead has no free one between its matched neighbours.  So a
+    panel lacking a bead its neighbour has keeps an EMPTY row there, and a shared bead stands at
+    one height across the whole chain, not only across a pair; one slide per part could do
+    neither, and left `H` at five heights in (15.1b). -/
 def placement (ps : Array Diagram) : Placement := Id.run do
-  let r := (List.range ps.size).foldl (fun a i => if ps[i]!.rows.size > ps[a]!.rows.size then i else a) 0
-  let mut s : Array Int := Array.replicate ps.size 0
-  for i in [r + 1 : ps.size] do s := s.set! i (s[i - 1]! + shiftTo ps[i - 1]! ps[i]!)
-  for k in [0 : r] do
-    let i := r - 1 - k
-    s := s.set! i (s[i + 1]! + shiftTo ps[i + 1]! ps[i]!)
-  let topRef := ((List.range ps.size).foldl (fun a i => max a ((ps[i]!.rows.size : Int) - s[i]!)) 1).toNat
-  return { parts := ps.zip s, topRef, frame := max (topRef + (s.foldl max 0).toNat + 1) 2 }
+  -- `slots` is the column of levels, top first; each holds the (part, row) pairs standing on it.
+  let mut slots : Array (Array (Nat × Nat)) := #[]
+  for k in [0 : ps.size] do
+    let b := ps[k]!
+    let (n, m) := (b.rows.size, slots.size)
+    -- The weight of row `i` on slot `j`: its bead's pin when a part already has that bead there,
+    -- ten times more when that part is the NEIGHBOUR, whose shared beads the gate holds level.
+    let w (i j : Nat) : Int :=
+      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
+      let pin : Int := b.rows[i]!.pin + 1
+      if hits.any (·.1 + 1 == k) then 100 * pin else if hits.isEmpty then 0 else 10 * pin
+    -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
+    -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
+    let ix (i j : Nat) := i * (m + 1) + j
+    let mut f : Array Int := Array.replicate ((n + 1) * (m + 1)) (-1000000000)
+    let mut how : Array Nat := Array.replicate ((n + 1) * (m + 1)) 0
+    f := f.set! 0 0
+    for i in [0 : n + 1] do
+      for j in [0 : m + 1] do
+        let v := f[ix i j]!
+        if j < m && v > f[ix i (j + 1)]! then
+          f := f.set! (ix i (j + 1)) v; how := how.set! (ix i (j + 1)) 0
+        if i < n && j < m && v + w i j > f[ix (i + 1) (j + 1)]! then
+          f := f.set! (ix (i + 1) (j + 1)) (v + w i j); how := how.set! (ix (i + 1) (j + 1)) 1
+        if i < n && v - 1 > f[ix (i + 1) j]! then
+          f := f.set! (ix (i + 1) j) (v - 1); how := how.set! (ix (i + 1) j) 2
+    let mut steps : List Nat := []
+    let mut (i, j) := (n, m)
+    for _ in [0 : n + m] do
+      if i == 0 && j == 0 then break
+      let h := how[ix i j]!
+      steps := h :: steps
+      if h == 0 then j := j - 1 else if h == 1 then (i, j) := (i - 1, j - 1) else i := i - 1
+    let mut out : Array (Array (Nat × Nat)) := #[]
+    let mut (r, s) := (0, 0)
+    for h in steps do
+      if h == 0 then out := out.push slots[s]!; s := s + 1
+      else if h == 1 then out := out.push (slots[s]!.push (k, r)); (r, s) := (r + 1, s + 1)
+      else out := out.push #[(k, r)]; r := r + 1
+    slots := out
+  -- The bottom level is frame row 1, and the frame keeps a row of headroom over the top one.
+  let lv := slots.size
+  let mut rows : Array (Array Nat) := ps.map fun p => Array.replicate p.rows.size 0
+  for s in [0 : lv] do
+    for (p, r) in slots[s]! do rows := rows.set! p (rows[p]!.set! r (lv - s))
+  return { parts := ps.zip rows, frame := max (lv + 1) 2 }
 
-/-- The row a part's first bead sits on; a part is found by its beads, and two parts with the same
-    beads are drawn alike. -/
-def Placement.top (pl : Placement) (p : Diagram) : Nat :=
-  let sh := (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).map (·.2)
-  max ((pl.topRef : Int) + sh.get!) 1 |>.toNat
+/-- The frame row of each of a part's beads; a part is found by its beads, and two parts with the
+    same beads are drawn alike. -/
+def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
+  (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).get!.2
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
@@ -568,11 +581,11 @@ def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
   -- THE OBLIGATION, not the record: the part drawn must be one the placement was taken over.  A
   -- part the peer list did not reach can start above the box or reach below its floor, and
   -- `frameRows` would then draw it taller than the parts beside it rather than clip it.
-  let t := pl.top p
-  unless t < pl.frame && p.rows.size ≤ t do
-    throwError "a part {p.rows.size} beads deep sits on row {t} of a frame of {pl.frame} rows: the \
+  let ls := pl.rows p
+  unless ls.all (· < pl.frame) do
+    throwError "a part {p.rows.size} beads deep reaches row {ls} of a frame of {pl.frame} rows: the \
       placement is the DECLARATION's, so every part of it must be among the ones it was taken over"
-  return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some t))
+  return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some ls))
     ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
 
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
@@ -587,7 +600,7 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
   for (sym, p) in parts do
     if !sym.isEmpty then cells := cells.push ("text(15pt)[" ++ sym ++ "]")
     cells := cells.push ("panels.at(" ++ toString panels.size ++ ")")
-    panels := panels.push (← panelCode p (some pl.frame) (some (pl.top p)))
+    panels := panels.push (← panelCode p (some pl.frame) (some (pl.rows p)))
     hs := hs.push (frameHeight p (some pl.frame))
   -- THE GATE.  A part drawn to its own depth would put the relation symbol between two boxes of
   -- different heights, which reads as two displays rather than one statement.
@@ -976,7 +989,7 @@ def beadCore (core : Expr) (vs : Array Expr) : MetaM Expr :=
     | _ => return .continue)
 
 /-- A BEAD'S IDENTITY IS ITS TERM, NOT ITS RENDERING — the key two parts of one display are told
-    the same 2-cell by (`shiftTo`, and the one-height obligation `drawString` holds a call to).
+    the same 2-cell by (`placement`, and the one-height obligation `drawString` holds a call to).
     Comparing the LABEL instead tied identity to the printing rules: a constant whose index the
     rules drop reads as one bead at both ends of its own naturality square, and the two beads that
     swap across it can then be at one height in neither panel.
@@ -1775,24 +1788,19 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
             if a.rows[ra]!.key == b.rows[rb]!.key then
-              shared := shared.push (ra, rb, (pl.top a : Int) - ra == (pl.top b : Int) - rb)
+              shared := shared.push (ra, rb, (pl.rows a)[ra]! == (pl.rows b)[rb]!)
         -- A BEAD THAT MOVED PAST A LEVEL ONE IS THE STATEMENT, not a misplacement: a slide
         -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.
         -- So a shared bead may stand at two heights only where its order against a level bead
         -- differs between the parts; kept in order, two heights are the misplacement this refuses.
         -- A LABEL THAT OCCURS TWICE is two beads (`Λ(T°)` and `Λ(H)` both open with `𝟙%∋`), so a
         -- pairing is only a misplacement when neither bead has a level partner of its label.
-        -- A BEAD ONLY ONE SIDE HAS, between a shared bead and a level one, needs an empty row on the
-        -- other side that the layout does not give (`P(X)est(R) ⊑ ∋X` puts `∋` above `X`), so that
-        -- distance cannot match; a gap of shared beads only can, and is still refused.
-        let only (d e : Diagram) (i j : Nat) : Bool := (List.range' (min i j) (max i j - min i j)).any
-          fun k => !(e.rows.any fun r => r.key == d.rows[k]!.key)
+        -- A bead only one side has is no excuse: `placement` gives the other side an empty row.
         for (ra, rb, level) in shared do
           unless level || shared.any (fun (sa, sb, l) => l && (sa == ra || sb == rb))
-              || shared.any (fun (sa, sb, l) => l && (only a b ra sa || only b a rb sb))
               || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
-            let ya := (pl.top a : Int) - ra
-            let yb := (pl.top b : Int) - rb
+            let ya := (pl.rows a)[ra]!
+            let yb := (pl.rows b)[rb]!
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
