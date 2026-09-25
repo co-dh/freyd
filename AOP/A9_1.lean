@@ -48,6 +48,40 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 
 /-! ## Theorem 9.1 (B&dM pp. 220-221) -/
 
+/-- (9.2), first step: rule (9.4) `P(X) est(R) ⊑ ∋X` (`powerRel_comp_est_le`, left meet
+    component) at `X ≜ F(M)h`. -/
+public theorem dynamic_programming_lower_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (le_trans (powerRel_comp_est_le _ R) (inter_lb_left _ _))
+
+/-- (9.2), second step: Λ cancellation, `Λ(T°)∋ = T°`. -/
+public theorem dynamic_programming_lower_step2 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h = T° ≫ F.map (Λ H ≫ est R) ≫ h := by
+  rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
+
+/-- (9.2), third step: `M ⊑ H`, the first component of the universal property of `est`
+    (`le_Λ_comp_est_iff`) at `M ≜ Λ(H) est(R)`, under `F` and before `h`. -/
+public theorem dynamic_programming_lower_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
+  comp_mono_left _ (comp_mono_right (F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).1) h)
+
+/-- **(9.2)** (B&dM p.220): `min R·P(h·FM)·ΛT° ⊆ H`, mirrored — with `M ≜ Λ(H) est(R)`, taking
+    the input apart every way `T` allows, solving each part by `M` and keeping an optimum stays
+    inside `H`.  The book's four hints are steps 1–3 and the fixed-point equation `hHfix` (the
+    definition of `H` and the hylomorphism theorem, `hylo_fixed`). -/
+public theorem dynamic_programming_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ H :=
+  calc Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step1
+      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step2
+      _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
+      _ = H := hHfix
+
 /-- **Core of Theorem 9.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the dynamic-programming body, for ANY `H` satisfying the hylomorphism fixed-point equation
     `H = h·FH·T°` (mirrored `T° ≫ F.map H ≫ h = H`) — Theorems 9.1/9.2 and the exercise
@@ -58,25 +92,12 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.o
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
   -- the two min-UP components of `M ⊑ min R°·ΛH`: `M ⊑ H` and `M·H° ⊑ R°` (mirrored)
-  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
+  obtain ⟨-, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
   -- rule (9.4) at `X := h·FM`
   have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
   apply le_Λ_comp_est_iff.mpr
   constructor
-  · -- (9.2): `min R°·P(h·FM)·ΛT° ⊆ H`
-    have s1 : Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
-      comp_mono_left _ (le_trans h94 (inter_lb_left _ _))
-    -- Λ cancellation: `∈·ΛT° = T°`
-    have s2 : Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h
-        = T° ≫ F.map (Λ H ≫ est R) ≫ h := by
-      rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
-    -- `M ⊑ H`, then the fixed-point equation
-    have s3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
-      comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
-    rw [s2] at s1
-    rw [hHfix] at s3
-    exact le_trans s1 s3
+  · exact dynamic_programming_lower hHfix
   · -- (9.3): `min R°·P(h·FM)·ΛT°·H° ⊆ R°`
     -- the lower-bound component of (9.4)
     have hL : powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
