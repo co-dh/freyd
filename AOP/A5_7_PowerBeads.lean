@@ -126,6 +126,16 @@ public theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
   rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
   exact F.map_mono (powerRel_eps_lax R) (le_refl _)
 
+/-- `F(𝟙,H)` IS STRICTLY NATURAL in the first argument, for every binary relator and every `H`:
+    both squares are `F(R,H)` by interchange.  The verdict Proposition 9.4's bead `G(𝟙,H)` needs. -/
+public theorem strictNatural_birel_id {𝒜 : Type u} [Allegory 𝒜] (F : BiRelator 𝒜) {w A : 𝒜}
+    (H : w ⟶ A) :
+    StrictNatural (Relator.comp (Relator.idRelator 𝒜) (F.appr A))
+      (Relator.comp (Relator.idRelator 𝒜) (F.appr w)) (fun a => F.map (𝟙 a) H) := by
+  intro a b R
+  show F.map R (𝟙 w) ≫ F.map (𝟙 b) H = F.map (𝟙 a) H ≫ F.map R (𝟙 A)
+  rw [F.interchange, F.interchange']
+
 end SingletonLax
 
 /-! ## The set model read pointwise, and the witness

@@ -55,14 +55,14 @@ open Freyd
 
 /-! ## The sum birelator `G(Y, X) = L + Y × X`
 
-  The concrete `Birelator` (B&dM p.223, `Freyd.A9_1`) whose left slot carries the greedy
-  CHOICE and whose right slot carries the residual state; `G.fixLeft ⟨E⟩` is exactly the
+  The concrete `BiRelator` (B&dM p.223, `Freyd.A9_1`) whose left slot carries the greedy
+  CHOICE and whose right slot carries the residual state; `G.appl ⟨E⟩` is exactly the
   cons-list pattern functor `CL.F L E` (`sumBirel_fixLeft_map`), which is what lets
   Proposition 9.4 discharge `greedy_dp`'s `hQ` on cons-shaped problems. -/
 
 /-- The sum-product birelator on `Rel(Set)`: `G(y, x) = L + y × x`, acting as the identity on
     the leaf summand and componentwise on the product. -/
-def sumBirel (L : Type) : Birelator RelSet.{0} where
+def sumBirel (L : Type) : BiRelator RelSet.{0} where
   obj y x := ⟨L ⊕ (y.carrier × x.carrier)⟩
   map {a b c d} R T := fun u v => match u, v with
     | Sum.inl l, Sum.inl l' => l = l'
@@ -211,7 +211,7 @@ def hAlg (P : GreedyDP L E S W) : (CL.F L E).obj ⟨W⟩ ⟶ (⟨W⟩ : RelSet.{
 
 /-- The thinning order `Q := G(U, V)` on decompositions (B&dM p.246). -/
 def Qrel (P : GreedyDP L E S W) : CL.Fobj L E ⟨S⟩ ⟶ CL.Fobj L E ⟨S⟩ :=
-  (sumBirel L).map (A := CL.dE E) (B := CL.dE E) (C := ⟨S⟩) (D := ⟨S⟩) P.Up P.Vp
+  (sumBirel L).map (a₁ := CL.dE E) (a₂ := CL.dE E) (b₁ := ⟨S⟩) (b₂ := ⟨S⟩) P.Up P.Vp
 
 /-- B&dM's optimisation-problem relation `H = ⦇h⦈·⦇T⦈°`, mirrored. -/
 def specH (P : GreedyDP L E S W) : (⟨S⟩ : RelSet.{0}) ⟶ ⟨W⟩ :=

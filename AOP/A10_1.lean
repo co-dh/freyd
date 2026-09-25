@@ -166,7 +166,7 @@ public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
 
 /-! ## B&dM p.246 — the greedy hypotheses via a bifunctor (recall of Proposition 9.4)
 
-  B&dM close §10.1 by recalling Proposition 9.4 (`AOP.A9_1`'s `Birelator` infra): the
+  B&dM close §10.1 by recalling Proposition 9.4 (`AOP.A9_1`'s `BiRelator` infra): the
   greedy theorem's hypotheses are met by taking `Q = F(U,V)` with `U`, `V` preorders such that
   `h·F(U,R) ⊆ R·h` and `H·V° ⊆ R°·H`.  As in chapter 9, the REFINEMENT itself needs only `U`
   reflexive (to get `MonotonicAlg` for the fixed-left relator via Prop 9.4(i)); reflexivity of
@@ -174,29 +174,29 @@ public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
   appropriate for an EXECUTABLE greedy algorithm, since one also needs `min Q·ΛT°` entire — an
   executability caveat on top of the refinement, not part of it.) -/
 
-/-- `G.fixLeft e` preserves converse whenever `G` does — `(G.fixLeft e).map R = G.map (id_e) R`
+/-- `G.appl e` preserves converse whenever `G` does — `(G.appl e).map R = G.map (id_e) R`
     and `(id_e)° = id_e`, so `G.PreservesRecip` at `id_e` gives the relator condition. -/
-theorem Birelator.fixLeft_preservesRecip {G : Birelator 𝒜} (hGr : G.PreservesRecip) (e : 𝒜) :
-    (G.fixLeft e).PreservesRecip := by
+theorem BiRelator.appl_preservesRecip {G : BiRelator 𝒜} (hGr : G.PreservesRecip) (e : 𝒜) :
+    (G.appl e).PreservesRecip := by
   intro C D R
   have h := hGr (Cat.id e) R
   rwa [recip_id] at h
 
 /-- **B&dM p.246**, the greedy theorem via bifunctor conditions: with `Q := G(U,V)` for a
-    birelator `G` (and `F := G.fixLeft e`), Proposition 9.4's monotonicity witness `hU`
+    birelator `G` (and `F := G.appl e`), Proposition 9.4's monotonicity witness `hU`
     (`h·G(U,R) ⊆ R·h`) and bound `hV` (`V·H ⊆ H·R`), plus reflexivity of `U` (all at the
     folded `°`, the note's letters), discharge all of `greedy_dp`'s hypotheses — so the
     greedy recursion refines the spec. -/
-theorem greedy_dp_of_birelator {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
-    (I : InitialAlgebra (G.fixLeft e)) {h : (G.fixLeft e).obj B ⟶ B}
-    {T : (G.fixLeft e).obj A ⟶ A} {R : B ⟶ B}
+theorem greedy_dp_of_birelator {G : BiRelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
+    (I : InitialAlgebra (G.appl e)) {h : (G.appl e).obj B ⟶ B}
+    {T : (G.appl e).obj A ⟶ A} {R : B ⟶ B}
     {U : e ⟶ e} {V : A ⟶ A} (hh : Map h) (htrans : R ≫ R ⊑ R) (hUrefl : Cat.id e ⊑ U)
     (hU : G.map U R ≫ h ⊑ h ≫ R)
     (hV : V ≫ (H T h) ⊑ (H T h) ≫ R) :
-    mu (fun X : A ⟶ B => Λ (T°) ≫ est (G.map U V) ≫ (G.fixLeft e).map X ≫ h)
+    mu (fun X : A ⟶ B => Λ (T°) ≫ est (G.map U V) ≫ (G.appl e).map X ≫ h)
       ⊑ Λ (H T h) ≫ est R := by
-  have hFr' : (G.fixLeft e).PreservesRecip := Birelator.fixLeft_preservesRecip hGr e
-  exact greedy_dp (F := G.fixLeft e) hFr' I hh (birelator_fixLeft_mono hUrefl hU) htrans
+  have hFr' : (G.appl e).PreservesRecip := BiRelator.appl_preservesRecip hGr e
+  exact greedy_dp (F := G.appl e) hFr' I hh (birelator_fixLeft_mono hUrefl hU) htrans
     (birelator_thin_condition (H := (relCata T)° ≫ relCata h) hU hV)
 
 end Freyd.Alg

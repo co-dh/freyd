@@ -484,63 +484,87 @@ section Prop9_3
 
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
+/-- Proposition 9.3, first step: shunting — `cost` is a map, so `𝟙⊑cost cost°`. -/
+public theorem monotonicAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+    {cost : A ⟶ C} {S : A ⟶ B} (hcost : Map cost) :
+    F.map (R ∩ (S ≫ S°)) ≫ h ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := by
+  simpa only [Cat.comp_id, Cat.assoc] using
+    comp_mono_left (F.map (R ∩ (S ≫ S°)) ≫ h) (map_entire_le hcost)
+
+/-- Proposition 9.3, second step: products — `R∩SS° = ⟨cost leq,S⟩⟨cost,S⟩°` by the definition
+    of `R` (`pair_recip_pair`). -/
+public theorem monotonicAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} (hR : R = cost ≫ leq ≫ cost°) :
+    F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost°
+      = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
+  rw [P.pair_recip_pair, hR, Cat.assoc cost leq cost°]
+
+/-- Proposition 9.3, third step: the assumption on `cost`, `h cost = F(⟨cost,S⟩)k`. -/
+public theorem monotonicAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+    {S : A ⟶ B} {P : RelProd C B} {k : F.obj P.p ⟶ C} {X : A ⟶ A}
+    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
+    F.map X ≫ h ≫ cost ≫ cost° = F.map X ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
+  rw [← Cat.assoc h cost, hch]
+  simp only [Cat.assoc]
+
+/-- Proposition 9.3, fourth step: `S` simple makes `⟨cost,S⟩` simple
+    (`tabulation_simple_of_simple`), so `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`. -/
+public theorem monotonicAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C} (hcost : Map cost) (hS : Simple S) :
+    F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
+      ⊑ F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost° := by
+  have hsp : Simple (P.pair cost S) := tabulation_simple_of_simple P.tab hcost.2 hS
+  have hs : P.pair (cost ≫ leq) S ≫ (P.pair cost S)° ≫ P.pair cost S ⊑ P.pair (cost ≫ leq) S := by
+    simpa only [Cat.comp_id] using comp_mono_left (P.pair (cost ≫ leq) S) hsp
+  rw [← Cat.assoc (F.map _) (F.map _) (k ≫ cost°), ← F.map_comp, Cat.assoc]
+  exact comp_mono_right (F.map_mono hs) _
+
+/-- Proposition 9.3, fifth step: products; functors — `⟨cost leq,S⟩ = ⟨cost,S⟩(leq×𝟙)`
+    (`pair_prodMap_fst`), then `F` preserves the composite. -/
+public theorem monotonicAlg_in_context_step5 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C} :
+    F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost°
+      = F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost° := by
+  rw [← RelProd.pair_prodMap_fst (P := P) (Q := P) cost S leq, F.map_comp, Cat.assoc]
+
+/-- Proposition 9.3, sixth step: the assumption on `k`, `F(leq×𝟙)k⊑k leq`. -/
+public theorem monotonicAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hk : F.map (prodMap P P leq (𝟙 B)) ≫ k ⊑ k ≫ leq) :
+    F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost°
+      ⊑ F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° :=
+  comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
+
+/-- Proposition 9.3, closing step: the assumption on `cost` read backwards, then the definition
+    of `R`. -/
+public theorem monotonicAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hR : R = cost ≫ leq ≫ cost°) (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
+    F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° = h ≫ R := by
+  rw [hR, ← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
+
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
     bundled with a simple context relation `S` via a chosen product `P`, and an algebra `k`
-    (on the bundle) monotonic on `leq × id` in the sense of `hk`, the algebra `h` is monotonic
-    on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`) — a
-    context-refined version of `monotonicAlg_of_cost` where the extra hypothesis `hk` need
-    only see the product bundle, not the bare `cost`. -/
+    (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
+    on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
+    chain, one step theorem per hint. -/
 public theorem monotonicAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ leq ≫ cost°)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
-    (hk : F.map (prodMap P P leq (Cat.id B)) ≫ k ⊑ k ≫ leq) :
-    F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R := by
-  have hRexp : h ≫ R = (h ≫ cost ≫ leq) ≫ cost° := by rw [hR]; simp only [Cat.assoc]
-  rw [hRexp]
-  apply (map_shunt_right hcost _ _).mp
-  -- goal: (F.map (R ∩ (S ≫ S°)) ≫ h) ≫ cost ⊑ h ≫ cost ≫ leq
-  have eLHS1 : (F.map (R ∩ (S ≫ S°)) ≫ h) ≫ cost = F.map (R ∩ (S ≫ S°)) ≫ (h ≫ cost) := by
-    rw [Cat.assoc]
-  rw [eLHS1, hch]
-  -- goal: F.map (R ∩ (S ≫ S°)) ≫ (F.map (P.pair cost S) ≫ k) ⊑ h ≫ cost ≫ leq
-  have eFold1 : F.map (R ∩ (S ≫ S°)) ≫ (F.map (P.pair cost S) ≫ k)
-      = (F.map (R ∩ (S ≫ S°)) ≫ F.map (P.pair cost S)) ≫ k := by rw [Cat.assoc]
-  rw [eFold1]
-  have eFold2 : F.map (R ∩ (S ≫ S°)) ≫ F.map (P.pair cost S)
-      = F.map ((R ∩ (S ≫ S°)) ≫ P.pair cost S) := by rw [← F.map_comp]
-  rw [eFold2]
-  -- goal: F.map ((R ∩ (S ≫ S°)) ≫ P.pair cost S) ≫ k ⊑ h ≫ cost ≫ leq
-  have hdecomp0 := P.pair_recip_pair (cost ≫ leq) S cost S
-  have hReq : (cost ≫ leq) ≫ cost° = R := by rw [hR]; simp only [Cat.assoc]
-  rw [hReq] at hdecomp0
-  -- hdecomp0 : P.pair (cost ≫ leq) S ≫ (P.pair cost S)° = R ∩ (S ≫ S°)
-  have hSimplePair : Simple (P.pair cost S) := tabulation_simple_of_simple P.tab hcost.2 hS
-  have hcancel : (R ∩ (S ≫ S°)) ≫ P.pair cost S ⊑ P.pair (cost ≫ leq) S := by
-    rw [← hdecomp0, Cat.assoc]
-    have e2 := comp_mono_left (P.pair (cost ≫ leq) S) hSimplePair
-    rwa [Cat.comp_id] at e2
-  have step2 : F.map ((R ∩ (S ≫ S°)) ≫ P.pair cost S) ≫ k ⊑ F.map (P.pair (cost ≫ leq) S) ≫ k :=
-    comp_mono_right (F.map_mono hcancel) k
-  have habsorb : P.pair cost S ≫ prodMap P P leq (Cat.id B) = P.pair (cost ≫ leq) S :=
-    P.pair_prodMap_fst cost S leq
-  have step3 : F.map (P.pair (cost ≫ leq) S) ≫ k
-      = (F.map (P.pair cost S) ≫ F.map (prodMap P P leq (Cat.id B))) ≫ k := by
-    rw [← habsorb, F.map_comp]
-  have step4 : (F.map (P.pair cost S) ≫ F.map (prodMap P P leq (Cat.id B))) ≫ k
-      = F.map (P.pair cost S) ≫ (F.map (prodMap P P leq (Cat.id B)) ≫ k) := by rw [Cat.assoc]
-  have eq1 : F.map (P.pair (cost ≫ leq) S) ≫ k
-      = F.map (P.pair cost S) ≫ (F.map (prodMap P P leq (Cat.id B)) ≫ k) := step3.trans step4
-  rw [eq1] at step2
-  have step5 : F.map (P.pair cost S) ≫ (F.map (prodMap P P leq (Cat.id B)) ≫ k)
-      ⊑ F.map (P.pair cost S) ≫ (k ≫ leq) := comp_mono_left _ hk
-  have step6 : F.map (P.pair cost S) ≫ (k ≫ leq) = (F.map (P.pair cost S) ≫ k) ≫ leq := by
-    rw [Cat.assoc]
-  have step7 : (F.map (P.pair cost S) ≫ k) ≫ leq = (h ≫ cost) ≫ leq := by rw [← hch]
-  have step8 : (h ≫ cost) ≫ leq = h ≫ cost ≫ leq := by rw [Cat.assoc]
-  have eq2 : F.map (P.pair cost S) ≫ (k ≫ leq) = h ≫ cost ≫ leq := step6.trans (step7.trans step8)
-  rw [eq2] at step5
-  exact le_trans step2 step5
+    (hk : F.map (prodMap P P leq (𝟙 B)) ≫ k ⊑ k ≫ leq) :
+    F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
+  calc F.map (R ∩ (S ≫ S°)) ≫ h
+      _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := monotonicAlg_in_context_step1 hcost
+      _ = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° :=
+          monotonicAlg_in_context_step2 hR
+      _ = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
+          monotonicAlg_in_context_step3 hch
+      _ ⊑ F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost° := monotonicAlg_in_context_step4 hcost hS
+      _ = F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost° :=
+          monotonicAlg_in_context_step5
+      _ ⊑ F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° := monotonicAlg_in_context_step6 hk
+      _ = h ≫ R := monotonicAlg_in_context_step7 hR hch
 
 end Prop9_3
 
@@ -549,52 +573,21 @@ end Prop9_3
   Back in the file's ambient `TabularUnitaryUnguardedPowerLCDA` setting.  B&dM's monotonicity/thinning
   conditions for Theorems 9.1/9.2 are often checked through a BIFUNCTOR `G` (e.g. `G(X,Y) :=
   X × Y` or a coproduct) with the algebra `h` living over `G` applied to a distinguished
-  extra argument `e` — Prop 9.4 packages sufficient conditions on `G` alone.  No existing
-  `Birelator`/allegory-bifunctor infra elsewhere in the repo (`S1_85`'s bifunctor is for plain
-  categories, chapter 1), so the minimal structure is defined here. -/
-
-/-- A **BIRELATOR** (B&dM p.223's implicit bifunctor setting): a relator in each argument
-    jointly, bundled as one two-argument action — the minimal bifunctor structure needed to
-    state Proposition 9.4. -/
-public structure Birelator (𝒜 : Type u) [Allegory 𝒜] where
-  obj : 𝒜 → 𝒜 → 𝒜
-  map : ∀ {A B C D : 𝒜}, (A ⟶ B) → (C ⟶ D) → (obj A C ⟶ obj B D)
-  map_id : ∀ (A C : 𝒜), map (Cat.id A) (Cat.id C) = Cat.id (obj A C)
-  map_comp : ∀ {A B C D e f : 𝒜} (R : A ⟶ B) (R' : B ⟶ C) (S : D ⟶ e) (S' : e ⟶ f),
-    map (R ≫ R') (S ≫ S') = map R S ≫ map R' S'
-  map_mono : ∀ {A B C D : 𝒜} {R R' : A ⟶ B} {S S' : C ⟶ D}, R ⊑ R' → S ⊑ S' → map R S ⊑ map R' S'
-
-/-- A birelator PRESERVES CONVERSE when `G(R°, S°) = (G(R,S))°`. -/
-@[expose] public def Birelator.PreservesRecip (G : Birelator 𝒜) : Prop :=
-  ∀ {A B C D : 𝒜} (R : A ⟶ B) (S : C ⟶ D), G.map R° S° = (G.map R S)°
-
-/-- "Fix the left argument at `e`": `G.fixLeft e` is the RELATOR `A ↦ G(e, A)`, `R ↦ G(id_e,
-    R)` — functoriality follows from `G`'s bifunctoriality with the left slot frozen at the
-    identity.  Prop 9.4's point: `MonotonicAlg h R` and Theorem 9.2's `hQ` for `F := G.fixLeft
-    e` are EXACTLY (by unfolding `map`) the conclusions of `birelator_fixLeft_mono` /
-    `birelator_thin_condition` below, at `Q := G.map U V` — so a monotonicity witness `hU` for
-    `G` (plus a reciprocal bound `hV` for the thinning case) suffices to run
-    `dynamic_programming`/`dynamic_programming_thin` on `G.fixLeft e`. -/
-@[expose] public def Birelator.fixLeft (G : Birelator 𝒜) (e : 𝒜) : Relator 𝒜 𝒜 where
-  obj := G.obj e
-  map := G.map (Cat.id e)
-  map_id A := G.map_id e A
-  map_comp R S := by
-    have h := G.map_comp (Cat.id e) (Cat.id e) R S
-    rwa [Cat.id_comp] at h
-  map_mono h := G.map_mono (le_refl (Cat.id e)) h
+  extra argument `e` — Prop 9.4 packages sufficient conditions on `G` alone.  `G` is the
+  binary relator `BiRelator` of `AOP.A5_5_TypeFunctor`, and fixing its left argument at `e` is
+  its partial application `G.appl e`. -/
 
 /-- **Proposition 9.4(i) (B&dM p.223)**, monotonicity: if `h` is monotonic for `G` at some `U`
     refined from below by `id_e` (`hUrefl`), then `h` is monotonic (in the ordinary
-    `MonotonicAlg` sense) for the fixed-left relator `G.fixLeft e`. -/
-public theorem birelator_fixLeft_mono {G : Birelator 𝒜} {e : 𝒜} {h : G.obj e A ⟶ A} {R : A ⟶ A}
+    `MonotonicAlg` sense) for the fixed-left relator `G.appl e`. -/
+public theorem birelator_fixLeft_mono {G : BiRelator 𝒜} {e : 𝒜} {h : G.obj e A ⟶ A} {R : A ⟶ A}
     {U : e ⟶ e} (hUrefl : Cat.id e ⊑ U) (hU : G.map U R ≫ h ⊑ h ≫ R) :
     G.map (Cat.id e) R ≫ h ⊑ h ≫ R :=
   le_trans (comp_mono_right (G.map_mono hUrefl (le_refl R)) h) hU
 
 /-- A map `h` monotonic for `G` at `(U, R)` is monotonic at `(U°, R°)` — conjugate, then
     shunt back across the map `h` (the birelator analogue of `monotonicAlg_recip_iff`). -/
-public theorem birelator_mono_recip {G : Birelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
+public theorem birelator_mono_recip {G : BiRelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
     {h : G.obj e A ⟶ A} {R : A ⟶ A} {U : e ⟶ e} (hh : Map h)
     (hU : G.map U R ≫ h ⊑ h ≫ R) : G.map U° R° ≫ h ⊑ h ≫ R° := by
   have hUrecip : h° ≫ G.map U° R° ⊑ R° ≫ h° := by
@@ -611,28 +604,46 @@ public theorem birelator_mono_recip {G : Birelator 𝒜} (hGr : G.PreservesRecip
   rw [Cat.comp_id] at hRRcollapse
   exact (map_shunt_left hh _ _).mp (le_trans hpost hRRcollapse)
 
+/-- Proposition 9.4, first step: taking `Q≜G(U,V)`; bifunctors — `G(U,V)G(𝟙,H) = G(U,VH)`. -/
+public theorem birelator_thin_condition_step1 {G : BiRelator 𝒜} {e w : 𝒜}
+    {h : G.obj e A ⟶ A} {H : w ⟶ A} {U : e ⟶ e} {V : w ⟶ w} :
+    G.map U V ≫ G.map (𝟙 e) H ≫ h = G.map U (V ≫ H) ≫ h := by
+  rw [← Cat.assoc, ← G.map_comp, Cat.comp_id]
+
+/-- Proposition 9.4, second step: the assumption on `V`, `VH⊑HR`. -/
+public theorem birelator_thin_condition_step2 {G : BiRelator 𝒜} {e w : 𝒜}
+    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} {V : w ⟶ w}
+    (hV : V ≫ H ⊑ H ≫ R) :
+    G.map U (V ≫ H) ≫ h ⊑ G.map U (H ≫ R) ≫ h :=
+  comp_mono_right (G.map_mono (le_refl U) hV) h
+
+/-- Proposition 9.4, third step: bifunctors — `G(U,HR) = G(𝟙,H)G(U,R)`. -/
+public theorem birelator_thin_condition_step3 {G : BiRelator 𝒜} {e w : 𝒜}
+    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} :
+    G.map U (H ≫ R) ≫ h = G.map (𝟙 e) H ≫ G.map U R ≫ h := by
+  rw [← Cat.assoc, ← G.map_comp, Cat.id_comp]
+
+/-- Proposition 9.4, fourth step: the assumption on `h`, `G(U,R)h⊑hR`. -/
+public theorem birelator_thin_condition_step4 {G : BiRelator 𝒜} {e w : 𝒜}
+    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e}
+    (hU : G.map U R ≫ h ⊑ h ≫ R) :
+    G.map (𝟙 e) H ≫ G.map U R ≫ h ⊑ G.map (𝟙 e) H ≫ h ≫ R :=
+  comp_mono_left _ hU
+
 /-- **Proposition 9.4(ii) (B&dM pp.223-224)**, the thinning condition: given the monotonicity
     witness `hU` and the bound `hV : V·H ⊑ H·R` (the note's letters, at the folded `°`), the
     thinning relation `Q := G(U,V)` discharges `dynamic_programming_thin`'s hypothesis `hQ`
-    for the fixed-left relator `G.fixLeft e` — a three-step calculation, no shunting. -/
-public theorem birelator_thin_condition {G : Birelator 𝒜} {e w : 𝒜}
+    for the fixed-left relator `G.appl e` — the book's chain, one step theorem per hint. -/
+public theorem birelator_thin_condition {G : BiRelator 𝒜} {e w : 𝒜}
     {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} {V : w ⟶ w}
     (hU : G.map U R ≫ h ⊑ h ≫ R) (hV : V ≫ H ⊑ H ≫ R) :
-    G.map U V ≫ G.map (Cat.id e) H ≫ h ⊑ G.map (Cat.id e) H ≫ h ≫ R := by
-  have eBC : G.map U V ≫ G.map (Cat.id e) H = G.map U (V ≫ H) := by
-    rw [← G.map_comp, Cat.comp_id]
-  have eE0 := G.map_comp (Cat.id e) U H R
-  rw [Cat.id_comp] at eE0
-  have step1 : G.map U V ≫ G.map (Cat.id e) H ⊑ G.map (Cat.id e) H ≫ G.map U R := by
-    rw [eBC, ← eE0]
-    exact G.map_mono (le_refl U) hV
-  have step3 := comp_mono_right step1 h
-  have e1 : (G.map U V ≫ G.map (Cat.id e) H) ≫ h
-      = G.map U V ≫ (G.map (Cat.id e) H ≫ h) := by rw [Cat.assoc]
-  have e2 : (G.map (Cat.id e) H ≫ G.map U R) ≫ h
-      = G.map (Cat.id e) H ≫ (G.map U R ≫ h) := by rw [Cat.assoc]
-  rw [e1, e2] at step3
-  exact le_trans step3 (comp_mono_left _ hU)
+    G.map U V ≫ G.map (𝟙 e) H ≫ h ⊑ G.map (𝟙 e) H ≫ h ≫ R :=
+  calc G.map U V ≫ G.map (𝟙 e) H ≫ h
+      _ = G.map U (V ≫ H) ≫ h := birelator_thin_condition_step1
+      _ ⊑ G.map U (H ≫ R) ≫ h := birelator_thin_condition_step2 hV
+      _ = G.map (𝟙 e) H ≫ G.map U R ≫ h := birelator_thin_condition_step3
+      _ ⊑ G.map (𝟙 e) H ≫ h ≫ R := birelator_thin_condition_step4 hU
+
 
 /-! ## Ex 9.2 (B&dM p.222) — context-strengthened Theorem 9.2
 
