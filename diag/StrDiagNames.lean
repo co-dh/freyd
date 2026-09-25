@@ -680,6 +680,9 @@ attribute [diag_unfold] RelSet.Tardy.bagAlg
 -- transpose's factorisation, and `Λ 𝟙` folds back to the unit alone through `existsImage_id` and
 -- the identity law.
 attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
+-- `∈\Z` is an APPLICATION of `∈\−`, which is no relator and so no wire; opened to the composite
+-- `⊆ Λ(Z°)°` it is beads on the lanes like `Λ` is, `Z` then drawn by the transpose's own rule.
+attribute [diag_rewrite] mem_leftDiv_eq
 -- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
 -- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
 attribute [diag_rewrite] RelSet.SL.arm₂_graph
