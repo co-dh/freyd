@@ -217,8 +217,9 @@
       rr.push(span(wide(s.why)))
     }
     grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
-      align: (x, y) => if y == py { center + horizon } else if under and y == py + 1 { center + top } else { left + top },
-      ..if py == 1 { fr } else { () }, ..pr, ..if under { ur } else { () }, ..rr)
+      // the reason right under its op, and the picture `u` under that, so no picture parts them
+      align: (x, y) => if y == py { center + horizon } else if under and y == py + 2 { center + top } else { left + top },
+      ..if py == 1 { fr } else { () }, ..pr, ..rr, ..if under { ur } else { () })
   }))
 })
 // The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the

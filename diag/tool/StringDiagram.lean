@@ -520,26 +520,6 @@ def shiftTo (ref p : Diagram) : Int := Id.run do
         sh := (j : Int) - (i : Int)
   return sh
 
-/-- How far the most-shifted part slides below the reference's first bead. -/
-def maxShift (ref : Diagram) (ps : Array Diagram) : Nat :=
-  (ps.foldl (fun a p => max a (shiftTo ref p)) 0).toNat
-
-/-- Where the REFERENCE part's first bead sits, in rows.  Every part starts `shiftTo` rows below it
-    and its own last bead must still land on row 1, so the reference sits as high as the part that
-    reaches deepest below it demands. -/
-def topRefOf (ref : Diagram) (ps : Array Diagram) : Nat :=
-  (ps.foldl (fun a p => max a ((p.rows.size : Int) - shiftTo ref p)) 1).toNat
-
-/-- A DISPLAY's frame, in rows: the reference's first bead, the rows the most-shifted part adds
-    above it, and the row of headroom the first bead sits below.  That is the deepest part's row
-    count only when nothing slides; taking the max of the parts' OWN frames instead has to clamp a
-    slide to fit, which puts a shared bead at two different heights — and aligning it is the whole
-    reason the parts are drawn in one box. -/
-def frameOf (ref : Diagram) (ps : Array Diagram) : Nat :=
-  max (topRefOf ref ps + maxShift ref ps + 1) 2
-
-/-- Where a part's first bead sits, in rows: the reference's, plus its own slide. -/
-def topOf (topRef : Nat) (ref p : Diagram) : Nat := max ((topRef : Int) + shiftTo ref p) 1 |>.toNat
 
 /-- WHERE A STATEMENT'S PARTS STAND, decided ONCE over every part of it the run draws — the two
     sides a relation symbol joins, asked for whole or one file at a time, or the branches of them
@@ -556,7 +536,10 @@ structure Placement where
 
 /-- The parts stand IN A ROW, so each slides to its NEIGHBOUR, outward from the reference: a pair
     is the old slide to the reference, and a chain `a ⊑ b = c` lines up every step on the bead its
-    two sides share, where sliding all to the reference aligned only the beads the reference has. -/
+    two sides share, where sliding all to the reference aligned only the beads the reference has.
+    The reference's first bead sits as high as the part reaching deepest below it demands, and the
+    frame adds the most-slid part's rows and one of headroom: the max of the parts' OWN frames
+    would clamp a slide and put a shared bead at two heights. -/
 def placement (ps : Array Diagram) : Placement := Id.run do
   let r := (List.range ps.size).foldl (fun a i => if ps[i]!.rows.size > ps[a]!.rows.size then i else a) 0
   let mut s : Array Int := Array.replicate ps.size 0
@@ -571,7 +554,7 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     beads are drawn alike. -/
 def Placement.top (pl : Placement) (p : Diagram) : Nat :=
   let sh := (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).map (·.2)
-  max ((pl.topRef : Int) + sh.getD 0) 1 |>.toNat
+  max ((pl.topRef : Int) + sh.get!) 1 |>.toNat
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
@@ -1797,8 +1780,17 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.
         -- So a shared bead may stand at two heights only where its order against a level bead
         -- differs between the parts; kept in order, two heights are the misplacement this refuses.
+        -- A LABEL THAT OCCURS TWICE is two beads (`Λ(T°)` and `Λ(H)` both open with `𝟙%∋`), so a
+        -- pairing is only a misplacement when neither bead has a level partner of its label.
+        -- A BEAD ONLY ONE SIDE HAS, between a shared bead and a level one, needs an empty row on the
+        -- other side that the layout does not give (`P(X)est(R) ⊑ ∋X` puts `∋` above `X`), so that
+        -- distance cannot match; a gap of shared beads only can, and is still refused.
+        let only (d e : Diagram) (i j : Nat) : Bool := (List.range' (min i j) (max i j - min i j)).any
+          fun k => !(e.rows.any fun r => r.key == d.rows[k]!.key)
         for (ra, rb, level) in shared do
-          unless level || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
+          unless level || shared.any (fun (sa, sb, l) => l && (sa == ra || sb == rb))
+              || shared.any (fun (sa, sb, l) => l && (only a b ra sa || only b a rb sb))
+              || shared.any fun (sa, sb, l) => l && (decide (ra < sa) != decide (rb < sb)) do
             let ya := (pl.top a : Int) - ra
             let yb := (pl.top b : Int) - rb
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
