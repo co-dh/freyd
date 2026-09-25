@@ -154,6 +154,20 @@ structure Row where
   /-- A UNIT: a family `𝟙 ⟹ W` — no arms, one leg, the same object under both.  Drawn as the
       note's unit lane, born half a row below the row it stands on with its own mark, not a bead. -/
   unit  : Bool := false
+  /-- A DIVISION'S BOX EDGE, no bead: the lanes the division's own end has and its operand's has not
+      end on it, and the operand's own begin there (`interp`'s division clause). -/
+  edge  : Bool := false
+  deriving Inhabited
+
+/-- A DIVISION `S\R` or `R/S` drawn as a dashed box round its operand `R`'s own picture, the divisor
+    (`lbl`, `∈\` or `/S`) where the replaced end crosses the edge: outside it the lanes of the
+    division's own type, inside the operand's.  `first`/`last` are the rows inside, the `edge` row
+    among them; `lanes` every lane the box holds, for its west side. -/
+structure Box where
+  first : Nat
+  last  : Nat
+  lanes : Array Nat
+  lbl   : Lbl
   deriving Inhabited
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
@@ -172,6 +186,7 @@ structure Diagram where
   /-- The object each edge stands over — the object wire's label there. -/
   otop  : Expr
   obot  : Expr
+  boxes : Array Box := #[]
   deriving Inhabited
 
 /-! ### `columns` — how far apart the lanes sit -/
@@ -362,7 +377,10 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
       | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
       | some .spider => key .spider
     -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
-    if r.unit then
+    -- Nor is a division's box EDGE: `boxes:` draws it, and the lanes ending there end straight.
+    if r.edge then
+      objs := objs.push ("(" ++ num ys[i]! ++ ", " ++ cell r.obj ++ ")")
+    else if r.unit then
       objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
     else
       -- A DOT ON THE OBJECT WIRE STILL CARRIES ITS MARK: the fourth and fifth fields are the bar
@@ -419,9 +437,27 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     |>.push ("(" ++ num xo ++ ", " ++ cell (← label p.otop) ++ ")")
   let bot := (ls.filter (·.dies >= (n : Int))).map (fun l => "(" ++ num l.x ++ ", " ++ cell l.label ++ ")")
     |>.push ("(" ++ num xo ++ ", " ++ cell (← label p.obot) ++ ")")
+  -- A BOX'S EDGE on its edge row, and half a row out from its last bead on the other side.  Its
+  -- west side clears every lane it holds and the name written west of that lane; the east side is
+  -- the bead labels', which only the page can measure (`dpanel`).
+  let edges := (List.range n).toArray.filter (p.rows[·]!.edge) |>.map (num ys[·]!)
+  let boxes := p.boxes.map fun b =>
+    let yt := if p.rows[b.first]!.edge then ys[b.first]! else ys[b.first]! + DY / 2.0
+    let yb := if p.rows[b.last]!.edge && b.last != b.first then ys[b.last]! else ys[b.last]! - DY / 2.0
+    let xl := minA (b.lanes.map fun j =>
+      ls[j]!.x - max (DX / 2.0) (LDX + LCW * ls[j]!.label.length.toFloat + 0.1)) (xo - DX / 2.0)
+    -- THE CROSSING: the edge row's lanes on the OUTER side — its arms on a top edge, its legs on a
+    -- bottom one — or, where only the object changes type, the object wire.
+    let ei := if p.rows[b.first]!.edge then b.first else b.last
+    let er := p.rows[ei]!
+    let outer := (if ei == b.first then er.arms else er.legs).map fun j => ls[j]!.x
+    let xc := if outer.isEmpty then xo else (minA outer 1e9 + maxA outer (-1e9)) / 2.0
+    "(" ++ num yt ++ ", " ++ num yb ++ ", " ++ num (roundTo 3 xl) ++ ", " ++ num (roundTo 3 xc)
+      ++ ", " ++ num ys[ei]! ++ ", " ++ cell b.lbl ++ ")"
   return "dpanel(" ++ num hh ++ ", " ++ num (roundTo 2 (xo + PAD)) ++ ", " ++ num xo ++ ",\n  "
     ++ tup (made.map fun i => lanecode ls[i]!) ++ ",\n  " ++ tup beads ++ ",\n  " ++ tup top
     ++ ",\n  " ++ tup bot
+    ++ (if boxes.isEmpty then "" else ",\n  edges: " ++ tup edges ++ ",\n  boxes: " ++ tup boxes)
     -- NO CERTIFICATE: the panel is the declaration's own drawing, so a copy of the statement,
     -- the bead types and the verdicts beside it is a second source of truth for a gate to read.
     ++ ",\n  obj: " ++ tup objs ++ ")"
@@ -467,7 +503,8 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
   -- environment happened to answer about cannot find the one it was never asked about, which is how
   -- `zip`, `cp` and `cons` came out with no row at all; deleting a record shortens no obligation
   -- here, because the obligations ARE the rows the picture is drawn from.
-  let rows := ps.flatMap (·.rows)
+  -- A division's box edge is no bead, so it has no verdict to trace.
+  let rows := (ps.flatMap (·.rows)).filter (!·.edge)
   -- The panel's OWN declaration is cited too where a bead's verdict is one of its hypotheses.
   let keys ← natKeys (rows.flatMap (·.natLean)
     ++ (if rows.any (·.natHyp.isSome) then #[decl] else #[]))
@@ -1183,7 +1220,9 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
     lanes := lanes.push { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
   let rows := d.rows ++ e.rows.map fun r =>
     { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
-  return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot }
+  let boxes := d.boxes ++ e.boxes.map fun b =>
+    { b with first := b.first + nr, last := b.last + nr, lanes := b.lanes.map emap }
+  return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot, boxes }
 
 /-- `d` WEST of `e`.  The object wire is the EASTMOST one, so `e` owns it and `d` only runs past it;
     a row of `d` therefore keeps its OWN ends and only picks up the object wire's new label. -/
@@ -1200,8 +1239,11 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     { r with arms := r.arms.map dmap, legs := r.legs.map dmap, over := r.over.map dmap, obj }
   let rows := drows ++ e.rows.map fun r =>
     { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
+  let boxes := d.boxes.map (fun b => { b with lanes := b.lanes.map dmap })
+    ++ e.boxes.map fun b =>
+      { b with first := b.first + nr, last := b.last + nr, lanes := b.lanes.map emap }
   return { lanes, rows, top := Array.mk (List.range (nt + mt)),
-           bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot }
+           bot := d.bot.map dmap ++ e.bot.map emap, otop := e.otop, obot := e.obot, boxes }
 
 /-- THE REGION'S NAMED OBJECTS CLOSED for `k` — a `def Ix : RelSet := ⟨Fin 65536⟩` is the OBJECT
     `Ix`, and inside `k` nothing can unfold it to its carrier.  The objects of a concrete region
@@ -1302,6 +1344,53 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let e ← rewriteSpine e
   let fs := factors e
   if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
+  -- A DIVISION IS A DASHED BOX ROUND ITS OPERAND'S OWN PICTURE, the divisor written on the side it
+  -- divides from: `S\R` (`S≫X ⊑ R`) replaces `R`'s SOURCE by `S`'s target, `R/S` (`X≫S ⊑ R`) its
+  -- TARGET by `S`'s source.  `∈\−` is no relator, so it has no wire; a bead would hide `R`.
+  let divOf : Option (Expr × Expr × Bool) := match e.getAppFnArgs with
+    | (``Freyd.Alg.leftDiv, a) => if a.size ≥ 2 then some (a[a.size - 2]!, a[a.size - 1]!, true) else none
+    | (``Freyd.Alg.DivisionAllegory.div, a) =>
+      if a.size ≥ 2 then some (a[a.size - 1]!, a[a.size - 2]!, false) else none
+    | _ => none
+  if let some (S, R, left) := divOf then
+    let (x, y) ← homEnds e
+    let d ← interp regionTy cat objVars vpass (if left then none else expect) R
+    -- The division's OWN end on the replaced side, read off its type, against the operand's there.
+    let (co, oo) ← if left then peelReadAt expect objVars cat regionTy x
+      else peelRead objVars cat regionTy y
+    let ow := co.map (·.1)
+    let iw := (if left then d.top else d.bot).map fun i => d.lanes[i]!.wire
+    let mut k := 0
+    while k < ow.size && k < iw.size do
+      unless ← Wire.beq ow[ow.size - 1 - k]! iw[iw.size - 1 - k]! do break
+      k := k + 1
+    let (ia, oi) := (if left then d.otop else d.obot, oo)
+    -- Above the edge the lanes of whichever end is OUTER, below it the other's; `k` run past.
+    let (arms, legs, ox, oy) := if left then (ow.extract 0 (ow.size - k), iw.extract 0 (iw.size - k), oi, ia)
+      else (iw.extract 0 (iw.size - k), ow.extract 0 (ow.size - k), ia, oi)
+    let over := ow.extract (ow.size - k) ow.size
+    let mut lanes : Array Lane := #[]
+    for w in arms do lanes := lanes.push { label := ← w.label, born := -1, dies := 0, wire := w }
+    for w in over do lanes := lanes.push { label := ← w.label, born := -1, dies := LIVE, wire := w }
+    for w in legs do lanes := lanes.push { label := ← w.label, born := 0, dies := LIVE, wire := w }
+    -- The divisor's spelling as the printer brackets it IN the division: the operand is a hole.
+    let hole := holeName 0
+    let side ← Meta.withLocalDeclD (Name.mkSimple hole) (← Meta.inferType R) fun h => do
+      let t ← labelT (mkAppN e.getAppFn
+        (e.getAppArgs.set! (e.getAppNumArgs - (if left then 1 else 2)) h))
+      return t.bare.mapText (·.replace hole "")
+    let ar := Array.mk (List.range arms.size)
+    let ov := Array.mk (List.range' arms.size over.size)
+    let lg := Array.mk (List.range' (arms.size + over.size) legs.size)
+    let ol ← label oy
+    let row : Row :=
+      { shape := side, key := "div:" ++ side.flat, arms := ar, legs := lg, over := ov, obj := ol,
+        src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy }, edge := true }
+    let b : Diagram :=
+      { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
+    let w ← if left then b.vcomp d else d.vcomp b
+    let bx : Box := ⟨0, w.rows.size - 1, Array.mk (List.range w.lanes.size), side⟩
+    return { w with boxes := w.boxes.push bx }
   -- A BUILT BUNDLE'S ACTION OPENS AS ITS OBJECTS DO: `(F×F')(R)` is `F(R)×F'(R)`, the product map
   -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
