@@ -94,9 +94,36 @@
   if t.k == "stack" {
     let ps = t.lanes.map(l => pic(l, length))
     let mw = calc.max(..ps.map(p => p.w))
-    return (w: mw, hh: (t.nin - 1) * UIP + calc.max(..ps.map(p => p.hh)),
-      body: ps.zip(ys(t.nin)).map(((p, y)) =>
-        d.group({ d.translate((0, y)); p.body; wire((p.w, 0), (mw, 0)) })).join())
+    // each lane centred on its own strands; a lane taller than its strands' span (a fork, a nested
+    // stack) would overlap its neighbour there, so then the lanes are spread and bent to the ports
+    let hs = ps.zip(t.lanes).map(((p, l)) => calc.max(p.hh, (l.nin - 1) * UIP, (l.nout - 1) * UIP))
+    let ns = t.lanes.map(l => calc.max(l.nin, 1))
+    let slot = ys(ns.sum())
+    let packed = ns.enumerate().map(((i, n)) => {
+      let o = ns.slice(0, i).sum(default: 0)
+      slot.slice(o, o + n).sum() / n
+    })
+    let tight = range(ps.len() - 1).any(i => packed.at(i) - packed.at(i + 1) < hs.at(i) + hs.at(i + 1))
+    if not tight {
+      return (w: mw, hh: (t.nin - 1) * UIP + calc.max(..ps.map(p => p.hh)),
+        body: ps.zip(t.lanes, packed).map(((p, l, c)) => d.group({
+          d.translate((0, c)); p.body; for y in ys(calc.max(l.nout, 1)) { wire((p.w, y), (mw, y)) } })).join())
+    }
+    let cs = (0.0,)
+    for i in range(1, ps.len()) { cs.push(cs.at(i - 1) - hs.at(i - 1) - 0.22 - hs.at(i)) }
+    let m = (cs.first() + cs.last()) / 2
+    let cs = cs.map(c => c - m)
+    let pin = t.lanes.zip(cs).map(((l, c)) => ys(l.nin).map(y => c + y)).flatten()
+    let pout = t.lanes.zip(cs).map(((l, c)) => ys(l.nout).map(y => c + y)).flatten()
+    let body = {
+      for (y, q) in ys(t.nin).zip(pin) { bend((0, y), (CSP, q), k: 0.5) }
+      for (i, p) in ps.enumerate() {
+        let l = t.lanes.at(i)
+        d.group({ d.translate((CSP, cs.at(i))); p.body; for y in ys(l.nout) { wire((p.w, y), (mw, y)) } })
+      }
+      for (q, y) in pout.zip(ys(t.nout)) { bend((CSP + mw, q), (2 * CSP + mw, y), k: 0.5) }
+    }
+    return (w: mw + 2 * CSP, hh: calc.max(..cs.zip(hs).map(((c, h)) => calc.abs(c) + h)), body: body)
   }
   // ---- §3 row 3: a projection.  The factors it drops END AT A DOT and the one it keeps crosses to
   // the port it leaves on — a product is already two wires, so this costs no box at all.

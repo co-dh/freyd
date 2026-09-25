@@ -429,13 +429,14 @@ constructor fed the input's factors is the carrier's structure map, a body that 
 is a discard.  One rule, so a map is named the same wherever it is spelled: on the box the circuit
 draws for it, and inside the `E(…)` or `⦇…⦈` of a label. -/
 
-/-- Which factor of a product a projection keeps, read off the function's own body. -/
-def projIndex (body : Expr) : Option Nat :=
+/-- Which factor of the INPUT `x` a projection keeps, read off the function's own body.  Only a
+    projection OF `x` counts: `fun t => (costSize t).1` is a map named `cost`, not a `π₁`. -/
+def projIndex (x body : Expr) : Option Nat :=
   match body with
-  | .proj ``Prod i _ => some i
+  | .proj ``Prod i s => if s == x then some i else none
   | _ => match body.getAppFnArgs with
-    | (``Prod.fst, _) => some 0
-    | (``Prod.snd, _) => some 1
+    | (``Prod.fst, #[_, _, s]) => if s == x then some 0 else none
+    | (``Prod.snd, #[_, _, s]) => if s == x then some 1 else none
     | _ => none
 
 /-- The last component of a declaration's name, for the places a picture writes a declaration by
@@ -725,7 +726,7 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
       | some v => Meta.whnfCore v
       | none => pure body₁
     else pure body₁
-  match projIndex body with
+  match projIndex (.fvar s) body with
   | some 0 => return "π₁"
   | some _ => return "π₂"
   | none =>
@@ -754,15 +755,15 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     -- is on the SOURCE and not on the body's head.
     if !(← hasStrands (← s.getType)) then return "nil"
     if isCtor && !body.containsFVar s then return "nil"
-    if isCtor && (body.find? fun x => projIndex x == some 0).isSome
-        && (body.find? fun x => projIndex x == some 1).isSome then
+    if isCtor && (body.find? fun x => projIndex (.fvar s) x == some 0).isSome
+        && (body.find? fun x => projIndex (.fvar s) x == some 1).isSome then
       -- WHICH FACTOR RECURSES NAMES THE MAP: the constructor is fed both factors of the input pair
       -- and one of them has the CARRIER's own type — the list being extended.  Second factor and the
       -- element goes on the front (`cons`), first and it goes on the end (`snoc`).  Read off the
       -- types, so the next carrier built either way is named without a line being added here.
       let t ← Meta.inferType body
       let recAt (i : Nat) : MetaM Bool := do
-        match body.find? fun x => projIndex x == some i with
+        match body.find? fun x => projIndex (.fvar s) x == some i with
         | some p => Meta.isDefEq (← Meta.inferType p) t
         | none => return false
       -- BOTH FACTORS THE CARRIER IS NOT A LIST: there is no side an element goes on, so `cons` and
