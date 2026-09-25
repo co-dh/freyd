@@ -1087,8 +1087,8 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
       ++ String.join (branch.map (·.suffix))
     let one (e : Expr) (s : Option String) : MetaM String := do
       return "cpanel(" ++ (← withSel branch e).render ++ ",\n  cert: (lean: " ++ tstr (name s) ++ "))"
-    -- A JOIN AT THE HEAD OF A SIDE IS TWO PANELS with its sign between, as in the Hinze–Marsden
-    -- column: one tape holding both operands' long labels is a panel scaled down to nothing.
+    -- A JOIN AT THE HEAD OF A SIDE IS TWO PANELS with its sign between: one tape holding both
+    -- operands is scaled down to nothing, and so is a row of them; stacked, each keeps its own width.
     let panel (e : Expr) (s : Option String) : MetaM String := do
       let ps ← if branch.isEmpty then StrDiag.joinParts "" e else pure #[("", e)]
       if ps.size == 1 then return ← one e s
@@ -1096,8 +1096,8 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
       for (sym, p) in ps do
         if !sym.isEmpty then cells := cells.push ("text(" ++ tstr sym ++ ")")
         cells := cells.push (← one p s)
-      return "grid(columns: " ++ toString cells.size ++ ", align: horizon, column-gutter: 6pt,\n  "
-        ++ ",\n  ".intercalate cells.toList ++ ")"
+      return "stack(dir: ttb, spacing: 4pt,\n  "
+        ++ ",\n  ".intercalate (cells.toList.map ("align(center, " ++ · ++ ")")) ++ ")"
     -- An unnamed side draws the WHOLE statement, both sides with its relation between, as the
     -- Hinze–Marsden route does: a law's circuit is the law, not one half of it.
     let pic ← match StrDiag.split body, side with
