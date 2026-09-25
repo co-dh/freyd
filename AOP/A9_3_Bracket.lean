@@ -1660,6 +1660,7 @@ public theorem graph_rpair {C D P Q : RelSet.{0}} (f : C.carrier → D.carrier) 
     obtain rfl := hm; obtain rfl := hm'
     exact ⟨_, rfl, hU, hV⟩
 
+omit [Inhabited A] in
 /-- The `⟨π₁ wrap,cons inits tail⟩` bead is lax natural. -/
 public theorem outlWrap_consInitsTail_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     rprodMap R (nelist R)
