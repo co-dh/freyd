@@ -805,78 +805,51 @@ both lists empty.
   [],
 )]<mct-laws>
 
-// B&dM (9.7), pp. 233-234: the book's five hints, one row each.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_rec") \
+// B&dM (9.7), pp. 233-234: the book's five hints, one step each, read left to right.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.mct_rec") \
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
-     // lean:AOP.A9_3_Bracket.mct_rec@4a856780
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs"),
-    [#src[recursive case of `mct`, and definition of `splits` — @mct-defn]])],
-     // lean:AOP.A9_3_Bracket.mct_rec_step1@b4883659
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs"),
-    [#src[`zip list(f×g)=(list(f)×list(g)) zip`]])],
-     // lean:AOP.A9_3_Bracket.mct_rec_step2@3cd48bd7
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs"),
-    [#src[introducing `mix≜zip list(bin) minlist(R)` — @mct-defn]])],
-     // lean:AOP.A9_3_Bracket.mct_rec_step3@28290b27
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs"),
-    [#src[`inits⁺=init inits` and `tails⁺=tail tails`, on non-singletons]])],
-     // lean:AOP.A9_3_Bracket.mct_rec_step4@0abf3076
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_rec_step5.rhs"),
-    [#src[definition of `row` and `col` — @mct-defn]])],
-     // lean:AOP.A9_3_Bracket.mct_rec_step5@c1b89aa6
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_rec_step5.rhs")],
+     // lean:AOP.A9_3_Bracket.mct_rec@d5db4aed
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Bracket.mct_rec_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs",
+      src[recursive case of `mct`, and definition of `splits` — @mct-defn]),
+     // lean:AOP.A9_3_Bracket.mct_rec_step1@fd2a48c2
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs", src[`zip list(f×g)=(list(f)×list(g)) zip`]),
+     // lean:AOP.A9_3_Bracket.mct_rec_step2@503ee736
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
+      src[introducing `mix≜zip list(bin) minlist(R)` — @mct-defn]),
+     // lean:AOP.A9_3_Bracket.mct_rec_step3@7cb91f9a
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs",
+      src[`inits⁺=init inits` and `tails⁺=tail tails`, on non-singletons]),
+     // lean:AOP.A9_3_Bracket.mct_rec_step4@a3f31058
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step5.rhs", src[definition of `row` and `col` — @mct-defn]),
+     // lean:AOP.A9_3_Bracket.mct_rec_step5@9bded5a9
+  ),
 )]<mct-rec>
 
-// B&dM (9.8), p. 234: the book's five hints, one row each.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Bracket.col_rec") \
+// B&dM (9.8), p. 234: the book's five hints, one step each, read left to right.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.col_rec") \
     #src[on a list of two or more elements, the column is what `next` makes of the column of its
      `init` and the row of its `tail`]],
-     // lean:AOP.A9_3_Bracket.col_rec@7c4de8ab
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs"),
-    [#src[definition of `col` — @mct-defn]])],
-     // lean:AOP.A9_3_Bracket.col_rec_step1@b164fb09
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs"),
-    [#src[`inits=⟨init inits,𝟙⟩ snoc` on non-singletons]])],
-     // lean:AOP.A9_3_Bracket.col_rec_step2@92fd5b86
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_rec_step3.rhs"),
-    [#src[`snoc list(f)=(list(f)×f) snoc`; definition of `col`]])],
-     // lean:AOP.A9_3_Bracket.col_rec_step3@5174ac41
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_rec_step4.rhs"),
-    [#src[(9.7) on non-singletons — @mct-rec]])],
-     // lean:AOP.A9_3_Bracket.col_rec_step4@7feb1094
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step4.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_rec_step5.rhs"),
-    [#src[introducing `next≜⟨π₁,mix⟩ snoc` — @mct-defn]])],
-     // lean:AOP.A9_3_Bracket.col_rec_step5@aa9f996b
-  [#lean("Freyd.Alg.RelSet.Bracket.col_rec_step5.rhs")],
+     // lean:AOP.A9_3_Bracket.col_rec@11ff5e11
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[definition of `col` — @mct-defn]),
+     // lean:AOP.A9_3_Bracket.col_rec_step1@b9b76e62
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs", src[`inits=⟨init inits,𝟙⟩ snoc` on non-singletons]),
+     // lean:AOP.A9_3_Bracket.col_rec_step2@42a73ac5
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step3.rhs",
+      src[`snoc list(f)=(list(f)×f) snoc`; definition of `col`]),
+     // lean:AOP.A9_3_Bracket.col_rec_step3@b23c2989
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step4.rhs", src[(9.7) on non-singletons — @mct-rec]),
+     // lean:AOP.A9_3_Bracket.col_rec_step4@dce2c925
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step5.rhs",
+      src[introducing `next≜⟨π₁,mix⟩ snoc` — @mct-defn]),
+     // lean:AOP.A9_3_Bracket.col_rec_step5@d570d2b6
+  ),
 )]<col-rec>
 
 // B&dM (9.10), p. 235: the book's three hints, one step each, read left to right.
@@ -884,16 +857,16 @@ both lists empty.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.row_rec") \
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
-     // lean:AOP.A9_3_Bracket.row_rec@bcaefb81
+     // lean:AOP.A9_3_Bracket.row_rec@2ee70011
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.row_rec_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[definition of `row` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.row_rec_step1@7749a479
+     // lean:AOP.A9_3_Bracket.row_rec_step1@8ee2d203
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step2.rhs", src[`tails=⟨𝟙,tail tails⟩ cons` on non-singletons]),
-     // lean:AOP.A9_3_Bracket.row_rec_step2@8cdf6344
+     // lean:AOP.A9_3_Bracket.row_rec_step2@53dda069
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step3.rhs",
       src[`cons list(f)=(f×list(f)) cons`; definition of `row`]),
-     // lean:AOP.A9_3_Bracket.row_rec_step3@f83b35bc
+     // lean:AOP.A9_3_Bracket.row_rec_step3@27b9f396
   ),
 )]<row-rec>
 
