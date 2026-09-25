@@ -1012,6 +1012,44 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.splitsFn] def unexpandBracketSplitsFn : Unexpander
   | `($_ $args*) => `($(mkIdent `splits) $args*)
   | _ => `($(mkIdent `splits))
+-- §9.3's tabulation: the list functions by the book's names, `row`/`col` without the `mct` they
+-- are taken of, `mix`/`next` without the leaf map, split cost and combine cost, as `R` does.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.initFn] def unexpandBracketInitFn : Unexpander
+  | _ => `($(mkIdent `init))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.tailFn] def unexpandBracketTailFn : Unexpander
+  | _ => `($(mkIdent `tail))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.neInitsFn] def unexpandBracketInitsFn : Unexpander
+  | _ => `($(mkIdent `inits))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.neTailsFn] def unexpandBracketTailsFn : Unexpander
+  | _ => `($(mkIdent `tails))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.initsPFn] def unexpandBracketInitsPFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "inits⁺")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.tailsPFn] def unexpandBracketTailsPFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "tails⁺")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.zipFn] def unexpandBracketZipFn : Unexpander
+  | _ => `($(mkIdent `zip))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.snocFn] def unexpandBracketSnocFn : Unexpander
+  | _ => `($(mkIdent `snoc))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.row] def unexpandBracketRow : Unexpander
+  | _ => `($(mkIdent `row))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.col] def unexpandBracketCol : Unexpander
+  | _ => `($(mkIdent `col))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.mix] def unexpandBracketMix : Unexpander
+  | _ => `($(mkIdent `mix))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.next] def unexpandBracketNext : Unexpander
+  | _ => `($(mkIdent `next))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Filter.filter] def unexpandFilterFilter : Unexpander
   | `($_ $args*) => `($(mkIdent `filter) $args*)
