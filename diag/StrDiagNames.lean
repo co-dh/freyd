@@ -1098,6 +1098,22 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.step] def unexpandBracketStep : Unexpander
   | _ => `($(mkIdent `step))
+-- Our own names for §9.3's long composites (not the book's): `graft`, `trees`, `tops`, `rests`, `newrows`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.graft] def unexpandBracketGraft : Unexpander
+  | _ => `($(mkIdent `graft))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.trees] def unexpandBracketTrees : Unexpander
+  | _ => `($(mkIdent `trees))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.tops] def unexpandBracketTops : Unexpander
+  | _ => `($(mkIdent `tops))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.rests] def unexpandBracketRests : Unexpander
+  | _ => `($(mkIdent `rests))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.newrows] def unexpandBracketNewrows : Unexpander
+  | _ => `($(mkIdent `newrows))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.listTailFn] def unexpandBracketListTailFn : Unexpander
   | _ => `($(mkIdent `tail))
