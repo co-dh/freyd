@@ -179,146 +179,162 @@ public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra 
   only matter for `dynamic_programming_of_thin`, Ex 9.1, which recovers Theorem 9.1 at `Q :=
   id`, where reflexivity IS needed to discharge `hQ`). -/
 
-/-- **Core of Theorem 9.2**: `M = min R°·ΛH` is a prefixed point of the THINNING
-    dynamic-programming body `min R°·P(h·FX)·thin Q·ΛT°` (mirrored), for any `H` satisfying the
-    hylomorphism fixed-point equation, given the thinning-compatibility hypothesis `hQ` (B&dM
-    p.221's unlabelled preorder condition connecting `Q` to `H` through `h`).  Same skeleton
-    as `dp_prefixed`, with a `thinRel Q` factor threaded through both halves of the min
-    universal property. -/
-theorem dp_thin_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
-    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+/-! ### Exercise 9.3: the proof of Theorem 9.1 with `thin(Q)` added, one theorem per step
+
+  `M≜Λ(H) est(R)` throughout.  Steps 1–2 and then `dynamic_programming_lower_step2/3` and the
+  fixed-point equation are (9.2) `body(M)⊑H`; steps 3–11 are (9.3) `H°body(M)⊑R°`. -/
+
+/-- (9.2) with thinning, step 1: rule (9.4) `P(X) est(R) ⊑ ∋X` at `X≜F(M)h`, after `thin(Q)`. -/
+public theorem dynamic_programming_thin_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (comp_mono_left _ (le_trans (powerRel_comp_est_le _ R) (inter_lb_left _ _)))
+
+/-- (9.2) with thinning, step 2: `thin(Q)∋⊑∋` — a thinned set is a subset. -/
+public theorem dynamic_programming_thin_step2 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (by simpa only [Cat.assoc] using (comp_mono_right (thinRel_comp_eps_le Q)
+    (F.map (Λ H ≫ est R) ≫ h)))
+
+/-- **(9.2) with thinning**: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`, mirrored — steps 1–2, then the
+    thinning-free (9.2)'s Λ cancellation, `M⊑H` and the fixed-point equation. -/
+public theorem dynamic_programming_thin_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ H :=
+  calc Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        dynamic_programming_thin_step1
+      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_thin_step2
+      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step2
+      _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
+      _ = H := hHfix
+
+/-- (9.3) with thinning, step 3: rule (9.4) `P(X) est(R) ⊑ ∈\(XR°)` at `X≜F(M)h`. -/
+public theorem dynamic_programming_thin_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  comp_mono_left _ (comp_mono_left _ (comp_mono_left _
+    (le_trans (powerRel_comp_est_le _ R) (inter_lb_right _ _))))
+
+/-- (9.3) with thinning, step 4: `H°=h°F(H°)T`, the converse of the fixed-point equation. -/
+public theorem dynamic_programming_thin_step4 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+          ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
+  have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
+    have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+    rw [← h1, hHfix]
+  conv => lhs; rw [hHrec]
+  simp only [Cat.assoc]
+
+/-- (9.3) with thinning, step 5: `TΛ(T°)⊑∈` — cancellation of the transpose, conversed. -/
+public theorem dynamic_programming_thin_step5 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
+  have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
+    simpa only [Allegory.recip_recip] using recip_comp_Λ_le_recip_eps (T°)
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using (comp_mono_right hTA
+    (thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))))))
+
+/-- (9.3) with thinning, step 6: `∈ thin(Q)⊑Q°∈` — every discarded candidate is `Q`-below a kept
+    one. -/
+public theorem dynamic_programming_thin_step6 {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right (recip_eps_comp_thinRel_le Q)
+      (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))))
+
+/-- (9.3) with thinning, step 7: division cancels, `∈(∈\Y)⊑Y`. -/
+public theorem dynamic_programming_thin_step7 {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+        ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
+  comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (leftDiv_comp_le ((∋ (F.obj A))°) ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))))
+
+/-- (9.3) with thinning, step 8: the thinning condition `QF(H)h⊑F(H)hR`, conversed. -/
+public theorem dynamic_programming_thin_step8 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
-  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
-  have h94 := powerRel_comp_est_le (F.map (Λ H ≫ est R) ≫ h) R
-  apply le_Λ_comp_est_iff.mpr
-  constructor
-  · -- (9.2)-with-thin: `min R°·P(h·FM)·thin Q·ΛT° ⊆ H`
-    have step1 : Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h) :=
-      comp_mono_left _ (comp_mono_left _ (le_trans h94 (inter_lb_left _ _)))
-    have step2 : Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h)
-        ⊑ T° ≫ F.map (Λ H ≫ est R) ≫ h := by
-      have e1 : Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h)
-          = (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h := by
-        simp only [Cat.assoc]
-      rw [e1]
-      have e2 : (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h
-          ⊑ (Λ (T°) ≫ ∋ (F.obj A)) ≫ F.map (Λ H ≫ est R) ≫ h :=
-        comp_mono_right (comp_mono_left _ (thinRel_comp_eps_le Q)) _
-      have e3 : (Λ (T°) ≫ ∋ (F.obj A)) ≫ F.map (Λ H ≫ est R) ≫ h
-          = T° ≫ F.map (Λ H ≫ est R) ≫ h := by rw [Λ_eps_eq']
-      rwa [e3] at e2
-    have step3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
-      comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
-    rw [hHfix] at step3
-    exact le_trans step1 (le_trans step2 step3)
-  · -- (9.3)-with-thin: `H°·min R°·P(h·FM)·thin Q·ΛT° ⊆ R°`
-    have hL := le_trans h94 (inter_lb_right _ _)
-    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
-      have h0 := recip_comp_Λ_le_recip_eps (T°)
-      rwa [Allegory.recip_recip] at h0
-    have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
-      have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      rw [← h1, hHfix]
-    -- the tail bound: peel `T·ΛT°` down to `∋°`, then `thin Q` down to `Q°·∋°`
-    have t1 : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) :=
-      comp_mono_left _ (comp_mono_left _ (comp_mono_left _ hL))
-    have t2 : T ≫ Λ (T°) ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))
-        ⊑ (∋ (F.obj A))° ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) := by
-      rw [← Cat.assoc T (Λ (T°)) _]
-      exact comp_mono_right hTA _
-    have t3 : (∋ (F.obj A))° ≫ (thinRel Q ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)))
-        ⊑ (Q° ≫ (∋ (F.obj A))°) ≫ (((∋ (F.obj A))°) \
-            ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
-      rw [← Cat.assoc]
-      exact comp_mono_right (recip_eps_comp_thinRel_le Q) _
-    have t4 : (Q° ≫ (∋ (F.obj A))°) ≫ (((∋ (F.obj A))°) \
-          ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
-        ⊑ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      rw [Cat.assoc]
-      exact comp_mono_left _ (leftDiv_comp_le _ _)
-    have htail : T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      le_trans t1 (le_trans t2 (le_trans t3 t4))
-    -- split `H°` in front and reassociate (backward-rewrite trick, cf. `dp_prefixed`'s `c1`)
-    have c1 : H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°) ≫ T)
-            ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      rw [← hHrec]
-    have c2 : (h° ≫ F.map (H°) ≫ T)
-          ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        = (h° ≫ F.map (H°))
-            ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R := by
-      simp only [Cat.assoc]
-    have hbound : (h° ≫ F.map (H°))
-          ≫ T ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-        ⊑ (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      comp_mono_left _ htail
-    -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q° ⊑ R°·h°·FH°`
-    have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
-      have hrm := recip_mono hQ
-      have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ Q° ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        = (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      simp only [Cat.assoc]
-    rw [hre1] at hbound
-    have step6 : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
-      comp_mono_right hQrec _
-    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
-        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-      simp only [Cat.assoc]
-    rw [hre2] at step6
-    -- collapse: `F(M·H°) ⊆ FR` then conjugated monotonicity and transitivity
-    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
-        rw [← F.map_comp]
-        exact F.map_mono hHMR
-      have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
-        rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
-        exact comp_mono_left _ (comp_mono_right hFRM h)
-      exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
-    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° ≫ R° ≫ R° :=
-      comp_mono_left R° (comp_mono_right hinner R°)
-    have hRRR : R° ≫ R° ≫ R° ⊑ R° := le_trans (comp_mono_left R° htrans) htrans
-    have hchain : (h° ≫ F.map (H°) ≫ Q°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° :=
-      le_trans step6 (le_trans step7 hRRR)
-    rw [c1, c2]
-    exact le_trans hbound hchain
+    h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R°
+      ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° := by
+  have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
+    have hrm := recip_mono hQ
+    have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+    have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+    rwa [eL, eR] at hrm
+  simpa only [Cat.assoc] using comp_mono_right hQrec (F.map (Λ H ≫ est R) ≫ h ≫ R°)
 
-/-! ### The optimisation chain (note §15.1b)
+/-- (9.3) with thinning, step 9: `H°M⊑R°`, the second component of the universal property of
+    `est` at `M`, under `F`. -/
+public theorem dynamic_programming_thin_step9 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° ⊑ R° ≫ h° ≫ F.map R° ≫ h ≫ R° := by
+  have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
+    rw [← F.map_comp]
+    exact F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right hFRM (h ≫ R°))))
 
-  `H%∋ est(R) ⊒ (T°)%∋ thin(Q)P(F(X)h)est(R)`: the note draws the spec as the single bead `X`
-  sitting inside the body, so the step abstracts that abbreviation out of `dp_thin_prefixed`. -/
+/-- (9.3) with thinning, step 10: `h` monotonic on `R`, in the conjugated form `h°F(R°)h⊑R°`. -/
+public theorem dynamic_programming_thin_step10 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : MonotonicAlg h R°) :
+    R° ≫ h° ≫ F.map R° ≫ h ≫ R° ⊑ R° ≫ R° ≫ R° :=
+  comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right ((monotonicAlg_iff_conj hh).mp hmono) R°))
 
-/-- Step 1: at `X≜H%∋ est(R)` the thinning body is below the spec — the prefixed point
-    Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
-public theorem dynamic_programming_thin_step1 (hFr : F.PreservesRecip)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
-    {X : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
-    (hX : X = Λ H ≫ est R) :
-    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ H ≫ est R := by
-  subst hX
-  exact dp_thin_prefixed hFr hh hmono htrans hHfix hQ
+/-- (9.3) with thinning, step 11: `R` transitive, used twice. -/
+public theorem dynamic_programming_thin_step11 {R : B ⟶ B} (htrans : R° ≫ R° ⊑ R°) :
+    R° ≫ R° ≫ R° ⊑ R° :=
+  le_trans (comp_mono_left R° htrans) htrans
+
+/-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored — steps 3–11. -/
+public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
+    (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
+  calc H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      _ ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step3
+      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step4 hFr hHfix
+      _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step5
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
+            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        dynamic_programming_thin_step6
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° := dynamic_programming_thin_step7
+      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
+        dynamic_programming_thin_step8 hFr hQ
+      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h ≫ R° := dynamic_programming_thin_step9
+      _ ⊑ R° ≫ R° ≫ R° := dynamic_programming_thin_step10 hh hmono
+      _ ⊑ R° := dynamic_programming_thin_step11 htrans
 
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
     recursion — provided `Q` interacts correctly with `H := ⦇h⦈·⦇T⦈°` and `h` (hypothesis
     `hQ`).  Ex 9.1 (`dynamic_programming_of_thin`) recovers Theorem 9.1 as the instance
-    `Q := id`. By Knaster–Tarski via `dp_thin_prefixed`. -/
+    `Q := id`.  Knaster–Tarski reduces it to (9.1) `body(M)⊑M`, which the universal property of
+    `est` splits into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
@@ -326,8 +342,9 @@ public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlg
         ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (dynamic_programming_thin_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
+    ⟨dynamic_programming_thin_lower (hylo_fixed hFr I h T),
+     dynamic_programming_thin_upper hFr hh hmono htrans (hylo_fixed hFr I h T) hQ⟩))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 
