@@ -186,6 +186,12 @@ public theorem R_recip_refl : 𝟙 (dTree A) ⊑ (R st sb cb)° :=
     Int × S :=
   (cb (p.1.2, p.2.2) + p.1.1 + p.2.1, sb (p.1.2, p.2.2))
 
+/-- **mct-defn**: `g`, the relation drawn as one bead — the graph of `gFn`, whose two summands a
+    picture would otherwise open. -/
+@[expose] public def gR (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
+    (TT.F A).obj (⟨Int × NEList A⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}) :=
+  graph (gFn st sb cb)
+
 /-- `⟨R,S⟩(U×V)=⟨RU,SV⟩` — a pair followed by a product action acts on each component. -/
 public theorem rpair_comp_rprodMap {C A B a' b' : RelSet.{0}} (R : C ⟶ A) (S : C ⟶ B)
     (U : A ⟶ a') (V : B ⟶ b') : rpair R S ≫ rprodMap U V = rpair (R ≫ U) (S ≫ V) :=
@@ -222,7 +228,7 @@ local notation "binG" => (graph (fun p : Tree A × Tree A => Tree.bin p.1 p.2)
 set_option hygiene false in
 local notation "tipG" => (graph (Tree.tip (A := A)) : dA A ⟶ dTree A)
 set_option hygiene false in
-local notation "gG" => (graph (gFn st sb cb)
+local notation "gG" => (gR st sb cb
   : TFobj A (⟨Int × NEList A⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}))
 
 /-- **mct-defn**: `g≜[zero,(𝟙×sz)² opb π₁]` — the note's definition of `g` is `gFn`. -/
@@ -296,14 +302,14 @@ public theorem mct_cost_alg_step4 :
 /-- (9.5), fifth step: coproducts, `[tip cost,bin cost]=[tip,bin] cost`. -/
 public theorem mct_cost_alg_step5 :
     junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) (tipG ≫ costG) (binG ≫ costG)
-      = graph con ≫ costG := by
-  rw [con_eq_junc, junc_comp]
+      = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG := by
+  exact (junc_comp _ _ _ _).symm
 
 /-- **mct-laws** (9.5): `(𝟙+⟨cost,flatten⟩²)g=[tip,bin] cost` — the cost of a node reads only
     the cost and the flattening of its two subtrees.  `sb` associative enters at step 2, through
     `size=flatten sz`. -/
 public theorem mct_cost_alg (hassoc : Assoc sb) :
-    (TT.F A).map ((P A).pair costG flattenG) ≫ gG = graph con ≫ costG :=
+    (TT.F A).map ((P A).pair costG flattenG) ≫ gG = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG :=
   calc (TT.F A).map ((P A).pair costG flattenG) ≫ gG
       _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) zeroG
           (rprodMap (rpair costG (flattenG ≫ szG)) (rpair costG (flattenG ≫ szG))
@@ -315,7 +321,7 @@ public theorem mct_cost_alg (hassoc : Assoc sb) :
           (binG ≫ rpair costG sizeG ≫ outlG) := mct_cost_alg_step3 st sb cb
       _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) (tipG ≫ costG) (binG ≫ costG) :=
         mct_cost_alg_step4 st sb cb
-      _ = graph con ≫ costG := mct_cost_alg_step5 st sb cb
+      _ = junc (sumCop (dA A) (⟨Tree A × Tree A⟩ : RelSet.{0})) tipG binG ≫ costG := mct_cost_alg_step5 st sb cb
 
 /-- (9.6), first step: definition of `g` — `F(≤×𝟙)g=[zero,(≤×sz)² opb π₁]`. -/
 public theorem mct_g_mono_step1 :
@@ -414,14 +420,14 @@ public theorem mct_mono (hassoc : Assoc sb) :
     (TT.F A).map (R st sb cb ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ R st sb cb :=
   monotonicAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2 (R_eq st sb cb)
-    (mct_cost_alg st sb cb hassoc).symm (mct_g_mono st sb cb)
+    ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono st sb cb)
 
 /-- The same at the mirrored order, which is what `dynamic_programming_context` consumes. -/
 public theorem mct_mono_recip (hassoc : Assoc sb) :
     (TT.F A).map ((R st sb cb)° ∩ (graph flattenFn ≫ (graph (flattenFn (A := A)))°)) ≫ graph con
       ⊑ graph con ≫ (R st sb cb)° :=
   monotonicAlg_in_context (graph_map (costFn st sb cb)) (graph_map flattenFn).2
-    (R_recip_eq st sb cb) (mct_cost_alg st sb cb hassoc).symm (mct_g_mono_geq st sb cb)
+    (R_recip_eq st sb cb) ((mct_cost_alg st sb cb hassoc).trans (congrArg (· ≫ _) con_eq_junc.symm)).symm (mct_g_mono_geq st sb cb)
 
 /-- **mct-laws**, second row (B&dM p.231): a least-cost bracketing is the least fixed point of
     `(μX : [wrap,cat]° P([tip,(X×X)bin]) est(R))` — split the list in every way, bracket both
@@ -723,6 +729,32 @@ public theorem bin_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
     cases t with
     | tip _ => exact h.elim
     | bin t₁ t₂ => exact ⟨(t₁, t₂), ⟨h.1, h.2⟩, rfl⟩
+
+/-- **`[tip,bin]` IS STRICTLY NATURAL** — the constructors of `tree`, read lane by lane: the leaf
+    arm relates two tips exactly when `R` relates their labels, the node arm is `bin_natural`. -/
+public theorem tipBin_strictNatural :
+    StrictNatural treeRelator
+      (Relator.sum (Relator.idRelator RelSet.{0}) (Relator.prod treeRelator treeRelator))
+      (fun a => junc (sumCop a (⟨Tree a.carrier × Tree a.carrier⟩ : RelSet.{0}))
+        (graph (Tree.tip (A := a.carrier)) : a ⟶ dTree a.carrier)
+        (graph (fun p : Tree a.carrier × Tree a.carrier => Tree.bin p.1 p.2)
+          : (⟨Tree a.carrier × Tree a.carrier⟩ : RelSet.{0}) ⟶ dTree a.carrier)) := by
+  intro a b R
+  rw [show (Relator.sum (Relator.idRelator RelSet.{0})
+        (Relator.prod treeRelator treeRelator)).map R
+      = sumMap (sumCop a ⟨Tree a.carrier × Tree a.carrier⟩)
+          (sumCop b ⟨Tree b.carrier × Tree b.carrier⟩)
+          R (rprodMap (tree R) (tree R)) from prodMap_eq_rprodMap _ _ ▸ rfl,
+    sumMap_junc, junc_comp]
+  congr 1
+  · apply hom_ext; intro x t
+    constructor
+    · rintro ⟨y, hy, rfl⟩; exact ⟨Tree.tip x, rfl, hy⟩
+    · rintro ⟨u, rfl, h⟩
+      cases t with
+      | tip y => exact ⟨y, h, rfl⟩
+      | bin _ _ => exact h.elim
+  · exact bin_natural R
 
 /-- `consSplits` transports along `list⁺(R)`: one more element at the front of both lists leaves
     the two split lists position for position related. -/

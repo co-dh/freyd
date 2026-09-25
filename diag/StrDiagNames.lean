@@ -73,6 +73,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart cod
   RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
+  RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
@@ -420,8 +421,16 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
   | _ => `($(mkIdent `opb))
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.gFn] def unexpandBracketGFn : Unexpander
+@[app_unexpander RelSet.Bracket.gR] def unexpandBracketGR : Unexpander
   | _ => `($(mkIdent `g))
+-- The label summand of `F X = A + X²` is the label type itself; `≤` on `Int` is its operator.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.dA] def unexpandTTdA : Unexpander
+  | `($_ $a) => `($a)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.leq] def unexpandListRelLeq : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≤")))
 
 open Lean PrettyPrinter in
 /-- The maximum-segment-sum step is the note's `⊕`, which is no Lean identifier: the formatter
