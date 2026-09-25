@@ -252,7 +252,8 @@
   m
   hchain(fill: true, ..ss.zip(pics).map(((s, p)) => (s.at(0), p, [])))
   v(6pt)
-  stack(dir: ttb, spacing: 6pt, ..ss.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))))
+  // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
+  pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..ss.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))))
 }
 #let sort-P-box = ([`sort(P)`], 2.23, true)
 #let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
