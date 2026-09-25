@@ -376,30 +376,26 @@ both lists empty.
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step1@1f625262
+    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn; and the bifunctor `F` preserves
+      composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs")],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
-    [#src[the bifunctor `F` preserves composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step2@b4d4a652 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
+    [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step2@fa716636
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs")],
 
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
-    [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step3@fa716636
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs"),
+    [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
+     // lean:AOP.A9_2_Edit.edit_thin_step3@cf285d6c
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step3.rhs")],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
-    [#src[`F` preserves composition: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step4@cf285d6c
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step5.rhs"),
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤,R)α⊑αR`, left as an exercise in the book: `cons`
       adds one to both lengths whatever the two operations are]])],
-     // lean:AOP.A9_2_Edit.edit_thin_step5@d0f1f0c6
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step5.rhs")],
+     // lean:AOP.A9_2_Edit.edit_thin_step4@d0f1f0c6
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step4.rhs")],
 )]<edit-thin>
 
 // B&dM p.226: the second condition of Proposition 9.4, split at `V°=(suffix×𝟙)(𝟙×suffix)`.
