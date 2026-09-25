@@ -226,15 +226,6 @@
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
 // PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
 // flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
-// A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
-// `#lean` call, so every step stands in one box at one height, each step's circuit under its panel
-// and its reason under the op it justifies.
-#let lean-chain(..steps, fill: false) = {
-  let ss = steps.pos()
-  let (m, pics) = lean-pics("generated/", <lean-panel>, ss.map(s => s.at(1)))
-  m
-  hchain(fill: fill, ..ss.zip(pics).map(((s, p)) => (s.at(0), p, s.at(2), none, leanc(s.at(1)))))
-}
 #let step(op, pic, f, pw: none) = layout(sz => {
   let gut = 6pt
   // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
@@ -250,6 +241,19 @@
   pic-meta(plain(f), row, width: sz.width)
   row
 })
+// A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
+// `#lean` call, so every step stands in one box at one height, on ONE line scaled to the width
+// (`fill`), because a wrapped chain hides which step follows which.  The circuits follow as their
+// own block, one `step` row each — op, circuit, reason — since aligning them under the panels
+// forced the panels to wrap to the circuits' widths.
+#let lean-chain(..steps) = {
+  let ss = steps.pos()
+  let (m, pics) = lean-pics("generated/", <lean-panel>, ss.map(s => s.at(1)))
+  m
+  hchain(fill: true, ..ss.zip(pics).map(((s, p)) => (s.at(0), p, [])))
+  v(6pt)
+  stack(dir: ttb, spacing: 6pt, ..ss.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))))
+}
 #let sort-P-box = ([`sort(P)`], 2.23, true)
 #let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
 #let est-Rc-box = ([`est(R°)`], 2.2, true)
