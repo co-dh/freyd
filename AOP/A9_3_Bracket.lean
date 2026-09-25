@@ -41,6 +41,8 @@ public import AOP.A5_6_ListCombinators
 -- `est(R)`, and `setify`'s lax naturality (`AOP.A5_7_ListBeads`) shunting `list(f)` to `P(f)`.
 public import AOP.A8_3
 public import AOP.A5_7_ListBeads
+-- `bmin`, B&dM's binary minimum, from which `minlist(R)` is folded.
+public import AOP.A9_2_Edit
 
 namespace Freyd.Alg.RelSet.Bracket
 
@@ -872,23 +874,106 @@ public theorem tailsPFn_cons (a : A) (z : NEList A) :
 @[expose] public def snocFn {X : Type} (p : CL.ConsList Unit X × X) : CL.ConsList Unit X :=
   cappend p.1 (CL.ConsList.cons p.2 (CL.ConsList.wrap ()))
 
-variable (mct : NEList A → Tree A)
+/-- `minlist(R) : list A⟶A` as B&dM implement it (p. 267), `foldr1 bmin(R)`: the leftmost of the
+    `R`-least elements, so a FUNCTION.  `default` answers `[]`, which no non-singleton's `splits` is. -/
+@[expose] public def minlistFn {X : Type} [Inhabited X] (Q : CL.dE X ⟶ CL.dE X)
+    [∀ a b, Decidable (Q a b)] : CL.ConsList Unit X → X
+  | CL.ConsList.wrap _ => default
+  | CL.ConsList.cons a (CL.ConsList.wrap _) => a
+  | CL.ConsList.cons a (CL.ConsList.cons b x) => Edit.bmin Q (a, minlistFn Q (CL.ConsList.cons b x))
+
+public instance instDecR (t t' : Tree A) : Decidable (R st sb cb t t') :=
+  inferInstanceAs (Decidable (costFn st sb cb t ≤ costFn st sb cb t'))
+
+/-- The length of a non-empty list — the bound `mct`'s recursion runs to. -/
+@[expose] public def neLen : NEList A → Nat
+  | CL.ConsList.wrap _ => 1
+  | CL.ConsList.cons _ x => neLen x + 1
+
+/-- `mct` unfolded `n` times: the recursion `(single→tip head,minlist(R) list(bin(X×X)) splits)`
+    by structural recursion on the depth, since a split's halves are shorter but not sub-terms. -/
+@[expose] public def mctN [Inhabited A] : Nat → NEList A → Tree A
+  | _, CL.ConsList.wrap a => Tree.tip a
+  | 0, CL.ConsList.cons a _ => Tree.tip a
+  | n + 1, x@(CL.ConsList.cons _ _) =>
+      minlistFn (R st sb cb) (cmap (fun p => Tree.bin (mctN n p.1) (mctN n p.2)) (splitsFn x))
+
+/-- **mct-defn** (B&dM p. 233): `mct≜(single→tip head,minlist(R) list(bin(mct×mct)) splits)`,
+    unfolded as deep as the list is long. -/
+@[expose] public def mct [Inhabited A] (x : NEList A) : Tree A := mctN st sb cb (neLen x) x
+
+public theorem neLen_pos : ∀ x : NEList A, 1 ≤ neLen x
+  | CL.ConsList.wrap _ => Nat.le_refl 1
+  | CL.ConsList.cons _ x => Nat.le_add_left 1 (neLen x)
+
+public theorem neLen_cat : ∀ u v : NEList A, neLen (cat u v) = neLen u + neLen v
+  | CL.ConsList.wrap _, v => by simp only [cat, neLen]; omega
+  | CL.ConsList.cons _ u, v => by simp only [cat, neLen]; rw [neLen_cat u v]; omega
+
+/-- `list(f)=list(g)` on a list whose every element `f` and `g` agree on. -/
+public theorem cmap_congr {X Y : Type} {f g : X → Y} :
+    ∀ xs : CL.ConsList Unit X, (∀ p, inlistP xs p → f p = g p) → cmap f xs = cmap g xs
+  | CL.ConsList.wrap _, _ => rfl
+  | CL.ConsList.cons b xs, h => by
+      show CL.ConsList.cons (f b) (cmap f xs) = CL.ConsList.cons (g b) (cmap g xs)
+      rw [h b (Or.inl rfl), cmap_congr xs fun p hp => h p (Or.inr hp)]
+
+/-- Each half of a split of `x` is at least one shorter than `x`. -/
+public theorem neLen_splits {x : NEList A} {p : NEList A × NEList A} (hp : inlistP (splitsFn x) p) :
+    neLen p.1 + 1 ≤ neLen x ∧ neLen p.2 + 1 ≤ neLen x := by
+  have hl := congrArg neLen ((mem_splits x p).mp hp)
+  rw [neLen_cat] at hl
+  have h1 := neLen_pos p.1; have h2 := neLen_pos p.2
+  omega
+
+/-- Any depth past the length gives the same tree. -/
+public theorem mctN_stable [Inhabited A] : ∀ (n m : Nat) (x : NEList A),
+    neLen x ≤ n + 1 → neLen x ≤ m + 1 → mctN st sb cb n x = mctN st sb cb m x
+  | n, m, CL.ConsList.wrap _, _, _ => by cases n <;> cases m <;> rfl
+  | 0, _, CL.ConsList.cons _ z, h, _ => by have := neLen_pos z; simp only [neLen] at h; omega
+  | _ + 1, 0, CL.ConsList.cons _ z, _, h => by have := neLen_pos z; simp only [neLen] at h; omega
+  | n + 1, m + 1, CL.ConsList.cons a z, hn, hm => by
+      show minlistFn _ (cmap _ _) = minlistFn _ (cmap _ _)
+      refine congrArg _ (cmap_congr _ fun p hp => ?_)
+      have hs := neLen_splits hp
+      rw [mctN_stable n m p.1 (by omega) (by omega), mctN_stable n m p.2 (by omega) (by omega)]
+
+/-- `mct`'s recursive case, pointwise. -/
+public theorem mct_cons [Inhabited A] (a : A) (z : NEList A) :
+    mct st sb cb (CL.ConsList.cons a z) = minlistFn (R st sb cb)
+      (cmap (fun p => Tree.bin (mct st sb cb p.1) (mct st sb cb p.2))
+        (splitsFn (CL.ConsList.cons a z))) := by
+  show minlistFn _ (cmap _ _) = minlistFn _ (cmap _ _)
+  refine congrArg _ (cmap_congr _ fun p hp => ?_)
+  have hs := neLen_splits hp
+  simp only [neLen] at hs
+  show Tree.bin _ _ = Tree.bin (mctN st sb cb _ p.1) (mctN st sb cb _ p.2)
+  rw [mctN_stable st sb cb (neLen z) (neLen p.1) p.1 (by omega) (by omega),
+    mctN_stable st sb cb (neLen z) (neLen p.2) p.2 (by omega) (by omega)]
+
+/-- `f×g` of two maps is the map of the pair. -/
+public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X'.carrier)
+    (g : Y.carrier → Y'.carrier) :
+    rprodMap (graph f : X ⟶ X') (graph g : Y ⟶ Y')
+      = graph (fun p : X.carrier × Y.carrier => (f p.1, g p.2)) :=
+  hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
+    fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
 
 /-- `row≜tails list(mct)`. -/
-@[expose] public def row : dNE A ⟶ dList (Tree A) :=
-  (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)
+@[expose] public def row [Inhabited A] : dNE A ⟶ dList (Tree A) :=
+  (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))
 
 /-- `col≜inits list(mct)`. -/
-@[expose] public def col : dNE A ⟶ dList (Tree A) :=
-  (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)
+@[expose] public def col [Inhabited A] : dNE A ⟶ dList (Tree A) :=
+  (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))
 
 /-- `mix≜zip list(bin) minlist(R)`. -/
-@[expose] public def mix (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
+@[expose] public def mix [Inhabited A] (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)⟩ : RelSet.{0}) ⟶ dTree A :=
-  (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ CL.minlist (R st sb cb)
+  (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
 
 /-- `next≜⟨π₁,mix⟩ snoc`. -/
-@[expose] public def next (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
+@[expose] public def next [Inhabited A] (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     (⟨CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)⟩ : RelSet.{0}) ⟶ dList (Tree A) :=
   rpair (graph Prod.fst : _ ⟶ dList (Tree A)) (mix st sb cb)
     ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0}) ⟶ dList (Tree A))
@@ -1143,17 +1228,25 @@ public theorem consAtUnit_lax_natural {X X' : Type} (R : CL.dE X ⟶ CL.dE X') :
 
 /-! ### (9.7): `mct` in terms of `row` and `col` -/
 
+variable [Inhabited A]
+
+/-- **mct-defn**: `mct`'s recursive equation, proved once — on non-singletons
+    `mct=splits list(bin(mct×mct)) minlist(R)`. -/
+public theorem mct_eq :
+    nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
+      = nonsingle ≫ splits ≫ list (rprodMap (graph (mct st sb cb)) (graph (mct st sb cb)) ≫ binG)
+          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+  simp only [splits, rprodMap_graph_pair, list_graph, graph_comp, graph_comp_comp]
+  exact nonsingle_graph fun a z => mct_cons st sb cb a z
+
 /-- (9.7), first step: recursive case of `mct` and definition of `splits`. -/
-public theorem mct_rec_step1
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb)) :
-    nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
+public theorem mct_rec_step1 :
+    nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
       = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ (graph zipFn : _ ⟶ dList (NEList A × NEList A))
-          ≫ list (rprodMap (graph mct) (graph mct) ≫ binG) ≫ CL.minlist (R st sb cb) := by
-  rw [hmct, rpair_graph, graph_comp_comp]
+          ≫ list (rprodMap (graph (mct st sb cb)) (graph (mct st sb cb)) ≫ binG) ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+  rw [mct_eq, rpair_graph, graph_comp_comp]
   exact congrArg (fun f => nonsingle ≫ (graph f : dNE A ⟶ dList (NEList A × NEList A)) ≫ _)
     (funext splitsFn_eq)
 
@@ -1162,35 +1255,30 @@ public theorem mct_rec_step2 :
     nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
           (graph tailsPFn : dNE A ⟶ dList (NEList A))
         ≫ (graph zipFn : _ ⟶ dList (NEList A × NEList A))
-        ≫ list (rprodMap (graph mct) (graph mct) ≫ binG) ≫ CL.minlist (R st sb cb)
-      = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-            ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ≫ (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ CL.minlist (R st sb cb) := by
-  -- `RelSet.rprodMap_graph` is not public, and exposing it would rebuild every importer.
-  have hp : rprodMap (graph mct : dNE A ⟶ dTree A) (graph mct)
-      = graph (fun p : NEList A × NEList A => (mct p.1, mct p.2)) :=
-    hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
-      fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
-  simp only [hp, list_graph, graph_comp, rpair_graph, graph_comp_comp]
+        ≫ list (rprodMap (graph (mct st sb cb)) (graph (mct st sb cb)) ≫ binG) ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
+      = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+            ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ≫ (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := by
+  simp only [rprodMap_graph_pair, list_graph, graph_comp, rpair_graph, graph_comp_comp]
   refine nonsingle_graph_comp _ fun a z => ?_
   rw [← cmap_zip, cmap_cmap]
 
 /-- (9.7), third step: introducing `mix≜zip list(bin) minlist(R)`. -/
 public theorem mct_rec_step3 :
-    nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-        ≫ (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ CL.minlist (R st sb cb)
-      = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)) ≫ mix st sb cb := rfl
+    nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+        ≫ (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A)
+      = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))) ≫ mix st sb cb := rfl
 
 /-- (9.7), fourth step: `inits⁺=init inits` and `tails⁺=tail tails`, on non-singletons. -/
 public theorem mct_rec_step4 :
-    nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)) ≫ mix st sb cb
+    nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))) ≫ mix st sb cb
       = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
-              ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+              ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
             ((graph tailFn : dNE A ⟶ dNE A)
-              ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+              ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
           ≫ mix st sb cb := by
   simp only [list_graph, graph_comp, rpair_graph]
   refine nonsingle_graph_comp _ fun a z => ?_
@@ -1199,42 +1287,39 @@ public theorem mct_rec_step4 :
 /-- (9.7), fifth step: definition of `row` and `col`. -/
 public theorem mct_rec_step5 :
     nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
-            ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+            ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
           ((graph tailFn : dNE A ⟶ dNE A)
-            ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+            ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
         ≫ mix st sb cb
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb := rfl
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb := rfl
 
 /-- **(9.7)**: `mct=(single→head tip,⟨init col,tail row⟩ mix)`, its recursive case — on a list of
     two or more, `mct` is `mix` of the column above and the row beside. -/
-public theorem mct_rec
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb)) :
-    nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb :=
-  calc nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
+public theorem mct_rec :
+    nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb :=
+  calc nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
           ≫ (graph zipFn : _ ⟶ dList (NEList A × NEList A))
-          ≫ list (rprodMap (graph mct) (graph mct) ≫ binG) ≫ CL.minlist (R st sb cb) :=
-        mct_rec_step1 st sb cb mct hmct
-      _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-            ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+          ≫ list (rprodMap (graph (mct st sb cb)) (graph (mct st sb cb)) ≫ binG) ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) :=
+        mct_rec_step1 st sb cb
+      _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+            ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
           ≫ (graph zipFn : _ ⟶ dList (Tree A × Tree A)) ≫ list binG
-          ≫ CL.minlist (R st sb cb) := mct_rec_step2 st sb cb mct
-      _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)) ≫ mix st sb cb :=
-        mct_rec_step3 st sb cb mct
+          ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := mct_rec_step2 st sb cb
+      _ = nonsingle ≫ rpair ((graph initsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ((graph tailsPFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))) ≫ mix st sb cb :=
+        mct_rec_step3 st sb cb
       _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
-              ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
+              ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
             ((graph tailFn : dNE A ⟶ dNE A)
-              ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct))
-          ≫ mix st sb cb := mct_rec_step4 st sb cb mct
-      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb := mct_rec_step5 st sb cb mct
+              ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)))
+          ≫ mix st sb cb := mct_rec_step4 st sb cb
+      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb := mct_rec_step5 st sb cb
 
 /-- A pair whose first component is a map, followed by `⟨π₁,M⟩`, keeps that component. -/
 public theorem rpair_graph_fst {C P Q W : RelSet.{0}} (f : C.carrier → P.carrier) (V : C ⟶ Q)
@@ -1252,17 +1337,17 @@ public theorem rpair_graph_fst {C P Q W : RelSet.{0}} (f : C.carrier → P.carri
 
 /-- (9.8), first step: definition of `col`. -/
 public theorem col_rec_step1 :
-    nonsingle ≫ col mct
-      = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct) := rfl
+    nonsingle ≫ col st sb cb
+      = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := rfl
 
 /-- (9.8), second step: `inits=⟨init inits,𝟙⟩ snoc` on non-singletons. -/
 public theorem col_rec_step2 :
-    nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)
+    nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))
       = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
             ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A))) (𝟙 (dNE A))
           ≫ (graph snocFn : (⟨CL.ConsList Unit (NEList A) × NEList A⟩ : RelSet.{0})
               ⟶ dList (NEList A))
-          ≫ list (graph mct) := by
+          ≫ list (graph (mct st sb cb)) := by
   simp only [id_eq_graph, list_graph, graph_comp, rpair_graph]
   exact nonsingle_graph fun a z => by rw [inits_snoc]
 
@@ -1272,83 +1357,77 @@ public theorem col_rec_step3 :
           ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A))) (𝟙 (dNE A))
         ≫ (graph snocFn : (⟨CL.ConsList Unit (NEList A) × NEList A⟩ : RelSet.{0})
             ⟶ dList (NEList A))
-        ≫ list (graph mct)
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct) (graph mct : dNE A ⟶ dTree A)
+        ≫ list (graph (mct st sb cb))
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) (graph (mct st sb cb) : dNE A ⟶ dTree A)
           ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0})
               ⟶ dList (Tree A)) := by
   simp only [col, id_eq_graph, list_graph, graph_comp, rpair_graph]
   exact nonsingle_graph fun a z => cmap_snoc _ _ _
 
 /-- (9.8), fourth step: (9.7) on non-singletons. -/
-public theorem col_rec_step4
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb)) :
-    nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct) (graph mct : dNE A ⟶ dTree A)
+public theorem col_rec_step4 :
+    nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) (graph (mct st sb cb) : dNE A ⟶ dTree A)
         ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0}) ⟶ dList (Tree A))
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-            (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-              ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb)
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+            (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+              ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb)
           ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0})
               ⟶ dList (Tree A)) := by
-  rw [← Cat.assoc, nonsingle_rpair, mct_rec st sb cb mct hmct, ← nonsingle_rpair, Cat.assoc]
+  rw [← Cat.assoc, nonsingle_rpair, mct_rec st sb cb, ← nonsingle_rpair, Cat.assoc]
 
 /-- (9.8), fifth step: introducing `next≜⟨π₁,mix⟩ snoc`. -/
 public theorem col_rec_step5 :
-    nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-            ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb)
+    nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+            ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb)
         ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0}) ⟶ dList (Tree A))
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ next st sb cb := by
-  have hX : (graph initFn : dNE A ⟶ dNE A) ≫ col mct
-      = graph (fun x => cmap mct (neInitsFn (initFn x))) := by
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ next st sb cb := by
+  have hX : (graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb
+      = graph (fun x => cmap (mct st sb cb) (neInitsFn (initFn x))) := by
     simp only [col, list_graph, graph_comp]; rfl
   rw [hX, next, ← Cat.assoc (rpair _ _) (rpair _ _), rpair_graph_fst]
 
 /-- **(9.8)**: `col=(single→head tip wrap,⟨init col,tail row⟩ next)`, its recursive case — on a
     list of two or more, the column is the column above extended by `next`. -/
-public theorem col_rec
-    (hmct : nonsingle ≫ (graph mct : dNE A ⟶ dTree A)
-      = nonsingle ≫ splits ≫ list (rprodMap (graph mct) (graph mct) ≫ binG)
-          ≫ CL.minlist (R st sb cb)) :
-    nonsingle ≫ col mct
-      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ next st sb cb :=
-  calc nonsingle ≫ col mct
-      _ = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct) :=
-        col_rec_step1 mct
+public theorem col_rec :
+    nonsingle ≫ col st sb cb
+      = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ next st sb cb :=
+  calc nonsingle ≫ col st sb cb
+      _ = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) :=
+        col_rec_step1 st sb cb
       _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
             ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A))) (𝟙 (dNE A))
           ≫ (graph snocFn : (⟨CL.ConsList Unit (NEList A) × NEList A⟩ : RelSet.{0})
               ⟶ dList (NEList A))
-          ≫ list (graph mct) := col_rec_step2 mct
-      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-            (graph mct : dNE A ⟶ dTree A)
+          ≫ list (graph (mct st sb cb)) := col_rec_step2 st sb cb
+      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+            (graph (mct st sb cb) : dNE A ⟶ dTree A)
           ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0})
-              ⟶ dList (Tree A)) := col_rec_step3 mct
-      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-            (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-              ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ mix st sb cb)
+              ⟶ dList (Tree A)) := col_rec_step3 st sb cb
+      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+            (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+              ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb)
           ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0})
-              ⟶ dList (Tree A)) := col_rec_step4 st sb cb mct hmct
-      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col mct)
-          ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ next st sb cb :=
-        col_rec_step5 st sb cb mct
+              ⟶ dList (Tree A)) := col_rec_step4 st sb cb
+      _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ next st sb cb :=
+        col_rec_step5 st sb cb
 
 /-! ### (9.10): `row` in terms of `mct` and `row` -/
 
 /-- (9.10), first step: definition of `row`. -/
 public theorem row_rec_step1 :
-    nonsingle ≫ row mct
-      = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct) := rfl
+    nonsingle ≫ row st sb cb
+      = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := rfl
 
 /-- (9.10), second step: `tails=⟨𝟙,tail tails⟩ cons` on non-singletons. -/
 public theorem row_rec_step2 :
-    nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct)
+    nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb))
       = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-          ≫ consAtUnit ≫ list (graph mct) := by
+          ≫ consAtUnit ≫ list (graph (mct st sb cb)) := by
   simp only [consAtUnit, CL.consR, id_eq_graph, list_graph, graph_comp, rpair_graph]
   exact nonsingle_graph fun a z => by rw [tailFn_cons]; rfl
 
@@ -1356,8 +1435,8 @@ public theorem row_rec_step2 :
 public theorem row_rec_step3 :
     nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
           ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-        ≫ consAtUnit ≫ list (graph mct)
-      = nonsingle ≫ rpair (graph mct : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct)
+        ≫ consAtUnit ≫ list (graph (mct st sb cb))
+      = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
           ≫ consAtUnit := by
   simp only [row, consAtUnit, CL.consR, id_eq_graph, list_graph, graph_comp, rpair_graph]
   exact nonsingle_graph fun a z => by rw [tailFn_cons]; rfl
@@ -1365,17 +1444,17 @@ public theorem row_rec_step3 :
 /-- **(9.10)**: `row=(single→wrap tip head,⟨mct,tail row⟩ cons)`, its recursive case — on a list
     of two or more, the row is `mct` of the whole list in front of the row of its tail. -/
 public theorem row_rec :
-    nonsingle ≫ row mct
-      = nonsingle ≫ rpair (graph mct : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct)
+    nonsingle ≫ row st sb cb
+      = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
           ≫ consAtUnit :=
-  calc nonsingle ≫ row mct
-      _ = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph mct) :=
-        row_rec_step1 mct
+  calc nonsingle ≫ row st sb cb
+      _ = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) :=
+        row_rec_step1 st sb cb
       _ = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))
-          ≫ consAtUnit ≫ list (graph mct) := row_rec_step2 mct
-      _ = nonsingle ≫ rpair (graph mct : dNE A ⟶ dTree A)
-            ((graph tailFn : dNE A ⟶ dNE A) ≫ row mct) ≫ consAtUnit := row_rec_step3 mct
+          ≫ consAtUnit ≫ list (graph (mct st sb cb)) := row_rec_step2 st sb cb
+      _ = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A)
+            ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ consAtUnit := row_rec_step3 st sb cb
 
 -- printing-only: the note's bead is `R`, the order the bracketing is optimised under.  The leaf
 -- map, the split cost and the combine cost are the section's context, not part of the name.
