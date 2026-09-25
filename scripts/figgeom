@@ -108,8 +108,8 @@ def hexcol(s):
 
 
 # ---------------------------------------------------------------- the page
-def elements(svg):
-    """(kind, colour, subpaths-in-page-coords) for every drawn path, text excluded."""
+def paths(svg):
+    """(fill, stroke, subpaths-in-page-coords, bbox, closed) for every drawn path, text excluded."""
     body = svg.split("</defs>", 1)[1] if "</defs>" in svg else svg
     for m in re.finditer(r"<path\b([^>]*)/>", body):
         a = m.group(1)
@@ -122,9 +122,19 @@ def elements(svg):
         sub = [[(c, [apply(mt, p) for p in ps]) for c, ps in s] for s in subpaths(d.group(1))]
         pts = [p for s in sub for _, ps in s for p in ps]
         if not pts: continue
-        x0, y0, x1, y1 = bbox(pts)
+        yield fill, stroke, sub, bbox(pts), any(c == "Z" for s in sub for c, _ in s)
+
+
+def framed(svg):
+    """The bboxes of closed paths drawn with a fill AND a stroke — a circuit's boxes and the tapes
+    round them.  A region fill and a label's knockout carry no stroke, so neither is one."""
+    return [bb for fill, stroke, _, bb, closed in paths(svg) if closed and "none" not in (fill, stroke)]
+
+
+def elements(svg):
+    """(kind, colour, subpaths-in-page-coords) for every drawn path, text excluded."""
+    for fill, stroke, sub, (x0, y0, x1, y1), closed in paths(svg):
         w, h = x1 - x0, y1 - y0
-        closed = any(c == "Z" for s in sub for c, _ in s)
         if fill != "none" and closed and w < 6 and h < 6:
             kind = "bead"
         elif fill == "none":

@@ -292,6 +292,29 @@ def heldLanes (p : Diagram) : Array Bool :=
     -- reaches the bottom edge either by outliving every row or by never having been given a death.
     (p.lanes.map fun l => l.born < 0 || l.dies < 0 || l.dies >= (n : Int))
 
+/-- The clear space between two port labels on one edge: one character, a word space. -/
+def EGAP : Float := LCW
+
+/-- AN EDGE'S PORT LABELS ARE ONE ROW OF TEXT.  Each is centred on its wire, so two wires closer
+    than half their two labels' widths set the labels into each other — `G` under the `(` of
+    `(e,w)`.  `edge` is the lanes reaching that edge west→east, the object wire (`xo`, labelled
+    `ol`) east of them all; every wire east of a tight pair moves east by the deficit, so the order,
+    and the lane names written west of each lane, are untouched. -/
+def spreadEdge (ls : Array Lane) (xo : Float) (edge : Array Nat) (ol : String) :
+    Array Lane × Float := Id.run do
+  let mut (ls, xo) := (ls, xo)
+  for i in [0 : edge.size] do
+    let a := ls[edge[i]!]!
+    let (bx, bl) := match edge[i + 1]? with
+      | some j => (ls[j]!.x, ls[j]!.label)
+      | none => (xo, ol)
+    if a.label.isEmpty || bl.isEmpty then continue
+    let d := LCW * (a.label.length + bl.length).toFloat / 2.0 + EGAP - (bx - a.x)
+    if d > 1e-6 then
+      ls := ls.map fun o => if o.x > a.x + 1e-6 then { o with x := roundTo 3 (o.x + d) } else o
+      xo := roundTo 2 (xo + d)
+  return (ls, xo)
+
 /-- The `dpanel(...)` call this panel is.  `frame` and `top` are ROW COUNTS, the two halves of
     lining a short panel up with a tall one: the frame gives them one box, the top one bead
     height.  Left off, the frame is one row deeper than the panel and the first bead sits at the
@@ -307,6 +330,10 @@ def panelCode (p : Diagram) (frame topRow : Option Nat) : MetaM String := do
   -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
   -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
   let xo := roundTo 2 (if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0 + DX)
+  let edge (f : Lane → Bool) : Array Nat :=
+    ((List.range ls.size).filter fun i => f ls[i]!).toArray.qsort fun i j => ls[i]!.x < ls[j]!.x
+  let (ls, xo) := spreadEdge ls xo (edge (·.born < 0)) (← label p.otop)
+  let (ls, xo) := spreadEdge ls xo (edge (·.dies >= (n : Int))) (← label p.obot)
   -- A label is set from its TREE (`Lbl.typst`), so a division is the fraction the note draws
   -- wherever it stands — the unit `𝟙%∋`, and one nested in a composite (`[R%∋,S%∋]`) alike.
   let cell (l : Lbl) : String := l.bare.typst

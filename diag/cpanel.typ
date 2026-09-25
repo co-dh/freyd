@@ -273,9 +273,10 @@
   let mw = calc.max(..ps.map(p => p.w))
   let xf = 1.26; let xj = xf + mw + 0.7
   // The tape is drawn round what the branches actually reach, top and bottom apart: the `𝟏` summand
-  // is one small box where the pair below it carries a whole `∪` region.
-  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + 0.15
-  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - 0.15
+  // is one small box where the pair below it carries a whole `∪` region.  `UM` is the clearance the
+  // `∪` region keeps too: any smaller and the tape's stroke lands on a box's top edge.
+  let top = calc.max(..ps.zip(oys).map(((p, o)) => o + p.hh)) + UM
+  let bot = calc.min(..ps.zip(oys).map(((p, o)) => o - p.hh)) - UM
   let st = (thickness: 1.4pt, paint: TAPEEDGE)
   let body = {
     tape((CGAP, bot), (xj, top))
