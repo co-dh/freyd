@@ -1209,6 +1209,11 @@ public theorem id_tailTails_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
   simp only [id_eq_graph, graph_comp, rpair_graph]
   exact graph_lax _ _ _ _ fun x y h => ⟨h, listP_tails R _ _ (nelistP_tail R x y h)⟩
 
+/-- The `tail` bead on `list⁺` is lax natural. -/
+public theorem tailNE_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
+    nelist R ≫ (graph tailFn : dNE B ⟶ dNE B) ⊑ (graph tailFn : dNE A ⟶ dNE A) ≫ nelist R :=
+  graph_lax _ _ _ _ fun x y h => nelistP_tail R x y h
+
 /-- The `zip` bead is lax natural. -/
 public theorem zip_lax_natural {X X' Y Y' : Type} (R : CL.dE X ⟶ CL.dE X') (S : CL.dE Y ⟶ CL.dE Y') :
     rprodMap (list R) (list S)
@@ -1619,6 +1624,15 @@ public theorem cmap_listTail {X Y : Type} (f : X → Y) (xs : CL.ConsList Unit X
   | cons x xs =>
     show cmap f (listTailFn (CL.ConsList.cons x xs)) = listTailFn (CL.ConsList.cons (f x) (cmap f xs))
     rw [listTailFn_cons, listTailFn_cons]
+
+/-- The `tail` bead on lists is lax natural. -/
+public theorem listTail_lax_natural {X Y : Type} (S : CL.dE X ⟶ CL.dE Y) :
+    list S ≫ (graph listTailFn : dList Y ⟶ dList Y) ⊑ (graph listTailFn : dList X ⟶ dList X) ≫ list S :=
+  graph_lax _ _ _ _ fun xs ys h => match xs, ys, h with
+    | CL.ConsList.wrap _, CL.ConsList.wrap _, h => by rw [listTailFn_wrap, listTailFn_wrap]; exact h
+    | CL.ConsList.wrap _, CL.ConsList.cons _ _, h => h.elim
+    | CL.ConsList.cons _ _, CL.ConsList.wrap _, h => h.elim
+    | CL.ConsList.cons _ _, CL.ConsList.cons _ _, h => by rw [listTailFn_cons, listTailFn_cons]; exact h.2
 
 /-- `⟨list f,list g⟩ zip=list⟨f,g⟩`, pointwise. -/
 public theorem zipFn_cmap_pair {X Y Z : Type} (f : X → Y) (g : X → Z) :
