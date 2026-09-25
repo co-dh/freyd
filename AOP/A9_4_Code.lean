@@ -423,37 +423,137 @@ public theorem code_V (hc : 0 ≤ c) (hp : 0 ≤ p) :
     obtain ⟨w, hV, hw⟩ := h
     exact decode_prefix c p hc hp cs w hw x hV
 
+/-! ### `code-thin` — Proposition 9.4 at `Q≜F(⊤+⊤,prefix°)`, one step per fact (B&dM p.240) -/
+
+/-- The BINARY action `F(U,V)` of the snoc bifunctor `F(E,X)=1+(X×E)`: `V×U` on the pair.
+    `SL.Fmap` is its `U=𝟙` case; the thinning order moves the code element, so it needs this. -/
+@[expose] public def Fbimap {E E' : Type} {C C' : RelSet.{0}} (U : (⟨E⟩ : RelSet.{0}) ⟶ ⟨E'⟩)
+    (V : C ⟶ C') : (F Unit E).obj C ⟶ (F Unit E').obj C' := fun u v =>
+  match u, v with
+  | Sum.inl d, Sum.inl d' => d = d'
+  | Sum.inr q, Sum.inr r => V q.1 r.1 ∧ U q.2 r.2
+  | _, _ => False
+
+/-- `F(U,V)F(W)=F(U,VW)`. -/
+public theorem Fbimap_Fmap {E : Type} {C C' C'' : RelSet.{0}} (U : (⟨E⟩ : RelSet.{0}) ⟶ ⟨E⟩)
+    (V : C ⟶ C') (W : C' ⟶ C'') : Fbimap U V ≫ (F Unit E).map W = Fbimap U (V ≫ W) :=
+  hom_ext fun u w => by
+    cases u with
+    | inl d => cases w with
+      | inl _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.trans h2
+          | inr _ => exact h1.elim, fun h => ⟨Sum.inl d, rfl, h⟩⟩
+      | inr _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h2.elim
+          | inr _ => exact h1.elim, fun h => h.elim⟩
+    | inr q => cases w with
+      | inl _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.elim
+          | inr _ => exact h2.elim, fun h => h.elim⟩
+      | inr r => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.elim
+          | inr s => exact ⟨⟨s.1, h1.1, h2.1⟩, by rw [← h2.2]; exact h1.2⟩,
+        fun ⟨⟨a, ha, hb⟩, hU⟩ => ⟨Sum.inr (a, r.2), ⟨ha, hU⟩, ⟨hb, rfl⟩⟩⟩
+
+/-- `F(V)F(U,W)=F(U,VW)`. -/
+public theorem Fmap_Fbimap {E : Type} {C C' C'' : RelSet.{0}} (U : (⟨E⟩ : RelSet.{0}) ⟶ ⟨E⟩)
+    (V : C ⟶ C') (W : C' ⟶ C'') : (F Unit E).map V ≫ Fbimap U W = Fbimap U (V ≫ W) :=
+  hom_ext fun u w => by
+    cases u with
+    | inl d => cases w with
+      | inl _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.trans h2
+          | inr _ => exact h1.elim, fun h => ⟨Sum.inl d, rfl, h⟩⟩
+      | inr _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h2.elim
+          | inr _ => exact h1.elim, fun h => h.elim⟩
+    | inr q => cases w with
+      | inl _ => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.elim
+          | inr _ => exact h2.elim, fun h => h.elim⟩
+      | inr r => exact ⟨fun ⟨v, h1, h2⟩ => by
+          cases v with
+          | inl _ => exact h1.elim
+          | inr s => exact ⟨⟨s.1, h1.1, h2.1⟩, by rw [h1.2]; exact h2.2⟩,
+        fun ⟨⟨a, ha, hb⟩, hU⟩ => ⟨Sum.inr (a, q.2), ⟨ha, rfl⟩, ⟨hb, hU⟩⟩⟩
+
+/-- `code-thin`, first step: `Q` IS `F(⊤+⊤,prefix°)`. -/
+public theorem code_thin_step1 :
+    Q ≫ (F Unit Code).map (decode°) ≫ graph con
+      = Fbimap U (prefixR°) ≫ (F Unit Code).map (decode°) ≫ graph con := by
+  congr 1
+  exact hom_ext fun u w => by
+    cases u with
+    | inl _ => cases w with
+      | inl _ => exact ⟨fun _ => rfl, fun _ => trivial⟩
+      | inr _ => exact Iff.rfl
+    | inr _ => cases w with
+      | inl _ => exact Iff.rfl
+      | inr _ => exact Iff.rfl
+
+/-- `code-thin`, second step: `F(U,prefix°)F(decode°)=F(U,prefix° decode°)`. -/
+public theorem code_thin_step2 :
+    Fbimap U (prefixR°) ≫ (F Unit Code).map (decode°) ≫ graph con
+      = Fbimap U (prefixR° ≫ decode°) ≫ graph con := by
+  rw [← Cat.assoc, Fbimap_Fmap]
+
+/-- `code-thin`, third step: Proposition 9.4's `prefix° decode°⊑decode° R` (`code_V`). -/
+public theorem code_thin_step3 (hc : 0 ≤ c) (hp : 0 ≤ p) :
+    Fbimap U (prefixR° ≫ decode°) ≫ graph con ⊑ Fbimap U (decode° ≫ R c p) ≫ graph con :=
+  comp_mono_right (le_iff.mpr fun u w h => by
+    cases u with
+    | inl _ => cases w with
+      | inl _ => exact h
+      | inr _ => exact h.elim
+    | inr _ => cases w with
+      | inl _ => exact h.elim
+      | inr _ => exact ⟨le_iff.mp (code_V c p hc hp) _ _ h.1, h.2⟩) _
+
+/-- `code-thin`, fourth step: `F(U,decode° R)=F(decode°)F(U,R)`. -/
+public theorem code_thin_step4 :
+    Fbimap U (decode° ≫ R c p) ≫ graph con
+      = (F Unit Code).map (decode°) ≫ Fbimap U (R c p) ≫ graph con := by
+  rw [← Cat.assoc, Fmap_Fbimap]
+
+/-- `code-thin`, fifth step: Proposition 9.4's `F(⊤+⊤,R)α⊑αR` — `snoc` adds the cost of the last
+    code element to both sides, and `[c,p](⊤+⊤)=[c,p]` (`bytes_U`) makes it the same cost. -/
+public theorem code_thin_step5 :
+    (F Unit Code).map (decode°) ≫ Fbimap U (R c p) ≫ graph con
+      ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R c p :=
+  comp_mono_left _ (le_iff.mpr fun u out h => by
+    obtain ⟨v, hv, hout⟩ := h
+    obtain rfl : out = con v := hout
+    refine ⟨con u, rfl, ?_⟩
+    cases u with
+    | inl _ => cases v with
+      | inl _ => exact Int.le_refl _
+      | inr _ => exact hv.elim
+    | inr a => cases v with
+      | inl _ => exact hv.elim
+      | inr b =>
+        show sizeFn c p a.1 + bytes c p a.2 ≤ sizeFn c p b.1 + bytes c p b.2
+        rw [bytes_U c p hv.2]
+        exact Int.add_le_add_right hv.1 _)
+
 /-- **code-laws**, second row: Theorem 9.2's thinning condition, Proposition 9.4 at `U≜⊤+⊤` and
     `V≜prefix°`.  `U` leaves the code element free but pins its cost, `code_V` supplies the
     cheaper code sequence for the shorter output, and `snoc` adds the same constant to both. -/
 public theorem code_thin_condition (hc : 0 ≤ c) (hp : 0 ≤ p) :
     Q ≫ (F Unit Code).map (decode°) ≫ graph con
       ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R c p :=
-  le_iff.mpr fun u out h => by
-    obtain ⟨v, hQ, w, hFw, hout⟩ := h
-    cases u with
-    | inl _ =>
-      cases v with
-      | inr _ => exact hQ.elim
-      | inl _ =>
-        cases w with
-        | inr _ => exact hFw.elim
-        | inl _ =>
-          obtain rfl : out = SnocList.wrap () := hout
-          exact ⟨Sum.inl (), rfl, SnocList.wrap (), rfl, Int.le_refl _⟩
-    | inr q =>
-      cases v with
-      | inl _ => exact hQ.elim
-      | inr r =>
-        cases w with
-        | inl _ => exact hFw.elim
-        | inr s =>
-          obtain rfl : out = SnocList.snoc s.1 s.2 := hout
-          obtain ⟨cs₀, hcs₀, hle⟩ := decode_prefix c p hc hp s.1 r.1 hFw.1 q.1 hQ.1
-          refine ⟨Sum.inr (cs₀, q.2), ⟨hcs₀, rfl⟩, SnocList.snoc cs₀ q.2, rfl, ?_⟩
-          show sizeFn c p cs₀ + bytes c p q.2 ≤ sizeFn c p s.1 + bytes c p s.2
-          rw [← (hFw.2 : r.2 = s.2), bytes_U c p hQ.2]
-          exact Int.add_le_add_right hle _
+  calc Q ≫ (F Unit Code).map (decode°) ≫ graph con
+      _ = _ := code_thin_step1
+      _ = _ := code_thin_step2
+      _ ⊑ _ := code_thin_step3 c p hc hp
+      _ = _ := code_thin_step4 c p
+      _ ⊑ _ := code_thin_step5 c p
 
 /-- **code-laws** (B&dM §9.4, p.240): a smallest code sequence decoding to the given string is
     the least fixed point of `(μX : Λ([nil,extend]°) thin(Q) P([nil,(X×𝟙)snoc]) est(R))` —
@@ -494,6 +594,44 @@ public theorem extend_ne_nil : ∀ (q : Str × Code) (w : Str), extendP q w → 
         rw [hw]
         show SnocList.snoc (sappend xs z) b ≠ SnocList.wrap ()
         exact snoc_ne_wrap _ b
+
+/-- **`nil°` is LAX natural** in the element type: only `[]` is related to `[]` by `list(S)`. -/
+public theorem nilR_recip_laxNatural :
+    LaxNatural (Relator.const (dL Unit)) (snocRelator Unit)
+      (fun a : RelSet.{0} => (nilR (E := a.carrier))°) := by
+  intro x y S
+  refine le_iff.mpr fun xs d h => ?_
+  obtain ⟨ys, hxy, hd⟩ := h
+  obtain rfl : ys = SnocList.wrap () := hd
+  refine ⟨d, ?_, rfl⟩
+  cases xs with
+  | wrap _ => rfl
+  | snoc _ _ => exact hxy.elim
+
+/-- **code-defn**: `null`, the coreflexive on the empty string. -/
+@[expose] public def null : dStr ⟶ dStr := fun w w' => w = w' ∧ w = SnocList.wrap ()
+
+/-- `code-disj`, first step: `nil` returns only `[]`, so `nil°=null nil°`. -/
+public theorem code_disj_step1 :
+    extend ≫ (nilR : dL Unit ⟶ dStr)° = extend ≫ null ≫ (nilR : dL Unit ⟶ dStr)° := by
+  congr 1
+  exact hom_ext fun w d => ⟨fun h => ⟨w, ⟨rfl, h⟩, h⟩, fun ⟨_, ⟨h1, _⟩, h2⟩ => h1 ▸ h2⟩
+
+/-- `code-disj`, second step: `extend null=𝟘`, `extend` never returns `[]` (`extend_ne_nil`). -/
+public theorem code_disj_step2 :
+    extend ≫ null ≫ (nilR : dL Unit ⟶ dStr)° = 𝟘 ≫ (nilR : dL Unit ⟶ dStr)° := by
+  rw [← Cat.assoc]
+  congr 1
+  exact hom_ext fun q w => ⟨fun ⟨_, h1, h2, h3⟩ => extend_ne_nil q _ h1 h3 |>.elim,
+    fun h => h.elim⟩
+
+/-- **code-disj** (B&dM p.240): `nil` and `extend` have disjoint ranges, `extend nil°=𝟘` —
+    Proposition 9.1's hypothesis. -/
+public theorem code_disj : extend ≫ (nilR : dL Unit ⟶ dStr)° = 𝟘 :=
+  calc extend ≫ (nilR : dL Unit ⟶ dStr)°
+      _ = _ := code_disj_step1
+      _ = _ := code_disj_step2
+      _ = 𝟘 := hom_ext fun _ _ => ⟨fun ⟨_, h, _⟩ => h.elim, fun h => h.elim⟩
 
 /-- **code-laws**, third row (Proposition 9.1): with `nil` and `extend` of disjoint ranges the
     branch `(extend°)%∋ thin(prefix°×(⊤+⊤))P((X×𝟙)snoc)est(R)` refines `code_laws`' body
@@ -834,6 +972,12 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander U] public meta def unexpandCodeU : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "(⊤+⊤)")))
+
+-- `Fbimap U V` is the note's `F(U,V)`, as `CL.Fbimap` prints on the cons side.
+open Lean PrettyPrinter in
+@[app_unexpander Fbimap] public meta def unexpandCodeFbimap : Unexpander
+  | `($_ $U $V) => `($(mkIdent `F) $U $V)
+  | _ => throw ()
 
 -- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
 open Lean PrettyPrinter in

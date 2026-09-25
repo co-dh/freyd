@@ -652,13 +652,10 @@ public theorem Fbimap_comp {L E E' E'' : Type} {C C' C'' : RelSet.{0}} (U : dE E
           | inr r => exact ⟨⟨r.1, h1.1, h2.1⟩, ⟨r.2, h1.2, h2.2⟩⟩,
         fun ⟨⟨a, ha1, ha2⟩, ⟨b, hb1, hb2⟩⟩ => ⟨Sum.inr (a, b), ⟨ha1, hb1⟩, ⟨ha2, hb2⟩⟩⟩
 
-/-- `edit-thin`, first step: `Q≜𝟙+(U×V)` IS `F(U,V)` at `U≜⊤`. -/
-public theorem edit_thin_step1 :
-    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
-      = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char)
-          ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con := by
-  congr 1
-  exact hom_ext fun u w => by
+/-- `Q≜𝟙+(U×V)` IS `F(U,V)` at `U≜⊤`. -/
+public theorem Q_eq_Fbimap :
+    Q Char = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char) :=
+  hom_ext fun u w => by
     cases u with
     | inl _ => cases w with
       | inl _ => exact ⟨fun _ => rfl, fun _ => trivial⟩
@@ -667,18 +664,18 @@ public theorem edit_thin_step1 :
       | inl _ => exact Iff.rfl
       | inr q => exact ⟨fun h => ⟨topMor_apply _ _, h⟩, fun h => h.2⟩
 
-/-- `edit-thin`, second step: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`. -/
-public theorem edit_thin_step2 :
-    Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char)
-        ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
+/-- `edit-thin`, first step: `Q` is `F(⊤,V)` (`Q_eq_Fbimap`), and `F(⊤,V)F(𝟙,edit°)=F(⊤,V edit°)`.
+    One step and not two: the exporter cannot cut `F(⊤,V)F(𝟙,edit°)` between its two beads. -/
+public theorem edit_thin_step1 :
+    Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
       = Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph editFn)°)
           ≫ graph con := by
-  rw [← Cat.assoc]
+  rw [Q_eq_Fbimap, ← Cat.assoc]
   congr 1
   exact (Fbimap_comp _ _ _ _).trans (by rw [Cat.comp_id])
 
-/-- `edit-thin`, third step: Proposition 9.4's `V edit°⊑edit° R` (`edit_V`) under `F(U,−)`. -/
-public theorem edit_thin_step3 :
+/-- `edit-thin`, second step: Proposition 9.4's `V edit°⊑edit° R` (`edit_V`) under `F(U,−)`. -/
+public theorem edit_thin_step2 :
     Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (V Char ≫ (graph (editFn (Char := Char)))°)
         ≫ graph con
       ⊑ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph editFn)° ≫ R Char)
@@ -692,8 +689,8 @@ public theorem edit_thin_step3 :
       | inl _ => exact h.elim
       | inr q => exact ⟨h.1, le_iff.mp edit_V _ _ h.2⟩) _
 
-/-- `edit-thin`, fourth step: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`. -/
-public theorem edit_thin_step4 :
+/-- `edit-thin`, third step: `F(U,edit° R)=F(𝟙,edit°)F(U,R)`. -/
+public theorem edit_thin_step3 :
     Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) ((graph (editFn (Char := Char)))° ≫ R Char)
         ≫ graph con
       = (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
@@ -702,9 +699,9 @@ public theorem edit_thin_step4 :
   congr 1
   exact ((Fbimap_comp _ _ _ _).trans (by rw [Cat.id_comp])).symm
 
-/-- `edit-thin`, fifth step: Proposition 9.4's `F(U,R)α⊑αR` at `U≜⊤` — `cons` adds one to both
+/-- `edit-thin`, fourth step: Proposition 9.4's `F(U,R)α⊑αR` at `U≜⊤` — `cons` adds one to both
     lengths whatever the two operations are. -/
-public theorem edit_thin_step5 :
+public theorem edit_thin_step4 :
     (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°)
         ≫ Fbimap Unit (topMor (dE (Op Char)) (dE (Op Char))) (R Char) ≫ graph con
       ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ graph con ≫ R Char :=
@@ -729,10 +726,9 @@ public theorem edit_thin_condition :
       ⊑ (F Unit (Op Char)).map ((graph editFn)°) ≫ graph con ≫ R Char :=
   calc Q Char ≫ (F Unit (Op Char)).map ((graph (editFn (Char := Char)))°) ≫ graph con
       _ = _ := edit_thin_step1
-      _ = _ := edit_thin_step2
-      _ ⊑ _ := edit_thin_step3
-      _ = _ := edit_thin_step4
-      _ ⊑ _ := edit_thin_step5
+      _ ⊑ _ := edit_thin_step2
+      _ = _ := edit_thin_step3
+      _ ⊑ _ := edit_thin_step4
 
 /-- **edit-laws**, second row (B&dM p.226): a shortest edit sequence is the least fixed point
     of `(μX : [base,step]° thin Q P([nil,(𝟙×X)cons]) est(R))` — Theorem 9.2 at `Q≜𝟙+(U×V)`,
@@ -1177,6 +1173,279 @@ public theorem thin_UV_not_lax_natural :
   · exact short_not_suffix_long hwQ.2.1
   · obtain ⟨q, hq, rfl⟩ := hfwd _ hwW
     exact toU_long_not_short ((stepF_apply _ _ _).mp hq).2.1
+
+/-- **`R` is not even lax natural** in the alphabet: an image sequence may use a character with no
+    preimage.  At the empty relation on `Bool`, `[]` is `R`-below `[cpy true]`, which no sequence
+    reaches through `list(Op(𝟘))`. -/
+public theorem R_not_lax_natural :
+    ¬ LaxNatural (opRelator.comp listRelator) (opRelator.comp listRelator)
+      (fun a : RelSet.{0} => R a.carrier) := by
+  intro hlax
+  obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (fun _ _ => False : dE Bool ⟶ dE Bool))
+    (ConsList.wrap () : ConsList Unit (Op Bool)) (ConsList.cons (Op.cpy true) (ConsList.wrap ()))
+    ⟨ConsList.wrap (), by simp [Relator.comp, listRelator, opRelator, list, listP], Nat.zero_le _⟩
+  rcases fs₀ with _ | ⟨op, t⟩
+  · simp [Relator.comp, listRelator, opRelator, list, listP] at hfs₀
+  · rcases op with a | a | a <;>
+      simp [Relator.comp, listRelator, opRelator, list, listP, opRel, opP] at hfs₀
+
+/-- **`Q` is not even lax natural** in the alphabet: `Q` puts above a decomposition one whose
+    operation carries any character, and an alphabet map that misses `false` has no preimage of
+    `del false`. -/
+public theorem Q_not_lax_natural :
+    ¬ LaxNatural pairF pairF (fun a : RelSet.{0} => Q a.carrier) := by
+  intro hlax
+  obtain ⟨v₀, -, hv₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
+    (Sum.inr (cand () (ConsList.wrap ())))
+    (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ()))))
+    ⟨Sum.inr (cand true (ConsList.wrap ())), (pairF_apply_inr _ _ _).mpr ⟨rfl, trivial, trivial⟩,
+      (show Q Bool (Sum.inr (cand true (ConsList.wrap ())))
+          (Sum.inr (cand false (ConsList.cons false (ConsList.wrap ())))) from
+        (V_apply _ _).mpr ⟨Or.inr rfl, rfl⟩)⟩
+  rcases v₀ with d | p
+  · rw [pairF_map] at hv₀; exact hv₀
+  · obtain ⟨hop, -⟩ := (pairF_apply_inr _ _ _).mp hv₀
+    rcases p with ⟨a | a | a, _⟩ <;> simp [opP, graph, cand] at hop
+
+/-- **`F(⊤,V)` is not even lax natural**: it is `Q` itself, spelled as the bifunctor. -/
+public theorem Fbimap_top_V_not_lax_natural :
+    ¬ LaxNatural pairF pairF (fun a : RelSet.{0} =>
+      Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier)) := by
+  rw [show (fun a : RelSet.{0} =>
+      Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier))
+      = fun a : RelSet.{0} => Q a.carrier from
+      funext fun a => (Q_eq_Fbimap (Char := a.carrier)).symm]
+  exact Q_not_lax_natural
+
+/-- The lane stack `𝟏 + Op×K` of the edit pictures acts as the bifunctor: `F(Op(S),K(S))`. -/
+public theorem sumOp_map (K : Relator RelSet.{0} RelSet.{0}) {x y : RelSet.{0}} (S : x ⟶ y) :
+    (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) K)).map S
+      = Fbimap Unit (opRel S) (K.map S) := by
+  apply hom_ext; intro u v
+  cases u <;> cases v <;>
+    simp [Relator.sum, Relator.prod, Relator.const, Relator.comp, Relator.idRelator, sumMap,
+      junc, RelProd.pair, prodMap, graph, Fbimap, instPositiveAllegory, instHasRelProd, sumCop,
+      opRelator] <;> first | grind | exact Subsingleton.elim _ _
+
+/-- **`[zero,π₂ succ]` is LAX natural** in the alphabet: `F(Op(S),𝟙)` keeps the tail's length. -/
+public theorem lenAlg_laxNatural :
+    LaxNatural (Relator.const (⟨Nat⟩ : RelSet.{0}))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.const (⟨Nat⟩ : RelSet.{0}))))
+      (fun a : RelSet.{0} => graph (lenAlgFn (Char := a.carrier))) := by
+  intro x y S
+  refine le_iff.mpr fun u n h => ?_
+  obtain ⟨u', hu, hn⟩ := h
+  rw [sumOp_map] at hu
+  refine ⟨lenAlgFn u, rfl, ?_⟩
+  show lenAlgFn u = n
+  rw [(hn : n = lenAlgFn u')]
+  rcases u with d | p <;> rcases u' with d' | p'
+  · rfl
+  · exact hu.elim
+  · exact hu.elim
+  · exact congrArg (· + 1) hu.2
+
+/-- **`F(⊤,W)` is not even lax natural** in the alphabet, whatever `W`: at `() ↦ true` the image
+    `(cpy true, c')` sits under `(cpy false, w')` by `⊤`, and `cpy false` has no preimage. -/
+public theorem Fbimap_top_not_laxNatural {F₂ G₂ : Relator RelSet.{0} RelSet.{0}}
+    (W : ∀ a : RelSet.{0}, G₂.obj a ⟶ F₂.obj a) (c : (G₂.obj (dE Unit)).carrier)
+    (c' : (G₂.obj (dE Bool)).carrier) (w' : (F₂.obj (dE Bool)).carrier)
+    (hc : G₂.map (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool) c c')
+    (hw : W (dE Bool) c' w') :
+    ¬ LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) F₂))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) G₂))
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (W a)) := by
+  intro hlax
+  obtain ⟨v, -, hv⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
+    (Sum.inr (Op.cpy (), c)) (Sum.inr (Op.cpy false, w'))
+    ⟨Sum.inr (Op.cpy true, c'), by rw [sumOp_map]; exact ⟨by simp [opRel, opP, graph], hc⟩,
+      ⟨topMor_apply _ _, hw⟩⟩
+  rw [sumOp_map] at hv
+  rcases v with d | ⟨o, e⟩
+  · exact hv
+  · rcases o with a | a | a <;> simp [Fbimap, opRel, opP, graph] at hv
+
+/-- `([],[])` is related to `([],[])` by the pair lanes, whatever `S`. -/
+public theorem listLanes_nil {x y : RelSet.{0}} (S : x ⟶ y) :
+    (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)).map S
+      (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) := by
+  rw [show (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)).map S = rprodMap (list S) (list S)
+    from prodMap_eq_rprodMap _ _]
+  exact ⟨trivial, trivial⟩
+
+/-- `F(⊤,V)`, at the lanes the step pictures read. -/
+public theorem Fbimap_top_V_not_laxNatural :
+    ¬ LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (V a.carrier)) :=
+  by
+  refine Fbimap_top_not_laxNatural (F₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)) (fun a => V a.carrier)
+    (ConsList.wrap (), ConsList.wrap ())
+    (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ())
+    (listLanes_nil _) ?_
+  exact (V_apply _ _).mpr ⟨rfl, rfl⟩
+
+/-- `F(⊤,V edit°)`, at the lanes the step pictures read. -/
+public theorem Fbimap_top_Vedit_not_laxNatural :
+    ¬ LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator)))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier)))
+        (V a.carrier ≫ (graph (editFn (Char := a.carrier)))°)) :=
+  by
+  refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+    (fun a => V a.carrier ≫ (graph (editFn (Char := a.carrier)))°)
+    (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap ())
+    (listLanes_nil _) ?_
+  exact ⟨(ConsList.wrap (), ConsList.wrap ()), (V_apply _ _).mpr ⟨rfl, rfl⟩, rfl⟩
+
+/-- `F(⊤,edit° R)`, at the lanes the step pictures read. -/
+public theorem Fbimap_top_editR_not_laxNatural :
+    ¬ LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator)))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))))
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier)))
+        ((graph (editFn (Char := a.carrier)))° ≫ R a.carrier)) :=
+  by
+  refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator) (G₂ := Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+    (fun a => (graph (editFn (Char := a.carrier)))° ≫ R a.carrier)
+    (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap (), ConsList.wrap ()) (ConsList.wrap ())
+    (listLanes_nil _) ?_
+  exact ⟨ConsList.wrap (), rfl, Nat.le_refl _⟩
+
+/-- `F(⊤,R)`, at the lanes the step pictures read. -/
+public theorem Fbimap_top_R_not_laxNatural :
+    ¬ LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator)))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) opRelator)
+          (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator)))
+      (fun a => Fbimap Unit (topMor (dE (Op a.carrier)) (dE (Op a.carrier))) (R a.carrier)) :=
+  by
+  refine Fbimap_top_not_laxNatural (F₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator) (G₂ := Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) opRelator) listRelator) (fun a => R a.carrier)
+    (ConsList.wrap ()) (ConsList.wrap ())
+    (ConsList.wrap ()) trivial ?_
+  exact Nat.le_refl _
+
+/-- **`R°` is not even lax natural**, at the alphabet map `() ↦ true`: `[cpy false]` is no longer
+    than the image `[cpy true]` of `[cpy ()]`, and has no preimage. -/
+public theorem R_recip_not_lax_natural :
+    ¬ LaxNatural (opRelator.comp listRelator) (opRelator.comp listRelator)
+      (fun a : RelSet.{0} => (R a.carrier)°) := by
+  intro hlax
+  obtain ⟨fs₀, -, hfs₀⟩ := le_iff.mp (hlax (graph (fun _ : Unit => true) : dE Unit ⟶ dE Bool))
+    (ConsList.cons (Op.cpy ()) (ConsList.wrap ())) (ConsList.cons (Op.cpy false) (ConsList.wrap ()))
+    ⟨ConsList.cons (Op.cpy true) (ConsList.wrap ()),
+      by simp [Relator.comp, listRelator, opRelator, list, listP, opRel, opP, graph], Nat.le_refl _⟩
+  rcases fs₀ with _ | ⟨op, t⟩
+  · simp [Relator.comp, listRelator, opRelator, list, listP] at hfs₀
+  · rcases op with a | a | a <;>
+      simp [Relator.comp, listRelator, opRelator, list, listP, opRel, opP, graph] at hfs₀
+
+/-- A suffix of the image of a list is the image of a suffix of the list. -/
+public theorem suffixP_listP {x y : RelSet.{0}} (S : x ⟶ y) :
+    ∀ (xs : ConsList Unit x.carrier) (xs' zs' : ConsList Unit y.carrier),
+      listP S xs xs' → suffixP zs' xs' → ∃ zs, suffixP zs xs ∧ listP S zs zs'
+  | ConsList.wrap _, ConsList.wrap _, zs', _, hs => by
+      obtain rfl : zs' = ConsList.wrap () := hs
+      exact ⟨ConsList.wrap (), rfl, trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
+  | ConsList.cons a xs, ConsList.cons b xs', zs', h, hs => by
+      rcases (hs : zs' = ConsList.cons b xs' ∨ suffixP zs' xs') with rfl | hs
+      · exact ⟨ConsList.cons a xs, Or.inl rfl, h⟩
+      · obtain ⟨zs, hz, hzs⟩ := suffixP_listP S xs xs' zs' h.2 hs
+        exact ⟨zs, Or.inr hz, hzs⟩
+
+/-- **`V°` is LAX natural**: a pair of suffixes of an image pair is the image of a pair of
+    suffixes (`suffixP_listP`).  Not STRICT — a suffix of the original need not have an image. -/
+public theorem V_recip_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => (V a.carrier)°) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _]
+  refine le_iff.mpr fun p q h => ?_
+  obtain ⟨p', ⟨h1, h2⟩, hV⟩ := h
+  obtain ⟨z1, hz1, hl1⟩ := suffixP_listP S p.1 p'.1 q.1 h1 hV.1
+  obtain ⟨z2, hz2, hl2⟩ := suffixP_listP S p.2 p'.2 q.2 h2 hV.2
+  exact ⟨(z1, z2), ⟨hz1, hz2⟩, hl1, hl2⟩
+
+/-- **`base°` is LAX natural**: only `([],[])` is related to `([],[])` by `list(S)×list(S)`. -/
+public theorem base_recip_laxNatural :
+    LaxNatural (Relator.const (dL Unit)) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => (base (Char := a.carrier))°) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _]
+  refine le_iff.mpr fun p d h => ?_
+  obtain ⟨q, ⟨h1, h2⟩, hd⟩ := h
+  obtain rfl : q = ((ConsList.wrap () : ConsList Unit y.carrier), ConsList.wrap ()) := hd
+  refine ⟨d, ?_, rfl⟩
+  obtain ⟨xs, ys⟩ := p
+  cases xs with
+  | cons _ _ => exact h1.elim
+  | wrap _ => cases ys with
+    | cons _ _ => exact h2.elim
+    | wrap _ => rfl
+
+/-- **`empty` is LAX natural**, for the reason `base°` is. -/
+public theorem empty_laxNatural :
+    LaxNatural (Relator.prod listRelator listRelator) (Relator.prod listRelator listRelator)
+      (fun a : RelSet.{0} => empty (Char := a.carrier)) := by
+  intro x y S
+  rw [show (Relator.prod listRelator listRelator).map S = rprodMap (list S) (list S) from
+    prodMap_eq_rprodMap _ _]
+  refine le_iff.mpr fun p q h => ?_
+  obtain ⟨m, hG, hmq, hm⟩ := h
+  subst hmq
+  subst hm
+  obtain ⟨xs, ys⟩ := p
+  refine ⟨(xs, ys), ⟨rfl, ?_⟩, hG⟩
+  obtain ⟨h1, h2⟩ := hG
+  cases xs with
+  | cons _ _ => exact h1.elim
+  | wrap _ => cases ys with
+    | cons _ _ => exact h2.elim
+    | wrap _ => rfl
+
+/-- **`length` is LAX natural**: `list(Op(S))` relates sequences of one length. -/
+public theorem clen_laxNatural :
+    LaxNatural (Relator.const (⟨Nat⟩ : RelSet.{0})) (opRelator.comp listRelator)
+      (fun a : RelSet.{0} => (graph clen : dEdit a.carrier ⟶ (⟨Nat⟩ : RelSet.{0}))) := by
+  intro x y S
+  refine le_iff.mpr fun es n h => ?_
+  obtain ⟨fs, hfs, hn⟩ := h
+  refine ⟨clen es, rfl, ?_⟩
+  rw [(hn : n = clen fs), Van.listP_clen (P := opRel S) hfs]
+  exact rfl
 
 /-! ## `edit-tabulation` (B&dM pp.227-229): `mle` computed column by column -/
 

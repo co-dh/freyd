@@ -339,7 +339,7 @@ both lists empty.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_disj") \
     #src[no pair of strings is both a result of `step` and the result `([],[])` of `base`]],
-     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.base@3b1de06b lean:AOP.A9_2_Edit.empty@ff28cd4c
+     // lean:AOP.A9_2_Edit.edit_disj@6767bb19 lean:AOP.A9_2_Edit.Freyd.Alg.RelSet.Edit.base@3b1de06b lean:AOP.A9_2_Edit.empty@ff28cd4c
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
@@ -557,5 +557,73 @@ the longest repeated tail; #h(4pt)
       gives no tabulation for it]])],
   [#lean("Freyd.Alg.RelSet.Code.code_prog.lhs")],
 )]<code-laws>
+
+// B&dM p.240, "By Proposition 9.4 we have to check that": the proposition's argument at
+// `Q≜F(⊤+⊤,prefix°)`, its two conditions one row each.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Code.code_thin_condition") \
+    #src[every code sequence built from a decomposition `Q` puts above a given one — a code element
+     of the same kind, a longer front string — costs at least as much as one built from the given
+     one]],
+     // lean:AOP.A9_4_Code.code_thin_condition@00aae404
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_thin_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step1.rhs"),
+    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @code-defn]])],
+     // lean:AOP.A9_4_Code.code_thin_step1@c5eac63a lean:AOP.A9_4_Code.Fbimap@f45fdcce
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step2.rhs"),
+    [#src[the bifunctor `F` preserves composition: `F(U,prefix°)F(𝟙,decode°)=F(U,prefix° decode°)`]])],
+     // lean:AOP.A9_4_Code.code_thin_step2@d3e2e959 lean:AOP.A9_4_Code.Fbimap_Fmap@1408119d
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step2.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step3.rhs"),
+    [#src[Proposition 9.4's second condition `prefix° decode°⊑decode° R`: dropping the last
+      character drops the last `sym`, or shortens or drops the last pointer. Proved at `prefix`
+      directly by induction, not through `init`]])],
+     // lean:AOP.A9_4_Code.code_thin_step3@9c774e54 lean:AOP.A9_4_Code.code_V@3407acb5
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step3.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step4.rhs"),
+    [#src[`F` preserves composition: `F(U,decode° R)=F(𝟙,decode°)F(U,R)`]])],
+     // lean:AOP.A9_4_Code.code_thin_step4@ff2b0d68 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step4.rhs")],
+
+  [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step5.rhs"),
+    [#src[Proposition 9.4's first condition `F(⊤+⊤,R)α⊑αR`, left as an exercise in the book: `snoc`
+      adds the cost of the last element to both sides, and `[c,p](⊤+⊤)=[c,p]`]])],
+     // lean:AOP.A9_4_Code.code_thin_step5@2bc8116d lean:AOP.A9_4_Code.bytes_U@953e99c3
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step5.rhs")],
+)]<code-thin>
+
+// B&dM p.240, "Since nil and extend have disjoint ranges": Proposition 9.1's hypothesis.
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.Code.code_disj") \
+    #src[no string is both a result of `extend` and the result `[]` of `nil`]],
+     // lean:AOP.A9_4_Code.code_disj@80dbea26 lean:AOP.A9_4_Code.null@2ab49554
+  table.header([*circuit*], [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_disj_step1.lhs"), [])],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.lhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step1.rhs"),
+    [#src[`nil` returns only `[]`, so `nil°=null nil°`]])],
+     // lean:AOP.A9_4_Code.code_disj_step1@9698e2de
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step2.rhs"),
+    [#src[`extend null=𝟘`: a symbol ends the string with a character, a pointer with its non-empty
+      `zs`]])],
+     // lean:AOP.A9_4_Code.code_disj_step2@49ebf5ab lean:AOP.A9_4_Code.extend_ne_nil@4f36ac2c
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step2.rhs")],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj.rhs"),
+    [#src[`𝟘` composed with anything is `𝟘`]])],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj.rhs")],
+)]<code-disj>
 
 #pagebreak(weak: true)
