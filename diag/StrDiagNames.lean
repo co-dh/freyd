@@ -975,6 +975,12 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.H] def unexpandTexH : Unexpander | _ => `($(mkIdent `H))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Q] def unexpandTexQ : Unexpander | _ => `($(mkIdent `Q))
+
+-- `l`, `r` take the tail's object implicitly, so they print through an unexpander, not by name.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.l] def unexpandTexL : Unexpander | _ => `($(mkIdent `l))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.r] def unexpandTexRInj : Unexpander | _ => `($(mkIdent `r))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Real] def unexpandTexReal : Unexpander
   | `($_ $args*) => `($(mkIdent `Real) $args*)
