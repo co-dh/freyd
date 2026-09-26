@@ -891,11 +891,18 @@ partial def armParts (br : Expr) (src s : Obj) (fuse : Option Expr) (opened : Bo
   if !opened then return (items, objs)
   return (#[← openPic src s] ++ items, #[src] ++ objs)
 
-/-- `.inl`/`.inr` on a route: ONE arm of the fork at the head of the run, drawn with the summand as
-    the SOURCE — what a panel draws when the other arm is a constant and carries none of the law's
-    content.  The rule is over the FORM of the run: a junction at its head, alone or behind the
-    functor whose tape fuses into it, and every factor after the fork stays on the arm. -/
+/-- `.inl`/`.inr` on a route: ONE OPERAND of a binary operation on ONE hom (a union, a meet — the
+    same TYPE test the string route's `branchOf` makes), or, failing that, ONE arm of the fork at
+    the head of the run, drawn with the summand as the SOURCE — what a panel draws when the other
+    operand or arm is a constant and carries none of the law's content.  The fork rule is over the
+    FORM of the run: a junction at its head, alone or behind the functor whose tape fuses into it,
+    and every factor after the fork stays on the arm. -/
 partial def armOf (e : Expr) (i : Nat) : MetaM Pic := do
+  -- A UNION OR A MEET is recognised by TYPE, not by its operator's name, so `.inl`/`.inr` on a `∪`
+  -- draws in the circuit exactly the operand the string route already draws with `branchOf`.
+  let sfs := StrDiag.factors e
+  if let some (l, r) ← StrDiag.binOperands? sfs[sfs.size - 1]! then
+    return ← drawRun (← StrDiag.compose ((sfs.extract 0 (sfs.size - 1)).push (if i == 0 then l else r)))
   let fs := if e.isAppOf ``Cat.comp then factorList e else #[e]
   -- `openBody`, not `openDef`: naming an ARM is the statement that this panel draws the inside of
   -- the fork, so a name that keeps itself everywhere else opens here — the same `S` the note sets
