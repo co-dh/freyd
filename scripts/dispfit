@@ -39,13 +39,24 @@ figgeom = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(figgeom)
 
 
+def cm_of(style, tok):
+    """`tok` is either a bare `12cm` literal or a name `#let`-bound to one earlier in the file — the
+    two forms Typst itself allows at that call site, so both must resolve rather than only whichever
+    one `set page(...)` happens to spell today."""
+    m = re.match(r"([\d.]+)cm$", tok)
+    if m: return float(m[1])
+    m = re.search(rf"#let {re.escape(tok)} = ([\d.]+)cm", style)
+    if not m: raise ValueError(f"dispfit: {tok!r} is neither a `Ncm` literal nor a `#let {tok} = Ncm` in note-style.typ")
+    return float(m[1])
+
+
 def frame():
     """(top, bottom) of the text frame, in pt from the page's top edge — from `note-style.typ`'s
     `conf`, which every page (whole-book or single-chapter, `note-chapter` defers to `conf`) obeys."""
     style = open(os.path.join(ROOT, "diag", "note-style.typ")).read()
-    margin_cm = float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1])
-    height_cm = float(re.search(r"set page\(width: PAGEW, height: ([\d.]+)cm, margin: MARGIN\)", style)[1])
-    margin, height = margin_cm * CM, height_cm * CM
+    margin_tok = re.search(r"#let MARGIN = (\S+)", style)[1]
+    page = re.search(r"set page\(width: PAGEW, height: (\S+), margin: MARGIN\)", style)[1]
+    margin, height = cm_of(style, margin_tok) * CM, cm_of(style, page) * CM
     return margin, height - margin
 
 
