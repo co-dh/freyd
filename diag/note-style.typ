@@ -164,11 +164,13 @@
 // `disp: true` only from `disp` below: a picture INSIDE a display reports a crop box of its own, so
 // without the flag a gate grouping marks by the preceding `pic` would file a display's arrows under
 // whichever inner picture came last.
-#let pic-meta(key, body, width: auto, disp: false) = if NODRAW { none } else { context {
+// `size`: the extent when the caller already has it — every `measure` lays `body` out once more,
+// and `P` inside `disp` nests that cost four deep.
+#let pic-meta(key, body, width: auto, disp: false, size: auto) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
     numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
-  let (sz, pos) = (measure(body, width: width), here().position())
+  let (sz, pos) = (if size == auto { measure(body, width: width) } else { size }, here().position())
   // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
   [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
     x: pos.x.pt(), y: pos.y.pt(), disp: disp,
@@ -176,6 +178,8 @@
 } }
 #let disp(body) = figure(kind: "disp", supplement: none, {
   // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
+  // Measured, not read off an end marker's position: the difference of two page positions is off
+  // from the measured height in the last bit, and a `<pic>` record should not move with the method.
   context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
     body, width: PAGEW - 2 * MARGIN, disp: true)
   body
@@ -200,10 +204,11 @@
 /// spends the second scale factor.  `s` stays what the picture asked for whenever it fits.
 #let P(p, s: 92%, key: none) = layout(sz => align(center, box({
   let q = scale(x: s, y: s, reflow: true, p)
-  let w = measure(q).width
-  let f = if w > sz.width and sz.width > 0pt { sz.width / w * 100% } else { 100% }
+  let m = measure(q)
+  let f = if m.width > sz.width and sz.width > 0pt { sz.width / m.width * 100% } else { 100% }
   let q = if f == 100% { q } else { scale(x: f, y: f, reflow: true, q) }
-  if key != none { pic-meta(key, q) }
+  // Scaled `q` is measured again: `m * f` is off in the last bit from the scaled frame's own bounds.
+  if key != none { pic-meta(key, q, size: if f == 100% { m } else { auto }) }
   q
 })))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
