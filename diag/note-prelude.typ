@@ -277,8 +277,10 @@
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary { r } else { (steps: r) })
   let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.steps.map(s => s.at(1))))
-  for c in calls { c.at(0) }
-  layout(sz => {
+  // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
+  // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
+  // page overran its foot (16.3i).
+  table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
     let k = calc.min(..rows.zip(calls).map(((r, c)) =>
       chain-k(sz.width, r.steps.first().at(0) == none, c.at(1).map(p => measure(box(p)).width))))
     for (row, c) in rows.zip(calls) {
@@ -291,11 +293,13 @@
           align(center, { leanf(row.sub); if "gloss" in row { [ \ ]; row.gloss } })))
       }
       hchain(fill: k, ..r.zip(c.at(1)).map(((s, p)) => (s.at(0), p, [])))
+      // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
+      // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
+      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))) }
+      // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)
-      // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
-      pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..r.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))))
     }
-  })
+  }) })
 }
 #let sort-P-box = ([`sort(P)`], 2.23, true)
 #let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
