@@ -903,20 +903,33 @@ theorem pre_positive_to_well_joined {𝒜 : Type u} [PrePositiveAllegory 𝒜] :
 
 /-- The partial order morphism on [a]: 2 = ∋/∋ : [a] → [a] (§2.442).
     ∋ : [a] → a, so ∋/∋ : [a] → [a] (right division, reflexive transitive closure).
-    Equivalently: X 2 Y iff X∋ ⊑ Y∋ (X is a subset of Y). -/
-@[expose] public def subset {a : 𝒜} [PowerAllegory 𝒜] :
+    Equivalently: X 2 Y iff every member of Y is a member of X (X is a superset of Y), the
+    note's `⊇`. -/
+@[expose] public def supset {a : 𝒜} [PowerAllegory 𝒜] :
     PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
   ∋ a / ∋ a
+
+/-- The note's `⊆ ≜ ∈\∈`: `xs ⊆ ys` iff every member of `xs` is a member of `ys`. -/
+@[expose] public def subset {a : 𝒜} [PowerAllegory 𝒜] :
+    PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
+  (∋ a)° \ (∋ a)°
+
+/-- `⊆ = ⊇°`: `∈\∈` unfolds to `(∈°/∈°)°`, and `∈° = ∋`. -/
+public theorem subset_eq_recip_supset {a : 𝒜} [PowerAllegory 𝒜] :
+    subset (a := a) = (supset (a := a))° := by
+  show ((((∋ a)°)°) / (((∋ a)°)°))° = _
+  rw [Allegory.recip_recip]
+  rfl
 
 -- (LEFT DIVISION `leftDiv` is defined canonically in S2_3 §2.312; reused here.)
 
 /-- §2.442 step: `∋ ≫ Λ(1) ⊑ 2 = ∋/∋`.  Book: "since `∋ Λ(1) ⊑ ∋/∋`".
     By `le_div_iff`: `(∋ ≫ Λ(1)) ≫ ∋ ⊑ ∋` iff `∋ ≫ (Λ(1) ≫ ∋) ⊑ ∋`, and
     `Λ(1) ≫ ∋ = 1` by `Λ_eps_eq`, so the LHS is `∋ ≫ 1 = ∋ ⊑ ∋`. -/
-theorem eps_singleton_le_subset {a : 𝒜} [PowerAllegory 𝒜]
+theorem eps_singleton_le_supset {a : 𝒜} [PowerAllegory 𝒜]
     (hbox1 : codBox (Cat.id a) = codBox (∋ a)) :
-    ∋ a ≫ singletonMap ⊑ subset (a := a) := by
-  rw [subset, le_div_iff, Cat.assoc, singletonMap, Λ_eps_eq _ hbox1, Cat.comp_id]
+    ∋ a ≫ singletonMap ⊑ supset (a := a) := by
+  rw [supset, le_div_iff, Cat.assoc, singletonMap, Λ_eps_eq _ hbox1, Cat.comp_id]
   exact le_refl _
 
 /-- §2.442: `Λ(S)` is MONIC when `S` is straight, `Λ(S)Λ°(S) ⊑ 1`.
@@ -995,11 +1008,11 @@ def bigInter {a : 𝒜} [PowerAllegory 𝒜] :
     forward direction by `semiSimple_of_le` and is the genuine equation the converse must produce.
 
     Orientation — verified against the clean §2.443 formula image (`⊃ ⊆ ∪° ∩`): the bound the
-    converse calculus `semiSimple_of_le_subset` naturally produces is `f°g ⊑ bigUnion° ≫ bigInter`,
+    converse calculus `semiSimple_of_le_supset` naturally produces is `f°g ⊑ bigUnion° ≫ bigInter`,
     matching this law exactly (an earlier OCR-era encoding had the operands swapped as
     `bigInter° ≫ bigUnion`, the spurious "obstacle (iii)"; now resolved). -/
 def MetonymyLaw (𝒜 : Type u) [PowerAllegory 𝒜] : Prop :=
-  ∀ (a : 𝒜), subset (a := a) ⊑ (@bigUnion 𝒜 a _)° ≫ (@bigInter 𝒜 a _)
+  ∀ (a : 𝒜), supset (a := a) ⊑ (@bigUnion 𝒜 a _)° ≫ (@bigInter 𝒜 a _)
 
 /-! ### §2.443  The `Λ`-calculus on the second power object
 
@@ -1119,14 +1132,14 @@ theorem bigInter_simple {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
     Simple (bigInter (a := a)) := by rw [bigInter]; exact Λ_simple _
 
 /-- §2.442: the partial order `2 = ∋/∋` is reflexive, `1 ⊑ 2`. -/
-theorem subset_reflexive {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
-    Cat.id (PowerAllegory.powerObj a) ⊑ subset (a := a) := by
-  rw [subset, le_div_iff, Cat.id_comp]; exact le_refl _
+theorem supset_reflexive {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
+    Cat.id (PowerAllegory.powerObj a) ⊑ supset (a := a) := by
+  rw [supset, le_div_iff, Cat.id_comp]; exact le_refl _
 
 /-- §2.442: `∋ ⊑ 2 ≫ ∋` (membership factors through the reflexive order). -/
-theorem eps_le_subset_comp_eps {𝒜 : Type u} [PowerAllegory 𝒜] {b : 𝒜} :
-    ∋ b ⊑ subset ≫ ∋ b := by
-  have h := comp_mono_right (subset_reflexive (a := b)) (∋ b)
+theorem eps_le_supset_comp_eps {𝒜 : Type u} [PowerAllegory 𝒜] {b : 𝒜} :
+    ∋ b ⊑ supset ≫ ∋ b := by
+  have h := comp_mono_right (supset_reflexive (a := b)) (∋ b)
   rwa [Cat.id_comp] at h
 
 /-- §2.443 BRIDGE (book 14151–14152): for maps `f, g : c → [a]`, `f°g ⊑ 2 = ∋/∋` iff
@@ -1137,14 +1150,14 @@ theorem eps_le_subset_comp_eps {𝒜 : Type u} [PowerAllegory 𝒜] {b : 𝒜} :
 
     `(⟸)`  `g∋ ⊑ f∋` gives `f°g∋ ⊑ f°f∋ ⊑ ∋` (`f` simple: `f°f ⊑ 1`), i.e. `(f°g)∋ ⊑ ∋`,
     so `f°g ⊑ ∋/∋` by `le_div_iff`. -/
-theorem le_subset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
+theorem le_supset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) :
-    f° ≫ g ⊑ subset ↔ g ≫ ∋ a ⊑ f ≫ ∋ a := by
+    f° ≫ g ⊑ supset ↔ g ≫ ∋ a ⊑ f ≫ ∋ a := by
   constructor
   · intro hle
     -- (f°g)∋ ⊑ ∋ from hle and DivisionAllegory.div_comp_le.
     have hgeps : (f° ≫ g) ≫ ∋ a ⊑ ∋ a := by
-      rw [subset] at hle
+      rw [supset] at hle
       exact le_trans (comp_mono_right hle (∋ a)) (DivisionAllegory.div_comp_le _ _)
     -- f entire: 1 ⊑ ff°.
     have hfe : Cat.id c ⊑ f ≫ f° := by
@@ -1157,7 +1170,7 @@ theorem le_subset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     exact comp_mono_left f hgeps
   · intro hle
     -- (f°g)∋ = f°(g∋) ⊑ f°(f∋) = (f°f)∋ ⊑ ∋, then le_div_iff.
-    rw [subset, le_div_iff, Cat.assoc]
+    rw [supset, le_div_iff, Cat.assoc]
     have s1 : f° ≫ (g ≫ ∋ a) ⊑ f° ≫ (f ≫ ∋ a) := comp_mono_left _ hle
     refine le_trans s1 ?_
     rw [← Cat.assoc]
@@ -1169,7 +1182,7 @@ theorem le_subset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     since `f∋ ∪ g∋ = f∋` and `f∋ ∩ g∋ = g∋`), whence
     `f°g = bigUnion° ≫ (Λ(f∪g)° ≫ Λ(f∪g)) ≫ bigInter ⊑ bigUnion° ≫ bigInter`,
     a `simple° ≫ simple`. -/
-theorem le_subset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
+theorem le_supset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) (hg : Map g)
     (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
     (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a))
@@ -1193,48 +1206,48 @@ theorem le_subset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : �
         comp_mono_left _ (comp_mono_right (Λ_simple _) bigInter)
     _ = bigUnion° ≫ bigInter := by rw [Cat.id_comp]
 
-theorem semiSimple_of_le_subset {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
+theorem semiSimple_of_le_supset {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) (hg : Map g)
     (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
     (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a))
     (hbI : codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a))
     (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : SemiSimple (f° ≫ g) :=
   semiSimple_of_le ⟨_, bigUnion, bigInter, bigUnion_simple, bigInter_simple,
-    le_subset_metonymy_bound hf hg hbfg hbU hbI hle⟩
+    le_supset_metonymy_bound hf hg hbfg hbU hbI hle⟩
 
-/-- §2.442 forward — metonymy ⟹ the partial-order `2 = ∋/∋ = subset` is semi-simple.
+/-- §2.442 forward — metonymy ⟹ the partial-order `2 = ∋/∋ = supset` is semi-simple.
 
     With `MetonymyLaw` stated as `2 ⊑ bigUnion° ≫ bigInter` (§2.443, the book formula `⊃ ⊆ ∪°∩`),
     `bigUnion`/`bigInter` are maps (hence simple), so `bigUnion° ≫ bigInter` is already a
     `simple° ≫ simple` and `semiSimple_of_le` closes it directly.  `eps_semiSimple_of_metonymy`
     consumes this to make `∋` semi-simple. -/
-private theorem subset_semiSimple_of_metonymy {𝒜 : Type u} [PowerAllegory 𝒜]
-    (hMet : MetonymyLaw 𝒜) (b : 𝒜) : SemiSimple (subset (a := b)) := by
+private theorem supset_semiSimple_of_metonymy {𝒜 : Type u} [PowerAllegory 𝒜]
+    (hMet : MetonymyLaw 𝒜) (b : 𝒜) : SemiSimple (supset (a := b)) := by
   -- Metonymy is exactly `2 ⊑ bigUnion° ≫ bigInter`, a `simple° ≫ simple` (both maps);
-  -- `semiSimple_of_le` then makes `subset = ∋/∋` semi-simple.
+  -- `semiSimple_of_le` then makes `supset = ∋/∋` semi-simple.
   exact semiSimple_of_le ⟨_, bigUnion, bigInter, bigUnion_simple, bigInter_simple, hMet b⟩
 
 /-- §2.442 forward GAP (1/2) — metonymy ⟹ `∋` semi-simple.
     Book: metonymy `⊓ ⊑ ⊔` forces the partial-order `2 = ∋/∋` to be semi-simple, and from
-    `∋ ≫ Λ(1) ⊑ 2` (`eps_singleton_le_subset`) plus `2 ≫ ∋ ⊑ ∋` (`DivisionAllegory.div_comp_le`)
+    `∋ ≫ Λ(1) ⊑ 2` (`eps_singleton_le_supset`) plus `2 ≫ ∋ ⊑ ∋` (`DivisionAllegory.div_comp_le`)
     Freyd derives the equation `∋ = ∋ ≫ Λ(1)°`, whence `∋ ⊑ 2 ≫ Λ°(1)` exhibits `∋` as
     contained in a semi-simple morphism (`semiSimple_of_le`).
 
-    NOW PROVEN modulo the single `subset_semiSimple_of_metonymy` residual: the honest algebra
-    `∋ = ∋ Λ(1)Λ°(1)` (`Λ(1)` entire) and `∋ Λ(1) ⊑ 2` (`eps_singleton_le_subset`) give
+    NOW PROVEN modulo the single `supset_semiSimple_of_metonymy` residual: the honest algebra
+    `∋ = ∋ Λ(1)Λ°(1)` (`Λ(1)` entire) and `∋ Λ(1) ⊑ 2` (`eps_singleton_le_supset`) give
     `∋ ⊑ 2 ≫ Λ°(1)`; `Λ°(1) = singletonMap°` is SIMPLE (`singletonMap_monic`), so with
     `SemiSimple 2 = P°Q` we get `∋ ⊑ P° ≫ (Q ≫ Λ°(1))`, a `simple°·simple` — `semiSimple_of_le`. -/
 private theorem eps_semiSimple_of_metonymy {𝒜 : Type u} [PowerAllegory 𝒜]
     (hMet : MetonymyLaw 𝒜) (b : 𝒜)
     (hbox1 : codBox (Cat.id b) = codBox (∋ b)) : SemiSimple (∋ b) := by
   -- ∋ Λ(1) ⊑ 2 (book step), and Λ°(1) = singletonMap° ⊑ ∋ (second symmDiv component).
-  have hle : ∋ b ≫ singletonMap ⊑ subset := eps_singleton_le_subset hbox1
+  have hle : ∋ b ≫ singletonMap ⊑ supset := eps_singleton_le_supset hbox1
   -- Λ(1) is entire: 1 ⊑ Λ(1)Λ°(1) (so we may insert it after ∋).
   have hsm_entire : Cat.id b ⊑ singletonMap (a := b) ≫ (singletonMap (a := b))° := by
     have h := (Λ_is_map (Cat.id b) hbox1).1; dsimp only [Entire, dom] at h
     rw [← h, singletonMap]; exact inter_lb_right _ _
   -- ∋ ⊑ 2 ≫ Λ°(1): ∋ = ∋·1 ⊑ ∋(Λ(1)Λ°(1)) = (∋Λ(1))Λ°(1) ⊑ 2·Λ°(1).
-  have heps2 : ∋ b ⊑ subset ≫ (singletonMap (a := b))° := by
+  have heps2 : ∋ b ⊑ supset ≫ (singletonMap (a := b))° := by
     have e1 : ∋ b ≫ Cat.id b ⊑ ∋ b ≫ (singletonMap ≫ (singletonMap (a := b))°) :=
       comp_mono_left _ hsm_entire
     rw [Cat.comp_id, ← Cat.assoc] at e1
@@ -1242,8 +1255,8 @@ private theorem eps_semiSimple_of_metonymy {𝒜 : Type u} [PowerAllegory 𝒜]
   -- Λ°(1) = singletonMap° is simple (singletonMap monic).
   have hsm_simple : Simple ((singletonMap (a := b))°) := by
     dsimp [Simple]; rw [Allegory.recip_recip]; exact singletonMap_monic
-  -- subset = 2 is semi-simple (the lone residual); write 2 = P°Q and finish via semiSimple_of_le.
-  obtain ⟨d, P, Q, hP, hQ, hPQ⟩ := subset_semiSimple_of_metonymy hMet b
+  -- supset = 2 is semi-simple (the lone residual); write 2 = P°Q and finish via semiSimple_of_le.
+  obtain ⟨d, P, Q, hP, hQ, hPQ⟩ := supset_semiSimple_of_metonymy hMet b
   refine semiSimple_of_le ⟨d, P, Q ≫ (singletonMap (a := b))°, hP, simple_comp hQ hsm_simple, ?_⟩
   rw [← Cat.assoc, ← hPQ]; exact heps2
 
@@ -1321,7 +1334,7 @@ theorem pre_positive_straight_simple_factor {𝒜 : Type u} [PrePositivePowerAll
 
     GAP 1 (metonymy ⟹ `∋` semi-simple): CLOSED.  With `MetonymyLaw` the order-level law
     `2 ⊑ bigUnion° ≫ bigInter` (§2.443, the book formula `⊃ ⊆ ∪°∩`), `bigUnion`/`bigInter` are maps
-    so the RHS is a `simple° ≫ simple`; `subset_semiSimple_of_metonymy` gives `SemiSimple (∋/∋)`
+    so the RHS is a `simple° ≫ simple`; `supset_semiSimple_of_metonymy` gives `SemiSimple (∋/∋)`
     by `semiSimple_of_le`, and `eps_semiSimple_of_metonymy` lifts it to `SemiSimple ∋`.
 
     GAP 2 (§2.441 (1)⟹(4)): CLOSED.  Carried by `pre_positive_straight_simple_factor`, now that the
@@ -1336,14 +1349,14 @@ theorem pre_positive_straight_simple_factor {𝒜 : Type u} [PrePositivePowerAll
     construction, and the rest is the now-complete §2.443 algebra:
 
     ROUTE (sharper than the book's literal "`2 = ⋃ {f°g ⊑ 2}`" union argument — it needs NO
-    local-completeness `Sup`): the order `2 = subset` is itself SEMI-SIMPLE by the LHS
+    local-completeness `Sup`): the order `2 = supset` is itself SEMI-SIMPLE by the LHS
     hypothesis `_hSS`, so `srcTabulation_of_semiSimple_split hsplit 2` realizes it as a single
     MAP span `2 = F° ≫ G` with `F, G : c → [a]` maps (§2.16(10) — split the symmetric idempotent
     `F₀F₀° ∩ G₀G₀°` of a semi-simple factorisation; this is exactly the map-realization the book
     obtains from the capital topos, applied to the *one* relation `2`, not to all of them).  Then:
-      • `2 = F° ≫ G ⊑ 2` (reflexive), and the §2.443 BRIDGE `le_subset_iff_eps_le` (for maps
+      • `2 = F° ≫ G ⊑ 2` (reflexive), and the §2.443 BRIDGE `le_supset_iff_eps_le` (for maps
         `F, G`, book 14151–14152) turns this into `G∋ ⊑ F∋`;
-      • the §2.443 PAYLOAD `semiSimple_of_le_subset` then gives `F° ≫ G ⊑ bigUnion° ≫ bigInter`;
+      • the §2.443 PAYLOAD `semiSimple_of_le_supset` then gives `F° ≫ G ⊑ bigUnion° ≫ bigInter`;
       • rewriting `2 = F° ≫ G` closes `2 ⊑ bigUnion° ≫ bigInter`, the law at object `a`.
 
     The former "obstacle (iii)" (operand-order `bigInter° ≫ bigUnion`) was an OCR artifact, dissolved
@@ -1374,14 +1387,14 @@ theorem pre_positive_semi_simple_iff_metonymic {𝒜 : Type u} [PrePositivePower
     (∀ (a b : 𝒜) (R : a ⟶ b), SemiSimple R) ↔ MetonymyLaw 𝒜 := by
   refine ⟨fun hSS a => ?_, fun hMet a b R => ?_⟩
   · -- CONVERSE (semi-simple ⟹ metonymy `2 ⊑ bigUnion° ≫ bigInter`) via Route B.
-    -- `2 = subset` is semi-simple, so split it into a MAP span `2 = F°≫G`.
+    -- `2 = supset` is semi-simple, so split it into a MAP span `2 = F°≫G`.
     obtain ⟨c, F, G, hF, hG, hUeq, _hmonic⟩ :=
-      srcTabulation_of_semiSimple_split hsplit (subset (a := a)) (hSS _ _ _)
+      srcTabulation_of_semiSimple_split hsplit (supset (a := a)) (hSS _ _ _)
     -- `2 = F°G ⊑ 2` (reflexive) gives `G∋ ⊑ F∋` (bridge), then the payload gives `F°G ⊑ ⋃°⋂`.
     have hGF : G ≫ ∋ a ⊑ F ≫ ∋ a :=
-      (le_subset_iff_eps_le hF).mp (hUeq ▸ le_refl (subset (a := a)))
+      (le_supset_iff_eps_le hF).mp (hUeq ▸ le_refl (supset (a := a)))
     rw [hUeq]
-    exact le_subset_metonymy_bound hF hG (hboxUnion F G hF hG) (hbU a) (hbI a) hGF
+    exact le_supset_metonymy_bound hF hG (hboxUnion F G hF hG) (hbU a) (hbI a) hGF
   · -- FORWARD: consume the §2.441 (1)⟹(4) factorization (diamond now gone via the combined class).
     -- `semiSimple_of_straight_simple_factor` (PROVEN above) then finishes: metonymy ⟹ `∋`
     -- semi-simple ⟹ `S` semi-simple; `S ≫ F` semi-simple.
