@@ -127,6 +127,62 @@ blank, `NL` the newline, tab stops every `n` columns.
 blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 ]]<entab-defn>
 
+// B&dM pp.249–250, "we argue": the claim the next chain leaves aside, one row per hint.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \
+    #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
+     step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
+     // lean:AOP.A10_2_Detab.expand_V@56eb1503
+  lean-chain((
+    (none, "Freyd.Alg.RelSet.Detab.expand_V_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
+      src[definition of `expand`: `(istab outr→fill π₁,snoc)` as its two guarded arms]),
+     // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
+    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step2.rhs",
+      src[conditionals: composition distributes over the two arms]),
+     // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
+  ), (
+    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", src[`fill V°=fill` (Exercise 10.4)]),
+     // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
+    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", src[`snoc V°⊑snoc∪(π₁V°)` (Exercise 10.4)]),
+     // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
+    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step5.rhs",
+      src[definition of `expand`; the guard `nottab` on `π₁V°` dropped]),
+     // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
+  )),
+)]<entab-expand-V>
+
+// B&dM p.249, "To prove V·detab ⊆ detab·R we reason", in diagram order: the note's `V` relates the
+// shorter string to the longer, so the book's `V·detab` is `detab V°` here.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.detab_V_R") \
+    #src[any `V`-shortening of `detab`'s output is `detab`'s output on an input no longer than the
+     given one]],
+     // lean:AOP.A10_2_Detab.detab_V_R@a6015fdd
+  lean-chain((
+    (none, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.rhs",
+      src[`detab` is a fold: `detab=α°F(detab)[nil,expand]` — @entab-defn]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step1@7202f1a5
+    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step2.rhs",
+      src[coproducts, and `nil V°=nil` (Exercise 10.4)]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step2@17093b20 lean:AOP.A10_2_Detab.nil_V@ab8b8818
+    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step3.rhs", src[the claim — @entab-expand-V]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step3@63a29781
+  ), (
+    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs",
+      src[distributing `∪`; the fold again, and the definition of `F`]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step4@12589ca1
+    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs",
+      src[naturality of `π₁`: `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step5@84af6677
+    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step6.rhs",
+      src[`init` is inductive, so `X≜detab V°`, a solution of `X⊑detab∪(init X)`, lies below the
+       greatest one, `prefix detab` (induction on the input); `prefix⊑R°`]),
+     // lean:AOP.A10_2_Detab.detab_V_R_step6@6f212d06
+  )),
+)]<entab-detab-V>
+
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
 // `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -158,7 +214,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       // lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac lean:AOP.A10_2_Detab.entab_V@ff19c265
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
-      // lean:AOP.A10_2_Detab.expand_V_step@1e653239
+      // lean:AOP.A10_2_Detab.expand_V@56eb1503
       last step alone or discards it]]),
     (EQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
