@@ -60,6 +60,9 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3.rhs", src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3@0b07a2e4
+  ),
+  // two rows, split where the old two tables split: seven panels in one row shrink the fractions past reading
+  lean-chain(
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
