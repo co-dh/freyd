@@ -1099,6 +1099,9 @@ def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
   unless ← Meta.isDefEq (← Meta.inferType pf) want do fail "the stored proof does not prove its proposition"
   return some { verdict := some { mark, lean }, proof := some (want, pf), passed }
 
+/-- The writes this process has made, for a temporary name no other write of it shares. -/
+initialize storeCount : IO.Ref Nat ← IO.mkRef 0
+
 /-- `c` written for `slot`, whole or not at all: a sibling process reads the file the moment it is
     named.  A verdict whose proof has metavariables or metadata is not written, since it could not
     be rebuilt. -/
@@ -1120,7 +1123,10 @@ def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
     fields := fields ++ [("verdict", verdictJson v), ("nodes", .arr nodes), ("want", toJson w), ("proof", toJson p)]
   | some _, none => throwError "diag-export: a verdict reached with no proof to cache: {verdictJson c.verdict.get!}"
   if let some d := path.parent then IO.FS.createDirAll d
-  let tmp := path.addExtension s!"{← IO.Process.getPID}.tmp"
+  -- One name per WRITE, not per process: the panels of one call are tasks of one process, and two of
+  -- them storing one question renamed each other's file away.
+  let n ← storeCount.modifyGet fun n => (n, n + 1)
+  let tmp := path.addExtension s!"{← IO.Process.getPID}.{n}.tmp"
   IO.FS.writeFile tmp (Json.mkObj fields).compress
   IO.FS.rename tmp path
 
