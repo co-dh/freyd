@@ -177,12 +177,17 @@
     w: sz.width.pt(), h: sz.height.pt()))<pic>]
 } }
 #let disp(body) = figure(kind: "disp", supplement: none, {
-  // No `layout` here: the block is `breakable` (see `conf`), so measure at the text width instead.
-  // Measured, not read off an end marker's position: the difference of two page positions is off
-  // from the measured height in the last bit, and a `<pic>` record should not move with the method.
-  context pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
-    body, width: PAGEW - 2 * MARGIN, disp: true)
+  // No `layout` here: the block is `breakable` (see `conf`), so the width is the text width.  The
+  // height is read off an end marker, not a `measure` that lays the body out again (off in the last
+  // bit, ~1e-14pt); only a display split across pages, whose positions do not subtract, measures.
+  context {
+    let (a, b) = (here().position(), query(selector(<disp-end>).after(here())).first().location().position())
+    let W = PAGEW - 2 * MARGIN
+    pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
+      body, width: W, disp: true, size: if a.page == b.page { (width: W, height: b.y - a.y) } else { auto })
+  }
   body
+  [#metadata(none)<disp-end>]
 })
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
@@ -207,8 +212,8 @@
   let m = measure(q)
   let f = if m.width > sz.width and sz.width > 0pt { sz.width / m.width * 100% } else { 100% }
   let q = if f == 100% { q } else { scale(x: f, y: f, reflow: true, q) }
-  // Scaled `q` is measured again: `m * f` is off in the last bit from the scaled frame's own bounds.
-  if key != none { pic-meta(key, q, size: if f == 100% { m } else { auto }) }
+  // `m * f`, not a second `measure` of the scaled `q`: the two differ only in the last bit (~1e-14pt).
+  if key != none { pic-meta(key, q, size: (width: m.width * (f / 100%), height: m.height * (f / 100%))) }
   q
 })))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
