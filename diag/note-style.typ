@@ -28,10 +28,16 @@
 
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
 /// A display's path — `13.4.3c`, the heading numbers then the display's letter.  Bare, so a panel's
-/// `scanline` metadata can use it as an address; `conf` parenthesises it for the margin.
+/// `scanline` metadata can use it as an address; `conf` parenthesises it for the display.
 /// ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
 /// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
 #let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
+/// A display's number as printed, `(13.4.3c)`: grey, a size under the text.
+#let numtext(id) = text(9pt, luma(130))[(#id)]
+/// THE `Thm` HEADERS OF A DISPLAY are the `<thm-num>` markers between its `<disp-start>` and its
+/// `<disp-end>`.  Every marker is emitted unconditionally, so each query settles in one pass: a
+/// marker that depends on a state or query of its own costs a layout pass per link and never converged.
+#let disp-thms(s, at) = query(selector(<thm-num>).after(s.location()).before(at))
 
 // ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
 // `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
@@ -57,7 +63,6 @@
 #let PAGEW = 25cm
 #let PAGEH = 35cm
 #let MARGIN = 1.5cm
-#let NUMGAP = 0.15cm  // column edge to the display number's LEFT edge; the rest of MARGIN is its room to grow
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
@@ -149,15 +154,8 @@
       }
     } else { it }
   }
-  // THE NUMBER SITS IN THE RIGHT MARGIN and takes no width: a column of its own cost every display
-  // about 35pt.  Breakable when taller than a page (`kept`), though a figure is not: a chain table
-  // that tall must run on.
-  // `dx` is MEASURED, never a constant: `place(top + right)` fixes the number's RIGHT edge at `dx`
-  // past the column, so a constant leaves its LEFT edge to the number's own width, and anything
-  // wider than that constant reaches back INTO the column — where the display's own tint is painted
-  // after the `place` and covers the overrun.  `(13.4.4a)` printed `3.4.4a`.  Measuring makes the
-  // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
-  // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
+  // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
+  // must run on.
   // The blocks INSIDE a display: breakable too, or a table taller than a page loses its last rows
   // past the foot, silently (`<edit-mono>`'s last row).  The display's own block is `kept`'s choice.
   // `pic-flow` here and not in `disp`: `kept` must find the body's markers from outside its block.
@@ -177,15 +175,26 @@
     context metadata((kind: "disp",
       id: plain(dispnum(counter(heading).get(), it.counter.at(here()).first())),
       label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
+    // THE NUMBER GOES IN THE DISPLAY'S FIRST `Thm` HEADER, at its right end (see `Thm`); a display
+    // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
+    // stood a page gutter away from the table it names.
     context {
-      let n = text(9pt, luma(130), it.counter.display(it.numbering))
-      place(top + right, dx: measure(n).width + NUMGAP, n)
+      let id = plain(dispnum(counter(heading).get(), it.counter.at(here()).first()))
+      [#metadata(id)<disp-start>]
+      context {
+        let s = query(selector(<disp-start>).before(here())).last()
+        let e = query(selector(<disp-end>).after(here())).at(0, default: none)
+        if e == none or disp-thms(s, e.location()).len() == 0 {
+          block(width: 100%, below: 2pt, align(right, numtext(id)))
+        }
+      }
     }
     // A string-diagram panel is addressed by its display and its place in it (see `hm-meta`), so the
     // count restarts here; the update draws nothing.
     counter("hm-panel").update(0)
     pic-flow(dispnum(counter(heading).get(), it.counter.at(k).first()), it.body,
       width: PAGEW - 2 * MARGIN, disp: true, k: k)
+    [#metadata(none)<disp-end>]
   }))
   body
 }
@@ -270,8 +279,21 @@
 
 // WHAT THE TABLE SETTLES, in its top row: the reader needs the destination before the steps, and a
 // footer would only confirm it.  Grey ground, heavier rule under it, no new font size.
+// The display's number at its right end, in the display's first `Thm` only; an empty column as wide
+// on the left keeps the theorem centred on the cell.  Outside a display it is the plain header.
 #let Thm(body, cols: 2) = table.cell(colspan: cols, fill: luma(233), align: center + horizon,
-  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), strong(body))
+  stroke: (rest: 0.4pt + luma(190), bottom: 1.1pt + luma(120)), {
+    [#metadata(none)<thm-num>]
+    context {
+      let s = query(selector(<disp-start>).before(here())).at(-1, default: none)
+      let inside = s != none and query(selector(<disp-end>).after(s.location()).before(here())).len() == 0
+      if not inside or disp-thms(s, here()).len() != 1 { strong(body) } else {
+        let n = numtext(s.value)
+        let w = measure(n).width
+        grid(columns: (w, 1fr, w), column-gutter: 4pt, [], strong(body), align(right + top, n))
+      }
+    }
+  })
 
 // `auto` and not a fixed width: a panel column is as wide as the panels IN IT, so the column beside
 // it keeps every point they do not use.  A constant is a guess made against one table's widest panel
