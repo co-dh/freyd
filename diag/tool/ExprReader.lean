@@ -1540,6 +1540,17 @@ def rewriteHead? (e : Expr) : MetaM (Option Expr) := do
     if let some x := out then return some x
   return none
 
+/-- AN OPENING THAT HOLDS ITS OWN INPUT MADE NO PROGRESS: `r`, what `e` was opened to, has a proper
+    part that one delta step turns back into `e` (`Λ 𝟙` to `singletonMap E(𝟙)`, `singletonMap` being
+    `Λ 𝟙`), so a caller that opens that part again chases the two for ever.  Such an opening is refused. -/
+def reopens (e r : Expr) : MetaM Bool := do
+  let hit ← IO.mkRef false
+  Meta.forEachExpr r fun x => do
+    if x != r && x.getAppFn.isConst && !(← hit.get) then
+      if let some v ← Meta.unfoldDefinition? x then
+        if v.headBeta == e then hit.set true
+  hit.get
+
 /-- The PRODUCT FACTORS of an object, flat, and the object left under them — the product part of
     the stack `peelCuts` reads, and read by the same `splitTimes?`, so the two cannot disagree about
     what `×` does. -/
@@ -1615,7 +1626,10 @@ partial def rewriteSpine (e : Expr) (fuel : Nat := 8) : MetaM Expr := do
   | none => return e
   | some r =>
     if fuel == 0 then throwError "diag_rewrite does not terminate on {← Meta.ppExpr e}"
-    else rewriteSpine r (fuel - 1)
+    -- The WHOLE run is judged, not each step: `Λ 𝟙` reaches `singletonMap` through `E(𝟙) = 𝟙`,
+    -- and only a run stuck at `singletonMap E(𝟙)` — that equation withheld — holds `e` again.
+    let r ← rewriteSpine r (fuel - 1)
+    return if ← reopens e r then e else r
 
 /-- A statement built from two STATEMENTS, and those two.  A different question from `split`, which
     reads the relation between two ARROWS: a side of one of these is itself a statement, so it
