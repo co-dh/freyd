@@ -92,6 +92,10 @@
     with `./scripts/diag-export <decl>`. The imports are now drawn before the listings run.
 [X] ch12: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
     12.1b and 12.1d stay vertical: their terms carry `cons ∪ π₂`.
-[ ] ch13: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+[X] ch13: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+    six stay vertical: ∪ in the term, a panel pinned to one branch, or Theorem 7.1's frozen marks.
+[ ] rename MonotonicAlg to MonoAlg, using our lean-refactor.
+[ ] 15.2.1k should be horizontal.
+    `<dp-bifunctor-thin>` is a lean-chain in the source; merge with 15.2.1g, rebuild ch15, review.
 [ ] ch14: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
 [ ] ch16: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
