@@ -2174,10 +2174,17 @@ structure Search where
   head : Option Name
   /-- Candidates the top-level scan dropped or failed to unify, for the spider message. -/
   passed : IO.Ref (Array String)
+  /-- Whether a heartbeat budget cut any candidate short: such a search may answer otherwise on a
+      warmer cache, so its verdict is not one to remember. -/
+  cut : IO.Ref Bool
+  /-- Every conclusion head whose candidate bucket the search read: what its answer depends on,
+      with the modules those candidates come from (`depText`). -/
+  heads : IO.Ref NameSet
 
 /-- A search at its start. -/
 def Search.new (head : Option Name) : IO Search := do
-  return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[] }
+  return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[], cut := ← IO.mkRef false
+           heads := ← IO.mkRef {} }
 
 /-- One candidate not taken, kept only where it is ABOUT this family — its statement names the
     family's head — because the whole bucket is every theorem of the repo with that conclusion. -/
@@ -2276,6 +2283,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   -- statements are letter for letter the same.  Only the candidates ABOUT the family are ordered:
   -- a closure theorem's conclusion is the shortest there is (`StrictNatural G F (fun A => (φ A)°)`,
   -- every part of it bound), so ordering the whole bucket would cite one of those for every bead.
+  s.heads.modify (·.insert head)
   let cs ← candidates head
   let (about, rest) := match s.head with
     | some h => cs.partition fun (c : Name × NameSet) =>

@@ -984,49 +984,102 @@ structure Cached where
   proof : Option (Expr × Expr)
   passed : Array String
 
-/-- EVERYTHING THE ANSWER DEPENDS ON, as text: this binary (its code, its constants, the modules it
-    was linked with) and every repository module the process imports, by its olean hash.  Any Lean
-    edit anywhere invalidates every entry — which modules a unification unfolds is not recorded,
-    so no narrower set is one this cache could prove sufficient.  Once per process. -/
-initialize fingerprintRef : IO.Ref (Option String) ← IO.mkRef none
+/-- What EVERY answer depends on, once per process: the exporter's own code (the `diag.tool`
+    modules by olean hash, and the Lean it runs on), every instance by name and statement — a new
+    one anywhere can change what `discharge` synthesises — and the spelling bridges by name. -/
+initialize toolPrintRef : IO.Ref (Option String) ← IO.mkRef none
 
-def fingerprint : MetaM String := do
-  if let some f ← fingerprintRef.get then return f
-  let mut parts := #[s!"exe {← exeStamp}"]
-  for m in ← repoModules (← getEnv) do parts := parts.push s!"{m} {← oleanHash m}"
-  let f := "\n".intercalate parts.toList
-  fingerprintRef.set (some f)
+/-- Each module's olean hash, read once per process. -/
+initialize oleanHashRef : IO.Ref (Std.HashMap Name String) ← IO.mkRef {}
+
+def oleanHashOnce (m : Name) : IO String := do
+  if let some h := (← oleanHashRef.get)[m]? then return h
+  let h ← oleanHash m
+  oleanHashRef.modify (·.insert m h)
+  return h
+
+def sortNames (ns : Array Name) : Array Name := ns.qsort (·.toString < ·.toString)
+
+def bridgeNames : MetaM (Array Name) := do
+  let some ext ← Meta.getSimpExtension? `diag_bridge | throwError "no `diag_bridge` simp set"
+  return sortNames ((← ext.getTheorems).lemmaNames.toList.filterMap fun | .decl n .. => some n | _ => none).toArray
+
+def toolPrint : MetaM String := do
+  if let some f ← toolPrintRef.get then return f
+  let env ← getEnv
+  let tool ← ((← repoModules env).filter (`diag.tool).isPrefixOf).mapM fun m => return s!"{m} {← oleanHashOnce m}"
+  let inst := sortNames ((Meta.instanceExtension.getState env).instanceNames.toList.map (·.1)).toArray
+  let insts := inst.map fun n => s!"{n} {((env.find? n).map (hash ·.type)).getD 0}"
+  let f := "\n".intercalate ([s!"lean {Lean.versionString}"] ++ tool.toList ++ insts.toList
+    ++ (← bridgeNames).toList.map (s!"bridge {·}"))
+  toolPrintRef.set (some f)
   return f
 
-/-- Where one question's entry lives, and the question as text: the region, the family and the
-    categories, closed over the local context, so a hypothesis in scope (evidence, `hypVerdict`)
-    is part of the question.  `none` for a question with metavariables, which is no key. -/
-def cacheSlot (regionTy : Expr) (cat : Array Name) (φ : Expr) :
-    MetaM (Option (System.FilePath × String)) := do
+/-- WHAT ONE ANSWER DEPENDS ON, beyond `toolPrint`: for every head whose bucket the search read,
+    the bucket's members by name — a theorem added anywhere joins a bucket and can win first-hit —
+    and the olean hash of every repository module in the import closure of the modules declaring
+    those members, the question's own constants and the bridges.  A unification unfolds only
+    constants of the terms it compares, and those live in that closure, so a module outside it
+    cannot change the answer. -/
+def depText (heads : Array Name) (q : Expr) : MetaM String := do
+  let env ← getEnv
+  let mut consts := q.getUsedConstants ++ (← bridgeNames)
+  let mut lines := #[]
+  for h in sortNames heads do
+    let b := (← candidates h).map (·.1)
+    consts := consts ++ b.push h
+    lines := lines.push s!"head {h}: {" ".intercalate ((sortNames b).toList.map toString)}"
+  let mut todo := consts.filterMap env.getModuleIdxFor?
+  let mut seen : Std.HashSet Nat := {}
+  while h : todo.size > 0 do
+    let i := todo[todo.size - 1]
+    todo := todo.pop
+    if seen.contains i.toNat then continue
+    seen := seen.insert i.toNat
+    for im in env.header.moduleData[i.toNat]!.imports do
+      if let some j := env.getModuleIdx? im.module then todo := todo.push j
+  for m in ← repoModules env do
+    if let some i := env.getModuleIdx? m then
+      if seen.contains i.toNat then lines := lines.push s!"{m} {← oleanHashOnce m}"
+  return "\n".intercalate lines.toList
+
+/-- One question's place in the cache: its file, the question as text — the region, the family
+    and the categories, closed over the local context, so a hypothesis in scope (evidence,
+    `hypVerdict`) is part of it — and the closed question itself, whose constants `depText` reads. -/
+structure Slot where
+  path : System.FilePath
+  key : String
+  q : Expr
+
+/-- `none` for a question with metavariables, which is no key. -/
+def cacheSlot (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM (Option Slot) := do
   let lctx ← instantiateLCtxMVars (← getLCtx)
   let close (e : Expr) : MetaM Expr := return lctx.mkForall lctx.getFVars (← instantiateMVars e)
   let q := mkAppN (← close regionTy) #[← close φ]
   let some (i, (nodes, _)) := (exprNodes q).run (#[], {}) | return none
   let key := (Json.mkObj [("q", toJson i), ("nodes", .arr nodes), ("cat", .arr (cat.map nameJson))]).compress
-  let fp ← fingerprint
-  return some (System.mkFilePath [".lake/build/diag-verdicts", toString (hash fp), s!"{hash key}.json"], key)
+  let dir := toString (hash (← toolPrint))
+  return some { path := System.mkFilePath [".lake/build/diag-verdicts", dir, s!"{hash key}.json"], key, q }
 
 def verdictJson (v : Verdict) : Json :=
   Json.mkObj [("mark", (v.mark.map (·.key)).elim .null .str), ("lean", .arr (v.lean.map nameJson))]
 
-/-- The entry for `slot`, or `none` where there is none for this exact question under this exact
-    fingerprint.  A found verdict comes back only with its proof term REBUILT and `Meta.check`ed
-    against the proposition it was found for; an entry that does not read or does not check is an
-    error naming the file, never a miss the search quietly answers instead. -/
-def cacheLoad (slot : System.FilePath × String) : MetaM (Option Cached) := do
-  let (path, key) := slot
+/-- The entry for `slot`, or `none` where there is none for this exact question, or its `depText`
+    is no longer the one stored.  A found verdict comes back only with its proof term REBUILT and
+    `Meta.check`ed against the proposition it was found for; an entry that does not read or does
+    not check is an error naming the file, never a miss the search quietly answers instead. -/
+def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
+  let path := slot.path
+  let key := slot.key
   unless ← path.pathExists do return none
   let fail {α} (why : String) : MetaM α :=
     throwError "diag-export: verdict cache {path}: {why}; delete .lake/build/diag-verdicts to rebuild it"
   let j ← match Json.parse (← IO.FS.readFile path) with | .ok j => pure j | .error e => fail e
   let get {α} [FromJson α] (k : String) : MetaM α := match j.getObjValAs? α k with
     | .ok a => pure a | .error e => fail s!"field {k}: {e}"
-  unless (← get (α := String) "fp") == (← fingerprint) && (← get (α := String) "key") == key do return none
+  unless (← get (α := String) "key") == key do return none
+  let heads ← match (← get (α := Array Json) "heads").mapM jsonName with | .ok hs => pure hs | .error e => fail e
+  unless (← get (α := String) "deps") == (← depText heads slot.q) do return none
   let passed ← get (α := Array String) "passed"
   let v ← get (α := Json) "verdict"
   if v.isNull then return some { verdict := none, proof := none, passed }
@@ -1049,10 +1102,12 @@ def cacheLoad (slot : System.FilePath × String) : MetaM (Option Cached) := do
 /-- `c` written for `slot`, whole or not at all: a sibling process reads the file the moment it is
     named.  A verdict whose proof has metavariables or metadata is not written, since it could not
     be rebuilt. -/
-def cacheStore (slot : System.FilePath × String) (c : Cached) : MetaM Unit := do
-  let (path, key) := slot
+def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
+  let path := slot.path
   let fvs := (← getLCtx).getFVars
-  let mut fields := [("fp", toJson (← fingerprint)), ("key", toJson key), ("passed", toJson c.passed)]
+  let hs := heads.toArray
+  let mut fields := [("key", toJson slot.key), ("heads", .arr (hs.map nameJson)), ("deps", toJson (← depText hs slot.q)),
+    ("passed", toJson c.passed)]
   match c.verdict, c.proof with
   | none, _ => fields := fields ++ [("verdict", .null)]
   | some v, some (want, pf) =>
@@ -1205,8 +1260,8 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
         return none
       if let some sl := slot then
         if found.isSome || !(← s.cut.get) then
-          cacheStore sl { verdict := found, proof := ← if found.isSome then proof.get else pure none,
-                          passed := ← s.passed.get }
+          let pr ← if found.isSome then proof.get else pure none
+          cacheStore sl (← s.heads.get) { verdict := found, proof := pr, passed := ← s.passed.get }
       pure found
   if let some v := found then return v
   -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
