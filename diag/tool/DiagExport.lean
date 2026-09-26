@@ -1520,13 +1520,6 @@ def selDecls (commutative graph : Bool) (arg base : String) : List Name :=
   else if graph then (arg.splitOn "+").map String.toName
   else [base.toName]
 
-/-- THE EXPORTER A PICTURE WAS DRAWN BY, as the modification time of this binary: a picture drawn
-    by an older exporter is as stale as one of an older statement, and `make exe` relinks the binary
-    exactly when the exporter or a module it imports changed. -/
-def exeStamp : IO String := do
-  let t := (← (← IO.appPath).metadata).modified
-  return s!"{t.sec}.{t.nsec}"
-
 def EXE_PREFIX : String := "// exe: "
 
 /-- The `cert:` line EVERY generated file carries, under the two header lines: the declarations the

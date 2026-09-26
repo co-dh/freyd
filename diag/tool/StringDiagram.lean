@@ -1135,7 +1135,7 @@ def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
     ASSEMBLED and `Meta.check`ed, never a name whose statement merely unified.  Where none of the
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
-    spider"). -/
+    spider").  The environment's answer is kept across runs in `cacheDir` (see `cacheLoad`). -/
 def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := do
   -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
@@ -1162,13 +1162,21 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- over as it goes: re-running the search to explain it would pay for it twice.  The state is this
   -- search's own — the exporter runs a task per panel in one process.
   let s ← Search.new (← familyHead br φ)
+  -- The proposition the verdict rests on and its proof, as the last hit left them: what the cache
+  -- stores, so that a hit is a term `Meta.check`ed again and never a remembered mark.
+  let proof ← IO.mkRef (none : Option (Expr × Expr))
+  let keep (want : Expr) (r : Option (Name × Expr)) : MetaM (Option (Name × Expr)) := do
+    if let some (_, pf) := r then proof.set (some (want, pf))
+    return r
+  let tele (sq : Expr) := do keep sq (← findTelescoped br s sq must s.head FUEL)
+  let prove (want : Expr) (h : Name) (m : NameSet) := do keep want (← findProof br s want h m FUEL)
   -- A CATEGORY HAS ONE NATURALITY STATEMENT, THE SQUARE, and no `⊑` to grade it by: there is no
   -- lax, no oplax and no refutation to look for, so a family between functor lanes is the solid
   -- dot its square proves or the spider below — never the object-wire bead a failed RELATOR
   -- reading used to demote it to.
   let search : MetaM (Option Verdict) := match alg with
     | .functor => id do
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must s.head FUEL then
+      if let some (n, _) ← tele (← laneSquare alg regionTy F G φ) then
         return some { mark := some .strict, lean := #[n] }
       -- THE SQUARE OVER THE MAPS, where the region HAS maps to restrict to.  `𝟙%∋ : 𝟙 ⟹ E` is
       -- natural there and at no relation (`singletonMap_natural`, whose `Map f` this square binds
@@ -1183,14 +1191,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
         -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
         -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
         for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
-          if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ g) must s.head FUEL then
+          if let some (n, _) ← tele (← laneSquare alg regionTy F G φ g) then
             return some { mark := some m, lean := #[n] }
-        if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .strict true)
-            must s.head FUEL then
+        if let some (n, _) ← tele (← laneSquare alg regionTy F G φ .strict true) then
           return some { mark := some .maps, lean := #[n] }
         -- `(𝟙%∋)°` is op-lax over the maps and nothing more (`singletonMap_recip_oplax`).
-        if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .oplax true)
-            must s.head FUEL then
+        if let some (n, _) ← tele (← laneSquare alg regionTy F G φ .oplax true) then
           return some { mark := some .mapsOplax, lean := #[n] }
       return none
     | .relator => id do
@@ -1201,18 +1207,18 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- of one with the two relators swapped: `φ a : G.obj a ⟶ F.obj a`, so a swapped statement is
       -- not even well typed unless the bead happens to end where it starts.
       let nolax ← Meta.mkAppM ``Not #[lax]
-      if let some (n, _) ← findProof br s strict ``Freyd.Alg.StrictNatural {} FUEL then
+      if let some (n, _) ← prove strict ``Freyd.Alg.StrictNatural {} then
         return some { mark := some .strict, lean := #[n] }
       -- THE SQUARE IS BUILT, NOT REACHED BY UNFOLDING THE CLASS, for the reason `laneSquare` gives:
       -- `LaxNatural F G φ` spells the lane stack's action as the COMPOSITE relator's `map`, and
       -- every hand-written square in the repo spells it wire by wire (`tupleP 3 (tupleP n S)`), so
       -- the unfolded class matched none of them and every `RelSet.graph` bead of the cylinder came
       -- back a spider.  Same builder as the functor algebra's, one grade apart.
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ) must s.head FUEL then
+      if let some (n, _) ← tele (← laneSquare alg regionTy F G φ) then
         return some { mark := some .strict, lean := #[n] }
-      if let some (n, _) ← findProof br s lax ``Freyd.Alg.LaxNatural {} FUEL then
+      if let some (n, _) ← prove lax ``Freyd.Alg.LaxNatural {} then
         return some { mark := some .lax, lean := #[n] }
-      if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .lax) must s.head FUEL then
+      if let some (n, _) ← tele (← laneSquare alg regionTy F G φ .lax) then
         return some { mark := some .lax, lean := #[n] }
       -- The CONVERSE of a lax family is not lax, it is lax the other way (`laxNatural_recip`), so
       -- `OplaxNatural` is asked before the refutation: `prefix°` is not a spider, it is a hollow dot
@@ -1221,9 +1227,9 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- unfolding it would scan every `⊑` in the environment for a shape only `laxNatural_recip`
       -- ever produces — and that closure's own hypothesis IS searched as a square, through
       -- `discharge`.  A whole extra sweep per bead is what the H panels' budget cannot pay.
-      if let some (n, _) ← findProof br s oplax ``Freyd.Alg.OpLaxNatural {} FUEL then
+      if let some (n, _) ← prove oplax ``Freyd.Alg.OpLaxNatural {} then
         return some { mark := some .oplax, lean := #[n] }
-      if let some (n, _) ← findProof br s nolax ``Not must FUEL then
+      if let some (n, _) ← prove nolax ``Not must then
         return some { mark := none, lean := #[n] }
       -- THEOREM 5.2 IS A BRIDGE, AND IT IS CROSSED WITH A TERM.  A family whose only square in the
       -- repo is the one over the MAPS was a spider here, and it is not: on a TABULAR allegory that
@@ -1233,14 +1239,14 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- to be the very relators the bead runs between; where either fails there is no term and the
       -- bead keeps `maps` — what was proved over the maps, and nothing claimed at a relation.
       -- BOTH NAMES ARE RECORDED: the dot rests on the square AND on the theorem that carried it.
-      if let some (n, pf) ← findTelescoped br s (← laneSquare alg regionTy F G φ .strict true)
-          must s.head FUEL then
+      if let some (n, pf) ← tele (← laneSquare alg regionTy F G φ .strict true) then
         let carried ← observing? do
           let e ← Meta.mkAppM ``Freyd.Alg.laxNatural_iff_strict_on_maps #[F, G, φ]
           let t ← Meta.mkAppM ``Iff.mpr #[e, pf]
           Meta.check t
           pure t
-        if carried.isSome then
+        if let some t := carried then
+          proof.set (some (lax, t))
           return some { mark := some .lax,
                         lean := #[n, ``Freyd.Alg.laxNatural_iff_strict_on_maps] }
         return some { mark := some .maps, lean := #[n] }

@@ -1941,6 +1941,11 @@ def oleanHash (m : Name) : IO String := do
     if ← h.pathExists then hs := hs.push (← IO.FS.readFile h).trimAscii.toString
   return ",".intercalate hs.toList
 
+/-- The REPOSITORY modules a process imported: the ones whose source is in the checkout, which is
+    how the index's own scan decides. -/
+def repoModules (env : Environment) : IO (Array Name) :=
+  env.header.moduleNames.filterM fun m => (modToFilePath "." m "lean").pathExists
+
 /-- A STALE INDEX IS A WRONG ANSWER THAT EXITS 0: a theorem built after the last index run is a
     candidate nobody tries, and its bead draws a spider.  So every REPOSITORY module this process
     imported — one whose source is in the checkout, which is how the index's own scan decides —
@@ -1950,8 +1955,7 @@ def indexFresh (env : Environment) : IO Unit := do
   for row in ← indexRows "select name, olean_hash from module" do
     stored := stored.insert (← nameCell row "name") (← cell row "olean_hash")
   let mut stale := #[]
-  for m in env.header.moduleNames do
-    unless ← (modToFilePath "." m "lean").pathExists do continue
+  for m in ← repoModules env do
     unless stored.find? m == some (← oleanHash m) do stale := stale.push m
   unless stale.isEmpty do
     indexFail s!"{INDEX} was written before the build of {stale.size} module(s) this \
@@ -2349,7 +2353,9 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
     let ok : Option (Name × Expr) ← tryCatchRuntimeEx attempt fun e => do
       -- A candidate a heartbeat budget cut short is not refuted — it may unify on a warmer cache —
       -- so no failure above it is remembered.
-      if e.isRuntime then s.leanedOn.set 0
+      if e.isRuntime then
+        s.leanedOn.set 0
+        s.cut.set true
       pure none
     if ok.isSome then hit := ok else saved.restore
   return hit
