@@ -162,11 +162,12 @@
   // `pic-flow` here and not in `disp`: `kept` must find the body's markers from outside its block.
   show figure.where(kind: "disp"): set block(breakable: true)
   // A display is not running prose: its second paragraph starts flush, not at the text's 1em
-  // indent, and a list reads from its bullets at the display's left edge, not centred like the pictures
+  // indent, and a list or a table reads from the display's left edge, not centred like the pictures
   // `figure` centres, with a gap between items so a gloss stays with the formula above it.
   show figure.where(kind: "disp"): set par(first-line-indent: 0em)
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     show list: set align(left)
+    show table: set align(left)
     set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
