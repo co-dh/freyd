@@ -300,7 +300,7 @@ in @mu-defn.
       src[shunting: `cost` a map, so `𝟙⊑cost cost°` — @triple-chains]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step1@44f1c030
     (EQ, "Freyd.Alg.monotonicAlg_in_context_step2.rhs",
-      src[products: `R∩SS°=⟨cost leq,S⟩⟨cost,S⟩°` at `R=cost leq cost°` — @relprod-defn]),
+      src[products: `R∩SS°=⟨cost≤,S⟩⟨cost,S⟩°` at `R=cost≤cost°` — @relprod-defn]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step2@e27a633e
     (EQ, "Freyd.Alg.monotonicAlg_in_context_step3.rhs",
       src[assumption on `cost`: `h cost=F(⟨cost,S⟩)k`]),
@@ -310,13 +310,13 @@ in @mu-defn.
       src[`S` simple, so `⟨cost,S⟩` simple: `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step4@e0fdcf2e
     (EQ, "Freyd.Alg.monotonicAlg_in_context_step5.rhs",
-      src[products; functors: `⟨cost leq,S⟩=⟨cost,S⟩(leq×𝟙)` — @bdm-prod-laws, @relator-laws]),
+      src[products; functors: `⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @bdm-prod-laws, @relator-laws]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step5@b63ea26a
     (SQ, "Freyd.Alg.monotonicAlg_in_context_step6.rhs",
-      src[assumption on `k`: `F(leq×𝟙)k⊑k leq`]),
+      src[assumption on `k`: `F(≤×𝟙)k⊑k≤`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step6@941ec9da
     (EQ, "Freyd.Alg.monotonicAlg_in_context.rhs",
-      src[assumption on `cost` read backwards, then `R=cost leq cost°`]),
+      src[assumption on `cost` read backwards, then `R=cost≤cost°`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step7@b5c7d052
   )),
 )]<dp-context-mono>

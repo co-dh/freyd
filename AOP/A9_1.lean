@@ -421,25 +421,25 @@ public theorem monotonicAlg_of_cost_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A 
 /-- Proposition 9.2, second step: `R cost ⊑ cost leq` (`cost` a map, `R ≜ cost leq cost°`),
     under `F`; functors. -/
 public theorem monotonicAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶ C}
-    {leq : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ leq ≫ cost°) :
-    F.map R ≫ F.map cost ≫ k ⊑ F.map cost ≫ F.map leq ≫ k := by
-  have eB : R ≫ cost ⊑ cost ≫ leq := by
-    have e := comp_mono_left cost (comp_mono_left leq hcost.2)
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°) :
+    F.map R ≫ F.map cost ≫ k ⊑ F.map cost ≫ F.map «≤» ≫ k := by
+  have eB : R ≫ cost ⊑ cost ≫ «≤» := by
+    have e := comp_mono_left cost (comp_mono_left «≤» hcost.2)
     rw [Cat.comp_id] at e
     rw [hR]; simpa only [Cat.assoc] using e
   rw [← Cat.assoc, ← Cat.assoc, ← F.map_comp, ← F.map_comp]
   exact comp_mono_right (F.map_mono eB) k
 
 /-- Proposition 9.2, third step: the assumption that `k` is monotonic on `leq`. -/
-public theorem monotonicAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {leq : C ⟶ C}
-    {k : F.obj C ⟶ C} (hk : F.map leq ≫ k ⊑ k ≫ leq) :
-    F.map cost ≫ F.map leq ≫ k ⊑ F.map cost ≫ k ≫ leq :=
+public theorem monotonicAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {«≤» : C ⟶ C}
+    {k : F.obj C ⟶ C} (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
+    F.map cost ≫ F.map «≤» ≫ k ⊑ F.map cost ≫ k ≫ «≤» :=
   comp_mono_left _ hk
 
 /-- Proposition 9.2, fourth step: the assumption `h cost = F(cost) k` again. -/
 public theorem monotonicAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {leq : C ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
-    F.map cost ≫ k ≫ leq = h ≫ cost ≫ leq := by
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
+    F.map cost ≫ k ≫ «≤» = h ≫ cost ≫ «≤» := by
   rw [← Cat.assoc, ← hch, Cat.assoc]
 
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on the order `R := cost·leq·cost°`
@@ -448,19 +448,19 @@ public theorem monotonicAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost :
     monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
     `F(R)h cost ⊑ h cost leq`, which steps 1–4 prove. -/
 public theorem monotonicAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
-    {leq : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ leq ≫ cost°)
-    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map leq ≫ k ⊑ k ≫ leq) :
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
+    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
     MonotonicAlg h R := by
   show F.map R ≫ h ⊑ h ≫ R
-  have hsh : h ≫ R = (h ≫ cost ≫ leq) ≫ cost° := by rw [hR]; simp only [Cat.assoc]
+  have hsh : h ≫ R = (h ≫ cost ≫ «≤») ≫ cost° := by rw [hR]; simp only [Cat.assoc]
   rw [hsh]
   apply (map_shunt_right hcost _ _).mp
   rw [Cat.assoc]
   exact calc F.map R ≫ h ≫ cost
       _ = F.map R ≫ F.map cost ≫ k := monotonicAlg_of_cost_step1 hch
-      _ ⊑ F.map cost ≫ F.map leq ≫ k := monotonicAlg_of_cost_step2 hcost hR
-      _ ⊑ F.map cost ≫ k ≫ leq := monotonicAlg_of_cost_step3 hk
-      _ = h ≫ cost ≫ leq := monotonicAlg_of_cost_step4 hch
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := monotonicAlg_of_cost_step2 hcost hR
+      _ ⊑ F.map cost ≫ k ≫ «≤» := monotonicAlg_of_cost_step3 hk
+      _ = h ≫ cost ≫ «≤» := monotonicAlg_of_cost_step4 hch
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 
@@ -527,10 +527,10 @@ public theorem monotonicAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R :
 /-- Proposition 9.3, second step: products — `R∩SS° = ⟨cost leq,S⟩⟨cost,S⟩°` by the definition
     of `R` (`pair_recip_pair`). -/
 public theorem monotonicAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} (hR : R = cost ≫ leq ≫ cost°) :
+    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} (hR : R = cost ≫ «≤» ≫ cost°) :
     F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost°
-      = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
-  rw [P.pair_recip_pair, hR, Cat.assoc cost leq cost°]
+      = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
+  rw [P.pair_recip_pair, hR, Cat.assoc cost «≤» cost°]
 
 /-- Proposition 9.3, third step: the assumption on `cost`, `h cost = F(⟨cost,S⟩)k`. -/
 public theorem monotonicAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
@@ -543,37 +543,37 @@ public theorem monotonicAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cos
 /-- Proposition 9.3, fourth step: `S` simple makes `⟨cost,S⟩` simple
     (`tabulation_simple_of_simple`), so `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`. -/
 public theorem monotonicAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C} (hcost : Map cost) (hS : Simple S) :
-    F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
-      ⊑ F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost° := by
+    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} (hcost : Map cost) (hS : Simple S) :
+    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
+      ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := by
   have hsp : Simple (P.pair cost S) := tabulation_simple_of_simple P.tab hcost.2 hS
-  have hs : P.pair (cost ≫ leq) S ≫ (P.pair cost S)° ≫ P.pair cost S ⊑ P.pair (cost ≫ leq) S := by
-    simpa only [Cat.comp_id] using comp_mono_left (P.pair (cost ≫ leq) S) hsp
+  have hs : P.pair (cost ≫ «≤») S ≫ (P.pair cost S)° ≫ P.pair cost S ⊑ P.pair (cost ≫ «≤») S := by
+    simpa only [Cat.comp_id] using comp_mono_left (P.pair (cost ≫ «≤») S) hsp
   rw [← Cat.assoc (F.map _) (F.map _) (k ≫ cost°), ← F.map_comp, Cat.assoc]
   exact comp_mono_right (F.map_mono hs) _
 
 /-- Proposition 9.3, fifth step: products; functors — `⟨cost leq,S⟩ = ⟨cost,S⟩(leq×𝟙)`
     (`pair_prodMap_fst`), then `F` preserves the composite. -/
 public theorem monotonicAlg_in_context_step5 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C} :
-    F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost°
-      = F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost° := by
-  rw [← RelProd.pair_prodMap_fst (P := P) (Q := P) cost S leq, F.map_comp, Cat.assoc]
+    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} :
+    F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost°
+      = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
+  rw [← RelProd.pair_prodMap_fst (P := P) (Q := P) cost S «≤», F.map_comp, Cat.assoc]
 
 /-- Proposition 9.3, sixth step: the assumption on `k`, `F(leq×𝟙)k⊑k leq`. -/
 public theorem monotonicAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hk : F.map (prodMap P P leq (𝟙 B)) ≫ k ⊑ k ≫ leq) :
-    F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost°
-      ⊑ F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° :=
+    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
+    F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost°
+      ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° :=
   comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
 
 /-- Proposition 9.3, closing step: the assumption on `cost` read backwards, then the definition
     of `R`. -/
 public theorem monotonicAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hR : R = cost ≫ leq ≫ cost°) (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
-    F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° = h ≫ R := by
+    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hR : R = cost ≫ «≤» ≫ cost°) (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
+    F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° = h ≫ R := by
   rw [hR, ← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
 
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
@@ -582,21 +582,21 @@ public theorem monotonicAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R :
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
     chain, one step theorem per hint. -/
 public theorem monotonicAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
-    {S : A ⟶ B} {P : RelProd C B} {leq : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ leq ≫ cost°)
+    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
-    (hk : F.map (prodMap P P leq (𝟙 B)) ≫ k ⊑ k ≫ leq) :
+    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
     F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
   calc F.map (R ∩ (S ≫ S°)) ≫ h
       _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := monotonicAlg_in_context_step1 hcost
-      _ = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° :=
+      _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° :=
           monotonicAlg_in_context_step2 hR
-      _ = F.map (P.pair (cost ≫ leq) S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
+      _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
           monotonicAlg_in_context_step3 hch
-      _ ⊑ F.map (P.pair (cost ≫ leq) S) ≫ k ≫ cost° := monotonicAlg_in_context_step4 hcost hS
-      _ = F.map (P.pair cost S) ≫ F.map (prodMap P P leq (𝟙 B)) ≫ k ≫ cost° :=
+      _ ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := monotonicAlg_in_context_step4 hcost hS
+      _ = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° :=
           monotonicAlg_in_context_step5
-      _ ⊑ F.map (P.pair cost S) ≫ k ≫ leq ≫ cost° := monotonicAlg_in_context_step6 hk
+      _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° := monotonicAlg_in_context_step6 hk
       _ = h ≫ R := monotonicAlg_in_context_step7 hR hch
 
 end Prop9_3
