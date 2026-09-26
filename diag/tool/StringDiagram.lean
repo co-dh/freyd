@@ -1197,6 +1197,28 @@ private def shiftRow (n : Nat) (i : Int) : Int := if i < 0 then i else i + n
 private def shiftConv (n : Nat) (cs : Array Conv) : Array Conv :=
   cs.map fun c => { c with first := shiftRow n c.first, last := shiftRow n c.last }
 
+/-- `d` UPSIDE DOWN — what a contravariant lane does to the picture it runs past.  Each bead eats
+    what it made and makes what it ate; the lanes are re-indexed so the new top edge is again the
+    lane array's prefix, and a unit turned over is no unit. -/
+def Diagram.flip (d : Diagram) : MetaM Diagram := do
+  let n := d.rows.size
+  let fr (i : Int) : Int := (n : Int) - 1 - i
+  let atBot (l : Lane) : Bool := l.dies < 0 || l.dies ≥ (n : Int)
+  let rest := ((List.range d.lanes.size).filter fun i => !d.bot.contains i).toArray.qsort
+    fun i j => fr d.lanes[i]!.dies < fr d.lanes[j]!.dies
+  let order := d.bot ++ rest
+  let pos (i : Nat) : Nat := (order.idxOf? i).getD i
+  let lanes := order.map fun i => let l := d.lanes[i]!
+    { l with born := if atBot l then -1 else fr l.dies, dies := if l.born < 0 then LIVE else fr l.born,
+             conv := l.conv.map fun c => { c with first := fr c.last, last := fr c.first } }
+  let mut rows : Array Row := #[]
+  for k in [0 : n] do
+    let r := d.rows[n - 1 - k]!
+    let obj ← if k + 1 < n then pure d.rows[n - 2 - k]!.obj else label d.otop
+    rows := rows.push { r with arms := r.legs.map pos, legs := r.arms.map pos, over := r.over.map pos,
+                               src := r.tgt, tgt := r.src, obj, unit := false }
+  return { lanes, rows, top := d.bot.map pos, bot := d.top.map pos, otop := d.obot, obot := d.otop }
+
 /-- `d` ABOVE `e`.  The two edges must be the SAME cut, and each lane of `e.top` then IS the lane of
     `d.bot` it continues — one wire, not two stacked — which is what makes `⟦f≫g⟧` a composite. -/
 def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
@@ -1327,7 +1349,20 @@ def recipArg? (r : Expr) : Option Expr :=
 def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     MetaM (Option (Expr × Expr × Bool × Bool)) := do
   let outer := recipArg? e
-  let some (R, r) ← peelMap? cat objVars regionTy (outer.getD e) | return none
+  let x := outer.getD e
+  -- The lane's action as written — `F.map r` for an ENDOFUNCTOR of the region, a local relator's
+  -- included; `graph : Fun → Rel` is no lane — else a catalogue lane's.
+  let endo (F : Expr) : MetaM Bool := do
+    let t ← Meta.whnf (← Meta.inferType F)
+    let (``Freyd.Functor, ts) := t.getAppFnArgs | return false
+    if ts.size < 2 then return false
+    return (← Meta.isDefEq ts[0]! regionTy) && (← Meta.isDefEq ts[1]! regionTy)
+  let direct : MetaM (Option (Expr × Expr)) := do
+    let (``Freyd.Functor.map, args) := x.getAppFnArgs | return none
+    if args.size < 6 then return none
+    unless ← endo args[4]! do return none
+    return some (args[4]!, args[args.size - 1]!)
+  let some (R, r) ← direct <||> peelMap? cat objVars regionTy x | return none
   let inner := recipArg? r
   if outer.isNone && inner.isNone then return none
   let z := inner.getD r
@@ -1382,8 +1417,13 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- lane on each side that carries one.
   if let some (R, z, outer, inner) ← conjugate? cat objVars regionTy e then
     let ws := (wiresOf R).map Wire.rel
+    -- ONE `°` IS CONTRAVARIANT and turns what it acts on upside down: `F(Z)°` runs from `F`
+    -- of `Z`'s target to `F` of its source, so `Z` is drawn flipped; the sandwich's two cancel.
+    let flip := outer != inner
+    let zs := (← homEnds z).1
     let d ← interp regionTy cat objVars (vpass ++ ws)
-      (Peeled.inner expect ws.size (← homEnds z).1) z
+      (if flip then none else Peeled.inner expect ws.size zs) z
+    let d ← if flip then d.flip else pure d
     let idd ← Diagram.id ws d.otop
     let sp : Conv := { first := 0, last := (d.rows.size : Int) - 1, outer, inner }
     return ← ({ idd with lanes := idd.lanes.map fun l => { l with conv := #[sp] } } : Diagram).beside d
