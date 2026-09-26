@@ -313,44 +313,69 @@ public theorem mod_add_of_lt (n a j : Nat) (h : a % n + j < n) : (a + j) % n = a
   have he : a + j = n * (a / n) + (a % n + j) := by omega
   rw [he, Nat.mul_add_mod, Nat.mod_eq_of_lt h]
 
-/-- **entab-laws**: `expand V°⊑expand∪(π₁V°)` — shortening the output of one `expand` step to a
-    `V`-smaller string either leaves the step alone or discards it.  On a tab the step is never
-    discarded: the filled string sits on a tab stop, so its own `fill` is a whole `n` blanks
-    long, which no shorter string can match.  On any other character the discarded case forces
-    that character to be a blank and the rest to be `x` padded, and then the two fills agree. -/
-public theorem expand_V_step (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl)
-    (z : Str) (c : Char) (x : Str) (h : V n nl blank x (expandFn n tb nl blank z c)) :
-    x = expandFn n tb nl blank z c ∨ V n nl blank x z := by
-  obtain ⟨hpre, hfill⟩ := h
-  by_cases hc : c = tb
-  · left
-    have hy : expandFn n tb nl blank z c = pad blank z (n - colFn nl z % n) := by
-      simp only [expandFn, if_pos hc, fillFn]
+/-- `fill : String⟶String` as an arrow. -/
+@[expose] public def fill (n : Nat) (nl blank : Char) : dSL Unit Char ⟶ dSL Unit Char :=
+  graph (fillFn n nl blank)
+
+/-- `π₁ : String×Char⟶String`, B&dM's `outl`. -/
+@[expose] public def outl : (⟨Str × Char⟩ : RelSet.{0}) ⟶ dSL Unit Char := graph Prod.fst
+
+/-- The coreflexive `istab outr`: the pairs whose character is `TB` — the guard of `expand`'s
+    conditional, written as the union of its two guarded arms. -/
+@[expose] public def istab (tb : Char) : (⟨Str × Char⟩ : RelSet.{0}) ⟶ ⟨Str × Char⟩ :=
+  fun p q => p = q ∧ p.2 = tb
+
+/-- The complementary coreflexive: the pairs whose character is not `TB`. -/
+@[expose] public def nottab (tb : Char) : (⟨Str × Char⟩ : RelSet.{0}) ⟶ ⟨Str × Char⟩ :=
+  fun p q => p = q ∧ p.2 ≠ tb
+
+public theorem prefixS_refl : ∀ x : Str, prefixS x x
+  | SnocList.wrap () => rfl
+  | SnocList.snoc _ _ => Or.inl rfl
+
+/-- Exercise 10.4, first claim: `nil V°=nil` — the empty string has no other prefix. -/
+public theorem nil_V (n : Nat) (nl blank : Char) :
+    (nilR : dL Unit ⟶ dSL Unit Char) ≫ (V n nl blank)° = nilR :=
+  hom_ext fun _ x => ⟨fun ⟨_, hy, hpre, _⟩ => by subst hy; exact hpre,
+    fun h => ⟨SnocList.wrap (), rfl, h, by rw [h]⟩⟩
+
+/-- Exercise 10.4, second claim: `fill V°=fill` — a filled string sits on a tab stop, so its own
+    `fill` is a whole `n` blanks long, which no shorter prefix can match. -/
+public theorem fill_V (n : Nat) (nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    fill n nl blank ≫ (V n nl blank)° = fill n nl blank :=
+  hom_ext fun z x => by
+    refine ⟨fun ⟨y, hy, hpre, hfill⟩ => ?_, fun h => ⟨x, h, prefixS_refl x, rfl⟩⟩
+    obtain rfl : y = fillFn n nl blank z := hy
+    show x = fillFn n nl blank z
     have hrz : colFn nl z % n < n := Nat.mod_lt _ hn
     have hdz : n * (colFn nl z / n) + colFn nl z % n = colFn nl z := Nat.div_add_mod _ _
-    have hcoly : colFn nl (expandFn n tb nl blank z c) = n * (colFn nl z / n + 1) := by
-      rw [hy, col_pad nl blank hb, Nat.mul_succ]
+    have hcoly : colFn nl (fillFn n nl blank z) = n * (colFn nl z / n + 1) := by
+      show colFn nl (pad blank z (n - colFn nl z % n)) = _
+      rw [col_pad nl blank hb, Nat.mul_succ]
       omega
-    have hmod0 : colFn nl (expandFn n tb nl blank z c) % n = 0 := by
+    have hmod0 : colFn nl (fillFn n nl blank z) % n = 0 := by
       rw [hcoly]; exact Nat.mul_mod_right _ _
-    have hfy : fillFn n nl blank (expandFn n tb nl blank z c)
-        = pad blank (expandFn n tb nl blank z c) n := by
-      show pad blank (expandFn n tb nl blank z c)
-          (n - colFn nl (expandFn n tb nl blank z c) % n)
-        = pad blank (expandFn n tb nl blank z c) n
+    have hfy : fillFn n nl blank (fillFn n nl blank z) = pad blank (fillFn n nl blank z) n := by
+      show pad blank (fillFn n nl blank z) (n - colFn nl (fillFn n nl blank z) % n) = _
       rw [hmod0, Nat.sub_zero]
-    rw [hfy] at hfill
-    obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (expandFn n tb nl blank z c)
-      (n - colFn nl x % n) n (prefixS_slen_le hpre) hfill
+    have hfill' : pad blank x (n - colFn nl x % n) = pad blank (fillFn n nl blank z) n :=
+      hfill.trans hfy
+    obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (fillFn n nl blank z)
+      (n - colFn nl x % n) n (prefixS_slen_le hpre) hfill'
     have hkx : n - colFn nl x % n ≤ n := Nat.sub_le _ _
     obtain rfl : m = 0 := by omega
     exact hm.symm
-  · have hy : expandFn n tb nl blank z c = SnocList.snoc z c := by
-      simp only [expandFn, if_neg hc]
-    rw [hy] at hpre hfill
+
+/-- Exercise 10.4, third claim: `snoc V°⊑snoc∪(π₁V°)` — a prefix of `xs⧺[a]` is the whole of it or
+    a prefix of `xs`; in the second case the two fills agree only when `a` is a blank and `xs` is
+    the prefix padded with blanks inside one tab period. -/
+public theorem snoc_V (n : Nat) (nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    snocR ≫ (V n nl blank)° ⊑ snocR ∪ outl ≫ (V n nl blank)° :=
+  le_iff.mpr fun ⟨z, c⟩ x ⟨y, hy, hpre, hfill⟩ => by
+    obtain rfl : y = SnocList.snoc z c := hy
     rcases (hpre : x = SnocList.snoc z c ∨ prefixS x z) with rfl | hpz
-    · exact Or.inl hy.symm
-    · refine Or.inr ⟨hpz, ?_⟩
+    · exact Or.inl rfl
+    · refine Or.inr ⟨z, rfl, hpz, ?_⟩
       have hlx : slen x ≤ slen z := prefixS_slen_le hpz
       obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (SnocList.snoc z c) (n - colFn nl x % n)
         (n - colFn nl (SnocList.snoc z c) % n) (by show slen x ≤ slen z + 1; omega) hfill
@@ -377,9 +402,72 @@ public theorem expand_V_step (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : b
       congr 1
       omega
 
-/-- **entab-laws**: `detab V°⊑R° detab` — shortening the output to a `V`-smaller string is
-    matched by an input no longer than the original.  Induction on the input, `expand_V_step`
-    at each step. -/
+/-- `expand` is the conditional `(istab outr→fill outl,snoc)`, written as its two guarded arms. -/
+public theorem expand_eq_cond (n : Nat) (tb nl blank : Char) :
+    expand n tb nl blank = istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ snocR :=
+  hom_ext fun ⟨z, c⟩ y => by
+    by_cases hc : c = tb
+    · have e : expandFn n tb nl blank z c = fillFn n nl blank z := if_pos hc
+      refine ⟨fun h => Or.inl ⟨(z, c), ⟨rfl, hc⟩, z, rfl, h.trans e⟩, fun h => ?_⟩
+      rcases h with ⟨_, ⟨rfl, _⟩, _, rfl, hy⟩ | ⟨_, ⟨rfl, hq⟩, _⟩
+      · exact hy.trans e.symm
+      · exact absurd hc hq
+    · have e : expandFn n tb nl blank z c = SnocList.snoc z c := if_neg hc
+      refine ⟨fun h => Or.inr ⟨(z, c), ⟨rfl, hc⟩, h.trans e⟩, fun h => ?_⟩
+      rcases h with ⟨_, ⟨rfl, hq⟩, _⟩ | ⟨_, ⟨rfl, _⟩, hy⟩
+      · exact absurd hq hc
+      · exact hy.trans e.symm
+
+/-- B&dM p.249, the claim, first step: definition of `expand`. -/
+public theorem expand_V_step1 (n : Nat) (tb nl blank : Char) :
+    expand n tb nl blank ≫ (V n nl blank)°
+      = (istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ snocR) ≫ (V n nl blank)° := by
+  rw [expand_eq_cond]
+
+/-- The claim, second step: conditionals — composition distributes over the two arms. -/
+public theorem expand_V_step2 (n : Nat) (tb nl blank : Char) :
+    (istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ snocR) ≫ (V n nl blank)°
+      = istab tb ≫ outl ≫ fill n nl blank ≫ (V n nl blank)°
+        ∪ nottab tb ≫ snocR ≫ (V n nl blank)° := by
+  simp only [union_comp_distrib, Cat.assoc]
+
+/-- The claim, third step: `fill V°=fill` (Exercise 10.4). -/
+public theorem expand_V_step3 (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    istab tb ≫ outl ≫ fill n nl blank ≫ (V n nl blank)° ∪ nottab tb ≫ snocR ≫ (V n nl blank)°
+      = istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ snocR ≫ (V n nl blank)° := by
+  rw [fill_V n nl blank hn hb]
+
+/-- The claim, fourth step: `snoc V°⊑snoc∪(π₁V°)` (Exercise 10.4). -/
+public theorem expand_V_step4 (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ snocR ≫ (V n nl blank)°
+      ⊑ istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ (snocR ∪ outl ≫ (V n nl blank)°) :=
+  union_mono (le_refl _) (comp_mono_left _ (snoc_V n nl blank hn hb))
+
+/-- The claim, fifth step: definition of `expand`; the guard on the second arm is dropped. -/
+public theorem expand_V_step5 (n : Nat) (tb nl blank : Char) :
+    istab tb ≫ outl ≫ fill n nl blank ∪ nottab tb ≫ (snocR ∪ outl ≫ (V n nl blank)°)
+      ⊑ expand n tb nl blank ∪ outl ≫ (V n nl blank)° := by
+  rw [expand_eq_cond]
+  refine le_iff.mpr fun p y h => ?_
+  rcases h with h | ⟨_, ⟨rfl, hq⟩, hs | hw⟩
+  · exact Or.inl (Or.inl h)
+  · exact Or.inl (Or.inr ⟨p, ⟨rfl, hq⟩, hs⟩)
+  · exact Or.inr hw
+
+/-- **B&dM p.249–250, the claim** `expand V°⊑expand∪(π₁V°)`: shortening the output of one
+    `expand` step to a `V`-smaller string either leaves the step alone or discards it. -/
+public theorem expand_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    expand n tb nl blank ≫ (V n nl blank)° ⊑ expand n tb nl blank ∪ outl ≫ (V n nl blank)° :=
+  calc expand n tb nl blank ≫ (V n nl blank)°
+      _ = _ := expand_V_step1 n tb nl blank
+      _ = _ := expand_V_step2 n tb nl blank
+      _ = _ := expand_V_step3 n tb nl blank hn hb
+      _ ⊑ _ := expand_V_step4 n tb nl blank hn hb
+      _ ⊑ _ := expand_V_step5 n tb nl blank
+
+/-- **entab-laws**: `detab V°⊑R° detab` read on points — shortening the output to a `V`-smaller
+    string is matched by an input no longer than the original.  Induction on the input,
+    `expand_V` at each step. -/
 public theorem detab_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
     ∀ (t x : Str), V n nl blank x (detabFn n tb nl blank t) →
       ∃ t₀, detabFn n tb nl blank t₀ = x ∧ slen t₀ ≤ slen t
@@ -387,10 +475,136 @@ public theorem detab_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank �
     obtain rfl : x = SnocList.wrap () := h.1
     exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
   | SnocList.snoc s c, x, h => by
-    rcases expand_V_step n tb nl blank hn hb (detabFn n tb nl blank s) c x h with hx | hV
+    rcases le_iff.mp (expand_V n tb nl blank hn hb) (detabFn n tb nl blank s, c) x
+      ⟨_, rfl, h⟩ with hx | ⟨_, rfl, hV⟩
     · exact ⟨SnocList.snoc s c, hx.symm, Nat.le_refl _⟩
     · obtain ⟨t₀, ht₀, hlen⟩ := detab_V n tb nl blank hn hb s x hV
       exact ⟨t₀, ht₀, Nat.le_succ_of_le hlen⟩
+
+/-- `α°α=𝟙`: every snoc-list is `nil` or a `snoc`, in exactly one way. -/
+public theorem con_recip_con :
+    (graph (con (L := Unit) (E := Char)))° ≫ graph con = 𝟙 (dSL Unit Char) :=
+  hom_ext fun t t' => ⟨fun ⟨_, h1, h2⟩ => h1.trans h2.symm, fun h => by
+    subst h
+    cases t with
+    | wrap d => exact ⟨Sum.inl d, rfl, rfl⟩
+    | snoc x a => exact ⟨Sum.inr (x, a), rfl, rfl⟩⟩
+
+/-- B&dM p.249, `V detab⊑detab R`, first step: `detab` is a fold, so it is the unique solution
+    of its recursion equation. -/
+public theorem detab_V_R_step1 (n : Nat) (tb nl blank : Char) :
+    detabR n tb nl blank ≫ (V n nl blank)°
+      = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank) ≫ (V n nl blank)° := by
+  have hc : detabR n tb nl blank = cataR (graph (expandAlgFn n tb nl blank)) :=
+    (detab_cata n tb nl blank).symm
+  have hcomm : (F Unit Char).map (cataR (graph (expandAlgFn n tb nl blank)))
+        ≫ graph (expandAlgFn n tb nl blank)
+      = graph con ≫ cataR (graph (expandAlgFn n tb nl blank)) :=
+    (cataFold_comm (graph (expandAlgFn n tb nl blank))).symm
+  rw [← con_eq_junc, ← expandAlg_eq_junc, hc]
+  simp only [← Cat.assoc]
+  rw [Cat.assoc (graph con)°, hcomm, ← Cat.assoc, con_recip_con, Cat.id_comp]
+
+/-- Second step: coproducts, and `nil V°=nil` (Exercise 10.4). -/
+public theorem detab_V_R_step2 (n : Nat) (tb nl blank : Char) :
+    (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank) ≫ (V n nl blank)°
+      = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ≫ (V n nl blank)°) := by
+  rw [junc_comp, nil_V]
+
+/-- Third step: the claim `expand V°⊑expand∪(π₁V°)`. -/
+public theorem detab_V_R_step3 (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ≫ (V n nl blank)°)
+      ⊑ (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ∪ outl ≫ (V n nl blank)°) :=
+  comp_mono_left _ (comp_mono_left _
+    (union_mono (le_refl _) (comp_mono_left _ (expand_V n tb nl blank hn hb))))
+
+/-- Fourth step: distributing `∪`; the fold again, and the definition of `F`. -/
+public theorem detab_V_R_step4 (n : Nat) (tb nl blank : Char) :
+    (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank)
+        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ∪ outl ≫ (V n nl blank)°)
+      = detabR n tb nl blank
+        ∪ snocR° ≫ rprodMap (detabR n tb nl blank) (𝟙 (⟨Char⟩ : RelSet.{0}))
+          ≫ outl ≫ (V n nl blank)° :=
+  hom_ext fun t x => by
+    constructor
+    · rintro ⟨u, hα, v, hF, hj⟩
+      rcases hα with ⟨d, rfl, hn⟩ | ⟨p, rfl, hs⟩
+      · cases v with
+        | inr _ => exact hF.elim
+        | inl _ =>
+          rcases hj with ⟨_, _, hn'⟩ | ⟨_, hq, _⟩
+          · subst hn; subst hn'; exact Or.inl rfl
+          · cases hq
+      · cases v with
+        | inl _ => exact hF.elim
+        | inr q =>
+          rcases hj with ⟨_, hq, _⟩ | ⟨q', hq', hEW⟩
+          · cases hq
+          · obtain rfl : q = q' := Sum.inr.inj hq'
+            obtain ⟨h1, h2⟩ := hF
+            rcases hEW with hx | ⟨w, hw, hV⟩
+            · subst hs
+              refine Or.inl ?_
+              show x = expandFn n tb nl blank (detabFn n tb nl blank p.1) p.2
+              rw [hx, ← h1, h2]
+            · exact Or.inr ⟨p, hs, q, ⟨h1, h2⟩, w, hw, hV⟩
+    · rintro (h | ⟨p, hs, q, ⟨h1, h2⟩, w, hw, hV⟩)
+      · cases t with
+        | wrap d =>
+          cases d
+          exact ⟨Sum.inl (), Or.inl ⟨(), rfl, rfl⟩, Sum.inl (), rfl, Or.inl ⟨(), rfl, h⟩⟩
+        | snoc s a =>
+          exact ⟨Sum.inr (s, a), Or.inr ⟨(s, a), rfl, rfl⟩, Sum.inr (detabFn n tb nl blank s, a),
+            ⟨rfl, rfl⟩, Or.inr ⟨(detabFn n tb nl blank s, a), rfl, Or.inl h⟩⟩
+      · exact ⟨Sum.inr p, Or.inr ⟨p, rfl, hs⟩, Sum.inr q, ⟨h1, h2⟩,
+          Or.inr ⟨q, rfl, Or.inr ⟨w, hw, hV⟩⟩⟩
+
+/-- Fifth step: naturality of `π₁`, `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`. -/
+public theorem detab_V_R_step5 (n : Nat) (tb nl blank : Char) :
+    detabR n tb nl blank
+        ∪ snocR° ≫ rprodMap (detabR n tb nl blank) (𝟙 (⟨Char⟩ : RelSet.{0}))
+          ≫ outl ≫ (V n nl blank)°
+      = detabR n tb nl blank ∪ snocR° ≫ outl ≫ detabR n tb nl blank ≫ (V n nl blank)° :=
+  hom_ext fun _ _ => or_congr Iff.rfl
+    ⟨fun ⟨p, hs, _, ⟨h1, _⟩, w, hw, hV⟩ => ⟨p, hs, p.1, rfl, w, hw.trans h1, hV⟩,
+     fun ⟨p, hs, w, hw, y, hy, hV⟩ =>
+      ⟨p, hs, (y, p.2), ⟨by show y = detabFn n tb nl blank p.1; rw [hy, hw], rfl⟩, y, rfl, hV⟩⟩
+
+/-- Sixth step: `X≜detab V°` solves `X⊑detab∪(init X)`; `init` is inductive, so every solution
+    lies below the greatest, `prefix detab` — induction on the input, `detab_V` — and a prefix is
+    no longer: `prefix⊑R°`. -/
+public theorem detab_V_R_step6 (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    detabR n tb nl blank ∪ snocR° ≫ outl ≫ detabR n tb nl blank ≫ (V n nl blank)°
+      ⊑ R° ≫ detabR n tb nl blank :=
+  le_iff.mpr fun t x h => by
+    rcases h with h | ⟨p, hs, _, rfl, _, rfl, hV⟩
+    · exact ⟨t, Nat.le_refl _, h⟩
+    · obtain ⟨t₀, ht₀, hlen⟩ := detab_V n tb nl blank hn hb p.1 x hV
+      subst hs
+      exact ⟨t₀, Nat.le_succ_of_le hlen, ht₀.symm⟩
+
+/-- **B&dM p.249** `V detab⊑detab R`, mirrored: `detab V°⊑R° detab` — the book's chain, one step
+    theorem per hint. -/
+public theorem detab_V_R (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
+    detabR n tb nl blank ≫ (V n nl blank)° ⊑ R° ≫ detabR n tb nl blank :=
+  calc detabR n tb nl blank ≫ (V n nl blank)°
+      _ = _ := detab_V_R_step1 n tb nl blank
+      _ = _ := detab_V_R_step2 n tb nl blank
+      _ ⊑ _ := detab_V_R_step3 n tb nl blank hn hb
+      _ = _ := detab_V_R_step4 n tb nl blank
+      _ = _ := detab_V_R_step5 n tb nl blank
+      _ ⊑ _ := detab_V_R_step6 n tb nl blank hn hb
 
 /-- **entab-laws**: Proposition 9.4's `hV`, `V detab°⊑detab° R`. -/
 public theorem entab_V (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl) :
@@ -519,5 +733,41 @@ open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
+
+-- printing-only unexpanders: B&dM's `outl` is the note's `π₁`; the two guards keep their names.
+open Lean PrettyPrinter in
+@[app_unexpander outl] public meta def unexpandDetabOutl : Unexpander
+  | `($_:ident) => `($(mkIdent `π₁))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander fill] public meta def unexpandFill : Unexpander
+  | `($_ $_ $_ $_) => `($(mkIdent `fill))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander istab] public meta def unexpandIstab : Unexpander
+  | `($_ $_) => `($(mkIdent `istab))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander nottab] public meta def unexpandNottab : Unexpander
+  | `($_ $_) => `($(mkIdent `nottab))
+  | _ => throw ()
+
+/-- `α°=[nil,snoc]°` is natural in the element type: `snocAlg_recip_strictNatural` with `α` spelled
+    as the junction the §10 pictures carry. -/
+public theorem alpha_recip_strictNatural :
+    StrictNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0})))
+      (snocRelator Unit)
+      (fun A => (junc (sumCop _ _) nilR snocR
+        : Fobj Unit A.carrier (dSL Unit A.carrier) ⟶ dSL Unit A.carrier)°) := by
+  intro A B R
+  have h := snocAlg_recip_strictNatural (L := Unit) R
+  dsimp only at h ⊢
+  rw [con_eq_junc, con_eq_junc] at h
+  exact h
 
 end Freyd.Alg.RelSet.Detab
