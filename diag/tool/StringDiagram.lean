@@ -25,8 +25,9 @@ namespace Freyd.StrDiag
 
 /-! ### The book's geometry -/
 
-/-- The margin the leftmost lane's NAME is written into. -/
-def X0 : Float := 1.875
+/-- The clear margin WEST of the leftmost ink — the lane's name or port label — the same clearance
+    `dpanel` leaves EAST of the widest bead label (its `0.28`); a wider one left blank canvas. -/
+def X0 : Float := 0.28
 /-- One column: IntroString p. 46's 0.5cm in cetz's own `length: 0.8cm` unit. -/
 def DX : Float := 0.625
 /-- One row — the height that holds one label clear of the label a row below it. -/
@@ -336,10 +337,9 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
   let ls := columns p
   let hh := frameHeight p frame
   let ys : Array Float := (levels.getD (Array.mk ((List.range n).map (n - ·)))).map (·.toFloat * DY)
-  -- WITH NO LANE THERE IS NOTHING TO STAND EAST OF, so the object wire IS the first column.  The
-  -- default `X0` is where a lane would have been, and adding `DX` to it puts the wire one column
-  -- east of a column nobody drew (`11.4.1a`, `11.4.2a`).
-  let xo := roundTo 2 (if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0 + DX)
+  -- WITH NO LANE THERE IS NOTHING TO STAND EAST OF, so the object wire IS the first column: `X0`
+  -- plus one column, where `columns` puts the westmost lane (`11.4.1a`, `11.4.2a`).
+  let xo := roundTo 2 ((if ls.isEmpty then X0 else maxA (ls.map (·.x)) X0) + DX)
   let edge (f : Lane → Bool) : Array Nat :=
     ((List.range ls.size).filter fun i => f ls[i]!).toArray.qsort fun i j => ls[i]!.x < ls[j]!.x
   let (ls, xo) := spreadEdge ls xo (edge (·.born < 0)) (← label p.otop)
@@ -358,6 +358,17 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
         let x := ls[i]!.x
         ls := ls.map fun o => if o.x > x + 1e-6 then { o with x := o.x + DX } else o
         xo := xo + DX
+  -- THE WEST EDGE HOLDS EACH EDGE'S WESTMOST PORT LABEL, centred on its wire: with the margin only
+  -- `X0` wide, a label wider than its wire's distance from the edge moves every wire east.
+  let westOf (f : Lane → Bool) (ol : String) : Float :=
+    match (ls.filter f).foldl (fun a l => match a with
+        | some b => if l.x < b.x then some l else a | none => some l) none with
+      | some l => X0 + LCW * l.label.length.toFloat / 2.0 - l.x
+      | none => X0 + LCW * ol.length.toFloat / 2.0 - xo
+  let d := max 0.0 (max (westOf (·.born < 0) (← label p.otop)) (westOf (·.dies >= (n : Int)) (← label p.obot)))
+  if d > 1e-6 then
+    ls := ls.map fun o => { o with x := roundTo 3 (o.x + d) }
+    xo := roundTo 2 (xo + d)
   let yOf (r : Int) : Float := if r < 0 then hh else if r >= (n : Int) then 0.0 else ys[r.toNat]!
   -- `(x0, x1, y0, y1, both)`: `Relᵒᵖ` runs from `x0` to the `°` lane at `x1` — from the outer `°`
   -- when both stand (`both`, dashed at `x0` too), else from the panel's west edge, since every
