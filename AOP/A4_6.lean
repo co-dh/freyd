@@ -125,6 +125,16 @@ public theorem existsImage_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
   map_id _ := existsImage_id
   map_comp := existsImage_comp
 
+/-- THE CONJUGATE `F° ≜ °∘F∘°` of an endofunctor: `F°(R) = F(R°)°`, the same object action.  The
+    converse is the contravariant functor `𝒜 → 𝒜ᵒᵖ` that is the identity on objects, so `F(R°)°` is
+    `F` sandwiched between two of them — which is how a string panel draws it, three lanes. -/
+@[expose] public def recipConj {ℬ : Type u} [Allegory ℬ] (F : Freyd.Functor ℬ ℬ) :
+    Freyd.Functor ℬ ℬ where
+  obj := F.obj
+  map R := (F.map R°)°
+  map_id X := by rw [recip_id, F.map_id, recip_id]
+  map_comp R S := by rw [Allegory.recip_comp, F.map_comp, Allegory.recip_comp]
+
 /-- Singleton naturality (B&dM p.106): for a map `f`, `f ≫ singletonMap = singletonMap ≫ E f`. -/
 public theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     f ≫ singletonMap = singletonMap ≫ existsImage f := by
