@@ -63,8 +63,8 @@
 }
 
 /// One `merge-path` and not one element per segment, so a bend and its straight run cannot seam.
-#let hm-wire(pts, col: black, thickness: lw, k: HMK, hs: (), straight: false) = d.merge-path(
-  fill: none, stroke: (thickness: thickness, paint: col),
+#let hm-wire(pts, col: black, thickness: lw, k: HMK, hs: (), straight: false, dash: none) = d.merge-path(
+  fill: none, stroke: (thickness: thickness, paint: col, dash: dash),
   hm-path(pts, k: k, hs: hs, straight: straight),
 )
 

@@ -83,6 +83,9 @@ structure Lane where
   wire  : Wire
   x     : Float := 0.0
   pad   : Float := 0.0
+  /-- The row spans (first, last) over which this lane is SANDWICHED by two `°` lanes: `F(Z°)°` is
+      the conjugate `F°(Z)`, and the region between the two `°` is `𝒜ᵒᵖ`. -/
+  conv  : Array (Int × Int) := #[]
   deriving Inhabited
 
 /-- One horizontal cut: the lanes it crosses, outermost first, and the object underneath. -/
@@ -332,6 +335,19 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     ((List.range ls.size).filter fun i => f ls[i]!).toArray.qsort fun i j => ls[i]!.x < ls[j]!.x
   let (ls, xo) := spreadEdge ls xo (edge (·.born < 0)) (← label p.otop)
   let (ls, xo) := spreadEdge ls xo (edge (·.dies >= (n : Int))) (← label p.obot)
+  -- A SANDWICHED LANE OPENS ONE COLUMN EACH SIDE for its two `°` lanes: everything from it east
+  -- moves one column, everything east of it one more, so the `°` lanes cross no other wire.
+  let mut (ls, xo) := (ls, xo)
+  for i in [0 : ls.size] do
+    for _ in ls[i]!.conv do
+      let x := ls[i]!.x
+      ls := ls.map fun o => if o.x > x - 1e-6 then { o with x := o.x + DX } else o
+      ls := ls.map fun o => if o.x > x + DX + 1e-6 then { o with x := o.x + DX } else o
+      xo := xo + 2.0 * DX
+  let yOf (r : Int) : Float := if r < 0 then hh else if r >= (n : Int) then 0.0 else ys[r.toNat]!
+  let convs : Array String := ls.foldl (fun acc l => acc ++ l.conv.map fun (a, b) =>
+    "(" ++ num (l.x - DX) ++ ", " ++ num (l.x + DX) ++ ", " ++ num (min hh (yOf a + DY / 2.0))
+      ++ ", " ++ num (max 0.0 (yOf b - DY / 2.0)) ++ ")") #[]
   -- A label is set from its TREE (`Lbl.typst`), so a division is the fraction the note draws
   -- wherever it stands — the unit `𝟙%∋`, and one nested in a composite (`[R%∋,S%∋]`) alike.
   let cell (l : Lbl) : String := l.bare.typst
@@ -424,7 +440,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     ++ ",\n  " ++ tup bot
     -- NO CERTIFICATE: the panel is the declaration's own drawing, so a copy of the statement,
     -- the bead types and the verdicts beside it is a second source of truth for a gate to read.
-    ++ ",\n  obj: " ++ tup objs ++ ")"
+    ++ ",\n  obj: " ++ tup objs
+    ++ (if convs.isEmpty then "" else ",\n  convs: " ++ tup convs) ++ ")"
 
 /-- The `lean:<Module>.<decl>@<key>` marker of each declaration a verdict leaned on, in ONE index
     query: the key is `decl_info.stmt_key`'s low half, `Freyd.Cite.keyHex`, the very number
@@ -1158,6 +1175,9 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     above it, and the two edge sentinels — `-1` the top, `LIVE` the bottom — do not move. -/
 private def shiftRow (n : Nat) (i : Int) : Int := if i < 0 then i else i + n
 
+private def shiftConv (n : Nat) (cs : Array (Int × Int)) : Array (Int × Int) :=
+  cs.map fun p => (shiftRow n p.1, shiftRow n p.2)
+
 /-- `d` ABOVE `e`.  The two edges must be the SAME cut, and each lane of `e.top` then IS the lane of
     `d.bot` it continues — one wire, not two stacked — which is what makes `⟦f≫g⟧` a composite. -/
 def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
@@ -1177,10 +1197,13 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
   let emap : Nat → Nat := fun j => if j < mt then d.bot[j]! else d.lanes.size + j - mt
   let mut lanes := d.lanes
   for j in [0 : mt] do
-    lanes := lanes.modify d.bot[j]! fun l => { l with dies := shiftRow nr e.lanes[j]!.dies }
+    let el := e.lanes[j]!
+    let cv := shiftConv nr el.conv
+    lanes := lanes.modify d.bot[j]! fun l => { l with dies := shiftRow nr el.dies, conv := l.conv ++ cv }
   for j in [mt : e.lanes.size] do
     let l := e.lanes[j]!
-    lanes := lanes.push { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
+    lanes := lanes.push { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies,
+                                 conv := shiftConv nr l.conv }
   let rows := d.rows ++ e.rows.map fun r =>
     { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
   return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot }
@@ -1192,7 +1215,8 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   let dmap : Nat → Nat := fun i => if i < nt then i else i + mt
   let emap : Nat → Nat := fun j => if j < mt then nt + j else nt + dn + j
   let esh : Lane → Lane := fun l =>
-    { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies }
+    { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies,
+             conv := shiftConv nr l.conv }
   let lanes := d.lanes.extract 0 nt ++ (e.lanes.extract 0 mt).map esh
     ++ d.lanes.extract nt d.lanes.size ++ (e.lanes.extract mt e.lanes.size).map esh
   let obj ← label e.otop
@@ -1268,6 +1292,24 @@ def cutAsDrawn (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (d : 
     if ← same flat then return (flat, ob)
   return free
 
+/-- `e` as the CONJUGATE `recipConj F` acting on `z` — `e = F(z°)°` for a catalogue lane `F` — or
+    `none`.  Read by the head constants (`°` over a lane's action over `°`) and CONFIRMED by
+    `isDefEq` against `(recipConj F).map z`, so the lanes drawn are the functor Lean checks. -/
+def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
+    MetaM (Option (Expr × Expr)) := do
+  let (``Freyd.Alg.Allegory.recip, args) := e.getAppFnArgs | return none
+  let some x := args.back? | return none
+  let some (R, r) ← peelMap? cat objVars regionTy x | return none
+  let (``Freyd.Alg.Allegory.recip, rargs) := r.getAppFnArgs | return none
+  let some z := rargs.back? | return none
+  let s ← Meta.saveState
+  try
+    let c ← Meta.mkAppM `Freyd.Alg.recipConj #[← laneFunctor R]
+    let m ← Meta.mkAppM ``Freyd.Functor.map #[c, z]
+    if ← Meta.isDefEq m e then return some (R, z)
+    s.restore; return none
+  catch _ => s.restore; return none
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -1302,6 +1344,15 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let e ← rewriteSpine e
   let fs := factors e
   if fs.size > 1 then return ← vstack regionTy cat objVars vpass expect fs
+  -- A CONVERSE SANDWICHING A LANE IS TWO LANES OF ITS OWN: `F(Z°)°` is `recipConj F` acting on `Z`,
+  -- asked of Lean by `isDefEq`, so `Z` is drawn under `F` with the two `°` lanes either side of `F`.
+  if let some (R, z) ← conjugate? cat objVars regionTy e then
+    let ws := (wiresOf R).map Wire.rel
+    let d ← interp regionTy cat objVars (vpass ++ ws)
+      (Peeled.inner expect ws.size (← homEnds z).1) z
+    let idd ← Diagram.id ws d.otop
+    let sp : Int × Int := (0, (d.rows.size : Int) - 1)
+    return ← ({ idd with lanes := idd.lanes.map fun l => { l with conv := #[sp] } } : Diagram).beside d
   -- A BUILT BUNDLE'S ACTION OPENS AS ITS OBJECTS DO: `(F×F')(R)` is `F(R)×F'(R)`, the product map
   -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no

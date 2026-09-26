@@ -9,6 +9,10 @@
 #import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
 #import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
 
+// The converse lane and the `Relᵒᵖ` region between two of them.
+#let CONVC = rgb("#7a2e62")
+#let fb-OPC = rgb("#f4e4ee")
+
 // ---- the Hinze-Marsden panel machinery, ABOVE every section that draws one: Typst binds a
 // `#let` where it stands, and §11.4's generated panels are the first `dpanel` calls in the note.
 // A panel's address is the display it stands in and its place in that display, both read off the
@@ -353,7 +357,7 @@
 #let dcovers(defn, y, x) = defn.any(d => calc.abs(d.at(2) - y) < 1e-6
   and x >= d.at(0) - 1e-6 and x <= d.at(1) + 1e-6)
 #let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
-            obreak: (), ostraight: false, obj: (), defn: (), cert: (:)) = context {
+            obreak: (), ostraight: false, obj: (), defn: (), convs: (), cert: (:)) = context {
   // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
   // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
   // on the wire, reads the same list back off `hm-meta`.
@@ -412,6 +416,16 @@
     beads.map(b => (plain(b.at(1)), b.at(2, default: black)))
       + obnd.map(o => (o.at(1), o.at(2))))
   dpan(h, w, xo, {
+  // THE CONVERSE IS A LANE: `F(Z°)°` is `°∘F∘°` acting on `Z`, two dashed `°` lanes around `F`,
+  // and the region between them is `Relᵒᵖ`, shaded before any wire so the wires draw over it.  The
+  // `°` names sit mid-run, west of each lane: at the ends they would land on the beads above and below.
+  for (x0, x1, y0, y1) in convs {
+    hm-region(((x0, y0), (x1, y0), (x1, y1), (x0, y1)), fb-OPC, straight: true)
+    for x in (x0, x1) {
+      hm-wire(((x, y0), (x, y1)), col: CONVC, straight: true, dash: "dashed")
+      hm-name((x - 0.12, (y0 + y1) / 2), [`°`], col: CONVC, size: 10pt, anchor: "east")
+    }
+  }
   for (i, l) in lanes.enumerate() {
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))
     let kb = dkb(gk, l)

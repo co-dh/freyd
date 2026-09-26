@@ -42,6 +42,73 @@ public theorem mem_oplaxNatural :
     OpLaxNatural (powerRelator (𝒜 := 𝒜)) (Relator.idRelator 𝒜) (fun A => (∋ A)°) :=
   recip_oplax idRelator_preservesRecip powerRelator_preservesRecip eps_laxNatural
 
+/-- **`⊆ ≜ ∈\∈` is OP-lax** along the power relator: `⊆ ≫ P(R) ⊑ P(R) ≫ ⊆`.  Both sides lie
+    in term₁ `∈\(R∈)` of `P(R)`, and term₁ lies under the right side: for `xs term₁ zs` the set
+    `ys = {z ∈ zs | ∃x∈xs. xRz}` has `xs P(R) ys ⊆ zs`; `ys` is `Λ W` over a tabulation `f°g` of
+    term₁.  Lax it is not: an element of `zs` outside `R`'s image stops `P(R) ≫ ⊆`. -/
+public theorem subset_oplaxNatural :
+    OpLaxNatural (powerRelator (𝒜 := 𝒜)) powerRelator (fun A => subset (a := A)) := by
+  intro A B R
+  show subset (a := A) ≫ powerRel R ⊑ powerRel R ≫ subset (a := B)
+  rw [subset_eq_recip_supset, subset_eq_recip_supset]
+  have hT : (∋ A)° ≫ ((∋ A)° \ (R ≫ (∋ B)°)) ⊑ R ≫ (∋ B)° := leftDiv_comp_le _ _
+  refine le_trans (?_ : _ ⊑ (∋ A)° \ (R ≫ (∋ B)°)) ?_
+  · apply (le_leftDiv_iff _ _ _).mpr
+    have hs : (∋ A)° ≫ (supset (a := A))° ⊑ (∋ A)° := by
+      rw [← Allegory.recip_comp]; exact recip_mono (DivisionAllegory.div_comp_le _ _)
+    rw [← Cat.assoc]
+    exact le_trans (comp_mono_right hs _) (le_trans (comp_mono_left _ (inter_lb_left _ _)) hT)
+  obtain ⟨C, f, g, hf, hg, hfg, -⟩ := TabularAllegory.tabular ((∋ A)° \ (R ≫ (∋ B)°))
+  rw [hfg] at hT ⊢
+  have hW : Λ ((g ≫ ∋ B) ∩ (f ≫ ∋ A ≫ R)) ≫ ∋ B = (g ≫ ∋ B) ∩ (f ≫ ∋ A ≫ R) := Λ_eps_eq' _
+  have hh : Map (Λ ((g ≫ ∋ B) ∩ (f ≫ ∋ A ≫ R))) := Λ_is_map' _
+  generalize Λ ((g ≫ ∋ B) ∩ (f ≫ ∋ A ≫ R)) = h at hW hh
+  -- `g ⊑ h ≫ ⊆`: every output member of the pair survives into `ys = h`.
+  have ha : g ⊑ h ≫ (supset (a := B))° := by
+    have hs : h° ≫ g ⊑ (supset (a := B))° := by
+      have hd : g° ≫ h ⊑ supset (a := B) := by
+        apply (le_div_iff _ _ _).mpr
+        rw [Cat.assoc, hW]
+        refine le_trans (comp_mono_left _ (inter_lb_left _ _)) ?_
+        rw [← Cat.assoc]
+        exact le_trans (comp_mono_right hg.2 _) (le_of_eq (Cat.id_comp _))
+      have := recip_mono hd
+      rwa [Allegory.recip_comp, Allegory.recip_recip] at this
+    calc g = 𝟙 C ≫ g := (Cat.id_comp _).symm
+      _ ⊑ (h ≫ h°) ≫ g := comp_mono_right (map_entire_le hh) _
+      _ = h ≫ h° ≫ g := Cat.assoc _ _ _
+      _ ⊑ h ≫ (supset (a := B))° := comp_mono_left _ hs
+  -- `f° ≫ h ⊑ P(R)`: term₂ because `ys ⊆ R(xs)`, term₁ by the modular law.
+  have hb2 : f° ≫ h ⊑ (∋ A ≫ R) / ∋ B := by
+    apply (le_div_iff _ _ _).mpr
+    rw [Cat.assoc, hW]
+    refine le_trans (comp_mono_left _ (inter_lb_right _ _)) ?_
+    rw [← Cat.assoc]
+    exact le_trans (comp_mono_right hf.2 _) (le_of_eq (Cat.id_comp _))
+  have hb1 : f° ≫ h ⊑ (∋ A)° \ (R ≫ (∋ B)°) := by
+    apply (le_leftDiv_iff _ _ _).mpr
+    have h1 : (∋ A)° ≫ f° ⊑ R ≫ (∋ B)° ≫ g° := by
+      calc (∋ A)° ≫ f° = ((∋ A)° ≫ f°) ≫ 𝟙 C := (Cat.comp_id _).symm
+        _ ⊑ ((∋ A)° ≫ f°) ≫ g ≫ g° := comp_mono_left _ (map_entire_le hg)
+        _ = ((∋ A)° ≫ f° ≫ g) ≫ g° := by simp only [Cat.assoc]
+        _ ⊑ (R ≫ (∋ B)°) ≫ g° := comp_mono_right hT _
+        _ = R ≫ (∋ B)° ≫ g° := Cat.assoc _ _ _
+    have h2 : (∋ A)° ≫ f° ⊑ R ≫ (∋ B)° ≫ h° := by
+      have hm := modular_le_left R ((∋ B)° ≫ g°) ((∋ A)° ≫ f°)
+      have hWr : ((∋ B)° ≫ g°) ∩ R° ≫ (∋ A)° ≫ f° = (∋ B)° ≫ h° := by
+        rw [← Allegory.recip_comp h, hW]
+        simp only [Allegory.recip_inter, Allegory.recip_comp, Cat.assoc]
+      rw [hWr] at hm
+      exact le_trans (le_inter h1 (le_refl _)) hm
+    calc (∋ A)° ≫ f° ≫ h = ((∋ A)° ≫ f°) ≫ h := (Cat.assoc _ _ _).symm
+      _ ⊑ (R ≫ (∋ B)° ≫ h°) ≫ h := comp_mono_right h2 _
+      _ = (R ≫ (∋ B)°) ≫ h° ≫ h := by simp only [Cat.assoc]
+      _ ⊑ (R ≫ (∋ B)°) ≫ 𝟙 _ := comp_mono_left _ hh.2
+      _ = R ≫ (∋ B)° := Cat.comp_id _
+  calc f° ≫ g ⊑ f° ≫ h ≫ (supset (a := B))° := comp_mono_left _ ha
+    _ = (f° ≫ h) ≫ (supset (a := B))° := (Cat.assoc _ _ _).symm
+    _ ⊑ powerRel R ≫ (supset (a := B))° := comp_mono_right (le_inter hb1 hb2) _
+
 end EpsLax
 
 /-! ## `cp` is lax natural -/

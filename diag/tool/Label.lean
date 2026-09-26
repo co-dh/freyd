@@ -1048,12 +1048,14 @@ def commaL (l r : String) (ps : Array Lbl) : Lbl := .delim l r (Lbl.join "," ps)
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
   if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
 
-/-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, and `∋°` makes the
-    reader undo one level of indirection to get back to it.  Decided by the OPERAND's head constant,
-    so every spelling of `∋` goes the same way — and read in TWO places, the labeller's `°` clause
-    and the circuit exporter's, so the name a box carries and the box drawn cannot disagree. -/
+/-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, the superset order's
+    (`supset ≜ ∋/∋`) is `⊆` (`subset_eq_recip_supset`), and a `°` makes the reader undo one level
+    of indirection to get back to it.  Decided by the OPERAND's head constant, so every spelling
+    goes the same way — and read in TWO places, the labeller's `°` clause and the circuit
+    exporter's, so the name a box carries and the box drawn cannot disagree. -/
 def namedRecip (r : Expr) : Option String :=
-  if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then some "∈" else none
+  if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then some "∈"
+  else if r.isAppOf ``Freyd.Alg.supset then some "⊆" else none
 
 /-- The one FIELD of a one-field record IS that record (`ExprReader.unprojRecord?`) — EXCEPT where
     the record is an INSTANCE.  A class with one field is a one-field record, so `m + 1`, which is

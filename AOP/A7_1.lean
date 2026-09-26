@@ -417,6 +417,16 @@ public theorem leftDiv_comp_recip_map {C D : 𝒜} {f : D ⟶ C} (hf : Map f) (S
     rw [Cat.assoc]
     exact le_trans (comp_mono_left T hf.2) (le_of_eq (Cat.comp_id T))
 
+/-- `∈\Z = ⊆ Λ(Z°)°`, `⊆ ≜ ∈\∈`: `Z = ∈ Λ(Z°)°`, and dividing by a map's converse commutes
+    (`leftDiv_comp_recip_map`). -/
+public theorem mem_leftDiv_eq {C : 𝒜} (Z : A ⟶ C) :
+    ((∋ A)° \ Z) = subset (a := A) ≫ (Λ (Z°))° := by
+  have hZ : Z = (∋ A)° ≫ (Λ (Z°))° := by
+    rw [← Allegory.recip_comp, Λ_comp_eps, Allegory.recip_recip]
+  have h := leftDiv_comp_recip_map (Λ_is_map' (Z°)) ((∋ A)°) ((∋ A)°)
+  rw [← hZ] at h
+  exact h.symm
+
 /-- **(7.8)**: `P f·min R = min (f°·R·f)·f` at `R°`, mirrored to
     `powerRel f ≫ est R = est (f ≫ R ≫ f°) ≫ f` for a MAP `f`.  `P = E` on maps opens `est`
     (`E f` is a map, so it distributes over the meet and slides through the division), the two
