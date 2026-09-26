@@ -502,6 +502,14 @@ open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Tex.Ix, delab const.Freyd.Alg.RelSet.Tex.Ix]
 def delabTexIx : Delab := `($(mkIdent (Name.mkSimple "[0,2¹⁶)")))
 
+-- `Real`'s carrier is a quotient, so a circuit opening `Digit×Real` reaches `Quotient realSetoid`:
+-- the setoid argument, read off the `Expr`, says it is the TeX problem's `Real`.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Quotient]
+def delabTexRealCarrier : Delab := do
+  unless (← getExpr).appArg!.isConstOf ``Freyd.Alg.RelSet.Tex.realSetoid do failure
+  `($(mkIdent `Real))
+
 -- `[zero, ⊸ zero ∪ plus]`'s two leaves are named in the note, so the box carries the note's word
 -- and not the namespace the Lean constant happens to live in.
 open Lean PrettyPrinter in
@@ -975,6 +983,18 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.H] def unexpandTexH : Unexpander | _ => `($(mkIdent `H))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Q] def unexpandTexQ : Unexpander | _ => `($(mkIdent `Q))
+
+-- `l`, `r` take the tail's object implicitly, so they print through an unexpander, not by name.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.l] def unexpandTexL : Unexpander | _ => `($(mkIdent `l))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.r] def unexpandTexRInj : Unexpander | _ => `($(mkIdent `r))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.zero] def unexpandTexZero : Unexpander | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.shift] def unexpandTexShift : Unexpander | _ => `($(mkIdent `shift))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.bang] def unexpandTexBang : Unexpander | _ => `($(mkIdent (Name.mkSimple "!")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Real] def unexpandTexReal : Unexpander
   | `($_ $args*) => `($(mkIdent `Real) $args*)

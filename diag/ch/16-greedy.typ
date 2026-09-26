@@ -301,11 +301,11 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
 `FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `H≜⦇[arb,step]⦈°`, #h(4pt)
 `! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r) ∪ 𝟙` #h(4pt)
-#src[`l`, `r` are @coprod-laws's injections into `FX=1+(Digit×X)`, so `l : 1⟶F(Interval)` and
- `r : Digit×Interval⟶F(Interval)`], #h(4pt) `w≜2¹⁷`.
+#src[`l`, `r` are @coprod-laws's injections into `FX=1+(Digit×X)`, so `l : 1⟶FX` and
+ `r : Digit×X⟶FX`], #h(4pt) `w≜2¹⁷`.
 // lean:AOP.A10_4_Tex.intern@56deb4eb
-// lean:AOP.A10_4_Tex.val@5187abdb
-// lean:AOP.A10_4_Tex.shift@80f781e1
+// lean:AOP.A10_4_Tex.val@b556684c lean:AOP.A10_4_Tex.zero@c2d020a3
+// lean:AOP.A10_4_Tex.shift@522be7b7
 // lean:AOP.A10_4_Tex.round@81382467
 // lean:AOP.A10_4_Tex.interval@9dc05d20
 // lean:AOP.A10_4_Tex.inrange@d4f92d7a
@@ -315,6 +315,64 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // lean:AOP.A10_4_Tex.step@1b245185
 // lean:AOP.A10_4_Tex.H@f5c2c294
 ]]<tex-defn>
+
+// B&dM pp. 260-261: the fusion condition, the two cases of `[zero,shift]` one row each.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_fusion") \
+    #src[the reals a decimal's value lies strictly between are the intervals got by folding its
+     digits with `[arb,step]`]],
+    // lean:AOP.A10_4_Tex.tex_fusion@e36b79cc
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.lhs",
+      src[fusion: it suffices that `[zero,shift] inrange°=F(inrange°)[arb,step]`]),
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.rhs",
+      src[`[T,U]Z=[TZ,UZ]`, a coproduct law not tabulated in the note]),
+     // lean:AOP.A10_4_Tex.tex_fusion_step1@258065cf
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step2.rhs",
+      src[`zero inrange°=arb`: the first condition, which determines `arb`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_step2@bc02821b
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.rhs",
+      src[arithmetic: `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_step3@dca01191
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step4.rhs",
+      src[`F(S)[T,U]=[T,(𝟙×S)U]` read right to left: definition of `F`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_step4@66ce201d
+  ),
+)]<tex-fusion>
+
+// B&dM p. 262: the greedy condition, the book's hints one row each; `Q` here is the book's `Q°`
+// because the chain runs in diagram order.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_greedy") \
+    #src[choosing by `Q` among the one-step decompositions before building with `F(X)` and `α`
+     yields only decimals that are `R`-related to one built without choosing]],
+    // lean:AOP.A10_4_Tex.tex_greedy@a8ba8ee9
+  lean-chain(
+    (
+      (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
+      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs",
+        src[definition of `Q`; composition distributes over `∪`]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
+      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", src[`R` is reflexive]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
+      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs",
+        src[`r F(X) α⊑! l α R`: `l α=nil`, and `length(nil)=0` is at most any length]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
+    ),
+    (
+      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs",
+        src[`!°!⊑𝟙` on `𝟏`: universal property of `!`]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
+      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs",
+        src[`l F(X)=l`: definition of `F`]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
+      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", src[`l` is simple: `l°l⊑𝟙`]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
+      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`∪` is idempotent]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
+    ),
+  ),
+)]<tex-greedy>
 
 // ONE WIRE, `[0,2¹⁶)` to `Decimal`, in every row: `interval`, `H` and `[arb,step]°` are relations
 // between objects with no functor of their own, so the picture never needs to open `Decimal`'s own

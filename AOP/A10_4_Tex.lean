@@ -155,7 +155,7 @@ public theorem shiftPre_congr (d : Int) {x y : PreReal} (h : preEq x y) :
   simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
 
 /-- **tex-defn**: `shift(d,r)=(d+r)/10`. -/
-@[expose] public def shift (d : Int) (r : Real.carrier) : Real.carrier :=
+@[expose] public def shiftFn (d : Int) (r : Real.carrier) : Real.carrier :=
   Quotient.liftOn r (fun x => mkR (shiftPre d x))
     fun _ _ h => Quotient.sound (shiftPre_congr d h)
 
@@ -174,12 +174,12 @@ public theorem unshiftPre_congr (d : Int) {x y : PreReal} (h : preEq x y) :
     simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
   rw [h', e]
 
-/-- `10a−d`, the inverse of `shift d` — the step the program takes when it emits `d`. -/
+/-- `10a−d`, the inverse of `shiftFn d` — the step the program takes when it emits `d`. -/
 @[expose] public def unshift (d : Int) (r : Real.carrier) : Real.carrier :=
   Quotient.liftOn r (fun x => mkR (unshiftPre d x))
     fun _ _ h => Quotient.sound (unshiftPre_congr d h)
 
-public theorem shift_unshift (d : Int) (r : Real.carrier) : shift d (unshift d r) = r := by
+public theorem shift_unshift (d : Int) (r : Real.carrier) : shiftFn d (unshift d r) = r := by
   refine Quotient.inductionOn r ?_
   intro x
   refine Quotient.sound ?_
@@ -188,9 +188,9 @@ public theorem shift_unshift (d : Int) (r : Real.carrier) : shift d (unshift d r
   rw [e, sc_succ]
   simp [Int.mul_assoc, Int.mul_comm]
 
-/-- `shift d` is strictly monotone, and that is the whole content of the fusion's step case. -/
+/-- `shiftFn d` is strictly monotone, and that is the whole content of the fusion's step case. -/
 public theorem shift_lt_shift (d : Int) (x y : Real.carrier) :
-    rlt (shift d x) (shift d y) ↔ rlt x y := by
+    rlt (shiftFn d x) (shiftFn d y) ↔ rlt x y := by
   refine Quotient.inductionOn₂ x y ?_
   intro a b
   show (d * w * sc a.2 + a.1) * sc (b.2 + 1) < (d * w * sc b.2 + b.1) * sc (a.2 + 1)
@@ -210,11 +210,11 @@ public theorem shift_lt_shift (d : Int) (x y : Real.carrier) :
     omega
 
 public theorem lt_shift_iff (d : Int) (a r : Real.carrier) :
-    rlt a (shift d r) ↔ rlt (unshift d a) r := by
+    rlt a (shiftFn d r) ↔ rlt (unshift d a) r := by
   rw [← shift_lt_shift d (unshift d a) r, shift_unshift]
 
 public theorem shift_lt_iff (d : Int) (r b : Real.carrier) :
-    rlt (shift d r) b ↔ rlt r (unshift d b) := by
+    rlt (shiftFn d r) b ↔ rlt r (unshift d b) := by
   rw [← shift_lt_shift d r (unshift d b), shift_unshift]
 
 /-! ## The objects and arrows of §10.4 (`tex-defn`) -/
@@ -266,20 +266,26 @@ public theorem round_recip : (round)° = interval ≫ inrange := by
   intro n r
   exact ⟨fun h => ⟨intervalFn n, rfl, h⟩, fun h => by obtain ⟨p, hp, hq⟩ := h; subst hp; exact hq⟩
 
-/-- **tex-defn**: `[zero,shift]`, the algebra of `val`. -/
-@[expose] public def valAlgFn : (Fobj Unit Digit Real).carrier → Real.carrier
-  | Sum.inl _ => zeroR
-  | Sum.inr p => shift (p.1.val : Int) p.2
+/-- **tex-defn**: `zero : 𝟏⟶Real`, the value of the empty decimal. -/
+@[expose] public def zero : dL Unit ⟶ Real := graph fun _ => zeroR
+
+/-- **tex-defn**: `shift : Digit×Real⟶Real`, the map `shiftFn` is the graph of. -/
+@[expose] public def shift : (⟨Digit × Real.carrier⟩ : RelSet.{0}) ⟶ Real :=
+  graph fun p => shiftFn (p.1.val : Int) p.2
+
+/-- The coproduct `1+(Digit×Real)` the algebra `[zero,shift]` is the case analysis over. -/
+@[expose] public abbrev copR : Coproduct ((F Unit Digit).obj Real) (dL Unit)
+    (⟨Digit × Real.carrier⟩ : RelSet.{0}) := sumCop (dL Unit) ⟨Digit × Real.carrier⟩
 
 /-- **tex-defn**: `val≜⦇[zero,shift]⦈`. -/
-@[expose] public def val : Decimal ⟶ Real := cataR (graph valAlgFn)
+@[expose] public def val : Decimal ⟶ Real := cataR (junc copR zero shift)
 
 /-- **tex-defn**: `intern≜val round`. -/
 @[expose] public def intern : Decimal ⟶ Ix := val ≫ round
 
 /-- **tex-defn**: `step(d,(a,b))=((d+a)/10,(d+b)/10)`. -/
 @[expose] public def stepFn (p : Digit × Interval.carrier) : Interval.carrier :=
-  ⟨shift (p.1.val : Int) p.2.lo, shift (p.1.val : Int) p.2.hi⟩
+  ⟨shiftFn (p.1.val : Int) p.2.lo, shiftFn (p.1.val : Int) p.2.hi⟩
 
 /-- **tex-defn**: `arb : 𝟏⟶Interval` — B&dM p.260's first fusion condition `arb=zero inrange°`, so
     `(a,b)` is an `arb` iff `a<0<b`. -/
@@ -315,12 +321,49 @@ public theorem R_trans : R ≫ R ⊑ R :=
     obtain ⟨y, h1, h2⟩ := h
     exact Nat.le_trans (h1 : len x ≤ len y) h2
 
-/-- **tex-defn**: `l : 𝟏⟶F(Interval)`, the left injection of `FX=1+(Digit×X)`. -/
-@[expose] public def l : dL Unit ⟶ (F Unit Digit).obj Interval := graph Sum.inl
+/-- **tex-defn**: `l : 𝟏⟶FX`, the left injection of `FX=1+(Digit×X)`. -/
+@[expose] public def l {X : RelSet.{0}} : dL Unit ⟶ (F Unit Digit).obj X := graph Sum.inl
 
-/-- **tex-defn**: `r : Digit×Interval⟶F(Interval)`, the right injection. -/
-@[expose] public def r : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ (F Unit Digit).obj Interval :=
+/-- **tex-defn**: `r : Digit×X⟶FX`, the right injection. -/
+@[expose] public def r {X : RelSet.{0}} : (⟨Digit × X.carrier⟩ : RelSet.{0}) ⟶ (F Unit Digit).obj X :=
   graph Sum.inr
+
+/-- **`r` is LAX natural** in `X`: `F(S)` acts on the pair arm as `𝟙×S`. -/
+public theorem r_laxNatural :
+    LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0})))
+      (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0}))
+      (fun a : RelSet.{0} => r (X := a)) := by
+  intro x y S
+  rw [F_eq_sum_prod]
+  refine le_iff.mpr fun p v h => ?_
+  obtain ⟨q, hpq, hr⟩ := h
+  have hv : v = Sum.inr q := hr
+  subst hv
+  refine ⟨Sum.inr p, rfl, ?_⟩
+  obtain ⟨d, a⟩ := p
+  obtain ⟨d', b⟩ := q
+  simp [Relator.prod, Relator.const, Relator.idRelator, RelProd.pair, prodMap, graph,
+    instPositiveAllegory, instHasRelProd] at hpq
+  show Fmap Unit Digit S (Sum.inr (d, a)) (Sum.inr (d', b))
+  exact hpq
+
+/-- **`l°` is LAX natural** in `X`: `F(S)` leaves the leaf alone. -/
+public theorem l_recip_laxNatural :
+    LaxNatural (Relator.const (dL Unit))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0})))
+      (fun a : RelSet.{0} => (l (X := a))°) := by
+  intro x y S
+  rw [F_eq_sum_prod]
+  refine le_iff.mpr fun u t h => ?_
+  obtain ⟨v, huv, hl⟩ := h
+  have hv : v = Sum.inl t := hl
+  subst hv
+  match u, huv with
+  | Sum.inl t', _ => cases t; cases t'; exact ⟨(), rfl, by simp [Relator.const]⟩
+  | Sum.inr _, huv => exact huv.elim
 
 /-- **tex-defn**: `! : Digit×Interval⟶𝟏`. -/
 @[expose] public def bang : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ dL Unit :=
@@ -349,7 +392,7 @@ public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
     Legal (stepFn (d, q)) := by
   obtain ⟨h0, h1, hab⟩ := h
   refine ⟨?_, ?_, (shift_lt_shift _ _ _).mpr hab⟩
-  · show rlt zeroR (shift (d.val : Int) q.2)
+  · show rlt zeroR (shiftFn (d.val : Int) q.2)
     revert h0
     refine Quotient.inductionOn q.2 ?_
     intro b hb
@@ -361,7 +404,7 @@ public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
     rw [sc_zero] at hb' ⊢
     rw [show (d.val : Int) * w * sc b.2 = (d.val : Int) * (w * sc b.2) from Int.mul_assoc _ _ _]
     omega
-  · show rlt (shift (d.val : Int) q.2) oneR
+  · show rlt (shiftFn (d.val : Int) q.2) oneR
     revert h1
     refine Quotient.inductionOn q.2 ?_
     intro b hb
@@ -380,53 +423,63 @@ public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
 
 /-! ## Fusion (B&dM p.260): `inrange° val` is a fold on cons-lists -/
 
-/-- **tex-laws**, second step: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to
-    intervals, is a fold, because `shift d` is an order-isomorphism whose inverse is `10a−d`.
-    B&dM's two fusion conditions are `arb=zero inrange°` and
-    `shift inrange°=(𝟙×inrange°)step`, both true by construction of `[arb,step]`. -/
-public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
-  apply hom_ext
-  intro x
-  induction x with
-  | wrap u =>
-    intro p
+/-- **tex-fusion**, first step: composition distributes into the case analysis. -/
+public theorem tex_fusion_step1 :
+    junc copR zero shift ≫ (inrange)° = junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) :=
+  junc_comp _ _ _ _
+
+/-- **tex-fusion**, second step: `zero inrange°=arb`, B&dM p.260's first fusion condition, which
+    determines `arb`. -/
+public theorem tex_fusion_step2 :
+    junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) = junc copR arb (shift ≫ (inrange)°) := by
+  have h : zero ≫ (inrange)° = arb := by
+    apply hom_ext
+    intro u p
+    exact ⟨fun ⟨_, hz, hin⟩ => by subst hz; exact hin, fun h => ⟨zeroR, rfl, h⟩⟩
+  rw [h]
+
+/-- **tex-fusion**, third step (B&dM pp.260-261): `shift inrange°=(𝟙×inrange°)step` —
+    `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`. -/
+public theorem tex_fusion_step3 :
+    junc copR arb (shift ≫ (inrange)°)
+      = junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step) := by
+  have h : shift ≫ (inrange)° = rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step := by
+    apply hom_ext
+    intro ⟨d, rr⟩ p
     constructor
-    · rintro ⟨rr, hv, hin⟩
-      have hr : rr = zeroR := hv
-      subst hr
-      exact Or.inl ⟨u, rfl, hin⟩
-    · rintro (⟨t, ht, ha⟩ | ⟨q, hq, _⟩)
-      · obtain rfl := Sum.inl.inj ht
-        exact ⟨zeroR, rfl, ha⟩
-      · have h : Sum.inl u = Sum.inr q := hq
-        exact nomatch h
-  | cons d y ih =>
-    intro p
-    constructor
-    · rintro ⟨rr, hv, hin⟩
-      obtain ⟨r', hy, hstep⟩ := hv
-      have hrr : rr = shift (d.val : Int) r' := hstep
-      subst hrr
-      refine ⟨⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩, ?_, ?_⟩
-      · refine (ih _).mp ⟨r', hy, ?_, ?_⟩
-        · exact (lt_shift_iff _ _ _).mp hin.1
-        · exact (shift_lt_iff _ _ _).mp hin.2
-      · refine Or.inr ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩), rfl, ?_⟩
-        show p = stepFn (d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩)
-        show p = (⟨shift (d.val : Int) (unshift (d.val : Int) p.lo),
-          shift (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
+    · rintro ⟨_, hs, hin⟩
+      subst hs
+      refine ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩),
+        ⟨?_, (lt_shift_iff _ _ _).mp hin.1, (shift_lt_iff _ _ _).mp hin.2⟩, ?_⟩
+      · rw [id_apply]
+      · show p = (⟨shiftFn (d.val : Int) (unshift (d.val : Int) p.lo),
+          shiftFn (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
         rw [shift_unshift, shift_unshift]
         rfl
-    · rintro ⟨q, hq, (⟨t, ht, _⟩ | ⟨q', hq', hp⟩)⟩
-      · have h : Sum.inr (d, q) = Sum.inl t := ht
-        exact nomatch h
-      · obtain rfl := Sum.inr.inj hq'
-        obtain ⟨r', hy, hin⟩ := (ih q).mpr hq
-        have hp' : p = stepFn (d, q) := hp
-        subst hp'
-        refine ⟨shift (d.val : Int) r', ⟨r', hy, rfl⟩, ?_, ?_⟩
-        · exact (shift_lt_shift _ _ _).mpr hin.1
-        · exact (shift_lt_shift _ _ _).mpr hin.2
+    · rintro ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩
+      rw [id_apply] at hd
+      subst hd
+      have hp' : p = stepFn (d, q2) := hp
+      subst hp'
+      exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
+        (shift_lt_shift _ _ _).mpr hin.2⟩
+  rw [h]
+
+/-- **tex-fusion**, fourth step: the relator slides out of the bracket — `F(S)[T,U]=[T,(𝟙×S)U]`
+    read right to left. -/
+public theorem tex_fusion_step4 :
+    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
+      = (F Unit Digit).map (inrange)° ≫ junc cop arb step :=
+  (Fmap_comp_junc Unit Digit _ _ _).symm
+
+/-- **tex-fusion** (B&dM p.260): `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down
+    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]`. -/
+public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
+  show cataR (junc copR zero shift) ≫ (inrange)° = cataR (junc cop arb step)
+  rw [cataR_eq_relCata, cataR_eq_relCata]
+  exact relCata_fusion (initial Unit Digit)
+    (by rw [tex_fusion_step1, tex_fusion_step2, tex_fusion_step3, tex_fusion_step4])
+
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/
 
@@ -444,29 +497,92 @@ public theorem tex_mono : Freyd.Alg.MonoAlg (F := F Unit Digit) alphaR R :=
       show len (ConsList.cons a.1 a.2) ≤ len (ConsList.cons b.1 b.2)
       exact Nat.succ_le_succ (hR : len a.2 ≤ len b.2)
 
+/-- **tex-greedy**, first step: definition of `Q`; composition distributes over `∪`. -/
+public theorem tex_greedy_step1 (X : Interval ⟶ Decimal) :
+    Q ≫ (F Unit Digit).map X ≫ alphaR
+      = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR) := by
+  rw [Q, union_comp_distrib, Cat.id_comp]
+  simp only [Cat.assoc]
+
+/-- **tex-greedy**, second step: `R` is reflexive. -/
+public theorem tex_greedy_step2 (X : Interval ⟶ Decimal) :
+    (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR)
+      ⊑ (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+  le_iff.mpr fun u z h => by
+    rcases h with h | ⟨v, hv, ha⟩
+    · exact Or.inl h
+    · exact Or.inr ⟨v, hv, z, ha, Nat.le_refl _⟩
+
+/-- **tex-greedy**, third step: `r F(X) α⊑! l α R`, since `l α` is `nil` and
+    `length(nil)=0≤length cons`. -/
+public theorem tex_greedy_step3 (X : Interval ⟶ Decimal) :
+    (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      ⊑ (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+  le_iff.mpr fun u z h => by
+    rcases h with ⟨t, hl, s, hb, _⟩ | h
+    · exact Or.inl ⟨t, hl, s, hb, (), rfl, Sum.inl (), rfl, ConsList.wrap (), rfl, Nat.zero_le _⟩
+    · exact Or.inr h
+
+/-- **tex-greedy**, fourth step: the universal property of `!` — `!°!⊑𝟙` on `𝟏`. -/
+public theorem tex_greedy_step4 (X : Interval ⟶ Decimal) :
+    (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      ⊑ (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+  le_iff.mpr fun u z h => by
+    rcases h with ⟨t, hl, _, _, t', _, f, hf, hR⟩ | h
+    · cases t; cases t'; exact Or.inl ⟨(), hl, f, hf, hR⟩
+    · exact Or.inr h
+
+/-- **tex-greedy**, fifth step: definition of `F` — `l F(X)=l`. -/
+public theorem tex_greedy_step5 (X : Interval ⟶ Decimal) :
+    (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      = (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) := by
+  have h : l ≫ (F Unit Digit).map X = l := by
+    apply hom_ext
+    intro t g
+    constructor
+    · rintro ⟨_, hl, hF⟩
+      subst hl
+      match g, hF with
+      | Sum.inl t', hF => have ht : t = t' := hF; subst ht; rfl
+    · intro h
+      subst h
+      exact ⟨Sum.inl t, rfl, rfl⟩
+  rw [← h]
+  simp only [Cat.assoc]
+
+/-- **tex-greedy**, sixth step: `l` is simple, `l°l⊑𝟙`. -/
+public theorem tex_greedy_step6 (X : Interval ⟶ Decimal) :
+    (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      ⊑ ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+  le_iff.mpr fun u z h => by
+    rcases h with ⟨t, h1, f, h2, h3⟩ | h
+    · have e : u = f := (h1 : u = Sum.inl t).trans (h2 : f = Sum.inl t).symm
+      subst e
+      exact Or.inl h3
+    · exact Or.inr h
+
+/-- **tex-greedy**, seventh step: `∪` is idempotent. -/
+public theorem tex_greedy_step7 (X : Interval ⟶ Decimal) :
+    ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      = (F Unit Digit).map X ≫ alphaR ≫ R := by
+  apply hom_ext
+  intro u z
+  exact ⟨fun h => h.elim id id, Or.inl⟩
+
 /-- **B&dM p.262**: the greedy condition for `Q≜(l°!°r) ∪ 𝟙`.  The `𝟙` half is reflexivity of
     `R`; the other half says that where stopping is legal the empty decimal is no longer than
     whatever the recursion would have produced — `len(nil)=0`. -/
 public theorem tex_greedy (X : Interval ⟶ Decimal) :
     Q ≫ (F Unit Digit).map X ≫ alphaR ⊑ (F Unit Digit).map X ≫ alphaR ≫ R :=
-  le_iff.mpr fun u z h => by
-    obtain ⟨v, hQ, hrest⟩ := h
-    obtain ⟨v', hFv, hcon⟩ := hrest
-    have hz : z = con v' := hcon
-    subst hz
-    rcases hQ with hQ | hQ
-    · -- `l° ≫ bang° ≫ r`: the source is the terminal inhabitant, so `nil` is available
-      obtain ⟨t, hl, hrest2⟩ := hQ
-      obtain ⟨s, _, _⟩ := hrest2
-      have hu : u = Sum.inl t := hl
-      subst hu
-      refine ⟨Sum.inl t, rfl, con (Sum.inl t), rfl, ?_⟩
-      show len (ConsList.wrap t) ≤ len (con v')
-      exact Nat.zero_le _
-    · -- `𝟙`: `R` is reflexive
-      rw [id_apply] at hQ
-      subst hQ
-      exact ⟨v', hFv, con v', rfl, Nat.le_refl _⟩
+  calc Q ≫ (F Unit Digit).map X ≫ alphaR
+      = _ := tex_greedy_step1 X
+    _ ⊑ _ := tex_greedy_step2 X
+    _ ⊑ _ := tex_greedy_step3 X
+    _ ⊑ _ := tex_greedy_step4 X
+    _ = _ := tex_greedy_step5 X
+    _ ⊑ _ := tex_greedy_step6 X
+    _ = _ := tex_greedy_step7 X
+
 
 /-- `H=⦇[arb,step]⦈°⦇α⦈` collapses to `⦇[arb,step]⦈°` by reflection
     (`AOP.A6_ConsList.cataR_con`). -/
