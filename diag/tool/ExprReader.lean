@@ -1535,6 +1535,11 @@ partial def rewriteSpine (e : Expr) (fuel : Nat := 8) : MetaM Expr := do
         let g' ← rewriteSpine g fuel
         pure (mkAppN e.getAppFn ((args.extract 0 (args.size - 2)).push f' |>.push g'))
       else pure e
+    -- THE CONVERSE OF A SPINE IS A SPINE: a `Λ` that a rewrite left under a `°` is opened like one
+    -- standing bare, since nothing draws the converse's operand but this walk.
+    | (``Freyd.Alg.Allegory.recip, args) =>
+      if let some r := args.back? then pure (mkAppN e.getAppFn (args.pop.push (← rewriteSpine r fuel)))
+      else pure e
     | _ => pure e
   -- A RE-BRACKETING IS `𝟙` ON THE SPINE, at whatever depth: the factors either side of it are
   -- already rewritten, so the identity it becomes is what the drawer sees in their place.
