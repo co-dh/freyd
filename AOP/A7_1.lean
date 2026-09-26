@@ -417,26 +417,43 @@ public theorem leftDiv_comp_recip_map {C D : 𝒜} {f : D ⟶ C} (hf : Map f) (S
     rw [Cat.assoc]
     exact le_trans (comp_mono_left T hf.2) (le_of_eq (Cat.comp_id T))
 
+/-- **`⊆` is OP-lax along `E`**: `⊆ E(R) ⊑ E(R) ⊆`, for `xs ⊆ ys` gives `R[xs] ⊆ R[ys]`.  Lax it is
+    not: `E(R)⊆` reaches every superset of `R[xs]`, `⊆E(R)` only images.  No tabulation: `E(R)` is a
+    simple map with `E(R)∋ = ∋R`, and `∈⊆ ⊑ ∈` is the division's cancellation. -/
+public theorem subset_existsImage_oplax {X Y : 𝒜} (R : X ⟶ Y) :
+    subset (a := X) ≫ (existsImageFunctor (𝒜 := 𝒜)).map R
+      ⊑ (existsImageFunctor (𝒜 := 𝒜)).map R ≫ subset (a := Y) := by
+  show subset (a := X) ≫ existsImage R ⊑ existsImage R ≫ subset (a := Y)
+  have hE : Map (existsImage R) := Λ_is_map' _
+  -- `∈E(R)° = R°∈`: the converse of `E(R)∋ = ∋R`.
+  have hc : (∋ Y)° ≫ (existsImage R)° = R° ≫ (∋ X)° := by
+    rw [← Allegory.recip_comp, existsImage_eps, Allegory.recip_comp]
+  refine (map_shunt_left hE _ _).mp ((le_leftDiv_iff _ _ _).mpr ?_)
+  calc (∋ Y)° ≫ (existsImage R)° ≫ subset (a := X) ≫ existsImage R
+      = R° ≫ ((∋ X)° ≫ subset (a := X)) ≫ existsImage R := by
+        rw [← Cat.assoc, hc]; simp only [Cat.assoc]
+    _ ⊑ R° ≫ (∋ X)° ≫ existsImage R :=
+        comp_mono_left _ (comp_mono_right (leftDiv_comp_le _ _) _)
+    _ = (∋ Y)° ≫ (existsImage R)° ≫ existsImage R := by rw [← Cat.assoc, ← hc, Cat.assoc]
+    _ ⊑ (∋ Y)° ≫ 𝟙 _ := comp_mono_left _ hE.2
+    _ = (∋ Y)° := Cat.comp_id _
+
 /-- `∈\Z = ⊆ Λ(Z°)°`, first step: `Z = ∈ Λ(Z°)°`, the converse of `Λ(Z°)∋ = Z°`. -/
 public theorem mem_leftDiv_eq_step1 {C : 𝒜} (Z : A ⟶ C) :
     ((∋ A)° \ Z) = ((∋ A)° \ ((∋ A)° ≫ (Λ (Z°))°)) := by
   rw [← Allegory.recip_comp, Λ_comp_eps, Allegory.recip_recip]
 
 /-- `∈\Z = ⊆ Λ(Z°)°`, second step: dividing by a map's converse commutes
-    (`leftDiv_comp_recip_map` at the map `Λ(Z°)`). -/
+    (`leftDiv_comp_recip_map` at the map `Λ(Z°)`), and `∈\∈` is `⊆` by definition. -/
 public theorem mem_leftDiv_eq_step2 {C : 𝒜} (Z : A ⟶ C) :
-    ((∋ A)° \ ((∋ A)° ≫ (Λ (Z°))°)) = ((∋ A)° \ (∋ A)°) ≫ (Λ (Z°))° :=
+    ((∋ A)° \ ((∋ A)° ≫ (Λ (Z°))°)) = subset (a := A) ≫ (Λ (Z°))° :=
   (leftDiv_comp_recip_map (Λ_is_map' (Z°)) ((∋ A)°) ((∋ A)°)).symm
-
-/-- `∈\Z = ⊆ Λ(Z°)°`, third step: `⊆ ≜ ∈\∈`. -/
-public theorem mem_leftDiv_eq_step3 {C : 𝒜} (Z : A ⟶ C) :
-    ((∋ A)° \ (∋ A)°) ≫ (Λ (Z°))° = subset (a := A) ≫ (Λ (Z°))° := rfl
 
 /-- `∈\Z = ⊆ Λ(Z°)°`, `⊆ ≜ ∈\∈`: `Z = ∈ Λ(Z°)°`, and dividing by a map's converse commutes
     (`leftDiv_comp_recip_map`). -/
 public theorem mem_leftDiv_eq {C : 𝒜} (Z : A ⟶ C) :
     ((∋ A)° \ Z) = subset (a := A) ≫ (Λ (Z°))° :=
-  (mem_leftDiv_eq_step1 Z).trans ((mem_leftDiv_eq_step2 Z).trans (mem_leftDiv_eq_step3 Z))
+  (mem_leftDiv_eq_step1 Z).trans (mem_leftDiv_eq_step2 Z)
 
 /-- **(7.8)**: `P f·min R = min (f°·R·f)·f` at `R°`, mirrored to
     `powerRel f ≫ est R = est (f ≫ R ≫ f°) ≫ f` for a MAP `f`.  `P = E` on maps opens `est`

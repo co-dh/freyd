@@ -117,13 +117,13 @@ def cutText (c : Cut) : MetaM String := do
     gets ink of its own; where the region is a CATEGORY every arrow is a map and the two coincide,
     and there the verdict is `strict`. -/
 inductive Mark where
-  | strict | lax | oplax | maps | spider
+  | strict | lax | oplax | maps | mapsOplax | spider
   deriving Inhabited, DecidableEq
 
 /-- The word the drawing side reads the mark by.  One spelling, here: the panel's `nat:` row cites
     the same word the bead's 6th element carries. -/
 def Mark.key : Mark → String
-  | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .maps => "maps"
+  | .strict => "strict" | .lax => "lax" | .oplax => "oplax" | .maps => "maps" | .mapsOplax => "maps-oplax"
   | .spider => "spider"
 
 /-- One bead: what it eats, what it makes, what the object wire carries below it, and whether a
@@ -396,6 +396,7 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     let mark := match r.nat with
       | none | some .strict => ""
       | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
+      | some .mapsOplax => key .mapsOplax
       | some .spider => key .spider
     -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
     if r.unit then
@@ -945,9 +946,18 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a region that is a
       -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
       if alg0 == .relator then
+        -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
+        -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
+        for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
+          if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ g) must s.head FUEL then
+            return some { mark := some m, lean := #[n] }
         if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .strict true)
             must s.head FUEL then
           return some { mark := some .maps, lean := #[n] }
+        -- `(𝟙%∋)°` is op-lax over the maps and nothing more (`singletonMap_recip_oplax`).
+        if let some (n, _) ← findTelescoped br s (← laneSquare alg regionTy F G φ .oplax true)
+            must s.head FUEL then
+          return some { mark := some .mapsOplax, lean := #[n] }
       return none
     | .relator => id do
       let strict ← Meta.mkAppM ``Freyd.Alg.StrictNatural #[F, G, φ]
@@ -1179,7 +1189,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- `maps` IS a proved family — the square over every map of the region — so it heads a lane like
   -- the other three; what it withholds is the claim at a relation, which is the ink, not the shape.
   let proved := match vd.bind (·.mark) with
-    | some .strict | some .lax | some .oplax | some .maps => true
+    | some .strict | some .lax | some .oplax | some .maps | some .mapsOplax => true
     | some .spider | none => false
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
@@ -1940,7 +1950,8 @@ def withDeclScope (declName : Name) (k : MetaM α) : MetaM α := do
   while !pre.isAnonymous do
     pre := pre.getPrefix
     unless pre.isAnonymous do ns := .simple pre [] :: ns
-  withTheReader Core.Context (fun c => { c with openDecls := c.openDecls ++ ns }) k
+  let opts := (← getOptions).set drawingKey declName
+  withTheReader Core.Context (fun c => { c with openDecls := c.openDecls ++ ns, options := opts }) k
 
 /-- DOES OPENING THIS `def` LOSE A LANE?  A `def` is drawn by its body so the picture shows what it
     IS, and a body that is a composite shows more wires and more beads than the name does.  But a

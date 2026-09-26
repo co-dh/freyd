@@ -118,6 +118,14 @@
   if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "maps-oplax" {
+    // The op-lax diamond over the maps only: its left half filled, as `maps` fills the circle's.
+    d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
+           (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: none)
+    d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (0, -HMD), to: p),
+           close: true, fill: col, stroke: none)
+    d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
+           (rel: (0, -HMD), to: p), close: true, fill: none, stroke: col + lw)
   } else if nat == "maps" {
     // The filled half goes down FIRST and the outline LAST, as a region does under a wire: a
     // stroked half-disc would draw the diameter across the middle of the dot.

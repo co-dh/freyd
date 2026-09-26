@@ -1504,6 +1504,10 @@ def openNotedAll (e : Expr) : MetaM Expr :=
     let x' ← openNoted x
     return if x' == x then .continue else .visit x')
 
+/-- The option key naming the declaration being drawn, set by `withDeclScope` and read by
+    `rewriteHead?`: an option, so every caller of the rewrite sees it without a parameter. -/
+def drawingKey : Name := `diag.drawing
+
 /-- One `diag_rewrite` step: `e` rewritten to the right side of the first equation whose left side it
     IS, or `none`; the state is threaded by the caller.  THE HEAD TEST IS THE TERMINATION ARGUMENT:
     matching is `isDefEq`, which UNFOLDS, so `Λ ?R =?= singletonMap` would unfold `singletonMap` to
@@ -1511,8 +1515,13 @@ def openNotedAll (e : Expr) : MetaM Expr :=
     the left side's, the left sides' heads being different from one another. -/
 def rewriteHead? (e : Expr) : MetaM (Option Expr) := do
   let some n := e.getAppFn.constName? | return none
+  let d := (← getOptions).get drawingKey Name.anonymous
   for thm in (← Lean.labelled `diag_rewrite) do
     let some ci := (← getEnv).find? thm | continue
+    -- AN EQUATION NEVER DRAWS ITS OWN PROOF: the declaration being drawn is `thm` or a step of its
+    -- proof, whose sides would otherwise come out already rewritten to the conclusion they prove.
+    if !d.isAnonymous && (thm == d || (ci.value?.map (·.getUsedConstants.contains d)).getD false) then
+      continue
     let s ← Meta.saveState
     let mut out : Option Expr := none
     try

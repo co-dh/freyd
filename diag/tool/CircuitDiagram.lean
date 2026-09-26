@@ -747,6 +747,9 @@ partial def pushRecip? (r : Expr) : MetaM (Option Expr) := do
     | some (x, y) => return some (← Meta.mkAppM ``Freyd.Alg.DistributiveAllegory.union #[← rc x, ← rc y])
     | none => return none
   | _ =>
+    -- An arrow the note OPENS by a `diag_rewrite` equation (`Λ(R) = (𝟙%∋)E(R)`) is conversed
+    -- through that opening, since it is the composite the circuit draws.
+    if let some v ← StrDiag.rewriteHead? r then return some (← rc v)
     match ← Meta.unfoldDefinition? r with
     | some v => if hasClause v then return some (← rc v) else return none
     | none => return none
