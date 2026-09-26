@@ -1364,6 +1364,8 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     unless ← endo args[4]! do return none
     return some (args[4]!, args[args.size - 1]!)
   let some (R, r) ← direct <||> peelMap? cat objVars regionTy x | return none
+  -- A converse with NO lane under it is a bead's own converse, `R°`, and stays that one bead.
+  if (wiresOf R).isEmpty then return none
   let inner := recipArg? r
   if outer.isNone && inner.isNone then return none
   let z := inner.getD r
