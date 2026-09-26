@@ -81,8 +81,6 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y` at `Y≜F(M)hR°` — division]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3b@71266e1c
   ), (
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)`: `F` a functor]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step3c@bf123921
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
