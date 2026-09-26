@@ -941,7 +941,12 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
       let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor R, inner]
       if ← Meta.isDefEq app X then
         let inner ← instantiateMVars inner
+        -- A TYPE ARGUMENT OF THE LANE AS THE STATEMENT WRITES IT: matched against a carrier, `F ?A`
+        -- takes `(dA A).carrier`, which is `A` and would print as no argument at all.
         let R ← instantiateMVars R
+        let R := mkAppN R.getAppFn (← R.getAppArgs.mapM fun a => do
+          let proj := a.getAppFn.constName?.any (← getEnv).isProjectionFn
+          if proj && (← Meta.isType a) then Meta.whnfR a else pure a)
         let src ← instantiateMVars src
         -- A wire is a relator of the REGION, so it cannot mention an object the statement
         -- quantifies over: `F(A,−)` is a different functor at each `A` and no lane can carry it.
@@ -1077,11 +1082,30 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
     return (#[(Wire.timesL a, b)] ++ cs, o)
   if let some (a, b) ← splitPlus? regionTy X then
     if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.sum a b then return r
+  -- A LANE TAKING AN INDEX VARIABLE IS THE LAST RESORT, not refused outright.  `F(A,−)` at an
+  -- OBJECT `A : 𝒜` is a bifunctor pinned at a point of the region, and no lane carries it; `F A` at
+  -- a CARRIER `A : Type` of a one-field region is the functor a type constructor picks, as `list`
+  -- is — and refusing it left ONE wire named by an unfolded carrier (`A ⊕ tree A×tree A`, the
+  -- `sumCop` apex a junction is typed at), where the same object spelled `(F A).obj X` is the lane
+  -- `F A` by the `Functor.obj` clause above: one cut, two readings.  A reading with no such lane
+  -- still comes first.
+  let objs ← objVars.filterM fun v => do Meta.isDefEq (← Meta.inferType v) regionTy
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then
       let (cs, o) ← peelCuts objVars cat src inner
       return (#[(Wire.rel R, inner)] ++ cs, o)
-  return (#[], X)
+  if objs.size == objVars.size then return (#[], X)
+  -- Here the object has several such readings — `A ⊕ X×X` is `TT.F A` at `X` and `CL.F A X` at
+  -- `X` alike — so the one taken is the lane that PINS THE LEAST of the object into its name.
+  let mut best : Option (Expr × Expr × Expr) := none
+  for n in cat do
+    let s ← Meta.saveState
+    if let some r@(R, _, _) ← peelWith? n objs regionTy X then
+      if best.all (R.sizeWithoutSharing < ·.1.sizeWithoutSharing) then best := some r
+    s.restore
+  let some (R, src, inner) := best | return (#[], X)
+  let (cs, o) ← peelCuts objVars cat src inner
+  return (#[(Wire.rel R, inner)] ++ cs, o)
 
 /-- A CUT ALREADY READ: the object it was read FROM, its wire stack with the object under each
     wire, and the object under them all — what `peelCuts` answered, kept beside the question. -/
