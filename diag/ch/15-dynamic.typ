@@ -148,33 +148,28 @@ in @mu-defn.
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
 // chamfered.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.dynamic_programming_thin") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin") \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
  optimum #h(4pt) ]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin.rhs"),
-    [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]])],
-  // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
-  // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
-  // it draws the same panel; the regions are named only in the first.
-  [#lean("Freyd.Alg.dynamic_programming_thin.rhs")],
-
-  // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
-  [#vstep(RQ, leanc("Freyd.Alg.dynamic_programming_thin.lhs.body"),
-    // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-    [#src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin(Q)` as in
+  lean-chain(
+    (none, "Freyd.Alg.dynamic_programming_thin.rhs",
+      src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]),
+    // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
+    // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
+    // it draws the same panel; the regions are named only in the first.
+    // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
+    (RQ, "Freyd.Alg.dynamic_programming_thin.lhs.body",
+      // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
+      src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin(Q)` as in
       @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin(Q)`. Knaster–Tarski
       leaves (9.1): the body at `M` is `⊑M`; `M=H∩(H°\R°)` splits that into (9.2) and (9.3) below
       — @est-up. The fixed point is unique and entire when `T°` followed by `F`'s membership
-      relation is inductive, #frc([`T°`]) finite and non-empty, `R` connected]])],
-  // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
-  // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
-  [#lean("Freyd.Alg.dynamic_programming_thin.lhs.body")],
+      relation is inductive, #frc([`T°`]) finite and non-empty, `R` connected]),
+    // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
+    // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
+  ),
 )]<dp-laws>
 
 // (9.2): the book's four hints of Theorem 9.1 with `thin(Q)∋⊑∋` added.  Its own display: a `#disp`
@@ -207,58 +202,37 @@ in @mu-defn.
 )]<dp-laws-92>
 
 // (9.3), the second half of the same proof: a `#disp` does not break across a page.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step3.lhs"), [])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step3.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step3.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_thin_step4.rhs"),
-    [#src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step4.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step5.rhs"),
-    [#src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step5.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"),
-    [#src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
+  lean-chain(
+    (none, "Freyd.Alg.dynamic_programming_thin_step3.lhs", []),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
+      src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+    (EQ, "Freyd.Alg.dynamic_programming_thin_step4.rhs",
+      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step5.rhs",
+      src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",
+      src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]),
+  ),
 )]<dp-laws-93>
 
 // (9.3) continued from the last row above: the ten rows overflow one page.
-#disp[#calc-table(
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_thin_step6.rhs"), [])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step6.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step7.rhs"),
-    [#src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step7.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step8.rhs"),
-    [#src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step8.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step9.rhs"),
-    [#src[`H°M⊑R°` under `F` — @est-up]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step9.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step10.rhs"),
-    [#src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step10.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step11.rhs"),
-    [#src[`R` transitive, twice]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step11.rhs")],
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  lean-chain((
+    (none, "Freyd.Alg.dynamic_programming_thin_step6.rhs", []),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step7.rhs",
+      src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step8.rhs",
+      src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
+  ), (
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step9.rhs", src[`H°M⊑R°` under `F` — @est-up]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step10.rhs",
+      src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step11.rhs", src[`R` transitive, twice]),
+  )),
 )]<dp-laws-93b>
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
@@ -291,36 +265,25 @@ in @mu-defn.
 )]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.monotonicAlg_of_cost") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.monotonicAlg_of_cost") \
     #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
      equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`]],
      // lean:AOP.A9_1.monotonicAlg_of_cost@f97d27af
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.monotonicAlg_of_cost_step1.lhs"),
-    [#src[`F(R)h⊑hR` iff `F(R)h cost⊑h cost ≤`: definition of `R` and shunting]])],
-  [#lean("Freyd.Alg.monotonicAlg_of_cost_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step1.rhs"),
-    [#src[assumption `h cost=F(cost)k`]])],
+  lean-chain(
+    (none, "Freyd.Alg.monotonicAlg_of_cost_step1.lhs",
+      src[`F(R)h⊑hR` iff `F(R)h cost⊑h cost ≤`: definition of `R` and shunting]),
+    (EQ, "Freyd.Alg.monotonicAlg_of_cost_step1.rhs", src[assumption `h cost=F(cost)k`]),
      // lean:AOP.A9_1.monotonicAlg_of_cost_step1@633bfed2
-  [#lean("Freyd.Alg.monotonicAlg_of_cost_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step2.rhs"),
-    [#src[`R cost⊑cost ≤`, as `cost` is a map; functors]])],
+    (SQ, "Freyd.Alg.monotonicAlg_of_cost_step2.rhs",
+      src[`R cost⊑cost ≤`, as `cost` is a map; functors]),
      // lean:AOP.A9_1.monotonicAlg_of_cost_step2@0d9c17f8
-  [#lean("Freyd.Alg.monotonicAlg_of_cost_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step3.rhs"),
-    [#src[assumption `F(≤)k⊑k≤`: `k` monotonic on `≤`]])],
+    (SQ, "Freyd.Alg.monotonicAlg_of_cost_step3.rhs",
+      src[assumption `F(≤)k⊑k≤`: `k` monotonic on `≤`]),
      // lean:AOP.A9_1.monotonicAlg_of_cost_step3@87ddc29e
-  [#lean("Freyd.Alg.monotonicAlg_of_cost_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_of_cost_step4.rhs"),
-    [#src[assumption `h cost=F(cost)k`]])],
+    (EQ, "Freyd.Alg.monotonicAlg_of_cost_step4.rhs", src[assumption `h cost=F(cost)k`]),
      // lean:AOP.A9_1.monotonicAlg_of_cost_step4@501ca466
-  [#lean("Freyd.Alg.monotonicAlg_of_cost_step4.rhs")],
+  ),
 )]<dp-cost>
 
 #disp[#table(
@@ -345,49 +308,35 @@ in @mu-defn.
 )]<dp-conditions>
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.monotonicAlg_in_context") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.monotonicAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monotonicAlg_in_context@f0a1b13c
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.monotonicAlg_in_context_step1.lhs"), [])],
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_in_context_step1.rhs"),
-    [#src[shunting: `cost` a map, so `𝟙⊑cost cost°` — @triple-chains]])],
+  lean-chain((
+    (none, "Freyd.Alg.monotonicAlg_in_context_step1.lhs", []),
+    (SQ, "Freyd.Alg.monotonicAlg_in_context_step1.rhs",
+      src[shunting: `cost` a map, so `𝟙⊑cost cost°` — @triple-chains]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step1@44f1c030
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_in_context_step2.rhs"),
-    [#src[products: `R∩SS°=⟨cost leq,S⟩⟨cost,S⟩°` at `R=cost leq cost°` — @relprod-defn]])],
+    (EQ, "Freyd.Alg.monotonicAlg_in_context_step2.rhs",
+      src[products: `R∩SS°=⟨cost leq,S⟩⟨cost,S⟩°` at `R=cost leq cost°` — @relprod-defn]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step2@e27a633e
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_in_context_step3.rhs"),
-    [#src[assumption on `cost`: `h cost=F(⟨cost,S⟩)k`]])],
+    (EQ, "Freyd.Alg.monotonicAlg_in_context_step3.rhs",
+      src[assumption on `cost`: `h cost=F(⟨cost,S⟩)k`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step3@23c4eb72
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step3.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_in_context_step4.rhs"),
-    [#src[`S` simple, so `⟨cost,S⟩` simple: `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]])],
+  ), (
+    (SQ, "Freyd.Alg.monotonicAlg_in_context_step4.rhs",
+      src[`S` simple, so `⟨cost,S⟩` simple: `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step4@e0fdcf2e
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step4.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_in_context_step5.rhs"),
-    [#src[products; functors: `⟨cost leq,S⟩=⟨cost,S⟩(leq×𝟙)` — @bdm-prod-laws, @relator-laws]])],
+    (EQ, "Freyd.Alg.monotonicAlg_in_context_step5.rhs",
+      src[products; functors: `⟨cost leq,S⟩=⟨cost,S⟩(leq×𝟙)` — @bdm-prod-laws, @relator-laws]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step5@b63ea26a
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step5.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.monotonicAlg_in_context_step6.rhs"),
-    [#src[assumption on `k`: `F(leq×𝟙)k⊑k leq`]])],
+    (SQ, "Freyd.Alg.monotonicAlg_in_context_step6.rhs",
+      src[assumption on `k`: `F(leq×𝟙)k⊑k leq`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step6@941ec9da
-  [#lean("Freyd.Alg.monotonicAlg_in_context_step6.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.monotonicAlg_in_context.rhs"),
-    [#src[assumption on `cost` read backwards, then `R=cost leq cost°`]])],
+    (EQ, "Freyd.Alg.monotonicAlg_in_context.rhs",
+      src[assumption on `cost` read backwards, then `R=cost leq cost°`]),
      // lean:AOP.A9_1.monotonicAlg_in_context_step7@b5c7d052
-  [#lean("Freyd.Alg.monotonicAlg_in_context.rhs")],
+  )),
 )]<dp-context-mono>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
