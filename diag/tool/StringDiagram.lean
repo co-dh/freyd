@@ -95,8 +95,7 @@ structure Cut where
   deriving Inhabited
 
 /-- A CUT: the lanes, outermost first, then the object, `|`-separated — `F|a`.  Not `F(a)`: a lane
-    may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back, and `scripts/scanline` folds
-    this list with the very `fold_cut` it reads the drawn cut with. -/
+    may be `×` or `⟨𝟙,T⟩`, which no application spelling reads back. -/
 def cutText (c : Cut) : MetaM String := do
   let ls ← c.ws.mapM Wire.label
   return String.intercalate "|" (ls.push (← label c.o)).toList
@@ -131,8 +130,7 @@ structure Row where
   legs  : Array Nat
   obj   : String
   /-- The cut the bead is drawn between: the lanes it TOUCHES, over the object wire.  Never a cut
-      assembled from a sibling bundle — `scripts/scanline` narrows the drawn cut to the touched
-      lanes too, so the two are the same list read from the two sides. -/
+      assembled from a sibling bundle. -/
   src   : Cut
   tgt   : Cut
   nat   : Option Mark := none
@@ -1313,6 +1311,14 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     s.restore; return none
   catch _ => s.restore; return none
 
+/-- A built bundle's action OPENED — `(F×F')(R)` as `F(R)×F'(R)` — where the opened action IS such a
+    product or sum map, else `none`.  One place, so the drawing and the scan line open alike. -/
+def openedBuilt? (regionTy e : Expr) : MetaM (Option Expr) := do
+  let some r ← openBuiltField? e | return none
+  if r != e && ((← asProdMap? regionTy r fun p => pure p.isSome) || (← asSumMap? r).isSome) then
+    return some r
+  return none
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -1362,9 +1368,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
   -- clause reads, and there the `F.map` route below draws it under its own lane.
-  if let some r ← openBuiltField? e then
-    if r != e && ((← asProdMap? regionTy r fun p => pure p.isSome) || (← asSumMap? r).isSome) then
-      return ← interp regionTy cat objVars vpass expect r
+  if let some r ← openedBuilt? regionTy e then return ← interp regionTy cat objVars vpass expect r
   match e.getAppFnArgs with
   | (``Freyd.Functor.map, args) =>
     if args.size ≥ 6 then
@@ -1749,6 +1753,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (wiresOf R).foldr (fun w b => #[Scan.lane (.rel w) op b]) body
   if let some (R, z) ← conjugate? cat objVars regionTy e then
     return nest R true (← scanStmt regionTy cat objVars z)
+  if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
   -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
   -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
   let pairLane ← do
