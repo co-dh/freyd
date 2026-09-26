@@ -349,69 +349,316 @@ public theorem blist_del [DecidableEq Job] (j : Job) (s : SnocList Unit Job) :
         · exact h
       exact (List.Perm.swap a j (blist (del j x))).trans ((ih hm').cons a)
 
-/-- Deleting a job shortens the completion time (the jobs' `ct` are positive). -/
-public theorem ctsum_del_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (j : Job)
-    (s : SnocList Unit Job) : ctsum ct (del j s) ≤ ctsum ct s := by
-  induction s with
-  | wrap d => exact Int.le_refl _
-  | snoc x a ih =>
-    show ctsum ct (if a = j then x else SnocList.snoc (del j x) a) ≤ ct a + ctsum ct x
-    split
-    · have := hct a; omega
-    · show ct a + ctsum ct (del j x) ≤ ct a + ctsum ct x
-      omega
+/-- `add (xs,j)=ys⧺[j]⧺zs` for some `xs=ys⧺zs`: `j` put anywhere in the schedule `xs`, stated by
+    where it goes — last, or under the last job `a` of `xs`. -/
+public inductive AddP : SnocList Unit Job → Job → SnocList Unit Job → Prop
+  | last (x : SnocList Unit Job) (j : Job) : AddP x j (SnocList.snoc x j)
+  | skip {x w : SnocList Unit Job} {j : Job} (a : Job) :
+      AddP x j w → AddP (SnocList.snoc x a) j (SnocList.snoc w a)
 
-/-- **(10.7)**: deleting a job never increases the cost of a schedule — every remaining job keeps
-    its place and starts no later, so no penalty rises, and one penalty disappears. -/
+/-- **tardy-defn**: `add`, the step of `perm=⦇[nil,add]⦈`. -/
+@[expose] public def add : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ dSL Unit Job :=
+  fun p w => AddP p.1 p.2 w
+
+/-- Adding `j` puts it in the bag. -/
+public theorem blist_add {x w : SnocList Unit Job} {j : Job} :
+    AddP x j w → (blist w).Perm (j :: blist x)
+  | .last _ _ => List.Perm.refl _
+  | .skip a h => ((blist_add h).cons a).trans (List.Perm.swap j a _)
+
+/-- Deleting the last `j` and adding it back where it was gives the schedule again. -/
+public theorem add_del [DecidableEq Job] (j : Job) :
+    ∀ w : SnocList Unit Job, j ∈ blist w → AddP (del j w) j w
+  | .wrap _, hm => absurd hm List.not_mem_nil
+  | .snoc x a, hm => by
+    simp only [del]
+    split
+    · next h => subst h; exact .last x a
+    · next h =>
+      refine .skip a (add_del j x ?_)
+      rcases List.mem_cons.mp hm with h' | h'
+      · exact absurd h'.symm h
+      · exact h'
+
+/-- A job not in the schedule deletes nothing. -/
+public theorem del_of_not_mem [DecidableEq Job] (j : Job) :
+    ∀ w : SnocList Unit Job, j ∉ blist w → del j w = w
+  | .wrap _, _ => rfl
+  | .snoc x a, hm => by
+    simp only [del]
+    split
+    · next h => exact absurd (List.mem_cons.mpr (Or.inl h.symm)) hm
+    · next h => rw [del_of_not_mem j x fun h' => hm (List.mem_cons.mpr (Or.inr h'))]
+
+/-- Adding a job lengthens the completion time (the jobs' `ct` are positive). -/
+public theorem ctsum_add_le (hct : ∀ j, 0 ≤ ct j) {x w : SnocList Unit Job} {j : Job} :
+    AddP x j w → ctsum ct x ≤ ctsum ct w
+  | .last _ _ => by show ctsum ct _ ≤ ct j + ctsum ct _; have := hct j; omega
+  | .skip a h => by
+    show ct a + ctsum ct _ ≤ ct a + ctsum ct _; have := ctsum_add_le hct h; omega
+
+/-- Adding a job never lowers the cost of a schedule — every job it passes starts later, so no
+    penalty falls, and one penalty is added. -/
+public theorem cost_add_le (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
+    {x w : SnocList Unit Job} {j : Job} : AddP x j w → cost ct dt wt x ≤ cost ct dt wt w
+  | .last _ _ => le_bmax_left _ _
+  | .skip a h => by
+    refine bmax_le (Int.le_trans (cost_add_le hct hwt h) (le_bmax_left _ _))
+      (Int.le_trans ?_ (le_bmax_right _ _))
+    show (ctsum ct _ + ct a - dt a) * wt a ≤ (ctsum ct _ + ct a - dt a) * wt a
+    refine Int.mul_le_mul_of_nonneg_right ?_ (hwt a)
+    have := ctsum_add_le ct hct h
+    omega
+
+/-- Deleting a job never increases the cost of a schedule: `cost_add_le` read backwards. -/
 public theorem cost_del_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
     (j : Job) (s : SnocList Unit Job) : cost ct dt wt (del j s) ≤ cost ct dt wt s := by
-  induction s with
-  | wrap d => exact Int.le_refl _
-  | snoc x a ih =>
-    show cost ct dt wt (if a = j then x else SnocList.snoc (del j x) a)
-      ≤ bmax (cost ct dt wt x) (penalty ct dt wt x a)
-    split
-    · exact le_bmax_left _ _
-    · refine bmax_le (Int.le_trans ih (le_bmax_left _ _)) (Int.le_trans ?_ (le_bmax_right _ _))
-      show (ctsum ct (del j x) + ct a - dt a) * wt a ≤ (ctsum ct x + ct a - dt a) * wt a
-      refine Int.mul_le_mul_of_nonneg_right ?_ (hwt a)
-      have := ctsum_del_le ct hct j x
-      omega
+  by_cases hm : j ∈ blist s
+  · exact cost_add_le ct dt wt hct hwt (add_del j s hm)
+  · rw [del_of_not_mem j s hm]; exact Int.le_refl _
+
+/-- **(10.7)** (B&dM p.256, Exercise 10.7): `add⊑π₁R` — adding a job to a schedule never lowers
+    its cost. -/
+public theorem add_le (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    add (Job := Job) ⊑ (relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt :=
+  le_iff.mpr fun p _ h => ⟨p.1, rfl, cost_add_le ct dt wt hct hwt h⟩
+
+/-- **(10.8)** (B&dM p.256, Exercise 10.8): `β bagify°=F(bagify°)[nil,add]` — `bagify°` is a fold
+    on bags. -/
+public theorem bagify_recip_cata [DecidableEq Job] :
+    bagAlg ≫ (bagify (Job := Job))°
+      = (F Unit Job).map (bagify (Job := Job))°
+          ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add := by
+  apply hom_ext; intro u w
+  rw [comp_apply, comp_apply]
+  cases u with
+  | inl d =>
+    constructor
+    · rintro ⟨b, hb, hw⟩
+      obtain rfl : b = nilBag := hb
+      refine ⟨Sum.inl d, rfl, (ListRel.junc_sum_inl _ _ _ _).mpr ?_⟩
+      show w = SnocList.wrap ()
+      cases w with
+      | wrap _ => rfl
+      | snoc x a => exact absurd hw (nil_ne_snag (bagifyFn x) a)
+    · rintro ⟨v, hv, hj⟩
+      cases v with
+      | inr _ => exact hv.elim
+      | inl d' =>
+        have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nilR add d' w).mp hj
+        subst hw
+        exact ⟨nilBag, rfl, rfl⟩
+  | inr p =>
+    obtain ⟨b, j⟩ := p
+    constructor
+    · rintro ⟨b', hb', hw⟩
+      obtain rfl : b' = snag (b, j) := hb'
+      obtain ⟨xs, rfl⟩ := exists_rep b
+      have hperm : (blist w).Perm (j :: xs) := Quotient.exact (hw.symm : bagifyFn w = _)
+      have hmem : j ∈ blist w := hperm.symm.mem_iff.mp List.mem_cons_self
+      refine ⟨Sum.inr (del j w, j), ⟨?_, rfl⟩, (ListRel.junc_sum_inr _ _ _ _).mpr (add_del j w hmem)⟩
+      exact Quotient.sound ((blist_del j w hmem).trans hperm).cons_inv.symm
+    · rintro ⟨v, hv, hj⟩
+      cases v with
+      | inl _ => exact hv.elim
+      | inr q =>
+        obtain ⟨x, j'⟩ := q
+        obtain ⟨hb, rfl⟩ := hv
+        obtain rfl : b = bagifyFn x := hb
+        exact ⟨_, rfl, Quotient.sound (blist_add ((ListRel.junc_sum_inr nilR add _ w).mp hj)).symm⟩
+
+/-! ## `cost` as an arrow, and the calculation of (10.3)'s tail bound (B&dM p.256) -/
+
+/-- **tardy-defn**: `cost : [Job]⟶Int`, the arrow the calculations compose. -/
+@[expose] public def costR : dSL Unit Job ⟶ (⟨Int⟩ : RelSet.{0}) := graph (cost ct dt wt)
+
+/-- **tardy-defn**: `penalty : [Job]×Job⟶Int` as an arrow. -/
+@[expose] public def penaltyR : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
+  graph fun p => penalty ct dt wt p.1 p.2
+
+/-- **tardy-defn**: `bmax : Int×Int⟶Int` as an arrow. -/
+@[expose] public def bmaxR : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph fun p => bmax p.1 p.2
+
+/-- **(10.5)**: `g≜[zero,penalty]`, the penalty of the last job. -/
+@[expose] public def g : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
+  junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero (penaltyR ct dt wt)
+
+/-- **(10.6)**: `m≜[zero,π₁ cost]`, the cost of the schedule before the last job (B&dM's `h`). -/
+@[expose] public def m : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
+  junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
+    ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+
+/-- **(10.4)** (B&dM p.256, Exercise 10.6): `α cost=⟨g,m⟩ bmax` — the cost of a schedule is the
+    larger of its last penalty and the cost of the rest. -/
+public theorem cost_alg_bmax :
+    graph (con (L := Unit) (E := Job)) ≫ costR ct dt wt
+      = (relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})).pair (g ct dt wt) (m ct dt wt)
+          ≫ bmaxR := by
+  rw [pair_eq_rpair]
+  apply hom_ext; intro u c
+  rw [comp_apply, comp_apply]
+  cases u with
+  | inl d =>
+    constructor
+    · rintro ⟨_, rfl, rfl⟩
+      exact ⟨(0, 0), ⟨(ListRel.junc_sum_inl _ _ _ _).mpr rfl, (ListRel.junc_sum_inl _ _ _ _).mpr rfl⟩, rfl⟩
+    · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
+      have e1 : q1 = 0 := (ListRel.junc_sum_inl ListRel.zero (penaltyR ct dt wt) d q1).mp h1
+      have e2 : q2 = 0 := (ListRel.junc_sum_inl ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt) d q2).mp h2
+      subst e1; subst e2
+      exact ⟨_, rfl, show bmax 0 0 = 0 by unfold bmax; split <;> rfl⟩
+  | inr p =>
+    constructor
+    · rintro ⟨_, rfl, rfl⟩
+      refine ⟨(penalty ct dt wt p.1 p.2, cost ct dt wt p.1),
+        ⟨(ListRel.junc_sum_inr _ _ _ _).mpr rfl, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨p.1, rfl, rfl⟩⟩, ?_⟩
+      show bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
+        = bmax (penalty ct dt wt p.1 p.2) (cost ct dt wt p.1)
+      unfold bmax; split <;> split <;> omega
+    · rintro ⟨⟨q1, q2⟩, ⟨h1, h2⟩, rfl⟩
+      have e1 : q1 = penalty ct dt wt p.1 p.2 := (ListRel.junc_sum_inr ListRel.zero (penaltyR ct dt wt) p q1).mp h1
+      subst e1
+      obtain ⟨_, rfl, rfl⟩ := (ListRel.junc_sum_inr ListRel.zero ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt) p q2).mp h2
+      refine ⟨_, rfl, ?_⟩
+      show bmax (penalty ct dt wt p.1 p.2) (cost ct dt wt p.1)
+        = bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
+      unfold bmax; split <;> split <;> omega
+
+/-- B&dM p.256, the calculation's second step: (10.7) under `[nil,−]`. -/
+public theorem bagify_recip_le_step2 (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add
+      ⊑ (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt) :=
+  le_iff.mpr fun u w ⟨v, hv, hj⟩ => ⟨v, hv, by
+    cases v with
+    | inl d => exact (ListRel.junc_sum_inl _ _ _ _).mpr ((ListRel.junc_sum_inl _ _ _ _).mp hj)
+    | inr q => exact (ListRel.junc_sum_inr _ _ _ _).mpr
+                  (le_iff.mp (add_le ct dt wt hct hwt) _ _ ((ListRel.junc_sum_inr _ _ _ _).mp hj))⟩
+
+/-- B&dM p.256, the calculation's third step: the definition of `R`, and `nil⊑zero≤cost°`. -/
+public theorem bagify_recip_le_step3 :
+    (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt)
+      ⊑ (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+        ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+  le_iff.mpr fun u w ⟨v, hv, hj⟩ => ⟨v, hv, by
+    cases v with
+    | inl d =>
+      have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nilR _ d w).mp hj
+      subst hw
+      exact ⟨0, (ListRel.junc_sum_inl _ _ _ _).mpr rfl, 0, Int.le_refl 0, rfl⟩
+    | inr q =>
+      obtain ⟨_, rfl, hR⟩ := (ListRel.junc_sum_inr _ _ _ _).mp hj
+      exact ⟨cost ct dt wt q.1, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨q.1, rfl, rfl⟩,
+        cost ct dt wt w, hR, rfl⟩⟩
+
+/-- B&dM p.256, the calculation's last step: the definition of `m`. -/
+public theorem bagify_recip_le_step4 :
+    (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+        ≫ ListRel.leq ≫ (costR ct dt wt)°
+      = (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+  rfl
+
+/-- B&dM p.256, "putting (10.7) and (10.8) together": `β bagify°⊑F(bagify°) m≤cost°` — a schedule
+    of a bag costs at least the cost of the rest after its last job. -/
+public theorem bagify_recip_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    bagAlg ≫ (bagify (Job := Job))°
+      ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+  rw [bagify_recip_cata, ← bagify_recip_le_step4]
+  exact le_trans (bagify_recip_le_step2 ct dt wt hct hwt) (bagify_recip_le_step3 ct dt wt)
+
+/-! ## (10.2) by Proposition 9.3 (B&dM pp.255–256) -/
+
+/-- **tardy-defn**: `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, the step `cost` is a fold of
+    once the schedule carries its bag. -/
+@[expose] public def kFn : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier → Int
+  | Sum.inl _ => 0
+  | Sum.inr ((c, b), j) => bmax c (bagPenalty ct dt wt (b, j))
+
+/-- **tardy-defn**: `k` as an arrow. -/
+@[expose] public def k :
+    (F Unit Job).obj (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).p ⟶ (⟨Int⟩ : RelSet.{0}) :=
+  graph (kFn ct dt wt)
+
+/-- B&dM p.256: `α cost=F(⟨cost,bagify⟩) k` — `cost` restated so that `penalty` reads the bag of
+    the schedule, not the schedule (`penalty_eq_bagPenalty`). -/
+public theorem cost_alg_k :
+    graph (con (L := Unit) (E := Job)) ≫ costR ct dt wt
+      = (F Unit Job).map
+          ((relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).pair (costR ct dt wt) bagify) ≫ k ct dt wt := by
+  rw [pair_eq_rpair]
+  apply hom_ext; intro u c
+  rw [comp_apply, comp_apply]
+  cases u with
+  | inl d =>
+    constructor
+    · rintro ⟨_, rfl, rfl⟩; exact ⟨Sum.inl d, rfl, rfl⟩
+    · rintro ⟨v, hv, rfl⟩
+      cases v with
+      | inl _ => exact ⟨_, rfl, rfl⟩
+      | inr _ => exact hv.elim
+  | inr p =>
+    constructor
+    · rintro ⟨_, rfl, rfl⟩
+      exact ⟨Sum.inr ((cost ct dt wt p.1, bagifyFn p.1), p.2), ⟨⟨rfl, rfl⟩, rfl⟩, rfl⟩
+    · rintro ⟨v, hv, rfl⟩
+      cases v with
+      | inl _ => exact hv.elim
+      | inr q =>
+        obtain ⟨⟨c, b⟩, j⟩ := q
+        obtain ⟨⟨hc, hb⟩, hj⟩ := hv
+        obtain rfl : c = cost ct dt wt p.1 := hc
+        obtain rfl : b = bagifyFn p.1 := hb
+        obtain rfl : p.2 = j := hj
+        exact ⟨_, rfl, rfl⟩
+
+/-- B&dM p.256, Exercise 10.5: `F(≥×𝟙)k⊑k≥` — `bmax` is monotone in its first argument. -/
+public theorem k_mono :
+    (F Unit Job).map (prodMap (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job))
+        (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)) ListRel.geq (𝟙 (Bag Job))) ≫ k ct dt wt
+      ⊑ k ct dt wt ≫ ListRel.geq := by
+  rw [prodMap_eq_rprodMap]
+  refine le_iff.mpr fun u c ⟨v, hv, hc⟩ => ⟨kFn ct dt wt u, rfl, ?_⟩
+  obtain rfl : c = kFn ct dt wt v := hc
+  cases u with
+  | inl _ =>
+    cases v with
+    | inl _ => exact Int.le_refl 0
+    | inr _ => exact hv.elim
+  | inr p =>
+    cases v with
+    | inl _ => exact hv.elim
+    | inr q =>
+      obtain ⟨⟨c, b⟩, j⟩ := p
+      obtain ⟨⟨c', b'⟩, j'⟩ := q
+      obtain ⟨⟨hc, hb⟩, hj⟩ := hv
+      obtain rfl : b = b' := hb
+      obtain rfl : j = j' := hj
+      exact bmax_le (Int.le_trans (hc : c' ≤ c) (le_bmax_left _ _)) (le_bmax_right _ _)
 
 /-! ## The two context conditions (B&dM (10.2) and (10.3)) -/
 
-/-- **(10.2)**, the monotonicity condition IN CONTEXT: `α·F(R ∩ bagify°bagify) ⊆ R·α`.  Two
-    schedules of the same bag have the same completion time, so `snoc`ing the same job gives the
-    same penalty and `bmax` is monotone.  Without the context this is FALSE: `cost x ≤ cost y`
-    bounds no completion time. -/
+/-- **(10.2)**, the monotonicity condition IN CONTEXT: `α·F(R ∩ bagify°bagify) ⊆ R·α`, by
+    Proposition 9.3 at `S=bagify`, `≤=≥`, from `cost_alg_k` and `k_mono`.  Two schedules of the
+    same bag have the same completion time, so `snoc`ing the same job gives the same penalty and
+    `bmax` is monotone.  Without the context this is FALSE: `cost x ≤ cost y` bounds no
+    completion time. -/
 public theorem tardy_mono :
     (F Unit Job).map ((R ct dt wt)° ∩ (bagify ≫ (bagify (Job := Job))°))
         ≫ graph (con (L := Unit) (E := Job))
       ⊑ graph (con (L := Unit) (E := Job)) ≫ (R ct dt wt)° :=
-  le_iff.mpr fun u out h => by
-    obtain ⟨v, hFv, hout⟩ := h
-    obtain rfl : out = con v := hout
-    refine ⟨con u, rfl, ?_⟩
-    cases u with
-    | inl du =>
-      cases v with
-      | inl dv => exact Int.le_refl 0
-      | inr q => exact hFv.elim
-    | inr p =>
-      cases v with
-      | inl dv => exact hFv.elim
-      | inr q =>
-        obtain ⟨⟨hR, hbag⟩, hij⟩ := hFv
-        obtain ⟨b, hb1, hb2⟩ := hbag
-        have hbq : bagifyFn p.1 = bagifyFn q.1 := hb1 ▸ hb2
-        show bmax (cost ct dt wt q.1) (penalty ct dt wt q.1 q.2)
-          ≤ bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
-        have hpen : penalty ct dt wt q.1 q.2 = penalty ct dt wt p.1 p.2 := by
-          rw [penalty_eq_bagPenalty, penalty_eq_bagPenalty, hbq, hij]
-        refine bmax_le (Int.le_trans (hR : cost ct dt wt q.1 ≤ cost ct dt wt p.1)
-          (le_bmax_left _ _)) ?_
-        rw [hpen]
-        exact le_bmax_right _ _
+  monoAlg_in_context (cost := costR ct dt wt) (S := bagify) («≤» := ListRel.geq) (k := k ct dt wt)
+    (graph_map _) (graph_simple _)
+    (hom_ext fun u v => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
+      subst h1; subst h3; exact h2⟩)
+    (cost_alg_k ct dt wt) (k_mono ct dt wt)
 
 /-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`.  Given a
     schedule `y⧺[jv]` of the bag `snag (bv,jv)` and a job `ju` of no greater penalty in the same

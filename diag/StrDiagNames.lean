@@ -400,6 +400,21 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.R] def unexpandDetabR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.R] def unexpandTardyR : Unexpander | _ => `($(mkIdent `R))
+-- §10.3's arrows drop the job quantities `ct dt wt` as `R` does; `costR`/`penaltyR`/`bmaxR` only
+-- tell the arrow from the Int function of the same name.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.costR] def unexpandTardyCostR : Unexpander | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.penaltyR] def unexpandTardyPenaltyR : Unexpander
+  | _ => `($(mkIdent `penalty))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.bmaxR] def unexpandTardyBmaxR : Unexpander | _ => `($(mkIdent `bmax))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.g] def unexpandTardyG : Unexpander | _ => `($(mkIdent `g))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.m] def unexpandTardyM : Unexpander | _ => `($(mkIdent `m))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.k] def unexpandTardyK : Unexpander | _ => `($(mkIdent `k))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.R] def unexpandKnapsackR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
