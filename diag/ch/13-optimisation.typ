@@ -871,59 +871,45 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 )])]
 
-#disp[#calc-table(cols: (1fr, 7.9cm), 
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
-  Thm[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile") \
     #leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata") \
     // takewhile-cata row: Ex 7.39
     #src[takewhile: `takewhile(p)(x)` returns the longest prefix of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard implementation.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@31b3dec9
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs"),
-    [#src[the specification — @est-defn's `est(R°)`.
- ]])],
-     // lean:AOP.A7_7_TakeWhile.takewhile@77395e5e
-  [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs"))],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs"),
- [#src[@takewhile-alg]])],
-    // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
-  [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs"))],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs"),
-    [#src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
-     for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
- collected and one chosen at the end. ]])],
-  [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs"))],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs"),
- [#src[@takewhile-step]])],
-    // lean:AOP.A7_7_TakeWhile.takewhile_step@a0403ffd
-  [#align(center, lean("Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs"))],
-
-  [#vstep([], [], [`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
-    #src[`takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
-     and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
- longest, not *a* longest. ]])],
-     // lean:AOP.A7_7_TakeWhile.takewhile_simple@f4543b09
-  [],
-
-  [#vstep([], [], [#frc([`prefix list(p)`]) ` est(R°)` entire \ #src[`nil` is always a `p`-prefix and
-    `R` is connected on the prefixes of one list, so the longest exists.
- ]])],
-    // lean:AOP.A7_7_TakeWhile.takewhile_entire@125bd033
-  [],
-
-  [#vstep([], [], [`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \ #src[`⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a
-    reduce of maps, hence entire — what turns the `⊒` above into the heading's `=`.
- ]])],
-    // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
-  [],
-)]<takewhile-laws>
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs",
+      // lean:AOP.A7_7_TakeWhile.takewhile@77395e5e
+      src[the specification — @est-defn's `est(R°)`]),
+    (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs",
+      // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
+      src[@takewhile-alg]),
+    (RQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs",
+      src[@greedy-thm72 at `R°`, with `F(R°)S⊑SR°` — @takewhile-mono —
+       for its hypothesis: one longest `p`-prefix kept at each `cons`, instead of every `p`-prefix
+       collected and one chosen at the end.]),
+    (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs",
+      // lean:AOP.A7_7_TakeWhile.takewhile_step@a0403ffd
+      src[@takewhile-step]),
+  ),
+)
+#align(center, block(inset: (y: 4pt))[#src[`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
+  `takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
+   and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
+   longest, not *a* longest.]])
+  // lean:AOP.A7_7_TakeWhile.takewhile_simple@f4543b09
+#align(center, block(inset: (y: 4pt))[#src[#frc([`prefix list(p)`]) ` est(R°)` entire \ `nil` is always
+  a `p`-prefix and `R` is connected on the prefixes of one list, so the longest exists.]])
+  // lean:AOP.A7_7_TakeWhile.takewhile_entire@125bd033
+#align(center, block(inset: (y: 4pt))[#src[`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \
+  `⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a reduce of maps, hence entire — what turns the `⊒` above into the
+   heading's `=`.]])
+  // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
+]<takewhile-laws>
 
 === `mss=⦇[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨(𝟙×π₁)⊕,⟨(𝟙×π₁)⊕ `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]⦈ π₂ est(≥)` <sec-mss>
 
@@ -989,9 +975,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
 // `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×A⟶A"`.
 #let mh-alg-plus = lean("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs")
-#let mh-segsum = lean("Freyd.Alg.RelSet.MSS.mss_shape.lhs")
-#let mh-greedy = lean("Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs")
-#let mh-shape = lean("Freyd.Alg.RelSet.MSS.mss_shape.rhs")
 
 // HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
 // wire and `sum` kills `list` onto `A`.  `∪` has no shape here — only `cons`'s branch is drawn.
@@ -1118,43 +1101,35 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
-#disp[#calc-table(
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
-  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") \
     #src[maximum segment sum problem: #frc([`suffix`])` E(⦇[zero,⊕]⦈)` expressed as the catamorphism `⦇k⦈`,
      // mss-scan row: Ex 7.40
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@0844559d
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
-  // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
-  // collapses a pair puts its one bead midway between the two it replaces.
-  [#vstep([], leanc("Freyd.Alg.RelSet.MSS.mss_shape.lhs"),
-    [#src[`mss` is the greatest of the segment sums — @mss-defn]])],
-  [#mh-segsum],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_shape.rhs"),
-    [#src[@mss-shape]])],
-  // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
-  // `E` runs past it, and `prefix sum` is where the `list` wire dies.
-  [#mh-shape],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs"),
-    [#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
-     #src[the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
-      condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
-      entire and #frc([`prefix sum`]) ` est(≥)` simple #src[@takewhile-laws's last row]]])],
-  [#mh-greedy],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs"),
-    [`⦇k⦈ π₂ est(≥)` \
-     #src[@cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
-      ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]])],
-  [#lean("Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs")],
+  lean-chain(
+    // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
+    // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
+    // collapses a pair puts its one bead midway between the two it replaces.
+    (none, "Freyd.Alg.RelSet.MSS.mss_shape.lhs",
+      src[`mss` is the greatest of the segment sums — @mss-defn]),
+    // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
+    // `E` runs past it, and `prefix sum` is where the `list` wire dies.
+    (EQ, "Freyd.Alg.RelSet.MSS.mss_shape.rhs", src[@mss-shape]),
+    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs",
+      src[#frc([`suffix`]) ` E(⦇[zero,⊕]⦈) est(≥)` \
+       the greedy theorem @greedy-thm72 at `R:=≥`, `S:=[zero,⊸ zero ∪ plus]` — @mss-mono is its
+       condition and @mss-step its #frc([`S`]) ` est(≥)`; its `⊑` is an `=` because `⦇[zero,⊕]⦈` is
+       entire and #frc([`prefix sum`]) ` est(≥)` simple @takewhile-laws's last row]),
+    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs",
+      src[`⦇k⦈ π₂ est(≥)` \
+       @cata-defining at @mss-scan's equation, so `⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])
+       ` E(⦇[zero,⊕]⦈)⟩`, of which `π₂` is the row above]),
+  ),
 )
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
@@ -1273,45 +1248,34 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 )])]
 
-#disp[#calc-table(cols: (1fr, 6.3cm), 
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
-  Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") \
     // filter-simple row: Ex 7.41
     #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
  ]],
      // lean:AOP.A7_7_Filter.filter_eq_cata@0882803d
-  table.header([*circuit* — one wire, its type written along it], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs"),
- [#src[@comb-fns]])],
-    // lean:AOP.A7_7_Filter.filter@8a5f6aed
-  [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs"))],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs"),
-    [#src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]])],
-  [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs"))],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Filter.filter_greedy.lhs"),
-    [#src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is
- @filter-mono]])],
-  // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
-  // unchanged, so they are drawn where the two panels above draw them.
-  [#align(center, lean("Freyd.Alg.RelSet.Filter.filter_greedy.lhs"))],
-
-  [#vstep(EQ, [#leanc("Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs")],
-    [#src[@filter-step]])],
-  // Empty: the step only renames the algebra, and the picture above already draws the reduce.
-  [],
-
-  [#vstep(EQ, [],
-    // lean:AOP.A7_7_Filter.filter_entire@587e37a8
-    // lean:AOP.A7_7_Filter.filter_simple@de8b5dbc
-    [#src[the catamorphism is entire and `filter(p)` simple, so `⊒` is `=`]])],
-         // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
-  [],
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs",
+      // lean:AOP.A7_7_Filter.filter@8a5f6aed
+      src[@comb-fns]),
+    (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs",
+      src[`subseq list(p)=⦇S⦈` — @takewhile-alg's header, `subseq` for `prefix`]),
+    // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
+    // unchanged, so they are drawn where the two panels above draw them.
+    (RQ, "Freyd.Alg.RelSet.Filter.filter_greedy.lhs",
+      src[@greedy-thm72 at `R°`, whose hypothesis `F(R°)S⊑SR°` is @filter-mono]),
+    // Empty: the step only renames the algebra, and the picture above already draws the reduce.
+    (EQ, "Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs", src[@filter-step]),
+  ),
 )
+#align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊒`
+  is `=`.]])
+  // lean:AOP.A7_7_Filter.filter_entire@587e37a8
+  // lean:AOP.A7_7_Filter.filter_simple@de8b5dbc
+  // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
   `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness
   argument does not transfer. What survives `est(R°)` is the one keeping *exactly* the passing
@@ -1545,16 +1509,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // Only the three `⊑` steps are rows: the five `=` steps are `F(RS)=F(R)F(S)`, `(R×S)(U×V)=(RU)×(SV)`
 // and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
-#let step = step.with(pw: 319pt)
-#disp[#table(
-  // Not `HMW`: that column holds a circuit, this one a panel, and 8.92cm is the exported panel's own
-  // width — five wires, `[A]` split into `list` and `A` the way every other panel splits it.
-  columns: (1fr, 8.92cm),
-  align: (center + horizon, center + horizon),
-  // `y: 1pt`, tighter than the note's usual 3pt: the four rows plus the key list are a page exactly.
-  inset: (x: 9pt, y: 1pt), stroke: 0.4pt + luma(190),
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   // One shape instantiated three times, so the three `⊑` stand in a column.
-  Thm[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
+  Thm(cols: 1)[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
     align: (right + horizon, center + horizon, left + horizon),
     // THREE DECLARATIONS, NOT ONE CONJUNCTION: each row is a law with its own proof and its own
     // citation, so the next such header is written the same way and needs nothing of the printer.
@@ -1570,19 +1527,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    running it first and bettering the two parties it returns,
  ]],
    // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@92dade83
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#step([], leanc("Freyd.Alg.RelSet.Party.branch_step1.lhs"))[]],
-  [#lean("Freyd.Alg.RelSet.Party.branch_step1.lhs")],
-
-  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step1.rhs"))[]],
-  [#lean("Freyd.Alg.RelSet.Party.branch_step1.rhs")],
-
-  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step2.rhs"))[]],
-  [#lean("Freyd.Alg.RelSet.Party.branch_step2.rhs")],
-
-  [#step(SQ, leanc("Freyd.Alg.RelSet.Party.branch_step3.rhs"))[]],
-  [#lean("Freyd.Alg.RelSet.Party.branch_step3.rhs")],
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Party.branch_step1.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Party.branch_step1.rhs", []),
+    (SQ, "Freyd.Alg.RelSet.Party.branch_step2.rhs", []),
+    (SQ, "Freyd.Alg.RelSet.Party.branch_step3.rhs", []),
+  ),
 )
 
 #v(3pt)
@@ -1672,100 +1622,44 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // Two of these panels stack in ONE cell from the greedy step on, and the seven rows are a page
 // exactly: this is the scale that buys the last row its reason line.
 
-// The panel pair a row shows.  `none` is a panel the row above already drew — the outside is fixed
-// from the greedy step on, and the inside does not exist before it.
-#let dcell(o, i) = align(center, stack(spacing: 5pt, ..(o, i).filter(x => x != none)))
-
 // Every row writes one fraction where its panel draws two beads: the unit `H%∋=(𝟙%∋)E(H)` opens
-// `E` outside `H`.  One law, instantiated at the numerator each row names.
-
-// `est(R°)` holds one height down the family and `choose` another, so what moves is the fold: the
-// bead that eats the `tree` wire, and where the `E` it opens is closed.
-#let d-out1 = lean("Freyd.Alg.RelSet.Party.party_open.lhs")
-// Rows 2 and 3 draw the SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, which is the absorption step.
-// The ink spells the LOWER of the two rows: `⦇S⦈%∋` and `choose` are two beads, and row 2's
-// `frc(⦇S⦈ choose)` is that one absorption step away.
-#let d-out4 = lean("Freyd.Alg.est_Λ_est_le.rhs")
-
-// Inside the brackets the source is `F([A]×[A])=A×[[A]×[A]]`: five wires down to the object.  The
+// `E` outside `H`.  One law, instantiated at the numerator each row names.  Rows 2 and 3 draw the
+// SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, the absorption step.  Inside the brackets the
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
-#let d-in5 = lean("Freyd.Alg.RelSet.Party.party_pair_step.rhs")
-#let d-in6 = lean("Freyd.Alg.RelSet.Party.include_step.rhs")
-// `list(`#frc([`choose`])` est(R°))` opens its `E` INSIDE the list: the transpose is taken once per
-// element, and `concat` is what finally eats the list the elements sat in.  The row writes the two
-// beads under one `list` wire as one application, which is `F(R)F(S)=F(RS)` at `F:=list`.
-// HAND-KEPT lanes, dots added by hand: regenerated, the unit's `E` lane goes leftmost and the sweep
-// reads `𝟙%∋` outside the `list` it is stated inside.
-#let d-in7 = lean("Freyd.Alg.RelSet.Party.exclude_step.lhs")
-
-// Not `P`: its 5pt of vertical inset is what `vstep`'s own 5pt of spacing already gives, and the
-// seven rows are a page exactly — the scale below is what those two insets bought.
-
-// The reason rides UNDER the formula, in the picture's own column: a column of its own cost the
-// circuits 3.8cm, and the two laws that would not fit it are now written out in full.  `vstep`, not
-// `step`: a cell whose height `layout` decides is measured on the branch it does not draw, and the
-// third line then lands under the row's rule.
-#disp[#table(
-  columns: (1fr, 6.6cm),
-  align: (left + horizon, center + horizon),
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   // Four rows here and three in the next display: at the book's own panel metric the seven no longer
   // fit one page, and the cut is where the fold is opened — outside the `⦇ ⦈` here, inside it there.
-  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
-  Thm[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
      // lean:AOP.A7_3_Party.party_laws@00692234
-  table.header([*circuit*],
-    [*Hinze–Marsden* — outside the `⦇ ⦈`]),
-
-  [#vstep([], dcell(leanc("Freyd.Alg.RelSet.Party.party_open.lhs"), none),
-    [#src[the specification — @party-defn]])],
-  [#dcell(d-out1, none)],
-
-  [#vstep(EQ, dcell(leanc("Freyd.Alg.RelSet.Party.party_open.rhs"), none),
-    [#src[`party≜⦇S⦈ choose` — @party-defn]])],
-  [#dcell(lean("Freyd.Alg.RelSet.Party.party_open.rhs"), none)],
-
-  [#vstep(EQ, dcell(leanc("Freyd.Alg.est_Λ_est_le.lhs"), none),
-    [#src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]])],
-  [#dcell(lean("Freyd.Alg.est_Λ_est_le.lhs"), none)],
-
-  [#vstep(RQ, dcell(leanc("Freyd.Alg.est_Λ_est_le.rhs"), none),
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Party.party_open.lhs", src[the specification — @party-defn]),
+    (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs", src[`party≜⦇S⦈ choose` — @party-defn]),
+    (EQ, "Freyd.Alg.est_Λ_est_le.lhs",
+      src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]),
     // party-branch row: Ex 7.38
-    [#src[`(R×R)°choose⊑choose R°` — @party-mono-branch's `g` row,
- ]])],
-  [#dcell(d-out4, none)],
+    (RQ, "Freyd.Alg.est_Λ_est_le.rhs", src[`(R×R)°choose⊑choose R°` — @party-mono-branch's `g` row]),
+  ),
 )]<party-laws>
 
-#disp[#table(
-  columns: (1fr, 6.6cm),
-  align: (left + horizon, center + horizon),
-  inset: (x: 8pt, y: 2pt), stroke: 0.4pt + luma(190),
-  table.header([*circuit*],
-    [*Hinze–Marsden* — inside the `⦇ ⦈`; a fork drawn at one branch]),
-
-  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.party_pair_step.rhs")),
-    [#src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
-      // greedy row: Theorem 7.2
-      `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono,
- ]])],
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  lean-chain(
+    (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
       // lean:AOP.A7_2.greedy@21400acf
-  [#dcell(none, d-in5)],
-
-  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.include_step.rhs")),
-    // pair_est_le row: Ex 7.15
-    [#src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`,
- ]])],
+      src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
+        // greedy row: Theorem 7.2
+        `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono]),
+    (RQ, "Freyd.Alg.RelSet.Party.include_step.rhs",
       // lean:AOP.A7_3_Party.pair_est_le@75a48598
-  [#dcell(none, d-in6)],
-
-  [#vstep(RQ, dcell(none, leanc("Freyd.Alg.RelSet.Party.exclude_step.lhs")),
-    [#src[`include` a map, `est(R°)` into each branch,
- ]])],
+      // pair_est_le row: Ex 7.15
+      src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`]),
+    (RQ, "Freyd.Alg.RelSet.Party.exclude_step.lhs",
       // lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d lean:AOP.A7_3_Party.exclude_step@963c1784
-  [#dcell(none, d-in7)],
+      src[`include` a map, `est(R°)` into each branch]),
+  ),
 )]<party-laws-fold>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
@@ -1991,36 +1885,26 @@ zip(that)                                         each row: its square, and the 
 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs"), [])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs"),
-    [#src[@vec-defn-cyl at `paths`]])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs"),
-    [#src[a cheapest of each of the `n` rows, then a cheapest of those; `R` transitive]])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs"),
-    [#src[@cata-fusion at @vec-cyl-fusion]])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs")],
-
-  Thm[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
+  lean-chain(
+    (none, "Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs", []),
+    (EQ, "Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs", src[@vec-defn-cyl at `paths`]),
+    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs",
+      src[a cheapest of each of the `n` rows, then a cheapest of those; `R` transitive]),
+    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs", src[@cata-fusion at @vec-cyl-fusion]),
+  ),
+  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
     #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
      `jk` entries laid end to end.
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_concat@8fdae89e
 
-  Thm[#leanf("Freyd.Alg.Vec.Rel.Qfold_le_genFold"), `R` reflexive, transitive and monotonic \
+  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.Qfold_le_genFold"), `R` reflexive, transitive and monotonic \
     #src[the one path per row the greedy fold keeps is one of the `p` that `⦇gen⦈` generates for
      that row, and a cheapest of them.
  ]],
@@ -2029,21 +1913,17 @@ zip(that)                                         each row: its square, and the 
 
 // B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
 // column; the right-hand side kills the `[p]` before, and that swap is the whole step.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.Vec.Rel.cyl_fusion") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.cyl_fusion") \
     #src[choosing a cheapest of each square's `p` paths before the column is extended is no better
      than extending first and choosing among the `3p`.
  ]],
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.Vec.Rel.cyl_fusion.rhs"), [])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_fusion.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.Vec.Rel.cyl_fusion.lhs"),
-    [#src[(7.13), then `zip`, `trans`, `moves` lax natural]])],
-  [#lean("Freyd.Alg.Vec.Rel.cyl_fusion.lhs")],
-
-  Thm[(7.13) on `Vec`: #leanf("Freyd.Alg.Vec.Rel.cyl_7_13"), `R` monotonic \
+  lean-chain(
+    (none, "Freyd.Alg.Vec.Rel.cyl_fusion.rhs", []),
+    (RQ, "Freyd.Alg.Vec.Rel.cyl_fusion.lhs",
+      src[(7.13), then `zip`, `trans`, `moves` lax natural]),
+  ),
+  Thm(cols: 1)[(7.13) on `Vec`: #leanf("Freyd.Alg.Vec.Rel.cyl_7_13"), `R` monotonic \
     #src[putting the new square in front of every one of the `p` candidates and then choosing a
      cheapest is beaten by choosing a cheapest first and putting the square in front of that one.
  ]],
@@ -2405,44 +2285,33 @@ zip(that)                                         each row: its square, and the 
 // the `A` one, and the outer `list` is born where the partition is.  A bead whose source and target
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Van.van_laws") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Van.van_laws") \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
      // lean:AOP.A7_5_Van.van_laws@400440f3
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Van.van_laws_step4.rhs"),
-    [#frc([`partition list(secure)`])` est(R)` \ #src[the specification — @van-defn]])],
-  [#lean("Freyd.Alg.RelSet.Van.van_laws_step4.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step4.lhs"),
-    [#frc([`⦇S⦈`])` est(R)` \ #src[`partition list(secure)=⦇S⦈`
- #h(4pt) — @van-defn, @cata-fusion at
-     // lean:AOP.A7_5_Van.van_spec@79d2f560
-     `secure prefix⊑prefix secure`]])],
-  [#lean("Freyd.Alg.RelSet.Van.van_laws_step4.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step3.lhs"),
-    [#frc([`⦇S⦈`])` est(R;H)` \ #src[`R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new ∪ old)R` is FALSE, the
-     shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds,
- ]])],
-     // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
-  [#lean("Freyd.Alg.RelSet.Van.van_laws_step3.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step2.lhs"),
-    [`⦇`#frc([`S`])` est(R;H)⦈` \ #src[@greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
-     the `old` half (7.17) — @van-mono — and the `new` half (7.16) — @van-716 — which rests on
- (7.18) `(𝟙×⊤)new⊑new H` — @van-718]])],
-     // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
-  [#lean("Freyd.Alg.RelSet.Van.van_laws_step2.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Van.van_laws_step1.lhs"),
-    [`⦇[nil,(ok→glue,new)]⦈` \ #src[`old⊑new (R;H)°`: `old` returns the shorter result wherever it
- returns one, and `ok` is where it does]])],
-     // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
-  [#lean("Freyd.Alg.RelSet.Van.van_laws_step1.lhs")],
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Van.van_laws_step4.rhs",
+      src[#frc([`partition list(secure)`])` est(R)` \ the specification — @van-defn]),
+    (EQ, "Freyd.Alg.RelSet.Van.van_laws_step4.lhs",
+      // lean:AOP.A7_5_Van.van_spec@79d2f560
+      src[#frc([`⦇S⦈`])` est(R)` \ `partition list(secure)=⦇S⦈` #h(4pt) — @van-defn, @cata-fusion at
+       `secure prefix⊑prefix secure`]),
+    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step3.lhs",
+      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
+      src[#frc([`⦇S⦈`])` est(R;H)` \ `R;H⊑R` — @van-defn; (7.15) `(𝟙×R)old⊑(new ∪ old)R` is FALSE, the
+       shorter partition need not stay secure, where (7.14) `(𝟙×R)new⊑(new ∪ old)R` holds]),
+    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step2.lhs",
+      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
+      src[`⦇`#frc([`S`])` est(R;H)⦈` \ @greedy-thm72 at `R;H`, its hypothesis `F(R;H)S⊑S(R;H)`
+       the `old` half (7.17) — @van-mono — and the `new` half (7.16) — @van-716 — which rests on
+       (7.18) `(𝟙×⊤)new⊑new H` — @van-718]),
+    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step1.lhs",
+      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
+      src[`⦇[nil,(ok→glue,new)]⦈` \ `old⊑new (R;H)°`: `old` returns the shorter result wherever it
+       returns one, and `ok` is where it does]),
+  ),
 )]<van-laws>
 
 #pagebreak(weak: true)
