@@ -363,8 +363,9 @@ def chainPrec (op : String) (p : Nat) (x : Expr) : Nat :=
   | some (_, _, op') => if op' == op then p else p + 1
   | none => p + 1
 
-/-- The note's spacing for a binary operator: closed up, `∪` alone set off. -/
-def spaced (op : String) : String := if op == "∪" then " ∪ " else op
+/-- The note's spacing for a binary operator: closed up, `∪` and the statement connectives set off,
+    since a connective joins whole statements and `A∧B⊑C` reads as if `∧` bound tighter than `⊑`. -/
+def spaced (op : String) : String := if ["∪", "∧", "∨", "⟺"].contains op then s!" {op} " else op
 
 /-- The heads the note sets TIGHT: the product and the fork.  Lean's formatter sets an INFIX off
     from its operands (`A × B`, `⟨f, g⟩`, `a + b`) where the note closes them up; the SPELLING is
