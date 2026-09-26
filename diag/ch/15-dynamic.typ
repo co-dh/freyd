@@ -227,31 +227,23 @@ in @mu-defn.
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs"),
-    [#src[off `ran V₁ ∪ ran V₂` the set is empty and `est(R)` of it is nothing; not a tabulated row]])],
-  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs"),
-    [#src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
-      have disjoint ranges]])],
-  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs"),
-    [#src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)` \ `=thin(Q₁)P(inl)`]])],
-  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs"),
-    [#src[`P` a relator and `inl[U₁,U₂]=U₁`]])],
-  [#lean("Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs")],
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs.inl",
+      src[off `ran V₁ ∪ ran V₂` the set is empty and `est(R)` of it is nothing; not a tabulated row
+       — the `V₂` branch is the same]),
+    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs.inl",
+      src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
+        have disjoint ranges]),
+    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs.inl",
+      src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)` \ `=thin(Q₁)P(inl)`]),
+    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs.inl",
+      src[`P` a relator and `inl[U₁,U₂]=U₁`]),
+  ),
 )]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
