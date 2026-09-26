@@ -70,7 +70,7 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
     // lean:AOP.A9_1.dynamic_programming@2ea6321c
-  [#src[
+  pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
