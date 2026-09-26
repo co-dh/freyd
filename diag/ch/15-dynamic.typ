@@ -69,7 +69,7 @@ in @mu-defn.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@2ea6321c
+    // lean:AOP.A9_1.dynamic_programming@ba090704
   [#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -121,7 +121,7 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@2afe998a
+     // lean:AOP.A9_1.dynamic_programming_upper@5992be6d
   // two rows: nine panels in one row shrink the fractions past reading
   lean-chain((
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
@@ -139,7 +139,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step5@7faf3348
+     // lean:AOP.A9_1.dynamic_programming_upper_step5@6140d646
     (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R°R°⊑R°`: `R` transitive]),
   )),
 )]<dp-upper>
@@ -251,7 +251,7 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_of_cost") \
     #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
      equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`]],
-     // lean:AOP.A9_1.monoAlg_of_cost@f97d27af
+     // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
   lean-chain(
     (none, "Freyd.Alg.monoAlg_of_cost_step1.lhs",
       src[`F(R)h⊑hR` iff `F(R)h cost⊑h cost ≤`: definition of `R` and shunting]),
@@ -276,7 +276,7 @@ in @mu-defn.
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
  `F(≤)k⊑k≤`]],
-   // lean:AOP.A9_1.monoAlg_of_cost@f97d27af
+   // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;

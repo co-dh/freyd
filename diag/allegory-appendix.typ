@@ -461,7 +461,7 @@ N(α)(that)
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
  ]])
-  // lean:AOP.A7_4_Cylinder.cyl_7_13@41e3cf5d
+  // lean:AOP.A7_4_Cylinder.cyl_7_13@d7d30f50
 ]<cyl-fusion>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
