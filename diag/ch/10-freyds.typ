@@ -83,9 +83,12 @@ subscript.
  $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
    // lean:AOP.A4_6.Λ_absorption@e87bd8f2
 
-  [#leanf("Freyd.Alg.subset")],
-  [`xs subset ys⟺∀a. ys∋a→xs∋a`, that is `ys⊆xs`, not `xs⊆ys`.],
-  // lean:Freyd.S2_40.subset@51b103bf
+  [#leanf("Freyd.Alg.supset")],
+  [`xs⊇ys⟺∀a. ys∋a→xs∋a`],
+  // lean:Freyd.S2_40.supset@51b103bf
+  [#leanf("Freyd.Alg.subset_eq_recip_supset")],
+  [`xs⊆ys⟺ys⊇xs`],
+  // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
 )]<pow-laws>
 
 == `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
