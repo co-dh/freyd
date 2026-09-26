@@ -65,19 +65,34 @@ public theorem H_fix :
 
 /-! ## The table: `h` at four inputs, and `H` at `[a,b,c]` -/
 
-public theorem h_nil : h (Sum.inl ()) (ConsList.wrap ()) := (junc_sum_inl _ _ _ _).mpr rfl
+/-- **`h` is a map**, and `hFn` is its function: `inl(()) ↦ []`, `inr(xs,ys) ↦ sum(xs):ys`. -/
+@[expose] public def hFn : Unit ⊕ (ConsList Unit Nat × ConsList Unit Nat) → ConsList Unit Nat
+  | .inl () => .wrap ()
+  | .inr (xs, ys) => .cons (csum xs) ys
 
-public theorem h_c (c : Nat) :
-    h (Sum.inr (.cons c (.wrap ()), .wrap ())) (.cons c (.wrap ())) :=
-  (junc_sum_inr _ _ _ _).mpr ⟨(c, .wrap ()), ⟨rfl, rfl⟩, rfl⟩
+/-- `h` relates each input to `hFn` of it and to nothing else, so each row of the table is `hFn`'s. -/
+public theorem h_iff_hFn (x : Unit ⊕ (ConsList Unit Nat × ConsList Unit Nat)) (r : ConsList Unit Nat) :
+    h x r ↔ r = hFn x := by
+  cases x with
+  | inl u => cases u; exact junc_sum_inl _ _ _ _
+  | inr p =>
+    refine (junc_sum_inr _ _ _ _).trans
+      ⟨fun ⟨q, ⟨h1, h2⟩, h3⟩ => ?_, fun hr => ⟨(csum p.1, p.2), ⟨rfl, rfl⟩, hr⟩⟩
+    rw [h3]; show ConsList.cons q.1 q.2 = ConsList.cons (csum p.1) p.2
+    congr 1 <;> first | exact h1 | exact h1.symm | exact h2 | exact h2.symm
+
+-- The rows: `h` at four inputs, as equations of its function (`h_iff_hFn`).
+public theorem h_nil : hFn (.inl ()) = .wrap () := rfl
+
+public theorem h_c (c : Nat) : hFn (.inr (.cons c (.wrap ()), .wrap ())) = .cons c (.wrap ()) := rfl
 
 public theorem h_ab_c (a b c : Nat) :
-    h (Sum.inr (.cons a (.cons b (.wrap ())), .cons c (.wrap ()))) (.cons (a + b) (.cons c (.wrap ()))) :=
-  (junc_sum_inr _ _ _ _).mpr ⟨(a + b, .cons c (.wrap ())), ⟨rfl, rfl⟩, rfl⟩
+    hFn (.inr (.cons a (.cons b (.wrap ())), .cons c (.wrap ()))) = .cons (a + b) (.cons c (.wrap ())) :=
+  rfl
 
 public theorem h_a_bc (a b c : Nat) :
-    h (Sum.inr (.cons a (.wrap ()), .cons (b + c) (.wrap ()))) (.cons a (.cons (b + c) (.wrap ()))) :=
-  (junc_sum_inr _ _ _ _).mpr ⟨(a, .cons (b + c) (.wrap ())), ⟨rfl, rfl⟩, rfl⟩
+    hFn (.inr (.cons a (.wrap ()), .cons (b + c) (.wrap ()))) = .cons a (.cons (b + c) (.wrap ())) :=
+  rfl
 
 theorem cappend_eq_nil {s y : ConsList Unit A} :
     cappend s y = .wrap () ↔ s = .wrap () ∧ y = .wrap () := by

@@ -529,12 +529,12 @@ open Lean PrettyPrinter in
 @[app_unexpander alphaR] public meta def unexpandAlphaR : Unexpander
   | _ => `($(mkIdent `α))
 
--- The leaf at the EMPTY leaf type is the note's `nil`: `wrap ()` is the one cons-list with no
--- elements.  At any other leaf type it is a leaf carrying a value and keeps its own spelling, which
--- is why the unit argument is matched and not the constructor alone.
+-- The leaf VALUE at the EMPTY leaf type is the empty list `[]`: `wrap ()` is the one cons-list with no
+-- elements (the ARROW `𝟙⟶[A]` stays `nil`).  At any other leaf type it is a leaf carrying a value
+-- and keeps its own spelling, which is why the unit argument is matched and not the constructor alone.
 open Lean PrettyPrinter in
 @[app_unexpander ConsList.wrap] public meta def unexpandNil : Unexpander
-  | `($_ ()) => `($(mkIdent `nil))
+  | `($_ ()) => `([])
   | `($_ $x) => `($(mkIdent `wrap) $x)
   | _ => throw ()
 
