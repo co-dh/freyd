@@ -90,3 +90,7 @@
     `diag/note-prelude.typ`: it lists the obligations by `typst query`, which fails on the very
     import that is missing, so the first panel of a new declaration has to be written by hand
     with `./scripts/diag-export <decl>`. The imports are now drawn before the listings run.
+[ ] ch12: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+[ ] ch13: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+[ ] ch14: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+[ ] ch16: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
