@@ -299,6 +299,7 @@ attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
 -- ending in `[]` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
+  | `($_ $x []) => `([$x])
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
   | _ => throw ()
 
