@@ -193,12 +193,17 @@
 #let hchain(..steps, fill: none) = layout(sz => {
   let gut = hgut
   // `u`, a second picture UNDER the first — the step's circuit under its Hinze–Marsden panel.
-  let ss = steps.pos().map(s => (op: s.at(0), pic: box(s.at(1)), why: s.at(2), f: s.at(3, default: none),
-    u: s.at(4, default: none), w: calc.max(measure(box(s.at(1))).width,
-      if s.at(4, default: none) == none { 0pt } else { measure(box(s.at(4))).width })))
+  // `pm`, `um`: the sizes `pic-meta` reports, kept from this one `measure` rather than taken again.
+  let ss = steps.pos().map(s => {
+    let (pic, u) = (box(s.at(1)), s.at(4, default: none))
+    let (pm, um) = (measure(pic), if u == none { none } else { measure(box(u)) })
+    (op: s.at(0), pic: pic, why: s.at(2), f: s.at(3, default: none), u: u, pm: pm, um: um,
+      w: calc.max(pm.width, if um == none { 0pt } else { um.width }))
+  })
   if fill != none {
     let k = if fill == true { chain-k(sz.width, ss.first().op == none, ss.map(s => s.w)) } else { fill }
-    ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k,
+    let sk(m) = if m == none { none } else { (width: m.width * k, height: m.height * k) }
+    ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k, pm: sk(s.pm), um: sk(s.um),
       u: if s.u == none { none } else { scale(k * 100%, reflow: true, box(s.u)) }))
   }
   let (lines, cur, used) = ((), (), 0pt)
@@ -220,8 +225,8 @@
       let op = not (li == 0 and i == 0 and s.op == none)
       if op { cols.push(OPW); pr.push(s.op); ur.push([]) }
       cols.push(s.w + extra)
-      pr.push({ pic-meta(plain(if s.f == none { s.why } else { s.f }), s.pic); s.pic })
-      ur.push(if s.u == none { [] } else { pic-meta(plain(if s.f == none { s.why } else { s.f }), s.u); s.u })
+      pr.push({ pic-meta(plain(if s.f == none { s.why } else { s.f }), s.pic, size: s.pm); s.pic })
+      ur.push(if s.u == none { [] } else { pic-meta(plain(if s.f == none { s.why } else { s.f }), s.u, size: s.um); s.u })
       let span = grid.cell.with(colspan: if op { 2 } else { 1 })
       let wide = box.with(width: s.w + extra + if op { OPW + gut } else { 0pt })
       fr.push(span(wide(if s.f == none { [] } else { s.f })))
@@ -249,8 +254,7 @@
     grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
       op, stack(spacing: 5pt, p, align(right, f)))
   }
-  pic-meta(plain(f), row, width: sz.width)
-  row
+  pic-flow(plain(f), row, width: sz.width)
 })
 // A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
 // `#lean` call, so every step stands in one box at one height, on ONE line scaled to the width

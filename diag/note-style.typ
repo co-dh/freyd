@@ -176,19 +176,23 @@
     x: pos.x.pt(), y: pos.y.pt(), disp: disp,
     w: sz.width.pt(), h: sz.height.pt()))<pic>]
 } }
-#let disp(body) = figure(kind: "disp", supplement: none, {
-  // No `layout` here: the block is `breakable` (see `conf`), so the width is the text width.  The
-  // height is read off an end marker, not a `measure` that lays the body out again (off in the last
-  // bit, ~1e-14pt); only a display split across pages, whose positions do not subtract, measures.
-  context {
-    let (a, b) = (here().position(), query(selector(<disp-end>).after(here())).first().location().position())
-    let W = PAGEW - 2 * MARGIN
-    pic-meta(dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
-      body, width: W, disp: true, size: if a.page == b.page { (width: W, height: b.y - a.y) } else { auto })
-  }
+// A block `body` set in flow at `width`, reporting its crop box: the height is read off an end marker,
+// not a `measure` that lays the body out again (off in the last bit, ~1e-14pt); only a body split
+// across pages, whose positions do not subtract, measures.  The marker carries its start's location,
+// so a nested one cannot be taken for it; before introspection has it, the height is a placeholder.
+#let pic-flow(key, body, width: auto, disp: false) = if NODRAW { body } else { context {
+  let a = here()
+  let e = query(selector(<pic-end>).after(a)).find(m => m.value == a)
+  let (p, q) = (a.position(), if e == none { a.position() } else { e.location().position() })
+  pic-meta(key, body, width: width, disp: disp,
+    size: if p.page == q.page { (width: width, height: q.y - p.y) } else { auto })
   body
-  [#metadata(none)<disp-end>]
-})
+  [#metadata(a)<pic-end>]
+} }
+// No `layout` here: the block is `breakable` (see `conf`), so the width is the text width.
+#let disp(body) = figure(kind: "disp", supplement: none, context pic-flow(
+  dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
+  body, width: PAGEW - 2 * MARGIN, disp: true))
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
@@ -264,6 +268,5 @@
 #let vstep(op, pic, f) = layout(sz => {
   let row = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
     column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
-  pic-meta(plain(f), row, width: sz.width)
-  row
+  pic-flow(plain(f), row, width: sz.width)
 })
