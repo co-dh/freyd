@@ -416,12 +416,13 @@
     beads.map(b => (plain(b.at(1)), b.at(2, default: black)))
       + obnd.map(o => (o.at(1), o.at(2))))
   dpan(h, w, xo, {
-  // THE CONVERSE IS A LANE: `F(Z°)°` is `°∘F∘°` acting on `Z`, two dashed `°` lanes around `F`,
-  // and the region between them is `Relᵒᵖ`, shaded before any wire so the wires draw over it.  The
-  // `°` names sit mid-run, west of each lane: at the ends they would land on the beads above and below.
-  for (x0, x1, y0, y1) in convs {
+  // THE CONVERSE IS A LANE, the functor `Rel → Relᵒᵖ`: a dashed `°` lane at `x1`, and west of it
+  // `Relᵒᵖ`, shaded before any wire so the wires draw over it — to the outer `°` at `x0` when the
+  // lane is sandwiched (`both`), else to the panel's edge.  The `°` names sit mid-run, west of each
+  // lane: at the ends they would land on the beads above and below.
+  for (x0, x1, y0, y1, both) in convs {
     hm-region(((x0, y0), (x1, y0), (x1, y1), (x0, y1)), fb-OPC, straight: true)
-    for x in (x0, x1) {
+    for x in if both { (x0, x1) } else { (x1,) } {
       hm-wire(((x, y0), (x, y1)), col: CONVC, straight: true, dash: "dashed")
       hm-name((x - 0.12, (y0 + y1) / 2), [`°`], col: CONVC, size: 10pt, anchor: "east")
     }

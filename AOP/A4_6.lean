@@ -135,6 +135,23 @@ public theorem existsImage_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
   map_id X := by rw [recip_id, F.map_id, recip_id]
   map_comp R S := by rw [Allegory.recip_comp, F.map_comp, Allegory.recip_comp]
 
+/-- THE CONVERSE IS A FUNCTOR `𝒜 → 𝒜ᵒᵖ`, the identity on objects: `R ↦ R°`.  A lane's action with
+    ONE `°` is a composite with it — `F(R)°` is `F` then `°`, `F(R°)` is `°` then `F` on `𝒜ᵒᵖ` — so a
+    string panel draws each as `F` beside one `°` lane, on the side the converse stands. -/
+@[expose] public def recipFunctor {ℬ : Type u} [Allegory ℬ] : Freyd.Functor ℬ (OppCat ℬ) where
+  obj X := X
+  map R := R°
+  map_id _ := recip_id
+  map_comp R S := Allegory.recip_comp R S
+
+/-- An endofunctor acting on the opposite category (§1.182): the same action, each arrow reversed. -/
+@[expose] public def oppFunctor {ℬ : Type u} [Allegory ℬ] (F : Freyd.Functor ℬ ℬ) :
+    Freyd.Functor (OppCat ℬ) (OppCat ℬ) where
+  obj := F.obj
+  map R := F.map R
+  map_id X := F.map_id X
+  map_comp R S := F.map_comp S R
+
 /-- Singleton naturality (B&dM p.106): for a map `f`, `f ≫ singletonMap = singletonMap ≫ E f`. -/
 public theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     f ≫ singletonMap = singletonMap ≫ existsImage f := by

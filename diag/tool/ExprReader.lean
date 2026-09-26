@@ -988,8 +988,9 @@ def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
   try
     -- An ENDOFUNCTOR of the region, both ends: the bead's own lanes are what runs past it, and a
     -- wire out of another region has none of them to run on.  A relator's and a functor's two type
-    -- arguments alike are its two regions.
-    let ends : Array Expr → MetaM Bool := fun c => do
+    -- arguments alike are its two regions.  REDUCIBLY: `OppCat 𝒜` unfolds to `𝒜` but is another
+    -- category, so the converse `𝒜 → 𝒜ᵒᵖ` is no lane of `𝒜` and a bare `S°` stays a bead.
+    let ends : Array Expr → MetaM Bool := fun c => Meta.withReducible do
       let lo ← Meta.isDefEq c[0]! regionTy
       let hi ← Meta.isDefEq c[1]! regionTy
       return lo && hi
