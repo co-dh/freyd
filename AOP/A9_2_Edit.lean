@@ -779,6 +779,73 @@ public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
 @[expose] public def empty : dPair Char ⟶ dPair Char :=
   fun p q => p = q ∧ p = ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ())
 
+/-! ### `edit-defn`, one declaration per line of the note's display -/
+
+/-- **edit-defn**: every `Op` is a `cpy`, a `del` or an `ins`. -/
+public theorem op_cases (o : Op Char) :
+    (∃ a, o = Op.cpy a) ∨ (∃ a, o = Op.del a) ∨ ∃ a, o = Op.ins a := by
+  cases o with
+  | cpy a => exact Or.inl ⟨a, rfl⟩
+  | del a => exact Or.inr (Or.inl ⟨a, rfl⟩)
+  | ins a => exact Or.inr (Or.inr ⟨a, rfl⟩)
+
+/-- **edit-defn**: `F(Op,X)=𝟏+(Op×X)`. -/
+public theorem F_obj (X : RelSet.{0}) :
+    ((F Unit (Op Char)).obj X).carrier = (Unit ⊕ (Op Char × X.carrier)) := rfl
+
+/-- **edit-defn**: `α=[nil,cons]`, the `nil` arm. -/
+public theorem con_nil (u : Unit) :
+    con (Sum.inl u : (Fobj Unit (Op Char) (dEdit Char)).carrier) = ConsList.wrap u := rfl
+/-- **edit-defn**: `α=[nil,cons]`, the `cons` arm. -/
+public theorem con_cons (o : Op Char) (es : ConsList Unit (Op Char)) :
+    con (Sum.inr (o, es) : (Fobj Unit (Op Char) (dEdit Char)).carrier) = ConsList.cons o es := rfl
+
+/-- **edit-defn**: `base` returns `([],[])`. -/
+public theorem base_nil (u : Unit) :
+    baseStepFn (Char := Char) (Sum.inl u) = (ConsList.wrap (), ConsList.wrap ()) := rfl
+/-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`. -/
+public theorem step_cpy (a : Char) (xs ys : ConsList Unit Char) :
+    baseStepFn (Sum.inr (Op.cpy a, (xs, ys))) = (ConsList.cons a xs, ConsList.cons a ys) := rfl
+/-- **edit-defn**: `step (del a,(xs,ys))=([a]⧺xs,ys)`. -/
+public theorem step_del (a : Char) (xs ys : ConsList Unit Char) :
+    baseStepFn (Sum.inr (Op.del a, (xs, ys))) = (ConsList.cons a xs, ys) := rfl
+/-- **edit-defn**: `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
+public theorem step_ins (a : Char) (xs ys : ConsList Unit Char) :
+    baseStepFn (Sum.inr (Op.ins a, (xs, ys))) = (xs, ConsList.cons a ys) := rfl
+
+/-- **edit-defn**: `V≜suffix°×suffix°`. -/
+public theorem V_eq : V Char = rprodMap (suffixR (A := Char))° (suffixR (A := Char))° := rfl
+
+/-- **edit-defn**: `Q≜𝟙+(U×V)` on the `base` summand is `𝟙`. -/
+public theorem Q_inl (u : Unit) : Q Char (Sum.inl u) (Sum.inl u) := trivial
+/-- **edit-defn**: `Q≜𝟙+(U×V)` on the `step` summand, `U≜⊤`, compares only the strings by `V`. -/
+public theorem Q_inr (p q : Op Char × (ConsList Unit Char × ConsList Unit Char)) :
+    Q Char (Sum.inr p) (Sum.inr q) ↔ V Char p.2 q.2 := Iff.rfl
+
+/-- **edit-defn**: `empty` holds exactly at `(([],[]),([],[]))`. -/
+public theorem empty_iff (p q : ConsList Unit Char × ConsList Unit Char) :
+    empty p q ↔ p = q ∧ p = (ConsList.wrap (), ConsList.wrap ()) := Iff.rfl
+
+/-- **edit-defn**: `unstep ([],[])=[]`. -/
+public theorem unstep_nil [DecidableEq Char] :
+    unstepFn ((ConsList.wrap (), ConsList.wrap ()) : ConsList Unit Char × ConsList Unit Char)
+      = ConsList.wrap () := rfl
+/-- **edit-defn**: `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`. -/
+public theorem unstep_del [DecidableEq Char] (a : Char) (xs : ConsList Unit Char) :
+    unstepFn (ConsList.cons a xs, ConsList.wrap ())
+      = ConsList.cons (Op.del a, (xs, ConsList.wrap ())) (ConsList.wrap ()) := rfl
+/-- **edit-defn**: `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`. -/
+public theorem unstep_ins [DecidableEq Char] (b : Char) (ys : ConsList Unit Char) :
+    unstepFn (ConsList.wrap (), ConsList.cons b ys)
+      = ConsList.cons (Op.ins b, (ConsList.wrap (), ys)) (ConsList.wrap ()) := rfl
+/-- **edit-defn**: `unstep ([a]⧺xs,[b]⧺ys)`, a copy where the heads agree, else a delete and an
+    insert. -/
+public theorem unstep_cons [DecidableEq Char] (a b : Char) (xs ys : ConsList Unit Char) :
+    unstepFn (ConsList.cons a xs, ConsList.cons b ys)
+      = if a = b then ConsList.cons (Op.cpy a, (xs, ys)) (ConsList.wrap ())
+        else ConsList.cons (Op.del a, (xs, ConsList.cons b ys))
+          (ConsList.cons (Op.ins b, (ConsList.cons a xs, ys)) (ConsList.wrap ())) := rfl
+
 /-- `edit-disj`, first step: `base` returns only `([],[])`, so `base°=empty base°`. -/
 public theorem edit_disj_step1 :
     step (Char := Char) ≫ (base (Char := Char))° = step ≫ empty ≫ (base (Char := Char))° := by
