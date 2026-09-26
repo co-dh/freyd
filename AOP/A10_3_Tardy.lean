@@ -660,71 +660,286 @@ public theorem tardy_mono :
       subst h1; subst h3; exact h2⟩)
     (cost_alg_k ct dt wt) (k_mono ct dt wt)
 
-/-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`.  Given a
-    schedule `y⧺[jv]` of the bag `snag (bv,jv)` and a job `ju` of no greater penalty in the same
-    bag, delete the last `ju` from `y⧺[jv]`: the result orders the bag `bu` (`blist_del`), costs
-    no more (`cost_del_le`, (10.7)), and putting `ju` last adds a penalty bounded by `Q`. -/
+/-! ## The greedy condition (10.3), B&dM p.257 — the book's calculation, one theorem per hint -/
+
+section Greedy
+
+set_option quotPrecheck false
+local notation "αJ" => graph (con (L := Unit) (E := Job))
+local notation "FbJ" => (F Unit Job).map (bagify (Job := Job))°
+local notation "P2" => relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})
+
+/-- `g` read as the function it is. -/
+@[expose] public def gFn : (Fobj Unit Job (dSL Unit Job)).carrier → Int
+  | Sum.inl _ => 0
+  | Sum.inr p => penalty ct dt wt p.1 p.2
+
+public theorem g_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier) (c : Int) :
+    g ct dt wt s c ↔ c = gFn ct dt wt s := by
+  cases s with
+  | inl d => exact ListRel.junc_sum_inl ListRel.zero (penaltyR ct dt wt) d c
+  | inr p => exact ListRel.junc_sum_inr ListRel.zero (penaltyR ct dt wt) p c
+
+/-- `F(bagify)` read as the function it is. -/
+@[expose] public def FbFn : (Fobj Unit Job (dSL Unit Job)).carrier → (Fobj Unit Job (Bag Job)).carrier
+  | Sum.inl d => Sum.inl d
+  | Sum.inr p => Sum.inr (bagifyFn p.1, p.2)
+
+public theorem Fbag_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier)
+    (v : (Fobj Unit Job (Bag Job)).carrier) :
+    (F Unit Job).map (bagify (Job := Job)) s v ↔ v = FbFn s := by
+  cases s with
+  | inl d => cases v with
+    | inl d' =>
+      show d = d' ↔ Sum.inl d' = Sum.inl d
+      exact ⟨fun h => by subst h; rfl, fun h => by cases h; rfl⟩
+    | inr _ => exact ⟨False.elim, fun h => nomatch h⟩
+  | inr p => cases v with
+    | inl _ => exact ⟨False.elim, fun h => nomatch h⟩
+    | inr q =>
+      obtain ⟨b, j⟩ := q
+      show b = bagifyFn p.1 ∧ p.2 = j ↔ Sum.inr (b, j) = Sum.inr (bagifyFn p.1, p.2)
+      exact ⟨fun ⟨h1, h2⟩ => by subst h1; subst h2; rfl, fun h => by cases h; exact ⟨rfl, rfl⟩⟩
+
+public theorem Fb_apply (v : (Fobj Unit Job (Bag Job)).carrier)
+    (s : (Fobj Unit Job (dSL Unit Job)).carrier) : FbJ v s ↔ v = FbFn s := by
+  refine Iff.trans ?_ (Fbag_apply s v)
+  cases v with
+  | inl _ => cases s with
+    | inl _ => exact eq_comm
+    | inr _ => exact Iff.rfl
+  | inr _ => cases s with
+    | inl _ => exact Iff.rfl
+    | inr _ => exact ⟨fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩, fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩⟩
+
+public theorem fFn_FbFn (s : (Fobj Unit Job (dSL Unit Job)).carrier) :
+    fFn ct dt wt (FbFn s) = gFn ct dt wt s := by
+  cases s <;> rfl
+
+public theorem bmax_absorb (a b : Int) : bmax b (bmax a b) = bmax a b := by
+  unfold bmax
+  by_cases h : a ≤ b
+  · rw [if_pos h, if_pos (Int.le_refl b)]
+  · rw [if_neg h, if_pos (by omega)]
+
+/-- `R = cost≤cost°`, the definition read as an equation of arrows. -/
+public theorem R_eq : R ct dt wt = costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+  hom_ext fun _ _ => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
+    subst h1; subst h3; exact h2⟩
+
+/-- `β°F(bagify°)α=bagify°`: the step of the fold `bagify=⦇β⦈`, read backwards. -/
+public theorem bagify_recip_alg : (bagAlg (Job := Job))° ≫ FbJ ≫ αJ = (bagify (Job := Job))° := by
+  apply hom_ext; intro b w
+  constructor
+  · rintro ⟨u, hu, s, hs, hw⟩
+    obtain rfl : b = bagAlgFn u := hu
+    obtain rfl : u = FbFn s := (Fb_apply u s).mp hs
+    obtain rfl : w = con s := hw
+    cases s <;> rfl
+  · intro hw
+    obtain rfl : b = bagifyFn w := hw
+    cases w with
+    | wrap d => exact ⟨Sum.inl d, rfl, Sum.inl d, (Fb_apply _ _).mpr rfl, rfl⟩
+    | snoc x j => exact ⟨Sum.inr (bagifyFn x, j), rfl, Sum.inr (x, j), (Fb_apply _ _).mpr rfl, rfl⟩
+
+/-- B&dM p.257, the choice of `Q`: `F(bagify) Q F(bagify°)=g≤g°` — under `Q` a job of least
+    penalty is chosen. -/
+public theorem Q_choice :
+    (F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ
+      = g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)° := by
+  apply hom_ext; intro s s'
+  constructor
+  · rintro ⟨u, hu, v, hQ, hv⟩
+    obtain rfl : u = FbFn s := (Fbag_apply s u).mp hu
+    obtain rfl : v = FbFn s' := (Fb_apply v s').mp hv
+    refine ⟨gFn ct dt wt s, (g_apply ct dt wt s _).mpr rfl, gFn ct dt wt s', ?_,
+      (g_apply ct dt wt s' _).mpr rfl⟩
+    have hQ' : fFn ct dt wt (FbFn s) ≤ fFn ct dt wt (FbFn s') := hQ
+    have e1 := fFn_FbFn ct dt wt s; have e2 := fFn_FbFn ct dt wt s'
+    show gFn ct dt wt s ≤ gFn ct dt wt s'
+    omega
+  · rintro ⟨c, hc, d, hd, hd'⟩
+    obtain rfl : c = gFn ct dt wt s := (g_apply ct dt wt s c).mp hc
+    obtain rfl : d = gFn ct dt wt s' := (g_apply ct dt wt s' d).mp hd'
+    refine ⟨FbFn s, (Fbag_apply s _).mpr rfl, FbFn s', ?_, (Fb_apply _ _).mpr rfl⟩
+    have hd' : gFn ct dt wt s ≤ gFn ct dt wt s' := hd
+    have e1 := fFn_FbFn ct dt wt s; have e2 := fFn_FbFn ct dt wt s'
+    show fFn ct dt wt (FbFn s) ≤ fFn ct dt wt (FbFn s')
+    omega
+
+/-- B&dM p.257: `α cost=⟨g,α cost⟩ bmax`, since the last penalty is below the cost. -/
+public theorem alg_cost_self :
+    αJ ≫ costR ct dt wt = (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR := by
+  rw [pair_eq_rpair]; apply hom_ext; intro s c
+  have key : cost ct dt wt (con s) = bmax (gFn ct dt wt s) (cost ct dt wt (con s)) := by
+    cases s with
+    | inl _ => show (0 : Int) = bmax 0 0; unfold bmax; rw [if_pos (Int.le_refl 0)]
+    | inr p => exact (bmax_absorb _ _).symm
+  constructor
+  · rintro ⟨_, rfl, rfl⟩
+    exact ⟨(gFn ct dt wt s, cost ct dt wt (con s)), ⟨(g_apply ct dt wt s _).mpr rfl, _, rfl, rfl⟩,
+      key⟩
+  · rintro ⟨⟨q1, q2⟩, ⟨h1, s', hs', hq2⟩, hb⟩
+    obtain rfl : q1 = gFn ct dt wt s := (g_apply ct dt wt s q1).mp h1
+    obtain rfl : s' = con s := hs'
+    obtain rfl : q2 = cost ct dt wt (con s) := hq2
+    exact ⟨_, rfl, (hb : c = _).trans key.symm⟩
+
+/-- **(10.3)**, first step: monotonicity of composition. -/
+public theorem tardy_greedy_step1 :
+    (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°)) ≫ FbJ ≫ αJ
+      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ) := by
+  refine le_iff.mpr fun u w h => ?_
+  obtain ⟨v, hv, h2⟩ := h
+  rw [inter_apply] at hv ⊢
+  obtain ⟨b, hb1, hb2⟩ := hv.2
+  exact ⟨⟨v, hv.1, h2⟩, ⟨b, hb1, v, hb2, h2⟩⟩
+
+/-- **(10.3)**, second step: `β°F(bagify°)α=bagify°`, since `bagify=⦇β⦈`. -/
+public theorem tardy_greedy_step2 :
+    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ)
+      = (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°) := by
+  rw [bagify_recip_alg]
+
+/-- **(10.3)**, third step: the calculation above, `bagify_recip_le`. -/
+public theorem tardy_greedy_step3 [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
+    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°)
+      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°) := by
+  refine le_iff.mpr fun u w h => ?_
+  rw [inter_apply] at h ⊢
+  exact ⟨h.1, le_iff.mp (bagify_recip_le ct dt wt hct hwt) u w h.2⟩
+
+/-- **(10.3)**, fourth step: the modular law, on both sides. -/
+public theorem tardy_greedy_step4 :
+    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°)
+      ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
+  refine le_iff.mpr fun u w h => ?_
+  rw [inter_apply] at h
+  obtain ⟨⟨v, hQ, s, hs, hα⟩, ⟨s', hs', c, hc, d, hd, he⟩⟩ := h
+  refine ⟨s', hs', s, ?_, hα⟩
+  rw [inter_apply]
+  exact ⟨⟨u, (Fbag_apply s' u).mpr ((Fb_apply u s').mp hs'), v, hQ, hs⟩, ⟨c, hc, d, hd, w, he, hα⟩⟩
+
+/-- **(10.3)**, fifth step: the choice of `Q`, `Q_choice`. -/
+public theorem tardy_greedy_step5 :
+    FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ
+      = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
+  rw [Q_choice]
+
+/-- **(10.3)**, sixth step: products, `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`. -/
+public theorem tardy_greedy_step6 :
+    FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ
+      = FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+          ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ := by
+  rw [pair_eq_rpair, pair_eq_rpair]
+  apply hom_ext; intro u w
+  constructor
+  · rintro ⟨s, hs, s', hi, hα⟩
+    rw [inter_apply] at hi
+    obtain ⟨⟨c1, hc1, d1, hd1, he1⟩, ⟨c2, hc2, d2, hd2, w', he2, hα'⟩⟩ := hi
+    exact ⟨s, hs, (d1, d2), ⟨⟨c1, hc1, hd1⟩, ⟨c2, hc2, hd2⟩⟩, s', ⟨he1, w', hα', he2⟩, hα⟩
+  · rintro ⟨s, hs, ⟨d1, d2⟩, ⟨⟨c1, hc1, hd1⟩, ⟨c2, hc2, hd2⟩⟩, s', ⟨he1, w', hα', he2⟩, hα⟩
+    refine ⟨s, hs, s', ?_, hα⟩
+    rw [inter_apply]
+    exact ⟨⟨c1, hc1, d1, hd1, he1⟩, ⟨c2, hc2, d2, hd2, w', he2, hα'⟩⟩
+
+/-- The tail, first step: shunting — `cost` a map, so `𝟙⊑cost cost°`. -/
+public theorem tardy_tail_step1 :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
+      ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
+        ≫ (costR ct dt wt)° :=
+  le_iff.mpr fun _ w ⟨q, hq, s', hq', hα⟩ => ⟨q, hq, s', hq', w, hα, _, rfl, rfl⟩
+
+/-- The tail, second step: `α cost=⟨g,α cost⟩ bmax` (`alg_cost_self`). -/
+public theorem tardy_tail_step2 :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
+        ≫ (costR ct dt wt)°
+      = (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
+        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)° := by
+  have hk : ∀ s' c, (αJ ≫ costR ct dt wt) s' c
+      ↔ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR) s' c := fun _ _ => by
+    rw [← alg_cost_self]
+  apply hom_ext; intro s w
+  constructor
+  · rintro ⟨q, hq, s', hq', w', hα, c, hc, hc'⟩
+    obtain ⟨q', hp, hb⟩ := (hk s' c).mp ⟨w', hα, hc⟩
+    exact ⟨q, hq, s', hq', q', hp, c, hb, hc'⟩
+  · rintro ⟨q, hq, s', hq', q', hp, c, hb, hc'⟩
+    obtain ⟨w', hα, hc⟩ := (hk s' c).mpr ⟨q', hp, hb⟩
+    exact ⟨q, hq, s', hq', w', hα, c, hc, hc'⟩
+
+/-- The tail, third step: `⟨g,α cost⟩` is simple. -/
+public theorem tardy_tail_step3 :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
+        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)°
+      ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
+        ≫ (costR ct dt wt)° := by
+  rw [pair_eq_rpair, pair_eq_rpair]
+  refine le_iff.mpr fun s w h => ?_
+  obtain ⟨q, hq, s', ⟨h1, x1, hx1, hc1⟩, q', ⟨h1', x2, hx2, hc2⟩, c, hb, hc⟩ := h
+  obtain rfl : x1 = con s' := hx1
+  obtain rfl : x2 = con s' := hx2
+  have e : q' = q := Prod.ext
+    (((g_apply ct dt wt s' _).mp h1').trans ((g_apply ct dt wt s' _).mp h1).symm)
+    ((hc2 : q'.2 = _).trans (hc1 : q.2 = _).symm)
+  subst e
+  exact ⟨q', hq, c, hb, hc⟩
+
+/-- The tail, fourth step: `bmax` is monotone, `⟨g≤,m≤⟩ bmax⊑⟨g,m⟩ bmax≤`. -/
+public theorem tardy_tail_step4 :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR ≫ (costR ct dt wt)°
+      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+  rw [pair_eq_rpair, pair_eq_rpair]
+  refine le_iff.mpr fun s w h => ?_
+  obtain ⟨⟨q1, q2⟩, ⟨⟨c1, hc1, h1⟩, ⟨c2, hc2, h2⟩⟩, c, hb, hc⟩ := h
+  refine ⟨(c1, c2), ⟨hc1, hc2⟩, bmax c1 c2, rfl, c, ?_, hc⟩
+  obtain rfl : c = bmax q1 q2 := hb
+  exact bmax_le (Int.le_trans (h1 : c1 ≤ q1) (le_bmax_left _ _))
+    (Int.le_trans (h2 : c2 ≤ q2) (le_bmax_right _ _))
+
+/-- The tail, fifth step: (10.4), `cost_alg_bmax`. -/
+public theorem tardy_tail_step5 :
+    (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)°
+      = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+  rw [← Cat.assoc ((P2).pair _ _) bmaxR, ← cost_alg_bmax, Cat.assoc]
+
+/-- B&dM p.257, the tail of (10.3): `⟨g≤,m≤⟩⟨g,α cost⟩°α⊑αR` — a job whose penalty is at most
+    the last job's, put last after a schedule costing at most the rest, costs at most the whole. -/
+public theorem tardy_tail :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
+      ⊑ αJ ≫ R ct dt wt := by
+  refine le_trans (tardy_tail_step1 ct dt wt) ?_
+  rw [tardy_tail_step2]
+  refine le_trans (tardy_tail_step3 ct dt wt) ?_
+  refine le_trans (tardy_tail_step4 ct dt wt) ?_
+  rw [tardy_tail_step5, R_eq]
+  exact le_refl _
+
+/-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`, by the
+    book's calculation (B&dM p.257). -/
 public theorem tardy_greedy [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°))
         ≫ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
       ⊑ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
-          ≫ R ct dt wt :=
-  le_iff.mpr fun u out h => by
-    obtain ⟨v, hQv, w, hFw, hout⟩ := h
-    obtain rfl : out = con w := hout
-    obtain ⟨hQ, hbag⟩ := hQv
-    obtain ⟨b, hb1, hb2⟩ := hbag
-    have hbeta : bagAlgFn u = bagAlgFn v := hb1 ▸ hb2
-    cases u with
-    | inl du =>
-      cases v with
-      | inl dv =>
-        cases w with
-        | inl dw => exact ⟨Sum.inl (), rfl, SnocList.wrap (), rfl, Int.le_refl 0⟩
-        | inr r => exact hFw.elim
-      | inr q => exact absurd hbeta (nil_ne_snag q.1 q.2)
-    | inr p =>
-      obtain ⟨bu, ju⟩ := p
-      cases v with
-      | inl dv => exact absurd hbeta.symm (nil_ne_snag bu ju)
-      | inr q =>
-        obtain ⟨bv, jv⟩ := q
-        cases w with
-        | inl dw => exact hFw.elim
-        | inr r =>
-          obtain ⟨y, jy⟩ := r
-          obtain ⟨hHy, hjw⟩ := hFw
-          have hq1 : bv = bagifyFn y := hHy
-          have hq2 : jv = jy := hjw
-          obtain ⟨xs, hxs⟩ := exists_rep bu
-          have hsnag : snag (Quotient.mk (permSetoid Job) xs, ju)
-              = snag (bagifyFn y, jy) := by
-            rw [hxs, ← hq1, ← hq2]; exact hbeta
-          have hperm : (ju :: xs).Perm (blist (SnocList.snoc y jy)) := Quotient.exact hsnag
-          have hmem : ju ∈ blist (SnocList.snoc y jy) := hperm.mem_iff.mp List.mem_cons_self
-          have hdel := blist_del ju (SnocList.snoc y jy) hmem
-          have hx : (blist (del ju (SnocList.snoc y jy))).Perm xs :=
-            (hdel.trans hperm.symm).cons_inv
-          have hbagx : bagifyFn (del ju (SnocList.snoc y jy)) = bu := by
-            rw [← hxs]; exact Quotient.sound hx
-          refine ⟨Sum.inr (del ju (SnocList.snoc y jy), ju), ⟨hbagx.symm, rfl⟩,
-            SnocList.snoc (del ju (SnocList.snoc y jy)) ju, rfl, ?_⟩
-          show bmax (cost ct dt wt (del ju (SnocList.snoc y jy)))
-              (penalty ct dt wt (del ju (SnocList.snoc y jy)) ju)
-            ≤ cost ct dt wt (SnocList.snoc y jy)
-          refine bmax_le (cost_del_le ct dt wt hct hwt ju _) ?_
-          -- the `Q` step: the chosen job's penalty is bounded by the one it replaces
-          have hpx : penalty ct dt wt (del ju (SnocList.snoc y jy)) ju
-              = bagPenalty ct dt wt (bu, ju) := by
-            rw [penalty_eq_bagPenalty, hbagx]
-          have hpy : bagPenalty ct dt wt (bv, jv) = penalty ct dt wt y jy := by
-            rw [penalty_eq_bagPenalty, ← hq1, ← hq2]
-          rw [hpx]
-          refine Int.le_trans hQ ?_
-          show bagPenalty ct dt wt (bv, jv) ≤ cost ct dt wt (SnocList.snoc y jy)
-          rw [hpy]
-          show penalty ct dt wt y jy ≤ bmax (cost ct dt wt y) (penalty ct dt wt y jy)
-          exact le_bmax_right _ _
+          ≫ R ct dt wt := by
+  refine le_trans (tardy_greedy_step1 ct dt wt) ?_
+  rw [tardy_greedy_step2]
+  refine le_trans (tardy_greedy_step3 ct dt wt hct hwt) ?_
+  refine le_trans (tardy_greedy_step4 ct dt wt) ?_
+  rw [tardy_greedy_step5, tardy_greedy_step6]
+  exact comp_mono_left _ (tardy_tail ct dt wt)
+
+end Greedy
 
 /-- `H = ⦇α⦈·⦇β⦈°` collapses to `bagify°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
 public theorem tardy_H :
