@@ -199,6 +199,32 @@ public theorem map_sort_comp_listcp_le_step6 {f : F.obj A ⟶ A} {p P : A ⟶ A}
     cpMap F A ≫ existsImage (f ≫ p) ≫ sort P = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
   rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
 
+/-- Lemma 8.1, steps 4–6 as one row: the sort walks past `filter p` by (8.9), and the image of
+    `p` after `P f` is the transpose of `F(∋) f p`. -/
+public theorem map_sort_comp_listcp_le_steps4to6
+    {f : F.obj A ⟶ A} (hf : Map f) {p P : A ⟶ A}
+    {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)} {filterp : L.obj A ⟶ L.obj A}
+    (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P) :
+    cpMap F A ≫ powerRel f ≫ sort P ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
+  rw [← map_sort_comp_listcp_le_step6 L, ← map_sort_comp_listcp_le_step5 L hf]
+  exact map_sort_comp_listcp_le_step4 L h89
+
+/-- Lemma 8.1, steps 1–3 as one row: the sort walks under `F` by (8.11), changes order by `f`
+    monotonic on `P`, and walks past `list f` by (8.8). -/
+public theorem map_sort_comp_listcp_le_steps1to3
+    {f : F.obj A ⟶ A} (hf : Map f) {P : A ⟶ A}
+    {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
+    {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
+    {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
+    {filterp : L.obj A ⟶ L.obj A}
+    (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
+    (hmono : Freyd.Alg.MonoAlg f P)
+    (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
+    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
+    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ powerRel f ≫ sort P ≫ filterp :=
+  le_trans (map_sort_comp_listcp_le_step1 L h811)
+    (le_trans (map_sort_comp_listcp_le_step2 L hf hsortF hmono) (map_sort_comp_listcp_le_step3 L h88))
+
 /-- **Lemma 8.1** (book p.202): one sorted list built from sorted arguments, instead of a set
     built and then sorted —
     `filter p·list f·listcp(F)·F(sort P) ⊑ sort P·Λ(p·f·F∈)`, mirrored to
@@ -216,11 +242,9 @@ public theorem map_sort_comp_listcp_le
     (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
     (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P)
     (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
-  rw [← map_sort_comp_listcp_le_step6 L, ← map_sort_comp_listcp_le_step5 L hf]
-  exact le_trans (map_sort_comp_listcp_le_step1 L h811)
-    (le_trans (map_sort_comp_listcp_le_step2 L hf hsortF hmono)
-      (le_trans (map_sort_comp_listcp_le_step3 L h88) (map_sort_comp_listcp_le_step4 L h89)))
+    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P :=
+  le_trans (map_sort_comp_listcp_le_steps1to3 L hf hsortF hmono h88 h811)
+    (map_sort_comp_listcp_le_steps4to6 L hf h89)
 
 /-! ## THEOREM 8.2 (book p.203) and its fusion side condition
 

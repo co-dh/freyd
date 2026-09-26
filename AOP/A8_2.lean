@@ -66,18 +66,20 @@ public theorem Λ_comp_eq_Λ_comp_powerRel_bigUnion (V : C ⟶ w) (S : w ⟶ A) 
     Λ (V ≫ S) = Λ V ≫ powerRel (Λ S) ≫ bigUnion := by
   rw [← Λ_absorption V S, existsImage_eq_Λ_bigUnion S, powerRel_map (Λ_is_map' S)]
 
-/-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
-    eliminated"): split the thinning algebra's source as `V ≫ S`, and the `thin Q` at its end
-    collapses to a `min R` under the power functor —
-    `thin Q·Λ(S·V) ⊒ P(min R·ΛS)·ΛV`, mirrored
-    `Λ V ≫ P (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thin Q`.
-    The steps are the book's: the power transpose of a composition splits `Λ (V ≫ S)` into
-    `Λ V ≫ P(Λ S) ≫ union`; (8.4) moves `thin Q` under `P`; thin-elimination (8.3) replaces it
-    by `min R` followed by the singleton, at `R ∩ (S°S) ⊑ Q`; and `P τ ≫ union = id` absorbs
-    the singleton and the union together. -/
-public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
+/-- **The first half of `thinAlg_elim`** (book p.198, the first two steps): the power transpose
+    of a composition splits `Λ (V ≫ S)` into `Λ V ≫ P(Λ S) ≫ union`, and (8.4) moves `thin Q`
+    under `P`. -/
+public theorem thinAlg_elim_thin (V : C ⟶ w) (S : w ⟶ A) (Q : A ⟶ A) :
+    Λ V ≫ powerRel (Λ S) ≫ powerRel (thinRel Q) ≫ bigUnion ⊑ Λ (V ≫ S) ≫ thinRel Q := by
+  rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion V S, Cat.assoc, Cat.assoc]
+  exact comp_mono_left (Λ V) (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
+
+/-- **The second half of `thinAlg_elim`** (book p.198, the rest of the chain): under `P`,
+    thin-elimination (8.3) replaces `thin Q` by `min R` followed by the singleton, and
+    `P τ ≫ union = id` absorbs the singleton and the union together, at `R ∩ (S°S) ⊑ Q`. -/
+public theorem thinAlg_elim_est (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
     (hQ : R ∩ (S° ≫ S) ⊑ Q) :
-    Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thinRel Q := by
+    Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ V ≫ powerRel (Λ S) ≫ powerRel (thinRel Q) ≫ bigUnion := by
   have hmapτ : Map (singletonMap : A ⟶ PowerAllegory.powerObj A) := Λ_is_map' (𝟙 A)
   -- `P τ ≫ union = id` (`union·Pτ = id`, the monad law)
   have hτ : powerRel (singletonMap : A ⟶ PowerAllegory.powerObj A) ≫ bigUnion
@@ -87,16 +89,21 @@ public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
   have h83 : (Λ S ≫ est R) ≫ singletonMap ⊑ Λ S ≫ thinRel Q := by
     rw [Cat.assoc]
     exact Λ_comp_est_comp_singletonMap_le_thinRel hQ
-  have hstep : powerRel (Λ S ≫ est R) ⊑ powerRel (Λ S ≫ thinRel Q) ≫ bigUnion := by
-    have e1 : powerRel ((Λ S ≫ est R) ≫ singletonMap) ≫ bigUnion
-        = powerRel (Λ S ≫ est R) := by
-      rw [powerRel_comp, Cat.assoc, hτ, Cat.comp_id]
-    rw [← e1]
-    exact comp_mono_right (powerRel_mono h83) bigUnion
-  rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion V S, Cat.assoc, Cat.assoc]
-  refine comp_mono_left (Λ V) (le_trans hstep ?_)
-  rw [powerRel_comp, Cat.assoc]
-  exact comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q)
+  have e1 : powerRel ((Λ S ≫ est R) ≫ singletonMap) ≫ bigUnion = powerRel (Λ S ≫ est R) := by
+    rw [powerRel_comp, Cat.assoc, hτ, Cat.comp_id]
+  refine comp_mono_left (Λ V) ?_
+  rw [← e1, ← Cat.assoc, ← powerRel_comp]
+  exact comp_mono_right (powerRel_mono h83) bigUnion
+
+/-- **§8.2's algebra elimination** (book p.198, the calculation "in which the term `thin Q` is
+    eliminated"): split the thinning algebra's source as `V ≫ S`, and the `thin Q` at its end
+    collapses to a `min R` under the power functor —
+    `thin Q·Λ(S·V) ⊒ P(min R·ΛS)·ΛV`, mirrored
+    `Λ V ≫ P (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thin Q`: `thinAlg_elim_est` then `thinAlg_elim_thin`. -/
+public theorem thinAlg_elim (V : C ⟶ w) (S : w ⟶ A) {Q R : A ⟶ A}
+    (hQ : R ∩ (S° ≫ S) ⊑ Q) :
+    Λ V ≫ powerRel (Λ S ≫ est R) ⊑ Λ (V ≫ S) ≫ thinRel Q :=
+  le_trans (thinAlg_elim_est V S hQ) (thinAlg_elim_thin V S Q)
 
 /-! ## The layered network's algebra is a BIFUNCTOR at `∋` and the structure map
 
@@ -135,6 +142,26 @@ public theorem thinning_paths_step (hFr : F.PreservesRecip)
   rw [← e]
   exact thinning_est hFr' I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
+/-- **The first row of the p.198 algebra chain at the layered network**: `thinAlg_elim_thin` at
+    the split `V ≜ F(∋,𝟙)`, `S ≜ F(𝟙,∋)α`, whose composite is `F(∋,∋)α` by interchange. -/
+public theorem thinning_paths_alg_thin {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
+    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+        ≫ powerRel (thinRel Q) ≫ bigUnion
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+  have h := thinAlg_elim_thin (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) (F.map (𝟙 A) (∋ B) ≫ α) Q
+  rwa [show F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (𝟙 A) (∋ B) ≫ α
+      = F.map (∋ A) (∋ B) ≫ α by rw [← Cat.assoc, F.interchange]] at h
+
+/-- **The second row of the p.198 algebra chain at the layered network**: `thinAlg_elim_est` at
+    the same split, at `R ∩ (S°S) ⊑ Q` for `S ≜ F(𝟙,∋)α`. -/
+public theorem thinning_paths_alg_est {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
+    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
+    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      ⊑ Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+        ≫ powerRel (thinRel Q) ≫ bigUnion :=
+  thinAlg_elim_est _ _ hQ
+
 /-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
     one the program runs —
     `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
@@ -145,10 +172,8 @@ public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-  have h := thinAlg_elim (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
-    (F.map (𝟙 A) (∋ B) ≫ α) hQ
-  rwa [← Cat.assoc, F.interchange (∋ A) (∋ B)] at h
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q :=
+  le_trans (thinning_paths_alg_est hQ) (thinning_paths_alg_thin Q)
 
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —
