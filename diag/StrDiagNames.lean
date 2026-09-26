@@ -303,6 +303,13 @@ open Lean PrettyPrinter in
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
   | _ => throw ()
 
+-- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
+def delabSegmentT : Delab := `($(mkIdent `T))
+open Lean PrettyPrinter Delaborator in
+@[delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
+
 -- The coproduct injections applied to a point are applications, so they take parentheses.
 notation:max "inl(" x ")" => Sum.inl x
 notation:max "inr(" x ")" => Sum.inr x
@@ -537,7 +544,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 /-- `H≜⦇T⦈°⦇h⦈` is the note's ONE bead `H`: which coalgebra and algebra it is built from is what
     the definition above the table states, not what the wire is labelled with. -/
-@[app_unexpander H] def unexpandH : Unexpander | _ => `($(mkIdent `H))
+-- Applied to points, `H` keeps them: `H([a,b,c],ys)` is a claim about one input, not about `H`.
+@[app_unexpander H] def unexpandH : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `H) $x $args*)
+  | _ => `($(mkIdent `H))
 
 -- A SECTION'S PARAMETERS ARE THE PANEL'S REGION, NOT PART OF THE BEAD'S NAME.  `gen`, `Q` and
 -- `paths` are stated over the cylinder's fixed data (`I`, `moves`, `trans`, `zip`, …), which every

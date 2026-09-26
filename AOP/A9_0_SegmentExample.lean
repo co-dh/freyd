@@ -131,26 +131,26 @@ public theorem H_abc (a b c : Nat) (ys : ConsList Unit Nat) :
       · obtain ⟨s4, rest3, rfl, y3, hs4, hr3⟩ := partition_cons.mp hr2
         obtain ⟨rfl, rfl⟩ := cappend_eq_nil.mp hs4
         obtain rfl := partition_nil.mp hr3
-        simp [cmap, csum]
+        exact Or.inr (Or.inr (Or.inr rfl))
       · obtain ⟨rfl, rfl⟩ := cappend_eq_nil.mp hs3
         obtain rfl := partition_nil.mp hr2
-        simp [cmap, csum]
+        exact Or.inr (Or.inl rfl)
     · rcases cappend_eq_cons.mp hs1 with ⟨rfl, rfl⟩ | ⟨s2, rfl, hs2⟩
       · obtain ⟨s4, rest3, rfl, y3, hs4, hr3⟩ := partition_cons.mp hr
         obtain ⟨rfl, rfl⟩ := cappend_eq_nil.mp hs4
         obtain rfl := partition_nil.mp hr3
-        simp [cmap, csum]
+        exact Or.inr (Or.inr (Or.inl rfl))
       · obtain ⟨rfl, rfl⟩ := cappend_eq_nil.mp hs2
         obtain rfl := partition_nil.mp hr
-        simp [cmap, csum, Nat.add_assoc]
+        exact Or.inl (by rw [Nat.add_assoc]; rfl)
   · rintro (rfl | rfl | rfl | rfl)
     · exact ⟨.cons (.cons a (.cons b (.cons c (.wrap ())))) (.wrap ()),
-        hp _ rfl ⟨trivial, trivial⟩, by simp [cmap, csum, Nat.add_assoc]⟩
+        hp _ rfl ⟨trivial, trivial⟩, by rw [Nat.add_assoc]; rfl⟩
     · exact ⟨.cons (.cons a (.wrap ())) (.cons (.cons b (.cons c (.wrap ()))) (.wrap ())),
-        hp _ rfl ⟨trivial, trivial, trivial⟩, by simp [cmap, csum]⟩
+        hp _ rfl ⟨trivial, trivial, trivial⟩, rfl⟩
     · exact ⟨.cons (.cons a (.cons b (.wrap ()))) (.cons (.cons c (.wrap ())) (.wrap ())),
-        hp _ rfl ⟨trivial, trivial, trivial⟩, by simp [cmap, csum]⟩
+        hp _ rfl ⟨trivial, trivial, trivial⟩, rfl⟩
     · exact ⟨.cons (.cons a (.wrap ())) (.cons (.cons b (.wrap ())) (.cons (.cons c (.wrap ())) (.wrap ()))),
-        hp _ rfl ⟨trivial, trivial, trivial, trivial⟩, by simp [cmap, csum]⟩
+        hp _ rfl ⟨trivial, trivial, trivial, trivial⟩, rfl⟩
 
 end Freyd.Alg.RelSet.Segment
