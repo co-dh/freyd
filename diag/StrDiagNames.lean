@@ -43,7 +43,7 @@ import AOP.A8_6_Tour
 -- row it cannot draw.
 import Freyd.S2_50
 -- `diag_unfold`, declared where it is read: an attribute is usable only below the module declaring it.
-import diag.tool.ExprReader
+import diag.tool.Tags
 
 namespace Freyd.Alg
 
@@ -80,7 +80,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Edit.empty RelSet.Code.null
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
--- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/ExprReader.lean`'s,
+-- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
@@ -720,7 +720,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
 
 -- WHAT THE CASE STUDIES' MIDDLE BEAD OPENS.  The note draws each algebra's own coproduct —
 -- `⦇[nil,cons](within(w)) ∪ [nil,π₂]⦈`, `⦇[wrap wrap,new ∪ (glue (ok w))]⦈` — where the name
--- `Salg` says nothing; `diag_unfold` is `diag/tool/ExprReader.lean`'s, as for `tour` above.
+-- `Salg` says nothing; `diag_unfold` is `diag/tool/Tags.lean`'s, as for `tour` above.
 attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
