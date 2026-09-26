@@ -5,7 +5,7 @@
   decomposition of the input (`h·FX·min Q·ΛT°`) still refines the global optimisation spec
   `min R·ΛH`, `H = ⦇h⦈·⦇T⦈°` — greedy as the extreme case of dynamic programming.  Using it on
   a concrete problem needs (cf. `leet.L322_dp`, the DP analogue done by hand): the abstract
-  hypothesis discharges (`Map h`, `MonotonicAlg`, transitivity, and the thinning bound `hQ`),
+  hypothesis discharges (`Map h`, `MonoAlg`, transitivity, and the thinning bound `hQ`),
   an executable-side bridge (the greedy PROGRAM's graph lands inside `μ(greedy body)`), and a
   pointwise readback of the abstract spec.  None of that plumbing is problem-specific.
 
@@ -292,8 +292,8 @@ theorem hV (P : GreedyDP L E S W) : P.Vp° ≫ P.specH ⊑ P.specH ≫ P.Rp° :=
   rw [hx]
   exact hR
 
-/-- `MonotonicAlg h R` for the pattern functor, via Prop 9.4(i) (`birelator_fixLeft_mono`). -/
-theorem hmono (P : GreedyDP L E S W) : MonotonicAlg (F := CL.F L E) P.hAlg P.Rp := by
+/-- `MonoAlg h R` for the pattern functor, via Prop 9.4(i) (`birelator_fixLeft_mono`). -/
+theorem hmono (P : GreedyDP L E S W) : Freyd.Alg.MonoAlg (F := CL.F L E) P.hAlg P.Rp := by
   have h := birelator_fixLeft_mono (G := sumBirel L) (e := CL.dE E)
     (h := P.hAlg) (R := P.Rp) (U := P.Up) P.hUrefl P.hU
   show (CL.F L E).map P.Rp ≫ P.hAlg ⊑ P.hAlg ≫ P.Rp
@@ -327,7 +327,7 @@ theorem greedy_refine (P : GreedyDP L E S W) :
     rwa [Allegory.recip_comp] at h0
   exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
     (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn)
-    ((monotonicAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
+    ((Freyd.Alg.monoAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 
 /-! ## The derived program and the executable-side bridge -/
 

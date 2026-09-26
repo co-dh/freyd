@@ -161,10 +161,10 @@ public theorem map_sort_comp_listcp_le_step2 {f : F.obj A ⟶ A} (hf : Map f) {P
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listf : L.obj (F.obj A) ⟶ L.obj A} {filterp : L.obj A ⟶ L.obj A}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : MonotonicAlg f P) :
+    (hmono : Freyd.Alg.MonoAlg f P) :
     cpMap F A ≫ sortF (F.map P) ≫ listf ≫ filterp
       ⊑ cpMap F A ≫ sortF (f ≫ P ≫ f°) ≫ listf ≫ filterp :=
-  comp_mono_left _ (comp_mono_right (hsortF ((monotonicAlg_iff_sandwich hf).mp hmono)) _)
+  comp_mono_left _ (comp_mono_right (hsortF ((Freyd.Alg.monoAlg_iff_sandwich hf).mp hmono)) _)
 
 /-- Step 3, (8.8): the sort walks past `list f`. -/
 public theorem map_sort_comp_listcp_le_step3 {f : F.obj A ⟶ A} {P : A ⟶ A}
@@ -212,7 +212,7 @@ public theorem map_sort_comp_listcp_le
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
     {filterp : L.obj A ⟶ L.obj A}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : MonotonicAlg f P)
+    (hmono : Freyd.Alg.MonoAlg f P)
     (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
     (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P)
     (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
@@ -244,7 +244,7 @@ public theorem sortedAlg_fusion_step1
     {filterp₁ filterp₂ : L.obj A ⟶ L.obj A} {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)}
     {Pr : RelProd (L.obj A) (L.obj A)} {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
     (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
@@ -333,7 +333,7 @@ public theorem sortedAlg_fusion
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
     (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
@@ -367,7 +367,7 @@ public theorem thinningList_step1 (I : InitialAlgebra F)
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
     (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
@@ -400,12 +400,12 @@ public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
 public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {f₁ f₂ S : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hm₁ : MonotonicAlg (f₁ ≫ p₁) Q) (hm₂ : MonotonicAlg (f₂ ≫ p₂) Q)
+    (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
       ⊑ Λ (relCata S) ≫ est R := by
   subst hS
-  have hmonoS : MonotonicAlg ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) Q := by
+  have hmonoS : Freyd.Alg.MonoAlg ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) Q := by
     show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
     exact union_mono hm₁ hm₂
@@ -432,9 +432,9 @@ public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hm₁ : MonotonicAlg (f₁ ≫ p₁) Q) (hm₂ : MonotonicAlg (f₂ ≫ p₂) Q)
+    (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : MonotonicAlg f₁ P) (hmono₂ : MonotonicAlg f₂ P)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
     (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
     (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
     (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)

@@ -453,10 +453,10 @@ the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an al
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f°·⊣f·` at `X:=F(R)f`,
 `Y:=R`], #h(4pt) equivalently #h(4pt)
-// lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+// lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
 `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
 ].
-// lean:AOP.A7_2.monotonicAlg_iff_sandwich@f82f1b18
+// lean:AOP.A7_2.monoAlg_iff_sandwich@5bcca5c8
 
 `(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -467,17 +467,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
 // functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
 // the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
-#let mon-hm-l = lean("Freyd.Alg.MonotonicAlg.lhs")
-#let mon-hm-r = lean("Freyd.Alg.MonotonicAlg.rhs")
+#let mon-hm-l = lean("Freyd.Alg.MonoAlg.lhs")
+#let mon-hm-r = lean("Freyd.Alg.MonoAlg.rhs")
 
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
-  leancd("Freyd.Alg.MonotonicAlg"),
+  leancd("Freyd.Alg.MonoAlg"),
   row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
 )
-// lean:AOP.A7_2.MonotonicAlg@26944450
+// lean:AOP.A7_2.MonoAlg@26944450
 ]<mon-str>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
@@ -541,9 +541,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
      `R` reflexive
-      // lean:AOP.A7_2.distributes_of_monotonicAlg@633ae757
+      // lean:AOP.A7_2.distributes_of_monoAlg@437ca1ee
  ]],
-      // lean:AOP.A7_2.monotonicAlg_of_distributes@6d74126d
+      // lean:AOP.A7_2.monoAlg_of_distributes@c15c0757
 
   [#vstep([], trow(ma-Fest-lam, ma-lam), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
@@ -564,9 +564,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
     (IFF, trow(ma-R, ma-Rplain-R),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
-     // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+     // lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
     ]),
-    // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
+    // lean:AOP.A7_2.monoAlg_recip_iff@d760ac4d
   )],
 )]<mon-thm71>
 
@@ -593,7 +593,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@21400acf
+     // lean:AOP.A7_2.greedy@aad4253e
   [],
 
   [#vstep(IFF, [],
@@ -825,7 +825,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch, which no row above draws, is
   `nil⊑nil R°`.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono@469bb647
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono@edba3e4e
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -1027,7 +1027,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
      branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
-    // lean:AOP.A7_7_MSS.mss_mono@f623d6fe
+    // lean:AOP.A7_7_MSS.mss_mono@dcf943db
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`]),
 
   [#hchain(fill: true,
@@ -1176,7 +1176,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[`(𝟙×R°)(π₂ ∪ (p×𝟙) cons)⊑(π₂ ∪ (p×𝟙) cons)R°` \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
-     // lean:AOP.A7_7_Filter.filter_mono@4095af88
+     // lean:AOP.A7_7_Filter.filter_mono@4da97239
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
@@ -1648,7 +1648,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   lean-chain(
     (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
-      // lean:AOP.A7_2.greedy@21400acf
+      // lean:AOP.A7_2.greedy@aad4253e
       src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
         // greedy row: Theorem 7.2
         `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono]),

@@ -371,7 +371,7 @@ public theorem allFitP_glue_iff (hlen : ∀ a, 0 ≤ len a) (a : Word) (p : Para
 /-- **para-mono**, first row: `(𝟙×Q) new ⊑ new Q` — opening a new line adds the same waste to
     both paragraphs and gives them the same first line. -/
 public theorem para_mono_new :
-    MonotonicAlg (F := F Word Word) (graph (newAlgFn (Word := Word))) (Q len w) :=
+    Freyd.Alg.MonoAlg (F := F Word Word) (graph (newAlgFn (Word := Word))) (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = newAlgFn v := hr
@@ -398,7 +398,7 @@ public theorem para_mono_new :
 /-- **para-mono**, second row: `(𝟙×Q)(glue (ok w)) ⊑ glue (ok w)Q` — `Q` pins the first line,
     which is the only thing `glue` changes and the only thing `waste` reads about it. -/
 public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
-    MonotonicAlg (F := F Word Word) (graph glueAlgFn ≫ ok (len := len) w) (Q len w) :=
+    Freyd.Alg.MonoAlg (F := F Word Word) (graph glueAlgFn ≫ ok (len := len) w) (Q len w) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, s, hs, hsr, hok⟩ := h
     obtain rfl : s = glueAlgFn v := hs
@@ -465,7 +465,7 @@ public theorem para_mono_glue (hlen : ∀ a, 0 ≤ len a) :
     paragraph `[10]·[0]` wastes nothing and `[9]·[0]` wastes 1, yet gluing a length-0 word onto
     each reverses that — the first line overflows to 11, the second lands exactly on 10. -/
 public theorem para_mono_glue_false :
-    ¬ MonotonicAlg (F := F Int Int) (graph glueAlgFn) (R (fun i : Int => i) 10) := by
+    ¬ Freyd.Alg.MonoAlg (F := F Int Int) (graph glueAlgFn) (R (fun i : Int => i) 10) := by
   intro h
   have hRxy : wasteFn (fun i : Int => i) 10
         (ConsList.cons (ConsList.wrap (10 : Int)) (ConsList.wrap (ConsList.wrap (0 : Int))))
@@ -493,14 +493,14 @@ public theorem para_mono_glue_false :
 /-- **para-defn**, `P ≜ ⊤`: nothing is asked of the sorting order, so both algebras are
     monotonic on it. -/
 public theorem para_sort_new :
-    MonotonicAlg (F := F Word Word) (graph (newAlgFn (Word := Word)))
+    Freyd.Alg.MonoAlg (F := F Word Word) (graph (newAlgFn (Word := Word)))
       (topMor (dPara Word) (dPara Word)) :=
-  graph_monotonicAlg_topMor _
+  Freyd.Alg.graph_monoAlg_topMor _
 
 public theorem para_sort_glue :
-    MonotonicAlg (F := F Word Word) (graph (glueAlgFn (Word := Word)))
+    Freyd.Alg.MonoAlg (F := F Word Word) (graph (glueAlgFn (Word := Word)))
       (topMor (dPara Word) (dPara Word)) :=
-  graph_monotonicAlg_topMor _
+  Freyd.Alg.graph_monoAlg_topMor _
 
 /-! ## `para-laws` -/
 
@@ -597,7 +597,7 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
     ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 (listRelator.obj (dPara Word))) (listf₂ ≫ filterp₂)
         ≫ mergeP ≫ thinlist⦈ ≫ minlist
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
-  have hm₁ : MonotonicAlg (F := F Word Word)
+  have hm₁ : Freyd.Alg.MonoAlg (F := F Word Word)
       (graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) (Q len w) := by
     rw [Cat.comp_id]; exact para_mono_new
   have h89₁ : sortP ≫ 𝟙 (listRelator.obj (dPara Word)) ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by

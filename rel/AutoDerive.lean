@@ -5,7 +5,7 @@
   SAME derivation: a snoc-list fold on a pair state (running "current" `e`, running "best" `b`),
   correct by the greedy theorem on a Pareto product order (`A7_4_Horner.horner_correct`).  Each
   file hand-proves ~100 lines of identical relational side conditions (order transitivity,
-  `MonotonicAlg`, the greedy-step refinement `alg ⊑ ΛS·max R`, fold = catamorphism, generator
+  `MonoAlg`, the greedy-step refinement `alg ⊑ ΛS·max R`, fold = catamorphism, generator
   totality).  Those proofs never touch the problem: they consume only componentwise
   monotonicity / selection / domination facts about the two coordinate operations.
 
@@ -155,7 +155,7 @@ theorem pareto_trans : P.pareto ≫ P.pareto ⊑ P.pareto := by
   exact ⟨P.ord_trans h1a h2a, Int.le_trans h2b h1b⟩
 
 /-- The deterministic step is MONOTONIC on the Pareto order. -/
-theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.pareto := by
+theorem alg_mono : Freyd.Alg.MonoAlg (F := F L E) P.alg P.pareto := by
   show (F L E).map P.pareto ≫ P.alg ⊑ P.alg ≫ P.pareto
   rw [le_iff]; rintro u w ⟨u', hFR, rfl⟩
   refine ⟨P.algFn u, rfl, ?_⟩

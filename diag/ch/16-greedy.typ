@@ -76,7 +76,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
  #src[]: one character of input is
       // lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608
       decided at each step. `F(⊤,R)α⊑αR`#src[].
-      // lean:AOP.A10_2_Detab.entab_mono@b7c30f2e
+      // lean:AOP.A10_2_Detab.entab_mono@1561c867
       `detab prefix⊑R° detab` is
  FALSE #src[,
       // lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9

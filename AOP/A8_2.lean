@@ -51,9 +51,9 @@ namespace Freyd.Alg
 
 /-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
     every candidate list counts as sorted. -/
-public theorem graph_monotonicAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+public theorem graph_monoAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
     (f : (F.obj A).carrier → A.carrier) :
-    MonotonicAlg (F := F) (RelSet.graph f) (topMor A A) :=
+    Freyd.Alg.MonoAlg (F := F) (RelSet.graph f) (topMor A A) :=
   RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
@@ -120,7 +120,7 @@ public theorem thinning_paths_step (hFr : F.PreservesRecip)
     (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hmono : MonotonicAlg
+    (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q) :
     relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
@@ -162,7 +162,7 @@ public theorem thinning_paths (hFr : F.PreservesRecip)
     (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
-    (hmono : MonotonicAlg
+    (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q)
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
     relCata (Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
@@ -266,7 +266,7 @@ public theorem headAlg_map : Map (headAlg (V := V)) := RelSet.graph_map _
     path: equal heads make the new edge cost the same, and the rest is the assumption.  On `R`
     alone it fails — `wt(a,head q)` can be arbitrarily large — which is why `Q` records the head. -/
 public theorem pathAlg_monotonic (wt : V → V → Nat) :
-    MonotonicAlg (F := CL.F (V → Prop) (V → Prop)) (pathAlg (V := V)) (pathQ wt) := by
+    Freyd.Alg.MonoAlg (F := CL.F (V → Prop) (V → Prop)) (pathAlg (V := V)) (pathQ wt) := by
   refine le_iff.mpr ?_
   rintro u p ⟨u', hu, hp⟩
   cases u with

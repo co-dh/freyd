@@ -19,7 +19,7 @@
     extension of a dominated one —
 
   plus seven one-line order facts.  From these the drivers discharge every side condition of
-  THEOREM 8.1 (`Qm` transitive/reflexive, `MonotonicAlg gen Qm°`, `Q ⊑ R`, …), build the
+  THEOREM 8.1 (`Qm` transitive/reflexive, `MonoAlg gen Qm°`, `Q ⊑ R`, …), build the
   program `foldFn` (extend-all + `thinList` prune) and its fold-bridge into
   `⦇Λ(S·F∈)·thin Q⦈`, and emit:
 
@@ -172,7 +172,7 @@ structure ThinBest (L E St : Type) where
   rDec_t : ∀ {s t}, rDec s t = true → R t s
   /-- ... and `false` means `t` is at least as good as `s` (totality of the comparison). -/
   rDec_f : ∀ {s t}, rDec s t = false → R s t
-  /-- MONOTONICITY (the §8.1 insight, = `MonotonicAlg S Q°`): a dominating state can match
+  /-- MONOTONICITY (the §8.1 insight, = `MonoAlg S Q°`): a dominating state can match
       any extension of a dominated one. -/
   step_mono : ∀ {s s' : St} (e : E) {y : St}, Q s' s → y ∈ stepOne s' e →
     ∃ y' ∈ stepOne s e, Q y y'
@@ -230,7 +230,7 @@ theorem Rm_trans_le : P.Rm ≫ P.Rm ⊑ P.Rm := by
 
 /-- The generator is MONOTONIC on `Q°` (THEOREM 8.1's hypothesis): `step_mono` on the `snoc`
     summand, reflexivity of `Q` on the leaf summand. -/
-theorem gen_mono : MonotonicAlg (F := F L E) P.gen P.Qm° := by
+theorem gen_mono : Freyd.Alg.MonoAlg (F := F L E) P.gen P.Qm° := by
   show (F L E).map P.Qm° ≫ P.gen ⊑ P.gen ≫ P.Qm°
   rw [le_iff]; rintro u y ⟨u', hF, hgen⟩
   cases u with

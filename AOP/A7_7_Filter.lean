@@ -193,7 +193,7 @@ public theorem filter_mono_cons (p : A → Bool) :
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
 public theorem filter_mono (p : A → Bool) :
-    MonotonicAlg (F := F Unit A) (Salg p) lenLE° := by
+    Freyd.Alg.MonoAlg (F := F Unit A) (Salg p) lenLE° := by
   show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
   apply le_iff.mpr
   intro u ws h

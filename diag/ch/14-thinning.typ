@@ -202,7 +202,7 @@ row((
      // thinning-of-reduce row: Theorem 8.1, p. 195
      `S` monotonic on `Q`, `Q` a preorder
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning@0c230c31
+     // lean:AOP.A8_1.thinning@d254d08d
   // A conjunction has no shape in either calculus, so it heads the chain as text.
   [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
    `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
@@ -228,7 +228,7 @@ row((
      // thinning-est row: Corollary 8.1
      `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning_est@a5f0005d
+     // lean:AOP.A8_1.thinning_est@8b7169bd
   lean-chain(
     // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
     (none, "Freyd.Alg.thinning_est_step1.lhs", []),
@@ -269,7 +269,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [`S head⊑[𝟙,π₁]` #h(4pt) #src[`S≜F(𝟙,∋)α`]],
   [`S head` is simple, which gives `R∩(S°S)⊑Q`: between two paths `S` builds from one argument,
    equal cost and equal head already means `Q`],
-  // lean:AOP.A8_2.pathAlg_monotonic@fd5852aa lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
+  // lean:AOP.A8_2.pathAlg_monotonic@7f6f2311 lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
 )]<path-mono>
 
 // B&dM §8.2, p. 198.  The `E` the transpose opens is born OUTSIDE the reduce in the specification
@@ -280,7 +280,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2.thinning_paths@bfee1a14
+     // lean:AOP.A8_2.thinning_paths@a07b5366
   lean-chain(
     (none, "Freyd.Alg.thinning_paths_step.rhs", src[`=` #frc([`L(∋)`])` est(R)`]),
     // thinAlg-elim row: Corollary 8.1
@@ -442,7 +442,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // thinningList row: Theorem 8.2, p. 203
      at @thinlist-defn's binary thinning data.
  ]],
-     // lean:AOP.A8_3.thinningList@06fe93ac
+     // lean:AOP.A8_3.thinningList@2a453b80
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -531,9 +531,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 `Q≜R∩(weight≤weight°)` #src[], #h(4pt)
 // lean:AOP.A8_4_Knapsack.Q_eq@22acbe51
 `P≜R` #src[,
-// lean:AOP.A8_4_Knapsack.knap_sort_cons@2219de33
+// lean:AOP.A8_4_Knapsack.knap_sort_cons@dce0f4b3
 ].
-// lean:AOP.A8_4_Knapsack.knap_sort_drop@ab5c746c
+// lean:AOP.A8_4_Knapsack.knap_sort_drop@23381fc8
 
 `FA=1+Item×A`, #h(4pt) `listcp=wrap+cpr`, #h(4pt) `g₁≜list([nil,cons]) filter(within w)`
 #h(4pt) `=[list(nil),h₁]`, #h(4pt) `g₂≜list([nil,π₂])=[list(nil),h₂]`.
@@ -551,9 +551,9 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
   [`(𝟙×Q) (cons (within w))⊑cons (within w)Q` \ `(𝟙×Q)π₂⊑π₂Q`
  #src[,
-   // lean:AOP.A8_4_Knapsack.knap_mono_cons@978d716e
+   // lean:AOP.A8_4_Knapsack.knap_mono_cons@d44e5999
  ]],
-   // lean:AOP.A8_4_Knapsack.knap_mono_drop@b49841b3
+   // lean:AOP.A8_4_Knapsack.knap_mono_drop@fce8ac80
   [both halves are monotonic on `Q` once ties in value are broken by weight],
 )]<knap-mono>
 
@@ -614,9 +614,9 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 `Q≜R∩(head head°)` #src[], #h(4pt)
 // lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf
 `P≜⊤` #src[,
-// lean:AOP.A8_5_Paragraph.para_sort_new@30222bce
+// lean:AOP.A8_5_Paragraph.para_sort_new@79ca91ea
 ].
-// lean:AOP.A8_5_Paragraph.para_sort_glue@bd4641b6
+// lean:AOP.A8_5_Paragraph.para_sort_glue@01887a30
 
 `g₁≜list([wrap wrap,new])`, #h(4pt) `g₂≜list([wrap wrap,glue]) filter(ok w)`, #h(4pt)
 `start≜wrap wrap wrap`, #h(4pt) `h₁≜list(new)`, #h(4pt) `h₂≜list(glue) filter(ok w)`.
@@ -633,9 +633,9 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
    greedy algorithm solves this],
   [`(𝟙×Q) new⊑new Q` \ `(𝟙×Q) (glue (ok w))⊑glue (ok w)Q` \ #src[`cons` monotonic on
  `collect≤collect°`. ,
-   // lean:AOP.A8_5_Paragraph.para_mono_new@d0ba9ffb
+   // lean:AOP.A8_5_Paragraph.para_mono_new@7bd0f665
  ]],
-   // lean:AOP.A8_5_Paragraph.para_mono_glue@0b67b0eb
+   // lean:AOP.A8_5_Paragraph.para_mono_glue@d88580bd
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
   [`merge ⊤=cat`; #h(4pt) `P≜head prefix head°` also serves],
   [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
@@ -703,9 +703,9 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 #src[], #h(4pt)
 // lean:AOP.A8_6_Tour.R_eq@15ad4adc
 `Q≜R∩(next2 next2°)∩(head2 head2°)`, #h(4pt) `P≜⊤` #src[,
-// lean:AOP.A8_6_Tour.tour_sort_dropl@3dddee2e
+// lean:AOP.A8_6_Tour.tour_sort_dropl@0dc4ff40
 ], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
-// lean:AOP.A8_6_Tour.tour_sort_dropr@12e55048
+// lean:AOP.A8_6_Tour.tour_sort_dropr@f9356ac3
 `g₂≜list([start,dropr])`.
 ]]<tour-defn>
 
@@ -720,9 +720,9 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
    of both lists],
   [`(𝟙×Q) dropl⊑dropl Q` \ `(𝟙×Q) dropr⊑dropr Q`
  #src[,
-   // lean:AOP.A8_6_Tour.tour_mono_dropl@72fb7ce1
+   // lean:AOP.A8_6_Tour.tour_mono_dropl@a80a947d
  ]],
-   // lean:AOP.A8_6_Tour.tour_mono_dropr@950fdec0
+   // lean:AOP.A8_6_Tour.tour_mono_dropr@327889aa
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
 )]<tour-mono>

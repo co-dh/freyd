@@ -88,7 +88,7 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` (`hτ`) in the lower-bound half. -/
 public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.obj A ⟶ A}
     {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hHfix : T° ≫ F.map H ≫ h = H)
     (hstrict : T° ≫ F.map (H ∪ τ) ≫ h ⊑ H ∪ τ)
     (hτ : τ° ≫ topHom B A ⊑ R°) :
@@ -182,7 +182,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
               ⊑ h° ≫ F.map R° ≫ h := by
             rw [← Cat.assoc (F.map (H°)) (F.map (Λ (H ∪ τ) ≫ est R)) h]
             exact comp_mono_left _ (comp_mono_right hFRM h)
-          exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono)
+          exact le_trans hx ((Freyd.Alg.monoAlg_iff_conj hh).mp hmono)
         have hre : (h° ≫ F.map (H°)) ≫ (F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R°
             = (h° ≫ F.map (H°) ≫ F.map (Λ (H ∪ τ) ≫ est R) ≫ h) ≫ R° := by
           simp only [Cat.assoc]
@@ -218,7 +218,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
 public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip)
     (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
         ⊑ ((relCata T)° ≫ relCata h) ∪ τ)
     (hτ : τ° ≫ topHom B A ⊑ R°) :

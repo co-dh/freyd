@@ -28,7 +28,7 @@
 
   — `memo v` is a `le`-minimum of the hylomorphism values `Hpt v` (all decompose-and-refold
   results), with `top` exactly when there are none — every abstract hypothesis of
-  `dynamic_programming_inf` (`Map h`, `MonotonicAlg`, `R·R ⊑ R`, `hstrict`, `hτ`), the
+  `dynamic_programming_inf` (`Map h`, `MonoAlg`, `R·R ⊑ R`, `hstrict`, `hτ`), the
   executable-side bridge `memo ⊑ μ(dpBodyInf)` and the spec readback discharged internally.
 
   Two further reusable layers:
@@ -234,8 +234,8 @@ theorem ord_trans : P.ord° ≫ P.ord° ⊑ P.ord° := by
   rintro y x ⟨z, hzy, hxz⟩
   exact P.le_trans hxz hzy
 
-/-- `MonotonicAlg h R`, from `le_refl` (base) and `hstep_mono` (step). -/
-theorem alg_mono : MonotonicAlg (F := F L E) P.alg P.ord° := by
+/-- `MonoAlg h R`, from `le_refl` (base) and `hstep_mono` (step). -/
+theorem alg_mono : Freyd.Alg.MonoAlg (F := F L E) P.alg P.ord° := by
   show (F L E).map P.ord° ≫ P.alg ⊑ P.alg ≫ P.ord°
   apply le_iff.mpr
   rintro u x ⟨w, hFw, hx⟩

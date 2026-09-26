@@ -147,18 +147,18 @@ public theorem dynamic_programming_upper_step4 {h : F.obj B ⟶ B} {R : B ⟶ B}
     (F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2) _)
 
 /-- (9.3), fifth step: the assumption that `h` is monotonic on `R°`, in its conjugated form
-    `h° F(R°) h ⊑ R°` (`monotonicAlg_iff_conj`). -/
+    `h° F(R°) h ⊑ R°` (`monoAlg_iff_conj`). -/
 public theorem dynamic_programming_upper_step5 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
-    (hmono : MonotonicAlg h R°) :
+    (hmono : MonoAlg h R°) :
     h° ≫ F.map (R°) ≫ h ≫ R° ⊑ R° ≫ R° := by
-  have e := comp_mono_right ((monotonicAlg_iff_conj hh).mp hmono) (R°)
+  have e := comp_mono_right ((monoAlg_iff_conj hh).mp hmono) (R°)
   simpa only [Cat.assoc] using e
 
 /-- **(9.3)** (B&dM p.221): `min R·P(h·FM)·ΛT°·H° ⊆ R`, mirrored — with `M ≜ Λ(H) est(R)`,
     whatever the dynamic-programming step returns is `R`-related to everything `H` returns from
     the same input.  The book's five hints are steps 1–5, then transitivity `htrans`. -/
 public theorem dynamic_programming_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
-    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
     H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
@@ -177,7 +177,7 @@ public theorem dynamic_programming_upper (hFr : F.PreservesRecip) {h : F.obj B �
     variants all instantiate `H := ⦇h⦈·⦇T⦈°`.  The two inclusions (9.2) and (9.3) of the book's
     proof are exactly the components of `min`'s universal property (`le_Λ_comp_est_iff`). -/
 public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R°)
+    {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R :=
   le_Λ_comp_est_iff.mpr
@@ -191,7 +191,7 @@ public theorem dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.o
     By Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_prefixed`. -/
 public theorem dynamic_programming (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T)))
@@ -321,10 +321,10 @@ public theorem dynamic_programming_thin_step9 {h : F.obj B ⟶ B} {R : B ⟶ B} 
 
 /-- (9.3) with thinning, step 10: `h` monotonic on `R`, in the conjugated form `h°F(R°)h⊑R°`. -/
 public theorem dynamic_programming_thin_step10 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
-    (hmono : MonotonicAlg h R°) :
+    (hmono : MonoAlg h R°) :
     R° ≫ h° ≫ F.map R° ≫ h ≫ R° ⊑ R° ≫ R° ≫ R° :=
   comp_mono_left _ (by simpa only [Cat.assoc] using
-    (comp_mono_right ((monotonicAlg_iff_conj hh).mp hmono) R°))
+    (comp_mono_right ((monoAlg_iff_conj hh).mp hmono) R°))
 
 /-- (9.3) with thinning, step 11: `R` transitive, used twice. -/
 public theorem dynamic_programming_thin_step11 {R : B ⟶ B} (htrans : R° ≫ R° ⊑ R°) :
@@ -334,7 +334,7 @@ public theorem dynamic_programming_thin_step11 {R : B ⟶ B} (htrans : R° ≫ R
 /-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored — steps 3–11. -/
 public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
-    (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+    (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
@@ -364,7 +364,7 @@ public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.ob
     `est` splits into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hQ : Q ≫ F.map (H T h) ≫ h
         ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
@@ -404,7 +404,7 @@ public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj B ⟶ B}
 
 theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonotonicAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
+    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   le_trans mu_le_mu_thinRel_id
@@ -413,14 +413,14 @@ theorem dynamic_programming_of_thin (hFr : F.PreservesRecip) (I : InitialAlgebra
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
 /-- Proposition 9.2, first step: the assumption `h cost = F(cost) k`. -/
-public theorem monotonicAlg_of_cost_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+public theorem monoAlg_of_cost_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
     {cost : A ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
     F.map R ≫ h ≫ cost = F.map R ≫ F.map cost ≫ k := by
   rw [hch]
 
 /-- Proposition 9.2, second step: `R cost ⊑ cost leq` (`cost` a map, `R ≜ cost leq cost°`),
     under `F`; functors. -/
-public theorem monotonicAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°) :
     F.map R ≫ F.map cost ≫ k ⊑ F.map cost ≫ F.map «≤» ≫ k := by
   have eB : R ≫ cost ⊑ cost ≫ «≤» := by
@@ -431,13 +431,13 @@ public theorem monotonicAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶
   exact comp_mono_right (F.map_mono eB) k
 
 /-- Proposition 9.2, third step: the assumption that `k` is monotonic on `leq`. -/
-public theorem monotonicAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {«≤» : C ⟶ C}
+public theorem monoAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {«≤» : C ⟶ C}
     {k : F.obj C ⟶ C} (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
     F.map cost ≫ F.map «≤» ≫ k ⊑ F.map cost ≫ k ≫ «≤» :=
   comp_mono_left _ hk
 
 /-- Proposition 9.2, fourth step: the assumption `h cost = F(cost) k` again. -/
-public theorem monotonicAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
     F.map cost ≫ k ≫ «≤» = h ≫ cost ≫ «≤» := by
   rw [← Cat.assoc, ← hch, Cat.assoc]
@@ -447,20 +447,20 @@ public theorem monotonicAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost :
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
     monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
     `F(R)h cost ⊑ h cost leq`, which steps 1–4 prove. -/
-public theorem monotonicAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    MonotonicAlg h R := by
+    MonoAlg h R := by
   show F.map R ≫ h ⊑ h ≫ R
   have hsh : h ≫ R = (h ≫ cost ≫ «≤») ≫ cost° := by rw [hR]; simp only [Cat.assoc]
   rw [hsh]
   apply (map_shunt_right hcost _ _).mp
   rw [Cat.assoc]
   exact calc F.map R ≫ h ≫ cost
-      _ = F.map R ≫ F.map cost ≫ k := monotonicAlg_of_cost_step1 hch
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := monotonicAlg_of_cost_step2 hcost hR
-      _ ⊑ F.map cost ≫ k ≫ «≤» := monotonicAlg_of_cost_step3 hk
-      _ = h ≫ cost ≫ «≤» := monotonicAlg_of_cost_step4 hch
+      _ = F.map R ≫ F.map cost ≫ k := monoAlg_of_cost_step1 hch
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := monoAlg_of_cost_step2 hcost hR
+      _ ⊑ F.map cost ≫ k ≫ «≤» := monoAlg_of_cost_step3 hk
+      _ = h ≫ cost ≫ «≤» := monoAlg_of_cost_step4 hch
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 
@@ -471,7 +471,7 @@ public theorem monotonicAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
     optimum `dynamic_programming_thin` is trying to compute — useless for actually EXECUTING
     the recursion (only for justifying that some valid `Q` exists). -/
 theorem thin_condition_of_optimum (hFr : F.PreservesRecip) {h : F.obj A ⟶ A}
-    {R : A ⟶ A} {H M : B ⟶ A} (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
+    {R : A ⟶ A} {H M : B ⟶ A} (hh : Map h) (hmono : MonoAlg h R) (htrans : R ≫ R ⊑ R)
     (hMH : M ⊑ H) (hHMR : H° ≫ M ⊑ R) :
     (F.map (M ≫ R ≫ M°))° ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R° := by
   have erecip : (M ≫ R ≫ M°)° = M ≫ R° ≫ M° := by
@@ -496,7 +496,7 @@ theorem thin_condition_of_optimum (hFr : F.PreservesRecip) {h : F.obj A ⟶ A}
     rw [← F.map_comp]
   have hsplit : F.map (H ≫ R°) ≫ h = F.map H ≫ (F.map R° ≫ h) := by
     rw [F.map_comp, Cat.assoc]
-  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (monotonicAlg_recip_iff hh hFr).mp hmono
+  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (monoAlg_recip_iff hh hFr).mp hmono
   rw [hrecipmap]
   have ereassoc : F.map (M ≫ R° ≫ M°) ≫ (F.map H ≫ h) = (F.map (M ≫ R° ≫ M°) ≫ F.map H) ≫ h := by
     rw [Cat.assoc]
@@ -518,7 +518,7 @@ section Prop9_3
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-- Proposition 9.3, first step: shunting — `cost` is a map, so `𝟙⊑cost cost°`. -/
-public theorem monotonicAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+public theorem monoAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
     {cost : A ⟶ C} {S : A ⟶ B} (hcost : Map cost) :
     F.map (R ∩ (S ≫ S°)) ≫ h ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := by
   simpa only [Cat.comp_id, Cat.assoc] using
@@ -526,14 +526,14 @@ public theorem monotonicAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R :
 
 /-- Proposition 9.3, second step: products — `R∩SS° = ⟨cost leq,S⟩⟨cost,S⟩°` by the definition
     of `R` (`pair_recip_pair`). -/
-public theorem monotonicAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+public theorem monoAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
     {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} (hR : R = cost ≫ «≤» ≫ cost°) :
     F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost°
       = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
   rw [P.pair_recip_pair, hR, Cat.assoc cost «≤» cost°]
 
 /-- Proposition 9.3, third step: the assumption on `cost`, `h cost = F(⟨cost,S⟩)k`. -/
-public theorem monotonicAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {k : F.obj P.p ⟶ C} {X : A ⟶ A}
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
     F.map X ≫ h ≫ cost ≫ cost° = F.map X ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
@@ -542,7 +542,7 @@ public theorem monotonicAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cos
 
 /-- Proposition 9.3, fourth step: `S` simple makes `⟨cost,S⟩` simple
     (`tabulation_simple_of_simple`), so `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`. -/
-public theorem monotonicAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+public theorem monoAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
     {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} (hcost : Map cost) (hS : Simple S) :
     F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
       ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := by
@@ -554,14 +554,14 @@ public theorem monotonicAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A 
 
 /-- Proposition 9.3, fifth step: products; functors — `⟨cost leq,S⟩ = ⟨cost,S⟩(leq×𝟙)`
     (`pair_prodMap_fst`), then `F` preserves the composite. -/
-public theorem monotonicAlg_in_context_step5 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+public theorem monoAlg_in_context_step5 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
     {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} :
     F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost°
       = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
   rw [← RelProd.pair_prodMap_fst (P := P) (Q := P) cost S «≤», F.map_comp, Cat.assoc]
 
 /-- Proposition 9.3, sixth step: the assumption on `k`, `F(leq×𝟙)k⊑k leq`. -/
-public theorem monotonicAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
+public theorem monoAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
     {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
     F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost°
@@ -570,7 +570,7 @@ public theorem monotonicAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A 
 
 /-- Proposition 9.3, closing step: the assumption on `cost` read backwards, then the definition
     of `R`. -/
-public theorem monotonicAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+public theorem monoAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
     {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hR : R = cost ≫ «≤» ≫ cost°) (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
     F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° = h ≫ R := by
@@ -581,23 +581,23 @@ public theorem monotonicAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R :
     (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
     chain, one step theorem per hint. -/
-public theorem monotonicAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
     F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
   calc F.map (R ∩ (S ≫ S°)) ≫ h
-      _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := monotonicAlg_in_context_step1 hcost
+      _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := monoAlg_in_context_step1 hcost
       _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° :=
-          monotonicAlg_in_context_step2 hR
+          monoAlg_in_context_step2 hR
       _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
-          monotonicAlg_in_context_step3 hch
-      _ ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := monotonicAlg_in_context_step4 hcost hS
+          monoAlg_in_context_step3 hch
+      _ ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := monoAlg_in_context_step4 hcost hS
       _ = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° :=
-          monotonicAlg_in_context_step5
-      _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° := monotonicAlg_in_context_step6 hk
-      _ = h ≫ R := monotonicAlg_in_context_step7 hR hch
+          monoAlg_in_context_step5
+      _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° := monoAlg_in_context_step6 hk
+      _ = h ≫ R := monoAlg_in_context_step7 hR hch
 
 end Prop9_3
 
@@ -612,7 +612,7 @@ end Prop9_3
 
 /-- **Proposition 9.4(i) (B&dM p.223)**, monotonicity: if `h` is monotonic for `G` at some `U`
     refined from below by `id_e` (`hUrefl`), then `h` is monotonic (in the ordinary
-    `MonotonicAlg` sense) for the fixed-left relator `G.appl e`. -/
+    `MonoAlg` sense) for the fixed-left relator `G.appl e`. -/
 public theorem birelator_fixLeft_mono {G : BiRelator 𝒜} {e : 𝒜} {h : G.obj e A ⟶ A} {R : A ⟶ A}
     {U : e ⟶ e} (hUrefl : Cat.id e ⊑ U) (hU : G.map U R ≫ h ⊑ h ≫ R) :
     G.map (Cat.id e) R ≫ h ⊑ h ≫ R :=
@@ -800,7 +800,7 @@ theorem dp_thin_prefixed_context (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T
         = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
       simp only [Cat.assoc]
     rw [hre2] at step6
-    -- the context collapse, from `hctx1` instead of `MonotonicAlg h R°`
+    -- the context collapse, from `hctx1` instead of `MonoAlg h R°`
     have hHM_ctx : H° ≫ (Λ H ≫ est R) ⊑ R° ∩ (H° ≫ H) :=
       le_inter hHMR (comp_mono_left H° hMH)
     have hFRM_ctx : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map (R° ∩ (H° ≫ H)) := by
@@ -1211,7 +1211,7 @@ public theorem thin_arm₁_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (
     draw. -/
 public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
     {Q : (F L W).obj b ⟶ (F L W).obj b} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
-    (hh : Map U) (hmono : MonotonicAlg U R°) (htrans : R° ≫ R° ⊑ R°)
+    (hh : Map U) (hmono : MonoAlg U R°) (htrans : R° ≫ R° ⊑ R°)
     (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
     (hQ : Q ≫ (F L W).map ((relCata T)° ≫ relCata U) ≫ U
