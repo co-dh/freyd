@@ -986,7 +986,8 @@ structure Cached where
 
 /-- What EVERY answer depends on, once per process: the exporter's own code (the `diag.tool`
     modules by olean hash, and the Lean it runs on), every instance by name and statement — a new
-    one anywhere can change what `discharge` synthesises — and the spelling bridges by name. -/
+    one anywhere can change what `discharge` synthesises — the spelling bridges by name, and the
+    congruence lemmas simp runs them with.  Its hash names the cache directory (`cacheSlot`). -/
 initialize toolPrintRef : IO.Ref (Option String) ← IO.mkRef none
 
 /-- Each module's olean hash, read once per process. -/
@@ -1004,16 +1005,41 @@ def bridgeNames : MetaM (Array Name) := do
   let some ext ← Meta.getSimpExtension? `diag_bridge | throwError "no `diag_bridge` simp set"
   return sortNames ((← ext.getTheorems).lemmaNames.toList.filterMap fun | .decl n .. => some n | _ => none).toArray
 
+/-- The congruence lemmas `bridges` hands `Meta.simp` beside the bridge set: a new `@[congr]` changes
+    how a bridge rewrites under an argument, as a new bridge lemma does. -/
+def congrNames : MetaM (Array Name) := do
+  let cs := (← Meta.getSimpCongrTheorems).lemmas.fold (init := #[]) fun (a : Array Name) _ l =>
+    a ++ (l.map (·.theoremName)).toArray
+  return sortNames cs
+
+def cacheRoot : System.FilePath := ".lake/build/diag-verdicts"
+
 def toolPrint : MetaM String := do
   if let some f ← toolPrintRef.get then return f
   let env ← getEnv
-  let tool ← ((← repoModules env).filter (`diag.tool).isPrefixOf).mapM fun m => return s!"{m} {← oleanHashOnce m}"
+  -- The exporter's modules as `diag/tool` lists them: the environment imports only those a library
+  -- module happens to, so reading them off it left `StringDiagram` itself out of the print.
+  let mods := (← System.FilePath.readDir "diag/tool").filterMap fun d =>
+    if d.path.extension == some "lean" then d.path.fileStem.map (`diag.tool).str else none
+  let tool ← (sortNames mods).mapM fun m => return s!"{m} {← oleanHashOnce m}"
+  let typed (tag : String) (n : Name) : MetaM String := do
+    let some ci := env.find? n | throwError "diag-export: {tag} {n} names no constant of the environment"
+    return s!"{tag} {n} {hash ci.type}"
   let inst := sortNames ((Meta.instanceExtension.getState env).instanceNames.toList.map (·.1)).toArray
-  let insts := inst.map fun n => s!"{n} {((env.find? n).map (hash ·.type)).getD 0}"
-  let f := "\n".intercalate ([s!"lean {Lean.versionString}"] ++ tool.toList ++ insts.toList
-    ++ (← bridgeNames).toList.map (s!"bridge {·}"))
+  let f := "\n".intercalate ([s!"lean {Lean.versionString}"] ++ tool.toList ++ (← inst.mapM (typed "instance")).toList
+    ++ (← bridgeNames).toList.map (s!"bridge {·}") ++ (← (← congrNames).mapM (typed "congr")).toList)
+  -- An entry under another exporter's hash is never read again (`cacheSlot` names the directory by
+  -- this one), so it is removed here, once per process, rather than left to accumulate.
+  if ← cacheRoot.pathExists then
+    for d in ← cacheRoot.readDir do
+      if d.fileName != toString (hash f) then IO.FS.removeDirAll d.path
   toolPrintRef.set (some f)
   return f
+
+/-- `depText` per process, keyed on the sorted heads and the modules declaring the question's
+    constants: the environment, the buckets, the bridges and the congruences do not change within
+    one, so these fix the text. -/
+initialize depTextRef : IO.Ref (Std.HashMap (Array Name × Array Nat) String) ← IO.mkRef {}
 
 /-- WHAT ONE ANSWER DEPENDS ON, beyond `toolPrint`: for every head whose bucket the search read,
     the bucket's members by name — a theorem added anywhere joins a bucket and can win first-hit —
@@ -1023,7 +1049,10 @@ def toolPrint : MetaM String := do
     cannot change the answer. -/
 def depText (heads : Array Name) (q : Expr) : MetaM String := do
   let env ← getEnv
-  let mut consts := q.getUsedConstants ++ (← bridgeNames)
+  let qMods := ((q.getUsedConstants.filterMap env.getModuleIdxFor?).map (·.toNat)).qsort (· < ·) |>.eraseReps
+  let k := (sortNames heads, qMods)
+  if let some t := (← depTextRef.get)[k]? then return t
+  let mut consts := q.getUsedConstants ++ (← bridgeNames) ++ (← congrNames)
   let mut lines := #[]
   for h in sortNames heads do
     let b := (← candidates h).map (·.1)
@@ -1041,7 +1070,9 @@ def depText (heads : Array Name) (q : Expr) : MetaM String := do
   for m in ← repoModules env do
     if let some i := env.getModuleIdx? m then
       if seen.contains i.toNat then lines := lines.push s!"{m} {← oleanHashOnce m}"
-  return "\n".intercalate lines.toList
+  let t := "\n".intercalate lines.toList
+  depTextRef.modify (·.insert k t)
+  return t
 
 /-- One question's place in the cache: its file, the question as text — the region, the family
     and the categories, closed over the local context, so a hypothesis in scope (evidence,
@@ -1059,7 +1090,7 @@ def cacheSlot (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM (Option S
   let some (i, (nodes, _)) := (exprNodes q).run (#[], {}) | return none
   let key := (Json.mkObj [("q", toJson i), ("nodes", .arr nodes), ("cat", .arr (cat.map nameJson))]).compress
   let dir := toString (hash (← toolPrint))
-  return some { path := System.mkFilePath [".lake/build/diag-verdicts", dir, s!"{hash key}.json"], key, q }
+  return some { path := cacheRoot / dir / s!"{hash key}.json", key, q }
 
 def verdictJson (v : Verdict) : Json :=
   Json.mkObj [("mark", (v.mark.map (·.key)).elim .null .str), ("lean", .arr (v.lean.map nameJson))]
@@ -1073,7 +1104,7 @@ def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
   let key := slot.key
   unless ← path.pathExists do return none
   let fail {α} (why : String) : MetaM α :=
-    throwError "diag-export: verdict cache {path}: {why}; delete .lake/build/diag-verdicts to rebuild it"
+    throwError "diag-export: verdict cache {path}: {why}; delete {cacheRoot} to rebuild it"
   let j ← match Json.parse (← IO.FS.readFile path) with | .ok j => pure j | .error e => fail e
   let get {α} [FromJson α] (k : String) : MetaM α := match j.getObjValAs? α k with
     | .ok a => pure a | .error e => fail s!"field {k}: {e}"
@@ -1135,7 +1166,7 @@ def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
     ASSEMBLED and `Meta.check`ed, never a name whose statement merely unified.  Where none of the
     three is proved the bead is a SPIDER: no dot, no claim, and a `nat:` row saying the tool
     looked and found nothing (CLAUDE.md: "a transformation with no naturality proof draws as a
-    spider").  The environment's answer is kept across runs in `cacheDir` (see `cacheLoad`). -/
+    spider").  The environment's answer is kept across runs under `cacheRoot` (see `cacheLoad`). -/
 def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := do
   -- THE STATEMENT IS READ OFF THE FAMILY, NOT OFF THE LANES.  `φ = fun v => core`, so its two
   -- relators are its own end objects as functions of `v` (`relatorOfObj`) and the proposition
@@ -1547,6 +1578,11 @@ def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α :=
     if ci.type.getAppFn.constName? == some h then Lean.setIrreducibleAttribute n
   try k finally setEnv env
 
+/-- `peelRead`'s answers in this process, by `metaKey`, as `peelMapMemo`: an answer with no
+    metavariable is the one a new read would give.  `withObjectsClosed` is entered only here, so
+    every read starts from the same reducibility. -/
+initialize peelReadMemo : IO.Ref (Std.HashMap (Array Expr) (Array (Wire × Expr) × Expr)) ← IO.mkRef {}
+
 /-- A CUT'S OBJECT IS READ BY THE HEAD CONSTANT IT IS WRITTEN WITH, and only an object no lane
     spells that way is unfolded.
 
@@ -1565,8 +1601,19 @@ def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α :=
     the bare name tore it open while the factor holding `E(Decimal)` — whose closed read stops at `E`
     — did not, and the same cut came apart one factor lower down. -/
 def peelRead (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
-    MetaM (Array (Wire × Expr) × Expr) :=
-  withObjectsClosed regionTy (peelCuts objVars cat regionTy X)
+    MetaM (Array (Wire × Expr) × Expr) := do
+  let key ← metaKey (#[regionTy, X] ++ objVars)
+  if let some k := key then
+    if let some r := (← peelReadMemo.get)[k]? then return r
+  let (cs, u) ← withObjectsClosed regionTy (peelCuts objVars cat regionTy X)
+  let inst (w : Wire) : MetaM Wire := match w with
+    | .rel r => return .rel (← instantiateMVars r) | .timesL l => return .timesL (← instantiateMVars l)
+  let cs ← cs.mapM fun (w, o) => return (← inst w, ← instantiateMVars o)
+  let u ← instantiateMVars u
+  let open_ (w : Wire) : Bool := match w with | .rel r | .timesL r => r.hasMVar
+  if let some k := key then
+    unless u.hasMVar || cs.any fun (w, o) => o.hasMVar || open_ w do peelReadMemo.modify (·.insert k (cs, u))
+  return (cs, u)
 
 /-- `peelRead` where the composite has already read the cut: the handed-down reading stands for the
     object it was read from, exactly as in `peelCutsAt`, and the closure governs only a cut this

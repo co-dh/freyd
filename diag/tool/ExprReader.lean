@@ -894,15 +894,21 @@ def catalogueOf (head : Name) (excluded : Array Name) : MetaM (Array Name) := do
     if ok then out := out.push n
   return out.qsort (fun a b => a.toString < b.toString)
 
+/-- The catalogue, swept once per process: every task of it reads the one imported environment. -/
+initialize catalogueRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
+
 /-- The LANES the environment names: the relators of a region, and its functors.  A lane is a
     functor between regions with a bead for each arrow it carries, and a relator is one that is
     also monotone; `E` is the case that is not — `existsImage` has no `map_mono`, so the power
     object's lane in a region where `powerRelator` cannot be instantiated (an abstract allegory that
     is not tabular) is `existsImageFunctor` itself, and the note's `E` lane.  ONE sweep over the
     environment, threaded down: the read asks at every level of the term. -/
-def catalogue : MetaM (Array Name) :=
-  return (← catalogueOf ``Freyd.Alg.Relator #[``Freyd.Alg.Relator])
+def catalogue : MetaM (Array Name) := do
+  if let some c ← catalogueRef.get then return c
+  let c := (← catalogueOf ``Freyd.Alg.Relator #[``Freyd.Alg.Relator])
     ++ (← catalogueOf ``Freyd.Functor #[``Freyd.Functor, ``Freyd.Alg.Relator])
+  catalogueRef.set (some c)
+  return c
 
 /-- The catalogue entry `n` instantiated at the region: fresh level metavariables, its argument
     telescope opened with metavariables, and every INSTANCE argument synthesised — one left standing
@@ -1013,10 +1019,44 @@ def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
     return some (R, r)
   catch _ => s.restore; return none
 
-/-- The first catalogue lane `e` is the action of, and the arrow underneath. -/
+/-- Everything a Meta question about `es` can read besides the environment: `es` themselves, and
+    every local their free variables and the local instances reach, each with its binder, type and
+    value.  `none` where a metavariable is left, whose assignment is state and no key.  A process
+    runs its panels as tasks each numbering its locals from the same start, so one id can name two
+    different locals; the key holds what each id MEANS, and two keys agree only where they do. -/
+def metaKey (es : Array Expr) : MetaM (Option (Array Expr)) := do
+  let mut todo := ((← Meta.getLocalInstances).map (·.fvar)) ++ es
+  let mut key := es.push (mkNatLit (← Meta.getTransparency).toCtorIdx)
+  let mut seen : FVarIdSet := {}
+  while h : todo.size > 0 do
+    let e ← instantiateMVars todo[todo.size - 1]
+    todo := todo.pop
+    if e.hasMVar then return none
+    for v in (collectFVars {} e).fvarIds do
+      if seen.contains v then continue
+      seen := seen.insert v
+      let d ← v.getDecl
+      let bi := mkNatLit (match d.binderInfo with | .default => 0 | .implicit => 1 | .strictImplicit => 2 | .instImplicit => 3)
+      key := key ++ #[.fvar v, bi, d.type, d.value?.getD (mkNatLit 0), mkNatLit d.value?.isSome.toNat]
+      todo := todo ++ #[d.type] ++ d.value?.toArray
+  return some key
+
+/-- `peelMap?`'s answers in this process, by `metaKey`: the term walk and the scan line read the
+    same arrows over and over, and each read tries every catalogue lane by unification. -/
+initialize peelMapMemo : IO.Ref (Std.HashMap (Array Expr) (Option (Expr × Expr))) ← IO.mkRef {}
+
+/-- The first catalogue lane `e` is the action of, and the arrow underneath.  An answer is
+    mvar-free (`peelMapWith?` refuses any other), so a remembered one is the one a new search would
+    give; `cat` is the environment's one catalogue and needs no place in the key. -/
 def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
-    MetaM (Option (Expr × Expr)) :=
-  cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
+    MetaM (Option (Expr × Expr)) := do
+  let key ← metaKey (#[regionTy, e] ++ objVars)
+  if let some k := key then
+    if let some r := (← peelMapMemo.get)[k]? then
+      return r
+  let r ← cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
+  if let some k := key then peelMapMemo.modify (·.insert k r)
+  return r
 
 /-- An object peeled into its wire stack (outermost first), each wire with the OBJECT UNDER IT, and
     the object underneath them all.  The object under a wire is what a bead taken there is a family
@@ -1939,6 +1979,9 @@ def oleanHash (m : Name) : IO String := do
   for p in #[o, o.addExtension "private", o.addExtension "server"] do
     let h := p.addExtension "hash"
     if ← h.pathExists then hs := hs.push (← IO.FS.readFile h).trimAscii.toString
+    -- A part without its hash would key the module by the other parts alone and miss its changes.
+    else if ← p.pathExists then
+      throw <| IO.userError s!"olean hash of {m}: {h} is missing beside {p}; run `lake build {m}` to write it"
   return ",".intercalate hs.toList
 
 /-- The REPOSITORY modules a process imported: the ones whose source is in the checkout, which is
