@@ -453,10 +453,10 @@ the two components `φ`#sub[`A`], `φ`#sub[`B`] are the one arrow `φ` — an al
 
 For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all's `f°·⊣f·` at `X:=F(R)f`,
 `Y:=R`], #h(4pt) equivalently #h(4pt)
-// lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+// lean:AOP.A7_2.monoAlg_iff_conj@46638b64
 `F(R)⊑fRf°` #h(4pt) #src[`·f⊣·f°` then `f°·⊣f·`,
 ].
-// lean:AOP.A7_2.monotonicAlg_iff_sandwich@f82f1b18
+// lean:AOP.A7_2.monoAlg_iff_sandwich@f82f1b18
 
 `(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
@@ -467,17 +467,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
 // functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
 // the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
-#let mon-hm-l = lean("Freyd.Alg.MonotonicAlg.lhs")
-#let mon-hm-r = lean("Freyd.Alg.MonotonicAlg.rhs")
+#let mon-hm-l = lean("Freyd.Alg.MonoAlg.lhs")
+#let mon-hm-r = lean("Freyd.Alg.MonoAlg.rhs")
 
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
-  leancd("Freyd.Alg.MonotonicAlg"),
+  leancd("Freyd.Alg.MonoAlg"),
   row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
  [`F(R)φ⊑φR` #src[]],
 )
-// lean:AOP.A7_2.MonotonicAlg@26944450
+// lean:AOP.A7_2.MonoAlg@26944450
 ]<mon-str>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
@@ -541,9 +541,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
      `R` reflexive
-      // lean:AOP.A7_2.distributes_of_monotonicAlg@633ae757
+      // lean:AOP.A7_2.distributes_of_monoAlg@633ae757
  ]],
-      // lean:AOP.A7_2.monotonicAlg_of_distributes@6d74126d
+      // lean:AOP.A7_2.monoAlg_of_distributes@6d74126d
 
   [#vstep([], trow(ma-Fest-lam, ma-lam), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
@@ -564,9 +564,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
     (IFF, trow(ma-R, ma-Rplain-R),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
-     // lean:AOP.A7_2.monotonicAlg_iff_conj@46638b64
+     // lean:AOP.A7_2.monoAlg_iff_conj@46638b64
     ]),
-    // lean:AOP.A7_2.monotonicAlg_recip_iff@27f6bb47
+    // lean:AOP.A7_2.monoAlg_recip_iff@27f6bb47
   )],
 )]<mon-thm71>
 

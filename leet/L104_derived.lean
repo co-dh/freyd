@@ -103,7 +103,7 @@ theorem R_trans : (R ≫ R : (dNat : RelSet.{0}) ⟶ dNat) ⊑ R := by
 
 /-- The depth fold `alg` is MONOTONE on `R`: `imax` is monotone, so a `≤`-larger pair of child
     depths yields a `≤`-larger node depth (mirrored through the reverse order `R`). -/
-theorem alg_mono : MonotonicAlg (F := F L) alg R := by
+theorem alg_mono : Freyd.Alg.MonoAlg (F := F L) alg R := by
   show (F L).map R ≫ alg ⊑ alg ≫ R
   rw [le_iff]; intro u m h
   obtain ⟨v, hFuv, hv⟩ := h

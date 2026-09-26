@@ -985,7 +985,7 @@ public theorem van_mono :
 /-- **van-laws**, the greedy theorem's hypothesis: `MonotonicAlg S (R;H)`, the two halves
     `van_mono_new` (7.16) and `van_mono` (7.17) together with the `nil` case. -/
 public theorem van_mono_alg :
-    MonotonicAlg (F := F Unit A) (Salg amount N) (RH A) :=
+    Freyd.Alg.MonoAlg (F := F Unit A) (Salg amount N) (RH A) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hS⟩ := h
     cases u with

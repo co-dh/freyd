@@ -49,12 +49,12 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q°` handled directly by
     `inter_lb_left` (member) and `recip_eps_comp_est_le` (lower bound). -/
 public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R)
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
   -- the book states both on the mirrored `R°` (`est R` = `min R°`); fold the `°` back in once
-  have hmono' : MonotonicAlg h R° := (monotonicAlg_recip_iff hh hFr).mp hmono
+  have hmono' : Freyd.Alg.MonoAlg h R° := (Freyd.Alg.monoAlg_recip_iff hh hFr).mp hmono
   have htrans' : R° ≫ R° ⊑ R° := by
     have h0 := recip_mono htrans
     rwa [Allegory.recip_comp] at h0
@@ -121,7 +121,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {
       have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
         rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
         exact comp_mono_left _ (comp_mono_right hFRM h)
-      exact le_trans hx ((monotonicAlg_iff_conj hh).mp hmono')
+      exact le_trans hx ((Freyd.Alg.monoAlg_iff_conj hh).mp hmono')
     have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ⊑ R° ≫ R° :=
       comp_mono_left R° hinner
     rw [c1, c2]
@@ -140,7 +140,7 @@ public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {
     Knaster–Tarski consumes, with the note's bead `X` as a binder of its own. -/
 public theorem greedy_dp_step1 (hFr : F.PreservesRecip)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
-    {X : A ⟶ B} (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
+    {X : A ⟶ B} (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R) (htrans : R ≫ R ⊑ R)
     (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R)
     (hX : X = Λ H ≫ est R) :
     Λ (T°) ≫ est Q ≫ F.map X ≫ h ⊑ Λ H ≫ est R := by
@@ -156,7 +156,7 @@ public theorem greedy_dp_step1 (hFr : F.PreservesRecip)
     the Theorem 7.2 greedy theorem `⦇min R°·ΛS⦈ ⊆ min R°·Λ⦇S⦈`.) -/
 public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonotonicAlg h R) (htrans : R ≫ R ⊑ R)
+    (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R) (htrans : R ≫ R ⊑ R)
     (hQ : Q ≫ F.map (H T h) ≫ h
         ⊑ F.map (H T h) ≫ h ≫ R) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
@@ -215,7 +215,7 @@ variable {L E : Type} {b c : RelSet.{0}}
     still refines `H%∋ est(R)`.  `AOP.A10_1.greedy_dp` at the snoc-list functor. -/
 public theorem greedy_dp_arms {T : (F L E).obj b ⟶ b} {Q : (F L E).obj b ⟶ (F L E).obj b}
     {U : (F L E).obj c ⟶ c} {R : c ⟶ c}
-    (hh : Map U) (hmono : MonotonicAlg U R) (htrans : R ≫ R ⊑ R)
+    (hh : Map U) (hmono : Freyd.Alg.MonoAlg U R) (htrans : R ≫ R ⊑ R)
     (hdisj : ∀ (d : L) (p : b.carrier × E) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
     (hQ : Q ≫ (F L E).map ((relCata T)° ≫ relCata U) ≫ U

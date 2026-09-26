@@ -431,7 +431,7 @@ public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := b
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/
 
 /-- `α≜[nil,cons]` is monotonic on `R`: `cons` adds one digit on either side. -/
-public theorem tex_mono : MonotonicAlg (F := F Unit Digit) alphaR R :=
+public theorem tex_mono : Freyd.Alg.MonoAlg (F := F Unit Digit) alphaR R :=
   le_iff.mpr fun u z h => by
     obtain ⟨v, hFv, hcon⟩ := h
     have hz : z = con v := hcon

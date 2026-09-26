@@ -439,7 +439,7 @@ variable {F : Relator 𝒜 𝒜}
 /-- Step 1: `Q°` walks out of the `F` handle — that move IS the monotonicity assumption
     `S°F(Q°) ⊑ Q°S°`, i.e. `hmono` conversed, with `F(R)° = F(R°)`. -/
 public theorem thinning_step1 (hFr : F.PreservesRecip) {Q : A ⟶ A} {S : F.obj A ⟶ A}
-    (hmono : MonotonicAlg S Q) :
+    (hmono : Freyd.Alg.MonoAlg S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
       ⊑ Q° ≫ S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q := by
   have hstr : S° ≫ F.map Q° ⊑ Q° ≫ S° := by
@@ -492,7 +492,7 @@ public theorem thinning_step4 {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A ⟶ A}
-    {S : F.obj A ⟶ A} (htrans : Q ≫ Q ⊑ Q) (hmono : MonotonicAlg S Q) :
+    {S : F.obj A ⟶ A} (htrans : Q ≫ Q ⊑ Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
@@ -515,7 +515,7 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A �
 
 /-- Step 1: THEOREM 8.1 composed with `est R` on the right. -/
 public theorem thinning_est_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : A ⟶ A}
-    {S : F.obj A ⟶ A} (htransQ : Q ≫ Q ⊑ Q) (hmono : MonotonicAlg S Q) :
+    {S : F.obj A ⟶ A} (htransQ : Q ≫ Q ⊑ Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
       ⊑ (Λ (relCata S) ≫ thinRel Q) ≫ est R :=
   comp_mono_right (thinning hFr I htransQ hmono) (est R)
@@ -533,7 +533,7 @@ public theorem thinning_est_step2 (I : InitialAlgebra F) {Q R : A ⟶ A} {S : F.
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : A ⟶ A}
     {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R ≫ R ⊑ R) (hmono : MonotonicAlg S Q) :
+    (htransR : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   rw [← thinning_est_step2 I hQR hreflQ htransR]
   exact thinning_est_step1 hFr I htransQ hmono

@@ -195,7 +195,7 @@ public theorem Salg_junc :
 /-- **knap-mono**, first row: `(𝟙×Q)(cons (within w)) ⊑ cons (within w)Q` — bettering a
     packing keeps it inside the knapsack, because `Q` also forbids getting heavier. -/
 public theorem knap_mono_cons :
-    MonotonicAlg (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q vol wt) :=
+    Freyd.Alg.MonoAlg (F := F Unit Item) (graph con ≫ within (wt := wt) w) (Q vol wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hcon⟩ := h
     obtain ⟨rfl, hwr⟩ := (con_within_apply (wt := wt) (w := w) v r).mp hcon
@@ -229,7 +229,7 @@ public theorem knap_mono_cons :
     and each is worth 1, the capacity is 5: `[10]` and `[0]` tie on value, so `R` lets the
     fold replace one by the other, but only `[0]` still admits another item. -/
 public theorem knap_mono_cons_false :
-    ¬ MonotonicAlg (F := F Unit Int) (graph con ≫ within (wt := fun i : Int => i) 5)
+    ¬ Freyd.Alg.MonoAlg (F := F Unit Int) (graph con ≫ within (wt := fun i : Int => i) 5)
         (R (fun _ : Int => (1 : Int))) := by
   intro h
   have hstep := le_iff.mp h (Sum.inr (0, ConsList.cons (10 : Int) (ConsList.wrap ())))
@@ -246,7 +246,7 @@ public theorem knap_mono_cons_false :
 
 /-- **knap-mono**, second row: `(𝟙×Q)π₂ ⊑ π₂Q` — dropping the head cannot undo `Q`. -/
 public theorem knap_mono_drop :
-    MonotonicAlg (F := F Unit Item) (graph dropFn) (Q vol wt) :=
+    Freyd.Alg.MonoAlg (F := F Unit Item) (graph dropFn) (Q vol wt) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
@@ -264,7 +264,7 @@ public theorem knap_mono_drop :
 
 /-- **knap-defn**, `P ≜ R`: `[nil,cons]` is monotonic on `R`, so the candidate lists may be
     sorted in descending order of value. -/
-public theorem knap_sort_cons : MonotonicAlg (F := F Unit Item) (graph con) (R vol) :=
+public theorem knap_sort_cons : Freyd.Alg.MonoAlg (F := F Unit Item) (graph con) (R vol) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = con v := hr
@@ -287,7 +287,7 @@ public theorem knap_sort_cons : MonotonicAlg (F := F Unit Item) (graph con) (R v
         exact ⟨ConsList.cons a x, rfl, show vol a + total vol y ≤ vol a + total vol x by omega⟩
 
 /-- **knap-defn**, `P ≜ R`: `[nil,π₂]` is monotonic on `R` too. -/
-public theorem knap_sort_drop : MonotonicAlg (F := F Unit Item) (graph dropFn) (R vol) :=
+public theorem knap_sort_drop : Freyd.Alg.MonoAlg (F := F Unit Item) (graph dropFn) (R vol) :=
   le_iff.mpr fun u r h => by
     obtain ⟨v, hFv, hr⟩ := h
     obtain rfl : r = dropFn v := hr
@@ -391,7 +391,7 @@ public theorem knap_laws_step1
     ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 (listRelator.obj (dList Item)))
         ≫ mergeP ≫ thinlist⦈ ≫ minlist
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
-  have hm₂ : MonotonicAlg (F := F Unit Item) (graph dropFn ≫ 𝟙 (dList Item)) (Q vol wt) := by
+  have hm₂ : Freyd.Alg.MonoAlg (F := F Unit Item) (graph dropFn ≫ 𝟙 (dList Item)) (Q vol wt) := by
     rw [Cat.comp_id]; exact knap_mono_drop
   have h89₂ : sortP ≫ 𝟙 (listRelator.obj (dList Item)) ⊑ existsImage (𝟙 (dList Item)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]

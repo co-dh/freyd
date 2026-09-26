@@ -244,7 +244,7 @@ public theorem mss_mono_cons (hrefl : Cat.id C ⊑ R)
     `plus` monotonic and the order reflexive is all it takes. -/
 public theorem plusAlg_mono (hrefl : Cat.id C ⊑ R)
     (hplus : rprodMap (𝟙 (dE E)) R ≫ plus ⊑ plus ≫ R) :
-    MonotonicAlg (F := F Unit E) (plusAlg zero plus) R := by
+    Freyd.Alg.MonoAlg (F := F Unit E) (plusAlg zero plus) R := by
   show (F Unit E).map R ≫ plusAlg zero plus ⊑ plusAlg zero plus ≫ R
   rw [plusAlg, Fmap_comp_junc, junc_comp]
   exact junc_mono _ (le_iff.mpr fun _ w h => ⟨w, h, le_iff.mp hrefl w w rfl⟩)
@@ -382,7 +382,7 @@ public theorem prefAlg_comp_sum :
 /-- The `mss-mono` row: `F(≥) S ⊑ S ≥`, whose `plus` branch is `(𝟙×≥)(⊸ zero ∪ plus) ⊑
     (⊸ zero ∪ plus)≥` — `plus` is monotonic, so a bigger running total gives a bigger step;
     the `zero` branch is `zero ⊑ zero ≥`. -/
-public theorem mss_mono : MonotonicAlg (F := F Unit A) (Salg (A := A)) geq := by
+public theorem mss_mono : Freyd.Alg.MonoAlg (F := F Unit A) (Salg (A := A)) geq := by
   rw [Salg_eq_plusAlg]
   exact plusAlg_mono _ _ _ geq_refl plus_mono
 
