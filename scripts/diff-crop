@@ -59,7 +59,8 @@ GROWMAX = 45                     # pt the band may run past the declared box bef
 LABELOFF = 3                     # pt: a margin label sits 1.1 pt above its display's box; slack for the word box's ascent
 MARG = 3                         # pt the crop must clear the ink by, or the run aborts
 STRIP = 6                        # px checked blank at the top and bottom of every crop
-MINSIM = 0.5                     # below this two pages are different pages, not an edited one
+SHAPETOL = 0.2                   # pt: two drawings of one primitive differ by float noise, no more
+MINSIM = 0.5                   # below this two pages are different pages, not an edited one
 NOTES = ("diag/allegory-axioms.pdf", "diag/allegory2.pdf")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
@@ -176,31 +177,42 @@ def bbox(ps):
     return (min(xs), min(ys), max(xs), max(ys))
 
 
+NOSTYLE = ("d", "transform", "id", "x", "y", "clip-path", "{http://www.w3.org/1999/xlink}href", "href")
+
+
 def walk(el, m, glyphs, out):
+    """Every drawn element as (kind, style, shape, box): `shape` is its points relative to its first
+    one, so the same wire drawn somewhere else has the same shape — what `rings` compares."""
     for c in el:
         t = tag(c)
         if t in ("defs", "clipPath", "symbol", "mask"):
             continue                     # a clip box is the page, not ink; a def is drawn only via <use>
         cm = mul(m, parse_tf(c.get("transform")))
+        ps = []
         if t == "path":
-            b = bbox([xf(cm, p) for p in pts(c.get("d", ""))])
+            ps = [xf(cm, p) for p in pts(c.get("d", ""))]
         elif t == "use":
             href = c.get("{http://www.w3.org/1999/xlink}href") or c.get("href") or ""
             g, x, y = glyphs.get(href.lstrip("#")), float(c.get("x", 0)), float(c.get("y", 0))
-            b = bbox([xf(cm, (x + g[0], y + g[1])), xf(cm, (x + g[2], y + g[3]))]) if g else None
+            ps = [xf(cm, (x + g[0], y + g[1])), xf(cm, (x + g[2], y + g[3]))] if g else []
         elif t == "image":
             x, y = float(c.get("x", 0)), float(c.get("y", 0))
-            b = bbox([xf(cm, (x, y)), xf(cm, (x + float(c.get("width", 0)), y + float(c.get("height", 0))))])
-        else:
-            b = None
-        if b:
-            out.append(b)
+            ps = [xf(cm, (x, y)), xf(cm, (x + float(c.get("width", 0)), y + float(c.get("height", 0))))]
+        if ps:
+            style = tuple(sorted((k, v) for k, v in c.attrib.items() if k not in NOSTYLE))
+            out.append((t, style, tuple((p[0] - ps[0][0], p[1] - ps[0][1]) for p in ps), bbox(ps)))
         walk(c, cm, glyphs, out)
 
 
 def svg_ink(pdf, page, tmp):
     """Every wire and glyph on `page`, as boxes in page points.  `pdftocairo -svg` writes the exact path
     data, so the extent is measured rather than estimated, and it costs no image tokens."""
+    W, H, items = svg_items(pdf, page, tmp)
+    return W, H, [i[3] for i in items]
+
+
+def svg_items(pdf, page, tmp):
+    """`walk`'s drawn elements of `page`, in page points, y down from the top."""
     svg = os.path.join(tmp, f"ink-{page}-{abs(hash(pdf)) % 9999}.svg")
     r = run("pdftocairo", "-svg", "-f", str(page), "-l", str(page), pdf, svg)
     if not os.path.exists(svg):
@@ -569,7 +581,8 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
                                                     f"{tmp}/kd.png").stderr.strip()):
         raise Refuse(f"{key}: the before and after crops are pixel-identical — this display did not "
                      f"change, and a pair the reader cannot tell apart costs him the whole review")
-    rings(cb, ca, tmp, key)
+    k = DPI / 72.0
+    rings((before_pdf, bp, by0, by1, int(by0 * k)), (after_pdf, ap, ay0, ay1, int(ay0 * k)), cb, ca, tmp, key)
     label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
     pair = os.path.join(out, f"key-{slug(key)}.png")
@@ -657,25 +670,70 @@ def ring(src, boxes, out):
     emit("magick", src, "-stroke", "red", "-strokewidth", "3", "-fill", "none", *draw, out)
 
 
-def rings(cb, ca, tmp, key):
-    """The two crops of one display, each ringed where they differ, IN PLACE.  Padded to one size first,
-    since a reflowed crop is a few pixels taller and `compare` refuses unequal images.  A ring round
-    most of the crop says nothing — that is a reflow, and the reader sees the shift himself."""
-    (wb, hb), (wa, ha) = size(cb), size(ca)
-    W, H = max(wb, wa), max(hb, ha)
-    pb, pa, d = f"{tmp}/rb.png", f"{tmp}/ra.png", f"{tmp}/rd.png"
-    for src, dst in ((cb, pb), (ca, pa)):
-        emit("magick", src, "-background", "white", "-gravity", "northwest", "-extent", f"{W}x{H}", dst)
-    run("compare", "-metric", "AE", pb, pa, d)
-    boxes = merge(components(d))
-    if not boxes:
-        print(f"{key}: no changed blob above {MINAREA} px to ring")
+def content(pdf, page, y0, y1, tmp):
+    """What the crop [y0, y1] of `page` draws, position aside: its words keyed by their text, and its
+    non-glyph primitives keyed by style and point count (a glyph is already in its word)."""
+    ws = [(("w", w[5]), w[5], (), (w[1], w[2], w[3], w[4])) for w in words(pdf, page, page)]
+    ps = [(("p", i[0], i[1], len(i[2])), None, i[2], i[3]) for i in svg_items(pdf, page, tmp)[2] if i[0] != "use"]
+    return [i for i in ws + ps if y0 <= (i[3][1] + i[3][3]) / 2 <= y1]
+
+
+def unmatched(bs, as_):
+    """The items of each side with no counterpart on the other: same key, same shape to within SHAPETOL
+    pt, paired nearest-first.  A pair's distance is its MOVE, which is no change at all."""
+    ctr = lambda i: ((i[3][0] + i[3][2]) / 2, (i[3][1] + i[3][3]) / 2)
+    same = lambda s, t: all(abs(p[0] - q[0]) <= SHAPETOL and abs(p[1] - q[1]) <= SHAPETOL for p, q in zip(s, t))
+    groups = {}
+    for side, items in ((0, bs), (1, as_)):
+        for n, i in enumerate(items):
+            groups.setdefault(i[0], ([], []))[side].append(n)
+    used, pairs = (set(), set()), []
+    for kb, ka in groups.values():
+        # Equal counts pair in reading order: nearest-first crosses rows once a reflow shifts a row by
+        # more than the row pitch.  Unequal counts, or a shape that differs, fall back to nearest-first.
+        rank = lambda ns, s: sorted(ns, key=lambda n: (s[n][3][1], s[n][3][0]))
+        cand = [(0, i, j) for i, j in zip(rank(kb, bs), rank(ka, as_)) if same(bs[i][2], as_[j][2])] \
+            if len(kb) == len(ka) else []
+        cand += sorted((math.dist(ctr(bs[i]), ctr(as_[j])), i, j) for i in kb for j in ka
+                       if same(bs[i][2], as_[j][2]))
+        for _, i, j in cand:
+            if i not in used[0] and j not in used[1]:
+                used[0].add(i), used[1].add(j)
+                pairs.append((i, j))
+    # A pair whose ENCLOSING filled shape is not itself a pair changed place, not just position: a label
+    # taken out of the margin into a header cell is the change, the rows the header pushed down are not.
+    # How far a pair moved says nothing — the rows of one reflowed display each move by their own amount.
+    area = lambda b: (b[2] - b[0]) * (b[3] - b[1])
+    fills = [[n for n, i in enumerate(s) if i[1] is None and dict(i[0][2]).get("fill", "none") != "none"]
+             for s in (bs, as_)]
+    def box(side, n):
+        s, (x, y) = (bs, as_)[side], ctr((bs, as_)[side][n])
+        inside = [m for m in fills[side] if m != n and area(s[m][3]) > area(s[n][3])
+                  and s[m][3][0] <= x <= s[m][3][2] and s[m][3][1] <= y <= s[m][3][3]]
+        return min(inside, key=lambda m: area(s[m][3]), default=None)
+    twin = dict(pairs)
+    for i, j in pairs:
+        c, d = box(0, i), box(1, j)
+        if (c is None) != (d is None) or (c is not None and twin.get(c) != d):
+            used[0].discard(i), used[1].discard(j)
+    return [i for n, i in enumerate(bs) if n not in used[0]], [i for n, i in enumerate(as_) if n not in used[1]]
+
+
+def rings(before, after, cb, ca, tmp, key):
+    """Each crop ringed, IN PLACE, round what it draws that the other does not: a word with no equal
+    word, a primitive with no equal-shaped primitive, wherever either sits.  A comparison of pixels at
+    the same (x, y) rings every row a change pushed down, which is a move, not a change.  `before` and
+    `after` are (pdf, page, top pt, bottom pt, top px) — the crop's own frame, which maps pt to px."""
+    k = DPI / 72.0
+    ub, ua = unmatched(content(*before[:4], tmp), content(*after[:4], tmp))
+    if not ub and not ua:
+        print(f"{key}: a pure reflow — every word and primitive has a moved counterpart, nothing ringed")
         return
-    if max(b[3] - b[1] for b in boxes) > 0.7 * H:
-        print(f"{key}: the change spans the crop — a reflow, not ringed")
-        return
-    ring(pb, boxes, cb)
-    ring(pa, boxes, ca)
+    for items, (_, _, _, _, top), png in ((ub, before, cb), (ua, after, ca)):
+        if items:
+            ring(png, merge([(b[0] * k, b[1] * k - top, b[2] * k, b[3] * k - top) for b in (i[3] for i in items)]), png)
+    say = lambda us: ", ".join([i[1] for i in us if i[1]] + [f"{sum(not i[1] for i in us)} primitives"])
+    print(f"{key}: ringed before [{say(ub)}]; after [{say(ua)}]")
 
 
 _BOX = {}
@@ -842,7 +900,10 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
             geo = f"{x1 - x0}x{y1 - y0}+{x0}+{y0}"
             emit("magick", b, "-crop", geo, "+repage", f"{tmp}/cb.png")
             emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
-            rings(f"{tmp}/cb.png", f"{tmp}/ca.png", tmp, f"{tag_}p{n}-{k}")
+            # One pixel crop of both pages, so both frames start at the same y0 px.
+            pt = 72.0 / DPI
+            rings((before_pdf, i + 1, y0 * pt, y1 * pt, y0), (after_pdf, j + 1, y0 * pt, y1 * pt, y0),
+                  f"{tmp}/cb.png", f"{tmp}/ca.png", tmp, f"{tag_}p{n}-{k}")
             scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
             label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
             label(f"{tmp}/ca.png", f"{tmp}/la.png", f"{tag_}p{j + 1} AFTER", tmp, scale)
