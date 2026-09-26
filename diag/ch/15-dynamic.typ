@@ -174,31 +174,17 @@ in @mu-defn.
 
 // (9.2): the book's four hints of Theorem 9.1 with `thin(Q)∋⊑∋` added.  Its own display: a `#disp`
 // cannot break across a page, and the rows above already fill one.
-#disp[#calc-table(
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([],leanc("Freyd.Alg.dynamic_programming_thin_lower.lhs"), [#src[(9.2)]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_lower.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step1.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_thin_step2.rhs"),
-    [#src[`thin(Q)∋⊑∋` — @thin-laws]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_lower_step2.rhs"),
-    [#src[#frc([`T°`])`∋=T°` — @pow-laws]])],
-  [#lean("Freyd.Alg.dynamic_programming_lower_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_lower_step3.rhs"),
-    [#src[`M⊑`#frc([`H`])`∋=H` — @est-up]])],
-  [#lean("Freyd.Alg.dynamic_programming_lower_step3.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_thin_lower.rhs"),
-    [#src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]])],
-  [#lean("Freyd.Alg.dynamic_programming_thin_lower.rhs")],
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  lean-chain(
+    (none, "Freyd.Alg.dynamic_programming_thin_lower.lhs", src[(9.2)]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
+      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @thin-laws]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
+    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
+    (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
+      src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+  ),
 )]<dp-laws-92>
 
 // (9.3), the second half of the same proof: a `#disp` does not break across a page.
