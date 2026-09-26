@@ -984,11 +984,14 @@ structure Cached where
   proof : Option (Expr × Expr)
   passed : Array String
 
-/-- What EVERY answer depends on, once per process: the exporter's own code (the `diag.tool`
-    modules by olean hash, and the Lean it runs on), every instance by name and statement — a new
+/-- What EVERY answer depends on, once per process: the exporter's own code (the hash of the code
+    `verdict` can run, `verdictCodeRef`, and the Lean it runs on), every instance by name and statement — a new
     one anywhere can change what `discharge` synthesises — the spelling bridges by name, and the
     congruence lemmas simp runs them with.  Its hash names the cache directory (`cacheSlot`). -/
 initialize toolPrintRef : IO.Ref (Option String) ← IO.mkRef none
+
+/-- `verdictCodeHash verdict`, set by the `initialize` after `verdict`. -/
+initialize verdictCodeRef : IO.Ref (Option UInt64) ← IO.mkRef none
 
 /-- Each module's olean hash, read once per process. -/
 initialize oleanHashRef : IO.Ref (Std.HashMap Name String) ← IO.mkRef {}
@@ -1017,22 +1020,26 @@ def cacheRoot : System.FilePath := ".lake/build/diag-verdicts"
 def toolPrint : MetaM String := do
   if let some f ← toolPrintRef.get then return f
   let env ← getEnv
-  -- The exporter's modules as `diag/tool` lists them: the environment imports only those a library
-  -- module happens to, so reading them off it left `StringDiagram` itself out of the print.
-  let mods := (← System.FilePath.readDir "diag/tool").filterMap fun d =>
-    if d.path.extension == some "lean" then d.path.fileStem.map (`diag.tool).str else none
-  let tool ← (sortNames mods).mapM fun m => return s!"{m} {← oleanHashOnce m}"
+  -- The code `verdict` runs, not every `diag.tool` module's olean: a layout edit cannot change a
+  -- verdict, and keying on it emptied the cache on every exporter change.
+  let some code ← verdictCodeRef.get
+    | throwError "diag-export: verdictCodeRef is unset: the `initialize` after `verdict` in diag/tool/StringDiagram.lean did not run"
   let typed (tag : String) (n : Name) : MetaM String := do
     let some ci := env.find? n | throwError "diag-export: {tag} {n} names no constant of the environment"
     return s!"{tag} {n} {hash ci.type}"
   let inst := sortNames ((Meta.instanceExtension.getState env).instanceNames.toList.map (·.1)).toArray
-  let f := "\n".intercalate ([s!"lean {Lean.versionString}"] ++ tool.toList ++ (← inst.mapM (typed "instance")).toList
+  let f := "\n".intercalate ([s!"lean {Lean.versionString}", s!"verdict code {code}"] ++ (← inst.mapM (typed "instance")).toList
     ++ (← bridgeNames).toList.map (s!"bridge {·}") ++ (← (← congrNames).mapM (typed "congr")).toList)
   -- An entry under another exporter's hash is never read again (`cacheSlot` names the directory by
   -- this one), so it is removed here, once per process, rather than left to accumulate.
   if ← cacheRoot.pathExists then
     for d in ← cacheRoot.readDir do
-      if d.fileName != toString (hash f) then IO.FS.removeDirAll d.path
+      -- Sibling processes remove the same directory at once, so a file already gone is the goal
+      -- reached, not an error: it failed a parallel cold run's panels with "no such file".
+      if d.fileName != toString (hash f) then
+        match ← (IO.FS.removeDirAll d.path).toBaseIO with
+        | .ok () | .error (.noFileOrDirectory ..) => pure ()
+        | .error e => throwError "diag-export: removing the stale verdict cache {d.path}: {e}"
   toolPrintRef.set (some f)
   return f
 
@@ -1322,6 +1329,39 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
     `LaxNatural ({← Meta.ppExpr F}) ({← Meta.ppExpr G}) ({← Meta.ppExpr φ})`, one of its two \
     siblings, or its refutation" ++ String.join (passed.toList.map ("\n  " ++ ·)))
   return { mark := some .spider, lean := #[] }
+
+/-- The hash of every constant `root` can run — a value, a type, an `implemented_by` or `partial` body,
+    an `initialize` action — outside the toolchain, which `toolPrint` keys by version.  Taken when this
+    module is built: the exporter's run-time environment is the drawn statement's and lacks this code.
+    A name with macro scopes (an `initialize`'s) is left out, since its scope moves with any edit above. -/
+def verdictCodeHash (root : Name) : CoreM UInt64 := do
+  let env ← getEnv
+  let mut seen : NameSet := {}
+  let mut todo := #[root]
+  let mut hs : Array UInt64 := #[]
+  while h : todo.size > 0 do
+    let n := todo[todo.size - 1]
+    todo := todo.pop
+    if seen.contains n then continue
+    seen := seen.insert n
+    let some ci := env.find? n | throwError "diag-export: {n}, reached from {root}, names no constant"
+    if let some i := env.getModuleIdxFor? n then
+      if [`Init, `Std, `Lean, `Lake].contains env.header.moduleNames[i.toNat]!.getRoot then continue
+    let (es, more) : Array Expr × Array Name := match ci with
+      | .defnInfo d => (#[d.type, d.value], #[])
+      | .opaqueInfo d => (#[d.type, d.value], #[])
+      | .inductInfo d => (#[d.type], d.ctors.toArray)
+      | .ctorInfo d => (#[d.type], #[d.induct])
+      | c => (#[c.type], #[])
+    hs := hs.push (es.foldl (fun a e => mixHash a (hash e)) (if n.hasMacroScopes then 0 else hash n))
+    let impl := [Compiler.implementedByAttr.getParam? env n, some (n ++ `_unsafe_rec), getInitFnNameFor? env n]
+    todo := todo ++ more ++ ((impl.filterMap id).filter env.contains).toArray
+    unless ci matches .thmInfo _ do todo := todo ++ es.flatMap (·.getUsedConstants)
+  return (hs.qsort (· < ·)).foldl mixHash 7
+
+elab "verdict_code%" : term => return toExpr (← verdictCodeHash ``verdict)
+
+initialize verdictCodeRef.set (some verdict_code%)
 
 /-! ### The four constructors — nothing else builds a `Diagram` -/
 
