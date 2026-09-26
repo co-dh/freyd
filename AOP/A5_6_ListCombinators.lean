@@ -227,7 +227,7 @@ public def catNE : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ d
 
 /-- B&dM's `concat = ⦇[nil, cat]⦈` at p.128, where that `cat` is `catNE`: only a flattening whose
     segments are all non-empty, so that `concat°` is `partition`. -/
-public def concatNE : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
+@[expose] public def concatNE : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A :=
   ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit A⟩) wrapR catNE
     : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
 

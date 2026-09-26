@@ -13,6 +13,45 @@
 // the way `scripts/diagram` draws it; the crossings that makes are the accepted ones.
 #let THP = 4.15                                   // a datatype inside `THN`
 
+== Example: segmenting a list <dp-example>
+
+// @dp-defn's `H≜⦇T⦈°⦇h⦈` at one instance: `A=B=[ℕ]`, `F(X)=𝟏+[ℕ]×X`, and the non-emptiness of a
+// segment carried by `T`'s `cat`, not by the element type.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Segment.fold_T") \
+    #src[`T=[nil,cat]` takes a non-empty first list, so `T°` cuts a non-empty prefix off a list every
+     way, and folding with `T` flattens a list of segments]],
+    // lean:AOP.A9_0_SegmentExample.fold_T@bdb6e7c6
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Segment.fold_h") \
+    #src[`h=[nil,cons(sum×𝟙)]` puts a segment's sum in front, so folding with `h` sums every segment]],
+    // lean:AOP.A9_0_SegmentExample.fold_h@5715f650
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Segment.H_eq") \
+    #src[`H` segments a list every way, then sums each segment; with `R` comparing the largest entry,
+     `M` cuts the list so that the largest segment sum is as small as possible]],
+    // lean:AOP.A9_0_SegmentExample.H_eq@49b18be4
+)]<dp-example-defs>
+
+#disp[#table(columns: 1, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*`h` at a point*]),
+  [#leanf("Freyd.Alg.RelSet.Segment.h_nil")],
+  // lean:AOP.A9_0_SegmentExample.h_nil@36fe87e4
+  [#leanf("Freyd.Alg.RelSet.Segment.h_c")],
+  // lean:AOP.A9_0_SegmentExample.h_c@a0923ff4
+  [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c")],
+  // lean:AOP.A9_0_SegmentExample.h_ab_c@6793d55b
+  [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc")],
+  // lean:AOP.A9_0_SegmentExample.h_a_bc@17446eea
+)]<dp-example-h>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Segment.H_abc") \
+    #src[`H` sends `[a,b,c]` to the sums of its four segmentations and nothing else]],
+    // lean:AOP.A9_0_SegmentExample.H_abc@1d74200c
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Segment.H_fix") \
+    #src[cut once, solve the rest, put the pieces back together]],
+    // lean:AOP.A9_0_SegmentExample.H_fix@80717498
+)]<dp-example-H>
+
 == Theory
 
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions

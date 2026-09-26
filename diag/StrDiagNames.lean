@@ -31,6 +31,8 @@ import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
 import AOP.A9_3_Bracket
 import AOP.A9_4_Code
+-- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
+import AOP.A9_0_SegmentExample
 import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
@@ -293,6 +295,25 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The snoc-list leaf object is the same object as the cons-list one, so it prints by the same rule.
 attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
 
+-- A cons-list VALUE is written as the list it is: `cons a (cons b nil)` is `[a,b]`.  Only a spine
+-- ending in `nil` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
+  | `($_ $x nil) => `([$x])
+  | `($_ $x [$xs,*]) => `([$x, $xs,*])
+  | _ => throw ()
+
+-- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
+def delabSegmentT : Delab := `($(mkIdent `T))
+open Lean PrettyPrinter Delaborator in
+@[delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
+
+-- The coproduct injections applied to a point are applications, so they take parentheses.
+notation:max "inl(" x ")" => Sum.inl x
+notation:max "inr(" x ")" => Sum.inr x
+
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
 notation:max "thin(" Q ")" => thinRel Q
@@ -523,7 +544,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 /-- `H≜⦇T⦈°⦇h⦈` is the note's ONE bead `H`: which coalgebra and algebra it is built from is what
     the definition above the table states, not what the wire is labelled with. -/
-@[app_unexpander H] def unexpandH : Unexpander | _ => `($(mkIdent `H))
+-- Applied to points, `H` keeps them: `H([a,b,c],ys)` is a claim about one input, not about `H`.
+@[app_unexpander H] def unexpandH : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `H) $x $args*)
+  | _ => `($(mkIdent `H))
 
 -- A SECTION'S PARAMETERS ARE THE PANEL'S REGION, NOT PART OF THE BEAD'S NAME.  `gen`, `Q` and
 -- `paths` are stated over the cylinder's fixed data (`I`, `moves`, `trans`, `zip`, …), which every
