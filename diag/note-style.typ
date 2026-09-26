@@ -160,7 +160,11 @@
   // past the foot, silently (`<edit-mono>`'s last row).  The display's own block is `kept`'s choice.
   // `pic-flow` here and not in `disp`: `kept` must find the body's markers from outside its block.
   show figure.where(kind: "disp"): set block(breakable: true)
+  // A display is not running prose: its second paragraph starts flush, not at the text's 1em
+  // indent, and a list reads from its bullets, not centred like the pictures `figure` centres.
+  show figure.where(kind: "disp"): set par(first-line-indent: 0em)
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
+    show list: set align(left)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
     if cetz.CDSCAN {
