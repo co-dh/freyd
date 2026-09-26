@@ -71,7 +71,7 @@ in @mu-defn.
     #src[every answer the recursion returns is an optimal one]],
     // lean:AOP.A9_1.dynamic_programming@2ea6321c
   [#src[
-    - the body, left to right: #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
+    - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
     - `⊑M`: that never misses the optimum, though all candidates are never listed as `H` would
     - `h` monotonic on `R`: a better part never makes the whole worse
@@ -175,6 +175,10 @@ in @mu-defn.
 // (9.2): the book's four hints of Theorem 9.1 with `thin(Q)∋⊑∋` added.  Its own display: a `#disp`
 // cannot break across a page, and the rows above already fill one.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_lower") \
+    #src[taking the input apart every way `T` allows (#frc([`T°`])), dropping the parts `thin(Q)`
+     rejects, solving each rest by `M` and keeping an optimum returns only what `H` returns]],
+     // lean:AOP.A9_1.dynamic_programming_thin_lower@e569bda9
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_thin_lower.lhs", src[(9.2)]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
