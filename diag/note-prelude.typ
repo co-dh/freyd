@@ -242,7 +242,7 @@
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
 // PICTURE FIRST on a shared left edge (a table rebinds `pw` to its widest drawing); the formula is
 // flush RIGHT in both branches, so it lands on one edge whether the row fits side by side or stacks.
-#let step(op, pic, f, pw: none) = layout(sz => {
+#let step(op, pic, f, pw: none) = kept(k => layout(sz => {
   let gut = 6pt
   // `box`: `P` centres its drawing in whatever width it gets, which would undo the shared left edge.
   let p = box(pic)
@@ -254,8 +254,8 @@
     grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon), column-gutter: gut,
       op, stack(spacing: 5pt, p, align(right, f)))
   }
-  pic-flow(plain(f), row, width: sz.width)
-})
+  pic-flow(plain(f), row, width: sz.width, k: k)
+}))
 // A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
 // `#lean` call, so every step stands in one box at one height, on ONE line scaled to the width
 // (`fill`), because a wrapped chain hides which step follows which.  The circuits follow as their

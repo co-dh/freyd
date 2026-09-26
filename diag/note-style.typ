@@ -58,6 +58,63 @@
 #let PAGEH = 35cm
 #let MARGIN = 1.5cm
 #let NUMGAP = 0.15cm  // column edge to the display number's LEFT edge; the rest of MARGIN is its room to grow
+// Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
+// `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
+// Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
+// `query(heading.before(here()))` per picture is quadratic in the note (650 pictures × 600 headings).
+// `disp: true` only from `disp` below: a picture INSIDE a display reports a crop box of its own, so
+// without the flag a gate grouping marks by the preceding `pic` would file a display's arrows under
+// whichever inner picture came last.
+// `size`: the extent when the caller already has it — every `measure` lays `body` out once more,
+// and `P` inside `disp` nests that cost four deep.
+// `parts`: one `(page, y, h)` per page the body occupies, one row each, so a crop never runs off its page.
+#let pic-meta(key, body, width: auto, disp: false, size: auto, parts: auto) = if NODRAW { none } else { context {
+  let hs = query(selector(heading).before(here()))
+  let sec = if hs.len() == 0 { "" } else {
+    numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
+  let (sz, pos) = (if size == auto { measure(body, width: width) } else { size }, here().position())
+  let parts = if parts == auto { ((page: pos.page, y: pos.y, h: sz.height),) } else { parts }
+  // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
+  for t in parts [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec,
+    page: t.page, x: pos.x.pt(), y: t.y.pt(), disp: disp,
+    w: sz.width.pt(), h: t.h.pt()))<pic>]
+} }
+// A block `body` set in flow at `width`, reporting its crop box off an end marker, not a `measure` that
+// lays the body out again: a body split across pages reports one part per page, from its start to the
+// content bottom, whole content columns between, and from the content top to its end.  The marker
+// carries its start's location, so a nested one cannot be taken for it; before introspection has it,
+// the height is a placeholder.  `k`: the key the marker is found by, when a caller outside the body
+// must find it too (`kept`); by default the start's own location.
+#let pic-span(k, from) = {
+  let e = query(selector(<pic-end>).after(from)).find(m => m.value.k == k)
+  if e != none { (e.value.at.position(), e.location().position()) }
+}
+#let pic-flow(key, body, width: auto, disp: false, k: none) = if NODRAW { body } else { context {
+  let a = here()
+  let k = if k == none { a } else { k }
+  let s = pic-span(k, a)
+  let (p, q) = if s == none { (a.position(), a.position()) } else { s }
+  let top(n) = if n == p.page { p.y } else { MARGIN }
+  let bot(n) = if n == q.page { q.y } else { PAGEH - MARGIN }
+  pic-meta(key, body, width: width, disp: disp, size: (width: width),
+    parts: range(p.page, q.page + 1).map(n => (page: n, y: top(n), h: bot(n) - top(n))))
+  body
+  [#metadata((k: k, at: a))<pic-end>]
+} }
+// ONE PAGE OR BROKEN: `f(k)` — a block holding a `pic-flow` keyed `k` — is unbreakable when its
+// body fits the content height, so it moves to the next page whole instead of splitting there, and a
+// taller one stays breakable.  The height is the markers', not a `measure`: the first pass has none
+// and lays every body out unbroken, so the next reads each one's true height off one page; a span
+// over two pages can only be one that height made breakable.  `>=` a FULL page, not `>`: laid out
+// unbreakable, a taller body is cut at the page foot and reports exactly the content height; 1e-4pt
+// is typst's own `fits` tolerance.  Under `NODRAW` there are no markers.
+#let kept(f) = context {
+  let k = here()
+  let s = if NODRAW { none } else { pic-span(k, k) }
+  set block(breakable: NODRAW or (s != none and (s.first().page != s.last().page
+    or s.last().y - s.first().y >= PAGEH - 2 * MARGIN - 0.0001pt)))
+  f(k)
+}
 #let conf(title: "", body) = {
   set page(width: PAGEW, height: PAGEH, margin: MARGIN)
   set text(size: 11.5pt)
@@ -93,17 +150,19 @@
     } else { it }
   }
   // THE NUMBER SITS IN THE RIGHT MARGIN and takes no width: a column of its own cost every display
-  // about 35pt.  `breakable` because a figure is not, and the chain tables here run over a page break.
+  // about 35pt.  Breakable when taller than a page (`kept`), though a figure is not: a chain table
+  // that tall must run on.
   // `dx` is MEASURED, never a constant: `place(top + right)` fixes the number's RIGHT edge at `dx`
   // past the column, so a constant leaves its LEFT edge to the number's own width, and anything
   // wider than that constant reaches back INTO the column — where the display's own tint is painted
   // after the `place` and covers the overrun.  `(13.4.4a)` printed `3.4.4a`.  Measuring makes the
   // LEFT edge the fixed thing, at `NUMGAP` past the column, whatever the number's depth.
   // `./scripts/inkfit` gates both ends: the tint no longer covers it, the trim does not cut it.
-  // The figure's OWN block, which the show rule below sits inside: breakable there too, or a table
-  // taller than a page loses its last rows past the foot, silently (`<edit-mono>`'s last row).
+  // The blocks INSIDE a display: breakable too, or a table taller than a page loses its last rows
+  // past the foot, silently (`<edit-mono>`'s last row).  The display's own block is `kept`'s choice.
+  // `pic-flow` here and not in `disp`: `kept` must find the body's markers from outside its block.
   show figure.where(kind: "disp"): set block(breakable: true)
-  show figure.where(kind: "disp"): it => block(width: 100%, breakable: true, {
+  show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
     if cetz.CDSCAN {
@@ -125,8 +184,9 @@
     // A string-diagram panel is addressed by its display and its place in it (see `hm-meta`), so the
     // count restarts here; the update draws nothing.
     counter("hm-panel").update(0)
-    it.body
-  })
+    pic-flow(dispnum(counter(heading).get(), it.counter.at(k).first()), it.body,
+      width: PAGEW - 2 * MARGIN, disp: true, k: k)
+  }))
   body
 }
 
@@ -158,47 +218,8 @@
 /// A NUMBERED DISPLAY carrying a letter-suffixed section path — `(13a)` or `(13.1a)` — at its right
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
-// Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
-// `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
-// Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
-// `query(heading.before(here()))` per picture is quadratic in the note (650 pictures × 600 headings).
-// `disp: true` only from `disp` below: a picture INSIDE a display reports a crop box of its own, so
-// without the flag a gate grouping marks by the preceding `pic` would file a display's arrows under
-// whichever inner picture came last.
-// `size`: the extent when the caller already has it — every `measure` lays `body` out once more,
-// and `P` inside `disp` nests that cost four deep.
-// `parts`: one `(page, y, h)` per page the body occupies, one row each, so a crop never runs off its page.
-#let pic-meta(key, body, width: auto, disp: false, size: auto, parts: auto) = if NODRAW { none } else { context {
-  let hs = query(selector(heading).before(here()))
-  let sec = if hs.len() == 0 { "" } else {
-    numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
-  let (sz, pos) = (if size == auto { measure(body, width: width) } else { size }, here().position())
-  let parts = if parts == auto { ((page: pos.page, y: pos.y, h: sz.height),) } else { parts }
-  // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
-  for t in parts [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec,
-    page: t.page, x: pos.x.pt(), y: t.y.pt(), disp: disp,
-    w: sz.width.pt(), h: t.h.pt()))<pic>]
-} }
-// A block `body` set in flow at `width`, reporting its crop box off an end marker, not a `measure` that
-// lays the body out again: a body split across pages reports one part per page, from its start to the
-// content bottom, whole content columns between, and from the content top to its end.  The marker
-// carries its start's location, so a nested one cannot be taken for it; before introspection has it,
-// the height is a placeholder.
-#let pic-flow(key, body, width: auto, disp: false) = if NODRAW { body } else { context {
-  let a = here()
-  let e = query(selector(<pic-end>).after(a)).find(m => m.value == a)
-  let (p, q) = (a.position(), if e == none { a.position() } else { e.location().position() })
-  let top(n) = if n == p.page { p.y } else { MARGIN }
-  let bot(n) = if n == q.page { q.y } else { PAGEH - MARGIN }
-  pic-meta(key, body, width: width, disp: disp, size: (width: width),
-    parts: range(p.page, q.page + 1).map(n => (page: n, y: top(n), h: bot(n) - top(n))))
-  body
-  [#metadata(a)<pic-end>]
-} }
-// No `layout` here: the block is `breakable` (see `conf`), so the width is the text width.
-#let disp(body) = figure(kind: "disp", supplement: none, context pic-flow(
-  dispnum(counter(heading).get(), counter(figure.where(kind: "disp")).get().first()),
-  body, width: PAGEW - 2 * MARGIN, disp: true))
+// Its crop box and its page break are `conf`'s show rule; the width is the text width.
+#let disp(body) = figure(kind: "disp", supplement: none, body)
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
@@ -271,8 +292,8 @@
 
 // A row is TALLER than it is wide once the second column is a picture too, so the circuit and its
 // formula stack on one left edge — which `step`'s side-by-side branch cannot give.
-#let vstep(op, pic, f) = layout(sz => {
+#let vstep(op, pic, f) = kept(k => layout(sz => {
   let row = grid(columns: (OPW, 1fr), align: (left + horizon, left + horizon),
     column-gutter: 6pt, op, stack(spacing: 5pt, box(pic), f))
-  pic-flow(plain(f), row, width: sz.width)
-})
+  pic-flow(plain(f), row, width: sz.width, k: k)
+}))
