@@ -31,16 +31,17 @@
     // lean:AOP.A9_0_SegmentExample.H_eq@49b18be4
 )]<dp-example-defs>
 
-#disp[#table(columns: 1, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*`h` at a point*]),
-  [#leanf("Freyd.Alg.RelSet.Segment.h_nil")],
-  // lean:AOP.A9_0_SegmentExample.h_nil@36fe87e4
-  [#leanf("Freyd.Alg.RelSet.Segment.h_c")],
-  // lean:AOP.A9_0_SegmentExample.h_c@a0923ff4
-  [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c")],
-  // lean:AOP.A9_0_SegmentExample.h_ab_c@6793d55b
-  [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc")],
-  // lean:AOP.A9_0_SegmentExample.h_a_bc@17446eea
+// `h` is a map (`h_iff_hFn`), so each row is one equation of its function, input | output.
+#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*`x`*], [*`h(x)`*]),
+  [#leanf("Freyd.Alg.RelSet.Segment.h_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_nil.rhs")],
+  // lean:AOP.A9_0_SegmentExample.h_nil@89d46cbf
+  [#leanf("Freyd.Alg.RelSet.Segment.h_c.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_c.rhs")],
+  // lean:AOP.A9_0_SegmentExample.h_c@ebeb0e4d
+  [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_ab_c.rhs")],
+  // lean:AOP.A9_0_SegmentExample.h_ab_c@cc4f586e
+  [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Segment.h_a_bc.rhs")],
+  // lean:AOP.A9_0_SegmentExample.h_a_bc@fff1c8b6
 )]<dp-example-h>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

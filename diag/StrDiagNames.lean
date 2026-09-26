@@ -295,11 +295,11 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The snoc-list leaf object is the same object as the cons-list one, so it prints by the same rule.
 attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
 
--- A cons-list VALUE is written as the list it is: `cons a (cons b nil)` is `[a,b]`.  Only a spine
--- ending in `nil` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
+-- A cons-list VALUE is written as the list it is: `cons a (cons b [])` is `[a,b]`.  Only a spine
+-- ending in `[]` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
-  | `($_ $x nil) => `([$x])
+  | `($_ $x []) => `([$x])
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
   | _ => throw ()
 

@@ -520,11 +520,11 @@ open Lean PrettyPrinter in
   | `($_ $_ $_) => `($(mkIdent `F))
   | _ => throw ()
 
--- The leaf at the EMPTY leaf type is the note's `nil`, and at any other leaf type it is a leaf
--- carrying a value: the unit argument is matched, not the constructor alone.
+-- The leaf VALUE at the EMPTY leaf type is the empty list `[]`, as for the cons-list, and at any other
+-- leaf type it is a leaf carrying a value: the unit argument is matched, not the constructor alone.
 open Lean PrettyPrinter in
 @[app_unexpander SnocList.wrap] public meta def unexpandNil : Unexpander
-  | `($_ ()) => `($(mkIdent `nil))
+  | `($_ ()) => `([])
   | `($_ $x) => `($(mkIdent `wrap) $x)
   | _ => throw ()
 

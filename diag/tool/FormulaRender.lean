@@ -38,10 +38,16 @@ def relBreak : String := "#sym.zws"
 /-- Chase `.lhs`/`.rhs` down through statements built from statements (`↔`, `∧`), the same walk
     `StrDiag.drawString`'s `reqParts` does: a step lands on a CONNECTIVE and keeps chasing, or on a
     RELATION and picks a side there, after which nothing may follow — a side has no sides of its
-    own. -/
+    own.  `.arg` then takes the argument that side is APPLIED to: `f(x)=y`'s `.lhs.arg` is `x`, so a
+    table of a map can put its input and output in two columns read off one equation. -/
 partial def descend (declName : Name) (path : List String) (body : Expr) : MetaM Expr := do
   match path with
   | [] => return body
+  | "arg" :: rest =>
+    if (← Meta.isProp body) || !body.isApp then
+      throwError "{declName}: `.arg` takes the argument of an applied side, and \
+        {← Meta.ppExpr body} is {if ← Meta.isProp body then "a statement — name a side first" else "no application"}"
+    descend declName rest body.appArg!
   | s :: rest =>
     match conn? body with
     | some (l, r) => descend declName rest (if s == "lhs" then l else r)
@@ -49,7 +55,7 @@ partial def descend (declName : Name) (path : List String) (body : Expr) : MetaM
       match ← splitM body with
       | some (_, l, r) =>
         let side := if s == "lhs" then l else r
-        if rest.isEmpty then return side
+        if rest.all (· == "arg") then descend declName rest side
         else throwError "{declName}: `.{rest.head!}` follows `.{s}`, which already names a side \
           of {← Meta.ppExpr body} — a side has no sides of its own"
       | none => throwError "{declName}: `.{s}` finds no side to take of {← Meta.ppExpr body}, \
