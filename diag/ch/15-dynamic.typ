@@ -51,7 +51,8 @@ in @mu-defn.
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@2afe998a
-  lean-chain(
+  // two rows, split where the old two tables split: seven panels in one row shrink the fractions past reading
+  lean-chain((
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
@@ -60,15 +61,13 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3.rhs", src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3@0b07a2e4
-  ),
-  // two rows, split where the old two tables split: seven panels in one row shrink the fractions past reading
-  lean-chain(
+  ), (
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step5@7faf3348
     (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R°R°⊑R°`: `R` transitive]),
-  ),
+  )),
 )]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:

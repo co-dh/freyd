@@ -181,25 +181,30 @@
 // A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
 // between it and the step before, the formula above, the reason underneath both.  Steps pack
 // greedily into lines of the cell's width, a continued line opening with its op; a line's slack
-// widens its columns — or, `fill`, ONE line, the pictures scaled by the factor that spends it all.
-#let hchain(..steps, fill: false) = layout(sz => {
-  let gut = 4pt
+// widens its columns — or, `fill`, ONE line, the pictures scaled by the factor that spends it all
+// (`fill: true`), or by a factor the caller fixed (`fill: k`, `lean-chain`'s shared one).
+#let hgut = 4pt
+// The factor that spends a line's slack: `w` the pictures' widths, `lead` whether the first has no op.
+// `--list` renders the panels as bare metadata, so every width is zero and there is no slack to spend.
+#let chain-k(width, lead, w) = {
+  let tot = w.sum(default: 0pt)
+  if tot == 0pt { 1.0 } else { (width - (w.len() - if lead { 1 } else { 0 }) * (OPW + 2 * hgut)) / tot }
+}
+#let hchain(..steps, fill: none) = layout(sz => {
+  let gut = hgut
   // `u`, a second picture UNDER the first — the step's circuit under its Hinze–Marsden panel.
   let ss = steps.pos().map(s => (op: s.at(0), pic: box(s.at(1)), why: s.at(2), f: s.at(3, default: none),
     u: s.at(4, default: none), w: calc.max(measure(box(s.at(1))).width,
       if s.at(4, default: none) == none { 0pt } else { measure(box(s.at(4))).width })))
-  if fill {
-    let lanes = ss.len() - if ss.first().op == none { 1 } else { 0 }
-    // `--list` renders the panels as bare metadata, so every width is zero and there is no slack to spend
-    let tot = ss.map(s => s.w).sum(default: 0pt)
-    let k = if tot == 0pt { 1.0 } else { (sz.width - lanes * (OPW + 2 * gut)) / tot }
+  if fill != none {
+    let k = if fill == true { chain-k(sz.width, ss.first().op == none, ss.map(s => s.w)) } else { fill }
     ss = ss.map(s => s + (pic: scale(k * 100%, reflow: true, s.pic), w: s.w * k,
       u: if s.u == none { none } else { scale(k * 100%, reflow: true, box(s.u)) }))
   }
   let (lines, cur, used) = ((), (), 0pt)
   for s in ss {
     let add = s.w + if lines.len() == 0 and cur.len() == 0 and s.op == none { 0pt } else { OPW + 2 * gut }
-    if not fill and cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
+    if fill == none and cur.len() > 0 and used + add > sz.width { lines.push(cur); cur = (); used = s.w } else { used += add }
     cur.push(s)
   }
   lines.push(cur)
@@ -250,14 +255,24 @@
 // (`fill`), because a wrapped chain hides which step follows which.  The circuits follow as their
 // own block, one `step` row each — op, circuit, reason — since aligning them under the panels
 // forced the panels to wrap to the circuits' widths.
-#let lean-chain(..steps) = {
-  let ss = steps.pos()
-  let (m, pics) = lean-pics("generated/", <lean-panel>, ss.map(s => s.at(1)))
-  m
-  hchain(fill: true, ..ss.zip(pics).map(((s, p)) => (s.at(0), p, [])))
-  v(6pt)
-  // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
-  pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..ss.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))))
+// A chain too long for one line is SEVERAL ROWS, each an array of steps and its own `#lean` box;
+// every row takes the SMALLEST row's factor, since a short row filled on its own grows its beads
+// and labels past its neighbours' and stands the tallest.
+#let lean-chain(..args) = {
+  let a = args.pos()
+  let rows = if type(a.first().at(0)) == array { a } else { (a,) }
+  let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.map(s => s.at(1))))
+  for c in calls { c.at(0) }
+  layout(sz => {
+    let k = calc.min(..rows.zip(calls).map(((r, c)) =>
+      chain-k(sz.width, r.first().at(0) == none, c.at(1).map(p => measure(box(p)).width))))
+    for (r, c) in rows.zip(calls) {
+      hchain(fill: k, ..r.zip(c.at(1)).map(((s, p)) => (s.at(0), p, [])))
+      v(6pt)
+      // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
+      pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..r.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))))
+    }
+  })
 }
 #let sort-P-box = ([`sort(P)`], 2.23, true)
 #let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
