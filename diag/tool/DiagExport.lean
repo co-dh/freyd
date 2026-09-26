@@ -1540,7 +1540,7 @@ def certLine (names : List Name) : MetaM String := do
     let some ci := env.find? n | throwError "no such declaration: {n}"
     return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 (← Freyd.TypeRender.stmtKey ci)
       ++ "\")"
-  return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← exeStamp) ++ "\n"
+  return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← StrDiag.exeStamp) ++ "\n"
 
 /-- The marks of a generated file's own `cert:` line, `(<declaration>, <key>)` each.  Parsing it is
     the exporter reading ITS OWN output format — the one string read in the tool — and a line it
@@ -1580,7 +1580,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
     ++ ", ".intercalate (names.map Cite.sqlLit) ++ ")")
   let keys : Std.HashMap String String :=
     rows.foldl (fun m r => m.insert r.user (Cite.keyHex r.key)) {}
-  let exe ← exeStamp
+  let exe ← StrDiag.exeStamp
   let mut gone : List String := []
   for n in names do
     unless keys.contains n do gone := gone ++ [n]

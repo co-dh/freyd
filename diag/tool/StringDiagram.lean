@@ -896,6 +896,179 @@ def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark ×
       if hit then return some (m, ← d.fvarId.getUserName)
   return none
 
+/-! ### The verdict cache — the environment's answer, kept across runs -/
+
+/-- THE EXPORTER A PICTURE WAS DRAWN BY, as the modification time of this binary: a picture drawn
+    by an older exporter is as stale as one of an older statement, and `make exe` relinks the binary
+    exactly when the exporter or a module it imports changed. -/
+def exeStamp : IO String := do
+  let t := (← (← IO.appPath).metadata).modified
+  return s!"{t.sec}.{t.nsec}"
+
+/-- A name as its COMPONENTS: `Name.toString`'s `«»` escapes are a second grammar to parse back. -/
+def nameJson (n : Name) : Json :=
+  .arr (n.components.toArray.map fun | .str _ s => .str s | .num _ k => toJson k | _ => .null)
+
+def jsonName (j : Json) : Except String Name := do
+  (← j.getArr?).foldlM (init := .anonymous) fun n c => match c with
+    | .str s => pure (.str n s)
+    | c => do pure (.num n (← c.getNat?))
+
+partial def levelJson : Lean.Level → Option Json
+  | .zero => some (.arr #["z"])
+  | .succ l => do return .arr #["s", ← levelJson l]
+  | .max a b => do return .arr #["m", ← levelJson a, ← levelJson b]
+  | .imax a b => do return .arr #["i", ← levelJson a, ← levelJson b]
+  | .param n => some (.arr #["p", nameJson n])
+  | .mvar _ => none
+
+partial def jsonLevel (j : Json) : Except String Lean.Level := do
+  match ← j.getArr? with
+  | #[.str "z"] => pure .zero
+  | #[.str "s", l] => do return .succ (← jsonLevel l)
+  | #[.str "m", a, b] => do return .max (← jsonLevel a) (← jsonLevel b)
+  | #[.str "i", a, b] => do return .imax (← jsonLevel a) (← jsonLevel b)
+  | #[.str "p", n] => do return .param (← jsonName n)
+  | _ => throw s!"no level: {j.compress}"
+
+def BINDERS : Array BinderInfo := #[.default, .implicit, .strictImplicit, .instImplicit]
+
+/-- An Expr as a node table, each node naming its children by index: a proof term is a DAG, and
+    written as a tree its shared subterms repeat exponentially.  `none` for a term with a
+    metavariable, a free variable or metadata — nothing that is not the term's own. -/
+partial def exprNodes (e : Expr) : StateT (Array Json × Std.HashMap Expr Nat) Option Nat := do
+  if let some i := (← get).2[e]? then return i
+  let b (bi : BinderInfo) := toJson (BINDERS.idxOf bi)
+  let j : Json ← match e with
+    | .bvar i => pure (.arr #["b", toJson i])
+    | .sort l => do pure (.arr #["S", ← levelJson l])
+    | .const n ls => do pure (.arr #["c", nameJson n, .arr (← StateT.lift (ls.toArray.mapM levelJson))])
+    | .app f x => do pure (.arr #["a", toJson (← exprNodes f), toJson (← exprNodes x)])
+    | .lam n t x bi => do pure (.arr #["l", nameJson n, b bi, toJson (← exprNodes t), toJson (← exprNodes x)])
+    | .forallE n t x bi => do pure (.arr #["f", nameJson n, b bi, toJson (← exprNodes t), toJson (← exprNodes x)])
+    | .letE n t v x nd =>
+      pure (.arr #["L", nameJson n, toJson (← exprNodes t), toJson (← exprNodes v), toJson (← exprNodes x), toJson nd])
+    | .lit (.natVal k) => pure (.arr #["n", .str (toString k)])
+    | .lit (.strVal s) => pure (.arr #["t", .str s])
+    | .proj s i x => do pure (.arr #["p", nameJson s, toJson i, toJson (← exprNodes x)])
+    | _ => failure
+  modifyGet fun (a, m) => (a.size, (a.push j, m.insert e a.size))
+
+/-- The node table read back, each node from the ones before it. -/
+def nodesExprs (nodes : Array Json) : Except String (Array Expr) :=
+  nodes.foldlM (init := #[]) fun es j => do
+    let r (k : Json) : Except String Expr := do
+      let i ← k.getNat?
+      match es[i]? with | some e => pure e | none => throw s!"node {es.size} names node {i} after it"
+    let b (k : Json) : Except String BinderInfo := do
+      match BINDERS[← k.getNat?]? with | some bi => pure bi | none => throw s!"no binder info {k}"
+    let e : Expr ← match ← j.getArr? with
+      | #[.str "b", i] => do pure (.bvar (← i.getNat?))
+      | #[.str "S", l] => do pure (.sort (← jsonLevel l))
+      | #[.str "c", n, ls] => do pure (.const (← jsonName n) ((← (← ls.getArr?).mapM jsonLevel).toList))
+      | #[.str "a", f, x] => do pure (.app (← r f) (← r x))
+      | #[.str "l", n, bi, t, x] => do pure (.lam (← jsonName n) (← r t) (← r x) (← b bi))
+      | #[.str "f", n, bi, t, x] => do pure (.forallE (← jsonName n) (← r t) (← r x) (← b bi))
+      | #[.str "L", n, t, v, x, nd] => do pure (.letE (← jsonName n) (← r t) (← r v) (← r x) (← nd.getBool?))
+      | #[.str "n", .str k] => match k.toNat? with
+        | some k => pure (.lit (.natVal k)) | none => throw s!"no numeral: {k}"
+      | #[.str "t", .str s] => pure (.lit (.strVal s))
+      | #[.str "p", s, i, x] => do pure (.proj (← jsonName s) (← i.getNat?) (← r x))
+      | _ => throw s!"no expression node: {j.compress}"
+    return es.push e
+
+/-- What `verdict` asks the environment, keyed.  `proof` is the proposition the verdict rests on and
+    its term, over the local context's free variables. -/
+structure Cached where
+  verdict : Option Verdict
+  proof : Option (Expr × Expr)
+  passed : Array String
+
+/-- EVERYTHING THE ANSWER DEPENDS ON, as text: this binary (its code, its constants, the modules it
+    was linked with) and every repository module the process imports, by its olean hash.  Any Lean
+    edit anywhere invalidates every entry — which modules a unification unfolds is not recorded,
+    so no narrower set is one this cache could prove sufficient.  Once per process. -/
+initialize fingerprintRef : IO.Ref (Option String) ← IO.mkRef none
+
+def fingerprint : MetaM String := do
+  if let some f ← fingerprintRef.get then return f
+  let mut parts := #[s!"exe {← exeStamp}"]
+  for m in ← repoModules (← getEnv) do parts := parts.push s!"{m} {← oleanHash m}"
+  let f := "\n".intercalate parts.toList
+  fingerprintRef.set (some f)
+  return f
+
+/-- Where one question's entry lives, and the question as text: the region, the family and the
+    categories, closed over the local context, so a hypothesis in scope (evidence, `hypVerdict`)
+    is part of the question.  `none` for a question with metavariables, which is no key. -/
+def cacheSlot (regionTy : Expr) (cat : Array Name) (φ : Expr) :
+    MetaM (Option (System.FilePath × String)) := do
+  let lctx ← instantiateLCtxMVars (← getLCtx)
+  let close (e : Expr) : MetaM Expr := return lctx.mkForall lctx.getFVars (← instantiateMVars e)
+  let q := mkAppN (← close regionTy) #[← close φ]
+  let some (i, (nodes, _)) := (exprNodes q).run (#[], {}) | return none
+  let key := (Json.mkObj [("q", toJson i), ("nodes", .arr nodes), ("cat", .arr (cat.map nameJson))]).compress
+  let fp ← fingerprint
+  return some (System.mkFilePath [".lake/build/diag-verdicts", toString (hash fp), s!"{hash key}.json"], key)
+
+def verdictJson (v : Verdict) : Json :=
+  Json.mkObj [("mark", (v.mark.map (·.key)).elim .null .str), ("lean", .arr (v.lean.map nameJson))]
+
+/-- The entry for `slot`, or `none` where there is none for this exact question under this exact
+    fingerprint.  A found verdict comes back only with its proof term REBUILT and `Meta.check`ed
+    against the proposition it was found for; an entry that does not read or does not check is an
+    error naming the file, never a miss the search quietly answers instead. -/
+def cacheLoad (slot : System.FilePath × String) : MetaM (Option Cached) := do
+  let (path, key) := slot
+  unless ← path.pathExists do return none
+  let fail {α} (why : String) : MetaM α :=
+    throwError "diag-export: verdict cache {path}: {why}; delete .lake/build/diag-verdicts to rebuild it"
+  let j ← match Json.parse (← IO.FS.readFile path) with | .ok j => pure j | .error e => fail e
+  let get {α} [FromJson α] (k : String) : MetaM α := match j.getObjValAs? α k with
+    | .ok a => pure a | .error e => fail s!"field {k}: {e}"
+  unless (← get (α := String) "fp") == (← fingerprint) && (← get (α := String) "key") == key do return none
+  let passed ← get (α := Array String) "passed"
+  let v ← get (α := Json) "verdict"
+  if v.isNull then return some { verdict := none, proof := none, passed }
+  let mark ← match v.getObjValAs? String "mark" with
+    | .ok k => match #[Mark.strict, .lax, .oplax, .maps, .mapsOplax, .spider].find? (·.key == k) with
+      | some m => pure (some m) | none => fail s!"no mark {k}"
+    | .error _ => if (v.getObjVal? "mark").toOption == some .null then pure none else fail "no mark"
+  let lean ← match (v.getObjValAs? (Array Json) "lean").bind (·.mapM jsonName) with
+    | .ok ns => pure ns | .error e => fail e
+  let es ← match nodesExprs (← get (α := Array Json) "nodes") with | .ok es => pure es | .error e => fail e
+  let (some want, some pf) := (es[← get (α := Nat) "want"]?, es[← get (α := Nat) "proof"]?)
+    | fail "no node for the proposition or the proof"
+  let fvs := (← getLCtx).getFVars
+  let want := want.instantiateRev fvs
+  let pf := pf.instantiateRev fvs
+  Meta.check pf
+  unless ← Meta.isDefEq (← Meta.inferType pf) want do fail "the stored proof does not prove its proposition"
+  return some { verdict := some { mark, lean }, proof := some (want, pf), passed }
+
+/-- `c` written for `slot`, whole or not at all: a sibling process reads the file the moment it is
+    named.  A verdict whose proof has metavariables or metadata is not written, since it could not
+    be rebuilt. -/
+def cacheStore (slot : System.FilePath × String) (c : Cached) : MetaM Unit := do
+  let (path, key) := slot
+  let fvs := (← getLCtx).getFVars
+  let mut fields := [("fp", toJson (← fingerprint)), ("key", toJson key), ("passed", toJson c.passed)]
+  match c.verdict, c.proof with
+  | none, _ => fields := fields ++ [("verdict", .null)]
+  | some v, some (want, pf) =>
+    if v.hyp.isSome then return
+    let want := (← instantiateMVars want).abstract fvs
+    let pf := (← instantiateMVars pf).abstract fvs
+    let enc : StateT (Array Json × Std.HashMap Expr Nat) Option (Nat × Nat) := do
+      return (← exprNodes want, ← exprNodes pf)
+    let some ((w, p), (nodes, _)) := enc.run (#[], {}) | return
+    fields := fields ++ [("verdict", verdictJson v), ("nodes", .arr nodes), ("want", toJson w), ("proof", toJson p)]
+  | some _, none => throwError "diag-export: a verdict reached with no proof to cache: {verdictJson c.verdict.get!}"
+  if let some d := path.parent then IO.FS.createDirAll d
+  let tmp := path.addExtension s!"{← IO.Process.getPID}.tmp"
+  IO.FS.writeFile tmp (Json.mkObj fields).compress
+  IO.FS.rename tmp path
+
 /-- The bead's verdict, from the ENVIRONMENT.  `StrictNatural F G φ` is a solid dot, `LaxNatural`
     a hollow one, a refuted `LaxNatural` the object wire — each of them a proof term the search
     ASSEMBLED and `Meta.check`ed, never a name whose statement merely unified.  Where none of the
@@ -1017,10 +1190,24 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- dot to a budget is not silent about it.
   let bounded : MetaM (Option Verdict) := Core.withCurrHeartbeats <| withTheReader Core.Context
     (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) search
-  let found : Option Verdict ← tryCatchRuntimeEx bounded fun e => do
-    IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} stopped on \
-      `{← e.toMessageData.toString}`: the bead draws as a spider"
-    return none
+  -- A HIT STANDS FOR THE SEARCH ONLY AS A TERM THAT CHECKS (`cacheLoad`).  A FOUND verdict is stored
+  -- even where a candidate's budget was cut on the way — it is a proof, and nearly every search of the
+  -- heavy panels is cut somewhere — but NOTHING FOUND only where no budget was: a spider off a
+  -- timeout is not a refutation, and a warmer cache may find the dot.
+  let slot ← cacheSlot regionTy cat φ
+  let found : Option Verdict ← match ← slot.mapM cacheLoad with
+    | some (some c) => do s.passed.set c.passed; pure c.verdict
+    | _ => do
+      let found ← tryCatchRuntimeEx bounded fun e => do
+        s.cut.set true
+        IO.eprintln s!"diag-export: the naturality search for {← Meta.ppExpr φ} stopped on \
+          `{← e.toMessageData.toString}`: the bead draws as a spider"
+        return none
+      if let some sl := slot then
+        if found.isSome || !(← s.cut.get) then
+          cacheStore sl { verdict := found, proof := ← if found.isSome then proof.get else pure none,
+                          passed := ← s.passed.get }
+      pure found
   if let some v := found then return v
   -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
   -- after the environment: a family something PROVES natural cites the proof, never the binder.
