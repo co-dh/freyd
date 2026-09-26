@@ -31,6 +31,8 @@ import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
 import AOP.A9_3_Bracket
 import AOP.A9_4_Code
+-- §9.1's worked example, segmenting a list: its `T`, `h` and the table of `h`'s values.
+import AOP.A9_0_SegmentExample
 import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
@@ -292,6 +294,18 @@ open Lean PrettyPrinter Delaborator SubExpr in
 
 -- The snoc-list leaf object is the same object as the cons-list one, so it prints by the same rule.
 attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
+
+-- A cons-list VALUE is written as the list it is: `cons a (cons b nil)` is `[a,b]`.  Only a spine
+-- ending in `nil` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
+  | `($_ $x nil) => `([$x])
+  | `($_ $x [$xs,*]) => `([$x, $xs,*])
+  | _ => throw ()
+
+-- The coproduct injections applied to a point are applications, so they take parentheses.
+notation:max "inl(" x ")" => Sum.inl x
+notation:max "inr(" x ")" => Sum.inr x
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
