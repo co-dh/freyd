@@ -163,6 +163,21 @@ public theorem singletonMap_natural {A B : 𝒜} {f : A ⟶ B} (hf : Map f) :
     rw [singletonMap, Λ_absorption, Cat.id_comp]
   rw [hL, hR]
 
+/-- **`(𝟙%∋)°` is OP-lax along `E` over the maps**: `{a} ↦ f(a)` lies under `E(f)` then `(𝟙%∋)°`.
+    Not strict: `E(f)` sends `{a₁,a₂}` to `{b}` when `f(a₁) = f(a₂) = b`, which `(𝟙%∋)°` never
+    reaches; and not at a relation, whose image of `{a}` need not be a singleton. -/
+public theorem singletonMap_recip_oplax {A B : 𝒜} (f : A ⟶ B) (hf : Map f) :
+    (singletonMap (a := A))° ≫ f ⊑ (existsImageFunctor (𝒜 := 𝒜)).map f ≫ (singletonMap (a := B))° := by
+  show (singletonMap (a := A))° ≫ f ⊑ existsImage f ≫ (singletonMap (a := B))°
+  have hs : ∀ X : 𝒜, Map (singletonMap (a := X)) := fun _ => Λ_is_map' _
+  calc (singletonMap (a := A))° ≫ f = (singletonMap (a := A))° ≫ f ≫ 𝟙 B := by rw [Cat.comp_id]
+    _ ⊑ (singletonMap (a := A))° ≫ f ≫ singletonMap ≫ (singletonMap (a := B))° :=
+        comp_mono_left _ (comp_mono_left _ (map_entire_le (hs B)))
+    _ = ((singletonMap (a := A))° ≫ singletonMap) ≫ existsImage f ≫ (singletonMap (a := B))° := by
+        rw [← Cat.assoc f, singletonMap_natural hf]; simp only [Cat.assoc]
+    _ ⊑ 𝟙 _ ≫ existsImage f ≫ (singletonMap (a := B))° := comp_mono_right (hs A).2 _
+    _ = existsImage f ≫ (singletonMap (a := B))° := Cat.id_comp _
+
 /-! ## The powerset monad (B&dM p.106: "union `μ = E∈`")
 
     `bigUnion` (Freyd's `⋃`) IS the powerset-monad multiplication `μ`; these are exactly the
