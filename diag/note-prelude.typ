@@ -209,9 +209,11 @@
   }
   lines.push(cur)
   stack(dir: ttb, spacing: 10pt, ..lines.enumerate().map(((li, line)) => {
-    let extra = calc.max(0pt, (sz.width - line.map(s => s.w).sum()
-      - (line.len() - if li == 0 and line.first().op == none { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len())
-    let py = if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
+    // A wrapped line's slack widens its columns: its formulas and reasons sit in them and need it.
+    // A `fill` line's pictures already took the slack their factor allows; the rest stays outside.
+    let extra = if fill != none { 0pt } else { calc.max(0pt, (sz.width - line.map(s => s.w).sum()
+      - (line.len() - if li == 0 and line.first().op == none { 1 } else { 0 }) * (OPW + 2 * gut)) / line.len()) }
+    let py =if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
     let under = ss.any(s => s.u != none)
     let (cols, fr, pr, ur, rr) = ((), (), (), (), ())
     for (i, s) in line.enumerate() {

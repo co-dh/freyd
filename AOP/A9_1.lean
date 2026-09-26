@@ -104,24 +104,40 @@ public theorem dynamic_programming_upper_step2 (hFr : F.PreservesRecip) {h : F.o
     (fun Y => Y ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))) hHrec
   simpa only [Cat.assoc] using e
 
-/-- (9.3), third step: `T Λ(T°) ⊑ ∈` (`recip_comp_Λ_le_recip_eps`), division cancels against
-    `∈` (`leftDiv_comp_le`), and functors. -/
-public theorem dynamic_programming_upper_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+/-- (9.3), step 3a: `T Λ(T°) ⊑ ∈` (`recip_comp_Λ_le_recip_eps` at `T°`): `Λ(T°)` is a map and
+    `Λ(T°)∋ = T°`. -/
+public theorem dynamic_programming_upper_step3a {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {H : A ⟶ B} :
     h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
-      ⊑ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := by
+      ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) := by
   have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
     have h0 := recip_comp_Λ_le_recip_eps (T°)
     rwa [Allegory.recip_recip] at h0
-  have ht : T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
-      ⊑ (F.map (Λ H ≫ est R) ≫ h) ≫ R° := by
-    rw [← Cat.assoc T (Λ (T°)) _]
-    exact le_trans (comp_mono_right hTA _) (leftDiv_comp_le _ _)
-  have e2 : F.map (H°) ≫ F.map (Λ H ≫ est R) = F.map (H° ≫ Λ H ≫ est R) := by
-    rw [← F.map_comp]
-  have e := comp_mono_left h° (comp_mono_left (F.map (H°)) ht)
-  simp only [Cat.assoc] at e ⊢
-  rwa [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)), e2] at e
+  have e := comp_mono_left h° (comp_mono_left (F.map (H°))
+    (comp_mono_right hTA ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))))
+  simpa only [Cat.assoc] using e
+
+/-- (9.3), step 3b: `∈(∈\Y) ⊑ Y` (`leftDiv_comp_le`) at `Y ≜ F(M)hR°`. -/
+public theorem dynamic_programming_upper_step3b {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
+  comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
+
+/-- (9.3), step 3c: `F(H°)F(M) = F(H°M)`, `F` a functor. -/
+public theorem dynamic_programming_upper_step3c {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R°
+      = h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := by
+  rw [F.map_comp (H°) (Λ H ≫ est R)]
+  simp only [Cat.assoc]
+
+/-- (9.3), third step: steps 3a–3c — `T Λ(T°) ⊑ ∈`, division cancels against `∈`, and
+    functors. -/
+public theorem dynamic_programming_upper_step3 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° :=
+  dynamic_programming_upper_step3c (F := F) ▸
+    le_trans dynamic_programming_upper_step3a dynamic_programming_upper_step3b
 
 /-- (9.3), fourth step: `H° M ⊑ R°`, the second component of the universal property of `est`
     (`le_Λ_comp_est_iff`) at `M ≜ Λ(H) est(R)`, under `F`. -/

@@ -51,7 +51,7 @@ in @mu-defn.
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@2afe998a
-  // two rows, split where the old two tables split: seven panels in one row shrink the fractions past reading
+  // two rows: nine panels in one row shrink the fractions past reading
   lean-chain((
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
@@ -59,9 +59,14 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
     (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
      // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step3.rhs", src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step3@0b07a2e4
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
+      src[`T`#frc([`T°`])`⊑∈`: #frc([`T°`]) a map, #frc([`T°`])`∋=T°` — @pow-laws]),
+     // lean:AOP.A9_1.dynamic_programming_upper_step3a@d6d3fb7f
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y` at `Y≜F(M)hR°` — division]),
+     // lean:AOP.A9_1.dynamic_programming_upper_step3b@71266e1c
   ), (
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)`: `F` a functor]),
+     // lean:AOP.A9_1.dynamic_programming_upper_step3c@bf123921
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
