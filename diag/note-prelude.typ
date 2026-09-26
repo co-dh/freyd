@@ -269,15 +269,27 @@
 // every row takes the SMALLEST row's factor, since a short row filled on its own grows its beads
 // and labels past its neighbours' and stands the tallest.
 // A step is `(op, sel, reason)`, one declaration driving BOTH pictures.
+// A row may instead be `(sub: sel, gloss: [..], steps: (..))`: `sub` names the declaration the row
+// proves, printed in a header row across the cell, so a new obligation reads apart from a row that
+// only wraps; a plain row after it continues the same obligation.  `gloss` is optional.
 #let lean-chain(..args) = {
   let a = args.pos()
-  let rows = if type(a.first().at(0)) == array { a } else { (a,) }
-  let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.map(s => s.at(1))))
+  let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
+    .map(r => if type(r) == dictionary { r } else { (steps: r) })
+  let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.steps.map(s => s.at(1))))
   for c in calls { c.at(0) }
   layout(sz => {
     let k = calc.min(..rows.zip(calls).map(((r, c)) =>
-      chain-k(sz.width, r.first().at(0) == none, c.at(1).map(p => measure(box(p)).width))))
-    for (r, c) in rows.zip(calls) {
+      chain-k(sz.width, r.steps.first().at(0) == none, c.at(1).map(p => measure(box(p)).width))))
+    for (row, c) in rows.zip(calls) {
+      let r = row.steps
+      // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
+      // the table's 9pt inset so it spans the cell like a row of the table
+      if "sub" in row {
+        pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
+          stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
+          align(center, { leanf(row.sub); if "gloss" in row { [ \ ]; row.gloss } })))
+      }
       hchain(fill: k, ..r.zip(c.at(1)).map(((s, p)) => (s.at(0), p, [])))
       v(6pt)
       // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border

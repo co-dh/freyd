@@ -123,7 +123,9 @@ in @mu-defn.
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@5992be6d
   // two rows: nine panels in one row shrink the fractions past reading
-  lean-chain((
+  lean-chain((sub: "Freyd.Alg.dynamic_programming_upper_steps1to3",
+    gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`], steps: (
+     // lean:AOP.A9_1.dynamic_programming_upper_steps1to3@caa05589
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
@@ -135,13 +137,15 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_upper_step3a@d6d3fb7f
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y` at `Y≜F(M)hR°` — division]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3b@71266e1c
-  ), (
+  )), (sub: "Freyd.Alg.dynamic_programming_upper_steps4to5",
+    gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`], steps: (
+     // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@7479b85b
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step5@6140d646
     (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R°R°⊑R°`: `R` transitive]),
-  )),
+  ))),
 )]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -196,7 +200,9 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-chain(
+  lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps3to6",
+    gloss: src[from an answer of `H`, the thinned step's answer is reached through `H`'s parts, a `Q°` step to a candidate, and that candidate's answer], steps: (
+     // lean:AOP.A9_1.dynamic_programming_thin_steps3to6@6b571ebd
     (none, "Freyd.Alg.dynamic_programming_thin_step3.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
@@ -206,23 +212,27 @@ in @mu-defn.
       src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",
       src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]),
-  ),
+  ))),
 )]<dp-laws-93>
 
 // (9.3) continued from the last row above: the ten rows overflow one page.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain((
+  lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps7to8",
+    gloss: src[the hypothesis on `Q` turns the `Q°` step into an `R°` step in front of rebuilding by `F(M)h`], steps: (
+     // lean:AOP.A9_1.dynamic_programming_thin_steps7to8@1b15c694
     (none, "Freyd.Alg.dynamic_programming_thin_step6.rhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step7.rhs",
       src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step8.rhs",
       src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
-  ), (
+  )), (sub: "Freyd.Alg.dynamic_programming_thin_steps9to11",
+    gloss: src[rebuilding from parts replaced by `M`'s, between two `R°` steps, stays within `R°`], steps: (
+     // lean:AOP.A9_1.dynamic_programming_thin_steps9to11@bc2eaa38
     (SQ, "Freyd.Alg.dynamic_programming_thin_step9.rhs", src[`H°M⊑R°` under `F` — @est-up]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step10.rhs",
       src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step11.rhs", src[`R` transitive, twice]),
-  )),
+  ))),
 )]<dp-laws-93b>
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
@@ -294,7 +304,9 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
-  lean-chain((
+  lean-chain((sub: "Freyd.Alg.monoAlg_in_context_steps1to3",
+    gloss: src[improving the parts within their `S`-context and assembling by `h` is below the same improvement on the (cost, context) bundles, assembled by `k`], steps: (
+     // lean:AOP.A9_1.monoAlg_in_context_steps1to3@11f5c474
     (none, "Freyd.Alg.monoAlg_in_context_step1.lhs", []),
     (SQ, "Freyd.Alg.monoAlg_in_context_step1.rhs",
       src[shunting: `cost` a map, so `𝟙⊑cost cost°` — @triple-chains]),
@@ -305,7 +317,9 @@ in @mu-defn.
     (EQ, "Freyd.Alg.monoAlg_in_context_step3.rhs",
       src[assumption on `cost`: `h cost=F(⟨cost,S⟩)k`]),
      // lean:AOP.A9_1.monoAlg_in_context_step3@23c4eb72
-  ), (
+  )), (sub: "Freyd.Alg.monoAlg_in_context_steps4to7",
+    gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`], steps: (
+     // lean:AOP.A9_1.monoAlg_in_context_steps4to7@865a4e77
     (SQ, "Freyd.Alg.monoAlg_in_context_step4.rhs",
       src[`S` simple, so `⟨cost,S⟩` simple: `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
      // lean:AOP.A9_1.monoAlg_in_context_step4@e0fdcf2e
@@ -318,7 +332,7 @@ in @mu-defn.
     (EQ, "Freyd.Alg.monoAlg_in_context.rhs",
       src[assumption on `cost` read backwards, then `R=cost≤cost°`]),
      // lean:AOP.A9_1.monoAlg_in_context_step7@b5c7d052
-  )),
+  ))),
 )]<dp-context-mono>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,

@@ -154,6 +154,22 @@ public theorem dynamic_programming_upper_step5 {h : F.obj B ⟶ B} {R : B ⟶ B}
   have e := comp_mono_right ((monoAlg_iff_conj hh).mp hmono) (R°)
   simpa only [Cat.assoc] using e
 
+/-- (9.3), hints 1–3 as one row: (9.4), the fixed point of `H`, and division cancelled at `T`. -/
+public theorem dynamic_programming_upper_steps1to3 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ h° ≫ F.map (H°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° :=
+  le_trans dynamic_programming_upper_step1 ((dynamic_programming_upper_step2 hFr hHfix).symm ▸
+    le_trans dynamic_programming_upper_step3a dynamic_programming_upper_step3b)
+
+/-- (9.3), hints 4–5 and transitivity as one row: `H° M ⊑ R°` under `F`, `h` monotonic on `R°`,
+    `R` transitive. -/
+public theorem dynamic_programming_upper_steps4to5 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B}
+    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    h° ≫ F.map (H°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° :=
+  dynamic_programming_upper_step3c (F := F) ▸
+    le_trans dynamic_programming_upper_step4 (le_trans (dynamic_programming_upper_step5 hh hmono) htrans)
+
 /-- **(9.3)** (B&dM p.221): `min R·P(h·FM)·ΛT°·H° ⊆ R`, mirrored — with `M ≜ Λ(H) est(R)`,
     whatever the dynamic-programming step returns is `R`-related to everything `H` returns from
     the same input.  The book's five hints are steps 1–5, then transitivity `htrans`. -/
@@ -161,15 +177,8 @@ public theorem dynamic_programming_upper (hFr : F.PreservesRecip) {h : F.obj B �
     {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R°)
     (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
     H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
-  calc H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_upper_step1
-      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_upper_step2 hFr hHfix
-      _ ⊑ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := dynamic_programming_upper_step3
-      _ ⊑ h° ≫ F.map (R°) ≫ h ≫ R° := dynamic_programming_upper_step4
-      _ ⊑ R° ≫ R° := dynamic_programming_upper_step5 hh hmono
-      _ ⊑ R° := htrans
+  le_trans (dynamic_programming_upper_steps1to3 hFr hHfix)
+    (dynamic_programming_upper_steps4to5 hh hmono htrans)
 
 /-- **Core of Theorem 9.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the dynamic-programming body, for ANY `H` satisfying the hylomorphism fixed-point equation
@@ -331,30 +340,41 @@ public theorem dynamic_programming_thin_step11 {R : B ⟶ B} (htrans : R° ≫ R
     R° ≫ R° ≫ R° ⊑ R° :=
   le_trans (comp_mono_left R° htrans) htrans
 
+/-- (9.3) with thinning, steps 3–6 as one row: (9.4), the fixed point of `H`, division cancelled
+    at `T`, and `∈ thin(Q) ⊑ Q° ∈`. -/
+public theorem dynamic_programming_thin_steps3to6 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))° ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+  le_trans dynamic_programming_thin_step3 ((dynamic_programming_thin_step4 hFr hHfix).symm ▸
+    le_trans dynamic_programming_thin_step5 dynamic_programming_thin_step6)
+
+/-- (9.3) with thinning, steps 7–8 as one row: division cancels, then the hypothesis on `Q`. -/
+public theorem dynamic_programming_thin_steps7to8 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))° ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°))
+      ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
+  le_trans dynamic_programming_thin_step7 (dynamic_programming_thin_step8 hFr hQ)
+
+/-- (9.3) with thinning, steps 9–11 as one row: `H° M ⊑ R°` under `F`, `h` monotonic on `R`,
+    `R` transitive twice. -/
+public theorem dynamic_programming_thin_steps9to11 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B}
+    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° ⊑ R° :=
+  le_trans dynamic_programming_thin_step9
+    (le_trans (dynamic_programming_thin_step10 hh hmono) (dynamic_programming_thin_step11 htrans))
+
 /-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored — steps 3–11. -/
 public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
     (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
-  calc H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_thin_step3
-      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
-            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_thin_step4 hFr hHfix
-      _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
-            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_thin_step5
-      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ (∋ (F.obj A))°
-            ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        dynamic_programming_thin_step6
-      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° := dynamic_programming_thin_step7
-      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° :=
-        dynamic_programming_thin_step8 hFr hQ
-      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h ≫ R° := dynamic_programming_thin_step9
-      _ ⊑ R° ≫ R° ≫ R° := dynamic_programming_thin_step10 hh hmono
-      _ ⊑ R° := dynamic_programming_thin_step11 htrans
+  le_trans (dynamic_programming_thin_steps3to6 hFr hHfix)
+    (le_trans (dynamic_programming_thin_steps7to8 hFr hQ)
+      (dynamic_programming_thin_steps9to11 hh hmono htrans))
 
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
@@ -576,6 +596,28 @@ public theorem monoAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A �
     F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° = h ≫ R := by
   rw [hR, ← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
 
+/-- Proposition 9.3, hints 1–3 as one row: shunting at `cost` a map, the product form of
+    `R ∩ S S°`, and the assumption on `cost`. -/
+public theorem monoAlg_in_context_steps1to3 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
+    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
+    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
+    F.map (R ∩ (S ≫ S°)) ≫ h
+      ⊑ F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
+  (monoAlg_in_context_step2 hR).trans (monoAlg_in_context_step3 hch) ▸ monoAlg_in_context_step1 hcost
+
+/-- Proposition 9.3, hints 4–7 as one row: `S` simple, products and functors, the assumption on
+    `k`, and the assumption on `cost` read backwards. -/
+public theorem monoAlg_in_context_steps4to7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
+    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
+    (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
+    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
+    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
+    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
+      ⊑ h ≫ R :=
+  monoAlg_in_context_step7 hR hch ▸ le_trans (monoAlg_in_context_step4 hcost hS)
+    (monoAlg_in_context_step5 (F := F) ▸ monoAlg_in_context_step6 hk)
+
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
     bundled with a simple context relation `S` via a chosen product `P`, and an algebra `k`
     (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
@@ -587,17 +629,7 @@ public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
     F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
-  calc F.map (R ∩ (S ≫ S°)) ≫ h
-      _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := monoAlg_in_context_step1 hcost
-      _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° :=
-          monoAlg_in_context_step2 hR
-      _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
-          monoAlg_in_context_step3 hch
-      _ ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := monoAlg_in_context_step4 hcost hS
-      _ = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° :=
-          monoAlg_in_context_step5
-      _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° := monoAlg_in_context_step6 hk
-      _ = h ≫ R := monoAlg_in_context_step7 hR hch
+  le_trans (monoAlg_in_context_steps1to3 hcost hR hch) (monoAlg_in_context_steps4to7 hcost hS hR hch hk)
 
 end Prop9_3
 
