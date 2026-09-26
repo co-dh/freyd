@@ -31,6 +31,76 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ),
 )]<greedy-laws>
 
+// B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
+// `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_lower") \
+    #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
+     `h` returns only what `H` returns]],
+     // lean:AOP.A10_1.greedy_dp_lower@44565adb
+  lean-chain(
+    (none, "Freyd.Alg.greedy_dp_lower.lhs", []),
+    (SQ, "Freyd.Alg.greedy_dp_lower_step1.rhs", src[`est(Q)⊑∋` — @est-defn]),
+     // lean:AOP.A10_1.greedy_dp_lower_step1@66f7230b
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
+    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
+    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+  ),
+)]<greedy-lower>
+
+// The second half of the same proof.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
+    #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
+     than an answer of `H` to the same input]],
+     // lean:AOP.A10_1.greedy_dp_upper@0f221b23
+  lean-chain((
+    (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
+    (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
+      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]),
+     // lean:AOP.A10_1.greedy_dp_upper_step1@861e793a
+    (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
+      src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
+     // lean:AOP.A10_1.greedy_dp_upper_step2@4a189407
+    (SQ, "Freyd.Alg.greedy_dp_upper_step3.rhs", src[`∈est(Q)⊑Q°` — @est-up]),
+     // lean:AOP.A10_1.greedy_dp_upper_step3@c17d0163
+  ), (
+    (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
+      src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
+     // lean:AOP.A10_1.greedy_dp_upper_step4@0c4dd106
+    (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
+     // lean:AOP.A10_1.greedy_dp_upper_step5@49e70aa8
+    (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
+      src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
+     // lean:AOP.A10_1.greedy_dp_upper_step6@8d3afe63
+    (SQ, "Freyd.Alg.greedy_dp_upper.rhs", src[`R` transitive]),
+  )),
+)]<greedy-upper>
+
+// B&dM Proposition 10.1, p. 245, "a variation on Proposition 9.1", in Rel(Set).  The book's
+// `(ran V₁ → W₁, W₂)` is the union below: off `ran V₁ ∪ ran V₂` both are empty.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.greedy_disjoint_ranges") \
+    #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
+     on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
+     // lean:AOP.A10_1.greedy_disjoint_ranges@611c02b4
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.rhs.inl",
+      src[off `ran V₁ ∪ ran V₂` the set is empty and `est(Q₁+Q₂)` of it is nothing; not a
+       tabulated row — the `V₂` branch is the same]),
+     // lean:AOP.A10_1.greedy_disjoint_ranges_step1@631ac87a
+    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step2.rhs.inl",
+      src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
+        have disjoint ranges — @dp-disjoint]),
+     // lean:AOP.A10_1.greedy_disjoint_ranges_step2@f2908d30
+    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step3.rhs.inl",
+      src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`, not a tabulated row: an extreme of left summands is one]),
+     // lean:AOP.A10_1.powerRel_inl_est@2ceb36e3 lean:AOP.A10_1.greedy_disjoint_ranges_step3@3a192617
+    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step4.rhs.inl", src[`inl[U₁,U₂]=U₁`]),
+  ),
+)]<greedy-disjoint>
+
 == The detab-entab problem
 
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because

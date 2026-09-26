@@ -25,14 +25,14 @@
     `min Q·∋ ⊆ Q` is `recip_eps_comp_est_le`.
 
   The disjoint-ranges/coproduct optimisation (B&dM Proposition 10.1, "a variation on
-  Proposition 9.1") is DROPPED for the same setting reason as Proposition 9.1/Ex 9.5 — see the
-  drop note at the end of `AOP.A9_1`.
+  Proposition 9.1") is `RelSet.greedy_disjoint_ranges` below, in `Rel(Set)` like Proposition 9.1.
 
   Setting: `TabularUnitaryUnguardedPowerLCDA` (`AOP.A6_2`), continuing chapters 7-9.
 -/
 module
 
 public import AOP.A9_1
+public import AOP.A7_2_RelSet
 
 universe u
 
@@ -42,94 +42,120 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 
 /-! ## Theorem 10.1 (B&dM p.245) — the greedy theorem, as extreme dynamic programming -/
 
+/-! ### Theorem 10.1's proof, one theorem per step (note §16.1)
+
+  The exercise B&dM leave: Theorem 9.2's proof with `est(Q)` for `thin(Q)`.  `M≜Λ(H) est(R)`
+  throughout; Knaster–Tarski needs the body at `M` below `M`, which `M=H∩(H°\R°)` splits into
+  (i) `body(M)⊑H` and (ii) `H°body(M)⊑R°`. -/
+
+/-- (i), step 1: `est(Q)⊑∋` — an `est` picks a member. -/
+public theorem greedy_dp_lower_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj A) from inter_lb_left _ _) _)
+
+/-- **Theorem 10.1, (i)**: the greedy body at `M` returns only what `H` returns — step 1, then
+    Theorem 9.1's `Λ` cancellation, `M⊑H` and the fixed-point equation. -/
+public theorem greedy_dp_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
+    Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ H :=
+  calc Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_lower_step1
+      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step2
+      _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
+      _ = H := hHfix
+
+/-- (ii), step 1: `H°=h°F(H°)T`, the converse of the fixed-point equation. -/
+public theorem greedy_dp_upper_step1 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hHfix : T° ≫ F.map H ≫ h = H) :
+    H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
+  have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
+    have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
+      rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+    rw [← h1, hHfix]
+  exact (congrArg (· ≫ (Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h)) hHrec).trans
+    (by simp only [Cat.assoc])
+
+/-- (ii), step 2: `TΛ(T°)⊑∈`, the converse of `Λ(T°)∋=T°`. -/
+public theorem greedy_dp_upper_step2 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
+  have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
+    have h0 := recip_comp_Λ_le_recip_eps (T°)
+    rwa [Allegory.recip_recip] at h0
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right hTA (est Q ≫ F.map (Λ H ≫ est R) ≫ h))))
+
+/-- (ii), step 3: `∈est(Q)⊑Q°` — the `est` lower bound. -/
+public theorem greedy_dp_upper_step3 {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
+    h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h :=
+  comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right (recip_eps_comp_est_le Q) (F.map (Λ H ≫ est R) ≫ h))))
+
+/-- (ii), step 4: `QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`. -/
+public theorem greedy_dp_upper_step4 (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h
+      ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h := by
+  have hrm := recip_mono hQ
+  simp only [Allegory.recip_comp] at hrm
+  rw [← hFr H] at hrm
+  simpa only [Cat.assoc] using comp_mono_right hrm (F.map (Λ H ≫ est R) ≫ h)
+
+/-- (ii), step 5: `H°M⊑R°` under `F`. -/
+public theorem greedy_dp_upper_step5 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
+    R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° ≫ h° ≫ F.map R° ≫ h := by
+  have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
+    rw [← F.map_comp]
+    exact F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2
+  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
+    (comp_mono_right hFRM h)))
+
+/-- (ii), step 6: `h` monotonic on `R`, in the conjugated form `h°F(R°)h⊑R°`. -/
+public theorem greedy_dp_upper_step6 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : MonoAlg h R°) :
+    R° ≫ h° ≫ F.map R° ≫ h ⊑ R° ≫ R° :=
+  comp_mono_left _ ((monoAlg_iff_conj hh).mp hmono)
+
+/-- **Theorem 10.1, (ii)**: `H°` followed by the greedy body at `M` is `⊑R°` — steps 1–6, then
+    `R` transitive. -/
+public theorem greedy_dp_upper (hFr : F.PreservesRecip) {h : F.obj B ⟶ B}
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
+    (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
+    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° :=
+  calc H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
+      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
+        greedy_dp_upper_step1 hFr hHfix
+      _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
+        greedy_dp_upper_step2
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_upper_step3
+      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_upper_step4 hFr hQ
+      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h := greedy_dp_upper_step5
+      _ ⊑ R° ≫ R° := greedy_dp_upper_step6 hh hmono
+      _ ⊑ R° := htrans
+
 /-- **Core of Theorem 10.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
-    the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`), for any `H`
-    satisfying the hylomorphism fixed-point equation `H = h·FH·T°` and any `Q°` satisfying the
-    thinning-compatibility bound `hQ` (identical to `dp_thin_prefixed`'s).  Same two-branch
-    `min`-universal-property skeleton as `dp_thin_prefixed`, with `min Q°` handled directly by
-    `inter_lb_left` (member) and `recip_eps_comp_est_le` (lower bound). -/
+    the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`) — (i) and (ii)
+    joined by the `min` universal property. -/
 public theorem greedy_dp_prefixed (hFr : F.PreservesRecip) {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R)
+    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R)
     (htrans : R ≫ R ⊑ R) (hHfix : T° ≫ F.map H ≫ h = H)
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ Λ H ≫ est R := by
   -- the book states both on the mirrored `R°` (`est R` = `min R°`); fold the `°` back in once
-  have hmono' : Freyd.Alg.MonoAlg h R° := (Freyd.Alg.monoAlg_recip_iff hh hFr).mp hmono
   have htrans' : R° ≫ R° ⊑ R° := by
     have h0 := recip_mono htrans
     rwa [Allegory.recip_comp] at h0
-  obtain ⟨hMH, hHMR⟩ := le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))
-  apply le_Λ_comp_est_iff.mpr
-  constructor
-  · -- component (i): greedy body ⊑ H, via `min Q° ⊆ ∈` and the fixed-point equation
-    have s1 : Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
-      comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj A) from inter_lb_left _ _) _)
-    have s2 : Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h
-        = T° ≫ F.map (Λ H ≫ est R) ≫ h := by
-      rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
-    have s3 : T° ≫ F.map (Λ H ≫ est R) ≫ h ⊑ T° ≫ F.map H ≫ h :=
-      comp_mono_left _ (comp_mono_right (F.map_mono hMH) h)
-    rw [s2] at s1
-    rw [hHfix] at s3
-    exact le_trans s1 s3
-  · -- component (ii): `H°·(greedy body) ⊑ R°`
-    have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
-      have h0 := recip_comp_Λ_le_recip_eps (T°)
-      rwa [Allegory.recip_recip] at h0
-    have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
-      have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
-      rw [← h1, hHfix]
-    -- the tail bound: peel `T·ΛT°` to `∋°`, then the `min` lower bound gives `Q°`
-    have htail : T ≫ Λ (T°) ≫ est Q ⊑ Q° := by
-      have t1 : T ≫ Λ (T°) ≫ est Q ⊑ (∋ (F.obj A))° ≫ est Q := by
-        rw [← Cat.assoc T (Λ (T°)) _]
-        exact comp_mono_right hTA _
-      exact le_trans t1 (recip_eps_comp_est_le Q)
-    -- split `H°` in front and reassociate (cf. `dp_thin_prefixed`'s `c1`/`c2`)
-    have c1 : H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
-      rw [← hHrec]
-    have c2 : (h° ≫ F.map (H°) ≫ T) ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est R) ≫ h := by
-      simp only [Cat.assoc]
-    have hbound : (h° ≫ F.map (H°)) ≫ (T ≫ Λ (T°) ≫ est Q) ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ (h° ≫ F.map (H°)) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h :=
-      comp_mono_left _ (comp_mono_right htail _)
-    -- the `hQ` step: conjugate `hQ` to `h°·FH°·Q° ⊑ R°·h°·FH°`
-    have hQrec : h° ≫ F.map (H°) ≫ Q° ⊑ R° ≫ h° ≫ F.map (H°) := by
-      have hrm := recip_mono hQ
-      have eL : (Q ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ Q° := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
-      rwa [eL, eR] at hrm
-    have hre1 : (h° ≫ F.map (H°)) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h
-        = (h° ≫ F.map (H°) ≫ Q°) ≫ F.map (Λ H ≫ est R) ≫ h := by
-      simp only [Cat.assoc]
-    have step6 : (h° ≫ F.map (H°) ≫ Q°) ≫ F.map (Λ H ≫ est R) ≫ h
-        ⊑ (R° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est R) ≫ h :=
-      comp_mono_right hQrec _
-    have hre2 : (R° ≫ h° ≫ F.map (H°)) ≫ F.map (Λ H ≫ est R) ≫ h
-        = R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) := by
-      simp only [Cat.assoc]
-    -- collapse `F(M·H°) ⊆ FR`, then conjugated monotonicity and transitivity
-    have hinner : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° := by
-      have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
-        rw [← F.map_comp]; exact F.map_mono hHMR
-      have hx : h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ h° ≫ F.map R° ≫ h := by
-        rw [← Cat.assoc (F.map (H°)) (F.map (Λ H ≫ est R)) h]
-        exact comp_mono_left _ (comp_mono_right hFRM h)
-      exact le_trans hx ((Freyd.Alg.monoAlg_iff_conj hh).mp hmono')
-    have step7 : R° ≫ (h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h) ⊑ R° ≫ R° :=
-      comp_mono_left R° hinner
-    rw [c1, c2]
-    refine le_trans hbound ?_
-    rw [hre1]
-    refine le_trans step6 ?_
-    rw [hre2]
-    exact le_trans step7 htrans'
+  exact le_Λ_comp_est_iff.mpr ⟨greedy_dp_lower hHfix,
+    greedy_dp_upper hFr hh ((monoAlg_recip_iff hh hFr).mp hmono) htrans' hHfix hQ⟩
 
 /-! ### The optimisation chain (note §16.1b)
 
@@ -205,6 +231,144 @@ end Freyd.Alg
 
   "A variation on Proposition 9.1": `AOP.A9_1`'s `est_arm₁_le`/`est_arm₂_le` are the two branches
   of Theorem 10.1's body, and the recursion that runs them separately still refines the spec. -/
+
+/-! # Proposition 10.1 (B&dM p.245) in `Rel(Set)` — Proposition 9.1 with `est(Q)` for `thin(Q)`
+
+  Same four steps as `dp_disjoint_ranges` (`AOP.A9_1`); only step 3 changes, from
+  `P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)` to `P(inl)est(Q₁+Q₂)=est(Q₁)inl`. -/
+
+namespace Freyd.Alg.RelSet
+
+variable {α β A B : RelSet.{0}}
+
+/-- `P(inl)est(Q₁+Q₂)=est(Q₁)inl`: an `est` of a set of left summands is a left summand. -/
+public theorem powerRel_inl_est (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₁ ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = est Q₁ ≫ (sumCop α β).u₁ := by
+  apply hom_ext; intro S t
+  constructor
+  · rintro ⟨S', hP, hE⟩
+    obtain ⟨hS't, hlow⟩ := (est_apply _ _ _).mp hE
+    obtain ⟨a, ha, rfl⟩ := hP.2 t hS't
+    refine ⟨a, (est_apply _ _ _).mpr ⟨ha, fun a' ha' => ?_⟩, rfl⟩
+    obtain ⟨u, rfl, hu⟩ := hP.1 a' ha'
+    obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁)
+      (Q₂ ≫ (sumCop α β).u₂) a (Sum.inl a')).mp (hlow _ hu)
+    cases he
+    exact hc
+  · rintro ⟨a, hE, rfl⟩
+    obtain ⟨ha, hlow⟩ := (est_apply _ _ _).mp hE
+    refine ⟨fun u => ∃ a', S a' ∧ u = Sum.inl a', ⟨fun t ht => ⟨Sum.inl t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, (est_apply _ _ _).mpr ⟨⟨a, ha, rfl⟩, ?_⟩⟩
+    rintro u ⟨a', ha', rfl⟩
+    exact (ListRel.junc_sum_inl (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+      a (Sum.inl a')).mpr ⟨a', hlow a' ha', rfl⟩
+
+/-- `P(inr)est(Q₁+Q₂)=est(Q₂)inr`: an `est` of a set of right summands is a right summand. -/
+public theorem powerRel_inr_est (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
+    powerRel (sumCop α β).u₂ ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+      = est Q₂ ≫ (sumCop α β).u₂ := by
+  apply hom_ext; intro S t
+  constructor
+  · rintro ⟨S', hP, hE⟩
+    obtain ⟨hS't, hlow⟩ := (est_apply _ _ _).mp hE
+    obtain ⟨b, hb, rfl⟩ := hP.2 t hS't
+    refine ⟨b, (est_apply _ _ _).mpr ⟨hb, fun b' hb' => ?_⟩, rfl⟩
+    obtain ⟨u, rfl, hu⟩ := hP.1 b' hb'
+    obtain ⟨c, hc, he⟩ := (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁)
+      (Q₂ ≫ (sumCop α β).u₂) b (Sum.inr b')).mp (hlow _ hu)
+    cases he
+    exact hc
+  · rintro ⟨b, hE, rfl⟩
+    obtain ⟨hb, hlow⟩ := (est_apply _ _ _).mp hE
+    refine ⟨fun u => ∃ b', S b' ∧ u = Sum.inr b', ⟨fun t ht => ⟨Sum.inr t, rfl, t, ht, rfl⟩,
+      fun u hu => hu⟩, (est_apply _ _ _).mpr ⟨⟨b, hb, rfl⟩, ?_⟩⟩
+    rintro u ⟨b', hb', rfl⟩
+    exact (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
+      b (Sum.inr b')).mpr ⟨b', hlow b' hb', rfl⟩
+
+/-- Proposition 10.1, step 1: the result is empty off `ran V₁ ∪ ran V₂` — an `est` of the empty
+    set is nothing — so the body splits by where the input lies. -/
+public theorem greedy_disjoint_ranges_step1 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ junc (sumCop α β) U₁ U₂
+      = (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
+  apply hom_ext; intro y z
+  constructor
+  · intro hb
+    obtain ⟨S, hS, t, hest, hU⟩ := hb
+    have hT : junc (sumCop α β) V₁ V₂ t y := by
+      rw [Λ_eq_classifier] at hS
+      subst hS
+      exact ((est_apply _ _ _).mp hest).1
+    cases t with
+    | inl a =>
+      have ha := (ListRel.junc_sum_inl V₁ V₂ a y).mp hT
+      exact Or.inl ⟨y, ⟨rfl, a, ha, ha⟩, S, hS, _, hest, hU⟩
+    | inr b =>
+      have hb := (ListRel.junc_sum_inr V₁ V₂ b y).mp hT
+      exact Or.inr ⟨y, ⟨rfl, b, hb, hb⟩, S, hS, _, hest, hU⟩
+  · rintro (⟨y', ⟨rfl, -⟩, h⟩ | ⟨y', ⟨rfl, -⟩, h⟩) <;> exact h
+
+/-- Proposition 10.1, step 2: Ex 9.5's second claim on each branch. -/
+public theorem greedy_disjoint_ranges_step2 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β}
+    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
+    (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
+  rw [← Cat.assoc (Freyd.Alg.ran V₁), ran_Λ_junc_recip_inl hdisj,
+    ← Cat.assoc (Freyd.Alg.ran V₂), ran_Λ_junc_recip_inr hdisj]
+  simp only [Cat.assoc]
+
+/-- Proposition 10.1, step 3: `P(inl)est(Q₁+Q₂)=est(Q₁)inl` and `P(inr)est(Q₁+Q₂)=est(Q₂)inr`. -/
+public theorem greedy_disjoint_ranges_step3 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
+            ≫ junc (sumCop α β) U₁ U₂) := by
+  rw [← Cat.assoc (powerRel (sumCop α β).u₁), powerRel_inl_est,
+    ← Cat.assoc (powerRel (sumCop α β).u₂), powerRel_inr_est]
+  simp only [Cat.assoc]
+
+/-- Proposition 10.1, step 4: `inl[U₁,U₂]=U₁` and `inr[U₁,U₂]=U₂`. -/
+public theorem greedy_disjoint_ranges_step4 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
+    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
+      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂ ≫ junc (sumCop α β) U₁ U₂)
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ U₂) := by
+  rw [u₁_junc, u₂_junc]
+
+/-- **Proposition 10.1 (B&dM p.245)**, in `Rel(Set)`: when `V₁` and `V₂` have disjoint ranges,
+    taking a `Q₁+Q₂`-extreme decomposition `[V₁,V₂]°` and assembling by `[U₁,U₂]` runs, on
+    `ran V₁`, `W₁≜Λ(V₁°)est(Q₁)U₁` and, on `ran V₂`, `W₂≜Λ(V₂°)est(Q₂)U₂`. -/
+public theorem greedy_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} (hdisj : V₂ ≫ V₁° = 𝟘) :
+    Λ ((junc (sumCop α β) V₁ V₂)°) ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ junc (sumCop α β) U₁ U₂
+      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ U₂) := by
+  -- `V₂V₁°=𝟘` read at a point: no `y` is reached by both
+  have hd : ∀ a b y, V₁ a y → V₂ b y → False := fun a b y h1 h2 =>
+    cast (congrFun (congrFun hdisj b) a) ⟨y, h2, h1⟩
+  exact (greedy_disjoint_ranges_step1.trans (greedy_disjoint_ranges_step2 hd)).trans
+    (greedy_disjoint_ranges_step3.trans greedy_disjoint_ranges_step4)
+
+end Freyd.Alg.RelSet
 
 namespace Freyd.Alg.RelSet.SL
 
