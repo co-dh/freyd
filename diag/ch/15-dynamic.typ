@@ -45,6 +45,26 @@ in @mu-defn.
   ),
 )]<dp-lower>
 
+=== `∈\` as a composite
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
+    #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
+     // lean:AOP.A7_1.mem_leftDiv_eq@MLDKEY
+  lean-chain(
+    (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
+  ),
+  // two rows: step 1 moves `Z` inside `Λ(Z°)°`, so no one height of its bead serves both sides
+  lean-chain(
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°`: the converse of `Λ(Z°)∋=Z°` — @pow-laws]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step1@S1KEY
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs", src[`X\(Yf°)=(X\Y)f°` for a map `f` (not a tabulated row), at the map `f≜Λ(Z°)`]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step2@S2KEY
+    (EQ, "Freyd.Alg.mem_leftDiv_eq.rhs", src[`⊆≜∈\∈`]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step3@S3KEY
+  ),
+)]<mem-ldiv>
+
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
