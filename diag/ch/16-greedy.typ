@@ -12,31 +12,23 @@
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.greedy_dp") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp") \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
  carried and the recursion runs on values alone #h(4pt) ]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.greedy_dp_step1.rhs"),
-    [#src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]])],
-  [#lean("Freyd.Alg.greedy_dp_step1.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.greedy_dp.lhs.body"),
+  lean-chain(
+    (none, "Freyd.Alg.greedy_dp_step1.rhs",
+      src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]),
     // dp-shrink row: Theorem 10.1
-    [#src[]])],
-  // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
-  // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
-  [#lean("Freyd.Alg.greedy_dp.lhs.body")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.SL.est_arm₂_le.lhs"),
+    // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
+    // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
+    (RQ, "Freyd.Alg.greedy_dp.lhs.body", src[]),
     // lean:AOP.A9_1.est_summand_le@1efecafb
-    [#src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`]])],
-  // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
-  // the object wire.
-  [#lean("Freyd.Alg.RelSet.SL.est_arm₂_le.lhs")],
+    // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
+    // the object wire.
+    (EQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
+      src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`]),
+  ),
 )]<greedy-laws>
 
 == The detab-entab problem
@@ -67,22 +59,18 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
 // `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Detab.entab_laws"), #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_laws"), #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
     #src[the shortest input `detab` expands to the given output is one pass along that output,
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
      tab stop]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Detab.entab_laws.rhs"),
-    [#src[the specification — @entab-defn; `detab entab=𝟙` and nothing
-     shorter does]])],
-  [#lean("Freyd.Alg.RelSet.Detab.entab_laws.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Detab.entab_laws.lhs.body"),
-    [
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Detab.entab_laws.rhs",
+      src[the specification — @entab-defn; `detab entab=𝟙` and nothing
+       shorter does]),
+    // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
+    // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
+    (RQ, "Freyd.Alg.RelSet.Detab.entab_laws.lhs.body", [
      // entab-thin row: Theorem 10.1
      #src[at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
@@ -101,32 +89,25 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
       // lean:AOP.A10_2_Detab.expand_V_step@1e653239
-      last step alone or discards it]])],
-  // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
-  // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
-  [#lean("Freyd.Alg.RelSet.Detab.entab_laws.lhs.body")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Detab.entab_branch.lhs"),
-    [#src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
-      a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]])],
-  [#lean("Freyd.Alg.RelSet.Detab.entab_branch.lhs")],
-
-  [#vstep(EQ, [],
-    [`entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt) #src[(10.1)] \
-     #src[what makes `triple≜⟨unfill entab,⟨tbc,col⟩⟩` a snoc-list reduce: the output splits at the
-      last tab stop]])],
-  // No picture: `entab` is here read on points, and the equation relates two strings, not two
-  // objects the panels carry.
-  [],
-
-  [#vstep(EQ, [],
-    [`triple=⦇[base,op]⦈`, #h(4pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
-     `base` returns `([],(0,0))`, #h(4pt) `op ((xs,(t,c)),a)=` \ #h(10pt)
-     `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` #h(4pt) `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
-     `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
-     #src[the program: one pass carrying the column and the count of pending blanks]])],
-  [],
-)]<entab-laws>
+      last step alone or discards it]]),
+    (EQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
+      src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
+       a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]),
+  ),
+)
+// No picture: `entab` is here read on points, and the equation relates two strings, not two
+// objects the panels carry.
+#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt)
+  #src[(10.1)] \
+  #src[what makes `triple≜⟨unfill entab,⟨tbc,col⟩⟩` a snoc-list reduce: the output splits at the
+   last tab stop]])
+#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `triple=⦇[base,op]⦈`, #h(4pt)
+  `entab=triple assocl π₁ (𝟙×blanks) cat` \
+  `base` returns `([],(0,0))`, #h(4pt) `op ((xs,(t,c)),a)=` \ #h(10pt)
+  `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` #h(4pt) `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
+  `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
+  #src[the program: one pass carrying the column and the count of pending blanks]])
+]<entab-laws>
 
 == The minimum tardiness problem
 
@@ -152,37 +133,27 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
 // `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
 // set at all.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@e2c381dc lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Tardy.tardy_laws.rhs"),
-    [#src[the specification — @tardy-defn]])],
-  [#lean("Freyd.Alg.RelSet.Tardy.tardy_laws.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body"),
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_laws.rhs", src[the specification — @tardy-defn]),
     // job-schedule row: Theorem 10.1
-    [#src[No greedy *reduce* exists — one would also
-      solve every prefix of the input, and the best schedule of a prefix need not extend to a best
-      schedule of the whole]])],
-  // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
-  // theorem it feeds and it would otherwise both be `h` in one table.
-  [#lean("Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tardy.tardy_branch.lhs"),
-    [#src[Proposition 10.1: `nil` and `snag` have disjoint ranges]])],
-  [#lean("Freyd.Alg.RelSet.Tardy.tardy_branch.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs"),
+    // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
+    // theorem it feeds and it would otherwise both be `h` in one table.
+    (RQ, "Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body",
+      src[No greedy *reduce* exists — one would also
+       solve every prefix of the input, and the best schedule of a prefix need not extend to a best
+       schedule of the whole]),
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_branch.lhs",
+      src[Proposition 10.1: `nil` and `snag` have disjoint ranges]),
     // lean:AOP.A10_3_Tardy.pick_branch_le@e50eb5ea lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
-    [#src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]])],
-  // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
-  [#lean("Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs")],
+    // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
+    (RQ, "Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs",
+      src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]),
+  ),
   // lean:AOP.A10_3_Tardy.tardy_laws@706eb827 lean:AOP.A10_3_Tardy.greedy_dp_context@0cb6fac5 lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
 )]<tardy-laws>
 
@@ -225,53 +196,40 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // pulled out of the transpose, and holding it at one height is what says the rest of the chain
 // moved past it.
 
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs"),
-    [#src[the specification — @tex-defn]])],
-  [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs"),
-    [#src[`round°` is not a map, but `interval` is, so it comes out of the transpose]])],
-  // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
-  // the unit: the set the transpose opens starts on its target.
-  [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs"),
-    [#src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
-      reduce on cons-lists]])],
-  [#lean("Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tex.tex_laws_body.lhs"),
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs", src[the specification — @tex-defn]),
+    // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
+    // the unit: the set the transpose opens starts on its target.
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs",
+      src[`round°` is not a map, but `interval` is, so it comes out of the transpose]),
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs",
+      src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
+       reduce on cons-lists]),
     // interval row: Theorem 10.1
-    [#src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
-      digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]])],
-  // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
-  // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
-  // `α≜[nil,cons]` — @tex-defn — builds the list).
-  [#lean("Freyd.Alg.RelSet.Tex.tex_laws_body.lhs")],
-
-  [#vstep(EQ, [],
-    [`extern=interval f`, #h(4pt) `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \
-     #src[the program, with `d` the digit above]])],
-  // No picture: `f` is read on points, and the two sides are values, not the objects the panels
-  // carry.
-  [],
-
-  [#vstep(EQ, [],
-    [`extern(n)=f(2n−1,2n+1)`, #h(4pt) `f(p,q)=(p≤0→[],[d]⧺f(10p−w·d,10q−w·d))` \
-     #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
-      `intern` — every interval reached is `(p/w,q/w)`]])],
-  [],
+    // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
+    // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
+    // `α≜[nil,cons]` — @tex-defn — builds the list).
+    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_body.lhs",
+      src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
+       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
+  ),
   // lean:AOP.A10_4_Tex.tex_laws@393983dc lean:AOP.A10_4_Tex.tex_laws_step1@ddde5bc4 lean:AOP.A10_4_Tex.tex_laws_step2@436904e9 lean:AOP.A10_4_Tex.tex_laws_step3@12f54b12 lean:AOP.A10_4_Tex.tex_laws_body@942aced5
-)]<tex-laws>
+)
+// No picture: `f` is read on points, and the two sides are values, not the objects the panels
+// carry.
+#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `extern=interval f`, #h(4pt)
+  `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \
+  #src[the program, with `d` the digit above]])
+#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `extern(n)=f(2n−1,2n+1)`, #h(4pt)
+  `f(p,q)=(p≤0→[],[d]⧺f(10p−w·d,10q−w·d))` \
+  #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
+   `intern` — every interval reached is `(p/w,q/w)`]])
+]<tex-laws>
 
 #pagebreak(weak: true)
 #include "../allegory-appendix.typ"
