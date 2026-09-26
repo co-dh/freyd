@@ -746,6 +746,30 @@ partial def pushRecip? (r : Expr) : MetaM (Option Expr) := do
   | (``Freyd.Alg.DistributiveAllegory.union, args) => match lastTwo args with
     | some (x, y) => return some (← Meta.mkAppM ``Freyd.Alg.DistributiveAllegory.union #[← rc x, ← rc y])
     | none => return none
+  -- `[X,Y]°=X°ι₁∪Y°ι₂`: the tape read backwards has no node of its own, but each arm conversed
+  -- then injected is a composite the circuit already draws, and the `∪` sets them side by side.
+  | (``Freyd.Alg.junc, args) =>
+    if args.size < 3 then return none
+    let (c, x, y) := (args[args.size - 3]!, args[args.size - 2]!, args[args.size - 1]!)
+    let inj (i : Name) (z : Expr) := do StrDiag.compose #[← rc z, ← Meta.mkAppM i #[c]]
+    return some (← Meta.mkAppM ``Freyd.Alg.DistributiveAllegory.union
+      #[← inj ``Freyd.Alg.Coproduct.u₁ x, ← inj ``Freyd.Alg.Coproduct.u₂ y])
+  -- A map that MATCHES on a coproduct is the same tape (`graphPic`), so it converses the same way,
+  -- with `graph inl`/`graph inr` for the injections.
+  | (``Freyd.Alg.RelSet.graph, args) =>
+    let some f := args.back? | return none
+    let some arms ← StrDiag.sumArms (← Meta.whnfD f) | return none
+    let .forallE _ d _ _ ← Meta.whnfD (← Meta.inferType f) | return none
+    let sd ← Meta.whnfD d
+    let (.const ``Sum us, #[a, b]) := (sd.getAppFn, sd.getAppArgs) | return none
+    -- `graph`'s objects are implicit behind `.carrier`, which no unifier inverts: pass them.
+    if args.size < 3 then return none
+    let gr (x y z : Expr) := Meta.mkAppOptM ``Freyd.Alg.RelSet.graph #[some x, some y, some z]
+    let inj (i : Name) (s z : Expr) := do
+      let o ← Meta.mkAppM ``Freyd.Alg.RelSet.mk #[s]
+      StrDiag.compose #[← rc (← gr o args[1]! z), ← gr o args[0]! (mkApp2 (.const i us) a b)]
+    return some (← Meta.mkAppM ``Freyd.Alg.DistributiveAllegory.union
+      #[← inj ``Sum.inl a arms[0]!, ← inj ``Sum.inr b arms[1]!])
   | _ =>
     -- An arrow the note OPENS by a `diag_rewrite` equation (`Λ(R) = (𝟙%∋)E(R)`) is conversed
     -- through that opening, since it is the composite the circuit draws.

@@ -254,7 +254,161 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, #h(4pt)
 `f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`, #h(4pt) `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`.
 // lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@5720a058 lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
+
+`g≜[zero,penalty]`, #h(4pt) `m≜[zero,π₁ cost]` (B&dM's `h`, renamed as in @tardy-laws).
+// lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A10_3_Tardy.bmaxR@c4eeff86 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
 ]]<tardy-defn>
+
+// B&dM p.255: `cost` restated over the bag of the schedule, the form Proposition 9.3 asks for.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_k") \
+    #src[the cost of a schedule is got from the cost and the bag of the schedule before its last
+     job, and that job]],
+  // lean:AOP.A10_3_Tardy.cost_alg_k@7f483422
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.cost_alg_k.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_k.rhs",
+      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, and `penalty(xs,j)` reads only the
+       bag of `xs` — @tardy-defn]),
+    // lean:AOP.A10_3_Tardy.penalty_eq_bagPenalty@437884a3
+  ),
+)]<tardy-cost-k>
+
+// B&dM Exercise 10.5, p.258: "it is easy to check".
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.k_mono") \
+    #src[a larger cost before the last job gives a larger cost after it]],
+  // lean:AOP.A10_3_Tardy.k_mono@4ce1b877
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.k_mono.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Tardy.k_mono.rhs",
+      src[`bmax` is monotone in its first argument]),
+  ),
+)]<tardy-k-mono>
+
+// B&dM (10.2), p.256: "(10.2) follows on appeal to Proposition 9.3".
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_mono") \
+    #src[improving the schedule before the last job, among schedules of the same bag, improves
+     the whole schedule]],
+  // lean:AOP.A10_3_Tardy.tardy_mono@f508140f
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_mono.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_mono.rhs",
+      src[Proposition 9.3 at `S≜bagify`, `≤≜≥` — @dp-context-mono, with @tardy-cost-k and
+       @tardy-k-mono]),
+    // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
+  ),
+)]<tardy-mono>
+
+// B&dM (10.4)–(10.6), p.256, Exercise 10.6.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_bmax") \
+    #src[the cost of a schedule is the larger of the penalty of its last job and the cost of the
+     schedule before it]],
+  // lean:AOP.A10_3_Tardy.cost_alg_bmax@6bdd5030
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",
+      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))` and `bmax` commutes — @tardy-defn]),
+  ),
+)]<tardy-cost-bmax>
+
+// B&dM (10.7), p.256, Exercise 10.7; needs `ct` and `wt` positive.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.add_le") \
+    #src[putting one more job anywhere into a schedule never lowers its cost]],
+  // lean:AOP.A10_3_Tardy.add_le@d29b4a89
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.add_le.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Tardy.add_le.rhs",
+      src[induction on where `j` goes: every job after it starts later, so no penalty falls]),
+    // lean:AOP.A10_3_Tardy.cost_add_le@4e677fdd lean:AOP.A10_3_Tardy.ctsum_add_le@aababe5b
+  ),
+)]<tardy-add>
+
+// B&dM (10.8), p.256, Exercise 10.8.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.bagify_recip_cata") \
+    #src[the orderings of a bag with one more job are the orderings of the bag with that job put
+     in anywhere]],
+  // lean:AOP.A10_3_Tardy.bagify_recip_cata@9781e524
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs",
+      src[take out the last copy of `j` and put it back — @tardy-defn]),
+    // lean:AOP.A10_3_Tardy.add_del@18003f68 lean:AOP.A10_3_Tardy.blist_add@74e74883
+  ),
+)]<tardy-bag-cata>
+
+// B&dM p.256, "putting (10.7) and (10.8) together".
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.bagify_recip_le") \
+    #src[an ordering of a bag with one more job costs at least the cost of the ordering of the
+     bag before its last job]],
+  // lean:AOP.A10_3_Tardy.bagify_recip_le@583c3c44
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs", src[(10.8) — @tardy-bag-cata]),
+    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step2.rhs", src[(10.7) — @tardy-add]),
+    // lean:AOP.A10_3_Tardy.bagify_recip_le_step2@88a920c7
+    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step3.rhs",
+      src[definition of `R`, and `nil⊑zero≤cost°`]),
+    // lean:AOP.A10_3_Tardy.bagify_recip_le_step3@6d50a490
+    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step4.rhs", src[definition of `m`]),
+    // lean:AOP.A10_3_Tardy.bagify_recip_le_step4@720cf659
+  ),
+)]<tardy-bag-le>
+
+// B&dM (10.3), p.257: the book's calculation, one row per hint.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_greedy") \
+    #src[a schedule of a bag ending in a job of least penalty is no worse than any schedule of
+     the same bag]],
+  // lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
+  lean-chain((
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.rhs", src[monotonicity of composition]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step1@588b14c9
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step2.rhs",
+      src[`β°F(bagify°)α=bagify°`, since `bagify=⦇β⦈`]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step2@0c67ad67 lean:AOP.A10_3_Tardy.bagify_recip_alg@909c28b3
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step3.rhs", src[@tardy-bag-le]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step3@4c8ea4a0
+  ), (
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step4.rhs", src[modular law]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step4@03c0558d
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step5.rhs",
+      src[choice of `Q`: `F(bagify) Q F(bagify°)=g≤g°`]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step5@1f772cd4 lean:AOP.A10_3_Tardy.Q_choice@1881a8ab
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step6.rhs", src[products: `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step6@19339638
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy.rhs", src[@tardy-tail]),
+  )),
+)]<tardy-greedy>
+
+// B&dM p.257, "to complete the proof it is sufficient to show", `cost°` shunted.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_tail") \
+    #src[a job whose penalty is at most the last penalty, put after a schedule costing at most
+     the cost before the last job, gives a schedule costing at most the whole]],
+  // lean:AOP.A10_3_Tardy.tardy_tail@d6af1dd1
+  lean-chain((
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.rhs", src[`cost` a map, so `𝟙⊑cost cost°`]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step1@7ed1c8a6
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step2.rhs", src[`α cost=⟨g,α cost⟩ bmax`]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step2@8865bddf lean:AOP.A10_3_Tardy.alg_cost_self@29bcea57
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step3.rhs", src[`⟨g,α cost⟩` simple]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step3@3427a120
+  ), (
+    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step4.rhs", src[monotonicity of `bmax`]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step4@337d771d
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step5.rhs", src[(10.4) — @tardy-cost-bmax]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step5@739d1394
+    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail.rhs", src[definition of `R`]),
+  )),
+)]<tardy-tail>
 
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
 // `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
