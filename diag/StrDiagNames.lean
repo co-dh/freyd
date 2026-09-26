@@ -416,6 +416,8 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.k] def unexpandTardyK : Unexpander | _ => `($(mkIdent `k))
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.add] def unexpandTardyAdd : Unexpander | _ => `($(mkIdent `add))
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.R] def unexpandKnapsackR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.R] def unexpandParagraphR : Unexpander | _ => `($(mkIdent `R))

@@ -118,10 +118,10 @@
   "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
   "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
   // §16.3's bag relator stands beside `F` in the tardy panels, where the khaki it had was ΔE76 28.7
-  // from it — two FIXED entries, which no allocation can separate.  This pink is the ring point
-  // furthest from every other entry (ΔE76 11.8 at the nearest, `[Char]×−`, which no panel draws with
-  // it) and ≥ 29 from `F`, `E`, `list`, `list⁺`, `tree` and `−×Job`, the lanes its panels do draw.
-  "bag": rgb("#de879d"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
+  // from it — two FIXED entries, which no allocation can separate.  This magenta is
+  // far from every lane its panels draw: ΔE76 ≥ 40 from `F`, `E`, `list`, `list⁺`, `tree`, `−×Job`,
+  // `𝟏` and `Int×−`, which (10.2)'s `F(Int×bag)` draws beside it (the pink it had was 21.6 from it).
+  "bag": rgb("#c85fa8"), "Fᵢ": rgb("#8d7e75"), "A×−": rgb("#b1605a"), "Int×−": rgb("#c78675"),
   "Op×−": rgb("#844a3b"), "−×Code": rgb("#c4858b"), "−×Job": rgb("#85474f"),
   "−×Char": rgb("#966e59"), "𝟏": rgb("#a3a3a3"),
   // IntroString p.48's three monads, for the panels that redraw Cheng's commuting diagram.

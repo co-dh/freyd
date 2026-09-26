@@ -1411,4 +1411,91 @@ public theorem bagify_recip_strictNatural :
     (Relator.preservesRecip_of_tabular _) (Relator.preservesRecip_of_tabular _)
     bagify_strictNatural
 
+/-- **`π₁` IS LAX NATURAL** from `F×G` to `F`: relating both components then dropping the second
+    is at most dropping it then relating the first — the second component may have no partner. -/
+public theorem outl_laxNatural (F G : Relator RelSet.{0} RelSet.{0}) :
+    LaxNatural F (Relator.prod F G) (fun A => (relProd (F.obj A) (G.obj A)).outl) := by
+  intro A B S
+  rw [show (Relator.prod F G).map S = rprodMap (F.map S) (G.map S) from prodMap_eq_rprodMap _ _]
+  exact le_iff.mpr fun p _ ⟨q, ⟨h1, _⟩, hq⟩ => ⟨p.1, rfl, by cases hq; exact h1⟩
+
+/-- **`add` IS STRICTLY NATURAL**: relating job by job then inserting `j` is inserting `j` then
+    relating job by job — the insertion point is carried across, one `skip` per job it passes. -/
+public theorem add_strictNatural :
+    StrictNatural (snocRelator Unit) (Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0}))
+      (fun A => add (Job := A.carrier)) := by
+  intro A B S
+  rw [show (Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0})).map S
+      = rprodMap (slist S) S from prodMap_eq_rprodMap _ _]
+  apply hom_ext
+  intro p w'
+  have fwd : ∀ {x' w' : SnocList Unit B.carrier} {j' : B.carrier}, AddP x' j' w' →
+      ∀ (x : SnocList Unit A.carrier) (j : A.carrier), slist S x x' → S j j' →
+      ∃ w, AddP x j w ∧ slist S w w' := by
+    intro x' w' j' h
+    induction h with
+    | last x' j' => exact fun x j hx hj => ⟨_, .last x j, hx, hj⟩
+    | skip a' _ ih =>
+      intro x j hx hj
+      cases x with
+      | wrap _ => exact hx.elim
+      | snoc x0 a0 =>
+        obtain ⟨w0, hw0, hs⟩ := ih x0 j hx.1 hj
+        exact ⟨_, .skip a0 hw0, hs, hx.2⟩
+  have bwd : ∀ {x w : SnocList Unit A.carrier} {j : A.carrier}, AddP x j w →
+      ∀ w' : SnocList Unit B.carrier, slist S w w' →
+      ∃ x' j', (slist S x x' ∧ S j j') ∧ AddP x' j' w' := by
+    intro x w j h
+    induction h with
+    | last x j =>
+      intro w' hw
+      cases w' with
+      | wrap _ => exact hw.elim
+      | snoc y b => exact ⟨y, b, ⟨hw.1, hw.2⟩, .last y b⟩
+    | skip a _ ih =>
+      intro w' hw
+      cases w' with
+      | wrap _ => exact hw.elim
+      | snoc y b =>
+        obtain ⟨x0', j', ⟨hx, hj⟩, hy⟩ := ih y hw.1
+        exact ⟨SnocList.snoc x0' b, j', ⟨⟨hx, hw.2⟩, hj⟩, .skip b hy⟩
+  constructor
+  · rintro ⟨q, ⟨h1, h2⟩, hq⟩
+    exact fwd hq p.1 p.2 h1 h2
+  · rintro ⟨w, hw, hs⟩
+    obtain ⟨x', j', hxj, hq⟩ := bwd hw w' hs
+    exact ⟨(x', j'), hxj, hq⟩
+
+/-- **`nil` IS LAX NATURAL** in the element type: `list(S)` relates `[]` to `[]`. -/
+public theorem nilR_laxNatural :
+    LaxNatural (snocRelator Unit) (Relator.const (dL Unit)) (fun a => nilR (E := a.carrier)) := by
+  intro x y S
+  refine le_iff.mpr fun d ys h => ?_
+  obtain ⟨d', _, hys⟩ := h
+  obtain rfl : ys = SnocList.wrap () := hys
+  exact ⟨SnocList.wrap (), rfl, rfl⟩
+
+/-- **`[nil,(bagify°×𝟙)add]` IS LAX NATURAL**, the step of (10.8)'s fold: `nil`'s square beside
+    `bagify°×𝟙` then `add`, both strictly natural. -/
+public theorem bagAdd_laxNatural :
+    LaxNatural (snocRelator Unit)
+      (Relator.sum (Relator.const (dL Unit)) (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+      (fun a => junc (sumCop (dL Unit) ⟨(Bag a.carrier).carrier × a.carrier⟩) nilR
+        (prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
+          (bagify (Job := a.carrier))° (𝟙 a) ≫ add)) := by
+  intro A B R
+  refine laxNatural_junc (F' := Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+    (ψ := fun a => prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
+      (bagify (Job := a.carrier))° (𝟙 a) ≫ add) nilR_laxNatural ?_ R
+  intro A B R
+  show _ ≫ (_ ≫ add) ⊑ (_ ≫ add) ≫ _
+  refine laxNatural_comp_slide (F := snocRelator Unit)
+    (G := Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0}))
+    (H := Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+    (ψ := fun a => prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
+      (bagify (Job := a.carrier))° (𝟙 a)) (φ := fun a => add (Job := a.carrier)) ?_ ?_
+  · exact le_of_eq (strictNatural_prod (F' := Relator.idRelator RelSet.{0}) bagify_recip_strictNatural
+      (strictNatural_id _) R)
+  · exact le_of_eq (add_strictNatural R)
+
 end Freyd.Alg.RelSet.Tardy
