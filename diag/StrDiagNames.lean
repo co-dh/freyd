@@ -67,7 +67,7 @@ attribute [diag_defines] relCata_cancel
 -- relation are already the note's words, so there is nothing for a printing rule to rewrite — the
 -- tag says so once per name, where an identity unexpander would say it in five lines each.  A
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
-attribute [diag_noted] dom ran Entire Simple Map Symmetric subset simplePart codBox
+attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
   RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive Monotonic MonotonicAlg
   RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
@@ -360,6 +360,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.leRel] def unexpandLeRel : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
+
+-- THE INCLUSION ORDER ON A POWER OBJECT IS WRITTEN BY ITS OWN SYMBOL, for the reason `≤` is: the
+-- note's `⊆ ≜ ∈\∈` and its converse `⊇ ≜ ∋/∋`, never the Lean names that tell the two apart.
+open Lean PrettyPrinter in
+@[app_unexpander subset] def unexpandSubset : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊆")))
+open Lean PrettyPrinter in
+@[app_unexpander supset] def unexpandSupset : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "⊇")))
 
 -- THE SECTION'S OWN ORDERING IS THE NOTE'S BEAD `R`.  Which cost function it ranks by — the volume,
 -- the line width, the due dates — is the section's context and not part of the name, exactly as
@@ -683,6 +692,9 @@ attribute [diag_rewrite] Λ_eq_singleton_existsImage existsImage_id Cat.comp_id
 -- `∈\Z` is an APPLICATION of `∈\−`, which is no relator and so no wire; opened to the composite
 -- `⊆ Λ(Z°)°` it is beads on the lanes like `Λ` is, `Z` then drawn by the transpose's own rule.
 attribute [diag_rewrite] mem_leftDiv_eq
+-- A converse of a COMPOSITE is the composite of the converses, reversed: a bead cannot carry a run
+-- of lanes, so `((1%∈)E(Z°))°` is drawn as `E(Z°)°(1%∈)°`, each factor a bead of its own.
+attribute [diag_rewrite] Allegory.recip_comp
 -- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
 -- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
 attribute [diag_rewrite] RelSet.SL.arm₂_graph

@@ -295,40 +295,40 @@ theorem est_simple_of_antisymmetric {R : A ⟶ A} (h : AntiSymmetric R) : Simple
 
 /-! ## Ex 7.1/7.2: the subset relation (book p.169)
 
-  B&dM's `subset = ∈\∈` mirrors to `(∋ a) / (∋ a)`, which IS Freyd's `subset` (§2.442,
+  B&dM's `subset = ∈\∈` is Freyd's `subset`; its converse `(∋ a) / (∋ a)` is `supset` (§2.442,
   `Freyd.S2_40`), so the book's relation is written with Freyd's name and no alias of its own. -/
 
-public theorem id_le_subset : Cat.id (PowerAllegory.powerObj A) ⊑ subset := by
+public theorem id_le_supset : Cat.id (PowerAllegory.powerObj A) ⊑ supset := by
   show Cat.id (PowerAllegory.powerObj A) ⊑ (∋ A) / (∋ A)
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
 
-public theorem subset_comp_eps_le : subset ≫ ∋ A ⊑ ∋ A := by
+public theorem supset_comp_eps_le : supset ≫ ∋ A ⊑ ∋ A := by
   show ((∋ A) / (∋ A)) ≫ ∋ A ⊑ ∋ A
   exact div_self_comp_le (∋ A)
 
 /-- **Ex 7.1** mirrored: `∋°\(R/∋)` is unaffected by intersecting with the subset order,
-    `subset°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ subset°≫lb` (`id ⊑
-    subset`).  `⊑`: `∋°≫subset°≫lb = (subset≫∋)°≫lb ⊑ ∋°≫lb ⊑ R` (`subset_comp_eps_le`). -/
-theorem recip_subset_comp_lb (R : A ⟶ A) :
-    subset° ≫ (((∋ A)°) \ R) = (((∋ A)°) \ R) := by
+    `supset°≫leftDiv(∋a)°R = leftDiv(∋a)°R`.  `⊒`: `lb = id≫lb ⊑ supset°≫lb` (`id ⊑
+    supset`).  `⊑`: `∋°≫supset°≫lb = (supset≫∋)°≫lb ⊑ ∋°≫lb ⊑ R` (`supset_comp_eps_le`). -/
+theorem recip_supset_comp_lb (R : A ⟶ A) :
+    supset° ≫ (((∋ A)°) \ R) = (((∋ A)°) \ R) := by
   apply le_antisymm
   · apply (le_leftDiv_iff _ _ _).mpr
-    have hstep2 : (subset ≫ ∋ A)° ⊑ (∋ A)° := recip_mono subset_comp_eps_le
-    have heq : (∋ A)° ≫ (subset° ≫ (((∋ A)°) \ R))
-        = (subset ≫ ∋ A)° ≫ (((∋ A)°) \ R) := by
+    have hstep2 : (supset ≫ ∋ A)° ⊑ (∋ A)° := recip_mono supset_comp_eps_le
+    have heq : (∋ A)° ≫ (supset° ≫ (((∋ A)°) \ R))
+        = (supset ≫ ∋ A)° ≫ (((∋ A)°) \ R) := by
       rw [← Cat.assoc, Allegory.recip_comp]
     rw [heq]
     exact le_trans (comp_mono_right hstep2 _) (leftDiv_comp_le _ _)
-  · have hid : Cat.id (PowerAllegory.powerObj A) ⊑ subset° := by
-      have h := recip_mono (id_le_subset (A := A)); rwa [recip_id] at h
+  · have hid : Cat.id (PowerAllegory.powerObj A) ⊑ supset° := by
+      have h := recip_mono (id_le_supset (A := A)); rwa [recip_id] at h
     have h2 := comp_mono_right hid (((∋ A)°) \ R)
     rwa [Cat.id_comp] at h2
 
-/-- **Ex 7.2** mirrored, the `⊑` half: `existsImage R ≫ subset ⊑ (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subset_le (R : A ⟶ B) :
-    existsImage R ≫ subset ⊑ (∋ A ≫ R) / (∋ B) := by
+/-- **Ex 7.2** mirrored, the `⊑` half: `existsImage R ≫ supset ⊑ (∋a≫R)/∋b`. -/
+theorem existsImage_comp_supset_le (R : A ⟶ B) :
+    existsImage R ≫ supset ⊑ (∋ A ≫ R) / (∋ B) := by
   show existsImage R ≫ ((∋ B) / (∋ B)) ⊑ (∋ A ≫ R) / (∋ B)
   apply (le_div_iff _ _ _).mpr
   calc (existsImage R ≫ ((∋ B) / (∋ B))) ≫ ∋ B
@@ -336,14 +336,14 @@ theorem existsImage_comp_subset_le (R : A ⟶ B) :
     _ ⊑ existsImage R ≫ ∋ B := comp_mono_left _ (div_self_comp_le (∋ B))
     _ = ∋ A ≫ R := existsImage_eps R
 
-/-- **Ex 7.2** mirrored, the `⊒` half: `(∋a≫R)/∋b ⊑ existsImage R ≫ subset`.  Shunts
+/-- **Ex 7.2** mirrored, the `⊒` half: `(∋a≫R)/∋b ⊑ existsImage R ≫ supset`.  Shunts
     across the map `existsImage R` (`map_shunt_left`), reducing to `(existsImage R)°≫((∋a≫R)/∋b)
-    ⊑ subset`, then unfolds `subset = ∋b/∋b` via `le_div_iff`: the numerator bound
+    ⊑ supset`, then unfolds `supset = ∋b/∋b` via `le_div_iff`: the numerator bound
     `((∋a≫R)/∋b)≫∋b ⊑ ∋a≫R` (`DivisionAllegory.div_comp_le`) composed with `(existsImage R)°`
     lands on `(existsImage R)°≫(∋a≫R) = (existsImage R)°≫(existsImage R≫∋b) ⊑ id≫∋b = ∋b`
     (`existsImage_eps` + `Simple (existsImage R)`). -/
-theorem existsImage_comp_subset_ge (R : A ⟶ B) :
-    (∋ A ≫ R) / (∋ B) ⊑ existsImage R ≫ subset := by
+theorem existsImage_comp_supset_ge (R : A ⟶ B) :
+    (∋ A ≫ R) / (∋ B) ⊑ existsImage R ≫ supset := by
   have hEMap : Map (existsImage R) := Λ_is_map' _
   apply (map_shunt_left hEMap _ _).mp
   show (existsImage R)° ≫ ((∋ A ≫ R) / (∋ B)) ⊑ (∋ B) / (∋ B)
@@ -361,10 +361,10 @@ theorem existsImage_comp_subset_ge (R : A ⟶ B) :
     rwa [Cat.id_comp] at h
   exact le_trans hb1 hb2
 
-/-- **Ex 7.2** mirrored (full equality): `existsImage R ≫ subset = (∋a≫R)/∋b`. -/
-theorem existsImage_comp_subset (R : A ⟶ B) :
-    existsImage R ≫ subset = (∋ A ≫ R) / (∋ B) :=
-  le_antisymm (existsImage_comp_subset_le R) (existsImage_comp_subset_ge R)
+/-- **Ex 7.2** mirrored (full equality): `existsImage R ≫ supset = (∋a≫R)/∋b`. -/
+theorem existsImage_comp_supset (R : A ⟶ B) :
+    existsImage R ≫ supset = (∋ A ≫ R) / (∋ B) :=
+  le_antisymm (existsImage_comp_supset_le R) (existsImage_comp_supset_ge R)
 
 /-! ## (7.10)/(7.11): fusion with the power functor and distribution over union
 
@@ -417,16 +417,14 @@ public theorem leftDiv_comp_recip_map {C D : 𝒜} {f : D ⟶ C} (hf : Map f) (S
     rw [Cat.assoc]
     exact le_trans (comp_mono_left T hf.2) (le_of_eq (Cat.comp_id T))
 
-/-- `∈\Z = ⊆ Λ(Z°)°`, `⊆ ≜ ∈\∈` being `subset°` (`subset ≜ ∋/∋` relates `xs` to `ys⊆xs`):
-    `Z = ∈ Λ(Z°)°`, and dividing by a map's converse commutes (`leftDiv_comp_recip_map`). -/
+/-- `∈\Z = ⊆ Λ(Z°)°`, `⊆ ≜ ∈\∈`: `Z = ∈ Λ(Z°)°`, and dividing by a map's converse commutes
+    (`leftDiv_comp_recip_map`). -/
 public theorem mem_leftDiv_eq {C : 𝒜} (Z : A ⟶ C) :
-    ((∋ A)° \ Z) = (subset (a := A))° ≫ (Λ (Z°))° := by
+    ((∋ A)° \ Z) = subset (a := A) ≫ (Λ (Z°))° := by
   have hZ : Z = (∋ A)° ≫ (Λ (Z°))° := by
     rw [← Allegory.recip_comp, Λ_comp_eps, Allegory.recip_recip]
-  have hs : ((∋ A)° \ (∋ A)°) = (subset (a := A))° := by
-    simp only [leftDiv, Allegory.recip_recip]; rfl
   have h := leftDiv_comp_recip_map (Λ_is_map' (Z°)) ((∋ A)°) ((∋ A)°)
-  rw [← hZ, hs] at h
+  rw [← hZ] at h
   exact h.symm
 
 /-- **(7.8)**: `P f·min R = min (f°·R·f)·f` at `R°`, mirrored to

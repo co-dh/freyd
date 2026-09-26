@@ -46,50 +46,30 @@ in @mu-defn.
 )]<dp-lower>
 
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.dynamic_programming_upper") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@2afe998a
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.dynamic_programming_upper_step1.lhs"), [])],
-  [#lean("Freyd.Alg.dynamic_programming_upper_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step1.rhs"),
-    [#src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]])],
+  lean-chain(
+    (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
+      src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
-  [#lean("Freyd.Alg.dynamic_programming_upper_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.dynamic_programming_upper_step2.rhs"),
-    [#src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]])],
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
      // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
-  [#lean("Freyd.Alg.dynamic_programming_upper_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step3.rhs"),
-    [#src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]])],
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step3.rhs", src[`T`#frc([`T°`])`⊑∈` — @pow-laws; division; functors]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3@0b07a2e4
-  [#lean("Freyd.Alg.dynamic_programming_upper_step3.rhs")],
-)]<dp-upper>
-
-// (9.3) continued: a `#disp` cannot break across a page, and seven rows do not fit on one.
-#disp[#calc-table(
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step4.rhs"),
-    [#src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]])],
+  ),
+  // two rows, split where the old two tables split: seven panels in one row shrink the fractions past reading
+  lean-chain(
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
-  [#lean("Freyd.Alg.dynamic_programming_upper_step4.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper_step5.rhs"),
-    [#src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]])],
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step5@7faf3348
-  [#lean("Freyd.Alg.dynamic_programming_upper_step5.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.dynamic_programming_upper.rhs"),
-    [#src[`R°R°⊑R°`: `R` transitive]])],
-  [#lean("Freyd.Alg.dynamic_programming_upper.rhs")],
-)]<dp-upper-end>
+    (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R°R°⊑R°`: `R` transitive]),
+  ),
+)]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
