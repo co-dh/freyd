@@ -70,6 +70,12 @@ register_label_attr diag_defines
     term.  Any OTHER arrow between two equal stacks is a bead like any other. -/
 register_label_attr diag_coherence
 
+/-- WHICH CONVERSES HAVE A NAME OF THEIR OWN (CLAUDE.md: `≥`, never `≤°`).  The tag goes on the
+    THEOREM `Q = P°` that makes the pair, so a pair nobody proved cannot be declared; the converse of
+    `P` is then drawn as `Q` and the converse of `Q` as `P`, each spelled by its own printing rule.
+    Registered here, tagged in `diag/StrDiagNames.lean`, for the same reason as `diag_unfold`. -/
+register_label_attr diag_opposite
+
 /-- WHICH BINARY OPERATION ON ONE HOM IS A JOIN, and the symbol that stands between the panels it
     draws.  An assertion about a JOIN is ONE PANEL PER OPERAND — the note's `∪` row of
     `<lax-closure>` is two squares with `∪` between them — where a MEET is one bead and one panel,

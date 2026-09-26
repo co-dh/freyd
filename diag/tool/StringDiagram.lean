@@ -1336,11 +1336,12 @@ def cutAsDrawn (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (d : 
 
 /-- The operand of a converse `r°`, or `none`.  A converse with a NAME of its own (`∈`, `⊆`) is an
     arrow in its own right and stays one bead. -/
-def recipArg? (r : Expr) : Option Expr :=
+def recipArg? (r : Expr) : MetaM (Option Expr) := do
   match r.getAppFnArgs with
-  | (``Freyd.Alg.Allegory.recip, args) =>
-    args.back?.bind fun z => if (namedRecip z).isSome then none else some z
-  | _ => none
+  | (``Freyd.Alg.Allegory.recip, args) => match args.back? with
+    | some z => return if (← namedRecip? z).isSome then none else some z
+    | none => return none
+  | _ => return none
 
 -- Off: a one-sided `F(z)°` / `F(z°)` draws as one bead labelled with its converse, the author's
 -- choice over a lone `°` lane that flips `z`; the sandwich `F(z°)°` keeps its lanes either way.
@@ -1353,7 +1354,7 @@ def drawOneSidedConv : Bool := false
     Returns `(F, z, outer, inner)`. -/
 def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     MetaM (Option (Expr × Expr × Bool × Bool)) := do
-  let outer := recipArg? e
+  let outer ← recipArg? e
   let x := outer.getD e
   -- The lane's action as written — `F.map r` for an ENDOFUNCTOR of the region, a local relator's
   -- included; `graph : Fun → Rel` is no lane — else a catalogue lane's.
@@ -1370,7 +1371,7 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   let some (R, r) ← direct <||> peelMap? cat objVars regionTy x | return none
   -- A converse with NO lane under it is a bead's own converse, `R°`, and stays that one bead.
   if (wiresOf R).isEmpty then return none
-  let inner := recipArg? r
+  let inner ← recipArg? r
   if outer.isNone && inner.isNone then return none
   if outer.isSome != inner.isSome && !drawOneSidedConv then return none
   let z := inner.getD r

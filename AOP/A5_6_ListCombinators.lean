@@ -372,6 +372,9 @@ public theorem suffixP_iff_append :
     `leq°`, per the book-notation rule that a converse with a name of its own gets the name. -/
 @[expose] public def geq : (⟨Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := fun a b => b ≤ a
 
+/-- `≥ = ≤°`: the pair by which a drawn `≤°` is named `≥`, and `≥°` named `≤`. -/
+public theorem geq_eq_recip_leq : geq = leq° := rfl
+
 /-- `≤` is transitive. -/
 public theorem leq_trans : leq ≫ leq ⊑ leq :=
   le_iff.mpr fun _ _ h => by obtain ⟨_, h1, h2⟩ := h; exact Int.le_trans h1 h2

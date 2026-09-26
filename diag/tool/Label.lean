@@ -1048,14 +1048,32 @@ def commaL (l r : String) (ps : Array Lbl) : Lbl := .delim l r (Lbl.join "," ps)
 def applyLabelL (f : String) (a : Lbl) (j : Join) : Lbl :=
   if j == .bracket || a.delimited || (oneChar f && j == .name) then f ++ a else f ++ "(" ++ a ++ ")"
 
-/-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the membership's is `∈`, the superset order's
-    (`supset ≜ ∋/∋`) is `⊆` (`subset_eq_recip_supset`), and a `°` makes the reader undo one level
-    of indirection to get back to it.  Decided by the OPERAND's head constant, so every spelling
-    goes the same way — and read in TWO places, the labeller's `°` clause and the circuit
-    exporter's, so the name a box carries and the box drawn cannot disagree. -/
-def namedRecip (r : Expr) : Option String :=
-  if r.isAppOf ``Freyd.Alg.PowerAllegory.eps then some "∈"
-  else if r.isAppOf ``Freyd.Alg.supset then some "⊆" else none
+/-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): the arrow `r°` IS, read off a `diag_opposite`
+    theorem `Q = P°` in EITHER direction — `r` matching `P` gives `Q`, `r` matching `Q` gives `P` —
+    since a `°` makes the reader undo one level of indirection to get back to the name.  Read in
+    TWO places, the labeller's `°` clause and the circuit exporter's, so the name a box carries and
+    the box drawn cannot disagree.  THE HEAD TEST keeps `isDefEq` from unfolding one side into the
+    other, as in `rewriteHead?`. -/
+def namedRecip? (r : Expr) : MetaM (Option Expr) := do
+  let some n := r.getAppFn.constName? | return none
+  for thm in (← Lean.labelled `diag_opposite) do
+    let some ci := (← getEnv).find? thm | throwError "diag_opposite: `{thm}` is not in the environment"
+    let s ← Meta.saveState
+    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+    let (_, _, concl) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+    let some (_, q, pc) := concl.eq? | throwError "diag_opposite: `{thm}` is not an equation `Q = P°`"
+    let (``Freyd.Alg.Allegory.recip, pargs) := pc.getAppFnArgs
+      | throwError "diag_opposite: the right side of `{thm}` is not a converse `P°`"
+    let some p := pargs.back? | throwError "diag_opposite: `{thm}`'s converse has no operand"
+    let mut out : Option Expr := none
+    for (x, y) in [(p, q), (q, p)] do
+      if out.isNone && x.getAppFn.constName? == some n then
+        if ← Meta.withReducible (Meta.isDefEq x r) then
+          let y ← instantiateMVars y
+          if !y.hasMVar then out := some y
+    s.restore
+    if out.isSome then return out
+  return none
 
 /-- The one FIELD of a one-field record IS that record (`ExprReader.unprojRecord?`) — EXCEPT where
     the record is an INSTANCE.  A class with one field is a one-field record, so `m + 1`, which is
@@ -1245,13 +1263,12 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
           ++ (← labelTree Prec.loose b))
       | none => txt e
     | none => txt e
-  -- A CONVERSE WITH A NAME OF ITS OWN IS WRITTEN BY THAT NAME (CLAUDE.md): the membership's is `∈`,
-  -- and `∋°` makes the reader undo one level of indirection to get back to it.  Decided by the
-  -- OPERAND's head constant, so every spelling of `∋` goes the same way.
+  -- A CONVERSE WITH A NAME OF ITS OWN IS WRITTEN BY THAT NAME (CLAUDE.md): `∋°` is `∈`, `⊇°` is
+  -- `⊆`, each pair a `diag_opposite` theorem read by `namedRecip?`.
   | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) => do
     match (← arrows args).back? with
-    | some r => match namedRecip r with
-      | some n => return n
+    | some r => match ← namedRecip? r with
+      | some q => labelTree prec q
       | none => un Prec.atom Prec.atom "" "°" args
     | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un Prec.atom Prec.atom "" "⊥" args

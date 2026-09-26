@@ -456,6 +456,16 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.leq] def unexpandListRelLeq : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "≤")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.geq] def unexpandListRelGeq : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "≥")))
+open Lean PrettyPrinter in
+@[app_unexpander mem] def unexpandMem : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "∈")))
+
+-- A CONVERSE WITH A NAME OF ITS OWN (CLAUDE.md): each theorem `Q = P°` names `P°` as `Q` and `Q°`
+-- as `P` (`diag/tool/Label.lean`, `namedRecip?`), both spelled by their unexpanders above.
+attribute [diag_opposite] mem_eq_recip_eps subset_eq_recip_supset RelSet.ListRel.geq_eq_recip_leq
 
 open Lean PrettyPrinter in
 /-- The maximum-segment-sum step is the note's `⊕`, which is no Lean identifier: the formatter

@@ -921,6 +921,12 @@ public theorem subset_eq_recip_supset {a : 𝒜} [PowerAllegory 𝒜] :
   rw [Allegory.recip_recip]
   rfl
 
+/-- The note's `∈ ≜ ∋°`: `x ∈ xs` iff `xs ∋ x`. -/
+@[expose] public def mem {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ PowerAllegory.powerObj a := (∋ a)°
+
+/-- `∈ = ∋°`: the pair by which a drawn `∋°` is named `∈`, and `∈°` named `∋`. -/
+public theorem mem_eq_recip_eps {a : 𝒜} [PowerAllegory 𝒜] : mem (a := a) = (∋ a)° := rfl
+
 -- (LEFT DIVISION `leftDiv` is defined canonically in S2_3 §2.312; reused here.)
 
 /-- §2.442 step: `∋ ≫ Λ(1) ⊑ 2 = ∋/∋`.  Book: "since `∋ Λ(1) ⊑ ∋/∋`".

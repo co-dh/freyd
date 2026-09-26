@@ -783,8 +783,8 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
         CIRCUIT-GEN §3 row 8 — `cpanel` has no node for it"
     -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
     -- is a primitive of `circuit-sigs.json`, so mirroring `∋` would chamfer it the wrong way.
-    let named := StrDiag.namedRecip r
-    let lbl ← match named with | some n => pure (StrDiag.Lbl.text n) | none => StrDiag.labelT r
+    let named ← StrDiag.namedRecip? r
+    let lbl ← StrDiag.labelT (named.getD r)
     let flip := if named.isSome then p.val.flag "flip" else !(p.val.flag "flip")
     return boxPic lbl p.outs p.ins src tgt false (frac := p.val.flag "frac") (flip := flip)
 
