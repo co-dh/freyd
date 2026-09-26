@@ -417,15 +417,14 @@
       + obnd.map(o => (o.at(1), o.at(2))))
   dpan(h, w, xo, {
   // THE CONVERSE IS A LANE: `F(Z°)°` is `°∘F∘°` acting on `Z`, two dashed `°` lanes around `F`,
-  // and the region between them is `Relᵒᵖ`, shaded before any wire so the wires draw over it.
+  // and the region between them is `Relᵒᵖ`, shaded before any wire so the wires draw over it.  The
+  // `°` names sit mid-run, west of each lane: at the ends they would land on the beads above and below.
   for (x0, x1, y0, y1) in convs {
     hm-region(((x0, y0), (x1, y0), (x1, y1), (x0, y1)), fb-OPC, straight: true)
     for x in (x0, x1) {
       hm-wire(((x, y0), (x, y1)), col: CONVC, straight: true, dash: "dashed")
-      hm-name((x, y0 + 0.22), [`°`], col: CONVC, size: 10pt)
-      hm-name((x, y1 - 0.22), [`°`], col: CONVC, size: 10pt)
+      hm-name((x - 0.12, (y0 + y1) / 2), [`°`], col: CONVC, size: 10pt, anchor: "east")
     }
-    hm-name((x0 + 0.06, y0 - 0.22), [`Rel`#super[op]], col: CONVC, size: 7pt, anchor: "west")
   }
   for (i, l) in lanes.enumerate() {
     let ys = ddips(dx, h, beads, l.at(0), l.at(1), l.at(2))

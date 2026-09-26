@@ -1175,6 +1175,9 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     above it, and the two edge sentinels — `-1` the top, `LIVE` the bottom — do not move. -/
 private def shiftRow (n : Nat) (i : Int) : Int := if i < 0 then i else i + n
 
+private def shiftConv (n : Nat) (cs : Array (Int × Int)) : Array (Int × Int) :=
+  cs.map fun p => (shiftRow n p.1, shiftRow n p.2)
+
 /-- `d` ABOVE `e`.  The two edges must be the SAME cut, and each lane of `e.top` then IS the lane of
     `d.bot` it continues — one wire, not two stacked — which is what makes `⟦f≫g⟧` a composite. -/
 def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
@@ -1194,12 +1197,13 @@ def Diagram.vcomp (d e : Diagram) : MetaM Diagram := do
   let emap : Nat → Nat := fun j => if j < mt then d.bot[j]! else d.lanes.size + j - mt
   let mut lanes := d.lanes
   for j in [0 : mt] do
-    lanes := lanes.modify d.bot[j]! fun l => { l with dies := shiftRow nr e.lanes[j]!.dies,
-      conv := l.conv ++ e.lanes[j]!.conv.map fun (a, b) => (shiftRow nr a, shiftRow nr b) }
+    let el := e.lanes[j]!
+    let cv := shiftConv nr el.conv
+    lanes := lanes.modify d.bot[j]! fun l => { l with dies := shiftRow nr el.dies, conv := l.conv ++ cv }
   for j in [mt : e.lanes.size] do
     let l := e.lanes[j]!
     lanes := lanes.push { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies,
-                                 conv := l.conv.map fun (a, b) => (shiftRow nr a, shiftRow nr b) }
+                                 conv := shiftConv nr l.conv }
   let rows := d.rows ++ e.rows.map fun r =>
     { r with arms := r.arms.map emap, legs := r.legs.map emap, over := r.over.map emap }
   return { lanes, rows, top := d.top, bot := e.bot.map emap, otop := d.otop, obot := e.obot }
@@ -1212,7 +1216,7 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
   let emap : Nat → Nat := fun j => if j < mt then nt + j else nt + dn + j
   let esh : Lane → Lane := fun l =>
     { l with born := shiftRow nr l.born, dies := shiftRow nr l.dies,
-             conv := l.conv.map fun (a, b) => (shiftRow nr a, shiftRow nr b) }
+             conv := shiftConv nr l.conv }
   let lanes := d.lanes.extract 0 nt ++ (e.lanes.extract 0 mt).map esh
     ++ d.lanes.extract nt d.lanes.size ++ (e.lanes.extract mt e.lanes.size).map esh
   let obj ← label e.otop
