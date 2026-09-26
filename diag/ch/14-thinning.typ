@@ -90,218 +90,151 @@ row((
 
 === `est(R)=thin(Q) est(R)` given `Q⊑R`, `𝟙⊑Q`, `RR⊑R`
 
-// B&dM p. 194, thin-introduction, mirrored: the row above read as a calculation.  Circuit and not
-// Hinze–Marsden — `est` and `thin` are both meets, which a wire-is-a-functor picture cannot draw.
+// B&dM p. 194, thin-introduction, mirrored: the row above read as a calculation.
 #grid(columns: (1fr, 1fr), column-gutter: 42pt, align: top,
 [#disp[
    // lean:AOP.A8_1.thinRel_comp_est@e5ad7ecb
-#calc-table(cols: (1fr,), al: (left + horizon,),
+#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[`est(R)⊑thin(Q) est(R)` \
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
      // lean:AOP.A8_1.thinRel_comp_est_step1@45085b64
-
-  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step1.lhs"),
-    [])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step1.rhs"),
-    [#src[`𝟙⊑thin(Q)` — @thin-laws, `Q` reflexive]])],
-
+  lean-chain(
+    (none, "Freyd.Alg.thinRel_comp_est_step1.lhs", []),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @thin-laws, `Q` reflexive]),
+  ),
 )
 ]<thin-intro>],
 [#disp[
-#calc-table(cols: (1fr,), al: (left + horizon,),
+#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[`thin(Q) est(R)⊑∋` \
     #src[the `⊒` half, first condition of the UP of `est` at `X≜thin(Q) est(R)` — @est-up]],
      // lean:AOP.A8_1.thinRel_comp_est_cond1@edcd4448
-
-  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step2.lhs"),
-    [])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step2.rhs"),
-    [#src[`est(R)⊑∋` — @est-laws first row at `X≜est(R)`]])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_eps_le.rhs"),
-    [#src[`thin(Q)∋⊑∋` — @thin-up at `S≜∋`, `X≜thin(Q)`: `∋%∋=𝟙`, so the left side is `thin(Q)⊑thin(Q)`]])],
-
+  lean-chain(
+    (none, "Freyd.Alg.thinRel_comp_est_step2.lhs", []),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step2.rhs", src[`est(R)⊑∋` — @est-laws first row at `X≜est(R)`]),
+    (SQ, "Freyd.Alg.thinRel_comp_eps_le.rhs",
+      src[`thin(Q)∋⊑∋` — @thin-up at `S≜∋`, `X≜thin(Q)`: `∋%∋=𝟙`, so the left side is `thin(Q)⊑thin(Q)`]),
+  ),
 )
 ]<thin-intro-up1>])
 
 #disp[
-#calc-table(cols: (1fr,), al: (left + horizon,),
+#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[`∈ thin(Q) est(R)⊑R°` \
     #src[the `⊒` half, second condition — `Q⊑R`, `R` transitive]],
      // lean:AOP.A8_1.thinRel_comp_est_cond2@ffc2b689
-
-  [#vstep([], leanc("Freyd.Alg.thinRel_comp_est_step3.lhs"),
-    [])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step3.rhs"),
-    [#src[`∈ thin(Q)⊑Q°∈` — @thin-up at `S≜∋`, `X≜thin(Q)`, second half]])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step4.rhs"),
-    [#src[`∈ est(R)⊑R°` — @est-laws first row at `X≜est(R)`, second half, conversed]])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step5.rhs"),
-    [#src[`Q⊑R`, conversed]])],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinRel_comp_est_step6.rhs"),
-    [#src[`R` transitive, conversed]])],
+  lean-chain(
+    (none, "Freyd.Alg.thinRel_comp_est_step3.lhs", []),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step3.rhs",
+      src[`∈ thin(Q)⊑Q°∈` — @thin-up at `S≜∋`, `X≜thin(Q)`, second half]),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step4.rhs",
+      src[`∈ est(R)⊑R°` — @est-laws first row at `X≜est(R)`, second half, conversed]),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step5.rhs", src[`Q⊑R`, conversed]),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step6.rhs", src[`R` transitive, conversed]),
+  ),
 )]<thin-intro-up2>
 
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
 // the first cancels the singleton against the `∋`, the second is the chain.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.est_comp_singletonMap_le_thinRel") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.est_comp_singletonMap_le_thinRel") \
     #src[the singleton holding a `Q`-least member of a set is a thinning of that set
      // thin-elimination row: (8.2), p. 194
  #h(4pt) ]],
      // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@6a9d3796
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep(IMP, leanc("Freyd.Alg.est_comp_singletonMap_cond1.lhs"),
-    [#src[the `∋/∋` half of @thin-defn at `X≜est(Q) `#frc([`𝟙`])]])],
+  lean-chain((
+    (IMP, "Freyd.Alg.est_comp_singletonMap_cond1.lhs",
+      src[the `∋/∋` half of @thin-defn at `X≜est(Q) `#frc([`𝟙`])]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond1@3c083e37
-  [#lean("Freyd.Alg.est_comp_singletonMap_cond1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.est_comp_singletonMap_cond1.rhs"),
-    [#src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then `est(Q)⊑∋` — @est-laws]])],
-  [#lean("Freyd.Alg.est_comp_singletonMap_cond1.rhs")],
-
-  [#vstep(IMP, leanc("Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs"),
-    [#src[the `∈\(Q°∈)` half of @thin-defn, `−⊑Q°∈`]])],
+    (SQ, "Freyd.Alg.est_comp_singletonMap_cond1.rhs",
+      src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then `est(Q)⊑∋` — @est-laws]),
+  ), (
+    (IMP, "Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs", src[the `∈\(Q°∈)` half of @thin-defn, `−⊑Q°∈`]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond2@0b3ab216
-  [#lean("Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.est_comp_singletonMap_cond2_step1.rhs"),
-    [#src[`∈ est(Q)⊑Q°` — @est-up at `X≜est(Q)`, conversed]])],
+    (SQ, "Freyd.Alg.est_comp_singletonMap_cond2_step1.rhs",
+      src[`∈ est(Q)⊑Q°` — @est-up at `X≜est(Q)`, conversed]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond2_step1@dab28250
-  [#lean("Freyd.Alg.est_comp_singletonMap_cond2_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.recip_comp_singletonMap_le.rhs"),
-    [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
+    (SQ, "Freyd.Alg.recip_comp_singletonMap_le.rhs",
+      src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]),
      // lean:AOP.A8_1.recip_comp_singletonMap_le@a290eae1
-  [#lean("Freyd.Alg.recip_comp_singletonMap_le.rhs")],
+  )),
 )]<thin-82>
 
 // B&dM (8.3), p. 194, mirrored.  The first of the two conditions cancels the singleton against `∋`;
 // the second is the chain, and the context row is where the side condition enters.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
     #src[given `R∩(S°S)⊑Q`, `Q` a preorder
      // thinning row: (8.3), p. 194
  #h(4pt) ]],
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@bac7360f
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep(IMP, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs"),
-    [#src[the first of @thin-laws' two conditions at `X≜`#frc([`S`])` est(R) `#frc([`𝟙`])]])],
+  lean-chain((
+    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs",
+      src[the first of @thin-laws' two conditions at `X≜`#frc([`S`])` est(R) `#frc([`𝟙`])]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond1@29aa52d6
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs"),
-    [#src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` — @est-laws]])],
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs")],
-
-  [#vstep(IMP, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs"),
-    [#src[the second condition, `−⊑Q°∈`]])],
+    (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs",
+      src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` — @est-laws]),
+  ), (
+    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs", src[the second condition, `−⊑Q°∈`]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2@29665c3e
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs"),
-    [#src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]])],
-  // Empty: the wiring is the row above's, with one bead renamed.
-  [],
-
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs"),
-    [#src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]])],
+    (EQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs",
+      src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]),
+    (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs",
+      src[`S°`#frc([`S`])`⊑∈`, since #frc([`S`])`∋=S` with #frc([`S`]) a map — @pow-laws]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step1@4ac3fc82
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs"),
-    [#src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]])],
+  ), (
+    (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs",
+      src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up at `X≜est(R∩S°S)`, conversed — then `R∩(S°S)⊑Q`]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step2@48c5c1ff
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.recip_comp_singletonMap_le.rhs"),
-    [#src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]])],
+    (SQ, "Freyd.Alg.recip_comp_singletonMap_le.rhs",
+      src[#frc([`𝟙`])`⊑∈`, since #frc([`𝟙`])`∋=𝟙` with #frc([`𝟙`]) a map — @pow-laws]),
      // lean:AOP.A8_1.recip_comp_singletonMap_le@a290eae1
-  [#lean("Freyd.Alg.recip_comp_singletonMap_le.rhs")],
+  )),
 )]<thin-83>
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal
 // property: the first half is fusion, and the hylomorphism theorem turns the second into one chain.
 // `thin(Q) : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.thinning") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning") \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
      // thinning-of-reduce row: Theorem 8.1, p. 195
      `S` monotonic on `Q`, `Q` a preorder
  #h(4pt) ]],
      // lean:AOP.A8_1.thinning@0c230c31
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], [],
-    [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
-     `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
-     #src[@thin-laws at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]])],
-  // A conjunction has no shape in either calculus.
-  [],
-
-  [#vstep(IMP, leanc("Freyd.Alg.thinning_step1.lhs"),
-    [#src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to
-      `−⊑Q°∈`]])],
-  [#lean("Freyd.Alg.thinning_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinning_step1.rhs"),
-    [#src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
-  [#lean("Freyd.Alg.thinning_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinning_step2.rhs"),
-    [#src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
-      @pow-laws]])],
-  [#lean("Freyd.Alg.thinning_step2.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinning_step3.rhs"),
-    [#src[`∈ thin(Q)⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]])],
-  [#lean("Freyd.Alg.thinning_step3.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinning_step4.rhs"),
-    [#src[`Q°Q°=Q°`, `Q` a preorder]])],
-  [#lean("Freyd.Alg.thinning_step4.rhs")],
+  // A conjunction has no shape in either calculus, so it heads the chain as text.
+  [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
+   `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
+   #src[@thin-laws at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]],
+  lean-chain(
+    (IMP, "Freyd.Alg.thinning_step1.lhs",
+      src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to `−⊑Q°∈`]),
+    (SQ, "Freyd.Alg.thinning_step1.rhs",
+      src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]),
+    (SQ, "Freyd.Alg.thinning_step2.rhs",
+      src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈`, since #frc([`F(∋)S`])`∋=F(∋)S` with #frc([`F(∋)S`]) a map —
+      @pow-laws]),
+    (SQ, "Freyd.Alg.thinning_step3.rhs", src[`∈ thin(Q)⊑Q°∈`, the `∈\(Q°∈)` half of @thin-defn — @adj-all]),
+    (SQ, "Freyd.Alg.thinning_step4.rhs", src[`Q°Q°=Q°`, `Q` a preorder]),
+  ),
 )]<thin-thm81>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.thinning_est") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_est") \
     #src[the thinning fold refines the optimisation problem itself —
      // thinning-est row: Corollary 8.1
      `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
      // lean:AOP.A8_1.thinning_est@a5f0005d
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.thinning_est_step1.lhs"),
-    [])],
-  // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
-  [#lean("Freyd.Alg.thinning_est_step1.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.thinning_est_step1.rhs"),
-    [#src[@thin-thm81]])],
-  [#lean("Freyd.Alg.thinning_est_step1.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.thinning_est_step2.rhs"),
-    [#src[`est(R)=thin(Q) est(R)` — @thin-laws, `Q⊑R`]])],
-  [#lean("Freyd.Alg.thinning_est_step2.rhs")],
+  lean-chain(
+    // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
+    (none, "Freyd.Alg.thinning_est_step1.lhs", []),
+    (SQ, "Freyd.Alg.thinning_est_step1.rhs", src[@thin-thm81]),
+    (EQ, "Freyd.Alg.thinning_est_step2.rhs", src[`est(R)=thin(Q) est(R)` — @thin-laws, `Q⊑R`]),
+  ),
 )]<thin-cor>
 
 == Paths in a layered network
@@ -343,90 +276,60 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // and INSIDE it from the thinning theorem on; that is what rows 1 and 2 differ by.
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.thinning_paths") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@bfee1a14
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.thinning_paths_step.rhs"),
-    [#src[`=` #frc([`L(∋)`])` est(R)`]])],
-  [#lean("Freyd.Alg.thinning_paths_step.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.thinning_paths_step.lhs"),
+  lean-chain(
+    (none, "Freyd.Alg.thinning_paths_step.rhs", src[`=` #frc([`L(∋)`])` est(R)`]),
     // thinAlg-elim row: Corollary 8.1
-    [#src[@thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.
- ]])],
+    (RQ, "Freyd.Alg.thinning_paths_step.lhs", src[@thin-cor, at `F(∋,𝟙)α` monotonic on `Q` — @path-mono.]),
       // lean:AOP.A8_2.thinAlg_elim@c87607a7
-  [#lean("Freyd.Alg.thinning_paths_step.lhs")],
-
-  [#vstep(RQ, [],
-    [#src[@path-alg under #box[`⦇ ⦈`] monotonic: the whole chain runs inside the reduce, and the
- `est(R)` behind it never moves. ]])],
-      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
+  ),
   // No panel: the program's fold is the path instance, and `thinning_paths` states this step over a
   // general `F`, whose algebra is @path-alg's row 5 rather than this row's `[P(wrap),cpl P(step)]`.
-  [],
+  [#RQ #src[@path-alg under #box[`⦇ ⦈`] monotonic: the whole chain runs inside the reduce, and the
+    `est(R)` behind it never moves.]],
+      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
 )]<path-laws>
 
 // B&dM §8.2, p. 198, rows 3–8.  Every step rewrites the ALGEBRA, so the chain is stated about the
 // algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.  Its source is the bifunctor at two
 // DIFFERENT arguments — one `F` lane over a pair object wire.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.thinning_paths_alg") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths_alg") \
     // algebra row: B&dM §8.2, p. 198
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b6e2e903
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.thinning_paths_alg.rhs"),
-    [#src[the algebra of @path-laws row 2]])],
-  [#lean("Freyd.Alg.thinning_paths_alg.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs"),
-    [#src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
- P(`#frc([`F(𝟙,∋)α`])`) union`. ]])],
+  lean-chain((
+    (none, "Freyd.Alg.thinning_paths_alg.rhs", src[the algebra of @path-laws row 2]),
+    (EQ, "Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs",
+      src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`; #h(3pt) #frc([`F(∋,𝟙)F(𝟙,∋)α`])`=`#frc([`F(∋,𝟙)`])`
+       P(`#frc([`F(𝟙,∋)α`])`) union`.]),
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@3b58c96c
-  [#lean("Freyd.Alg.Λ_comp_eq_Λ_comp_powerRel_bigUnion.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs"),
-    [#src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws.
- ]])],
+    (RQ, "Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs", src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws.]),
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@57742f7b
-  [#lean("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs"),
-    [#src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
- `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono. ]])],
+  ), (
+    (RQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs",
+      src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) #h(4pt) — @thin-laws at
+       `S≜F(𝟙,∋)α`, `R∩(S°S)⊑Q` — @path-mono.]),
       // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@bac7360f
       // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@03155579
-  [#lean("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.thinning_paths_alg.lhs"),
-    [#src[`P(`#frc([`𝟙`])`) union=𝟙`. ]])],
+    (EQ, "Freyd.Alg.thinning_paths_alg.lhs", src[`P(`#frc([`𝟙`])`) union=𝟙`.]),
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@0d6a3843
-  [#lean("Freyd.Alg.thinning_paths_alg.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs"),
-    [#src[`α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`; #h(3pt)
- #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn. ]])],
+    (EQ, "Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs",
+      src[`α` a map, so #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`; #h(3pt)
+       #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn.]),
       // lean:AOP.A4_6.Λ_absorption@e87bd8f2
       // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@8bf8624f
       // lean:AOP.A8_2.pathStep@5253071f
-  [#lean("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs")],
-
-  [#vstep(EQ, [],
-    [#src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]])],
-      // lean:AOP.A5_6.cpMap_sum_eq_junc@fde8662f
+  )),
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
-  [],
+  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
+      // lean:AOP.A5_6.cpMap_sum_eq_junc@fde8662f
 )]<path-alg>
 
 // Same reason as the hand-placed breaks in §@sec-opt: `sticky` cannot hold a heading to a BREAKABLE
@@ -478,89 +381,57 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // subsequence of a `P`-ordered list is `P`-ordered, so the thinning may run before the sort.
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
  preorder, `thinlist(Q)⊑subseq`. ]],
      // lean:AOP.A8_3.sortRel_comp_thinlist_le@849100a7
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs"), [])],
-  // `sort(P) : EA⟶[A]`, `ordered P`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
-  // `sort(P)≜setify° ordered P` at `setify : [A]⟶EA`.
-  [#lean("Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs"),
-    [#src[`sort(P)≜setify° ordered P` — @thinlist-defn]])],
-  [#lean("Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs"),
-    [#src[`ordered P thinlist(Q)⊑thinlist(Q) ordered P`, since `thinlist(Q)⊑subseq` — @thinlist-defn —
-      and a subsequence of a `P`-ordered list is `P`-ordered]])],
-  [#lean("Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs")],
-
-  [#vstep(SQ, leanc("Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs"),
-    [#src[@thinlist-defn's `thinlist(Q) setify⊑setify thin(Q)` after `setify°`, at `setify°setify⊑𝟙`
-      for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]])],
-  [#lean("Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs"),
-    [#src[`sort(P)≜setify° ordered P` — @thinlist-defn]])],
-  [#lean("Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs")],
+  lean-chain(
+    // `sort(P) : EA⟶[A]`, `ordered P`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
+    // `sort(P)≜setify° ordered P` at `setify : [A]⟶EA`.
+    (none, "Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs", []),
+    (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs", src[`sort(P)≜setify° ordered P` — @thinlist-defn]),
+    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs",
+      src[`ordered P thinlist(Q)⊑thinlist(Q) ordered P`, since `thinlist(Q)⊑subseq` — @thinlist-defn —
+       and a subsequence of a `P`-ordered list is `P`-ordered]),
+    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs",
+      src[@thinlist-defn's `thinlist(Q) setify⊑setify thin(Q)` after `setify°`, at `setify°setify⊑𝟙`
+       for `setify` simple — @dom-laws — then `·setify⊣·setify°` — @triple-chains]),
+    (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs", src[`sort(P)≜setify° ordered P` — @thinlist-defn]),
+  ),
 )]<thinlist-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
 // `sort(P) : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      // map_sort row: Lemma 8.1, p. 202
      `f : FA⟶A` monotonic on `P`, `p` coreflexive, `F` linear.
  ]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.map_sort_comp_listcp_le.rhs"), [])],
-  [#lean("Freyd.Alg.map_sort_comp_listcp_le.rhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.map_sort_comp_listcp_le_step6.lhs"),
-    [#src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws; `cp(F)≜`#frc([`F(∋)`]) —
-      @thinlist-defn]])],
-  // Empty: rows 2 and 3 redraw row 1 — the two steps only rebracket what the transpose is made of.
-  [],
-
-  [#vstep(EQ, leanc("Freyd.Alg.map_sort_comp_listcp_le_step5.lhs"),
-    [#src[`E(fp)=E(f)E(p)`; #h(3pt) `E(f)=P(f)` for `f` a map —
-     @powrel-laws]])],
-  [],
-
-  [#vstep(RQ, leanc("Freyd.Alg.map_sort_comp_listcp_le_step4.lhs"),
-    [#src[`sort(P) filter(p)⊑E(p) sort(P)` — @thinlist-laws]])],
-  // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
-  // lane: the same coreflexive, applied to the sorted list instead of to the set.
-  // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
-  [#lean("Freyd.Alg.map_sort_comp_listcp_le_step4.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.map_sort_comp_listcp_le_step3.lhs"),
-    [#src[`sort(fPf°) list(f)⊑P(f) sort(P)` — @thinlist-laws]])],
-  // Empty from here: the node now acts while `F` is still alive, so it cannot reach the object wire
-  // without crossing it, and `listcp` below is the `F`/`list` swap — two functor wires, not one.
-  [],
-
-  [#vstep(RQ, leanc("Freyd.Alg.map_sort_comp_listcp_le_step2.lhs"),
-    [#src[`FP⊑fPf°` — @mon-str at `f` a map; `sort(P)≜setify° ordered P` grows with `P` —
-      @thinlist-defn]])],
-  [],
-
-  [#vstep(RQ, leanc("Freyd.Alg.map_sort_comp_listcp_le.lhs"),
-    [#src[`F(sort(P)) listcp⊑cp(F) sort(FP)` — @thinlist-laws, `F` linear]])],
-  [],
+  lean-chain((
+    (none, "Freyd.Alg.map_sort_comp_listcp_le.rhs", []),
+    (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step6.lhs",
+      src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws; `cp(F)≜`#frc([`F(∋)`]) —
+       @thinlist-defn]),
+    (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step5.lhs",
+      src[`E(fp)=E(f)E(p)`; #h(3pt) `E(f)=P(f)` for `f` a map — @powrel-laws]),
+    // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
+    // lane: the same coreflexive, applied to the sorted list instead of to the set.
+    // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
+    (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step4.lhs", src[`sort(P) filter(p)⊑E(p) sort(P)` — @thinlist-laws]),
+  ), (
+    (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step3.lhs",
+      src[`sort(fPf°) list(f)⊑P(f) sort(P)` — @thinlist-laws]),
+    (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step2.lhs",
+      src[`FP⊑fPf°` — @mon-str at `f` a map; `sort(P)≜setify° ordered P` grows with `P` —
+       @thinlist-defn]),
+    (RQ, "Freyd.Alg.map_sort_comp_listcp_le.lhs",
+      src[`F(sort(P)) listcp⊑cp(F) sort(FP)` — @thinlist-laws, `F` linear]),
+  )),
 )]<thinlist-lem81>
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
