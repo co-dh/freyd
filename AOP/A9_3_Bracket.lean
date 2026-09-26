@@ -717,6 +717,20 @@ public theorem flatten_recip_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
   · rintro ⟨s, rfl, hst⟩
     exact ⟨flattenFn t, (flattenP_natural R s (flattenFn t)).mpr ⟨t, hst, rfl⟩, rfl⟩
 
+/-- **`flatten` IS STRICTLY NATURAL**, `tree(R) flatten = flatten list⁺(R)`: the bead a lone `°`
+    lane turns over into `flatten°`, so the dot the picture claims is this square. -/
+public theorem flatten_strictNatural :
+    StrictNatural nelistRelator treeRelator (fun a => graph (flattenFn (A := a.carrier))) := by
+  intro a b R
+  apply hom_ext
+  intro t y
+  constructor
+  · rintro ⟨u, hu, rfl⟩
+    exact ⟨flattenFn t, rfl, (flattenP_natural R t _).mpr ⟨u, hu, rfl⟩⟩
+  · rintro ⟨x, rfl, hx⟩
+    obtain ⟨u, hu, rfl⟩ := (flattenP_natural R t y).mp hx
+    exact ⟨u, hu, rfl⟩
+
 /-- **mct-laws**, fourth row: the `bin` bead is the initial algebra's constructor, so its square
     is an EQUALITY — relating the two subtrees is relating the node they build. -/
 public theorem bin_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
