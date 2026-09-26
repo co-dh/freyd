@@ -1183,6 +1183,28 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
   | _ => `($(mkIdent `cons))
+-- The edit operations are the note's `cpy`/`del`/`ins`; `inlistP xs q` is membership `q∈xs`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.cpy] def unexpandEditCpy : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpy) $args*)
+  | _ => `($(mkIdent `cpy))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.del] def unexpandEditDel : Unexpander
+  | `($_ $args*) => `($(mkIdent `del) $args*)
+  | _ => `($(mkIdent `del))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.ins] def unexpandEditIns : Unexpander
+  | `($_ $args*) => `($(mkIdent `ins) $args*)
+  | _ => `($(mkIdent `ins))
+-- `baseStepFn` is the note's algebra `[base,step]`; only `unstep_sound` prints it, at an `inr`, so `step`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditStepFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.inlistP] def unexpandInlistP : Unexpander
+  | `($_ $xs $q) => `($q ∈ $xs)
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Filter.filter] def unexpandFilterFilter : Unexpander
   | `($_ $args*) => `($(mkIdent `filter) $args*)

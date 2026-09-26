@@ -348,32 +348,74 @@ in @mu-defn.
 
 // B&dM §9.2, p. 225.  The section numbers no equation.  `base` and `step` are reused for the
 // tabulating fold at the foot of the table; they are not `edit`'s.
-#disp[#definition[
-`Op::=cpy Char∣del Char∣ins Char`, #h(4pt) `F(A,B)=1+(A×B)`, #h(4pt) `α≜[nil,cons]`.
+#disp[
+  - #leanf("Freyd.Alg.RelSet.Edit.op_cases") \
+    #src[an edit operation copies, deletes or inserts one character]
+    // lean:AOP.A9_2_Edit.op_cases@c6eaf29f
+  - #leanf("Freyd.Alg.RelSet.Edit.F_obj") \
+    #src[`F(Op,X)` is the empty sequence or one operation paired with an `X`]
+    // lean:AOP.A9_2_Edit.F_obj@c75acbc8
+  - #leanf("Freyd.Alg.RelSet.Edit.edit_cata") \
+    #src[`edit` is the fold of `[base,step]` over an edit sequence, returning the two strings it
+     reconstitutes]
+    // lean:AOP.A9_2_Edit.edit_cata@0dafb85c
+  - #leanf("Freyd.Alg.RelSet.Edit.length_cata") \
+    #src[the fold of `[zero,π₂ succ]` counts the operations of a sequence]
+    // lean:AOP.A9_2_Edit.length_cata@9e3040b0
+  - #leanf("Freyd.Alg.RelSet.Edit.R_eq") \
+    #src[`R` relates `es` to `fs` when `es` is no longer than `fs`]
+    // lean:AOP.A9_2_Edit.R_eq@0f7a4661
+  - #leanf("Freyd.Alg.RelSet.Edit.V_eq") \
+    #src[`V` relates two pairs of strings when each string of the first is a suffix of the matching
+     string of the second]
+    // lean:AOP.A9_2_Edit.V_eq@dca965f7
+  - #leanf("Freyd.Alg.RelSet.Edit.Q_inl") \
+    #src[`Q` is the identity on the `base` summand]
+    // lean:AOP.A9_2_Edit.Q_inl@881e94ca
+  - #leanf("Freyd.Alg.RelSet.Edit.Q_inr") \
+    #src[on the `step` summand `Q` compares any two operations (`U≜⊤`) and the two pairs of strings
+     by `V`]
+    // lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
+  - #leanf("Freyd.Alg.RelSet.Edit.empty_iff") \
+    #src[`empty` is the coreflexive holding only at the pair of two empty strings]
+    // lean:AOP.A9_2_Edit.empty_iff@0a966621
+  - #leanf("Freyd.Alg.RelSet.Edit.unstep_sound") \
+    #src[every decomposition `unstep` returns is sent back to its input by `step`]
+    // lean:AOP.A9_2_Edit.unstep_sound@d5b21374
+]<edit-defn>
 
-`edit≜⦇[base,step]⦈ : [Op]⟶[Char]×[Char]` #src[],
-// lean:AOP.A9_2_Edit.edit_cata@0dafb85c
-#h(4pt) `base` returning `([],[])`,
-#h(4pt) `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, #h(4pt) `step (del a,(xs,ys))=([a]⧺xs,ys)`,
-#h(4pt) `step (ins a,(xs,ys))=(xs,[a]⧺ys)`.
+// `α`, `[base,step]` and `unstep` are maps, so each row is one equation, input | output.
+#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*`x`*], [*`α(x)`*]),
+  [#leanf("Freyd.Alg.RelSet.Edit.con_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.con_nil.rhs")],
+  // lean:AOP.A9_2_Edit.con_nil@56d08b95
+  [#leanf("Freyd.Alg.RelSet.Edit.con_cons.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.con_cons.rhs")],
+  // lean:AOP.A9_2_Edit.con_cons@347d25ed
+)]<edit-defn-alpha>
 
-`length≜⦇[zero,π₂ succ]⦈` #src[], #h(4pt)
-// lean:AOP.A9_2_Edit.length_cata@9e3040b0
-`R≜length≤length°` #src[], #h(4pt) `U≜⊤`, #h(4pt)
-// lean:AOP.A9_2_Edit.R_eq@0f7a4661
-`V≜suffix°×suffix°` #src[], #h(4pt)
-// lean:AOP.A9_2_Edit.V@09fe0b1a
-`Q≜𝟙+(U×V)` #src[], #h(4pt) `empty` the coreflexive on `(xs,ys)` with
-// lean:AOP.A9_2_Edit.Q@e6ebf648
-both lists empty.
+#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*`x`*], [*`[base,step](x)`*]),
+  [#leanf("Freyd.Alg.RelSet.Edit.base_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.base_nil.rhs")],
+  // lean:AOP.A9_2_Edit.base_nil@eba6cc46
+  [#leanf("Freyd.Alg.RelSet.Edit.step_cpy.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_cpy.rhs")],
+  // lean:AOP.A9_2_Edit.step_cpy@ef7fd738
+  [#leanf("Freyd.Alg.RelSet.Edit.step_del.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_del.rhs")],
+  // lean:AOP.A9_2_Edit.step_del@eee5b78e
+  [#leanf("Freyd.Alg.RelSet.Edit.step_ins.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_ins.rhs")],
+  // lean:AOP.A9_2_Edit.step_ins@1fed2e53
+)]<edit-defn-step>
 
-`unstep` implements $frac(#[`step°`], ∋)$ `thin(U×V)`
-#src[]:
-// lean:AOP.A9_2_Edit.unstep@186b86c5 lean:AOP.A9_2_Edit.unstep_sound@d5b21374
-#h(4pt) `unstep ([a]⧺xs,[])=[(del a,(xs,[]))]`,
-#h(4pt) `unstep ([],[b]⧺ys)=[(ins b,([],ys))]`, #h(4pt)
-`unstep ([a]⧺xs,[b]⧺ys)=(a=b→[(cpy a,(xs,ys))],[(del a,(xs,[b]⧺ys)),(ins b,([a]⧺xs,ys))])`.
-]]<edit-defn>
+#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
+  table.header([*`p`*], [*`unstep(p)`*]),
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_nil.rhs")],
+  // lean:AOP.A9_2_Edit.unstep_nil@1e0900c5
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_del.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_del.rhs")],
+  // lean:AOP.A9_2_Edit.unstep_del@07222c75
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_ins.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_ins.rhs")],
+  // lean:AOP.A9_2_Edit.unstep_ins@d0e84c5e
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_cons.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_cons.rhs")],
+  // lean:AOP.A9_2_Edit.unstep_cons@008bce13
+)]<edit-defn-unstep>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
