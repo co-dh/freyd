@@ -722,21 +722,24 @@ public theorem entab_branch (n : Nat) (tb nl blank : Char) (hn : 0 < n)
 /-- `col : String⟶ℕ` as an arrow. -/
 @[expose] public def colR (nl : Char) : dSL Unit Char ⟶ (⟨Nat⟩ : RelSet.{0}) := graph (colFn nl)
 
-/-- The tupled carrier `(output so far, current column)`. -/
-@[expose] public abbrev St : RelSet.{0} := ⟨Str × Nat⟩
+-- The tupled carrier `(output so far, current column)`.
 
-/-- `[base,step]`: `base=([],0)`; `step` appends a character, resetting the column on a newline
-    and padding to the next tab stop on a tab. -/
-@[expose] public def stepFn (n : Nat) (tb nl blank : Char) :
-    (Fobj Unit Char St).carrier → Str × Nat
-  | Sum.inl _ => (SnocList.wrap (), 0)
-  | Sum.inr ((x, c), a) =>
+/-- `step((x,c),a)`: append `a`, resetting the column on a newline and padding to the next tab
+    stop on a tab. -/
+@[expose] public def step (n : Nat) (tb nl blank : Char) : (Str × Nat) × Char → Str × Nat
+  | ((x, c), a) =>
       if a = nl then (SnocList.snoc x nl, 0)
       else if a = tb then (pad blank x (n - c % n), c + (n - c % n))
       else (SnocList.snoc x a, c + 1)
 
+/-- `[base,step]` with `base=([],0)`. -/
+@[expose] public def stepFn (n : Nat) (tb nl blank : Char) :
+    (Fobj Unit Char (⟨Str × Nat⟩ : RelSet.{0})).carrier → Str × Nat
+  | Sum.inl _ => (SnocList.wrap (), 0)
+  | Sum.inr p => step n tb nl blank p
+
 /-- `[base,step] : F(String×ℕ)⟶String×ℕ` as an arrow. -/
-@[expose] public def detabAlg (n : Nat) (tb nl blank : Char) : Fobj Unit Char St ⟶ St :=
+@[expose] public def detabAlg (n : Nat) (tb nl blank : Char) : Fobj Unit Char (⟨Str × Nat⟩ : RelSet.{0}) ⟶ (⟨Str × Nat⟩ : RelSet.{0}) :=
   graph (stepFn n tb nl blank)
 
 /-- `step` on `(detab x, col(detab x))` is `(detab, col·detab)` one character further. -/
@@ -766,7 +769,7 @@ public theorem stepFn_detab (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (
   (detabFn n tb nl blank t, colFn nl (detabFn n tb nl blank t))
 
 public theorem detabAlg_cata (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (htb : tb ≠ nl) :
-    cataR (detabAlg n tb nl blank) = (graph (detabColFn n tb nl blank) : dSL Unit Char ⟶ St) :=
+    cataR (detabAlg n tb nl blank) = (graph (detabColFn n tb nl blank) : dSL Unit Char ⟶ (⟨Str × Nat⟩ : RelSet.{0})) :=
   cataR_graph _ _ (fun _ => rfl) (fun _ a => (stepFn_detab n tb nl blank hb htb _ a).symm)
 
 /-- **B&dM p.247**, tupling: `(detab, col·detab)=⦇[base,step]⦈`, in diagram order. -/
@@ -782,18 +785,18 @@ public theorem detab_tupled (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (
 public theorem detabCol_foldl (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (htb : tb ≠ nl) :
     ∀ (l : List Char) (t : Str),
       detabColFn n tb nl blank (l.foldl (fun x a => SnocList.snoc x a) t)
-        = loop (fun p => stepFn n tb nl blank (Sum.inr p)) (detabColFn n tb nl blank t, l)
+        = loop (step n tb nl blank) (detabColFn n tb nl blank t, l)
   | [], _ => rfl
   | a :: l, t => by
     rw [List.foldl_cons, detabCol_foldl n tb nl blank hb htb l]
-    exact congrArg (fun s => loop (fun p => stepFn n tb nl blank (Sum.inr p)) (s, l))
+    exact congrArg (fun s => loop (step n tb nl blank) (s, l))
       (stepFn_detab n tb nl blank hb htb (detabFn n tb nl blank t) a).symm
 
 /-- **B&dM p.247**: `⦇[base,step]⦈ convert=loop step (base,id)` — `ofChars` is `convert`. -/
 public theorem detab_loop (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (htb : tb ≠ nl)
     (l : List Char) (r : Str × Nat) :
     cataR (detabAlg n tb nl blank) (ofChars l) r
-      ↔ r = loop (fun p => stepFn n tb nl blank (Sum.inr p)) ((SnocList.wrap (), 0), l) := by
+      ↔ r = loop (step n tb nl blank) ((SnocList.wrap (), 0), l) := by
   rw [detabAlg_cata n tb nl blank hb htb]
   show r = detabColFn n tb nl blank (ofChars l) ↔ _
   rw [ofChars, detabCol_foldl n tb nl blank hb htb]
@@ -805,23 +808,25 @@ public theorem detab_loop (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (ht
   | (_, []) => []
   | (c, a :: x) => f (c, a) ++ loop' f g (g (c, a), x)
 
+/-- Exercise 10.1's `step((y,c),a)=(y⧺f(c,a),g(c,a))`. -/
+@[expose] public def loopStep {C A B : Type} (f : C × A → List B) (g : C × A → C) :
+    (List B × C) × A → List B × C
+  | ((y, c), a) => (y ++ f (c, a), g (c, a))
+
 public theorem outl_loop_append {C A B : Type} (f : C × A → List B) (g : C × A → C) :
     ∀ (x : List A) (y : List B) (c : C),
-      (loop (fun p : (List B × C) × A => (p.1.1 ++ f (p.1.2, p.2), g (p.1.2, p.2))) ((y, c), x)).1
-        = y ++ loop' f g (c, x)
+      (loop (loopStep f g) ((y, c), x)).1 = y ++ loop' f g (c, x)
   | [], y, c => by
     show y = y ++ loop' f g (c, [])
     rw [loop'.eq_1, List.append_nil]
   | a :: x, y, c => by
-    show (loop (fun p : (List B × C) × A => (p.1.1 ++ f (p.1.2, p.2), g (p.1.2, p.2)))
-      ((y ++ f (c, a), g (c, a)), x)).1 = y ++ loop' f g (c, a :: x)
+    show (loop (loopStep f g) ((y ++ f (c, a), g (c, a)), x)).1 = y ++ loop' f g (c, a :: x)
     rw [loop'.eq_2, outl_loop_append f g x, List.append_assoc]
 
 /-- **Exercise 10.1**: `outl·loop step (base,id)=loop'(f,g)(c₀,id)` when `base=(nil,c₀)` and
     `step((x,c),a)=(x⧺f(c,a),g(c,a))`. -/
 public theorem outl_loop {C A B : Type} (f : C × A → List B) (g : C × A → C) (c₀ : C) (x : List A) :
-    (loop (fun p : (List B × C) × A => (p.1.1 ++ f (p.1.2, p.2), g (p.1.2, p.2))) (([], c₀), x)).1
-      = loop' f g (c₀, x) :=
+    (loop (loopStep f g) (([], c₀), x)).1 = loop' f g (c₀, x) :=
   (outl_loop_append f g x [] c₀).trans (List.nil_append _)
 
 /-! ## `entab` (B&dM pp.250–252): the greedy step, `unfill`, `tbc`, and the loop -/
@@ -1126,12 +1131,11 @@ public theorem tbc_col_fold (n : Nat) (nl blank : Char) (hb : blank ≠ nl) :
     (fun x a => (tcOp_step n nl blank hb x a).symm), tbcR, colR]
   exact rpair_graph _ _
 
-/-- The carrier of `triple`: `(entab (unfill x), (tbc x, col x))`. -/
-@[expose] public abbrev Tr : RelSet.{0} := ⟨Str × (Nat × Nat)⟩
+-- The carrier of `triple`: `(entab (unfill x), (tbc x, col x))`.
 
 /-- `[base,op]` for `triple`: `base=([],(0,0))`; the string grows only when the held blanks are
     cashed in — for a tab on a tab stop, or `blanks t⧺[a]` otherwise. -/
-@[expose] public def tripleOpFn (n : Nat) (tb nl blank : Char) : (Fobj Unit Char Tr).carrier → Str × (Nat × Nat)
+@[expose] public def tripleOpFn (n : Nat) (tb nl blank : Char) : (Fobj Unit Char (⟨Str × (Nat × Nat)⟩ : RelSet.{0})).carrier → Str × (Nat × Nat)
   | Sum.inl _ => (SnocList.wrap (), (0, 0))
   | Sum.inr ((x, (t, c)), a) =>
       (if a = blank ∧ (c + 1) % n ≠ 0 then x
@@ -1139,11 +1143,11 @@ public theorem tbc_col_fold (n : Nat) (nl blank : Char) (hb : blank ≠ nl) :
        else SnocList.snoc (pad blank x t) a,
        tcOpFn n nl blank (Sum.inr ((t, c), a)))
 
-@[expose] public def tripleAlg (n : Nat) (tb nl blank : Char) : Fobj Unit Char Tr ⟶ Tr :=
+@[expose] public def tripleAlg (n : Nat) (tb nl blank : Char) : Fobj Unit Char (⟨Str × (Nat × Nat)⟩ : RelSet.{0}) ⟶ (⟨Str × (Nat × Nat)⟩ : RelSet.{0}) :=
   graph (tripleOpFn n tb nl blank)
 
 /-- `triple≜⟨unfill entab,⟨tbc,col⟩⟩`. -/
-@[expose] public def tripleR (n : Nat) (tb nl blank : Char) : dSL Unit Char ⟶ Tr :=
+@[expose] public def tripleR (n : Nat) (tb nl blank : Char) : dSL Unit Char ⟶ (⟨Str × (Nat × Nat)⟩ : RelSet.{0}) :=
   rpair (unfillR n nl blank ≫ entabR n tb nl blank) (rpair (tbcR n nl blank) (colR nl))
 
 public theorem tripleOp_step (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) (x : Str) (a : Char) :
@@ -1176,7 +1180,7 @@ public theorem tripleOp_step (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) 
 /-- `triple` read as the function it is. -/
 public theorem tripleR_graph (n : Nat) (tb nl blank : Char) :
     tripleR n tb nl blank = (graph (fun x => (entabFn n tb nl blank (unfillFn n nl blank x),
-      (tbcFn n nl blank x, colFn nl x))) : dSL Unit Char ⟶ Tr) := by
+      (tbcFn n nl blank x, colFn nl x))) : dSL Unit Char ⟶ (⟨Str × (Nat × Nat)⟩ : RelSet.{0})) := by
   rw [tripleR, unfillR, entabR, tbcR, colR, graph_comp, rpair_graph, rpair_graph]
 
 /-- **B&dM pp.251–252**: `triple=⦇[base,op]⦈`. -/
@@ -1195,9 +1199,9 @@ public theorem triple_fold (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl) :
 @[expose] public def catR : (⟨Str × Str⟩ : RelSet.{0}) ⟶ dSL Unit Char := graph fun p => catFn p.1 p.2
 @[expose] public def blanksR (blank : Char) : (⟨Nat⟩ : RelSet.{0}) ⟶ dSL Unit Char :=
   graph (pad blank (SnocList.wrap ()))
-@[expose] public def assoclR : Tr ⟶ (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) :=
+@[expose] public def assoclR : (⟨Str × (Nat × Nat)⟩ : RelSet.{0}) ⟶ (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) :=
   graph fun p => ((p.1, p.2.1), p.2.2)
-@[expose] public def outlR : (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) ⟶ St := graph Prod.fst
+@[expose] public def outlR : (⟨(Str × Nat) × Nat⟩ : RelSet.{0}) ⟶ (⟨Str × Nat⟩ : RelSet.{0}) := graph Prod.fst
 
 public theorem cat_blanks (blank : Char) (x : Str) :
     ∀ k, catFn x (pad blank (SnocList.wrap ()) k) = pad blank x k
@@ -1232,6 +1236,104 @@ open Lean PrettyPrinter in
 @[app_unexpander outlR] public meta def unexpandOutlR : Unexpander
   | `($_:ident) => `($(mkIdent `π₁))
   | _ => throw ()
+
+-- printing-only unexpanders: the program's arrows print under the book's names, parameters dropped.
+open Lean PrettyPrinter in
+@[app_unexpander colR] public meta def unexpandColR : Unexpander
+  | `($_ $_*) => `($(mkIdent `col)) | `($_:ident) => `($(mkIdent `col)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander tbcR] public meta def unexpandTbcR : Unexpander
+  | `($_ $_*) => `($(mkIdent `tbc)) | `($_:ident) => `($(mkIdent `tbc)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander entabR] public meta def unexpandEntabR : Unexpander
+  | `($_ $_*) => `($(mkIdent `entab)) | `($_:ident) => `($(mkIdent `entab)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander tripleR] public meta def unexpandTripleR : Unexpander
+  | `($_ $_*) => `($(mkIdent `triple)) | `($_:ident) => `($(mkIdent `triple)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander unfillR] public meta def unexpandUnfillR : Unexpander
+  | `($_ $_*) => `($(mkIdent `unfill)) | `($_:ident) => `($(mkIdent `unfill)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander blanksR] public meta def unexpandBlanksR : Unexpander
+  | `($_ $_*) => `($(mkIdent `blanks)) | `($_:ident) => `($(mkIdent `blanks)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander catR] public meta def unexpandCatR : Unexpander
+  | `($_ $_*) => `($(mkIdent `cat)) | `($_:ident) => `($(mkIdent `cat)) | _ => throw ()
+
+-- The pointwise functions print under the book's names applied to their points; the tab width and
+-- the three characters are the section's, not part of the name.
+open Lean PrettyPrinter in
+@[app_unexpander entabFn] public meta def unexpandEntabFn : Unexpander
+  | `($_ $_ $_ $_ $_ $xs*) => `($(mkIdent `entab) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander tbcFn] public meta def unexpandTbcFn : Unexpander
+  | `($_ $_ $_ $_ $xs*) => `($(mkIdent `tbc) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander colFn] public meta def unexpandColFn : Unexpander
+  | `($_ $_ $xs*) => `($(mkIdent `col) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander fillFn] public meta def unexpandFillFn : Unexpander
+  | `($_ $_ $_ $_ $xs*) => `($(mkIdent `fill) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander unfillFn] public meta def unexpandUnfillFn : Unexpander
+  | `($_ $_ $_ $_ $xs*) => `($(mkIdent `unfill) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander expandFn] public meta def unexpandExpandFn : Unexpander
+  | `($_ $_ $_ $_ $_ $y $a) => `($(mkIdent `expand) $y $a) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander contractFn] public meta def unexpandContractFn : Unexpander
+  | `($_ $_ $_ $_ $_ $y $a) => `($(mkIdent `contract) $y $a) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander step] public meta def unexpandStep : Unexpander
+  | `($_ $_ $_ $_ $_ $x $xs*) => `($(mkIdent `step) $x $xs*) | `($_ $_ $_ $_ $_) => `($(mkIdent `step)) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander loopStep] public meta def unexpandLoopStep : Unexpander
+  | `($_ $_ $_ $x $xs*) => `($(mkIdent `step) $x $xs*) | `($_ $_ $_) => `($(mkIdent `step)) | _ => throw ()
+
+-- `ofChars` is B&dM's `convert` from a cons-list to a snoc-list.
+open Lean PrettyPrinter in
+@[app_unexpander ofChars] public meta def unexpandOfChars : Unexpander
+  | `($_ $xs*) => `($(mkIdent `convert) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander SnocList.snoc] public meta def unexpandSnoc : Unexpander
+  | `($_ $x $a) => `($(mkIdent `snoc) $x $a) | _ => throw ()
+
+-- `pad blank y k` appends `k` blanks: the book's `y⧺blanks(k)`.
+open Lean PrettyPrinter in
+@[app_unexpander pad] public meta def unexpandPad : Unexpander
+  | `($_ $_ $y $k) => `($y ++ $(mkIdent `blanks) $k) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander loop] public meta def unexpandLoop : Unexpander
+  | `($_ $xs*) => `($(mkIdent `loop) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander loop'] public meta def unexpandLoop' : Unexpander
+  | `($_ $f $g $xs*) => `($(mkIdent `loop') ($f, $g) $xs*) | _ => throw ()
+
+-- A first component is the note's `π₁` (B&dM's `outl`), applied pointwise as well.
+open Lean PrettyPrinter in
+@[app_unexpander Prod.fst] public meta def unexpandProdFst : Unexpander
+  | `($_ $xs*) => `($(mkIdent `π₁) $xs*) | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander assoclR] public meta def unexpandAssoclR : Unexpander
+  | `($_ $_*) => `($(mkIdent `assocl)) | `($_:ident) => `($(mkIdent `assocl)) | _ => throw ()
 
 -- printing-only unexpander: the note's `prefix` (a Lean keyword; the label emitter unescapes it).
 open Lean PrettyPrinter in

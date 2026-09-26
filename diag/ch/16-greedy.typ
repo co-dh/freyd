@@ -186,7 +186,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
 // `(𝟙+(X×𝟙))[nil,snoc]`, so the `list` lane pinches twice rather than three times.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_laws"), #h(6pt) `entab=triple assocl π₁ (𝟙×blanks) cat` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_laws") \
     #src[the shortest input `detab` expands to the given output is one pass along that output,
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
      tab stop]],
@@ -221,19 +221,91 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
        a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]),
   ),
 )
-// No picture: `entab` is here read on points, and the equation relates two strings, not two
-// objects the panels carry.
-#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `entab xs=entab (unfill xs)⧺blanks (tbc xs)` #h(4pt)
-  #src[(10.1)] \
-  #src[what makes `triple≜⟨unfill entab,⟨tbc,col⟩⟩` a snoc-list reduce: the output splits at the
-   last tab stop]])
-#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `triple=⦇[base,op]⦈`, #h(4pt)
-  `entab=triple assocl π₁ (𝟙×blanks) cat` \
-  `base` returns `([],(0,0))`, #h(4pt) `op ((xs,(t,c)),a)=` \ #h(10pt)
-  `(a=BL∧(c+1) mod n≠0→(xs,(t+1,c+1)),` #h(4pt) `a=BL→(xs⧺[TB],(0,c+1)),` \ #h(10pt)
-  `a=NL→(xs⧺blanks t⧺[NL],(0,0)),` #h(4pt) `(xs⧺blanks t⧺[a],(0,c+1)))` \
-  #src[the program: one pass carrying the column and the count of pending blanks]])
 ]<entab-laws>
+
+// B&dM p.247: the program for `detab`, `detab` tupled with `col` and run as a loop.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.detab_tupled") \
+    #src[one pass over the input carries the output so far together with its column]],
+    // lean:AOP.A10_2_Detab.detab_tupled@6e91c58a
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Detab.detab_tupled.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.detab_tupled.rhs",
+      src[both components are folds over the same input; `step` on `(detab x,col(detab x))` is
+       `(detab,col detab)` one character further — not a tabulated row]),
+  ),
+)]<entab-detab-tupled>
+
+#disp[
+  - #leanf("Freyd.Alg.RelSet.Detab.detab_loop") \
+    #src[the fold of `[base,step]` over the input converted to a snoc-list is the left loop of
+     `step` from `base`]
+    // lean:AOP.A10_2_Detab.detab_loop@9eb74257
+  - #leanf("Freyd.Alg.RelSet.Detab.outl_loop") \
+    #src[Exercise 10.1: when `step` only appends `f(c,a)` to the output and moves the state by
+     `g`, the output of the loop is `loop'(f,g)`, which never carries the output]
+    // lean:AOP.A10_2_Detab.outl_loop@069af82d
+]<entab-detab-loop>
+
+// B&dM p.250: the greedy step `min(V×U)Λexpand°`, read on points.
+#disp[
+  - #leanf("Freyd.Alg.RelSet.Detab.expand_recip_snoc") \
+    #src[`expand` produces `x⧺[a]` from a tab after a string that fills to it, or from `x` and `a`]
+    // lean:AOP.A10_2_Detab.expand_recip_snoc@7a7b0b8f
+  - #leanf("Freyd.Alg.RelSet.Detab.fill_exists_iff") \
+    #src[a string is a `fill` exactly when it ends in a blank on a tab stop]
+    // lean:AOP.A10_2_Detab.fill_exists_iff@0db73b67
+]<entab-step>
+
+// B&dM p.251: (10.1) and the equations for `tbc` it gives.
+#disp[
+  - #leanf("Freyd.Alg.RelSet.Detab.entab_unfill") \
+    #src[(10.1): the output of `entab` is that of `unfill x` followed by the trailing blanks held
+     back]
+    // lean:AOP.A10_2_Detab.entab_unfill@8725e757
+  - #leanf("Freyd.Alg.RelSet.Detab.tbc_nil") \
+    #src[the empty string has no trailing blanks]
+    // lean:AOP.A10_2_Detab.tbc_nil@71e49d67
+  - #leanf("Freyd.Alg.RelSet.Detab.tbc_snoc") \
+    #src[a blank off a tab stop adds one held blank; anything else releases them all]
+    // lean:AOP.A10_2_Detab.tbc_snoc@accc64d3
+]<entab-tbc>
+
+// B&dM pp.251–252: `⟨tbc,col⟩`, `triple` and `entab` as one fold.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.tbc_col_fold") \
+    #src[one pass counts the held blanks and the column together]],
+    // lean:AOP.A10_2_Detab.tbc_col_fold@a4bc74e4
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Detab.tbc_col_fold.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.tbc_col_fold.rhs",
+      src[`op` on `(tbc x,col x)` is `(tbc,col)` one character further, from the equations for
+       `tbc` — @entab-tbc]),
+  ),
+)]<entab-tbc-col>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.triple_fold") \
+    #src[one pass carries the output up to the held blanks, their count and the column]],
+    // lean:AOP.A10_2_Detab.triple_fold@69838b3d
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Detab.triple_fold.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.triple_fold.rhs",
+      src[`op` on `triple x` is `triple` one character further: (10.1) where the blanks are
+       released — @entab-tbc]),
+  ),
+)]<entab-triple>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.entab_triple") \
+    #src[`entab` is `triple` with the held blanks appended to its output]],
+    // lean:AOP.A10_2_Detab.entab_triple@31bc2b82
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Detab.entab_triple.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Detab.entab_triple.rhs", src[(10.1) — @entab-tbc]),
+  ),
+)]<entab-entab>
+
 
 == The minimum tardiness problem
 
