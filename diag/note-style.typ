@@ -55,10 +55,11 @@
 
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
 #let PAGEW = 25cm
+#let PAGEH = 35cm
 #let MARGIN = 1.5cm
 #let NUMGAP = 0.15cm  // column edge to the display number's LEFT edge; the rest of MARGIN is its room to grow
 #let conf(title: "", body) = {
-  set page(width: PAGEW, height: 35cm, margin: MARGIN)
+  set page(width: PAGEW, height: PAGEH, margin: MARGIN)
   set text(size: 11.5pt)
   show raw: set text(size: 9.6pt)
   // `sticky`: a heading whose display lands on the next page goes with it, instead of sitting alone
@@ -166,26 +167,31 @@
 // whichever inner picture came last.
 // `size`: the extent when the caller already has it — every `measure` lays `body` out once more,
 // and `P` inside `disp` nests that cost four deep.
-#let pic-meta(key, body, width: auto, disp: false, size: auto) = if NODRAW { none } else { context {
+// `parts`: one `(page, y, h)` per page the body occupies, one row each, so a crop never runs off its page.
+#let pic-meta(key, body, width: auto, disp: false, size: auto, parts: auto) = if NODRAW { none } else { context {
   let hs = query(selector(heading).before(here()))
   let sec = if hs.len() == 0 { "" } else {
     numbering("1.1", ..counter(heading).get()) + " " + plain(hs.last().body) }
   let (sz, pos) = (if size == auto { measure(body, width: width) } else { size }, here().position())
+  let parts = if parts == auto { ((page: pos.page, y: pos.y, h: sz.height),) } else { parts }
   // `plain([])` is `none` — an empty caption's `join` — and the key column wants text.
-  [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec, page: pos.page,
-    x: pos.x.pt(), y: pos.y.pt(), disp: disp,
-    w: sz.width.pt(), h: sz.height.pt()))<pic>]
+  for t in parts [#metadata((kind: "pic", key: if key == none { "" } else { key }, section: sec,
+    page: t.page, x: pos.x.pt(), y: t.y.pt(), disp: disp,
+    w: sz.width.pt(), h: t.h.pt()))<pic>]
 } }
-// A block `body` set in flow at `width`, reporting its crop box: the height is read off an end marker,
-// not a `measure` that lays the body out again (off in the last bit, ~1e-14pt); only a body split
-// across pages, whose positions do not subtract, measures.  The marker carries its start's location,
-// so a nested one cannot be taken for it; before introspection has it, the height is a placeholder.
+// A block `body` set in flow at `width`, reporting its crop box off an end marker, not a `measure` that
+// lays the body out again: a body split across pages reports one part per page, from its start to the
+// content bottom, whole content columns between, and from the content top to its end.  The marker
+// carries its start's location, so a nested one cannot be taken for it; before introspection has it,
+// the height is a placeholder.
 #let pic-flow(key, body, width: auto, disp: false) = if NODRAW { body } else { context {
   let a = here()
   let e = query(selector(<pic-end>).after(a)).find(m => m.value == a)
   let (p, q) = (a.position(), if e == none { a.position() } else { e.location().position() })
-  pic-meta(key, body, width: width, disp: disp,
-    size: if p.page == q.page { (width: width, height: q.y - p.y) } else { auto })
+  let top(n) = if n == p.page { p.y } else { MARGIN }
+  let bot(n) = if n == q.page { q.y } else { PAGEH - MARGIN }
+  pic-meta(key, body, width: width, disp: disp, size: (width: width),
+    parts: range(p.page, q.page + 1).map(n => (page: n, y: top(n), h: bot(n) - top(n))))
   body
   [#metadata(a)<pic-end>]
 } }
