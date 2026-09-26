@@ -44,7 +44,7 @@ def frame():
     `conf`, which every page (whole-book or single-chapter, `note-chapter` defers to `conf`) obeys."""
     style = open(os.path.join(ROOT, "diag", "note-style.typ")).read()
     margin_cm = float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1])
-    height_cm = float(re.search(r"set page\(width: PAGEW, height: ([\d.]+)cm, margin: MARGIN\)", style)[1])
+    height_cm = float(re.search(r"#let PAGEH = ([\d.]+)cm", style)[1])
     margin, height = margin_cm * CM, height_cm * CM
     return margin, height - margin
 
