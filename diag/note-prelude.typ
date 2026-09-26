@@ -268,10 +268,7 @@
 // A chain too long for one line is SEVERAL ROWS, each an array of steps and its own `#lean` box;
 // every row takes the SMALLEST row's factor, since a short row filled on its own grows its beads
 // and labels past its neighbours' and stands the tallest.
-// A step is `(op, sel, reason)`, one declaration driving BOTH pictures — the usual case (@dp-lower
-// etc). `(op, sel, reason, circSel)` is the escape hatch for a display whose Hinze–Marsden panel
-// stays FIXED on one operand while its circuit keeps rewriting the whole term (§12.1's exception,
-// AGENTS.md): `sel` draws the (possibly repeated) HM panel, `circSel` the step's own circuit.
+// A step is `(op, sel, reason)`, one declaration driving BOTH pictures.
 #let lean-chain(..args) = {
   let a = args.pos()
   let rows = if type(a.first().at(0)) == array { a } else { (a,) }
@@ -284,7 +281,7 @@
       hchain(fill: k, ..r.zip(c.at(1)).map(((s, p)) => (s.at(0), p, [])))
       v(6pt)
       // `pad`: the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
-      pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..r.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(3, default: s.at(1))), s.at(2)))))
+      pad(bottom: 6pt, stack(dir: ttb, spacing: 6pt, ..r.map(s => step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))))
     }
   })
 }
