@@ -178,8 +178,8 @@ row((
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs",
       src[#frc([`𝟙`])`∋=𝟙` — @pow-laws — then #frc([`S`])` est(R)=S∩(S°\R°)⊑S` — @est-laws]),
   )), (sub: "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2",
-    gloss: src[the singleton's member stands in `Q` to every value `S` returns at the same argument; the
-     next row continues this chain], steps: (
+    gloss: src[the singleton's member stands in `Q` to every value `S` returns at the same argument],
+    steps: (
     (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs", src[the second condition, `−⊑Q°∈`]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2@29665c3e
     (EQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs",
