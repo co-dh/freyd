@@ -1736,18 +1736,39 @@ partial def scanRows (d : Diagram) (ls : Array Lane) (i j : Nat) (outer : Array 
 /-- The statement as the same tree, taken apart as `interp` takes it: noted constants opened, the
     spine rewritten, composites split, identities dropped; a conjugate `F(z°)°` is `F` sandwiched,
     a relator's action `F` plain, and anything else one bead. -/
-partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (e : Expr) :
+partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (e : Expr)
+    (split : Bool := false) :
     MetaM (Array Scan) := do
   let e' ← openNoted e
-  if e' != e then return ← scanStmt regionTy cat objVars e'
+  if e' != e then return ← scanStmt regionTy cat objVars e' split
   let e ← rewriteSpine e
   let fs := factors e
-  if fs.size > 1 then return (← fs.mapM (scanStmt regionTy cat objVars)).flatten
+  if fs.size > 1 then return (← fs.mapM (scanStmt regionTy cat objVars · split)).flatten
   if e.isAppOf ``Cat.id then return #[]
   let nest (R : Expr) (op : Bool) (body : Array Scan) : Array Scan :=
     (wiresOf R).foldr (fun w b => #[Scan.lane (.rel w) op b]) body
   if let some (R, z) ← conjugate? cat objVars regionTy e then
     return nest R true (← scanStmt regionTy cat objVars z)
+  -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
+  -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
+  let pairLane ← do
+    let (cx, _) ← peelRead objVars cat regionTy (← homEnds e).1
+    pure (match cx[0]? with | some (.rel f, _) => f.isAppOf ``Freyd.Alg.Relator.prod | _ => false)
+  unless pairLane && !split do
+    let prod (φψ : Option (Expr × Expr)) : MetaM (Option (Array Scan)) := do
+      let some (φ, ψ) := φψ | return none
+      let (a, a') ← homEnds φ
+      let (b, _) ← homEnds ψ
+      if ← isIdArrow φ then return some #[Scan.lane (.timesL a) false (← scanStmt regionTy cat objVars ψ)]
+      let one ← Meta.mkAppM ``Cat.id #[b]
+      let mut ps : Array (Expr × Expr) := (factors φ).map (·, one)
+      unless ← isIdArrow ψ do ps := ps.push (← Meta.mkAppM ``Cat.id #[a'], ψ)
+      if ps.size > 1 then
+        return some (← withProdMapsAt e ps.toList #[] #[] fun parts => do
+          return (← parts.mapM (scanStmt regionTy cat objVars · true)).flatten)
+      if (← familyVar e objVars).isSome then return some #[Scan.bead e]
+      return none
+    if let some s ← asProdMap? regionTy e prod then return s
   if let (``Freyd.Functor.map, args) := e.getAppFnArgs then
     if args.size ≥ 6 then
       return nest args[4]! false (← scanStmt regionTy cat objVars args[args.size - 1]!)
