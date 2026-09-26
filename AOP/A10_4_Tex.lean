@@ -328,10 +328,35 @@ public theorem R_trans : R ≫ R ⊑ R :=
 @[expose] public def r {X : RelSet.{0}} : (⟨Digit × X.carrier⟩ : RelSet.{0}) ⟶ (F Unit Digit).obj X :=
   graph Sum.inr
 
+/-- **`r` is LAX natural** in `X`: `F(S)` acts on the pair arm as `𝟙×S`. -/
+public theorem r_laxNatural :
+    LaxNatural
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0})))
+      (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0}))
+      (fun a : RelSet.{0} => r (X := a)) := by
+  intro x y S
+  rw [F_eq_sum_prod]
+  refine le_iff.mpr fun p v h => ?_
+  obtain ⟨q, hpq, hr⟩ := h
+  have hv : v = Sum.inr q := hr
+  subst hv
+  refine ⟨Sum.inr p, rfl, ?_⟩
+  obtain ⟨d, a⟩ := p
+  obtain ⟨d', b⟩ := q
+  simp [Relator.prod, Relator.const, Relator.idRelator, RelProd.pair, prodMap, graph,
+    instPositiveAllegory, instHasRelProd] at hpq
+  show Fmap Unit Digit S (Sum.inr (d, a)) (Sum.inr (d', b))
+  exact hpq
+
 /-- **`l°` is LAX natural** in `X`: `F(S)` leaves the leaf alone. -/
 public theorem l_recip_laxNatural :
-    LaxNatural (Relator.const (dL Unit)) (F Unit Digit) (fun a : RelSet.{0} => (l (X := a))°) := by
+    LaxNatural (Relator.const (dL Unit))
+      (Relator.sum (Relator.const (dL Unit))
+        (Relator.prod (Relator.const (dE Digit)) (Relator.idRelator RelSet.{0})))
+      (fun a : RelSet.{0} => (l (X := a))°) := by
   intro x y S
+  rw [F_eq_sum_prod]
   refine le_iff.mpr fun u t h => ?_
   obtain ⟨v, huv, hl⟩ := h
   have hv : v = Sum.inl t := hl
@@ -488,38 +513,40 @@ public theorem tex_greedy_step2 (X : Interval ⟶ Decimal) :
     · exact Or.inl h
     · exact Or.inr ⟨v, hv, z, ha, Nat.le_refl _⟩
 
-/-- **tex-greedy**, third step: `r F(X) α⊑! nil R`, since `length nil=0≤length cons`. -/
+/-- **tex-greedy**, third step: `r F(X) α⊑! l α R`, since `l α` is `nil` and
+    `length(nil)=0≤length cons`. -/
 public theorem tex_greedy_step3 (X : Interval ⟶ Decimal) :
     (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      ⊑ (l° ≫ bang° ≫ bang ≫ wrapR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+      ⊑ (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
   le_iff.mpr fun u z h => by
     rcases h with ⟨t, hl, s, hb, _⟩ | h
-    · exact Or.inl ⟨t, hl, s, hb, (), rfl, ConsList.wrap (), rfl, Nat.zero_le _⟩
+    · exact Or.inl ⟨t, hl, s, hb, (), rfl, Sum.inl (), rfl, ConsList.wrap (), rfl, Nat.zero_le _⟩
     · exact Or.inr h
 
 /-- **tex-greedy**, fourth step: the universal property of `!` — `!°!⊑𝟙` on `𝟏`. -/
 public theorem tex_greedy_step4 (X : Interval ⟶ Decimal) :
-    (l° ≫ bang° ≫ bang ≫ wrapR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      ⊑ (l° ≫ wrapR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+    (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+      ⊑ (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
   le_iff.mpr fun u z h => by
-    rcases h with ⟨t, hl, _, _, t', _, n, hw, hR⟩ | h
-    · cases t; cases t'; exact Or.inl ⟨(), hl, n, hw, hR⟩
+    rcases h with ⟨t, hl, _, _, t', _, f, hf, hR⟩ | h
+    · cases t; cases t'; exact Or.inl ⟨(), hl, f, hf, hR⟩
     · exact Or.inr h
 
-/-- **tex-greedy**, fifth step: definition of `F` and `α` — `l F(X) α=nil`. -/
+/-- **tex-greedy**, fifth step: definition of `F` — `l F(X)=l`. -/
 public theorem tex_greedy_step5 (X : Interval ⟶ Decimal) :
-    (l° ≫ wrapR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
+    (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
       = (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) := by
-  have h : l ≫ (F Unit Digit).map X ≫ alphaR = wrapR := by
+  have h : l ≫ (F Unit Digit).map X = l := by
     apply hom_ext
-    intro t n
+    intro t g
     constructor
-    · rintro ⟨_, hl, f, hF, hc⟩
+    · rintro ⟨_, hl, hF⟩
       subst hl
-      match f, hF with
-      | Sum.inl t', hF => have ht : t = t' := hF; subst ht; exact hc
+      match g, hF with
+      | Sum.inl t', hF => have ht : t = t' := hF; subst ht; rfl
     · intro h
-      exact ⟨Sum.inl t, rfl, Sum.inl t, rfl, h⟩
+      subst h
+      exact ⟨Sum.inl t, rfl, rfl⟩
   rw [← h]
   simp only [Cat.assoc]
 

@@ -230,16 +230,16 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", src[`R` is reflexive]),
        // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
       (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs",
-        src[`r F(X) α⊑! nil R`: `length(nil)=0` is at most any length]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step3@2c03caab
+        src[`r F(X) α⊑! l α R`: `l α=nil`, and `length(nil)=0` is at most any length]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
     ),
     (
       (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs",
         src[`!°!⊑𝟙` on `𝟏`: universal property of `!`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step4@d260b196
+       // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
       (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs",
-        src[`l F(X) α=nil`: definitions of `F` and `α`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step5@dedfc0ea
+        src[`l F(X)=l`: definition of `F`]),
+       // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
       (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", src[`l` is simple: `l°l⊑𝟙`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
       (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`∪` is idempotent]),
