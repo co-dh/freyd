@@ -17,8 +17,9 @@
 #let thmbox(c, ..a) = builder-thmbox(color: c, frame: (body-color: c.lighten(92%),
   border-color: c.darken(10%), thickness: 1.5pt, inset: THMPAD, radius: 0.3em), ..a)
 // `definition` also drops the "Definition 9.1." head: every block already names its term in bold and
-// nothing ever cited a definition by number.  The separator goes with it.
-#let definition = thmline(colors.at(8))("definition", "", separator: []).with(numbering: none)
+// nothing ever cited a definition by number.  The separator goes with it; a weak space in its place
+// eats the space the source newline after `#definition[` leaves, which indented only the first line.
+#let definition = thmline(colors.at(8))("definition", "", separator: h(0pt, weak: true)).with(numbering: none)
 #let theorem = thmbox(colors.at(6), shadow: (offset: (x: 3pt, y: 3pt), color: luma(70%)))(
   "theorem", "Theorem")
 #let example = thmline(colors.at(16))("example", "Example").with(numbering: none)
@@ -160,7 +161,13 @@
   // past the foot, silently (`<edit-mono>`'s last row).  The display's own block is `kept`'s choice.
   // `pic-flow` here and not in `disp`: `kept` must find the body's markers from outside its block.
   show figure.where(kind: "disp"): set block(breakable: true)
+  // A display is not running prose: its second paragraph starts flush, not at the text's 1em
+  // indent, and a list reads from its bullets at the display's left edge, not centred like the pictures
+  // `figure` centres, with a gap between items so a gloss stays with the formula above it.
+  show figure.where(kind: "disp"): set par(first-line-indent: 0em)
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
+    show list: set align(left)
+    set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
     if cetz.CDSCAN {
