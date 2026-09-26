@@ -755,6 +755,17 @@ partial def freshObj (ty : Expr) : MetaM Expr := do
   | some (a, b) => Meta.mkAppM ``Prod.mk #[← freshObj a, ← freshObj b]
   | none => Meta.mkFreshExprMVar (some ty)
 
+/-- A fresh object of a ONE-FIELD STRUCTURE region built through its constructor, `⟨?c⟩`, or `none`
+    where the region is no such structure.  An object written by its carrier — the apex of
+    `sumCop A B` is `⟨A ⊕ B⟩`, a base functor's `obj X` is `⟨… X.carrier …⟩` — meets a bare `?X` only
+    as `?X.carrier =?= T`, which the unifier does not solve, so a lane whose action it IS never
+    peeled.  Asked only AFTER the bare metavariable, whose answer (`a`, not `⟨a.carrier⟩`) stands. -/
+def freshStructObj? (regionTy : Expr) : MetaM (Option Expr) := do
+  let some fty ← regionIndexType? regionTy | return none
+  let .const n us := regionTy.getAppFn | return none
+  let ctor := mkConst (Lean.getStructureCtor (← getEnv) n).name us
+  return some (mkAppN ctor (regionTy.getAppArgs.push (← Meta.mkFreshExprMVar (some fty))))
+
 /-- The two factors of a product object: `X` is `a × b` when the region's own product apex
     `relProd ?a ?b` unifies with it.  `none` where the region has no products at all.
 
@@ -776,18 +787,24 @@ def splitTimes? (regionTy X : Expr) : MetaM (Option (Expr × Expr)) := do
     if t.isAppOfArity ``Freyd.Alg.RelProd 4 then
       let args := t.getAppArgs
       return some (args[2]!, args[3]!)
-  let s ← Meta.saveState
-  try
-    let a ← Meta.mkFreshExprMVar (some regionTy)
-    let b ← Meta.mkFreshExprMVar (some regionTy)
-    let (prod, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[a, b]
-    let (apex, _) ← mkAppMeta ``Freyd.Alg.RelProd.p #[prod]
-    if ← Meta.isDefEq apex X then
-      let a ← instantiateMVars a
-      let b ← instantiateMVars b
-      if !a.hasExprMVar && !b.hasExprMVar then return some (a, b)
-    s.restore; return none
-  catch _ => s.restore; return none
+  -- The bare metavariables first, then the objects built through the region's constructor
+  -- (`freshStructObj?`): an apex written by its carrier, `⟨Int × list⁺ A⟩`, meets only the second.
+  let fresh : List (MetaM (Option Expr)) :=
+    [some <$> Meta.mkFreshExprMVar (some regionTy), freshStructObj? regionTy]
+  for mk in fresh do
+    let s ← Meta.saveState
+    try
+      let some a ← mk | s.restore; continue
+      let some b ← mk | s.restore; continue
+      let (prod, _) ← mkAppMeta ``Freyd.Alg.HasRelProd.relProd #[a, b]
+      let (apex, _) ← mkAppMeta ``Freyd.Alg.RelProd.p #[prod]
+      if ← Meta.isDefEq apex X then
+        let a ← instantiateMVars a
+        let b ← instantiateMVars b
+        if !a.hasExprMVar && !b.hasExprMVar then return some (a, b)
+      s.restore
+    catch _ => s.restore
+  return none
 
 /-- The two SUMMANDS of a coproduct object, read the way `splitTimes?` reads a product: Lean's `Sum`
     where the objects ARE types, and where they are a one-field structure over types, the object
@@ -908,26 +925,32 @@ def instCatalogue (n : Name) (ends : Array Expr → MetaM Bool) :
     keeps a relator with an undetermined parameter from matching anything. -/
 def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     MetaM (Option (Expr × Expr × Expr)) := do
-  let s ← Meta.saveState
-  try
-    -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
-    -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
-    let some (R, cargs) ← instCatalogue n (fun c => Meta.isDefEq c[1]! regionTy)
-      | s.restore; return none
-    let src ← instantiateMVars cargs[0]!
-    let inner ← freshObj src
-    let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor R, inner]
-    if ← Meta.isDefEq app X then
-      let inner ← instantiateMVars inner
-      let R ← instantiateMVars R
-      let src ← instantiateMVars src
-      -- A wire is a relator of the REGION, so it cannot mention an object the statement quantifies
-      -- over: `F(A,−)` is a different functor at each `A` and no lane can carry it.
-      if objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
-      if !inner.hasExprMVar && !R.hasExprMVar && !src.hasExprMVar && !(← Meta.isDefEq inner X) then
-        return some (R, src, inner)
-    s.restore; return none
-  catch _ => s.restore; return none
+  -- `struct`: the object under the lane built through the region's constructor (`freshStructObj?`),
+  -- for an `X` written by its carrier — the unfolded `sumCop` apex of a base functor's action —
+  -- which a bare metavariable meets only as an unsolvable `?X.carrier =?= T`.  The bare one first.
+  for struct in [false, true] do
+    let s ← Meta.saveState
+    try
+      -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
+      -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
+      let some (R, cargs) ← instCatalogue n (fun c => Meta.isDefEq c[1]! regionTy)
+        | s.restore; return none
+      let src ← instantiateMVars cargs[0]!
+      let some inner ← if struct then freshStructObj? src else some <$> freshObj src
+        | s.restore; continue
+      let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor R, inner]
+      if ← Meta.isDefEq app X then
+        let inner ← instantiateMVars inner
+        let R ← instantiateMVars R
+        let src ← instantiateMVars src
+        -- A wire is a relator of the REGION, so it cannot mention an object the statement
+        -- quantifies over: `F(A,−)` is a different functor at each `A` and no lane can carry it.
+        if objVars.any (fun v => R.containsFVar v.fvarId!) then s.restore; return none
+        if !inner.hasExprMVar && !R.hasExprMVar && !src.hasExprMVar && !(← Meta.isDefEq inner X) then
+          return some (R, src, inner)
+      s.restore
+    catch _ => s.restore
+  return none
 
 /-- `e` as `G.map r` for the functor `g`, with `r` the arrow underneath.  The functor is the FIRST
     explicit argument of the projection, so the application is built with it already in place: an
