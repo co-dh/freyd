@@ -95,7 +95,7 @@
 [X] ch13: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
     six stay vertical: ∪ in the term, a panel pinned to one branch, or Theorem 7.1's frozen marks.
 [ ] rename MonotonicAlg to MonoAlg, using our lean-refactor.
-[ ] 15.2.1k should be horizontal.
+[X] 15.2.1k should be horizontal.
     `<dp-bifunctor-thin>` is a lean-chain in the source; merge with 15.2.1g, rebuild ch15, review.
 [ ] A generated panel is judged fresh by `stmt_key`, which ignores binder names, so renaming `leq` to `«≤»`
     left 23 panels printing `leq` until they were deleted by hand. Key freshness on what the picture prints.
