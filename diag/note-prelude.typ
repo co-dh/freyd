@@ -186,9 +186,13 @@
 #let hgut = 4pt
 // The factor that spends a line's slack: `w` the pictures' widths, `lead` whether the first has no op.
 // `--list` renders the panels as bare metadata, so every width is zero and there is no slack to spend.
+// Capped at 1.0: a chain must never draw a panel BIGGER than `#lean` draws it standalone, so a chain
+// with little content (one short row) leaves its slack outside the row instead of blowing the row up.
 #let chain-k(width, lead, w) = {
   let tot = w.sum(default: 0pt)
-  if tot == 0pt { 1.0 } else { (width - (w.len() - if lead { 1 } else { 0 }) * (OPW + 2 * hgut)) / tot }
+  if tot == 0pt { 1.0 } else {
+    calc.min(1.0, (width - (w.len() - if lead { 1 } else { 0 }) * (OPW + 2 * hgut)) / tot)
+  }
 }
 #let hchain(..steps, fill: none) = layout(sz => {
   let gut = hgut
