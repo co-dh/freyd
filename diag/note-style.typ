@@ -290,7 +290,10 @@
       if not inside or disp-thms(s, here()).len() != 1 { strong(body) } else {
         let n = numtext(s.value)
         let w = measure(n).width
-        grid(columns: (w, 1fr, w), column-gutter: 4pt, [], strong(body), align(right + top, n))
+        // Right edge on the COLUMN edge, where a headerless display's number ends too, not on the
+        // cell's inset: read from the cell's own position, so no inset constant is repeated here.
+        grid(columns: (w, 1fr, w), column-gutter: 4pt, [], strong(body),
+          context place(top + left, dx: PAGEW - MARGIN - here().position().x - w, n))
       }
     }
   })
