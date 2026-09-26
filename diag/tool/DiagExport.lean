@@ -1522,81 +1522,65 @@ def selDecls (commutative graph : Bool) (arg base : String) : List Name :=
 
 def EXE_PREFIX : String := "// exe: "
 
+/-- THE DECLARATION WHOSE FILE A LABEL IS PRINTED IN: a commutative page's first part, a graph's
+    first name, else the selector's own.  The drawing and `--stale` both build their context on it. -/
+def ctxDecl (commutative graph : Bool) (arg base : String) : Name :=
+  if commutative then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1
+  else if graph then (arg.splitOn "+").head!.toName else base.toName
+
 /-- The `cert:` line EVERY generated file carries, under the two header lines: the declarations the
-    picture was drawn from, each with the key of the statement it was drawn from — `stmtKey`, the
-    number the index stores and `cite-check` re-verifies.  One form for all seven routes, so one
-    reader (`--stale`) answers for all of them and a panel whose Lean statement changed is redrawn
-    by `diag-regen --missing` instead of waiting for the next whole redraw. -/
+    picture was drawn from, each with the key of the statement AS THE PICTURE PRINTS IT, and the
+    exporter that drew it.  One form for all routes, and `--stale` recomputes it in the drawing's
+    own context, so a panel whose Lean statement changed is redrawn by `diag-regen --missing`. -/
 def certLine (names : List Name) : MetaM String := do
   let env ← getEnv
   let parts ← names.mapM fun n => do
     let some ci := env.find? n | throwError "no such declaration: {n}"
-    return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 (← Freyd.TypeRender.stmtKey ci)
-      ++ "\")"
+    -- `stmtKey` hashes the Expr, which ignores binder names; the picture prints the delaborated
+    -- type, binder names and notation included, so that text is mixed in and not the module's olean.
+    let key := mixHash (← Freyd.TypeRender.stmtKey ci) (hash (toString (← Meta.ppExpr ci.type)))
+    return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 key ++ "\")"
   return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← StrDiag.exeStamp) ++ "\n"
-
-/-- The marks of a generated file's own `cert:` line, `(<declaration>, <key>)` each.  Parsing it is
-    the exporter reading ITS OWN output format — the one string read in the tool — and a line it
-    cannot read at all yields none of them, which is a redraw and never a silent pass. -/
-def certMarks (txt : String) : List (String × String) :=
-  match (txt.splitOn "\n").find? (·.startsWith "// cert: ") with
-  | none => []
-  | some l => ((l.splitOn "(lean: \"").drop 1).filterMap fun p =>
-      match (p.splitOn "\")").head?.map (·.splitOn "@") with
-      | some [d, k] => some (d, k)
-      | _ => none
 
 /-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `cert:` line it can
     read, or a key that is no longer the declaration's — printed one per line, in the order given,
     for `diag-regen --missing` to draw.  The route flags come with the selectors, because the path
     and the `+` rule are the route's.
 
-    It reads the INDEX and no environment, as `--cite` does: `decl_info.stmt_key` is the very number
-    the drawing wrote, so the comparison costs a sqlite query and not an import.
+    It recomputes `certLine` in the drawing's OWN context — environment, options, opened scopes,
+    `declCtx` — because the key is the statement as printed, which no index column holds.
 
     THE SELECTORS ARE THE OBLIGATIONS, not the files: a selector whose file is missing is stale, and
-    one naming a declaration THE INDEX NO LONGER HAS ends the run — a picture of a statement that no
-    longer exists is not a picture to keep. -/
+    one naming a declaration THE ENVIRONMENT NO LONGER HAS ends the run — a picture of a statement
+    that no longer exists is not a picture to keep. -/
 def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
-    proofMode : Bool)
+    proofMode : Bool) (env : Environment) (opts : Options) (scopes : List Name)
     (args : List String) : IO UInt32 := do
   -- ONE CALL, ITS FILES, AND THE DECLARATIONS EACH FILE IS DRAWN FROM.  The string route's `+`
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
   -- call; the commutative route's `+` is one file drawn from two declarations.
-  let jobs : List (String × List (String × List Name)) := args.map fun a =>
+  let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
     (a, (if stringMode then a.splitOn "+" else [a]).map fun n =>
       let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
-      (n, selDecls commutativeMode graphMode n base))
-  let names := (jobs.flatMap fun j => j.2.flatMap fun f => f.2.map toString)
-  if names.isEmpty then return 0
-  let rows ← Cite.rowsOf (Cite.Q ++ "i.user_name in ("
-    ++ ", ".intercalate (names.map Cite.sqlLit) ++ ")")
-  let keys : Std.HashMap String String :=
-    rows.foldl (fun m r => m.insert r.user (Cite.keyHex r.key)) {}
-  let exe ← StrDiag.exeStamp
-  let mut gone : List String := []
-  for n in names do
-    unless keys.contains n do gone := gone ++ [n]
-  unless gone.isEmpty do
-    IO.eprintln s!"diag-export --stale: the index has no declaration named \
-      {" ".intercalate gone} — a picture drawn from it is a picture of a statement that no longer \
-      exists.  Rename the note's selector, or refresh the index with `./scripts/lean-refactor index`"
-    return 1
+      (n, ctxDecl commutativeMode graphMode n base, selDecls commutativeMode graphMode n base))
   for (call, files) in jobs do
     let mut stale := false
-    for (n, decls) in files do
-      if stale then break
+    for (n, decl, decls) in files do
+      -- THE CERT THE DRAWING WOULD WRITE NOW, before the file is looked at: a declaration that is
+      -- gone ends the run whether or not its file is there.
+      let ctx := StrDiag.declCtx env opts scopes decl
+      let cert ← try Prod.fst <$> (Meta.MetaM.run' (certLine decls)).toIO ctx { env }
+        catch e => throw <| IO.userError s!"diag-export --stale: {n}: {e} — a picture drawn from \
+          it is a picture of a statement that no longer exists.  Rename the note's selector"
+      if stale then continue
       let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
       if !(← path.pathExists) then stale := true
       else
-        -- EVERY declaration the picture is drawn from must be marked with its CURRENT key, and the
-        -- marks must be exactly those: a mark naming another declaration is a picture drawn from
-        -- something else, which is as stale as a changed key, and a file with no mark at all — a
-        -- red stub, or one written before the routes recorded a key — is redrawn.
-        let wanted := decls.map fun d => (toString d, keys.getD (toString d) "")
+        -- EVERY line of that cert must be in the file as written: another declaration, another key
+        -- or another exporter is a picture of something else, and a red stub carries none of them.
         let txt ← IO.FS.readFile path
         let lines := txt.splitOn "\n"
-        unless certMarks txt == wanted && lines.contains (EXE_PREFIX ++ exe) do stale := true
+        unless (cert.splitOn "\n").all (fun l => l.isEmpty || lines.contains l) do stale := true
         -- THE DECLARATIONS THE PICTURE READ, not only the one it draws: a dot cites the theorem its
         -- naturality came from (`lean:<mark>@<key>`), and a changed or vanished one is a changed dot.
         let cited := (lines.toArray.flatMap Cite.marksOf).filterMap fun (m, k) => k.map (m, ·)
@@ -1643,10 +1627,6 @@ def main (args : List String) : IO UInt32 := do
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative" && a != "--graph"
       && a != "--value" && a != "--records" && a != "--stale")
   if args.isEmpty then IO.eprintln usage; return 2
-  -- The staleness route reads the INDEX and no environment, so it answers before the import below.
-  if staleMode then
-    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
-      proofMode args
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1681,6 +1661,10 @@ def main (args : List String) : IO UInt32 := do
       (Options.empty.setBool `pp.fieldNotation false).setBool `pp.structureInstances false
     else ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
       |>.insert `maxHeartbeats (.ofNat 1000000)
+  -- The staleness route prints the statement as the drawing does, so it needs all of the above.
+  if staleMode then
+    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
+      proofMode env opts scopes args
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
   -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
@@ -1704,9 +1688,7 @@ def main (args : List String) : IO UInt32 := do
     -- per declaration, and not once for the whole command line.
     -- A commutative page's first part names it, and the parts of one page are the faces of one
     -- statement's neighbourhood.
-    let ctx := StrDiag.declCtx env opts scopes <| if commutativeMode
-      then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1
-      else if graphMode then (arg.splitOn "+").head!.toName else base.toName
+    let ctx := StrDiag.declCtx env opts scopes (ctxDecl commutativeMode graphMode arg base)
     let run : CoreM String :=
       -- THE UNIFIER THAT CHECKED THE THEOREMS IS THE ONE THAT LOOKS THEM UP: the command elaborator
       -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
