@@ -1370,6 +1370,9 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       | none => un Prec.atom Prec.atom "" "°" args
     | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un Prec.atom Prec.atom "" "⊥" args
+  -- `codBox` IS FREYD'S `R□` (§2.122), a POSTFIX like `°`: the box terminates its operand exactly
+  -- as `°` does, at the same tight precedence, so `codBox(R°)` reads `R°□`, never `R°□`'s reverse.
+  | (``Freyd.Alg.codBox, args) => un Prec.atom Prec.atom "" "□" args
   -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
   | (``Freyd.Alg.neg, args) => un Prec.atom Prec.atom "∼" "" args
   -- The BRACKETING operators: their own delimiters separate the operand, so it is set at the
