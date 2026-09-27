@@ -701,7 +701,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM (5.12), p.121, the proof above one row per step, each row drawn from the theorem proving it.
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt,
   Thm[#leanf("Freyd.Alg.relCata_UP") \
-    #src[a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
+    #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
     // lean:AOP.A5_5.relCata_UP@e4a4905f
   table.header([*formula* — each equation of the chain], [*reason*]),
 
@@ -783,11 +783,12 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
 // mirrored: two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's own leastness
-// fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  The chain then LEAVES
-// `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one `⊑` is hylo_fixed
-// through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ` is.
+// fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  Theorem 6.2's two
+// inclusions are these two rows: one `⊑` is hylo_fixed
+// through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ`.
 #disp[#calc-table(cols: (1fr,), al: auto,
-  // hylo-fusion-eq header: Theorem 6.2
+  // hylo-fusion-eq header: Theorem 6.2, whose two inclusions are the Sub rows a and b
+  // lean:AOP.A6_3.hylo_eq_mu@8426ae5f
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   [#lean-chain(
@@ -795,7 +796,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
         decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
         recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
-      // lean:AOP.A6_3.hylo_fixed@42010f9f
+      // lean:AOP.A6_3.hylo_fixed@07ee2714
       (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
       (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
       (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
@@ -824,17 +825,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
     ),
   )],
-  [#lean-chain((
-      // lean:AOP.A6_3.hylo_eq_mu@c60df971
-      (none, "Freyd.Alg.hylo_eq_mu_step1.lhs", src[@mu-defn at `φ(X):=S°F(X)R`]),
-      (SQ, "Freyd.Alg.hylo_eq_mu_step1.rhs", src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
- `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is hylo_fixed above]),
-      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-      (SQ, "Freyd.Alg.hylo_eq_mu_step2.rhs", src[hylo_le_of_prefixed above at `X:=(μX : S°F(X)R)`, whose
- `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
- ]),
-      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
-  ))],
 )]<hylo-mu>
 
 #pagebreak(weak: true)

@@ -190,19 +190,19 @@ end Thm71
 
 section Greedy
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S : F.obj A ⟶ A}
 
 /-- Step 1 of the greedy chain: `S°F(R°)(`#frc(S)` est(R)) ⊑ R°S°(`#frc(S)` est(R))` — the
     monotonicity hypothesis, conversed (`F(R)°=F(R°)`, `(SR)°=R°S°`), slides `R°` out of the
     relator's span and up above `S°`; the three arrows to its right do not move. -/
-public theorem greedy_step1 (hFr : F.PreservesRecip) {R : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem greedy_step1 {R : A ⟶ A} {S : F.obj A ⟶ A}
     (hmono : Freyd.Alg.MonoAlg S R) :
     S° ≫ F.map R° ≫ (S%∋ ≫ est(R)) ⊑ R° ≫ S° ≫ (S%∋ ≫ est(R)) := by
   have hslide : S° ≫ F.map R° ⊑ R° ≫ S° := by
     have h := recip_mono hmono
     have heqL : (F.map R ≫ S)° = S° ≫ F.map R° := by
-      rw [Allegory.recip_comp, hFr R]
+      rw [Allegory.recip_comp, Relator.preservesRecip_of_tabular F R]
     have heqR : (S ≫ R)° = R° ≫ S° := Allegory.recip_comp _ _
     rwa [heqL, heqR] at h
   have hB := comp_mono_right hslide (S%∋ ≫ est(R))
@@ -225,7 +225,7 @@ public theorem greedy_step3 {R : A ⟶ A} (htrans : R ≫ R ⊑ R) : R° ≫ R°
 /-- **Theorem 7.2 (THE GREEDY THEOREM, B&dM p.173)**: `⦇est R·ΛS⦈ ⊆ est R·Λ⦇S⦈` if `S` is
     monotonic on the preorder `R`, mirrored.  (B&dM state it for `min R` with `S` monotonic
     on `R°`; `est R = min R°`, so the two `°`s cancel and `R` is the order throughout.) -/
-public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem greedy (I : InitialAlgebra F) {R : A ⟶ A} {S : F.obj A ⟶ A}
     (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg S R) :
     ⦇S%∋ ≫ est(R)⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   apply le_Λ_comp_est_iff.mpr
@@ -234,12 +234,28 @@ public theorem greedy (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶
       have h := comp_mono_left (Λ S) (show est R ⊑ ∋ A from inter_lb_left _ _)
       rwa [Λ_eps_eq'] at h
     exact relCata_mono I hi
-  · exact hylo_le_of_prefixed hFr I
-      (le_trans (greedy_step1 hFr hmono) (le_trans greedy_step2 (greedy_step3 htrans)))
+  · exact hylo_le_of_prefixed I
+      (le_trans (greedy_step1 hmono) (le_trans greedy_step2 (greedy_step3 htrans)))
+
+/-- **Ex 7.37 variant**: if `f` (an arbitrary algebra, monotonic on `R°`) REFINES a greedy
+    candidate `Λ S ≫ est R`, its catamorphism already lands inside `min R°·Λ⦇S⦈` — a
+    one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
+    form `Λ S ≫ est R` up to equality. -/
+public theorem greedy_of_refinement (I : InitialAlgebra F) {R : A ⟶ A}
+    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.MonoAlg f R°)
+    (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
+  obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
+  apply le_Λ_comp_est_iff.mpr
+  refine ⟨relCata_mono I hfS, ?_⟩
+  apply hylo_le_of_prefixed I
+  have hA : S° ≫ (F.map R° ≫ f) ⊑ S° ≫ (f ≫ R°) := comp_mono_left _ hmono
+  rw [← Cat.assoc S° f R°] at hA
+  have hB : (S° ≫ f) ≫ R° ⊑ R° ≫ R° := comp_mono_right hSf _
+  exact le_trans hA (le_trans hB htrans)
 
 end Greedy
 
-/-! ## Exercises 7.34 and 7.37 -/
+/-! ## Exercises 7.34 and 7.38 -/
 
 section Exercises
 
@@ -255,22 +271,6 @@ theorem reflexive_of_alpha_monoAlg (I : InitialAlgebra F) {R : I.t ⟶ I.t}
   apply relCata_le_of_prefixed
   have h2 := comp_mono_left I.α° hmono
   rwa [← Cat.assoc I.α° I.α R, I.recip_alpha_alpha, Cat.id_comp] at h2
-
-/-- **Ex 7.37 variant**: if `f` (an arbitrary algebra, monotonic on `R°`) REFINES a greedy
-    candidate `Λ S ≫ est R`, its catamorphism already lands inside `min R°·Λ⦇S⦈` — a
-    one-hypothesis strengthening of `greedy` that does not require `f` itself to be of the
-    form `Λ S ≫ est R` up to equality. -/
-public theorem greedy_of_refinement (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A}
-    {S : F.obj A ⟶ A} {f : F.obj A ⟶ A} (htrans : R° ≫ R° ⊑ R°) (hmono : Freyd.Alg.MonoAlg f R°)
-    (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
-  obtain ⟨hfS, hSf⟩ := le_Λ_comp_est_iff.mp href
-  apply le_Λ_comp_est_iff.mpr
-  refine ⟨relCata_mono I hfS, ?_⟩
-  apply hylo_le_of_prefixed hFr I
-  have hA : S° ≫ (F.map R° ≫ f) ⊑ S° ≫ (f ≫ R°) := comp_mono_left _ hmono
-  rw [← Cat.assoc S° f R°] at hA
-  have hB : (S° ≫ f) ≫ R° ⊑ R° ≫ R° := comp_mono_right hSf _
-  exact le_trans hA (le_trans hB htrans)
 
 /-- **Ex 7.38 (B&dM p.174)**, in the arrow form §7.3's derivation consumes: for `S : a ⟶ b`
     with `Q ≫ S ⊑ S ≫ R'` and `R'` transitive, a `Q`-best input followed by an `R'`-best

@@ -576,6 +576,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
 // The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
 // `s: 100%`, so the labels print at the size the note sets them in.
+#let gr-mon = lean("Freyd.Alg.greedy_step1.lhs")
+#let gr-Rbare = lean("Freyd.Alg.greedy_step3.rhs")
 #let gr-slid = lean("Freyd.Alg.greedy_step1.rhs")
 #let gr-RR = lean("Freyd.Alg.greedy_step2.rhs")
 #let gr-R = lean("Freyd.Alg.greedy_step3.rhs")
@@ -587,7 +589,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@aad4253e
+     // lean:AOP.A7_2.greedy@27f44953
   [],
 
   [#vstep(IFF, [],
@@ -613,7 +615,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
-  [#lean("Freyd.Alg.greedy_step1.lhs", "Freyd.Alg.greedy_step3.rhs")],
+  [#trow(gr-mon, gr-Rbare)],
 
   [#vstep(SQ, leanc("Freyd.Alg.greedy_step1.rhs"),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
@@ -1642,7 +1644,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   lean-chain(
     (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
-      // lean:AOP.A7_2.greedy@aad4253e
+      // lean:AOP.A7_2.greedy@27f44953
       src[from here `⦇ ⦈` is drawn open — the two bars, with the algebra's own circuit between them;
         // greedy row: Theorem 7.2
         `(𝟙×list((R×R)°))S⊑S(R×R)°` at `(R×R)°`, @party-mono]),

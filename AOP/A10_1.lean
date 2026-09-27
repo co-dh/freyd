@@ -187,7 +187,7 @@ public theorem greedy_dp (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     mu (fun X : A ⟶ B => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (greedy_dp_step1 hFr hh hmono htrans (hylo_fixed hFr I h T) hQ rfl))
+    (greedy_dp_step1 hFr hh hmono htrans (hylo_fixed I h T) hQ rfl))
 
 /-! ## B&dM p.246 — the greedy hypotheses via a bifunctor (recall of Proposition 9.4)
 

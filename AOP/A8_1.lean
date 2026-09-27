@@ -503,7 +503,7 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A �
       comp_mono_left _ (thinRel_comp_eps_le Q)
     rwa [Λ_eps_eq'] at h1
   · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q°·∋`, by the hylomorphism theorem
-    apply hylo_le_of_prefixed hFr I
+    apply hylo_le_of_prefixed I
     -- goal: `S° ≫ F.map (Q° ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q° ≫ (∋a)°`
     exact le_trans (thinning_step1 hFr hmono)
       (le_trans (thinning_step2 hFr) (le_trans thinning_step3 (thinning_step4 htrans)))
