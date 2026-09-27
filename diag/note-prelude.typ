@@ -279,8 +279,15 @@
 // a new obligation reads apart from a row that only wraps; a plain row after it continues the same
 // obligation.  `gloss` is optional.  `lean-chain` accepts only a dict `Sub` built — never a
 // hand-written one — so a row can't drift from what `Sub` prints.
-// A step whose `sel` is a PAIR `(l, r)` draws both sides of its OWN relation as one `lean(l, r)`
-// call — its two panels one height — beside the row's single-selector steps, which share one call.
+// A step whose `sel` is `(decl,)` draws that WHOLE STATEMENT as its own `lean(decl)` call — both
+// sides one height, and between them the relation the exporter reads off the statement's head, so
+// no hand-written symbol can call an equation an inclusion — beside the row's single-side steps,
+// which share one call.
+#let stmt-sel(p) = {
+  assert(p.len() == 1, message: "a lean-chain statement step is `(decl,)`, not " + repr(p)
+    + ": the exporter draws both sides and the relation between them from the one declaration")
+  p
+}
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 #let lean-chain(..args, circuit: false) = {
   let a = args.pos()
@@ -298,7 +305,7 @@
     let i = 0
     let got = ()
     for s in r.steps {
-      if type(s.at(1)) == array { got.push((pic: lean-call("generated/", <lean-panel>, s.at(1)), dup: false)) }
+      if type(s.at(1)) == array { got.push((pic: lean-call("generated/", <lean-panel>, stmt-sel(s.at(1))), dup: false)) }
       else { got.push(sp.at(i)); i += 1 }
     }
     let (steps, pics, held) = ((), (), none)
@@ -331,7 +338,11 @@
         (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else { s.at(2) })))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
-      if circuit { for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, if type(s.at(1)) == array { leanc(..s.at(1)) } else { leanc(s.at(1)) }, s.at(2))) } }
+      if circuit { for s in r {
+        assert(type(s.at(1)) != array, message: "lean-chain(circuit: true): the step " + repr(s.at(1))
+          + " draws a whole statement, and the circuit route reads one side only")
+        block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))
+      } }
       // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)
     }
