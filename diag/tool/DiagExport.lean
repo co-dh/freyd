@@ -1672,9 +1672,10 @@ def main (args : List String) : IO UInt32 := do
     let procExtra ← match ← Prof.processExtra.toBaseIO with
       | .ok s => pure s
       | .error e => IO.eprintln s!"diag-export: profiling: {e}"; pure "proc=unreadable"
+    let total : Prof.Line :=
+      { phase := "total", ns := (← IO.monoNanosNow) - t0, extra := s!"kind={kind} {extra} {procExtra}" }
     Prof.write t0 <| #[{ phase := "import", ns := tImport - t0, extra := s!"hb={hbImport}" }]
-      ++ lines.push { phase := "total", ns := (← IO.monoNanosNow) - t0,
-        extra := s!"kind={kind} {extra} {procExtra}" }
+      ++ lines.push total
   if staleMode then
     let code ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode
       graphMode proofMode env opts scopes args
@@ -1780,8 +1781,8 @@ def main (args : List String) : IO UInt32 := do
       unless sigMode do record "file" path.toString
     -- `rest` is the panel less its named phases: reading the declaration, layout, rendering.
     let named := subs.foldl (· + ·.2.ns) 0
-    prof := prof.push { sel := arg, phase := "panel", ns,
-      extra := s!"kind={kind} hb={hb} ok={res matches .ok _}" }
+    let ok := res matches .ok _
+    prof := prof.push { sel := arg, phase := "panel", ns := ns, extra := s!"kind={kind} hb={hb} ok={ok}" }
     prof := prof ++ subs.map fun (p, a) =>
       { sel := arg, phase := p, ns := a.ns, extra := s!"hb={a.hb} calls={a.calls}" }
     prof := prof.push { sel := arg, phase := "rest", ns := ns - named }
