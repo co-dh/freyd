@@ -151,15 +151,15 @@ structure Row where
       ASSUMES the square, so the panel's citation is the panel's own declaration and this name. -/
   natHyp : Option Name := none
   /-- THE RELATION THIS BEAD LETS DOWN PAST IT and the binder proving it: a binder assumes
-      `F(X)φ ⊑ WX` (`passHyp`) AND the bead directly above this one is `X` (`settlePass`) — a
-      hollow down triangle.  Once `X` has moved below, the same bead is drawn plain. -/
+      the naturality square of this bead at `X`, `F(X)φ ⊑ φG(X)` or its `⊒` (`passOf?`), AND the bead
+      directly above this one is `X` (`settlePass`).  Once `X` has moved below, it is drawn plain. -/
   pass : Option (Name × String × Bool) := none
   /-- DRAWN AS A HOLLOW TRIANGLE, settled once the panel's order is (`settlePass`): `some false`
       pointing down, `some true` pointing up.  Only ever with `pass`: a family's own square is its
       naturality and draws its circle or diamond, never a triangle. -/
   tri : Option Bool := none
   /-- Every `(binder, X)` a binder lets down past this bead, before the panel's order is known. -/
-  passCands : Array (Name × String × Expr) := #[]
+  passCands : Array (Name × String × Expr × Bool) := #[]
   /-- The bead's own term with no lane around it (`X`, not `F(X)`), which `settlePass` compares
       with the `X` of the bead below it. -/
   core : Option Expr := none
@@ -938,11 +938,11 @@ partial def compFactors (e : Expr) : Array Expr :=
     compFactors args[args.size - 2]! ++ compFactors args[args.size - 1]!
   else #[e]
 
-/-- `X` WHERE A PROPOSITION SAYS `F(X)φ ⊑ …X`: opened one definition at a time until its `⊑`
-    shows (8 bounds a cycle), its sides flattened (`compFactors`), `φ` the last factor on the left,
-    `F(X)` the one before it and `X` the last on the right.  Read off the proposition's `⊑` and its
-    composites, never off the formula drawn.  Metavariables in `ty` are assigned by the match. -/
-def passOf? (ty φ : Expr) : MetaM (Option Expr) := do
+/-- `X` WHERE A PROPOSITION IS THE NATURALITY SQUARE OF `φ` AT `X`: opened one definition at a time
+    until its `⊑` shows (8 bounds a cycle), its sides flattened (`compFactors`), each exactly two
+    factors, `F(X)φ` and `φG(X)` with `φ` unified on both — `true` where it reads `φG(X) ⊑ F(X)φ`.
+    A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
+def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
   for _ in [0:8] do
     if ty.getAppFn.isConstOf ``Freyd.Alg.le then break
@@ -953,26 +953,34 @@ def passOf? (ty φ : Expr) : MetaM (Option Expr) := do
   let args := ty.getAppArgs
   if args.size < 2 then return none
   let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
-  -- EXACTLY `F(X)φ` on the left and something `W` still ABOVE `X` on the right: `X` has moved below
-  -- a bead.  `α°F(X)R ⊑ X` (a prefixed point, §6.2) has `X` swallowing the whole composite: no pass.
-  if l.size != 2 || r.size < 2 then return none
-  let fx := l[l.size - 2]!
-  unless fx.getAppFn.isConstOf ``Freyd.Functor.map && fx.getAppNumArgs ≥ 1 do return none
-  let X := fx.appArg!
-  if (← Meta.isDefEq l[l.size - 1]! φ) && (← Meta.isDefEq r[r.size - 1]! X) then return some X
+  if l.size != 2 || r.size != 2 then return none
+  let mapArg (e : Expr) : Option Expr :=
+    if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
+  -- `G(X)`, or `X` itself where `G` is the identity: the image of the SAME `X` below `φ`.
+  let image (e X : Expr) : MetaM Bool := match mapArg e with
+    | some Y => Meta.isDefEq Y X
+    | none => Meta.isDefEq e X
+  -- ONE SQUARE, EITHER WAY ROUND: `F(X)φ` on one side and `φG(X)` on the other, the same `φ` both
+  -- times.  `F(X)φ ⊑ φG(X)` is the down triangle, `φG(X) ⊑ F(X)φ` the up one.
+  for (up, a, b) in [(false, l, r), (true, r, l)] do
+    let some X := mapArg a[0]! | continue
+    let s ← Meta.saveState
+    if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
+      return some (X, up)
+    s.restore
   return none
 
 /-- THE BEAD LETS A RELATION DOWN, AND A BINDER SAYS SO.  A hypothesis of the drawn statement — or
-    the predicate being drawn, applied to its own binders — that opens to `F(X)φ ⊑ WX` with `φ` the
-    bead says `X`, run through `F` above `φ`, may be moved below it: `MonoAlg φ R` (`W := φ`) and
-    `Distributes f R` (`X := est(R)`, `W := Λ(F(∋)f)`) alike.  Nothing found is the default bead. -/
-def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr)) := do
+    the predicate being drawn, applied to its own binders — that is the square `F(X)φ ⊑ φG(X)` of
+    the bead `φ` (`passOf?`): `MonoAlg φ R` is one, `Distributes f R` is not (`Λ(F(∋)f)` is not
+    `f`).  Nothing found is the default bead. -/
+def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr × Bool)) := do
   let mut out := #[]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     unless ← Meta.isProp d.type do continue
-    if let some X ← Meta.withNewMCtxDepth (passOf? d.type φ) then
-      out := out.push (← d.fvarId.getUserName, ← label X, X)
+    if let some (X, up) ← Meta.withNewMCtxDepth (passOf? d.type φ) then
+      out := out.push (← d.fvarId.getUserName, ← label X, X, up)
   return out
 
 initialize passHeadsRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
@@ -1004,7 +1012,7 @@ def passHeads : MetaM (Array Name) := do
     (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
     `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
     `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
-def passThm (φ Y : Expr) : MetaM (Option Name) := do
+def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
   let br ← bridges
   let mφ ← mustOfFamily br φ
   -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
@@ -1014,7 +1022,7 @@ def passThm (φ Y : Expr) : MetaM (Option Name) := do
   let s ← Search.new none
   let al ← bridgeAliases
   let env ← getEnv
-  let search : MetaM (Option Name) := do
+  let search : MetaM (Option (Name × Bool)) := do
     let mut cs := #[]
     for h in ← passHeads do cs := cs ++ (← candidates h)
     for (n, has) in cs do
@@ -1022,18 +1030,18 @@ def passThm (φ Y : Expr) : MetaM (Option Name) := do
       if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
       let some ci := env.find? n | continue
       let saved ← Meta.saveState
-      let attempt : MetaM Bool := do
+      let attempt : MetaM (Option Bool) := do
         let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
         let (args, bis, body) ← Meta.forallMetaTelescope
           (ci.type.instantiateLevelParams ci.levelParams lvls)
-        let some X ← passOf? body φ | return false
-        unless ← Meta.isDefEq X Y do return false
-        unless ← discharge br s args bis 1 #[] do return false
+        let some (X, up) ← passOf? body φ | return none
+        unless ← Meta.isDefEq X Y do return none
+        unless ← discharge br s args bis 1 #[] do return none
         let pf ← instantiateMVars (mkAppN (.const n lvls) args)
-        if pf.hasExprMVar then return false
+        if pf.hasExprMVar then return none
         Meta.check pf
-        return true
-      if ← tryCatchRuntimeEx attempt (fun _ => pure false) then return some n
+        return some up
+      if let some up ← tryCatchRuntimeEx attempt (fun _ => pure none) then return some (n, up)
       saved.restore
     return none
   tryCatchRuntimeEx (Core.withCurrHeartbeats <| withTheReader Core.Context
@@ -1044,7 +1052,8 @@ def passThm (φ Y : Expr) : MetaM (Option Name) := do
 
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
-    `isDefEq`) or a theorem (`passThm`) proves `F(X)φ ⊑ WX` for; once `X` has moved below, plain.
+    `isDefEq`) or a theorem (`passThm`) gives the square `F(X)φ ⊑ φG(X)` of — the up triangle
+    where the square is `⊒`; once `X` has moved below, plain.
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
 def settlePass (d : Diagram) : MetaM Diagram := do
   let mut rows := d.rows
@@ -1054,9 +1063,11 @@ def settlePass (d : Diagram) : MetaM Diagram := do
     unless r.nat.isNone do continue
     let some Y := up.bind (·.core) | continue
     let mut hit : Option (Name × String × Bool) := none
-    for (h, xl, X) in r.passCands do
+    let mut dir := false
+    for (h, xl, X, up) in r.passCands do
       if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
         hit := some (h, xl, true)
+        dir := up
         break
     -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
     -- here; no theorem can be instantiated at a term that does not exist in this context.
@@ -1065,8 +1076,10 @@ def settlePass (d : Diagram) : MetaM Diagram := do
     if hit.isNone then
       if let some c := r.core then
         if inScope c && inScope Y then
-          if let some n ← passThm c Y then hit := some (n, ← label Y, false)
-    if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some false }
+          if let some (n, up) ← passThm c Y then
+            hit := some (n, ← label Y, false)
+            dir := up
+    if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some dir }
   return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
