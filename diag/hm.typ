@@ -112,10 +112,16 @@
 /// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
 /// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
 /// proved for every map and nothing proved at a relation, which is half of what the filled dot
-/// claims.  `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
+/// claims.  `pass` is a hollow DOWN triangle, for an arrow a statement lets a relation down past.
+/// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg) = {
-  if nat == "oplax" {
+  if nat == "pass" {
+    // A HOLLOW TRIANGLE POINTING DOWN: the bead lets the relation above it pass below it across a
+    // `⊑` (`F(X)φ⊑WX`), a claim about this one arrow and one `X`, not a family's square.
+    d.line((rel: (-HMD, HMR * 0.8), to: p), (rel: (HMD, HMR * 0.8), to: p),
+           (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
   } else if nat == "maps-oplax" {

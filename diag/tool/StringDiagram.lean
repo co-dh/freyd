@@ -150,6 +150,9 @@ structure Row where
   /-- THE BINDER THE VERDICT WAS READ OFF, where no declaration proves it: the drawn statement
       ASSUMES the square, so the panel's citation is the panel's own declaration and this name. -/
   natHyp : Option Name := none
+  /-- THE RELATION THIS BEAD LETS DOWN PAST IT and the binder proving it (`passHyp`): the drawn
+      statement assumes `F(X)φ ⊑ WX`, so `X` above `φ` may move below it — a hollow down triangle. -/
+  pass : Option (Name × String) := none
   /-- IS THE BEAD A FAMILY IN AN OBJECT AT ALL?  One that is not is an arrow at this one object and
       has no naturality to be asked about; one that IS, carrying neither mark nor citation, is a
       family whose ends no lane of the region spells — and the trace says which, rather than
@@ -393,8 +396,11 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
+    -- A proved FAMILY keeps its naturality mark even where it also lets a relation down: its square
+    -- is that fact at every arrow, so the triangle marks only a bead with no family claim.
     let mark := match r.nat with
-      | none | some .strict => ""
+      | none => if r.pass.isSome then ", \"pass\"" else ""
+      | some .strict => ""
       | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
       | some .mapsOplax => key .mapsOplax
       | some .spider => key .spider
@@ -411,7 +417,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
           else "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, none" ++ mark ++ ")"
         | none, some d =>
           "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, " ++ num d ++ mark ++ ")"
-        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ")"
+        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc
+            ++ (if mark.isEmpty then "" else ", none" ++ mark) ++ ")"
         | some rc, some d =>
           "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ", " ++ num d
             ++ mark ++ ")"
@@ -508,7 +515,7 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
   let rows := ps.flatMap (·.rows)
   -- The panel's OWN declaration is cited too where a bead's verdict is one of its hypotheses.
   let keys ← natKeys (rows.flatMap (·.natLean)
-    ++ (if rows.any (·.natHyp.isSome) then #[decl] else #[]))
+    ++ (if rows.any (fun r => r.natHyp.isSome || r.pass.isSome) then #[decl] else #[]))
   let mut out := ""
   for r in rows do
     -- A bead that is NO FAMILY is an arrow of the base category at this one object (`est(R)`, a
@@ -543,6 +550,9 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
       ++ (match r.natHyp with
           | some hn => " " ++ keys[decl]! ++ " hyp:" ++ toString hn
+          | none => "")
+      ++ (match r.pass with
+          | some (hn, x) => " pass:" ++ x ++ " " ++ keys[decl]! ++ " hyp:" ++ toString hn
           | none => "")
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
@@ -894,6 +904,44 @@ def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark ×
         let (_, _, body) ← Meta.forallMetaTelescope sq
         Meta.isDefEq ty body
       if hit then return some (m, ← d.fvarId.getUserName)
+  return none
+
+/-- The factors of a composite, first to last, through either bracketing: `a(bc)` and `(ab)c` are
+    one picture, so a match on the last factors must not see where the brackets fell. -/
+partial def compFactors (e : Expr) : Array Expr :=
+  let e := e.consumeMData
+  let args := e.getAppArgs
+  if e.getAppFn.isConstOf ``Cat.comp && args.size ≥ 2 then
+    compFactors args[args.size - 2]! ++ compFactors args[args.size - 1]!
+  else #[e]
+
+/-- THE BEAD LETS A RELATION DOWN, AND A BINDER SAYS SO.  A hypothesis of the drawn statement — or
+    the predicate being drawn, applied to its own binders — that opens to `F(X)φ ⊑ WX` with `φ` the
+    bead says `X`, run through `F` above `φ`, may be moved below it: `MonoAlg φ R` (`W := φ`) and
+    `Distributes f R` (`X := est(R)`, `W := Λ(F(∋)f)`) alike.  Read off the PROVED proposition's
+    `⊑` and its composites, never off the formula drawn; nothing found is the default bead. -/
+def passHyp (φ : Expr) : MetaM (Option (Name × String)) := do
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    let mut ty ← instantiateMVars d.type
+    unless ← Meta.isProp ty do continue
+    -- A predicate is opened one definition at a time until its `⊑` shows; 8 bounds a cycle.
+    for _ in [0:8] do
+      if ty.getAppFn.isConstOf ``Freyd.Alg.le then break
+      match ← Meta.unfoldDefinition? ty with
+      | some t => ty := t.headBeta
+      | none => break
+    unless ty.getAppFn.isConstOf ``Freyd.Alg.le do continue
+    let args := ty.getAppArgs
+    if args.size < 2 then continue
+    let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
+    if l.size < 2 then continue
+    let fx := l[l.size - 2]!
+    unless fx.getAppFn.isConstOf ``Freyd.Functor.map && fx.getAppNumArgs ≥ 1 do continue
+    let X := fx.appArg!
+    let hit ← Meta.withNewMCtxDepth do
+      pure ((← Meta.isDefEq l[l.size - 1]! φ) && (← Meta.isDefEq r[r.size - 1]! X))
+    if hit then return some (← d.fvarId.getUserName, ← label X)
   return none
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
@@ -1523,7 +1571,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
-      family := φ.isSome, map := ← isMapOf core }
+      pass := ← passHyp core, family := φ.isSome, map := ← isMapOf core }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
@@ -2373,7 +2421,9 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- `hypVerdict` already looks, and it is the same evidence a theorem's `(h : LaxNatural F G φ)`
     -- binder is.  `isSort`: only a declaration whose type ENDS in a sort is a predicate, so a
     -- partially applied telescope that stopped at a hom states nothing about itself.
-    if (markOfNatPredicate declName).isSome && body0.isSort then
+    -- EVERY predicate, not only the naturality ones: `MonoAlg φ R` drawn is the claim `passHyp`
+    -- reads the triangle off, exactly as `LaxNatural` drawn is the claim `hypVerdict` reads.
+    if body0.isSort then
       let self := mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs
       Meta.withLocalDeclD declName self fun h => Meta.mkForallFVars (xs.push h) body
     else Meta.mkForallFVars xs body
