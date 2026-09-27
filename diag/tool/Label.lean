@@ -32,20 +32,24 @@ open Lean
 
 namespace Freyd.StrDiag
 
-/-- The delaborator's answers in this process.  A label asks it of the same subterm from several
-    places, and a chain's steps share their terms.  The key is what the printer reads: the term by
-    `metaKey`, the names of every local in scope (a name is printed, and one in scope renames a
-    binder), the options and the open namespaces. -/
+/-- What a printed term is keyed by: the term by `metaKey`, the names of every local in scope (a
+    name is printed, and one in scope renames a binder), the options and the open namespaces.
+    `none` for a term `metaKey` cannot key. -/
+def printKey (es : Array Expr) : MetaM (Option (Array Expr × String)) := do
+  let some (k, vs) ← metaKey es | return none
+  let names ← vs.mapM fun v => return toString (← v.fvarId!.getUserName)
+  let scope := (← getLCtx).foldl (fun a d => a.push (toString d.userName)) #[]
+  return some (k, s!"{names}|{scope}|{← getOptions}|{← getOpenDecls}|{← getCurrNamespace}")
+
+/-- The delaborator's answers in this process: a label asks it of the same subterm from several
+    places, and a chain's steps share their terms. -/
 initialize delabMemo : IO.Ref (Std.HashMap (Array Expr × String) Term) ← IO.mkRef {}
 
 def delabP (e : Expr) : MetaM Term := do
-  let some (k, vs) ← metaKey #[e] | PrettyPrinter.delab e
-  let names ← vs.mapM fun v => return toString (← v.fvarId!.getUserName)
-  let scope := (← getLCtx).foldl (fun a d => a.push (toString d.userName)) #[]
-  let tag := s!"{names}|{scope}|{← getOptions}|{← getOpenDecls}|{← getCurrNamespace}"
-  if let some t := (← delabMemo.get)[(k, tag)]? then return t
+  let some k ← printKey #[e] | PrettyPrinter.delab e
+  if let some t := (← delabMemo.get)[k]? then return t
   let t ← PrettyPrinter.delab e
-  delabMemo.modify (·.insert (k, tag) t)
+  delabMemo.modify (·.insert k t)
   return t
 
 /-- How a label JOINS under a functor's name — the note's rule (CLAUDE.md), one copy for every
@@ -1205,6 +1209,19 @@ def provedSimple (r : Expr) : MetaM Bool := do
       if ok then return true
     return false
 
+/-- The labels this process has printed, by which printer (`what`) and `printKey`, each with the
+    reads it noted: a panel labels the same bead as a row, a wire and a peer's part, and a label
+    recurses into subterms its neighbours share. -/
+initialize labelMemo : IO.Ref (Std.HashMap (String × Array Expr × String) (Array Lbl × Array Read)) ←
+  IO.mkRef {}
+
+def memoLbl (what : String) (es : Array Expr) (m : MetaM (Array Lbl)) : MetaM (Array Lbl) := do
+  let some (k, t) ← printKey es | m
+  if let some (r, rs) := (← labelMemo.get)[(what, k, t)]? then rs.forM (noteRead ·); return r
+  let (r, rs) ← recordReads m
+  labelMemo.modify (·.insert (what, k, t) (r, rs))
+  return r
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -1225,6 +1242,10 @@ mutual
     equation `Q = P°` naming that pair, and substituting there collapses it into `Q=Q` — CLAUDE.md's
     stated exception, `∈ ≜ ∋°` itself printing its `°`. -/
 partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : MetaM Lbl := do
+  return (← memoLbl s!"{prec}{avoid.isSome}" (#[e] ++ avoid.toArray) do
+    return #[← labelTreeCore prec e avoid])[0]!
+
+partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) : MetaM Lbl := do
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
@@ -1719,15 +1740,16 @@ end
 def labelT (e : Expr) (avoid : Option Expr := none) : MetaM Lbl :=
   Prof.phase "label" do return (← labelTree 0 e avoid).norm
 
-/-- …and FLAT, which is every label a box, a bead or a wire carries. -/
-def label (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree 0 e).flat
-
 /-- The flat spelling at a given precedence, for the pictures that write one string. -/
-def labelAt (prec : Nat) (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree prec e).flat
+def labelAt (prec : Nat) (e : Expr) : MetaM String := Prof.phase "label" do
+  return (← labelTree prec e).flat
+
+/-- …and FLAT, which is every label a box, a bead or a wire carries. -/
+def label (e : Expr) : MetaM String := labelAt 0 e
 
 /-- The factors a label writes, flat. -/
 def labelRun (e : Expr) : MetaM (Array String) := Prof.phase "label" do
-  return (← labelRunT e).map Lbl.flat
+  return (← memoLbl "run" #[e] (labelRunT e)).map Lbl.flat
 
 /-- A label in the PARTS the picture sets it in.  A SYMMETRIC DIVISION is the note's fraction, and a
     bar DELIMITS its numerator, so that part is spelled at the loosest precedence — `frac(F(∋)f, ∋)`,
@@ -1747,7 +1769,7 @@ partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
 
 /-- …and each part flat, for the pictures that write one string. -/
 def labelParts (e : Expr) : MetaM (Array String) := Prof.phase "label" do
-  return (← labelPartsT e).map Lbl.flat
+  return (← memoLbl "parts" #[e] (labelPartsT e)).map Lbl.flat
 
 /-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
     pairing, an identity, a composite and the product bifunctor have no name of their own, so they
