@@ -91,6 +91,39 @@ subscript.
   // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
 )]<pow-laws>
 
+== `∈\` as a composite <sec-mem-ldiv>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
+    #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
+     // lean:AOP.A7_1.mem_leftDiv_eq@7e4fcb2b
+  lean-chain(
+    (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°`: the converse of `Λ(Z°)∋=Z°` — @pow-laws]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9ab326b8
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
+      src[`X\(Yf°)=(X\Y)f°` for a map `f` (not a tabulated row), at the map `f≜Λ(Z°)`; `⊆≜∈\∈`]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step2@dc661372
+  ),
+)]<mem-ldiv>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.leftDiv_eq_Λ_subset") \
+    #src[`b` is related to `c` by `R\S` exactly when `Λ(R°)(b) ⊆ Λ(S°)(c)`, the `R`-preimage of `b` inside the `S`-preimage of `c`]],
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset@6b9c4f56
+  lean-chain(
+    (none, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.lhs", []),
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.rhs", src[`R=∈Λ(R°)°`: the converse of `Λ(R°)∋=R°` — @pow-laws]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@a8fe3773
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step2.rhs", src[`(XY)\S=Y\(X\S)`]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@032cf912
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step3.rhs", src[`f°\X=fX` for the map `f≜Λ(R°)`]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@1c4fd03c
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step4.rhs", src[`∈\S=⊆Λ(S°)°` — @mem-ldiv]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step4@a1f0d86d
+  ),
+)]<ldiv-comp>
+
 == `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
 
 // The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:

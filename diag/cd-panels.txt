@@ -26,7 +26,7 @@
 7.1a/fokkinga#1                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ
 7.1a/fokkinga#2                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ  # the SECOND conjunct's square: one statement, one face per conjunct, so one selector answers both canvases
 7.2b/horner#1                    | Freyd.Alg.tri_cata_fusion                                  | cdref-horner.typ
-10.1a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
+10.2a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
 11.1c/fork-pic#1                 | Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le | cdref-fork.typ
 11.1.1b/relprod-pic#1            | Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le        | cdref-relprod.typ
 11.2.1b/coprod-square#1          | Freyd.Alg.u_junc_Λ_eps                                     | cdref-coprod.typ
@@ -58,8 +58,8 @@
 13.4.3a/party-mono#1             | Freyd.Alg.RelSet.Party.party_mono                          | cdref-party.typ
 13.4.3b/party-absorb#1           | Freyd.Alg.RelSet.Party.party_absorb.lhs                    | cdref-absorb-l.typ
 13.4.3b/party-absorb#2           | Freyd.Alg.RelSet.Party.party_absorb.rhs                    | cdref-absorb-r.typ
-15.2.1c/dp-laws#1                | Freyd.Alg.dynamic_programming_thin#hQ                      | -  # the ASSUMPTION `hQ` of Theorem 9.2, read in the theorem that assumes it; the note never drew it by hand, so the panel is held to its own geometry
-15.2.1c/dp-laws#2                | Freyd.Alg.H_fixed                                          | -
+15.2e/dp-laws#1                  | Freyd.Alg.dynamic_programming_thin#hQ                      | -  # the ASSUMPTION `hQ` of Theorem 9.2, read in the theorem that assumes it; the note never drew it by hand, so the panel is held to its own geometry
+15.2e/dp-laws#2                  | Freyd.Alg.H_fixed                                          | -
 #
 # Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
 - | Freyd.Alg.alpha_natural                          | -
