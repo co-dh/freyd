@@ -1983,12 +1983,6 @@ def recipArg? (r : Expr) : MetaM (Option Expr) := do
     | none => return none
   | _ => return none
 
-/-- A `°` WIRE RUNS ONLY BESIDE A SEGMENT WHOSE SOURCE IS ITS TARGET; elsewhere the `°` is the label's.
-    `(−)°` is contravariant, so over a non-endo segment the object line would change type at its ends. -/
-def endoSeg (e : Expr) : MetaM Bool := do
-  let (x, y) ← homEnds e
-  Meta.withNewMCtxDepth (Meta.isDefEq x y)
-
 /-- `e` as a catalogue lane `F`'s action carrying a CONVERSE, the converse being the functor
     `recipFunctor : 𝒜 → 𝒜ᵒᵖ`: `F(z)°` is `F` then `°` (`outer`), `F(z°)` is `°` then `F` on `𝒜ᵒᵖ`
     (`inner`), `F(z°)°` the conjugate `recipConj F` (both).  Read by the head constants and CONFIRMED
@@ -2015,10 +2009,13 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   if (wiresOf R).isEmpty then return none
   let inner ← recipArg? r
   if outer.isNone && inner.isNone then return none
-  unless ← endoSeg e do return none
   -- A ONE-SIDED `F(z)°`/`F(z°)` expands too, never one bead wearing a `°`: "E(R)° should be
   -- expanded with the converse functor" (the author, on §13.1's `⊆Λ(R)°`).
   let z := inner.getD r
+  -- ONE conversed bead wears its `°` in the label (`⦇S⦈°`); the `°` wire is for a converse that runs
+  -- over several beads, where one wire says it once (`panelOf` sets `diag.convWire` for such a side).
+  if !(← getOptions).getBool `diag.convWire false && (factors (← rewriteSpine (← openNoted z))).size ≤ 1 then
+    return none
   let s ← Meta.saveState
   try
     let F ← laneFunctor R
@@ -2107,7 +2104,7 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- lane of it carries the span, so the `°` stands west of them all and beside every bead.
   if let some (z, fs) ← conversedComposite? e then
     let d ← (← interp regionTy cat objVars vpass none z).flip
-    if d.lanes.isEmpty || !(← endoSeg e) then
+    if d.lanes.isEmpty then
       return ← vstack regionTy cat objVars vpass expect (← recipFactors fs)
     let sp : Conv := { first := 0, last := (d.rows.size : Int) - 1, outer := true, inner := false,
                        whole := true }
@@ -2535,7 +2532,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let b ← scanStmt regionTy cat objVars z
     return nest R (o, i) (if o != i then Scan.rev b else b)
   if let some (z, fs) ← conversedComposite? e then
-    if (← interp regionTy cat objVars #[] none z).lanes.isEmpty || !(← endoSeg e) then
+    if (← interp regionTy cat objVars #[] none z).lanes.isEmpty then
       return (← (← recipFactors fs).mapM (scanStmt regionTy cat objVars · split)).flatten
     return #[.conv (Scan.rev (← scanStmt regionTy cat objVars z))]
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
@@ -2608,11 +2605,18 @@ def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : D
     a side is one such spine and gets no copy of it here. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none (← instantiateMVars side))
+  let side ← instantiateMVars side
+  let wide {α} (m : MetaM α) : MetaM α :=
+    withTheReader Core.Context (fun c => { c with options := c.options.setBool `diag.convWire true }) m
+  -- A SIDE WHOSE CONVERSE IS ON TWO OR MORE FACTORS draws every one of them as a `°` wire.
+  let convs ← wide <| (factors (← rewriteSpine (← openNoted side))).filterM fun f => do
+    return (← conjugate? cat objVars regionTy f).isSome || (← conversedComposite? f).isSome
+  let run {α} (m : MetaM α) : MetaM α := if convs.size ≥ 2 then wide m else m
+  let d ← run do joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none side)
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
-  scanCheck regionTy cat objVars side d
-  settlePass d (some (← instantiateMVars side))
+  run <| scanCheck regionTy cat objVars side d
+  settlePass d (some side)
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
