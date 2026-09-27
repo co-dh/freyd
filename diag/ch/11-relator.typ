@@ -716,10 +716,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
         `F(`$frac(#[`X`], ∋)$`)` — @pow-laws]),
     ),
     (
-      (IMP, ("Freyd.Alg.relCata_UP_fold.lhs", "Freyd.Alg.relCata_UP_fold.rhs"),
+      (IMP, ("Freyd.Alg.relCata_UP_fold.lhs", EQ, "Freyd.Alg.relCata_UP_fold.rhs"),
         src[the chain times `α`, with `αα°=𝟙`, is the fold equation of the map $frac(#[`F(∋)R`], ∋)$ at
           $frac(#[`X`], ∋)$; its fold is the unique map satisfying it — @initial-defn]),
-      (IMP, ("Freyd.Alg.relCata_UP_of_comm.lhs", "Freyd.Alg.relCata_UP_of_comm.rhs"),
+      (IMP, ("Freyd.Alg.relCata_UP_of_comm.lhs", EQ, "Freyd.Alg.relCata_UP_of_comm.rhs"),
         src[cancellation `X=`$frac(#[`X`], ∋)$`∋`, and `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc]),
     ),
   )],

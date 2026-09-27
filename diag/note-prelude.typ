@@ -278,6 +278,9 @@
 // hand-written one — so a row can't drift from what `Sub` prints.
 // A step whose `sel` is a PAIR `(l, r)` draws both sides of its OWN relation as one `lean(l, r)`
 // call — its two panels one height — beside the row's single-selector steps, which share one call.
+// A pair is `(l, r)`, its relation `⊑`, or `(l, rel, r)` for any other relation — the declaration
+// states which, and the default drew an equation as an inclusion.
+#let pair-sel(p) = if p.len() == 3 { (p.at(0), p.at(1), p.at(2)) } else { (p.at(0), SQ, p.at(1)) }
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 #let lean-chain(..args) = {
   let a = args.pos()
@@ -292,7 +295,7 @@
     let i = 0
     let pics = ()
     for s in r.steps {
-      if type(s.at(1)) == array { pics.push(lean-call("generated/", <lean-panel>, s.at(1))) }
+      if type(s.at(1)) == array { let (l, op, r) = pair-sel(s.at(1)); pics.push(lean-call("generated/", <lean-panel>, (l, r), op: op)) }
       else { pics.push(sp.at(i)); i += 1 }
     }
     (m, pics)
@@ -315,7 +318,7 @@
       hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
-      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, if type(s.at(1)) == array { leanc(..s.at(1)) } else { leanc(s.at(1)) }, s.at(2))) }
+      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, if type(s.at(1)) == array { { let (l, op, r) = pair-sel(s.at(1)); lean-call("generated/circuit/", <lean-circuit>, (l, r), op: op) } } else { leanc(s.at(1)) }, s.at(2))) }
       // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)
     }
