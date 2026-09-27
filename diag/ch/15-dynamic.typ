@@ -174,6 +174,15 @@ in @mu-defn.
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
+  // The two squares the chain rests on: the hypothesis `hQ` and the fixed point `H` satisfies.
+  grid(columns: 2, column-gutter: 24pt, align: center + top,
+    [#leancd("Freyd.Alg.ThinCondition") \
+      #src[`QF(H)h⊑F(H)hR`: every result of thinning by `Q`, solving the parts by `F(H)` and
+      assembling by `h` is reached by `R` from a result of solving by `F(H)` and assembling by `h`
+      without `Q`]],
+    [#leancd("Freyd.Alg.H_fixed") \
+      #src[`T°F(H)h=H`: taking the input apart once by `T°`, solving the parts by `F(H)` and
+      assembling by `h` returns exactly what `H` returns]]),
 )]<dp-laws>
 
 // (9.2): the book's four hints of Theorem 9.1 with `thin(Q)∋⊑∋` added.  Its own display: a `#disp`

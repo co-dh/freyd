@@ -46,6 +46,18 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 @[expose] public def H [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
   (relCata T)° ≫ relCata h
 
+/-- **`T°F(H)h = H`**: `H` solves its own recursion — `hylo_fixed` read at `H≜⦇T⦈°⦇h⦈`, stated
+    on the name so a picture draws `H` as one arrow. -/
+public theorem H_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) (T : F.obj A ⟶ A)
+    (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
+  hylo_fixed hFr I h T
+
+/-- **The thinning condition** of Theorem 9.2 (B&dM p.222): `QF(H)h ⊑ F(H)hR` — thinning the
+    decompositions by `Q` before solving them only moves the answer up `R`. -/
+@[expose] public def ThinCondition [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B)
+    (R : B ⟶ B) (Q : F.obj A ⟶ F.obj A) : Prop :=
+  Q ≫ F.map (H T h) ≫ h ⊑ F.map (H T h) ≫ h ≫ R
+
 /-! ## Theorem 9.1 (B&dM pp. 220-221) -/
 
 /-- (9.2), first step: rule (9.4) `P(X) est(R) ⊑ ∋X` (`powerRel_comp_est_le`, left meet
@@ -390,8 +402,8 @@ public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlg
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
-    ⟨dynamic_programming_thin_lower (hylo_fixed hFr I h T),
-     dynamic_programming_thin_upper hFr hh hmono htrans (hylo_fixed hFr I h T) hQ⟩))
+    ⟨dynamic_programming_thin_lower (H_fixed hFr I T h),
+     dynamic_programming_thin_upper hFr hh hmono htrans (H_fixed hFr I T h) hQ⟩))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 

@@ -58,6 +58,8 @@
 13.4.3a/party-mono#1             | Freyd.Alg.RelSet.Party.party_mono                          | cdref-party.typ
 13.4.3b/party-absorb#1           | Freyd.Alg.RelSet.Party.party_absorb.lhs                    | cdref-absorb-l.typ
 13.4.3b/party-absorb#2           | Freyd.Alg.RelSet.Party.party_absorb.rhs                    | cdref-absorb-r.typ
+15.2.1c/dp-laws#1                | Freyd.Alg.ThinCondition                                    | cdref-thincond.typ  # drawn by `#leancd` from the start; the reference is the author's spoken spec, top `Q`, sides `F(H)h`, bottom `R`
+15.2.1c/dp-laws#2                | Freyd.Alg.H_fixed                                          | cdref-hfix.typ
 #
 # Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
 - | Freyd.Alg.alpha_natural                          | -
