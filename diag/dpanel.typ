@@ -464,7 +464,7 @@
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
     // another strand sweeps that row west of this lane.
-    // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
+    // The name clears the wire by 0.12, and the edge of any mark it sits beside by as much.
     if nmd.contains(i) {
       // Any lane's name can reach a west bead label, not only the leftmost lane's: test the MEASURED
       // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
@@ -476,8 +476,12 @@
         let c = hn + m.height / 0.8cm / 2 + 0.06
         if (l.at(0) - 0.12 - wn < br + 0.06 and l.at(0) > br - m.width / 0.8cm - 0.06
           and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
-      let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
-        and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
+      // Every MARK in the name's column clears it — a bead's, and a unit's, which `dlane` draws at
+      // its lane's birth and `beads` does not list: a name on a unit-born lane sat on its own dot.
+      let marks = (beads.map(b => (dx(b.at(0)), b.at(0), b.at(5, default: "strict")))
+        + lanes.filter(o => o.at(4) != none and o.at(1) != "top").map(o => (o.at(0), o.at(1), o.at(5, default: "strict"))))
+      let gap = calc.max(0.12, ..marks.filter(m => calc.abs(m.at(0) - l.at(0)) < 0.3
+        and calc.abs(m.at(1) - ny) < 0.3).map(m => hm-mark-half(m.at(2)) + 0.12))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
     }
   }
