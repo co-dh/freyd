@@ -402,6 +402,10 @@
   let dotx = (:)
   for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
+  // A BEAD WHOSE DOT IS ON THE LEFTMOST LANE writes its label WEST of the mark, right-aligned: east
+  // of it the label would run across the lanes and the object wire it sits beside.
+  let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
+  let west = b => lx != none and b.at(4, default: none) != none and calc.abs(b.at(4) - lx) < 1e-6
   // THE FRAME HOLDS EVERY BEAD LABEL: `hm-bead` sets it 0.32 east of the dot, and the generator's
   // width is a fixed pad east of the object wire, which a long label (a `∪` of two terms) runs out of.
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
@@ -454,7 +458,10 @@
     // another strand sweeps that row west of this lane.
     // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
     if nmd.contains(i) {
-      let ny = dnamey(lanes, l, kb)
+      // A west bead label on this lane holds the row, so the name drops one label height below it.
+      let wb = beads.filter(b => west(b) and calc.abs(lx - l.at(0)) < 1e-6)
+      let ny0 = dnamey(lanes, l, kb)
+      let ny = wb.fold(ny0, (y, b) => if calc.abs(b.at(0) - y) < LLH { b.at(0) - LLH } else { y })
       let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
         and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
@@ -475,19 +482,16 @@
   // glyph — hollow and half-filled marks punched out in `fb-ALLC`, the region behind every dot.
   // The word is the only thing passed: a panel that decided the shape here would drift from the
   // lane above and from the exporter, which name the same verdicts.  Absent, it is `"strict"`.
-  for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
-                           bg: fb-ALLC, nat: b.at(5, default: "strict")) }
-  // THE LEFTMOST LANE'S NAME IS WRITTEN WEST OF IT, right-aligned, at each edge: the margin west of
-  // that lane is reserved for its name (`columns` in StringDiagram.lean), and `spreadEdge` counts it.
-  let wx(es) = { let xs = es.map(e => e.at(0)).filter(x => x != xo); if xs == () { none } else { calc.min(..xs) } }
-  let (wt, wb) = (wx(top), wx(bot))
+  for b in beads {
+    let nat = b.at(5, default: "strict")
+    hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black), bg: fb-ALLC, nat: nat,
+            ..(if west(b) { (dx: -(hm-mark-half(nat) + 0.12), anchor: "east") } else { (:) })) }
   for (x, l) in top {
     if not dcovers(defn, h, x) {
-      hm-port((if x == xo { xat(h) } else { x }, h), l, west: x == wt,
-              col: if x == xo { otc } else { palf(pal, l) }) } }
+      hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { palf(pal, l) }) } }
   for (x, l) in bot {
     if not dcovers(defn, 0, x) {
-      hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, west: x == wb,
+      hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1,
               col: if x == xo { obc } else { palf(pal, l) }) } }
   for (x0, x1, y, l) in defn { dbrace(x0, x1, y, l, h, pal) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
