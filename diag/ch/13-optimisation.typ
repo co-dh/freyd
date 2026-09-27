@@ -10,6 +10,11 @@
 For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`X⊑∈\R°⟺∈X⊑R°`, and `∈X` runs `y⟶xs⟶x`, member first, so its pair `(y,x)` is in `R°` exactly when `x R y`; at `R≜≤` that is `x≤y` for every `y∈xs`, the least — `∈\≤` would give `y≤x`, the greatest].
 // lean:AOP.A7_1.est@e39806f8
 
+#leanf("Freyd.Alg.est_eq_subset_Λ") #h(4pt) #src[`x` is the `est(R)` of `xs` when `x∈xs` and `xs ⊆ Λ(R)(x)`, the set of every `y` with `x R y` — @mem-ldiv at `Z≜R°`]
+// lean:AOP.A7_1.est_eq_subset_Λ@2e66b635
+
+#lean("Freyd.Alg.est_eq_subset_Λ.rhs.inl", "Freyd.Alg.est_eq_subset_Λ.rhs.inr", op: [`∩`])
+
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[the same predicate under the same
 letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 ]

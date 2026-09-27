@@ -106,16 +106,36 @@
 // The diamond's half-diagonal.  Equal AREA to the circle reads smaller — a diamond loses its
 // corners to the eye — so it is set by the width that matches, not by the area.
 #let HMD = HMR * 1.45
+// The scale of the triangles and circles over `HMR`/`HMD`: at `HMR` the hollow circle was unreadable.
+#let HMS = 2
+// The circle marks' radius (`strict`, `lax`, `maps`).
+#let HMC = HMS * HMR
+
+/// How far a mark reaches either side of its point: what a name set beside the point must clear.
+#let hm-mark-half(nat) = if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
 /// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
 /// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
 /// proved for every map and nothing proved at a relation, which is half of what the filled dot
-/// claims.  `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
+/// claims.  `pass` is a hollow DOWN triangle, for a bead what stands above may pass down across `⊑`;
+/// `passup` the UP one, for a bead what stands below may pass up.
+/// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg) = {
-  if nat == "oplax" {
+  if nat == "pass" {
+    // A HOLLOW TRIANGLE POINTING DOWN: the bead lets what stands above it pass below it across a
+    // `⊑` — one `X` a statement names (`F(X)φ⊑WX`), or every arrow, a lax square `G(X)φ⊑φF(X)`.
+    // `HMS` is its one size.
+    d.line((rel: (-HMS * HMD, HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, HMS * HMR * 0.8), to: p),
+           (rel: (0, -HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "passup" {
+    // THE SAME TRIANGLE POINTING UP: what stands below the bead may pass up across `⊑`, every arrow,
+    // the square `φF(X)⊑G(X)φ`.  The mirror of `pass`, so its size is `HMS` too.
+    d.line((rel: (-HMS * HMD, -HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, -HMS * HMR * 0.8), to: p),
+           (rel: (0, HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
   } else if nat == "maps-oplax" {
@@ -129,12 +149,12 @@
   } else if nat == "maps" {
     // The filled half goes down FIRST and the outline LAST, as a region does under a wire: a
     // stroked half-disc would draw the diameter across the middle of the dot.
-    d.circle(p, radius: HMR, fill: bg, stroke: none)
-    d.arc(p, start: 90deg, stop: 270deg, radius: HMR, anchor: "origin", mode: "PIE",
+    d.circle(p, radius: HMC, fill: bg, stroke: none)
+    d.arc(p, start: 90deg, stop: 270deg, radius: HMC, anchor: "origin", mode: "PIE",
           fill: col, stroke: none)
-    d.circle(p, radius: HMR, fill: none, stroke: col + lw)
+    d.circle(p, radius: HMC, fill: none, stroke: col + lw)
   } else if nat != "spider" {
-    d.circle(p, radius: HMR, fill: if nat == "lax" { bg } else { col },
+    d.circle(p, radius: HMC, fill: if nat == "lax" { bg } else { col },
              stroke: if nat == "lax" { col + lw } else { none })
   }
 }

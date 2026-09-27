@@ -20,7 +20,9 @@
 // so both sides of the equation come out the same height and line up on the bead they share.  Two
 // separate calls share nothing, which is what keeps a calc-table's cells as short as their own
 // pictures.
-#let trow(l, r) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, SQ, r))
+// `op` is what stands between them: the relation by default, `∩`/`∪` when the pair is the two
+// operands `.inl`/`.inr` of one side — a meet or union is a label between pictures, never wiring.
+#let trow(l, r, op: SQ) = align(center, grid(columns: 3, align: horizon, column-gutter: 6pt, l, op, r))
 // One body, two routes: `dir` is the exporter's output directory and `label` the metadata the
 // listing queries, because a second copy of this would drift from the first at the next change.
 // `lean-pics` is the call's metadata and its panels one by one, for a layout that puts something
@@ -31,10 +33,10 @@
   if "list" in sys.inputs { ns.map(n => []) } else {
     let sub = if ns.len() > 1 { ns.join("/") + "/" } else { "" }
     ns.map(n => { import dir + sub + n + ".typ": pic; pic }) })
-#let lean-call(dir, label, ns) = {
+#let lean-call(dir, label, ns, op: SQ) = {
   let (m, pics) = lean-pics(dir, label, ns)
   m
-  if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics) } else {
+  if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics, op: op) } else {
     panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()) + "; a chain is lean-chain(…)")
   }
 }
@@ -43,7 +45,7 @@
 // an argument of THIS route and not part of the selector because the circuit draws the fork itself
 // and takes the WHOLE side: the row's two cells then name one declaration and one side, and the
 // restriction sits where it belongs, on the picture that has it.
-#let lean(..sels, branch: none) = lean-call("generated/", <lean-panel>,
+#let lean(..sels, branch: none, op: SQ) = lean-call("generated/", <lean-panel>, op: op,
   sels.pos().map(n => if branch == none { n } else { n + "." + branch }))
 // The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
 // walks the same Expr under the monoidal reading.
