@@ -1201,8 +1201,13 @@ mutual
 
     RECURSIVE THROUGH THE BRACKETING OPERATORS TOO.  `⦇…⦈`, `E(…)` and `…%∋` delimit their operand,
     so a composite inside one is still a composite of the note's: `⦇S%∋ est(R°)⦈`, never
-    `⦇S%∋ ≫ est(R°)⦈`, which is what the raw printer hands back for the whole application. -/
-partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
+    `⦇S%∋ ≫ est(R°)⦈`, which is what the raw printer hands back for the whole application.
+
+    `avoid`, when given, is the SIBLING side of a statement `split` just cut this term from: a
+    converse that would substitute a named form EQUAL TO `avoid` is the theorem's own defining
+    equation `Q = P°` naming that pair, and substituting there collapses it into `Q=Q` — CLAUDE.md's
+    stated exception, `∈ ≜ ∋°` itself printing its `°`. -/
+partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : MetaM Lbl := do
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
@@ -1263,7 +1268,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- `split` every route already asks of a head — so a HYPOTHESIS is spelled by the same rules its
   -- conclusion is, where it used to fall to the printer and carry Lean's `≫` into the cell.
   if let some (sym, l, r) := split e then
-    return wrap Prec.rel ((← labelTree (Prec.rel + 1) l) ++ sym ++ (← labelTree (Prec.rel + 1) r))
+    return wrap Prec.rel
+      ((← labelTree (Prec.rel + 1) l (some r)) ++ sym ++ (← labelTree (Prec.rel + 1) r (some l)))
   -- A `→` BETWEEN TWO STATEMENTS is the note's `⟹`; a binder the body depends on is its `∀`.  Read
   -- off the BINDER — whether the body mentions it — never off how the arrow prints.
   if let .forallE _ t b _ := e then
@@ -1362,12 +1368,19 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       | none => txt e
     | none => txt e
   -- A CONVERSE WITH A NAME OF ITS OWN IS WRITTEN BY THAT NAME (CLAUDE.md): `∋°` is `∈`, `⊇°` is
-  -- `⊆`, each pair a `diag_opposite` theorem read by `namedRecip?`.
+  -- `⊆`, each pair a `diag_opposite` theorem read by `namedRecip?` — EXCEPT where the substitution
+  -- would reproduce `avoid`, the sibling side of the very equation naming the pair (`subset =
+  -- (supset)°` printing `supset` as `subset` collapses to `⊆=⊆`): there the `°` prints literally.
   | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) => do
     match (← arrows args).back? with
-    | some r => match ← namedRecip? r with
-      | some q => labelTree prec q
-      | none => un Prec.atom Prec.atom "" "°" args
+    | some r =>
+      let literal := un Prec.atom Prec.atom "" "°" args
+      match ← namedRecip? r with
+      | some q =>
+        match avoid with
+        | some sib => if ← Meta.isDefEqGuarded q sib then literal else labelTree prec q
+        | none => labelTree prec q
+      | none => literal
     | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un Prec.atom Prec.atom "" "⊥" args
   -- `codBox` IS FREYD'S `R□` (§2.122), a POSTFIX like `°`: the box terminates its operand exactly
@@ -1683,8 +1696,11 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
 
 end
 
-/-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses. -/
-def labelT (e : Expr) : MetaM Lbl := Prof.phase "label" do return (← labelTree 0 e).norm
+/-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses.  `avoid`
+    passes down to `labelTree`'s named-converse clause — the sibling side of a statement this term
+    was split from, so its own defining equation prints its `°` rather than collapsing. -/
+def labelT (e : Expr) (avoid : Option Expr := none) : MetaM Lbl :=
+  Prof.phase "label" do return (← labelTree 0 e avoid).norm
 
 /-- …and FLAT, which is every label a box, a bead or a wire carries. -/
 def label (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree 0 e).flat
