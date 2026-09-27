@@ -372,10 +372,10 @@ in @mu-defn.
   - #leanf("Freyd.Alg.RelSet.Edit.edit_cata") \
     #src[`edit` is the fold of `[base,step]` over an edit sequence, returning the two strings it
      reconstitutes]
-    // lean:AOP.A9_2_Edit.edit_cata@0dafb85c
+    // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
   - #leanf("Freyd.Alg.RelSet.Edit.length_cata") \
     #src[the fold of `[zero,π₂ succ]` counts the operations of a sequence]
-    // lean:AOP.A9_2_Edit.length_cata@9e3040b0
+    // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
   - #leanf("Freyd.Alg.RelSet.Edit.R_eq") \
     #src[`R` relates `es` to `fs` when `es` is no longer than `fs`]
     // lean:AOP.A9_2_Edit.R_eq@0f7a4661

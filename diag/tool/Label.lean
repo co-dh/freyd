@@ -779,7 +779,11 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     -- carrier's empty structure, whatever term writes it: a constructor (`wrap s`, `wrap ()` — the
     -- unit value in it or not is a spelling) or a quotient of one (`nilBag`), which is why the test
     -- is on the SOURCE and not on the body's head.
-    if !(← hasStrands (← s.getType)) then return "nil"
+    -- …except a NULLARY constructor, which IS a named constant of the carrier and is written by its
+    -- own name: `Nat.zero` is B&dM's `zero` in `length≜⦇[zero,π₂ succ]⦈`, not a list's `nil`.
+    if !(← hasStrands (← s.getType)) then
+      if body.isConst then if let some n ← ctorName? body then return n
+      return "nil"
     if isCtor && !body.containsFVar s then return "nil"
     if isCtor && (body.find? fun x => projIndex (.fvar s) x == some 0).isSome
         && (body.find? fun x => projIndex (.fvar s) x == some 1).isSome then
@@ -1102,6 +1106,42 @@ def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
         if ← Meta.isDefEqGuarded args[2]! e then return some (args[3]!, args[4]!)
   return none
 
+/-- A RELATION OR A MAP APPLIED TO POINTS whose points the printer SWALLOWED: `Q Char a b` came out
+    `Q` and `unstepFn p` `unstep`, because an unexpander written for the arrow (`| _ => Q`) matches
+    the whole application, and Lean tries the longest one first.  The points are the trailing
+    explicit arguments that are data — no type, proof, object, arrow, or value of `Unit`, which
+    says nothing — and they were swallowed exactly when the application prints as its head alone.
+    Returns the head (the arrow, printed by its own unexpander at its own arity) and the points. -/
+def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
+  unless e.getAppFn.isConst do return none
+  -- AN ARROW OR AN OBJECT HAS NO POINTS: what its unexpander drops are PARAMETERS the note leaves
+  -- off on purpose (`R` for `R(w)`, `expand` for `expand(n,tb,nl,blank)`).  Only a statement or a
+  -- value — the arrow already applied — has points to lose.
+  -- A STATEMENT is asked first: `homEnds?` answers yes for a relation applied to its two points too.
+  unless ← Meta.isProp e do
+    if (← homEnds? e).isSome || (← Meta.isType e) then return none
+  let args := e.getAppArgs
+  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+  let point (i : Nat) : MetaM Bool := do
+    let a := args[i]!
+    let ty ← Meta.inferType a
+    if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
+    if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
+      return false
+    -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
+    -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
+    -- own category, so it would never count as a point.
+    unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
+    return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
+  let mut k := args.size
+  while k > 0 do
+    unless ← point (k - 1) do break
+    k := k - 1
+  if k == args.size then return none
+  let hd := mkAppN e.getAppFn (args.extract 0 k)
+  unless (← PrettyPrinter.delab e).raw.structEq (← PrettyPrinter.delab hd).raw do return none
+  return some (hd, args.extract k args.size)
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -1363,6 +1403,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- printer wrote with a space of its own (`Bag Job`) is welded shut by closing the whole
   -- application up, which is what a tight head would do.
   | (``Prod, #[a, b]) => prodL a b
+  -- …and a SUM of objects is the note's `+`, its unit summand the terminal object `𝟏`:
+  -- `FX=𝟏+A×X`, never Lean's `Unit ⊕ A×X`.
+  | (``Sum, #[a, b]) => sumL a b
+  | (``Unit, #[]) => return "𝟏"
   -- A PRODUCT OF RELATORS is that same `×`, one level up — `(F×G)(X)` is `F(X)×G(X)` — so it is
   -- spelled the same way, closed up: `V×𝟙`, never the printed `V × 𝟙`.  The coproduct below is the
   -- object `+` for the same reason.
@@ -1407,6 +1451,10 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- not the composite the PICTURE splits it into, and rewriting it here loops through
     -- `singletonMap` and back.
     if let some r ← rewriteHead? e then return ← labelTree prec r
+    -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
+    -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
+    if let some (hd, pts) ← swallowedPoints? e then
+      return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
     -- closes up against a name (`FA`, `EFA`) or an operand the printer already bracketed (`E[A]`),
     -- and every other application takes parentheses (`tree(A)`, `E(bag(Job))`, `F([A]×[A])`).  Head
@@ -1517,7 +1565,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- A PAIR OPERAND is respelled too, FIRST, so the pair's own clause writes it whole — `(xs,ys)`,
     -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
-      (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)).toList
+      (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)
+        ++ (← args.filterM fun a => return (← swallowedPoints? a).isSome)).toList
       #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
