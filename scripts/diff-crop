@@ -606,13 +606,10 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
 NUMCOL = "#828282"   # `numtext`'s luma(130) in diag/note-style.typ: a display's OWN number, never a reference to it
 
 
-def disp_query(root, typ, nodraw):
-    """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`.
-    Under `nodraw` there are no parts: `pic-meta` is off, and only the numbering and each display's
-    source (`src`, `repr` of its body) are wanted.  `list=1` keeps `lean(…)` from importing a panel
-    file, so a `rev` whose panels the current `diag/generated` no longer holds still numbers."""
-    a = ["typst", "query", "--root", root] + (["--input", "nodraw=1", "--input", "list=1"] if nodraw else []) + \
-        [os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
+def disp_query(root, typ):
+    """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`,
+    laid out in full so each display's parts are where that tree's own pdf sets them."""
+    a = ["typst", "query", "--root", root, os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
     r = run(*a)
     if r.returncode:
         sys.exit(f"diff-crop: {' '.join(a)}: {r.stderr.strip()[:800]}")
@@ -623,14 +620,14 @@ def disp_query(root, typ, nodraw):
         if v.get("kind") == "pic" and v.get("disp"):
             parts.setdefault(v["key"], []).append((v["page"], v["y"], v["h"]))
     ds = [v for v in vs if v.get("kind") == "disp"]
-    return [(v["id"], v["label"]) for v in ds], parts, {v["id"]: v["src"] for v in ds if "src" in v}
+    return [(v["id"], v["label"]) for v in ds], parts
 
 
 def rev_tree(rev, tmp):
-    """`rev`'s `diag/` in a scratch root, for numbering only.  `diag/generated` is untracked, so the
-    current one stands in: under `nodraw` no picture is laid out, and a number depends only on the
-    headings and displays of `rev`'s own source.  A panel file `rev` names that is gone now stops the
-    query with typst's own message."""
+    """`rev`'s `diag/` in a scratch root.  `diag/generated` is untracked, so the current one stands in;
+    a display whose panel changed since `rev` may then be set elsewhere than in `rev`'s pdf, and
+    `spans` refuses it when its own number is not on its first part's page.  A panel file `rev` names
+    that is gone now stops the query with typst's own message."""
     d = os.path.join(tmp, "rev-" + rev.replace("/", "-"))
     os.makedirs(d, exist_ok=True)
     tar = os.path.join(tmp, "rev.tar")
@@ -662,22 +659,12 @@ def own_anchor(pdf, did, tmp, page=None):
     return own[0]
 
 
-def frame_bottom():
-    style = open(os.path.join(ROOT, "diag", "note-style.typ")).read()
-    cm = 28.346456693
-    return (float(re.search(r"#let PAGEH = ([\d.]+)cm", style)[1]) -
-            float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1])) * cm, \
-        float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1]) * cm
-
-
-def crop_parts(pdf, spans, tmp, tagp, grow=False):
-    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked.  `grow`:
-    the bottom is only a bound, so the band grows down from the top and stops at the gutter the display
-    ends at — the prose, heading or next header between it and the bound stay out."""
+def crop_parts(pdf, spans, tmp, tagp):
+    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked."""
     pngs = []
     for i, (pg, y0, y1) in enumerate(spans):
         W, H, boxes = svg_ink(pdf, pg, tmp)
-        got = band(boxes, y0, min(y1, y0 + GUT) if grow else y1, (y0, y1))
+        got = band(boxes, y0, y1, (y0, y1))
         if got is None:
             raise Refuse(f"no ink on page {pg} of {pdf} in y {y0:.1f}..{y1:.1f}")
         ink, pads, gaps = got
@@ -685,9 +672,6 @@ def crop_parts(pdf, spans, tmp, tagp, grow=False):
         p = f"{tmp}/{tagp}{i}.png"
         cut(pdf, pg, c0, c1, W, p)
         pngs.append(p)
-        # a grown display that stopped short of the frame's foot ended on this page
-        if grow and ink[3] < frame_bottom()[0] - GUT:
-            return stackp(pngs, tmp, tagp), [s[0] for s in spans[:i + 1]]
     return stackp(pngs, tmp, tagp), [s[0] for s in spans]
 
 
@@ -697,16 +681,21 @@ def stackp(pngs, tmp, tagp):
     return out
 
 
-def after_spans(pdf, order, parts, ids, tmp):
-    """The after display(s) `ids`, whole: every page part `pic-meta` recorded, from the display's own
-    number — set ABOVE the part when the display has no `Thm` — bounded below by the next display's
-    start on the same page so a crop cannot run into it."""
+def disp_spans(pdf, order, parts, ids, tmp):
+    """The display(s) `ids` of `pdf`, whole: every page part `pic-meta` recorded in the query of the
+    tree `pdf` was compiled from, from the display's own number — set ABOVE the part when the display
+    has no `Thm` — bounded below by the next display's start on the same page so a crop cannot run
+    into it.  The before and the after both take this one route."""
     starts = {(p[0][0], p[0][1]) for d, _ in order for p in [parts.get(d, [])] if p}
     spans = []
     for d in ids:
         if d not in parts:
-            sys.exit(f"diff-crop: ({d}) has no `pic` metadata in the after query — is the chapter pdf current?")
+            sys.exit(f"diff-crop: ({d}) has no `pic` metadata in the query for {pdf} — is that pdf current?")
         a = own_anchor(pdf, d, tmp)
+        if not parts[d][0][0] - 1 <= a[0] <= parts[d][0][0]:
+            raise Refuse(f"({d}): own number on page {a[0]} of {pdf}, but its query sets it on page "
+                         f"{parts[d][0][0]} — the pdf was not compiled from the queried tree (for a rev, "
+                         f"its panels differ from the current diag/generated)")
         for j, (pg, y, h) in enumerate(parts[d]):
             nxt = min([sy for sp, sy in starts if sp == pg and sy > y + 1], default=y + h + GROWMAX)
             top = min(y, a[2]) if j == 0 and a[0] == pg else y
@@ -720,31 +709,11 @@ def after_spans(pdf, order, parts, ids, tmp):
     return merged
 
 
-def before_spans(pdf, order, ids, lead, tmp):
-    """The before display(s) `ids`: from the first one's own number (less `lead`, its offset below the
-    display's top, measured in the after pdf) down to the next display's own number, page by page."""
-    fb, ft = frame_bottom()
-    first = own_anchor(pdf, ids[0], tmp)
-    nums = [d for d, _ in order]
-    nxt_id = nums[nums.index(ids[-1]) + 1] if nums.index(ids[-1]) + 1 < len(nums) else None
-    nxt = own_anchor(pdf, nxt_id, tmp) if nxt_id else None
-    lead = max(lead, 0)            # a number set above its display is the crop's top itself
-    spans, pg, top = [], first[0], first[2] - lead - LABELOFF - NEAR
-    while True:
-        bot = nxt[2] - lead - LABELOFF - NEAR if nxt and nxt[0] == pg else fb + LABELOFF
-        if bot <= top + 1:             # the next display opens this page: nothing of this one is on it
-            return spans
-        spans.append((pg, top, bot))
-        if (nxt and nxt[0] <= pg) or (not nxt and pg >= int(run("pdfinfo", pdf).stdout.split("Pages:")[1].split()[0])):
-            return spans
-        pg, top = pg + 1, ft - LABELOFF
-
-
-def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, aorder, aparts, bsrc, asrc):
+def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, aorder, aparts, bparts):
     """`key` is a label (`tex-fusion`, `<tex-fusion>`), a number of the AFTER (`16.4b`), or a range of
     them `first:last`.  The before half shows the same labels, found through `rev`'s own numbering; a
     range with none of its labels in `rev` is new, and its after half is shown alone.  A range whose
-    source or whose two crops did not change writes nothing and returns None: a pair of two equal
+    two crops did not change writes nothing and returns None: a pair of two equal
     pictures asks the reader to hunt for a difference that is not there."""
     lab_of = {d: l for d, l in aorder}
     id_of = {l: d for d, l in aorder}
@@ -756,7 +725,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     ai = [d for d, _ in aorder]
     ids = ai[ai.index(id_of[ends[0]]):ai.index(id_of[ends[-1]]) + 1]
     labels = [lab_of[d] for d in ids]
-    ca, apages = crop_parts(after_pdf, after_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
+    ca, apages = crop_parts(after_pdf, disp_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
     borders = [d for d, l in border if l in labels]
     name = os.path.join(out, f"key-{slug(key)}.png")
     if not borders:
@@ -765,16 +734,9 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
             caption_strip(name, name, caption)
         print(f"{key}: new in the after ({', '.join(ids)}), no label of it in {rev} -> {name}")
         return name
-    # a `rev` older than `src` in the `disp` metadata has none: then only the pixels can say
-    bs, as_ = [bsrc.get(d) for d in borders], [asrc.get(d) for d in ids]
-    if None not in bs + as_ and bs == as_:
-        print(f"{key}: unchanged, skipped (source of {', '.join(ids)} same as in {rev})")
-        return None
-    a0 = own_anchor(after_pdf, ids[0], tmp)
-    lead = a0[2] - aparts[ids[0]][0][1]
-    cb, bpages = crop_parts(before_pdf, before_spans(before_pdf, border, borders, lead, tmp), tmp, "lb", grow=True)
-    # to the ink first: the before's band grows to the gutter and the after's stops at its parts, so the
-    # same display cut from the two pdfs differs in its white margin alone
+    # only the pixels decide: a display whose source is unchanged still changes with its Lean statement
+    cb, bpages = crop_parts(before_pdf, disp_spans(before_pdf, border, bparts, borders, tmp), tmp, "lb")
+    # to the ink first: the same display cut from the two pdfs may differ in its white margin alone
     tb, ta = f"{tmp}/ltb.png", f"{tmp}/lta.png"
     emit("magick", cb, "-trim", "+repage", tb)
     emit("magick", ca, "-trim", "+repage", ta)
@@ -797,14 +759,13 @@ def cut_labels(keys, rev, before_pdf, after_pdf, out):
     tmp = tempfile.mkdtemp(prefix="diff-crop-label.")
     made, bad = [], []
     try:
-        aorder, aparts, _ = disp_query(ROOT, typ, False)
-        _, _, asrc = disp_query(ROOT, typ, True)
-        border, _, bsrc = disp_query(rev_tree(rev, tmp), typ, True)
+        aorder, aparts = disp_query(ROOT, typ)
+        border, bparts = disp_query(rev_tree(rev, tmp), typ)
         before_pdf = before_pdf or at_rev(rev, rel, binary=True)
         for k, cap in keys:
             try:
                 name = labelcrop(k, rev, before_pdf, after_pdf, typ, out, tmp, cap, border, aorder, aparts,
-                                 bsrc, asrc)
+                                 bparts)
                 if name:
                     made.append(name)
             except Refuse as e:
