@@ -300,9 +300,18 @@ theorem wlp_antitone_iff {A B : 𝒜} (R S : A ⟶ B) :
 /-- `Λ R = singletonMap ≫ E R`. -/
 public theorem Λ_eq_singleton_existsImage {A B : 𝒜} (R : A ⟶ B) :
     Λ R = singletonMap ≫ existsImage R := by
-  have h := Λ_absorption (Cat.id A) R
-  rw [Cat.id_comp] at h
-  exact h.symm
+  -- By `Λ`'s uniqueness, not as absorption at `S = 𝟙`: a proof citing `Λ_absorption` withholds this
+  -- `diag_rewrite` from absorption's own picture, which then cannot open its `%∋` beads.
+  have hmap : Map (singletonMap ≫ existsImage R) := map_comp (Λ_is_map' _) (Λ_is_map' _)
+  have heq : (singletonMap ≫ existsImage R) ≫ ∋ B = R := by
+    rw [Cat.assoc, existsImage_eps, ← Cat.assoc, singletonMap, Λ_eps_eq', Cat.id_comp]
+  exact (Λ_unique _ _ hmap heq).symm
+
+/-- A simple `F` is inside the one-person-set map composed with the image of `F∋`: `simple_le_Λ_eps`
+    with `Λ(F∋)` written as the composite `(𝟙%∋)E(F∋)`. -/
+public theorem simple_le_singleton_existsImage {A B : 𝒜} (F : A ⟶ PowerAllegory.powerObj B)
+    (hF : Simple F) : F ⊑ singletonMap ≫ existsImage (F ≫ ∋ B) :=
+  Λ_eq_singleton_existsImage (F ≫ ∋ B) ▸ simple_le_Λ_eps F hF
 
 /-- `E R = E (Λ R) ≫ bigUnion`. -/
 public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
