@@ -33,8 +33,11 @@ def jsonName (j : Json) : Except String Name := do
 
 /-- One read of the environment beyond `shared`. -/
 inductive Read where
-  /-- every constant concluding in `h`: a candidate bucket, a catalogue of lanes -/
+  /-- every constant concluding in `h`: a catalogue of lanes -/
   | head (h : Name)
+  /-- the constants concluding in `h` whose statement names every one of `must`, or a spelling a
+      bridge rewrites into it: the candidates a search tries -/
+  | scan (h : Name) (must : List Name)
   /-- every constant directly under the namespace `p` -/
   | pre (p : Name)
   /-- every theorem of the module `m` -/
@@ -49,6 +52,7 @@ inductive Read where
 
 def Read.json : Read → Json
   | .head h => .arr #["head", nameJson h]
+  | .scan h ms => .arr #["scan", nameJson h, .arr (ms.toArray.map nameJson)]
   | .pre p => .arr #["pre", nameJson p]
   | .module m => .arr #["module", nameJson m]
   | .thms => .arr #["thms"]
@@ -58,6 +62,7 @@ def Read.json : Read → Json
 def Read.ofJson (j : Json) : Except String Read := do
   match ← j.getArr? with
   | #[.str "head", n] => return .head (← jsonName n)
+  | #[.str "scan", n, .arr ms] => return .scan (← jsonName n) (← ms.toList.mapM jsonName)
   | #[.str "pre", n] => return .pre (← jsonName n)
   | #[.str "module", n] => return .module (← jsonName n)
   | #[.str "thms"] => return .thms
@@ -142,16 +147,5 @@ def envPrint (extra : UInt64) : CoreM EnvPrint := do
   p := { p with shared := mixHash (mixHash p.shared insts) printers }
   envPrintRef.set (some p)
   return p
-
-/-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
-    since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise. -/
-def EnvPrint.of (p : EnvPrint) (env : Environment) : Read → UInt64
-  | .head h => p.heads.getD h 0
-  | .pre q => p.pres.getD q 0
-  | .module m => p.modules.getD m 0
-  | .thms => p.thms
-  | .stmt n => (env.find? n).elim 1 fun ci => mixHash (hash n) (hash ci.type)
-  | .decl n => (env.find? n).elim 1 fun ci =>
-      mixHash (mixHash (hash n) (hash ci.type)) ((ci.value? (allowOpaque := true)).elim 0 hash)
 
 end Freyd.StrDiag

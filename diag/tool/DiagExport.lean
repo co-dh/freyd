@@ -1578,13 +1578,28 @@ def readsKey (decls : List Name) (rs : Array StrDiag.Read) : MetaM UInt64 := do
   let env ← getEnv
   for d in decls do unless env.contains d do throwError "no such declaration: {d}"
   let p ← Prof.phase "print" StrDiag.envPrintNow
-  return rs.foldl (fun h r => mixHash h (mixHash (hash r.json.compress) (p.of env r)))
+  rs.foldlM (fun h r => return mixHash h (mixHash (hash r.json.compress) (← StrDiag.readPrint p r)))
     (mixHash p.shared (← Prof.phase "rules" (rulesKey decls)))
 
 /-- The `reads:` line: the reads the drawing recorded, and their key now. -/
 def readsLine (decls : List Name) (rs : Array StrDiag.Read) : MetaM String :=
   return READS_PREFIX ++ (Json.mkObj [("key", .str (toString (← readsKey decls rs))),
     ("reads", .arr (rs.map (·.json)))]).compress ++ "\n"
+
+/-- The file's reads line: its key and reads, `none` for no file or one with no such line — a red
+    stub carries none, so it is redrawn.  A line that does not read back is an error naming the file. -/
+def storedReads (path : System.FilePath) : IO (Option (String × Array StrDiag.Read)) := do
+  if !(← path.pathExists) then return none
+  let some l := ((← IO.FS.readFile path).splitOn "\n").find? (·.startsWith READS_PREFIX) | return none
+  match Json.parse (l.drop READS_PREFIX.length).toString >>= fun j => do
+      return ((← j.getObjValAs? String "key"), ← (← j.getObjValAs? (Array Json) "reads").mapM StrDiag.Read.ofJson) with
+  | .ok r => return some r
+  | .error e => throw <| IO.userError s!"diag-export: {path}: the reads line does not read back: {e}; \
+      delete the file to redraw it"
+
+/-- Whether a file whose reads line is `stored` is still what those reads answer. -/
+def fresh (stored : Option (String × Array StrDiag.Read)) (decls : List Name) : MetaM Bool := do
+  return stored.map (·.1) == some (toString (← readsKey decls ((stored.map (·.2)).getD #[])))
 
 /-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `reads:` line, or
     a key that is no longer what those reads answer — printed one per line, in the order given, for
@@ -1609,22 +1624,13 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
     let mut stale := false
     for (n, decl, decls) in files do
       let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
-      -- The file's reads: `none` for no file, or one drawn before files carried them.  A red stub
-      -- carries none, so it is redrawn.
-      let stored ← if !(← path.pathExists) then pure none else
-        match ((← IO.FS.readFile path).splitOn "\n").find? (·.startsWith READS_PREFIX) with
-        | none => pure none
-        | some l => match Json.parse (l.drop READS_PREFIX.length).toString >>= fun j => do
-            return ((← j.getObjValAs? String "key"), ← (← j.getObjValAs? (Array Json) "reads").mapM StrDiag.Read.ofJson) with
-          | .ok r => pure (some r)
-          | .error e => throw <| IO.userError s!"diag-export --stale: {path}: the reads line does not \
-              read back: {e}; delete the file to redraw it"
+      let stored ← storedReads path
       -- THE KEY NOW, whether or not the file is there: a declaration that is gone ends the run.
       let ctx := StrDiag.declCtx env opts scopes decl
-      let key ← try Prod.fst <$> (Meta.MetaM.run' (readsKey decls ((stored.map (·.2)).getD #[]))).toIO ctx { env }
+      let ok ← try Prod.fst <$> (Meta.MetaM.run' (fresh stored decls)).toIO ctx { env }
         catch e => throw <| IO.userError s!"diag-export --stale: {n}: {e} — a picture drawn from \
           it is a picture of a statement that no longer exists.  Rename the note's selector"
-      unless stored.map (·.1) == some (toString key) do stale := true
+      unless ok do stale := true
     if stale then IO.println call
   return 0
 
@@ -1658,10 +1664,13 @@ def main (args : List String) : IO UInt32 := do
   -- failed with — every mode, because the question is the run's, not any one route's.
   let recordsMode := args.contains "--records"
   let staleMode := args.contains "--stale"
+  -- `--verify` draws and writes nothing: a picture its reads call fresh that draws otherwise is a
+  -- read the drawing did not record, and the run fails naming it.
+  let verifyMode := args.contains "--verify"
   let args := args.filter (fun a =>
     a != "--proof" && a != "--sig" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative" && a != "--graph"
-      && a != "--value" && a != "--records" && a != "--stale")
+      && a != "--value" && a != "--records" && a != "--stale" && a != "--verify")
   if args.isEmpty then IO.eprintln usage; return 2
   let t0 ← IO.monoNanosNow
   let kind := (["sig", "string", "circuit", "commutative", "graph", "type", "formula", "value",
@@ -1778,15 +1787,21 @@ def main (args : List String) : IO UInt32 := do
       return (← certLine decls) ++ (← readsLine decls (← StrDiag.takeReads)) ++ body
     -- The picture's reads start empty, and the call's declarations — the peers' too, which set the
     -- shared box — are the first of them.
+    -- Under `--verify`, whether the file on disk is fresh by its own reads, asked before the drawing.
+    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
+    let wasFresh ← if !verifyMode then pure false else do
+      let stored ← storedReads path
+      Prod.fst <$> (Meta.MetaM.run' (fresh stored (selDecls commutativeMode graphMode arg base))).toIO ctx { env }
     discard StrDiag.takeReads
     for n in if stringMode then call.splitOn "+" else [arg] do
       let (b, _) := parseArg n (circuitMode || stringMode || formulaMode)
       for d in selDecls commutativeMode graphMode n b do StrDiag.noteRead (.decl d)
     let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
     let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO
-    return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain)
+    return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain, wasFresh)
   -- The results are reported in ARGUMENT order.
   let mut failed : Array String := #[]
+  let mut wrong : Array String := #[]
   let mut prof : Array Prof.Line := #[]
   for ((arg, call), t) in jobs.zip tasks do
     let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
@@ -1798,10 +1813,11 @@ def main (args : List String) : IO UInt32 := do
     -- `--records` changes what goes to STDOUT, not what goes in the file, so a header naming it
     -- would tell the reader to regenerate with a command that prints JSON instead of the file.
     let cmd := " ".intercalate
-      (argv.filter fun a => a != "--records" && (a == call || !args.contains a))
-    let write (body : String) : IO Unit := do
-      IO.FS.writeFile path s!"// GENERATED by `diag-export` — do not edit; regenerate with\n\
+      (argv.filter fun a => a != "--records" && a != "--verify" && (a == call || !args.contains a))
+    let full (body : String) := s!"// GENERATED by `diag-export` — do not edit; regenerate with\n\
         //   ./scripts/diag-export {cmd}\n{body}"
+    let write (body : String) : IO Unit := do
+      IO.FS.writeFile path (full body)
       unless recordsMode do IO.println path.toString
     let record (field : String) (value : String) : IO Unit :=
       if recordsMode then
@@ -1811,17 +1827,23 @@ def main (args : List String) : IO UInt32 := do
     -- and a bead whose naturality nobody proved has a message naming the three statements it
     -- looked for.  THE DEFECT ALSO GOES ON THE PAGE: the note imports this file by name, so a
     -- selector that drew nothing still gets one — a red box holding the error — and the run fails.
-    let (res, ns, hb, subs) := t
+    let (res, ns, hb, subs, wasFresh) := t
     let tw ← IO.monoNanosNow
     match res with
     | .error ex =>
       IO.eprintln s!"diag-export: {arg}: {ex}"
-      unless sigMode do write (stubFile arg (toString ex))
+      unless sigMode || verifyMode do write (stubFile arg (toString ex))
       record "error" (toString ex)
       failed := failed.push arg
     | .ok text =>
-      if sigMode then IO.println text else write text
-      unless sigMode do record "file" path.toString
+      if sigMode then IO.println text
+      else if verifyMode then
+        if wasFresh && full text != (← IO.FS.readFile path) then
+          IO.eprintln s!"diag-export --verify: {path}: its reads call it fresh and it draws otherwise, \
+            so the drawing read something it did not record"
+          wrong := wrong.push arg
+      else write text
+      unless sigMode || verifyMode do record "file" path.toString
     -- `rest` is the panel less its named phases: reading the declaration, layout, rendering.
     let named := subs.foldl (· + ·.2.ns) 0
     let ok := res matches .ok _
@@ -1832,9 +1854,12 @@ def main (args : List String) : IO UInt32 := do
     prof := prof.push { sel := arg, phase := "write", ns := (← IO.monoNanosNow) - tw }
   profWrite s!"panels={jobs.length} failed={failed.size}" prof
   unless failed.isEmpty do
-    IO.eprintln s!"diag-export: drew a red stub for {failed.size} selector(s): \
-      {" ".intercalate failed.toList}"
-  return if failed.isEmpty then 0 else 1
+    IO.eprintln s!"diag-export: {if verifyMode then "could not draw" else "drew a red stub for"} \
+      {failed.size} selector(s): {" ".intercalate failed.toList}"
+  unless wrong.isEmpty do
+    IO.eprintln s!"diag-export --verify: {wrong.size} fresh picture(s) draw otherwise: \
+      {" ".intercalate wrong.toList}"
+  return if failed.isEmpty && wrong.isEmpty then 0 else 1
 
 end Freyd.DiagExport
 

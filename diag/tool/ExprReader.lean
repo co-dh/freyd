@@ -1899,7 +1899,6 @@ def sqlName (head : Name) : String := s!"'{(toString head).replace "'" "''"}'"
     conclude in it, that this process imports and can apply.  An inductive concludes in a sort and a
     constructor has no row, so neither is one. -/
 def bucket (head : Name) : MetaM (Array Name) := do
-  noteRead (.head head)
   let env ← getEnv
   let buckets ← match ← headBuckets.get with
     | some bs => pure bs
@@ -1987,6 +1986,37 @@ def bridgeAliases : MetaM (Std.HashMap Name (Array Name)) := do
   let a := acc.fold (fun m c t => m.insert c t.toList.toArray) {}
   aliasRef.set (some a)
   return a
+
+/-- The first of `must` a candidate whose statement uses `has` does not name, in its own spelling
+    or a source spelling a bridge rewrites into it: `none` for a candidate the search tries. -/
+def lacks (al : Std.HashMap Name (Array Name)) (must : List Name) (has : NameSet) : Option Name :=
+  must.find? fun m => !has.contains m && !(al.getD m #[]).any has.contains
+
+/-- `must` in the one order a `Read` is written in. -/
+def mustList (must : NameSet) : List Name := (must.toArray.qsort (·.toString < ·.toString)).toList
+
+/-- `candidates head` for a search filtered by `must`, RECORDED as the read the picture made: only
+    the ones `lacks` lets through are tried, so a theorem the filter drops is none of its reads. -/
+def searchCandidates (head : Name) (must : NameSet) : MetaM (Array (Name × NameSet)) := do
+  noteRead (.scan head (mustList must))
+  candidates head
+
+/-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
+    since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise.  A `scan`
+    is summed over the candidates the search's own filter (`lacks`) lets through. -/
+def readPrint (p : EnvPrint) (r : Read) : MetaM UInt64 := do
+  let env ← getEnv
+  let stmt (n : Name) := (env.find? n).elim 1 fun ci => mixHash (hash n) (hash ci.type)
+  match r with
+  | .head h => return p.heads.getD h 0
+  | .scan h ms =>
+    let al ← bridgeAliases
+    return (← candidates h).foldl (init := 0) (fun a (n, has) => if (lacks al ms has).isSome then a else a + stmt n)
+  | .pre q => return p.pres.getD q 0
+  | .module m => return p.modules.getD m 0
+  | .thms => return p.thms
+  | .stmt n => return stmt n
+  | .decl n => return mixHash (stmt n) (((env.find? n).bind (·.value? (allowOpaque := true))).elim 0 hash)
 
 /-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
     about, ACROSS THE BRIDGES — the normal form the two propositions are compared in, because a
@@ -2105,14 +2135,14 @@ structure Search where
   /-- Whether a heartbeat budget cut any candidate short: such a search may answer otherwise on a
       warmer cache, so its verdict is not one to remember. -/
   cut : IO.Ref Bool
-  /-- Every conclusion head whose candidate bucket the search read: what its answer depends on,
+  /-- Every candidate scan the search made (`Read.scan`): what its answer depends on,
       with the declarations those candidates reach (`depText`). -/
-  heads : IO.Ref NameSet
+  scans : IO.Ref (Std.HashSet Read)
 
 /-- A search at its start. -/
 def Search.new (head : Option Name) : IO Search := do
   return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[], cut := ← IO.mkRef false
-           heads := ← IO.mkRef {} }
+           scans := ← IO.mkRef {} }
 
 /-- One candidate not taken, kept only where it is ABOUT this family — its statement names the
     family's head — because the whole bucket is every theorem of the repo with that conclusion. -/
@@ -2192,7 +2222,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   let rw ← bridge br want
   let al ← bridgeAliases
   let mut hit : Option (Name × Expr) := none
-  let ms := must.toList
+  let ms := mustList must
   -- THE THEOREM CITED FOR A BEAD IS ONE ABOUT THE BEAD'S OWN CONSTANT, and every other candidate
   -- is tried only after those.  The bucket is every theorem with this conclusion, so it holds both
   -- the family's own naturality and the closure theorems (`strictNatural_recip`) that conclude it
@@ -2211,8 +2241,8 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   -- statements are letter for letter the same.  Only the candidates ABOUT the family are ordered:
   -- a closure theorem's conclusion is the shortest there is (`StrictNatural G F (fun A => (φ A)°)`,
   -- every part of it bound), so ordering the whole bucket would cite one of those for every bead.
-  s.heads.modify (·.insert head)
-  let cs ← candidates head
+  s.scans.modify (·.insert (.scan head ms))
+  let cs ← searchCandidates head must
   let (about, rest) := match s.head with
     | some h => cs.partition fun (c : Name × NameSet) =>
         c.2.contains h || (al.getD h #[]).any c.2.contains
@@ -2239,7 +2269,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
     Core.checkMaxHeartbeats "the naturality search"
     -- The candidate is spelled as the INDEX stores it and `must` as the bridges rewrite it, so a
     -- constant is also met by any source spelling a bridge could have rewritten into it.
-    if let some m := ms.find? (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then
+    if let some m := lacks al ms has then
       if seen.isEmpty then s.passOver has s!"dropped {n}: lacks {m}"
       continue
     let some ci := env.find? n | continue

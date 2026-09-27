@@ -1063,10 +1063,11 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
   let env ← getEnv
   let search : MetaM (Option (Name × Bool)) := do
     let mut cs := #[]
-    for h in ← passHeads do cs := cs ++ (← candidates h)
+    for h in ← passHeads do cs := cs ++ (← searchCandidates h must)
+    let ms := mustList must
     for (n, has) in cs do
       Core.checkMaxHeartbeats "the pass search"
-      if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
+      if (lacks al ms has).isSome then continue
       let some ci := env.find? n | continue
       let saved ← Meta.saveState
       let attempt : MetaM (Option Bool) := do
@@ -1254,11 +1255,12 @@ def envPrintNow : MetaM EnvPrint := do
 
 /-- ONE CACHE FOR EVERY CHECKOUT.  An entry is keyed by its question and by the declarations its
     answer read (`depText`), never by the checkout or the exporter build, so a worktree reuses what
-    another computed exactly where the answer would come out the same. -/
+    another computed exactly where the answer would come out the same.  `scans`, not the old
+    `verdicts`: an entry names the candidate scans it made, where those named whole buckets. -/
 def cacheRoot : IO System.FilePath := do
   let some h ← IO.getEnv "HOME"
-    | throw <| IO.userError "diag-export: HOME is unset, so the verdict cache ~/.cache/diag-export/verdicts has no path"
-  return System.FilePath.mk h / ".cache" / "diag-export" / "verdicts"
+    | throw <| IO.userError "diag-export: HOME is unset, so the verdict cache ~/.cache/diag-export/scans has no path"
+  return System.FilePath.mk h / ".cache" / "diag-export" / "scans"
 
 def failPrint : MetaM String := do
   if let some f ← failPrintRef.get then return f
@@ -1276,29 +1278,32 @@ def failPrint : MetaM String := do
   failPrintRef.set (some f)
   return f
 
-/-- `depText` per process, keyed on what fixes its text: the heads, the declarations walked and
+/-- `depText` per process, keyed on what fixes its text: the scans, the declarations walked and
     whether the answer was found. -/
-initialize depTextRef : IO.Ref (Std.HashMap (Array Name × Array Name × Bool) String) ← IO.mkRef {}
+initialize depTextRef : IO.Ref (Std.HashMap (Array Read × Array Name × Bool) String) ← IO.mkRef {}
 
 /-- WHAT ONE ANSWER DEPENDS ON, so an entry is reused exactly where the search would answer the same:
-    for every head whose bucket the search read, the bucket's members by name — a theorem added
-    anywhere joins a bucket and can win first-hit — the bridges by name, and `declsHash` of the
+    for every scan the search made, the candidates its filter let through by name — a theorem added
+    that the filter admits can win first-hit — the bridges by name, and `declsHash` of the
     question's constants and of `uses`, the found proof's, which is everything a unification of
     the two can unfold.  A FAILURE read more: every candidate's statement, the bridges' own, and
     `failPrint` — a spider stands for every search the code could have run over what it saw. -/
-def depText (heads : Array Name) (q : Expr) (uses : Array Name) (found : Bool) : MetaM String := do
-  let hs := sortNames heads
+def depText (scans : Array Read) (q : Expr) (uses : Array Name) (found : Bool) : MetaM String := do
+  let ss := scans.qsort (·.json.compress < ·.json.compress)
   let mut roots := q.getUsedConstants ++ uses
   let mut lines := #[s!"lean {Lean.versionString}"]
-  for h in hs do
-    let b := sortNames (← bucket h)
+  let al ← bridgeAliases
+  for r in ss do
+    let .scan h ms := r | throwError "diag-export: {r.json.compress} is no candidate scan, so no verdict read it"
+    noteRead r
+    let b := sortNames ((← candidates h).filterMap fun (n, has) => if (lacks al ms has).isSome then none else some n)
     unless found do roots := roots ++ b.push h
-    lines := lines.push s!"head {h}: {" ".intercalate (b.toList.map toString)}"
+    lines := lines.push s!"{r.json.compress}: {" ".intercalate (b.toList.map toString)}"
   let br ← bridgeNames
   unless found do roots := roots ++ br ++ (← congrNames)
   roots := (sortNames roots).eraseReps
   for r in roots do noteRead (.stmt r)
-  let k := (hs, roots, found)
+  let k := (ss, roots, found)
   if let some t := (← depTextRef.get)[k]? then return t
   lines := lines ++ br.map (s!"bridge {·}") |>.push s!"decls {← Prof.phase "decls" (declsHash roots)}"
   unless found do lines := lines.push (← failPrint)
@@ -1341,7 +1346,8 @@ def cacheEntry (slot : Slot) (path : System.FilePath) : MetaM (Option Cached) :=
   let names (k : String) : MetaM (Array Name) := do
     match (← get (α := Array Json) k).mapM jsonName with | .ok hs => pure hs | .error e => fail e
   let v ← get (α := Json) "verdict"
-  unless (← get (α := String) "deps") == (← depText (← names "heads") slot.q (← names "uses") !v.isNull) do
+  let scans ← match (← get (α := Array Json) "scans").mapM Read.ofJson with | .ok ss => pure ss | .error e => fail e
+  unless (← get (α := String) "deps") == (← depText scans slot.q (← names "uses") !v.isNull) do
     return none
   let passed ← get (α := Array String) "passed"
   if v.isNull then return some { verdict := none, proof := none, passed }
@@ -1376,11 +1382,11 @@ initialize storeCount : IO.Ref Nat ← IO.mkRef 0
 /-- `c` written for `slot`, whole or not at all: a sibling process reads the file the moment it is
     named.  A verdict whose proof has metavariables or metadata is not written, since it could not
     be rebuilt. -/
-def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
+def cacheStore (slot : Slot) (scans : Std.HashSet Read) (c : Cached) : MetaM Unit := do
   let fvs := (← getLCtx).getFVars
-  let hs := heads.toArray
+  let ss := scans.toArray
   let mut uses := #[]
-  let mut fields := [("key", toJson slot.key), ("heads", .arr (hs.map nameJson)), ("passed", toJson c.passed)]
+  let mut fields := [("key", toJson slot.key), ("scans", .arr (ss.map (·.json))), ("passed", toJson c.passed)]
   match c.verdict, c.proof with
   | none, _ => fields := fields ++ [("verdict", .null)]
   | some v, some (want, pf) =>
@@ -1393,7 +1399,7 @@ def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
     let some ((w, p), (nodes, _)) := enc.run (#[], {}) | return
     fields := fields ++ [("verdict", verdictJson v), ("nodes", .arr nodes), ("want", toJson w), ("proof", toJson p)]
   | some _, none => throwError "diag-export: a verdict reached with no proof to cache: {verdictJson c.verdict.get!}"
-  let deps ← depText hs slot.q uses c.verdict.isSome
+  let deps ← depText ss slot.q uses c.verdict.isSome
   fields := fields ++ [("uses", .arr (uses.map nameJson)), ("deps", toJson deps)]
   let path := slot.dir / s!"{hash deps}.json"
   IO.FS.createDirAll slot.dir
@@ -1547,7 +1553,7 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       if let some sl := slot then
         if found.isSome || !(← s.cut.get) then
           let pr ← if found.isSome then proof.get else pure none
-          cacheStore sl (← s.heads.get) { verdict := found, proof := pr, passed := ← s.passed.get }
+          cacheStore sl (← s.scans.get) { verdict := found, proof := pr, passed := ← s.passed.get }
       pure (found, (← proof.get).map (·.1))
   if let some v := fp.1 then return v
   -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
