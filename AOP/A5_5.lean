@@ -105,10 +105,10 @@ public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A �
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
     of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ A`
     (not just maps). -/
-public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    (I.α ≫ X = F.map X ≫ f) ↔ X = relCata f :=
-  (relCata_UP_step1 I f X).trans <| (relCata_UP_step2 I f X).trans <|
-    (relCata_UP_step3 I f X).trans <| (relCata_UP_step4 I f X).trans (relCata_UP_step5 I f X)
+public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R :=
+  (relCata_UP_step1 I R X).trans <| (relCata_UP_step2 I R X).trans <|
+    (relCata_UP_step3 I R X).trans <| (relCata_UP_step4 I R X).trans (relCata_UP_step5 I R X)
 
 /-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
 public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :

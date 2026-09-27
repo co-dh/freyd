@@ -701,7 +701,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM (5.12), p.121, the proof above one row per step, each row drawn from the theorem proving it.
 #disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt,
   Thm[#leanf("Freyd.Alg.relCata_UP") \
-    #src[a relation `X` out of `T` satisfies the defining equation of the fold of `f` exactly when it is `⦇f⦈`]],
+    #src[a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
     // lean:AOP.A5_5.relCata_UP@e4a4905f
   table.header([*formula* — each equation of the chain], [*reason*]),
 
