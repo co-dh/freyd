@@ -707,28 +707,25 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#lean-chain(
     Sub("Freyd.Alg.relCata_UP_of_comm",
       gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` is `⦇R⦈`],
-      (none, "Freyd.Alg.relCata_UP_step1.lhs", src[the transpose of `X`]),
-      (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α°α=𝟙`: `α` is an iso; the hypothesis `αX=F(X)R`]),
+      (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
+      (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5a99c7f6
-      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[fusion at the map `α°` — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[cancellation, backwards: `X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn; fusion at the map
-        `F(`$frac(#[`X`], ∋)$`)` — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` a map, $frac(#[`fS`], ∋)$`=f`$frac(#[`S`], ∋)$ — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F` a functor, `F(`$frac(#[`X`], ∋)$`)` a map —
+        @relator-defn, @pow-laws]),
     ),
     (
       (IMP, ("Freyd.Alg.relCata_UP_fold",),
-        src[the chain times `α`, with `αα°=𝟙`, is the fold equation of the map $frac(#[`F(∋)R`], ∋)$ at
-          $frac(#[`X`], ∋)$; its fold is the unique map satisfying it — @initial-defn]),
+        src[fold uniqueness — @initial-defn]),
       (IMP, ("Freyd.Alg.relCata_UP_of_comm",),
-        src[cancellation `X=`$frac(#[`X`], ∋)$`∋`, and `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc]),
+        src[cancellation — @cata-map-calc]),
     ),
     Sub("Freyd.Alg.relCata_cancel",
       gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],
       // lean:AOP.A5_5.relCata_cancel@957f4846
       (none, ("Freyd.Alg.relCata_cancel",),
-        src[`⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc; the map fold's equation at
-          $frac(#[`F(∋)R`], ∋)$ — @initial-defn; cancellation $frac(#[`S`], ∋)$`∋=S` — @pow-laws;
-          `F(RS)=F(R)F(S)` — @relator-defn]),
+        src[fold equation, cancellation — @cata-map-calc, @initial-defn, @pow-laws, @relator-defn]),
     ),
   )],
 )]<cata-map-proof>
@@ -808,10 +805,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       // lean:AOP.A6_3.hylo_fixed@07ee2714
       (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
       (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
-      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
-      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
-        `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
-      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α°α=𝟙`: `α` is an iso]),
+      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
+      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
+      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5a99c7f6
     ),
   )],
@@ -819,18 +815,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     Sub("Freyd.Alg.hylo_le_of_prefixed",
       gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
         satisfies the associated recursion inequation],
-      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[the body at `Y:=⦇S⦈°\X`, behind `⦇S⦈°`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
+      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
       (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all — and `F` monotone]),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[the hypothesis `S°F(X)R⊑X`]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
     ),
     (
       (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix",),
-        src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+        src[`S·⊣S\` — @adj-all]),
       (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
-        src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
-          @adj-all once more gives the header]),
+        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @mu-laws, @adj-all]),
       // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
     ),
   )],

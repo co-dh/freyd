@@ -288,13 +288,10 @@
     + ": the exporter draws both sides and the relation between them from the one declaration")
   p
 }
-// A reason under its panel has the panel's width only, and an inline raw is one unbreakable word
-// that ran into the next step's reason: here a raw may break between any two characters.
-#let why-under(why) = {
-  show raw.where(block: false): it => if it.text.clusters().len() < 2 { it } else {
-    it.text.clusters().map(c => raw(c)).join(sym.zws) }
-  why
-}
+// A reason stands under its panel only when it fits the panel's width; a longer one would run into
+// the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
+// are listed under the row, where the circuits stood.
+#let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 #let lean-chain(..args, circuit: false) = {
   let a = args.pos()
@@ -339,10 +336,21 @@
           stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
           align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
       }
-      // `circuit: false`: each reason under the panel of its step, the circuits not drawn;
-      // `circuit: true`: the panels bare, and under them one circuit row per step carrying its reason.
-      hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) =>
-        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else { why-under(s.at(2)) })))
+      // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
+      // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
+      // them one circuit row per step carrying its reason.
+      let pw = w.map(x => x * k)
+      let (tags, n) = ((), 0)
+      for (s, x) in r.zip(pw) {
+        if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 } else { tags.push(none) }
+      }
+      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) =>
+        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
+          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) })))
+      if n > 0 {
+        block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
+          ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
+      }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
       if circuit { for s in r {

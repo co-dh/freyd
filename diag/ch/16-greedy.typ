@@ -18,7 +18,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
  carried and the recursion runs on values alone #h(4pt) ]],
   lean-chain(
     (none, "Freyd.Alg.greedy_dp_step1.rhs",
-      src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @greedy-defn]),
+      src[`H≜⦇T⦈°⦇h⦈` — @greedy-defn]),
     // dp-shrink row: Theorem 10.1
     // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
     // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
@@ -27,7 +27,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
     // the object wire.
     (EQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
-      src[Proposition 10.1 at `T=[V₁,V₂]`, `h=[U₁,U₂]`, `Q=Q₁+Q₂`, `V₂V₁°=𝟘`]),
+      src[Proposition 10.1, `V₂V₁°=𝟘`]),
   ),
 )]<greedy-laws>
 
@@ -44,7 +44,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      // lean:AOP.A10_1.greedy_dp_lower_step1@66f7230b
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-mu]),
+    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
   ),
 )]<greedy-lower>
 
@@ -57,21 +57,21 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain((
     (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
     (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
-      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-mu]),
+      src[`H°=h°F(H°)T` — @hylo-mu]),
      // lean:AOP.A10_1.greedy_dp_upper_step1@861e793a
     (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
-      src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
+      src[`T`#frc([`T°`])`⊑∈`]),
      // lean:AOP.A10_1.greedy_dp_upper_step2@4a189407
     (SQ, "Freyd.Alg.greedy_dp_upper_step3.rhs", src[`∈est(Q)⊑Q°` — @est-up]),
      // lean:AOP.A10_1.greedy_dp_upper_step3@c17d0163
   ), (
     (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
-      src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
+      src[`QF(H)h⊑F(H)hR` conversed]),
      // lean:AOP.A10_1.greedy_dp_upper_step4@0c4dd106
     (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
      // lean:AOP.A10_1.greedy_dp_upper_step5@49e70aa8
     (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
-      src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
+      src[`h°F(R°)h⊑R°`]),
      // lean:AOP.A10_1.greedy_dp_upper_step6@8d3afe63
     (SQ, "Freyd.Alg.greedy_dp_upper.rhs", src[`R` transitive]),
   )),
@@ -87,15 +87,13 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain(
     (none, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.rhs.inl",
-      src[off `ran V₁ ∪ ran V₂` the set is empty and `est(Q₁+Q₂)` of it is nothing; not a
-       tabulated row — the `V₂` branch is the same]),
+      src[empty off `ran V₁ ∪ ran V₂`]),
      // lean:AOP.A10_1.greedy_disjoint_ranges_step1@631ac87a
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step2.rhs.inl",
-      src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
-        have disjoint ranges — @dp-disjoint]),
+      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁` — @dp-disjoint]),
      // lean:AOP.A10_1.greedy_disjoint_ranges_step2@f2908d30
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step3.rhs.inl",
-      src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`, not a tabulated row: an extreme of left summands is one]),
+      src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`]),
      // lean:AOP.A10_1.powerRel_inl_est@2ceb36e3 lean:AOP.A10_1.greedy_disjoint_ranges_step3@3a192617
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step4.rhs.inl", src[`inl[U₁,U₂]=U₁`]),
   ),
@@ -136,18 +134,18 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   lean-chain((
     (none, "Freyd.Alg.RelSet.Detab.expand_V_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
-      src[definition of `expand`: `(istab outr→fill π₁,snoc)` as its two guarded arms]),
+      src[definition of `expand`]),
      // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
     (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step2.rhs",
-      src[conditionals: composition distributes over the two arms]),
+      src[conditionals distribute]),
      // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
   ), (
-    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", src[`fill V°=fill` (Exercise 10.4)]),
+    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", src[`fill V°=fill` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
-    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", src[`snoc V°⊑snoc∪(π₁V°)` (Exercise 10.4)]),
+    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
     (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step5.rhs",
-      src[definition of `expand`; the guard `nottab` on `π₁V°` dropped]),
+      src[definition of `expand`, guard dropped]),
      // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
   )),
 )]<entab-expand-V>
