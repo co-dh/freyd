@@ -323,7 +323,7 @@ def heldLanes (p : Diagram) : Array Bool :=
 /-- The clear space between two port labels on one edge: one character, a word space. -/
 def EGAP : Float := LCW
 
-/-- AN EDGE'S PORT LABELS ARE ONE ROW OF TEXT.  Each is centred on its wire, so two wires closer
+/-- AN EDGE'S PORT LABELS ARE ONE ROW OF TEXT.  Each but the westmost is centred on its wire, so two wires closer
     than half their two labels' widths set the labels into each other — `G` under the `(` of
     `(e,w)`.  `edge` is the lanes reaching that edge west→east, the object wire (`xo`, labelled
     `ol`) east of them all; every wire east of a tight pair moves east by the deficit, so the order,
@@ -337,7 +337,9 @@ def spreadEdge (ls : Array Lane) (xo : Float) (edge : Array Nat) (ol : String) :
       | some j => (ls[j]!.x, ls[j]!.label)
       | none => (xo, ol)
     if a.label.isEmpty || bl.isEmpty then continue
-    let d := LCW * (a.label.length + bl.length).toFloat / 2.0 + EGAP - (bx - a.x)
+    -- The westmost lane's label is set WEST of it (`dpanel`), so it reaches no further east than it.
+    let aw := if i == 0 then 0 else a.label.length
+    let d := LCW * (aw + bl.length).toFloat / 2.0 + EGAP - (bx - a.x)
     if d > 1e-6 then
       ls := ls.map fun o => if o.x > a.x + 1e-6 then { o with x := roundTo 3 (o.x + d) } else o
       xo := roundTo 2 (xo + d)

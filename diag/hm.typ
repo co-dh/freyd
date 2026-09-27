@@ -174,12 +174,14 @@
 /// `p` and not `(x, "top")`: a panel body is drawn in its own coordinates and is not told the height.
 /// `axis: "x"` turns the pair a quarter — `+1` right of the RIGHT edge — for a wire that leaves
 /// through the panel's side, which is what all three of IntroString p.74's figures do.
-#let hm-port(p, label, dir: 1, col: black, gap: 0.28, axis: "y") = d.content(
-  (p.at(0) + (if axis == "x" { dir * gap } else { 0 }),
+/// `west: true` sets the name WEST of the wire, its text ending `LDX` short of it — the leftmost
+/// lane's, which then reads like the lane names `dpanel` writes west of every lane.
+#let hm-port(p, label, dir: 1, col: black, gap: 0.28, axis: "y", west: false) = d.content(
+  (p.at(0) + (if axis == "x" { dir * gap } else if west { -0.12 } else { 0 }),
    p.at(1) + (if axis == "x" { 0 } else { dir * gap })),
   text(col)[#label],
   anchor: if axis == "x" { if dir > 0 { "west" } else { "east" } }
-          else if dir > 0 { "south" } else { "north" },
+          else { (if dir > 0 { "south" } else { "north" }) + (if west { "-east" } else { "" }) },
 )
 
 /// A region name, muted, inside the region.  Named ONCE in a family's first picture — the book's own

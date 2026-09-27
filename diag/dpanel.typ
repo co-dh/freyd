@@ -477,12 +477,17 @@
   // lane above and from the exporter, which name the same verdicts.  Absent, it is `"strict"`.
   for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
                            bg: fb-ALLC, nat: b.at(5, default: "strict")) }
+  // THE LEFTMOST LANE'S NAME IS WRITTEN WEST OF IT, right-aligned, at each edge: the margin west of
+  // that lane is reserved for its name (`columns` in StringDiagram.lean), and `spreadEdge` counts it.
+  let wx(es) = { let xs = es.map(e => e.at(0)).filter(x => x != xo); if xs == () { none } else { calc.min(..xs) } }
+  let (wt, wb) = (wx(top), wx(bot))
   for (x, l) in top {
     if not dcovers(defn, h, x) {
-      hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { palf(pal, l) }) } }
+      hm-port((if x == xo { xat(h) } else { x }, h), l, west: x == wt,
+              col: if x == xo { otc } else { palf(pal, l) }) } }
   for (x, l) in bot {
     if not dcovers(defn, 0, x) {
-      hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1,
+      hm-port((if x == xo { xat(0) } else { x }, 0), l, dir: -1, west: x == wb,
               col: if x == xo { obc } else { palf(pal, l) }) } }
   for (x0, x1, y, l) in defn { dbrace(x0, x1, y, l, h, pal) }
   // The right side carries only the object edge, so its ports take `BCOL` with no lookup.
