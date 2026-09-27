@@ -81,14 +81,14 @@ public theorem relCata_cancel_recip (hFr : F.PreservesRecip) (I : InitialAlgebra
   step; `hylo_fixed` is their composition. -/
 
 /-- Step 1: the relator splits the composite, `F(⦇S⦈°⦇R⦈) = F(⦇S⦈°)F(⦇R⦈)`. -/
-public theorem hylo_fixed_step1 (I : InitialAlgebra F) {A B : 𝒜}
+public theorem hylo_fixed_step1 (_hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
     S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R
       = S° ≫ F.map ((relCata S)°) ≫ F.map (relCata R) ≫ R := by
   rw [F.map_comp, Cat.assoc]
 
 /-- Step 2: the fold's cancellation `F(⦇R⦈)R = α⦇R⦈` (`relCata_cancel` at `R`). -/
-public theorem hylo_fixed_step2 (I : InitialAlgebra F) {A B : 𝒜}
+public theorem hylo_fixed_step2 (_hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
     S° ≫ F.map ((relCata S)°) ≫ F.map (relCata R) ≫ R
       = S° ≫ F.map ((relCata S)°) ≫ I.α ≫ relCata R := by
@@ -116,7 +116,7 @@ public theorem hylo_fixed_step4 (I : InitialAlgebra F) {A B : 𝒜}
 public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) :
     S° ≫ F.map ((relCata S)° ≫ relCata R) ≫ R = (relCata S)° ≫ relCata R :=
-  ((hylo_fixed_step1 I R S).trans (hylo_fixed_step2 I R S)).trans
+  ((hylo_fixed_step1 hFr I R S).trans (hylo_fixed_step2 hFr I R S)).trans
     ((hylo_fixed_step3 hFr I R S).trans (hylo_fixed_step4 I R S))
 
 /-! ### The leastness chain (note §11.6.4b)
