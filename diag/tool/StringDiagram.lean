@@ -1009,6 +1009,35 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     s.restore
   return none
 
+/-- `h` MOVES THROUGH AN ALGEBRA SQUARE `ty`: each side two factors, `h` bare on one and `F(h)` on
+    the other at the opposite end, the neighbours free to differ (`α⦇R⦈ = F(⦇R⦈)R`), the side the
+    panel shows having `nb` beside `h` — below it when `below`.  `some true` where the statement,
+    read left to right, moves `h` from below its neighbour to above it. -/
+def moveOf? (ty h nb : Expr) (below : Bool) : MetaM (Option Bool) := do
+  let mut ty ← instantiateMVars ty
+  let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
+  for _ in [0:8] do
+    if rel ty then break
+    match ← Meta.unfoldDefinition? ty with
+    | some t => ty := t.headBeta
+    | none => break
+  unless rel ty do return none
+  let args := ty.getAppArgs
+  let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
+  if l.size != 2 || r.size != 2 then return none
+  let mapArg? (e : Expr) : Option Expr :=
+    if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
+  let i := if below then 0 else 1
+  for (lhs, s, o) in [(true, l, r), (false, r, l)] do
+    let (a, b) := (s[i]!, o[1 - i]!)
+    if (mapArg? a).isSome == (mapArg? b).isSome then continue
+    let st ← Meta.saveState
+    if (← Meta.isDefEq ((mapArg? a).getD a) h) && (← Meta.isDefEq ((mapArg? b).getD b) h)
+        && (← Meta.isDefEq s[1 - i]! nb) then
+      return some ((if lhs then i else 1 - i) == 1)
+    st.restore
+  return none
+
 /-- THE BEAD LETS A RELATION DOWN, AND A BINDER SAYS SO.  A hypothesis of the drawn statement — or
     the predicate being drawn, applied to its own binders — that is the square `F(X)φ ⊑ φG(X)` of
     the bead `φ` (`passOf?`): `MonoAlg φ R` is one, `Distributes f R` is not (`Λ(F(∋)f)` is not
@@ -1047,15 +1076,13 @@ def passHeads : MetaM (Array Name) := do
   passHeadsRef.set (some out)
   return out
 
-/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
-    (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
-    `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
-    `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
-def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
+/-- The search `passThm` and `moveThm` share: every candidate under `heads` naming the constants of
+    `φ` and `Y`, opened with metavariables, its body answered by `m`, its open arguments discharged. -/
+def squareThm (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option Bool)) :
+    MetaM (Option (Name × Bool)) := do
   let br ← bridges
   let mφ ← mustOfFamily br φ
   -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
-
   let must := (← mustOfFamily br Y).toList.foldl (·.insert ·) mφ
   if must.isEmpty then return none
   let s ← Search.new none
@@ -1063,7 +1090,7 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
   let env ← getEnv
   let search : MetaM (Option (Name × Bool)) := do
     let mut cs := #[]
-    for h in ← passHeads do cs := cs ++ (← candidates h)
+    for h in heads do cs := cs ++ (← candidates h)
     for (n, has) in cs do
       Core.checkMaxHeartbeats "the pass search"
       if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
@@ -1073,8 +1100,7 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
         let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
         let (args, bis, body) ← Meta.forallMetaTelescope
           (ci.type.instantiateLevelParams ci.levelParams lvls)
-        let some (X, up) ← passOf? body φ | return none
-        unless ← Meta.isDefEq X Y do return none
+        let some up ← m body | return none
         unless ← discharge br s args bis 1 #[] do return none
         let pf ← instantiateMVars (mkAppN (.const n lvls) args)
         if pf.hasExprMVar then return none
@@ -1088,6 +1114,20 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
     IO.eprintln s!"diag-export: the pass search for {← Meta.ppExpr Y} above {← Meta.ppExpr φ} \
       stopped on `{← e.toMessageData.toString}`: the bead draws its default mark"
     return none
+
+/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
+    (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
+    `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
+    `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
+def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
+  squareThm φ Y (← passHeads) fun body => do
+    let some (X, up) ← passOf? body φ | return none
+    return if ← Meta.isDefEq X Y then some up else none
+
+/-- A THEOREM OF THE ENVIRONMENT MOVING `h` THROUGH ITS NEIGHBOUR `nb` (`moveOf?`), searched as
+    `passThm` searches, under an equation as well as a `⊑`. -/
+def moveThm (h nb : Expr) (below : Bool) : MetaM (Option (Name × Bool)) := do
+  squareThm h nb ((← passHeads).push ``Eq) (moveOf? · h nb below)
 
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
@@ -1119,6 +1159,29 @@ def settlePass (d : Diagram) : MetaM Diagram := do
             hit := some (n, ← label Y, false)
             dir := up
     if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some dir }
+  -- A BEAD THAT MOVES THROUGH AN ALGEBRA SQUARE (`α⦇R⦈ = F(⦇R⦈)R`) wears the triangle itself: the
+  -- algebra beside it changes name as it passes, so only the moving bead is the same on both sides.
+  let lctx ← getLCtx
+  let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
+  for i in [0 : rows.size] do
+    let r := rows[i]!
+    if r.tri.isSome || r.nat.any (· != .spider) then continue
+    let some h := r.core | continue
+    unless inScope h do continue
+    let nbs := (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
+      ++ (if i > 0 then #[(rows[i - 1]!, false)] else #[])
+    let mut hit : Option ((Name × String × Bool) × Bool) := none
+    for (n, below) in nbs do
+      if hit.isSome then break
+      let some nb := n.core | continue
+      unless inScope nb do continue
+      for dcl in lctx do
+        if hit.isSome || dcl.isImplementationDetail || !(← Meta.isProp dcl.type) then continue
+        if let some up ← Meta.withNewMCtxDepth (moveOf? dcl.type h nb below) then
+          hit := some ((dcl.userName, ← label nb, true), up)
+      if hit.isNone then
+        if let some (thm, up) ← moveThm h nb below then hit := some ((thm, ← label nb, false), up)
+    if let some (p, up) := hit then rows := rows.set! i { r with pass := some p, tri := some up }
   return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
@@ -1921,6 +1984,12 @@ def recipArg? (r : Expr) : MetaM (Option Expr) := do
     | none => return none
   | _ => return none
 
+/-- A `°` WIRE RUNS ONLY BESIDE A SEGMENT WHOSE SOURCE IS ITS TARGET; elsewhere the `°` is the label's.
+    `(−)°` is contravariant, so over a non-endo segment the object line would change type at its ends. -/
+def endoSeg (e : Expr) : MetaM Bool := do
+  let (x, y) ← homEnds e
+  Meta.withNewMCtxDepth (Meta.isDefEq x y)
+
 /-- `e` as a catalogue lane `F`'s action carrying a CONVERSE, the converse being the functor
     `recipFunctor : 𝒜 → 𝒜ᵒᵖ`: `F(z)°` is `F` then `°` (`outer`), `F(z°)` is `°` then `F` on `𝒜ᵒᵖ`
     (`inner`), `F(z°)°` the conjugate `recipConj F` (both).  Read by the head constants and CONFIRMED
@@ -1947,6 +2016,7 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   if (wiresOf R).isEmpty then return none
   let inner ← recipArg? r
   if outer.isNone && inner.isNone then return none
+  unless ← endoSeg e do return none
   -- A ONE-SIDED `F(z)°`/`F(z°)` expands too, never one bead wearing a `°`: "E(R)° should be
   -- expanded with the converse functor" (the author, on §13.1's `⊆Λ(R)°`).
   let z := inner.getD r
@@ -2038,7 +2108,8 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- lane of it carries the span, so the `°` stands west of them all and beside every bead.
   if let some (z, fs) ← conversedComposite? e then
     let d ← (← interp regionTy cat objVars vpass none z).flip
-    if d.lanes.isEmpty then return ← vstack regionTy cat objVars vpass expect (← recipFactors fs)
+    if d.lanes.isEmpty || !(← endoSeg e) then
+      return ← vstack regionTy cat objVars vpass expect (← recipFactors fs)
     let sp : Conv := { first := 0, last := (d.rows.size : Int) - 1, outer := true, inner := false,
                        whole := true }
     return { d with lanes := d.lanes.map fun l => { l with conv := l.conv.push sp } }
@@ -2465,7 +2536,7 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let b ← scanStmt regionTy cat objVars z
     return nest R (o, i) (if o != i then Scan.rev b else b)
   if let some (z, fs) ← conversedComposite? e then
-    if (← interp regionTy cat objVars #[] none z).lanes.isEmpty then
+    if (← interp regionTy cat objVars #[] none z).lanes.isEmpty || !(← endoSeg e) then
       return (← (← recipFactors fs).mapM (scanStmt regionTy cat objVars · split)).flatten
     return #[.conv (Scan.rev (← scanStmt regionTy cat objVars z))]
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
