@@ -756,10 +756,7 @@ attribute [diag_rewrite] mem_leftDiv_eq
 attribute [diag_rewrite] Allegory.recip_comp
 -- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
 -- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
-attribute [diag_rewrite] RelSet.SL.arm₂_graph
--- §9.2's algebra is the note's `[base,step]` (B&dM p.225: `edit = ⦇[base, step]⦈`).
-attribute [diag_rewrite] RelSet.Edit.editAlg_junc
--- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
+attribute [diag_rewrite] RelSet.SL.arm₂_graph-- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
 -- second arm carries the `X`, never a box `F(X)` in front of the junction.
 attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
 -- The same slide at the tip-tree, where the relator is `𝟙+X²`: `F(X)[tip,bin] = [tip,(X×X)bin]`.
@@ -889,9 +886,11 @@ open Lean PrettyPrinter in
   | `($_ $args*) => `($(mkIdent `op) $args*)
   | _ => `($(mkIdent `op))
 open Lean PrettyPrinter in
+-- B&dM p.225 writes the algebra as its junction, `edit = ⦇[base, step]⦈` (`editAlg_junc`).  A
+-- spelling and not a `diag_rewrite`: the bead keeps its term, whose naturality `editAlg_laxNatural` states.
 @[app_unexpander RelSet.Edit.editAlg] def unexpandEditAlg : Unexpander
-  | `($_ $args*) => `($(mkIdent `editAlg) $args*)
-  | _ => `($(mkIdent `editAlg))
+  -- ONE name, closed up as the note sets a junction: a list literal would print `[base, step]`.
+  | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
@@ -1240,6 +1239,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditStepFn : Unexpander
   | `($_ $args*) => `($(mkIdent `step) $args*)
   | _ => `($(mkIdent `step))
+-- A projection applied to a point is the note's `π₁`/`π₂` applied to it: `V(π₂(p),π₂(q))`.
+open Lean PrettyPrinter in
+@[app_unexpander Prod.fst] def unexpandProdFst : Unexpander
+  | `($_ $x) => `($(mkIdent `π₁) $x)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Prod.snd] def unexpandProdSnd : Unexpander
+  | `($_ $x) => `($(mkIdent `π₂) $x)
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.inlistP] def unexpandInlistP : Unexpander
   | `($_ $xs $q) => `($q ∈ $xs)

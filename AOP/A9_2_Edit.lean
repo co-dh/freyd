@@ -781,7 +781,12 @@ public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
 public theorem editAlg_junc :
     editAlg (Char := Char)
       = junc (sumCop (dL Unit) ⟨Op Char × (dPair Char).carrier⟩) base step :=
-  hom_ext fun u v => by cases u <;> exact Iff.rfl
+  hom_ext fun u v => by
+    cases u with
+    | inl d =>
+      cases d; simp [editAlg, base, junc, graph, sumCop]
+      exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
+    | inr q => simp [editAlg, step, junc, graph, sumCop]
 
 /-- **edit-defn**: `empty`, the coreflexive on `(xs,ys)` with both lists empty. -/
 @[expose] public def empty : dPair Char ⟶ dPair Char :=

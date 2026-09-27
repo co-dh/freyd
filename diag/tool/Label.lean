@@ -779,7 +779,11 @@ partial def bodyLabel (s : FVarId) (body₀ f : Expr) : MetaM String := do
     -- carrier's empty structure, whatever term writes it: a constructor (`wrap s`, `wrap ()` — the
     -- unit value in it or not is a spelling) or a quotient of one (`nilBag`), which is why the test
     -- is on the SOURCE and not on the body's head.
-    if !(← hasStrands (← s.getType)) then return "nil"
+    -- …except a NULLARY constructor, which IS a named constant of the carrier and is written by its
+    -- own name: `Nat.zero` is B&dM's `zero` in `length≜⦇[zero,π₂ succ]⦈`, not a list's `nil`.
+    if !(← hasStrands (← s.getType)) then
+      if body.isConst then if let some n ← ctorName? body then return n
+      return "nil"
     if isCtor && !body.containsFVar s then return "nil"
     if isCtor && (body.find? fun x => projIndex (.fvar s) x == some 0).isSome
         && (body.find? fun x => projIndex (.fvar s) x == some 1).isSome then
@@ -1110,17 +1114,29 @@ def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
     Returns the head (the arrow, printed by its own unexpander at its own arity) and the points. -/
 def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
   unless e.getAppFn.isConst do return none
+  -- AN ARROW OR AN OBJECT HAS NO POINTS: what its unexpander drops are PARAMETERS the note leaves
+  -- off on purpose (`R` for `R(w)`, `expand` for `expand(n,tb,nl,blank)`).  Only a statement or a
+  -- value — the arrow already applied — has points to lose.
+  -- A STATEMENT is asked first: `homEnds?` answers yes for a relation applied to its two points too.
+  unless ← Meta.isProp e do
+    if (← homEnds? e).isSome || (← Meta.isType e) then return none
   let args := e.getAppArgs
   let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
   let point (i : Nat) : MetaM Bool := do
     let a := args[i]!
     let ty ← Meta.inferType a
     if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
-    if (← Meta.isProp ty) || (← Meta.isType a) || (← isObjType ty) || (← homEnds? a).isSome then
+    if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
       return false
+    -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
+    -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
+    -- own category, so it would never count as a point.
+    unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
     return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
   let mut k := args.size
-  while k > 0 && (← point (k - 1)) do k := k - 1
+  while k > 0 do
+    unless ← point (k - 1) do break
+    k := k - 1
   if k == args.size then return none
   let hd := mkAppN e.getAppFn (args.extract 0 k)
   unless (← PrettyPrinter.delab e).raw.structEq (← PrettyPrinter.delab hd).raw do return none
