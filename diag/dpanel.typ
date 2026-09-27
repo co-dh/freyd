@@ -466,13 +466,16 @@
     // another strand sweeps that row west of this lane.
     // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
     if nmd.contains(i) {
-      // A west bead label on this lane holds the row, so the name drops one label height below it.
-      let wb = beads.filter(b => west(b) and calc.abs(lx - l.at(0)) < 1e-6)
-      let ny0 = dnamey(lanes, l, kb)
-      // Clearance is the two MEASURED half-heights plus a hair: a tall glyph (`𝟙`, `[`) outgrows `LLH`.
-      let hh = t => measure(text(t)).height / 0.8cm / 2
-      let ny = wb.fold(ny0, (y, b) => { let c = hh(nm) + hh(b.at(1)) + 0.06
-        if calc.abs(b.at(0) - y) < c { b.at(0) - c } else { y } })
+      // Any lane's name can reach a west bead label, not only the leftmost lane's: test the MEASURED
+      // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
+      let sz = t => measure(block(text(top-edge: "ascender", bottom-edge: "descender", t)))
+      let (wn, hn) = { let m = sz(text(9pt)[#nm]); (m.width / 0.8cm, m.height / 0.8cm / 2) }
+      let ny = beads.filter(west).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
+        let m = sz(text[#b.at(1)])
+        let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12
+        let c = hn + m.height / 0.8cm / 2 + 0.06
+        if (l.at(0) - 0.12 - wn < br + 0.06 and l.at(0) > br - m.width / 0.8cm - 0.06
+          and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
       let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
         and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
