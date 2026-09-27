@@ -69,7 +69,7 @@ in @mu-defn.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@ba090704
+    // lean:AOP.A9_1.dynamic_programming@58bc6d9f
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -121,17 +121,17 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@5992be6d
+     // lean:AOP.A9_1.dynamic_programming_upper@68f9a1dc
   // two rows: nine panels in one row shrink the fractions past reading
   lean-chain((sub: "Freyd.Alg.dynamic_programming_upper_steps1to3",
     gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`], steps: (
-     // lean:AOP.A9_1.dynamic_programming_upper_steps1to3@caa05589
+     // lean:AOP.A9_1.dynamic_programming_upper_steps1to3@b5a0fdb5
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
     (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step2@11432c5a
+     // lean:AOP.A9_1.dynamic_programming_upper_step2@5d42b26b
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
       src[`T`#frc([`T°`])`⊑∈`: #frc([`T°`]) a map, #frc([`T°`])`∋=T°` — @pow-laws]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3a@d6d3fb7f
@@ -211,7 +211,7 @@ in @mu-defn.
      answer of `H` to the same input]],
   lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps3to6",
     gloss: src[from an answer of `H`, the thinned step's answer is reached through `H`'s parts, a `Q°` step to a candidate, and that candidate's answer], steps: (
-     // lean:AOP.A9_1.dynamic_programming_thin_steps3to6@6b571ebd
+     // lean:AOP.A9_1.dynamic_programming_thin_steps3to6@aa56309b
     (none, "Freyd.Alg.dynamic_programming_thin_step3.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
@@ -228,7 +228,7 @@ in @mu-defn.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps7to8",
     gloss: src[the hypothesis on `Q` turns the `Q°` step into an `R°` step in front of rebuilding by `F(M)h`], steps: (
-     // lean:AOP.A9_1.dynamic_programming_thin_steps7to8@1b15c694
+     // lean:AOP.A9_1.dynamic_programming_thin_steps7to8@ed33437b
     (none, "Freyd.Alg.dynamic_programming_thin_step6.rhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step7.rhs",
       src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]),

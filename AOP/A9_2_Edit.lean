@@ -745,10 +745,10 @@ public theorem edit_laws :
       = (graph (editFn (Char := Char)))° := by
     rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
-  have key := dynamic_programming_thin (F := F Unit (Op Char)) (F_preservesRecip Unit (Op Char))
+  have key := dynamic_programming_thin (F := F Unit (Op Char))
     (initial Unit (Op Char)) (h := graph con) (T := editAlg (Char := Char)) (R := R Char)
     (Q := Q Char) (graph_map con) edit_mono_recip R_recip_trans
-    (by simp only [H]; rw [hH]; exact edit_thin_condition)
+    (by simp only [ThinCondition, H]; rw [hH]; exact edit_thin_condition)
   simp only [H] at key; rwa [hH] at key
 
 /-! ## `edit-laws`, third row: Proposition 9.1 at the `step` summand
