@@ -1342,10 +1342,10 @@
 // THE FORMULA'S SIGN GOES UNDER THE PICTURE'S: the display states one law twice, once in strokes and
 // once in symbols, and the reader drops from one sign to the other to match the sides.
 // `s: auto` fills the column, so the box is as wide as a definition box beside it; 24pt is the inset.
+// `pair-fill` is that scale on its own, for a picture below that must match the pair's size.
+#let pair-fill(sq, sd, w) = (w - 24pt - 34pt) / (measure(P(sq, s: 100%)).width + measure(P(sd, s: 100%)).width) * 100%
 #let pair(sq, sd, f, s: 100%) = layout(avail => {
-  let s = if s != auto { s } else {
-    (avail.width - 24pt - 34pt) / (measure(P(sq, s: 100%)).width + measure(P(sd, s: 100%)).width) * 100%
-  }
+  let s = if s != auto { s } else { pair-fill(sq, sd, avail.width) }
   let body = grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s))
   let (px, fe) = (hm-sepx(sd), capeqx(f))
   if px == none or fe == none { return capbox(body, f) }

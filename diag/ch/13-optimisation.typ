@@ -467,14 +467,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
 // functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
 // the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
-#let mon-hm-l = lean("Freyd.Alg.MonoAlg.lhs")
-#let mon-hm-r = lean("Freyd.Alg.MonoAlg.rhs")
+// ONE call, so the two sides share a box and line up on the bead they share.
+#let mon-hm = lean("Freyd.Alg.MonoAlg.lhs", "Freyd.Alg.MonoAlg.rhs")
 
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
   leancd("Freyd.Alg.MonoAlg"),
-  row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
+  mon-hm,
  [`F(R)φ⊑φR` #src[]],
 )
 // lean:AOP.A7_2.MonoAlg@26944450
@@ -488,7 +488,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // lean:AOP.A7_2.Distributes@e061e29e
 
 `+` distributes over `≤`, at the point level #h(4pt)
-`min(xs)+min(ys)=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
+`min(xs)+min(ys)` is a least element of `{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
 `min≜est(≤)`.
 ]]<dist-defn>
 
@@ -502,18 +502,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
 // `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
-#disp[#align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
-  pair(
-    leancd("Freyd.Alg.Distributes"),
-    row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
- [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
-    s: auto,
-  ),
-  capbox(
-    leancd("Freyd.Alg.RelSet.plus_distributes_le"),
-    [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
-  ),
-))
+#disp[#layout(avail => {
+  let (sq, sd) = (leancd("Freyd.Alg.Distributes"), row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)))
+  // The example square is drawn at the pair's scale, so the two squares are the same size.
+  let s = pair-fill(sq, sd, avail.width)
+  align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
+    pair(sq, sd, [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]], s: s),
+    capbox(
+      P(leancd("Freyd.Alg.RelSet.plus_distributes_le"), s: s),
+      [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
+    ),
+  ))
+})
 // lean:AOP.A7_2.Distributes@e061e29e
 // lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
 ]<dist-str>

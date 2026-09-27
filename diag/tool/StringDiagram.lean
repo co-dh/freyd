@@ -576,6 +576,11 @@ def fileOf (body : String) (nat : String := "") : String :=
 def Row.pin (r : Row) : Nat :=
   if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1
 
+/-- HOW MUCH STRUCTURE A BEAD HAS: the lanes it touches, above it and below it.  Of two beads a
+    display could line up on, the one with more of the picture around it says more by standing
+    still, so it outranks `Row.pin`, which only breaks a tie between two of one size. -/
+def Row.size (r : Row) : Nat := r.src.ws.size + r.tgt.ws.size
+
 
 /-- WHERE A STATEMENT'S PARTS STAND, decided ONCE over every part of it the run draws — the two
     sides a relation symbol joins, asked for whole or one file at a time, or the branches of them
@@ -601,12 +606,14 @@ def placement (ps : Array Diagram) : Placement := Id.run do
   for k in [0 : ps.size] do
     let b := ps[k]!
     let (n, m) := (b.rows.size, slots.size)
-    -- The weight of row `i` on slot `j`: its bead's pin when a part already has that bead there,
-    -- ten times more when that part is the NEIGHBOUR, whose shared beads the gate holds level.
+    -- The weight of row `i` on slot `j`: its bead's size, then its pin (`Row.pin` < 4), when a part
+    -- already has that bead there; more than every other match together when that part is the
+    -- NEIGHBOUR, whose shared beads the gate holds level.
+    let pin (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    let tot : Int := (List.range n).foldl (· + pin ·) 0
     let w (i j : Nat) : Int :=
       let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
-      let pin : Int := b.rows[i]!.pin + 1
-      if hits.any (·.1 + 1 == k) then 100 * pin else if hits.isEmpty then 0 else 10 * pin
+      if hits.any (·.1 + 1 == k) then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
     -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
     let ix (i j : Nat) := i * (m + 1) + j
