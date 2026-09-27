@@ -288,6 +288,13 @@
     + ": the exporter draws both sides and the relation between them from the one declaration")
   p
 }
+// A reason under its panel has the panel's width only, and an inline raw is one unbreakable word
+// that ran into the next step's reason: here a raw may break between any two characters.
+#let why-under(why) = {
+  show raw.where(block: false): it => if it.text.clusters().len() < 2 { it } else {
+    it.text.clusters().map(c => raw(c)).join(sym.zws) }
+  why
+}
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 #let lean-chain(..args, circuit: false) = {
   let a = args.pos()
@@ -335,7 +342,7 @@
       // `circuit: false`: each reason under the panel of its step, the circuits not drawn;
       // `circuit: true`: the panels bare, and under them one circuit row per step carrying its reason.
       hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) =>
-        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else { s.at(2) })))
+        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else { why-under(s.at(2)) })))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
       if circuit { for s in r {
