@@ -91,6 +91,27 @@ subscript.
   // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
 )]<pow-laws>
 
+// Rows 5, 6, 9, 13, 14 of @pow-laws, each drawn whole from its own declaration; a row with
+// hypotheses draws its conclusion.  Row 10 (`Λ_of_map`) is missing: it lives in a bare power allegory,
+// where `E` is no lane (`existsImageFunctor` needs an unguarded one), so its `𝟙%∋` has no naturality.
+#disp[#grid(columns: 5, column-gutter: 8pt, row-gutter: 6pt, align: center + bottom,
+  lean("Freyd.Alg.Λ_eps_eq'"),
+  lean("Freyd.Alg.simple_le_Λ_eps"),
+  lean("Freyd.Alg.Λ_fusion"),
+  lean("Freyd.Alg.Λ_eq_singleton_existsImage"),
+  lean("Freyd.Alg.Λ_absorption"),
+  src[#leanf("Freyd.Alg.Λ_eps_eq'")],
+  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
+  src[#leanf("Freyd.Alg.simple_le_Λ_eps")],
+  // lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe
+  src[#leanf("Freyd.Alg.Λ_fusion")],
+  // lean:AOP.A4_6.Λ_fusion@9d7bda13
+  src[#leanf("Freyd.Alg.Λ_eq_singleton_existsImage")],
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  src[#leanf("Freyd.Alg.Λ_absorption")],
+  // lean:AOP.A4_6.Λ_absorption@e87bd8f2
+)]<pow-laws-hm>
+
 == `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
 
 // The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
