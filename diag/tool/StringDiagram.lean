@@ -1209,23 +1209,43 @@ structure Cached where
   proof : Option (Expr × Expr)
   passed : Array String
 
-/-- What EVERY answer depends on, once per process: the exporter's own code (the hash of the code
-    `verdict` can run, `verdictCodeRef`, and the Lean it runs on), every instance by name and statement — a new
-    one anywhere can change what `discharge` synthesises — the spelling bridges by name, and the
-    congruence lemmas simp runs them with.  Its hash names the cache directory (`cacheSlot`). -/
-initialize toolPrintRef : IO.Ref (Option String) ← IO.mkRef none
+/-- What a FAILURE depends on beyond its candidates, once per process: the code the search ran
+    (`verdictCodeRef`), every instance by name and statement — a new one anywhere can change what
+    `discharge` synthesises — and the congruence lemmas simp runs the bridges with.  A found proof is
+    `Meta.check`ed again on load, so none of this is part of its key. -/
+initialize failPrintRef : IO.Ref (Option String) ← IO.mkRef none
 
-/-- `verdictCodeHash verdict`, set by the `initialize` after `verdict`. -/
+/-- `declsHash #[verdict]`, set by the `initialize` after `verdict`. -/
 initialize verdictCodeRef : IO.Ref (Option UInt64) ← IO.mkRef none
 
-/-- Each module's olean hash, read once per process. -/
-initialize oleanHashRef : IO.Ref (Std.HashMap Name String) ← IO.mkRef {}
-
-def oleanHashOnce (m : Name) : IO String := do
-  if let some h := (← oleanHashRef.get)[m]? then return h
-  let h ← oleanHash m
-  oleanHashRef.modify (·.insert m h)
-  return h
+/-- The hash of every declaration `roots` reach — a type, a definition's value, an `implemented_by`
+    or `partial` body, an `initialize` action; a theorem by its statement alone — outside the
+    toolchain, which the keys name by version.  A name with macro scopes (an `initialize`'s) is left
+    out, since its scope moves with any edit above. -/
+def declsHash (roots : Array Name) : CoreM UInt64 := do
+  let env ← getEnv
+  let mut seen : NameSet := {}
+  let mut todo := roots
+  let mut hs : Array UInt64 := #[]
+  while h : todo.size > 0 do
+    let n := todo[todo.size - 1]
+    todo := todo.pop
+    if seen.contains n then continue
+    seen := seen.insert n
+    let some ci := env.find? n | throwError "diag-export: {n}, reached from {roots}, names no constant"
+    if let some i := env.getModuleIdxFor? n then
+      if [`Init, `Std, `Lean, `Lake].contains env.header.moduleNames[i.toNat]!.getRoot then continue
+    let (es, more) : Array Expr × Array Name := match ci with
+      | .defnInfo d => (#[d.type, d.value], #[])
+      | .opaqueInfo d => (#[d.type, d.value], #[])
+      | .inductInfo d => (#[d.type], d.ctors.toArray)
+      | .ctorInfo d => (#[d.type], #[d.induct])
+      | c => (#[c.type], #[])
+    hs := hs.push (es.foldl (fun a e => mixHash a (hash e)) (if n.hasMacroScopes then 0 else hash n))
+    let impl := [Compiler.implementedByAttr.getParam? env n, some (n ++ `_unsafe_rec), getInitFnNameFor? env n]
+    todo := todo ++ more ++ ((impl.filterMap id).filter env.contains).toArray
+    unless ci matches .thmInfo _ do todo := todo ++ es.flatMap (·.getUsedConstants)
+  return (hs.qsort (· < ·)).foldl mixHash 7
 
 def sortNames (ns : Array Name) : Array Name := ns.qsort (·.toString < ·.toString)
 
@@ -1240,77 +1260,65 @@ def congrNames : MetaM (Array Name) := do
     a ++ (l.map (·.theoremName)).toArray
   return sortNames cs
 
-def cacheRoot : System.FilePath := ".lake/build/diag-verdicts"
+/-- ONE CACHE FOR EVERY CHECKOUT.  An entry is keyed by its question and by the declarations its
+    answer read (`depText`), never by the checkout or the exporter build, so a worktree reuses what
+    another computed exactly where the answer would come out the same. -/
+def cacheRoot : IO System.FilePath := do
+  let some h ← IO.getEnv "HOME"
+    | throw <| IO.userError "diag-export: HOME is unset, so the verdict cache ~/.cache/diag-export/verdicts has no path"
+  return System.FilePath.mk h / ".cache" / "diag-export" / "verdicts"
 
-def toolPrint : MetaM String := do
-  if let some f ← toolPrintRef.get then return f
+def failPrint : MetaM String := do
+  if let some f ← failPrintRef.get then return f
   let env ← getEnv
   -- The code `verdict` runs, not every `diag.tool` module's olean: a layout edit cannot change a
-  -- verdict, and keying on it emptied the cache on every exporter change.
+  -- verdict.
   let some code ← verdictCodeRef.get
     | throwError "diag-export: verdictCodeRef is unset: the `initialize` after `verdict` in diag/tool/StringDiagram.lean did not run"
   let typed (tag : String) (n : Name) : MetaM String := do
     let some ci := env.find? n | throwError "diag-export: {tag} {n} names no constant of the environment"
     return s!"{tag} {n} {hash ci.type}"
   let inst := sortNames ((Meta.instanceExtension.getState env).instanceNames.toList.map (·.1)).toArray
-  let f := "\n".intercalate ([s!"lean {Lean.versionString}", s!"verdict code {code}"] ++ (← inst.mapM (typed "instance")).toList
-    ++ (← bridgeNames).toList.map (s!"bridge {·}") ++ (← (← congrNames).mapM (typed "congr")).toList)
-  -- An entry under another exporter's hash is never read again (`cacheSlot` names the directory by
-  -- this one), so it is removed here, once per process, rather than left to accumulate.
-  if ← cacheRoot.pathExists then
-    for d in ← cacheRoot.readDir do
-      -- Sibling processes remove the same directory at once, so a file already gone is the goal
-      -- reached, not an error: it failed a parallel cold run's panels with "no such file".
-      if d.fileName != toString (hash f) then
-        match ← (IO.FS.removeDirAll d.path).toBaseIO with
-        | .ok () | .error (.noFileOrDirectory ..) => pure ()
-        | .error e => throwError "diag-export: removing the stale verdict cache {d.path}: {e}"
-  toolPrintRef.set (some f)
+  let f := "\n".intercalate ([s!"verdict code {code}"] ++ (← inst.mapM (typed "instance")).toList
+    ++ (← (← congrNames).mapM (typed "congr")).toList)
+  failPrintRef.set (some f)
   return f
 
-/-- `depText` per process, keyed on the sorted heads and the modules declaring the question's
-    constants: the environment, the buckets, the bridges and the congruences do not change within
-    one, so these fix the text. -/
-initialize depTextRef : IO.Ref (Std.HashMap (Array Name × Array Nat) String) ← IO.mkRef {}
+/-- `depText` per process, keyed on what fixes its text: the heads, the declarations walked and
+    whether the answer was found. -/
+initialize depTextRef : IO.Ref (Std.HashMap (Array Name × Array Name × Bool) String) ← IO.mkRef {}
 
-/-- WHAT ONE ANSWER DEPENDS ON, beyond `toolPrint`: for every head whose bucket the search read,
-    the bucket's members by name — a theorem added anywhere joins a bucket and can win first-hit —
-    and the olean hash of every repository module in the import closure of the modules declaring
-    those members, the question's own constants and the bridges.  A unification unfolds only
-    constants of the terms it compares, and those live in that closure, so a module outside it
-    cannot change the answer. -/
-def depText (heads : Array Name) (q : Expr) : MetaM String := do
-  let env ← getEnv
-  let qMods := ((q.getUsedConstants.filterMap env.getModuleIdxFor?).map (·.toNat)).qsort (· < ·) |>.eraseReps
-  let k := (sortNames heads, qMods)
+/-- WHAT ONE ANSWER DEPENDS ON, so an entry is reused exactly where the search would answer the same:
+    for every head whose bucket the search read, the bucket's members by name — a theorem added
+    anywhere joins a bucket and can win first-hit — the bridges by name, and `declsHash` of the
+    question's constants and of `uses`, the found proof's, which is everything a unification of
+    the two can unfold.  A FAILURE read more: every candidate's statement, the bridges' own, and
+    `failPrint` — a spider stands for every search the code could have run over what it saw. -/
+def depText (heads : Array Name) (q : Expr) (uses : Array Name) (found : Bool) : MetaM String := do
+  let hs := sortNames heads
+  let mut roots := q.getUsedConstants ++ uses
+  let mut lines := #[s!"lean {Lean.versionString}"]
+  for h in hs do
+    let b := sortNames ((← candidates h).map (·.1))
+    unless found do roots := roots ++ b.push h
+    lines := lines.push s!"head {h}: {" ".intercalate (b.toList.map toString)}"
+  let br ← bridgeNames
+  unless found do roots := roots ++ br ++ (← congrNames)
+  roots := (sortNames roots).eraseReps
+  let k := (hs, roots, found)
   if let some t := (← depTextRef.get)[k]? then return t
-  let mut consts := q.getUsedConstants ++ (← bridgeNames) ++ (← congrNames)
-  let mut lines := #[]
-  for h in sortNames heads do
-    let b := (← candidates h).map (·.1)
-    consts := consts ++ b.push h
-    lines := lines.push s!"head {h}: {" ".intercalate ((sortNames b).toList.map toString)}"
-  let mut todo := consts.filterMap env.getModuleIdxFor?
-  let mut seen : Std.HashSet Nat := {}
-  while h : todo.size > 0 do
-    let i := todo[todo.size - 1]
-    todo := todo.pop
-    if seen.contains i.toNat then continue
-    seen := seen.insert i.toNat
-    for im in env.header.moduleData[i.toNat]!.imports do
-      if let some j := env.getModuleIdx? im.module then todo := todo.push j
-  for m in ← repoModules env do
-    if let some i := env.getModuleIdx? m then
-      if seen.contains i.toNat then lines := lines.push s!"{m} {← oleanHashOnce m}"
+  lines := lines ++ br.map (s!"bridge {·}") |>.push s!"decls {← Prof.phase "decls" (declsHash roots)}"
+  unless found do lines := lines.push (← failPrint)
   let t := "\n".intercalate lines.toList
   depTextRef.modify (·.insert k t)
   return t
 
-/-- One question's place in the cache: its file, the question as text — the region, the family
-    and the categories, closed over the local context, so a hypothesis in scope (evidence,
-    `hypVerdict`) is part of it — and the closed question itself, whose constants `depText` reads. -/
+/-- One question's place in the cache: its directory, holding one entry per dependency text, the
+    question as text — the region, the family and the categories, closed over the local context,
+    so a hypothesis in scope (evidence, `hypVerdict`) is part of it — and the closed question
+    itself, whose constants `depText` reads. -/
 structure Slot where
-  path : System.FilePath
+  dir : System.FilePath
   key : String
   q : Expr
 
@@ -1321,30 +1329,28 @@ def cacheSlot (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM (Option S
   let q := mkAppN (← close regionTy) #[← close φ]
   let some (i, (nodes, _)) := (exprNodes q).run (#[], {}) | return none
   let key := (Json.mkObj [("q", toJson i), ("nodes", .arr nodes), ("cat", .arr (cat.map nameJson))]).compress
-  let dir := toString (hash (← toolPrint))
-  return some { path := cacheRoot / dir / s!"{hash key}.json", key, q }
+  return some { dir := (← cacheRoot) / toString (hash key), key, q }
 
 def verdictJson (v : Verdict) : Json :=
   Json.mkObj [("mark", (v.mark.map (·.key)).elim .null .str), ("lean", .arr (v.lean.map nameJson))]
 
-/-- The entry for `slot`, or `none` where there is none for this exact question, or its `depText`
-    is no longer the one stored.  A found verdict comes back only with its proof term REBUILT and
+/-- The entry at `path` for `slot`, or `none` where it is for another question or its `depText` is
+    no longer the one stored.  A found verdict comes back only with its proof term REBUILT and
     `Meta.check`ed against the proposition it was found for; an entry that does not read or does
     not check is an error naming the file, never a miss the search quietly answers instead. -/
-def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
-  let path := slot.path
-  let key := slot.key
-  unless ← path.pathExists do return none
+def cacheEntry (slot : Slot) (path : System.FilePath) : MetaM (Option Cached) := do
   let fail {α} (why : String) : MetaM α :=
-    throwError "diag-export: verdict cache {path}: {why}; delete {cacheRoot} to rebuild it"
+    throwError "diag-export: verdict cache {path}: {why}; delete {slot.dir} to rebuild it"
   let j ← match Json.parse (← IO.FS.readFile path) with | .ok j => pure j | .error e => fail e
   let get {α} [FromJson α] (k : String) : MetaM α := match j.getObjValAs? α k with
     | .ok a => pure a | .error e => fail s!"field {k}: {e}"
-  unless (← get (α := String) "key") == key do return none
-  let heads ← match (← get (α := Array Json) "heads").mapM jsonName with | .ok hs => pure hs | .error e => fail e
-  unless (← get (α := String) "deps") == (← depText heads slot.q) do return none
-  let passed ← get (α := Array String) "passed"
+  unless (← get (α := String) "key") == slot.key do return none
+  let names (k : String) : MetaM (Array Name) := do
+    match (← get (α := Array Json) k).mapM jsonName with | .ok hs => pure hs | .error e => fail e
   let v ← get (α := Json) "verdict"
+  unless (← get (α := String) "deps") == (← depText (← names "heads") slot.q (← names "uses") !v.isNull) do
+    return none
+  let passed ← get (α := Array String) "passed"
   if v.isNull then return some { verdict := none, proof := none, passed }
   let mark ← match v.getObjValAs? String "mark" with
     | .ok k => match #[Mark.strict, .lax, .oplax, .maps, .mapsOplax, .spider].find? (·.key == k) with
@@ -1358,9 +1364,18 @@ def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
   let fvs := (← getLCtx).getFVars
   let want := want.instantiateRev fvs
   let pf := pf.instantiateRev fvs
-  Meta.check pf
+  Prof.phase "check" (Meta.check pf)
   unless ← Meta.isDefEq (← Meta.inferType pf) want do fail "the stored proof does not prove its proposition"
   return some { verdict := some { mark, lean }, proof := some (want, pf), passed }
+
+/-- The entry for `slot` whose dependencies are the environment's now, if one is stored.  A write
+    in flight is a `.tmp` file, and is not read. -/
+def cacheLoad (slot : Slot) : MetaM (Option Cached) := do
+  unless ← slot.dir.pathExists do return none
+  for d in ← slot.dir.readDir do
+    unless d.path.extension == some "json" do continue
+    if let some c ← cacheEntry slot d.path then return some c
+  return none
 
 /-- The writes this process has made, for a temporary name no other write of it shares. -/
 initialize storeCount : IO.Ref Nat ← IO.mkRef 0
@@ -1369,23 +1384,26 @@ initialize storeCount : IO.Ref Nat ← IO.mkRef 0
     named.  A verdict whose proof has metavariables or metadata is not written, since it could not
     be rebuilt. -/
 def cacheStore (slot : Slot) (heads : NameSet) (c : Cached) : MetaM Unit := do
-  let path := slot.path
   let fvs := (← getLCtx).getFVars
   let hs := heads.toArray
-  let mut fields := [("key", toJson slot.key), ("heads", .arr (hs.map nameJson)), ("deps", toJson (← depText hs slot.q)),
-    ("passed", toJson c.passed)]
+  let mut uses := #[]
+  let mut fields := [("key", toJson slot.key), ("heads", .arr (hs.map nameJson)), ("passed", toJson c.passed)]
   match c.verdict, c.proof with
   | none, _ => fields := fields ++ [("verdict", .null)]
   | some v, some (want, pf) =>
     if v.hyp.isSome then return
     let want := (← instantiateMVars want).abstract fvs
     let pf := (← instantiateMVars pf).abstract fvs
+    uses := sortNames (want.getUsedConstants ++ pf.getUsedConstants) |>.eraseReps
     let enc : StateT (Array Json × Std.HashMap Expr Nat) Option (Nat × Nat) := do
       return (← exprNodes want, ← exprNodes pf)
     let some ((w, p), (nodes, _)) := enc.run (#[], {}) | return
     fields := fields ++ [("verdict", verdictJson v), ("nodes", .arr nodes), ("want", toJson w), ("proof", toJson p)]
   | some _, none => throwError "diag-export: a verdict reached with no proof to cache: {verdictJson c.verdict.get!}"
-  if let some d := path.parent then IO.FS.createDirAll d
+  let deps ← depText hs slot.q uses c.verdict.isSome
+  fields := fields ++ [("uses", .arr (uses.map nameJson)), ("deps", toJson deps)]
+  let path := slot.dir / s!"{hash deps}.json"
+  IO.FS.createDirAll slot.dir
   -- One name per WRITE, not per process: the panels of one call are tasks of one process, and two of
   -- them storing one question renamed each other's file away.
   let n ← storeCount.modifyGet fun n => (n, n + 1)
@@ -1413,18 +1431,18 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- `alg0` is the REGION's algebra and `alg` the one its ends were read in: an allegory's functor
   -- lane (`E`) is read in the functor algebra while the region still has maps to restrict to.
   let alg0 ← laneAlgOf regionTy
-  let some (alg, G, F) ← readEnds regionTy cat φ | return { mark := none, lean := #[] }
+  let some (alg, G, F) ← Prof.phase "ends" (readEnds regionTy cat φ) | return { mark := none, lean := #[] }
   -- THE FILTER IS THE FAMILY'S CONSTANTS, NOT THE TERM'S AT ITS OBJECT.  A bead taken at an initial
   -- algebra's carrier carries `InitialAlgebra.t` into `core`, and no naturality theorem mentions a
   -- projection of the region's own structure, so filtering on it dropped every candidate there is.
   -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
   -- and not from `verdict`.
-  let br ← bridges
-  let must ← mustOfFamily br φ
+  let br ← Prof.phase "bridge" bridges
+  let must ← Prof.phase "bridge" (mustOfFamily br φ)
   -- The spider's message is what the next proving agent reads, so the scan records what it passed
   -- over as it goes: re-running the search to explain it would pay for it twice.  The state is this
   -- search's own — the exporter runs a task per panel in one process.
-  let s ← Search.new (← familyHead br φ)
+  let s ← Search.new (← Prof.phase "bridge" (familyHead br φ))
   -- The proposition the verdict rests on and its proof, as the last hit left them: what the cache
   -- stores, so that a hit is a term `Meta.check`ed again and never a remembered mark.
   let proof ← IO.mkRef (none : Option (Expr × Expr))
@@ -1524,8 +1542,8 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- even where a candidate's budget was cut on the way — it is a proof, and nearly every search of the
   -- heavy panels is cut somewhere — but NOTHING FOUND only where no budget was: a spider off a
   -- timeout is not a refutation, and a warmer cache may find the dot.
-  let slot ← cacheSlot regionTy cat φ
-  let fp : Option Verdict × Option Expr ← match ← slot.mapM cacheLoad with
+  let slot ← Prof.phase "slot" (cacheSlot regionTy cat φ)
+  let fp : Option Verdict × Option Expr ← match ← Prof.phase "load" (slot.mapM cacheLoad) with
     | some (some c) => do s.passed.set c.passed; pure (c.verdict, c.proof.map (·.1))
     | _ => do
       let found ← tryCatchRuntimeEx bounded fun e => do
@@ -1556,36 +1574,9 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
     siblings, or its refutation" ++ String.join (passed.toList.map ("\n  " ++ ·)))
   return { mark := some .spider, lean := #[] }
 
-/-- The hash of every constant `root` can run — a value, a type, an `implemented_by` or `partial` body,
-    an `initialize` action — outside the toolchain, which `toolPrint` keys by version.  Taken when this
-    module is built: the exporter's run-time environment is the drawn statement's and lacks this code.
-    A name with macro scopes (an `initialize`'s) is left out, since its scope moves with any edit above. -/
-def verdictCodeHash (root : Name) : CoreM UInt64 := do
-  let env ← getEnv
-  let mut seen : NameSet := {}
-  let mut todo := #[root]
-  let mut hs : Array UInt64 := #[]
-  while h : todo.size > 0 do
-    let n := todo[todo.size - 1]
-    todo := todo.pop
-    if seen.contains n then continue
-    seen := seen.insert n
-    let some ci := env.find? n | throwError "diag-export: {n}, reached from {root}, names no constant"
-    if let some i := env.getModuleIdxFor? n then
-      if [`Init, `Std, `Lean, `Lake].contains env.header.moduleNames[i.toNat]!.getRoot then continue
-    let (es, more) : Array Expr × Array Name := match ci with
-      | .defnInfo d => (#[d.type, d.value], #[])
-      | .opaqueInfo d => (#[d.type, d.value], #[])
-      | .inductInfo d => (#[d.type], d.ctors.toArray)
-      | .ctorInfo d => (#[d.type], #[d.induct])
-      | c => (#[c.type], #[])
-    hs := hs.push (es.foldl (fun a e => mixHash a (hash e)) (if n.hasMacroScopes then 0 else hash n))
-    let impl := [Compiler.implementedByAttr.getParam? env n, some (n ++ `_unsafe_rec), getInitFnNameFor? env n]
-    todo := todo ++ more ++ ((impl.filterMap id).filter env.contains).toArray
-    unless ci matches .thmInfo _ do todo := todo ++ es.flatMap (·.getUsedConstants)
-  return (hs.qsort (· < ·)).foldl mixHash 7
-
-elab "verdict_code%" : term => return toExpr (← verdictCodeHash ``verdict)
+/-- The code `verdict` can run, hashed when this module is built (`declsHash`): the exporter's
+    run-time environment is the drawn statement's and lacks this code. -/
+elab "verdict_code%" : term => return toExpr (← declsHash #[``verdict])
 
 initialize verdictCodeRef.set (some verdict_code%)
 
@@ -1835,13 +1826,23 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     are the constants AT that type; a relator (`RelSet ⟶ RelSet`) is a `∀` with no constant head,
     so the machinery that spells the lanes stays open.  A constant the note draws OPENED keeps its
     `diag_unfold` meaning: `openNoted` opens it ABOVE the peel, where the note's own body is drawn. -/
+-- The objects of each region head, swept once per process: every task shares the imported `env`,
+-- and a sweep of all its constants per read was most of a cached panel's time.
+initialize objectsOfRef : IO.Ref (Std.HashMap Name (Array Name)) ← IO.mkRef {}
+
 def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α := do
   let some h := regionTy.getAppFn.constName? | k
   let env ← getEnv
-  let opened ← Lean.labelled `diag_unfold
-  for (n, ci) in env.constants do
-    if n.isInternal || ci.isUnsafe || opened.contains n then continue
-    if ci.type.getAppFn.constName? == some h then Lean.setIrreducibleAttribute n
+  let objs ← match (← objectsOfRef.get)[h]? with
+    | some os => pure os
+    | none =>
+      let opened ← Lean.labelled `diag_unfold
+      let os := env.constants.fold (init := #[]) fun a n ci =>
+        if n.isInternal || ci.isUnsafe || opened.contains n || ci.type.getAppFn.constName? != some h
+        then a else a.push n
+      objectsOfRef.modify (·.insert h os)
+      pure os
+  for n in objs do Lean.setIrreducibleAttribute n
   try k finally setEnv env
 
 /-- `peelRead`'s answers in this process, by `metaKey`, as `peelMapMemo`: an answer with no
@@ -2603,6 +2604,26 @@ def opensFewerLanes (cat : Array Name) (declTy opened : Expr) : MetaM Bool := do
     return cs.size
   return (← lanes x) > (← lanes x') || (← lanes y) > (← lanes y')
 
+/-- A PEER'S PARTS, drawn ONCE PER PROCESS.  Every panel of one call is a task and stands beside
+    every other, so drawing the peers inside each task was k² drawings for k panels; `placement`
+    reads only their rows' keys, so parts drawn in another task's `MetaM` serve as well. -/
+initialize peerRef : IO.Ref (Std.HashMap String (IO.Promise (Except String (Array Diagram)))) ←
+  IO.mkRef {}
+
+/-- `draw`'s parts under `key`, drawn by the first task to ask and awaited by the rest.  The first
+    task's failure is every waiter's, runtime ones included: an unresolved promise hangs its waiters. -/
+def peerParts (key : String) (draw : MetaM (Array Diagram)) : MetaM (Array Diagram) := do
+  let p ← IO.Promise.new
+  let (mine, q) ← peerRef.modifyGet fun m => match m[key]? with
+    | some q => ((false, q), m)
+    | none => ((true, p), m.insert key p)
+  if mine then
+    return ← tryCatchRuntimeEx (do let d ← draw; q.resolve (.ok d); return d) fun e => do
+      q.resolve (.error (← e.toMessageData.toString)); throw e
+  match ← IO.wait q.result! with
+  | .ok d => return d
+  | .error e => throwError "{key}, drawn as a peer of this call: {e}"
+
 /-- `--string <Name>[#<binder>][.lhs|.rhs][.inl|.inr…]`.  A `def` is drawn by its BODY unfolded one
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
@@ -2737,15 +2758,17 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
+    -- Each task draws ITS OWN parts first, so the call's panels are drawn in parallel, once each.
+    -- A peer is read in its OWN declaration's context alone: under this one's binders its verdicts'
+    -- cache keys, and the hypotheses `hypVerdict` sees, would depend on which task drew it.
+    let part (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
+      peerParts (toString (b, h, p, s.map (·.suffix)))
+        (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
     let qs ← Prof.phaseIf draw "peers" do
-      let mut qs : Array Diagram := #[]
-      for (b, h, p, s) in peers do
-        if b.toName == declName && h == binder then
-          let (_, _, d) ← reqParts p s
-          for (_, e) in d do
-            qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
-        else qs := qs ++ (← drawWith b.toName p h s [] false).2
-      return qs
+      if peers.any fun (b, h, p, s) => b.toName == declName && h == binder && p == path
+          && s.map (·.suffix) == sel.map (·.suffix) then
+        discard <| part declName binder path sel
+      peers.toArray.flatMapM fun (b, h, p, s) => part b.toName h p s
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.

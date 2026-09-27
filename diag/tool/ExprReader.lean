@@ -2108,7 +2108,7 @@ structure Search where
       warmer cache, so its verdict is not one to remember. -/
   cut : IO.Ref Bool
   /-- Every conclusion head whose candidate bucket the search read: what its answer depends on,
-      with the modules those candidates come from (`depText`). -/
+      with the declarations those candidates reach (`depText`). -/
   heads : IO.Ref NameSet
 
 /-- A search at its start. -/

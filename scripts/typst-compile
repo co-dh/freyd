@@ -1,0 +1,28 @@
+#!/bin/sh
+# typst-compile SRC PDF — `typst compile --root . SRC PDF`, skipped when nothing the last compile
+# read has changed.
+#
+# The test is on CONTENT, not mtimes: `panels` rewrites files under diag/generated that no make
+# rule names, and a `git checkout` leaves a committed pdf newer than the sources it was not built
+# from, so an mtime test kept a stale pdf twice.  `--deps` lists every file typst read — the
+# note, its imports, every generated picture, fonts — and the stamp is the hash of each of them,
+# of typst itself and of the pdf.  A file the note newly imports is read through a changed .typ,
+# so the old list is enough to see it.
+set -e
+src=$1; pdf=$2
+[ -n "$src" ] && [ -n "$pdf" ] || { echo "usage: typst-compile SRC PDF" >&2; exit 2; }
+dir=.lake/build/typst-compile
+mkdir -p "$dir"
+base=$dir/$(printf '%s' "$pdf" | tr / %)
+key() {
+  # A dependency that is gone makes the key unreadable, which is a change: compile.
+  { typst --version && xargs -0 -r sha256sum < "$base.deps" && sha256sum "$pdf"; } | sha256sum
+}
+if [ -f "$base.deps" ] && [ -f "$base.stamp" ] && [ -f "$pdf" ] \
+    && now=$(key) && [ "$now" = "$(cat "$base.stamp")" ]; then
+  echo "typst-compile: $pdf is current — nothing it reads has changed"
+  exit 0
+fi
+rm -f "$base.stamp"
+typst compile --root . --deps "$base.deps" --deps-format zero "$src" "$pdf"
+key > "$base.stamp"

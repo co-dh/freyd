@@ -62,6 +62,18 @@ prepare() {
   prepared=1
 }
 
+# The staleness tests of several lists AT ONCE, each `$ls/<list>` into `$ls/<list>.stale`: pairs of
+# a list and its route flag ('' for none).  Each test is a process importing the environment, and
+# nine of them one after another were most of an unchanged chapter's `make c`.
+tests() {
+  pids=
+  while [ $# -gt 0 ]; do
+    filter $2 < "$ls/$1" > "$ls/$1.stale" &
+    pids="$pids $!"; shift 2
+  done
+  for p in $pids; do wait "$p" || exit 1; done
+}
+
 draw() {
   names=$1; shift
   [ -n "$names" ] || return 0
@@ -79,36 +91,30 @@ all=$(./scripts/note-files --generated) || exit 1
 # a note whose import has no file yet does not compile, so a new import could never be drawn.
 # The `.proof` suffix comes off FIRST: it is the route's, not the selector's, and `--proof` is what
 # puts it back — on the file the exporter writes and on the one `--stale` reads.
-plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | filter) || exit 1
-proofs=$(printf '%s\n' "$all" | sed -n 's|\.proof$||p' | filter --proof) || exit 1
-draw "$plain"
-draw "$proofs" --proof
+ls=$(mktemp -d) || exit 1
+trap 'rm -rf "$ls"' EXIT
+printf '%s\n' "$all" | grep -v '\.proof$' > "$ls/plain"
+printf '%s\n' "$all" | sed -n 's|\.proof$||p' > "$ls/proof"
+tests plain '' proof --proof
+draw "$(cat "$ls/plain.stale")"
+draw "$(cat "$ls/proof.stale")" --proof
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
-lean=$(./scripts/diag-export --list lean-panel) || exit 1
-circuit=$(./scripts/diag-export --list lean-circuit) || exit 1
-cd=$(./scripts/diag-export --list lean-cd) || exit 1
-graph=$(./scripts/diag-export --list lean-graph) || exit 1
-formula=$(./scripts/diag-export --list lean-formula) || exit 1
-type=$(./scripts/diag-export --list lean-type) || exit 1
-value=$(./scripts/diag-export --list lean-value) || exit 1
+# ONE listing for all seven labels, a file each: every typst query lays the note out again.
+prepare
+./scripts/diag-export --prepared --list "$ls" \
+  lean-panel lean-circuit lean-cd lean-graph lean-formula lean-type lean-value || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.
-
-leans=$(printf '%s\n' "$lean" | filter --string) || exit 1
-circuits=$(printf '%s\n' "$circuit" | filter --circuit) || exit 1
-cds=$(printf '%s\n' "$cd" | filter --commutative) || exit 1
-graphs=$(printf '%s\n' "$graph" | filter --graph) || exit 1
-formulas=$(printf '%s\n' "$formula" | filter --formula) || exit 1
-types=$(printf '%s\n' "$type" | filter --type) || exit 1
-values=$(printf '%s\n' "$value" | filter --value) || exit 1
-draw "$leans" --string
-draw "$circuits" --circuit
-draw "$cds" --commutative
-draw "$graphs" --graph
-draw "$formulas" --formula
-draw "$types" --type
-draw "$values" --value
+tests lean-panel --string lean-circuit --circuit lean-cd --commutative lean-graph --graph \
+  lean-formula --formula lean-type --type lean-value --value
+draw "$(cat "$ls/lean-panel.stale")" --string
+draw "$(cat "$ls/lean-circuit.stale")" --circuit
+draw "$(cat "$ls/lean-cd.stale")" --commutative
+draw "$(cat "$ls/lean-graph.stale")" --graph
+draw "$(cat "$ls/lean-formula.stale")" --formula
+draw "$(cat "$ls/lean-type.stale")" --type
+draw "$(cat "$ls/lean-value.stale")" --value
 exit 0
