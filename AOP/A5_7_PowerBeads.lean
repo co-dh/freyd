@@ -109,6 +109,14 @@ public theorem subset_oplaxNatural :
     _ = (f° ≫ h) ≫ (supset (a := B))° := (Cat.assoc _ _ _).symm
     _ ⊑ powerRel R ≫ (supset (a := B))° := comp_mono_right (le_inter hb1 hb2) _
 
+/-- **`⊇` is LAX** along the power relator, the converse verdict `recip_lax` turns
+    `subset_oplaxNatural` into, since `⊇ = ⊆°`. -/
+public theorem supset_laxNatural :
+    LaxNatural (powerRelator (𝒜 := 𝒜)) powerRelator (fun A => supset (a := A)) := by
+  intro A B R
+  have h := recip_lax powerRelator_preservesRecip powerRelator_preservesRecip subset_oplaxNatural R
+  simpa only [subset_eq_recip_supset, Allegory.recip_recip] using h
+
 end EpsLax
 
 /-! ## `cp` is lax natural -/
