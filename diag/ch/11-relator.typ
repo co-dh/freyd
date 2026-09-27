@@ -780,11 +780,16 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let (hy-m, (hy-body, hy-split, hy-alg, hy-alpha-iso, hy-unit)) = lean-pics("generated/", <lean-panel>,
   ("Freyd.Alg.hylo_fixed_step1.lhs", "Freyd.Alg.hylo_fixed_step1.rhs", "Freyd.Alg.hylo_fixed_step2.rhs",
    "Freyd.Alg.hylo_fixed_step3.rhs", "Freyd.Alg.hylo_fixed_step4.rhs"))
-#let hy-cataR = lean("Freyd.Alg.hylo_le_of_prefixed_step1.lhs")
-#let hy-rec = lean("Freyd.Alg.hylo_le_of_prefixed_step2.lhs")
-#let hy-adj = lean("Freyd.Alg.hylo_le_of_prefixed_step3.lhs")
-#let hy-fuse = lean("Freyd.Alg.hylo_le_of_prefixed_step4.lhs")
-#let hy-prefix = lean("Freyd.Alg.hylo_le_of_prefixed#h.lhs")
+// ONE call for the chain's twelve panels, so they share one placement and the bead a step moves
+// over (its triangle) stands at one height on both sides of that step.
+#let (hyl-m, (hy-base-l, hy-base-r, hy-cataR, hy-cataR-r, hy-rec, hy-rec-r, hy-adj, hy-adj-r,
+  hy-fuse, hy-fuse-r, hy-prefix, hy-prefix-r)) = lean-pics("generated/", <lean-panel>,
+  ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs",
+   "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", "Freyd.Alg.hylo_le_of_prefixed_step1.rhs",
+   "Freyd.Alg.hylo_le_of_prefixed_step2.lhs", "Freyd.Alg.hylo_le_of_prefixed_step2.rhs",
+   "Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs",
+   "Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs",
+   "Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"))
 // The right-hand side of a step: the one relation the chain is bounded by, at the height its
 // partner's own bead keeps — `X` against @hylo-least's `S°F(X)R`, `⦇S⦈°\X` against `α°F(⦇S⦈°\X)R`.
 
@@ -815,39 +820,43 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_le_of_prefixed") \
     #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
      satisfies the associated recursion inequation]],
-  [#hchain(
-    (none, lean("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs"),
+  [#hyl-m#hchain(
+    (none, trow(hy-base-l, hy-base-r),
      src[the conclusion]),
-    (IFF, trow(hy-cataR, lean("Freyd.Alg.hylo_le_of_prefixed_step1.rhs")),
+    (IFF, trow(hy-cataR, hy-cataR-r),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IMP, trow(hy-rec, lean("Freyd.Alg.hylo_le_of_prefixed_step2.rhs")),
+    (IMP, trow(hy-rec, hy-rec-r),
      src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
  ]),
      // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-    (IFF, trow(hy-adj, lean("Freyd.Alg.hylo_le_of_prefixed_step3.rhs")),
+    (IFF, trow(hy-adj, hy-adj-r),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IFF, trow(hy-fuse, lean("Freyd.Alg.hylo_le_of_prefixed_step4.rhs")),
+    (IFF, trow(hy-fuse, hy-fuse-r),
      src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]),
-    (IMP, trow(hy-prefix, lean("Freyd.Alg.hylo_le_of_prefixed#h.rhs")),
+    (IMP, trow(hy-prefix, hy-prefix-r),
      src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
   )],
 )]<hylo-least>
 
 // The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
 // `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
-#disp[#calc-table(cols: (1fr,), al: auto, 
+// ONE call for the chain's three panels, so they share one placement and the bead a step moves
+// over (its triangle) stands at one height on both sides of that step.
+#let (hym-m, (hym-1, hym-2, hym-3)) = lean-pics("generated/", <lean-panel>,
+  ("Freyd.Alg.hylo_eq_mu_step1.lhs", "Freyd.Alg.hylo_eq_mu_step1.rhs", "Freyd.Alg.hylo_eq_mu_step2.rhs"))
+#disp[#calc-table(cols: (1fr,), al: auto,
  // hylo-fusion-eq row: Theorem 6.2
  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   // lean:AOP.A6_3.hylo_eq_mu@c60df971
-  [#hchain(
-    (none, lean("Freyd.Alg.hylo_eq_mu_step1.lhs"),
+  [#hym-m#hchain(
+    (none, hym-1,
      src[@mu-defn at `φ(X):=S°F(X)R`]),
-    (SQ, lean("Freyd.Alg.hylo_eq_mu_step1.rhs"),
+    (SQ, hym-2,
      src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
  `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]),
      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-    (SQ, lean("Freyd.Alg.hylo_eq_mu_step2.rhs"),
+    (SQ, hym-3,
      src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
      `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
  ]),
