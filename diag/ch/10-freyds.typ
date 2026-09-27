@@ -139,10 +139,8 @@ monad `iE`.]]
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@a8fe3773
     (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step2.rhs", src[`(XY)\S=Y\(X\S)`]),
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@032cf912
-    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step3.rhs", src[`f°\X=fX` for the map `f≜Λ(R°)`]),
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@1c4fd03c
-    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step4.rhs", src[`∈\S=⊆Λ(S°)°` — @mem-ldiv]),
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step4@a1f0d86d
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step3.rhs", src[`f°\X=fX` for the map `f≜Λ(R°)`, and `∈\S=⊆Λ(S°)°` — @mem-ldiv]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@baf4fd86
   ),
 )]<ldiv-comp>
 

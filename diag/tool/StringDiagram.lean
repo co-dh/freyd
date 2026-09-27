@@ -1701,10 +1701,6 @@ def recipArg? (r : Expr) : MetaM (Option Expr) := do
     | none => return none
   | _ => return none
 
--- Off: a one-sided `F(z)°` / `F(z°)` draws as one bead labelled with its converse, the author's
--- choice over a lone `°` lane that flips `z`; the sandwich `F(z°)°` keeps its lanes either way.
-def drawOneSidedConv : Bool := false
-
 /-- `e` as a catalogue lane `F`'s action carrying a CONVERSE, the converse being the functor
     `recipFunctor : 𝒜 → 𝒜ᵒᵖ`: `F(z)°` is `F` then `°` (`outer`), `F(z°)` is `°` then `F` on `𝒜ᵒᵖ`
     (`inner`), `F(z°)°` the conjugate `recipConj F` (both).  Read by the head constants and CONFIRMED
@@ -1731,7 +1727,8 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   if (wiresOf R).isEmpty then return none
   let inner ← recipArg? r
   if outer.isNone && inner.isNone then return none
-  if outer.isSome != inner.isSome && !drawOneSidedConv then return none
+  -- A ONE-SIDED `F(z)°`/`F(z°)` expands too, never one bead wearing a `°`: "E(R)° should be
+  -- expanded with the converse functor" (the author, on §13.1's `⊆Λ(R)°`).
   let z := inner.getD r
   let s ← Meta.saveState
   try

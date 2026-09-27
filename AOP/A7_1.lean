@@ -465,22 +465,18 @@ public theorem leftDiv_eq_Λ_subset_step2 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C)
     (((∋ A)° ≫ (Λ (R°))°) \ S) = ((Λ (R°))° \ ((∋ A)° \ S)) :=
   leftDiv_comp _ _ _
 
-/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, third step: dividing by a map's converse is composing with the map. -/
+/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, third step: dividing by a map's converse is composing with the
+    map, and `∈\S = ⊆ Λ(S°)°`.  One step: the two draw the same picture. -/
 public theorem leftDiv_eq_Λ_subset_step3 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
-    ((Λ (R°))° \ ((∋ A)° \ S)) = Λ (R°) ≫ ((∋ A)° \ S) :=
-  recip_map_leftDiv (Λ_is_map' (R°)) _
-
-/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, fourth step: `∈\S = ⊆ Λ(S°)°`. -/
-public theorem leftDiv_eq_Λ_subset_step4 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
-    Λ (R°) ≫ ((∋ A)° \ S) = Λ (R°) ≫ subset (a := A) ≫ (Λ (S°))° := by
-  rw [mem_leftDiv_eq]
+    ((Λ (R°))° \ ((∋ A)° \ S)) = Λ (R°) ≫ subset (a := A) ≫ (Λ (S°))° := by
+  rw [recip_map_leftDiv (Λ_is_map' (R°)), mem_leftDiv_eq]
 
 /-- Every left division is a composite: `R\S = Λ(R°) ⊆ Λ(S°)°`, `b (R\S) c` exactly when
     `Λ(R°)(b) ⊆ Λ(S°)(c)`. -/
 public theorem leftDiv_eq_Λ_subset {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
     (R \ S) = Λ (R°) ≫ subset (a := A) ≫ (Λ (S°))° :=
-  (leftDiv_eq_Λ_subset_step1 R S).trans ((leftDiv_eq_Λ_subset_step2 R S).trans
-    ((leftDiv_eq_Λ_subset_step3 R S).trans (leftDiv_eq_Λ_subset_step4 R S)))
+  (leftDiv_eq_Λ_subset_step1 R S).trans
+    ((leftDiv_eq_Λ_subset_step2 R S).trans (leftDiv_eq_Λ_subset_step3 R S))
 
 /-- `est(R) = ∋ ∩ ⊆Λ(R)°`: `∈\R° = ⊆Λ(R)°` (`mem_leftDiv_eq` at `Z := R°`). -/
 public theorem est_eq_subset_Λ (R : A ⟶ A) :
