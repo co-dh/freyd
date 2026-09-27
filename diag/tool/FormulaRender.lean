@@ -183,7 +183,7 @@ def render (declName : Name) (binder : Option String) (path : List String)
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return #[ante ++ (← labelT l) ++ sym, ← labelT r]
+      | some (sym, l, r) => return #[ante ++ (← labelT l (some r)) ++ sym, ← labelT r (some l)]
       | none => return #[ante ++ (← labelT target')]
 
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
