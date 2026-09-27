@@ -47,20 +47,20 @@ universe u
 /-! ## Abstract: greedy-from-refinement with monotonicity stated on `R` -/
 
 section Abstract
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
 /-- **`A7_2.greedy_of_refinement` with monotonicity on `R` instead of `R°`.**  A deterministic
     algebra `f` (a map), MONOTONIC on the order `R`, that REFINES the greedy choice
     `Λ S ≫ est R`, already has its catamorphism inside `est R·Λ⦇S⦈` — the Pareto frontier of
     the plain non-deterministic catamorphism `⦇S⦈`.  Transitivity and monotonicity are
     transposed to `R°` by `recip_mono`/`monotonicAlg_recip_iff` (the latter needs `f` a map). -/
-public theorem greedy_of_refinement_mono (hFr : F.PreservesRecip) (I : InitialAlgebra F) {R : A ⟶ A}
+public theorem greedy_of_refinement_mono (I : InitialAlgebra F) {R : A ⟶ A}
     {S f : F.obj A ⟶ A} (hf : Map f) (htrans : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg f R)
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
-  have hmono' : Freyd.Alg.MonoAlg f R° := (Freyd.Alg.monoAlg_recip_iff hf hFr).mp hmono
-  exact greedy_of_refinement hFr I htrans' hmono' href
+  have hmono' : Freyd.Alg.MonoAlg f R° := (Freyd.Alg.monoAlg_recip_iff hf (Relator.preservesRecip_of_tabular F)).mp hmono
+  exact greedy_of_refinement I htrans' hmono' href
 
 end Abstract
 
@@ -102,7 +102,7 @@ public theorem horner_correct {L E A1 : Type}
     spec xs (foldFn xs).2 ∧ ∀ v, spec xs v → v ≤ (foldFn xs).2 := by
   -- The genuine greedy content: the fold lands inside the Pareto frontier of ⦇S⦈.
   have Hcore : ⦇alg⦈ ⊑ ⦇S⦈%∋ ≫ est(R) :=
-    greedy_of_refinement_mono (F_preservesRecip L E) (initial L E) halg_map htrans hmono href
+    greedy_of_refinement_mono (initial L E) halg_map htrans hmono href
   rw [← cataR_eq_relCata alg, ← cataR_eq_relCata S] at Hcore
   -- Apply the refinement at the actual fold output `foldFn xs`.
   have hmem_fold : (cataR alg) xs (foldFn xs) := (hfold xs (foldFn xs)).mpr rfl

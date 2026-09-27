@@ -154,7 +154,7 @@ public theorem greedy_dp_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (greedy_dp_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
+    (greedy_dp_prefixed_context hFr hh hctx1 htrans (hylo_fixed I h T) hctx2))
 
 end Freyd.Alg
 

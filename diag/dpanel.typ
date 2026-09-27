@@ -232,7 +232,7 @@
 // bead's height otherwise, and `un` is a birth carrying a bead of its own (the singleton).  `xat` is
 // the object wire's x at a height (constant `xo` unless `opath` slopes it); `kb`/`kd` are the knees
 // `dknees` gave the bead this lane is born on and the one it dies on.
-#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false, unat: "strict") = {
+#let dlane(xat, h, x, y0, y1, nm, un, kb: none, kd: none, col: none, alone: false, unat: "strict", west: false) = {
   let wc = if col == none { (:) } else { (col: col) }
   // Two beads a row apart give knees that eat the whole gap, so the lane stands in its own column
   // for ZERO height and the wire kinks there — vertical for an instant between two swings.  One
@@ -263,7 +263,8 @@
             + (if not flat and y1 != "bot" { (pts.len() - 1,) } else { () }))
   // The unit's own mark draws its naturality, exactly as a bead's does: `hm-mark` is handed the
   // verdict word and picks the glyph, so a lane and a bead cannot disagree about what one means.
-  if un != none { hm-bead((x, y0), un, bg: fb-ALLC, nat: unat) }
+  if un != none { hm-bead((x, y0), un, bg: fb-ALLC, nat: unat,
+    ..(if west { (dx: -(hm-mark-half(unat) + 0.12), anchor: "east") } else { (:) })) }
 }
 // The bead is a POINT and every arm into one is a bend (IntroString.pdf p. 40, whose spider takes six
 // of them), so a wire the bead does not consume dips to the dot at each `ybs` and comes back out, at
@@ -402,15 +403,19 @@
   let dotx = (:)
   for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
-  // A BEAD WHOSE DOT IS ON THE LEFTMOST LANE writes its label WEST of the mark, right-aligned: east
-  // of it the label would run across the lanes and the object wire it sits beside.
+  // A MARK ON THE LEFTMOST LANE writes its label WEST of it, right-aligned: east of it the label
+  // would run across the lanes and the object wire it sits beside.  A unit is such a mark too, drawn
+  // by its lane (`dlane`) and absent from `beads`, so the test is on the x alone — unless the lane's own
+  // NAME is written west at that birth (`nmd`): the name holds that slot, and the unit label stays east.
   let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
-  let west = b => lx != none and b.at(4, default: none) != none and calc.abs(b.at(4) - lx) < 1e-6
+  let west-at = x => lx != none and calc.abs(x - lx) < 1e-6
+  let west = b => b.at(4, default: none) != none and west-at(b.at(4))
   // THE FRAME HOLDS EVERY BEAD LABEL: `hm-bead` sets it 0.32 east of the dot, and the generator's
   // width is a fixed pad east of the object wire, which a long label (a `∪` of two terms) runs out of.
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
     + measure(text(b.at(2, default: black))[#b.at(1)]).width / 0.8cm))
   let nmd = dnamed(lanes, top, bot)
+  let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not nmd.contains(j) }
   let gk = dknees(dx, h, lanes, beads, nmd)
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
@@ -460,24 +465,29 @@
     let alone = (corr.len() == 0
       and lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1)
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
-                        alone: alone, unat: l.at(5, default: "strict")) }
+                        alone: alone, unat: l.at(5, default: "strict"), west: wunit(i)) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
     // another strand sweeps that row west of this lane.
-    // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
+    // The name clears the wire by 0.12, and the edge of any mark it sits beside by as much.
     if nmd.contains(i) {
       // Any lane's name can reach a west bead label, not only the leftmost lane's: test the MEASURED
       // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
       let sz = t => measure(block(text(top-edge: "ascender", bottom-edge: "descender", t)))
       let (wn, hn) = { let m = sz(text(9pt)[#nm]); (m.width / 0.8cm, m.height / 0.8cm / 2) }
-      let ny = beads.filter(west).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
+      let ny = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
+        .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
         let m = sz(text[#b.at(1)])
         let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12
         let c = hn + m.height / 0.8cm / 2 + 0.06
         if (l.at(0) - 0.12 - wn < br + 0.06 and l.at(0) > br - m.width / 0.8cm - 0.06
           and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
-      let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
-        and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
+      // Every MARK in the name's column clears it — a bead's, and a unit's, which `dlane` draws at
+      // its lane's birth and `beads` does not list: a name on a unit-born lane sat on its own dot.
+      let marks = (beads.map(b => (dx(b.at(0)), b.at(0), b.at(5, default: "strict")))
+        + lanes.filter(o => o.at(4) != none and o.at(1) != "top").map(o => (o.at(0), o.at(1), o.at(5, default: "strict"))))
+      let gap = calc.max(0.12, ..marks.filter(m => calc.abs(m.at(0) - l.at(0)) < 0.3
+        and calc.abs(m.at(1) - ny) < 0.3).map(m => hm-mark-half(m.at(2)) + 0.12))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
     }
   }

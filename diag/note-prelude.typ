@@ -30,11 +30,13 @@
 #let lean-pics(dir, label, ns) = ([#metadata(ns.join("+"))#label],
   // a call of several selectors is its own directory, the exporter's `outPath`: a selector drawn in
   // a shared box and drawn alone are two pictures
-  if "list" in sys.inputs { ns.map(n => []) } else {
+  // each file's MODULE: a chain reads the string route's `dup` beside `pic` (`lean-chain`)
+  if "list" in sys.inputs { ns.map(n => (pic: [], dup: false)) } else {
     let sub = if ns.len() > 1 { ns.join("/") + "/" } else { "" }
-    ns.map(n => { import dir + sub + n + ".typ": pic; pic }) })
+    ns.map(n => { import dir + sub + n + ".typ" as f; f }) })
 #let lean-call(dir, label, ns, op: SQ) = {
-  let (m, pics) = lean-pics(dir, label, ns)
+  let (m, fs) = lean-pics(dir, label, ns)
+  let pics = fs.map(f => f.pic)
   m
   if pics.len() == 1 { pics.at(0) } else if pics.len() == 2 { trow(..pics, op: op) } else {
     panic("a lean(…) call draws one panel or a pair, not " + str(pics.len()) + "; a chain is lean-chain(…)")
@@ -264,40 +266,98 @@
 }))
 // A CHAIN `(op, selector, reason)` per step, read left to right: the Hinze–Marsden panels are ONE
 // `#lean` call, so every step stands in one box at one height, on ONE line scaled to the width
-// (`fill`), because a wrapped chain hides which step follows which.  The circuits follow as their
-// own block, one `step` row each — op, circuit, reason — since aligning them under the panels
-// forced the panels to wrap to the circuits' widths.
+// (`fill`), because a wrapped chain hides which step follows which.  `circuit: true` draws the
+// circuits after as their own block, one `step` row each — op, circuit, reason — since aligning them
+// under the panels forced the panels to wrap to the circuits' widths; the default `false` draws no
+// circuit and sets each reason under its panel.
 // A chain too long for one line is SEVERAL ROWS, each an array of steps and its own `#lean` box;
 // every row takes the SMALLEST row's factor, since a short row filled on its own grows its beads
 // and labels past its neighbours' and stands the tallest.
 // A step is `(op, sel, reason)`, one declaration driving BOTH pictures.
-// A row may instead be `(sub: sel, gloss: [..], steps: (..))`: `sub` names the declaration the row
-// proves, printed in a header row across the cell, so a new obligation reads apart from a row that
-// only wraps; a plain row after it continues the same obligation.  `gloss` is optional.
-#let lean-chain(..args) = {
+// A row may instead be `Sub(decl, gloss: [..], step, ..)`: `Sub` names the declaration the row
+// proves and packages it as the dict `lean-chain` reads, printed in a header row across the cell so
+// a new obligation reads apart from a row that only wraps; a plain row after it continues the same
+// obligation.  `gloss` is optional.  `lean-chain` accepts only a dict `Sub` built — never a
+// hand-written one — so a row can't drift from what `Sub` prints.
+// A step whose `sel` is `(decl,)` draws that WHOLE STATEMENT as its own `lean(decl)` call — both
+// sides one height, and between them the relation the exporter reads off the statement's head, so
+// no hand-written symbol can call an equation an inclusion — beside the row's single-side steps,
+// which share one call.
+#let stmt-sel(p) = {
+  assert(p.len() == 1, message: "a lean-chain statement step is `(decl,)`, not " + repr(p)
+    + ": the exporter draws both sides and the relation between them from the one declaration")
+  p
+}
+// A reason stands under its panel only when it fits the panel's width; a longer one would run into
+// the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
+// are listed under the row, where the circuits stood.
+#let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
+#let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
+#let lean-chain(..args, circuit: false) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
-    .map(r => if type(r) == dictionary { r } else { (steps: r) })
-  let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.steps.map(s => s.at(1))))
+    .map(r => if type(r) == dictionary {
+      assert(r.at("kind", default: none) == "Sub", message: "a lean-chain row dict must come from Sub(...)")
+      r
+    } else { (steps: r) })
+  // ONE PICTURE ONCE: a step whose panel the exporter found drawn as the NEXT one's (`dup`, its
+  // `Diagram.drawnAs`) only re-spells the term, so it is merged into that step — its op and the
+  // next step's picture, both reasons — and neither its panel nor its circuit is drawn.
+  let calls = rows.map(r => {
+    let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
+    let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
+    let i = 0
+    let got = ()
+    for s in r.steps {
+      if type(s.at(1)) == array { got.push((pic: lean-call("generated/", <lean-panel>, stmt-sel(s.at(1))), dup: false)) }
+      else { got.push(sp.at(i)); i += 1 }
+    }
+    let (steps, pics, held) = ((), (), none)
+    for (s, g) in r.steps.zip(got) {
+      let s = if held == none { s } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
+      held = if g.dup { s } else { none }
+      if not g.dup { steps.push(s); pics.push(g.pic) }
+    }
+    assert(held == none, message: "the last step of a lean-chain row is marked `dup`: it has no next step to merge into")
+    (m, pics, steps)
+  })
   // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
   table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
     let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
-    let k = calc.min(..rows.zip(ws).map(((r, w)) => chain-k(sz.width, r.steps.first().at(0) == none, w)))
+    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none, w)))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
-      let r = row.steps
+      let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
       if "sub" in row {
         pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
           stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-          align(center, { leanf(row.sub); if "gloss" in row { [ \ ]; row.gloss } })))
+          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
       }
-      hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
+      // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
+      // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
+      // them one circuit row per step carrying its reason.
+      let pw = w.map(x => x * k)
+      let (tags, n) = ((), 0)
+      for (s, x) in r.zip(pw) {
+        if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 } else { tags.push(none) }
+      }
+      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) =>
+        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
+          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) })))
+      if n > 0 {
+        block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
+          ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
+      }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
-      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))) }
+      if circuit { for s in r {
+        assert(type(s.at(1)) != array, message: "lean-chain(circuit: true): the step " + repr(s.at(1))
+          + " draws a whole statement, and the circuit route reads one side only")
+        block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))
+      } }
       // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)
     }

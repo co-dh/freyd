@@ -61,7 +61,7 @@ public theorem H_eq : H T h = partition ≫ list sumR := by
     equation `hylo_fixed` at this `T` and `h`. -/
 public theorem H_fix :
     T° ≫ (F Unit (ConsList Unit Nat)).map (H T h) ≫ h = H T h :=
-  hylo_fixed (F_preservesRecip _ _) _ h T
+  hylo_fixed _ h T
 
 /-! ## The table: `h` at four inputs, and `H` at `[a,b,c]` -/
 

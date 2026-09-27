@@ -1114,7 +1114,7 @@ public theorem van_laws_step1 :
 public theorem van_laws_step2 :
     (⦇Λ (Salg amount N) ≫ est (RH A)⦈ : dList A ⟶ dSched A)
       ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) :=
-  greedy (F_preservesRecip Unit A) (initial Unit A) RH_trans van_mono_alg
+  greedy (initial Unit A) RH_trans van_mono_alg
 
 /-- **@van-laws' second step**: `𝟙%∋ E(⦇S⦈)est(R;H) ⊑ 𝟙%∋ E(⦇S⦈)est(R)` — `R;H ⊑ R`, and `est`
     is monotonic. -/

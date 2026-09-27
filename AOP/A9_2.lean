@@ -225,6 +225,6 @@ public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.Preserve
     mu (dpBodyInf F T h R τ)
       ⊑ Λ (((relCata T)° ≫ relCata h) ∪ τ) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS =>
-    hS _ (dp_inf_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hstrict hτ))
+    hS _ (dp_inf_prefixed hFr hh hmono htrans (hylo_fixed I h T) hstrict hτ))
 
 end Freyd.Alg

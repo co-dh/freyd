@@ -678,7 +678,7 @@ public theorem takewhile_laws_step1 (p : A → Bool) (R : dList A ⟶ dList A) :
 public theorem takewhile_greedy (p : A → Bool) :
     cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit A) (initial Unit A) lenLE_recip_trans (takewhile_mono p)
+  exact greedy (initial Unit A) lenLE_recip_trans (takewhile_mono p)
 
 theorem twStep_pos {p : A → Bool} {a : A} (h : p a = true) (c : ConsList Unit A) :
     twStep p a c = ConsList.cons a c := by

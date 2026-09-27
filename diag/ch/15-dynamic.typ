@@ -93,14 +93,14 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_lower_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step1.rhs",
-      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+      src[`P(X)est(R)⊑∋X` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_lower_step1@9d770398
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
      // lean:AOP.A9_1.dynamic_programming_lower_step2@3449c959
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs",
-      src[`M≜`#frc([`H`])` est(R)⊑`#frc([`H`])`∋=H` — @est-up]),
+      src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_lower_step3@c6f95aaf
-    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
   ),
 )]<dp-lower>
 
@@ -111,29 +111,29 @@ in @mu-defn.
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@1e9866e3
   // two rows: nine panels in one row shrink the fractions past reading
-  lean-chain((sub: "Freyd.Alg.dynamic_programming_upper_steps1to3",
-    gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`], steps: (
+  lean-chain(Sub("Freyd.Alg.dynamic_programming_upper_steps1to3",
+    gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`],
      // lean:AOP.A9_1.dynamic_programming_upper_steps1to3@b5a0fdb5
     (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
-      src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+      src[`P(X)est(R)⊑∈\(XR°)` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T` — @hylo-mu]),
      // lean:AOP.A9_1.dynamic_programming_upper_step2@5d42b26b
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
-      src[`T`#frc([`T°`])`⊑∈`: #frc([`T°`]) a map, #frc([`T°`])`∋=T°` — @pow-laws]),
+      src[`T`#frc([`T°`])`⊑∈` — @pow-laws]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3a@d6d3fb7f
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y` at `Y≜F(M)hR°` — division]),
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3b@71266e1c
-  )), (sub: "Freyd.Alg.dynamic_programming_upper_steps4to5",
-    gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`], steps: (
+  ), Sub("Freyd.Alg.dynamic_programming_upper_steps4to5",
+    gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`],
      // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@db9b0efd
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
+    (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h` monotonic on `R°`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step5@6140d646
-    (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R°R°⊑R°`: `R` transitive]),
-  ))),
+    (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R` transitive]),
+  )),
 )]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -147,18 +147,14 @@ in @mu-defn.
  optimum #h(4pt) ]],
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_thin.rhs",
-      src[the problem to be solved, `H≜⦇T⦈°⦇h⦈` — @dp-defn]),
+      src[`H≜⦇T⦈°⦇h⦈` — @dp-defn]),
     // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
     // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
     // it draws the same panel; the regions are named only in the first.
     // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
     (RQ, "Freyd.Alg.dynamic_programming_thin.lhs.body",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-      src[`h` monotonic on `R` and `Q` a preorder with `QF(H)h⊑F(H)hR`; `thin(Q)` as in
-      @thin-laws. Theorem 9.1 is this with the thinning step dropped — `𝟙⊑thin(Q)`. Knaster–Tarski
-      leaves (9.1): the body at `M` is `⊑M`; `M=H∩(H°\R°)` splits that into (9.2) and (9.3) below
-      — @est-up. The fixed point is unique and entire when `T°` followed by `F`'s membership
-      relation is inductive, #frc([`T°`]) finite and non-empty, `R` connected]),
+      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @thin-laws, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
@@ -183,12 +179,12 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_thin_lower.lhs", src[(9.2)]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
-      src[(9.4) `P(X)est(R)⊑∋X` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+      src[`P(X)est(R)⊑∋X` — @est-710]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @thin-laws]),
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
-      src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+      src[`T°F(H)h=H` — @hylo-mu]),
   ),
 )]<dp-laws-92>
 
@@ -197,39 +193,39 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps3to6",
-    gloss: src[from an answer of `H`, the thinned step's answer is reached through `H`'s parts, a `Q°` step to a candidate, and that candidate's answer], steps: (
+  lean-chain(Sub("Freyd.Alg.dynamic_programming_thin_steps3to6",
+    gloss: src[from an answer of `H`, the thinned step's answer is reached through `H`'s parts, a `Q°` step to a candidate, and that candidate's answer],
      // lean:AOP.A9_1.dynamic_programming_thin_steps3to6@aa56309b
     (none, "Freyd.Alg.dynamic_programming_thin_step3.lhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
-      src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
+      src[`P(X)est(R)⊑∈\(XR°)` — @est-710]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_step4.rhs",
-      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]),
+      src[`H°=h°F(H°)T` — @hylo-mu]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step5.rhs",
-      src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
+      src[`T`#frc([`T°`])`⊑∈`]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",
-      src[`∈thin(Q)⊑Q°∈`: a dropped candidate is `Q`-below a kept one — @thin-laws]),
-  ))),
+      src[`∈thin(Q)⊑Q°∈` — @thin-laws]),
+  )),
 )]<dp-laws-93>
 
 // (9.3) continued from the last row above: the ten rows overflow one page.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain((sub: "Freyd.Alg.dynamic_programming_thin_steps7to8",
-    gloss: src[the hypothesis on `Q` turns the `Q°` step into an `R°` step in front of rebuilding by `F(M)h`], steps: (
+  lean-chain(Sub("Freyd.Alg.dynamic_programming_thin_steps7to8",
+    gloss: src[the hypothesis on `Q` turns the `Q°` step into an `R°` step in front of rebuilding by `F(M)h`],
      // lean:AOP.A9_1.dynamic_programming_thin_steps7to8@ed33437b
     (none, "Freyd.Alg.dynamic_programming_thin_step6.rhs", []),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step7.rhs",
-      src[`∈(∈\Y)⊑Y`, not a tabulated row: division cancels]),
+      src[`∈(∈\Y)⊑Y`]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step8.rhs",
-      src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
-  )), (sub: "Freyd.Alg.dynamic_programming_thin_steps9to11",
-    gloss: src[rebuilding from parts replaced by `M`'s, between two `R°` steps, stays within `R°`], steps: (
+      src[`QF(H)h⊑F(H)hR` conversed]),
+  ), Sub("Freyd.Alg.dynamic_programming_thin_steps9to11",
+    gloss: src[rebuilding from parts replaced by `M`'s, between two `R°` steps, stays within `R°`],
      // lean:AOP.A9_1.dynamic_programming_thin_steps9to11@ed076f93
     (SQ, "Freyd.Alg.dynamic_programming_thin_step9.rhs", src[`H°M⊑R°` under `F` — @est-up]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step10.rhs",
-      src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
+      src[`h°F(R°)h⊑R°`]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step11.rhs", src[`R` transitive, twice]),
-  ))),
+  )),
 )]<dp-laws-93b>
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
@@ -241,15 +237,13 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs.inl",
-      src[off `ran V₁ ∪ ran V₂` the set is empty and `est(R)` of it is nothing; not a tabulated row
-       — the `V₂` branch is the same]),
+      src[empty off `ran V₁ ∪ ran V₂`]),
     (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs.inl",
-      src[Exercise 9.5: on `ran V₁`, #frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)`, as `V₁`, `V₂`
-        have disjoint ranges]),
+      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁`]),
     (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs.inl",
-      src[Exercise 9.5: `P(inl)thin(Q₁+Q₂)` \ `=thin(Q₁)P(inl)`]),
+      src[`P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`]),
     (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs.inl",
-      src[`P` a relator and `inl[U₁,U₂]=U₁`]),
+      src[`P` a relator, `inl[U₁,U₂]=U₁`]),
   ),
 )]<dp-disjoint>
 
@@ -261,16 +255,16 @@ in @mu-defn.
      // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
   lean-chain(
     (none, "Freyd.Alg.monoAlg_of_cost_step1.lhs",
-      src[`F(R)h⊑hR` iff `F(R)h cost⊑h cost ≤`: definition of `R` and shunting]),
-    (EQ, "Freyd.Alg.monoAlg_of_cost_step1.rhs", src[assumption `h cost=F(cost)k`]),
+      src[definition of `R`, shunting]),
+    (EQ, "Freyd.Alg.monoAlg_of_cost_step1.rhs", src[`h cost=F(cost)k`]),
      // lean:AOP.A9_1.monoAlg_of_cost_step1@633bfed2
     (SQ, "Freyd.Alg.monoAlg_of_cost_step2.rhs",
-      src[`R cost⊑cost ≤`, as `cost` is a map; functors]),
+      src[`R cost⊑cost ≤`]),
      // lean:AOP.A9_1.monoAlg_of_cost_step2@0d9c17f8
     (SQ, "Freyd.Alg.monoAlg_of_cost_step3.rhs",
-      src[assumption `F(≤)k⊑k≤`: `k` monotonic on `≤`]),
+      src[`F(≤)k⊑k≤`]),
      // lean:AOP.A9_1.monoAlg_of_cost_step3@87ddc29e
-    (EQ, "Freyd.Alg.monoAlg_of_cost_step4.rhs", src[assumption `h cost=F(cost)k`]),
+    (EQ, "Freyd.Alg.monoAlg_of_cost_step4.rhs", src[`h cost=F(cost)k`]),
      // lean:AOP.A9_1.monoAlg_of_cost_step4@501ca466
   ),
 )]<dp-cost>
@@ -301,35 +295,35 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
-  lean-chain((sub: "Freyd.Alg.monoAlg_in_context_steps1to3",
-    gloss: src[improving the parts within their `S`-context and assembling by `h` is below the same improvement on the (cost, context) bundles, assembled by `k`], steps: (
+  lean-chain(Sub("Freyd.Alg.monoAlg_in_context_steps1to3",
+    gloss: src[improving the parts within their `S`-context and assembling by `h` is below the same improvement on the (cost, context) bundles, assembled by `k`],
      // lean:AOP.A9_1.monoAlg_in_context_steps1to3@11f5c474
     (none, "Freyd.Alg.monoAlg_in_context_step1.lhs", []),
     (SQ, "Freyd.Alg.monoAlg_in_context_step1.rhs",
-      src[shunting: `cost` a map, so `𝟙⊑cost cost°` — @triple-chains]),
+      src[`𝟙⊑cost cost°` — @triple-chains]),
      // lean:AOP.A9_1.monoAlg_in_context_step1@44f1c030
     (EQ, "Freyd.Alg.monoAlg_in_context_step2.rhs",
-      src[products: `R∩SS°=⟨cost≤,S⟩⟨cost,S⟩°` at `R=cost≤cost°` — @relprod-defn]),
+      src[`R∩SS°=⟨cost≤,S⟩⟨cost,S⟩°` — @relprod-defn]),
      // lean:AOP.A9_1.monoAlg_in_context_step2@e27a633e
     (EQ, "Freyd.Alg.monoAlg_in_context_step3.rhs",
-      src[assumption on `cost`: `h cost=F(⟨cost,S⟩)k`]),
+      src[`h cost=F(⟨cost,S⟩)k`]),
      // lean:AOP.A9_1.monoAlg_in_context_step3@23c4eb72
-  )), (sub: "Freyd.Alg.monoAlg_in_context_steps4to7",
-    gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`], steps: (
+  ), Sub("Freyd.Alg.monoAlg_in_context_steps4to7",
+    gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`],
      // lean:AOP.A9_1.monoAlg_in_context_steps4to7@865a4e77
     (SQ, "Freyd.Alg.monoAlg_in_context_step4.rhs",
-      src[`S` simple, so `⟨cost,S⟩` simple: `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
+      src[`⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
      // lean:AOP.A9_1.monoAlg_in_context_step4@e0fdcf2e
     (EQ, "Freyd.Alg.monoAlg_in_context_step5.rhs",
-      src[products; functors: `⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @bdm-prod-laws, @relator-laws]),
+      src[`⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @bdm-prod-laws, @relator-laws]),
      // lean:AOP.A9_1.monoAlg_in_context_step5@b63ea26a
     (SQ, "Freyd.Alg.monoAlg_in_context_step6.rhs",
-      src[assumption on `k`: `F(≤×𝟙)k⊑k≤`]),
+      src[`F(≤×𝟙)k⊑k≤`]),
      // lean:AOP.A9_1.monoAlg_in_context_step6@941ec9da
     (EQ, "Freyd.Alg.monoAlg_in_context.rhs",
-      src[assumption on `cost` read backwards, then `R=cost≤cost°`]),
+      src[`h cost=F(⟨cost,S⟩)k`, `R=cost≤cost°`]),
      // lean:AOP.A9_1.monoAlg_in_context_step7@b5c7d052
-  ))),
+  )),
 )]<dp-context-mono>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
@@ -343,14 +337,14 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.birelator_thin_condition_step1.lhs", []),
     (EQ, "Freyd.Alg.birelator_thin_condition_step1.rhs",
-      src[taking `Q≜G(U,V)`; bifunctors: `G(U,V)G(𝟙,H)=G(U,VH)` — @relator-laws]),
+      src[`G(U,V)G(𝟙,H)=G(U,VH)` — @relator-laws]),
      // lean:AOP.A9_1.birelator_thin_condition_step1@5cb3fde0
-    (SQ, "Freyd.Alg.birelator_thin_condition_step2.rhs", src[assumption on `V`: `VH⊑HR`]),
+    (SQ, "Freyd.Alg.birelator_thin_condition_step2.rhs", src[`VH⊑HR`]),
      // lean:AOP.A9_1.birelator_thin_condition_step2@8990dc41
     (EQ, "Freyd.Alg.birelator_thin_condition_step3.rhs",
-      src[bifunctors: `G(U,HR)=G(𝟙,H)G(U,R)` — @relator-laws]),
+      src[`G(U,HR)=G(𝟙,H)G(U,R)` — @relator-laws]),
      // lean:AOP.A9_1.birelator_thin_condition_step3@920f9952
-    (SQ, "Freyd.Alg.birelator_thin_condition_step4.rhs", src[assumption on `h`: `G(U,R)h⊑hR`]),
+    (SQ, "Freyd.Alg.birelator_thin_condition_step4.rhs", src[`G(U,R)h⊑hR`]),
      // lean:AOP.A9_1.birelator_thin_condition_step4@988df7b4
   ),
 )]<dp-bifunctor-thin>
@@ -839,20 +833,18 @@ in @mu-defn.
      // lean:AOP.A9_3_Bracket.mct_rec@d5db4aed
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.mct_eq.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_eq.rhs", src[recursive case of `mct` — @mct-defn]),
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_eq.rhs", src[`mct` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_eq@5c6a919c
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs", src[definition of `splits` — @mct-defn]),
+    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs", src[`splits` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_rec_step1@cab18148
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs",
-      src[definitions of `graft≜(mct×mct) bin` and `trees≜⟨inits⁺ list(mct),tails⁺ list(mct)⟩`, our
-       names; `zip list(f×g)=(list(f)×list(g)) zip`]),
+      src[`graft`, `trees`; `zip list(f×g)=(list(f)×list(g)) zip`]),
      // lean:AOP.A9_3_Bracket.mct_rec_step2@bdfe8912
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
-      src[introducing `mix≜zip list(bin) minlist(R)` — @mct-defn]),
+      src[`mix≜zip list(bin) minlist(R)` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_rec_step3@8ba2a32c
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs",
-      src[definition of `trees`; `inits⁺=init inits` and `tails⁺=tail tails` on non-singletons;
-       definition of `row` and `col` — @mct-defn]),
+      src[`inits⁺=init inits`, `tails⁺=tail tails`; `row`, `col` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_rec_step4@c9829da7
   ),
 )]<mct-rec>
@@ -865,15 +857,15 @@ in @mu-defn.
      // lean:AOP.A9_3_Bracket.col_rec@11ff5e11
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[definition of `col` — @mct-defn]),
+    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[`col` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.col_rec_step1@b9b76e62
     (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs", src[`inits=⟨init inits,𝟙⟩ snoc` on non-singletons]),
      // lean:AOP.A9_3_Bracket.col_rec_step2@42a73ac5
     (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step3.rhs",
-      src[`snoc list(f)=(list(f)×f) snoc`; definition of `col`]),
+      src[`snoc list(f)=(list(f)×f) snoc`; `col`]),
      // lean:AOP.A9_3_Bracket.col_rec_step3@b23c2989
     (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step4.rhs",
-      src[(9.7) on non-singletons — @mct-rec — and introducing `next≜⟨π₁,mix⟩ snoc` — @mct-defn]),
+      src[(9.7) — @mct-rec; `next≜⟨π₁,mix⟩ snoc` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.col_rec_step4@84225c07
   ),
 )]<col-rec>
@@ -886,12 +878,12 @@ in @mu-defn.
      // lean:AOP.A9_3_Bracket.row_rec@2ee70011
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.row_rec_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[definition of `row` — @mct-defn]),
+    (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[`row` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.row_rec_step1@8ee2d203
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step2.rhs", src[`tails=⟨𝟙,tail tails⟩ cons` on non-singletons]),
      // lean:AOP.A9_3_Bracket.row_rec_step2@53dda069
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step3.rhs",
-      src[`cons list(f)=(f×list(f)) cons`; definition of `row`]),
+      src[`cons list(f)=(f×list(f)) cons`; `row`]),
      // lean:AOP.A9_3_Bracket.row_rec_step3@27b9f396
   ),
 )]<row-rec>

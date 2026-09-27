@@ -798,7 +798,7 @@ public theorem tex_laws_body :
         ≫ (F Unit Digit).map
             (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
           = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
-      hylo_fixed (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
+      hylo_fixed (F := F Unit Digit) (initial Unit Digit)
         alphaR (junc cop arb step)
     rwa [tex_H] at h0
   have hest : est Q ⊑ ∋ ((F Unit Digit).obj Interval) := inter_lb_left _ _
