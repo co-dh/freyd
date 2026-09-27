@@ -18,6 +18,7 @@ import AOP.A5_7
 -- relator is one, and its partial application is what `openBuiltField?` opens.
 import AOP.A5_5_TypeFunctor
 import diag.tool.Tags
+import diag.tool.Prof
 
 open Lean
 
@@ -2178,7 +2179,7 @@ mutual
     back is the candidate applied to those arguments — a term, checked before it is believed. -/
 partial def findProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Name)
     (must : NameSet) (fuel : Nat) (seen : Array Expr := #[]) (fam : Option Name := none) :
-    MetaM (Option (Name × Expr)) := do
+    MetaM (Option (Name × Expr)) := Prof.phase "search" do
   -- AN EMPTY FILTER IS NO SEARCH where the head needs one: a family the match unfolded to a bare
   -- lambda (`prefix` read as `(φ A)°`) names no constant, and every equation passes that filter.
   if must.isEmpty && !(← unfiltered head) then return none
@@ -2319,7 +2320,7 @@ partial def discharge (br : Meta.Simp.Context) (s : Search) (args : Array Expr)
     unfolding one and opening its binders gives the very equation (or inclusion) a hand-written
     declaration states, and its own head is what to search under. -/
 partial def findAnyProof (br : Meta.Simp.Context) (s : Search) (want : Expr) (fuel : Nat)
-    (seen : Array Expr) : MetaM (Option (Name × Expr)) := do
+    (seen : Array Expr) : MetaM (Option (Name × Expr)) := Prof.phase "search" do
   let some h := want.getAppFn.constName? | return none
   -- A GOAL AMONG ITS OWN ANCESTORS IS NO NEW GOAL: `strictNatural_recip` twice asks again for the
   -- family it started from (`φ°° ≡ φ`), and a proof through that loop has a shorter one without it.
@@ -2364,7 +2365,7 @@ partial def findSquare (br : Meta.Simp.Context) (s : Search) (prop : Expr) (must
     naturality class — the function category's `funSquare`, which no class in the repo wraps. -/
 partial def findTelescoped (br : Meta.Simp.Context) (s : Search) (body : Expr) (must : NameSet)
     (fam : Option Name) (fuel : Nat) (seen : Array Expr := #[]) :
-    MetaM (Option (Name × Expr)) := do
+    MetaM (Option (Name × Expr)) := Prof.phase "search" do
   remembered s true body must.toList fuel seen <|
     Meta.forallTelescope body fun xs sq => do
       let .const h _ := sq.getAppFn | return none

@@ -1116,7 +1116,7 @@ def sideLayout (fc : Face) (p : Path) : MetaM (Array Node × Array Edge × Array
 
 /-- The face laid on the grid: coordinates for its two boundary paths, and the symbol between them.
     Only `cdpanel` can measure a label, so what leaves here is grid units, not centimetres. -/
-def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := do
+def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := Prof.phase "layout" do
   if let some s := fc.only then return ← sideLayout fc (if s == "lhs" then fc.lhs else fc.rhs)
   let comps ← fc.components
   let given ← fc.givenNodes

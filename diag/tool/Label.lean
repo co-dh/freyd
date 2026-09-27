@@ -1601,16 +1601,16 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
 end
 
 /-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses. -/
-def labelT (e : Expr) : MetaM Lbl := return (← labelTree 0 e).norm
+def labelT (e : Expr) : MetaM Lbl := Prof.phase "label" do return (← labelTree 0 e).norm
 
 /-- …and FLAT, which is every label a box, a bead or a wire carries. -/
-def label (e : Expr) : MetaM String := return (← labelTree 0 e).flat
+def label (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree 0 e).flat
 
 /-- The flat spelling at a given precedence, for the pictures that write one string. -/
-def labelAt (prec : Nat) (e : Expr) : MetaM String := return (← labelTree prec e).flat
+def labelAt (prec : Nat) (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree prec e).flat
 
 /-- The factors a label writes, flat. -/
-def labelRun (e : Expr) : MetaM (Array String) :=
+def labelRun (e : Expr) : MetaM (Array String) := Prof.phase "label" do
   return (← labelRunT e).map Lbl.flat
 
 /-- A label in the PARTS the picture sets it in.  A SYMMETRIC DIVISION is the note's fraction, and a
@@ -1630,7 +1630,7 @@ partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
   | _ => return #[← labelT e]
 
 /-- …and each part flat, for the pictures that write one string. -/
-def labelParts (e : Expr) : MetaM (Array String) :=
+def labelParts (e : Expr) : MetaM (Array String) := Prof.phase "label" do
   return (← labelPartsT e).map Lbl.flat
 
 /-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A
