@@ -121,59 +121,60 @@ public theorem hylo_fixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B :
 
 /-! ### The leastness chain (note §11.6.4b)
 
-  Six inclusions, each implying the one above it:
-  `⦇S⦈°⦇R⦈⊑X ⟸ ⦇R⦈⊑⦇S⦈°\X ⟸ α°F(⦇S⦈°\X)R⊑⦇S⦈°\X ⟸ ⦇S⦈°α°F(⦇S⦈°\X)R⊑X
-   ⟸ S°F(⦇S⦈°)F(⦇S⦈°\X)R⊑X ⟸ S°F(X)R⊑X`.
-  The last is the hypothesis `h`, so every step carries it; they are declared bottom-up, which is
-  the order in which they are proved. -/
+  With `Y ≜ ⦇S⦈°\X`, one term chain `⦇S⦈°α°F(Y)R = S°F(⦇S⦈°)F(Y)R = S°F(⦇S⦈°Y)R ⊑ S°F(X)R ⊑ X`,
+  the last step the hypothesis `h`; the adjunction `⦇S⦈°· ⊣ ⦇S⦈°\·` and the fold's leastness then
+  carry it to `⦇S⦈°⦇R⦈ ⊑ X`. -/
 
-/-- Step 4, the row above the hypothesis: the relator rejoins `F(⦇S⦈°)F(⦇S⦈°\X)` into
-    `F(⦇S⦈°(⦇S⦈°\X))`, and the division's counit `⦇S⦈°(⦇S⦈°\X) ⊑ X` reduces it to `h`. -/
-public theorem hylo_le_of_prefixed_step4 (I : InitialAlgebra F) {A B : 𝒜}
-    {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
-    S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X := by
-  have hcomp : S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R
-      = S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R := by
-    rw [F.map_comp, Cat.assoc]
-  rw [hcomp]
-  have hWX : (relCata S)° ≫ (((relCata S)°) \ X) ⊑ X := leftDiv_comp_le _ X
-  exact le_trans (comp_mono_left S° (comp_mono_right (F.map_mono hWX) R)) h
+/-- Step 1: `⦇S⦈°α° = S°F(⦇S⦈°)` (`relCata_cancel_recip`). -/
+public theorem hylo_le_of_prefixed_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) (X : B ⟶ A) :
+    (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
+      = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R :=
+  calc (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
+      = ((relCata S)° ≫ I.α°) ≫ F.map (((relCata S)°) \ X) ≫ R := (Cat.assoc _ _ _).symm
+    _ = (S° ≫ F.map ((relCata S)°)) ≫ F.map (((relCata S)°) \ X) ≫ R := by
+        rw [relCata_cancel_recip hFr I S]
+    _ = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R := Cat.assoc _ _ _
 
-/-- Step 3: `⦇S⦈°α° = S°F(⦇S⦈°)` (`relCata_cancel_recip`) rewrites the head of step 4's row. -/
-public theorem hylo_le_of_prefixed_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+/-- Step 2: the relator rejoins `F(⦇S⦈°)F(Y)` into `F(⦇S⦈°Y)`. -/
+public theorem hylo_le_of_prefixed_step2 (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) (X : B ⟶ A) :
+    S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R = S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R := by
+  rw [F.map_comp, Cat.assoc]
+
+/-- Step 3: the division's counit `⦇S⦈°(⦇S⦈°\X) ⊑ X`, under the monotone relator. -/
+public theorem hylo_le_of_prefixed_step3 (I : InitialAlgebra F) {A B : 𝒜}
+    (R : F.obj A ⟶ A) (S : F.obj B ⟶ B) (X : B ⟶ A) :
+    S° ≫ F.map ((relCata S)° ≫ (((relCata S)°) \ X)) ≫ R ⊑ S° ≫ F.map X ≫ R :=
+  comp_mono_left S° (comp_mono_right (F.map_mono (leftDiv_comp_le _ X)) R)
+
+/-- The chain: steps 1–3, then the hypothesis `h`. -/
+public theorem hylo_le_of_prefixed_chain (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
     (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ X := by
-  have hkey : (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
-      = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R :=
-    calc (relCata S)° ≫ I.α° ≫ F.map (((relCata S)°) \ X) ≫ R
-        = ((relCata S)° ≫ I.α°) ≫ F.map (((relCata S)°) \ X) ≫ R := (Cat.assoc _ _ _).symm
-      _ = (S° ≫ F.map ((relCata S)°)) ≫ F.map (((relCata S)°) \ X) ≫ R := by
-          rw [relCata_cancel_recip hFr I S]
-      _ = S° ≫ F.map ((relCata S)°) ≫ F.map (((relCata S)°) \ X) ≫ R := Cat.assoc _ _ _
-  rw [hkey]
-  exact hylo_le_of_prefixed_step4 I h
+  rw [hylo_le_of_prefixed_step1 hFr I R S X, hylo_le_of_prefixed_step2 I R S X]
+  exact le_trans (hylo_le_of_prefixed_step3 I R S X) h
 
-/-- Step 2: the division adjunction `⦇S⦈°· ⊣ ⦇S⦈°\·` (`le_leftDiv_iff`) moves the leading
-    converse to the other side. -/
-public theorem hylo_le_of_prefixed_step2 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+/-- The chain through the adjunction `⦇S⦈°· ⊣ ⦇S⦈°\·` (`le_leftDiv_iff`): `Y` is a prefixed point
+    of the fold's body. -/
+public theorem hylo_le_of_prefixed_prefix (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
-    I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ ((relCata S)°) \ X :=
-  (le_leftDiv_iff _ ((relCata S)°) X).mpr (hylo_le_of_prefixed_step3 hFr I h)
+    I.α° ≫ F.map (((relCata S)°) \ X) ≫ R ⊑ (((relCata S)°) \ X) :=
+  (le_leftDiv_iff _ ((relCata S)°) X).mpr (hylo_le_of_prefixed_chain hFr I h)
 
-/-- Step 1: the fold's own leastness (`relCata_le_of_prefixed`) at the prefixed point
-    `⦇S⦈°\X`. -/
-public theorem hylo_le_of_prefixed_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
+/-- The fold's own leastness (`relCata_le_of_prefixed`) at the prefixed point `Y`. -/
+public theorem hylo_le_of_prefixed_fold (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
-    relCata R ⊑ ((relCata S)°) \ X :=
-  relCata_le_of_prefixed I (hylo_le_of_prefixed_step2 hFr I h)
+    relCata R ⊑ (((relCata S)°) \ X) :=
+  relCata_le_of_prefixed I (hylo_le_of_prefixed_prefix hFr I h)
 
 /-- **Step B of Theorem 6.2**: the hylomorphism `[[R,S]]` refines any prefixed point `X` of the
     body `S° ≫ F.map X ≫ R` — proved DIRECTLY (not via `hylo_eq_mu`, which uses this as its
-    leastness half). -/
+    leastness half): the fold's leastness through the adjunction once more. -/
 public theorem hylo_le_of_prefixed (hFr : F.PreservesRecip) (I : InitialAlgebra F) {A B : 𝒜}
     {R : F.obj A ⟶ A} {S : F.obj B ⟶ B} {X : B ⟶ A} (h : S° ≫ F.map X ≫ R ⊑ X) :
     (relCata S)° ≫ relCata R ⊑ X :=
-  (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp (hylo_le_of_prefixed_step1 hFr I h)
+  (le_leftDiv_iff (relCata R) ((relCata S)°) X).mp (hylo_le_of_prefixed_fold hFr I h)
 
 /-! ### The two inclusions of Theorem 6.2 (note §11.6.4c)
 

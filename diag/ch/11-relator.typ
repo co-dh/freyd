@@ -776,8 +776,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
 // 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
-// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed's steps each draw BOTH
-// sides of their own relation: a pair step, one `lean(l, r)` call apiece so its sides are one height.
+// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed is a term chain ending
+// in its hypothesis, then two statement rows (adjunction, fold leastness), each a pair step: one
+// `lean(l, r)` call apiece so its two sides are one height.
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
@@ -808,14 +809,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     Sub("Freyd.Alg.hylo_le_of_prefixed",
       gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
         satisfies the associated recursion inequation],
-      (none, ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs"), src[the conclusion]),
-      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step1.lhs", "Freyd.Alg.hylo_le_of_prefixed_step1.rhs"), src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_step2.lhs", "Freyd.Alg.hylo_le_of_prefixed_step2.rhs"), src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
- ]),
+      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[the body at `Y:=⦇S⦈°\X`, behind `⦇S⦈°`]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all — and `F` monotone]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[the hypothesis `S°F(X)R⊑X`]),
+    ),
+    (
+      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix.lhs", "Freyd.Alg.hylo_le_of_prefixed_prefix.rhs"),
+        src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold.lhs", "Freyd.Alg.hylo_le_of_prefixed_fold.rhs"),
+        src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
+          @adj-all once more gives the header]),
       // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs"), src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs"), src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
-      (IMP, ("Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"), src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
     ),
   )],
   [#lean-chain((
