@@ -577,7 +577,7 @@ public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
   have key := dynamic_programming_thin (F := F Unit Code) (F_preservesRecip Unit Code)
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
     (R := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
-    (by simp only [H]; rw [hH]; exact code_thin_condition c p hc hp)
+    (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p hc hp)
   simp only [H] at key; rwa [hH] at key
 
 /-- `extend` never returns the empty string: the symbol case snocs, and the pointer case appends

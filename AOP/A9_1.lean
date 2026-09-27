@@ -397,8 +397,7 @@ public theorem dynamic_programming_thin_upper (hFr : F.PreservesRecip) {h : F.ob
 public theorem dynamic_programming_thin (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
     (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
-    (hQ : Q ≫ F.map (H T h) ≫ h
-        ⊑ F.map (H T h) ≫ h ≫ R) :
+    (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
@@ -424,8 +423,8 @@ public theorem mu_le_mu_thinRel_id {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : 
 /-- At `Q := id`, Theorem 9.2's thinning condition `hQ` says only that `R` is reflexive. -/
 public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} (hrefl : Cat.id B ⊑ R°) :
-    Cat.id (F.obj A) ≫ F.map (H T h) ≫ h
-      ⊑ F.map (H T h) ≫ h ≫ R := by
+    ThinCondition T h R (𝟙 (F.obj A)) := by
+  unfold ThinCondition
   rw [Cat.id_comp]
   have hid : Cat.id B ⊑ R := by
     have h1 := recip_mono hrefl
@@ -876,8 +875,7 @@ public theorem dynamic_programming_thin_context (hFr : F.PreservesRecip) (I : In
     (hctx1 : F.map (R° ∩ ((H T h)° ≫ H T h)) ≫ h
         ⊑ h ≫ R°)
     (htrans : R° ≫ R° ⊑ R°)
-    (hctx2 : (Q ∩ (T ≫ T°)) ≫ F.map (H T h) ≫ h
-        ⊑ F.map (H T h) ≫ h ≫ R) :
+    (hctx2 : ThinCondition T h R (Q ∩ (T ≫ T°))) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))

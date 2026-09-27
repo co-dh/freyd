@@ -650,7 +650,7 @@ public theorem tex_laws_step3 :
       ⊑ interval ≫ Λ H ≫ est R := by
   have key := greedy_dp (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
     (h := alphaR) (T := (junc cop arb step)) (R := R) (Q := Q) (graph_map con) tex_mono R_trans
-    (by rw [tex_H]; exact tex_greedy _)
+    (by unfold ThinCondition; rw [tex_H]; exact tex_greedy _)
   rw [tex_H] at key
   exact comp_mono_left _ key
 
