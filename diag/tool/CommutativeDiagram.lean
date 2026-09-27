@@ -1089,6 +1089,15 @@ def Face.isTriangle (fc : Face) : Bool :=
   fc.chord.isNone && fc.lhs.edges.size + fc.rhs.edges.size == 3 &&
     (fc.lhs.edges.size == 1 || fc.rhs.edges.size == 1)
 
+/-- A WRAPPED SQUARE: four arrows round one cycle, split three against one.  The four nodes are a
+    square's corners whatever the split, so the long side goes round three sides of it — across the
+    top, down the right, back along the bottom — and the single arrow is the fourth, down the left,
+    with the shared source top-left.  The general grid would lay that arrow on the diagonal of a
+    square whose fourth corner is nobody's (`T°F(H)h=H`).  The 2+2 split is the ordinary square. -/
+def Face.isWrapped (fc : Face) : Bool :=
+  fc.chord.isNone && fc.lhs.edges.size + fc.rhs.edges.size == 4 &&
+    (fc.lhs.edges.size == 1 || fc.rhs.edges.size == 1)
+
 /-- ONE SIDE of a statement laid along a row: its objects left to right, its arrows between them,
     every label set above.  The hues and the dashes are still the FACE's — which arrow an equation
     produces is a property of the equation and not of the side it is written on — so the two canvases
@@ -1133,6 +1142,19 @@ def layout (fc : Face) : MetaM (Array Node × Array Edge × Array FaceMark) := d
     edges := edges.push { src := csrc, tgt := ctgt, label := (← edgeLabel fc.named cf), value := (← namedValue? fc.named cf),
                           side := if turns then "left" else "right",
                           dash := ← fc.dashes cf, hue := ← fc.hue cf }
+    return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
+  if fc.isWrapped then
+    let (long, one) := if fc.lhs.edges.size == 3 then (fc.lhs, fc.rhs) else (fc.rhs, fc.lhs)
+    let cells : Array (Float × Float) := #[(0.0, 0.0), (1.0, 0.0), (1.0, -1.0), (0.0, -1.0)]
+    let sides := #["top", "right", "bottom"]
+    let mut nodes : Array Node := #[]
+    for i in [0:4] do
+      let (id, o) := long.nodes[i]!
+      nodes := nodes.push { id, gx := cells[i]!.1, gy := cells[i]!.2, label := (← labelT o) }
+    let mut edges : Array Edge := #[]
+    for ((src, tgt, f), i) in (long.edges ++ one.edges).zipIdx do
+      edges := edges.push { src, tgt, label := (← edgeLabel fc.named f), value := (← namedValue? fc.named f),
+                            side := sides.getD i "left", dash := ← fc.dashes f, hue := ← fc.hue f }
     return (nodeHues given nodes edges, edges, faceMark nodes fc.sym (nodes.map (·.id)))
   if fc.isFan then
     -- Three columns, two rows: the apex over the middle of the row its chord ends in.
