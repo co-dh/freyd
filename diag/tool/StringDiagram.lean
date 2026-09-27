@@ -1299,7 +1299,7 @@ def depText (heads : Array Name) (q : Expr) (uses : Array Name) (found : Bool) :
   let mut roots := q.getUsedConstants ++ uses
   let mut lines := #[s!"lean {Lean.versionString}"]
   for h in hs do
-    let b := sortNames ((← candidates h).map (·.1))
+    let b := sortNames (← bucket h)
     unless found do roots := roots ++ b.push h
     lines := lines.push s!"head {h}: {" ".intercalate (b.toList.map toString)}"
   let br ← bridgeNames
