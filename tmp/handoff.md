@@ -1,20 +1,16 @@
-# Handoff — tabular AOP hylomorphism/greedy, 11.6.4c removal
+Handoff
 
-Done (commit 4cd2694 on worktree-agent-af2582376f0111bfb):
-- AOP/A6_3: `relCata_alpha`/`relCata_alpha_UP` stay in `section Alpha` over `UnguardedPowerLCDA`; the rest
-  is over `TabularUnitaryUnguardedPowerLCDA`, no `hFr` anywhere; `hylo_eq_mu_step1/2` inlined into `hylo_eq_mu`.
-- AOP/A7_2: Greedy section tabular; `greedy_step1`, `greedy`, `greedy_of_refinement` (moved into it) lose `hFr`.
-- AOP/A7_4_Horner `greedy_of_refinement_mono` tabular, no `hFr`. Call sites fixed in A6_4_FastExp,
-  A7_3_Party, A7_5_Van, A7_7_{MSS,Filter,TakeWhile}, A8_1, A9_0_SegmentExample, A9_1, A9_2, A10_1,
-  A10_3_Tardy, A10_4_Tex (elaborates against the tabular RelSet instance), leet/L104_derived.
-- Note: 11.6.4c chain removed from `<hylo-mu>`; 11.6.2c header (`relCata_UP`) states the tabular setup;
-  gr-mon/gr-Rbare back to master's two calls. Markers refreshed.
-- Gates green: lake build Freyd AOP diag, make cite, make c CH=11/13/14/15/16; L104 typechecks with lean.
+Done (commits 6efde64, 9b8c771 on worktree-agent-af2582376f0111bfb):
+- lean-chain (circuit: false): a reason under its panel when it fits the panel width, else a letter
+  (a, b, ... per row) under the panel and the lettered reasons listed under the row. Any-character
+  raw breaking removed.
+- Hints shortened in every lean-chain of ch 10, 11, 13, 14, 15, 16; the 11.6.2c chain has one per step.
+- dpanel: a unit mark on the leftmost lane writes its label west, unless its lane's own name is
+  written there (then it stays east; otherwise the name drops onto the next lane's name, labelfit 'EF').
+- StringDiagram.lean: `canon` renames each free variable to its binder name (macro scopes erased,
+  numbered among namesakes); `Row.ctx` holds canon Exprs, `Row.ident` the canon factor; `drawnAs`
+  compares `ident`, not printed key/obj.
+- Gates: lake build Freyd AOP diag, make cite, make c CH=10,11,13,14,15,16 all exit 0.
 
-Left:
-- `hFr` still carried in sections that are ALREADY tabular: A7_2 Thm71 (`mon_thm71_step1/4`,
-  `monoAlg_iff_distributes`, ...), A8_1 `thinning*`, A8_2, A8_3, A9_2, A10_1, A10_3. Dropping them is the
-  same rule; mon-thm71's marks were frozen pending a peer branch, so not touched.
-- `relCata_UP` (AOP/A5_5) is over `UnguardedPowerAllegory`, not tabular: restricting it would break the
-  general `relCata_alpha` (used by A6_5). The 11.6.2c header states the stronger setup in prose only.
-- tmp/rv/s2.png (11.6.4b rows alone) not cut: the rows are inside s1.png's display.
+Known effect: the ch14 chain thinning_paths_alg_est (steps Λ_comp_est_comp_singletonMap_le_thinRel.lhs,
+thinning_paths_alg.lhs) no longer aligns its shared beads: the two declarations name their binders differently.
