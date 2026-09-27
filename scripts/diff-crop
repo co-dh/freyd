@@ -667,12 +667,14 @@ def frame_bottom():
         float(re.search(r"#let MARGIN = ([\d.]+)cm", style)[1]) * cm
 
 
-def crop_parts(pdf, spans, tmp, tagp):
-    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked."""
+def crop_parts(pdf, spans, tmp, tagp, grow=False):
+    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked.  `grow`:
+    the bottom is only a bound, so the band grows down from the top and stops at the gutter the display
+    ends at — the prose, heading or next header between it and the bound stay out."""
     pngs = []
     for i, (pg, y0, y1) in enumerate(spans):
         W, H, boxes = svg_ink(pdf, pg, tmp)
-        got = band(boxes, y0, y1, (y0, y1))
+        got = band(boxes, y0, min(y1, y0 + GUT) if grow else y1, (y0, y1))
         if got is None:
             raise Refuse(f"no ink on page {pg} of {pdf} in y {y0:.1f}..{y1:.1f}")
         ink, pads, gaps = got
@@ -680,22 +682,32 @@ def crop_parts(pdf, spans, tmp, tagp):
         p = f"{tmp}/{tagp}{i}.png"
         cut(pdf, pg, c0, c1, W, p)
         pngs.append(p)
+        # a grown display that stopped short of the frame's foot ended on this page
+        if grow and ink[3] < frame_bottom()[0] - GUT:
+            return stackp(pngs, tmp, tagp), [s[0] for s in spans[:i + 1]]
+    return stackp(pngs, tmp, tagp), [s[0] for s in spans]
+
+
+def stackp(pngs, tmp, tagp):
     out = f"{tmp}/{tagp}.png"
     emit("magick", *pngs, "-background", "white", "-append", "+repage", out)
-    return out, [s[0] for s in spans]
+    return out
 
 
-def after_spans(order, parts, ids):
-    """The after display(s) `ids`, whole: every page part `pic-meta` recorded, bounded below by the next
-    display's start on the same page so a crop cannot run into it."""
+def after_spans(pdf, order, parts, ids, tmp):
+    """The after display(s) `ids`, whole: every page part `pic-meta` recorded, from the display's own
+    number — set ABOVE the part when the display has no `Thm` — bounded below by the next display's
+    start on the same page so a crop cannot run into it."""
     starts = {(p[0][0], p[0][1]) for d, _ in order for p in [parts.get(d, [])] if p}
     spans = []
     for d in ids:
         if d not in parts:
             sys.exit(f"diff-crop: ({d}) has no `pic` metadata in the after query — is the chapter pdf current?")
-        for pg, y, h in parts[d]:
+        a = own_anchor(pdf, d, tmp)
+        for j, (pg, y, h) in enumerate(parts[d]):
             nxt = min([sy for sp, sy in starts if sp == pg and sy > y + 1], default=y + h + GROWMAX)
-            spans.append((pg, y - LABELOFF, min(y + h + KEYPAD, nxt - 1)))
+            top = min(y, a[2]) if j == 0 and a[0] == pg else y
+            spans.append((pg, top - LABELOFF - NEAR, min(y + h + KEYPAD, nxt - 1)))
     merged = []
     for s in spans:                       # consecutive displays on one page are one span
         if merged and merged[-1][0] == s[0] and s[1] <= merged[-1][2] + GROWMAX:
@@ -713,9 +725,12 @@ def before_spans(pdf, order, ids, lead, tmp):
     nums = [d for d, _ in order]
     nxt_id = nums[nums.index(ids[-1]) + 1] if nums.index(ids[-1]) + 1 < len(nums) else None
     nxt = own_anchor(pdf, nxt_id, tmp) if nxt_id else None
-    spans, pg, top = [], first[0], first[2] - lead - LABELOFF
+    lead = max(lead, 0)            # a number set above its display is the crop's top itself
+    spans, pg, top = [], first[0], first[2] - lead - LABELOFF - NEAR
     while True:
-        bot = nxt[2] - lead - LABELOFF - 1 if nxt and nxt[0] == pg else fb + LABELOFF
+        bot = nxt[2] - lead - LABELOFF - NEAR if nxt and nxt[0] == pg else fb + LABELOFF
+        if bot <= top + 1:             # the next display opens this page: nothing of this one is on it
+            return spans
         spans.append((pg, top, bot))
         if (nxt and nxt[0] <= pg) or (not nxt and pg >= int(run("pdfinfo", pdf).stdout.split("Pages:")[1].split()[0])):
             return spans
@@ -736,7 +751,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     ai = [d for d, _ in aorder]
     ids = ai[ai.index(id_of[ends[0]]):ai.index(id_of[ends[-1]]) + 1]
     labels = [lab_of[d] for d in ids]
-    ca, apages = crop_parts(after_pdf, after_spans(aorder, aparts, ids), tmp, "la")
+    ca, apages = crop_parts(after_pdf, after_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
     borders = [d for d, l in border if l in labels]
     name = os.path.join(out, f"key-{slug(key)}.png")
     if not borders:
@@ -747,7 +762,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
         return name
     a0 = own_anchor(after_pdf, ids[0], tmp)
     lead = a0[2] - aparts[ids[0]][0][1]
-    cb, bpages = crop_parts(before_pdf, before_spans(before_pdf, border, borders, lead, tmp), tmp, "lb")
+    cb, bpages = crop_parts(before_pdf, before_spans(before_pdf, border, borders, lead, tmp), tmp, "lb", grow=True)
     if size(cb) == size(ca) and re.match(r"0\b", run("compare", "-metric", "AE", cb, ca, f"{tmp}/ld.png").stderr.strip()):
         raise Refuse(f"{key}: before and after are pixel-identical — this display did not change")
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
@@ -971,8 +986,11 @@ def checked(text, where):
 def label(src, out, text, tmp, scale):
     t = os.path.join(tmp, "lab.png")
     textimg(checked(text, "label"), t, "red")
-    emit("magick", src, *scale, "-bordercolor", "white", "-border", "6", "-background", "white",
-        "-splice", "0x30", t, "-gravity", "northwest", "-geometry", "+8+4", "-composite", out)
+    # `TrueColor`: a crop with no colour on it is a grayscale png, and the red label composited
+    # onto it came out grey — a pair whose AFTER half had no visible label.
+    emit("magick", src, "-colorspace", "sRGB", "-type", "TrueColor", *scale, "-bordercolor", "white",
+        "-border", "6", "-background", "white", "-splice", "0x30", t, "-gravity", "northwest",
+        "-geometry", "+8+4", "-composite", "-type", "TrueColor", out)
 
 
 def caption_strip(src, out, text):
