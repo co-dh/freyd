@@ -467,14 +467,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // so `φ` lands on one row either side: the algebra bead stands still while `R` walks out of the
 // functor and down past it.  `φ` is an arrow at the one object `A`, not a family, so its dot rides
 // the object wire and carries no `"lax"` — that is where it differs from @lax-str's spider.
-#let mon-hm-l = lean("Freyd.Alg.MonoAlg.lhs")
-#let mon-hm-r = lean("Freyd.Alg.MonoAlg.rhs")
+// ONE call, so the two sides share a box and line up on the bead they share.
+#let mon-hm = lean("Freyd.Alg.MonoAlg.lhs", "Freyd.Alg.MonoAlg.rhs")
 
 // @lax-str at `G := F`, `F := Id`: the right edge's `Id(R)` is written `R`, and the one algebra `φ`
 // stands at both components.  `⊑` points NE — down-then-across is the smaller `F(R)φ`.
 #disp[#pair(
   leancd("Freyd.Alg.MonoAlg"),
-  row((mon-hm-l, [#h(7pt) #SQ #h(7pt)], mon-hm-r)),
+  mon-hm,
  [`F(R)φ⊑φR` #src[]],
 )
 // lean:AOP.A7_2.MonoAlg@26944450
