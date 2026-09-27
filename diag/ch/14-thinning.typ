@@ -213,7 +213,7 @@ row((
    #src[@thin-laws at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]],
   lean-chain(
     (IMP, "Freyd.Alg.thinning_step1.lhs",
-      src[the first by @cata-fusion; @hylo-least at the bound `Q°∈` reduces the second to `−⊑Q°∈`]),
+      src[the first by @cata-fusion; @hylo-mu at the bound `Q°∈` reduces the second to `−⊑Q°∈`]),
     (SQ, "Freyd.Alg.thinning_step1.rhs",
       src[`S°F(Q°)⊑Q°S°` — @mon-str at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]),
     (SQ, "Freyd.Alg.thinning_step2.rhs",

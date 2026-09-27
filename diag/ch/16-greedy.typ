@@ -44,7 +44,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      // lean:AOP.A10_1.greedy_dp_lower_step1@66f7230b
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-mu]),
   ),
 )]<greedy-lower>
 
@@ -57,7 +57,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain((
     (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
     (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
-      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]),
+      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-mu]),
      // lean:AOP.A10_1.greedy_dp_upper_step1@861e793a
     (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
       src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),

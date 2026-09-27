@@ -100,7 +100,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs",
       src[`M≜`#frc([`H`])` est(R)⊑`#frc([`H`])`∋=H` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_lower_step3@c6f95aaf
-    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-mu]),
   ),
 )]<dp-lower>
 
@@ -118,7 +118,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_upper_step1@1d2d8693
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T`: `H≜⦇T⦈°⦇h⦈` and @hylo-mu]),
      // lean:AOP.A9_1.dynamic_programming_upper_step2@5d42b26b
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
       src[`T`#frc([`T°`])`⊑∈`: #frc([`T°`]) a map, #frc([`T°`])`∋=T°` — @pow-laws]),
@@ -188,7 +188,7 @@ in @mu-defn.
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
-      src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-fix]),
+      src[`T°F(H)h=H`: `H≜⦇T⦈°⦇h⦈` and @hylo-mu]),
   ),
 )]<dp-laws-92>
 
@@ -204,7 +204,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
       src[(9.4) `P(X)est(R)⊑∈\(XR°)` at `X≜F(`#frc([`H`])` est(R))h` — @est-710]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_step4.rhs",
-      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-fix]),
+      src[`H°=h°F(H°)T`, the converse of `T°F(H)h=H` — @hylo-mu]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step5.rhs",
       src[`T`#frc([`T°`])`⊑∈`, not a tabulated row: #frc([`T°`])`∋=T°` conversed]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",

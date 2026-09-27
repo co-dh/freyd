@@ -775,13 +775,20 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
-// ONE call for the chain's five panels, so they share one placement and the bead a step moves over
-// (its triangle) stands at one height on both sides of that step.
-#let (hy-m, (hy-body, hy-split, hy-alg, hy-alpha-iso, hy-unit)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_fixed_step1.lhs", "Freyd.Alg.hylo_fixed_step1.rhs", "Freyd.Alg.hylo_fixed_step2.rhs",
-   "Freyd.Alg.hylo_fixed_step3.rhs", "Freyd.Alg.hylo_fixed_step4.rhs"))
-// ONE call for the chain's twelve panels, so they share one placement and the bead a step moves
-// over (its triangle) stands at one height on both sides of that step.
+// 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
+// share ONE table, headed by the fixed-point statement; hylo_fixed and hylo_le_of_prefixed print as
+// `sub-header` rows (their own #src banner), hylo_eq_mu continues as a plain row.  hylo_fixed and
+// hylo_eq_mu go through `Sub`/`lean-chain`, one selector per step; hylo_le_of_prefixed's six steps
+// each draw BOTH sides of ITS OWN relation (a `trow` pair per step, not one picture), which
+// `lean-chain` cannot give an individual step's own height-matched call, so that row stays on
+// `hchain` directly, under a `sub-header` banner for the same look.  ONE call for its twelve panels
+// so they share one placement; PAIRWISE height-matching (`#lean(a, b)`'s two-selector depth match)
+// was tried per pair and dropped — isolating `hylo_le_of_prefixed#h.{lhs,rhs}` on its own reliably
+// crashes `diag-export --stale`'s batched check ("no such declaration: [anonymous]") under the full
+// note sweep, reproducibly, though the identical selectors succeed standalone outside that sweep —
+// an exporter regression from the recent staleness rework, not a note-content issue; left alone.
+// Citations to 11.6.4a/b from elsewhere in this table now name a row of the SAME table, so they
+// read as plain text; @hylo-mu (this table's one label) is what the rest of the note still cites.
 #let (hyl-m, (hy-base-l, hy-base-r, hy-cataR, hy-cataR-r, hy-rec, hy-rec-r, hy-adj, hy-adj-r,
   hy-fuse, hy-fuse-r, hy-prefix, hy-prefix-r)) = lean-pics("generated/", <lean-panel>,
   ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs",
@@ -790,37 +797,36 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
    "Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs",
    "Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs",
    "Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"))
-// The right-hand side of a step: the one relation the chain is bounded by, at the height its
-// partner's own bead keeps — `X` against @hylo-least's `S°F(X)R`, `⦇S⦈°\X` against `α°F(⦇S⦈°\X)R`.
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
-// at the trailing algebra; every step shortens it, and by the last panel it is gone.
-#disp[#calc-table(cols: (1fr,), al: auto, 
-  // hylo-fixed row: Theorem 6.2
-  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
- #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
-     decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
-     recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
-    // lean:AOP.A6_3.hylo_fixed@42010f9f
-  [#hy-m#hchain(
-    (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
-    (EQ, hy-split, src[`F(RS)=F(R)F(S)` — @relator-defn]),
-    (EQ, hy-alg, src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
-    (EQ, hy-alpha-iso, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
-     `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
-    (EQ, hy-unit, src[`α°α=𝟙`: `α` is an iso]),
-    // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
+// at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
+// mirrored: two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's own leastness
+// fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  The chain then LEAVES
+// `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one `⊑` is hylo_fixed
+// through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ` is.
+#disp[#calc-table(cols: (1fr,), al: auto,
+  // hylo-fusion-eq header: Theorem 6.2
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
+    #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
+  [#lean-chain(
+    Sub("Freyd.Alg.hylo_fixed",
+      gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
+        decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
+        recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
+      // lean:AOP.A6_3.hylo_fixed@42010f9f
+      (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
+      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
+      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
+        `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
+      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α°α=𝟙`: `α` is an iso]),
+      // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
+    ),
   )],
-)]<hylo-fix>
-
-// B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
-// own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
-#disp[#calc-table(cols: (1fr,), al: auto, 
- // hylo-least row: Theorem 6.2
- Thm(cols: 1)[#leanf("Freyd.Alg.hylo_le_of_prefixed") \
-    #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
-     satisfies the associated recursion inequation]],
-  [#hyl-m#hchain(
+  [#sub-header("Freyd.Alg.hylo_le_of_prefixed",
+      gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
+        satisfies the associated recursion inequation])
+    #hyl-m#hchain(
     (none, trow(hy-base-l, hy-base-r),
      src[the conclusion]),
     (IFF, trow(hy-cataR, hy-cataR-r),
@@ -832,36 +838,21 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     (IFF, trow(hy-adj, hy-adj-r),
      src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
     (IFF, trow(hy-fuse, hy-fuse-r),
-     src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]),
+     src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
     (IMP, trow(hy-prefix, hy-prefix-r),
      src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
   )],
-)]<hylo-least>
-
-// The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
-// `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
-// ONE call for the chain's three panels, so they share one placement and the bead a step moves
-// over (its triangle) stands at one height on both sides of that step.
-#let (hym-m, (hym-1, hym-2, hym-3)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_eq_mu_step1.lhs", "Freyd.Alg.hylo_eq_mu_step1.rhs", "Freyd.Alg.hylo_eq_mu_step2.rhs"))
-#disp[#calc-table(cols: (1fr,), al: auto,
- // hylo-fusion-eq row: Theorem 6.2
- Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
-    #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
-  // lean:AOP.A6_3.hylo_eq_mu@c60df971
-  [#hym-m#hchain(
-    (none, hym-1,
-     src[@mu-defn at `φ(X):=S°F(X)R`]),
-    (SQ, hym-2,
-     src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
- `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]),
-     // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-    (SQ, hym-3,
-     src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
-     `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
+  [#lean-chain((
+      // lean:AOP.A6_3.hylo_eq_mu@c60df971
+      (none, "Freyd.Alg.hylo_eq_mu_step1.lhs", src[@mu-defn at `φ(X):=S°F(X)R`]),
+      (SQ, "Freyd.Alg.hylo_eq_mu_step1.rhs", src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
+ `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is hylo_fixed above]),
+      // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
+      (SQ, "Freyd.Alg.hylo_eq_mu_step2.rhs", src[hylo_le_of_prefixed above at `X:=(μX : S°F(X)R)`, whose
+ `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
  ]),
-     // lean:AOP.A6_2.mu_prefixed@fc0a1dca
-  )],
+      // lean:AOP.A6_2.mu_prefixed@fc0a1dca
+  ))],
 )]<hylo-mu>
 
 #pagebreak(weak: true)

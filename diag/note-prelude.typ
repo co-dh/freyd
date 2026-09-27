@@ -275,8 +275,17 @@
 // proves and packages it as the dict `lean-chain` reads, printed in a header row across the cell so
 // a new obligation reads apart from a row that only wraps; a plain row after it continues the same
 // obligation.  `gloss` is optional.  `lean-chain` accepts only a dict `Sub` built — never a
-// hand-written one — so a row can't drift from what `Sub` prints.
+// hand-written one — so a row can't drift from what `Sub` prints.  A row whose steps each draw BOTH
+// sides of their own relation (a `trow` pair per step, not one picture) stays on `hchain` directly —
+// `lean-chain` always resolves a row's steps through ONE shared multi-selector call, which cannot
+// also give an individual step's pair its own height-matched call; `sub-header` below is the printed
+// banner factored out so such a row can still look like a `Sub` row without going through `Sub`.
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
+// The `Sub` banner, standalone: for a row that cannot go through `lean-chain` (its steps are
+// height-matched `trow` pairs, not single selectors) but still opens a fresh obligation.
+#let sub-header(decl, gloss: none) = pad(x: -9pt, block(width: 100%, fill: luma(246),
+  inset: (x: 9pt, y: 4pt), below: 6pt, stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
+  align(center, { leanf(decl); if gloss != none { [ \ ]; gloss } })))
 #let lean-chain(..args) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
@@ -293,13 +302,8 @@
     let k = calc.min(..rows.zip(ws).map(((r, w)) => chain-k(sz.width, r.steps.first().at(0) == none, w)))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = row.steps
-      // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
-      // the table's 9pt inset so it spans the cell like a row of the table
-      if "sub" in row {
-        pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
-          stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
-      }
+      // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule
+      if "sub" in row { sub-header(row.sub, gloss: row.gloss) }
       hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
