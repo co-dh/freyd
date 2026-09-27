@@ -710,6 +710,18 @@ def placement (ps : Array Diagram) : Placement := Id.run do
 def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
   (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).get!.2
 
+/-- TWO PARTS THAT DRAW ONE PICTURE: the same lanes born and dying at the same rows, the same beads
+    in order, over the same objects.  A step that only re-spells the term (`F(RS)=F(R)F(S)`, a
+    re-association) draws its two sides alike, and a chain showing both shows one picture twice. -/
+def Diagram.drawnAs (a b : Diagram) : Bool :=
+  a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
+    && a.rows.map (·.key) == b.rows.map (·.key) && a.top == b.top && a.bot == b.bot
+    && a.otop == b.otop && a.obot == b.obot
+
+/-- `dup`: this file draws what the NEXT selector of its call draws (`Diagram.drawnAs`), so a chain
+    shows the picture once — `lean-chain` merges the step into the next and joins their reasons. -/
+def dupLine (dup : Bool) : String := "#let dup = " ++ (if dup then "true" else "false") ++ "\n"
+
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
     re-splitting the picture.
@@ -718,7 +730,7 @@ def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
     sides of one equation are two files, and a side that took its own depth came out shorter than the
     side across the `=` from it, one that took its own row put the bead they share at two heights.
     Asked for alone it has no peers and the box and the row are its own. -/
-def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
+def emit (decl : Name) (p : Diagram) (pl : Placement) (dup : Bool) : MetaM String := do
   -- THE OBLIGATION, not the record: the part drawn must be one the placement was taken over.  A
   -- part the peer list did not reach can start above the box or reach below its floor, and
   -- `frameRows` would then draw it taller than the parts beside it rather than clip it.
@@ -727,14 +739,14 @@ def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
     throwError "a part {p.rows.size} beads deep reaches row {ls} of a frame of {pl.frame} rows: the \
       placement is the DECLARATION's, so every part of it must be among the ones it was taken over"
   return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some ls))
-    ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
+    ++ ",)\n#let pic = panels.at(0)\n" ++ dupLine dup) (← natLines decl #[p])
 
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
     never the part's — the placement's deepest part sets it and every shorter one is lined up
     inside it. -/
 def emitStatement (decl : Name) (declName : String) (parts : Array (String × Diagram))
-    (pl : Placement) : MetaM String := do
+    (pl : Placement) (dup : Bool) : MetaM String := do
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
@@ -754,7 +766,7 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines decl (parts.map (·.2)))
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n" ++ dupLine dup) (← natLines decl (parts.map (·.2)))
 
 /-! ### The functor: an arrow of the allegory as a panel
 
@@ -2841,12 +2853,18 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     let part (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
       peerParts (toString (b, h, p, s.map (·.suffix)))
         (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
-    let qs ← Prof.phaseIf draw "peers" do
-      if peers.any fun (b, h, p, s) => b.toName == declName && h == binder && p == path
-          && s.map (·.suffix) == sel.map (·.suffix) then
-        discard <| part declName binder path sel
-      peers.toArray.flatMapM fun (b, h, p, s) => part b.toName h p s
+    let me := peers.findIdx? fun (b, h, p, s) => b.toName == declName && h == binder && p == path
+      && s.map (·.suffix) == sel.map (·.suffix)
+    let per ← Prof.phaseIf draw "peers" do
+      if me.isSome then discard <| part declName binder path sel
+      peers.toArray.mapM fun (b, h, p, s) => part b.toName h p s
+    let qs := per.flatten
     let pl := placement qs
+    -- THIS selector against the NEXT one of its call, each a single panel: the same picture twice.
+    let dup := match me with
+      | some k => k + 1 < per.size && per[k]!.size == 1 && per[k + 1]!.size == 1
+          && per[k]![0]!.drawnAs per[k + 1]![0]!
+      | none => false
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
     -- A pair owes two things and this is where both are answered: ONE HEIGHT, so the parts stand in
@@ -2886,8 +2904,8 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      return (← if parts.size == 1 then emit declName parts[0]!.2 pl
-        else emitStatement declName nm parts pl, #[])
+      return (← if parts.size == 1 then emit declName parts[0]!.2 pl dup
+        else emitStatement declName nm parts pl dup, #[])
 
 def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
     (peers : List (String × Option String × List String × List Sel)) : MetaM String :=
