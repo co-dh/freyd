@@ -962,10 +962,23 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     | none => Meta.isDefEq e X
   -- ONE SQUARE, EITHER WAY ROUND: `F(X)φ` on one side and `φG(X)` on the other, the same `φ` both
   -- times.  `F(X)φ ⊑ φG(X)` is the down triangle, `φG(X) ⊑ F(X)φ` the up one.
+  -- A FAMILY'S SQUARE HAS TWO COMPONENTS: `H(R)ψ_B ⊑ ψ_A G(R)`.  The drawn bead is the side `X`
+  -- stands above, whole; the other side is the same family at whatever object — a component being
+  -- the last argument when it occurs in the arrow's own type (`ψ_B : H(B)⟶G(B)`).
+  let fam (e : Expr) : MetaM (Option Expr) := do
+    let e := e.consumeMData
+    unless e.isApp do return none
+    let t ← instantiateMVars (← Meta.inferType e)
+    return if (t.find? (· == e.appArg!)).isSome then some e.appFn! else none
+  let same (e : Expr) : MetaM Bool := do
+    if ← Meta.isDefEq e φ then return true
+    match ← fam e, ← fam φ with
+    | some f, some g => Meta.isDefEq f g
+    | _, _ => return false
   for (up, a, b) in [(false, l, r), (true, r, l)] do
     let some X := mapArg a[0]! | continue
     let s ← Meta.saveState
-    if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
+    if (← Meta.isDefEq a[1]! φ) && (← same b[0]!) && (← image b[1]! X) then
       return some (X, up)
     s.restore
   return none
@@ -1053,14 +1066,14 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
     `isDefEq`) or a theorem (`passThm`) gives the square `F(X)φ ⊑ φG(X)` of — the up triangle
-    where the square is `⊒`; once `X` has moved below, plain.
-    A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
+    where the square is `⊒`; once `X` has moved below, plain.  The square is asked of EVERY bead,
+    a lax one too (`hψ : H(R)ψ_B ⊑ ψ_A G(R)` with `R` above `ψ_B`): a found pass is drawn in place
+    of the verdict's circle, which stays where no bead above has a square. -/
 def settlePass (d : Diagram) : MetaM Diagram := do
   let mut rows := d.rows
   for i in [0 : rows.size] do
     let r := rows[i]!
     let up := if i == 0 then none else some rows[i - 1]!
-    unless r.nat.isNone do continue
     let some Y := up.bind (·.core) | continue
     let mut hit : Option (Name × String × Bool) := none
     let mut dir := false
