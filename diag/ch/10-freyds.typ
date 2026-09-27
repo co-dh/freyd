@@ -91,6 +91,28 @@ subscript.
   // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
 )]<pow-laws>
 
+== `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
+
+// The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
+// the two agree on maps only (B&dM p. 119), and `𝟙/∋ P(R)` is every nonempty subset of `R(a)`.
+#disp[#pair(
+  leancd("Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage"),
+  // `𝟙/∋` opens the `i E` pair and `∋` closes it again, so the strand running in and out of a panel is
+  // the one functor; the panel beside it draws that same functor as the plain wire the law equates it to.
+  grid(columns: 2, column-gutter: 14pt, align: horizon,
+    lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
+  [#leanf("Freyd.Alg.Λ_comp_eps") #h(1.4cm)
+   #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
+ already the relator `P(R)`. ]],
+   // lean:AOP.A4_6.Λ_comp_eps@76d609ed
+   // B&dM write `PA` for the powerset.
+  // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
+  s: 95%,
+)]<adj-E-bend>
+
+#block[#src[`i` is the inclusion `Map(𝒜)⟶𝒜`, doing nothing, so `E` is both the functor and the
+monad `iE`.]]
+
 == `∈\` as a composite <sec-mem-ldiv>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -123,28 +145,6 @@ subscript.
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step4@a1f0d86d
   ),
 )]<ldiv-comp>
-
-== `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
-
-// The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
-// the two agree on maps only (B&dM p. 119), and `𝟙/∋ P(R)` is every nonempty subset of `R(a)`.
-#disp[#pair(
-  leancd("Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage"),
-  // `𝟙/∋` opens the `i E` pair and `∋` closes it again, so the strand running in and out of a panel is
-  // the one functor; the panel beside it draws that same functor as the plain wire the law equates it to.
-  grid(columns: 2, column-gutter: 14pt, align: horizon,
-    lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
-  [#leanf("Freyd.Alg.Λ_comp_eps") #h(1.4cm)
-   #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
- already the relator `P(R)`. ]],
-   // lean:AOP.A4_6.Λ_comp_eps@76d609ed
-   // B&dM write `PA` for the powerset.
-  // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
-  s: 95%,
-)]<adj-E-bend>
-
-#block[#src[`i` is the inclusion `Map(𝒜)⟶𝒜`, doing nothing, so `E` is both the functor and the
-monad `iE`.]]
 
 // The heading gets its own page: §10.1's pair fills the foot of the previous one, and the definition
 // below is unbreakable, so the heading was left standing alone there.

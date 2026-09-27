@@ -26,7 +26,7 @@
 7.1a/fokkinga#1                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ
 7.1a/fokkinga#2                  | Freyd.Alg.pair_eq_relCata_pair_iff.lhs                     | cdref-fokkinga.typ  # the SECOND conjunct's square: one statement, one face per conjunct, so one selector answers both canvases
 7.2b/horner#1                    | Freyd.Alg.tri_cata_fusion                                  | cdref-horner.typ
-10.2a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
+10.1a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
 11.1c/fork-pic#1                 | Freyd.Alg.RelProd.pair_outl_le+Freyd.Alg.RelProd.pair_outr_le | cdref-fork.typ
 11.1.1b/relprod-pic#1            | Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le        | cdref-relprod.typ
 11.2.1b/coprod-square#1          | Freyd.Alg.u_junc_Λ_eps                                     | cdref-coprod.typ
