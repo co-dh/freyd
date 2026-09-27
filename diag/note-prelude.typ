@@ -272,9 +272,7 @@
 // A row may instead be `(sub: sel, gloss: [..], steps: (..))`: `sub` names the declaration the row
 // proves, printed in a header row across the cell, so a new obligation reads apart from a row that
 // only wraps; a plain row after it continues the same obligation.  `gloss` is optional.
-// `aligned: true`: the rows are the BRANCHES of one chain, row i's step k a component of the same
-// term, so every row has the same steps and column k is as wide as its widest panel in every row.
-#let lean-chain(..args, aligned: false) = {
+#let lean-chain(..args) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary { r } else { (steps: r) })
@@ -284,13 +282,6 @@
   // page overran its foot (16.3i).
   table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
     let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
-    if aligned {
-      let n = ws.first().len()
-      assert(ws.all(w => w.len() == n), message: "lean-chain(aligned: true): the rows have "
-        + ws.map(w => str(w.len())).join(", ") + " steps; branches of one chain have the same steps")
-      let m = range(n).map(i => calc.max(..ws.map(w => w.at(i))))
-      ws = ws.map(_ => m)
-    }
     let k = calc.min(..rows.zip(ws).map(((r, w)) => chain-k(sz.width, r.steps.first().at(0) == none, w)))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = row.steps
