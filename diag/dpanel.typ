@@ -6,7 +6,7 @@
 //
 //   typst compile --root . diag/allegory-axioms.typ diag/allegory-axioms.pdf
 #import "note-style.typ": P, dispnum, plain
-#import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
+#import "hm.typ": cetz, hm-bead, hm-mark-half, hm-name, hm-panel, hm-port, hm-region, hm-wire
 #import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
 
 // The converse lane and the `Relᵒᵖ` region between two of them.
@@ -452,7 +452,13 @@
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
     // another strand sweeps that row west of this lane.
-    if nmd.contains(i) { hm-name((l.at(0) - 0.12, dnamey(lanes, l, kb)), nm, col: col, anchor: "east") }
+    // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
+    if nmd.contains(i) {
+      let ny = dnamey(lanes, l, kb)
+      let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
+        and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
+      hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
+    }
   }
   // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
   // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the

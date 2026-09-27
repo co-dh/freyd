@@ -109,6 +109,9 @@
 // The triangle's scale on the diamond's half-diagonal, for `pass` and `passup` alike.
 #let HMS = 2
 
+/// How far a mark reaches either side of its point: what a name set beside the point must clear.
+#let hm-mark-half(nat) = if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else { HMR }
+
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
 /// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
