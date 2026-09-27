@@ -69,6 +69,11 @@ def exit : BaseIO Unit := do
   enter name
   try x finally exit
 
+/-- `phase` where `b`, else `x` as it is: a recursive reader times only its outermost call. -/
+@[inline] def phaseIf {m : Type → Type} {α : Type} [Monad m] [MonadLiftT BaseIO m] [MonadFinally m]
+    (b : Bool) (name : String) (x : m α) : m α :=
+  if b then phase name x else x
+
 /-- Remove and return the current thread's phase totals — the task calling it owns them. -/
 def drain : BaseIO (Array (String × Acc)) := do
   let tid ← IO.getTID
