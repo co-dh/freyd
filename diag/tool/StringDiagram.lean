@@ -150,9 +150,15 @@ structure Row where
   /-- THE BINDER THE VERDICT WAS READ OFF, where no declaration proves it: the drawn statement
       ASSUMES the square, so the panel's citation is the panel's own declaration and this name. -/
   natHyp : Option Name := none
-  /-- THE RELATION THIS BEAD LETS DOWN PAST IT and the binder proving it (`passHyp`): the drawn
-      statement assumes `F(X)φ ⊑ WX`, so `X` above `φ` may move below it — a hollow down triangle. -/
+  /-- THE RELATION THIS BEAD LETS DOWN PAST IT and the binder proving it: a binder assumes
+      `F(X)φ ⊑ WX` (`passHyp`) AND the bead directly above this one is `X` (`settlePass`) — a
+      hollow down triangle.  Once `X` has moved below, the same bead is drawn plain. -/
   pass : Option (Name × String) := none
+  /-- Every `(binder, X)` a binder lets down past this bead, before the panel's order is known. -/
+  passCands : Array (Name × String × Expr) := #[]
+  /-- The bead's own term with no lane around it (`X`, not `F(X)`), which `settlePass` compares
+      with the `X` of the bead below it. -/
+  core : Option Expr := none
   /-- IS THE BEAD A FAMILY IN AN OBJECT AT ALL?  One that is not is an arrow at this one object and
       has no naturality to be asked about; one that IS, carrying neither mark nor citation, is a
       family whose ends no lane of the region spells — and the trace says which, rather than
@@ -173,6 +179,10 @@ structure Row where
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
 def Row.label (r : Row) : String := r.shape.flat
+
+/-- DRAWN AS THE HOLLOW DOWN TRIANGLE: a bead with no family claim that a binder lets a relation
+    down past (`passHyp`).  A proved family keeps its naturality mark, whose square says as much. -/
+def Row.tri (r : Row) : Bool := r.nat.isNone && r.pass.isSome
 
 /-- A PICTURE, with an open top and bottom edge — the value `⟦f⟧` is, so that `⟦f≫g⟧ = ⟦f⟧⋆⟦g⟧` and
     `⟦φ×ψ⟧ = ×▹(⟦φ⟧∥⟦ψ⟧)` are composites of pictures and not a second walk over the term. -/
@@ -396,10 +406,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    -- A proved FAMILY keeps its naturality mark even where it also lets a relation down: its square
-    -- is that fact at every arrow, so the triangle marks only a bead with no family claim.
     let mark := match r.nat with
-      | none => if r.pass.isSome then ", \"pass\"" else ""
+      | none => if r.tri then ", \"pass\"" else ""
       | some .strict => ""
       | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
       | some .mapsOplax => key .mapsOplax
@@ -609,7 +617,11 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     -- The weight of row `i` on slot `j`: its bead's size, then its pin (`Row.pin` < 4), when a part
     -- already has that bead there; more than every other match together when that part is the
     -- NEIGHBOUR, whose shared beads the gate holds level.
-    let pin (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    -- THE TRIANGLE IS THE ANCHOR, ahead of size: the bead the relation passes down across the `⊑`
+    -- is what the display is about, so its match outweighs every other match of the part together.
+    let base (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    let rest : Int := (List.range n).foldl (· + base ·) 0
+    let pin (i : Nat) : Int := if b.rows[i]!.tri then rest + base i else base i
     let tot : Int := (List.range n).foldl (· + pin ·) 0
     let w (i j : Nat) : Int :=
       let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
@@ -927,7 +939,8 @@ partial def compFactors (e : Expr) : Array Expr :=
     bead says `X`, run through `F` above `φ`, may be moved below it: `MonoAlg φ R` (`W := φ`) and
     `Distributes f R` (`X := est(R)`, `W := Λ(F(∋)f)`) alike.  Read off the PROVED proposition's
     `⊑` and its composites, never off the formula drawn; nothing found is the default bead. -/
-def passHyp (φ : Expr) : MetaM (Option (Name × String)) := do
+def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr)) := do
+  let mut out := #[]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     let mut ty ← instantiateMVars d.type
@@ -948,8 +961,22 @@ def passHyp (φ : Expr) : MetaM (Option (Name × String)) := do
     let X := fx.appArg!
     let hit ← Meta.withNewMCtxDepth do
       pure ((← Meta.isDefEq l[l.size - 1]! φ) && (← Meta.isDefEq r[r.size - 1]! X))
-    if hit then return some (← d.fvarId.getUserName, ← label X)
-  return none
+    if hit then out := out.push (← d.fvarId.getUserName, ← label X, X)
+  return out
+
+/-- THE TRIANGLE IS A PROPERTY OF A BEAD AND THE BEAD ABOVE IT, so it is settled once the panel's
+    order is: row `i` keeps a `(binder, X)` only where row `i-1` IS `X` (`isDefEq` on the terms).
+    On the far side of the `⊑`, where `X` has moved below, the bead is drawn plain — unless the
+    bead now above it is one some other binder lets down too. -/
+def settlePass (d : Diagram) : MetaM Diagram := do
+  let mut rows := d.rows
+  for i in [1 : rows.size] do
+    let some up := rows[i - 1]!.core | continue
+    for (h, xl, X) in rows[i]!.passCands do
+      if ← Meta.withNewMCtxDepth (Meta.isDefEq up X) then
+        rows := rows.set! i { rows[i]! with pass := some (h, xl) }
+        break
+  return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
@@ -1578,7 +1605,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
-      pass := ← passHyp core, family := φ.isSome, map := ← isMapOf core }
+      passCands := ← passHyp core, core := some core, family := φ.isSome, map := ← isMapOf core }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
@@ -2302,7 +2329,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   scanCheck regionTy cat objVars side d
-  return d
+  settlePass d
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
