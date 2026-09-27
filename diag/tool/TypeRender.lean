@@ -55,8 +55,22 @@ def stmtKey (ci : ConstantInfo) : MetaM UInt64 := do
       (ci.levelParams.mapIdx fun i _ => .param (.mkSimple s!"u{i}")))).hash
   match ci with
   | .thmInfo _ | .axiomInfo _ => return canon ci.type
-  | .inductInfo _ => throwError "{ci.name} is an inductive type; its `stmt_key` is keyed on its \
-      constructors, which this tool does not compute — cite a declaration ABOUT it instead"
+  -- An inductive keys on its CONSTRUCTORS, as `lean-refactor`'s `statementKey` does (the index
+  -- this key is checked against): its own block replaced by positional markers, and each
+  -- constructor's name and binder names mixed in.
+  | .inductInfo ind =>
+    let deSelf (e : Expr) : Expr := e.replace fun
+      | .const n _ => (ind.all.idxOf? n).map fun i => .const (.mkSimple s!"#self{i}") []
+      | _ => none
+    let rec names : Expr → List Name
+      | .forallE n _ b _ => n :: names b
+      | _ => []
+    let env ← getEnv
+    ind.ctors.foldlM (init := mixHash (hash ind.numParams) (canon (deSelf ci.type))) fun h c => do
+      let some cc := env.find? c | throwError "{ci.name}: constructor {c} is not in the environment"
+      let ty := deSelf cc.type
+      let ctorName := match c with | .str _ s => s | _ => ""
+      return mixHash (mixHash h (mixHash (hash ctorName) (hash (names ty)))) (canon ty)
   | _ => return mixHash (canon ci.type) ((ci.value?.map canon).getD 0)
 
 /-- The low 32 bits as `cite-check` spells them: 8 hex digits, zero-padded. -/

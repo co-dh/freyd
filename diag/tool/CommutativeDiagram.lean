@@ -1779,8 +1779,18 @@ def withHyps (fs₀ : Array Face) (xs : Array Expr) : MetaM (Array Face) := do
   return (← ds.filterM fun d => return (← shared d) == 1) ++ fs
     ++ (← hyps.filterM fun h => return (← shared h) == 1)
 
-/-- One part of the command line: a declaration, and the side of its `↔` if it names one. -/
-def part (s : String) : Name × Option String :=
+/-- `<Name>#<binder>`: the declaration and the BINDER whose type is the claim — a hypothesis is a
+    statement too (`DiagExport.parseArg`'s spelling).  Split before `toName`: `#` is not an
+    identifier character. -/
+def binderPart (s : String) : String × Option String :=
+  match s.splitOn "#" with
+  | [b, h] => (b, some h)
+  | _ => (s, none)
+
+/-- One part of the command line: a declaration, and the side of its `↔` if it names one.  The
+    declaration is the one a `#<binder>` is read in (`binderPart`). -/
+def part (s₀ : String) : Name × Option String :=
+  let s := (binderPart s₀).1
   if s.endsWith ".lhs" then ((s.dropEnd 4).toString.toName, some "lhs")
   else if s.endsWith ".rhs" then ((s.dropEnd 4).toString.toName, some "rhs")
   else (s.toName, none)
@@ -1830,10 +1840,22 @@ partial def drawParts (sel : String) (parts : Array (Name × Option String)) (xs
     be found shared.  Two faces sharing exactly one edge are pasted along it; anything else is one
     panel per face, set side by side. -/
 def draw (sel : String) : MetaM String := do
-  let parts := (sel.splitOn "+").toArray.map part
+  let (sel₀, binder) := binderPart sel
+  let parts := (sel₀.splitOn "+").toArray.map part
   let (n₀, s₀) := parts[0]!
   let some ci := (← getEnv).find? n₀ | throwError "no such declaration: {n₀}"
   Meta.forallTelescopeReducing ci.type fun xs body => do
+    -- A HYPOTHESIS IS A STATEMENT TOO: `<Name>#<binder>` draws that binder's type, found by the
+    -- binder it is and never by what its type is called, over the telescope standing before it —
+    -- the binders a hypothesis can be about.  A predicate it names is opened by `faces`' delta step.
+    let (xs, body) ← match binder with
+      | none => pure (xs, body)
+      | some h =>
+        match ← (List.range xs.size).findM? fun i => return (← xs[i]!.fvarId!.getUserName).toString == h with
+        | some i => pure (xs.extract 0 i, ← Meta.inferType xs[i]!)
+        | none =>
+          let names ← xs.mapM fun x => return (← x.fvarId!.getUserName).toString
+          throwError "{n₀} has no binder `{h}`; its binders are {String.intercalate ", " names.toList}"
     -- A STATEMENT THAT ENDS IN `False` DENIES WHAT IT WAS HANDED LAST.  `¬ X` is `X → False`, and
     -- the telescope opens that like any other implication, so the claim is the last hypothesis and
     -- the picture is its own face with the struck symbol (`negSym`) in the middle.
