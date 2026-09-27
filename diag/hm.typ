@@ -106,11 +106,13 @@
 // The diamond's half-diagonal.  Equal AREA to the circle reads smaller — a diamond loses its
 // corners to the eye — so it is set by the width that matches, not by the area.
 #let HMD = HMR * 1.45
-// The triangle's scale on the diamond's half-diagonal, for `pass` and `passup` alike.
+// The scale of the triangles and circles over `HMR`/`HMD`: at `HMR` the hollow circle was unreadable.
 #let HMS = 2
+// The circle marks' radius (`strict`, `lax`, `maps`).
+#let HMC = HMS * HMR
 
 /// How far a mark reaches either side of its point: what a name set beside the point must clear.
-#let hm-mark-half(nat) = if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else { HMR }
+#let hm-mark-half(nat) = if nat in ("pass", "passup") { HMS * HMD } else if nat in ("oplax", "maps-oplax") { HMD } else if nat == "spider" { HMR } else { HMC }
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
@@ -147,12 +149,12 @@
   } else if nat == "maps" {
     // The filled half goes down FIRST and the outline LAST, as a region does under a wire: a
     // stroked half-disc would draw the diameter across the middle of the dot.
-    d.circle(p, radius: HMR, fill: bg, stroke: none)
-    d.arc(p, start: 90deg, stop: 270deg, radius: HMR, anchor: "origin", mode: "PIE",
+    d.circle(p, radius: HMC, fill: bg, stroke: none)
+    d.arc(p, start: 90deg, stop: 270deg, radius: HMC, anchor: "origin", mode: "PIE",
           fill: col, stroke: none)
-    d.circle(p, radius: HMR, fill: none, stroke: col + lw)
+    d.circle(p, radius: HMC, fill: none, stroke: col + lw)
   } else if nat != "spider" {
-    d.circle(p, radius: HMR, fill: if nat == "lax" { bg } else { col },
+    d.circle(p, radius: HMC, fill: if nat == "lax" { bg } else { col },
              stroke: if nat == "lax" { col + lw } else { none })
   }
 }
