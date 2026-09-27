@@ -552,6 +552,7 @@ where
 initialize inducedDefsRef : IO.Ref (Option NameSet) ← IO.mkRef none
 
 def inducedDefs : MetaM NameSet := do
+  StrDiag.noteRead .thms
   if let some s ← inducedDefsRef.get then return s
   let heads ← inducedHeads
   let env ← getEnv

@@ -1123,22 +1123,6 @@ def settlePass (d : Diagram) : MetaM Diagram := do
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
-/-- THE EXPORTER A PICTURE WAS DRAWN BY, as the modification time of this binary: a picture drawn
-    by an older exporter is as stale as one of an older statement, and `make exe` relinks the binary
-    exactly when the exporter or a module it imports changed. -/
-def exeStamp : IO String := do
-  let t := (← (← IO.appPath).metadata).modified
-  return s!"{t.sec}.{t.nsec}"
-
-/-- A name as its COMPONENTS: `Name.toString`'s `«»` escapes are a second grammar to parse back. -/
-def nameJson (n : Name) : Json :=
-  .arr (n.components.toArray.map fun | .str _ s => .str s | .num _ k => toJson k | _ => .null)
-
-def jsonName (j : Json) : Except String Name := do
-  (← j.getArr?).foldlM (init := .anonymous) fun n c => match c with
-    | .str s => pure (.str n s)
-    | c => do pure (.num n (← c.getNat?))
-
 partial def levelJson : Lean.Level → Option Json
   | .zero => some (.arr #["z"])
   | .succ l => do return .arr #["s", ← levelJson l]
@@ -1260,6 +1244,14 @@ def congrNames : MetaM (Array Name) := do
     a ++ (l.map (·.theoremName)).toArray
   return sortNames cs
 
+/-- `envPrint` with the simp sets the search runs: a bridge or a congruence lemma is a theorem, and
+    only its membership of the set tells it from any other. -/
+def envPrintNow : MetaM EnvPrint := do
+  let env ← getEnv
+  let typed (ns : Array Name) := ns.foldl (init := 0) fun h n =>
+    mixHash h (mixHash (hash n) ((env.find? n).elim 0 (hash ·.type)))
+  envPrint (mixHash (typed (← bridgeNames)) (typed (← congrNames)))
+
 /-- ONE CACHE FOR EVERY CHECKOUT.  An entry is keyed by its question and by the declarations its
     answer read (`depText`), never by the checkout or the exporter build, so a worktree reuses what
     another computed exactly where the answer would come out the same. -/
@@ -1305,6 +1297,7 @@ def depText (heads : Array Name) (q : Expr) (uses : Array Name) (found : Bool) :
   let br ← bridgeNames
   unless found do roots := roots ++ br ++ (← congrNames)
   roots := (sortNames roots).eraseReps
+  for r in roots do noteRead (.stmt r)
   let k := (hs, roots, found)
   if let some t := (← depTextRef.get)[k]? then return t
   lines := lines ++ br.map (s!"bridge {·}") |>.push s!"decls {← Prof.phase "decls" (declsHash roots)}"

@@ -99,6 +99,7 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
       if t.getAppFn.constName? == some s && !n.isAnonymous && !n.hasMacroScopes && n != `self
         then rest.push n else rest
     | _ => #[]
+  noteRead (.pre s)
   let counts := env.constants.fold (init := (∅ : Std.HashMap Name Nat)) fun m c ci =>
     if c.getPrefix != s || (env.getProjectionFnInfo? c).isSome then m
     else (binderNames ci.type).foldl (fun m n => m.insert n (m.getD n 0 + 1)) m

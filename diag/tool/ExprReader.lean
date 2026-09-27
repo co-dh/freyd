@@ -19,6 +19,7 @@ import AOP.A5_7
 import AOP.A5_5_TypeFunctor
 import diag.tool.Tags
 import diag.tool.Prof
+import diag.tool.Reads
 
 open Lean
 
@@ -475,12 +476,6 @@ def familyOf (regionTy v core : Expr) : MetaM Expr := do
   Meta.withLocalDeclD `a regionTy fun a => do
     Meta.mkLambdaFVars #[a] (core.replaceFVar v (← Meta.mkProjection a f))
 
-/-- The head of a statement's CONCLUSION, under whatever `∀` binders it carries. -/
-partial def concHead : Expr → Name
-  | .forallE _ _ b _ => concHead b
-  | .mdata _ b => concHead b
-  | t => (t.getAppFn.constName?).getD Name.anonymous
-
 /-! ### The wire stack of an OBJECT, asked of the environment
 
   §13.6's objects are records and defs — `dSched X`, `⟨X × Sched X⟩` — not `F.obj X`, so a
@@ -773,6 +768,7 @@ initialize catalogueRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
     is not tabular) is `existsImageFunctor` itself, and the note's `E` lane.  ONE sweep over the
     environment, threaded down: the read asks at every level of the term. -/
 def catalogue : MetaM (Array Name) := do
+  noteRead (.head ``Freyd.Alg.Relator); noteRead (.head ``Freyd.Functor)
   if let some c ← catalogueRef.get then return c
   let c := (← catalogueOf ``Freyd.Alg.Relator #[``Freyd.Alg.Relator])
     ++ (← catalogueOf ``Freyd.Functor #[``Freyd.Functor, ``Freyd.Alg.Relator])
@@ -1903,6 +1899,7 @@ def sqlName (head : Name) : String := s!"'{(toString head).replace "'" "''"}'"
     conclude in it, that this process imports and can apply.  An inductive concludes in a sort and a
     constructor has no row, so neither is one. -/
 def bucket (head : Name) : MetaM (Array Name) := do
+  noteRead (.head head)
   let env ← getEnv
   let buckets ← match ← headBuckets.get with
     | some bs => pure bs
