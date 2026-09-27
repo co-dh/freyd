@@ -423,62 +423,45 @@ public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
 
 /-! ## Fusion (B&dM p.260): `inrange° val` is a fold on cons-lists -/
 
-/-- **tex-fusion**, first step: composition distributes into the case analysis. -/
-public theorem tex_fusion_step1 :
-    junc copR zero shift ≫ (inrange)° = junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) :=
-  junc_comp _ _ _ _
+/-- **tex-fusion**, the `zero` branch: `zero inrange°=arb`, B&dM p.260's first fusion condition,
+    which determines `arb`. -/
+public theorem tex_fusion_zero : zero ≫ (inrange)° = arb := by
+  apply hom_ext
+  intro u p
+  exact ⟨fun ⟨_, hz, hin⟩ => by subst hz; exact hin, fun h => ⟨zeroR, rfl, h⟩⟩
 
-/-- **tex-fusion**, second step: `zero inrange°=arb`, B&dM p.260's first fusion condition, which
-    determines `arb`. -/
-public theorem tex_fusion_step2 :
-    junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) = junc copR arb (shift ≫ (inrange)°) := by
-  have h : zero ≫ (inrange)° = arb := by
-    apply hom_ext
-    intro u p
-    exact ⟨fun ⟨_, hz, hin⟩ => by subst hz; exact hin, fun h => ⟨zeroR, rfl, h⟩⟩
-  rw [h]
-
-/-- **tex-fusion**, third step (B&dM pp.260-261): `shift inrange°=(𝟙×inrange°)step` —
+/-- **tex-fusion**, the `shift` branch (B&dM pp.260-261): `shift inrange°=(𝟙×inrange°)step` —
     `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`. -/
-public theorem tex_fusion_step3 :
-    junc copR arb (shift ≫ (inrange)°)
-      = junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step) := by
-  have h : shift ≫ (inrange)° = rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step := by
-    apply hom_ext
-    intro ⟨d, rr⟩ p
-    constructor
-    · rintro ⟨_, hs, hin⟩
-      subst hs
-      refine ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩),
-        ⟨?_, (lt_shift_iff _ _ _).mp hin.1, (shift_lt_iff _ _ _).mp hin.2⟩, ?_⟩
-      · rw [id_apply]
-      · show p = (⟨shiftFn (d.val : Int) (unshift (d.val : Int) p.lo),
-          shiftFn (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
-        rw [shift_unshift, shift_unshift]
-        rfl
-    · rintro ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩
-      rw [id_apply] at hd
-      subst hd
-      have hp' : p = stepFn (d, q2) := hp
-      subst hp'
-      exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
-        (shift_lt_shift _ _ _).mpr hin.2⟩
-  rw [h]
-
-/-- **tex-fusion**, fourth step: the relator slides out of the bracket — `F(S)[T,U]=[T,(𝟙×S)U]`
-    read right to left. -/
-public theorem tex_fusion_step4 :
-    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
-      = (F Unit Digit).map (inrange)° ≫ junc cop arb step :=
-  (Fmap_comp_junc Unit Digit _ _ _).symm
+public theorem tex_fusion_shift :
+    shift ≫ (inrange)° = rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step := by
+  apply hom_ext
+  intro ⟨d, rr⟩ p
+  constructor
+  · rintro ⟨_, hs, hin⟩
+    subst hs
+    refine ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩),
+      ⟨?_, (lt_shift_iff _ _ _).mp hin.1, (shift_lt_iff _ _ _).mp hin.2⟩, ?_⟩
+    · rw [id_apply]
+    · show p = (⟨shiftFn (d.val : Int) (unshift (d.val : Int) p.lo),
+        shiftFn (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
+      rw [shift_unshift, shift_unshift]
+      rfl
+  · rintro ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩
+    rw [id_apply] at hd
+    subst hd
+    have hp' : p = stepFn (d, q2) := hp
+    subst hp'
+    exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
+      (shift_lt_shift _ _ _).mpr hin.2⟩
 
 /-- **tex-fusion** (B&dM p.260): `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down
-    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]`. -/
+    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]` branch by
+    branch: `junc_comp` splits it, the two branch results fill it, `Fmap_comp_junc` closes it. -/
 public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
   show cataR (junc copR zero shift) ≫ (inrange)° = cataR (junc cop arb step)
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact relCata_fusion (initial Unit Digit)
-    (by rw [tex_fusion_step1, tex_fusion_step2, tex_fusion_step3, tex_fusion_step4])
+    (by rw [junc_comp, tex_fusion_zero, tex_fusion_shift, Fmap_comp_junc])
 
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/

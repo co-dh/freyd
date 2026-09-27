@@ -548,22 +548,20 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[the reals a decimal's value lies strictly between are the intervals got by folding its
      digits with `[arb,step]`]],
     // lean:AOP.A10_4_Tex.tex_fusion@e36b79cc
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.lhs",
-      src[fusion: it suffices that `[zero,shift] inrange°=F(inrange°)[arb,step]`]),
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.rhs",
-      src[`[T,U]Z=[TZ,UZ]`, a coproduct law not tabulated in the note]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step1@258065cf
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step2.rhs",
-      src[`zero inrange°=arb`: the first condition, which determines `arb`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step2@bc02821b
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.rhs",
-      src[arithmetic: `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step3@dca01191
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step4.rhs",
-      src[`F(S)[T,U]=[T,(𝟙×S)U]` read right to left: definition of `F`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step4@66ce201d
-  ),
+  lean-chain((sub: "Freyd.Alg.RelSet.Tex.tex_fusion_zero",
+    gloss: src[the `zero` branch of `[zero,shift] inrange°=F(inrange°)[arb,step]`], steps: (
+    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_zero.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_zero.rhs",
+      src[the first condition, which determines `arb`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_zero@b4a5706a
+  )), (sub: "Freyd.Alg.RelSet.Tex.tex_fusion_shift",
+    gloss: src[the `shift` branch of `[zero,shift] inrange°=F(inrange°)[arb,step]`], steps: (
+    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_shift.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_shift.rhs",
+      src[definition of `inrange` and `shift`: `a<(d+r)/10<b`; arithmetic: `⟺ 10a−d<r<10b−d`;
+       definition of `step`: `(a,b)=step(d,(10a−d,10b−d))`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_shift@a4224b43
+  ))),
 )]<tex-fusion>
 
 // B&dM p. 262: the greedy condition, the book's hints one row each; `Q` here is the book's `Q°`

@@ -180,9 +180,12 @@
     // heading, so `diag/string-panels.txt` names a display by its LABEL and the gate reads the pair
     // off here.  Same reason as the line above — a label belongs to the figure, and only a show rule
     // holds the element it is attached to.
+    // `src` only under `list`, where no panel is imported: `diff-crop --key` skips a display whose
+    // source did not change, and with pictures laid out the repr would be every canvas's drawing.
     context metadata((kind: "disp",
       id: plain(dispnum(counter(heading).get(), it.counter.at(here()).first())),
-      label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
+      label: if it.at("label", default: none) == none { "" } else { str(it.label) },
+      ..if "list" in sys.inputs { (src: repr(it.body)) } else { (:) }))
     // THE NUMBER GOES IN THE DISPLAY'S FIRST `Thm` HEADER, at its right end (see `Thm`); a display
     // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
     // stood a page gutter away from the table it names.

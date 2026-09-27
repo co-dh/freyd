@@ -608,8 +608,10 @@ NUMCOL = "#828282"   # `numtext`'s luma(130) in diag/note-style.typ: a display's
 
 def disp_query(root, typ, nodraw):
     """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`.
-    Under `nodraw` there are no parts: `pic-meta` is off, and only the numbering is wanted."""
-    a = ["typst", "query", "--root", root] + (["--input", "nodraw=1"] if nodraw else []) + \
+    Under `nodraw` there are no parts: `pic-meta` is off, and only the numbering and each display's
+    source (`src`, `repr` of its body) are wanted.  `list=1` keeps `lean(…)` from importing a panel
+    file, so a `rev` whose panels the current `diag/generated` no longer holds still numbers."""
+    a = ["typst", "query", "--root", root] + (["--input", "nodraw=1", "--input", "list=1"] if nodraw else []) + \
         [os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
     r = run(*a)
     if r.returncode:
@@ -620,7 +622,8 @@ def disp_query(root, typ, nodraw):
     for v in vs:
         if v.get("kind") == "pic" and v.get("disp"):
             parts.setdefault(v["key"], []).append((v["page"], v["y"], v["h"]))
-    return [(v["id"], v["label"]) for v in vs if v.get("kind") == "disp"], parts
+    ds = [v for v in vs if v.get("kind") == "disp"]
+    return [(v["id"], v["label"]) for v in ds], parts, {v["id"]: v["src"] for v in ds if "src" in v}
 
 
 def rev_tree(rev, tmp):
@@ -737,10 +740,12 @@ def before_spans(pdf, order, ids, lead, tmp):
         pg, top = pg + 1, ft - LABELOFF
 
 
-def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, aorder, aparts):
+def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, aorder, aparts, bsrc, asrc):
     """`key` is a label (`tex-fusion`, `<tex-fusion>`), a number of the AFTER (`16.4b`), or a range of
     them `first:last`.  The before half shows the same labels, found through `rev`'s own numbering; a
-    range with none of its labels in `rev` is new, and its after half is shown alone."""
+    range with none of its labels in `rev` is new, and its after half is shown alone.  A range whose
+    source or whose two crops did not change writes nothing and returns None: a pair of two equal
+    pictures asks the reader to hunt for a difference that is not there."""
     lab_of = {d: l for d, l in aorder}
     id_of = {l: d for d, l in aorder}
     ends = [k.strip("<>") for k in key.split(":")]
@@ -760,11 +765,22 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
             caption_strip(name, name, caption)
         print(f"{key}: new in the after ({', '.join(ids)}), no label of it in {rev} -> {name}")
         return name
+    # a `rev` older than `src` in the `disp` metadata has none: then only the pixels can say
+    bs, as_ = [bsrc.get(d) for d in borders], [asrc.get(d) for d in ids]
+    if None not in bs + as_ and bs == as_:
+        print(f"{key}: unchanged, skipped (source of {', '.join(ids)} same as in {rev})")
+        return None
     a0 = own_anchor(after_pdf, ids[0], tmp)
     lead = a0[2] - aparts[ids[0]][0][1]
     cb, bpages = crop_parts(before_pdf, before_spans(before_pdf, border, borders, lead, tmp), tmp, "lb", grow=True)
-    if size(cb) == size(ca) and re.match(r"0\b", run("compare", "-metric", "AE", cb, ca, f"{tmp}/ld.png").stderr.strip()):
-        raise Refuse(f"{key}: before and after are pixel-identical — this display did not change")
+    # to the ink first: the before's band grows to the gutter and the after's stops at its parts, so the
+    # same display cut from the two pdfs differs in its white margin alone
+    tb, ta = f"{tmp}/ltb.png", f"{tmp}/lta.png"
+    emit("magick", cb, "-trim", "+repage", tb)
+    emit("magick", ca, "-trim", "+repage", ta)
+    if size(tb) == size(ta) and re.match(r"0\b", run("compare", "-metric", "AE", tb, ta, f"{tmp}/ld.png").stderr.strip()):
+        print(f"{key}: unchanged, skipped (crops pixel-identical)")
+        return None
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
     label(ca, f"{tmp}/lla.png", f"{'/'.join(ids)} AFTER p{apages[0]}", tmp, [])
     emit("magick", f"{tmp}/llb.png", f"{tmp}/lla.png", "-background", "gray70", "-append", "+repage", name)
@@ -781,12 +797,16 @@ def cut_labels(keys, rev, before_pdf, after_pdf, out):
     tmp = tempfile.mkdtemp(prefix="diff-crop-label.")
     made, bad = [], []
     try:
-        aorder, aparts = disp_query(ROOT, typ, False)
-        border, _ = disp_query(rev_tree(rev, tmp), typ, True)
+        aorder, aparts, _ = disp_query(ROOT, typ, False)
+        _, _, asrc = disp_query(ROOT, typ, True)
+        border, _, bsrc = disp_query(rev_tree(rev, tmp), typ, True)
         before_pdf = before_pdf or at_rev(rev, rel, binary=True)
         for k, cap in keys:
             try:
-                made.append(labelcrop(k, rev, before_pdf, after_pdf, typ, out, tmp, cap, border, aorder, aparts))
+                name = labelcrop(k, rev, before_pdf, after_pdf, typ, out, tmp, cap, border, aorder, aparts,
+                                 bsrc, asrc)
+                if name:
+                    made.append(name)
             except Refuse as e:
                 print(f"diff-crop REFUSED {e}")
                 bad.append(k)
