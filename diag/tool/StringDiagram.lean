@@ -351,16 +351,20 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
   -- and everything east of it move), the inner one east (everything east of the lane moves), so no
   -- `°` lane crosses another wire.
   let mut (ls, xo) := (ls, xo)
+  -- ONE COLUMN PER `°` WIRE, not per span: two spans on one side of lanes in one column are one
+  -- wire, however many rows or lanes they come from.
+  let mut opened : Array (Nat × Bool) := #[]
   for i in [0 : ls.size] do
     for c in ls[i]!.conv do
       if c.whole then continue
-      if c.outer then
+      for (west, on) in [(true, c.outer), (false, c.inner)] do
+        let lsNow := ls
+        if !on || opened.any fun (j, w) => w == west && (lsNow[j]!.x - lsNow[i]!.x).abs < 1e-6 then
+          continue
+        opened := opened.push (i, west)
         let x := ls[i]!.x
-        ls := ls.map fun o => if o.x > x - 1e-6 then { o with x := o.x + DX } else o
-        xo := xo + DX
-      if c.inner then
-        let x := ls[i]!.x
-        ls := ls.map fun o => if o.x > x + 1e-6 then { o with x := o.x + DX } else o
+        let thr := if west then x - 1e-6 else x + 1e-6
+        ls := ls.map fun o => if o.x > thr then { o with x := o.x + DX } else o
         xo := xo + DX
   -- A WHOLE `°` opens one column WEST of every lane that carries it, once per span.
   let wholes : Array (Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
@@ -2320,13 +2324,38 @@ def scanCheck (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (side 
     throwError "scan line: the panel reads back as `{← txt drawn}`, but it was drawn from \
       `{← txt said}`"
 
+/-- A BEAD ON A LANE BETWEEN TWO INNER `°` SPANS of that lane is drawn inside ONE `°` when it has a
+    named converse: west of the inner `°` a bead is read in `𝒜ᵒᵖ`, so `⊆` there is drawn `⊇`, the
+    `diag_opposite` lemma (`⊆ = ⊇°`) saying the two are one arrow — "the right converse line can be
+    connected, as ⊆ preserves converse" (the author, on §10.2b).  The bead's term stays the factor. -/
+def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : Diagram) :
+    MetaM Diagram := do
+  let mut d := d
+  for i in [1 : d.rows.size - 1] do
+    let r := d.rows[i]!
+    let (#[a], #[b]) := (r.arms, r.legs) | continue
+    let lone (k : Nat) (p : Conv → Bool) : Bool :=
+      d.lanes[k]!.conv.any fun c => !c.whole && c.inner && !c.outer && p c
+    unless lone a (·.last == (i : Int) - 1) && lone b (·.first == (i : Int) + 1) do continue
+    let some t := r.term | throwError "joinNamed: row {i} (`{r.label}`) records no factor"
+    let some q ← namedRecip? t | continue
+    let nd ← interp regionTy cat objVars #[] none q
+    let #[nr] := nd.rows
+      | throwError "joinNamed: the named converse of `{r.label}` draws {nd.rows.size} rows, not one bead"
+    d := { d with
+      rows := d.rows.set! i { r with shape := nr.shape, key := nr.key, nat := nr.nat,
+                                     natLean := nr.natLean, natHyp := nr.natHyp }
+      lanes := d.lanes.modify b fun l =>
+        { l with conv := l.conv.push { first := i, last := i, outer := false, inner := true } } }
+  return d
+
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be.  The rewrite that draws `Λ S` as the note draws it — the unit bead and
     `S` on the `E` lane — is `interp`'s, taken at every spine it draws and so at every lane depth;
     a side is one such spine and gets no copy of it here. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← interp regionTy cat objVars #[] none (← instantiateMVars side)
+  let d ← joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none (← instantiateMVars side))
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   scanCheck regionTy cat objVars side d
