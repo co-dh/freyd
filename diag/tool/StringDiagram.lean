@@ -1024,7 +1024,9 @@ def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
     | none => break
   unless rel ty do return none
   let args := ty.getAppArgs
-  unless ← Meta.isDefEq args[args.size - 2]! side do return none
+  -- `IS side` up to instances: a failed unification at default transparency unfolds both sides
+  -- to the bottom, and nearly every candidate fails.
+  unless ← Meta.withTransparency .instances <| Meta.isDefEq args[args.size - 2]! side do return none
   let l := compFactors (← instantiateMVars args[args.size - 2]!)
   let r := compFactors (← instantiateMVars args[args.size - 1]!)
   let mut p := 0
