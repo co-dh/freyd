@@ -507,7 +507,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     leancd("Freyd.Alg.Distributes"),
     row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
  [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
-    s: 74%,
+    s: auto,
   ),
   capbox(
     leancd("Freyd.Alg.RelSet.plus_distributes_le"),
