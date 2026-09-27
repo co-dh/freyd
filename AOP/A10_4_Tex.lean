@@ -16,11 +16,12 @@
   is carried in the denominator rather than multiplying `r`, so `round r = n ⟺ 2n−1 < wr < 2n+1`
   is read off as `(2n−1)/w < r < (2n+1)/w`; the two are the same inequality.
 
-  THE TYPE RESTRICTION (10.9).  B&dM's fusion (p.260) is over ALL pairs `(a,b)`, and the
-  restriction to `0<b<1, a<b` is the SEPARATE p.261 observation that `[arb,step]` maps `Interval`
-  into itself (`arb_legal`, `step_legal` below).  It is not part of the fusion — `⦇[arb,step]⦈`
-  cut down to (10.9) is strictly smaller than `inrange° val` — so `Interval` is the pairs, and
-  (10.9) is a property of them.
+  THE TYPE RESTRICTION (10.9).  Following B&dM p.261, `Interval` is the pairs `(a,b)` with
+  `0<b<1` and `a<b`, and `step_legal` is what types `step : Digit×Interval⟶Interval`.  Over it the
+  p.260 fusion is an inclusion, `⦇[arb,step]⦈⊑val inrange°`: a decimal's value lies inside every
+  interval its digits fold to, but an interval wider than one digit's cell is folded to by no
+  decimal.  What makes the restriction harmless is `tex_laws_step2`: the shortest decimal among
+  those `⦇[arb,step]⦈°` allows is a shortest one among ALL decimals inside the interval.
 -/
 module
 
@@ -217,6 +218,94 @@ public theorem shift_lt_iff (d : Int) (r b : Real.carrier) :
     rlt (shiftFn d r) b ↔ rlt r (unshift d b) := by
   rw [← shift_lt_shift d r (unshift d b), shift_unshift]
 
+public theorem unshift_shift (d : Int) (r : Real.carrier) : unshift d (shiftFn d r) = r := by
+  refine Quotient.inductionOn r ?_
+  intro x
+  refine Quotient.sound ?_
+  show (10 * (d * w * sc x.2 + x.1) - d * w * sc (x.2 + 1)) * sc x.2 = x.1 * sc (x.2 + 1)
+  rw [sc_succ]
+  have e1 : d * w * (sc x.2 * 10) = 10 * (d * w * sc x.2) := by
+    simp [Int.mul_comm, Int.mul_left_comm]
+  have e : 10 * (d * w * sc x.2 + x.1) - d * w * (sc x.2 * 10) = 10 * x.1 := by
+    rw [e1, Int.mul_add]; omega
+  rw [e]
+  simp [Int.mul_assoc, Int.mul_comm]
+
+public theorem unshift_lt (d : Int) {x y : Real.carrier} (h : rlt x y) :
+    rlt (unshift d x) (unshift d y) := by
+  rw [← shift_lt_shift d, shift_unshift, shift_unshift]; exact h
+
+/-- `<` on `Real` is decided by the integers under it, so the case split needs no choice. -/
+public theorem rlt_em (x y : Real.carrier) : rlt x y ∨ ¬ rlt x y := by
+  refine Quotient.inductionOn₂ x y ?_
+  intro a b
+  exact Decidable.em (a.1 * sc b.2 < b.1 * sc a.2)
+
+public theorem rlt_irrefl (x : Real.carrier) : ¬ rlt x x := by
+  refine Quotient.inductionOn x ?_
+  intro a h
+  exact Int.lt_irrefl _ (h : a.1 * sc a.2 < a.1 * sc a.2)
+
+/-- `x<y≤z ⟹ x<z`, with `y≤z` read as `¬ z<y`. -/
+public theorem rlt_le_trans {x y z : Real.carrier} : rlt x y → ¬ rlt z y → rlt x z := by
+  refine Quotient.inductionOn₃ x y z ?_
+  intro a b c h1 h2
+  have h1' : a.1 * sc b.2 < b.1 * sc a.2 := h1
+  have h2' : ¬ c.1 * sc b.2 < b.1 * sc c.2 := h2
+  show a.1 * sc c.2 < c.1 * sc a.2
+  refine (Int.mul_lt_mul_right (sc_pos b.2)).mp ?_
+  have a1 : a.1 * sc b.2 * sc c.2 < b.1 * sc a.2 * sc c.2 :=
+    (Int.mul_lt_mul_right (sc_pos c.2)).mpr h1'
+  have a2 : b.1 * sc c.2 * sc a.2 ≤ c.1 * sc b.2 * sc a.2 :=
+    Int.mul_le_mul_of_nonneg_right (Int.not_lt.mp h2') (Int.le_of_lt (sc_pos a.2))
+  have e1 : a.1 * sc c.2 * sc b.2 = a.1 * sc b.2 * sc c.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  have e2 : b.1 * sc a.2 * sc c.2 = b.1 * sc c.2 * sc a.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  have e3 : c.1 * sc b.2 * sc a.2 = c.1 * sc a.2 * sc b.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  rw [e1]; rw [e2] at a1; rw [e3] at a2
+  exact Int.lt_of_lt_of_le a1 a2
+
+/-- `x≤y<z ⟹ x<z`, with `x≤y` read as `¬ y<x`. -/
+public theorem le_rlt_trans {x y z : Real.carrier} : ¬ rlt y x → rlt y z → rlt x z := by
+  refine Quotient.inductionOn₃ x y z ?_
+  intro a b c h1 h2
+  have h1' : ¬ b.1 * sc a.2 < a.1 * sc b.2 := h1
+  have h2' : b.1 * sc c.2 < c.1 * sc b.2 := h2
+  show a.1 * sc c.2 < c.1 * sc a.2
+  refine (Int.mul_lt_mul_right (sc_pos b.2)).mp ?_
+  have a1 : a.1 * sc b.2 * sc c.2 ≤ b.1 * sc a.2 * sc c.2 :=
+    Int.mul_le_mul_of_nonneg_right (Int.not_lt.mp h1') (Int.le_of_lt (sc_pos c.2))
+  have a2 : b.1 * sc c.2 * sc a.2 < c.1 * sc b.2 * sc a.2 :=
+    (Int.mul_lt_mul_right (sc_pos a.2)).mpr h2'
+  have e1 : a.1 * sc c.2 * sc b.2 = a.1 * sc b.2 * sc c.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  have e2 : b.1 * sc a.2 * sc c.2 = b.1 * sc c.2 * sc a.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  have e3 : c.1 * sc b.2 * sc a.2 = c.1 * sc a.2 * sc b.2 := by
+    simp [Int.mul_assoc, Int.mul_comm, Int.mul_left_comm]
+  rw [e1]; rw [e2] at a1; rw [e3] at a2
+  exact Int.lt_of_le_of_lt a1 a2
+
+/-- `(e+1)/10≤(d+0)/10` for `e+1≤d`: the cell of a smaller leading digit ends where a larger one's
+    begins. -/
+public theorem shift_le_digit (e d : Int) (h : e + 1 ≤ d) :
+    ¬ rlt (shiftFn d zeroR) (shiftFn e oneR) := by
+  show ¬ (d * w * sc 0 + 0) * sc (0 + 1) < (e * w * sc 0 + w) * sc (0 + 1)
+  simp only [sc_succ, sc_zero, w, Int.mul_one, Int.one_mul, Int.add_zero]
+  omega
+
+public theorem zero_le_shift (e : Int) (he : 0 ≤ e) : ¬ rlt (shiftFn e zeroR) zeroR := by
+  show ¬ (e * w * sc 0 + 0) * sc 0 < 0 * sc (0 + 1)
+  simp only [sc_succ, sc_zero, w, Int.mul_one, Int.one_mul, Int.add_zero]
+  omega
+
+public theorem shift_one_le_one (e : Int) (he : e ≤ 9) : ¬ rlt oneR (shiftFn e oneR) := by
+  show ¬ w * sc (0 + 1) < (e * w * sc 0 + w) * sc 0
+  simp only [sc_succ, sc_zero, w, Int.mul_one, Int.one_mul]
+  omega
+
 /-! ## The objects and arrows of §10.4 (`tex-defn`) -/
 
 /-- **tex-defn**: a digit. -/
@@ -240,12 +329,28 @@ public structure Iv where
   lo : Real.carrier
   hi : Real.carrier
 
-/-- **tex-defn**: the object `Interval` — the pairs `(a,b)`. -/
-@[expose] public def Interval : RelSet.{0} := ⟨Iv⟩
+/-- **(10.9)**: the pairs `(a,b)` with `0<b<1` and `a<b`. -/
+@[expose] public def Legal (p : Iv) : Prop :=
+  rlt zeroR p.hi ∧ rlt p.hi oneR ∧ rlt p.lo p.hi
+
+/-- **tex-defn**: the object `Interval` — the pairs `(a,b)` satisfying (10.9) (B&dM p.261). -/
+@[expose] public def Interval : RelSet.{0} := ⟨{p : Iv // Legal p}⟩
+
+/-- `interval n` satisfies (10.9): `0<(2n+1)/2¹⁷<1` for `n<2¹⁶`. -/
+public theorem interval_legal (n : Fin 65536) :
+    Legal ⟨mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0)⟩ := by
+  have hn := n.isLt
+  refine ⟨?_, ?_, ?_⟩
+  · show (0 : Int) * sc 0 < (2 * (n.val : Int) + 1) * sc 0
+    rw [sc_zero]; omega
+  · show (2 * (n.val : Int) + 1) * sc 0 < w * sc 0
+    rw [sc_zero]; simp only [w]; omega
+  · show (2 * (n.val : Int) - 1) * sc 0 < (2 * (n.val : Int) + 1) * sc 0
+    rw [sc_zero]; omega
 
 /-- **tex-defn**: `interval n=((2n−1)/2¹⁷,(2n+1)/2¹⁷)`. -/
 @[expose] public def intervalFn (n : Fin 65536) : Interval.carrier :=
-  ⟨mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0)⟩
+  ⟨⟨mkR (2 * (n.val : Int) - 1, 0), mkR (2 * (n.val : Int) + 1, 0)⟩, interval_legal n⟩
 
 /-- **tex-defn**: `interval`, a map. -/
 @[expose] public def interval : Ix ⟶ Interval := graph intervalFn
@@ -253,7 +358,7 @@ public structure Iv where
 public theorem interval_map : Map interval := graph_map intervalFn
 
 /-- **tex-defn**: `r inrange (a,b)⟺a<r<b`. -/
-@[expose] public def inrange : Interval ⟶ Real := fun p r => rlt p.lo r ∧ rlt r p.hi
+@[expose] public def inrange : Interval ⟶ Real := fun p r => rlt p.1.lo r ∧ rlt r p.1.hi
 
 /-- **tex-defn**: `round r=n⟺2n−1<2¹⁷r<2n+1`, read as `(2n−1)/2¹⁷<r<(2n+1)/2¹⁷`. -/
 @[expose] public def round : Real ⟶ Ix := fun r n =>
@@ -283,13 +388,54 @@ public theorem round_recip : (round)° = interval ≫ inrange := by
 /-- **tex-defn**: `intern≜val round`. -/
 @[expose] public def intern : Decimal ⟶ Ix := val ≫ round
 
-/-- **tex-defn**: `step(d,(a,b))=((d+a)/10,(d+b)/10)`. -/
+/-- **(10.9)** for `arb`: `a<0<b` already gives `a<b`, so a pair `arb` returns is legal as soon as
+    `b<1` — "we can always restrict `arb` so that it returns an interval satisfying (10.9)". -/
+public theorem arb_legal (p : Iv) (hb : rlt p.hi oneR)
+    (harb : rlt p.lo zeroR ∧ rlt zeroR p.hi) : Legal p :=
+  ⟨harb.2, hb, rlt_trans harb.1 harb.2⟩
+
+/-- **(10.9)** for `step` (B&dM p.261): if `(a',b')` satisfies (10.9) then so does
+    `((d+a')/10,(d+b')/10)`, which is what types `step : Digit×Interval⟶Interval`. -/
+public theorem step_legal (d : Digit) (q : Iv) (h : Legal q) :
+    Legal ⟨shiftFn (d.val : Int) q.lo, shiftFn (d.val : Int) q.hi⟩ := by
+  obtain ⟨h0, h1, hab⟩ := h
+  refine ⟨?_, ?_, (shift_lt_shift _ _ _).mpr hab⟩
+  · show rlt zeroR (shiftFn (d.val : Int) q.2)
+    revert h0
+    refine Quotient.inductionOn q.2 ?_
+    intro b hb
+    have hb' : (0:Int) * sc b.2 < b.1 * sc 0 := hb
+    have hd : (0:Int) ≤ (d.val : Int) := by omega
+    have hnn : 0 ≤ (d.val : Int) * (w * sc b.2) :=
+      Int.mul_nonneg hd (Int.le_of_lt (Int.mul_pos (by decide) (sc_pos b.2)))
+    show (0:Int) * sc (b.2 + 1) < ((d.val : Int) * w * sc b.2 + b.1) * sc 0
+    rw [sc_zero] at hb' ⊢
+    rw [show (d.val : Int) * w * sc b.2 = (d.val : Int) * (w * sc b.2) from Int.mul_assoc _ _ _]
+    omega
+  · show rlt (shiftFn (d.val : Int) q.2) oneR
+    revert h1
+    refine Quotient.inductionOn q.2 ?_
+    intro b hb
+    have hb' : b.1 * sc 0 < w * sc b.2 := hb
+    have hd : (d.val : Int) ≤ 9 := by omega
+    have hmul : (d.val : Int) * (w * sc b.2) ≤ 9 * (w * sc b.2) :=
+      Int.mul_le_mul_of_nonneg_right hd (Int.le_of_lt (Int.mul_pos (by decide) (sc_pos b.2)))
+    show ((d.val : Int) * w * sc b.2 + b.1) * sc 0 < w * sc (b.2 + 1)
+    rw [sc_zero] at hb' ⊢
+    rw [sc_succ]
+    have hw : w * (sc b.2 * 10) = 10 * (w * sc b.2) := by
+      simp [Int.mul_comm, Int.mul_left_comm]
+    rw [show (d.val : Int) * w * sc b.2 = (d.val : Int) * (w * sc b.2) from Int.mul_assoc _ _ _,
+      hw]
+    omega
+
+/-- **tex-defn**: `step(d,(a,b))=((d+a)/10,(d+b)/10)`, legal by `step_legal`. -/
 @[expose] public def stepFn (p : Digit × Interval.carrier) : Interval.carrier :=
-  ⟨shiftFn (p.1.val : Int) p.2.lo, shiftFn (p.1.val : Int) p.2.hi⟩
+  ⟨⟨shiftFn (p.1.val : Int) p.2.1.lo, shiftFn (p.1.val : Int) p.2.1.hi⟩, step_legal p.1 p.2.1 p.2.2⟩
 
 /-- **tex-defn**: `arb : 𝟏⟶Interval` — B&dM p.260's first fusion condition `arb=zero inrange°`, so
     `(a,b)` is an `arb` iff `a<0<b`. -/
-@[expose] public def arb : dL Unit ⟶ Interval := fun _ p => rlt p.lo zeroR ∧ rlt zeroR p.hi
+@[expose] public def arb : dL Unit ⟶ Interval := fun _ p => rlt p.1.lo zeroR ∧ rlt zeroR p.1.hi
 
 /-- **tex-defn**: `step : Digit×Interval⟶Interval`, the map `stepFn` is the graph of. -/
 @[expose] public def step : (⟨Digit × Interval.carrier⟩ : RelSet.{0}) ⟶ Interval := graph stepFn
@@ -374,54 +520,7 @@ public theorem l_recip_laxNatural :
 @[expose] public def Q : (F Unit Digit).obj Interval ⟶ (F Unit Digit).obj Interval :=
   (l° ≫ bang° ≫ r) ∪ 𝟙 ((F Unit Digit).obj Interval)
 
-/-! ## (10.9): `[arb,step]` maps `Interval` into itself (B&dM p.261) -/
-
-/-- **(10.9)**: the pairs `(a,b)` with `0<b<1` and `a<b`. -/
-@[expose] public def Legal (p : Interval.carrier) : Prop :=
-  rlt zeroR p.hi ∧ rlt p.hi oneR ∧ rlt p.lo p.hi
-
-/-- **(10.9)** for `arb`: `arb` can always be restricted so that it returns a legal interval —
-    `a<0<b` already gives `a<b`, so only `b<1` has to be asked for. -/
-public theorem arb_legal (p : Interval.carrier) (hb : rlt p.hi oneR)
-    (harb : rlt p.lo zeroR ∧ rlt zeroR p.hi) : Legal p :=
-  ⟨harb.2, hb, rlt_trans harb.1 harb.2⟩
-
-/-- **(10.9)** for `step` (B&dM p.261): if `(a',b')` satisfies (10.9) then so does
-    `step(d,(a',b'))`, which is what types `[arb,step] : Interval⟵1+(Digit×Interval)`. -/
-public theorem step_legal (d : Digit) (q : Interval.carrier) (h : Legal q) :
-    Legal (stepFn (d, q)) := by
-  obtain ⟨h0, h1, hab⟩ := h
-  refine ⟨?_, ?_, (shift_lt_shift _ _ _).mpr hab⟩
-  · show rlt zeroR (shiftFn (d.val : Int) q.2)
-    revert h0
-    refine Quotient.inductionOn q.2 ?_
-    intro b hb
-    have hb' : (0:Int) * sc b.2 < b.1 * sc 0 := hb
-    have hd : (0:Int) ≤ (d.val : Int) := by omega
-    have hnn : 0 ≤ (d.val : Int) * (w * sc b.2) :=
-      Int.mul_nonneg hd (Int.le_of_lt (Int.mul_pos (by decide) (sc_pos b.2)))
-    show (0:Int) * sc (b.2 + 1) < ((d.val : Int) * w * sc b.2 + b.1) * sc 0
-    rw [sc_zero] at hb' ⊢
-    rw [show (d.val : Int) * w * sc b.2 = (d.val : Int) * (w * sc b.2) from Int.mul_assoc _ _ _]
-    omega
-  · show rlt (shiftFn (d.val : Int) q.2) oneR
-    revert h1
-    refine Quotient.inductionOn q.2 ?_
-    intro b hb
-    have hb' : b.1 * sc 0 < w * sc b.2 := hb
-    have hd : (d.val : Int) ≤ 9 := by omega
-    have hmul : (d.val : Int) * (w * sc b.2) ≤ 9 * (w * sc b.2) :=
-      Int.mul_le_mul_of_nonneg_right hd (Int.le_of_lt (Int.mul_pos (by decide) (sc_pos b.2)))
-    show ((d.val : Int) * w * sc b.2 + b.1) * sc 0 < w * sc (b.2 + 1)
-    rw [sc_zero] at hb' ⊢
-    rw [sc_succ]
-    have hw : w * (sc b.2 * 10) = 10 * (w * sc b.2) := by
-      simp [Int.mul_comm, Int.mul_left_comm]
-    rw [show (d.val : Int) * w * sc b.2 = (d.val : Int) * (w * sc b.2) from Int.mul_assoc _ _ _,
-      hw]
-    omega
-
-/-! ## Fusion (B&dM p.260): `inrange° val` is a fold on cons-lists -/
+/-! ## Fusion (B&dM p.260): `⦇[arb,step]⦈` refines `val inrange°` -/
 
 /-- **tex-fusion**, the `zero` branch: `zero inrange°=arb`, B&dM p.260's first fusion condition,
     which determines `arb`. -/
@@ -430,23 +529,14 @@ public theorem tex_fusion_zero : zero ≫ (inrange)° = arb := by
   intro u p
   exact ⟨fun ⟨_, hz, hin⟩ => by subst hz; exact hin, fun h => ⟨zeroR, rfl, h⟩⟩
 
-/-- **tex-fusion**, the `shift` branch (B&dM pp.260-261): `shift inrange°=(𝟙×inrange°)step` —
-    `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`. -/
+/-- **tex-fusion**, the `shift` branch (B&dM pp.260-261): `(𝟙×inrange°)step⊑shift inrange°` —
+    `10a−d<r<10b−d ⟹ a<(d+r)/10<b` for `(a,b)=step(d,(10a−d,10b−d))`.  Only an inclusion over
+    `Interval`: `(10a−d,10b−d)` satisfies (10.9) only when `d<10b<d+1`. -/
 public theorem tex_fusion_shift :
-    shift ≫ (inrange)° = rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step := by
-  apply hom_ext
-  intro ⟨d, rr⟩ p
-  constructor
-  · rintro ⟨_, hs, hin⟩
-    subst hs
-    refine ⟨(d, ⟨unshift (d.val : Int) p.lo, unshift (d.val : Int) p.hi⟩),
-      ⟨?_, (lt_shift_iff _ _ _).mp hin.1, (shift_lt_iff _ _ _).mp hin.2⟩, ?_⟩
-    · rw [id_apply]
-    · show p = (⟨shiftFn (d.val : Int) (unshift (d.val : Int) p.lo),
-        shiftFn (d.val : Int) (unshift (d.val : Int) p.hi)⟩ : Interval.carrier)
-      rw [shift_unshift, shift_unshift]
-      rfl
-  · rintro ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩
+    rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step ⊑ shift ≫ (inrange)° :=
+  le_iff.mpr fun x p h => by
+    obtain ⟨d, rr⟩ := x
+    obtain ⟨⟨d', q2⟩, ⟨hd, hin⟩, hp⟩ := h
     rw [id_apply] at hd
     subst hd
     have hp' : p = stepFn (d, q2) := hp
@@ -466,9 +556,9 @@ public theorem tex_fusion_step2 :
 
 /-- **tex-fusion**, third step: the `shift` branch, `tex_fusion_shift`. -/
 public theorem tex_fusion_step3 :
-    junc copR arb (shift ≫ (inrange)°)
-      = junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step) := by
-  rw [tex_fusion_shift]
+    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
+      ⊑ junc copR arb (shift ≫ (inrange)°) :=
+  junc_mono _ (le_iff.mpr fun _ _ h => h) tex_fusion_shift
 
 /-- **tex-fusion**, fourth step: the relator slides out of the bracket — `F(S)[T,U]=[T,(𝟙×S)U]`
     read right to left. -/
@@ -477,13 +567,18 @@ public theorem tex_fusion_step4 :
       = (F Unit Digit).map (inrange)° ≫ junc cop arb step :=
   (Fmap_comp_junc Unit Digit _ _ _).symm
 
-/-- **tex-fusion** (B&dM p.260): `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down
-    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]`. -/
-public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
-  show cataR (junc copR zero shift) ≫ (inrange)° = cataR (junc cop arb step)
+/-- **tex-fusion** (B&dM p.260): `⦇[arb,step]⦈⊑val inrange°` — every interval a decimal's digits
+    fold to has the decimal's value strictly inside it, because
+    `F(inrange°)[arb,step]⊑[zero,shift] inrange°`. -/
+public theorem tex_fusion : cataR (junc cop arb step) ⊑ val ≫ (inrange)° := by
+  show cataR (junc cop arb step) ⊑ cataR (junc copR zero shift) ≫ (inrange)°
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact relCata_fusion (initial Unit Digit)
-    (by rw [tex_fusion_step1, tex_fusion_step2, tex_fusion_step3, tex_fusion_step4])
+  refine relCata_le_comp (initial Unit Digit) ?_
+  calc (F Unit Digit).map (inrange)° ≫ junc cop arb step
+      = _ := tex_fusion_step4.symm
+    _ ⊑ _ := tex_fusion_step3
+    _ = _ := tex_fusion_step2.symm
+    _ = _ := tex_fusion_step1.symm
 
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/
@@ -607,13 +702,85 @@ public theorem tex_laws_step1 :
     rw [Allegory.recip_comp, round_recip, Cat.assoc]
   rw [h, Λ_fusion interval_map, Cat.assoc]
 
-/-- **tex-laws**, second step: fusion replaces `inrange val°` by the fold's converse `H`. -/
+/-- A decimal's value `r` lies in `[0,1)`. -/
+public theorem val_bounds (y : Dec) (r : Real.carrier) (h : val y r) :
+    ¬ rlt r zeroR ∧ rlt r oneR := by
+  induction y generalizing r with
+  | wrap u =>
+    have hr : r = zeroR := (ListRel.junc_sum_inl zero shift u r).mp h
+    subst hr
+    exact ⟨rlt_irrefl _, by show (0 : Int) * sc 0 < w * sc 0; rw [sc_zero]; simp only [w]; omega⟩
+  | cons e y ih =>
+    obtain ⟨r', hr', hs⟩ := h
+    have hr : r = shiftFn (e.val : Int) r' := (ListRel.junc_sum_inr zero shift (e, r') r).mp hs
+    subst hr
+    obtain ⟨h0, h1⟩ := ih r' hr'
+    exact ⟨fun hlt => zero_le_shift (e.val : Int) (by omega) (le_rlt_trans (fun h => h0 ((shift_lt_shift _ _ _).mp h)) hlt),
+      rlt_le_trans ((shift_lt_shift _ _ _).mpr h1) (shift_one_le_one (e.val : Int) (by omega))⟩
+
+/-- If a decimal `y` has its value in `p`, and `H` gives `p` some decimal at all, then `H` gives `p`
+    a decimal no longer than `y`: follow `y`'s digits while they agree with `p`'s, and stop at the
+    first that differs — there `p`'s remainder already contains `0`. -/
+public theorem tex_short (y : Dec) : ∀ (r : Real.carrier) (p : Interval.carrier) (x : Dec),
+    val y r → inrange p r → H p x → ∃ z, H p z ∧ len z ≤ len y := by
+  induction y with
+  | wrap u =>
+    intro r p x hv hin _
+    have hr : r = zeroR := (ListRel.junc_sum_inl zero shift u r).mp hv
+    subst hr
+    exact ⟨ConsList.wrap (), (ListRel.junc_sum_inl arb step () p).mpr hin, Nat.le_refl _⟩
+  | cons e y ih =>
+    intro r p x hv hin hx
+    obtain ⟨r', hr', hs⟩ := hv
+    have hr : r = shiftFn (e.val : Int) r' := (ListRel.junc_sum_inr zero shift (e, r') r).mp hs
+    subst hr
+    obtain ⟨v0, v1⟩ := val_bounds y r' hr'
+    rcases rlt_em p.1.lo zeroR with ha | ha
+    · exact ⟨ConsList.wrap (), (ListRel.junc_sum_inl arb step () p).mpr ⟨ha, p.2.1⟩, Nat.zero_le _⟩
+    · cases x with
+      | wrap u => exact absurd ((ListRel.junc_sum_inl arb step u p).mp hx).1 ha
+      | cons d x' =>
+        obtain ⟨p1, hx', hst⟩ := hx
+        have hp : p = stepFn (d, p1) := (ListRel.junc_sum_inr arb step (d, p1) p).mp hst
+        subst hp
+        by_cases hed : e = d
+        · subst hed
+          obtain ⟨z', hz', hlen⟩ := ih r' p1 x' hr'
+            ⟨(shift_lt_shift _ _ _).mp hin.1, (shift_lt_shift _ _ _).mp hin.2⟩ hx'
+          exact ⟨ConsList.cons e z', ⟨p1, hz', (ListRel.junc_sum_inr arb step (e, p1) _).mpr rfl⟩,
+            Nat.succ_le_succ hlen⟩
+        · have hne : (e.val : Int) ≠ (d.val : Int) := fun h => hed (Fin.ext (by omega))
+          have hlo : rlt p1.1.lo zeroR := by
+            rcases Int.lt_or_gt_of_ne hne with hlt | hgt
+            · have h1 : rlt (shiftFn (d.val : Int) p1.1.lo) (shiftFn (e.val : Int) oneR) :=
+                rlt_trans hin.1 ((shift_lt_shift _ _ _).mpr v1)
+              exact (shift_lt_shift _ _ _).mp
+                (rlt_le_trans h1 (shift_le_digit (e.val : Int) (d.val : Int) (by omega)))
+            · exfalso
+              have h1 : rlt (shiftFn (d.val : Int) p1.1.hi) (shiftFn (d.val : Int) oneR) :=
+                (shift_lt_shift _ _ _).mpr p1.2.2.1
+              have h2 := rlt_le_trans h1 (shift_le_digit (d.val : Int) (e.val : Int) (by omega))
+              have h3 := rlt_le_trans h2 (fun h => v0 ((shift_lt_shift _ _ _).mp h))
+              exact rlt_irrefl _ (rlt_trans h3 hin.2)
+          exact ⟨ConsList.cons d (ConsList.wrap ()),
+            ⟨p1, (ListRel.junc_sum_inl arb step () p1).mpr ⟨hlo, p1.2.1⟩,
+              (ListRel.junc_sum_inr arb step (d, p1) _).mpr rfl⟩,
+            Nat.succ_le_succ (Nat.zero_le _)⟩
+
+/-- **tex-laws**, second step: the type restriction (10.9) — a shortest decimal among those the
+    fold's converse `H` gives an interval is a shortest among all decimals inside it (`tex_short`),
+    and it is inside it by fusion. -/
 public theorem tex_laws_step2 :
-    interval ≫ Λ (inrange ≫ (val)°) ≫ est R = interval ≫ Λ H ≫ est R := by
-  have h : inrange ≫ (val)° = H := by
-    show inrange ≫ (val)° = (cataR (junc cop arb step))°
-    rw [← tex_fusion, Allegory.recip_comp, Allegory.recip_recip]
-  rw [h]
+    interval ≫ Λ H ≫ est R ⊑ interval ≫ Λ (inrange ≫ (val)°) ≫ est R := by
+  refine comp_mono_left _ (le_iff.mpr fun p x h => ?_)
+  rw [Λ_comp_est_apply] at h ⊢
+  obtain ⟨hx, hmin⟩ := h
+  refine ⟨?_, fun y hy => ?_⟩
+  · obtain ⟨r, hv, hin⟩ := le_iff.mp tex_fusion x p hx
+    exact ⟨r, hin, hv⟩
+  · obtain ⟨r, hin, hv⟩ := hy
+    obtain ⟨z, hz, hlen⟩ := tex_short y r p x hv hin hx
+    exact Nat.le_trans (hmin z hz) hlen
 
 /-- **tex-laws**, the greedy body at `H`: `interval Λ([arb,step]°) est(Q) F(H) α ⊑ interval H`.
     `est(Q) ⊑ ∋` cancels the transpose, and what is left is `H`'s own fixed-point equation
@@ -657,26 +824,21 @@ public theorem tex_laws_step3 :
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification
     `Λ(intern°) est(R)` — a shortest decimal whose internal representation is the given `n`.
-    The book's reading on points, `extern(n)=f(2n−1,2n+1)` (B&dM p.263), is `tex_extern` below,
-    stated from `f`'s own recursion rather than from this fixed point. -/
+    The fixed point is `f` (`tex_f`), and on points `extern(n)=f(2n−1,2n+1)` (`tex_extern`). -/
 public theorem tex_laws :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
       ⊑ Λ ((intern)°) ≫ est R := by
-  rw [tex_laws_step1, tex_laws_step2]
-  exact tex_laws_step3
+  rw [tex_laws_step1]
+  calc _ ⊑ _ := tex_laws_step3
+    _ ⊑ _ := tex_laws_step2
 
-/-! ## `f` on points (B&dM p.263, `tex-extern`)
+/-! ## `f` on points (B&dM p.263, `tex-extern`) -/
 
-  The greedy body of `tex_laws` is NOT read off as `f` here: its `[arb,step]` ranges over all
-  pairs, so at an interval with `a≥0` it offers ten one-digit decompositions, only one of which
-  keeps (10.9), and `est(Q)` finds no `Q`-least one among them.  `f` is stated as the book's
-  recursion itself, the least relation satisfying it, and the program is proved to compute it. -/
-
-/-- `d=⌊10b⌋`, stated by the inequalities that define the floor, `0≤10b−d<1`: `Real` has no floor
-    function, and Exercise 10.12 (`digit_unique`) is that these pin `d` down. -/
+/-- `d=⌊10b⌋`, stated by the inequalities `0<10b−d<1` that make `(10a−d,10b−d)` satisfy (10.9):
+    `Real` has no floor function, and Exercise 10.12 (`digit_unique`) is that these pin `d` down. -/
 @[expose] public def IsDigit (d : Digit) (b : Real.carrier) : Prop :=
-  ¬ rlt (unshift (d.val : Int) b) zeroR ∧ rlt (unshift (d.val : Int) b) oneR
+  rlt zeroR (unshift (d.val : Int) b) ∧ rlt (unshift (d.val : Int) b) oneR
 
 /-- **tex-extern**: `f(a,b)=[]` if `a<0`, else `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋` — the least
     relation satisfying the book's two clauses.  The base case is `a<0`, not `a≤0`: at `a=0` the
@@ -686,14 +848,14 @@ public inductive fR : Iv → Dec → Prop
   | cons {a b : Real.carrier} {x : Dec} (d : Digit) : ¬ rlt a zeroR → IsDigit d b →
       fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ x → fR ⟨a, b⟩ (ConsList.cons d x)
 
-/-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `fR` is. -/
-@[expose] public def f : Interval ⟶ Decimal := fun p x => fR p x
+/-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `fR` is on the pairs (10.9) admits. -/
+@[expose] public def f : Interval ⟶ Decimal := fun p x => fR p.1 x
 
 /-- **tex-extern** (B&dM p.263): `f(a,b)=[]` if `a<0`, and `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋`
     otherwise — the two clauses `fR` is the least relation satisfying. -/
 public theorem f_eq (a b : Real.carrier) (x : Dec) :
-    f ⟨a, b⟩ x ↔ (rlt a zeroR ∧ x = ConsList.wrap ()) ∨
-      (¬ rlt a zeroR ∧ ∃ d y, IsDigit d b ∧ f ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ y
+    fR ⟨a, b⟩ x ↔ (rlt a zeroR ∧ x = ConsList.wrap ()) ∨
+      (¬ rlt a zeroR ∧ ∃ d y, IsDigit d b ∧ fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ y
         ∧ x = ConsList.cons d y) := by
   constructor
   · intro h
@@ -718,11 +880,10 @@ public theorem digit_unique {d e : Digit} {b : Real.carrier} (hd : IsDigit d b)
     omega
   have hW : 0 < w * sc m.2 := Int.mul_pos (by decide) (sc_pos _)
   have lo : ∀ c : Digit, IsDigit c (mkR m) → ¬ 10 * m.1 - (c.val : Int) * (w * sc m.2) < 0 := by
-    intro c hc h
-    apply hc.1
-    show (10 * m.1 - (c.val : Int) * w * sc m.2) * sc 0 < 0 * sc m.2
-    rw [sc_zero, Int.mul_one, Int.zero_mul, Int.mul_assoc]
-    exact h
+    intro c hc
+    have h : (0 : Int) * sc m.2 < (10 * m.1 - (c.val : Int) * w * sc m.2) * sc 0 := hc.1
+    rw [sc_zero, Int.mul_one, Int.zero_mul, Int.mul_assoc] at h
+    omega
   have hi : ∀ c : Digit, IsDigit c (mkR m) → 10 * m.1 - (c.val : Int) * (w * sc m.2) < w * sc m.2 := by
     intro c hc
     have h : (10 * m.1 - (c.val : Int) * w * sc m.2) * sc 0 < w * sc m.2 := hc.2
@@ -745,6 +906,118 @@ public theorem f_simple {p : Iv} {x y : Dec} (hx : fR p x) (hy : fR p y) : x = y
       have hde := digit_unique hd he
       subst hde
       rw [ih hy']
+
+/-- `Q` on points: `l(t)` is below every `r(s)`, and everything is below itself. -/
+public theorem Q_apply (u z : ((F Unit Digit).obj Interval).carrier) :
+    Q u z ↔ (∃ t, u = Sum.inl t ∧ ∃ s, z = Sum.inr s) ∨ u = z := by
+  rw [Q, union_apply, id_apply]
+  constructor
+  · rintro (⟨t, hl, s, _, hr⟩ | h)
+    · exact Or.inl ⟨t, hl, s, hr⟩
+    · exact Or.inr h
+  · rintro (⟨t, hl, s, hr⟩ | h)
+    · exact Or.inl ⟨t, hl, s, rfl, hr⟩
+    · exact Or.inr h
+
+/-- The greedy body on points: `est(Q)` picks a one-step decomposition `u` of `p` that is
+    `Q`-below every other, and `F(X)α` builds the decimal from it. -/
+public theorem body_apply (X : Interval ⟶ Decimal) (p : Interval.carrier) (x : Dec) :
+    (Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) p x ↔
+      ∃ u, (junc cop arb step u p ∧ ∀ z, junc cop arb step z p → Q u z)
+        ∧ ∃ v, Fmap Unit Digit X u v ∧ x = con v := by
+  rw [← Cat.assoc]
+  show (∃ u, (Λ ((junc cop arb step)°) ≫ est Q) p u ∧ ∃ v, Fmap Unit Digit X u v ∧ x = con v) ↔ _
+  simp only [Λ_comp_est_apply]
+  exact Iff.rfl
+
+/-- **tex-extern** (B&dM p.263): the least solution of the greedy recursion is `f` — at `(a,b)`
+    with `a<0` stopping is legal and `Q` prefers it, and otherwise `[arb,step]°` offers the one
+    decomposition `(⌊10b⌋,(10a−d,10b−d))` that (10.9) admits. -/
+public theorem tex_f :
+    mu (fun X : Interval ⟶ Decimal =>
+        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) = f := by
+  have hmono : Monotonic (fun X : Interval ⟶ Decimal =>
+      Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) := by
+    intro X Y h
+    exact comp_mono_left _ (comp_mono_left _ (comp_mono_right ((F Unit Digit).map_mono h) _))
+  have hle : (Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map f ≫ alphaR) ⊑ f :=
+    le_iff.mpr fun p x h => by
+      rw [body_apply] at h
+      obtain ⟨u, ⟨hT, hmin⟩, v, hF, rfl⟩ := h
+      cases u with
+      | inl t =>
+        have ha := ((ListRel.junc_sum_inl arb step t p).mp hT).1
+        cases v with
+        | inl t' => cases t'; exact fR.nil (b := p.1.hi) ha
+        | inr _ => exact (hF : False).elim
+      | inr s =>
+        obtain ⟨d, q⟩ := s
+        have hp : p = stepFn (d, q) := (ListRel.junc_sum_inr arb step (d, q) p).mp hT
+        have ha : ¬ rlt p.1.lo zeroR := fun ha => by
+          have h := hmin (Sum.inl ()) ((ListRel.junc_sum_inl arb step () p).mpr ⟨ha, p.2.1⟩)
+          rw [Q_apply] at h
+          rcases h with ⟨t, h1, _⟩ | h1 <;> cases h1
+        cases v with
+        | inl _ => exact (hF : False).elim
+        | inr w' =>
+          obtain ⟨d', y⟩ := w'
+          obtain ⟨hd, hy⟩ := (hF : d = d' ∧ f q y)
+          have hd' : d = d' := hd
+          subst hd' hp
+          have e1 := unshift_shift (d.val : Int) q.1.lo
+          have e2 := unshift_shift (d.val : Int) q.1.hi
+          refine fR.cons (a := shiftFn (d.val : Int) q.1.lo) (b := shiftFn (d.val : Int) q.1.hi) d ha
+            ⟨by rw [e2]; exact q.2.1, by rw [e2]; exact q.2.2.1⟩ ?_
+          rw [e1, e2]; exact hy
+  have key : ∀ (pp : Iv) (x : Dec), fR pp x → ∀ h : Legal pp,
+      mu (fun X : Interval ⟶ Decimal =>
+        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR) ⟨pp, h⟩ x := by
+    intro pp x hf
+    induction hf with
+    | nil ha =>
+      intro h
+      apply le_iff.mp (mu_prefixed hmono)
+      rw [body_apply]
+      refine ⟨Sum.inl (), ⟨(ListRel.junc_sum_inl arb step () _).mpr ⟨ha, h.1⟩, fun z _ => ?_⟩,
+        Sum.inl (), (rfl : () = ()), rfl⟩
+      rw [Q_apply]
+      rcases z with z | s
+      · cases z; exact Or.inr rfl
+      · exact Or.inl ⟨(), rfl, s, rfl⟩
+    | @cons a b x d ha hd _ ih =>
+      intro h
+      have hq : Legal ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ :=
+        ⟨hd.1, hd.2, unshift_lt _ h.2.2⟩
+      have hp : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = stepFn (d, ⟨_, hq⟩) := by
+        apply Subtype.ext
+        show (⟨a, b⟩ : Iv) = ⟨shiftFn _ (unshift _ a), shiftFn _ (unshift _ b)⟩
+        rw [shift_unshift, shift_unshift]
+      apply le_iff.mp (mu_prefixed hmono)
+      rw [body_apply]
+      refine ⟨Sum.inr (d, ⟨_, hq⟩), ⟨?_, fun z hz => ?_⟩, Sum.inr (d, x), ⟨rfl, ih hq⟩, rfl⟩
+      · rw [hp]; exact (ListRel.junc_sum_inr arb step (d, ⟨_, hq⟩) _).mpr rfl
+      · rw [Q_apply]; right
+        rcases z with t | ⟨e, q2⟩
+        · exact absurd ((ListRel.junc_sum_inl arb step t _).mp hz).1 ha
+        · have h2 : (⟨⟨a, b⟩, h⟩ : Interval.carrier) = stepFn (e, q2) :=
+            (ListRel.junc_sum_inr arb step (e, q2) _).mp hz
+          have ha' : a = shiftFn (e.val : Int) q2.1.lo :=
+            congrArg (fun p : Interval.carrier => p.1.lo) h2
+          have hb : b = shiftFn (e.val : Int) q2.1.hi :=
+            congrArg (fun p : Interval.carrier => p.1.hi) h2
+          have he : IsDigit e b := by
+            rw [hb]
+            exact ⟨by rw [unshift_shift]; exact q2.2.1, by rw [unshift_shift]; exact q2.2.2.1⟩
+          have hde := digit_unique hd he
+          subst hde
+          have hq2 : q2 = ⟨_, hq⟩ := by
+            apply Subtype.ext
+            show q2.1 = ⟨unshift _ a, unshift _ b⟩
+            rw [ha', hb, unshift_shift, unshift_shift]
+          rw [hq2]
+  apply hom_ext
+  intro p x
+  exact ⟨fun h => le_iff.mp (mu_le hle) p x h, fun h => key p.1 x h p.2⟩
 
 /-! ## The program in integer arithmetic (B&dM p.263) -/
 
@@ -799,6 +1072,38 @@ public theorem next_ok (p q d : Int) (h : 0 < q - p ∧ q < w) (hd : d = 10 * q 
 termination_by (w - (x.1.2 - x.1.1)).toNat
 decreasing_by exact measure_lt _ _ _ hp x.2
 
+/-- The pairs the program reaches from `interval n=(2n−1,2n+1)`: after `k` digits the width is
+    `q−p=2·10ᵏ` and `2ᵏ` exactly divides `q`, until the width passes `w`.  This is what keeps
+    `10q/w` off the integers (Exercise 10.14), so the digit leaves `10b−d>0`. -/
+@[expose] public def Reach (p q : Int) : Prop :=
+  ∃ m : Int, (q - p = 2 ∧ q = 2 * m + 1) ∨ (q - p = 20 ∧ q = 2 * (2 * m + 1))
+    ∨ (q - p = 200 ∧ q = 4 * (2 * m + 1)) ∨ (q - p = 2000 ∧ q = 8 * (2 * m + 1))
+    ∨ (q - p = 20000 ∧ q = 16 * (2 * m + 1)) ∨ w ≤ q - p
+
+/-- On a reached pair with `p≥0`, `0<10q−w·d` for `d=(10q) div w`. -/
+public theorem digit_strict (p q : Int) (hp : ¬ p < 0) (h : 0 < q - p ∧ q < w)
+    (hr : Reach p q) : 0 < 10 * q - w * (10 * q / w) := by
+  have hb := div_bounds q
+  generalize 10 * q / w = d at *
+  obtain ⟨m, hm⟩ := hr
+  simp only [w] at *
+  omega
+
+/-- The next pair `(10p−w·d,10q−w·d)` is reached too. -/
+public theorem reach_next (p q : Int) (hp : ¬ p < 0) (h : 0 < q - p ∧ q < w) (hr : Reach p q) :
+    Reach (10 * p - w * (10 * q / w)) (10 * q - w * (10 * q / w)) := by
+  generalize 10 * q / w = d
+  obtain ⟨m, h1 | h2 | h3 | h4 | h5 | h6⟩ := hr
+  · exact ⟨5 * m + 2 - 32768 * d, Or.inr (Or.inl ⟨by simp only [w]; omega, by simp only [w]; omega⟩)⟩
+  · exact ⟨5 * m + 2 - 16384 * d,
+      Or.inr (Or.inr (Or.inl ⟨by simp only [w]; omega, by simp only [w]; omega⟩))⟩
+  · exact ⟨5 * m + 2 - 8192 * d,
+      Or.inr (Or.inr (Or.inr (Or.inl ⟨by simp only [w]; omega, by simp only [w]; omega⟩)))⟩
+  · exact ⟨5 * m + 2 - 4096 * d,
+      Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨by simp only [w]; omega, by simp only [w]; omega⟩))))⟩
+  · exact ⟨0, Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (by simp only [w]; omega)))))⟩
+  · exfalso; simp only [w] at *; omega
+
 /-- **tex-extern**: the program's first clause, `f(p,q)=[]` if `p<0`. -/
 public theorem f_nil (p q : Int) (h : 0 < q - p ∧ q < w) (hp : p < 0) :
     f ⟨(p, q), h⟩ = ConsList.wrap () := by
@@ -826,9 +1131,10 @@ public theorem unshift_mkR (d p : Int) : unshift d (mkR (p, 0)) = mkR (10 * p - 
   show (10 * p - d * w * sc 0) * sc 0 = (10 * p - w * d) * sc 0
   rw [Int.mul_comm d w, sc_zero]; simp only [Int.mul_one]
 
-/-- **tex-extern**: the integer `f` computes the rational one under `(p,q)↦(p/w,q/w)`. -/
-public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) :
-    f ⟨mkR (p, 0), mkR (q, 0)⟩ (Prog.f ⟨(p, q), h⟩) := by
+/-- **tex-extern**: on the pairs it reaches, the integer `f` computes the rational one under
+    `(p,q)↦(p/w,q/w)`. -/
+public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) (hr : Prog.Reach p q) :
+    fR ⟨mkR (p, 0), mkR (q, 0)⟩ (Prog.f ⟨(p, q), h⟩) := by
   by_cases hp : p < 0
   · rw [Prog.f_nil p q h hp]
     refine fR.nil ?_
@@ -837,13 +1143,13 @@ public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) :
   · rw [Prog.f_cons p q _ h hp rfl]
     have hv := Prog.dig_val (10 * q / w) (Prog.dig_ok p q _ hp h rfl)
     have ih := f_agree (10 * p - w * (10 * q / w)) (10 * q - w * (10 * q / w))
-      (Prog.next_ok p q _ h rfl)
+      (Prog.next_ok p q _ h rfl) (Prog.reach_next p q hp h hr)
     refine fR.cons _ ?_ ⟨?_, ?_⟩ ?_
     · show ¬ p * sc 0 < 0 * sc 0
       rw [sc_zero]; omega
     · rw [hv, unshift_mkR]
-      show ¬ (10 * q - w * (10 * q / w)) * sc 0 < 0 * sc 0
-      rw [sc_zero, Int.mul_one, Int.zero_mul]; exact Int.not_lt.mpr (Prog.div_bounds q).1
+      show (0 : Int) * sc 0 < (10 * q - w * (10 * q / w)) * sc 0
+      simp only [sc_zero, Int.mul_one]; exact Prog.digit_strict p q hp h hr
     · rw [hv, unshift_mkR]
       show (10 * q - w * (10 * q / w)) * sc 0 < w * sc 0
       rw [sc_zero, Int.mul_one, Int.mul_one]; exact (Prog.div_bounds q).2
@@ -860,7 +1166,9 @@ decreasing_by exact Prog.measure_lt _ _ _ hp h
 public theorem tex_extern : interval ≫ f = extern := by
   apply hom_ext
   intro n x
-  have hn : f (intervalFn n) (Prog.extern n) := f_agree _ _ (Prog.interval n).2
+  have hn : f (intervalFn n) (Prog.extern n) :=
+    f_agree (2 * (n.val : Int) - 1) (2 * (n.val : Int) + 1) (Prog.interval n).2
+      ⟨n.val, Or.inl ⟨by omega, rfl⟩⟩
   constructor
   · rintro ⟨p, hp, hf⟩
     have hp' : p = intervalFn n := hp

@@ -521,7 +521,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `interval n=((2n−1)/2¹⁷,(2n+1)/2¹⁷)`, #h(4pt) `r inrange (a,b)⟺a<r<b`, #h(4pt)
 `round°=interval inrange`, #h(4pt) `R≜length≤length°`.
 
-`Interval` all pairs `(a,b)`, `Legal(a,b)⟺0<b<1` and `a<b` #h(4pt) #src[(10.9), preserved by `[arb,step]` — `arb_legal`, `step_legal`]; #h(4pt)
+`Interval` the pairs `(a,b)` with `Legal(a,b)⟺0<b<1` and `a<b` #h(4pt) #src[(10.9); `step_legal` is what types `step`]; #h(4pt)
 `[arb,step] : 1+(Digit×Interval)⟶Interval`, #h(4pt)
 `step (d,(a,b))=((d+a)/10,(d+b)/10)`.
 
@@ -534,10 +534,10 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // lean:AOP.A10_4_Tex.shift@522be7b7
 // lean:AOP.A10_4_Tex.round@81382467
 // lean:AOP.A10_4_Tex.Freyd.Alg.RelSet.Tex.interval@9dc05d20
-// lean:AOP.A10_4_Tex.inrange@d4f92d7a
+// lean:AOP.A10_4_Tex.inrange@324d56b2
 // lean:AOP.A10_4_Tex.round_recip@8787573e
 // lean:AOP.A10_4_Tex.R@393e9bb8
-// lean:AOP.A10_4_Tex.Legal@5b60045f
+// lean:AOP.A10_4_Tex.Legal@ad318946
 // lean:AOP.A10_4_Tex.step@1b245185
 // lean:AOP.A10_4_Tex.H@f5c2c294
 ]]<tex-defn>
@@ -545,21 +545,22 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // B&dM pp. 260-261: the fusion condition, the two cases of `[zero,shift]` one row each.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_fusion") \
-    #src[the reals a decimal's value lies strictly between are the intervals got by folding its
-     digits with `[arb,step]`]],
-    // lean:AOP.A10_4_Tex.tex_fusion@e36b79cc
+    #src[every interval got by folding a decimal's digits with `[arb,step]` has the decimal's value
+     strictly inside it]],
+    // lean:AOP.A10_4_Tex.tex_fusion@6c48b5bc
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.lhs",
-      src[fusion: it suffices that `[zero,shift] inrange°=F(inrange°)[arb,step]`]),
+      src[fusion: it suffices that `[zero,shift] inrange°⊒F(inrange°)[arb,step]`]),
     (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.rhs",
       src[`[T,U]Z=[TZ,UZ]`, a coproduct law not tabulated in the note]),
      // lean:AOP.A10_4_Tex.tex_fusion_step1@258065cf
     (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step2.rhs",
       src[`zero inrange°=arb`: the first condition, which determines `arb`]),
      // lean:AOP.A10_4_Tex.tex_fusion_step2@bc02821b
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.rhs",
-      src[arithmetic: `a<(d+r)/10<b ⟺ 10a−d<r<10b−d`, and `(a,b)=step(d,(10a−d,10b−d))`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step3@dca01191
+    (RQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.lhs",
+      src[arithmetic: `10a−d<r<10b−d ⟹ a<(d+r)/10<b` for `(a,b)=step(d,(10a−d,10b−d))`; only `⊒`,
+       since `(10a−d,10b−d)` satisfies (10.9) only when `d<10b<d+1`]),
+     // lean:AOP.A10_4_Tex.tex_fusion_step3@15be0440
     (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step4.rhs",
       src[`F(S)[T,U]=[T,(𝟙×S)U]` read right to left: definition of `F`]),
      // lean:AOP.A10_4_Tex.tex_fusion_step4@66ce201d
@@ -617,9 +618,9 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     // the unit: the set the transpose opens starts on its target.
     (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs",
       src[`round°` is not a map, but `interval` is, so it comes out of the transpose]),
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step2.rhs",
-      src[fusion: `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down to intervals, is a
-       reduce on cons-lists]),
+    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_step2.lhs",
+      src[the type restriction (10.9): a shortest decimal `H` gives an interval is a shortest one
+       among all decimals inside it, and is inside it by @tex-fusion]),
     // interval row: Theorem 10.1
     // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
     // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
@@ -628,22 +629,23 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
        digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
   ),
-  // lean:AOP.A10_4_Tex.tex_laws@393983dc lean:AOP.A10_4_Tex.tex_laws_step1@ddde5bc4 lean:AOP.A10_4_Tex.tex_laws_step2@436904e9 lean:AOP.A10_4_Tex.tex_laws_step3@12f54b12 lean:AOP.A10_4_Tex.tex_laws_body@942aced5
+  // lean:AOP.A10_4_Tex.tex_laws@393983dc lean:AOP.A10_4_Tex.tex_laws_step1@ddde5bc4 lean:AOP.A10_4_Tex.tex_laws_step2@3fd53250 lean:AOP.A10_4_Tex.tex_laws_step3@12f54b12 lean:AOP.A10_4_Tex.tex_laws_body@942aced5
 )
 ]<tex-laws>
 
 // B&dM p.263, on points: no picture, the two sides are values, not the objects the panels carry.
-// `f` is the book's recursion itself, not read off `tex-laws`'s body: that body's `[arb,step]`
-// ranges over all pairs, so at `a≥0` it offers ten decompositions and `est(Q)` picks none.
 // The base case is `a<0`/`p<0`, not the Gofer `p<=0`: at `p=0` the empty decimal's value `0` is
 // not strictly inside `(a,b)`, so only `<` makes `f`'s output lie in the interval.
 #disp[
   - #leanf("Freyd.Alg.RelSet.Tex.f_eq") \
     #src[`f` gives `(a,b)` the empty decimal when `a<0`, and otherwise the digit `d=⌊10b⌋`
      followed by what it gives `(10a−d,10b−d)`]
-    // lean:AOP.A10_4_Tex.f_eq@36a95576
+    // lean:AOP.A10_4_Tex.f_eq@c0c2128a
+  - #leanf("Freyd.Alg.RelSet.Tex.tex_f") \
+    #src[the least solution of the greedy recursion of @tex-laws is `f`]
+    // lean:AOP.A10_4_Tex.tex_f@059727cf
   - #leanf("Freyd.Alg.RelSet.Tex.digit_unique") \
-    #src[Exercise 10.12: two digits `d` and `e` with `0≤10b−d<1` and `0≤10b−e<1` are equal]
+    #src[Exercise 10.12: two digits `d` and `e` with `0<10b−d<1` and `0<10b−e<1` are equal]
     // lean:AOP.A10_4_Tex.digit_unique@4fd18062
   - #leanf("Freyd.Alg.RelSet.Tex.Prog.f_nil") \
     #src[the program's first clause: `f(p,q)=[]` when `p<0`]
@@ -653,8 +655,9 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      `f(10p−w·d,10q−w·d)`]
     // lean:AOP.A10_4_Tex.Prog.f_cons@7cf555c4
   - #leanf("Freyd.Alg.RelSet.Tex.f_agree") \
-    #src[the integer `f` at `(p,q)` is a value of the rational `f` at `(p/w,q/w)`]
-    // lean:AOP.A10_4_Tex.f_agree@70d68d5e
+    #src[on the pairs the program reaches from `interval n`, the integer `f` at `(p,q)` is a value
+     of the rational `f` at `(p/w,q/w)`]
+    // lean:AOP.A10_4_Tex.f_agree@e4dce558
   - #leanf("Freyd.Alg.RelSet.Tex.tex_extern") \
     #src[`f` after `interval` is the program `extern`, whose value at `n` is `f(2n−1,2n+1)`]
     // lean:AOP.A10_4_Tex.tex_extern@5e874693

@@ -527,6 +527,14 @@ def delabTexRealCarrier : Delab := do
   unless (← getExpr).appArg!.isConstOf ``Freyd.Alg.RelSet.Tex.realSetoid do failure
   `($(mkIdent `Real))
 
+-- `Interval`'s carrier is the subtype cut out by (10.9), so a circuit opening `Digit×Interval`
+-- reaches `{p // Legal p}`: the predicate, read off the `Expr`, says it is the TeX `Interval`.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Subtype]
+def delabTexIntervalCarrier : Delab := do
+  unless (← getExpr).appArg!.eta.isConstOf ``Freyd.Alg.RelSet.Tex.Legal do failure
+  `($(mkIdent `Interval))
+
 -- `[zero, ⊸ zero ∪ plus]`'s two leaves are named in the note, so the box carries the note's word
 -- and not the namespace the Lean constant happens to live in.
 open Lean PrettyPrinter in
@@ -1071,6 +1079,10 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.f] def unexpandTexProgF : Unexpander
   | `($_ ⟨($p, $q), $_⟩) => `($(mkIdent `f) $p $q)
   | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Prog.Reach] def unexpandTexProgReach : Unexpander
+  | `($_ $args*) => `($(mkIdent `Reach) $args*)
+  | _ => `($(mkIdent `Reach))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.dig] def unexpandTexProgDig : Unexpander
   | `($_ $d $_) => `($d)
