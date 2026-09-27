@@ -657,12 +657,218 @@ public theorem tex_laws_step3 :
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification
     `Λ(intern°) est(R)` — a shortest decimal whose internal representation is the given `n`.
-    Reading it off on points (`extern(n)=f(2n−1,2n+1)`, B&dM p.263) is not formalised here. -/
+    The book's reading on points, `extern(n)=f(2n−1,2n+1)` (B&dM p.263), is `tex_extern` below,
+    stated from `f`'s own recursion rather than from this fixed point. -/
 public theorem tex_laws :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
       ⊑ Λ ((intern)°) ≫ est R := by
   rw [tex_laws_step1, tex_laws_step2]
   exact tex_laws_step3
+
+/-! ## `f` on points (B&dM p.263, `tex-extern`)
+
+  The greedy body of `tex_laws` is NOT read off as `f` here: its `[arb,step]` ranges over all
+  pairs, so at an interval with `a≥0` it offers ten one-digit decompositions, only one of which
+  keeps (10.9), and `est(Q)` finds no `Q`-least one among them.  `f` is stated as the book's
+  recursion itself, the least relation satisfying it, and the program is proved to compute it. -/
+
+/-- `d=⌊10b⌋`, stated by the inequalities that define the floor, `0≤10b−d<1`: `Real` has no floor
+    function, and Exercise 10.12 (`digit_unique`) is that these pin `d` down. -/
+@[expose] public def IsDigit (d : Digit) (b : Real.carrier) : Prop :=
+  ¬ rlt (unshift (d.val : Int) b) zeroR ∧ rlt (unshift (d.val : Int) b) oneR
+
+/-- **tex-extern**: `f(a,b)=[]` if `a<0`, else `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋` — the least
+    relation satisfying the book's two clauses.  The base case is `a<0`, not `a≤0`: at `a=0` the
+    empty decimal's value `0` is not strictly inside `(a,b)`. -/
+public inductive fR : Iv → Dec → Prop
+  | nil {a b : Real.carrier} : rlt a zeroR → fR ⟨a, b⟩ (ConsList.wrap ())
+  | cons {a b : Real.carrier} {x : Dec} (d : Digit) : ¬ rlt a zeroR → IsDigit d b →
+      fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ x → fR ⟨a, b⟩ (ConsList.cons d x)
+
+/-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `fR` is. -/
+@[expose] public def f : Interval ⟶ Decimal := fun p x => fR p x
+
+/-- **tex-extern** (B&dM p.263): `f(a,b)=[]` if `a<0`, and `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋`
+    otherwise — the two clauses `fR` is the least relation satisfying. -/
+public theorem f_eq (a b : Real.carrier) (x : Dec) :
+    f ⟨a, b⟩ x ↔ (rlt a zeroR ∧ x = ConsList.wrap ()) ∨
+      (¬ rlt a zeroR ∧ ∃ d y, IsDigit d b ∧ f ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ y
+        ∧ x = ConsList.cons d y) := by
+  constructor
+  · intro h
+    cases h with
+    | nil ha => exact Or.inl ⟨ha, rfl⟩
+    | cons d ha hd hy => exact Or.inr ⟨ha, d, _, hd, hy, rfl⟩
+  · rintro (⟨ha, rfl⟩ | ⟨ha, d, y, hd, hy, rfl⟩)
+    · exact fR.nil ha
+    · exact fR.cons d ha hd hy
+
+/-- **Exercise 10.12**: `0≤10b−d₁<1` and `0≤10b−d₂<1` imply `d₁=d₂`. -/
+public theorem digit_unique {d e : Digit} {b : Real.carrier} (hd : IsDigit d b)
+    (he : IsDigit e b) : d = e := by
+  revert hd he
+  refine Quotient.inductionOn b ?_
+  intro m hd he
+  have key : ∀ {x y W N : Int}, 0 < W → ¬ N - x * W < 0 → N - y * W < W → x ≤ y := by
+    intro x y W N hW h1 h2
+    refine Int.not_lt.mp fun hlt => ?_
+    have h3 : (y + 1) * W ≤ x * W := Int.mul_le_mul_of_nonneg_right (by omega) (Int.le_of_lt hW)
+    rw [Int.add_mul, Int.one_mul] at h3
+    omega
+  have hW : 0 < w * sc m.2 := Int.mul_pos (by decide) (sc_pos _)
+  have lo : ∀ c : Digit, IsDigit c (mkR m) → ¬ 10 * m.1 - (c.val : Int) * (w * sc m.2) < 0 := by
+    intro c hc h
+    apply hc.1
+    show (10 * m.1 - (c.val : Int) * w * sc m.2) * sc 0 < 0 * sc m.2
+    rw [sc_zero, Int.mul_one, Int.zero_mul, Int.mul_assoc]
+    exact h
+  have hi : ∀ c : Digit, IsDigit c (mkR m) → 10 * m.1 - (c.val : Int) * (w * sc m.2) < w * sc m.2 := by
+    intro c hc
+    have h : (10 * m.1 - (c.val : Int) * w * sc m.2) * sc 0 < w * sc m.2 := hc.2
+    rwa [sc_zero, Int.mul_one, Int.mul_assoc] at h
+  have h1 := key hW (lo d hd) (hi e he)
+  have h2 := key hW (lo e he) (hi d hd)
+  exact Fin.ext (by omega)
+
+/-- `f` is simple: the two clauses never both apply, and Exercise 10.12 fixes the digit. -/
+public theorem f_simple {p : Iv} {x y : Dec} (hx : fR p x) (hy : fR p y) : x = y := by
+  induction hx generalizing y with
+  | nil ha =>
+    cases hy with
+    | nil _ => rfl
+    | cons _ ha' _ _ => exact absurd ha ha'
+  | cons d ha hd _ ih =>
+    cases hy with
+    | nil ha' => exact absurd ha' ha
+    | cons e _ he hy' =>
+      have hde := digit_unique hd he
+      subst hde
+      rw [ih hy']
+
+/-! ## The program in integer arithmetic (B&dM p.263) -/
+
+namespace Prog
+
+/-- The pairs `(p,q)` the program reaches, representing `(p/w,q/w)`: `q−p>0` and `q<w` are what
+    make the recursion stop, since the width `q−p` grows tenfold at each digit and `q−p<q<w`
+    while `p≥0`. -/
+@[expose] public def Rep : Type := {x : Int × Int // 0 < x.2 - x.1 ∧ x.2 < w}
+
+/-- `d`, as a digit. -/
+@[expose] public def dig (d : Int) (h : 0 ≤ d ∧ d < 10) : Digit := ⟨d.toNat, by omega⟩
+
+public theorem dig_val (d : Int) (h : 0 ≤ d ∧ d < 10) : ((dig d h).val : Int) = d := by
+  show ((d.toNat : Nat) : Int) = d
+  omega
+
+-- `omega` over `/` pulls in `Classical.choice`, so the division is replaced by its two bounds
+-- once, here, and every later arithmetic step sees `d` as a plain variable.
+/-- `0≤10q−w·d<w` for `d=(10q) div w`: the division's defining bounds. -/
+public theorem div_bounds (q : Int) :
+    0 ≤ 10 * q - w * (10 * q / w) ∧ 10 * q - w * (10 * q / w) < w := by
+  have e := Int.emod_add_mul_ediv (10 * q) w
+  have h1 := Int.emod_nonneg (10 * q) (show w ≠ 0 by decide)
+  have h2 := Int.emod_lt_of_pos (10 * q) (show 0 < w by decide)
+  generalize 10 * q / w = d at *
+  generalize 10 * q % w = r at *
+  generalize w * d = m at *
+  exact ⟨by omega, by omega⟩
+
+/-- The width `q−p` grows tenfold at a digit, and stays below `w` while `p≥0`. -/
+public theorem measure_lt (p q e : Int) (hp : ¬ p < 0) (h : 0 < q - p ∧ q < w) :
+    (w - ((10 * q - e) - (10 * p - e))).toNat < (w - (q - p)).toNat := by
+  omega
+
+public theorem dig_ok (p q d : Int) (hp : ¬ p < 0) (h : 0 < q - p ∧ q < w) (hd : d = 10 * q / w) :
+    0 ≤ d ∧ d < 10 := by
+  subst hd; have hb := div_bounds q; generalize 10 * q / w = d at *; simp only [w] at *; exact ⟨by omega, by omega⟩
+
+public theorem next_ok (p q d : Int) (h : 0 < q - p ∧ q < w) (hd : d = 10 * q / w) :
+    0 < (10 * q - w * d) - (10 * p - w * d) ∧ 10 * q - w * d < w := by
+  subst hd; have hb := Prog.div_bounds q; generalize 10 * q / w = d at *; exact ⟨by omega, by omega⟩
+
+/-- **tex-extern**: the program's `f(p,q)=[]` if `p<0`, else `[d]⧺f(10p−w·d,10q−w·d)` with
+    `d=(10q) div w`.  The book's Gofer has `p<=0`; `p<0` is kept because it is the rational line's
+    `a<0` under `a=p/w`, and at `p=0` the empty decimal's value `0` is not strictly above `a`. -/
+@[expose] public def f (x : Rep) : Dec :=
+  if hp : x.1.1 < 0 then ConsList.wrap ()
+  else ConsList.cons (dig (10 * x.1.2 / w) (dig_ok x.1.1 x.1.2 _ hp x.2 rfl))
+    (f ⟨(10 * x.1.1 - w * (10 * x.1.2 / w), 10 * x.1.2 - w * (10 * x.1.2 / w)),
+      next_ok x.1.1 x.1.2 _ x.2 rfl⟩)
+termination_by (w - (x.1.2 - x.1.1)).toNat
+decreasing_by exact measure_lt _ _ _ hp x.2
+
+/-- **tex-extern**: the program's first clause, `f(p,q)=[]` if `p<0`. -/
+public theorem f_nil (p q : Int) (h : 0 < q - p ∧ q < w) (hp : p < 0) :
+    f ⟨(p, q), h⟩ = ConsList.wrap () := by
+  rw [f]; exact dif_pos hp
+
+/-- **tex-extern**: the program's second clause, `f(p,q)=[d]⧺f(10p−w·d,10q−w·d)` where
+    `d=(10q) div w`. -/
+public theorem f_cons (p q d : Int) (h : 0 < q - p ∧ q < w) (hp : ¬ p < 0) (hd : d = 10 * q / w) :
+    f ⟨(p, q), h⟩ = ConsList.cons (dig d (dig_ok p q d hp h hd))
+      (f ⟨(10 * p - w * d, 10 * q - w * d), next_ok p q d h hd⟩) := by
+  subst hd; rw [f]; exact dif_neg hp
+
+/-- **tex-extern**: `interval n=(2n−1,2n+1)`, the representation of `interval`'s pair. -/
+@[expose] public def interval (n : Fin 65536) : Rep :=
+  ⟨(2 * (n.val : Int) - 1, 2 * (n.val : Int) + 1), by simp only [w]; exact ⟨by omega, by omega⟩⟩
+
+/-- **tex-extern**: `extern=f·interval`, the Gofer program. -/
+@[expose] public def extern (n : Fin 65536) : Dec := f (interval n)
+
+end Prog
+
+/-- `p/w` is `(p,0)`, and `10a−d` on it is `(10p−w·d)/w` — the representation step of p.263. -/
+public theorem unshift_mkR (d p : Int) : unshift d (mkR (p, 0)) = mkR (10 * p - w * d, 0) := by
+  refine Quotient.sound ?_
+  show (10 * p - d * w * sc 0) * sc 0 = (10 * p - w * d) * sc 0
+  rw [Int.mul_comm d w, sc_zero]; simp only [Int.mul_one]
+
+/-- **tex-extern**: the integer `f` computes the rational one under `(p,q)↦(p/w,q/w)`. -/
+public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) :
+    f ⟨mkR (p, 0), mkR (q, 0)⟩ (Prog.f ⟨(p, q), h⟩) := by
+  by_cases hp : p < 0
+  · rw [Prog.f_nil p q h hp]
+    refine fR.nil ?_
+    show p * sc 0 < 0 * sc 0
+    rw [sc_zero]; omega
+  · rw [Prog.f_cons p q _ h hp rfl]
+    have hv := Prog.dig_val (10 * q / w) (Prog.dig_ok p q _ hp h rfl)
+    have ih := f_agree (10 * p - w * (10 * q / w)) (10 * q - w * (10 * q / w))
+      (Prog.next_ok p q _ h rfl)
+    refine fR.cons _ ?_ ⟨?_, ?_⟩ ?_
+    · show ¬ p * sc 0 < 0 * sc 0
+      rw [sc_zero]; omega
+    · rw [hv, unshift_mkR]
+      show ¬ (10 * q - w * (10 * q / w)) * sc 0 < 0 * sc 0
+      rw [sc_zero, Int.mul_one, Int.zero_mul]; exact Int.not_lt.mpr (Prog.div_bounds q).1
+    · rw [hv, unshift_mkR]
+      show (10 * q - w * (10 * q / w)) * sc 0 < w * sc 0
+      rw [sc_zero, Int.mul_one, Int.mul_one]; exact (Prog.div_bounds q).2
+    · rw [hv, unshift_mkR, unshift_mkR]
+      exact ih
+termination_by (w - (q - p)).toNat
+decreasing_by exact Prog.measure_lt _ _ _ hp h
+
+/-- **tex-extern**: `extern≜f·interval` in integer arithmetic, as an arrow `[0,2¹⁶)⟶Decimal`. -/
+@[expose] public def extern : Ix ⟶ Decimal := graph Prog.extern
+
+/-- **tex-extern** (B&dM p.263): `extern=interval f` — the rational `f` after `interval` is the
+    integer program, `extern(n)=f(2n−1,2n+1)`. -/
+public theorem tex_extern : interval ≫ f = extern := by
+  apply hom_ext
+  intro n x
+  have hn : f (intervalFn n) (Prog.extern n) := f_agree _ _ (Prog.interval n).2
+  constructor
+  · rintro ⟨p, hp, hf⟩
+    have hp' : p = intervalFn n := hp
+    subst hp'
+    exact f_simple hf hn
+  · intro hx
+    have hx' : x = Prog.extern n := hx
+    subst hx'
+    exact ⟨intervalFn n, rfl, hn⟩
 
 end Freyd.Alg.RelSet.Tex

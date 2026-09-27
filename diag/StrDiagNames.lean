@@ -1035,6 +1035,55 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.arb] def unexpandTexArb : Unexpander
   | `($_ $args*) => `($(mkIdent `arb) $args*)
   | _ => `($(mkIdent `arb))
+-- B&dM p.263 on points: `Real`'s order, constants and `10a−d` wear the book's arithmetic, a
+-- representative `(p,0)` is `p/w`, and the rational `f` and the program's `f` share the book's letter.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.w] def unexpandTexW : Unexpander | _ => `($(mkIdent `w))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.rlt] def unexpandTexRlt : Unexpander
+  | `($_ $a $b) => `($a < $b)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.zeroR] def unexpandTexZeroR : Unexpander | _ => `(0)
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.oneR] def unexpandTexOneR : Unexpander | _ => `(1)
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.unshift] def unexpandTexUnshift : Unexpander
+  | `($_ $d $a) => `(10 * $a - $d)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.mkR] def unexpandTexMkR : Unexpander
+  | `($_ ($p, 0)) => `($p / $(mkIdent `w))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.IsDigit] def unexpandTexIsDigit : Unexpander
+  | `($_ $d $b) => `($d = $(mkIdent (Name.mkSimple "floor")) (10 * $b))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.fR] def unexpandTexFR : Unexpander
+  | `($_ $args*) => `($(mkIdent `f) $args*)
+  | _ => `($(mkIdent `f))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.f] def unexpandTexF : Unexpander
+  | `($_ $args*) => `($(mkIdent `f) $args*)
+  | _ => `($(mkIdent `f))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Prog.f] def unexpandTexProgF : Unexpander
+  | `($_ ⟨($p, $q), $_⟩) => `($(mkIdent `f) $p $q)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.Prog.dig] def unexpandTexProgDig : Unexpander
+  | `($_ $d $_) => `($d)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.extern] def unexpandTexExtern : Unexpander | _ => `($(mkIdent `extern))
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- An interval `(a,b)` is the pair it is, not a structure instance with field names. -/
+@[delab app.Freyd.Alg.RelSet.Tex.Iv.mk] def delabTexIvMk : Delab := do
+  guard ((← getExpr).getAppNumArgs == 2)
+  let a ← withNaryArg 0 delab
+  let b ← withNaryArg 1 delab
+  `(($a, $b))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
   | `($_ $args*) => `($(mkIdent `tourAlg) $args*)
