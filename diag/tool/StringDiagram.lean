@@ -1009,21 +1009,49 @@ partial def passSquare (ty : Expr) : MetaM (Option (Bool × Bool)) := do
       return some (up, onMaps)
     return none
 
-/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a `⊑`-headed candidate (`candidates`)
-    naming the constants of both, opened with metavariables, matched by `passOf?` with its `X`
-    unified with `Y`, every open argument answered (`discharge`) and the term `Meta.check`ed.  The
-    search is bounded; one cut short prints the pair and answers nothing, which draws the default. -/
+initialize passHeadsRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
+
+/-- EVERY CONCLUSION HEAD A PASS CAN BE STATED UNDER: `⊑` itself and each predicate whose body
+    opens to one of these (`MonoAlg`, `Distributes`) — found by walking the definitions of the
+    environment to a fixed point, once per process, never by a list of names. -/
+def passHeads : MetaM (Array Name) := do
+  if let some hs ← passHeadsRef.get then return hs
+  let rec body : Expr → Expr
+    | .lam _ _ b _ | .forallE _ _ b _ | .mdata _ b => body b
+    | e => e
+  let defs := (← getEnv).constants.fold (init := #[]) fun acc n ci => match ci with
+    | .defnInfo d => match (body d.value).getAppFn.constName? with
+      | some h => acc.push (n, h)
+      | none => acc
+    | _ => acc
+  let mut hs : NameSet := NameSet.empty.insert ``Freyd.Alg.le
+  -- 8 bounds the depth of predicates defined through predicates.
+  for _ in [0:8] do
+    let more := defs.filter fun (n, h) => hs.contains h && !hs.contains n
+    if more.isEmpty then break
+    hs := more.foldl (fun s (n, _) => s.insert n) hs
+  let out := hs.toList.toArray
+  passHeadsRef.set (some out)
+  return out
+
+/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
+    (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
+    `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
+    `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
 def passThm (φ Y : Expr) : MetaM (Option Name) := do
   let br ← bridges
   let mφ ← mustOfFamily br φ
-  -- A bead of no constant is spoken about only by its binders, and every `⊑` would pass the filter.
-  if mφ.isEmpty then return none
+  -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
+
   let must := (← mustOfFamily br Y).toList.foldl (·.insert ·) mφ
+  if must.isEmpty then return none
   let s ← Search.new none
   let al ← bridgeAliases
   let env ← getEnv
   let search : MetaM (Option Name) := do
-    for (n, has) in ← candidates ``Freyd.Alg.le do
+    let mut cs := #[]
+    for h in ← passHeads do cs := cs ++ (← candidates h)
+    for (n, has) in cs do
       Core.checkMaxHeartbeats "the pass search"
       if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
       let some ci := env.find? n | continue
