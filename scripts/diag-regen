@@ -56,10 +56,9 @@ filter() {
   fi
 }
 
-# ONE PROCESS PER CALL, half the cores at a time.  The exe draws its arguments as tasks over one
-# shared environment, and a whole route in one process contends on it: 176 circuits cost 2011 CPU
-# seconds that way and 184 as a process each, the strings 3301 against 1201.  Half the cores because
-# a panel with a long naturality search holds 1.6 GiB.  The build and the index are done ONCE, before
+# Half the cores at a time, because a panel with a long naturality search holds 1.6 GiB.  Batches
+# are drawn one call after another inside a process (`draw`): drawn as tasks over the one shared
+# environment they contended on it.  The build and the index are done ONCE, before
 # the first picture and only when there is one: the index is refreshed under a lock.
 # `$1` is the list, a call to a line; the rest is the route's flag.
 prepare() {
@@ -83,8 +82,14 @@ draw() {
   names=$1; shift
   [ -n "$names" ] || return 0
   prepare
+  # A BATCH OF CALLS PER PROCESS, about four batches per slot so a slow batch does not hold the
+  # rest: one call per process paid the import, the environment's hash and a cold verdict cache
+  # 1281 times, a third of a whole redraw's CPU.  The exporter draws its arguments one by one.
+  p=$(( ($(nproc) + 1) / 2 ))
+  n=$(printf '%s\n' "$names" | wc -l)
   printf '%s\n' "$names" \
-    | xargs -d '\n' -n 1 -P "$(( ($(nproc) + 1) / 2 ))" ./scripts/diag-export --prepared $verify "$@" || exit 1
+    | xargs -d '\n' -n "$(( (n + 4 * p - 1) / (4 * p) ))" -P "$p" \
+        ./scripts/diag-export --prepared $verify "$@" || exit 1
 }
 
 all=$(./scripts/note-files --generated) || exit 1
