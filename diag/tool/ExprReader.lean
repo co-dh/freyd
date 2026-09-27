@@ -797,6 +797,70 @@ def instCatalogue (n : Name) (ends : Array Expr → MetaM Bool) :
     unless ← Meta.isDefEq args[i]! v do return none
   return some (mkAppN (mkConst n lvls) args, cargs)
 
+/-- Everything a Meta question about `es` can read besides the environment: `es` themselves, and
+    every local their free variables and the local instances reach, each with its binder, type and
+    value.  `none` where a metavariable is left, whose assignment is state and no key.
+    THE KEY NAMES NO LOCAL: each is abstracted by the order the walk meets it, so every panel
+    opening a telescope of the same shape asks the same question, where a key holding the locals
+    themselves was new at every panel.  The locals come back beside it: an answer is stored
+    abstracted over them (`memoPut`) and instantiated with the asker's own (`memoGet`). -/
+def metaKey (es : Array Expr) : MetaM (Option (Array Expr × Array Expr)) := do
+  let mut todo := ((← Meta.getLocalInstances).map (·.fvar)) ++ es
+  let mut vs : Array Expr := #[]
+  let mut seen : FVarIdSet := {}
+  while h : todo.size > 0 do
+    let e ← instantiateMVars todo[todo.size - 1]
+    todo := todo.pop
+    if e.hasMVar then return none
+    for v in (collectFVars {} e).fvarIds do
+      if seen.contains v then continue
+      seen := seen.insert v
+      vs := vs.push (.fvar v)
+      let d ← v.getDecl
+      todo := todo ++ #[d.type] ++ d.value?.toArray
+  let mut key := (← es.mapM instantiateMVars).map (·.abstract vs)
+    |>.push (mkNatLit (← Meta.getTransparency).toCtorIdx)
+  for v in vs do
+    let d ← v.fvarId!.getDecl
+    let bi := mkNatLit (match d.binderInfo with | .default => 0 | .implicit => 1 | .strictImplicit => 2 | .instImplicit => 3)
+    key := key ++ #[bi, (← instantiateMVars d.type).abstract vs,
+      (← d.value?.mapM instantiateMVars).getD (mkNatLit 0) |>.abstract vs, mkNatLit d.value?.isSome.toNat]
+  return some (key, vs)
+
+/-- WHAT NO UNIFICATION CAN CHANGE about a term: its head after `whnf` where that head is an
+    inductive type or a constructor, which no reduction and no assignment moves, over the same of
+    its arguments; a local with no value; and `any` for everything else.  Two skeletons that
+    `clash` belong to terms `isDefEq` cannot equate, so a lane whose `F.obj ?x` clashes with the
+    object is not asked at all — the catalogue was otherwise unified against at every leaf. -/
+inductive Skel where
+  | rigid (n : Name) (ctor : Bool) (args : Array Skel)
+  | loc (v : FVarId)
+  | any
+  deriving Inhabited
+
+partial def skelOf (e : Expr) (depth : Nat := 3) : MetaM Skel := do
+  if depth == 0 then return .any
+  let e ← Meta.whnf e
+  match e.getAppFn with
+  | .const c _ => match (← getEnv).find? c with
+    | some (.inductInfo _) => return .rigid c false (← e.getAppArgs.mapM (skelOf · (depth - 1)))
+    | some (.ctorInfo _) => return .rigid c true (← e.getAppArgs.mapM (skelOf · (depth - 1)))
+    | _ => return .any
+  | .fvar v => return if e.isFVar && ((← getLCtx).find? v).any (!·.isLet) then .loc v else .any
+  | _ => return .any
+
+/-- `true` only where the two terms are certainly not definitionally equal.  A local against a
+    CONSTRUCTOR is no clash — structure eta equates `x` with `⟨x.1⟩` — and two locals are none
+    either, a unit-like type making any two of its locals equal. -/
+partial def Skel.clash : Skel → Skel → Bool
+  | .rigid c _ as, .rigid d _ bs => c != d || as.size != bs.size || (as.zip bs).any fun (a, b) => a.clash b
+  | .loc _, .rigid _ ctor _ | .rigid _ ctor _, .loc _ => !ctor
+  | _, _ => false
+
+/-- The skeleton of `F.obj ?x` for a catalogue entry at a region, by (entry, `struct`, region key):
+    `none` where the entry has no instance at the region at all. -/
+initialize laneSkelMemo : IO.Ref (Std.HashMap (Name × Bool × Array Expr) (Option Skel)) ← IO.mkRef {}
+
 /-- `X` as `R.obj a` for the catalogue entry `n`, or `none`.  Progress is required — a relator
     that gives back `X` itself peels nothing — and so is a fully determined answer, which is what
     keeps a relator with an undetermined parameter from matching anything. -/
@@ -805,17 +869,35 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
   -- `struct`: the object under the lane built through the region's constructor (`freshStructObj?`),
   -- for an `X` written by its carrier — the unfolded `sumCop` apex of a base functor's action —
   -- which a bare metavariable meets only as an unsolvable `?X.carrier =?= T`.  The bare one first.
+  let rk := (·.1) <$> (← metaKey #[regionTy])
+  let xs ← skelOf X
   for struct in [false, true] do
+    if let some k := rk then
+      match (← laneSkelMemo.get)[(n, struct, k)]? with
+      | some none => if struct then continue else return none
+      | some (some p) => if p.clash xs then continue
+      | none => pure ()
     let s ← Meta.saveState
     try
       -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
       -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
       let some (R, cargs) ← instCatalogue n (fun c => Meta.isDefEq c[1]! regionTy)
-        | s.restore; return none
+        | s.restore
+          if let some k := rk then laneSkelMemo.modify (·.insert (n, false, k) none)
+          return none
       let src ← instantiateMVars cargs[0]!
       let some inner ← if struct then freshStructObj? src else some <$> freshObj src
-        | s.restore; continue
+        | s.restore
+          if let some k := rk then laneSkelMemo.modify (·.insert (n, struct, k) none)
+          continue
       let (app, _) ← mkAppMeta ``Freyd.Functor.obj #[← laneFunctor R, inner]
+      -- A local of THIS asker in the pattern means nothing to the next: kept as `any`.
+      if let some k := rk then
+        let rec strip : Skel → Skel
+          | .rigid c b as => .rigid c b (as.map strip) | .loc _ => .any | .any => .any
+        let p := strip (← skelOf app)
+        laneSkelMemo.modify (·.insert (n, struct, k) (some p))
+        if p.clash xs then s.restore; continue
       if ← Meta.isDefEq app X then
         let inner ← instantiateMVars inner
         -- A TYPE ARGUMENT OF THE LANE AS THE STATEMENT WRITES IT: matched against a carrier, `F ?A`
@@ -884,28 +966,6 @@ def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
     return some (R, r)
   catch _ => s.restore; return none
 
-/-- Everything a Meta question about `es` can read besides the environment: `es` themselves, and
-    every local their free variables and the local instances reach, each with its binder, type and
-    value.  `none` where a metavariable is left, whose assignment is state and no key.  A process
-    runs its panels as tasks each numbering its locals from the same start, so one id can name two
-    different locals; the key holds what each id MEANS, and two keys agree only where they do. -/
-def metaKey (es : Array Expr) : MetaM (Option (Array Expr)) := do
-  let mut todo := ((← Meta.getLocalInstances).map (·.fvar)) ++ es
-  let mut key := es.push (mkNatLit (← Meta.getTransparency).toCtorIdx)
-  let mut seen : FVarIdSet := {}
-  while h : todo.size > 0 do
-    let e ← instantiateMVars todo[todo.size - 1]
-    todo := todo.pop
-    if e.hasMVar then return none
-    for v in (collectFVars {} e).fvarIds do
-      if seen.contains v then continue
-      seen := seen.insert v
-      let d ← v.getDecl
-      let bi := mkNatLit (match d.binderInfo with | .default => 0 | .implicit => 1 | .strictImplicit => 2 | .instImplicit => 3)
-      key := key ++ #[.fvar v, bi, d.type, d.value?.getD (mkNatLit 0), mkNatLit d.value?.isSome.toNat]
-      todo := todo ++ #[d.type] ++ d.value?.toArray
-  return some key
-
 /-- `peelMap?`'s answers in this process, by `metaKey`: the term walk and the scan line read the
     same arrows over and over, and each read tries every catalogue lane by unification. -/
 initialize peelMapMemo : IO.Ref (Std.HashMap (Array Expr) (Option (Expr × Expr))) ← IO.mkRef {}
@@ -914,13 +974,17 @@ initialize peelMapMemo : IO.Ref (Std.HashMap (Array Expr) (Option (Expr × Expr)
     mvar-free (`peelMapWith?` refuses any other), so a remembered one is the one a new search would
     give; `cat` is the environment's one catalogue and needs no place in the key. -/
 def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
-    MetaM (Option (Expr × Expr)) := do
+    MetaM (Option (Expr × Expr)) := Prof.phase "peelMap" do
   let key ← metaKey (#[regionTy, e] ++ objVars)
-  if let some k := key then
+  if let some (k, vs) := key then
     if let some r := (← peelMapMemo.get)[k]? then
-      return r
+      return r.map fun (a, b) => (a.instantiateRev vs, b.instantiateRev vs)
   let r ← cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
-  if let some k := key then peelMapMemo.modify (·.insert k r)
+  if let some (k, vs) := key then
+    let a := r.map fun (x, y) => (x.abstract vs, y.abstract vs)
+    -- A local the key does not reach would come back as the asker's dangling one.
+    unless a.any fun (x, y) => x.hasFVar || y.hasFVar || x.hasMVar || y.hasMVar do
+      peelMapMemo.modify (·.insert k a)
   return r
 
 /-- An object peeled into its wire stack (outermost first), each wire with the OBJECT UNDER IT, and
@@ -938,10 +1002,13 @@ def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
 partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array (Wire × Expr) × Expr) := do
   let pairLane? (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (op : Name)
-      (a b : Expr) : MetaM (Option (Array (Wire × Expr) × Expr)) := do
+      (a : Expr) (pb : Array (Wire × Expr) × Expr) : MetaM (Option (Array (Wire × Expr) × Expr)) := do
+    -- `b` comes PEELED: the product's fallback reads the same peel, and peeling it again here
+    -- doubled the work at every level of a nested product.
+    let (cb, ob) := pb
+    if cb.isEmpty then return none
     let (ca, oa) ← peelCuts objVars cat regionTy a
-    let (cb, ob) ← peelCuts objVars cat regionTy b
-    if ca.isEmpty || cb.isEmpty then return none
+    if ca.isEmpty then return none
     unless ← Meta.isDefEq oa ob do return none
     -- The composite lane of a (non-empty) stack, innermost first.  No identity in front: this is
     -- a wire's NAME, and `Wire.beq` compares lanes by what they do to an object, where `𝟙` is free.
@@ -993,11 +1060,12 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
       if let some inner ← mkTimes? regionTy a₂ b then
         if let some whole ← mkTimes? regionTy a₁ inner then
           return ← peelCuts objVars cat regionTy whole
-    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.prod a b then return r
-    let (cs, o) ← peelCuts objVars cat regionTy b
-    return (#[(Wire.timesL a, b)] ++ cs, o)
+    let pb ← peelCuts objVars cat regionTy b
+    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.prod a pb then return r
+    return (#[(Wire.timesL a, b)] ++ pb.1, pb.2)
   if let some (a, b) ← splitPlus? regionTy X then
-    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.sum a b then return r
+    if let some r ← pairLane? objVars cat regionTy ``Freyd.Alg.Relator.sum a
+        (← peelCuts objVars cat regionTy b) then return r
   -- A LANE TAKING AN INDEX VARIABLE IS THE LAST RESORT, not refused outright.  `F(A,−)` at an
   -- OBJECT `A : 𝒜` is a bifunctor pinned at a point of the region, and no lane carries it; `F A` at
   -- a CARRIER `A : Type` of a one-field region is the functor a type constructor picks, as `list`
@@ -1005,6 +1073,14 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
   -- `sumCop` apex a junction is typed at), where the same object spelled `(F A).obj X` is the lane
   -- `F A` by the `Functor.obj` clause above: one cut, two readings.  A reading with no such lane
   -- still comes first.
+  -- AN ATOM IS NO LANE'S IMAGE: a local, or a constant this read may not unfold, meets `F.obj ?x`
+  -- only by `F` giving it back unchanged, which `peelWith?` refuses — so the catalogue is not asked.
+  let w ← Meta.whnf X
+  let atom ← match w with
+    | .fvar v => pure (((← getLCtx).find? v).any (!·.isLet))
+    | .const n _ => (·.isNone) <$> Meta.getUnfoldableConst? n
+    | _ => pure false
+  if atom then return (#[], X)
   let objs ← objVars.filterM fun v => do Meta.isDefEq (← Meta.inferType v) regionTy
   for n in cat do
     if let some (R, src, inner) ← peelWith? n objVars regionTy X then

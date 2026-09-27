@@ -1929,25 +1929,33 @@ initialize peelReadMemo : IO.Ref (Std.HashMap (Array Expr) (Array (Wire × Expr)
     the bare name tore it open while the factor holding `E(Decimal)` — whose closed read stops at `E`
     — did not, and the same cut came apart one factor lower down. -/
 def peelRead (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
-    MetaM (Array (Wire × Expr) × Expr) := do
+    MetaM (Array (Wire × Expr) × Expr) := Prof.phase "peel" do
   let key ← metaKey (#[regionTy, X] ++ objVars)
-  if let some k := key then
-    if let some r := (← peelReadMemo.get)[k]? then return r
+  let wmap (f : Expr → Expr) : Wire → Wire | .rel r => .rel (f r) | .timesL l => .timesL (f l)
+  let rmap (f : Expr → Expr) (r : Array (Wire × Expr) × Expr) :=
+    (r.1.map fun (w, o) => (wmap f w, f o), f r.2)
+  if let some (k, vs) := key then
+    if let some r := (← peelReadMemo.get)[k]? then return rmap (·.instantiateRev vs) r
   let (cs, u) ← withObjectsClosed regionTy (peelCuts objVars cat regionTy X)
   let inst (w : Wire) : MetaM Wire := match w with
     | .rel r => return .rel (← instantiateMVars r) | .timesL l => return .timesL (← instantiateMVars l)
   let cs ← cs.mapM fun (w, o) => return (← inst w, ← instantiateMVars o)
   let u ← instantiateMVars u
   let open_ (w : Wire) : Bool := match w with | .rel r | .timesL r => r.hasMVar
-  if let some k := key then
-    unless u.hasMVar || cs.any fun (w, o) => o.hasMVar || open_ w do peelReadMemo.modify (·.insert k (cs, u))
+  if let some (k, vs) := key then
+    let a := rmap (·.abstract vs) (cs, u)
+    -- A local the key does not reach would come back as the asker's dangling one.
+    let loose (w : Wire) : Bool := match w with | .rel r | .timesL r => r.hasFVar
+    unless u.hasMVar || cs.any (fun (w, o) => o.hasMVar || open_ w)
+        || a.2.hasFVar || a.1.any fun (w, o) => o.hasFVar || loose w do
+      peelReadMemo.modify (·.insert k a)
   return (cs, u)
 
 /-- `peelRead` where the composite has already read the cut: the handed-down reading stands for the
     object it was read from, exactly as in `peelCutsAt`, and the closure governs only a cut this
     factor has to read for itself. -/
 def peelReadAt (expect : Option Peeled) (objVars : Array Expr) (cat : Array Name)
-    (regionTy X : Expr) : MetaM (Array (Wire × Expr) × Expr) := do
+    (regionTy X : Expr) : MetaM (Array (Wire × Expr) × Expr) := Prof.phase "peel" do
   if let some p := expect then
     let s ← Meta.saveState
     if ← Meta.isDefEq X p.obj then return (p.cuts, p.under)
@@ -2612,14 +2620,14 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let wide {α} (m : MetaM α) : MetaM α :=
     withTheReader Core.Context (fun c => { c with options := c.options.setBool `diag.convWire true }) m
   -- A SIDE WHOSE CONVERSE IS ON TWO OR MORE FACTORS draws every one of them as a `°` wire.
-  let convs ← wide <| (factors (← rewriteSpine (← openNoted side))).filterM fun f => do
+  let convs ← Prof.phase "convs" <| wide <| (factors (← rewriteSpine (← openNoted side))).filterM fun f => do
     return (← conjugate? cat objVars regionTy f).isSome || (← conversedComposite? f).isSome
   let run {α} (m : MetaM α) : MetaM α := if convs.size ≥ 2 then wide m else m
-  let d ← run do joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none side)
+  let d ← Prof.phase "interp" <| run do joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none side)
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
-  run <| scanCheck regionTy cat objVars side d
-  settlePass d (some side)
+  Prof.phase "scan" <| run <| scanCheck regionTy cat objVars side d
+  Prof.phase "settle" <| settlePass d (some side)
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
@@ -2835,16 +2843,17 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
-    -- Each task draws ITS OWN parts first, so the call's panels are drawn in parallel, once each.
     -- A peer is read in its OWN declaration's context alone: under this one's binders its verdicts'
     -- cache keys, and the hypotheses `hypVerdict` sees, would depend on which task drew it.
+    let key (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
+      toString (b, h, p, s.map (·.suffix))
     let part (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
-      peerParts (toString (b, h, p, s.map (·.suffix)))
-        (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
-    let qs ← Prof.phaseIf draw "peers" do
-      if peers.any fun (b, h, p, s) => b.toName == declName && h == binder && p == path
-          && s.map (·.suffix) == sel.map (·.suffix) then
-        discard <| part declName binder path sel
+      peerParts (key b h p s) (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
+    -- THIS FILE'S OWN PARTS ARE DRAWN ONCE, under the locals it is printed in, and handed to the
+    -- peer cache as they are: drawn again as a peer of their own call, every panel cost two draws.
+    withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    let qs ← Prof.phase "peers" do
+      discard <| peerParts (key declName binder path sel) (pure (parts.map (·.2)))
       peers.toArray.flatMapM fun (b, h, p, s) => part b.toName h p s
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
@@ -2882,7 +2891,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
-    Prof.phaseIf draw "emit" <| withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    Prof.phase "emit" do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
