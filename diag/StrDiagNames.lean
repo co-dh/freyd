@@ -1122,8 +1122,14 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `f))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.f] def unexpandTexProgF : Unexpander
-  | `($_ ⟨($p, $q), $_⟩) => `($(mkIdent `f) $p $q)
+  | `($_ ($p, $q)) => `($(mkIdent `f) $p $q)
   | _ => throw ()
+-- A SUBTYPE'S POINT IS ITS VALUE: `⟨(a,b),h⟩` is the interval `(a,b)`, the proof `h` a statement
+-- about it that no formula of the note writes.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Subtype.mk] def delabSubtypeMk : Delab := do
+  guard ((← getExpr).getAppNumArgs == 4)
+  withNaryArg 2 delab
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.dig] def unexpandTexProgDig : Unexpander
   | `($_ $d $_) => `($d)

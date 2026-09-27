@@ -1150,6 +1150,8 @@ def provedSimple (r : Expr) : MetaM Bool := do
   let some c := r.getAppFn.constName? | return false
   let env ← getEnv
   let some idx := env.getModuleIdxFor? c | return false
+  -- Lean's own predicates (`<`, `∈`) are no relation of the book's, and their modules are huge
+  if env.header.moduleNames[idx.toNat]!.getRoot == `Init then return false
   Meta.forallTelescope (← Meta.whnf (← Meta.inferType r)) fun xs _ => do
     if xs.size != 2 then return false
     let some xi := xs[0]? | return false
@@ -1284,10 +1286,15 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     return ← bin p a op e.getAppArgs
   -- A VALUE THE PRINTER WRITES AS A TUPLE — a pair, an interval `(a,b)` — is a comma list like the
   -- fork's: its fields, each a term of the note's, and no space after the comma.
+  -- A PROOF FIELD is a statement about the others that no formula writes (a subtype's point is its
+  -- value), so it is not one of the list.
   if let some (.ctorInfo ci) := e.getAppFn.constName?.bind (← getEnv).find? then
-    if e.getAppNumArgs == ci.numParams + ci.numFields &&
-        (stxPeel (← PrettyPrinter.delab e)).isOfKind ``Lean.Parser.Term.tuple then
-      return commaL "(" ")" (← (e.getAppArgs.extract ci.numParams e.getAppNumArgs).mapM (labelTree 0))
+    if e.getAppNumArgs == ci.numParams + ci.numFields then
+      let fs ← (e.getAppArgs.extract ci.numParams e.getAppNumArgs).filterM fun a => return !(← Meta.isProof a)
+      if let #[v] := fs then
+        if fs.size < ci.numFields then return ← labelTree prec v
+      if (stxPeel (← PrettyPrinter.delab e)).isOfKind ``Lean.Parser.Term.tuple then
+        return commaL "(" ")" (← fs.mapM (labelTree 0))
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
@@ -1504,7 +1511,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- statement says which one it is.
     if (← Meta.isProp e) && args.size ≥ 2 then
       let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
-      if (← homEnds? hd).isSome then
+      -- an arrow of the allegory, or the bare predicate one is defined by (`fR`)
+      if (← homEnds? hd).isSome || hd.isConst then
         if ← provedSimple hd then
           let i := args[args.size - 2]!
           let a ← labelTree 0 i
