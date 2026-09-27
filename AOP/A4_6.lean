@@ -304,7 +304,7 @@ public theorem Λ_eq_singleton_existsImage {A B : 𝒜} (R : A ⟶ B) :
   -- `diag_rewrite` from absorption's own picture, which then cannot open its `%∋` beads.
   have hmap : Map (singletonMap ≫ existsImage R) := map_comp (Λ_is_map' _) (Λ_is_map' _)
   have heq : (singletonMap ≫ existsImage R) ≫ ∋ B = R := by
-    rw [Cat.assoc, existsImage_eps, ← Cat.assoc, singletonMap, Λ_eps_eq', Cat.id_comp]
+    rw [Cat.assoc, existsImage_eps, ← Cat.assoc, singletonMap, Λ_comp_eps, Cat.id_comp]
   exact (Λ_unique _ _ hmap heq).symm
 
 /-- A simple `F` is inside the one-person-set map composed with the image of `F∋`: `simple_le_Λ_eps`
