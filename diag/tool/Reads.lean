@@ -22,6 +22,27 @@ partial def concHead : Expr → Name
   | .mdata _ b => concHead b
   | t => (t.getAppFn.constName?).getD Name.anonymous
 
+/-- `hash e` with the BINDER NAMES and infos mixed in: `Expr.hash` leaves them out, and a picture
+    prints them — a binder renamed from `f` to `R` is another picture.  Memoised by POINTER, because
+    a proof term is a DAG a plain walk unfolds, and a map keyed by `Expr.equal` compares whole
+    subterms on every hit; the pointer changes only the cost, never the key. -/
+unsafe def exprKeyImpl (e : Expr) : UInt64 := Id.run ((go e).run' mkPtrMap)
+where
+  go (e : Expr) : StateM (PtrMap Expr UInt64) UInt64 := do
+    if let some h := (← get).find? e then return h
+    let h ← match e with
+      | .forallE n t b bi | .lam n t b bi =>
+        return mixHash (mixHash (hash n) bi.ctorIdx.toUInt64) (mixHash (← go t) (← go b))
+      | .letE n t v b _ => return mixHash (hash n) (mixHash (← go t) (mixHash (← go v) (← go b)))
+      | .app f a => return mixHash (← go f) (← go a)
+      | .mdata _ b => go b
+      | .proj s i b => return mixHash (mixHash (hash s) (hash i)) (← go b)
+      | e => pure (hash e)
+    modify (·.insert e h)
+    return h
+
+@[implemented_by exprKeyImpl] opaque exprKey (e : Expr) : UInt64
+
 /-- A name as its COMPONENTS: `Name.toString`'s `«»` escapes are a second grammar to parse back. -/
 def nameJson (n : Name) : Json :=
   .arr (n.components.toArray.map fun | .str _ s => .str s | .num _ k => toJson k | _ => .null)
@@ -85,7 +106,6 @@ def takeReads : BaseIO (Array Read) :=
 structure EnvPrint where
   shared : UInt64
   heads : Std.HashMap Name UInt64 := {}
-  pres : Std.HashMap Name UInt64 := {}
   modules : Std.HashMap Name UInt64 := {}
   thms : UInt64 := 0
 
@@ -127,7 +147,7 @@ def envPrint (extra : UInt64) : CoreM EnvPrint := do
     let some idx := env.getModuleIdxFor? n | continue
     if toolchain[idx.toNat]! then continue
     let h := mixHash (hash n) (hash ci.type)
-    p := { p with heads := add p.heads (concHead ci.type) h, pres := add p.pres n.getPrefix h }
+    p := { p with heads := add p.heads (concHead ci.type) h }
     match ci with
     | .thmInfo _ =>
       let m := env.header.moduleNames[idx.toNat]!

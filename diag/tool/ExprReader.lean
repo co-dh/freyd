@@ -2001,22 +2001,34 @@ def searchCandidates (head : Name) (must : NameSet) : MetaM (Array (Name × Name
   noteRead (.scan head (mustList must))
   candidates head
 
-/-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
-    since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise.  A `scan`
-    is summed over the candidates the search's own filter (`lacks`) lets through. -/
-def readPrint (p : EnvPrint) (r : Read) : MetaM UInt64 := do
+initialize readPrintRef : IO.Ref (Std.HashMap Read UInt64) ← IO.mkRef {}
+
+def readPrintNow (p : EnvPrint) (r : Read) : MetaM UInt64 := do
   let env ← getEnv
-  let stmt (n : Name) := (env.find? n).elim 1 fun ci => mixHash (hash n) (hash ci.type)
+  let stmt (n : Name) := (env.find? n).elim 1 fun ci => mixHash (hash n) (exprKey ci.type)
   match r with
   | .head h => return p.heads.getD h 0
   | .scan h ms =>
     let al ← bridgeAliases
     return (← candidates h).foldl (init := 0) (fun a (n, has) => if (lacks al ms has).isSome then a else a + stmt n)
-  | .pre q => return p.pres.getD q 0
+  -- The one read summed with BINDER NAMES over many constants: `nameSelf` prints the name its
+  -- siblings give an argument.  Every other sum takes `hash`, since `exprKey` over the whole
+  -- environment cost seconds a process.
+  | .pre q => return env.constants.fold (init := 0) fun a n _ => if n.getPrefix == q then a + stmt n else a
   | .module m => return p.modules.getD m 0
   | .thms => return p.thms
   | .stmt n => return stmt n
-  | .decl n => return mixHash (stmt n) (((env.find? n).bind (·.value? (allowOpaque := true))).elim 0 hash)
+  | .decl n => return mixHash (stmt n) (((env.find? n).bind (·.value? (allowOpaque := true))).elim 0 exprKey)
+
+/-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
+    since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise.  A `scan`
+    is summed over the candidates the search's own filter (`lacks`) lets through.  Held for the
+    process: the pictures of one call read many of the same declarations. -/
+def readPrint (p : EnvPrint) (r : Read) : MetaM UInt64 := do
+  if let some h := (← readPrintRef.get)[r]? then return h
+  let h ← readPrintNow p r
+  readPrintRef.modify (·.insert r h)
+  return h
 
 /-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
     about, ACROSS THE BRIDGES — the normal form the two propositions are compared in, because a

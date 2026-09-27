@@ -1551,9 +1551,9 @@ def rulesKey (names : List Name) : MetaM UInt64 := do
     h := mixHash h (hash a)
     for n in ← labelled a do
       let some ci := env.find? n | throwError "diag-export: {n}, labelled `{a}`, names no constant"
-      h := mixHash (mixHash h (hash n)) (hash ci.type)
+      h := mixHash (mixHash h (hash n)) (StrDiag.exprKey ci.type)
       match ci with
-      | .defnInfo d => h := mixHash h (hash d.value)
+      | .defnInfo d => h := mixHash h (StrDiag.exprKey d.value)
       | .thmInfo t => h := mixHash h (hash (names.any fun d => d == n || t.value.getUsedConstants.contains d))
       | _ => pure ()
   return h
@@ -1626,7 +1626,8 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
       let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
       let stored ← storedReads path
       -- THE KEY NOW, whether or not the file is there: a declaration that is gone ends the run.
-      let ctx := StrDiag.declCtx env opts scopes decl
+      -- Each selector its own heartbeat budget: the count is the PROCESS's, and this one tests many.
+      let ctx := { StrDiag.declCtx env opts scopes decl with initHeartbeats := ← IO.getNumHeartbeats }
       let ok ← try Prod.fst <$> (Meta.MetaM.run' (fresh stored decls)).toIO ctx { env }
         catch e => throw <| IO.userError s!"diag-export --stale: {n}: {e} — a picture drawn from \
           it is a picture of a statement that no longer exists.  Rename the note's selector"
