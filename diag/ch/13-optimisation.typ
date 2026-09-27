@@ -535,12 +535,14 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let ma-Fest-ni = lean("Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.lhs")
 #let ma-lam = lean("Freyd.Alg.Distributes.rhs")
 #let ma-Fni = lean("Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.rhs")
-#let ma-Ro = lean("Freyd.Alg.mon_thm71_step3.rhs.lhs")
-#let ma-R = lean("Freyd.Alg.mon_thm71_step4.rhs.lhs")
 // The bare `R°`/`R` panels these rows pair with, emitted by `./scripts/diagram --src A --tgt A
 // --frame … --top 3 "R°"` (resp. `"R"`); one binding per partner frame, named after the partner.
-#let ma-Rbare-Ro = lean("Freyd.Alg.mon_thm71_step3.rhs.rhs")
-#let ma-Rplain-R = lean("Freyd.Alg.mon_thm71_step4.rhs.rhs")
+// ONE call for the tail chain's six panels, so they share one placement and the bead a step moves
+// over (its triangle) stands at one height on both sides of that step.
+#let (mon-m, (mon-s3l-l, mon-s3l-r, ma-Ro, ma-Rbare-Ro, ma-R, ma-Rplain-R)) = lean-pics("generated/", <lean-panel>,
+  ("Freyd.Alg.mon_thm71_step3.lhs.lhs", "Freyd.Alg.mon_thm71_step3.lhs.rhs",
+   "Freyd.Alg.mon_thm71_step3.rhs.lhs", "Freyd.Alg.mon_thm71_step3.rhs.rhs",
+   "Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"))
 #disp[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
@@ -562,8 +564,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
-  [#hchain(
-    (IFF, lean("Freyd.Alg.mon_thm71_step3.lhs.lhs", "Freyd.Alg.mon_thm71_step3.lhs.rhs"),
+  [#mon-m#hchain(
+    (IFF, trow(mon-s3l-l, mon-s3l-r),
       src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
     (IFF, trow(ma-Ro, ma-Rbare-Ro),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
