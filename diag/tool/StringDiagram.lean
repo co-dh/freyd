@@ -1009,11 +1009,12 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     s.restore
   return none
 
-/-- `h` MOVES THROUGH AN ALGEBRA SQUARE `ty`: each side two factors, `h` bare on one and `F(h)` on
-    the other at the opposite end, the neighbours free to differ (`α⦇R⦈ = F(⦇R⦈)R`), the side the
-    panel shows having `nb` beside `h` — below it when `below`.  `some true` where the statement,
-    read left to right, moves `h` from below its neighbour to above it. -/
-def moveOf? (ty h nb : Expr) (below : Bool) : MetaM (Option Bool) := do
+/-- THE STEP OUT OF THE DRAWN SIDE `side` MOVES A BEAD THROUGH ITS NEIGHBOUR: `ty`'s left side (the
+    side a `⊑` leaves) is `side`, and it differs from the right side only in a two-factor window
+    inside a shared prefix and suffix, `h` beside `nb` on the left and `nb'` beside `h` on the
+    other end on the right, one of the two `h`s under the relator (`F(⦇R⦈)R = α⦇R⦈`).  Answers the
+    bare `h`, the bare `nb`, whether `nb` stands below `h`, which is also whether it moves up. -/
+def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
   let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
   for _ in [0:8] do
@@ -1023,19 +1024,26 @@ def moveOf? (ty h nb : Expr) (below : Bool) : MetaM (Option Bool) := do
     | none => break
   unless rel ty do return none
   let args := ty.getAppArgs
-  let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
-  if l.size != 2 || r.size != 2 then return none
+  unless ← Meta.isDefEq args[args.size - 2]! side do return none
+  let l := compFactors (← instantiateMVars args[args.size - 2]!)
+  let r := compFactors (← instantiateMVars args[args.size - 1]!)
+  let mut p := 0
+  for _ in [0 : min l.size r.size] do
+    if ← Meta.isDefEq l[p]! r[p]! then p := p + 1 else break
+  let mut s := 0
+  for _ in [0 : min (l.size - p) (r.size - p)] do
+    if ← Meta.isDefEq l[l.size - 1 - s]! r[r.size - 1 - s]! then s := s + 1 else break
+  let (wl, wr) := (l.extract p (l.size - s), r.extract p (r.size - s))
+  if wl.size != 2 || wr.size != 2 then return none
   let mapArg? (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
-  let i := if below then 0 else 1
-  for (lhs, s, o) in [(true, l, r), (false, r, l)] do
-    let (a, b) := (s[i]!, o[1 - i]!)
+  for i in [0, 1] do
+    let (a, b) := (wl[i]!, wr[1 - i]!)
     if (mapArg? a).isSome == (mapArg? b).isSome then continue
-    let st ← Meta.saveState
-    if (← Meta.isDefEq ((mapArg? a).getD a) h) && (← Meta.isDefEq ((mapArg? b).getD b) h)
-        && (← Meta.isDefEq s[1 - i]! nb) then
-      return some ((if lhs then i else 1 - i) == 1)
-    st.restore
+    let h := (mapArg? a).getD a
+    if ← Meta.isDefEq h ((mapArg? b).getD b) then
+      let nb := wl[1 - i]!
+      return some (← instantiateMVars h, ← instantiateMVars ((mapArg? nb).getD nb), i == 0)
   return none
 
 /-- THE BEAD LETS A RELATION DOWN, AND A BINDER SAYS SO.  A hypothesis of the drawn statement — or
@@ -1078,8 +1086,8 @@ def passHeads : MetaM (Array Name) := do
 
 /-- The search `passThm` and `moveThm` share: every candidate under `heads` naming the constants of
     `φ` and `Y`, opened with metavariables, its body answered by `m`, its open arguments discharged. -/
-def squareThm (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option Bool)) :
-    MetaM (Option (Name × Bool)) := do
+def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option α)) :
+    MetaM (Option (Name × α)) := do
   let br ← bridges
   let mφ ← mustOfFamily br φ
   -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
@@ -1088,7 +1096,7 @@ def squareThm (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option Boo
   let s ← Search.new none
   let al ← bridgeAliases
   let env ← getEnv
-  let search : MetaM (Option (Name × Bool)) := do
+  let search : MetaM (Option (Name × α)) := do
     let mut cs := #[]
     for h in heads do cs := cs ++ (← candidates h)
     for (n, has) in cs do
@@ -1096,7 +1104,7 @@ def squareThm (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option Boo
       if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
       let some ci := env.find? n | continue
       let saved ← Meta.saveState
-      let attempt : MetaM (Option Bool) := do
+      let attempt : MetaM (Option α) := do
         let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
         let (args, bis, body) ← Meta.forallMetaTelescope
           (ci.type.instantiateLevelParams ci.levelParams lvls)
@@ -1124,17 +1132,17 @@ def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
     let some (X, up) ← passOf? body φ | return none
     return if ← Meta.isDefEq X Y then some up else none
 
-/-- A THEOREM OF THE ENVIRONMENT MOVING `h` THROUGH ITS NEIGHBOUR `nb` (`moveOf?`), searched as
-    `passThm` searches, under an equation as well as a `⊑`. -/
-def moveThm (h nb : Expr) (below : Bool) : MetaM (Option (Name × Bool)) := do
-  squareThm h nb ((← passHeads).push ``Eq) (moveOf? · h nb below)
+/-- THE STEP OUT OF THE DRAWN SIDE: a theorem of the environment whose left side IS `side` and
+    which moves a bead through its neighbour (`moveStep?`), searched as `passThm` searches. -/
+def moveThm (side : Expr) : MetaM (Option (Name × Expr × Expr × Bool)) := do
+  squareThm side side ((← passHeads).push ``Eq) (moveStep? · side)
 
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
     `isDefEq`) or a theorem (`passThm`) gives the square `F(X)φ ⊑ φG(X)` of — the up triangle
     where the square is `⊒`; once `X` has moved below, plain.
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
-def settlePass (d : Diagram) : MetaM Diagram := do
+def settlePass (d : Diagram) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
   for i in [0 : rows.size] do
     let r := rows[i]!
@@ -1159,29 +1167,20 @@ def settlePass (d : Diagram) : MetaM Diagram := do
             hit := some (n, ← label Y, false)
             dir := up
     if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some dir }
-  -- A BEAD THAT MOVES THROUGH AN ALGEBRA SQUARE (`α⦇R⦈ = F(⦇R⦈)R`) wears the triangle itself: the
-  -- algebra beside it changes name as it passes, so only the moving bead is the same on both sides.
+  -- THE STEP OUT OF THIS SIDE moves its neighbour across `h`: the triangle points the way the neighbour
+  -- goes, as a lax bead's does, and only BEFORE the jump — after it `h` is the default bead again.
   let lctx ← getLCtx
-  let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
-  for i in [0 : rows.size] do
-    let r := rows[i]!
-    if r.tri.isSome || r.nat.any (· != .spider) then continue
-    let some h := r.core | continue
-    unless inScope h do continue
-    let nbs := (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
-      ++ (if i > 0 then #[(rows[i - 1]!, false)] else #[])
-    let mut hit : Option ((Name × String × Bool) × Bool) := none
-    for (n, below) in nbs do
-      if hit.isSome then break
-      let some nb := n.core | continue
-      unless inScope nb do continue
-      for dcl in lctx do
-        if hit.isSome || dcl.isImplementationDetail || !(← Meta.isProp dcl.type) then continue
-        if let some up ← Meta.withNewMCtxDepth (moveOf? dcl.type h nb below) then
-          hit := some ((dcl.userName, ← label nb, true), up)
-      if hit.isNone then
-        if let some (thm, up) ← moveThm h nb below then hit := some ((thm, ← label nb, false), up)
-    if let some (p, up) := hit then rows := rows.set! i { r with pass := some p, tri := some up }
+  if let some side := side? then
+    if !side.hasAnyFVar (!lctx.contains ·) then
+      if let some (thm, h, nb, below) ← moveThm side then
+        for i in [0 : rows.size] do
+          let r := rows[i]!
+          let j := if below then i + 1 else i - 1
+          if r.tri.isSome || r.nat.any (· != .spider) || (!below && i == 0) || j ≥ rows.size then continue
+          let (some c, some n) := (r.core, rows[j]!.core) | continue
+          if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
+            rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below }
+            break
   return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
@@ -2613,7 +2612,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   scanCheck regionTy cat objVars side d
-  settlePass d
+  settlePass d (some (← instantiateMVars side))
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
