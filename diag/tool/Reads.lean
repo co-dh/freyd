@@ -97,6 +97,19 @@ initialize readsRef : IO.Ref (Std.HashSet Read) ← IO.mkRef {}
 
 def noteRead (r : Read) : BaseIO Unit := readsRef.modify (·.insert r)
 
+/-- `x`, and the reads it noted — noted here as well, so a memo that answers without running `x`
+    again notes the same reads and the picture's `// reads:` does not depend on which panel asked first. -/
+def recordReads {m : Type → Type} {α : Type} [Monad m] [MonadLiftT BaseIO m] [MonadFinally m]
+    (x : m α) : m (α × Array Read) := do
+  let before ← (readsRef.modifyGet fun s => (s, {}) : BaseIO _)
+  let mut got : Std.HashSet Read := {}
+  try
+    let a ← x
+    got ← (readsRef.get : BaseIO _)
+    return (a, got.toArray)
+  finally
+    (readsRef.modify fun s => s.fold (·.insert ·) before : BaseIO _)
+
 /-- The reads so far, in one order a later process reads back and hashes in, and none left. -/
 def takeReads : BaseIO (Array Read) :=
   readsRef.modifyGet fun s => ((s.toArray.qsort fun a b => a.json.compress < b.json.compress), {})

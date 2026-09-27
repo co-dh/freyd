@@ -32,6 +32,22 @@ open Lean
 
 namespace Freyd.StrDiag
 
+/-- The delaborator's answers in this process.  A label asks it of the same subterm from several
+    places, and a chain's steps share their terms.  The key is what the printer reads: the term by
+    `metaKey`, the names of every local in scope (a name is printed, and one in scope renames a
+    binder), the options and the open namespaces. -/
+initialize delabMemo : IO.Ref (Std.HashMap (Array Expr × String) Term) ← IO.mkRef {}
+
+def delabP (e : Expr) : MetaM Term := do
+  let some (k, vs) ← metaKey #[e] | PrettyPrinter.delab e
+  let names ← vs.mapM fun v => return toString (← v.fvarId!.getUserName)
+  let scope := (← getLCtx).foldl (fun a d => a.push (toString d.userName)) #[]
+  let tag := s!"{names}|{scope}|{← getOptions}|{← getOpenDecls}|{← getCurrNamespace}"
+  if let some t := (← delabMemo.get)[(k, tag)]? then return t
+  let t ← PrettyPrinter.delab e
+  delabMemo.modify (·.insert (k, tag) t)
+  return t
+
 /-- How a label JOINS under a functor's name — the note's rule (CLAUDE.md), one copy for every
     picture that writes an object. -/
 inductive Join where
@@ -211,7 +227,7 @@ end
 
     THE HEAD IS `headShown`'s: the note writes a name's last component and no qualifier. -/
 def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
-  let stx ← PrettyPrinter.delab e
+  let stx ← delabP e
   checkSpelled e stx
   match appParts stx with
   | some (h, ops) => appSpell (← headShown h brk) ops brk
@@ -449,7 +465,7 @@ def declName? (e : Expr) : MetaM (Option String) := do
   -- THE PRINTER IS THE DEFAULT here too: a constant an `app_unexpander` gives a name of its own
   -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
   -- drops the namespace chose nothing, so the constant's own last component stands.
-  if let some h := stxHead (← PrettyPrinter.delab e) then
+  if let some h := stxHead (← delabP e) then
     if h.getString! != n.getString! then return some h.getString!
   return some n.getString!
 
@@ -484,7 +500,7 @@ where
     let some i0 := gap.head? | return none
     Meta.withLocalDeclD hole (← Meta.inferType args[i0]!) fun x => do
       let full := mkAppN f (args.mapIdx fun i a => if gap.contains i then x else a)
-      let stx := stxPeel (← PrettyPrinter.delab full)
+      let stx := stxPeel (← delabP full)
       let kids := stx.getArgs
       unless kids.any (· matches .atom ..) do return none
       let parts ← kids.toList.mapM fun k => do
@@ -604,7 +620,7 @@ partial def betaHead (e : Expr) : Expr :=
     relator and the PRINTER gives the letter, so an unexpander's chosen name still wins. -/
 def relatorName? (e : Expr) : MetaM (Option String) := do
   unless ← isLaneBundle e do return none
-  if let some h := stxHead (← PrettyPrinter.delab e) then return some h.getString!
+  if let some h := stxHead (← delabP e) then return some h.getString!
   let some c := e.getAppFn.constName? | return none
   return some c.getString!
 
@@ -645,7 +661,7 @@ def functorName (f : Expr) : MetaM String := do
     into the generic printer (`BiRelator.objFA(TA)` for `F(A,TA)`). -/
 def printsItsName (e : Expr) : MetaM Bool := do
   let .const n _ := e.getAppFn | return false
-  return ((← PrettyPrinter.delab e).raw.find? fun s =>
+  return ((← delabP e).raw.find? fun s =>
     s.isIdent && s.getId.eraseMacroScopes.isSuffixOf n).isSome
 
 /-- Whether the printer wrote a field access AS ITSELF — `(Vec n).obj A`, `Functor.obj (Vec n) A` —
@@ -655,7 +671,7 @@ def printsItsName (e : Expr) : MetaM Bool := do
 def printsAsField (e : Expr) : MetaM Bool := do
   let .const n _ := e.getAppFn | return false
   let fld := Name.mkSimple n.getString!
-  if ((← PrettyPrinter.delab e).raw.find? fun s =>
+  if ((← delabP e).raw.find? fun s =>
       s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent
         && s[2].getId.eraseMacroScopes == fld).isSome then return true
   printsItsName e
@@ -666,7 +682,7 @@ def printsAsField (e : Expr) : MetaM Bool := do
 def objJoin (e : Expr) : MetaM Join := do
   match ← functorObj? e with
   | some (f, _) => return applyJoin (← functorName f)
-  | none => return stxJoin (← PrettyPrinter.delab e)
+  | none => return stxJoin (← delabP e)
 
 /-- The last component of the head's name WHEN THAT HEAD IS A CONSTRUCTOR — read off the
     environment, never off the printed string.  A constructor is qualified by the type it builds,
@@ -719,7 +735,7 @@ def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
   -- is a projection is read off the environment, never off its spelling.
   let head? : MetaM (Option Name) := do
     if ((← getEnv).getProjectionFnInfo? c).isSome then return some (Name.mkSimple c.getString!)
-    return stxHead (← PrettyPrinter.delab e)
+    return stxHead (← delabP e)
   let some h ← head? | return none
   let mut ix : Option Expr := none
   for a in e.getAppArgs do
@@ -1139,7 +1155,7 @@ def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
     k := k - 1
   if k == args.size then return none
   let hd := mkAppN e.getAppFn (args.extract 0 k)
-  unless (← PrettyPrinter.delab e).raw.structEq (← PrettyPrinter.delab hd).raw do return none
+  unless (← delabP e).raw.structEq (← delabP hd).raw do return none
   return some (hd, args.extract k args.size)
 
 /-- Whether the relation `r : A ⟶ B` is PROVED SIMPLE by a theorem beside its definition (same
@@ -1287,7 +1303,7 @@ partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : Me
   if let some (h, tok, op) := binOps.find? (·.1 == e.getAppFnArgs.1) then
     -- THE HEAD'S OWN NOTATION first, as the printer chose it: a token two notations share (`\`)
     -- parses ambiguously, and only a head with no notation of its own asks the token.
-    let (p, a) ← match ← stxLevel (stxPeel (← PrettyPrinter.delab e)) with
+    let (p, a) ← match ← stxLevel (stxPeel (← delabP e)) with
       | some l => pure l
       | none => notationLevel tok h
     return ← bin p a op e.getAppArgs
@@ -1300,7 +1316,7 @@ partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : Me
       let fs ← (e.getAppArgs.extract ci.numParams e.getAppNumArgs).filterM fun a => return !(← Meta.isProof a)
       if let #[v] := fs then
         if fs.size < ci.numFields then return ← labelTree prec v
-      if (stxPeel (← PrettyPrinter.delab e)).isOfKind ``Lean.Parser.Term.tuple then
+      if (stxPeel (← delabP e)).isOfKind ``Lean.Parser.Term.tuple then
         return commaL "(" ")" (← fs.mapM (labelTree 0))
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
@@ -1534,7 +1550,7 @@ partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : Me
           let i := args[args.size - 2]!
           let a ← labelTree 0 i
           -- an input the printer writes as a tuple is already the application's own brackets
-          let tup := (stxPeel (← PrettyPrinter.delab i)).isOfKind `Freyd.Alg.noteTuple
+          let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
           return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
             ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
     if let some (hd, pts) ← swallowedPoints? e then
@@ -1558,7 +1574,7 @@ partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : Me
     -- since a notation opens with an atom.  THE HEAD'S OWN PRINTER TAKES A NAME, so each operand
     -- goes in as a HOLE (`holeName`) and comes back as its own tree (`Lbl.fill`): a division inside
     -- the operand of a head nobody here wrote is still the fraction.
-    let stx ← PrettyPrinter.delab e
+    let stx ← delabP e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
     let rec respell (p : Nat) (as : List Expr) (holes : Array Lbl) (t : Expr) : MetaM Lbl := do
       match as with
@@ -1663,7 +1679,7 @@ partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : Me
           unless (fi.paramInfo[i]?.map (·.isExplicit)).getD true do return false
           if (← Meta.isProp a) || (← Meta.isType a) || (← homEnds? a).isSome then return false
           unless (← Meta.whnf (← Meta.inferType (← Meta.inferType a))) == .sort 1 do return false
-          return (appParts (stxPeel (← PrettyPrinter.delab a))).isSome).mapM fun i => pure args[i]!)).toList
+          return (appParts (stxPeel (← delabP a))).isSome).mapM fun i => pure args[i]!)).toList
       #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and

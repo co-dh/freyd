@@ -1124,19 +1124,42 @@ def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM
       stopped on `{← e.toMessageData.toString}`: the bead draws its default mark"
     return none
 
+/-- The two theorem searches' answers in this process, by `metaKey`, each with the reads it noted:
+    a chain's neighbouring steps share their beads, and each step searched the same pairs again. -/
+initialize passMemo : IO.Ref (Std.HashMap (Array Expr) (Option (Name × Bool) × Array Read)) ←
+  IO.mkRef {}
+initialize moveMemo :
+    IO.Ref (Std.HashMap (Array Expr) (Option (Name × Expr × Expr × Bool) × Array Read)) ← IO.mkRef {}
+
 /-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
     (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
     `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
     `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
 def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
-  squareThm φ Y (← passHeads) fun body => do
+  let key ← metaKey #[φ, Y]
+  if let some (k, _) := key then
+    if let some (r, rs) := (← passMemo.get)[k]? then rs.forM (noteRead ·); return r
+  let (r, rs) ← recordReads <| squareThm φ Y (← passHeads) fun body => do
     let some (X, up) ← passOf? body φ | return none
     return if ← Meta.isDefEq X Y then some up else none
+  if let some (k, _) := key then passMemo.modify (·.insert k (r, rs))
+  return r
 
 /-- THE STEP OUT OF THE DRAWN SIDE: a theorem of the environment whose left side IS `side` and
     which moves a bead through its neighbour (`moveStep?`), searched as `passThm` searches. -/
 def moveThm (side : Expr) : MetaM (Option (Name × Expr × Expr × Bool)) := do
-  squareThm side side ((← passHeads).push ``Eq) (moveStep? · side)
+  let key ← metaKey #[side]
+  if let some (k, vs) := key then
+    if let some (r, rs) := (← moveMemo.get)[k]? then
+      rs.forM (noteRead ·)
+      return r.map fun (n, h, nb, b) => (n, h.instantiateRev vs, nb.instantiateRev vs, b)
+  let (r, rs) ← recordReads <| squareThm side side ((← passHeads).push ``Eq) (moveStep? · side)
+  if let some (k, vs) := key then
+    let a := r.map fun (n, h, nb, b) => (n, h.abstract vs, nb.abstract vs, b)
+    -- A local the key does not reach would come back as the asker's dangling one.
+    unless a.any fun (_, h, nb, _) => h.hasFVar || nb.hasFVar || h.hasMVar || nb.hasMVar do
+      moveMemo.modify (·.insert k (a, rs))
+  return r
 
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
