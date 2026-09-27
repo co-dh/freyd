@@ -1152,21 +1152,37 @@ def provedSimple (r : Expr) : MetaM Bool := do
   let some idx := env.getModuleIdxFor? c | return false
   Meta.forallTelescope (← Meta.whnf (← Meta.inferType r)) fun xs _ => do
     if xs.size != 2 then return false
-    let app := mkAppN r xs
-    let heads := #[c] ++ ((← Meta.unfoldDefinition? app).bind (·.getAppFn.constName?)).toArray
+    let some xi := xs[0]? | return false
+    let some xo := xs[1]? | return false
+    Meta.withLocalDeclD `o₂ (← Meta.inferType xo) fun xo₂ => do
+    -- `r i o`, and the predicate its definition applies at the same points
+    let forms (o : Expr) : MetaM (Array Expr) := do
+      let a := mkApp2 r xi o
+      return #[a] ++ (← Meta.unfoldDefinition? a).toArray
+    let heads := (← forms xo).filterMap (·.getAppFn.constName?)
     for n in env.header.moduleData[idx.toNat]!.constNames do
       let some (.thmInfo t) := env.find? n | continue
       unless heads.any fun h => (t.type.find? (·.isConstOf h)).isSome do continue
-      let ok ← Meta.forallTelescope t.type fun hs b => do
-        if (b.isAppOf ``Freyd.Alg.Simple || b.isAppOf ``Freyd.Alg.Map) && hs.isEmpty then
-          return ← Meta.isDefEqGuarded b.appArg! r
+      -- NO FURTHER HYPOTHESIS: every binder but the last two is instantiated by unification, so a
+      -- theorem that needs one more premise (`Simple R → …`) leaves it unassigned and is refused.
+      let ok ← Meta.withNewMCtxDepth do
+        let (hs, _, b) ← Meta.forallMetaTelescope t.type
+        let closed : MetaM Bool := do
+          for h in hs.pop.pop do
+            if (← Meta.isProp (← Meta.inferType h)) && !(← h.mvarId!.isAssigned) then return false
+          return true
+        if hs.isEmpty && (b.isAppOf ``Freyd.Alg.Simple || b.isAppOf ``Freyd.Alg.Map) then
+          return ← Meta.isDefEq b.appArg! r
         let some (_, x, y) := b.eq? | return false
         let some h2 := hs.back? | return false
         let some h1 := hs[hs.size - 2]? | return false
         let t1 ← Meta.inferType h1
         let t2 ← Meta.inferType h2
-        return heads.any (t1.isAppOf ·) && t1.isApp && t2.isApp && t1.appFn! == t2.appFn!
-          && t1.appArg! == x && t2.appArg! == y
+        for (a₁, a₂) in (← forms xo).zip (← forms xo₂) do
+          if (← Meta.isDefEq t1 a₁) && (← Meta.isDefEq t2 a₂) && (← Meta.isDefEq x xo)
+              && (← Meta.isDefEq y xo₂) then
+            return ← closed
+        return false
       if ok then return true
     return false
 
@@ -1490,8 +1506,11 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
       if (← homEnds? hd).isSome then
         if ← provedSimple hd then
-          let a ← labelTree 0 args[args.size - 2]!
-          return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited then a else .delim "(" ")" a)
+          let i := args[args.size - 2]!
+          let a ← labelTree 0 i
+          -- an input the printer writes as a tuple is already the application's own brackets
+          let tup := (stxPeel (← PrettyPrinter.delab i)).isOfKind `Freyd.Alg.noteTuple
+          return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
             ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
     if let some (hd, pts) ← swallowedPoints? e then
       return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
@@ -1609,9 +1628,17 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
         ++ (← args.filterM fun a => return (← swallowedPoints? a).isSome)
         -- …and an operand the printer writes as a JUXTAPOSED APPLICATION, which inside a notation
         -- (`[d]⧺f (p) (q)`) no `appSpell` reaches: respelled here, it is the note's `f(p,q)`.
-        ++ (← args.filterM fun a => do
+        -- A VALUE only, `swallowedPoints?`'s test: an explicit argument whose type is a small set.
+        ++ (← (← (List.range args.size).toArray.filterM fun i => do
+          -- only under a `noteArith` notation: everywhere else `appSpell` already re-sets them
+          unless ((Parser.parserExtension.getState (← getEnv)).categories.find? `noteArith).any
+            (·.kinds.contains (stxPeel stx).getKind) do return false
+          let a := args[i]!
+          let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+          unless (fi.paramInfo[i]?.map (·.isExplicit)).getD true do return false
           if (← Meta.isProp a) || (← Meta.isType a) || (← homEnds? a).isSome then return false
-          return (appParts (stxPeel (← PrettyPrinter.delab a))).isSome)).toList
+          unless (← Meta.whnf (← Meta.inferType (← Meta.inferType a))) == .sort 1 do return false
+          return (appParts (stxPeel (← PrettyPrinter.delab a))).isSome).mapM fun i => pure args[i]!)).toList
       #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and

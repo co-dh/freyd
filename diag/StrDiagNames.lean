@@ -304,6 +304,7 @@ syntax:70 (name := noteDiv) term:70 "/" term:71 : noteArith
 syntax:65 (name := noteSub) term:65 "−" term:66 : noteArith
 syntax:65 (name := noteCat) term:66 "⧺" term:65 : noteArith
 syntax:max (name := noteFloor) "⌊" term "⌋" : noteArith
+syntax:max (name := noteTuple) "(" term "," term ")" : noteArith
 
 open Lean in
 /-- The first (`last = false`) or last token of a printed term. -/
@@ -1135,7 +1136,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
   guard ((← getExpr).getAppNumArgs == 2)
   let a ← withNaryArg 0 delab
   let b ← withNaryArg 1 delab
-  `(($a, $b))
+  pure ⟨.node .none ``noteTuple #[mkAtom "(", a, mkAtom ",", b, mkAtom ")"]⟩
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
   | `($_ $args*) => `($(mkIdent `tourAlg) $args*)
