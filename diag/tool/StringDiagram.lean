@@ -712,11 +712,14 @@ def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
 
 /-- TWO PARTS THAT DRAW ONE PICTURE: the same lanes born and dying at the same rows, the same beads
     in order, over the same objects.  A step that only re-spells the term (`F(RS)=F(R)F(S)`, a
-    re-association) draws its two sides alike, and a chain showing both shows one picture twice. -/
+    re-association) draws its two sides alike, and a chain showing both shows one picture twice.
+    Objects compare as PRINTED (`Row.obj`), never as `Expr`: each peer is read in its own
+    telescope, so one object is a different free variable in each.  A part with no bead is no step. -/
 def Diagram.drawnAs (a b : Diagram) : Bool :=
-  a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
-    && a.rows.map (·.key) == b.rows.map (·.key) && a.top == b.top && a.bot == b.bot
-    && a.otop == b.otop && a.obot == b.obot
+  !a.rows.isEmpty
+    && a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
+    && a.rows.map (fun r => (r.key, r.obj)) == b.rows.map (fun r => (r.key, r.obj))
+    && a.top == b.top && a.bot == b.bot
 
 /-- `dup`: this file draws what the NEXT selector of its call draws (`Diagram.drawnAs`), so a chain
     shows the picture once — `lean-chain` merges the step into the next and joins their reasons. -/
