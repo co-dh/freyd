@@ -1929,6 +1929,10 @@ def recipArg? (r : Expr) : MetaM (Option Expr) := do
 def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     MetaM (Option (Expr × Expr × Bool × Bool)) := do
   let outer ← recipArg? e
+  -- The inner `°` is the arrow the lane acts on, a subterm of `e`: with no `recip` anywhere in `e`
+  -- there is nothing to find, and the peel below was a catalogue `isDefEq` per factor.
+  if outer.isNone && ((← instantiateMVars e).find? (·.isConstOf ``Freyd.Alg.Allegory.recip)).isNone then
+    return none
   let x := outer.getD e
   -- The lane's action as written — `F.map r` for an ENDOFUNCTOR of the region, a local relator's
   -- included; `graph : Fun → Rel` is no lane — else a catalogue lane's.
