@@ -1528,6 +1528,26 @@ def ctxDecl (commutative graph : Bool) (arg base : String) : Name :=
   if commutative then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1
   else if graph then (arg.splitOn "+").head!.toName else base.toName
 
+/-- THE EXPORTER'S RULES AS THE DRAWING OF `names` READS THEM.  A label set (`diag_rewrite`,
+    `diag_unfold`, …) is part of the drawer as much as its code, so every member of every one is keyed
+    by its statement, a definition also by the value an unfolding opens, and a theorem by whether its
+    proof names a drawn declaration — what `rewriteHead?` reads of a proof, to keep an equation from
+    drawing its own proof.  A rule changed there is a picture drawn by another exporter. -/
+def rulesKey (names : List Name) : MetaM UInt64 := do
+  let env ← getEnv
+  let attrs := (← labelExtensionMapRef.get).toArray.map (·.1) |>.qsort (·.toString < ·.toString)
+  let mut h : UInt64 := 11
+  for a in attrs do
+    h := mixHash h (hash a)
+    for n in ← labelled a do
+      let some ci := env.find? n | throwError "diag-export: {n}, labelled `{a}`, names no constant"
+      h := mixHash (mixHash h (hash n)) (hash ci.type)
+      match ci with
+      | .defnInfo d => h := mixHash h (hash d.value)
+      | .thmInfo t => h := mixHash h (hash (names.any fun d => d == n || t.value.getUsedConstants.contains d))
+      | _ => pure ()
+  return h
+
 /-- The `cert:` line EVERY generated file carries, under the two header lines: the declarations the
     picture was drawn from, each with the key of the statement AS THE PICTURE PRINTS IT, and the
     exporter that drew it.  One form for all routes, and `--stale` recomputes it in the drawing's
@@ -1540,7 +1560,8 @@ def certLine (names : List Name) : MetaM String := do
     -- type, binder names and notation included, so that text is mixed in and not the module's olean.
     let key := mixHash (← Freyd.TypeRender.stmtKey ci) (hash (toString (← Meta.ppExpr ci.type)))
     return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 key ++ "\")"
-  return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← StrDiag.exeStamp) ++ "\n"
+  return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← StrDiag.exeStamp) ++ " rules "
+    ++ Freyd.TypeRender.hex8 (← rulesKey names) ++ "\n"
 
 /-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `cert:` line it can
     read, or a key that is no longer the declaration's — printed one per line, in the order given,
