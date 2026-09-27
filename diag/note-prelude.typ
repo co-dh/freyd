@@ -271,13 +271,19 @@
 // every row takes the SMALLEST row's factor, since a short row filled on its own grows its beads
 // and labels past its neighbours' and stands the tallest.
 // A step is `(op, sel, reason)`, one declaration driving BOTH pictures.
-// A row may instead be `(sub: sel, gloss: [..], steps: (..))`: `sub` names the declaration the row
-// proves, printed in a header row across the cell, so a new obligation reads apart from a row that
-// only wraps; a plain row after it continues the same obligation.  `gloss` is optional.
+// A row may instead be `Sub(decl, gloss: [..], step, ..)`: `Sub` names the declaration the row
+// proves and packages it as the dict `lean-chain` reads, printed in a header row across the cell so
+// a new obligation reads apart from a row that only wraps; a plain row after it continues the same
+// obligation.  `gloss` is optional.  `lean-chain` accepts only a dict `Sub` built — never a
+// hand-written one — so a row can't drift from what `Sub` prints.
+#let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 #let lean-chain(..args) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
-    .map(r => if type(r) == dictionary { r } else { (steps: r) })
+    .map(r => if type(r) == dictionary {
+      assert(r.at("kind", default: none) == "Sub", message: "a lean-chain row dict must come from Sub(...)")
+      r
+    } else { (steps: r) })
   let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.steps.map(s => s.at(1))))
   // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
@@ -292,7 +298,7 @@
       if "sub" in row {
         pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
           stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-          align(center, { leanf(row.sub); if "gloss" in row { [ \ ]; row.gloss } })))
+          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
       }
       hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
