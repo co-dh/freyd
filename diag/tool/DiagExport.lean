@@ -1523,6 +1523,13 @@ def outPath (circuit commutative type formula value graph proof : Bool) (call ar
   System.FilePath.mk
     s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{if proof then ".proof" else ""}.typ"
 
+/-- THE FILES OF ONE CALL: the string and circuit routes' `+` names several pictures, a file each
+    (the note's `lean(a, b)`/`leanc(a, b)`); every other route's call is one file.  One rule, read by
+    the drawer and by `--stale`: split in one and not the other, a pair's call was taken for one
+    selector and its name, `#` and `+` included, parsed to the anonymous declaration. -/
+def callFiles (string circuit : Bool) (call : String) : List String :=
+  if string || circuit then call.splitOn "+" else [call]
+
 /-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
     `+` joins two different statements on one page — so its picture goes stale when either does. -/
 def selDecls (commutative graph : Bool) (arg base : String) : List Name :=
@@ -1617,7 +1624,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
   -- call; the commutative route's `+` is one file drawn from two declarations.
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
-    (a, (if stringMode then a.splitOn "+" else [a]).map fun n =>
+    (a, (callFiles stringMode circuitMode a).map fun n =>
       let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
       (n, ctxDecl commutativeMode graphMode n base, selDecls commutativeMode graphMode n base))
   for (call, files) in jobs do
@@ -1736,9 +1743,8 @@ def main (args : List String) : IO UInt32 := do
   -- the note's `lean(a, b)`, the panels that stand beside each other on the page — and they are
   -- drawn to ONE depth, each into its own file; selectors that never arrive in one argument share
   -- nothing, whatever declaration they come from.  Every selector is taken apart once, here.
-  let jobs : List (String × String) := if stringMode
-    then args.flatMap fun a => (a.splitOn "+").map fun n => (n, a)
-    else args.map fun a => (a, a)
+  let jobs : List (String × String) :=
+    args.flatMap fun a => (callFiles stringMode circuitMode a).map fun n => (n, a)
   let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
@@ -1777,10 +1783,11 @@ def main (args : List String) : IO UInt32 := do
         else if proofMode then drawProof arg.toName else draw arg.toName)
       if sigMode then return body
       -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
-      let head := StrDiag.fileHead "../"
+      -- Every route's file opens with its library's relative `#import`, whichever library it is.
+      let head := "#import \""
       let body ← if call == arg then pure body
         else if body.startsWith head then
-          pure (StrDiag.fileHead (String.join ((call.splitOn "+").map fun _ => "../") ++ "../")
+          pure (head ++ String.join ((call.splitOn "+").map fun _ => "../")
             ++ (body.drop head.length).toString)
         else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
           cannot be moved into the call's directory"

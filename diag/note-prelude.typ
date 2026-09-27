@@ -275,17 +275,10 @@
 // proves and packages it as the dict `lean-chain` reads, printed in a header row across the cell so
 // a new obligation reads apart from a row that only wraps; a plain row after it continues the same
 // obligation.  `gloss` is optional.  `lean-chain` accepts only a dict `Sub` built — never a
-// hand-written one — so a row can't drift from what `Sub` prints.  A row whose steps each draw BOTH
-// sides of their own relation (a `trow` pair per step, not one picture) stays on `hchain` directly —
-// `lean-chain` always resolves a row's steps through ONE shared multi-selector call, which cannot
-// also give an individual step's pair its own height-matched call; `sub-header` below is the printed
-// banner factored out so such a row can still look like a `Sub` row without going through `Sub`.
+// hand-written one — so a row can't drift from what `Sub` prints.
+// A step whose `sel` is a PAIR `(l, r)` draws both sides of its OWN relation as one `lean(l, r)`
+// call — its two panels one height — beside the row's single-selector steps, which share one call.
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
-// The `Sub` banner, standalone: for a row that cannot go through `lean-chain` (its steps are
-// height-matched `trow` pairs, not single selectors) but still opens a fresh obligation.
-#let sub-header(decl, gloss: none) = pad(x: -9pt, block(width: 100%, fill: luma(246),
-  inset: (x: 9pt, y: 4pt), below: 6pt, stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-  align(center, { leanf(decl); if gloss != none { [ \ ]; gloss } })))
 #let lean-chain(..args) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
@@ -293,7 +286,17 @@
       assert(r.at("kind", default: none) == "Sub", message: "a lean-chain row dict must come from Sub(...)")
       r
     } else { (steps: r) })
-  let calls = rows.map(r => lean-pics("generated/", <lean-panel>, r.steps.map(s => s.at(1))))
+  let calls = rows.map(r => {
+    let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
+    let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
+    let i = 0
+    let pics = ()
+    for s in r.steps {
+      if type(s.at(1)) == array { pics.push(lean-call("generated/", <lean-panel>, s.at(1))) }
+      else { pics.push(sp.at(i)); i += 1 }
+    }
+    (m, pics)
+  })
   // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
@@ -302,12 +305,17 @@
     let k = calc.min(..rows.zip(ws).map(((r, w)) => chain-k(sz.width, r.steps.first().at(0) == none, w)))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = row.steps
-      // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule
-      if "sub" in row { sub-header(row.sub, gloss: row.gloss) }
+      // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
+      // the table's 9pt inset so it spans the cell like a row of the table
+      if "sub" in row {
+        pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
+          stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
+          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
+      }
       hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
-      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))) }
+      for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, if type(s.at(1)) == array { leanc(..s.at(1)) } else { leanc(s.at(1)) }, s.at(2))) }
       // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)
     }

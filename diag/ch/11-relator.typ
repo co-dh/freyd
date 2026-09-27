@@ -776,27 +776,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
 // 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
-// share ONE table, headed by the fixed-point statement; hylo_fixed and hylo_le_of_prefixed print as
-// `sub-header` rows (their own #src banner), hylo_eq_mu continues as a plain row.  hylo_fixed and
-// hylo_eq_mu go through `Sub`/`lean-chain`, one selector per step; hylo_le_of_prefixed's six steps
-// each draw BOTH sides of ITS OWN relation (a `trow` pair per step, not one picture), which
-// `lean-chain` cannot give an individual step's own height-matched call, so that row stays on
-// `hchain` directly, under a `sub-header` banner for the same look.  ONE call for its twelve panels
-// so they share one placement; PAIRWISE height-matching (`#lean(a, b)`'s two-selector depth match)
-// was tried per pair and dropped — isolating `hylo_le_of_prefixed#h.{lhs,rhs}` on its own reliably
-// crashes `diag-export --stale`'s batched check ("no such declaration: [anonymous]") under the full
-// note sweep, reproducibly, though the identical selectors succeed standalone outside that sweep —
-// an exporter regression from the recent staleness rework, not a note-content issue; left alone.
-// Citations to 11.6.4a/b from elsewhere in this table now name a row of the SAME table, so they
-// read as plain text; @hylo-mu (this table's one label) is what the rest of the note still cites.
-#let (hyl-m, (hy-base-l, hy-base-r, hy-cataR, hy-cataR-r, hy-rec, hy-rec-r, hy-adj, hy-adj-r,
-  hy-fuse, hy-fuse-r, hy-prefix, hy-prefix-r)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", "Freyd.Alg.hylo_le_of_prefixed_step1.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step2.lhs", "Freyd.Alg.hylo_le_of_prefixed_step2.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"))
+// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed's steps each draw BOTH
+// sides of their own relation: a pair step, one `lean(l, r)` call apiece so its sides are one height.
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
@@ -823,24 +804,19 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
     ),
   )],
-  [#sub-header("Freyd.Alg.hylo_le_of_prefixed",
+  [#lean-chain(
+    Sub("Freyd.Alg.hylo_le_of_prefixed",
       gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
-        satisfies the associated recursion inequation])
-    #hyl-m#hchain(
-    (none, trow(hy-base-l, hy-base-r),
-     src[the conclusion]),
-    (IFF, trow(hy-cataR, hy-cataR-r),
-     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IMP, trow(hy-rec, hy-rec-r),
-     src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
+        satisfies the associated recursion inequation],
+      (none, ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs"), src[the conclusion]),
+      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step1.lhs", "Freyd.Alg.hylo_le_of_prefixed_step1.rhs"), src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_step2.lhs", "Freyd.Alg.hylo_le_of_prefixed_step2.rhs"), src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
  ]),
-     // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-    (IFF, trow(hy-adj, hy-adj-r),
-     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IFF, trow(hy-fuse, hy-fuse-r),
-     src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
-    (IMP, trow(hy-prefix, hy-prefix-r),
-     src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
+      // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
+      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs"), src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
+      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs"), src[`⦇S⦈°α°=S°F(⦇S⦈°)` — hylo_fixed above]),
+      (IMP, ("Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"), src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
+    ),
   )],
   [#lean-chain((
       // lean:AOP.A6_3.hylo_eq_mu@c60df971

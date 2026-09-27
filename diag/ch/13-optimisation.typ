@@ -531,18 +531,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // — `f` is one algebra at the object `A` (Lean: `f : F.obj A ⟶ A`), not a family, so its bead
 // sits on the object wire and the sweep needs no naturality verdict.
 // plus `s: 100%`, so the labels print at the size the note sets them in.
-#let ma-Fest-lam = lean("Freyd.Alg.Distributes.lhs")
-#let ma-Fest-ni = lean("Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.lhs")
-#let ma-lam = lean("Freyd.Alg.Distributes.rhs")
-#let ma-Fni = lean("Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.rhs")
-// The bare `R°`/`R` panels these rows pair with, emitted by `./scripts/diagram --src A --tgt A
-// --frame … --top 3 "R°"` (resp. `"R"`); one binding per partner frame, named after the partner.
-// ONE call for the tail chain's six panels, so they share one placement and the bead a step moves
-// over (its triangle) stands at one height on both sides of that step.
-#let (mon-m, (mon-s3l-l, mon-s3l-r, ma-Ro, ma-Rbare-Ro, ma-R, ma-Rplain-R)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.mon_thm71_step3.lhs.lhs", "Freyd.Alg.mon_thm71_step3.lhs.rhs",
-   "Freyd.Alg.mon_thm71_step3.rhs.lhs", "Freyd.Alg.mon_thm71_step3.rhs.rhs",
-   "Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"))
+// Each step's two sides are one `lean(l, r)` call, so they share one box and stand one height.
 #disp[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
@@ -552,24 +541,24 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
  ]],
       // lean:AOP.A7_2.monoAlg_of_distributes@c15c0757
 
-  [#vstep([], trow(ma-Fest-lam, ma-lam), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
+  [#vstep([], lean("Freyd.Alg.Distributes.lhs", "Freyd.Alg.Distributes.rhs"), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
   // One picture per conjunct, side by side so the display stays on one page: the first is row 1's
   // left panel twice over, `est(R)` against `∋`; the second is the row-3 panel the next step keeps.
   [#vstep(IFF, grid(columns: 3, align: center + horizon, column-gutter: 10pt,
-    trow(ma-Fest-ni, ma-Fni),
+    lean("Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.lhs", "Freyd.Alg.Fmap_est_comp_le_Fmap_eps_comp.rhs"),
     [and],
     lean("Freyd.Alg.mon_thm71_step2.rhs.lhs", "Freyd.Alg.mon_thm71_step2.rhs.rhs"),
   ), [#src[@est-75 splits the bound in two, @div-laws moving `(F(∋)f)°` across]])],
 
   // The last three panels share one row, so the display stays on one page: the surviving conjunct,
   // its `∈ est(R)` collapsed to `R°`, and the whole conversed.
-  [#mon-m#hchain(
-    (IFF, trow(mon-s3l-l, mon-s3l-r),
+  [#hchain(
+    (IFF, lean("Freyd.Alg.mon_thm71_step3.lhs.lhs", "Freyd.Alg.mon_thm71_step3.lhs.rhs"),
       src[`est(R)⊑∋` — @est-defn — so the first conjunct drops]),
-    (IFF, trow(ma-Ro, ma-Rbare-Ro),
+    (IFF, lean("Freyd.Alg.mon_thm71_step3.rhs.lhs", "Freyd.Alg.mon_thm71_step3.rhs.rhs"),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
-    (IFF, trow(ma-R, ma-Rplain-R),
+    (IFF, lean("Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"),
       src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
      // lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
     ]),
@@ -587,8 +576,6 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
 // The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
 // `s: 100%`, so the labels print at the size the note sets them in.
-#let gr-mon = lean("Freyd.Alg.greedy_step1.lhs")
-#let gr-Rbare = lean("Freyd.Alg.greedy_step3.rhs")
 #let gr-slid = lean("Freyd.Alg.greedy_step1.rhs")
 #let gr-RR = lean("Freyd.Alg.greedy_step2.rhs")
 #let gr-R = lean("Freyd.Alg.greedy_step3.rhs")
@@ -626,7 +613,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      #src[#frc([`S`]) `=` #frc([`𝟙`]) `E(S)` — @adj-E-bend]])],
   // `S°` births the `F` wire and `S` kills it, so `F(R°)` is the `R°` bead INSIDE that span — the
   // relator's action costs no notation.  The unit births the `E` wire, and `est(R)` kills it.
-  [#trow(gr-mon, gr-Rbare)],
+  [#lean("Freyd.Alg.greedy_step1.lhs", "Freyd.Alg.greedy_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.greedy_step1.rhs"),
     [#src[`S°F(R°)⊑R°S°` — @mon-defn at `S`, conversed; `F(R)°=F(R°)` — @relator-laws]])],
