@@ -574,9 +574,11 @@ public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
       = Allegory.recip decode := by
     rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con]
     exact Cat.comp_id _
+  haveI : DPSetting (F := F Unit Code) (graph (con (L := Unit) (E := Code))) (R c p) :=
+    ⟨graph_map con, code_mono c p, R_recip_trans c p⟩
   have key := dynamic_programming_thin (F := F Unit Code)
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
-    (R := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
+    (R := R c p) (Q := Q)
     (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p hc hp)
   simp only [H] at key; rwa [hH] at key
 

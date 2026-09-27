@@ -46,6 +46,14 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 @[expose] public def H [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
   (relCata T)° ≫ relCata h
 
+/-- **The setting of Theorems 9.1 and 9.2** (B&dM p.220, "h is monotonic on R"): `h` a map,
+    monotonic on `R°`, and `R°` transitive.  A class, so every theorem of the section takes it as an
+    instance binder — the setting, stated once — and no header repeats it as a hypothesis. -/
+public class DPSetting (h : F.obj B ⟶ B) (R : B ⟶ B) : Prop where
+  map : Map h
+  mono : MonoAlg h R°
+  trans : R° ≫ R° ⊑ R°
+
 /-- **`T°F(H)h = H`**: `H` solves its own recursion — `hylo_fixed` read at `H≜⦇T⦈°⦇h⦈`, stated
     on the name so a picture draws `H` as one arrow. -/
 public theorem H_fixed (I : InitialAlgebra F) (T : F.obj A ⟶ A)
@@ -177,20 +185,19 @@ public theorem dynamic_programming_upper_steps1to3 {h : F.obj B ⟶ B}
 /-- (9.3), hints 4–5 and transitivity as one row: `H° M ⊑ R°` under `F`, `h` monotonic on `R°`,
     `R` transitive. -/
 public theorem dynamic_programming_upper_steps4to5 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    [s : DPSetting h R] :
     h° ≫ F.map (H°) ≫ (F.map (Λ H ≫ est R) ≫ h) ≫ R° ⊑ R° :=
   dynamic_programming_upper_step3c (F := F) ▸
-    le_trans dynamic_programming_upper_step4 (le_trans (dynamic_programming_upper_step5 hh hmono) htrans)
+    le_trans dynamic_programming_upper_step4 (le_trans (dynamic_programming_upper_step5 s.map s.mono) s.trans)
 
 /-- **(9.3)** (B&dM p.221): `min R·P(h·FM)·ΛT°·H° ⊆ R`, mirrored — with `M ≜ Λ(H) est(R)`,
     whatever the dynamic-programming step returns is `R`-related to everything `H` returns from
     the same input.  The book's five hints are steps 1–5, then transitivity `htrans`. -/
 public theorem dynamic_programming_upper {h : F.obj B ⟶ B}
-    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R°)
-    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {H : A ⟶ B} [DPSetting h R]
+    (hHfix : T° ≫ F.map H ≫ h = H) :
     H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
-  le_trans (dynamic_programming_upper_steps1to3 hHfix)
-    (dynamic_programming_upper_steps4to5 hh hmono htrans)
+  le_trans (dynamic_programming_upper_steps1to3 hHfix) dynamic_programming_upper_steps4to5
 
 /-- **Core of Theorem 9.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the dynamic-programming body, for ANY `H` satisfying the hylomorphism fixed-point equation
@@ -198,11 +205,9 @@ public theorem dynamic_programming_upper {h : F.obj B ⟶ B}
     variants all instantiate `H := ⦇h⦈·⦇T⦈°`.  The two inclusions (9.2) and (9.3) of the book's
     proof are exactly the components of `min`'s universal property (`le_Λ_comp_est_iff`). -/
 public theorem dp_prefixed {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {H : A ⟶ B} (hh : Map h) (hmono : MonoAlg h R°)
-    (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H) :
+    {R : B ⟶ B} {H : A ⟶ B} [DPSetting h R] (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ Λ H ≫ est R :=
-  le_Λ_comp_est_iff.mpr
-    ⟨dynamic_programming_lower hHfix, dynamic_programming_upper hh hmono htrans hHfix⟩
+  le_Λ_comp_est_iff.mpr ⟨dynamic_programming_lower hHfix, dynamic_programming_upper hHfix⟩
 
 /-- **Theorem 9.1 (B&dM p.220)**, the basic theorem of DYNAMIC PROGRAMMING:
     `(μX : min R°·P(h·FX)·ΛT°) ⊆ min R°·ΛH` for `H = ⦇h⦈·⦇T⦈°`, mirrored — if the algebra `h`
@@ -211,11 +216,10 @@ public theorem dp_prefixed {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     results (`min R°`) refines "generate everything, then pick a global optimum".
     By Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_prefixed`. -/
 public theorem dynamic_programming (I : InitialAlgebra F)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} [DPSetting h R] :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed hh hmono htrans (hylo_fixed (Relator.preservesRecip_of_tabular F) I h T)))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed (hylo_fixed (Relator.preservesRecip_of_tabular F) I h T)))
 
 /-! ## Theorem 9.2 (B&dM p.221) — thinning dynamic programming
 
@@ -373,20 +377,18 @@ public theorem dynamic_programming_thin_steps7to8 {h : F.obj B ⟶ B}
 /-- (9.3) with thinning, steps 9–11 as one row: `H° M ⊑ R°` under `F`, `h` monotonic on `R`,
     `R` transitive twice. -/
 public theorem dynamic_programming_thin_steps9to11 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) :
+    [s : DPSetting h R] :
     R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ≫ R° ⊑ R° :=
   le_trans dynamic_programming_thin_step9
-    (le_trans (dynamic_programming_thin_step10 hh hmono) (dynamic_programming_thin_step11 htrans))
+    (le_trans (dynamic_programming_thin_step10 s.map s.mono) (dynamic_programming_thin_step11 s.trans))
 
 /-- **(9.3) with thinning**: `min R·P(h·FM)·thin Q·ΛT°·H° ⊆ R`, mirrored — steps 3–11. -/
 public theorem dynamic_programming_thin_upper {h : F.obj B ⟶ B}
-    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
-    (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
-    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
+    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} [DPSetting h R]
+    (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   le_trans (dynamic_programming_thin_steps3to6 hHfix)
-    (le_trans (dynamic_programming_thin_steps7to8 hQ)
-      (dynamic_programming_thin_steps9to11 hh hmono htrans))
+    (le_trans (dynamic_programming_thin_steps7to8 hQ) dynamic_programming_thin_steps9to11)
 
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
@@ -395,14 +397,13 @@ public theorem dynamic_programming_thin_upper {h : F.obj B ⟶ B}
     `Q := id`.  Knaster–Tarski reduces it to (9.1) `body(M)⊑M`, which the universal property of
     `est` splits into (9.2) and (9.3). -/
 public theorem dynamic_programming_thin (I : InitialAlgebra F)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
+    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} [DPSetting h R]
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
     ⟨dynamic_programming_thin_lower (H_fixed I T h),
-     dynamic_programming_thin_upper hh hmono htrans (H_fixed I T h) hQ⟩))
+     dynamic_programming_thin_upper (H_fixed I T h) hQ⟩))
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 
@@ -434,12 +435,10 @@ public theorem thin_condition_of_refl (I : InitialAlgebra F) {h : F.obj B ⟶ B}
   exact step
 
 theorem dynamic_programming_of_thin (I : InitialAlgebra F)
-    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B}
-    (hh : Map h) (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hrefl : Cat.id B ⊑ R°) :
+    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} [DPSetting h R] (hrefl : Cat.id B ⊑ R°) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  le_trans mu_le_mu_thinRel_id
-    (dynamic_programming_thin I hh hmono htrans (thin_condition_of_refl I hrefl))
+  le_trans mu_le_mu_thinRel_id (dynamic_programming_thin I (thin_condition_of_refl I hrefl))
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
@@ -1253,7 +1252,7 @@ public theorem thin_arm₁_le {T : (F L W).obj b ⟶ b} {Q : (F L W).obj b ⟶ (
     draw. -/
 public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
     {Q : (F L W).obj b ⟶ (F L W).obj b} {U : (F L W).obj c ⟶ c} {R : c ⟶ c}
-    (hh : Map U) (hmono : MonoAlg U R°) (htrans : R° ≫ R° ⊑ R°)
+    [DPSetting U R]
     (hdisj : ∀ (d : L) (p : b.carrier × W) (y : b.carrier),
       T (Sum.inl d) y → T (Sum.inr p) y → False)
     (hQ : Q ≫ (F L W).map ((relCata T)° ≫ relCata U) ≫ U
@@ -1264,7 +1263,7 @@ public theorem dynamic_programming_thin_arms {T : (F L W).obj b ⟶ b}
               ≫ powerRel (rprodMap X (𝟙 (⟨W⟩ : RelSet.{0})) ≫ arm₂ U) ≫ est R))
       ⊑ Λ ((relCata T)° ≫ relCata U) ≫ est R :=
   le_trans (mu_le_mu fun X => union_lub (thin_arm₁_le (X := X) hdisj) (thin_arm₂_le hdisj))
-    (dynamic_programming_thin (F := F L W) (initial L W) hh hmono htrans hQ)
+    (dynamic_programming_thin (F := F L W) (initial L W) hQ)
 
 /-! ## Proposition 9.1 (B&dM p.222) along Exercise 9.5
 
