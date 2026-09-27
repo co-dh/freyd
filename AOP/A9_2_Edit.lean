@@ -168,7 +168,8 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
       = ((editFn es).1, ConsList.cons a (editFn es).2) := rfl
 
 /-- **edit-defn**: the catamorphism of `[base,step]` IS `editFn`. -/
-public theorem edit_cata : cataR (editAlg (Char := Char)) = graph editFn := by
+public theorem edit_cata : graph editFn = cataR (editAlg (Char := Char)) := by
+  refine Eq.symm ?_
   apply hom_ext; intro es
   induction es with
   | wrap _ => exact fun p => Iff.rfl
@@ -187,13 +188,14 @@ public theorem edit_cata : cataR (editAlg (Char := Char)) = graph editFn := by
 
 /-- **edit-defn**: the algebra `[zero,π₂ succ]` of `length`. -/
 @[expose] public def lenAlgFn : (Fobj Unit (Op Char) (⟨Nat⟩ : RelSet.{0})).carrier → Nat
-  | Sum.inl _ => 0
-  | Sum.inr p => p.2 + 1
+  | Sum.inl _ => Nat.zero
+  | Sum.inr p => Nat.succ p.2
 
 /-- **edit-defn**: `length≜⦇[zero,π₂ succ]⦈` is the list length `clen`. -/
 public theorem length_cata :
-    cataR (graph (lenAlgFn (Char := Char)))
-      = (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) := by
+    (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = cataR (graph (lenAlgFn (Char := Char))) := by
+  refine Eq.symm ?_
   apply hom_ext; intro es
   induction es with
   | wrap _ => exact fun n => Iff.rfl
@@ -741,7 +743,7 @@ public theorem edit_laws :
       ⊑ Λ ((graph (editFn (Char := Char)))°) ≫ est (R Char) := by
   have hH : (relCata (editAlg (Char := Char)))° ≫ relCata (graph con)
       = (graph (editFn (Char := Char)))° := by
-    rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, edit_cata]
+    rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, ← edit_cata]
     exact Cat.comp_id _
   have key := dynamic_programming_thin (F := F Unit (Op Char)) (F_preservesRecip Unit (Op Char))
     (initial Unit (Op Char)) (h := graph con) (T := editAlg (Char := Char)) (R := R Char)
@@ -774,6 +776,12 @@ public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
 
 /-- **edit-defn**: `base`, the first arm of `[base,step]`, returning `([],[])`. -/
 @[expose] public def base : dL Unit ⟶ dPair Char := graph (fun d => baseStepFn (Sum.inl d))
+
+/-- **edit-defn**: the algebra IS the junction `[base,step]` of its two arms, as B&dM write it. -/
+public theorem editAlg_junc :
+    editAlg (Char := Char)
+      = junc (sumCop (dL Unit) ⟨Op Char × (dPair Char).carrier⟩) base step :=
+  hom_ext fun u v => by cases u <;> exact Iff.rfl
 
 /-- **edit-defn**: `empty`, the coreflexive on `(xs,ys)` with both lists empty. -/
 @[expose] public def empty : dPair Char ⟶ dPair Char :=

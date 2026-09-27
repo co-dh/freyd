@@ -757,6 +757,8 @@ attribute [diag_rewrite] Allegory.recip_comp
 -- An ARM is written by its own name (`snoc`, `snag`), never as the algebra restricted: `arm₂` of a
 -- map is a map, and `diag/tool/Label.lean` then reads the name off the restricted function.
 attribute [diag_rewrite] RelSet.SL.arm₂_graph
+-- §9.2's algebra is the note's `[base,step]` (B&dM p.225: `edit = ⦇[base, step]⦈`).
+attribute [diag_rewrite] RelSet.Edit.editAlg_junc
 -- And the relator SLIDES INTO THE BRACKET: `F(X)[T,U]` is the note's `[T,(X×𝟙)U]`, one tape whose
 -- second arm carries the `X`, never a box `F(X)` in front of the junction.
 attribute [diag_rewrite] RelSet.SL.Fmap_comp_junc
@@ -846,7 +848,7 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `splits))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.Op] def unexpandEditOp : Unexpander
-  | `($_ $args*) => `($(mkIdent `Op) $args*)
+  -- B&dM p.225 writes the type `Op` alone: the alphabet is the section's one `Char`.
   | _ => `($(mkIdent `Op))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.step] def unexpandEditStep : Unexpander
