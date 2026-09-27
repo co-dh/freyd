@@ -142,56 +142,6 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
     TabularUnitaryUnguardedPowerAllegory 𝒜 :=
   { inst with }
 
-/-! ## `α` is an iso, for `InitialAlgebra` (B&dM Ex 6.5's subject)
-
-  The inverse of `α` is the (map) catamorphism of the algebra `F.map α`; the standard
-  argument runs entirely inside the map subcategory, then `recip_of_comp_id` (Prop 4.1,
-  `AOP.A4_2`) identifies the inverse with `α°`. -/
-
-section AlphaIso
-
-variable [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
-
-/-- The inverse of `α`: `cata (F.map α)`. -/
-@[expose] public def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
-  I.cata (F.map I.α) (F.map_is_map I.α_map)
-
-/-- **`α` is an iso**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
-public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
-    I.alphaInv ≫ I.α = Cat.id I.t := by
-  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
-  have hmap : Map (I.alphaInv ≫ I.α) := map_comp (I.cata_map _ _) I.α_map
-  have hcomm : I.α ≫ (I.alphaInv ≫ I.α) = F.map (I.alphaInv ≫ I.α) ≫ I.α := by
-    rw [← Cat.assoc, hk, ← F.map_comp]
-  have hid : I.α ≫ Cat.id I.t = F.map (Cat.id I.t) ≫ I.α := by
-    rw [Cat.comp_id, F.map_id, Cat.id_comp]
-  have h1 := I.cata_unique I.α I.α_map _ hmap hcomm
-  have h2 := I.cata_unique I.α I.α_map _ (id_is_map_local I.t) hid
-  rw [h1, ← h2]
-
-/-- **`α` is an iso**: `α ≫ alphaInv = id`. -/
-public theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
-    I.α ≫ I.alphaInv = Cat.id (F.obj I.t) := by
-  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
-  rw [hk, ← F.map_comp, I.alphaInv_alpha, F.map_id]
-
-/-- The inverse of `α` IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
-public theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
-  (recip_of_comp_id (by rw [I.alpha_alphaInv]; exact le_refl _)
-    (by rw [I.alphaInv_alpha]; exact le_refl _)).1
-
-/-- `α° ≫ α = id`: the initial algebra is a split (in fact two-sided) iso of maps. -/
-public theorem InitialAlgebra.recip_alpha_alpha (I : InitialAlgebra F) :
-    I.α° ≫ I.α = Cat.id I.t := by
-  rw [← I.alphaInv_eq_recip]; exact I.alphaInv_alpha
-
-/-- `α ≫ α° = id`. -/
-public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
-    I.α ≫ I.α° = Cat.id (F.obj I.t) := by
-  rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
-
-end AlphaIso
-
 /-! ## §6.2  Catamorphisms as least (and greatest) fixed points: (6.2) and (6.3)
 
   Because `α` is invertible, the catamorphism UP `α ≫ X = F.map X ≫ R ⟺ X = ⦇R⦈` (5.12)

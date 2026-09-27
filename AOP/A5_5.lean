@@ -69,37 +69,97 @@ open Lean PrettyPrinter in
 public theorem relCata_unfold (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     relCata R = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := rfl
 
-/-! The proof of (5.12), B&dM p.121, one theorem per step so each row of the note's table is drawn
-    from the declaration that proves it; `relCata_UP` below is their composite. -/
+/-! ## `α` is an iso, for `InitialAlgebra` (B&dM Ex 6.5's subject)
 
-/-- `Λ` is an isomorphism. -/
-public theorem relCata_UP_step1 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    I.α ≫ X = F.map X ≫ R ↔ Λ (I.α ≫ X) = Λ (F.map X ≫ R) :=
-  ⟨congrArg Λ, fun h => by rw [← Λ_eps_eq' (I.α ≫ X), h, Λ_eps_eq']⟩
+  The inverse of `α` is the (map) catamorphism of the algebra `F.map α`; the standard
+  argument runs entirely inside the map subcategory, then `recip_of_comp_id` (Prop 4.1,
+  `AOP.A4_2`) identifies the inverse with `α°`. -/
 
-/-- `Λ` cancellation, backwards: `X = Λ(X)∋`. -/
+
+/-- The inverse of `α`: `cata (F.map α)`. -/
+@[expose] public def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
+  I.cata (F.map I.α) (F.map_is_map I.α_map)
+
+/-- **`α` is an iso**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
+public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
+    I.alphaInv ≫ I.α = Cat.id I.t := by
+  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
+  have hmap : Map (I.alphaInv ≫ I.α) := map_comp (I.cata_map _ _) I.α_map
+  have hcomm : I.α ≫ (I.alphaInv ≫ I.α) = F.map (I.alphaInv ≫ I.α) ≫ I.α := by
+    rw [← Cat.assoc, hk, ← F.map_comp]
+  have hid : I.α ≫ Cat.id I.t = F.map (Cat.id I.t) ≫ I.α := by
+    rw [Cat.comp_id, F.map_id, Cat.id_comp]
+  have h1 := I.cata_unique I.α I.α_map _ hmap hcomm
+  have h2 := I.cata_unique I.α I.α_map _ (id_is_map_local I.t) hid
+  rw [h1, ← h2]
+
+/-- **`α` is an iso**: `α ≫ alphaInv = id`. -/
+public theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
+    I.α ≫ I.alphaInv = Cat.id (F.obj I.t) := by
+  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
+  rw [hk, ← F.map_comp, I.alphaInv_alpha, F.map_id]
+
+/-- The inverse of `α` IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
+public theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
+  (recip_of_comp_id (by rw [I.alpha_alphaInv]; exact le_refl _)
+    (by rw [I.alphaInv_alpha]; exact le_refl _)).1
+
+/-- `α° ≫ α = id`: the initial algebra is a split (in fact two-sided) iso of maps. -/
+public theorem InitialAlgebra.recip_alpha_alpha (I : InitialAlgebra F) :
+    I.α° ≫ I.α = Cat.id I.t := by
+  rw [← I.alphaInv_eq_recip]; exact I.alphaInv_alpha
+
+/-- `α ≫ α° = id`. -/
+public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
+    I.α ≫ I.α° = Cat.id (F.obj I.t) := by
+  rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
+
+/-- (5.12) at `X := ⦇R⦈`: `⦇R⦈` satisfies its own defining equation — the map fold's equation at
+    `Λ(F(∋)R)`, then the cancellation `Λ(S)∋ = S`. -/
+public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    I.α ≫ relCata R = F.map (relCata R) ≫ R := by
+  rw [relCata_unfold, ← Cat.assoc, I.cata_comm, Cat.assoc, Λ_eps_eq', F.map_comp, Cat.assoc]
+
+/-! The `⟹` half of (5.12), B&dM p.121, as ONE term chain from `Λ(X)` back to a term holding
+    `Λ(X)`: `Λ(X) = Λ(α°F(X)R) = α°Λ(F(X)R) = α°Λ(F(Λ(X)∋)R) = α°F(Λ(X))Λ(F(∋)R)`.  So `Λ(X)`
+    solves the map fold's equation, the fold's uniqueness names it, and cancellation returns to `X`.
+    One theorem per step, so each panel of the note's chain is drawn from the one proving it. -/
+
+/-- Step 1: `α°α = 𝟙` and the hypothesis `αX = F(X)R`, so `X = α°F(X)R`. -/
+public theorem relCata_UP_step1 (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = Λ (I.α° ≫ F.map X ≫ R) := by
+  rw [← h, ← Cat.assoc, I.recip_alpha_alpha, Cat.id_comp]
+
+/-- Step 2: `Λ` fusion at the map `α°`, the fold `alphaInv`. -/
 public theorem relCata_UP_step2 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ (I.α ≫ X) = Λ (F.map X ≫ R) ↔ Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R) := by
+    Λ (I.α° ≫ F.map X ≫ R) = I.α° ≫ Λ (F.map X ≫ R) :=
+  Λ_fusion (by rw [← I.alphaInv_eq_recip]; exact I.cata_map _ _) _
+
+/-- Step 3: `Λ` cancellation, backwards: `X = Λ(X)∋`. -/
+public theorem relCata_UP_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    I.α° ≫ Λ (F.map X ≫ R) = I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) := by
   rw [Λ_eps_eq' X]
 
-/-- Relators, and `Λ` fusion backwards twice, at the maps `α` and `F(Λ(X))`. -/
-public theorem relCata_UP_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R)
-      ↔ I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
-  rw [Λ_fusion I.α_map, F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
-
-/-- The fold of a map algebra is the unique map satisfying its defining equation. -/
+/-- Step 4: the relator, then `Λ` fusion at the map `F(Λ(X))`. -/
 public theorem relCata_UP_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R)
-      ↔ Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
-  ⟨I.cata_unique _ _ _ (Λ_is_map' X), fun h => by rw [h]; exact I.cata_comm _ _⟩
+    I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+  rw [F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
 
-/-- `Λ` cancellation: `Λ(X)∋ = X`, and `Λ(u∋) = u` at the map `u`. -/
-public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)
-      ↔ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A :=
-  ⟨fun h => by rw [← h, Λ_eps_eq'],
-   fun h => by rw [h]; exact ((Λ_UP _ (I.cata_map _ _)).mpr rfl).symm⟩
+/-- The chain, times `α` (`αα° = 𝟙`), is the map fold's equation at `Λ(X)`; the fold of a map
+    algebra is the unique map satisfying it. -/
+public theorem relCata_UP_fold (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  I.cata_unique _ _ _ (Λ_is_map' X) <|
+    calc I.α ≫ Λ X = I.α ≫ I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
+          congrArg (I.α ≫ ·) (((relCata_UP_step1 I h).trans (relCata_UP_step2 I R X)).trans
+            ((relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)))
+      _ = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+          rw [← Cat.assoc, I.alpha_alpha_recip, Cat.id_comp]
+
+/-- Cancellation `X = Λ(X)∋`, and `⦇R⦈ = ⦇Λ(F(∋)R)⦈∋`. -/
+public theorem relCata_UP_of_comm (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : X = relCata R := by
+  rw [relCata_unfold, ← relCata_UP_fold I h, Λ_eps_eq']
 
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
@@ -107,13 +167,7 @@ public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A �
     (not just maps). -/
 public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
     (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R :=
-  (relCata_UP_step1 I R X).trans <| (relCata_UP_step2 I R X).trans <|
-    (relCata_UP_step3 I R X).trans <| (relCata_UP_step4 I R X).trans (relCata_UP_step5 I R X)
-
-/-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
-public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
-    I.α ≫ relCata R = F.map (relCata R) ≫ R :=
-  (relCata_UP I R (relCata R)).mpr rfl
+  ⟨relCata_UP_of_comm I, fun e => by rw [e]; exact relCata_cancel I R⟩
 
 /-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
     `(|f|) = cata f hf` when `f` is a map. -/

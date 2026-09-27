@@ -698,30 +698,31 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
  // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
 ]<cata-map-calc>
 
-// B&dM (5.12), p.121, the proof above one row per step, each row drawn from the theorem proving it.
-#disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt,
-  Thm[#leanf("Freyd.Alg.relCata_UP") \
+// B&dM (5.12), p.121: the `⟹` half as ONE term chain from $frac(#[`X`], ∋)$ back to a term holding it,
+// each panel drawn from the theorem proving that step, then the two statement rows closing it.
+#disp[#calc-table(cols: (1fr,), al: auto,
+  Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP") \
     #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
     // lean:AOP.A5_5.relCata_UP@e4a4905f
-  table.header([*formula* — each equation of the chain], [*reason*]),
-
-  [#step([])[#row((lean("Freyd.Alg.relCata_UP_step1.lhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.lhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.lhs")]], [],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step1.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.rhs")]],
-  [$frac(#box(width: 8pt), ∋)$ is an isomorphism \ #src[@pow-laws — `frac(X,∋)∋=X`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step2.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step2.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step2.rhs")]],
-  [cancellation, backwards \ #src[@pow-laws — `X=frac(X,∋)∋`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step3.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step3.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step3.rhs")]],
-  [relator; fusion, backwards, twice \ #src[@relator-defn — `F(RS)=F(R)F(S)`; @pow-laws's fusion at the
-   maps `α` and `F(`$frac(#[`X`], ∋)$`)`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step4.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step4.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step4.rhs")]],
-  [the fold of a map algebra \ #src[@initial-defn — the unique map satisfying its defining equation]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step5.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step5.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step5.rhs")]],
-  [cancellation \ #src[@pow-laws — `frac(X,∋)∋=X`]],
+  [#lean-chain(
+    Sub("Freyd.Alg.relCata_UP_of_comm",
+      gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` is `⦇R⦈`],
+      (none, "Freyd.Alg.relCata_UP_step1.lhs", src[the transpose of `X`]),
+      (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α°α=𝟙`: `α` is an iso; the hypothesis `αX=F(X)R`]),
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5a99c7f6
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[fusion at the map `α°` — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[cancellation, backwards: `X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn; fusion at the map
+        `F(`$frac(#[`X`], ∋)$`)` — @pow-laws]),
+    ),
+    (
+      (IMP, ("Freyd.Alg.relCata_UP_fold.lhs", "Freyd.Alg.relCata_UP_fold.rhs"),
+        src[the chain times `α`, with `αα°=𝟙`, is the fold equation of the map $frac(#[`F(∋)R`], ∋)$ at
+          $frac(#[`X`], ∋)$; its fold is the unique map satisfying it — @initial-defn]),
+      (IMP, ("Freyd.Alg.relCata_UP_of_comm.lhs", "Freyd.Alg.relCata_UP_of_comm.rhs"),
+        src[cancellation `X=`$frac(#[`X`], ∋)$`∋`, and `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc]),
+    ),
+  )],
 )]<cata-map-proof>
 
 // The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
@@ -803,7 +804,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
         `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
       (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α°α=𝟙`: `α` is an iso]),
-      // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5a99c7f6
     ),
   )],
   [#lean-chain(
