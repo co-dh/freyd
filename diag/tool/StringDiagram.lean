@@ -1009,10 +1009,25 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     s.restore
   return none
 
+/-- ONE ARROW, AT ANY COMPONENT: `x` and `y` are the same constant applied to the same arguments,
+    except the OBJECTS — arguments typed as the arrow's own source is — which a family's two
+    components differ in (`α` at `F(T)` against `α` at `F(A)`). -/
+def sameArrow (x y : Expr) : MetaM Bool := do
+  if ← Meta.isDefEq x y then return true
+  let (ax, ay) := (x.getAppArgs, y.getAppArgs)
+  unless x.getAppFn.isConst && x.getAppFn == y.getAppFn && ax.size == ay.size do return false
+  let hom ← instantiateMVars (← Meta.whnfR (← Meta.inferType x))
+  let some src := hom.getAppArgs.reverse[1]? | return false
+  let objT ← Meta.inferType src
+  let obj (e : Expr) : MetaM Bool := do Meta.isDefEq (← Meta.inferType e) objT
+  (ax.zip ay).allM fun (a, b) => do
+    pure ((← Meta.isDefEq a b) || ((← obj a) && (← obj b)))
+
 /-- THE STEP OUT OF THE DRAWN SIDE `side` MOVES A BEAD THROUGH ITS NEIGHBOUR: `ty`'s left side (the
     side a `⊑` leaves) is `side`, and it differs from the right side only in a two-factor window
     inside a shared prefix and suffix, `h` beside `nb` on the left and `nb'` beside `h` on the
-    other end on the right, one of the two `h`s under the relator (`F(⦇R⦈)R = α⦇R⦈`).  Answers the
+    other end on the right, one of the two `h`s under the relator, and `nb'` the same arrow as `nb`
+    (`sameArrow`).  Answers the
     bare `h`, the bare `nb`, whether `nb` stands below `h`, which is also whether it moves up. -/
 def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
@@ -1041,8 +1056,10 @@ def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
     let (a, b) := (wl[i]!, wr[1 - i]!)
     if (mapArg? a).isSome == (mapArg? b).isSome then continue
     let h := (mapArg? a).getD a
-    if ← Meta.isDefEq h ((mapArg? b).getD b) then
-      let nb := wl[1 - i]!
+    -- A SLIDE KEEPS ITS PARTNER: `nb` is the same arrow on both sides, up to its component — `αf =
+    -- F(f)α` is one; the fold equation `αX = F(X)R` trades `α` for `R` and moves nothing.
+    let (nb, nb') := (wl[1 - i]!, wr[i]!)
+    if (← Meta.isDefEq h ((mapArg? b).getD b)) && (← sameArrow ((mapArg? nb).getD nb) ((mapArg? nb').getD nb')) then
       return some (← instantiateMVars h, ← instantiateMVars ((mapArg? nb).getD nb), i == 0)
   return none
 
