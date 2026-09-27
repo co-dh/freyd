@@ -1070,9 +1070,14 @@ def settlePass (d : Diagram) : MetaM Diagram := do
       if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
         hit := some (h, xl, true)
         break
+    -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
+    -- here; no theorem can be instantiated at a term that does not exist in this context.
+    let lctx ← getLCtx
+    let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
     if hit.isNone then
       if let some c := r.core then
-        if let some n ← passThm c Y then hit := some (n, ← label Y, false)
+        if inScope c && inScope Y then
+          if let some n ← passThm c Y then hit := some (n, ← label Y, false)
     if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some false }
   return { d with rows }
 
