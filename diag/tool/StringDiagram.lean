@@ -182,6 +182,10 @@ structure Row where
   /-- THE FACTOR THIS BEAD DRAWS, at the object it is drawn at — what the scan line reads the row
       back as.  Set by `interp` at the factor it drew, never rebuilt from the label. -/
   term  : Option Expr := none
+  /-- EVERY TERM `interp` WALKED THROUGH TO REACH THIS BEAD, as its factors, innermost first: which subterm of the
+      side the bead is, so two beads of one label (`Λ(X)` and `Λ(F(∋)R)` both open with `𝟙%∋`)
+      are told apart by the term they came from and not by where they happen to stand. -/
+  ctx   : Array (Array String) := #[]
   deriving Inhabited
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
@@ -666,9 +670,22 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     let rest : Int := (List.range n).foldl (· + base ·) 0
     let pin (i : Nat) : Int := if b.rows[i]!.tri.isSome then rest + base i else base i
     let tot : Int := (List.range n).foldl (· + pin ·) 0
+    -- THE SAME BEAD, not the same label: two rows are one bead when the composite the walk found each
+    -- in (the first `ctx` term of several factors) holds a factor beside it that the other's holds
+    -- too — the inner `𝟙%∋` stands before `E(X)` both in `(𝟙%∋)E(X)∋` and in `(𝟙%∋)E(X)`, while the
+    -- outer one stands before a different `E(…)`.  Such a match counts twice a bare label's, so the
+    -- beads the step did not rewrite hold their level and only the rewritten ones move.
+    let sib (r : Row) : Array String := Id.run do
+      for i in [1 : r.ctx.size] do
+        let fs := r.ctx[i]!
+        if fs.size > 1 then return fs.filter fun f => !(r.ctx.extract 0 i).any (·.contains f)
+      return #[]
+    let kin (x y : Row) : Bool := (sib x).any (sib y).contains
     let w (i j : Nat) : Int :=
       let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
-      if hits.any (·.1 + 1 == k) then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
+      let nbr := hits.filter (·.1 + 1 == k)
+      if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin i
+      else if !nbr.isEmpty then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
     -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
     let ix (i j : Nat) := i * (m + 1) + j
@@ -2082,8 +2099,19 @@ mutual
 
     Comparing the two ends' wire STACKS cannot do this: `cons : [A]×[[A]] ⟶ [[A]]` and
     `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
-    does not.  What separates them is the factor's own form, which is what is read here. -/
+    does not.  What separates them is the factor's own form, which is what is read here.
+    Every bead drawn records `e` in its `ctx`, so the walk's path to it is on the row. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
+    (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
+  let d ← interpAt regionTy cat objVars vpass expect e
+  -- Recorded as DRAWN — after `rewriteSpine`, which is what its factors are — and each factor by its
+  -- `label`, the bead key's own identity: each step of a chain is its own declaration, with its own
+  -- binders and instance paths, so no two steps share an `Expr`.
+  let fs ← (compFactors (← instantiateMVars (← rewriteSpine e))).mapM label
+  return { d with rows := d.rows.map fun r => { r with ctx := r.ctx.push fs } }
+
+/-- `interp`'s cases, one level of the walk. -/
+partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
   -- THE LANES A RELATOR'S ACTION RUNS PAST, and the arrow it acts on drawn under them.  One helper,
   -- so the three spellings that reach it cannot drift apart.
