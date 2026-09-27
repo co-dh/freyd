@@ -1351,8 +1351,9 @@ def usage : String :=
      `diag-regen --missing`\n\
      to draw; it takes the same route flag the drawing takes, and reads the index, not the\n\
      environment.  A selector the index no longer has a declaration for ends the run\n\
-   --list <label> prints the note's `#lean`/`#leanc` CALLS under that metadata label, one per\n\
-     line, selectors of one call joined by `+`: `--list lean-panel`, `--list lean-circuit`\n\
+   --list <dir> <label>... writes the note's `#lean`/`#leanc` CALLS under each metadata label to\n\
+     <dir>/<label>, one per line, selectors of one call joined by `+`:\n\
+     `--list /tmp/l lean-panel lean-circuit`\n\
    --commutative draws the COMMUTATIVE DIAGRAM of a statement, to\n\
      diag/generated/commutative/<name>.typ; `<decl>.lhs`/`.rhs` is one side of an `↔`, and\n\
      `<a>+<b>` two statements drawn as one page — pasted along the edge they share, or side by side\n\
@@ -1463,33 +1464,42 @@ def rootsToList : IO (List String) := do
     THE NOTE IS ASKED, never matched: `leanc("x")` is a typst call, and a pattern over the source
     would miss one written in a variable, in a loop or across two lines, and find one inside a
     comment.  `--input list=1` makes the prelude's helper emit its metadata and draw nothing, so
-    the listing runs before any picture exists — which is what `diag-regen --missing` needs. -/
-def listMain (label : String) : IO UInt32 := do
-  let mut out : Array String := #[]
+    the listing runs before any picture exists — which is what `diag-regen --missing` needs.
+    ALL LABELS IN ONE QUERY per root, one file each in `dir`: every query lays the note out
+    again, and seven of them were most of an unchanged chapter's `make c`. -/
+def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
+  let tag (l : String) := "<" ++ l ++ ">"
+  let sel := match labels.map tag with
+    | [] => ""
+    | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
+  let mut out : Std.HashMap String (Array String) := labels.foldl (fun m l => m.insert (tag l) #[]) {}
   for root in ← rootsToList do
-    let args := #["query", "--root", ".", "--input", "list=1", root,
-                  "<" ++ label ++ ">", "--field", "value"]
+    let args := #["query", "--root", ".", "--input", "list=1", root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
     let r ← IO.Process.output { cmd := "typst", args := args }
     if r.exitCode != 0 then
       IO.eprintln s!"diag-export --list: `{cmdline}` exited {r.exitCode}: {r.stderr.trimAscii}"
       return 1
-    match Json.parse r.stdout >>= (·.getArr?) with
-    | .error e =>
-      IO.eprintln s!"diag-export --list: `{cmdline}` printed no JSON array of selectors: {e}"
-      return 1
-    | .ok xs =>
-      for x in xs do
-        match x.getStr? with
-        | .error e =>
-          IO.eprintln s!"diag-export --list: `{cmdline}`: a selector is not a string: {e}"
-          return 1
-        | .ok s => out := out.push s
-  -- Sorted, and adjacent duplicates dropped: the same picture named by both notes is one job.
-  let mut prev := ""
-  for s in out.qsort (· < ·) do
-    if s != prev then IO.println s
-    prev := s
+    let xs ← match Json.parse r.stdout >>= (·.getArr?) with
+      | .ok xs => pure xs
+      | .error e => throw <| IO.userError s!"diag-export --list: `{cmdline}` printed no JSON array: {e}"
+    for x in xs do
+      match x.getObjValAs? String "label", x.getObjValAs? String "value" with
+      | .ok l, .ok s =>
+        let some a := out[l]?
+          | throw <| IO.userError s!"diag-export --list: `{cmdline}` answered label {l}, not asked for"
+        out := out.insert l (a.push s)
+      | .error e, _ | _, .error e =>
+        throw <| IO.userError s!"diag-export --list: `{cmdline}`: {e} in {x.compress}"
+  IO.FS.createDirAll dir
+  for l in labels do
+    -- Sorted, and adjacent duplicates dropped: the same picture named by both notes is one job.
+    let mut prev := ""
+    let mut txt := ""
+    for s in (out.getD (tag l) #[]).qsort (· < ·) do
+      if s != prev then txt := txt ++ s ++ "\n"
+      prev := s
+    IO.FS.writeFile (dir.join l) txt
   return 0
 
 /-! ### Where a picture goes, and what it was drawn from -/
@@ -1561,7 +1571,19 @@ def certLine (names : List Name) : MetaM String := do
     let key := mixHash (← Freyd.TypeRender.stmtKey ci) (hash (toString (← Meta.ppExpr ci.type)))
     return "(lean: \"" ++ n.toString ++ "@" ++ Freyd.TypeRender.hex8 key ++ "\")"
   return "// cert: " ++ " ".intercalate parts ++ "\n" ++ EXE_PREFIX ++ (← StrDiag.exeStamp) ++ " rules "
-    ++ Freyd.TypeRender.hex8 (← rulesKey names) ++ "\n"
+    ++ Freyd.TypeRender.hex8 (← Prof.phase "rules" (rulesKey names)) ++ "\n"
+
+/-- THE IMPORTED ENVIRONMENT'S FINGERPRINT: each module's `.olean.hash`, the content hash `lake`
+    writes beside an olean it builds; the toolchain's own modules by the Lean version. -/
+def envKey (env : Environment) : IO UInt64 := do
+  let mut h : UInt64 := hash Lean.versionString
+  for m in env.header.moduleNames do
+    if [`Init, `Std, `Lean, `Lake].contains m.getRoot then continue
+    let p := (← findOLean m).toString ++ ".hash"
+    let s ← try IO.FS.readFile p catch e =>
+      throw <| IO.userError s!"diag-export --stale: {p}: {e} — `lake build` writes it beside the olean"
+    h := mixHash (mixHash h (hash m)) (hash s)
+  return h
 
 /-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `cert:` line it can
     read, or a key that is no longer the declaration's — printed one per line, in the order given,
@@ -1584,32 +1606,41 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
     (a, (if stringMode then a.splitOn "+" else [a]).map fun n =>
       let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
       (n, ctxDecl commutativeMode graphMode n base, selDecls commutativeMode graphMode n base))
+  -- A FILE ALREADY VERIFIED against this environment and this exporter is verified still: the cert
+  -- and the citations below are functions of those two and the file, so recomputing them — a
+  -- statement printed per file — was most of an unchanged gate's time.
+  let key := mixHash (← envKey env) (hash (← StrDiag.exeStamp))
+  let vdir := (← StrDiag.cacheRoot).withFileName "verified"
   for (call, files) in jobs do
     let mut stale := false
     for (n, decl, decls) in files do
+      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
+      let txt? ← if ← path.pathExists then some <$> IO.FS.readFile path else pure none
+      let mark := txt?.map fun t => vdir.join (toString (mixHash (mixHash (hash t) (hash path.toString)) key))
+      if let some m := mark then if ← m.pathExists then continue
       -- THE CERT THE DRAWING WOULD WRITE NOW, before the file is looked at: a declaration that is
       -- gone ends the run whether or not its file is there.
       let ctx := StrDiag.declCtx env opts scopes decl
-      let cert ← try Prod.fst <$> (Meta.MetaM.run' (certLine decls)).toIO ctx { env }
+      let cert ← try Prod.fst <$> (Prof.phase "cert" (Meta.MetaM.run' (certLine decls))).toIO ctx { env }
         catch e => throw <| IO.userError s!"diag-export --stale: {n}: {e} — a picture drawn from \
           it is a picture of a statement that no longer exists.  Rename the note's selector"
       if stale then continue
-      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
-      if !(← path.pathExists) then stale := true
-      else
+      match txt? with
+      | none => stale := true
+      | some txt =>
         -- EVERY line of that cert must be in the file as written: another declaration, another key
         -- or another exporter is a picture of something else, and a red stub carries none of them.
-        let txt ← IO.FS.readFile path
         let lines := txt.splitOn "\n"
         unless (cert.splitOn "\n").all (fun l => l.isEmpty || lines.contains l) do stale := true
         -- THE DECLARATIONS THE PICTURE READ, not only the one it draws: a dot cites the theorem its
         -- naturality came from (`lean:<mark>@<key>`), and a changed or vanished one is a changed dot.
         let cited := (lines.toArray.flatMap Cite.marksOf).filterMap fun (m, k) => k.map (m, ·)
         if !stale && !cited.isEmpty then
-          let rows ← Cite.rowsOf (Cite.candidateSql (cited.map (·.1)))
+          let rows ← Prof.phase "cite" (Cite.rowsOf (Cite.candidateSql (cited.map (·.1))))
           if cited.any (fun (m, k) => match Cite.resolve rows m with
               | #[r] => Cite.keyHex r.key != k
               | _ => true) then stale := true
+        if !stale then if let some m := mark then IO.FS.createDirAll vdir; IO.FS.writeFile m ""
     if stale then IO.println call
   return 0
 
@@ -1617,10 +1648,10 @@ def main (args : List String) : IO UInt32 := do
   if args.isEmpty then IO.eprintln usage; return 2
   -- The listing route reads the NOTE and no environment, so it answers before the import below.
   match args with
-  | ["--list", label] => return ← listMain label
+  | "--list" :: dir :: l :: ls => return ← listMain dir (l :: ls)
   | "--list" :: _ =>
-    IO.eprintln "diag-export --list takes exactly one metadata label, \
-      e.g. `--list lean-panel` or `--list lean-circuit`"
+    IO.eprintln "diag-export --list takes a directory and at least one metadata label, \
+      e.g. `--list /tmp/l lean-panel lean-circuit`"
     return 2
   | _ => pure ()
   -- The citation routes read the INDEX and no environment, so they answer before the import of
@@ -1700,7 +1731,8 @@ def main (args : List String) : IO UInt32 := do
   if staleMode then
     let code ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode
       graphMode proofMode env opts scopes args
-    profWrite s!"stale=1 selectors={args.length}" #[]
+    profWrite s!"stale=1 selectors={args.length}"
+      ((← Prof.drain).map fun (p, a) => { phase := p, ns := a.ns, extra := s!"calls={a.calls}" })
     return code
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.

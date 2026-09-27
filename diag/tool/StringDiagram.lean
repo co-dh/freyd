@@ -1089,7 +1089,7 @@ def depText (heads : Array Name) (q : Expr) (uses : Array Name) (found : Bool) :
   roots := (sortNames roots).eraseReps
   let k := (hs, roots, found)
   if let some t := (← depTextRef.get)[k]? then return t
-  lines := lines ++ br.map (s!"bridge {·}") |>.push s!"decls {← declsHash roots}"
+  lines := lines ++ br.map (s!"bridge {·}") |>.push s!"decls {← Prof.phase "decls" (declsHash roots)}"
   unless found do lines := lines.push (← failPrint)
   let t := "\n".intercalate lines.toList
   depTextRef.modify (·.insert k t)
@@ -1146,7 +1146,7 @@ def cacheEntry (slot : Slot) (path : System.FilePath) : MetaM (Option Cached) :=
   let fvs := (← getLCtx).getFVars
   let want := want.instantiateRev fvs
   let pf := pf.instantiateRev fvs
-  Meta.check pf
+  Prof.phase "check" (Meta.check pf)
   unless ← Meta.isDefEq (← Meta.inferType pf) want do fail "the stored proof does not prove its proposition"
   return some { verdict := some { mark, lean }, proof := some (want, pf), passed }
 
@@ -1213,18 +1213,18 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- `alg0` is the REGION's algebra and `alg` the one its ends were read in: an allegory's functor
   -- lane (`E`) is read in the functor algebra while the region still has maps to restrict to.
   let alg0 ← laneAlgOf regionTy
-  let some (alg, G, F) ← readEnds regionTy cat φ | return { mark := none, lean := #[] }
+  let some (alg, G, F) ← Prof.phase "ends" (readEnds regionTy cat φ) | return { mark := none, lean := #[] }
   -- THE FILTER IS THE FAMILY'S CONSTANTS, NOT THE TERM'S AT ITS OBJECT.  A bead taken at an initial
   -- algebra's carrier carries `InitialAlgebra.t` into `core`, and no naturality theorem mentions a
   -- projection of the region's own structure, so filtering on it dropped every candidate there is.
   -- `id` is what separates this `do` from the enclosing one, so a hit `return`s from the search
   -- and not from `verdict`.
-  let br ← bridges
-  let must ← mustOfFamily br φ
+  let br ← Prof.phase "bridge" bridges
+  let must ← Prof.phase "bridge" (mustOfFamily br φ)
   -- The spider's message is what the next proving agent reads, so the scan records what it passed
   -- over as it goes: re-running the search to explain it would pay for it twice.  The state is this
   -- search's own — the exporter runs a task per panel in one process.
-  let s ← Search.new (← familyHead br φ)
+  let s ← Search.new (← Prof.phase "bridge" (familyHead br φ))
   -- The proposition the verdict rests on and its proof, as the last hit left them: what the cache
   -- stores, so that a hit is a term `Meta.check`ed again and never a remembered mark.
   let proof ← IO.mkRef (none : Option (Expr × Expr))
@@ -1324,8 +1324,8 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- even where a candidate's budget was cut on the way — it is a proof, and nearly every search of the
   -- heavy panels is cut somewhere — but NOTHING FOUND only where no budget was: a spider off a
   -- timeout is not a refutation, and a warmer cache may find the dot.
-  let slot ← cacheSlot regionTy cat φ
-  let found : Option Verdict ← match ← slot.mapM cacheLoad with
+  let slot ← Prof.phase "slot" (cacheSlot regionTy cat φ)
+  let found : Option Verdict ← match ← Prof.phase "load" (slot.mapM cacheLoad) with
     | some (some c) => do s.passed.set c.passed; pure c.verdict
     | _ => do
       let found ← tryCatchRuntimeEx bounded fun e => do
@@ -1607,13 +1607,23 @@ def Diagram.beside (d e : Diagram) : MetaM Diagram := do
     are the constants AT that type; a relator (`RelSet ⟶ RelSet`) is a `∀` with no constant head,
     so the machinery that spells the lanes stays open.  A constant the note draws OPENED keeps its
     `diag_unfold` meaning: `openNoted` opens it ABOVE the peel, where the note's own body is drawn. -/
+-- The objects of each region head, swept once per process: every task shares the imported `env`,
+-- and a sweep of all its constants per read was most of a cached panel's time.
+initialize objectsOfRef : IO.Ref (Std.HashMap Name (Array Name)) ← IO.mkRef {}
+
 def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α := do
   let some h := regionTy.getAppFn.constName? | k
   let env ← getEnv
-  let opened ← Lean.labelled `diag_unfold
-  for (n, ci) in env.constants do
-    if n.isInternal || ci.isUnsafe || opened.contains n then continue
-    if ci.type.getAppFn.constName? == some h then Lean.setIrreducibleAttribute n
+  let objs ← match (← objectsOfRef.get)[h]? with
+    | some os => pure os
+    | none =>
+      let opened ← Lean.labelled `diag_unfold
+      let os := env.constants.fold (init := #[]) fun a n ci =>
+        if n.isInternal || ci.isUnsafe || opened.contains n || ci.type.getAppFn.constName? != some h
+        then a else a.push n
+      objectsOfRef.modify (·.insert h os)
+      pure os
+  for n in objs do Lean.setIrreducibleAttribute n
   try k finally setEnv env
 
 /-- `peelRead`'s answers in this process, by `metaKey`, as `peelMapMemo`: an answer with no
@@ -2307,6 +2317,26 @@ def opensFewerLanes (cat : Array Name) (declTy opened : Expr) : MetaM Bool := do
     return cs.size
   return (← lanes x) > (← lanes x') || (← lanes y) > (← lanes y')
 
+/-- A PEER'S PARTS, drawn ONCE PER PROCESS.  Every panel of one call is a task and stands beside
+    every other, so drawing the peers inside each task was k² drawings for k panels; `placement`
+    reads only their rows' keys, so parts drawn in another task's `MetaM` serve as well. -/
+initialize peerRef : IO.Ref (Std.HashMap String (IO.Promise (Except String (Array Diagram)))) ←
+  IO.mkRef {}
+
+/-- `draw`'s parts under `key`, drawn by the first task to ask and awaited by the rest.  The first
+    task's failure is every waiter's, runtime ones included: an unresolved promise hangs its waiters. -/
+def peerParts (key : String) (draw : MetaM (Array Diagram)) : MetaM (Array Diagram) := do
+  let p ← IO.Promise.new
+  let (mine, q) ← peerRef.modifyGet fun m => match m[key]? with
+    | some q => ((false, q), m)
+    | none => ((true, p), m.insert key p)
+  if mine then
+    return ← tryCatchRuntimeEx (do let d ← draw; q.resolve (.ok d); return d) fun e => do
+      q.resolve (.error (← e.toMessageData.toString)); throw e
+  match ← IO.wait q.result! with
+  | .ok d => return d
+  | .error e => throwError "{key}, drawn as a peer of this call: {e}"
+
 /-- `--string <Name>[#<binder>][.lhs|.rhs][.inl|.inr…]`.  A `def` is drawn by its BODY unfolded one
     level; a HYPOTHESIS IS A STATEMENT TOO, so `#h` draws that binder's type instead of the
     conclusion, and a `def`'s body is then not unfolded because the binder belongs to the type.
@@ -2439,15 +2469,17 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
+    -- Each task draws ITS OWN parts first, so the call's panels are drawn in parallel, once each.
+    -- A peer is read in its OWN declaration's context alone: under this one's binders its verdicts'
+    -- cache keys, and the hypotheses `hypVerdict` sees, would depend on which task drew it.
+    let part (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
+      peerParts (toString (b, h, p, s.map (·.suffix)))
+        (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
     let qs ← Prof.phaseIf draw "peers" do
-      let mut qs : Array Diagram := #[]
-      for (b, h, p, s) in peers do
-        if b.toName == declName && h == binder then
-          let (_, _, d) ← reqParts p s
-          for (_, e) in d do
-            qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
-        else qs := qs ++ (← drawWith b.toName p h s [] false).2
-      return qs
+      if peers.any fun (b, h, p, s) => b.toName == declName && h == binder && p == path
+          && s.map (·.suffix) == sel.map (·.suffix) then
+        discard <| part declName binder path sel
+      peers.toArray.flatMapM fun (b, h, p, s) => part b.toName h p s
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.

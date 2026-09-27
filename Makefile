@@ -96,10 +96,11 @@ labels: $(NOTEPDF)
 # resolve the same either way.
 # `| panels`: a name just written into the note has no file until `panels` draws it, and under a
 # parallel make the compile started first and failed on the missing include.
-# UNCONDITIONAL, as `p`'s compile is: `panels` rewrites files under diag/generated that no rule can
-# name, so an mtime test left a chapter pdf showing the old pictures after an exporter change.
+# FORCE, and `typst-compile` decides: `panels` rewrites files under diag/generated that no rule can
+# name, so an mtime test left a chapter pdf showing the old pictures after an exporter change; the
+# script compares the CONTENT of every file the last compile read.
 $(NOTEPDF): FORCE | panels
-	$(LOCK) typst compile --root . $(NOTESRC) $@
+	$(LOCK) ./scripts/typst-compile $(NOTESRC) $@
 FORCE:
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
