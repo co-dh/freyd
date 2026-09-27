@@ -447,7 +447,7 @@ public theorem mct_laws (hassoc : Assoc sb) :
       = Allegory.recip (graph flattenFn : dTree A ⟶ dNE A) := by
     rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, flatten_cata]
     exact Cat.comp_id _
-  have key := dynamic_programming_context (F := TT.F A) (F_preservesRecip A) (initial A)
+  have key := dynamic_programming_context (F := TT.F A) (initial A)
     (h := graph (con (A := A))) (T := graph (wrapCatFn (A := A))) (R := R st sb cb)
     (graph_map con)
     (by simp only [H]; rw [hH, Allegory.recip_recip]; exact mct_mono_recip st sb cb hassoc)
