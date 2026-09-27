@@ -26,7 +26,8 @@
 # ONE LINE PER CANVAS:
 #   ok            the panel and the note's drawing differ only as `cd-accepted.txt` accepts
 #   DIFF          they do not; the report is under .lake/build/cd-check/
-#   NO-REF        the line names a statement but no drawing in the note to hold the panel to
+#   geometry      the line's reference is `-`: the note has no hand drawing of the panel, so the
+#                 panel is held to its generator and its own geometry, and nothing else
 #   NO-SEL        the line names no statement — a canvas nothing is drawn from
 #   CANNOT-DRAW   the exe refused the selector — its record's error follows — or wrote no record
 #                 for it, or the panel or its reference does not compile
@@ -85,9 +86,10 @@ EOF
     return
   fi
   if [ "$r" = "-" ]; then
-    # A row naming no canvas holds its panel to nothing BY DESIGN — that is what the `-` canvas
-    # column says — so only a canvas of the note left without a drawing to answer is a failure.
-    if [ "$c" = "-" ]; then row "geometry     $head"; else row "NO-REF       $head"; fi
+    # A `-` reference says the note has NO HAND DRAWING of this panel — a canvas the note only ever
+    # drew by `#leancd`, or none at all — so there is nothing to hold it to but its generator, and
+    # its geometry (svg-check, above) is the whole check.  A reference is an original to compare to.
+    row "geometry     $head"
     return
   fi
   if [ ! -f "$OUT/ref/${r%.typ}.done" ]; then
