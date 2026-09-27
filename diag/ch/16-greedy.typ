@@ -533,7 +533,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // lean:AOP.A10_4_Tex.val@b556684c lean:AOP.A10_4_Tex.zero@c2d020a3
 // lean:AOP.A10_4_Tex.shift@522be7b7
 // lean:AOP.A10_4_Tex.round@81382467
-// lean:AOP.A10_4_Tex.interval@9dc05d20
+// lean:AOP.A10_4_Tex.Freyd.Alg.RelSet.Tex.interval@9dc05d20
 // lean:AOP.A10_4_Tex.inrange@d4f92d7a
 // lean:AOP.A10_4_Tex.round_recip@8787573e
 // lean:AOP.A10_4_Tex.R@393e9bb8
@@ -630,16 +630,35 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ),
   // lean:AOP.A10_4_Tex.tex_laws@393983dc lean:AOP.A10_4_Tex.tex_laws_step1@ddde5bc4 lean:AOP.A10_4_Tex.tex_laws_step2@436904e9 lean:AOP.A10_4_Tex.tex_laws_step3@12f54b12 lean:AOP.A10_4_Tex.tex_laws_body@942aced5
 )
-// No picture: `f` is read on points, and the two sides are values, not the objects the panels
-// carry.
-#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `extern=interval f`, #h(4pt)
-  `f(a,b)=(a<0→[],[d]⧺f(10a−d,10b−d))` \
-  #src[the program, with `d` the digit above]])
-#align(center, block(inset: (y: 4pt))[#EQ #h(4pt) `extern(n)=f(2n−1,2n+1)`, #h(4pt)
-  `f(p,q)=(p≤0→[],[d]⧺f(10p−w·d,10q−w·d))` \
-  #src[`d=(10q) div w`: the same in integer arithmetic only, as chapter 3 required of
-   `intern` — every interval reached is `(p/w,q/w)`]])
 ]<tex-laws>
+
+// B&dM p.263, on points: no picture, the two sides are values, not the objects the panels carry.
+// `f` is the book's recursion itself, not read off `tex-laws`'s body: that body's `[arb,step]`
+// ranges over all pairs, so at `a≥0` it offers ten decompositions and `est(Q)` picks none.
+// The base case is `a<0`/`p<0`, not the Gofer `p<=0`: at `p=0` the empty decimal's value `0` is
+// not strictly inside `(a,b)`, so only `<` makes `f`'s output lie in the interval.
+#disp[
+  - #leanf("Freyd.Alg.RelSet.Tex.f_eq") \
+    #src[`f` gives `(a,b)` the empty decimal when `a<0`, and otherwise the digit `d=⌊10b⌋`
+     followed by what it gives `(10a−d,10b−d)`]
+    // lean:AOP.A10_4_Tex.f_eq@36a95576
+  - #leanf("Freyd.Alg.RelSet.Tex.digit_unique") \
+    #src[Exercise 10.12: two digits `d` and `e` with `0≤10b−d<1` and `0≤10b−e<1` are equal]
+    // lean:AOP.A10_4_Tex.digit_unique@4fd18062
+  - #leanf("Freyd.Alg.RelSet.Tex.Prog.f_nil") \
+    #src[the program's first clause: `f(p,q)=[]` when `p<0`]
+    // lean:AOP.A10_4_Tex.Prog.f_nil@e28d0992
+  - #leanf("Freyd.Alg.RelSet.Tex.Prog.f_cons") \
+    #src[the program's second clause: with `d=(10q) div w`, `f(p,q)` is `d` followed by
+     `f(10p−w·d,10q−w·d)`]
+    // lean:AOP.A10_4_Tex.Prog.f_cons@7cf555c4
+  - #leanf("Freyd.Alg.RelSet.Tex.f_agree") \
+    #src[the integer `f` at `(p,q)` is a value of the rational `f` at `(p/w,q/w)`]
+    // lean:AOP.A10_4_Tex.f_agree@70d68d5e
+  - #leanf("Freyd.Alg.RelSet.Tex.tex_extern") \
+    #src[`f` after `interval` is the program `extern`, whose value at `n` is `f(2n−1,2n+1)`]
+    // lean:AOP.A10_4_Tex.tex_extern@5e874693
+]<tex-extern>
 
 #pagebreak(weak: true)
 #include "../allegory-appendix.typ"

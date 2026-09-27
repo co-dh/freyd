@@ -657,7 +657,8 @@ public theorem tex_laws_step3 :
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification
     `Λ(intern°) est(R)` — a shortest decimal whose internal representation is the given `n`.
-    Reading it off on points (`extern(n)=f(2n−1,2n+1)`, B&dM p.263) is not formalised here. -/
+    The book's reading on points, `extern(n)=f(2n−1,2n+1)` (B&dM p.263), is `tex_extern` below,
+    stated from `f`'s own recursion rather than from this fixed point. -/
 public theorem tex_laws :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
@@ -687,6 +688,21 @@ public inductive fR : Iv → Dec → Prop
 
 /-- **tex-extern**: `f : Interval⟶Decimal`, the arrow `fR` is. -/
 @[expose] public def f : Interval ⟶ Decimal := fun p x => fR p x
+
+/-- **tex-extern** (B&dM p.263): `f(a,b)=[]` if `a<0`, and `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋`
+    otherwise — the two clauses `fR` is the least relation satisfying. -/
+public theorem f_eq (a b : Real.carrier) (x : Dec) :
+    f ⟨a, b⟩ x ↔ (rlt a zeroR ∧ x = ConsList.wrap ()) ∨
+      (¬ rlt a zeroR ∧ ∃ d y, IsDigit d b ∧ f ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ y
+        ∧ x = ConsList.cons d y) := by
+  constructor
+  · intro h
+    cases h with
+    | nil ha => exact Or.inl ⟨ha, rfl⟩
+    | cons d ha hd hy => exact Or.inr ⟨ha, d, _, hd, hy, rfl⟩
+  · rintro (⟨ha, rfl⟩ | ⟨ha, d, y, hd, hy, rfl⟩)
+    · exact fR.nil ha
+    · exact fR.cons d ha hd hy
 
 /-- **Exercise 10.12**: `0≤10b−d₁<1` and `0≤10b−d₂<1` imply `d₁=d₂`. -/
 public theorem digit_unique {d e : Digit} {b : Real.carrier} (hd : IsDigit d b)
