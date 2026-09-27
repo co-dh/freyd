@@ -1152,6 +1152,7 @@ def provedSimple (r : Expr) : MetaM Bool := do
   let some idx := env.getModuleIdxFor? c | return false
   -- Lean's own predicates (`<`, `∈`) are no relation of the book's, and their modules are huge
   if env.header.moduleNames[idx.toNat]!.getRoot == `Init then return false
+  noteRead (.module env.header.moduleNames[idx.toNat]!)
   Meta.forallTelescope (← Meta.whnf (← Meta.inferType r)) fun xs _ => do
     if xs.size != 2 then return false
     let some xi := xs[0]? | return false

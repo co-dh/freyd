@@ -7,6 +7,9 @@
 #                                       declaration no longer has, citing a `lean:` key the
 #                                       index no longer has, or drawn by another build of the
 #                                       exporter (`diag-export --stale`)
+#     ./scripts/diag-regen --verify     draw every picture and write none: fail naming each one
+#                                       `--stale` calls fresh that draws otherwise, which is a
+#                                       read the drawing made and did not record
 #
 # The notes THEMSELVES are the list: `diag-export --list` reads every `#lean(...)`/`#leanc(...)`
 # selector out of the note's own metadata, and `note-files --generated` every surviving `#import`
@@ -27,8 +30,10 @@
 # for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
+verify=
 [ "$1" = "--missing" ] && { missing=1; shift; }
-[ $# -eq 0 ] || { echo "usage: diag-regen [--missing]" >&2; exit 2; }
+[ "$1" = "--verify" ] && { verify=--verify; shift; }
+[ $# -eq 0 ] || { echo "usage: diag-regen [--missing | --verify]" >&2; exit 2; }
 
 # Only the names that NEED DRAWING, under --missing — and a picture whose Lean statement has changed
 # needs it as much as one that was never drawn: every generated file carries the `cert:` key it was
@@ -79,7 +84,7 @@ draw() {
   [ -n "$names" ] || return 0
   prepare
   printf '%s\n' "$names" \
-    | xargs -d '\n' -n 1 -P "$(( ($(nproc) + 1) / 2 ))" ./scripts/diag-export --prepared "$@" || exit 1
+    | xargs -d '\n' -n 1 -P "$(( ($(nproc) + 1) / 2 ))" ./scripts/diag-export --prepared $verify "$@" || exit 1
 }
 
 all=$(./scripts/note-files --generated) || exit 1

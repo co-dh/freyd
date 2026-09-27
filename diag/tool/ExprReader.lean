@@ -19,6 +19,7 @@ import AOP.A5_7
 import AOP.A5_5_TypeFunctor
 import diag.tool.Tags
 import diag.tool.Prof
+import diag.tool.Reads
 
 open Lean
 
@@ -475,12 +476,6 @@ def familyOf (regionTy v core : Expr) : MetaM Expr := do
   Meta.withLocalDeclD `a regionTy fun a => do
     Meta.mkLambdaFVars #[a] (core.replaceFVar v (← Meta.mkProjection a f))
 
-/-- The head of a statement's CONCLUSION, under whatever `∀` binders it carries. -/
-partial def concHead : Expr → Name
-  | .forallE _ _ b _ => concHead b
-  | .mdata _ b => concHead b
-  | t => (t.getAppFn.constName?).getD Name.anonymous
-
 /-! ### The wire stack of an OBJECT, asked of the environment
 
   §13.6's objects are records and defs — `dSched X`, `⟨X × Sched X⟩` — not `F.obj X`, so a
@@ -773,6 +768,7 @@ initialize catalogueRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
     is not tabular) is `existsImageFunctor` itself, and the note's `E` lane.  ONE sweep over the
     environment, threaded down: the read asks at every level of the term. -/
 def catalogue : MetaM (Array Name) := do
+  noteRead (.head ``Freyd.Alg.Relator); noteRead (.head ``Freyd.Functor)
   if let some c ← catalogueRef.get then return c
   let c := (← catalogueOf ``Freyd.Alg.Relator #[``Freyd.Alg.Relator])
     ++ (← catalogueOf ``Freyd.Functor #[``Freyd.Functor, ``Freyd.Alg.Relator])
@@ -1888,49 +1884,50 @@ def indexFresh (env : Environment) : IO Unit := do
       process imports, so the naturality search would miss what they declare: {stale.toList}\n\
       refresh it with `./scripts/lean-refactor index`"
 
-/-- THE CANDIDATE BUCKETS: for each conclusion head, the declarations concluding in it and the
-    constants each one's statement uses — the two things a search selects candidates by.  One index
-    query per head, held for the life of the process, because the environment does not grow while
-    the exporter draws.  `none` until the first query, which the freshness check has to precede. -/
-initialize headBuckets : IO.Ref (Option (NameMap (Array (Name × NameSet)))) ← IO.mkRef none
+/-- THE CANDIDATE BUCKETS: for each conclusion head, the declarations concluding in it, and apart
+    from them the constants each one's statement uses — the key of a cached verdict reads only the
+    first, and a hit needs no more.  One index query each per head, held for the life of the
+    process, because the environment does not grow while the exporter draws.  `none` until the
+    first query, which the freshness check has to precede. -/
+initialize headBuckets : IO.Ref (Option (NameMap (Array Name))) ← IO.mkRef none
+initialize headUses : IO.Ref (NameMap (Array (Name × NameSet))) ← IO.mkRef {}
 
-/-- The declarations that could prove a statement headed by `head`, each with the constants its own
-    statement uses.  The index says which statements USE `head`; which of them CONCLUDE in it is
-    the Expr's to say, at `env.find?`, because the index stores no conclusion. -/
-def candidates (head : Name) : MetaM (Array (Name × NameSet)) := do
+/-- `head` as an SQL string literal. -/
+def sqlName (head : Name) : String := s!"'{(toString head).replace "'" "''"}'"
+
+/-- The declarations that could prove a statement headed by `head`: the ones the index says
+    conclude in it, that this process imports and can apply.  An inductive concludes in a sort and a
+    constructor has no row, so neither is one. -/
+def bucket (head : Name) : MetaM (Array Name) := do
   let env ← getEnv
   let buckets ← match ← headBuckets.get with
     | some bs => pure bs
     | none => do indexFresh env; pure {}
   if let some b := buckets.find? head then return b
-  -- One row per (declaration, constant its statement uses), a declaration's rows adjacent.
   -- `name = user_name` leaves out the private ones: `Name.isInternal` drops them below anyway, and
   -- their mangled names carry a numeric component no name literal spells.
-  let rows ← indexRows s!"select d.src as n, t.dst as c from dep d \
-    join decl_info i on i.name = d.src and i.module = d.module \
-    join dep t on t.src = d.src and t.module = d.module and t.in_type = 1 \
-    where d.dst = '{(toString head).replace "'" "''"}' and d.in_type = 1 and i.name = i.user_name \
-    order by d.src"
-  let mut uses : Array (Name × NameSet) := #[]
-  for row in rows do
+  let rows ← indexRows s!"select name as n from decl_info \
+    where conc_head = {sqlName head} and name = user_name order by name"
+  let b ← rows.filterMapM fun row => do
     let n ← nameCell row "n"
-    let c ← nameCell row "c"
-    uses := match uses.back? with
-      | some (m, cs) => if m == n then uses.pop.push (m, cs.insert c) else uses.push (n, ({} : NameSet).insert c)
-      | none => #[(n, ({} : NameSet).insert c)]
-  let mut b : Array (Name × NameSet) := #[]
-  for (n, cs) in uses do
-    -- A declaration of a module this process does not import cannot be applied here.
-    let some ci := env.find? n | continue
-    -- A CONSTRUCTOR has no row of its own: its statement is part of its inductive's, so the
-    -- inductive's row is how it is found, and its own constants are read off its own type.
-    let ctors := match ci with
-      | .inductInfo v => v.ctors.filterMap fun c => (env.find? c).map fun cc => (c, cc, consts cc.type)
-      | _ => []
-    for (k, ki, ks) in (n, ci, cs) :: ctors do
-      unless k.isInternal || ki.isUnsafe || concHead ki.type != head do b := b.push (k, ks)
+    return (env.find? n).bind fun ci => if n.isInternal || ci.isUnsafe then none else some n
   headBuckets.set (some (buckets.insert head b))
   return b
+
+/-- `bucket head`, each declaration with the constants its own statement uses. -/
+def candidates (head : Name) : MetaM (Array (Name × NameSet)) := do
+  let b ← bucket head
+  if let some u := (← headUses.get).find? head then return u
+  let rows ← indexRows s!"select i.name as n, t.dst as c from decl_info i \
+    join dep t on t.src = i.name and t.module = i.module and t.in_type = 1 \
+    where i.conc_head = {sqlName head} and i.name = i.user_name"
+  let mut uses : NameMap NameSet := {}
+  for row in rows do
+    let n ← nameCell row "n"
+    uses := uses.insert n (((uses.find? n).getD {}).insert (← nameCell row "c"))
+  let u := b.map fun n => (n, (uses.find? n).getD {})
+  headUses.modify (·.insert head u)
+  return u
 
 /-- One candidate's share of the search. Unifying a square against a concrete region unfolds every
     relator on both sides, which costs more than a whole default budget, so this is twice the
@@ -1989,6 +1986,49 @@ def bridgeAliases : MetaM (Std.HashMap Name (Array Name)) := do
   let a := acc.fold (fun m c t => m.insert c t.toList.toArray) {}
   aliasRef.set (some a)
   return a
+
+/-- The first of `must` a candidate whose statement uses `has` does not name, in its own spelling
+    or a source spelling a bridge rewrites into it: `none` for a candidate the search tries. -/
+def lacks (al : Std.HashMap Name (Array Name)) (must : List Name) (has : NameSet) : Option Name :=
+  must.find? fun m => !has.contains m && !(al.getD m #[]).any has.contains
+
+/-- `must` in the one order a `Read` is written in. -/
+def mustList (must : NameSet) : List Name := (must.toArray.qsort (·.toString < ·.toString)).toList
+
+/-- `candidates head` for a search filtered by `must`, RECORDED as the read the picture made: only
+    the ones `lacks` lets through are tried, so a theorem the filter drops is none of its reads. -/
+def searchCandidates (head : Name) (must : NameSet) : MetaM (Array (Name × NameSet)) := do
+  noteRead (.scan head (mustList must))
+  candidates head
+
+initialize readPrintRef : IO.Ref (Std.HashMap Read UInt64) ← IO.mkRef {}
+
+def readPrintNow (p : EnvPrint) (r : Read) : MetaM UInt64 := do
+  let env ← getEnv
+  let stmt (n : Name) := (env.find? n).elim 1 fun ci => mixHash (hash n) (exprKey ci.type)
+  match r with
+  | .head h => return p.heads.getD h 0
+  | .scan h ms =>
+    let al ← bridgeAliases
+    return (← candidates h).foldl (init := 0) (fun a (n, has) => if (lacks al ms has).isSome then a else a + stmt n)
+  -- The one read summed with BINDER NAMES over many constants: `nameSelf` prints the name its
+  -- siblings give an argument.  Every other sum takes `hash`, since `exprKey` over the whole
+  -- environment cost seconds a process.
+  | .pre q => return env.constants.fold (init := 0) fun a n _ => if n.getPrefix == q then a + stmt n else a
+  | .module m => return p.modules.getD m 0
+  | .thms => return p.thms
+  | .stmt n => return stmt n
+  | .decl n => return mixHash (stmt n) (((env.find? n).bind (·.value? (allowOpaque := true))).elim 0 exprKey)
+
+/-- What `r` reads now.  A declaration that is gone reads as `1`, so a picture citing a theorem
+    since deleted is redrawn; the DRAWN declaration gone is the caller's error to raise.  A `scan`
+    is summed over the candidates the search's own filter (`lacks`) lets through.  Held for the
+    process: the pictures of one call read many of the same declarations. -/
+def readPrint (p : EnvPrint) (r : Read) : MetaM UInt64 := do
+  if let some h := (← readPrintRef.get)[r]? then return h
+  let h ← readPrintNow p r
+  readPrintRef.modify (·.insert r h)
+  return h
 
 /-- What a candidate for a naturality proposition must MENTION: the constants of the family it is
     about, ACROSS THE BRIDGES — the normal form the two propositions are compared in, because a
@@ -2107,14 +2147,14 @@ structure Search where
   /-- Whether a heartbeat budget cut any candidate short: such a search may answer otherwise on a
       warmer cache, so its verdict is not one to remember. -/
   cut : IO.Ref Bool
-  /-- Every conclusion head whose candidate bucket the search read: what its answer depends on,
+  /-- Every candidate scan the search made (`Read.scan`): what its answer depends on,
       with the declarations those candidates reach (`depText`). -/
-  heads : IO.Ref NameSet
+  scans : IO.Ref (Std.HashSet Read)
 
 /-- A search at its start. -/
 def Search.new (head : Option Name) : IO Search := do
   return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[], cut := ← IO.mkRef false
-           heads := ← IO.mkRef {} }
+           scans := ← IO.mkRef {} }
 
 /-- One candidate not taken, kept only where it is ABOUT this family — its statement names the
     family's head — because the whole bucket is every theorem of the repo with that conclusion. -/
@@ -2194,7 +2234,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   let rw ← bridge br want
   let al ← bridgeAliases
   let mut hit : Option (Name × Expr) := none
-  let ms := must.toList
+  let ms := mustList must
   -- THE THEOREM CITED FOR A BEAD IS ONE ABOUT THE BEAD'S OWN CONSTANT, and every other candidate
   -- is tried only after those.  The bucket is every theorem with this conclusion, so it holds both
   -- the family's own naturality and the closure theorems (`strictNatural_recip`) that conclude it
@@ -2213,8 +2253,8 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
   -- statements are letter for letter the same.  Only the candidates ABOUT the family are ordered:
   -- a closure theorem's conclusion is the shortest there is (`StrictNatural G F (fun A => (φ A)°)`,
   -- every part of it bound), so ordering the whole bucket would cite one of those for every bead.
-  s.heads.modify (·.insert head)
-  let cs ← candidates head
+  s.scans.modify (·.insert (.scan head ms))
+  let cs ← searchCandidates head must
   let (about, rest) := match s.head with
     | some h => cs.partition fun (c : Name × NameSet) =>
         c.2.contains h || (al.getD h #[]).any c.2.contains
@@ -2241,7 +2281,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
     Core.checkMaxHeartbeats "the naturality search"
     -- The candidate is spelled as the INDEX stores it and `must` as the bridges rewrite it, so a
     -- constant is also met by any source spelling a bridge could have rewritten into it.
-    if let some m := ms.find? (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then
+    if let some m := lacks al ms has then
       if seen.isEmpty then s.passOver has s!"dropped {n}: lacks {m}"
       continue
     let some ci := env.find? n | continue
