@@ -775,10 +775,11 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
-#let hy-body = lean("Freyd.Alg.hylo_fixed_step1.lhs")
-#let hy-split = lean("Freyd.Alg.hylo_fixed_step1.rhs")
-#let hy-alg = lean("Freyd.Alg.hylo_fixed_step2.rhs")
-#let hy-alpha-iso = lean("Freyd.Alg.hylo_fixed_step3.rhs")
+// ONE call for the chain's five panels, so they share one placement and the bead a step moves over
+// (its triangle) stands at one height on both sides of that step.
+#let (hy-m, (hy-body, hy-split, hy-alg, hy-alpha-iso, hy-unit)) = lean-pics("generated/", <lean-panel>,
+  ("Freyd.Alg.hylo_fixed_step1.lhs", "Freyd.Alg.hylo_fixed_step1.rhs", "Freyd.Alg.hylo_fixed_step2.rhs",
+   "Freyd.Alg.hylo_fixed_step3.rhs", "Freyd.Alg.hylo_fixed_step4.rhs"))
 #let hy-cataR = lean("Freyd.Alg.hylo_le_of_prefixed_step1.lhs")
 #let hy-rec = lean("Freyd.Alg.hylo_le_of_prefixed_step2.lhs")
 #let hy-adj = lean("Freyd.Alg.hylo_le_of_prefixed_step3.lhs")
@@ -796,13 +797,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
      decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
      recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
     // lean:AOP.A6_3.hylo_fixed@42010f9f
-  [#hchain(
+  [#hy-m#hchain(
     (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
     (EQ, hy-split, src[`F(RS)=F(R)F(S)` — @relator-defn]),
     (EQ, hy-alg, src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
     (EQ, hy-alpha-iso, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
      `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
-    (EQ, lean("Freyd.Alg.hylo_fixed_step4.rhs"), src[`α°α=𝟙`: `α` is an iso]),
+    (EQ, hy-unit, src[`α°α=𝟙`: `α` is an iso]),
     // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
   )],
 )]<hylo-fix>
