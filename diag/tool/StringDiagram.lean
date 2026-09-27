@@ -2342,7 +2342,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
   -- ONE SWEEP.  The catalogue is the ENVIRONMENT's lanes and not the statement's, so it is read
   -- once and threaded: the def-opening test below peels cuts with it, and so does every panel.
-  let cat ← catalogue
+  let cat ← Prof.phaseIf draw "read" catalogue
   -- `stmtTelescope`, not `forallTelescopeReducing`: in a CONCRETE region a hom reduces to a
   -- function type, so the reducing walk goes straight through the arrow an arrow-valued `def` IS
   -- and hands back the codomain with the arrow's own elements as extra binders — the def's body
@@ -2353,7 +2353,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
   -- body, where the first walk cannot reach them, and the arrow still carried them and was refused
   -- as no arrow.  Re-quantifying over what has been entered and walking once more lands on the
   -- statement whichever side of the definition its binders sit.
-  let stmt ← stmtTelescope ci.type fun xs body0 => do
+  let stmt ← Prof.phaseIf draw "read" <| stmtTelescope ci.type fun xs body0 => do
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -2448,13 +2448,15 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
-    let mut qs : Array Diagram := #[]
-    for (b, h, p, s) in peers do
-      if b.toName == declName && h == binder then
-        let (_, _, d) ← reqParts p s
-        for (_, e) in d do
-          qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
-      else qs := qs ++ (← drawWith b.toName p h s [] false).2
+    let qs ← Prof.phaseIf draw "peers" do
+      let mut qs : Array Diagram := #[]
+      for (b, h, p, s) in peers do
+        if b.toName == declName && h == binder then
+          let (_, _, d) ← reqParts p s
+          for (_, e) in d do
+            qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+        else qs := qs ++ (← drawWith b.toName p h s [] false).2
+      return qs
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
@@ -2491,7 +2493,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
-    withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    Prof.phaseIf draw "emit" <| withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
