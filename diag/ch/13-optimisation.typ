@@ -488,7 +488,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // lean:AOP.A7_2.Distributes@e061e29e
 
 `+` distributes over `≤`, at the point level #h(4pt)
-`min(xs)+min(ys)=min{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
+`min(xs)+min(ys)` is a least element of `{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
 `min≜est(≤)`.
 ]]<dist-defn>
 
@@ -502,18 +502,18 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
 // The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
 // `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
-#disp[#align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
-  pair(
-    leancd("Freyd.Alg.Distributes"),
-    row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)),
- [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]],
-    s: auto,
-  ),
-  capbox(
-    leancd("Freyd.Alg.RelSet.plus_distributes_le"),
-    [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
-  ),
-))
+#disp[#layout(avail => {
+  let (sq, sd) = (leancd("Freyd.Alg.Distributes"), row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)))
+  // The example square is drawn at the pair's scale, so the two squares are the same size.
+  let s = pair-fill(sq, sd, avail.width)
+  align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
+    pair(sq, sd, [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]], s: s),
+    capbox(
+      P(leancd("Freyd.Alg.RelSet.plus_distributes_le"), s: s),
+      [`(est(≤)×est(≤))+⊑` $frac(#[`(∋×∋)+`], ∋)$ ` est(≤)`],
+    ),
+  ))
+})
 // lean:AOP.A7_2.Distributes@e061e29e
 // lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
 ]<dist-str>
