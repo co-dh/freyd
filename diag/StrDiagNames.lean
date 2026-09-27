@@ -295,12 +295,64 @@ open Lean PrettyPrinter Delaborator SubExpr in
 -- The snoc-list leaf object is the same object as the cons-list one, so it prints by the same rule.
 attribute [delab app.Freyd.Alg.RelSet.SL.dL] delabDL
 
--- A cons-list VALUE is written as the list it is: `cons a (cons b [])` is `[a,b]`.  Only a spine
--- ending in `[]` is a literal; a variable tail keeps `cons`, since no bracket can spell it.
+-- THE NOTE'S ARITHMETIC, as B&dM sets it (p.263: `⌊10b⌋`, `10a−d`, `[d]⧺x`): closed up, a product
+-- by juxtaposition.  A category of its own, so no source file parses these (`f(x)` would be a product).
+declare_syntax_cat noteArith
+syntax:70 (name := noteMul) term:70 noWs term:71 : noteArith
+syntax:70 (name := noteDot) term:70 "·" term:71 : noteArith
+syntax:70 (name := noteDiv) term:70 "/" term:71 : noteArith
+syntax:65 (name := noteSub) term:65 "−" term:66 : noteArith
+syntax:65 (name := noteCat) term:66 "⧺" term:65 : noteArith
+syntax:max (name := noteFloor) "⌊" term "⌋" : noteArith
+syntax:max (name := noteTuple) "(" term "," term ")" : noteArith
+
+open Lean in
+/-- The first (`last = false`) or last token of a printed term. -/
+partial def stxLeaf (last : Bool) : Syntax → Option Syntax
+  | s@(.atom ..) | s@(.ident ..) => some s
+  | .node _ _ args => (if last then args.reverse else args).findSome? (stxLeaf last)
+  | .missing => none
+
+open Lean in
+/-- `ab`, or `a·b` where juxtaposition would weld two tokens into another one: a numeral after
+    anything (`n·3`, `3·2^m`), or anything after a name of two letters or more. -/
+def mulStx (a b : Syntax) : Syntax :=
+  let num := match stxLeaf false b with | some (.atom _ v) => v.front.isDigit | _ => false
+  let word := match stxLeaf true a with
+    | some (.ident _ _ n _) => !(n.toString.drop 1).all (· == '\'')
+    | _ => false
+  if num || word then .node .none ``noteDot #[a, mkAtom "·", b] else .node .none ``noteMul #[a, b]
+
+open Lean PrettyPrinter in
+@[app_unexpander HMul.hMul] def unexpandNoteMul : Unexpander
+  | `($_ $a $b) => pure (mulStx a b)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander HSub.hSub] def unexpandNoteSub : Unexpander
+  | `($_ $a $b) => pure (.node .none ``noteSub #[a, mkAtom "−", b])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander HDiv.hDiv] def unexpandNoteDiv : Unexpander
+  | `($_ $a $b) => pure (.node .none ``noteDiv #[a, mkAtom "/", b])
+  | _ => throw ()
+
+-- A COERCION PRINTS AS WHAT IT COERCES: a digit used as a number is `d`, never `↑↑d`.  Read off the
+-- `@[coe]` registry, so every coercion Lean knows of goes the same way.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app] def delabNoteCoe : Delab := do
+  let e ← getExpr
+  let .const c _ := e.getAppFn | failure
+  let some info ← Meta.getCoeFnInfo? c | failure
+  unless info.type == .coe && e.getAppNumArgs == info.numArgs do failure
+  withNaryArg info.coercee delab
+
+-- A cons-list VALUE is written as the list it is: `cons a (cons b [])` is `[a,b]`, and a variable
+-- tail is the book's `[a]⧺x`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.CL.ConsList.cons] def unexpandConsLit : Unexpander
   | `($_ $x []) => `([$x])
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
+  | `($_ $x $xs) => do pure (.node .none ``noteCat #[← `([$x]), mkAtom "⧺", xs])
   | _ => throw ()
 
 -- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
@@ -1057,15 +1109,16 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.oneR] def unexpandTexOneR : Unexpander | _ => `(1)
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.unshift] def unexpandTexUnshift : Unexpander
-  | `($_ $d $a) => `(10 * $a - $d)
+  | `($_ $d $a) => pure (.node .none ``noteSub #[mulStx (Syntax.mkNumLit "10") a, mkAtom "−", d])
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.mkR] def unexpandTexMkR : Unexpander
-  | `($_ ($p, 0)) => `($p / $(mkIdent `w))
+  | `($_ ($p, 0)) => pure (.node .none ``noteDiv #[p, mkAtom "/", mkIdent `w])
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.IsDigit] def unexpandTexIsDigit : Unexpander
-  | `($_ $d $b) => `($d = $(mkIdent (Name.mkSimple "floor")) (10 * $b))
+  | `($_ $d $b) =>
+    `($d = $(⟨.node .none ``noteFloor #[mkAtom "⌊", mulStx (Syntax.mkNumLit "10") b, mkAtom "⌋"]⟩))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.fR] def unexpandTexFR : Unexpander
@@ -1077,8 +1130,14 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `f))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.f] def unexpandTexProgF : Unexpander
-  | `($_ ⟨($p, $q), $_⟩) => `($(mkIdent `f) $p $q)
+  | `($_ ($p, $q)) => `($(mkIdent `f) $p $q)
   | _ => throw ()
+-- A SUBTYPE'S POINT IS ITS VALUE: `⟨(a,b),h⟩` is the interval `(a,b)`, the proof `h` a statement
+-- about it that no formula of the note writes.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Subtype.mk] def delabSubtypeMk : Delab := do
+  guard ((← getExpr).getAppNumArgs == 4)
+  withNaryArg 2 delab
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.Prog.Reach] def unexpandTexProgReach : Unexpander
   | `($_ $args*) => `($(mkIdent `Reach) $args*)
@@ -1095,7 +1154,7 @@ open Lean PrettyPrinter Delaborator SubExpr in
   guard ((← getExpr).getAppNumArgs == 2)
   let a ← withNaryArg 0 delab
   let b ← withNaryArg 1 delab
-  `(($a, $b))
+  pure ⟨.node .none ``noteTuple #[mkAtom "(", a, mkAtom ",", b, mkAtom ")"]⟩
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
   | `($_ $args*) => `($(mkIdent `tourAlg) $args*)
