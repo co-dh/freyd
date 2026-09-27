@@ -6,7 +6,7 @@
 //
 //   typst compile --root . diag/allegory-axioms.typ diag/allegory-axioms.pdf
 #import "note-style.typ": P, dispnum, plain
-#import "hm.typ": cetz, hm-bead, hm-name, hm-panel, hm-port, hm-region, hm-wire
+#import "hm.typ": cetz, hm-bead, hm-mark-half, hm-name, hm-panel, hm-port, hm-region, hm-wire
 #import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
 
 // The converse lane and the `Relᵒᵖ` region between two of them.
@@ -402,6 +402,10 @@
   let dotx = (:)
   for b in beads { if b.at(4, default: none) != none { dotx.insert(dkey("x", b.at(0)), b.at(4)) } }
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
+  // A BEAD WHOSE DOT IS ON THE LEFTMOST LANE writes its label WEST of the mark, right-aligned: east
+  // of it the label would run across the lanes and the object wire it sits beside.
+  let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
+  let west = b => lx != none and b.at(4, default: none) != none and calc.abs(b.at(4) - lx) < 1e-6
   // THE FRAME HOLDS EVERY BEAD LABEL: `hm-bead` sets it 0.32 east of the dot, and the generator's
   // width is a fixed pad east of the object wire, which a long label (a `∪` of two terms) runs out of.
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
@@ -460,7 +464,22 @@
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
     // another strand sweeps that row west of this lane.
-    if nmd.contains(i) { hm-name((l.at(0) - 0.12, dnamey(lanes, l, kb)), nm, col: col, anchor: "east") }
+    // The name clears 0.12, or the mark of a bead it sits beside where that mark reaches further.
+    if nmd.contains(i) {
+      // Any lane's name can reach a west bead label, not only the leftmost lane's: test the MEASURED
+      // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
+      let sz = t => measure(block(text(top-edge: "ascender", bottom-edge: "descender", t)))
+      let (wn, hn) = { let m = sz(text(9pt)[#nm]); (m.width / 0.8cm, m.height / 0.8cm / 2) }
+      let ny = beads.filter(west).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
+        let m = sz(text[#b.at(1)])
+        let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12
+        let c = hn + m.height / 0.8cm / 2 + 0.06
+        if (l.at(0) - 0.12 - wn < br + 0.06 and l.at(0) > br - m.width / 0.8cm - 0.06
+          and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
+      let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
+        and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
+      hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
+    }
   }
   // A MERGE IS A HOLD, NOT A POINT: where more than one strand dies on a bead, IntroString p.74
   // (pdf 89) lands them on the ends of a 0.12cm horizontal segment centred on the dot, and drops the
@@ -477,8 +496,10 @@
   // glyph — hollow and half-filled marks punched out in `fb-ALLC`, the region behind every dot.
   // The word is the only thing passed: a panel that decided the shape here would drift from the
   // lane above and from the exporter, which name the same verdicts.  Absent, it is `"strict"`.
-  for b in beads { hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black),
-                           bg: fb-ALLC, nat: b.at(5, default: "strict")) }
+  for b in beads {
+    let nat = b.at(5, default: "strict")
+    hm-bead((dx(b.at(0)), b.at(0)), b.at(1), col: b.at(2, default: black), bg: fb-ALLC, nat: nat,
+            ..(if west(b) { (dx: -(hm-mark-half(nat) + 0.12), anchor: "east") } else { (:) })) }
   for (x, l) in top {
     if not dcovers(defn, h, x) {
       hm-port((if x == xo { xat(h) } else { x }, h), l, col: if x == xo { otc } else { palf(pal, l) }) } }

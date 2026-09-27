@@ -153,6 +153,19 @@ structure Row where
   /-- THE BINDER THE VERDICT WAS READ OFF, where no declaration proves it: the drawn statement
       ASSUMES the square, so the panel's citation is the panel's own declaration and this name. -/
   natHyp : Option Name := none
+  /-- THE RELATION THIS BEAD LETS DOWN PAST IT and the binder proving it: a binder assumes
+      the naturality square of this bead at `X`, `F(X)φ ⊑ φG(X)` or its `⊒` (`passOf?`), AND the bead
+      directly above this one is `X` (`settlePass`).  Once `X` has moved below, it is drawn plain. -/
+  pass : Option (Name × String × Bool) := none
+  /-- DRAWN AS A HOLLOW TRIANGLE, settled once the panel's order is (`settlePass`): `some false`
+      pointing down, `some true` pointing up.  Only ever with `pass`: a family's own square is its
+      naturality and draws its circle or diamond, never a triangle. -/
+  tri : Option Bool := none
+  /-- Every `(binder, X)` a binder lets down past this bead, before the panel's order is known. -/
+  passCands : Array (Name × String × Expr × Bool) := #[]
+  /-- The bead's own term with no lane around it (`X`, not `F(X)`), which `settlePass` compares
+      with the `X` of the bead below it. -/
+  core : Option Expr := none
   /-- IS THE BEAD A FAMILY IN AN OBJECT AT ALL?  One that is not is an arrow at this one object and
       has no naturality to be asked about; one that IS, carrying neither mark nor citation, is a
       family whose ends no lane of the region spells — and the trace says which, rather than
@@ -430,11 +443,16 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- The 6th element is the MARK, written by name for every verdict but the two that ARE the
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
-    let mark := match r.nat with
-      | none | some .strict => ""
-      | some .lax => key .lax | some .oplax => key .oplax | some .maps => key .maps
-      | some .mapsOplax => key .mapsOplax
-      | some .spider => key .spider
+    let mark := match r.tri, r.nat with
+      | some false, _ => ", \"pass\"" | some true, _ => ", \"passup\""
+      | none, none => ""
+      | none, some .strict => ""
+      -- A LAX SQUARE `G(R)φ ⊑ φF(R)` lets every arrow above down past the bead, so it IS the down
+      -- triangle; oplax is the converse `⊑`, the up one.  The pass test is for beads with no family.
+      | none, some .lax => ", \"pass\"" | none, some .oplax => ", \"passup\""
+      | none, some .maps => key .maps
+      | none, some .mapsOplax => key .mapsOplax
+      | none, some .spider => key .spider
     -- A UNIT is no bead: it is its leg's own birth, half a row below its row, written on the lane.
     if r.unit then
       objs := objs.push ("(" ++ num (ys[i]! - DY / 2.0) ++ ", " ++ cell r.obj ++ ")")
@@ -448,7 +466,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
           else "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, none" ++ mark ++ ")"
         | none, some d =>
           "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, none, " ++ num d ++ mark ++ ")"
-        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ")"
+        | some rc, none => "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc
+            ++ (if mark.isEmpty then "" else ", none" ++ mark) ++ ")"
         | some rc, some d =>
           "(" ++ num ys[i]! ++ ", " ++ cell r.shape ++ ", black, " ++ num rc ++ ", " ++ num d
             ++ mark ++ ")"
@@ -545,7 +564,8 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
   let rows := ps.flatMap (·.rows)
   -- The panel's OWN declaration is cited too where a bead's verdict is one of its hypotheses.
   let keys ← natKeys (rows.flatMap (·.natLean)
-    ++ (if rows.any (·.natHyp.isSome) then #[decl] else #[]))
+    ++ (if rows.any (fun r => r.natHyp.isSome || r.pass.any (·.2.2)) then #[decl] else #[])
+    ++ rows.filterMap fun r => r.pass.bind fun (n, _, hyp) => if hyp then none else some n)
   let mut out := ""
   for r in rows do
     -- A bead that is NO FAMILY is an arrow of the base category at this one object (`est(R)`, a
@@ -580,6 +600,10 @@ def natLines (decl : Name) (ps : Array Diagram) : MetaM String := do
     let cites := String.join (r.natLean.toList.map fun n => " " ++ keys[n]!)
       ++ (match r.natHyp with
           | some hn => " " ++ keys[decl]! ++ " hyp:" ++ toString hn
+          | none => "")
+      ++ (match r.pass with
+          | some (hn, x, true) => " pass:" ++ x ++ " " ++ keys[decl]! ++ " hyp:" ++ toString hn
+          | some (n, x, false) => " pass:" ++ x ++ " " ++ keys[n]!
           | none => "")
     out := out ++ "// nat: " ++ r.label ++ " " ++ word ++ cites ++ "\n"
   return out
@@ -636,7 +660,11 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     -- The weight of row `i` on slot `j`: its bead's size, then its pin (`Row.pin` < 4), when a part
     -- already has that bead there; more than every other match together when that part is the
     -- NEIGHBOUR, whose shared beads the gate holds level.
-    let pin (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    -- THE TRIANGLE IS THE ANCHOR, ahead of size: the bead the relation passes down across the `⊑`
+    -- is what the display is about, so its match outweighs every other match of the part together.
+    let base (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    let rest : Int := (List.range n).foldl (· + base ·) 0
+    let pin (i : Nat) : Int := if b.rows[i]!.tri.isSome then rest + base i else base i
     let tot : Int := (List.range n).foldl (· + pin ·) 0
     let w (i j : Nat) : Int :=
       let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
@@ -915,7 +943,7 @@ def markOfNatPredicate : Name → Option Mark
     plus the binder, so `cite-check` re-verifies the statement the assumption lives in.
     The binder may state the class or the family's SQUARE at an arrow of the statement
     (`laxNatural_comp_slide`'s `hψ`), graded by the square's relation. -/
-def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark × Name)) := do
+def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark × Name × Expr)) := do
   -- A category has only the equation to grade a square by (`laneSquare`).
   let grades := match alg with
     | .relator => #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)]
@@ -926,7 +954,7 @@ def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark ×
     if let .const h _ := ty.getAppFn then
       if let some m := markOfNatPredicate h then
         let some want ← observing? (Meta.mkAppM h #[F, G, φ]) | continue
-        if ← Meta.isDefEq ty want then return some (m, ← d.fvarId.getUserName)
+        if ← Meta.isDefEq ty want then return some (m, ← d.fvarId.getUserName, ty)
         continue
     -- THE SQUARE AT ONE ARROW IS EVIDENCE FOR THE PICTURE OF THAT ARROW: a statement assuming
     -- `G(R) φ_B ⊑ φ_A F(R)` for the `R` it draws assumes all the bead's naturality the picture
@@ -937,8 +965,161 @@ def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark ×
       let hit ← Meta.withNewMCtxDepth do
         let (_, _, body) ← Meta.forallMetaTelescope sq
         Meta.isDefEq ty body
-      if hit then return some (m, ← d.fvarId.getUserName)
+      if hit then return some (m, ← d.fvarId.getUserName, ty)
   return none
+
+/-- The factors of a composite, first to last, through either bracketing: `a(bc)` and `(ab)c` are
+    one picture, so a match on the last factors must not see where the brackets fell. -/
+partial def compFactors (e : Expr) : Array Expr :=
+  let e := e.consumeMData
+  let args := e.getAppArgs
+  if e.getAppFn.isConstOf ``Cat.comp && args.size ≥ 2 then
+    compFactors args[args.size - 2]! ++ compFactors args[args.size - 1]!
+  else #[e]
+
+/-- `X` WHERE A PROPOSITION IS THE NATURALITY SQUARE OF `φ` AT `X`: opened one definition at a time
+    until its `⊑` shows (8 bounds a cycle), its sides flattened (`compFactors`), each exactly two
+    factors, `F(X)φ` and `φG(X)` with `φ` unified on both — `true` where it reads `φG(X) ⊑ F(X)φ`.
+    A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
+def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
+  let mut ty ← instantiateMVars ty
+  for _ in [0:8] do
+    if ty.getAppFn.isConstOf ``Freyd.Alg.le then break
+    match ← Meta.unfoldDefinition? ty with
+    | some t => ty := t.headBeta
+    | none => break
+  unless ty.getAppFn.isConstOf ``Freyd.Alg.le do return none
+  let args := ty.getAppArgs
+  if args.size < 2 then return none
+  let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
+  if l.size != 2 || r.size != 2 then return none
+  let mapArg (e : Expr) : Option Expr :=
+    if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
+  -- `G(X)`, or `X` itself where `G` is the identity: the image of the SAME `X` below `φ`.
+  let image (e X : Expr) : MetaM Bool := match mapArg e with
+    | some Y => Meta.isDefEq Y X
+    | none => Meta.isDefEq e X
+  -- ONE SQUARE, EITHER WAY ROUND: `F(X)φ` on one side and `φG(X)` on the other, the same `φ` both
+  -- times.  `F(X)φ ⊑ φG(X)` is the down triangle, `φG(X) ⊑ F(X)φ` the up one.
+  for (up, a, b) in [(false, l, r), (true, r, l)] do
+    let some X := mapArg a[0]! | continue
+    let s ← Meta.saveState
+    if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
+      return some (X, up)
+    s.restore
+  return none
+
+/-- THE BEAD LETS A RELATION DOWN, AND A BINDER SAYS SO.  A hypothesis of the drawn statement — or
+    the predicate being drawn, applied to its own binders — that is the square `F(X)φ ⊑ φG(X)` of
+    the bead `φ` (`passOf?`): `MonoAlg φ R` is one, `Distributes f R` is not (`Λ(F(∋)f)` is not
+    `f`).  Nothing found is the default bead. -/
+def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr × Bool)) := do
+  let mut out := #[]
+  for d in ← getLCtx do
+    if d.isImplementationDetail then continue
+    unless ← Meta.isProp d.type do continue
+    if let some (X, up) ← Meta.withNewMCtxDepth (passOf? d.type φ) then
+      out := out.push (← d.fvarId.getUserName, ← label X, X, up)
+  return out
+
+initialize passHeadsRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
+
+/-- EVERY CONCLUSION HEAD A PASS CAN BE STATED UNDER: `⊑` itself and each predicate whose body
+    opens to one of these (`MonoAlg`, `Distributes`) — found by walking the definitions of the
+    environment to a fixed point, once per process, never by a list of names. -/
+def passHeads : MetaM (Array Name) := do
+  if let some hs ← passHeadsRef.get then return hs
+  let rec body : Expr → Expr
+    | .lam _ _ b _ | .forallE _ _ b _ | .mdata _ b => body b
+    | e => e
+  let defs := (← getEnv).constants.fold (init := #[]) fun acc n ci => match ci with
+    | .defnInfo d => match (body d.value).getAppFn.constName? with
+      | some h => acc.push (n, h)
+      | none => acc
+    | _ => acc
+  let mut hs : NameSet := NameSet.empty.insert ``Freyd.Alg.le
+  -- 8 bounds the depth of predicates defined through predicates.
+  for _ in [0:8] do
+    let more := defs.filter fun (n, h) => hs.contains h && !hs.contains n
+    if more.isEmpty then break
+    hs := more.foldl (fun s (n, _) => s.insert n) hs
+  let out := hs.toList.toArray
+  passHeadsRef.set (some out)
+  return out
+
+/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
+    (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
+    `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
+    `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
+def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
+  let br ← bridges
+  let mφ ← mustOfFamily br φ
+  -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
+
+  let must := (← mustOfFamily br Y).toList.foldl (·.insert ·) mφ
+  if must.isEmpty then return none
+  let s ← Search.new none
+  let al ← bridgeAliases
+  let env ← getEnv
+  let search : MetaM (Option (Name × Bool)) := do
+    let mut cs := #[]
+    for h in ← passHeads do cs := cs ++ (← candidates h)
+    for (n, has) in cs do
+      Core.checkMaxHeartbeats "the pass search"
+      if must.toList.any (fun m => !has.contains m && !(al.getD m #[]).any has.contains) then continue
+      let some ci := env.find? n | continue
+      let saved ← Meta.saveState
+      let attempt : MetaM (Option Bool) := do
+        let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+        let (args, bis, body) ← Meta.forallMetaTelescope
+          (ci.type.instantiateLevelParams ci.levelParams lvls)
+        let some (X, up) ← passOf? body φ | return none
+        unless ← Meta.isDefEq X Y do return none
+        unless ← discharge br s args bis 1 #[] do return none
+        let pf ← instantiateMVars (mkAppN (.const n lvls) args)
+        if pf.hasExprMVar then return none
+        Meta.check pf
+        return some up
+      if let some up ← tryCatchRuntimeEx attempt (fun _ => pure none) then return some (n, up)
+      saved.restore
+    return none
+  tryCatchRuntimeEx (Core.withCurrHeartbeats <| withTheReader Core.Context
+      (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) search) fun e => do
+    IO.eprintln s!"diag-export: the pass search for {← Meta.ppExpr Y} above {← Meta.ppExpr φ} \
+      stopped on `{← e.toMessageData.toString}`: the bead draws its default mark"
+    return none
+
+/-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
+    down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
+    `isDefEq`) or a theorem (`passThm`) gives the square `F(X)φ ⊑ φG(X)` of — the up triangle
+    where the square is `⊒`; once `X` has moved below, plain.
+    A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
+def settlePass (d : Diagram) : MetaM Diagram := do
+  let mut rows := d.rows
+  for i in [0 : rows.size] do
+    let r := rows[i]!
+    let up := if i == 0 then none else some rows[i - 1]!
+    unless r.nat.isNone do continue
+    let some Y := up.bind (·.core) | continue
+    let mut hit : Option (Name × String × Bool) := none
+    let mut dir := false
+    for (h, xl, X, up) in r.passCands do
+      if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
+        hit := some (h, xl, true)
+        dir := up
+        break
+    -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
+    -- here; no theorem can be instantiated at a term that does not exist in this context.
+    let lctx ← getLCtx
+    let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
+    if hit.isNone then
+      if let some c := r.core then
+        if inScope c && inScope Y then
+          if let some (n, up) ← passThm c Y then
+            hit := some (n, ← label Y, false)
+            dir := up
+    if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some dir }
+  return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
@@ -1344,8 +1525,8 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- heavy panels is cut somewhere — but NOTHING FOUND only where no budget was: a spider off a
   -- timeout is not a refutation, and a warmer cache may find the dot.
   let slot ← cacheSlot regionTy cat φ
-  let found : Option Verdict ← match ← slot.mapM cacheLoad with
-    | some (some c) => do s.passed.set c.passed; pure c.verdict
+  let fp : Option Verdict × Option Expr ← match ← slot.mapM cacheLoad with
+    | some (some c) => do s.passed.set c.passed; pure (c.verdict, c.proof.map (·.1))
     | _ => do
       let found ← tryCatchRuntimeEx bounded fun e => do
         s.cut.set true
@@ -1356,11 +1537,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
         if found.isSome || !(← s.cut.get) then
           let pr ← if found.isSome then proof.get else pure none
           cacheStore sl (← s.heads.get) { verdict := found, proof := pr, passed := ← s.passed.get }
-      pure found
-  if let some v := found then return v
+      pure (found, (← proof.get).map (·.1))
+  if let some v := fp.1 then return v
   -- WHAT THE DRAWN STATEMENT ASSUMES IS STILL A CLAIM THE PANEL MAY DRAW, and it is asked only
   -- after the environment: a family something PROVES natural cites the proof, never the binder.
-  if let some (m, n) ← hypVerdict alg regionTy F G φ then return { mark := some m, lean := #[], hyp := some n }
+  if let some (m, n, _) ← hypVerdict alg regionTy F G φ then
+    return { mark := some m, lean := #[], hyp := some n }
   -- NO VERDICT, NO DOT, NO CLAIM.  The three statements are what was looked for and none of them
   -- is proved, so the bead draws as the book's spider (IntroString §2.2.4) — a node with no mark —
   -- rather than the panel failing or, worse, a dot standing for a naturality nobody has.
@@ -1567,7 +1749,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
-      family := φ.isSome, map := ← isMapOf core }
+      passCands := ← passHyp core, core := some core, family := φ.isSome, map := ← isMapOf core }
   return { lanes, rows := #[row], top := ar ++ ov, bot := lg ++ ov, otop := ox, obot := oy }
 
 /-- One lane index shifted from a part's frame into the whole's: a row index moves by the rows drawn
@@ -2359,7 +2541,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   scanCheck regionTy cat objVars side d
-  return d
+  settlePass d
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
@@ -2485,7 +2667,9 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- `hypVerdict` already looks, and it is the same evidence a theorem's `(h : LaxNatural F G φ)`
     -- binder is.  `isSort`: only a declaration whose type ENDS in a sort is a predicate, so a
     -- partially applied telescope that stopped at a hom states nothing about itself.
-    if (markOfNatPredicate declName).isSome && body0.isSort then
+    -- EVERY predicate, not only the naturality ones: `MonoAlg φ R` drawn is the claim `passHyp`
+    -- reads the triangle off, exactly as `LaxNatural` drawn is the claim `hypVerdict` reads.
+    if body0.isSort then
       let self := mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs
       Meta.withLocalDeclD declName self fun h => Meta.mkForallFVars (xs.push h) body
     else Meta.mkForallFVars xs body
