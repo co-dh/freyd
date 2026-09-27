@@ -461,7 +461,10 @@
       // A west bead label on this lane holds the row, so the name drops one label height below it.
       let wb = beads.filter(b => west(b) and calc.abs(lx - l.at(0)) < 1e-6)
       let ny0 = dnamey(lanes, l, kb)
-      let ny = wb.fold(ny0, (y, b) => if calc.abs(b.at(0) - y) < LLH { b.at(0) - LLH } else { y })
+      // Clearance is the two MEASURED half-heights plus a hair: a tall glyph (`𝟙`, `[`) outgrows `LLH`.
+      let hh = t => measure(text(t)).height / 0.8cm / 2
+      let ny = wb.fold(ny0, (y, b) => { let c = hh(nm) + hh(b.at(1)) + 0.06
+        if calc.abs(b.at(0) - y) < c { b.at(0) - c } else { y } })
       let gap = calc.max(0.12, ..beads.filter(b => calc.abs(dx(b.at(0)) - l.at(0)) < 0.3
         and calc.abs(b.at(0) - ny) < 0.3).map(b => hm-mark-half(b.at(5, default: "strict")) + 0.02))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
