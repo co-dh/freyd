@@ -405,7 +405,8 @@
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
   // A MARK ON THE LEFTMOST LANE writes its label WEST of it, right-aligned: east of it the label
   // would run across the lanes and the object wire it sits beside.  A unit is such a mark too, drawn
-  // by its lane (`dlane`) and absent from `beads`, so the test is on the x alone.
+  // by its lane (`dlane`) and absent from `beads`, so the test is on the x alone — unless the lane's own
+  // NAME is written west at that birth (`nmd`): the name holds that slot, and the unit label stays east.
   let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
   let west-at = x => lx != none and calc.abs(x - lx) < 1e-6
   let west = b => b.at(4, default: none) != none and west-at(b.at(4))
@@ -414,6 +415,7 @@
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
     + measure(text(b.at(2, default: black))[#b.at(1)]).width / 0.8cm))
   let nmd = dnamed(lanes, top, bot)
+  let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not nmd.contains(j) }
   let gk = dknees(dx, h, lanes, beads, nmd)
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
@@ -463,7 +465,7 @@
     let alone = (corr.len() == 0
       and lanes.filter(o => o.at(1) == l.at(1) and o.at(2) == l.at(2)).len() == 1)
     if ys == () { dlane(dx, h, l.at(0), l.at(1), l.at(2), l.at(3), l.at(4), kb: kb, kd: kd, col: col,
-                        alone: alone, unat: l.at(5, default: "strict"), west: west-at(l.at(0))) }
+                        alone: alone, unat: l.at(5, default: "strict"), west: wunit(i)) }
     else { ddip(dx, h, l.at(0), l.at(1), l.at(2), ys, l.at(3), gk, col: col) }
     // `dnamey` says where: on the birth row, or half a name's height below the knee's end where
     // another strand sweeps that row west of this lane.
@@ -473,7 +475,7 @@
       // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
       let sz = t => measure(block(text(top-edge: "ascender", bottom-edge: "descender", t)))
       let (wn, hn) = { let m = sz(text(9pt)[#nm]); (m.width / 0.8cm, m.height / 0.8cm / 2) }
-      let ny = (beads.filter(west) + lanes.filter(o => o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)))
+      let ny = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
         .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
         let m = sz(text[#b.at(1)])
         let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12

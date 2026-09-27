@@ -185,7 +185,10 @@ structure Row where
   /-- EVERY TERM `interp` WALKED THROUGH TO REACH THIS BEAD, as its factors, innermost first: which subterm of the
       side the bead is, so two beads of one label (`Λ(X)` and `Λ(F(∋)R)` both open with `𝟙%∋`)
       are told apart by the term they came from and not by where they happen to stand. -/
-  ctx   : Array (Array String) := #[]
+  ctx   : Array (Array Expr) := #[]
+  /-- THE FACTOR THIS BEAD DRAWS, read alike in every step of a chain (`canon`): what says two
+      panels of a call draw the same bead, where `term` is the factor in its own step's telescope. -/
+  ident : Option Expr := none
   deriving Inhabited
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
@@ -675,7 +678,7 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     -- too — the inner `𝟙%∋` stands before `E(X)` both in `(𝟙%∋)E(X)∋` and in `(𝟙%∋)E(X)`, while the
     -- outer one stands before a different `E(…)`.  Such a match counts twice a bare label's, so the
     -- beads the step did not rewrite hold their level and only the rewritten ones move.
-    let sib (r : Row) : Array String := Id.run do
+    let sib (r : Row) : Array Expr := Id.run do
       for i in [1 : r.ctx.size] do
         let fs := r.ctx[i]!
         if fs.size > 1 then return fs.filter fun f => !(r.ctx.extract 0 i).any (·.contains f)
@@ -730,12 +733,13 @@ def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
 /-- TWO PARTS THAT DRAW ONE PICTURE: the same lanes born and dying at the same rows, the same beads
     in order, over the same objects.  A step that only re-spells the term (`F(RS)=F(R)F(S)`, a
     re-association) draws its two sides alike, and a chain showing both shows one picture twice.
-    Objects compare as PRINTED (`Row.obj`), never as `Expr`: each peer is read in its own
-    telescope, so one object is a different free variable in each.  A part with no bead is no step. -/
+    Beads compare as TERMS (`Row.ident`, which carries the objects they are drawn at), never as
+    printed: `canon` reads each peer's binders as one variable per binder name, so the same factor
+    of two steps is one `Expr`.  A part with no bead is no step. -/
 def Diagram.drawnAs (a b : Diagram) : Bool :=
   !a.rows.isEmpty
     && a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
-    && a.rows.map (fun r => (r.key, r.obj)) == b.rows.map (fun r => (r.key, r.obj))
+    && a.rows.all (·.ident.isSome) && a.rows.map (·.ident) == b.rows.map (·.ident)
     && a.top == b.top && a.bot == b.bot
 
 /-- `dup`: this file draws what the NEXT selector of its call draws (`Diagram.drawnAs`), so a chain
@@ -2100,6 +2104,22 @@ def conversedComposite? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
 def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
   fs.reverse.mapM fun f => Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
 
+/-- A TERM EVERY STEP OF A CHAIN READS ALIKE: each step is its own declaration and each peer is read
+    in its own telescope, so one binder is a different free variable in each.  Every free variable
+    becomes its binder's name — macro scopes erased, numbered among its namesakes in binder order —
+    so the binders the steps share by name are one variable, and `==` compares the terms. -/
+def canon (e : Expr) : MetaM Expr := do
+  let mut seen : Std.HashMap Name Nat := {}
+  let mut ren : Std.HashMap FVarId Expr := {}
+  for d in (← getLCtx) do
+    let n := d.userName.eraseMacroScopes
+    let k := seen.getD n 0
+    seen := seen.insert n (k + 1)
+    ren := ren.insert d.fvarId (.fvar ⟨.num n k⟩)
+  return (← instantiateMVars e).replace fun x => match x with
+    | .fvar f => ren[f]?
+    | _ => none
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -2119,11 +2139,14 @@ mutual
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
   let d ← interpAt regionTy cat objVars vpass expect e
-  -- Recorded as DRAWN — after `rewriteSpine`, which is what its factors are — and each factor by its
-  -- `label`, the bead key's own identity: each step of a chain is its own declaration, with its own
-  -- binders and instance paths, so no two steps share an `Expr`.
-  let fs ← (compFactors (← instantiateMVars (← rewriteSpine e))).mapM label
-  return { d with rows := d.rows.map fun r => { r with ctx := r.ctx.push fs } }
+  -- Recorded as DRAWN — after `rewriteSpine`, which is what its factors are — and each factor as
+  -- `canon` reads it, so the steps of a chain, each its own declaration, share the binders they
+  -- name alike.  The innermost level sets `ident`, from the factor `interpAt` drew.
+  let fs ← (compFactors (← instantiateMVars (← rewriteSpine e))).mapM canon
+  let rows ← d.rows.mapM fun r => do
+    let ident ← match r.ident with | some i => pure (some i) | none => r.term.mapM canon
+    return { r with ctx := r.ctx.push fs, ident }
+  return { d with rows }
 
 /-- `interp`'s cases, one level of the walk. -/
 partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
