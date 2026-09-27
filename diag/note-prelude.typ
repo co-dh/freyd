@@ -272,7 +272,9 @@
 // A row may instead be `(sub: sel, gloss: [..], steps: (..))`: `sub` names the declaration the row
 // proves, printed in a header row across the cell, so a new obligation reads apart from a row that
 // only wraps; a plain row after it continues the same obligation.  `gloss` is optional.
-#let lean-chain(..args) = {
+// `aligned: true`: the rows are the BRANCHES of one chain, row i's step k a component of the same
+// term, so every row has the same steps and column k is as wide as its widest panel in every row.
+#let lean-chain(..args, aligned: false) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary { r } else { (steps: r) })
@@ -281,9 +283,16 @@
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
   table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
-    let k = calc.min(..rows.zip(calls).map(((r, c)) =>
-      chain-k(sz.width, r.steps.first().at(0) == none, c.at(1).map(p => measure(box(p)).width))))
-    for (row, c) in rows.zip(calls) {
+    let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
+    if aligned {
+      let n = ws.first().len()
+      assert(ws.all(w => w.len() == n), message: "lean-chain(aligned: true): the rows have "
+        + ws.map(w => str(w.len())).join(", ") + " steps; branches of one chain have the same steps")
+      let m = range(n).map(i => calc.max(..ws.map(w => w.at(i))))
+      ws = ws.map(_ => m)
+    }
+    let k = calc.min(..rows.zip(ws).map(((r, w)) => chain-k(sz.width, r.steps.first().at(0) == none, w)))
+    for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = row.steps
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
@@ -292,7 +301,7 @@
           stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
           align(center, { leanf(row.sub); if "gloss" in row { [ \ ]; row.gloss } })))
       }
-      hchain(fill: k, ..r.zip(c.at(1)).map(((s, p)) => (s.at(0), p, [])))
+      hchain(fill: k, ..r.zip(c.at(1), w).map(((s, p, cw)) => (s.at(0), box(width: cw, align(center, p)), [])))
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
       for s in r { block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2))) }

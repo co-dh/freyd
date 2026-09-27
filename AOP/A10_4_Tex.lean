@@ -454,14 +454,36 @@ public theorem tex_fusion_shift :
     exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
       (shift_lt_shift _ _ _).mpr hin.2⟩
 
+/-- **tex-fusion**, first step: composition distributes into the case analysis. -/
+public theorem tex_fusion_step1 :
+    junc copR zero shift ≫ (inrange)° = junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) :=
+  junc_comp _ _ _ _
+
+/-- **tex-fusion**, second step: the `zero` branch, `tex_fusion_zero`. -/
+public theorem tex_fusion_step2 :
+    junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) = junc copR arb (shift ≫ (inrange)°) := by
+  rw [tex_fusion_zero]
+
+/-- **tex-fusion**, third step: the `shift` branch, `tex_fusion_shift`. -/
+public theorem tex_fusion_step3 :
+    junc copR arb (shift ≫ (inrange)°)
+      = junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step) := by
+  rw [tex_fusion_shift]
+
+/-- **tex-fusion**, fourth step: the relator slides out of the bracket — `F(S)[T,U]=[T,(𝟙×S)U]`
+    read right to left. -/
+public theorem tex_fusion_step4 :
+    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
+      = (F Unit Digit).map (inrange)° ≫ junc cop arb step :=
+  (Fmap_comp_junc Unit Digit _ _ _).symm
+
 /-- **tex-fusion** (B&dM p.260): `val inrange°=⦇[arb,step]⦈` — the converse of `val`, cut down
-    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]` branch by
-    branch: `junc_comp` splits it, the two branch results fill it, `Fmap_comp_junc` closes it. -/
+    to intervals, is a fold, because `[zero,shift] inrange°=F(inrange°)[arb,step]`. -/
 public theorem tex_fusion : val ≫ (inrange)° = cataR (junc cop arb step) := by
   show cataR (junc copR zero shift) ≫ (inrange)° = cataR (junc cop arb step)
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact relCata_fusion (initial Unit Digit)
-    (by rw [junc_comp, tex_fusion_zero, tex_fusion_shift, Fmap_comp_junc])
+    (by rw [tex_fusion_step1, tex_fusion_step2, tex_fusion_step3, tex_fusion_step4])
 
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/

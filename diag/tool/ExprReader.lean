@@ -1666,20 +1666,34 @@ def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
     return ← compose ((fs.extract 0 (fs.size - 1)).push (if i == 0 then l else r))
   let (src, _) ← homEnds e
   let mut hit : Option (Nat × Expr × Expr × Expr × Expr) := none
+  -- the junction stands over the coproduct the run has reached by then — the source itself, or,
+  -- behind functor actions `F.map R`, `F` at `R`'s target (`F(inrange°)[arb,step]`)
+  let mut at_ := src
   for k in [0 : fs.size] do
     if hit.isNone then
       if let some (C, X, Y) ← juncOf? fs[k]! then
         if let some (s, a₁, a₂) ← summands? C then
-          if ← Meta.isDefEq s src then hit := some (k, a₁, a₂, X, Y)
+          if ← Meta.isDefEq s at_ then hit := some (k, a₁, a₂, X, Y)
+      at_ := (← homEnds fs[k]!).2
   let some (j, a₁, a₂, X, Y) := hit
     | throwError "`.inl`/`.inr` names one operand of a union or a meet, or one arm of a junction \
-        over a coproduct at the source of the run, and `{← plain e}` runs into neither"
-  let mut parts : Array Expr := #[]
-  let mut obj := if i == 0 then a₁ else a₂
+        over a coproduct at the source of the run or behind functor actions from it, and \
+        `{← plain e}` runs into neither"
+  let mut rs : Array Expr := #[]
   for k in [0 : j] do
     let some (_, R) := functorMap? fs[k]!
       | throwError "the arm is behind `{← plain fs[k]!}`, which is not a functor acting on an \
           arrow, so the injection has nothing to slide through"
+    rs := rs.push R
+  -- THE SUMMAND AT THE SOURCE is the junction's summand read back through each action: a functor's
+  -- summand is functorial in its argument, so `R`'s target in it is `R`'s source there.  The
+  -- forward pass below then checks it lands on the arm's source.
+  let mut obj := if i == 0 then a₁ else a₂
+  for R in rs.reverse do
+    let (rS, rT) ← homEnds R
+    obj := (← Meta.kabstract obj rT).instantiate1 rS
+  let mut parts : Array Expr := #[]
+  for R in rs do
     if let some act ← summandAction regionTy obj R then
       parts := parts.push act
       obj := (← homEnds act).2
