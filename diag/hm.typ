@@ -106,21 +106,30 @@
 // The diamond's half-diagonal.  Equal AREA to the circle reads smaller — a diamond loses its
 // corners to the eye — so it is set by the width that matches, not by the area.
 #let HMD = HMR * 1.45
+// The triangle's scale on the diamond's half-diagonal, for `pass` and `passup` alike.
+#let HMS = 2
 
 /// THE one place a verdict picks a glyph, keyed by the verdict's own word so the generator, the
 /// sweep and the Lean exporter all name the same mark: `strict` a filled circle, `lax` a hollow
 /// one, `oplax` a hollow DIAMOND — the converse of a lax square is the containment the other way
 /// round, a different claim and so not the same mark — and `maps` a HALF-FILLED circle, the square
 /// proved for every map and nothing proved at a relation, which is half of what the filled dot
-/// claims.  `pass` is a hollow DOWN triangle, for an arrow a statement lets a relation down past.
+/// claims.  `pass` is a hollow DOWN triangle, for a bead what stands above may pass down across `⊑`;
+/// `passup` the UP one, for a bead what stands below may pass up.
 /// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
 #let hm-mark(p, nat, col, bg) = {
   if nat == "pass" {
-    // A HOLLOW TRIANGLE POINTING DOWN: the bead lets the relation above it pass below it across a
-    // `⊑` (`F(X)φ⊑WX`), a claim about this one arrow and one `X`, not a family's square.
-    d.line((rel: (-HMD, HMR * 0.8), to: p), (rel: (HMD, HMR * 0.8), to: p),
-           (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
+    // A HOLLOW TRIANGLE POINTING DOWN: the bead lets what stands above it pass below it across a
+    // `⊑` — one `X` a statement names (`F(X)φ⊑WX`), or every arrow, a lax square `G(X)φ⊑φF(X)`.
+    // `HMS` is its one size.
+    d.line((rel: (-HMS * HMD, HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, HMS * HMR * 0.8), to: p),
+           (rel: (0, -HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
+  } else if nat == "passup" {
+    // THE SAME TRIANGLE POINTING UP: what stands below the bead may pass up across `⊑`, every arrow,
+    // the square `φF(X)⊑G(X)φ`.  The mirror of `pass`, so its size is `HMS` too.
+    d.line((rel: (-HMS * HMD, -HMS * HMR * 0.8), to: p), (rel: (HMS * HMD, -HMS * HMR * 0.8), to: p),
+           (rel: (0, HMS * HMD), to: p), close: true, fill: bg, stroke: col + lw)
   } else if nat == "oplax" {
     d.line((rel: (-HMD, 0), to: p), (rel: (0, HMD), to: p), (rel: (HMD, 0), to: p),
            (rel: (0, -HMD), to: p), close: true, fill: bg, stroke: col + lw)
