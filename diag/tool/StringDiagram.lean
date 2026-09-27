@@ -74,12 +74,15 @@ def num (x : Float) : String :=
 private def LIVE : Int := -2
 
 /-- A span of rows over which a lane's action carries a converse: `outer` is a `°` lane WEST of the
-    lane (`F(R)°`), `inner` one EAST of it (`F(R°)`), both the conjugate `F(R°)°`. -/
+    lane (`F(R)°`), `inner` one EAST of it (`F(R°)`), both the conjugate `F(R°)°`.  `whole` is the
+    `°` of a conversed COMPOSITE `(XY)°`: carried by every lane of that composite, it stands WEST of
+    them all over its rows, so one `°` runs beside every bead of it. -/
 structure Conv where
   first : Int
   last  : Int
   outer : Bool
   inner : Bool
+  whole : Bool := false
   deriving Inhabited
 
 /-- One wire, from the bead that makes it to the bead that eats it.  `born = -1` is the top edge,
@@ -361,26 +364,60 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
   -- and everything east of it move), the inner one east (everything east of the lane moves), so no
   -- `°` lane crosses another wire.
   let mut (ls, xo) := (ls, xo)
+  -- ONE COLUMN PER `°` WIRE, not per span: two spans on one side of lanes in one column are one
+  -- wire, however many rows or lanes they come from.
+  let mut opened : Array (Nat × Bool) := #[]
   for i in [0 : ls.size] do
     for c in ls[i]!.conv do
-      if c.outer then
+      if c.whole then continue
+      for (west, on) in [(true, c.outer), (false, c.inner)] do
+        let lsNow := ls
+        if !on || opened.any fun (j, w) => w == west && (lsNow[j]!.x - lsNow[i]!.x).abs < 1e-6 then
+          continue
+        opened := opened.push (i, west)
         let x := ls[i]!.x
-        ls := ls.map fun o => if o.x > x - 1e-6 then { o with x := o.x + DX } else o
+        let thr := if west then x - 1e-6 else x + 1e-6
+        ls := ls.map fun o => if o.x > thr then { o with x := o.x + DX } else o
         xo := xo + DX
-      if c.inner then
-        let x := ls[i]!.x
-        ls := ls.map fun o => if o.x > x + 1e-6 then { o with x := o.x + DX } else o
-        xo := xo + DX
+  -- A WHOLE `°` opens one column WEST of every lane that carries it, once per span.
+  let wholes : Array (Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
+    if c.whole && !a.contains (c.first, c.last) then a.push (c.first, c.last) else a) acc) #[]
+  let carried (ls : Array Lane) (s : Int × Int) : Float :=
+    minA ((ls.filter fun l => l.conv.any fun c => c.whole && (c.first, c.last) == s).map (·.x)) 1e9
+  for s in wholes do
+    let m := carried ls s
+    ls := ls.map fun o => if o.x > m - 1e-6 then { o with x := o.x + DX } else o
+    xo := xo + DX
   let yOf (r : Int) : Float := if r < 0 then hh else if r >= (n : Int) then 0.0 else ys[r.toNat]!
-  -- `(x0, x1, y0, y1, both)`: `Relᵒᵖ` runs from `x0` to the `°` lane at `x1` — from the outer `°`
-  -- when both stand (`both`, dashed at `x0` too), else from the panel's west edge, since every
-  -- functor west of a lone `°` acts on the opposite category.
-  let convs : Array String := ls.foldl (fun acc l => acc ++ l.conv.map fun c =>
-    let x1 := if c.inner then l.x + DX else l.x - DX
-    let x0 := if c.inner && c.outer then l.x - DX else 0.0
-    "(" ++ num x0 ++ ", " ++ num x1 ++ ", " ++ num (min hh (yOf c.first + DY / 2.0))
-      ++ ", " ++ num (max 0.0 (yOf c.last - DY / 2.0)) ++ ", "
-      ++ (if c.inner && c.outer then "true" else "false") ++ ")") #[]
+  -- Every `°` wire `(x, first, last)`: the outer one of a lane WEST of it, the inner one EAST, a
+  -- whole one west of every lane carrying it.
+  let wires : Array (Float × Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
+      if c.whole then a else
+      let a := if c.outer then a.push (l.x - DX, c.first, c.last) else a
+      if c.inner then a.push (l.x + DX, c.first, c.last) else a) acc) #[]
+    ++ wholes.map fun s => (carried ls s - DX, s.1, s.2)
+  -- `(x0, x1, y0, y1, both)`: `Relᵒᵖ` runs from `x0` to the `°` lane at `x1`.  Read row by row: each
+  -- `°` wire crossed going WEST from the object toggles `𝒜`/`𝒜ᵒᵖ`, so the wires pair up from the
+  -- east (`both`, dashed at `x0` too) and an odd one out shades to the panel's west edge.
+  let bandsAt (r : Nat) : Array (Float × Float × Bool) :=
+    let xs := ((wires.filter fun w => w.2.1 ≤ (r : Int) && (r : Int) ≤ w.2.2).map (·.1)).qsort (· > ·)
+    (List.range ((xs.size + 1) / 2)).toArray.map fun k =>
+      if 2 * k + 1 < xs.size then (xs[2 * k + 1]!, xs[2 * k]!, true) else (0.0, xs[2 * k]!, false)
+  let mut convs : Array String := #[]
+  let mut rr := 0
+  while rr < n do
+    let bs := bandsAt rr
+    let mut k := rr + 1
+    while k < n && bandsAt k == bs do k := k + 1
+    -- A run's ends meet its neighbours' halfway, so a `°` that changes company mid-run stays one line.
+    let y0 := if rr > 0 && !(bandsAt (rr - 1)).isEmpty then (yOf rr + yOf (rr - 1)) / 2.0
+      else min hh (yOf rr + DY / 2.0)
+    let y1 := if k < n && !(bandsAt k).isEmpty then (yOf (k - 1) + yOf k) / 2.0
+      else max 0.0 (yOf (k - 1) - DY / 2.0)
+    for (x0, x1, both) in bs do
+      convs := convs.push ("(" ++ num x0 ++ ", " ++ num x1 ++ ", " ++ num y0 ++ ", " ++ num y1 ++ ", "
+        ++ (if both then "true" else "false") ++ ")")
+    rr := k
   -- A label is set from its TREE (`Lbl.typst`), so a division is the fraction the note draws
   -- wherever it stands — the unit `𝟙%∋`, and one nested in a composite (`[R%∋,S%∋]`) alike.
   let cell (l : Lbl) : String := l.bare.typst
@@ -1883,10 +1920,6 @@ def recipArg? (r : Expr) : MetaM (Option Expr) := do
     | none => return none
   | _ => return none
 
--- Off: a one-sided `F(z)°` / `F(z°)` draws as one bead labelled with its converse, the author's
--- choice over a lone `°` lane that flips `z`; the sandwich `F(z°)°` keeps its lanes either way.
-def drawOneSidedConv : Bool := false
-
 /-- `e` as a catalogue lane `F`'s action carrying a CONVERSE, the converse being the functor
     `recipFunctor : 𝒜 → 𝒜ᵒᵖ`: `F(z)°` is `F` then `°` (`outer`), `F(z°)` is `°` then `F` on `𝒜ᵒᵖ`
     (`inner`), `F(z°)°` the conjugate `recipConj F` (both).  Read by the head constants and CONFIRMED
@@ -1913,7 +1946,8 @@ def conjugate? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   if (wiresOf R).isEmpty then return none
   let inner ← recipArg? r
   if outer.isNone && inner.isNone then return none
-  if outer.isSome != inner.isSome && !drawOneSidedConv then return none
+  -- A ONE-SIDED `F(z)°`/`F(z°)` expands too, never one bead wearing a `°`: "E(R)° should be
+  -- expanded with the converse functor" (the author, on §13.1's `⊆Λ(R)°`).
   let z := inner.getD r
   let s ← Meta.saveState
   try
@@ -1934,6 +1968,18 @@ def openedBuilt? (regionTy e : Expr) : MetaM (Option Expr) := do
   if r != e && ((← asProdMap? regionTy r fun p => pure p.isSome) || (← asSumMap? r).isSome) then
     return some r
   return none
+
+/-- The factors of `z` as `interp` takes it apart — noted constants opened, the spine rewritten —
+    when `e` is `z°` for a COMPOSITE `z`, else `none`.  One place, so drawing and scan line agree. -/
+def conversedComposite? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
+  let some z ← recipArg? e | return none
+  let fs := factors (← rewriteSpine (← openNoted z))
+  return if fs.size > 1 then some (z, fs) else none
+
+/-- `(XY)° = Y°X°`: a composite with NO lane to run beside is its converses reversed, one bead each,
+    as a lone `R°` is. -/
+def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
+  fs.reverse.mapM fun f => Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
 
 mutual
 
@@ -1986,6 +2032,15 @@ partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     let idd ← Diagram.id ws d.otop
     let sp : Conv := { first := 0, last := (d.rows.size : Int) - 1, outer, inner }
     return ← ({ idd with lanes := idd.lanes.map fun l => { l with conv := #[sp] } } : Diagram).beside d
+  -- A CONVERSED COMPOSITE `(XY)°` IS ONE `°` beside the whole of `⟦XY⟧` drawn upside down: "the
+  -- converse functor can be extended upward to include R" (the author, on §10.2's chain).  Every
+  -- lane of it carries the span, so the `°` stands west of them all and beside every bead.
+  if let some (z, fs) ← conversedComposite? e then
+    let d ← (← interp regionTy cat objVars vpass none z).flip
+    if d.lanes.isEmpty then return ← vstack regionTy cat objVars vpass expect (← recipFactors fs)
+    let sp : Conv := { first := 0, last := (d.rows.size : Int) - 1, outer := true, inner := false,
+                       whole := true }
+    return { d with lanes := d.lanes.map fun l => { l with conv := l.conv.push sp } }
   -- A BUILT BUNDLE'S ACTION OPENS AS ITS OBJECTS DO: `(F×F')(R)` is `F(R)×F'(R)`, the product map
   -- whose ends are the `FA×F'A` a product map beside it reads, so the cut they share is spelled once.
   -- ONLY where the opened action IS such a map: `F(X,−)`'s action opens to a `BiRelator.map` no
@@ -2286,11 +2341,14 @@ def branchSel (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (e : E
 inductive Scan where
   | bead (e : Expr)
   | lane (w : Wire) (op : Bool × Bool) (body : Array Scan)
+  /-- A conversed composite `(XY)°`, its body stored upside down as it is drawn. -/
+  | conv (body : Array Scan)
   deriving Inhabited
 
 /-- The tree UPSIDE DOWN, as `Diagram.flip` draws it: every run of rows reversed, all the way in. -/
 partial def Scan.rev (xs : Array Scan) : Array Scan :=
-  xs.reverse.map fun | .lane w op b => .lane w op (Scan.rev b) | b => b
+  xs.reverse.map fun | .lane w op b => .lane w op (Scan.rev b) | .conv b => .conv (Scan.rev b)
+                     | b => b
 
 /-- Adjacent nodes of one lane and one side of the `°` are ONE node: `F(a)F(b) = F(ab)`, and inside
     two `°` lanes `F(a°)°F(b°)° = F((ab)°)°` — functoriality of the lane and of its conjugate.  A lane
@@ -2300,6 +2358,7 @@ partial def Scan.merge (xs : Array Scan) : MetaM (Array Scan) := do
   for x in xs do
     let x ← match x with
       | .lane w op b => pure (Scan.lane w op (← Scan.merge b))
+      | .conv b => pure (Scan.conv (← Scan.merge b))
       | b => pure b
     if let .lane _ _ #[] := x then continue
     match out.back?, x with
@@ -2313,6 +2372,7 @@ partial def Scan.merge (xs : Array Scan) : MetaM (Array Scan) := do
     conversed, so the text shows the reversal the `°` lanes perform. -/
 partial def Scan.text : Scan → MetaM String
   | .bead e => plain e
+  | .conv b => return s!"({String.intercalate "≫" (← b.reverse.toList.mapM Scan.text)})°"
   | .lane w op b => do
     let l ← w.label
     if op == (true, true) then
@@ -2330,6 +2390,7 @@ partial def Scan.same : Scan → Scan → MetaM Bool
   | .lane w op a, .lane w' op' b => do
     unless op == op' && (← Wire.beq w w') do return false
     Scan.sameAll a b
+  | .conv a, .conv b => Scan.sameAll a b
   | _, _ => return false
 
 partial def Scan.sameAll (a b : Array Scan) : MetaM Bool := do
@@ -2342,8 +2403,15 @@ end
     At a row, the lanes live WEST of everything the bead touches run past it; the outermost of them
     is a lane node over the run of rows it passes on the same side of its `conv` spans, and a row
     with no such lane left is its own bead.  Only lanes, rows and spans are read — never a label. -/
-partial def scanRows (d : Diagram) (ls : Array Lane) (i j : Nat) (outer : Array Nat) :
-    MetaM (Array Scan) := do
+partial def scanRows (d : Diagram) (ls : Array Lane) (i j : Nat) (outer : Array Nat)
+    (done : Array (Int × Int) := #[]) : MetaM (Array Scan) := do
+  -- The widest whole `°` span opening at row `r` and not yet read, and whether lane `k` carries it.
+  let spanAt (r : Nat) : Option (Int × Int) := ls.foldl (fun b l => l.conv.foldl (fun b c =>
+    if !c.whole || c.first != (r : Int) || done.contains (c.first, c.last) then b else
+    match b with | some t => if c.last > t.2 then some (c.first, c.last) else b
+                 | none => some (c.first, c.last)) b) none
+  let carries (k : Nat) (s : Int × Int) : Bool :=
+    ls[k]!.conv.any fun c => c.whole && (c.first, c.last) == s
   let west (r : Nat) : Array Nat :=
     let row := d.rows[r]!
     let touch := row.arms ++ row.legs ++ row.over
@@ -2351,11 +2419,19 @@ partial def scanRows (d : Diagram) (ls : Array Lane) (i j : Nat) (outer : Array 
     ((Array.range ls.size).filter fun k => ls[k]!.born < (r : Int) && (r : Int) < ls[k]!.dies
       && !touch.contains k && !outer.contains k && ls[k]!.x < edge).qsort fun a b => ls[a]!.x < ls[b]!.x
   let covered (k r : Nat) : Bool × Bool :=
-    match ls[k]!.conv.find? fun c => c.first ≤ (r : Int) && (r : Int) ≤ c.last with
+    match ls[k]!.conv.find? fun c => !c.whole && c.first ≤ (r : Int) && (r : Int) ≤ c.last with
     | some c => (c.outer, c.inner) | none => (false, false)
   let mut out : Array Scan := #[]
   let mut r := i
   while r < j do
+    -- A whole `°` encloses every lane that carries it, so it is read before them; a lane west of it
+    -- that does not carry it encloses the `°` and is read first.
+    if let some s := spanAt r then
+      if match (west r)[0]? with | none => true | some k => carries k s then
+        let e := min j (s.2.toNat + 1)
+        out := out.push (.conv (← scanRows d ls r e outer (done.push s)))
+        r := e
+        continue
     match (west r)[0]? with
     | none =>
       let some e := d.rows[r]!.term
@@ -2365,7 +2441,7 @@ partial def scanRows (d : Diagram) (ls : Array Lane) (i j : Nat) (outer : Array 
       let op := covered f r
       let mut k := r + 1
       while k < j && (west k)[0]? == some f && covered f k == op do k := k + 1
-      out := out.push (.lane ls[f]!.wire op (← scanRows d ls r k (outer.push f)))
+      out := out.push (.lane ls[f]!.wire op (← scanRows d ls r k (outer.push f) done))
       r := k
   return out
 
@@ -2387,6 +2463,10 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   if let some (R, z, o, i) ← conjugate? cat objVars regionTy e then
     let b ← scanStmt regionTy cat objVars z
     return nest R (o, i) (if o != i then Scan.rev b else b)
+  if let some (z, fs) ← conversedComposite? e then
+    if (← interp regionTy cat objVars #[] none z).lanes.isEmpty then
+      return (← (← recipFactors fs).mapM (scanStmt regionTy cat objVars · split)).flatten
+    return #[.conv (Scan.rev (← scanStmt regionTy cat objVars z))]
   if let some r ← openedBuilt? regionTy e then return ← scanStmt regionTy cat objVars r split
   -- A PRODUCT MAP as `interp` reads it: `𝟙×ψ` is `ψ` under the lane `A×−`, and `φ×ψ` the
   -- interchange `(φ×𝟙)(𝟙×ψ)`, split by functoriality into one product map per factor of `φ`.
@@ -2426,13 +2506,38 @@ def scanCheck (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (side 
     throwError "scan line: the panel reads back as `{← txt drawn}`, but it was drawn from \
       `{← txt said}`"
 
+/-- A BEAD ON A LANE BETWEEN TWO INNER `°` SPANS of that lane is drawn inside ONE `°` when it has a
+    named converse: west of the inner `°` a bead is read in `𝒜ᵒᵖ`, so `⊆` there is drawn `⊇`, the
+    `diag_opposite` lemma (`⊆ = ⊇°`) saying the two are one arrow — "the right converse line can be
+    connected, as ⊆ preserves converse" (the author, on §10.2b).  The bead's term stays the factor. -/
+def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : Diagram) :
+    MetaM Diagram := do
+  let mut d := d
+  for i in [1 : d.rows.size - 1] do
+    let r := d.rows[i]!
+    let (#[a], #[b]) := (r.arms, r.legs) | continue
+    let lone (k : Nat) (p : Conv → Bool) : Bool :=
+      d.lanes[k]!.conv.any fun c => !c.whole && c.inner && !c.outer && p c
+    unless lone a (·.last == (i : Int) - 1) && lone b (·.first == (i : Int) + 1) do continue
+    let some t := r.term | throwError "joinNamed: row {i} (`{r.label}`) records no factor"
+    let some q ← namedRecip? t | continue
+    let nd ← interp regionTy cat objVars #[] none q
+    let #[nr] := nd.rows
+      | throwError "joinNamed: the named converse of `{r.label}` draws {nd.rows.size} rows, not one bead"
+    d := { d with
+      rows := d.rows.set! i { r with shape := nr.shape, key := nr.key, nat := nr.nat,
+                                     natLean := nr.natLean, natHyp := nr.natHyp }
+      lanes := d.lanes.modify b fun l =>
+        { l with conv := l.conv.push { first := i, last := i, outer := false, inner := true } } }
+  return d
+
 /-- One side of a statement, as a panel: its picture, with the bottom edge's lanes told how deep the
     picture turned out to be.  The rewrite that draws `Λ S` as the note draws it — the unit bead and
     `S` on the `E` lane — is `interp`'s, taken at every spine it draws and so at every lane depth;
     a side is one such spine and gets no copy of it here. -/
 def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
     MetaM Diagram := do
-  let d ← interp regionTy cat objVars #[] none (← instantiateMVars side)
+  let d ← joinNamed regionTy cat objVars (← interp regionTy cat objVars #[] none (← instantiateMVars side))
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   scanCheck regionTy cat objVars side d
@@ -2524,7 +2629,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
   let some ci := env.find? declName | throwError "no such declaration: {declName}"
   -- ONE SWEEP.  The catalogue is the ENVIRONMENT's lanes and not the statement's, so it is read
   -- once and threaded: the def-opening test below peels cuts with it, and so does every panel.
-  let cat ← catalogue
+  let cat ← Prof.phaseIf draw "read" catalogue
   -- `stmtTelescope`, not `forallTelescopeReducing`: in a CONCRETE region a hom reduces to a
   -- function type, so the reducing walk goes straight through the arrow an arrow-valued `def` IS
   -- and hands back the codomain with the arrow's own elements as extra binders — the def's body
@@ -2535,7 +2640,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
   -- body, where the first walk cannot reach them, and the arrow still carried them and was refused
   -- as no arrow.  Re-quantifying over what has been entered and walking once more lands on the
   -- statement whichever side of the definition its binders sit.
-  let stmt ← stmtTelescope ci.type fun xs body0 => do
+  let stmt ← Prof.phaseIf draw "read" <| stmtTelescope ci.type fun xs body0 => do
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -2632,13 +2737,15 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- DECLARATION instead handed a side the depth of a side it is drawn nowhere near — half a panel
     -- of blank rows wherever the shared bead is one side's first and the other's last, which is what
     -- "unnecessary vertical space" named in (14.3f).
-    let mut qs : Array Diagram := #[]
-    for (b, h, p, s) in peers do
-      if b.toName == declName && h == binder then
-        let (_, _, d) ← reqParts p s
-        for (_, e) in d do
-          qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
-      else qs := qs ++ (← drawWith b.toName p h s [] false).2
+    let qs ← Prof.phaseIf draw "peers" do
+      let mut qs : Array Diagram := #[]
+      for (b, h, p, s) in peers do
+        if b.toName == declName && h == binder then
+          let (_, _, d) ← reqParts p s
+          for (_, e) in d do
+            qs := qs.push (← withSel regionTy cat objVars s e fun e' => panelOf regionTy cat e' objVars)
+        else qs := qs ++ (← drawWith b.toName p h s [] false).2
+      return qs
     let pl := placement qs
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
@@ -2675,7 +2782,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
-    withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    Prof.phaseIf draw "emit" <| withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""

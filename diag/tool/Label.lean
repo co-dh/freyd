@@ -1142,6 +1142,52 @@ def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
   unless (← PrettyPrinter.delab e).raw.structEq (← PrettyPrinter.delab hd).raw do return none
   return some (hd, args.extract k args.size)
 
+/-- Whether the relation `r : A ⟶ B` is PROVED SIMPLE by a theorem beside its definition (same
+    module): `Simple r` or `Map r`, or pointwise `P p x → P p y → x = y` of the predicate `r`'s own
+    definition applies (`f` is `fun p x => fR p x`, and `f_simple` is stated of `fR`).  Read off the
+    theorems' TYPES, never their names. -/
+def provedSimple (r : Expr) : MetaM Bool := do
+  let some c := r.getAppFn.constName? | return false
+  let env ← getEnv
+  let some idx := env.getModuleIdxFor? c | return false
+  -- Lean's own predicates (`<`, `∈`) are no relation of the book's, and their modules are huge
+  if env.header.moduleNames[idx.toNat]!.getRoot == `Init then return false
+  Meta.forallTelescope (← Meta.whnf (← Meta.inferType r)) fun xs _ => do
+    if xs.size != 2 then return false
+    let some xi := xs[0]? | return false
+    let some xo := xs[1]? | return false
+    Meta.withLocalDeclD `o₂ (← Meta.inferType xo) fun xo₂ => do
+    -- `r i o`, and the predicate its definition applies at the same points
+    let forms (o : Expr) : MetaM (Array Expr) := do
+      let a := mkApp2 r xi o
+      return #[a] ++ (← Meta.unfoldDefinition? a).toArray
+    let heads := (← forms xo).filterMap (·.getAppFn.constName?)
+    for n in env.header.moduleData[idx.toNat]!.constNames do
+      let some (.thmInfo t) := env.find? n | continue
+      unless heads.any fun h => (t.type.find? (·.isConstOf h)).isSome do continue
+      -- NO FURTHER HYPOTHESIS: every binder but the last two is instantiated by unification, so a
+      -- theorem that needs one more premise (`Simple R → …`) leaves it unassigned and is refused.
+      let ok ← Meta.withNewMCtxDepth do
+        let (hs, _, b) ← Meta.forallMetaTelescope t.type
+        let closed : MetaM Bool := do
+          for h in hs.pop.pop do
+            if (← Meta.isProp (← Meta.inferType h)) && !(← h.mvarId!.isAssigned) then return false
+          return true
+        if hs.isEmpty && (b.isAppOf ``Freyd.Alg.Simple || b.isAppOf ``Freyd.Alg.Map) then
+          return ← Meta.isDefEq b.appArg! r
+        let some (_, x, y) := b.eq? | return false
+        let some h2 := hs.back? | return false
+        let some h1 := hs[hs.size - 2]? | return false
+        let t1 ← Meta.inferType h1
+        let t2 ← Meta.inferType h2
+        for (a₁, a₂) in (← forms xo).zip (← forms xo₂) do
+          if (← Meta.isDefEq t1 a₁) && (← Meta.isDefEq t2 a₂) && (← Meta.isDefEq x xo)
+              && (← Meta.isDefEq y xo₂) then
+            return ← closed
+        return false
+      if ok then return true
+    return false
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -1155,8 +1201,13 @@ mutual
 
     RECURSIVE THROUGH THE BRACKETING OPERATORS TOO.  `⦇…⦈`, `E(…)` and `…%∋` delimit their operand,
     so a composite inside one is still a composite of the note's: `⦇S%∋ est(R°)⦈`, never
-    `⦇S%∋ ≫ est(R°)⦈`, which is what the raw printer hands back for the whole application. -/
-partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
+    `⦇S%∋ ≫ est(R°)⦈`, which is what the raw printer hands back for the whole application.
+
+    `avoid`, when given, is the SIBLING side of a statement `split` just cut this term from: a
+    converse that would substitute a named form EQUAL TO `avoid` is the theorem's own defining
+    equation `Q = P°` naming that pair, and substituting there collapses it into `Q=Q` — CLAUDE.md's
+    stated exception, `∈ ≜ ∋°` itself printing its `°`. -/
+partial def labelTree (prec : Nat) (e : Expr) (avoid : Option Expr := none) : MetaM Lbl := do
   -- A NAME THE NOTE DRAWS OPENED is opened wherever it is SPELLED, not only where a factor of a
   -- composite is drawn: a case study's middle bead is ONE bead `⦇Salg⦈` whose whole content is the
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
@@ -1217,7 +1268,8 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   -- `split` every route already asks of a head — so a HYPOTHESIS is spelled by the same rules its
   -- conclusion is, where it used to fall to the printer and carry Lean's `≫` into the cell.
   if let some (sym, l, r) := split e then
-    return wrap Prec.rel ((← labelTree (Prec.rel + 1) l) ++ sym ++ (← labelTree (Prec.rel + 1) r))
+    return wrap Prec.rel
+      ((← labelTree (Prec.rel + 1) l (some r)) ++ sym ++ (← labelTree (Prec.rel + 1) r (some l)))
   -- A `→` BETWEEN TWO STATEMENTS is the note's `⟹`; a binder the body depends on is its `∀`.  Read
   -- off the BINDER — whether the body mentions it — never off how the arrow prints.
   if let .forallE _ t b _ := e then
@@ -1238,6 +1290,17 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       | some l => pure l
       | none => notationLevel tok h
     return ← bin p a op e.getAppArgs
+  -- A VALUE THE PRINTER WRITES AS A TUPLE — a pair, an interval `(a,b)` — is a comma list like the
+  -- fork's: its fields, each a term of the note's, and no space after the comma.
+  -- A PROOF FIELD is a statement about the others that no formula writes (a subtype's point is its
+  -- value), so it is not one of the list.
+  if let some (.ctorInfo ci) := e.getAppFn.constName?.bind (← getEnv).find? then
+    if e.getAppNumArgs == ci.numParams + ci.numFields then
+      let fs ← (e.getAppArgs.extract ci.numParams e.getAppNumArgs).filterM fun a => return !(← Meta.isProof a)
+      if let #[v] := fs then
+        if fs.size < ci.numFields then return ← labelTree prec v
+      if (stxPeel (← PrettyPrinter.delab e)).isOfKind ``Lean.Parser.Term.tuple then
+        return commaL "(" ")" (← fs.mapM (labelTree 0))
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
@@ -1305,14 +1368,24 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
       | none => txt e
     | none => txt e
   -- A CONVERSE WITH A NAME OF ITS OWN IS WRITTEN BY THAT NAME (CLAUDE.md): `∋°` is `∈`, `⊇°` is
-  -- `⊆`, each pair a `diag_opposite` theorem read by `namedRecip?`.
+  -- `⊆`, each pair a `diag_opposite` theorem read by `namedRecip?` — EXCEPT where the substitution
+  -- would reproduce `avoid`, the sibling side of the very equation naming the pair (`subset =
+  -- (supset)°` printing `supset` as `subset` collapses to `⊆=⊆`): there the `°` prints literally.
   | (``Freyd.Alg.Allegory.recip, args) | (``Freyd.Diag.CartBicat.conv, args) => do
     match (← arrows args).back? with
-    | some r => match ← namedRecip? r with
-      | some q => labelTree prec q
-      | none => un Prec.atom Prec.atom "" "°" args
+    | some r =>
+      let literal := un Prec.atom Prec.atom "" "°" args
+      match ← namedRecip? r with
+      | some q =>
+        match avoid with
+        | some sib => if ← Meta.isDefEqGuarded q sib then literal else labelTree prec q
+        | none => labelTree prec q
+      | none => literal
     | none => txt e
   | (``Freyd.Diag.ClosedLinearBicat.perp, args) => un Prec.atom Prec.atom "" "⊥" args
+  -- `codBox` IS FREYD'S `R□` (§2.122), a POSTFIX like `°`: the box terminates its operand exactly
+  -- as `°` does, at the same tight precedence, so `codBox(R°)` reads `R°□`, never `R°□`'s reverse.
+  | (``Freyd.Alg.codBox, args) => un Prec.atom Prec.atom "" "□" args
   -- `∼` binds tighter than everything but `°`, so its operand is set at `°`'s precedence.
   | (``Freyd.Alg.neg, args) => un Prec.atom Prec.atom "∼" "" args
   -- The BRACKETING operators: their own delimiters separate the operand, so it is set at the
@@ -1416,9 +1489,6 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
   | (``Freyd.Alg.Relator.sum, args) => match lastTwo args with
     | some (a, b) => sumL a b
     | none => txt e
-  -- A PAIR'S VALUE is a comma list like the fork's and is set the same way: `(xs,ys)`, each factor
-  -- a term of the note's — the printer writes `(xs, ys)` and welds nothing.
-  | (``Prod.mk, #[_, _, a, b]) => return commaL "(" ")" #[← labelTree 0 a, ← labelTree 0 b]
   | (``Freyd.Functor.map, _) =>
     -- A RELATOR WHOSE ACTION THE NOTE WRITES OUT is rewritten to that spelling first, the same
     -- `diag_rewrite` step the composite takes and for the same reason: the note keeps the letter on
@@ -1453,6 +1523,19 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     if let some r ← rewriteHead? e then return ← labelTree prec r
     -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
     -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
+    -- A SIMPLE RELATION at (input, output) is the book's `f(a,b)=x`: at most one output, so the
+    -- statement says which one it is.
+    if (← Meta.isProp e) && args.size ≥ 2 then
+      let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
+      -- an arrow of the allegory, or the bare predicate one is defined by (`fR`)
+      if (← homEnds? hd).isSome || hd.isConst then
+        if ← provedSimple hd then
+          let i := args[args.size - 2]!
+          let a ← labelTree 0 i
+          -- an input the printer writes as a tuple is already the application's own brackets
+          let tup := (stxPeel (← PrettyPrinter.delab i)).isOfKind `Freyd.Alg.noteTuple
+          return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
+            ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
     if let some (hd, pts) ← swallowedPoints? e then
       return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
@@ -1566,7 +1649,20 @@ partial def labelTree (prec : Nat) (e : Expr) : MetaM Lbl := do
     -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
       (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)
-        ++ (← args.filterM fun a => return (← swallowedPoints? a).isSome)).toList
+        ++ (← args.filterM fun a => return (← swallowedPoints? a).isSome)
+        -- …and an operand the printer writes as a JUXTAPOSED APPLICATION, which inside a notation
+        -- (`[d]⧺f (p) (q)`) no `appSpell` reaches: respelled here, it is the note's `f(p,q)`.
+        -- A VALUE only, `swallowedPoints?`'s test: an explicit argument whose type is a small set.
+        ++ (← (← (List.range args.size).toArray.filterM fun i => do
+          -- only under a `noteArith` notation: everywhere else `appSpell` already re-sets them
+          unless ((Parser.parserExtension.getState (← getEnv)).categories.find? `noteArith).any
+            (·.kinds.contains (stxPeel stx).getKind) do return false
+          let a := args[i]!
+          let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+          unless (fi.paramInfo[i]?.map (·.isExplicit)).getD true do return false
+          if (← Meta.isProp a) || (← Meta.isType a) || (← homEnds? a).isSome then return false
+          unless (← Meta.whnf (← Meta.inferType (← Meta.inferType a))) == .sort 1 do return false
+          return (appParts (stxPeel (← PrettyPrinter.delab a))).isSome).mapM fun i => pure args[i]!)).toList
       #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
@@ -1600,17 +1696,20 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
 
 end
 
-/-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses. -/
-def labelT (e : Expr) : MetaM Lbl := return (← labelTree 0 e).norm
+/-- A term's label as a TREE, at the top of its own picture or box: no outer parentheses.  `avoid`
+    passes down to `labelTree`'s named-converse clause — the sibling side of a statement this term
+    was split from, so its own defining equation prints its `°` rather than collapsing. -/
+def labelT (e : Expr) (avoid : Option Expr := none) : MetaM Lbl :=
+  Prof.phase "label" do return (← labelTree 0 e avoid).norm
 
 /-- …and FLAT, which is every label a box, a bead or a wire carries. -/
-def label (e : Expr) : MetaM String := return (← labelTree 0 e).flat
+def label (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree 0 e).flat
 
 /-- The flat spelling at a given precedence, for the pictures that write one string. -/
-def labelAt (prec : Nat) (e : Expr) : MetaM String := return (← labelTree prec e).flat
+def labelAt (prec : Nat) (e : Expr) : MetaM String := Prof.phase "label" do return (← labelTree prec e).flat
 
 /-- The factors a label writes, flat. -/
-def labelRun (e : Expr) : MetaM (Array String) :=
+def labelRun (e : Expr) : MetaM (Array String) := Prof.phase "label" do
   return (← labelRunT e).map Lbl.flat
 
 /-- A label in the PARTS the picture sets it in.  A SYMMETRIC DIVISION is the note's fraction, and a
@@ -1630,7 +1729,7 @@ partial def labelPartsT (e : Expr) : MetaM (Array Lbl) := do
   | _ => return #[← labelT e]
 
 /-- …and each part flat, for the pictures that write one string. -/
-def labelParts (e : Expr) : MetaM (Array String) :=
+def labelParts (e : Expr) : MetaM (Array String) := Prof.phase "label" do
   return (← labelPartsT e).map Lbl.flat
 
 /-- A relator's own spelling as a LANE, in the NOTE's notation and not the pretty printer's.  A

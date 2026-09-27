@@ -438,6 +438,29 @@ public theorem subset_existsImage_oplax {X Y : 𝒜} (R : X ⟶ Y) :
     _ ⊑ (∋ Y)° ≫ 𝟙 _ := comp_mono_left _ hE.2
     _ = (∋ Y)° := Cat.comp_id _
 
+/-- **`⊇` is OP-lax along `E`** too: `⊇ E(R) ⊑ E(R) ⊇`, for `xs ⊇ ys` gives `R[xs] ⊇ R[ys]`.  The
+    bead `⊆` becomes when it is read inside a `°` (`⊆ = ⊇°`).  `E(R)°⊇E(R) ⊑ ⊇`, because
+    `E(R)∋ = ∋R` and `⊇∋ ⊑ ∋` is the division's cancellation; `E(R)` entire then moves it across. -/
+public theorem supset_existsImage_oplax {X Y : 𝒜} (R : X ⟶ Y) :
+    supset (a := X) ≫ (existsImageFunctor (𝒜 := 𝒜)).map R
+      ⊑ (existsImageFunctor (𝒜 := 𝒜)).map R ≫ supset (a := Y) := by
+  show (∋ X / ∋ X) ≫ existsImage R ⊑ existsImage R ≫ (∋ Y / ∋ Y)
+  have hE : Map (existsImage R) := Λ_is_map' _
+  have h : (existsImage R)° ≫ (∋ X / ∋ X) ≫ existsImage R ⊑ ∋ Y / ∋ Y := by
+    refine (le_div_iff _ _ _).mpr ?_
+    calc ((existsImage R)° ≫ (∋ X / ∋ X) ≫ existsImage R) ≫ ∋ Y
+        = (existsImage R)° ≫ ((∋ X / ∋ X) ≫ ∋ X) ≫ R := by
+          simp only [Cat.assoc, existsImage_eps]
+      _ ⊑ (existsImage R)° ≫ ∋ X ≫ R :=
+          comp_mono_left _ (comp_mono_right ((le_div_iff _ _ _).mp (le_refl _)) _)
+      _ = ((existsImage R)° ≫ existsImage R) ≫ ∋ Y := by rw [Cat.assoc, existsImage_eps]
+      _ ⊑ 𝟙 _ ≫ ∋ Y := comp_mono_right hE.2 _
+      _ = ∋ Y := Cat.id_comp _
+  calc (∋ X / ∋ X) ≫ existsImage R = 𝟙 _ ≫ (∋ X / ∋ X) ≫ existsImage R := (Cat.id_comp _).symm
+    _ ⊑ (existsImage R ≫ (existsImage R)°) ≫ (∋ X / ∋ X) ≫ existsImage R := comp_mono_right hE.1 _
+    _ = existsImage R ≫ ((existsImage R)° ≫ (∋ X / ∋ X) ≫ existsImage R) := by simp only [Cat.assoc]
+    _ ⊑ existsImage R ≫ (∋ Y / ∋ Y) := comp_mono_left _ h
+
 /-- `∈\Z = ⊆ Λ(Z°)°`, first step: `Z = ∈ Λ(Z°)°`, the converse of `Λ(Z°)∋ = Z°`. -/
 public theorem mem_leftDiv_eq_step1 {C : 𝒜} (Z : A ⟶ C) :
     ((∋ A)° \ Z) = ((∋ A)° \ ((∋ A)° ≫ (Λ (Z°))°)) := by
@@ -454,6 +477,35 @@ public theorem mem_leftDiv_eq_step2 {C : 𝒜} (Z : A ⟶ C) :
 public theorem mem_leftDiv_eq {C : 𝒜} (Z : A ⟶ C) :
     ((∋ A)° \ Z) = subset (a := A) ≫ (Λ (Z°))° :=
   (mem_leftDiv_eq_step1 Z).trans (mem_leftDiv_eq_step2 Z)
+
+/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, first step: `R = ∈Λ(R°)°`, the converse of `Λ(R°)∋ = R°`. -/
+public theorem leftDiv_eq_Λ_subset_step1 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
+    (R \ S) = (((∋ A)° ≫ (Λ (R°))°) \ S) := by
+  rw [← Allegory.recip_comp, Λ_comp_eps, Allegory.recip_recip]
+
+/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, second step: dividing by a composite divides twice. -/
+public theorem leftDiv_eq_Λ_subset_step2 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
+    (((∋ A)° ≫ (Λ (R°))°) \ S) = ((Λ (R°))° \ ((∋ A)° \ S)) :=
+  leftDiv_comp _ _ _
+
+/-- `R\S = Λ(R°) ⊆ Λ(S°)°`, third step: dividing by a map's converse is composing with the
+    map, and `∈\S = ⊆ Λ(S°)°`.  One step: the two draw the same picture. -/
+public theorem leftDiv_eq_Λ_subset_step3 {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
+    ((Λ (R°))° \ ((∋ A)° \ S)) = Λ (R°) ≫ subset (a := A) ≫ (Λ (S°))° := by
+  rw [recip_map_leftDiv (Λ_is_map' (R°)), mem_leftDiv_eq]
+
+/-- Every left division is a composite: `R\S = Λ(R°) ⊆ Λ(S°)°`, `b (R\S) c` exactly when
+    `Λ(R°)(b) ⊆ Λ(S°)(c)`. -/
+public theorem leftDiv_eq_Λ_subset {C : 𝒜} (R : A ⟶ B) (S : A ⟶ C) :
+    (R \ S) = Λ (R°) ≫ subset (a := A) ≫ (Λ (S°))° :=
+  (leftDiv_eq_Λ_subset_step1 R S).trans
+    ((leftDiv_eq_Λ_subset_step2 R S).trans (leftDiv_eq_Λ_subset_step3 R S))
+
+/-- `est(R) = ∋ ∩ ⊆Λ(R)°`: `∈\R° = ⊆Λ(R)°` (`mem_leftDiv_eq` at `Z := R°`). -/
+public theorem est_eq_subset_Λ (R : A ⟶ A) :
+    est R = ∋ A ∩ (subset (a := A) ≫ (Λ R)°) := by
+  show ∋ A ∩ (((∋ A)°) \ R°) = _
+  rw [mem_leftDiv_eq, Allegory.recip_recip]
 
 /-- **(7.8)**: `P f·min R = min (f°·R·f)·f` at `R°`, mirrored to
     `powerRel f ≫ est R = est (f ≫ R ≫ f°) ≫ f` for a MAP `f`.  `P = E` on maps opens `est`

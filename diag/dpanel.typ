@@ -420,11 +420,19 @@
   // `Relᵒᵖ`, shaded before any wire so the wires draw over it — to the outer `°` at `x0` when the
   // lane is sandwiched (`both`), else to the panel's edge.  The `°` names sit mid-run, west of each
   // lane: at the ends they would land on the beads above and below.
-  for (x0, x1, y0, y1, both) in convs {
+  // One `°` wire can come as several bands, one per change in the wires beside it; it is named once,
+  // in the band where it starts, so a wire that runs on keeps one name.
+  let owire(c) = if c.at(4) { (c.at(0), c.at(1)) } else { (c.at(1),) }
+  for (i, c) in convs.enumerate() {
+    let (x0, x1, y0, y1, both) = c
     hm-region(((x0, y0), (x1, y0), (x1, y1), (x0, y1)), fb-OPC, straight: true)
-    for x in if both { (x0, x1) } else { (x1,) } {
+    for x in owire(c) {
       hm-wire(((x, y0), (x, y1)), col: CONVC, straight: true, dash: "dashed")
-      hm-name((x - 0.12, (y0 + y1) / 2), [`°`], col: CONVC, size: 10pt, anchor: "east")
+      let runs-on = convs.slice(0, i).any(p => calc.abs(p.at(3) - y0) < 1e-6
+        and owire(p).any(px => calc.abs(px - x) < 1e-6))
+      if not runs-on {
+        hm-name((x - 0.12, (y0 + y1) / 2), [`°`], col: CONVC, size: 10pt, anchor: "east")
+      }
     }
   }
   for (i, l) in lanes.enumerate() {

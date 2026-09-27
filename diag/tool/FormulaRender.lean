@@ -129,9 +129,20 @@ def render (declName : Name) (binder : Option String) (path : List String)
       unless path.isEmpty do
         throwError "{declName}: `.{path.head!}` takes a side of a statement, and a definition has \
           none — its formula is `<name>≜<body>`"
+      let head ← labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
+      -- A STRUCTURE OF PROPOSITIONS (a `Prop` class) has no value but its FIELDS: what it states is
+      -- their conjunction, read off the constructor at these arguments.
+      if ci.value?.isNone && isStructure (← getEnv) declName then
+        let ctor := getStructureCtor (← getEnv) declName
+        let cty ← Meta.instantiateForall (← Meta.inferType
+          (mkConst ctor.name (ci.levelParams.map Level.param))) xs
+        return ← Meta.forallTelescope cty fun fs _ => do
+          let tys ← fs.mapM Meta.inferType
+          let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
+            | throwError "{declName}: a structure with no fields states nothing"
+          return #[head ++ "≜" ++ (← labelT c)]
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
-      let head ← labelT (mkAppN (.const declName (ci.levelParams.map Level.param)) xs)
       return ← withBody declName branch (val.beta xs) fun v => return #[head ++ "≜" ++ (← labelT v)]
     let body ← match binder with
       | some h =>
@@ -172,7 +183,7 @@ def render (declName : Name) (binder : Option String) (path : List String)
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return #[ante ++ (← labelT l) ++ sym, ← labelT r]
+      | some (sym, l, r) => return #[ante ++ (← labelT l (some r)) ++ sym, ← labelT r (some l)]
       | none => return #[ante ++ (← labelT target')]
 
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the

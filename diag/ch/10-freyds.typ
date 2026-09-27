@@ -113,6 +113,37 @@ subscript.
 #block[#src[`i` is the inclusion `Map(𝒜)⟶𝒜`, doing nothing, so `E` is both the functor and the
 monad `iE`.]]
 
+== `∈\` as a composite <sec-mem-ldiv>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
+    #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
+     // lean:AOP.A7_1.mem_leftDiv_eq@7e4fcb2b
+  lean-chain(
+    (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°`: the converse of `Λ(Z°)∋=Z°` — @pow-laws]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9ab326b8
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
+      src[`X\(Yf°)=(X\Y)f°` for a map `f` (not a tabulated row), at the map `f≜Λ(Z°)`; `⊆≜∈\∈`]),
+     // lean:AOP.A7_1.mem_leftDiv_eq_step2@dc661372
+  ),
+)]<mem-ldiv>
+
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.leftDiv_eq_Λ_subset") \
+    #src[`b` is related to `c` by `R\S` exactly when `Λ(R°)(b) ⊆ Λ(S°)(c)`, the `R`-preimage of `b` inside the `S`-preimage of `c`]],
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset@6b9c4f56
+  lean-chain(
+    (none, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.lhs", []),
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.rhs", src[`R=∈Λ(R°)°`: the converse of `Λ(R°)∋=R°` — @pow-laws]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@a8fe3773
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step2.rhs", src[`(XY)\S=Y\(X\S)`]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@032cf912
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step3.rhs", src[`f°\X=fX` for the map `f≜Λ(R°)`, and `∈\S=⊆Λ(S°)°` — @mem-ldiv]),
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@baf4fd86
+  ),
+)]<ldiv-comp>
+
 // The heading gets its own page: §10.1's pair fills the foot of the previous one, and the definition
 // below is unbreakable, so the heading was left standing alone there.
 #pagebreak(weak: true)

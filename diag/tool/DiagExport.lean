@@ -1627,6 +1627,9 @@ def main (args : List String) : IO UInt32 := do
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative" && a != "--graph"
       && a != "--value" && a != "--records" && a != "--stale")
   if args.isEmpty then IO.eprintln usage; return 2
+  let t0 ← IO.monoNanosNow
+  let kind := (["sig", "string", "circuit", "commutative", "graph", "type", "formula", "value",
+    "proof"].find? (argv.contains <| "--" ++ ·)).getD "draw"
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1643,6 +1646,8 @@ def main (args : List String) : IO UInt32 := do
     else [`Freyd, `Freyd.Diag.SymMonCat, `Freyd.Diag.Word]
   let exts ← scopedEnvExtensionsRef.get
   let env := scopes.foldl (fun env ns => exts.foldl (fun env ext => ext.activateScoped env ns) env) env
+  let tImport ← IO.monoNanosNow
+  let hbImport ← IO.getNumHeartbeats
   -- Each route writes under its own directory, except the string one: its panel IS the picture the
   -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
   let outDir := outDirOf circuitMode commutativeMode typeMode formulaMode valueMode graphMode
@@ -1662,9 +1667,20 @@ def main (args : List String) : IO UInt32 := do
     else ((Options.empty.setBool `pp.fieldNotation false).setBool `pp.fieldNotation.generalized false)
       |>.insert `maxHeartbeats (.ofNat 1000000)
   -- The staleness route prints the statement as the drawing does, so it needs all of the above.
+  -- The run's own lines around the panels': the import, and the process totals.
+  let profWrite (extra : String) (lines : Array Prof.Line) : IO Unit := do
+    let procExtra ← match ← Prof.processExtra.toBaseIO with
+      | .ok s => pure s
+      | .error e => IO.eprintln s!"diag-export: profiling: {e}"; pure "proc=unreadable"
+    let total : Prof.Line :=
+      { phase := "total", ns := (← IO.monoNanosNow) - t0, extra := s!"kind={kind} {extra} {procExtra}" }
+    Prof.write t0 <| #[{ phase := "import", ns := tImport - t0, extra := s!"hb={hbImport}" }]
+      ++ lines.push total
   if staleMode then
-    return ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
-      proofMode env opts scopes args
+    let code ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode
+      graphMode proofMode env opts scopes args
+    profWrite s!"stale=1 selectors={args.length}" #[]
+    return code
   -- EVERY ARGUMENT IS A TASK over the ONE imported `env`: a batch then costs its declarations
   -- spread over the cores of Lean's own pool, sized by the hardware, and not their sum on one core.
   -- Nothing a task runs holds mutable state outside its own `CoreM` run, so they share only `env`.
@@ -1721,9 +1737,14 @@ def main (args : List String) : IO UInt32 := do
         else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
           cannot be moved into the call's directory"
       return (← certLine (selDecls commutativeMode graphMode arg base)) ++ body
-    IO.asTask (Prod.fst <$> run.toIO ctx { env })
+    -- A task runs on one pool thread, so the phases its thread recorded are its own.
+    BaseIO.asTask do
+      let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
+      let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO
+      return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain)
   -- The results are reported in ARGUMENT order, as a serial run reported them.
   let mut failed : Array String := #[]
+  let mut prof : Array Prof.Line := #[]
   for ((arg, call), t) in jobs.zip tasks do
     let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
     unless sigMode do if let some p := path.parent then IO.FS.createDirAll p
@@ -1747,7 +1768,9 @@ def main (args : List String) : IO UInt32 := do
     -- and a bead whose naturality nobody proved has a message naming the three statements it
     -- looked for.  THE DEFECT ALSO GOES ON THE PAGE: the note imports this file by name, so a
     -- selector that drew nothing still gets one — a red box holding the error — and the run fails.
-    match ← IO.wait t with
+    let (res, ns, hb, subs) ← IO.wait t
+    let tw ← IO.monoNanosNow
+    match res with
     | .error ex =>
       IO.eprintln s!"diag-export: {arg}: {ex}"
       unless sigMode do write (stubFile arg (toString ex))
@@ -1756,6 +1779,15 @@ def main (args : List String) : IO UInt32 := do
     | .ok text =>
       if sigMode then IO.println text else write text
       unless sigMode do record "file" path.toString
+    -- `rest` is the panel less its named phases: reading the declaration, layout, rendering.
+    let named := subs.foldl (· + ·.2.ns) 0
+    let ok := res matches .ok _
+    prof := prof.push { sel := arg, phase := "panel", ns := ns, extra := s!"kind={kind} hb={hb} ok={ok}" }
+    prof := prof ++ subs.map fun (p, a) =>
+      { sel := arg, phase := p, ns := a.ns, extra := s!"hb={a.hb} calls={a.calls}" }
+    prof := prof.push { sel := arg, phase := "rest", ns := ns - named }
+    prof := prof.push { sel := arg, phase := "write", ns := (← IO.monoNanosNow) - tw }
+  profWrite s!"panels={jobs.length} failed={failed.size}" prof
   unless failed.isEmpty do
     IO.eprintln s!"diag-export: drew a red stub for {failed.size} selector(s): \
       {" ".intercalate failed.toList}"

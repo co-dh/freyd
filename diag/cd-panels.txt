@@ -8,8 +8,8 @@
 #
 # The canvas number counts the commutative canvases of that display, in the order the display draws
 # them.  `-` in a column: no selector (the canvas is drawn from no statement — its candidates are in
-# the trailing `#` comment), or no reference (nothing in `diag/` holds the generated panel to the
-# note's drawing, so only the panel's own geometry is checked).
+# the trailing `#` comment), or no reference (the note never drew the canvas by hand, so there is no
+# original to hold the generated panel to, and only the panel's own geometry is checked).
 #
 # WHY THE SELECTOR IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST
 # COMMENT, which the compiler discards before anything can query it, so no typed reader can see it
@@ -58,8 +58,8 @@
 13.4.3a/party-mono#1             | Freyd.Alg.RelSet.Party.party_mono                          | cdref-party.typ
 13.4.3b/party-absorb#1           | Freyd.Alg.RelSet.Party.party_absorb.lhs                    | cdref-absorb-l.typ
 13.4.3b/party-absorb#2           | Freyd.Alg.RelSet.Party.party_absorb.rhs                    | cdref-absorb-r.typ
-15.2.1c/dp-laws#1                | Freyd.Alg.ThinCondition                                    | cdref-thincond.typ  # drawn by `#leancd` from the start; the reference is the author's spoken spec, top `Q`, sides `F(H)h`, bottom `R`
-15.2.1c/dp-laws#2                | Freyd.Alg.H_fixed                                          | cdref-hfix.typ
+15.2e/dp-laws#1                  | Freyd.Alg.dynamic_programming_thin#hQ                      | -  # the ASSUMPTION `hQ` of Theorem 9.2, read in the theorem that assumes it; the note never drew it by hand, so the panel is held to its own geometry
+15.2e/dp-laws#2                  | Freyd.Alg.H_fixed                                          | -
 #
 # Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
 - | Freyd.Alg.alpha_natural                          | -

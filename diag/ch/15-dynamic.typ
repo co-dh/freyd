@@ -63,13 +63,17 @@
 `H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` as
 in @mu-defn.
 // lean:AOP.A9_1.H@2beea1fa
+
+#leanf("Freyd.Alg.DPSetting") \
+#src[`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive — assumed by every theorem below]
+// lean:AOP.A9_1.DPSetting@761bb771
 ]]<dp-defn>
 
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@58bc6d9f
+    // lean:AOP.A9_1.dynamic_programming@cadd292a
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -100,28 +104,12 @@ in @mu-defn.
   ),
 )]<dp-lower>
 
-=== `∈\` as a composite
-
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
-    #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
-     // lean:AOP.A7_1.mem_leftDiv_eq@7e4fcb2b
-  lean-chain(
-    (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
-    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°`: the converse of `Λ(Z°)∋=Z°` — @pow-laws]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9ab326b8
-    (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
-      src[`X\(Yf°)=(X\Y)f°` for a map `f` (not a tabulated row), at the map `f≜Λ(Z°)`; `⊆≜∈\∈`]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step2@dc661372
-  ),
-)]<mem-ldiv>
-
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@68f9a1dc
+     // lean:AOP.A9_1.dynamic_programming_upper@1e9866e3
   // two rows: nine panels in one row shrink the fractions past reading
   lean-chain((sub: "Freyd.Alg.dynamic_programming_upper_steps1to3",
     gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`], steps: (
@@ -139,7 +127,7 @@ in @mu-defn.
      // lean:AOP.A9_1.dynamic_programming_upper_step3b@71266e1c
   )), (sub: "Freyd.Alg.dynamic_programming_upper_steps4to5",
     gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`], steps: (
-     // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@7479b85b
+     // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@db9b0efd
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°`: `M≜`#frc([`H`])` est(R)` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@9e7292e3
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h°F(R°)h⊑R°`: `h` monotonic on `R°`]),
@@ -176,7 +164,7 @@ in @mu-defn.
   ),
   // The two squares the chain rests on: the hypothesis `hQ` and the fixed point `H` satisfies.
   grid(columns: 2, column-gutter: 24pt, align: center + top,
-    [#leancd("Freyd.Alg.ThinCondition") \
+    [#leancd("Freyd.Alg.dynamic_programming_thin#hQ") \
       #src[`QF(H)h⊑F(H)hR`: every result of thinning by `Q`, solving the parts by `F(H)` and
       assembling by `h` is reached by `R` from a result of solving by `F(H)` and assembling by `h`
       without `Q`]],
@@ -236,7 +224,7 @@ in @mu-defn.
       src[`QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`]),
   )), (sub: "Freyd.Alg.dynamic_programming_thin_steps9to11",
     gloss: src[rebuilding from parts replaced by `M`'s, between two `R°` steps, stays within `R°`], steps: (
-     // lean:AOP.A9_1.dynamic_programming_thin_steps9to11@bc2eaa38
+     // lean:AOP.A9_1.dynamic_programming_thin_steps9to11@ed076f93
     (SQ, "Freyd.Alg.dynamic_programming_thin_step9.rhs", src[`H°M⊑R°` under `F` — @est-up]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step10.rhs",
       src[`h°F(R°)h⊑R°`: `h` monotonic on `R`, shunted — the hypothesis on `h`]),
