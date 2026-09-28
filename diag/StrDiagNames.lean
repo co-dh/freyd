@@ -36,6 +36,8 @@ import AOP.A9_0_SegmentExample
 import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
+-- §6.5's membership, which Theorem 6.4's claim draws as a bead.
+import AOP.A6_5
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
@@ -1448,6 +1450,11 @@ open Lean PrettyPrinter in
 @[app_unexpander Quotient] def unexpandQuotientName : Unexpander
   | `($_ $args*) => `($(mkIdent `Quotient) $args*)
   | _ => `($(mkIdent `Quotient))
+-- B&dM p.148 writes `member(F)`; the bead's `F` and object are the wires it joins, so the label is bare.
+open Lean PrettyPrinter in
+@[app_unexpander LaxMembership.mem] def unexpandMember : Unexpander
+  | `($_ $_ $_) => `($(mkIdent `member))
+  | _ => throw ()
 -- `Fin` KEEPS ITS ARGUMENT — `Fin n` is the object, where `Int` and `Char` are whole names; an
 -- unexpander and not a delaborator, so the index the printer already wrote stands.
 open Lean PrettyPrinter in
