@@ -1,8 +1,8 @@
 /-
   Bird & de Moor, *Algebra of Programming*, §5.1 Relators (book pp. 111–113).
 
-  A RELATOR is a monotonic functor between allegories; between tabular allegories this is
-  the same as a converse-preserving functor (Theorem 5.1).  Relators are the datatype-formers
+  A RELATOR is a monotonic functor between allegories; over a tabular source it preserves
+  converse (Theorem 5.1).  Relators are the datatype-formers
   of the relational calculus: §5.2–§5.5 build relational products, coproducts, the power
   relator, and relational catamorphisms over them.
 
@@ -13,10 +13,8 @@
   their converses), Theorem 5.1(a) (relator ⟹ converse-preserving, over tabular source),
   Corollary 5.1 (relators agreeing on maps agree), Ex 5.2 (meets of coreflexives), Ex 5.5 (dom).
 
-  Theorem 5.1(b) — the converse direction (converse-preserving, out of a tabular source, ⟹
-  monotone) — is DROPPED; see the "Theorem 5.1(b) DROPPED" section near the end of the file
-  for the precise blocker (transporting `m`'s simplicity across a not-yet-known-monotone map
-  is circular).  Nothing else in this file, or so far outside it, needs that direction.
+  Theorem 5.1's other direction (converse-preserving ⟹ monotone) is in `AOP.A5_1_Converse`:
+  proved for the source `Rel`, and refuted by a counterexample for tabular sources in general.
 -/
 module
 
@@ -160,6 +158,8 @@ public theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
   `F`'s action on `f, g` into converse-preserving pieces, and reassembling them on both sides
   of `F(R°) = (F R)°` matches term-by-term. -/
 
+/-- **Theorem 5.1**, forward direction (B&dM p. 112): over a tabular source a relator preserves
+    converse, `F(R°) = (F(R))°`. -/
 public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) : F.PreservesRecip := by
   intro A B R
@@ -193,7 +193,7 @@ public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
   have h := F.map_mono (show R° ≫ R ⊑ 𝟙 B from hR)
   rwa [F.map_id] at h
 
-/-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 112)
+/-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 113)
 
   Any `R` tabulates as `f°≫g` for maps `f, g`; `Theorem 5.1(a)`'s computation of `F.map R`
   only ever touches `F.map f`, `F.map g`, so two relators that agree on all maps already
@@ -202,7 +202,8 @@ public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
   same type `G.obj a ⟶ G.obj b` and the conclusion becomes an ordinary `Eq` wrapped in
   `HEq` (`heq_of_eq`). -/
 
-theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
+/-- **Corollary 5.1** (B&dM p. 113): two relators that agree on maps agree on every relation. -/
+public theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] {F G : Relator 𝒜 ℬ}
     (hobj : ∀ A, F.obj A = G.obj A)
     (hmaps : ∀ {A B : 𝒜} (f : A ⟶ B), Map f → HEq (F.map f) (G.map f))
@@ -278,38 +279,6 @@ theorem Relator.map_dom_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R : A ⟶ B) :
     F.map (dom R) = dom (F.map R) :=
   Relator.map_dom F (Relator.preservesRecip_of_tabular F) R
-
-/-! ## Theorem 5.1(b)  DROPPED — converse-preserving does not obviously give monotone
-    (B&dM p. 112)
-
-  The book's other half of Theorem 5.1: a functor between allegories that preserves `id`,
-  `≫` and `°`, out of a *tabular* source, is automatically monotone (hence a relator).
-  Attempted and dropped after a real derivation attempt; here is the precise blocker.
-
-  Tabulate `R = h°≫k` (apex `c`) and `S = f°≫g` (apex `d`).  `R ⊑ S` gives `h°≫k ⊑ f°≫g`, so
-  `tabulation_UP_forward` (applied to `(f,g)`, with `x := h`, `y := k`) yields a MAP
-  `m : c ⟶ d` with `m≫f = h`, `m≫g = k`.  Chasing the two tabulation identities
-  (`h≫h°∩k≫k° = id_c`, `f≫f°∩g≫g° = id_d`) gives the EQUATION `m≫m° = id_c` (`⊑` from the
-  joint-monic chase, `⊒` from `Entire m`) — this much needs no monotonicity, only equational
-  allegory reasoning.
-
-  Now `map R = map(h°≫k) = (map h)°≫map k = (map f)°≫(map m)°≫map m≫map g` (via `hrec` and
-  `map_comp`, applied to `h = m≫f` and `k = m≫g` — again purely equational), while
-  `map S = (map f)°≫map g`.  So `map R ⊑ map S` reduces to
-  `(map m)°≫map m ⊑ Cat.id (obj d)`.
-
-  This is where the argument breaks: `Simple m` (part of `Map m`) gives `m°≫m ⊑ id_d` IN
-  `𝒜`, but transporting an INEQUALITY across `map` to get `(map m)°≫map m ⊑ id` in `ℬ` is
-  exactly an instance of monotonicity — the very property being proved, so invoking it here
-  is circular.  The equational route (`m°≫m = id_d` outright, which WOULD transport for
-  free via `map_comp`/`hrec`/`congrArg`, no monotonicity needed) fails because nothing
-  forces `m` to be co-entire: `R ⊑ S` can be a strict inequality, in which case `S`'s apex
-  `d` is not exactly covered by `m`'s image and `m` is a genuinely proper (non-invertible)
-  map.
-
-  No non-circular derivation was found in the time available.  Only Theorem 5.1(a)
-  (`Relator.preservesRecip_of_tabular`) is formalized; nothing later in this file, and
-  nothing so far outside it, depends on the converse direction. -/
 
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
