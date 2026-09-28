@@ -61,10 +61,17 @@
     // lean:AOP.A6_5.inductive_of_comp_le_step3@6567f943
   ),
 )]<inductive-comp-le>
-// TODO p.148 member: `member(id)=𝟙`, `member(K)=𝟘`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
-//   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `K`, `P`, `T` missing.
-// B&dM p.148, the sum and product rows
+// TODO p.148 member: `member(id)=𝟙`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
+//   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `P`, `T` missing.
+// B&dM p.148, the constant, sum and product rows
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.member_const") \
+    #src[a constant relator records no elements, so its membership is empty]],
+    // lean:AOP.A6_5.member_const@91d83a84
+  lean-chain(
+    (none, "Freyd.Alg.member_const.lhs", []),
+    (EQ, "Freyd.Alg.member_const.rhs", []),
+  ),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_sum") \
     #src[a member of `F+G` is a member of whichever summand the value is in]],
     // lean:AOP.A6_5.member_sum@f2ed47bd

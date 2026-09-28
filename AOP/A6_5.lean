@@ -349,6 +349,20 @@ public def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG :
 
 end Membership
 
+section ConstMembership
+
+variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
+
+/-- `member(K_B) = 𝟘` (B&dM p.148): a constant records no elements. -/
+@[expose] public def constMembership (B : 𝒜) : LaxMembership (Relator.const (𝒜 := 𝒜) B) where
+  mem _ := 𝟘
+  lax _ := by rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_comp]; exact le_refl _
+
+/-- The p.148 row `member(K) = 𝟘`. -/
+public theorem member_const (B A : 𝒜) : (constMembership B).mem A = 𝟘 := rfl
+
+end ConstMembership
+
 -- Each polynomial relator's membership in the least structure its relator needs: a sum needs the
 -- coproducts, a product the tabulated pairs.
 section SumMembership
