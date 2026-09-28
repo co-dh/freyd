@@ -307,7 +307,7 @@ theorem hQ (P : GreedyDP L E S W) :
       ⊑ (CL.F L E).map P.specH ≫ P.hAlg ≫ P.Rp° := by
   have h := birelator_thin_condition (G := sumBirel L) (e := CL.dE E) (h := P.hAlg)
     (H := P.specH) (R := P.Rp°) (U := P.Up°) (V := P.Vp°)
-    (birelator_mono_recip (sumBirel_preservesRecip L) (graph_map P.hFn) P.hU) P.hV
+    (birelator_mono_recip (graph_map P.hFn) P.hU) P.hV
   rw [sumBirel_preservesRecip L P.Up P.Vp] at h
   rwa [sumBirel_fixLeft_map] at h
 
@@ -326,7 +326,7 @@ theorem greedy_refine (P : GreedyDP L E S W) :
     have h0 := recip_mono P.htrans
     rwa [Allegory.recip_comp] at h0
   exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
-    (CL.F_preservesRecip L E) (CL.initial L E) (graph_map P.hFn)
+    (CL.initial L E) (graph_map P.hFn)
     ((Freyd.Alg.monoAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 
 /-! ## The derived program and the executable-side bridge -/

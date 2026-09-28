@@ -679,7 +679,7 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
       = Allegory.recip (detabR n tb nl blank) := by
     rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, detab_cata]
     exact Cat.comp_id _
-  have key := greedy_dp (F := F Unit Char) (F_preservesRecip Unit Char) (initial Unit Char)
+  have key := greedy_dp (F := F Unit Char) (initial Unit Char)
     (h := graph (con (L := Unit) (E := Char))) (T := graph (expandAlgFn n tb nl blank))
     (R := R) (Q := Q n tb nl blank) (graph_map con) entab_mono R_trans
     (by simp only [ThinCondition, H]; rw [hH]; exact entab_thin_condition n tb nl blank hn hb)

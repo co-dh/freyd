@@ -662,13 +662,13 @@ public theorem birelator_fixLeft_mono {G : BiRelator 𝒜} {e : 𝒜} {h : G.obj
 
 /-- A map `h` monotonic for `G` at `(U, R)` is monotonic at `(U°, R°)` — conjugate, then
     shunt back across the map `h` (the birelator analogue of `monotonicAlg_recip_iff`). -/
-public theorem birelator_mono_recip {G : BiRelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
+public theorem birelator_mono_recip {G : BiRelator 𝒜} {e : 𝒜}
     {h : G.obj e A ⟶ A} {R : A ⟶ A} {U : e ⟶ e} (hh : Map h)
     (hU : G.map U R ≫ h ⊑ h ≫ R) : G.map U° R° ≫ h ⊑ h ≫ R° := by
   have hUrecip : h° ≫ G.map U° R° ⊑ R° ≫ h° := by
     have hrm := recip_mono hU
     have eL : (G.map U R ≫ h)° = h° ≫ G.map U° R° := by
-      rw [Allegory.recip_comp, ← hGr U R]
+      rw [Allegory.recip_comp, ← BiRelator.preservesRecip_of_tabular G U R]
     have eRr : (h ≫ R)° = R° ≫ h° := Allegory.recip_comp h R
     rwa [eL, eRr] at hrm
   have hpost : (h° ≫ G.map U° R°) ≫ h ⊑ (R° ≫ h°) ≫ h := comp_mono_right hUrecip h

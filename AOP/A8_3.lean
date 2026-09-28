@@ -421,7 +421,7 @@ public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
 
 /-- Step 3: Corollary 8.1 (`thinning_est`) at the union algebra — the union of two `Q`-monotonic
     algebras is `Q`-monotonic, which is the only hypothesis of it the union has to earn. -/
-public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem thinningList_step3 (I : InitialAlgebra F)
     {f₁ f₂ S : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
@@ -433,7 +433,7 @@ public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F
     show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
     exact union_mono hm₁ hm₂
-  exact thinning_est hFr I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmonoS
+  exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmonoS
 
 /-- **THEOREM 8.2** (book p.203): a fold on SORTED LISTS of partial solutions, thinned at
     every step, refines the thinning specification —
@@ -445,7 +445,7 @@ public theorem thinningList_step3 (hFr : F.PreservesRecip) (I : InitialAlgebra F
     Corollary 8.1 (`thinning_est`) puts `thin Q` inside the fold, (8.7) splits the minimum
     into `sort P` followed by `minlist R`, and `relCata_le_comp` fuses `sort P` into the
     algebra — that fusion condition being `sortedAlg_fusion`.  No set is ever built. -/
-public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem thinningList (I : InitialAlgebra F)
     {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
@@ -476,7 +476,7 @@ public theorem thinningList (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     (thinningList_step1 L I hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86
       hg₁ hg₂)
     (le_trans (thinningList_step2 L I h87)
-      (thinningList_step3 hFr I hQR hreflQ htransQ htransR hm₁ hm₂ rfl))
+      (thinningList_step3 I hQR hreflQ htransQ htransR hm₁ hm₂ rfl))
 
 /-! ## The note's `thinlist-laws`: (8.7), (8.8) and (8.9) discharged
 

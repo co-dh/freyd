@@ -396,7 +396,7 @@ public theorem knap_laws_step1
   have h89₂ : sortP ≫ 𝟙 (listRelator.obj (dList Item)) ⊑ existsImage (𝟙 (dList Item)) ≫ sortP := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
-  have key := thinningList (L := listRelator) (F := F Unit Item) (F_preservesRecip Unit Item) (initial Unit Item)
+  have key := thinningList (L := listRelator) (F := F Unit Item) (initial Unit Item)
     (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within (wt := wt) w) (p₂ := 𝟙 (dList Item))
     (P := R vol) (Q := Q vol wt) (R := R vol)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
