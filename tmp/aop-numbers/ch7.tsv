@@ -1,0 +1,97 @@
+file	typst label	current note number	B&dM item	B&dM section	page	new number	note
+diag/ch/13-optimisation.typ	est-defn	13.1a	none	7.1	166	7.1a	definition of min R (as est(R)), the universal property and max R = min R°, all unnumbered on p.166; also restates E(R), P(R) from ch 4/5
+diag/ch/13-optimisation.typ	est-laws	13.1b	none	7.1	166-168	7.1b	summary table of the whole section: rows are the UP, (7.1), (7.2), (7.3), (7.4), (7.5), (7.6), (7.7), (7.8), (7.9), (7.10), (7.11), (7.12); (7.4), (7.7), (7.9), (7.12) appear ONLY here
+diag/ch/13-optimisation.typ	est-laws row `𝟙/∋ est(R)=𝟙∩R°`	13.1b row	(7.4)	7.1	166	—	covered only as a table row, no display of its own
+diag/ch/13-optimisation.typ	est-laws row `E(S) est(R)=(∋S)∩((∋S)°\R°)`	13.1b row	(7.7)	7.1	167	—	covered only as a table row
+diag/ch/13-optimisation.typ	est-laws row `P(S) est(R)=(∋S)∩(∈\(SR°))`	13.1b row	(7.9)	7.1	168	—	covered only as a table row; the book says one half needs tabulations
+diag/ch/13-optimisation.typ	est-laws row powerRel_est_eq_bigUnion	13.1b row	(7.12)	7.1	168	—	covered only as a table row
+diag/ch/13-optimisation.typ	est-up	13.1.1a	none	7.1	166	7.1c	the universal property `X⊆min R ≡ X⊆∈ and X·∋⊆R`, unnumbered on p.166 (hint "universal property of min")
+diag/ch/13-optimisation.typ	est-71	13.1.2a	(7.1)	7.1	166	7.1	the same four-step chain as (7.2) at S:=𝟙
+diag/ch/13-optimisation.typ	est-72	13.1.3a	(7.2)	7.1	166	7.2	two adjunctions composed
+diag/ch/13-optimisation.typ	est-73	13.1.4a	(7.3)	7.1	166	7.3	union ∋ = ∋ ∋ in the middle
+diag/ch/13-optimisation.typ	est-75	13.1.5a	(7.5)	7.1	166	7.5	(7.4) is this at S:=𝟙, covered as an est-laws row
+diag/ch/13-optimisation.typ	est-76	13.1.6a	(7.6)	7.1	166-167	7.6	the context rule; proof on p.167
+diag/ch/13-optimisation.typ	est-78	13.1.7a	(7.8)	7.1	167-168	7.8	shunting a function through a minimum
+diag/ch/13-optimisation.typ	est-710	13.1.8a	(7.10)	7.1	168	7.10	fusion with the power functor, the ⊆ half of (7.9)
+diag/ch/13-optimisation.typ	est-711	13.1.9a	(7.11)	7.1	168	7.11	distribution over union; book needs R a preorder, note R transitive
+diag/ch/13-optimisation.typ	lax-defn	13.2a	(5.13); Theorem 5.2	5.7	133	5.13	OTHER CHAPTER (5): states the LaT definition (5.13) and Theorem 5.2 (lax at every map suffices)
+diag/ch/13-optimisation.typ	lax-str	13.2b	none	5.7	133	5.7a	OTHER CHAPTER (5): the two panels of (5.13); could also share the number 5.13
+diag/ch/13-optimisation.typ	lax-closure	13.2c	none	5.7	133	5.7b	OTHER CHAPTER (5): closure of LaT under composition, hcomp, ∪, relator, ×, +; not in the book (its own comment says so)
+diag/ch/13-optimisation.typ	meet-counterex	13.2.1a	none	5.7	133	5.7c	OTHER CHAPTER (5): not in the book
+diag/ch/13-optimisation.typ	lat-tower	13.2.2a	none	5.7	133	5.7d	OTHER CHAPTER (5): not in the book
+diag/ch/13-optimisation.typ	lat-const	13.2.3a	none	5.7	133	5.7e	OTHER CHAPTER (5): not in the book
+diag/ch/13-optimisation.typ	mon-defn	13.3a	none	7.2	172	7.2a	definition of monotonic algebra, the plus/leq example, the two equivalent forms for a function; all unnumbered p.172
+diag/ch/13-optimisation.typ	mon-str	13.3b	none	7.2	172	7.2b	pictures of the definition
+diag/ch/13-optimisation.typ	dist-defn	13.3.1a	none	7.2	172	7.2c	definition of "f distributes over R" and the min x + min y example, unnumbered p.172
+diag/ch/13-optimisation.typ	dist-str	13.3.1b	none	7.2	172	7.2d	pictures of the definition, plus the + over ≤ instance
+diag/ch/13-optimisation.typ	mon-thm71	13.3.1c	Theorem 7.1	7.2	172-173	Thm 7.1	f monotonic on R iff f distributes over R; f a map, R reflexive
+diag/ch/13-optimisation.typ	greedy-thm72	13.3.2a	Theorem 7.2	7.2	173	Thm 7.2	the greedy theorem; note mirrors the book's R° to R
+diag/ch/13-optimisation.typ	takewhile-defn	13.3.3a	none	7.2	174	7.2e	definitions table for Ex 7.39 (F, nil, cons, p, R, prefix, S); alternative numbering 7.39a
+diag/ch/13-optimisation.typ	prefix-defn	13.3.3b	none	7.2	174	7.2f	`prefix=⦇[nil, cons ∪ nil]⦈`, the hypothesis Ex 7.39 hands out; the catamorphism itself is §5.6; alternative 7.39b
+diag/ch/13-optimisation.typ	takewhile-alg	13.3.3c	none	7.2	174	7.2g	step of Ex 7.39: `prefix list(p)=⦇S⦈`; alternative 7.39c
+diag/ch/13-optimisation.typ	takewhile-mono	13.3.3d	none	7.2	174	7.2h	step of Ex 7.39: S monotonic on R°; alternative 7.39d
+diag/ch/13-optimisation.typ	takewhile-step	13.3.3e	none	7.2	174	7.2i	step of Ex 7.39: `S/∋ est(R°)` computed; alternative 7.39e
+diag/ch/13-optimisation.typ	(unlabeled #disp, S table before takewhile-laws)	13.3.3f	none	7.2	174	7.2j	repeats takewhile-defn's S row; alternative 7.39f (or drop the number)
+diag/ch/13-optimisation.typ	takewhile-laws	13.3.3g	Exercise 7.39	7.2	174	Ex 7.39	the exercise's conclusion, `takewhile(p)=⦇[nil,(π₁p→cons,⊸ nil)]⦈`, plus the "the longest not a longest" question
+diag/ch/13-optimisation.typ	mss-defn	13.3.4a	none	7.2	174-175	7.2k	definitions for Ex 7.40 (sum, segment, head, wrap, ⊕ = max Λ(zero ∪ plus)); alternative 7.40a
+diag/ch/13-optimisation.typ	mss-shape	13.3.4b	none (Ex 7.40, stage 1)	7.2	174	7.2l	states Ex 7.40's first instruction: mss = max P(max Λ(sum prefix)) Λsuffix; alternative 7.40b
+diag/ch/13-optimisation.typ	mss-prefix-sum	13.3.4c	none (Ex 7.40, stage 2)	7.2	174	7.2m	states Ex 7.40's second instruction: prefix as a catamorphism, fusion gives sum·prefix; alternative 7.40c
+diag/ch/13-optimisation.typ	mss-mono	13.3.4d	none (Ex 7.40, stage 3 hypothesis)	7.2	172,174	7.2n	monotonicity of [zero, ⊸ zero ∪ plus] on ≥, the greedy theorem's hypothesis; alternative 7.40d
+diag/ch/13-optimisation.typ	mss-step	13.3.4e	none (Ex 7.40, stage 3)	7.2	174	7.2o	computes the algebra; footer states Ex 7.40's `⦇[zero,oplus]⦈ ⊆ max Λ(sum prefix)`; alternative 7.40e
+diag/ch/13-optimisation.typ	mss-scan	13.3.4f	none (Ex 7.40, stage 4)	7.2	175	7.2p	states Ex 7.40's `list⦇[c,f]⦈·tails` as a catamorphism (here `⟨g, suffix/∋ E(g)⟩=⦇k⦈`); alternative 7.40f
+diag/ch/13-optimisation.typ	mss-deriv	13.3.4g	Exercise 7.40	7.2	174-175	Ex 7.40	the exercise's conclusion: mss by a linear-time algorithm
+diag/ch/13-optimisation.typ	filter-defn	13.3.5a	none	7.2	175	7.2q	definitions for Ex 7.41 (π₂, subseq, S, `𝟙⊑π₂R cons°`); alternative 7.41a
+diag/ch/13-optimisation.typ	filter-mono	13.3.5b	none	7.2	175	7.2r	step of Ex 7.41: S monotonic on R°; alternative 7.41b
+diag/ch/13-optimisation.typ	filter-step	13.3.5c	none	7.2	175	7.2s	step of Ex 7.41: `S/∋ est(R°)` computed; alternative 7.41c
+diag/ch/13-optimisation.typ	(unlabeled #disp, S table before filter-deriv)	13.3.5d	none	7.2	175	7.2t	repeats filter-defn's S row; alternative 7.41d (or drop the number)
+diag/ch/13-optimisation.typ	filter-deriv	13.3.5e	Exercise 7.41	7.2	175	Ex 7.41	the exercise's conclusion, `filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈`
+diag/ch/13-optimisation.typ	party-defn	13.4a	none	7.3	176	7.3a	tree, F(A,B)=A×[B], rating, R, party=choose⦇⟨include,exclude⟩⦈, include, exclude, the specification; all unnumbered p.176
+diag/ch/13-optimisation.typ	party-example-tree	13.4.1a	none	7.3	176	7.3b	worked example, not in the book
+diag/ch/13-optimisation.typ	party-example	13.4.1b	none	7.3	176	7.3c	worked example, not in the book
+diag/ch/13-optimisation.typ	include-pic	13.4.1c	none	7.3	176	7.3d	circuit of include's definition p.176
+diag/ch/13-optimisation.typ	exclude-pic	13.4.1d	none	7.3	176	7.3e	circuit of exclude's definition p.176
+diag/ch/13-optimisation.typ	party-list-choose	13.4.1e	none	7.3	176	7.3f	worked example, not in the book
+diag/ch/13-optimisation.typ	party-listrr	13.4.2a	none	7.3	177	7.3g	worked example, not in the book
+diag/ch/13-optimisation.typ	party-rr	13.4.2b	none	7.3	177	7.3h	worked example, not in the book
+diag/ch/13-optimisation.typ	party-mono	13.4.3a	none	7.3	177	7.3i	the second claim p.177: ⟨include,exclude⟩ monotonic on R×R (note: on (R×R)°, mirrored)
+diag/ch/13-optimisation.typ	party-absorb	13.4.3b	none	7.3	176	7.3j	the derivation's step `Λ(X·Y)=E X·ΛY` p.176 (absorption, a ch 4 law) at this instance
+diag/ch/13-optimisation.typ	party-mono-branch	13.4.3c	none (Exercise 7.43)	7.3	177	7.3k	the p.177 proof of the include subclaim and the "left as exercise" ones (exclude, concat monotonic, cons monotonic, choose monotonic) = the missing proofs Ex 7.43 asks for
+diag/ch/13-optimisation.typ	choose-strict	13.4.3d	none	7.3	177	7.3l	p.177 "choose is monotonic on R" is strict ⊆; witness not in the book
+diag/ch/13-optimisation.typ	party-laws	13.4.4a	none	7.3	176-177	7.3m	the derivation p.176-177 down to the Ex 7.38 step; the RQ row cites Ex 7.38 (`min R·ΛS·min(FR) ⊆ min R·ES`)
+diag/ch/13-optimisation.typ	party-laws-fold	13.4.4b	none	7.3	177-178	7.3n	the derivation's greedy step (Thm 7.2) and the p.178 refinement to a function via Ex 7.15 (`⟨min R ΛS, min R ΛT⟩ ⊆ min(R×R) Λ⟨S,T⟩`); include a function
+diag/ch/13-optimisation.typ	vec-defn-cyl	13.5a	none	7.4	179-181	7.4a	the definitions p.179-181 (F, paths, moves, trans, union, zip, cp, generate, Q, specification) recast on Vec/matrix types; the book's N/P version is the note's ch 12 (sec-cyl-gen)
+diag/ch/13-optimisation.typ	vec-gen-diag	13.5.1a	none	7.4	181	7.4b	the typing diagram of generate p.181, on Vec
+diag/ch/13-optimisation.typ	vec-step	13.5.1b	none	7.4	181	7.4c	worked run of gen, not in the book
+diag/ch/13-optimisation.typ	vec-fold-diag	13.5.2a	none	7.4	180	7.4d	⦇generate⦈'s defining equation p.180 (the fold law is ch 6)
+diag/ch/13-optimisation.typ	vec-fold-step	13.5.2b	none	7.4	180	7.4e	worked run, not in the book
+diag/ch/13-optimisation.typ	vec-q-diag	13.5.3a	none	7.4	183	7.4f	Q = Nα·zip·F(id, N(min R)·trans·moves) p.183, on Vec
+diag/ch/13-optimisation.typ	vec-q-step	13.5.3b	none	7.4	183	7.4g	worked run of Q, not in the book
+diag/ch/13-optimisation.typ	vec-cyl-laws	13.5.4a	none	7.4	182	7.4h	the derivation p.182 `min R·paths ⊇ min R·setify·⦇Q⦈`; Thm row 2 (est_concat) is (7.11) on Vec, Thm row 3 (Qfold_le_genFold) the fusion step
+diag/ch/13-optimisation.typ	vec-cyl-fusion	13.5.4b	(7.13)	7.4	182-183	7.13	Thm row 2 (cyl_7_13) states (7.13) `α·F(id,min R) ⊆ min R·Pα·cp` on Vec; Thm row 1 (cyl_fusion) is the fusion condition `N(min R)·generate ⊇ Q·F(id,N(min R))` p.182-183, unnumbered
+diag/ch/13-optimisation.typ	van-defn	13.6a	none	7.5	184-187	7.5a	R, ceiling, floor, secure, ok, new, glue, old, partition, S, `list secure·partition=⦇[nil,new ∪ old]⦈` (Ex 7.51), H, R;H, |R|, specification; p.184-187
+diag/ch/13-optimisation.typ	van-secure	13.6.1a	none	7.5	185	7.5b	secure as the coreflexive of `bmax(ceiling x, ceiling x − floor x) ≤ N` p.185 (the predicate Ex 7.48 asks about, but not Ex 7.48's equivalence)
+diag/ch/13-optimisation.typ	van-prefix	13.6.1b	Exercise 7.49	7.5	185,189	Ex 7.49	prefix-closure `prefix·secure ⊆ secure·prefix` p.185; Ex 7.49 asks for its formal proof
+diag/ch/13-optimisation.typ	van-algebras	13.6.2a	none	7.5	185	7.5c	new, glue, old definitions p.185 as pictures
+diag/ch/13-optimisation.typ	van-fusion-cond	13.6.2b	none (Exercise 7.51, the condition)	7.5	185	7.5d	the fusion side condition behind p.185's "appeal to fusion (left as an exercise)"; alternative 7.51a
+diag/ch/13-optimisation.typ	van-fusion-steps	13.6.2c	Exercise 7.51	7.5	185,189	Ex 7.51	the details of the appeal to fusion: `list secure·partition=⦇[nil,new ∪ old]⦈` (book's p.189 printing says `wrap wrap`, the note keeps nil)
+diag/ch/13-optimisation.typ	van-fusion	13.6.2d	none (Exercise 7.51, the equation)	7.5	185	7.5e	the same equation as one picture; alternative 7.51b
+diag/ch/13-optimisation.typ	van-714	13.6.3a	(7.14)	7.5	186	7.14	the SQ step `cons monotonic on R` is Exercise 7.52 (cons_mono_R)
+diag/ch/13-optimisation.typ	van-h	13.6.4a	none	7.5	186	7.5f	H = (head° prefix head) ∪ (nil nil°) p.186, unnumbered
+diag/ch/13-optimisation.typ	van-718	13.6.5a	(7.18)	7.5	187	7.18	Ex 7.53 asks to justify it
+diag/ch/13-optimisation.typ	van-716	13.6.5b	(7.16)	7.5	187	7.16	the chain p.187 proving (7.16) from (7.14) and (7.18)
+diag/ch/13-optimisation.typ	van-719	13.6.6a	(7.19)	7.5	187	7.19	Ex 7.53
+diag/ch/13-optimisation.typ	van-720	13.6.6b	(7.20)	7.5	187	7.20	Ex 7.53
+diag/ch/13-optimisation.typ	van-721	13.6.6c	(7.21)	7.5	187	7.21	Ex 7.53
+diag/ch/13-optimisation.typ	van-mono	13.6.6d	(7.17)	7.5	187-188	7.17	the chain p.188 proving (7.17) from (7.19)-(7.21)
+diag/ch/13-optimisation.typ	van-laws	13.6.7a	none	7.5	187-188	7.5g	the derivation p.187: `⦇[nil,(ok→glue,new)]⦈ ⊆ ⦇min(R;H)·ΛS⦈` via `old ⊆ (R;H)°·new`, R;H ⊆ R and Thm 7.2; the final program p.188
+uncovered	—	—	(7.4)	7.1	166	—	only an est-laws row (13.1b), no display
+uncovered	—	—	(7.7)	7.1	167	—	only an est-laws row (13.1b), no display
+uncovered	—	—	(7.9)	7.1	168	—	only an est-laws row (13.1b), no display
+uncovered	—	—	(7.12)	7.1	168	—	only an est-laws row (13.1b), no display
+uncovered	—	—	(7.15)	7.5	186	—	the book states it is FALSE; the note cites Lean van_7_15_false in van-laws's chain but draws no display
+uncovered	—	—	Exercise 7.15	7.1	170	—	cited as a step of party-laws-fold (pair_est_le), no display
+uncovered	—	—	Exercise 7.38	7.2	174	—	cited as a step of party-laws (est_Λ_est_le), no display
+uncovered	—	—	Exercise 7.43	7.3	178	—	answered inside party-mono-branch, no display states it
+uncovered	—	—	Exercise 7.52	7.5	189	—	a step of van-714 (cons_mono_R), no display
+uncovered	—	—	Exercise 7.53	7.5	190	—	its four claims are van-718..van-721; nothing states the exercise itself
+uncovered	—	—	Exercises 7.1-7.14, 7.16-7.37, 7.42, 7.44-7.48, 7.50, 7.54-7.57	7.1-7.5	169-171,174-175,178-179,184,189-190	—	no display, no citation (7.48 is the predicate of van-secure but not its equivalence; 7.55 the baby-sized greedy runs for ceiling/floor)
