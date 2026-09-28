@@ -1126,6 +1126,22 @@ def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
         if ← Meta.isDefEqGuarded args[2]! e then return some (args[3]!, args[4]!)
   return none
 
+/-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
+    data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
+def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
+  let args := e.getAppArgs
+  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+  let a := args[i]!
+  let ty ← Meta.inferType a
+  if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
+  if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
+    return false
+  -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
+  -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
+  -- own category, so it would never count as a point.
+  unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
+  return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
+
 /-- A RELATION OR A MAP APPLIED TO POINTS whose points the printer SWALLOWED: `Q Char a b` came out
     `Q` and `unstepFn p` `unstep`, because an unexpander written for the arrow (`| _ => Q`) matches
     the whole application, and Lean tries the longest one first.  The points are the trailing
@@ -1141,21 +1157,9 @@ def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
   unless ← Meta.isProp e do
     if (← homEnds? e).isSome || (← Meta.isType e) then return none
   let args := e.getAppArgs
-  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
-  let point (i : Nat) : MetaM Bool := do
-    let a := args[i]!
-    let ty ← Meta.inferType a
-    if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
-    if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
-      return false
-    -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
-    -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
-    -- own category, so it would never count as a point.
-    unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
-    return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
   let mut k := args.size
   while k > 0 do
-    unless ← point (k - 1) do break
+    unless ← isPoint e (k - 1) do break
     k := k - 1
   if k == args.size then return none
   let hd := mkAppN e.getAppFn (args.extract 0 k)
@@ -1339,6 +1343,29 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         if fs.size < ci.numFields then return ← labelTree prec v
       if (stxPeel (← delabP e)).isOfKind ``Lean.Parser.Term.tuple then
         return commaL "(" ")" (← fs.mapM (labelTree 0))
+  -- AN ARROW APPLIED TO ITS TWO POINTS is split off BEFORE the operator clauses: each of those
+  -- matches its head at any arity, so `(op°) m p` printed the `°` clause's `op°` and lost `m`, `p`.
+  -- A SIMPLE one is the book's `f(a)=x` — at most one output, so the statement says which — and any
+  -- other the note's `R(a,b)` (`empty(p,q)`), the spelling `swallowedPoints?` writes back.
+  if (← Meta.isProp e) && e.getAppNumArgs ≥ 2 then
+    let args := e.getAppArgs
+    let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
+    -- an arrow of the allegory, or the bare predicate one is defined by (`fR`) — and only where the
+    -- printer wrote an APPLICATION or swallowed the points: `0<π₁(p)` is a notation's own spelling.
+    let arrow := (← homEnds? hd).isSome
+    let stx := stxPeel (← delabP e)
+    let applied := stx.isOfKind ``Lean.Parser.Term.app || stx.structEq (stxPeel (← delabP hd))
+    let points := (← isPoint e (args.size - 2)) && (← isPoint e (args.size - 1))
+    if applied && points && (arrow || hd.isConst) then
+      let i := args[args.size - 2]!
+      if ← provedSimple hd then
+        let a ← labelTree 0 i
+        -- an input the printer writes as a tuple is already the application's own brackets
+        let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
+        return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
+          ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
+      if arrow then
+        return (← labelTree Prec.atom hd) ++ commaL "(" ")" #[← labelTree 0 i, ← labelTree 0 args.back!]
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
@@ -1567,19 +1594,6 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     if let some r ← rewriteHead? e then return ← labelTree prec r
     -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
     -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
-    -- A SIMPLE RELATION at (input, output) is the book's `f(a,b)=x`: at most one output, so the
-    -- statement says which one it is.
-    if (← Meta.isProp e) && args.size ≥ 2 then
-      let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
-      -- an arrow of the allegory, or the bare predicate one is defined by (`fR`)
-      if (← homEnds? hd).isSome || hd.isConst then
-        if ← provedSimple hd then
-          let i := args[args.size - 2]!
-          let a ← labelTree 0 i
-          -- an input the printer writes as a tuple is already the application's own brackets
-          let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
-          return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
-            ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
     if let some (hd, pts) ← swallowedPoints? e then
       return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor

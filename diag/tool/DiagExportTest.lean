@@ -22,6 +22,7 @@
   the part that has been wrong.
 -/
 import diag.tool.DiagExport
+import diag.StrDiagNames
 
 namespace Freyd.DiagExport.Test
 
@@ -233,5 +234,13 @@ what made the first snakes look unwired. -/
 -- operands are centred in, or they are centred against the wrong total.
 #guard Cell.width (.meet #[snake] #[.box "S"]) ==
   2.0 * FORK + max (runWidth #[snake]) (runWidth #[.box "S"])
+
+-- A RELATION APPLIED TO ITS POINTS keeps them, whatever operator builds the relation: the `°`
+-- clause matched `(op°) m p` at every arity and printed `op°`, dropping `m` and `p`.
+#eval show Lean.Meta.MetaM Unit from do
+  let ci ← Lean.getConstInfo `Freyd.Alg.RelSet.Digits.op_recip_iff
+  Lean.Meta.forallTelescope ci.type fun _ body => do
+    let s ← Freyd.StrDiag.label (body.getArg! 0)
+    unless s == "op°(m,p)" do throwError "op_recip_iff's left side prints {s}, not op°(m,p)"
 
 end Freyd.DiagExport.Test
