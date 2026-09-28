@@ -1,6 +1,6 @@
 #import "../note-prelude.typ": *
-#show: note-chapter.with(15)
-// note-split: chapter 15 — this header is written by scripts/note-split and stripped by scripts/note-join
+#show: note-chapter.with(9)
+// note-split: chapter 9 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Dynamic Programming <sec-dp>
 
 // A `(μX : …)` row draws the BODY of the recursion: a fixed point has no circuit of its own, and

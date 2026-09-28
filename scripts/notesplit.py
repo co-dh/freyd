@@ -39,10 +39,25 @@ beginning `#` and runs while its bracket nesting is open.
 import os, sys
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NOTE = os.path.join("diag", "allegory-axioms.typ")
-NOTES = (NOTE, os.path.join("diag", "allegory2.typ"))   # the laws, and the proofs that work them
+# THE SPLIT NOTES, by the ONE name every gate takes: `NOTE=aop` (default `axioms`), exported by make.
+# Each is a root and the directory its chapter files sit in; everything below reads `NOTE`/`CHDIR`.
+NOTE_ROOTS = {"axioms": (os.path.join("diag", "allegory-axioms.typ"), os.path.join("diag", "ch")),
+              "aop": (os.path.join("diag", "algprog-companion.typ"), os.path.join("diag", "aop"))}
+# The displays both split notes place: bound once in this file, `#import`ed rather than included.
+SHARED = os.path.join("diag", "shared-laws.typ")
+NOTES = tuple(r for r, _ in NOTE_ROOTS.values()) + (os.path.join("diag", "allegory2.typ"),)
 PRELUDE = os.path.join("diag", "note-prelude.typ")
-CHDIR = os.path.join("diag", "ch")
+
+
+def note_name():
+    """The note `$NOTE` names; an unknown name stops the run rather than falling back to one."""
+    n = os.environ.get("NOTE", "").strip() or "axioms"
+    if n not in NOTE_ROOTS:
+        sys.exit("note-split: NOTE=%s is no note: the notes are %s" % (n, ", ".join(NOTE_ROOTS)))
+    return n
+
+
+NOTE, CHDIR = NOTE_ROOTS[note_name()]
 
 ROOT_MARK = "// note-split: root — written by scripts/note-split and stripped by scripts/note-join"
 ROOT_IMPORT = '#import "note-prelude.typ": *'
@@ -62,6 +77,20 @@ def chapter_header(n):
 
 def die(msg):
     sys.exit("note-split: " + msg)
+
+
+def chapter_number(path):
+    """The chapter number a chapter file DECLARES on its header's second line — the line
+    `chapter_header` writes, read back as exactly that shape; a note's chapters need not run 1, 2, …
+    (the companion follows B&dM's chapters), so the position among the includes is not the number."""
+    lines = read(path).split("\n")
+    pre, post = "#show: note-chapter.with(", ")"
+    ln = lines[1] if len(lines) > 1 else ""
+    mid = ln[len(pre):-len(post)] if ln.startswith(pre) and ln.endswith(post) else ""
+    if not mid.isdigit() or lines[:3] != chapter_header(int(mid)):
+        die("%s does not begin with the header scripts/note-split writes:\n  %s"
+            % (path, "\n  ".join(chapter_header(0))))
+    return int(mid)
 
 
 # ---- readers ---------------------------------------------------------------------------------
@@ -202,11 +231,26 @@ def cut_chapters(text):
 
 # ---- the layout ------------------------------------------------------------------------------
 
+def chapter_numbers(root_dir=None, text=None):
+    """The numbers the note's chapters carry, in include order — or, for a monolith `text` not yet
+    split, their positions.  A split note's numbers survive a join and re-split only while the
+    chapter count does; a heading added or removed is numbered by hand, never guessed."""
+    root_dir = root_dir or ROOT_DIR
+    path = os.path.join(root_dir, NOTE)
+    if not read(path).startswith(ROOT_MARK):
+        return list(range(1, len(cut_chapters(text)[1]) + 1)) if text is not None else []
+    nums = [chapter_number(p) for p in includes(path)]
+    if text is not None and len(nums) != len(cut_chapters(text)[1]):
+        die("%s has %d chapters and the text to split %d: write the new chapter's file and its "
+            "`#include` by hand, then split" % (NOTE, len(nums), len(cut_chapters(text)[1])))
+    return nums
+
+
 def chapter_paths(text):
     """The chapter file each level-1 heading goes to, in order — the one place the naming lives."""
     _, chapters, _ = cut_chapters(text)
     out = []
-    for n, (heading, _) in enumerate(chapters, 1):
+    for n, (heading, _) in zip(chapter_numbers(text=text), chapters):
         slug = chapter_slug(heading)
         out.append(os.path.join(CHDIR, "%02d-%s.typ" % (n, slug) if slug else "%02d.typ" % n))
     return out
@@ -232,8 +276,8 @@ def split_text(text):
     root = [ROOT_MARK, ROOT_IMPORT] + rules + [ROOT_FLAG]
     root += ['#include "%s"' % os.path.relpath(p, "diag").replace(os.sep, "/") for p in paths]
     out[NOTE] = "\n".join(root) + "\n"
-    for n, (path, (_, body)) in enumerate(zip(paths, chapters), 1):
-        out[path] = "\n".join(chapter_header(n) + chapter_paths_fixed(body, True)) + tail
+    for n, path, (_, body) in zip(chapter_numbers(text=text), paths, chapters):
+        out[path] ="\n".join(chapter_header(n) + chapter_paths_fixed(body, True)) + tail
     return out
 
 
@@ -288,15 +332,12 @@ def join_text(root_dir=None, root_path=None):
     pre = pl[:pl.index(PRELUDE_MARK)]
 
     body, tail = [], "\n"
-    for n, inc in enumerate(incs, 1):
+    for inc in incs:
         path = os.path.join(here, inc)
+        chapter_number(path)             # the header check: it stops the join on any other header
         cl = read(path)
         tail = "\n" if cl.endswith("\n") else ""
         cl = cl[:-1].split("\n") if cl.endswith("\n") else cl.split("\n")
-        want = chapter_header(n)
-        if cl[:3] != want:
-            die("%s does not carry the header scripts/note-split wrote for chapter %d:\n"
-                "  want: %s\n  got:  %s" % (path, n, want[1], cl[1] if len(cl) > 1 else "<eof>"))
         body += chapter_paths_fixed(cl[3:], False)
     return "\n".join(pre + rules + body) + tail
 
@@ -328,7 +369,9 @@ def note_files(root=None, root_dir=None, ch=None):
     n = chapter_env(ch)
     if n is not None and os.path.abspath(path) == os.path.abspath(os.path.join(root_dir, NOTE)):
         return [chapter_file(n, root_dir)]
-    out = [path]
+    # A split note's root stands for the shared laws too: its chapters place them from there.
+    out = [path] + ([os.path.join(root_dir, SHARED)]
+                    if os.path.relpath(path, root_dir) in [r for r, _ in NOTE_ROOTS.values()] else [])
     for inc in includes(path):
         out += note_files(root=inc, root_dir=root_dir)
     return out
@@ -384,17 +427,18 @@ def take_chapter(argv):
 
 
 def chapter_file(n, root_dir=None):
-    """Chapter N's file: the N-th file the root includes, which is the N-th level-1 heading."""
+    """Chapter N's file: the file the root includes whose header declares chapter N."""
     root_dir = root_dir or ROOT_DIR
     path = os.path.join(root_dir, NOTE)
     if not read(path).startswith(ROOT_MARK):
         die("CH=%d, but %s is not split into chapters: run ./scripts/note-split first" % (n, NOTE))
     chs = includes(path)
-    if not 1 <= n <= len(chs):
-        die("no chapter %d: %s includes %d chapters —\n  %s"
-            % (n, NOTE, len(chs), "\n  ".join("%d %s" % (i, os.path.relpath(p, root_dir))
-                                              for i, p in enumerate(chs, 1))))
-    return chs[n - 1]
+    hit = [p for p, k in zip(chs, chapter_numbers(root_dir)) if k == n]
+    if len(hit) != 1:
+        die("%s chapter %d: %s includes —\n  %s"
+            % ("no" if not hit else "more than one", n, NOTE,
+               "\n  ".join("%d %s" % (chapter_number(p), os.path.relpath(p, root_dir)) for p in chs)))
+    return hit[0]
 
 
 def chapter_pdf(n, root_dir=None):
@@ -643,6 +687,17 @@ def cmd_files(argv):
     if "--generated" in argv:
         print(*generated_imports(), sep="\n")
         return
+    # `--root`: the root `$NOTE` names; `--roots`: every note make compiles; `--names`: the names
+    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`.  Make and the Lean gates ask
+    # these, so the notes are listed in this file alone.
+    if "--root" in argv:
+        return print(NOTE)
+    if "--roots" in argv:
+        return print(*NOTES, sep="\n")
+    if "--names" in argv:
+        return print(*NOTE_ROOTS, sep="\n")
+    if "--chapters" in argv:
+        return print(*chapter_numbers(), sep="\n")
     argv = take_chapter(argv)
     for p in note_files(argv[0] if argv else None):
         print(os.path.relpath(p, ROOT_DIR))

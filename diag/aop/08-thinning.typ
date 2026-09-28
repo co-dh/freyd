@@ -1,6 +1,6 @@
 #import "../note-prelude.typ": *
-#show: note-chapter.with(14)
-// note-split: chapter 14 — this header is written by scripts/note-split and stripped by scripts/note-join
+#show: note-chapter.with(8)
+// note-split: chapter 8 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Thinning Algorithms <sec-thin>
 
 

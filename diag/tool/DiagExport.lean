@@ -1457,8 +1457,12 @@ def splitSides (calls steps : Array String) : Array (String × String) := Id.run
         bad := bad.push (s, s')
   return bad
 
-/-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
-def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
+/-- The note ROOTS a listing queries — every note `make p` compiles, as `note-files --roots` lists
+    them, so a note added there is drawn with no edit here. -/
+def noteRoots : IO (List String) := do
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--roots"] }
+  if r.exitCode != 0 then throw <| IO.userError s!"./scripts/note-files --roots: {r.stderr.trimAscii}"
+  return (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
 
 /-- THE ROOTS THIS RUN LISTS: both notes, or the ONE chapter file `CH` names.  Every gate takes its
     chapter from that variable (the Makefile exports it), and a listing that answered for the whole
@@ -1467,7 +1471,7 @@ def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"
     run with its message rather than falling back to the note. -/
 def rootsToList : IO (List String) := do
   let ch := ((← IO.getEnv "CH").getD "").trimAscii.toString
-  if ch.isEmpty then return noteRoots
+  if ch.isEmpty then return ← noteRoots
   let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
   let files := (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
   if r.exitCode != 0 || files.length != 1 then

@@ -217,7 +217,7 @@
 /// label in another chapter rendered as its `names` entry, or as the label's own text, instead of
 /// stopping the compile.  Inside the whole book the root has already applied `conf` and the counter
 /// already stands at N-1, so there the chapter's own rules are skipped and nothing changes.
-#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { doc } else {
+#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
   conf(title: title, {
     counter(heading).update(N - 1)
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter

@@ -24,9 +24,9 @@ from importlib.machinery import SourceFileLoader
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # A chapter named (`CH`/`--ch`, `scripts/notesplit.py`) is ONE pdf — its own; unnamed, both notes.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import chapter_env, note_pdf
+from notesplit import NOTES as TYPS, chapter_env, note_pdf
 NOTES = ([os.path.join(ROOT, note_pdf())] if chapter_env() is not None
-         else [os.path.join(ROOT, "diag", n) for n in ("allegory-axioms.pdf", "allegory2.pdf")])
+         else [os.path.join(ROOT, os.path.splitext(t)[0] + ".pdf") for t in TYPS])
 BURY = 0.4   # pt of a word box a later fill must cover before the word counts as buried
 HIT = 0.5    # two word boxes must OVERLAP by this much to collide — a shared edge is not one
 HIDE = 0.4   # …and cover this share of the smaller box: tight setting clips boxes, it does not hide words
