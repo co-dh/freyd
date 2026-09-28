@@ -151,4 +151,18 @@ theorem tabulates_map_iso {A B C : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : A ⟶ 
     (ht : Tabulates f g R) (hR : Map R) : Freyd.IsIso f :=
   ⟨f°, tabulates_simple_monic ht hR.2, tabulates_entire_cover ht hR.1⟩
 
+/-- **B&dM Proposition 4.2** (p.92): let `(f, g)` tabulate `R`; then for maps `h, k`,
+    `h·k° ⊆ R` iff there is a (necessarily unique) map `m` with `h = f·m` and `k = g·m`.
+    Diagram order: B&dM's `R : A ← B` is `R : B ⟶ A`, its tabulation `R = f·g°` is
+    `Tabulates g f R`, and `h·k°` is `k° ≫ h`.  This is Freyd §2.143, assembled from
+    `tabulation_UP_forward`, `tabulation_UP_backward` and `tabulation_UP_unique`. -/
+public theorem tabulation_incl_iff {A B C D : 𝒜} {f : C ⟶ A} {g : C ⟶ B} {R : B ⟶ A}
+    (ht : Tabulates g f R) {h : D ⟶ A} {k : D ⟶ B} (hh : Map h) (hk : Map k) :
+    k° ≫ h ⊑ R ↔ ∃ m : D ⟶ C, (Map m ∧ m ≫ f = h ∧ m ≫ g = k) ∧
+      ∀ m' : D ⟶ C, Map m' → m' ≫ f = h → m' ≫ g = k → m' = m := by
+  refine ⟨fun hR => ?_, fun ⟨m, ⟨hm, hf, hg⟩, _⟩ => tabulation_UP_backward ht hm hg hf⟩
+  obtain ⟨m, hm, hg, hf⟩ := tabulation_UP_forward ht hk hh hR
+  exact ⟨m, ⟨hm, hf, hg⟩, fun m' hm' hf' hg' =>
+    tabulation_UP_unique ht hm' hm (hg'.trans hg.symm) (hf'.trans hf.symm)⟩
+
 end Freyd.Alg
