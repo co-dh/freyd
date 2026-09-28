@@ -617,10 +617,20 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
 NUMCOL = "#828282"   # `numtext`'s luma(130) in diag/note-style.typ: a display's OWN number, never a reference to it
 
 
+def _title_for(typ):
+    """The title of whichever note owns `typ` (`note-files --title-for`) — a chapter queried alone
+    never sets NOTEROOT, so `note-chapter` needs it or it panics; the whole note ignores it."""
+    r = subprocess.run(["./scripts/note-files", "--title-for", typ], cwd=ROOT, capture_output=True, text=True)
+    if r.returncode:
+        sys.exit(f"diff-crop: ./scripts/note-files --title-for {typ}: {r.stderr.strip()}")
+    return r.stdout.strip()
+
+
 def disp_query(root, typ):
     """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`,
     laid out in full so each display's parts are where that tree's own pdf sets them."""
-    a = ["typst", "query", "--root", root, os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
+    a = ["typst", "query", "--root", root, "--input", "title=" + _title_for(typ),
+         os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
     r = run(*a)
     if r.returncode:
         sys.exit(f"diff-crop: {' '.join(a)}: {r.stderr.strip()[:800]}")

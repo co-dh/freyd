@@ -82,17 +82,37 @@ def die(msg):
     sys.exit("note-split: " + msg)
 
 
-def note_title(root_dir=None):
-    """`$NOTE`'s own title, off the `#show: conf.with(title: "...")` line its root states — the ONE
-    place a note's title lives, so a chapter compiled alone (`--input title=...`) prints the note it
-    belongs to and never a sibling's hardcoded default."""
+def title_of_root(root, root_dir=None):
+    """`root`'s own title, off the `#show: conf.with(title: "...")` line it states — the ONE place a
+    note's title lives, so a chapter compiled alone (`--input title=...`) prints the note it belongs
+    to and never a sibling's hardcoded default."""
     root_dir = root_dir or ROOT_DIR
-    for ln in read(os.path.join(root_dir, NOTE)).split("\n"):
+    for ln in read(os.path.join(root_dir, root)).split("\n"):
         if ln.startswith("#show: conf.with(") and "title:" in ln:
             t = typst_string(ln)
             if t is not None:
                 return t
-    die("%s has no `#show: conf.with(title: \"...\")` line: every note states its own title there" % NOTE)
+    die("%s has no `#show: conf.with(title: \"...\")` line: every note states its own title there" % root)
+
+
+def note_title(root_dir=None):
+    """`$NOTE`'s own title — see `title_of_root`."""
+    return title_of_root(NOTE, root_dir)
+
+
+def root_for(path, root_dir=None):
+    """The note ROOT that OWNS `path`: `path` itself when it is a root or `allegory2.typ`, else the
+    root of the one NOTE_ROOTS entry whose chapter dir contains it.  The single place chapter-to-note
+    ownership is decided, so a caller (diff-crop, cutting a display from an arbitrary chapter pdf)
+    never guesses it from the path's own spelling."""
+    root_dir = root_dir or ROOT_DIR
+    path = os.path.normpath(path)
+    for root, chdir, *_ in NOTE_ROOTS.values():
+        if path == root or path.startswith(chdir + os.sep):
+            return root
+    if path in NOTES:
+        return path
+    die("%s belongs to no known note (checked NOTE_ROOTS' chapter dirs and NOTES)" % path)
 
 
 def chapter_number(path):
@@ -706,13 +726,16 @@ def cmd_files(argv):
         return
     # `--root`: the root `$NOTE` names; `--roots`: every note make compiles; `--names`: the names
     # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`; `--title`: `$NOTE`'s own title,
-    # for a chapter compiled alone (`--input title=`).
+    # for a chapter compiled alone (`--input title=`); `--title-for PATH`: the title of whichever note
+    # OWNS an arbitrary chapter/root path, for a caller (diff-crop) that is not `$NOTE`-scoped.
     # `--panels`: `$NOTE`'s commutative-canvas manifest.  Make and the Lean gates ask
     # these, so the notes are listed in this file alone.
     if "--root" in argv:
         return print(NOTE)
     if "--title" in argv:
         return print(note_title())
+    if "--title-for" in argv:
+        return print(title_of_root(root_for(argv[argv.index("--title-for") + 1])))
     if "--panels" in argv:
         return print(PANELS)
     if "--roots" in argv:
