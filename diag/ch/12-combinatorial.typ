@@ -17,18 +17,18 @@
   [The list type, under the short name it keeps.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.list_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.list_cata@f0f5cb68
+  // lean:AOP.A5_6_ListCombinators.list_cata@08d57306
   [#leant("Freyd.Alg.RelSet.ListRel.list_cata")],
   [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.subseq_cata@51d64f81
+  // lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
   [#leant("Freyd.Alg.RelSet.ListRel.subseq_cata")],
   [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
  #leanf("Freyd.Alg.RelSet.ListRel.prefix_cat")`=init*` #src[]],
-   // lean:AOP.A5_6_ListCombinators.prefix_cata@1086ab52 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
+   // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
   [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
   [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
@@ -48,7 +48,7 @@
   [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
 
  [#leanf("Freyd.Alg.RelSet.ListRel.concat_cata") #src[]],
-  // lean:AOP.A5_6_ListCombinators.concat_cata@36d534a9
+  // lean:AOP.A5_6_ListCombinators.concat_cata@37766c0d
   [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
   [Joins the segments back up, which is why its converse splits a list.],
 
@@ -116,7 +116,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
      `subseq=⦇[nil,cons ∪ π₂]⦈`, @comb-fns.
  ]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@d73bdb8e lean:AOP.A5_6_ListCombinators.subseq_cata@51d64f81
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@d73bdb8e lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 

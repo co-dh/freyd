@@ -413,7 +413,7 @@ An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` w
 The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
 every F-algebra `f`
 #src[].
-// lean:AOP.A5_5.InitialAlgebra@6fcd701c
+// lean:AOP.A5_5.InitialAlgebra@0ea41da0
 
   // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
   // paint the same carrier red in the row below and cyan in the row above.
@@ -427,7 +427,7 @@ every F-algebra `f`
     row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
     [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
   )
-  // lean:AOP.A5_5.relCata_cancel@f4c34202
+  // lean:AOP.A5_5.relCata_cancel@c83d7b44
 ]]<initial-defn>
 
 === Reflection
@@ -490,7 +490,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 
   #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap_defn") #h(4pt)
  #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@c4a81137 lean:AOP.A5_5_TypeFunctor.typeMap_defn@ee033782
+    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317 lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 ]]<tf-defn>
 
 // Same widths and stroke as the reduce table: the two tables are read one after the other, and
@@ -506,13 +506,13 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   [#leanf("Freyd.Alg.typeMap_defn")],
   [Rebuild the structure with `α`, applying `R` to the parameter on the way.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_defn@ee033782
+   // lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 
   [functor],
   [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
   [Acting by the identity changes nothing, and two actions in a row are one action.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_id@2c95bf10 lean:AOP.A5_5_TypeFunctor.typeMap_comp@33f95d9f
+   // lean:AOP.A5_5_TypeFunctor.typeMap_id@602faba9 lean:AOP.A5_5_TypeFunctor.typeMap_comp@74556074
 
   [type functor fusion],
   [#leanf("Freyd.Alg.typeMap_fusion")],
@@ -520,21 +520,21 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    The side condition holds because `F` is a bifunctor —
    `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@353c5ea1 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
+   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@fde772c0 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
 
   [naturality of `α`],
   [#leanf("Freyd.Alg.alpha_natural")],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@6cdec1b4
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@ee446834
 
   [type relator],
   [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_recip@fea0f9ee
+   // lean:AOP.A5_5_TypeFunctor.typeMap_recip@be2f7fb9
 )]<tf-laws>
 
 // Its own page: the definition and its two squares are read together, and without the break the
@@ -549,7 +549,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 
   #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
  #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@c4a81137
+    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317
 ]]<tfun-defn>
 
 // The square is the five arrows `alpha_natural_split` states; the algebra `F(f,𝟙)α_B` is the path
@@ -649,7 +649,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[]],
-  // lean:AOP.A6_ConsList.initial@c9df5854
+  // lean:AOP.A6_ConsList.initial@ac4e2c78
 
   [the fold, pointwise],
   [`⦇[c,f]⦈(zero)=c` \ `⦇[c,f]⦈(succ(n))=f(⦇[c,f]⦈(n))`],
@@ -672,7 +672,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
   [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
-   // lean:AOP.A5_5.Λ_relCata@dec79d11 lean:AOP.A5_5.relCata_unfold@7993c26c
+   // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
 )]<cata-map-square>
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
@@ -695,7 +695,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 )
 #align(center, block(inset: (y: 3pt))[#src[the last two rows at `X:=⦇R⦈`:
  ]])
- // lean:AOP.A5_5.Λ_relCata@dec79d11 lean:AOP.A5_5.relCata_unfold@7993c26c
+ // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
 ]<cata-map-calc>
 
 // B&dM (5.12), p.121: the `⟹` half as ONE term chain from $frac(#[`X`], ∋)$ back to a term holding it,
@@ -703,13 +703,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#calc-table(cols: (1fr,), al: auto,
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP") \
     #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
-    // lean:AOP.A5_5.relCata_UP@c5b689b0
+    // lean:AOP.A5_5.relCata_UP@32e11255
   [#lean-chain(
     Sub("Freyd.Alg.relCata_UP_of_comm",
       gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` is `⦇R⦈`],
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
-      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@621bab27
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
       (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` a map, $frac(#[`fS`], ∋)$`=f`$frac(#[`S`], ∋)$ — @pow-laws]),
       (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
       (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F` a functor, `F(`$frac(#[`X`], ∋)$`)` a map —
@@ -723,7 +723,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     ),
     Sub("Freyd.Alg.relCata_cancel",
       gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],
-      // lean:AOP.A5_5.relCata_cancel@f4c34202
+      // lean:AOP.A5_5.relCata_cancel@c83d7b44
       (none, ("Freyd.Alg.relCata_cancel",),
         src[fold equation, cancellation — @cata-map-calc, @initial-defn, @pow-laws, @relator-defn]),
     ),
@@ -794,7 +794,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ`.
 #disp[#calc-table(cols: (1fr,), al: auto,
   // hylo-fusion-eq header: Theorem 6.2, whose two inclusions are the Sub rows a and b
-  // lean:AOP.A6_3.hylo_eq_mu@99e3a1e0
+  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
   [#lean-chain(
@@ -802,13 +802,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
         decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
         recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
-      // lean:AOP.A6_3.hylo_fixed@68c93321
+      // lean:AOP.A6_3.hylo_fixed@67ca7394
       (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
       (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
       (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
       (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
       (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
-      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@621bab27
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
     ),
   )],
   [#lean-chain(
@@ -826,7 +826,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
         src[`S·⊣S\` — @adj-all]),
       (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
         src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @mu-laws, @adj-all]),
-      // lean:AOP.A6_2.relCata_le_of_prefixed@1eeb7125
+      // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
     ),
   )],
 )]<hylo-mu>

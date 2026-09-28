@@ -132,7 +132,7 @@ end BiRelator
   `TA = (I A).t`, `α_A = (I A).α`.  Every law below is one application of the
   Eilenberg-Wright UP `relCata_UP` (5.12) or of the equality fusion (2.12). -/
 
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] {F : BiRelator 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F : BiRelator 𝒜}
   (I : ∀ A : 𝒜, InitialAlgebra (F.appl A))
 
 /-- **(2.13) / B&dM p. 122**: `T` acts on an arrow `R : A ⟶ B` by `T(R) = ⦇F(R,𝟙)α⦈ : TA ⟶ TB`

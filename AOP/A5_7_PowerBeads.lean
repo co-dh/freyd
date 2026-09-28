@@ -156,7 +156,7 @@ end CpLax
 
 section SingletonSpelling
 
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
+variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 
 /-- `𝟙%∋` IS `singletonMap`.  §2.415 defines the singleton as `Λ 𝟙`, and that is the spelling a
     picture is drawn in — `Λ W = 𝟙%∋ E(W)` splits the transpose and leaves `Λ 𝟙` standing — while
