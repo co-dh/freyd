@@ -160,8 +160,8 @@
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
-// B&dM 6.6c, p.153, the program.  Uniqueness of the solution is Theorem 6.3, a hypothesis in Lean
-// (HyloUnique); drawn here is that `⦇[nil,select°]⦈°` IS a solution.  `nil` is strictly natural
+// B&dM 6.6c, p.153, the program.  Uniqueness of the solution is Theorem 6.3 (thm63_unique), which
+// needs a `member` for the list functor that Lean lacks; drawn here is that `⦇[nil,select°]⦈°` IS a solution.  `nil` is strictly natural
 // (lean:AOP.A6_6b_SortConcrete.nil_strictNatural@c7a02590).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.sort_rec") \
@@ -215,8 +215,22 @@
 )]<sort-split>
 // TODO p.155 split-cata: `split = embed ⦇[base,step]⦈` with `base ⊆ wrap perm join°check'`,
 //   `(𝟙×join check')step ⊆ cons perm join°check'`.
-// TODO p.155 qsort-rec: `X=⦇[nil,split°]⦈°flatten` the least solution of `X = nil°nil ∪ split(X×𝟙×X)join`;
-//   the program.
+// B&dM 6.6f, p.155, the program: by the hylomorphism theorem `X=⦇[nil,split°]⦈°flatten` solves the
+// equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@3e9893c3).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.qsort_rec") \
+    #src[quicksort returns `[]` on `[]`, and otherwise splits into `(x,a,y)`, sorts `x` and `y` and
+     joins them around `a`]],
+     // lean:AOP.A6_6e_Quicksort.qsort_rec@6776e923
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.qsort_rec.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.lhs", src[hylomorphism theorem]),
+    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.rhs", src[`F(X)[nil,join]=[nil,(X×𝟙×X)join]`]),
+     // lean:AOP.A6_6e_Quicksort.qrec_step1@8fce50a6
+    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step2.rhs", src[coproduct]),
+     // lean:AOP.A6_6e_Quicksort.qrec_step2@4ee6ccce
+  ),
+)]<qsort-rec>
 // TODO Ex 6.30 insertion: `perm ordered = ⦇[nil,add]⦈ordered = ⦇[nil,add ordered]⦈ ⊒ ⦇[nil,insert]⦈`
 //   (3 steps) — Lean isort_emerges is concrete.
 

@@ -456,4 +456,44 @@ public theorem quicksort (htrans : ∀ a b c, R a b → R b c → R a c)
   refine le_trans ?_ (qsort_step1 R)
   rw [qsort_step2 R htrans, qsort_step3 R]; exact qsort_step4 hsplit
 
+/-! ## The quicksort recursion (p.155) -/
+
+/-- **p.155, recursion step 1**: `[nil, split°]° F(X) [nil, join] = [nil, split°]° [nil, join (X×id×X)]`
+    — `F` acting on `X` passes into the `fork` branch of the algebra. -/
+public theorem qrec_step1 (X : dList A ⟶ dList A) :
+    (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join
+      = (junc (sumCop (dL Unit) (dLAL A)) wrapR split°)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
+  rw [TFmap_comp_junc]
+
+/-- **p.155, recursion step 2**: `[nil, split°]° [nil, join (X×id×X)] = nil nil° ∪ join (X×id×X) split`
+    — a converse coproduct join against a coproduct join is the union of the branches. -/
+public theorem qrec_step2 (X : dList A ⟶ dList A) :
+    (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join)
+      = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
+  rw [junc_recip_junc, Allegory.recip_recip]
+
+/-- **The quicksort recursion (B&dM p.155)**: `X = flatten ⦇[nil, split°]⦈°` solves
+    `X = nil nil° ∪ join (X×id×X) split`, by the hylomorphism theorem. -/
+public theorem qsort_rec :
+    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+        ≫ flatten
+      = wrapR° ≫ wrapR
+        ∪ split ≫ rprodMap ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
+              : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)
+            (rprodMap (𝟙 (dE A)) ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
+              : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)) ≫ join := by
+  rw [← qrec_step2, ← qrec_step1]; exact (hylo_fixed (TB.initial A) _ _).symm
+
+/-- **The quicksort recursion is the least solution (B&dM p.155)**: every `Y` with
+    `nil nil° ∪ join (Y×id×Y) split ⊆ Y` contains `flatten ⦇[nil, split°]⦈°`. -/
+public theorem qsort_least {Y : dList A ⟶ dList A}
+    (h : wrapR° ≫ wrapR ∪ split ≫ rprodMap Y (rprodMap (𝟙 (dE A)) Y) ≫ join ⊑ Y) :
+    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+        ≫ flatten ⊑ Y := by
+  refine hylo_le_of_prefixed (TB.initial A) ?_
+  rw [qrec_step1, qrec_step2]; exact h
+
 end Freyd.Alg.RelSet.Sort

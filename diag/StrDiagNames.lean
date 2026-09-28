@@ -277,6 +277,12 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The binary tree's BASE relator is the book's `F` (p.154 `F f = f×id×f`), as `RT.F` is. -/
+@[app_unexpander RelSet.TB.F] def unexpandTBF : Unexpander
+  | `($_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
   | _ => throw ()
