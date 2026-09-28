@@ -17,7 +17,7 @@ monolith still land after the split:
     ./scripts/note-split m.typ
 
 ONE CHAPTER, THE WHOLE RECIPE — `CH=<n>` is the ONE variable every gate honours.  `n` is the
-chapter's position among the level-1 headings, which is the number its displays already carry
+chapter's number as its header declares it, which is the number its displays already carry
 (`13.4.3c` is in chapter 13).  Working on chapter 13:
 
     make ch N=13                    # the chapter's own pdf, diag/ch/13-optimisation.pdf
@@ -40,12 +40,15 @@ import os, sys
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # THE SPLIT NOTES, by the ONE name every gate takes: `NOTE=aop` (default `axioms`), exported by make.
-# Each is a root and the directory its chapter files sit in; everything below reads `NOTE`/`CHDIR`.
-NOTE_ROOTS = {"axioms": (os.path.join("diag", "allegory-axioms.typ"), os.path.join("diag", "ch")),
-              "aop": (os.path.join("diag", "algprog-companion.typ"), os.path.join("diag", "aop"))}
+# Each is a root, the directory its chapter files sit in, and the manifest of its commutative canvases
+# (`scripts/cd-check`); everything below reads `NOTE`/`CHDIR`/`PANELS`.
+NOTE_ROOTS = {"axioms": (os.path.join("diag", "allegory-axioms.typ"), os.path.join("diag", "ch"),
+                         os.path.join("diag", "cd-panels.txt")),
+              "aop": (os.path.join("diag", "algprog-companion.typ"), os.path.join("diag", "aop"),
+                      os.path.join("diag", "aop", "cd-panels.txt"))}
 # The displays both split notes place: bound once in this file, `#import`ed rather than included.
 SHARED = os.path.join("diag", "shared-laws.typ")
-NOTES = tuple(r for r, _ in NOTE_ROOTS.values()) + (os.path.join("diag", "allegory2.typ"),)
+NOTES = tuple(r for r, *_ in NOTE_ROOTS.values()) + (os.path.join("diag", "allegory2.typ"),)
 PRELUDE = os.path.join("diag", "note-prelude.typ")
 
 
@@ -57,7 +60,7 @@ def note_name():
     return n
 
 
-NOTE, CHDIR = NOTE_ROOTS[note_name()]
+NOTE, CHDIR, PANELS = NOTE_ROOTS[note_name()]
 
 ROOT_MARK = "// note-split: root — written by scripts/note-split and stripped by scripts/note-join"
 ROOT_IMPORT = '#import "note-prelude.typ": *'
@@ -371,7 +374,7 @@ def note_files(root=None, root_dir=None, ch=None):
         return [chapter_file(n, root_dir)]
     # A split note's root stands for the shared laws too: its chapters place them from there.
     out = [path] + ([os.path.join(root_dir, SHARED)]
-                    if os.path.relpath(path, root_dir) in [r for r, _ in NOTE_ROOTS.values()] else [])
+                    if os.path.relpath(path, root_dir) in [r for r, *_ in NOTE_ROOTS.values()] else [])
     for inc in includes(path):
         out += note_files(root=inc, root_dir=root_dir)
     return out
@@ -409,7 +412,7 @@ def chapter_env(ch=None):
     try:
         return int(ch.strip())
     except ValueError:
-        die("CH=%s is no chapter: give its number among the note's level-1 headings, e.g. CH=13 "
+        die("CH=%s is no chapter: give the number its header declares, e.g. CH=13 "
             "(./scripts/note-files lists the chapters in order)" % ch)
 
 
@@ -688,10 +691,13 @@ def cmd_files(argv):
         print(*generated_imports(), sep="\n")
         return
     # `--root`: the root `$NOTE` names; `--roots`: every note make compiles; `--names`: the names
-    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`.  Make and the Lean gates ask
+    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`;
+    # `--panels`: `$NOTE`'s commutative-canvas manifest.  Make and the Lean gates ask
     # these, so the notes are listed in this file alone.
     if "--root" in argv:
         return print(NOTE)
+    if "--panels" in argv:
+        return print(PANELS)
     if "--roots" in argv:
         return print(*NOTES, sep="\n")
     if "--names" in argv:

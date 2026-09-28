@@ -96,7 +96,7 @@ def creator(path):
 # Our own notes, under the name the chat uses; page = pdf page, and `ingest` reads their `<pic>` metadata.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from notesplit import NOTE_ROOTS  # noqa: E402
-NOTES = {os.path.splitext(r)[0] + ".pdf": name for name, (r, _) in NOTE_ROOTS.items()}
+NOTES = {os.path.splitext(r)[0] + ".pdf": name for name, (r, *_) in NOTE_ROOTS.items()}
 
 
 DIRS = ("AOP", "doc")  # subdirectories scanned for third-party PDFs, alongside ROOT itself

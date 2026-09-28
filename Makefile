@@ -4,11 +4,12 @@
 # out to `typst` anyway: typst is not a Lean artefact and lake would not know when to rerun it.
 # Lake's half of this is `diag-export`, which make calls below.
 #
-# TWO notes: allegory-axioms states the laws, allegory2 works the proofs.  They share
-# diag/note-style.typ, and both are compiled by `make p` — a split whose second half only builds
-# when someone remembers to name it is a split that rots.
+# THREE notes: allegory-axioms states the laws, algprog-companion follows Bird & de Moor's chapters,
+# allegory2 works the proofs.  They share diag/note-style.typ, and all are compiled by `make p` — a
+# split whose second half only builds when someone remembers to name it is a split that rots.
+# `./scripts/note-files` is the one list of them; nothing here names a note's path.
 
-TYP   := diag/allegory-axioms.typ diag/allegory2.typ
+TYP   := $(shell ./scripts/note-files --roots)
 PDF   := $(TYP:.typ=.pdf)
 LEAN  := $(wildcard diag/*.lean diag/tool/*.lean)
 BOOK  := Freyd.lean $(wildcard AOP/*.lean Freyd/*.lean Freyd/tool/*.lean leet/*.lean rel/*.lean)
@@ -25,11 +26,25 @@ DB    := .lake/build/refactor-index.db
 # `make ch N=13` is the same variable under the name that target has always taken.
 # A chapter that does not exist STOPS make here, naming it: a gate that fell back to the whole book
 # would check something else and exit 0.
+#
+# ONE NOTE, ONE VARIABLE, the same way: `NOTE` names a split note — `axioms` (the default) or `aop`,
+# the companion — and every chapter gate reads it from the environment, so `make c NOTE=aop CH=7` is
+# chapter 7 of the companion.  An unknown name STOPS make here, naming the notes there are.
+NOTE ?= axioms
+export NOTE
+NOTEROOT := $(shell ./scripts/note-files --root)
+ifneq ($(words $(NOTEROOT)),1)
+$(error NOTE=$(NOTE): ./scripts/note-files --root named no note — its message is above)
+endif
+# The pdfs of the split notes, one per name, for the gates `make p` runs once per note.
+NOTENAMES := $(shell ./scripts/note-files --names)
+# The displays both split notes place, bound once here: it is `#import`ed, so no include walk sees it.
+SHARED := diag/shared-laws.typ
 CH ?= $(N)
 export CH
 ifeq ($(strip $(CH)),)
-NOTESRC := diag/allegory-axioms.typ
-CITESRC := $(TYP)
+NOTESRC := $(NOTEROOT)
+CITESRC := $(TYP) $(SHARED)
 else
 # The resolver's own message goes to make's stderr, naming the chapters there are; it prints no path
 # when it fails, and one file when it succeeds, so anything else stops make here.
@@ -76,10 +91,9 @@ p: $(STAMP) .WAIT panels cite cd-check
 # nothing draws from can be broken with all of them green.
 	./scripts/cap lake build
 	for t in $(TYP); do $(LOCK) typst compile $$t $${t%.typ}.pdf || exit 1; done
-	./scripts/labelfit
+	for n in $(NOTENAMES); do NOTE=$$n ./scripts/labelfit && NOTE=$$n ./scripts/dispfit || exit 1; done
 	./scripts/inkfit
-	./scripts/dispfit
-	./scripts/book ingest diag/allegory-axioms.pdf
+	./scripts/book ingest $(foreach n,$(NOTENAMES),$(basename $(shell NOTE=$(n) ./scripts/note-files --root)).pdf)
 
 # No two labels inside one panel may touch, and ink stays inside its frame, measured off the
 # COMPILED page.  It needs the PDF, so unlike its neighbours it pays a typst compile when the note
@@ -153,21 +167,20 @@ v:
 # why this is not a browser.  Ctrl-C closes both.
 #
 # ONE note at a time: `typst watch` takes one input, and watching the pair would need two watchers
-# and two viewers.  `make w NOTE=diag/allegory2.typ` for the proofs.
-NOTE ?= diag/allegory-axioms.typ
+# and two viewers.  `make w NOTE=aop` for the companion.
 
-# ONE CHAPTER'S PDF: `make ch N=13`.  N is the chapter's position among the level-1 headings, which
+# ONE CHAPTER'S PDF: `make ch N=13`.  N is the number the chapter's header declares, which
 # is the number its displays already carry (`13.4.3c` is in chapter 13); `CH ?= $(N)` at the top of
 # this file makes it the same variable every gate takes, and `./scripts/note-files --ch` the one
 # thing that turns it into a file, so a renamed heading needs no edit here.
 ch:
-	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the chapter's number among the level-1 headings"; exit 1; }
+	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the number the chapter's header declares"; exit 1; }
 	$(LOCK) typst compile --root . $(NOTESRC) $(NOTEPDF)
 
 w: p
-	@zathura $(NOTE:.typ=.pdf) & \
+	@zathura $(NOTEROOT:.typ=.pdf) & \
 	  v=$$!; trap "kill $$v 2>/dev/null" EXIT INT TERM; \
-	  typst watch $(NOTE) $(NOTE:.typ=.pdf)
+	  typst watch $(NOTEROOT) $(NOTEROOT:.typ=.pdf)
 
 # The pictures are exported from the Lean STATEMENTS, so only the Lean makes them stale.  NOT the
 # note: `diag-regen` reads its list off the note's imports, but editing prose changes no picture,
