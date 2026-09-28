@@ -705,21 +705,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
     // lean:AOP.A5_5.relCata_UP@32e11255
   [#lean-chain(
-    Sub("Freyd.Alg.relCata_UP_of_comm",
-      gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` is `⦇R⦈`],
+    Sub("Freyd.Alg.relCata_UP_fold", formula: true,
+      gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` makes $frac(#[`X`], ∋)$ the fold of the map $frac(#[`F(∋)R`], ∋)$],
+      // lean:AOP.A5_5.relCata_UP_fold@17f60f40
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` a map, $frac(#[`fS`], ∋)$`=f`$frac(#[`S`], ∋)$ — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` is a map because `α` is an iso, so it leaves Λ: $frac(#[`α°F(X)R`], ∋)$`=α°`$frac(#[`F(X)R`], ∋)$ — @pow-laws]),
       (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F` a functor, `F(`$frac(#[`X`], ∋)$`)` a map —
-        @relator-defn, @pow-laws]),
-    ),
-    (
-      (IMP, ("Freyd.Alg.relCata_UP_fold",),
-        src[fold uniqueness — @initial-defn]),
-      (IMP, ("Freyd.Alg.relCata_UP_of_comm",),
-        src[cancellation — @cata-map-calc]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
+      // lean:AOP.A5_5.relCata_UP_step5@0c3c4eb1
     ),
     Sub("Freyd.Alg.relCata_cancel",
       gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],

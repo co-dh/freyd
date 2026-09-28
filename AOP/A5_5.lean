@@ -146,16 +146,27 @@ public theorem relCata_UP_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A �
     I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
   rw [F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
 
+/-- Steps 1–4 chained: `Λ(X)` satisfies the fold equation of the map `Λ(F(∋)R)`, up to `α°`. -/
+public theorem relCata_UP_chain (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
+  (relCata_UP_step1 I h).trans <| (relCata_UP_step2 I R X).trans <|
+    (relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)
+
 /-- The chain, times `α` (`αα° = 𝟙`), is the map fold's equation at `Λ(X)`; the fold of a map
     algebra is the unique map satisfying it. -/
 public theorem relCata_UP_fold (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
     (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
   I.cata_unique _ _ _ (Λ_is_map' X) <|
     calc I.α ≫ Λ X = I.α ≫ I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
-          congrArg (I.α ≫ ·) (((relCata_UP_step1 I h).trans (relCata_UP_step2 I R X)).trans
-            ((relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)))
+          congrArg (I.α ≫ ·) (relCata_UP_chain I h)
       _ = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
           rw [← Cat.assoc, I.alpha_alpha_recip, Cat.id_comp]
+
+/-- Step 5: fold uniqueness, now that `Λ(F(∋)R)` is a map: the chain's last term is its fold. -/
+public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) :
+    I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  (relCata_UP_chain I h).symm.trans (relCata_UP_fold I h)
 
 /-- Cancellation `X = Λ(X)∋`, and `⦇R⦈ = ⦇Λ(F(∋)R)⦈∋`. -/
 public theorem relCata_UP_of_comm (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
