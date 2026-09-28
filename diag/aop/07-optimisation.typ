@@ -43,20 +43,20 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
   [`union≜` $frac(#[`∋∋`], ∋)$ `: E(EA)⟶EA`], [flattens a set of sets],
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
-  [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°`],
+  [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°` #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
   // lean:AOP.A7_1.singletonMap_comp_est@06b2ed05
   [#leanf("Freyd.Alg.Λ_comp_est")], [an `S`-value that points to every `S`-value],
   [#leanf("Freyd.Alg.Λ_comp_est_context")], [only `R` between values `S` gives one argument counts — context],
-  [`E(S) est(R)=(∋S)∩((∋S)°\R°)`],
+  [`E(S) est(R)=(∋S)∩((∋S)°\R°)` #src[(7.7)]],
   [the same for the image of a set \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=∋S`]],
   [#leanf("Freyd.Alg.powerRel_map_comp_est")], [shunt a function through a minimum],
-  [`P(S) est(R)=(∋S)∩(∈\(SR°))` \ #src[`R` reflexive]],
+  [`P(S) est(R)=(∋S)∩(∈\(SR°))` #src[(7.9)] \ #src[`R` reflexive]],
   [fusion with the power relator \ #src[`⊒` is the only proof here that tabulates]],
   [`P(S) est(R)⊑(∋S)∩(∈\(SR°))`], [the half of the row above that costs nothing],
   [`P(est(R)) est(R)⊑union est(R)` \ #src[`R` transitive]],
   [a minimum in each set, then a minimum of those],
-  [#leanf("Freyd.Alg.powerRel_est_eq_bigUnion")],
+  [#leanf("Freyd.Alg.powerRel_est_eq_bigUnion") #src[(7.12)]],
   [the same as an equality, once empty sets are dropped],
 )]<est-laws>
 
@@ -82,7 +82,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 
 // B&dM (7.1): the same four steps as the subsection below, with `(𝟙%∋) ∋ = 𝟙` — the `i ⊣ E` triangle —
 // where that one has `(S%∋) ∋ = S`.
-#disp[
+#disp(num: "(7.1)")[
 #zline(
   zsqc(`X`, [$frac(#[`𝟙`], ∋)$ `(∈\R)`]),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
@@ -105,7 +105,7 @@ that set be `R`-related to the target, so the set cancels and `S°\R` asks it of
 directly.
 
 // B&dM (7.2): two adjunctions composed, `(S%∋) ∋ = S` collapsing the middle — the shape of (1.2a).
-#disp[
+#disp(num: "(7.2)")[
 #zline(
   zsqc(`X`, [$frac(#[`S`], ∋)$ `(∈\R)`]),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
@@ -126,7 +126,7 @@ directly.
 === `union (∈\R)=∈\(∈\R)`
 
 // B&dM (7.3): the shape of the two chains above with `union ∋ = ∋ ∋` in the middle.
-#disp[
+#disp(num: "(7.3)")[
 #zline(
   zsqc(`X`, `union (∈\R)`),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
@@ -147,7 +147,7 @@ directly.
 === $frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`
 
 // B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
-#disp[
+#disp(num: "(7.5)")[
 #zline(
   zsqc(`X`, [$frac(#[`S`], ∋)$ `est(R)`]),
   zstep(op: sym.arrow.l.r.double, under: true)[`f°·⊣f·`],
@@ -169,7 +169,7 @@ directly.
 
 // B&dM (7.6): `X ⊑ S` already forces `S° X ⊑ S° S`, so the extra conjunct costs nothing — that is
 // the whole content, and it is the middle step.
-#disp[
+#disp(num: "(7.6)")[
 #zline(
   zsqc(`X`, [$frac(#[`S`], ∋)$ `est(R∩S°S)`]),
   zstep(op: sym.arrow.l.r.double, under: true)[@est-75, `°`],
@@ -194,7 +194,7 @@ directly.
 
 // B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
 // modular law, and it needs `f` simple — the only such step in §@sec-est.
-#disp[
+#disp(num: "(7.8)")[
 #zline(
   zsqc(`P(f) est(R)`, none, name: "f a map"),
   zstep(op: sym.eq, under: true)[`P=E` on maps, @est-75],
@@ -217,7 +217,7 @@ directly.
 
 // B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
 // property of `est` that is the whole proof.  The equality (7.9) is not this — it needs tabulations.
-#disp[
+#disp(num: "(7.10)")[
 #zline(
   zsqc(`P(S) est(R)`, `(∋S)∩(∈\(SR°))`),
   zstep(op: sym.arrow.l.double, under: true)[`Δ⊣∩`, `T·⊣T\`],
@@ -233,7 +233,7 @@ directly.
 
 // B&dM (7.11): (7.5) at `S := ∋ ∋` opens the right-hand side, then the same two facts as (7.10)
 // close both strands — the left one twice, the right one against transitivity.
-#disp[
+#disp(num: "(7.11)")[
 #zline(
   zsqc(`P(est(R)) est(R)`, `union est(R)`, name: "R transitive"),
   zstep(op: sym.arrow.l.r.double, under: true)[@est-75],
@@ -334,7 +334,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // sits on the object wire and the sweep needs no naturality verdict.
 // plus `s: 100%`, so the labels print at the size the note sets them in.
 // Each step's two sides are one `lean(l, r)` call, so they share one box and stand one height.
-#disp[#calc-table(cols: (1fr,), al: auto,
+#disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
     #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
@@ -385,7 +385,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #let gr-R = lean("Freyd.Alg.greedy_step3.rhs")
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
 // `est(R)` uses: the book reads right to left and states it on `R°`, and mirroring flips it back.
-#disp[#calc-table(
+#disp(num: "Theorem 7.2")[#calc-table(
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
@@ -669,7 +669,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 )])]
 
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Exercise 7.39")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile") \
@@ -897,7 +897,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Exercise 7.40")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") \
@@ -1039,7 +1039,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 )])]
 
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Exercise 7.41")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") \
@@ -1702,7 +1702,7 @@ zip(that)                                         each row: its square, and the 
 
 // B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
 // column; the right-hand side kills the `[p]` before, and that swap is the whole step.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(7.13)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.cyl_fusion") \
     #src[choosing a cheapest of each square's `p` paths before the column is extended is no better
      than extending first and choosing among the `3p`.
@@ -1824,7 +1824,7 @@ zip(that)                                         each row: its square, and the 
 #let van-pre-l = "Freyd.Alg.RelSet.Van.secure_prefix.lhs"
 #let van-pre-r = "Freyd.Alg.RelSet.Van.secure_prefix.rhs"
 
-#disp[#capbox(
+#disp(num: "Exercise 7.49")[#capbox(
   lean(van-pre-l, van-pre-r, op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.secure_prefix") \
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
@@ -1879,7 +1879,7 @@ zip(that)                                         each row: its square, and the 
 
 // The chain the book runs on p.185: `partition` is a fold, and the fold law absorbs
 // `list(secure)` into that fold's algebra.
-#disp[#calc-table(
+#disp(num: "Exercise 7.51")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_spec") \
     #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
      every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
@@ -1920,7 +1920,7 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.186's (7.14).  Its mirror (7.15) — the same with `old` in place of `new` — is FALSE, and
 // @van-deriv is where that costs the refinement of `R` to `R;H`.  `R` sits on the two schedule
 // wires and `new` on the product context, so the chain is those two beads swapping height.
-#disp[#calc-table(
+#disp(num: "(7.14)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_7_14") \
     #src[calling the van for the transaction on a no-longer schedule gets no further than calling
      it on this one and shortening the schedule afterwards]],
@@ -1962,7 +1962,7 @@ zip(that)                                         each row: its square, and the 
 // whatever the schedules were — which is why the left panel below carries `⊤` and not `H`.
 #let van-718-l = "Freyd.Alg.RelSet.Van.van_7_18.lhs"
 
-#disp[#capbox(
+#disp(num: "(7.18)")[#capbox(
   lean(van-718-l, "Freyd.Alg.RelSet.Van.van_7_18.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_18") \
    #src[whatever schedule the van is called on, the result's first segment is the one transaction
@@ -1971,7 +1971,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.van_7_18@767da25f
 ]<van-718>
 
-#disp[#calc-table(
+#disp(num: "(7.16)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono_new") \
     #src[calling the van for the transaction on a `R;H`-better schedule gets no further than calling
      it on this one and bettering the whole schedule afterwards]],
@@ -2006,7 +2006,7 @@ zip(that)                                         each row: its square, and the 
 #let van-721-l = "Freyd.Alg.RelSet.Van.van_7_21.lhs"
 #let van-721-r = "Freyd.Alg.RelSet.Van.van_7_21.rhs"
 
-#disp[#capbox(
+#disp(num: "(7.19)")[#capbox(
   lean(van-719-l, "Freyd.Alg.RelSet.Van.van_7_19.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_19") \
    #src[`old` leaves the transaction `[a]` at the front of the first segment, and `[a]` is what
@@ -2016,7 +2016,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.van_7_19@78e3274f
 ]<van-719>
 
-#disp[#capbox(
+#disp(num: "(7.20)")[#capbox(
   lean(van-720-l, "Freyd.Alg.RelSet.Van.van_7_20.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_20") \
    #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
@@ -2025,7 +2025,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.van_7_20@b29be38c
 ]<van-720>
 
-#disp[#capbox(
+#disp(num: "(7.21)")[#capbox(
   lean(van-721-l, van-721-r, op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_21") \
    #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
@@ -2034,7 +2034,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.van_7_21@302aa148
 ]<van-721>
 
-#disp[#calc-table(
+#disp(num: "(7.17)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_mono") \
     #src[gluing the transaction onto a better schedule for the rest gets no further than gluing it
      on, or calling the van, and bettering the whole schedule after,
