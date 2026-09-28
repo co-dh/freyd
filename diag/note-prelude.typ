@@ -295,13 +295,18 @@
     + ": the exporter draws both sides and the relation between them from the one declaration")
   p
 }
-// A step whose Lean head at `sel` is `∪` reads as two branches, `sel.inr` then `sel.inl` — the
-// order the chain already draws them in.  `union(sel)` names the pair once: a lean-chain row
-// `(op, union(sel), reason)` expands (in `lean-chain`, below) to the panel at `sel.inr` under `op`
-// then the panel at `sel.inl` under `[∪]`, with no reason; spread, the same pair is what a raw
-// `lean(..union(sel), op: [∪])` call draws side by side.  Distinguished from `stmt-sel`'s `(decl,)`
-// by length — 2 selectors, never 1 — so the two array forms never collide.
-#let union(sel) = (sel + ".inr", sel + ".inl")
+// A step whose Lean side at `sel` is two branches joined by `sym` — a union `P ∪ Q`, or a sum
+// `∇°(P+Q)∇` whose codiagonals the sign stands for — reads as `sel.inr` then `sel.inl` (`rev:`
+// swaps them).  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`, below) to the
+// panel at the first selector under `op` then the second under `sym`, with no reason; `.sels`
+// spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A dictionary,
+// so it never collides with `stmt-sel`'s `(decl,)` array.
+#let branches(sym, sel, rev: false) = {
+  let s = (sel + ".inr", sel + ".inl")
+  (sym: sym, sels: if rev { s.rev() } else { s })
+}
+#let union = branches.with([∪])
+#let sum = branches.with([+])
 // A reason stands under its panel only when it fits the panel's width; a longer one would run into
 // the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
 // are listed under the row, where the circuits stood.
@@ -316,14 +321,14 @@
       assert(r.at("kind", default: none) == "Sub", message: "a lean-chain row dict must come from Sub(...)")
       r
     } else { (steps: r) })
-    // expand a `union(sel)` step into its two rows before anything else sees it, so the rest of
+    // expand a `branches` step into its two rows before anything else sees it, so the rest of
     // this function only ever meets plain string selectors or a `stmt-sel` singleton.
     .map(r => {
       let steps = ()
       for s in r.steps {
-        if type(s.at(1)) == array and s.at(1).len() == 2 {
-          steps.push((s.at(0), s.at(1).at(0), s.at(2)))
-          steps.push(([∪], s.at(1).at(1), src[]))
+        if type(s.at(1)) == dictionary {
+          steps.push((s.at(0), s.at(1).sels.at(0), s.at(2)))
+          steps.push((s.at(1).sym, s.at(1).sels.at(1), src[]))
         } else { steps.push(s) }
       }
       r + (steps: steps)

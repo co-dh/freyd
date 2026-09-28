@@ -1820,7 +1820,7 @@ def compose (fs : Array Expr) : MetaM Expr := do
     * the last factor is a UNION or a MEET — two arrows of the same hom as itself — and the operand
       keeps the run before it: `X ≫ (U ∪ V)` selects `X ≫ V`, a bare `U ∪ V` selects `V`;
     * the run starts at the apex of a COPRODUCT and ends in a junction over it, and the operand is
-      one ARM.  The whole run is precomposed with that summand's injection, and
+      one ARM; a sum map on the way contributes its own arrow `i`, so `∇°(P+Q)∇` selects `P`.  The whole run is precomposed with that summand's injection, and
       `uᵢ ≫ F.map R ≫ junc C g h` is `Fᵢ(R) ≫ hᵢ`: the injection slides through the functor into
       the summand's own action, and the junction absorbs it.
 
@@ -1833,36 +1833,53 @@ partial def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
   -- is `Xᵢ°` followed by `rest` entered at summand `i`, which is the junction case below.
   if fs.size > 1 && fs[0]!.isAppOf ``Freyd.Alg.Allegory.recip then
     if let some (_, X, Y) ← juncOf? fs[0]!.appArg! then
-      let arm ← Meta.mkAppM ``Freyd.Alg.Allegory.recip #[if i == 0 then X else Y]
-      return ← Meta.mkAppM ``Cat.comp #[arm, ← branchOf regionTy (← compose (fs.extract 1 fs.size)) i]
+      let rest ← branchOf regionTy (← compose (fs.extract 1 fs.size)) i
+      -- an identity arm (`∇° = [𝟙,𝟙]°`) is a bare wire: the operand is `rest` alone
+      let X := if i == 0 then X else Y
+      if X.isAppOf ``Cat.id then return rest
+      return ← Meta.mkAppM ``Cat.comp #[← Meta.mkAppM ``Freyd.Alg.Allegory.recip #[X], rest]
   let (src, _) ← homEnds e
-  let mut hit : Option (Nat × Expr × Expr × Expr × Expr) := none
   -- the junction stands over the coproduct the run has reached by then — the source itself, or,
-  -- behind functor actions `F.map R`, `F` at `R`'s target (`F(inrange°)[arb,step]`)
-  let mut at_ := src
-  for k in [0 : fs.size] do
-    if hit.isNone then
-      if let some (C, X, Y) ← juncOf? fs[k]! then
-        if let some (s, a₁, a₂) ← summands? C then
-          if ← Meta.isDefEq s at_ then hit := some (k, a₁, a₂, X, Y)
+  -- behind functor actions `F.map R` and sum maps `P+Q`, their target (`F(inrange°)[arb,step]`,
+  -- `(P+Q)∇`).  A sum map is itself a junction, so it is passed over first and taken as the
+  -- junction only when no other is reached.
+  let search (passSums : Bool) : MetaM (Option (Nat × Expr × Expr × Expr × Expr)) := do
+    let mut hit := none
+    let mut at_ := src
+    for k in [0 : fs.size] do
+      if hit.isNone && !(passSums && (← asSumMap? fs[k]!).isSome) then
+        if let some (C, X, Y) ← juncOf? fs[k]! then
+          if let some (s, a₁, a₂) ← summands? C then
+            if ← Meta.isDefEq s at_ then hit := some (k, a₁, a₂, X, Y)
       at_ := (← homEnds fs[k]!).2
+    return hit
+  let hit ← match ← search true with
+    | some h => pure (some h)
+    | none => search false
   let some (j, a₁, a₂, X, Y) := hit
     | throwError "`.inl`/`.inr` names one operand of a union or a meet, or one arm of a junction \
         over a coproduct at the source of the run or behind functor actions from it, and \
         `{← plain e}` runs into neither"
-  let mut rs : Array Expr := #[]
+  -- `none` marks a sum map, whose summand `i` is its own arrow `i`
+  let mut rs : Array (Option Expr) := #[]
   for k in [0 : j] do
+    if (← asSumMap? fs[k]!).isSome then rs := rs.push none; continue
     let some (_, R) := functorMap? fs[k]!
-      | throwError "the arm is behind `{← plain fs[k]!}`, which is not a functor acting on an \
-          arrow, so the injection has nothing to slide through"
-    rs := rs.push R
+      | throwError "the arm is behind `{← plain fs[k]!}`, which is neither a functor acting on an \
+          arrow nor a sum map, so the injection has nothing to slide through"
+    rs := rs.push (some R)
   -- THE SUMMAND AT THE SOURCE is the junction's summand read back through each action: a functor's
-  -- summand is functorial in its argument, so `R`'s target in it is `R`'s source there.  The
-  -- forward pass below then checks it lands on the arm's source.
+  -- summand is functorial in its argument, so `R`'s target in it is `R`'s source there; a sum map's
+  -- is its arrow `i`'s source.  The forward pass below then checks it lands on the arm's source.
   let mut obj := if i == 0 then a₁ else a₂
-  for R in rs.reverse do
-    let (rS, rT) ← homEnds R
-    obj := (← Meta.kabstract obj rT).instantiate1 rS
+  for k in (List.range j).reverse do
+    match rs[k]! with
+    | some R =>
+      let (rS, rT) ← homEnds R
+      obj := (← Meta.kabstract obj rT).instantiate1 rS
+    | none =>
+      let some (p, q) ← asSumMap? fs[k]! | throwError "unreachable: `{← plain fs[k]!}` was a sum map"
+      obj := (← homEnds (if i == 0 then p else q)).1
   let mut parts : Array Expr := #[]
   for k in [0 : j] do
     -- a relator whose action UNFOLDS to a sum map `P+Q` says its summand's action itself: take arm
@@ -1872,7 +1889,7 @@ partial def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
       parts := parts.push a
       obj := (← homEnds a).2
       continue
-    let R := rs[k]!
+    let some R := rs[k]! | continue
     if let some act ← summandAction regionTy obj R then
       parts := parts.push act
       obj := (← homEnds act).2
@@ -1881,8 +1898,10 @@ partial def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
   unless ← Meta.isDefEq armSrc obj do
     throwError "the arm `{← plain arm}` starts at `{← plain armSrc}`, and the run carries the \
       summand `{← plain obj}` into it"
-  parts := parts.push arm
-  for k in [j + 1 : fs.size] do parts := parts.push fs[k]!
+  -- an identity arm (`∇ = [𝟙,𝟙]`) is a bare wire, kept only when it is all the operand has
+  let rest := fs.extract (j + 1) fs.size
+  unless arm.isAppOf ``Cat.id && !(parts.isEmpty && rest.isEmpty) do parts := parts.push arm
+  parts := parts ++ rest
   compose parts
 
 /-! ### The dot

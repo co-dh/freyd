@@ -203,10 +203,12 @@
   // lean:AOP.A6_3.hylo_eq_mu_coprod@066877fe
   lean-chain(
     (none, "Freyd.Alg.hylo_body_coprod_step1.lhs", src[the body of Theorem 6.2 at `F(X)=G(X)+H(X)`]),
-    (EQ, "Freyd.Alg.hylo_body_coprod_step1.rhs", src[`(P+Q)[R₁,R₂]=[PR₁,QR₂]` — coproduct]),
-    // lean:AOP.A6_3.hylo_body_coprod_step1@2ca7d056
-    (EQ, "Freyd.Alg.hylo_body_coprod_step2.rhs", src[`[S₁,S₂]°[P,Q]=S₁°P∪S₂°Q` — coproduct]),
-    // lean:AOP.A6_3.hylo_body_coprod_step2@00f0c2d0
+    // `sum`/`union` give `.inr` then `.inl`; `rev:` puts them in the formula's own left-to-right
+    // order, `.inl` (`S₁°G(X)R₁`) then `.inr` (`S₂°H(X)R₂`), as `<van-h>` does for `Hrel`.
+    (EQ, sum("Freyd.Alg.hylo_body_coprod_sum_step1.rhs", rev: true), src[`[S,T]=(S+T)∇` on both sides gives `∇°(S₁°G(X)R₁+S₂°H(X)R₂)∇`; the `+` stands for the codiagonals `∇°`, `∇`, which are not drawn]),
+    // lean:AOP.A6_3.hylo_body_coprod_sum_step1@cb461a01
+    (EQ, union("Freyd.Alg.hylo_body_coprod_sum_step2.rhs", rev: true), src[`∇°(P+Q)∇=P∪Q` — coproduct]),
+    // lean:AOP.A6_3.hylo_body_coprod_sum_step2@ef499730
   ),
 )]<hylo-coprod>
 

@@ -1983,7 +1983,7 @@ zip(that)                                         each row: its square, and the 
 #disp[#capbox(
   // `union` gives `.inr` then `.inl`; this row draws the formula's own left-to-right order, `.inl`
   // (`head prefix° head°`) then `.inr` (`nil° nil`), so the pair is reversed here.
-  lean(..union("Freyd.Alg.RelSet.Van.Hrel").rev(), op: [∪]),
+  lean(..union("Freyd.Alg.RelSet.Van.Hrel", rev: true).sels, op: [∪]),
  [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
