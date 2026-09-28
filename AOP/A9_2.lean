@@ -86,7 +86,7 @@ public theorem dpBodyInf_monotonic (F : Relator 𝒜 𝒜) (T : F.obj B ⟶ B) (
     `dp_prefixed` (`AOP.A9_1`): the two obligations are the components of `min`'s universal
     property `le_Λ_comp_est_iff`; the fallback disjunct is handled by `τ ∩ W ⊑ τ` in the
     membership half and by `τ° ≫ W ⊑ τ° ≫ ⊤ ⊑ R°` (`hτ`) in the lower-bound half. -/
-public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) {h : F.obj A ⟶ A}
+public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} {h : F.obj A ⟶ A}
     {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A} {H : B ⟶ A}
     (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hHfix : T° ≫ F.map H ≫ h = H)
@@ -124,7 +124,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
     -- `H°` kills `W` by the (9.3)-style chain of `dp_prefixed`
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
       have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       rw [← h1, hHfix]
     have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj B))° := by
       have h0 := recip_comp_Λ_le_recip_eps (T°)
@@ -216,7 +216,7 @@ public theorem dp_inf_prefixed {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip) 
     algebra `h` is STRICT at the adjoined top (`osucc ∞ = ∞` in `leet.L322`).  By
     Knaster–Tarski (`Sup_le`'s lower-bound half) via `dp_inf_prefixed` and the hylomorphism
     theorem (`hylo_fixed`, B&dM Theorem 6.2). -/
-public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.PreservesRecip)
+public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜}
     (I : InitialAlgebra F) {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {τ : B ⟶ A}
     (hh : Map h) (hmono : Freyd.Alg.MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°)
     (hstrict : T° ≫ F.map (((relCata T)° ≫ relCata h) ∪ τ) ≫ h
@@ -225,6 +225,6 @@ public theorem dynamic_programming_inf {F : Relator 𝒜 𝒜} (hFr : F.Preserve
     mu (dpBodyInf F T h R τ)
       ⊑ Λ (((relCata T)° ≫ relCata h) ∪ τ) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS =>
-    hS _ (dp_inf_prefixed hFr hh hmono htrans (hylo_fixed hFr I h T) hstrict hτ))
+    hS _ (dp_inf_prefixed hh hmono htrans (hylo_fixed I h T) hstrict hτ))
 
 end Freyd.Alg

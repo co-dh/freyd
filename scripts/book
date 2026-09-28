@@ -18,7 +18,6 @@ sentence embedding per paragraph, cosine KNN inside SQLite), `page` (raw text, f
     ./scripts/book sim -b IntroString why is a monad the same thing as a monoid
     ./scripts/book page IntroString 64          # or `pdf:79`, always available
     ./scripts/book ls
-    ./scripts/book pics                         # the note's displays' crop boxes, from `<pic>` metadata
     ./scripts/book pic takewhile axioms         # p.44  x y w h  section  key, and the pdftoppm crop
 
 The DB holds the full text of PDFs gitignored for copyright, so it is gitignored too
@@ -94,7 +93,7 @@ def creator(path):
     return ""
 
 
-# Our own notes, under the name the chat uses; page = pdf page, and `pics` reads their `<pic>` metadata.
+# Our own notes, under the name the chat uses; page = pdf page, and `ingest` reads their `<pic>` metadata.
 NOTES = {"diag/allegory-axioms.pdf": "axioms"}
 
 
@@ -275,8 +274,9 @@ def wipe(db, bid):
         db.execute(f"delete from {t} where book=?", (bid,))
 
 
-def store(db, bid, pages, heads, warn):
-    """page/para/label rows for one book; returns (paras, labels)."""
+def store(db, bid, pages, heads, warn, eqs=None):
+    """page/para/label rows for one book; returns (paras, labels).  `eqs`: the equation labels
+    `(name, pdf_page)` when Typst supplies them (`note_pics`), replacing the text regex's."""
     nums = [(n, page_number(l)) for n, l in enumerate(pages, 1)]
     db.executemany("insert into page(book,pdf_page,printed,text) values(?,?,?,?)",
                    [(bid, n, s, "\n".join(pages[n - 1])) for n, s in nums])
@@ -284,16 +284,19 @@ def store(db, bid, pages, heads, warn):
                    [(bid, n, t) for n, t in paragraphs(pages, heads)])
     db.execute("insert into para_fts(rowid,text) select id,text from para where book=?", (bid,))
     seen, dup = {}, []
-    for n, lines in enumerate(pages, 1):
-        for kind, name, title in page_labels(body(lines, heads)):
-            if (kind, name) in seen:
-                # A section number reappears in the running head of every page it covers; only a
-                # second EQUATION or theorem site means a regex read something it should not have.
-                if kind != "sec":
-                    dup.append(f"{kind} {name} on pdf {seen[(kind, name)]} and {n}")
-            else:
-                seen[(kind, name)] = n
-                db.execute("insert into label values(?,?,?,?,?)", (bid, kind, name, title, n))
+    # A tag in the text is also every citation of it — a chain hint `— (13.1b)` reads exactly like
+    # the display's own number, and may come first — so where Typst knows the displays, it decides.
+    found = [(kind, name, title, n) for n, lines in enumerate(pages, 1)
+             for kind, name, title in page_labels(body(lines, heads)) if eqs is None or kind != "eq"]
+    for kind, name, title, n in found + [("eq", name, None, n) for name, n in eqs or []]:
+        if (kind, name) in seen:
+            # A section number reappears in the running head of every page it covers; only a
+            # second EQUATION or theorem site means a regex read something it should not have.
+            if kind != "sec":
+                dup.append(f"{kind} {name} on pdf {seen[(kind, name)]} and {n}")
+        else:
+            seen[(kind, name)] = n
+            db.execute("insert into label values(?,?,?,?,?)", (bid, kind, name, title, n))
     if dup:
         warn(f"{len(dup)} label(s) redefined: " + "; ".join(dup[:3]) + "; kept the first page")
     return counts(db, bid)
@@ -337,7 +340,8 @@ def ingest_one(db, rel, name, path, sha, row):
         print(f"{rel}  {n}p  offset=?  paras=0  labels=0")
         return print(f"WARN {rel}: no text layer (avg {avg} B/page) — not searchable", file=sys.stderr)
     heads = running_heads(pages)
-    paras, labels = store(db, bid, pages, heads, warns.append)
+    paras, labels = store(db, bid, pages, heads, warns.append,
+                          note_pics(db, bid, rel) if rel in NOTES else None)
     nums = [(i, s) for i, p in enumerate(pages, 1) if (s := page_number(p))]
     off, vote = (0, "") if rel in NOTES else detect_offset(nums, n)
     db.execute("update book set offset=?, status=? where id=?",
@@ -552,26 +556,26 @@ def cmd_sim(a):
         sys.exit("no matches")
 
 
-def cmd_pics(a):
-    """`pic` rows for the notes: every `<pic>` metadata a display helper emits (`pic-meta`), replacing
-    the note's old rows.  A second typst pass, like `spell`; `make p` runs it right after the compile."""
-    db = open_db()
-    db.executescript(SCHEMA)
-    for rel in [os.path.relpath(os.path.abspath(f), ROOT) for f in a] or NOTES:
-        bk = db.execute("select id from book where file=?", (rel,)).fetchone()
-        if not bk:
-            sys.exit(f"{rel} not ingested — ./scripts/book ingest {rel}")
-        typ = os.path.join(ROOT, os.path.splitext(rel)[0] + ".typ")
-        out = subprocess.run(["typst", "query", typ, "<pic>", "--field", "value"],
-                             capture_output=True, text=True)
-        if out.returncode:
-            sys.exit(f"typst query {typ}: {out.stderr.strip()}")
-        rows = [(bk[0], v["key"], v["section"], v["page"], v["x"], v["y"], v["w"], v["h"])
-                for v in json.loads(out.stdout)]
-        db.execute("delete from pic where book=?", (bk[0],))
-        db.executemany("insert into pic values(?,?,?,?,?,?,?,?)", rows)
-        db.commit()
-        print(f"{rel}  pics={len(rows)}")
+def note_pics(db, bid, rel):
+    """`pic` rows for a note: every `<pic>` metadata a display helper emits (`pic-meta`), replacing
+    the note's old rows.  A second typst pass, like `spell`, run by `ingest` on the note's new pdf.
+    Returns the equation labels: a display's crop box (`disp`) is keyed by the number the figure
+    counter gives it, and it starts on the page its tag is printed, whatever the text cites."""
+    typ = os.path.join(ROOT, os.path.splitext(rel)[0] + ".typ")
+    out = subprocess.run(["typst", "query", typ, "<pic>", "--field", "value"], capture_output=True, text=True)
+    if out.returncode:
+        sys.exit(f"typst query {typ}: {out.stderr.strip()}")
+    vs = json.loads(out.stdout)
+    db.execute("delete from pic where book=?", (bid,))
+    db.executemany("insert into pic values(?,?,?,?,?,?,?,?)",
+                   [(bid, v["key"], v["section"], v["page"], v["x"], v["y"], v["w"], v["h"]) for v in vs])
+    print(f"{rel}  pics={len(vs)}")
+    # One row per page a display spans; the tag stands at its start.
+    first = {}
+    for v in vs:
+        if v["disp"]:
+            first[v["key"]] = min(first.get(v["key"], v["page"]), v["page"])
+    return list(first.items())
 
 
 def cmd_pic(a):
@@ -594,7 +598,7 @@ def cmd_pic(a):
 
 
 CMDS = {"ingest": ingest, "find": cmd_find, "grep": cmd_grep, "page": cmd_page, "ls": cmd_ls,
-        "embed": cmd_embed, "sim": cmd_sim, "pics": cmd_pics, "pic": cmd_pic}
+        "embed": cmd_embed, "sim": cmd_sim, "pic": cmd_pic}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] not in CMDS:

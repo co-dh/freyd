@@ -798,7 +798,7 @@ public theorem tex_laws_body :
         ≫ (F Unit Digit).map
             (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
           = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
-      hylo_fixed (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
+      hylo_fixed (F := F Unit Digit) (initial Unit Digit)
         alphaR (junc cop arb step)
     rwa [tex_H] at h0
   have hest : est Q ⊑ ∋ ((F Unit Digit).obj Interval) := inter_lb_left _ _
@@ -815,7 +815,7 @@ public theorem tex_laws_step3 :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
       ⊑ interval ≫ Λ H ≫ est R := by
-  have key := greedy_dp (F := F Unit Digit) (F_preservesRecip Unit Digit) (initial Unit Digit)
+  have key := greedy_dp (F := F Unit Digit) (initial Unit Digit)
     (h := alphaR) (T := (junc cop arb step)) (R := R) (Q := Q) (graph_map con) tex_mono R_trans
     (by unfold ThinCondition; rw [tex_H]; exact tex_greedy _)
   rw [tex_H] at key

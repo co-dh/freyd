@@ -134,9 +134,6 @@ def Mark.key : Mark → String
 structure Row where
   /-- The bead's label, shape and all: a division stays a fraction inside any composite. -/
   shape : Lbl
-  /-- THE BEAD'S OWN TERM (`beadKey`), which is what says two beads are ONE 2-CELL — the label is
-      a rendering and a rendering is the printing rules' business, not the picture's identity. -/
-  key   : String
   arms  : Array Nat
   legs  : Array Nat
   obj   : String
@@ -182,10 +179,22 @@ structure Row where
   /-- THE FACTOR THIS BEAD DRAWS, at the object it is drawn at — what the scan line reads the row
       back as.  Set by `interp` at the factor it drew, never rebuilt from the label. -/
   term  : Option Expr := none
+  /-- EVERY TERM `interp` WALKED THROUGH TO REACH THIS BEAD, as its factors, innermost first: which subterm of the
+      side the bead is, so two beads of one label (`Λ(X)` and `Λ(F(∋)R)` both open with `𝟙%∋`)
+      are told apart by the term they came from and not by where they happen to stand. -/
+  ctx   : Array (Array Expr) := #[]
+  /-- THE FACTOR THIS BEAD DRAWS, read alike in every step of a chain (`canon`): what says two
+      panels of a call draw the same bead, where `term` is the factor in its own step's telescope. -/
+  ident : Option Expr := none
   deriving Inhabited
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
 def Row.label (r : Row) : String := r.shape.flat
+
+/-- ONE 2-CELL: two beads are the same bead when their terms are (`Row.ident`, read by `canon`), never
+    when their labels print alike — a label is the printing rules' business, and a constant whose
+    index they drop reads as one bead at both ends of its own naturality square. -/
+def Row.same (x y : Row) : Bool := x.ident.isSome && x.ident == y.ident
 
 /-- A PICTURE, with an open top and bottom edge — the value `⟦f⟧` is, so that `⟦f≫g⟧ = ⟦f⟧⋆⟦g⟧` and
     `⟦φ×ψ⟧ = ×▹(⟦φ⟧∥⟦ψ⟧)` are composites of pictures and not a second walk over the term. -/
@@ -666,9 +675,22 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     let rest : Int := (List.range n).foldl (· + base ·) 0
     let pin (i : Nat) : Int := if b.rows[i]!.tri.isSome then rest + base i else base i
     let tot : Int := (List.range n).foldl (· + pin ·) 0
+    -- THE SAME BEAD, not the same label: two rows are one bead when the composite the walk found each
+    -- in (the first `ctx` term of several factors) holds a factor beside it that the other's holds
+    -- too — the inner `𝟙%∋` stands before `E(X)` both in `(𝟙%∋)E(X)∋` and in `(𝟙%∋)E(X)`, while the
+    -- outer one stands before a different `E(…)`.  Such a match counts twice a bare label's, so the
+    -- beads the step did not rewrite hold their level and only the rewritten ones move.
+    let sib (r : Row) : Array Expr := Id.run do
+      for i in [1 : r.ctx.size] do
+        let fs := r.ctx[i]!
+        if fs.size > 1 then return fs.filter fun f => !(r.ctx.extract 0 i).any (·.contains f)
+      return #[]
+    let kin (x y : Row) : Bool := (sib x).any (sib y).contains
     let w (i j : Nat) : Int :=
-      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
-      if hits.any (·.1 + 1 == k) then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
+      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.same b.rows[i]!
+      let nbr := hits.filter (·.1 + 1 == k)
+      if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin i
+      else if !nbr.isEmpty then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
     -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
     let ix (i j : Nat) := i * (m + 1) + j
@@ -708,7 +730,23 @@ def placement (ps : Array Diagram) : Placement := Id.run do
 /-- The frame row of each of a part's beads; a part is found by its beads, and two parts with the
     same beads are drawn alike. -/
 def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
-  (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).get!.2
+  (pl.parts.find? fun (q, _) => q.rows.map (·.ident) == p.rows.map (·.ident)).get!.2
+
+/-- TWO PARTS THAT DRAW ONE PICTURE: the same lanes born and dying at the same rows, the same beads
+    in order, over the same objects.  A step that only re-spells the term (`F(RS)=F(R)F(S)`, a
+    re-association) draws its two sides alike, and a chain showing both shows one picture twice.
+    Beads compare as TERMS (`Row.ident`, which carries the objects they are drawn at), never as
+    printed: `canon` reads each peer's binders as one variable per binder name, so the same factor
+    of two steps is one `Expr`.  A part with no bead is no step. -/
+def Diagram.drawnAs (a b : Diagram) : Bool :=
+  !a.rows.isEmpty
+    && a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
+    && a.rows.all (·.ident.isSome) && a.rows.map (·.ident) == b.rows.map (·.ident)
+    && a.top == b.top && a.bot == b.bot
+
+/-- `dup`: this file draws what the NEXT selector of its call draws (`Diagram.drawnAs`), so a chain
+    shows the picture once — `lean-chain` merges the step into the next and joins their reasons. -/
+def dupLine (dup : Bool) : String := "#let dup = " ++ (if dup then "true" else "false") ++ "\n"
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
     panels in order, so a caller holding the note to ONE of them names it by index instead of
@@ -718,7 +756,7 @@ def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
     sides of one equation are two files, and a side that took its own depth came out shorter than the
     side across the `=` from it, one that took its own row put the bead they share at two heights.
     Asked for alone it has no peers and the box and the row are its own. -/
-def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
+def emit (decl : Name) (p : Diagram) (pl : Placement) (dup : Bool) : MetaM String := do
   -- THE OBLIGATION, not the record: the part drawn must be one the placement was taken over.  A
   -- part the peer list did not reach can start above the box or reach below its floor, and
   -- `frameRows` would then draw it taller than the parts beside it rather than clip it.
@@ -727,14 +765,14 @@ def emit (decl : Name) (p : Diagram) (pl : Placement) : MetaM String := do
     throwError "a part {p.rows.size} beads deep reaches row {ls} of a frame of {pl.frame} rows: the \
       placement is the DECLARATION's, so every part of it must be among the ones it was taken over"
   return fileOf ("#let panels = (" ++ (← panelCode p (some pl.frame) (some ls))
-    ++ ",)\n#let pic = panels.at(0)\n") (← natLines decl #[p])
+    ++ ",)\n#let pic = panels.at(0)\n" ++ dupLine dup) (← natLines decl #[p])
 
 /-- One file for a WHOLE STATEMENT: its parts side by side, the relation symbol between them, in one
     frame.  Two panels a relation symbol joins are one display, so the frame is the statement's and
     never the part's — the placement's deepest part sets it and every shorter one is lined up
     inside it. -/
 def emitStatement (decl : Name) (declName : String) (parts : Array (String × Diagram))
-    (pl : Placement) : MetaM String := do
+    (pl : Placement) (dup : Bool) : MetaM String := do
   let mut cells : Array String := #[]
   let mut panels : Array String := #[]
   let mut hs : Array Float := #[]
@@ -754,7 +792,7 @@ def emitStatement (decl : Name) (declName : String) (parts : Array (String × Di
     ++ String.intercalate ",\n  " panels.toList ++ ",)\n"
     ++ "#let pic = align(center, grid(columns: " ++ toString cells.size
     ++ ", align: horizon, column-gutter: 6pt,\n  "
-    ++ String.intercalate ",\n  " cells.toList ++ "))\n") (← natLines decl (parts.map (·.2)))
+    ++ String.intercalate ",\n  " cells.toList ++ "))\n" ++ dupLine dup) (← natLines decl (parts.map (·.2)))
 
 /-! ### The functor: an arrow of the allegory as a panel
 
@@ -1009,10 +1047,25 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     s.restore
   return none
 
+/-- ONE ARROW, AT ANY COMPONENT: `x` and `y` are the same constant applied to the same arguments,
+    except the OBJECTS — arguments typed as the arrow's own source is — which a family's two
+    components differ in (`α` at `F(T)` against `α` at `F(A)`). -/
+def sameArrow (x y : Expr) : MetaM Bool := do
+  if ← Meta.isDefEq x y then return true
+  let (ax, ay) := (x.getAppArgs, y.getAppArgs)
+  unless x.getAppFn.isConst && x.getAppFn == y.getAppFn && ax.size == ay.size do return false
+  let hom ← instantiateMVars (← Meta.whnfR (← Meta.inferType x))
+  let some src := hom.getAppArgs.reverse[1]? | return false
+  let objT ← Meta.inferType src
+  let obj (e : Expr) : MetaM Bool := do Meta.isDefEq (← Meta.inferType e) objT
+  (ax.zip ay).allM fun (a, b) => do
+    pure ((← Meta.isDefEq a b) || ((← obj a) && (← obj b)))
+
 /-- THE STEP OUT OF THE DRAWN SIDE `side` MOVES A BEAD THROUGH ITS NEIGHBOUR: `ty`'s left side (the
     side a `⊑` leaves) is `side`, and it differs from the right side only in a two-factor window
     inside a shared prefix and suffix, `h` beside `nb` on the left and `nb'` beside `h` on the
-    other end on the right, one of the two `h`s under the relator (`F(⦇R⦈)R = α⦇R⦈`).  Answers the
+    other end on the right, one of the two `h`s under the relator, and `nb'` the same arrow as `nb`
+    (`sameArrow`).  Answers the
     bare `h`, the bare `nb`, whether `nb` stands below `h`, which is also whether it moves up. -/
 def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
@@ -1043,8 +1096,10 @@ def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
     let (a, b) := (wl[i]!, wr[1 - i]!)
     if (mapArg? a).isSome == (mapArg? b).isSome then continue
     let h := (mapArg? a).getD a
-    if ← Meta.isDefEq h ((mapArg? b).getD b) then
-      let nb := wl[1 - i]!
+    -- A SLIDE KEEPS ITS PARTNER: `nb` is the same arrow on both sides, up to its component — `αf =
+    -- F(f)α` is one; the fold equation `αX = F(X)R` trades `α` for `R` and moves nothing.
+    let (nb, nb') := (wl[1 - i]!, wr[i]!)
+    if (← Meta.isDefEq h ((mapArg? b).getD b)) && (← sameArrow ((mapArg? nb).getD nb) ((mapArg? nb').getD nb')) then
       return some (← instantiateMVars h, ← instantiateMVars ((mapArg? nb).getD nb), i == 0)
   return none
 
@@ -1694,20 +1749,6 @@ def beadCore (core : Expr) (vs : Array Expr) : MetaM Expr :=
       else return .continue
     | _ => return .continue)
 
-/-- A BEAD'S IDENTITY IS ITS TERM, NOT ITS RENDERING — the key two parts of one display are told
-    the same 2-cell by (`placement`, and the one-height obligation `drawString` holds a call to).
-    Comparing the LABEL instead tied identity to the printing rules: a constant whose index the
-    rules drop reads as one bead at both ends of its own naturality square, and the two beads that
-    swap across it can then be at one height in neither panel.
-
-    THE TERM, SPELLED WITH ITS INDEX — never the `Expr` itself.  One `#lean(…)` call draws panels
-    of TWO DECLARATIONS side by side (`thinRel_comp_eps_le` beside its reciprocal), and the same
-    object is a different free variable in each, so a structural key makes every bead of such a
-    pair a bead of its own and the two panels line up on nothing.  What is stable across the pair
-    is the note's own spelling of the family AT its index, which is what this is. -/
-def beadKey (core : Expr) (vs : Array Expr) : MetaM String := do
-  label (← beadCore core vs)
-
 /-- A CONSTANT'S INDEX COMES OFF AT THE BEAD'S OWN HEAD, and ONLY WHERE THE BARE CONSTANT HAS A
     PRINTING RULE BESIDE ITSELF.  An unexpander matches the term as APPLIED, so cutting the object
     argument out from under it stops it firing and the label comes out worse than the one the strip
@@ -1822,7 +1863,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
     { shape := (← beadLabel core (#[ox, oy] ++ v?.toArray)),
-      key := (← beadKey core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
+      arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
@@ -2085,6 +2126,22 @@ def conversedComposite? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
 def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
   fs.reverse.mapM fun f => Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
 
+/-- A TERM EVERY STEP OF A CHAIN READS ALIKE: each step is its own declaration and each peer is read
+    in its own telescope, so one binder is a different free variable in each.  Every free variable
+    becomes its binder's name — macro scopes erased, numbered among its namesakes in binder order —
+    so the binders the steps share by name are one variable, and `==` compares the terms. -/
+def canon (e : Expr) : MetaM Expr := do
+  let mut seen : Std.HashMap Name Nat := {}
+  let mut ren : Std.HashMap FVarId Expr := {}
+  for d in (← getLCtx) do
+    let n := d.userName.eraseMacroScopes
+    let k := seen.getD n 0
+    seen := seen.insert n (k + 1)
+    ren := ren.insert d.fvarId (.fvar ⟨.num n k⟩)
+  return (← instantiateMVars e).replace fun x => match x with
+    | .fvar f => ren[f]?
+    | _ => none
+
 mutual
 
 /-- `⟦e⟧`: the picture an arrow of the allegory IS.  A factor is taken apart until what is left acts
@@ -2099,8 +2156,22 @@ mutual
 
     Comparing the two ends' wire STACKS cannot do this: `cons : [A]×[[A]] ⟶ [[A]]` and
     `secure×𝟙` both leave `list list` below them, and the first eats those wires while the second
-    does not.  What separates them is the factor's own form, which is what is read here. -/
+    does not.  What separates them is the factor's own form, which is what is read here.
+    Every bead drawn records `e` in its `ctx`, so the walk's path to it is on the row. -/
 partial def interp (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
+    (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
+  let d ← interpAt regionTy cat objVars vpass expect e
+  -- Recorded as DRAWN — after `rewriteSpine`, which is what its factors are — and each factor as
+  -- `canon` reads it, so the steps of a chain, each its own declaration, share the binders they
+  -- name alike.  The innermost level sets `ident`, from the factor `interpAt` drew.
+  let fs ← (compFactors (← instantiateMVars (← rewriteSpine e))).mapM canon
+  let rows ← d.rows.mapM fun r => do
+    let ident ← match r.ident with | some i => pure (some i) | none => r.term.mapM canon
+    return { r with ctx := r.ctx.push fs, ident }
+  return { d with rows }
+
+/-- `interp`'s cases, one level of the walk. -/
+partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     (vpass : Array Wire) (expect : Option Peeled) (e : Expr) : MetaM Diagram := do
   -- THE LANES A RELATOR'S ACTION RUNS PAST, and the arrow it acts on drawn under them.  One helper,
   -- so the three spellings that reach it cannot drift apart.
@@ -2630,7 +2701,7 @@ def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : D
     let #[nr] := nd.rows
       | throwError "joinNamed: the named converse of `{r.label}` draws {nd.rows.size} rows, not one bead"
     d := { d with
-      rows := d.rows.set! i { r with shape := nr.shape, key := nr.key, nat := nr.nat,
+      rows := d.rows.set! i { r with shape := nr.shape, ident := nr.ident, nat := nr.nat,
                                      natLean := nr.natLean, natHyp := nr.natHyp }
       lanes := d.lanes.modify b fun l =>
         { l with conv := l.conv.push { first := i, last := i, outer := false, inner := true } } }
@@ -2875,13 +2946,26 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       toString (b, h, p, s.map (·.suffix))
     let part (b : Name) (h : Option String) (p : List String) (s : List Sel) :=
       peerParts (key b h p s) (return (← Meta.withLCtx {} {} (drawWith b p h s [] false)).2)
+    let me := peers.findIdx? fun (b, h, p, s) => b.toName == declName && h == binder && p == path
+      && s.map (·.suffix) == sel.map (·.suffix)
     -- THIS FILE'S OWN PARTS ARE DRAWN ONCE, under the locals it is printed in, and handed to the
     -- peer cache as they are: drawn again as a peer of their own call, every panel cost two draws.
     withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
-    let qs ← Prof.phase "peers" do
+    let per ← Prof.phaseIf draw "peers" do
       discard <| peerParts (key declName binder path sel) (pure (parts.map (·.2)))
-      peers.toArray.flatMapM fun (b, h, p, s) => part b.toName h p s
+      peers.toArray.mapM fun (b, h, p, s) => part b.toName h p s
+    let qs := per.flatten
+    -- A bead with no term is one `Row.same` can match to nothing, so it would silently stand alone.
+    for q in qs do
+      for r in q.rows do
+        unless r.ident.isSome do
+          throwError "{declName}: the bead `{r.label}` records no term, so no panel of this call can share it"
     let pl := placement qs
+    -- THIS selector against the NEXT one of its call, each a single panel: the same picture twice.
+    let dup := match me with
+      | some k => k + 1 < per.size && per[k]!.size == 1 && per[k + 1]!.size == 1
+          && per[k]![0]!.drawnAs per[k + 1]![0]!
+      | none => false
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
     -- A pair owes two things and this is where both are answered: ONE HEIGHT, so the parts stand in
@@ -2900,7 +2984,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         let mut shared : Array (Nat × Nat × Bool) := #[]
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
-            if a.rows[ra]!.key == b.rows[rb]!.key then
+            if a.rows[ra]!.same b.rows[rb]! then
               shared := shared.push (ra, rb, (pl.rows a)[ra]! == (pl.rows b)[rb]!)
         -- A BEAD THAT MOVED PAST A LEVEL ONE IS THE STATEMENT, not a misplacement: a slide
         -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.
@@ -2917,12 +3001,12 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
             throwError "{declName}: `{a.rows[ra]!.label}` stands on row {ya} of one panel of \
                   this call and row {yb} of another: the panels one `#lean(…)` call names are drawn \
                   side by side, so a bead they SHARE is drawn at one height in both"
-    Prof.phase "emit" do
+    Prof.phaseIf draw "emit" do
       let nm := declName.toString ++ (match binder with | some h => "#" ++ h | none => "")
         ++ path.foldl (fun a s => a ++ "." ++ s) ""
         ++ sel.foldl (fun s x => s ++ x.suffix) ""
-      return (← if parts.size == 1 then emit declName parts[0]!.2 pl
-        else emitStatement declName nm parts pl, #[])
+      return (← if parts.size == 1 then emit declName parts[0]!.2 pl dup
+        else emitStatement declName nm parts pl dup, #[])
 
 def drawString (declName : Name) (path : List String) (binder : Option String) (sel : List Sel)
     (peers : List (String × Option String × List String × List Sel)) : MetaM String :=

@@ -68,12 +68,12 @@ def modFast (b : Nat) : dNat ⟶ dNat := (relCata convAlg)° ≫ relCata (modAlg
     is split into a conditional (which needs the disjoint-ranges/junc machinery). -/
 theorem exp_eq_mu (a : Nat) :
     exp a = mu (fun X : dNat ⟶ dNat => convAlg° ≫ (F Unit Bit).map X ≫ expAlg a) :=
-  hylo_eq_mu (F_preservesRecip Unit Bit) I (expAlg a) convAlg
+  hylo_eq_mu I (expAlg a) convAlg
 
 /-- **§6.4 (B&dM p.146)**: fast modulus IS the divide-and-conquer least fixed point, by the
     hylomorphism theorem — the `O(log a)` recursion for `a mod b`. -/
 theorem mod_eq_mu (b : Nat) :
     modFast b = mu (fun X : dNat ⟶ dNat => convAlg° ≫ (F Unit Bit).map X ≫ modAlg b) :=
-  hylo_eq_mu (F_preservesRecip Unit Bit) I (modAlg b) convAlg
+  hylo_eq_mu I (modAlg b) convAlg
 
 end Freyd.Alg.RelSet.FastExp

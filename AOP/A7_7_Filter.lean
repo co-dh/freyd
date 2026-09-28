@@ -228,7 +228,7 @@ public theorem filter_laws_step1 (p : A → Bool) (R : dList A ⟶ dList A) :
 public theorem filter_greedy (p : A → Bool) :
     cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit A) (initial Unit A) lenLE_recip_trans (filter_mono p)
+  exact greedy (initial Unit A) lenLE_recip_trans (filter_mono p)
 
 /-! ## The note's `filter-step`: the program algebra -/
 

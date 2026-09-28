@@ -1439,6 +1439,24 @@ def parseArg (arg : String) (sel : Bool) :
     | _ => (stem.toString, none)
   return (base, binder, sides, branch)
 
+/-- ONE STATEMENT'S TWO SIDES DRAWN IN TWO CALLS: every drawn string-route selector whose last side
+    step is `lhs`/`rhs` and whose other side is drawn too, in a call it is not in.  The obligation is
+    each DRAWN SELECTOR, read through `parseArg`, because only one call shares a height and a bead
+    row between its panels (`note-prelude.typ`'s `lean`); two CALC-TABLE STEPS (`steps`, the
+    `<lean-step>` selectors) are exempt, being stacked rows with no `=` between them. -/
+def splitSides (calls steps : Array String) : Array (String × String) := Id.run do
+  let drawn := calls.flatMap fun c => ((c.splitOn "+").map fun s => (c.splitOn "+", s, parseArg s true)).toArray
+  let side (sd : List String) := sd.getLast?.filter (· ∈ ["lhs", "rhs"])
+  let mut bad : Array (String × String) := #[]
+  for (c, s, (b, h, sd, br)) in drawn do
+    for (_, s', (b', h', sd', br')) in drawn do
+      if side sd == some "lhs" && side sd' == some "rhs" && b == b' && h == h' && br == br'
+          && sd.dropLast == sd'.dropLast && !(c.contains s' && drawn.all fun (c'', t, _) =>
+            t != s' || c''.contains s) && !(steps.contains s && steps.contains s')
+          && !bad.contains (s, s') then
+        bad := bad.push (s, s')
+  return bad
+
 /-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
 def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
 
@@ -1469,10 +1487,12 @@ def rootsToList : IO (List String) := do
     again, and seven of them were most of an unchanged chapter's `make c`. -/
 def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
   let tag (l : String) := "<" ++ l ++ ">"
-  let sel := match labels.map tag with
+  -- `lean-step` rides along whenever `lean-panel` is listed: `splitSides` reads it, no file does
+  let asked := if labels.contains "lean-panel" && !labels.contains "lean-step" then labels ++ ["lean-step"] else labels
+  let sel := match asked.map tag with
     | [] => ""
     | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
-  let mut out : Std.HashMap String (Array String) := labels.foldl (fun m l => m.insert (tag l) #[]) {}
+  let mut out : Std.HashMap String (Array String) := asked.foldl (fun m l => m.insert (tag l) #[]) {}
   for root in ← rootsToList do
     let args := #["query", "--root", ".", "--input", "list=1", root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
@@ -1491,6 +1511,13 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
         out := out.insert l (a.push s)
       | .error e, _ | _, .error e =>
         throw <| IO.userError s!"diag-export --list: `{cmdline}`: {e} in {x.compress}"
+  let split := splitSides (out.getD (tag "lean-panel") #[]) (out.getD (tag "lean-step") #[])
+  unless split.isEmpty do
+    for (a, b) in split do
+      IO.eprintln s!"diag-export --list: `{a}` and `{b}` are the two sides of one statement drawn \
+        in separate lean(…) calls, so they share no height and no bead row; draw them as \
+        lean(\"{a}\", \"{b}\")"
+    return 1
   IO.FS.createDirAll dir
   for l in labels do
     -- Sorted, and adjacent duplicates dropped: the same picture named by both notes is one job.
@@ -1522,6 +1549,13 @@ def outPath (circuit commutative type formula value graph proof : Bool) (call ar
   let sub := if call == arg then "" else "/".intercalate (call.splitOn "+") ++ "/"
   System.FilePath.mk
     s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{if proof then ".proof" else ""}.typ"
+
+/-- THE FILES OF ONE CALL: the string and circuit routes' `+` names several pictures, a file each
+    (the note's `lean(a, b)`/`leanc(a, b)`); every other route's call is one file.  One rule, read by
+    the drawer and by `--stale`: split in one and not the other, a pair's call was taken for one
+    selector and its name, `#` and `+` included, parsed to the anonymous declaration. -/
+def callFiles (string circuit : Bool) (call : String) : List String :=
+  if string || circuit then call.splitOn "+" else [call]
 
 /-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
     `+` joins two different statements on one page — so its picture goes stale when either does. -/
@@ -1617,7 +1651,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
   -- call; the commutative route's `+` is one file drawn from two declarations.
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
-    (a, (if stringMode then a.splitOn "+" else [a]).map fun n =>
+    (a, (callFiles stringMode circuitMode a).map fun n =>
       let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
       (n, ctxDecl commutativeMode graphMode n base, selDecls commutativeMode graphMode n base))
   for (call, files) in jobs do
@@ -1736,9 +1770,8 @@ def main (args : List String) : IO UInt32 := do
   -- the note's `lean(a, b)`, the panels that stand beside each other on the page — and they are
   -- drawn to ONE depth, each into its own file; selectors that never arrive in one argument share
   -- nothing, whatever declaration they come from.  Every selector is taken apart once, here.
-  let jobs : List (String × String) := if stringMode
-    then args.flatMap fun a => (a.splitOn "+").map fun n => (n, a)
-    else args.map fun a => (a, a)
+  let jobs : List (String × String) :=
+    args.flatMap fun a => (callFiles stringMode circuitMode a).map fun n => (n, a)
   let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
@@ -1777,10 +1810,11 @@ def main (args : List String) : IO UInt32 := do
         else if proofMode then drawProof arg.toName else draw arg.toName)
       if sigMode then return body
       -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
-      let head := StrDiag.fileHead "../"
+      -- Every route's file opens with its library's relative `#import`, whichever library it is.
+      let head := "#import \""
       let body ← if call == arg then pure body
         else if body.startsWith head then
-          pure (StrDiag.fileHead (String.join ((call.splitOn "+").map fun _ => "../") ++ "../")
+          pure (head ++ String.join ((call.splitOn "+").map fun _ => "../")
             ++ (body.drop head.length).toString)
         else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
           cannot be moved into the call's directory"

@@ -420,7 +420,7 @@ public theorem mss_mono_step4 :
     `mss_mono` for its hypothesis. -/
 public theorem mss_greedy : cataR ((Salg (A := A))%∋ ≫ est(geq)) ⊑ (cataR Salg)%∋ ≫ est(geq) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  exact greedy (F_preservesRecip Unit A) (initial Unit A) geq_trans mss_mono
+  exact greedy (initial Unit A) geq_trans mss_mono
 
 /-! ## The note's `mss-step`: the program algebra -/
 

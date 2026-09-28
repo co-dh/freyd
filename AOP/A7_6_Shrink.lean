@@ -114,7 +114,7 @@ end Division
 /-! ## Coherence with §7.1: shrink IS `min R · Λ S` -/
 
 section Power
-variable [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
 /-- **(7.5) as a coherence law.**  `S ↾ R° = Λ S ≫ est R`.  The shrink operator is exactly
     Bird & de Moor's `min R° · Λ S`; this is `A7_1.Λ_comp_est` read backwards, unfolding the

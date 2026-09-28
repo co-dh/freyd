@@ -498,7 +498,7 @@ public theorem party_laws :
   -- the greedy theorem at `(R×R)°`
   have hgreedy : ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈
       ⊑ ⦇S⦈%∋ ≫ est((rprodMap (R rating) (R rating))°) :=
-    greedy (RT.F_preservesRecip A) (RT.initial A) (RR_recip_trans rating) (party_mono rating)
+    greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)
   -- Ex 7.38 row, at `Q := (R×R)°`, `T := choose`
   have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
     have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h

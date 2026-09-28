@@ -402,10 +402,10 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
 // (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
 // (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
-#let ia-hom-l = lean("Freyd.Alg.IsFHom.lhs")
-#let ia-hom-r = lean("Freyd.Alg.IsFHom.rhs")
-#let ia-cata-l = lean("Freyd.Alg.InitialAlgebra.cata_comm.lhs")
-#let ia-cata-r = lean("Freyd.Alg.InitialAlgebra.cata_comm.rhs")
+#let ia-hom-l = "Freyd.Alg.IsFHom.lhs"
+#let ia-hom-r = "Freyd.Alg.IsFHom.rhs"
+#let ia-cata-l = "Freyd.Alg.InitialAlgebra.cata_comm.lhs"
+#let ia-cata-r = "Freyd.Alg.InitialAlgebra.cata_comm.rhs"
 
 #disp[#definition[
 An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
@@ -413,21 +413,21 @@ An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` w
 The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
 every F-algebra `f`
 #src[].
-// lean:AOP.A5_5.InitialAlgebra@a45a8436
+// lean:AOP.A5_5.InitialAlgebra@0ea41da0
 
   // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
   // paint the same carrier red in the row below and cyan in the row above.
   #pair(
     leancd("Freyd.Alg.IsFHom"),
-    row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
+    lean(ia-hom-l, ia-hom-r, op: [=]),
     [#leanf("Freyd.Alg.IsFHom")],
   )
   #pair(
     leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
-    row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
+    lean(ia-cata-l, ia-cata-r, op: [=]),
     [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
   )
-  // lean:AOP.A5_5.relCata_cancel@957f4846
+  // lean:AOP.A5_5.relCata_cancel@c83d7b44
 ]]<initial-defn>
 
 === Reflection
@@ -436,12 +436,12 @@ every F-algebra `f`
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
 // alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
 // bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
-#let ia-refl-l = lean("Freyd.Alg.relCata_alpha.lhs")
-#let ia-refl-r = lean("Freyd.Alg.relCata_alpha.rhs")
+#let ia-refl-l = "Freyd.Alg.relCata_alpha.lhs"
+#let ia-refl-r = "Freyd.Alg.relCata_alpha.rhs"
 
 #disp[#pair(
   leancd("Freyd.Alg.relCata_alpha"),
-  row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
+  lean(ia-refl-l, ia-refl-r, op: [=]),
  [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
 )]<cata-reflection>
 
@@ -457,21 +457,21 @@ then applying `S` is folding with `Q`.
 
 // `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
 // square of @initial-defn at `f := R`, `g := Q`, `h := S`.
-#let ia-fuse-l = lean("Freyd.Alg.relCata_fusion#h.lhs")
-#let ia-fuse-r = lean("Freyd.Alg.relCata_fusion#h.rhs")
+#let ia-fuse-l = "Freyd.Alg.relCata_fusion#h.lhs"
+#let ia-fuse-r = "Freyd.Alg.relCata_fusion#h.rhs"
 // The conclusion, generated like the side condition above it: the two folds differ by their algebra,
 // and the wire under each says where it lands — `B` on the left, `C` on the right.
-#let ia-fuse-cl = lean("Freyd.Alg.relCata_fusion.lhs")
-#let ia-fuse-cr = lean("Freyd.Alg.relCata_fusion.rhs")
+#let ia-fuse-cl = "Freyd.Alg.relCata_fusion.lhs"
+#let ia-fuse-cr = "Freyd.Alg.relCata_fusion.rhs"
 
 #disp[#pair(
   leancd("Freyd.Alg.relCata_fusion"),
   grid(
     columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
     src[the side condition],
-    row((ia-fuse-l, [#h(7pt) = #h(7pt)], ia-fuse-r)),
+    lean(ia-fuse-l, ia-fuse-r, op: [=]),
     src[the conclusion],
-    row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
+    lean(ia-fuse-cl, ia-fuse-cr, op: [=]),
   ),
   [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
  #src[(2.12)]],
@@ -490,7 +490,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 
   #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap_defn") #h(4pt)
  #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0 lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
+    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317 lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 ]]<tf-defn>
 
 // Same widths and stroke as the reduce table: the two tables are read one after the other, and
@@ -506,13 +506,13 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
   [#leanf("Freyd.Alg.typeMap_defn")],
   [Rebuild the structure with `α`, applying `R` to the parameter on the way.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_defn@edbd9794
+   // lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 
   [functor],
   [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
   [Acting by the identity changes nothing, and two actions in a row are one action.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_id@e509bbf1 lean:AOP.A5_5_TypeFunctor.typeMap_comp@c9ae6abd
+   // lean:AOP.A5_5_TypeFunctor.typeMap_id@602faba9 lean:AOP.A5_5_TypeFunctor.typeMap_comp@74556074
 
   [type functor fusion],
   [#leanf("Freyd.Alg.typeMap_fusion")],
@@ -520,21 +520,21 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    The side condition holds because `F` is a bifunctor —
    `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@7d2c6178 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
+   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@fde772c0 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
 
   [naturality of `α`],
   [#leanf("Freyd.Alg.alpha_natural")],
   [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
    from `G(R)=F(R,T(R))` to `T`.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@02d77e92
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@ee446834
 
   [type relator],
   [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
    map.
  #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_recip@4bb90fe1
+   // lean:AOP.A5_5_TypeFunctor.typeMap_recip@be2f7fb9
 )]<tf-laws>
 
 // Its own page: the definition and its two squares are read together, and without the break the
@@ -549,7 +549,7 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 
   #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
  #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@ce1f93d0
+    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317
 ]]<tfun-defn>
 
 // The square is the five arrows `alpha_natural_split` states; the algebra `F(f,𝟙)α_B` is the path
@@ -559,11 +559,11 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 // `F(f,T(f))` free — it is `f` on the object wire with `⟨𝟙,T⟩` and `F` running past — and the law the
 // naturality of `α`, the `f` bead sliding past it.  Not `P`, which is the powerset relator already.
 // This REPLACES the 2026-08-26 unindexed-`F` exception, which needed a second bead `F(f,𝟙)`.
-#let tfun-l = lean("Freyd.Alg.alphaT_natural.lhs")
-#let tfun-r = lean("Freyd.Alg.alphaT_natural.rhs")
+#let tfun-l = "Freyd.Alg.alphaT_natural.lhs"
+#let tfun-r = "Freyd.Alg.alphaT_natural.rhs"
 #disp[#pair(
   leancd("Freyd.Alg.alpha_natural_split"),
-  row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
+  row((lean(tfun-l, tfun-r, op: [=]),), s: 92%),
   [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
  #src[]],
 )]<tfun-sq>
@@ -606,11 +606,11 @@ let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcatego
 // A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over from the
 // square.  The string half is generated, on @initial-defn's two panels at `⦇f⦈ := X`: two ALGEBRAS,
 // `α` at `T` and `f` at `A`, each an arrow at its own carrier and so a bead on the object wire.
-#let cata-def-l = lean("Freyd.Alg.relCata_UP.lhs.lhs")
-#let cata-def-r = lean("Freyd.Alg.relCata_UP.lhs.rhs")
+#let cata-def-l = "Freyd.Alg.relCata_UP.lhs.lhs"
+#let cata-def-r = "Freyd.Alg.relCata_UP.lhs.rhs"
 #disp[#pair(
   leancd("Freyd.Alg.relCata_UP.lhs"),
-  row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
+  lean(cata-def-l, cata-def-r, op: [=]),
   [#leanf("Freyd.Alg.relCata_UP") #h(6pt)
  #src[]],
 )]<cata-defining>
@@ -649,7 +649,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [initial algebra `α`],
   [`α=[zero,succ]` \ `: 1+Nat⟶Nat`],
  [`α=[nil,cons]` \ `: 1+A×[A]⟶[A]` #src[]],
-  // lean:AOP.A6_ConsList.initial@0ebba980
+  // lean:AOP.A6_ConsList.initial@ac4e2c78
 
   [the fold, pointwise],
   [`⦇[c,f]⦈(zero)=c` \ `⦇[c,f]⦈(succ(n))=f(⦇[c,f]⦈(n))`],
@@ -663,16 +663,16 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
 // banana, `T⟶EA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(EA)⟶EA`.
-#let cata-map-l = lean("Freyd.Alg.Λ_relCata.lhs")
-#let cata-map-r = lean("Freyd.Alg.Λ_relCata.rhs")
+#let cata-map-l = "Freyd.Alg.Λ_relCata.lhs"
+#let cata-map-r = "Freyd.Alg.Λ_relCata.rhs"
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   leancd("Freyd.Alg.relCata_mapAlg_cancel"),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
-  row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
+  lean(cata-map-l, cata-map-r, op: [=]),
   [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
-   // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
+   // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
 )]<cata-map-square>
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
@@ -695,33 +695,39 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 )
 #align(center, block(inset: (y: 3pt))[#src[the last two rows at `X:=⦇R⦈`:
  ]])
- // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c
+ // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
 ]<cata-map-calc>
 
-// B&dM (5.12), p.121, the proof above one row per step, each row drawn from the theorem proving it.
-#disp[#calc-table(cols: (1fr, 4.6cm), al: (center + horizon, left + horizon), pr: 0pt,
-  Thm[#leanf("Freyd.Alg.relCata_UP") \
-    #src[a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
-    // lean:AOP.A5_5.relCata_UP@e4a4905f
-  table.header([*formula* — each equation of the chain], [*reason*]),
-
-  [#step([])[#row((lean("Freyd.Alg.relCata_UP_step1.lhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.lhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.lhs")]], [],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step1.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step1.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step1.rhs")]],
-  [$frac(#box(width: 8pt), ∋)$ is an isomorphism \ #src[@pow-laws — `frac(X,∋)∋=X`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step2.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step2.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step2.rhs")]],
-  [cancellation, backwards \ #src[@pow-laws — `X=frac(X,∋)∋`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step3.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step3.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step3.rhs")]],
-  [relator; fusion, backwards, twice \ #src[@relator-defn — `F(RS)=F(R)F(S)`; @pow-laws's fusion at the
-   maps `α` and `F(`$frac(#[`X`], ∋)$`)`]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step4.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step4.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step4.rhs")]],
-  [the fold of a map algebra \ #src[@initial-defn — the unique map satisfying its defining equation]],
-
-  [#step(IFF)[#row((lean("Freyd.Alg.relCata_UP_step5.rhs.lhs"), [#h(7pt) = #h(7pt)], lean("Freyd.Alg.relCata_UP_step5.rhs.rhs")))][#leanf("Freyd.Alg.relCata_UP_step5.rhs")]],
-  [cancellation \ #src[@pow-laws — `frac(X,∋)∋=X`]],
+// B&dM (5.12), p.121: the `⟹` half as ONE term chain from $frac(#[`X`], ∋)$ back to a term holding it,
+// each panel drawn from the theorem proving that step, then the two statement rows closing it.
+#disp[#calc-table(cols: (1fr,), al: auto,
+  Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP") \
+    #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
+    // lean:AOP.A5_5.relCata_UP@32e11255
+  [#lean-chain(
+    Sub("Freyd.Alg.relCata_UP_of_comm",
+      gloss: src[a relation `X` satisfying the fold equation `αX=F(X)R` of `R` is `⦇R⦈`],
+      (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
+      (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` a map, $frac(#[`fS`], ∋)$`=f`$frac(#[`S`], ∋)$ — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F` a functor, `F(`$frac(#[`X`], ∋)$`)` a map —
+        @relator-defn, @pow-laws]),
+    ),
+    (
+      (IMP, ("Freyd.Alg.relCata_UP_fold",),
+        src[fold uniqueness — @initial-defn]),
+      (IMP, ("Freyd.Alg.relCata_UP_of_comm",),
+        src[cancellation — @cata-map-calc]),
+    ),
+    Sub("Freyd.Alg.relCata_cancel",
+      gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],
+      // lean:AOP.A5_5.relCata_cancel@c83d7b44
+      (none, ("Freyd.Alg.relCata_cancel",),
+        src[fold equation, cancellation — @cata-map-calc, @initial-defn, @pow-laws, @relator-defn]),
+    ),
+  )],
 )]<cata-map-proof>
 
 // The step-table helpers, hoisted above §@sec-mu, the first section that uses them: a Typst `#let`
@@ -775,92 +781,53 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
-// ONE call for the chain's five panels, so they share one placement and the bead a step moves over
-// (its triangle) stands at one height on both sides of that step.
-#let (hy-m, (hy-body, hy-split, hy-alg, hy-alpha-iso, hy-unit)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_fixed_step1.lhs", "Freyd.Alg.hylo_fixed_step1.rhs", "Freyd.Alg.hylo_fixed_step2.rhs",
-   "Freyd.Alg.hylo_fixed_step3.rhs", "Freyd.Alg.hylo_fixed_step4.rhs"))
-// ONE call for the chain's twelve panels, so they share one placement and the bead a step moves
-// over (its triangle) stands at one height on both sides of that step.
-#let (hyl-m, (hy-base-l, hy-base-r, hy-cataR, hy-cataR-r, hy-rec, hy-rec-r, hy-adj, hy-adj-r,
-  hy-fuse, hy-fuse-r, hy-prefix, hy-prefix-r)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_le_of_prefixed.lhs", "Freyd.Alg.hylo_le_of_prefixed.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", "Freyd.Alg.hylo_le_of_prefixed_step1.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step2.lhs", "Freyd.Alg.hylo_le_of_prefixed_step2.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step3.lhs", "Freyd.Alg.hylo_le_of_prefixed_step3.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed_step4.lhs", "Freyd.Alg.hylo_le_of_prefixed_step4.rhs",
-   "Freyd.Alg.hylo_le_of_prefixed#h.lhs", "Freyd.Alg.hylo_le_of_prefixed#h.rhs"))
-// The right-hand side of a step: the one relation the chain is bounded by, at the height its
-// partner's own bead keeps — `X` against @hylo-least's `S°F(X)R`, `⦇S⦈°\X` against `α°F(⦇S⦈°\X)R`.
+// 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
+// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed is a term chain ending
+// in its hypothesis, then two statement rows (adjunction, fold leastness), each a pair step: one
+// `lean(l, r)` call apiece so its two sides are one height.
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
-// at the trailing algebra; every step shortens it, and by the last panel it is gone.
-#disp[#calc-table(cols: (1fr,), al: auto, 
-  // hylo-fixed row: Theorem 6.2
-  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_fixed") \
- #src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
-     decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
-     recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial]],
-    // lean:AOP.A6_3.hylo_fixed@42010f9f
-  [#hy-m#hchain(
-    (none, hy-body, src[the body at `⦇S⦈°⦇R⦈`]),
-    (EQ, hy-split, src[`F(RS)=F(R)F(S)` — @relator-defn]),
-    (EQ, hy-alg, src[@cata-defining at `R`: `F(⦇R⦈)R=α⦇R⦈`]),
-    (EQ, hy-alpha-iso, src[@cata-defining at `S` conversed: `⦇S⦈°α°=S°F(⦇S⦈)°`, and
-     `F(⦇S⦈)°=F(⦇S⦈°)` — @relator-laws]),
-    (EQ, hy-unit, src[`α°α=𝟙`: `α` is an iso]),
-    // lean:AOP.A6_2.InitialAlgebra.recip_alpha_alpha@5a99c7f6
-  )],
-)]<hylo-fix>
-
-// B&dM p. 143, mirrored.  Two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's
-// own leastness fires between them, and the `F` wire's top end walks from `α°` up to `S°`.
-#disp[#calc-table(cols: (1fr,), al: auto, 
- // hylo-least row: Theorem 6.2
- Thm(cols: 1)[#leanf("Freyd.Alg.hylo_le_of_prefixed") \
-    #src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
-     satisfies the associated recursion inequation]],
-  [#hyl-m#hchain(
-    (none, trow(hy-base-l, hy-base-r),
-     src[the conclusion]),
-    (IFF, trow(hy-cataR, hy-cataR-r),
-     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IMP, trow(hy-rec, hy-rec-r),
-     src[(6.2) `⦇R⦈=(μX : α°F(X)R)` — @cata-defining and @mu-laws;
- ]),
-     // lean:AOP.A6_2.relCata_le_of_prefixed@9f98060a
-    (IFF, trow(hy-adj, hy-adj-r),
-     src[@adj-all's `S·⊣S\` at `⦇S⦈°`]),
-    (IFF, trow(hy-fuse, hy-fuse-r),
-     src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @hylo-fix]),
-    (IMP, trow(hy-prefix, hy-prefix-r),
-     src[`F(RS)=F(R)F(S)` — @relator-defn — and `⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
-  )],
-)]<hylo-least>
-
-// The chain LEAVES `(μX : S°F(X)R)` and comes back to it, so everything on the way is equal: one
-// `⊑` is @hylo-fix through @mu-laws, the other @hylo-least at the prefix point `μ` is.
-// ONE call for the chain's three panels, so they share one placement and the bead a step moves
-// over (its triangle) stands at one height on both sides of that step.
-#let (hym-m, (hym-1, hym-2, hym-3)) = lean-pics("generated/", <lean-panel>,
-  ("Freyd.Alg.hylo_eq_mu_step1.lhs", "Freyd.Alg.hylo_eq_mu_step1.rhs", "Freyd.Alg.hylo_eq_mu_step2.rhs"))
+// at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
+// mirrored: two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's own leastness
+// fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  Theorem 6.2's two
+// inclusions are these two rows: one `⊑` is hylo_fixed
+// through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ`.
 #disp[#calc-table(cols: (1fr,), al: auto,
- // hylo-fusion-eq row: Theorem 6.2
- Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
+  // hylo-fusion-eq header: Theorem 6.2, whose two inclusions are the Sub rows a and b
+  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
-  // lean:AOP.A6_3.hylo_eq_mu@c60df971
-  [#hym-m#hchain(
-    (none, hym-1,
-     src[@mu-defn at `φ(X):=S°F(X)R`]),
-    (SQ, hym-2,
-     src[@mu-laws's `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` at `Y:=⦇S⦈°⦇R⦈`, whose
- `S°F(⦇S⦈°⦇R⦈)R=⦇S⦈°⦇R⦈` is @hylo-fix]),
-     // lean:AOP.A6_2.mu_le_of_fixed@8ea2332b
-    (SQ, hym-3,
-     src[@hylo-least at `X:=(μX : S°F(X)R)`, whose
-     `S°F(μX : S°F(X)R)R⊑(μX : S°F(X)R)` is @mu-laws's `φ(μX : φ(X))=(μX : φ(X))`;
- ]),
-     // lean:AOP.A6_2.mu_prefixed@fc0a1dca
+  [#lean-chain(
+    Sub("Freyd.Alg.hylo_fixed",
+      gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
+        decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
+        recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
+      // lean:AOP.A6_3.hylo_fixed@67ca7394
+      (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
+      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
+      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
+      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
+      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
+    ),
+  )],
+  [#lean-chain(
+    Sub("Freyd.Alg.hylo_le_of_prefixed",
+      gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
+        satisfies the associated recursion inequation],
+      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
+    ),
+    (
+      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix",),
+        src[`S·⊣S\` — @adj-all]),
+      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
+        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @mu-laws, @adj-all]),
+      // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
+    ),
   )],
 )]<hylo-mu>
 

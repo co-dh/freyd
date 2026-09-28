@@ -58,7 +58,7 @@ public class DPSetting (h : F.obj B ⟶ B) (R : B ⟶ B) : Prop where
     on the name so a picture draws `H` as one arrow. -/
 public theorem H_fixed (I : InitialAlgebra F) (T : F.obj A ⟶ A)
     (h : F.obj B ⟶ B) : T° ≫ F.map (H T h) ≫ h = H T h :=
-  hylo_fixed (Relator.preservesRecip_of_tabular F) I h T
+  hylo_fixed I h T
 
 /-- **The thinning condition** of Theorem 9.2 (B&dM p.222): `QF(H)h ⊑ F(H)hR` — thinning the
     decompositions by `Q` before solving them only moves the answer up `R`. -/
@@ -219,7 +219,7 @@ public theorem dynamic_programming (I : InitialAlgebra F)
     {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} [DPSetting h R] :
     mu (fun X : A ⟶ B => Λ (T°) ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed (hylo_fixed (Relator.preservesRecip_of_tabular F) I h T)))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_prefixed (hylo_fixed I h T)))
 
 /-! ## Theorem 9.2 (B&dM p.221) — thinning dynamic programming
 
@@ -662,13 +662,13 @@ public theorem birelator_fixLeft_mono {G : BiRelator 𝒜} {e : 𝒜} {h : G.obj
 
 /-- A map `h` monotonic for `G` at `(U, R)` is monotonic at `(U°, R°)` — conjugate, then
     shunt back across the map `h` (the birelator analogue of `monotonicAlg_recip_iff`). -/
-public theorem birelator_mono_recip {G : BiRelator 𝒜} (hGr : G.PreservesRecip) {e : 𝒜}
+public theorem birelator_mono_recip {G : BiRelator 𝒜} {e : 𝒜}
     {h : G.obj e A ⟶ A} {R : A ⟶ A} {U : e ⟶ e} (hh : Map h)
     (hU : G.map U R ≫ h ⊑ h ≫ R) : G.map U° R° ≫ h ⊑ h ≫ R° := by
   have hUrecip : h° ≫ G.map U° R° ⊑ R° ≫ h° := by
     have hrm := recip_mono hU
     have eL : (G.map U R ≫ h)° = h° ≫ G.map U° R° := by
-      rw [Allegory.recip_comp, ← hGr U R]
+      rw [Allegory.recip_comp, ← BiRelator.preservesRecip_of_tabular G U R]
     have eRr : (h ≫ R)° = R° ≫ h° := Allegory.recip_comp h R
     rwa [eL, eRr] at hrm
   have hpost : (h° ≫ G.map U° R°) ≫ h ⊑ (R° ≫ h°) ≫ h := comp_mono_right hUrecip h
@@ -877,7 +877,7 @@ public theorem dynamic_programming_thin_context (I : InitialAlgebra F)
     (hctx2 : ThinCondition T h R (Q ∩ (T ≫ T°))) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hh hctx1 htrans (hylo_fixed (Relator.preservesRecip_of_tabular F) I h T) hctx2))
+  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (dp_thin_prefixed_context hh hctx1 htrans (hylo_fixed I h T) hctx2))
 
 /-- **Theorem 9.1 in context**: the plain (un-thinned) dynamic-programming recursion refines the
     optimisation spec when `h` is monotonic only ON `H`'s domain of definition, `R° ∩ (H°·H)` —

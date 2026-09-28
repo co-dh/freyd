@@ -80,7 +80,6 @@ p: $(STAMP) .WAIT panels cite cd-check
 	./scripts/inkfit
 	./scripts/dispfit
 	./scripts/book ingest diag/allegory-axioms.pdf
-	./scripts/book pics
 
 # No two labels inside one panel may touch, and ink stays inside its frame, measured off the
 # COMPILED page.  It needs the PDF, so unlike its neighbours it pays a typst compile when the note
@@ -139,7 +138,7 @@ panels: | exe
 cd-check: panels
 	./scripts/cd-check
 
-# The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book pics`.
+# The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book ingest`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
 c: panels labels cite cd-check
 

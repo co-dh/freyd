@@ -313,7 +313,7 @@ theorem le_Λ_cata_thinRel :
   have hQtrans : P.Qm° ≫ P.Qm° ⊑ P.Qm° := by
     have h0 := recip_mono P.Qm_trans_le
     rwa [Allegory.recip_comp] at h0
-  have Hcore := thinning (F_preservesRecip L E) (initial L E) hQtrans P.gen_mono
+  have Hcore := thinning (initial L E) hQtrans P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore
   rw [le_iff]; intro xs Y hY
@@ -422,7 +422,7 @@ theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
   have hRtrans : P.Rm° ≫ P.Rm° ⊑ P.Rm° := by
     have h0 := recip_mono P.Rm_trans_le
     rwa [Allegory.recip_comp] at h0
-  have Hcore := thinning_est (R := P.Rm°) (F_preservesRecip L E) (initial L E)
+  have Hcore := thinning_est (R := P.Rm°) (initial L E)
     (recip_mono P.Qm_le_Rm) hQrefl hQtrans hRtrans P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore

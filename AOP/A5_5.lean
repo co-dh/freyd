@@ -23,12 +23,13 @@ public import Freyd.S2_40
 public import AOP.A4_6
 public import AOP.A4_2
 public import AOP.A5_1
+public import AOP.A5_6
 
 universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
+variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
 
 -- (Lemma 5.1 "relators preserve maps" now comes from A5_1: `Relator.map_is_map`.)
 
@@ -69,37 +70,97 @@ open Lean PrettyPrinter in
 public theorem relCata_unfold (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
     relCata R = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := rfl
 
-/-! The proof of (5.12), B&dM p.121, one theorem per step so each row of the note's table is drawn
-    from the declaration that proves it; `relCata_UP` below is their composite. -/
+/-! ## `α` is an iso, for `InitialAlgebra` (B&dM Ex 6.5's subject)
 
-/-- `Λ` is an isomorphism. -/
-public theorem relCata_UP_step1 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    I.α ≫ X = F.map X ≫ R ↔ Λ (I.α ≫ X) = Λ (F.map X ≫ R) :=
-  ⟨congrArg Λ, fun h => by rw [← Λ_eps_eq' (I.α ≫ X), h, Λ_eps_eq']⟩
+  The inverse of `α` is the (map) catamorphism of the algebra `F.map α`; the standard
+  argument runs entirely inside the map subcategory, then `recip_of_comp_id` (Prop 4.1,
+  `AOP.A4_2`) identifies the inverse with `α°`. -/
 
-/-- `Λ` cancellation, backwards: `X = Λ(X)∋`. -/
+
+/-- The inverse of `α`: `cata (F.map α)`. -/
+@[expose] public def InitialAlgebra.alphaInv (I : InitialAlgebra F) : I.t ⟶ F.obj I.t :=
+  I.cata (F.map I.α) (F.map_is_map I.α_map)
+
+/-- **`α` is an iso**: `alphaInv ≫ α = id` — both sides solve the `α`-algebra recursion. -/
+public theorem InitialAlgebra.alphaInv_alpha (I : InitialAlgebra F) :
+    I.alphaInv ≫ I.α = Cat.id I.t := by
+  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
+  have hmap : Map (I.alphaInv ≫ I.α) := map_comp (I.cata_map _ _) I.α_map
+  have hcomm : I.α ≫ (I.alphaInv ≫ I.α) = F.map (I.alphaInv ≫ I.α) ≫ I.α := by
+    rw [← Cat.assoc, hk, ← F.map_comp]
+  have hid : I.α ≫ Cat.id I.t = F.map (Cat.id I.t) ≫ I.α := by
+    rw [Cat.comp_id, F.map_id, Cat.id_comp]
+  have h1 := I.cata_unique I.α I.α_map _ hmap hcomm
+  have h2 := I.cata_unique I.α I.α_map _ (id_is_map_local I.t) hid
+  rw [h1, ← h2]
+
+/-- **`α` is an iso**: `α ≫ alphaInv = id`. -/
+public theorem InitialAlgebra.alpha_alphaInv (I : InitialAlgebra F) :
+    I.α ≫ I.alphaInv = Cat.id (F.obj I.t) := by
+  have hk : I.α ≫ I.alphaInv = F.map I.alphaInv ≫ F.map I.α := I.cata_comm _ _
+  rw [hk, ← F.map_comp, I.alphaInv_alpha, F.map_id]
+
+/-- The inverse of `α` IS the reciprocal: `alphaInv = α°` (Prop 4.1). -/
+public theorem InitialAlgebra.alphaInv_eq_recip (I : InitialAlgebra F) : I.alphaInv = I.α° :=
+  (recip_of_comp_id (by rw [I.alpha_alphaInv]; exact le_refl _)
+    (by rw [I.alphaInv_alpha]; exact le_refl _)).1
+
+/-- `α° ≫ α = id`: the initial algebra is a split (in fact two-sided) iso of maps. -/
+public theorem InitialAlgebra.recip_alpha_alpha (I : InitialAlgebra F) :
+    I.α° ≫ I.α = Cat.id I.t := by
+  rw [← I.alphaInv_eq_recip]; exact I.alphaInv_alpha
+
+/-- `α ≫ α° = id`. -/
+public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
+    I.α ≫ I.α° = Cat.id (F.obj I.t) := by
+  rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
+
+/-- (5.12) at `X := ⦇R⦈`: `⦇R⦈` satisfies its own defining equation — the map fold's equation at
+    `Λ(F(∋)R)`, then the cancellation `Λ(S)∋ = S`. -/
+public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    I.α ≫ relCata R = F.map (relCata R) ≫ R := by
+  rw [relCata_unfold, ← Cat.assoc, I.cata_comm, Cat.assoc, Λ_eps_eq', F.map_comp, Cat.assoc]
+
+/-! The `⟹` half of (5.12), B&dM p.121, as ONE term chain from `Λ(X)` back to a term holding
+    `Λ(X)`: `Λ(X) = Λ(α°F(X)R) = α°Λ(F(X)R) = α°Λ(F(Λ(X)∋)R) = α°F(Λ(X))Λ(F(∋)R)`.  So `Λ(X)`
+    solves the map fold's equation, the fold's uniqueness names it, and cancellation returns to `X`.
+    One theorem per step, so each panel of the note's chain is drawn from the one proving it. -/
+
+/-- Step 1: `α°α = 𝟙` and the hypothesis `αX = F(X)R`, so `X = α°F(X)R`. -/
+public theorem relCata_UP_step1 (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = Λ (I.α° ≫ F.map X ≫ R) := by
+  rw [← h, ← Cat.assoc, I.recip_alpha_alpha, Cat.id_comp]
+
+/-- Step 2: `Λ` fusion at the map `α°`, the fold `alphaInv`. -/
 public theorem relCata_UP_step2 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ (I.α ≫ X) = Λ (F.map X ≫ R) ↔ Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R) := by
+    Λ (I.α° ≫ F.map X ≫ R) = I.α° ≫ Λ (F.map X ≫ R) :=
+  Λ_fusion (by rw [← I.alphaInv_eq_recip]; exact I.cata_map _ _) _
+
+/-- Step 3: `Λ` cancellation, backwards: `X = Λ(X)∋`. -/
+public theorem relCata_UP_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    I.α° ≫ Λ (F.map X ≫ R) = I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) := by
   rw [Λ_eps_eq' X]
 
-/-- Relators, and `Λ` fusion backwards twice, at the maps `α` and `F(Λ(X))`. -/
-public theorem relCata_UP_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ (I.α ≫ X) = Λ (F.map (Λ X ≫ ∋ A) ≫ R)
-      ↔ I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
-  rw [Λ_fusion I.α_map, F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
-
-/-- The fold of a map algebra is the unique map satisfying its defining equation. -/
+/-- Step 4: the relator, then `Λ` fusion at the map `F(Λ(X))`. -/
 public theorem relCata_UP_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    I.α ≫ Λ X = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R)
-      ↔ Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
-  ⟨I.cata_unique _ _ _ (Λ_is_map' X), fun h => by rw [h]; exact I.cata_comm _ _⟩
+    I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+  rw [F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
 
-/-- `Λ` cancellation: `Λ(X)∋ = X`, and `Λ(u∋) = u` at the map `u`. -/
-public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)
-      ↔ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A :=
-  ⟨fun h => by rw [← h, Λ_eps_eq'],
-   fun h => by rw [h]; exact ((Λ_UP _ (I.cata_map _ _)).mpr rfl).symm⟩
+/-- The chain, times `α` (`αα° = 𝟙`), is the map fold's equation at `Λ(X)`; the fold of a map
+    algebra is the unique map satisfying it. -/
+public theorem relCata_UP_fold (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  I.cata_unique _ _ _ (Λ_is_map' X) <|
+    calc I.α ≫ Λ X = I.α ≫ I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
+          congrArg (I.α ≫ ·) (((relCata_UP_step1 I h).trans (relCata_UP_step2 I R X)).trans
+            ((relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)))
+      _ = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+          rw [← Cat.assoc, I.alpha_alpha_recip, Cat.id_comp]
+
+/-- Cancellation `X = Λ(X)∋`, and `⦇R⦈ = ⦇Λ(F(∋)R)⦈∋`. -/
+public theorem relCata_UP_of_comm (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : X = relCata R := by
+  rw [relCata_unfold, ← relCata_UP_fold I h, Λ_eps_eq']
 
 /-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
     `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
@@ -107,13 +168,7 @@ public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A �
     (not just maps). -/
 public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
     (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R :=
-  (relCata_UP_step1 I R X).trans <| (relCata_UP_step2 I R X).trans <|
-    (relCata_UP_step3 I R X).trans <| (relCata_UP_step4 I R X).trans (relCata_UP_step5 I R X)
-
-/-- (5.12), read backwards at `X := (|R|)`: `(|R|)` satisfies its own defining equation. -/
-public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
-    I.α ≫ relCata R = F.map (relCata R) ≫ R :=
-  (relCata_UP I R (relCata R)).mpr rfl
+  ⟨relCata_UP_of_comm I, fun e => by rw [e]; exact relCata_cancel I R⟩
 
 /-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
     `(|f|) = cata f hf` when `f` is a map. -/
@@ -146,7 +201,7 @@ public theorem relCata_mapAlg_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.ob
   These belong here, not in `AOP.A6_2`: the INCLUSION fusion laws (6.4)/(6.5) there need
   `UnguardedPowerLCDA` because they argue through a least fixed point, whereas the EQUALITY
   fusion below follows from the universal property `relCata_UP` alone and so lives in the
-  weaker `UnguardedPowerAllegory` setting of this file. -/
+  weaker `TabularUnitaryUnguardedDivisionPowerAllegory` setting of this file. -/
 
 /-- **B&dM (2.12), p.46 — fusion**: `h·(|f|) = (|g|) ⟸ h·f = g·F h`, mirrored to diagram
     order (`h·f ↦ f h`) as `(|R|) S = (|Q|) ⟸ R S = (F S) Q`.
@@ -199,7 +254,7 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A)
   because `≫` is monotone in both arguments.  They differ in what the fold then satisfies:
 
   - STRICT arrows: `relCata_fusion` gives `⦇R⦈S = ⦇Q⦈` — an EQUALITY, so the family is
-    STRICTLY natural, and it holds in this file's `UnguardedPowerAllegory`, from the universal
+    STRICTLY natural, and it holds in this file's `TabularUnitaryUnguardedDivisionPowerAllegory`, from the universal
     property `relCata_UP` alone.  That is the form stated below.
   - LAX arrows: the best available is `comp_le_relCata` (`AOP.A6_2`), `⦇R⦈S ⊑ ⦇Q⦈`.  Note the
     DIRECTION: with `φ A ≜ ⦇A.alg⦈ : t ⟶ A` the square runs `φ A ≫ U(S) ⊑ Δᴛ(S) ≫ φ B`, the
@@ -212,13 +267,13 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A)
 
 /-- An `F`-ALGEBRA (B&dM p. 121): a carrier with an algebra — a RELATION, not necessarily a
     map — on it.  The objects of the category the fold is natural over. -/
-public structure Algebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
+public structure Algebra {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
   carrier : 𝒜
   alg : F.obj carrier ⟶ carrier
 
 /-- A HOMOMORPHISM of `F`-algebras: `R S = F(S) Q`, the arrows of the STRICT algebra category
     (see the section note for why the lax condition is not the one taken). -/
-public structure AlgHom {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+public structure AlgHom {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
     (A B : Algebra F) where
   hom : A.carrier ⟶ B.carrier
   comm : A.alg ≫ hom = F.map hom ≫ B.alg
@@ -237,7 +292,7 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
     homomorphism condition) nor `∩` (it would need `F(S)Q ∩ F(S')Q ⊑ F(S∩S')Q`, and a relator
     preserves `∩` only on coreflexives, Ex 5.2) — so `U` and `Δᴛ` below are `Freyd.Functor`s
     and not `Relator`s, and the fold's naturality is `=`, not `⊑`. -/
-@[expose] public instance instCatAlgebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
+@[expose] public instance instCatAlgebra {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
     (F : Relator 𝒜 𝒜) : Cat (Algebra F) where
   Hom A B := AlgHom A B
   id A := ⟨𝟙 A.carrier, by rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
@@ -247,7 +302,7 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
   assoc S T U := AlgHom.ext (Cat.assoc S.hom T.hom U.hom)
 
 /-- `U`, the FORGETFUL functor: an algebra to its carrier, a homomorphism to its arrow. -/
-@[expose] public def algU {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
+@[expose] public def algU {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
     Freyd.Functor (Algebra F) 𝒜 where
   obj A := A.carrier
   map S := S.hom
@@ -311,7 +366,7 @@ open Lean PrettyPrinter in
 /-- **THE FOLD IS STRICTLY NATURAL IN ITS ALGEBRA**: `Δᴛ(S) ⦇B⦈ = ⦇A⦈ S` for every homomorphism
     `S : A ⟶ B`, `S` below the fold being `U(S)`, the underlying arrow.  `Δᴛ(S)` is the identity,
     so this is `relCata_fusion` read as one square of a natural transformation — an EQUALITY, in
-    `UnguardedPowerAllegory`. -/
+    `TabularUnitaryUnguardedDivisionPowerAllegory`. -/
 public theorem fold_natural [I : InitialAlgebra F] {A B : Algebra F} (S : A ⟶ B) :
     (algDelta (F := F)).map S ≫ fold B = fold A ≫ S.hom := by
   show 𝟙 I.t ≫ relCata B.alg = relCata A.alg ≫ S.hom
@@ -402,7 +457,7 @@ end Freyd.Alg
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **BANANA SPLIT (B&dM figure 7b)**: the product's universal property read AT THE TWO FOLDS.
     `⟨⦇h⦈,⦇k⦈⟩` is the one arrow `T⟶A×B` with components `⦇h⦈` and `⦇k⦈`, and these are the two

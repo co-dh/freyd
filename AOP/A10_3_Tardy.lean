@@ -59,7 +59,7 @@ public theorem est_unfold_context_le (T : F.obj B ⟶ B) (Q : F.obj B ⟶ F.obj 
     on `Q ∩ (T·T°)` — the two hypotheses `AOP.A9_1`'s `dp_thin_prefixed_context` uses.  Same
     skeleton as `AOP.A10_1`'s `greedy_dp_prefixed`, with `est_unfold_context_le` in place of the
     unrestricted tail bound and `hctx1` in place of `MonotonicAlg h R`. -/
-public theorem greedy_dp_prefixed_context (hFr : F.PreservesRecip) {h : F.obj A ⟶ A}
+public theorem greedy_dp_prefixed_context {h : F.obj A ⟶ A}
     {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} {H : B ⟶ A} (hh : Map h)
     (hctx1 : F.map (R° ∩ (H° ≫ H)) ≫ h ⊑ h ≫ R°) (htrans : R ≫ R ⊑ R)
     (hHfix : T° ≫ F.map H ≫ h = H)
@@ -86,7 +86,7 @@ public theorem greedy_dp_prefixed_context (hFr : F.PreservesRecip) {h : F.obj A 
   · -- component (ii): `H°·(greedy body) ⊑ R°`, at `Q ∩ (T ≫ T°)` throughout
     have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
       have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← hFr H, Cat.assoc]
+        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       rw [← h1, hHfix]
     have htail : T ≫ Λ (T°) ≫ est Q ⊑ (Q ∩ (T ≫ T°))° := est_unfold_context_le T Q
     have c1 : H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
@@ -101,9 +101,9 @@ public theorem greedy_dp_prefixed_context (hFr : F.PreservesRecip) {h : F.obj A 
     have hctx2rec : h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° ⊑ R° ≫ h° ≫ F.map (H°) := by
       have hrm := recip_mono hctx2
       have eL : ((Q ∩ (T ≫ T°)) ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))° := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       have eR : (F.map H ≫ h ≫ R)° = R° ≫ h° ≫ F.map (H°) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, ← hFr H, Cat.assoc]
+        rw [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
       rwa [eL, eR] at hrm
     have hre1 : (h° ≫ F.map (H°)) ≫ (Q ∩ (T ≫ T°))° ≫ F.map (Λ H ≫ est R) ≫ h
         = (h° ≫ F.map (H°) ≫ (Q ∩ (T ≫ T°))°) ≫ F.map (Λ H ≫ est R) ≫ h := by
@@ -144,7 +144,7 @@ public theorem greedy_dp_prefixed_context (hFr : F.PreservesRecip) {h : F.obj A 
     monotonicity holds only on `R° ∩ (H°·H)` and the greedy condition only on `Q ∩ (T·T°)` — the
     form §10.3 needs, where only schedules of the SAME BAG are ever compared.  By Knaster-Tarski
     via `greedy_dp_prefixed_context`. -/
-public theorem greedy_dp_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
+public theorem greedy_dp_context (I : InitialAlgebra F)
     {h : F.obj A ⟶ A} {T : F.obj B ⟶ B} {R : A ⟶ A} {Q : F.obj B ⟶ F.obj B} (hh : Map h)
     (hctx1 : F.map (R° ∩ (((relCata T)° ≫ relCata h)° ≫ (relCata T)° ≫ relCata h)) ≫ h
         ⊑ h ≫ R°)
@@ -154,7 +154,7 @@ public theorem greedy_dp_context (hFr : F.PreservesRecip) (I : InitialAlgebra F)
     mu (fun X : B ⟶ A => Λ (T°) ≫ est Q ≫ F.map X ≫ h)
       ⊑ Λ ((relCata T)° ≫ relCata h) ≫ est R :=
   LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _
-    (greedy_dp_prefixed_context hFr hh hctx1 htrans (hylo_fixed hFr I h T) hctx2))
+    (greedy_dp_prefixed_context hh hctx1 htrans (hylo_fixed I h T) hctx2))
 
 end Freyd.Alg
 
@@ -961,7 +961,7 @@ public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀
         Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
           ≫ graph (con (L := Unit) (E := Job)))
       ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) := by
-  have key := greedy_dp_context (F := F Unit Job) (F_preservesRecip Unit Job)
+  have key := greedy_dp_context (F := F Unit Job)
     (initial Unit Job) (h := graph (con (L := Unit) (E := Job))) (T := bagAlg)
     (R := R ct dt wt) (Q := Q ct dt wt) (graph_map con)
     (by rw [tardy_H, Allegory.recip_recip]; exact tardy_mono ct dt wt)
