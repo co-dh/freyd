@@ -802,7 +802,7 @@ public theorem id_is_map_local (a : 𝒜) : Map (Cat.id a) :=
 
 /-- §2.143 backward: if `h` is a map with `h≫f=x` and `h≫g=y`, then `x°≫y ⊑ R`.
     `x°y = (hf)°(hg) = f°(h°h)g ⊑ f°g = R`. -/
-theorem tabulation_UP_backward {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
+public theorem tabulation_UP_backward {a b c p : 𝒜} {f : c ⟶ a} {g : c ⟶ b} {R : a ⟶ b}
     (ht : Tabulates f g R) {x : p ⟶ a} {y : p ⟶ b} {h : p ⟶ c}
     (hh : Map h) (hf_eq : h ≫ f = x) (hg_eq : h ≫ g = y) :
     x° ≫ y ⊑ R := by
