@@ -21,10 +21,10 @@
   - #leanf("Freyd.Alg.RelSet.Segment.fold_T") \
     #src[`T=[nil,cat]` takes a non-empty first list, so `T°` cuts a non-empty prefix off a list every
      way, and folding with `T` flattens a list of segments]
-    // lean:AOP.A9_0_SegmentExample.fold_T@bdb6e7c6
+    // lean:AOP.A9_0_SegmentExample.fold_T@1dccd32b
   - #leanf("Freyd.Alg.RelSet.Segment.fold_h") \
     #src[`h=[nil,cons(sum×𝟙)]` puts a segment's sum in front, so folding with `h` sums every segment]
-    // lean:AOP.A9_0_SegmentExample.fold_h@5715f650
+    // lean:AOP.A9_0_SegmentExample.fold_h@7b93dfa0
   - #leanf("Freyd.Alg.RelSet.Segment.H_eq") \
     #src[`H` segments a list every way, then sums each segment; with `R` comparing the largest entry,
      `M` cuts the list so that the largest segment sum is as small as possible]
@@ -62,7 +62,7 @@
 
 `H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` as
 in @mu-defn.
-// lean:AOP.A9_1.H@2beea1fa
+// lean:AOP.A9_1.H@3bd78e65
 
 #leanf("Freyd.Alg.DPSetting") \
 #src[`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive — assumed by every theorem below]
@@ -73,7 +73,7 @@ in @mu-defn.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@cadd292a
+    // lean:AOP.A9_1.dynamic_programming@075b2505
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one

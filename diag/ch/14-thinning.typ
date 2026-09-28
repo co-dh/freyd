@@ -206,7 +206,7 @@ row((
      // thinning-of-reduce row: Theorem 8.1, p. 195
      `S` monotonic on `Q`, `Q` a preorder
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning@d254d08d
+     // lean:AOP.A8_1.thinning@0f159f21
   // A conjunction has no shape in either calculus, so it heads the chain as text.
   [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
    `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
@@ -231,7 +231,7 @@ row((
      // thinning-est row: Corollary 8.1
      `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning_est@8b7169bd
+     // lean:AOP.A8_1.thinning_est@5a22f5ba
   lean-chain(
     // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
     (none, "Freyd.Alg.thinning_est_step1.lhs", []),
@@ -283,7 +283,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2.thinning_paths@a07b5366
+     // lean:AOP.A8_2.thinning_paths@15ada321
   lean-chain(
     (none, "Freyd.Alg.thinning_paths_step.rhs", src[`=` #frc([`L(∋)`])` est(R)`]),
     // thinAlg-elim row: Corollary 8.1
@@ -451,7 +451,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
      // thinningList row: Theorem 8.2, p. 203
      at @thinlist-defn's binary thinning data.
  ]],
-     // lean:AOP.A8_3.thinningList@2a453b80
+     // lean:AOP.A8_3.thinningList@259ceae8
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -572,7 +572,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@0f259407
+     // lean:AOP.A8_4_Knapsack.knap_laws@1d12b5d9
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -584,7 +584,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs"),
     [#frc([`⦇[nil,cons](within w) ∪ [nil,π₂]⦈`])` est(R)` \
  #src[@cata-fusion, weights non-negative. ]])],
-     // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
+     // lean:AOP.A8_4_Knapsack.knap_spec@433c22b6
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
@@ -659,7 +659,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@0147808d
+     // lean:AOP.A8_5_Paragraph.para_laws@a4a26b3f
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -679,7 +679,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
      #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
  ]])],
-     // lean:AOP.A8_5_Paragraph.para_spec@af6e3f82
+     // lean:AOP.A8_5_Paragraph.para_spec@97740aa1
   // Empty: the step renames the algebra and the panel above already draws the reduce.
   [],
 

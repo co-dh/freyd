@@ -53,12 +53,12 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
-     // lean:AOP.A10_1.greedy_dp_upper@0f221b23
+     // lean:AOP.A10_1.greedy_dp_upper@2d89b7d1
   lean-chain((
     (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
     (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
       src[`H°=h°F(H°)T` — @hylo-mu]),
-     // lean:AOP.A10_1.greedy_dp_upper_step1@861e793a
+     // lean:AOP.A10_1.greedy_dp_upper_step1@8ec8c9b2
     (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
       src[`T`#frc([`T°`])`⊑∈`]),
      // lean:AOP.A10_1.greedy_dp_upper_step2@4a189407
@@ -67,7 +67,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ), (
     (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
       src[`QF(H)h⊑F(H)hR` conversed]),
-     // lean:AOP.A10_1.greedy_dp_upper_step4@0c4dd106
+     // lean:AOP.A10_1.greedy_dp_upper_step4@bbace0f9
     (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
      // lean:AOP.A10_1.greedy_dp_upper_step5@49e70aa8
     (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
@@ -323,7 +323,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
 `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, #h(4pt)
 `f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`, #h(4pt) `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`.
-// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@5720a058 lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
+// lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@fc683ac6 lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
 
 `g≜[zero,penalty]`, #h(4pt) `m≜[zero,π₁ cost]` (B&dM's `h`, renamed as in @tardy-laws).
 // lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A10_3_Tardy.bmaxR@c4eeff86 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
@@ -504,7 +504,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (RQ, "Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs",
       src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]),
   ),
-  // lean:AOP.A10_3_Tardy.tardy_laws@706eb827 lean:AOP.A10_3_Tardy.greedy_dp_context@0cb6fac5 lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
+  // lean:AOP.A10_3_Tardy.tardy_laws@706eb827 lean:AOP.A10_3_Tardy.greedy_dp_context@a1e52a03 lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
 )]<tardy-laws>
 
 == The TeX problem
