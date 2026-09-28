@@ -579,24 +579,24 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (
       (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
       (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs", rev: true),
-        src[definition of `Q`; composition distributes over `∪`]),
+        src[`(S ∪ T)U = SU ∪ TU` — definition of `Q`; composition distributes over `∪`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", rev: true), src[`R` is reflexive]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", rev: true), src[`𝟙 ⊑ R` — `R` is reflexive]),
        // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
       (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs", rev: true),
-        src[`r F(X) α⊑! l α R`: `l α=nil`, and `length(nil)=0` is at most any length]),
+        src[`rF(X)α ⊑ !lαR` — `lα = nil`, and `length(nil) = 0` is at most any length]),
        // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
     ),
     (
       (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs", rev: true),
-        src[`!°!⊑𝟙` on `𝟏`: universal property of `!`]),
+        src[`!°! ⊑ 𝟙` on `𝟏` — universal property of `!`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
       (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs", rev: true),
-        src[`l F(X)=l`: definition of `F`]),
+        src[`lF(X) = l` — definition of `F`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", rev: true), src[`l` is simple: `l°l⊑𝟙`]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", rev: true), src[`l°l ⊑ 𝟙` — `l` is simple]),
        // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
-      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`∪` is idempotent]),
+      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`S ∪ S = S` — `∪` is idempotent]),
        // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
     ),
   ),
