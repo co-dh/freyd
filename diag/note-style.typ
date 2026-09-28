@@ -242,14 +242,25 @@
 /// fallback here is how every note's chapter printed the SAME title.  A chapter file passes none, so
 /// this falls to `--input title=...` (`./scripts/note-files --title`, spliced in by the Makefile);
 /// missing both, it stops rather than guess.
-#let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
+// Typst's own heading counter only steps a heading that carries a `numbering`, and only ever
+// forward from its current (non-negative) state — so it cannot land ON N by priming N-1 when N is
+// 0. Instead the chapter's own first-level heading is drawn unnumbered and its number is the
+// literal N, in dvdtyp's own style (`dvd.typ`'s `show heading`); the counter is then set to N
+// outright for every heading and display inside the chapter, which works for any N including 0.
+#let chapter-number(N) = { text(colors.at(6), weight: 500)[#sym.section]; text(colors.at(6))[#str(N) ] }
+#let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() {
+  show heading.where(level: 1): it => { set heading(numbering: none); chapter-number(N); it.body }
+  counter(heading).update(N)
+  doc
+} else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
   if title == none {
     panic("note-chapter: no title — pass title: to note-chapter.with(...), or compile with " +
       "--input title=\"$(./scripts/note-files --title)\"")
   }
   conf(title: title, {
-    counter(heading).update(N - 1)
+    show heading.where(level: 1): it => { set heading(numbering: none); chapter-number(N); it.body }
+    counter(heading).update(N)
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
     // never reaches `it.element`: reading that is what turns a cross-chapter reference into an error.
     show ref: it => context {
