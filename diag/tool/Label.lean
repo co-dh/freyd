@@ -425,17 +425,14 @@ def tightHeads : Array Name :=
 /-- The RELATOR arguments of an application, picked by their TYPE as `homArgs` picks the arrows: a
     relator is a term of the note's like an arrow is, so the note's own spelling of it is written
     HERE and handed back to the head's printer — `cp(V×𝟙,list⁺(V))`, where the formatter's spacing
-    round the printed `V × 𝟙` is the formatter's and not the note's. -/
+    round the printed `V × 𝟙` is the formatter's and not the note's.  Whether holing one is SAFE —
+    a neighbour's type, or a neighbour's OWN VALUE'S type at any depth (`cpMap (F.appl A) I.t`
+    buries `F.appl A` inside `I.t`'s value, under `I`'s own type, two levels below `I.t`'s type `𝒜`)
+    — is `respell`'s question to answer by trying the substitution, not a shape rule here. -/
 def relatorArgs (args : Array Expr) : MetaM (Array Expr) :=
   args.filterM fun a => do
     let ty ← Meta.inferType a
-    unless ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor do return false
-    -- AN ARGUMENT ITS NEIGHBOUR'S TYPE IS TAKEN AT cannot be handed back as a local: the
-    -- replacement takes every occurrence, so the neighbour (`I : InitialAlgebra F`) is left standing
-    -- at a relator the term no longer has, and the printer refuses the ill-typed application.  An
-    -- arrow is never a neighbour's type, which is why `homArgs` asks nothing of the kind.
-    args.allM fun b => do
-      return b == a || ((← Meta.inferType b).find? (· == a)).isNone
+    return ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor
 
 /-- The ARROW arguments of an application, picked by their TYPE and not by their position:
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
@@ -1633,11 +1630,21 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       | a :: rest =>
         let nm := Name.mkSimple (holeName holes.size)
         let l ← labelTree p a
-        Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
+        Meta.withLocalDeclD nm (← Meta.inferType a) fun x => do
           -- ONE LOCAL PER DISTINCT OPERAND: the replacement takes every occurrence at once, so a
           -- second local of the same name only shadows the first, which the printer then marks
           -- inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
-          respell p (rest.filter (· != a)) (ops.push a) (xs.push x) (holes.push l) t
+          let ops' := ops.push a
+          let xs' := xs.push x
+          -- AN OPERAND CAN SIT INSIDE A NEIGHBOUR'S TYPE AT ANY DEPTH, not just directly beside it
+          -- (`cpMap (F.appl A) I.t` buries `F.appl A` inside `I.t`'s value, under `I`'s own type) —
+          -- so the one test that catches every depth is trying the substitution and type-checking
+          -- the result, the rule `interpAt.split` already uses for a picture's bead
+          -- (StringDiagram.lean).  An operand that breaks it is skipped, not handed to the printer.
+          if ← Meta.isTypeCorrect (t.replace fun s => (ops'.findIdx? (· == s)).map (xs'[·]!)) then
+            respell p (rest.filter (· != a)) ops' xs' (holes.push l) t
+          else
+            respell p (rest.filter (· != a)) ops xs holes t
     -- A HEAD THE NOTE SETS TIGHT closes up the space the FORMATTER wrote around the operator's own
     -- atom (`A × B` is `A×B`), and that space alone: a space INSIDE an operand belongs to that
     -- operand's own application, and cutting it welds two factors into one name — `E Nat × E Nat`
