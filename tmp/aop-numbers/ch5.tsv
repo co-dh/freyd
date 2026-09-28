@@ -1,0 +1,123 @@
+file	typst label	current note number	B&dM item	B&dM section	page	new number	note
+diag/ch/11-relator.typ	relator-defn	11a	none	5.1	111	5.1a	relator ≜ monotonic functor, R⊑S ⟹ F(R)⊑F(S); F(𝟙), F(RS) are the functor laws (ch2); "converse not asked for" is the remark before Theorem 5.1 (p. 112)
+diag/ch/11-relator.typ	relator-laws	11b	table	5.1	112-114	rows: Lem 5.1; Thm 5.1; 5.1b; Cor 5.1; Ex 5.2; Ex 5.2; Ex 5.5	table of seven separately numbered rows; no single book item
+diag/ch/11-relator.typ	relator-laws row 1 (map_is_map, map_recip_map)	11b	Lemma 5.1	5.1	112	Lemma 5.1	F(f) a function and F(f°)=F(f)°
+diag/ch/11-relator.typ	relator-laws row 2 (functor is relator ⟺ preserves °)	11b	Theorem 5.1	5.1	112	Theorem 5.1	the book's standing assumption is a tabular allegory, which the row states
+diag/ch/11-relator.typ	relator-laws row 3 (F(R°)=F(R)°, no bracket)	11b	none	5.1	113	5.1b	the convention sentence after Corollary 5.1: "safe to write FR° to mean either"
+diag/ch/11-relator.typ	relator-laws row 4 (relators agreeing on maps are equal)	11b	Corollary 5.1	5.1	113	Corollary 5.1	
+diag/ch/11-relator.typ	relator-laws row 5 (map_inter_coreflexive)	11b	Exercise 5.2	5.1	113	Ex 5.2	the meets-of-coreflexives half
+diag/ch/11-relator.typ	relator-laws row 6 (map_inter_le, strictly)	11b	Exercise 5.2	5.1	113	Ex 5.2	the "is the restriction X,Y⊑id necessary?" half; the paragraph after the table (P(R)∩P(S) example) is its answer and carries no number
+diag/ch/11-relator.typ	relator-laws row 7 (map_dom)	11b	Exercise 5.5	5.1	114	Ex 5.5	
+diag/ch/11-relator.typ	fork-defn	11.1a	(5.1)	5.2	114	(5.1)	"(π₁,π₂) the tabulation of ⊤" is the p. 114 recall from ch4, part of the same paragraph
+diag/ch/11-relator.typ	fork-proj	11.1b	(5.6), (5.7)	5.2	115	(5.6),(5.7)	one display states two book items side by side; split, or take (5.6) and let (5.7) be its mirror
+diag/ch/11-relator.typ	fork-pic	11.1c	none	5.2	114-116	5.2a	the two ⊑ triangles ⟨R,S⟩π₁⊑R, ⟨R,S⟩π₂⊑S drawn; the book only remarks (p. 116) that outl⟨R,∅⟩=∅, so not a categorical product
+diag/ch/11-relator.typ	fork-collapse	11.1d	none	5.2	114	5.2b	the note's own circuit; the book gives only the Rel reading "(a,b)⟨R,S⟩c when aRc and bSc"
+diag/ch/11-relator.typ	relprod-defn	11.1.1a	(5.2)	5.2	114	(5.2)	"a relator in each argument, not a categorical product" is the p. 114 remark after (5.2)
+diag/ch/11-relator.typ	relprod-pic	11.1.1b	none	5.2	115	5.2c	the two unnumbered "claims" in the proof of (5.4): outl(R×id)⊑R outl, outr(R×S)⊑S outr
+diag/ch/11-relator.typ	absorption-pic	11.1.2a	(5.3)	5.2	114	(5.3)	
+diag/ch/11-relator.typ	bdm-prod-laws	11.1.2b	table	5.2	114-117	rows: (5.2); (5.3); (5.6); (5.7); (5.8); Ex 5.7; Ex 5.9; Ex 5.10; Ex 5.11	rows 1, 3, 4 duplicate relprod-defn and fork-proj; row 2 duplicates absorption-pic
+diag/ch/11-relator.typ	bdm-prod-laws row 1 (prodMap)	11.1.2b	(5.2)	5.2	114	(5.2)	duplicate of relprod-defn
+diag/ch/11-relator.typ	bdm-prod-laws row 2 (pair_prodMap)	11.1.2b	(5.3)	5.2	114-115	(5.3)	duplicate of absorption-pic; its gloss mentions (5.4), (5.5) (the two stages, p. 115), Ex 5.8 (the ⊑ half) and the corollary (R×S)(U×V)=(RU)×(SV), which is the unnumbered "nub of the matter" on p. 114 — NOT Ex 5.6 as the typst comment says (Ex 5.6 is (R×id)(id×S) vs R×S)
+diag/ch/11-relator.typ	bdm-prod-laws row 3 (pair_outl)	11.1.2b	(5.6)	5.2	115	(5.6)	duplicate of fork-proj
+diag/ch/11-relator.typ	bdm-prod-laws row 4 (pair_outr)	11.1.2b	(5.7)	5.2	115	(5.7)	duplicate of fork-proj
+diag/ch/11-relator.typ	bdm-prod-laws row 5 (pair_recip_pair)	11.1.2b	(5.8)	5.2	116	(5.8)	
+diag/ch/11-relator.typ	bdm-prod-laws row 6 (recip_pair_pair_le)	11.1.2b	Exercise 5.7	5.2	117	Ex 5.7	
+diag/ch/11-relator.typ	bdm-prod-laws row 7 (map_comp_pair)	11.1.2b	Exercise 5.9	5.2	117	Ex 5.9	
+diag/ch/11-relator.typ	bdm-prod-laws row 8 (unzip_lax)	11.1.2b	Exercise 5.10	5.2	117	Ex 5.10	
+diag/ch/11-relator.typ	bdm-prod-laws row 9 (curry / exponentials question)	11.1.2b	Exercise 5.11	5.2	117	Ex 5.11	text only, no Lean
+diag/ch/11-relator.typ	coprod-laws	11.2a	table	5.3	117-118	rows: (5.9); 5.3a; (5.10); 5.3b; Ex 5.12; Ex 5.12; Ex 5.12; (5.11)	
+diag/ch/11-relator.typ	coprod-laws row 1 (junc)	11.2a	(5.9)	5.3	118	(5.9)	the Lean definition of [R,S] is the explicit formula (l°R) ∪ (r°S)
+diag/ch/11-relator.typ	coprod-laws row 2 (junc_eq_Λ_junc_eps)	11.2a	none	5.3	117	5.3a	the book's definition "[R,S] ≜ ∈[ΛR,ΛS]" (unnumbered, end of the p. 117 calculation)
+diag/ch/11-relator.typ	coprod-laws row 3 (sumMap)	11.2a	(5.10)	5.3	118	(5.10)	
+diag/ch/11-relator.typ	coprod-laws row 4 (u₁_junc, u₂_junc, junc_unique)	11.2a	none	5.3	117	5.3b	the universal property "inl T=R ∧ inr T=S ⟺ T=[R,S]" the p. 117 calculation proves; unnumbered
+diag/ch/11-relator.typ	coprod-laws row 5 (u₁_self_comp_recip, u₂_self_comp_recip)	11.2a	Exercise 5.12	5.3	118	Ex 5.12	X inl=id with X=inl°; Lean lives in Freyd.S2_20 (Freyd's coproduct), not AOP
+diag/ch/11-relator.typ	coprod-laws row 6 (u₁_u₂_recip, u₂_u₁_recip)	11.2a	Exercise 5.12	5.3	118	Ex 5.12	X inr=∅ with X=inl°; same source
+diag/ch/11-relator.typ	coprod-laws row 7 (recip_union_eq_id)	11.2a	Exercise 5.12	5.3	118	Ex 5.12	(inl X) ∪ (inr Y)=[inl,inr]=id
+diag/ch/11-relator.typ	coprod-laws row 8 (junc_recip_junc)	11.2a	(5.11)	5.3	118	(5.11)	
+diag/ch/11-relator.typ	coprod-calc	11.2.1a	none	5.3	117	5.3c	the p. 117 calculation "inl T=R and inr T=S ⟺ … ⟺ T=∈[ΛR,ΛS]", mirrored
+diag/ch/11-relator.typ	coprod-square	11.2.1b	none	5.3	117-118	5.3d	"the following diagram illustrates this calculation"; its border is (5.9)
+diag/ch/11-relator.typ	bdm-coprod-laws	11.2.1c	table	5.3	118	rows: (5.9); (5.10); (5.11); Ex 5.12; Ex 5.13; Ex 5.14	rows 1-3 duplicate coprod-laws rows 1, 3, 8; row 4 duplicates coprod-laws rows 5-7
+diag/ch/11-relator.typ	bdm-coprod-laws row 1 (junc)	11.2.1c	(5.9)	5.3	118	(5.9)	duplicate
+diag/ch/11-relator.typ	bdm-coprod-laws row 2 (sumMap)	11.2.1c	(5.10)	5.3	118	(5.10)	duplicate
+diag/ch/11-relator.typ	bdm-coprod-laws row 3 (junc_recip_junc)	11.2.1c	(5.11)	5.3	118	(5.11)	duplicate
+diag/ch/11-relator.typ	bdm-coprod-laws row 4 (junc_id_zero, junc_zero_id, junc_injections)	11.2.1c	Exercise 5.12	5.3	118	Ex 5.12	X≜[𝟙,𝟘]=l°, Y≜[𝟘,𝟙]=r°, (Xl) ∪ (Yr)=[l,r]=𝟙
+diag/ch/11-relator.typ	bdm-coprod-laws row 5 (prove (5.11), why not duality)	11.2.1c	Exercise 5.13	5.3	118	Ex 5.13	text only, no Lean
+diag/ch/11-relator.typ	bdm-coprod-laws row 6 (sumMap_inter_junc_recip)	11.2.1c	Exercise 5.14	5.3	118	Ex 5.14	
+diag/ch/11-relator.typ	powrel-defn	11.3a	none	5.4	119	5.4a	P(R)≜(∋R/∋)∩((∋R°/∋))° with its Rel reading and the sentence in words, all p. 119 unnumbered; the E(R)≜Λ(∋R) line is ch4 (§4.6, p. 105) — other chapter
+diag/ch/11-relator.typ	powrel-readings	11.3b	none	5.4	119	5.4b	the note's own five-row reading of the two divisions; the book has only the one Rel sentence
+diag/ch/11-relator.typ	powrel-vs-erel	11.3c	none	5.4	119-121	5.4c	the note's own example; it is the counterexample Ex 5.15 (p. 121) asks for ("P and E coincide on functions, so equal — what is wrong?"), not stated as such
+diag/ch/11-relator.typ	powrel-laws	11.3d	table	5.4	119-120	rows: 5.4d; 5.4e; 5.4f; 5.4g	all four rows are the unnumbered p. 119-120 steps showing P is a relator
+diag/ch/11-relator.typ	powrel-laws row 1 (X⊑P(R) ⟺ …, P(R°)=P(R)°, powerRel_mono)	11.3d	none	5.4	119	5.4d	"immediate from the monotonicity of division"
+diag/ch/11-relator.typ	powrel-laws row 2 (powerRel_id)	11.3d	none	5.4	119	5.4e	"Pid=id, a restatement of the anti-symmetry of subset"
+diag/ch/11-relator.typ	powrel-laws row 3 (powerRel_map)	11.3d	none	5.4	119	5.4f	"P was defined as the restriction of E to functions … Pf=Λ(f∈)"
+diag/ch/11-relator.typ	powrel-laws row 4 (powerRel_comp)	11.3d	none	5.4	119-120	5.4g	P(RS)=P(R)P(S): ⊒ by division cancellation, ⊑ "the hard part" via a tabulation of P(RS)
+diag/ch/11-relator.typ	initial-defn	11.4a	(2.10)	2.6	46	(2.10) [ch2]	F-algebra, homomorphism, initial algebra, ⦇f⦈ — ch2; ch5 only recalls it at p. 121 ("suppose F has initial algebra α in the subcategory of functions")
+diag/ch/11-relator.typ	cata-reflection	11.4.1a	(2.11)	2.6	48	(2.11) [ch2]	reflection law, stated for the relational fold (relCata_alpha)
+diag/ch/11-relator.typ	cata-fusion	11.4.2a	(2.12)	2.6	48	(2.12) [ch2]	fusion law, stated for the relational fold (relCata_fusion)
+diag/ch/11-relator.typ	tf-defn	11.5a	none	5.5	122	5.5a	"Type relators": T(R)≜⦇F(R,𝟙)α⦈ used as "definition of T" in the p. 122 calculation; the functional form is (2.13)
+diag/ch/11-relator.typ	tf-laws	11.5b	table	5.5 / 2.7	122 / 50-51	rows: 5.5a; ch2 §2.7 p.50-51; (2.14) [ch2]; ch2 §2.7 p.51; 5.5b	mixed: rows 2-4 are ch2 facts, rows 1 and 5 are §5.5
+diag/ch/11-relator.typ	tf-laws row 1 (typeMap_defn)	11.5b	none	5.5	122	5.5a	duplicate of tf-defn
+diag/ch/11-relator.typ	tf-laws row 2 (typeMap_id, typeMap_comp)	11.5b	none	2.7	50-51	2.7 p.50-51 [ch2]	"T is a functor", the p. 50-51 calculation; for a relator the book (p. 122) says only converse is left to check
+diag/ch/11-relator.typ	tf-laws row 3 (typeMap_fusion)	11.5b	(2.14)	2.7	51	(2.14) [ch2]	type functor fusion
+diag/ch/11-relator.typ	tf-laws row 4 (alpha_natural)	11.5b	none	2.7	51	2.7 p.51 [ch2]	"α : T ← G is a natural transformation, where Gf=F(f,Tf)"
+diag/ch/11-relator.typ	tf-laws row 5 (typeMap_recip)	11.5b	none	5.5	122	5.5b	the p. 122 calculation (TR)°=T(R°), "so T is a relator"
+diag/ch/11-relator.typ	tfun-defn	11.5.1a	(2.13)	2.7	50	(2.13) [ch2]	type functor T(f)≜⦇F(f,𝟙)α⦈
+diag/ch/11-relator.typ	tfun-sq	11.5.1b	none	2.7	51	2.7 p.51 [ch2]	naturality of α, same item as tf-laws row 4
+diag/ch/11-relator.typ	tfun-fusion	11.5.1c	(2.14)	2.7	51	(2.14) [ch2]	same item as tf-laws row 3
+diag/ch/11-relator.typ	cata-defn	11.6a	none	5.5	121	5.5c	"α is also initial in the whole allegory", the sentence introducing (5.12)
+diag/ch/11-relator.typ	cata-defining	11.6.1a	none	5.5	121-122	5.5d	relCata_UP: αX=F(X)R ⟺ X=⦇R⦈ — (5.12)'s left side with p. 122's "we can define ⦇R⦈ by the equation"; the book never states this UP as a numbered item
+diag/ch/11-relator.typ	cata-initial	11.6.1b	none	2.6	46	2.6 p.46 [ch2]	the Nat and cons-list examples of ⦇f⦈ ("familiar idea in abstract clothing"), ch2
+diag/ch/11-relator.typ	cata-map-square	11.6.2a	none	5.5	121	5.5e	"the proof is summarised in the following diagram" under (5.12)
+diag/ch/11-relator.typ	cata-map-calc	11.6.2b	(5.12)	5.5	121	(5.12)	the book's own proof chain, mirrored
+diag/ch/11-relator.typ	cata-map-proof	11.6.2c	(5.12) / Eilenberg-Wright lemma	5.5	121-122	5.5f	relCata_UP_fold: αX=F(X)R ⟺ ΛX=⦇Λ(F(∋)R)⦈ is the ⟹ half of (5.12) in the Λ-form the book names "Eilenberg-Wright Lemma" (p. 122, unnumbered); AMBIGUOUS — a second display for (5.12) if the user prefers that number
+diag/ch/11-relator.typ	mu-defn	11.6.3a	none	6.1	140	6.1 p.140 [ch6]	monotonic φ and μX — the setup of Theorem 6.1; other chapter (hylomorphisms)
+diag/ch/11-relator.typ	mu-laws	11.6.3b	Theorem 6.1	6.1	140	Theorem 6.1 [ch6]	Knaster-Tarski: rows mu_le (least prefix point bound) and mu_fixed (it is a fixed point)
+diag/ch/11-relator.typ	hylo-mu	11.6.4a	Theorem 6.2	6.2	142-143	Theorem 6.2 [ch6]	hylomorphism theorem; Sub rows (a) hylo_fixed and (b) hylo_le_of_prefixed are the two inclusions of its proof (p. 142-143)
+diag/ch/12-combinatorial.typ	comb-fns	12a	table	5.6	123-128	rows: 5.6a; 5.6b; 5.6c; 5.6d; 5.6e; Ex 7.40 [ch7]; 5.6f; 5.6g; 5.6h; 5.6i; Ex 7.41 [ch7]; Ex 7.39 [ch7]; Ex 7.39 [ch7]; Ex 7.40 [ch7]	fourteen rows; the last four (and segment) are ch7 exercises
+diag/ch/12-combinatorial.typ	comb-fns row 1 (list datatype)	12a	none	5.6	123	5.6a	"lists mean cons-lists; write list rather than listr"
+diag/ch/12-combinatorial.typ	comb-fns row 2 (list_cata)	12a	none	5.6	126	5.6b	"list R=⦇[nil,cons(R×id)]⦈", stated in passing in the cp(list) paragraph
+diag/ch/12-combinatorial.typ	comb-fns row 3 (subseq_cata)	12a	none	5.6	123	5.6c	subseq=⦇[nil,cons ∪ outr]⦈
+diag/ch/12-combinatorial.typ	comb-fns row 4 (prefix_cata, prefix_cat=init*)	12a	none	5.6	126-127	5.6d	prefix=outl cat°=init*=⦇[nil,nil ∪ cons]⦈
+diag/ch/12-combinatorial.typ	comb-fns row 5 (suffix_cat=tail*)	12a	none	5.6	127	5.6e	suffix=outr cons°=tail*; "we have to use snoc-lists to describe it as a catamorphism"
+diag/ch/12-combinatorial.typ	comb-fns row 6 (segment_eq)	12a	Exercise 7.40	7.5	174	Ex 7.40 [ch7]	"segment=prefix suffix" is given inside Ex 7.40, not in §5.6
+diag/ch/12-combinatorial.typ	comb-fns row 7 (partition_concat)	12a	none	5.6	128	5.6f	partition=concat°, cat restricted to list A ← list⁺A × list A
+diag/ch/12-combinatorial.typ	comb-fns row 8 (concat_cata)	12a	none	5.6	128	5.6g	concat=⦇[nil,cat]⦈
+diag/ch/12-combinatorial.typ	comb-fns row 9 (inits)	12a	none	5.6	127	5.6h	inits implements Λprefix, increasing length
+diag/ch/12-combinatorial.typ	comb-fns row 10 (tails)	12a	none	5.6	127	5.6i	tails implements Λsuffix, decreasing length
+diag/ch/12-combinatorial.typ	comb-fns row 11 (filter)	12a	Exercise 7.41	7.5	175	Ex 7.41 [ch7]	
+diag/ch/12-combinatorial.typ	comb-fns row 12 (R≜length≤length°)	12a	Exercise 7.39	7.5	174	Ex 7.39 [ch7]	the R of takewhile's specification
+diag/ch/12-combinatorial.typ	comb-fns row 13 (takewhile)	12a	Exercise 7.39	7.5	174	Ex 7.39 [ch7]	
+diag/ch/12-combinatorial.typ	comb-fns row 14 (mss)	12a	Exercise 7.40	7.5	174	Ex 7.40 [ch7]	
+diag/ch/12-combinatorial.typ	cup-defn	12.1a	none	5.6	124	5.6j	"power transpose of join" Λ(R ∪ S)=cup⟨ΛR,ΛS⟩, cup≜Λ(∈outl ∪ ∈outr), p. 124 unnumbered; Ex 5.20 (p. 131) asks to construct cup, cap, cross — the cup third of it
+diag/ch/12-combinatorial.typ	subseq-EW-case	12.1b	none	5.6	124	5.6k	the first p. 124 calculation Λ([nil,cons ∪ outr]F(id,∈))=[Λnil,Λ((cons ∪ outr)(id×∈))], mirrored, in Lean steps
+diag/ch/12-combinatorial.typ	subseq-outr-square	12.1c	none	5.6	124	5.6l	the "naturality of outr" step of the second p. 124 calculation, (id×∈)outr=outr ∈, drawn
+diag/ch/12-combinatorial.typ	subseq-EW-join	12.1d	none	5.6	124	5.6m	the second p. 124 calculation Λ((cons ∪ outr)(id×∈))=cup⟨Pcons Λ(id×∈),outr⟩
+diag/ch/12-combinatorial.typ	subseq-alg	12.1e	none	5.6	124	5.6n	Λsubseq=⦇[τ nil, cup⟨Pcons Λ(id×∈),outr⟩]⦈, the p. 124 result; the book then replaces sets by lists (subseqs, p. 125), which the note does not
+
+UNCOVERED B&dM ch5 numbered items (no display of their own)
+item	page	status
+(5.4)	115	gloss only, bdm-prod-laws row 2
+(5.5)	115	gloss only, bdm-prod-laws row 2
+(5.13)	133	uncovered (lax natural transformation)
+Theorem 5.2	133	uncovered (lax naturality tested on functions)
+Exercise 5.1	113	uncovered
+Exercise 5.3	113	uncovered
+Exercise 5.4	113	uncovered
+Exercise 5.6	117	uncovered (typst comment credits it for the (R×S)(U×V) corollary, wrongly)
+Exercise 5.8	117	gloss only, bdm-prod-laws row 2
+Exercise 5.15	121	uncovered; powrel-vs-erel is its counterexample but does not say so
+Exercise 5.16	121	uncovered
+Exercise 5.17	122	uncovered
+Exercise 5.18	123	uncovered
+Exercise 5.19	123	uncovered
+Exercise 5.20	131	partial: cup only (cup-defn); cap, cross uncovered
+Exercise 5.21	132	uncovered
+Exercise 5.22	132	uncovered
+Exercise 5.23	132	uncovered
+Exercise 5.24	132	uncovered
+Exercise 5.25	132	uncovered
+Exercise 5.26	132	uncovered
+Exercise 5.27	132	uncovered
+Exercise 5.28	132	uncovered
+Exercise 5.29	132	uncovered
+Exercise 5.30	134	uncovered
