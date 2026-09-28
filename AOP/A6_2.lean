@@ -221,11 +221,17 @@ public theorem relCata_le_comp_step3 (I : InitialAlgebra F) {C D : 𝒜} (R : F.
     Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
     I.recip_alpha_alpha, Cat.id_comp]
 
+/-- (6.4) step 4: (6.2) at `X≜⦇R⦈S`, closing the prefix-point chain. -/
+public theorem relCata_le_comp_step4 (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
+    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : I.α° ≫ F.map (relCata R ≫ S) ≫ T ⊑ relCata R ≫ S) :
+    relCata T ⊑ relCata R ≫ S :=
+  relCata_le_of_prefixed I h
+
 /-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion — (6.2) at `X≜⦇R⦈S`,
     whose prefix-point condition is steps 1–3. -/
 public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
     {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) : relCata T ⊑ relCata R ≫ S :=
-  relCata_le_of_prefixed I <| calc
+  relCata_le_comp_step4 I <| calc
     I.α° ≫ F.map (relCata R ≫ S) ≫ T
       = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := relCata_le_comp_step1 I R T S
     _ ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S := relCata_le_comp_step2 I h
@@ -237,11 +243,17 @@ public theorem comp_le_relCata_step2 (I : InitialAlgebra F) {C D : 𝒜} {R : F.
     I.α° ≫ F.map (relCata R) ≫ R ≫ S ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T :=
   comp_mono_left _ (comp_mono_left _ h)
 
+/-- (6.5) step 3: (6.3) at `X≜⦇R⦈S`, closing the postfix-point chain. -/
+public theorem comp_le_relCata_step3 (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
+    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : relCata R ≫ S ⊑ I.α° ≫ F.map (relCata R ≫ S) ≫ T) :
+    relCata R ≫ S ⊑ relCata T :=
+  le_relCata_of_postfixed I h
+
 /-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion — (6.3) at `X≜⦇R⦈S`,
     the chain of (6.4) run backwards with the hypothesis reversed. -/
 public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
     {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) : relCata R ≫ S ⊑ relCata T :=
-  le_relCata_of_postfixed I <| calc
+  comp_le_relCata_step3 I <| calc
     relCata R ≫ S
       = I.α° ≫ F.map (relCata R) ≫ R ≫ S := (relCata_le_comp_step3 I R S).symm
     _ ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := comp_le_relCata_step2 I h
