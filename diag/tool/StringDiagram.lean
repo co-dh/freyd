@@ -2132,9 +2132,12 @@ def conversedComposite? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
   return if fs.size > 1 then some (z, fs) else none
 
 /-- `(XY)° = Y°X°`: a composite with NO lane to run beside is its converses reversed, one bead each,
-    as a lone `R°` is. -/
+    as a lone `R°` is.  A factor that is already `X°` gives `X` (`R°° = R`, `recip_recip`), else
+    its bead would read `wrap°°`. -/
 def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
-  fs.reverse.mapM fun f => Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
+  fs.reverse.mapM fun f => do
+    if let some x ← recipArg? f then return x
+    Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
 
 /-- A TERM EVERY STEP OF A CHAIN READS ALIKE: each step is its own declaration and each peer is read
     in its own telescope, so one binder is a different free variable in each.  Every free variable
