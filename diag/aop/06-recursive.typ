@@ -111,8 +111,19 @@
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
-// TODO p.153 sort-rec: `X=⦇[nil,select°]⦈°` the unique solution of `X = nil°nil ∪ select(𝟙×X)cons`; the
-//   program — Lean sort_recursion (unfold only).
+// B&dM p.153, the program.  Uniqueness of the solution is Theorem 6.3, a hypothesis in Lean
+// (HyloUnique); drawn here is that `⦇[nil,select°]⦈°` IS a solution.  `nil` is strictly natural
+// (lean:AOP.A6_6b_SortConcrete.nil_strictNatural@c7a02590).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.sort_rec") \
+    #src[selection sort returns `[]` on `[]`, and otherwise selects `(a,y)`, sorts `y` and conses
+     `a` back on]],
+     // lean:AOP.A6_6b_SortConcrete.sort_rec@5232b3c3
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.sort_rec.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.sort_rec.rhs", src[unfolding the converse of a fold]),
+  ),
+)]<sort-rec>
 // TODO p.154 quicksort: `perm ordered ⊒ perm flatten°flatten ordered = perm flatten°inordered flatten
 //   = (inordered flatten perm)°flatten ⊒ ⦇[nil,split°]⦈°flatten` (4 steps + claim
 //   `flatten ordered = inordered flatten`) — abstract Lean missing (qsort_emerges is concrete).

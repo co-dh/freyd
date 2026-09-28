@@ -157,6 +157,23 @@ public theorem perm_strictNatural :
     obtain ⟨z', p, l⟩ := perm_listP Q° (Perm.symm hp) z ((listP_recip Q z x').mpr hl)
     exact ⟨z', (listP_recip Q z' x).mp l, Perm.symm p⟩
 
+/-- `nil` is strictly natural, `nil list(Q) = nil`: the empty list has no element for `Q` to relate. -/
+public theorem nil_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.const (dL Unit)) (fun a => (wrapR : dL Unit ⟶ dList a.carrier)) := by
+  intro a b Q
+  apply hom_ext; intro d z
+  cases d
+  constructor
+  · rintro ⟨u, hu, h⟩
+    cases u; subst h
+    exact ⟨ConsList.wrap (), rfl, trivial⟩
+  · rintro ⟨y, hy, hl⟩
+    subst hy
+    cases z with
+    | wrap u => exact ⟨(), rfl, by cases u; rfl⟩
+    | cons b w => exact hl.elim
+
 /-- **p.152, step 1**: `perm ordered = (ordered perm)°`, `perm` and the coreflexive `ordered`
     being their own converses. -/
 public theorem selection_step1 :
@@ -239,5 +256,24 @@ public theorem selection_sort (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
 /-- The concrete `select` meets the specification `select° ⊑ ok cons perm` (B&dM p.153). -/
 theorem selectC_spec : (selectC R)° ⊑ ok R ≫ consR ≫ (perm : dList A ⟶ dList A) :=
   le_iff.mpr fun p _ ⟨hp, hlb⟩ => ⟨p, ⟨rfl, hlb⟩, _, rfl, hp⟩
+
+variable (select) in
+/-- **p.153, the program**: `X = ⦇[nil, select°]⦈°` satisfies `X = nil°nil ∪ select(𝟙×X)cons` —
+    the converse of the fold unfolds one `select` at a time. -/
+public theorem sort_rec :
+    (cataR (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
+        : (F Unit A).obj (dList A) ⟶ dList A))°
+      = wrapR° ≫ wrapR
+        ∪ select ≫ rprodMap (𝟙 (dE A))
+            (cataR (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
+              : (F Unit A).obj (dList A) ⟶ dList A))° ≫ consR := by
+  have hw : algWrap (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
+      : (F Unit A).obj (dList A) ⟶ dList A) = wrapR :=
+    hom_ext fun d r => junc_sum_inl _ _ d r
+  have hc : algCons (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
+      : (F Unit A).obj (dList A) ⟶ dList A) = select° :=
+    hom_ext fun p r => junc_sum_inr _ _ p r
+  refine (cata_converse_eq _).trans ?_
+  rw [hw, hc, Allegory.recip_recip]
 
 end Freyd.Alg.RelSet.Sort
