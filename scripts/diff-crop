@@ -63,8 +63,19 @@ MARG = 3                         # pt the crop must clear the ink by, or the run
 STRIP = 6                        # px checked blank at the top and bottom of every crop
 SHAPETOL = 0.2                   # pt: two drawings of one primitive differ by float noise, no more
 MINSIM = 0.5                   # below this two pages are different pages, not an edited one
-NOTES = ("diag/allegory-axioms.pdf", "diag/allegory2.pdf")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _note_pdfs():
+    """Every note's pdf, from the one list of notes (`scripts/note-files --roots`) — never a second,
+    hand-written tuple that the next split silently leaves behind."""
+    r = subprocess.run(["./scripts/note-files", "--roots"], cwd=ROOT, capture_output=True, text=True)
+    if r.returncode:
+        sys.exit(f"diff-crop: ./scripts/note-files --roots: {r.stderr.strip()}")
+    return tuple(p[:-4] + ".pdf" for p in r.stdout.split())
+
+
+NOTES = _note_pdfs()
 NUM = re.compile(r"[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?")
 
 

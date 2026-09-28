@@ -82,6 +82,19 @@ def die(msg):
     sys.exit("note-split: " + msg)
 
 
+def note_title(root_dir=None):
+    """`$NOTE`'s own title, off the `#show: conf.with(title: "...")` line its root states — the ONE
+    place a note's title lives, so a chapter compiled alone (`--input title=...`) prints the note it
+    belongs to and never a sibling's hardcoded default."""
+    root_dir = root_dir or ROOT_DIR
+    for ln in read(os.path.join(root_dir, NOTE)).split("\n"):
+        if ln.startswith("#show: conf.with(") and "title:" in ln:
+            t = typst_string(ln)
+            if t is not None:
+                return t
+    die("%s has no `#show: conf.with(title: \"...\")` line: every note states its own title there" % NOTE)
+
+
 def chapter_number(path):
     """The chapter number a chapter file DECLARES on its header's second line — the line
     `chapter_header` writes, read back as exactly that shape; a note's chapters need not run 1, 2, …
@@ -591,7 +604,8 @@ def unknown_variables(root_dir):
         if os.path.dirname(path) != os.path.join(root_dir, CHDIR):
             continue
         p = subprocess.run(["typst", "compile", "--root", ".", "--format", "pdf",
-                            "--input", "nodraw=1", os.path.relpath(path, root_dir), os.devnull],
+                            "--input", "nodraw=1", "--input", "title=" + note_title(root_dir),
+                            os.path.relpath(path, root_dir), os.devnull],
                            cwd=root_dir, capture_output=True, text=True)
         found = 0
         for ln in p.stderr.split("\n"):
@@ -691,11 +705,14 @@ def cmd_files(argv):
         print(*generated_imports(), sep="\n")
         return
     # `--root`: the root `$NOTE` names; `--roots`: every note make compiles; `--names`: the names
-    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`;
+    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`; `--title`: `$NOTE`'s own title,
+    # for a chapter compiled alone (`--input title=`).
     # `--panels`: `$NOTE`'s commutative-canvas manifest.  Make and the Lean gates ask
     # these, so the notes are listed in this file alone.
     if "--root" in argv:
         return print(NOTE)
+    if "--title" in argv:
+        return print(note_title())
     if "--panels" in argv:
         return print(PANELS)
     if "--roots" in argv:
