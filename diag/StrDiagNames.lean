@@ -690,6 +690,10 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `Decimal))
 
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dNat] def unexpandDNat : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "ℕ")))
+
+open Lean PrettyPrinter in
 /-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the
     algebra `f` to the algebra `g`, which a type ascription already spells. -/
 @[app_unexpander IsFHom] def unexpandIsFHom : Unexpander

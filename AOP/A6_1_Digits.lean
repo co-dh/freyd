@@ -435,6 +435,38 @@ public theorem val_converse_eq :
     val° = embed° ≫ wrap ∪ op° ≫ timesDigit.map val° ≫ snoc :=
   cata_converse_eq embed op
 
+/-! The (6.1) chain at `g≜embed`, `h≜op`, `C≜dNat`, so each step draws with the book's own beads. -/
+
+/-- p.138 step 1 at `val`: `val = α°F(val)[embed,op]`, conversed. -/
+public theorem val_converse_step1 :
+    val° = ((graph con)° ≫ (F(val) ≫ ⁅embed, op⁆))° :=
+  cata_converse_step1 embed op
+
+/-- p.138 step 2 at `val`: `(RS)° = S°R°`. -/
+public theorem val_converse_step2 :
+    ((graph con)° ≫ (F(val) ≫ ⁅embed, op⁆))° = ⁅embed, op⁆° ≫ ((F(val))° ≫ graph con) :=
+  cata_converse_step2 embed op
+
+/-- p.138 step 3 at `val`: `F(val)° = F(val°)`. -/
+public theorem val_converse_step3 :
+    ⁅embed, op⁆° ≫ ((F(val))° ≫ graph con) = ⁅embed, op⁆° ≫ (F(val°) ≫ graph con) :=
+  cata_converse_step3 embed op
+
+/-- p.138 step 4 at `val`: `α = [wrap,snoc]`. -/
+public theorem val_converse_step4 :
+    ⁅embed, op⁆° ≫ (F(val°) ≫ graph con) = ⁅embed, op⁆° ≫ (F(val°) ≫ ⁅wrap, snoc⁆) :=
+  cata_converse_step4 embed op
+
+/-- p.138 step 5 at `val`: `(𝟙+S)[P,Q] = [P,SQ]`. -/
+public theorem val_converse_step5 :
+    ⁅embed, op⁆° ≫ (F(val°) ≫ ⁅wrap, snoc⁆) = ⁅embed, op⁆° ≫ ⁅wrap, timesDigit.map val° ≫ snoc⁆ :=
+  cata_converse_step5 embed op
+
+/-- p.138 step 6 at `val`: `[embed,op]°[P,Q] = embed°P ∪ op°Q`. -/
+public theorem val_converse_step6 :
+    ⁅embed, op⁆° ≫ ⁅wrap, timesDigit.map val° ≫ snoc⁆ = embed° ≫ wrap ∪ op° ≫ timesDigit.map val° ≫ snoc :=
+  cata_converse_step6 embed op
+
 /-! ## B&dM p.139: the two converses in `val°`'s recursion
 
   `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; with the book's `n ∈ ℕ⁺`, `op°` is defined exactly on

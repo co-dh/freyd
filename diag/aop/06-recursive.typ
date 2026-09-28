@@ -20,18 +20,17 @@
   // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@639ee2c7
   // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
   lean-chain(
-    (none, "Freyd.Alg.RelSet.Digits.cata_converse_step1.lhs", src[`val=⦇[embed,op]⦈` — definition]),
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step1.rhs", src[`⦇φ⦈=α°F(⦇φ⦈)φ` — catamorphisms]),
+    (none, "Freyd.Alg.RelSet.Digits.val_converse_step1.lhs", src[`val=⦇[embed,op]⦈` — definition]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step1.rhs", src[`⦇φ⦈=α°F(⦇φ⦈)φ` — catamorphisms]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@b78dddd4
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step2.rhs", src[`(RS)°=S°R°` — converse]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step2.rhs", src[`(RS)°=S°R°` — converse]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@65155218
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step3.rhs", src[`F(R)°=F(R°)` — `F=(−×Digit)(Digit⁺+−)`, definition of `F`]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step3.rhs", src[`F(R)°=F(R°)` — `F=(−×Digit)(Digit⁺+−)`, definition of `F`]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@e9a6a733
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step4.rhs", src[`α=[wrap,snoc]`]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@2be20807
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step5.rhs", src[`(𝟙+S)[P,Q]=[P,SQ]` at `S=(−×Digit)(R)` — coproduct]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@69f15a17
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step6.rhs", src[`[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inr", src[`α=[wrap,snoc]`, then `(𝟙+S)[P,Q]=[P,SQ]` and `[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
+    (none, "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inl", src[]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@7d262eb2
   ),
 )]<val-converse>

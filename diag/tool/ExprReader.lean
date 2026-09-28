@@ -1151,20 +1151,24 @@ partial def peelCutsCore (objVars : Array Expr) (cat : Array Name) (regionTy X :
     | _ => pure false
   if atom then return (#[], X)
   let objs ← objVars.filterM fun v => do Meta.isDefEq (← Meta.inferType v) regionTy
-  for n in cat do
-    if let some (R, src, inner) ← peelWith? n objVars regionTy X then
-      let (cs, o) ← peelCuts objVars cat src inner
-      return (#[(Wire.rel R, inner)] ++ cs, o)
-  if objs.size == objVars.size then return (#[], X)
-  -- Here the object has several such readings — `A ⊕ X×X` is `TT.F A` at `X` and `CL.F A X` at
-  -- `X` alike — so the one taken is the lane that PINS THE LEAST of the object into its name.
-  let mut best : Option (Expr × Expr × Expr) := none
-  for n in cat do
-    let s ← Meta.saveState
-    if let some r@(R, _, _) ← peelWith? n objs regionTy X then
-      if best.all (R.sizeWithoutSharing < ·.1.sizeWithoutSharing) then best := some r
+  -- An object has several such readings — `A ⊕ X×X` is `TT.F A` at `X` and `CL.F A X` at `X`
+  -- alike, and `Digit⁺ ⊕ ℕ×Digit` is `Digit⁺+−` at `ℕ×Digit` and a lane with `ℕ` pinned in at
+  -- `Digit` — so the one taken is the lane that PINS THE LEAST of the object into its name, never
+  -- the first the catalogue's order reaches.
+  let best (vs : Array Expr) : MetaM (Option (Expr × Expr × Expr)) := do
+    let mut b : Option (Expr × Expr × Expr × Meta.SavedState) := none
+    for n in cat do
+      let s ← Meta.saveState
+      if let some r@(R, _, _) ← peelWith? n vs regionTy X then
+        if b.all (R.sizeWithoutSharing < ·.1.sizeWithoutSharing) then b := some (r.1, r.2.1, r.2.2, ← Meta.saveState)
+      s.restore
+    let some (R, src, inner, s) := b | return none
     s.restore
-  let some (R, src, inner) := best | return (#[], X)
+    return some (R, src, inner)
+  let pick ← match ← best objVars with
+    | some r => pure (some r)
+    | none => if objs.size == objVars.size then pure none else best objs
+  let some (R, src, inner) := pick | return (#[], X)
   let (cs, o) ← peelCuts objVars cat src inner
   return (#[(Wire.rel R, inner)] ++ cs, o)
 
