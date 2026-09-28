@@ -4,12 +4,14 @@
 # `scripts/cd-check` asks this file for each one's record, in the note's document order — so
 # deleting a line does not drop an obligation, it leaves a canvas with no record and fails the gate.
 #
-#   <number>/<label>#<canvas> | <selector> | <reference in diag/>
+#   <label>#<canvas> | <selector> | <reference in diag/>
 #
-# The canvas number counts the commutative canvases of that display, in the order the display draws
-# them.  `-` in a column: no selector (the canvas is drawn from no statement — its candidates are in
-# the trailing `#` comment), or no reference (the note never drew the canvas by hand, so there is no
-# original to hold the generated panel to, and only the panel's own geometry is checked).
+# The key is the typst LABEL, never the display number: a renumbering (`#disp(num:)`) must not
+# break the match, so `scripts/cd-obligations` reads the number nowhere near this key.  `<canvas>`
+# counts the commutative canvases of that display, in the order the display draws them.  `-` in a
+# column: no selector (the canvas is drawn from no statement — its candidates are in the trailing
+# `#` comment), or no reference (the note never drew the canvas by hand, so there is no original to
+# hold the generated panel to, and only the panel's own geometry is checked).
 #
 # WHY THE SELECTOR IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST
 # COMMENT, which the compiler discards before anything can query it, so no typed reader can see it
@@ -24,4 +26,4 @@
 #
 #
 # Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
-10.1a/adj-E-bend#1               | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
+adj-E-bend#1                     | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
