@@ -156,6 +156,8 @@ end CpLax
 
 section SingletonSpelling
 
+-- The weakest class the `rfl` holds in: a bridge the panel's own context cannot instantiate is
+-- invisible to the naturality search (an `UnguardedPowerAllegory` panel has no tabular instance).
 variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- `𝟙%∋` IS `singletonMap`.  §2.415 defines the singleton as `Λ 𝟙`, and that is the spelling a

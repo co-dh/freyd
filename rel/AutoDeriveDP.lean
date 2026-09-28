@@ -381,7 +381,7 @@ theorem memo_mem_mu (v : B) :
 theorem solve_le_spec :
     (graph P.memo : (⟨B⟩ : RelSet.{0}) ⟶ (⟨Ans⟩ : RelSet.{0}))
       ⊑ Λ (P.hylo ∪ P.tau) ≫ est P.ord := by
-  have habs := dynamic_programming_inf (F := F L E) (F_preservesRecip L E) (initial L E)
+  have habs := dynamic_programming_inf (F := F L E) (initial L E)
     (graph_map P.algFn) P.alg_mono P.ord_trans P.hstrict P.tau_top
   apply le_iff.mpr
   intro v x hx

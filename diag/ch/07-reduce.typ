@@ -17,12 +17,12 @@
   [The cons-lists over `A`, the datatype every row below folds.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.sum_cata")],
-  // lean:AOP.A5_6_ListCombinators.sum_cata@9396e206
+  // lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
   [#leant("Freyd.Alg.RelSet.ListRel.sumR")],
   [`plus(a,b)=a+b`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.length_cata")],
-  // lean:AOP.A5_6_ListCombinators.length_cata@0cd685fc
+  // lean:AOP.A5_6_ListCombinators.length_cata@12cd98d0
   [#leant("Freyd.Alg.RelSet.ListRel.length_cata")],
   [`π₂` drops the head and keeps the count of the tail, `succ` adds one for the head.],
 
@@ -33,19 +33,19 @@
 
   [banana-split law \
    #leanf("Freyd.Alg.pair_relCata_eq_relCata_pair")],
-  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@8e98edce
+  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@e8d45159
   [#leant("Freyd.Alg.pair_relCata_eq_relCata_pair")],
   [Any fork of folds is a single fold, hence one traversal — `F` the base functor.],
 
   [what it reduces to \
    #leanf("Freyd.Alg.pair_relCata_hom")],
-  // lean:AOP.A5_5.pair_relCata_hom@93cbc99a
+  // lean:AOP.A5_5.pair_relCata_hom@e885edfd
   [#leant("Freyd.Alg.pair_relCata_hom")],
   [All that @cata-defining leaves to check: the fork satisfies the defining equation.],
 
   [the instance \
    #leanf("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
-  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@820d9011
+  // lean:AOP.A5_6_ListCombinators.pair_sum_length_cata@a2e3fa5f
   [#leant("Freyd.Alg.RelSet.ListRel.pair_sum_length_cata")],
   [`pluss(a,(b,n))=(a+b,n+1)`, so `average` runs in one pass.],
 
@@ -63,7 +63,7 @@
     lean("Freyd.Alg.pair_relCata_hom"),
   )),
   [#leanf("Freyd.Alg.pair_relCata_eq_relCata_pair") #h(6pt) #src[banana split]],
-  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@8e98edce
+  // lean:AOP.A5_5.pair_relCata_eq_relCata_pair@e8d45159
 )]<banana-split>
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
@@ -91,7 +91,7 @@
 #disp[#capbox(
   leancd("Freyd.Alg.pair_eq_relCata_pair_iff.lhs"),
   [#leanf("Freyd.Alg.pair_eq_relCata_pair_iff")],
-  // lean:AOP.A5_5.pair_eq_relCata_pair_iff@beb351af
+  // lean:AOP.A5_5.pair_eq_relCata_pair_iff@c35035a2
 )]<fokkinga>
 
 == Ruby triangles
@@ -116,7 +116,7 @@
 
   [abstractly],
   [`F` a bifunctor with initial type `(α,T)`: #leanf("Freyd.Alg.tri_defn")],
-  // lean:AOP.A5_5_TypeFunctor.tri_defn@b4b44137
+  // lean:AOP.A5_5_TypeFunctor.tri_defn@86133c88
 )]<tri-evolution>
 
 For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA⟶TA`.
@@ -129,7 +129,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
     lean("Freyd.Alg.tri_cata_fusion"),
   )),
   [#leanf("Freyd.Alg.tri_cata_fusion")],
-  // lean:AOP.A5_5_TypeFunctor.tri_cata_fusion@d3864107 lean:AOP.A5_5_TypeFunctor.tri@864792f0
+  // lean:AOP.A5_5_TypeFunctor.tri_cata_fusion@f8348c21 lean:AOP.A5_5_TypeFunctor.tri@59cf2350
 )]<horner>
 
 // horner paragraph: B&dM pp. 58-59; B&dM call it Horner's rule because for cons-lists it is the

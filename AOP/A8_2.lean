@@ -123,7 +123,7 @@ variable {B : 𝒜} {F : BiRelator 𝒜}
     `relCata (Λ (F(∋,∋)α) ≫ thin Q) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`.
     `thinning_est` is stated at `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose
     action on `∋` is `F(𝟙,∋)`; `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange. -/
-public theorem thinning_paths_step (hFr : F.PreservesRecip)
+public theorem thinning_paths_step
     (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
@@ -131,16 +131,12 @@ public theorem thinning_paths_step (hFr : F.PreservesRecip)
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q) :
     relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have hFr' : (F.appl (PowerAllegory.powerObj A)).PreservesRecip := by
-    intro a₁ a₂ S
-    show F.map (𝟙 (PowerAllegory.powerObj A)) S° = (F.map (𝟙 (PowerAllegory.powerObj A)) S)°
-    rw [← hFr (𝟙 (PowerAllegory.powerObj A)) S, recip_id]
   have e : (F.appl (PowerAllegory.powerObj A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
       = F.map (∋ A) (∋ B) ≫ α := by
     show F.map (𝟙 (PowerAllegory.powerObj A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
     rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
   rw [← e]
-  exact thinning_est hFr' I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
+  exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
 /-- **The first row of the p.198 algebra chain at the layered network**: `thinAlg_elim_thin` at
     the split `V ≜ F(∋,𝟙)`, `S ≜ F(𝟙,∋)α`, whose composite is `F(∋,∋)α` by interchange. -/
@@ -183,7 +179,7 @@ public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     `thinAlg_elim` the algebra; the source `F(∋,∋)α` of the thinned algebra splits as
     `F(∋,𝟙)` followed by `F(𝟙,∋)α` by interchange.  At the book's `α = [wrap,cons]` the algebra
     `ΛF(∈,id)·P(min R·Λ(α·F(id,∈)))` is the printed `[P wrap, cpl·P step]`. -/
-public theorem thinning_paths (hFr : F.PreservesRecip)
+public theorem thinning_paths
     (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
@@ -195,7 +191,7 @@ public theorem thinning_paths (hFr : F.PreservesRecip)
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
   exact le_trans
     (comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R))
-    (thinning_paths_step hFr I hQR hreflQ htransQ htransR hmono)
+    (thinning_paths_step I hQR hreflQ htransQ htransR hmono)
 
 end Layered
 

@@ -589,7 +589,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@27f44953
+     // lean:AOP.A7_2.greedy@84a2c1de
   [],
 
   [#vstep(IFF, [],
@@ -700,7 +700,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
     #src[the fold whose algebra, at each `cons`, stops with `nil` or keeps the head:
       `xs prefix ys⟺∃zs. xs=ys⧺zs`]
-    // lean:AOP.A5_6_ListCombinators.prefix_cata@b8d861c4
+    // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0
     // lean:AOP.A5_6_ListCombinators.prefixP_iff_append@1c6dd07f
     ],
   table.header([*the defining square* `α prefix=F(prefix)[nil,⊸ nil ∪ cons]` — build the list and then
@@ -750,7 +750,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
     #src[this same diagram is `subseq`'s: algebra `[nil,π₂ ∪ cons]`, type `[A]⟶[A]`]
-    // lean:AOP.A7_7_Filter.filter_alg_comm@e2fc9591
+    // lean:AOP.A7_7_Filter.filter_alg_comm@73bbcbaa
     // lean:AOP.A7_7_Filter.filter_alg@5c8645c6
     ],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
@@ -781,7 +781,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
  the side condition. ,
   // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@98848cae
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4f482b64
 ]<takewhile-alg>
 
 // One law to a step: `R°` starts on the tail strand, is copied into both operands of the `∪`,
@@ -913,7 +913,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 `FX=𝟏+A×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
 `sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns.
 #h(4pt) #src[]
-// lean:AOP.A5_6_ListCombinators.sum_cata@9396e206
+// lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
 
 `head≜cons° π₁`, #h(4pt) `wrap≜⟨𝟙,⊸ nil⟩ cons` #h(4pt) #src[the head of a list and the
 one-element list, beside @comb-fns's `tail≜cons° π₂`]
@@ -1104,7 +1104,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
-    // lean:AOP.A7_7_MSS.mss_eq_scan@0844559d
+    // lean:AOP.A7_7_MSS.mss_eq_scan@7b3ee2be
   lean-chain(
     // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
     // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
@@ -1324,7 +1324,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [The algebra: one step returns both parties of a subtree at once.],
 
  [#leanf("Freyd.Alg.RelSet.Party.party_eq") #src[]],
-  // lean:AOP.A7_3_Party.party_eq@cb4fab14
+  // lean:AOP.A7_3_Party.party_eq@1dbc13ac
   [#leant("Freyd.Alg.RelSet.Party.party_eq")],
   [Every guest list the president's ruling allows.],
 
@@ -1475,7 +1475,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
  ]],
    // lean:AOP.A4_6.Λ_absorption@e87bd8f2
-   // lean:AOP.A7_3_Party.party_absorb@5ae02626
+   // lean:AOP.A7_3_Party.party_absorb@537b93c7
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
@@ -1623,7 +1623,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
-     // lean:AOP.A7_3_Party.party_laws@00692234
+     // lean:AOP.A7_3_Party.party_laws@46d60422
   lean-chain(
     (none, "Freyd.Alg.RelSet.Party.party_open.lhs", src[@party-defn]),
     (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs", src[`party≜⦇S⦈ choose` — @party-defn]),
@@ -1637,7 +1637,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   lean-chain(
     (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
-      // lean:AOP.A7_2.greedy@27f44953
+      // lean:AOP.A7_2.greedy@84a2c1de
       src[
         // greedy row: Theorem 7.2
         `(𝟙×list((R×R)°))S⊑S(R×R)°` — @party-mono]),
@@ -1964,7 +1964,7 @@ zip(that)                                         each row: its square, and the 
  [#leanf("Freyd.Alg.RelSet.Van.partition_cata") \
    #src[cutting the transactions into non-empty segments is one pass along them that either opens
     a segment for the transaction in hand or puts it on the front of the segment already open]],
-  // lean:AOP.A7_5_Van.partition_cata@bbe49948
+  // lean:AOP.A7_5_Van.partition_cata@09deaaa5
   [#leant("Freyd.Alg.RelSet.ListRel.partition")],
   [`partition[a,b]` gives `[[a],[b]]` and `[[a,b]]`.],
 
@@ -1975,7 +1975,7 @@ zip(that)                                         each row: its square, and the 
  [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
     every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
-  // lean:AOP.A7_5_Van.van_spec@79d2f560
+  // lean:AOP.A7_5_Van.van_spec@104cf5ec
   [#leant("Freyd.Alg.RelSet.Van.van_spec")],
   [Both take `[a,b]` to `[[a],[b]]` — each `[a]` is secure — and to `[[a,b]]` when `[a,b]` is.],
 
@@ -2081,7 +2081,7 @@ zip(that)                                         each row: its square, and the 
   Thm[#leanf("Freyd.Alg.RelSet.Van.van_spec") \
     #src[cutting the transactions into non-empty segments every way and keeping the cuts whose
      every segment is secure is the one fold whose algebra is `[nil,new ∪ old]`]],
-     // lean:AOP.A7_5_Van.van_spec@79d2f560
+     // lean:AOP.A7_5_Van.van_spec@104cf5ec
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`partition list(secure)` \ #src[the specification: cut the transactions every way, then keep
@@ -2090,7 +2090,7 @@ zip(that)                                         each row: its square, and the 
 
   [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ list(secure)` \ #src[`partition` is the fold that either opens a
    segment for the transaction in hand or puts it on the front of the segment already open]],
-     // lean:AOP.A7_5_Van.partition_cata@bbe49948
+     // lean:AOP.A7_5_Van.partition_cata@09deaaa5
   [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs", step: true)],
 
   [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `list(secure)` inside
@@ -2106,7 +2106,7 @@ zip(that)                                         each row: its square, and the 
 
 #disp[#capbox(
   lean(van-fus-l, van-fus-r, op: [=]),
-  // lean:AOP.A7_5_Van.van_spec@79d2f560
+  // lean:AOP.A7_5_Van.van_spec@104cf5ec
  [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions every way and then keeping the cuts whose every segment is secure
     is one pass along them that either calls the van or extends the open segment while it stays
@@ -2277,12 +2277,12 @@ zip(that)                                         each row: its square, and the 
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
-     // lean:AOP.A7_5_Van.van_laws@400440f3
+     // lean:AOP.A7_5_Van.van_laws@98742baf
   lean-chain(
     (none, "Freyd.Alg.RelSet.Van.van_laws_step4.rhs",
       src[@van-defn]),
     (EQ, "Freyd.Alg.RelSet.Van.van_laws_step4.lhs",
-      // lean:AOP.A7_5_Van.van_spec@79d2f560
+      // lean:AOP.A7_5_Van.van_spec@104cf5ec
       src[`partition list(secure)=⦇S⦈` — @van-defn, @cata-fusion]),
     (RQ, "Freyd.Alg.RelSet.Van.van_laws_step3.lhs",
       // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849

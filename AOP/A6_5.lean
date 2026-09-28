@@ -259,7 +259,7 @@ end WellFoundedBoolean
 
 section Membership
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **B&dM p.148-149**: a LAX MEMBERSHIP for the relator `F`: a family `mem a : F a ⟶ a`
     with `R·mem ⊑ mem·FR` for all `R : A⟶B` (mirrored: `F.map R ≫ mem b ⊑ mem a ≫ R`), i.e.
@@ -324,7 +324,7 @@ end Membership
 
 section HyloTheorem63
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **Theorem 6.3** (B&dM p.149, uniqueness half): if `member(F)·S` is inductive, the
     equation `X = R·FX·S` (mirrored: `X = S ≫ F.map X ≫ R`) has AT MOST one solution.
@@ -355,7 +355,7 @@ end HyloTheorem63
 
 section Theorem64
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- The intermediate fact shared by `thm64_forward` and `thm64` — under the Theorem 6.4
     commuting hypothesis, `(|R|)·f ⊑ 1` (mirrored: `relCata I R ≫ f ⊑ 1`).  This is

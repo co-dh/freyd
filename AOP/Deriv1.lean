@@ -125,7 +125,7 @@ theorem value_hom_iff_graph (base : Int) (h : dSL Unit Int ⟶ (⟨Int⟩ : RelS
 
 section Fusion
 universe u
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **Fold fusion (5.x).**  If a map `h` turns the algebra `φ` into `ψ` — the fusion
     condition `φ ≫ h = F h ≫ ψ` — then post-composing `h` after the catamorphism of `φ` is

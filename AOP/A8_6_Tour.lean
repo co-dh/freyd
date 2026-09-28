@@ -580,7 +580,7 @@ public theorem tour_laws
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
   have key := thinningList (L := listRelator) (F := F (City × City) City)
-    (F_preservesRecip (City × City) City) (initial (City × City) City)
+    (initial (City × City) City)
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
     (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)

@@ -259,7 +259,7 @@ end Greedy
 
 section Exercises
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map

@@ -440,14 +440,14 @@ variable {F : Relator 𝒜 𝒜}
 
 /-- Step 1: `Q°` walks out of the `F` handle — that move IS the monotonicity assumption
     `S°F(Q°) ⊑ Q°S°`, i.e. `hmono` conversed, with `F(R)° = F(R°)`. -/
-public theorem thinning_step1 (hFr : F.PreservesRecip) {Q : A ⟶ A} {S : F.obj A ⟶ A}
+public theorem thinning_step1 {Q : A ⟶ A} {S : F.obj A ⟶ A}
     (hmono : Freyd.Alg.MonoAlg S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
       ⊑ Q° ≫ S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q := by
   have hstr : S° ≫ F.map Q° ⊑ Q° ≫ S° := by
     have h := recip_mono hmono
     have heqL : (F.map Q ≫ S)° = S° ≫ F.map Q° := by
-      rw [Allegory.recip_comp, hFr Q]
+      rw [Allegory.recip_comp, Relator.preservesRecip_of_tabular F Q]
     have heqR : (S ≫ Q)° = Q° ≫ S° := Allegory.recip_comp _ _
     rwa [heqL, heqR] at h
   rw [F.map_comp Q° ((∋ A)°),
@@ -458,11 +458,11 @@ public theorem thinning_step1 (hFr : F.PreservesRecip) {Q : A ⟶ A} {S : F.obj 
 
 /-- Step 2: `S°F(∈)·Λ(F(∋)S) ⊑ ∈`, the transpose swallowed by its own converse
     (`recip_comp_Λ_le_recip_eps` at `W ≜ F(∋)S`, after `F(∋)°` is folded back into `W°`). -/
-public theorem thinning_step2 (hFr : F.PreservesRecip) {Q : A ⟶ A} {S : F.obj A ⟶ A} :
+public theorem thinning_step2 {Q : A ⟶ A} {S : F.obj A ⟶ A} :
     Q° ≫ S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
       ⊑ Q° ≫ (∋ A)° ≫ thinRel Q := by
   have hWrecip : (F.map (∋ A) ≫ S)° = S° ≫ F.map ((∋ A)°) := by
-    rw [Allegory.recip_comp, ← hFr (∋ A)]
+    rw [Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F (∋ A)]
   have a1 : S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
       = ((F.map (∋ A) ≫ S)° ≫ Λ (F.map (∋ A) ≫ S)) ≫ thinRel Q := by
     rw [← Cat.assoc S° (F.map ((∋ A)°)) (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q), ← hWrecip,
@@ -493,7 +493,7 @@ public theorem thinning_step4 {Q : A ⟶ A} (htrans : Q ≫ Q ⊑ Q) :
     universal property (`le_Λ_comp_thinRel_iff`): the "shrinks" half by the fusion law (6.5), the
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
-public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A ⟶ A}
+public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     {S : F.obj A ⟶ A} (htrans : Q ≫ Q ⊑ Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
@@ -507,8 +507,8 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A �
   · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q°·∋`, by the hylomorphism theorem
     apply hylo_le_of_prefixed I
     -- goal: `S° ≫ F.map (Q° ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q° ≫ (∋a)°`
-    exact le_trans (thinning_step1 hFr hmono)
-      (le_trans (thinning_step2 hFr) (le_trans thinning_step3 (thinning_step4 htrans)))
+    exact le_trans (thinning_step1 hmono)
+      (le_trans (thinning_step2) (le_trans thinning_step3 (thinning_step4 htrans)))
 
 /-! ### The Corollary 8.1 chain (note §14.1.1d)
 
@@ -516,11 +516,11 @@ public theorem thinning (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q : A �
   `thinning_est` is their composition. -/
 
 /-- Step 1: THEOREM 8.1 composed with `est R` on the right. -/
-public theorem thinning_est_step1 (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : A ⟶ A}
+public theorem thinning_est_step1 (I : InitialAlgebra F) {Q R : A ⟶ A}
     {S : F.obj A ⟶ A} (htransQ : Q ≫ Q ⊑ Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
       ⊑ (Λ (relCata S) ≫ thinRel Q) ≫ est R :=
-  comp_mono_right (thinning hFr I htransQ hmono) (est R)
+  comp_mono_right (thinning I htransQ hmono) (est R)
 
 /-- Step 2: thin-introduction `est R = thin Q ≫ est R` (`Q ⊑ R`, `Q` reflexive, `R` transitive). -/
 public theorem thinning_est_step2 (I : InitialAlgebra F) {Q R : A ⟶ A} {S : F.obj A ⟶ A}
@@ -533,12 +533,12 @@ public theorem thinning_est_step2 (I : InitialAlgebra F) {Q R : A ⟶ A} {S : F.
     `relCata I (Λ (F.map ∈ ≫ S) ≫ thin Q) ≫ min R° ⊑ Λ (relCata I S) ≫ min R°`, given `Q ⊑ R`,
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
-public theorem thinning_est (hFr : F.PreservesRecip) (I : InitialAlgebra F) {Q R : A ⟶ A}
+public theorem thinning_est (I : InitialAlgebra F) {Q R : A ⟶ A}
     {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
     (htransR : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   rw [← thinning_est_step2 I hQR hreflQ htransR]
-  exact thinning_est_step1 hFr I htransQ hmono
+  exact thinning_est_step1 I htransQ hmono
 
 /-! ## Ex 8.6 — the context rule for thin (book p.196) -/
 

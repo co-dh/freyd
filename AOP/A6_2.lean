@@ -151,7 +151,7 @@ public class TabularUnitaryUnguardedPowerLCDA (𝒜 : Type u) extends
 
 section CataFix
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- The recursion body `φX = R·FX·α°` (mirrored: `α° ≫ F.map X ≫ R`) is monotonic. -/
 public theorem cataBody_monotonic (I : InitialAlgebra F) {C : 𝒜} (R : F.obj C ⟶ C) :
@@ -200,7 +200,7 @@ end CataFix
 
 section Fusion
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion. -/
 public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
