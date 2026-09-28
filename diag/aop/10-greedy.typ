@@ -572,26 +572,29 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[choosing by `Q` among the one-step decompositions before building with `F(X)` and `α`
      yields only decimals that are `R`-related to one built without choosing]],
     // lean:AOP.A10_4_Tex.tex_greedy@a8ba8ee9
+  // steps 1-6's rhs is a `∪` of the branch that simplifies (`.inl`) and the fixed `F(X)α[≫R]`
+  // branch (`.inr`); `rev: true` throughout draws them in that left-to-right order, so the fixed
+  // branch stays on the same side across every step, remerging by idempotence at step 7.
   lean-chain(
     (
       (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
-      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs",
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs", rev: true),
         src[definition of `Q`; composition distributes over `∪`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", src[`R` is reflexive]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", rev: true), src[`R` is reflexive]),
        // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
-      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs",
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs", rev: true),
         src[`r F(X) α⊑! l α R`: `l α=nil`, and `length(nil)=0` is at most any length]),
        // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
     ),
     (
-      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs",
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs", rev: true),
         src[`!°!⊑𝟙` on `𝟏`: universal property of `!`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
-      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs",
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs", rev: true),
         src[`l F(X)=l`: definition of `F`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", src[`l` is simple: `l°l⊑𝟙`]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", rev: true), src[`l` is simple: `l°l⊑𝟙`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
       (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`∪` is idempotent]),
        // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
