@@ -45,6 +45,9 @@ import AOP.A6_7
 -- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
 import AOP.A6_6b_SortConcrete
 import AOP.A6_6e_Quicksort
+-- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
+import AOP.A6_1_Digits
+import AOP.A6_4_FastExp
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
@@ -678,6 +681,121 @@ open Lean PrettyPrinter in
 @[app_unexpander theta] def unexpandTheta : Unexpander
   | `($_ $_ $p $q) => `($(mkIdent `θ) $p $q)
   | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The greatest fixed point, `(νX : α°F(X)R)`, spelled as its least twin above. -/
+@[app_unexpander nu] def unexpandNu : Unexpander
+  | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("ν" ++ x.getId.toString))) : $b))
+  | _ => throw ()
+
+-- B&dM §6.1's datatype `Decimal = wrap Digit⁺ | snoc (Decimal, Digit)`: its constructor map is the
+-- book's `α`, its base relator the section's `F`, its objects the book's `Digit⁺`, `Digit`, `Decimal`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.con] def unexpandDigitsCon : Unexpander
+  | _ => `($(mkIdent `α))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.cataR] def unexpandDigitsCata : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.wrap] def unexpandDigitsWrap : Unexpander
+  | _ => `($(mkIdent `wrap))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.snoc] def unexpandDigitsSnoc : Unexpander
+  | _ => `($(mkIdent `snoc))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.val] def unexpandDigitsVal : Unexpander
+  | _ => `($(mkIdent `val))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.embed] def unexpandDigitsEmbed : Unexpander
+  | _ => `($(mkIdent `embed))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.op] def unexpandDigitsOp : Unexpander
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.F] def unexpandDigitsF : Unexpander
+  | _ => `($(mkIdent `F))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDigitP] def unexpandDDigitP : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDigit] def unexpandDDigit : Unexpander
+  | _ => `($(mkIdent `Digit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.Digit] def unexpandDigitType : Unexpander
+  | _ => `($(mkIdent `Digit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.Decimal] def unexpandDecimalType : Unexpander
+  | _ => `($(mkIdent `Decimal))
+
+-- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
+-- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNat] def unexpandFEdNat : Unexpander
+  | _ => `($(mkIdent `Nat))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Bit] def unexpandFEBit : Unexpander
+  | _ => `($(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNB] def unexpandFEdNB : Unexpander
+  | _ => `($(mkIdent `Nat) × $(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dBin] def unexpandFEdBin : Unexpander
+  | _ => `($(mkIdent `Bin))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.zero] def unexpandFEZero : Unexpander
+  | _ => `($(mkIdent `zero))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.one] def unexpandFEOne : Unexpander
+  | _ => `($(mkIdent `one))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.shift] def unexpandFEShift : Unexpander
+  | _ => `($(mkIdent `shift))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.convert] def unexpandFEConvert : Unexpander
+  | _ => `($(mkIdent `convert))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.exp] def unexpandFEExp : Unexpander
+  | `($_ $a) => `($(mkIdent `exp) $a)
+  | _ => `($(mkIdent `exp))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.mod] def unexpandFEMod : Unexpander
+  | `($_ $b) => `($(mkIdent `mod) $b)
+  | _ => `($(mkIdent `mod))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Exp.op] def unexpandFEExpOp : Unexpander
+  | `($_ $a) => `($(mkIdent `op) $a)
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Modulus.op] def unexpandFEModOp : Unexpander
+  | `($_ $b) => `($(mkIdent `op) $b)
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDec] def unexpandDDec : Unexpander
+  | _ => `($(mkIdent `Decimal))
 
 open Lean PrettyPrinter in
 /-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the

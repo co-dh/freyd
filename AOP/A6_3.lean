@@ -271,32 +271,42 @@ end ExSimple
 
 section Corollary61
 
+/-- Corollary 6.1, step 1 (coproduct): `(G(X)+H(X))[R₁,R₂] = [G(X)R₁,H(X)R₂]`. -/
+public theorem hylo_body_coprod_step1 {G H : Relator 𝒜 𝒜}
+    (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
+    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
+    (X : B ⟶ A) :
+    (junc (C B) S₁ S₂)° ≫ sumMap (C B) (C A) (G.map X) (H.map X) ≫ junc (C A) R₁ R₂
+      = (junc (C B) S₁ S₂)° ≫ junc (C B) (G.map X ≫ R₁) (H.map X ≫ R₂) := by
+  rw [sumMap_junc]
+
+/-- Corollary 6.1, step 2 (coproduct): a conversed junc against a junc is the union of the
+    branches, `[U,V]°[P,Q] = U°P ∪ V°Q`. -/
+public theorem hylo_body_coprod_step2 {G H : Relator 𝒜 𝒜}
+    (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
+    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
+    (X : B ⟶ A) :
+    (junc (C B) S₁ S₂)° ≫ junc (C B) (G.map X ≫ R₁) (H.map X ≫ R₂)
+      = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂) :=
+  junc_recip_junc (C B)
+
 /-- **Corollary 6.1**, the body decomposition: `S° ≫ F.map X ≫ R = (S₁°≫G.map X≫R₁) ∪
     (S₂°≫H.map X≫R₂)` when `R = [R₁,R₂]`, `S = [S₁,S₂]` are juncs over `F`'s coproduct
-    presentation `F.map X = sumMap (C x) (C y) (G.map X) (H.map X)`. -/
-theorem hylo_body_coprod_decompose {G H : Relator 𝒜 𝒜}
+    presentation `F.map X = sumMap (C x) (C y) (G.map X) (H.map X)`: steps 1–2. -/
+public theorem hylo_body_coprod_decompose {G H : Relator 𝒜 𝒜}
     (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
     (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
     {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
     (X : B ⟶ A) :
     (junc (C B) S₁ S₂)° ≫ F.map X ≫ junc (C A) R₁ R₂
       = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂) := by
-  rw [hF X]
-  show (junc (C B) S₁ S₂)°
-      ≫ junc (C B) (G.map X ≫ (C A).u₁) (H.map X ≫ (C A).u₂) ≫ junc (C A) R₁ R₂
-      = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)
-  rw [← Cat.assoc, junc_recip_junc (C B)]
-  have hb1 : (S₁° ≫ (G.map X ≫ (C A).u₁)) ≫ junc (C A) R₁ R₂ = S₁° ≫ G.map X ≫ R₁ := by
-    rw [Cat.assoc, Cat.assoc, u₁_junc]
-  have hb2 : (S₂° ≫ (H.map X ≫ (C A).u₂)) ≫ junc (C A) R₁ R₂ = S₂° ≫ H.map X ≫ R₂ := by
-    rw [Cat.assoc, Cat.assoc, u₂_junc]
-  rw [union_comp_distrib, hb1, hb2]
+  rw [hF X]; exact (hylo_body_coprod_step1 C X).trans (hylo_body_coprod_step2 C X)
 
 /-- **Corollary 6.1**, hylo form: transporting `hylo_eq_mu`'s fixed-point equation through the
     body decomposition (`mu_congr`) — the hylomorphism over a coproduct-decomposed `F` equals
     the `mu` of the two-branch body directly, with NO reference to `F`, `G.map`/`H.map`'s common
     ambient functor beyond what's already in the branch bodies. -/
-theorem hylo_eq_mu_coprod (I : InitialAlgebra F)
+public theorem hylo_eq_mu_coprod (I : InitialAlgebra F)
     {G H : Relator 𝒜 𝒜} (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
     (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
     {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B} :

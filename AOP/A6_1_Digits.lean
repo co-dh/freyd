@@ -56,7 +56,7 @@ public inductive Decimal where
   | snoc : Decimal → Digit → Decimal
 
 /-- Object of `Rel(Set)` carrying `Digit`.  `abbrev` so `.carrier` reduces to `Digit`. -/
-abbrev dDigit : RelSet.{0} := ⟨Digit⟩
+@[expose] public abbrev dDigit : RelSet.{0} := ⟨Digit⟩
 /-- Object of `Rel(Set)` carrying `Digit⁺`. -/
 @[expose] public abbrev dDigitP : RelSet.{0} := ⟨DigitP⟩
 /-- Object of `Rel(Set)` carrying `Decimal`. -/
@@ -130,7 +130,7 @@ abbrev dDigit : RelSet.{0} := ⟨Digit⟩
 /-! ## `Decimal` is the initial algebra of `F` -/
 
 /-- The constructor map `⁅wrap, snoc⁆ : F Decimal → Decimal`. -/
-def con : (Fobj dDec).carrier → Decimal
+public def con : (F.obj dDec).carrier → Decimal
   | Sum.inl d => Decimal.wrap d
   | Sum.inr p => Decimal.snoc p.1 p.2
 
@@ -184,7 +184,7 @@ theorem cataFold_map {C : RelSet.{0}} (f : Fobj C ⟶ C) (hf : Map f) :
 
 /-- The fold square `α ≫ ⦇φ⦈ = F⦇φ⦈ ≫ φ` for EVERY algebra `φ` (not only maps) — the
     homomorphism equation, hoisted out of `decInitial` so the §6.1 derivation can cite it. -/
-theorem cata_square {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
+public theorem cata_square {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     graph con ≫ cataR φ = F.map (cataR φ) ≫ φ := by
   apply hom_ext; intro u r
   cases u with
@@ -282,15 +282,15 @@ def decInitial : InitialAlgebra F where
 notation:max "⁅" g ", " h "⁆" => junc (sumCop _ _) g h
 
 /-- The constructor `wrap` as a relation (the book's `wrap : Digit⁺ → Decimal`). -/
-def wrap : dDigitP ⟶ dDec := graph Decimal.wrap
+public def wrap : dDigitP ⟶ dDec := graph Decimal.wrap
 /-- The constructor `snoc` as a relation (the book's `snoc : Decimal × Digit → Decimal`). -/
-def snoc : (⟨Decimal × Digit⟩ : RelSet.{0}) ⟶ dDec := graph (fun p => Decimal.snoc p.1 p.2)
+public def snoc : (⟨Decimal × Digit⟩ : RelSet.{0}) ⟶ dDec := graph (fun p => Decimal.snoc p.1 p.2)
 
 /-! Supporting laws for the derivation, each a single ingredient of one p.138 step. -/
 
 /-- `α` is a cover: `α° ≫ α = 1` (`con` is surjective — every decimal is a `wrap` or a `snoc`).
     Cancels the constructor in the fold square, giving the fixed-point form below. -/
-theorem con_recip_con : (graph con)° ≫ graph con = 𝟙 dDec := by
+public theorem con_recip_con : (graph con)° ≫ graph con = 𝟙 dDec := by
   apply hom_ext; intro dec dec'
   constructor
   · intro h; obtain ⟨u, h1, h2⟩ := h; exact h1.trans h2.symm
@@ -302,7 +302,7 @@ theorem con_recip_con : (graph con)° ≫ graph con = 𝟙 dDec := by
     | snoc a b => exact ⟨Sum.inr (a, b), rfl, rfl⟩
 
 /-- The fold's fixed-point form `⦇φ⦈ = α° ≫ F⦇φ⦈ ≫ φ` — the book's "{catamorphisms}" step. -/
-theorem cata_fix {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
+public theorem cata_fix {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     cataR φ = (graph con)° ≫ (F.map (cataR φ) ≫ φ) :=
   calc cataR φ
       = 𝟙 dDec ≫ cataR φ := (Cat.id_comp _).symm
@@ -312,7 +312,7 @@ theorem cata_fix {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
 
 /-- `F`'s action in the coproduct calculus: `F R = id + (R × id)` as a `sumMap` over the
     concrete coproducts `sumCop` — the raw material of the "{definition of F}" step. -/
-theorem Fmap_eq_sumMap {C c' : RelSet.{0}} (R : C ⟶ c') :
+public theorem Fmap_eq_sumMap {C c' : RelSet.{0}} (R : C ⟶ c') :
     F.map R = sumMap (sumCop dDigitP ⟨C.carrier × Digit⟩) (sumCop dDigitP ⟨c'.carrier × Digit⟩)
       (𝟙 dDigitP) (R × 𝟙 dDigit) := by
   apply hom_ext; intro u v
@@ -332,7 +332,7 @@ theorem Fmap_eq_sumMap {C c' : RelSet.{0}} (R : C ⟶ c') :
 
 /-- Converse of `F`'s action: `(F R)° = id + (R° × id)` — the "{definition of F}" step
     as used on p.138 (the functor applied to the conversed fold). -/
-theorem Fmap_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
+public theorem Fmap_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
     (F.map R)° = sumMap (sumCop dDigitP ⟨c'.carrier × Digit⟩) (sumCop dDigitP ⟨C.carrier × Digit⟩)
       (𝟙 dDigitP) (R° × 𝟙 dDigit) := by
   rw [Fmap_eq_sumMap, sumMap_recip, recip_id, rprodMap_recip]
@@ -341,7 +341,7 @@ theorem Fmap_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
   exact congrArg (sumMap _ _ _) (congrArg (rprodMap _) recip_id)
 
 /-- The constructor map as a junc: `α = ⁅wrap, snoc⁆` — the book's presentation of `α`. -/
-theorem con_eq_junc : graph con = ⁅wrap, snoc⁆ := by
+public theorem con_eq_junc : graph con = ⁅wrap, snoc⁆ := by
   apply hom_ext; intro u dec
   constructor
   · intro h
@@ -369,36 +369,61 @@ theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
     | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
 
+/-- p.138 step 1 {catamorphisms}: `⦇φ⦈ = α°F(⦇φ⦈)φ`. -/
+public theorem cata_converse_step1 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    (cataR ⁅g, h⁆)° = ((graph con)° ≫ (F.map (cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by
+  rw [← cata_fix]
+
+/-- p.138 step 2 {converse}: `(RS)° = S°R°`, `R°° = R`. -/
+public theorem cata_converse_step2 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    ((graph con)° ≫ (F.map (cataR ⁅g, h⁆) ≫ ⁅g, h⁆))°
+      = ⁅g, h⁆° ≫ ((F.map (cataR ⁅g, h⁆))° ≫ graph con) := by
+  rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
+
+/-- p.138 step 3 {definition of F}: `F(⦇φ⦈)° = 𝟙+(⦇φ⦈°×𝟙)`. -/
+public theorem cata_converse_step3 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    ⁅g, h⁆° ≫ ((F.map (cataR ⁅g, h⁆))° ≫ graph con)
+      = ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ graph con) := by
+  dsimp only [HAdd.hAdd, rsumMap]
+  rw [Fmap_recip]
+
+/-- p.138 step 4: `α = [wrap,snoc]`. -/
+public theorem cata_converse_step4 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ graph con)
+      = ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ ⁅wrap, snoc⁆) := by
+  rw [con_eq_junc]
+
+/-- p.138 step 5 {coproduct}: `(R+S)[P,Q] = [RP,SQ]`. -/
+public theorem cata_converse_step5 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ ⁅wrap, snoc⁆)
+      = ⁅g, h⁆° ≫ ⁅wrap, ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc⁆ := by
+  dsimp only [HAdd.hAdd, rsumMap]
+  rw [sumMap_junc, Cat.id_comp]
+
+/-- p.138 step 6 {coproduct}: `[g,h]°[P,Q] = g°P ∪ h°Q`. -/
+public theorem cata_converse_step6 {C : RelSet.{0}} (g : dDigitP ⟶ C)
+    (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
+    ⁅g, h⁆° ≫ ⁅wrap, ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc⁆
+      = g° ≫ wrap ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
+  junc_recip_junc (sumCop dDigitP ⟨C.carrier × Digit⟩)
+
 /-- **§6.1 (B&dM p.138)**: the converse of a catamorphism satisfies the recursive equation
     `val° = (wrap·embed°) ∪ (snoc·(val°×id)·op°)` (mirrored), for any algebra `⁅g, h⁆`.
     Instantiating `g := embed`, `h := op` gives the book's `val°` recursion verbatim.
 
     The proof is the book's derivation, step for step (brace-hints as on p.138). -/
-theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
+public theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : (⟨C.carrier × Digit⟩ : RelSet.{0}) ⟶ C) :
     (cataR ⁅g, h⁆)° = g° ≫ wrap
       ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
-  calc (cataR ⁅g, h⁆)°
-      -- {catamorphisms}: `⦇φ⦈ = α° ≫ F⦇φ⦈ ≫ φ`
-    _ = ((graph con)° ≫ (F.map (cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by rw [← cata_fix]
-      -- {converse}: `(R ≫ S)° = S° ≫ R°`, `R°° = R`
-    _ = ⁅g, h⁆° ≫ ((F.map (cataR ⁅g, h⁆))° ≫ graph con) := by
-        rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
-      -- {definition of F}: `(F⦇φ⦈)° = id + (⦇φ⦈° × id)`
-    _ = ⁅g, h⁆° ≫ (((𝟙 dDigitP) + ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ graph con) := by
-        dsimp only [HAdd.hAdd, rsumMap]
-        rw [Fmap_recip]
-      -- {α = ⁅wrap, snoc⁆}
-    _ = ⁅g, h⁆° ≫ (((𝟙 dDigitP) +
-          ((cataR ⁅g, h⁆)° × 𝟙 dDigit)) ≫ ⁅wrap, snoc⁆) := by
-        rw [con_eq_junc]
-      -- {coproduct fusion}: `(R + S) ≫ [P, Q] = [R ≫ P, S ≫ Q]`
-    _ = ⁅g, h⁆° ≫ ⁅wrap, ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc⁆ := by
-        dsimp only [HAdd.hAdd, rsumMap]
-        rw [sumMap_junc, Cat.id_comp]
-      -- {coproduct (5.11)}: `⁅g, h⁆° ≫ ⁅P, Q⁆ = (g° ≫ P) ∪ (h° ≫ Q)`
-    _ = g° ≫ wrap ∪ h° ≫ ((cataR ⁅g, h⁆)° × 𝟙 dDigit) ≫ snoc :=
-        junc_recip_junc (sumCop dDigitP ⟨C.carrier × Digit⟩)
+  (cata_converse_step1 g h).trans <| (cata_converse_step2 g h).trans <|
+    (cata_converse_step3 g h).trans <| (cata_converse_step4 g h).trans <|
+    (cata_converse_step5 g h).trans (cata_converse_step6 g h)
 
 /-! ## The `val`uation catamorphism and its recursion (book p.138)
 
@@ -410,17 +435,52 @@ theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
 @[expose] public abbrev dNat : RelSet.{0} := ⟨Nat⟩
 
 /-- The book's `embed : Digit⁺ → ℕ` — include a nonzero digit as a number. -/
-def embed : dDigitP ⟶ dNat := graph fun d => d.1.val
+public def embed : dDigitP ⟶ dNat := graph fun d => d.1.val
 /-- The book's `op (n, d) = 10·n + d` — append a digit to a number. -/
-def op : (⟨Nat × Digit⟩ : RelSet.{0}) ⟶ dNat := graph fun p => 10 * p.1 + p.2.val
+public def op : (⟨Nat × Digit⟩ : RelSet.{0}) ⟶ dNat := graph fun p => 10 * p.1 + p.2.val
 
 /-- `val = ⦇⁅embed, op⁆⦈ : Decimal → ℕ`, the reading catamorphism. -/
-def val : dDec ⟶ dNat := cataR ⁅embed, op⁆
+public def val : dDec ⟶ dNat := cataR ⁅embed, op⁆
 
 /-- **§6.1 (B&dM p.138)** for the actual valuation: `val°` satisfies the recursive equation
     `val° = (wrap·embed°) ∪ (snoc·(val°×id)·op°)` — a direct instance of `cata_converse_eq`. -/
-theorem val_converse_eq :
+public theorem val_converse_eq :
     val° = embed° ≫ wrap ∪ op° ≫ (val° × 𝟙 dDigit) ≫ snoc :=
   cata_converse_eq embed op
+
+/-! ## B&dM p.139: the two converses in `val°`'s recursion
+
+  `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; with the book's `n ∈ ℕ⁺`, `op°` is defined exactly on
+  `m ≥ 10`, and `embed°` exactly on `0 < m < 10` — the two ranges are disjoint, so the join in
+  `val°`'s recursion is a conditional. -/
+
+/-- **B&dM p.139**: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`. -/
+public theorem op_recip_iff (m : Nat) (p : Nat × Digit) :
+    (op°) m p ↔ p.1 = m / 10 ∧ p.2.val = m % 10 := by
+  rw [recip_apply, op]
+  show m = 10 * p.1 + p.2.val ↔ _
+  have := p.2.isLt
+  omega
+
+/-- **B&dM p.139**: `op°` at a positive quotient is defined iff `m ≥ 10`. -/
+public theorem op_recip_defined (m : Nat) : (∃ p : Nat × Digit, 0 < p.1 ∧ (op°) m p) ↔ 10 ≤ m := by
+  constructor
+  · rintro ⟨p, hp, h⟩
+    have := (op_recip_iff m p).mp h
+    omega
+  · intro h
+    exact ⟨(m / 10, ⟨m % 10, Nat.mod_lt m (by decide)⟩), by omega,
+      (op_recip_iff m _).mpr ⟨rfl, rfl⟩⟩
+
+/-- **B&dM p.139**: `embed°` is defined iff `0 < m < 10`. -/
+public theorem embed_recip_defined (m : Nat) : (∃ d : DigitP, (embed°) m d) ↔ 0 < m ∧ m < 10 := by
+  constructor
+  · rintro ⟨d, h⟩
+    have h' : m = d.1.val := by rw [recip_apply, embed] at h; exact h
+    have := d.1.isLt
+    have := d.2
+    omega
+  · intro h
+    exact ⟨⟨⟨m, h.2⟩, by show m ≠ 0; omega⟩, by rw [recip_apply, embed]; show m = m; rfl⟩
 
 end Freyd.Alg.RelSet.Digits

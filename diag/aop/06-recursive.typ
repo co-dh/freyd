@@ -11,11 +11,43 @@
 
 == Digits of a number
 
-// TODO (6.1)+p.138 val°: `digits ⊆ val°`, `val=⦇[embed,op]⦈`; `val° = embed°wrap ∪ op°(val°×𝟙)snoc`
-//   — 6 steps (definition; catamorphisms; converse; definition of F; coproduct; coproduct);
-//   Lean AOP.A6_1_Digits.val_converse_eq, no step decls yet.
-// TODO p.139 op°: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; `op°` defined iff `m≥10`, `embed°` iff `m<10`
-//   — a Lean lemma, not a picture.
+// B&dM (6.1), p.138.  The book derives `val°` for `val=⦇[embed,op]⦈`; the chain is stated for any
+// algebra `[g,h]`, and `val_converse_eq` is it at `g≜embed`, `h≜op`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
+    #src[a number is read back into digits either as one nonzero digit, or by splitting off its
+     last digit and reading back the rest]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@464083fc
+  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@83b05a50
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Digits.cata_converse_step1.lhs", src[`val=⦇[embed,op]⦈` — definition]),
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step1.rhs", src[`⦇φ⦈=α°F(⦇φ⦈)φ` — catamorphisms]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@f212a141
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step2.rhs", src[`(RS)°=S°R°` — converse]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@54cfab45
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step3.rhs", src[`F(R)=𝟙+(R×𝟙)` — definition of `F`]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@55fc19d6
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step4.rhs", src[`α=[wrap,snoc]`]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@f1315001
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step5.rhs", src[`(R+S)[P,Q]=[RP,SQ]` — coproduct]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@a1d4f22f
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step6.rhs", src[`[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@6b76c614
+  ),
+)]<val-converse>
+// B&dM p.139: `op(n,d)=10n+d` read backwards, and where `op°` and `embed°` are defined — which is what
+// turns the join of (6.1) into a conditional.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  [#leanf("Freyd.Alg.RelSet.Digits.op_recip_iff") \
+    #src[`op°` splits a number into its quotient and remainder by 10]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
+  [#leanf("Freyd.Alg.RelSet.Digits.op_recip_defined") \
+    #src[`op°` gives a pair with a nonzero first component exactly at the numbers with two or more digits]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+  [#leanf("Freyd.Alg.RelSet.Digits.embed_recip_defined") \
+    #src[`embed°` gives a digit exactly at the one-digit numbers]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c
+)]<op-recip>
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 
 == Least fixed points <sec-mu>
@@ -49,11 +81,68 @@
  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
 )]<mu-laws>
 
-// TODO Thm 6.1: Knaster–Tarski, `R=⋂{X∣φ(X)⊑X}`; `φ(R)⊑R` (3 steps), `R⊑φ(R)` (2 steps);
-//   Lean AOP.A6_2.mu_fixed via mu_prefixed, mu_postfixed, mu_le; statement drawn at @mu-laws (ch 11).
-// TODO (6.2) (6.3): `⦇R⦈⊑X ⇐ α°F(X)R⊑X`; `X⊑⦇R⦈ ⇐ X⊑α°F(X)R` — Lean relCata_le_of_prefixed,
-//   le_relCata_of_postfixed.
-// TODO (6.4) (6.5): `⦇T⦈⊑⦇R⦈S ⇐ F(S)T⊑RS`; `⦇R⦈S⊑⦇T⦈ ⇐ RS⊑F(S)T` — Lean relCata_le_comp, comp_le_relCata.
+// B&dM Theorem 6.1, p.140 — drawn at @mu-laws; not redrawn.
+#src[Theorem 6.1 (Knaster–Tarski) is @mu-laws.]
+// lean:AOP.A6_2.mu_fixed@2d3d1a8a
+
+// B&dM (6.2), p.141: `⦇R⦈` is `(μX : α°F(X)R)`, so Theorem 6.1's leastness bounds it by any prefix point.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.relCata_le_of_prefixed") \
+    #src[a relation `X` that contains one unfolding of the fold's recursion at `X` contains the fold]],
+  // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
+  lean-chain(
+    (none, "Freyd.Alg.relCata_eq_mu.lhs", []),
+    (EQ, "Freyd.Alg.relCata_eq_mu.rhs", src[`⦇R⦈` the least fixed point — Theorem 6.1, @mu-laws]),
+    // lean:AOP.A6_2.relCata_eq_mu@c2d55908
+    (SQ, "Freyd.Alg.relCata_le_of_prefixed#h.rhs", src[`α°F(X)R⊑X`, `μ` below every prefix point]),
+  ),
+)]<cata-prefix>
+
+// B&dM (6.3), p.141: `⦇R⦈` is also the greatest fixed point `(νX : α°F(X)R)`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.le_relCata_of_postfixed") \
+    #src[a relation `X` contained in one unfolding of the fold's recursion at `X` is contained in the fold]],
+  // lean:AOP.A6_2.le_relCata_of_postfixed@6d0c3236
+  lean-chain(
+    (none, "Freyd.Alg.le_relCata_of_postfixed#h.lhs", []),
+    (SQ, "Freyd.Alg.relCata_eq_nu.rhs", src[`X⊑α°F(X)R`, `ν` above every postfix point]),
+    (EQ, "Freyd.Alg.relCata_eq_nu.lhs", src[`⦇R⦈` the greatest fixed point]),
+    // lean:AOP.A6_2.relCata_eq_nu@0af949db
+  ),
+)]<cata-postfix>
+
+// B&dM (6.4), p.141, "easy exercise" (Ex 6.6): (6.2) at `X≜⦇R⦈S`, whose prefix-point condition is
+// this chain.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.relCata_le_comp") \
+    #src[if `S` followed by `R` absorbs `T` after `F(S)`, the fold of `T` is below the fold of `R`
+     followed by `S`]],
+  // lean:AOP.A6_2.relCata_le_comp@b54d0a6b
+  lean-chain(
+    (none, "Freyd.Alg.relCata_le_comp_step1.lhs", src[(6.2) at `X≜⦇R⦈S`]),
+    (EQ, "Freyd.Alg.relCata_le_comp_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+    // lean:AOP.A6_2.relCata_le_comp_step1@2fbeae5c
+    (SQ, "Freyd.Alg.relCata_le_comp_step2.rhs", src[`F(S)T⊑RS`]),
+    // lean:AOP.A6_2.relCata_le_comp_step2@e2b7aeb0
+    (EQ, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`F(⦇R⦈)R=α⦇R⦈`, `α°α=𝟙` — @cata-defining]),
+    // lean:AOP.A6_2.relCata_le_comp_step3@3ef0b9b8
+  ),
+)]<cata-fusion-le>
+
+// B&dM (6.5), p.141: (6.3) at `X≜⦇R⦈S`; the chain of (6.4) read backwards, its hypothesis reversed.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_le_relCata") \
+    #src[if `R` followed by `S` is absorbed by `F(S)` followed by `T`, the fold of `R` followed by `S`
+     is below the fold of `T`]],
+  // lean:AOP.A6_2.comp_le_relCata@5874cf45
+  lean-chain(
+    (none, "Freyd.Alg.relCata_le_comp_step3.rhs", src[(6.3) at `X≜⦇R⦈S`]),
+    (EQ, "Freyd.Alg.relCata_le_comp_step3.lhs", src[`α⦇R⦈=F(⦇R⦈)R`, `α°α=𝟙` — @cata-defining]),
+    (SQ, "Freyd.Alg.comp_le_relCata_step2.rhs", src[`RS⊑F(S)T`]),
+    // lean:AOP.A6_2.comp_le_relCata_step2@adb9a462
+    (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", src[`F(R)F(S)=F(RS)` — @relator-defn]),
+  ),
+)]<fusion-le-cata>
 
 == Hylomorphisms <sec-hylo>
 
@@ -111,17 +200,71 @@
   )],
 )]<hylo-mu>
 
-// TODO Thm 6.2: `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` — proved+steps and DRAWN at 11.6.4 (§@sec-hylo): cite with a
-//   reference, do not redraw.
-// TODO Cor 6.1: `⦇[S₁,S₂]⦈°⦇[R₁,R₂]⦈ = (μX : S₁°G(X)R₁ ∪ S₂°H(X)R₂)` — 2 steps (coproduct; coproduct);
-//   Lean AOP.A6_3.hylo_eq_mu_coprod.
+// B&dM Theorem 6.2, p.142 — drawn at §@sec-hylo; not redrawn.
+#src[Theorem 6.2 is §@sec-hylo.]
+// lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
+
+// B&dM Corollary 6.1, p.143: Theorem 6.2 at `R≜[R₁,R₂]`, `S≜[S₁,S₂]` over `F(X)=G(X)+H(X)`; the chain
+// is the body under the `μ`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu_coprod") \
+    #src[when both algebras are case splits over the same sum, the recursion runs each case on its
+     own and unites the results]],
+  // lean:AOP.A6_3.hylo_eq_mu_coprod@066877fe
+  lean-chain(
+    (none, "Freyd.Alg.hylo_body_coprod_step1.lhs", src[the body of Theorem 6.2 at `F(X)=G(X)+H(X)`]),
+    (EQ, "Freyd.Alg.hylo_body_coprod_step1.rhs", src[`(P+Q)[R₁,R₂]=[PR₁,QR₂]` — coproduct]),
+    // lean:AOP.A6_3.hylo_body_coprod_step1@2ca7d056
+    (EQ, "Freyd.Alg.hylo_body_coprod_step2.rhs", src[`[S₁,S₂]°[P,Q]=S₁°P∪S₂°Q` — coproduct]),
+    // lean:AOP.A6_3.hylo_body_coprod_step2@00f0c2d0
+  ),
+)]<hylo-coprod>
 
 == Fast exponentiation and modulus computation
 
-// TODO p.145 exp: `exp(a) ⊒ convert°convert exp(a) = convert°⦇[one,op(a)]⦈ = (μX : zero°one ∪ shift°(X×𝟙)op(a))`
-//   — 3 steps (convert simple; fusion; Cor 6.1) + side conditions `zero exp(a)=one`,
-//   `shift exp(a)=(exp(a)×𝟙)op(a)`; Lean AOP.A6_4_FastExp.exp_eq_mu.
-// TODO p.145 mod: the same for `mod(b)`: `= (μX : zero°zero ∪ shift°(X×𝟙)op(b))`; Lean mod_eq_mu.
+// B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[g,h]` with the
+// fusion conditions `zero f=g`, `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
+    #src[once `f` sends `zero` to `g` and turns `shift` into `h`, the recursion that halves the
+     argument at each step computes `f`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@9f928e8d
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.FastExp.convert_step1.rhs", []),
+    (RQ, "Freyd.Alg.RelSet.FastExp.convert_step1.lhs", src[`convert` simple]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step1@69eb83de
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_simple@bb3512f8
+    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step2.rhs", src[fusion: `zero f=g`, `shift f=(f×𝟙)h`]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step2@74323421
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_fusion@4f54bb8d
+    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step3.rhs", src[Corollary 6.1, @hylo-coprod]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step3@e3126154
+  ),
+)]<convert-program>
+
+// B&dM p.145: the two fusion conditions for `exp(a)`, then the program.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.exp_program") \
+    #src[the recursion that halves the exponent at each step computes `a` to the power `b`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_program@08ea7ea9
+  [#leanf("Freyd.Alg.RelSet.FastExp.exp_zero") \ #src[`a` to the power `0` is `1`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_zero@753de5ee
+  [#leanf("Freyd.Alg.RelSet.FastExp.exp_shift") \
+    #src[`a` to the power `2n+d` is `op(a)` of `a` to the power `n` and `d`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_shift@943dfec6
+)]<fast-exp>
+
+// B&dM p.145: the same argument for `mod(b)`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.mod_program") \
+    #src[the recursion that halves `a` at each step computes the remainder of `a` by `b`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_program@82bb412b
+  [#leanf("Freyd.Alg.RelSet.FastExp.mod_zero") \ #src[`0 mod b` is `0`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_zero@9b6e59c5
+  [#leanf("Freyd.Alg.RelSet.FastExp.mod_shift") \
+    #src[`(2a+d) mod b` is `op(b)` of `a mod b` and `d`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_shift@8ad8e239
+)]<fast-mod>
 
 == Unique fixed points
 
