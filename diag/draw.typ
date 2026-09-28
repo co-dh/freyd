@@ -115,8 +115,17 @@
 // THE ENTRIES BELOW ARE DATA, NOT THE RULE: `fcol` derives a hue for a name they do not list, and
 // `lanecheck` measures every panel's lanes against its beads, so nothing here rests on a hand count.
 #let FCOL = (
-  "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "tree": rgb("#725730"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
+  "E": rgb("#00a5a2"), "list": rgb("#8193c9"), "F": rgb("#695c53"), "F(A,−)": rgb("#93ae75"), "A": rgb("#214875"),
   "N": rgb("#576000"), "Δ": rgb("#ba6d9f"), "list⁺": rgb("#969b49"),
+  // §9.3's tree base functor: `F` is fixed for the base relator `FX=A+X²`, so once `TB.F` began
+  // printing as plain `F` the object wire `tree A` needed a hue of its own — the old khaki was
+  // ΔE76 19.8 from `F`, under 29, and every muted brown/olive left is already `F`, `list⁺`, `N`,
+  // `A[n]×−` or `(A × [A])×−`. The Bracket panels also draw plain `list` beside `tree`
+  // (`array`/`col`/`row`/`mct_prog`, built from `list(row)`, `list(mct)`, `list(cons)`), so `tree`
+  // needs ΔE76 ≥ 29 from `F`, `list⁺`, `E` AND `list` at once; nothing that clears all four stays
+  // muted, so `tree` moves to azure — ΔE76 ≥ 29 from every OTHER FCOL entry too (32.4 from the
+  // four it is drawn beside, 31.0 from the next-nearest, `[3]`), ≥ 33 from every bead/object hue.
+  "tree": rgb("#00c5fb"),
   // §16.3's bag relator stands beside `F` in the tardy panels, where the khaki it had was ΔE76 28.7
   // from it — two FIXED entries, which no allocation can separate.  This magenta is
   // far from every lane its panels draw: ΔE76 ≥ 40 from `F`, `E`, `list`, `list⁺`, `tree`, `−×Job`,
