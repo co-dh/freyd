@@ -288,7 +288,7 @@ end WellFoundedBoolean
 
 section Membership
 
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [Allegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **B&dM p.148-149**: a LAX MEMBERSHIP for the relator `F`: a family `mem a : F a ⟶ a`
     with `R·mem ⊑ mem·FR` for all `R : A⟶B` (mirrored: `F.map R ≫ mem b ⊑ mem a ≫ R`), i.e.
@@ -347,6 +347,60 @@ public def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG :
         ⊑ MG.mem (F.obj A) ≫ (MF.mem A ≫ R) := le_trans s2 s4
     rwa [e4] at s5
 
+end Membership
+
+-- Each polynomial relator's membership in the least structure its relator needs: a sum needs the
+-- coproducts, a product the tabulated pairs.
+section SumMembership
+
+variable {𝒜 : Type u} [PositiveAllegory 𝒜]
+
+/-- `member(F+G) = [member(F), member(G)]` (B&dM p.148): a member of either summand. -/
+@[expose] public def sumMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) :
+    LaxMembership (Relator.sum F G) where
+  mem A := junc (PositiveAllegory.has_coproduct _ _) (MF.mem A) (MG.mem A)
+  lax R := junc_slides _ _ (MF.lax R) (MG.lax R)
+
+/-- The p.148 row `member(F+G) = [member(F), member(G)]`, as the arrow `sumMembership` IS. -/
+public theorem member_sum {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) (A : 𝒜) :
+    (sumMembership MF MG).mem A = junc (PositiveAllegory.has_coproduct _ _) (MF.mem A) (MG.mem A) :=
+  rfl
+
+end SumMembership
+
+section ProdMembership
+
+variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜]
+
+/-- `member(F×G) = outl member(F) ∪ outr member(G)` (B&dM p.148), mirrored: a member of either
+    component. -/
+@[expose] public def prodMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) :
+    LaxMembership (Relator.prod F G) where
+  mem A := (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A
+  lax {A B} R := by
+    show prodMap _ _ (F.map R) (G.map R) ≫ ((relProd _ _).outl ≫ MF.mem B ∪ (relProd _ _).outr ≫ MG.mem B)
+      ⊑ ((relProd _ _).outl ≫ MF.mem A ∪ (relProd _ _).outr ≫ MG.mem A) ≫ R
+    rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
+    refine union_mono ?_ ?_
+    · have := comp_mono_right (outl_laxNatural F G R) (MF.mem B)
+      simp only [Cat.assoc] at this ⊢
+      exact le_trans this (comp_mono_left _ (MF.lax R))
+    · have := comp_mono_right (outr_laxNatural F G R) (MG.mem B)
+      simp only [Cat.assoc] at this ⊢
+      exact le_trans this (comp_mono_left _ (MG.lax R))
+
+/-- The p.148 row `member(F×G) = outl member(F) ∪ outr member(G)`, mirrored. -/
+public theorem member_prod {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G)
+    (A : 𝒜) : (prodMembership MF MG).mem A
+      = (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A :=
+  rfl
+
+end ProdMembership
+
+section MembershipAll
+
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
 /-- **B&dM Ex 6.18**, the coreflexive half of the formal definition: a MEMBERSHIP is a lax
     membership whose relator keeps every `s` all of whose members pass the coreflexive `Q`.  The
     lax inequality alone does not pin `mem` down — `mem = 𝟘` satisfies it, and then Theorem 6.3
@@ -354,7 +408,7 @@ public def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG :
 public structure Membership (F : Relator 𝒜 𝒜) extends LaxMembership F where
   all : ∀ {B : 𝒜} {Q : B ⟶ B}, Coreflexive Q → 𝟙 (F.obj B) ∩ ((mem B ≫ Q) / mem B) ⊑ F.map Q
 
-end Membership
+end MembershipAll
 
 /-! ## §6.5.4  Theorem 6.3 (unique fixed points) and its corollaries -/
 

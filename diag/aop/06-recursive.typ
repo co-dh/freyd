@@ -61,9 +61,25 @@
     // lean:AOP.A6_5.inductive_of_comp_le_step3@6567f943
   ),
 )]<inductive-comp-le>
-// TODO p.148 member: `member(id)=𝟙`, `member(K)=𝟘`, `member(F+G)=[member(F),member(G)]`,
-//   `member(F×G)=outl member(F) ∪ outr member(G)`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
-//   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `+`, `×`, `P`, `T` missing.
+// TODO p.148 member: `member(id)=𝟙`, `member(K)=𝟘`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
+//   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `K`, `P`, `T` missing.
+// B&dM p.148, the sum and product rows
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.member_sum") \
+    #src[a member of `F+G` is a member of whichever summand the value is in]],
+    // lean:AOP.A6_5.member_sum@f2ed47bd
+  lean-chain(
+    (none, "Freyd.Alg.member_sum.lhs", []),
+    (EQ, "Freyd.Alg.member_sum.rhs", []),
+  ),
+  Thm(cols: 1)[#leanf("Freyd.Alg.member_prod") \
+    #src[a member of `F×G` is a member of either component]],
+    // lean:AOP.A6_5.member_prod@fefd83ec
+  lean-chain(
+    (none, "Freyd.Alg.member_prod.lhs", []),
+    (EQ, "Freyd.Alg.member_prod.rhs", []),
+  ),
+)]<member-sum-prod>
 // TODO p.148 lax: `F(R)member ⊑ member R`, the largest lax natural `F ⟶ id`, hence unique — Lean
 //   LaxMembership.laxNatural, largestLax_unique.
 // TODO p.148 member α°: `α°member(F)` inductive; examples `[zero,succ]°[𝟘,𝟙]=succ°`,
