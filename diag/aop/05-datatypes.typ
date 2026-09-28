@@ -1,7 +1,9 @@
 #import "../note-prelude.typ": *
-#show: note-chapter.with(11)
-// note-split: chapter 11 — this header is written by scripts/note-split and stripped by scripts/note-join
-= Relator
+#show: note-chapter.with(5)
+// note-split: chapter 5 — this header is written by scripts/note-split and stripped by scripts/note-join
+= Datatypes in Allegories
+
+== Relators
 
 #disp[#definition[
 Every hom-set of an allegory is a poset, so an allegory is a *locally posetal 2-category*: the 2-cell
@@ -723,98 +725,396 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #let RQ = text(SLACK)[$supset.eq.sq$]
 
 
+== Combinatorial functions <sec-comb>
 
+// B&dM §5.6, p. 125, plus the three specifications of Ex 7.39–7.41 (p. 174).  Every composite is
+// mirrored to diagram order, so B&dM's `prefix · suffix` is `suffix prefix` here.
+#disp[#table(
+  columns: (7.1cm, 2.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
 
+  [`[A]::=nil|cons(A,[A])`],
+  [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
+  // list type note: B&dM's `listr`, renamed here from p. 125 on
+  [The list type, under the short name it keeps.],
 
+ [#leanf("Freyd.Alg.RelSet.ListRel.list_cata") #src[]],
+  // lean:AOP.A5_6_ListCombinators.list_cata@08d57306
+  [#leant("Freyd.Alg.RelSet.ListRel.list_cata")],
+  [The relator's action on `R : A⟶B`: one `R` per element, the shape untouched.],
 
+ [#leanf("Freyd.Alg.RelSet.ListRel.subseq_cata") #src[]],
+  // lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+  [#leant("Freyd.Alg.RelSet.ListRel.subseq_cata")],
+  [`xs subseq ys`: `ys` is `xs` with elements dropped — `cons` keeps the head, `π₂` drops it.],
 
-// Otherwise the heading lands alone at the foot of the reduce-of-maps page.
-#pagebreak(weak: true)
-=== `φ(Y)⊑Y⟹(μX : φ(X))⊑Y` <sec-mu>
+  [#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
+ #leanf("Freyd.Alg.RelSet.ListRel.prefix_cat")`=init*` #src[]],
+   // lean:AOP.A5_6_ListCombinators.prefix_cata@9836cfe0 lean:AOP.A5_6_ListCombinators.prefix_cat@eb19c936
+  [#leant("Freyd.Alg.RelSet.ListRel.prefix_cata")],
+  [`ys` is an initial segment of `xs`; the first `nil` is where it stops early. `init≜snoc° π₁`.],
 
-// B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,
-// and nothing before this said what it was.
+ [#leanf("Freyd.Alg.RelSet.ListRel.suffix_cat")`=tail*` #src[]],
+  // lean:AOP.A5_6_ListCombinators.suffix_cat@c70cd49e
+  [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
+  [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
+
+ [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
+  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
+  [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
+  [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
+
+ [#leanf("Freyd.Alg.RelSet.ListRel.partition_concat") #src[]],
+  // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
+  [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
+  [This `cat` is restricted to `[A]⁺×[A]⟶[A]`, so `ys` is a list of non-empty segments of `xs`.],
+
+ [#leanf("Freyd.Alg.RelSet.ListRel.concat_cata") #src[]],
+  // lean:AOP.A5_6_ListCombinators.concat_cata@37766c0d
+  [#leant("Freyd.Alg.RelSet.ListRel.concat_cata")],
+  [Joins the segments back up, which is why its converse splits a list.],
+
+  [`inits`],
+  [#leant("Freyd.Alg.RelSet.ListRel.initsR")],
+  [Implements $frac(#[`prefix`], ∋)$, listing the prefixes by increasing length.],
+
+  [`tails`],
+  [#leant("Freyd.Alg.RelSet.ListRel.tailsR")],
+  [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
+
+  [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
+  [#leant("Freyd.Alg.RelSet.Filter.filter")],
+  [The longest subsequence of `xs` whose every element passes `p`.
+   // filter row: Ex 7.41
+   #h(4pt) #src[`est(R°)` is @est-defn]],
+
+  [`R≜length≤length°`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [The preorder `filter` and `takewhile` maximise over: the longer list wins.
+   #h(4pt) #src[`≥≜≤°`]],
+
+  [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
+  [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
+   // takewhile row: Ex 7.39
+   #h(4pt) #src[]],
+
+  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
+  [#leant("Freyd.Alg.RelSet.MSS.mss")],
+  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
+   // mss row: Ex 7.40
+   on each suffix. #h(4pt) #src[]],
+)]<comb-fns>
+
+=== $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`
+
+// B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
+// turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.
 #disp[#definition[
-`φ` a *monotonic* mapping of the hom-set `A⟶B` into itself: #h(4pt) `X⊑Y⟹φ(X)⊑φ(Y)`
-#src[].
-// lean:AOP.A6_2.Monotonic@66dddf1e
+`cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : EA×EA⟶EA`, #h(4pt) so
+$frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
+#h(4pt) #src[]
+// lean:AOP.A5_6.Λ_union@632cc56a
+]]<cup-defn>
 
-`(μX : φ(X))` the least `X : A⟶B` with #h(4pt) `φ(X)⊑X` #src[].
-// lean:AOP.A6_2.mu@4928a490
-]]<mu-defn>
+// The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
+// object wire and `cons` is where the `A×−` wire ends on it.  Emitted verbatim by `./scripts/diagram`;
+// `sb-hm-born` adds the `E` the transpose opens.
+#let sb-hm = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inl")
+#let sb-hm-born = lean("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_cons.lhs")
+// @subseq-EW-case draws the `π₂` operand of `cons ∪ π₂` in every row, never `cons`: the derivation
+// rewrites only `π₂` (@subseq-outr-square, then `∋%∋=𝟙`); `(𝟙×∋)cons` stays as `sb-hm` draws it.
+// Recipe for a union's lower operand: the `cert:` is the formula with the `∪` cut to that operand
+// by hand (`rank` in `scripts/diagram` would pick the other), and the cell's `#src` names it.
+#let sb-hm-p2 = lean("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_proj.lhs")
+// @subseq-EW-join's `π₂` operand at three steps, each the `∪` cut to `π₂` by hand (`rank` would pick
+// `cons`): after the distribution, after @relprod-pic slides the `∋` past `π₂`, and bare at the end.
+#let sb-hm-p2-slid = lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs", branch: "inr")
+#let sb-hm-p2-bare = lean("Freyd.Alg.RelSet.ListRel.Λ_proj_ni.rhs")
+
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ") \
+    #src[the set of lists the algebra builds is, from nothing, just `nil`, and from a head and a set
+     of tails, every tail in the set with the head put on or left off — @cata-map-calc at
+     `subseq=⦇[nil,cons ∪ π₂]⦈`, @comb-fns.
+ ]],
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@d73bdb8e lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+  table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
+    [*Hinze–Marsden*]),
+
+  // THE TWO COLUMNS ARE NOT ONE THEOREM PER ROW HERE, and that is deliberate: the circuit column
+  // rewrites the WHOLE term step by step, where the Hinze–Marsden column stays on the one operand
+  // `(𝟙×∋)π₂` the steps do not touch — which is why one selector repeats down three rows.  The
+  // general rule is the other way round (AGENTS.md); §12.1 is its exception and stays as it is.
+  // Rows 1–3 draw the NUMERATOR, `F(E[A]) ⟶ [A]`: the transpose is still outside the bracket there,
+  // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust (CIRCUIT-GEN §1.4).
+  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
+
+  // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
+    [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@73aaa858 lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
+    #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
+  [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
+    #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons ∪ π₂)]`]])],
+    // lean:AOP.A5_3.Λ_junc@d392c2aa
+  [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
+    `(𝟙×∋)π₂=π₂∋`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
+    #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@99c153ab
+  [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
+)]<subseq-EW-case>
+
+// @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
+// sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
+#disp[#leancd("Freyd.Alg.RelSet.ListRel.prod_ni_proj_slide")]<subseq-outr-square>
+
+#disp[#calc-table(
+  Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_join") \
+    #src[power transpose of join: the power transpose of the join of two relations is
+     `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_join@3a6f03a8
+  table.header([*circuit*],
+    [*Hinze–Marsden*]),
+
+  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.lhs"),
+    [#frc([`(𝟙×∋)(cons ∪ π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+  [#sb-hm \ #src[the `cons` operand of `cons ∪ π₂`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs"),
+    [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross]])],
+  [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
+    [#frc([`(𝟙×∋)cons ∪ π₂∋`]) \
+    #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
+    // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@d3755d54
+  [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
+    #src[#frc([`R ∪ S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
+  [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
+
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+    #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
+     #frc([`∋`])` =𝟙` on the `π₂` operand]])],
+  [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
+)]<subseq-EW-join>
+
+// @coprod-laws' picture at this algebra, so the banana's contents are read off the tape: the fork is
+// the coproduct, and every box inside it but the two injections is a MAP — `chamfer: false`.
+#disp[#leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_transpose.rhs")
+#align(center, block(inset: (y: 4pt))[
+  `[`#frc([`nil`])`,⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup]` \
+  #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
+])]<subseq-alg>
+
+#pagebreak(weak: true)
+#pagebreak(weak: true)
+== Lax natural transformations (LaT)
+
+// B&dM §5.7, p. 133.  Same `⇒` the note gives an ordinary natural transformation: B&dM's own hooked
+// arrow marks laxness, but the word already does, and the inequation is right there.
+#disp[#definition[
+For relators `G,F : 𝒞⟶𝓓` and components `φ`#sub[`A`]` : GA⟶FA`, `φ` is *lax at*
+`R : A⟶B` when #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) — both sides `GA⟶FB`, the
+left through the component at `B`, the right through the one at `A`.
+
+`φ : G⇒F` is a *lax natural transformation* (LaT) when it is lax at *every* `R`. #h(4pt) #src[(5.13)]
+
+Lax at every *map* already gives LaT, and at a map the inequation is an equality #h(4pt)
+`G(f)φ=φF(f)`: #h(4pt) laxness is about relations only.
+// lax-defn row: Theorem 5.2
+#h(4pt) #src[]
+// lean:AOP.A5_7.laxNatural_iff_strict_on_maps@e374cc23
+]]<lax-defn>
+
+// The two panels of the inequation, emitted by `./scripts/diagram --sigs … --src … --tgt …` plus
+// `s: 100%`, the square's own size.  `φ` is `!lax`: the HOLLOW dot is the whole difference from a
+// natural transformation's filled one, and it is why `φ` may leave the object wire at all — a LaT is
+// a family, not an arrow at one object.  The bead is BARE, as §11.4's `α` is: the component's index
+// is the object wire it stands on, and the two panels differ in exactly where that wire is renamed.
+#let lax-hm-l = "Freyd.Alg.LaxNatural.lhs"
+#let lax-hm-r = "Freyd.Alg.LaxNatural.rhs"
+
+#disp[#pair(
+  leancd("Freyd.Alg.LaxNatural"),
+  lean(lax-hm-l, lax-hm-r, op: [#SQ]),
+ [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
+)
+// lean:AOP.A5_1.LaxNatural@ba661fee
+]<lax-str>
+
+// Not in B&dM §5.7, which stops at Theorem 5.2.
 
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*the law*], [*what it says*]),
+  columns: (4.8cm, 10.6cm, 6.6cm),
+  align: (left + horizon, center + horizon, center + horizon),
+  // `y: 2pt`: the LaT letters wrap two of the statement lines, and at 5pt the table outgrew the page —
+  // a `#disp` table cannot break, so the last row was laid over the one above it.
+  inset: (x: 9pt, y: 2pt), stroke: 0.4pt + luma(190),
+  table.header([*closed under*], [*commutative diagram*], [*string diagram*]),
 
- // μX upper bound row: Theorem 6.1
- [#leanf("Freyd.Alg.mu_le") \ #src[]],
-  [to bound `(μX : φ(X))` above, exhibit one `Y` the body does not grow past — the half §@sec-hylo
-   and every chapter after it uses],
- // μX fixed point row: Theorem 6.1
- [#leanf("Freyd.Alg.mu_fixed") \ #src[]],
-  [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
-   point and the least fixed point are one relation],
- // lean:AOP.A6_2.mu_le@9918bd39
- // lean:AOP.A6_2.mu_fixed@2d3d1a8a
-)]<mu-laws>
+  [composition \ `ψφ`],
+  [#P(leancd("Freyd.Alg.laxNatural_comp_slide"), s: 74%)
+   `H(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`G(R)` #h(4pt) and #h(4pt) `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)`
+   #h(4pt) give #h(4pt) `H(R)(ψ`#sub[`B`]`φ`#sub[`B`]`)⊑(ψ`#sub[`A`]`φ`#sub[`A`]`)F(R)`],
+  P(lean("Freyd.Alg.laxNatural_comp_slide"), s: 74%),
 
-=== `⦇S⦈°⦇R⦈=(μX : S°F(X)R)` <sec-hylo>
+  [horizontal composition \ `χ∘φ`],
+  [#P(leancd("Freyd.Alg.laxNatural_hcomp_outer_first"), s: 74%)
+   `φ : G⇒F` with `G,F : 𝒞⟶𝓓` and `χ : L⇒K` with `L,K : 𝓓⟶𝓔` give
+   `χ∘φ : L∘G⇒K∘F`, the family `A ↦ χ`#sub[`GA`]`K(φ`#sub[`A`]`)` \
+   #src[`L(G(R))χ`#sub[`GB`]`⊑χ`#sub[`GA`]`K(G(R))` is `χ` lax at `G(R)`; then
+   `K(G(R)φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`F(R))` is `K` applied to `φ`'s own inequation;
+ ] \
+   // lean:AOP.A5_7.laxNatural_hcomp_outer_first@ce6a24d8
+   #src[`χ:=𝟙`#sub[`K`] gives `K(φ) : K∘G⇒K∘F`, `K` composed on the outside;
+   `φ:=𝟙`#sub[`G`] gives `χG : L∘G⇒K∘G`, `G` composed on the inside] \
+   #src[two candidates, `χ`#sub[`GA`]`K(φ`#sub[`A`]`)` and `L(φ`#sub[`A`]`)χ`#sub[`FA`], ordered by
+   `⊑`; this row is the first]],
+  // Two wires side by side, a bead on each; an identity 2-cell is a bare wire, so dropping the left
+  // bead leaves `K(φ)` and dropping the right one leaves `χG` — the two cases that had rows of their own.
+  P(lean("Freyd.Alg.laxNatural_hcomp_outer_first_slide"), s: 74%),
 
-// §@sec-hylo's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus
-// `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
-// of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
-// `top: 3` drops a lone bead to the height of the bead it stands against.
-// 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
-// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed is a term chain ending
-// in its hypothesis, then two statement rows (adjunction, fold leastness), each a pair step: one
-// `lean(l, r)` call apiece so its two sides are one height.
+  [union \ `φ ∪ ψ`],
+  [#P(leancd("Freyd.Alg.laxNatural_union"), s: 74%)
+   `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) and #h(4pt) `G(R)ψ`#sub[`B`]`⊑ψ`#sub[`A`]`F(R)`
+   #h(4pt) give #h(4pt) `G(R)(φ`#sub[`B`]` ∪ ψ`#sub[`B`]`)⊑(φ`#sub[`A`]` ∪ ψ`#sub[`A`]`)F(R)`
+ #h(4pt) #src[]],
+   // lean:AOP.A5_7.union_slides@f7484fb4
+  P(lean("Freyd.Alg.laxNatural_union_slide"), s: 74%),
 
-// B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
-// at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
-// mirrored: two adjunction steps carry `⦇S⦈°` out of the way and back, the reduce's own leastness
-// fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  Theorem 6.2's two
-// inclusions are these two rows: one `⊑` is hylo_fixed
-// through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ`.
-#disp[#calc-table(cols: (1fr,), al: auto,
-  // hylo-fusion-eq header: Theorem 6.2, whose two inclusions are the Sub rows a and b
-  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
-  Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
-    #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
-  [#lean-chain(
-    Sub("Freyd.Alg.hylo_fixed",
-      gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
-        decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
-        recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
-      // lean:AOP.A6_3.hylo_fixed@67ca7394
-      (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
-      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
-      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
-      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
-      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
-      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-    ),
-  )],
-  [#lean-chain(
-    Sub("Freyd.Alg.hylo_le_of_prefixed",
-      gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
-        satisfies the associated recursion inequation],
-      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
-    ),
-    (
-      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix",),
-        src[`S·⊣S\` — @adj-all]),
-      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
-        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @mu-laws, @adj-all]),
-      // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
-    ),
-  )],
-)]<hylo-mu>
+  [a relator `K` \ `K(φ)`],
+  [#P(leancd("Freyd.Alg.Relator.map_laxNatural"), s: 74%)
+   `G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #h(4pt) gives #h(4pt)
+   `K(G(R))K(φ`#sub[`B`]`)⊑K(φ`#sub[`A`]`)K(F(R))`],
+  [],
 
+  [product \ `φ×ψ`],
+  [#P(leancd("Freyd.Alg.laxNatural_prod"), s: 74%)
+   `φ : G⇒F` and `ψ : G'⇒F'` give `φ×ψ : G×G'⇒F×F'` \
+   #src[`(R×S)(U×V)=(RU)×(SV)` and monotonicity in both slots — the row above's `K` applied to the
+   inequation, run on a bifunctor; the fork is the derived case `⟨φ,ψ⟩=◁(φ×ψ)`, and its ONE cost is
+   the lax copy law `R◁⊑◁(R×R)` — @rel-monoid]],
+  // `G×G'=×∘⟨G,G'⟩`: two UNARY functors, so the split is typed — `⟨G,G'⟩ : 𝒞⟶𝓓×𝓓` then `× : 𝓓×𝓓⟶𝓓`.
+  // The bead is the PAIR in `𝓓×𝓓`, written `(φ,ψ)`: the fork `⟨φ,ψ⟩=◁(φ×ψ)` is a different arrow, in `𝓓`.
+  P(lean("Freyd.Alg.laxNatural_prod_slide"), s: 74%),
+
+  [coproduct \ `φ+ψ`],
+  [#P(leancd("Freyd.Alg.laxNatural_sum"), s: 74%)
+   `φ : G⇒F` and `ψ : G'⇒F'` give `φ+ψ : G+G'⇒F+F'` \
+   #src[`(R+S)(U+V)=(RU)+(SV)` and monotonicity in both slots; the co-fork is the derived case
+   `[φ,ψ]=(φ+ψ)▿`, and `▿` costs nothing]],
+  // `+`, like `×`, is a functor `𝓓×𝓓⟶𝓓`, so the picture is the one above with `+` on the left wire.
+  P(lean("Freyd.Alg.laxNatural_sum_slide"), s: 74%),
+
+  [meet — *fails* \ `φ∩ψ`],
+  [#src[the step it would need is
+   `(φ`#sub[`A`]`F(R))∩(ψ`#sub[`A`]`F(R))⊑(φ∩ψ)`#sub[`A`]`F(R)`, the wrong direction of
+   @meet-semidistrib] \
+   #src[a counterexample: @meet-counterex]],
+  [],
+
+  table.cell(colspan: 3, align: left + horizon)[Each row is the general slide #h(4pt)
+   `R`#sub[`A`]`X⊑X'R`#sub[`B`] and `R`#sub[`B`]`Y⊑Y'R`#sub[`C`] give
+   `R`#sub[`A`]`(XY)⊑(X'Y')R`#sub[`C`] #h(4pt) at `R`#sub[`A`]`,R`#sub[`B`]`:=G(R),F(R)` and
+   `X,X':=φ`#sub[`B`]`,φ`#sub[`A`], quantified over `R`; at `X'=X` with `R`#sub[`A`]`,R`#sub[`B`]
+   endorelations it is the monotonicity reading instead — the `∀R` sits outside the law, and is the
+ only difference #h(4pt) #src[]],
+   // lean:AOP.A5_7.comp_slides@480a3dc9
+)]<lax-closure>
+
+// `sticky` binds a heading to the next BLOCK, and `conf` wraps every display in a breakable one, so
+// the heading stays behind while the picture moves on: the break has to be placed by hand.
 #pagebreak(weak: true)
+=== meet is not closed in LaT
+
+// diag/natsq.typ's idiom for a square that FAILS: ONE COLOUR PER ROUTE — here `GIVEN1`/`GIVEN2` mark
+// across-then-down and down-then-across, not horizontal/vertical — and the traced element's values
+// wear their route's colour, so the two results are read off without following the arrows.
+// `breakable: false`: `conf` makes every display breakable, and the claim line broke away from its
+// own picture at the foot of a page.
+#disp[#block(breakable: false)[
+#align(center, strong[counterexample — `φ,ψ : G⇒F` lax natural does NOT give `φ∩ψ` lax natural])
+#v(4pt)
+#capbox(
+  leancd("Freyd.Alg.inter_not_laxNatural_square"),
+  [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
+   // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
+)]]<meet-counterex>
+
+=== Two stacked towers
+
+// TWO towers, not one four-level ladder: `R⊑S` is the LOWER tower's 2-cell, and the whole lower
+// tower is one 0-cell of the upper.  Drawn together because that containment is the only thing that
+// answers "where did the ordinary `⊑` go".
+#disp[
+#table(
+  columns: (2.2cm, 5.5cm, 1fr),
+  align: (center + horizon, left + horizon, left + horizon),
+  inset: (x: 9pt, y: 5pt), stroke: 0.4pt + luma(190),
+  table.header([], [*lower — inside ONE allegory*], [*upper — between allegories*]),
+
+  [`0`-cell], [an object `A`],
+  [an allegory `𝒞` #h(4pt) — *a whole lower tower*],
+
+  [`1`-cell], [a relation `R : A⟶B`], [a relator `F : 𝒞⟶𝓓`],
+
+  [`2`-cell], [`R⊑S`], [a LaT `φ : G⇒F` #h(4pt) #src[@lax-defn]],
+
+  [order], [`R⊑S`], [`φ⊑ψ` componentwise],
+
+  [union], [`R ∪ S`], [`φ ∪ ψ`, *survives* #h(4pt) #src[@lax-closure]],
+
+  [product], [`R×S` #h(4pt) #src[@relprod-defn]],
+  [`φ×ψ`, *survives*; a TENSOR, not a categorical product; SYMMETRIC
+   #h(4pt) #src[@fork-proj] #h(4pt) #src[@lax-closure]],
+
+  [coproduct], [`R+S`],
+  [`φ+ψ`, *survives*; a BIPRODUCT #h(4pt) #src[@lax-closure]],
+
+  [meet], [`R∩S`],
+  [`φ∩ψ` componentwise, *fails* #h(4pt) #src[@meet-counterex]],
+
+  [converse], [`R°`],
+  [`φ°`, *fails*, oplax: `φ`#sub[`A`]`°G(R)⊑F(R)φ`#sub[`B`]`°`
+ #h(4pt) #src[]],
+   // lean:AOP.A5_7.recip_oplax@7735eec0 lean:AOP.A6_1_OrdRelSet.recip_not_laxNatural@1983c3f6
+
+  [zero object], [`z` with `𝟙 z=𝟘`],
+  [the constant relator at such a `z`, initial and terminal],
+)
+]<lat-tower>
+
+
+=== `R⊑S` is a special case of LaT
+
+// @lax-str's square three times over, at the base arrow `R : X⟶Y`: general, then at the two constant
+// relators, then with the identity verticals gone.  Identity verticals are what turn a square into a
+// comparison of its two horizontals, so the collapse is drawn, not asserted.
+#disp[#capbox(
+  row((leancd("Freyd.Alg.LaxNatural"), [#h(9pt) #sym.arrow.r.double.long #h(9pt)],
+       leancd("Freyd.Alg.laxNatural_const_iff.lhs"),
+       [#h(9pt) #sym.arrow.r.double.long #h(9pt)],
+       leancd("Freyd.Alg.laxNatural_const_iff.rhs"))),
+  [`G≜const A`, #h(4pt) `F≜const B` #h(4pt) — the relators `X↦A` and `X↦B`, each sending every arrow
+   to `𝟙` #h(4pt) #src[@lax-defn] \
+   with `𝒞` two objects and one non-identity arrow `X⟶Y`, a LaT `const A⇒const B` is the pair
+   `φ`#sub[`X`]`,φ`#sub[`Y`]` : A⟶B` with `φ`#sub[`Y`]`⊑φ`#sub[`X`] #h(4pt) — the datum `R⊑S` \
+   not every LaT is constant: #h(4pt) `∋ : P⇒Id` #h(4pt) #src[@powrel-laws] #h(4pt)
+   `π₂ : (A×−)⇒Id` #h(4pt) #src[@subseq-outr-square] #h(4pt) `◁ : Id⇒Δ` #h(4pt) #src[@rel-monoid]],
+  // lean:AOP.A5_7.laxNatural_const_iff@4af68018
+)]<lat-const>
+
+// `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading

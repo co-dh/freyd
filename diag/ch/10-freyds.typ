@@ -1,6 +1,7 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(10)
 // note-split: chapter 10 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
 = Freyd's Power allegories <sec-power>
 
 #disp[#definition[
@@ -24,72 +25,7 @@ subscript.
 `∈≜∋° : A⟶EA`
 ]]<pow-defn>
 
-#disp[
-  #show table.cell.where(x: 0): rownum
-  #table(
-  columns: (7.95cm, 1fr),
-  align: (left + horizon, left + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-  table.header([*law*], [*the reading*]),
-
-  [$#e[R] □ = R □$, #h(4pt) $#e[R] = #e[R □]$],
-  [One `∋` per object, not per arrow.],
-
-  [`∋` is *thick*],
-  [*Comprehension*: every `x` has a set of exactly the people `x` admires.],
-
-  [$frac(R, ∋)$ ` : A⟶EB`, for `R : A⟶B` ],
-  [convert a relation to a function. `a` $frac(R, ∋)$ ` ={b|a R b}` ],
-  [#leanf("Freyd.Alg.Λ_is_map'")],  [],
-  // lean:Freyd.S2_40.Λ_is_map'@d8366eca
-
- [#leanf("Freyd.Alg.Λ_eps_eq'")], [#src[reading the chosen set back through `∋` returns the relation.]],
-  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
-
-  [#leanf("Freyd.Alg.simple_le_Λ_eps")],
- [A partial choice of sets is inside the total one. #src[]],
-  // lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe
-
-  [the *singleton map* is monic: #leanf("Freyd.Alg.singletonMap_monic")
- #src[two points with the same one-person set are the same point.]],
-  // lean:Freyd.S2_40.singletonMap_monic@f1b11e36
-  [The one-person set.],
-
-  [#leanf("Freyd.Alg.Λ_eps_reflection")],
- [Make the set of a set, then read it back one level down. #src[]],
-  // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
-
-  [*fusion:* #leanf("Freyd.Alg.Λ_fusion")],
-  [Naturality of the unit, #leanf("Freyd.Alg.singletonMap_natural").
- #src[renaming a point and then taking its one-person set is taking the set and renaming inside it.]],
-   // lean:AOP.A4_6.Λ_fusion@9d7bda13
-   // lean:AOP.A4_6.singletonMap_natural@9214d7f0
-
-  [#leanf("Freyd.Alg.Λ_of_map")],
-  [Rename first or take singletons first — the fusion row above at `R=𝟙`.],
-  // lean:Freyd.S2_40.Λ_of_map@9ddca812
-
-  [#leanf("Freyd.Alg.symm_div_eq_Λ_comp")],
-  [`x` and `y` match when `R` sends `x` and `S` sends `y` to the same set.],
-  // lean:Freyd.S2_40.symm_div_eq_Λ_comp@d031e970
-
-  [#leanf("Freyd.Alg.existsImage")], [`E(R): EA⟶EB`, image of a set of A],
-  // lean:AOP.A4_6.existsImage@db266886
-  [#leanf("Freyd.Alg.Λ_eq_singleton_existsImage")],
- [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[]],
-  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
-  [#leanf("Freyd.Alg.Λ_absorption")],
-  [absorption — the monad's composition law, $frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$ `=`
- $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
-   // lean:AOP.A4_6.Λ_absorption@e87bd8f2
-
-  [#leanf("Freyd.Alg.supset")],
-  [`xs⊇ys⟺∀a. ys∋a→xs∋a`],
-  // lean:Freyd.S2_40.supset@51b103bf
-  [#leanf("Freyd.Alg.subset_eq_recip_supset")],
-  [`xs⊆ys⟺ys⊇xs`],
-  // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
-)]<pow-laws>
+#law-pow-laws
 
 // Rows 5, 6, 9, 13, 14 of @pow-laws, each drawn whole from its own declaration, with every `%∋`
 // opened to `(𝟙%∋)E(−)`; a row with hypotheses draws its conclusion.  Row 6 is its composite form,
@@ -117,41 +53,14 @@ subscript.
 
 == `i⊣E` Power Allegory defined as adjunction <sec-adj-E>
 
-// The factorisation the whole adjunction is about, drawn once.  Middle arrow is `E(R)`, NOT `P(R)`:
-// the two agree on maps only (B&dM p. 119), and `𝟙/∋ P(R)` is every nonempty subset of `R(a)`.
-#disp[#pair(
-  leancd("Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage"),
-  // `𝟙/∋` opens the `i E` pair and `∋` closes it again, so the strand running in and out of a panel is
-  // the one functor; the panel beside it draws that same functor as the plain wire the law equates it to.
-  grid(columns: 2, column-gutter: 14pt, align: horizon,
-    lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
-  [#leanf("Freyd.Alg.Λ_comp_eps") #h(1.4cm)
-   #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
- already the relator `P(R)`. ]],
-   // lean:AOP.A4_6.Λ_comp_eps@76d609ed
-   // B&dM write `PA` for the powerset.
-  // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
-  s: 95%,
-)]<adj-E-bend>
+#law-adj-E-bend
 
 #block[#src[`i` is the inclusion `Map(𝒜)⟶𝒜`, doing nothing, so `E` is both the functor and the
 monad `iE`.]]
 
 == `∈\` as a composite <sec-mem-ldiv>
 
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
-    #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
-     // lean:AOP.A7_1.mem_leftDiv_eq@7e4fcb2b
-  lean-chain(
-    (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
-    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°` — @pow-laws]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9ab326b8
-    (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
-      src[`X\(Yf°)=(X\Y)f°`, `f` a map]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step2@dc661372
-  ),
-)]<mem-ldiv>
+#law-mem-ldiv
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.leftDiv_eq_Λ_subset") \

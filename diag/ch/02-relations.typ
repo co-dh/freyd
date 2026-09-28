@@ -1,6 +1,7 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(2)
 // note-split: chapter 2 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
 = Relations
 
 #disp[#definition[
@@ -13,17 +14,7 @@ Rel is a poset-enriched category with ($times.o$, °) where $times.o$ is commuta
 // lean:diag.CB.CartBicat@acc5575a
 ]]<rel-defn>
 
-#disp[#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(p-n-assoc, s: 60%) #v(-7pt) \ #src[`▷` associative]],
-  [#P(p-n-comm, s: 60%) #v(-7pt) \ #src[`▷` commutative]],
-  [#P(p-n-unit, s: 60%) #v(-7pt) \ #src[`⟜` is its unit]],
-  // `slice(0, 2)`, not `slice(1)`: the exporter draws the relation symbol at the LEFT edge of every
-  // step after the first, so dropping the first step would leave a dangling `=` in front.
-  [#row(frobb.at(0).steps.slice(0, 2), s: 42%) #v(-7pt) \ #src[Frobenius, one half — the other is
-   its `°`]],
-  [#P(p-lax-delta, s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_Δ")]],
-  [#P(p-lax-bang, s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_!")]],
-)]<rel-monoid>
+#law-rel-monoid
 
 == $forall$ object A, `(A,◁,⊸)⊣(A,▷,⟜)`
 

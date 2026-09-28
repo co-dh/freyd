@@ -18,7 +18,7 @@ import json, os, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from notesplit import NOTE, chapter_env, includes     # noqa: E402
+from notesplit import chapter_env, chapter_numbers     # noqa: E402
 
 
 def queries(*argsets):
@@ -42,7 +42,7 @@ def canvases():
     # the slowest one's seconds.  The chapter files are the root's includes, in the root's order.
     scan = ["--input", "cdscan=1"]
     chs = [scan] if chapter_env() is not None else \
-        [["--ch", str(n), *scan] for n in range(1, len(includes(os.path.join(ROOT, NOTE))) + 1)]
+        [["--ch", str(n), *scan] for n in chapter_numbers()]
     marks = [m for ms in queries(*chs) for m in ms]
     out, disp, lab = [], "(before the first display)", "(unlabelled)"
     for m in marks:

@@ -1,6 +1,7 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(8)
 // note-split: chapter 8 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
 = `/` is all of
 
 #disp[#definition[
@@ -49,68 +50,7 @@ hates, so nothing composes to it. The missing path is exactly the strictness of
 // Boxed so the line breaker cannot split the law after a `/` — it lands at the end of the paragraph.
 #box[`(R/S)(S/W)⊑R/W`].
 
-// One law per row, and the picture column takes the rest of the 22cm: `le_div_iff` is a `⟺` between
-// two containments, four sub-pictures wide (10.9cm before scaling), the widest picture in the note.
-#disp[#table(
-  columns: (8.6cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 9pt, stroke: 0.4pt + luma(190),
-
-  [`X⊑R/S⟺XS⊑R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y`
-   such that `x` admires everyone `y` hates lies inside `R/S`, and `R/S` is the largest such.]],
-  P(p-le-div),
-
-  [`X⊑S\R⟺SX⊑R` \ #src[The mirror — divide on the left when `x` comes first.]],
-  P(p-le-ldiv),
-
-  [`(R/S)S⊑R` \ #src[There is a `y` such that `x` admires everyone `y` hates, and `p` is one of
-   the people `y` hates — then `x` admires `p` too. Strict at `S=∅`: `R/S` is everyone, `(R/S)S=∅`.]],
-  P(p-div-cancel),
-
-  [`S (S\R)⊑R` \ #src[The mirror.]],
-  P(p-ldiv-cancel),
-
-  [*associate:* `R/(S₁S₂)=(R/S₂)/S₁` \ #src[*A friend's enemy* is two hops: divide by the far end
-   first.]],
-  P(p-div-assoc),
-
-  [`(S₁S₂)\R=S₂\(S₁\R)` \ #src[The mirror.]],
-  P(p-ldiv-assoc),
-
-  [*maps:* `f (R/S)=(fR)/S` \ #src[Rename `x` before or after dividing — the licence to write
-   `fR/S`.]],
-  P(p-map-div),
-
-  [`R/(fS)=(R/S)f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.
- ]],
-   // lean:AOP.A4_4.div_comp_recip_map@bc41ec1a
-  P(p-div-map),
-
-  [`(R/S)(S/W)⊑R/W` \ #src[Someone who admires all of a hate-set that already covers everyone
-   `z` works for admires those people too.]],
-  P(p-div-comp),
-
-  [`𝟙⊑R/R` \ #src[`R/R` runs admirer to admirer: each admires everyone they admire. Strict: two
-   people who each admire only `a` and `b` admire each other's idols too, and still stay two people.]],
-  P(p-one-div),
-
-  [`(R/R)(R/R)=R/R` \ #src[`R/R` is the preorder *admires at least as much as*, and a preorder is
-   idempotent. Freyd writes `⊑`; with `𝟙⊑R/R` above it is an equality.]],
-  P(p-div-self-idem),
-
-  [`(R/R)R=R` \ #src[Reaching `p` through someone whose idols `x` fully admires is reaching `p`
-   directly, since `x` admires their own idols.]],
-  P(p-div-self),
-
-  [`R/𝟙=R` \ #src[Dividing by `𝟙`: `p`'s set is just `{p}`, so admiring all of it is admiring `p`.]],
-  P(p-div-one),
-
-  [`R/(S₁ ∪ S₂)=R/S₁∩R/S₂` \ #src[Admiring a combined hate-set is admiring each set in full.]],
-  P(p-div-union),
-
-  [`S\(R/W)=(S\R)/W` \ #src[Which is why `S\R/W` needs no bracket.]],
-  P(p-ldiv-div),
-)]<div-laws>
+#law-div-laws
 
 Fifteen laws, fifteen pictures, and not one shows a generator: `∩`, `∪`, `°` and composition are what
 the Frobenius generators build, and `/` is none of those — it is posited, with nothing to unfold.

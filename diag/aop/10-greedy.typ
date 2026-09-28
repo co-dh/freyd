@@ -1,6 +1,6 @@
 #import "../note-prelude.typ": *
-#show: note-chapter.with(16)
-// note-split: chapter 16 — this header is written by scripts/note-split and stripped by scripts/note-join
+#show: note-chapter.with(10)
+// note-split: chapter 10 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Greedy Algorithms <sec-greedy>
 
 == Theory

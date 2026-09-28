@@ -1,7 +1,24 @@
 #import "../note-prelude.typ": *
-#show: note-chapter.with(7)
-// note-split: chapter 7 — this header is written by scripts/note-split and stripped by scripts/note-join
-= Reduce in 𝒮et
+#show: note-chapter.with(3)
+// note-split: chapter 3 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
+= Applications
+
+== Laws from Relation Algebra
+
+#law-adj-all
+#law-adj-cross
+#law-triple-chains
+#law-rel-monoid
+#law-conv-defn
+#law-meet-semidistrib
+#law-dom-laws
+#law-dom-slide
+#law-div-laws
+#law-pow-laws
+#law-adj-E-bend
+#law-mem-ldiv
+
 
 // B&dM §3.1 "Banana-split", pp. 55–57.  The book writes `h · f` applicatively; every composite in the
 // table is mirrored to `f h`, this note's diagram order.
