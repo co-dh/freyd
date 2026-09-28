@@ -448,4 +448,39 @@ public theorem val_converse_eq :
     val° = embed° ≫ wrap ∪ op° ≫ (val° × 𝟙 dDigit) ≫ snoc :=
   cata_converse_eq embed op
 
+/-! ## B&dM p.139: the two converses in `val°`'s recursion
+
+  `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; with the book's `n ∈ ℕ⁺`, `op°` is defined exactly on
+  `m ≥ 10`, and `embed°` exactly on `0 < m < 10` — the two ranges are disjoint, so the join in
+  `val°`'s recursion is a conditional. -/
+
+/-- **B&dM p.139**: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`. -/
+public theorem op_recip_iff (m : Nat) (p : Nat × Digit) :
+    (op°) m p ↔ p.1 = m / 10 ∧ p.2.val = m % 10 := by
+  rw [recip_apply, op]
+  show m = 10 * p.1 + p.2.val ↔ _
+  have := p.2.isLt
+  omega
+
+/-- **B&dM p.139**: `op°` at a positive quotient is defined iff `m ≥ 10`. -/
+public theorem op_recip_defined (m : Nat) : (∃ p : Nat × Digit, 0 < p.1 ∧ (op°) m p) ↔ 10 ≤ m := by
+  constructor
+  · rintro ⟨p, hp, h⟩
+    have := (op_recip_iff m p).mp h
+    omega
+  · intro h
+    exact ⟨(m / 10, ⟨m % 10, Nat.mod_lt m (by decide)⟩), by omega,
+      (op_recip_iff m _).mpr ⟨rfl, rfl⟩⟩
+
+/-- **B&dM p.139**: `embed°` is defined iff `0 < m < 10`. -/
+public theorem embed_recip_defined (m : Nat) : (∃ d : DigitP, (embed°) m d) ↔ 0 < m ∧ m < 10 := by
+  constructor
+  · rintro ⟨d, h⟩
+    have h' : m = d.1.val := by rw [recip_apply, embed] at h; exact h
+    have := d.1.isLt
+    have := d.2
+    omega
+  · intro h
+    exact ⟨⟨⟨m, h.2⟩, by show m ≠ 0; omega⟩, by rw [recip_apply, embed]; show m = m; rfl⟩
+
 end Freyd.Alg.RelSet.Digits

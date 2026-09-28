@@ -36,7 +36,10 @@
   ),
 )]<val-converse>
 // TODO p.139 op°: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; `op°` defined iff `m≥10`, `embed°` iff `m<10`
-//   — a Lean lemma, not a picture.
+//   — a Lean lemma, not a picture.  PROVED: lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
+//   lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+//   lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c.  Not displayed: `--formula`
+//   drops a relation's points (`op° m p` prints `op°`), an exporter gap to close before a #leanf row.
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 
 == Least fixed points
