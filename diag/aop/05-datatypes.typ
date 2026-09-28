@@ -122,25 +122,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  [#leanf("Freyd.Alg.prodMap")], P(leanc("Freyd.Alg.prodMap"), s: 74%),
-  // lean:AOP.A5_2.prodMap@28e34ad0
-
-  [#leanf("Freyd.Alg.RelProd.pair_prodMap") \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
-// R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
-   half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
-   this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
- ]],
-   // lean:AOP.A5_2.pair_prodMap@8861fda2
-  P(leanc("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
-
- [#leanf("Freyd.Alg.RelProd.pair_outl") \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outl@18c8ddee
-  P(leanc("Freyd.Alg.RelProd.pair_outl"), s: 74%),
-
- [#leanf("Freyd.Alg.RelProd.pair_outr") \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outr@ce99887d
-  P(leanc("Freyd.Alg.RelProd.pair_outr"), s: 74%),
-
+  // prodMap (duplicate of @relprod-defn), pair_prodMap (duplicate of @absorption-pic),
+  // pair_outl/pair_outr (duplicate of @fork-proj) deleted — rule M.
  [#leanf("Freyd.Alg.RelProd.pair_recip_pair") #src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
   P(leanc("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
@@ -247,28 +230,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  // [R,S]=(l°R) ∪ (r°S): B&dM (5.9)
-  [#leanf("Freyd.Alg.junc") \ #src[@coprod-laws's first row]],
-  // lean:AOP.A5_3.junc@da022f10
-  P(leanc("Freyd.Alg.junc"), s: 82%),
-
-  // R+S=[Rl,Sr]: B&dM (5.10)
-  [#leanf("Freyd.Alg.sumMap")],
-  // lean:AOP.A5_3.sumMap@eb035ed1
-  P(leanc("Freyd.Alg.sumMap"), s: 82%),
-
-  // [U,V]°[R,S]=(U°R) ∪ (V°S): B&dM (5.11)
-  [#leanf("Freyd.Alg.junc_recip_junc") \ #src[@coprod-laws's last row;
- ]],
-   // lean:AOP.A5_3.junc_recip_junc@838f4abc
-  P(leanc("Freyd.Alg.junc_recip_junc"), s: 68%),
-
-  // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
-  [#leanf("Freyd.Alg.junc_id_zero"), #leanf("Freyd.Alg.junc_zero_id") \
-   #leanf("Freyd.Alg.junc_injections") \ #src[which is (5.9)]],
-  // lean:AOP.A5_3.junc_id_zero@28919704 lean:AOP.A5_3.junc_zero_id@328e3c31
-  // lean:AOP.A5_3.junc_injections@11d515bf lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
-  P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
+  // junc (5.9), sumMap (5.10), junc_recip_junc (5.11) — duplicates of @coprod-laws's first,
+  // third and last rows — and junc_id_zero/junc_zero_id/junc_injections (Ex 5.12) — duplicate
+  // of @coprod-laws's Exercise 5.12 rows — deleted, rule M.
 
   // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
   [#src[prove (5.11), and say why duality does not carry it over from the product law]],
