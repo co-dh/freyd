@@ -1929,7 +1929,9 @@ def withObjectsClosed {α : Type} (regionTy : Expr) (k : MetaM α) : MetaM α :=
       objectsOfRef.modify (·.insert h os)
       pure os
   for n in objs do Lean.setIrreducibleAttribute n
-  try k finally setEnv env
+  let h₀ ← closedHeadRef.get
+  closedHeadRef.set h
+  try k finally setEnv env; closedHeadRef.set h₀
 
 /-- `peelRead`'s answers in this process, by `metaKey`, as `peelMapMemo`: an answer with no
     metavariable is the one a new read would give.  `withObjectsClosed` is entered only here, so
@@ -1956,9 +1958,8 @@ initialize peelReadMemo : IO.Ref (Std.HashMap (Array Expr) (Array (Wire × Expr)
 def peelRead (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array (Wire × Expr) × Expr) := Prof.phase "peel" do
   let key ← metaKey (#[regionTy, X] ++ objVars)
-  let wmap (f : Expr → Expr) : Wire → Wire | .rel r => .rel (f r) | .timesL l => .timesL (f l)
   let rmap (f : Expr → Expr) (r : Array (Wire × Expr) × Expr) :=
-    (r.1.map fun (w, o) => (wmap f w, f o), f r.2)
+    (r.1.map fun (w, o) => (w.map f, f o), f r.2)
   if let some (k, vs) := key then
     if let some r := (← peelReadMemo.get)[k]? then return rmap (·.instantiateRev vs) r
   let (cs, u) ← withObjectsClosed regionTy (peelCuts objVars cat regionTy X)

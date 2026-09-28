@@ -797,6 +797,29 @@ def instCatalogue (n : Name) (ends : Array Expr → MetaM Bool) :
     unless ← Meta.isDefEq args[i]! v do return none
   return some (mkAppN (mkConst n lvls) args, cargs)
 
+/-- `instCatalogue`'s answers in this process, by the asker's `tag`, the entry and the region: a
+    read tries every entry at every cut, and all but a few are refused at every one of them. -/
+initialize instMemo : IO.Ref (Std.HashMap (String × Name × Expr) (Option Meta.AbstractMVarsResult)) ←
+  IO.mkRef {}
+
+/-- `instCatalogue n ends` for an `ends` that reads nothing but the closed region `regionTy`, which
+    `tag` names.  An answer is kept with its open metavariables abstracted and opened fresh on every
+    hit, so each asker gets unknowns of its own, as a new search would give. -/
+def instCatalogueAt (tag : String) (regionTy : Expr) (n : Name) (ends : Array Expr → MetaM Bool) :
+    MetaM (Option (Expr × Array Expr)) := do
+  let regionTy ← instantiateMVars regionTy
+  if regionTy.hasFVar || regionTy.hasMVar then return ← instCatalogue n ends
+  let k := (tag, n, regionTy)
+  if let some a := (← instMemo.get)[k]? then
+    let some a := a | return none
+    let (_, _, e) ← Meta.openAbstractMVarsResult a
+    return some (e.appFn!, e.appArg!.getAppArgs)
+  let r ← instCatalogue n ends
+  let a ← r.mapM fun (R, cargs) => do
+    Meta.abstractMVars (mkApp R (mkAppN (mkConst `cargs) cargs))
+  instMemo.modify (·.insert k a)
+  return r
+
 /-- Everything a Meta question about `es` can read besides the environment: `es` themselves, and
     every local their free variables and the local instances reach, each with its binder, type and
     value.  `none` where a metavariable is left, whose assignment is state and no key.
@@ -881,7 +904,7 @@ def peelWith? (n : Name) (objVars : Array Expr) (regionTy X : Expr) :
     try
       -- Only the wire's TARGET is the region being peeled: a wire is a functor between regions, and
       -- a bifunctor's is `𝒜×𝒜 ⟶ 𝒜`, so the peel goes on in whatever region the wire comes from.
-      let some (R, cargs) ← instCatalogue n (fun c => Meta.isDefEq c[1]! regionTy)
+      let some (R, cargs) ← instCatalogueAt "obj" regionTy n (fun c => Meta.isDefEq c[1]! regionTy)
         | s.restore
           if let some k := rk then laneSkelMemo.modify (·.insert (n, false, k) none)
           return none
@@ -957,7 +980,7 @@ def peelMapWith? (n : Name) (objVars : Array Expr) (regionTy e : Expr) :
       let lo ← Meta.isDefEq c[0]! regionTy
       let hi ← Meta.isDefEq c[1]! regionTy
       return lo && hi
-    let some (R, _) ← instCatalogue n ends | s.restore; return none
+    let some (R, _) ← instCatalogueAt "map" regionTy n ends | s.restore; return none
     -- A lane with a parameter — `tupleRelator ?n` — is fixed by the bead it matches, so the test
     -- for an unknown comes AFTER the match, as in `peelWith?`; before it, `[n]` never peels.
     let some r ← mapOfFunctor? (← laneFunctor R) regionTy e | s.restore; return none
@@ -979,13 +1002,59 @@ def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
   if let some (k, vs) := key then
     if let some r := (← peelMapMemo.get)[k]? then
       return r.map fun (a, b) => (a.instantiateRev vs, b.instantiateRev vs)
-  let r ← cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
+  -- AN ATOM IS NO LANE'S ACTION, as in `peelCuts`: `F.map ?r` meets a local or a closed constant
+  -- only by `F` giving it back unchanged, which `peelMapWith?` refuses.
+  let atom ← match ← Meta.whnf e with
+    | .fvar v => pure (((← getLCtx).find? v).any (!·.isLet))
+    | .const n _ => (·.isNone) <$> Meta.getUnfoldableConst? n
+    | _ => pure false
+  let r ← if atom then pure none else
+    cat.findSomeM? fun n => peelMapWith? n objVars regionTy e
   if let some (k, vs) := key then
     let a := r.map fun (x, y) => (x.abstract vs, y.abstract vs)
     -- A local the key does not reach would come back as the asker's dangling one.
     unless a.any fun (x, y) => x.hasFVar || y.hasFVar || x.hasMVar || y.hasMVar do
       peelMapMemo.modify (·.insert k a)
   return r
+
+/-- A wire with `f` applied to the term it holds. -/
+def Wire.map (f : Expr → Expr) : Wire → Wire | .rel r => .rel (f r) | .timesL l => .timesL (f l)
+
+def Wire.term : Wire → Expr | .rel r | .timesL r => r
+
+/-- The region head whose named objects the read in progress has closed (`withObjectsClosed`), or
+    anonymous: a peel answers by `isDefEq`, which unfolds exactly the objects left open. -/
+initialize closedHeadRef : IO.Ref Name ← IO.mkRef .anonymous
+
+/-- `peelCuts`' answers in this process, by the closed head and `metaKey`: the objects of one panel
+    share their sub-objects, and each was peeled again at every object holding it. -/
+initialize peelCutsMemo : IO.Ref (Std.HashMap (Name × Array Expr) (Array (Wire × Expr) × Expr)) ←
+  IO.mkRef {}
+
+mutual
+
+/-- `peelCutsCore`, remembered.  Only an answer with no metavariable and no local the key does not
+    reach is kept: either would come back as something the next asker does not hold. -/
+partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
+    MetaM (Array (Wire × Expr) × Expr) := do
+  let rmap (f : Expr → Expr) (r : Array (Wire × Expr) × Expr) :=
+    (r.1.map fun (w, o) => (w.map f, f o), f r.2)
+  let key ← metaKey (#[regionTy, X] ++ objVars)
+  let h ← closedHeadRef.get
+  if let some (k, vs) := key then
+    if let some r := (← peelCutsMemo.get)[(h, k)]? then return rmap (·.instantiateRev vs) r
+  let r ← peelCutsCore objVars cat regionTy X
+  let some (k, vs) := key | return r
+  let (cs, u) := r
+  let cs ← cs.mapM fun (w, o) => return (← match w with
+    | .rel x => return Wire.rel (← instantiateMVars x)
+    | .timesL x => return Wire.timesL (← instantiateMVars x), ← instantiateMVars o)
+  let u ← instantiateMVars u
+  let a := rmap (·.abstract vs) (cs, u)
+  let bad (e : Expr) := e.hasMVar || e.hasFVar
+  unless bad a.2 || a.1.any fun (w, o) => bad o || bad w.term do
+    peelCutsMemo.modify (·.insert (h, k) a)
+  return (cs, u)
 
 /-- An object peeled into its wire stack (outermost first), each wire with the OBJECT UNDER IT, and
     the object underneath them all.  The object under a wire is what a bead taken there is a family
@@ -999,7 +1068,7 @@ def peelMap? (cat : Array Name) (objVars : Array Expr) (regionTy e : Expr) :
     EXCEPT WHERE BOTH FACTORS ARE LANES OVER ONE OBJECT: `F(A)×G(A)` is `(F×G)(A)`, the one lane
     `F×G` over `A` — the lane a family `φ×ψ : G×G' ⇒ F×F'` has its naturality at and a
     `Relator.prod` action runs on.  Read as `F(A)×−` over `G|A` the one cut had two spellings. -/
-partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
+partial def peelCutsCore (objVars : Array Expr) (cat : Array Name) (regionTy X : Expr) :
     MetaM (Array (Wire × Expr) × Expr) := do
   let pairLane? (objVars : Array Expr) (cat : Array Name) (regionTy : Expr) (op : Name)
       (a : Expr) (pb : Array (Wire × Expr) × Expr) : MetaM (Option (Array (Wire × Expr) × Expr)) := do
@@ -1098,6 +1167,8 @@ partial def peelCuts (objVars : Array Expr) (cat : Array Name) (regionTy X : Exp
   let some (R, src, inner) := best | return (#[], X)
   let (cs, o) ← peelCuts objVars cat src inner
   return (#[(Wire.rel R, inner)] ++ cs, o)
+
+end
 
 /-- A CUT ALREADY READ: the object it was read FROM, its wire stack with the object under each
     wire, and the object under them all — what `peelCuts` answered, kept beside the question. -/
