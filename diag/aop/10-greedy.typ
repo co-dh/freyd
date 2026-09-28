@@ -12,7 +12,7 @@
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Theorem 10.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp") \
     #src[the same optimum reached by keeping ONE decomposition at each step, so that no set is ever
  carried and the recursion runs on values alone #h(4pt) ]],
@@ -79,7 +79,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM Proposition 10.1, p. 245, "a variation on Proposition 9.1", in Rel(Set).  The book's
 // `(ran V₁ → W₁, W₂)` is the union below: off `ran V₁ ∪ ran V₂` both are empty.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Proposition 10.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.greedy_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
      on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
@@ -234,7 +234,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   ),
 )]<entab-detab-tupled>
 
-#disp[
+#disp(num: "Exercise 10.1")[
   - #leanf("Freyd.Alg.RelSet.Detab.detab_loop") \
     #src[the fold of `[base,step]` over the input converted to a snoc-list is the left loop of
      `step` from `base`]
@@ -256,7 +256,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 ]<entab-step>
 
 // B&dM p.251: (10.1) and the equations for `tbc` it gives.
-#disp[
+#disp(num: "(10.1)")[
   - #leanf("Freyd.Alg.RelSet.Detab.entab_unfill") \
     #src[(10.1): the output of `entab` is that of `unfill x` followed by the trailing blanks held
      back]
@@ -325,7 +325,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 `f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`, #h(4pt) `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`.
 // lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
 
-`g≜[zero,penalty]`, #h(4pt) `m≜[zero,π₁ cost]` (B&dM's `h`, renamed as in @tardy-laws).
+`g≜[zero,penalty]` #src[(10.5)], #h(4pt) `m≜[zero,π₁ cost]` (B&dM's `h`, renamed as in @tardy-laws) #src[(10.6)].
 // lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A10_3_Tardy.bmaxR@c4eeff86 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
 ]]<tardy-defn>
 
@@ -345,7 +345,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-cost-k>
 
 // B&dM Exercise 10.5, p.258: "it is easy to check".
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Exercise 10.5")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.k_mono") \
     #src[a larger cost before the last job gives a larger cost after it]],
   // lean:AOP.A10_3_Tardy.k_mono@4ce1b877
@@ -357,7 +357,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-k-mono>
 
 // B&dM (10.2), p.256: "(10.2) follows on appeal to Proposition 9.3".
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(10.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_mono") \
     #src[improving the schedule before the last job, among schedules of the same bag, improves
      the whole schedule]],
@@ -372,7 +372,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-mono>
 
 // B&dM (10.4)–(10.6), p.256, Exercise 10.6.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(10.4)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_bmax") \
     #src[the cost of a schedule is the larger of the penalty of its last job and the cost of the
      schedule before it]],
@@ -385,7 +385,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-cost-bmax>
 
 // B&dM (10.7), p.256, Exercise 10.7; needs `ct` and `wt` positive.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(10.7)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.add_le") \
     #src[putting one more job anywhere into a schedule never lowers its cost]],
   // lean:AOP.A10_3_Tardy.add_le@d29b4a89
@@ -398,7 +398,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-add>
 
 // B&dM (10.8), p.256, Exercise 10.8.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(10.8)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.bagify_recip_cata") \
     #src[the orderings of a bag with one more job are the orderings of the bag with that job put
      in anywhere]],
@@ -431,7 +431,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 )]<tardy-bag-le>
 
 // B&dM (10.3), p.257: the book's calculation, one row per hint.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(10.3)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_greedy") \
     #src[a schedule of a bag ending in a job of least penalty is no worse than any schedule of
      the same bag]],
