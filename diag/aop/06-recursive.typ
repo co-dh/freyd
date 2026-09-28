@@ -205,7 +205,9 @@
     (none, "Freyd.Alg.hylo_body_coprod_step1.lhs", src[the body of Theorem 6.2 at `F(X)=G(X)+H(X)`]),
     (EQ, "Freyd.Alg.hylo_body_coprod_step1.rhs", src[`(P+Q)[R₁,R₂]=[PR₁,QR₂]` — coproduct]),
     // lean:AOP.A6_3.hylo_body_coprod_step1@2ca7d056
-    (EQ, "Freyd.Alg.hylo_body_coprod_step2.rhs", src[`[S₁,S₂]°[P,Q]=S₁°P∪S₂°Q` — coproduct]),
+    // `union` gives `.inr` then `.inl`; reversed here for the formula's own left-to-right order,
+    // `.inl` (`S₁°P`) then `.inr` (`S₂°Q`), as `<van-h>` does for `Hrel`.
+    (EQ, union("Freyd.Alg.hylo_body_coprod_step2.rhs").rev(), src[`[S₁,S₂]°[P,Q]=S₁°P∪S₂°Q` — coproduct]),
     // lean:AOP.A6_3.hylo_body_coprod_step2@00f0c2d0
   ),
 )]<hylo-coprod>
