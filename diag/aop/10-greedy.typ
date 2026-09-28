@@ -168,10 +168,13 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step3.rhs", src[the claim — @entab-expand-V]),
      // lean:AOP.A10_2_Detab.detab_V_R_step3@63a29781
   ), (
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs",
+    // step4-5's rhs is a `∪` of `detabR` (`.inl`) and the `snocR°≫…` branch (`.inr`); `rev: true`
+    // draws them in that left-to-right order, so the unchanged `detabR` branch stays on the same
+    // (left) side across both steps.
+    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs", rev: true),
       src[distributing `∪`; the fold again, and the definition of `F`]),
      // lean:AOP.A10_2_Detab.detab_V_R_step4@12589ca1
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs",
+    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs", rev: true),
       src[naturality of `π₁`: `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`]),
      // lean:AOP.A10_2_Detab.detab_V_R_step5@84af6677
     (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step6.rhs",
