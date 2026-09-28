@@ -28,9 +28,9 @@ worked: the steps of the Lean proof, side by side, with the rule that reaches ea
 
 // Heading, chain and its paragraph kept together — `width: 100%` because a block sizes to its
 // contents, and inside one that has shrunk the `align(center)` of `chain` has nothing to centre in.
-#block(breakable: false, width: 100%)[
 = `R ∩ R = R`, the one that is not bookkeeping
 
+#block(breakable: false, width: 100%)[
 #chain(
   (mib.at(0).steps.at(0), mib.at(0).steps.at(1), mib.at(0).steps.at(2)),
   ([], [`◁ ▷ = 𝟙`], [lax copy]))
@@ -90,9 +90,9 @@ in the definition that may duplicate a box — so that is where the inequality h
 )
 
 // One section, one page: the chain is only readable beside the two cuts it is made of.
-#block(breakable: false, width: 100%)[
 = `R ≤ R R° R`, by cutting two wires
 
+#block(breakable: false, width: 100%)[
 Freyd reads this off the modular law #src[(§2.112)]: `R ⊑ 1R ∩ R ⊑ (1 ∩ R R°) R ⊑ R R° R`. In
 pictures neither the modular law nor a meet with `1` is wanted. The one law that makes a picture
 bigger is spent twice, and it is the cut, `𝟙 ≤ ⊸ ⟜`:
@@ -122,9 +122,9 @@ calculus lets you add for free.
 
 // The other route to the same containment.  Kept next to it because the interesting thing is what
 // each one SPENDS, and that is only visible with both chains on the page.
-#block(breakable: false, width: 100%)[
 = The same, from the cap end
 
+#block(breakable: false, width: 100%)[
 The section above cuts twice in its chain. This one cuts once and pays for the other cut with the
 *lax copy law* — `R ◁ ≤ ◁ (R ⊗ R)`, the only law in the definition that may duplicate a box. Read
 `𝟙` as a copy tree whose last two legs are capped back:
