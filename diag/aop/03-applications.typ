@@ -4,7 +4,9 @@
 #import "../shared-laws.typ": *
 = Applications
 
-== Laws from Relation Algebra
+== Banana-split
+
+=== Laws from Relation Algebra
 
 #law-adj-all
 #law-adj-cross
@@ -85,7 +87,7 @@
 
 // Its own page: the heading was left orphaned at the foot of the page before it.
 #pagebreak(weak: true)
-== Fokkinga's mutual recursion theorem
+=== Fokkinga's mutual recursion theorem
 
 // Algebras lettered `h`, `k` as in @cata-examples; the display below reuses the letters for the
 // general case, which is what the last bullet contrasts the product with.
@@ -111,7 +113,7 @@
   // lean:AOP.A5_5.pair_eq_relCata_pair_iff@c35035a2
 )]<fokkinga>
 
-== Ruby triangles
+== Ruby triangles and Horner's rule
 
 // B&dM §3.2, pp. 58–59.  The book writes `cons · (id × listr f)` applicatively; every composite in the
 // table is mirrored by `h·f ↦ f h` into this note's diagram order.
@@ -157,7 +159,7 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 // Its own page: the section is one table long and the heading was left orphaned at the foot of the
 // page before it once the F-Alg bullets above pushed the table over the break.
 #pagebreak(weak: true)
-== Depth of a tree
+=== Depth of a tree
 
 // B&dM p. 60, mirrored to diagram order: the book writes `depths = tri succ · tree zero` and
 // `depth = max · depths`.
@@ -193,3 +195,18 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 )]<tree-depth>
 
 #pagebreak(weak: true)
+
+== The TeX problem
+
+== Conditions and conditionals
+
+== Concatenation and currying
+
+// B&dM Theorem 3.1, p. 73: the structural-recursion theorem behind `cat`, book's own composition
+// order kept here — the coordinator mirrors it to diagram order together with the Lean proof and picture.
+#disp(num: "Theorem 3.1")[
+`If φ is natural, i.e. G(h×id)·φ=φ·(F(h)×id), then h·G(f)·φ=f ⟺ f=apply·((h·G(apply)·φ)×id)`
+#src[The unique solution of a two-argument recursion `f(a,x)=h(G(f)(a,x))` built from a natural `φ`
+is `apply` composed with a one-argument fold, which is how `cat` — not itself a fold — is derived
+from one.]
+]<sec-tex-thm31>

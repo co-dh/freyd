@@ -13,7 +13,9 @@
 // the way `scripts/diagram` draws it; the crossings that makes are the accepted ones.
 #let THP = 4.15                                   // a datatype inside `THN`
 
-== Example of Hylo `⦇T⦈°⦇h⦈`: segmenting a list <dp-example>
+== Theory
+
+=== Example: segmenting a list <dp-example>
 
 // @dp-defn's `H≜⦇T⦈°⦇h⦈` at one instance: `A=B=[ℕ]`, `F(X)=𝟏+[ℕ]×X`, and the non-emptiness of a
 // segment carried by `T`'s `cat`, not by the element type.
@@ -52,8 +54,6 @@
     #src[cut once, solve the rest, put the pieces back together]
     // lean:AOP.A9_0_SegmentExample.H_fix@80717498
 ]<dp-example-H>
-
-== Theory
 
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
 // come from `⦇T⦈°`, and the recursion is over them rather than over an initial algebra.

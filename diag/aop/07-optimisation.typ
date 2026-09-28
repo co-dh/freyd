@@ -3,7 +3,7 @@
 // note-split: chapter 7 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Optimisation Problems <sec-opt>
 
-== `est(R)≜∋∩(∈\R°)` <sec-est>
+== Minimum and maximum <sec-est>
 
 // B&dM §7.1, p. 166.
 #disp[#definition[
