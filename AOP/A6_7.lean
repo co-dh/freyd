@@ -35,35 +35,35 @@ variable {𝒜 : Type u} [DivisionLCDA 𝒜] {A B : 𝒜}
 /-! ## §6.7  Definition and basic laws: (6.7) -/
 
 /-- `R* := (μX : id ∪ X·R)` (6.7), mirrored: `mu (fun X => id ∪ R≫X)`. -/
-def star {A : 𝒜} (R : A ⟶ A) : A ⟶ A := mu (fun X => Cat.id A ∪ (R ≫ X))
+@[expose] public def star {A : 𝒜} (R : A ⟶ A) : A ⟶ A := mu (fun X => Cat.id A ∪ (R ≫ X))
 
 /-- The recursion body of (6.7) is monotonic. -/
-theorem star_body_monotonic {A : 𝒜} (R : A ⟶ A) :
+public theorem star_body_monotonic {A : 𝒜} (R : A ⟶ A) :
     Monotonic (fun X : A ⟶ A => Cat.id A ∪ (R ≫ X)) :=
   fun h => union_mono (le_refl _) (comp_mono_left R h)
 
 /-- `R*` unfolds: `id ∪ R·R* = R*` (Knaster-Tarski applied to (6.7)). -/
-theorem star_unfold {A : 𝒜} (R : A ⟶ A) : Cat.id A ∪ (R ≫ star R) = star R :=
+public theorem star_unfold {A : 𝒜} (R : A ⟶ A) : Cat.id A ∪ (R ≫ star R) = star R :=
   mu_fixed (star_body_monotonic R)
 
 /-- `id ⊑ R*`: `R*` is reflexive. -/
-theorem id_le_star {A : 𝒜} (R : A ⟶ A) : Cat.id A ⊑ star R := by
+public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : Cat.id A ⊑ star R := by
   have h : Cat.id A ⊑ Cat.id A ∪ (R ≫ star R) := le_union_left (Cat.id A) (R ≫ star R)
   rwa [star_unfold R] at h
 
 /-- `R·R* ⊑ R*`. -/
-theorem comp_star_le {A : 𝒜} (R : A ⟶ A) : R ≫ star R ⊑ star R := by
+public theorem comp_star_le {A : 𝒜} (R : A ⟶ A) : R ≫ star R ⊑ star R := by
   have h : R ≫ star R ⊑ Cat.id A ∪ (R ≫ star R) := le_union_right (Cat.id A) (R ≫ star R)
   rwa [star_unfold R] at h
 
 /-- `R ⊑ R*`. -/
-theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R := by
+public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R := by
   have h : R ≫ Cat.id A ⊑ star R :=
     le_trans (comp_mono_left R (id_le_star R)) (comp_star_le R)
   rwa [Cat.comp_id] at h
 
 /-- **Transitivity of `R*`** (book's division proof, p.157-158). -/
-theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R := by
+public theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R := by
   have hsub : star R ⊑ star R / star R := by
     refine Sup_le (fun _S hS => hS _ ?_)
     apply (le_div_iff _ _ _).mpr
@@ -75,17 +75,17 @@ theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R := by
   exact (le_div_iff _ _ _).mp hsub
 
 /-- `R*` is bounded above by any preorder (`refl` + `trans`) containing `R`. -/
-theorem star_le_of_preorder {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X)
+public theorem star_le_of_preorder {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X)
     (htrans : X ≫ X ⊑ X) (hR : R ⊑ X) : star R ⊑ X :=
   Sup_le (fun _S hS => hS _ (union_lub hrefl (le_trans (comp_mono_right hR X) htrans)))
 
 /-- **Universal property of `R*`** (§6.7): `R* ` is the SMALLEST preorder containing `R`. -/
-theorem star_UP {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X) (htrans : X ≫ X ⊑ X) :
+public theorem star_UP {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X) (htrans : X ≫ X ⊑ X) :
     R ⊑ X ↔ star R ⊑ X :=
   ⟨star_le_of_preorder hrefl htrans, le_trans (le_star R)⟩
 
 /-- `*` is monotone: `R ⊑ S → R* ⊑ S*`. -/
-theorem star_mono {A : 𝒜} {R S : A ⟶ A} (h : R ⊑ S) : star R ⊑ star S :=
+public theorem star_mono {A : 𝒜} {R S : A ⟶ A} (h : R ⊑ S) : star R ⊑ star S :=
   star_le_of_preorder (id_le_star S) (star_trans S) (le_trans h (le_star S))
 
 /-! ## §6.7  The (6.8) variant (B&dM Ex 6.31)
@@ -138,7 +138,7 @@ private theorem star'_le_of_preorder {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id 
 /-- **(6.8)**: `R* = (μX : id ∪ R·X)`, mirrored: `star R = mu (fun X => id ∪ X≫R)` (Ex 6.31).
     Proved by mutual leastness: `star R` and `star' R` are each preorders containing `R`, hence
     each is `⊑` the other's least such bound. -/
-theorem star_eq_mu' {A : 𝒜} (R : A ⟶ A) :
+public theorem star_eq_mu' {A : 𝒜} (R : A ⟶ A) :
     star R = mu (fun X : A ⟶ A => Cat.id A ∪ (X ≫ R)) :=
   le_antisymm
     (star_le_of_preorder (id_le_star' R) (star'_trans R) (le_star' R))
@@ -146,7 +146,7 @@ theorem star_eq_mu' {A : 𝒜} (R : A ⟶ A) :
 
 /-- `R*·R ⊑ R*` (the (6.8)-shaped "contains-`R`-on-the-right" law for `star`, derived from
     `star_eq_mu'` and `star'_comp_le`). -/
-theorem star_comp_le {A : 𝒜} (R : A ⟶ A) : star R ≫ R ⊑ star R := by
+public theorem star_comp_le {A : 𝒜} (R : A ⟶ A) : star R ≫ R ⊑ star R := by
   rw [star_eq_mu']
   exact star'_comp_le R
 
@@ -185,7 +185,7 @@ private theorem closureFrom_le {A B : 𝒜} {S : B ⟶ A} {R : A ⟶ A} {T : B �
   Sup_le (fun _S1 hS1 => hS1 _ (union_lub hS hT))
 
 /-- **B&dM Ex 6.32 / p.160**: `S·R* = (μX : S ∪ R·X)`, mirrored: `S≫R* = μX. S∪(X≫R)`. -/
-theorem comp_star_eq_mu {A B : 𝒜} (S : B ⟶ A) (R : A ⟶ A) :
+public theorem comp_star_eq_mu {A B : 𝒜} (S : B ⟶ A) (R : A ⟶ A) :
     S ≫ star R = mu (fun X : B ⟶ A => S ∪ (X ≫ R)) := by
   have hMle : closureFrom S R ⊑ S ≫ star R := by
     apply closureFrom_le
@@ -237,7 +237,7 @@ private theorem closureFromR_le {A B : 𝒜} {S : A ⟶ B} {R : A ⟶ A} {T : A 
 
 /-- The symmetric form (B&dM p.160, "S*·R = (μX : R ∪ S·X)" with roles renamed):
     `R*·S = (μX : S ∪ R·X)`, mirrored: `star R ≫ S = μX. S∪(R≫X)`. -/
-theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
+public theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
     star R ≫ S = mu (fun X : A ⟶ B => S ∪ (R ≫ X)) := by
   have hMle : closureFromR S R ⊑ star R ≫ S := by
     apply closureFromR_le
@@ -281,7 +281,7 @@ theorem star_comp_eq_mu {A B : 𝒜} (R : A ⟶ A) (S : A ⟶ B) :
 
 /-- The easy (`⊒`) half of B&dM Ex 6.36: both factors of `star(star R≫S)≫star R` are
     `⊑ star(R∪S)`, hence so is their composite (via `star_trans (R∪S)` twice). -/
-theorem star_union_ge {A : 𝒜} (R S : A ⟶ A) :
+public theorem star_union_ge {A : 𝒜} (R S : A ⟶ A) :
     star (star R ≫ S) ≫ star R ⊑ star (R ∪ S) := by
   have hT : star R ⊑ star (R ∪ S) := star_mono (le_union_left R S)
   have hS : S ⊑ star (R ∪ S) := le_trans (le_union_right R S) (le_star (R ∪ S))
@@ -316,17 +316,17 @@ variable {𝒜 : Type u} [DivisionBooleanAllegory 𝒜] {A B : 𝒜}
 -- `MonotonicHom` hypotheses are definitionally `Monotonic` on a single hom-set.)
 
 /-- `θ(P,Q) := P ∪ (μX : Q ∪ (R·X − P))`, mirrored: `P ∪ (μX : Q∪(X≫R − P))`. -/
-def theta {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) : B ⟶ A :=
+@[expose] public def theta {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) : B ⟶ A :=
   P ∪ mu (fun X : B ⟶ A => Q ∪ sub (X ≫ R) P)
 
 /-- **p.160**: `θ(0,S) = R*·S`, mirrored `θ(0,S) = S≫R*` (the θ-recursion computes `S≫R*`). -/
-theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R := by
+public theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R := by
   show (𝟘 : B ⟶ A) ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) = S ≫ star R
   simp only [sub_zero, DistributiveAllegory.zero_union]
   exact (comp_star_eq_mu S R).symm
 
 /-- **p.160**: `θ(P,0) = P`. -/
-theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P := by
+public theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P := by
   show P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) = P
   have hmu : mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) ⊑ 𝟘 := by
     refine Sup_le (fun _S hS => hS _ ?_)
@@ -337,7 +337,7 @@ theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P �
 
 /-- **p.160 recursion step** (B&dM's five-step derivation: subtraction, rolling, subtraction ×2,
     definition of `θ`): `θ(P,Q) = θ(P∪Q, Q·R−P−Q)`, mirrored `θ(P,Q) = θ(P∪Q, (Q≫R−P)−Q)`. -/
-theorem theta_step {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) :
+public theorem theta_step {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) :
     theta R P Q = theta R (P ∪ Q) (sub (sub (Q ≫ R) P) Q) := by
   show P ∪ mu (fun X : B ⟶ A => Q ∪ sub (X ≫ R) P)
      = (P ∪ Q) ∪ mu (fun X : B ⟶ A => sub (sub (Q ≫ R) P) Q ∪ sub (X ≫ R) (P ∪ Q))
