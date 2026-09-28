@@ -178,21 +178,21 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm63_unique") \
     #src[when `S member` is inductive, two solutions `X`, `Y` of `X=SF(X)R` are equal]],
-    // lean:AOP.A6_5.thm63_unique@d1b466e6
+    // lean:AOP.A6_5.thm63_unique@7de915fc
 )]<thm63-unique>
 
 // B&dM Theorem 6.3 (entire), p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm63_entire") \
     #src[when `S member` is inductive and `S`, `R` are entire, a pre-fixed point of `X↦SF(X)R` is entire]],
-    // lean:AOP.A6_5.thm63_entire@04a95a25
+    // lean:AOP.A6_5.thm63_entire@d76aca23
 )]<thm63-entire>
 
 // B&dM Corollary 6.2, p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor62") \
     #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map]],
-    // lean:AOP.A6_5.cor62@b00cdf6c
+    // lean:AOP.A6_5.cor62@6df24a22
   lean-chain(
     (none, "Freyd.Alg.cor62_step1.lhs", []),
     (SQ, "Freyd.Alg.cor62_step1.rhs", src[`X=gF(X)f`, `g` simple]),
@@ -207,7 +207,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor63") \
     #src[when `R°member` is inductive and `R` is surjective, the fold `⦇R⦈` is surjective]],
-    // lean:AOP.A6_5.cor63@17c6ea36
+    // lean:AOP.A6_5.cor63@a768e5a5
   lean-chain(
     (none, "Freyd.Alg.cor63.lhs", []),
     (SQ, "Freyd.Alg.cor63.rhs", src[@thm63-entire at `S=R°`]),
@@ -218,7 +218,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64") \
     #src[a map `f` with `Rf⊑F(f)α`, for a surjective `R`, has the fold `⦇R⦈` as its converse]],
-    // lean:AOP.A6_5.thm64@8cc00228
+    // lean:AOP.A6_5.thm64@296aa783
   lean-chain(
     (none, "Freyd.Alg.thm64_forward.lhs", []),
     (SQ, "Freyd.Alg.thm64_forward.rhs", src[shunting `f`, fusion, `Rf⊑F(f)α`]),
@@ -235,13 +235,13 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64_claim") \
     #src[`R°member` is below `α°member` conjugated by `f`, so it is inductive when `α°member` is]],
-    // lean:AOP.A6_5.thm64_claim@a0b6e290
+    // lean:AOP.A6_5.thm64_claim@4b02dea3
   lean-chain(
     (none, "Freyd.Alg.thm64_claim_step1.lhs", []),
     (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`Rf⊑F(f)α`, shunting]),
-    // lean:AOP.A6_5.thm64_claim_step1@12aae1e3
+    // lean:AOP.A6_5.thm64_claim_step1@b4925181
     (SQ, "Freyd.Alg.thm64_claim_step2.rhs", src[`member` lax natural]),
-    // lean:AOP.A6_5.thm64_claim_step2@fd00cb7e
+    // lean:AOP.A6_5.thm64_claim_step2@3e9c7464
   ),
 )]<thm64-claim>
 
