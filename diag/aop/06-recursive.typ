@@ -36,10 +36,10 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   [#leanf("Freyd.Alg.RelSet.Digits.op_recip_iff") \
     #src[`op°` splits a number into its quotient and remainder by 10]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@78c25f21
   [#leanf("Freyd.Alg.RelSet.Digits.op_recip_defined") \
     #src[`op°` gives a pair with a nonzero first component exactly at the numbers with two or more digits]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@c44897b0
   [#leanf("Freyd.Alg.RelSet.Digits.embed_recip_defined") \
     #src[`embed°` gives a digit exactly at the one-digit numbers]],
   // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c
