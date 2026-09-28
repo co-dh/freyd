@@ -307,12 +307,16 @@
 // mechanism `<entab-expand-V>` uses for the `nottab` arm's nested `∪`.  `sel` (the un-suffixed
 // parent) survives in the dict so `lean-chain` can generate the group's own formula from it — the
 // whole side the branches split, not one formula per branch.
-#let branches(sym, sel, split: none) = {
+// `rev: true` draws the two branches right-to-left (`.inr` then `.inl`) instead of the coproduct's
+// own left-to-right order, so a branch that stays fixed across several steps can stay on the same
+// visual side even when the book's `.inl`/`.inr` assignment flips between them.
+#let branches(sym, sel, split: none, rev: false) = {
   let s = (sel + ".inl", sel + ".inr")
   let s = if split == none { s } else {
     let nest = sel + "." + split
     s.map(x => if x == nest { (nest + ".inl", nest + ".inr") } else { x }).flatten()
   }
+  let s = if rev { s.rev() } else { s }
   (sym: sym, sel: sel, sels: s)
 }
 #let union = branches.with([∪])

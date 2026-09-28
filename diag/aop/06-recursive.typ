@@ -353,7 +353,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64") \
     #src[a map `f` with `Rf⊑F(f)α`, for a surjective `R`, has the fold `⦇R⦈` as its converse]],
-    // lean:AOP.A6_5.thm64@296aa783
+    // lean:AOP.A6_5.thm64@3db80141
   lean-chain(
     (none, "Freyd.Alg.thm64_forward.lhs", []),
     (SQ, "Freyd.Alg.thm64_forward.rhs", src[shunting `f`, fusion, `Rf⊑F(f)α`]),

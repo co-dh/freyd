@@ -209,4 +209,5 @@ For the definition to make sense `f : A⟶A` is required, and then `tri(f) : TA�
 #src[The unique solution of a two-argument recursion `f(a,x)=h(G(f)(a,x))` built from a natural `φ`
 is `apply` composed with a one-argument fold, which is how `cat` — not itself a fold — is derived
 from one.]
+  // lean:AOP.A3_5_Currying.structural_recursion@1fed87f2
 ]<sec-tex-thm31>

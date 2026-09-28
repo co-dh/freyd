@@ -31,7 +31,12 @@ the 2-category.
  [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[Lemma 5.1]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
-  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`. #src[Theorem 5.1]],
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`. #src[Theorem 5.1]
+    #src[the book's reverse direction (preserving `°` ⟹ relator) needs the source to be `Rel`: the
+    counterexample over a tabular allegory that is not `Rel` shows it can fail]],
+  // lean:AOP.A5_1_Converse.map_mono_of_preservesRecip_relSet@9b4c46b5
+  // lean:AOP.A5_1.preservesRecip_of_tabular@02b327b3
+  // lean:AOP.A5_1_Converse.thm5_1_fails_for_tabular@e3406781
   // F(R°)=F(R)° row: after Theorem 5.1, p. 113
   [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.],
   // relators-agree-on-maps row: Corollary 5.1

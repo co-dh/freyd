@@ -22,6 +22,7 @@ identity above the other — is that inverse's converse, and R is itself a map.]
 `(f,g) a tabulation of R ⟹ k°h⊑R ⟺ ∃! map m with h=mf, k=mg`
 #src[Every pair below `R`'s tabulating pair factors, uniquely, through a single map into the
 tabulation's apex.]
+  // lean:AOP.A4_3.tabulation_incl_iff@6e0229df
 ]<prop-4-2>
 
 == Locally complete allegories
