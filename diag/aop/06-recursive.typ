@@ -270,24 +270,12 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.member_const") \
     #src[a constant relator records no elements, so its membership is empty]],
     // lean:AOP.A6_5.member_const@91d83a84
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.member_const.lhs", []),
-    (EQ, "Freyd.Alg.member_const.rhs", []),
-  ),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_sum") \
     #src[a member of `F+G` is a member of whichever summand the value is in]],
     // lean:AOP.A6_5.member_sum@f2ed47bd
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.member_sum.lhs", []),
-    (EQ, "Freyd.Alg.member_sum.rhs", []),
-  ),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_prod") \
     #src[a member of `F×G` is a member of either component]],
     // lean:AOP.A6_5.member_prod@fefd83ec
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.member_prod.lhs", []),
-    (EQ, "Freyd.Alg.member_prod.rhs", []),
-  ),
 )]<member-sum-prod>
 // TODO p.148 lax: `F(R)member ⊑ member R`, the largest lax natural `F ⟶ id`, hence unique — Lean
 //   LaxMembership.laxNatural, largestLax_unique.
@@ -496,10 +484,6 @@
     #src[closing `R` by composing it on the left and closing it by composing on the right give the
      same relation `R*`]],
      // lean:AOP.A6_7.star_eq_mu'@42cc4c0c lean:AOP.A6_7.star@a8a6944f
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_eq_mu'.lhs", []),
-    (EQ, "Freyd.Alg.star_eq_mu'.rhs", src[(6.8), Ex 6.31]),
-  ),
 )]<closure-star>
 
 // B&dM §6.7, p.157: the universal property, a statement with no chain of its own — it is the
@@ -610,10 +594,6 @@
     #src[the least fixed point of `φ` after `ψ` is `φ` applied to the least fixed point of `ψ` after
      `φ`]],
      // lean:AOP.A6_2.mu_rolling@c705ef5a
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.mu_rolling.lhs", []),
-    (EQ, "Freyd.Alg.mu_rolling.rhs", src[Ex 6.35]),
-  ),
 )]<closure-rolling>
 
 // B&dM 6.7g, p.160 and Ex 6.32: `SR*` and `R*S` as least fixed points, mirrored.
@@ -622,18 +602,10 @@
     #src[`S` followed by any number of `R` steps is the least `X` containing `S` and closed under a
      further `R` step]],
      // lean:AOP.A6_7.comp_star_eq_mu@2bbfa45b
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.comp_star_eq_mu.lhs", []),
-    (EQ, "Freyd.Alg.comp_star_eq_mu.rhs", src[p.160]),
-  ),
   Thm(cols: 1)[#leanf("Freyd.Alg.star_comp_eq_mu") \
     #src[any number of `R` steps followed by `S` is the least `X` containing `S` and closed under an
      `R` step in front]],
      // lean:AOP.A6_7.star_comp_eq_mu@537dc253
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_comp_eq_mu.lhs", []),
-    (EQ, "Freyd.Alg.star_comp_eq_mu.rhs", src[Ex 6.32]),
-  ),
 )]<closure-comp>
 
 // B&dM (6.9), p.160: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`, mirrored; `θ(𝟘,S)=SR*` is why it is defined.
