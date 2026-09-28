@@ -444,14 +444,24 @@
       // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
       // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
       // them one circuit row per step carrying its reason.  A row with a BRANCHES step (∪/+) letters
-      // every step regardless of width and replaces the list with a 3-column table (letter, formula,
-      // hint) — see the comment above `chain-tags`.
+      // every COLUMN regardless of width — one letter per group, not per branch inside it — and
+      // replaces the list with a 3-column table (letter, formula, hint) — see the comment above `chain-tags`.
       let pw = w.map(x => x * k)
       let hasg = not circuit and r.any(s => type(s.at(3, default: none)) == dictionary)
+      // A GROUP is one COLUMN, so it gets one letter shared by every flat member — the letters run
+      // consecutively over COLUMNS (`chain-groups(r)`), never over flat steps, or a 2-member group
+      // would eat two letters of the row's alphabet and print them joined ("(b, c)") under one picture.
       let (tags, n) = ((), 0)
-      for (s, x) in r.zip(pw) {
-        if hasg or (not circuit and measure(s.at(2)).width > x) { tags.push(chain-tags.at(n)); n += 1 }
-        else { tags.push(none) }
+      if hasg {
+        for (i0, gn) in chain-groups(r) {
+          for idx in range(i0, i0 + gn) { tags.push(chain-tags.at(n)) }
+          n += 1
+        }
+      } else {
+        for (s, x) in r.zip(pw) {
+          if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 }
+          else { tags.push(none) }
+        }
       }
       // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
       // below, the group's own `sym` between them as a plain centred label — instead of standing
@@ -475,16 +485,15 @@
               align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
             f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none })
         } else {
-          let (children, letters, maxw) = ((), (), 0pt)
+          let (children, maxw) = ((), 0pt)
           for (k2, idx) in range(i0, i0 + n).enumerate() {
             let (s, p, cw, x, t) = zipped.at(idx)
             if k2 > 0 { children.push(align(center, s.at(0))) }
             children.push(box(width: cw, align(center, p)))
-            letters.push(t)
             maxw = calc.max(maxw, x)
           }
           (top: true, op: zipped.at(i0).at(0).at(0), pic: stack(dir: ttb, spacing: hgut, ..children),
-            reason: if circuit { [] } else { align(right, box(width: maxw, align(center, [(#letters.join(", "))]))) },
+            reason: if circuit { [] } else { align(right, box(width: maxw, align(center, [(#tags.at(i0))]))) },
             f: none)
         }
       })
@@ -495,14 +504,13 @@
       if hasg {
         // One table line per GROUP, not per flat step: a `union(sel)`/`sum(sel)` call's `n` flat
         // members all carry the same `gid` (set where the group is expanded, above), so consecutive
-        // same-`gid` entries collapse into one line — its letters joined, its `gform` once, and the
-        // head member's own hint once — while a plain step (no `g`) keeps its own line unchanged.
+        // same-`gid` entries collapse into one line — its ONE column letter, its `gform` once, and
+        // the head member's own hint once — while a plain step (no `g`) keeps its own line unchanged.
         let lines = ()
         for (i0, n) in chain-groups(r) {
           if n > 1 {
             let g = r.at(i0).at(3)
-            let letters = range(i0, i0 + n).map(idx => tags.at(idx))
-            lines.push(([(#letters.join(", "))], fit-w(g.gform), r.at(i0).at(2)))
+            lines.push(([(#tags.at(i0))], fit-w(g.gform), r.at(i0).at(2)))
           } else {
             let s = r.at(i0)
             lines.push(([(#tags.at(i0))], fit-w(leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) })), s.at(2)))
