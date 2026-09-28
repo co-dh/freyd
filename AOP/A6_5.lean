@@ -45,6 +45,21 @@ public theorem zero_inductive (A : 𝒜) : Inductive (𝟘 : A ⟶ A) := by
     rw [DistributiveAllegory.comp_zero]; exact zero_le X
   exact le_trans ((le_div_iff _ _ _).mpr h0) _hX
 
+/-- Ex 6.13, first step: `R≫R ⊑ S≫R` after `(X/R)/S`. -/
+public theorem inductive_of_comp_le_step1 {A B : 𝒜} {R S : A ⟶ A} (h : R ≫ R ⊑ S ≫ R)
+    (X : B ⟶ A) : ((X / R) / S) ≫ R ≫ R ⊑ ((X / R) / S) ≫ S ≫ R :=
+  comp_mono_left _ h
+
+/-- Ex 6.13, second step: `(X/R)/S` composed with `S` is below `X/R`. -/
+public theorem inductive_of_comp_le_step2 {A B : 𝒜} (R S : A ⟶ A) (X : B ⟶ A) :
+    ((X / R) / S) ≫ S ≫ R ⊑ (X / R) ≫ R := by
+  rw [← Cat.assoc]; exact comp_mono_right (DivisionAllegory.div_comp_le (X / R) S) R
+
+/-- Ex 6.13, third step: `X/R` composed with `R` is below `X`. -/
+public theorem inductive_of_comp_le_step3 {A B : 𝒜} (R : A ⟶ A) (X : B ⟶ A) :
+    (X / R) ≫ R ⊑ X :=
+  DivisionAllegory.div_comp_le X R
+
 /-- **Ex 6.13**: if `S` is inductive and `R≫R ⊑ S≫R`, then `R` is inductive too.
 
     Given `X/R ⊑ X`, apply `hS` to `X/R`.  Need `(X/R)/S ⊑ X/R`, i.e. (`le_div_iff`)
@@ -59,16 +74,10 @@ public theorem inductive_of_comp_le {A : 𝒜} {R S : A ⟶ A} (hS : Inductive S
   apply le_trans _ hX
   apply hS (X / R)
   apply (le_div_iff _ _ _).mpr
-  have h1 : ((X / R) / S) ≫ S ⊑ X / R := DivisionAllegory.div_comp_le (X / R) S
-  have h2 : (((X / R) / S) ≫ S) ≫ R ⊑ (X / R) ≫ R := comp_mono_right h1 R
-  have h3 : (X / R) ≫ R ⊑ X := DivisionAllegory.div_comp_le X R
-  have h4 : (((X / R) / S) ≫ S) ≫ R ⊑ X := le_trans h2 h3
-  have h5 : ((X / R) / S) ≫ (S ≫ R) ⊑ X := by rw [← Cat.assoc]; exact h4
-  have h6 : ((X / R) / S) ≫ (R ≫ R) ⊑ ((X / R) / S) ≫ (S ≫ R) := comp_mono_left _ h
-  have h7 : ((X / R) / S) ≫ (R ≫ R) ⊑ X := le_trans h6 h5
-  have h8 : (((X / R) / S) ≫ R) ≫ R ⊑ X := by rw [Cat.assoc]; exact h7
-  have h9 : ((X / R) / S) ≫ R ⊑ X / R := (le_div_iff _ _ _).mpr h8
-  exact le_trans h9 hX
+  have h7 := le_trans (inductive_of_comp_le_step1 h X)
+    (le_trans (inductive_of_comp_le_step2 R S X) (inductive_of_comp_le_step3 R X))
+  rw [← Cat.assoc] at h7
+  exact le_trans ((le_div_iff _ _ _).mpr h7) hX
 
 /-- **Ex 6.13**, corollary: a relation below an inductive relation is itself inductive. -/
 public theorem inductive_of_le {A : 𝒜} {R S : A ⟶ A} (hS : Inductive S) (h : R ⊑ S) : Inductive R :=
@@ -279,7 +288,7 @@ end WellFoundedBoolean
 
 section Membership
 
-variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [Allegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **B&dM p.148-149**: a LAX MEMBERSHIP for the relator `F`: a family `mem a : F a ⟶ a`
     with `R·mem ⊑ mem·FR` for all `R : A⟶B` (mirrored: `F.map R ≫ mem b ⊑ mem a ≫ R`), i.e.
@@ -338,6 +347,74 @@ public def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG :
         ⊑ MG.mem (F.obj A) ≫ (MF.mem A ≫ R) := le_trans s2 s4
     rwa [e4] at s5
 
+end Membership
+
+section ConstMembership
+
+variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
+
+/-- `member(K_B) = 𝟘` (B&dM p.148): a constant records no elements. -/
+@[expose] public def constMembership (B : 𝒜) : LaxMembership (Relator.const (𝒜 := 𝒜) B) where
+  mem _ := 𝟘
+  lax _ := by rw [DistributiveAllegory.comp_zero, DistributiveAllegory.zero_comp]; exact le_refl _
+
+/-- The p.148 row `member(K) = 𝟘`. -/
+public theorem member_const (B A : 𝒜) : (constMembership B).mem A = 𝟘 := rfl
+
+end ConstMembership
+
+-- Each polynomial relator's membership in the least structure its relator needs: a sum needs the
+-- coproducts, a product the tabulated pairs.
+section SumMembership
+
+variable {𝒜 : Type u} [PositiveAllegory 𝒜]
+
+/-- `member(F+G) = [member(F), member(G)]` (B&dM p.148): a member of either summand. -/
+@[expose] public def sumMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) :
+    LaxMembership (Relator.sum F G) where
+  mem A := junc (PositiveAllegory.has_coproduct _ _) (MF.mem A) (MG.mem A)
+  lax R := junc_slides _ _ (MF.lax R) (MG.lax R)
+
+/-- The p.148 row `member(F+G) = [member(F), member(G)]`, as the arrow `sumMembership` IS. -/
+public theorem member_sum {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) (A : 𝒜) :
+    (sumMembership MF MG).mem A = junc (PositiveAllegory.has_coproduct _ _) (MF.mem A) (MG.mem A) :=
+  rfl
+
+end SumMembership
+
+section ProdMembership
+
+variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] [HasRelProd 𝒜]
+
+/-- `member(F×G) = outl member(F) ∪ outr member(G)` (B&dM p.148), mirrored: a member of either
+    component. -/
+@[expose] public def prodMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G) :
+    LaxMembership (Relator.prod F G) where
+  mem A := (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A
+  lax {A B} R := by
+    show prodMap _ _ (F.map R) (G.map R) ≫ ((relProd _ _).outl ≫ MF.mem B ∪ (relProd _ _).outr ≫ MG.mem B)
+      ⊑ ((relProd _ _).outl ≫ MF.mem A ∪ (relProd _ _).outr ≫ MG.mem A) ≫ R
+    rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
+    refine union_mono ?_ ?_
+    · have := comp_mono_right (outl_laxNatural F G R) (MF.mem B)
+      simp only [Cat.assoc] at this ⊢
+      exact le_trans this (comp_mono_left _ (MF.lax R))
+    · have := comp_mono_right (outr_laxNatural F G R) (MG.mem B)
+      simp only [Cat.assoc] at this ⊢
+      exact le_trans this (comp_mono_left _ (MG.lax R))
+
+/-- The p.148 row `member(F×G) = outl member(F) ∪ outr member(G)`, mirrored. -/
+public theorem member_prod {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMembership G)
+    (A : 𝒜) : (prodMembership MF MG).mem A
+      = (relProd (F.obj A) (G.obj A)).outl ≫ MF.mem A ∪ (relProd (F.obj A) (G.obj A)).outr ≫ MG.mem A :=
+  rfl
+
+end ProdMembership
+
+section MembershipAll
+
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
 /-- **B&dM Ex 6.18**, the coreflexive half of the formal definition: a MEMBERSHIP is a lax
     membership whose relator keeps every `s` all of whose members pass the coreflexive `Q`.  The
     lax inequality alone does not pin `mem` down — `mem = 𝟘` satisfies it, and then Theorem 6.3
@@ -345,7 +422,7 @@ public def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG :
 public structure Membership (F : Relator 𝒜 𝒜) extends LaxMembership F where
   all : ∀ {B : 𝒜} {Q : B ⟶ B}, Coreflexive Q → 𝟙 (F.obj B) ∩ ((mem B ≫ Q) / mem B) ⊑ F.map Q
 
-end Membership
+end MembershipAll
 
 /-! ## §6.5.4  Theorem 6.3 (unique fixed points) and its corollaries -/
 
@@ -478,6 +555,50 @@ public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} 
       (le_trans this (comp_mono_left X (inter_lb_right _ _)))
   have := (cover_iff_recip_entire X°).mp (by rwa [Allegory.recip_recip])
   rwa [Allegory.recip_recip] at this
+
+/-- Corollary 6.2, simple half, first step: `X = gF(X)f` unfolded under the converse, and `g` simple
+    cancels `g°g`. -/
+public theorem cor62_step1 {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} (hg : Map g) {X : B ⟶ A}
+    (hX : X = g ≫ F.map X ≫ f) (Y : B ⟶ A) :
+    (g ≫ F.map Y ≫ f)° ≫ X ⊑ f° ≫ F.map (Y° ≫ X) ≫ f := by
+  have e : (g ≫ F.map Y ≫ f)° ≫ X = f° ≫ F.map Y° ≫ (g° ≫ g) ≫ F.map X ≫ f := by
+    conv => lhs; rw [hX]
+    simp only [Allegory.recip_comp, Cat.assoc, Relator.preservesRecip_of_tabular F]
+  have s := comp_mono_left f° (comp_mono_left (F.map Y°) (comp_mono_right hg.2 (F.map X ≫ f)))
+  rw [Cat.id_comp] at s
+  rw [e, F.map_comp]
+  simpa only [Cat.assoc] using s
+
+/-- Corollary 6.2, simple half, second step: `Y°X ⊑ 𝟙` under the relator. -/
+public theorem cor62_step2 {A B : 𝒜} {f : F.obj A ⟶ A} {X Y : B ⟶ A} (hY : Y° ≫ X ⊑ 𝟙 A) :
+    f° ≫ F.map (Y° ≫ X) ≫ f ⊑ f° ≫ f := by
+  have := comp_mono_left f° (comp_mono_right (F.map_mono hY) f)
+  rwa [F.map_id, Cat.id_comp] at this
+
+/-- Corollary 6.2, simple half, third step: `f` is simple. -/
+public theorem cor62_step3 {A : 𝒜} {f : F.obj A ⟶ A} (hf : Map f) : f° ≫ f ⊑ 𝟙 A := hf.2
+
+/-- **Corollary 6.2** (B&dM p.149): if `g member(F)` is inductive and `f`, `g` are maps, the
+    solution of `X = gF(X)f` is a map — entire by Theorem 6.3, simple (Ex 6.10) by Theorem 6.3's
+    induction against `X ∩ (𝟙/X)°`. -/
+public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A}
+    (hind : Inductive (g ≫ M.mem B)) (hg : Map g) (hf : Map f) {X : B ⟶ A}
+    (hX : X = g ≫ F.map X ≫ f) : Map X := by
+  refine ⟨thm63_entire M hind hg.1 hf.1 (by rw [← hX]; exact le_refl _), ?_⟩
+  have hYX : (X ∩ (𝟙 A / X)°)° ≫ X ⊑ 𝟙 A := by
+    have := comp_mono_right (recip_mono (inter_lb_right X (𝟙 A / X)°)) X
+    rw [Allegory.recip_recip] at this
+    exact le_trans this (DivisionAllegory.div_comp_le (𝟙 A) X)
+  have hY : g ≫ F.map (X ∩ (𝟙 A / X)°) ≫ f ⊑ X ∩ (𝟙 A / X)° := by
+    refine le_inter ?_ ?_
+    · have := comp_mono_left g (comp_mono_right (F.map_mono (inter_lb_left X (𝟙 A / X)°)) f)
+      rwa [← hX] at this
+    · have h := le_trans (cor62_step1 hg hX _) (le_trans (cor62_step2 hYX) (cor62_step3 hf))
+      have := recip_mono ((le_div_iff _ _ _).mpr h)
+      rwa [Allegory.recip_recip] at this
+  have h1 := recip_mono (le_trans (thm63_le M hind hX hY) (inter_lb_right _ _))
+  rw [Allegory.recip_recip] at h1
+  exact (le_div_iff _ _ _).mp h1
 
 /-- **Corollary 6.3** (B&dM p.149): if `R° member(F)` is inductive, `⦇R⦈` is surjective when `R`
     is — `⦇R⦈°` solves `X = R°F(X)α`, entire by Theorem 6.3. -/

@@ -211,6 +211,18 @@ structure Diagram where
   obot  : Expr
   deriving Inhabited
 
+/-- EVERY TERM the picture holds, mapped by `f`: how a picture drawn inside a binder's scope leaves
+    it (`replaceFVar`).  A field holding an `Expr` added to `Row` or `Lane` belongs here too. -/
+def Diagram.mapExpr (f : Expr → Expr) (d : Diagram) : Diagram :=
+  let cut (c : Cut) : Cut := { ws := c.ws.map (·.map f), o := f c.o }
+  { d with
+    lanes := d.lanes.map fun l => { l with wire := l.wire.map f }
+    rows := d.rows.map fun r => { r with
+      src := cut r.src, tgt := cut r.tgt, core := r.core.map f, term := r.term.map f,
+      ctx := r.ctx.map (·.map f), ident := r.ident.map f,
+      passCands := r.passCands.map fun (n, s, x, b) => (n, s, f x, b) }
+    otop := f d.otop, obot := f d.obot }
+
 /-! ### `columns` — how far apart the lanes sit -/
 
 def minA (xs : Array Float) (dflt : Float) : Float := xs.foldl (fun a b => if b < a then b else a) dflt
@@ -2312,8 +2324,11 @@ partial def interpAt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
       Meta.withLocalDeclD `a regionTy fun a => do
         let ea := e'.instantiate1 a
         unless ← Meta.isTypeCorrect ea do return none
-        (some ∘ drew) <$> Diagram.bead regionTy cat #[a] (ax.extract 0 (ax.size - k))
+        let d ← Diagram.bead regionTy cat #[a] (ax.extract 0 (ax.size - k))
           (ay.extract 0 (ay.size - k)) ox oy ea (over := ax.extract (ax.size - k) ax.size)
+        -- The bead is read at the local `a` and handed back at `x'`, the object `a` stands for: a
+        -- row keeping `a` outlives this scope, and the next reader of it fails on an unknown local.
+        return some (drew (d.mapExpr (·.replaceFVar a x')))
     -- How deep an end already holds `t`: the trailing lanes are the ones `t` itself peels into.
     let depth : Expr → MetaM (Option Nat) := fun t => do
       for i in [0 : cx.size] do
