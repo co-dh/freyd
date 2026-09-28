@@ -631,6 +631,12 @@ open Lean PrettyPrinter in
   | `($_ $f) => `($(mkIdent `monotonic) $f)
   | _ => throw ()
 
+open Lean PrettyPrinter in
+/-- The hypothesis of B&dM p.158 in the book's word (p.147): `R` is inductive. -/
+@[app_unexpander Inductive] def unexpandInductive : Unexpander
+  | `($_ $r) => `($(mkIdent `inductive) $r)
+  | _ => throw ()
+
 /-- The book's closure `R*` (6.7), postfix like `°`. -/
 postfix:max "*" => star
 

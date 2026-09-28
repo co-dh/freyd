@@ -255,8 +255,40 @@
   ),
 )]<closure-least>
 
-// TODO p.158 suffix: `X=𝟙∪RX` unique iff `R` inductive; `suffix = 𝟙 ∪ tail suffix`;
-//   `Λ(suffix) = ⟨τ, Λ(tail suffix)⟩cup`; the `tails` program — Lean missing.
+// B&dM p.158: `X=𝟙∪RX` has the one solution `R*` for an inductive `R` (the `if` half; `suffix` is
+// the case `R=tail`).  The chain is the induction step `Z/R⊑Z` at `Z=R*⇨R*/X`, read through
+// `le_impl_iff` and `le_div_iff` as `((Z/R)∩R*)X⊑R*`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_unique") \
+    #src[when `R` admits induction, `R*` is the only `X` equal to `𝟙∪RX`]],
+     // lean:AOP.A6_7.star_unique@bce1f49a
+  lean-chain(
+    (none, "Freyd.Alg.star_unique_step1.lhs", []),
+    (EQ, "Freyd.Alg.star_unique_step1.rhs", src[`X=𝟙∪RX`]),
+     // lean:AOP.A6_7.star_unique_step1@49cd5ad2
+    (EQ, "Freyd.Alg.star_unique_step2.rhs", src[composition distributes over `∪`]),
+     // lean:AOP.A6_7.star_unique_step2@0987abdb
+    (SQ, "Freyd.Alg.star_unique_step3.rhs", src[`(Z/R)R⊑Z`, `R*R⊑R*`]),
+     // lean:AOP.A6_7.star_unique_step3@c0934f90
+    (SQ, "Freyd.Alg.star_unique_step4.rhs", src[`(R*⇨R*/X)∩R*⊑R*/X`]),
+     // lean:AOP.A6_7.star_unique_step4@f979c4cb
+  ),
+)]<closure-unique>
+
+// B&dM p.158: the `tails` recursion, `R` being `tail`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.Λ_star") \
+    #src[the set of `R*`-successors of `a` is `a` itself joined with the `R*`-successors of its
+     `R`-successors]],
+     // lean:AOP.A6_7.Λ_star@eb24385a
+  lean-chain(
+    (none, "Freyd.Alg.Λ_star_step1.lhs", []),
+    (EQ, "Freyd.Alg.Λ_star_step1.rhs", src[`R*=𝟙∪RR*`]),
+     // lean:AOP.A6_7.Λ_star_step1@3ed4ca2e
+    (EQ, "Freyd.Alg.Λ_star.rhs", src[`Λ(R∪S)=⟨Λ(R),Λ(S)⟩cup`]),
+     // lean:AOP.A5_6.Λ_union@632cc56a
+  ),
+)]<closure-tails>
 
 // B&dM 6.7e, p.159: the subtraction laws, chapter 4's (`AOP.A4_5`), each a statement row.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
