@@ -702,8 +702,8 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // each panel drawn from the theorem proving that step, its last the fold uniqueness.
 #disp[#calc-table(cols: (1fr,), al: auto,
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP_fold") \
-    #src[in a tabular allegory, with `F` a relator and `α : F(T)⟶T` its initial algebra: a relation `X` out of `T` satisfying the fold equation `αX=F(X)R` of `R` has $frac(#[`X`], ∋)$ equal to the fold of the map $frac(#[`F(∋)R`], ∋)$]],
-    // lean:AOP.A5_5.relCata_UP_fold@17f60f40
+    #src[in a tabular allegory, with `F` a relator and `α : F(T)⟶T` its initial algebra: a relation `X` out of `T` satisfies the fold equation `αX=F(X)R` of `R` exactly when $frac(#[`X`], ∋)$ is the fold of the map $frac(#[`F(∋)R`], ∋)$]],
+    // lean:AOP.A5_5.relCata_UP_fold@896f6361
   [#lean-chain(formula: true,
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
