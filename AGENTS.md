@@ -114,9 +114,10 @@ break when sections are reordered. Avoid unexplained field-specific notation (e.
 out ("the one-object category of `ℤ/2`") unless the term has already been introduced.
 
 **Banned words, in chat and in the note alike.** No eponyms for a result — never "Lambek"; say the
-property ("`α` is an iso"). None of B&dM's Greek scheme names — no catamorphism, anamorphism,
-hylomorphism, paramorphism; `⦇R⦈` is "the fold", `⟦R⟧` an "unfold", a hylomorphism "an unfold then a
-fold". A technical term keeps the note's own English spelling inside a Chinese sentence (`path`, never
+property ("`α` is an iso"). In the axioms note only, none of B&dM's Greek scheme names — no
+catamorphism, anamorphism, hylomorphism, paramorphism; `⦇R⦈` is "the fold", `⟦R⟧` an "unfold", a
+hylomorphism "an unfold then a fold". The B&dM companion note (`diag/aop/`) follows the book's own
+section numbers and titles ("6.3 Hylomorphisms"), because it is read beside the book. A technical term keeps the note's own English spelling inside a Chinese sentence (`path`, never
 路径), because a word the reader has not met in the note or the book reads as invented even when it is
 in B&dM.
 

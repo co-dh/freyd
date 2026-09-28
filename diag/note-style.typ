@@ -166,6 +166,8 @@
   // another.  See `disp`.
   set figure(numbering: n => context { [(] + dispnum(counter(heading).get(), n) + [)] })
   show heading: it => { counter(figure.where(kind: "disp")).update(0); it }
+  // Every chapter opens a page; `weak` so the first chapter, and a per-chapter pdf, get no blank page.
+  show heading.where(level: 1): it => { pagebreak(weak: true); it }
   // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
   show ref: it => {
