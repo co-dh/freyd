@@ -1,30 +1,10 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(3)
 // note-split: chapter 3 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
 = ° : 𝒞ᵒᵖ ⟶ 𝒞 is a 2 functor 
 
-#disp[#definition[
-`°` is primitive, part of the data the first section lists. It turns both of `R`'s wires round, and
-the Frobenius structure DRAWS that — the picture and the formula below are `R°`, not its definition:
-
-#fig({ conv((0, -0.80), $R$) })
-
-#align(center, block(inset: (y: 4pt))[#text(12.5pt)[`R°=(⟜◁⊗𝟙)(𝟙⊗R⊗𝟙)(𝟙⊗▷⊸)`]])
-
-where `⟜◁ : 𝕀⟶a⊗a` opens a pair of wires out of nothing and `▷⊸ : b⊗b⟶𝕀` closes one, so
-the input of `R°` is where the output of `R` was.  Taking that formula as the definition would now
-be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that it is a contravariant
-2-functor `° : 𝒞ᵒᵖ⟶𝒞`:
-
-#align(center, block(inset: (y: 5pt))[
- (i) `𝟙°=𝟙` #src[] #h(1cm) (ii) `(RS)°=S°R°`
-  // lean:Freyd.S2_10.recip_id@319d8965
- #src[] #h(1cm) (iii) `(R⊗S)°=R°⊗S°`
-  // lean:Freyd.S2_10.recip_comp@516c2d8a
- #h(1cm) (iv) `R≤S` implies `R°≤S°` #src[]
-  // lean:Freyd.S2_10.recip_mono@d584321d
-])
-]]<conv-defn>
+#law-conv-defn
 
 == The slide
 

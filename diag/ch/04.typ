@@ -1,6 +1,7 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(4)
 // note-split: chapter 4 — this header is written by scripts/note-split and stripped by scripts/note-join
+#import "../shared-laws.typ": *
 = `∩` is a commutative idempotent monoid on every hom-set
 
 #disp[#definition[
@@ -35,15 +36,6 @@ anything under both `S` and `T` into something under `S∩T`, since `R=R∩R≤S
 
 And one law relating `∩` to composition, which is *not* an equation:
 
-#disp[#table(
-  columns: (9.4cm, 1fr),
-  align: (left + horizon, center + horizon),
-  inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header([*semi-distributivity, and what supplies it*], [*picture*]),
-
-  [`R (S∩T)⊑RS∩RT` — the lax copy law. #src[Equality exactly when `R` is single valued: the Maps section's
- `F(R∩S)=FR∩FS`. ]], P(p-semidistrib),
-   // lean:AOP.A4_1.comp_inter_le@c62bf05a
-)]<meet-semidistrib>
+#law-meet-semidistrib
 
 #pagebreak(weak: true)

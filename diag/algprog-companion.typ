@@ -2,7 +2,7 @@
 #import "note-prelude.typ": *
 
 
-#show: conf.with(title: "Relation Algebra")
+#show: conf.with(title: "Companion to Bird & de Moor, Algebra of Programming")
 
 // `supplement: none` so a `@sec-…` reference prints the BARE number: the prose writes its own
 // `§`, and the default supplement would set "Section §1.1." in the middle of a sentence.
@@ -11,15 +11,13 @@
 // `▿` at the four generator glyphs' size and for the same reason: at running-text size it reads as a
 // subscript, not an operator.  Not in note-style.typ — the proofs note shares that file and has no copair.
 #show regex("▿"): it => text(size: 1.45em, it)
-#show ref: it => if str(it.target) in refname { link(it.target, refname.at(str(it.target))) } else { it }
+#show ref: it => context { import "shared-laws.typ": elsewhere; let t = str(it.target); if t in refname { link(it.target, refname.at(t)) } else if t in elsewhere and query(it.target).len() == 0 { elsewhere.at(t) } else { it } }
 
 #NOTEROOT.update(true)
-#include "ch/01-notation.typ"
-#include "ch/02-relations.typ"
-#include "ch/03.typ"
-#include "ch/04.typ"
-#include "ch/05-domain.typ"
-#include "ch/06-maps.typ"
-#include "ch/08.typ"
-#include "ch/09-fracr.typ"
-#include "ch/10-freyds.typ"
+#include "aop/03-applications.typ"
+#include "aop/05-datatypes.typ"
+#include "aop/06-recursive.typ"
+#include "aop/07-optimisation.typ"
+#include "aop/08-thinning.typ"
+#include "aop/09-dynamic.typ"
+#include "aop/10-greedy.typ"

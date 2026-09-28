@@ -231,7 +231,6 @@ def check (rows : Array Row) (mark : String) (want : Option String) (loc : Strin
 `CH` is the ONE variable every gate honours: `--ch N` off the command line, else `$CH`.  Narrowing to
 a chapter means reading that chapter's file and nothing outside it. -/
 
-def NOTE : String := "diag/allegory-axioms.typ"
 def ROOT_MARK : String :=
   "// note-split: root — written by scripts/note-split and stripped by scripts/note-join"
 
@@ -269,22 +268,31 @@ def includesOf (path : String) : IO (Array String) := do
       | some inc => out := out.push (joinPath here inc)
   return out
 
-/-- Chapter N's file: the N-th file the root includes, which is the N-th level-1 heading. -/
-def chapterFile (root : String) (n : Nat) : IO String := do
-  unless (← readFileOr root).startsWith ROOT_MARK do
-    noteDie s!"CH={n}, but {NOTE} is not split into chapters: run ./scripts/note-split first"
-  let chs ← includesOf root
-  if n < 1 || n > chs.size then
-    let list := "\n  ".intercalate
-      (chs.mapIdx (fun i p => s!"{i + 1} {p}")).toList
-    noteDie s!"no chapter {n}: {NOTE} includes {chs.size} chapters —\n  {list}"
-  return chs[n - 1]!
+/-- What `./scripts/note-files ARGS` prints, one path a line — the ONE resolver of `NOTE` and `CH`
+    (`scripts/notesplit.py`), so this gate and the python ones cannot disagree about which note or
+    which chapter a name means.  Its message, not a guess, when it fails. -/
+def noteFilesOut (args : Array String) : IO (Array String) := do
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args }
+  if r.exitCode != 0 then die r.stderr.trimAscii.toString
+  return ((r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)).toArray
+
+/-- The root `$NOTE` names. -/
+def noteRoot : IO String := do
+  match (← noteFilesOut #["--root"]).toList with
+  | [p] => pure p
+  | ps => noteDie s!"./scripts/note-files --root printed {ps.length} paths"
+
+/-- Chapter N's file in `$NOTE`: the one whose header declares N. -/
+def chapterFile (n : Nat) : IO String := do
+  match (← noteFilesOut #["--ch", toString n]).toList with
+  | [p] => pure p
+  | ps => noteDie s!"./scripts/note-files --ch {n} printed {ps.length} paths"
 
 /-- The root and every file it `#include`s, in order; a chapter named narrows it to that chapter. -/
 partial def noteFiles (rootDir : String) (ch : Option Nat) (arg : String) : IO (Array String) := do
   let path := joinPath rootDir arg
   match ch with
-  | some n => if path == joinPath rootDir NOTE then return #[← chapterFile path n]
+  | some n => if path == joinPath rootDir (← noteRoot) then return #[joinPath rootDir (← chapterFile n)]
   | none => pure ()
   let mut out : Array String := #[path]
   for inc in ← includesOf path do
@@ -883,7 +891,7 @@ def coverMain (args : List String) : IO UInt32 := do
   -- THE .typ EVERY GATE READS: the chapter when `CH`/`--ch` names one, else the note; and a split
   -- root is a preamble, so it stands for the chapters it includes rather than being swept empty.
   if paths.isEmpty then
-    paths := (← noteFiles cwd ch NOTE).map (relPath cwd)
+    paths := (← noteFiles cwd ch (← noteRoot)).map (relPath cwd)
   else
     paths := (← paths.toList.flatMapM (fun a => do pure (← noteFiles cwd ch a).toList)).toArray.map
       (relPath cwd)

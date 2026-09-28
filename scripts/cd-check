@@ -49,7 +49,7 @@ set -e
 cd "$(dirname "$0")/.." || exit 1
 if [ "$1" = --ch ]; then CH=$2; export CH; shift 2; fi
 OUT=.lake/build/cd-check
-PANELS=diag/cd-panels.txt
+PANELS=$(./scripts/note-files --panels)
 ACCEPT=diag/cd-accepted.txt
 
 # Each compile leaves `.done` only once all of it succeeded, so a panel reads its inputs' state
@@ -128,14 +128,21 @@ rm -rf "$OUT"
 mkdir -p "$OUT/gen" "$OUT/ref" "$OUT/rows"
 rc=0
 
-# The manifest read ONCE, into the three fields every loop below wants: canvas, selector, reference.
+# A manifest read into the three fields every loop below wants: canvas, selector, reference.
 # `#` opens a comment only after whitespace — a Lean selector may carry one.
-awk -F' *[|] *' '/^[ \t]*#/ { next } { sub(/[ \t]+#.*$/, "") } NF == 0 { next }
+fields() {
+  awk -F' *[|] *' '/^[ \t]*#/ { next } { sub(/[ \t]+#.*$/, "") } NF == 0 { next }
      NF != 3 { printf "cd-check: %s line %d has %d fields, not <canvas> | <selector> |" \
                       " <reference>: %s\n", FILENAME, FNR, NF, $0 > "/dev/stderr"; bad = 1; next }
      { gsub(/[ \t]+$/, "", $1); gsub(/[ \t]+$/, "", $2); gsub(/[ \t]+$/, "", $3)
        print $1 "\t" $2 "\t" $3 }
-     END { exit bad }' "$PANELS" > "$OUT/panels"
+     END { exit bad }' "$@"
+}
+fields "$PANELS" > "$OUT/panels"
+# Every note's manifest: the reference drawings are shared, so one is an orphan only when no note's
+# manifest names it.
+fields $(./scripts/note-files --names | while read -r n; do NOTE=$n ./scripts/note-files --panels; done) \
+  > "$OUT/allpanels"
 
 # THE OBLIGATIONS.  A canvas the file does not name is a plus line here, a line naming a canvas the
 # note no longer draws a minus line, and either fails before a single panel is drawn.
@@ -177,8 +184,8 @@ if [ -n "${CH:-}" ]; then
   echo "cd-check: chapter $CH — a reference drawing no line names is the whole-book run's to find"
 else
   for f in diag/cdref*.typ; do
-    awk -F'\t' -v r="$(basename "$f")" '$3 == r {found = 1} END {exit !found}' "$OUT/panels" || {
-      echo "cd-check: $f is a reference drawing no line of $PANELS names, so nothing is held to it" >&2
+    awk -F'\t' -v r="$(basename "$f")" '$3 == r {found = 1} END {exit !found}' "$OUT/allpanels" || {
+      echo "cd-check: $f is a reference drawing no note's manifest names, so nothing is held to it" >&2
       rc=1
     }
   done
