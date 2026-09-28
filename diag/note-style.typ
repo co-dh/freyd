@@ -235,7 +235,17 @@
 /// label in another chapter rendered as its `names` entry, or as the label's own text, instead of
 /// stopping the compile.  Inside the whole book the root has already applied `conf` and the counter
 /// already stands at N-1, so there the chapter's own rules are skipped and nothing changes.
-#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
+///
+/// `title`: NEVER a hardcoded default — a chapter belongs to whichever note split it, and a shared
+/// fallback here is how every note's chapter printed the SAME title.  A chapter file passes none, so
+/// this falls to `--input title=...` (`./scripts/note-files --title`, spliced in by the Makefile);
+/// missing both, it stops rather than guess.
+#let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
+  let title = if title != none { title } else { sys.inputs.at("title", default: none) }
+  if title == none {
+    panic("note-chapter: no title — pass title: to note-chapter.with(...), or compile with " +
+      "--input title=\"$(./scripts/note-files --title)\"")
+  }
   conf(title: title, {
     counter(heading).update(N - 1)
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter

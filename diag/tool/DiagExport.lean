@@ -1457,6 +1457,16 @@ def splitSides (calls steps : Array String) : Array (String × String) := Id.run
         bad := bad.push (s, s')
   return bad
 
+/-- `$NOTE`'s own title (`./scripts/note-files --title`), passed as `--input title=...` to every
+    `typst query` below: a chapter queried ALONE (`CH` set, `rootsToList` names the one chapter
+    file) never sets `NOTEROOT`, so `note-chapter` needs the title from here or it panics; a
+    whole-note root sets `NOTEROOT` itself before any `note-chapter` call and never reads
+    `sys.inputs`, so passing this unconditionally is harmless there. -/
+def noteTitle : IO String := do
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--title"] }
+  if r.exitCode != 0 then throw <| IO.userError s!"./scripts/note-files --title: {r.stderr.trimAscii}"
+  return r.stdout.trimAscii.toString
+
 /-- The note ROOTS a listing queries — every note `make p` compiles, as `note-files --roots` lists
     them, so a note added there is drawn with no edit here. -/
 def noteRoots : IO (List String) := do
@@ -1497,8 +1507,9 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
     | [] => ""
     | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
   let mut out : Std.HashMap String (Array String) := asked.foldl (fun m l => m.insert (tag l) #[]) {}
+  let title ← noteTitle
   for root in ← rootsToList do
-    let args := #["query", "--root", ".", "--input", "list=1", root, sel]
+    let args := #["query", "--root", ".", "--input", "list=1", "--input", "title=" ++ title, root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
     let r ← IO.Process.output { cmd := "typst", args := args }
     if r.exitCode != 0 then

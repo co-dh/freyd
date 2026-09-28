@@ -82,6 +82,39 @@ def die(msg):
     sys.exit("note-split: " + msg)
 
 
+def title_of_root(root, root_dir=None):
+    """`root`'s own title, off the `#show: conf.with(title: "...")` line it states — the ONE place a
+    note's title lives, so a chapter compiled alone (`--input title=...`) prints the note it belongs
+    to and never a sibling's hardcoded default."""
+    root_dir = root_dir or ROOT_DIR
+    for ln in read(os.path.join(root_dir, root)).split("\n"):
+        if ln.startswith("#show: conf.with(") and "title:" in ln:
+            t = typst_string(ln)
+            if t is not None:
+                return t
+    die("%s has no `#show: conf.with(title: \"...\")` line: every note states its own title there" % root)
+
+
+def note_title(root_dir=None):
+    """`$NOTE`'s own title — see `title_of_root`."""
+    return title_of_root(NOTE, root_dir)
+
+
+def root_for(path, root_dir=None):
+    """The note ROOT that OWNS `path`: `path` itself when it is a root or `allegory2.typ`, else the
+    root of the one NOTE_ROOTS entry whose chapter dir contains it.  The single place chapter-to-note
+    ownership is decided, so a caller (diff-crop, cutting a display from an arbitrary chapter pdf)
+    never guesses it from the path's own spelling."""
+    root_dir = root_dir or ROOT_DIR
+    path = os.path.normpath(path)
+    for root, chdir, *_ in NOTE_ROOTS.values():
+        if path == root or path.startswith(chdir + os.sep):
+            return root
+    if path in NOTES:
+        return path
+    die("%s belongs to no known note (checked NOTE_ROOTS' chapter dirs and NOTES)" % path)
+
+
 def chapter_number(path):
     """The chapter number a chapter file DECLARES on its header's second line — the line
     `chapter_header` writes, read back as exactly that shape; a note's chapters need not run 1, 2, …
@@ -591,7 +624,8 @@ def unknown_variables(root_dir):
         if os.path.dirname(path) != os.path.join(root_dir, CHDIR):
             continue
         p = subprocess.run(["typst", "compile", "--root", ".", "--format", "pdf",
-                            "--input", "nodraw=1", os.path.relpath(path, root_dir), os.devnull],
+                            "--input", "nodraw=1", "--input", "title=" + note_title(root_dir),
+                            os.path.relpath(path, root_dir), os.devnull],
                            cwd=root_dir, capture_output=True, text=True)
         found = 0
         for ln in p.stderr.split("\n"):
@@ -691,11 +725,17 @@ def cmd_files(argv):
         print(*generated_imports(), sep="\n")
         return
     # `--root`: the root `$NOTE` names; `--roots`: every note make compiles; `--names`: the names
-    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`;
+    # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`; `--title`: `$NOTE`'s own title,
+    # for a chapter compiled alone (`--input title=`); `--title-for PATH`: the title of whichever note
+    # OWNS an arbitrary chapter/root path, for a caller (diff-crop) that is not `$NOTE`-scoped.
     # `--panels`: `$NOTE`'s commutative-canvas manifest.  Make and the Lean gates ask
     # these, so the notes are listed in this file alone.
     if "--root" in argv:
         return print(NOTE)
+    if "--title" in argv:
+        return print(note_title())
+    if "--title-for" in argv:
+        return print(title_of_root(root_for(argv[argv.index("--title-for") + 1])))
     if "--panels" in argv:
         return print(PANELS)
     if "--roots" in argv:
