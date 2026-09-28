@@ -600,9 +600,11 @@
     (none, "Freyd.Alg.star_unique_step1.lhs", []),
     (EQ, "Freyd.Alg.star_unique_step1.rhs", src[`X=𝟙∪RX`]),
      // lean:AOP.A6_7.star_unique_step1@49cd5ad2
-    (EQ, "Freyd.Alg.star_unique_step2.rhs", src[composition distributes over `∪`]),
+    (EQ, union("Freyd.Alg.star_unique_step2.rhs"),
+      src[`R(S∪T) = RS∪RT` — composition distributes over `∪`]),
      // lean:AOP.A6_7.star_unique_step2@0987abdb
-    (SQ, "Freyd.Alg.star_unique_step3.rhs", src[`(Z/R)R⊑Z`, `R*R⊑R*`]),
+    (SQ, union("Freyd.Alg.star_unique_step3.rhs"),
+      src[`a⊑c, b⊑d ⟹ a∪b⊑c∪d` — `∪` is monotone; `(Z/R)R⊑Z`, `R*R⊑R*` justify the right side]),
      // lean:AOP.A6_7.star_unique_step3@c0934f90
     (SQ, "Freyd.Alg.star_unique_step4.rhs", src[`(R*⇨R*/X)∩R*⊑R*/X`]),
      // lean:AOP.A6_7.star_unique_step4@f979c4cb
