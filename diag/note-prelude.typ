@@ -295,26 +295,68 @@
     + ": the exporter draws both sides and the relation between them from the one declaration")
   p
 }
-// A step whose Lean side at `sel` is two branches joined by `sym` — a union `P ∪ Q`, or a sum
-// `∇°(P+Q)∇` whose codiagonals the sign stands for — reads as `sel.inr` then `sel.inl` (`rev:`
-// swaps them).  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`, below) to the
-// panel at the first selector under `op` then the second under `sym`, with no reason; `.sels`
-// spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A dictionary,
-// so it never collides with `stmt-sel`'s `(decl,)` array.
-#let branches(sym, sel, rev: false) = {
-  let s = (sel + ".inr", sel + ".inl")
-  (sym: sym, sels: if rev { s.rev() } else { s })
+// A step whose Lean side at `sel` is branches joined by `sym` — a union `P ∪ Q`, or a sum
+// `∇°(P+Q)∇` whose codiagonals the sign stands for — reads `sel.inl` then `sel.inr`, the coproduct's
+// own left-to-right order.  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`,
+// below) to the panel at the first selector under `op` then the second under `sym`, with no reason;
+// `.sels` spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A
+// dictionary, so it never collides with `stmt-sel`'s `(decl,)` array.
+// `split:` names ONE of the two top branches ("inl"/"inr", the book's writing order) that is ITSELF
+// a further `∪`/`+`, and flattens it in place: `union(sel, split: "inr")` reads
+// `sel.inl, sel.inr.inl, sel.inr.inr` — three selectors, one `sym` between each pair — the same
+// mechanism `<entab-expand-V>` uses for the `nottab` arm's nested `∪`.  `sel` (the un-suffixed
+// parent) survives in the dict so `lean-chain` can generate the group's own formula from it — the
+// whole side the branches split, not one formula per branch.
+#let branches(sym, sel, split: none) = {
+  let s = (sel + ".inl", sel + ".inr")
+  let s = if split == none { s } else {
+    let nest = sel + "." + split
+    s.map(x => if x == nest { (nest + ".inl", nest + ".inr") } else { x }).flatten()
+  }
+  (sym: sym, sel: sel, sels: s)
 }
 #let union = branches.with([∪])
 #let sum = branches.with([+])
 // A reason stands under its panel only when it fits the panel's width; a longer one would run into
 // the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
-// are listed under the row, where the circuits stood.
+// are listed under the row, where the circuits stood.  A row with a BRANCHES step (∪/+) letters
+// EVERY step and lists a 3-column table instead — letter, formula, hint — because the group's
+// formula only reads against its own hint, not against a panel too narrow to hold it.
 #let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
+// The maximal runs of a flat step list `r` that share one `union`/`sum` call: each run is
+// `(i0, n)`, `n == 1` a plain step, `n > 1` a branches group — identified by the `gid` the
+// group's expansion stamped on every one of its flat members (never by comparing formula text).
+// Shared by the below-row table and by `hchain`'s vertical stacking of a group's own pictures.
+#let chain-groups(r) = {
+  let out = ()
+  let i = 0
+  while i < r.len() {
+    let g = r.at(i).at(3, default: none)
+    if type(g) == dictionary {
+      let j = i + 1
+      while j < r.len() and type(r.at(j).at(3, default: none)) == dictionary and r.at(j).at(3).gid == g.gid { j += 1 }
+      out.push((i, j - i))
+      i = j
+    } else {
+      out.push((i, 1))
+      i += 1
+    }
+  }
+  out
+}
+// Shrinks CONTENT to whatever width its container gives it, never growing past 1.0 — the ratio
+// `chain-k` uses for a whole row, read here from `layout` since a table cell's width is only known
+// once the surrounding grid resolves its `1fr` columns.
+#let fit-w(f) = layout(sz => {
+  let need = measure(f).width
+  let ratio = if need > sz.width and need > 0pt { sz.width / need } else { 1.0 }
+  align(center, scale(ratio * 100%, reflow: true, f))
+})
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
 // selector like a header, so the chain reads as a term chain as well as a picture chain.
-#let lean-chain(..args, circuit: false, formula: false) = {
+// `pictures: false` drops the string diagram entirely — see the branch below.
+#let lean-chain(..args, circuit: false, formula: false, pictures: true) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary {
@@ -325,15 +367,23 @@
     // this function only ever meets plain string selectors or a `stmt-sel` singleton; `groups`
     // remembers which flat rows came from ONE row entry — a `branches` pair, or a row of its own —
     // so the merge below decides once per STEP, never once per branch.
+    // A branches step's OWN FORMULA — the whole side the branches split, e.g. `S₁°G(X)R₁∪S₂°H(X)R₂`
+    // — is generated ONCE from the un-suffixed parent selector and carried on EVERY flat step of the
+    // group as `(gform: ..)`, head and members alike: the below-row table (further down) tables one
+    // line per step, and every line of the group names the SAME group formula in its formula column,
+    // so it must read off whichever member that line is, not only the first.
     .map(r => {
       let steps = ()
       let groups = ()
       for s in r.steps {
         if type(s.at(1)) == dictionary {
+          let b = s.at(1)
           let i0 = steps.len()
-          steps.push((s.at(0), s.at(1).sels.at(0), s.at(2)))
-          steps.push((s.at(1).sym, s.at(1).sels.at(1), src[]))
-          groups.push((i0, i0 + 1))
+          let n = b.sels.len()
+          let g = (gform: leanf(b.sel), gid: i0)
+          steps.push((s.at(0), b.sels.at(0), s.at(2), g))
+          for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[], g)) }
+          groups.push(range(i0, i0 + n))
         } else {
           groups.push((steps.len(),))
           steps.push(s)
@@ -341,6 +391,41 @@
       }
       r + (steps: steps, groups: groups)
     })
+  // `sub`: this row's own `Sub(...)` header, a grey band across the cell — factored out so the
+  // pictures:false table below and the pictured chain's own row loop draw the same band.
+  let sub-header(row) = if "sub" in row {
+    pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
+      stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
+      align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
+  }
+  // `pictures: false`: no string diagram at all, no exporter call — just what a branches group's
+  // own table already prints, letter | formula | hint, one line per STEP (a branches group is
+  // still one line, its whole side), with an OP column at the row's own left edge (the
+  // string-diagram skill's proof-table rule: the relation goes at the START of the row, because
+  // dropping the picture also drops the ⊑/=/⊒ glyph `hchain` used to draw between panels).
+  if not pictures {
+    return table.cell(breakable: true, {
+      for row in rows {
+        sub-header(row)
+        let lines = ()
+        for (i0, n) in chain-groups(row.steps) {
+          let tag = chain-tags.at(lines.len())
+          let op = row.steps.at(i0).at(0)
+          let (f, hint) = if n > 1 {
+            let g = row.steps.at(i0).at(3)
+            (g.gform, row.steps.at(i0).at(2))
+          } else {
+            let s = row.steps.at(i0)
+            (leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }), s.at(2))
+          }
+          lines.push((if op == none { [] } else { op }, [(#tag)], fit-w(f), hint))
+        }
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, auto, 1fr, 1fr),
+          al: (center + horizon, center + horizon, center + horizon, left + horizon), ..lines.flatten()))
+        v(6pt)
+      }
+    })
+  }
   // ONE PICTURE ONCE: a STEP whose panel the exporter found drawn the same as the NEXT step's,
   // branch for branch (`dup`, the exporter's `stepGroups`/`Diagram.drawnAs`), only re-spells the
   // term, so the whole step is merged into the next one — its op and the next step's own
@@ -362,7 +447,9 @@
     for grp in r.groups {
       let i0 = grp.first()
       let s = r.steps.at(i0)
-      let s = if held == none { s } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
+      let s = if held == none { s } else if s.len() > 3 {
+        (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)], s.at(3))
+      } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
       held = if got.at(i0).dup { s } else { none }
       if not got.at(i0).dup {
         steps.push(s); pics.push(got.at(i0).pic)
@@ -377,30 +464,94 @@
   // page overran its foot (16.3i).
   table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
     let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
-    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none, w)))
+    // The scale factor treats a GROUP as one column, not `n` side by side — its members stack
+    // vertically (below), so the row only spends one picture's worth of width on them, the widest.
+    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none,
+      chain-groups(c.at(2)).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx)))))))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
-      if "sub" in row {
-        pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
-          stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
-      }
+      sub-header(row)
       // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
       // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
-      // them one circuit row per step carrying its reason.
+      // them one circuit row per step carrying its reason.  A row with a BRANCHES step (∪/+) letters
+      // every COLUMN regardless of width — one letter per group, not per branch inside it — and
+      // replaces the list with a 3-column table (letter, formula, hint) — see the comment above `chain-tags`.
       let pw = w.map(x => x * k)
+      let hasg = not circuit and r.any(s => type(s.at(3, default: none)) == dictionary)
+      // A GROUP is one COLUMN, so it gets one letter shared by every flat member — the letters run
+      // consecutively over COLUMNS (`chain-groups(r)`), never over flat steps, or a 2-member group
+      // would eat two letters of the row's alphabet and print them joined ("(b, c)") under one picture.
       let (tags, n) = ((), 0)
-      for (s, x) in r.zip(pw) {
-        if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 } else { tags.push(none) }
+      if hasg {
+        for (i0, gn) in chain-groups(r) {
+          for idx in range(i0, i0 + gn) { tags.push(chain-tags.at(n)) }
+          n += 1
+        }
+      } else {
+        for (s, x) in r.zip(pw) {
+          if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 }
+          else { tags.push(none) }
+        }
       }
-      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) =>
-        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
-          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
-        if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
-          else { none })))
-      if n > 0 {
+      // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
+      // below, the group's own `sym` between them as a plain centred label — instead of standing
+      // side by side.  A plain `align(top, ..)` does NOT beat `hchain`'s own per-cell
+      // `center+horizon`: a grid measures each cell at its natural size FIRST, so an inner `align`
+      // with nothing to redistribute is a no-op, and the grid then centres the whole (already
+      // natural-sized) block regardless — confirmed by `look` on the 10.2b row of three groups (2, 3,
+      // 2 members), where a plain `align(top, ..)` left the 3-member group's `.inl` still centred,
+      // 115px above the 2-member groups' `.inl`.  The fix gives every entry in an `hasg` row the SAME
+      // explicit height (`rowh`, the row's tallest entry) via `box(height: rowh, align(.., ..))`
+      // FIRST — a box with a real height gives its own `align` real slack, and every cell then being
+      // already `rowh` tall leaves the grid nothing left to redistribute — top-aligning a group's
+      // stack inside its box and horizon-aligning a plain step inside its own, so groups' tops sit on
+      // one line and a plain step still reads centred on the group next to it.
+      let zipped = r.zip(c.at(1), w, pw, tags)
+      let raw = chain-groups(r).map(((i0, n)) => {
+        if n == 1 {
+          let (s, p, cw, x, t) = zipped.at(i0)
+          (top: false, op: s.at(0), pic: box(width: cw, align(center, p)),
+            reason: if circuit { [] } else {
+              align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
+            f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none })
+        } else {
+          let (children, maxw) = ((), 0pt)
+          for (k2, idx) in range(i0, i0 + n).enumerate() {
+            let (s, p, cw, x, t) = zipped.at(idx)
+            if k2 > 0 { children.push(align(center, s.at(0))) }
+            children.push(box(width: cw, align(center, p)))
+            maxw = calc.max(maxw, x)
+          }
+          (top: true, op: zipped.at(i0).at(0).at(0), pic: stack(dir: ttb, spacing: hgut, ..children),
+            reason: if circuit { [] } else { align(right, box(width: maxw, align(center, [(#tags.at(i0))]))) },
+            f: none)
+        }
+      })
+      let rowh = if hasg { calc.max(..raw.map(e => measure(e.pic).height)) } else { 0pt }
+      hchain(fill: k, ..raw.map(e => (e.op,
+        if hasg { box(height: rowh, align(if e.top { top } else { horizon }, e.pic)) } else { e.pic },
+        e.reason, e.f, none)))
+      if hasg {
+        // One table line per GROUP, not per flat step: a `union(sel)`/`sum(sel)` call's `n` flat
+        // members all carry the same `gid` (set where the group is expanded, above), so consecutive
+        // same-`gid` entries collapse into one line — its ONE column letter, its `gform` once, and
+        // the head member's own hint once — while a plain step (no `g`) keeps its own line unchanged.
+        let lines = ()
+        for (i0, n) in chain-groups(r) {
+          if n > 1 {
+            let g = r.at(i0).at(3)
+            lines.push(([(#tags.at(i0))], fit-w(g.gform), r.at(i0).at(2)))
+          } else {
+            let s = r.at(i0)
+            lines.push(([(#tags.at(i0))], fit-w(leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) })), s.at(2)))
+          }
+        }
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
+          al: (center + horizon, center + horizon, left + horizon),
+          ..lines.flatten()))
+      } else if n > 0 {
         block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
           ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
       }
