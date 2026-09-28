@@ -385,6 +385,17 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
   -- and everything east of it move), the inner one east (everything east of the lane moves), so no
   -- `°` lane crosses another wire.
   let mut (ls, xo) := (ls, xo)
+  -- THE GAP A WEST `°` COLUMN NEEDS is not always one column: a bead whose dot sits on the lane it
+  -- borders is drawn WEST of it exactly when that lane is the panel's own leftmost ink
+  -- (`dpanel.typ`'s `west-at`), and a flat `DX` only clears a label shorter than it — `flatten`'s
+  -- ran on into the `°` band it was meant to stand beside.  Estimated the way `spreadEdge`
+  -- estimates a port label, one character at `LCW`; `DX` is the floor, for every panel with no
+  -- such label to clear.
+  let convGap (ls : Array Lane) (atX : Float) : Float :=
+    if (minA (ls.map (·.x)) 1e9 - atX).abs > 1e-6 then DX else
+    let onLane (r : Row) : Bool := r.nat.isSome &&
+      (if r.arms.isEmpty then r.legs else r.arms).any fun j => (ls[j]!.x - atX).abs < 1e-6
+    maxA ((p.rows.filter onLane).map fun r => LCW * r.label.length.toFloat + 2 * LDX + DX) DX
   -- ONE COLUMN PER `°` WIRE, not per span: two spans on one side of lanes in one column are one
   -- wire, however many rows or lanes they come from.
   let mut opened : Array (Nat × Bool) := #[]
@@ -398,25 +409,29 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
         opened := opened.push (i, west)
         let x := ls[i]!.x
         let thr := if west then x - 1e-6 else x + 1e-6
-        ls := ls.map fun o => if o.x > thr then { o with x := o.x + DX } else o
-        xo := xo + DX
-  -- A WHOLE `°` opens one column WEST of every lane that carries it, once per span.
+        let g := if west then convGap ls x else DX
+        ls := ls.map fun o => if o.x > thr then { o with x := o.x + g } else o
+        xo := xo + g
+  -- A WHOLE `°` opens a column WEST of every lane that carries it, once per span — `convGap` wide.
   let wholes : Array (Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
     if c.whole && !a.contains (c.first, c.last) then a.push (c.first, c.last) else a) acc) #[]
   let carried (ls : Array Lane) (s : Int × Int) : Float :=
     minA ((ls.filter fun l => l.conv.any fun c => c.whole && (c.first, c.last) == s).map (·.x)) 1e9
+  let mut wholeAt : Array (Int × Int × Float) := #[]
   for s in wholes do
     let m := carried ls s
-    ls := ls.map fun o => if o.x > m - 1e-6 then { o with x := o.x + DX } else o
-    xo := xo + DX
+    let g := convGap ls m
+    ls := ls.map fun o => if o.x > m - 1e-6 then { o with x := o.x + g } else o
+    xo := xo + g
+    wholeAt := wholeAt.push (s.1, s.2, m)
   let yOf (r : Int) : Float := if r < 0 then hh else if r >= (n : Int) then 0.0 else ys[r.toNat]!
   -- Every `°` wire `(x, first, last)`: the outer one of a lane WEST of it, the inner one EAST, a
-  -- whole one west of every lane carrying it.
+  -- whole one at the span's carrying lane's own PRE-SHIFT `x` — where `convGap` opened its column.
   let wires : Array (Float × Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
       if c.whole then a else
       let a := if c.outer then a.push (l.x - DX, c.first, c.last) else a
       if c.inner then a.push (l.x + DX, c.first, c.last) else a) acc) #[]
-    ++ wholes.map fun s => (carried ls s - DX, s.1, s.2)
+    ++ wholeAt.map fun (f, l, m) => (m, f, l)
   -- `(x0, x1, y0, y1, both)`: `Relᵒᵖ` runs from `x0` to the `°` lane at `x1`.  Read row by row: each
   -- `°` wire crossed going WEST from the object toggles `𝒜`/`𝒜ᵒᵖ`, so the wires pair up from the
   -- east (`both`, dashed at `x0` too) and an odd one out shades to the panel's west edge.
