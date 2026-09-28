@@ -3,7 +3,17 @@
 // note-split: chapter 2 — this header is written by scripts/note-split and stripped by scripts/note-join
 = Functions and Categories <sec-categories>
 
-== Initial algebra
+== Categories
+
+== Functors
+
+== Natural transformations
+
+== Constructing datatypes
+
+== Products and coproducts
+
+== Initial algebras
 
 // §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
 // the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
@@ -86,7 +96,7 @@ then applying `S` is folding with `Q`.
 )]<cata-fusion>
 
 #pagebreak(weak: true)
-== Type functor
+== Type functors
 
 #disp[#definition[
 Let `F` be a bifunctor taking both the parameter `A` and the recursive position `TA`, with an initial

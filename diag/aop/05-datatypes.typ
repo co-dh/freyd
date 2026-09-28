@@ -50,7 +50,7 @@ The *power relator* `P` — `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b�
 the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a₂,b₁)}` the pair
 `({a₁,a₂},{b₁,b₂})` is in `P(R)∩P(S)`, while `R∩S=∅`.
 
-== Fork `⟨R,S⟩`
+== Relational products
 
 #disp(num: "(5.1)")[#definition[
 The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
@@ -145,7 +145,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   [],
 )]<bdm-prod-laws>
 
-== Coproduct `[R,S] : A+B⟶C` <sec-coprod>
+== Relational coproducts <sec-coprod>
 
 // THE DEFINITION, DRAWN, and it needs no new generator: `+` is a UNION, already drawn as the tape of
 // the laws above.  A TAPE ONLY WHERE THERE IS A `∪`, which is why two of the three shape rows have none.
@@ -362,7 +362,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
 #pagebreak(weak: true)
-== Type relator
+=== Type relator
 
 // `F`-algebra, `F`-homomorphism, the initial algebra, its reflection and fusion laws — @initial-defn,
 // @cata-reflection, @cata-fusion — moved to §2 (Functions and Categories, `02-categories.typ`).
@@ -407,7 +407,7 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
 // a page away from the definition it names, and the defining square below straddles the break.
 #pagebreak(weak: true)
 // B&dM and Freyd call this a catamorphism; the note says reduce, after q's `/`.
-== Reduce <sec-cata>
+== Relational catamorphisms <sec-cata>
 
 #disp[#definition[
 let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcategory of functions.
