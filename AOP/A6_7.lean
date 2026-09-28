@@ -16,6 +16,8 @@
 module
 
 public import AOP.A6_2
+public import AOP.A6_5
+public import AOP.A5_6
 
 universe u
 
@@ -179,6 +181,57 @@ public theorem star_comp_le {A : 𝒜} (R : A ⟶ A) : star R ≫ R ⊑ star R :
   rw [star_eq_mu']
   exact star'_comp_le R
 
+/-! ## §6.7  p.158: `X=𝟙∪RX` has the one solution `R*` when `R` is inductive
+
+  Induction along `R` (`Inductive`, p.147) on `Z := R* ⇨ R*/X`, which holds at `a` when every
+  `x` reaching `a` by `R*` reaches all of `X(a)` too.  `Z/R ⊑ Z` is the chain below: on the `𝟙`
+  branch `x` reaches `a` itself; on the `RX` branch it reaches the `R`-successor by `R*R ⊑ R*`. -/
+
+/-- p.158 uniqueness, step 1 of 4 (`X=𝟙∪RX`). -/
+public theorem star_unique_step1 {A : 𝒜} {R X : A ⟶ A} (hX : X = 𝟙 A ∪ (R ≫ X)) :
+    (((star R ⇨ star R / X) / R) ∩ star R) ≫ X
+      = (((star R ⇨ star R / X) / R) ∩ star R) ≫ (𝟙 A ∪ (R ≫ X)) :=
+  congrArg _ hX
+
+/-- p.158 uniqueness, step 2 of 4 (composition distributes over join). -/
+public theorem star_unique_step2 {A : 𝒜} (R X : A ⟶ A) :
+    (((star R ⇨ star R / X) / R) ∩ star R) ≫ (𝟙 A ∪ (R ≫ X))
+      = (((star R ⇨ star R / X) / R) ∩ star R)
+          ∪ ((((star R ⇨ star R / X) / R) ∩ star R) ≫ R) ≫ X := by
+  rw [DistributiveAllegory.comp_union_distrib, Cat.comp_id, Cat.assoc]
+
+/-- p.158 uniqueness, step 3 of 4 (`(Z/R)R⊑Z`, `R*R⊑R*`). -/
+public theorem star_unique_step3 {A : 𝒜} (R X : A ⟶ A) :
+    (((star R ⇨ star R / X) / R) ∩ star R)
+        ∪ ((((star R ⇨ star R / X) / R) ∩ star R) ≫ R) ≫ X
+      ⊑ star R ∪ ((star R ⇨ star R / X) ∩ star R) ≫ X :=
+  union_mono (inter_lb_right _ _) (comp_mono_right (le_trans (inter_comp_le _ _ R)
+    (inter_mono (DivisionAllegory.div_comp_le _ R) (star_comp_le R))) X)
+
+/-- p.158 uniqueness, step 4 of 4 (`(R*⇨R*/X)∩R* ⊑ R*/X`, `(R*/X)X⊑R*`). -/
+public theorem star_unique_step4 {A : 𝒜} (R X : A ⟶ A) :
+    star R ∪ ((star R ⇨ star R / X) ∩ star R) ≫ X ⊑ star R :=
+  union_lub (le_refl _) (le_trans (comp_mono_right (impl_cancel _ _) X)
+    (DivisionAllegory.div_comp_le _ X))
+
+/-- p.158: the induction step, `Z/R ⊑ Z` for `Z := R*⇨R*/X`. -/
+public theorem star_unique_step {A : 𝒜} {R X : A ⟶ A} (hX : X = 𝟙 A ∪ (R ≫ X)) :
+    (star R ⇨ star R / X) / R ⊑ star R ⇨ star R / X := by
+  refine (le_impl_iff _ _ _).mpr ((le_div_iff _ _ _).mpr ?_)
+  rw [star_unique_step1 hX, star_unique_step2]
+  exact le_trans (star_unique_step3 R X) (star_unique_step4 R X)
+
+/-- **p.158**: for an inductive `R`, `X=𝟙∪RX` has exactly one solution, and it is `R*`. -/
+public theorem star_unique {A : 𝒜} {R X : A ⟶ A} (hR : Inductive R) (hX : X = 𝟙 A ∪ (R ≫ X)) :
+    X = star R := by
+  have hM : star R ⊑ star R / X := le_trans (le_inter (le_refl _) (le_refl _))
+    ((le_impl_iff _ _ _).mp (le_trans (show star R ⊑ topHom A A from le_Sup trivial)
+      (hR _ (star_unique_step hX))))
+  refine le_antisymm ?_ (mu_le (by rw [← hX]; exact le_refl X))
+  calc X = 𝟙 A ≫ X := (Cat.id_comp X).symm
+    _ ⊑ star R ≫ X := comp_mono_right (id_le_star R) X
+    _ ⊑ star R := (le_div_iff _ _ _).mp hM
+
 /-! ## §6.7  Star-composition μ-forms (B&dM Ex 6.32 + p.160)
 
   `S·R*` and `R*·S` are themselves least fixed points — of the SAME body shape as `star`/`star'`
@@ -323,6 +376,24 @@ public theorem star_union_ge {A : 𝒜} (R S : A ⟶ A) :
     (le_trans (comp_mono_left (star (R ∪ S)) hT) (star_trans (R ∪ S)))
 
 end StarSection
+
+/-! ## §6.7  p.158: `Λ(R*)` as a join of two transposes -/
+
+section LambdaStar
+
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
+
+/-- p.158 `Λ(R*)`, step 1 of 2 (`R*=𝟙∪RR*`); step 2 is `Λ_union`. -/
+public theorem Λ_star_step1 {A : 𝒜} (R : A ⟶ A) : Λ (star R) = Λ (𝟙 A ∪ (R ≫ star R)) := by
+  rw [star_unfold R]
+
+/-- **p.158**: `Λ(R*) = ⟨Λ(𝟙),Λ(RR*)⟩cup` — the `tails` recursion, `R` being `tail`. -/
+public theorem Λ_star {A : 𝒜} (R : A ⟶ A)
+    (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
+    Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := by
+  rw [Λ_star_step1, Λ_union]
+
+end LambdaStar
 
 /-! ## §6.7  STRETCH: the θ-recursion for computing `S≫R*` (book pp. 159-161)
 

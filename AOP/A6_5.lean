@@ -31,7 +31,7 @@ variable {𝒜 : Type u} [DivisionLCDA 𝒜]
 
 /-- **B&dM p.146**: `R : A ← A` is INDUCTIVE if `X/R ⊑ X ⟹ Π ⊑ X` for all `X : A ← B`
     (`Π` = the universal relation of that type, `topHom`). -/
-def Inductive {A : 𝒜} (R : A ⟶ A) : Prop :=
+@[expose] public def Inductive {A : 𝒜} (R : A ⟶ A) : Prop :=
   ∀ {B : 𝒜} (X : B ⟶ A), X / R ⊑ X → topHom B A ⊑ X
 
 /-- **Ex 6.14**, `0` half: the empty relation is inductive (for ANY `X`, `X ≫ 0 = 0 ⊑ X`,
