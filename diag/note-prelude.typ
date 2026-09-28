@@ -322,20 +322,32 @@
       r
     } else { (steps: r) })
     // expand a `branches` step into its two rows before anything else sees it, so the rest of
-    // this function only ever meets plain string selectors or a `stmt-sel` singleton.
+    // this function only ever meets plain string selectors or a `stmt-sel` singleton; `groups`
+    // remembers which flat rows came from ONE row entry — a `branches` pair, or a row of its own —
+    // so the merge below decides once per STEP, never once per branch.
     .map(r => {
       let steps = ()
+      let groups = ()
       for s in r.steps {
         if type(s.at(1)) == dictionary {
+          let i0 = steps.len()
           steps.push((s.at(0), s.at(1).sels.at(0), s.at(2)))
           steps.push((s.at(1).sym, s.at(1).sels.at(1), src[]))
-        } else { steps.push(s) }
+          groups.push((i0, i0 + 1))
+        } else {
+          groups.push((steps.len(),))
+          steps.push(s)
+        }
       }
-      r + (steps: steps)
+      r + (steps: steps, groups: groups)
     })
-  // ONE PICTURE ONCE: a step whose panel the exporter found drawn as the NEXT one's (`dup`, its
-  // `Diagram.drawnAs`) only re-spells the term, so it is merged into that step — its op and the
-  // next step's picture, both reasons — and neither its panel nor its circuit is drawn.
+  // ONE PICTURE ONCE: a STEP whose panel the exporter found drawn the same as the NEXT step's,
+  // branch for branch (`dup`, the exporter's `stepGroups`/`Diagram.drawnAs`), only re-spells the
+  // term, so the whole step is merged into the next one — its op and the next step's own
+  // picture(s), both reasons — and neither its panel nor its circuit is drawn.  A pair merges only
+  // with a pair whose two branches BOTH match; it never merges with a single panel, and never with
+  // its own sibling branch, because the exporter's `dup` answers for the STEP, not the branch, and
+  // is the same for every row of one step — so this loop reads it once, at the step's first row.
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
@@ -347,10 +359,15 @@
       else { got.push(sp.at(i)); i += 1 }
     }
     let (steps, pics, held) = ((), (), none)
-    for (s, g) in r.steps.zip(got) {
+    for grp in r.groups {
+      let i0 = grp.first()
+      let s = r.steps.at(i0)
       let s = if held == none { s } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
-      held = if g.dup { s } else { none }
-      if not g.dup { steps.push(s); pics.push(g.pic) }
+      held = if got.at(i0).dup { s } else { none }
+      if not got.at(i0).dup {
+        steps.push(s); pics.push(got.at(i0).pic)
+        for idx in grp.slice(1) { steps.push(r.steps.at(idx)); pics.push(got.at(idx).pic) }
+      }
     }
     assert(held == none, message: "the last step of a lean-chain row is marked `dup`: it has no next step to merge into")
     (m, pics, steps)

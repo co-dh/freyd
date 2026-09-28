@@ -771,8 +771,34 @@ def Diagram.drawnAs (a b : Diagram) : Bool :=
     && a.rows.all (·.ident.isSome) && a.rows.map (·.ident) == b.rows.map (·.ident)
     && a.top == b.top && a.bot == b.bot
 
-/-- `dup`: this file draws what the NEXT selector of its call draws (`Diagram.drawnAs`), so a chain
-    shows the picture once — `lean-chain` merges the step into the next and joins their reasons. -/
+/-- THE KEY a peer's STEP shares with its sibling branch: everything about it but the branch
+    itself, so the two selectors one `branches(...)` call built — `.inl` and `.inr` of one side —
+    carry one key, and a peer with no such sibling carries a key nothing else matches. -/
+def peerStepKey (peer : String × Option String × List String × List Sel) :
+    String × Option String × List String × List String :=
+  let (b, h, p, s) := peer
+  (b, h, p, s.dropLast.map (·.suffix))
+
+/-- `peers` GROUPED INTO STEPS (`peerStepKey`): a run of consecutive peers sharing one key is the
+    one or two selectors a `lean-chain` row entry names — a `branches(...)` pair, or a lone
+    selector — each an array of indices into `peers`/`per`, in source order both ways.  Read off
+    `peers` itself, so a row's own pairing is never told to the exporter a second time. -/
+def stepGroups (peers : Array (String × Option String × List String × List Sel)) :
+    Array (Array Nat) := Id.run do
+  let mut out : Array (Array Nat) := #[]
+  let mut lastKey? : Option (String × Option String × List String × List String) := none
+  for i in [0 : peers.size] do
+    let k := peerStepKey peers[i]!
+    if lastKey? == some k then out := out.set! (out.size - 1) (out[out.size - 1]!.push i)
+    else out := out.push #[i]
+    lastKey? := some k
+  return out
+
+/-- `dup`: this file's whole STEP — itself alone, or itself and the sibling branch one
+    `branches(...)` call built with it (`stepGroups`) — draws what the NEXT step draws, branch for
+    branch (`Diagram.drawnAs`), so `lean-chain` merges the step into the next one and joins their
+    reasons.  A pair only merges with a pair whose two branches BOTH match; a pair never merges
+    with a single panel, and never with its own sibling branch, because neither is the next STEP. -/
 def dupLine (dup : Bool) : String := "#let dup = " ++ (if dup then "true" else "false") ++ "\n"
 
 /-- One panel on its own — one side of a statement, or one branch of a side.  `panels` is the file's
@@ -2994,11 +3020,19 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         unless r.ident.isSome do
           throwError "{declName}: the bead `{r.label}` records no term, so no panel of this call can share it"
     let pl := placement qs
-    -- THIS selector against the NEXT one of its call, each a single panel: the same picture twice.
+    -- THIS STEP against the NEXT one of its call — a pair compared branch for branch with a pair,
+    -- never with a single panel or with its own sibling (`stepGroups`, `dupLine`).
     let dup := match me with
-      | some k => k + 1 < per.size && per[k]!.size == 1 && per[k + 1]!.size == 1
-          && per[k]![0]!.drawnAs per[k + 1]![0]!
       | none => false
+      | some k => Id.run do
+        let groups := stepGroups peers.toArray
+        let some gi := groups.findIdx? (·.contains k) | return false
+        if gi + 1 >= groups.size then return false
+        let g0 := groups[gi]!
+        let g1 := groups[gi + 1]!
+        if g0.size != g1.size then return false
+        return (g0.zip g1).all fun (a, b) =>
+          per[a]!.size == 1 && per[b]!.size == 1 && per[a]![0]!.drawnAs per[b]![0]!
     -- THE OBLIGATION IS THE CALL'S, and it is taken over the parts the CALL names — not over the
     -- one file this run writes, which is a record and would drop out of the count by being deleted.
     -- A pair owes two things and this is where both are answered: ONE HEIGHT, so the parts stand in
