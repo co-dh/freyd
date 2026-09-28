@@ -296,25 +296,24 @@
   p
 }
 // A step whose Lean side at `sel` is branches joined by `sym` — a union `P ∪ Q`, or a sum
-// `∇°(P+Q)∇` whose codiagonals the sign stands for — reads as `sel.inr` then `sel.inl` (`rev:`
-// swaps them).  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`, below) to the
-// panel at the first selector under `op` then the second under `sym`, with no reason; `.sels`
-// spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A dictionary,
-// so it never collides with `stmt-sel`'s `(decl,)` array.
+// `∇°(P+Q)∇` whose codiagonals the sign stands for — reads `sel.inl` then `sel.inr`, the coproduct's
+// own left-to-right order.  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`,
+// below) to the panel at the first selector under `op` then the second under `sym`, with no reason;
+// `.sels` spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A
+// dictionary, so it never collides with `stmt-sel`'s `(decl,)` array.
 // `split:` names ONE of the two top branches ("inl"/"inr", the book's writing order) that is ITSELF
-// a further `∪`/`+`, and flattens it in place: `union(sel, split: "inr")` on the default (non-rev)
-// order reads `sel.inr.inr, sel.inr.inl, sel.inl` — three selectors, one `sym` between each pair —
-// the same mechanism `<entab-expand-V>` uses for the `nottab` arm's nested `∪`.  `rev:` still
-// reverses the WHOLE flattened list, so the split branch's two children stay adjacent to each other
-// under any order.  `sel` (the un-suffixed parent) survives in the dict so `lean-chain` can generate
-// the group's own formula from it — the whole side the branches split, not one formula per branch.
-#let branches(sym, sel, rev: false, split: none) = {
-  let s = (sel + ".inr", sel + ".inl")
+// a further `∪`/`+`, and flattens it in place: `union(sel, split: "inr")` reads
+// `sel.inl, sel.inr.inl, sel.inr.inr` — three selectors, one `sym` between each pair — the same
+// mechanism `<entab-expand-V>` uses for the `nottab` arm's nested `∪`.  `sel` (the un-suffixed
+// parent) survives in the dict so `lean-chain` can generate the group's own formula from it — the
+// whole side the branches split, not one formula per branch.
+#let branches(sym, sel, split: none) = {
+  let s = (sel + ".inl", sel + ".inr")
   let s = if split == none { s } else {
     let nest = sel + "." + split
-    s.map(x => if x == nest { (nest + ".inr", nest + ".inl") } else { x }).flatten()
+    s.map(x => if x == nest { (nest + ".inl", nest + ".inr") } else { x }).flatten()
   }
-  (sym: sym, sel: sel, sels: if rev { s.rev() } else { s })
+  (sym: sym, sel: sel, sels: s)
 }
 #let union = branches.with([∪])
 #let sum = branches.with([+])
@@ -324,6 +323,27 @@
 // EVERY step and lists a 3-column table instead — letter, formula, hint — because the group's
 // formula only reads against its own hint, not against a panel too narrow to hold it.
 #let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
+// The maximal runs of a flat step list `r` that share one `union`/`sum` call: each run is
+// `(i0, n)`, `n == 1` a plain step, `n > 1` a branches group — identified by the `gid` the
+// group's expansion stamped on every one of its flat members (never by comparing formula text).
+// Shared by the below-row table and by `hchain`'s vertical stacking of a group's own pictures.
+#let chain-groups(r) = {
+  let out = ()
+  let i = 0
+  while i < r.len() {
+    let g = r.at(i).at(3, default: none)
+    if type(g) == dictionary {
+      let j = i + 1
+      while j < r.len() and type(r.at(j).at(3, default: none)) == dictionary and r.at(j).at(3).gid == g.gid { j += 1 }
+      out.push((i, j - i))
+      i = j
+    } else {
+      out.push((i, 1))
+      i += 1
+    }
+  }
+  out
+}
 // Shrinks CONTENT to whatever width its container gives it, never growing past 1.0 — the ratio
 // `chain-k` uses for a whole row, read here from `layout` since a table cell's width is only known
 // once the surrounding grid resolves its `1fr` columns.
@@ -359,7 +379,7 @@
           let b = s.at(1)
           let i0 = steps.len()
           let n = b.sels.len()
-          let g = (gform: leanf(b.sel),)
+          let g = (gform: leanf(b.sel), gid: i0)
           steps.push((s.at(0), b.sels.at(0), s.at(2), g))
           for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[], g)) }
           groups.push(range(i0, i0 + n))
@@ -408,7 +428,10 @@
   // page overran its foot (16.3i).
   table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
     let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
-    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none, w)))
+    // The scale factor treats a GROUP as one column, not `n` side by side — its members stack
+    // vertically (below), so the row only spends one picture's worth of width on them, the widest.
+    let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none,
+      chain-groups(c.at(2)).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx)))))))
     for ((row, c), w) in rows.zip(calls).zip(ws) {
       let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
@@ -430,25 +453,55 @@
         if hasg or (not circuit and measure(s.at(2)).width > x) { tags.push(chain-tags.at(n)); n += 1 }
         else { tags.push(none) }
       }
-      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) => {
-        let g = s.at(3, default: none)
-        let isg = type(g) == dictionary
-        (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
-          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
-        if isg { none }
-          else if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
-          else { none },
-        none)
+      // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
+      // below, the group's own `sym` between them as a plain centred label — instead of standing
+      // side by side.  Top-aligned (`align(top, ..)`), against `hchain`'s row-wide `center+horizon`
+      // default, so every group's `.inl` sits at the row's top edge regardless of how many members
+      // its neighbour stacks — the top pictures of every group in the row form one line to read
+      // across, unlike centring, which only lines up groups of the same member count.  A plain step
+      // next to a group is NOT wrapped, so it keeps `hchain`'s own centring and reads centred on the
+      // group's whole height, unchanged.
+      let zipped = r.zip(c.at(1), w, pw, tags)
+      hchain(fill: k, ..chain-groups(r).map(((i0, n)) => {
+        if n == 1 {
+          let (s, p, cw, x, t) = zipped.at(i0)
+          (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
+            align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
+          if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none },
+          none)
+        } else {
+          let (children, letters, maxw) = ((), (), 0pt)
+          for (k2, idx) in range(i0, i0 + n).enumerate() {
+            let (s, p, cw, x, t) = zipped.at(idx)
+            if k2 > 0 { children.push(align(center, s.at(0))) }
+            children.push(box(width: cw, align(center, p)))
+            letters.push(t)
+            maxw = calc.max(maxw, x)
+          }
+          (zipped.at(i0).at(0).at(0), align(top, stack(dir: ttb, spacing: hgut, ..children)),
+            if circuit { [] } else { align(right, box(width: maxw, align(center, [(#letters.join(", "))]))) },
+            none, none)
+        }
       }))
       if hasg {
+        // One table line per GROUP, not per flat step: a `union(sel)`/`sum(sel)` call's `n` flat
+        // members all carry the same `gid` (set where the group is expanded, above), so consecutive
+        // same-`gid` entries collapse into one line — its letters joined, its `gform` once, and the
+        // head member's own hint once — while a plain step (no `g`) keeps its own line unchanged.
+        let lines = ()
+        for (i0, n) in chain-groups(r) {
+          if n > 1 {
+            let g = r.at(i0).at(3)
+            let letters = range(i0, i0 + n).map(idx => tags.at(idx))
+            lines.push(([(#letters.join(", "))], fit-w(g.gform), r.at(i0).at(2)))
+          } else {
+            let s = r.at(i0)
+            lines.push(([(#tags.at(i0))], fit-w(leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) })), s.at(2)))
+          }
+        }
         block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
           al: (center + horizon, center + horizon, left + horizon),
-          ..r.zip(tags).map(((s, t)) => {
-            let g = s.at(3, default: none)
-            let f = if type(g) == dictionary { g.gform }
-              else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
-            ([(#t)], fit-w(f), s.at(2))
-          }).flatten()))
+          ..lines.flatten()))
       } else if n > 0 {
         block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
           ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))

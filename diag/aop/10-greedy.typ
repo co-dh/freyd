@@ -136,18 +136,18 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
       src[`expand=istab outl fill∪nottab snocR` — definition of `expand`]),
      // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step2.rhs", rev: true),
+    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step2.rhs"),
       src[`(S∪T)R=SR∪TR` — conditionals distribute]),
      // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
   ), (
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", rev: true), src[`fill V°=fill` (Ex. 10.4)]),
+    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step3.rhs"), src[`fill V°=fill` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
     // the `nottab` arm splits again here — three diagrams: the unchanged `istab` side, then its own
     // two children — because `snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4) introduces a second `∪` under `nottab`.
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", rev: true, split: "inr"),
+    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", split: "inr"),
       src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step5.rhs", rev: true),
+    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step5.rhs"),
       src[`expand=istab outl fill∪nottab snocR` — definition of `expand`; `nottab R⊑R` — guard
        dropped]),
      // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
@@ -577,28 +577,28 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      yields only decimals that are `R`-related to one built without choosing]],
     // lean:AOP.A10_4_Tex.tex_greedy@a8ba8ee9
   // steps 1-6's rhs is a `∪` of the branch that simplifies (`.inl`) and the fixed `F(X)α[≫R]`
-  // branch (`.inr`); `rev: true` throughout draws them in that left-to-right order, so the fixed
-  // branch stays on the same side across every step, remerging by idempotence at step 7.
+  // branch (`.inr`); `union`'s coproduct order draws them left-to-right that way throughout, so the
+  // fixed branch stays on the same side across every step, remerging by idempotence at step 7.
   lean-chain(
     (
       (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs", rev: true),
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs"),
         src[definition of `Q`; composition distributes over `∪`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", rev: true), src[`R` is reflexive]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs"), src[`R` is reflexive]),
        // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs", rev: true),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs"),
         src[`r F(X) α⊑! l α R`: `l α=nil`, and `length(nil)=0` is at most any length]),
        // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
     ),
     (
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs", rev: true),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs"),
         src[`!°!⊑𝟙` on `𝟏`: universal property of `!`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs", rev: true),
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs"),
         src[`l F(X)=l`: definition of `F`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", rev: true), src[`l` is simple: `l°l⊑𝟙`]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs"), src[`l` is simple: `l°l⊑𝟙`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
       (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`∪` is idempotent]),
        // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f

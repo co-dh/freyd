@@ -1981,9 +1981,9 @@ zip(that)                                         each row: its square, and the 
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
 // coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
 #disp[#capbox(
-  // `union` gives `.inr` then `.inl`; this row draws the formula's own left-to-right order, `.inl`
-  // (`head prefix° head°`) then `.inr` (`nil° nil`), so the pair is reversed here.
-  lean(..union("Freyd.Alg.RelSet.Van.Hrel", rev: true).sels, op: [∪]),
+  // `union` gives the formula's own left-to-right order, `.inl` (`head prefix° head°`) then `.inr`
+  // (`nil° nil`).
+  lean(..union("Freyd.Alg.RelSet.Van.Hrel").sels, op: [∪]),
  [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
