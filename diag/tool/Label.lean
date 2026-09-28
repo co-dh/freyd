@@ -1600,19 +1600,24 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- the operand of a head nobody here wrote is still the fraction.
     let stx ← delabP e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
-    let rec respell (p : Nat) (as : List Expr) (holes : Array Lbl) (t : Expr) : MetaM Lbl := do
+    -- EVERY OPERAND IS REPLACED IN ONE PASS, outermost first: replacing them one at a time rewrote
+    -- `R` inside `QR−P−Q` before that operand's own turn, which then matched nothing and printed
+    -- raw — `θ(P ∪ Q,Q ≫ R − P − Q)`.  An operand nested in another is that operand's business.
+    let rec respell (p : Nat) (as : List Expr) (ops xs : Array Expr) (holes : Array Lbl) (t : Expr) :
+        MetaM Lbl := do
       match as with
-      | [] => return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
+      | [] =>
+        let t := t.replace fun s => (ops.findIdx? (· == s)).map (xs[·]!)
+        return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
           (Name.mkSimple ∘ holeName)).toArray) holes
       | a :: rest =>
         let nm := Name.mkSimple (holeName holes.size)
         let l ← labelTree p a
         Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
-          -- ONE LOCAL PER DISTINCT OPERAND: the replacement below takes every occurrence at once,
-          -- so a second local of the same name has nothing left to replace and only shadows the
-          -- first, which the printer then marks inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
-          respell p (rest.filter (· != a)) (holes.push l)
-            (t.replace fun s => if s == a then some x else none)
+          -- ONE LOCAL PER DISTINCT OPERAND: the replacement takes every occurrence at once, so a
+          -- second local of the same name only shadows the first, which the printer then marks
+          -- inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
+          respell p (rest.filter (· != a)) (ops.push a) (xs.push x) (holes.push l) t
     -- A HEAD THE NOTE SETS TIGHT closes up the space the FORMATTER wrote around the operator's own
     -- atom (`A × B` is `A×B`), and that space alone: a space INSIDE an operand belongs to that
     -- operand's own application, and cutting it welds two factors into one name — `E Nat × E Nat`
@@ -1627,7 +1632,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- …at the level of the notation the printer wrote it with: `A×B` binds as Lean's `×` does.
       let some (p, _) ← stxLevel (stxPeel stx)
         | throwError "labelTree: the tight head `{c}` printed `{stx}`, which is no infix notation"
-      return wrap p ((← respell (← Prec.factor) ops.toList #[] e).mapText (·.replace " " ""))
+      return wrap p ((← respell (← Prec.factor) ops.toList #[] #[] #[] e).mapText (·.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
       -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.
@@ -1704,7 +1709,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
           if (← Meta.isProp a) || (← Meta.isType a) || (← homEnds? a).isSome then return false
           unless (← Meta.whnf (← Meta.inferType (← Meta.inferType a))) == .sort 1 do return false
           return (appParts (stxPeel (← delabP a))).isSome).mapM fun i => pure args[i]!)).toList
-      #[] e
+      #[] #[] #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
     -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
