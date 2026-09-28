@@ -416,6 +416,14 @@
     + measure(text(b.at(2, default: black))[#b.at(1)]).width / 0.8cm))
   let nmd = dnamed(lanes, top, bot)
   let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not nmd.contains(j) }
+  // THE GATE FOR THAT RULE, over the MARKS and not the labels: every dot drawn at the leftmost lane's x
+  // — a bead's where `hm-bead` puts it, a unit's at its lane's birth — has its label set west.
+  if lx != none {
+    for b in beads { if west-at(dx(b.at(0))) and not west(b) {
+      panic("dpanel: the bead `" + plain(b.at(1)) + "` sits on the leftmost lane but its label is set east, across the lanes") } }
+    for (j, o) in lanes.enumerate() { if o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not wunit(j) {
+      panic("dpanel: the unit `" + plain(o.at(4)) + "` is born on the leftmost lane but its label is set east, across the lanes") } }
+  }
   let gk = dknees(dx, h, lanes, beads, nmd)
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:

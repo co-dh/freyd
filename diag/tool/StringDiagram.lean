@@ -134,9 +134,6 @@ def Mark.key : Mark → String
 structure Row where
   /-- The bead's label, shape and all: a division stays a fraction inside any composite. -/
   shape : Lbl
-  /-- THE BEAD'S OWN TERM (`beadKey`), which is what says two beads are ONE 2-CELL — the label is
-      a rendering and a rendering is the printing rules' business, not the picture's identity. -/
-  key   : String
   arms  : Array Nat
   legs  : Array Nat
   obj   : String
@@ -193,6 +190,11 @@ structure Row where
 
 /-- The flat spelling, for widths, messages and traces — never for what the panel sets. -/
 def Row.label (r : Row) : String := r.shape.flat
+
+/-- ONE 2-CELL: two beads are the same bead when their terms are (`Row.ident`, read by `canon`), never
+    when their labels print alike — a label is the printing rules' business, and a constant whose
+    index they drop reads as one bead at both ends of its own naturality square. -/
+def Row.same (x y : Row) : Bool := x.ident.isSome && x.ident == y.ident
 
 /-- A PICTURE, with an open top and bottom edge — the value `⟦f⟧` is, so that `⟦f≫g⟧ = ⟦f⟧⋆⟦g⟧` and
     `⟦φ×ψ⟧ = ×▹(⟦φ⟧∥⟦ψ⟧)` are composites of pictures and not a second walk over the term. -/
@@ -685,7 +687,7 @@ def placement (ps : Array Diagram) : Placement := Id.run do
       return #[]
     let kin (x y : Row) : Bool := (sib x).any (sib y).contains
     let w (i j : Nat) : Int :=
-      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.key == b.rows[i]!.key
+      let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.same b.rows[i]!
       let nbr := hits.filter (·.1 + 1 == k)
       if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin i
       else if !nbr.isEmpty then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
@@ -728,7 +730,7 @@ def placement (ps : Array Diagram) : Placement := Id.run do
 /-- The frame row of each of a part's beads; a part is found by its beads, and two parts with the
     same beads are drawn alike. -/
 def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
-  (pl.parts.find? fun (q, _) => q.rows.map (·.key) == p.rows.map (·.key)).get!.2
+  (pl.parts.find? fun (q, _) => q.rows.map (·.ident) == p.rows.map (·.ident)).get!.2
 
 /-- TWO PARTS THAT DRAW ONE PICTURE: the same lanes born and dying at the same rows, the same beads
     in order, over the same objects.  A step that only re-spells the term (`F(RS)=F(R)F(S)`, a
@@ -1722,20 +1724,6 @@ def beadCore (core : Expr) (vs : Array Expr) : MetaM Expr :=
       else return .continue
     | _ => return .continue)
 
-/-- A BEAD'S IDENTITY IS ITS TERM, NOT ITS RENDERING — the key two parts of one display are told
-    the same 2-cell by (`placement`, and the one-height obligation `drawString` holds a call to).
-    Comparing the LABEL instead tied identity to the printing rules: a constant whose index the
-    rules drop reads as one bead at both ends of its own naturality square, and the two beads that
-    swap across it can then be at one height in neither panel.
-
-    THE TERM, SPELLED WITH ITS INDEX — never the `Expr` itself.  One `#lean(…)` call draws panels
-    of TWO DECLARATIONS side by side (`thinRel_comp_eps_le` beside its reciprocal), and the same
-    object is a different free variable in each, so a structural key makes every bead of such a
-    pair a bead of its own and the two panels line up on nothing.  What is stable across the pair
-    is the note's own spelling of the family AT its index, which is what this is. -/
-def beadKey (core : Expr) (vs : Array Expr) : MetaM String := do
-  label (← beadCore core vs)
-
 /-- A CONSTANT'S INDEX COMES OFF AT THE BEAD'S OWN HEAD, and ONLY WHERE THE BARE CONSTANT HAS A
     PRINTING RULE BESIDE ITSELF.  An unexpander matches the term as APPLIED, so cutting the object
     argument out from under it stops it firing and the label comes out worse than the one the strip
@@ -1850,7 +1838,7 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   let unit := arms.isEmpty && legs.size == 1 && proved && (← Meta.isDefEq ox oy)
   let row : Row :=
     { shape := (← beadLabel core (#[ox, oy] ++ v?.toArray)),
-      key := (← beadKey core (#[ox, oy] ++ v?.toArray)), arms := ar, legs := lg, over := ov,
+      arms := ar, legs := lg, over := ov,
       unit, obj := (← label oy),
       src := { ws := arms, o := ox }, tgt := { ws := legs, o := oy },
       nat := vd.bind (·.mark), natLean := (vd.map (·.lean)).getD #[], natHyp := vd.bind (·.hyp),
@@ -2679,7 +2667,7 @@ def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : D
     let #[nr] := nd.rows
       | throwError "joinNamed: the named converse of `{r.label}` draws {nd.rows.size} rows, not one bead"
     d := { d with
-      rows := d.rows.set! i { r with shape := nr.shape, key := nr.key, nat := nr.nat,
+      rows := d.rows.set! i { r with shape := nr.shape, ident := nr.ident, nat := nr.nat,
                                      natLean := nr.natLean, natHyp := nr.natHyp }
       lanes := d.lanes.modify b fun l =>
         { l with conv := l.conv.push { first := i, last := i, outer := false, inner := true } } }
@@ -2930,6 +2918,11 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       if me.isSome then discard <| part declName binder path sel
       peers.toArray.mapM fun (b, h, p, s) => part b.toName h p s
     let qs := per.flatten
+    -- A bead with no term is one `Row.same` can match to nothing, so it would silently stand alone.
+    for q in qs do
+      for r in q.rows do
+        unless r.ident.isSome do
+          throwError "{declName}: the bead `{r.label}` records no term, so no panel of this call can share it"
     let pl := placement qs
     -- THIS selector against the NEXT one of its call, each a single panel: the same picture twice.
     let dup := match me with
@@ -2954,7 +2947,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         let mut shared : Array (Nat × Nat × Bool) := #[]
         for ra in [0 : a.rows.size] do
           for rb in [0 : b.rows.size] do
-            if a.rows[ra]!.key == b.rows[rb]!.key then
+            if a.rows[ra]!.same b.rows[rb]! then
               shared := shared.push (ra, rb, (pl.rows a)[ra]! == (pl.rows b)[rb]!)
         -- A BEAD THAT MOVED PAST A LEVEL ONE IS THE STATEMENT, not a misplacement: a slide
         -- `H(R)ψφ ⊑ ψφF(R)` carries `R` from above `ψ` to below it, and no box holds both level.

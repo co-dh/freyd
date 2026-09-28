@@ -419,8 +419,10 @@ public theorem Λ_comp_est_comp_singletonMap_cond2 {S : B ⟶ A} {Q R : A ⟶ A}
 /-- **(8.3)**, thin-elimination with context: `ΛS ≫ min R ≫ τ ⊑ ΛS ≫ thin Q` whenever `R`
     restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal
     property (`le_Λ_comp_thinRel_iff`), the context rule (7.6) `Λ_comp_est_context`, and the
-    shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound). -/
-public theorem Λ_comp_est_comp_singletonMap_le_thinRel {S : B ⟶ A} {Q R : A ⟶ A}
+    shared `recip_comp_Λ_le_recip_eps` (to recover the `S°S`-context bound).
+    `R` stands on `B`, the carrier's letter in `thinning_paths_alg`, so the chain drawing the two
+    side by side reads their `est(R)` as one bead. -/
+public theorem Λ_comp_est_comp_singletonMap_le_thinRel {B C : 𝒜} {S : C ⟶ B} {Q R : B ⟶ B}
     (h : R ∩ (S° ≫ S) ⊑ Q) : Λ S ≫ est R ≫ singletonMap ⊑ Λ S ≫ thinRel Q :=
   le_Λ_comp_thinRel_iff.mpr
     ⟨Λ_comp_est_comp_singletonMap_cond1, Λ_comp_est_comp_singletonMap_cond2 h⟩
