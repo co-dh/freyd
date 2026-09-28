@@ -556,6 +556,21 @@ public theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} 
   have := (cover_iff_recip_entire X°).mp (by rwa [Allegory.recip_recip])
   rwa [Allegory.recip_recip] at this
 
+/-- **Theorem 6.3** (B&dM p.149): if `S member(F)` is inductive, the equation `X = SF(X)R` has a
+    unique solution `φ(R,S) = μX : SF(X)R` — its least fixed point solves it (Knaster–Tarski),
+    every solution equals it (`thm63_unique`), and it is entire when `R` and `S` are
+    (`thm63_entire`). -/
+public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+    (hind : Inductive (S ≫ M.mem B)) :
+    mu (fun X : B ⟶ A => S ≫ F.map X ≫ R) = S ≫ F.map (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)) ≫ R
+    ∧ (∀ Y : B ⟶ A, Y = S ≫ F.map Y ≫ R → Y = mu (fun X : B ⟶ A => S ≫ F.map X ≫ R))
+    ∧ (Entire S → Entire R → Entire (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R))) := by
+  have hfix : mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)
+      = S ≫ F.map (mu (fun X : B ⟶ A => S ≫ F.map X ≫ R)) ≫ R :=
+    (mu_fixed (fun h => comp_mono_left _ (comp_mono_right (F.map_mono h) R))).symm
+  exact ⟨hfix, fun Y hY => thm63_unique M hind hY hfix,
+    fun hS hR => thm63_entire M hind hS hR (by rw [← hfix]; exact le_refl _)⟩
+
 /-- Corollary 6.2, simple half, first step: `X = gF(X)f` unfolded under the converse, and `g` simple
     cancels `g°g`. -/
 public theorem cor62_step1 {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} (hg : Map g) {X : B ⟶ A}
@@ -599,6 +614,18 @@ public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.
   have h1 := recip_mono (le_trans (thm63_le M hind hX hY) (inter_lb_right _ _))
   rw [Allegory.recip_recip] at h1
   exact (le_div_iff _ _ _).mp h1
+
+/-- **Corollary 6.2** (B&dM p.149), the book's proof: the unique solution of `X = gF(X)f` is the
+    hylomorphism `⦇f⦈⦇g°⦈°` (Theorem 6.2), and it is a function (`cor62`). -/
+public theorem cor62_hylo (I : InitialAlgebra F) (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B}
+    {f : F.obj A ⟶ A} (hind : Inductive (g ≫ M.mem B)) (hg : Map g) (hf : Map f) :
+    Map ((relCata g°)° ≫ relCata f)
+    ∧ ∀ Y : B ⟶ A, Y = g ≫ F.map Y ≫ f → Y = (relCata g°)° ≫ relCata f := by
+  have h := hylo_eq_mu I f g°
+  simp only [Allegory.recip_recip] at h
+  obtain ⟨hfix, huniq, -⟩ := thm63 M (R := f) hind
+  rw [h]
+  exact ⟨cor62 M hind hg hf hfix, huniq⟩
 
 /-- **Corollary 6.3** (B&dM p.149): if `R° member(F)` is inductive, `⦇R⦈` is surjective when `R`
     is — `⦇R⦈°` solves `X = R°F(X)α`, entire by Theorem 6.3. -/
