@@ -172,13 +172,10 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step3.rhs", src[the claim — @entab-expand-V]),
      // lean:AOP.A10_2_Detab.detab_V_R_step3@63a29781
   ), (
-    // step4-5's rhs is a `∪` of `detabR` (`.inl`) and the `snocR°≫…` branch (`.inr`); `rev: true`
-    // draws them in that left-to-right order, so the unchanged `detabR` branch stays on the same
-    // (left) side across both steps.
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs", rev: true),
+    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs"),
       src[distributing `∪`; the fold again, and the definition of `F`]),
      // lean:AOP.A10_2_Detab.detab_V_R_step4@12589ca1
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs", rev: true),
+    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs"),
       src[naturality of `π₁`: `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`]),
      // lean:AOP.A10_2_Detab.detab_V_R_step5@84af6677
     (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step6.rhs",
@@ -585,23 +582,23 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   lean-chain(
     (
       (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs", rev: true),
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs"),
         src[`(S ∪ T)U = SU ∪ TU` — definition of `Q`; composition distributes over `∪`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs", rev: true), src[`𝟙 ⊑ R` — `R` is reflexive]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs"), src[`𝟙 ⊑ R` — `R` is reflexive]),
        // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs", rev: true),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs"),
         src[`rF(X)α ⊑ !lαR` — `lα = nil`, and `length(nil) = 0` is at most any length]),
        // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
     ),
     (
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs", rev: true),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs"),
         src[`!°! ⊑ 𝟙` on `𝟏` — universal property of `!`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs", rev: true),
+      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs"),
         src[`lF(X) = l` — definition of `F`]),
        // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs", rev: true), src[`l°l ⊑ 𝟙` — `l` is simple]),
+      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs"), src[`l°l ⊑ 𝟙` — `l` is simple]),
        // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
       (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`S ∪ S = S` — `∪` is idempotent]),
        // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
