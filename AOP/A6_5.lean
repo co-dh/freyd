@@ -79,6 +79,34 @@ theorem inductive_of_le {A : 𝒜} {R S : A ⟶ A} (hS : Inductive S) (h : R ⊑
 theorem inductive_inter {A : 𝒜} {R S : A ⟶ A} (hR : Inductive R) : Inductive (R ∩ S) :=
   inductive_of_le hR (inter_lb_left R S)
 
+/-- **Ex 6.16**, for `Inductive`: conjugation by a map preserves inductivity, `f W f°` inductive
+    when `W` is.  Division alone does it: `Z/f°` is the test relation for `W` (a Boolean detour
+    through well-foundedness would tie Theorem 6.4 to a Boolean allegory). -/
+theorem inductive_conjugate {A B : 𝒜} {W : A ⟶ A} {f : B ⟶ A} (hf : Map f) (hW : Inductive W) :
+    Inductive (f ≫ W ≫ f°) := by
+  intro C Z hZ
+  have h1 : (Z / f°) / W ⊑ Z / f° := by
+    apply (le_div_iff _ _ _).mpr
+    apply le_trans _ hZ
+    apply (le_div_iff _ _ _).mpr
+    have e : (((Z / f°) / W) ≫ f°) ≫ (f ≫ W ≫ f°) = ((Z / f°) / W) ≫ (f° ≫ f) ≫ W ≫ f° := by
+      simp only [Cat.assoc]
+    rw [e]
+    have s1 : ((Z / f°) / W) ≫ (f° ≫ f) ≫ W ≫ f° ⊑ ((Z / f°) / W) ≫ W ≫ f° := by
+      have := comp_mono_left ((Z / f°) / W) (comp_mono_right hf.2 (W ≫ f°))
+      rwa [Cat.id_comp] at this
+    have s2 : ((Z / f°) / W) ≫ W ≫ f° ⊑ Z := by
+      rw [← Cat.assoc]
+      exact le_trans (comp_mono_right (DivisionAllegory.div_comp_le _ W) f°)
+        (DivisionAllegory.div_comp_le Z f°)
+    exact le_trans s1 s2
+  have h2 : topHom C A ⊑ Z / f° := hW _ h1
+  have s1 : topHom C B ⊑ topHom C B ≫ (f ≫ f°) := by
+    have := comp_mono_left (topHom C B) (map_entire_le hf); rwa [Cat.comp_id] at this
+  have s2 : topHom C B ≫ (f ≫ f°) ⊑ topHom C A ≫ f° := by
+    rw [← Cat.assoc]; exact comp_mono_right (le_Sup trivial) f°
+  exact le_trans s1 (le_trans s2 (le_trans (comp_mono_right h2 f°) (DivisionAllegory.div_comp_le Z f°)))
+
 /-- **Ex 6.12**: `R` is inductive iff `X = X/R` has `topHom` as its ONLY solution.
     `topHom` is always A solution (`topHom = topHom/R`, shown by antisymmetry).  Forward:
     a solution satisfies `X/R ⊑ X` (from the equation), so inductivity gives `topHom ⊑ X`,
@@ -245,14 +273,6 @@ theorem wellFoundedRel_conjugate {A B : 𝒜} {R : A ⟶ A} {f : B ⟶ A} (hf : 
     exact t5
   exact le_trans hX hfinal
 
-/-- **Ex 6.16**, transported to `Inductive`: conjugation by a map preserves inductivity.
-    Proved via well-foundedness (the book's own route for Theorem 6.4 factors through the
-    same well-foundedness/Boolean detour, so this is the natural home rather than a direct
-    division-only argument). -/
-theorem inductive_conjugate {A B : 𝒜} {W : A ⟶ A} {f : B ⟶ A} (hf : Map f) (hW : Inductive W) :
-    Inductive (f ≫ W ≫ f°) :=
-  inductive_of_wellFoundedRel (wellFoundedRel_conjugate hf (wellFoundedRel_of_inductive hW))
-
 end WellFoundedBoolean
 
 /-! ## §6.5.3  Membership -/
@@ -318,38 +338,163 @@ def compMembership {F G : Relator 𝒜 𝒜} (MF : LaxMembership F) (MG : LaxMem
         ⊑ MG.mem (F.obj A) ≫ (MF.mem A ≫ R) := le_trans s2 s4
     rwa [e4] at s5
 
+/-- **B&dM Ex 6.18**, the coreflexive half of the formal definition: a MEMBERSHIP is a lax
+    membership whose relator keeps every `s` all of whose members pass the coreflexive `Q`.  The
+    lax inequality alone does not pin `mem` down — `mem = 𝟘` satisfies it, and then Theorem 6.3
+    would solve p.146's equation uniquely, which `X = 𝟙` refutes. -/
+structure Membership (F : Relator 𝒜 𝒜) extends LaxMembership F where
+  all : ∀ {B : 𝒜} {Q : B ⟶ B}, Coreflexive Q → 𝟙 (F.obj B) ∩ ((mem B ≫ Q) / mem B) ⊑ F.map Q
+
 end Membership
 
-/-! ## §6.5.4  Theorem 6.3 cluster (hylomorphism uniqueness) and Theorem 6.4 -/
+/-! ## §6.5.4  Theorem 6.3 (unique fixed points) and its corollaries -/
 
-section HyloTheorem63
+section Theorem63
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
-/-- **Theorem 6.3** (B&dM p.149, uniqueness half): if `member(F)·S` is inductive, the
-    equation `X = R·FX·S` (mirrored: `X = S ≫ F.map X ≫ R`) has AT MOST one solution.
+/-- Every `W` factors through the coreflexive of the points it reaches: `W ⊑ Π(𝟙 ∩ ΠW)`. -/
+theorem le_topHom_dom {C B : 𝒜} (W : C ⟶ B) : W ⊑ topHom C B ≫ (𝟙 B ∩ topHom B C ≫ W) := by
+  have h := modular_le_right (topHom C B) (𝟙 B) W
+  rw [Cat.comp_id, recip_topHom] at h
+  exact le_trans (le_inter (le_Sup trivial) (le_refl W)) h
 
-    The book gives NO proof here (cites Doornbos & Backhouse 1995).  GENUINE ATTEMPT: the
-    natural candidate exploiting `hind : Inductive (S ≫ M.mem b)` (an endo on `b`) is the
-    relation `Z := X / Y : b ⟶ b` (well-typed since `X, Y : b ⟶ a` share codomain `a`,
-    matching `Inductive`'s domain-`b` slot).  Closing `(X/Y) / (S ≫ M.mem b) ⊑ X/Y` needs
-    relating `F.map (X/Y)` to `X` and `Y` through the coalgebra/algebra equations and
-    `M.lax`'s inequality — the diagrammatic chase needs `F.map` to interact with division
-    (e.g. `F.map (X/Y)` vs `F.map X / F.map Y`), which a bare `Relator` (a monotonic
-    functor, preserving neither `∩` nor division in general — only `Ex 5.2`'s coreflexive
-    `∩`) does not support.  No non-circular closing step was found in the time budgeted.
-    Recorded as a STATEMENT-ONLY placeholder (matching the book's own uncited status), NOT
-    a Sorry. -/
-def HyloUnique (_M : LaxMembership F) {A B : 𝒜} (S : B ⟶ F.obj B) (R : F.obj A ⟶ A) : Prop :=
-  ∀ X Y : B ⟶ A, X = S ≫ F.map X ≫ R → Y = S ≫ F.map Y ≫ R → X = Y
+/-- A coreflexive `Q` with `Π ⊑ ΠQ` is the identity. -/
+theorem id_le_of_topHom_le {B : 𝒜} {Q : B ⟶ B} (hQ : Coreflexive Q)
+    (h : topHom B B ⊑ topHom B B ≫ Q) : 𝟙 B ⊑ Q := by
+  have h1 : 𝟙 B ⊑ (topHom B B ≫ Q) ∩ 𝟙 B := le_inter (le_trans (le_Sup trivial) h) (le_refl _)
+  have h2 : topHom B B ∩ 𝟙 B ≫ Q° ⊑ 𝟙 B := by
+    rw [Cat.id_comp]; exact le_trans (inter_lb_right _ _) (by have := recip_mono hQ; rwa [recip_id] at this)
+  have h3 := comp_mono_right h2 Q
+  exact le_trans h1 (le_trans (modular_le _ _ _) (le_trans h3 (by rw [Cat.id_comp]; exact le_refl _)))
 
-/-- **Theorem 6.3** (B&dM p.149, entireness half): "Moreover `φ(R,S)` is entire if both
-    `R` and `S` are entire."  Also cited to Doornbos & Backhouse 1995 without proof;
-    recorded alongside `HyloUnique` as a statement-only placeholder. -/
-def HyloEntire (_M : LaxMembership F) {A B : 𝒜} (S : B ⟶ F.obj B) (R : F.obj A ⟶ A) : Prop :=
-  Entire S → Entire R → ∀ X : B ⟶ A, X = S ≫ F.map X ≫ R → Entire X
+/-- The induction step of Theorem 6.3: where every member of an `S`-image passes `Q` after `W`,
+    the points `P` that `W` reaches go through `S` into `F(Q)`. -/
+theorem membership_step (M : Membership F) {B C : 𝒜} (S : B ⟶ F.obj B) {Q : B ⟶ B}
+    (hQ : Coreflexive Q) (W : C ⟶ B) (hW : W ≫ S ≫ M.mem B ⊑ topHom C B ≫ Q) :
+    (𝟙 B ∩ topHom B C ≫ W) ≫ S ⊑ S ≫ F.map Q := by
+  have hUS : (𝟙 B ∩ topHom B C ≫ W) ≫ S ⊑ S := by
+    have := comp_mono_right (inter_lb_left (𝟙 B) (topHom B C ≫ W)) S; rwa [Cat.id_comp] at this
+  have hUm : ((𝟙 B ∩ topHom B C ≫ W) ≫ S) ≫ M.mem B ⊑ topHom B B ≫ Q := by
+    have s1 := comp_mono_right (comp_mono_right (inter_lb_right (𝟙 B) (topHom B C ≫ W)) S) (M.mem B)
+    have e : ((topHom B C ≫ W) ≫ S) ≫ M.mem B = topHom B C ≫ (W ≫ S ≫ M.mem B) := by
+      simp only [Cat.assoc]
+    rw [e] at s1
+    have s2 : topHom B C ≫ (topHom C B ≫ Q) ⊑ topHom B B ≫ Q := by
+      rw [← Cat.assoc]; exact comp_mono_right (le_Sup trivial) Q
+    exact le_trans s1 (le_trans (comp_mono_left _ hW) s2)
+  generalize (𝟙 B ∩ topHom B C ≫ W) ≫ S = U at hUS hUm
+  have hU : U ⊑ U ≫ (𝟙 (F.obj B) ∩ U° ≫ U) := by
+    have := modular_le_right U (𝟙 (F.obj B)) U
+    rw [Cat.comp_id] at this
+    exact le_trans (le_inter (le_refl U) (le_refl U)) this
+  have hG : 𝟙 (F.obj B) ∩ U° ≫ U ⊑ 𝟙 (F.obj B) ∩ ((M.mem B ≫ Q) / M.mem B) := by
+    refine le_inter (inter_lb_left _ _) ((le_div_iff _ _ _).mpr ?_)
+    have s1 := inter_comp_le (𝟙 (F.obj B)) (U° ≫ U) (M.mem B)
+    rw [Cat.id_comp, Cat.assoc] at s1
+    have s2 : U° ≫ U ≫ M.mem B ⊑ (U° ≫ topHom B B) ≫ Q := by
+      rw [Cat.assoc]; exact comp_mono_left _ hUm
+    have s3 : M.mem B ∩ U° ≫ U ≫ M.mem B ⊑ ((U° ≫ topHom B B) ≫ Q) ∩ M.mem B :=
+      le_inter (le_trans (inter_lb_right _ _) s2) (inter_lb_left _ _)
+    have s4 : (U° ≫ topHom B B ∩ M.mem B ≫ Q°) ≫ Q ⊑ M.mem B ≫ Q := by
+      have hQr : Q° ⊑ 𝟙 B := by have := recip_mono hQ; rwa [recip_id] at this
+      have t1 : (U° ≫ topHom B B ∩ M.mem B ≫ Q°) ≫ Q ⊑ (M.mem B ≫ Q°) ≫ Q :=
+        comp_mono_right (inter_lb_right _ _) Q
+      have t2 : (M.mem B ≫ Q°) ≫ Q ⊑ (M.mem B ≫ 𝟙 B) ≫ Q :=
+        comp_mono_right (comp_mono_left _ hQr) Q
+      rw [Cat.comp_id] at t2
+      exact le_trans t1 t2
+    exact le_trans s1 (le_trans s3 (le_trans (modular_le _ _ _) s4))
+  exact le_trans hU (le_trans (comp_mono_left U hG)
+    (le_trans (comp_mono_right hUS _) (comp_mono_left S (M.all hQ))))
 
-end HyloTheorem63
+/-- **Theorem 6.3**, its induction principle: when `S member(F)` is inductive, a coreflexive `Q`
+    that holds wherever `S` sends every member into `Q` holds everywhere. -/
+theorem thm63_induction (M : Membership F) {B : 𝒜} (S : B ⟶ F.obj B)
+    (hind : Inductive (S ≫ M.mem B)) {Q : B ⟶ B} (hQ : Coreflexive Q)
+    (hclosed : ∀ P : B ⟶ B, P ⊑ 𝟙 B → P ≫ S ⊑ S ≫ F.map Q → P ⊑ Q) : 𝟙 B ⊑ Q := by
+  apply id_le_of_topHom_le hQ
+  apply hind
+  have hP := hclosed _ (inter_lb_left _ _)
+    (membership_step M S hQ _ (DivisionAllegory.div_comp_le (topHom B B ≫ Q) (S ≫ M.mem B)))
+  have h := le_topHom_dom ((topHom B B ≫ Q) / (S ≫ M.mem B))
+  exact le_trans h (comp_mono_left _ hP)
+
+/-- **Theorem 6.3**, uniqueness as an inequality: when `S member(F)` is inductive, a solution of
+    `X = SF(X)R` lies below every `Y` with `SF(Y)R ⊑ Y`. -/
+theorem thm63_le (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+    (hind : Inductive (S ≫ M.mem B)) {X Y : B ⟶ A} (hX : X = S ≫ F.map X ≫ R)
+    (hY : S ≫ F.map Y ≫ R ⊑ Y) : X ⊑ Y := by
+  have hQ : Coreflexive (𝟙 B ∩ (Y / X)) := inter_lb_left _ _
+  have h := thm63_induction M S hind hQ (fun P hP hPS => by
+    refine le_inter hP ((le_div_iff _ _ _).mpr ?_)
+    have hQX : (𝟙 B ∩ (Y / X)) ≫ X ⊑ Y :=
+      le_trans (comp_mono_right (inter_lb_right _ _) X) (DivisionAllegory.div_comp_le Y X)
+    calc P ≫ X = (P ≫ S) ≫ F.map X ≫ R := by rw [Cat.assoc, ← hX]
+      _ ⊑ (S ≫ F.map (𝟙 B ∩ (Y / X))) ≫ F.map X ≫ R := comp_mono_right hPS _
+      _ = S ≫ F.map ((𝟙 B ∩ (Y / X)) ≫ X) ≫ R := by rw [F.map_comp]; simp only [Cat.assoc]
+      _ ⊑ S ≫ F.map Y ≫ R := comp_mono_left S (comp_mono_right (F.map_mono hQX) R)
+      _ ⊑ Y := hY)
+  have := comp_mono_right (le_trans h (inter_lb_right _ _)) X
+  rw [Cat.id_comp] at this
+  exact le_trans this (DivisionAllegory.div_comp_le Y X)
+
+/-- **Theorem 6.3** (B&dM p.149): if `S member(F)` is inductive, `X = SF(X)R` has at most one
+    solution. -/
+theorem thm63_unique (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+    (hind : Inductive (S ≫ M.mem B)) {X Y : B ⟶ A} (hX : X = S ≫ F.map X ≫ R)
+    (hY : Y = S ≫ F.map Y ≫ R) : X = Y :=
+  le_antisymm (thm63_le M hind hX (by rw [← hY]; exact le_refl _))
+    (thm63_le M hind hY (by rw [← hX]; exact le_refl _))
+
+/-- **Theorem 6.3** (B&dM p.149), entire half: if `S member(F)` is inductive and `R`, `S` are
+    entire, every `X` with `SF(X)R ⊑ X` is entire — the unique solution in particular. -/
+theorem thm63_entire (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.obj A ⟶ A}
+    (hind : Inductive (S ≫ M.mem B)) (hS : Entire S) (hR : Entire R) {X : B ⟶ A}
+    (hX : S ≫ F.map X ≫ R ⊑ X) : Entire X := by
+  have hQ : Coreflexive (𝟙 B ∩ X ≫ topHom A B) := inter_lb_left _ _
+  have hRtop : topHom (F.obj A) B ⊑ R ≫ topHom A B := by
+    have := comp_mono_right (entire_id_le hR) (topHom (F.obj A) B)
+    rw [Cat.id_comp, Cat.assoc] at this
+    exact le_trans this (comp_mono_left R (le_Sup trivial))
+  have h := thm63_induction M S hind hQ (fun P hP hPS => by
+    refine le_inter hP ?_
+    have s1 : P ⊑ (P ≫ S) ≫ S° := by
+      have := comp_mono_left P (entire_id_le hS); rwa [Cat.comp_id, ← Cat.assoc] at this
+    have s2 : F.map (𝟙 B ∩ X ≫ topHom A B) ≫ S° ⊑ F.map X ≫ topHom (F.obj A) B := by
+      have := comp_mono_right (F.map_mono (inter_lb_right (𝟙 B) (X ≫ topHom A B))) S°
+      rw [F.map_comp, Cat.assoc] at this
+      exact le_trans this (comp_mono_left _ (le_Sup trivial))
+    calc P ⊑ (P ≫ S) ≫ S° := s1
+      _ ⊑ (S ≫ F.map (𝟙 B ∩ X ≫ topHom A B)) ≫ S° := comp_mono_right hPS _
+      _ ⊑ S ≫ F.map X ≫ topHom (F.obj A) B := by rw [Cat.assoc]; exact comp_mono_left S s2
+      _ ⊑ S ≫ F.map X ≫ R ≫ topHom A B := comp_mono_left S (comp_mono_left _ hRtop)
+      _ ⊑ X ≫ topHom A B := by
+        have := comp_mono_right hX (topHom A B); simp only [Cat.assoc] at this; exact this)
+  have h2 : 𝟙 B ⊑ X ≫ X° := by
+    have := modular_le_right X (topHom A B) (𝟙 B)
+    rw [Cat.comp_id] at this
+    exact le_trans (le_trans h (le_inter (inter_lb_right _ _) (inter_lb_left _ _)))
+      (le_trans this (comp_mono_left X (inter_lb_right _ _)))
+  have := (cover_iff_recip_entire X°).mp (by rwa [Allegory.recip_recip])
+  rwa [Allegory.recip_recip] at this
+
+/-- **Corollary 6.3** (B&dM p.149): if `R° member(F)` is inductive, `⦇R⦈` is surjective when `R`
+    is — `⦇R⦈°` solves `X = R°F(X)α`, entire by Theorem 6.3. -/
+theorem cor63 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+    (hind : Inductive (R° ≫ M.mem A)) (hR : 𝟙 A ⊑ R° ≫ R) :
+    𝟙 A ⊑ (relCata R)° ≫ relCata R := by
+  have hfix : relCata R = I.α° ≫ F.map (relCata R) ≫ R := (eq_relCata_iff_fixed I R _).mpr rfl
+  have hX : R° ≫ F.map (relCata R)° ≫ I.α ⊑ (relCata R)° := by
+    conv => rhs; rw [hfix]
+    simp only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc,
+      Relator.preservesRecip_of_tabular F]
+    exact le_refl _
+  have hE := thm63_entire M hind ((cover_iff_recip_entire R).mp hR) I.α_map.1 hX
+  have := entire_id_le hE
+  rwa [Allegory.recip_recip] at this
+
+end Theorem63
 
 /-! ### Theorem 6.4 -/
 
@@ -362,7 +507,7 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
     B&dM's fusion step: `comp_le_relCata` ((6.5), `AOP.A6_2`) against `⦇α⦈ = id`
     (`relCata_alpha`, `AOP.A6_3`). -/
 private theorem relCata_comp_le_id (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A}
-    {f : A ⟶ I.t} (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ≫ f ⊑ Cat.id I.t := by
+    {f : A ⟶ I.t} (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ≫ f ⊑ 𝟙 I.t := by
   have h1 : relCata R ≫ f ⊑ relCata I.α := comp_le_relCata I hcomm
   rwa [relCata_alpha] at h1
 
@@ -370,46 +515,71 @@ private theorem relCata_comp_le_id (I : InitialAlgebra F) {A : 𝒜} {R : F.obj 
     `R·f ⊑ α·Ff` (mirrored: `R≫f ⊑ F.map f≫I.α`), then `(|R|) ⊑ f°`. -/
 theorem thm64_forward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
     (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : relCata R ⊑ f° := by
-  have h1 : relCata R ≫ f ⊑ Cat.id I.t := relCata_comp_le_id I hcomm
-  have h2 : relCata R ⊑ Cat.id I.t ≫ f° := (map_shunt_right hf (relCata R) (Cat.id I.t)).mp h1
+  have h1 : relCata R ≫ f ⊑ 𝟙 I.t := relCata_comp_le_id I hcomm
+  have h2 : relCata R ⊑ 𝟙 I.t ≫ f° := (map_shunt_right hf (relCata R) (𝟙 I.t)).mp h1
   rwa [Cat.id_comp] at h2
 
 /-- **Theorem 6.4**, backward half: given `(|R|)` surjective (`hsur`) and `(|R|)·f ⊑ 1`
     (`hcancel`), `f° ⊑ (|R|)`. -/
 theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
-    (hsur : Cat.id A ⊑ (relCata R)° ≫ relCata R) (hcancel : relCata R ≫ f ⊑ Cat.id I.t) :
+    (hsur : 𝟙 A ⊑ (relCata R)° ≫ relCata R) (hcancel : relCata R ≫ f ⊑ 𝟙 I.t) :
     f° ⊑ relCata R := by
-  have e1 : f° = f° ≫ Cat.id A := (Cat.comp_id f°).symm
-  have s1 : f° ≫ Cat.id A ⊑ f° ≫ ((relCata R)° ≫ relCata R) := comp_mono_left f° hsur
+  have s1 : f° ≫ 𝟙 A ⊑ f° ≫ ((relCata R)° ≫ relCata R) := comp_mono_left f° hsur
   have e2 : f° ≫ ((relCata R)° ≫ relCata R) = (relCata R ≫ f)° ≫ relCata R := by
     rw [← Cat.assoc, ← Allegory.recip_comp]
-  have s2 : (relCata R ≫ f)° ≫ relCata R ⊑ (Cat.id I.t)° ≫ relCata R :=
+  have s2 : (relCata R ≫ f)° ≫ relCata R ⊑ (𝟙 I.t)° ≫ relCata R :=
     comp_mono_right (recip_mono hcancel) _
-  have e3 : (Cat.id I.t)° ≫ relCata R = relCata R := by rw [recip_id, Cat.id_comp]
-  have hA : f° ⊑ (relCata R ≫ f)° ≫ relCata R := by
-    calc f° = f° ≫ Cat.id A := e1
-      _ ⊑ f° ≫ ((relCata R)° ≫ relCata R) := s1
-      _ = (relCata R ≫ f)° ≫ relCata R := e2
-  have hB : (relCata R ≫ f)° ≫ relCata R ⊑ relCata R := by
-    calc (relCata R ≫ f)° ≫ relCata R
-        ⊑ (Cat.id I.t)° ≫ relCata R := s2
-      _ = relCata R := e3
-  exact le_trans hA hB
+  rw [Cat.comp_id, e2] at s1
+  rw [recip_id, Cat.id_comp] at s2
+  exact le_trans s1 s2
 
-/-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `f·R ⊑ α·Ff` (mirrored:
-    `R≫f ⊑ F.map f≫I.α`), then `f° = (|R|)`.
+/-- The claim in Theorem 6.4, first step: `F(f)` is entire. -/
+theorem thm64_claim_step1 {A T : 𝒜} (M : Membership F) {R : F.obj A ⟶ A} {f : A ⟶ T}
+    (hf : Map f) : R° ≫ M.mem A ⊑ R° ≫ F.map f ≫ F.map f° ≫ M.mem A := by
+  have h : 𝟙 (F.obj A) ⊑ F.map f ≫ F.map f° := by
+    rw [← F.map_comp, ← F.map_id]; exact F.map_mono (map_entire_le hf)
+  have := comp_mono_left R° (comp_mono_right h (M.mem A))
+  rwa [Cat.id_comp, Cat.assoc] at this
 
-    The book's hypothesis is `R` surjective (`_hRsur : 1 ⊑ R°≫R`); discharging the
-    STRONGER `hcatasur : 1 ⊑ (|R|)°≫(|R|)` (surjectivity of the catamorphism itself,
-    which is what `thm64_backward` actually needs) from `_hRsur` alone is B&dM's
-    Corollary 6.3, whose proof rests on `member·α°` being inductive — the same uncited
-    Doornbos & Backhouse 1995 fact flagged at `HyloUnique`/`HyloEntire` above.  `hcatasur`
-    is therefore taken as an explicit hypothesis rather than derived; `_hRsur` is kept in
-    the signature (unused by this assembly, hence the underscore) purely to record the
-    book's actual Theorem 6.4 hypothesis. -/
-theorem thm64 (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t} (hf : Map f)
-    (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (_hRsur : Cat.id A ⊑ R° ≫ R)
-    (hcatasur : Cat.id A ⊑ (relCata R)° ≫ relCata R) : f° = relCata R :=
-  le_antisymm (thm64_backward I hcatasur (relCata_comp_le_id I hcomm)) (thm64_forward I hf hcomm)
+/-- The claim in Theorem 6.4, second step: `R°F(f) ⊑ fα°`, the hypothesis conversed and shunted. -/
+theorem thm64_claim_step2 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+    {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
+    R° ≫ F.map f ≫ F.map f° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
+  have h1 : R ⊑ (F.map f ≫ I.α) ≫ f° := (map_shunt_right hf R _).mp hcomm
+  have h2 := recip_mono h1
+  simp only [Allegory.recip_comp, Allegory.recip_recip] at h2
+  have h3 : R° ≫ F.map f ⊑ f ≫ I.α° := by
+    have := comp_mono_right h2 (F.map f)
+    simp only [Cat.assoc] at this
+    have hs := comp_mono_left f (comp_mono_left I.α° (Relator.map_is_map F hf).2)
+    rw [Cat.comp_id] at hs
+    exact le_trans this hs
+  have := comp_mono_right h3 (F.map f° ≫ M.mem A)
+  simp only [Cat.assoc] at this
+  exact this
+
+/-- The claim in Theorem 6.4, third step: `member` is lax natural. -/
+theorem thm64_claim_step3 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {f : A ⟶ I.t} :
+    f ≫ I.α° ≫ F.map f° ≫ M.mem A ⊑ f ≫ I.α° ≫ M.mem I.t ≫ f° :=
+  comp_mono_left f (comp_mono_left I.α° (M.lax f°))
+
+/-- **Theorem 6.4**, the claim (B&dM p.150): `R° member ⊑ f α° member f°`, so `R° member` is
+    inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive). -/
+theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+    {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
+    R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° := by
+  rw [Cat.assoc]
+  exact le_trans (thm64_claim_step1 M hf) (le_trans (thm64_claim_step2 I M hf hcomm)
+    (thm64_claim_step3 I M))
+
+/-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `Rf ⊑ F(f)α`, then `f° = ⦇R⦈` —
+    given that `α° member(F)` is inductive, the fact B&dM p.148 calls "the central result". -/
+theorem thm64 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
+    {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (hR : 𝟙 A ⊑ R° ≫ R)
+    (hα : Inductive (I.α° ≫ M.mem I.t)) : f° = relCata R :=
+  le_antisymm
+    (thm64_backward I (cor63 I M (inductive_of_le (inductive_conjugate hf hα)
+      (thm64_claim I M hf hcomm)) hR) (relCata_comp_le_id I hcomm))
+    (thm64_forward I hf hcomm)
 
 end Theorem64
