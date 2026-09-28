@@ -88,8 +88,7 @@ public theorem interchange' {a₁ a₂ b₁ b₂ : 𝒜} (R : a₁ ⟶ a₂) (S 
   map_comp R R' := by rw [← F.map_comp, Cat.id_comp]
   map_mono h := F.map_mono h (le_refl _)
 
-/-- `F(R°,S°) = F(R,S)°`, the binary form of `Relator.PreservesRecip`.  Carried as a
-    hypothesis on the one law that needs it (`typeMap_recip`); automatic over a tabular
+/-- `F(R°,S°) = F(R,S)°`, the binary form of `Relator.PreservesRecip`; automatic over a tabular
     source (below). -/
 @[expose] public def PreservesRecip : Prop :=
   ∀ {a₁ a₂ b₁ b₂ : 𝒜} (R : a₁ ⟶ a₂) (S : b₁ ⟶ b₂), F.map R° S° = (F.map R S)°
@@ -133,7 +132,7 @@ end BiRelator
   `TA = (I A).t`, `α_A = (I A).α`.  Every law below is one application of the
   Eilenberg-Wright UP `relCata_UP` (5.12) or of the equality fusion (2.12). -/
 
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : BiRelator 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] {F : BiRelator 𝒜}
   (I : ∀ A : 𝒜, InitialAlgebra (F.appl A))
 
 /-- **(2.13) / B&dM p. 122**: `T` acts on an arrow `R : A ⟶ B` by `T(R) = ⦇F(R,𝟙)α⦈ : TA ⟶ TB`
@@ -207,7 +206,7 @@ public theorem alpha_natural_split {A B : 𝒜} (f : A ⟶ B) :
     map of the converse is the converse of the map.  Needs `F` converse-preserving; the
     book's chain (converse the naturality square, cancel the invertible `α` on both sides)
     with `α` an iso, `α°≫α = 𝟙`, `α≫α° = 𝟙` from `AOP.A6_2`. -/
-public theorem typeMap_recip (hF : F.PreservesRecip) {A B : 𝒜} (R : A ⟶ B) :
+public theorem typeMap_recip {A B : 𝒜} (R : A ⟶ B) :
     (typeMap I R)° = typeMap I R° := by
   have hrec : (typeMap I R)° ≫ (I A).α° = (I B).α° ≫ (F.map R (typeMap I R))° := by
     rw [← Allegory.recip_comp, ← Allegory.recip_comp,
@@ -221,7 +220,7 @@ public theorem typeMap_recip (hF : F.PreservesRecip) {A B : 𝒜} (R : A ⟶ B) 
     _ = ((I B).α ≫ (I B).α°) ≫ (F.map R (typeMap I R))° ≫ (I A).α := by
         rw [hrec, Cat.assoc, Cat.assoc]
     _ = F.map R° (typeMap I R)° ≫ (I A).α := by
-        rw [(I B).alpha_alpha_recip, Cat.id_comp, ← hF R (typeMap I R)]
+        rw [(I B).alpha_alpha_recip, Cat.id_comp, ← BiRelator.preservesRecip_of_tabular F R (typeMap I R)]
     _ = F.map (𝟙 B) (typeMap I R)° ≫ F.map R° (𝟙 (I A).t) ≫ (I A).α := by
         rw [← Cat.assoc, F.interchange']
 
@@ -234,7 +233,7 @@ public theorem typeMap_recip (hF : F.PreservesRecip) {A B : 𝒜} (R : A ⟶ B) 
 
 section TypeRelator
 
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : BiRelator 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : BiRelator 𝒜}
   (I : ∀ A : 𝒜, InitialAlgebra (F.appl A))
 
 /-- `T` is MONOTONIC: `⦇·⦈` is monotonic in the algebra (Ex 6.7) and `F` in its arguments. -/

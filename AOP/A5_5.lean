@@ -23,12 +23,13 @@ public import Freyd.S2_40
 public import AOP.A4_6
 public import AOP.A4_2
 public import AOP.A5_1
+public import Freyd.S2_41b
 
 universe u
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜)
 
 -- (Lemma 5.1 "relators preserve maps" now comes from A5_1: `Relator.map_is_map`.)
 
@@ -200,7 +201,7 @@ public theorem relCata_mapAlg_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.ob
   These belong here, not in `AOP.A6_2`: the INCLUSION fusion laws (6.4)/(6.5) there need
   `UnguardedPowerLCDA` because they argue through a least fixed point, whereas the EQUALITY
   fusion below follows from the universal property `relCata_UP` alone and so lives in the
-  weaker `UnguardedPowerAllegory` setting of this file. -/
+  weaker `TabularUnitaryUnguardedPowerAllegory` setting of this file. -/
 
 /-- **B&dM (2.12), p.46 — fusion**: `h·(|f|) = (|g|) ⟸ h·f = g·F h`, mirrored to diagram
     order (`h·f ↦ f h`) as `(|R|) S = (|Q|) ⟸ R S = (F S) Q`.
@@ -253,7 +254,7 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A)
   because `≫` is monotone in both arguments.  They differ in what the fold then satisfies:
 
   - STRICT arrows: `relCata_fusion` gives `⦇R⦈S = ⦇Q⦈` — an EQUALITY, so the family is
-    STRICTLY natural, and it holds in this file's `UnguardedPowerAllegory`, from the universal
+    STRICTLY natural, and it holds in this file's `TabularUnitaryUnguardedPowerAllegory`, from the universal
     property `relCata_UP` alone.  That is the form stated below.
   - LAX arrows: the best available is `comp_le_relCata` (`AOP.A6_2`), `⦇R⦈S ⊑ ⦇Q⦈`.  Note the
     DIRECTION: with `φ A ≜ ⦇A.alg⦈ : t ⟶ A` the square runs `φ A ≫ U(S) ⊑ Δᴛ(S) ≫ φ B`, the
@@ -266,13 +267,13 @@ public theorem relCata_of_comp (I : InitialAlgebra F) {A x : 𝒜} (f : x ⟶ A)
 
 /-- An `F`-ALGEBRA (B&dM p. 121): a carrier with an algebra — a RELATION, not necessarily a
     map — on it.  The objects of the category the fold is natural over. -/
-public structure Algebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
+public structure Algebra {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) where
   carrier : 𝒜
   alg : F.obj carrier ⟶ carrier
 
 /-- A HOMOMORPHISM of `F`-algebras: `R S = F(S) Q`, the arrows of the STRICT algebra category
     (see the section note for why the lax condition is not the one taken). -/
-public structure AlgHom {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+public structure AlgHom {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
     (A B : Algebra F) where
   hom : A.carrier ⟶ B.carrier
   comm : A.alg ≫ hom = F.map hom ≫ B.alg
@@ -291,7 +292,7 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
     homomorphism condition) nor `∩` (it would need `F(S)Q ∩ F(S')Q ⊑ F(S∩S')Q`, and a relator
     preserves `∩` only on coreflexives, Ex 5.2) — so `U` and `Δᴛ` below are `Freyd.Functor`s
     and not `Relator`s, and the fold's naturality is `=`, not `⊑`. -/
-@[expose] public instance instCatAlgebra {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
+@[expose] public instance instCatAlgebra {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     (F : Relator 𝒜 𝒜) : Cat (Algebra F) where
   Hom A B := AlgHom A B
   id A := ⟨𝟙 A.carrier, by rw [Cat.comp_id, F.map_id, Cat.id_comp]⟩
@@ -301,7 +302,7 @@ public theorem AlgHom.comm_comp {A B C : Algebra F} (S : AlgHom A B) (T : AlgHom
   assoc S T U := AlgHom.ext (Cat.assoc S.hom T.hom U.hom)
 
 /-- `U`, the FORGETFUL functor: an algebra to its carrier, a homomorphism to its arrow. -/
-@[expose] public def algU {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
+@[expose] public def algU {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] (F : Relator 𝒜 𝒜) :
     Freyd.Functor (Algebra F) 𝒜 where
   obj A := A.carrier
   map S := S.hom
@@ -365,7 +366,7 @@ open Lean PrettyPrinter in
 /-- **THE FOLD IS STRICTLY NATURAL IN ITS ALGEBRA**: `Δᴛ(S) ⦇B⦈ = ⦇A⦈ S` for every homomorphism
     `S : A ⟶ B`, `S` below the fold being `U(S)`, the underlying arrow.  `Δᴛ(S)` is the identity,
     so this is `relCata_fusion` read as one square of a natural transformation — an EQUALITY, in
-    `UnguardedPowerAllegory`. -/
+    `TabularUnitaryUnguardedPowerAllegory`. -/
 public theorem fold_natural [I : InitialAlgebra F] {A B : Algebra F} (S : A ⟶ B) :
     (algDelta (F := F)).map S ≫ fold B = fold A ≫ S.hom := by
   show 𝟙 I.t ≫ relCata B.alg = relCata A.alg ≫ S.hom
@@ -456,7 +457,7 @@ end Freyd.Alg
 
 namespace Freyd.Alg
 
-variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜] {F : Relator 𝒜 𝒜}
 
 /-- **BANANA SPLIT (B&dM figure 7b)**: the product's universal property read AT THE TWO FOLDS.
     `⟨⦇h⦈,⦇k⦈⟩` is the one arrow `T⟶A×B` with components `⦇h⦈` and `⦇k⦈`, and these are the two

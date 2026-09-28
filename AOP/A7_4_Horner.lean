@@ -59,7 +59,7 @@ public theorem greedy_of_refinement_mono (I : InitialAlgebra F) {R : A ⟶ A}
     (href : f ⊑ S%∋ ≫ est(R)) : ⦇f⦈ ⊑ ⦇S⦈%∋ ≫ est(R) := by
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
-  have hmono' : Freyd.Alg.MonoAlg f R° := (Freyd.Alg.monoAlg_recip_iff hf (Relator.preservesRecip_of_tabular F)).mp hmono
+  have hmono' : Freyd.Alg.MonoAlg f R° := (Freyd.Alg.monoAlg_recip_iff hf).mp hmono
   exact greedy_of_refinement I htrans' hmono' href
 
 end Abstract

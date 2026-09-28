@@ -33,7 +33,7 @@ open LocallyCompleteDistributiveAllegory
 universe u
 
 section Alpha
-variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
+variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
 /-! ## B&dM p.142: `⦇α⦈ = id`
 

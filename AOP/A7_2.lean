@@ -39,7 +39,7 @@ variable {𝒜 : Type u}
 
 section MonoAlg
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **B&dM p.172**: `φ` is MONOTONIC on `R` when `φ·FR ⊆ R·φ`, mirrored `F.map R ≫ φ ⊑ φ ≫ R`.
@@ -71,12 +71,12 @@ public theorem conj_Fmap_eps_est_le (f : F.obj A ⟶ A) (R : A ⟶ A) :
   exact comp_mono_right (Fmap_eps_comp_Fmap_est_le R) f
 
 /-- `f` is monotonic on `R` iff it is monotonic on `R°` — conjugation is preserved by converse,
-    using `hFr` to push `F.map` through `°`. -/
-public theorem monoAlg_recip_iff (hf : Map f) (hFr : F.PreservesRecip) :
+    since over a tabular allegory `F(T°)=F(T)°`. -/
+public theorem monoAlg_recip_iff (hf : Map f) :
     MonoAlg f R ↔ MonoAlg f R° := by
   rw [monoAlg_iff_conj hf, monoAlg_iff_conj hf]
   have hconj : ∀ T : A ⟶ A, (f° ≫ F.map T ≫ f)° = f° ≫ F.map T° ≫ f := fun T => by
-    rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc, ← hFr T]
+    rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc, ← Relator.preservesRecip_of_tabular F T]
   constructor
   · intro h
     have h2 := recip_mono h
@@ -96,7 +96,7 @@ end MonoAlg
 
 section Distributes
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 
 /-- **B&dM p.172**: `f` DISTRIBUTES over `min R°`: `f·F(min R°) ⊆ min R°·Λ(f·F∈)`, mirrored. -/
@@ -154,7 +154,7 @@ public theorem mon_thm71_step3 (hpair : R° ⊑ (∋ A)° ≫ est R) :
 public theorem mon_thm71_step4 (hf : Map f) (hFr : F.PreservesRecip) :
     f° ≫ F.map R° ≫ f ⊑ R° ↔ f° ≫ F.map R ≫ f ⊑ R := by
   rw [← Freyd.Alg.monoAlg_iff_conj hf, ← Freyd.Alg.monoAlg_iff_conj hf]
-  exact (Freyd.Alg.monoAlg_recip_iff hf hFr).symm
+  exact (Freyd.Alg.monoAlg_recip_iff hf).symm
 
 /-- **Theorem 7.1 (B&dM p.172)**: `f` is monotonic on `R` exactly when it distributes over
     `min R°` — the four steps composed. -/
@@ -259,7 +259,7 @@ end Greedy
 
 section Exercises
 
-variable [UnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
+variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : 𝒜}
 variable {R : A ⟶ A} {S f : F.obj A ⟶ A}
 
 /-- **Ex 7.34**: an algebra monotonic on `R` w.r.t. its own initial algebra structure map
