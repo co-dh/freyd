@@ -271,12 +271,12 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 // natural transformation's filled one, and it is why `φ` may leave the object wire at all — a LaT is
 // a family, not an arrow at one object.  The bead is BARE, as §11.4's `α` is: the component's index
 // is the object wire it stands on, and the two panels differ in exactly where that wire is renamed.
-#let lax-hm-l = lean("Freyd.Alg.LaxNatural.lhs")
-#let lax-hm-r = lean("Freyd.Alg.LaxNatural.rhs")
+#let lax-hm-l = "Freyd.Alg.LaxNatural.lhs"
+#let lax-hm-r = "Freyd.Alg.LaxNatural.rhs"
 
 #disp[#pair(
   leancd("Freyd.Alg.LaxNatural"),
-  row((lax-hm-l, [#h(7pt) #SQ #h(7pt)], lax-hm-r)),
+  lean(lax-hm-l, lax-hm-r, op: [#SQ]),
  [`G(R)φ`#sub[`B`]`⊑φ`#sub[`A`]`F(R)` #src[]],
 )
 // lean:AOP.A5_1.LaxNatural@ba661fee
@@ -502,13 +502,13 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `est(R)` starts INSIDE the functor on the left and ends up last of all on the right.  The right
 // panel factors `(F(∋)f)%∋` the way @lam-defn does — `𝟙%∋` births the `E` wire, `∋` kills the one
 // the source brought in — because a bead drawn whole would hide the very `E` the law is about.
-#let dist-hm-l = lean("Freyd.Alg.Distributes.lhs")
-#let dist-hm-r = lean("Freyd.Alg.Distributes.rhs")
+#let dist-hm-l = "Freyd.Alg.Distributes.lhs"
+#let dist-hm-r = "Freyd.Alg.Distributes.rhs"
 
 // The `f` edges run across, as @mon-str's algebra does, so down-then-across is the smaller
 // `F(est(R)) f` and `⊑` points NE.  Below: the same square at `F := (−×−)`, `f := +`, `R := ≤`.
 #disp[#layout(avail => {
-  let (sq, sd) = (leancd("Freyd.Alg.Distributes"), row((dist-hm-l, [#h(7pt) #SQ #h(7pt)], dist-hm-r)))
+  let (sq, sd) = (leancd("Freyd.Alg.Distributes"), lean(dist-hm-l, dist-hm-r, op: [#SQ]))
   // The example square is drawn at the pair's scale, so the two squares are the same size.
   let s = pair-fill(sq, sd, avail.width)
   align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
@@ -576,9 +576,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // of converses is ONE frame: `(SR)°=R°S°`, so the step that pulls `R°` out of `F` moves `R` inside.
 // The greedy panels, emitted by `./scripts/diagram --sigs "S:F(x)⟶x" --src A --tgt A "<formula>"` plus
 // `s: 100%`, so the labels print at the size the note sets them in.
-#let gr-mon = lean("Freyd.Alg.greedy_step1.lhs")
+#let gr-mon = lean("Freyd.Alg.greedy_step1.lhs", step: true)
 #let gr-Rbare = lean("Freyd.Alg.greedy_step3.rhs")
-#let gr-slid = lean("Freyd.Alg.greedy_step1.rhs")
+#let gr-slid = lean("Freyd.Alg.greedy_step1.rhs", step: true)
 #let gr-RR = lean("Freyd.Alg.greedy_step2.rhs")
 #let gr-R = lean("Freyd.Alg.greedy_step3.rhs")
 // B&dM Theorem 7.2, p. 173.  The hypothesis is monotonicity on the SAME `R` the conclusion's
@@ -693,8 +693,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 //   ./scripts/diagram --frame 4 --top 3 --src "F([A])" --tgt "[A]" --sigs "α:F([A])⟶[A]" "α prefix"
 //   ./scripts/diagram --frame 4 --src "F([A])" --tgt "[A]" "F(prefix)[nil,⊸ nil ∪ cons]"
 // `--frame 4 --top 3` lifts `α prefix` so both panels share one frame and meet on the `prefix` bead.
-#let pfx-def-l = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.lhs")
-#let pfx-def-r = lean("Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs", branch: "inr.inr")
+#let pfx-def-l = "Freyd.Alg.RelSet.ListRel.prefix_cancel.lhs"
+#let pfx-def-r = "Freyd.Alg.RelSet.ListRel.prefix_cancel.rhs.inr.inr"
 
 #disp[#calc-table(cols: (1fr, 7.4cm), pr: 0pt,
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.prefix_cata") \
@@ -711,7 +711,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   #src[`F=𝟏+A×−`, so `F(prefix)=𝟙+𝟙×prefix`: the head passes, the fold recurses on the tail alone]
   // lean:AOP.A6_ConsList.F@61b71616
   ],
-  [#row((pfx-def-l, [#h(7pt) = #h(7pt)], pfx-def-r)) \
+  [#lean(pfx-def-l, pfx-def-r, op: [=]) \
    #src[the `cons` operand of `⊸ nil ∪ cons`; `⊸ nil` makes a constant and draws nothing]],
 
   [#leanc("Freyd.Alg.RelSet.ListRel.prefAlg") \
@@ -963,7 +963,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // §13.3.4's generated panels, emitted verbatim by `./scripts/diagram --src … --tgt … "<formula>"`: a
 // bracket is cut to ONE branch, which the `cert:` names, and the bead wears that branch's name.
-#let mh-cons-sum = lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs")
+#let mh-cons-sum = lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.lhs", step: true)
 #let mh-alg-est = lean("Freyd.Alg.RelSet.MSS.mss_step1.lhs")
 #let mh-alg = lean("Freyd.Alg.RelSet.MSS.mss_step2.rhs", branch: "inr")
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
@@ -997,7 +997,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs"),
     [`[zero,⊸ zero ∪ (𝟙×sum) plus]` \ #src[`sum`'s defining equation]])],
-  [#lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs") \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
+  [#lean("Freyd.Alg.RelSet.MSS.cons_comp_sum.rhs", step: true) \ #src[the `(𝟙×sum) plus` operand of `⊸ zero ∪ (𝟙×sum) plus`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_prefix_sum_step3.rhs"),
     [`[zero,(𝟙×sum)(⊸ zero ∪ plus)]` \ #src[`(𝟙×sum)⊸=⊸`, `sum` entire]])],
@@ -1801,9 +1801,7 @@ Vec(n)(cp)(that)                                  cp pairs the square with each 
 // on the left and INSIDE it on the right — that is all the recursion there is.  `cons=𝟙` here, so
 // on the left it is the `[m+1]` bracket alone.  Every bead is a function, so the dots are filled.
 #disp[#align(center, grid(columns: 3, align: horizon + center, column-gutter: 14pt, row-gutter: 5pt,
-  lean("Freyd.Alg.Vec.cons_genFold.lhs"),
-  EQ,
-  lean("Freyd.Alg.Vec.cons_genFold.rhs"),
+  grid.cell(colspan: 3, lean("Freyd.Alg.Vec.cons_genFold.lhs", "Freyd.Alg.Vec.cons_genFold.rhs", op: EQ)),
 
   src[the `[m+1]` bracket puts the column back on the matrix, then the fold reads all of it],
   [],
@@ -2006,11 +2004,11 @@ zip(that)                                         each row: its square, and the 
 // test `⟨ceiling,ceiling−floor⟩bmax` is a MAP, so the coreflexive is the one that slides across it
 // into `≤N` — which is the equation below, and the whole of what @van-defn's `bmax` row says.
 // `Δ` is the pair lane the fork opens and `bmax` eats; `ceiling` and `floor` are @van-defn's.
-#let van-sec-l = lean("Freyd.Alg.RelSet.Van.secure_bmax.lhs")
-#let van-sec-r = lean("Freyd.Alg.RelSet.Van.secure_bmax.rhs")
+#let van-sec-l = "Freyd.Alg.RelSet.Van.secure_bmax.lhs"
+#let van-sec-r = "Freyd.Alg.RelSet.Van.secure_bmax.rhs"
 
 #disp[#capbox(
-  row((van-sec-l, [#h(7pt) = #h(7pt)], van-sec-r)),
+  lean(van-sec-l, van-sec-r, op: [=]),
  [#leanf("Freyd.Alg.RelSet.Van.secure_bmax") \
    #src[a stretch passes `secure` before the test exactly where the test's own value passes `≤N`
     after it, which is @van-defn's `bmax(ceiling x,ceiling x−floor x)≤N`]],
@@ -2021,11 +2019,11 @@ zip(that)                                         each row: its square, and the 
 // The two panels differ only in the ORDER of the two beads, so they share `prefix`'s height and
 // `secure` is the one that moves: above `prefix` on the left, below it on the right.  `prefix` is
 // only LAX natural — `prefix_lax_natural`/`prefix_not_strict` in diag/hm-sigs.json — hence `⊑`, not `=`.
-#let van-pre-l = lean("Freyd.Alg.RelSet.Van.secure_prefix.lhs")
-#let van-pre-r = lean("Freyd.Alg.RelSet.Van.secure_prefix.rhs")
+#let van-pre-l = "Freyd.Alg.RelSet.Van.secure_prefix.lhs"
+#let van-pre-r = "Freyd.Alg.RelSet.Van.secure_prefix.rhs"
 
 #disp[#capbox(
-  row((van-pre-l, [#h(7pt) #SQ #h(7pt)], van-pre-r)),
+  lean(van-pre-l, van-pre-r, op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.secure_prefix") \
    #src[every pair `secure` then `prefix` gives, `prefix` then `secure` gives too — a prefix of a
     secure stretch is itself secure, which is the prefix-closure B&dM p.185 names]],
@@ -2065,11 +2063,11 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.185's "appeal to fusion" needs the fold law's side condition `R S=(F S)Q`, and this is
 // it: the two panels are the algebra's stack of context wires with `secure` moved across it, and
 // `glue` is what it turns into `old` on the way.
-#let van-cond-l = lean("Freyd.Alg.RelSet.Van.van_fusion_cond.lhs")
-#let van-cond-r = lean("Freyd.Alg.RelSet.Van.van_fusion_cond.rhs")
+#let van-cond-l = "Freyd.Alg.RelSet.Van.van_fusion_cond.lhs"
+#let van-cond-r = "Freyd.Alg.RelSet.Van.van_fusion_cond.rhs"
 
 #disp[#capbox(
-  row((van-cond-l, [#h(7pt) = #h(7pt)], van-cond-r)),
+  lean(van-cond-l, van-cond-r, op: [=]),
   // lean:AOP.A7_5_Van.van_fusion_cond@51d043c5
  [#leanf("Freyd.Alg.RelSet.Van.van_fusion_cond") \
    #src[testing every segment for security after the algebra has run is testing it before it ran:
@@ -2088,12 +2086,12 @@ zip(that)                                         each row: its square, and the 
 
   [`partition list(secure)` \ #src[the specification: cut the transactions every way, then keep
    the cuts whose every segment is secure]],
-  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.lhs", step: true)],
 
   [#EQ #h(5pt) `⦇[nil,new ∪ glue]⦈ list(secure)` \ #src[`partition` is the fold that either opens a
    segment for the transaction in hand or puts it on the front of the segment already open]],
      // lean:AOP.A7_5_Van.partition_cata@bbe49948
-  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Van.van_spec_step1.rhs", step: true)],
 
   [#EQ #h(5pt) `⦇[nil,new ∪ old]⦈` \ #src[fusion: the condition above moves `list(secure)` inside
    that fold, which is what turns `glue` into `old`]],
@@ -2103,11 +2101,11 @@ zip(that)                                         each row: its square, and the 
 
 // One wire in, two out, both sides: the fold is ONE bead where the left panel has the two the
 // specification writes, and `secure` is what the fusion has moved inside it.
-#let van-fus-l = lean("Freyd.Alg.RelSet.Van.van_spec.lhs")
-#let van-fus-r = lean("Freyd.Alg.RelSet.Van.van_spec.rhs")
+#let van-fus-l = "Freyd.Alg.RelSet.Van.van_spec.lhs"
+#let van-fus-r = "Freyd.Alg.RelSet.Van.van_spec.rhs"
 
 #disp[#capbox(
-  row((van-fus-l, [#h(7pt) = #h(7pt)], van-fus-r)),
+  lean(van-fus-l, van-fus-r, op: [=]),
   // lean:AOP.A7_5_Van.van_spec@79d2f560
  [#leanf("Freyd.Alg.RelSet.Van.van_spec") \
    #src[cutting the transactions every way and then keeping the cuts whose every segment is secure
@@ -2128,10 +2126,10 @@ zip(that)                                         each row: its square, and the 
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`(𝟙×R)new` \ #src[the left side of (7.14) — @van-defn]],
-  [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.lhs")],
+  [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.lhs", step: true)],
 
   [#EQ #h(5pt) `(wrap×R)cons` \ #src[`new≜(wrap×𝟙)cons` — @van-algebras — and `(wrap×𝟙)(𝟙×R)=(wrap×R)`]],
-  [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.rhs")],
+  [#lean("Freyd.Alg.RelSet.Van.new_eq_cons.rhs", step: true)],
 
   [#SQ #h(5pt) `new R` \ #src[`cons` is monotonic on `R` — `(𝟙×R)cons⊑cons R`, consing onto a
    no-longer schedule leaves it no longer — and `new⊑new ∪ old`]],
@@ -2144,11 +2142,11 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
 // coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
-#let van-h-l = lean("Freyd.Alg.RelSet.Van.Hrel", branch: "inl")
-#let van-h-r = lean("Freyd.Alg.RelSet.Van.Hrel", branch: "inr")
+#let van-h-l = "Freyd.Alg.RelSet.Van.Hrel.inl"
+#let van-h-r = "Freyd.Alg.RelSet.Van.Hrel.inr"
 
 #disp[#capbox(
-  row((van-h-l, [#h(7pt) ∪ #h(7pt)], van-h-r)),
+  lean(van-h-l, van-h-r, op: [∪]),
  [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
@@ -2160,10 +2158,10 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.187's (7.16), the `new` half of monotonicity on the refined order.  It rests on (7.18):
 // both sides open a segment `[a]` of their own, so the two first segments are EQUAL and `H` holds
 // whatever the schedules were — which is why the left panel below carries `⊤` and not `H`.
-#let van-718-l = lean("Freyd.Alg.RelSet.Van.van_7_18.lhs")
+#let van-718-l = "Freyd.Alg.RelSet.Van.van_7_18.lhs"
 
 #disp[#capbox(
-  row((van-718-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_18.rhs"))),
+  lean(van-718-l, "Freyd.Alg.RelSet.Van.van_7_18.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_18") \
    #src[whatever schedule the van is called on, the result's first segment is the one transaction
     `[a]`, so any two results of `new` on that transaction stand in `H`]],
@@ -2179,11 +2177,11 @@ zip(that)                                         each row: its square, and the 
   table.header([*step*], [*Hinze–Marsden*]),
 
   [`(𝟙×(R;H))new` \ #src[the left side of (7.16)]],
-  [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.lhs", step: true)],
 
   [#SQ #h(5pt) `(𝟙×R)new` \ #src[`R;H⊑R` — @van-defn]],
      // lean:AOP.A7_5_Van.RH_le_R@84a882e3
-  [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step1.rhs", step: true)],
 
   [#SQ #h(5pt) `new R ∩ new H` \ #src[(7.14) as far as its `new R` line — @van-714 — and (7.18)]],
   [#row((lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs", branch: "inl"), [#h(7pt) ∩ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_mono_new_step2.rhs", branch: "inr")))],
@@ -2201,13 +2199,13 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.187–188's (7.17), the `old` half.  `R;H` splits as `|R| ∪ (R∩H)` and the two pieces are
 // answered by different branches of the algebra: on the strict part the van is called, on the tie
 // `old` fires again.  (7.19)–(7.21) below are the three claims that split rests on.
-#let van-719-l = lean("Freyd.Alg.RelSet.Van.van_7_19.lhs")
-#let van-720-l = lean("Freyd.Alg.RelSet.Van.van_7_20.lhs")
-#let van-721-l = lean("Freyd.Alg.RelSet.Van.van_7_21.lhs")
-#let van-721-r = lean("Freyd.Alg.RelSet.Van.van_7_21.rhs")
+#let van-719-l = "Freyd.Alg.RelSet.Van.van_7_19.lhs"
+#let van-720-l = "Freyd.Alg.RelSet.Van.van_7_20.lhs"
+#let van-721-l = "Freyd.Alg.RelSet.Van.van_7_21.lhs"
+#let van-721-r = "Freyd.Alg.RelSet.Van.van_7_21.rhs"
 
 #disp[#capbox(
-  row((van-719-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_19.rhs"))),
+  lean(van-719-l, "Freyd.Alg.RelSet.Van.van_7_19.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_19") \
    #src[`old` leaves the transaction `[a]` at the front of the first segment, and `[a]` is what
     `new` makes that segment, so the two first segments are `prefix`-related whatever the schedules
@@ -2217,7 +2215,7 @@ zip(that)                                         each row: its square, and the 
 ]<van-719>
 
 #disp[#capbox(
-  row((van-720-l, [#h(7pt) #SQ #h(7pt)], lean("Freyd.Alg.RelSet.Van.van_7_20.rhs"))),
+  lean(van-720-l, "Freyd.Alg.RelSet.Van.van_7_20.rhs", op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_20") \
    #src[`old` keeps the schedule's length, so a strictly shorter one still comes out no longer than
     the one the van's own segment lengthens]],
@@ -2226,7 +2224,7 @@ zip(that)                                         each row: its square, and the 
 ]<van-720>
 
 #disp[#capbox(
-  row((van-721-l, [#h(7pt) #SQ #h(7pt)], van-721-r)),
+  lean(van-721-l, van-721-r, op: [#SQ]),
  [#leanf("Freyd.Alg.RelSet.Van.van_7_21") \
    #src[on a tie the one first segment is a prefix of the other, so prefix-closure of `secure` —
     @van-prefix — lets `old` fire on this side too, and it keeps both the length and the prefix]],

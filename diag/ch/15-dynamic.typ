@@ -495,12 +495,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
     [#src[`R≜length≤length°` — @edit-defn; `F` preserves composition]])],
      // lean:AOP.A9_2_Edit.edit_mono_step1@bc06a294
-  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs"),
     [#src[`length` is a map, so entire: `𝟙⊑length length°`]])],
@@ -541,13 +541,13 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
     [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn; and the bifunctor `F` preserves
       composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
      // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
-  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step2.rhs"),
     [#src[Proposition 9.4's second condition `V edit°⊑edit° R` — @edit-V]])],
@@ -575,12 +575,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs"),
     [#src[`V≜suffix°×suffix°`, and `×` preserves composition]])],
      // lean:AOP.A9_2_Edit.edit_Vrecip_step1@0604c8cb
-  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_Vrecip_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_Vrecip_step2.rhs"),
     [#src[`edit (suffix×𝟙)⊑R° edit`: drop the operation that produced the head, or weaken its
@@ -608,12 +608,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs"),
     [#src[`base` returns only `([],[])`, so `base°=empty base°`]])],
      // lean:AOP.A9_2_Edit.edit_disj_step1@3739ccad
-  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Edit.edit_disj_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_disj_step2.rhs"),
     [#src[`step empty=𝟘`: `cpy` and `del` put a character on the left string, `ins` one on the
@@ -694,12 +694,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
     [#src[definition of `g`; coproducts and products — @mct-defn]])],
      // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@45921a50
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
     [#src[`flatten sz=size`, since `sb` is associative — @mct-defn]])],
@@ -731,12 +731,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
     [#src[definition of `g` — @mct-defn]])],
      // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bfddbbdc
-  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step2.rhs"),
     [#src[definition of `opb`, and `+` monotonic]])],
@@ -896,13 +896,13 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs"),
     [#src[Exercise 9.13 with `k≜cons col`, `g≜tip wrap`, `h≜row`, `f≜next`: its two equations are
      (9.8) — @col-rec — at `a:[b]` and at `a:(u++[b])`, with `[a] col=[tip(a)]`]])],
      // lean:AOP.A9_3_Bracket.col_cons_step1@e278817f
-  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.col_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.col_cons_step2.rhs"),
     [#src[products]])],
@@ -925,12 +925,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.tops_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step1.rhs"),
     [#src[definition of `tops≜tic list(mct)`, our name]])],
      // lean:AOP.A9_3_Bracket.tops_step1@59fe41e2
-  [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.tops_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.tops_step2.rhs"),
     [#src[`tail list(f)=list(f) tail`; definition of `col`]])],
@@ -950,12 +950,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.rests_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step1.rhs"),
     [#src[definition of `rests≜tic list(tail row)`, our name]])],
      // lean:AOP.A9_3_Bracket.rests_step1@23371fac
-  [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.rests_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.rests_step2.rhs"),
     [#src[`tic list(tail)=π₂ inits`; definition of `array`]])],
@@ -971,12 +971,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.newrows_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs"),
     [#src[definition of `newrows≜tic list(row)`, our name]])],
      // lean:AOP.A9_3_Bracket.newrows_step1@74ecf218
-  [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.newrows_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.newrows_step2.rhs"),
     [#src[(9.10) — @row-rec — on the non-singleton `tic` lists]])],
@@ -1001,12 +1001,12 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs"),
     [#src[definition of `array`]])],
      // lean:AOP.A9_3_Bracket.array_cons_step1@8ccbea69
-  [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Bracket.array_cons_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.array_cons_step2.rhs"),
     [#src[`cons inits=⟨π₁ wrap,tic⟩ cons`, abbreviating `cons inits tail` by `tic`]])],
@@ -1107,12 +1107,12 @@ the longest repeated tail; #h(4pt)
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_thin_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step1.rhs"),
     [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @code-defn]])],
      // lean:AOP.A9_4_Code.code_thin_step1@c5eac63a lean:AOP.A9_4_Code.Fbimap@f45fdcce
-  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step2.rhs"),
     [#src[the bifunctor `F` preserves composition: `F(U,prefix°)F(𝟙,decode°)=F(U,prefix° decode°)`]])],
@@ -1146,12 +1146,12 @@ the longest repeated tail; #h(4pt)
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_disj_step1.lhs"), [])],
-  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.lhs")],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step1.rhs"),
     [#src[`nil` returns only `[]`, so `nil°=null nil°`]])],
      // lean:AOP.A9_4_Code.code_disj_step1@9698e2de
-  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.rhs")],
+  [#lean("Freyd.Alg.RelSet.Code.code_disj_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_disj_step2.rhs"),
     [#src[`extend null=𝟘`: a symbol ends the string with a character, a pointer with its non-empty

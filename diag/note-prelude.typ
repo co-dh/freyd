@@ -47,8 +47,15 @@
 // an argument of THIS route and not part of the selector because the circuit draws the fork itself
 // and takes the WHOLE side: the row's two cells then name one declaration and one side, and the
 // restriction sits where it belongs, on the picture that has it.
-#let lean(..sels, branch: none, op: SQ) = lean-call("generated/", <lean-panel>, op: op,
-  sels.pos().map(n => if branch == none { n } else { n + "." + branch }))
+// `step: true` marks a CALC-TABLE STEP: each side of a step is its own row, stacked, so there is no
+// `=` for two panels to stand beside; `diag-export --list` refuses a statement's two sides in two
+// calls unless both are steps (`splitSides`).
+#let lean-step(ns) = for n in ns [#metadata(n)<lean-step>]
+#let lean(..sels, branch: none, op: SQ, step: false) = {
+  let ns = sels.pos().map(n => if branch == none { n } else { n + "." + branch })
+  if step { lean-step(ns) }
+  lean-call("generated/", <lean-panel>, op: op, ns)
+}
 // The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
 // walks the same Expr under the monoidal reading.
 #let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
@@ -306,6 +313,7 @@
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
+    let m = m + lean-step(singles)
     let i = 0
     let got = ()
     for s in r.steps {
