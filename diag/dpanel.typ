@@ -142,13 +142,15 @@
 // `straight` draws it as the book's own polyline instead of `oknee`'s bow, and `obreak` lists the
 // dots it is broken at.  An edge may STOP ON THE PANEL'S RIGHT SIDE rather than its bottom (all
 // three of IntroString p.74's figures do), and then both regions close along that side.
-#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, obnd: (), key: none) = P(
+// `x0` is the panel's WEST EDGE: the leftmost ink `dpanel` measured, so the `Rel` region starts
+// where the drawing does and not at a fixed margin that a panel without a west label leaves empty.
+#let dpan(h, w, xa, body, s: 74%, opath: none, obreak: (), straight: false, obnd: (), key: none, x0: 0) = P(
     cetz.canvas(length: 0.8cm, {
   let op = if opath == none { ((xa, h), (xa, 0)) } else { opath }
   let ok = if straight { 0 } else { oknee(op) }
   let (ex, ey) = op.last()
   let side = if ey > 1e-9 and calc.abs(ex - w) > 1e-9 { ((w, ey),) } else { () }
-  let lead = if calc.abs(op.first().at(0)) > 1e-9 { ((0, 0), (0, h)) } else { ((0, 0),) }
+  let lead = if calc.abs(op.first().at(0) - x0) > 1e-9 { ((x0, 0), (x0, h)) } else { ((x0, 0),) }
   hm-region(lead + op + (if ey > 1e-9 { side + ((w, 0),) } else { () }), fb-ALLC,
             k: ok, straight: straight)
   hm-region(op + (if ey > 1e-9 { side } else { ((w, 0),) }) + ((w, h),), luma(226),
@@ -425,6 +427,20 @@
       panic("dpanel: the unit `" + plain(o.at(4)) + "` is born on the leftmost lane but its label is set east, across the lanes") } }
   }
   let gk = dknees(dx, h, lanes, beads, nmd)
+  // THE WEST EDGE IS THE LEFTMOST INK, measured: a wire, a label set west of the leftmost lane, a
+  // lane's name, a port label centred on its wire, a `°` band.  The generator's margin (`X0`) is
+  // sized for the widest west label any panel has, and a panel without one drew it as empty `Rel`.
+  let wd = t => measure(text(t)).width / 0.8cm
+  let x0 = if names { 0 } else { calc.max(0, calc.min(
+    xo - 0.3, ..lanes.map(l => l.at(0) - 0.3),
+    ..(beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
+        .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict"))))
+      .map(b => b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12 - wd(b.at(1)) - 0.1),
+    ..nmd.map(k => lanes.at(k).at(0) - 0.12 - 0.3 - wd(text(9pt)[#dnm(lanes.at(k), top, bot)]) - 0.1),
+    ..(top + bot).map(p => p.at(0) - wd(p.at(1)) / 2 - 0.15),
+    ..convs.map(c => c.at(0) - 0.12 - wd(text(10pt)[`°`]) - 0.1),
+    ..defn.map(d => d.at(0) - 0.15),
+    ..(if opath == none { () } else { opath.map(p => p.at(0) - 0.3) }))) }
   // The palette's separations, measured on THIS panel — its lanes against each other, and each lane
   // against the beads and the object bands it is read beside.  The rule is only true panel by panel:
   // two lanes that never share a picture may reuse a band, and only the panel knows which those are.
@@ -538,7 +554,7 @@
   for (y, l) in right { hm-port((w, y), l, axis: "x", col: BCOL) }
   if names { hm-name((1.12, 0.35), [`Rel`]); hm-name((xo + 1.4, 0.35), [`𝟏`]) }
   }, s: s, opath: opath, obreak: obreak.map(y => (xat(y), y)), straight: ostraight, obnd: obnd,
-     key: cert.at("expect", default: "dpanel"))
+     key: cert.at("expect", default: "dpanel"), x0: x0)
   // `knees` is what the ink was DRAWN with, so a panel whose two knees disagree is a crossing
   // that would otherwise pass while the page still braids.
   // The panel's COMPLEXITY, so a display is laid out from what is in the picture and not by eye:

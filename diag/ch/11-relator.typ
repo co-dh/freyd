@@ -699,7 +699,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 ]<cata-map-calc>
 
 // B&dM (5.12), p.121: the `⟹` half as ONE term chain from $frac(#[`X`], ∋)$ back to a term holding it,
-// each panel drawn from the theorem proving that step, then the two statement rows closing it.
+// each panel drawn from the theorem proving that step, its last the fold uniqueness; then the `⟸` half as a chain.
 #disp[#calc-table(cols: (1fr,), al: auto,
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP") \
     #src[in a tabular allegory, with `F` a relator — so `F(R°)=F(R)°` — and `α : F(T)⟶T` its initial algebra, which every later fold theorem assumes: a relation `X` out of `T` satisfies the fold equation of the relation `R` exactly when it is `⦇R⦈`, the fold of the map $frac(#[`F(∋)R`], ∋)$ followed by `∋`]],
@@ -717,11 +717,20 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
       // lean:AOP.A5_5.relCata_UP_step5@0c3c4eb1
     ),
-    Sub("Freyd.Alg.relCata_cancel",
+    Sub("Freyd.Alg.relCata_cancel", formula: true,
       gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],
       // lean:AOP.A5_5.relCata_cancel@c83d7b44
-      (none, ("Freyd.Alg.relCata_cancel",),
-        src[fold equation, cancellation — @cata-map-calc, @initial-defn, @pow-laws, @relator-defn]),
+      (none, "Freyd.Alg.relCata_cancel_step1.lhs", []),
+      (EQ, "Freyd.Alg.relCata_cancel_step1.rhs", src[`⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc]),
+      // lean:AOP.A5_5.relCata_cancel_step1@d86664d1
+      (EQ, "Freyd.Alg.relCata_cancel_step2.rhs", src[the fold's own equation `α⦇f⦈=F(⦇f⦈)f` at the map `f=`$frac(#[`F(∋)R`], ∋)$ — @initial-defn]),
+      // lean:AOP.A5_5.relCata_cancel_step2@f1a86d6b
+      (EQ, "Freyd.Alg.relCata_cancel_step3.rhs", src[$frac(#[`F(∋)R`], ∋)$`∋=F(∋)R` — @pow-laws]),
+      // lean:AOP.A5_5.relCata_cancel_step3@1d9ab616
+      (EQ, "Freyd.Alg.relCata_cancel_step4.rhs", src[`F` a functor — @relator-defn]),
+      // lean:AOP.A5_5.relCata_cancel_step4@5b345f8c
+      (EQ, "Freyd.Alg.relCata_cancel_step5.rhs", src[`⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋=⦇R⦈` — @cata-map-calc]),
+      // lean:AOP.A5_5.relCata_cancel_step5@5d372eec
     ),
   )],
 )]<cata-map-proof>

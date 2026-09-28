@@ -115,11 +115,43 @@ public theorem InitialAlgebra.alpha_alpha_recip (I : InitialAlgebra F) :
     I.α ≫ I.α° = Cat.id (F.obj I.t) := by
   rw [← I.alphaInv_eq_recip]; exact I.alpha_alphaInv
 
+/-! The `⟸` half of (5.12) as ONE term chain from `α⦇R⦈` to `F(⦇R⦈)R`, one theorem per step so
+    each panel of the note's chain is drawn from the one proving it; `f` is the map `Λ(F(∋)R)`. -/
+
+/-- Step 1: unfold `⦇R⦈ = ⦇Λ(F(∋)R)⦈∋`. -/
+public theorem relCata_cancel_step1 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    I.α ≫ relCata R = I.α ≫ I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A := by
+  rw [relCata_unfold]
+
+/-- Step 2: the map fold's own equation `α⦇f⦈ = F(⦇f⦈)f`. -/
+public theorem relCata_cancel_step2 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    I.α ≫ I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A
+      = F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)) ≫ Λ (F.map (∋ A) ≫ R) ≫ ∋ A := by
+  rw [← Cat.assoc, I.cata_comm, Cat.assoc]
+
+/-- Step 3: `Λ` cancellation, `Λ(S)∋ = S`. -/
+public theorem relCata_cancel_step3 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)) ≫ Λ (F.map (∋ A) ≫ R) ≫ ∋ A
+      = F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)) ≫ F.map (∋ A) ≫ R := by
+  rw [Λ_eps_eq']
+
+/-- Step 4: `F` a functor. -/
+public theorem relCata_cancel_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _)) ≫ F.map (∋ A) ≫ R
+      = F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A) ≫ R := by
+  rw [F.map_comp, Cat.assoc]
+
+/-- Step 5: fold back `⦇Λ(F(∋)R)⦈∋ = ⦇R⦈`. -/
+public theorem relCata_cancel_step5 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
+    F.map (I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ≫ ∋ A) ≫ R = F.map (relCata R) ≫ R := by
+  rw [relCata_unfold]
+
 /-- (5.12) at `X := ⦇R⦈`: `⦇R⦈` satisfies its own defining equation — the map fold's equation at
     `Λ(F(∋)R)`, then the cancellation `Λ(S)∋ = S`. -/
 public theorem relCata_cancel (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) :
-    I.α ≫ relCata R = F.map (relCata R) ≫ R := by
-  rw [relCata_unfold, ← Cat.assoc, I.cata_comm, Cat.assoc, Λ_eps_eq', F.map_comp, Cat.assoc]
+    I.α ≫ relCata R = F.map (relCata R) ≫ R :=
+  (relCata_cancel_step1 I R).trans <| (relCata_cancel_step2 I R).trans <|
+    (relCata_cancel_step3 I R).trans <| (relCata_cancel_step4 I R).trans (relCata_cancel_step5 I R)
 
 /-! The `⟹` half of (5.12), B&dM p.121, as ONE term chain from `Λ(X)` back to a term holding
     `Λ(X)`: `Λ(X) = Λ(α°F(X)R) = α°Λ(F(X)R) = α°Λ(F(Λ(X)∋)R) = α°F(Λ(X))Λ(F(∋)R)`.  So `Λ(X)`
