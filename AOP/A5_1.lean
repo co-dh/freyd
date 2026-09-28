@@ -160,6 +160,8 @@ public theorem Relator.map_is_map {𝒜 : Type u₁} {ℬ : Type u₂}
   `F`'s action on `f, g` into converse-preserving pieces, and reassembling them on both sides
   of `F(R°) = (F R)°` matches term-by-term. -/
 
+/-- **Theorem 5.1**, forward direction (B&dM p. 112): over a tabular source a relator preserves
+    converse, `F(R°) = (F(R))°`. -/
 public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) : F.PreservesRecip := by
   intro A B R
@@ -193,7 +195,7 @@ public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
   have h := F.map_mono (show R° ≫ R ⊑ 𝟙 B from hR)
   rwa [F.map_id] at h
 
-/-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 112)
+/-! ## Corollary 5.1  Relators agreeing on maps agree everywhere (B&dM p. 113)
 
   Any `R` tabulates as `f°≫g` for maps `f, g`; `Theorem 5.1(a)`'s computation of `F.map R`
   only ever touches `F.map f`, `F.map g`, so two relators that agree on all maps already
@@ -202,7 +204,8 @@ public theorem Relator.simple_map {𝒜 : Type u₁} {ℬ : Type u₂}
   same type `G.obj a ⟶ G.obj b` and the conclusion becomes an ordinary `Eq` wrapped in
   `HEq` (`heq_of_eq`). -/
 
-theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
+/-- **Corollary 5.1** (B&dM p. 113): two relators that agree on maps agree on every relation. -/
+public theorem Relator.map_eq_of_eq_on_maps {𝒜 : Type u₁} {ℬ : Type u₂}
     [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] {F G : Relator 𝒜 ℬ}
     (hobj : ∀ A, F.obj A = G.obj A)
     (hmaps : ∀ {A B : 𝒜} (f : A ⟶ B), Map f → HEq (F.map f) (G.map f))
