@@ -28,21 +28,21 @@ the 2-category.
   table.header([*the statement*]),
 
  // F(f) map preserving row: Lemma 5.1
- [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[]],
+ [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[Lemma 5.1]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
-  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.],
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`. #src[Theorem 5.1]],
   // F(R°)=F(R)° row: after Theorem 5.1, p. 113
   [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.],
   // relators-agree-on-maps row: Corollary 5.1
-  [Two relators agreeing on maps are equal.],
+  [Two relators agreeing on maps are equal. #src[Corollary 5.1]],
  // F(X∩Y) row: Ex 5.2
- [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[Ex 5.2]],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
  // F(R∩S) row: Ex 5.2, the restriction
- [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[Ex 5.2]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [#leanf("Freyd.Alg.Relator.map_dom") #src[]],
+ [#leanf("Freyd.Alg.Relator.map_dom") #src[Ex 5.5]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
@@ -52,7 +52,7 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 
 == Fork `⟨R,S⟩`
 
-#disp[#definition[
+#disp(num: "(5.1)")[#definition[
 The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
 // lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 where `(π₁,π₂)` is the tabulation of `⊤`
@@ -61,9 +61,9 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
- #leanf("Freyd.Alg.RelProd.pair_outl") #src[] #h(1.4cm)
+ #leanf("Freyd.Alg.RelProd.pair_outl") #src[(5.6)] #h(1.4cm)
   // lean:AOP.A5_2.pair_outl@18c8ddee
- #leanf("Freyd.Alg.RelProd.pair_outr") #src[]
+ #leanf("Freyd.Alg.RelProd.pair_outr") #src[(5.7)]
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
@@ -85,7 +85,7 @@ the monoid's unit law:
 
 === Relational product `R×S`
 
-#disp[#definition[
+#disp(num: "(5.2)")[#definition[
 `R×S≜⟨π₁R,π₂S⟩` #src[], a relator in each argument
 // lean:AOP.A5_2.prodMap@28e34ad0
 #src[] but no longer a categorical product.
@@ -107,7 +107,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
+#disp(num: "(5.3)")[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
 // lean:AOP.A5_2.pair_prodMap@8861fda2
 
 // A `#disp` block does NOT break across a page — it overflows and the last row is lost — so the rows
@@ -172,14 +172,14 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [#leanf("Freyd.Alg.junc") \ #src[The tape is the union — a particle entering at `A+B` takes exactly
+  [#leanf("Freyd.Alg.junc") \ #src[(5.9) The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
   // lean:AOP.A5_3.junc@da022f10
   P(leanc("Freyd.Alg.junc"), s: 85%),
 
   [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
   // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
-  [#leanf("Freyd.Alg.sumMap")], P(leanc("Freyd.Alg.sumMap"), s: 85%),
+  [#leanf("Freyd.Alg.sumMap") #src[(5.10)]], P(leanc("Freyd.Alg.sumMap"), s: 85%),
   // lean:AOP.A5_3.sumMap@eb035ed1
   [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
@@ -187,21 +187,21 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
 
-  [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip")],
+  [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip") #src[Ex 5.12]],
   P(row((leanc("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
     leanc("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_self_comp_recip@6cd82772
   // lean:Freyd.S2_20.Coproduct.u₂_self_comp_recip@53e6991d
 
   // `rl°=𝟘` stays a formula: the exporter finds no naturality for the `𝟘` family on `B⟶A`.
-  [#leanf("Freyd.Alg.Coproduct.u₁_u₂_recip"), #leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")],
+  [#leanf("Freyd.Alg.Coproduct.u₁_u₂_recip"), #leanf("Freyd.Alg.Coproduct.u₂_u₁_recip") #src[Ex 5.12]],
   P(leanc("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_u₂_recip@ade7327c lean:Freyd.S2_20.Coproduct.u₂_u₁_recip@61def7d7
 
-  [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id")], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
+  [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id") #src[Ex 5.12]], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 
-  [#leanf("Freyd.Alg.junc_recip_junc")], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
+  [#leanf("Freyd.Alg.junc_recip_junc") #src[(5.11)]], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
   // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
@@ -679,7 +679,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
 // and the next row opens with the `⟺` that carries it over.
-#disp[
+#disp(num: "(5.12)")[
 #zline(
   zsqc([`αX`], [`F(X)R`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
