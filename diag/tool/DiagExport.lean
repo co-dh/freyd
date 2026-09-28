@@ -1439,6 +1439,24 @@ def parseArg (arg : String) (sel : Bool) :
     | _ => (stem.toString, none)
   return (base, binder, sides, branch)
 
+/-- ONE STATEMENT'S TWO SIDES DRAWN IN TWO CALLS: every drawn string-route selector whose last side
+    step is `lhs`/`rhs` and whose other side is drawn too, in a call it is not in.  The obligation is
+    each DRAWN SELECTOR, read through `parseArg`, because only one call shares a height and a bead
+    row between its panels (`note-prelude.typ`'s `lean`); two CALC-TABLE STEPS (`steps`, the
+    `<lean-step>` selectors) are exempt, being stacked rows with no `=` between them. -/
+def splitSides (calls steps : Array String) : Array (String × String) := Id.run do
+  let drawn := calls.flatMap fun c => ((c.splitOn "+").map fun s => (c.splitOn "+", s, parseArg s true)).toArray
+  let side (sd : List String) := sd.getLast?.filter (· ∈ ["lhs", "rhs"])
+  let mut bad : Array (String × String) := #[]
+  for (c, s, (b, h, sd, br)) in drawn do
+    for (_, s', (b', h', sd', br')) in drawn do
+      if side sd == some "lhs" && side sd' == some "rhs" && b == b' && h == h' && br == br'
+          && sd.dropLast == sd'.dropLast && !(c.contains s' && drawn.all fun (c'', t, _) =>
+            t != s' || c''.contains s) && !(steps.contains s && steps.contains s')
+          && !bad.contains (s, s') then
+        bad := bad.push (s, s')
+  return bad
+
 /-- The note ROOTS a listing queries: the laws, and the proofs that work them. -/
 def noteRoots : List String := ["diag/allegory-axioms.typ", "diag/allegory2.typ"]
 
@@ -1469,10 +1487,12 @@ def rootsToList : IO (List String) := do
     again, and seven of them were most of an unchanged chapter's `make c`. -/
 def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
   let tag (l : String) := "<" ++ l ++ ">"
-  let sel := match labels.map tag with
+  -- `lean-step` rides along whenever `lean-panel` is listed: `splitSides` reads it, no file does
+  let asked := if labels.contains "lean-panel" && !labels.contains "lean-step" then labels ++ ["lean-step"] else labels
+  let sel := match asked.map tag with
     | [] => ""
     | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
-  let mut out : Std.HashMap String (Array String) := labels.foldl (fun m l => m.insert (tag l) #[]) {}
+  let mut out : Std.HashMap String (Array String) := asked.foldl (fun m l => m.insert (tag l) #[]) {}
   for root in ← rootsToList do
     let args := #["query", "--root", ".", "--input", "list=1", root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
@@ -1491,6 +1511,13 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
         out := out.insert l (a.push s)
       | .error e, _ | _, .error e =>
         throw <| IO.userError s!"diag-export --list: `{cmdline}`: {e} in {x.compress}"
+  let split := splitSides (out.getD (tag "lean-panel") #[]) (out.getD (tag "lean-step") #[])
+  unless split.isEmpty do
+    for (a, b) in split do
+      IO.eprintln s!"diag-export --list: `{a}` and `{b}` are the two sides of one statement drawn \
+        in separate lean(…) calls, so they share no height and no bead row; draw them as \
+        lean(\"{a}\", \"{b}\")"
+    return 1
   IO.FS.createDirAll dir
   for l in labels do
     -- Sorted, and adjacent duplicates dropped: the same picture named by both notes is one job.

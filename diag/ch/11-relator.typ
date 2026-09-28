@@ -402,10 +402,10 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
 // the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
 // (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
 // (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
-#let ia-hom-l = lean("Freyd.Alg.IsFHom.lhs")
-#let ia-hom-r = lean("Freyd.Alg.IsFHom.rhs")
-#let ia-cata-l = lean("Freyd.Alg.InitialAlgebra.cata_comm.lhs")
-#let ia-cata-r = lean("Freyd.Alg.InitialAlgebra.cata_comm.rhs")
+#let ia-hom-l = "Freyd.Alg.IsFHom.lhs"
+#let ia-hom-r = "Freyd.Alg.IsFHom.rhs"
+#let ia-cata-l = "Freyd.Alg.InitialAlgebra.cata_comm.lhs"
+#let ia-cata-r = "Freyd.Alg.InitialAlgebra.cata_comm.rhs"
 
 #disp[#definition[
 An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
@@ -419,12 +419,12 @@ every F-algebra `f`
   // paint the same carrier red in the row below and cyan in the row above.
   #pair(
     leancd("Freyd.Alg.IsFHom"),
-    row((ia-hom-l, [#h(7pt) = #h(7pt)], ia-hom-r)),
+    lean(ia-hom-l, ia-hom-r, op: [=]),
     [#leanf("Freyd.Alg.IsFHom")],
   )
   #pair(
     leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
-    row((ia-cata-l, [#h(7pt) = #h(7pt)], ia-cata-r)),
+    lean(ia-cata-l, ia-cata-r, op: [=]),
     [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
   )
   // lean:AOP.A5_5.relCata_cancel@957f4846
@@ -436,12 +436,12 @@ every F-algebra `f`
 // the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
 // alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
 // bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
-#let ia-refl-l = lean("Freyd.Alg.relCata_alpha.lhs")
-#let ia-refl-r = lean("Freyd.Alg.relCata_alpha.rhs")
+#let ia-refl-l = "Freyd.Alg.relCata_alpha.lhs"
+#let ia-refl-r = "Freyd.Alg.relCata_alpha.rhs"
 
 #disp[#pair(
   leancd("Freyd.Alg.relCata_alpha"),
-  row((ia-refl-l, [#h(7pt) = #h(7pt)], ia-refl-r)),
+  lean(ia-refl-l, ia-refl-r, op: [=]),
  [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
 )]<cata-reflection>
 
@@ -457,21 +457,21 @@ then applying `S` is folding with `Q`.
 
 // `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
 // square of @initial-defn at `f := R`, `g := Q`, `h := S`.
-#let ia-fuse-l = lean("Freyd.Alg.relCata_fusion#h.lhs")
-#let ia-fuse-r = lean("Freyd.Alg.relCata_fusion#h.rhs")
+#let ia-fuse-l = "Freyd.Alg.relCata_fusion#h.lhs"
+#let ia-fuse-r = "Freyd.Alg.relCata_fusion#h.rhs"
 // The conclusion, generated like the side condition above it: the two folds differ by their algebra,
 // and the wire under each says where it lands — `B` on the left, `C` on the right.
-#let ia-fuse-cl = lean("Freyd.Alg.relCata_fusion.lhs")
-#let ia-fuse-cr = lean("Freyd.Alg.relCata_fusion.rhs")
+#let ia-fuse-cl = "Freyd.Alg.relCata_fusion.lhs"
+#let ia-fuse-cr = "Freyd.Alg.relCata_fusion.rhs"
 
 #disp[#pair(
   leancd("Freyd.Alg.relCata_fusion"),
   grid(
     columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
     src[the side condition],
-    row((ia-fuse-l, [#h(7pt) = #h(7pt)], ia-fuse-r)),
+    lean(ia-fuse-l, ia-fuse-r, op: [=]),
     src[the conclusion],
-    row((ia-fuse-cl, [#h(7pt) = #h(7pt)], ia-fuse-cr)),
+    lean(ia-fuse-cl, ia-fuse-cr, op: [=]),
   ),
   [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
  #src[(2.12)]],
@@ -559,11 +559,11 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
 // `F(f,T(f))` free — it is `f` on the object wire with `⟨𝟙,T⟩` and `F` running past — and the law the
 // naturality of `α`, the `f` bead sliding past it.  Not `P`, which is the powerset relator already.
 // This REPLACES the 2026-08-26 unindexed-`F` exception, which needed a second bead `F(f,𝟙)`.
-#let tfun-l = lean("Freyd.Alg.alphaT_natural.lhs")
-#let tfun-r = lean("Freyd.Alg.alphaT_natural.rhs")
+#let tfun-l = "Freyd.Alg.alphaT_natural.lhs"
+#let tfun-r = "Freyd.Alg.alphaT_natural.rhs"
 #disp[#pair(
   leancd("Freyd.Alg.alpha_natural_split"),
-  row((tfun-l, [#h(7pt) = #h(7pt)], tfun-r), s: 92%),
+  row((lean(tfun-l, tfun-r, op: [=]),), s: 92%),
   [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
  #src[]],
 )]<tfun-sq>
@@ -606,11 +606,11 @@ let `F` be a relator and has  *initial algebra* `α : F(T)⟶T` in the subcatego
 // A WIRE'S COLOUR IS ITS TYPE, A BEAD'S COLOUR IS WHICH ARROW IT IS, so arrows carry over from the
 // square.  The string half is generated, on @initial-defn's two panels at `⦇f⦈ := X`: two ALGEBRAS,
 // `α` at `T` and `f` at `A`, each an arrow at its own carrier and so a bead on the object wire.
-#let cata-def-l = lean("Freyd.Alg.relCata_UP.lhs.lhs")
-#let cata-def-r = lean("Freyd.Alg.relCata_UP.lhs.rhs")
+#let cata-def-l = "Freyd.Alg.relCata_UP.lhs.lhs"
+#let cata-def-r = "Freyd.Alg.relCata_UP.lhs.rhs"
 #disp[#pair(
   leancd("Freyd.Alg.relCata_UP.lhs"),
-  row((cata-def-l, [#h(7pt) = #h(7pt)], cata-def-r)),
+  lean(cata-def-l, cata-def-r, op: [=]),
   [#leanf("Freyd.Alg.relCata_UP") #h(6pt)
  #src[]],
 )]<cata-defining>
@@ -663,13 +663,13 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
 // banana, `T⟶EA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(EA)⟶EA`.
-#let cata-map-l = lean("Freyd.Alg.Λ_relCata.lhs")
-#let cata-map-r = lean("Freyd.Alg.Λ_relCata.rhs")
+#let cata-map-l = "Freyd.Alg.Λ_relCata.lhs"
+#let cata-map-r = "Freyd.Alg.Λ_relCata.rhs"
 #disp[#pair(
   grid(columns: 1, align: center, row-gutter: 6pt,
   leancd("Freyd.Alg.relCata_mapAlg_cancel"),
   src[$frac(#[`𝟙`], ∋)$ is the inverse of `∋`]),
-  row((cata-map-l, [#h(7pt) = #h(7pt)], cata-map-r)),
+  lean(cata-map-l, cata-map-r, op: [=]),
   [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
    // lean:AOP.A5_5.Λ_relCata@5b63ea5d lean:AOP.A5_5.relCata_unfold@22ba1c5c

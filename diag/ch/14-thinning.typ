@@ -71,11 +71,7 @@ row((
 ), s: 96%),
 [⟺],
 row((
-  lean("Freyd.Alg.le_Λ_comp_thinRel_iff.rhs.lhs"),
-), s: 96%),
-[and],
-row((
-  lean("Freyd.Alg.le_Λ_comp_thinRel_iff.rhs.rhs"),
+  lean("Freyd.Alg.le_Λ_comp_thinRel_iff.rhs.lhs", "Freyd.Alg.le_Λ_comp_thinRel_iff.rhs.rhs", op: [and]),
 ), s: 96%),
 )
 ]<thin-up>
@@ -457,11 +453,11 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.thinningList_step3.rhs"), [])],
-  [#lean("Freyd.Alg.thinningList_step3.rhs")],
+  [#lean("Freyd.Alg.thinningList_step3.rhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.thinningList_step3.lhs"),
     [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
-  [#lean("Freyd.Alg.thinningList_step3.lhs")],
+  [#lean("Freyd.Alg.thinningList_step3.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.thinningList_step2.lhs"),
     [#src[`sort(P) minlist(R)⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
@@ -579,13 +575,13 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs"),
     [#frc([`subseq (within w)`])` est(R)`])],
-  [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs")],
+  [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs"),
     [#frc([`⦇[nil,cons](within w) ∪ [nil,π₂]⦈`])` est(R)` \
  #src[@cata-fusion, weights non-negative. ]])],
      // lean:AOP.A8_4_Knapsack.knap_spec@dc0de67d
-  [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs")],
+  [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
     [`⦇listcp ⟨g₁,g₂⟩ merge R thinlist(Q)⦈ minlist(R)` \
@@ -666,14 +662,14 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs"),
     [#frc([`partition list⁺(fits w)`])` est(R)`])],
-  [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs")],
+  [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs"),
     [#frc([`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`])` est(R)` \
      #src[@cata-fusion, every word fits on a line by itself.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@031c245f
-  [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs")],
+  [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
@@ -747,7 +743,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Tour.tour_laws.rhs"), [#frc([`tour`])` est(R)`])],
-  [#lean("Freyd.Alg.RelSet.Tour.tour_laws.rhs")],
+  [#lean("Freyd.Alg.RelSet.Tour.tour_laws.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs"),
     [#frc([`⦇[start,dropl ∪ dropr]⦈`])` est(R)` \ #src[`tour≜⦇[start,dropl ∪ dropr]⦈` — @tour-defn]])],
@@ -757,7 +753,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws.lhs"),
     [`⦇listcp ⟨g₁,g₂⟩ cat thinlist(Q)⦈ minlist(R)` \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono]])],
-  [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs")],
+  [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 
   [#vstep(EQ, [],
     [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]⦈ minlist(R)` \
