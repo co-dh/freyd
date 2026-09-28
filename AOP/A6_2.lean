@@ -202,35 +202,48 @@ section Fusion
 
 variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜}
 
-/-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion. -/
-public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
-    {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) : relCata T ⊑ relCata R ≫ S := by
-  apply relCata_le_of_prefixed
-  have e1 : I.α° ≫ F.map (relCata R ≫ S) ≫ T
-      = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := by rw [F.map_comp, Cat.assoc]
-  have e2 : I.α° ≫ F.map (relCata R) ≫ R ≫ S = relCata R ≫ S := by
-    rw [← Cat.assoc (F.map (relCata R)) R S, ← relCata_cancel I R,
-      Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
-      I.recip_alpha_alpha, Cat.id_comp]
-  rw [e1]
-  calc I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T
-      ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S := comp_mono_left _ (comp_mono_left _ h)
-    _ = relCata R ≫ S := e2
+/-- (6.4) step 1: the relator splits `F(⦇R⦈S)` into `F(⦇R⦈)F(S)`. -/
+public theorem relCata_le_comp_step1 (I : InitialAlgebra F) {C D : 𝒜} (R : F.obj C ⟶ C)
+    (T : F.obj D ⟶ D) (S : C ⟶ D) :
+    I.α° ≫ F.map (relCata R ≫ S) ≫ T = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := by
+  rw [F.map_comp, Cat.assoc]
 
-/-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion. -/
+/-- (6.4) step 2: the hypothesis `F(S)T ⊑ RS` in context. -/
+public theorem relCata_le_comp_step2 (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
+    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) :
+    I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S :=
+  comp_mono_left _ (comp_mono_left _ h)
+
+/-- (6.4) step 3: `F(⦇R⦈)R = α⦇R⦈`, then `α°α = 𝟙`. -/
+public theorem relCata_le_comp_step3 (I : InitialAlgebra F) {C D : 𝒜} (R : F.obj C ⟶ C)
+    (S : C ⟶ D) : I.α° ≫ F.map (relCata R) ≫ R ≫ S = relCata R ≫ S := by
+  rw [← Cat.assoc (F.map (relCata R)) R S, ← relCata_cancel I R,
+    Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
+    I.recip_alpha_alpha, Cat.id_comp]
+
+/-- **(6.4)**: fusion law for the least-fixed-point (prefixed) inclusion — (6.2) at `X≜⦇R⦈S`,
+    whose prefix-point condition is steps 1–3. -/
+public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
+    {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) : relCata T ⊑ relCata R ≫ S :=
+  relCata_le_of_prefixed I (calc I.α° ≫ F.map (relCata R ≫ S) ≫ T
+      = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := relCata_le_comp_step1 I R T S
+    _ ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S := relCata_le_comp_step2 I h
+    _ = relCata R ≫ S := relCata_le_comp_step3 I R S)
+
+/-- (6.5) step 2: the hypothesis `RS ⊑ F(S)T` in context. -/
+public theorem comp_le_relCata_step2 (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
+    {T : F.obj D ⟶ D} {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) :
+    I.α° ≫ F.map (relCata R) ≫ R ≫ S ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T :=
+  comp_mono_left _ (comp_mono_left _ h)
+
+/-- **(6.5)**: fusion law for the greatest-fixed-point (postfixed) inclusion — (6.3) at `X≜⦇R⦈S`,
+    the chain of (6.4) run backwards with the hypothesis reversed. -/
 public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
-    {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) : relCata R ≫ S ⊑ relCata T := by
-  apply le_relCata_of_postfixed
-  have e1 : relCata R ≫ S = I.α° ≫ F.map (relCata R) ≫ R ≫ S := by
-    rw [← Cat.assoc (F.map (relCata R)) R S, ← relCata_cancel I R,
-      Cat.assoc I.α (relCata R) S, ← Cat.assoc I.α° I.α (relCata R ≫ S),
-      I.recip_alpha_alpha, Cat.id_comp]
-  have e2 : I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T
-      = I.α° ≫ F.map (relCata R ≫ S) ≫ T := by rw [F.map_comp, Cat.assoc]
-  calc relCata R ≫ S
-      = I.α° ≫ F.map (relCata R) ≫ R ≫ S := e1
-    _ ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := comp_mono_left _ (comp_mono_left _ h)
-    _ = I.α° ≫ F.map (relCata R ≫ S) ≫ T := e2
+    {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) : relCata R ≫ S ⊑ relCata T :=
+  le_relCata_of_postfixed I (calc relCata R ≫ S
+      = I.α° ≫ F.map (relCata R) ≫ R ≫ S := (relCata_le_comp_step3 I R S).symm
+    _ ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := comp_le_relCata_step2 I h
+    _ = I.α° ≫ F.map (relCata R ≫ S) ≫ T := (relCata_le_comp_step1 I R T S).symm)
 
 /-- **Ex 6.7**: `⦇R⦈ ⊑ ⦇S⦈` when the recursion bodies agree at `⦇S⦈` in the ⊑ direction. -/
 public theorem relCata_le_relCata (I : InitialAlgebra F) {C : 𝒜} {R S : F.obj C ⟶ C}
