@@ -126,7 +126,7 @@
   ),
 )]<sort-ordered>
 
-// B&dM p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
+// B&dM 6.6a, p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
 // `perm` is strictly natural (lean:AOP.A6_6b_SortConcrete.perm_strictNatural@f0271ba3).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
@@ -143,7 +143,7 @@
   ),
 )]<sort-selection>
 
-// B&dM p.153, the fusion proviso; `select` is specified by `select°⊑ok cons perm`.
+// B&dM 6.6b, p.153, the fusion proviso; `select` is specified by `select°⊑ok cons perm`.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.select_proviso") \
     #src[permuting the tail and then undoing `select` lands among the `ok` conses of a permutation]],
@@ -160,7 +160,7 @@
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
-// B&dM p.153, the program.  Uniqueness of the solution is Theorem 6.3, a hypothesis in Lean
+// B&dM 6.6c, p.153, the program.  Uniqueness of the solution is Theorem 6.3, a hypothesis in Lean
 // (HyloUnique); drawn here is that `⦇[nil,select°]⦈°` IS a solution.  `nil` is strictly natural
 // (lean:AOP.A6_6b_SortConcrete.nil_strictNatural@c7a02590).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -173,12 +173,46 @@
     (EQ, "Freyd.Alg.RelSet.Sort.sort_rec.rhs", src[unfolding the converse of a fold]),
   ),
 )]<sort-rec>
-// TODO p.154 quicksort: `perm ordered ⊒ perm flatten°flatten ordered = perm flatten°inordered flatten
-//   = (inordered flatten perm)°flatten ⊒ ⦇[nil,split°]⦈°flatten` (4 steps + claim
-//   `flatten ordered = inordered flatten`) — abstract Lean missing (qsort_emerges is concrete).
-// TODO p.155 split-proviso: `check fork flatten perm = check F(flatten) join perm = F(flatten) check' join perm
-//   = F(flatten)F(perm) check' join perm = F(flatten perm) check' join perm ⊒ F(flatten perm) split°`
-//   (5 steps, 3 claims) — Lean missing.
+// B&dM 6.6d, p.154, "quicksort": the specification `perm ordered` refined through a tree; `R` is a
+// preorder, which the claim `flatten ordered = inordered flatten` needs.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.quicksort") \
+    #src[every output of unfolding the input by `split` into a tree and flattening that tree is a
+     sorted permutation of the input]],
+     // lean:AOP.A6_6e_Quicksort.quicksort@KEY
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.qsort_step1.rhs", []),
+    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step1.lhs", src[`flatten` is simple]),
+     // lean:AOP.A6_6e_Quicksort.qsort_step1@KEY
+    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step2.rhs", src[`flatten ordered=inordered flatten`]),
+     // lean:AOP.A6_6e_Quicksort.qsort_step2@KEY
+    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step3.rhs", src[converses]),
+     // lean:AOP.A6_6e_Quicksort.qsort_step3@KEY
+    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step4.lhs", src[fusion (6.4) under @sort-split]),
+     // lean:AOP.A6_6e_Quicksort.qsort_step4@KEY
+  ),
+)]<sort-quick>
+
+// B&dM 6.6e, p.155, the fusion proviso; `split` is specified by `split°⊑check' join perm`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_proviso") \
+    #src[undoing `split` and then flattening and permuting both parts lands among the `check`ed
+     forks whose flattening is permuted]],
+     // lean:AOP.A6_6e_Quicksort.split_proviso@KEY
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.split_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.split_step1.rhs", src[`fork flatten=F(flatten)join`]),
+     // lean:AOP.A6_6e_Quicksort.split_step1@KEY
+    (EQ, "Freyd.Alg.RelSet.Sort.split_step2.rhs", src[`check F(flatten)=F(flatten)check'`]),
+     // lean:AOP.A6_6e_Quicksort.split_step2@KEY
+    (EQ, "Freyd.Alg.RelSet.Sort.split_step3.rhs", src[`join perm=F(perm)join perm`, `check' F(perm)=F(perm)check'`]),
+     // lean:AOP.A6_6e_Quicksort.split_step3@KEY
+    (EQ, "Freyd.Alg.RelSet.Sort.split_step4.rhs", src[functors]),
+     // lean:AOP.A6_6e_Quicksort.split_step4@KEY
+    (RQ, "Freyd.Alg.RelSet.Sort.split_step5.lhs", src[`split°⊑check' join perm`]),
+     // lean:AOP.A6_6e_Quicksort.split_step5@KEY
+  ),
+)]<sort-split>
 // TODO p.155 split-cata: `split = embed ⦇[base,step]⦈` with `base ⊆ wrap perm join°check'`,
 //   `(𝟙×join check')step ⊆ cons perm join°check'`.
 // TODO p.155 qsort-rec: `X=⦇[nil,split°]⦈°flatten` the least solution of `X = nil°nil ∪ split(X×𝟙×X)join`;

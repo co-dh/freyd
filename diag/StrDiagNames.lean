@@ -42,6 +42,7 @@ import AOP.A6_5
 import AOP.A8_6_Tour
 -- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
 import AOP.A6_6b_SortConcrete
+import AOP.A6_6e_Quicksort
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
@@ -251,6 +252,16 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.TT.Tree] def unexpandTreeType : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.dTree] def unexpandTBDTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.Tree] def unexpandTBTree : Unexpander
   | `($_ $A) => `($(mkIdent `tree) $A)
   | _ => throw ()
 
@@ -1477,6 +1488,35 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Sort.ok] def unexpandOk : Unexpander
   | `($_ $_) => `($(mkIdent `ok))
+  | _ => throw ()
+-- §6.6 quicksort (B&dM pp.154-155): the tree fold's arrows under the book's names.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.flatten] def unexpandFlatten : Unexpander
+  | `($_:ident) => `($(mkIdent `flatten))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.join] def unexpandSortJoin : Unexpander
+  | `($_:ident) => `($(mkIdent `join))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.fork] def unexpandSortFork : Unexpander
+  | `($_:ident) => `($(mkIdent `fork))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.null] def unexpandSortNull : Unexpander
+  | `($_:ident) => `($(mkIdent `null))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.inordered] def unexpandInordered : Unexpander
+  | `($_ $_) => `($(mkIdent `inordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.check] def unexpandCheck : Unexpander
+  | `($_ $_) => `($(mkIdent `check))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.check'] def unexpandCheck' : Unexpander
+  | `($_ $_) => `($(mkIdent `check'))
   | _ => throw ()
 
 end Freyd.Alg
