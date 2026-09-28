@@ -146,35 +146,11 @@ public theorem relCata_UP_step4 (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A �
     I.α° ≫ Λ (F.map (Λ X ≫ ∋ A) ≫ R) = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
   rw [F.map_comp, Cat.assoc, Λ_fusion (F.map_is_map (Λ_is_map' X))]
 
-/-- The chain, times `α` (`αα° = 𝟙`), is the map fold's equation at `Λ(X)`; the fold of a map
-    algebra is the unique map satisfying it. -/
-public theorem relCata_UP_fold (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
-    (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
-  I.cata_unique _ _ _ (Λ_is_map' X) <|
-    calc I.α ≫ Λ X = I.α ≫ I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
-          congrArg (I.α ≫ ·) (((relCata_UP_step1 I h).trans (relCata_UP_step2 I R X)).trans
-            ((relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)))
-      _ = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
-          rw [← Cat.assoc, I.alpha_alpha_recip, Cat.id_comp]
-
-/-- Cancellation `X = Λ(X)∋`, and `⦇R⦈ = ⦇Λ(F(∋)R)⦈∋`. -/
-public theorem relCata_UP_of_comm (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
-    (h : I.α ≫ X = F.map X ≫ R) : X = relCata R := by
-  rw [relCata_unfold, ← relCata_UP_fold I h, Λ_eps_eq']
-
-/-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
-    `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
-    of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ A`
-    (not just maps). -/
-public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
-    (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R :=
-  ⟨relCata_UP_of_comm I, fun e => by rw [e]; exact relCata_cancel I R⟩
-
-/-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
-    `(|f|) = cata f hf` when `f` is a map. -/
-theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) :
-    relCata f = I.cata f hf :=
-  ((relCata_UP I f (I.cata f hf)).mp (I.cata_comm f hf)).symm
+/-- Steps 1–4 chained: `Λ(X)` satisfies the fold equation of the map `Λ(F(∋)R)`, up to `α°`. -/
+public theorem relCata_UP_chain (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) : Λ X = I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
+  (relCata_UP_step1 I h).trans <| (relCata_UP_step2 I R X).trans <|
+    (relCata_UP_step3 I R X).trans (relCata_UP_step4 I R X)
 
 /-- `Λ(|R|) = (|Λ(R·F∈)|)` (B&dM p.121): the power-transpose of the relational catamorphism
     is exactly the map catamorphism of the transposed algebra it was built from. -/
@@ -184,6 +160,44 @@ public theorem Λ_relCata (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) 
   generalize hu_def : I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) = u
   have hu_map : Map u := hu_def ▸ I.cata_map _ _
   exact ((Λ_UP (u ≫ ∋ A) hu_map).mpr rfl).symm
+
+/-- `Λ` is a bijection onto maps: `Λ(X)` is the map fold `⦇Λ(F(∋)R)⦈` exactly when `X` is `⦇R⦈`
+    (cancellation `X = Λ(X)∋` one way, `Λ(⦇R⦈) = ⦇Λ(F(∋)R)⦈` the other). -/
+public theorem Λ_eq_cata_iff (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A} :
+    Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) ↔ X = relCata R :=
+  ⟨fun e => by rw [relCata_unfold, ← e, Λ_eps_eq'], fun e => e ▸ Λ_relCata I R⟩
+
+/-- (5.12) at the transpose: `X` satisfies the fold equation of `R` exactly when `Λ(X)` is the fold
+    of the map `Λ(F(∋)R)`.  `⟹` is the chain times `α` (`αα° = 𝟙`), which the fold of a map algebra
+    is the unique map to satisfy; `⟸` is `⦇R⦈`'s own fold equation. -/
+public theorem relCata_UP_fold (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A} :
+    (I.α ≫ X = F.map X ≫ R) ↔ Λ X = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  ⟨fun h => I.cata_unique _ _ _ (Λ_is_map' X) <|
+    calc I.α ≫ Λ X = I.α ≫ I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) :=
+          congrArg (I.α ≫ ·) (relCata_UP_chain I h)
+      _ = F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) := by
+          rw [← Cat.assoc, I.alpha_alpha_recip, Cat.id_comp],
+   fun e => by rw [(Λ_eq_cata_iff I).mp e]; exact relCata_cancel I R⟩
+
+/-- Step 5: fold uniqueness, now that `Λ(F(∋)R)` is a map: the chain's last term is its fold. -/
+public theorem relCata_UP_step5 (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {X : I.t ⟶ A}
+    (h : I.α ≫ X = F.map X ≫ R) :
+    I.α° ≫ F.map (Λ X) ≫ Λ (F.map (∋ A) ≫ R) = I.cata (Λ (F.map (∋ A) ≫ R)) (Λ_is_map' _) :=
+  (relCata_UP_chain I h).symm.trans ((relCata_UP_fold I).mp h)
+
+/-- **Eilenberg–Wright lemma (5.12)**: `α · X = FX · R ⟺ X = (|R|)`, mirrored to
+    `α ≫ X = F.map X ≫ R ⟺ X = relCata I R`.  This is the defining universal property
+    of the relational catamorphism, characterising `(|R|)` among ALL relations `X : t ⟶ A`
+    (not just maps). -/
+public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) (X : I.t ⟶ A) :
+    (I.α ≫ X = F.map X ≫ R) ↔ X = relCata R :=
+  (relCata_UP_fold I).trans (Λ_eq_cata_iff I)
+
+/-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
+    `(|f|) = cata f hf` when `f` is a map. -/
+theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) :
+    relCata f = I.cata f hf :=
+  ((relCata_UP I f (I.cata f hf)).mp (I.cata_comm f hf)).symm
 
 /-- **B&dM p.121, the map algebra's square**: the fold's defining equation at the MAP algebra
     `Λ(F(∋)R)`, together with the triangle saying what that algebra is — `Λ(F(∋)R)∋ = F(∋)R`.

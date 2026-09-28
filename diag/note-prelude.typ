@@ -300,7 +300,9 @@
 // are listed under the row, where the circuits stood.
 #let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
-#let lean-chain(..args, circuit: false) = {
+// `formula: true` sets each panel's own statement side above it, generated from the panel's
+// selector like a header, so the chain reads as a term chain as well as a picture chain.
+#let lean-chain(..args, circuit: false, formula: false) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary {
@@ -354,7 +356,9 @@
       }
       hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) =>
         (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
-          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) })))
+          align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
+        if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
+          else { none })))
       if n > 0 {
         block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
           ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
