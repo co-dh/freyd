@@ -254,9 +254,18 @@
       } else if s.gspan > 1 {
         let idxs = range(i, i + s.gspan)
         let memop = idxs.map(k => not (li == 0 and k == 0 and line.at(k).op == none))
-        let gw = idxs.zip(memop).map(((k, o)) => line.at(k).w + extra + if o { OPW + gut } else { 0pt }).sum()
         let gspan = memop.map(o => if o { 2 } else { 1 }).sum()
-        fr.push(grid.cell(colspan: gspan, box(width: gw, s.f)))
+        // sum of the group's own tracks, PLUS the `gspan-1` gutters BETWEEN them — the per-member
+        // term below already carries the ONE gutter inside that member (between its own op track
+        // and its picture track), so the group has `s.gspan-1` more, between consecutive members.
+        let gw = (idxs.zip(memop).map(((k, o)) => line.at(k).w + extra + if o { OPW + gut } else { 0pt }).sum()
+          + (s.gspan - 1) * gut)
+        // the formula is Lean's own pretty-printing at full size, so it can easily outgrow two or
+        // three small panels; shrink it to `gw` exactly (never grow past it) so it can never spill
+        // into the next group's cell — the same idea `chain-k` uses to fit the pictures.
+        let need = measure(s.f).width
+        let ratio = if need > gw and need > 0pt { gw / need } else { 1.0 }
+        fr.push(grid.cell(colspan: gspan, box(width: gw, align(center, scale(ratio * 100%, reflow: true, s.f)))))
         skip = s.gspan - 1
       } else {
         fr.push(span(wide(if s.f == none { [] } else { s.f })))
