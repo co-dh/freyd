@@ -134,18 +134,22 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   lean-chain((
     (none, "Freyd.Alg.RelSet.Detab.expand_V_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
-      src[definition of `expand`]),
+      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`]),
      // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
-    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step2.rhs",
-      src[conditionals distribute]),
+    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step2.rhs", rev: true),
+      src[`(S∪T)R=SR∪TR` — conditionals distribute]),
      // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
   ), (
-    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", src[`fill V°=fill` (Ex. 10.4)]),
+    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step3.rhs", rev: true), src[`fill V°=fill` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
-    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
+    // the `nottab` arm splits again here — three diagrams: the unchanged `istab` side, then its own
+    // two children — because `snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4) introduces a second `∪` under `nottab`.
+    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", rev: true, split: "inr"),
+      src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
      // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
-    (SQ, "Freyd.Alg.RelSet.Detab.expand_V_step5.rhs",
-      src[definition of `expand`, guard dropped]),
+    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step5.rhs", rev: true),
+      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`; `nottab R⊑R` — guard
+       dropped]),
      // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
   )),
 )]<entab-expand-V>

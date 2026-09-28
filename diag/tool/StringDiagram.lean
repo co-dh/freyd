@@ -771,27 +771,39 @@ def Diagram.drawnAs (a b : Diagram) : Bool :=
     && a.rows.all (·.ident.isSome) && a.rows.map (·.ident) == b.rows.map (·.ident)
     && a.top == b.top && a.bot == b.bot
 
-/-- THE KEY a peer's STEP shares with its sibling branch: everything about it but the branch
-    itself, so the two selectors one `branches(...)` call built — `.inl` and `.inr` of one side —
-    carry one key, and a peer with no such sibling carries a key nothing else matches. -/
-def peerStepKey (peer : String × Option String × List String × List Sel) :
-    String × Option String × List String × List String :=
-  let (b, h, p, s) := peer
-  (b, h, p, s.dropLast.map (·.suffix))
+/-- Two selector atoms as the same fork-arm. -/
+def selEq : Sel → Sel → Bool
+  | .inl, .inl => true | .inr, .inr => true | .body, .body => true | _, _ => false
 
-/-- `peers` GROUPED INTO STEPS (`peerStepKey`): a run of consecutive peers sharing one key is the
-    one or two selectors a `lean-chain` row entry names — a `branches(...)` pair, or a lone
-    selector — each an array of indices into `peers`/`per`, in source order both ways.  Read off
+/-- How far two selector chains walk the same road before one of them turns off it. -/
+def selLCP : List Sel → List Sel → Nat
+  | a :: as, b :: bs => if selEq a b then selLCP as bs + 1 else 0
+  | _, _ => 0
+
+/-- TWO PEERS ARE LEAVES OF ONE `branches(...)` CALL, however deep the nesting on either side — a
+    plain pair (`.inl`, `.inr`), or `<entab-expand-V>`'s 3-way split (`.inl` depth 1, `.inr.inl` and
+    `.inr.inr` depth 2) — when they share their declaration, binder and path, and their selector
+    chains walk the same road and then BOTH still have road left: that remaining fork is the one a
+    `branches` call built, whatever its depth on either side.  Not a `dropLast`-by-one key: that only
+    ever matched siblings at the SAME depth, which a nested split's two arms are not. -/
+def peerSameStep (a b : String × Option String × List String × List Sel) : Bool :=
+  let (an, ah, ap, as) := a
+  let (bn, bh, bp, bs) := b
+  an == bn && ah == bh && ap == bp &&
+    let l := selLCP as bs
+    l < as.length && l < bs.length
+
+/-- `peers` GROUPED INTO STEPS (`peerSameStep`): a run of consecutive peers all leaves of one
+    `branches(...)` call is the selectors a `lean-chain` row entry names — a pair, or a nested
+    triple — each an array of indices into `peers`/`per`, in source order both ways.  Read off
     `peers` itself, so a row's own pairing is never told to the exporter a second time. -/
 def stepGroups (peers : Array (String × Option String × List String × List Sel)) :
     Array (Array Nat) := Id.run do
   let mut out : Array (Array Nat) := #[]
-  let mut lastKey? : Option (String × Option String × List String × List String) := none
   for i in [0 : peers.size] do
-    let k := peerStepKey peers[i]!
-    if lastKey? == some k then out := out.set! (out.size - 1) (out[out.size - 1]!.push i)
+    if i > 0 && peerSameStep peers[i - 1]! peers[i]! then
+      out := out.set! (out.size - 1) (out[out.size - 1]!.push i)
     else out := out.push #[i]
-    lastKey? := some k
   return out
 
 /-- `dup`: this file's whole STEP — itself alone, or itself and the sibling branch one

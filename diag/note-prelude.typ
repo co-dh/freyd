@@ -213,7 +213,7 @@
     let (pic, u) = (box(s.at(1)), s.at(4, default: none))
     let (pm, um) = (measure(pic), if u == none { none } else { measure(box(u)) })
     (op: s.at(0), pic: pic, why: s.at(2), f: s.at(3, default: none), u: u, pm: pm, um: um,
-      w: calc.max(pm.width, if um == none { 0pt } else { um.width }))
+      w: calc.max(pm.width, if um == none { 0pt } else { um.width }), gspan: s.at(5, default: 1))
   })
   if fill != none {
     let k = if fill == true { chain-k(sz.width, ss.first().op == none, ss.map(s => s.w)) } else { fill }
@@ -236,6 +236,11 @@
     let py =if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
     let under = ss.any(s => s.u != none)
     let (cols, fr, pr, ur, rr) = ((), (), (), (), ())
+    // A BRANCHES GROUP'S FORMULA SPANS THE WHOLE GROUP, not one cell per branch: `skip` is how many
+    // of the group's own trailing steps this loop owes no `fr` cell to, because the head already
+    // pushed ONE cell wide enough to cover them (their `cols` slots are unaffected — only `fr`, the
+    // formula row, merges).
+    let skip = 0
     for (i, s) in line.enumerate() {
       let op = not (li == 0 and i == 0 and s.op == none)
       if op { cols.push(OPW); pr.push(s.op); ur.push([]) }
@@ -244,7 +249,18 @@
       ur.push(if s.u == none { [] } else { pic-meta(plain(if s.f == none { s.why } else { s.f }), s.u, size: s.um); s.u })
       let span = grid.cell.with(colspan: if op { 2 } else { 1 })
       let wide = box.with(width: s.w + extra + if op { OPW + gut } else { 0pt })
-      fr.push(span(wide(if s.f == none { [] } else { s.f })))
+      if skip > 0 {
+        skip = skip - 1
+      } else if s.gspan > 1 {
+        let idxs = range(i, i + s.gspan)
+        let memop = idxs.map(k => not (li == 0 and k == 0 and line.at(k).op == none))
+        let gw = idxs.zip(memop).map(((k, o)) => line.at(k).w + extra + if o { OPW + gut } else { 0pt }).sum()
+        let gspan = memop.map(o => if o { 2 } else { 1 }).sum()
+        fr.push(grid.cell(colspan: gspan, box(width: gw, s.f)))
+        skip = s.gspan - 1
+      } else {
+        fr.push(span(wide(if s.f == none { [] } else { s.f })))
+      }
       rr.push(span(wide(s.why)))
     }
     grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
@@ -295,15 +311,26 @@
     + ": the exporter draws both sides and the relation between them from the one declaration")
   p
 }
-// A step whose Lean side at `sel` is two branches joined by `sym` — a union `P ∪ Q`, or a sum
+// A step whose Lean side at `sel` is branches joined by `sym` — a union `P ∪ Q`, or a sum
 // `∇°(P+Q)∇` whose codiagonals the sign stands for — reads as `sel.inr` then `sel.inl` (`rev:`
 // swaps them).  A lean-chain row `(op, union(sel), reason)` expands (in `lean-chain`, below) to the
 // panel at the first selector under `op` then the second under `sym`, with no reason; `.sels`
 // spread is what a raw `lean(..union(sel).sels, op: [∪])` call draws side by side.  A dictionary,
 // so it never collides with `stmt-sel`'s `(decl,)` array.
-#let branches(sym, sel, rev: false) = {
+// `split:` names ONE of the two top branches ("inl"/"inr", the book's writing order) that is ITSELF
+// a further `∪`/`+`, and flattens it in place: `union(sel, split: "inr")` on the default (non-rev)
+// order reads `sel.inr.inr, sel.inr.inl, sel.inl` — three selectors, one `sym` between each pair —
+// the same mechanism `<entab-expand-V>` uses for the `nottab` arm's nested `∪`.  `rev:` still
+// reverses the WHOLE flattened list, so the split branch's two children stay adjacent to each other
+// under any order.  `sel` (the un-suffixed parent) survives in the dict so `lean-chain` can generate
+// the group's own formula from it — the whole side the branches split, not one formula per branch.
+#let branches(sym, sel, rev: false, split: none) = {
   let s = (sel + ".inr", sel + ".inl")
-  (sym: sym, sels: if rev { s.rev() } else { s })
+  let s = if split == none { s } else {
+    let nest = sel + "." + split
+    s.map(x => if x == nest { (nest + ".inr", nest + ".inl") } else { x }).flatten()
+  }
+  (sym: sym, sel: sel, sels: if rev { s.rev() } else { s })
 }
 #let union = branches.with([∪])
 #let sum = branches.with([+])
@@ -325,15 +352,22 @@
     // this function only ever meets plain string selectors or a `stmt-sel` singleton; `groups`
     // remembers which flat rows came from ONE row entry — a `branches` pair, or a row of its own —
     // so the merge below decides once per STEP, never once per branch.
+    // A branches step's OWN FORMULA — the whole side the branches split, e.g. `S₁°G(X)R₁∪S₂°H(X)R₂`
+    // — is generated ONCE from the un-suffixed parent selector and carried on the group's first flat
+    // step as `(gform: .., gspan: ..)`; `hchain` (below) reads it and spans it over the whole group,
+    // regardless of this chain's own `formula:` flag — a branches step is "complicated" enough (his
+    // words) to always show it, where an ordinary step only shows one when asked.
     .map(r => {
       let steps = ()
       let groups = ()
       for s in r.steps {
         if type(s.at(1)) == dictionary {
+          let b = s.at(1)
           let i0 = steps.len()
-          steps.push((s.at(0), s.at(1).sels.at(0), s.at(2)))
-          steps.push((s.at(1).sym, s.at(1).sels.at(1), src[]))
-          groups.push((i0, i0 + 1))
+          let n = b.sels.len()
+          steps.push((s.at(0), b.sels.at(0), s.at(2), (gform: leanf(b.sel), gspan: n)))
+          for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[])) }
+          groups.push(range(i0, i0 + n))
         } else {
           groups.push((steps.len(),))
           steps.push(s)
@@ -362,7 +396,9 @@
     for grp in r.groups {
       let i0 = grp.first()
       let s = r.steps.at(i0)
-      let s = if held == none { s } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
+      let s = if held == none { s } else if s.len() > 3 {
+        (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)], s.at(3))
+      } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
       held = if got.at(i0).dup { s } else { none }
       if not got.at(i0).dup {
         steps.push(s); pics.push(got.at(i0).pic)
@@ -395,11 +431,17 @@
       for (s, x) in r.zip(pw) {
         if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 } else { tags.push(none) }
       }
-      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) =>
+      hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) => {
+        let g = s.at(3, default: none)
+        let isg = type(g) == dictionary
         (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
           align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
-        if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
-          else { none })))
+        if isg { g.gform }
+          else if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
+          else { none },
+        none,
+        if isg { g.gspan } else { 1 })
+      }))
       if n > 0 {
         block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
           ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
