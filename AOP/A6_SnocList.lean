@@ -99,6 +99,19 @@ public theorem F_preservesRecip (L E : Type) : (F L E).PreservesRecip := by
       | exact ⟨fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩, fun ⟨h1, h2⟩ => ⟨h1, h2.symm⟩⟩
       | exact Iff.rfl
 
+/-- **`F(X) = 𝟏+(X×E)`** as a `sumMap` over `sumCop`, the constant relator on the leaf arm and
+    `−×E` on the pair arm: the `hF` Corollary 6.1 (`hylo_eq_mu_coprod`) takes over this `F`.
+    `Rel(Set)`'s coproduct and relational product are its own `⊕`/`×`, so the objects agree
+    definitionally and only the relations need the calculation. -/
+public theorem Fmap_eq_sumMap (L E : Type) {C c' : RelSet.{0}} (X : C ⟶ c') :
+    (F L E).map X = sumMap (sumCop (dL L) ⟨C.carrier × E⟩) (sumCop (dL L) ⟨c'.carrier × E⟩)
+      ((Relator.const (dL L) : Relator RelSet.{0} RelSet.{0}).map X)
+      ((Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE E))).map X) := by
+  apply hom_ext; intro u v
+  cases u <;> cases v <;>
+    simp [F, Fmap, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
+      RelProd.pair, prodMap, graph, instHasRelProd, sumCop] <;> grind
+
 /-! ## `SnocList L E` is the initial algebra of `F` -/
 
 /-- The constructor map `[wrap, snoc] : F (SnocList L E) → SnocList L E`. -/
