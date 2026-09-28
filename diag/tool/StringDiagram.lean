@@ -2182,6 +2182,27 @@ def recipFactors (fs : Array Expr) : MetaM (Array Expr) :=
     if let some x ← recipArg? f then return x
     Meta.mkAppM ``Freyd.Alg.Allegory.recip #[f]
 
+/-- A CLASS REACHED TWO WAYS IS TWO TERMS: `Allegory` sits under `DistributiveAllegory` both
+    directly (`toAllegory`) and through `UnionAllegory` (`distributiveAllegory_isUnionAllegory` then
+    `toAllegory`), so a factor that needed `Union` nearby carries the second path and one that did
+    not carries the first — same allegory, `==`-different terms.  Both paths are the same field of
+    the one underlying structure by unfolding + iota, so reducing each instance-implicit argument to
+    normal form (never re-synthesizing — that goes through instance search, which can hand back a
+    term standing on a search-local metavariable the caller's context no longer has) collapses them
+    to one spelling regardless of which path the surrounding term happened to need first. -/
+partial def canonInsts (e : Expr) : MetaM Expr := do
+  let .app .. := e | return e
+  let fn := e.getAppFn
+  let args ← e.getAppArgs.mapM canonInsts
+  let .const .. := fn | return mkAppN fn args
+  let info ← Meta.getFunInfoNArgs fn args.size
+  let mut args := args
+  for i in [0 : args.size] do
+    if h : i < info.paramInfo.size then
+      if info.paramInfo[i].binderInfo.isInstImplicit then
+        args := args.set! i (← Meta.reduce args[i]! (skipTypes := false))
+  return mkAppN fn args
+
 /-- A TERM EVERY STEP OF A CHAIN READS ALIKE: each step is its own declaration and each peer is read
     in its own telescope, so one binder is a different free variable in each.  Every free variable
     becomes its binder's name — macro scopes erased, numbered among its namesakes in binder order —
@@ -2194,7 +2215,8 @@ def canon (e : Expr) : MetaM Expr := do
     let k := seen.getD n 0
     seen := seen.insert n (k + 1)
     ren := ren.insert d.fvarId (.fvar ⟨.num n k⟩)
-  return (← instantiateMVars e).replace fun x => match x with
+  let e ← canonInsts (← instantiateMVars e)
+  return e.replace fun x => match x with
     | .fvar f => ren[f]?
     | _ => none
 

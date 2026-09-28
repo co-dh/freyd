@@ -604,7 +604,7 @@
       src[`R(S∪T) = RS∪RT` — composition distributes over `∪`]),
      // lean:AOP.A6_7.star_unique_step2@0987abdb
     (SQ, union("Freyd.Alg.star_unique_step3.rhs", rev: true),
-      src[`(Z/R)R⊑Z`, `R*R⊑R*`]),
+      src[`a⊑c, b⊑d ⟹ a∪b⊑c∪d` — `∪` is monotone; `(Z/R)R⊑Z`, `R*R⊑R*` justify the right side]),
      // lean:AOP.A6_7.star_unique_step3@c0934f90
     (SQ, "Freyd.Alg.star_unique_step4.rhs", src[`(R*⇨R*/X)∩R*⊑R*/X`]),
      // lean:AOP.A6_7.star_unique_step4@f979c4cb
