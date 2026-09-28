@@ -225,10 +225,11 @@ public theorem relCata_le_comp_step3 (I : InitialAlgebra F) {C D : 𝒜} (R : F.
     whose prefix-point condition is steps 1–3. -/
 public theorem relCata_le_comp (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
     {S : C ⟶ D} (h : F.map S ≫ T ⊑ R ≫ S) : relCata T ⊑ relCata R ≫ S :=
-  relCata_le_of_prefixed I (calc I.α° ≫ F.map (relCata R ≫ S) ≫ T
+  relCata_le_of_prefixed I <| calc
+    I.α° ≫ F.map (relCata R ≫ S) ≫ T
       = I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := relCata_le_comp_step1 I R T S
     _ ⊑ I.α° ≫ F.map (relCata R) ≫ R ≫ S := relCata_le_comp_step2 I h
-    _ = relCata R ≫ S := relCata_le_comp_step3 I R S)
+    _ = relCata R ≫ S := relCata_le_comp_step3 I R S
 
 /-- (6.5) step 2: the hypothesis `RS ⊑ F(S)T` in context. -/
 public theorem comp_le_relCata_step2 (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C}
@@ -240,10 +241,11 @@ public theorem comp_le_relCata_step2 (I : InitialAlgebra F) {C D : 𝒜} {R : F.
     the chain of (6.4) run backwards with the hypothesis reversed. -/
 public theorem comp_le_relCata (I : InitialAlgebra F) {C D : 𝒜} {R : F.obj C ⟶ C} {T : F.obj D ⟶ D}
     {S : C ⟶ D} (h : R ≫ S ⊑ F.map S ≫ T) : relCata R ≫ S ⊑ relCata T :=
-  le_relCata_of_postfixed I (calc relCata R ≫ S
+  le_relCata_of_postfixed I <| calc
+    relCata R ≫ S
       = I.α° ≫ F.map (relCata R) ≫ R ≫ S := (relCata_le_comp_step3 I R S).symm
     _ ⊑ I.α° ≫ F.map (relCata R) ≫ F.map S ≫ T := comp_le_relCata_step2 I h
-    _ = I.α° ≫ F.map (relCata R ≫ S) ≫ T := (relCata_le_comp_step1 I R T S).symm)
+    _ = I.α° ≫ F.map (relCata R ≫ S) ≫ T := (relCata_le_comp_step1 I R T S).symm
 
 /-- **Ex 6.7**: `⦇R⦈ ⊑ ⦇S⦈` when the recursion bodies agree at `⦇S⦈` in the ⊑ direction. -/
 public theorem relCata_le_relCata (I : InitialAlgebra F) {C : 𝒜} {R S : F.obj C ⟶ C}
