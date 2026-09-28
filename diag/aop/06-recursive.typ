@@ -565,9 +565,10 @@
      // lean:AOP.A6_7.star_trans@2a716981
   lean-chain(
     (none, "Freyd.Alg.star_trans_step1.lhs", []),
-    (EQ, "Freyd.Alg.star_trans_step1.rhs", src[composition distributes over `∪`]),
+    (EQ, union("Freyd.Alg.star_trans_step1.rhs", rev: true),
+      src[`(P∪Q)T=PT∪QT` — composition distributes over `∪`]),
      // lean:AOP.A6_7.star_trans_step1@c574fb0e
-    (SQ, "Freyd.Alg.star_trans_step2.rhs", src[`(S/S)S⊑S`]),
+    (SQ, union("Freyd.Alg.star_trans_step2.rhs", rev: true), src[`(S/S)S⊑S`]),
      // lean:AOP.A6_7.star_trans_step2@ac21f3be
     (SQ, "Freyd.Alg.star_trans_step3.rhs", src[`RR*⊑R*` — @closure-contains]),
      // lean:AOP.A6_7.star_trans_step3@525c9edd
