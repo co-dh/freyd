@@ -455,20 +455,25 @@
       }
       // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
       // below, the group's own `sym` between them as a plain centred label — instead of standing
-      // side by side.  Top-aligned (`align(top, ..)`), against `hchain`'s row-wide `center+horizon`
-      // default, so every group's `.inl` sits at the row's top edge regardless of how many members
-      // its neighbour stacks — the top pictures of every group in the row form one line to read
-      // across, unlike centring, which only lines up groups of the same member count.  A plain step
-      // next to a group is NOT wrapped, so it keeps `hchain`'s own centring and reads centred on the
-      // group's whole height, unchanged.
+      // side by side.  A plain `align(top, ..)` does NOT beat `hchain`'s own per-cell
+      // `center+horizon`: a grid measures each cell at its natural size FIRST, so an inner `align`
+      // with nothing to redistribute is a no-op, and the grid then centres the whole (already
+      // natural-sized) block regardless — confirmed by `look` on the 10.2b row of three groups (2, 3,
+      // 2 members), where a plain `align(top, ..)` left the 3-member group's `.inl` still centred,
+      // 115px above the 2-member groups' `.inl`.  The fix gives every entry in an `hasg` row the SAME
+      // explicit height (`rowh`, the row's tallest entry) via `box(height: rowh, align(.., ..))`
+      // FIRST — a box with a real height gives its own `align` real slack, and every cell then being
+      // already `rowh` tall leaves the grid nothing left to redistribute — top-aligning a group's
+      // stack inside its box and horizon-aligning a plain step inside its own, so groups' tops sit on
+      // one line and a plain step still reads centred on the group next to it.
       let zipped = r.zip(c.at(1), w, pw, tags)
-      hchain(fill: k, ..chain-groups(r).map(((i0, n)) => {
+      let raw = chain-groups(r).map(((i0, n)) => {
         if n == 1 {
           let (s, p, cw, x, t) = zipped.at(i0)
-          (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
-            align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
-          if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none },
-          none)
+          (top: false, op: s.at(0), pic: box(width: cw, align(center, p)),
+            reason: if circuit { [] } else {
+              align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
+            f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none })
         } else {
           let (children, letters, maxw) = ((), (), 0pt)
           for (k2, idx) in range(i0, i0 + n).enumerate() {
@@ -478,11 +483,15 @@
             letters.push(t)
             maxw = calc.max(maxw, x)
           }
-          (zipped.at(i0).at(0).at(0), align(top, stack(dir: ttb, spacing: hgut, ..children)),
-            if circuit { [] } else { align(right, box(width: maxw, align(center, [(#letters.join(", "))]))) },
-            none, none)
+          (top: true, op: zipped.at(i0).at(0).at(0), pic: stack(dir: ttb, spacing: hgut, ..children),
+            reason: if circuit { [] } else { align(right, box(width: maxw, align(center, [(#letters.join(", "))]))) },
+            f: none)
         }
-      }))
+      })
+      let rowh = if hasg { calc.max(..raw.map(e => measure(e.pic).height)) } else { 0pt }
+      hchain(fill: k, ..raw.map(e => (e.op,
+        if hasg { box(height: rowh, align(if e.top { top } else { horizon }, e.pic)) } else { e.pic },
+        e.reason, e.f, none)))
       if hasg {
         // One table line per GROUP, not per flat step: a `union(sel)`/`sum(sel)` call's `n` flat
         // members all carry the same `gid` (set where the group is expanded, above), so consecutive
