@@ -75,35 +75,19 @@
  [#leanf("Freyd.Alg.mu_fixed") \ #src[]],
   [*Knaster–Tarski*: the least solution of `φ(X)⊑X` already solves `φ(X)=X`, so the least prefix
    point and the least fixed point are one relation],
+ // B&dM (6.2), p.141: Theorem 6.1 at `φ(X)≜α°F(X)R`, since `⦇R⦈=(μX : α°F(X)R)`
+ [#leanf("Freyd.Alg.relCata_le_of_prefixed") \ #src[(6.2)]],
+  [a relation `X` that contains one unfolding of the fold's recursion at `X` contains the fold],
+ // B&dM (6.3), p.141: `⦇R⦈` is also the greatest fixed point `(νX : α°F(X)R)`
+ [#leanf("Freyd.Alg.le_relCata_of_postfixed") \ #src[(6.3)]],
+  [a relation `X` contained in one unfolding of the fold's recursion at `X` is contained in the fold],
  // lean:AOP.A6_2.mu_le@9918bd39
  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
+ // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
+ // lean:AOP.A6_2.le_relCata_of_postfixed@6d0c3236
+ // lean:AOP.A6_2.relCata_eq_mu@c2d55908
+ // lean:AOP.A6_2.relCata_eq_nu@0af949db
 )]<mu-laws>
-
-// B&dM (6.2), p.141: `⦇R⦈` is `(μX : α°F(X)R)`, so Theorem 6.1's leastness bounds it by any prefix point.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.relCata_le_of_prefixed") \
-    #src[a relation `X` that contains one unfolding of the fold's recursion at `X` contains the fold]],
-  // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.relCata_eq_mu.lhs", []),
-    (EQ, "Freyd.Alg.relCata_eq_mu.rhs", src[`⦇R⦈` the least fixed point — Theorem 6.1, @mu-laws]),
-    // lean:AOP.A6_2.relCata_eq_mu@c2d55908
-    (SQ, "Freyd.Alg.relCata_le_of_prefixed#h.rhs", src[`α°F(X)R⊑X`, `μ` below every prefix point]),
-  ),
-)]<cata-prefix>
-
-// B&dM (6.3), p.141: `⦇R⦈` is also the greatest fixed point `(νX : α°F(X)R)`.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.le_relCata_of_postfixed") \
-    #src[a relation `X` contained in one unfolding of the fold's recursion at `X` is contained in the fold]],
-  // lean:AOP.A6_2.le_relCata_of_postfixed@6d0c3236
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.le_relCata_of_postfixed#h.lhs", []),
-    (SQ, "Freyd.Alg.relCata_eq_nu.rhs", src[`X⊑α°F(X)R`, `ν` above every postfix point]),
-    (EQ, "Freyd.Alg.relCata_eq_nu.lhs", src[`⦇R⦈` the greatest fixed point]),
-    // lean:AOP.A6_2.relCata_eq_nu@0af949db
-  ),
-)]<cata-postfix>
 
 // B&dM (6.4), p.141, "easy exercise" (Ex 6.6): (6.2) at `X≜⦇R⦈S`, whose prefix-point condition is
 // this chain.
