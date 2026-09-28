@@ -713,7 +713,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `≤` is on `A`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
 #disp[#definition[
 `FX=𝟏+A×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
-`sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns.
+`sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @cata-examples and @comb-fns-7.
 #h(4pt) #src[]
 // lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
 
@@ -741,7 +741,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.rhs")][]],
-  [`segment=suffix prefix` \ #src[@comb-fns, @mss-defn]],
+  [`segment=suffix prefix` \ #src[@comb-fns-7, @mss-defn]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step2.rhs")][]],
   [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
@@ -1051,7 +1051,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   lean-chain(
     (none, "Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs",
       // lean:AOP.A7_7_Filter.filter@8a5f6aed
-      src[@comb-fns]),
+      src[@comb-fns-7]),
     (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs",
       src[`subseq list(p)=⦇S⦈` — @takewhile-alg]),
     // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
@@ -1072,6 +1072,42 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   argument does not transfer. What survives `est(R°)` is the one keeping *exactly* the passing
   elements: a subsequence that drops a passing element is beaten by the one that keeps it.]])
 ]<filter-deriv>
+
+// Moved from §5.6's @comb-fns (row 6 and rows 11-14, ch7 items): same table helper, same widths.
+#disp[#table(
+  columns: (7.1cm, 2.6cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*definition*], [*type*], [*note*]),
+
+ [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
+  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
+  [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
+  [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
+
+  [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
+  [#leant("Freyd.Alg.RelSet.Filter.filter")],
+  [The longest subsequence of `xs` whose every element passes `p`.
+   // filter row: Ex 7.41
+   #h(4pt) #src[`est(R°)` is @est-defn]],
+
+  [`R≜length≤length°`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
+  [The preorder `filter` and `takewhile` maximise over: the longer list wins.
+   #h(4pt) #src[`≥≜≤°`]],
+
+  [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
+  [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
+  [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
+   // takewhile row: Ex 7.39
+   #h(4pt) #src[]],
+
+  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
+  [#leant("Freyd.Alg.RelSet.MSS.mss")],
+  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
+   // mss row: Ex 7.40
+   on each suffix. #h(4pt) #src[]],
+)]<comb-fns-7>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)

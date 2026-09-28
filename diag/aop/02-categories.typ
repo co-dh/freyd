@@ -134,3 +134,32 @@ algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a funct
   [#leanf("Freyd.Alg.typeMap_fusion") #h(6pt)
  #src[]],
 )]<tfun-fusion>
+
+// Moved from §5.5's @tf-laws (rows 2-4, ch2 items): same table helper, same widths and stroke.
+#disp[#table(
+  columns: (4.2cm, 7.4cm, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 9pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*law*], [*what it says*]),
+
+  [functor],
+  [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
+  [Acting by the identity changes nothing, and two actions in a row are one action.
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_id@602faba9 lean:AOP.A5_5_TypeFunctor.typeMap_comp@74556074
+
+  [type functor fusion],
+  [#leanf("Freyd.Alg.typeMap_fusion")],
+  [A relator action followed by a fold is a single fold — the intermediate structure is never built.
+   The side condition holds because `F` is a bifunctor —
+   `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@fde772c0 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
+
+  [naturality of `α`],
+  [#leanf("Freyd.Alg.alpha_natural")],
+  [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
+   from `G(R)=F(R,T(R))` to `T`.
+ #h(4pt) #src[]],
+   // lean:AOP.A5_5_TypeFunctor.alpha_natural@ee446834
+)]<tf-laws-2>
