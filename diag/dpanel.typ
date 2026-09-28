@@ -417,11 +417,12 @@
   let nmd = dnamed(lanes, top, bot)
   let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not nmd.contains(j) }
   // THE GATE FOR THAT RULE, over the MARKS and not the labels: every dot drawn at the leftmost lane's x
-  // — a bead's where `hm-bead` puts it, a unit's at its lane's birth — has its label set west.
+  // — a bead's where `hm-bead` puts it, a unit's at its lane's birth — has its label set west, or,
+  // for a unit, the west slot holds its lane's own name (`nmd`), as the rule above allows.
   if lx != none {
     for b in beads { if west-at(dx(b.at(0))) and not west(b) {
       panic("dpanel: the bead `" + plain(b.at(1)) + "` sits on the leftmost lane but its label is set east, across the lanes") } }
-    for (j, o) in lanes.enumerate() { if o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not wunit(j) {
+    for (j, o) in lanes.enumerate() { if o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not (wunit(j) or nmd.contains(j)) {
       panic("dpanel: the unit `" + plain(o.at(4)) + "` is born on the leftmost lane but its label is set east, across the lanes") } }
   }
   let gk = dknees(dx, h, lanes, beads, nmd)
