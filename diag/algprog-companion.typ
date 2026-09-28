@@ -14,6 +14,7 @@
 #show ref: it => context { import "shared-laws.typ": elsewhere; let t = str(it.target); if t in refname { link(it.target, refname.at(t)) } else if t in elsewhere and query(it.target).len() == 0 { elsewhere.at(t) } else { it } }
 
 #NOTEROOT.update(true)
+#include "aop/02-categories.typ"
 #include "aop/03-applications.typ"
 #include "aop/05-datatypes.typ"
 #include "aop/06-recursive.typ"

@@ -395,95 +395,13 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
    // lean:AOP.A5_4.powerRel_comp@06364064
 )]<powrel-laws>
 
-// Ahead of §11.4 and §11.5, which both write `⦇…⦈` before anything says what it is.  The three
-// squares are the one geometry: algebras across the rows, homomorphisms down the columns.
-#pagebreak(weak: true)
-== Initial algebra
-
-// §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
-// the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
-// (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
-// (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
-#let ia-hom-l = "Freyd.Alg.IsFHom.lhs"
-#let ia-hom-r = "Freyd.Alg.IsFHom.rhs"
-#let ia-cata-l = "Freyd.Alg.InitialAlgebra.cata_comm.lhs"
-#let ia-cata-r = "Freyd.Alg.InitialAlgebra.cata_comm.rhs"
-
-#disp[#definition[
-An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
-An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` with `f h=F(h)g`.
-The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
-every F-algebra `f`
-#src[].
-// lean:AOP.A5_5.InitialAlgebra@0ea41da0
-
-  // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
-  // paint the same carrier red in the row below and cyan in the row above.
-  #pair(
-    leancd("Freyd.Alg.IsFHom"),
-    lean(ia-hom-l, ia-hom-r, op: [=]),
-    [#leanf("Freyd.Alg.IsFHom")],
-  )
-  #pair(
-    leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
-    lean(ia-cata-l, ia-cata-r, op: [=]),
-    [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
-  )
-  // lean:AOP.A5_5.relCata_cancel@c83d7b44
-]]<initial-defn>
-
-=== Reflection
-
-// THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
-// the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
-// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
-// bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
-#let ia-refl-l = "Freyd.Alg.relCata_alpha.lhs"
-#let ia-refl-r = "Freyd.Alg.relCata_alpha.rhs"
-
-#disp[#pair(
-  leancd("Freyd.Alg.relCata_alpha"),
-  lean(ia-refl-l, ia-refl-r, op: [=]),
- [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
-)]<cata-reflection>
-
-// `relCata_alpha`, AOP/A6_3.lean:40.
-Taking a value apart with `α` and putting it straight back is doing nothing.
-
-=== Fusion: ⦇R:FB⦈ absorb S:R->Q (in Alg(F) ) and becomes ⦇Q⦈ 
-
-// `T` is already the initial algebra's carrier, so the two algebras of the law take their own letters,
-// `R` on `B` and `Q` on `C`; `S` is the homomorphism between them, not an algebra.
-When `S : B⟶C` is an F-homomorphism from `R : F(B)⟶B` to `Q : F(C)⟶C`, folding with `R` and
-then applying `S` is folding with `Q`.
-
-// `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
-// square of @initial-defn at `f := R`, `g := Q`, `h := S`.
-#let ia-fuse-l = "Freyd.Alg.relCata_fusion#h.lhs"
-#let ia-fuse-r = "Freyd.Alg.relCata_fusion#h.rhs"
-// The conclusion, generated like the side condition above it: the two folds differ by their algebra,
-// and the wire under each says where it lands — `B` on the left, `C` on the right.
-#let ia-fuse-cl = "Freyd.Alg.relCata_fusion.lhs"
-#let ia-fuse-cr = "Freyd.Alg.relCata_fusion.rhs"
-
-#disp[#pair(
-  leancd("Freyd.Alg.relCata_fusion"),
-  grid(
-    columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
-    src[the side condition],
-    lean(ia-fuse-l, ia-fuse-r, op: [=]),
-    src[the conclusion],
-    lean(ia-fuse-cl, ia-fuse-cr, op: [=]),
-  ),
-  [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
- #src[(2.12)]],
-  s: 92%,
-)]<cata-fusion>
-
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
 #pagebreak(weak: true)
 == Type relator
+
+// `F`-algebra, `F`-homomorphism, the initial algebra, its reflection and fusion laws — @initial-defn,
+// @cata-reflection, @cata-fusion — moved to §2 (Functions and Categories, `02-categories.typ`).
 
 #disp[#definition[
 Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor. `F(R,S)` is its
@@ -539,57 +457,8 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    // lean:AOP.A5_5_TypeFunctor.typeMap_recip@be2f7fb9
 )]<tf-laws>
 
-// Its own page: the definition and its two squares are read together, and without the break the
-// fusion square is the only one of the three on the next page.
-#pagebreak(weak: true)
-=== Type functor
-
-#disp[#definition[
-Let `F` be a bifunctor taking both the parameter `A` and the recursive position `TA`, with an initial
-algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
-`f : A⟶B` by
-
-  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
- #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317
-]]<tfun-defn>
-
-// The square is the five arrows `alpha_natural_split` states; the algebra `F(f,𝟙)α_B` is the path
-// through `F(B,TB)`, not a sixth arrow, because the statement names no such composite.
-// TWO WIRES, not one indexed `F`: `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` packs the two arguments and `F : 𝒜×𝒜⟶𝒜` is then
-// unary, so every wire is a functor again and the region between them is `𝒜×𝒜`.  That is what makes
-// `F(f,T(f))` free — it is `f` on the object wire with `⟨𝟙,T⟩` and `F` running past — and the law the
-// naturality of `α`, the `f` bead sliding past it.  Not `P`, which is the powerset relator already.
-// This REPLACES the 2026-08-26 unindexed-`F` exception, which needed a second bead `F(f,𝟙)`.
-#let tfun-l = "Freyd.Alg.alphaT_natural.lhs"
-#let tfun-r = "Freyd.Alg.alphaT_natural.rhs"
-#disp[#pair(
-  leancd("Freyd.Alg.alpha_natural_split"),
-  row((lean(tfun-l, tfun-r, op: [=]),), s: 92%),
-  [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
- #src[]],
-)]<tfun-sq>
-
-- `F : 𝒜×𝒜⟶𝒜` is a bifunctor and a wire is a unary functor, so the two arguments are packed first:
-  `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` sends `A` to `(A,TA)`, and `F(⟨𝟙,T⟩(A))` is `F(A,TA)`.
-- The picture is three wires — `F`, `⟨𝟙,T⟩`, and the object — and the region between the first two
-  is `𝒜×𝒜`.
-- `α` is then an ordinary natural transformation `F∘⟨𝟙,T⟩⇒T`: its bead eats the `F` and `⟨𝟙,T⟩` wires,
-  and the `T` wire is born under it.
-- `F(f,T(f))` costs no notation. It is the bead `f` on the object wire with `⟨𝟙,T⟩` and `F` running
-  past: `⟨𝟙,T⟩` is what turns `f` into the pair `(f,T(f))`, and `F` is what applies it.
-- The law is the naturality of `α`, which is exactly the freedom to slide that `f` bead past it.
-
-// The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
-// bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.
-#disp[#pair(
-  leancd("Freyd.Alg.typeMap_fusion_cancel"),
-  row((
-    lean("Freyd.Alg.typeMap_fusion"),
-  )),
-  [#leanf("Freyd.Alg.typeMap_fusion") #h(6pt)
- #src[]],
-)]<tfun-fusion>
+// The type functor `T` itself (its definition, the naturality square of `α`, and its fusion law —
+// @tfun-defn, @tfun-sq, @tfun-fusion) moved to §2's "Type functor" section (`02-categories.typ`).
 
 // Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
 // a page away from the definition it names, and the defining square below straddles the break.
