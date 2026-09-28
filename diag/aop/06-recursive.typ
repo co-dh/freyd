@@ -84,7 +84,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_le_of_prefixed") \
     #src[a relation `X` that contains one unfolding of the fold's recursion at `X` contains the fold]],
   // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.relCata_eq_mu.lhs", []),
     (EQ, "Freyd.Alg.relCata_eq_mu.rhs", src[`⦇R⦈` the least fixed point — Theorem 6.1, @mu-laws]),
     // lean:AOP.A6_2.relCata_eq_mu@c2d55908
@@ -97,7 +97,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.le_relCata_of_postfixed") \
     #src[a relation `X` contained in one unfolding of the fold's recursion at `X` is contained in the fold]],
   // lean:AOP.A6_2.le_relCata_of_postfixed@6d0c3236
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.le_relCata_of_postfixed#h.lhs", []),
     (SQ, "Freyd.Alg.relCata_eq_nu.rhs", src[`X⊑α°F(X)R`, `ν` above every postfix point]),
     (EQ, "Freyd.Alg.relCata_eq_nu.lhs", src[`⦇R⦈` the greatest fixed point]),
@@ -286,21 +286,21 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.member_const") \
     #src[a constant relator records no elements, so its membership is empty]],
     // lean:AOP.A6_5.member_const@91d83a84
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.member_const.lhs", []),
     (EQ, "Freyd.Alg.member_const.rhs", []),
   ),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_sum") \
     #src[a member of `F+G` is a member of whichever summand the value is in]],
     // lean:AOP.A6_5.member_sum@f2ed47bd
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.member_sum.lhs", []),
     (EQ, "Freyd.Alg.member_sum.rhs", []),
   ),
   Thm(cols: 1)[#leanf("Freyd.Alg.member_prod") \
     #src[a member of `F×G` is a member of either component]],
     // lean:AOP.A6_5.member_prod@fefd83ec
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.member_prod.lhs", []),
     (EQ, "Freyd.Alg.member_prod.rhs", []),
   ),
@@ -512,7 +512,7 @@
     #src[closing `R` by composing it on the left and closing it by composing on the right give the
      same relation `R*`]],
      // lean:AOP.A6_7.star_eq_mu'@42cc4c0c lean:AOP.A6_7.star@a8a6944f
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.star_eq_mu'.lhs", []),
     (EQ, "Freyd.Alg.star_eq_mu'.rhs", src[(6.8), Ex 6.31]),
   ),
@@ -531,7 +531,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.id_le_star") \
     #src[`R*` is reflexive]],
      // lean:AOP.A6_7.id_le_star@90d24167
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.id_le_star_step1.lhs", []),
     (SQ, "Freyd.Alg.id_le_star_step1.rhs", src[union]),
      // lean:AOP.A6_7.id_le_star_step1@c4b88c90
@@ -545,7 +545,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.le_star") \
     #src[`R*` contains `R`]],
      // lean:AOP.A6_7.le_star@3ecb72e1
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.le_star_step1.lhs", []),
     (EQ, "Freyd.Alg.le_star_step1.rhs", src[identity]),
      // lean:AOP.A6_7.le_star_step1@ded98a89
@@ -563,7 +563,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.star_trans") \
     #src[`R*` is transitive, because `R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`]],
      // lean:AOP.A6_7.star_trans@2a716981
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.star_trans_step1.lhs", []),
     (EQ, "Freyd.Alg.star_trans_step1.rhs", src[composition distributes over `∪`]),
      // lean:AOP.A6_7.star_trans_step1@c574fb0e
@@ -580,7 +580,7 @@
     #src[a reflexive transitive `X` containing `R` is a prefixed point of `X ↦ 𝟙∪RX`, so it
      contains `R*`]],
      // lean:AOP.A6_7.star_le_of_preorder@a62fa34b
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.star_le_of_preorder_step1.lhs", []),
     (SQ, "Freyd.Alg.star_le_of_preorder_step1.rhs", src[`𝟙⊑X`, `R⊑X`]),
      // lean:AOP.A6_7.star_le_of_preorder_step1@00030274
@@ -625,7 +625,7 @@
     #src[the least fixed point of `φ` after `ψ` is `φ` applied to the least fixed point of `ψ` after
      `φ`]],
      // lean:AOP.A6_2.mu_rolling@c705ef5a
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.mu_rolling.lhs", []),
     (EQ, "Freyd.Alg.mu_rolling.rhs", src[Ex 6.35]),
   ),
@@ -637,7 +637,7 @@
     #src[`S` followed by any number of `R` steps is the least `X` containing `S` and closed under a
      further `R` step]],
      // lean:AOP.A6_7.comp_star_eq_mu@2bbfa45b
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.comp_star_eq_mu.lhs", []),
     (EQ, "Freyd.Alg.comp_star_eq_mu.rhs", src[p.160]),
   ),
@@ -645,7 +645,7 @@
     #src[any number of `R` steps followed by `S` is the least `X` containing `S` and closed under an
      `R` step in front]],
      // lean:AOP.A6_7.star_comp_eq_mu@537dc253
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.star_comp_eq_mu.lhs", []),
     (EQ, "Freyd.Alg.star_comp_eq_mu.rhs", src[Ex 6.32]),
   ),
@@ -656,7 +656,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_left") \
     #src[started with nothing found and `S` to explore, `θ` computes `SR*`]],
      // lean:AOP.A6_7.theta_zero_left@b8297d35 lean:AOP.A6_7.theta@494eeaa5
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.theta_zero_left_step1.lhs", []),
     (EQ, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
      // lean:AOP.A6_7.theta_zero_left_step1@794d78de
@@ -671,7 +671,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_right") \
     #src[with nothing left to explore, `θ` returns what it has found]],
      // lean:AOP.A6_7.theta_zero_right@14a43ab2
-  lean-chain(
+  lean-chain(pictures: false,
     (none, "Freyd.Alg.theta_zero_right_step1.lhs", []),
     (EQ, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
      // lean:AOP.A6_7.theta_zero_right_step1@6c0c4172

@@ -355,7 +355,8 @@
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
 // selector like a header, so the chain reads as a term chain as well as a picture chain.
-#let lean-chain(..args, circuit: false, formula: false) = {
+// `pictures: false` drops the string diagram entirely — see the branch below.
+#let lean-chain(..args, circuit: false, formula: false, pictures: true) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary {
@@ -390,6 +391,41 @@
       }
       r + (steps: steps, groups: groups)
     })
+  // `sub`: this row's own `Sub(...)` header, a grey band across the cell — factored out so the
+  // pictures:false table below and the pictured chain's own row loop draw the same band.
+  let sub-header(row) = if "sub" in row {
+    pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
+      stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
+      align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
+  }
+  // `pictures: false`: no string diagram at all, no exporter call — just what a branches group's
+  // own table already prints, letter | formula | hint, one line per STEP (a branches group is
+  // still one line, its whole side), with an OP column at the row's own left edge (the
+  // string-diagram skill's proof-table rule: the relation goes at the START of the row, because
+  // dropping the picture also drops the ⊑/=/⊒ glyph `hchain` used to draw between panels).
+  if not pictures {
+    return table.cell(breakable: true, {
+      for row in rows {
+        sub-header(row)
+        let lines = ()
+        for (i0, n) in chain-groups(row.steps) {
+          let tag = chain-tags.at(lines.len())
+          let op = row.steps.at(i0).at(0)
+          let (f, hint) = if n > 1 {
+            let g = row.steps.at(i0).at(3)
+            (g.gform, row.steps.at(i0).at(2))
+          } else {
+            let s = row.steps.at(i0)
+            (leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }), s.at(2))
+          }
+          lines.push((if op == none { [] } else { op }, [(#tag)], fit-w(f), hint))
+        }
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, auto, 1fr, 1fr),
+          al: (center + horizon, center + horizon, center + horizon, left + horizon), ..lines.flatten()))
+        v(6pt)
+      }
+    })
+  }
   // ONE PICTURE ONCE: a STEP whose panel the exporter found drawn the same as the NEXT step's,
   // branch for branch (`dup`, the exporter's `stepGroups`/`Diagram.drawnAs`), only re-spells the
   // term, so the whole step is merged into the next one — its op and the next step's own
@@ -436,11 +472,7 @@
       let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
-      if "sub" in row {
-        pad(x: -9pt, block(width: 100%, fill: luma(246), inset: (x: 9pt, y: 4pt), below: 6pt,
-          stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
-          align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
-      }
+      sub-header(row)
       // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
       // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
       // them one circuit row per step carrying its reason.  A row with a BRANCHES step (∪/+) letters
