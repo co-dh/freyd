@@ -38,6 +38,8 @@ import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
+import AOP.A6_6b_SortConcrete
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
