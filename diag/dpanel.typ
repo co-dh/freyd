@@ -405,8 +405,8 @@
   let dx = y => dotx.at(dkey("x", y), default: xat(y))
   // A MARK ON THE LEFTMOST LANE writes its label WEST of it, right-aligned: east of it the label
   // would run across the lanes and the object wire it sits beside.  A unit is such a mark too, drawn
-  // by its lane (`dlane`) and absent from `beads`, so the test is on the x alone — unless the lane's own
-  // NAME is written west at that birth (`nmd`): the name holds that slot, and the unit label stays east.
+  // by its lane (`dlane`) and absent from `beads`, so the test is on the x alone.  A lane NAME written
+  // west at that birth (`nmd`) gives way: the name-placement fold below drops it under the label.
   let lx = if lanes == () { none } else { calc.min(..lanes.map(l => l.at(0))) }
   let west-at = x => lx != none and calc.abs(x - lx) < 1e-6
   let west = b => b.at(4, default: none) != none and west-at(b.at(4))
@@ -415,14 +415,13 @@
   let w = calc.max(w, ..beads.map(b => dx(b.at(0)) + 0.32 + 0.28
     + measure(text(b.at(2, default: black))[#b.at(1)]).width / 0.8cm))
   let nmd = dnamed(lanes, top, bot)
-  let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not nmd.contains(j) }
+  let wunit = j => { let o = lanes.at(j); o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) }
   // THE GATE FOR THAT RULE, over the MARKS and not the labels: every dot drawn at the leftmost lane's x
-  // — a bead's where `hm-bead` puts it, a unit's at its lane's birth — has its label set west, or,
-  // for a unit, the west slot holds its lane's own name (`nmd`), as the rule above allows.
+  // — a bead's where `hm-bead` puts it, a unit's at its lane's birth — has its label set west.
   if lx != none {
     for b in beads { if west-at(dx(b.at(0))) and not west(b) {
       panic("dpanel: the bead `" + plain(b.at(1)) + "` sits on the leftmost lane but its label is set east, across the lanes") } }
-    for (j, o) in lanes.enumerate() { if o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not (wunit(j) or nmd.contains(j)) {
+    for (j, o) in lanes.enumerate() { if o.at(4) != none and o.at(1) != "top" and west-at(o.at(0)) and not wunit(j) {
       panic("dpanel: the unit `" + plain(o.at(4)) + "` is born on the leftmost lane but its label is set east, across the lanes") } }
   }
   let gk = dknees(dx, h, lanes, beads, nmd)
@@ -484,12 +483,20 @@
       // boxes and drop the name below each label it meets, top-down, so no width or glyph height escapes.
       let sz = t => measure(block(text(top-edge: "ascender", bottom-edge: "descender", t)))
       let (wn, hn) = { let m = sz(text(9pt)[#nm]); (m.width / 0.8cm, m.height / 0.8cm / 2) }
-      let ny = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
-        .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
+      // Each obstacle is a box (y, left, right, half height): a west label, and the name of every
+      // other named lane where `dnamey` sets it — a name dropped under a label can land on its neighbour's.
+      let lab = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
+        .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).map(b => {
         let m = sz(text[#b.at(1)])
         let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12
-        let c = hn + m.height / 0.8cm / 2 + 0.06
-        if (l.at(0) - 0.12 - wn < br + 0.06 and l.at(0) > br - m.width / 0.8cm - 0.06
+        (b.at(0), br - m.width / 0.8cm, br, m.height / 0.8cm / 2) })
+      let oth = nmd.filter(k => k != i).map(k => {
+        let o = lanes.at(k)
+        let m = sz(text(9pt)[#dnm(o, top, bot)])
+        (dnamey(lanes, o, dkb(gk, o)), o.at(0) - 0.12 - m.width / 0.8cm, o.at(0) - 0.12, m.height / 0.8cm / 2) })
+      let ny = (lab + oth).sorted(key: b => -b.at(0)).fold(dnamey(lanes, l, kb), (y, b) => {
+        let c = hn + b.at(3) + 0.06
+        if (l.at(0) - 0.12 - wn < b.at(2) + 0.06 and l.at(0) > b.at(1) - 0.06
           and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
       // Every MARK in the name's column clears it — a bead's, and a unit's, which `dlane` draws at
       // its lane's birth and `beads` does not list: a name on a unit-born lane sat on its own dot.
