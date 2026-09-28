@@ -392,27 +392,6 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 
-  [functor],
-  [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
-  [Acting by the identity changes nothing, and two actions in a row are one action.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_id@602faba9 lean:AOP.A5_5_TypeFunctor.typeMap_comp@74556074
-
-  [type functor fusion],
-  [#leanf("Freyd.Alg.typeMap_fusion")],
-  [A relator action followed by a fold is a single fold — the intermediate structure is never built.
-   The side condition holds because `F` is a bifunctor —
-   `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@fde772c0 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
-
-  [naturality of `α`],
-  [#leanf("Freyd.Alg.alpha_natural")],
-  [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
-   from `G(R)=F(R,T(R))` to `T`.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@ee446834
-
   [type relator],
   [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
@@ -594,11 +573,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
- [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
-  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
-  [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
-  [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
-
  [#leanf("Freyd.Alg.RelSet.ListRel.partition_concat") #src[]],
   // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
   [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
@@ -617,28 +591,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leant("Freyd.Alg.RelSet.ListRel.tailsR")],
   [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
 
-  [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
-  [#leant("Freyd.Alg.RelSet.Filter.filter")],
-  [The longest subsequence of `xs` whose every element passes `p`.
-   // filter row: Ex 7.41
-   #h(4pt) #src[`est(R°)` is @est-defn]],
-
-  [`R≜length≤length°`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
-  [The preorder `filter` and `takewhile` maximise over: the longer list wins.
-   #h(4pt) #src[`≥≜≤°`]],
-
-  [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
-  [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
-   // takewhile row: Ex 7.39
-   #h(4pt) #src[]],
-
-  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
-  [#leant("Freyd.Alg.RelSet.MSS.mss")],
-  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
-   // mss row: Ex 7.40
-   on each suffix. #h(4pt) #src[]],
 )]<comb-fns>
 
 === $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`
