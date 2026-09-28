@@ -718,7 +718,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       // lean:AOP.A5_5.relCata_UP_step5@0c3c4eb1
     ),
     Sub("Freyd.Alg.relCata_cancel", formula: true,
-      gloss: src[the `⟸` half: `⦇R⦈` satisfies the fold equation of `R`],
+      gloss: src[`⟸`],
       // lean:AOP.A5_5.relCata_cancel@c83d7b44
       (none, "Freyd.Alg.relCata_cancel_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_cancel_step1.rhs", src[`⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋` — @cata-map-calc]),
