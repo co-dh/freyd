@@ -29,8 +29,8 @@
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@e9a6a733
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@2be20807
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@69f15a17
-    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inr", src[`α=[wrap,snoc]`, then `(𝟙+S)[P,Q]=[P,SQ]` and `[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
-    (none, "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inl", src[]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inr", src[`α=[wrap,snoc]`, then `(𝟙+S)[P,Q]=[P,SQ]` and `[embed,op]°[wrap,snoc]=embed°wrap ∪ op°snoc` — coproduct]),
+    ([∪], "Freyd.Alg.RelSet.Digits.val_converse_step6.rhs.inl", src[]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@7d262eb2
   ),
 )]<val-converse>

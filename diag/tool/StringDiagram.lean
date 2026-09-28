@@ -388,23 +388,33 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
         let thr := if west then x - 1e-6 else x + 1e-6
         ls := ls.map fun o => if o.x > thr then { o with x := o.x + DX } else o
         xo := xo + DX
-  -- A WHOLE `°` opens one column WEST of every lane that carries it, once per span.
+  -- A WHOLE `°` opens one column WEST of every lane that carries it, once per span, wide enough to
+  -- clear the WESTMOST carrying lane's OWN name: a fixed `DX` fit `E`, `list`, but a compound name
+  -- like `Digit⁺+−` still runs past it into the boundary — `LCW` is Lean's character-count estimate
+  -- of a printed label's width, the same one `spreadEdge` uses for a port label, since this side
+  -- never measures glyphs itself.
   let wholes : Array (Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
     if c.whole && !a.contains (c.first, c.last) then a.push (c.first, c.last) else a) acc) #[]
   let carried (ls : Array Lane) (s : Int × Int) : Float :=
     minA ((ls.filter fun l => l.conv.any fun c => c.whole && (c.first, c.last) == s).map (·.x)) 1e9
+  let wholeGap (ls : Array Lane) (s : Int × Int) : Float :=
+    let m := carried ls s
+    match ls.find? fun l => (l.conv.any fun c => c.whole && (c.first, c.last) == s) && (l.x - m).abs < 1e-6 with
+    | some l => max DX (LCW * l.label.length.toFloat + LDX)
+    | none => DX
   for s in wholes do
     let m := carried ls s
-    ls := ls.map fun o => if o.x > m - 1e-6 then { o with x := o.x + DX } else o
-    xo := xo + DX
+    let g := wholeGap ls s
+    ls := ls.map fun o => if o.x > m - 1e-6 then { o with x := o.x + g } else o
+    xo := xo + g
   let yOf (r : Int) : Float := if r < 0 then hh else if r >= (n : Int) then 0.0 else ys[r.toNat]!
   -- Every `°` wire `(x, first, last)`: the outer one of a lane WEST of it, the inner one EAST, a
-  -- whole one west of every lane carrying it.
+  -- whole one west of every lane carrying it, by that same name-aware gap.
   let wires : Array (Float × Int × Int) := ls.foldl (fun acc l => l.conv.foldl (fun a c =>
       if c.whole then a else
       let a := if c.outer then a.push (l.x - DX, c.first, c.last) else a
       if c.inner then a.push (l.x + DX, c.first, c.last) else a) acc) #[]
-    ++ wholes.map fun s => (carried ls s - DX, s.1, s.2)
+    ++ wholes.map fun s => (carried ls s - wholeGap ls s, s.1, s.2)
   -- `(x0, x1, y0, y1, both)`: `Relᵒᵖ` runs from `x0` to the `°` lane at `x1`.  Read row by row: each
   -- `°` wire crossed going WEST from the object toggles `𝒜`/`𝒜ᵒᵖ`, so the wires pair up from the
   -- east (`both`, dashed at `x0` too) and an odd one out shades to the panel's west edge.
