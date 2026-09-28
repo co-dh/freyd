@@ -38,6 +38,9 @@ import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
+import AOP.A6_1_Digits
+import AOP.A6_4_FastExp
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
@@ -618,6 +621,67 @@ open Lean PrettyPrinter in
 @[app_unexpander mu] def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The greatest fixed point, `(νX : α°F(X)R)`, spelled as its least twin above. -/
+@[app_unexpander nu] def unexpandNu : Unexpander
+  | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("ν" ++ x.getId.toString))) : $b))
+  | _ => throw ()
+
+-- B&dM §6.1's datatype `Decimal = wrap Digit⁺ | snoc (Decimal, Digit)`: its constructor map is the
+-- book's `α`, its base relator the section's `F`, its objects the book's `Digit⁺`, `Digit`, `Decimal`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.con] def unexpandDigitsCon : Unexpander
+  | _ => `($(mkIdent `α))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.cataR] def unexpandDigitsCata : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.wrap] def unexpandDigitsWrap : Unexpander
+  | _ => `($(mkIdent `wrap))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.snoc] def unexpandDigitsSnoc : Unexpander
+  | _ => `($(mkIdent `snoc))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.val] def unexpandDigitsVal : Unexpander
+  | _ => `($(mkIdent `val))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.embed] def unexpandDigitsEmbed : Unexpander
+  | _ => `($(mkIdent `embed))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.op] def unexpandDigitsOp : Unexpander
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.F] def unexpandDigitsF : Unexpander
+  | _ => `($(mkIdent `F))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDigitP] def unexpandDDigitP : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDigit] def unexpandDDigit : Unexpander
+  | _ => `($(mkIdent `Digit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.Digit] def unexpandDigitType : Unexpander
+  | _ => `($(mkIdent `Digit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.Decimal] def unexpandDecimalType : Unexpander
+  | _ => `($(mkIdent `Decimal))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dDec] def unexpandDDec : Unexpander
+  | _ => `($(mkIdent `Decimal))
 
 open Lean PrettyPrinter in
 /-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the

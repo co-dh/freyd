@@ -1434,7 +1434,11 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- the same brackets as `F(R)` and `T(R)`; its definition is an intersection of two divisions,
   -- which is the relator's PROOF and not its picture.
   | (``Freyd.Alg.powerRel, args) => un Prec.atom Prec.loose "P(" ")" args
-  | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args) =>
+  -- A datatype's OWN fold (`cataR` of a worked RelSet type) is the same `⦇φ⦈`; named with one
+  -- backtick because those modules are not imported here.
+  | (``Freyd.Alg.relCata, args) | (``Freyd.Alg.InitialAlgebra.cata, args)
+  | (`Freyd.Alg.RelSet.Digits.cataR, args) | (`Freyd.Alg.RelSet.CL.cataR, args)
+  | (`Freyd.Alg.RelSet.SL.cataR, args) =>
     match (← opnds args).back? with
     | some r => return .delim "⦇" "⦈" (← labelTree Prec.loose r)
     | none => txt e
@@ -1488,12 +1492,13 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- The RUBY TRIANGLE is an operator applied to an arrow, so it takes the brackets every applied
   -- operator takes (CLAUDE.md): `tri(f)`, never `tri f`, which reads as `tri` composed with `f`.
   | (``Freyd.Alg.tri, args) => un Prec.atom Prec.loose "tri(" ")" args
-  -- The LEAST FIXED POINT is the note's `(μX : S°F(X)R)`.  Its body is a term of the note's like any
+  -- The LEAST FIXED POINT is the note's `(μX : S°F(X)R)`, the greatest `(νX : …)`.  Its body is a
+  -- term of the note's like any
   -- other — the binder is an arrow the picture draws a wire for — so its composition is
   -- juxtaposition, where the printer's own `≫` survived because the label was the raw printer's.
   -- A BODY THAT IS NO LAMBDA (`mu φ`, φ a variable) is the same bead with its binder opened by
   -- eta: `(μX : φ(X))`, `X` being B&dM's letter for it, freshened against the names in scope.
-  | (``Freyd.Alg.mu, args) =>
+  | (``Freyd.Alg.mu, args) | (``Freyd.Alg.nu, args) =>
     match args.back? with
     | some φ => do
       let φ ← if φ.isLambda then pure φ else do
@@ -1504,7 +1509,8 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       Meta.lambdaBoundedTelescope φ 1 fun xs b => do
         match xs[0]? with
         | some x =>
-          let body : Lbl := "μ" ++ (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b)
+          let body : Lbl := (if e.getAppFn.isConstOf ``Freyd.Alg.nu then "ν" else "μ") ++
+            (← x.fvarId!.getUserName).toString ++ " : " ++ (← labelTree 0 b)
           return .delim "(" ")" body
         | none => txt e
     | none => txt e
