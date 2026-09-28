@@ -44,9 +44,23 @@
 
 // TODO p.146 counterexample: `X=⦇[zero,positive]⦈°⦇[zero,id]⦈` is the coreflexive at 0, its equation
 //   `[zero,positive]°(𝟙+X)[zero,id] = zero°zero ∪ positive X` (2 steps) is also solved by `X=𝟙`.
-// TODO p.147 inductive: `S` inductive ∧ `RR⊑SR` ⟹ `R` inductive (the division exercise, 3 steps);
-//   `R⊑S` ⟹ `R` inductive; `S` inductive iff `S⁺` is — Lean AOP.A6_5.inductive_of_comp_le,
-//   inductive_of_le, inductive_transClosure_iff.
+// TODO p.147 inductive: `R⊑S` ⟹ `R` inductive; `S` inductive iff `S⁺` is — Lean AOP.A6_5.inductive_of_le,
+//   inductive_transClosure_iff; no picture (statements about `Inductive`, not arrows).
+// B&dM p.147 (Ex 6.13)
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.inductive_of_comp_le") \
+    #src[`R` is inductive when `RR⊑SR` for an inductive `S`]],
+    // lean:AOP.A6_5.inductive_of_comp_le@17eb3b43
+  lean-chain(
+    (none, "Freyd.Alg.inductive_of_comp_le_step1.lhs", []),
+    (SQ, "Freyd.Alg.inductive_of_comp_le_step1.rhs", src[`RR⊑SR`]),
+    // lean:AOP.A6_5.inductive_of_comp_le_step1@541f5e6c
+    (SQ, "Freyd.Alg.inductive_of_comp_le_step2.rhs", src[division by `S`]),
+    // lean:AOP.A6_5.inductive_of_comp_le_step2@de8b5c71
+    (SQ, "Freyd.Alg.inductive_of_comp_le_step3.rhs", src[division by `R`]),
+    // lean:AOP.A6_5.inductive_of_comp_le_step3@6567f943
+  ),
+)]<inductive-comp-le>
 // TODO p.148 member: `member(id)=𝟙`, `member(K)=𝟘`, `member(F+G)=[member(F),member(G)]`,
 //   `member(F×G)=outl member(F) ∪ outr member(G)`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
 //   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `+`, `×`, `P`, `T` missing.
@@ -68,7 +82,21 @@
     // lean:AOP.A6_5.thm63_entire@04a95a25
 )]<thm63-entire>
 
-// TODO Cor 6.2: `g member(F)` inductive ⟹ the unique solution of `X=gF(X)f` is a function (2 steps).
+// B&dM Corollary 6.2, p.149
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.cor62") \
+    #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map]],
+    // lean:AOP.A6_5.cor62@b00cdf6c
+  lean-chain(
+    (none, "Freyd.Alg.cor62_step1.lhs", []),
+    (SQ, "Freyd.Alg.cor62_step1.rhs", src[`X=gF(X)f`, `g` simple]),
+    // lean:AOP.A6_5.cor62_step1@71864db7
+    (SQ, "Freyd.Alg.cor62_step2.rhs", src[`Y°X⊑𝟙`]),
+    // lean:AOP.A6_5.cor62_step2@e7d4ea15
+    (SQ, "Freyd.Alg.cor62_step3.rhs", src[`f` simple]),
+    // lean:AOP.A6_5.cor62_step3@fca728a4
+  ),
+)]<cor62>
 // B&dM Corollary 6.3, p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor63") \
