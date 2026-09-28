@@ -54,13 +54,62 @@
 //   LaxMembership.laxNatural, largestLax_unique.
 // TODO p.148 member α°: `α°member(F)` inductive; examples `[zero,succ]°[𝟘,𝟙]=succ°`,
 //   `[nil,cons]°[𝟘,outr]=cons°outr=tail` — Lean missing.
-// TODO Thm 6.3: `S member(F)` inductive ⟹ `X=SF(X)R` has a unique solution, entire if `R`,`S` are —
-//   a hypothesis in Lean (HyloUnique, HyloEntire); statement row only.
+// B&dM Theorem 6.3, p.149
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thm63_unique") \
+    #src[when `S member` is inductive, two solutions `X`, `Y` of `X=SF(X)R` are equal]],
+    // lean:AOP.A6_5.thm63_unique@d1b466e6
+)]<thm63-unique>
+
+// B&dM Theorem 6.3 (entire), p.149
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thm63_entire") \
+    #src[when `S member` is inductive and `S`, `R` are entire, a pre-fixed point of `X↦SF(X)R` is entire]],
+    // lean:AOP.A6_5.thm63_entire@04a95a25
+)]<thm63-entire>
+
 // TODO Cor 6.2: `g member(F)` inductive ⟹ the unique solution of `X=gF(X)f` is a function (2 steps).
-// TODO Cor 6.3: `R°member(F)` inductive ⟹ `⦇R⦈` surjective if `R` is (2 steps).
-// TODO Thm 6.4: `R` surjective ∧ `Rf⊑F(f)α` ⟹ `f°=⦇R⦈`; `⊑` by shunting, fusion, assumption (3);
-//   `⊒` by the surjectivity claim and `⦇R⦈f⊑𝟙` (2); claim `R°member ⊑ R°member F(f°)α°f ⊑ f°member α°f`
-//   (2) — Lean thm64 (forward/backward) takes the claim as the hypothesis `hcatasur`.
+// B&dM Corollary 6.3, p.149
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.cor63") \
+    #src[when `R°member` is inductive and `R` is surjective, the fold `⦇R⦈` is surjective]],
+    // lean:AOP.A6_5.cor63@17c6ea36
+  lean-chain(
+    (none, "Freyd.Alg.cor63.lhs", []),
+    (SQ, "Freyd.Alg.cor63.rhs", src[@thm63-entire at `S=R°`]),
+  ),
+)]<cor63>
+
+// B&dM Theorem 6.4, p.150
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thm64") \
+    #src[a map `f` with `Rf⊑F(f)α`, for a surjective `R`, has the fold `⦇R⦈` as its converse]],
+    // lean:AOP.A6_5.thm64@8cc00228
+  lean-chain(
+    (none, "Freyd.Alg.thm64_forward.lhs", []),
+    (SQ, "Freyd.Alg.thm64_forward.rhs", src[shunting `f`, fusion, `Rf⊑F(f)α`]),
+  ),
+    // lean:AOP.A6_5.thm64_forward@f35729d1
+  lean-chain(
+    (none, "Freyd.Alg.thm64_backward.lhs", []),
+    (SQ, "Freyd.Alg.thm64_backward.rhs", src[@cor63 and `⦇R⦈f⊑𝟙`]),
+  ),
+    // lean:AOP.A6_5.thm64_backward@117de421
+)]<thm64>
+
+// B&dM Theorem 6.4 (the claim), p.150
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thm64_claim") \
+    #src[`R°member` is below `α°member` conjugated by `f`, so it is inductive when `α°member` is]],
+    // lean:AOP.A6_5.thm64_claim@a0b6e290
+  lean-chain(
+    (none, "Freyd.Alg.thm64_claim_step1.lhs", []),
+    (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`Rf⊑F(f)α`, shunting]),
+    // lean:AOP.A6_5.thm64_claim_step1@12aae1e3
+    (SQ, "Freyd.Alg.thm64_claim_step2.rhs", src[`member` lax natural]),
+    // lean:AOP.A6_5.thm64_claim_step2@fd00cb7e
+  ),
+)]<thm64-claim>
 
 == Sorting by selection
 
