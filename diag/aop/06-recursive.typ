@@ -589,28 +589,6 @@
   ),
 )]<closure-least>
 
-// B&dM p.158: `X=𝟙∪RX` has the one solution `R*` for an inductive `R` (the `if` half; `suffix` is
-// the case `R=tail`).  The chain is the induction step `Z/R⊑Z` at `Z=R*⇨R*/X`, read through
-// `le_impl_iff` and `le_div_iff` as `((Z/R)∩R*)X⊑R*`.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_unique") \
-    #src[when `R` admits induction, `R*` is the only `X` equal to `𝟙∪RX`]],
-     // lean:AOP.A6_7.star_unique@bce1f49a
-  lean-chain(
-    (none, "Freyd.Alg.star_unique_step1.lhs", []),
-    (EQ, "Freyd.Alg.star_unique_step1.rhs", src[`X=𝟙∪RX`]),
-     // lean:AOP.A6_7.star_unique_step1@49cd5ad2
-    (EQ, union("Freyd.Alg.star_unique_step2.rhs"),
-      src[`R(S∪T) = RS∪RT` — composition distributes over `∪`]),
-     // lean:AOP.A6_7.star_unique_step2@0987abdb
-    (SQ, union("Freyd.Alg.star_unique_step3.rhs"),
-      src[`a⊑c, b⊑d ⟹ a∪b⊑c∪d` — `∪` is monotone; `(Z/R)R⊑Z`, `R*R⊑R*` justify the right side]),
-     // lean:AOP.A6_7.star_unique_step3@c0934f90
-    (SQ, "Freyd.Alg.star_unique_step4.rhs", src[`(R*⇨R*/X)∩R*⊑R*/X`]),
-     // lean:AOP.A6_7.star_unique_step4@f979c4cb
-  ),
-)]<closure-unique>
-
 // B&dM p.158: the `tails` recursion, `R` being `tail`.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_star") \
@@ -702,36 +680,6 @@
     (EQ, "Freyd.Alg.theta_zero_right.rhs", src[`P∪𝟘=P`]),
   ),
 )]<closure-theta-zero-right>
-
-// B&dM 6.7i, p.160: the recursion step, the book's five steps.  Steps 1-2's rhs is a 2-branch `∪`
-// (`P`, the `μ`-body); rolling at step 3 extracts `Q` as a third branch, kept between `P` and the
-// `μ`-body through step 4; step 5 collapses back to one `θ` application.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.theta_step") \
-    #src[one round moves `Q` into the found part and explores the new `R`-successors of `Q` that
-     are in neither]],
-     // lean:AOP.A6_7.theta_step@49b0c3c6
-  lean-chain((
-    (none, "Freyd.Alg.theta_step_step1.lhs", []),
-    (EQ, union("Freyd.Alg.theta_step_step1.rhs"),
-      src[`θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))` — definition of `θ`]),
-     // lean:AOP.A6_7.theta_step_step1@8b77fe50
-    (EQ, union("Freyd.Alg.theta_step_step2.rhs"), src[`Q∪S=Q∪(S−Q)` — @closure-sub]),
-     // lean:AOP.A6_7.theta_step_step2@1ecc0428
-  ), (
-    (EQ, union("Freyd.Alg.theta_step_step3.rhs", split: "inr"),
-      src[`(μX : φ(ψ(X))) = φ(μY : ψ(φ(Y)))` — @closure-rolling]),
-     // lean:AOP.A6_7.theta_step_step3@db1322e0
-  ), (
-    (EQ, union("Freyd.Alg.theta_step_step4.rhs", split: "inl"),
-      src[`((Q∪X)R − P) − Q = (QR − P) − Q ∪ (XR − (P∪Q))` — composition distributes over `∪`,
-       then subtraction distributes, @closure-sub]),
-     // lean:AOP.A6_7.theta_step_step4@54c7a347
-    (EQ, "Freyd.Alg.theta_step_step5.rhs",
-      src[`θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))` — definition of `θ`]),
-     // lean:AOP.A6_7.theta_step_step5@afe9da13
-  )),
-)]<closure-theta-step>
 
 // TODO p.161 close: `E(R*)(s)=close(∅,s)`, `close(p,∅)=p`, `close(p,q)=close(p∪q, E(R)(q)−p−q)` by `Λ`
 //   (3 steps) — Lean missing.
