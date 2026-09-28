@@ -213,7 +213,7 @@
     let (pic, u) = (box(s.at(1)), s.at(4, default: none))
     let (pm, um) = (measure(pic), if u == none { none } else { measure(box(u)) })
     (op: s.at(0), pic: pic, why: s.at(2), f: s.at(3, default: none), u: u, pm: pm, um: um,
-      w: calc.max(pm.width, if um == none { 0pt } else { um.width }), gspan: s.at(5, default: 1))
+      w: calc.max(pm.width, if um == none { 0pt } else { um.width }))
   })
   if fill != none {
     let k = if fill == true { chain-k(sz.width, ss.first().op == none, ss.map(s => s.w)) } else { fill }
@@ -236,11 +236,6 @@
     let py =if line.any(s => s.f != none) { 1 } else { 0 }     // the picture row sits under the formulas
     let under = ss.any(s => s.u != none)
     let (cols, fr, pr, ur, rr) = ((), (), (), (), ())
-    // A BRANCHES GROUP'S FORMULA SPANS THE WHOLE GROUP, not one cell per branch: `skip` is how many
-    // of the group's own trailing steps this loop owes no `fr` cell to, because the head already
-    // pushed ONE cell wide enough to cover them (their `cols` slots are unaffected — only `fr`, the
-    // formula row, merges).
-    let skip = 0
     for (i, s) in line.enumerate() {
       let op = not (li == 0 and i == 0 and s.op == none)
       if op { cols.push(OPW); pr.push(s.op); ur.push([]) }
@@ -249,27 +244,7 @@
       ur.push(if s.u == none { [] } else { pic-meta(plain(if s.f == none { s.why } else { s.f }), s.u, size: s.um); s.u })
       let span = grid.cell.with(colspan: if op { 2 } else { 1 })
       let wide = box.with(width: s.w + extra + if op { OPW + gut } else { 0pt })
-      if skip > 0 {
-        skip = skip - 1
-      } else if s.gspan > 1 {
-        let idxs = range(i, i + s.gspan)
-        let memop = idxs.map(k => not (li == 0 and k == 0 and line.at(k).op == none))
-        let gspan = memop.map(o => if o { 2 } else { 1 }).sum()
-        // sum of the group's own tracks, PLUS the `gspan-1` gutters BETWEEN them — the per-member
-        // term below already carries the ONE gutter inside that member (between its own op track
-        // and its picture track), so the group has `s.gspan-1` more, between consecutive members.
-        let gw = (idxs.zip(memop).map(((k, o)) => line.at(k).w + extra + if o { OPW + gut } else { 0pt }).sum()
-          + (s.gspan - 1) * gut)
-        // the formula is Lean's own pretty-printing at full size, so it can easily outgrow two or
-        // three small panels; shrink it to `gw` exactly (never grow past it) so it can never spill
-        // into the next group's cell — the same idea `chain-k` uses to fit the pictures.
-        let need = measure(s.f).width
-        let ratio = if need > gw and need > 0pt { gw / need } else { 1.0 }
-        fr.push(grid.cell(colspan: gspan, box(width: gw, align(center, scale(ratio * 100%, reflow: true, s.f)))))
-        skip = s.gspan - 1
-      } else {
-        fr.push(span(wide(if s.f == none { [] } else { s.f })))
-      }
+      fr.push(span(wide(if s.f == none { [] } else { s.f })))
       rr.push(span(wide(s.why)))
     }
     grid(columns: cols, column-gutter: gut, row-gutter: 4pt,
@@ -345,8 +320,18 @@
 #let sum = branches.with([+])
 // A reason stands under its panel only when it fits the panel's width; a longer one would run into
 // the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
-// are listed under the row, where the circuits stood.
+// are listed under the row, where the circuits stood.  A row with a BRANCHES step (∪/+) letters
+// EVERY step and lists a 3-column table instead — letter, formula, hint — because the group's
+// formula only reads against its own hint, not against a panel too narrow to hold it.
 #let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
+// Shrinks CONTENT to whatever width its container gives it, never growing past 1.0 — the ratio
+// `chain-k` uses for a whole row, read here from `layout` since a table cell's width is only known
+// once the surrounding grid resolves its `1fr` columns.
+#let fit-w(f) = layout(sz => {
+  let need = measure(f).width
+  let ratio = if need > sz.width and need > 0pt { sz.width / need } else { 1.0 }
+  align(center, scale(ratio * 100%, reflow: true, f))
+})
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
 // selector like a header, so the chain reads as a term chain as well as a picture chain.
@@ -362,10 +347,10 @@
     // remembers which flat rows came from ONE row entry — a `branches` pair, or a row of its own —
     // so the merge below decides once per STEP, never once per branch.
     // A branches step's OWN FORMULA — the whole side the branches split, e.g. `S₁°G(X)R₁∪S₂°H(X)R₂`
-    // — is generated ONCE from the un-suffixed parent selector and carried on the group's first flat
-    // step as `(gform: .., gspan: ..)`; `hchain` (below) reads it and spans it over the whole group,
-    // regardless of this chain's own `formula:` flag — a branches step is "complicated" enough (his
-    // words) to always show it, where an ordinary step only shows one when asked.
+    // — is generated ONCE from the un-suffixed parent selector and carried on EVERY flat step of the
+    // group as `(gform: ..)`, head and members alike: the below-row table (further down) tables one
+    // line per step, and every line of the group names the SAME group formula in its formula column,
+    // so it must read off whichever member that line is, not only the first.
     .map(r => {
       let steps = ()
       let groups = ()
@@ -374,8 +359,9 @@
           let b = s.at(1)
           let i0 = steps.len()
           let n = b.sels.len()
-          steps.push((s.at(0), b.sels.at(0), s.at(2), (gform: leanf(b.sel), gspan: n)))
-          for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[])) }
+          let g = (gform: leanf(b.sel),)
+          steps.push((s.at(0), b.sels.at(0), s.at(2), g))
+          for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[], g)) }
           groups.push(range(i0, i0 + n))
         } else {
           groups.push((steps.len(),))
@@ -434,24 +420,36 @@
       }
       // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
       // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
-      // them one circuit row per step carrying its reason.
+      // them one circuit row per step carrying its reason.  A row with a BRANCHES step (∪/+) letters
+      // every step regardless of width and replaces the list with a 3-column table (letter, formula,
+      // hint) — see the comment above `chain-tags`.
       let pw = w.map(x => x * k)
+      let hasg = not circuit and r.any(s => type(s.at(3, default: none)) == dictionary)
       let (tags, n) = ((), 0)
       for (s, x) in r.zip(pw) {
-        if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 } else { tags.push(none) }
+        if hasg or (not circuit and measure(s.at(2)).width > x) { tags.push(chain-tags.at(n)); n += 1 }
+        else { tags.push(none) }
       }
       hchain(fill: k, ..r.zip(c.at(1), w, pw, tags).map(((s, p, cw, x, t)) => {
         let g = s.at(3, default: none)
         let isg = type(g) == dictionary
         (s.at(0), box(width: cw, align(center, p)), if circuit { [] } else {
           align(right, box(width: x, align(center, if t == none { s.at(2) } else { [(#t)] }))) },
-        if isg { g.gform }
+        if isg { none }
           else if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
           else { none },
-        none,
-        if isg { g.gspan } else { 1 })
+        none)
       }))
-      if n > 0 {
+      if hasg {
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
+          al: (center + horizon, center + horizon, left + horizon),
+          ..r.zip(tags).map(((s, t)) => {
+            let g = s.at(3, default: none)
+            let f = if type(g) == dictionary { g.gform }
+              else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }
+            ([(#t)], fit-w(f), s.at(2))
+          }).flatten()))
+      } else if n > 0 {
         block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
           ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
       }
