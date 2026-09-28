@@ -715,13 +715,46 @@ public theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} 
   rw [Cat.assoc]
   exact le_trans (thm64_claim_step1 I M hf hcomm) (thm64_claim_step2 I M)
 
-/-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `Rf ⊑ F(f)α`, then `f° = ⦇R⦈` —
-    given that `α° member(F)` is inductive, the fact B&dM p.148 calls "the central result". -/
+/-- **B&dM p.148**, "the central result": `member(F)·α°` (mirrored: `α° ≫ member`) is inductive.
+    Given `X/(α°member) ⊑ X`, the points `W` that `X` reaches from everywhere satisfy
+    `α°F(W)α ⊑ W` by lax naturality of `member`, so `𝟙 = ⦇α⦈ ⊑ W` by initiality. -/
+public theorem alpha_member_inductive (I : InitialAlgebra F) (M : LaxMembership F) :
+    Inductive (I.α° ≫ M.mem I.t) := by
+  intro B X hX
+  -- `W` is the largest relation with `ΠW ⊑ X`.
+  have hW : topHom B I.t ≫ (X° / topHom I.t B)° ⊑ X := by
+    have := recip_mono (DivisionAllegory.div_comp_le X° (topHom I.t B))
+    simpa only [Allegory.recip_comp, Allegory.recip_recip, recip_topHom] using this
+  have hleW : ∀ V : I.t ⟶ I.t, topHom B I.t ≫ V ⊑ X → V ⊑ (X° / topHom I.t B)° := fun V h => by
+    have h1 := recip_mono h
+    simp only [Allegory.recip_comp, recip_topHom] at h1
+    have := recip_mono ((le_div_iff _ _ _).mpr h1)
+    rwa [Allegory.recip_recip] at this
+  have hid : 𝟙 I.t ⊑ (X° / topHom I.t B)° := by
+    rw [← relCata_alpha I]
+    refine relCata_le_of_prefixed I (hleW _ (le_trans ?_ hX))
+    refine (le_div_iff _ _ _).mpr ?_
+    have e : (topHom B I.t ≫ I.α° ≫ F.map (X° / topHom I.t B)° ≫ I.α) ≫ I.α° ≫ M.mem I.t
+        = topHom B I.t ≫ I.α° ≫ F.map (X° / topHom I.t B)° ≫ M.mem I.t := by
+      simp only [Cat.assoc]; rw [← Cat.assoc I.α, I.alpha_alpha_recip, Cat.id_comp]
+    rw [e]
+    have s1 := comp_mono_left (topHom B I.t ≫ I.α°) (M.lax (X° / topHom I.t B)°)
+    have s2 : (topHom B I.t ≫ I.α°) ≫ M.mem I.t ≫ (X° / topHom I.t B)°
+        ⊑ topHom B I.t ≫ (X° / topHom I.t B)° := by
+      rw [← Cat.assoc]; exact comp_mono_right (le_Sup trivial) _
+    simp only [Cat.assoc] at s1 s2
+    exact le_trans s1 (le_trans s2 hW)
+  have := comp_mono_left (topHom B I.t) hid
+  rw [Cat.comp_id] at this
+  exact le_trans this hW
+
+/-- **Theorem 6.4** (B&dM p.150): if `R` is surjective and `Rf ⊑ F(f)α`, then `f° = ⦇R⦈`. -/
 public theorem thm64 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
-    {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (hR : 𝟙 A ⊑ R° ≫ R)
-    (hα : Inductive (I.α° ≫ M.mem I.t)) : f° = relCata R :=
+    {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) (hR : 𝟙 A ⊑ R° ≫ R) :
+    f° = relCata R :=
   le_antisymm
-    (thm64_backward I (cor63 I M (inductive_of_le (inductive_conjugate hf hα)
+    (thm64_backward I (cor63 I M (inductive_of_le
+      (inductive_conjugate hf (alpha_member_inductive I M.toLaxMembership))
       (thm64_claim I M hf hcomm)) hR) (relCata_comp_le_id I hcomm))
     (thm64_forward I hf hcomm)
 
