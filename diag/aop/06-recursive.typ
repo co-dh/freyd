@@ -17,22 +17,18 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
     #src[a number is read back into digits either as one nonzero digit, or by splitting off its
      last digit and reading back the rest]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@464083fc
-  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@83b05a50
+  // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@639ee2c7
+  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
   lean-chain(
-    (none, "Freyd.Alg.RelSet.Digits.cata_converse_step1.lhs", src[`val=⦇[embed,op]⦈` — definition]),
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step1.rhs", src[`⦇φ⦈=α°F(⦇φ⦈)φ` — catamorphisms]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@f212a141
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step2.rhs", src[`(RS)°=S°R°` — converse]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@54cfab45
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step3.rhs", src[`F(R)=𝟙+(R×𝟙)` — definition of `F`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@55fc19d6
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step4.rhs", src[`α=[wrap,snoc]`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@f1315001
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step5.rhs", src[`(R+S)[P,Q]=[RP,SQ]` — coproduct]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@a1d4f22f
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step6.rhs", src[`[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@6b76c614
+    (none, "Freyd.Alg.RelSet.Digits.val_converse_step1.lhs", src[the converse of `val`, which reads digits as a number]),
+    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step1.rhs", src[`val` undoes `wrap` or `snoc`, reads the front with `val` and combines by `embed` or `op`, so its converse runs that backwards]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@53737b95
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step2.rhs"), src[undoing `wrap` or `snoc` first gives two cases: a decimal and its last digit read by `val` then `op`, or one digit read by `embed`]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@5227a8b5
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step3.rhs"), src[the converse of each case is its steps undone in reverse: undo `op`, undo reading the front, then `snoc`; or undo `embed`, then `wrap`]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@b5e43d1f
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step4.rhs"), src[undoing the read of the front while keeping the last digit is `val°` on the front alone]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@e643973b
   ),
 )]<val-converse>
 // B&dM p.139: `op(n,d)=10n+d` read backwards, and where `op°` and `embed°` are defined — which is what
@@ -40,16 +36,18 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   [#leanf("Freyd.Alg.RelSet.Digits.op_recip_iff") \
     #src[`op°` splits a number into its quotient and remainder by 10]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@78c25f21
   [#leanf("Freyd.Alg.RelSet.Digits.op_recip_defined") \
     #src[`op°` gives a pair with a nonzero first component exactly at the numbers with two or more digits]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@c44897b0
   [#leanf("Freyd.Alg.RelSet.Digits.embed_recip_defined") \
     #src[`embed°` gives a digit exactly at the one-digit numbers]],
   // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c
 )]<op-recip>
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 
+// Otherwise the heading lands alone at the foot of the reduce-of-maps page.
+#pagebreak(weak: true)
 == Least fixed points <sec-mu>
 
 // B&dM Theorem 6.1, p. 140.  `μ` is read off a whole chapter of specifications from §@sec-dp on,
@@ -80,10 +78,6 @@
  // lean:AOP.A6_2.mu_le@9918bd39
  // lean:AOP.A6_2.mu_fixed@2d3d1a8a
 )]<mu-laws>
-
-// B&dM Theorem 6.1, p.140 — drawn at @mu-laws; not redrawn.
-#src[Theorem 6.1 (Knaster–Tarski) is @mu-laws.]
-// lean:AOP.A6_2.mu_fixed@2d3d1a8a
 
 // B&dM (6.2), p.141: `⦇R⦈` is `(μX : α°F(X)R)`, so Theorem 6.1's leastness bounds it by any prefix point.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -199,10 +193,6 @@
     ),
   )],
 )]<hylo-mu>
-
-// B&dM Theorem 6.2, p.142 — drawn at §@sec-hylo; not redrawn.
-#src[Theorem 6.2 is §@sec-hylo.]
-// lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
 
 // B&dM Corollary 6.1, p.143: Theorem 6.2 at `R≜[R₁,R₂]`, `S≜[S₁,S₂]` over `F(X)=G(X)+H(X)`; the chain
 // is the body under the `μ`.

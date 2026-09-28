@@ -1151,20 +1151,24 @@ partial def peelCutsCore (objVars : Array Expr) (cat : Array Name) (regionTy X :
     | _ => pure false
   if atom then return (#[], X)
   let objs ← objVars.filterM fun v => do Meta.isDefEq (← Meta.inferType v) regionTy
-  for n in cat do
-    if let some (R, src, inner) ← peelWith? n objVars regionTy X then
-      let (cs, o) ← peelCuts objVars cat src inner
-      return (#[(Wire.rel R, inner)] ++ cs, o)
-  if objs.size == objVars.size then return (#[], X)
-  -- Here the object has several such readings — `A ⊕ X×X` is `TT.F A` at `X` and `CL.F A X` at
-  -- `X` alike — so the one taken is the lane that PINS THE LEAST of the object into its name.
-  let mut best : Option (Expr × Expr × Expr) := none
-  for n in cat do
-    let s ← Meta.saveState
-    if let some r@(R, _, _) ← peelWith? n objs regionTy X then
-      if best.all (R.sizeWithoutSharing < ·.1.sizeWithoutSharing) then best := some r
+  -- An object has several such readings — `A ⊕ X×X` is `TT.F A` at `X` and `CL.F A X` at `X`
+  -- alike, and `Digit⁺ ⊕ ℕ×Digit` is `Digit⁺+−` at `ℕ×Digit` and a lane with `ℕ` pinned in at
+  -- `Digit` — so the one taken is the lane that PINS THE LEAST of the object into its name, never
+  -- the first the catalogue's order reaches.
+  let best (vs : Array Expr) : MetaM (Option (Expr × Expr × Expr)) := do
+    let mut b : Option (Expr × Expr × Expr × Meta.SavedState) := none
+    for n in cat do
+      let s ← Meta.saveState
+      if let some r@(R, _, _) ← peelWith? n vs regionTy X then
+        if b.all (R.sizeWithoutSharing < ·.1.sizeWithoutSharing) then b := some (r.1, r.2.1, r.2.2, ← Meta.saveState)
+      s.restore
+    let some (R, src, inner, s) := b | return none
     s.restore
-  let some (R, src, inner) := best | return (#[], X)
+    return some (R, src, inner)
+  let pick ← match ← best objVars with
+    | some r => pure (some r)
+    | none => if objs.size == objVars.size then pure none else best objs
+  let some (R, src, inner) := pick | return (#[], X)
   let (cs, o) ← peelCuts objVars cat src inner
   return (#[(Wire.rel R, inner)] ++ cs, o)
 
@@ -1787,6 +1791,23 @@ partial def summandAction (regionTy a R : Expr) : MetaM (Option Expr) := do
   return some (← instantiateMVars
     (← Meta.mkAppM ``Freyd.Alg.prodMap #[P, Q, ← Meta.mkAppM ``Cat.id #[l], act]))
 
+/-- A functor action `F.map R` as the SUM MAP its definition is, `F(R) = P+Q`: unfold the head one
+    definition (or projection) at a time until `asSumMap?` reads the type.  `none` when it never does
+    — the functor is not a sum, and the caller falls back to `summandAction`. -/
+partial def sumMapUnfolded? (e : Expr) (fuel : Nat := 12) : MetaM (Option (Expr × Expr)) := do
+  if fuel == 0 then return none
+  if let some pq ← asSumMap? e then return some pq
+  -- a projection out of a structure-valued definition (`Relator.toFunctor X`, `plusDigitP`) reduces
+  -- once that structure is brought to its constructor
+  let e' ← Meta.whnfCore e
+  let e' ← match e'.getAppFn with
+    | .proj s i st => do Meta.whnfCore (mkAppN (.proj s i (← Meta.whnf st)) e'.getAppArgs)
+    | _ => pure e'
+  if e' != e then return ← sumMapUnfolded? e' (fuel - 1)
+  match ← Meta.unfoldDefinition? e with
+  | some e'' => sumMapUnfolded? e'' (fuel - 1)
+  | none => return none
+
 /-- A run rebuilt from its factors, in diagram order. -/
 def compose (fs : Array Expr) : MetaM Expr := do
   let mut acc := fs[0]!
@@ -1804,10 +1825,16 @@ def compose (fs : Array Expr) : MetaM Expr := do
       the summand's own action, and the junction absorbs it.
 
     Selectors chain — `.inr.inr` is the arm, and then that arm's operand. -/
-def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
+partial def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
   let fs := factors e
   if let some (l, r) ← binOperands? fs[fs.size - 1]! then
     return ← compose ((fs.extract 0 (fs.size - 1)).push (if i == 0 then l else r))
+  -- a run that OPENS with a co-fork's converse `[X,Y]° ≫ rest` enters the coproduct there: arm `i`
+  -- is `Xᵢ°` followed by `rest` entered at summand `i`, which is the junction case below.
+  if fs.size > 1 && fs[0]!.isAppOf ``Freyd.Alg.Allegory.recip then
+    if let some (_, X, Y) ← juncOf? fs[0]!.appArg! then
+      let arm ← Meta.mkAppM ``Freyd.Alg.Allegory.recip #[if i == 0 then X else Y]
+      return ← Meta.mkAppM ``Cat.comp #[arm, ← branchOf regionTy (← compose (fs.extract 1 fs.size)) i]
   let (src, _) ← homEnds e
   let mut hit : Option (Nat × Expr × Expr × Expr × Expr) := none
   -- the junction stands over the coproduct the run has reached by then — the source itself, or,
@@ -1837,7 +1864,15 @@ def branchOf (regionTy e : Expr) (i : Nat) : MetaM Expr := do
     let (rS, rT) ← homEnds R
     obj := (← Meta.kabstract obj rT).instantiate1 rS
   let mut parts : Array Expr := #[]
-  for R in rs do
+  for k in [0 : j] do
+    -- a relator whose action UNFOLDS to a sum map `P+Q` says its summand's action itself: take arm
+    -- `i`, identity included, so the lanes it acts on come from its own type
+    if let some (p, q) ← sumMapUnfolded? fs[k]! then
+      let a := if i == 0 then p else q
+      parts := parts.push a
+      obj := (← homEnds a).2
+      continue
+    let R := rs[k]!
     if let some act ← summandAction regionTy obj R then
       parts := parts.push act
       obj := (← homEnds act).2

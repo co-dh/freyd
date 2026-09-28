@@ -720,8 +720,14 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `op))
 
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Digits.F] def unexpandDigitsF : Unexpander
-  | _ => `($(mkIdent `F))
+@[app_unexpander RelSet.Digits.timesDigit] def unexpandDigitsTimes : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "−×Digit")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "−×Digit")))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.plusDigitP] def unexpandDigitsPlus : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.dDigitP] def unexpandDDigitP : Unexpander
@@ -796,6 +802,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.dDec] def unexpandDDec : Unexpander
   | _ => `($(mkIdent `Decimal))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.dNat] def unexpandDNat : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "ℕ")))
 
 open Lean PrettyPrinter in
 /-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the
