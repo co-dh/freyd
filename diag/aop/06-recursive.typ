@@ -35,11 +35,19 @@
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@6b76c614
   ),
 )]<val-converse>
-// TODO p.139 op°: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; `op°` defined iff `m≥10`, `embed°` iff `m<10`
-//   — a Lean lemma, not a picture.  PROVED: lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
-//   lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
-//   lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c.  Not displayed: `--formula`
-//   drops a relation's points (`op° m p` prints `op°`), an exporter gap to close before a #leanf row.
+// B&dM p.139: `op(n,d)=10n+d` read backwards, and where `op°` and `embed°` are defined — which is what
+// turns the join of (6.1) into a conditional.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  [#leanf("Freyd.Alg.RelSet.Digits.op_recip_iff") \
+    #src[`op°` splits a number into its quotient and remainder by 10]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
+  [#leanf("Freyd.Alg.RelSet.Digits.op_recip_defined") \
+    #src[`op°` gives a pair with a nonzero first component exactly at the numbers with two or more digits]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+  [#leanf("Freyd.Alg.RelSet.Digits.embed_recip_defined") \
+    #src[`embed°` gives a digit exactly at the one-digit numbers]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c
+)]<op-recip>
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.
 
 == Least fixed points
@@ -131,10 +139,49 @@
 
 == Fast exponentiation and modulus computation
 
-// TODO p.145 exp: `exp(a) ⊒ convert°convert exp(a) = convert°⦇[one,op(a)]⦈ = (μX : zero°one ∪ shift°(X×𝟙)op(a))`
-//   — 3 steps (convert simple; fusion; Cor 6.1) + side conditions `zero exp(a)=one`,
-//   `shift exp(a)=(exp(a)×𝟙)op(a)`; Lean AOP.A6_4_FastExp.exp_eq_mu.
-// TODO p.145 mod: the same for `mod(b)`: `= (μX : zero°zero ∪ shift°(X×𝟙)op(b))`; Lean mod_eq_mu.
+// B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[g,h]` with the
+// fusion conditions `zero f=g`, `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
+    #src[once `f` sends `zero` to `g` and turns `shift` into `h`, the recursion that halves the
+     argument at each step computes `f`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@9f928e8d
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.FastExp.convert_step1.rhs", []),
+    (RQ, "Freyd.Alg.RelSet.FastExp.convert_step1.lhs", src[`convert` simple]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step1@69eb83de
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_simple@bb3512f8
+    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step2.rhs", src[fusion: `zero f=g`, `shift f=(f×𝟙)h`]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step2@74323421
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_fusion@4f54bb8d
+    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step3.rhs", src[Corollary 6.1, @hylo-coprod]),
+    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step3@e3126154
+  ),
+)]<convert-program>
+
+// B&dM p.145: the two fusion conditions for `exp(a)`, then the program.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.exp_program") \
+    #src[the recursion that halves the exponent at each step computes `a` to the power `b`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_program@08ea7ea9
+  [#leanf("Freyd.Alg.RelSet.FastExp.exp_zero") \ #src[`a` to the power `0` is `1`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_zero@753de5ee
+  [#leanf("Freyd.Alg.RelSet.FastExp.exp_shift") \
+    #src[`a` to the power `2n+d` is `op(a)` of `a` to the power `n` and `d`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.exp_shift@943dfec6
+)]<fast-exp>
+
+// B&dM p.145: the same argument for `mod(b)`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.mod_program") \
+    #src[the recursion that halves `a` at each step computes the remainder of `a` by `b`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_program@82bb412b
+  [#leanf("Freyd.Alg.RelSet.FastExp.mod_zero") \ #src[`0 mod b` is `0`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_zero@9b6e59c5
+  [#leanf("Freyd.Alg.RelSet.FastExp.mod_shift") \
+    #src[`(2a+d) mod b` is `op(b)` of `a mod b` and `d`]],
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.mod_shift@8ad8e239
+)]<fast-mod>
 
 == Unique fixed points
 

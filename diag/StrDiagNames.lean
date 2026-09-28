@@ -679,6 +679,60 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.Decimal] def unexpandDecimalType : Unexpander
   | _ => `($(mkIdent `Decimal))
 
+-- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
+-- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNat] def unexpandFEdNat : Unexpander
+  | _ => `($(mkIdent `Nat))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Bit] def unexpandFEBit : Unexpander
+  | _ => `($(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNB] def unexpandFEdNB : Unexpander
+  | _ => `($(mkIdent `Nat) × $(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dBin] def unexpandFEdBin : Unexpander
+  | _ => `($(mkIdent `Bin))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.zero] def unexpandFEZero : Unexpander
+  | _ => `($(mkIdent `zero))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.one] def unexpandFEOne : Unexpander
+  | _ => `($(mkIdent `one))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.shift] def unexpandFEShift : Unexpander
+  | _ => `($(mkIdent `shift))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.convert] def unexpandFEConvert : Unexpander
+  | _ => `($(mkIdent `convert))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.exp] def unexpandFEExp : Unexpander
+  | `($_ $a) => `($(mkIdent `exp) $a)
+  | _ => `($(mkIdent `exp))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.mod] def unexpandFEMod : Unexpander
+  | `($_ $b) => `($(mkIdent `mod) $b)
+  | _ => `($(mkIdent `mod))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Exp.op] def unexpandFEExpOp : Unexpander
+  | `($_ $a) => `($(mkIdent `op) $a)
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Modulus.op] def unexpandFEModOp : Unexpander
+  | `($_ $b) => `($(mkIdent `op) $b)
+  | _ => `($(mkIdent `op))
+
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.dDec] def unexpandDDec : Unexpander
   | _ => `($(mkIdent `Decimal))
