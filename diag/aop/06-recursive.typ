@@ -64,11 +64,51 @@
 
 == Sorting by selection
 
-// TODO (6.6): `sort ⊆ perm ordered`, `ordered=⦇[nil,ok cons]⦈`, `ok(a,x) ≡ ∀b∈x. aRb` — abstract def missing.
-// TODO p.152 selection: `perm ordered = (ordered perm)° = (⦇[nil,ok cons]⦈perm)° ⊒ ⦇[nil,select°]⦈°`
-//   (3 steps) — Lean AOP.A6_6_Sort.selection_sort_correct.
-// TODO p.153 select: proviso `ok cons perm = ok (𝟙×perm)cons perm = (𝟙×perm)ok cons perm ⊒ (𝟙×perm)select°`
-//   (3 steps; Ex 6.22 claim `ok (𝟙×perm) = (𝟙×perm) ok`) — pointwise only (hfus_concrete).
+// B&dM (6.6), p.151.  `ok(a,x) ≡ ∀b∈x. aRb`; the preorder `R` is fixed, so `ordered` and `ok`
+// carry no argument.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.ordered_cata") \
+    #src[a list is sorted exactly when the fold that rebuilds it passes `ok` at every `cons`, i.e.
+     each head is `R`-below every element after it]],
+     // lean:AOP.A6_6b_SortConcrete.ordered_cata@38fa5c86
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.ordered_cata.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.ordered_cata.rhs", src[fold uniqueness]),
+  ),
+)]<sort-ordered>
+
+// B&dM p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
+// `perm` is strictly natural (lean:AOP.A6_6b_SortConcrete.perm_strictNatural@f0271ba3).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
+    #src[every output of unfolding the input by `select` is a sorted permutation of it]],
+     // lean:AOP.A6_6b_SortConcrete.selection_sort@b5a3d5ac
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.selection_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.selection_step1.rhs", src[`perm°=perm`, `ordered°=ordered`]),
+     // lean:AOP.A6_6b_SortConcrete.selection_step1@b0c2bf70
+    (EQ, "Freyd.Alg.RelSet.Sort.selection_step2.rhs", src[@sort-ordered]),
+     // lean:AOP.A6_6b_SortConcrete.selection_step2@b39e4cf7
+    (RQ, "Freyd.Alg.RelSet.Sort.selection_step3.lhs", src[fusion (6.4) under @sort-select]),
+     // lean:AOP.A6_6b_SortConcrete.selection_step3@e26a2b44
+  ),
+)]<sort-selection>
+
+// B&dM p.153, the fusion proviso; `select` is specified by `select°⊑ok cons perm`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.select_proviso") \
+    #src[permuting the tail and then undoing `select` lands among the `ok` conses of a permutation]],
+     // lean:AOP.A6_6b_SortConcrete.select_proviso@53989486
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.select_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.select_step1.rhs", src[`cons perm=(𝟙×perm)cons perm`]),
+     // lean:AOP.A6_6b_SortConcrete.select_step1@7ab18cc3
+    (EQ, "Freyd.Alg.RelSet.Sort.select_step2.rhs", src[Ex 6.22, `ok(𝟙×perm)=(𝟙×perm)ok`]),
+     // lean:AOP.A6_6b_SortConcrete.select_step2@64cbd9c8
+    (RQ, "Freyd.Alg.RelSet.Sort.select_step3.lhs", src[`select°⊑ok cons perm`]),
+     // lean:AOP.A6_6b_SortConcrete.select_step3@ca4f7279
+  ),
+)]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
 // TODO p.153 sort-rec: `X=⦇[nil,select°]⦈°` the unique solution of `X = nil°nil ∪ select(𝟙×X)cons`; the

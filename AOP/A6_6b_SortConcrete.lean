@@ -128,6 +128,35 @@ public theorem ordered_cata :
 public theorem perm_recip : (perm : dList A ⟶ dList A)° = perm :=
   hom_ext fun _ _ => ⟨fun h => Perm.symm h, fun h => Perm.symm h⟩
 
+/-- Relating elementwise and then permuting is permuting and then relating elementwise. -/
+theorem perm_listP {B : Type} (Q : dE A ⟶ dE B) : ∀ {y z : ConsList Unit B}, Perm y z →
+    ∀ x : ConsList Unit A, listP Q x y → ∃ x', Perm x x' ∧ listP Q x' z
+  | _, _, Perm.nil, x, h => ⟨x, Perm.refl x, h⟩
+  | _, _, Perm.cons _ hp, ConsList.cons a x, h =>
+      let ⟨x', p, l⟩ := perm_listP Q hp x h.2
+      ⟨ConsList.cons a x', Perm.cons a p, h.1, l⟩
+  | _, _, Perm.swap _ _ _, ConsList.cons a₁ (ConsList.cons a₂ x), h =>
+      ⟨_, Perm.swap a₁ a₂ x, h.2.1, h.1, h.2.2⟩
+  | _, _, Perm.trans h₁ h₂, x, h =>
+      let ⟨x₁, p₁, l₁⟩ := perm_listP Q h₁ x h
+      let ⟨x₂, p₂, l₂⟩ := perm_listP Q h₂ x₁ l₁
+      ⟨x₂, Perm.trans p₁ p₂, l₂⟩
+
+/-- `perm` is strictly natural, `list(Q) perm = perm list(Q)`: a permutation does not look at the
+    elements. -/
+public theorem perm_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (perm : dList a.carrier ⟶ dList a.carrier)) := by
+  intro a b Q
+  apply hom_ext; intro x z
+  constructor
+  · rintro ⟨y, hl, hp⟩
+    exact perm_listP Q hp x hl
+  · rintro ⟨x', hp, hl⟩
+    obtain ⟨z', p, l⟩ := perm_listP Q° (Perm.symm hp) z ((listP_recip Q z x').mpr hl)
+    exact ⟨z', (listP_recip Q z' x).mp l, Perm.symm p⟩
+
 /-- **p.152, step 1**: `perm ordered = (ordered perm)°`, `perm` and the coreflexive `ordered`
     being their own converses. -/
 public theorem selection_step1 :

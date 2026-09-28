@@ -1457,4 +1457,19 @@ open Lean PrettyPrinter in
   | `($_ $args*) => `($(mkIdent `Fin) $args*)
   | _ => `($(mkIdent `Fin))
 
+-- §6.6's sorting relations under the book's names: the preorder `R` is fixed for the whole
+-- section, so `ordered` and `ok` are written without it (B&dM p.151).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.perm] def unexpandPerm : Unexpander
+  | `($_:ident) => `($(mkIdent `perm))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.ordered] def unexpandOrdered : Unexpander
+  | `($_ $_) => `($(mkIdent `ordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.ok] def unexpandOk : Unexpander
+  | `($_ $_) => `($(mkIdent `ok))
+  | _ => throw ()
+
 end Freyd.Alg
