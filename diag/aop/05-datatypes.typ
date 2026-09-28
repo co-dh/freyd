@@ -28,21 +28,21 @@ the 2-category.
   table.header([*the statement*]),
 
  // F(f) map preserving row: Lemma 5.1
- [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[]],
+ [#leanf("Freyd.Alg.Relator.map_is_map") and #leanf("Freyd.Alg.Relator.map_recip_map"). #src[Lemma 5.1]],
   // lean:AOP.A5_1.map_is_map@8f150beb lean:AOP.A5_1.map_recip_map@c9f5d6f2
   // functor-is-relator row: Theorem 5.1
-  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`.],
+  [Over a *tabular* allegory a functor is a relator `⟺` it preserves `°`. #src[Theorem 5.1]],
   // F(R°)=F(R)° row: after Theorem 5.1, p. 113
   [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.],
   // relators-agree-on-maps row: Corollary 5.1
-  [Two relators agreeing on maps are equal.],
+  [Two relators agreeing on maps are equal. #src[Corollary 5.1]],
  // F(X∩Y) row: Ex 5.2
- [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_coreflexive") #src[Ex 5.2]],
   // lean:AOP.A5_1.map_inter_coreflexive@a2233804
  // F(R∩S) row: Ex 5.2, the restriction
- [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[]],
+ [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[Ex 5.2]],
   // lean:AOP.A5_1.map_inter_le@af565f80
- [#leanf("Freyd.Alg.Relator.map_dom") #src[]],
+ [#leanf("Freyd.Alg.Relator.map_dom") #src[Ex 5.5]],
   // lean:AOP.A5_1.map_dom@5e9ecd68
 )]<relator-laws>
 
@@ -52,7 +52,7 @@ the fourth is strict: for `R={(a₁,b₁),(a₂,b₂)}` and `S={(a₁,b₂),(a�
 
 == Fork `⟨R,S⟩`
 
-#disp[#definition[
+#disp(num: "(5.1)")[#definition[
 The *fork* of `R : C⟶A` and `S : C⟶B` is `⟨R,S⟩≜Rπ₁°∩Sπ₂°` #src[],
 // lean:AOP.A5_2.Freyd.Alg.RelProd.pair@df1791ca
 where `(π₁,π₂)` is the tabulation of `⊤`
@@ -61,9 +61,9 @@ where `(π₁,π₂)` is the tabulation of `⊤`
 ]]<fork-defn>
 
 #disp[#block(inset: (y: 6pt))[
- #leanf("Freyd.Alg.RelProd.pair_outl") #src[] #h(1.4cm)
+ #leanf("Freyd.Alg.RelProd.pair_outl") #src[(5.6)] #h(1.4cm)
   // lean:AOP.A5_2.pair_outl@18c8ddee
- #leanf("Freyd.Alg.RelProd.pair_outr") #src[]
+ #leanf("Freyd.Alg.RelProd.pair_outr") #src[(5.7)]
   // lean:AOP.A5_2.pair_outr@ce99887d
 ]]<fork-proj>
 
@@ -85,7 +85,7 @@ the monoid's unit law:
 
 === Relational product `R×S`
 
-#disp[#definition[
+#disp(num: "(5.2)")[#definition[
 `R×S≜⟨π₁R,π₂S⟩` #src[], a relator in each argument
 // lean:AOP.A5_2.prodMap@28e34ad0
 #src[] but no longer a categorical product.
@@ -107,7 +107,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
 // ONE picture, not two with an `=`: pushing `R ⊗ S` past `X ⊗ Y` is interchange, already spent by the
 // notation — both sides are the same strokes.  All of B&dM (5.3), whose direct proof needs two lemmas.
-#disp[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
+#disp(num: "(5.3)")[#leanc("Freyd.Alg.RelProd.pair_prodMap.rhs")]<absorption-pic>
 // lean:AOP.A5_2.pair_prodMap@8861fda2
 
 // A `#disp` block does NOT break across a page — it overflows and the last row is lost — so the rows
@@ -122,25 +122,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  [#leanf("Freyd.Alg.prodMap")], P(leanc("Freyd.Alg.prodMap"), s: 74%),
-  // lean:AOP.A5_2.prodMap@28e34ad0
-
-  [#leanf("Freyd.Alg.RelProd.pair_prodMap") \ #src[both sides are the same strokes — @absorption-pic. Its `⊑`
-// R×S row: ⊑ half is Ex 5.8, B&dM's (5.4),(5.5); (R×S)(U×V) corollary is Ex 5.6
-   half is that half at `S:=𝟙` and at `R:=𝟙` — stages of their proof of
-   this row; the corollary is the `(R×S)(U×V)=(RU)×(SV)` it yields, at `R:=𝟙` and `V:=𝟙`.
- ]],
-   // lean:AOP.A5_2.pair_prodMap@8861fda2
-  P(leanc("Freyd.Alg.RelProd.pair_prodMap"), s: 74%),
-
- [#leanf("Freyd.Alg.RelProd.pair_outl") \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outl@18c8ddee
-  P(leanc("Freyd.Alg.RelProd.pair_outl"), s: 74%),
-
- [#leanf("Freyd.Alg.RelProd.pair_outr") \ #src[@fork-proj]],
-  // lean:AOP.A5_2.pair_outr@ce99887d
-  P(leanc("Freyd.Alg.RelProd.pair_outr"), s: 74%),
-
+  // prodMap (duplicate of @relprod-defn), pair_prodMap (duplicate of @absorption-pic),
+  // pair_outl/pair_outr (duplicate of @fork-proj) deleted — rule M.
  [#leanf("Freyd.Alg.RelProd.pair_recip_pair") #src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
   P(leanc("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
@@ -172,14 +155,14 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [#leanf("Freyd.Alg.junc") \ #src[The tape is the union — a particle entering at `A+B` takes exactly
+  [#leanf("Freyd.Alg.junc") \ #src[(5.9) The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
   // lean:AOP.A5_3.junc@da022f10
   P(leanc("Freyd.Alg.junc"), s: 85%),
 
   [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
   // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
-  [#leanf("Freyd.Alg.sumMap")], P(leanc("Freyd.Alg.sumMap"), s: 85%),
+  [#leanf("Freyd.Alg.sumMap") #src[(5.10)]], P(leanc("Freyd.Alg.sumMap"), s: 85%),
   // lean:AOP.A5_3.sumMap@eb035ed1
   [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
@@ -187,21 +170,21 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
 
-  [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip")],
+  [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip") #src[Ex 5.12]],
   P(row((leanc("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
     leanc("Freyd.Alg.Coproduct.u₂_self_comp_recip"))), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_self_comp_recip@6cd82772
   // lean:Freyd.S2_20.Coproduct.u₂_self_comp_recip@53e6991d
 
   // `rl°=𝟘` stays a formula: the exporter finds no naturality for the `𝟘` family on `B⟶A`.
-  [#leanf("Freyd.Alg.Coproduct.u₁_u₂_recip"), #leanf("Freyd.Alg.Coproduct.u₂_u₁_recip")],
+  [#leanf("Freyd.Alg.Coproduct.u₁_u₂_recip"), #leanf("Freyd.Alg.Coproduct.u₂_u₁_recip") #src[Ex 5.12]],
   P(leanc("Freyd.Alg.Coproduct.u₁_u₂_recip"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.u₁_u₂_recip@ade7327c lean:Freyd.S2_20.Coproduct.u₂_u₁_recip@61def7d7
 
-  [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id")], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
+  [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id") #src[Ex 5.12]], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 
-  [#leanf("Freyd.Alg.junc_recip_junc")], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
+  [#leanf("Freyd.Alg.junc_recip_junc") #src[(5.11)]], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
   // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
@@ -247,28 +230,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*picture*]),
 
-  // [R,S]=(l°R) ∪ (r°S): B&dM (5.9)
-  [#leanf("Freyd.Alg.junc") \ #src[@coprod-laws's first row]],
-  // lean:AOP.A5_3.junc@da022f10
-  P(leanc("Freyd.Alg.junc"), s: 82%),
-
-  // R+S=[Rl,Sr]: B&dM (5.10)
-  [#leanf("Freyd.Alg.sumMap")],
-  // lean:AOP.A5_3.sumMap@eb035ed1
-  P(leanc("Freyd.Alg.sumMap"), s: 82%),
-
-  // [U,V]°[R,S]=(U°R) ∪ (V°S): B&dM (5.11)
-  [#leanf("Freyd.Alg.junc_recip_junc") \ #src[@coprod-laws's last row;
- ]],
-   // lean:AOP.A5_3.junc_recip_junc@838f4abc
-  P(leanc("Freyd.Alg.junc_recip_junc"), s: 68%),
-
-  // X≜[𝟙,𝟘]=l° and Y≜[𝟘,𝟙]=r°, so (Xl) ∪ (Yr)=[l,r]=𝟙: B&dM Ex 5.12
-  [#leanf("Freyd.Alg.junc_id_zero"), #leanf("Freyd.Alg.junc_zero_id") \
-   #leanf("Freyd.Alg.junc_injections") \ #src[which is (5.9)]],
-  // lean:AOP.A5_3.junc_id_zero@28919704 lean:AOP.A5_3.junc_zero_id@328e3c31
-  // lean:AOP.A5_3.junc_injections@11d515bf lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
-  P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 78%),
+  // junc (5.9), sumMap (5.10), junc_recip_junc (5.11) — duplicates of @coprod-laws's first,
+  // third and last rows — and junc_id_zero/junc_zero_id/junc_injections (Ex 5.12) — duplicate
+  // of @coprod-laws's Exercise 5.12 rows — deleted, rule M.
 
   // prove (5.11), and say why duality does not carry it over from the product law: B&dM Ex 5.13
   [#src[prove (5.11), and say why duality does not carry it over from the product law]],
@@ -395,95 +359,13 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
    // lean:AOP.A5_4.powerRel_comp@06364064
 )]<powrel-laws>
 
-// Ahead of §11.4 and §11.5, which both write `⦇…⦈` before anything says what it is.  The three
-// squares are the one geometry: algebras across the rows, homomorphisms down the columns.
-#pagebreak(weak: true)
-== Initial algebra
-
-// §11.4's panels, emitted by `./scripts/diagram --sigs … --src … --tgt … "<formula>"` plus `s: 100%`,
-// the squares' own size.  An algebra is an ARROW AT ITS CARRIER — `f : F(A)⟶A`, `α : F(T)⟶T`, B&dM
-// (2.10) — so its bead spans the object wire and carries no dot; only the type functor's `αᴀ`
-// (@tfun-defn), a family over the parameter `A`, is a transformation and draws on the functor lane.
-#let ia-hom-l = "Freyd.Alg.IsFHom.lhs"
-#let ia-hom-r = "Freyd.Alg.IsFHom.rhs"
-#let ia-cata-l = "Freyd.Alg.InitialAlgebra.cata_comm.lhs"
-#let ia-cata-r = "Freyd.Alg.InitialAlgebra.cata_comm.rhs"
-
-#disp[#definition[
-An *F-algebra* is a map `f : F(A)⟶A`; `A` is its *carrier*.
-An *F-homomorphism* from `f : F(A)⟶A` to `g : F(B)⟶B` is a map `h : A⟶B` with `f h=F(h)g`.
-The *initial algebra* `α : F(T)⟶T` is the F-algebra with exactly one F-homomorphism `⦇f⦈ : T⟶A` to
-every F-algebra `f`
-#src[].
-// lean:AOP.A5_5.InitialAlgebra@0ea41da0
-
-  // ONE OBJECT, ONE HUE down the display: `A` is amber in both rows.  The positional defaults would
-  // paint the same carrier red in the row below and cyan in the row above.
-  #pair(
-    leancd("Freyd.Alg.IsFHom"),
-    lean(ia-hom-l, ia-hom-r, op: [=]),
-    [#leanf("Freyd.Alg.IsFHom")],
-  )
-  #pair(
-    leancd("Freyd.Alg.InitialAlgebra.cata_comm"),
-    lean(ia-cata-l, ia-cata-r, op: [=]),
-    [#leanf("Freyd.Alg.InitialAlgebra.cata_comm")],
-  )
-  // lean:AOP.A5_5.relCata_cancel@c83d7b44
-]]<initial-defn>
-
-=== Reflection
-
-// THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
-// the edge for the corresponding functor" (IntroString p. 37), so the right of the `=` is the `T` wire
-// alone in its grey `𝟏` box — a panel with no bead, not an empty cell.  The `T` on the wire under the
-// bead is the fold's carrier: this is the fold of the initial algebra itself, `α : F(T)⟶T`.
-#let ia-refl-l = "Freyd.Alg.relCata_alpha.lhs"
-#let ia-refl-r = "Freyd.Alg.relCata_alpha.rhs"
-
-#disp[#pair(
-  leancd("Freyd.Alg.relCata_alpha"),
-  lean(ia-refl-l, ia-refl-r, op: [=]),
- [#leanf("Freyd.Alg.relCata_alpha") #h(6pt) #src[(2.11)]],
-)]<cata-reflection>
-
-// `relCata_alpha`, AOP/A6_3.lean:40.
-Taking a value apart with `α` and putting it straight back is doing nothing.
-
-=== Fusion: ⦇R:FB⦈ absorb S:R->Q (in Alg(F) ) and becomes ⦇Q⦈ 
-
-// `T` is already the initial algebra's carrier, so the two algebras of the law take their own letters,
-// `R` on `B` and `Q` on `C`; `S` is the homomorphism between them, not an algebra.
-When `S : B⟶C` is an F-homomorphism from `R : F(B)⟶B` to `Q : F(C)⟶C`, folding with `R` and
-then applying `S` is folding with `Q`.
-
-// `s: 92%`: the one row that does not fit at full size.  The side condition is the homomorphism
-// square of @initial-defn at `f := R`, `g := Q`, `h := S`.
-#let ia-fuse-l = "Freyd.Alg.relCata_fusion#h.lhs"
-#let ia-fuse-r = "Freyd.Alg.relCata_fusion#h.rhs"
-// The conclusion, generated like the side condition above it: the two folds differ by their algebra,
-// and the wire under each says where it lands — `B` on the left, `C` on the right.
-#let ia-fuse-cl = "Freyd.Alg.relCata_fusion.lhs"
-#let ia-fuse-cr = "Freyd.Alg.relCata_fusion.rhs"
-
-#disp[#pair(
-  leancd("Freyd.Alg.relCata_fusion"),
-  grid(
-    columns: 2, align: horizon, column-gutter: 16pt, row-gutter: 10pt,
-    src[the side condition],
-    lean(ia-fuse-l, ia-fuse-r, op: [=]),
-    src[the conclusion],
-    lean(ia-fuse-cl, ia-fuse-cr, op: [=]),
-  ),
-  [#leanf("Freyd.Alg.relCata_fusion") #h(6pt)
- #src[(2.12)]],
-  s: 92%,
-)]<cata-fusion>
-
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
 // that arrow exists, so the two have to be read together — under the picture above they would not be.
 #pagebreak(weak: true)
 == Type relator
+
+// `F`-algebra, `F`-homomorphism, the initial algebra, its reflection and fusion laws — @initial-defn,
+// @cata-reflection, @cata-fusion — moved to §2 (Functions and Categories, `02-categories.typ`).
 
 #disp[#definition[
 Let `F` be a binary relator with initial type `(α,T)`, so `T` is a type functor. `F(R,S)` is its
@@ -510,27 +392,6 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
  #h(4pt) #src[]],
    // lean:AOP.A5_5_TypeFunctor.typeMap_defn@0b53edb2
 
-  [functor],
-  [#leanf("Freyd.Alg.typeMap_id") and #leanf("Freyd.Alg.typeMap_comp")],
-  [Acting by the identity changes nothing, and two actions in a row are one action.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_id@602faba9 lean:AOP.A5_5_TypeFunctor.typeMap_comp@74556074
-
-  [type functor fusion],
-  [#leanf("Freyd.Alg.typeMap_fusion")],
-  [A relator action followed by a fold is a single fold — the intermediate structure is never built.
-   The side condition holds because `F` is a bifunctor —
-   `F(R,𝟙)F(𝟙,⦇Q⦈)=F(R,⦇Q⦈)=F(𝟙,⦇Q⦈)F(R,𝟙)`.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.typeMap_fusion@fde772c0 lean:AOP.A5_5_TypeFunctor.interchange@cc0eb4af
-
-  [naturality of `α`],
-  [#leanf("Freyd.Alg.alpha_natural")],
-  [Building and then mapping is the same as mapping the parts and then building, so `α` is natural
-   from `G(R)=F(R,T(R))` to `T`.
- #h(4pt) #src[]],
-   // lean:AOP.A5_5_TypeFunctor.alpha_natural@ee446834
-
   [type relator],
   [#leanf("Freyd.Alg.typeMap_recip")],
   [A datatype acts on relations, not only on maps — the map of the converse is the converse of the
@@ -539,57 +400,8 @@ action on a pair, and `F(X)` abbreviates `F(𝟙,X)`, the `F` of the reduce sect
    // lean:AOP.A5_5_TypeFunctor.typeMap_recip@be2f7fb9
 )]<tf-laws>
 
-// Its own page: the definition and its two squares are read together, and without the break the
-// fusion square is the only one of the three on the next page.
-#pagebreak(weak: true)
-=== Type functor
-
-#disp[#definition[
-Let `F` be a bifunctor taking both the parameter `A` and the recursive position `TA`, with an initial
-algebra `α`#sub[`A`]` : F(A,TA)⟶TA` for every object `A`. Then `T` is a functor, acting on a map
-`f : A⟶B` by
-
-  #align(center, block(inset: (y: 6pt))[#leanf("Freyd.Alg.typeMap") #h(4pt)
- #src[]])
-    // lean:AOP.A5_5_TypeFunctor.typeMap@dc092317
-]]<tfun-defn>
-
-// The square is the five arrows `alpha_natural_split` states; the algebra `F(f,𝟙)α_B` is the path
-// through `F(B,TB)`, not a sixth arrow, because the statement names no such composite.
-// TWO WIRES, not one indexed `F`: `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` packs the two arguments and `F : 𝒜×𝒜⟶𝒜` is then
-// unary, so every wire is a functor again and the region between them is `𝒜×𝒜`.  That is what makes
-// `F(f,T(f))` free — it is `f` on the object wire with `⟨𝟙,T⟩` and `F` running past — and the law the
-// naturality of `α`, the `f` bead sliding past it.  Not `P`, which is the powerset relator already.
-// This REPLACES the 2026-08-26 unindexed-`F` exception, which needed a second bead `F(f,𝟙)`.
-#let tfun-l = "Freyd.Alg.alphaT_natural.lhs"
-#let tfun-r = "Freyd.Alg.alphaT_natural.rhs"
-#disp[#pair(
-  leancd("Freyd.Alg.alpha_natural_split"),
-  row((lean(tfun-l, tfun-r, op: [=]),), s: 92%),
-  [#leanf("Freyd.Alg.alpha_natural") #h(6pt)
- #src[]],
-)]<tfun-sq>
-
-- `F : 𝒜×𝒜⟶𝒜` is a bifunctor and a wire is a unary functor, so the two arguments are packed first:
-  `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜` sends `A` to `(A,TA)`, and `F(⟨𝟙,T⟩(A))` is `F(A,TA)`.
-- The picture is three wires — `F`, `⟨𝟙,T⟩`, and the object — and the region between the first two
-  is `𝒜×𝒜`.
-- `α` is then an ordinary natural transformation `F∘⟨𝟙,T⟩⇒T`: its bead eats the `F` and `⟨𝟙,T⟩` wires,
-  and the `T` wire is born under it.
-- `F(f,T(f))` costs no notation. It is the bead `f` on the object wire with `⟨𝟙,T⟩` and `F` running
-  past: `⟨𝟙,T⟩` is what turns `f` into the pair `(f,T(f))`, and `F` is what applies it.
-- The law is the naturality of `α`, which is exactly the freedom to slide that `f` bead past it.
-
-// The defining square of `⦇F(f,𝟙)h⦈`, its right column drawn twice: straight down as the one fold, and
-// bowed out through `TB` as `T(f)` then `⦇h⦈`.  That the two paths agree IS the law.
-#disp[#pair(
-  leancd("Freyd.Alg.typeMap_fusion_cancel"),
-  row((
-    lean("Freyd.Alg.typeMap_fusion"),
-  )),
-  [#leanf("Freyd.Alg.typeMap_fusion") #h(6pt)
- #src[]],
-)]<tfun-fusion>
+// The type functor `T` itself (its definition, the naturality square of `α`, and its fusion law —
+// @tfun-defn, @tfun-sq, @tfun-fusion) moved to §2's "Type functor" section (`02-categories.typ`).
 
 // Its own page: otherwise the heading lands as the last line under the power relator's table, an orphan
 // a page away from the definition it names, and the defining square below straddles the break.
@@ -679,7 +491,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
 // and the next row opens with the `⟺` that carries it over.
-#disp[
+#disp(num: "(5.12)")[
 #zline(
   zsqc([`αX`], [`F(X)R`], eq: true),
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
@@ -761,11 +573,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leant("Freyd.Alg.RelSet.ListRel.suffix_cat")],
   [The dual, `tail≜cons° π₂`; as a reduce it needs snoc-lists.],
 
- [#leanf("Freyd.Alg.RelSet.ListRel.segment_eq") #src[]],
-  // lean:AOP.A5_6_ListCombinators.segment_eq@db9aa91a
-  [#leant("Freyd.Alg.RelSet.ListRel.segment_eq")],
-  [A contiguous stretch of `xs`: a suffix, then a prefix of that.],
-
  [#leanf("Freyd.Alg.RelSet.ListRel.partition_concat") #src[]],
   // lean:AOP.A5_6_ListCombinators.partition_concat@f9c15a2e
   [#leant("Freyd.Alg.RelSet.ListRel.partition_concat")],
@@ -784,28 +591,6 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leant("Freyd.Alg.RelSet.ListRel.tailsR")],
   [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
 
-  [`filter(p)≜` $frac(#[`subseq list(p)`], ∋)$ `est(R°)`],
-  [#leant("Freyd.Alg.RelSet.Filter.filter")],
-  [The longest subsequence of `xs` whose every element passes `p`.
-   // filter row: Ex 7.41
-   #h(4pt) #src[`est(R°)` is @est-defn]],
-
-  [`R≜length≤length°`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")],
-  [The preorder `filter` and `takewhile` maximise over: the longer list wins.
-   #h(4pt) #src[`≥≜≤°`]],
-
-  [`takewhile(p)≜` $frac(#[`prefix list(p)`], ∋)$ `est(R°)`],
-  [#leant("Freyd.Alg.RelSet.GCTakeWhile.takewhile")],
-  [The same with `prefix` for `subseq`: the longest prefix whose every element passes `p`.
-   // takewhile row: Ex 7.39
-   #h(4pt) #src[]],
-
-  [`mss≜` $frac(#[`segment sum`], ∋)$ `est(≥)`],
-  [#leant("Freyd.Alg.RelSet.MSS.mss")],
-  [Maximum segment sum. `segment=suffix prefix` splits it into $frac(#[`prefix sum`], ∋)$ `est(≥)`
-   // mss row: Ex 7.40
-   on each suffix. #h(4pt) #src[]],
 )]<comb-fns>
 
 === $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`

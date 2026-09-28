@@ -36,8 +36,15 @@ import AOP.A9_0_SegmentExample
 import AOP.A10_2_Detab
 import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
+-- §6.5's membership, which Theorem 6.4's claim draws as a bead.
+import AOP.A6_5
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- `star`, `sub`'s chains and `theta` (§6.7), whose beads the closure displays draw.
+import AOP.A6_7
+-- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
+import AOP.A6_6b_SortConcrete
+import AOP.A6_6e_Quicksort
 -- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
 import AOP.A6_1_Digits
 import AOP.A6_4_FastExp
@@ -74,7 +81,7 @@ attribute [diag_defines] relCata_cancel
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
-  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive Monotonic Freyd.Alg.MonoAlg Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
+  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.MonoAlg Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
   RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
@@ -251,6 +258,33 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.TT.Tree] def unexpandTreeType : Unexpander
   | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The binary-tree relator (§6.6 quicksort) is the note's lane `tree` as much as the tip tree's. -/
+@[app_unexpander RelSet.TB.treeRelator] def unexpandTBTreeRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.tree] def unexpandTBTreeMap : Unexpander
+  | `($_ $args*) => `($(mkIdent `tree) $args*)
+  | _ => `($(mkIdent `tree))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.dTree] def unexpandTBDTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.Tree] def unexpandTBTree : Unexpander
+  | `($_ $A) => `($(mkIdent `tree) $A)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The binary tree's BASE relator is the book's `F` (p.154 `F f = f×id×f`), as `RT.F` is. -/
+@[app_unexpander RelSet.TB.F] def unexpandTBF : Unexpander
+  | `($_ $_) => `($(mkIdent `F))
   | _ => throw ()
 
 open Lean PrettyPrinter in
@@ -622,6 +656,32 @@ open Lean PrettyPrinter in
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
   | _ => throw ()
 
+/-- The book's subtraction `R−S` (B&dM p.159), at `∪`'s level as the book brackets it.  A
+    notation, not an unexpander, so the label printer reads its precedence off the declaration. -/
+infixl:65 " − " => sub
+
+open Lean PrettyPrinter in
+/-- The rolling rule's hypothesis (B&dM Ex 6.35) in the book's word: `φ` is monotonic. -/
+@[app_unexpander MonotonicHom] def unexpandMonotonicHom : Unexpander
+  | `($_ $f) => `($(mkIdent `monotonic) $f)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The hypothesis of B&dM p.158 in the book's word (p.147): `R` is inductive. -/
+@[app_unexpander Inductive] def unexpandInductive : Unexpander
+  | `($_ $r) => `($(mkIdent `inductive) $r)
+  | _ => throw ()
+
+/-- The book's closure `R*` (6.7), postfix like `°`. -/
+postfix:max "*" => star
+
+open Lean PrettyPrinter in
+/-- `theta R P Q` is the book's `θ(P,Q)` (6.9): `R` is the section's fixed relation, which the
+    region already carries, so the label writes only the two arguments that change. -/
+@[app_unexpander theta] def unexpandTheta : Unexpander
+  | `($_ $_ $p $q) => `($(mkIdent `θ) $p $q)
+  | _ => throw ()
+
 open Lean PrettyPrinter in
 /-- The greatest fixed point, `(νX : α°F(X)R)`, spelled as its least twin above. -/
 @[app_unexpander nu] def unexpandNu : Unexpander
@@ -684,6 +744,60 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.Decimal] def unexpandDecimalType : Unexpander
   | _ => `($(mkIdent `Decimal))
+
+-- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
+-- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNat] def unexpandFEdNat : Unexpander
+  | _ => `($(mkIdent `Nat))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Bit] def unexpandFEBit : Unexpander
+  | _ => `($(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dNB] def unexpandFEdNB : Unexpander
+  | _ => `($(mkIdent `Nat) × $(mkIdent `Bit))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.dBin] def unexpandFEdBin : Unexpander
+  | _ => `($(mkIdent `Bin))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.zero] def unexpandFEZero : Unexpander
+  | _ => `($(mkIdent `zero))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.one] def unexpandFEOne : Unexpander
+  | _ => `($(mkIdent `one))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.shift] def unexpandFEShift : Unexpander
+  | _ => `($(mkIdent `shift))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.convert] def unexpandFEConvert : Unexpander
+  | _ => `($(mkIdent `convert))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.exp] def unexpandFEExp : Unexpander
+  | `($_ $a) => `($(mkIdent `exp) $a)
+  | _ => `($(mkIdent `exp))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.mod] def unexpandFEMod : Unexpander
+  | `($_ $b) => `($(mkIdent `mod) $b)
+  | _ => `($(mkIdent `mod))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Exp.op] def unexpandFEExpOp : Unexpander
+  | `($_ $a) => `($(mkIdent `op) $a)
+  | _ => `($(mkIdent `op))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.FastExp.Modulus.op] def unexpandFEModOp : Unexpander
+  | `($_ $b) => `($(mkIdent `op) $b)
+  | _ => `($(mkIdent `op))
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.dDec] def unexpandDDec : Unexpander
@@ -1522,11 +1636,60 @@ open Lean PrettyPrinter in
 @[app_unexpander Quotient] def unexpandQuotientName : Unexpander
   | `($_ $args*) => `($(mkIdent `Quotient) $args*)
   | _ => `($(mkIdent `Quotient))
+-- B&dM p.148 writes `member(F)`; the bead's `F` and object are the wires it joins, so the label is bare.
+open Lean PrettyPrinter in
+@[app_unexpander LaxMembership.mem] def unexpandMember : Unexpander
+  | `($_ $_ $_) => `($(mkIdent `member))
+  | _ => throw ()
 -- `Fin` KEEPS ITS ARGUMENT — `Fin n` is the object, where `Int` and `Char` are whole names; an
 -- unexpander and not a delaborator, so the index the printer already wrote stands.
 open Lean PrettyPrinter in
 @[app_unexpander Fin] def unexpandFinName : Unexpander
   | `($_ $args*) => `($(mkIdent `Fin) $args*)
   | _ => `($(mkIdent `Fin))
+
+-- §6.6's sorting relations under the book's names: the preorder `R` is fixed for the whole
+-- section, so `ordered` and `ok` are written without it (B&dM p.151).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.perm] def unexpandPerm : Unexpander
+  | `($_:ident) => `($(mkIdent `perm))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.ordered] def unexpandOrdered : Unexpander
+  | `($_ $_) => `($(mkIdent `ordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.ok] def unexpandOk : Unexpander
+  | `($_ $_) => `($(mkIdent `ok))
+  | _ => throw ()
+-- §6.6 quicksort (B&dM pp.154-155): the tree fold's arrows under the book's names.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.flatten] def unexpandFlatten : Unexpander
+  | `($_:ident) => `($(mkIdent `flatten))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.join] def unexpandSortJoin : Unexpander
+  | `($_:ident) => `($(mkIdent `join))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.fork] def unexpandSortFork : Unexpander
+  | `($_:ident) => `($(mkIdent `fork))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.null] def unexpandSortNull : Unexpander
+  | `($_:ident) => `($(mkIdent `null))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.inordered] def unexpandInordered : Unexpander
+  | `($_ $_) => `($(mkIdent `inordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.check] def unexpandCheck : Unexpander
+  | `($_ $_) => `($(mkIdent `check))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.check'] def unexpandCheck' : Unexpander
+  | `($_ $_) => `($(mkIdent `check'))
+  | _ => throw ()
 
 end Freyd.Alg

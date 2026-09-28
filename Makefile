@@ -55,6 +55,9 @@ $(error CH=$(CH): ./scripts/note-files --ch $(CH) named no chapter file — its 
 endif
 endif
 NOTEPDF := $(NOTESRC:.typ=.pdf)
+# $(NOTE)'s own title, off its root's `#show: conf.with(title: "...")` line — a chapter compiled
+# alone takes it as `--input title=`, so it never falls back to a sibling note's default.
+NOTETITLE := $(shell ./scripts/note-files --title)
 
 # A LAYOUT IS THE MEMORY: one chapter peaks at 7 GiB and the whole note at 24, on a machine with 30.
 # Chapters share the lock and the whole note takes it alone, so three agents' chapter gates run side
@@ -84,7 +87,7 @@ exe:
 # `.WAIT`: the stamp's redraw DELETES and rewrites every picture, and under `-j` `cd-check` compiled the
 # note while that was half done — an old-format panel beside a new `cdpanel.typ` — and `panels` redrew
 # a file the full redraw had just deleted.  Everything right of the stamp waits for it.
-p: $(STAMP) .WAIT panels cite cd-check
+p: $(STAMP) .WAIT panels cite
 	@test -z "$(strip $(CH))" || { echo "make p is the whole book, both notes and the book index:" \
 	  " one chapter is 'make ch N=$(CH)' for its pdf and 'make c CH=$(CH)' for its gates"; exit 1; }
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
@@ -93,6 +96,7 @@ p: $(STAMP) .WAIT panels cite cd-check
 	for t in $(TYP); do $(LOCK) typst compile $$t $${t%.typ}.pdf || exit 1; done
 	for n in $(NOTENAMES); do NOTE=$$n ./scripts/labelfit && NOTE=$$n ./scripts/dispfit || exit 1; done
 	./scripts/inkfit
+	for n in $(NOTENAMES); do NOTE=$$n ./scripts/cd-check || exit 1; done
 	./scripts/book ingest $(foreach n,$(NOTENAMES),$(basename $(shell NOTE=$(n) ./scripts/note-files --root)).pdf)
 
 # No two labels inside one panel may touch, and ink stays inside its frame, measured off the
@@ -113,7 +117,7 @@ labels: $(NOTEPDF)
 # name, so an mtime test left a chapter pdf showing the old pictures after an exporter change; the
 # script compares the CONTENT of every file the last compile read.
 $(NOTEPDF): FORCE | panels
-	$(LOCK) ./scripts/typst-compile $(NOTESRC) $@
+	$(LOCK) ./scripts/typst-compile $(NOTESRC) $@ --input title="$(NOTETITLE)"
 FORCE:
 
 # The notes' `lean:<decl>@<key>` markers against the statements they cite.  BEFORE the typst compile:
@@ -175,7 +179,7 @@ v:
 # thing that turns it into a file, so a renamed heading needs no edit here.
 ch:
 	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the number the chapter's header declares"; exit 1; }
-	$(LOCK) typst compile --root . $(NOTESRC) $(NOTEPDF)
+	$(LOCK) typst compile --root . --input title="$(NOTETITLE)" $(NOTESRC) $(NOTEPDF)
 
 w: p
 	@zathura $(NOTEROOT:.typ=.pdf) & \

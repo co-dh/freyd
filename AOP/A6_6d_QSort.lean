@@ -213,7 +213,7 @@ theorem perm_cappend_right : ∀ (L : ConsList Unit A) {M M' : ConsList Unit A},
   | ConsList.cons a L, M, M', h => Perm.cons a (perm_cappend_right L h)
 
 /-- `cappend` is a `Perm`-congruence (AoPA's postulated `bag-++` / `++⇒permute`, here constructive). -/
-theorem perm_cappend {L L' M M' : ConsList Unit A} (hL : Perm L L') (hM : Perm M M') :
+public theorem perm_cappend {L L' M M' : ConsList Unit A} (hL : Perm L L') (hM : Perm M M') :
     Perm (cappend L M) (cappend L' M') :=
   Perm.trans (perm_cappend_left hL) (perm_cappend_right L' hM)
 

@@ -30,7 +30,7 @@ public inductive Tree (A : Type) where
 /-- The object carrying `Tree A`. -/
 @[expose] public abbrev dTree (A : Type) : RelSet.{0} := ⟨Tree A⟩
 /-- The object carrying the label type `A`. -/
-abbrev dA (A : Type) : RelSet.{0} := ⟨A⟩
+@[expose] public abbrev dA (A : Type) : RelSet.{0} := ⟨A⟩
 
 /-! ## Two elementary `Rel(Set)` facts about maps -/
 
@@ -307,5 +307,79 @@ public theorem cataTreeFold_comm {C : RelSet.{0}} (φ : TFobj A C ⟶ C) :
 public theorem cataR_eq_relCata {C : RelSet.{0}} (φ : (F A).obj C ⟶ C) :
     cataR φ = relCata φ :=
   (relCata_UP (initial A) φ (cataR φ)).mp (cataTreeFold_comm φ)
+
+/-! ## The type relator `tree`
+
+  `tree(R)` relates two trees of the same shape whose labels are related by `R` at each node — the
+  lane a statement over `tree A` draws, where `dTree A` alone is an object nothing peels. -/
+
+/-- Elementwise lifting on binary trees: the same shape, each node's label related by `R`. -/
+@[expose] public def treeP {B : Type} (R : dA A ⟶ dA B) : Tree A → Tree B → Prop
+  | Tree.nil, Tree.nil => True
+  | Tree.nil, Tree.node _ _ _ => False
+  | Tree.node _ _ _, Tree.nil => False
+  | Tree.node l a r, Tree.node l' b r' => treeP R l l' ∧ R a b ∧ treeP R r r'
+
+/-- The relator's action `tree(R) : tree A⟶tree B`. -/
+@[expose] public def tree {B : Type} (R : dA A ⟶ dA B) : dTree A ⟶ dTree B := treeP R
+
+public theorem treeP_id : ∀ x y : Tree A, treeP (𝟙 (dA A)) x y ↔ x = y
+  | Tree.nil, Tree.nil => ⟨fun _ => rfl, fun _ => trivial⟩
+  | Tree.nil, Tree.node _ _ _ => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.node _ _ _, Tree.nil => ⟨False.elim, fun h => nomatch h⟩
+  | Tree.node l a r, Tree.node l' b r' =>
+      ⟨fun ⟨hl, (hab : a = b), hr⟩ => by rw [(treeP_id l l').mp hl, hab, (treeP_id r r').mp hr],
+       fun h => by cases h; exact ⟨(treeP_id l l).mpr rfl, rfl, (treeP_id r r).mpr rfl⟩⟩
+
+/-- `tree(𝟙) = 𝟙`. -/
+public theorem tree_id : tree (𝟙 (dA A)) = 𝟙 (dTree A) := hom_ext treeP_id
+
+public theorem treeP_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    ∀ (x : Tree A) (z : Tree C), treeP (R ≫ S) x z ↔ ∃ y, treeP R x y ∧ treeP S y z
+  | Tree.nil, Tree.nil => ⟨fun _ => ⟨Tree.nil, trivial, trivial⟩, fun _ => trivial⟩
+  | Tree.nil, Tree.node _ _ _ =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | nil => exact h2
+        | node _ _ _ => exact h1⟩
+  | Tree.node _ _ _, Tree.nil =>
+      ⟨False.elim, fun ⟨y, h1, h2⟩ => by cases y with
+        | nil => exact h1
+        | node _ _ _ => exact h2⟩
+  | Tree.node l a r, Tree.node l' c r' => by
+      constructor
+      · rintro ⟨hl, ⟨b, hab, hbc⟩, hr⟩
+        obtain ⟨m, hm, hm'⟩ := (treeP_comp R S l l').mp hl
+        obtain ⟨n, hn, hn'⟩ := (treeP_comp R S r r').mp hr
+        exact ⟨Tree.node m b n, ⟨hm, hab, hn⟩, hm', hbc, hn'⟩
+      · rintro ⟨y, h1, h2⟩
+        cases y with
+        | nil => exact h1.elim
+        | node m b n =>
+            exact ⟨(treeP_comp R S l l').mpr ⟨m, h1.1, h2.1⟩, ⟨b, h1.2.1, h2.2.1⟩,
+                   (treeP_comp R S r r').mpr ⟨n, h1.2.2, h2.2.2⟩⟩
+
+/-- `tree(RS) = tree(R) tree(S)`. -/
+public theorem tree_comp {B C : Type} (R : dA A ⟶ dA B) (S : dA B ⟶ dA C) :
+    tree (R ≫ S) = tree R ≫ tree S := hom_ext (treeP_comp R S)
+
+public theorem treeP_mono {B : Type} {R S : dA A ⟶ dA B} (h : ∀ a b, R a b → S a b) :
+    ∀ x y, treeP R x y → treeP S x y
+  | Tree.nil, Tree.nil, _ => trivial
+  | Tree.nil, Tree.node _ _ _, hxy => hxy.elim
+  | Tree.node _ _ _, Tree.nil, hxy => hxy.elim
+  | Tree.node l a r, Tree.node l' b r', hxy =>
+      ⟨treeP_mono h l l' hxy.1, h a b hxy.2.1, treeP_mono h r r' hxy.2.2⟩
+
+/-- `R ⊑ S ⟹ tree(R) ⊑ tree(S)` — `tree` is monotonic. -/
+public theorem tree_mono {B : Type} {R S : dA A ⟶ dA B} (h : R ⊑ S) : tree R ⊑ tree S :=
+  le_iff.mpr (treeP_mono (le_iff.mp h))
+
+/-- `tree` BUNDLED as a relator: one lane `tree` over the label wire. -/
+@[expose] public def treeRelator : Relator RelSet.{0} RelSet.{0} where
+  obj a := dTree a.carrier
+  map R := tree R
+  map_id _ := tree_id
+  map_comp R S := tree_comp R S
+  map_mono h := tree_mono h
 
 end Freyd.Alg.RelSet.TB

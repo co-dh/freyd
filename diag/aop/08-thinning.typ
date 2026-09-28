@@ -18,7 +18,7 @@
 
 // B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
 // and `est(Q) (𝟙%∋)` keeps one, `thin(Q)` keeps a representative collection.
-#disp[#definition[
+#disp(num: "(8.1)")[#definition[
 For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt) #src[(8.1)].
 
 `ys thin(Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[the same `°` as @est-defn: `∈X` runs `a⟶ys⟶xs`, member of `ys` first, and `Q°∈` runs `a⟶b⟶xs`, so `(a,b)∈Q°` reads `b Q a`; at `Q≜≤` every `a∈ys` keeps some `b≤a` in `xs`, the end `est(≤)` picks]
@@ -132,7 +132,7 @@ row((
 
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
 // the first cancels the singleton against the `∋`, the second is the chain.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(8.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.est_comp_singletonMap_le_thinRel") \
     #src[the singleton holding a `Q`-least member of a set is a thinning of that set
      // thin-elimination row: (8.2), p. 194
@@ -160,7 +160,7 @@ row((
 
 // B&dM (8.3), p. 194, mirrored.  The first of the two conditions cancels the singleton against `∋`;
 // the second is the chain, and the context row is where the side condition enters.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(8.3)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
     #src[given `R∩(S°S)⊑Q`, `Q` a preorder
      // thinning row: (8.3), p. 194
@@ -196,7 +196,7 @@ row((
 // property: the first half is fusion, and the hylomorphism theorem turns the second into one chain.
 // `thin(Q) : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Theorem 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning") \
     #src[thinning at every step of the reduce is a thinning of the whole candidate set —
      // thinning-of-reduce row: Theorem 8.1, p. 195
@@ -221,7 +221,7 @@ row((
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Corollary 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_est") \
     #src[the thinning fold refines the optimisation problem itself —
      // thinning-est row: Corollary 8.1
@@ -386,7 +386,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // subsequence of a `P`-ordered list is `P`-ordered, so the thinning may run before the sort.
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(8.6)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `P` a connected
@@ -409,7 +409,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
 // `sort(P) : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      // map_sort row: Lemma 8.1, p. 202
@@ -441,7 +441,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
 // LIST, and that swap — `E` killed by `est(R)`, `list` by `minlist(R)` — is what rows 3 and 4 draw.
-#disp[#calc-table(
+#disp(num: "Theorem 8.2")[#calc-table(
   Thm[#leanf("Freyd.Alg.thinningList") \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
      // thinningList row: Theorem 8.2, p. 203

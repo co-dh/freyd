@@ -569,6 +569,11 @@ public theorem outr_laxNatural {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : 
     LaxNatural G (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outr) :=
   fun _ => prodMap_outr_le _ _ _ _
 
+/-- The free theorem of `π₁`, the mirror of `outr_laxNatural`: `(FR × GR) ≫ outl ⊑ outl ≫ FR`. -/
+public theorem outl_laxNatural {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
+    LaxNatural F (Relator.prod F G) (fun x => (relProd (F.obj x) (G.obj x)).outl) :=
+  fun _ => prodMap_outl_le _ _ _ _
+
 /-- **B&dM p.133**: the right projection `outr` is lax natural from the duplication relator to the
     identity relator — `(R×R) ≫ outr ⊑ outr ≫ R`, the `F = G = 1` case of `outr_laxNatural`. -/
 public theorem outr_lax_natural :

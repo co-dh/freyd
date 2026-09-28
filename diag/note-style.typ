@@ -33,8 +33,31 @@
 /// ONE pattern built from the heading depth rather than a branch per depth: a three-slot pattern fed
 /// four numbers repeats its last symbol, which is how a `===` display came out `(15.5a)a)`.
 #let dispnum(h, n) = numbering("1." * (h.len() - 1) + "1a", ..h, n)
-/// A display's number as printed, `(13.4.3c)`: grey, a size under the text.
-#let numtext(id) = text(9pt, luma(130))[(#id)]
+/// THE DISPLAY'S NUMBER, at the given location — the figure's own print and every `@ref` to it call
+/// this ONE function, so neither can show a number the other disagrees with.  An explicit book
+/// number (`disp`'s own `<disp-num>` metadata, the first thing in its body) is spelled exactly as
+/// given, an equation's own parens included; with none, the letter is the count of AUTOMATIC
+/// displays since the last heading up to and including this one, so an explicitly numbered display
+/// consumes no letter and the next automatic one continues the same sequence.  `raw`: the bare form
+/// external tools match on, with no parens added to the automatic letter.
+#let dispid(loc, raw: false) = {
+  // `.at(0, default: none)`, not `.first()`: introspection converges over several passes, and a
+  // pass where this figure's own `<disp-num>` has not been placed yet must degrade to `none`
+  // (every caller already accepts it, `pic-meta`'s `key` included) rather than abort the compile.
+  let m = query(selector(<disp-num>).after(loc)).at(0, default: none)
+  if m == none { none } else if m.value != none { m.value } else {
+    let hs = query(selector(heading).before(loc))
+    let sec = selector(<disp-num>).before(m.location())
+    let sec = if hs.len() == 0 { sec } else { sec.after(hs.last().location()) }
+    // `.before` is INCLUSIVE of `m.location()` itself, so this count already counts `m` — no `+ 1`.
+    let n = query(sec).filter(x => x.value == none).len()
+    let l = dispnum(counter(heading).at(loc), n)
+    if raw { l } else { [(] + l + [)] }
+  }
+}
+/// A display's number as printed, `(13.4.3c)` or `Theorem 10.1`: grey, a size under the text — the
+/// parens, when there are any, are already in `id` (`dispid`'s job, not this styling).
+#let numtext(id) = text(9pt, luma(130))[#id]
 /// THE `Thm` HEADERS OF A DISPLAY are the `<thm-num>` markers between its `<disp-start>` and its
 /// `<disp-end>`.  Every marker is emitted unconditionally, so each query settles in one pass: a
 /// marker that depends on a state or query of its own costs a layout pass per link and never converged.
@@ -148,11 +171,7 @@
   show ref: it => {
     let el = it.element
     if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
-      context {
-        let h = counter(heading).at(el.location())
-        let n = counter(figure.where(kind: "disp")).at(el.location()).first()
-        link(el.location(), [(] + dispnum(h, n) + [)])
-      }
+      context link(el.location(), dispid(el.location()))
     } else { it }
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
@@ -181,26 +200,25 @@
     // off here.  Same reason as the line above — a label belongs to the figure, and only a show rule
     // holds the element it is attached to.
     context metadata((kind: "disp",
-      id: plain(dispnum(counter(heading).get(), it.counter.at(here()).first())),
+      id: plain(dispid(here(), raw: true)),
       label: if it.at("label", default: none) == none { "" } else { str(it.label) }))
     // THE NUMBER GOES IN THE DISPLAY'S FIRST `Thm` HEADER, at its right end (see `Thm`); a display
     // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
     // stood a page gutter away from the table it names.
     context {
-      let id = plain(dispnum(counter(heading).get(), it.counter.at(here()).first()))
-      [#metadata(id)<disp-start>]
+      [#metadata(none)<disp-start>]
       context {
         let s = query(selector(<disp-start>).before(here())).last()
         let e = query(selector(<disp-end>).after(here())).at(0, default: none)
         if e == none or disp-thms(s, e.location()).len() == 0 {
-          block(width: 100%, below: 2pt, align(right, numtext(id)))
+          block(width: 100%, below: 2pt, align(right, numtext(dispid(here()))))
         }
       }
     }
     // A string-diagram panel is addressed by its display and its place in it (see `hm-meta`), so the
     // count restarts here; the update draws nothing.
     counter("hm-panel").update(0)
-    pic-flow(dispnum(counter(heading).get(), it.counter.at(k).first()), it.body,
+    pic-flow(dispid(k, raw: true), it.body,
       width: PAGEW - 2 * MARGIN, disp: true, k: k)
     [#metadata(none)<disp-end>]
   }))
@@ -217,7 +235,17 @@
 /// label in another chapter rendered as its `names` entry, or as the label's own text, instead of
 /// stopping the compile.  Inside the whole book the root has already applied `conf` and the counter
 /// already stands at N-1, so there the chapter's own rules are skipped and nothing changes.
-#let note-chapter(N, title: "Relation Algebra", names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
+///
+/// `title`: NEVER a hardcoded default — a chapter belongs to whichever note split it, and a shared
+/// fallback here is how every note's chapter printed the SAME title.  A chapter file passes none, so
+/// this falls to `--input title=...` (`./scripts/note-files --title`, spliced in by the Makefile);
+/// missing both, it stops rather than guess.
+#let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() { counter(heading).update(N - 1); doc } else {
+  let title = if title != none { title } else { sys.inputs.at("title", default: none) }
+  if title == none {
+    panic("note-chapter: no title — pass title: to note-chapter.with(...), or compile with " +
+      "--input title=\"$(./scripts/note-files --title)\"")
+  }
   conf(title: title, {
     counter(heading).update(N - 1)
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
@@ -236,7 +264,12 @@
 /// edge; a literal number typed into prose is what this makes impossible.  `kind: "disp"`: ONE
 /// sequence per heading whatever the display is.
 // Its crop box and its page break are `conf`'s show rule; the width is the text width.
-#let disp(body) = figure(kind: "disp", supplement: none, body)
+// `num`: the book's own number for a display that states one, spelled exactly as the book prints
+// it — `"(10.3)"` for an equation, `"Theorem 10.1"` for a theorem, proposition or exercise; `none`
+// (the default) keeps the automatic section+letter, which SKIPS every display that carries one
+// rather than give it a letter of its own.  Recorded as `<disp-num>` metadata, the first thing in
+// the figure's own body, so `dispid` reads one value for both the figure's print and every `@ref`.
+#let disp(body, num: none) = figure(kind: "disp", supplement: none, [#metadata(num)<disp-num>#body])
 
 #let TYCOL = rgb("#5f7fa0")  // the circuit panels' type labels only: a muted blue, quieter than the black box names
 #let src(s) = text(9.2pt, luma(105))[#s]
@@ -296,7 +329,7 @@
       let s = query(selector(<disp-start>).before(here())).at(-1, default: none)
       let inside = s != none and query(selector(<disp-end>).after(s.location()).before(here())).len() == 0
       if not inside or disp-thms(s, here()).len() != 1 { strong(body) } else {
-        let n = numtext(s.value)
+        let n = numtext(dispid(s.location()))
         let w = measure(n).width
         grid(columns: (w, 1fr, w), column-gutter: 4pt, [], strong(body), align(right + top, n))
       }

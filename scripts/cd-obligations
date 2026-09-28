@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """cd-obligations — every COMMUTATIVE DIAGRAM the note draws, read off the note's own drawing.
 
-    ./scripts/cd-obligations              # one line per commutative canvas: <number>/<label>#<n>
+    ./scripts/cd-obligations              # one line per commutative canvas: <label>#<n>
     ./scripts/cd-obligations --all        # every canvas, commutative or not, with its counts
 
 THE OBLIGATIONS ARE THE NOTE'S CANVASES, not the rows of a manifest: a record can be deleted, a
@@ -36,7 +36,12 @@ def queries(*argsets):
 
 
 def canvases():
-    """Every canvas of the note, in document order: (display number, [labels], el counts)."""
+    """Every canvas of the note, in document order: (label, el counts).
+
+    The label is the typst label — the identity a record is keyed by.  The display NUMBER
+    (`m['key']`, from `#disp(num:)` or the automatic letter) is a DERIVED value: renumbering the
+    note must not break the key, so it is read here only if a caller wants it printed, never
+    folded into the obligation itself."""
     # THE BOOK IS ITS CHAPTERS' STREAMS END TO END, each queried in a process of its own: one typst
     # query of the whole note lays every page out at once and takes minutes, the chapters in parallel
     # the slowest one's seconds.  The chapter files are the root's includes, in the root's order.
@@ -44,17 +49,15 @@ def canvases():
     chs = [scan] if chapter_env() is not None else \
         [["--ch", str(n), *scan] for n in chapter_numbers()]
     marks = [m for ms in queries(*chs) for m in ms]
-    out, disp, lab = [], "(before the first display)", "(unlabelled)"
+    out, lab = [], "(before the first display)"
     for m in marks:
         if not isinstance(m, dict):
             continue
         if m.get("kind") == "cd" and m["el"] == "disp":
             lab = m["label"] or "(unlabelled)"       # the show rule runs ahead of the display's body
-        elif m.get("kind") == "pic" and m.get("disp"):
-            disp = f"{m['key']}/{lab}"
         elif m.get("kind") == "cd":
             if m["el"] == "canvas":
-                out.append((disp, {"ar": 0, "node": 0}))
+                out.append((lab, {"ar": 0, "node": 0}))
             elif out:
                 out[-1][1][m["el"]] += 1
     return out
@@ -68,17 +71,17 @@ def commutative(c):
 def main(argv):
     cs = canvases()
     if "--all" in argv:
-        for disp, c in cs:
-            print(f"{disp}\t{c['ar']} ar\t{c['node']} node\t"
+        for lab, c in cs:
+            print(f"{lab}\t{c['ar']} ar\t{c['node']} node\t"
                   f"{'commutative' if commutative(c) else 'other picture'}")
         return
-    # `<number>/<label>#<n>`: the canvas's place among the COMMUTATIVE canvases of its display, which
-    # is what a record can name — a count per display could not tell two squares of one display apart.
+    # `<label>#<n>`: the canvas's place among the COMMUTATIVE canvases of its display, which is what
+    # a record can name — a count per display could not tell two squares of one display apart.
     seen = {}
-    for disp, c in cs:
+    for lab, c in cs:
         if commutative(c):
-            seen[disp] = seen.get(disp, 0) + 1
-            print(f"{disp}#{seen[disp]}")
+            seen[lab] = seen.get(lab, 0) + 1
+            print(f"{lab}#{seen[lab]}")
 
 
 if __name__ == "__main__":

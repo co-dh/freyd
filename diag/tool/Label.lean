@@ -261,7 +261,8 @@ def juxt (a b : String) : String :=
   -- come out `est(R∩S° S)`.
   -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
   -- blocks) cannot continue a name either, so `cost≤cost°` and `plus≥` close up as the note sets them.
-  else if oneChar a || ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front
+  -- The closure's `*` (B&dM (6.7)) is a postfix like `°`: `R*R*`, not `R* R*`.
+  else if oneChar a || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
       || (0x2190 ≤ b.front.val && b.front.val ≤ 0x22FF) then a ++ b
   else a ++ " " ++ b
 
@@ -364,6 +365,8 @@ def binOps : Array (Name × String × String) := #[
   (``Freyd.Alg.symmDiv, "/ₛ", "/ₛ"),
   (``Freyd.Alg.DistributiveAllegory.union, "∪", "∪"),
   (``Freyd.Diag.Biprod.union, "∪", "∪"),
+  -- B&dM's subtraction (p.159), at `∪`'s level by the notation in diag/StrDiagNames.lean.
+  (``Freyd.Alg.sub, "−", "−"),
   (``Freyd.Alg.thenRel, "⨾", "⨾"),
   (``Freyd.Alg.kleisliComp, "⋄", "⋄"),
   (``Freyd.Alg.impl, "⇨", "⇨"),
@@ -422,17 +425,14 @@ def tightHeads : Array Name :=
 /-- The RELATOR arguments of an application, picked by their TYPE as `homArgs` picks the arrows: a
     relator is a term of the note's like an arrow is, so the note's own spelling of it is written
     HERE and handed back to the head's printer — `cp(V×𝟙,list⁺(V))`, where the formatter's spacing
-    round the printed `V × 𝟙` is the formatter's and not the note's. -/
+    round the printed `V × 𝟙` is the formatter's and not the note's.  Whether holing one is SAFE —
+    a neighbour's type, or a neighbour's OWN VALUE'S type at any depth (`cpMap (F.appl A) I.t`
+    buries `F.appl A` inside `I.t`'s value, under `I`'s own type, two levels below `I.t`'s type `𝒜`)
+    — is `respell`'s question to answer by trying the substitution, not a shape rule here. -/
 def relatorArgs (args : Array Expr) : MetaM (Array Expr) :=
   args.filterM fun a => do
     let ty ← Meta.inferType a
-    unless ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor do return false
-    -- AN ARGUMENT ITS NEIGHBOUR'S TYPE IS TAKEN AT cannot be handed back as a local: the
-    -- replacement takes every occurrence, so the neighbour (`I : InitialAlgebra F`) is left standing
-    -- at a relator the term no longer has, and the printer refuses the ill-typed application.  An
-    -- arrow is never a neighbour's type, which is why `homArgs` asks nothing of the kind.
-    args.allM fun b => do
-      return b == a || ((← Meta.inferType b).find? (· == a)).isNone
+    return ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor
 
 /-- The ARROW arguments of an application, picked by their TYPE and not by their position:
     `I.cata f hf` carries the algebra AND the proof it is one, and taking the last argument wrote
@@ -1126,6 +1126,22 @@ def coprodCarrier? (e : Expr) : MetaM (Option (Expr × Expr)) := do
         if ← Meta.isDefEqGuarded args[2]! e then return some (args[3]!, args[4]!)
   return none
 
+/-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
+    data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
+def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
+  let args := e.getAppArgs
+  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
+  let a := args[i]!
+  let ty ← Meta.inferType a
+  if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
+  if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
+    return false
+  -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
+  -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
+  -- own category, so it would never count as a point.
+  unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
+  return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
+
 /-- A RELATION OR A MAP APPLIED TO POINTS whose points the printer SWALLOWED: `Q Char a b` came out
     `Q` and `unstepFn p` `unstep`, because an unexpander written for the arrow (`| _ => Q`) matches
     the whole application, and Lean tries the longest one first.  The points are the trailing
@@ -1141,21 +1157,9 @@ def swallowedPoints? (e : Expr) : MetaM (Option (Expr × Array Expr)) := do
   unless ← Meta.isProp e do
     if (← homEnds? e).isSome || (← Meta.isType e) then return none
   let args := e.getAppArgs
-  let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
-  let point (i : Nat) : MetaM Bool := do
-    let a := args[i]!
-    let ty ← Meta.inferType a
-    if !((fi.paramInfo[i]?.map (·.isExplicit)).getD true) then return false
-    if (← Meta.isProp ty) || (← Meta.isType a) || (← homEnds? a).isSome then
-      return false
-    -- A POINT'S TYPE IS A SMALL SET, in `Type`; an object (`B : RelSet`) lives a universe up.  Not
-    -- `isObjType`: under the exporter's opened scopes a sum of carriers is an object of `Type`'s
-    -- own category, so it would never count as a point.
-    unless (← Meta.whnf (← Meta.inferType ty)) == .sort 1 do return false
-    return !(← Meta.isDefEqGuarded ty (mkConst ``Unit))
   let mut k := args.size
   while k > 0 do
-    unless ← point (k - 1) do break
+    unless ← isPoint e (k - 1) do break
     k := k - 1
   if k == args.size then return none
   let hd := mkAppN e.getAppFn (args.extract 0 k)
@@ -1339,6 +1343,29 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         if fs.size < ci.numFields then return ← labelTree prec v
       if (stxPeel (← delabP e)).isOfKind ``Lean.Parser.Term.tuple then
         return commaL "(" ")" (← fs.mapM (labelTree 0))
+  -- AN ARROW APPLIED TO ITS TWO POINTS is split off BEFORE the operator clauses: each of those
+  -- matches its head at any arity, so `(op°) m p` printed the `°` clause's `op°` and lost `m`, `p`.
+  -- A SIMPLE one is the book's `f(a)=x` — at most one output, so the statement says which — and any
+  -- other the note's `R(a,b)` (`empty(p,q)`), the spelling `swallowedPoints?` writes back.
+  if (← Meta.isProp e) && e.getAppNumArgs ≥ 2 then
+    let args := e.getAppArgs
+    let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
+    -- an arrow of the allegory, or the bare predicate one is defined by (`fR`) — and only where the
+    -- printer wrote an APPLICATION or swallowed the points: `0<π₁(p)` is a notation's own spelling.
+    let arrow := (← homEnds? hd).isSome
+    let stx := stxPeel (← delabP e)
+    let applied := stx.isOfKind ``Lean.Parser.Term.app || stx.structEq (stxPeel (← delabP hd))
+    let points := (← isPoint e (args.size - 2)) && (← isPoint e (args.size - 1))
+    if applied && points && (arrow || hd.isConst) then
+      let i := args[args.size - 2]!
+      if ← provedSimple hd then
+        let a ← labelTree 0 i
+        -- an input the printer writes as a tuple is already the application's own brackets
+        let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
+        return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
+          ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
+      if arrow then
+        return (← labelTree Prec.atom hd) ++ commaL "(" ")" #[← labelTree 0 i, ← labelTree 0 args.back!]
   match e.getAppFnArgs with
   | (``Cat.id, _) => return "𝟙"
   -- THE INJECTIONS OF A COPRODUCT ARE THE NOTE'S `l` AND `r`: `u₁`/`u₂` are the structure's own
@@ -1567,19 +1594,6 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     if let some r ← rewriteHead? e then return ← labelTree prec r
     -- POINTS THE PRINTER SWALLOWED are written back as the arrow APPLIED to them, the note's
     -- `f(a)` and `R(a,b)` (`empty(p,q)`, `mle(xs,ys)`): `unstep(p)`, `Q(inl(u),inl(u))`.
-    -- A SIMPLE RELATION at (input, output) is the book's `f(a,b)=x`: at most one output, so the
-    -- statement says which one it is.
-    if (← Meta.isProp e) && args.size ≥ 2 then
-      let hd := mkAppN e.getAppFn (args.extract 0 (args.size - 2))
-      -- an arrow of the allegory, or the bare predicate one is defined by (`fR`)
-      if (← homEnds? hd).isSome || hd.isConst then
-        if ← provedSimple hd then
-          let i := args[args.size - 2]!
-          let a ← labelTree 0 i
-          -- an input the printer writes as a tuple is already the application's own brackets
-          let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
-          return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
-            ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
     if let some (hd, pts) ← swallowedPoints? e then
       return (← labelTree Prec.atom hd) ++ commaL "(" ")" (← pts.mapM (labelTree 0))
     -- A FUNCTOR'S ACTION ON OBJECTS joins by the note's own rule (CLAUDE.md): a ONE-LETTER functor
@@ -1603,19 +1617,34 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- the operand of a head nobody here wrote is still the fraction.
     let stx ← delabP e
     let paren := (appParts stx).isSome || (stxHead stx).isNone
-    let rec respell (p : Nat) (as : List Expr) (holes : Array Lbl) (t : Expr) : MetaM Lbl := do
+    -- EVERY OPERAND IS REPLACED IN ONE PASS, outermost first: replacing them one at a time rewrote
+    -- `R` inside `QR−P−Q` before that operand's own turn, which then matched nothing and printed
+    -- raw — `θ(P ∪ Q,Q ≫ R − P − Q)`.  An operand nested in another is that operand's business.
+    let rec respell (p : Nat) (as : List Expr) (ops xs : Array Expr) (holes : Array Lbl) (t : Expr) :
+        MetaM Lbl := do
       match as with
-      | [] => return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
+      | [] =>
+        let t := t.replace fun s => (ops.findIdx? (· == s)).map (xs[·]!)
+        return Lbl.fill (← appShow t (((List.range holes.size).filter (holes[·]!.delimited)).map
           (Name.mkSimple ∘ holeName)).toArray) holes
       | a :: rest =>
         let nm := Name.mkSimple (holeName holes.size)
         let l ← labelTree p a
-        Meta.withLocalDeclD nm (← Meta.inferType a) fun x =>
-          -- ONE LOCAL PER DISTINCT OPERAND: the replacement below takes every occurrence at once,
-          -- so a second local of the same name has nothing left to replace and only shadows the
-          -- first, which the printer then marks inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
-          respell p (rest.filter (· != a)) (holes.push l)
-            (t.replace fun s => if s == a then some x else none)
+        Meta.withLocalDeclD nm (← Meta.inferType a) fun x => do
+          -- ONE LOCAL PER DISTINCT OPERAND: the replacement takes every occurrence at once, so a
+          -- second local of the same name only shadows the first, which the printer then marks
+          -- inaccessible — `E(Nat)✝×E(Nat)✝` for `A×A`.
+          let ops' := ops.push a
+          let xs' := xs.push x
+          -- AN OPERAND CAN SIT INSIDE A NEIGHBOUR'S TYPE AT ANY DEPTH, not just directly beside it
+          -- (`cpMap (F.appl A) I.t` buries `F.appl A` inside `I.t`'s value, under `I`'s own type) —
+          -- so the one test that catches every depth is trying the substitution and type-checking
+          -- the result, the rule `interpAt.split` already uses for a picture's bead
+          -- (StringDiagram.lean).  An operand that breaks it is skipped, not handed to the printer.
+          if ← Meta.isTypeCorrect (t.replace fun s => (ops'.findIdx? (· == s)).map (xs'[·]!)) then
+            respell p (rest.filter (· != a)) ops' xs' (holes.push l) t
+          else
+            respell p (rest.filter (· != a)) ops xs holes t
     -- A HEAD THE NOTE SETS TIGHT closes up the space the FORMATTER wrote around the operator's own
     -- atom (`A × B` is `A×B`), and that space alone: a space INSIDE an operand belongs to that
     -- operand's own application, and cutting it welds two factors into one name — `E Nat × E Nat`
@@ -1630,7 +1659,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- …at the level of the notation the printer wrote it with: `A×B` binds as Lean's `×` does.
       let some (p, _) ← stxLevel (stxPeel stx)
         | throwError "labelTree: the tight head `{c}` printed `{stx}`, which is no infix notation"
-      return wrap p ((← respell (← Prec.factor) ops.toList #[] e).mapText (·.replace " " ""))
+      return wrap p ((← respell (← Prec.factor) ops.toList #[] #[] #[] e).mapText (·.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
       -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.
@@ -1707,7 +1736,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
           if (← Meta.isProp a) || (← Meta.isType a) || (← homEnds? a).isSome then return false
           unless (← Meta.whnf (← Meta.inferType (← Meta.inferType a))) == .sort 1 do return false
           return (appParts (stxPeel (← delabP a))).isSome).mapM fun i => pure args[i]!)).toList
-      #[] e
+      #[] #[] #[] e
     match stxPeel stx with
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
     -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
