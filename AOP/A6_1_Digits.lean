@@ -13,9 +13,9 @@
   the recursive equation the converse of a catamorphism satisfies (mirrored to diagram order),
     `⦇⁅g, h⁆⦈° = (g° ≫ wrap) ∪ (h° ≫ (⦇⁅g, h⁆⦈° × id) ≫ snoc)`   (`⁅g, h⁆` = the book's `[g, h]`),
   which is exactly `val° = (wrap·embed°) ∪ (snoc·(val°×id)·op°)` of book p.138 at `φ = [embed, op]`.
-  The headline is proved BY THE BOOK'S OWN EQUATIONAL DERIVATION (p.138): a six-step calc —
-  {catamorphisms}, {converse}, {definition of F}, {α = [wrap,snoc]}, {coproduct fusion},
-  {coproduct (5.11)} — over the `junc`/`sumMap` calculus of `AOP.A5_3`, not by pointwise cases.
+  The headline is proved BY THE BOOK'S OWN EQUATIONAL DERIVATION (p.138): a four-step calc —
+  {catamorphisms, α = [wrap,snoc]}, {coproduct}, {converse of a composite}, {converse of a
+  product} — over the `junc`/`sumMap` calculus of `AOP.A5_3`, not by pointwise cases.
   Everything is constructive (the fold is defined FROM the algebra-relation, no choice).
 -/
 module
@@ -318,16 +318,6 @@ public theorem cata_fix {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     _ = (graph con)° ≫ (graph con ≫ cataR φ) := Cat.assoc _ _ _
     _ = (graph con)° ≫ (F(cataR φ) ≫ φ) := by rw [cata_square]
 
-/-- Converse of `F`'s action: `(F R)° = id + (R° × id)` — the "{definition of F}" step
-    as used on p.138 (the functor applied to the conversed fold). -/
-public theorem Fmap_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
-    F(R)° = sumMap (sumCop dDigitP ⟨c'.carrier × Digit⟩) (sumCop dDigitP ⟨C.carrier × Digit⟩)
-      (𝟙 dDigitP) (R° × 𝟙 dDigit) := by
-  rw [Fmap_eq_sumMap, sumMap_recip, recip_id, rprodMap_recip]
-  -- `rw [recip_id]` cannot key-match this last `(Cat.id dDigit)°`: its `Cat` instance sits
-  -- behind `Allegory.toCat`, so apply the same law by congruence instead.
-  exact congrArg (sumMap _ _ _) (congrArg (rprodMap _) recip_id)
-
 /-- The constructor map as a junc: `α = ⁅wrap, snoc⁆` — the book's presentation of `α`. -/
 public theorem con_eq_junc : graph con = ⁅wrap, snoc⁆ := by
   apply hom_ext; intro u dec
@@ -357,47 +347,36 @@ theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
     | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
 
-/-- p.138 step 1 {catamorphisms}: `⦇φ⦈ = α°F(⦇φ⦈)φ`. -/
+/-- p.138 step 1 {catamorphisms}, `α = [wrap,snoc]`: `⦇φ⦈ = [wrap,snoc]°F(⦇φ⦈)φ`, conversed. -/
 public theorem cata_converse_step1 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
-    (cataR ⁅g, h⁆)° = ((graph con)° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by
-  exact congrArg Allegory.recip (cata_fix ⁅g, h⁆)
+    (cataR ⁅g, h⁆)° = (⁅wrap, snoc⁆° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° :=
+  congrArg Allegory.recip ((cata_fix ⁅g, h⁆).trans (by rw [con_eq_junc]; rfl))
 
-/-- p.138 step 2 {converse}: `(RS)° = S°R°`, `R°° = R`. -/
+/-- p.138 step 2 {coproduct}: `[P,Q]°(𝟙+S)[g,h] = P°g ∪ Q°Sh`, at `F(R) = 𝟙+(R×𝟙)`. -/
 public theorem cata_converse_step2 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
-    ((graph con)° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))°
-      = ⁅g, h⁆° ≫ ((F(cataR ⁅g, h⁆))° ≫ graph con) := by
-  rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
+    (⁅wrap, snoc⁆° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))°
+      = (wrap° ≫ g)° ∪ (snoc° ≫ (timesDigit.map (cataR ⁅g, h⁆) ≫ h))° := by
+  show (⁅wrap, snoc⁆° ≫ (sumMap (sumCop dDigitP (timesDigit.obj dDec)) (sumCop dDigitP (timesDigit.obj C)) (𝟙 dDigitP) (timesDigit.map (cataR ⁅g, h⁆)) ≫ ⁅g, h⁆))° = _
+  rw [sumMap_junc, Cat.id_comp, junc_recip_junc (sumCop dDigitP (timesDigit.obj dDec)), recip_union]
+  exact DistributiveAllegory.union_comm _ _
 
-/-- p.138 step 3 {definition of F}: `F(⦇φ⦈)° = F(⦇φ⦈°)`, since `F(R)=𝟙+(R×𝟙)`. -/
+/-- p.138 step 3 {converse}: `(RS)° = S°R°`, `R°° = R`. -/
 public theorem cata_converse_step3 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
-    ⁅g, h⁆° ≫ ((F(cataR ⁅g, h⁆))° ≫ graph con)
-      = ⁅g, h⁆° ≫ (F((cataR ⁅g, h⁆)°) ≫ graph con) := by
-  rw [Fmap_recip, Fmap_eq_sumMap]
+    (wrap° ≫ g)° ∪ (snoc° ≫ (timesDigit.map (cataR ⁅g, h⁆) ≫ h))°
+      = g° ≫ wrap ∪ h° ≫ (timesDigit.map (cataR ⁅g, h⁆))° ≫ snoc := by
+  simp only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc]
 
-/-- p.138 step 4: `α = [wrap,snoc]`. -/
+/-- p.138 step 4 {converse}: `(R×S)° = R°×S°`, `𝟙° = 𝟙`. -/
 public theorem cata_converse_step4 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
-    ⁅g, h⁆° ≫ (F((cataR ⁅g, h⁆)°) ≫ graph con)
-      = ⁅g, h⁆° ≫ (F((cataR ⁅g, h⁆)°) ≫ ⁅wrap, snoc⁆) := by
-  rw [con_eq_junc]
-
-/-- p.138 step 5 {coproduct}: `(R+S)[P,Q] = [RP,SQ]`, at `F(R) = 𝟙+(−×Digit)(R)`. -/
-public theorem cata_converse_step5 {C : RelSet.{0}} (g : dDigitP ⟶ C)
-    (h : timesDigit.obj C ⟶ C) :
-    ⁅g, h⁆° ≫ (F((cataR ⁅g, h⁆)°) ≫ ⁅wrap, snoc⁆)
-      = ⁅g, h⁆° ≫ ⁅wrap, timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc⁆ := by
-  show ⁅g, h⁆° ≫ (sumMap (sumCop dDigitP (timesDigit.obj C)) (sumCop dDigitP (timesDigit.obj dDec)) (𝟙 dDigitP) (timesDigit.map (cataR ⁅g, h⁆)°) ≫ ⁅wrap, snoc⁆) = _
-  rw [sumMap_junc, Cat.id_comp]
-
-/-- p.138 step 6 {coproduct}: `[g,h]°[P,Q] = g°P ∪ h°Q`. -/
-public theorem cata_converse_step6 {C : RelSet.{0}} (g : dDigitP ⟶ C)
-    (h : timesDigit.obj C ⟶ C) :
-    ⁅g, h⁆° ≫ ⁅wrap, timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc⁆
-      = g° ≫ wrap ∪ h° ≫ timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc :=
-  junc_recip_junc (sumCop dDigitP (timesDigit.obj C))
+    g° ≫ wrap ∪ h° ≫ (timesDigit.map (cataR ⁅g, h⁆))° ≫ snoc
+      = g° ≫ wrap ∪ h° ≫ timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc := by
+  have e : (timesDigit.map (cataR ⁅g, h⁆))° = timesDigit.map (cataR ⁅g, h⁆)° :=
+    (rprodMap_recip (cataR ⁅g, h⁆) (𝟙 dDigit)).trans (congrArg (rprodMap _) recip_id)
+  rw [e]
 
 /-- **§6.1 (B&dM p.138)**: the converse of a catamorphism satisfies the recursive equation
     `val° = (wrap·embed°) ∪ (snoc·(val°×id)·op°)` (mirrored), for any algebra `⁅g, h⁆`.
@@ -409,8 +388,7 @@ public theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (cataR ⁅g, h⁆)° = g° ≫ wrap
       ∪ h° ≫ timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc :=
   (cata_converse_step1 g h).trans <| (cata_converse_step2 g h).trans <|
-    (cata_converse_step3 g h).trans <| (cata_converse_step4 g h).trans <|
-    (cata_converse_step5 g h).trans (cata_converse_step6 g h)
+    (cata_converse_step3 g h).trans (cata_converse_step4 g h)
 
 /-! ## The `val`uation catamorphism and its recursion (book p.138)
 
@@ -437,35 +415,28 @@ public theorem val_converse_eq :
 
 /-! The (6.1) chain at `g≜embed`, `h≜op`, `C≜dNat`, so each step draws with the book's own beads. -/
 
-/-- p.138 step 1 at `val`: `val = α°F(val)[embed,op]`, conversed. -/
+/-- p.138 step 1 at `val`: `val = [wrap,snoc]°F(val)[embed,op]`, conversed. -/
 public theorem val_converse_step1 :
-    val° = ((graph con)° ≫ (F(val) ≫ ⁅embed, op⁆))° :=
+    val° = (⁅wrap, snoc⁆° ≫ (F(val) ≫ ⁅embed, op⁆))° :=
   cata_converse_step1 embed op
 
-/-- p.138 step 2 at `val`: `(RS)° = S°R°`. -/
+/-- p.138 step 2 at `val`: `[P,Q]°(𝟙+S)[embed,op] = P°embed ∪ Q°S op`. -/
 public theorem val_converse_step2 :
-    ((graph con)° ≫ (F(val) ≫ ⁅embed, op⁆))° = ⁅embed, op⁆° ≫ ((F(val))° ≫ graph con) :=
+    (⁅wrap, snoc⁆° ≫ (F(val) ≫ ⁅embed, op⁆))°
+      = (wrap° ≫ embed)° ∪ (snoc° ≫ (timesDigit.map val ≫ op))° :=
   cata_converse_step2 embed op
 
-/-- p.138 step 3 at `val`: `F(val)° = F(val°)`. -/
+/-- p.138 step 3 at `val`: `(RS)° = S°R°`. -/
 public theorem val_converse_step3 :
-    ⁅embed, op⁆° ≫ ((F(val))° ≫ graph con) = ⁅embed, op⁆° ≫ (F(val°) ≫ graph con) :=
+    (wrap° ≫ embed)° ∪ (snoc° ≫ (timesDigit.map val ≫ op))°
+      = embed° ≫ wrap ∪ op° ≫ (timesDigit.map val)° ≫ snoc :=
   cata_converse_step3 embed op
 
-/-- p.138 step 4 at `val`: `α = [wrap,snoc]`. -/
+/-- p.138 step 4 at `val`: `(val×𝟙)° = val°×𝟙`. -/
 public theorem val_converse_step4 :
-    ⁅embed, op⁆° ≫ (F(val°) ≫ graph con) = ⁅embed, op⁆° ≫ (F(val°) ≫ ⁅wrap, snoc⁆) :=
+    embed° ≫ wrap ∪ op° ≫ (timesDigit.map val)° ≫ snoc
+      = embed° ≫ wrap ∪ op° ≫ timesDigit.map val° ≫ snoc :=
   cata_converse_step4 embed op
-
-/-- p.138 step 5 at `val`: `(𝟙+S)[P,Q] = [P,SQ]`. -/
-public theorem val_converse_step5 :
-    ⁅embed, op⁆° ≫ (F(val°) ≫ ⁅wrap, snoc⁆) = ⁅embed, op⁆° ≫ ⁅wrap, timesDigit.map val° ≫ snoc⁆ :=
-  cata_converse_step5 embed op
-
-/-- p.138 step 6 at `val`: `[embed,op]°[P,Q] = embed°P ∪ op°Q`. -/
-public theorem val_converse_step6 :
-    ⁅embed, op⁆° ≫ ⁅wrap, timesDigit.map val° ≫ snoc⁆ = embed° ≫ wrap ∪ op° ≫ timesDigit.map val° ≫ snoc :=
-  cata_converse_step6 embed op
 
 /-! ## B&dM p.139: the two converses in `val°`'s recursion
 
