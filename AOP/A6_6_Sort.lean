@@ -13,16 +13,13 @@
 -/
 module
 
-public import AOP.A6_ConsList
+public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Sort
 
-open Freyd Freyd.Alg.RelSet.CL
+open Freyd Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
 variable {A : Type}
-
-/-- `list A = ConsList Unit A` (`nil = wrap ()`). -/
-@[expose] public abbrev dList (A : Type) : RelSet.{0} := dCL Unit A
 
 /-- Coreflexives in `Rel(Set)` are symmetric: `R ⊑ id ⟹ R° = R`. -/
 public theorem coref_recip {A : RelSet.{0}} {R : A ⟶ A} (h : R ⊑ Cat.id A) : R° = R :=

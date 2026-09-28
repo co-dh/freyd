@@ -119,7 +119,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.ordered_cata") \
     #src[a list is sorted exactly when the fold that rebuilds it passes `ok` at every `cons`, i.e.
      each head is `R`-below every element after it]],
-     // lean:AOP.A6_6b_SortConcrete.ordered_cata@38fa5c86
+     // lean:AOP.A6_6b_SortConcrete.ordered_cata@38414536
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.ordered_cata.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.ordered_cata.rhs", src[fold uniqueness]),
@@ -131,15 +131,15 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
     #src[every output of unfolding the input by `select` is a sorted permutation of it]],
-     // lean:AOP.A6_6b_SortConcrete.selection_sort@b5a3d5ac
+     // lean:AOP.A6_6b_SortConcrete.selection_sort@617e20db
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.selection_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.selection_step1.rhs", src[`perm°=perm`, `ordered°=ordered`]),
      // lean:AOP.A6_6b_SortConcrete.selection_step1@b0c2bf70
     (EQ, "Freyd.Alg.RelSet.Sort.selection_step2.rhs", src[@sort-ordered]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step2@b39e4cf7
+     // lean:AOP.A6_6b_SortConcrete.selection_step2@efecdea7
     (RQ, "Freyd.Alg.RelSet.Sort.selection_step3.lhs", src[fusion (6.4) under @sort-select]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step3@e26a2b44
+     // lean:AOP.A6_6b_SortConcrete.selection_step3@2c3b5167
   ),
 )]<sort-selection>
 
@@ -147,7 +147,7 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.select_proviso") \
     #src[permuting the tail and then undoing `select` lands among the `ok` conses of a permutation]],
-     // lean:AOP.A6_6b_SortConcrete.select_proviso@53989486
+     // lean:AOP.A6_6b_SortConcrete.select_proviso@924131a0
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.select_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.select_step1.rhs", src[`cons perm=(𝟙×perm)cons perm`]),
@@ -155,7 +155,7 @@
     (EQ, "Freyd.Alg.RelSet.Sort.select_step2.rhs", src[Ex 6.22, `ok(𝟙×perm)=(𝟙×perm)ok`]),
      // lean:AOP.A6_6b_SortConcrete.select_step2@64cbd9c8
     (RQ, "Freyd.Alg.RelSet.Sort.select_step3.lhs", src[`select°⊑ok cons perm`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step3@ca4f7279
+     // lean:AOP.A6_6b_SortConcrete.select_step3@b7940931
   ),
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
@@ -167,7 +167,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.sort_rec") \
     #src[selection sort returns `[]` on `[]`, and otherwise selects `(a,y)`, sorts `y` and conses
      `a` back on]],
-     // lean:AOP.A6_6b_SortConcrete.sort_rec@5232b3c3
+     // lean:AOP.A6_6b_SortConcrete.sort_rec@19c1b660
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.sort_rec.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.sort_rec.rhs", src[unfolding the converse of a fold]),
@@ -179,17 +179,17 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.quicksort") \
     #src[every output of unfolding the input by `split` into a tree and flattening that tree is a
      sorted permutation of the input]],
-     // lean:AOP.A6_6e_Quicksort.quicksort@KEY
+     // lean:AOP.A6_6e_Quicksort.quicksort@2ff8cd0e
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.qsort_step1.rhs", []),
     (RQ, "Freyd.Alg.RelSet.Sort.qsort_step1.lhs", src[`flatten` is simple]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step1@KEY
+     // lean:AOP.A6_6e_Quicksort.qsort_step1@f0b72a2c
     (EQ, "Freyd.Alg.RelSet.Sort.qsort_step2.rhs", src[`flatten ordered=inordered flatten`]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step2@KEY
+     // lean:AOP.A6_6e_Quicksort.qsort_step2@ed8f63c8
     (EQ, "Freyd.Alg.RelSet.Sort.qsort_step3.rhs", src[converses]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step3@KEY
+     // lean:AOP.A6_6e_Quicksort.qsort_step3@35ed5007
     (RQ, "Freyd.Alg.RelSet.Sort.qsort_step4.lhs", src[fusion (6.4) under @sort-split]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step4@KEY
+     // lean:AOP.A6_6e_Quicksort.qsort_step4@a3fb7ac7
   ),
 )]<sort-quick>
 
@@ -198,19 +198,19 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_proviso") \
     #src[undoing `split` and then flattening and permuting both parts lands among the `check`ed
      forks whose flattening is permuted]],
-     // lean:AOP.A6_6e_Quicksort.split_proviso@KEY
+     // lean:AOP.A6_6e_Quicksort.split_proviso@124d2f0d
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.split_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.split_step1.rhs", src[`fork flatten=F(flatten)join`]),
-     // lean:AOP.A6_6e_Quicksort.split_step1@KEY
+     // lean:AOP.A6_6e_Quicksort.split_step1@06a641a0
     (EQ, "Freyd.Alg.RelSet.Sort.split_step2.rhs", src[`check F(flatten)=F(flatten)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step2@KEY
+     // lean:AOP.A6_6e_Quicksort.split_step2@023773b1
     (EQ, "Freyd.Alg.RelSet.Sort.split_step3.rhs", src[`join perm=F(perm)join perm`, `check' F(perm)=F(perm)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step3@KEY
+     // lean:AOP.A6_6e_Quicksort.split_step3@d865bdf1
     (EQ, "Freyd.Alg.RelSet.Sort.split_step4.rhs", src[functors]),
-     // lean:AOP.A6_6e_Quicksort.split_step4@KEY
+     // lean:AOP.A6_6e_Quicksort.split_step4@a36f98a6
     (RQ, "Freyd.Alg.RelSet.Sort.split_step5.lhs", src[`split°⊑check' join perm`]),
-     // lean:AOP.A6_6e_Quicksort.split_step5@KEY
+     // lean:AOP.A6_6e_Quicksort.split_step5@94aed1e9
   ),
 )]<sort-split>
 // TODO p.155 split-cata: `split = embed ⦇[base,step]⦈` with `base ⊆ wrap perm join°check'`,

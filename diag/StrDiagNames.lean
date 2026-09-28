@@ -256,6 +256,17 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The binary-tree relator (§6.6 quicksort) is the note's lane `tree` as much as the tip tree's. -/
+@[app_unexpander RelSet.TB.treeRelator] def unexpandTBTreeRelator : Unexpander
+  | `($_:ident) => `($(mkIdent `tree))
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TB.tree] def unexpandTBTreeMap : Unexpander
+  | `($_ $args*) => `($(mkIdent `tree) $args*)
+  | _ => `($(mkIdent `tree))
+
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.TB.dTree] def unexpandTBDTree : Unexpander
   | `($_ $A) => `($(mkIdent `tree) $A)
   | _ => throw ()

@@ -262,6 +262,87 @@ public theorem check'_perm :
     exact ⟨p, ⟨rfl, fun b hb => h2 ▸ hla b (perm_mem h1 hb),
       fun b hb => h2 ▸ har b (perm_mem h3 hb)⟩, h1, h2, h3⟩
 
+/-! ## Naturality: `flatten`, `join` and `fork` look only at the shape -/
+
+theorem flat_treeP {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (t : Tree A) (t' : Tree B), TB.treeP Q t t' → listP Q (flat t) (flat t')
+  | Tree.nil, Tree.nil, _ => trivial
+  | Tree.nil, Tree.node _ _ _, h => h.elim
+  | Tree.node _ _ _, Tree.nil, h => h.elim
+  | Tree.node l _ r, Tree.node l' _ r', ⟨hl, hab, hr⟩ =>
+      listP_cappend Q _ _ (flat_treeP Q l l' hl) ⟨hab, flat_treeP Q r r' hr⟩
+
+theorem flat_listP {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (t : Tree A) (w : ConsList Unit B), listP Q (flat t) w → ∃ t', TB.treeP Q t t' ∧ w = flat t'
+  | Tree.nil, ConsList.wrap u, _ => ⟨Tree.nil, trivial, by cases u; rfl⟩
+  | Tree.nil, ConsList.cons _ _, h => h.elim
+  | Tree.node l a r, w, h => by
+    obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split Q _ _ w h
+    cases v with
+    | wrap _ => exact hv.elim
+    | cons b v' =>
+      obtain ⟨l', hl, rfl⟩ := flat_listP Q l y hy
+      obtain ⟨r', hr, rfl⟩ := flat_listP Q r v' hv.2
+      exact ⟨Tree.node l' b r', ⟨hl, hv.1, hr⟩, rfl⟩
+
+/-- In `Rel(Set)` the product relator acts componentwise. -/
+theorem prod_map_rprodMap (F G : Relator RelSet.{0} RelSet.{0}) {a b : RelSet.{0}} (Q : a ⟶ b) :
+    (Relator.prod F G).map Q = rprodMap (F.map Q) (G.map Q) :=
+  prodMap_eq_rprodMap _ _
+
+/-- `flatten` is strictly natural, `tree(Q) flatten = flatten list(Q)`. -/
+public theorem flatten_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) TB.treeRelator)
+      (fun a => (flatten : dTree a.carrier ⟶ dList a.carrier)) := by
+  intro a b Q
+  dsimp only
+  rw [flatten_graph, flatten_graph]
+  apply hom_ext; intro t z
+  constructor
+  · rintro ⟨t', ht, rfl⟩
+    exact ⟨flat t, rfl, flat_treeP Q t t' ht⟩
+  · rintro ⟨w, rfl, hw⟩
+    obtain ⟨t', ht, rfl⟩ := flat_listP Q t z hw
+    exact ⟨t', ht, rfl⟩
+
+/-- `join` is strictly natural, `(list(Q)×Q×list(Q)) join = join list(Q)`. -/
+public theorem join_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0})
+          (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (fun a => (join : dLAL a.carrier ⟶ dList a.carrier)) := by
+  intro a b Q
+  rw [prod_map_rprodMap, prod_map_rprodMap]
+  apply hom_ext; intro p z
+  constructor
+  · rintro ⟨q, ⟨h1, h2, h3⟩, rfl⟩
+    exact ⟨_, rfl, listP_cappend Q _ _ h1 ⟨h2, h3⟩⟩
+  · rintro ⟨w, rfl, hw⟩
+    obtain ⟨y, v, hy, hv, rfl⟩ := listP_cappend_split Q _ _ z hw
+    cases v with
+    | wrap _ => exact hv.elim
+    | cons b v' => exact ⟨(y, b, v'), ⟨hy, hv.1, hv.2⟩, rfl⟩
+
+/-- `fork` is strictly natural, `(tree(Q)×Q×tree(Q)) fork = fork tree(Q)`. -/
+public theorem fork_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) TB.treeRelator)
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) TB.treeRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0})
+          (Relator.comp (Relator.idRelator RelSet.{0}) TB.treeRelator)))
+      (fun a => (fork : dTAT a.carrier ⟶ dTree a.carrier)) := by
+  intro a b Q
+  rw [prod_map_rprodMap, prod_map_rprodMap]
+  apply hom_ext; intro p z
+  constructor
+  · rintro ⟨q, h, rfl⟩
+    exact ⟨_, rfl, h⟩
+  · rintro ⟨w, rfl, hw⟩
+    cases z with
+    | nil => exact hw.elim
+    | node l' b r' => exact ⟨(l', b, r'), hw, rfl⟩
+
 /-! ## The fusion proviso (p.155) -/
 
 /-- **p.155, step 1**: `check fork flatten perm = check F(flatten) join perm` — catamorphisms,
