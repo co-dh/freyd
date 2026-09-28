@@ -660,8 +660,14 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `op))
 
 open Lean PrettyPrinter in
-@[app_unexpander RelSet.Digits.F] def unexpandDigitsF : Unexpander
-  | _ => `($(mkIdent `F))
+@[app_unexpander RelSet.Digits.timesDigit] def unexpandDigitsTimes : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "−×Digit")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "−×Digit")))
+
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Digits.plusDigitP] def unexpandDigitsPlus : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.dDigitP] def unexpandDDigitP : Unexpander

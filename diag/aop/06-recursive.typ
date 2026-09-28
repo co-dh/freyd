@@ -17,27 +17,27 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
     #src[a number is read back into digits either as one nonzero digit, or by splitting off its
      last digit and reading back the rest]],
-  // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@464083fc
-  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@83b05a50
+  // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@639ee2c7
+  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
   lean-chain(
     (none, "Freyd.Alg.RelSet.Digits.cata_converse_step1.lhs", src[`val=⦇[embed,op]⦈` — definition]),
     (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step1.rhs", src[`⦇φ⦈=α°F(⦇φ⦈)φ` — catamorphisms]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@f212a141
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@b78dddd4
     (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step2.rhs", src[`(RS)°=S°R°` — converse]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@54cfab45
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step3.rhs", src[`F(R)=𝟙+(R×𝟙)` — definition of `F`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@55fc19d6
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@65155218
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step3.rhs", src[`F(R)°=F(R°)` — `F=(−×Digit)(Digit⁺+−)`, definition of `F`]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@e9a6a733
     (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step4.rhs", src[`α=[wrap,snoc]`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@f1315001
-    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step5.rhs", src[`(R+S)[P,Q]=[RP,SQ]` — coproduct]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@a1d4f22f
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@2be20807
+    (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step5.rhs", src[`(𝟙+S)[P,Q]=[P,SQ]` at `S=(−×Digit)(R)` — coproduct]),
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step5@69f15a17
     (EQ, "Freyd.Alg.RelSet.Digits.cata_converse_step6.rhs", src[`[g,h]°[P,Q]=g°P∪h°Q` — coproduct]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@6b76c614
+    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step6@7d262eb2
   ),
 )]<val-converse>
 // TODO p.139 op°: `op(n,d)=m ≡ n=m div 10 ∧ d=m mod 10`; `op°` defined iff `m≥10`, `embed°` iff `m<10`
-//   — a Lean lemma, not a picture.  PROVED: lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@2686cd29
-//   lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@e2b3eb5f
+//   — a Lean lemma, not a picture.  PROVED: lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_iff@78c25f21
+//   lean:AOP.A6_1_Digits.RelSet.Digits.op_recip_defined@c44897b0
 //   lean:AOP.A6_1_Digits.RelSet.Digits.embed_recip_defined@65abb14c.  Not displayed: `--formula`
 //   drops a relation's points (`op° m p` prints `op°`), an exporter gap to close before a #leanf row.
 // TODO p.139 digits: the join is a conditional; `val°` the unique solution, total; `digits=val°`.

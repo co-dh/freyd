@@ -77,7 +77,7 @@ public inductive Decimal where
   obj C := ⟨C.carrier × Digit⟩
   map R := R × 𝟙 dDigit
   map_id C := rprodMap_id C dDigit
-  map_comp R S := by rw [rprodMap_comp, Cat.id_comp]
+  map_comp R S := by rw [rprodMap_comp]; exact congrArg (rprodMap (R ≫ S)) (Cat.id_comp (𝟙 dDigit)).symm
   map_mono h := rprodMap_mono h (le_iff.mpr fun _ _ e => e)
 
 /-- The relator `Digit⁺+−`: `C ↦ Digit⁺+C`, `R ↦ 𝟙+R`. -/
@@ -90,7 +90,7 @@ public inductive Decimal where
 
 /-- `F = (−×Digit)(Digit⁺+−)` in diagram order, so `F(R)` is `𝟙+(R×𝟙)`.  A notation, not a
     constant, so every statement carries the `Relator.comp` the exporter splits into two lanes. -/
-local notation:max "F(" R ")" => (Relator.comp timesDigit plusDigitP).map R
+local notation:max "F(" R ")" => Freyd.Functor.map (Relator.toFunctor (Relator.comp timesDigit plusDigitP)) R
 
 /-- Pointwise action of `F` on a relation: identity on `Digit⁺`, `R × id` on `A × Digit`. -/
 @[expose] public def Fmap {C c' : RelSet.{0}} (R : C ⟶ c') : Fobj C ⟶ Fobj c' :=
@@ -136,7 +136,7 @@ public theorem Fmap_eq {C c' : RelSet.{0}} (R : C ⟶ c') : F(R) = Fmap R := by
 /-! ## `Decimal` is the initial algebra of `F` -/
 
 /-- The constructor map `⁅wrap, snoc⁆ : F Decimal → Decimal`. -/
-public def con : (F.obj dDec).carrier → Decimal
+public def con : ((Relator.comp timesDigit plusDigitP).obj dDec).carrier → Decimal
   | Sum.inl d => Decimal.wrap d
   | Sum.inr p => Decimal.snoc p.1 p.2
 
@@ -361,7 +361,7 @@ theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
 public theorem cata_converse_step1 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
     (cataR ⁅g, h⁆)° = ((graph con)° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by
-  rw [← cata_fix]
+  exact congrArg Allegory.recip (cata_fix ⁅g, h⁆)
 
 /-- p.138 step 2 {converse}: `(RS)° = S°R°`, `R°° = R`. -/
 public theorem cata_converse_step2 {C : RelSet.{0}} (g : dDigitP ⟶ C)
@@ -389,7 +389,8 @@ public theorem cata_converse_step5 {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (h : timesDigit.obj C ⟶ C) :
     ⁅g, h⁆° ≫ (F((cataR ⁅g, h⁆)°) ≫ ⁅wrap, snoc⁆)
       = ⁅g, h⁆° ≫ ⁅wrap, timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc⁆ := by
-  rw [Fmap_eq_sumMap, sumMap_junc, Cat.id_comp]; try rfl
+  show ⁅g, h⁆° ≫ (sumMap (sumCop dDigitP (timesDigit.obj C)) (sumCop dDigitP (timesDigit.obj dDec)) (𝟙 dDigitP) (timesDigit.map (cataR ⁅g, h⁆)°) ≫ ⁅wrap, snoc⁆) = _
+  rw [sumMap_junc, Cat.id_comp]
 
 /-- p.138 step 6 {coproduct}: `[g,h]°[P,Q] = g°P ∪ h°Q`. -/
 public theorem cata_converse_step6 {C : RelSet.{0}} (g : dDigitP ⟶ C)
