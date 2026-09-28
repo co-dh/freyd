@@ -327,7 +327,7 @@ theorem greedy_refine (P : GreedyDP L E S W) :
     rwa [Allegory.recip_comp] at h0
   exact greedy_dp (F := CL.F L E) (T := P.TRel) (Q := P.Qrel°) (h := P.hAlg) (R := P.Rp°)
     (CL.initial L E) (graph_map P.hFn)
-    ((Freyd.Alg.monoAlg_recip_iff (graph_map P.hFn)).mp P.hmono) htrans' P.hQ
+    ((Freyd.Alg.monoAlg_recip_iff (graph_map P.hFn) (CL.F_preservesRecip L E)).mp P.hmono) htrans' P.hQ
 
 /-! ## The derived program and the executable-side bridge -/
 

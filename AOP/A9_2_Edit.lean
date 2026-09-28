@@ -491,7 +491,7 @@ public theorem edit_mono :
 
 /-- Theorem 9.2 asks for monotonicity at the mirrored `R°`, which `cons` also has. -/
 public theorem edit_mono_recip : Freyd.Alg.MonoAlg (F := F Unit (Op Char)) (graph con) (R Char)° :=
-  (Freyd.Alg.monoAlg_recip_iff (graph_map con)).mp edit_mono
+  (Freyd.Alg.monoAlg_recip_iff (graph_map con) (F_preservesRecip Unit (Op Char))).mp edit_mono
 
 /-! ## `edit-laws` — the `V` condition, B&dM p.226
 

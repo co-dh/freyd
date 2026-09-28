@@ -526,7 +526,7 @@ theorem thin_condition_of_optimum {h : F.obj A ⟶ A}
     rw [← F.map_comp]
   have hsplit : F.map (H ≫ R°) ≫ h = F.map H ≫ (F.map R° ≫ h) := by
     rw [F.map_comp, Cat.assoc]
-  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (monoAlg_recip_iff hh).mp hmono
+  have hmonoR' : F.map R° ≫ h ⊑ h ≫ R° := (monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono
   rw [hrecipmap]
   have ereassoc : F.map (M ≫ R° ≫ M°) ≫ (F.map H ≫ h) = (F.map (M ≫ R° ≫ M°) ≫ F.map H) ≫ h := by
     rw [Cat.assoc]

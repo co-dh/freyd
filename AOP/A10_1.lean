@@ -155,7 +155,7 @@ public theorem greedy_dp_prefixed {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     have h0 := recip_mono htrans
     rwa [Allegory.recip_comp] at h0
   exact le_Λ_comp_est_iff.mpr ⟨greedy_dp_lower hHfix,
-    greedy_dp_upper hh ((monoAlg_recip_iff hh).mp hmono) htrans' hHfix hQ⟩
+    greedy_dp_upper hh ((monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono) htrans' hHfix hQ⟩
 
 /-! ### The optimisation chain (note §16.1b)
 
