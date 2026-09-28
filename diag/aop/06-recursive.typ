@@ -23,14 +23,11 @@
     (none, "Freyd.Alg.RelSet.Digits.val_converse_step1.lhs", src[the converse of `val`, which reads digits as a number]),
     (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step1.rhs", src[`val` undoes `wrap` or `snoc`, reads the front with `val` and combines by `embed` or `op`, so its converse runs that backwards]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@53737b95
-    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step2.rhs.inr", src[undoing `wrap` or `snoc` first gives two cases: a decimal and its last digit read by `val` then `op`, or one digit read by `embed`]),
-    ([∪], "Freyd.Alg.RelSet.Digits.val_converse_step2.rhs.inl", src[]),
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step2.rhs"), src[undoing `wrap` or `snoc` first gives two cases: a decimal and its last digit read by `val` then `op`, or one digit read by `embed`]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@5227a8b5
-    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step3.rhs.inr", src[the converse of each case is its steps undone in reverse: undo `op`, undo reading the front, then `snoc`; or undo `embed`, then `wrap`]),
-    ([∪], "Freyd.Alg.RelSet.Digits.val_converse_step3.rhs.inl", src[]),
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step3.rhs"), src[the converse of each case is its steps undone in reverse: undo `op`, undo reading the front, then `snoc`; or undo `embed`, then `wrap`]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@b5e43d1f
-    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step4.rhs.inr", src[undoing the read of the front while keeping the last digit is `val°` on the front alone]),
-    ([∪], "Freyd.Alg.RelSet.Digits.val_converse_step4.rhs.inl", src[]),
+    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step4.rhs"), src[undoing the read of the front while keeping the last digit is `val°` on the front alone]),
     // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@e643973b
   ),
 )]<val-converse>

@@ -1980,11 +1980,10 @@ zip(that)                                         each row: its square, and the 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
 // coreflexive on the empty schedule, where `nil` dies on the `𝟏` wire and is born again.
-#let van-h-l = "Freyd.Alg.RelSet.Van.Hrel.inl"
-#let van-h-r = "Freyd.Alg.RelSet.Van.Hrel.inr"
-
 #disp[#capbox(
-  lean(van-h-l, van-h-r, op: [∪]),
+  // `union` gives `.inr` then `.inl`; this row draws the formula's own left-to-right order, `.inl`
+  // (`head prefix° head°`) then `.inr` (`nil° nil`), so the pair is reversed here.
+  lean(..union("Freyd.Alg.RelSet.Van.Hrel").rev(), op: [∪]),
  [#leanf("Freyd.Alg.RelSet.Van.Hrel") \
    #src[one schedule's first segment is a prefix of the other's, or both schedules are empty]],
 )
