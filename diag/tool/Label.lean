@@ -261,7 +261,8 @@ def juxt (a b : String) : String :=
   -- come out `est(R∩S° S)`.
   -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
   -- blocks) cannot continue a name either, so `cost≤cost°` and `plus≥` close up as the note sets them.
-  else if oneChar a || ")]⟩⦈}°".contains a.back || "[⟨⦇{".contains b.front
+  -- The closure's `*` (B&dM (6.7)) is a postfix like `°`: `R*R*`, not `R* R*`.
+  else if oneChar a || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
       || (0x2190 ≤ b.front.val && b.front.val ≤ 0x22FF) then a ++ b
   else a ++ " " ++ b
 
@@ -364,6 +365,8 @@ def binOps : Array (Name × String × String) := #[
   (``Freyd.Alg.symmDiv, "/ₛ", "/ₛ"),
   (``Freyd.Alg.DistributiveAllegory.union, "∪", "∪"),
   (``Freyd.Diag.Biprod.union, "∪", "∪"),
+  -- B&dM's subtraction (p.159), at `∪`'s level by the notation in diag/StrDiagNames.lean.
+  (``Freyd.Alg.sub, "−", "−"),
   (``Freyd.Alg.thenRel, "⨾", "⨾"),
   (``Freyd.Alg.kleisliComp, "⋄", "⋄"),
   (``Freyd.Alg.impl, "⇨", "⇨"),

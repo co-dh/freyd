@@ -88,19 +88,191 @@
 
 == Closure
 
-// TODO (6.7) (6.8): `R* = (μX : 𝟙 ∪ RX) = (μX : 𝟙 ∪ XR)`; UP `R⊑X ≡ R*⊑X` for preorders `X` — Lean
-//   AOP.A6_7.star_eq_mu', star_UP.
-// TODO p.158 preorder: `S=(μX : 𝟙∪RX)` is the least preorder containing `R`: `𝟙⊑S` (2), `R⊑S` (3),
-//   `SS⊑S ≡ S⊑S\S ⇐ 𝟙∪R(S\S)⊑S\S ≡ S(𝟙∪R(S\S))⊑S ≡ S∪SR(S\S)⊑S ⇐ S∪RS⊑S ≡ true` (6), least (2) — Lean
-//   id_le_star', le_star', star'_trans, star'_le_of_preorder.
+// B&dM (6.7) (6.8), p.157.  Mirrored: the book's `(μX : 𝟙 ∪ X·R)` is `(μX : 𝟙 ∪ RX)` here, and the
+// Lean `star` is defined by it; (6.8) is the other side.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_eq_mu'") \
+    #src[closing `R` by composing it on the left and closing it by composing on the right give the
+     same relation `R*`]],
+     // lean:AOP.A6_7.star_eq_mu'@42cc4c0c lean:AOP.A6_7.star@a8a6944f
+  lean-chain(
+    (none, "Freyd.Alg.star_eq_mu'.lhs", []),
+    (EQ, "Freyd.Alg.star_eq_mu'.rhs", src[(6.8), Ex 6.31]),
+  ),
+)]<closure-star>
+
+// B&dM §6.7, p.157: the universal property, a statement with no chain of its own — it is the
+// next four displays put together.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_UP") \
+    #src[for a preorder `X`, `X` contains `R` exactly when it contains `R*`]],
+     // lean:AOP.A6_7.star_UP@96ea823a
+)]<closure-up>
+
+// B&dM 6.7a, p.158: `S=(μX : 𝟙∪RX)` is reflexive.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.id_le_star") \
+    #src[`R*` is reflexive]],
+     // lean:AOP.A6_7.id_le_star@90d24167
+  lean-chain(
+    (none, "Freyd.Alg.id_le_star_step1.lhs", []),
+    (SQ, "Freyd.Alg.id_le_star_step1.rhs", src[union]),
+     // lean:AOP.A6_7.id_le_star_step1@c4b88c90
+    (EQ, "Freyd.Alg.star_unfold.rhs", src[fixed point, Thm 6.1]),
+     // lean:AOP.A6_7.star_unfold@97a800c3
+  ),
+)]<closure-refl>
+
+// B&dM 6.7b, p.158: `S` contains `R`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.le_star") \
+    #src[`R*` contains `R`]],
+     // lean:AOP.A6_7.le_star@3ecb72e1
+  lean-chain(
+    (none, "Freyd.Alg.le_star_step1.lhs", []),
+    (EQ, "Freyd.Alg.le_star_step1.rhs", src[identity]),
+     // lean:AOP.A6_7.le_star_step1@ded98a89
+    (SQ, "Freyd.Alg.le_star_step2.rhs", src[`𝟙⊑R*` — @closure-refl]),
+     // lean:AOP.A6_7.le_star_step2@b6b96fe7
+    (SQ, "Freyd.Alg.comp_star_le.rhs", src[fixed point]),
+     // lean:AOP.A6_7.comp_star_le@b5af2336
+  ),
+)]<closure-contains>
+
+// B&dM 6.7c, p.158.  The book's `SS⊑S ≡ S⊑S\S ⇐ 𝟙∪R(S\S)⊑S\S ≡ S(𝟙∪R(S\S))⊑S`: the first two
+// equivalences are division and least fixed point, and the chain is the inequality they reduce to,
+// mirrored (the book's `S\S` is `S/S` here).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_trans") \
+    #src[`R*` is transitive, because `R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`]],
+     // lean:AOP.A6_7.star_trans@2a716981
+  lean-chain(
+    (none, "Freyd.Alg.star_trans_step1.lhs", []),
+    (EQ, "Freyd.Alg.star_trans_step1.rhs", src[composition distributes over `∪`]),
+     // lean:AOP.A6_7.star_trans_step1@c574fb0e
+    (SQ, "Freyd.Alg.star_trans_step2.rhs", src[`(S/S)S⊑S`]),
+     // lean:AOP.A6_7.star_trans_step2@ac21f3be
+    (SQ, "Freyd.Alg.star_trans_step3.rhs", src[`RR*⊑R*` — @closure-contains]),
+     // lean:AOP.A6_7.star_trans_step3@525c9edd
+  ),
+)]<closure-trans>
+
+// B&dM 6.7d, p.158: `S` is the least preorder containing `R`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_le_of_preorder") \
+    #src[a reflexive transitive `X` containing `R` is a prefixed point of `X ↦ 𝟙∪RX`, so it
+     contains `R*`]],
+     // lean:AOP.A6_7.star_le_of_preorder@a62fa34b
+  lean-chain(
+    (none, "Freyd.Alg.star_le_of_preorder_step1.lhs", []),
+    (SQ, "Freyd.Alg.star_le_of_preorder_step1.rhs", src[`𝟙⊑X`, `R⊑X`]),
+     // lean:AOP.A6_7.star_le_of_preorder_step1@00030274
+    (SQ, "Freyd.Alg.star_le_of_preorder_step2.rhs", src[`XX⊑X`]),
+     // lean:AOP.A6_7.star_le_of_preorder_step2@28ad3644
+  ),
+)]<closure-least>
+
 // TODO p.158 suffix: `X=𝟙∪RX` unique iff `R` inductive; `suffix = 𝟙 ∪ tail suffix`;
 //   `Λ(suffix) = ⟨τ, Λ(tail suffix)⟩cup`; the `tails` program — Lean missing.
-// TODO p.159 subtraction: `R−𝟘=R`, `R∪S=R∪(S−R)`, `R−(S∪T)=R−S−T`, `(R∪S)−T=(R−T)∪(S−T)` — ch 4 laws
-//   (A4_5.sub_zero, union_sub_absorb, sub_union, union_sub_distrib): cite.
-// TODO p.159 rolling: `(μX : φ(ψ(X))) = φ(μX : ψ(φ(X)))` (2 steps) — Lean AOP.A6_2.mu_rolling.
-// TODO p.160 R*S: `SR* = (μX : S ∪ XR)` (2 steps) — Lean AOP.A6_7.star_comp_eq_mu.
-// TODO (6.9) θ: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`; `θ(𝟘,S)=SR*`; `θ(P,𝟘)=P` (2);
-//   `θ(P,Q)=θ(P∪Q, QR−P−Q)` (definition; subtraction; rolling; subtraction; definition) — Lean
-//   theta_zero_left, theta_zero_right, theta_step.
+
+// B&dM 6.7e, p.159: the subtraction laws, chapter 4's (`AOP.A4_5`), each a statement row.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.sub_zero") \ #src[taking nothing away leaves `R`]],
+     // lean:AOP.A4_5.sub_zero@2c6ece15
+  Thm(cols: 1)[#leanf("Freyd.Alg.union_sub_absorb") \
+    #src[beside `R`, only the part of `S` outside `R` adds anything]],
+     // lean:AOP.A4_5.union_sub_absorb@00bbf8e8
+  Thm(cols: 1)[#leanf("Freyd.Alg.sub_union") \
+    #src[taking away `S` and then `T` takes away `S∪T`]],
+     // lean:AOP.A4_5.sub_union@b387b972
+  Thm(cols: 1)[#leanf("Freyd.Alg.union_sub_distrib") \
+    #src[taking `T` away from a union takes it away from each part]],
+     // lean:AOP.A4_5.union_sub_distrib@54092403
+)]<closure-sub>
+
+// B&dM 6.7f, p.159 (Ex 6.35): the rolling rule.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.mu_rolling") \
+    #src[the least fixed point of `φ` after `ψ` is `φ` applied to the least fixed point of `ψ` after
+     `φ`]],
+     // lean:AOP.A6_2.mu_rolling@c705ef5a
+  lean-chain(
+    (none, "Freyd.Alg.mu_rolling.lhs", []),
+    (EQ, "Freyd.Alg.mu_rolling.rhs", src[Ex 6.35]),
+  ),
+)]<closure-rolling>
+
+// B&dM 6.7g, p.160 and Ex 6.32: `SR*` and `R*S` as least fixed points, mirrored.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.comp_star_eq_mu") \
+    #src[`S` followed by any number of `R` steps is the least `X` containing `S` and closed under a
+     further `R` step]],
+     // lean:AOP.A6_7.comp_star_eq_mu@2bbfa45b
+  lean-chain(
+    (none, "Freyd.Alg.comp_star_eq_mu.lhs", []),
+    (EQ, "Freyd.Alg.comp_star_eq_mu.rhs", src[p.160]),
+  ),
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_comp_eq_mu") \
+    #src[any number of `R` steps followed by `S` is the least `X` containing `S` and closed under an
+     `R` step in front]],
+     // lean:AOP.A6_7.star_comp_eq_mu@537dc253
+  lean-chain(
+    (none, "Freyd.Alg.star_comp_eq_mu.lhs", []),
+    (EQ, "Freyd.Alg.star_comp_eq_mu.rhs", src[Ex 6.32]),
+  ),
+)]<closure-comp>
+
+// B&dM (6.9), p.160: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`, mirrored; `θ(𝟘,S)=SR*` is why it is defined.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_left") \
+    #src[started with nothing found and `S` to explore, `θ` computes `SR*`]],
+     // lean:AOP.A6_7.theta_zero_left@b8297d35 lean:AOP.A6_7.theta@494eeaa5
+  lean-chain(
+    (none, "Freyd.Alg.theta_zero_left_step1.lhs", []),
+    (EQ, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
+     // lean:AOP.A6_7.theta_zero_left_step1@794d78de
+    (EQ, "Freyd.Alg.theta_zero_left_step2.rhs", src[`R−𝟘=R` — @closure-sub]),
+     // lean:AOP.A6_7.theta_zero_left_step2@3d29ce01
+    (EQ, "Freyd.Alg.comp_star_eq_mu.lhs", src[@closure-comp]),
+  ),
+)]<closure-theta-zero-left>
+
+// B&dM 6.7h, p.160: `θ(P,𝟘)=P`, the recursion's exit.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_right") \
+    #src[with nothing left to explore, `θ` returns what it has found]],
+     // lean:AOP.A6_7.theta_zero_right@14a43ab2
+  lean-chain(
+    (none, "Freyd.Alg.theta_zero_right_step1.lhs", []),
+    (EQ, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
+     // lean:AOP.A6_7.theta_zero_right_step1@6c0c4172
+    (EQ, "Freyd.Alg.theta_zero_right_step2.rhs", src[`𝟘` is a prefixed point: `𝟘R−P=𝟘`]),
+     // lean:AOP.A6_7.theta_zero_right_step2@e32277dc
+    (EQ, "Freyd.Alg.theta_zero_right.rhs", src[`P∪𝟘=P`]),
+  ),
+)]<closure-theta-zero-right>
+
+// B&dM 6.7i, p.160: the recursion step, the book's five steps.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.theta_step") \
+    #src[one round moves `Q` into the found part and explores the new `R`-successors of `Q` that
+     are in neither]],
+     // lean:AOP.A6_7.theta_step@49b0c3c6
+  lean-chain((
+    (none, "Freyd.Alg.theta_step_step1.lhs", []),
+    (EQ, "Freyd.Alg.theta_step_step1.rhs", src[definition of `θ`]),
+     // lean:AOP.A6_7.theta_step_step1@8b77fe50
+    (EQ, "Freyd.Alg.theta_step_step2.rhs", src[`Q∪S=Q∪(S−Q)` — @closure-sub]),
+     // lean:AOP.A6_7.theta_step_step2@1ecc0428
+    (EQ, "Freyd.Alg.theta_step_step3.rhs", src[rolling — @closure-rolling]),
+     // lean:AOP.A6_7.theta_step_step3@db1322e0
+  ), (
+    (EQ, "Freyd.Alg.theta_step_step4.rhs", src[subtraction — @closure-sub]),
+     // lean:AOP.A6_7.theta_step_step4@54c7a347
+    (EQ, "Freyd.Alg.theta_step_step5.rhs", src[definition of `θ`]),
+     // lean:AOP.A6_7.theta_step_step5@afe9da13
+  )),
+)]<closure-theta-step>
+
 // TODO p.161 close: `E(R*)(s)=close(∅,s)`, `close(p,∅)=p`, `close(p,q)=close(p∪q, E(R)(q)−p−q)` by `Λ`
 //   (3 steps) — Lean missing.

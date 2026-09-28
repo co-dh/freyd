@@ -38,6 +38,8 @@ import AOP.A10_3_Tardy
 import AOP.A10_4_Tex
 -- `tour`, whose body the note draws: a tag names a constant, so its module has to be in scope.
 import AOP.A8_6_Tour
+-- `star`, `sub`'s chains and `theta` (§6.7), whose beads the closure displays draw.
+import AOP.A6_7
 -- THE ENVIRONMENT A CELL IS DRAWN FROM IS THIS IMPORT BLOCK, so a book section the note cites a law
 -- of has to be in it: `inter_zero` (`T∩𝟘=𝟘`) is §2.50's, and a section the exporter cannot see is a
 -- row it cannot draw.
@@ -617,6 +619,26 @@ open Lean PrettyPrinter in
     which is what a TYPE ASCRIPTION already spells, so no new notation is needed for the brackets. -/
 @[app_unexpander mu] def unexpandMu : Unexpander
   | `($_ fun $x:ident => $b) => `(($(mkIdent (Name.mkSimple ("μ" ++ x.getId.toString))) : $b))
+  | _ => throw ()
+
+/-- The book's subtraction `R−S` (B&dM p.159), at `∪`'s level as the book brackets it.  A
+    notation, not an unexpander, so the label printer reads its precedence off the declaration. -/
+infixl:65 " − " => sub
+
+open Lean PrettyPrinter in
+/-- The rolling rule's hypothesis (B&dM Ex 6.35) in the book's word: `φ` is monotonic. -/
+@[app_unexpander MonotonicHom] def unexpandMonotonicHom : Unexpander
+  | `($_ $f) => `($(mkIdent `monotonic) $f)
+  | _ => throw ()
+
+/-- The book's closure `R*` (6.7), postfix like `°`. -/
+postfix:max "*" => star
+
+open Lean PrettyPrinter in
+/-- `theta R P Q` is the book's `θ(P,Q)` (6.9): `R` is the section's fixed relation, which the
+    region already carries, so the label writes only the two arguments that change. -/
+@[app_unexpander theta] def unexpandTheta : Unexpander
+  | `($_ $_ $p $q) => `($(mkIdent `θ) $p $q)
   | _ => throw ()
 
 open Lean PrettyPrinter in
