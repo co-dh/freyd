@@ -701,7 +701,9 @@
   ),
 )]<closure-theta-zero-right>
 
-// B&dM 6.7i, p.160: the recursion step, the book's five steps.
+// B&dM 6.7i, p.160: the recursion step, the book's five steps.  Steps 1-2's rhs is a 2-branch `∪`
+// (`P`, the `μ`-body); rolling at step 3 extracts `Q` as a third branch, kept between `P` and the
+// `μ`-body through step 4; step 5 collapses back to one `θ` application.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_step") \
     #src[one round moves `Q` into the found part and explores the new `R`-successors of `Q` that
@@ -709,16 +711,26 @@
      // lean:AOP.A6_7.theta_step@49b0c3c6
   lean-chain((
     (none, "Freyd.Alg.theta_step_step1.lhs", []),
-    (EQ, "Freyd.Alg.theta_step_step1.rhs", src[definition of `θ`]),
+    (EQ, union("Freyd.Alg.theta_step_step1.rhs", rev: true),
+      src[`θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))` — definition of `θ`]),
      // lean:AOP.A6_7.theta_step_step1@8b77fe50
-    (EQ, "Freyd.Alg.theta_step_step2.rhs", src[`Q∪S=Q∪(S−Q)` — @closure-sub]),
+    (EQ, union("Freyd.Alg.theta_step_step2.rhs", rev: true), src[`Q∪S=Q∪(S−Q)` — @closure-sub]),
      // lean:AOP.A6_7.theta_step_step2@1ecc0428
-    (EQ, "Freyd.Alg.theta_step_step3.rhs", src[rolling — @closure-rolling]),
-     // lean:AOP.A6_7.theta_step_step3@db1322e0
   ), (
-    (EQ, "Freyd.Alg.theta_step_step4.rhs", src[subtraction — @closure-sub]),
+    (EQ, "Freyd.Alg.theta_step_step3.rhs.inl",
+      src[`(μX : φ(ψ(X))) = φ(μY : ψ(φ(Y)))` — @closure-rolling]),
+     // lean:AOP.A6_7.theta_step_step3@db1322e0
+    ([∪], "Freyd.Alg.theta_step_step3.rhs.inr.inl", src[]),
+    ([∪], "Freyd.Alg.theta_step_step3.rhs.inr.inr", src[]),
+  ), (
+    (EQ, "Freyd.Alg.theta_step_step4.rhs.inl.inl",
+      src[`((Q∪X)R − P) − Q = (QR − P) − Q ∪ (XR − (P∪Q))` — composition distributes over `∪`,
+       then subtraction distributes, @closure-sub]),
      // lean:AOP.A6_7.theta_step_step4@54c7a347
-    (EQ, "Freyd.Alg.theta_step_step5.rhs", src[definition of `θ`]),
+    ([∪], "Freyd.Alg.theta_step_step4.rhs.inl.inr", src[]),
+    ([∪], "Freyd.Alg.theta_step_step4.rhs.inr", src[]),
+    (EQ, "Freyd.Alg.theta_step_step5.rhs",
+      src[`θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))` — definition of `θ`]),
      // lean:AOP.A6_7.theta_step_step5@afe9da13
   )),
 )]<closure-theta-step>
