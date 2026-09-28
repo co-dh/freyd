@@ -70,7 +70,7 @@ in @mu-defn.
 ]]<dp-defn>
 
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
     // lean:AOP.A9_1.dynamic_programming@08ba360c
@@ -85,7 +85,7 @@ in @mu-defn.
 )]<dp-thm>
 
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
@@ -105,7 +105,7 @@ in @mu-defn.
 )]<dp-lower>
 
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(9.3)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
@@ -140,7 +140,7 @@ in @mu-defn.
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A
 // transpose is a MAP (@pow-laws), hence a square box; `est`, `thin` and `P(−)` are relations, hence
 // chamfered.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Theorem 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin") \
     #src[an optimum over everything `H` returns is reached by taking the input apart every way `T`
      allows, dropping the parts that can never win, solving each of the rest and keeping one
@@ -230,7 +230,7 @@ in @mu-defn.
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Proposition 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
@@ -248,7 +248,7 @@ in @mu-defn.
 )]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_of_cost") \
     #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
      equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`]],
@@ -291,7 +291,7 @@ in @mu-defn.
 )]<dp-conditions>
 
 // B&dM Proposition 9.3, p. 223: the book's hints, one row each; B&dM's `H°` is `S` here.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
@@ -328,7 +328,7 @@ in @mu-defn.
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,
 // the book's hints one row each, without the converse B&dM takes (the note's `R` is his `R°`).
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "Proposition 9.4")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.birelator_thin_condition") \
     #src[thinning the parts by `U` in the first argument and by `V` in the second (`G(U,V)`), then
      solving by `H` and assembling by `h`, gives only what solving and assembling and then improving
@@ -686,7 +686,7 @@ in @mu-defn.
 ]]<mct-defn>
 
 // B&dM (9.5), p. 232: the book's five hints, one row each.
-#disp[#calc-table(
+#disp(num: "(9.5)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_cost_alg") \
     #src[pairing each subtree with its cost and its flattening and then applying `g` gives what
      building the tree by `[tip,bin]` and taking its `cost` gives]],
@@ -723,7 +723,7 @@ in @mu-defn.
 )]<mct-cost>
 
 // B&dM (9.6), p. 232: the book's four hints, one row each.
-#disp[#calc-table(
+#disp(num: "(9.6)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_g_mono") \
     #src[raising the cost of either subtree (`≤×𝟙` in both slots) and then applying `g` returns a
      value at least what `g` returns on the costs before raising (`g≤`)]],
@@ -826,7 +826,7 @@ in @mu-defn.
 )]<mct-laws>
 
 // B&dM (9.7), pp. 233-234: the book's five hints, one step each, read left to right.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(9.7)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.mct_rec") \
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
@@ -850,7 +850,7 @@ in @mu-defn.
 )]<mct-rec>
 
 // B&dM (9.8), p. 234: the book's five hints, one step each, read left to right.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(9.8)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.col_rec") \
     #src[on a list of two or more elements, the column is what `next` makes of the column of its
      `init` and the row of its `tail`]],
@@ -871,7 +871,7 @@ in @mu-defn.
 )]<col-rec>
 
 // B&dM (9.10), p. 235: the book's three hints, one step each, read left to right.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
+#disp(num: "(9.10)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.row_rec") \
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
@@ -889,7 +889,7 @@ in @mu-defn.
 )]<row-rec>
 
 // B&dM (9.9), p. 234, by Exercise 9.13, p. 237: `col` as a loop, then the book's equivalent form.
-#disp[#calc-table(
+#disp(num: "(9.9)")[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Bracket.col_cons") \
     #src[the column of `a` consed onto `x` is what `process` makes of `a` and the array of `x`]],
      // lean:AOP.A9_3_Bracket.col_cons@c6b5beca
