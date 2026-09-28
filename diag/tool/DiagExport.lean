@@ -1474,20 +1474,34 @@ def noteRoots : IO (List String) := do
   if r.exitCode != 0 then throw <| IO.userError s!"./scripts/note-files --roots: {r.stderr.trimAscii}"
   return (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
 
-/-- THE ROOTS THIS RUN LISTS: both notes, or the ONE chapter file `CH` names.  Every gate takes its
-    chapter from that variable (the Makefile exports it), and a listing that answered for the whole
-    note under `CH=13` hands a chapter's gate every other chapter's selectors — checking something
-    else and exiting 0.  `note-files --ch` is the one resolver, so a `CH` naming no chapter ENDS the
-    run with its message rather than falling back to the note. -/
+/-- Every file SOME chapter `#import`s besides the prelude (`note-files --shared`) — `shared-laws.typ`,
+    today.  Typst evaluates a content literal's embedded calls as soon as it is built, not when it is
+    placed, so importing such a file for one binding also runs every OTHER binding's `#leanf`/`#lean`
+    calls; a chapter that places only one of them still needs the rest drawn.  Queried below with
+    `list-shared=1`, which makes the file place all of its own bindings so a listing scoped to a SINGLE
+    chapter sees the selectors that chapter's compile needs but does not itself place — exactly the
+    ones a whole-book listing already saw by way of whichever OTHER chapter places them. -/
+def sharedFiles : IO (List String) := do
+  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--shared"] }
+  if r.exitCode != 0 then throw <| IO.userError s!"./scripts/note-files --shared: {r.stderr.trimAscii}"
+  return (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
+
+/-- THE ROOTS THIS RUN LISTS: both notes, or the ONE chapter file `CH` names — plus, always, the
+    shared files (`sharedFiles`), queried with `list-shared=1` so their untouched bindings surface
+    too.  Every gate takes its chapter from that variable (the Makefile exports it), and a listing
+    that answered for the whole note under `CH=13` hands a chapter's gate every other chapter's
+    selectors — checking something else and exiting 0.  `note-files --ch` is the one resolver, so a
+    `CH` naming no chapter ENDS the run with its message rather than falling back to the note. -/
 def rootsToList : IO (List String) := do
   let ch := ((← IO.getEnv "CH").getD "").trimAscii.toString
-  if ch.isEmpty then return ← noteRoots
-  let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
-  let files := (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
-  if r.exitCode != 0 || files.length != 1 then
-    throw <| IO.userError s!"diag-export --list: CH={ch}: `./scripts/note-files --ch {ch}` named \
-      {files.length} chapter file(s) and exited {r.exitCode}: {r.stderr.trimAscii}"
-  return files
+  let base ← if ch.isEmpty then noteRoots else do
+    let r ← IO.Process.output { cmd := "./scripts/note-files", args := #["--ch", ch] }
+    let files := (r.stdout.splitOn "\n").map (·.trimAscii.toString) |>.filter (!·.isEmpty)
+    if r.exitCode != 0 || files.length != 1 then
+      throw <| IO.userError s!"diag-export --list: CH={ch}: `./scripts/note-files --ch {ch}` named \
+        {files.length} chapter file(s) and exited {r.exitCode}: {r.stderr.trimAscii}"
+    pure files
+  return base ++ (← sharedFiles)
 
 /-- Every `#lean`/`#leanc` CALL the notes make, read off the note's own metadata under `label` —
     the selectors of one call joined by `+`, because one call is one box and the exporter is told
@@ -1508,8 +1522,12 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
     | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
   let mut out : Std.HashMap String (Array String) := asked.foldl (fun m l => m.insert (tag l) #[]) {}
   let title ← noteTitle
+  -- `list-shared=1` is harmless noise to every root but the shared files: only they check it
+  -- (`shared-laws.typ`'s own `#if sys.inputs.at("list-shared", …)`), placing every binding they
+  -- have so a chapter-scoped listing sees what that chapter's compile needs from them.
   for root in ← rootsToList do
-    let args := #["query", "--root", ".", "--input", "list=1", "--input", "title=" ++ title, root, sel]
+    let args := #["query", "--root", ".", "--input", "list=1", "--input", "list-shared=1",
+                  "--input", "title=" ++ title, root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
     let r ← IO.Process.output { cmd := "typst", args := args }
     if r.exitCode != 0 then

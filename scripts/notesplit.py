@@ -46,8 +46,6 @@ NOTE_ROOTS = {"axioms": (os.path.join("diag", "allegory-axioms.typ"), os.path.jo
                          os.path.join("diag", "cd-panels.txt")),
               "aop": (os.path.join("diag", "algprog-companion.typ"), os.path.join("diag", "aop"),
                       os.path.join("diag", "aop", "cd-panels.txt"))}
-# The displays both split notes place: bound once in this file, `#import`ed rather than included.
-SHARED = os.path.join("diag", "shared-laws.typ")
 NOTES = tuple(r for r, *_ in NOTE_ROOTS.values()) + (os.path.join("diag", "allegory2.typ"),)
 PRELUDE = os.path.join("diag", "note-prelude.typ")
 
@@ -392,24 +390,75 @@ def includes(path):
     return out
 
 
-def note_files(root=None, root_dir=None, ch=None):
-    """The root and every file it `#include`s, in order — a marker or a `cert:` lives in a chapter
-    now, so a gate that reads the note alone reads a preamble and nothing else.
+def imports(path):
+    """The local `.typ` files this one `#import`s, in order.
 
-    A chapter named (`--ch 13`, `CH=13`) narrows this to that chapter's file: a gate told a chapter
-    reads the chapter and nothing outside it.  The root itself holds no prose — only `#show` rules
-    and the includes — so dropping it drops no marker."""
+    A typst content literal `[...]` evaluates every embedded call it holds as soon as the literal
+    is built, not when it is later placed — so `#import "shared-laws.typ": *` runs every
+    `#leanf(...)`/`#lean(...)` inside EVERY `#let x = [...]` that file defines, whether or not `x`
+    is ever placed by the importer.  A gate that compiles or queries `path` therefore needs
+    whatever an import reaches exactly as much as an include, and a chapter narrowed to itself
+    alone must follow its own imports too, not just the root's.  A package import (`@preview/…`)
+    names no local file and is skipped."""
+    here, out = os.path.dirname(path), []
+    for ln in read(path).split("\n"):
+        if ln.startswith("#import "):
+            inc = typst_string(ln)
+            if inc is not None and not inc.startswith("@") and inc.endswith(".typ"):
+                out.append(os.path.join(here, inc))
+    return out
+
+
+def note_files(root=None, root_dir=None, ch=None, _seen=None):
+    """The root and every file it `#include`s or `#import`s, in order — a marker or a `cert:`
+    lives in a chapter now, so a gate that reads the note alone reads a preamble and nothing else.
+
+    A chapter named (`--ch 13`, `CH=13`) narrows this to THAT ONE FILE — `Cite.lean`'s
+    `chapterFile` and the Makefile's `NOTESRC` both require `--ch` to print exactly one path, the
+    file `typst compile`s as the chapter's own root, and neither reads any further.  What a
+    compile of that file also reaches through `#import` (`shared-laws.typ`, whose content is
+    evaluated whether or not the chapter places it) is a SEPARATE question — `shared_files`
+    answers it, for the one caller (`diag-export --list`) that needs it.
+
+    `_seen` dedups by absolute path so a file imported from two places (`note-prelude.typ`, from
+    every chapter) is walked once."""
     root_dir = root_dir or ROOT_DIR
     root = root or NOTE
     path = root if os.path.isabs(root) else os.path.join(root_dir, root)
+    seen = set() if _seen is None else _seen
     n = chapter_env(ch)
     if n is not None and os.path.abspath(path) == os.path.abspath(os.path.join(root_dir, NOTE)):
         return [chapter_file(n, root_dir)]
-    # A split note's root stands for the shared laws too: its chapters place them from there.
-    out = [path] + ([os.path.join(root_dir, SHARED)]
-                    if os.path.relpath(path, root_dir) in [r for r, *_ in NOTE_ROOTS.values()] else [])
-    for inc in includes(path):
-        out += note_files(root=inc, root_dir=root_dir)
+    ap = os.path.abspath(path)
+    if ap in seen:
+        return []
+    seen.add(ap)
+    out = [path]
+    for inc in imports(path) + includes(path):
+        out += note_files(root=inc, root_dir=root_dir, _seen=seen)
+    return out
+
+
+def shared_files(root_dir=None):
+    """Every local file some chapter of EITHER note `#import`s besides the prelude.
+
+    Typst evaluates a content literal's embedded calls (`#leanf(...)`, in a `#let law = [...]`)
+    as soon as the literal is built, not when it is later placed — so importing such a file for
+    one binding also runs every OTHER binding's calls, whether or not the importer places them.
+    A chapter's compile therefore needs every selector such a file names, not only the ones it
+    itself places; `rootsToList` (`DiagExport.lean`) queries each of these with `list-shared=1` so
+    a chapter-scoped listing draws the same panels a chapter-scoped compile is about to need,
+    exactly as the whole book already does by way of whichever OTHER chapter places them."""
+    root_dir = root_dir or ROOT_DIR
+    prelude = os.path.abspath(os.path.join(root_dir, PRELUDE))
+    out, seen = [], set()
+    for root, *_ in NOTE_ROOTS.values():
+        for ch in includes(os.path.join(root_dir, root)):
+            for imp in imports(ch):
+                ap = os.path.abspath(imp)
+                if ap != prelude and ap not in seen:
+                    seen.add(ap)
+                    out.append(imp)
     return out
 
 
@@ -728,7 +777,8 @@ def cmd_files(argv):
     # `NOTE=` takes; `--chapters`: the numbers `CH=` takes in `$NOTE`; `--title`: `$NOTE`'s own title,
     # for a chapter compiled alone (`--input title=`); `--title-for PATH`: the title of whichever note
     # OWNS an arbitrary chapter/root path, for a caller (diff-crop) that is not `$NOTE`-scoped.
-    # `--panels`: `$NOTE`'s commutative-canvas manifest.  Make and the Lean gates ask
+    # `--panels`: `$NOTE`'s commutative-canvas manifest.  `--shared`: every file some chapter of
+    # EITHER note `#import`s besides the prelude (see `shared_files`).  Make and the Lean gates ask
     # these, so the notes are listed in this file alone.
     if "--root" in argv:
         return print(NOTE)
@@ -738,6 +788,8 @@ def cmd_files(argv):
         return print(title_of_root(root_for(argv[argv.index("--title-for") + 1])))
     if "--panels" in argv:
         return print(PANELS)
+    if "--shared" in argv:
+        return print(*shared_files(), sep="\n")
     if "--roots" in argv:
         return print(*NOTES, sep="\n")
     if "--names" in argv:

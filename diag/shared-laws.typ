@@ -454,3 +454,19 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 // A label the laws above cite that lives in Relation Algebra and is no display — a section — prints
 // as this name in the companion, where it is absent; Relation Algebra keeps its own rule.
 #let elsewhere = ("sec-kleisli": [`𝒜≅Kleisli(E)` in Relation Algebra])
+
+// `#import`ing this file for ONE binding still runs every OTHER binding's `#leanf`/`#lean` calls —
+// a content literal evaluates them as soon as it is built, not when the importer places it — so a
+// chapter that places only `law-rel-monoid` still needs `law-adj-all`'s panels drawn.  A listing
+// scoped to that one chapter cannot see the ones it never places (unplaced content is invisible to
+// `query`), so this file places ALL of them itself under `list-shared=1`; `rootsToList`
+// (`DiagExport.lean`) queries it that way alongside the chapter, for exactly this reason.
+#if sys.inputs.at("list-shared", default: none) != none [
+  // A `@sec-…` cross-reference into the chapter that actually places this law fails to resolve
+  // here, where nothing defines that label — irrelevant to a listing, which reads selectors, not
+  // rendered prose, so references are dropped rather than resolved.
+  #show ref: it => []
+  #law-adj-all #law-adj-cross #law-triple-chains #law-rel-monoid #law-conv-defn
+  #law-meet-semidistrib #law-dom-laws #law-dom-slide #law-div-laws #law-pow-laws
+  #law-adj-E-bend #law-mem-ldiv
+]
