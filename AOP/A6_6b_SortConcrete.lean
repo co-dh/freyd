@@ -43,61 +43,6 @@ def lb (a : A) (x : ConsList Unit A) : Prop := ∀ b, inlistP x b → R a b
 def selectC : dList A ⟶ (⟨A × ConsList Unit A⟩ : RelSet.{0}) :=
   fun x p => Perm (ConsList.cons p.1 p.2) x ∧ lb R p.1 p.2
 
-/-- **The ordered algebra** `[nil, cons·ok]` (B&dM p.152): `nil ↦ []`, and `(a, y) ↦ a::y` guarded
-    by `ok(a,y)` (= `a` below all of `y`).  `cataR oalgC = ordered` (sortedness). -/
-def oalgC : Fobj Unit A (dList A) ⟶ dList A :=
-  fun u y => match u with
-    | Sum.inl _ => y = ConsList.wrap ()
-    | Sum.inr p => lb R p.1 p.2 ∧ y = ConsList.cons p.1 p.2
-
-/-- `cataR oalgC` is coreflexive (it is the sortedness relation `ordered ⊑ id`), by induction. -/
-theorem oalg_coref : ∀ (x y : ConsList Unit A), cataFold (oalgC R) x y → x = y
-  | ConsList.wrap u, y, h => by cases u; exact (h : y = _).symm
-  | ConsList.cons a x, y, h => by
-    obtain ⟨y', hy', ho⟩ := h
-    have hxy' : x = y' := oalg_coref x y' hy'
-    obtain ⟨_, hy⟩ := ho
-    rw [hxy']; exact hy.symm
-
-/-- The fusion condition B&dM leave "as a simple exercise": `perm·[nil,select°] ⊇ [nil,cons·ok]`,
-    mirrored `F(perm) ≫ [nil, select°] ⊑ [nil, cons·ok] ≫ perm`.  Proved from the concrete `select`
-    using `perm_mem` (`a` below all of a permuted list is below all of the original). -/
-theorem hfus_concrete :
-    (F Unit A).map perm ≫ sortAlg (selectC R) ⊑ oalgC R ≫ perm := by
-  rw [le_iff]; intro u y h
-  obtain ⟨v, hv, hsort⟩ := h
-  cases u with
-  | inl u' =>
-    cases v with
-    | inl v' =>
-      have hy : y = ConsList.wrap () := hsort
-      exact ⟨ConsList.wrap (), rfl, by rw [hy]; exact Perm.nil⟩
-    | inr q => exact hv.elim
-  | inr p =>
-    obtain ⟨a, x⟩ := p
-    cases v with
-    | inl v' => exact hv.elim
-    | inr q =>
-      obtain ⟨a', x''⟩ := q
-      have haa : a = a' := hv.1
-      have hpx : Perm x x'' := hv.2
-      obtain ⟨hperm', hlb'⟩ := hsort
-      subst haa
-      refine ⟨ConsList.cons a x, ⟨?_, rfl⟩, ?_⟩
-      · intro b hb; exact hlb' b (perm_mem hpx hb)
-      · exact Perm.trans (Perm.cons a hpx) hperm'
-
-/-- **§6.6 fully concrete (B&dM pp.152-153)**: selection sort with the concrete `select`,
-    `sort (selectC R) ⊆ ordered · perm` — mirrored `sort ⊑ perm ≫ cataR (oalgC R)`, where
-    `cataR (oalgC R)` is sortedness and `perm` is the concrete permutation relation.  Holds for ANY
-    `R : A → A → Prop`, with NO hypotheses: `perm` symmetry, `ordered` coreflexivity, and the
-    `select` fusion-proviso are all discharged concretely. -/
-theorem selection_sort_correct_concrete :
-    sort (selectC R) ⊑ perm ≫ cataR (oalgC R) :=
-  selection_sort_correct (selectC R) (oalgC R) perm
-    (hom_ext fun _ _ => ⟨fun h => Perm.symm h, fun h => Perm.symm h⟩)
-    (le_iff.mpr fun x y h => oalg_coref R x y h) (hfus_concrete R)
-
 /-! ## The book's point-free argument (B&dM pp.151-153)
 
 Each step of the book's calculation is one declaration, stated in the relations it composes;
