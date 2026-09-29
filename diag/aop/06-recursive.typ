@@ -97,14 +97,14 @@
      followed by `S`]],
   // lean:AOP.A6_2.relCata_le_comp@b54d0a6b
   lean-chain(
-    (none, "Freyd.Alg.relCata_le_comp_step1.lhs", src[the prefix-point condition of (6.2) for `T` at `X≜⦇R⦈S`]),
+    (none, "Freyd.Alg.relCata_le_comp_step1.lhs", src[`X≜⦇R⦈S`]),
     (EQ, "Freyd.Alg.relCata_le_comp_step1.rhs", []),
     // lean:AOP.A6_2.relCata_le_comp_step1@2fbeae5c
     (SQ, "Freyd.Alg.relCata_le_comp_step2.rhs", src[`F(S)T⊑RS`]),
     // lean:AOP.A6_2.relCata_le_comp_step2@e2b7aeb0
     (EQ, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`F(⦇R⦈)R=α⦇R⦈`, `α°α=𝟙` — @cata-defining]),
     // lean:AOP.A6_2.relCata_le_comp_step3@3ef0b9b8
-    (IMP, ("Freyd.Alg.relCata_le_comp_step4",), src[(6.2) at `X≜⦇R⦈S`, for the algebra `T`]),
+    (IMP, ("Freyd.Alg.relCata_le_comp_step4",), src[(6.2) `α°F(X)T⊑X ⟹ ⦇T⦈⊑X`]),
     // lean:AOP.A6_2.relCata_le_comp_step4@af5d58e5
   ),
 )]<cata-fusion-le>
@@ -116,12 +116,12 @@
      is below the fold of `T`]],
   // lean:AOP.A6_2.comp_le_relCata@5874cf45
   lean-chain(
-    (none, "Freyd.Alg.relCata_le_comp_step3.rhs", src[the postfix-point condition of (6.3) for `T` at `X≜⦇R⦈S`]),
+    (none, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`X≜⦇R⦈S`]),
     (EQ, "Freyd.Alg.relCata_le_comp_step3.lhs", src[`α⦇R⦈=F(⦇R⦈)R`, `α°α=𝟙` — @cata-defining]),
     (SQ, "Freyd.Alg.comp_le_relCata_step2.rhs", src[`RS⊑F(S)T`]),
     // lean:AOP.A6_2.comp_le_relCata_step2@adb9a462
     (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", []),
-    (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[(6.3) at `X≜⦇R⦈S`, for the algebra `T`]),
+    (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[(6.3) `X⊑α°F(X)T ⟹ X⊑⦇T⦈`]),
     // lean:AOP.A6_2.comp_le_relCata_step3@804ce7dc
   ),
 )]<fusion-le-cata>
