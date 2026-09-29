@@ -1080,9 +1080,17 @@ partial def compFactors (e : Expr) : Array Expr :=
     compFactors args[args.size - 2]! ++ compFactors args[args.size - 1]!
   else #[e]
 
-/-- `X` WHERE A PROPOSITION IS THE NATURALITY SQUARE OF `φ` AT `X`: opened one definition at a time
-    until its `⊑` shows (8 bounds a cycle), its sides flattened (`compFactors`), each exactly two
-    factors, `F(X)φ` and `φG(X)` with `φ` unified on both — `true` where it reads `φG(X) ⊑ F(X)φ`.
+/-- WHAT LETS A BEAD PASS: `ty` opened one definition at a time until its `⊑` shows (8 bounds a
+    cycle), each side flattened (`compFactors`), then trimmed to the WINDOW where the two sides
+    actually differ — a shared prefix/suffix is context the step carries unchanged, the same trim
+    `moveStep?` applies before its own check.  Two shapes, tried against that window, in this order:
+    (1) THE SANDWICH — the window exactly two factors, `φ` unified on both: `F(X)φ` against `φG(X)`,
+    `some (X, false)`; the reverse `φG(X) ⊑ F(X)φ` is `some (X, true)`.
+    (2) `φ` ITSELF PASSES — the window restates a composite ENDING in `φ` as one STARTING from its
+    image `G(φ)`, with no relation asked between what comes before and what comes after; the
+    candidate a neighbouring bead must match (`settlePass`) is the factor directly before `φ` inside
+    the window, or — when `φ` opens the window itself — the last factor of the shared prefix, giving
+    `some (P, false)`.  The mirror gives `some (P, true)`.
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
@@ -1095,20 +1103,41 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let args := ty.getAppArgs
   if args.size < 2 then return none
   let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
-  if l.size != 2 || r.size != 2 then return none
   let mapArg (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
   -- `G(X)`, or `X` itself where `G` is the identity: the image of the SAME `X` below `φ`.
   let image (e X : Expr) : MetaM Bool := match mapArg e with
     | some Y => Meta.isDefEq Y X
     | none => Meta.isDefEq e X
+  -- STRIP WHAT THE TWO SIDES SHARE AT EACH END, exactly as `moveStep?` does: the shared run is
+  -- context the step carries along unchanged, and both patterns below are about what is left.
+  let mut p := 0
+  for _ in [0 : min l.size r.size] do
+    if ← Meta.isDefEq l[p]! r[p]! then p := p + 1 else break
+  let mut suf := 0
+  for _ in [0 : min (l.size - p) (r.size - p)] do
+    if ← Meta.isDefEq l[l.size - 1 - suf]! r[r.size - 1 - suf]! then suf := suf + 1 else break
+  let (wl, wr) := (l.extract p (l.size - suf), r.extract p (r.size - suf))
   -- ONE SQUARE, EITHER WAY ROUND: `F(X)φ` on one side and `φG(X)` on the other, the same `φ` both
   -- times.  `F(X)φ ⊑ φG(X)` is the down triangle, `φG(X) ⊑ F(X)φ` the up one.
-  for (up, a, b) in [(false, l, r), (true, r, l)] do
-    let some X := mapArg a[0]! | continue
+  if wl.size == 2 && wr.size == 2 then
+    for (up, a, b) in [(false, wl, wr), (true, wr, wl)] do
+      let some X := mapArg a[0]! | continue
+      let s ← Meta.saveState
+      if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
+        return some (X, up)
+      s.restore
+  -- `φ` IS THE MOVER: bare as the LAST factor of the window on one side, `G(φ)` as its FIRST factor
+  -- on the other — the bead's own hypothesis, not a square shared with a fixed neighbour.  Down
+  -- triangle first; `full`/`p` recover the factor before the window when `φ` opens it.
+  for (up, a, b, full) in [(false, wl, wr, l), (true, wr, wl, r)] do
+    if a.size < 1 || b.size < 1 then continue
     let s ← Meta.saveState
-    if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
-      return some (X, up)
+    if (← Meta.isDefEq a.back! φ) then
+      if let some X := mapArg b[0]! then
+        if ← Meta.isDefEq X φ then
+          if a.size ≥ 2 then return some (a[a.size - 2]!, up)
+          else if p ≥ 1 then return some (full[p - 1]!, up)
     s.restore
   return none
 

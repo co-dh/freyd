@@ -185,7 +185,9 @@
   "thinlist-thm82": [binary thinning theorem],
   "dp-laws": [dynamic programming theorem],
 )
-#let IMP = text(SLACK)[$arrow.l.double$]
+// Long and rightward, matching EQ/SQ's left-to-right reading: the panel before IMP is the
+// hypothesis actually established, the panel after is what it closes the chain to.
+#let IMP = text(SLACK)[$arrow.r.double.long$]
 #let TH = 1.2   // a fraction box is two lines tall
 #let IFF = text(SLACK)[$arrow.l.r.double$]
 #let So-box = ([`S°`], 0.85, true)
