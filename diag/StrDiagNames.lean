@@ -1617,6 +1617,9 @@ open Lean PrettyPrinter Delaborator in
 @[delab app.Int, delab const.Int] def delabIntName : Delab := `($(mkIdent `Int))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Char, delab const.Char] def delabCharName : Delab := `($(mkIdent `Char))
+-- B&dM's own name for the booleans (§1.7, the answers of `p` in `filter`).
+open Lean PrettyPrinter Delaborator in
+@[delab app.Bool, delab const.Bool] def delabBoolName : Delab := `($(mkIdent `Bool))
 open Lean PrettyPrinter Delaborator in
 @[delab app.Nat, delab const.Nat] def delabNatName : Delab := `($(mkIdent `Nat))
 -- The counterexample's objects and relation are the note's `A`, `B`, `R`; which sets they are, is

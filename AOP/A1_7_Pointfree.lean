@@ -144,6 +144,108 @@ public theorem pair_conditional (p : dE A ⟶ dE Bool) :
       exact ⟨(a, true), ⟨(id_apply a a).mpr rfl, hp⟩, Or.inl ⟨rfl, a, rfl, hy⟩⟩
     · exact ⟨(a, false), ⟨(id_apply a a).mpr rfl, hp⟩, Or.inr ⟨rfl, hy⟩⟩
 
+/-! ## The beads' naturality: `zip` and the two conditionals are LAX natural (Theorem 5.2's
+  `⊑`, not `=`: at an element with no `R`-image the left side is empty and the right side is not) -/
+
+theorem listP_rprodMap_czip {D : Type} (R : dE A ⟶ dE C) (S : dE B ⟶ dE D) :
+    ∀ (x : ConsList Unit A) (y : ConsList Unit B) (q : ConsList Unit C × ConsList Unit D),
+      listP R x q.1 → listP S y q.2 → listP (rprodMap R S) (czip x y) (czip q.1 q.2)
+  | ConsList.cons _ x, ConsList.cons _ y, (ConsList.cons _ u, ConsList.cons _ v), h1, h2 =>
+      ⟨⟨h1.1, h2.1⟩, listP_rprodMap_czip R S x y (u, v) h1.2 h2.2⟩
+  | ConsList.cons _ _, ConsList.cons _ _, (ConsList.wrap _, _), h1, _ => h1.elim
+  | ConsList.cons _ _, ConsList.cons _ _, (ConsList.cons _ _, ConsList.wrap _), _, h2 => h2.elim
+  | ConsList.wrap _, _, (ConsList.wrap _, _), _, _ => trivial
+  | ConsList.wrap _, _, (ConsList.cons _ _, _), h1, _ => h1.elim
+  | ConsList.cons _ _, ConsList.wrap _, (ConsList.wrap _, _), _, _ => trivial
+  | ConsList.cons _ _, ConsList.wrap _, (ConsList.cons _ _, ConsList.wrap _), _, _ => trivial
+  | ConsList.cons _ _, ConsList.wrap _, (ConsList.cons _ _, ConsList.cons _ _), _, h2 => h2.elim
+
+/-- `zip` is lax natural in its left element type: `(list(R)×𝟙) zip ⊑ zip list(R×𝟙)`. -/
+public theorem zip_laxNatural_left :
+    LaxNatural
+      (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE B))) listRelator)
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.const (dList B)))
+      (fun a => (zip : (⟨ConsList Unit a.carrier × ConsList Unit B⟩ : RelSet.{0})
+        ⟶ dList (a.carrier × B))) := by
+  intro a b R
+  show prodMap (relProd _ _) (relProd _ _) (list R) (𝟙 (dList B)) ≫ zip
+    ⊑ zip ≫ list (prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE B)))
+  rw [prodMap_eq_rprodMap, prodMap_eq_rprodMap, ← list_id]
+  exact le_iff.mpr fun p z ⟨q, ⟨h1, h2⟩, hz⟩ =>
+    ⟨czip p.1 p.2, rfl, (show z = czip q.1 q.2 from hz) ▸ listP_rprodMap_czip R _ p.1 p.2 q h1 h2⟩
+
+/-- `zip` is lax natural in its right element type: `(𝟙×list(R)) zip ⊑ zip list(𝟙×R)`. -/
+public theorem zip_laxNatural_right :
+    LaxNatural
+      (Relator.comp (Relator.prod (Relator.const (dE A)) (Relator.idRelator RelSet.{0})) listRelator)
+      (Relator.prod (Relator.const (dList A))
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (fun b => (zip : (⟨ConsList Unit A × ConsList Unit b.carrier⟩ : RelSet.{0})
+        ⟶ dList (A × b.carrier))) := by
+  intro a b R
+  show prodMap (relProd _ _) (relProd _ _) (𝟙 (dList A)) (list R) ≫ zip
+    ⊑ zip ≫ list (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) R)
+  rw [prodMap_eq_rprodMap, prodMap_eq_rprodMap, ← list_id]
+  exact le_iff.mpr fun p z ⟨q, ⟨h1, h2⟩, hz⟩ =>
+    ⟨czip p.1 p.2, rfl, (show z = czip q.1 q.2 from hz) ▸ listP_rprodMap_czip _ R p.1 p.2 q h1 h2⟩
+
+/-- `(π₂ → wrap, nil)` is lax natural: `(R×𝟙)(π₂ → wrap, nil) ⊑ (π₂ → wrap, nil) list(R×𝟙)`. -/
+public theorem conditional_wrap_laxNatural :
+    LaxNatural
+      (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
+        listRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
+      (fun a => conditional (relProd a (dE Bool)).outr (singleR ()) nil) := by
+  intro a b R
+  show prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)) ≫ _
+    ⊑ _ ≫ list (prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)))
+  rw [prodMap_eq_rprodMap]
+  refine le_iff.mpr fun ⟨x, t⟩ y ⟨⟨x', t'⟩, ⟨hR, ht⟩, hc⟩ => ?_
+  have ht : t = t' := (id_apply t t').mp ht
+  subst ht
+  rcases hc with ⟨hb, hy⟩ | ⟨hb, hy⟩
+  · exact ⟨ConsList.cons (x, t) (ConsList.wrap ()), Or.inl ⟨hb, rfl⟩,
+      (show y = _ from hy) ▸ ⟨⟨hR, (id_apply t t).mpr rfl⟩, trivial⟩⟩
+  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ trivial⟩
+
+/-- `(π₂ → π₁ wrap, nil)` is lax natural: `(R×𝟙)(π₂ → π₁ wrap, nil) ⊑ (π₂ → π₁ wrap, nil) list(R)`. -/
+public theorem conditional_outl_wrap_laxNatural :
+    LaxNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
+      (fun a => conditional (relProd a (dE Bool)).outr ((relProd a (dE Bool)).outl ≫ singleR ())
+        nil) := by
+  intro a b R
+  show prodMap (relProd _ _) (relProd _ _) R (𝟙 (dE Bool)) ≫ _ ⊑ _ ≫ list R
+  rw [prodMap_eq_rprodMap]
+  refine le_iff.mpr fun ⟨x, t⟩ y ⟨⟨x', t'⟩, ⟨hR, ht⟩, hc⟩ => ?_
+  have ht : t = t' := (id_apply t t').mp ht
+  subst ht
+  rcases hc with ⟨hb, x'', hx, hy⟩ | ⟨hb, hy⟩
+  · have hx : x'' = x' := hx
+    subst hx
+    exact ⟨ConsList.cons x (ConsList.wrap ()), Or.inl ⟨hb, x, rfl, rfl⟩,
+      (show y = _ from hy) ▸ ⟨hR, trivial⟩⟩
+  · exact ⟨ConsList.wrap (), Or.inr ⟨hb, rfl⟩, (show y = _ from hy) ▸ trivial⟩
+
+/-- `filter(π₂)` is lax natural: `list(R×𝟙) filter(π₂) ⊑ filter(π₂) list(R×𝟙)` — the conditional's
+    square under `list`, then (1.6). -/
+public theorem filter_outr_laxNatural :
+    LaxNatural
+      (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
+        listRelator)
+      (Relator.comp (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool)))
+        listRelator)
+      (fun a => filter (relProd a (dE Bool)).outr) := by
+  intro a b R
+  have hel := conditional_wrap_laxNatural R
+  show list ((Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool))).map R)
+      ≫ filter _
+    ⊑ filter _ ≫ list ((Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bool))).map R)
+  unfold filter
+  rw [← Cat.assoc, ← list_comp, Cat.assoc, ← concat_natural, ← Cat.assoc, ← list_comp]
+  exact le_iff.mpr fun x z ⟨y, hy, hz⟩ => ⟨y, le_iff.mp (list_mono hel) _ _ hy, hz⟩
+
 /-! ## The calculation of p.21–22, one theorem per step -/
 
 variable (p : dE A ⟶ dE Bool)
