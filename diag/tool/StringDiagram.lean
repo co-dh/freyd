@@ -659,9 +659,13 @@ def fileOf (body : String) (nat : String := "") : String :=
     them, so two parts pinned there have their lanes at one height; next a MAP, the note's own
     order — the lax bead first, then the function; a bead that eats lanes is tied to where they
     die; a bead with none of these rides the object wire, where the note's own `place` lets it sit
-    at any height (IntroString (1.16): two such placements are the SAME diagram). -/
+    at any height (IntroString (1.16): two such placements are the SAME diagram).
+    LAST, AN OPERATOR OVER A VARIABLE: a bead whose term is a defined constant (`est(R)`, `∋`) is
+    the fixed context a law moves a free variable of the statement past (`f` in
+    `F(est(R))f ⊑ …est(R)`), so of two beads alike in all else the operator stands still. -/
 def Row.pin (r : Row) : Nat :=
-  if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1
+  2 * (if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1)
+    + (if r.core.any (·.getAppFn.isConst) then 1 else 0)
 
 /-- HOW MUCH STRUCTURE A BEAD HAS: the lanes it touches, above it and below it.  Of two beads a
     display could line up on, the one with more of the picture around it says more by standing
@@ -693,12 +697,12 @@ def placement (ps : Array Diagram) : Placement := Id.run do
   for k in [0 : ps.size] do
     let b := ps[k]!
     let (n, m) := (b.rows.size, slots.size)
-    -- The weight of row `i` on slot `j`: its bead's size, then its pin (`Row.pin` < 4), when a part
+    -- The weight of row `i` on slot `j`: its bead's size, then its pin (`Row.pin` < 8), when a part
     -- already has that bead there; more than every other match together when that part is the
     -- NEIGHBOUR, whose shared beads the gate holds level.
     -- THE TRIANGLE IS THE ANCHOR, ahead of size: the bead the relation passes down across the `⊑`
     -- is what the display is about, so its match outweighs every other match of the part together.
-    let base (i : Nat) : Int := 4 * b.rows[i]!.size + b.rows[i]!.pin + 1
+    let base (i : Nat) : Int := 8 * b.rows[i]!.size + b.rows[i]!.pin + 1
     let rest : Int := (List.range n).foldl (· + base ·) 0
     let pin (i : Nat) : Int := if b.rows[i]!.tri.isSome then rest + base i else base i
     let tot : Int := (List.range n).foldl (· + pin ·) 0
