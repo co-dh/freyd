@@ -242,15 +242,29 @@
 /// fallback here is how every note's chapter printed the SAME title.  A chapter file passes none, so
 /// this falls to `--input title=...` (`./scripts/note-files --title`, spliced in by the Makefile);
 /// missing both, it stops rather than guess.
-// Typst's own heading counter only steps a heading that carries a `numbering`, and only ever
-// forward from its current (non-negative) state — so it cannot land ON N by priming N-1 when N is
-// 0. Instead the chapter's own first-level heading is drawn unnumbered and its number is the
-// literal N, in dvdtyp's own style (`dvd.typ`'s `show heading`); the counter is then set to N
-// outright for every heading and display inside the chapter, which works for any N including 0.
-#let chapter-number(N) = { text(colors.at(6), weight: 500)[#sym.section]; text(colors.at(6))[#str(N) ] }
+// Typst's own heading counter steps at EVERY level-1 heading regardless of that instance's own
+// `numbering` (`set heading(numbering: none)` inside the show below only changes what dvdtyp's
+// OWN show rule would have printed for `it`, not whether the built-in counter steps) — and it can
+// only ever step forward from a non-negative state, so it cannot land ON N by priming N-1 when N
+// is 0.  So the chapter's own first-level heading is drawn unnumbered, with its number as the
+// literal N in dvdtyp's own style (`dvd.typ`'s `show heading`), and the counter is corrected to N
+// AFTER that heading's own (otherwise wrong) step, for every heading and display that follows —
+// works for any N including 0.
+// Mirrors dvdtyp's own per-heading `show heading` (`dvd.typ`'s `set text(...)`/`set
+// par(first-line-indent: 0em)`/`numbering("1.", ..)`) exactly, since our show rule for the
+// level-1 heading replaces the heading element outright and so no longer matches dvdtyp's.
+#let chapter-number(N) = {
+  text(colors.at(6), weight: 500)[#sym.section]
+  text(colors.at(6))[#numbering("1.", N) ]
+}
+#let chapter-heading(N, it) = {
+  set text(font: "New Computer Modern Sans")
+  set par(first-line-indent: 0em)
+  chapter-number(N)
+  it.body
+}
 #let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() {
-  show heading.where(level: 1): it => { set heading(numbering: none); chapter-number(N); it.body }
-  counter(heading).update(N)
+  show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
   doc
 } else {
   let title = if title != none { title } else { sys.inputs.at("title", default: none) }
@@ -259,8 +273,7 @@
       "--input title=\"$(./scripts/note-files --title)\"")
   }
   conf(title: title, {
-    show heading.where(level: 1): it => { set heading(numbering: none); chapter-number(N); it.body }
-    counter(heading).update(N)
+    show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
     // Bound after `conf`'s own `ref` rule, so it runs FIRST and a label that is not in this chapter
     // never reaches `it.element`: reading that is what turns a cross-chapter reference into an error.
     show ref: it => context {
