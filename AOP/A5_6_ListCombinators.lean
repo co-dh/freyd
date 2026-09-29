@@ -1288,6 +1288,116 @@ public theorem concat_cata :
   · show r = cappend seg (cconcat rest) ↔ ∃ y, y = cconcat rest ∧ r = cappend seg y
     exact ⟨fun h => ⟨cconcat rest, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
+/-! ## `glue` and `glue concat ⊑ (𝟙×concat) cons` (B&dM pp.128–129) -/
+
+/-- B&dM's `assocl`, re-bracketing `A×(B×C)` as `(A×B)×C`. -/
+@[expose] public def assocl {A B C : Type} : (⟨A × B × C⟩ : RelSet.{0}) ⟶ ⟨(A × B) × C⟩ :=
+  graph fun p => ((p.1, p.2.1), p.2.2)
+
+/-- B&dM's `assocr`, re-bracketing `(A×B)×C` as `A×(B×C)`. -/
+@[expose] public def assocr {A B C : Type} : (⟨(A × B) × C⟩ : RelSet.{0}) ⟶ ⟨A × B × C⟩ :=
+  graph fun p => (p.1.1, (p.1.2, p.2))
+
+/-- **`glue ≜ (𝟙×cons°) assocl (cons×𝟙) cons`** (B&dM p.128, `cons·(cons×id)·assocl·(id×cons°)`
+    mirrored): the element goes on the front of the first segment, so there must be one. -/
+@[expose] public def glue :
+    (⟨A × ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ ⟨ConsList Unit (ConsList Unit A)⟩ :=
+  rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+    ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+    ≫ consR (L := Unit) (E := ConsList Unit A)
+
+/-- The hint of p.129's fifth step, `cat·(cons×id) = cons·(id×cat)·assocr` mirrored: `cons`ing onto
+    the front segment then appending is re-bracketing, appending, then `cons`ing. -/
+public theorem cat_cons :
+    rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      = assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+  apply hom_ext; rintro ⟨⟨a, s⟩, t⟩ r
+  constructor
+  · rintro ⟨⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨_, rfl, (a, cappend s t), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨_, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨(ConsList.cons a s, t), ⟨rfl, rfl⟩, rfl⟩
+
+/-- p.129 {definition of glue}. -/
+public theorem concat_glue_step1 :
+    glue ≫ concatR
+      = rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ consR (L := Unit) (E := ConsList Unit A) ≫ concatR := by
+  simp only [glue, Cat.assoc]
+
+/-- p.129 {since concat = ⦇[nil, cat]⦈}: `cons concat = (𝟙×concat) cat`. -/
+public theorem concat_glue_step2 :
+    rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ consR (L := Unit) (E := ConsList Unit A) ≫ concatR
+      = rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) concatR ≫ catR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, _, rfl, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, x'), ⟨rfl, rfl⟩, _, rfl, rfl⟩
+
+/-- p.129 {naturality of assocl}: `assocl (cons×concat) = (𝟙×(𝟙×concat)) assocl (cons×𝟙)`. -/
+public theorem concat_glue_step3 :
+    rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) concatR ≫ catR
+      = rprodMap (𝟙 (dE A))
+            ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, cconcat x')), ⟨rfl, (s, x'), rfl, rfl, rfl⟩, _, rfl,
+      (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨⟨_, _, _⟩, ⟨rfl, ⟨s, x'⟩, rfl, rfl, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+
+/-- p.129 {since concat = ⦇[nil, cat]⦈}: `cons° (𝟙×concat) ⊑ concat cat°` — the head segment and
+    the flattened rest are one way to split the flattened whole. -/
+public theorem concat_glue_step4 :
+    rprodMap (𝟙 (dE A))
+            ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+  refine le_iff.mpr ?_
+  rintro ⟨a, x⟩ r ⟨⟨_, _, _⟩, ⟨rfl, ⟨s, x'⟩, rfl, rfl, rfl⟩, h⟩
+  exact ⟨(a, cconcat (ConsList.cons s x')), ⟨rfl, rfl⟩, (a, (s, cconcat x')), ⟨rfl, rfl⟩, h⟩
+
+/-- p.129 {since cat·(cons×id) = cons·(id×cat)·assocr}. -/
+public theorem concat_glue_step5 :
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      = rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+  rw [cat_cons]
+
+/-- p.129 {since assocr·assocl = id and cat·cat° ⊆ id}: mirrored, `assocl assocr = 𝟙` and
+    `cat° cat ⊑ 𝟙`. -/
+public theorem concat_glue_step6 :
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A)
+      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ consR (L := Unit) (E := A) := by
+  refine le_iff.mpr ?_
+  rintro ⟨a, x⟩ r ⟨⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, s, t⟩, ⟨rfl, hst⟩, _, rfl, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+  refine ⟨(a, cconcat x), ⟨rfl, rfl⟩, ?_⟩
+  show ConsList.cons a (cappend s t) = ConsList.cons a (cconcat x)
+  rw [show cconcat x = cappend s t from hst]
+
+/-- **B&dM p.129, the third inclusion**: `concat·glue ⊆ cons·(id×concat)`, mirrored:
+    `glue concat ⊑ (𝟙×concat) cons` — gluing an element onto the first segment and flattening is
+    flattening and then `cons`ing the element on.  Steps 1–6. -/
+public theorem concat_glue :
+    glue ≫ concatR ⊑ rprodMap (𝟙 (dE A)) concatR ≫ consR (L := Unit) (E := A) := by
+  rw [concat_glue_step1, concat_glue_step2, concat_glue_step3]
+  exact le_trans concat_glue_step4 (by rw [concat_glue_step5]; exact concat_glue_step6)
+
 /-- **`sum = ⦇[zero, plus]⦈`** (note `cata-examples`; B&dM §5.x): fold the list, adding each head
     onto the total of the tail, `nil` contributing `zero`. -/
 public theorem sum_cata [Add A] [OfNat A 0] :
@@ -1369,6 +1479,18 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander concatR] public meta def unexpandConcatR : Unexpander
   | `($_:ident) => `($(mkIdent `concat))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander glue] public meta def unexpandGlue : Unexpander
+  | `($_:ident) => `($(mkIdent `glue))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander assocl] public meta def unexpandAssocl : Unexpander
+  | `($_:ident) => `($(mkIdent `assocl))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander assocr] public meta def unexpandAssocr : Unexpander
+  | `($_:ident) => `($(mkIdent `assocr))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander sumR] public meta def unexpandSumR : Unexpander

@@ -598,6 +598,30 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 )]<comb-fns>
 
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.concat_glue") \
+    #src[putting `a` on the front of the first segment and flattening (`glue concat`) gives at most
+     flattening the segments and putting `a` on the front of the result (`(𝟙×concat) cons`)]],
+  // lean:AOP.A5_6_ListCombinators.concat_glue@00000000
+  // two rows: seven panels in one row shrink the labels past reading
+  lean-chain((
+    (none, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.lhs", src[the starting composite]),
+    (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.rhs", src[definition of glue]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step1@00000000
+    (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step2.rhs", src[since `concat=⦇[nil,cat]⦈`]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step2@00000000
+    (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step3.rhs", src[naturality of `assocl`]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step3@00000000
+  ), (
+    (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step4.rhs", src[since `concat=⦇[nil,cat]⦈`]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step4@00000000
+    (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step5.rhs", src[since `(cons×𝟙) cat=assocr (𝟙×cat) cons`]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step5@00000000
+    (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step6.rhs", src[since `assocl assocr=𝟙` and `cat° cat⊑𝟙`]),
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step6@00000000
+  )),
+)]<concat-glue>
+
 === $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`
 
 // B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
