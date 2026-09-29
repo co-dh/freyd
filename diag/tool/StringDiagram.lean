@@ -1118,10 +1118,10 @@ def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
 /-- WHAT LETS A BEAD PASS: `ty` opened one definition at a time until its `⊑` shows (8 bounds a
     cycle), each side flattened (`compFactors`), then trimmed to the WINDOW where the two sides
     actually differ — a shared prefix/suffix is context the step carries unchanged, the same trim
-    `moveStep?` applies before its own check.  THE BEAD THAT CROSSES IS MARKED, not the one it crosses:
-    `φ` at one end of the left window and, in the other form (`F(φ)` against `φ`), at the opposite end
-    of the right one.  `F(R)φ ⊑ φR` marks `R`, `f h = F(h) g` marks `h`.  Answers `φ`'s partner in
-    the left side and whether it stands below `φ` (the up triangle): `some (P, below)`.
+    `moveStep?` applies before its own check.  Of the two beads the square swaps, THE ONE IT LEAVES
+    UNCHANGED IS MARKED, else the one that crosses: `F(R)φ ⊑ φR` marks `φ`, `f h = F(h) g` marks `h`.
+    Answers `φ`'s partner in the left side and whether it stands below `φ` (the up triangle):
+    `some (P, below)`, and `none` for a bead the square does not mark.
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let some (sl, sr) ← relSides? ty | return none
@@ -1138,22 +1138,27 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     if ← Meta.isDefEq l[l.size - 1 - suf]! r[r.size - 1 - suf]! then suf := suf + 1 else break
   let (wl, wr) := (l.extract p (l.size - suf), r.extract p (r.size - suf))
   if wl.isEmpty || wr.isEmpty then return none
-  let bare (e : Expr) : MetaM Bool := Meta.isDefEq e φ
-  let imaged (e : Expr) : MetaM Bool := match mapArg e with
-    | some Y => Meta.isDefEq Y φ
-    | none => pure false
-  -- `φ` IS THE MOVER: at one end of the LEFT window in one form (bare, or under a functor) and at
-  -- the OTHER end of the right window in the other form.  The mark is the left side's, where `φ` has
-  -- not moved yet, and its partner is `φ`'s neighbour there — inside the window, or the shared factor
-  -- next to it: below `φ` (`φ` opens the window) is the up triangle, above it the down one.
+  -- THE MOVER `M`: at one end of the LEFT window in one form (bare, or under a functor) and at the
+  -- OTHER end of the right window in the other form; its partner `P` is its neighbour in the left
+  -- side — inside the window, or the shared factor next to it.  THE TRIANGLE GOES ON THE BEAD THE
+  -- SQUARE LEAVES UNCHANGED: `P` when it stands in the right window as it is (`φ` in `F(R)φ ⊑ φR`),
+  -- else `M` (`h` in `f h = F(h) g`, whose `f` becomes `g`).  Down when the other bead of the pair
+  -- stands above it, up when below.
   for first in [true, false] do
     let (m, o) := if first then (wl[0]!, wr.back!) else (wl.back!, wr[0]!)
     for img in [true, false] do
       let s ← Meta.saveState
-      if (← if img then imaged m else bare m) && (← if img then bare o else imaged o) then
+      let some M := if img then mapArg m else some m | continue
+      let ok ← if img then Meta.isDefEq o M else match mapArg o with
+        | some Y => Meta.isDefEq Y M
+        | none => pure false
+      if ok then
         let partner? := if first then (if wl.size ≥ 2 then some wl[1]! else l[l.size - suf]?)
           else if wl.size ≥ 2 then some wl[wl.size - 2]! else if p ≥ 1 then l[p - 1]? else none
-        if let some P := partner? then return some (P, first)
+        if let some P := partner? then
+          if ← wr.anyM (Meta.isDefEq · P) then
+            if ← Meta.isDefEq φ P then return some (M, !first)
+          else if ← Meta.isDefEq φ M then return some (P, first)
       s.restore
   return none
 
@@ -1316,63 +1321,6 @@ def stepProof (n : Name) (xs : Array Expr) (lvls? : Option (List Lean.Level) := 
   let some v := ci.value? | return mkConst n
   return (match lvls? with | some l => v.instantiateLevelParams ci.levelParams l | none => v).beta xs
 
-/-- HOW MUCH A BEAD IS: the nodes of its term and of its type, metavariables instantiated, read
-    through EXPLICIT arguments only — an instance or an implicit object is not what the reader sees,
-    and counted it swamps the rest — and through a STRUCTURE FIELD as through nothing: `F.obj A` is
-    `F` applied to `A`, and a variable relator reaches `obj` through `toFunctor` where a named one
-    does not.  A class method (`powerObj`, `⟶`) is a name the reader sees, and counts.  `φ : F(A)⟶A` outweighs `R : A⟶A` by the functor its type carries, `est(R) : E(A)⟶A` outweighs `f : F(A)⟶A` by the operator its term applies. -/
-partial def beadWeight (e : Expr) : MetaM Nat := do
-  let e ← instantiateMVars e
-  return (← nodes e) + (← nodes (← instantiateMVars (← Meta.inferType e)))
-where
-  nodes (e : Expr) : MetaM Nat := do
-    match e.consumeMData with
-    | e@(.app ..) =>
-      let (f, args) := (e.getAppFn, e.getAppArgs)
-      let info ← Meta.getFunInfoNArgs f args.size
-      let field ← match f.constName? with
-        | some c => pure ((← getProjectionFnInfo? c).any (!·.fromClass))
-        | none => pure false
-      let mut n := 0
-      unless field do n ← nodes f
-      for i in [0 : args.size] do
-        if info.paramInfo[i]?.all (·.isExplicit) then n := n + (← nodes args[i]!)
-      return n
-    | .proj _ _ x => nodes x
-    | .lam _ t b _ | .forallE _ t b _ => return 1 + (← nodes t) + (← nodes b)
-    | _ => return 1
-
-/-- OF THE TWO BEADS A PASS SWAPS, THE TRIANGLE GOES ON THE MORE COMPLICATED ONE (`beadWeight`): the
-    crossing bead `φ` keeps it on a tie, else its partner `P` takes it, pointing the other way — down
-    when its partner stands above it, up when below.  Answers the marked bead, its partner, and
-    whether that partner stands below it. -/
-def heavierMark (φ P : Expr) (below : Bool) : MetaM (Expr × Expr × Bool) := do
-  if (← beadWeight P) > (← beadWeight φ) then return (P, φ, !below) else return (φ, P, below)
-
-/-- `heavierMark` over a settled panel: a mark on row `i`, whose partner is the row its triangle
-    points at, moves to that partner when the partner is the more complicated bead, and is dropped
-    when that partner already carries another pass's triangle.  A bead under a
-    binder the walk opened has no type in this context, so it is weighed nowhere: the crossing bead
-    keeps the mark there, as `settlePass` keeps theorems off such beads. -/
-def settleHeavier (rows : Array Row) : MetaM (Array Row) := do
-  let lctx ← getLCtx
-  let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
-  let mut rows := rows
-  for i in [0 : rows.size] do
-    let r := rows[i]!
-    let (some below, some (n, _, b)) := (r.tri, r.pass) | continue
-    let j := if below then i + 1 else i - 1
-    if (!below && i == 0) || j ≥ rows.size then continue
-    let p := rows[j]!
-    let (some c, some q) := (r.core, p.core) | continue
-    unless inScope c && inScope q && p.nat.isNone do continue
-    let (m, _, dir) ← heavierMark c q below
-    unless m == q do continue
-    -- ONE TRIANGLE A BEAD: a heavier partner already marked by another pass keeps that one alone.
-    rows := rows.set! i { r with pass := none, tri := none }
-    if p.tri.isNone then rows := rows.set! j { p with pass := some (n, ← label c, b), tri := some dir }
-  return rows
-
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead directly above, the up triangle where the bead directly below, is
     the partner a binder (`passCands`, `isDefEq`) or a theorem (`passThm`) says the bead crosses
@@ -1424,7 +1372,7 @@ def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : Meta
           if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
             rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below }
             break
-  return { d with rows := ← settleHeavier rows }
+  return { d with rows }
 
 /-- A STEP'S HYPOTHESIS IS EVIDENCE FOR ITS NEIGHBOURING PANELS: a chain step `R S ⊑ F(S) T` is drawn
     as two panels, each read in its own declaration's telescope, so the panel of the side that does
@@ -1472,7 +1420,7 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
       if let some up := hit then
         rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some up }
         break
-  return { d with rows := ← settleHeavier rows }
+  return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
