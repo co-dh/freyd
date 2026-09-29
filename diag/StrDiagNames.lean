@@ -11,6 +11,7 @@
 import AOP.A5_5_TypeFunctor
 import AOP.A5_5
 import AOP.A5_5_AlgCat
+import AOP.A2_6
 -- `laxNatural_birel_eps_eps`, the verdict the exporter reads for the bifunctor family at `(∋,∋)`:
 -- proved beside the other power beads, in scope here because the exporter looks it up by name.
 import AOP.A5_7_PowerBeads
@@ -813,6 +814,16 @@ open Lean PrettyPrinter in
 @[app_unexpander IsFHom] def unexpandIsFHom : Unexpander
   | `($_ $f $g $h) => `(($h : $f ⟶ $g))
   | _ => throw ()
+
+-- B&dM pp.46–47 write `Nat`'s functor `F`, its constructors `zero`, `succ`, and the unit `1`.
+open Lean PrettyPrinter in
+@[app_unexpander natF] def unexpandNatF : Unexpander | _ => `($(mkIdent `F))
+open Lean PrettyPrinter in
+@[app_unexpander natZero] def unexpandNatZero : Unexpander | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander natSucc] def unexpandNatSucc : Unexpander | _ => `($(mkIdent `succ))
+open Lean PrettyPrinter in
+@[app_unexpander UnitaryAllegory.unit_obj] def unexpandUnitObj : Unexpander | _ => `(1)
 
 open Lean PrettyPrinter in
 /-- `H≜⦇T⦈°⦇h⦈` is the note's ONE bead `H`: which coalgebra and algebra it is built from is what

@@ -47,6 +47,39 @@ every F-algebra `f`
   // lean:AOP.A5_5.relCata_cancel@c83d7b44
 ]]<initial-defn>
 
+// B&dM p.47: `h = ⦇c,f⦈` on `Nat`, `α = [zero,succ]`, `F(A) = 1+A`, `F(h) = 𝟙+h`.  The book's chain
+// is of equivalences between equations; its first four steps each rewrite ONE side, so the right
+// side's two steps are the first row, the left side's two the second, and cancellation the third.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.nat_fold_spec") \
+    #src[`h` is a homomorphism from `α = [zero,succ]` to `[c,f]` exactly when `h` sends `zero` to
+     `c` and `succ` then `h` equals `h` then `f`]],
+  // lean:AOP.A2_6.nat_fold_spec@4f96f949
+  lean-chain(
+    (
+      (none, "Freyd.Alg.nat_fold_spec_step1.lhs", src[the right side]),
+      (EQ, "Freyd.Alg.nat_fold_spec_step1.rhs", src[definition of `F`]),
+      // lean:AOP.A2_6.nat_fold_spec_step1@3617b276
+      (EQ, "Freyd.Alg.nat_fold_spec_step2.rhs", src[coproduct]),
+      // lean:AOP.A2_6.nat_fold_spec_step2@34821c4d
+    ),
+    (
+      (none, "Freyd.Alg.nat_fold_spec_step3.lhs", src[the left side]),
+      (EQ, "Freyd.Alg.nat_fold_spec_step3.rhs", src[since `α = [zero,succ]`]),
+      // lean:AOP.A2_6.nat_fold_spec_step3@305350d9
+      (EQ, "Freyd.Alg.nat_fold_spec_step4.rhs", src[coproduct]),
+      // lean:AOP.A2_6.nat_fold_spec_step4@d3fec447
+    ),
+    (
+      (IFF, ("Freyd.Alg.nat_fold_spec_step5_zero",), src[cancellation, `zero` arm]),
+      (src[and], ("Freyd.Alg.nat_fold_spec_step5_succ",), src[cancellation, `succ` arm]),
+      // lean:AOP.A2_6.nat_fold_spec_step5@54298de9
+      // lean:AOP.A2_6.nat_fold_spec_step5_zero@d3a0daa1
+      // lean:AOP.A2_6.nat_fold_spec_step5_succ@b36deae1
+    ),
+  ),
+)]<nat-fold-spec>
+
 === Reflection
 
 // THE LAW ITSELF, not the square that proves it.  The identity natural transformation "is represented by
