@@ -7,7 +7,9 @@
     ./scripts/diff-crop --key 7.2b --caption "what changed" [--key 13.3.1a --caption "..."] [OUTDIR]
     ./scripts/diff-crop --key tex-fusion --after diag/ch/16-greedy.pdf --rev 3e7c4d5 [OUTDIR]
     ./scripts/diff-crop --key edit-defn:edit-defn-unstep --after diag/ch/15-dynamic.pdf --rev REV
-                         # a key is a label, an after number, or a range `first:last` of either
+                         # a key is a label, an after number, or a range `first:last` of either;
+                         # a number is a letter-key `7.2b`, a book number `9.3` / `(9.3)`, or a
+                         # book name `Proposition 9.2` (any case) — zero or several matches refuse
     ./scripts/diff-crop BEFORE.pdf AFTER.pdf [OUTDIR]
     ./scripts/diff-crop --stack BEFORE.png AFTER.png --caption "what changed" [OUT.png]
 
@@ -50,7 +52,7 @@ Three measured faults shipped clipped or silent reviews, and all three are fixed
 import difflib, hashlib, math, os, re, shutil, subprocess, sys, tempfile
 import xml.etree.ElementTree as ET
 
-DPI, PAD, MINW, MAXH = 150, 26, 1000, 1500
+DPI, PAD, MINW, MAXH = 300, 52, 2000, 3000
 VPAD = 180                       # a display's worth of context above and below a changed band
 MINAREA = 40                     # ignore antialiasing specks
 GAP = 90                         # change regions closer than this are one edit
@@ -666,7 +668,14 @@ def own_anchor(pdf, did, tmp, page=None):
     spec = importlib.util.spec_from_loader("figgeom", SourceFileLoader("figgeom", os.path.join(ROOT, "scripts", "figgeom")))
     fg = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(fg)
-    hits = [w for w in (words(pdf, page, page) if page else words(pdf)) if w[5] == f"({did})"]
+    # `did` as printed: a letter-key `7.2b` is set `(7.2b)`; a book number `(9.3)` and a book name
+    # `Proposition 9.2` are set as they stand, the latter as one word per token.
+    toks = did.split() if " " in did or did.startswith("(") else [f"({did})"]
+    ws = words(pdf, page, page) if page else words(pdf)
+    hits = [(a[0], min(v[1] for v in run_), min(v[2] for v in run_), max(v[3] for v in run_),
+             max(v[4] for v in run_), " ".join(toks))
+            for i, a in enumerate(ws) for run_ in [ws[i:i + len(toks)]]
+            if [v[5] for v in run_] == toks and all(v[0] == a[0] and abs(v[2] - a[2]) < 1 for v in run_)]
     own = []
     for w in hits:
         svg = os.path.join(tmp, f"own-{w[0]}.svg")
@@ -675,7 +684,7 @@ def own_anchor(pdf, did, tmp, page=None):
         if cs == {NUMCOL}:
             own.append(w)
     if len(own) != 1:
-        raise Refuse(f"({did}): {len(own)} own-number words in {pdf} ({len(hits)} words spell it) — "
+        raise Refuse(f"{' '.join(toks)}: {len(own)} own-number words in {pdf} ({len(hits)} words spell it) — "
                      f"expected exactly one set in numtext's {NUMCOL}")
     return own[0]
 
@@ -730,6 +739,22 @@ def disp_spans(pdf, order, parts, ids, tmp):
     return merged
 
 
+def display_id(e, order, typ):
+    """The display `e` names, as its id in `order` (`disp_query`'s `[(id, label)]`).  A display's id is
+    whatever `disp` printed as its number, and the note prints three forms: a note letter-key `7.2b`, a
+    book number `(9.3)` (also asked as `9.3`), and a book name `Proposition 9.2` (any case).  Tried in
+    order — a label, an id spelled exactly, an id whose parentheses/case differ — and the first tier
+    that answers must answer with exactly one display, else the run stops naming `e`."""
+    norm = lambda s: " ".join(s.strip("()").lower().split())
+    for tier in (lambda d, l: l == e, lambda d, l: d == e, lambda d, l: norm(d) == norm(e)):
+        hit = [d for d, l in order if tier(d, l)]
+        if hit:
+            if len(hit) > 1:
+                sys.exit(f"diff-crop: `{e}` names {len(hit)} displays in the after {typ}: {', '.join(hit)}")
+            return hit[0]
+    sys.exit(f"diff-crop: no display labelled or numbered `{e}` in the after {typ}")
+
+
 def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, aorder, aparts, bparts):
     """`key` is a label (`tex-fusion`, `<tex-fusion>`), a number of the AFTER (`16.4b`), or a range of
     them `first:last`.  The before half shows the same labels, found through `rev`'s own numbering; a
@@ -737,14 +762,9 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     two crops did not change writes nothing and returns None: a pair of two equal
     pictures asks the reader to hunt for a difference that is not there."""
     lab_of = {d: l for d, l in aorder}
-    id_of = {l: d for d, l in aorder}
-    ends = [k.strip("<>") for k in key.split(":")]
-    ends = [lab_of.get(e, e) for e in ends]
-    miss = [e for e in ends if e not in id_of]
-    if miss:
-        sys.exit(f"diff-crop: no display labelled {', '.join(miss)} in the after {typ}")
     ai = [d for d, _ in aorder]
-    ids = ai[ai.index(id_of[ends[0]]):ai.index(id_of[ends[-1]]) + 1]
+    ends = [display_id(k.strip("<>"), aorder, typ) for k in key.split(":")]
+    ids = ai[ai.index(ends[0]):ai.index(ends[-1]) + 1]
     labels = [lab_of[d] for d in ids]
     ca, apages = crop_parts(after_pdf, disp_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
     borders = [d for d, l in border if l in labels]
