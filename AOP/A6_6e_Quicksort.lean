@@ -496,4 +496,169 @@ public theorem qsort_least {Y : dList A ⟶ dList A}
   refine hylo_le_of_prefixed (TB.initial A) ?_
   rw [qrec_step1, qrec_step2]; exact h
 
+/-! ## `split` as a fold on non-empty lists (p.155) -/
+
+/-- The elements of a non-empty list, as a list. -/
+@[expose] public def neList : NEList A → ConsList Unit A
+  | ConsList.wrap a => ConsList.cons a (ConsList.wrap ())
+  | ConsList.cons a y => ConsList.cons a (neList y)
+
+/-- B&dM p.155 `embed : list⁺ A ← list A`, the partial map taking a non-empty list to itself. -/
+@[expose] public def embed : dList A ⟶ dNE A := (graph neList)°
+
+theorem neList_nelistP {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (y : NEList A) (z : NEList B), nelistP Q y z → listP Q (neList y) (neList z)
+  | ConsList.wrap _, ConsList.wrap _, h => ⟨h, trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ y, ConsList.cons _ z, ⟨h1, h2⟩ => ⟨h1, neList_nelistP Q y z h2⟩
+
+theorem listP_neList {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (x : ConsList Unit A) (z : NEList B), listP Q x (neList z) → ∃ y, x = neList y ∧ nelistP Q y z
+  | ConsList.wrap _, ConsList.wrap _, h => h.elim
+  | ConsList.cons a (ConsList.wrap u), ConsList.wrap _, h => ⟨ConsList.wrap a, by cases u; rfl, h.1⟩
+  | ConsList.cons _ (ConsList.cons _ _), ConsList.wrap _, h => h.2.elim
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons a x, ConsList.cons _ z, h => by
+    obtain ⟨y, rfl, hy⟩ := listP_neList Q x z h.2
+    exact ⟨ConsList.cons a y, rfl, h.1, hy⟩
+
+/-- `embed` is strictly natural, `list(Q) embed = embed list⁺(Q)`: it looks only at the shape. -/
+public theorem embed_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (embed : dList a.carrier ⟶ dNE a.carrier)) := by
+  intro a b Q
+  apply hom_ext; intro x z
+  constructor
+  · rintro ⟨x', hx, hz⟩
+    have e : x' = neList z := hz
+    subst e
+    obtain ⟨y, rfl, hy⟩ := listP_neList Q x z hx
+    exact ⟨y, rfl, hy⟩
+  · rintro ⟨y, hy, hz⟩
+    have e : x = neList y := hy
+    subst e
+    exact ⟨neList z, neList_nelistP Q y z hz, rfl⟩
+
+/-- B&dM p.155 `base(a) = ([], a, [])`. -/
+@[expose] public def base : dL A ⟶ dLAL A := graph fun a => (ConsList.wrap (), a, ConsList.wrap ())
+
+/-- `base` is strictly natural, `Q base = base (list(Q)×Q×list(Q))`. -/
+public theorem base_strictNatural :
+    StrictNatural (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0})
+          (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (Relator.idRelator RelSet.{0}) (fun a => base (A := a.carrier)) := by
+  intro a b Q
+  simp only [prod_map_rprodMap]
+  apply hom_ext; intro x q
+  constructor
+  · rintro ⟨y, hxy, rfl⟩
+    exact ⟨_, rfl, trivial, hxy, trivial⟩
+  · rintro ⟨p, rfl, h1, h2, h3⟩
+    obtain ⟨l, y, r⟩ := q
+    cases l with
+    | cons _ _ => exact h1.elim
+    | wrap u =>
+      cases r with
+      | cons _ _ => exact h3.elim
+      | wrap u' => exact ⟨y, h2, by cases u; cases u'; rfl⟩
+
+/-- B&dM p.155 `step(a,(x,b,y))`: `([a]⧺x, b, y)` if `aRb`, otherwise `(x, b, [a]⧺y)`; `leb`
+    decides `R`. -/
+@[expose] public def step (leb : A → A → Bool) : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A :=
+  graph fun p => bif leb p.1 p.2.2.1 then (ConsList.cons p.1 p.2.1, p.2.2.1, p.2.2.2)
+    else (p.2.1, p.2.2.1, ConsList.cons p.1 p.2.2.2)
+
+/-- `perm join° check'` pointwise: `q` passes `check'` and joins to a permutation of `x`. -/
+theorem pjc_iff (x : ConsList Unit A) (q : (dLAL A).carrier) :
+    ((perm : dList A ⟶ dList A) ≫ join° ≫ check' R) x q
+      ↔ Perm x (cappend q.1 (ConsList.cons q.2.1 q.2.2))
+        ∧ (∀ b, inlistP q.1 b → R b q.2.1) ∧ (∀ b, inlistP q.2.2 b → R q.2.1 b) := by
+  constructor
+  · rintro ⟨m, hm, q', hj, rfl, h1, h2⟩
+    have e : m = _ := hj; subst e; exact ⟨hm, h1, h2⟩
+  · rintro ⟨hm, h1, h2⟩
+    exact ⟨_, hm, q, rfl, rfl, h1, h2⟩
+
+/-- The fold below `embed° perm join° check'`, by induction on the non-empty list. -/
+theorem split_fold_le {bs : dL A ⟶ dLAL A} {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
+    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
+    ∀ (y : NEList A) q, cataR (junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st) y q
+      → ((perm : dList A ⟶ dList A) ≫ join° ≫ check' R) (neList y) q := by
+  have hsq := (cata_square_junc_iff bs st _).mp (cataFold_comm (L := A) (E := A)
+    (junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st))
+  intro y
+  induction y with
+  | wrap a =>
+    intro q h
+    obtain ⟨l, hl, hP⟩ := le_iff.mp hb a q ((hsq.1 a q).mp h)
+    subst hl; exact hP
+  | cons a y ih =>
+    intro q h
+    obtain ⟨r, hr, hst⟩ := (hsq.2 a y q).mp h
+    obtain ⟨w, hw, hP⟩ := le_iff.mp hs (a, neList y) q ⟨(a, r), ⟨rfl, ih r hr⟩, hst⟩
+    subst hw; exact hP
+
+variable (R) in
+/-- **p.155, split step 1**: `embed ⦇[base, step]⦈ ⊑ embed embed° perm join° check'` — the fold is
+    below `embed° perm join° check'` when `base` and `step` meet the two fusion conditions. -/
+public theorem split_cata_step1 {bs : dL A ⟶ dLAL A}
+    {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
+    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
+    embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
+      ⊑ embed ≫ embed° ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R := by
+  rw [← cataR_eq_relCata]
+  exact le_iff.mpr fun x q ⟨y, hxy, hf⟩ => ⟨y, hxy, neList y, rfl, split_fold_le hb hs y q hf⟩
+
+variable (R) in
+/-- **p.155, split step 2**: `embed embed° perm join° check' ⊑ perm join° check'` — `embed` is
+    simple. -/
+public theorem split_cata_step2 :
+    embed ≫ embed° ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R ⊑ perm ≫ join° ≫ check' R :=
+  le_iff.mpr fun x q ⟨_, hxy, _, hyx, hP⟩ => by
+    have h : x = _ := hxy; have h' : _ = _ := hyx; subst h; subst h'; exact hP
+
+variable (R) in
+/-- **`split = embed ⦇[base, step]⦈` (B&dM p.155)**: under the two fusion conditions the fold
+    satisfies the specification `split ⊑ perm join° check'`. -/
+public theorem split_cata {bs : dL A ⟶ dLAL A}
+    {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
+    (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
+    (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
+    embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
+      ⊑ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
+  le_trans (split_cata_step1 R hb hs) (split_cata_step2 R)
+
+variable (R) in
+/-- **p.155, the `base` condition**: `base ⊑ wrap perm join° check'`. -/
+public theorem split_base : (base : dL A ⟶ dLAL A) ⊑ singleR () ≫ perm ≫ join° ≫ check' R :=
+  le_iff.mpr fun a q h => by
+    subst h
+    exact ⟨_, rfl, (pjc_iff _ _).mpr ⟨Perm.refl _, fun _ hb => hb.elim, fun _ hb => hb.elim⟩⟩
+
+/-- **p.155, the `step` condition**: `(𝟙×perm join° check') step ⊑ cons perm join° check'`. -/
+public theorem split_step {leb : A → A → Bool}
+    (hleb : ∀ a b, leb a b = true → R a b) (htotal : ∀ a b, leb a b = false → R b a) :
+    rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ step leb
+      ⊑ consR ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
+  le_iff.mpr fun p q ⟨p', ⟨h1, hP⟩, hs⟩ => by
+    obtain ⟨a, l⟩ := p; obtain ⟨a', x, b, y⟩ := p'
+    obtain rfl : a = a' := h1
+    obtain ⟨hm, hx, hy⟩ := (pjc_iff _ _).mp hP
+    refine ⟨ConsList.cons a l, rfl, (pjc_iff _ _).mpr ?_⟩
+    subst hs
+    cases h : leb a b with
+    | true =>
+      simp only [h, cond_true]
+      exact ⟨Perm.cons a hm, fun c hc => hc.elim (fun e => e ▸ hleb a b h) (hx c), hy⟩
+    | false =>
+      simp only [h, cond_false]
+      refine ⟨Perm.trans (Perm.cons a hm) (Perm.trans (QSort.perm_cons_cappend a x _)
+        (QSort.perm_cappend_right x (Perm.swap a b y))), hx,
+        fun c hc => hc.elim (fun e => e ▸ htotal a b h) (hy c)⟩
+
 end Freyd.Alg.RelSet.Sort

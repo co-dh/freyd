@@ -207,7 +207,7 @@ theorem perm_cappend_left {M : ConsList Unit A} :
   | _, _, Perm.trans h1 h2 => Perm.trans (perm_cappend_left h1) (perm_cappend_left h2)
 
 /-- `cappend` respects `Perm` on its RIGHT argument (induction on the left list). -/
-theorem perm_cappend_right : ∀ (L : ConsList Unit A) {M M' : ConsList Unit A},
+public theorem perm_cappend_right : ∀ (L : ConsList Unit A) {M M' : ConsList Unit A},
     Perm M M' → Perm (cappend L M) (cappend L M')
   | ConsList.wrap _, M, M', h => h
   | ConsList.cons a L, M, M', h => Perm.cons a (perm_cappend_right L h)
@@ -218,7 +218,7 @@ public theorem perm_cappend {L L' M M' : ConsList Unit A} (hL : Perm L L') (hM :
   Perm.trans (perm_cappend_left hL) (perm_cappend_right L' hM)
 
 /-- Moving the head into the middle of an append is a permutation (AoPA `bCons-commute-++`). -/
-theorem perm_cons_cappend (a : A) : ∀ L M : ConsList Unit A,
+public theorem perm_cons_cappend (a : A) : ∀ L M : ConsList Unit A,
     Perm (ConsList.cons a (cappend L M)) (cappend L (ConsList.cons a M))
   | ConsList.wrap _, M => Perm.refl _
   | ConsList.cons b L, M => by

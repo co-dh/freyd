@@ -46,6 +46,7 @@ import AOP.A6_7
 -- §6.6's sorting calculations, which the note's chapter 6 draws step by step.
 import AOP.A6_6b_SortConcrete
 import AOP.A6_6e_Quicksort
+import AOP.A6_6c_ISort
 -- B&dM §6.1 and §6.4's worked programs, whose derivations chapter 6 of the companion note draws.
 import AOP.A6_1_Digits
 import AOP.A6_4_FastExp
@@ -1701,6 +1702,37 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Sort.check'] def unexpandCheck' : Unexpander
   | `($_ $_) => `($(mkIdent `check'))
+  | _ => throw ()
+-- §6.6 `split` as a fold on non-empty lists (B&dM p.155).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.embed] def unexpandEmbed : Unexpander
+  | `($_:ident) => `($(mkIdent `embed))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.base] def unexpandBase : Unexpander
+  | `($_:ident) => `($(mkIdent `base))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Sort.step] def unexpandStep : Unexpander
+  | `($_ $_) => `($(mkIdent `step))
+  | _ => throw ()
+-- The Boolean test `leb` of a sort's comparison states its hypotheses with `true`/`false`.
+open Lean PrettyPrinter in
+@[app_unexpander Bool.true] def unexpandBoolTrue : Unexpander
+  | `($_:ident) => `($(mkIdent `true))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Bool.false] def unexpandBoolFalse : Unexpander
+  | `($_:ident) => `($(mkIdent `false))
+  | _ => throw ()
+-- Ex 6.30 insertion sort (B&dM p.157).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ISort.add] def unexpandISortAdd : Unexpander
+  | `($_:ident) => `($(mkIdent `add))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ISort.insertR] def unexpandInsertR : Unexpander
+  | `($_ $_) => `($(mkIdent `insert))
   | _ => throw ()
 
 end Freyd.Alg

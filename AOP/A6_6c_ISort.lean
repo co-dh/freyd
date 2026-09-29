@@ -47,7 +47,7 @@ variable {A : Type}
 
 /-- `insert a x` slides `a` into `x` past every element it is not `leb`-below (AoPA `insert`,
     `iSort.agda`'s `Second-try.insert`). -/
-def insert (leb : A → A → Bool) (a : A) : ConsList Unit A → ConsList Unit A
+public def insert (leb : A → A → Bool) (a : A) : ConsList Unit A → ConsList Unit A
   | ConsList.wrap _   => ConsList.cons a (ConsList.wrap ())
   | ConsList.cons b x => match leb a b with
     | true  => ConsList.cons a (ConsList.cons b x)
@@ -80,14 +80,14 @@ theorem isort_emerges (leb : A → A → Bool) :
 
 /-- `combine x a y` : `y` is `x` with `a` spliced in at some position (AoPA `combine`, arguments
     curried and reordered to diagram convenience). -/
-def combineP (a : A) : ConsList Unit A → ConsList Unit A → Prop
+@[expose] public def combineP (a : A) : ConsList Unit A → ConsList Unit A → Prop
   | ConsList.wrap _, y   => y = ConsList.cons a (ConsList.wrap ())
   | ConsList.cons b x, y =>
       y = ConsList.cons a (ConsList.cons b x) ∨
       ∃ z, combineP a x z ∧ y = ConsList.cons b z
 
 /-- Splicing `a` into `x` yields a permutation of `a :: x` (AoPA content of `bagify-homo`). -/
-theorem combine_perm (leb : A → A → Bool) (a : A) :
+public theorem combine_perm (a : A) :
     ∀ {x y : ConsList Unit A}, combineP a x y → Perm (ConsList.cons a x) y
   | ConsList.wrap u, y, h => by
       cases u; rw [(h : y = _)]; exact Perm.refl _
@@ -98,11 +98,11 @@ theorem combine_perm (leb : A → A → Bool) (a : A) :
           obtain ⟨z, hz, hy⟩ := h
           rw [hy]
           -- a::b::x  --swap-->  b::a::x  --cons b (combine_perm)-->  b::z
-          exact Perm.trans (Perm.swap a b x) (Perm.cons b (combine_perm leb a hz))
+          exact Perm.trans (Perm.swap a b x) (Perm.cons b (combine_perm a hz))
 
 /-- **`insert ⊑ combine`** (AoPA `insert⊑combine`): the deterministic `insert` is one branch of
     the relational splice. -/
-theorem insert_le_combine (leb : A → A → Bool) (a : A) :
+public theorem insert_le_combine (leb : A → A → Bool) (a : A) :
     ∀ x : ConsList Unit A, combineP a x (insert leb a x)
   | ConsList.wrap _   => rfl
   | ConsList.cons b x => by
@@ -118,7 +118,7 @@ theorem insert_le_combine (leb : A → A → Bool) (a : A) :
     `combine_perm`. -/
 theorem insert_perm (leb : A → A → Bool) (a : A) (x : ConsList Unit A) :
     Perm (ConsList.cons a x) (insert leb a x) :=
-  combine_perm leb a (insert_le_combine leb a x)
+  combine_perm a (insert_le_combine leb a x)
 
 /-! ## Insertion establishes sortedness (AoPA `insert-respects-order`, `-lbound`, `relax-lbound`)
 
@@ -195,6 +195,224 @@ theorem isort_refines_spec {R : A → A → Prop} {leb : A → A → Bool}
   -- hxy : y = isortFn x.  Witness the permutation `z := isortFn x = y`.
   refine ⟨isortFn leb x, isort_perm leb x, ?_⟩
   exact ⟨hxy.symm, isort_sorted hleb htotal htrans x⟩
+
+/-! ## Exercise 6.30 (B&dM p.157): insertion sort from `perm = ⦇[nil, add]⦈`
+
+  The same derivation point-free, each step one declaration, for ANY `insert` meeting the exercise's
+  condition; the `insert` above is one such. -/
+
+/-- B&dM §5.6 `add = cat (𝟙×cons) exch (𝟙×cat°)`, mirrored: `add(a,x)` is `x` with `a` spliced in
+    at some position, which is `combineP`. -/
+@[expose] public def add : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A := fun p y => combineP p.1 p.2 y
+
+/-- Splicing at the front: `add(a,x) ∋ a::x`. -/
+theorem combine_head (a : A) : ∀ x : ConsList Unit A, combineP a x (ConsList.cons a x)
+  | ConsList.wrap u => by cases u; rfl
+  | ConsList.cons _ _ => Or.inl rfl
+
+/-- A permutation of `x` with `a` spliced in is a permutation of `x` with `a` spliced in last:
+    `perm` passes through `add`. -/
+theorem perm_combine {s r : ConsList Unit A} (hp : Perm s r) :
+    ∀ (a : A) (x : ConsList Unit A), combineP a x s → ∃ y, Perm x y ∧ combineP a y r := by
+  induction hp with
+  | nil => intro a x h; cases x <;> simp [combineP] at h
+  | @cons b s' r' hp ih =>
+    intro a x h
+    cases x with
+    | wrap u =>
+      simp only [combineP, ConsList.cons.injEq] at h
+      obtain ⟨rfl, rfl⟩ := h
+      obtain rfl := Perm.eq_nil hp rfl
+      exact ⟨ConsList.wrap u, Perm.refl _, rfl⟩
+    | cons c x' =>
+      simp only [combineP, ConsList.cons.injEq] at h
+      rcases h with ⟨rfl, rfl⟩ | ⟨z, hz, rfl, rfl⟩
+      · exact ⟨r', hp, combine_head _ r'⟩
+      · obtain ⟨y, hy, hc⟩ := ih a x' hz
+        exact ⟨ConsList.cons b y, Perm.cons b hy, Or.inr ⟨r', hc, rfl⟩⟩
+  | swap b c t =>
+    intro a x h
+    cases x with
+    | wrap u => simp [combineP] at h
+    | cons d x' =>
+      simp only [combineP, ConsList.cons.injEq] at h
+      rcases h with ⟨rfl, rfl, rfl⟩ | ⟨z, hz, rfl, rfl⟩
+      · exact ⟨ConsList.cons c t, Perm.refl _, Or.inr ⟨ConsList.cons b t, combine_head _ t, rfl⟩⟩
+      · cases x' with
+        | wrap u =>
+          simp only [combineP, ConsList.cons.injEq] at hz
+          obtain ⟨rfl, rfl⟩ := hz
+          cases u
+          exact ⟨ConsList.cons b (ConsList.wrap ()), Perm.refl _, Or.inl rfl⟩
+        | cons e x'' =>
+          simp only [combineP, ConsList.cons.injEq] at hz
+          rcases hz with ⟨rfl, rfl⟩ | ⟨z', hz', rfl, rfl⟩
+          · exact ⟨_, Perm.refl _, Or.inl rfl⟩
+          · exact ⟨ConsList.cons c (ConsList.cons b x''), Perm.swap b c x'',
+              Or.inr ⟨_, Or.inr ⟨_, hz', rfl⟩, rfl⟩⟩
+  | trans _ _ ih1 ih2 =>
+    intro a x h
+    obtain ⟨y1, p1, c1⟩ := ih1 a x h
+    obtain ⟨y2, p2, c2⟩ := ih2 a y1 c1
+    exact ⟨y2, Perm.trans p1 p2, c2⟩
+
+/-- **`perm = ⦇[nil, add]⦈`** (B&dM §5.6, recalled in Ex 6.30). -/
+public theorem perm_add :
+    (perm : dList A ⟶ dList A)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+  refine (relCata_UP (initial Unit A) _ _).mp
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun a x r => ?_⟩)
+  · show Perm (ConsList.wrap ()) r ↔ r = ConsList.wrap D
+    exact ⟨fun h => Perm.eq_nil h rfl, fun h => by obtain rfl := h; exact Perm.nil⟩
+  · show Perm (ConsList.cons a x) r ↔ ∃ y, Perm x y ∧ combineP a y r
+    exact ⟨fun h => perm_combine h a x (combine_head a x),
+      fun ⟨y, hxy, hc⟩ => Perm.trans (Perm.cons a hxy) (combine_perm a hc)⟩
+
+theorem combine_listP {B : Type} (Q : dE A ⟶ dE B) (a : A) :
+    ∀ {x w : ConsList Unit A} {z : ConsList Unit B}, combineP a x w → listP Q w z →
+      ∃ b y, Q a b ∧ listP Q x y ∧ combineP b y z
+  | ConsList.wrap _, w, z, hw, hz => by
+    have e : w = _ := hw; subst e
+    match z, hz with
+    | ConsList.cons b (ConsList.wrap u), hz => exact ⟨b, ConsList.wrap (), hz.1, trivial, by cases u; rfl⟩
+    | ConsList.cons _ (ConsList.cons _ _), hz => exact hz.2.elim
+    | ConsList.wrap _, hz => exact hz.elim
+  | ConsList.cons c x, w, z, hw, hz => by
+    simp only [combineP] at hw
+    rcases hw with rfl | ⟨w', hw', rfl⟩
+    · match z, hz with
+      | ConsList.cons b z', hz => exact ⟨b, z', hz.1, hz.2, combine_head b z'⟩
+      | ConsList.wrap _, hz => exact hz.elim
+    · match z, hz with
+      | ConsList.cons d z'', hz =>
+        obtain ⟨b, y, hab, hy, hc⟩ := combine_listP Q a hw' hz.2
+        exact ⟨b, ConsList.cons d y, hab, ⟨hz.1, hy⟩, Or.inr ⟨z'', hc, rfl⟩⟩
+      | ConsList.wrap _, hz => exact hz.elim
+
+theorem listP_combine {B : Type} (Q : dE A ⟶ dE B) (a : A) (b : B) (hab : Q a b) :
+    ∀ {x : ConsList Unit A} {y z : ConsList Unit B}, listP Q x y → combineP b y z →
+      ∃ w, combineP a x w ∧ listP Q w z
+  | ConsList.wrap u, ConsList.wrap _, z, _, hz => by
+    have e : z = _ := hz; subst e
+    exact ⟨_, combine_head a (ConsList.wrap u), hab, trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
+  | ConsList.cons c x, ConsList.cons d y, z, hxy, hz => by
+    simp only [combineP] at hz
+    rcases hz with rfl | ⟨z', hz', rfl⟩
+    · exact ⟨_, Or.inl rfl, hab, hxy⟩
+    · obtain ⟨w', hw', hl⟩ := listP_combine Q a b hab hxy.2 hz'
+      exact ⟨ConsList.cons c w', Or.inr ⟨w', hw', rfl⟩, hxy.1, hl⟩
+
+/-- `add` is strictly natural, `(𝟙×list)(Q) add = add list(Q)`: splicing looks only at the shape. -/
+public theorem add_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (fun a => add (A := a.carrier)) := by
+  intro a b Q
+  dsimp only
+  rw [show (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)).map Q = rprodMap Q ((Relator.comp (Relator.idRelator RelSet.{0}) listRelator).map Q) from prodMap_eq_rprodMap _ _]
+  apply hom_ext; intro p z
+  constructor
+  · rintro ⟨q, ⟨h1, h2⟩, hc⟩
+    exact listP_combine Q p.1 q.1 h1 h2 hc
+  · rintro ⟨w, hw, hz⟩
+    obtain ⟨b', y, h1, h2, hc⟩ := combine_listP Q p.1 hw hz
+    exact ⟨(b', y), ⟨h1, h2⟩, hc⟩
+
+/-- `⦇[nil, add]⦈` is strictly natural, being `perm`. -/
+public theorem add_cata_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (⦇(junc (sumCop (dL Unit) ⟨a.carrier × ConsList Unit a.carrier⟩) wrapR add
+          : (F Unit a.carrier).obj (dList a.carrier) ⟶ dList a.carrier)⦈)) := by
+  simp only [← perm_add]; exact Sort.perm_strictNatural
+
+variable (R : A → A → Prop)
+
+/-- Removing a spliced-in element keeps a list ordered. -/
+theorem combine_ordered (a : A) :
+    ∀ {x y : ConsList Unit A}, combineP a x y → orderedP R y → orderedP R x
+  | ConsList.wrap _, _, _, _ => trivial
+  | ConsList.cons b x, y, h, hy => by
+      simp only [combineP] at h
+      rcases h with rfl | ⟨z, hz, rfl⟩
+      · exact hy.2
+      · exact ⟨fun c hc => hy.1 c (Sort.perm_mem (combine_perm a hz) (Or.inr hc)),
+          combine_ordered a hz hy.2⟩
+
+/-- `nil ordered = nil`: the empty list is ordered. -/
+public theorem wrap_ordered : (wrapR : dL Unit ⟶ dList A) ≫ ordered R = wrapR :=
+  hom_ext fun _ r => ⟨fun ⟨_, hm, hmr, _⟩ => hmr ▸ hm, fun h => ⟨r, h, rfl, by subst h; trivial⟩⟩
+
+/-- **Ex 6.30, the fusion condition**: `add ordered = (𝟙×ordered) add ordered` — a list with an
+    element spliced in is ordered only if the list was. -/
+public theorem ordered_add :
+    add ≫ ordered R = rprodMap (𝟙 (dE A)) (ordered R) ≫ add ≫ ordered R :=
+  hom_ext fun p r => ⟨fun ⟨m, hm, hmr, ho⟩ =>
+      ⟨p, ⟨rfl, rfl, combine_ordered R p.1 hm ho⟩, m, hm, hmr, ho⟩,
+    fun ⟨q, ⟨h1, h2, _⟩, m, hm, hmr⟩ => by
+      obtain ⟨a, x⟩ := p; obtain ⟨a', y⟩ := q
+      obtain rfl : a = a' := h1; obtain rfl : x = y := h2
+      exact ⟨m, hm, hmr⟩⟩
+
+/-- **Ex 6.30, step 1**: `perm ordered = ⦇[nil, add]⦈ ordered`. -/
+public theorem isort_step1 :
+    (perm : dList A ⟶ dList A) ≫ ordered R
+      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R := by
+  rw [← perm_add]
+
+/-- **Ex 6.30, step 2**: `⦇[nil, add]⦈ ordered = ⦇[nil, add ordered]⦈` — fusion, under
+    `ordered_add`. -/
+public theorem isort_step2 :
+    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
+        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R
+      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (add ≫ ordered R)
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ :=
+  relCata_fusion (initial Unit A)
+    (by rw [junc_comp, Fmap_comp_junc, ← ordered_add R, wrap_ordered R])
+
+/-- **Ex 6.30, step 3**: `⦇[nil, add ordered]⦈ ⊒ ⦇[nil, insert]⦈` for any `insert` with
+    `(𝟙×ordered) insert ⊑ add ordered`. -/
+public theorem isort_step3 {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
+    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR ins
+        : (F Unit A).obj (dList A) ⟶ dList A)⦈
+      ⊑ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (add ≫ ordered R)
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+  rw [← isort_step2 R]
+  refine relCata_le_comp (initial Unit A) ?_
+  rw [Fmap_comp_junc, junc_comp, wrap_ordered R]
+  exact junc_mono _ (le_of_eq rfl) hins
+
+/-- **Exercise 6.30 (B&dM p.157)**: `perm ordered ⊒ ⦇[nil, insert]⦈` for any `insert` with
+    `(𝟙×ordered) insert ⊑ add ordered`. -/
+public theorem insertion_sort {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+    (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
+    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR ins
+        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ⊑ (perm : dList A ⟶ dList A) ≫ ordered R := by
+  rw [isort_step1 R, isort_step2 R]; exact isort_step3 R hins
+
+/-- The relation `insert : list A ← A × list A` of the function `insert`. -/
+@[expose] public def insertR (leb : A → A → Bool) : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+  graph fun p => insert leb p.1 p.2
+
+/-- **Ex 6.30, the `insert` asked for**: the `insert` above meets
+    `(𝟙×ordered) insert ⊑ add ordered`. -/
+public theorem insert_add {leb : A → A → Bool}
+    (hleb : ∀ a b, leb a b = true → R a b)
+    (htotal : ∀ a b, leb a b = false → R b a)
+    (htrans : ∀ a b c, R a b → R b c → R a c) :
+    rprodMap (𝟙 (dE A)) (ordered R) ≫ insertR leb
+      ⊑ add ≫ ordered R :=
+  le_iff.mpr fun p r ⟨q, ⟨h1, h2, ho⟩, hr⟩ => by
+    obtain ⟨a, x⟩ := p; obtain ⟨a', y⟩ := q
+    obtain rfl : a = a' := h1; obtain rfl : x = y := h2
+    subst hr
+    exact ⟨_, insert_le_combine leb a x, rfl, insert_ordered hleb htotal htrans a x ho⟩
 
 /-! ## Sanity checks on `ℕ` with `Nat.ble` -/
 
