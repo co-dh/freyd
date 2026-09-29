@@ -1410,7 +1410,15 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
             if ← Meta.isProp (← Meta.inferType φ') then continue
             let some (X', up) ← Meta.withNewMCtxDepth (passOf? ty φ') | continue
             let s' ← Meta.saveState
-            if up == below && (← Meta.isDefEq (φ'.replaceFVars xs ms) φ) && (← Meta.isDefEq (X'.replaceFVars xs ms) Y) then
+            -- A BINDER STANDS FOR ITSELF: the steps of one chain share their binder names, so the
+            -- peer's `k` matched to the panel's local `h` is two different arrows, not one instance.
+            let sameName : MetaM Bool := (xs.zip ms).allM fun (x, m) => do
+              unless φ'.containsFVar x.fvarId! || X'.containsFVar x.fvarId! do return true
+              match ← instantiateMVars m with
+              | .fvar v => return (← v.getUserName) == (← x.fvarId!.getUserName)
+              | _ => return true
+            if up == below && (← Meta.isDefEq (φ'.replaceFVars xs ms) φ) && (← Meta.isDefEq (X'.replaceFVars xs ms) Y)
+                && (← sameName) then
               hit := some up
               break
             s'.restore

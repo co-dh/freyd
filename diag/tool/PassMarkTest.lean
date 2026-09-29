@@ -45,9 +45,10 @@ def cites (step thm : Name) : MetaM Bool := do
 -- 7.2b: `R` crosses `φ`, which stands unchanged on both sides, `R` above it: the down triangle on `φ`.
 /-- info: [("φ", "R", false)] -/
 #guard_msgs in #eval marks ``Freyd.Alg.MonoAlg
--- dp-cost: `MonoAlg h R` again, `h` unchanged: the down triangle on `h`.
-/-- info: [("h", "R", false)] -/
-#guard_msgs in #eval marks ``Freyd.Alg.monoAlg_of_cost
+-- dp-cost (9.2): `h cost = F(cost)k`, `cost` the only expression on both sides and `h` above it:
+-- the down triangle on `cost`.
+/-- info: [("cost", "h", false)] -/
+#guard_msgs in #eval marks ``Freyd.Alg.monoAlg_of_cost_step1
 -- 7.2.1b: `est(R)` crosses `f` below it in `F(est(R))f`, and `f` does not stand as it is on the right:
 -- the up triangle on `est(R)`.
 /-- info: [("est(R)", "f", true)] -/
