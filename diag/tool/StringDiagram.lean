@@ -1094,12 +1094,15 @@ partial def compFactors (e : Expr) : Array Expr :=
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
+  -- AN EQUATION IS BOTH INCLUSIONS, so it lets the bead pass as its `⊑` would: `f h = F(h) g` moves
+  -- `h` across `f`, and which side `F(h)` stands on still decides the triangle.
+  let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
   for _ in [0:8] do
-    if ty.getAppFn.isConstOf ``Freyd.Alg.le then break
+    if rel ty then break
     match ← Meta.unfoldDefinition? ty with
     | some t => ty := t.headBeta
     | none => break
-  unless ty.getAppFn.isConstOf ``Freyd.Alg.le do return none
+  unless rel ty do return none
   let args := ty.getAppArgs
   if args.size < 2 then return none
   let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
@@ -1225,7 +1228,8 @@ def passHeads : MetaM (Array Name) := do
       | some h => acc.push (n, h)
       | none => acc
     | _ => acc
-  let mut hs : NameSet := NameSet.empty.insert ``Freyd.Alg.le
+  -- `Eq` as well as `⊑`: an equation states the square both ways round (`passOf?`).
+  let mut hs : NameSet := (NameSet.empty.insert ``Freyd.Alg.le).insert ``Eq
   -- 8 bounds the depth of predicates defined through predicates.
   for _ in [0:8] do
     let more := defs.filter fun (n, h) => hs.contains h && !hs.contains n
@@ -1304,7 +1308,7 @@ def moveThm (side : Expr) : MetaM (Option (Name × Expr × Expr × Bool)) := do
     if let some (r, rs) := (← moveMemo.get)[k]? then
       rs.forM (noteRead ·)
       return r.map fun (n, h, nb, b) => (n, h.instantiateRev vs, nb.instantiateRev vs, b)
-  let (r, rs) ← recordReads <| squareThm side side ((← passHeads).push ``Eq) (moveStep? · side)
+  let (r, rs) ← recordReads <| squareThm side side (← passHeads) (moveStep? · side)
   if let some (k, vs) := key then
     let a := r.map fun (n, h, nb, b) => (n, h.abstract vs, nb.abstract vs, b)
     -- A local the key does not reach would come back as the asker's dangling one.
