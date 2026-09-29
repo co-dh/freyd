@@ -208,6 +208,15 @@
 )]<rel-monoid>
 ]
 
+#let law-rel-adj = [
+#disp[#grid(columns: (1fr, 1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
+  [#P(p-37, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«∇Δ≤𝟙»")]],
+  [#P(p-38, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤Δ∇»")]],
+  [#P(p-39, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«?!≤𝟙»")]],
+  [#P(p-40, s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤!?»")]],
+)]<rel-adj>
+]
+
 #let law-conv-defn = [
 #disp[#definition[
 `°` is primitive, part of the data the first section lists. It turns both of `R`'s wires round, and

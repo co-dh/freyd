@@ -1,38 +1,9 @@
 #import "../note-prelude.typ": *
 #show: note-chapter.with(3)
 // note-split: chapter 3 — this header is written by scripts/note-split and stripped by scripts/note-join
-#import "../shared-laws.typ": *
 = Applications
 
 == Banana-split
-
-=== Laws from Relation Algebra
-
-==== Adjunctions
-#law-adj-all
-==== Composing adjunctions
-#law-adj-cross
-==== Adjoint triples
-#law-triple-chains
-==== Copy and merge
-#law-rel-monoid
-==== `°` is a contravariant 2-functor
-#law-conv-defn
-==== Meet and composition
-#law-meet-semidistrib
-==== Domain and range
-#law-dom-laws
-==== Sliding the discard
-#law-dom-slide
-==== Division
-#law-div-laws
-==== Power allegories
-#law-pow-laws
-==== `i⊣E`: power transpose through singleton
-#law-adj-E-bend
-==== `∈\` as a composite
-#law-mem-ldiv
-
 
 // B&dM §3.1 "Banana-split", pp. 55–57.  The book writes `h · f` applicatively; every composite in the
 // table is mirrored to `f h`, this note's diagram order.
