@@ -602,23 +602,23 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.concat_glue") \
     #src[putting `a` on the front of the first segment and flattening (`glue concat`) gives at most
      flattening the segments and putting `a` on the front of the result (`(𝟙×concat) cons`)]],
-  // lean:AOP.A5_6_ListCombinators.concat_glue@00000000
+  // lean:AOP.A5_6_ListCombinators.concat_glue@4d016cca
   // two rows: seven panels in one row shrink the labels past reading
   lean-chain((
     (none, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.lhs", src[the starting composite]),
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.rhs", src[definition of glue]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step1@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step1@116e04aa
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step2.rhs", src[since `concat=⦇[nil,cat]⦈`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step2@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step2@6a274ac8
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step3.rhs", src[naturality of `assocl`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step3@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step3@f23e8b63
   ), (
     (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step4.rhs", src[since `concat=⦇[nil,cat]⦈`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step4@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step4@6a0affce
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step5.rhs", src[since `(cons×𝟙) cat=assocr (𝟙×cat) cons`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step5@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step5@72b82363
     (SQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step6.rhs", src[since `assocl assocr=𝟙` and `cat° cat⊑𝟙`]),
-    // lean:AOP.A5_6_ListCombinators.concat_glue_step6@00000000
+    // lean:AOP.A5_6_ListCombinators.concat_glue_step6@ff4485e8
   )),
 )]<concat-glue>
 
