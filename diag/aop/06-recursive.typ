@@ -104,7 +104,7 @@
     // lean:AOP.A6_2.relCata_le_comp_step2@e2b7aeb0
     (EQ, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`F(⦇R⦈)R=α⦇R⦈`, `α°α=𝟙` — @cata-defining]),
     // lean:AOP.A6_2.relCata_le_comp_step3@3ef0b9b8
-    (IMP, ("Freyd.Alg.relCata_le_comp_step4",), src[(6.2) `α°F(X)T⊑X ⟹ ⦇T⦈⊑X`]),
+    (IMP, ("Freyd.Alg.relCata_le_comp_step4",), src[`⦇R⦈S` is a prefix point of `α°F(−)T`, and `⦇T⦈` is the least one — (6.2) `α°F(X)T⊑X ⟹ ⦇T⦈⊑X`]),
     // lean:AOP.A6_2.relCata_le_comp_step4@af5d58e5
   ),
 )]<cata-fusion-le>
@@ -121,7 +121,7 @@
     (SQ, "Freyd.Alg.comp_le_relCata_step2.rhs", src[`RS⊑F(S)T`]),
     // lean:AOP.A6_2.comp_le_relCata_step2@adb9a462
     (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", []),
-    (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[(6.3) `X⊑α°F(X)T ⟹ X⊑⦇T⦈`]),
+    (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[`⦇R⦈S` is a postfix point of `α°F(−)T`, and `⦇T⦈` is the greatest one — (6.3) `X⊑α°F(X)T ⟹ X⊑⦇T⦈`]),
     // lean:AOP.A6_2.comp_le_relCata_step3@804ce7dc
   ),
 )]<fusion-le-cata>
