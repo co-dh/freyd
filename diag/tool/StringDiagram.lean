@@ -1094,6 +1094,20 @@ def sameArrow (x y : Expr) : MetaM Bool := do
   (ax.zip ay).allM fun (a, b) => do
     pure ((← Meta.isDefEq a b) || ((← obj a) && (← obj b)))
 
+/-- A STATEMENT'S TWO SIDES: `ty` opened one definition at a time until a `⊑` or an `=` shows (8
+    bounds a cycle).  AN EQUATION IS BOTH INCLUSIONS, so it lets a bead pass as its `⊑` would. -/
+def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
+  let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
+  let mut ty ← instantiateMVars ty
+  for _ in [0:8] do
+    if rel ty then break
+    match ← Meta.unfoldDefinition? ty with
+    | some t => ty := t.headBeta
+    | none => break
+  unless rel ty do return none
+  let args := ty.getAppArgs
+  return some (args[args.size - 2]!, args[args.size - 1]!)
+
 /-- WHAT LETS A BEAD PASS: `ty` opened one definition at a time until its `⊑` shows (8 bounds a
     cycle), each side flattened (`compFactors`), then trimmed to the WINDOW where the two sides
     actually differ — a shared prefix/suffix is context the step carries unchanged, the same trim
@@ -1103,19 +1117,8 @@ def sameArrow (x y : Expr) : MetaM Bool := do
     the left side and whether it stands below `φ` (the up triangle): `some (P, below)`.
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
-  let mut ty ← instantiateMVars ty
-  -- AN EQUATION IS BOTH INCLUSIONS, so it lets the bead pass as its `⊑` would: `f h = F(h) g` moves
-  -- `h` across `f`, and which side `F(h)` stands on still decides the triangle.
-  let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
-  for _ in [0:8] do
-    if rel ty then break
-    match ← Meta.unfoldDefinition? ty with
-    | some t => ty := t.headBeta
-    | none => break
-  unless rel ty do return none
-  let args := ty.getAppArgs
-  if args.size < 2 then return none
-  let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
+  let some (sl, sr) ← relSides? ty | return none
+  let (l, r) := (compFactors sl, compFactors sr)
   let mapArg (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
   -- STRIP WHAT THE TWO SIDES SHARE AT EACH END, exactly as `moveStep?` does: the shared run is
@@ -1154,20 +1157,12 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     (`sameArrow`).  Answers the
     bare `h`, the bare `nb`, whether `nb` stands below `h`, which is also whether it moves up. -/
 def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
-  let mut ty ← instantiateMVars ty
-  let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
-  for _ in [0:8] do
-    if rel ty then break
-    match ← Meta.unfoldDefinition? ty with
-    | some t => ty := t.headBeta
-    | none => break
-  unless rel ty do return none
-  let args := ty.getAppArgs
+  let some (sl, sr) ← relSides? ty | return none
   -- `IS side` up to instances: a failed unification at default transparency unfolds both sides
   -- to the bottom, and nearly every candidate fails.
-  unless ← Meta.withTransparency .instances <| Meta.isDefEq args[args.size - 2]! side do return none
-  let l := compFactors (← instantiateMVars args[args.size - 2]!)
-  let r := compFactors (← instantiateMVars args[args.size - 1]!)
+  unless ← Meta.withTransparency .instances <| Meta.isDefEq sl side do return none
+  let l := compFactors (← instantiateMVars sl)
+  let r := compFactors (← instantiateMVars sr)
   let mut p := 0
   for _ in [0 : min l.size r.size] do
     if ← Meta.isDefEq l[p]! r[p]! then p := p + 1 else break
