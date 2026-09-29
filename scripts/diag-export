@@ -21,7 +21,9 @@ cd "$(dirname "$0")/.." || exit 1
 # `diag-regen` spreads a route over many processes, and the index is refreshed under a lock, so a
 # refresh per process would queue them behind each other to learn nothing changed.
 if [ "$1" = "--prepared" ]; then shift; else
-  ./scripts/cap lake build diag-export diag.StrDiagNames >&2 || exit 1
+  # `@freyd` is the package's defaultTargets (Freyd, AOP, diag): the exe walks those roots at run time
+  # (`libModules`), so a module it imports by name only there — no static import — must be built too.
+  ./scripts/cap lake build @freyd diag-export diag.StrDiagNames >&2 || exit 1
   case " $* " in *" --list "*) ;; *)
     ./scripts/lean-refactor index >&2 || exit 1
     [ "$1" = "--prepare" ] && exit 0 ;;
