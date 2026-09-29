@@ -64,9 +64,8 @@ partial def descend (declName : Name) (path : List String) (body : Expr) : MetaM
 /-- `.body`, the one branch selector a formula opens: it instantiates a least fixed point's binder
     with a local of that binder's own name — the same local `StrDiag.withSel` opens for the
     picture, so the formula names it the same way the wire beside it does.  `.inl`/`.inr` name an
-    ARM of a fork or an OPERAND of a union or meet, which is a restriction of the PICTURE the
-    formula has no counterpart of: the statement itself has no such part to print, so this fails
-    rather than guess at what the fork's other side would have said. -/
+    ARM of a fork or an OPERAND of a union or meet, a restriction of the PICTURE only: the step
+    still states the WHOLE side, so the formula prints that side — as a `branches` group's does. -/
 partial def withBody {α : Type} [Inhabited α] (declName : Name) (branch : List StrDiag.Sel) (e : Expr)
     (k : Expr → MetaM α) : MetaM α := do
   match branch with
@@ -80,9 +79,7 @@ partial def withBody {α : Type} [Inhabited α] (declName : Name) (branch : List
         throwError "{declName}: `{← Meta.ppExpr φ}` binds no arrow, so `.body` opens no wire to \
           write the formula on"
       withBody declName rest b k
-  | .inl :: _ | .inr :: _ =>
-    throwError "{declName}: --formula draws no `.inl`/`.inr` branch of a side — the statement has \
-      no such part to print"
+  | .inl :: _ | .inr :: _ => k e
 
 /-- A FIELD'S STRUCTURE ARGUMENT under the name the library gives a value of that structure.  Lean
     calls it `self`, which is no word of the note's (`self(R)` for `F(R)`); the structure's own
