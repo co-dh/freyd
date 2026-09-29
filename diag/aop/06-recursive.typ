@@ -434,6 +434,55 @@
   ),
 )]<sort-quick>
 
+// B&dM 6.6d, p.154, "claim: ordered flatten = inordered flatten"; `inordered = ⦇[null, fork check]⦈` is a
+// coreflexive (lean:AOP.A6_6e_Quicksort.inordered_coref@99102d71) and `R` must be transitive.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.flatten_ordered") \
+    #src[flattening a tree and then testing the list for order is the same as testing the tree with
+     `inordered` and then flattening]],
+     // lean:AOP.A6_6e_Quicksort.flatten_ordered@0f755413
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.flatten_ordered.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.flatten_ordered.rhs", src[`R` transitive: a flattened tree is ordered iff every node passes `check`]),
+  ),
+)]<sort-flatten-ordered>
+
+// B&dM 6.6e, p.155, the three claims left as exercises, the first: `F(flatten)` carries `check` to `check'`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.check_flatten") \
+    #src[testing a fork with `check` and then flattening both subtrees equals flattening both subtrees and
+     then testing with `check'`, since `intree` of a tree is `inlist` of its flattening]],
+     // lean:AOP.A6_6e_Quicksort.check_flatten@65a38823
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.check_flatten.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.check_flatten.rhs", src[`b intree x ⟺ b inlist flatten(x)`]),
+  ),
+)]<sort-check-flatten>
+
+// B&dM 6.6e, p.155, the second claim: `perm join = F(perm) join perm`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.join_perm") \
+    #src[permuting the list `x ++ [a] ++ y` is the same as first permuting `x` and `y` and then permuting the
+     joined list]],
+     // lean:AOP.A6_6e_Quicksort.join_perm@1c05221d
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.join_perm.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.join_perm.rhs", src[`perm` is transitive and closed under `++`]),
+  ),
+)]<sort-join-perm>
+
+// B&dM 6.6e, p.155, the third claim: `F(perm) check' = check' F(perm)`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.check'_perm") \
+    #src[testing a fork of lists with `check'` and then permuting both parts equals permuting both parts and
+     then testing, since permuting a list leaves its members unchanged]],
+     // lean:AOP.A6_6e_Quicksort.check'_perm@49e70eef
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.check'_perm.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.Sort.check'_perm.rhs", src[`b inlist x ⟺ b inlist perm(x)`]),
+  ),
+)]<sort-checkp-perm>
+
 // B&dM 6.6e, p.155, the fusion proviso; `split` is specified by `split°⊑check' join perm`.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_proviso") \
