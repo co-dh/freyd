@@ -98,7 +98,7 @@
   // lean:AOP.A6_2.relCata_le_comp@b54d0a6b
   lean-chain(
     (none, "Freyd.Alg.relCata_le_comp_step1.lhs", src[the prefix-point condition of (6.2) for `T` at `X≜⦇R⦈S`]),
-    (EQ, "Freyd.Alg.relCata_le_comp_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+    (EQ, "Freyd.Alg.relCata_le_comp_step1.rhs", []),
     // lean:AOP.A6_2.relCata_le_comp_step1@2fbeae5c
     (SQ, "Freyd.Alg.relCata_le_comp_step2.rhs", src[`F(S)T⊑RS`]),
     // lean:AOP.A6_2.relCata_le_comp_step2@e2b7aeb0
@@ -120,7 +120,7 @@
     (EQ, "Freyd.Alg.relCata_le_comp_step3.lhs", src[`α⦇R⦈=F(⦇R⦈)R`, `α°α=𝟙` — @cata-defining]),
     (SQ, "Freyd.Alg.comp_le_relCata_step2.rhs", src[`RS⊑F(S)T`]),
     // lean:AOP.A6_2.comp_le_relCata_step2@adb9a462
-    (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", src[`F(R)F(S)=F(RS)` — @relator-defn]),
+    (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", []),
     (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[(6.3) at `X≜⦇R⦈S`, for the algebra `T`]),
     // lean:AOP.A6_2.comp_le_relCata_step3@804ce7dc
   ),
@@ -155,7 +155,7 @@
         recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
       // lean:AOP.A6_3.hylo_fixed@67ca7394
       (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
-      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", []),
       (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
       (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
       (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
@@ -168,7 +168,7 @@
         satisfies the associated recursion inequation],
       (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
       (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", src[`F(RS)=F(R)F(S)` — @relator-defn]),
+      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", []),
       (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
       (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
     ),
