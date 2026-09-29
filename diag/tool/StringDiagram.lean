@@ -1327,6 +1327,9 @@ def stepProof (n : Name) (xs : Array Expr) (lvls? : Option (List Lean.Level) := 
     where the square is `⊒`; once `X` has moved below, plain.
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
 def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : MetaM Diagram := do
+  -- A THEOREM MARKS only when the step cites it or IS it: a square no step's proof uses moved nothing.
+  let self := (← getOptions).get drawingKey Name.anonymous
+  let cites (n : Name) := n == self || proof.getUsedConstants.contains n
   let mut rows := d.rows
   for i in [0 : rows.size] do
     let r := rows[i]!
@@ -1350,7 +1353,7 @@ def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : Meta
       if let some c := r.core then
         if inScope c && inScope Y then
           if let some (n, up) ← passThm c Y then
-            hit := some (n, ← label Y, false)
+            if cites n then hit := some (n, ← label Y, false)
             dir := up
     if let some p := hit then rows := rows.set! i { r with pass := some p, tri := some dir }
   -- THE STEP OUT OF THIS SIDE moves its neighbour across `h`: the triangle points the way the neighbour
@@ -1358,7 +1361,7 @@ def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : Meta
   let lctx ← getLCtx
   if let some side := side? then
     if !side.hasAnyFVar (!lctx.contains ·) then
-      if let some (thm, h, nb, below) ← moveThm side then
+      if let some (thm, h, nb, below) := (← moveThm side).filter fun (t, _, _, _) => cites t then
         for i in [0 : rows.size] do
           let r := rows[i]!
           let j := if below then i + 1 else i - 1
