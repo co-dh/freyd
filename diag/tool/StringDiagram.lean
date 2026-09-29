@@ -660,9 +660,9 @@ def fileOf (body : String) (nat : String := "") : String :=
     order — the lax bead first, then the function; a bead that eats lanes is tied to where they
     die; a bead with none of these rides the object wire, where the note's own `place` lets it sit
     at any height (IntroString (1.16): two such placements are the SAME diagram).
-    LAST, AN OPERATOR OVER A VARIABLE: a bead whose term is a defined constant (`est(R)`, `∋`) is
-    the fixed context a law moves a free variable of the statement past (`f` in
-    `F(est(R))f ⊑ …est(R)`), so of two beads alike in all else the operator stands still. -/
+    LAST, AN OPERATOR OVER A VARIABLE: of two beads alike in all else, one whose term is a defined
+    constant (`∋`) stands still.  Only a tie-break for a display with NO triangle: where one is
+    drawn, `placement` anchors on the bead that carries it. -/
 def Row.pin (r : Row) : Nat :=
   2 * (if r.nat.isSome then 3 else if r.map then 2 else if r.arms.isEmpty then 0 else 1)
     + (if r.core.any (·.getAppFn.isConst) then 1 else 0)
@@ -701,11 +701,13 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     -- already has that bead there; more than every other match together when that part is the
     -- NEIGHBOUR, whose shared beads the gate holds level.
     -- THE TRIANGLE IS THE ANCHOR, ahead of size: the bead the relation passes down across the `⊑`
-    -- is what the display is about, so its match outweighs every other match of the part together.
+    -- is what the display is about, so its match outweighs every other match of the part together —
+    -- whichever part carries it: the mark is drawn in the left panel only, and the right panel's
+    -- copy of that bead lines up on it all the same.
     let base (i : Nat) : Int := 8 * b.rows[i]!.size + b.rows[i]!.pin + 1
     let rest : Int := (List.range n).foldl (· + base ·) 0
-    let pin (i : Nat) : Int := if b.rows[i]!.tri.isSome then rest + base i else base i
-    let tot : Int := (List.range n).foldl (· + pin ·) 0
+    let pin (i : Nat) (anchor : Bool) : Int := if anchor then rest + base i else base i
+    let tot : Int := (List.range n).foldl (· + pin · true) 0
     -- THE SAME BEAD, not the same label: two rows are one bead when the composite the walk found each
     -- in (the first `ctx` term of several factors) holds a factor beside it that the other's holds
     -- too — the inner `𝟙%∋` stands before `E(X)` both in `(𝟙%∋)E(X)∋` and in `(𝟙%∋)E(X)`, while the
@@ -720,8 +722,9 @@ def placement (ps : Array Diagram) : Placement := Id.run do
     let w (i j : Nat) : Int :=
       let hits := slots[j]!.filter fun (p, r) => ps[p]!.rows[r]!.same b.rows[i]!
       let nbr := hits.filter (·.1 + 1 == k)
-      if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin i
-      else if !nbr.isEmpty then 10 * (tot + 1) * pin i else if hits.isEmpty then 0 else 10 * pin i
+      let pin := pin i (b.rows[i]!.tri.isSome || hits.any fun (p, r) => ps[p]!.rows[r]!.tri.isSome)
+      if nbr.any (fun (p, r) => kin ps[p]!.rows[r]! b.rows[i]!) then 20 * (tot + 1) * pin
+      else if !nbr.isEmpty then 10 * (tot + 1) * pin else if hits.isEmpty then 0 else 10 * pin
     -- f(i,j): best score with rows `< i` placed among slots `< j`; a new slot costs 1, so a row
     -- takes a free level before it opens one.  `how` is the step taken: 0 skip, 1 place, 2 new.
     let ix (i j : Nat) := i * (m + 1) + j
@@ -1313,6 +1316,61 @@ def stepProof (n : Name) (xs : Array Expr) (lvls? : Option (List Lean.Level) := 
   let some v := ci.value? | return mkConst n
   return (match lvls? with | some l => v.instantiateLevelParams ci.levelParams l | none => v).beta xs
 
+/-- HOW MUCH A BEAD IS: the nodes of its term and of its type, metavariables instantiated, read
+    through EXPLICIT arguments only — an instance or an implicit object is not what the reader sees,
+    and counted it swamps the rest — and through a STRUCTURE FIELD as through nothing: `F.obj A` is
+    `F` applied to `A`, and a variable relator reaches `obj` through `toFunctor` where a named one
+    does not.  A class method (`powerObj`, `⟶`) is a name the reader sees, and counts.  `φ : F(A)⟶A` outweighs `R : A⟶A` by the functor its type carries, `est(R) : E(A)⟶A` outweighs `f : F(A)⟶A` by the operator its term applies. -/
+partial def beadWeight (e : Expr) : MetaM Nat := do
+  let e ← instantiateMVars e
+  return (← nodes e) + (← nodes (← instantiateMVars (← Meta.inferType e)))
+where
+  nodes (e : Expr) : MetaM Nat := do
+    match e.consumeMData with
+    | e@(.app ..) =>
+      let (f, args) := (e.getAppFn, e.getAppArgs)
+      let info ← Meta.getFunInfoNArgs f args.size
+      let field ← match f.constName? with
+        | some c => pure ((← getProjectionFnInfo? c).any (!·.fromClass))
+        | none => pure false
+      let mut n := 0
+      unless field do n ← nodes f
+      for i in [0 : args.size] do
+        if info.paramInfo[i]?.all (·.isExplicit) then n := n + (← nodes args[i]!)
+      return n
+    | .proj _ _ x => nodes x
+    | .lam _ t b _ | .forallE _ t b _ => return 1 + (← nodes t) + (← nodes b)
+    | _ => return 1
+
+/-- OF THE TWO BEADS A PASS SWAPS, THE TRIANGLE GOES ON THE MORE COMPLICATED ONE (`beadWeight`): the
+    crossing bead `φ` keeps it on a tie, else its partner `P` takes it, pointing the other way — down
+    when its partner stands above it, up when below.  Answers the marked bead, its partner, and
+    whether that partner stands below it. -/
+def heavierMark (φ P : Expr) (below : Bool) : MetaM (Expr × Expr × Bool) := do
+  if (← beadWeight P) > (← beadWeight φ) then return (P, φ, !below) else return (φ, P, below)
+
+/-- `heavierMark` over a settled panel: a mark on row `i`, whose partner is the row its triangle
+    points at, moves to that partner when the partner is the more complicated bead.  A bead under a
+    binder the walk opened has no type in this context, so it is weighed nowhere: the crossing bead
+    keeps the mark there, as `settlePass` keeps theorems off such beads. -/
+def settleHeavier (rows : Array Row) : MetaM (Array Row) := do
+  let lctx ← getLCtx
+  let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
+  let mut rows := rows
+  for i in [0 : rows.size] do
+    let r := rows[i]!
+    let (some below, some (n, _, b)) := (r.tri, r.pass) | continue
+    let j := if below then i + 1 else i - 1
+    if (!below && i == 0) || j ≥ rows.size then continue
+    let p := rows[j]!
+    let (some c, some q) := (r.core, p.core) | continue
+    unless inScope c && inScope q && p.nat.isNone && p.tri.isNone do continue
+    let (m, _, dir) ← heavierMark c q below
+    unless m == q do continue
+    rows := (rows.set! i { r with pass := none, tri := none }).set! j
+      { p with pass := some (n, ← label c, b), tri := some dir }
+  return rows
+
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead directly above, the up triangle where the bead directly below, is
     the partner a binder (`passCands`, `isDefEq`) or a theorem (`passThm`) says the bead crosses
@@ -1364,7 +1422,7 @@ def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : Meta
           if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
             rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below }
             break
-  return { d with rows }
+  return { d with rows := ← settleHeavier rows }
 
 /-- A STEP'S HYPOTHESIS IS EVIDENCE FOR ITS NEIGHBOURING PANELS: a chain step `R S ⊑ F(S) T` is drawn
     as two panels, each read in its own declaration's telescope, so the panel of the side that does
@@ -1411,7 +1469,7 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
       if let some up := hit then
         rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some up }
         break
-  return { d with rows }
+  return { d with rows := ← settleHeavier rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
