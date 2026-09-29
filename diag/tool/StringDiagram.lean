@@ -1358,6 +1358,48 @@ def settlePass (d : Diagram) (side? : Option Expr := none) : MetaM Diagram := do
             break
   return { d with rows }
 
+/-- A STEP'S HYPOTHESIS IS EVIDENCE FOR ITS NEIGHBOURING PANELS: a chain step `R S ⊑ F(S) T` is drawn
+    as two panels, each read in its own declaration's telescope, so the panel of the side that does
+    NOT own the hypothesis `h : R S ⊑ F(S) T` never sees it.  Every declaration of the call is opened
+    with metavariables, and a hypothesis with the pass shape (`passOf?`) for a bead whose directly
+    preceding bead is its `X` marks that bead, cited by the declaration (as `passThm` cites). -/
+def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
+  let mut rows := d.rows
+  let env ← getEnv
+  for i in [1 : rows.size] do
+    let r := rows[i]!
+    unless r.nat.isNone && r.tri.isNone do continue
+    let (some φ, some Y) := (r.core, rows[i - 1]!.core) | continue
+    for n in decls do
+      let some ci := env.find? n | continue
+      let s ← Meta.saveState
+      let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+      let ty0 := ci.type.instantiateLevelParams ci.levelParams lvls
+      -- The hypothesis is read under LOCALS, as `passHyp` reads a binder: with metavariables the
+      -- prefix trim of `passOf?` can unify unrelated factors.  The match against the panel's `φ`
+      -- and `Y` is then one unification of the two terms, with the locals replaced by metavariables.
+      let hit ← Meta.forallTelescope ty0 fun xs _ => do
+        let (ms, _, _) ← Meta.forallMetaTelescope ty0
+        let mut hit : Option Bool := none
+        for x in xs do
+          let ty ← instantiateMVars (← Meta.inferType x)
+          unless ← Meta.isProp ty do continue
+          for φ' in xs do
+            if ← Meta.isProp (← Meta.inferType φ') then continue
+            let some (X', up) ← Meta.withNewMCtxDepth (passOf? ty φ') | continue
+            let s' ← Meta.saveState
+            if (← Meta.isDefEq (φ'.replaceFVars xs ms) φ) && (← Meta.isDefEq (X'.replaceFVars xs ms) Y) then
+              hit := some up
+              break
+            s'.restore
+          if hit.isSome then break
+        return hit
+      s.restore
+      if let some up := hit then
+        rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some up }
+        break
+  return { d with rows }
+
 /-! ### The verdict cache — the environment's answer, kept across runs -/
 
 partial def levelJson : Lean.Level → Option Json
@@ -3073,6 +3115,9 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- THIS FILE'S OWN PARTS ARE DRAWN ONCE, under the locals it is printed in, and handed to the
     -- peer cache as they are: drawn again as a peer of their own call, every panel cost two draws.
     withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    -- The call's declarations speak for each other's panels (`settlePeerHyps`).
+    let parts ← parts.mapM fun (s, d) => do
+      return (s, ← settlePeerHyps d (peers.toArray.map fun (b, _, _, _) => b.toName))
     let per ← Prof.phaseIf draw "peers" do
       discard <| peerParts (key declName binder path sel) (pure (parts.map (·.2)))
       peers.toArray.mapM fun (b, h, p, s) => part b.toName h p s
