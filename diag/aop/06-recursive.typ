@@ -503,8 +503,45 @@
      // lean:AOP.A6_6e_Quicksort.split_step5@94aed1e9
   ),
 )]<sort-split>
-// TODO p.155 split-cata: `split = embed ⦇[base,step]⦈` with `base ⊆ wrap perm join°check'`,
-//   `(𝟙×join check')step ⊆ cons perm join°check'`.
+// B&dM 6.6f, p.155, `split = ⦇[base,step]⦈·embed` on non-empty lists; the fold is below the
+// specification `split ⊆ check'·join°·perm` when `base` and `step` meet the two fusion conditions.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_cata") \
+    #src[turning a list into a non-empty list and folding it with `[base, step]` gives only
+     `check`ed triples `(x,a,y)` whose join `x ⧺ [a] ⧺ y` is a permutation of the list]],
+     // lean:AOP.A6_6e_Quicksort.split_cata@6dc148a1
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.split_cata_step1.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step1.rhs", src[@split-base and @split-step, induction on the non-empty list]),
+     // lean:AOP.A6_6e_Quicksort.split_cata_step1@330ccb63
+    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step2.rhs", src[`embed` is simple]),
+     // lean:AOP.A6_6e_Quicksort.split_cata_step2@054111f9
+  ),
+)]<split-cata>
+
+// B&dM p.155, the first fusion condition, with `base(a) = ([],a,[])`.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_base") \
+    #src[`base(a)` is a `check`ed triple whose join is a permutation of the one-element list `[a]`]],
+     // lean:AOP.A6_6e_Quicksort.split_base@5518d1ff
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.split_base.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Sort.split_base.rhs", src[`[] ⧺ [a] ⧺ [] = [a]`, and `check'` holds on empty lists]),
+  ),
+)]<split-base>
+
+// B&dM p.155, the second fusion condition, with `step(a,(x,b,y)) = ([a]⧺x,b,y)` if `aRb`, otherwise
+// `(x,b,[a]⧺y)`; `R` total.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_step") \
+    #src[if `(x,b,y)` is a `check`ed triple for a permutation of `l`, then `step(a,(x,b,y))` is a
+     `check`ed triple for a permutation of `[a] ⧺ l`]],
+     // lean:AOP.A6_6e_Quicksort.split_step@5468d217
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.Sort.split_step.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.Sort.split_step.rhs", src[`aRb` puts `a` in front of `x`; otherwise `bRa` and `a` goes in front of `y`]),
+  ),
+)]<split-step>
 // B&dM 6.6f, p.155, the program: by the hylomorphism theorem `X=⦇[nil,split°]⦈°flatten` solves the
 // equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@3e9893c3).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -521,8 +558,34 @@
      // lean:AOP.A6_6e_Quicksort.qrec_step2@4ee6ccce
   ),
 )]<qsort-rec>
-// TODO Ex 6.30 insertion: `perm ordered = ⦇[nil,add]⦈ordered = ⦇[nil,add ordered]⦈ ⊒ ⦇[nil,insert]⦈`
-//   (3 steps) — Lean isort_emerges is concrete.
+// B&dM p.157 (Ex 6.30): insertion sort, from `perm = ⦇[nil,add]⦈` (§5.6) with `add` putting an
+// element anywhere in a list (lean:AOP.A6_6c_ISort.add@88935b2b).
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insertion_sort") \
+    #src[for any `insert` that, on an ordered list, returns only ordered results of `add`, folding
+     with `[nil, insert]` gives only sorted permutations]],
+     // lean:AOP.A6_6c_ISort.insertion_sort@3dcc9fbb
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.ISort.isort_step1.lhs", []),
+    (EQ, "Freyd.Alg.RelSet.ISort.isort_step1.rhs", src[`perm = ⦇[nil,add]⦈`]),
+     // lean:AOP.A6_6c_ISort.isort_step1@1b7905a1 lean:AOP.A6_6c_ISort.perm_add@f1c7b0d4
+    (EQ, "Freyd.Alg.RelSet.ISort.isort_step2.rhs", src[fusion, `add ordered = (𝟙×ordered) add ordered`]),
+     // lean:AOP.A6_6c_ISort.isort_step2@3a587343 lean:AOP.A6_6c_ISort.ordered_add@e96a052f
+    (RQ, "Freyd.Alg.RelSet.ISort.isort_step3.lhs", src[`(𝟙×ordered) insert ⊑ add ordered`]),
+     // lean:AOP.A6_6c_ISort.isort_step3@b909215e
+  ),
+)]<isort-ex630>
+
+// B&dM p.157 (Ex 6.30), the `insert` asked for: slide `a` past every element it is not below.
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insert_add") \
+    #src[inserting `a` into an ordered list puts `a` somewhere in it and keeps it ordered]],
+     // lean:AOP.A6_6c_ISort.insert_add@dd8903b1
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.ISort.insert_add.lhs", []),
+    (SQ, "Freyd.Alg.RelSet.ISort.insert_add.rhs", src[`insert` splices `a` in, and `R` transitive and total]),
+  ),
+)]<isort-insert>
 
 == Closure
 
