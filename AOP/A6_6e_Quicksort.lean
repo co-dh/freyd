@@ -506,8 +506,64 @@ public theorem qsort_least {Y : dList A ⟶ dList A}
 /-- B&dM p.155 `embed : list⁺ A ← list A`, the partial map taking a non-empty list to itself. -/
 @[expose] public def embed : dList A ⟶ dNE A := (graph neList)°
 
+theorem neList_nelistP {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (y : NEList A) (z : NEList B), nelistP Q y z → listP Q (neList y) (neList z)
+  | ConsList.wrap _, ConsList.wrap _, h => ⟨h, trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h => h.elim
+  | ConsList.cons _ y, ConsList.cons _ z, ⟨h1, h2⟩ => ⟨h1, neList_nelistP Q y z h2⟩
+
+theorem listP_neList {B : Type} (Q : dE A ⟶ dE B) :
+    ∀ (x : ConsList Unit A) (z : NEList B), listP Q x (neList z) → ∃ y, x = neList y ∧ nelistP Q y z
+  | ConsList.wrap _, ConsList.wrap _, h => h.elim
+  | ConsList.cons a (ConsList.wrap u), ConsList.wrap _, h => ⟨ConsList.wrap a, by cases u; rfl, h.1⟩
+  | ConsList.cons _ (ConsList.cons _ _), ConsList.wrap _, h => h.2.elim
+  | ConsList.wrap _, ConsList.cons _ _, h => h.elim
+  | ConsList.cons a x, ConsList.cons _ z, h => by
+    obtain ⟨y, rfl, hy⟩ := listP_neList Q x z h.2
+    exact ⟨ConsList.cons a y, rfl, h.1, hy⟩
+
+/-- `embed` is strictly natural, `list(Q) embed = embed list⁺(Q)`: it looks only at the shape. -/
+public theorem embed_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) nelistRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (embed : dList a.carrier ⟶ dNE a.carrier)) := by
+  intro a b Q
+  apply hom_ext; intro x z
+  constructor
+  · rintro ⟨x', hx, hz⟩
+    have e : x' = neList z := hz
+    subst e
+    obtain ⟨y, rfl, hy⟩ := listP_neList Q x z hx
+    exact ⟨y, rfl, hy⟩
+  · rintro ⟨y, hy, hz⟩
+    have e : x = neList y := hy
+    subst e
+    exact ⟨neList z, neList_nelistP Q y z hz, rfl⟩
+
 /-- B&dM p.155 `base(a) = ([], a, [])`. -/
 @[expose] public def base : dL A ⟶ dLAL A := graph fun a => (ConsList.wrap (), a, ConsList.wrap ())
+
+/-- `base` is strictly natural, `Q base = base (list(Q)×Q×list(Q))`. -/
+public theorem base_strictNatural :
+    StrictNatural (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.prod (Relator.idRelator RelSet.{0})
+          (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (Relator.idRelator RelSet.{0}) (fun a => base (A := a.carrier)) := by
+  intro a b Q
+  simp only [prod_map_rprodMap]
+  apply hom_ext; intro x q
+  constructor
+  · rintro ⟨y, hxy, rfl⟩
+    exact ⟨_, rfl, trivial, hxy, trivial⟩
+  · rintro ⟨p, rfl, h1, h2, h3⟩
+    obtain ⟨l, y, r⟩ := q
+    cases l with
+    | cons _ _ => exact h1.elim
+    | wrap u =>
+      cases r with
+      | cons _ _ => exact h3.elim
+      | wrap u' => exact ⟨y, h2, by cases u; cases u'; rfl⟩
 
 /-- B&dM p.155 `step(a,(x,b,y))`: `([a]⧺x, b, y)` if `aRb`, otherwise `(x, b, [a]⧺y)`; `leb`
     decides `R`. -/

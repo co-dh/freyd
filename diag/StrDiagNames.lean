@@ -1705,6 +1705,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Sort.step] def unexpandStep : Unexpander
   | `($_ $_) => `($(mkIdent `step))
   | _ => throw ()
+-- The Boolean test `leb` of a sort's comparison states its hypotheses with `true`/`false`.
+open Lean PrettyPrinter in
+@[app_unexpander Bool.true] def unexpandBoolTrue : Unexpander
+  | `($_:ident) => `($(mkIdent `true))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Bool.false] def unexpandBoolFalse : Unexpander
+  | `($_:ident) => `($(mkIdent `false))
+  | _ => throw ()
 -- Ex 6.30 insertion sort (B&dM p.157).
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ISort.add] def unexpandISortAdd : Unexpander

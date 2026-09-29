@@ -507,7 +507,7 @@
 // specification `split ⊆ check'·join°·perm` when `base` and `step` meet the two fusion conditions.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_cata") \
-    #src[turning a list into a non-empty list and folding it with `[base, step]` gives only
+    #src[turning a list into a non-empty list and folding it with any `[bs, st]` meeting the two conditions below gives only
      `check`ed triples `(x,a,y)` whose join `x ⧺ [a] ⧺ y` is a permutation of the list]],
      // lean:AOP.A6_6e_Quicksort.split_cata@6dc148a1
   lean-chain(
@@ -562,8 +562,8 @@
 // element anywhere in a list (lean:AOP.A6_6c_ISort.add@88935b2b).
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insertion_sort") \
-    #src[for any `insert` that, on an ordered list, returns only ordered results of `add`, folding
-     with `[nil, insert]` gives only sorted permutations]],
+    #src[for any `ins` that, on an ordered list, returns only ordered results of `add`, folding
+     with `[nil, ins]` gives only sorted permutations]],
      // lean:AOP.A6_6c_ISort.insertion_sort@3dcc9fbb
   lean-chain(
     (none, "Freyd.Alg.RelSet.ISort.isort_step1.lhs", []),
@@ -571,7 +571,7 @@
      // lean:AOP.A6_6c_ISort.isort_step1@1b7905a1 lean:AOP.A6_6c_ISort.perm_add@f1c7b0d4
     (EQ, "Freyd.Alg.RelSet.ISort.isort_step2.rhs", src[fusion, `add ordered = (𝟙×ordered) add ordered`]),
      // lean:AOP.A6_6c_ISort.isort_step2@3a587343 lean:AOP.A6_6c_ISort.ordered_add@e96a052f
-    (RQ, "Freyd.Alg.RelSet.ISort.isort_step3.lhs", src[`(𝟙×ordered) insert ⊑ add ordered`]),
+    (RQ, "Freyd.Alg.RelSet.ISort.isort_step3.lhs", src[`(𝟙×ordered) ins ⊑ add ordered`]),
      // lean:AOP.A6_6c_ISort.isort_step3@b909215e
   ),
 )]<isort-ex630>

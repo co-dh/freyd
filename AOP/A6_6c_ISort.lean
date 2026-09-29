@@ -269,6 +269,67 @@ public theorem perm_add :
     exact ⟨fun h => perm_combine h a x (combine_head a x),
       fun ⟨y, hxy, hc⟩ => Perm.trans (Perm.cons a hxy) (combine_perm a hc)⟩
 
+theorem combine_listP {B : Type} (Q : dE A ⟶ dE B) (a : A) :
+    ∀ {x w : ConsList Unit A} {z : ConsList Unit B}, combineP a x w → listP Q w z →
+      ∃ b y, Q a b ∧ listP Q x y ∧ combineP b y z
+  | ConsList.wrap _, w, z, hw, hz => by
+    have e : w = _ := hw; subst e
+    match z, hz with
+    | ConsList.cons b (ConsList.wrap u), hz => exact ⟨b, ConsList.wrap (), hz.1, trivial, by cases u; rfl⟩
+    | ConsList.cons _ (ConsList.cons _ _), hz => exact hz.2.elim
+    | ConsList.wrap _, hz => exact hz.elim
+  | ConsList.cons c x, w, z, hw, hz => by
+    simp only [combineP] at hw
+    rcases hw with rfl | ⟨w', hw', rfl⟩
+    · match z, hz with
+      | ConsList.cons b z', hz => exact ⟨b, z', hz.1, hz.2, combine_head b z'⟩
+      | ConsList.wrap _, hz => exact hz.elim
+    · match z, hz with
+      | ConsList.cons d z'', hz =>
+        obtain ⟨b, y, hab, hy, hc⟩ := combine_listP Q a hw' hz.2
+        exact ⟨b, ConsList.cons d y, hab, ⟨hz.1, hy⟩, Or.inr ⟨z'', hc, rfl⟩⟩
+      | ConsList.wrap _, hz => exact hz.elim
+
+theorem listP_combine {B : Type} (Q : dE A ⟶ dE B) (a : A) (b : B) (hab : Q a b) :
+    ∀ {x : ConsList Unit A} {y z : ConsList Unit B}, listP Q x y → combineP b y z →
+      ∃ w, combineP a x w ∧ listP Q w z
+  | ConsList.wrap u, ConsList.wrap _, z, _, hz => by
+    have e : z = _ := hz; subst e
+    exact ⟨_, combine_head a (ConsList.wrap u), hab, trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _, _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, _, h, _ => h.elim
+  | ConsList.cons c x, ConsList.cons d y, z, hxy, hz => by
+    simp only [combineP] at hz
+    rcases hz with rfl | ⟨z', hz', rfl⟩
+    · exact ⟨_, Or.inl rfl, hab, hxy⟩
+    · obtain ⟨w', hw', hl⟩ := listP_combine Q a b hab hxy.2 hz'
+      exact ⟨ConsList.cons c w', Or.inr ⟨w', hw', rfl⟩, hxy.1, hl⟩
+
+/-- `add` is strictly natural, `(𝟙×list)(Q) add = add list(Q)`: splicing looks only at the shape. -/
+public theorem add_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (fun a => add (A := a.carrier)) := by
+  intro a b Q
+  dsimp only
+  rw [show (Relator.prod (Relator.idRelator RelSet.{0}) (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)).map Q = rprodMap Q ((Relator.comp (Relator.idRelator RelSet.{0}) listRelator).map Q) from prodMap_eq_rprodMap _ _]
+  apply hom_ext; intro p z
+  constructor
+  · rintro ⟨q, ⟨h1, h2⟩, hc⟩
+    exact listP_combine Q p.1 q.1 h1 h2 hc
+  · rintro ⟨w, hw, hz⟩
+    obtain ⟨b', y, h1, h2, hc⟩ := combine_listP Q p.1 hw hz
+    exact ⟨(b', y), ⟨h1, h2⟩, hc⟩
+
+/-- `⦇[nil, add]⦈` is strictly natural, being `perm`. -/
+public theorem add_cata_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (⦇(junc (sumCop (dL Unit) ⟨a.carrier × ConsList Unit a.carrier⟩) wrapR add
+          : (F Unit a.carrier).obj (dList a.carrier) ⟶ dList a.carrier)⦈)) := by
+  simp only [← perm_add]; exact Sort.perm_strictNatural
+
 variable (R : A → A → Prop)
 
 /-- Removing a spliced-in element keeps a list ordered. -/
