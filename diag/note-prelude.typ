@@ -320,10 +320,8 @@
 #let union = branches.with([∪])
 #let sum = branches.with([+])
 // A reason stands under its panel only when it fits the panel's width; a longer one would run into
-// the next step's, so the panel gets a letter instead, numbered per row, and the lettered reasons
-// are listed under the row, where the circuits stood.  A row with a BRANCHES step (∪/+) letters
-// EVERY step and lists a 3-column table instead — letter, formula, hint — because the group's
-// formula only reads against its own hint, not against a panel too narrow to hold it.
+// the next step's, so the panel gets a letter instead, and the row lists a 3-column table under it:
+// letter, formula, hint.  A row with a BRANCHES step (∪/+) letters EVERY step (one per group).
 #let chain-tags = "abcdefghijklmnopqrstuvwxyz".clusters()
 // The maximal runs of a flat step list `r` that share one `union`/`sum` call: each run is
 // `(i0, n)`, `n == 1` a plain step, `n > 1` a branches group — identified by the `gid` the
@@ -478,8 +476,8 @@
       // `circuit: false`: each reason under its panel if it fits the panel's width, else a letter
       // there and the reason in the list under the row; `circuit: true`: the panels bare, and under
       // them one circuit row per step carrying its reason.  A row with a BRANCHES step (∪/+) letters
-      // every COLUMN regardless of width — one letter per group, not per branch inside it — and
-      // replaces the list with a 3-column table (letter, formula, hint) — see the comment above `chain-tags`.
+      // every COLUMN regardless of width — one letter per group, not per branch inside it; any
+      // lettered row lists the 3-column table (letter, formula, hint) — see the comment above `chain-tags`.
       let pw = w.map(x => x * k)
       let hasg = not circuit and r.any(s => type(s.at(3, default: none)) == dictionary)
       // A GROUP is one COLUMN, so it gets one letter shared by every flat member — the letters run
@@ -493,7 +491,8 @@
         }
       } else {
         for (s, x) in r.zip(pw) {
-          if not circuit and measure(s.at(2)).width > x { tags.push(chain-tags.at(n)); n += 1 }
+          // the list pass draws no panels, so widths say nothing: it letters every step, so every formula is listed
+          if not circuit and ("list" in sys.inputs or measure(s.at(2)).width > x) { tags.push(chain-tags.at(n)); n += 1 }
           else { tags.push(none) }
         }
       }
@@ -554,8 +553,11 @@
           al: (center + horizon, center + horizon, left + horizon),
           ..lines.flatten()))
       } else if n > 0 {
-        block(above: 6pt, below: 0pt, grid(columns: (auto, 1fr), column-gutter: 6pt, row-gutter: 5pt,
-          ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)], s.at(2))).flatten()))
+        // same table as the branches rows: each lettered step lists its generated formula beside its hint
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
+          al: (center + horizon, center + horizon, left + horizon),
+          ..r.zip(tags).filter(((s, t)) => t != none).map(((s, t)) => ([(#t)],
+            fit-w(leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) })), s.at(2))).flatten()))
       }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
