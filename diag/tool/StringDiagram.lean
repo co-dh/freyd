@@ -1080,9 +1080,14 @@ partial def compFactors (e : Expr) : Array Expr :=
     compFactors args[args.size - 2]! ++ compFactors args[args.size - 1]!
   else #[e]
 
-/-- `X` WHERE A PROPOSITION IS THE NATURALITY SQUARE OF `φ` AT `X`: opened one definition at a time
-    until its `⊑` shows (8 bounds a cycle), its sides flattened (`compFactors`), each exactly two
-    factors, `F(X)φ` and `φG(X)` with `φ` unified on both — `true` where it reads `φG(X) ⊑ F(X)φ`.
+/-- WHAT LETS A BEAD PASS: `ty` opened one definition at a time until its `⊑` shows (8 bounds a
+    cycle), each side flattened (`compFactors`).  Two shapes, tried in this order:
+    (1) THE SANDWICH — each side exactly two factors, `φ` unified on both: `F(X)φ` against `φG(X)`,
+    `some (X, false)`; the reverse `φG(X) ⊑ F(X)φ` is `some (X, true)`.
+    (2) `φ` ITSELF PASSES — a hypothesis `P⋯φ ⊑ G(φ)⋯Q` restates the composite ENDING in `φ` as one
+    STARTING from its image `G(φ)`, with no relation asked between `P` and `Q`; `P`, whatever
+    directly precedes `φ`, is the candidate a neighbouring bead must match (`settlePass`), giving
+    `some (P, false)`.  The mirror `G(φ)⋯Q ⊑ P⋯φ` gives `some (P, true)`.
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let mut ty ← instantiateMVars ty
@@ -1095,7 +1100,6 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let args := ty.getAppArgs
   if args.size < 2 then return none
   let (l, r) := (compFactors args[args.size - 2]!, compFactors args[args.size - 1]!)
-  if l.size != 2 || r.size != 2 then return none
   let mapArg (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
   -- `G(X)`, or `X` itself where `G` is the identity: the image of the SAME `X` below `φ`.
@@ -1104,11 +1108,21 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     | none => Meta.isDefEq e X
   -- ONE SQUARE, EITHER WAY ROUND: `F(X)φ` on one side and `φG(X)` on the other, the same `φ` both
   -- times.  `F(X)φ ⊑ φG(X)` is the down triangle, `φG(X) ⊑ F(X)φ` the up one.
+  if l.size == 2 && r.size == 2 then
+    for (up, a, b) in [(false, l, r), (true, r, l)] do
+      let some X := mapArg a[0]! | continue
+      let s ← Meta.saveState
+      if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
+        return some (X, up)
+      s.restore
+  -- `φ` IS THE MOVER: bare as the LAST factor of one side, `G(φ)` as the FIRST factor of the other —
+  -- the bead's own hypothesis, not a square shared with a fixed neighbour.  Down triangle first.
   for (up, a, b) in [(false, l, r), (true, r, l)] do
-    let some X := mapArg a[0]! | continue
+    if a.size < 2 || b.size < 1 then continue
     let s ← Meta.saveState
-    if (← Meta.isDefEq a[1]! φ) && (← Meta.isDefEq b[0]! φ) && (← image b[1]! X) then
-      return some (X, up)
+    if (← Meta.isDefEq a.back! φ) then
+      if let some X := mapArg b[0]! then
+        if ← Meta.isDefEq X φ then return some (a[a.size - 2]!, up)
     s.restore
   return none
 
