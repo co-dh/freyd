@@ -159,7 +159,7 @@ structure Row where
       naturality and draws its circle or diamond, never a triangle. -/
   tri : Option Bool := none
   /-- Every `(binder, X)` a binder lets down past this bead, before the panel's order is known. -/
-  passCands : Array (Name × String × Expr × Bool) := #[]
+  passCands : Array (Name × String × Expr × Bool × FVarId) := #[]
   /-- The bead's own term with no lane around it (`X`, not `F(X)`), which `settlePass` compares
       with the `X` of the bead below it. -/
   core : Option Expr := none
@@ -220,7 +220,7 @@ def Diagram.mapExpr (f : Expr → Expr) (d : Diagram) : Diagram :=
     rows := d.rows.map fun r => { r with
       src := cut r.src, tgt := cut r.tgt, core := r.core.map f, term := r.term.map f,
       ctx := r.ctx.map (·.map f), ident := r.ident.map f,
-      passCands := r.passCands.map fun (n, s, x, b) => (n, s, f x, b) }
+      passCands := r.passCands.map fun (n, s, x, b, v) => (n, s, f x, b, v) }
     otop := f d.otop, obot := f d.obot }
 
 /-! ### `columns` — how far apart the lanes sit -/
@@ -1201,13 +1201,13 @@ def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
     the predicate being drawn, applied to its own binders — that is the square `F(X)φ ⊑ φG(X)` of
     the bead `φ` (`passOf?`): `MonoAlg φ R` is one, `Distributes f R` is not (`Λ(F(∋)f)` is not
     `f`).  Nothing found is the default bead. -/
-def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr × Bool)) := do
+def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr × Bool × FVarId)) := do
   let mut out := #[]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     unless ← Meta.isProp d.type do continue
     if let some (X, up) ← Meta.withNewMCtxDepth (passOf? d.type φ) then
-      out := out.push (← d.fvarId.getUserName, ← label X, X, up)
+      out := out.push (← d.fvarId.getUserName, ← label X, X, up, d.fvarId)
   return out
 
 initialize passHeadsRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
@@ -1312,12 +1312,21 @@ def moveThm (side : Expr) : MetaM (Option (Name × Expr × Expr × Bool)) := do
       moveMemo.modify (·.insert k (a, rs))
   return r
 
+/-- THE STEP'S PROOF AT ITS BINDERS `xs`: a hypothesis the step USES is a free variable of it, one
+    that merely sits in the telescope is not.  `lvls` instantiates the value's universe parameters
+    as the caller's `xs` were.  A declaration with no value (an axiom) proves nothing from its
+    binders, so it uses none of them. -/
+def stepProof (n : Name) (xs : Array Expr) (lvls? : Option (List Lean.Level) := none) : MetaM Expr := do
+  let some ci := (← getEnv).find? n | throwError "stepProof: no such declaration: {n}"
+  let some v := ci.value? | return mkConst n
+  return (match lvls? with | some l => v.instantiateLevelParams ci.levelParams l | none => v).beta xs
+
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
     down triangle where the bead `i-1` directly above IS an `X` that a binder (`passCands`,
     `isDefEq`) or a theorem (`passThm`) gives the square `F(X)φ ⊑ φG(X)` of — the up triangle
     where the square is `⊒`; once `X` has moved below, plain.
     A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
-def settlePass (d : Diagram) (side? : Option Expr := none) : MetaM Diagram := do
+def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
   for i in [0 : rows.size] do
     let r := rows[i]!
@@ -1326,7 +1335,9 @@ def settlePass (d : Diagram) (side? : Option Expr := none) : MetaM Diagram := do
     let some Y := up.bind (·.core) | continue
     let mut hit : Option (Name × String × Bool) := none
     let mut dir := false
-    for (h, xl, X, up) in r.passCands do
+    for (h, xl, X, up, v) in r.passCands do
+      -- A binder the step's proof never mentions moved nothing past this bead (`stepProof`).
+      unless proof.containsFVar v do continue
       if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
         hit := some (h, xl, true)
         dir := up
@@ -1380,10 +1391,13 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
       -- and `Y` is then one unification of the two terms, with the locals replaced by metavariables.
       let hit ← Meta.forallTelescope ty0 fun xs _ => do
         let (ms, _, _) ← Meta.forallMetaTelescope ty0
+        let proof ← stepProof n xs lvls
         let mut hit : Option Bool := none
         for x in xs do
           let ty ← instantiateMVars (← Meta.inferType x)
           unless ← Meta.isProp ty do continue
+          -- The peer's hypothesis marks a bead only where the peer's own step USES it (`stepProof`).
+          unless proof.containsFVar x.fvarId! do continue
           for φ' in xs do
             if ← Meta.isProp (← Meta.inferType φ') then continue
             let some (X', up) ← Meta.withNewMCtxDepth (passOf? ty φ') | continue
@@ -2875,7 +2889,7 @@ def joinNamed (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (d : D
     picture turned out to be.  The rewrite that draws `Λ S` as the note draws it — the unit bead and
     `S` on the `E` lane — is `interp`'s, taken at every spine it draws and so at every lane depth;
     a side is one such spine and gets no copy of it here. -/
-def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) :
+def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array Expr) (proof : Expr) :
     MetaM Diagram := do
   let side ← instantiateMVars side
   let wide {α} (m : MetaM α) : MetaM α :=
@@ -2888,7 +2902,7 @@ def panelOf (regionTy : Expr) (cat : Array Name) (side : Expr) (objVars : Array 
   let n : Int := d.rows.size
   let d := { d with lanes := d.lanes.map fun l => if l.dies == LIVE then { l with dies := n } else l }
   Prof.phase "scan" <| run <| scanCheck regionTy cat objVars side d
-  Prof.phase "settle" <| settlePass d (some side)
+  Prof.phase "settle" <| settlePass d proof (some side)
 
 /-- The selectors applied in order, with the REST OF THE READ run under whatever locals they open.
     `.body` instantiates the least fixed point's binder with a local of that binder's own name, and
@@ -2913,13 +2927,13 @@ partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Na
     inside all of them: a bead's ends are printed from the `Expr`, so a local opened for one part is
     still needed when the last part's panel is written out. -/
 partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Name)
-    (objVars : Array Expr) (sel : List Sel) (drawn : List (String × Expr))
+    (objVars : Array Expr) (proof : Expr) (sel : List Sel) (drawn : List (String × Expr))
     (acc : Array (String × Diagram)) (k : Array (String × Diagram) → MetaM α) : MetaM α :=
   match drawn with
   | [] => k acc
   | (sym, e) :: rest =>
     withSel regionTy cat objVars sel e fun e' => do
-      withParts regionTy cat objVars sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars)) k
+      withParts regionTy cat objVars proof sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars proof)) k
 
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
@@ -3007,7 +3021,12 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
   -- body, where the first walk cannot reach them, and the arrow still carried them and was refused
   -- as no arrow.  Re-quantifying over what has been entered and walking once more lands on the
   -- statement whichever side of the definition its binders sit.
-  let stmt ← Prof.phaseIf draw "read" <| stmtTelescope ci.type fun xs body0 => do
+  -- `own`: the binder of the re-quantified statement that IS the drawn step's proof — the drawn
+  -- hypothesis, or a predicate's own claim — where the step has no value to read uses off.
+  let (stmt, own) ← Prof.phaseIf draw "read" <| stmtTelescope ci.type fun xs body0 => do
+    let hIdx ← match binder with
+      | some h => xs.findIdxM? fun x => return (← x.fvarId!.getUserName).toString == h
+      | none => pure none
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -3038,9 +3057,17 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
     -- reads the triangle off, exactly as `LaxNatural` drawn is the claim `hypVerdict` reads.
     if body0.isSort then
       let self := mkAppN (mkConst declName (ci.levelParams.map mkLevelParam)) xs
-      Meta.withLocalDeclD declName self fun h => Meta.mkForallFVars (xs.push h) body
-    else Meta.mkForallFVars xs body
+      return (← Meta.withLocalDeclD declName self fun h => Meta.mkForallFVars (xs.push h) body,
+        hIdx <|> some xs.size, xs.size)
+    else return (← Meta.mkForallFVars xs body, hIdx, xs.size)
+  let (own, nb) := own
   stmtTelescope stmt fun xs body => do
+    -- The step whose ⊑ a pass mark may claim: marks cite only what this proof mentions.
+    let proof ← match own with
+      | some i => match xs[i]? with
+        | some x => pure x
+        | none => throwError "{declName}: the re-read statement has {xs.size} binders, not the {i + 1}th its proof is"
+      | none => stepProof declName (xs.extract 0 nb)
     -- A PATH NAMES A STATEMENT; a TRAILING SIDE NAME picks one part of it.  `relCata_UP` is an `↔`
     -- between two inequations, so `.lhs` names the left inequation and draws it whole — both parts
     -- in one frame — and `.lhs.lhs` goes on to that inequation's left part alone.  A step descends
@@ -3092,7 +3119,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         if ← Meta.isDefEq t it then objVars := objVars.push x
     unless draw do
       return ("", ← drawn.mapM fun (_, e) =>
-        withSel regionTy cat objVars sel e fun e' => panelOf regionTy cat e' objVars)
+        withSel regionTy cat objVars sel e fun e' => panelOf regionTy cat e' objVars proof)
     -- `.inl`/`.inr` is ONE BRANCH of the side, and the selectors CHAIN: each names an operand of
     -- the binary operation what the one before it left is, outermost first.  What that operation
     -- is — a union, a meet, a junction over a coproduct — is read off the run's type by
@@ -3114,7 +3141,7 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       && s.map (·.suffix) == sel.map (·.suffix)
     -- THIS FILE'S OWN PARTS ARE DRAWN ONCE, under the locals it is printed in, and handed to the
     -- peer cache as they are: drawn again as a peer of their own call, every panel cost two draws.
-    withParts regionTy cat objVars sel drawn.toList #[] fun parts => do
+    withParts regionTy cat objVars proof sel drawn.toList #[] fun parts => do
     -- The call's declarations speak for each other's panels (`settlePeerHyps`).
     let parts ← parts.mapM fun (s, d) => do
       return (s, ← settlePeerHyps d (peers.toArray.map fun (b, _, _, _) => b.toName))
