@@ -54,28 +54,28 @@ every F-algebra `f`
   Thm(cols: 1)[#leanf("Freyd.Alg.nat_fold_spec") \
     #src[`h` is a homomorphism from `α = [zero,succ]` to `[c,f]` exactly when `h` sends `zero` to
      `c` and `succ` then `h` equals `h` then `f`]],
-  // lean:AOP.A2_6.nat_fold_spec@9046a59f
+  // lean:AOP.A2_6.nat_fold_spec@4f96f949
   lean-chain(
     (
       (none, "Freyd.Alg.nat_fold_spec_step1.lhs", src[the right side]),
       (EQ, "Freyd.Alg.nat_fold_spec_step1.rhs", src[definition of `F`]),
-      // lean:AOP.A2_6.nat_fold_spec_step1@d82b9284
+      // lean:AOP.A2_6.nat_fold_spec_step1@3617b276
       (EQ, "Freyd.Alg.nat_fold_spec_step2.rhs", src[coproduct]),
-      // lean:AOP.A2_6.nat_fold_spec_step2@fc083a02
+      // lean:AOP.A2_6.nat_fold_spec_step2@34821c4d
     ),
     (
       (none, "Freyd.Alg.nat_fold_spec_step3.lhs", src[the left side]),
       (EQ, "Freyd.Alg.nat_fold_spec_step3.rhs", src[since `α = [zero,succ]`]),
-      // lean:AOP.A2_6.nat_fold_spec_step3@2bd668e6
+      // lean:AOP.A2_6.nat_fold_spec_step3@305350d9
       (EQ, "Freyd.Alg.nat_fold_spec_step4.rhs", src[coproduct]),
-      // lean:AOP.A2_6.nat_fold_spec_step4@8989a46b
+      // lean:AOP.A2_6.nat_fold_spec_step4@d3fec447
     ),
     (
       (IFF, ("Freyd.Alg.nat_fold_spec_step5_zero",), src[cancellation, `zero` arm]),
       (src[and], ("Freyd.Alg.nat_fold_spec_step5_succ",), src[cancellation, `succ` arm]),
-      // lean:AOP.A2_6.nat_fold_spec_step5@f4e0b720
-      // lean:AOP.A2_6.nat_fold_spec_step5_zero@31b106bc
-      // lean:AOP.A2_6.nat_fold_spec_step5_succ@297b6b0e
+      // lean:AOP.A2_6.nat_fold_spec_step5@54298de9
+      // lean:AOP.A2_6.nat_fold_spec_step5_zero@d3a0daa1
+      // lean:AOP.A2_6.nat_fold_spec_step5_succ@b36deae1
     ),
   ),
 )]<nat-fold-spec>
