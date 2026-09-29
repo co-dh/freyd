@@ -1350,7 +1350,8 @@ def heavierMark (φ P : Expr) (below : Bool) : MetaM (Expr × Expr × Bool) := d
   if (← beadWeight P) > (← beadWeight φ) then return (P, φ, !below) else return (φ, P, below)
 
 /-- `heavierMark` over a settled panel: a mark on row `i`, whose partner is the row its triangle
-    points at, moves to that partner when the partner is the more complicated bead.  A bead under a
+    points at, moves to that partner when the partner is the more complicated bead, and is dropped
+    when that partner already carries another pass's triangle.  A bead under a
     binder the walk opened has no type in this context, so it is weighed nowhere: the crossing bead
     keeps the mark there, as `settlePass` keeps theorems off such beads. -/
 def settleHeavier (rows : Array Row) : MetaM (Array Row) := do
@@ -1364,11 +1365,12 @@ def settleHeavier (rows : Array Row) : MetaM (Array Row) := do
     if (!below && i == 0) || j ≥ rows.size then continue
     let p := rows[j]!
     let (some c, some q) := (r.core, p.core) | continue
-    unless inScope c && inScope q && p.nat.isNone && p.tri.isNone do continue
+    unless inScope c && inScope q && p.nat.isNone do continue
     let (m, _, dir) ← heavierMark c q below
     unless m == q do continue
-    rows := (rows.set! i { r with pass := none, tri := none }).set! j
-      { p with pass := some (n, ← label c, b), tri := some dir }
+    -- ONE TRIANGLE A BEAD: a heavier partner already marked by another pass keeps that one alone.
+    rows := rows.set! i { r with pass := none, tri := none }
+    if p.tri.isNone then rows := rows.set! j { p with pass := some (n, ← label c, b), tri := some dir }
   return rows
 
 /-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
@@ -1436,7 +1438,8 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
    for (j, below) in [(i - 1, false), (i + 1, true)] do
     let r := rows[i]!
     if (!below && i == 0) || j ≥ rows.size then continue
-    unless r.nat.isNone && r.tri.isNone do continue
+    -- A pass `settlePass` already drew on the partner, pointing at this bead, is this very pair.
+    unless r.nat.isNone && r.tri.isNone && rows[j]!.tri != some (!below) do continue
     let (some φ, some Y) := (r.core, rows[j]!.core) | continue
     for n in decls do
       let some ci := env.find? n | continue
