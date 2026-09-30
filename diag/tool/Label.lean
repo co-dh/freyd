@@ -247,14 +247,24 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
       headShown (stxPeel stx)
     else plain e
 
+/-- Whether a factor OPENS WITH A WORD: a name of two letters or more, standing alone (`cost`) or
+    heading an application (`est(R)`).  The name is the run the LEXER would read as one identifier
+    (`isIdFirst`, then `isIdRest`), and primes do not count, as in `oneChar`: `F'(R)` opens with
+    the one-letter `F'`. -/
+def opensWord (s : String) : Bool :=
+  match s.toList with
+  | c :: rest => Lean.isIdFirst c && !(rest.takeWhile Lean.isIdRest).all (· == '\'')
+  | [] => false
+
 /-- The note's juxtaposition spacing, the same rule the note's own generator writes back with.
-    `a` IS ONE FACTOR — `juxtL` folds the run from the right so it always is — and the space is
-    there for ONE reason: two factors run together read as one name.  A FACTOR OF ONE CHARACTER
-    (`oneChar`, whatever the character) cannot, so it closes up against whatever follows it —
-    `RR°`, `π₂R°`, `R◁`, `▷◁`, `⟜⊸`, and `◁(R⊗R)` and `S(S\T)` against an opening bracket too.
-    A WORD of two characters or more keeps its space (`cons R`, `prefix list(p)`,
-    `S%∋ est(R°)`, `pick (schedule×𝟙)snoc`, which closed up would read as an application of
-    `pick`), unless a bracket or a `°` already separates it from what follows (`F(∋)S`). -/
+    `a` AND `b` ARE ONE FACTOR EACH — `juxtL` hands in the run's first factor — and the space is
+    there for ONE reason: two factors run together read as one name.  TWO ONE-LETTER NAMES cannot
+    (the note's variables are one letter each), so they close up — `RR°`, `SR`, `hF(cost)` — and so
+    does a one-character factor against anything that opens with no name: `R◁`, `▷◁`, `⟜⊸`, `k≤`,
+    and `◁(R⊗R)` and `S(S\T)` against an opening bracket.  A WORD of two characters or more keeps
+    its space AGAINST A NAME ON EITHER SIDE (`cons R`, `h cost`, `S est(R)`, `prefix list(p)`, `S%∋ est(R°)`,
+    `pick (schedule×𝟙)snoc`, which closed up would read as an application of `pick`), unless a
+    bracket or a `°` already separates it from what follows (`F(∋)S`). -/
 def juxt (a b : String) : String :=
   if a.isEmpty || b.isEmpty then a ++ b
   -- `°` is a POSTFIX: it terminates its operand exactly as a closer does, so `est(R∩S°S)` must not
@@ -262,7 +272,10 @@ def juxt (a b : String) : String :=
   -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
   -- blocks) cannot continue a name either, so `cost≤cost°` and `plus≥` close up as the note sets them.
   -- The closure's `*` (B&dM (6.7)) is a postfix like `°`: `R*R*`, not `R* R*`.
-  else if oneChar a || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
+  -- A ONE-LETTER NAME before a word is the one join that reads as a single name (`hcost`); a
+  -- one-character OPERATOR continues no name, so it closes up on both sides (`cost≤cost°`).
+  else if (oneChar a && !(Lean.isIdFirst a.front && opensWord b))
+      || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
       || (0x2190 ≤ b.front.val && b.front.val ≤ 0x22FF) then a ++ b
   else a ++ " " ++ b
 
@@ -1050,12 +1063,12 @@ partial def Lbl.leadsDelim : Lbl → Bool
 def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
 
 /-- The note's juxtaposition spacing between two labels, decided on their flat spelling (`juxt`), so
-    one rule answers for the string and for the tree alike.  `a` IS ONE FACTOR and `b` the rest of
-    the run, which is why the run is folded from the RIGHT: the spacing is the LEFT factor's own
-    (a one-character factor closes up, a word does not), and a left fold hands `juxt` a whole run
-    whose last factor it cannot see — `R◁` then `▷` came out `R◁ ▷`. -/
-def juxtL (a b : Lbl) : Lbl :=
-  if b.leadsDelim || juxt a.flat b.flat == a.flat ++ b.flat then a ++ b else a ++ " " ++ b
+    one rule answers for the string and for the tree alike.  `a` IS ONE FACTOR, `next` the factor
+    it meets and `rest` the run `next` opens, which is why the run is folded from the RIGHT: the
+    spacing is decided by the two factors either side of the join and by nothing else, and a run
+    handed in whole hides where its first factor ends — `RS` reads as a word after `h`. -/
+def juxtL (a next rest : Lbl) : Lbl :=
+  if next.leadsDelim || juxt a.flat next.flat == a.flat ++ next.flat then a ++ rest else a ++ " " ++ rest
 
 /-- `sep` between the parts. -/
 def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
@@ -1414,9 +1427,12 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     if let some r ← rewriteHead? e then return ← labelTree prec r
     if lastTwo args |>.isNone then txt e else do
       let mut s : Lbl := .text ""
+      let mut next : Lbl := .text ""
       -- FROM THE RIGHT, so `juxtL`'s left operand is ONE factor and the spacing between two
-      -- factors is decided by the left one of THEM, not by the run built so far.
-      for t in (← labelRunT e).reverse do s := juxtL t s
+      -- factors is decided by THEM, not by the run built so far.
+      for t in (← labelRunT e).reverse do
+        s := juxtL t next s
+        next := t
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
       -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
       -- `old (R∩H)` does — so composition sits ABOVE `∩`/`∪` and below `°`.
