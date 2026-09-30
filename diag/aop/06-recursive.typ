@@ -349,7 +349,7 @@
     // lean:AOP.A6_5.thm64_claim@4b02dea3
   lean-chain(
     (none, "Freyd.Alg.thm64_claim_step1.lhs", []),
-    (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`Rf⊑F(f)α`, shunting]),
+    (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`R° ⊑ f α° F(f°)` — `R f ⊑ F(f) α`, shunting, converse]),
     // lean:AOP.A6_5.thm64_claim_step1@b4925181
     (SQ, "Freyd.Alg.thm64_claim_step2.rhs", src[`member` lax natural]),
     // lean:AOP.A6_5.thm64_claim_step2@3e9c7464
