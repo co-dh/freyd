@@ -1430,6 +1430,11 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".arg" then
       stem := stem.dropEnd 4
       sides := "arg" :: sides
+    -- `.compact`: the FORMULA's print mode, the caller's — a formula fitted above a panel has no
+    -- room, where every other formula is set as text and spaced (`FormulaRender.file`).
+    else if stem.endsWith ".compact" then
+      stem := stem.dropEnd 8
+      sides := "compact" :: sides
     else more := false
   -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
   -- statement too.  Split before `toName`: `#` is not an identifier character, so
@@ -1828,6 +1833,9 @@ def main (args : List String) : IO UInt32 := do
       -- `.arg` is a formula step only: a picture has no argument of a side to draw on its own.
       if sides.contains "arg" && !formulaMode then
         throwError "{arg}: `.arg` (the argument a side is applied to) is read by --formula only"
+      if sides.contains "compact" && !formulaMode then
+        throwError "{arg}: `.compact` is a formula's print mode, read by --formula only — a panel's \
+          labels are compact already"
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
