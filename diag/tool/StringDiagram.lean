@@ -158,6 +158,9 @@ structure Row where
       pointing down, `some true` pointing up.  Only ever with `pass`: a family's own square is its
       naturality and draws its circle or diamond, never a triangle. -/
   tri : Option Bool := none
+  /-- THE SIGN OF THE STEP THAT LEAVES THE PANEL IS `=` (`Step.eq`): an equal rule is applied, and
+      the mark is a hollow circle on the bead `tri` names; a `⊑` step's is the triangle. -/
+  eq : Bool := false
   /-- Every `(binder, X)` a binder lets down past this bead, before the panel's order is known. -/
   passCands : Array (Name × String × Expr × Bool × FVarId) := #[]
   /-- The bead's own term with no lane around it (`X`, not `F(X)`), which `settlePass` compares
@@ -480,7 +483,8 @@ def panelCode (p : Diagram) (frame : Option Nat) (levels : Option (Array Nat)) :
     -- default drawing: a strict bead is the filled dot and a refuted one (`nat := none`) no dot at
     -- all.  One arm per constructor and no default, so `oplax` cannot be drawn as `lax` again.
     let mark := match r.tri, r.nat with
-      | some false, _ => ", \"pass\"" | some true, _ => ", \"passup\""
+      -- THE SIGN RIGHT OF THE PANEL PICKS THE SHAPE: `=` the hollow circle, `⊑` the triangle.
+      | some up, _ => if r.eq then ", \"eq\"" else if up then ", \"passup\"" else ", \"pass\""
       | none, none => ""
       | none, some .strict => ""
       -- A LAX SQUARE `G(R)φ ⊑ φF(R)` lets every arrow above down past the bead, so it IS the down
@@ -1129,10 +1133,16 @@ def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
     Answers `φ`'s partner in the left side and whether it stands below `φ` (the up triangle):
     `some (P, below)`, and `none` for a bead the square does not mark.
     A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match
-    of `φ` alone. -/
-def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
-  let some (sl, sr) ← relSides? ty | return none
-  let (l, r) := (compFactors sl, compFactors sr)
+    of `φ` alone.
+    `rev` READS AN EQUATION RIGHT TO LEFT — its right side is the one left, the partner `φ`'s
+    neighbour THERE: a step rewriting `F(⦇R⦈)R` to `α⦇R⦈` applies `α⦇R⦈ = F(⦇R⦈)R` to the panel
+    that draws its right side.  A `⊑` has no such reading. -/
+def passOf? (ty φ : Expr) (rev : Bool := false) : MetaM (Option (Expr × Bool)) := do
+  let some rel ← stmtRel? ty | return none
+  if rev && !rel.isAppOfArity ``Eq 3 then return none
+  let args := rel.getAppArgs
+  let (sl, sr) := (args[args.size - 2]!, args[args.size - 1]!)
+  let (l, r) := if rev then (compFactors sr, compFactors sl) else (compFactors sl, compFactors sr)
   let mapArg (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
   -- WHAT IS COMMON IS READ OFF THE STATEMENT AS IT STANDS, its metavariables closed to assignment:
@@ -1183,7 +1193,16 @@ def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
     (`sameArrow`).  Answers the
     bare `h`, the bare `nb`, whether `nb` stands below `h`, which is also whether it moves up. -/
 def moveStep? (ty side : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
-  let some (sl, sr) ← relSides? ty | return none
+  let some rel ← stmtRel? ty | return none
+  let args := rel.getAppArgs
+  let (a, b) := (args[args.size - 2]!, args[args.size - 1]!)
+  -- AN EQUATION LEAVES EITHER SIDE (`passOf?`'s `rev`); a `⊑` its left one only.
+  for (sl, sr) in if rel.isAppOfArity ``Eq 3 then [(a, b), (b, a)] else [(a, b)] do
+    let s ← Meta.saveState
+    if let some x ← go sl sr then return some x
+    s.restore
+  return none
+where go (sl sr : Expr) : MetaM (Option (Expr × Expr × Bool)) := do
   -- `IS side` up to instances: a failed unification at default transparency unfolds both sides
   -- to the bottom, and nearly every candidate fails.
   unless ← Meta.withTransparency .instances <| Meta.isDefEq sl side do return none
@@ -1219,8 +1238,9 @@ def passHyp (φ : Expr) : MetaM (Array (Name × String × Expr × Bool × FVarId
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     unless ← Meta.isProp d.type do continue
-    if let some (X, up) ← Meta.withNewMCtxDepth (passOf? d.type φ) then
-      out := out.push (← d.fvarId.getUserName, ← label X, X, up, d.fvarId)
+    for rev in [false, true] do
+      if let some (X, up) ← Meta.withNewMCtxDepth (passOf? d.type φ rev) then
+        out := out.push (← d.fvarId.getUserName, ← label X, X, up, d.fvarId)
   return out
 
 initialize passHeadsRef : IO.Ref (Option (Array Name)) ← IO.mkRef none
@@ -1249,10 +1269,38 @@ def passHeads : MetaM (Array Name) := do
   passHeadsRef.set (some out)
   return out
 
+/-- A STEP THAT LEAVES A PANEL: the statement whose LEFT side the panel draws, so its sign stands to
+    the panel's right — the panel's own declaration, for the panel of its left side, or a peer of
+    the call whose left side the panel is (`peerStep`).  THE MARK ON A PANEL IS THE RULE THIS STEP
+    APPLIES TO IT to obtain the next panel: the step that ARRIVED at a panel marks nothing on it,
+    and the last panel of a chain, left by no step, carries no mark. -/
+structure Step where
+  name  : Name
+  /-- Its sign, read off the relation of its statement (`stmtRel?`): `=`, where a `⊑` is not. -/
+  eq    : Bool
+  /-- Its proof: at the panel's own binders for the panel's declaration, the closed value of a peer. -/
+  proof : Expr
+  /-- A peer's hypotheses its proof uses, at the panel's arrows; the panel's own declaration's are
+      its rows' `passCands`. -/
+  hyps  : Array Expr := #[]
+  /-- Every constant the proof mentions, read once. -/
+  used  : NameSet := NameSet.empty
+
+def Step.mk' (name : Name) (eq : Bool) (proof : Expr) (hyps : Array Expr := #[]) : Step :=
+  { name, eq, proof, hyps, used := proof.getUsedConstants.foldl (·.insert ·) NameSet.empty }
+
+/-- A THEOREM MARKS only when the step cites it or IS it. -/
+def Step.cites (s : Step) (n : Name) : Bool := n == s.name || s.used.contains n
+
+/-- What a theorem search for this step depends on, for its memo: the step and its citations. -/
+def Step.key (s : Step) : UInt64 := s.used.toList.foldl (fun h n => mixHash h (hash n)) (hash s.name)
+
 /-- The search `passThm` and `moveThm` share: every candidate under `heads` naming the constants of
-    `φ` and `Y`, opened with metavariables, its body answered by `m`, its open arguments discharged. -/
-def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM (Option α)) :
-    MetaM (Option (Name × α)) := do
+    `φ` and `Y`, opened with metavariables, its body answered by `m`, its open arguments discharged.
+    ONLY A THEOREM THE STEP CITES IS TRIED (`cites`): a square no step's proof uses moved nothing, and
+    the first match of an uncited one would stand in front of the cited one behind it. -/
+def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (cites : Name → Bool)
+    (m : Expr → MetaM (Option α)) : MetaM (Option (Name × α)) := do
   let br ← bridges
   let mφ ← mustOfFamily br φ
   -- A PAIR OF NO CONSTANT is spoken about only by binders, and every `⊑` would pass the filter.
@@ -1267,7 +1315,7 @@ def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM
     let ms := mustList must
     for (n, has) in cs do
       Core.checkMaxHeartbeats "the pass search"
-      if (lacks al ms has).isSome then continue
+      if !cites n || (lacks al ms has).isSome then continue
       let some ci := env.find? n | continue
       let saved ← Meta.saveState
       let attempt : MetaM (Option α) := do
@@ -1289,41 +1337,50 @@ def squareThm {α : Type} (φ Y : Expr) (heads : Array Name) (m : Expr → MetaM
       stopped on `{← e.toMessageData.toString}`: the bead draws its default mark"
     return none
 
-/-- The two theorem searches' answers in this process, by `metaKey`, each with the reads it noted:
-    a chain's neighbouring steps share their beads, and each step searched the same pairs again. -/
-initialize passMemo : IO.Ref (Std.HashMap (Array Expr) (Option (Name × Bool) × Array Read)) ←
+/-- The two theorem searches' answers in this process, by `metaKey` and the step asking (its
+    citations are the candidates), each with the reads it noted: a panel drawn for itself and as a
+    peer of its call asks the same pairs twice. -/
+initialize passMemo : IO.Ref (Std.HashMap (Array Expr × Bool × UInt64) (Option Name × Array Read)) ←
   IO.mkRef {}
 initialize moveMemo :
-    IO.Ref (Std.HashMap (Array Expr) (Option (Name × Expr × Expr × Bool) × Array Read)) ← IO.mkRef {}
+    IO.Ref (Std.HashMap (Array Expr × UInt64) (Option (Name × Expr × Expr × Bool) × Array Read)) ← IO.mkRef {}
 
-/-- A THEOREM OF THE ENVIRONMENT THAT LETS `Y` DOWN PAST `φ`: a candidate concluding in a pass head
-    (`passHeads`, `candidates`) naming the constants of both, opened with metavariables, matched by
-    `passOf?` with its `X` unified with `Y`, every open argument answered (`discharge`) and the term
-    `Meta.check`ed.  Bounded; one cut short prints the pair and answers nothing: the default mark. -/
-def passThm (φ Y : Expr) : MetaM (Option (Name × Bool)) := do
+/-- A THEOREM THE STEP `st` CITES THAT LETS `Y` PAST `φ`, `Y` standing `below` it or above: a
+    candidate concluding in a pass head (`passHeads`, `candidates`) naming the constants of both,
+    opened with metavariables, matched by `passOf?` — an equation in either direction — with its `X`
+    unified with `Y`, every open argument answered (`discharge`) and the term `Meta.check`ed.
+    Bounded; one cut short prints the pair and answers nothing: the default mark. -/
+def passThm (φ Y : Expr) (below : Bool) (st : Step) : MetaM (Option Name) := do
   let key ← metaKey #[φ, Y]
   if let some (k, _) := key then
-    if let some (r, rs) := (← passMemo.get)[k]? then rs.forM (noteRead ·); return r
-  let (r, rs) ← recordReads <| squareThm φ Y (← passHeads) fun body => do
-    let some (X, up) ← passOf? body φ | return none
-    return if ← Meta.isDefEq X Y then some up else none
-  if let some (k, _) := key then passMemo.modify (·.insert k (r, rs))
+    if let some (r, rs) := (← passMemo.get)[(k, below, st.key)]? then rs.forM (noteRead ·); return r
+  let (r, rs) ← recordReads <| squareThm φ Y (← passHeads) st.cites fun body => do
+    for rev in [false, true] do
+      let s ← Meta.saveState
+      if let some (X, up) ← passOf? body φ rev then
+        if up == below && (← Meta.isDefEq X Y) then return some ()
+      s.restore
+    return none
+  let r := r.map (·.1)
+  if let some (k, _) := key then passMemo.modify (·.insert (k, below, st.key) (r, rs))
   return r
 
-/-- THE STEP OUT OF THE DRAWN SIDE: a theorem of the environment whose left side IS `side` and
-    which moves a bead through its neighbour (`moveStep?`), searched as `passThm` searches. -/
-def moveThm (side : Expr) : MetaM (Option (Name × Expr × Expr × Bool)) := do
+/-- THE STEP OUT OF THE DRAWN SIDE: a theorem `st` cites, one side of which IS `side` — the left
+    one, or either of an equation — and which moves a bead through its neighbour (`moveStep?`),
+    searched as `passThm` searches. -/
+def moveThm (side : Expr) (st : Step) :
+    MetaM (Option (Name × Expr × Expr × Bool)) := do
   let key ← metaKey #[side]
   if let some (k, vs) := key then
-    if let some (r, rs) := (← moveMemo.get)[k]? then
+    if let some (r, rs) := (← moveMemo.get)[(k, st.key)]? then
       rs.forM (noteRead ·)
       return r.map fun (n, h, nb, b) => (n, h.instantiateRev vs, nb.instantiateRev vs, b)
-  let (r, rs) ← recordReads <| squareThm side side (← passHeads) (moveStep? · side)
+  let (r, rs) ← recordReads <| squareThm side side (← passHeads) st.cites (moveStep? · side)
   if let some (k, vs) := key then
     let a := r.map fun (n, h, nb, b) => (n, h.abstract vs, nb.abstract vs, b)
     -- A local the key does not reach would come back as the asker's dangling one.
     unless a.any fun (_, h, nb, _) => h.hasFVar || nb.hasFVar || h.hasMVar || nb.hasMVar do
-      moveMemo.modify (·.insert k (a, rs))
+      moveMemo.modify (·.insert (k, st.key) (a, rs))
   return r
 
 /-- THE STEP'S PROOF AT ITS BINDERS `xs`: a hypothesis the step USES is a free variable of it, one
@@ -1335,110 +1392,96 @@ def stepProof (n : Name) (xs : Array Expr) (lvls? : Option (List Lean.Level) := 
   let some v := ci.value? | return mkConst n
   return (match lvls? with | some l => v.instantiateLevelParams ci.levelParams l | none => v).beta xs
 
-/-- THE TRIANGLE IS A PROPERTY OF A BEAD AND ITS NEIGHBOUR, settled once the panel's order is: the
-    down triangle where the bead directly above, the up triangle where the bead directly below, is
-    the partner a binder (`passCands`, `isDefEq`) or a theorem (`passThm`) says the bead crosses
-    (`passOf?`); once it has crossed, plain.
-    A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
-def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : MetaM Diagram := do
-  -- A THEOREM MARKS only when the step cites it or IS it: a square no step's proof uses moved nothing.
-  let self := (← getOptions).get drawingKey Name.anonymous
-  let cites (n : Name) := n == self || proof.getUsedConstants.contains n
-  let mut rows := d.rows
-  for i in [0 : rows.size] do
-    let r := rows[i]!
-    unless r.nat.isNone do continue
-    -- THE PARTNER ABOVE gives the down triangle, THE ONE BELOW the up one (`passOf?`).
-    let nbs := (if i == 0 then #[] else #[(rows[i - 1]!, false)]) ++
-      (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
-    let mut hit : Option (Name × String × Bool × Bool) := none
-    for (nr, below) in nbs do
-      let some Y := nr.core | continue
-      for (h, xl, X, up, v) in r.passCands do
-        -- A binder the step's proof never mentions moved nothing past this bead (`stepProof`).
-        unless up == below && proof.containsFVar v do continue
-        if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
-          hit := some (h, xl, true, below)
-          break
-      if hit.isSome then break
-    -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
-    -- here; no theorem can be instantiated at a term that does not exist in this context.
-    let lctx ← getLCtx
-    let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
-    for (nr, below) in nbs do
-      if hit.isSome then break
-      let (some c, some Y) := (r.core, nr.core) | continue
-      if inScope c && inScope Y then
-        if let some (n, up) ← passThm c Y then
-          if cites n && up == below then hit := some (n, ← label Y, false, below)
-    if let some (n, xl, b, dir) := hit then rows := rows.set! i { r with pass := some (n, xl, b), tri := some dir }
-  -- THE STEP OUT OF THIS SIDE moves its neighbour across `h`: the triangle points the way the neighbour
-  -- goes, as a lax bead's does, and only BEFORE the jump — after it `h` is the default bead again.
-  let lctx ← getLCtx
-  if let some side := side? then
-    if !side.hasAnyFVar (!lctx.contains ·) then
-      if let some (thm, h, nb, below) := (← moveThm side).filter fun (t, _, _, _) => cites t then
-        for i in [0 : rows.size] do
-          let r := rows[i]!
-          let j := if below then i + 1 else i - 1
-          if r.tri.isSome || r.nat.any (· != .spider) || (!below && i == 0) || j ≥ rows.size then continue
-          let (some c, some n) := (r.core, rows[j]!.core) | continue
-          if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
-            rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below }
-            break
-  return { d with rows }
-
-/-- A STEP'S HYPOTHESIS IS EVIDENCE FOR ITS NEIGHBOURING PANELS: a chain step `R S ⊑ F(S) T` is drawn
-    as two panels, each read in its own declaration's telescope, so the panel of the side that does
-    NOT own the hypothesis `h : R S ⊑ F(S) T` never sees it.
-    THE HYPOTHESES THE PEER `n`'S STEP BRINGS TO THE PANEL DRAWN FROM `side`, each at the panel's own
-    arrows: the step LEAVES `side` — its left side is `side`, or either side of an equation, which
-    reads both ways — and its proof USES the hypothesis (`stepProof`).  The step's binders are fixed
-    by that one unification, so a panel the step does not leave gets nothing from it, however alike
-    its beads: the mark stands in the step's LEFT panel only. -/
-def peerHyps (n : Name) (side : Expr) : MetaM (Array Expr) := do
-  let some ci := (← getEnv).find? n | return #[]
+/-- A PEER `n` OF THE CALL AS THE STEP THAT LEAVES THE PANEL DRAWN FROM `side`: a chain step
+    `R S ⊑ F(S) T` is drawn as two panels, each read in its own declaration's telescope, and the
+    chain's panel `k` is step `k`'s RIGHT side — so the step that leaves it, and whose sign stands to
+    its right, is step `k+1`, a peer.  `n` is that step when its LEFT side is `side`; its binders are
+    fixed by that one unification, so a panel it does not leave gets nothing from it, however alike
+    its beads.  The hypotheses it brings are the ones its proof USES (`stepProof`), each at the
+    panel's own arrows. -/
+def peerStep (n : Name) (side : Expr) : MetaM (Option Step) := do
+  let some ci := (← getEnv).find? n | return none
   let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
   let ty0 := ci.type.instantiateLevelParams ci.levelParams lvls
   let used ← Meta.forallTelescope ty0 fun xs _ => do
     let proof ← stepProof n xs lvls
     xs.mapM fun x => return (← Meta.isProp (← Meta.inferType x)) && proof.containsFVar x.fvarId!
-  unless used.any id do return #[]
   let s ← Meta.saveState
   let (ms, _, body) ← Meta.forallMetaTelescope ty0
   unless ms.size == used.size do
-    throwError "peerHyps: {n} opens {ms.size} binders with metavariables and {used.size} with locals"
-  let some rel ← stmtRel? body | s.restore; return #[]
+    throwError "peerStep: {n} opens {ms.size} binders with metavariables and {used.size} with locals"
+  let some rel ← stmtRel? body | s.restore; return none
   let args := rel.getAppArgs
   -- Up to instances, as `moveStep?` matches a side: a failure at default transparency unfolds both.
-  let leaves (e : Expr) := Meta.withTransparency .instances <| Meta.isDefEq e side
-  unless (← leaves args[args.size - 2]!) || (rel.isAppOfArity ``Eq 3 && (← leaves args[args.size - 1]!)) do
-    s.restore; return #[]
-  (ms.zip used).filterMapM fun (m, u) => do
+  unless ← Meta.withTransparency .instances <| Meta.isDefEq args[args.size - 2]! side do
+    s.restore; return none
+  let hyps ← (ms.zip used).filterMapM fun (m, u) => do
     if u then return some (← instantiateMVars (← Meta.inferType m)) else return none
+  return some (Step.mk' n (rel.isAppOfArity ``Eq 3) (ci.value?.getD (mkConst n)) hyps)
 
-/-- The call's declarations speak for each other's panels: a hypothesis a peer brings to this panel
-    (`peerHyps`) with the pass shape (`passOf?`) for a bead whose neighbour is its partner marks
-    that bead, cited by the declaration (as `passThm` cites). -/
-def settlePeerHyps (d : Diagram) (side : Expr) (decls : Array Name) : MetaM Diagram := do
+/-- THE MARK IS A PROPERTY OF A BEAD, ITS NEIGHBOUR AND THE STEP THAT LEAVES THE PANEL (`Step`),
+    settled once the panel's order is: the bead whose partner — directly above it or directly below —
+    a binder of the step (`passCands`), a hypothesis a peer's step brings (`Step.hyps`) or a theorem
+    the step cites (`passThm`) says it crosses (`passOf?`).  THE SHAPE IS THE STEP'S SIGN: a hollow
+    circle for `=`, a triangle for `⊑` — down where the partner stands above, up where below.  A
+    panel no step leaves (`steps` empty) keeps every bead plain.
+    A bead with a naturality verdict keeps its circle or diamond: its square is not a neighbour's. -/
+def settlePass (d : Diagram) (steps : Array Step) (side? : Option Expr := none) : MetaM Diagram := do
   let mut rows := d.rows
-  let hyps ← decls.mapM fun n => return (n, ← peerHyps n side)
-  for i in [0 : rows.size] do
-   for (j, below) in [(i - 1, false), (i + 1, true)] do
-    let r := rows[i]!
-    if (!below && i == 0) || j ≥ rows.size then continue
-    -- A pass `settlePass` already drew on the partner, pointing at this bead, is this very pair.
-    unless r.nat.isNone && r.tri.isNone && rows[j]!.tri != some (!below) do continue
-    let (some φ, some Y) := (r.core, rows[j]!.core) | continue
-    for (n, tys) in hyps do
-      let hit ← tys.anyM fun ty => do
-        let s ← Meta.saveState
-        let some (X, up) ← passOf? ty φ | s.restore; return false
-        if up == below && (← Meta.isDefEq X Y) then return true
-        s.restore; return false
-      if hit then
-        rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some below }
-        break
+  -- A BEAD DRAWN UNDER A BINDER the walk opened carries that binder's local, which is out of scope
+  -- here; no theorem can be instantiated at a term that does not exist in this context.
+  let lctx ← getLCtx
+  let inScope (e : Expr) := !e.hasAnyFVar (!lctx.contains ·)
+  for st in steps do
+    for i in [0 : rows.size] do
+      let r := rows[i]!
+      unless r.nat.isNone && r.tri.isNone do continue
+      -- THE PARTNER ABOVE gives the down triangle, THE ONE BELOW the up one (`passOf?`).
+      let nbs := (if i == 0 then #[] else #[(rows[i - 1]!, false)]) ++
+        (if i + 1 < rows.size then #[(rows[i + 1]!, true)] else #[])
+      let mut hit : Option (Name × String × Bool × Bool) := none
+      for (nr, below) in nbs do
+        if hit.isSome then break
+        let some Y := nr.core | continue
+        for (h, xl, X, up, v) in r.passCands do
+          -- A binder the step's proof never mentions moved nothing past this bead (`stepProof`).
+          unless up == below && st.proof.containsFVar v do continue
+          if ← Meta.withNewMCtxDepth (Meta.isDefEq Y X) then
+            hit := some (h, xl, true, below)
+            break
+      for (nr, below) in nbs do
+        -- A mark already drawn on the partner, pointing at this bead, is this very pair.
+        if hit.isSome || nr.tri == some (!below) then continue
+        let (some c, some Y) := (r.core, nr.core) | continue
+        for ty in st.hyps do
+          for rev in [false, true] do
+            if hit.isSome then break
+            let s ← Meta.saveState
+            if let some (X, up) ← passOf? ty c rev then
+              if up == below && (← Meta.isDefEq X Y) then
+                hit := some (st.name, ← label Y, false, below)
+                continue
+            s.restore
+      for (nr, below) in nbs do
+        if hit.isSome then break
+        let (some c, some Y) := (r.core, nr.core) | continue
+        if inScope c && inScope Y then
+          if let some n ← passThm c Y below st then hit := some (n, ← label Y, false, below)
+      if let some (n, xl, b, dir) := hit then
+        rows := rows.set! i { r with pass := some (n, xl, b), tri := some dir, eq := st.eq }
+    -- THE STEP OUT OF THIS SIDE moves its neighbour across `h`: the mark stands on `h` BEFORE the
+    -- jump — after it `h` is the default bead again.
+    if let some side := side? then
+      if inScope side then
+        if let some (thm, h, nb, below) ← moveThm side st then
+          for i in [0 : rows.size] do
+            let r := rows[i]!
+            let j := if below then i + 1 else i - 1
+            if r.tri.isSome || r.nat.any (· != .spider) || (!below && i == 0) || j ≥ rows.size then continue
+            let (some c, some n) := (r.core, rows[j]!.core) | continue
+            if (← Meta.isDefEq c h) && (← Meta.isDefEq n nb) then
+              rows := rows.set! i { r with pass := some (thm, ← label nb, false), tri := some below, eq := st.eq }
+              break
   return { d with rows }
 
 /-! ### The verdict cache — the environment's answer, kept across runs -/
