@@ -262,7 +262,7 @@ def opensWord (s : String) : Bool :=
     (the note's variables are one letter each), so they close up — `RR°`, `SR`, `hF(cost)` — and so
     does a one-character factor against anything that opens with no name: `R◁`, `▷◁`, `⟜⊸`, `k≤`,
     and `◁(R⊗R)` and `S(S\T)` against an opening bracket.  A WORD of two characters or more keeps
-    its space ON EITHER SIDE (`cons R`, `h cost`, `S est(R)`, `prefix list(p)`, `S%∋ est(R°)`,
+    its space AGAINST A NAME ON EITHER SIDE (`cons R`, `h cost`, `S est(R)`, `prefix list(p)`, `S%∋ est(R°)`,
     `pick (schedule×𝟙)snoc`, which closed up would read as an application of `pick`), unless a
     bracket or a `°` already separates it from what follows (`F(∋)S`). -/
 def juxt (a b : String) : String :=
@@ -272,7 +272,10 @@ def juxt (a b : String) : String :=
   -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
   -- blocks) cannot continue a name either, so `cost≤cost°` and `plus≥` close up as the note sets them.
   -- The closure's `*` (B&dM (6.7)) is a postfix like `°`: `R*R*`, not `R* R*`.
-  else if (oneChar a && !opensWord b) || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
+  -- A ONE-LETTER NAME before a word is the one join that reads as a single name (`hcost`); a
+  -- one-character OPERATOR continues no name, so it closes up on both sides (`cost≤cost°`).
+  else if (oneChar a && !(Lean.isIdFirst a.front && opensWord b))
+      || ")]⟩⦈}°*".contains a.back || "[⟨⦇{".contains b.front
       || (0x2190 ≤ b.front.val && b.front.val ≤ 0x22FF) then a ++ b
   else a ++ " " ++ b
 

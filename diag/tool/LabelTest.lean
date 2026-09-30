@@ -36,6 +36,7 @@ def formula (n : Lean.Name) : Lean.Meta.MetaM String :=
 #guard Freyd.StrDiag.juxt "R" "R°" == "RR°"
 #guard Freyd.StrDiag.juxt "h" "F'(cost)" == "hF'(cost)"
 #guard Freyd.StrDiag.juxt "k" "≤" == "k≤"
+#guard Freyd.StrDiag.juxt "≤" "cost°" == "≤cost°"
 #guard Freyd.StrDiag.juxt "S" "(S\\T)" == "S(S\\T)"
 #guard Freyd.StrDiag.juxt "F(R)" "h" == "F(R)h"
 
