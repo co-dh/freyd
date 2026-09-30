@@ -1,17 +1,20 @@
 /-
-  WHICH BEAD CARRIES THE PASS TRIANGLE, checked at elaboration time on every `lake build diag`.
+  WHICH BEAD CARRIES THE MARK, IN WHICH SHAPE, ON WHICH PANEL — checked at elaboration time on every
+  `lake build diag`, by the exporter's own `settlePass` over the steps the exporter's own `peerStep`
+  finds.
 
-  The triangle is on the expression the two sides of a square have in common (`passOf?`) — a bead
-  standing as it is on both, or bare on one and under the functor on the other; both, the one
-  standing as it is — drawn in the side the step leaves: 7.2b put it on `R` although `φ` stands
-  on both sides, 7.2.1b (`est(R)`) shipped unmarked, and `cata_comm`'s `⦇f⦈` lost its mark.
-  A theorem the step's proof does not cite marks nothing (`settlePass`'s `cites`, 10.4c's `tex_mono`),
-  and a peer's hypothesis marks only the panel that peer's step leaves (`peerHyps`).
+  A MARK BELONGS TO THE STEP THAT LEAVES THE PANEL (`Step`): for a panel with the sign `σ` drawn to
+  its right, the mark is the rule applied to that panel to obtain the next one.  It stands on the
+  expression the rule's two sides have in common (`passOf?`), and ITS SHAPE IS THE SIGN: a hollow
+  circle for `=`, a triangle for `⊑` — down where the partner stands above the bead, up where below.
+  The panel a step arrives at gets no mark from it, and the last panel of a chain has none.
+  A theorem the step's proof does not cite marks nothing (`Step.cited`, 10.4c's `tex_mono`).
 -/
 import diag.tool.StringDiagram
 import AOP.A5_5
 import AOP.A5_5_AlgCat
 import AOP.A6_2
+import AOP.A6_3
 import AOP.A7_2
 import AOP.A9_1
 import AOP.A10_4_Tex
@@ -20,72 +23,66 @@ namespace Freyd.StrDiag.PassMarkTest
 
 open Lean Meta Freyd.StrDiag
 
-/-- Every mark of `decl`'s own statement, read under its binders: the bead a pass (`passOf?`) puts
-    the triangle on, its partner in the left side, and whether the partner stands below it (the up
-    triangle).  Each
-    bead is asked for as it is drawn, with no lane around it. -/
-def marks (decl : Name) : MetaM (List (String × String × Bool)) := do
-  let ci ← getConstInfo decl
-  forallTelescope ci.type fun xs body => do
-    -- A predicate is read applied to its binders, a theorem by what it concludes.
-    let ty := if body.isProp then mkAppN (mkConst decl (ci.levelParams.map mkLevelParam)) xs else body
-    let some (l, r) ← relSides? ty | throwError "{decl} states no ⊑ or ="
-    let core (e : Expr) := if e.getAppFn.isConstOf ``Freyd.Functor.map then e.appArg! else e
-    let mut out := []
-    for φ in (compFactors l ++ compFactors r).map core do
-      if let some (P, below) ← withNewMCtxDepth (passOf? ty φ) then
-        out := out ++ [((← ppExpr φ).pretty, (← ppExpr P).pretty, below)]
-    return out.eraseDups
+/-- A side as the beads the panel draws it with, one per factor in order (`compFactors`), each with
+    its term bare of the functor it runs under and the binders that let a neighbour past it
+    (`passHyp`) — the fields `settlePass` reads, and no others. -/
+def beads (side : Expr) : MetaM Diagram := do
+  let core (e : Expr) := if e.getAppFn.isConstOf ``Freyd.Functor.map then e.appArg! else e
+  let rows ← (compFactors side).mapM fun f => do
+    let c := core f
+    return ({ shape := .text (← label c), arms := #[], legs := #[], obj := "",
+              src := default, tgt := default, core := some c, passCands := ← passHyp c } : Row)
+  return { lanes := #[], rows, top := #[], bot := #[], otop := side, obot := side }
 
-/-- Does the proof of `step`, at its own binders, cite `thm`?  A mark cited to a theorem it does
-    not is dropped (`settlePass`). -/
+/-- The marks on one panel — `decl`'s left side or its right — in a call naming `peers` beside it:
+    every marked bead with its shape.  Read as `drawWith` reads it: under the declaration's binders
+    (a predicate's own claim among them), the panel's own step only for its LEFT side. -/
+def panel (decl : Name) (left : Bool) (peers : List Name := []) : MetaM (List (String × String)) := do
+  let ci ← getConstInfo decl
+  let lv := ci.levelParams.map mkLevelParam
+  forallTelescope ci.type fun xs body => do
+    let claim := mkAppN (mkConst decl lv) xs
+    let run (proof ty : Expr) : MetaM (List (String × String)) := do
+      let some rel ← stmtRel? ty | throwError "{decl} states no ⊑ or ="
+      let args := rel.getAppArgs
+      let side := if left then args[args.size - 2]! else args[args.size - 1]!
+      let own ← Step.new decl (rel.isAppOfArity ``Eq 3) proof #[] (some ty)
+      let steps := (if left then #[own] else #[])
+        ++ (← (peers.toArray.filter (· != decl)).filterMapM (peerStep · side))
+      let d ← settlePass (← beads side) steps (some side)
+      return d.rows.toList.filterMap fun r =>
+        r.tri.map fun up => (r.label, if r.eq then "circle" else if up then "up" else "down")
+    if body.isProp then withLocalDeclD decl claim fun h => run h claim
+    else run (← stepProof decl xs) body
+
+/-- A statement's two panels, left then right. -/
+def pair (n : Name) : MetaM (List (List (String × String))) :=
+  return [← panel n true, ← panel n false]
+
+/-- Does the proof of `step`, at its own binders, cite `thm`? -/
 def cites (step thm : Name) : MetaM Bool := do
   let ci ← getConstInfo step
-  forallTelescope ci.type fun xs _ => return (← stepProof step xs).getUsedConstants.contains thm
+  forallTelescope ci.type fun xs _ => return (← Step.new step false (← stepProof step xs)).cited.contains thm
 
-/-- `marks` as `passThm` asks: the statement opened with METAVARIABLES, as a candidate theorem is,
-    and asked for each bead of its own sides read under its binders. -/
-def thmMarks (decl : Name) : MetaM (List (String × String × Bool)) := do
-  let ci ← getConstInfo decl
-  forallTelescope ci.type fun _ body => do
-    let some (l, r) ← relSides? body | throwError "{decl} states no ⊑ or ="
-    let core (e : Expr) := if e.getAppFn.isConstOf ``Freyd.Functor.map then e.appArg! else e
-    let mut out := []
-    for φ in (compFactors l ++ compFactors r).map core do
-      let s ← saveState
-      if let some (P, below) ← passOf? (← forallMetaTelescope ci.type).2.2 φ then
-        out := out ++ [((← ppExpr φ).pretty, (← ppExpr (← instantiateMVars P)).pretty, below)]
-      s.restore
-    return out.eraseDups
-
-/-- How many hypotheses `peer`'s step brings to the panel of each side of `decl` (`peerHyps`). -/
-def peerUse (decl peer : Name) : MetaM (List Nat) := do
-  forallTelescope (← getConstInfo decl).type fun _ body => do
-    let some (l, r) ← relSides? body | throwError "{decl} states no ⊑ or ="
-    return [(← peerHyps peer l).size, (← peerHyps peer r).size]
-
--- 2.6 `cata_comm`, `α⦇f⦈ = F(⦇f⦈)f`: `⦇f⦈` is the one expression on both sides, `α` above it: down.
--- Opened as the search opens it: `?f` unified with `α` made `α` the common bead and dropped the mark.
-/-- info: [("⦇f⦈", "α", false)] -/
-#guard_msgs in #eval thmMarks ``Freyd.Alg.InitialAlgebra.cata_comm
--- 6.2 `relCata_le_comp`: step 2 uses `h : F(S)T ⊑ RS` and leaves step 1's RIGHT side; step 1's left
--- side draws the same beads and is left by step 1 alone, which uses no hypothesis: no mark there.
-/-- info: [0, 1] -/
-#guard_msgs in #eval peerUse ``Freyd.Alg.relCata_le_comp_step1 ``Freyd.Alg.relCata_le_comp_step2
--- 2.6a: `h` is bare on the left and under `F` on the right, `f` becomes `g`: `h`, `f` above: down.
-/-- info: [("h", "f", false)] -/
-#guard_msgs in #eval marks ``Freyd.Alg.IsFHom
--- 7.2b: `R` crosses `φ`, which stands unchanged on both sides, `R` above it: the down triangle on `φ`.
-/-- info: [("φ", "R", false)] -/
-#guard_msgs in #eval marks ``Freyd.Alg.MonoAlg
--- dp-cost (9.2): `h cost = F(cost)k`, `cost` the only expression on both sides and `h` above it:
--- the down triangle on `cost`.
-/-- info: [("cost", "h", false)] -/
-#guard_msgs in #eval marks ``Freyd.Alg.monoAlg_of_cost_step1
--- 7.2.1b: `est(R)` crosses `f` below it in `F(est(R))f`, and `f` does not stand as it is on the right:
--- the up triangle on `est(R)`.
-/-- info: [("est(R)", "f", true)] -/
-#guard_msgs in #eval marks ``Freyd.Alg.Distributes
+-- 7.2b `F(R)φ ⊑ φR`: `φ` stands on both sides, `R` above it on the left: the down triangle on `φ`,
+-- in the left panel; the right panel is where the step arrives.
+/-- info: [[("φ", "down")], []] -/
+#guard_msgs in #eval pair ``Freyd.Alg.MonoAlg
+-- 7.2.1b: `est(R)` crosses `f` below it in `F(est(R))f`: the up triangle on `est(R)`, left panel.
+/-- info: [[("est(R)", "up")], []] -/
+#guard_msgs in #eval pair ``Freyd.Alg.Distributes
+-- 2.6a `f h = F(h) g`: an equation, so the hollow circle, on `h`, in the left panel.
+/-- info: [[("h", "circle")], []] -/
+#guard_msgs in #eval pair ``Freyd.Alg.IsFHom
+-- 2.6 `cata_comm`, `α⦇f⦈ = F(⦇f⦈)f`: the hollow circle on `⦇f⦈`, in the left panel.
+/-- info: [[("⦇f⦈", "circle")], []] -/
+#guard_msgs in #eval pair ``Freyd.Alg.InitialAlgebra.cata_comm
+-- 9.2 dp-cost: panel (a) is left by the `=` step `h cost = F(cost)k`, panel (b) by a `⊑` step — the
+-- hollow circle on `cost` in (a), the down triangle on `cost` in (b), each BEFORE its sign.
+/-- info: [[("cost", "circle")], [("cost", "down")]] -/
+#guard_msgs in #eval do
+  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg s!"monoAlg_of_cost_step{k}"
+  return [← panel steps[0]! true steps, ← panel steps[0]! false steps]
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false] -/
 #guard_msgs in #eval [1, 2, 3, 4, 5, 6, 7].mapM fun k =>
