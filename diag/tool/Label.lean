@@ -256,7 +256,20 @@ def opensWord (s : String) : Bool :=
   | c :: rest => Lean.isIdFirst c && !(rest.takeWhile Lean.isIdRest).all (· == '\'')
   | [] => false
 
+/-! ### TWO PRINT MODES, ONE PRINTER — "we only remove space when space are limited".
+    COMPACT where room is limited, a bead, wire or region label inside a drawn panel; SPACED where it
+    is not, a formula set as text: a space between every two juxtaposed factors and round every
+    binary relation and operator sign.  THE CALLER SAYS WHICH (`withSpaced`), never the printer and
+    never the length of what it printed; the mode rides in the options, which `printKey` already
+    keys every memo by, and only the separators ask it (`juxt`, `spaced`).  An application's own
+    brackets, a chain of one-letter functors on an object and a postfix are no separator, so
+    `F(R)`, `FEA` and `R°` are one spelling in both. -/
+def spacedKey : Name := `diag.spaced
+def isSpaced : MetaM Bool := return (← getOptions).getBool spacedKey
+def withSpaced {α : Type} (sp : Bool) (m : MetaM α) : MetaM α := withOptions (·.setBool spacedKey sp) m
+
 /-- The note's juxtaposition spacing, the same rule the note's own generator writes back with.
+    SPACED (`sp`), two factors are always set apart; the rest of this is the COMPACT rule.
     `a` AND `b` ARE ONE FACTOR EACH — `juxtL` hands in the run's first factor — and the space is
     there for ONE reason: two factors run together read as one name.  TWO ONE-LETTER NAMES cannot
     (the note's variables are one letter each), so they close up — `RR°`, `SR`, `hF(cost)` — and so
@@ -265,8 +278,9 @@ def opensWord (s : String) : Bool :=
     its space AGAINST A NAME ON EITHER SIDE (`cons R`, `h cost`, `S est(R)`, `prefix list(p)`, `S%∋ est(R°)`,
     `pick (schedule×𝟙)snoc`, which closed up would read as an application of `pick`), unless a
     bracket or a `°` already separates it from what follows (`F(∋)S`). -/
-def juxt (a b : String) : String :=
+def juxt (a b : String) (sp : Bool := false) : String :=
   if a.isEmpty || b.isEmpty then a ++ b
+  else if sp then a ++ " " ++ b
   -- `°` is a POSTFIX: it terminates its operand exactly as a closer does, so `est(R∩S°S)` must not
   -- come out `est(R∩S° S)`.
   -- A factor OPENING WITH A MATHEMATICAL OPERATOR (`≤`, `≥`, `⊸`: the Arrows and Mathematical Operators
@@ -399,9 +413,11 @@ def chainPrec (op : String) (p : Nat) (x : Expr) : Nat :=
   | some (_, _, op') => if op' == op then p else p + 1
   | none => p + 1
 
-/-- The note's spacing for a binary operator: closed up, `∪` and the statement connectives set off,
-    since a connective joins whole statements and `A∧B⊑C` reads as if `∧` bound tighter than `⊑`. -/
-def spaced (op : String) : String := if ["∪", "∧", "∨", "⟺"].contains op then s!" {op} " else op
+/-- The note's spacing for a binary operator or relation sign: SPACED (`sp`), every one is set off;
+    COMPACT, closed up, `∪` and the statement connectives set off, since a connective joins whole
+    statements and `A∧B⊑C` reads as if `∧` bound tighter than `⊑`. -/
+def spaced (op : String) (sp : Bool := false) : String :=
+  if sp || ["∪", "∧", "∨", "⟺"].contains op then s!" {op} " else op
 
 /-- The heads the note sets TIGHT: the product and the fork.  Lean's formatter sets an INFIX off
     from its operands (`A × B`, `⟨f, g⟩`, `a + b`) where the note closes them up; the SPELLING is
@@ -1067,8 +1083,9 @@ def txt (e : Expr) : MetaM Lbl := return .text (← plain e)
     it meets and `rest` the run `next` opens, which is why the run is folded from the RIGHT: the
     spacing is decided by the two factors either side of the join and by nothing else, and a run
     handed in whole hides where its first factor ends — `RS` reads as a word after `h`. -/
-def juxtL (a next rest : Lbl) : Lbl :=
-  if next.leadsDelim || juxt a.flat next.flat == a.flat ++ next.flat then a ++ rest else a ++ " " ++ rest
+def juxtL (sp : Bool) (a next rest : Lbl) : Lbl :=
+  if (!sp && next.leadsDelim) || juxt a.flat next.flat sp == a.flat ++ next.flat then a ++ rest
+  else a ++ " " ++ rest
 
 /-- `sep` between the parts. -/
 def Lbl.join (sep : String) (ps : Array Lbl) : Lbl :=
@@ -1282,13 +1299,14 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- …and a field of a bundle with no name of its own is the field's DEFINITION at that bundle: the
   -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
   if let some x ← openBuiltField? e then return ← labelTree prec x
+  let sp ← isSpaced
   let wrap (p : Nat) (s : Lbl) : Lbl := if prec > p then "(" ++ s ++ ")" else s
   -- A SUM AND A PRODUCT, of objects or of arrows, are written with Lean's own `+` and `×`, so they
   -- bind at those notations' levels: `(R+S)∩T`, where the level juxtaposition binds at wrote
   -- `R+S∩T`.  Their operands stay one factor each, as the note sets them (`(R∩PU°)+(S∩QV°)`).
   let infixL (tok : String) (a b : Expr) : MetaM Lbl := do
     let f ← Prec.factor
-    return wrap (← notationLevel tok).1 ((← labelTree f a) ++ tok ++ (← labelTree f b))
+    return wrap (← notationLevel tok).1 ((← labelTree f a) ++ spaced tok sp ++ (← labelTree f b))
   let sumL := infixL "+"
   let prodL := infixL "×"
   -- …and an object that is a COPRODUCT'S CARRIER is that coproduct: `A+B`, never the letter the
@@ -1312,7 +1330,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     | some (f, g) =>
       let pl := if a == .left then chainPrec op p f else p + 1
       let pr := if a == .right then chainPrec op p g else p + 1
-      return wrap p ((← labelTree pl f) ++ spaced op ++ (← labelTree pr g))
+      return wrap p ((← labelTree pl f) ++ spaced op sp ++ (← labelTree pr g))
     | none => txt e
   -- The one argument of a unary operator, at the precedence its operand is set at.
   let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM Lbl := do
@@ -1324,7 +1342,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- conclusion is, where it used to fall to the printer and carry Lean's `≫` into the cell.
   if let some (sym, l, r) := split e then
     return wrap Prec.rel
-      ((← labelTree (Prec.rel + 1) l (some r)) ++ sym ++ (← labelTree (Prec.rel + 1) r (some l)))
+      ((← labelTree (Prec.rel + 1) l (some r)) ++ spaced sym sp ++ (← labelTree (Prec.rel + 1) r (some l)))
   -- A `→` BETWEEN TWO STATEMENTS is the note's `⟹`; a binder the body depends on is its `∀`.  Read
   -- off the BINDER — whether the body mentions it — never off how the arrow prints.
   if let .forallE _ t b _ := e then
@@ -1376,7 +1394,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         -- an input the printer writes as a tuple is already the application's own brackets
         let tup := (stxPeel (← delabP i)).isOfKind `Freyd.Alg.noteTuple
         return wrap Prec.rel ((← labelTree Prec.atom hd) ++ (if a.delimited || tup then a else .delim "(" ")" a)
-          ++ "=" ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
+          ++ spaced "=" sp ++ (← labelTree (Prec.rel + 1) args[args.size - 1]!))
       if arrow then
         return (← labelTree Prec.atom hd) ++ commaL "(" ")" #[← labelTree 0 i, ← labelTree 0 args.back!]
   match e.getAppFnArgs with
@@ -1431,7 +1449,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- FROM THE RIGHT, so `juxtL`'s left operand is ONE factor and the spacing between two
       -- factors is decided by THEM, not by the run built so far.
       for t in (← labelRunT e).reverse do
-        s := juxtL t next s
+        s := juxtL sp t next s
         next := t
       -- JUXTAPOSITION BINDS TIGHTER THAN THE LATTICE OPERATORS:
       -- `⊸ nil ∪ (p×𝟙)cons` is a union of two composites and needs no brackets, where
@@ -1675,7 +1693,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- …at the level of the notation the printer wrote it with: `A×B` binds as Lean's `×` does.
       let some (p, _) ← stxLevel (stxPeel stx)
         | throwError "labelTree: the tight head `{c}` printed `{stx}`, which is no infix notation"
-      return wrap p ((← respell (← Prec.factor) ops.toList #[] #[] #[] e).mapText (·.replace " " ""))
+      -- SPACED, the formatter's own space round the operator's atom is the space the mode asks for.
+      let out ← respell (← Prec.factor) ops.toList #[] #[] #[] e
+      return wrap p (if sp then out else out.mapText (·.replace " " ""))
     if let some (f, xs) ← functorObj? e then
       -- A COMBINATOR RELATOR'S ACTION IS THE OBJECT IT REDUCES TO (`relatorObj?`), labelled as the
       -- object it is: `(V×𝟙)(X)` is `V×X`, and every factor of it is respelled by this same rule.

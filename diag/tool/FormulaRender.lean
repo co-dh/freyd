@@ -114,10 +114,11 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
 /-- The declaration's statement, or the one side `path`/`branch` names, in the note's own
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
-    from. -/
-def render (declName : Name) (binder : Option String) (path : List String)
+    from.  `sp` IS THE PRINT MODE (`StrDiag.withSpaced`), the caller's: a formula set as text has the
+    room and is SPACED, and the same statement inside a drawn panel is not. -/
+def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
-  withDeclScope declName do
+  withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   Meta.forallTelescope (← nameSelf declName ci.type) fun xs body => do
     -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
@@ -138,10 +139,10 @@ def render (declName : Name) (binder : Option String) (path : List String)
           let tys ← fs.mapM Meta.inferType
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
             | throwError "{declName}: a structure with no fields states nothing"
-          return #[head ++ "≜" ++ (← labelT c)]
+          return #[head ++ spaced "≜" sp ++ (← labelT c)]
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
-      return ← withBody declName branch (val.beta xs) fun v => return #[head ++ "≜" ++ (← labelT v)]
+      return ← withBody declName branch (val.beta xs) fun v => return #[head ++ spaced "≜" sp ++ (← labelT v)]
     let body ← match binder with
       | some h =>
         match ← xs.findM? fun x => return (← x.fvarId!.getUserName).toString == h with
@@ -181,15 +182,16 @@ def render (declName : Name) (binder : Option String) (path : List String)
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return #[ante ++ (← labelT l (some r)) ++ sym, ← labelT r (some l)]
+      | some (sym, l, r) => return #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
       | none => return #[ante ++ (← labelT target')]
 
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
     fraction wherever it stands), cut after its relation by
     `relBreak` so the cell has somewhere to wrap.  The `lean:<decl>@<key>` marker above it is
-    `DiagExport.certLine`'s, written for every route at the one place the file is. -/
+    `DiagExport.certLine`'s, written for every route at the one place the file is.  SPACED: this is
+    the formula set as text, the one caller with the room. -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
-  return relBreak.intercalate ((← render declName binder path branch).toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
+  return relBreak.intercalate ((← render true declName binder path branch).toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
 end Freyd.FormulaRender

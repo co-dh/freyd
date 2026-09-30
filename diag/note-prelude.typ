@@ -347,11 +347,12 @@
 }
 // Shrinks CONTENT to whatever width its container gives it, never growing past 1.0 — the ratio
 // `chain-k` uses for a whole row, read here from `layout` since a table cell's width is only known
-// once the surrounding grid resolves its `1fr` columns.
+// once the surrounding grid resolves its `1fr` columns.  WHERE it sits in the cell is the table's
+// own `al:`, never decided here: a chain's formula column is LEFT-aligned, one edge for every line.
 #let fit-w(f) = layout(sz => {
   let need = measure(f).width
   let ratio = if need > sz.width and need > 0pt { sz.width / need } else { 1.0 }
-  align(center, scale(ratio * 100%, reflow: true, f))
+  scale(ratio * 100%, reflow: true, f)
 })
 #let Sub(decl, gloss: none, ..steps) = (sub: decl, gloss: gloss, steps: steps.pos(), kind: "Sub")
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
@@ -422,7 +423,7 @@
           lines.push((if op == none { [] } else { op }, [(#tag)], fit-w(f), hint))
         }
         block(above: 6pt, below: 0pt, calc-table(cols: (auto, auto, 1fr, 1fr),
-          al: (center + horizon, center + horizon, center + horizon, left + horizon), ..lines.flatten()))
+          al: (center + horizon, center + horizon, left + horizon, left + horizon), ..lines.flatten()))
         v(6pt)
       }
     })
@@ -474,6 +475,13 @@
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
       sub-header(row)
+      // A ROW'S FIRST REASON, when that row OPENS a chain (its first step has no op): no step leads
+      // into its panel, so no table line below carries it, and it stands as ONE LINE ABOVE the row,
+      // the author's own words.  A row that CONTINUES a chain gave its reason to the line before it,
+      // and `circuit: true` prints every reason beside its own circuit.
+      if not circuit and r.first().at(0) == none and measure(r.first().at(2)).width > 0pt {
+        block(above: 0pt, below: 6pt, width: 100%, align(left, r.first().at(2)))
+      }
       // `circuit: false`: a letter under every column, and the 3-column table (letter, formula,
       // hint) under the row — see the comment above `chain-tags`; `circuit: true`: the panels bare,
       // and under them one circuit row per step carrying its op and its reason.
@@ -544,7 +552,7 @@
             if into == none { [] } else { into.at(2) }))
         }
         block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
-          al: (center + horizon, center + horizon, left + horizon),
+          al: (center + horizon, left + horizon, left + horizon),
           ..lines.flatten()))
       }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
