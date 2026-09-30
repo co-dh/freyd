@@ -1288,6 +1288,224 @@ public theorem concat_cata :
   · show r = cappend seg (cconcat rest) ↔ ∃ y, y = cconcat rest ∧ r = cappend seg y
     exact ⟨fun h => ⟨cconcat rest, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
+/-! ## `glue` and `glue concat ⊑ (𝟙×concat) cons` (B&dM pp.128–129) -/
+
+/-- B&dM's `assocl`, re-bracketing `A×(B×C)` as `(A×B)×C`. -/
+@[expose] public def assocl {A B C : Type} : (⟨A × B × C⟩ : RelSet.{0}) ⟶ ⟨(A × B) × C⟩ :=
+  graph fun p => ((p.1, p.2.1), p.2.2)
+
+/-- B&dM's `assocr`, re-bracketing `(A×B)×C` as `A×(B×C)`. -/
+@[expose] public def assocr {A B C : Type} : (⟨(A × B) × C⟩ : RelSet.{0}) ⟶ ⟨A × B × C⟩ :=
+  graph fun p => (p.1.1, (p.1.2, p.2))
+
+/-- **`glue ≜ (𝟙×cons°) assocl (cons×𝟙) cons`** (B&dM p.128, `cons·(cons×id)·assocl·(id×cons°)`
+    mirrored): the element goes on the front of the first segment, so there must be one. -/
+@[expose] public def glue :
+    (⟨A × ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ ⟨ConsList Unit (ConsList Unit A)⟩ :=
+  rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+    ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+    ≫ consR (L := Unit) (E := ConsList Unit A)
+
+/-- The hint of p.129's fifth step, `cat·(cons×id) = cons·(id×cat)·assocr` mirrored: `cons`ing onto
+    the front segment then appending is re-bracketing, appending, then `cons`ing. -/
+public theorem cat_cons :
+    rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      = assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+  apply hom_ext; rintro ⟨⟨a, s⟩, t⟩ r
+  constructor
+  · rintro ⟨⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨_, rfl, (a, cappend s t), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨_, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨(ConsList.cons a s, t), ⟨rfl, rfl⟩, rfl⟩
+
+/-- p.129 {definition of glue}. -/
+public theorem concat_glue_step1 :
+    glue ≫ concatR
+      = rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ consR (L := Unit) (E := ConsList Unit A) ≫ concatR := by
+  simp only [glue, Cat.assoc]
+
+/-- p.129 {since concat = ⦇[nil, cat]⦈}: `cons concat = (𝟙×concat) cat`. -/
+public theorem concat_glue_step2 :
+    rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ consR (L := Unit) (E := ConsList Unit A) ≫ concatR
+      = rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ rprodMap (𝟙 (dList A)) concatR ≫ catR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, _, rfl, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, x'), ⟨rfl, rfl⟩,
+      (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, x'), ⟨rfl, rfl⟩, _, rfl, rfl⟩
+
+/-- p.129 {naturality of assocl}: `assocl (cons×𝟙) (𝟙×concat) = (𝟙×(𝟙×concat)) assocl (cons×𝟙)`. -/
+public theorem concat_glue_step3 :
+    rprodMap (𝟙 (dE A)) (consR (L := Unit) (E := ConsList Unit A))° ≫ assocl
+          ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dCL Unit (ConsList Unit A)))
+          ≫ rprodMap (𝟙 (dList A)) concatR ≫ catR
+      = rprodMap (𝟙 (dE A))
+            ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+  apply hom_ext; rintro ⟨a, x⟩ r
+  constructor
+  · rintro ⟨⟨_, s, x'⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    change a = _ at ha; subst ha
+    exact ⟨(a, (s, cconcat x')), ⟨rfl, (s, x'), rfl, rfl, rfl⟩, _, rfl,
+      (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+  · rintro ⟨⟨_, _, _⟩, ⟨rfl, ⟨s, x'⟩, rfl, rfl, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    exact ⟨(a, (s, x')), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s, x'), ⟨rfl, rfl⟩,
+      (ConsList.cons a s, cconcat x'), ⟨rfl, rfl⟩, rfl⟩
+
+/-- **The free theorem of `cat°`**, and it is STRICT: `list(R) cat° = cat° (list(R)×list(R))` —
+    `list(R)` keeps the length, so a split of the image is the image of a split. -/
+public theorem cat_recip_strictNatural :
+    StrictNatural
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (fun a => (catR (A := a.carrier))°) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; intro w q
+  show (∃ z, listP S w z ∧ z = cappend q.1 q.2)
+      ↔ ∃ p : ConsList Unit x.carrier × ConsList Unit x.carrier,
+          w = cappend p.1 p.2 ∧ listP S p.1 q.1 ∧ listP S p.2 q.2
+  constructor
+  · rintro ⟨_, hw, rfl⟩
+    obtain ⟨y1, y2, h1, h2, hq⟩ :=
+      listP_cappend_split S° q.1 q.2 w ((listP_recip S (cappend q.1 q.2) w).mpr hw)
+    exact ⟨(y1, y2), hq, (listP_recip S q.1 y1).mp h1, (listP_recip S q.2 y2).mp h2⟩
+  · rintro ⟨⟨y1, y2⟩, rfl, h1, h2⟩
+    exact ⟨_, listP_cappend S y1 q.1 h1 h2, rfl⟩
+
+/-- **The free theorem of `cat`**, and it is STRICT: `(list(R)×list(R)) cat = cat list(R)`. -/
+public theorem cat_strictNatural :
+    StrictNatural (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (fun a => catR (A := a.carrier)) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; intro p r
+  constructor
+  · rintro ⟨⟨y1, y2⟩, ⟨h1, h2⟩, rfl⟩
+    exact ⟨_, rfl, listP_cappend S p.1 y1 h1 h2⟩
+  · rintro ⟨_, rfl, hr⟩
+    obtain ⟨y1, y2, h1, h2, rfl⟩ := listP_cappend_split S p.1 p.2 r hr
+    exact ⟨(y1, y2), ⟨h1, h2⟩, rfl⟩
+
+/-- **`assocl` is STRICTLY natural**: re-bracketing looks at no element and discards none. -/
+public theorem assocl_strictNatural :
+    StrictNatural
+      (Relator.prod (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+          (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (fun a => assocl (A := a.carrier) (B := ConsList Unit a.carrier) (C := ConsList Unit a.carrier)) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; rintro ⟨a, s, u⟩ q
+  constructor
+  · rintro ⟨⟨a', s', u'⟩, ⟨hS, hs, hu⟩, rfl⟩
+    exact ⟨((a, s), u), rfl, ⟨hS, hs⟩, hu⟩
+  · rintro ⟨m, rfl, hm⟩
+    exact ⟨(q.1.1, q.1.2, q.2), ⟨hm.1.1, hm.1.2, hm.2⟩, rfl⟩
+
+/-- **`assocr` is STRICTLY natural**, as `assocl` is. -/
+public theorem assocr_strictNatural :
+    StrictNatural
+      (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)
+          (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (Relator.prod (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+        (Relator.comp (Relator.idRelator RelSet.{0}) listRelator))
+      (fun a => assocr (A := a.carrier) (B := ConsList Unit a.carrier) (C := ConsList Unit a.carrier)) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; rintro ⟨⟨a, s⟩, u⟩ q
+  constructor
+  · rintro ⟨⟨⟨a', s'⟩, u'⟩, ⟨⟨hS, hs⟩, hu⟩, rfl⟩
+    exact ⟨(a, (s, u)), rfl, hS, hs, hu⟩
+  · rintro ⟨m, rfl, hm⟩
+    exact ⟨((q.1, q.2.1), q.2.2), ⟨⟨hm.1, hm.2.1⟩, hm.2.2⟩, rfl⟩
+
+/-- **`glue` is STRICTLY natural**: it moves elements between segments without looking at them,
+    so `(R×list(list(R))) glue = glue list(list(R))`. -/
+public theorem glue_strictNatural :
+    StrictNatural
+      (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) listRelator)
+      (Relator.prod (Relator.idRelator RelSet.{0})
+        (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) listRelator) listRelator))
+      (fun a => glue (A := a.carrier)) := by
+  intro x y S
+  simp only [Relator.prod, prodMap_eq_rprodMap]
+  apply hom_ext; rintro ⟨a, xs⟩ r
+  constructor
+  · rintro ⟨⟨b, ys⟩, ⟨hab, hxy⟩, ⟨_, s, t⟩, ⟨hb, hys⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+    change ys = ConsList.cons s t at hys; subst hys
+    change b = _ at hb; subst hb
+    rcases xs with _ | ⟨s0, t0⟩
+    · exact hxy.elim
+    · exact ⟨_, ⟨(a, (s0, t0)), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons a s0, t0), ⟨rfl, rfl⟩, rfl⟩,
+        ⟨hab, hxy.1⟩, hxy.2⟩
+  · rintro ⟨_, ⟨⟨_, s, t⟩, ⟨ha, rfl⟩, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩, hq⟩
+    change a = _ at ha; subst ha
+    rcases r with _ | ⟨u, w⟩
+    · exact hq.elim
+    · rcases u with _ | ⟨b, s'⟩
+      · exact hq.1.elim
+      · exact ⟨(b, ConsList.cons s' w), ⟨hq.1.1, hq.1.2, hq.2⟩,
+          (b, (s', w)), ⟨rfl, rfl⟩, _, rfl, (ConsList.cons b s', w), ⟨rfl, rfl⟩, rfl⟩
+
+/-- p.129 {since concat = ⦇[nil, cat]⦈}: `cons° (𝟙×concat) ⊑ concat cat°` — the head segment and
+    the flattened rest are one way to split the flattened whole. -/
+public theorem concat_glue_step4 :
+    rprodMap (𝟙 (dE A))
+            ((consR (L := Unit) (E := ConsList Unit A))° ≫ rprodMap (𝟙 (dList A)) concatR)
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR := by
+  refine le_iff.mpr ?_
+  rintro ⟨a, x⟩ r ⟨⟨_, _, _⟩, ⟨rfl, ⟨s, x'⟩, rfl, rfl, rfl⟩, h⟩
+  exact ⟨(a, cconcat (ConsList.cons s x')), ⟨rfl, rfl⟩, (a, (s, cconcat x')), ⟨rfl, rfl⟩, h⟩
+
+/-- p.129 {since cat·(cons×id) = cons·(id×cat)·assocr}. -/
+public theorem concat_glue_step5 :
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ rprodMap (consR (L := Unit) (E := A)) (𝟙 (dList A)) ≫ catR
+      = rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A) := by
+  rw [cat_cons]
+
+/-- p.129 {since assocr·assocl = id and cat·cat° ⊆ id}: mirrored, `assocl assocr = 𝟙` and
+    `cat° cat ⊑ 𝟙`. -/
+public theorem concat_glue_step6 :
+    rprodMap (𝟙 (dE A)) concatR ≫ rprodMap (𝟙 (dE A)) catR°
+          ≫ assocl ≫ assocr ≫ rprodMap (𝟙 (dE A)) catR ≫ consR (L := Unit) (E := A)
+      ⊑ rprodMap (𝟙 (dE A)) concatR ≫ consR (L := Unit) (E := A) := by
+  refine le_iff.mpr ?_
+  rintro ⟨a, x⟩ r ⟨⟨_, _⟩, ⟨rfl, rfl⟩, ⟨_, s, t⟩, ⟨rfl, hst⟩, _, rfl, _, rfl, ⟨_, _⟩, ⟨rfl, rfl⟩, rfl⟩
+  refine ⟨(a, cconcat x), ⟨rfl, rfl⟩, ?_⟩
+  show ConsList.cons a (cappend s t) = ConsList.cons a (cconcat x)
+  rw [show cconcat x = cappend s t from hst]
+
+/-- **B&dM p.129, the third inclusion**: `concat·glue ⊆ cons·(id×concat)`, mirrored:
+    `glue concat ⊑ (𝟙×concat) cons` — gluing an element onto the first segment and flattening is
+    flattening and then `cons`ing the element on.  Steps 1–6. -/
+public theorem concat_glue :
+    glue ≫ concatR ⊑ rprodMap (𝟙 (dE A)) concatR ≫ consR (L := Unit) (E := A) := by
+  rw [concat_glue_step1, concat_glue_step2, concat_glue_step3]
+  exact le_trans concat_glue_step4 (by rw [concat_glue_step5]; exact concat_glue_step6)
+
 /-- **`sum = ⦇[zero, plus]⦈`** (note `cata-examples`; B&dM §5.x): fold the list, adding each head
     onto the total of the tail, `nil` contributing `zero`. -/
 public theorem sum_cata [Add A] [OfNat A 0] :
@@ -1369,6 +1587,18 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander concatR] public meta def unexpandConcatR : Unexpander
   | `($_:ident) => `($(mkIdent `concat))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander glue] public meta def unexpandGlue : Unexpander
+  | `($_:ident) => `($(mkIdent `glue))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander assocl] public meta def unexpandAssocl : Unexpander
+  | `($_:ident) => `($(mkIdent `assocl))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander assocr] public meta def unexpandAssocr : Unexpander
+  | `($_:ident) => `($(mkIdent `assocr))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander sumR] public meta def unexpandSumR : Unexpander
