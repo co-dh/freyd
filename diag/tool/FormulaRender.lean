@@ -189,9 +189,11 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
     fraction wherever it stands), cut after its relation by
     `relBreak` so the cell has somewhere to wrap.  The `lean:<decl>@<key>` marker above it is
     `DiagExport.certLine`'s, written for every route at the one place the file is.  SPACED: this is
-    the formula set as text, the one caller with the room. -/
+    the formula set as text, the caller with the room — unless the note's own call says it has none
+    (`leanf(sel, compact: true)`, the selector step `.compact`: a formula fitted above a panel). -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
-  return relBreak.intercalate ((← render true declName binder path branch).toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
+  let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
+  return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
 end Freyd.FormulaRender

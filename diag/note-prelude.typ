@@ -83,7 +83,9 @@
   [#metadata(sel)#label]
   if "list" not in sys.inputs { include dir + sel + ".typ" }
 }
-#let leanf(sel) = lean-text("generated/formula/", <lean-formula>, sel)
+// SPACED by default — a formula set as text has the room; `compact: true` is the call that has none
+// (a formula fitted above a panel), and it names the exporter's `.compact` step of the selector.
+#let leanf(sel, compact: false) = lean-text("generated/formula/", <lean-formula>, sel + if compact { ".compact" } else { "" })
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
 // spelling, so a table's type column is read off the declaration its row already cites.
 #let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
@@ -514,7 +516,7 @@
           let (s, p, cw, x, t) = zipped.at(i0)
           (top: false, op: s.at(0), pic: box(width: cw, align(center, p)),
             reason: if circuit { [] } else { align(right, box(width: x, align(center, [(#t)]))) },
-            f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) } else { none })
+            f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }, compact: true) } else { none })
         } else {
           let (children, maxw) = ((), 0pt)
           for (k2, idx) in range(i0, i0 + n).enumerate() {
