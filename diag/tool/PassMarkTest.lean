@@ -1,13 +1,17 @@
 /-
   WHICH BEAD CARRIES THE PASS TRIANGLE, checked at elaboration time on every `lake build diag`.
 
-  Of the two beads a pass swaps (`passOf?`), the triangle is on the one the square leaves unchanged,
-  else on the one that crosses, drawn in the side it leaves: 7.2b put it on the crossing `R` although
-  `φ` stands unchanged on both sides, and 7.2.1b (`est(R)`) shipped unmarked.
-  A theorem the step's proof does not cite marks nothing (`settlePass`'s `cites`, 10.4c's `tex_mono`).
+  The triangle is on the expression the two sides of a square have in common (`passOf?`) — a bead
+  standing as it is on both, or bare on one and under the functor on the other; both, the one
+  standing as it is — drawn in the side the step leaves: 7.2b put it on `R` although `φ` stands
+  on both sides, 7.2.1b (`est(R)`) shipped unmarked, and `cata_comm`'s `⦇f⦈` lost its mark.
+  A theorem the step's proof does not cite marks nothing (`settlePass`'s `cites`, 10.4c's `tex_mono`),
+  and a peer's hypothesis marks only the panel that peer's step leaves (`peerHyps`).
 -/
 import diag.tool.StringDiagram
+import AOP.A5_5
 import AOP.A5_5_AlgCat
+import AOP.A6_2
 import AOP.A7_2
 import AOP.A9_1
 import AOP.A10_4_Tex
@@ -39,7 +43,36 @@ def cites (step thm : Name) : MetaM Bool := do
   let ci ← getConstInfo step
   forallTelescope ci.type fun xs _ => return (← stepProof step xs).getUsedConstants.contains thm
 
--- 2.6a: `h` crosses `f`, which becomes `g`: nothing unchanged, so the crossing `h`, `f` above: down.
+/-- `marks` as `passThm` asks: the statement opened with METAVARIABLES, as a candidate theorem is,
+    and asked for each bead of its own sides read under its binders. -/
+def thmMarks (decl : Name) : MetaM (List (String × String × Bool)) := do
+  let ci ← getConstInfo decl
+  forallTelescope ci.type fun _ body => do
+    let some (l, r) ← relSides? body | throwError "{decl} states no ⊑ or ="
+    let core (e : Expr) := if e.getAppFn.isConstOf ``Freyd.Functor.map then e.appArg! else e
+    let mut out := []
+    for φ in (compFactors l ++ compFactors r).map core do
+      let s ← saveState
+      if let some (P, below) ← passOf? (← forallMetaTelescope ci.type).2.2 φ then
+        out := out ++ [((← ppExpr φ).pretty, (← ppExpr (← instantiateMVars P)).pretty, below)]
+      s.restore
+    return out.eraseDups
+
+/-- How many hypotheses `peer`'s step brings to the panel of each side of `decl` (`peerHyps`). -/
+def peerUse (decl peer : Name) : MetaM (List Nat) := do
+  forallTelescope (← getConstInfo decl).type fun _ body => do
+    let some (l, r) ← relSides? body | throwError "{decl} states no ⊑ or ="
+    return [(← peerHyps peer l).size, (← peerHyps peer r).size]
+
+-- 2.6 `cata_comm`, `α⦇f⦈ = F(⦇f⦈)f`: `⦇f⦈` is the one expression on both sides, `α` above it: down.
+-- Opened as the search opens it: `?f` unified with `α` made `α` the common bead and dropped the mark.
+/-- info: [("⦇f⦈", "α", false)] -/
+#guard_msgs in #eval thmMarks ``Freyd.Alg.InitialAlgebra.cata_comm
+-- 6.2 `relCata_le_comp`: step 2 uses `h : F(S)T ⊑ RS` and leaves step 1's RIGHT side; step 1's left
+-- side draws the same beads and is left by step 1 alone, which uses no hypothesis: no mark there.
+/-- info: [0, 1] -/
+#guard_msgs in #eval peerUse ``Freyd.Alg.relCata_le_comp_step1 ``Freyd.Alg.relCata_le_comp_step2
+-- 2.6a: `h` is bare on the left and under `F` on the right, `f` becomes `g`: `h`, `f` above: down.
 /-- info: [("h", "f", false)] -/
 #guard_msgs in #eval marks ``Freyd.Alg.IsFHom
 -- 7.2b: `R` crosses `φ`, which stands unchanged on both sides, `R` above it: the down triangle on `φ`.

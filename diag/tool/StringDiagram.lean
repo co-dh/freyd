@@ -1103,7 +1103,7 @@ def sameArrow (x y : Expr) : MetaM Bool := do
 
 /-- A STATEMENT'S TWO SIDES: `ty` opened one definition at a time until a `⊑` or an `=` shows (8
     bounds a cycle).  AN EQUATION IS BOTH INCLUSIONS, so it lets a bead pass as its `⊑` would. -/
-def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
+def stmtRel? (ty : Expr) : MetaM (Option Expr) := do
   let rel (t : Expr) := t.getAppFn.isConstOf ``Freyd.Alg.le || t.isAppOfArity ``Eq 3
   let mut ty ← instantiateMVars ty
   for _ in [0:8] do
@@ -1111,55 +1111,69 @@ def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
     match ← Meta.unfoldDefinition? ty with
     | some t => ty := t.headBeta
     | none => break
-  unless rel ty do return none
-  let args := ty.getAppArgs
+  return if rel ty then some ty else none
+
+/-- The two sides of `stmtRel?`'s relation. -/
+def relSides? (ty : Expr) : MetaM (Option (Expr × Expr)) := do
+  let some rel ← stmtRel? ty | return none
+  let args := rel.getAppArgs
   return some (args[args.size - 2]!, args[args.size - 1]!)
 
 /-- WHAT LETS A BEAD PASS: `ty` opened one definition at a time until its `⊑` shows (8 bounds a
     cycle), each side flattened (`compFactors`), then trimmed to the WINDOW where the two sides
     actually differ — a shared prefix/suffix is context the step carries unchanged, the same trim
-    `moveStep?` applies before its own check.  Of the two beads the square swaps, THE ONE IT LEAVES
-    UNCHANGED IS MARKED, else the one that crosses: `F(R)φ ⊑ φR` marks `φ`, `f h = F(h) g` marks `h`.
+    `moveStep?` applies before its own check.  THE TRIANGLE GOES ON THE EXPRESSION THE TWO SIDES
+    HAVE IN COMMON: a bead standing as it is on both (`φ` in `F(R)φ ⊑ φR`), or bare on one side and
+    under the functor on the other (`h` in `f h = F(h) g`, `⦇f⦈` in `α⦇f⦈ = F(⦇f⦈)f`); where a
+    square has both, the one standing as it is.
     Answers `φ`'s partner in the left side and whether it stands below `φ` (the up triangle):
     `some (P, below)`, and `none` for a bead the square does not mark.
-    A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match. -/
+    A prefixed point `α°F(X)R ⊑ X` is no square.  Metavariables in `ty` are assigned by the match
+    of `φ` alone. -/
 def passOf? (ty φ : Expr) : MetaM (Option (Expr × Bool)) := do
   let some (sl, sr) ← relSides? ty | return none
   let (l, r) := (compFactors sl, compFactors sr)
   let mapArg (e : Expr) : Option Expr :=
     if e.getAppFn.isConstOf ``Freyd.Functor.map && e.getAppNumArgs ≥ 1 then some e.appArg! else none
-  -- STRIP WHAT THE TWO SIDES SHARE AT EACH END, exactly as `moveStep?` does: the shared run is
-  -- context the step carries along unchanged, and both patterns below are about what is left.
-  let mut p := 0
-  for _ in [0 : min l.size r.size] do
-    if ← Meta.isDefEq l[p]! r[p]! then p := p + 1 else break
-  let mut suf := 0
-  for _ in [0 : min (l.size - p) (r.size - p)] do
-    if ← Meta.isDefEq l[l.size - 1 - suf]! r[r.size - 1 - suf]! then suf := suf + 1 else break
-  let (wl, wr) := (l.extract p (l.size - suf), r.extract p (r.size - suf))
-  if wl.isEmpty || wr.isEmpty then return none
-  -- THE MOVER `M`: at one end of the LEFT window in one form (bare, or under a functor) and at the
-  -- OTHER end of the right window in the other form; its partner `P` is its neighbour in the left
-  -- side — inside the window, or the shared factor next to it.  THE TRIANGLE GOES ON THE BEAD THE
-  -- SQUARE LEAVES UNCHANGED: `P` when it stands in the right window as it is (`φ` in `F(R)φ ⊑ φR`),
-  -- else `M` (`h` in `f h = F(h) g`, whose `f` becomes `g`).  Down when the other bead of the pair
-  -- stands above it, up when below.
-  for first in [true, false] do
-    let (m, o) := if first then (wl[0]!, wr.back!) else (wl.back!, wr[0]!)
-    for img in [true, false] do
-      let s ← Meta.saveState
-      let some M := if img then mapArg m else some m | continue
-      let ok ← if img then Meta.isDefEq o M else match mapArg o with
-        | some Y => Meta.isDefEq Y M
-        | none => pure false
-      if ok then
+  -- WHAT IS COMMON IS READ OFF THE STATEMENT AS IT STANDS, its metavariables closed to assignment:
+  -- a theorem opened for the search has its binders open, and `?f` unified with `α` made `α` "stand
+  -- on both sides" of `α⦇?f⦈ = F(⦇?f⦈)?f`, an instance the theorem does not state.  Up to
+  -- instances: with nothing to assign, a mismatch at default transparency unfolds both factors
+  -- to the bottom before it fails, and the search runs out of heartbeats on its candidates.
+  let pairs ← Meta.withNewMCtxDepth <| Meta.withTransparency .instances do
+    -- STRIP WHAT THE TWO SIDES SHARE AT EACH END, exactly as `moveStep?` does: the shared run is
+    -- context the step carries along unchanged, and both patterns below are about what is left.
+    let mut p := 0
+    for _ in [0 : min l.size r.size] do
+      if ← Meta.isDefEq l[p]! r[p]! then p := p + 1 else break
+    let mut suf := 0
+    for _ in [0 : min (l.size - p) (r.size - p)] do
+      if ← Meta.isDefEq l[l.size - 1 - suf]! r[r.size - 1 - suf]! then suf := suf + 1 else break
+    let (wl, wr) := (l.extract p (l.size - suf), r.extract p (r.size - suf))
+    if wl.isEmpty || wr.isEmpty then return #[]
+    -- COMMON UNDER THE FUNCTOR, `M`: at one end of the LEFT window in one form (bare, or under a
+    -- functor) and at the OTHER end of the right window in the other form; its partner `P` is its
+    -- neighbour in the left side — inside the window, or the shared factor next to it.  COMMON AS
+    -- IT STANDS: `P`, when the right window holds it too.
+    let mut out : Array (Expr × Expr × Bool × Bool) := #[]
+    for first in [true, false] do
+      let (m, o) := if first then (wl[0]!, wr.back!) else (wl.back!, wr[0]!)
+      for img in [true, false] do
+        let some M := if img then mapArg m else some m | continue
+        let ok ← if img then Meta.isDefEq o M else match mapArg o with
+          | some Y => Meta.isDefEq Y M
+          | none => pure false
+        unless ok do continue
         let partner? := if first then (if wl.size ≥ 2 then some wl[1]! else l[l.size - suf]?)
           else if wl.size ≥ 2 then some wl[wl.size - 2]! else if p ≥ 1 then l[p - 1]? else none
-        if let some P := partner? then
-          if ← wr.anyM (Meta.isDefEq · P) then
-            if ← Meta.isDefEq φ P then return some (M, !first)
-          else if ← Meta.isDefEq φ M then return some (P, first)
-      s.restore
+        if let some P := partner? then out := out.push (M, P, ← wr.anyM (Meta.isDefEq · P), first)
+    return out
+  -- Down when the other bead of the pair stands above the marked one, up when below.
+  for (M, P, stands, first) in pairs do
+    let s ← Meta.saveState
+    if ← Meta.isDefEq φ (if stands then P else M) then
+      return some (if stands then (M, !first) else (P, first))
+    s.restore
   return none
 
 /-- THE STEP OUT OF THE DRAWN SIDE `side` MOVES A BEAD THROUGH ITS NEIGHBOUR: `ty`'s left side (the
@@ -1376,12 +1390,39 @@ def settlePass (d : Diagram) (proof : Expr) (side? : Option Expr := none) : Meta
 
 /-- A STEP'S HYPOTHESIS IS EVIDENCE FOR ITS NEIGHBOURING PANELS: a chain step `R S ⊑ F(S) T` is drawn
     as two panels, each read in its own declaration's telescope, so the panel of the side that does
-    NOT own the hypothesis `h : R S ⊑ F(S) T` never sees it.  Every declaration of the call is opened
-    with metavariables, and a hypothesis with the pass shape (`passOf?`) for a bead whose directly
-    preceding bead is its `X` marks that bead, cited by the declaration (as `passThm` cites). -/
-def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
+    NOT own the hypothesis `h : R S ⊑ F(S) T` never sees it.
+    THE HYPOTHESES THE PEER `n`'S STEP BRINGS TO THE PANEL DRAWN FROM `side`, each at the panel's own
+    arrows: the step LEAVES `side` — its left side is `side`, or either side of an equation, which
+    reads both ways — and its proof USES the hypothesis (`stepProof`).  The step's binders are fixed
+    by that one unification, so a panel the step does not leave gets nothing from it, however alike
+    its beads: the mark stands in the step's LEFT panel only. -/
+def peerHyps (n : Name) (side : Expr) : MetaM (Array Expr) := do
+  let some ci := (← getEnv).find? n | return #[]
+  let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+  let ty0 := ci.type.instantiateLevelParams ci.levelParams lvls
+  let used ← Meta.forallTelescope ty0 fun xs _ => do
+    let proof ← stepProof n xs lvls
+    xs.mapM fun x => return (← Meta.isProp (← Meta.inferType x)) && proof.containsFVar x.fvarId!
+  unless used.any id do return #[]
+  let s ← Meta.saveState
+  let (ms, _, body) ← Meta.forallMetaTelescope ty0
+  unless ms.size == used.size do
+    throwError "peerHyps: {n} opens {ms.size} binders with metavariables and {used.size} with locals"
+  let some rel ← stmtRel? body | s.restore; return #[]
+  let args := rel.getAppArgs
+  -- Up to instances, as `moveStep?` matches a side: a failure at default transparency unfolds both.
+  let leaves (e : Expr) := Meta.withTransparency .instances <| Meta.isDefEq e side
+  unless (← leaves args[args.size - 2]!) || (rel.isAppOfArity ``Eq 3 && (← leaves args[args.size - 1]!)) do
+    s.restore; return #[]
+  (ms.zip used).filterMapM fun (m, u) => do
+    if u then return some (← instantiateMVars (← Meta.inferType m)) else return none
+
+/-- The call's declarations speak for each other's panels: a hypothesis a peer brings to this panel
+    (`peerHyps`) with the pass shape (`passOf?`) for a bead whose neighbour is its partner marks
+    that bead, cited by the declaration (as `passThm` cites). -/
+def settlePeerHyps (d : Diagram) (side : Expr) (decls : Array Name) : MetaM Diagram := do
   let mut rows := d.rows
-  let env ← getEnv
+  let hyps ← decls.mapM fun n => return (n, ← peerHyps n side)
   for i in [0 : rows.size] do
    for (j, below) in [(i - 1, false), (i + 1, true)] do
     let r := rows[i]!
@@ -1389,44 +1430,14 @@ def settlePeerHyps (d : Diagram) (decls : Array Name) : MetaM Diagram := do
     -- A pass `settlePass` already drew on the partner, pointing at this bead, is this very pair.
     unless r.nat.isNone && r.tri.isNone && rows[j]!.tri != some (!below) do continue
     let (some φ, some Y) := (r.core, rows[j]!.core) | continue
-    for n in decls do
-      let some ci := env.find? n | continue
-      let s ← Meta.saveState
-      let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
-      let ty0 := ci.type.instantiateLevelParams ci.levelParams lvls
-      -- The hypothesis is read under LOCALS, as `passHyp` reads a binder: with metavariables the
-      -- prefix trim of `passOf?` can unify unrelated factors.  The match against the panel's `φ`
-      -- and `Y` is then one unification of the two terms, with the locals replaced by metavariables.
-      let hit ← Meta.forallTelescope ty0 fun xs _ => do
-        let (ms, _, _) ← Meta.forallMetaTelescope ty0
-        let proof ← stepProof n xs lvls
-        let mut hit : Option Bool := none
-        for x in xs do
-          let ty ← instantiateMVars (← Meta.inferType x)
-          unless ← Meta.isProp ty do continue
-          -- The peer's hypothesis marks a bead only where the peer's own step USES it (`stepProof`).
-          unless proof.containsFVar x.fvarId! do continue
-          for φ' in xs do
-            if ← Meta.isProp (← Meta.inferType φ') then continue
-            let some (X', up) ← Meta.withNewMCtxDepth (passOf? ty φ') | continue
-            let s' ← Meta.saveState
-            -- A BINDER STANDS FOR ITSELF: the steps of one chain share their binder names, so the
-            -- peer's `k` matched to the panel's local `h` is two different arrows, not one instance.
-            let sameName : MetaM Bool := (xs.zip ms).allM fun (x, m) => do
-              unless φ'.containsFVar x.fvarId! || X'.containsFVar x.fvarId! do return true
-              match ← instantiateMVars m with
-              | .fvar v => return (← v.getUserName) == (← x.fvarId!.getUserName)
-              | _ => return true
-            if up == below && (← Meta.isDefEq (φ'.replaceFVars xs ms) φ) && (← Meta.isDefEq (X'.replaceFVars xs ms) Y)
-                && (← sameName) then
-              hit := some up
-              break
-            s'.restore
-          if hit.isSome then break
-        return hit
-      s.restore
-      if let some up := hit then
-        rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some up }
+    for (n, tys) in hyps do
+      let hit ← tys.anyM fun ty => do
+        let s ← Meta.saveState
+        let some (X, up) ← passOf? ty φ | s.restore; return false
+        if up == below && (← Meta.isDefEq X Y) then return true
+        s.restore; return false
+      if hit then
+        rows := rows.set! i { r with pass := some (n, ← label Y, false), tri := some below }
         break
   return { d with rows }
 
@@ -2943,13 +2954,15 @@ partial def withSel {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Na
     inside all of them: a bead's ends are printed from the `Expr`, so a local opened for one part is
     still needed when the last part's panel is written out. -/
 partial def withParts {α : Type} [Inhabited α] (regionTy : Expr) (cat : Array Name)
-    (objVars : Array Expr) (proof : Expr) (sel : List Sel) (drawn : List (String × Expr))
+    (objVars : Array Expr) (proof : Expr) (decls : Array Name) (sel : List Sel) (drawn : List (String × Expr))
     (acc : Array (String × Diagram)) (k : Array (String × Diagram) → MetaM α) : MetaM α :=
   match drawn with
   | [] => k acc
   | (sym, e) :: rest =>
     withSel regionTy cat objVars sel e fun e' => do
-      withParts regionTy cat objVars proof sel rest (acc.push (sym, ← panelOf regionTy cat e' objVars proof)) k
+      -- The call's declarations speak for each other's panels, each for the side it leaves.
+      let d ← settlePeerHyps (← panelOf regionTy cat e' objVars proof) e' decls
+      withParts regionTy cat objVars proof decls sel rest (acc.push (sym, d)) k
 
 /-- A declaration is read in ITS OWN namespaces.  `Freyd.Alg` keeps its allegory instances and its
     `≫`/`°`/`⦇⦈` notations scoped, so outside them the region has no product to split an object on
@@ -3157,10 +3170,8 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
       && s.map (·.suffix) == sel.map (·.suffix)
     -- THIS FILE'S OWN PARTS ARE DRAWN ONCE, under the locals it is printed in, and handed to the
     -- peer cache as they are: drawn again as a peer of their own call, every panel cost two draws.
-    withParts regionTy cat objVars proof sel drawn.toList #[] fun parts => do
-    -- The call's declarations speak for each other's panels (`settlePeerHyps`).
-    let parts ← parts.mapM fun (s, d) => do
-      return (s, ← settlePeerHyps d (peers.toArray.map fun (b, _, _, _) => b.toName))
+    withParts regionTy cat objVars proof (peers.toArray.map fun (b, _, _, _) => b.toName) sel
+      drawn.toList #[] fun parts => do
     let per ← Prof.phaseIf draw "peers" do
       discard <| peerParts (key declName binder path sel) (pure (parts.map (·.2)))
       peers.toArray.mapM fun (b, h, p, s) => part b.toName h p s
