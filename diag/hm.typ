@@ -154,8 +154,12 @@
           fill: col, stroke: none)
     d.circle(p, radius: HMC, fill: none, stroke: col + lw)
   } else if nat != "spider" {
-    d.circle(p, radius: HMC, fill: if nat == "lax" { bg } else { col },
-             stroke: if nat == "lax" { col + lw } else { none })
+    // `eq`: A HOLLOW CIRCLE, the mark of an EQUAL rule — the sign right of the panel is `=`, where
+    // the triangles say `⊑`.  The exporter draws a lax family as `pass`, so the hollow circle is the
+    // equation's alone; against `strict` it is hollow, against `maps` it has no filled half.
+    let hollow = nat in ("lax", "eq")
+    d.circle(p, radius: HMC, fill: if hollow { bg } else { col },
+             stroke: if hollow { col + lw } else { none })
   }
 }
 

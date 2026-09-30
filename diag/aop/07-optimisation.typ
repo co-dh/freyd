@@ -300,8 +300,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<dist-defn>
 
 // The two panels of the inequation, emitted by `./scripts/diagram --frame 12 --sigs "f:F(A)⟶A"`
-// plus `s: 100%`, the square's own size.  They line up on `f`, so the picture says what moves:
-// `est(R)` starts INSIDE the functor on the left and ends up last of all on the right.  The right
+// plus `s: 100%`, the square's own size.  They line up on `est(R)`, so the picture says what moves:
+// `f` starts below it on the left and ends up above it, inside the fraction, on the right.  The right
 // panel factors `(F(∋)f)%∋` the way @lam-defn does — `𝟙%∋` births the `E` wire, `∋` kills the one
 // the source brought in — because a bead drawn whole would hide the very `E` the law is about.
 #let dist-hm-l = "Freyd.Alg.Distributes.lhs"
@@ -312,7 +312,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#layout(avail => {
   let (sq, sd) = (leancd("Freyd.Alg.Distributes"), lean(dist-hm-l, dist-hm-r, op: [#SQ]))
   // The example square is drawn at the pair's scale, so the two squares are the same size.
-  let s = pair-fill(sq, sd, avail.width)
+  let s = pair-fill(sq, sd, avail.width) * 0.7
   align(center, grid(columns: 1, align: horizon, row-gutter: 10pt,
     pair(sq, sd, [`F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ ` est(R)` #src[]], s: s),
     capbox(
