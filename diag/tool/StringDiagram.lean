@@ -2903,8 +2903,66 @@ partial def scanStmt (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
     return nest R (false, false) (← scanStmt regionTy cat objVars r)
   return #[.bead e]
 
+/-- The arrow a node of the tree is, where it is one plain arrow: a bead, or a plain lane over one
+    such node, `L(t)`.  `none` for a `°` node or a lane over a composite. -/
+partial def Scan.term? : Scan → MetaM (Option Expr)
+  | .bead e => return some e
+  | .lane (.rel L) (false, false) #[x] => do
+    let some t ← x.term? | return none
+    return some (← Meta.mkAppM ``Freyd.Functor.map #[← laneFunctor L, t])
+  | _ => return none
+
+/-- The catalogue lanes of the region — what a reader can take a lane's letter to be.  Every
+    `Relator`/`Functor` endolane of the region the environment names. -/
+def laneLetters (regionTy : Expr) (cat : Array Name) : MetaM (Array Expr) := do
+  let ends : Array Expr → MetaM Bool := fun c => do
+    return (← Meta.isDefEq c[0]! regionTy) && (← Meta.isDefEq c[1]! regionTy)
+  cat.filterMapM fun n => do
+    let some (G, _) ← instCatalogueAt "map" regionTy n ends | return none
+    let G ← instantiateMVars G
+    if G.hasExprMVar then return none
+    return some G
+
+/-- A LANE `L` AROUND A BEAD `t` READS `L(t)`, and a reader knows `L` only by its letter.  So every
+    lane of the region printed with `L`'s letter and having `L`'s object action must give the arrow
+    `L` gives at `t` — the Lean subterm the bead was drawn from — or the drawing denotes another
+    arrow: the power relator printed `E` read `E(thin(Q))`, `existsImage`, where `powerRel` stood.
+    The obligations are every node directly under a lane; one that is no plain arrow (`°`, a
+    composite) is asked at a fresh arrow of the region, which every bead under it instantiates. -/
+partial def laneReads (regionTy : Expr) (letters : Array Expr) : Scan → MetaM Unit
+  | .bead _ => pure ()
+  | .conv b => b.forM (laneReads regionTy letters)
+  | .lane w op b => do
+    b.forM (laneReads regionTy letters)
+    let .rel L := w | return
+    let ℓ ← w.label
+    -- The catalogue holds the region's ENDOlanes: a lane between other regions shows them in its
+    -- colours, so none of them is a reading of it.
+    let ends := (← Meta.inferType L).getAppArgs
+    unless ends.size ≥ 2 do return
+    unless (← Meta.isDefEq ends[0]! regionTy) && (← Meta.isDefEq ends[1]! regionTy) do return
+    -- The letter is asked LAST: a lane with another object action is told apart by its region
+    -- types, and only one the reader could take for `L` must have a printing rule.
+    for G in letters do
+      if ← Meta.isDefEq G L then continue
+      unless ← Wire.beq (.rel G) w do continue
+      unless (← Wire.label (.rel G)) == ℓ do continue
+      let at1 (t : Expr) : MetaM Unit := do
+        let lt ← Meta.mkAppM ``Freyd.Functor.map #[← laneFunctor L, t]
+        let gt ← Meta.mkAppM ``Freyd.Functor.map #[← laneFunctor G, t]
+        unless ← Meta.isDefEq lt gt do
+          throwError "scan line: the lane `{ℓ}` around `{← plain t}` reads `{G.getAppFn.constName?}` \
+            of it, but it was drawn from `{L.getAppFn.constName?}` of it, a different arrow — the two \
+            lanes print one letter, `{ℓ}`"
+      for x in b do
+        if op == (false, false) then
+          if let some t ← x.term? then at1 t; continue
+        Meta.withLocalDeclD `x regionTy fun x => Meta.withLocalDeclD `y regionTy fun y => do
+          Meta.withLocalDeclD `r (← Meta.mkAppM ``Cat.Hom #[x, y]) fun r => at1 r
+
 /-- The panel read back by the scan line against the side it was drawn from.  A drawing whose
-    lanes, rows or `°` spans say a different arrow fails here, before any file is written. -/
+    lanes, rows or `°` spans say a different arrow fails here, before any file is written; so does
+    one whose lane letters say a different arrow (`laneReads`). -/
 def scanCheck (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (side : Expr)
     (d : Diagram) : MetaM Unit := do
   let drawn ← Scan.merge (← scanRows d (columns d) 0 d.rows.size #[])
@@ -2913,6 +2971,11 @@ def scanCheck (regionTy : Expr) (cat : Array Name) (objVars : Array Expr) (side 
     let txt (xs : Array Scan) : MetaM String := return String.intercalate " ≫ " (← xs.toList.mapM Scan.text)
     throwError "scan line: the panel reads back as `{← txt drawn}`, but it was drawn from \
       `{← txt said}`"
+  -- Asked of the STATEMENT's tree: its lanes are the subterms the beads were drawn from, and the
+  -- drawn tree has just been shown the same lane for lane.
+  if said.any fun | .lane .. | .conv .. => true | _ => false then
+    let letters ← laneLetters regionTy cat
+    said.forM (laneReads regionTy letters)
 
 /-- A BEAD ON A LANE BETWEEN TWO INNER `°` SPANS of that lane is drawn inside ONE `°` when it has a
     named converse: west of the inner `°` a bead is read in `𝒜ᵒᵖ`, so `⊆` there is drawn `⊇`, the
