@@ -48,43 +48,59 @@ namespace Freyd.Alg
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L : Relator 𝒜 𝒜)
 
-/-! ## `sort P` and (8.6) -/
+/-! ## The order `≼`
 
-/-- `sort P ≜ ordered P·setify°` (book p.199), mirrored `setify° ≫ ordered P`: read the set
-    back as one of its `P`-ordered listings.  `L A` is the list object `[A]` and
-    `setify : L A ⟶ EA` the map that forgets the order. -/
+  B&dM write the connected preorder §8.3 sorts by as a letter, `sort P`, `ordered P`, `merge P`;
+  the note writes it `≼`, and so does every statement below.  `≼` is an ordinary binder, named
+  `«≼»`; the notation lets the source write it as the note does.  Every combinator the book
+  parameterises by that order (`ordered`, `sort`, `merge`) is a FAMILY applied to it, so a
+  statement prints `ordered(≼)`, never a fused name. -/
+
+set_option hygiene false in
+/-- The order binder `«≼»`, written `≼`. -/
+local notation "≼" => «≼»
+
+/-! ## `sort(≼)` and (8.6) -/
+
+/-- `sort(≼) ≜ ordered(≼)·setify°` (book p.201, "definition of sort P"), mirrored
+    `setify° ordered(≼)`: read the set back as one of its `≼`-ordered listings.  `L A` is the list
+    object `[A]`, `setify : L A ⟶ EA` the map that forgets the order, and `ordered` the family of
+    order tests, `ordered(≼)` the coreflexive that keeps the `≼`-ordered lists. -/
 @[expose] public def sortRel (setify : L.obj A ⟶ PowerAllegory.powerObj A)
-    (ordered : L.obj A ⟶ L.obj A) : PowerAllegory.powerObj A ⟶ L.obj A := setify° ≫ ordered
+    (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A) :
+    PowerAllegory.powerObj A ⟶ L.obj A := setify° ≫ ordered ≼
 
 /-! ### The steps of the p.201 argument
 
-  `sort P g = setify° ordered P g ⊑ setify° g ordered P ⊑ T setify° ordered P = T sort P`.  The
-  outer two steps are the unfolding of `sort P`; the inner two carry the argument and are stated
-  here, ahead of their first use, for any combinator `g` that only drops elements and implements
-  `T` on the underlying set.  `sortRel_comp_le` below is their composition, (8.6) and (8.9) its
-  instances, so the argument is written once. -/
+  `sort(≼) g = setify° ordered(≼) g ⊑ setify° g ordered(≼) ⊑ T setify° ordered(≼) = T sort(≼)`.
+  The outer two steps are the unfolding of `sort(≼)`; the inner two carry the argument and are
+  stated here, ahead of their first use, for any combinator `g` that only drops elements and
+  implements `T` on the underlying set.  `sortRel_comp_le` below is their composition, (8.6) and
+  (8.9) its instances, so the argument is written once. -/
 
-/-- Step 1: `g` only drops elements (`g ⊑ subseq`) and a subsequence of a `P`-ordered list is
-    `P`-ordered, so `g` may run before the order test. -/
+/-- Step 1: `g` only drops elements (`g ⊑ subseq`) and a subsequence of a `≼`-ordered list is
+    `≼`-ordered, so `g` may run before the order test. -/
 public theorem sortRel_comp_le_step1 (setify : L.obj A ⟶ PowerAllegory.powerObj A)
-    {ordered subseq g : L.obj A ⟶ L.obj A} (hord : Coreflexive ordered) (hsub : g ⊑ subseq)
-    (hos : ordered ≫ subseq ⊑ subseq ≫ ordered) :
-    setify° ≫ ordered ≫ g ⊑ setify° ≫ g ≫ ordered := by
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
+    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
+    setify° ≫ ordered ≼ ≫ g ⊑ setify° ≫ g ≫ ordered ≼ := by
   refine comp_mono_left _ ?_
-  have h1 : ordered ≫ g ⊑ subseq ≫ ordered := le_trans (comp_mono_left _ hsub) hos
-  have h2 : ordered ≫ g ⊑ g := by
+  have h1 : ordered ≼ ≫ g ⊑ subseq ≫ ordered ≼ := le_trans (comp_mono_left _ hsub) hos
+  have h2 : ordered ≼ ≫ g ⊑ g := by
     have := comp_mono_right hord g
     rwa [Cat.id_comp] at this
   have h3 := le_inter h1 h2
   rw [coreflexive_comp_inter hord subseq g] at h3
-  exact le_trans h3 (comp_mono_right (inter_lb_right _ _) ordered)
+  exact le_trans h3 (comp_mono_right (inter_lb_right _ _) (ordered ≼))
 
 /-- Step 2: `·setify ⊣ ·setify°` shunts `g`'s specification `g·setify ⊑ setify·T` across the
     converse. -/
 public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ PowerAllegory.powerObj A}
-    (hset : Map setify) (ordered : L.obj A ⟶ L.obj A) {g : L.obj A ⟶ L.obj A}
+    (hset : Map setify) (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A)
+    {g : L.obj A ⟶ L.obj A}
     {T : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A} (hspec : g ≫ setify ⊑ setify ≫ T) :
-    setify° ≫ g ≫ ordered ⊑ T ≫ setify° ≫ ordered := by
+    setify° ≫ g ≫ ordered ≼ ⊑ T ≫ setify° ≫ ordered ≼ := by
   have hshunt : setify° ≫ g ⊑ T ≫ setify° := by
     refine (map_shunt_left hset g _).mpr ?_
     have hent : g ⊑ g ≫ setify ≫ setify° := by
@@ -93,49 +109,51 @@ public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ PowerAllegory.powerOb
     refine le_trans hent ?_
     rw [← Cat.assoc g setify (setify°), ← Cat.assoc setify T (setify°)]
     exact comp_mono_right hspec _
-  rw [← Cat.assoc (setify°) g ordered, ← Cat.assoc T (setify°) ordered]
-  exact comp_mono_right hshunt ordered
+  rw [← Cat.assoc (setify°) g (ordered ≼), ← Cat.assoc T (setify°) (ordered ≼)]
+  exact comp_mono_right hshunt (ordered ≼)
 
 /-! ### (8.6)'s chain, spelled with `thinlist Q` and `thin Q`
 
   Only the ends of the chain and the shunt name the combinator; the step between them is
   `sortRel_comp_le_step1` at `g ≜ thinlist Q`, whose statement it is verbatim. -/
 
-/-- Step 1: `sort P ≜ ordered P·setify°` unfolded. -/
+/-- Step 1: `sort(≼) ≜ ordered(≼)·setify°` unfolded. -/
 public theorem sortRel_comp_thinlist_le_step1 (setify : L.obj A ⟶ PowerAllegory.powerObj A)
-    (ordered thinlist : L.obj A ⟶ L.obj A) :
-    sortRel L setify ordered ≫ thinlist = setify° ≫ ordered ≫ thinlist := by
-  show (setify° ≫ ordered) ≫ thinlist = setify° ≫ ordered ≫ thinlist
+    (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A) (thinlist : L.obj A ⟶ L.obj A) :
+    sortRel L setify ordered ≼ ≫ thinlist = setify° ≫ ordered ≼ ≫ thinlist := by
+  show (setify° ≫ ordered ≼) ≫ thinlist = setify° ≫ ordered ≼ ≫ thinlist
   exact Cat.assoc _ _ _
 
 /-- Step 2: `thinlist Q·setify ⊑ setify·thin Q` shunted across `setify°`. -/
 public theorem sortRel_comp_thinlist_le_step2 {setify : L.obj A ⟶ PowerAllegory.powerObj A}
-    (hset : Map setify) (ordered : L.obj A ⟶ L.obj A) {thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
+    (hset : Map setify) (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A)
+    {thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
     (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
-    setify° ≫ thinlist ≫ ordered ⊑ thinRel Q ≫ setify° ≫ ordered :=
-  sortRel_comp_le_step2 L hset ordered hspec
+    setify° ≫ thinlist ≫ ordered ≼ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ :=
+  sortRel_comp_le_step2 L hset ordered ≼ hspec
 
-/-- Step 3: `sort P` folded back. -/
+/-- Step 3: `sort(≼)` folded back. -/
 public theorem sortRel_comp_thinlist_le_step3 (setify : L.obj A ⟶ PowerAllegory.powerObj A)
-    (ordered : L.obj A ⟶ L.obj A) {Q : A ⟶ A} :
-    thinRel Q ≫ setify° ≫ ordered = thinRel Q ≫ sortRel L setify ordered := rfl
+    (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A) {Q : A ⟶ A} :
+    thinRel Q ≫ setify° ≫ ordered ≼ = thinRel Q ≫ sortRel L setify ordered ≼ := rfl
 
 /-- **(8.6)** (book p.201): a thinning of the sorted list lists a thinning of the set,
-    `sort P·thinlist Q ⊑ thin Q·sort P` mirrored to
-    `sortRel setify ordered ≫ thinlist ⊑ thinRel Q ≫ sortRel setify ordered`.  The two
+    `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` mirrored to
+    `sortRel setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel setify ordered ≼`.  The two
     conditions on `thinlist Q` do all the work: `thinlist Q ⊑ subseq` lets the thinning run
     before the order test, and `thinlist Q·setify ⊑ setify·thin Q` shunts across `setify°`. -/
 public theorem sortRel_comp_thinlist_le
     {setify : L.obj A ⟶ PowerAllegory.powerObj A} (hset : Map setify)
-    {ordered subseq thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
-    (hord : Coreflexive ordered) (hsub : thinlist ⊑ subseq)
-    (hos : ordered ≫ subseq ⊑ subseq ≫ ordered)
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A}
+    {subseq thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
+    (hord : Coreflexive (ordered ≼)) (hsub : thinlist ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
     (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
-    sortRel L setify ordered ≫ thinlist ⊑ thinRel Q ≫ sortRel L setify ordered :=
-  le_trans (le_of_eq (sortRel_comp_thinlist_le_step1 L setify ordered thinlist))
+    sortRel L setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel L setify ordered ≼ :=
+  le_trans (le_of_eq (sortRel_comp_thinlist_le_step1 L setify ordered ≼ thinlist))
     (le_trans (le_trans (sortRel_comp_le_step1 L setify hord hsub hos)
-        (sortRel_comp_thinlist_le_step2 L hset ordered hspec))
-      (le_of_eq (sortRel_comp_thinlist_le_step3 L setify ordered)))
+        (sortRel_comp_thinlist_le_step2 L hset ordered ≼ hspec))
+      (le_of_eq (sortRel_comp_thinlist_le_step3 L setify ordered ≼)))
 
 /-! ## Lemma 8.1 (book p.202) -/
 
@@ -146,111 +164,111 @@ variable {F : Relator 𝒜 𝒜}
   The sort walks inwards one law at a time; `map_sort_comp_listcp_le` is their composition. -/
 
 /-- Step 1, (8.11): the sort goes under `F`. -/
-public theorem map_sort_comp_listcp_le_step1 {P : A ⟶ A}
+public theorem map_sort_comp_listcp_le_step1 {«≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
     {filterp : L.obj A ⟶ L.obj A}
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ sortF (F.map P) ≫ listf ≫ filterp := by
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
+    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ sortF (F.map ≼) ≫ listf ≫ filterp := by
   rw [← Cat.assoc, ← Cat.assoc (cpMap F A)]
   exact comp_mono_right h811 _
 
-/-- Step 2: `f` monotonic on `P`, and `sort` grows with its order. -/
-public theorem map_sort_comp_listcp_le_step2 {f : F.obj A ⟶ A} (hf : Map f) {P : A ⟶ A}
+/-- Step 2: `f` monotonic on `≼`, and `sort` grows with its order. -/
+public theorem map_sort_comp_listcp_le_step2 {f : F.obj A ⟶ A} (hf : Map f) {«≼» : A ⟶ A}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listf : L.obj (F.obj A) ⟶ L.obj A} {filterp : L.obj A ⟶ L.obj A}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : Freyd.Alg.MonoAlg f P) :
-    cpMap F A ≫ sortF (F.map P) ≫ listf ≫ filterp
-      ⊑ cpMap F A ≫ sortF (f ≫ P ≫ f°) ≫ listf ≫ filterp :=
+    (hmono : Freyd.Alg.MonoAlg f ≼) :
+    cpMap F A ≫ sortF (F.map ≼) ≫ listf ≫ filterp
+      ⊑ cpMap F A ≫ sortF (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp :=
   comp_mono_left _ (comp_mono_right (hsortF ((Freyd.Alg.monoAlg_iff_sandwich hf).mp hmono)) _)
 
 /-- Step 3, (8.8): the sort walks past `list f`. -/
-public theorem map_sort_comp_listcp_le_step3 {f : F.obj A ⟶ A} {P : A ⟶ A}
+public theorem map_sort_comp_listcp_le_step3 {f : F.obj A ⟶ A} {«≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listf : L.obj (F.obj A) ⟶ L.obj A} {filterp : L.obj A ⟶ L.obj A}
-    (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P) :
-    cpMap F A ≫ sortF (f ≫ P ≫ f°) ≫ listf ≫ filterp
-      ⊑ cpMap F A ≫ powerRel f ≫ sort P ≫ filterp := by
+    (h88 : sortF (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼) :
+    cpMap F A ≫ sortF (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp
+      ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp := by
   refine comp_mono_left _ ?_
   rw [← Cat.assoc, ← Cat.assoc (powerRel f)]
   exact comp_mono_right h88 filterp
 
 /-- Step 4, (8.9): the sort walks past `filter p`. -/
-public theorem map_sort_comp_listcp_le_step4 {f : F.obj A ⟶ A} {p P : A ⟶ A}
+public theorem map_sort_comp_listcp_le_step4 {f : F.obj A ⟶ A} {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)} {filterp : L.obj A ⟶ L.obj A}
-    (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P) :
-    cpMap F A ≫ powerRel f ≫ sort P ≫ filterp
-      ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort P :=
+    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼) :
+    cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp
+      ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼ :=
   comp_mono_left _ (comp_mono_left _ h89)
 
-/-- Step 5: `E` is a functor and agrees with `P` on maps. -/
-public theorem map_sort_comp_listcp_le_step5 {f : F.obj A ⟶ A} (hf : Map f) {p P : A ⟶ A}
+/-- Step 5: `E` is a functor and agrees with `≼` on maps. -/
+public theorem map_sort_comp_listcp_le_step5 {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)} :
-    cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort P
-      = cpMap F A ≫ existsImage (f ≫ p) ≫ sort P := by
+    cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼
+      = cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ := by
   rw [powerRel_map hf, ← Cat.assoc (existsImage f), ← existsImage_comp]
 
 /-- Step 6: `cp(F) ≜ F(∋)%∋`, and the power transpose absorbs `E(fp)`. -/
-public theorem map_sort_comp_listcp_le_step6 {f : F.obj A ⟶ A} {p P : A ⟶ A}
+public theorem map_sort_comp_listcp_le_step6 {f : F.obj A ⟶ A} {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)} :
-    cpMap F A ≫ existsImage (f ≫ p) ≫ sort P = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
+    cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
   rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
 
 /-- Lemma 8.1, steps 4–6 as one row: the sort walks past `filter p` by (8.9), and the image of
-    `p` after `P f` is the transpose of `F(∋) f p`. -/
+    `p` after `≼ f` is the transpose of `F(∋) f p`. -/
 public theorem map_sort_comp_listcp_le_steps4to6
-    {f : F.obj A ⟶ A} (hf : Map f) {p P : A ⟶ A}
+    {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)} {filterp : L.obj A ⟶ L.obj A}
-    (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P) :
-    cpMap F A ≫ powerRel f ≫ sort P ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P := by
+    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼) :
+    cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
   rw [← map_sort_comp_listcp_le_step6 L, ← map_sort_comp_listcp_le_step5 L hf]
   exact map_sort_comp_listcp_le_step4 L h89
 
 /-- Lemma 8.1, steps 1–3 as one row: the sort walks under `F` by (8.11), changes order by `f`
-    monotonic on `P`, and walks past `list f` by (8.8). -/
+    monotonic on `≼`, and walks past `list f` by (8.8). -/
 public theorem map_sort_comp_listcp_le_steps1to3
-    {f : F.obj A ⟶ A} (hf : Map f) {P : A ⟶ A}
+    {f : F.obj A ⟶ A} (hf : Map f) {«≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
     {filterp : L.obj A ⟶ L.obj A}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : Freyd.Alg.MonoAlg f P)
-    (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ powerRel f ≫ sort P ≫ filterp :=
+    (hmono : Freyd.Alg.MonoAlg f ≼)
+    (h88 : sortF (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
+    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp :=
   le_trans (map_sort_comp_listcp_le_step1 L h811)
     (le_trans (map_sort_comp_listcp_le_step2 L hf hsortF hmono) (map_sort_comp_listcp_le_step3 L h88))
 
 /-- **Lemma 8.1** (book p.202): one sorted list built from sorted arguments, instead of a set
     built and then sorted —
-    `filter p·list f·listcp(F)·F(sort P) ⊑ sort P·Λ(p·f·F∈)`, mirrored to
-    `F(sort P) ≫ listcp ≫ list f ≫ filter p ⊑ Λ (F(∋) ≫ f ≫ p) ≫ sort P`.
+    `filter p·list f·listcp(F)·F(sort ≼) ⊑ sort ≼·Λ(p·f·F∈)`, mirrored to
+    `F(sort ≼) ≫ listcp ≫ list f ≫ filter p ⊑ Λ (F(∋) ≫ f ≫ p) ≫ sort ≼`.
     The sort walks inwards: past `filter p` by (8.9), past `list f` by (8.8), under `F` by
-    (8.11), with `f` monotonic on `P` (`FP ⊑ f·P·f°`) closing the change of order. -/
+    (8.11), with `f` monotonic on `≼` (`FP ⊑ f·≼·f°`) closing the change of order. -/
 public theorem map_sort_comp_listcp_le
-    {f : F.obj A ⟶ A} (hf : Map f) {p P : A ⟶ A}
+    {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
     {filterp : L.obj A ⟶ L.obj A}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : Freyd.Alg.MonoAlg f P)
-    (h88 : sortF (f ≫ P ≫ f°) ≫ listf ⊑ powerRel f ≫ sort P)
-    (h89 : sort P ≫ filterp ⊑ existsImage p ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort P :=
+    (hmono : Freyd.Alg.MonoAlg f ≼)
+    (h88 : sortF (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼)
+    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
+    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ :=
   le_trans (map_sort_comp_listcp_le_steps1to3 L hf hsortF hmono h88 h811)
     (map_sort_comp_listcp_le_steps4to6 L hf h89)
 
 /-! ## THEOREM 8.2 (book p.203) and its fusion side condition
 
   BINARY THINNING DATA (book p.203): `S = (f₁p₁) ∪ (f₂p₂)` with `p₁`, `p₂` coreflexive; `Q` a
-  preorder with `Q ⊑ R` and both `f₁p₁`, `f₂p₂` monotonic on `Q`; `P` a connected preorder
-  with both `f₁`, `f₂` monotonic on `P`; `gᵢ = list fᵢ·filter pᵢ`.  Connectedness of `P` and
+  preorder with `Q ⊑ R` and both `f₁p₁`, `f₂p₂` monotonic on `Q`; `≼` a connected preorder
+  with both `f₁`, `f₂` monotonic on `≼`; `gᵢ = list fᵢ·filter pᵢ`.  Connectedness of `≼` and
   coreflexivity of the `pᵢ` enter only through the laws (8.6)-(8.11) they are there to make
   true, so they are not separate hypotheses below. -/
 
@@ -258,9 +276,9 @@ public theorem map_sort_comp_listcp_le
 
   `sortedAlg_fusion` below is their composition. -/
 
-/-- Step 1: Lemma 8.1 at `f₁,p₁` and at `f₂,p₂` under the common prefix `F(sort P)·listcp(F)`. -/
+/-- Step 1: Lemma 8.1 at `f₁,p₁` and at `f₂,p₂` under the common prefix `F(sort ≼)·listcp(F)`. -/
 public theorem sortedAlg_fusion_step1
-    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q : A ⟶ A}
+    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ «≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)}
@@ -268,86 +286,86 @@ public theorem sortedAlg_fusion_step1
     {filterp₁ filterp₂ : L.obj A ⟶ L.obj A} {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)}
     {Pr : RelProd (L.obj A) (L.obj A)} {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
-    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
-    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
-    (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
-    (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P)) :
-    F.map (sort P) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
-        ≫ merge P ≫ thinlist Q
-      ⊑ Pr.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort P) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort P)
-        ≫ merge P ≫ thinlist Q := by
-  have l1 : (F.map (sort P) ≫ listcp) ≫ (listf₁ ≫ filterp₁)
-      ⊑ Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort P := by
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)
+    (h88₁ : sortF (f₁ ≫ ≼ ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort ≼)
+    (h88₂ : sortF (f₂ ≫ ≼ ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort ≼)
+    (h89₁ : sort ≼ ≫ filterp₁ ⊑ existsImage p₁ ≫ sort ≼)
+    (h89₂ : sort ≼ ≫ filterp₂ ⊑ existsImage p₂ ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
+    F.map (sort ≼) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
+        ≫ merge ≼ ≫ thinlist Q
+      ⊑ Pr.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort ≼) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort ≼)
+        ≫ merge ≼ ≫ thinlist Q := by
+  have l1 : (F.map (sort ≼) ≫ listcp) ≫ (listf₁ ≫ filterp₁)
+      ⊑ Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort ≼ := by
     rw [Cat.assoc]
     exact map_sort_comp_listcp_le L hf₁ hsortF hmono₁ h88₁ h89₁ h811
-  have l2 : (F.map (sort P) ≫ listcp) ≫ (listf₂ ≫ filterp₂)
-      ⊑ Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort P := by
+  have l2 : (F.map (sort ≼) ≫ listcp) ≫ (listf₂ ≫ filterp₂)
+      ⊑ Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort ≼ := by
     rw [Cat.assoc]
     exact map_sort_comp_listcp_le L hf₂ hsortF hmono₂ h88₂ h89₂ h811
-  rw [← Cat.assoc (F.map (sort P)) (listcp)
-        (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ merge P ≫ thinlist Q),
-      ← Cat.assoc (F.map (sort P) ≫ listcp)
-        (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)) (merge P ≫ thinlist Q)]
+  rw [← Cat.assoc (F.map (sort ≼)) (listcp)
+        (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂) ≫ merge ≼ ≫ thinlist Q),
+      ← Cat.assoc (F.map (sort ≼) ≫ listcp)
+        (Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)) (merge ≼ ≫ thinlist Q)]
   exact comp_mono_right (le_trans (RelProd.comp_pair_le _ _ _) (RelProd.pair_mono l1 l2)) _
 
-/-- Step 2: `⟨X,Y⟩(sort P×sort P) = ⟨X sort P,Y sort P⟩`, read right to left. -/
-public theorem sortedAlg_fusion_step2 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ P Q : A ⟶ A}
+/-- Step 2: `⟨X,Y⟩(sort ≼×sort ≼) = ⟨X sort ≼,Y sort ≼⟩`, read right to left. -/
+public theorem sortedAlg_fusion_step2 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ «≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {Pr : RelProd (L.obj A) (L.obj A)}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)} :
-    Pr.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort P) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort P)
-        ≫ merge P ≫ thinlist Q
+    Pr.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁) ≫ sort ≼) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂) ≫ sort ≼)
+        ≫ merge ≼ ≫ thinlist Q
       = Pr'.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂))
-        ≫ prodMap Pr' Pr (sort P) (sort P) ≫ merge P ≫ thinlist Q := by
+        ≫ prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ≫ thinlist Q := by
   rw [← RelProd.pair_prodMap (P := Pr') (Q := Pr)
-        (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂)) (sort P) (sort P), Cat.assoc]
+        (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂)) (sort ≼) (sort ≼), Cat.assoc]
 
-/-- Step 3, (8.10): `merge P` of the two sorted lists lists their union. -/
-public theorem sortedAlg_fusion_step3 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ P Q : A ⟶ A}
+/-- Step 3, (8.10): `merge ≼` of the two sorted lists lists their union. -/
+public theorem sortedAlg_fusion_step3 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ «≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {Pr : RelProd (L.obj A) (L.obj A)}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
-    (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P) :
+    (h810 : prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ⊑ cup Pr' ≫ sort ≼) :
     Pr'.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂))
-        ≫ prodMap Pr' Pr (sort P) (sort P) ≫ merge P ≫ thinlist Q
+        ≫ prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ≫ thinlist Q
       ⊑ Pr'.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂))
-        ≫ cup Pr' ≫ sort P ≫ thinlist Q := by
+        ≫ cup Pr' ≫ sort ≼ ≫ thinlist Q := by
   refine comp_mono_left _ ?_
-  rw [← Cat.assoc (prodMap Pr' Pr (sort P) (sort P)) (merge P) (thinlist Q),
-      ← Cat.assoc (cup Pr') (sort P) (thinlist Q)]
+  rw [← Cat.assoc (prodMap Pr' Pr (sort ≼) (sort ≼)) (merge ≼) (thinlist Q),
+      ← Cat.assoc (cup Pr') (sort ≼) (thinlist Q)]
   exact comp_mono_right h810 (thinlist Q)
 
 /-- Step 4: `Λ` of the union is the pair of the two transposes, closed by `cup`. -/
-public theorem sortedAlg_fusion_step4 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ P Q : A ⟶ A}
+public theorem sortedAlg_fusion_step4 {f₁ f₂ : F.obj A ⟶ A} {p₁ p₂ «≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)} :
     Pr'.pair (Λ (F.map (∋ A) ≫ f₁ ≫ p₁)) (Λ (F.map (∋ A) ≫ f₂ ≫ p₂))
-        ≫ cup Pr' ≫ sort P ≫ thinlist Q
-      = Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ sort P ≫ thinlist Q := by
+        ≫ cup Pr' ≫ sort ≼ ≫ thinlist Q
+      = Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ sort ≼ ≫ thinlist Q := by
   rw [DistributiveAllegory.comp_union_distrib, Λ_union, Cat.assoc]
 
-/-- Step 5, (8.6): `sort P·thinlist Q ⊑ thin Q·sort P`. -/
-public theorem sortedAlg_fusion_step5 {S : F.obj A ⟶ A} {P Q : A ⟶ A}
+/-- Step 5, (8.6): `sort ≼·thinlist Q ⊑ thin Q·sort ≼`. -/
+public theorem sortedAlg_fusion_step5 {S : F.obj A ⟶ A} {«≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {thinlist : (A ⟶ A) → (L.obj A ⟶ L.obj A)}
-    (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P) :
-    Λ (F.map (∋ A) ≫ S) ≫ sort P ≫ thinlist Q ⊑ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ≫ sort P :=
+    (h86 : sort ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sort ≼) :
+    Λ (F.map (∋ A) ≫ S) ≫ sort ≼ ≫ thinlist Q ⊑ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ≫ sort ≼ :=
   comp_mono_left _ h86
 
 /-- **The fusion side condition of THEOREM 8.2** (book p.203): sorting the candidate set is
     what turns the thinning algebra into an algebra on lists,
-    `thin Q·Λ(F∈·S)·sort P ⊒ thinlist Q·merge P·⟨g₁,g₂⟩·listcp(F)·F(sort P)` mirrored to
-    `F(sort P) ≫ listcp ≫ ⟨g₁,g₂⟩ ≫ merge P ≫ thinlist Q ⊑ Λ (F(∋) ≫ S) ≫ thin Q ≫ sort P`.
+    `thin Q·Λ(F∈·S)·sort ≼ ⊒ thinlist Q·merge ≼·⟨g₁,g₂⟩·listcp(F)·F(sort ≼)` mirrored to
+    `F(sort ≼) ≫ listcp ≫ ⟨g₁,g₂⟩ ≫ merge ≼ ≫ thinlist Q ⊑ Λ (F(∋) ≫ S) ≫ thin Q ≫ sort ≼`.
     (8.6) exchanges `thin Q` for `thinlist Q`; `cup` splits `Λ` of the union of the two
-    algebras; (8.10) exchanges the union of the two sorted lists for `merge P`; and Lemma 8.1
+    algebras; (8.10) exchanges the union of the two sorted lists for `merge ≼`; and Lemma 8.1
     at `f₁,p₁` and at `f₂,p₂` puts the sort back inside `F`. -/
 public theorem sortedAlg_fusion
-    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q : A ⟶ A}
+    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ «≼» Q : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)}
@@ -357,17 +375,17 @@ public theorem sortedAlg_fusion
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
-    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
-    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
-    (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
-    (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
-    (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
-    (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P) :
-    F.map (sort P) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
-        ≫ merge P ≫ thinlist Q
-      ⊑ Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q ≫ sort P :=
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)
+    (h88₁ : sortF (f₁ ≫ ≼ ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort ≼)
+    (h88₂ : sortF (f₂ ≫ ≼ ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort ≼)
+    (h89₁ : sort ≼ ≫ filterp₁ ⊑ existsImage p₁ ≫ sort ≼)
+    (h89₂ : sort ≼ ≫ filterp₂ ⊑ existsImage p₂ ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼))
+    (h810 : prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ⊑ cup Pr' ≫ sort ≼)
+    (h86 : sort ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sort ≼) :
+    F.map (sort ≼) ≫ listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ filterp₂)
+        ≫ merge ≼ ≫ thinlist Q
+      ⊑ Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q ≫ sort ≼ :=
   le_trans (sortedAlg_fusion_step1 L hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811)
     (le_trans (le_of_eq (sortedAlg_fusion_step2 L (Pr' := Pr')))
       (le_trans (sortedAlg_fusion_step3 L h810)
@@ -375,13 +393,13 @@ public theorem sortedAlg_fusion
 
 /-! ### THEOREM 8.2's three steps
 
-  `⦇−thinlist Q⦈minlist R ⊑ ⦇(F(∋)S)%∋ thin Q⦈sort P minlist R ⊑ ⦇(F(∋)S)%∋ thin Q⦈est R
+  `⦇−thinlist Q⦈minlist R ⊑ ⦇(F(∋)S)%∋ thin Q⦈sort ≼ minlist R ⊑ ⦇(F(∋)S)%∋ thin Q⦈est R
    ⊑ ⦇S⦈%∋ est R`, at `S ≜ f₁p₁∪f₂p₂`; `thinningList` is their composition. -/
 
-/-- Step 1: `relCata_le_comp` fuses `sort P` into the algebra, its side condition being
+/-- Step 1: `relCata_le_comp` fuses `sort ≼` into the algebra, its side condition being
     `sortedAlg_fusion` — the fold on sorted lists refines the fold on thinned sets, read sorted. -/
 public theorem thinningList_step1 (I : InitialAlgebra F)
-    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : A ⟶ A}
+    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ «≼» Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)}
@@ -391,17 +409,17 @@ public theorem thinningList_step1 (I : InitialAlgebra F)
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
-    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
-    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
-    (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
-    (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
-    (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
-    (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)
+    (h88₁ : sortF (f₁ ≫ ≼ ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort ≼)
+    (h88₂ : sortF (f₂ ≫ ≼ ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort ≼)
+    (h89₁ : sort ≼ ≫ filterp₁ ⊑ existsImage p₁ ≫ sort ≼)
+    (h89₂ : sort ≼ ≫ filterp₂ ⊑ existsImage p₂ ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼))
+    (h810 : prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ⊑ cup Pr' ≫ sort ≼)
+    (h86 : sort ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sort ≼)
     (hg₁ : g₁ = listf₁ ≫ filterp₁) (hg₂ : g₂ = listf₂ ≫ filterp₂) :
-    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
-      ⊑ (relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ sort P)
+    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge ≼ ≫ thinlist Q) ≫ minlist R
+      ⊑ (relCata (Λ (F.map (∋ A) ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂))) ≫ thinRel Q) ≫ sort ≼)
         ≫ minlist R := by
   subst hg₁
   subst hg₂
@@ -409,13 +427,13 @@ public theorem thinningList_step1 (I : InitialAlgebra F)
   rw [Cat.assoc]
   exact sortedAlg_fusion L hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86
 
-/-- Step 2: (8.7) `sort P·minlist R ⊑ min R` reads the minimum off the sorted list. -/
+/-- Step 2: (8.7) `sort ≼·minlist R ⊑ min R` reads the minimum off the sorted list. -/
 public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
-    {P Q R : A ⟶ A}
+    {«≼» Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {minlist : (A ⟶ A) → (L.obj A ⟶ A)}
-    (h87 : sort P ≫ minlist R ⊑ est R) :
-    (relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ sort P) ≫ minlist R
+    (h87 : sort ≼ ≫ minlist R ⊑ est R) :
+    (relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ sort ≼) ≫ minlist R
       ⊑ relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R :=
   le_trans (le_of_eq (Cat.assoc _ _ _)) (comp_mono_left _ h87)
 
@@ -437,16 +455,16 @@ public theorem thinningList_step3 (I : InitialAlgebra F)
 
 /-- **THEOREM 8.2** (book p.203): a fold on SORTED LISTS of partial solutions, thinned at
     every step, refines the thinning specification —
-    `min R·Λ⦇S⦈ ⊒ minlist R·⦇thinlist Q·merge P·⟨g₁,g₂⟩·listcp(F)⦈`, mirrored to
-    `relCata (listcp(F) ≫ ⟨g₁,g₂⟩ ≫ merge P ≫ thinlist Q) ≫ minlist R ⊑ Λ ⦇S⦈ ≫ est R`.
+    `min R·Λ⦇S⦈ ⊒ minlist R·⦇thinlist Q·merge ≼·⟨g₁,g₂⟩·listcp(F)⦈`, mirrored to
+    `relCata (listcp(F) ≫ ⟨g₁,g₂⟩ ≫ merge ≼ ≫ thinlist Q) ≫ minlist R ⊑ Λ ⦇S⦈ ≫ est R`.
     The specification's algebra is BOUND as `S` (`hS : S = f₁p₁ ∪ f₂p₂`), because that is the one
     letter the book and the note both write there and a conclusion spelling the union out reads as
     a different theorem from the one the picture draws.
     Corollary 8.1 (`thinning_est`) puts `thin Q` inside the fold, (8.7) splits the minimum
-    into `sort P` followed by `minlist R`, and `relCata_le_comp` fuses `sort P` into the
+    into `sort ≼` followed by `minlist R`, and `relCata_le_comp` fuses `sort ≼` into the
     algebra — that fusion condition being `sortedAlg_fusion`.  No set is ever built. -/
 public theorem thinningList (I : InitialAlgebra F)
-    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ P Q R : A ⟶ A}
+    {f₁ f₂ : F.obj A ⟶ A} (hf₁ : Map f₁) (hf₂ : Map f₂) {p₁ p₂ «≼» Q R : A ⟶ A}
     {sort : (A ⟶ A) → (PowerAllegory.powerObj A ⟶ L.obj A)}
     {sortF : (F.obj A ⟶ F.obj A) → (PowerAllegory.powerObj (F.obj A) ⟶ L.obj (F.obj A))}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)}
@@ -458,18 +476,18 @@ public theorem thinningList (I : InitialAlgebra F)
     (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono₁ : Freyd.Alg.MonoAlg f₁ P) (hmono₂ : Freyd.Alg.MonoAlg f₂ P)
-    (h88₁ : sortF (f₁ ≫ P ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort P)
-    (h88₂ : sortF (f₂ ≫ P ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort P)
-    (h89₁ : sort P ≫ filterp₁ ⊑ existsImage p₁ ≫ sort P)
-    (h89₂ : sort P ≫ filterp₂ ⊑ existsImage p₂ ≫ sort P)
-    (h811 : F.map (sort P) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map P))
-    (h810 : prodMap Pr' Pr (sort P) (sort P) ≫ merge P ⊑ cup Pr' ≫ sort P)
-    (h86 : sort P ≫ thinlist Q ⊑ thinRel Q ≫ sort P)
-    (h87 : sort P ≫ minlist R ⊑ est R)
+    (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)
+    (h88₁ : sortF (f₁ ≫ ≼ ≫ f₁°) ≫ listf₁ ⊑ powerRel f₁ ≫ sort ≼)
+    (h88₂ : sortF (f₂ ≫ ≼ ≫ f₂°) ≫ listf₂ ⊑ powerRel f₂ ≫ sort ≼)
+    (h89₁ : sort ≼ ≫ filterp₁ ⊑ existsImage p₁ ≫ sort ≼)
+    (h89₂ : sort ≼ ≫ filterp₂ ⊑ existsImage p₂ ≫ sort ≼)
+    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼))
+    (h810 : prodMap Pr' Pr (sort ≼) (sort ≼) ≫ merge ≼ ⊑ cup Pr' ≫ sort ≼)
+    (h86 : sort ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sort ≼)
+    (h87 : sort ≼ ≫ minlist R ⊑ est R)
     (hg₁ : g₁ = listf₁ ≫ filterp₁) (hg₂ : g₂ = listf₂ ≫ filterp₂) {S : F.obj A ⟶ A}
     (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
-    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge P ≫ thinlist Q) ≫ minlist R
+    relCata (listcp ≫ Pr.pair g₁ g₂ ≫ merge ≼ ≫ thinlist Q) ≫ minlist R
       ⊑ Λ (relCata S) ≫ est R := by
   subst hS
   exact le_trans
@@ -481,10 +499,11 @@ public theorem thinningList (I : InitialAlgebra F)
 /-! ## The note's `thinlist-laws`: (8.7), (8.8) and (8.9) discharged
 
   `thinningList` above takes (8.5) and (8.7)-(8.11) as hypotheses.  Three of them are not
-  interface conditions at all once `sort P` is unfolded to `ordered P·setify°`: they follow, in
+  interface conditions at all once `sort(≼)` is unfolded to `setify° ordered(≼)`: they follow, in
   the book's own style for (8.6), from the two DEFINING properties of the combinator each one
   mentions.  Everything below is stated for `sortRel`, so it applies to any `setify`/`ordered`
-  pair. -/
+  pair; `AOP.A8_3`'s `RelSet` section below discharges `ordered`'s properties from its
+  definition. -/
 
 section SortLaws
 
@@ -492,81 +511,82 @@ variable {A : 𝒜} (L : Relator 𝒜 𝒜)
 
 /-- **(8.6) and (8.9) are one law.**  A list combinator `g` that only DROPS elements
     (`g ⊑ subseq`) and that implements a set operation `T` on the underlying set
-    (`g·setify ⊑ setify·T`) commutes with the sort: `sort P·g ⊑ T·sort P`.  (8.6) is the case
+    (`g·setify ⊑ setify·T`) commutes with the sort: `sort(≼)·g ⊑ T·sort(≼)`.  (8.6) is the case
     `g ≜ thinlist Q`, `T ≜ thin Q` (`sortRel_comp_thinlist_le` above); (8.9) is `g ≜ filter p`,
     `T ≜ E p`.  The proof is the book's p.201 argument verbatim: `g` only drops elements and a
-    subsequence of a `P`-ordered list is `P`-ordered, so `g` may run before the order test, and
+    subsequence of a `≼`-ordered list is `≼`-ordered, so `g` may run before the order test, and
     `·setify ⊣ ·setify°` shunts its specification across the converse. -/
 public theorem sortRel_comp_le
     {setify : L.obj A ⟶ PowerAllegory.powerObj A} (hset : Map setify)
-    {ordered subseq g : L.obj A ⟶ L.obj A}
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
     {T : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj A}
-    (hord : Coreflexive ordered) (hsub : g ⊑ subseq)
-    (hos : ordered ≫ subseq ⊑ subseq ≫ ordered)
+    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
     (hspec : g ≫ setify ⊑ setify ≫ T) :
-    sortRel L setify ordered ≫ g ⊑ T ≫ sortRel L setify ordered := by
-  show (setify° ≫ ordered) ≫ g ⊑ T ≫ (setify° ≫ ordered)
+    sortRel L setify ordered ≼ ≫ g ⊑ T ≫ sortRel L setify ordered ≼ := by
+  show (setify° ≫ ordered ≼) ≫ g ⊑ T ≫ (setify° ≫ ordered ≼)
   rw [Cat.assoc]
   exact le_trans (sortRel_comp_le_step1 L setify hord hsub hos)
-    (sortRel_comp_le_step2 L hset ordered hspec)
+    (sortRel_comp_le_step2 L hset ordered ≼ hspec)
 
-/-- **(8.9)** (book p.203): `sort P·filter p ⊑ E p·sort P` — filtering a sorted list sorts the
+/-- **(8.9)** (book p.203): `sort(≼)·filter p ⊑ E p·sort(≼)` — filtering a sorted list sorts the
     restricted set.  `filter p` drops elements and, on the underlying set, is `E p`; that is all
     the law says, so it is `sortRel_comp_le` at `T ≜ E p`. -/
 public theorem sortRel_comp_filter_le
     {setify : L.obj A ⟶ PowerAllegory.powerObj A} (hset : Map setify)
-    {ordered subseq filterp : L.obj A ⟶ L.obj A} {p : A ⟶ A}
-    (hord : Coreflexive ordered) (hsub : filterp ⊑ subseq)
-    (hos : ordered ≫ subseq ⊑ subseq ≫ ordered)
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A}
+    {subseq filterp : L.obj A ⟶ L.obj A} {p : A ⟶ A}
+    (hord : Coreflexive (ordered ≼)) (hsub : filterp ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
     (hspec : filterp ≫ setify ⊑ setify ≫ existsImage p) :
-    sortRel L setify ordered ≫ filterp ⊑ existsImage p ≫ sortRel L setify ordered :=
+    sortRel L setify ordered ≼ ≫ filterp ⊑ existsImage p ≫ sortRel L setify ordered ≼ :=
   sortRel_comp_le L hset hord hsub hos hspec
 
-/-- **(8.7)** (book p.203): `sort P·minlist R ⊑ min R`, mirrored
-    `sortRel setify ordered ≫ minlist ⊑ est R` — a minimum of the sorted list is a minimum of the
-    set.  The two defining properties of `minlist R` are what it comes to: the answer is an
+/-- **(8.7)** (book p.203): `sort(≼)·minlist R ⊑ min R`, mirrored
+    `sortRel setify ordered ≼ ≫ minlist ⊑ est R` — a minimum of the sorted list is a minimum of
+    the set.  The two defining properties of `minlist R` are what it comes to: the answer is an
     ELEMENT of the list (`minlist ⊑ setify·∋`), and it is `R`-below every element of the list
-    (`(setify·∋)°·minlist ⊑ R°`).  `ordered` is dropped by coreflexivity and `setify` by
+    (`(setify·∋)°·minlist ⊑ R°`).  `ordered(≼)` is dropped by coreflexivity and `setify` by
     simplicity, so the order plays no part. -/
 public theorem sortRel_comp_minlist_le
     {setify : L.obj A ⟶ PowerAllegory.powerObj A} (hset : Map setify)
-    {ordered : L.obj A ⟶ L.obj A} {minlist : L.obj A ⟶ A} {R : A ⟶ A}
-    (hord : Coreflexive ordered)
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {minlist : L.obj A ⟶ A} {R : A ⟶ A}
+    (hord : Coreflexive (ordered ≼))
     (hmem : minlist ⊑ setify ≫ ∋ A)
     (hleast : (setify ≫ ∋ A)° ≫ minlist ⊑ R°) :
-    sortRel L setify ordered ≫ minlist ⊑ est R := by
-  have hdrop : setify° ≫ ordered ≫ minlist ⊑ setify° ≫ minlist := by
+    sortRel L setify ordered ≼ ≫ minlist ⊑ est R := by
+  have hdrop : setify° ≫ ordered ≼ ≫ minlist ⊑ setify° ≫ minlist := by
     refine comp_mono_left _ ?_
     have := comp_mono_right hord minlist
     rwa [Cat.id_comp] at this
   refine le_est_iff.mpr ⟨?_, ?_⟩
-  · show (setify° ≫ ordered) ≫ minlist ⊑ ∋ A
+  · show (setify° ≫ ordered ≼) ≫ minlist ⊑ ∋ A
     rw [Cat.assoc]
     refine le_trans hdrop ?_
     refine le_trans (comp_mono_left _ hmem) ?_
     rw [← Cat.assoc (setify°) setify (∋ A)]
     have := comp_mono_right hset.2 (∋ A)
     rwa [Cat.id_comp] at this
-  · show (∋ A)° ≫ (setify° ≫ ordered) ≫ minlist ⊑ R°
+  · show (∋ A)° ≫ (setify° ≫ ordered ≼) ≫ minlist ⊑ R°
     rw [Cat.assoc]
     refine le_trans (comp_mono_left _ hdrop) ?_
     rw [← Cat.assoc ((∋ A)°) (setify°) minlist, ← Allegory.recip_comp]
     exact hleast
 
-/-- **(8.8)** (book p.203): `sort(fPf°)·list f ⊑ P f·sort P`, mirrored
-    `sortRel setifyF orderedFPf ≫ listf ⊑ powerRel f ≫ sortRel setify ordered` — shunt a function
-    through a sort.  Again two defining properties: `setify` is natural in the list
-    (`list f·setify ⊑ setifyF·E f`, so the shunt across `setifyF°` gives `E f·setify°`), and
-    `list f` carries an `fPf°`-ordered list to a `P`-ordered one, which is where `f` monotonic on
-    `P` enters. -/
+/-- **(8.8)** (book p.203): `sort(f≼f°)·list f ⊑ P f·sort(≼)`, mirrored
+    `sortRel setifyF ordered (f≼f°) ≫ listf ⊑ powerRel f ≫ sortRel setify ordered ≼` — shunt a
+    function through a sort.  `ordered` is ONE family over every object, as the book's is.  Again
+    two defining properties: `setify` is natural in the list (`list f·setify ⊑ setifyF·E f`, so
+    the shunt across `setifyF°` gives `E f·setify°`), and `list f` carries an `f≼f°`-ordered list
+    to a `≼`-ordered one, which is where `f` monotonic on `≼` enters. -/
 public theorem sortRel_comp_listMap_le
     {setifyF : L.obj A ⟶ PowerAllegory.powerObj A} (hsetF : Map setifyF)
     {B : 𝒜} {setify : L.obj B ⟶ PowerAllegory.powerObj B} (hset : Map setify)
-    {orderedFPf : L.obj A ⟶ L.obj A} {ordered : L.obj B ⟶ L.obj B}
+    {ordered : ∀ {X : 𝒜}, (X ⟶ X) → (L.obj X ⟶ L.obj X)} {«≼» : B ⟶ B}
     {listf : L.obj A ⟶ L.obj B} {f : A ⟶ B} (hf : Map f)
     (hnat : listf ≫ setify ⊑ setifyF ≫ existsImage f)
-    (hordf : orderedFPf ≫ listf ⊑ listf ≫ ordered) :
-    sortRel L setifyF orderedFPf ≫ listf ⊑ powerRel f ≫ sortRel L setify ordered := by
+    (hordf : ordered (f ≫ ≼ ≫ f°) ≫ listf ⊑ listf ≫ ordered ≼) :
+    sortRel L setifyF ordered (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sortRel L setify ordered ≼ := by
   have hshunt : setifyF° ≫ listf ⊑ existsImage f ≫ setify° := by
     refine (map_shunt_left hsetF listf _).mpr ?_
     have hent : listf ⊑ listf ≫ setify ≫ setify° := by
@@ -575,28 +595,29 @@ public theorem sortRel_comp_listMap_le
     refine le_trans hent ?_
     rw [← Cat.assoc listf setify (setify°), ← Cat.assoc setifyF (existsImage f) (setify°)]
     exact comp_mono_right hnat _
-  show (setifyF° ≫ orderedFPf) ≫ listf ⊑ powerRel f ≫ (setify° ≫ ordered)
+  show (setifyF° ≫ ordered (f ≫ ≼ ≫ f°)) ≫ listf ⊑ powerRel f ≫ (setify° ≫ ordered ≼)
   rw [Cat.assoc]
   refine le_trans (comp_mono_left _ hordf) ?_
-  rw [← Cat.assoc (setifyF°) listf ordered, powerRel_map hf,
-    ← Cat.assoc (existsImage f) (setify°) ordered]
-  exact comp_mono_right hshunt ordered
+  rw [← Cat.assoc (setifyF°) listf (ordered ≼), powerRel_map hf,
+    ← Cat.assoc (existsImage f) (setify°) (ordered ≼)]
+  exact comp_mono_right hshunt (ordered ≼)
 
-/-- **(8.11)** (book p.203): `F(sort P)·listcp(F) ⊑ cp(F)·sort(FP)`, mirrored
-    `F.map (sortRel setify ordered) ≫ listcp ⊑ cpMap F A ≫ sortRel setifyF orderedFP` —
+/-- **(8.11)** (book p.203): `F(sort(≼))·listcp(F) ⊑ cp(F)·sort(F(≼))`, mirrored
+    `F.map (sortRel setify ordered ≼) ≫ listcp ⊑ cpMap F A ≫ sortRel setifyF ordered (F(≼))` —
     `listcp(F)` is the list implementation of the cartesian product.  Two defining properties
     again: on the underlying sets `listcp(F)` IS the cartesian product
-    (`listcp·setifyF ⊑ F(setify)·cp(F)`), and it carries `F`-many `P`-ordered lists to an
-    `FP`-ordered one.  A relator preserves a map and its converse (Lemma 5.1), which is what lets
-    the `setify°` of the sort come out from under `F`. -/
+    (`listcp·setifyF ⊑ F(setify)·cp(F)`), and it carries `F`-many `≼`-ordered lists to an
+    `F(≼)`-ordered one.  A relator preserves a map and its converse (Lemma 5.1), which is what
+    lets the `setify°` of the sort come out from under `F`. -/
 public theorem map_sortRel_comp_listcp_le
     {setify : L.obj A ⟶ PowerAllegory.powerObj A} (hset : Map setify)
     {setifyF : L.obj (F.obj A) ⟶ PowerAllegory.powerObj (F.obj A)} (hsetF : Map setifyF)
-    {ordered : L.obj A ⟶ L.obj A} {orderedFP : L.obj (F.obj A) ⟶ L.obj (F.obj A)}
+    {ordered : ∀ {X : 𝒜}, (X ⟶ X) → (L.obj X ⟶ L.obj X)} {«≼» : A ⟶ A}
     {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)}
     (hnat : listcp ≫ setifyF ⊑ F.map setify ≫ cpMap F A)
-    (hordcp : F.map ordered ≫ listcp ⊑ listcp ≫ orderedFP) :
-    F.map (sortRel L setify ordered) ≫ listcp ⊑ cpMap F A ≫ sortRel L setifyF orderedFP := by
+    (hordcp : F.map (ordered ≼) ≫ listcp ⊑ listcp ≫ ordered (F.map ≼)) :
+    F.map (sortRel L setify ordered ≼) ≫ listcp
+      ⊑ cpMap F A ≫ sortRel L setifyF ordered (F.map ≼) := by
   have hshunt : (F.map setify)° ≫ listcp ⊑ cpMap F A ≫ setifyF° := by
     refine (map_shunt_left (F.map_is_map hset) listcp _).mpr ?_
     have hent : listcp ⊑ listcp ≫ setifyF ≫ setifyF° := by
@@ -605,39 +626,39 @@ public theorem map_sortRel_comp_listcp_le
     refine le_trans hent ?_
     rw [← Cat.assoc listcp setifyF (setifyF°), ← Cat.assoc (F.map setify) (cpMap F A) (setifyF°)]
     exact comp_mono_right hnat _
-  show F.map (setify° ≫ ordered) ≫ listcp ⊑ cpMap F A ≫ (setifyF° ≫ orderedFP)
+  show F.map (setify° ≫ ordered ≼) ≫ listcp ⊑ cpMap F A ≫ (setifyF° ≫ ordered (F.map ≼))
   rw [F.map_comp, F.map_recip_map hset, Cat.assoc]
   refine le_trans (comp_mono_left _ hordcp) ?_
-  rw [← Cat.assoc ((F.map setify)°) listcp orderedFP,
-    ← Cat.assoc (cpMap F A) (setifyF°) orderedFP]
-  exact comp_mono_right hshunt orderedFP
+  rw [← Cat.assoc ((F.map setify)°) listcp (ordered (F.map ≼)),
+    ← Cat.assoc (cpMap F A) (setifyF°) (ordered (F.map ≼))]
+  exact comp_mono_right hshunt (ordered (F.map ≼))
 
-/-- **(8.10)** (book p.203): `(sort P×sort P)·merge P ⊑ cup·sort P` — merging two sorted lists
-    sorts their union.  `merge P`'s two defining properties do it: a listing of `S` and a listing
-    of `T` merge to a listing of `S∪T`, and merging two `P`-ordered lists gives a `P`-ordered
-    list.  The only step besides those is that `−×−` is a functor, so the pair of sorts splits
-    into the pair of listings followed by the pair of order tests. -/
+/-- **(8.10)** (book p.203): `(sort(≼)×sort(≼))·merge(≼) ⊑ cup·sort(≼)` — merging two sorted
+    lists sorts their union.  `merge(≼)`'s two defining properties do it: a listing of `S` and a
+    listing of `T` merge to a listing of `S∪T`, and merging two `≼`-ordered lists gives a
+    `≼`-ordered list.  The only step besides those is that `−×−` is a functor, so the pair of
+    sorts splits into the pair of listings followed by the pair of order tests. -/
 public theorem prodMap_sortRel_comp_merge_le
-    {setify : L.obj A ⟶ PowerAllegory.powerObj A} {ordered : L.obj A ⟶ L.obj A}
-    {Pr : RelProd (L.obj A) (L.obj A)}
+    {setify : L.obj A ⟶ PowerAllegory.powerObj A} {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)}
+    {«≼» : A ⟶ A} {Pr : RelProd (L.obj A) (L.obj A)}
     {Pr' : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)}
-    {mergeP : Pr.p ⟶ L.obj A}
-    (hmset : prodMap Pr' Pr (setify°) (setify°) ≫ mergeP ⊑ cup Pr' ≫ setify°)
-    (hmord : prodMap Pr Pr ordered ordered ≫ mergeP ⊑ mergeP ≫ ordered) :
-    prodMap Pr' Pr (sortRel L setify ordered) (sortRel L setify ordered) ≫ mergeP
-      ⊑ cup Pr' ≫ sortRel L setify ordered := by
-  have hfun : prodMap Pr' Pr (setify° ≫ ordered) (setify° ≫ ordered)
-      = prodMap Pr' Pr (setify°) (setify°) ≫ prodMap Pr Pr ordered ordered := by
-    show Pr.pair (Pr'.outl ≫ setify° ≫ ordered) (Pr'.outr ≫ setify° ≫ ordered)
-      = Pr.pair (Pr'.outl ≫ setify°) (Pr'.outr ≫ setify°) ≫ prodMap Pr Pr ordered ordered
+    {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
+    (hmset : prodMap Pr' Pr (setify°) (setify°) ≫ merge ≼ ⊑ cup Pr' ≫ setify°)
+    (hmord : prodMap Pr Pr (ordered ≼) (ordered ≼) ≫ merge ≼ ⊑ merge ≼ ≫ ordered ≼) :
+    prodMap Pr' Pr (sortRel L setify ordered ≼) (sortRel L setify ordered ≼) ≫ merge ≼
+      ⊑ cup Pr' ≫ sortRel L setify ordered ≼ := by
+  have hfun : prodMap Pr' Pr (setify° ≫ ordered ≼) (setify° ≫ ordered ≼)
+      = prodMap Pr' Pr (setify°) (setify°) ≫ prodMap Pr Pr (ordered ≼) (ordered ≼) := by
+    show Pr.pair (Pr'.outl ≫ setify° ≫ ordered ≼) (Pr'.outr ≫ setify° ≫ ordered ≼)
+      = Pr.pair (Pr'.outl ≫ setify°) (Pr'.outr ≫ setify°) ≫ prodMap Pr Pr (ordered ≼) (ordered ≼)
     rw [RelProd.pair_prodMap, Cat.assoc, Cat.assoc]
-  show prodMap Pr' Pr (setify° ≫ ordered) (setify° ≫ ordered) ≫ mergeP
-    ⊑ cup Pr' ≫ (setify° ≫ ordered)
+  show prodMap Pr' Pr (setify° ≫ ordered ≼) (setify° ≫ ordered ≼) ≫ merge ≼
+    ⊑ cup Pr' ≫ (setify° ≫ ordered ≼)
   rw [hfun, Cat.assoc]
   refine le_trans (comp_mono_left _ hmord) ?_
-  rw [← Cat.assoc (prodMap Pr' Pr (setify°) (setify°)) mergeP ordered,
-    ← Cat.assoc (cup Pr') (setify°) ordered]
-  exact comp_mono_right hmset ordered
+  rw [← Cat.assoc (prodMap Pr' Pr (setify°) (setify°)) (merge ≼) (ordered ≼),
+    ← Cat.assoc (cup Pr') (setify°) (ordered ≼)]
+  exact comp_mono_right hmset (ordered ≼)
 
 end SortLaws
 

@@ -398,7 +398,7 @@ public theorem knap_laws_step1
     exact le_refl _
   have key := thinningList (L := listRelator) (F := F Unit Item) (initial Unit Item)
     (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within (wt := wt) w) (p₂ := 𝟙 (dList Item))
-    (P := R vol) (Q := Q vol wt) (R := R vol)
+    («≼» := R vol) (Q := Q vol wt) (R := R vol)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
     (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)

@@ -605,7 +605,7 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
     exact le_refl _
   have key := thinningList (L := listRelator) (F := F Word Word) (initial Word Word)
     (f₁ := graph newAlgFn) (f₂ := graph glueAlgFn) (p₁ := 𝟙 (dPara Word)) (p₂ := ok (len := len) w)
-    (P := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
+    («≼» := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
     (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)

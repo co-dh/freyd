@@ -583,7 +583,7 @@ public theorem tour_laws
     (initial (City × City) City)
     (f₁ := graph droplAlgFn) (f₂ := graph droprAlgFn)
     (p₁ := 𝟙 (dTour City)) (p₂ := 𝟙 (dTour City))
-    (P := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
+    («≼» := topMor (dTour City) (dTour City)) (Q := Qc tc) (R := R tc)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
     (sort := fun _ => sortP) (merge := fun _ => cat) (thinlist := fun _ => thinlist)
