@@ -198,7 +198,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 // B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: why the universal property holds
 // with equality where the fork's triangles above only hold up to `Dom`.
 The universal-property row is not free: `l,r` were only ever asked to be a coproduct of *maps*. They stay one
-once every arrow is allowed because $frac(#box(width: 8pt), ∋)$ sends an arrow `A⟶C` to a map `A⟶EC` reversibly, so the
+once every arrow is allowed because $frac(#box(width: 8pt), ∋)$ sends an arrow `A⟶C` to a map `A⟶PC` reversibly, so the
 map coproduct can be applied underneath it. For any `T : A+B⟶C`,
 
 // The box chain of the `R%∋ = (R/∋) ∩ (∋/R)°` subsection, wrapped the same way: the row that
@@ -478,10 +478,10 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
 === `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`
 
-// B&dM p.121's figure, mirrored: @cata-defining's square at `f := `#frc([`F(∋)R`])`, `A := E A`,
+// B&dM p.121's figure, mirrored: @cata-defining's square at `f := `#frc([`F(∋)R`])`, `A := P A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
 // Generated, on the defining equation above at `X := ⦇`#frc([`F(∋)R`])`⦈`: the `E` wire is BORN at the
-// banana, `T⟶EA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(EA)⟶EA`.
+// banana, `T⟶PA` being where the power object enters.  TWO ALGEBRAS, `α : F(T)⟶T` and `f : F(PA)⟶PA`.
 #let cata-map-l = "Freyd.Alg.Λ_relCata.lhs"
 #let cata-map-r = "Freyd.Alg.Λ_relCata.rhs"
 #disp[#pair(
@@ -654,7 +654,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 // B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
 // turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.
 #disp[#definition[
-`cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : EA×EA⟶EA`, #h(4pt) so
+`cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : PA×PA⟶PA`, #h(4pt) so
 $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
 #h(4pt) #src[]
 // lean:AOP.A5_6.Λ_union@632cc56a
@@ -689,7 +689,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // rewrites the WHOLE term step by step, where the Hinze–Marsden column stays on the one operand
   // `(𝟙×∋)π₂` the steps do not touch — which is why one selector repeats down three rows.  The
   // general rule is the other way round (AGENTS.md); §12.1 is its exception and stays as it is.
-  // Rows 1–3 draw the NUMERATOR, `F(E[A]) ⟶ [A]`: the transpose is still outside the bracket there,
+  // Rows 1–3 draw the NUMERATOR, `F(P[A]) ⟶ [A]`: the transpose is still outside the bracket there,
   // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust (CIRCUIT-GEN §1.4).
   [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],

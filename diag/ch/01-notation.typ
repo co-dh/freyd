@@ -113,7 +113,7 @@ exactly what that collapse spends
 // `div_comp_recip_map`, AOP/A4_4.lean:378.
 #src[#leanf("Freyd.Alg.div_comp_recip_map")] — `f°` is not a map, so
 // lean:AOP.A4_4.div_comp_recip_map@bc41ec1a
-`/f°` does not collapse in turn, and the three operators stay distinct. On `Rel(𝕀,A)=EA` they
+`/f°` does not collapse in turn, and the three operators stay distinct. On `Rel(𝕀,A)=PA` they
 are the image triple:
 
 #disp[#table(
@@ -125,7 +125,7 @@ are the image triple:
 )]<triple-image>
 
 §@sec-adj's `𝓓⊣·⊤` is this same chain along the projection `A⊗B⟶A`, read through
-`Rel(A,B)=E(A⊗B)`: `𝓓R={(a,a) : ∃b. aRb}`, `A⊤` is the relation that ignores `b`
+`Rel(A,B)=P(A⊗B)`: `𝓓R={(a,a) : ∃b. aRb}`, `A⊤` is the relation that ignores `b`
 altogether, and the third link is `R↦𝟙∩R/⊤={(a,a) : ∀b. aRb}`.
 
 #disp[#block(inset: (y: 6pt))[`𝓓⊣·⊤⊣𝟙∩·/⊤`

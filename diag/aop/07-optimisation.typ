@@ -7,7 +7,7 @@
 
 // B&dM §7.1, p. 166.
 #disp[#definition[
-For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : EA⟶A` #h(4pt) #src[`X⊑∈\R°⟺∈X⊑R°`, and `∈X` runs `y⟶xs⟶x`, member first, so its pair `(y,x)` is in `R°` exactly when `x R y`; at `R≜≤` that is `x≤y` for every `y∈xs`, the least — `∈\≤` would give `y≤x`, the greatest].
+For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : PA⟶A` #h(4pt) #src[`X⊑∈\R°⟺∈X⊑R°`, and `∈X` runs `y⟶xs⟶x`, member first, so its pair `(y,x)` is in `R°` exactly when `x R y`; at `R≜≤` that is `x≤y` for every `y∈xs`, the least — `∈\≤` would give `y≤x`, the greatest].
 // lean:AOP.A7_1.est@e39806f8
 
 #leanf("Freyd.Alg.est_eq_subset_Λ") #h(4pt) #src[`x` is the `est(R)` of `xs` when `x∈xs` and `xs ⊆ Λ(R)(x)`, the set of every `y` with `x R y` — @mem-ldiv at `Z≜R°`]
@@ -25,10 +25,10 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 
 `est(R)=∋∩all R°` #h(4pt) #src[`all R≜∈\R`, q's `all`; the chains below keep it written `∈\`]
 
-`E(R)≜` $frac(#[`∋R`], ∋)$ ` : EA⟶EB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
+`E(R)≜` $frac(#[`∋R`], ∋)$ ` : PA⟶PB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
 #src[the image of `xs`, @pow-laws]
 
-`P(R) : EA⟶EB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
+`P(R) : PA⟶PB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
 #src[every `x` and every `y` has a partner, @powrel-readings]
 ]]<est-defn>
 
@@ -41,7 +41,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [`X⊑est(R)⟺X⊑∋` and `X°∋⊑R`], [in the set, and below every element of it],
   [$frac(#[`𝟙`], ∋)$ `(∈\R)=R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
-  [`union≜` $frac(#[`∋∋`], ∋)$ `: E(EA)⟶EA`], [flattens a set of sets],
+  [`union≜` $frac(#[`∋∋`], ∋)$ `: PPA⟶PA`], [flattens a set of sets],
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°` #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
@@ -1021,9 +1021,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   place `π₂` shows against @takewhile-step's `⊸ nil`.]])
 ]<filter-step>
 
-// B&dM Ex 7.41, p. 174, assembled: the four displays above are the four steps, and the `E[A]` the
+// B&dM Ex 7.41, p. 174, assembled: the four displays above are the four steps, and the `P[A]` the
 // transpose births is what the greedy step moves inside the reduce.
-// ONE WIRE, `[A]` to `[A]`, its type written along it; `mid: none` once `E[A]` has gone inside the
+// ONE WIRE, `[A]` to `[A]`, its type written along it; `mid: none` once `P[A]` has gone inside the
 // reduce.  Its own run and not @takewhile-step's, which starts at `F([A])` and belongs to §13.3.3.
 // `S` is defined in @filter-defn, three pages back, and every row below reads it: the definition is
 // repeated here rather than looked up, in that table's own five columns.
@@ -1430,7 +1430,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // TWO — `est((R×R)°)` opens the strand into a pair and `choose/∋` closes it again.  Every `R/∋` is a
 // MAP (@pow-laws), so every fraction box is square and every other box chamfered.
 // `13.4.4a`'s row: the only one where the type actually changes mid-run, so it is the only one
-// that gets the wire types spelled out — `E([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
+// that gets the wire types spelled out — `P([A]×[A])` in, `est((R×R)°)` opens the pair, `[A]` on
 // each of the two strands it opens into (a PRODUCT is two wires, never one wire marked `×`).
 
 // `⦇−⦈` drawn as MELLIÈS' functorial box: the body's own circuit, inside brackets.  A bar is where
@@ -1519,7 +1519,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Through `m` columns, `m` squares: the count is in the type. A one-square path is the square; `Vec(m)` is the functor `X↦X[m]`.],
 
   [the paths into a row],
-  [`E(L A)`],
+  [`P(L A)`],
   [`A[p][m]`, `p=3^(m-1)`],
   [Three moves per column crossed, so this count is in the type too; a set forgets it.],
 
@@ -1529,17 +1529,17 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`wrap` is an identity; `cons` is only an iso, so it stays a bead.],
 
   [`moves`],
-  [`NA⟶E(NA)`],
+  [`NA⟶PNA`],
   [`X[n]⟶X[3][n]`],
   [`moves(x)=(up(x),x,down(x))`, a `3×n` matrix.],
 
   [`trans`],
-  [`E(NX)⟶N(EX)`],
+  [`PNX⟶NPX`],
   [`X[3][n]⟶X[n][3]`],
   [The transpose.],
 
   [`union`],
-  [`E(EX)⟶EX`],
+  [`PPX⟶PX`],
   [`concat:X[j][k]⟶X[jk]`],
   [The `j` rows laid end to end; `j` is `3` inside `gen` and `n` inside `paths`.],
 
@@ -1549,12 +1549,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Unchanged.],
 
   [`cp`],
-  [`F(A,EB)⟶E(F(A,B))`],
+  [`F(A,PB)⟶P(F(A,B))`],
   [`A×B[p]⟶(A×B)[p]`],
   [The square paired with each of the `p` candidates.],
 
   [`est(R)≜∋∩(∈\R°)`],
-  [`E X⟶X`],
+  [`PX⟶X`],
   [`X[k]⟶X`, `∋:X[k]⟶X`],
   // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est@d89b35a7
   // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_eq@6474d151
@@ -1566,19 +1566,19 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [The cost of a path, which the cheapest minimises — one order per length `m`.],
 
   [`gen`],
-  [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(E(LA)))` \ `⟶N(E(LA))`],
+  [`F(𝟙,moves trans N(union))` \ `zip N(cp P(α))` \ `F(NA,N(P(LA)))` \ `⟶N(P(LA))`],
   [`F(𝟙,moves trans Vec(n)(concat))` \ `zip Vec(n)(cp Vec(3p)(cons))` \ `F(A[n],A[n][p][m])⟶A[n][3p][m+1]`],
   // lean:AOP.A7_4_CylinderVec.Vec.gen@0466b07f
   [The same composite without `α`; the type shown is the `cons` side, the `wrap` side is `𝟙:A[n]⟶A[n]`.],
 
   [`⦇gen⦈`],
-  [`L(N A)⟶N(E(L A))`],
+  [`L(N A)⟶N(P(L A))`],
   [`A[m][n]⟶A[n][p][m]`],
   // lean:AOP.A7_4_CylinderVec.Vec.genFold@f1b10c83
   [Columns in, rows out.],
 
   [`paths≜⦇gen⦈ concat`],
-  [`⦇gen⦈ setify union` \ `L N Nat⟶E(L Nat)`],
+  [`⦇gen⦈ setify union` \ `L N Nat⟶P(L Nat)`],
   [`A[m][n]⟶A[np][m]`],
   // lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b
   [The `n` rows of `p` paths laid end to end: every path of the cylinder, in one row.],

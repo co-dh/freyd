@@ -7,7 +7,7 @@
 // ---- HINZE–MARSDEN.  A WIRE IS A FUNCTOR: `[A]` is the `list` wire beside the `A` wire, at the
 // ENDS as much as in the middle, and `E` is born by the unit `𝟙%∋` — a bead with a free upper end.
 // A counit may only land on the object wire when nothing is left outside it; where a datatype
-// survives (`est(R) : E(LA)⟶LA`) the wire ends on its own lane, since bending in would CROSS it.
+// survives (`est(R) : P(LA)⟶LA`) the wire ends on its own lane, since bending in would CROSS it.
 // A bead sits on the wire it CHANGES: a functor wire when it only rearranges that functor, the
 // object wire when it changes the value.  Lane labels run west, object-wire labels east.
 #let THU = 1.90                                   // the set the transpose opens, outside everything
@@ -19,7 +19,7 @@
 // B&dM §8.1, p. 193.  Between the two extremes of the last section: `𝟙` keeps every partial solution
 // and `est(Q) (𝟙%∋)` keeps one, `thin(Q)` keeps a representative collection.
 #disp(num: "(8.1)")[#definition[
-For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : EA⟶EA` #h(4pt) #src[(8.1)].
+For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt) #src[(8.1)].
 
 `ys thin(Q) xs⟺xs⊆ys∧(∀a∈ys. ∃b∈xs. b Q a)` #src[the same `°` as @est-defn: `∈X` runs `a⟶ys⟶xs`, member of `ys` first, and `Q°∈` runs `a⟶b⟶xs`, so `(a,b)∈Q°` reads `b Q a`; at `Q≜≤` every `a∈ys` keeps some `b≤a` in `xs`, the end `est(≤)` picks]
 // lean:AOP.A8_1.thinRel_pt@f6ff770e
@@ -194,7 +194,7 @@ row((
 
 // B&dM Theorem 8.1, p. 195, mirrored.  The proof is about the SECOND half of `thin`'s universal
 // property: the first half is fusion, and the hylomorphism theorem turns the second into one chain.
-// `thin(Q) : EA⟶EA` is fixed by one `Q`, not natural in `A`: an arrow of the object `EA`, so its bead
+// `thin(Q) : PA⟶PA` is fixed by one `Q`, not natural in `A`: an arrow of the object `PA`, so its bead
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
 #disp(num: "Theorem 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning") \
@@ -345,7 +345,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
 // it is one connected preorder, spelled `P` here.
 #disp[#definition[
-`setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)` #src[@comb-fns], #h(4pt)
+`setify : [A]⟶PA`, #h(4pt) `cup : PA×PA⟶PA`, #h(4pt) `cp(F)` #src[@comb-fns], #h(4pt)
 `listcp : F(L)⟶LF`, #h(4pt) `sort(P)≜setify° ordered P` #src[]
 // lean:AOP.A8_3.sortRel@7cf6d184
 for `P` a connected preorder.
@@ -393,8 +393,8 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
  preorder, `thinlist(Q)⊑subseq`. ]],
      // lean:AOP.A8_3.sortRel_comp_thinlist_le@849100a7
   lean-chain(
-    // `sort(P) : EA⟶[A]`, `ordered P`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
-    // `sort(P)≜setify° ordered P` at `setify : [A]⟶EA`.
+    // `sort(P) : PA⟶[A]`, `ordered P`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
+    // `sort(P)≜setify° ordered P` at `setify : [A]⟶PA`.
     (none, "Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs", []),
     (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs", src[`sort(P)≜setify° ordered P` — @thinlist-defn]),
     (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs",
@@ -407,7 +407,7 @@ with both `f₁`, `f₂` monotonic on `P`; #h(4pt) `gᵢ≜list(fᵢ) filter(p�
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past
 // `list(f)`, then under `F` — each step one of (8.9), (8.8), (8.11).
-// `sort(P) : EA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
+// `sort(P) : PA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \

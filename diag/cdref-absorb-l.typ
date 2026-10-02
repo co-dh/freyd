@@ -14,5 +14,5 @@
   let (T, EB) = ((-2.9, 0), (2.9, 0))
   ar(T, EB, INDUCED, dash: "dashed", s0: 1.05, s1: 0.8)
   lab(0, 0.85, INDUCED)[$frac(#[`⦇S⦈choose`], ∋)$]
-  node(T.at(0), T.at(1), black, `tree(A)`); node(EB.at(0), EB.at(1), black, `E[A]`)
+  node(T.at(0), T.at(1), black, `tree(A)`); node(EB.at(0), EB.at(1), black, `P[A]`)
 })

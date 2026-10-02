@@ -636,7 +636,7 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 /-- The power relator's lane is `P`: on arrows it is `powerRel`, a relation, where `E`'s is
     `existsImage`, a function, so a `P` lane around `R` reads `P(R)` and an `E` lane `E(R)`.  Its
-    OBJECTS keep the note's `E A` — every power object is written `E`; `P` names only the relator. -/
+    OBJECTS print `P A` (`unexpandPowerObj`); a lane prints the letter of the ARROW it gives. -/
 @[app_unexpander powerRelator] def unexpandPowerRelator : Unexpander
   | _ => `($(mkIdent `P))
 

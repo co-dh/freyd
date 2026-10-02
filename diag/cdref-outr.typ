@@ -16,6 +16,6 @@
   ar(AE, AL, GIVEN2, s0: 0.55, s1: 0.55); ar(E, L, GIVEN2, s0: 0.55, s1: 0.55)
   lab(0, 1.9, GIVEN1)[`π₂`]; lab(0, -1.9, GIVEN1)[`π₂`]
   lab(-3.95, 0, GIVEN2)[`𝟙×∋`]; lab(3.2, 0, GIVEN2)[`∋`]
-  node(AE.at(0), AE.at(1), black, `A×E[A]`); node(E.at(0), E.at(1), black, `E[A]`)
+  node(AE.at(0), AE.at(1), black, `A×P[A]`); node(E.at(0), E.at(1), black, `P[A]`)
   node(AL.at(0), AL.at(1), black, `A×[A]`); node(L.at(0), L.at(1), black, `[A]`)
 })

@@ -37,6 +37,6 @@
   lab(2.5, 0.45, black)[`∋`]
   node(A.at(0), A.at(1), GIVEN1, `A`); node(B.at(0), B.at(1), GIVEN2, `B`)
   node(AB.at(0), AB.at(1), black, `A+B`)
-  node(PC.at(0), PC.at(1), INDUCED, `EC`)
+  node(PC.at(0), PC.at(1), INDUCED, `PC`)
   node(C.at(0), C.at(1), black, `C`)
 })

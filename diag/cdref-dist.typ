@@ -18,6 +18,6 @@
   lab(0, 2.1, GIVEN1)[$frac(#[`F(∋)f`], ∋)$]; lab(0, -1.8, GIVEN1)[`f`]
   lab(-4.75, 0, GIVEN2)[`F(est(R))`]; lab(4.4, 0, GIVEN2)[`est(R)`]
   lab(0, 0, SLACK, rot: -45deg)[`⊑`]
-  node(FEA.at(0), FEA.at(1), black, `F(EA)`); node(EA.at(0), EA.at(1), black, `EA`)
+  node(FEA.at(0), FEA.at(1), black, `F(PA)`); node(EA.at(0), EA.at(1), black, `PA`)
   node(FA.at(0), FA.at(1), black, `FA`); node(A.at(0), A.at(1), black, `A`)
 })

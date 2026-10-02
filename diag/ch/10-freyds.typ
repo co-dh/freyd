@@ -18,11 +18,11 @@ subject to
 ))
 // lean:Freyd.S2_40.PowerAllegory@b05084c6
 
-`R□` is `R`'s target, an identity arrow. For `R : A⟶B` write `∋ : EB⟶B`, dropping the
+`R□` is `R`'s target, an identity arrow. For `R : A⟶B` write `∋ : PB⟶B`, dropping the
 subscript.
 
 // The converse of epsiloff IS membership, and the note's pointwise glosses already write it `∈`.
-`∈≜∋° : A⟶EA`
+`∈≜∋° : A⟶PA`
 ]]<pow-defn>
 
 #law-pow-laws
@@ -85,10 +85,10 @@ monad `iE`.]]
 // Every ingredient is a row of @pow-laws; nothing here is new.  `union` is `E(∋)`: the counit with
 // `E` applied to it, which is the multiplication the adjunction hands back.
 #disp[#block(breakable: false)[#definition[
-#leanf("Freyd.Alg.existsImage"), #h(4pt) $frac(#[`𝟙`], ∋)$ ` : A⟶EA`, #h(4pt)
-#leanf("Freyd.Alg.bigUnion_eq_existsImage_eps") ` : E(EA)⟶EA`
+#leanf("Freyd.Alg.existsImage"), #h(4pt) $frac(#[`𝟙`], ∋)$ ` : A⟶PA`, #h(4pt)
+#leanf("Freyd.Alg.bigUnion_eq_existsImage_eps") ` : PPA⟶PA`
 
-#leanf("Freyd.Alg.kleisliComp"), #h(4pt) for `f : A⟶EB` and `g : B⟶EC`
+#leanf("Freyd.Alg.kleisliComp"), #h(4pt) for `f : A⟶PB` and `g : B⟶PC`
 
 #src[the monad is on `Map(𝒜)`, not on the allegory: `E` is a relator on all relations, but
 $frac(#[`𝟙`], ∋)$,
