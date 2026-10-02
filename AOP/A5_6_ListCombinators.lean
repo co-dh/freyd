@@ -1548,6 +1548,190 @@ public theorem pair_sum_length_cata :
       fun ⟨⟨_, _⟩, ⟨hy1, hy2⟩, hr⟩ => by
         subst hy1; subst hy2; exact Prod.ext_iff.mp hr⟩
 
+/-! ### Cartesian product (B&dM §5.6, pp. 125–126)
+
+  `cpp`, `cpl`, `cpr` list every pair drawn from their arguments; `setify` forgets the order, and
+  what is left is the transpose of `∋×∋`, `∋×𝟙`, `𝟙×∋`.  `cp(list)` is `cpMap` (`AOP.A5_6`) at the
+  list relator, and `cplist` is its list implementation. -/
+
+section cartesian
+variable {B : Type}
+
+/-- `cpr(a,y) = [(a,b) ∣ b←y]` (B&dM p.125). -/
+@[expose] public def cprFn (p : A × ConsList Unit B) : ConsList Unit (A × B) :=
+  cmap (fun b => (p.1, b)) p.2
+
+/-- `cpl(x,b) = [(a,b) ∣ a←x]` (B&dM p.125). -/
+@[expose] public def cplFn (p : ConsList Unit A × B) : ConsList Unit (A × B) :=
+  cmap (fun a => (a, p.2)) p.1
+
+/-- `cpp(x,y) = [(a,b) ∣ a←x, b←y]`, recursing on `x` with `y` fixed. -/
+@[expose] public def cppAux (y : ConsList Unit B) : ConsList Unit A → ConsList Unit (A × B)
+  | ConsList.wrap _ => ConsList.wrap ()
+  | ConsList.cons a x => cappend (cprFn (a, y)) (cppAux y x)
+
+/-- `cpp(x,y) = [(a,b) ∣ a←x, b←y]` (B&dM p.125). -/
+@[expose] public def cppFn (p : ConsList Unit A × ConsList Unit B) : ConsList Unit (A × B) :=
+  cppAux p.2 p.1
+
+/-- `cpp : [A]×[B]⟶[A×B]`. -/
+@[expose] public def cpp : (⟨ConsList Unit A × ConsList Unit B⟩ : RelSet.{0}) ⟶ dList (A × B) :=
+  graph cppFn
+/-- `cpl : [A]×B⟶[A×B]`. -/
+@[expose] public def cpl : (⟨ConsList Unit A × B⟩ : RelSet.{0}) ⟶ dList (A × B) := graph cplFn
+/-- `cpr : A×[B]⟶[A×B]`. -/
+@[expose] public def cpr : (⟨A × ConsList Unit B⟩ : RelSet.{0}) ⟶ dList (A × B) := graph cprFn
+
+public theorem inlistP_cappend (y : ConsList Unit A) (a : A) :
+    ∀ x : ConsList Unit A, inlistP (cappend x y) a ↔ inlistP x a ∨ inlistP y a
+  | ConsList.wrap _ => ⟨Or.inr, fun h => h.elim False.elim id⟩
+  | ConsList.cons b x => by
+      show a = b ∨ inlistP (cappend x y) a ↔ (a = b ∨ inlistP x a) ∨ inlistP y a
+      rw [inlistP_cappend y a x, or_assoc]
+
+public theorem inlistP_cpr (a : A) :
+    ∀ (y : ConsList Unit B) (q : A × B), inlistP (cprFn (a, y)) q ↔ q.1 = a ∧ inlistP y q.2
+  | ConsList.wrap _, _ => ⟨False.elim, fun h => h.2.elim⟩
+  | ConsList.cons b y, q => by
+      show q = (a, b) ∨ inlistP (cprFn (a, y)) q ↔ q.1 = a ∧ (q.2 = b ∨ inlistP y q.2)
+      rw [inlistP_cpr a y q, Prod.ext_iff, ← and_or_left]
+
+public theorem inlistP_cpl (b : B) :
+    ∀ (x : ConsList Unit A) (q : A × B), inlistP (cplFn (x, b)) q ↔ inlistP x q.1 ∧ q.2 = b
+  | ConsList.wrap _, _ => ⟨False.elim, fun h => h.1.elim⟩
+  | ConsList.cons a x, q => by
+      show q = (a, b) ∨ inlistP (cplFn (x, b)) q ↔ (q.1 = a ∨ inlistP x q.1) ∧ q.2 = b
+      rw [inlistP_cpl b x q, Prod.ext_iff, ← or_and_right]
+
+public theorem inlistP_cpp (y : ConsList Unit B) :
+    ∀ (x : ConsList Unit A) (q : A × B), inlistP (cppFn (x, y)) q ↔ inlistP x q.1 ∧ inlistP y q.2
+  | ConsList.wrap _, _ => ⟨False.elim, fun h => h.1.elim⟩
+  | ConsList.cons a x, q => by
+      show inlistP (cappend (cprFn (a, y)) (cppFn (x, y))) q ↔ (q.1 = a ∨ inlistP x q.1) ∧ inlistP y q.2
+      rw [inlistP_cappend, inlistP_cpr, inlistP_cpp y x q, ← or_and_right]
+
+/-- The product of two graphs is the graph of the pairing. -/
+public theorem rprodMap_graph_eq {C C' D D' : Type} (f : C → C') (g : D → D') :
+    rprodMap (graph f : dE C ⟶ dE C') (graph g : dE D ⟶ dE D')
+      = (graph (fun p : C × D => (f p.1, g p.2)) : (⟨C × D⟩ : RelSet.{0}) ⟶ ⟨C' × D'⟩) :=
+  hom_ext fun _ _ => ⟨fun ⟨h1, h2⟩ => Prod.ext h1 h2, fun h => by subst h; exact ⟨rfl, rfl⟩⟩
+
+/-- The identity of `Rel(Set)` is the graph of the identity function. -/
+public theorem id_eq_graph_iff {C : Type} (x y : C) : (𝟙 (dE C)) x y ↔ y = x := by
+  constructor <;> intro h <;> first | exact h | exact h.symm
+
+public theorem id_eq_graph {C : Type} : 𝟙 (dE C) = graph id :=
+  hom_ext fun x y => (id_eq_graph_iff x y).trans Iff.rfl
+
+/-- `setify ∋ = inlist`: `setify` is the transpose of list membership. -/
+public theorem setify_ni_iff (x : ConsList Unit A) (a : A) : (setify ≫ ∋ (dE A)) x a ↔ inlistP x a :=
+  ⟨fun ⟨_, hS, ha⟩ => by subst hS; exact ha, fun ha => ⟨_, rfl, ha⟩⟩
+
+/-- A list-valued `g` whose result holds exactly the elements `R` relates to its argument:
+    `g setify` is the transpose of `R`. -/
+public theorem graph_setify_Λ {C : RelSet.{0}} {D : Type} (g : C.carrier → ConsList Unit D)
+    (R : C ⟶ dE D) (h : ∀ c d, inlistP (g c) d ↔ R c d) : graph g ≫ setify = Λ R :=
+  Λ_unique _ _ (map_comp (graph_map _) (graph_map _)) (hom_ext fun c d =>
+    ⟨fun ⟨_, ⟨_, hl, hS⟩, hd⟩ => by subst hl; subst hS; exact (h c d).mp hd,
+     fun hr => ⟨_, ⟨_, rfl, rfl⟩, (h c d).mpr hr⟩⟩)
+
+/-- **`cpp setify = (setify×setify) ∋×∋%∋`** (B&dM p.126, mirrored): `cpp` implements the
+    transpose of `∋×∋`. -/
+public theorem setify_cpp :
+    cpp ≫ setify = rprodMap setify setify ≫ Λ (rprodMap (∋ (dE A)) (∋ (dE B))) := by
+  rw [← Λ_fusion (show Map (rprodMap (setify (A := A)) (setify (A := B))) by
+    rw [setify, setify, rprodMap_graph_eq]; exact graph_map _), rprodMap_comp]
+  exact graph_setify_Λ _ _ fun p q => (inlistP_cpp p.2 p.1 q).trans
+    (and_congr (setify_ni_iff _ _).symm (setify_ni_iff _ _).symm)
+
+/-- **`cpl setify = (setify×𝟙) ∋×𝟙%∋`** (B&dM p.126, mirrored). -/
+public theorem setify_cpl :
+    cpl ≫ setify = rprodMap setify (𝟙 (dE B)) ≫ Λ (rprodMap (∋ (dE A)) (𝟙 (dE B))) := by
+  rw [← Λ_fusion (show Map (rprodMap (setify (A := A)) (𝟙 (dE B))) by
+    rw [setify, id_eq_graph, rprodMap_graph_eq]; exact graph_map _), rprodMap_comp, Cat.id_comp]
+  exact graph_setify_Λ _ _ fun p q => (inlistP_cpl p.2 p.1 q).trans
+    (and_congr (setify_ni_iff _ _).symm (id_eq_graph_iff _ _).symm)
+
+/-- **`cpr setify = (𝟙×setify) 𝟙×∋%∋`** (B&dM p.125, mirrored). -/
+public theorem setify_cpr :
+    cpr ≫ setify = rprodMap (𝟙 (dE A)) setify ≫ Λ (rprodMap (𝟙 (dE A)) (∋ (dE B))) := by
+  rw [← Λ_fusion (show Map (rprodMap (𝟙 (dE A)) (setify (A := B))) by
+    rw [setify, id_eq_graph, rprodMap_graph_eq]; exact graph_map _), rprodMap_comp, Cat.id_comp]
+  exact graph_setify_Λ _ _ fun p q => (inlistP_cpr p.1 p.2 q).trans
+    (and_congr (id_eq_graph_iff _ _).symm (setify_ni_iff _ _).symm)
+
+end cartesian
+
+/-- The relator `F(∋)` slid into `list(∋)`'s algebra: `F(∋)[nil,(∋×𝟙)cons] = [nil,(∋×∋)cons]`. -/
+public theorem cp_list_alg_sum_junc :
+    (F Unit (PowerAllegory.powerObj (dE A)).carrier).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨(PowerAllegory.powerObj (dE A)).carrier × ConsList Unit A⟩) wrapR
+            (rprodMap (∋ (dE A)) (𝟙 (dList A)) ≫ consR)
+      = junc (sumCop (dL Unit)
+            ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR) := by
+  rw [← F_eq_sum_prod]
+  show sumMap (sumCop (dL Unit)
+        ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      (sumCop (dL Unit) ⟨(PowerAllegory.powerObj (dE A)).carrier × ConsList Unit A⟩) (𝟙 (dL Unit))
+      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE (PowerAllegory.powerObj (dE A)).carrier))
+        (∋ (dList A))) ≫ _ = _
+  rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap, ← Cat.assoc, rprodMap_comp, Cat.id_comp,
+    Cat.comp_id]
+
+/-- **`cp(list) = ⦇[nil,(∋×∋)cons]%∋⦈`** (B&dM p.126, mirrored): `list(R) = ⦇[nil,(R×𝟙)cons]⦈`
+    at `R := ∋`, transposed by `Λ_relCata`. -/
+public theorem cp_list :
+    cpMap listRelator (dE A)
+      = (initial Unit (PowerAllegory.powerObj (dE A)).carrier).cata
+          (Λ (junc (sumCop (dL Unit)
+            ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+            wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))) (Λ_is_map' _) := by
+  show Λ (list (∋ (dE A))) = _
+  rw [list_cata, Λ_relCata (initial Unit _)]
+  congr 2
+  exact cp_list_alg_sum_junc
+
+/-- **`[nil,(∋×∋)cons]%∋ = [nil 𝟙%∋, ∋×∋%∋ E(cons)]`** (B&dM p.126, mirrored): the algebra of
+    `cp(list)` expanded — the transpose splits over the junction, `nil` is a map and `cons` is
+    absorbed. -/
+public theorem cp_list_alg :
+    Λ (junc (sumCop (dL Unit)
+        ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+        wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))
+      = junc (sumCop (dL Unit)
+          ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap) (Λ (rprodMap (∋ (dE A)) (∋ (dList A))) ≫ existsImage consR) := by
+  rw [Λ_junc, Λ_nil_singleton, Λ_absorption]
+
+/-- `cplist`, the list implementation of `cp(list)`: `cplist [] = [[]]`, and
+    `cplist (x::xs) = list(cons)(cpp(x, cplist xs))`. -/
+@[expose] public def cplistFn : ConsList Unit (ConsList Unit A) → ConsList Unit (ConsList Unit A)
+  | ConsList.wrap _ => ConsList.cons (ConsList.wrap ()) (ConsList.wrap ())
+  | ConsList.cons x xs => cmap (fun p => ConsList.cons p.1 p.2) (cppFn (x, cplistFn xs))
+
+/-- `cplist : [[A]]⟶[[A]]`. -/
+@[expose] public def cplist : dList (ConsList Unit A) ⟶ dList (ConsList Unit A) := graph cplistFn
+
+/-- **`cplist = ⦇[nil wrap, cpp list(cons)]⦈`** (B&dM p.126, mirrored). -/
+public theorem cplist_cata :
+    (cplist : dList (ConsList Unit A) ⟶ dList (ConsList Unit A))
+      = ⦇(junc (sumCop (dL Unit) ⟨ConsList Unit A × ConsList Unit (ConsList Unit A)⟩)
+          ((wrapR : dL Unit ⟶ dList A) ≫ singleR ())
+          (cpp ≫ list (consR (L := Unit) (E := A)))
+          : (F Unit (ConsList Unit A)).obj (dList (ConsList Unit A)) ⟶ dList (ConsList Unit A))⦈ := by
+  refine (relCata_UP (initial Unit (ConsList Unit A)) _ _).mp
+    ((cata_square_junc_iff _ _ _).mpr ⟨fun D r => ?_, fun x xs r => ?_⟩)
+  · cases D
+    exact ⟨fun h => ⟨_, rfl, h⟩, fun ⟨_, hy, hr⟩ => by subst hy; exact hr⟩
+  · show r = cplistFn (ConsList.cons x xs)
+        ↔ ∃ y, y = cplistFn xs ∧ ∃ z, z = cppFn (x, y) ∧ listP consR z r
+    constructor
+    · intro h
+      exact ⟨_, rfl, _, rfl, (listP_graph (fun p : A × ConsList Unit A => ConsList.cons p.1 p.2) _ _).mpr h⟩
+    · rintro ⟨y, rfl, z, rfl, hz⟩
+      exact (listP_graph (fun p : A × ConsList Unit A => ConsList.cons p.1 p.2) _ _).mp hz
+
 -- printing-only unexpanders: the note's spelling.  `dList A` is the note's `[A]`: the brackets ARE
 -- the name; `listRelator` is its lane `list`; `prefixR` is `prefix`, a Lean keyword, which the
 -- printer escapes as `«prefix»` and the label emitter (`diag/tool/ExprReader`) unescapes.
@@ -1615,6 +1799,26 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander predsR] public meta def unexpandPredsR : Unexpander
   | `($_:ident) => `($(mkIdent `preds))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander setify] public meta def unexpandSetify : Unexpander
+  | `($_:ident) => `($(mkIdent `setify))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander cpp] public meta def unexpandCpp : Unexpander
+  | `($_:ident) => `($(mkIdent `cpp))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander cpl] public meta def unexpandCpl : Unexpander
+  | `($_:ident) => `($(mkIdent `cpl))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander cpr] public meta def unexpandCpr : Unexpander
+  | `($_:ident) => `($(mkIdent `cpr))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander cplist] public meta def unexpandCplist : Unexpander
+  | `($_:ident) => `($(mkIdent `cplist))
   | _ => throw ()
 
 /-- The list relator's action on an arrow, with its own brackets like every other relator's `F(R)`,

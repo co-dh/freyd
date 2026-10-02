@@ -596,6 +596,33 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   [#leant("Freyd.Alg.RelSet.ListRel.tailsR")],
   [Implements $frac(#[`suffix`], ∋)$ by decreasing length — the opposite order.],
 
+  // B&dM §5.6, pp. 125–126, "Cartesian product".
+  [`cpp`, `cpl`, `cpr`],
+  [#leant("Freyd.Alg.RelSet.ListRel.cpp") \ #leant("Freyd.Alg.RelSet.ListRel.cpl") \
+   #leant("Freyd.Alg.RelSet.ListRel.cpr")],
+  [Every pair `(a,b)` with `a` from the first list and `b` from the second; `cpl`, `cpr` keep one side a single element.],
+
+  [#leanf("Freyd.Alg.RelSet.ListRel.setify_cpp") \ #leanf("Freyd.Alg.RelSet.ListRel.setify_cpl") \
+   #leanf("Freyd.Alg.RelSet.ListRel.setify_cpr") #src[]],
+  // lean:AOP.A5_6_ListCombinators.setify_cpp@1244ff9a lean:AOP.A5_6_ListCombinators.setify_cpl@bd16fc19 lean:AOP.A5_6_ListCombinators.setify_cpr@8d80980d
+  [#leant("Freyd.Alg.RelSet.ListRel.setify_cpp")],
+  [Forgetting the order with `setify`, `cpp` is the transpose of `∋×∋`.],
+
+  [#leanf("Freyd.Alg.cpMap") #src[]],
+  // lean:AOP.A5_6.cpMap@8554ec3c
+  [#leant("Freyd.Alg.cpMap")],
+  [`cp(F)`, the transpose of a relator's action on `∋`; `cpp` implements it at `F(A)=A×A`.],
+
+  [#leanf("Freyd.Alg.RelSet.ListRel.cp_list") \ #leanf("Freyd.Alg.RelSet.ListRel.cp_list_alg") #src[]],
+  // lean:AOP.A5_6_ListCombinators.cp_list@c67067c2 lean:AOP.A5_6_ListCombinators.cp_list_alg@e7822cf3
+  [#leant("Freyd.Alg.RelSet.ListRel.cp_list")],
+  [`cp(list)`: @cata-map-calc at `list(∋)=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
+
+  [#leanf("Freyd.Alg.RelSet.ListRel.cplist_cata") #src[]],
+  // lean:AOP.A5_6_ListCombinators.cplist_cata@69ef2d49
+  [#leant("Freyd.Alg.RelSet.ListRel.cplist")],
+  [`cp(list)` with every set a list: `cpp` in place of $frac(#[`∋×∋`], ∋)$.],
+
 )]<comb-fns>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

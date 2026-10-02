@@ -345,7 +345,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
 // it is one connected preorder, spelled `P` here.
 #disp[#definition[
-`setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)≜` $frac(#[`F(∋)`], ∋)$, #h(4pt)
+`setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)` #src[@comb-fns], #h(4pt)
 `listcp : F(L)⟶LF`, #h(4pt) `sort(P)≜setify° ordered P` #src[]
 // lean:AOP.A8_3.sortRel@7cf6d184
 for `P` a connected preorder.
