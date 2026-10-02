@@ -1126,10 +1126,12 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.S] def unexpandPartyS : Unexpander
   | _ => `($(mkIdent `S))
--- The note's `cp` is the copy-and-pair map; `cpMap` is the Lean name.
+-- The note's `cp(F)` (B&dM §5.6) is `cpMap F A`: the relator is its argument and the object `A` is
+-- the wire under the bead, so only `F` is printed (`$args*` here matched nothing and wrote bare `cp`).
 open Lean PrettyPrinter in
 @[app_unexpander cpMap] def unexpandCpMap : Unexpander
-  | `($_ $args*) => `($(mkIdent `cp) $args*)
+  | `($_ $F $_) => `($(mkIdent `cp) $F)
+  | `($_ $F) => `($(mkIdent `cp) $F)
   | _ => `($(mkIdent `cp))
 -- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
 -- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): the algebras and

@@ -28,7 +28,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 `E(R)≜` $frac(#[`∋R`], ∋)$ ` : EA⟶EB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
 #src[the image of `xs`, @pow-laws]
 
-`P(R) : PA⟶PB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
+`P(R) : EA⟶EB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
 #src[every `x` and every `y` has a partner, @powrel-readings]
 ]]<est-defn>
 
