@@ -932,24 +932,24 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL
 variable {A : Type}
 
 /-- `mergeP ≼ x y z`: `z` is `merge(≼)(x,y)`, the book's equations read as rules. -/
-public inductive mergeP («≼» : A → A → Prop) :
+public inductive Freyd.Alg.RelSet.ListRel.Merge («≼» : A → A → Prop) :
     ConsList Unit A → ConsList Unit A → ConsList Unit A → Prop
-  | nilr (x : ConsList Unit A) : mergeP ≼ x (ConsList.wrap ()) x
-  | nill (y : ConsList Unit A) : mergeP ≼ (ConsList.wrap ()) y y
+  | nilr (x : ConsList Unit A) : Freyd.Alg.RelSet.ListRel.Merge ≼ x (ConsList.wrap ()) x
+  | nill (y : ConsList Unit A) : Freyd.Alg.RelSet.ListRel.Merge ≼ (ConsList.wrap ()) y y
   | consl (a b : A) {x y z : ConsList Unit A} : ≼ a b →
-      mergeP ≼ x (ConsList.cons b y) z →
-      mergeP ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons a z)
+      Freyd.Alg.RelSet.ListRel.Merge ≼ x (ConsList.cons b y) z →
+      Freyd.Alg.RelSet.ListRel.Merge ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons a z)
   | consr (a b : A) {x y z : ConsList Unit A} : ¬ ≼ a b →
-      mergeP ≼ (ConsList.cons a x) y z →
-      mergeP ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons b z)
+      Freyd.Alg.RelSet.ListRel.Merge ≼ (ConsList.cons a x) y z →
+      Freyd.Alg.RelSet.ListRel.Merge ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons b z)
 
 /-- `merge(≼) : [A]×[A] ⟶ [A]` (B&dM p.156). -/
 @[expose] public def merge («≼» : dE A ⟶ dE A) : (relProd (dList A) (dList A)).p ⟶ dList A :=
-  fun p z => mergeP ≼ p.1 p.2 z
+  fun p z => Freyd.Alg.RelSet.ListRel.Merge ≼ p.1 p.2 z
 
 /-- Every element of a merge comes from one of the two lists. -/
 public theorem inlistP_of_mergeP {«≼» : A → A → Prop} {x y z : ConsList Unit A}
-    (h : mergeP ≼ x y z) {c : A} (hc : inlistP z c) : inlistP x c ∨ inlistP y c := by
+    (h : Freyd.Alg.RelSet.ListRel.Merge ≼ x y z) {c : A} (hc : inlistP z c) : inlistP x c ∨ inlistP y c := by
   induction h with
   | nilr x => exact Or.inl hc
   | nill y => exact Or.inr hc
@@ -968,7 +968,7 @@ public theorem inlistP_of_mergeP {«≼» : A → A → Prop} {x y z : ConsList 
 
 /-- Merging two `≼`-ordered lists gives a `≼`-ordered list, `≼` a connected preorder. -/
 public theorem orderedP_of_mergeP {«≼» : A → A → Prop} (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c)
-    (hconn : ∀ a b, ≼ a b ∨ ≼ b a) {x y z : ConsList Unit A} (h : mergeP ≼ x y z) :
+    (hconn : ∀ a b, ≼ a b ∨ ≼ b a) {x y z : ConsList Unit A} (h : Freyd.Alg.RelSet.ListRel.Merge ≼ x y z) :
     orderedP ≼ x → orderedP ≼ y → orderedP ≼ z := by
   induction h with
   | nilr x => exact fun hx _ => hx
