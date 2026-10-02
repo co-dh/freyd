@@ -597,7 +597,7 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
         raise Refuse(f"{key}: the before and after crops are pixel-identical — this display did not "
                      f"change, and a pair the reader cannot tell apart costs him the whole review")
     k = DPI / 72.0
-    rings((before_pdf, bp, by0, by1, int(by0 * k)), (after_pdf, ap, ay0, ay1, int(ay0 * k)), cb, ca, tmp, key)
+    rings([(before_pdf, bp, by0, by1)], [(after_pdf, ap, ay0, ay1)], cb, ca, tmp, key)
     label(cb, f"{tmp}/klb.png", f"{key} BEFORE p{bp}", tmp, [])
     label(ca, f"{tmp}/kla.png", f"{key} AFTER p{ap}", tmp, [])
     pair = os.path.join(out, f"key-{slug(key)}.png")
@@ -690,8 +690,9 @@ def own_anchor(pdf, did, tmp, page=None):
 
 
 def crop_parts(pdf, spans, tmp, tagp):
-    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked."""
-    pngs = []
+    """One png from `(page, top, bottom)` spans, measured to the ink inside each and stacked; with it the
+    spans as cut, `[(pdf, page, top, bottom)]`, the frame `rings` reads."""
+    pngs, cuts = [], []
     for i, (pg, y0, y1) in enumerate(spans):
         W, H, boxes = svg_ink(pdf, pg, tmp)
         got = band(boxes, y0, y1, (y0, y1))
@@ -702,7 +703,8 @@ def crop_parts(pdf, spans, tmp, tagp):
         p = f"{tmp}/{tagp}{i}.png"
         cut(pdf, pg, c0, c1, W, p)
         pngs.append(p)
-    return stackp(pngs, tmp, tagp), [s[0] for s in spans]
+        cuts.append((pdf, pg, c0, c1))
+    return stackp(pngs, tmp, tagp), [s[0] for s in spans], cuts
 
 
 def stackp(pngs, tmp, tagp):
@@ -766,7 +768,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     ends = [display_id(k.strip("<>"), aorder, typ) for k in key.split(":")]
     ids = ai[ai.index(ends[0]):ai.index(ends[-1]) + 1]
     labels = [lab_of[d] for d in ids]
-    ca, apages = crop_parts(after_pdf, disp_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
+    ca, apages, acuts = crop_parts(after_pdf, disp_spans(after_pdf, aorder, aparts, ids, tmp), tmp, "la")
     borders = [d for d, l in border if l in labels]
     name = os.path.join(out, f"key-{slug(key)}.png")
     if not borders:
@@ -776,7 +778,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
         print(f"{key}: new in the after ({', '.join(ids)}), no label of it in {rev} -> {name}")
         return name
     # only the pixels decide: a display whose source is unchanged still changes with its Lean statement
-    cb, bpages = crop_parts(before_pdf, disp_spans(before_pdf, border, bparts, borders, tmp), tmp, "lb")
+    cb, bpages, bcuts = crop_parts(before_pdf, disp_spans(before_pdf, border, bparts, borders, tmp), tmp, "lb")
     # to the ink first: the same display cut from the two pdfs may differ in its white margin alone
     tb, ta = f"{tmp}/ltb.png", f"{tmp}/lta.png"
     emit("magick", cb, "-trim", "+repage", tb)
@@ -784,6 +786,7 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     if size(tb) == size(ta) and re.match(r"0\b", run("compare", "-metric", "AE", tb, ta, f"{tmp}/ld.png").stderr.strip()):
         print(f"{key}: unchanged, skipped (crops pixel-identical)")
         return None
+    rings(bcuts, acuts, cb, ca, tmp, key)
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
     label(ca, f"{tmp}/lla.png", f"{'/'.join(ids)} AFTER p{apages[0]}", tmp, [])
     emit("magick", f"{tmp}/llb.png", f"{tmp}/lla.png", "-background", "gray70", "-append", "+repage", name)
@@ -945,15 +948,23 @@ def rings(before, after, cb, ca, tmp, key):
     """Each crop ringed, IN PLACE, round what it draws that the other does not: a word with no equal
     word, a primitive with no equal-shaped primitive, wherever either sits.  A comparison of pixels at
     the same (x, y) rings every row a change pushed down, which is a move, not a change.  `before` and
-    `after` are (pdf, page, top pt, bottom pt, top px) — the crop's own frame, which maps pt to px."""
+    `after` are the spans `[(pdf, page, top pt, bottom pt)]` stacked top to bottom into `cb`/`ca`; each
+    item is moved into that stacked frame, so a display split across pages compares as one."""
     k = DPI / 72.0
-    ub, ua = unmatched(content(*before[:4], tmp), content(*after[:4], tmp))
+    def frame(spans):
+        out, off = [], 0.0
+        for pdf, pg, y0, y1 in spans:
+            d = off - y0
+            out += [i[:3] + ((i[3][0], i[3][1] + d, i[3][2], i[3][3] + d),) for i in content(pdf, pg, y0, y1, tmp)]
+            off += y1 - y0
+        return out
+    ub, ua = unmatched(frame(before), frame(after))
     if not ub and not ua:
         print(f"{key}: a pure reflow — every word and primitive has a moved counterpart, nothing ringed")
         return
-    for items, (_, _, _, _, top), png in ((ub, before, cb), (ua, after, ca)):
+    for items, png in ((ub, cb), (ua, ca)):
         if items:
-            ring(png, merge([(b[0] * k, b[1] * k - top, b[2] * k, b[3] * k - top) for b in (i[3] for i in items)]), png)
+            ring(png, merge([tuple(v * k for v in i[3]) for i in items]), png)
     say = lambda us: ", ".join([i[1] for i in us if i[1]] + [f"{sum(not i[1] for i in us)} primitives"])
     print(f"{key}: ringed before [{say(ub)}]; after [{say(ua)}]")
 
@@ -1127,7 +1138,7 @@ def crops(before_pdf, after_pdf, out, tag_="", caption=""):
             emit("magick", a, "-crop", geo, "+repage", f"{tmp}/ca.png")
             # One pixel crop of both pages, so both frames start at the same y0 px.
             pt = 72.0 / DPI
-            rings((before_pdf, i + 1, y0 * pt, y1 * pt, y0), (after_pdf, j + 1, y0 * pt, y1 * pt, y0),
+            rings([(before_pdf, i + 1, y0 * pt, y1 * pt)], [(after_pdf, j + 1, y0 * pt, y1 * pt)],
                   f"{tmp}/cb.png", f"{tmp}/ca.png", tmp, f"{tag_}p{n}-{k}")
             scale = ["-resize", f"{MINW}x"] if x1 - x0 < MINW else []
             label(f"{tmp}/cb.png", f"{tmp}/lb.png", f"{tag_}p{i + 1} BEFORE", tmp, scale)
