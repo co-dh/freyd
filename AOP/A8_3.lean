@@ -931,7 +931,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL
 
 variable {A : Type}
 
-/-- `mergeP ≼ x y z`: `z` is `merge(≼)(x,y)`, the book's equations read as rules. -/
+/-- `Merge ≼ x y z`: `z` is `merge(≼)(x,y)`, the book's equations read as rules. -/
 public inductive Freyd.Alg.RelSet.ListRel.Merge («≼» : A → A → Prop) :
     ConsList Unit A → ConsList Unit A → ConsList Unit A → Prop
   | nilr (x : ConsList Unit A) : Freyd.Alg.RelSet.ListRel.Merge ≼ x (ConsList.wrap ()) x
@@ -948,7 +948,7 @@ public inductive Freyd.Alg.RelSet.ListRel.Merge («≼» : A → A → Prop) :
   fun p z => Freyd.Alg.RelSet.ListRel.Merge ≼ p.1 p.2 z
 
 /-- Every element of a merge comes from one of the two lists. -/
-public theorem inlistP_of_mergeP {«≼» : A → A → Prop} {x y z : ConsList Unit A}
+public theorem inlistP_of_Merge {«≼» : A → A → Prop} {x y z : ConsList Unit A}
     (h : Freyd.Alg.RelSet.ListRel.Merge ≼ x y z) {c : A} (hc : inlistP z c) : inlistP x c ∨ inlistP y c := by
   induction h with
   | nilr x => exact Or.inl hc
@@ -967,7 +967,7 @@ public theorem inlistP_of_mergeP {«≼» : A → A → Prop} {x y z : ConsList 
       · exact Or.inr (Or.inr h)
 
 /-- Merging two `≼`-ordered lists gives a `≼`-ordered list, `≼` a connected preorder. -/
-public theorem orderedP_of_mergeP {«≼» : A → A → Prop} (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c)
+public theorem orderedP_of_Merge {«≼» : A → A → Prop} (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c)
     (hconn : ∀ a b, ≼ a b ∨ ≼ b a) {x y z : ConsList Unit A} (h : Freyd.Alg.RelSet.ListRel.Merge ≼ x y z) :
     orderedP ≼ x → orderedP ≼ y → orderedP ≼ z := by
   induction h with
@@ -976,7 +976,7 @@ public theorem orderedP_of_mergeP {«≼» : A → A → Prop} (htrans : ∀ a b
   | consl a b hab hm ih =>
     intro hx hy
     refine ⟨fun c hc => ?_, ih hx.2 hy⟩
-    rcases inlistP_of_mergeP hm hc with hc | hc
+    rcases inlistP_of_Merge hm hc with hc | hc
     · exact hx.1 c hc
     · rcases hc with rfl | hc
       · exact hab
@@ -985,7 +985,7 @@ public theorem orderedP_of_mergeP {«≼» : A → A → Prop} (htrans : ∀ a b
     intro hx hy
     have hba : ≼ b a := (hconn a b).resolve_left hab
     refine ⟨fun c hc => ?_, ih hx hy.2⟩
-    rcases inlistP_of_mergeP hm hc with hc | hc
+    rcases inlistP_of_Merge hm hc with hc | hc
     · rcases hc with rfl | hc
       · exact hba
       · exact htrans _ _ _ hba (hx.1 c hc)
@@ -999,7 +999,7 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
   rw [prodMap_eq_rprodMap]
   refine le_iff.mpr fun ⟨x, y⟩ z h => ?_
   obtain ⟨⟨x', y'⟩, ⟨⟨rfl, hx⟩, ⟨rfl, hy⟩⟩, hm⟩ := h
-  exact ⟨z, hm, rfl, orderedP_of_mergeP htrans hconn hm hx hy⟩
+  exact ⟨z, hm, rfl, orderedP_of_Merge htrans hconn hm hx hy⟩
 
 /-- **(8.10)** in `Rel` (book p.203), `(sort(≼)×sort(≼))·merge(≼) ⊑ cup·sort(≼)`, with
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: only the set condition
