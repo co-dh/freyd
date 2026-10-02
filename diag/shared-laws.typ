@@ -85,13 +85,13 @@
     // lean:Freyd.Alg.DistributiveAllegory.comp_union_distrib@bd91d212
     [`f(X∩Y)=` \ `fX∩fY`], [`ff°f=f`], [`f°ff°=f°`],
 
-  [`i⊣E`], [`Map↪Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶EA`], [`∋:EB⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
+  [`i⊣E`], [`Map↪Rel`], [`E`], [$frac(#[`𝟙`], ∋)$`:A⟶PA`], [`∋:PB⟶B`], [—], [—], [$frac(#[`∋`], ∋)$`=𝟙`], [$frac(#[`R`], ∋)$`∋=R`],
 
   // The row above at the HOM-SET level, and the table's only bijection that is not an ORDER-iso:
   // `%∋` is not monotone, and monotone would force every hom-poset discrete.
-  [`·∋⊣` $frac(#box(width: 8pt), ∋)$], [`Map(A,EB)⟶` \ `(A⟶B)`], [`𝟙`], [$frac(#[`f∋`], ∋)$`=f`], [$frac(#[`R`], ∋)$`∋=R`], [—], [—], [$frac(#[`f∋`], ∋)$`∋` \ `=f∋`], [$frac(#[$frac(#[`R`], ∋)$`∋`], ∋)$ \ `=`$frac(#[`R`], ∋)$],
+  [`·∋⊣` $frac(#box(width: 8pt), ∋)$], [`Map(A,PB)⟶` \ `(A⟶B)`], [`𝟙`], [$frac(#[`f∋`], ∋)$`=f`], [$frac(#[`R`], ∋)$`∋=R`], [—], [—], [$frac(#[`f∋`], ∋)$`∋` \ `=f∋`], [$frac(#[$frac(#[`R`], ∋)$`∋`], ∋)$ \ `=`$frac(#[`R`], ∋)$],
 
-  [$frac(#box(width: 8pt), ∋)$ `⊣·∋`], [`(A⟶B)⟶` \ `Map(A,EB)`], [`𝟙`], [$frac(#[`R`], ∋)$`∋=R`], [$frac(#[`f∋`], ∋)$`=f`], [—], [—], [$frac(#[$frac(#[`R`], ∋)$`∋`], ∋)$ \ `=`$frac(#[`R`], ∋)$], [$frac(#[`f∋`], ∋)$`∋` \ `=f∋`],
+  [$frac(#box(width: 8pt), ∋)$ `⊣·∋`], [`(A⟶B)⟶` \ `Map(A,PB)`], [`𝟙`], [$frac(#[`R`], ∋)$`∋=R`], [$frac(#[`f∋`], ∋)$`=f`], [—], [—], [$frac(#[$frac(#[`R`], ∋)$`∋`], ∋)$ \ `=`$frac(#[`R`], ∋)$], [$frac(#[`f∋`], ∋)$`∋` \ `=f∋`],
 )]<adj-all>
 ]
 
@@ -371,7 +371,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   [`∋` is *thick*],
   [*Comprehension*: every `x` has a set of exactly the people `x` admires.],
 
-  [$frac(R, ∋)$ ` : A⟶EB`, for `R : A⟶B` ],
+  [$frac(R, ∋)$ ` : A⟶PB`, for `R : A⟶B` ],
   [convert a relation to a function. `a` $frac(R, ∋)$ ` ={b|a R b}` ],
   [#leanf("Freyd.Alg.Λ_is_map'")],  [],
   // lean:Freyd.S2_40.Λ_is_map'@d8366eca
@@ -406,7 +406,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   [`x` and `y` match when `R` sends `x` and `S` sends `y` to the same set.],
   // lean:Freyd.S2_40.symm_div_eq_Λ_comp@d031e970
 
-  [#leanf("Freyd.Alg.existsImage")], [`E(R): EA⟶EB`, image of a set of A],
+  [#leanf("Freyd.Alg.existsImage")], [`E(R): PA⟶PB`, image of a set of A],
   // lean:AOP.A4_6.existsImage@db266886
   [#leanf("Freyd.Alg.Λ_eq_singleton_existsImage")],
  [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[]],
@@ -435,10 +435,8 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   grid(columns: 2, column-gutter: 14pt, align: horizon,
     lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
   [#leanf("Freyd.Alg.Λ_comp_eps") #h(1.4cm)
-   #src[`EA` is the powerset of `A` — standard mathematics, but here `P` is
- already the relator `P(R)`. ]],
+   #src[`PA` is the powerset of `A`.]],
    // lean:AOP.A4_6.Λ_comp_eps@76d609ed
-   // B&dM write `PA` for the powerset.
   // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>

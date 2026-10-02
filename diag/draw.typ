@@ -102,7 +102,7 @@
 #let objcol(l) = oband0(plain(l))
 
 // `auto` on a hand-drawn panel's object colour means THE OBJECT'S OWN HUE, so a hand-laid figure and
-// a generated one give one object one colour.  A composite port names no single object — `A×B`, `EA`,
+// a generated one give one object one colour.  A composite port names no single object — `A×B`, `PA`,
 // `TA` are the three the note writes — and keeps the panel's positional default.
 #let ocol(c, l, d) = if c != auto { c } else if l == none { d } else { OCOL.at(plain(l), default: d) }
 
