@@ -44,6 +44,10 @@ public import AOP.A5_7_ListBeads
 
 universe u
 
+set_option hygiene false in
+/-- The order binder `«≼»`, written `≼` as the note writes it. -/
+local notation "≼" => «≼»
+
 namespace Freyd.Alg
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L : Relator 𝒜 𝒜)
@@ -54,11 +58,8 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L :
   the note writes it `≼`, and so does every statement below.  `≼` is an ordinary binder, named
   `«≼»`; the notation lets the source write it as the note does.  Every combinator the book
   parameterises by that order (`ordered`, `sort`, `merge`) is a FAMILY applied to it, so a
-  statement prints `ordered(≼)`, never a fused name. -/
-
-set_option hygiene false in
-/-- The order binder `«≼»`, written `≼`. -/
-local notation "≼" => «≼»
+  statement prints `ordered(≼)`, never a fused name.  The notation is declared at the top of
+  the file, so the `Rel` section at its end reads the same. -/
 
 /-! ## `sort(≼)` and (8.6) -/
 
@@ -850,3 +851,168 @@ public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hrefl : ∀ a,
           exact Or.inr (Or.inl ⟨hw.2 a (clMem_cons.mpr (Or.inl rfl)), rfl⟩)
 
 end Freyd.Alg.RelSet.CL
+
+/-! ## `ordered(≼)` in `Rel`: the book's definition discharges `hord` and `hos`
+
+  At the list relator, `ordered(≼)` is B&dM's own `⦇[nil, cons·ok]⦈` (p.152, `ListRel.ordered`,
+  `ordered_cata`), `ok(a,x) ≡ ∀b∈x. a≼b`.  From that definition the two order hypotheses of
+  (8.6) and (8.9) are theorems: `ordered(≼)` is coreflexive, and a subsequence of a `≼`-ordered
+  list is `≼`-ordered — for ANY `≼`, because `ok` compares `a` with every later element, not only
+  with the next one.  What is left of (8.6) and (8.9) is what they say about `thinlist Q` and
+  `filter p`. -/
+
+namespace Freyd.Alg.RelSet.ListRel
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL
+
+variable {A : Type}
+
+/-- An element of a subsequence is an element of the list. -/
+public theorem inlistP_of_subseqP : ∀ {ys x : ConsList Unit A}, subseqP ys x →
+    ∀ {b : A}, inlistP ys b → inlistP x b
+  | ConsList.wrap _, _, _, _, hb => hb.elim
+  | ConsList.cons _ _, ConsList.wrap _, h, _, _ => h.elim
+  | ConsList.cons a ys, ConsList.cons c x, h, b, hb => by
+    rcases h with ⟨rfl, hyx⟩ | h
+    · rcases hb with rfl | hb
+      · exact Or.inl rfl
+      · exact Or.inr (inlistP_of_subseqP hyx hb)
+    · exact Or.inr (inlistP_of_subseqP h hb)
+
+/-- A subsequence of a `≼`-ordered list is `≼`-ordered (B&dM p.201 "since subseq·ordered P ⊑
+    ordered P"), for any `≼`. -/
+public theorem orderedP_of_subseqP («≼» : A → A → Prop) : ∀ {ys x : ConsList Unit A},
+    subseqP ys x → orderedP ≼ x → orderedP ≼ ys
+  | ConsList.wrap _, _, _, _ => trivial
+  | ConsList.cons _ _, ConsList.wrap _, h, _ => h.elim
+  | ConsList.cons a ys, ConsList.cons c x, h, ho => by
+    rcases h with ⟨rfl, hyx⟩ | h
+    · exact ⟨fun b hb => ho.1 b (inlistP_of_subseqP hyx hb), orderedP_of_subseqP ≼ hyx ho.2⟩
+    · exact orderedP_of_subseqP ≼ h ho.2
+
+/-- `hos` of (8.6) and (8.9) from the definition: `ordered(≼) subseq ⊑ subseq ordered(≼)`. -/
+public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
+    (ordered ≼ : dList A ⟶ dList A) ≫ subseq ⊑ subseq ≫ ordered ≼ :=
+  le_iff.mpr fun x ys h => by
+    obtain ⟨y, ⟨rfl, hx⟩, hys⟩ := h
+    exact ⟨ys, hys, rfl, orderedP_of_subseqP ≼ hys hx⟩
+
+/-- **(8.6)** in `Rel` (book p.201), `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` with
+    `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: only `thinlist Q`'s two conditions
+    remain hypotheses. -/
+public theorem sortRel_comp_thinlist_le {«≼» : dE A ⟶ dE A}
+    {thinlist : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {Q : dE A ⟶ dE A}
+    (hsub : thinlist ⊑ subseq) (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
+    sortRel listRelator setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
+  Freyd.Alg.sortRel_comp_thinlist_le listRelator (graph_map _) (ordered_coreflexive ≼) hsub
+    (ordered_comp_subseq_le ≼) hspec
+
+/-- **(8.9)** in `Rel` (book p.203), `sort(≼)·filter p ⊑ E p·sort(≼)`: only `filter p`'s two
+    conditions remain hypotheses. -/
+public theorem sortRel_comp_filter_le {«≼» : dE A ⟶ dE A}
+    {filterp : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {p : dE A ⟶ dE A}
+    (hsub : filterp ⊑ subseq) (hspec : filterp ≫ setify ⊑ setify ≫ existsImage p) :
+    sortRel listRelator setify ordered ≼ ≫ filterp ⊑ existsImage p ≫ sortRel listRelator setify ordered ≼ :=
+  Freyd.Alg.sortRel_comp_filter_le listRelator (graph_map _) (ordered_coreflexive ≼) hsub
+    (ordered_comp_subseq_le ≼) hspec
+
+end Freyd.Alg.RelSet.ListRel
+
+/-! ## `merge(≼)` in `Rel` (B&dM Exercise 6.27, p.156)
+
+  `merge(x,[]) = x`, `merge([],y) = y`, and `merge([a]⧺x,[b]⧺y)` is `[a]⧺merge(x,[b]⧺y)` when
+  `a ≼ b`, otherwise `[b]⧺merge([a]⧺x,y)`.  With it, (8.10)'s order condition `hmord` is a
+  theorem for `≼` a connected preorder; the set condition `hmset` stays a hypothesis, since it
+  needs `cup`'s pointwise reading in `Rel`, which nothing here states yet. -/
+
+namespace Freyd.Alg.RelSet.ListRel
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet Freyd.Alg.RelSet.CL
+
+variable {A : Type}
+
+/-- `mergeP ≼ x y z`: `z` is `merge(≼)(x,y)`, the book's equations read as rules. -/
+public inductive mergeP («≼» : A → A → Prop) :
+    ConsList Unit A → ConsList Unit A → ConsList Unit A → Prop
+  | nilr (x : ConsList Unit A) : mergeP ≼ x (ConsList.wrap ()) x
+  | nill (y : ConsList Unit A) : mergeP ≼ (ConsList.wrap ()) y y
+  | consl (a b : A) {x y z : ConsList Unit A} : ≼ a b →
+      mergeP ≼ x (ConsList.cons b y) z →
+      mergeP ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons a z)
+  | consr (a b : A) {x y z : ConsList Unit A} : ¬ ≼ a b →
+      mergeP ≼ (ConsList.cons a x) y z →
+      mergeP ≼ (ConsList.cons a x) (ConsList.cons b y) (ConsList.cons b z)
+
+/-- `merge(≼) : [A]×[A] ⟶ [A]` (B&dM p.156). -/
+@[expose] public def merge («≼» : dE A ⟶ dE A) : (relProd (dList A) (dList A)).p ⟶ dList A :=
+  fun p z => mergeP ≼ p.1 p.2 z
+
+/-- Every element of a merge comes from one of the two lists. -/
+public theorem inlistP_of_mergeP {«≼» : A → A → Prop} {x y z : ConsList Unit A}
+    (h : mergeP ≼ x y z) {c : A} (hc : inlistP z c) : inlistP x c ∨ inlistP y c := by
+  induction h with
+  | nilr x => exact Or.inl hc
+  | nill y => exact Or.inr hc
+  | consl a b _ _ ih =>
+    rcases hc with rfl | hc
+    · exact Or.inl (Or.inl rfl)
+    · rcases ih hc with h | h
+      · exact Or.inl (Or.inr h)
+      · exact Or.inr h
+  | consr a b _ _ ih =>
+    rcases hc with rfl | hc
+    · exact Or.inr (Or.inl rfl)
+    · rcases ih hc with h | h
+      · exact Or.inl h
+      · exact Or.inr (Or.inr h)
+
+/-- Merging two `≼`-ordered lists gives a `≼`-ordered list, `≼` a connected preorder. -/
+public theorem orderedP_of_mergeP {«≼» : A → A → Prop} (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c)
+    (hconn : ∀ a b, ≼ a b ∨ ≼ b a) {x y z : ConsList Unit A} (h : mergeP ≼ x y z) :
+    orderedP ≼ x → orderedP ≼ y → orderedP ≼ z := by
+  induction h with
+  | nilr x => exact fun hx _ => hx
+  | nill y => exact fun _ hy => hy
+  | consl a b hab hm ih =>
+    intro hx hy
+    refine ⟨fun c hc => ?_, ih hx.2 hy⟩
+    rcases inlistP_of_mergeP hm hc with hc | hc
+    · exact hx.1 c hc
+    · rcases hc with rfl | hc
+      · exact hab
+      · exact htrans _ _ _ hab (hy.1 c hc)
+  | consr a b hab hm ih =>
+    intro hx hy
+    have hba : ≼ b a := (hconn a b).resolve_left hab
+    refine ⟨fun c hc => ?_, ih hx hy.2⟩
+    rcases inlistP_of_mergeP hm hc with hc | hc
+    · rcases hc with rfl | hc
+      · exact hba
+      · exact htrans _ _ _ hba (hx.1 c hc)
+    · exact hy.1 c hc
+
+/-- (8.10)'s `hmord` from the definitions: `(ordered(≼)×ordered(≼)) merge(≼) ⊑ merge(≼) ordered(≼)`. -/
+public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
+    (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a) :
+    prodMap (relProd (dList A) (dList A)) (relProd (dList A) (dList A)) (ordered ≼) (ordered ≼)
+        ≫ merge ≼ ⊑ merge ≼ ≫ ordered ≼ := by
+  rw [prodMap_eq_rprodMap]
+  refine le_iff.mpr fun ⟨x, y⟩ z h => ?_
+  obtain ⟨⟨x', y'⟩, ⟨⟨rfl, hx⟩, ⟨rfl, hy⟩⟩, hm⟩ := h
+  exact ⟨z, hm, rfl, orderedP_of_mergeP htrans hconn hm hx hy⟩
+
+/-- **(8.10)** in `Rel` (book p.203), `(sort(≼)×sort(≼))·merge(≼) ⊑ cup·sort(≼)`, with
+    `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: only the set condition
+    `hmset` remains a hypothesis. -/
+public theorem prodMap_sortRel_comp_merge_le {«≼» : dE A ⟶ dE A}
+    {Pr' : RelProd (PowerAllegory.powerObj (dE A)) (PowerAllegory.powerObj (dE A))}
+    (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a)
+    (hmset : prodMap Pr' (relProd (dList A) (dList A)) (setify°) (setify°) ≫ merge ≼
+      ⊑ cup Pr' ≫ setify°) :
+    prodMap Pr' (relProd (dList A) (dList A)) (sortRel listRelator setify ordered ≼)
+        (sortRel listRelator setify ordered ≼) ≫ merge ≼
+      ⊑ cup Pr' ≫ sortRel listRelator setify ordered ≼ :=
+  Freyd.Alg.prodMap_sortRel_comp_merge_le listRelator (merge := merge) hmset
+    (prodMap_ordered_comp_merge_le htrans hconn)
+
+end Freyd.Alg.RelSet.ListRel

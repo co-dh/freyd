@@ -168,7 +168,7 @@ variable (R : A → A → Prop)
 
 /-- **`ordered` is coreflexive** (`ordered ⊑ id`) — discharges the `hord` hypothesis of §6.6's
     `selection_sort_correct` for the concrete sortedness relation. -/
-theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.id (dList A) :=
+public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.id (dList A) :=
   le_iff.mpr fun _ _ h => h.1
 
 /-! ## Partition `partition : list (list⁺ A) ← list A` (B&dM p.128, `partition = concat°`) -/

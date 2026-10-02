@@ -1134,8 +1134,8 @@ open Lean PrettyPrinter in
   | `($_ $F) => `($(mkIdent `cp) $F)
   | _ => `($(mkIdent `cp))
 -- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
--- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): the algebras and
--- `sortRel` keep the Lean name; a bundled relator prints as the type it bundles (`op`, `Journey`).
+-- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): the algebras keep
+-- the Lean name; a bundled relator prints as the type it bundles (`op`, `Journey`).
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.wrapCatFn] def unexpandBracketWrapCat : Unexpander
   | `($_ $args*) => `($(mkIdent `wrapCatFn) $args*)
@@ -1155,7 +1155,10 @@ open Lean PrettyPrinter in
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
 open Lean PrettyPrinter in
+-- `sortRel L setify ordered ≼` is the book's `sort(≼)`: `L`, `setify` and `ordered` are what its
+-- definition `setify° ordered(≼)` is made of, and the note writes only the order it sorts by.
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
+  | `($_ $_ $_ $_ $o $args*) => `($(mkIdent `sort) $o $args*)
   | `($_ $args*) => `($(mkIdent `sortRel) $args*)
   | _ => `($(mkIdent `sortRel))
 -- The note's word for the arrow is `path`; the `R` is Lean's, as `detabR`'s is.

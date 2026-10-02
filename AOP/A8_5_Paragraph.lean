@@ -571,7 +571,7 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
 public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
-    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word)}
+    {sort : (dPara Word ⟶ dPara Word) → (PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word))}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
       (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
         listRelator.obj ((F Word Word).obj (dPara Word)))}
@@ -581,26 +581,26 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
     {minlist : listRelator.obj (dPara Word) ⟶ dPara Word}
     {Pr : RelProd (listRelator.obj (dPara Word)) (listRelator.obj (dPara Word))}
     {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
-    {mergeP : Pr.p ⟶ listRelator.obj (dPara Word)}
+    {merge : (dPara Word ⟶ dPara Word) → (Pr.p ⟶ listRelator.obj (dPara Word))}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph newAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph newAlgFn)°)
-      ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
+      ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ (sort (topMor (dPara Word) (dPara Word))))
     (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
-      ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
-    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
-    (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
+      ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h89₂ : (sort (topMor (dPara Word) (dPara Word))) ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h811 : (F Word Word).map (sort (topMor (dPara Word) (dPara Word))) ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
       ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
-    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
-    (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
-    (h87 : sortP ≫ minlist ⊑ est (R len w)) :
+    (h810 : prodMap Pr' Pr (sort (topMor (dPara Word) (dPara Word))) (sort (topMor (dPara Word) (dPara Word))) ≫ (merge (topMor (dPara Word) (dPara Word))) ⊑ cup Pr' ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h86 : (sort (topMor (dPara Word) (dPara Word))) ≫ thinlist ⊑ thinRel (Q len w) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h87 : (sort (topMor (dPara Word) (dPara Word))) ≫ minlist ⊑ est (R len w)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 (listRelator.obj (dPara Word))) (listf₂ ≫ filterp₂)
-        ≫ mergeP ≫ thinlist⦈ ≫ minlist
+        ≫ (merge (topMor (dPara Word) (dPara Word))) ≫ thinlist⦈ ≫ minlist
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
   have hm₁ : Freyd.Alg.MonoAlg (F := F Word Word)
       (graph (newAlgFn (Word := Word)) ≫ 𝟙 (dPara Word)) (Q len w) := by
     rw [Cat.comp_id]; exact para_mono_new
-  have h89₁ : sortP ≫ 𝟙 (listRelator.obj (dPara Word)) ⊑ existsImage (𝟙 (dPara Word)) ≫ sortP := by
+  have h89₁ : (sort (topMor (dPara Word) (dPara Word))) ≫ 𝟙 (listRelator.obj (dPara Word)) ⊑ existsImage (𝟙 (dPara Word)) ≫ (sort (topMor (dPara Word) (dPara Word))) := by
     rw [Cat.comp_id, existsImage_id, Cat.id_comp]
     exact le_refl _
   have key := thinningList (L := listRelator) (F := F Word Word) (initial Word Word)
@@ -608,7 +608,7 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
     («≼» := topMor (dPara Word) (dPara Word)) (Q := Q len w) (R := R len w)
     -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
-    (sort := fun _ => sortP) (merge := fun _ => mergeP) (thinlist := fun _ => thinlist)
+    (sort := sort) (merge := merge) (thinlist := fun _ => thinlist)
     (minlist := fun _ => minlist)
     (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
     hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
@@ -637,7 +637,7 @@ public theorem para_laws_split :
     monotonicity conditions and `para_spec` the specification. -/
 public theorem para_laws (hlen : ∀ a, 0 ≤ len a)
     (hfit : ∀ a, len a ≤ w)
-    {sortP : PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word)}
+    {sort : (dPara Word ⟶ dPara Word) → (PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word))}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
       (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
         listRelator.obj ((F Word Word).obj (dPara Word)))}
@@ -647,21 +647,21 @@ public theorem para_laws (hlen : ∀ a, 0 ≤ len a)
     {minlist : listRelator.obj (dPara Word) ⟶ dPara Word}
     {Pr : RelProd (listRelator.obj (dPara Word)) (listRelator.obj (dPara Word))}
     {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
-    {mergeP : Pr.p ⟶ listRelator.obj (dPara Word)}
+    {merge : (dPara Word ⟶ dPara Word) → (Pr.p ⟶ listRelator.obj (dPara Word))}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)
     (h88₁ : sortF (graph newAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph newAlgFn)°)
-      ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ sortP)
+      ≫ listf₁ ⊑ powerRel (graph (newAlgFn (Word := Word))) ≫ (sort (topMor (dPara Word) (dPara Word))))
     (h88₂ : sortF (graph glueAlgFn ≫ topMor (dPara Word) (dPara Word) ≫ (graph glueAlgFn)°)
-      ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ sortP)
-    (h89₂ : sortP ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ sortP)
-    (h811 : (F Word Word).map sortP ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
+      ≫ listf₂ ⊑ powerRel (graph (glueAlgFn (Word := Word))) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h89₂ : (sort (topMor (dPara Word) (dPara Word))) ≫ filterp₂ ⊑ existsImage (ok (len := len) w) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h811 : (F Word Word).map (sort (topMor (dPara Word) (dPara Word))) ≫ listcp ⊑ cpMap (F Word Word) (dPara Word)
       ≫ sortF ((F Word Word).map (topMor (dPara Word) (dPara Word))))
-    (h810 : prodMap Pr' Pr sortP sortP ≫ mergeP ⊑ cup Pr' ≫ sortP)
-    (h86 : sortP ≫ thinlist ⊑ thinRel (Q len w) ≫ sortP)
-    (h87 : sortP ≫ minlist ⊑ est (R len w)) :
+    (h810 : prodMap Pr' Pr (sort (topMor (dPara Word) (dPara Word))) (sort (topMor (dPara Word) (dPara Word))) ≫ (merge (topMor (dPara Word) (dPara Word))) ⊑ cup Pr' ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h86 : (sort (topMor (dPara Word) (dPara Word))) ≫ thinlist ⊑ thinRel (Q len w) ≫ (sort (topMor (dPara Word) (dPara Word))))
+    (h87 : (sort (topMor (dPara Word) (dPara Word))) ≫ minlist ⊑ est (R len w)) :
     ⦇listcp ≫ Pr.pair (listf₁ ≫ 𝟙 (listRelator.obj (dPara Word))) (listf₂ ≫ filterp₂)
-        ≫ mergeP ≫ thinlist⦈ ≫ minlist
+        ≫ (merge (topMor (dPara Word) (dPara Word))) ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [← para_laws_step2 hlen hfit]
   exact para_laws_step1 hlen hsortF h88₁ h88₂ h89₂ h811 h810 h86 h87
