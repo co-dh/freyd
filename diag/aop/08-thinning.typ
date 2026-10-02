@@ -347,7 +347,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 #disp[#definition[
 `setify : [A]⟶EA`, #h(4pt) `cup : EA×EA⟶EA`, #h(4pt) `cp(F)` #src[@comb-fns], #h(4pt)
 `listcp : F(L)⟶LF`, #h(4pt) `sort(≼)≜setify° ordered(≼)` #src[]
-// lean:AOP.A8_3.sortRel@a733eb54 lean:AOP.A5_6_ListCombinators.ordered@76bb18c0 lean:AOP.A8_3.merge@08b3a7d9
+// lean:AOP.A8_3.sortRel@a733eb54 lean:AOP.A5_6_ListCombinators.ordered@76bb18c0 lean:AOP.A8_3.merge@8a648486
 for `≼` a connected preorder.
 
 `thinlist(Q)` is any `thinlist(Q)⊑subseq` with #h(4pt) `thinlist(Q) setify⊑setify thin(Q)`; #h(4pt)
