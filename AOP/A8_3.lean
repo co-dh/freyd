@@ -900,7 +900,7 @@ public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
 /-- **(8.6)** in `Rel` (book p.201), `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` with
     `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: only `thinlist Q`'s two conditions
     remain hypotheses. -/
-public theorem sortRel_comp_thinlist_le {«≼» : dE A ⟶ dE A}
+public theorem sort_comp_thinlist_le {«≼» : dE A ⟶ dE A}
     {thinlist : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {Q : dE A ⟶ dE A}
     (hsub : thinlist ⊑ subseq) (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
     sortRel listRelator setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
@@ -909,7 +909,7 @@ public theorem sortRel_comp_thinlist_le {«≼» : dE A ⟶ dE A}
 
 /-- **(8.9)** in `Rel` (book p.203), `sort(≼)·filter p ⊑ E p·sort(≼)`: only `filter p`'s two
     conditions remain hypotheses. -/
-public theorem sortRel_comp_filter_le {«≼» : dE A ⟶ dE A}
+public theorem sort_comp_filter_le {«≼» : dE A ⟶ dE A}
     {filterp : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {p : dE A ⟶ dE A}
     (hsub : filterp ⊑ subseq) (hspec : filterp ≫ setify ⊑ setify ≫ existsImage p) :
     sortRel listRelator setify ordered ≼ ≫ filterp ⊑ existsImage p ≫ sortRel listRelator setify ordered ≼ :=
@@ -1004,7 +1004,7 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
 /-- **(8.10)** in `Rel` (book p.203), `(sort(≼)×sort(≼))·merge(≼) ⊑ cup·sort(≼)`, with
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: only the set condition
     `hmset` remains a hypothesis. -/
-public theorem prodMap_sortRel_comp_merge_le {«≼» : dE A ⟶ dE A}
+public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
     {Pr' : RelProd (PowerAllegory.powerObj (dE A)) (PowerAllegory.powerObj (dE A))}
     (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a)
     (hmset : prodMap Pr' (relProd (dList A) (dList A)) (setify°) (setify°) ≫ merge ≼

@@ -1158,8 +1158,7 @@ open Lean PrettyPrinter in
 -- `sortRel L setify ordered ≼` is the book's `sort(≼)`: `L`, `setify` and `ordered` are what its
 -- definition `setify° ordered(≼)` is made of, and the note writes only the order it sorts by.
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
-  | `($_ $_ $_ $_ $o $args*) => `($(mkIdent `sort) $o $args*)
-  | `($_ $args*) => `($(mkIdent `sortRel) $args*)
+  | `($_ $_ $_ $_ $o) => `($(mkIdent `sort) $o)
   | _ => `($(mkIdent `sortRel))
 -- The note's word for the arrow is `path`; the `R` is Lean's, as `detabR`'s is.
 open Lean PrettyPrinter in
