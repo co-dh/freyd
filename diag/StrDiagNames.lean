@@ -634,14 +634,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.MSS.plus] def unexpandMSSPlus : Unexpander | _ => `($(mkIdent `plus))
 
 open Lean PrettyPrinter in
-/-- The power relator's lane is the note's `E`, the letter its object action already prints with
-    (`E A`) and the only lane the note draws over a power object — 113 of them, and no `P` lane. -/
+/-- The power relator's lane is `P`: on arrows it is `powerRel`, a relation, where `E`'s is
+    `existsImage`, a function, so a `P` lane around `R` reads `P(R)` and an `E` lane `E(R)`.  Its
+    OBJECTS print `P A` (`unexpandPowerObj`); a lane prints the letter of the ARROW it gives. -/
 @[app_unexpander powerRelator] def unexpandPowerRelator : Unexpander
-  | _ => `($(mkIdent `E))
+  | _ => `($(mkIdent `P))
 
 open Lean PrettyPrinter in
-/-- The existential-image functor is the same `E` lane: it has the power relator's object action
-    and is the only `E` an abstract region has, where `powerRelator` needs tabularity. -/
+/-- The existential-image functor's lane is `E`: it has the power relator's object action but
+    acts on arrows by `existsImage`, so the two lanes print different letters. -/
 @[app_unexpander existsImageFunctor] def unexpandExistsImageFunctor : Unexpander
   | _ => `($(mkIdent `E))
 

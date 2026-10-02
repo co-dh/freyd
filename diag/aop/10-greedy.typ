@@ -20,7 +20,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (none, "Freyd.Alg.greedy_dp_step1.rhs",
       src[`H≜⦇T⦈°⦇h⦈` — @greedy-defn]),
     // dp-shrink row: Theorem 10.1
-    // `est(Q) : E(FA)⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
+    // `est(Q) : PFA⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
     // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
     (RQ, "Freyd.Alg.greedy_dp.lhs.body", src[]),
     // lean:AOP.A9_1.est_summand_le@1efecafb
@@ -627,7 +627,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       src[the type restriction (10.9): a shortest decimal `H` gives an interval is a shortest one
        among all decimals inside it, and is inside it by @tex-fusion]),
     // interval row: Theorem 10.1
-    // `est(Q) : E(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
+    // `est(Q) : P(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
     // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
     // `α≜[nil,cons]` — @tex-defn — builds the list).
     (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_body.lhs",

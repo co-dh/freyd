@@ -175,7 +175,7 @@ partial def objOf (o : Expr) : MetaM Obj := do
   match o.getAppFnArgs with
   | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
     match args.back? with
-    | some b => do let a ← objOf b; return .mk (objApply "E" a) .opaq #[] (applyJoin "E")
+    | some b => do let a ← objOf b; return .mk (objApply "P" a) .opaq #[] (applyJoin "P")
     | none => opaqObj o
   -- A RELATIONAL PRODUCT IS A PRODUCT, whatever object carries it.  `Pr.p` is a FIELD — nothing to
   -- unfold and no carrier to read — so its strands come from the two objects `RelProd` says it is
@@ -498,7 +498,7 @@ def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
 /-- The `E a` of an object: the power object as a LABEL, which is all the picture needs of it. -/
-def powLabel (a : Obj) : Obj := .mk (objApply "E" a) .opaq #[] (applyJoin "E")
+def powLabel (a : Obj) : Obj := .mk (objApply "P" a) .opaq #[] (applyJoin "P")
 
 def wiresOf (o : Obj) : MetaM (Array Obj) :=
   match o.wires with

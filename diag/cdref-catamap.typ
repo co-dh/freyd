@@ -28,6 +28,6 @@
   lab(-4.0, -2.55, black)[`F(∋)`]; lab(3.6, -2.55, black)[`∋`]
   lab(0, -4.45, black)[`R`]
   node(FT.at(0), FT.at(1), black, `FT`); node(T.at(0), T.at(1), black, `T`)
-  node(FE.at(0), FE.at(1), GIVEN1, `F(EA)`); node(E.at(0), E.at(1), GIVEN1, `EA`)
+  node(FE.at(0), FE.at(1), GIVEN1, `F(PA)`); node(E.at(0), E.at(1), GIVEN1, `PA`)
   node(FA.at(0), FA.at(1), GIVEN1, `FA`); node(A.at(0), A.at(1), GIVEN1, `A`)
 })

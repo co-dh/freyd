@@ -16,6 +16,6 @@
   ar(T, EM, INDUCED, dash: "dashed", s0: 1.05, s1: 1.6); ar(EM, EB, GIVEN2, s0: 1.6, s1: 0.8)
   lab(-2.5, 0.85, INDUCED)[$frac(#[`⦇S⦈`], ∋)$]
   lab(2.5, 0.62, GIVEN2)[`E(choose)`]
-  node(T.at(0), T.at(1), black, `tree(A)`); node(EM.at(0), EM.at(1), black, `E([A]×[A])`)
-  node(EB.at(0), EB.at(1), black, `E[A]`)
+  node(T.at(0), T.at(1), black, `tree(A)`); node(EM.at(0), EM.at(1), black, `P([A]×[A])`)
+  node(EB.at(0), EB.at(1), black, `P[A]`)
 })

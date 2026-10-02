@@ -25,5 +25,5 @@
   lab(xB + 0.35, 0, GIVEN2)[`∋`]
   lab(1.25, 0.2, INDUCED)[$frac(#[`R`], ∋)$]
   node(xA, T, black, `A`); node(xB, T, black, `B`)
-  node(xA, B, black, `EA`); node(xB, B, black, `EB`)
+  node(xA, B, black, `PA`); node(xB, B, black, `PB`)
 })

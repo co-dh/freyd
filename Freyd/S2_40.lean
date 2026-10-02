@@ -1536,14 +1536,14 @@ theorem pre_positive_well_joined_equiv {𝒜 : Type u} [PrePositivePowerAllegory
 notation:max "𝟙%∋" => singletonMap
 
 -- Printing-only: `∋` is taken at the object its target already names, so a label repeats nothing by
--- dropping the argument; `E` is the power object's own letter.  No statement changes.
+-- dropping the argument; `P` is the power object's own letter (`E` is the letter of an arrow).  No statement changes.
 open Lean PrettyPrinter in
 @[app_unexpander PowerAllegory.eps] public meta def unexpandEps : Unexpander
   | _ => `(∋)
 
 open Lean PrettyPrinter in
 @[app_unexpander PowerAllegory.powerObj] public meta def unexpandPowerObj : Unexpander
-  | `($_ $A) => `($(mkIdent `E) $A)
+  | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 
 end Freyd.Alg

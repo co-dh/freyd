@@ -156,7 +156,7 @@ in @mu-defn.
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
       src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @thin-laws, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
-    // `F(X)`.  `thin(Q) : E(FA)⟶E(FA)` rearranges the SET alone, so it is a bead on the `E` wire.
+    // `F(X)`.  `thin(Q) : PFA⟶PFA` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
   // The two squares the chain rests on: the hypothesis `hQ` and the fixed point `H` satisfies.
   grid(columns: 2, column-gutter: 24pt, align: center + top,
@@ -437,7 +437,7 @@ in @mu-defn.
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_laws.rhs"),
     [#src[the specification — @edit-defn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
-  // `est(R) : E([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
+  // `est(R) : P([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.rhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body"),
@@ -464,7 +464,7 @@ in @mu-defn.
       weaken its `cpy` to a `del`, never lengthening the sequence]])],
   // `[base,step]°` opens the base functor INSIDE the set the singleton opened, and the algebra
   // closes it again; `Δ` and the source `list` die and are remade at both beads, so each runs as a
-  // loop between them.  `thin(Q) : E(F−)⟶E(F−)` rearranges the set alone: a bead on the `E` wire.
+  // loop between them.  `thin(Q) : P(F−)⟶P(F−)` rearranges the set alone: a bead on the `E` wire.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.lhs.body")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_branch.lhs"),
@@ -766,7 +766,7 @@ in @mu-defn.
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_laws.rhs"),
     [#src[the specification — @mct-defn]])],
-  // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : E(tree A)⟶tree A`
+  // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : P(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.rhs")],
 

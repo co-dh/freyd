@@ -1515,13 +1515,13 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     match lastTwo (← arrows args) with
     | some (f, g) => return commaL "⟨" "⟩" #[← labelTree 0 f, ← labelTree 0 g]
     | none => txt e
-  -- THE POWER OBJECT is that same `E` at an OBJECT, and its operand is a term of the note's for
-  -- the same reason the arrow's is: the printer sets a product off from its factors (`E ([A] ×
-  -- [A])`) where the note writes `E([A]×[A])`, and how the letter joins is the note's own rule —
-  -- `E[A]` against the brackets the printer closed, `EA` against a name, parentheses otherwise.
+  -- THE POWER OBJECT is written `P` (the arrow's `E` is `E(R)`), and its operand is a term of the
+  -- note's for the same reason the arrow's is: the printer sets a product off from its factors
+  -- (`P ([A] × [A])`) where the note writes `P([A]×[A])`, and how the letter joins is the note's own
+  -- rule — `P[A]` against the brackets the printer closed, `PA` against a name, parentheses otherwise.
   | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
     match args.back? with
-    | some x => return applyLabelL "E" (← labelTree 0 x) (← objJoin x)
+    | some x => return applyLabelL "P" (← labelTree 0 x) (← objJoin x)
     | none => txt e
   -- The TRANSPOSE IS A SYMMETRIC DIVISION, and INLINE the note writes it with its own `%`:
   -- `S%∋`, `(F(∋)S)%∋`, `𝟙%∋`.  The `%` binds tighter than composition, so the inline numerator
