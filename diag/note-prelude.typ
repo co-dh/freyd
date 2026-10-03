@@ -379,7 +379,7 @@
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
 // selector like a header, so the chain reads as a term chain as well as a picture chain.
 // `pictures: false` drops the string diagram entirely — see the branch below.
-#let lean-chain(..args, circuit: false, formula: false, pictures: true) = {
+#let lean-chain(..args, circuit: false, formula: false, pictures: true, from: none) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary {
@@ -417,8 +417,9 @@
   // EVERY STEP'S RELATION IS LEAN'S (`lean-rel`), between the side the chain LEFT — the last
   // column's, across a row break too — and the side it ENTERS: a group's whole side (`gsel`), a
   // statement step's `.lhs` entered and `.rhs` left.  A chain OPENS at the first row and at every
-  // `Sub` row, and nowhere else.
-  let (out, prev, metas) = ((), none, [])
+  // `Sub` row, and nowhere else.  A chain that CONTINUES another display names the side it
+  // continues (`from:`), so its first relation is Lean's too.
+  let (out, prev, metas) = ((), from, [])
   for (ri, row) in rows.enumerate() {
     let steps = row.steps
     for (j, s) in steps.enumerate() {
@@ -430,6 +431,8 @@
       // `none` opens a chain, and a connective between STATEMENTS (`IMP`, `IFF`, `and`) is the
       // note's, relating no two arrows; a relation between arrows is Lean's, and the note's must agree.
       if s.at(0) in (EQ, SQ, RQ) {
+        assert(prev != none, message: "lean-chain: " + win + " opens with a relation but nothing "
+          + "precedes it; name the side it continues with `from:`")
         let (m, rel) = lean-rel(prev, win)
         metas += m
         if rel != none {

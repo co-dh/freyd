@@ -1473,7 +1473,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 )]<party-laws>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain(
+  lean-chain(from: "Freyd.Alg.est_Λ_est_le.rhs",
     (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
       // lean:AOP.A7_2.greedy@5876dfbf
       src[

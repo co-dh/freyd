@@ -231,6 +231,27 @@ def converseSym (sym : String) : MetaM String :=
   | "=" => pure "=" | "⊑" => pure "⊒" | "≤" => pure "≥"
   | s => throwError "a chain step's relation `{s}` has no converse in the note's notation"
 
+/-- Opens the statement `t` under the locals `xs` already in scope, one binder at a time so each
+    type sees the values chosen before it.  ONE VARIABLE PER BINDER NAME, as `canon` reads a chain's
+    peers: `t`'s `X` IS `xs`'s `X` when their types agree (names compared without macro scopes, since
+    an anonymous `inst✝` has a different hygiene scope in each declaration); an instance is what
+    resolution in that context gives; any other binder is a fresh RIGID local — never a metavariable,
+    which would absorb a composite and make two different panels the same term. -/
+partial def openUnder {α} (xs : Array Expr) (t : Expr) (vs : Array Expr)
+    (k : Array Expr → Expr → MetaM α) : MetaM α := do
+  match t with
+  | .forallE n d body bi =>
+    let d := d.instantiateRev vs
+    let hit ← xs.findM? fun x => do
+      if (← x.fvarId!.getUserName).eraseMacroScopes != n.eraseMacroScopes then return false
+      let s ← Meta.saveState
+      if ← Meta.isDefEq d (← Meta.inferType x) then return true else s.restore; return false
+    if let some x := hit then return ← openUnder xs body (vs.push x) k
+    if bi.isInstImplicit then
+      if let some v ← Meta.synthInstance? d then return ← openUnder xs body (vs.push v) k
+    Meta.withLocalDecl n bi d fun y => openUnder xs body (vs.push y) k
+  | _ => k vs (t.instantiateRev vs)
+
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
     head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
     which side each panel unifies with.  The candidates are `rfl`, the panels' own declarations, then
@@ -249,32 +270,26 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
       if (env.find? n).any (· matches .thmInfo _) && !acc.contains n && !near.contains n
         && n != a.1 && n != b.1 then acc.push n else acc) acc) #[]
   let cands := #[a.1, b.1] ++ near.qsort (·.toString < ·.toString) ++ cited
-  -- `a`'s binders are LOCALS, rigid: a metavariable on both sides unifies with whatever a theorem
-  -- asks and reads `X ⊑ Y` as `X = X`.  `b` is the same statement's other side, or another
-  -- declaration's, whose binders are then fixed by matching `a`'s.
+  -- BOTH panels' binders are LOCALS, rigid: a metavariable unifies with whatever a theorem asks, so
+  -- a binder only `b` has would absorb a composite and read `X ⊑ Y` as `X = X`.
   let some ca := env.find? a.1 | throwError "no such declaration: {a.1}"
+  let some cb := env.find? b.1 | throwError "no such declaration: {b.1}"
   Meta.forallTelescope ca.type fun xs bodyA => do
+  openUnder xs cb.type #[] fun ys bodyB => do
   let A ← sideIn a xs (binderNames ca.type) bodyA
-  let (msB, B) ← if b.1 == a.1 then pure (#[], ← sideIn b xs (binderNames ca.type) bodyA) else sideM b
-  -- ONE VARIABLE PER BINDER NAME, as `canon` reads a chain's peers: `b`'s `X` IS `a`'s `X`, or
-  -- `X` would swallow a whole composite and call `S° F(X) R` the same term as `S° F(Y) R`.
-  if b.1 != a.1 then
-    let some cb := env.find? b.1 | throwError "no such declaration: {b.1}"
-    for (m, n) in msB.toList.zip (binderNames cb.type) do
-      for x in xs do
-        if (← x.fvarId!.getUserName) == n && !(← m.mvarId!.isAssigned) then
-          let s ← Meta.saveState
-          unless ← Meta.isDefEq m x do s.restore
+  let B ← sideIn b ys (binderNames cb.type) bodyB
   -- The hypotheses the step may use: either panel's declaration assumes them.
-  let given ← (xs ++ msB).filterM fun h => do Meta.isProp (← Meta.inferType h)
+  let given ← (xs ++ ys).filterMapM fun h => do
+    let t ← Meta.inferType h
+    return if ← Meta.isProp t then some t else none
   -- THE SAME TERM, however spelled, is `=` by `rfl`: no theorem states it.
   let s0 ← Meta.saveState
   if ← Meta.isDefEq A B then return (`rfl, "=")
   s0.restore
   -- A HYPOTHESIS A PANEL'S DECLARATION ASSUMES is a step of its own (`S°F(X)R ⊑ X`, the prefixed
   -- point a fold is below), answered outright like the declaration.
-  for h in given do
-    let some (sym, l, r) := split (← instantiateMVars (← Meta.inferType h)) | continue
+  for g in given do
+    let some (sym, l, r) := split g | continue
     for rev in [false, true] do
       let s ← Meta.saveState
       let (x, y) := if rev then (B, A) else (A, B)
@@ -291,9 +306,9 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
       if ← m.mvarId!.isAssigned then return true
       let t ← instantiateMVars (← Meta.inferType m)
       unless ← Meta.isProp t do return true
-      given.anyM fun h => do
+      given.anyM fun g => do
         let s ← Meta.saveState
-        if ← Meta.isDefEq t (← Meta.inferType h) then Meta.isDefEq m h else s.restore; return false
+        if ← Meta.isDefEq t g then return true else s.restore; return false
     for rev in [false, true] do
       let s ← Meta.saveState
       let (x, y) := if rev then (B, A) else (A, B)
@@ -304,12 +319,9 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
       s.restore
     return none
   -- THE RANK OF AN ANSWER.  A panel's OWN declaration is the step the note draws, and answers
-  -- outright.  Of the module's theorems, one whose hypotheses the panels assume beats one that
-  -- needs more — the chain's own goal sits among them, and `est R = thin(Q) est(R)` (needing `R`
-  -- transitive) would call the `⊑` that `𝟙 ⊑ Q` alone gives an equation; among the first `=` wins,
-  -- among the second the weaker inclusion.
-  let rank (own : Bool) (s : String) (ok : Bool) : Nat :=
-    if own then 4 else if ok then (if s == "=" then 3 else 2) else (if s == "=" then 0 else 1)
+  -- outright; of the other theorems an `=` wins over a `⊑`.  A theorem needing a hypothesis neither
+  -- panel assumes proves nothing here (`Eq.symm` would "prove" any `=`), so it is no answer at all.
+  let rank (own : Bool) (s : String) : Nat := if own then 4 else if s == "=" then 3 else 2
   let mut best : Option (Nat × Name × String) := none
   let mut cut : Array Name := #[]
   for c in cands do
@@ -320,7 +332,8 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
     saved.restore
     match r with
     | .ok (some (s, ok)) =>
-      let k := rank (c == a.1 || c == b.1) s ok
+      if !ok then continue
+      let k := rank (c == a.1 || c == b.1) s
       if k ≥ 3 then noteRead (.stmt c); return (c, s)
       if best.all (·.1 < k) then best := some (k, c, s)
     | .ok none => pure ()
