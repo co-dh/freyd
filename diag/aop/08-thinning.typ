@@ -319,10 +319,12 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
       // lean:AOP.A8_2.thinning_paths_alg_distrib@848628a4
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs",
-      src[#frc([`R`])` P(`#frc([`S`])`) union=`#frc([`RS`])`, union≜`#frc([`∋∋`])]),
+      src[`P(`#frc([`S`])`) union=E(S)`, #frc([`R`])` E(S)=`#frc([`RS`])`, union≜`#frc([`∋∋`])` — `@pow-laws]),
       // lean:AOP.A8_2.thinning_paths_alg_split@e7649320
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
       // lean:AOP.A8_2.thinning_paths_alg_union@61dac39b
+      // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@cd08cc82
+      // lean:AOP.A4_6.Λ_absorption@00399742
     (EQ, "Freyd.Alg.thinning_paths_alg.rhs",
       src[`F(∋,𝟙)F(𝟙,∋)=F(∋,∋)` \ #frc([`F(∋,∋)α`]) `= {raze x,/:\:y}`]),
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30

@@ -416,6 +416,10 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
  $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
    // lean:AOP.A4_6.Λ_absorption@00399742
 
+  [#leanf("Freyd.Alg.existsImage_eq_Λ_bigUnion")],
+  [#src[the image of a set under `R` is the union of the `R`-sets of its points.]],
+  // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@cd08cc82
+
   [#leanf("Freyd.Alg.supset")],
   [`xs⊇ys⟺∀a. ys∋a→xs∋a`],
   // lean:Freyd.S2_40.supset@ee7109d6
