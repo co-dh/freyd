@@ -359,7 +359,7 @@
   l.at(1) - kb - LLH / 2 } else { l.at(1) }
 #let dcovers(defn, y, x) = defn.any(d => calc.abs(d.at(2) - y) < 1e-6
   and x >= d.at(0) - 1e-6 and x <= d.at(1) + 1e-6)
-#let dpanel(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
+#let dpanel-raw(h, w, xo, lanes, beads, top, bot, names: false, s: 74%, opath: none, right: (),
             obreak: (), ostraight: false, obj: (), defn: (), convs: (), cert: (:)) = context {
   // `obj` is the generator's OWN typing of the object wire — which bead renames it, and to what.
   // `dpan` colours the wire by it; the sweep, which otherwise guesses the seam at the lowest bead
@@ -519,7 +519,7 @@
       let marks = (beads.map(b => (dx(b.at(0)), b.at(0), b.at(5, default: "strict"), b.at(1), b.at(2, default: black)))
         + lanes.filter(o => o.at(4) != none and o.at(1) != "top").map(o => (o.at(0), o.at(1), o.at(5, default: "strict"), o.at(4), black)))
       let gap = calc.max(0.12, ..marks.filter(m => calc.abs(m.at(0) - l.at(0)) < 0.3
-        and calc.abs(m.at(1) - ny) < 0.3).map(m => calc.max(hm-mark-half(m.at(2)), ..if m.len() > 3 { (hm-fit(m.at(2), m.at(3), m.at(4)).at(1),) } else { () }) + 0.12))
+        and calc.abs(m.at(1) - ny) < 0.3).map(m => calc.max(hm-mark-half(m.at(2)) + 0.12, ..if m.len() > 3 { (hm-fit(m.at(2), m.at(3), m.at(4)).at(1) + 0.22,) } else { () })))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
     }
   }
@@ -577,4 +577,42 @@
     // wire draws are the obligations: an endpoint pair can only catch the collisions that happen to
     // land on the ends, and says nothing about a rename in the middle of the panel.
     + (ocol: obnd.map(b => (b.at(1), b.at(2).to-hex()))))
+}
+
+// A MARK THAT HOLDS ITS LABEL INSIDE (`hm-fit`) gets a radius the generator's lane spacing never
+// knew; the lane east of it must clear that radius, whatever it is.  Every x is remapped by one
+// monotone step function that pushes the lanes at and beyond the neighbour east, so order and
+// slopes' signs are unchanged and no spacing is keyed on a label or a panel.
+#let DCLEAR = 0.2
+#let dpanel(h, w, xo, lanes, beads, top, bot, opath: none, defn: (), convs: (), ..a) = context {
+  let xs = lanes.map(l => l.at(0)) + (xo,)
+  let bm = beads.filter(b => b.at(4, default: none) != none)
+    .map(b => (b.at(4), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)))
+  let um = lanes.filter(l => l.at(4) != none)
+    .map(l => (l.at(0), hm-fit(l.at(5, default: "strict"), l.at(4), black).at(1)))
+  let marks = bm + um
+  let cuts = ()
+  for (x, r) in marks {
+    let east = xs.filter(e => e > x + 1e-6)
+    if east.len() > 0 {
+      let nx = calc.min(..east)
+      let need = r + DCLEAR - (nx - x)
+      if need > 1e-6 { cuts.push((nx, need)) }
+    }
+  }
+  let cut-at = nx => calc.max(..cuts.filter(c => calc.abs(c.at(0) - nx) < 1e-6).map(c => c.at(1)))
+  let steps = cuts.map(c => c.at(0)).dedup().sorted().map(nx => (nx, cut-at(nx)))
+  let xm = x => x + steps.filter(s => x >= s.at(0) - 1e-6).map(s => s.at(1)).sum(default: 0)
+  if steps.len() == 0 or convs != () {
+    dpanel-raw(h, w, xo, lanes, beads, top, bot, opath: opath, defn: defn, convs: convs, ..a)
+  } else {
+    dpanel-raw(h, xm(w), xm(xo),
+      lanes.map(l => (xm(l.at(0)), ..l.slice(1))),
+      beads.map(b => b.enumerate().map(((i, v)) => if i == 3 and type(v) in (int, float) { xm(v) }
+        else if i == 4 and v != none { xm(v) } else { v })),
+      top.map(p => (xm(p.at(0)), ..p.slice(1))), bot.map(p => (xm(p.at(0)), ..p.slice(1))),
+      opath: if opath == none { none } else { opath.map(p => (xm(p.at(0)), ..p.slice(1))) },
+      defn: defn.map(d => (xm(d.at(0)), xm(d.at(1)), ..d.slice(2))),
+      ..a)
+  }
 }
