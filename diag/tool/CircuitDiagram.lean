@@ -563,7 +563,8 @@ partial def sumJunc? (l r : Expr) : MetaM (Option Pic) := do
   let some (u, v) := lastTwo r.getAppArgs | return none
   let (s, _) ← endsOf l
   let (_, t) ← endsOf r
-  return some (← casePic (← StrDiag.compose #[f, u]) (← StrDiag.compose #[g, v]) s t (fuse := none))
+  return some (← casePic (← StrDiag.compose #[f, u]) (← StrDiag.compose #[g, v]) s t (fuse := none)
+    (injOf := some l))
 
 /-- §3 row 5: a composite is its factors' pictures, ports glued.  The factors are flattened, so a
     nested composite splices in rather than nesting, and an identity contributes NO factor — it is
@@ -865,17 +866,46 @@ partial def sumAt (e o : Expr) (ob : Obj) : MetaM Obj := do
     | _ => pure ()
   return ob
 
+/-- The two injections of the coproduct whose apex is `o`, its witness found by TYPE among `e`'s
+    arguments exactly as `sumAt` finds the summands. -/
+partial def injAt (e o : Expr) : MetaM (Option (Expr × Expr)) := do
+  for a in e.getAppArgs do
+    match (← Meta.whnfR (← Meta.inferType a)).getAppFnArgs with
+    | (``Freyd.Alg.Coproduct, ps) =>
+      if h : ps.size ≥ 3 then
+        if ← Meta.isDefEq ps[ps.size - 3] o then
+          return some (← Meta.mkAppM ``Freyd.Alg.Coproduct.u₁ #[a],
+            ← Meta.mkAppM ``Freyd.Alg.Coproduct.u₂ #[a])
+    | _ => pure ()
+  return none
+
 /-- §3 row 13.  The coproduct arrives as ONE wire, the fork being what opens it; each arm opens
     that wire into its summand's strands, and the seam after the generator names them. -/
-partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) (e : Option Expr := none) :
-    MetaM Pic := do
+partial def casePic (f g : Expr) (src tgt : Obj) (fuse : Option Expr) (e : Option Expr := none)
+    (injOf : Option Expr := e) : MetaM Pic := do
   let (src, tgt) ← match e with
     | some e => match StrDiag.lastTwo (← Meta.inferType e).getAppArgs with
       | some (x, y) => pure (← sumAt e x src, ← sumAt e y tgt)
       | none => pure (src, tgt)
     | none => pure (src, tgt)
-  tapePic src tgt fun i s =>
-    armParts (if i == 0 then f else g) src s (if i == 1 then fuse else none) (opened := true)
+  let inj ← match injOf with
+    | some w => match StrDiag.lastTwo (← Meta.inferType w).getAppArgs with
+      | some (x, _) => injAt w x
+      | none => pure none
+    | none => pure none
+  tapePic src tgt fun i s => do
+    let br := if i == 0 then f else g
+    let fz := if i == 1 then fuse else none
+    -- `[R,S] = l°R ∪ r°S`: an arm whose injection is known opens with it conversed, so the summand
+    -- each branch starts from is named by the arrow that reaches it, as in the union it abbreviates.
+    -- It counts as a map: the bracket of maps is one, and the tape's own `isMap` must not change.
+    match inj with
+    | some (u, v) => do
+      let (items, objs) ← armParts br src s fz (opened := false)
+      let b := mkPic "box" #[src] (← wiresOf s) src s true (labelVals (← StrDiag.labelT
+        (if i == 0 then u else v)) ++ #[("chamfer", .b true), ("frac", .b false), ("flip", .b true)])
+      return (#[b] ++ items, #[src] ++ objs)
+    | none => armParts br src s fz (opened := true)
 
 /-- The tape itself: the fork, its two arms, the join.  How an arm is DRAWN is the caller's — a
     junction draws its two arrows, a map's `match` its two alternatives — and what they share is
@@ -1122,17 +1152,9 @@ def drawDecl (declName : Name) (side : Option String) (binder : Option String :=
       ++ String.join (branch.map (·.suffix))
     let one (e : Expr) (s : Option String) : MetaM String := do
       return "cpanel(" ++ (← withSel branch e).render ++ ",\n  cert: (lean: " ++ tstr (name s) ++ "))"
-    -- A JOIN AT THE HEAD OF A SIDE IS TWO PANELS with its sign between: one tape holding both
-    -- operands is scaled down to nothing, and so is a row of them; stacked, each keeps its own width.
-    let panel (e : Expr) (s : Option String) : MetaM String := do
-      let ps ← if branch.isEmpty then StrDiag.joinParts "" e else pure #[("", e)]
-      if ps.size == 1 then return ← one e s
-      let mut cells : Array String := #[]
-      for (sym, p) in ps do
-        if !sym.isEmpty then cells := cells.push ("text(" ++ tstr sym ++ ")")
-        cells := cells.push (← one p s)
-      return "stack(dir: ttb, spacing: 4pt,\n  "
-        ++ ",\n  ".intercalate (cells.toList.map ("align(center, " ++ · ++ ")")) ++ ")"
+    -- A JOIN AT THE HEAD OF A SIDE IS ONE PANEL, its `∪` the tape: the tape IS this route's union,
+    -- and two panels with a bare `∪` between them drew a union no other circuit in the note draws.
+    let panel (e : Expr) (s : Option String) : MetaM String := one e s
     -- An unnamed side draws the WHOLE statement, both sides with its relation between, as the
     -- Hinze–Marsden route does: a law's circuit is the law, not one half of it.
     let pic ← match StrDiag.split body, side with

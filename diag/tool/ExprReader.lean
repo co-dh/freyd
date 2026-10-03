@@ -1531,7 +1531,7 @@ def joinOperands? (e : Expr) : MetaM (Option (String × Expr × Expr)) := do
 
 /-- A side as the PANELS it is drawn as: a join at its head is its operands with the join's symbol
     between them, all the way down, and anything else is one panel.  `sym` is the symbol before the
-    first panel.  One reader for both picture routes, so a union is two panels in either column. -/
+    first panel.  The string route's reader; a circuit draws the union as its tape instead. -/
 partial def joinParts (sym : String) (e : Expr) : MetaM (Array (String × Expr)) := do
   let some (s, l, r) ← joinOperands? e | return #[(sym, e)]
   return (← joinParts sym l) ++ (← joinParts s r)
