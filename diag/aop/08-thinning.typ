@@ -305,7 +305,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
     (EQ, "Freyd.Alg.thinning_paths_alg_transpose.lhs",
-      src[power transpose of composition: #frc([`F(∋,𝟙)S`])`=`#frc([`F(∋,𝟙)`])` P(`#frc([`S`])`) union`]),
+      src[power transpose of composition: #frc([`F(∋,𝟙)S`])`=`#frc([`F(∋,𝟙)`])` P(`#frc([`S`])`) union`; `union≜`#frc([`∋∋`])`: in the picture, the ∋ that closes the inner P wire opened by P(`#frc([`S`])`)`]),
       // lean:AOP.A8_2.thinning_paths_alg_transpose@e7649320
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
     (RQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
