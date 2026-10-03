@@ -160,6 +160,18 @@
   // Everything the template sets is merged into, not replaced by, the rules above.
   // `author: none` or the template prints a bare "by" under the title.
   show: dvdtyp.with(title: title, author: none)
+  // The reader needs to know where they are; the same title on every page says nothing.
+  set page(header: context {
+    let hs = query(heading.where(level: 1).or(heading.where(level: 2)))
+    let here-p = here().page()
+    let on = hs.filter(hd => hd.location().page() == here-p)
+    let before = hs.filter(hd => hd.location().page() < here-p)
+    let hd = if on.len() > 0 { on.first() } else if before.len() > 0 { before.last() } else { none }
+    if hd != none {
+      let n = if hd.numbering == none { none } else { numbering(hd.numbering, ..counter(heading).at(hd.location())) }
+      box(stroke: (bottom: 0.7pt), inset: 0.2em, width: 100%)[#text(font: "New Computer Modern Sans", size: 0.8em)[#h(1fr)#if n != none [#n #h(0.4em)]#hd.body]]
+    }
+  })
   // The heading path is read from the HEADING COUNTER rather than stored anywhere, so it cannot
   // disagree with the heading it sits under.  A display is `(13a)` at top level and `(13.1a)` in
   // subsection §13.1: section references and display references can never be mistaken for one
