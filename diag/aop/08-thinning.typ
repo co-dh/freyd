@@ -241,13 +241,13 @@ row((
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
 #disp[#definition[
-`F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra `α≜[wrap,cons] : F(A,LA)⟶LA`.
+`F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`.
 
 `wrapz≜⟨wrap,zero⟩`, #h(4pt) `consw(a,(xs,n))=(cons(a,xs),wt(a,head(xs))+n)`.
 
 `cost≜⦇[wrapz,consw]⦈π₂`, #h(4pt) `⦇[wrapz,consw]⦈=⟨𝟙,cost⟩`, #h(4pt) #leanf("Freyd.Alg.pathR").
 
-#leanf("Freyd.Alg.pathQ"), #h(4pt) `S≜F(𝟙,∋)α`, #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
+#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.pathSplit"), #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
 $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
 // lean:AOP.A8_2.pathAlg@111b43a5
 // lean:AOP.A8_2.costOf@dfe994f6

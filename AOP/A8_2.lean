@@ -274,11 +274,93 @@ public theorem pathR_apply (wt : V → V → Nat) (p q : ConsList V V) :
     | Sum.inl S => ∃ v, S v ∧ p = ConsList.wrap v
     | Sum.inr q => ∃ v, q.1 v ∧ p = ConsList.cons v q.2
 
+/-- 8.2d's `F(A,X) = A + A×X` as a binary relator on `Rel(Set)` (book p.196): unlike `CL.FB`,
+    the layer `A` moves in the leaf too, because a layer is what both summands draw from. -/
+@[expose] public def pathF : BiRelator RelSet.{0} where
+  obj a x := ⟨a.carrier ⊕ a.carrier × x.carrier⟩
+  map R S := fun u v => match u, v with
+    | Sum.inl d, Sum.inl d' => R d d'
+    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
+    | _, _ => False
+  map_id A B := hom_ext fun u v => by
+    cases u <;> cases v <;> simp only [id_apply, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq,
+      Prod.ext_iff]
+  map_comp R R' S S' := by
+    apply hom_ext; intro u w
+    constructor
+    · intro h
+      cases u with
+      | inl d => cases w with
+        | inl d' => obtain ⟨m, h1, h2⟩ := h; exact ⟨Sum.inl m, h1, h2⟩
+        | inr q => exact h.elim
+      | inr p => cases w with
+        | inl d' => exact h.elim
+        | inr q =>
+            obtain ⟨⟨e, h1, h2⟩, ⟨x, h3, h4⟩⟩ := h
+            exact ⟨Sum.inr (e, x), ⟨h1, h3⟩, ⟨h2, h4⟩⟩
+    · rintro ⟨v, hv, hw⟩
+      cases u with
+      | inl d => cases v with
+        | inl m => cases w with
+          | inl d'' => exact ⟨m, hv, hw⟩
+          | inr q => exact hw.elim
+        | inr q => exact hv.elim
+      | inr p => cases v with
+        | inl d => exact hv.elim
+        | inr q => cases w with
+          | inl d => exact hw.elim
+          | inr r => exact ⟨⟨q.1, hv.1, hw.1⟩, ⟨q.2, hv.2, hw.2⟩⟩
+  map_mono h1 h2 := le_iff.mpr fun u v hu => by
+    cases u with
+    | inl d => cases v with
+      | inl d' => exact le_iff.mp h1 _ _ hu
+      | inr q => exact hu.elim
+    | inr p => cases v with
+      | inl d => exact hu.elim
+      | inr q => exact ⟨le_iff.mp h1 _ _ hu.1, le_iff.mp h2 _ _ hu.2⟩
+
+/-- 8.2d's `F(𝟙,S)` is §6.1's cons-list relator at the layer type: with the layer held still the
+    bifunctor's leaf arm is an identity, which is all `CL.F` does there (book p.196). -/
+public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
+    pathF.map (𝟙 A) S = (CL.F A.carrier A.carrier).map S :=
+  hom_ext fun u v => by cases u <;> cases v <;> exact Iff.rfl
+
 /-- `S ≜ F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
 @[expose] public def pathSplit : Fobj V V (pow (dCL V V)) ⟶ dCL V V :=
-  fun u p => match u with
-    | Sum.inl v => p = ConsList.wrap v
-    | Sum.inr q => ∃ t, q.2 t ∧ p = ConsList.cons q.1 t
+  pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR
+
+/-- `S`'s pointwise reading: `wrap` the leaf vertex, or `cons` the vertex onto some tail of the
+    set. -/
+public theorem pathSplit_apply (u : (Fobj V V (pow (dCL V V))).carrier) (p : ConsList V V) :
+    pathSplit u p ↔ match u with
+      | Sum.inl v => p = ConsList.wrap v
+      | Sum.inr q => ∃ t, q.2 t ∧ p = ConsList.cons q.1 t := by
+  cases u with
+  | inl v =>
+    constructor
+    · rintro ⟨u', hu, hp⟩
+      cases u' with
+      | inl v' =>
+        have hv : v = v' := hu
+        subst hv
+        exact hp
+      | inr r => exact hu.elim
+    · intro h
+      exact ⟨Sum.inl v, rfl, h⟩
+  | inr q =>
+    obtain ⟨a, S⟩ := q
+    constructor
+    · rintro ⟨u', hu, hp⟩
+      cases u' with
+      | inl v' => exact hu.elim
+      | inr r =>
+        obtain ⟨b, t⟩ := r
+        obtain ⟨h1, h2⟩ := hu
+        have h1' : a = b := h1
+        subst h1'
+        exact ⟨t, h2, hp⟩
+    · rintro ⟨t, ht, rfl⟩
+      exact ⟨Sum.inr (a, t), ⟨rfl, ht⟩, rfl⟩
 
 /-- `head : LA ⟶ A`. -/
 @[expose] public def headRel : dCL V V ⟶ (⟨V⟩ : RelSet.{0}) := RelSet.graph headOf
@@ -334,6 +416,7 @@ public theorem pathAlg_monotonic (wt : V → V → Nat) :
 public theorem pathSplit_comp_headRel_le : pathSplit (V := V) ≫ headRel ⊑ headAlg := by
   refine le_iff.mpr ?_
   rintro u x ⟨p, hp, hx⟩
+  have hp := (pathSplit_apply u p).mp hp
   cases u with
   | inl v => subst hp; exact hx
   | inr q => obtain ⟨t, _, rfl⟩ := hp; exact hx
@@ -365,34 +448,8 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
     `∋` in the recursion argument, followed by the constructor. -/
 public theorem pathSplit_eq_Fmap_comp_alphaR :
     (pathSplit (V := V)) = (CL.F V V).map (∋ (dCL V V)) ≫ alphaR := by
-  apply hom_ext
-  intro u p
-  cases u with
-  | inl v =>
-    constructor
-    · intro h
-      exact ⟨Sum.inl v, rfl, h⟩
-    · rintro ⟨u', hu, hp⟩
-      cases u' with
-      | inl v' =>
-        have hv : v = v' := hu
-        subst hv
-        exact hp
-      | inr r => exact hu.elim
-  | inr q =>
-    obtain ⟨a, S⟩ := q
-    constructor
-    · rintro ⟨t, ht, rfl⟩
-      exact ⟨Sum.inr (a, t), ⟨rfl, ht⟩, rfl⟩
-    · rintro ⟨u', hu, hp⟩
-      cases u' with
-      | inl v' => exact hu.elim
-      | inr r =>
-        obtain ⟨b, t⟩ := r
-        obtain ⟨h1, h2⟩ := hu
-        have h1' : a = b := h1
-        subst h1'
-        exact ⟨t, h2, hp⟩
+  unfold pathSplit
+  rw [pathF_map_id]
 
 /-- **`F(𝟙,∋) P(α) est(R) = [wrap,step]`** (book p.198, the note's `path-defn`): the second
     transpose, computed on the same coproduct.  On the leaf summand there is no set to distribute,
@@ -417,6 +474,7 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : V → V → Nat
       pathSplit (V := V) (Sum.inr q) z
         ↔ (rprodMap (𝟙 (dE V)) (∋ (dCL V V)) ≫ consR) q z := by
     rintro ⟨a, S⟩ z
+    rw [pathSplit_apply]
     constructor
     · rintro ⟨t, ht, rfl⟩
       exact ⟨(a, t), ⟨rfl, ht⟩, rfl⟩
@@ -433,15 +491,15 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : V → V → Nat
   | inl v =>
     constructor
     · rintro ⟨h, -⟩
-      exact Or.inl ⟨v, rfl, h⟩
+      exact Or.inl ⟨v, rfl, (pathSplit_apply _ _).mp h⟩
     · rintro (⟨x, hx, hw⟩ | ⟨y, hy, -⟩)
       · have hxv : v = x := Sum.inl.inj hx
         subst hxv
         have hp : p = ConsList.wrap v := hw
         subst hp
-        refine ⟨rfl, ?_⟩
+        refine ⟨(pathSplit_apply _ _).mpr rfl, ?_⟩
         intro z hz
-        have hz' : z = ConsList.wrap v := hz
+        have hz' : z = ConsList.wrap v := (pathSplit_apply _ _).mp hz
         subst hz'
         exact (pathR_apply wt _ _).mpr (Nat.le_refl _)
       · exact (nomatch hy)

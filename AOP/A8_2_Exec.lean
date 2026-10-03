@@ -21,59 +21,6 @@ open PowerAllegory
 
 open RelSet RelSet.CL
 
-/-! ## The layered network's base bifunctor -/
-
-/-- 8.2d's `F(A,X) = A + A×X` as a binary relator on `Rel(Set)` (book p.196): unlike `CL.FB`,
-    the layer `A` moves in the leaf too, because a layer is what both summands draw from. -/
-@[expose] public def pathF : BiRelator RelSet.{0} where
-  obj a x := ⟨a.carrier ⊕ a.carrier × x.carrier⟩
-  map R S := fun u v => match u, v with
-    | Sum.inl d, Sum.inl d' => R d d'
-    | Sum.inr p, Sum.inr q => R p.1 q.1 ∧ S p.2 q.2
-    | _, _ => False
-  map_id A B := hom_ext fun u v => by
-    cases u <;> cases v <;> simp only [id_apply, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq,
-      Prod.ext_iff]
-  map_comp R R' S S' := by
-    apply hom_ext; intro u w
-    constructor
-    · intro h
-      cases u with
-      | inl d => cases w with
-        | inl d' => obtain ⟨m, h1, h2⟩ := h; exact ⟨Sum.inl m, h1, h2⟩
-        | inr q => exact h.elim
-      | inr p => cases w with
-        | inl d' => exact h.elim
-        | inr q =>
-            obtain ⟨⟨e, h1, h2⟩, ⟨x, h3, h4⟩⟩ := h
-            exact ⟨Sum.inr (e, x), ⟨h1, h3⟩, ⟨h2, h4⟩⟩
-    · rintro ⟨v, hv, hw⟩
-      cases u with
-      | inl d => cases v with
-        | inl m => cases w with
-          | inl d'' => exact ⟨m, hv, hw⟩
-          | inr q => exact hw.elim
-        | inr q => exact hv.elim
-      | inr p => cases v with
-        | inl d => exact hv.elim
-        | inr q => cases w with
-          | inl d => exact hw.elim
-          | inr r => exact ⟨⟨q.1, hv.1, hw.1⟩, ⟨q.2, hv.2, hw.2⟩⟩
-  map_mono h1 h2 := le_iff.mpr fun u v hu => by
-    cases u with
-    | inl d => cases v with
-      | inl d' => exact le_iff.mp h1 _ _ hu
-      | inr q => exact hu.elim
-    | inr p => cases v with
-      | inl d => exact hu.elim
-      | inr q => exact ⟨le_iff.mp h1 _ _ hu.1, le_iff.mp h2 _ _ hu.2⟩
-
-/-- 8.2d's `F(𝟙,S)` is §6.1's cons-list relator at the layer type: with the layer held still the
-    bifunctor's leaf arm is an identity, which is all `CL.F` does there (book p.196). -/
-public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
-    pathF.map (𝟙 A) S = (CL.F A.carrier A.carrier).map S :=
-  hom_ext fun u v => by cases u <;> cases v <;> exact Iff.rfl
-
 /-- The initial algebra of 8.2d's fold relator `F(PV,−)`: networks are cons-lists of layers
     (book p.196).  `CL.initial`'s data verbatim; its laws carried over by `pathF_map_id`. -/
 @[expose] public def pathInit (V : Type) :
@@ -230,13 +177,13 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc_exec (wt : V → V �
   cases z with
   | inl v =>
     cases h
-    exact ⟨rfl, fun q hq => by subst hq; exact (pathR_apply wt _ _).mpr (Nat.le_refl _)⟩
+    exact ⟨(pathSplit_apply _ _).mpr rfl, fun q hq => by have hq := (pathSplit_apply _ _).mp hq; subst hq; exact (pathR_apply wt _ _).mpr (Nat.le_refl _)⟩
   | inr q =>
     obtain ⟨v, ps⟩ := q
     obtain ⟨hm, hle⟩ := minPath_spec wt h
     obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hm
-    refine ⟨⟨t, ht, rfl⟩, ?_⟩
-    rintro z ⟨t', ht', rfl⟩
+    refine ⟨(pathSplit_apply _ _).mpr ⟨t, ht, rfl⟩, ?_⟩
+    intro z hz; obtain ⟨t', ht', rfl⟩ := (pathSplit_apply _ _).mp hz
     exact (pathR_apply wt _ _).mpr (hle _ (List.mem_map.mpr ⟨t', ht', rfl⟩))
 
 /-- 8.2d row 8 as the fold's algebra: `Λ(F(∋,𝟙)) P([wrap,step])` at `Rel(Set)`. -/
@@ -509,7 +456,7 @@ public theorem cpl_char (x : List V ⊕ (List V × List (ConsList V V)))
 /-- 8.2d `S ≜ F(𝟙,∋)α` (book p.198): the paths `S` builds are what `sExec` lists. -/
 public theorem sExec_char (z : V ⊕ (V × List (ConsList V V))) (p : ConsList V V) :
     (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) (toS1 z) p ↔ p ∈ sExec z := by
-  rw [pathF_map_id, ← pathSplit_eq_Fmap_comp_alphaR]
+  rw [pathF_map_id, ← pathSplit_eq_Fmap_comp_alphaR, pathSplit_apply]
   cases z with
   | inl v =>
     exact ⟨fun h => List.mem_singleton.mpr h, fun h => List.mem_singleton.mp h⟩

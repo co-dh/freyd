@@ -1189,6 +1189,10 @@ open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander
   | `($_ $args*) => `($(mkIdent `step) $args*)
   | _ => `($(mkIdent `step))
+-- B&dM p.198 names the algebra's second factor `S`; `pathSplit` is only Lean's name for it.
+open Lean PrettyPrinter in
+@[app_unexpander pathSplit] def unexpandPathSplit : Unexpander
+  | _ => `($(mkIdent `S))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
