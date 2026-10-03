@@ -111,13 +111,20 @@ public theorem thinning_paths_alg_bifunctors {α : F.obj A B ⟶ B} (Q : B ⟶ B
       = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [← Cat.assoc, F.interchange]
 
-/-- p.198 {power transpose of composition}: `Λ(V) P(Λ(S)) union thin(Q) = Λ(VS) thin(Q)`. -/
+/-- p.198 {power transpose of composition}: `Λ(V) P(Λ(S)) union thin(Q) = Λ(V Λ(S) ∋) thin(Q)`,
+    the first `∋` of `union ≜ Λ(∋∋)` cancelling against the `Λ` of `P(Λ(S))`. -/
 public theorem thinning_paths_alg_transpose {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
         ≫ bigUnion ≫ thinRel Q
+      = Λ (F.map (∋ A) (𝟙 (P B)) ≫ Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ ∋ B) ≫ thinRel Q := by
+  rw [Λ_comp_eps, Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α),
+    Cat.assoc, Cat.assoc]
+
+/-- p.198 {Λ(R)∋ = R}: `Λ(V Λ(S) ∋) thin(Q) = Λ(VS) thin(Q)`, the second `∋` of `union ≜ Λ(∋∋)`. -/
+public theorem thinning_paths_alg_cancel {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
+    Λ (F.map (∋ A) (𝟙 (P B)) ≫ Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ ∋ B) ≫ thinRel Q
       = Λ (F.map (∋ A) (𝟙 (P B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q := by
-  rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α), Cat.assoc,
-    Cat.assoc]
+  rw [Λ_comp_eps]
 
 /-- p.198 {thin distributes over union (8.4)}: `Λ(V) P(Λ(S) thin(Q)) union ⊑ Λ(V) P(Λ(S)) union thin(Q)`,
     by `P(thin(Q)) union ⊑ union thin(Q)`. -/
@@ -169,7 +176,8 @@ public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
       ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-  rw [thinning_paths_alg_unit R, ← thinning_paths_alg_bifunctors Q, ← thinning_paths_alg_transpose Q]
+  rw [thinning_paths_alg_unit R, ← thinning_paths_alg_bifunctors Q, ← thinning_paths_alg_cancel Q,
+    ← thinning_paths_alg_transpose Q]
   exact le_trans (thinning_paths_alg_elim hQ) (thinning_paths_alg_distrib Q)
 
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over

@@ -304,9 +304,11 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[bifunctors: `F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`]),
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
+    (EQ, "Freyd.Alg.thinning_paths_alg_cancel.lhs", src[`Λ(R)∋=R`, the second ∋ of `union≜`#frc([`∋∋`])]),
+      // lean:AOP.A8_2.thinning_paths_alg_cancel@87132166
     (EQ, "Freyd.Alg.thinning_paths_alg_transpose.lhs",
-      src[power transpose of composition: #frc([`F(∋,𝟙)S`])`=`#frc([`F(∋,𝟙)`])` P(`#frc([`S`])`) union`; `union≜`#frc([`∋∋`])`: in the picture, the ∋ that closes the inner P wire opened by P(`#frc([`S`])`)`]),
-      // lean:AOP.A8_2.thinning_paths_alg_transpose@e7649320
+      src[power transpose of composition: `P(`#frc([`S`])`) union=`#frc([`∋`#frc([`S`])`∋`])`, the first ∋ of union≜`#frc([`∋∋`])` cancelling against `#frc([`S`])]),
+      // lean:AOP.A8_2.thinning_paths_alg_transpose@c140c43f
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
     (RQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
       src[thin distributes over union (8.4): `union thin(Q)⊒P(thin(Q)) union` — @thin-laws]),
@@ -325,11 +327,10 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
       src[since `P=E` on functions, `α` a map: #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`]),
       // lean:AOP.A8_2.thinning_paths_alg_map@a2609343
       // lean:AOP.A4_6.Λ_absorption@00399742
-    (EQ, "Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc.rhs",
-      src[at the layered network: #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]),
-      // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
-      // lean:AOP.A8_2.pathStep@b614307d
   ),
+  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]],
+    // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
+    // lean:AOP.A8_2.pathStep@b614307d
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
   [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
