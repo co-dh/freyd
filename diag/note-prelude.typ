@@ -86,6 +86,23 @@
 // SPACED by default — a formula set as text has the room; `compact: true` is the call that has none
 // (a formula fitted above a panel), and it names the exporter's `.compact` step of the selector.
 #let leanf(sel, compact: false) = lean-text("generated/formula/", <lean-formula>, sel + if compact { ".compact" } else { "" })
+// A CHAIN STEP'S RELATION, read off Lean: the formula route's `a+b` call is the theorem relating
+// side `a` to side `b` (`FormulaRender.stepRel`), so no hand-typed `=`/`⊑` can call an inclusion an
+// equation.  `none` only under `list`, where nothing is drawn.
+#let lean-rel(a, b) = {
+  let sel = a + "+" + b
+  ([#metadata(sel)<lean-formula>], if "list" in sys.inputs { none } else {
+    import "generated/formula/" + sel + ".typ": rel
+    rel
+  })
+}
+// The mark a relation string stands as; content (a branches group's own `∪`/`+`) passes through.
+#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
+// Two steps read as one (a `dup` panel merged into the next): `=` is the unit, and an inclusion
+// composes only with itself — a `⊑` then a `⊒` relates nothing.
+#let rel-compose(a, b) = if a == none or b == "=" { a } else if a == "=" or a == b { b } else {
+  panic("lean-chain: a merged step reads " + a + " then " + b + ", which relates nothing")
+}
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
 // spelling, so a table's type column is read off the declaration its row already cites.
 #let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
@@ -384,7 +401,7 @@
           let b = s.at(1)
           let i0 = steps.len()
           let n = b.sels.len()
-          let g = (gform: leanf(b.sel), gid: i0)
+          let g = (gform: leanf(b.sel), gid: i0, gsel: b.sel)
           steps.push((s.at(0), b.sels.at(0), s.at(2), g))
           for k in range(1, n) { steps.push((b.sym, b.sels.at(k), src[], g)) }
           groups.push(range(i0, i0 + n))
@@ -395,6 +412,36 @@
       }
       r + (steps: steps, groups: groups)
     })
+  // EVERY STEP'S RELATION IS LEAN'S (`lean-rel`), between the side the chain LEFT — the last
+  // column's, across a row break too — and the side it ENTERS: a group's whole side (`gsel`), a
+  // statement step's `.lhs` entered and `.rhs` left.  A chain OPENS at the first row and at every
+  // `Sub` row, and nowhere else.
+  let (out, prev, metas) = ((), none, [])
+  for (ri, row) in rows.enumerate() {
+    let steps = row.steps
+    for (j, s) in steps.enumerate() {
+      let g = s.at(3, default: none)
+      if type(g) == dictionary and g.gid != j { continue }
+      let (win, wout) = if type(g) == dictionary { (g.gsel, g.gsel) }
+        else if type(s.at(1)) == array { (s.at(1).first() + ".lhs", s.at(1).first() + ".rhs") }
+        else { (s.at(1), s.at(1)) }
+      let opens = j == 0 and (ri == 0 or "sub" in row)
+      assert(opens == (s.at(0) == none), message: "lean-chain: the step into " + win
+        + if opens { " opens a chain and carries a relation" } else { " continues a chain and carries none" })
+      if not opens {
+        let (m, rel) = lean-rel(prev, win)
+        metas += m
+        if rel != none {
+          assert(rel-mark(rel) == s.at(0), message: "lean-chain: Lean proves " + prev + " " + rel + " "
+            + win + ", and the note types " + repr(s.at(0)))
+        }
+        steps.at(j) = (rel,) + s.slice(1)
+      }
+      prev = wout
+    }
+    out.push(row + (steps: steps))
+  }
+  let rows = out
   // `sub`: this row's own `Sub(...)` header, a grey band across the cell — factored out so the
   // pictures:false table below and the pictured chain's own row loop draw the same band.
   let sub-header(row) = if "sub" in row {

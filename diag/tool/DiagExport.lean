@@ -1444,6 +1444,15 @@ def parseArg (arg : String) (sel : Bool) :
     | _ => (stem.toString, none)
   return (base, binder, sides, branch)
 
+/-- A FORMULA CALL OF TWO SELECTORS joined by `+` is a CHAIN STEP (`lean-rel`): the relation Lean
+    proves from the first panel to the second (`FormulaRender.relFile`), not a statement to print. -/
+def relSels (formula : Bool) (arg : String) :
+    Option ((Name × List String × List StrDiag.Sel) × (Name × List String × List StrDiag.Sel)) :=
+  let p (s : String) := let (n, _, sd, br) := parseArg s true; (n.toName, sd, br)
+  match formula, arg.splitOn "+" with
+  | true, [a, b] => some (p a, p b)
+  | _, _ => none
+
 /-- ONE STATEMENT'S TWO SIDES DRAWN IN TWO CALLS: every drawn string-route selector whose last side
     step is `lhs`/`rhs` and whose other side is drawn too, in a call it is not in.  The obligation is
     each DRAWN SELECTOR, read through `parseArg`, because only one call shares a height and a bead
@@ -1597,8 +1606,9 @@ def callFiles (string circuit : Bool) (call : String) : List String :=
 
 /-- THE DECLARATIONS A SELECTOR IS DRAWN FROM.  One for every route but the commutative one, whose
     `+` joins two different statements on one page — so its picture goes stale when either does. -/
-def selDecls (commutative graph : Bool) (arg base : String) : List Name :=
-  if commutative then (arg.splitOn "+").map fun p => (Freyd.CommutativeDiagram.part p).1
+def selDecls (commutative graph formula : Bool) (arg base : String) : List Name :=
+  if let some ((a, _), (b, _)) := relSels formula arg then [a, b]
+  else if commutative then (arg.splitOn "+").map fun p => (Freyd.CommutativeDiagram.part p).1
   else if graph then (arg.splitOn "+").map String.toName
   else [base.toName]
 
@@ -1606,8 +1616,9 @@ def READS_PREFIX : String := "// reads: "
 
 /-- THE DECLARATION WHOSE FILE A LABEL IS PRINTED IN: a commutative page's first part, a graph's
     first name, else the selector's own.  The drawing and `--stale` both build their context on it. -/
-def ctxDecl (commutative graph : Bool) (arg base : String) : Name :=
-  if commutative then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1
+def ctxDecl (commutative graph formula : Bool) (arg base : String) : Name :=
+  if let some ((a, _), _) := relSels formula arg then a
+  else if commutative then (Freyd.CommutativeDiagram.part (arg.splitOn "+").head!).1
   else if graph then (arg.splitOn "+").head!.toName else base.toName
 
 /-- THE EXPORTER'S RULES AS THE DRAWING OF `names` READS THEM.  A label set (`diag_rewrite`,
@@ -1691,7 +1702,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
     (a, (callFiles stringMode circuitMode a).map fun n =>
       let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
-      (n, ctxDecl commutativeMode graphMode n base, selDecls commutativeMode graphMode n base))
+      (n, ctxDecl commutativeMode graphMode formulaMode n base, selDecls commutativeMode graphMode formulaMode n base))
   for (call, files) in jobs do
     let mut stale := false
     for (n, decl, decls) in files do
@@ -1823,7 +1834,7 @@ def main (args : List String) : IO UInt32 := do
     -- per declaration, and not once for the whole command line.
     -- A commutative page's first part names it, and the parts of one page are the faces of one
     -- statement's neighbourhood.
-    let ctx := StrDiag.declCtx env opts scopes (ctxDecl commutativeMode graphMode arg base)
+    let ctx := StrDiag.declCtx env opts scopes (ctxDecl commutativeMode graphMode formulaMode arg base)
     let run : CoreM String :=
       -- THE UNIFIER THAT CHECKED THE THEOREMS IS THE ONE THAT LOOKS THEM UP: the command elaborator
       -- runs with these on, and under the bare default a bead's own naturality theorem fails to match.
@@ -1846,6 +1857,7 @@ def main (args : List String) : IO UInt32 := do
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
         else if typeMode then Freyd.TypeRender.file arg.toName
+        else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName
         else if proofMode then drawProof arg.toName else draw arg.toName)
@@ -1859,7 +1871,7 @@ def main (args : List String) : IO UInt32 := do
             ++ (body.drop head.length).toString)
         else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
           cannot be moved into the call's directory"
-      let decls := selDecls commutativeMode graphMode arg base
+      let decls := selDecls commutativeMode graphMode formulaMode arg base
       return (← certLine decls) ++ (← readsLine decls (← StrDiag.takeReads)) ++ body
     -- The picture's reads start empty, and the call's declarations — the peers' too, which set the
     -- shared box — are the first of them.
@@ -1867,11 +1879,11 @@ def main (args : List String) : IO UInt32 := do
     let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
     let wasFresh ← if !verifyMode then pure false else do
       let stored ← storedReads path
-      Prod.fst <$> (Meta.MetaM.run' (fresh stored (selDecls commutativeMode graphMode arg base))).toIO ctx { env }
+      Prod.fst <$> (Meta.MetaM.run' (fresh stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
     discard StrDiag.takeReads
     for n in if stringMode then call.splitOn "+" else [arg] do
       let (b, _) := parseArg n (circuitMode || stringMode || formulaMode)
-      for d in selDecls commutativeMode graphMode n b do StrDiag.noteRead (.decl d)
+      for d in selDecls commutativeMode graphMode formulaMode n b do StrDiag.noteRead (.decl d)
     let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
     let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO
     return (r, (← IO.monoNanosNow) - t, (← IO.getNumHeartbeats) - hb, ← Prof.drain, wasFresh)

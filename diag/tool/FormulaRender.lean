@@ -196,4 +196,77 @@ def file (declName : Name) (binder : Option String) (path : List String)
   let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
   return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
+/-- The side `path` names of `declName`'s statement, its binders opened with METAVARIABLES, so two
+    panels read off two declarations meet in one theorem by unification rather than by binder name.
+    `.inl`/`.inr` restrict the picture only (`withBody`); a step relates WHOLE sides. -/
+def sideM (declName : Name) (path : List String) (branch : List StrDiag.Sel) : MetaM Expr := do
+  if branch.any (· matches .body) then
+    throwError "{declName}: a chain step relates whole sides, and `.body` names a fixed point's body"
+  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
+  let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+  let (_, _, body) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+  descend declName path body
+
+/-- The relation read with its two sides swapped: what `B sym A` says of `A` and `B`. -/
+def converseSym (sym : String) : MetaM String :=
+  match sym with
+  | "=" => pure "=" | "⊑" => pure "⊒" | "≤" => pure "≥"
+  | s => throwError "a chain step's relation `{s}` has no converse in the note's notation"
+
+/-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
+    head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
+    which side each panel unifies with.  The candidates are the panels' own declarations, then every
+    theorem of their modules — where a chain's step lemmas live; an `=` wins over an inclusion that
+    also holds.  No candidate proves the step: an error naming both sides, never a default. -/
+def stepRel (a b : Name × List String × List StrDiag.Sel) : MetaM String := do
+  let env ← getEnv
+  let mods := [a.1, b.1].filterMap env.getModuleIdxFor?
+  let near := env.constants.fold (init := #[]) fun acc n ci =>
+    if (ci matches .thmInfo _) && !n.isInternal && n != a.1 && n != b.1
+      && (env.getModuleIdxFor? n).any mods.contains then acc.push n else acc
+  for m in mods do if let some mn := env.header.moduleNames[m.toNat]? then noteRead (.module mn)
+  let cands := #[a.1, b.1] ++ near.qsort (·.toString < ·.toString)
+  let attempt (c : Name) : MetaM (Option String) := do
+    let some ci := env.find? c | return none
+    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+    let (_, _, body) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+    let some (sym, l, r) := split body | return none
+    for rev in [false, true] do
+      let s ← Meta.saveState
+      let A ← sideM a.1 a.2.1 a.2.2
+      let B ← sideM b.1 b.2.1 b.2.2
+      let (x, y) := if rev then (B, A) else (A, B)
+      if (← Meta.isDefEq l x) && (← Meta.isDefEq r y) then
+        s.restore
+        return some (← if rev then converseSym sym else pure sym)
+      s.restore
+    return none
+  let mut weak : Option (Name × String) := none
+  let mut cut : Array Name := #[]
+  for c in cands do
+    let saved ← Meta.saveState
+    let r ← tryCatchRuntimeEx (Core.withCurrHeartbeats <| withTheReader Core.Context
+        (fun ctx => { ctx with maxHeartbeats := SEARCH_HEARTBEATS }) (Except.ok <$> attempt c))
+      fun e => pure (.error e)
+    saved.restore
+    match r with
+    | .ok (some "=") => noteRead (.stmt c); return "="
+    | .ok (some s) => if weak.isNone then weak := some (c, s)
+    | .ok none => pure ()
+    | .error _ => cut := cut.push c
+  -- A candidate cut short might have proved `=`: an inclusion found beside it is not the answer.
+  unless cut.isEmpty do
+    throwError "the step from {a.1}.{".".intercalate a.2.1} to {b.1}.{".".intercalate b.2.1}: the \
+      search was cut short at {cut.toList}, which might prove it; raise SEARCH_HEARTBEATS"
+  let some (c, s) := weak
+    | throwError "no theorem of {a.1}, {b.1} or their modules relates {a.1}.{".".intercalate a.2.1} \
+        to {b.1}.{".".intercalate b.2.1} by `=`, `⊑` or `≤` in either direction — prove the step \
+        in Lean"
+  noteRead (.stmt c)
+  return s
+
+/-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
+def relFile (a b : Name × List String × List StrDiag.Sel) : MetaM String :=
+  return "#let rel = \"" ++ (← stepRel a b) ++ "\"\n"
+
 end Freyd.FormulaRender
