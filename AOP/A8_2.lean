@@ -104,13 +104,13 @@ public theorem thinning_paths_step
   Each theorem's two sides are two consecutive lines of the book's calculation, mirrored, at the
   split `V ≜ F(∋,𝟙)`, `S ≜ F(𝟙,∋)α`; `thinning_paths_alg` composes them. -/
 
-/-- p.198 {bifunctors}: `F(∈,∈) = F(id,∈)·F(∈,id)`, mirrored `F(∋,∋) = F(∋,𝟙)F(𝟙,∋)`. -/
+/-- p.198 {bifunctors}: `Λ(F(∋,𝟙)F(𝟙,∋)α) thin(Q) = Λ(F(∋,∋)α) thin(Q)`, by `F(∋,𝟙)F(𝟙,∋) = F(∋,∋)`. -/
 public theorem thinning_paths_alg_bifunctors {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q
       = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [← Cat.assoc, F.interchange]
 
-/-- p.198 {power transpose of composition}: `Λ(V S) = Λ V P(Λ S) union`. -/
+/-- p.198 {power transpose of composition}: `Λ(V) P(Λ(S)) union thin(Q) = Λ(VS) thin(Q)`. -/
 public theorem thinning_paths_alg_transpose {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
         ≫ bigUnion ≫ thinRel Q
@@ -118,7 +118,8 @@ public theorem thinning_paths_alg_transpose {α : F.obj A B ⟶ B} (Q : B ⟶ B)
   rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α), Cat.assoc,
     Cat.assoc]
 
-/-- p.198 {thin distributes over union (8.4)}: `union thin(Q) ⊒ P(thin(Q)) union`. -/
+/-- p.198 {thin distributes over union (8.4)}: `Λ(V) P(Λ(S) thin(Q)) union ⊑ Λ(V) P(Λ(S)) union thin(Q)`,
+    by `P(thin(Q)) union ⊑ union thin(Q)`. -/
 public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ bigUnion
@@ -127,8 +128,8 @@ public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
   rw [powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
 
-/-- p.198 {thin-elimination (8.3)}: `Λ S thin(Q) ⊒ Λ S est(R) τ`, the one step that needs
-    `R ∩ (S°S) ⊑ Q`. -/
+/-- p.198 {thin-elimination (8.3)}: `Λ(V) P(Λ(S) est(R) τ) union ⊑ Λ(V) P(Λ(S) thin(Q)) union`,
+    the one step that needs `R ∩ (S°S) ⊑ Q`. -/
 public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
@@ -137,7 +138,8 @@ public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ bigUnion :=
   comp_mono_left _ (comp_mono_right (powerRel_mono (Λ_comp_est_comp_singletonMap_le_thinRel hQ)) _)
 
-/-- p.198 {since `union·Pτ = id`}, mirrored `P(τ) union = 𝟙`. -/
+/-- p.198 {since `union·Pτ = id`}: `Λ(V) P(Λ(S) est(R)) = Λ(V) P(Λ(S) est(R) τ) union`,
+    by `P(τ) union = 𝟙`. -/
 public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
       = Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
@@ -148,7 +150,8 @@ public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
     rw [powerRel_map hmapτ, bigUnion_existsImage_singleton]
   rw [← Cat.assoc (Λ (F.map (𝟙 A) (∋ B) ≫ α)), powerRel_comp (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R), Cat.assoc, hτ, Cat.comp_id]
 
-/-- p.198 {since `P = E` on functions}: at a map `α`, `Λ(F(𝟙,∋)α) = Λ(F(𝟙,∋)) P(α)`. -/
+/-- p.198 {since `P = E` on functions}: at a map `α`,
+    `Λ(V) P(Λ(F(𝟙,∋)) P(α) est(R)) = Λ(V) P(Λ(S) est(R))`. -/
 public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B)) ≫ powerRel α ≫ est R)
@@ -158,7 +161,7 @@ public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R :
 /-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
     one the program runs —
     `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
-    `Λ (F(∋,𝟙)) ≫ P(Λ (F(𝟙,∋)α) ≫ est R) ⊑ Λ (F(∋,∋)α) ≫ thin Q`, at `R ∩ (S°S) ⊑ Q` for
+    `Λ(V) P(Λ(S) est(R)) ⊑ Λ(F(∋,∋)α) thin(Q)`, at `R ∩ (S°S) ⊑ Q` for
     `S ≜ F(𝟙,∋)α`: the step theorems above, from the bottom line of the book's chain up. -/
 public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
