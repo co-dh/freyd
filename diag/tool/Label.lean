@@ -1325,12 +1325,19 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- THE OPERANDS SIT WHERE THE NOTATION PUTS THEM, and a bracket goes only where the note's reader
   -- needs it: the side the operator associates on drops its bracket when it is MORE OF THE SAME
   -- OPERATOR (`chainPrec`), everything else stays one level above.
+  -- A COMPOSITE OPERAND OF AN INFIX OPERATOR IS BRACKETED, as the note sets it: `R∩(head head°)`,
+  -- `(cost cost°)×R`.  Whether the operand IS one is the printer's own answer at juxtaposition's
+  -- level and one above it — the test the transpose's bar asks — never a test on its spelling.
+  let side (q : Nat) (x : Expr) : MetaM Lbl := do
+    let j ← Prec.juxt
+    if q ≤ j && (← labelTree j x) != (← labelTree (j + 1) x) then labelTree (j + 1) x
+    else labelTree q x
   let bin (p : Nat) (a : Assoc) (op : String) (args : Array Expr) : MetaM Lbl := do
     match lastTwo (← opnds args) with
     | some (f, g) =>
       let pl := if a == .left then chainPrec op p f else p + 1
       let pr := if a == .right then chainPrec op p g else p + 1
-      return wrap p ((← labelTree pl f) ++ spaced op sp ++ (← labelTree pr g))
+      return wrap p ((← side pl f) ++ spaced op sp ++ (← side pr g))
     | none => txt e
   -- The one argument of a unary operator, at the precedence its operand is set at.
   let un (p cp : Nat) (pre post : String) (args : Array Expr) : MetaM Lbl := do

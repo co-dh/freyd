@@ -1116,8 +1116,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.TT.F] def unexpandTTF : Unexpander
   | `($_ $args*) => `($(mkIdent `F) $args*)
   | _ => `($(mkIdent `F))
--- A SECTION'S STEP ALGEBRA IS THE NOTE'S `S`, the letter its `#leant` row is headed by — `Salg` is
--- only the Lean name, as `Kalg` is for the maximum-segment-sum step's `k`.
+-- A SECTION'S STEP ALGEBRA PRINTS `S`, as `Party.S` does: it is drawn opened (`diag_unfold` below),
+-- so the letter shows only where a label names it whole.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.Salg] def unexpandParagraphSalg : Unexpander
   | _ => `($(mkIdent `S))
@@ -1161,16 +1161,68 @@ open Lean PrettyPrinter in
 @[app_unexpander sortRel] def unexpandSortRel : Unexpander
   | `($_ $_ $_ $_ $o) => `($(mkIdent `sort) $o)
   | _ => `($(mkIdent `sortRel))
--- The note's word for the arrow is `path`; the `R` is Lean's, as `detabR`'s is.
+-- B&dM p.196 names the cost order `R` and p.197 its refinement `Q`; `path` is only Lean's prefix,
+-- and the note's `path-defn` lines print these from the defs' values.
 open Lean PrettyPrinter in
 @[app_unexpander pathR] def unexpandPathR : Unexpander
-  | `($_ $args*) => `($(mkIdent `path) $args*)
-  | _ => `($(mkIdent `path))
+  | `($_ $args*) => `($(mkIdent `R) $args*)
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander pathQ] def unexpandPathQ : Unexpander
+  | `($_ $args*) => `($(mkIdent `Q) $args*)
+  | _ => `($(mkIdent `Q))
+-- B&dM p.196 writes `cost` and `head`; the weight `wt` is the section's one parameter and no
+-- argument the note writes.
+open Lean PrettyPrinter in
+@[app_unexpander costOf] def unexpandCostOf : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander headOf] def unexpandHeadOf : Unexpander
+  | `($_ $args*) => `($(mkIdent `head) $args*)
+  | _ => `($(mkIdent `head))
+open Lean PrettyPrinter in
+@[app_unexpander headRel] def unexpandHeadRel : Unexpander
+  | _ => `($(mkIdent `head))
 -- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
 open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander
   | `($_ $args*) => `($(mkIdent `step) $args*)
   | _ => `($(mkIdent `step))
+-- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
+open Lean PrettyPrinter in
+@[app_unexpander pathF] def unexpandPathF : Unexpander
+  | _ => `($(mkIdent `F))
+-- B&dM p.126 writes `cpr`/`cpl` for the cross product at `A×−`/`−×A`; the objects are the wires.
+open Lean PrettyPrinter in
+@[app_unexpander cprMap] def unexpandCprMap : Unexpander
+  | _ => `($(mkIdent `cpr))
+open Lean PrettyPrinter in
+@[app_unexpander cplMap] def unexpandCplMap : Unexpander
+  | _ => `($(mkIdent `cpl))
+-- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
+open Lean PrettyPrinter in
+@[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
+  | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander wrapz] def unexpandWrapz : Unexpander
+  | _ => `($(mkIdent `wrapz))
+open Lean PrettyPrinter in
+@[app_unexpander conswFn] def unexpandConswFn : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+open Lean PrettyPrinter in
+@[app_unexpander consw] def unexpandConsw : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+open Lean PrettyPrinter in
+@[app_unexpander pathCost] def unexpandPathCost : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+  | _ => `($(mkIdent `cost))
+-- B&dM p.198 names the algebra's second factor `S`; `pathSplit` is only Lean's name for it.
+open Lean PrettyPrinter in
+@[app_unexpander pathSplit] def unexpandPathSplit : Unexpander
+  | _ => `($(mkIdent `S))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
@@ -1421,8 +1473,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.catR] def unexpandListRelCatR : Unexpander
   | `($_ $args*) => `($(mkIdent `cat) $args*)
   | _ => `($(mkIdent `cat))
--- The note writes `partition≜concat°` and says in the row beside it that this `concat` is the one
--- restricted to non-empty segments, so the restriction is the note's words, not a second name.
+-- B&dM writes `partition = concat°` with `concat` restricted to non-empty segments; the restriction
+-- is no second name.  Not `cat`: that is `catR`'s, the binary join, and `cat°` splits in two.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.concatNE] def unexpandListRelConcatNE : Unexpander
   | `($_ $args*) => `($(mkIdent `concat) $args*)

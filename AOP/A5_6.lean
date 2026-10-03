@@ -110,6 +110,14 @@ theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
 
 public theorem cpMap_is_map (F : Relator 𝒜 𝒜) (A : 𝒜) : Map (cpMap F A) := Λ_is_map' _
 
+/-- `cpr ≜ cp(A×𝟙)` and `cpl ≜ cp(𝟙×A)` (B&dM p.126): the cross product at a product relator
+    with one factor held at `A` — the value beside a set is paired with each member. -/
+@[expose] public noncomputable def cprMap [HasRelProd 𝒜] (A B : 𝒜) :=
+  cpMap (Relator.prod (Relator.const A) (Relator.idRelator 𝒜)) B
+
+@[inherit_doc cprMap, expose] public noncomputable def cplMap [HasRelProd 𝒜] (A B : 𝒜) :=
+  cpMap (Relator.prod (Relator.idRelator 𝒜) (Relator.const A)) B
+
 /-! ## The cp-pattern at a SUM of relators (B&dM p.126, used at p.198)
 
   `Relator.sum` asks the ambient allegory to CHOOSE a coproduct for each pair of objects
