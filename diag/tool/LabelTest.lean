@@ -17,7 +17,7 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
 -- and that operand then printed raw: `θ(P ∪ Q,Q ≫ R − P − Q)`.
 #eval show Lean.Meta.MetaM Unit from do
   let s ← formula ``Freyd.Alg.theta_step false
-  unless s == "θ(P,Q)=θ(P ∪ Q,QR−P−Q)" do throwError "an operand of `θ` printed raw: {s}"
+  unless s == "θ(P,Q)=θ(P ∪ Q,(QR)−P−Q)" do throwError "an operand of `θ` printed raw: {s}"
 
 -- A RELATION APPLIED TO ITS POINTS keeps them, whatever operator builds the relation: the `°`
 -- clause matched `(op°) m p` at every arity and printed `op°`, dropping `m` and `p`.

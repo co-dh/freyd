@@ -243,18 +243,23 @@ row((
 #disp[#definition[
 `F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`.
 
-`wrapz≜⟨wrap,zero⟩`, #h(4pt) `consw(a,(xs,n))=(cons(a,xs),wt(a,head(xs))+n)`.
+#leanf("Freyd.Alg.wrapz"), #h(4pt) #leanf("Freyd.Alg.conswFn_apply").
 
-`cost≜⦇[wrapz,consw]⦈π₂`, #h(4pt) `⦇[wrapz,consw]⦈=⟨𝟙,cost⟩`, #h(4pt) #leanf("Freyd.Alg.pathR").
+#leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
 
 #leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.pathSplit"), #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
 $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
-// lean:AOP.A8_2.pathAlg@111b43a5
+// lean:AOP.A6_ConsList.alphaR@d7bb4987
+// lean:AOP.A8_2.wrapz@e528d496
+// lean:AOP.A8_2.conswFn_apply@c88ec21b
+// lean:AOP.A8_2.pathCost@2d18e3c4
+// lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
+// lean:AOP.A8_2.pathSplit@de3fcbd3
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
 // lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
-// lean:AOP.A8_2.pathStep@b614307d
+// lean:AOP.A8_2.pathStep@f546a21f
 ]]<path-defn>
 
 #disp[#table(
@@ -346,7 +351,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
   F(A',X') =  A'  +   A' ×  X'
   ```
 ]
-// lean:AOP.A8_2_Exec.pathF@2dcf37fa
+// lean:AOP.A8_2.pathF@2dcf37fa
 `u F(R,S) v` holds iff one of:
 - `u`, `v` are both `inl` and `d R d'`: the leaf moves by `R`;
 - `u`, `v` are both `inr` and `p₁ R q₁ ∧ p₂ S q₂`: the vertex moves by `R`, the rest by `S`.

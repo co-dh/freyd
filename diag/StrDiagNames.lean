@@ -1189,6 +1189,36 @@ open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander
   | `($_ $args*) => `($(mkIdent `step) $args*)
   | _ => `($(mkIdent `step))
+-- B&dM p.196 writes `F(A,X)=A+A×X` for the network's bifunctor.
+open Lean PrettyPrinter in
+@[app_unexpander pathF] def unexpandPathF : Unexpander
+  | _ => `($(mkIdent `F))
+-- B&dM p.126 writes `cpr`/`cpl` for the cross product at `A×−`/`−×A`; the objects are the wires.
+open Lean PrettyPrinter in
+@[app_unexpander cprMap] def unexpandCprMap : Unexpander
+  | _ => `($(mkIdent `cpr))
+open Lean PrettyPrinter in
+@[app_unexpander cplMap] def unexpandCplMap : Unexpander
+  | _ => `($(mkIdent `cpl))
+-- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
+open Lean PrettyPrinter in
+@[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
+  | _ => `($(mkIdent `zero))
+open Lean PrettyPrinter in
+@[app_unexpander wrapz] def unexpandWrapz : Unexpander
+  | _ => `($(mkIdent `wrapz))
+open Lean PrettyPrinter in
+@[app_unexpander conswFn] def unexpandConswFn : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+open Lean PrettyPrinter in
+@[app_unexpander consw] def unexpandConsw : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `consw) $args*)
+  | _ => `($(mkIdent `consw))
+open Lean PrettyPrinter in
+@[app_unexpander pathCost] def unexpandPathCost : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
+  | _ => `($(mkIdent `cost))
 -- B&dM p.198 names the algebra's second factor `S`; `pathSplit` is only Lean's name for it.
 open Lean PrettyPrinter in
 @[app_unexpander pathSplit] def unexpandPathSplit : Unexpander

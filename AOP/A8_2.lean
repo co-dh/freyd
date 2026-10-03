@@ -267,6 +267,84 @@ public theorem pathR_apply (wt : V → V → Nat) (p q : ConsList V V) :
     pathR wt p q ↔ costOf wt p ≤ costOf wt q :=
   ⟨fun ⟨_, h1, _, h2, h3⟩ => by subst h1 h3; exact h2, fun h => ⟨_, rfl, _, h, rfl⟩⟩
 
+/-- `zero`, a one-vertex path's cost. -/
+@[expose] public def zeroCost : dL V ⟶ (⟨Nat⟩ : RelSet.{0}) := RelSet.graph fun _ => 0
+
+/-- `wrapz ≜ ⟨wrap,zero⟩` (book p.196). -/
+@[expose] public def wrapz : dL V ⟶ (⟨ConsList V V × Nat⟩ : RelSet.{0}) := rpair wrapR zeroCost
+
+/-- `consw` (book p.196) as a function on points. -/
+@[expose] public def conswFn (wt : V → V → Nat) (a : V) (q : ConsList V V × Nat) : ConsList V V × Nat :=
+  (ConsList.cons a q.1, wt a (headOf q.1) + q.2)
+
+/-- `consw(a,(xs,n)) = (cons(a,xs),wt(a,head(xs))+n)`. -/
+public theorem conswFn_apply (wt : V → V → Nat) (a : V) (xs : ConsList V V) (n : Nat) :
+    conswFn wt a (xs, n) = (ConsList.cons a xs, wt a (headOf xs) + n) := rfl
+
+/-- `consw` as an arrow, the algebra's right summand. -/
+@[expose] public def consw (wt : V → V → Nat) :
+    (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0}) ⟶ (⟨ConsList V V × Nat⟩ : RelSet.{0}) :=
+  RelSet.graph fun q => conswFn wt q.1 q.2
+
+/-- `cost ≜ ⦇[wrapz,consw]⦈π₂` (book p.196): the fold builds the path beside its cost, and the
+    cost is read off. -/
+@[expose] public def pathCost (wt : V → V → Nat) : dCL V V ⟶ (⟨Nat⟩ : RelSet.{0}) :=
+  cataR (junc (sumCop (dL V) (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0})) wrapz (consw wt))
+    ≫ RelSet.graph Prod.snd
+
+/-- The fold `⦇[wrapz,consw]⦈` relates a path to itself beside `costOf` of it. -/
+public theorem cataR_wrapz_consw_apply (wt : V → V → Nat) : ∀ (xs : ConsList V V)
+    (r : ConsList V V × Nat),
+    cataR (junc (sumCop (dL V) (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0})) wrapz (consw wt)) xs r
+      ↔ r = (xs, costOf wt xs)
+  | .wrap v, r => by
+    constructor
+    · rintro (⟨x, hx, h1, h2⟩ | ⟨y, hy, -⟩)
+      · cases hx
+        exact Prod.ext (by first | exact h1 | exact h1.symm) (by first | exact h2 | exact h2.symm)
+      · cases hy
+    · intro h
+      subst h
+      exact Or.inl ⟨v, rfl, rfl, rfl⟩
+  | .cons a xs, r => by
+    constructor
+    · rintro ⟨r', h1, (⟨x, hx, -⟩ | ⟨y, hy, h2⟩)⟩
+      · cases hx
+      · cases hy
+        have h1 := (cataR_wrapz_consw_apply wt xs r').mp h1
+        subst h1
+        first | exact h2 | exact h2.symm
+    · intro h
+      subst h
+      exact ⟨_, (cataR_wrapz_consw_apply wt xs _).mpr rfl, Or.inr ⟨_, rfl, rfl⟩⟩
+
+/-- `cost` is the structural `costOf`, as an arrow. -/
+public theorem pathCost_eq (wt : V → V → Nat) :
+    pathCost wt = (RelSet.graph (costOf wt) : dCL V V ⟶ (⟨Nat⟩ : RelSet.{0})) := by
+  apply hom_ext
+  intro xs n
+  constructor
+  · rintro ⟨r, h1, h2⟩
+    have h1 := (cataR_wrapz_consw_apply wt xs r).mp h1
+    subst h1
+    exact h2
+  · intro h
+    exact ⟨_, (cataR_wrapz_consw_apply wt xs _).mpr rfl, h⟩
+
+/-- `⦇[wrapz,consw]⦈ = ⟨𝟙,cost⟩` (book p.196). -/
+public theorem cataR_wrapz_consw (wt : V → V → Nat) :
+    cataR (junc (sumCop (dL V) (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0})) wrapz (consw wt))
+      = rpair (𝟙 (dCL V V)) (pathCost wt) := by
+  apply hom_ext
+  intro xs r
+  rw [cataR_wrapz_consw_apply, pathCost_eq]
+  constructor
+  · intro h
+    subst h
+    exact ⟨rfl, rfl⟩
+  · rintro ⟨h1, h2⟩
+    exact Prod.ext (by first | exact h1 | exact h1.symm) (by first | exact h2 | exact h2.symm)
+
 /-- `Sspec ≜ F(∋,𝟙)α`, the specification's algebra: take a vertex out of the layer and `wrap` it,
     or `cons` it onto the partial path already built. -/
 @[expose] public def pathAlg : (CL.F (V → Prop) (V → Prop)).obj (dCL V V) ⟶ dCL V V :=
@@ -441,8 +519,7 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
     goes on each of them, and `est R` keeps a cheapest one. -/
 @[expose] public def pathStep (wt : V → V → Nat) :
     (⟨V × (pow (dCL V V)).carrier⟩ : RelSet.{0}) ⟶ dCL V V :=
-  cpMap (Relator.prod (Relator.const (dE V)) (Relator.idRelator RelSet.{0})) (dCL V V)
-    ≫ powerRel consR ≫ est (pathR wt)
+  cprMap (dE V) (dCL V V) ≫ powerRel consR ≫ est (pathR wt)
 
 /-- `S ≜ F(𝟙,∋)α` (book p.198): what `pathSplit`'s definition says in words — the bifunctor at
     `∋` in the recursion argument, followed by the constructor. -/
@@ -467,7 +544,7 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : V → V → Nat
     rw [powerRel_map hα, Λ_absorption, ← pathSplit_eq_Fmap_comp_alphaR]
   have hS : pathStep wt
       = Λ (rprodMap (𝟙 (dE V)) (∋ (dCL V V)) ≫ consR) ≫ est (pathR wt) := by
-    simp only [pathStep, cpMap, Relator.prod, Relator.const, Relator.idRelator]
+    simp only [pathStep, cprMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
     rw [prodMap_eq_rprodMap, ← Cat.assoc, powerRel_map hc, Λ_absorption]
     rfl
   have hstep : ∀ (q : V × (pow (dCL V V)).carrier) (z : ConsList V V),
