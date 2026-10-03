@@ -1693,7 +1693,12 @@ def cacheEntry (slot : Slot) (path : System.FilePath) : MetaM (Option Cached) :=
     match (← get (α := Array Json) k).mapM jsonName with | .ok hs => pure hs | .error e => fail e
   let v ← get (α := Json) "verdict"
   let scans ← match (← get (α := Array Json) "scans").mapM Read.ofJson with | .ok ss => pure ss | .error e => fail e
-  unless (← get (α := String) "deps") == (← depText scans slot.q (← names "uses") !v.isNull) do
+  let uses ← names "uses"
+  -- A constant the entry recorded and the environment no longer has is a changed read: the entry is
+  -- stale, not an error.  `declsHash` still throws on a name the drawing itself reaches now.
+  let env ← getEnv
+  unless (uses ++ scans.filterMap fun | .scan h _ => some h | _ => none).all env.contains do return none
+  unless (← get (α := String) "deps") == (← depText scans slot.q uses !v.isNull) do
     return none
   let passed ← get (α := Array String) "passed"
   if v.isNull then return some { verdict := none, proof := none, passed }
