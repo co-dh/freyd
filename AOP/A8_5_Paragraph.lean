@@ -43,6 +43,7 @@ public import AOP.A8_3
 public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Paragraph
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
@@ -571,16 +572,16 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
 public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
-    {sort : (dPara Word ⟶ dPara Word) → (PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word))}
+    {sort : (dPara Word ⟶ dPara Word) → (P (dPara Word) ⟶ listRelator.obj (dPara Word))}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
-      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
+      (P ((F Word Word).obj (dPara Word)) ⟶
         listRelator.obj ((F Word Word).obj (dPara Word)))}
     {listcp : (F Word Word).obj (listRelator.obj (dPara Word)) ⟶ listRelator.obj ((F Word Word).obj (dPara Word))}
     {listf₁ listf₂ : listRelator.obj ((F Word Word).obj (dPara Word)) ⟶ listRelator.obj (dPara Word)}
     {filterp₂ thinlist : listRelator.obj (dPara Word) ⟶ listRelator.obj (dPara Word)}
     {minlist : listRelator.obj (dPara Word) ⟶ dPara Word}
     {Pr : RelProd (listRelator.obj (dPara Word)) (listRelator.obj (dPara Word))}
-    {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
+    {Pr' : RelProd (P (dPara Word)) (P (dPara Word))}
     {merge : (dPara Word ⟶ dPara Word) → (Pr.p ⟶ listRelator.obj (dPara Word))}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)
@@ -637,16 +638,16 @@ public theorem para_laws_split :
     monotonicity conditions and `para_spec` the specification. -/
 public theorem para_laws (hlen : ∀ a, 0 ≤ len a)
     (hfit : ∀ a, len a ≤ w)
-    {sort : (dPara Word ⟶ dPara Word) → (PowerAllegory.powerObj (dPara Word) ⟶ listRelator.obj (dPara Word))}
+    {sort : (dPara Word ⟶ dPara Word) → (P (dPara Word) ⟶ listRelator.obj (dPara Word))}
     {sortF : ((F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)) →
-      (PowerAllegory.powerObj ((F Word Word).obj (dPara Word)) ⟶
+      (P ((F Word Word).obj (dPara Word)) ⟶
         listRelator.obj ((F Word Word).obj (dPara Word)))}
     {listcp : (F Word Word).obj (listRelator.obj (dPara Word)) ⟶ listRelator.obj ((F Word Word).obj (dPara Word))}
     {listf₁ listf₂ : listRelator.obj ((F Word Word).obj (dPara Word)) ⟶ listRelator.obj (dPara Word)}
     {filterp₂ thinlist : listRelator.obj (dPara Word) ⟶ listRelator.obj (dPara Word)}
     {minlist : listRelator.obj (dPara Word) ⟶ dPara Word}
     {Pr : RelProd (listRelator.obj (dPara Word)) (listRelator.obj (dPara Word))}
-    {Pr' : RelProd (PowerAllegory.powerObj (dPara Word)) (PowerAllegory.powerObj (dPara Word))}
+    {Pr' : RelProd (P (dPara Word)) (P (dPara Word))}
     {merge : (dPara Word ⟶ dPara Word) → (Pr.p ⟶ listRelator.obj (dPara Word))}
     (hsortF : ∀ {X Y : (F Word Word).obj (dPara Word) ⟶ (F Word Word).obj (dPara Word)},
       X ⊑ Y → sortF X ⊑ sortF Y)

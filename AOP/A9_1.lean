@@ -37,6 +37,7 @@ public import AOP.A5_6_ListCombinators
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
@@ -930,6 +931,7 @@ end Freyd.Alg
   branches the note's @dp-laws and @greedy-laws draw, and each branch refines the body. -/
 
 namespace Freyd.Alg.RelSet.SL
+open PowerAllegory
 
 variable {L W : Type} {b c : RelSet.{0}}
 
@@ -1116,7 +1118,7 @@ public theorem _root_.Freyd.Alg.RelSet.thin_summand_le {A B : RelSet.{0}} {Fᵢ 
     what lets the thinning-free law below BE the thinning one at `Q ≜ 𝟙` rather than a second proof
     of the same disjointness argument. -/
 public theorem _root_.Freyd.Alg.RelSet.thinRel_id {A : RelSet.{0}} :
-    thinRel (𝟙 A) = 𝟙 (PowerAllegory.powerObj A) := by
+    thinRel (𝟙 A) = 𝟙 (P A) := by
   apply hom_ext
   intro S Y
   constructor

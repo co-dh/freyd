@@ -13,7 +13,7 @@
 #disp[#definition[
 `(p,q)` tabulates `W≜(∋S)∩(∈\(SR°))`, and #h(4pt) `y≜` $frac(#[`(p∋S)∩(qR)`], ∋)$, a map.
 ]
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@10235253
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
 ]<est-79-defn>
 
 #disp[
@@ -22,7 +22,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`p°q=W`, `𝟙⊑yy°`],
   zpair(zsqc(`p°y`, `P(S)`), zsqc(`y°q`, `est(R)`)),
 )
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@10235253
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
 ]<est-79>
 
 #disp[
@@ -39,7 +39,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$, `°`, meet],
   zsqc(`R°q°q`, `R°`, name: "q simple"),
 )
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@10235253
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
 ]<est-79-est>
 
 #disp[
@@ -62,7 +62,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`°`, `T·⊣T\`],
   zsqc(`W`, `∈\(SR°)`, name: "W's right half"),
 )
-// lean:AOP.A7_2_RelSet.powerRel_comp_est@10235253
+// lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
 ]<est-79-pow>
 
 == `P(est(R)) est(R)=P(dom(est(R))) union est(R)`
@@ -81,7 +81,7 @@
   zstep(op: sym.subset.eq.sq, under: true)[@est-711],
   zsqc(`P(dom(est(R))) union est(R)`, none),
 )
-// lean:AOP.A7_1.powerRel_est_eq_bigUnion@56a0227d
+// lean:AOP.A7_1.powerRel_est_eq_bigUnion@edd67d04
 ]<est-712>
 
 #disp[
@@ -113,7 +113,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`est(R)°⊑∈`, `∈∈union⊑∈`],
   zsqc(`est(R)∈est(R)`, `est(R)R°`, name: "UP of est"),
 )
-// lean:AOP.A7_1.powerRel_est_eq_bigUnion@56a0227d
+// lean:AOP.A7_1.powerRel_est_eq_bigUnion@edd67d04
 ]<est-712-geq>
 
 == Shortest paths on a cylinder, on lists <sec-cyl-lists>
@@ -168,12 +168,12 @@
 
   [#leanf("Freyd.Alg.Cylinder.gen")
  #src[]],
-   // lean:AOP.A7_4_Cylinder.gen@5094061a
+   // lean:AOP.A7_4_Cylinder.gen@9ccb5c34
   [#leant("Freyd.Alg.Cylinder.gen")],
   [`gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))` is worked out in @cyl-gen.],
 
  [#leanf("Freyd.Alg.Cylinder.paths") #src[]],
-  // lean:AOP.A7_4_Cylinder.paths@656d6a51
+  // lean:AOP.A7_4_Cylinder.paths@d335f44f
   [#leant("Freyd.Alg.Cylinder.paths")],
   [`paths[(1,2,3,4),(5,6,7,8)]` is the union of @cyl-gen's four sets: 12 paths, 3 from each entry row.],
 
@@ -202,7 +202,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
       {[3,6],[3,7],[3,8]},
       {[4,5],[4,7],[4,8]} )
 ```]
-// lean:AOP.A7_4_Cylinder.gen@5094061a lean:AOP.A7_4_CylinderVec.gen_run@47a0e44e
+// lean:AOP.A7_4_Cylinder.gen@9ccb5c34 lean:AOP.A7_4_CylinderVec.gen_run@47a0e44e
 ]<cyl-gen>
 
 #disp[#block(breakable: false)[
@@ -237,9 +237,9 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   src[the `A×−` summand: `∋` picks one path, `𝟙%∋` collects the results],
   src[the `A` summand, no `E` to distribute: `𝟙%∋` alone, `a↦{a}`],
 ))]<cp-diag>
-   // lean:AOP.A7_4_Cylinder.cyl_cp@795c84e2
-   // lean:AOP.A7_4_Cylinder.cyl_cp_prod@7f182a1e
-   // lean:AOP.A7_4_Cylinder.cyl_cp_const@94a6c342
+   // lean:AOP.A7_4_Cylinder.cyl_cp@fbd62a53
+   // lean:AOP.A7_4_Cylinder.cyl_cp_prod@13cb99c3
+   // lean:AOP.A7_4_Cylinder.cyl_cp_const@3744ab1f
 
 #disp[#table(
   columns: (5.6cm, 1fr),
@@ -264,7 +264,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 
   [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
   [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @pow-laws],
-  // lean:AOP.A7_4_Cylinder.cyl_cp@795c84e2 lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  // lean:AOP.A7_4_Cylinder.cyl_cp@fbd62a53 lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
 )]<cp-types>
 
 #disp[#align(center)[```
@@ -273,7 +273,7 @@ w      = (1,{[5],[6],[8]})            : A×E(L A)     the right summand
          w ↦ (1,[5]), (1,[6]), (1,[8]) : A×L A        one output per path in w
 cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collected
 ```]
-// lean:AOP.A5_6.cpMap@8554ec3c
+// lean:AOP.A5_6.cpMap@636ea157
 ]<cp-step>
 
 #v(8pt)
@@ -304,7 +304,7 @@ N(cp P(α))(that)
       {[3,6],[3,7],[3,8]},{[4,5],[4,7],[4,8]}) : N(E(L A))     cp pairs the square with each path,
                                                                α prefixes it: α(1,[5])=[1,5]
 ```]
-// lean:AOP.A7_4_Cylinder.gen@5094061a
+// lean:AOP.A7_4_Cylinder.gen@9ccb5c34
 ]<gen-step>
 
 === `gen` is an `F`-algebra; `⦇gen⦈`: `α⦇gen⦈=F(𝟙,⦇gen⦈)gen` <sec-cyl-fold>
@@ -318,16 +318,16 @@ N(cp P(α))(that)
   [],
   src[the fold reads the rest under `F`, then one `gen` puts the column in front],
 ))]<fold-diag>
-   // lean:AOP.A7_4_Cylinder.gen_cata_comm@93f96f39
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@4c4ca025
-   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@1dc8cdb8
+   // lean:AOP.A7_4_Cylinder.gen_cata_comm@e977733a
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen@83c39d10
+   // lean:AOP.A7_4_CylinderPaths.RelSet.Tuple.cataGen_lax_natural@8ac2b454
 
 #disp[#align(center)[```
 xs = [(1,2,3,4),(5,6,7,8)] = α((1,2,3,4),[(5,6,7,8)])   : L(N A)
 
 ⦇gen⦈(xs) = gen((1,2,3,4), ⦇gen⦈[(5,6,7,8)])
 ```]
-// lean:AOP.A7_4_Cylinder.gen_cata_comm@93f96f39
+// lean:AOP.A7_4_Cylinder.gen_cata_comm@e977733a
 ]<fold-step>
 
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[both halves are in @cyl-gen: the
@@ -357,7 +357,7 @@ zip(that)
 N(α)(that)
    = ([1,5],[2,5],[3,6],[4,5])                 : N(L A)        α(1,[5])=[1,5]
 ```]
-// lean:AOP.A7_4_Cylinder.Q@184a41f8
+// lean:AOP.A7_4_Cylinder.Q@9701f7ec
 ]<q-step>
 
 // ---- HINZE-MARSDEN, generated by `scripts/diagram --fold-list`.  A wire is a FUNCTOR: the object
@@ -380,7 +380,7 @@ N(α)(that)
     #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
      front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
      step folds]],
-  // lean:AOP.A7_4_Cylinder.cyl_step@a95365ca
+  // lean:AOP.A7_4_Cylinder.cyl_step@3882306d
   table.header([*circuit* — the fork is `F(NA,N(LA))=NA+NA×N(LA)`], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.Cylinder.cyl_step.lhs"), [])],
@@ -407,7 +407,7 @@ N(α)(that)
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
  ]],
-    // lean:AOP.A7_4_Cylinder.cyl_laws@6ea8ea31
+    // lean:AOP.A7_4_Cylinder.cyl_laws@322dd3dc
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.Cylinder.cyl_laws_step4.rhs"), [])],
@@ -459,7 +459,7 @@ N(α)(that)
   map `α` with $frac(#[`F(𝟙,∋)α`], ∋)$ `=cp P(α)`: extending every path in a set and then taking a
   minimum is beaten by extending one minimum. It is the crux here, not the greedy theorem.
  ]])
-  // lean:AOP.A7_4_Cylinder.cyl_7_13@32c672fb
+  // lean:AOP.A7_4_Cylinder.cyl_7_13@859be6fa
 ]<cyl-fusion>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.

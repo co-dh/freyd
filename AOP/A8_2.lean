@@ -48,6 +48,7 @@ public import AOP.A7_2_RelSet
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 /-- A MAP is monotonic on `⊤`, so §8.5's and §8.6's `P ≜ ⊤` costs their derivations nothing:
     every candidate list counts as sorted. -/
@@ -85,16 +86,16 @@ variable {B : 𝒜} {F : BiRelator 𝒜}
     `thinning_est` is stated at `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose
     action on `∋` is `F(𝟙,∋)`; `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange. -/
 public theorem thinning_paths_step
-    (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
+    (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
     (hmono : Freyd.Alg.MonoAlg
-      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q) :
+      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q) :
     relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have e : (F.appl (PowerAllegory.powerObj A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
+  have e : (F.appl (P A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
       = F.map (∋ A) (∋ B) ≫ α := by
-    show F.map (𝟙 (PowerAllegory.powerObj A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
+    show F.map (𝟙 (P A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
     rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
   rw [← e]
   exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
@@ -106,24 +107,24 @@ public theorem thinning_paths_step
 
 /-- p.198 {bifunctors}: `Λ(F(∋,𝟙)F(𝟙,∋)α) thin(Q) = Λ(F(∋,∋)α) thin(Q)`, by `F(∋,𝟙)F(𝟙,∋) = F(∋,∋)`. -/
 public theorem thinning_paths_alg_bifunctors {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q
+    Λ (F.map (∋ A) (𝟙 (P B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q
       = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [← Cat.assoc, F.interchange]
 
 /-- p.198 {power transpose of composition}: `Λ(V) P(Λ(S)) union thin(Q) = Λ(VS) thin(Q)`. -/
 public theorem thinning_paths_alg_transpose {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+    Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
         ≫ bigUnion ≫ thinRel Q
-      = Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q := by
+      = Λ (F.map (∋ A) (𝟙 (P B)) ≫ F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α), Cat.assoc,
     Cat.assoc]
 
 /-- p.198 {thin distributes over union (8.4)}: `Λ(V) P(Λ(S) thin(Q)) union ⊑ Λ(V) P(Λ(S)) union thin(Q)`,
     by `P(thin(Q)) union ⊑ union thin(Q)`. -/
 public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ bigUnion
-      ⊑ Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+      ⊑ Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
         ≫ bigUnion ≫ thinRel Q := by
   rw [powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
@@ -132,30 +133,30 @@ public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     the one step that needs `R ∩ (S°S) ⊑ Q`. -/
 public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R ≫ singletonMap) ≫ bigUnion
-      ⊑ Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+      ⊑ Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ bigUnion :=
   comp_mono_left _ (comp_mono_right (powerRel_mono (Λ_comp_est_comp_singletonMap_le_thinRel hQ)) _)
 
 /-- p.198 {since `union·Pτ = id`}: `Λ(V) P(Λ(S) est(R)) = Λ(V) P(Λ(S) est(R) τ) union`,
     by `P(τ) union = 𝟙`. -/
 public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      = Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+      = Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R ≫ singletonMap) ≫ bigUnion := by
-  have hτ : powerRel (singletonMap : B ⟶ PowerAllegory.powerObj B) ≫ bigUnion
-      = 𝟙 (PowerAllegory.powerObj B) := by
-    have hmapτ : Map (singletonMap : B ⟶ PowerAllegory.powerObj B) := Λ_is_map' (𝟙 B)
+  have hτ : powerRel (singletonMap : B ⟶ P B) ≫ bigUnion
+      = 𝟙 (P B) := by
+    have hmapτ : Map (singletonMap : B ⟶ P B) := Λ_is_map' (𝟙 B)
     rw [powerRel_map hmapτ, bigUnion_existsImage_singleton]
   rw [← Cat.assoc (Λ (F.map (𝟙 A) (∋ B) ≫ α)), powerRel_comp (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R), Cat.assoc, hτ, Cat.comp_id]
 
 /-- p.198 {since `P = E` on functions}: at a map `α`,
     `Λ(V) P(Λ(F(𝟙,∋)) P(α) est(R)) = Λ(V) P(Λ(S) est(R))`. -/
 public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B)) ≫ powerRel α ≫ est R)
-      = Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R) := by
+      = Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R) := by
   rw [powerRel_map hα, ← Cat.assoc (Λ (F.map (𝟙 A) (∋ B))), Λ_absorption]
 
 /-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
@@ -165,7 +166,7 @@ public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R :
     `S ≜ F(𝟙,∋)α`: the step theorems above, from the bottom line of the book's chain up. -/
 public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
-    Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
       ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [thinning_paths_alg_unit R, ← thinning_paths_alg_bifunctors Q, ← thinning_paths_alg_transpose Q]
@@ -180,13 +181,13 @@ public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     `F(∋,𝟙)` followed by `F(𝟙,∋)α` by interchange.  At the book's `α = [wrap,cons]` the algebra
     `ΛF(∈,id)·P(min R·Λ(α·F(id,∈)))` is the printed `[P wrap, cpl·P step]`. -/
 public theorem thinning_paths
-    (I : InitialAlgebra (F.appl (PowerAllegory.powerObj A)))
+    (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
     (hmono : Freyd.Alg.MonoAlg
-      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (PowerAllegory.powerObj A)).obj B ⟶ B)) Q)
+      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q)
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
-    relCata (Λ (F.map (∋ A) (𝟙 (PowerAllegory.powerObj B)))
+    relCata (Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
       ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
   exact le_trans

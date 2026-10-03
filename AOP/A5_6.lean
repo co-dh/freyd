@@ -25,6 +25,7 @@ public import AOP.A5_4
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 /-- Merge class for Ex 5.20: a tabular unitary DIVISION allegory (gives `topMor`/`RelProd`,
     `AOP.A5_2`) whose power-object membership is additionally UNGUARDED (gives `Λ`/`∋`
@@ -39,8 +40,8 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 /-- Diamond check: `RelProd`/`topMor` (division-allegory side) and `Λ`/`∋`
     (unguarded-power side) resolve on the SAME `Allegory 𝒜`. -/
 example (A B : 𝒜) : Nonempty (RelProd A B) := relProd_nonempty A B
-noncomputable example (A C : 𝒜) (R : C ⟶ A) : C ⟶ PowerAllegory.powerObj A := Λ R
-example (A : 𝒜) (f : A ⟶ PowerAllegory.powerObj A) : Prop := Map f
+noncomputable example (A C : 𝒜) (R : C ⟶ A) : C ⟶ P A := Λ R
+example (A : 𝒜) (f : A ⟶ P A) : Prop := Map f
 
 end
 
@@ -48,23 +49,23 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedDivisionPowerAllegory 𝒜]
 
 /-! ## Ex 5.20  `cup` (book p.124): the union relator, transposed
 
-  For a chosen relational product `P` of `[a]` with itself, `cup P : P.p ⟶ [a]` is the
+  For a chosen relational product `P` of `[a]` with itself, `cup pr : pr.p ⟶ [a]` is the
   power transpose of `(outl≫∋) ∪ (outr≫∋)` — the relation "belongs to the first OR the
   second set".  `Λ_union` shows this recovers `Λ(R∪S)` when fed the pair of transposes. -/
 
-/-- **Ex 5.20** (B&dM p.124): `cup P = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
-@[expose] public noncomputable def cup {A : 𝒜} (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
-    P.p ⟶ PowerAllegory.powerObj A :=
-  Λ ((P.outl ≫ ∋ A) ∪ (P.outr ≫ ∋ A))
+/-- **Ex 5.20** (B&dM p.124): `cup pr = Λ((∈·outl) ∪ (∈·outr))`, mirrored. -/
+@[expose] public noncomputable def cup {A : 𝒜} (pr : RelProd (P A) (P A)) :
+    pr.p ⟶ P A :=
+  Λ ((pr.outl ≫ ∋ A) ∪ (pr.outr ≫ ∋ A))
 
-/-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∪S) = pair(Λ R)(Λ S) ≫ cup P`. -/
+/-- **Ex 5.20**: `Λ(R∪S) = cup·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∪S) = pair(Λ R)(Λ S) ≫ cup pr`. -/
 public theorem Λ_union {A C : 𝒜} (R S : C ⟶ A)
-    (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
-    Λ (R ∪ S) = P.pair (Λ R) (Λ S) ≫ cup P := by
-  have hpair : Map (P.pair (Λ R) (Λ S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
-  have hmap : Map (P.pair (Λ R) (Λ S) ≫ cup P) := map_comp hpair (Λ_is_map' _)
+    (pr : RelProd (P A) (P A)) :
+    Λ (R ∪ S) = pr.pair (Λ R) (Λ S) ≫ cup pr := by
+  have hpair : Map (pr.pair (Λ R) (Λ S)) := pr.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (pr.pair (Λ R) (Λ S) ≫ cup pr) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
-  rw [Cat.assoc, show cup P ≫ ∋ A = (P.outl ≫ ∋ A) ∪ (P.outr ≫ ∋ A) from Λ_eps_eq' _,
+  rw [Cat.assoc, show cup pr ≫ ∋ A = (pr.outl ≫ ∋ A) ∪ (pr.outr ≫ ∋ A) from Λ_eps_eq' _,
     DistributiveAllegory.comp_union_distrib, ← Cat.assoc, ← Cat.assoc,
     RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
     Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
@@ -72,22 +73,22 @@ public theorem Λ_union {A C : 𝒜} (R S : C ⟶ A)
 /-! ## Ex 5.20  `cap` (book p.126): the intersection relator, transposed
 
   Same skeleton as `cup`, with `∩` in place of `∪`.  The distribution step now needs
-  `P.pair (Λ R) (Λ S)` to be a MAP (`simple_dist_inter`), since plain intersection does not
+  `pr.pair (Λ R) (Λ S)` to be a MAP (`simple_dist_inter`), since plain intersection does not
   distribute over composition in a general allegory the way union does. -/
 
-/-- **Ex 5.20**: `cap P = Λ((∈·outl) ∩ (∈·outr))`, mirrored. -/
-noncomputable def cap {A : 𝒜} (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
-    P.p ⟶ PowerAllegory.powerObj A :=
-  Λ ((P.outl ≫ ∋ A) ∩ (P.outr ≫ ∋ A))
+/-- **Ex 5.20**: `cap pr = Λ((∈·outl) ∩ (∈·outr))`, mirrored. -/
+noncomputable def cap {A : 𝒜} (pr : RelProd (P A) (P A)) :
+    pr.p ⟶ P A :=
+  Λ ((pr.outl ≫ ∋ A) ∩ (pr.outr ≫ ∋ A))
 
-/-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∩S) = pair(Λ R)(Λ S) ≫ cap P`. -/
+/-- **Ex 5.20**: `Λ(R∩S) = cap·⟨ΛR,ΛS⟩`, mirrored: `Λ (R∩S) = pair(Λ R)(Λ S) ≫ cap pr`. -/
 theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
-    (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
-    Λ (R ∩ S) = P.pair (Λ R) (Λ S) ≫ cap P := by
-  have hpair : Map (P.pair (Λ R) (Λ S)) := P.pair_map (Λ_is_map' R) (Λ_is_map' S)
-  have hmap : Map (P.pair (Λ R) (Λ S) ≫ cap P) := map_comp hpair (Λ_is_map' _)
+    (pr : RelProd (P A) (P A)) :
+    Λ (R ∩ S) = pr.pair (Λ R) (Λ S) ≫ cap pr := by
+  have hpair : Map (pr.pair (Λ R) (Λ S)) := pr.pair_map (Λ_is_map' R) (Λ_is_map' S)
+  have hmap : Map (pr.pair (Λ R) (Λ S) ≫ cap pr) := map_comp hpair (Λ_is_map' _)
   symm; apply Λ_unique _ _ hmap
-  rw [Cat.assoc, show cap P ≫ ∋ A = (P.outl ≫ ∋ A) ∩ (P.outr ≫ ∋ A) from Λ_eps_eq' _,
+  rw [Cat.assoc, show cap pr ≫ ∋ A = (pr.outl ≫ ∋ A) ∩ (pr.outr ≫ ∋ A) from Λ_eps_eq' _,
     simple_dist_inter hpair.2, ← Cat.assoc, ← Cat.assoc,
     RelProd.pair_outl, RelProd.pair_outr, (Λ_is_map' S).1, (Λ_is_map' R).1,
     Cat.id_comp, Cat.id_comp, Λ_eps_eq', Λ_eps_eq']
@@ -104,7 +105,7 @@ theorem Λ_inter {A C : 𝒜} (R S : C ⟶ A)
     transpose of `F`'s action on membership, `cp F a : F[a] ⟶ [F a]`.  `cup`/`cap`/`cross`
     are the instances for the various product relators (`F = Δ`, `∩`, `×`). -/
 @[expose] public noncomputable def cpMap (F : Relator 𝒜 𝒜) (A : 𝒜) :
-    F.obj (PowerAllegory.powerObj A) ⟶ PowerAllegory.powerObj (F.obj A) :=
+    F.obj (P A) ⟶ P (F.obj A) :=
   Λ (F.map (∋ A))
 
 public theorem cpMap_is_map (F : Relator 𝒜 𝒜) (A : 𝒜) : Map (cpMap F A) := Λ_is_map' _
@@ -134,12 +135,12 @@ variable {𝒜 : Type u} [PositiveTabularUnitaryUnguardedDivisionPowerAllegory �
 public theorem cpMap_sum_eq_junc (G H : Relator 𝒜 𝒜) (A : 𝒜) :
     cpMap (Relator.sum G H) A
       = junc (PositiveAllegory.has_coproduct
-                (G.obj (PowerAllegory.powerObj A)) (H.obj (PowerAllegory.powerObj A)))
+                (G.obj (P A)) (H.obj (P A)))
           (cpMap G A ≫ powerRel (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₁)
           (cpMap H A ≫ powerRel (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₂) := by
   simp only [cpMap]
   show Λ (junc (PositiveAllegory.has_coproduct
-        (G.obj (PowerAllegory.powerObj A)) (H.obj (PowerAllegory.powerObj A)))
+        (G.obj (P A)) (H.obj (P A)))
       (G.map (∋ A) ≫ (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₁)
       (H.map (∋ A) ≫ (PositiveAllegory.has_coproduct (G.obj A) (H.obj A)).u₂)) = _
   rw [Λ_junc, powerRel_map (Coproduct.u₁_map _), powerRel_map (Coproduct.u₂_map _),

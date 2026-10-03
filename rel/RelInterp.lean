@@ -347,7 +347,7 @@ theorem epsB_thick {b c : FinObj} (R : c ⟶ b) :
 /-- `FinRel` is a POWER ALLEGORY — so all `∋`/`Λ` laws hold of the executable model too. -/
 instance : PowerAllegory FinObj :=
   { (inferInstance : DivisionAllegory FinObj) with
-    powerObj := pow
+    P := pow
     eps := epsB
     eps_straight := epsB_straight
     eps_thick := fun R _ => epsB_thick R }

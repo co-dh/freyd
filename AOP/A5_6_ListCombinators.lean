@@ -22,6 +22,7 @@ public import AOP.A6_ConsList
 public import AOP.A5_7
 
 namespace Freyd.Alg.RelSet.ListRel
+open PowerAllegory
 
 open Freyd Freyd.Alg.RelSet.CL
 
@@ -46,7 +47,7 @@ def inlist : dList A ⟶ dE A := inlistP
     has exactly one element set.  `AOP.A7_4_CylinderBeads`'s `Tuple.setify` is the §7.4 arrow of the
     same name at the tuple relator, `Aⁿ⟶E(A)`, forgetting which row a component came from; the
     two are different arrows and neither is an instance of the other. -/
-@[expose] public def setify : dList A ⟶ PowerAllegory.powerObj (dE A) := graph inlistP
+@[expose] public def setify : dList A ⟶ P (dE A) := graph inlistP
 
 /-! ## Permutation `perm : list A ← list A` -/
 
@@ -1003,7 +1004,7 @@ public theorem prod_ni_union_dist :
     instance the row states: the membership crosses the projection unchanged. -/
 public theorem prod_ni_proj_slide :
     rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2)
-      = (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
+      = (graph fun q : A × (P (dList A)).carrier => q.2) ≫ ∋ (dList A) :=
   rprodMap_id_snd _
 
 /-- The note's `subseq-EW-join` fourth row: **`(𝟙×∋)cons ∪ (𝟙×∋)π₂ = (𝟙×∋)cons ∪ π₂∋`** —
@@ -1012,7 +1013,7 @@ public theorem prod_ni_union_slide :
     (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
         ∪ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ graph fun p : A × ConsList Unit A => p.2)
       = (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
-        ∪ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+        ∪ ((graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ ∋ (dList A)) := by
   rw [prod_ni_proj_slide]
 
@@ -1021,15 +1022,15 @@ public theorem prod_ni_union_slide :
     union (`Λ_union`). -/
 public theorem Λ_prod_ni_union :
     Λ ((rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR)
-        ∪ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+        ∪ ((graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ ∋ (dList A)))
       = rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ consR))
-          (Λ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
+          (Λ ((graph fun q : A × (P (dList A)).carrier => q.2)
             ≫ ∋ (dList A)))
-        ≫ cup (relProd (PowerAllegory.powerObj (dList A))
-            (PowerAllegory.powerObj (dList A))) := by
-  rw [Λ_union _ _ (relProd (PowerAllegory.powerObj (dList A))
-    (PowerAllegory.powerObj (dList A))), pair_eq_rpair]
+        ≫ cup (relProd (P (dList A))
+            (P (dList A))) := by
+  rw [Λ_union _ _ (relProd (P (dList A))
+    (P (dList A))), pair_eq_rpair]
 
 /-- The note's `subseq-EW-join` last row at the `cons` operand: **`((𝟙×∋)cons)%∋ = (𝟙×∋)%∋ E(cons)`**
     — absorption (`Λ_absorption`) takes the transpose inside the composite. -/
@@ -1041,8 +1042,8 @@ public theorem Λ_prod_ni_cons :
 /-- The note's `subseq-EW-join` last row at the `π₂` operand: **`(π₂∋)%∋ = π₂`** — fusion takes the
     map out of the transpose (`Λ_fusion`) and `Λ(∋)=𝟙` (`Λ_eps_reflection`) leaves it bare. -/
 public theorem Λ_proj_ni :
-    Λ ((graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2) ≫ ∋ (dList A))
-      = graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2 := by
+    Λ ((graph fun q : A × (P (dList A)).carrier => q.2) ≫ ∋ (dList A))
+      = graph fun q : A × (P (dList A)).carrier => q.2 := by
   rw [Λ_fusion (graph_map _), Λ_eps_reflection, Cat.comp_id]
 
 /-- The note's `subseq-EW-case` `π₂` arm under its transpose: **`((𝟙×∋)π₂)%∋ = π₂`** — the
@@ -1050,7 +1051,7 @@ public theorem Λ_proj_ni :
     what is left, which is why the arm the case display carries never changes. -/
 public theorem Λ_prod_ni_proj :
     Λ (rprodMap (𝟙 (dE A)) (∋ (dList A)) ≫ (graph fun p : A × ConsList Unit A => p.2))
-      = graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2 := by
+      = graph fun q : A × (P (dList A)).carrier => q.2 := by
   rw [prod_ni_proj_slide, Λ_proj_ni]
 
 /-- The note's `subseq-EW-join`: **`Λ((𝟙×∋)(cons ∪ π₂)) = ⟨Λ(𝟙×∋) E(cons), π₂⟩ cup`** — the
@@ -1062,9 +1063,9 @@ public theorem subseq_alg_join :
     Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
         ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))
       = rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
-          (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
-        ≫ cup (relProd (PowerAllegory.powerObj (dList A))
-            (PowerAllegory.powerObj (dList A))) := by
+          (graph fun q : A × (P (dList A)).carrier => q.2)
+        ≫ cup (relProd (P (dList A))
+            (P (dList A))) := by
   rw [prod_ni_union_dist, prod_ni_union_slide, Λ_prod_ni_union, Λ_prod_ni_cons, Λ_proj_ni]
 
 /-- The note's `subseq-EW-case` third row: **`F(∋)[nil,cons ∪ π₂] = [nil,(𝟙×∋)(cons ∪ π₂)]`** —
@@ -1074,11 +1075,11 @@ public theorem subseq_alg_sum_junc :
     (F Unit A).map (∋ (dList A))
         ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
             (consR ∪ graph fun p : A × ConsList Unit A => p.2)
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
           (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
   rw [← F_eq_sum_prod]
-  show sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+  show sumMap (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
       (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
       (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE A)) (∋ (dList A))) ≫ _ = _
   rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap]
@@ -1088,12 +1089,12 @@ public theorem subseq_alg_sum_junc :
     the circuit draws: a sum before a junction is the junction of the branches (`sumMap_junc`), the
     leaf arm's `𝟙` cancelling. -/
 public theorem subseq_alg_sum_map :
-    sumMap (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+    sumMap (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
         (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) (𝟙 (dL Unit))
         (rprodMap (𝟙 (dE A)) (∋ (dList A)))
       ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
           (consR ∪ graph fun p : A × ConsList Unit A => p.2)
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
           (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)) := by
   rw [sumMap_junc, Cat.id_comp]
@@ -1109,10 +1110,10 @@ public theorem Λ_nil_singleton :
 /-- The note's `subseq-EW-case` fourth row: **`[nil,(𝟙×∋)(cons ∪ π₂)]%∋ = [nil%∋,((𝟙×∋)(cons ∪
     π₂))%∋]`** — the transpose of a junction is the junction of the transposes (`Λ_junc`). -/
 public theorem subseq_alg_Λ_junc :
-    Λ (junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩) wrapR
+    Λ (junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩) wrapR
         (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
           (Λ (wrapR : dL Unit ⟶ dList A))
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) :=
@@ -1121,11 +1122,11 @@ public theorem subseq_alg_Λ_junc :
 /-- The note's `subseq-EW-case` last row: **`[nil%∋,…] = [nil 𝟙%∋,…]`** — `Λ_nil_singleton` in the
     leaf arm, the cons arm untouched. -/
 public theorem subseq_alg_Λ_nil :
-    junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+    junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
         (Λ (wrapR : dL Unit ⟶ dList A))
         (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
           (wrapR ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
@@ -1138,7 +1139,7 @@ public theorem subseq_alg_Λ :
     Λ ((F Unit A).map (∋ (dList A))
         ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
             (consR ∪ graph fun p : A × ConsList Unit A => p.2))
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
           (wrapR ≫ singletonMap)
           (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
             ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2))) := by
@@ -1148,16 +1149,16 @@ public theorem subseq_alg_Λ :
     cup]`** — `subseq_alg_join` in the cons arm, which is the whole of `subseq`'s algebra under
     the power transpose. -/
 public theorem subseq_alg_transpose :
-    junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+    junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
         (wrapR ≫ singletonMap)
         (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
           ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
-      = junc (sumCop (dL Unit) ⟨A × (PowerAllegory.powerObj (dList A)).carrier⟩)
+      = junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
           (wrapR ≫ singletonMap)
           (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
-              (graph fun q : A × (PowerAllegory.powerObj (dList A)).carrier => q.2)
-            ≫ cup (relProd (PowerAllegory.powerObj (dList A))
-              (PowerAllegory.powerObj (dList A)))) := by
+              (graph fun q : A × (P (dList A)).carrier => q.2)
+            ≫ cup (relProd (P (dList A))
+              (P (dList A)))) := by
   rw [subseq_alg_join]
 
 /-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
@@ -1664,17 +1665,17 @@ end cartesian
 
 /-- The relator `F(∋)` slid into `list(∋)`'s algebra: `F(∋)[nil,(∋×𝟙)cons] = [nil,(∋×∋)cons]`. -/
 public theorem cp_list_alg_sum_junc :
-    (F Unit (PowerAllegory.powerObj (dE A)).carrier).map (∋ (dList A))
-        ≫ junc (sumCop (dL Unit) ⟨(PowerAllegory.powerObj (dE A)).carrier × ConsList Unit A⟩) wrapR
+    (F Unit (P (dE A)).carrier).map (∋ (dList A))
+        ≫ junc (sumCop (dL Unit) ⟨(P (dE A)).carrier × ConsList Unit A⟩) wrapR
             (rprodMap (∋ (dE A)) (𝟙 (dList A)) ≫ consR)
       = junc (sumCop (dL Unit)
-            ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+            ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
           wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR) := by
   rw [← F_eq_sum_prod]
   show sumMap (sumCop (dL Unit)
-        ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
-      (sumCop (dL Unit) ⟨(PowerAllegory.powerObj (dE A)).carrier × ConsList Unit A⟩) (𝟙 (dL Unit))
-      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE (PowerAllegory.powerObj (dE A)).carrier))
+        ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
+      (sumCop (dL Unit) ⟨(P (dE A)).carrier × ConsList Unit A⟩) (𝟙 (dL Unit))
+      (prodMap (relProd _ _) (relProd _ _) (𝟙 (dE (P (dE A)).carrier))
         (∋ (dList A))) ≫ _ = _
   rw [sumMap_junc, Cat.id_comp, prodMap_eq_rprodMap, ← Cat.assoc, rprodMap_comp, Cat.id_comp,
     Cat.comp_id]
@@ -1683,9 +1684,9 @@ public theorem cp_list_alg_sum_junc :
     at `R := ∋`, transposed by `Λ_relCata`. -/
 public theorem cp_list :
     cpMap listRelator (dE A)
-      = (initial Unit (PowerAllegory.powerObj (dE A)).carrier).cata
+      = (initial Unit (P (dE A)).carrier).cata
           (Λ (junc (sumCop (dL Unit)
-            ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+            ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
             wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))) (Λ_is_map' _) := by
   show Λ (list (∋ (dE A))) = _
   rw [list_cata, Λ_relCata (initial Unit _)]
@@ -1697,10 +1698,10 @@ public theorem cp_list :
     absorbed. -/
 public theorem cp_list_alg :
     Λ (junc (sumCop (dL Unit)
-        ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+        ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
         wrapR (rprodMap (∋ (dE A)) (∋ (dList A)) ≫ consR))
       = junc (sumCop (dL Unit)
-          ⟨(PowerAllegory.powerObj (dE A)).carrier × (PowerAllegory.powerObj (dList A)).carrier⟩)
+          ⟨(P (dE A)).carrier × (P (dList A)).carrier⟩)
           (wrapR ≫ singletonMap) (Λ (rprodMap (∋ (dE A)) (∋ (dList A))) ≫ existsImage consR) := by
   rw [Λ_junc, Λ_nil_singleton, Λ_absorption]
 

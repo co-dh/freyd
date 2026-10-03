@@ -173,7 +173,7 @@ mutual
     recognised for the same reason: its carrier is a predicate type, which says nothing. -/
 partial def objOf (o : Expr) : MetaM Obj := do
   match o.getAppFnArgs with
-  | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
+  | (``Freyd.Alg.PowerAllegory.P, args) =>
     match args.back? with
     | some b => do let a ← objOf b; return .mk (objApply "P" a) .opaq #[] (applyJoin "P")
     | none => opaqObj o

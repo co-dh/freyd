@@ -17,6 +17,7 @@ public import AOP.A5_7_PowerBeads
 meta import AOP.A8_2
 
 namespace Freyd.Alg
+open PowerAllegory
 
 open RelSet RelSet.CL
 
@@ -76,7 +77,7 @@ public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
 /-- The initial algebra of 8.2d's fold relator `F(PV,−)`: networks are cons-lists of layers
     (book p.196).  `CL.initial`'s data verbatim; its laws carried over by `pathF_map_id`. -/
 @[expose] public def pathInit (V : Type) :
-    InitialAlgebra (pathF.appl (PowerAllegory.powerObj (dE V))) where
+    InitialAlgebra (pathF.appl (P (dE V))) where
   t := dCL (V → Prop) (V → Prop)
   α := alphaR
   α_map := graph_map con
@@ -94,7 +95,7 @@ public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
 /-- A fold over `pathInit` is the fold over `CL.initial`: the two differ only in how `F(𝟙,∋)`
     is spelled (8.2d, book p.198). -/
 public theorem relCata_pathInit {V : Type} {A : RelSet.{0}}
-    (R : (pathF.appl (PowerAllegory.powerObj (dE V))).obj A ⟶ A) :
+    (R : (pathF.appl (P (dE V))).obj A ⟶ A) :
     relCata (I := pathInit V) R = relCata (I := CL.initial (V → Prop) (V → Prop)) R := by
   show cataFold (Λ (pathF.map (𝟙 _) (∋ A) ≫ R)) ≫ ∋ A = cataFold (Λ (Fmap _ _ (∋ A) ≫ R)) ≫ ∋ A
   rw [pathF_map_id]
@@ -150,13 +151,13 @@ variable {V : Type}
 
 /-- 8.2d's algebra input `F(PV,PLV)` read as sets. -/
 @[expose] public def toS : List V ⊕ (List V × List (ConsList V V))
-    → (pathF.obj (PowerAllegory.powerObj (dE V)) (PowerAllegory.powerObj (dCL V V))).carrier
+    → (pathF.obj (P (dE V)) (P (dCL V V))).carrier
   | .inl vs => .inl (memS vs)
   | .inr (vs, ps) => .inr (memS vs, memS ps)
 
 /-- 8.2d's `[wrap,step]` input `F(V,PLV)` read as sets. -/
 @[expose] public def toS1 : V ⊕ (V × List (ConsList V V))
-    → (Fobj V V (PowerAllegory.powerObj (dCL V V))).carrier
+    → (Fobj V V (P (dCL V V))).carrier
   | .inl v => .inl v
   | .inr (v, ps) => .inr (v, memS ps)
 
@@ -240,9 +241,9 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc_exec (wt : V → V �
 
 /-- 8.2d row 8 as the fold's algebra: `Λ(F(∋,𝟙)) P([wrap,step])` at `Rel(Set)`. -/
 @[expose] public def pathAlgRel (wt : V → V → Nat) :
-    pathF.obj (PowerAllegory.powerObj (dE V)) (PowerAllegory.powerObj (dCL V V))
-      ⟶ PowerAllegory.powerObj (dCL V V) :=
-  Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    pathF.obj (P (dE V)) (P (dCL V V))
+      ⟶ P (dCL V V) :=
+  Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
     ≫ powerRel (junc (sumCop (dL V) (⟨V × (pow (dCL V V)).carrier⟩ : RelSet.{0}))
       wrapR (pathStep wt))
 
@@ -254,7 +255,7 @@ public theorem pathAlgExec_le (wt : V → V → Nat) (x : List V ⊕ (List V × 
     pathAlgRel wt (toS x) (memS (pathAlgExec wt x)) := by
   simp only [pathAlgRel]
   rw [Λ_eq_classifier]
-  refine ⟨fun z => pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))) (toS x) z, rfl,
+  refine ⟨fun z => pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))) (toS x) z, rfl,
     (powerRel_apply _ _ _).mpr ⟨?_, ?_⟩⟩
   · intro z hz
     cases x with
@@ -316,7 +317,7 @@ public theorem pathsExec_rel (wt : V → V → Nat) :
 /-- 8.2d's specification algebra `F(∋,𝟙)α` at the bifunctor IS `pathAlg` (book p.196). -/
 public theorem pathF_map_comp_alphaR_eq_pathAlg :
     (pathF.map (∋ (dE V)) (𝟙 (dCL V V)) ≫ alphaR
-      : pathF.obj (PowerAllegory.powerObj (dE V)) (dCL V V) ⟶ dCL V V) = pathAlg (V := V) := by
+      : pathF.obj (P (dE V)) (dCL V V) ⟶ dCL V V) = pathAlg (V := V) := by
   apply hom_ext
   intro u p
   cases u with
@@ -358,7 +359,7 @@ public theorem mcp_spec (wt : V → V → Nat) (net : ConsList (List V) (List V)
     le_iff.mpr fun _ _ ⟨_, h1, h2⟩ => Nat.le_trans h2 h1
   have hmono : Freyd.Alg.MonoAlg
       ((pathF.map (∋ (dE V)) (𝟙 (dCL V V)) ≫ alphaR
-        : (pathF.appl (PowerAllegory.powerObj (dE V))).obj (dCL V V) ⟶ dCL V V)) (pathQ wt) := by
+        : (pathF.appl (P (dE V))).obj (dCL V V) ⟶ dCL V V)) (pathQ wt) := by
     show pathF.map (𝟙 _) (pathQ wt) ≫ _ ⊑ _
     rw [pathF_map_id, pathF_map_comp_alphaR_eq_pathAlg]
     exact pathAlg_monotonic wt
@@ -470,8 +471,8 @@ public theorem thinExec_le [DecidableEq V] (wt : V → V → Nat) (xs : List (Co
 
 /-- 8.2d `Λ(F(∋,𝟙))` (book p.198): the vertices taken out of the layer are what `cpl` lists. -/
 public theorem cpl_char (x : List V ⊕ (List V × List (ConsList V V)))
-    (w : (pathF.obj (dE V) (PowerAllegory.powerObj (dCL V V))).carrier) :
-    pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))) (toS x) w
+    (w : (pathF.obj (dE V) (P (dCL V V))).carrier) :
+    pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))) (toS x) w
       ↔ ∃ z ∈ cpl x, w = toS1 z := by
   constructor
   · intro h
@@ -546,7 +547,7 @@ public theorem minPath_sExec (wt : V → V → Nat) (z : V ⊕ (V × List (ConsL
     `Λ(F(∋,𝟙)) P(Λ S) union thin(Q)`. -/
 public theorem thinning_paths_alg_transpose_exec [DecidableEq V] (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V))) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR))
         ≫ bigUnion ≫ thinRel (pathQ wt)) (toS x) (memS (row3 wt x)) := by
   rw [Λ_eq_classifier, Λ_eq_classifier]
@@ -574,7 +575,7 @@ public theorem thinning_paths_alg_transpose_exec [DecidableEq V] (wt : V → V �
     `Λ(F(∋,𝟙) F(𝟙,∋) α) thin(Q)`, which the transpose step equates with row 3. -/
 public theorem thinning_paths_alg_bifunctors_exec [DecidableEq V] (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V))) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V)))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V)))
         ≫ pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ thinRel (pathQ wt))
       (toS x) (memS (row2 wt x)) := by
   rw [← thinning_paths_alg_transpose]
@@ -600,7 +601,7 @@ public theorem thinning_paths_alg_exec [DecidableEq V] (wt : V → V → Nat)
     `Λ(F(∋,𝟙)) P(Λ S thin(Q)) union`. -/
 public theorem thinning_paths_alg_distrib_exec [DecidableEq V] (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V))) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ thinRel (pathQ wt))
         ≫ bigUnion) (toS x) (memS (row4 wt x)) := by
   have hz : ∀ z, (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ thinRel (pathQ wt))
@@ -633,7 +634,7 @@ public theorem thinning_paths_alg_distrib_exec [DecidableEq V] (wt : V → V →
 public theorem thinning_paths_alg_elim_exec (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V)))
     (hx : ∀ vs ps, x = .inr (vs, ps) → ps ≠ []) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ est (pathR wt)
           ≫ singletonMap) ≫ bigUnion) (toS x) (memS (row5 wt x)) := by
   have hsome : ∀ z ∈ cpl x, ∃ p, minPath wt (sExec z) = some p := by
@@ -701,7 +702,7 @@ public theorem row6_eq (wt : V → V → Nat) (x : List V ⊕ (List V × List (C
 public theorem thinning_paths_alg_map_exec (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V)))
     (hx : ∀ vs ps, x = .inr (vs, ps) → ps ≠ []) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)))
           ≫ powerRel (alphaR : pathF.obj (dE V) (dCL V V) ⟶ dCL V V) ≫ est (pathR wt)))
       (toS x) (memS (row7 wt x)) := by
@@ -718,7 +719,7 @@ public theorem thinning_paths_alg_map_exec (wt : V → V → Nat)
 public theorem thinning_paths_alg_unit_exec (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V)))
     (hx : ∀ vs ps, x = .inr (vs, ps) → ps ≠ []) :
-    (Λ (pathF.map (∋ (dE V)) (𝟙 (PowerAllegory.powerObj (dCL V V))))
+    (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V))))
         ≫ powerRel (Λ (pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ est (pathR wt)))
       (toS x) (memS (row6 wt x)) := by
   have hα : Map (alphaR : pathF.obj (dE V) (dCL V V) ⟶ dCL V V) := graph_map _

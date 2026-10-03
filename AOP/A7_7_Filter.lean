@@ -35,6 +35,7 @@ public import AOP.A5_6_ListCombinators
 set_option linter.unusedVariables false
 
 namespace Freyd.Alg.RelSet.Filter
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.GCTakeWhile
 open Freyd.Alg.RelSet.ListRel hiding listP prefixR
@@ -248,8 +249,8 @@ theorem fStep_neg {p : A → Bool} {a : A} (h : p a = false) (c : ConsList Unit 
 
 /-- The power object of `[A]`, and the product of two copies of it — where the `∪` of two
     transposes is taken. -/
-public abbrev PL : RelProd (PowerAllegory.powerObj (dList A))
-    (PowerAllegory.powerObj (dList A)) :=
+public abbrev PL : RelProd (P (dList A))
+    (P (dList A)) :=
   relProd _ _
 
 /-- Step 1 of `filter-step`: `S%∋ est(R°) = [nil%∋ est(R°),(π₂ ∪ (p×𝟙) cons)%∋ est(R°)]` — the

@@ -9,7 +9,7 @@
 
   B&dM's construction: `(|R|) = ∈ · (|Λ(R·F∈)|)`, i.e. transpose the relational algebra
   `R : F A ⟶ A` through the power object of `A` to the MAP algebra
-  `Λ(R·F∈) : F [A] ⟶ [A]` (Freyd: `Λ (F.map (∋ A) ≫ R) : F.obj (powerObj A) ⟶ powerObj A`),
+  `Λ(R·F∈) : F [A] ⟶ [A]` (Freyd: `Λ (F.map (∋ A) ≫ R) : F.obj (P A) ⟶ P A`),
   take the ordinary (map) catamorphism of that, and compose with `∈` to come back down
   to `A`.  All composition is diagram order (Freyd `≫`), mirroring B&dM's `·`.
 

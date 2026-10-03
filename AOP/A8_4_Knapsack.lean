@@ -37,6 +37,7 @@ public import AOP.A8_3
 public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Knapsack
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
@@ -366,16 +367,16 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
     `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
 public theorem knap_laws_step1
-    {sort : (dList Item ⟶ dList Item) → (PowerAllegory.powerObj (dList Item) ⟶ listRelator.obj (dList Item))}
+    {sort : (dList Item ⟶ dList Item) → (P (dList Item) ⟶ listRelator.obj (dList Item))}
     {sortF : ((F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)) →
-      (PowerAllegory.powerObj ((F Unit Item).obj (dList Item)) ⟶
+      (P ((F Unit Item).obj (dList Item)) ⟶
         listRelator.obj ((F Unit Item).obj (dList Item)))}
     {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
     {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
     {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
     {minlist : listRelator.obj (dList Item) ⟶ dList Item}
     {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
-    {Pr' : RelProd (PowerAllegory.powerObj (dList Item)) (PowerAllegory.powerObj (dList Item))}
+    {Pr' : RelProd (P (dList Item)) (P (dList Item))}
     {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
     (hsortF : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
       X ⊑ Y → sortF X ⊑ sortF Y)
@@ -422,16 +423,16 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `knap_spec` the specification.  The sorted-list interface (8.7)-(8.11) is assumed, as in
     the book. -/
 public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i)
-    {sort : (dList Item ⟶ dList Item) → (PowerAllegory.powerObj (dList Item) ⟶ listRelator.obj (dList Item))}
+    {sort : (dList Item ⟶ dList Item) → (P (dList Item) ⟶ listRelator.obj (dList Item))}
     {sortF : ((F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)) →
-      (PowerAllegory.powerObj ((F Unit Item).obj (dList Item)) ⟶
+      (P ((F Unit Item).obj (dList Item)) ⟶
         listRelator.obj ((F Unit Item).obj (dList Item)))}
     {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
     {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
     {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
     {minlist : listRelator.obj (dList Item) ⟶ dList Item}
     {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
-    {Pr' : RelProd (PowerAllegory.powerObj (dList Item)) (PowerAllegory.powerObj (dList Item))}
+    {Pr' : RelProd (P (dList Item)) (P (dList Item))}
     {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
     (hsortF : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
       X ⊑ Y → sortF X ⊑ sortF Y)

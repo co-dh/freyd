@@ -38,6 +38,7 @@ universe v u
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
@@ -184,6 +185,7 @@ end Freyd.Alg
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 /-! ## §2.537  An effective power allegory
 
@@ -406,9 +408,9 @@ noncomputable def quotEffectivePrePower
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
     thick_target := fun b =>
-      -- `powerObj`/`∋` are taken in `𝒜` (the syntactic quotient object `b` would otherwise
+      -- `P`/`∋` are taken in `𝒜` (the syntactic quotient object `b` would otherwise
       -- send instance resolution looking for the very `PowerAllegory` we are building).
-      ⟨@PowerAllegory.powerObj 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
+      ⟨@P 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
         quotThickEps amen b (hbox b)⟩ }
 
 /-- §2.537 (HEADLINE): **An amenable quotient of an effective power allegory is an effective
@@ -474,7 +476,7 @@ noncomputable def quotEffectivePrePower_unguarded :
       (fun R₀ => quotRep_preserves_tabular amen.cong (TabularAllegory.tabular R₀))
     split_symmetric_idempotent := fun {_a} E hR hS hI => quotSplit amen E hR hS hI
     thick_target := fun b =>
-      ⟨@PowerAllegory.powerObj 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
+      ⟨@P 𝒜 _ b, (quotRep amen.cong).map (@PowerAllegory.eps 𝒜 _ b),
         quotThickEps_unguarded amen b⟩ }
 
 /-- **§2.537 (unconditional)**: an amenable quotient of an effective UNGUARDED power allegory

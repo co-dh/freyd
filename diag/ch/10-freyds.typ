@@ -16,7 +16,7 @@ subject to
   [$𝟙 ⊑ (R slash #e[R])(#e[R] slash R)$], [$#e[R]$ is *thick*],
   [$frac(#e[R], #e[R]) = 𝟙$], [$#e[R]$ is *straight*],
 ))
-// lean:Freyd.S2_40.PowerAllegory@b05084c6
+// lean:Freyd.S2_40.PowerAllegory@524da929
 
 `R□` is `R`'s target, an identity arrow. For `R : A⟶B` write `∋ : PB⟶B`, dropping the
 subscript.
@@ -36,18 +36,18 @@ subscript.
   lean("Freyd.Alg.simple_le_singleton_existsImage"),
   lean("Freyd.Alg.singletonMap_natural"),
   src[#leanf("Freyd.Alg.Λ_eps_eq'")],
-  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
+  // lean:Freyd.S2_40.Λ_eps_eq'@2de083e0
   src[#leanf("Freyd.Alg.simple_le_singleton_existsImage")],
-  // lean:AOP.A4_6.simple_le_singleton_existsImage@7895568d
+  // lean:AOP.A4_6.simple_le_singleton_existsImage@cc1b7c9f
   src[#leanf("Freyd.Alg.singletonMap_natural")],
-  // lean:AOP.A4_6.singletonMap_natural@9214d7f0
+  // lean:AOP.A4_6.singletonMap_natural@332a071d
   lean("Freyd.Alg.Λ_eq_singleton_existsImage"),
   lean("Freyd.Alg.Λ_absorption.lhs"),
   [],
   src[#leanf("Freyd.Alg.Λ_eq_singleton_existsImage")],
-  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
   src[#leanf("Freyd.Alg.Λ_absorption")],
-  // lean:AOP.A4_6.Λ_absorption@e87bd8f2
+  // lean:AOP.A4_6.Λ_absorption@00399742
   [],
 )]<pow-laws-hm>
 
@@ -65,15 +65,15 @@ monad `iE`.]]
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.leftDiv_eq_Λ_subset") \
     #src[`b` is related to `c` by `R\S` exactly when `Λ(R°)(b) ⊆ Λ(S°)(c)`, the `R`-preimage of `b` inside the `S`-preimage of `c`]],
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset@6b9c4f56
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset@92f4fb8f
   lean-chain(
     (none, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.lhs", []),
     (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.rhs", src[`R=∈Λ(R°)°` — @pow-laws]),
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@a8fe3773
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@389887f3
     (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step2.rhs", src[`(XY)\S=Y\(X\S)`]),
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@032cf912
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@7002b70d
     (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step3.rhs", src[`f°\X=fX`; `∈\S=⊆Λ(S°)°` — @mem-ldiv]),
-     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@baf4fd86
+     // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step3@560d9192
   ),
 )]<ldiv-comp>
 
@@ -93,7 +93,7 @@ monad `iE`.]]
 #src[the monad is on `Map(𝒜)`, not on the allegory: `E` is a relator on all relations, but
 $frac(#[`𝟙`], ∋)$,
 `union` and `f E(g) union` are maps, and the Kleisli construction happens where they live.]
-// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@889637e4 lean:AOP.A4_6.kleisliComp@449ff4f9
+// lean:AOP.A4_6.bigUnion_eq_existsImage_eps@bca8d7c5 lean:AOP.A4_6.kleisliComp@70c8eb7e
 ]]]<kleisli-defn>
 
 #disp[
@@ -114,7 +114,7 @@ $frac(#[`𝟙`], ∋)$,
   unfold `⋄` — `E` is a functor, so `E(`$frac(#[`R`], ∋)$`)union=E(`$frac(#[`R`], ∋)$`∋)=E(R)` and the
   `union` is gone. Absorption, the row of @pow-laws, is the whole law, and it is the functoriality
  of $frac(#[`·`], ∋)$. ]]])
-  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a lean:AOP.A4_6.Λ_absorption@e87bd8f2
+  // lean:Freyd.S2_40.Λ_eps_eq'@2de083e0 lean:AOP.A4_6.Λ_absorption@00399742
 ]<kleisli-comp>
 
 #block[#src[`𝟙` goes to $frac(#[`𝟙`], ∋)$, the Kleisli identity, by definition — so

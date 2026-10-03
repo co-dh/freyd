@@ -2,8 +2,8 @@
   Bird & de Moor, *Algebra of Programming* §4.6  Power allegories.
 
   B&dM's power allegory (universal property `f = ΛR ≡ ∈·f = R` for functions `f`) is exactly
-  Freyd's `UnguardedPowerAllegory` (Freyd/S2_4.lean): power object `powerObj b`, membership
-  `∋ b : powerObj b ⟶ b` (from the power object TO `b`), power transpose `Λ R : a ⟶ powerObj b`
+  Freyd's `UnguardedPowerAllegory` (Freyd/S2_4.lean): power object `P b`, membership
+  `∋ b : P b ⟶ b` (from the power object TO `b`), power transpose `Λ R : a ⟶ P b`
   for `R : a ⟶ b` (`Λ R := R /ₛ ∋ b`), unconditionally a map with `Λ R ≫ ∋ b = R`
   (`Λ_is_map'`, `Λ_eps_eq'`).  Composition throughout is diagram order (`≫`).
 
@@ -24,6 +24,7 @@ public import AOP.A4_4  -- map_comp_div (and, via A4_2, the shunting rules)
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 section DivisionHelpers
 
@@ -58,7 +59,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
 
 /-- B&dM p.103 universal property of `Λ`: for a map `f`,
     `f = Λ R ↔ f ≫ ∋ b = R`. -/
-public theorem Λ_UP {A B : 𝒜} (R : A ⟶ B) {f : A ⟶ PowerAllegory.powerObj B} (hf : Map f) :
+public theorem Λ_UP {A B : 𝒜} (R : A ⟶ B) {f : A ⟶ P B} (hf : Map f) :
     f = Λ R ↔ f ≫ ∋ B = R := by
   constructor
   · intro h; rw [h]; exact Λ_eps_eq' R
@@ -76,8 +77,8 @@ public theorem Λ_fusion {C A : 𝒜} {f : C ⟶ A} (hf : Map f) {B : 𝒜} (R :
   exact (Λ_unique _ _ hmap heq).symm
 
 /-- B&dM p.104 reflection law: `Λ (∋ b) = 1_{[b]}` (`Λ∈ = id`). -/
-public theorem Λ_eps_reflection {B : 𝒜} : Λ (∋ B) = Cat.id (PowerAllegory.powerObj B) := by
-  have heq : Cat.id (PowerAllegory.powerObj B) ≫ ∋ B = ∋ B := Cat.id_comp _
+public theorem Λ_eps_reflection {B : 𝒜} : Λ (∋ B) = Cat.id (P B) := by
+  have heq : Cat.id (P B) ≫ ∋ B = ∋ B := Cat.id_comp _
   exact (Λ_unique _ _ (id_is_map_local _) heq).symm
 
 /-- (10.1a) at this layer: the counit triangle `Λ(R) ∋ = R` with the layer's object letters `A B`. -/
@@ -90,7 +91,7 @@ public theorem Λ_comp_eps {A B : 𝒜} (R : A ⟶ B) : Λ R ≫ ∋ B = R := Λ
     embeds `Map(𝒜)` in `𝒜`. -/
 
 /-- The existential-image map `E R : [a] ⟶ [b]` for `R : a ⟶ b` (B&dM p.104-105). -/
-@[expose] public def existsImage {A B : 𝒜} (R : A ⟶ B) : PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj B :=
+@[expose] public def existsImage {A B : 𝒜} (R : A ⟶ B) : P A ⟶ P B :=
   Λ (∋ A ≫ R)
 
 /-- `∈` is an (exactly) natural transformation (B&dM p.105): `E R ≫ ∋ b = ∋ a ≫ R`. -/
@@ -106,8 +107,8 @@ public theorem Λ_absorption {A B C : 𝒜} (S : C ⟶ A) (R : A ⟶ B) :
   exact Λ_unique _ _ hmap heq
 
 /-- `E` preserves identities: `E 1_a = 1_{[a]}`. -/
-public theorem existsImage_id {A : 𝒜} : existsImage (Cat.id A) = Cat.id (PowerAllegory.powerObj A) := by
-  show Λ (∋ A ≫ Cat.id A) = Cat.id (PowerAllegory.powerObj A)
+public theorem existsImage_id {A : 𝒜} : existsImage (Cat.id A) = Cat.id (P A) := by
+  show Λ (∋ A ≫ Cat.id A) = Cat.id (P A)
   rw [Cat.comp_id, Λ_eps_reflection]
 
 /-- `E` is functorial: `E (R ≫ S) = E R ≫ E S`. -/
@@ -120,7 +121,7 @@ public theorem existsImage_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
 /-- B&dM p.104: `E` is a functor `Rel → Map` — on objects the power object, on arrows the existential image.
     It is NOT a relator: `existsImage` is not monotone, so it has no `map_mono`. -/
 @[expose] public def existsImageFunctor : Freyd.Functor 𝒜 𝒜 where
-  obj := PowerAllegory.powerObj
+  obj := P
   map := existsImage
   map_id _ := existsImage_id
   map_comp := existsImage_comp
@@ -186,29 +187,29 @@ public theorem singletonMap_recip_oplax {A B : 𝒜} (f : A ⟶ B) (hf : Map f) 
 
 /-- `bigUnion = E ∋` (definitional: both unfold to `Λ (∋' ≫ ∋)`). -/
 public theorem bigUnion_eq_existsImage_eps {A : 𝒜} :
-    (bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj A) ⟶ PowerAllegory.powerObj A)
+    (bigUnion : P (P A) ⟶ P A)
       = existsImage (∋ A) := rfl
 
 /-- Monad law `μ·τ = id`: `singletonMap ≫ bigUnion = 1`. -/
 theorem bigUnion_singleton {A : 𝒜} :
-    singletonMap ≫ bigUnion (a := A) = Cat.id (PowerAllegory.powerObj A) := by
+    singletonMap ≫ bigUnion (a := A) = Cat.id (P A) := by
   rw [bigUnion_eq_existsImage_eps, singletonMap, Λ_absorption, Cat.id_comp, Λ_eps_reflection]
 
 /-- Monad law `μ·Pτ = id`: `E singletonMap ≫ bigUnion = 1`. -/
 public theorem bigUnion_existsImage_singleton {A : 𝒜} :
-    existsImage (singletonMap (a := A)) ≫ bigUnion = Cat.id (PowerAllegory.powerObj A) := by
+    existsImage (singletonMap (a := A)) ≫ bigUnion = Cat.id (P A) := by
   rw [bigUnion_eq_existsImage_eps, ← existsImage_comp, singletonMap, Λ_eps_eq', existsImage_id]
 
 /-- Monad law `μ·μ = μ·Pμ`: `bigUnion ≫ bigUnion = E bigUnion ≫ bigUnion`. -/
 theorem bigUnion_assoc {A : 𝒜} :
     bigUnion ≫ bigUnion (a := A)
       = existsImage (bigUnion (a := A)) ≫ bigUnion := by
-  have hL : bigUnion (a := PowerAllegory.powerObj A) ≫ bigUnion (a := A)
-      = existsImage (∋ (PowerAllegory.powerObj A) ≫ ∋ A) := by
-    rw [bigUnion_eq_existsImage_eps (A := PowerAllegory.powerObj A),
+  have hL : bigUnion (a := P A) ≫ bigUnion (a := A)
+      = existsImage (∋ (P A) ≫ ∋ A) := by
+    rw [bigUnion_eq_existsImage_eps (A := P A),
         bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp]
   have hR : existsImage (bigUnion (a := A)) ≫ bigUnion (a := A)
-      = existsImage (∋ (PowerAllegory.powerObj A) ≫ ∋ A) := by
+      = existsImage (∋ (P A) ≫ ∋ A) := by
     rw [bigUnion_eq_existsImage_eps (A := A), ← existsImage_comp, existsImage_eps]
   exact hL.trans hR.symm
 
@@ -261,7 +262,7 @@ theorem leftDiv_div_eps {A B : 𝒜} (R : A ⟶ B) :
 
 /-- `wlp R` maps a postcondition-set `Y ⊆ b` to `{x ∈ a | ∀ y, x R y → y ∈ Y}`
     (B&dM Ex 4.52). -/
-def wlp {A B : 𝒜} (R : A ⟶ B) : PowerAllegory.powerObj B ⟶ PowerAllegory.powerObj A :=
+def wlp {A B : 𝒜} (R : A ⟶ B) : P B ⟶ P A :=
   Λ (∋ B / R)
 
 /-- `wlp` is contravariantly functorial (sequential composition of programs). -/
@@ -309,7 +310,7 @@ public theorem Λ_eq_singleton_existsImage {A B : 𝒜} (R : A ⟶ B) :
 
 /-- A simple `F` is inside the one-person-set map composed with the image of `F∋`: `simple_le_Λ_eps`
     with `Λ(F∋)` written as the composite `(𝟙%∋)E(F∋)`. -/
-public theorem simple_le_singleton_existsImage {A B : 𝒜} (F : A ⟶ PowerAllegory.powerObj B)
+public theorem simple_le_singleton_existsImage {A B : 𝒜} (F : A ⟶ P B)
     (hF : Simple F) : F ⊑ singletonMap ≫ existsImage (F ≫ ∋ B) :=
   Λ_eq_singleton_existsImage (F ≫ ∋ B) ▸ simple_le_Λ_eps F hF
 
@@ -322,8 +323,8 @@ public theorem existsImage_eq_Λ_bigUnion {A B : 𝒜} (R : A ⟶ B) :
 
 /-- KLEISLI COMPOSITION `f⋄g ≜ f E(g) union`, for `f : A ⟶ EB` and `g : B ⟶ EC` — the
     composition of `Kleisli(E)`, which `Λ` carries the allegory's own composition to. -/
-@[expose] public def kleisliComp {A B C : 𝒜} (f : A ⟶ PowerAllegory.powerObj B)
-    (g : B ⟶ PowerAllegory.powerObj C) : A ⟶ PowerAllegory.powerObj C :=
+@[expose] public def kleisliComp {A B C : 𝒜} (f : A ⟶ P B)
+    (g : B ⟶ P C) : A ⟶ P C :=
   f ≫ existsImage g ≫ bigUnion
 
 @[inherit_doc] infixl:70 " ⋄ " => kleisliComp

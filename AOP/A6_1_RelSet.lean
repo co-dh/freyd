@@ -220,7 +220,7 @@ public theorem classifier_comp_eps {B C : RelSet.{u}} (R : C ⟶ B) : classifier
 
 @[expose] public instance : PowerAllegory RelSet.{u} :=
   { (inferInstance : DivisionAllegory RelSet) with
-    powerObj := pow
+    P := pow
     eps := epsRel
     eps_straight := fun B => by
       show epsRel B /ₛ epsRel B ⊑ Cat.id (pow B)

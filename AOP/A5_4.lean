@@ -25,6 +25,7 @@ public import Freyd.S2_41b
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 -- (`div_mono_left`/`leftDiv_mono_right` were hoisted into S2_3 at collection.)
 
@@ -70,7 +71,7 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
     `X ⊑ ((∋a)° \ (R≫(∋b)°)) ↔ (∋a)°≫X ⊑ R≫(∋b)°` (term₁) and
     `X ⊑ (∋a≫R)/∋b ↔ X≫∋b ⊑ ∋a≫R` (term₂). -/
 @[expose] public def powerRel {A B : 𝒜} (R : A ⟶ B) :
-    PowerAllegory.powerObj A ⟶ PowerAllegory.powerObj B :=
+    P A ⟶ P B :=
   ((∋ A)° \ (R ≫ (∋ B)°)) ∩ ((∋ A ≫ R) / ∋ B)
 
 /-- B&dM's own spelling of the power relator's action on an arrow: `P(R)`.  Its own brackets, like
@@ -110,7 +111,7 @@ public theorem powerRel_mono {A B : 𝒜} {R S : A ⟶ B} (h : R ⊑ S) : powerR
     `supset°` on the nose (`(S \ R)` unfolds to `(R° / S°)°`, and `(∋a)°° = ∋a`), so the
     whole meet is `supset° ∩ supset = supset ∩ supset°`, which is exactly
     the unfolding of `Λ (∋ a) = ∋a /ₛ ∋a`. -/
-public theorem powerRel_id {A : 𝒜} : powerRel (Cat.id A) = Cat.id (PowerAllegory.powerObj A) := by
+public theorem powerRel_id {A : 𝒜} : powerRel (Cat.id A) = Cat.id (P A) := by
   have hterm1 : ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) = (supset (a := A))° := by
     have e : Cat.id A ≫ (∋ A)° = (∋ A)° := Cat.id_comp _
     rw [e]
@@ -118,9 +119,9 @@ public theorem powerRel_id {A : 𝒜} : powerRel (Cat.id A) = Cat.id (PowerAlleg
     rw [Allegory.recip_recip]
     rfl
   show ((∋ A)° \ (Cat.id A ≫ (∋ A)°)) ∩ ((∋ A ≫ Cat.id A) / ∋ A)
-      = Cat.id (PowerAllegory.powerObj A)
+      = Cat.id (P A)
   rw [hterm1, Cat.comp_id]
-  show (supset (a := A))° ∩ supset (a := A) = Cat.id (PowerAllegory.powerObj A)
+  show (supset (a := A))° ∩ supset (a := A) = Cat.id (P A)
   rw [Allegory.inter_comm]
   exact Λ_eps_reflection
 
@@ -220,11 +221,11 @@ variable {𝒜 : Type u} [UnguardedPowerAllegory 𝒜]
     combine with the trivial `S' ⊑ S'` via the (right) modular law `modular_le_right` to land
     inside `bookRel ≫ W°`. -/
 private theorem powerRel_leg_bound {w a' b'' D : 𝒜}
-    {p : w ⟶ PowerAllegory.powerObj a'} {q : w ⟶ PowerAllegory.powerObj b''}
+    {p : w ⟶ P a'} {q : w ⟶ P b''}
     (hq : Map q)
     {bookRel : a' ⟶ D} {bookRel' : b'' ⟶ D}
     {W : w ⟶ D} (hWdef : W = (p ≫ ∋ a' ≫ bookRel) ∩ (q ≫ ∋ b'' ≫ bookRel'))
-    {h : w ⟶ PowerAllegory.powerObj D} (hh : Map h) (hheps : h ≫ ∋ D = W)
+    {h : w ⟶ P D} (hh : Map h) (hheps : h ≫ ∋ D = W)
     (fact : (∋ a')° ≫ p° ≫ q ⊑ (bookRel ≫ bookRel'°) ≫ (∋ b'')°) :
     (∋ a')° ≫ (p° ≫ h) ⊑ bookRel ≫ (∋ D)° := by
   have hstep : ((∋ a')° ≫ p°) ≫ h ⊑ bookRel ≫ (∋ D)° := by
@@ -273,7 +274,7 @@ public theorem powerRel_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
   obtain ⟨w, x, z, hxmap, hzmap, hxz, _hjoint⟩ :=
     TabularAllegory.tabular (𝒜 := 𝒜) (powerRel (R ≫ S))
   let W : w ⟶ B := (x ≫ ∋ A ≫ R) ∩ (z ≫ ∋ C ≫ S°)
-  let h : w ⟶ PowerAllegory.powerObj B := Λ W
+  let h : w ⟶ P B := Λ W
   have hWdef : W = (x ≫ ∋ A ≫ R) ∩ (z ≫ ∋ C ≫ S°) := rfl
   have hhmap : Map h := Λ_is_map' W
   have hheps : h ≫ ∋ B = W := Λ_eps_eq' W
@@ -306,7 +307,7 @@ public theorem powerRel_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
           _ = (x° ≫ x) ≫ ∋ A ≫ R := (Cat.assoc _ _ _).symm
       have part2 : (x° ≫ x) ≫ ∋ A ≫ R ⊑ ∋ A ≫ R := by
         calc (x° ≫ x) ≫ ∋ A ≫ R
-            ⊑ Cat.id (PowerAllegory.powerObj A) ≫ ∋ A ≫ R := comp_mono_right hxmap.2 _
+            ⊑ Cat.id (P A) ≫ ∋ A ≫ R := comp_mono_right hxmap.2 _
           _ = ∋ A ≫ R := Cat.id_comp _
       exact le_trans part1 part2
   -- `z`-leg: term₁ (easy) directly, term₂ (hard) via `powerRel_leg_bound` + a `°`-flip.
@@ -320,7 +321,7 @@ public theorem powerRel_comp {A B C : 𝒜} (R : A ⟶ B) (S : B ⟶ C) :
             _ = (z° ≫ z) ≫ ∋ C ≫ S° := (Cat.assoc _ _ _).symm
         have part2 : (z° ≫ z) ≫ ∋ C ≫ S° ⊑ ∋ C ≫ S° := by
           calc (z° ≫ z) ≫ ∋ C ≫ S°
-              ⊑ Cat.id (PowerAllegory.powerObj C) ≫ ∋ C ≫ S° := comp_mono_right hzmap.2 _
+              ⊑ Cat.id (P C) ≫ ∋ C ≫ S° := comp_mono_right hzmap.2 _
             _ = ∋ C ≫ S° := Cat.id_comp _
         exact le_trans part1 part2
       have hr := recip_mono hraw
@@ -351,11 +352,11 @@ section PowerRelator
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
 
-/-- **B&dM §5.4 p.119**: the power relator `P` as a `Relator` — object part `powerObj`, arrow
+/-- **B&dM §5.4 p.119**: the power relator `P` as a `Relator` — object part `P`, arrow
     part `powerRel`.  Only `map_comp` (`powerRel_comp`) needs this section's tabularity; every
     other field holds in a bare `UnguardedPowerAllegory`. -/
 @[expose] public def powerRelator : Relator 𝒜 𝒜 where
-  obj := PowerAllegory.powerObj
+  obj := P
   map := powerRel
   map_id _ := powerRel_id
   map_comp := powerRel_comp
@@ -381,8 +382,8 @@ public theorem bigUnion_lax_natural :
       (fun A => bigUnion (a := A)) :=
   fun {A B} R => by
   have hUm : ∀ x : 𝒜, Map (bigUnion (a := x)) := fun x => by
-    show Map (Λ (∋ (PowerAllegory.powerObj x) ≫ ∋ x)); exact Λ_is_map' _
-  have hUe : ∀ x : 𝒜, bigUnion (a := x) ≫ ∋ x = ∋ (PowerAllegory.powerObj x) ≫ ∋ x :=
+    show Map (Λ (∋ (P x) ≫ ∋ x)); exact Λ_is_map' _
+  have hUe : ∀ x : 𝒜, bigUnion (a := x) ≫ ∋ x = ∋ (P x) ≫ ∋ x :=
     fun x => Λ_eps_eq' _
   show powerRel (powerRel R) ≫ bigUnion (a := B) ⊑ bigUnion (a := A) ≫ powerRel R
   refine (map_shunt_left (hUm A) _ _).mp ?_
@@ -391,31 +392,31 @@ public theorem bigUnion_lax_natural :
   apply le_inter
   · -- TERM₁: cancel `(∋a)°⋃°` to `(∋a)°(∋_{[a]})°`, then term₁ at `P R` and at `R`.
     refine (le_leftDiv_iff _ _ _).mpr ?_
-    have e1 : (∋ A)° ≫ (bigUnion (a := A))° = (∋ A)° ≫ (∋ (PowerAllegory.powerObj A))° := by
+    have e1 : (∋ A)° ≫ (bigUnion (a := A))° = (∋ A)° ≫ (∋ (P A))° := by
       rw [← Allegory.recip_comp, hUe A, Allegory.recip_comp]
     -- `⋃` is simple, so a member of a member of a family is a member of its union.
-    have h3 : (bigUnion (a := B))° ≫ (∋ (PowerAllegory.powerObj B) ≫ ∋ B) ⊑ ∋ B := by
+    have h3 : (bigUnion (a := B))° ≫ (∋ (P B) ≫ ∋ B) ⊑ ∋ B := by
       rw [← hUe B, ← Cat.assoc]
       calc ((bigUnion (a := B))° ≫ bigUnion (a := B)) ≫ ∋ B
           ⊑ Cat.id _ ≫ ∋ B := comp_mono_right (hUm B).2 _
         _ = ∋ B := Cat.id_comp _
-    have s3 : (∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) ⊑ (∋ B)° := by
+    have s3 : (∋ B)° ≫ ((∋ (P B))° ≫ bigUnion (a := B)) ⊑ (∋ B)° := by
       simpa only [Allegory.recip_comp, Allegory.recip_recip, Cat.assoc] using recip_mono h3
     calc (∋ A)° ≫ ((bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)))
         = ((∋ A)° ≫ (bigUnion (a := A))°) ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)) := by
           simp only [Cat.assoc]
-      _ = ((∋ A)° ≫ (∋ (PowerAllegory.powerObj A))°)
+      _ = ((∋ A)° ≫ (∋ (P A))°)
             ≫ (powerRel (powerRel R) ≫ bigUnion (a := B)) := by rw [e1]
-      _ = (∋ A)° ≫ (((∋ (PowerAllegory.powerObj A))° ≫ powerRel (powerRel R))
+      _ = (∋ A)° ≫ (((∋ (P A))° ≫ powerRel (powerRel R))
             ≫ bigUnion (a := B)) := by simp only [Cat.assoc]
-      _ ⊑ (∋ A)° ≫ ((powerRel R ≫ (∋ (PowerAllegory.powerObj B))°) ≫ bigUnion (a := B)) :=
+      _ ⊑ (∋ A)° ≫ ((powerRel R ≫ (∋ (P B))°) ≫ bigUnion (a := B)) :=
           comp_mono_left _ (comp_mono_right (powerRel_term1_cancel (powerRel R)) _)
       _ = ((∋ A)° ≫ powerRel R)
-            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) := by simp only [Cat.assoc]
+            ≫ ((∋ (P B))° ≫ bigUnion (a := B)) := by simp only [Cat.assoc]
       _ ⊑ (R ≫ (∋ B)°)
-            ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B)) :=
+            ≫ ((∋ (P B))° ≫ bigUnion (a := B)) :=
           comp_mono_right (powerRel_term1_cancel R) _
-      _ = R ≫ ((∋ B)° ≫ ((∋ (PowerAllegory.powerObj B))° ≫ bigUnion (a := B))) := by
+      _ = R ≫ ((∋ B)° ≫ ((∋ (P B))° ≫ bigUnion (a := B))) := by
           simp only [Cat.assoc]
       _ ⊑ R ≫ (∋ B)° := comp_mono_left _ s3
   · -- TERM₂: `⋃∋ = ∋∋` on both ends, with `∋` lax natural at `P R` and at `R` in between.
@@ -424,15 +425,15 @@ public theorem bigUnion_lax_natural :
         = (bigUnion (a := A))° ≫ (powerRel (powerRel R) ≫ (bigUnion (a := B) ≫ ∋ B)) := by
           simp only [Cat.assoc]
       _ = (bigUnion (a := A))°
-            ≫ ((powerRel (powerRel R) ≫ ∋ (PowerAllegory.powerObj B)) ≫ ∋ B) := by
+            ≫ ((powerRel (powerRel R) ≫ ∋ (P B)) ≫ ∋ B) := by
           rw [hUe B]; simp only [Cat.assoc]
-      _ ⊑ (bigUnion (a := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ powerRel R) ≫ ∋ B) :=
+      _ ⊑ (bigUnion (a := A))° ≫ ((∋ (P A) ≫ powerRel R) ≫ ∋ B) :=
           comp_mono_left _ (comp_mono_right (powerRel_eps_lax (powerRel R)) _)
-      _ = (bigUnion (a := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (powerRel R ≫ ∋ B)) := by
+      _ = (bigUnion (a := A))° ≫ (∋ (P A) ≫ (powerRel R ≫ ∋ B)) := by
           simp only [Cat.assoc]
-      _ ⊑ (bigUnion (a := A))° ≫ (∋ (PowerAllegory.powerObj A) ≫ (∋ A ≫ R)) :=
+      _ ⊑ (bigUnion (a := A))° ≫ (∋ (P A) ≫ (∋ A ≫ R)) :=
           comp_mono_left _ (comp_mono_left _ (powerRel_eps_lax R))
-      _ = (bigUnion (a := A))° ≫ ((∋ (PowerAllegory.powerObj A) ≫ ∋ A) ≫ R) := by
+      _ = (bigUnion (a := A))° ≫ ((∋ (P A) ≫ ∋ A) ≫ R) := by
           simp only [Cat.assoc]
       _ = ((bigUnion (a := A))° ≫ bigUnion (a := A)) ≫ (∋ A ≫ R) := by
           rw [← hUe A]; simp only [Cat.assoc]

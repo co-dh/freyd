@@ -36,6 +36,7 @@ universe v u
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
@@ -80,6 +81,7 @@ theorem le_comp_codom {a b : 𝒜} (R : a ⟶ b) :
 end Freyd.Alg
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
@@ -302,6 +304,7 @@ end Freyd.Alg
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 section SplEqCore
 variable {𝒜 : Type u} [DivisionAllegory 𝒜] {x a b : 𝒜}
@@ -412,6 +415,7 @@ end Freyd.Alg
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 section Core
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
@@ -591,6 +595,7 @@ end Freyd.Alg
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 open LocallyCompleteDistributiveAllegory
 
@@ -894,6 +899,7 @@ end Freyd.Alg
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 
@@ -978,6 +984,7 @@ theorem thick_endo_zero_entire (hSC : StronglyConnectedAllegory 𝒜)
 end Freyd.Alg
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [PowerAllegory 𝒜]
 
@@ -995,8 +1002,8 @@ variable {𝒜 : Type u} [PowerAllegory 𝒜]
 
 /-- `codBox (F∋) = codBox ∋` when `F°F = 1` (§2.41 box bookkeeping).
     `codBox R = 1 ∩ R°R`; for `R = F∋`, `(F∋)°(F∋) = ∋°(F°F)∋ = ∋°∋`. -/
-theorem codBox_comp_eps {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a)) :
+theorem codBox_comp_eps {a : 𝒜} (F : a ⟶ P a)
+    (hF : F° ≫ F = Cat.id (P a)) :
     codBox (F ≫ ∋ a) = codBox (∋ a) := by
   show dom ((F ≫ ∋ a)°) = dom ((∋ a)°)
   dsimp only [dom]
@@ -1007,8 +1014,8 @@ theorem codBox_comp_eps {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
 
 /-- §2.435 Cantor: in a power allegory, `F : a → [a]` with `F°F = 1` makes
     `T = F∋` a thick endomorphism.  Witness `R̂ = Λ(R)F°` (book `(R/∋)F°`). -/
-theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a)) :
+theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ P a)
+    (hF : F° ≫ F = Cat.id (P a)) :
     Thick (F ≫ ∋ a) := by
   rw [thick_iff_existential]
   intro c R hbox
@@ -1054,8 +1061,8 @@ theorem cantor_thick_endo {a : 𝒜} (F : a ⟶ PowerAllegory.powerObj a)
     side-condition (S2_43 `one_object_pre_power_inconsistent`; it can fail for the
     box-guarded `Thick`, which is why it is an explicit hypothesis here). -/
 theorem cantor_degenerate (hSC : StronglyConnectedAllegory 𝒜) {a : 𝒜}
-    (F : a ⟶ PowerAllegory.powerObj a)
-    (hF : F° ≫ F = Cat.id (PowerAllegory.powerObj a))
+    (F : a ⟶ P a)
+    (hF : F° ≫ F = Cat.id (P a))
     (hBox : codBox (diag (F ≫ ∋ a)) = codBox (F ≫ ∋ a)) :
     ∀ (β : 𝒜), Cat.id β = (𝟘 : β ⟶ β) :=
   thick_endo_degenerate hSC (F ≫ ∋ a) (cantor_thick_endo F hF) hBox
@@ -1063,6 +1070,7 @@ theorem cantor_degenerate (hSC : StronglyConnectedAllegory 𝒜) {a : 𝒜}
 end Freyd.Alg
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [DivisionAllegory 𝒜]
 

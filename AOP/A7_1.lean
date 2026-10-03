@@ -7,7 +7,7 @@
   the longest.  `est R` is B&dM's `max R`, and B&dM's `min R` is `est (R°)`.
 
   MIRRORING (diagram order, B&dM `X·Y` = Freyd `Y ≫ X`):
-  - B&dM `∈ : A ← PA` is Freyd's `∋ a : powerObj a ⟶ a`; B&dM `∋ = ∈°` is Freyd `(∋ a)°`.
+  - B&dM `∈ : A ← PA` is Freyd's `∋ a : P a ⟶ a`; B&dM `∋ = ∈°` is Freyd `(∋ a)°`.
   - B&dM division `R/S` (UP: `X ⊆ R/S ⟺ X·S ⊆ R`) mirrors to Freyd `(S \ R)`
     (`le_leftDiv_iff : T ⊑ (S \ R) ↔ S ≫ T ⊑ R`); B&dM `S\R` mirrors to Freyd `R / S`.
   - Hence `est R = ∋ ∩ (∈ \ R°)` mirrors to `est R = ∋ a ∩ (((∋ a)°) \ R°)`.
@@ -25,6 +25,7 @@ public import AOP.A5_3
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
@@ -35,7 +36,7 @@ variable {𝒜 : Type u} [UnguardedPowerLCDA 𝒜] {A B : 𝒜}
 
 /-- The note's one operator `est(R) ≜ ∋ ∩ (∈ \ R°)` (with `∈ = ∋°`): `xss est(R) x` iff
     `x ∈ xss` and `x R y` for every `y ∈ xss`. -/
-@[expose] public def est (R : A ⟶ A) : PowerAllegory.powerObj A ⟶ A :=
+@[expose] public def est (R : A ⟶ A) : P A ⟶ A :=
   ∋ A ∩ (((∋ A)°) \ R°)
 
 /-- The note's call-style spelling `est(R)`. -/
@@ -43,7 +44,7 @@ notation:max "est(" R ")" => est R
 
 /-- The universal property of `est` (book p.166's for `min`, at `R°`): `X ⊑ est R ⟺ X ⊑ ∈ ∧
     X·∋ ⊑ R°`, mirrored (`X·∋` becomes `(∋ a)° ≫ X`). -/
-public theorem le_est_iff {R : A ⟶ A} {X : PowerAllegory.powerObj A ⟶ A} :
+public theorem le_est_iff {R : A ⟶ A} {X : P A ⟶ A} :
     X ⊑ est R ↔ X ⊑ ∋ A ∧ (∋ A)° ≫ X ⊑ R° := by
   constructor
   · intro h
@@ -66,7 +67,7 @@ public theorem recip_eps_comp_est_le (R : A ⟶ A) : (∋ A)° ≫ est R ⊑ R°
 
 /-- `ΛS·(R/∋) = R/S°` mirrored: `Λ S ≫ ((∋ a)° \ R) = (S° \ R)` (B&dM (7.2)).
     Stated for a numerator of ARBITRARY target type `c` — §7.1 uses it at `c := a`
-    (`R` an order on `a`), §8.1's thinning at `c := powerObj a`. -/
+    (`R` an order on `a`), §8.1's thinning at `c := P a`. -/
 public theorem Λ_comp_lb {C : 𝒜} (S : B ⟶ A) (R : A ⟶ C) :
     Λ S ≫ (((∋ A)°) \ R) = (S° \ R) := by
   have hS' : (∋ A)° ≫ (Λ S)° = S° := by rw [← Allegory.recip_comp, Λ_eps_eq']
@@ -142,9 +143,9 @@ theorem singletonMap_comp_lb (R : A ⟶ A) : singletonMap ≫ (((∋ A)°) \ R) 
     ((∋[a])° \ ((∋a)° \ R))`, via `bigUnion = Λ(∋[a]≫∋a)`, (7.2), and `leftDiv_comp`. -/
 theorem bigUnion_comp_lb (R : A ⟶ A) :
     bigUnion ≫ (((∋ A)°) \ R) =
-      (((∋ (PowerAllegory.powerObj A))°) \ (((∋ A)°) \ R)) := by
-  show Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A) ≫ (((∋ A)°) \ R) =
-      (((∋ (PowerAllegory.powerObj A))°) \ (((∋ A)°) \ R))
+      (((∋ (P A))°) \ (((∋ A)°) \ R)) := by
+  show Λ (∋ (P A) ≫ ∋ A) ≫ (((∋ A)°) \ R) =
+      (((∋ (P A))°) \ (((∋ A)°) \ R))
   rw [Λ_comp_lb, Allegory.recip_comp, leftDiv_comp]
 
 /-! ## (7.6): the context rule (book pp.166-167) -/
@@ -174,7 +175,7 @@ theorem recip_eps_comp_eps (A : 𝒜) : (∋ A)° ≫ ∋ A = topHom A A := by
   · exact LocallyCompleteDistributiveAllegory.le_Sup trivial
   · let f := Λ (topHom A A)
     have hfeq : topHom A A = f ≫ ∋ A := (Λ_eps_eq' (topHom A A)).symm
-    have hsimple : f° ≫ f ⊑ Cat.id (PowerAllegory.powerObj A) := (Λ_is_map' (topHom A A)).2
+    have hsimple : f° ≫ f ⊑ Cat.id (P A) := (Λ_is_map' (topHom A A)).2
     have h1 : Cat.id A ⊑ topHom A A := LocallyCompleteDistributiveAllegory.le_Sup trivial
     have h2 : topHom A A ⊑ topHom A A ≫ topHom A A := by
       have h2a := comp_mono_right h1 (topHom A A)
@@ -210,7 +211,7 @@ public theorem est_eq_eps_iff (R : A ⟶ A) : est R = ∋ A ↔ R = topHom A A :
     subst h
     show ∋ A ∩ (((∋ A)°) \ ((topHom A A)°)) = ∋ A
     rw [recip_topHom]
-    have hdiv : (((∋ A)°) \ (topHom A A)) = topHom (PowerAllegory.powerObj A) A :=
+    have hdiv : (((∋ A)°) \ (topHom A A)) = topHom (P A) A :=
       le_antisymm (LocallyCompleteDistributiveAllegory.le_Sup trivial)
         ((le_leftDiv_iff _ _ _).mpr (LocallyCompleteDistributiveAllegory.le_Sup trivial))
     rw [hdiv]
@@ -232,7 +233,7 @@ theorem comp_lb_of_preorder {R : A ⟶ A} (htrans : R ≫ R ⊑ R) (hrefl : Cat.
 
 /-- **Ex 7.10** (easy half): `est` is monotone, mirrored `R ⊑ S → est R ⊑ est S`. -/
 public theorem est_mono {R S : A ⟶ A} (h : R ⊑ S) : est R ⊑ est S := by
-  show (∋ A ∩ (((∋ A)°) \ R°) : PowerAllegory.powerObj A ⟶ A) ⊑ ∋ A ∩ (((∋ A)°) \ S°)
+  show (∋ A ∩ (((∋ A)°) \ R°) : P A ⟶ A) ⊑ ∋ A ∩ (((∋ A)°) \ S°)
   exact inter_mono (le_refl _) (leftDiv_mono_right _ (recip_mono h))
 
 -- The converse of `est_mono` (`est R ⊑ est S → R ⊑ S`, for reflexive `R,S`) is Ex 7.10's
@@ -244,7 +245,7 @@ theorem est_inter (R S : A ⟶ A) : est (R ∩ S) = est R ∩ est S := by
   apply le_antisymm
   · exact le_inter (est_mono (inter_lb_left R S)) (est_mono (inter_lb_right R S))
   · show ((∋ A ∩ (((∋ A)°) \ R°)) ∩ (∋ A ∩ (((∋ A)°) \ S°)) :
-        PowerAllegory.powerObj A ⟶ A) ⊑ ∋ A ∩ (((∋ A)°) \ ((R ∩ S)°))
+        P A ⟶ A) ⊑ ∋ A ∩ (((∋ A)°) \ ((R ∩ S)°))
     rw [Allegory.recip_inter, leftDiv_inter]
     apply le_inter
     · exact le_trans (inter_lb_left _ _) (inter_lb_left _ _)
@@ -298,8 +299,8 @@ theorem est_simple_of_antisymmetric {R : A ⟶ A} (h : AntiSymmetric R) : Simple
   B&dM's `subset = ∈\∈` is Freyd's `subset`; its converse `(∋ a) / (∋ a)` is `supset` (§2.442,
   `Freyd.S2_40`), so the book's relation is written with Freyd's name and no alias of its own. -/
 
-public theorem id_le_supset : Cat.id (PowerAllegory.powerObj A) ⊑ supset := by
-  show Cat.id (PowerAllegory.powerObj A) ⊑ (∋ A) / (∋ A)
+public theorem id_le_supset : Cat.id (P A) ⊑ supset := by
+  show Cat.id (P A) ⊑ (∋ A) / (∋ A)
   apply (le_div_iff _ _ _).mpr
   rw [Cat.id_comp]
   exact le_refl _
@@ -321,7 +322,7 @@ theorem recip_supset_comp_lb (R : A ⟶ A) :
       rw [← Cat.assoc, Allegory.recip_comp]
     rw [heq]
     exact le_trans (comp_mono_right hstep2 _) (leftDiv_comp_le _ _)
-  · have hid : Cat.id (PowerAllegory.powerObj A) ⊑ supset° := by
+  · have hid : Cat.id (P A) ⊑ supset° := by
       have h := recip_mono (id_le_supset (A := A)); rwa [recip_id] at h
     have h2 := comp_mono_right hid (((∋ A)°) \ R)
     rwa [Cat.id_comp] at h2
@@ -349,7 +350,7 @@ theorem existsImage_comp_supset_ge (R : A ⟶ B) :
   show (existsImage R)° ≫ ((∋ A ≫ R) / (∋ B)) ⊑ (∋ B) / (∋ B)
   apply (le_div_iff _ _ _).mpr
   have hd : ((∋ A ≫ R) / (∋ B)) ≫ ∋ B ⊑ ∋ A ≫ R := DivisionAllegory.div_comp_le _ _
-  have hsimp : (existsImage R)° ≫ existsImage R ⊑ Cat.id (PowerAllegory.powerObj B) :=
+  have hsimp : (existsImage R)° ≫ existsImage R ⊑ Cat.id (P B) :=
     hEMap.2
   have hb1 : ((existsImage R)° ≫ ((∋ A ≫ R) / (∋ B))) ≫ ∋ B
       ⊑ (existsImage R)° ≫ (∋ A ≫ R) := by
@@ -539,33 +540,33 @@ public theorem powerRel_map_comp_est {f : A ⟶ B} (hf : Map f) (R : B ⟶ B) :
 public theorem powerRel_est_le_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
     powerRel (est R) ≫ est R ⊑ bigUnion ≫ est R := by
   show powerRel (est R) ≫ est R
-      ⊑ Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A) ≫ est R
+      ⊑ Λ (∋ (P A) ≫ ∋ A) ≫ est R
   have htrans' : R° ≫ R° ⊑ R° := by
     have h := recip_mono htrans; rwa [Allegory.recip_comp] at h
   have hb := recip_eps_comp_est_le R
-  have hi : powerRel (est R) ≫ est R ⊑ ∋ (PowerAllegory.powerObj A) ≫ ∋ A := by
+  have hi : powerRel (est R) ≫ est R ⊑ ∋ (P A) ≫ ∋ A := by
     have s1 : powerRel (est R) ≫ est R ⊑ powerRel (est R) ≫ ∋ A :=
       comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)
-    have s2 : powerRel (est R) ≫ ∋ A ⊑ ∋ (PowerAllegory.powerObj A) ≫ est R :=
+    have s2 : powerRel (est R) ≫ ∋ A ⊑ ∋ (P A) ≫ est R :=
       powerRel_eps_lax (est R)
-    have s3 : ∋ (PowerAllegory.powerObj A) ≫ est R ⊑ ∋ (PowerAllegory.powerObj A) ≫ ∋ A :=
+    have s3 : ∋ (P A) ≫ est R ⊑ ∋ (P A) ≫ ∋ A :=
       comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)
     exact le_trans s1 (le_trans s2 s3)
-  have hii : (∋ (PowerAllegory.powerObj A) ≫ ∋ A)° ≫ (powerRel (est R) ≫ est R) ⊑ R° := by
-    have hcancel : (∋ (PowerAllegory.powerObj A))° ≫ powerRel (est R) ⊑ est R ≫ (∋ A)° :=
+  have hii : (∋ (P A) ≫ ∋ A)° ≫ (powerRel (est R) ≫ est R) ⊑ R° := by
+    have hcancel : (∋ (P A))° ≫ powerRel (est R) ⊑ est R ≫ (∋ A)° :=
       powerRel_term1_cancel (est R)
-    have hcombined : ((∋ (PowerAllegory.powerObj A))° ≫ powerRel (est R)) ≫ est R
+    have hcombined : ((∋ (P A))° ≫ powerRel (est R)) ≫ est R
         ⊑ est R ≫ R° := by
-      have hstepA : ((∋ (PowerAllegory.powerObj A))° ≫ powerRel (est R)) ≫ est R
+      have hstepA : ((∋ (P A))° ≫ powerRel (est R)) ≫ est R
           ⊑ (est R ≫ (∋ A)°) ≫ est R := comp_mono_right hcancel _
       have hstepB : (est R ≫ (∋ A)°) ≫ est R ⊑ est R ≫ R° := by
         rw [Cat.assoc]; exact comp_mono_left _ hb
       exact le_trans hstepA hstepB
-    have e1 : (∋ (PowerAllegory.powerObj A) ≫ ∋ A)° ≫ (powerRel (est R) ≫ est R)
-        = (∋ A)° ≫ (((∋ (PowerAllegory.powerObj A))° ≫ powerRel (est R)) ≫ est R) := by
+    have e1 : (∋ (P A) ≫ ∋ A)° ≫ (powerRel (est R) ≫ est R)
+        = (∋ A)° ≫ (((∋ (P A))° ≫ powerRel (est R)) ≫ est R) := by
       rw [Allegory.recip_comp, Cat.assoc, Cat.assoc]
     rw [e1]
-    have hfin : (∋ A)° ≫ (((∋ (PowerAllegory.powerObj A))° ≫ powerRel (est R)) ≫ est R)
+    have hfin : (∋ A)° ≫ (((∋ (P A))° ≫ powerRel (est R)) ≫ est R)
         ⊑ (∋ A)° ≫ (est R ≫ R°) := comp_mono_left _ hcombined
     have e2 : (∋ A)° ≫ (est R ≫ R°) = ((∋ A)° ≫ est R) ≫ R° := by rw [Cat.assoc]
     rw [e2] at hfin
@@ -586,7 +587,7 @@ public theorem powerRel_est_le_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
     of `U°U` and then drops the `∋°∋` left in the middle by the modular law again. -/
 public theorem dom_powerRel_le {A B : 𝒜} (S : A ⟶ B) :
     dom (powerRel S) ⊑ powerRel (dom S) := by
-  have hcor : dom (powerRel S) ⊑ 𝟙 (PowerAllegory.powerObj A) := dom_coreflexive _
+  have hcor : dom (powerRel S) ⊑ 𝟙 (P A) := dom_coreflexive _
   have hsym : (dom (powerRel S))° = dom (powerRel S) :=
     symmetric_eq (coreflexive_symmetric_idempotent hcor).1
   have hdsym : (dom S)° = dom S :=
@@ -601,7 +602,7 @@ public theorem dom_powerRel_le {A B : 𝒜} (S : A ⟶ B) :
   have hkey : dom (powerRel S) ≫ ∋ A ⊑ ∋ A ≫ dom S := by
     have hV : (∋ A)° ≫ (dom (powerRel S) ≫ ∋ A) ⊑ S ≫ ((∋ B)° ≫ (∋ B ≫ S°)) := by
       have hdomle : dom (powerRel S) ⊑ powerRel S ≫ (powerRel S)° :=
-        inter_lb_right (𝟙 (PowerAllegory.powerObj A)) (powerRel S ≫ (powerRel S)°)
+        inter_lb_right (𝟙 (P A)) (powerRel S ≫ (powerRel S)°)
       calc (∋ A)° ≫ (dom (powerRel S) ≫ ∋ A)
           ⊑ (∋ A)° ≫ ((powerRel S ≫ (powerRel S)°) ≫ ∋ A) :=
             comp_mono_left _ (comp_mono_right hdomle _)
@@ -639,7 +640,7 @@ public theorem dom_powerRel_le {A B : 𝒜} (S : A ⟶ B) :
 public theorem powerRel_dom_comp_existsImage_le {A B : 𝒜} (S : A ⟶ B) :
     powerRel (dom S) ≫ existsImage S ⊑ powerRel S := by
   have hmap : Map (existsImage S) := Λ_is_map' _
-  have hcor : powerRel (dom S) ⊑ 𝟙 (PowerAllegory.powerObj A) := by
+  have hcor : powerRel (dom S) ⊑ 𝟙 (P A) := by
     have h := powerRel_mono (dom_coreflexive S); rwa [powerRel_id] at h
   show _ ⊑ ((∋ A)° \ (S ≫ (∋ B)°)) ∩ ((∋ A ≫ S) / ∋ B)
   apply le_inter
@@ -668,33 +669,33 @@ public theorem bigUnion_comp_est_le (R : A ⟶ A) :
     bigUnion ≫ est R ⊑ existsImage (est R) ≫ est R := by
   have hmap : Map (existsImage (est R)) := Λ_is_map' _
   have hUmap : Map (bigUnion (a := A)) := Λ_is_map' _
-  have heps : existsImage (est R) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ est R :=
+  have heps : existsImage (est R) ≫ ∋ A = ∋ (P A) ≫ est R :=
     existsImage_eps (est R)
-  have hbeps : ∋ (PowerAllegory.powerObj A) ≫ ∋ A = bigUnion ≫ ∋ A := (Λ_eps_eq' _).symm
-  have hlb : (∋ (PowerAllegory.powerObj A))° ≫ (bigUnion ≫ est R) ⊑ ((∋ A)° \ R°) := by
+  have hbeps : ∋ (P A) ≫ ∋ A = bigUnion ≫ ∋ A := (Λ_eps_eq' _).symm
+  have hlb : (∋ (P A))° ≫ (bigUnion ≫ est R) ⊑ ((∋ A)° \ R°) := by
     apply (le_leftDiv_iff _ _ _).mpr
-    have e1 : (∋ A)° ≫ ((∋ (PowerAllegory.powerObj A))° ≫ (bigUnion ≫ est R))
-        = ((∋ (PowerAllegory.powerObj A) ≫ ∋ A)°) ≫ (bigUnion ≫ est R) := by
+    have e1 : (∋ A)° ≫ ((∋ (P A))° ≫ (bigUnion ≫ est R))
+        = ((∋ (P A) ≫ ∋ A)°) ≫ (bigUnion ≫ est R) := by
       rw [Allegory.recip_comp, Cat.assoc]
     rw [e1, hbeps, Allegory.recip_comp, Cat.assoc,
-      ← Cat.assoc ((bigUnion : PowerAllegory.powerObj (PowerAllegory.powerObj A) ⟶
-        PowerAllegory.powerObj A)°) bigUnion (est R)]
+      ← Cat.assoc ((bigUnion : P (P A) ⟶
+        P A)°) bigUnion (est R)]
     refine le_trans (comp_mono_left _ (comp_mono_right hUmap.2 (est R))) ?_
     rw [Cat.id_comp]
     exact recip_eps_comp_est_le R
-  have hmem : bigUnion ≫ est R ⊑ ∋ (PowerAllegory.powerObj A) ≫ est R := by
-    have hsub : bigUnion ≫ est R ⊑ ∋ (PowerAllegory.powerObj A) ≫ ∋ A := by
+  have hmem : bigUnion ≫ est R ⊑ ∋ (P A) ≫ est R := by
+    have hsub : bigUnion ≫ est R ⊑ ∋ (P A) ≫ ∋ A := by
       have h1 : bigUnion ≫ est R ⊑ bigUnion ≫ ∋ A :=
         comp_mono_left _ (show est R ⊑ ∋ A from inter_lb_left _ _)
       rwa [← hbeps] at h1
     refine le_trans (le_trans (le_inter hsub (le_refl _))
-      (modular_le_right (∋ (PowerAllegory.powerObj A)) (∋ A) (bigUnion ≫ est R))) ?_
+      (modular_le_right (∋ (P A)) (∋ A) (bigUnion ≫ est R))) ?_
     exact comp_mono_left _ (inter_mono (le_refl _) hlb)
   apply (map_shunt_left hmap _ _).mp
   apply le_est_iff.mpr
   refine ⟨(map_shunt_left hmap _ _).mpr (by rw [heps]; exact hmem), ?_⟩
   have e3 : (∋ A)° ≫ ((existsImage (est R))° ≫ (bigUnion ≫ est R))
-      = ((est R)° ≫ (∋ (PowerAllegory.powerObj A))°) ≫ (bigUnion ≫ est R) := by
+      = ((est R)° ≫ (∋ (P A))°) ≫ (bigUnion ≫ est R) := by
     rw [← Cat.assoc, ← Allegory.recip_comp, heps, Allegory.recip_comp]
   rw [e3]
   refine le_trans (comp_mono_right (comp_mono_right
@@ -711,7 +712,7 @@ public theorem bigUnion_comp_est_le (R : A ⟶ A) :
 public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
     powerRel (est R) ≫ est R = powerRel (dom (est R)) ≫ (bigUnion ≫ est R) := by
   apply le_antisymm
-  · have hcor : powerRel (dom (est R)) ⊑ 𝟙 (PowerAllegory.powerObj (PowerAllegory.powerObj A)) := by
+  · have hcor : powerRel (dom (est R)) ⊑ 𝟙 (P (P A)) := by
       have h := powerRel_mono (dom_coreflexive (est R)); rwa [powerRel_id] at h
     calc powerRel (est R) ≫ est R
         ⊑ (powerRel (dom (est R)) ≫ powerRel (est R)) ≫ est R :=
@@ -729,7 +730,7 @@ public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
 -- (7.12), the (7.9) equality, Ex 7.3/7.4, Ex 7.8/7.9/7.16/7.17/7.18, and
 -- well-boundedness (Ex 7.26-7.32) are DROPPED here.  Ex 7.8/7.9/7.18/7.26 are TABULATION
 -- walls: B&dM's argument pairs two maps `f, g : c ⟶ a` into `h := Λ(f∪g) : c ⟶ PowerAllegory
--- .powerObj a` and reasons about the resulting two-element sets, which needs a tabular
+-- .P a` and reasons about the resulting two-element sets, which needs a tabular
 -- setting (`f,g` jointly monic factoring a relation) not assumed by `UnguardedPowerLCDA`.
 -- Ex 7.3/7.4/7.16/7.17 and the rest of well-boundedness build on that pairing or on
 -- `existsImage = powerRel` restricted to maps; (7.12)/(7.9) likewise
@@ -740,7 +741,7 @@ public theorem powerRel_est_eq_bigUnion {R : A ⟶ A} (htrans : R ≫ R ⊑ R) :
 
 /-- **Ex 7.19** mirrored: `mnl R := est (R° ⇨ R)` — an element `x` of the set with `y R x →
     x R y` for every member `y`, i.e. minimal w.r.t. `R` restricted to that set. -/
-def mnlRel (R : A ⟶ A) : PowerAllegory.powerObj A ⟶ A := est (R° ⇨ R)
+def mnlRel (R : A ⟶ A) : P A ⟶ A := est (R° ⇨ R)
 
 /-- **Ex 7.19** (first part): `id ⊑ R° ⇨ R`, i.e. every element is `(R°⇨R)`-related to
     itself.  Via `le_impl_iff`: `id ∩ R° ⊑ R`.  Since `id∩R°` is coreflexive, it is

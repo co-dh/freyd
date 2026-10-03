@@ -50,6 +50,7 @@ public import AOP.A5_6_ListCombinators
 set_option linter.unusedVariables false
 
 namespace Freyd.Alg.RelSet.MSS
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
@@ -704,8 +705,8 @@ private theorem suffix_mssPre_ys (v : Int) : (suffixR ≫ mssPre) ys v ↔ (v = 
     read `⦇[zero,⊕]⦈ x` back out of the SET of that fold's values on the suffixes of `x`, and
     `xs`, `ys` are two lists where the set is the same and the value is not. -/
 public theorem suffixMax_not_relCata :
-    ¬ ∃ h : (F Unit Int).obj (PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0}))
-              ⟶ PowerAllegory.powerObj (⟨Int⟩ : RelSet.{0}),
+    ¬ ∃ h : (F Unit Int).obj (P (⟨Int⟩ : RelSet.{0}))
+              ⟶ P (⟨Int⟩ : RelSet.{0}),
         suffixR%∋ ≫ existsImage mssPre = ⦇h⦈ := by
   rintro ⟨h, hh⟩
   have hcomm := (relCata_UP (initial Unit Int) h _).mpr hh
@@ -789,10 +790,10 @@ public theorem suffixMax_not_relCata :
     (rpair wstep (Λ (wstep ∪ tailSet)))
 
 /-- `Λ(𝟙)` pointwise: the singleton of `v`. -/
-theorem singletonMap_apply (v : A) (P : (PowerAllegory.powerObj (⟨A⟩ : RelSet.{0})).carrier) :
-    (singletonMap : (⟨A⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩) v P
-      ↔ P = fun y => v = y := by
-  show Λ (𝟙 (⟨A⟩ : RelSet.{0})) v P ↔ _
+theorem singletonMap_apply (v : A) (p : (P (⟨A⟩ : RelSet.{0})).carrier) :
+    (singletonMap : (⟨A⟩ : RelSet.{0}) ⟶ P ⟨A⟩) v p
+      ↔ p = fun y => v = y := by
+  show Λ (𝟙 (⟨A⟩ : RelSet.{0})) v p ↔ _
   rw [Λ_eq_classifier]
   exact Iff.rfl
 
@@ -822,8 +823,8 @@ theorem wstep_map : Map (wstep (A := A)) := by
 
 /-- The note's `cup-defn` at this step: `k`'s second component IS `⟨w Λ(𝟙),π₂π₂⟩ cup`, the new
     running maximum joined onto the set the tail carries.  (Classical: `cup` takes a `RelProd`.) -/
-theorem scanStep_union (P : RelProd (PowerAllegory.powerObj (⟨A⟩ : RelSet.{0}))
-    (PowerAllegory.powerObj ⟨A⟩)) :
+theorem scanStep_union (P : RelProd (P (⟨A⟩ : RelSet.{0}))
+    (P ⟨A⟩)) :
     P.pair (wstep ≫ singletonMap) (Λ tailSet) ≫ cup P = Λ (wstep ∪ tailSet) := by
   have hw : (wstep (A := A)) ≫ singletonMap = Λ wstep := by
     have h := Λ_fusion wstep_map (𝟙 (⟨A⟩ : RelSet.{0}))
@@ -948,7 +949,7 @@ public theorem cata_Kalg_eq_graph :
 public theorem scan_snd_eq :
     (graph scanFn : dCL Unit A ⟶ ⟨A × (A → Prop)⟩)
       ≫ (graph (fun p : A × (A → Prop) => p.2)
-          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩)
+          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩)
       = suffixR%∋ ≫ existsImage mssPre := by
   rw [Λ_absorption, Λ_eq_classifier]
   apply hom_ext; intro s P
@@ -1023,7 +1024,7 @@ public theorem mss_eq_scan_step3 :
     suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
         (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)) ≫ est(geq)
       = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
-          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩) ≫ est(geq) := by
+          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩) ≫ est(geq) := by
   rw [← mss_eq_scan_step2, cata_Kalg_eq_graph]
   conv => rhs; rw [← Cat.assoc, scan_snd_eq, Cat.assoc]
 
@@ -1031,7 +1032,7 @@ public theorem mss_eq_scan_step3 :
     of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
 public theorem mss_eq_scan :
     mss = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
-      : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ PowerAllegory.powerObj ⟨A⟩) ≫ est(geq) :=
+      : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩) ≫ est(geq) :=
   mss_shape.trans (mss_eq_scan_step2.trans mss_eq_scan_step3)
 
 /-! ## Executable sanity checks -/

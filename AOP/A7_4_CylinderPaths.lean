@@ -33,6 +33,7 @@ public import AOP.A5_6_ListCombinators
 public import AOP.A7_4_Cylinder
 
 namespace Freyd.Alg.RelSet.Tuple
+open PowerAllegory
 
 open Freyd CL ListRel
 
@@ -143,7 +144,7 @@ public theorem zipF_lax_natural (F : Relator RelSet.{0} RelSet.{0}) (R : a ⟶ b
 /-- **`cp(inl d) = {inl d}`, `cp(e,S) = {(e,s) | s ∈ S}`** (book p.181) read pointwise: `cp` is
     the abstract `cpMap`, and this is the function whose graph it is (`cpMap_eq_graph`). -/
 @[expose] public def cpFn (L E : Type) {a : RelSet.{0}} :
-    ((F L E).obj (PowerAllegory.powerObj a)).carrier → Sub ((F L E).obj a).carrier :=
+    ((F L E).obj (P a)).carrier → Sub ((F L E).obj a).carrier :=
   fun w => match w with
     | Sum.inl d => fun y => y = Sum.inl d
     | Sum.inr p => fun y => ∃ s, p.2 s ∧ y = Sum.inr (p.1, s)
@@ -287,9 +288,9 @@ public theorem cpMap_strict_natural (L E : Type) (R : a ⟶ b) :
     which is why a path may start in any row. -/
 public theorem moves_trans_union :
     (moves ≫ transT ≫ tupleP n (bigUnion (a := a))
-        : dTuple n (PowerAllegory.powerObj a) ⟶ dTuple n (PowerAllegory.powerObj a))
-      = graph (fun T : (dTuple n (PowerAllegory.powerObj a)).carrier =>
-          (fun _ => fun q => ∃ i, T i q : (dTuple n (PowerAllegory.powerObj a)).carrier)) := by
+        : dTuple n (P a) ⟶ dTuple n (P a))
+      = graph (fun T : (dTuple n (P a)).carrier =>
+          (fun _ => fun q => ∃ i, T i q : (dTuple n (P a)).carrier)) := by
   apply hom_ext
   intro T U
   constructor
@@ -331,7 +332,7 @@ public theorem moves_trans_union :
     powerset out of the base functor and `P(α)` applies the algebra inside it, so the empty
     summand goes to `{nil}` and a column paired with a set of tails to the set of conses. -/
 @[expose] public def consFn :
-    ((F Unit A).obj (PowerAllegory.powerObj (dList A))).carrier → Sub (ConsList Unit A) :=
+    ((F Unit A).obj (P (dList A))).carrier → Sub (ConsList Unit A) :=
   fun w => match w with
     | Sum.inl u => fun p => p = ConsList.wrap u
     | Sum.inr q => fun p => ∃ s, q.2 s ∧ p = ConsList.cons q.1 s
@@ -380,7 +381,7 @@ public theorem cpMap_comp_existsImage_alphaR :
     every row; a new column `c` conses `c k` onto every path any row of the tail holds, which is
     `zip` pairing row `k` with `moves trans N(union)`'s union and `N(cp P(α))` prefixing it. -/
 @[expose] public def genFun :
-    (Fobj Unit (Fin n → A) (dTuple n (PowerAllegory.powerObj (dList A)))).carrier →
+    (Fobj Unit (Fin n → A) (dTuple n (P (dList A)))).carrier →
       Fin n → ConsList Unit A → Prop
   | Sum.inl _ => fun _ p => p = ConsList.wrap ()
   | Sum.inr (c, T) => fun k p => ∃ j q, T j q ∧ p = ConsList.cons (c k) q
@@ -462,7 +463,7 @@ public theorem gen_eq_graph :
 
 /-- **cyl-defn**: `⦇gen⦈ : L(N(x))⟶N(E(L(x)))`, one path set per row of the cylinder. -/
 @[expose] public def cataGen :
-    dList (Fin n → A) ⟶ dTuple n (PowerAllegory.powerObj (dList A)) :=
+    dList (Fin n → A) ⟶ dTuple n (P (dList A)) :=
   graph fun xs => fun k => genFn xs k
 
 /-- **`gen` is an `F`-algebra and `⦇gen⦈` its fold** (`<fold-diag>`): `α⦇gen⦈=F(𝟙,⦇gen⦈)gen`.
@@ -504,7 +505,7 @@ public theorem cataGen_comm :
 /-- **`⦇gen⦈` IS the fold of the setting's `gen`** — the Eilenberg-Wright lemma at `cataGen_comm`,
     which is what makes `pathsRel` below an instance rather than a second definition. -/
 public theorem cataGen_eq_relCata :
-    (cataGen : dList (Fin n → A) ⟶ dTuple n (PowerAllegory.powerObj (dList A)))
+    (cataGen : dList (Fin n → A) ⟶ dTuple n (P (dList A)))
       = relCata (I := CL.initial Unit (Fin n → A))
           (Cylinder.gen (N := tupleRelator n) (CL.FB Unit) (CL.initial Unit A)
             (fun x => moves (A := x) (n := n)) (fun x => transT (A := x) (n := n))
@@ -551,7 +552,7 @@ public theorem cataGen_lax_natural (R : dE A ⟶ dE B) :
     cylinder, the row it starts in forgotten.  The abstract `Cylinder.paths` at this instance,
     not a second definition of it. -/
 @[expose] public noncomputable def pathsRel :
-    dList (Fin n → A) ⟶ PowerAllegory.powerObj (dList A) :=
+    dList (Fin n → A) ⟶ P (dList A) :=
   Cylinder.paths (N := tupleRelator n) (CL.FB Unit) (CL.initial Unit A)
     (CL.initial Unit (Fin n → A))
     (fun x => moves (A := x) (n := n)) (fun x => transT (A := x) (n := n))
@@ -561,7 +562,7 @@ public theorem cataGen_lax_natural (R : dE A ⟶ dE B) :
 /-- `paths` computed: the fold is `cataGen`, so `paths` is the structural fold followed by
     `setify union`. -/
 public theorem pathsRel_eq :
-    (pathsRel : dList (Fin n → A) ⟶ PowerAllegory.powerObj (dList A))
+    (pathsRel : dList (Fin n → A) ⟶ P (dList A))
       = cataGen ≫ setify ≫ bigUnion := by
   rw [pathsRel, Cylinder.paths, ← cataGen_eq_relCata]
 

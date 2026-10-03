@@ -23,6 +23,7 @@ universe u
 
 
 namespace Freyd.Alg
+open PowerAllegory
 
 variable {𝒜 : Type u}
 
@@ -296,9 +297,9 @@ variable {ℬ : Type u} [PowerAllegory ℬ] {a : ℬ}
 
 /-- If `W ⊑ Λ(0)` and `W ⊑ Λ(1)` then `W = 0`.  `WW° ⊑ Λ(0)Λ(1)° ⊑ (0/∋)∋ ⊑ 0`
     (`Λ(0) ⊑ 0/∋`, `Λ(1)° ⊑ ∋/1 = ∋`), so `dom W ⊑ 0` and `W ⊑ (dom W)W ⊑ 0`. -/
-public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ PowerAllegory.powerObj a)
+public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ P a)
     (h0 : W ⊑ Λ (𝟘 : a ⟶ a)) (h1 : W ⊑ Λ (Cat.id a)) :
-    W = (𝟘 : a ⟶ PowerAllegory.powerObj a) := by
+    W = (𝟘 : a ⟶ P a) := by
   apply le_antisymm _ (zero_le _)
   have hA0 : Λ (𝟘 : a ⟶ a) ⊑ (𝟘 : a ⟶ a) / PowerAllegory.eps a := inter_lb_left _ _
   have hA1r : (Λ (Cat.id a))° ⊑ PowerAllegory.eps a := by
@@ -320,7 +321,7 @@ public theorem le_zero_of_le_Λ_zero_Λ_one (W : a ⟶ PowerAllegory.powerObj a)
 /-- **§2.441 disjointness crux**: `Λ(0) ∩ Λ(1) = 0` (`Λ 𝟘 ∩ Λ 1 = 𝟘`).  The empty-transpose
     and the singleton-transpose are disjoint — the heart of (3)⟹(1)'s `ℓϰ° = 0`. -/
 public theorem Λ_zero_inter_Λ_one :
-    Λ (𝟘 : a ⟶ a) ∩ Λ (Cat.id a) = (𝟘 : a ⟶ PowerAllegory.powerObj a) :=
+    Λ (𝟘 : a ⟶ a) ∩ Λ (Cat.id a) = (𝟘 : a ⟶ P a) :=
   le_zero_of_le_Λ_zero_Λ_one _ (inter_lb_left _ _) (inter_lb_right _ _)
 
 end PowerDisjoint

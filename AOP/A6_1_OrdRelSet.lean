@@ -15,6 +15,7 @@ public import AOP.A6_1_RelSet
 public import AOP.A7_1
 
 namespace Freyd.Alg
+open PowerAllegory
 
 -- `reducible` so instance search sees through `ordMerge.carrier.carrier` to `Option Bool`; without
 -- it `decide` cannot find `DecidableEq` on the elements below.
@@ -483,7 +484,7 @@ public theorem powerRel_est_lt_bigUnion :
       (RelSet.le_iff.mpr fun _ _ _ => rfl)
   rw [(est_eq_eps_iff (𝟙 (⟨Unit⟩ : RelSet.{0}))).mpr htop] at h
   -- `union xss = s ∋ ()`, so the left side relates `xss` to `()`
-  have hbe : (∋ (PowerAllegory.powerObj (⟨Unit⟩ : RelSet.{0})) ≫ ∋ (⟨Unit⟩ : RelSet.{0}))
+  have hbe : (∋ (P (⟨Unit⟩ : RelSet.{0})) ≫ ∋ (⟨Unit⟩ : RelSet.{0}))
       = bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0}) := (Λ_eps_eq' _).symm
   have hmem : (bigUnion ≫ ∋ (⟨Unit⟩ : RelSet.{0})) (fun _ => True) () := by
     rw [← hbe]; exact ⟨fun _ => True, trivial, trivial⟩

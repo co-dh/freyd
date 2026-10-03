@@ -22,7 +22,7 @@ namespace Freyd.Alg
 /-! ## §5.7 example (B&dM p.133): `∈` is lax natural from the power relator to the identity
 
   `powerRel_eps_lax` (`AOP.A5_4`) is LITERALLY the defining inequality of `LaxNatural` with
-  `G` the power relator (object map `PowerAllegory.powerObj`, hom map `powerRel`), `F` the
+  `G` the power relator (object map `P`, hom map `powerRel`), `F` the
   identity relator, and `φ := ∋`.  The power relator is not bundled as a `Relator` here — its
   `map_comp` field needs the STRONGER `TabularUnitaryUnguardedPowerAllegory` hypothesis of
   `powerRel_comp`, more than this bare-`UnguardedPowerAllegory` section carries — so the

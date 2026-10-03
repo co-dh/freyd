@@ -2190,7 +2190,7 @@ initialize peelReadMemo : IO.Ref (Std.HashMap (Array Expr) (Array (Wire × Expr)
     one comes back is an accident of where the catalogue's sweep reached first: `E(Ix)` is
     `⟨Fin 65536 → Prop⟩` once `Ix` is open, which the index lane `[65536]` over `Prop` answers as
     readily as `E` over `Ix`.  The two sides of one cut hold different spellings of its object —
-    `powerObj Ix` above, `E.obj Ix` below — so each picked its own answer and the composite came
+    `P Ix` above, `E.obj Ix` below — so each picked its own answer and the composite came
     apart at a cut both sides agreed the TYPE of.  Reading with the objects closed leaves exactly
     the lanes the object is written with, which is the same list from either side.
 

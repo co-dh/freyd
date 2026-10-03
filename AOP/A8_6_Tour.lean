@@ -39,6 +39,7 @@ public import AOP.A8_3
 public import AOP.A5_6_ListCombinators
 
 namespace Freyd.Alg.RelSet.Tour
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
@@ -544,9 +545,9 @@ public theorem tour_laws_defn :
     `p₁ = p₂ ≜ 𝟙`, `P ≜ ⊤`.  The thinning order is `Qc`, NOT the note's `Q`: see
     `tour_mono_dropl_Q_false`. -/
 public theorem tour_laws
-    {sort : (dTour City ⟶ dTour City) → (PowerAllegory.powerObj (dTour City) ⟶ listRelator.obj (dTour City))}
+    {sort : (dTour City ⟶ dTour City) → (P (dTour City) ⟶ listRelator.obj (dTour City))}
     {sortF : ((F (City × City) City).obj (dTour City) ⟶ (F (City × City) City).obj (dTour City)) →
-      (PowerAllegory.powerObj ((F (City × City) City).obj (dTour City)) ⟶
+      (P ((F (City × City) City).obj (dTour City)) ⟶
         listRelator.obj ((F (City × City) City).obj (dTour City)))}
     {listcp : (F (City × City) City).obj (listRelator.obj (dTour City)) ⟶
       listRelator.obj ((F (City × City) City).obj (dTour City))}
@@ -554,7 +555,7 @@ public theorem tour_laws
     {thinlist : listRelator.obj (dTour City) ⟶ listRelator.obj (dTour City)}
     {minlist : listRelator.obj (dTour City) ⟶ dTour City}
     {Pr : RelProd (listRelator.obj (dTour City)) (listRelator.obj (dTour City))}
-    {Pr' : RelProd (PowerAllegory.powerObj (dTour City)) (PowerAllegory.powerObj (dTour City))}
+    {Pr' : RelProd (P (dTour City)) (P (dTour City))}
     {cat : Pr.p ⟶ listRelator.obj (dTour City)}
     (hsortF : ∀ {X Y : (F (City × City) City).obj (dTour City)
         ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sortF X ⊑ sortF Y)

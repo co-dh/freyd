@@ -679,13 +679,13 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_star") \
     #src[the set of `R*`-successors of `a` is `a` itself joined with the `R*`-successors of its
      `R`-successors]],
-     // lean:AOP.A6_7.Λ_star@eb24385a
+     // lean:AOP.A6_7.Λ_star@f11f82f1
   lean-chain(
     (none, "Freyd.Alg.Λ_star_step1.lhs", []),
     (EQ, "Freyd.Alg.Λ_star_step1.rhs", src[`R*=𝟙∪RR*`]),
-     // lean:AOP.A6_7.Λ_star_step1@3ed4ca2e
+     // lean:AOP.A6_7.Λ_star_step1@5cd6f202
     (EQ, "Freyd.Alg.Λ_star.rhs", src[`Λ(R∪S)=⟨Λ(R),Λ(S)⟩cup`]),
-     // lean:AOP.A5_6.Λ_union@632cc56a
+     // lean:AOP.A5_6.Λ_union@a769989a
   ),
 )]<closure-tails>
 

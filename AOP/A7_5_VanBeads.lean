@@ -39,6 +39,7 @@ public import AOP.A5_7_ListBeads
 public import AOP.A7_4_Horner
 
 namespace Freyd.Alg.RelSet.Van
+open PowerAllegory
 
 open Freyd Freyd.Alg Freyd.Alg.RelSet.CL Freyd.Alg.RelSet.ListRel
 
@@ -311,7 +312,7 @@ public theorem Hrel_schedOne {a b : Bool} (h : Hrel Bool (schedOne a) (schedOne 
 public theorem est_RH_not_lax_natural :
     ¬ LaxNatural schedRelator (schedRelator.comp powerRelator)
       (fun a => (est (RH a.carrier) :
-        PowerAllegory.powerObj (dSched a.carrier) ⟶ dSched a.carrier)) := by
+        P (dSched a.carrier) ⟶ dSched a.carrier)) := by
   intro hlax
   have h : powerRel (list (list (relTop (dE Bool) (dE Bool)))) ≫ est (RH Bool)
       ⊑ est (RH Bool) ≫ list (list (relTop (dE Bool) (dE Bool))) :=

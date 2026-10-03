@@ -17,6 +17,7 @@ public import AOP.A8_2
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 /-! ## `∋` is lax natural, bundled -/
 
@@ -195,10 +196,10 @@ public theorem singleton_laxNatural :
 public theorem laxNatural_birel_eps_eps (F : BiRelator 𝒜) (B : 𝒜) :
     LaxNatural (Relator.comp (Relator.idRelator 𝒜) (F.appr B))
       (Relator.comp (Relator.comp (Relator.idRelator 𝒜) powerRelator)
-        (F.appr (PowerAllegory.powerObj B)))
+        (F.appr (P B)))
       (fun a => F.map (∋ a) (∋ B)) := by
   intro a b R
-  show F.map (powerRel R) (𝟙 (PowerAllegory.powerObj B)) ≫ F.map (∋ b) (∋ B)
+  show F.map (powerRel R) (𝟙 (P B)) ≫ F.map (∋ b) (∋ B)
       ⊑ F.map (∋ a) (∋ B) ≫ F.map R (𝟙 B)
   rw [← F.map_comp, ← F.map_comp, Cat.id_comp, Cat.comp_id]
   exact F.map_mono (powerRel_eps_lax R) (le_refl _)
@@ -224,7 +225,7 @@ end SingletonLax
 /-- `powerRel` in `Rel(Set)`, pointwise: `X (P R) Y` iff every element of `X` `R`-reaches into
     `Y` (term₁) and every element of `Y` is `R`-reachable from `X` (term₂). -/
 public theorem powerRel_apply {A B : RelSet.{u}} (R : A ⟶ B)
-    (X : (PowerAllegory.powerObj A).carrier) (Y : (PowerAllegory.powerObj B).carrier) :
+    (X : (P A).carrier) (Y : (P B).carrier) :
     powerRel R X Y ↔ (∀ x, X x → ∃ y, R x y ∧ Y y) ∧ (∀ y, Y y → ∃ x, X x ∧ R x y) :=
   Iff.rfl
 
@@ -232,13 +233,13 @@ public theorem powerRel_apply {A B : RelSet.{u}} (R : A ⟶ B)
     of the elements of the members of `F`.  `⋃` is a map (`Λ_is_map'`) with `⋃ ≫ ∋ = ∋∋`
     (`Λ_eps_eq'`); simplicity pins the set, entireness produces it. -/
 public theorem bigUnion_apply {A : RelSet.{u}}
-    (F : (PowerAllegory.powerObj (PowerAllegory.powerObj A)).carrier)
-    (U : (PowerAllegory.powerObj A).carrier) :
+    (F : (P (P A)).carrier)
+    (U : (P A).carrier) :
     bigUnion (a := A) F U ↔ ∀ x, (U x ↔ ∃ X, F X ∧ X x) := by
   have hmap : Map (bigUnion (a := A)) := by
-    show Map (Λ (∋ (PowerAllegory.powerObj A) ≫ ∋ A)); exact Λ_is_map' _
-  have heq : bigUnion (a := A) ≫ ∋ A = ∋ (PowerAllegory.powerObj A) ≫ ∋ A := Λ_eps_eq' _
-  have fwd : ∀ V : (PowerAllegory.powerObj A).carrier, bigUnion (a := A) F V →
+    show Map (Λ (∋ (P A) ≫ ∋ A)); exact Λ_is_map' _
+  have heq : bigUnion (a := A) ≫ ∋ A = ∋ (P A) ≫ ∋ A := Λ_eps_eq' _
+  have fwd : ∀ V : (P A).carrier, bigUnion (a := A) F V →
       ∀ x, (V x ↔ ∃ X, F X ∧ X x) := by
     intro V hFV x
     constructor
@@ -317,7 +318,7 @@ public theorem bigUnion_strict_relSet {A B : RelSet.{u}} (R : A ⟶ B) :
   have hU := (bigUnion_apply F U).mp hFU
   have hEM := (powerRel_apply R U Y).mp hUY
   -- Each member `X` of `F` is `P R`-related to the part of `Y` it reaches.
-  have hkey : ∀ X : (PowerAllegory.powerObj A).carrier, F X →
+  have hkey : ∀ X : (P A).carrier, F X →
       powerRel R X (fun y => Y y ∧ ∃ x, X x ∧ R x y) := by
     intro X hFX
     refine (powerRel_apply R X _).mpr ⟨fun x hXx => ?_, ?_⟩

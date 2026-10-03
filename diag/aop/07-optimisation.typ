@@ -8,17 +8,17 @@
 // B&dM §7.1, p. 166.
 #disp[#definition[
 For `R : A⟶A`, #h(4pt) `est(R)≜∋∩(∈\R°) : PA⟶A` #h(4pt) #src[`X⊑∈\R°⟺∈X⊑R°`, and `∈X` runs `y⟶xs⟶x`, member first, so its pair `(y,x)` is in `R°` exactly when `x R y`; at `R≜≤` that is `x≤y` for every `y∈xs`, the least — `∈\≤` would give `y≤x`, the greatest].
-// lean:AOP.A7_1.est@e39806f8
+// lean:AOP.A7_1.est@f615ac35
 
 #leanf("Freyd.Alg.est_eq_subset_Λ") #h(4pt) #src[`x` is the `est(R)` of `xs` when `x∈xs` and `xs ⊆ Λ(R)(x)`, the set of every `y` with `x R y` — @mem-ldiv at `Z≜R°`]
-// lean:AOP.A7_1.est_eq_subset_Λ@2e66b635
+// lean:AOP.A7_1.est_eq_subset_Λ@be447c48
 
 #lean("Freyd.Alg.est_eq_subset_Λ.rhs.inl", "Freyd.Alg.est_eq_subset_Λ.rhs.inr", op: [`∩`])
 
 `xs (est(R)) x⟺x∈xs∧(∀y∈xs. x R y)` #h(4pt) #src[the same predicate under the same
 letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 ]
-// lean:AOP.A7_2_RelSet.est_apply@91dc1299
+// lean:AOP.A7_2_RelSet.est_apply@9438ceab
 // B&dM's `min R` has `R : A⟵A` reading `x R y` as the arrow `y⟶x`, ours `R : A⟶A` reading `x⟶y`.
 
 `xs (est(R)) x⟺(x in xs) and all x R\: xs` #h(4pt) #src[in q]
@@ -45,7 +45,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°` #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
-  // lean:AOP.A7_1.singletonMap_comp_est@06b2ed05
+  // lean:AOP.A7_1.singletonMap_comp_est@76cd41a5
   [#leanf("Freyd.Alg.Λ_comp_est")], [an `S`-value that points to every `S`-value],
   [#leanf("Freyd.Alg.Λ_comp_est_context")], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)` #src[(7.7)]],
@@ -75,7 +75,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   zpair(zsqc(`X`, `∋`), zsqc(`X°∋`, `R`)),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.le_est_iff@81855810
+// lean:AOP.A7_1.le_est_iff@0a537bd2
 ]<est-up>
 
 === $frac(#[`𝟙`], ∋)$ `(∈\R)=R`
@@ -95,7 +95,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   zsqc(`X`, `R`),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.singletonMap_comp_lb@9d4759cf
+// lean:AOP.A7_1.singletonMap_comp_lb@38cf516c
 ]<est-71>
 
 === $frac(#[`S`], ∋)$ `(∈\R)=S°\R`
@@ -120,7 +120,7 @@ directly.
   zsqc(`X`, `S°\R`),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.Λ_comp_lb@f14ab8b5
+// lean:AOP.A7_1.Λ_comp_lb@e66a494e
 ]<est-72>
 
 === `union (∈\R)=∈\(∈\R)`
@@ -141,7 +141,7 @@ directly.
   zsqc(`X`, `∈\(∈\R)`),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.bigUnion_comp_lb@ed13dc7a
+// lean:AOP.A7_1.bigUnion_comp_lb@96c7fcdf
 ]<est-73>
 
 === $frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`
@@ -162,7 +162,7 @@ directly.
   zsqc(`X`, `S∩(S°\R°)`),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.Λ_comp_est@4c6d38d0
+// lean:AOP.A7_1.Λ_comp_est@c1d1bcdd
 ]<est-75>
 
 === $frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`
@@ -187,7 +187,7 @@ directly.
   zsqc(`X`, [$frac(#[`S`], ∋)$ `est(R)`]),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.Λ_comp_est_context@e8052cf4
+// lean:AOP.A7_1.Λ_comp_est_context@4f68e16f
 ]<est-76>
 
 === `P(f) est(R)=est(fRf°) f`
@@ -210,7 +210,7 @@ directly.
   zstep(op: sym.eq, under: true)[`·f⊣·f°`, `°`, `est`],
   zsqc(`est(fRf°) f`, none),
 )
-// lean:AOP.A7_1.powerRel_map_comp_est@864a344c
+// lean:AOP.A7_1.powerRel_map_comp_est@cd2fa61a
 ]<est-78>
 
 === `P(S) est(R)⊑(∋S)∩(∈\(SR°))`
@@ -226,7 +226,7 @@ directly.
   zpair(zsqc(`P(S)∋`, `∋S`), zsqc(`∈P(S)`, `S∈`)),
 )
 #align(center, block(inset: (y: 4pt))[#src[]])
-// lean:AOP.A7_1.powerRel_comp_est_le@d8b5692c
+// lean:AOP.A7_1.powerRel_comp_est_le@1893b87c
 ]<est-710>
 
 === `P(est(R)) est(R)⊑union est(R)`
@@ -244,7 +244,7 @@ directly.
   zpair(zsqc(`P(est(R))∋`, `∋est(R)`), zsqc(`∈P(est(R))`, `est(R)∈`)),
 )
 #align(center, block(inset: (y: 4pt))[#src[, `R` transitive]])
-// lean:AOP.A7_1.powerRel_est_le_bigUnion@d0c726a1
+// lean:AOP.A7_1.powerRel_est_le_bigUnion@a48e1dce
 ]<est-711>
 
 // would sit alone at the foot of §13.2's last page.
@@ -292,7 +292,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp[#definition[
 `f : FA⟶A` *distributes over* `R` if #h(4pt) `F(est(R))f⊑` $frac(#[`F(∋)f`], ∋)$ `est(R)`
 #src[].
-// lean:AOP.A7_2.Distributes@e061e29e
+// lean:AOP.A7_2.Distributes@311e8198
 
 `+` distributes over `≤`, at the point level #h(4pt)
 `min(xs)+min(ys)` is a least element of `{x+y∣x∈xs∧y∈ys}` #h(4pt) for `xs`, `ys` non-empty and
@@ -321,7 +321,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     ),
   ))
 })
-// lean:AOP.A7_2.Distributes@e061e29e
+// lean:AOP.A7_2.Distributes@311e8198
 // lean:AOP.A7_2_RelSet.plus_distributes_le@c9089ed5
 ]<dist-str>
 
@@ -341,7 +341,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      `R` reflexive
       // lean:AOP.A7_2.distributes_of_monoAlg@437ca1ee
  ]],
-      // lean:AOP.A7_2.monoAlg_of_distributes@c15c0757
+      // lean:AOP.A7_2.monoAlg_of_distributes@213bcf14
 
   [#vstep([], lean("Freyd.Alg.Distributes.lhs", "Freyd.Alg.Distributes.rhs"), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
@@ -391,7 +391,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [#vstep([], [], [`⦇`#frc([`S`])` est(R)⦈⊑`#frc([`⦇S⦈`])` est(R)` \
     #src[the conclusion: one minimum kept at each step is below every result collected and one
  minimum taken at the end]])],
-     // lean:AOP.A7_2.greedy@84a2c1de
+     // lean:AOP.A7_2.greedy@5876dfbf
   [],
 
   [#vstep(IFF, [],
@@ -635,7 +635,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      `nil` where it does not]],
   table.header([*formula*], [*reason*]),
 
-  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.lhs")][]], [],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_step1.rhs")]],
@@ -650,7 +650,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_step@a0403ffd
+  // lean:AOP.A7_7_TakeWhile.takewhile_step@bb113fef
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -681,7 +681,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@31b3dec9
   lean-chain(
     (none, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs",
-      // lean:AOP.A7_7_TakeWhile.takewhile@77395e5e
+      // lean:AOP.A7_7_TakeWhile.takewhile@9e837282
       src[@est-defn]),
     (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs",
       // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
@@ -689,7 +689,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (RQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs",
       src[@greedy-thm72 at `R°` — @takewhile-mono]),
     (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs",
-      // lean:AOP.A7_7_TakeWhile.takewhile_step@a0403ffd
+      // lean:AOP.A7_7_TakeWhile.takewhile_step@bb113fef
       src[@takewhile-step]),
   ),
 )
@@ -724,7 +724,7 @@ one-element list, beside @comb-fns's `tail≜cons° π₂`]
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ]
 // B&dM's `oplus=max(Λ(zero ∪ plus))`.
-// lean:AOP.A7_7_MSS.oplus@e876f97f lean:AOP.A7_7_MSS.oplus_eq@8819d3f7
+// lean:AOP.A7_7_MSS.oplus@d30f8d90 lean:AOP.A7_7_MSS.oplus_eq@8819d3f7
 ]]<mss-defn>
 
 
@@ -735,7 +735,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
-    // lean:AOP.A7_7_MSS.mss_shape@9c38ad6f
+    // lean:AOP.A7_7_MSS.mss_shape@f0837b92
   table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
@@ -850,7 +850,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_step") \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
-  // lean:AOP.A7_7_MSS.mss_step@28267eec lean:AOP.A7_7_MSS.mss_step_plus@b71cc592
+  // lean:AOP.A7_7_MSS.mss_step@1d9c20e4 lean:AOP.A7_7_MSS.mss_step_plus@10bf728b
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
@@ -870,7 +870,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — and @mss-deriv
  makes it an equality. ]])
-  // lean:AOP.A7_7_MSS.mss_greedy@6f748228
+  // lean:AOP.A7_7_MSS.mss_greedy@4b131516
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
@@ -881,7 +881,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
-     // lean:AOP.A7_7_MSS.Kalg@745285de lean:AOP.A7_7_MSS.scanStep_union@82dd2f1a
+     // lean:AOP.A7_7_MSS.Kalg@745285de lean:AOP.A7_7_MSS.scanStep_union@ebb14e72
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -906,7 +906,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
-    // lean:AOP.A7_7_MSS.mss_eq_scan@7b3ee2be
+    // lean:AOP.A7_7_MSS.mss_eq_scan@758d9b12
   lean-chain(
     // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
     // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
@@ -997,7 +997,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
-     // lean:AOP.A7_7_Filter.filter_step@504b7851
+     // lean:AOP.A7_7_Filter.filter_step@853608fd
   table.header([*formula*], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
@@ -1050,7 +1050,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_7_Filter.filter_eq_cata@0882803d
   lean-chain(
     (none, "Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs",
-      // lean:AOP.A7_7_Filter.filter@8a5f6aed
+      // lean:AOP.A7_7_Filter.filter@698bf998
       src[@comb-fns-7]),
     (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs",
       src[`subseq list(p)=⦇S⦈` — @takewhile-alg]),
@@ -1312,8 +1312,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   leancd("Freyd.Alg.RelSet.Party.party_absorb.rhs"),
   [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
  ]],
-   // lean:AOP.A4_6.Λ_absorption@e87bd8f2
-   // lean:AOP.A7_3_Party.party_absorb@537b93c7
+   // lean:AOP.A4_6.Λ_absorption@00399742
+   // lean:AOP.A7_3_Party.party_absorb@4dd05f08
 )]<party-absorb>
 
 // `(label, width, chamfer)`, set once: the same box is drawn in up to four rows, and a width typed
@@ -1461,7 +1461,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
-     // lean:AOP.A7_3_Party.party_laws@46d60422
+     // lean:AOP.A7_3_Party.party_laws@b2a60154
   lean-chain(
     (none, "Freyd.Alg.RelSet.Party.party_open.lhs", src[@party-defn]),
     (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs", src[`party≜⦇S⦈ choose` — @party-defn]),
@@ -1475,16 +1475,16 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   lean-chain(
     (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
-      // lean:AOP.A7_2.greedy@84a2c1de
+      // lean:AOP.A7_2.greedy@5876dfbf
       src[
         // greedy row: Theorem 7.2
         `(𝟙×list((R×R)°))S⊑S(R×R)°` — @party-mono]),
     (RQ, "Freyd.Alg.RelSet.Party.include_step.rhs",
-      // lean:AOP.A7_3_Party.pair_est_le@75a48598
+      // lean:AOP.A7_3_Party.pair_est_le@44802697
       // pair_est_le row: Ex 7.15
       src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`]),
     (RQ, "Freyd.Alg.RelSet.Party.exclude_step.lhs",
-      // lean:AOP.A7_3_Party.graph_le_Λ_est@32e3aa7d lean:AOP.A7_3_Party.exclude_step@963c1784
+      // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
       src[`include` a map]),
   ),
 )]<party-laws-fold>
@@ -2114,7 +2114,7 @@ zip(that)                                         each row: its square, and the 
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
-     // lean:AOP.A7_5_Van.van_laws@98742baf
+     // lean:AOP.A7_5_Van.van_laws@d9b2bf01
   lean-chain(
     (none, "Freyd.Alg.RelSet.Van.van_laws_step4.rhs",
       src[@van-defn]),
@@ -2128,7 +2128,7 @@ zip(that)                                         each row: its square, and the 
       // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
       src[@greedy-thm72 at `R;H` — @van-mono, @van-716, @van-718]),
     (RQ, "Freyd.Alg.RelSet.Van.van_laws_step1.lhs",
-      // lean:AOP.A7_5_Van.prog_le_greedy@9203a952
+      // lean:AOP.A7_5_Van.prog_le_greedy@8cc86313
       src[`old⊑new (R;H)°`]),
   ),
 )]<van-laws>

@@ -555,7 +555,7 @@ def SYMS : List Char := "⊑⊒∩∪°∋∈⟶≫×⦇⊔⊓↔∀∃⊤𝟙Λ
 /-- The note's glyph for a thing Lean spells with letters.  Only where the two really are the same
     thing: `E(-)` is the power object, `frac(x, ∋)` is `Λ x`, `⦇…⦈` is the reduce. -/
 def GLYPH : List (String × String × Bool) :=
-  [("E(", " powerObj ", true), ("P(", " powerRel ", true), ("⦇", " relCata cata ", false),
+  [("E(", " P ", true), ("P(", " powerRel ", true), ("⦇", " relCata cata ", false),
    ("⦈", " relCata cata ", false), ("frac(", " Λ ", true), ("𝟙", " id ", false),
    ("⊤", " top ", false), ("μ", " mu ", false), ("Dom", " dom ", true), ("Ran", " ran ", true),
    ("union", " bigUnion union ", true)]

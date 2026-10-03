@@ -11,10 +11,10 @@
   The topos data of `Map(A)`:
     • finite limits — already proved in `Freyd.MapCat` (`mapPreLogos`): terminal =
       the unit object, binary products / pullbacks via tabulations.
-    • power objects — `[C] = powerObj C` with membership `∋_C = eps C`; the §1.9
+    • power objects — `[C] = P C` with membership `∋_C = eps C`; the §1.9
       universal relation is the tabulation of `eps C` as a jointly-monic span of
       maps in `Map(A)`.
-    • subobject classifier — `Ω = [1] = powerObj (unit)`, classifying maps via the
+    • subobject classifier — `Ω = [1] = P (unit)`, classifying maps via the
       transpose `Λ(R) = R /ₛ ∋`.
 
   Diamond management: `TabularUnitaryAllegory` and `PowerAllegory` are separate
@@ -24,7 +24,7 @@
   (`TabularUnitaryDistributiveAllegory`), we MERGE them into one class
   `TabularUnitaryPowerAllegory` extending `TabularUnitaryDistributiveAllegory`
   (which `mapPreLogos` and friends require) and `PowerAllegory` (which supplies
-  `powerObj`/`eps`); the shared `DistributiveAllegory`→`Allegory` grandparent is
+  `P`/`eps`); the shared `DistributiveAllegory`→`Allegory` grandparent is
   unified by structure inheritance.  `PowerAllegory extends DivisionAllegory extends
   DistributiveAllegory`, so a power allegory is automatically distributive — the
   merge is well-formed.
@@ -40,6 +40,7 @@ public import Freyd.S1_90
 universe v u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 /-! ## §2.414  A TABULAR UNITARY POWER ALLEGORY
 
@@ -68,13 +69,13 @@ variable {𝒜 : Type u} [TabularUnitaryPowerAllegory 𝒜]
 /-- Diamond check: under `[TabularUnitaryPowerAllegory 𝒜]` the `mapPreLogos` finite-limit
     instances (which need `TabularUnitaryDistributiveAllegory`) and the `PowerAllegory`
     operations resolve on the SAME `Allegory 𝒜` / `mapCat`.  If the two `Allegory`
-    routes did not merge, the `eps`/`powerObj` (Power side) used next to `mapCat`
+    routes did not merge, the `eps`/`P` (Power side) used next to `mapCat`
     (TUD side) would fail to typecheck. -/
 noncomputable example : @HasBinaryProducts (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) := inferInstance
 noncomputable example : @HasPullbacks (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) := inferInstance
 noncomputable example : @HasTerminal (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) := inferInstance
-example (C : 𝒜) : 𝒜 := PowerAllegory.powerObj C
-example (C : 𝒜) : PowerAllegory.powerObj C ⟶ C := PowerAllegory.eps C
+example (C : 𝒜) : 𝒜 := P C
+example (C : 𝒜) : P C ⟶ C := PowerAllegory.eps C
 
 end
 
@@ -94,7 +95,7 @@ variable {𝒜 : Type u} [TabularUnitaryPowerAllegory 𝒜]
   (TabularAllegory.tabular (𝒜 := 𝒜) (PowerAllegory.eps C)).choose
 
 /-- First leg `src → [C]` of the membership tabulation (a map). -/
-@[expose] public noncomputable def memP (C : 𝒜) : memSrc C ⟶ PowerAllegory.powerObj C :=
+@[expose] public noncomputable def memP (C : 𝒜) : memSrc C ⟶ P C :=
   (TabularAllegory.tabular (𝒜 := 𝒜) (PowerAllegory.eps C)).choose_spec.choose
 
 /-- Second leg `src → C` of the membership tabulation (a map). -/
@@ -117,8 +118,8 @@ public theorem memSpan_rel (C : 𝒜) : (memP C)° ≫ (memQ C) = PowerAllegory.
     Joint-monicity in `Map(A)` is the allegory condition `pp° ∩ qq° = id` (§2.141,
     `tabulates_monic_pair`). -/
 @[expose] public noncomputable def mapMem (C : 𝒜) :
-    @BinRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) (PowerAllegory.powerObj C) C :=
-  @BinRel.mk (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) (PowerAllegory.powerObj C) C
+    @BinRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) (P C) C :=
+  @BinRel.mk (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) (P C) C
     (memSrc C) ⟨memP C, (memTab C).1⟩ ⟨memQ C, (memTab C).2.1⟩
     (by
       intro W f g hA hB
@@ -149,9 +150,9 @@ variable {𝒜 : Type u} [TabularUnitaryPowerAllegory 𝒜]
     the membership (cf. the gap note below). -/
 theorem mapTranspose_existsUnique (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
     (hbox : codBox R = codBox (PowerAllegory.eps C)) :
-    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
+    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C),
       f.val ≫ PowerAllegory.eps C = R ∧
-      ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
+      ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C),
         g.val ≫ PowerAllegory.eps C = R → g = f := by
   refine ⟨⟨Λ R, Λ_is_map R hbox⟩, Λ_eps_eq R hbox, ?_⟩
   intro g hgeq
@@ -160,7 +161,7 @@ theorem mapTranspose_existsUnique (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
 /-- The classifying `Map(A)`-morphism `A → [C]` for a box-matched relation `R̄ : A → C`. -/
 noncomputable def mapClassify (C : 𝒜) {a : 𝒜} (R : a ⟶ C)
     (hbox : codBox R = codBox (PowerAllegory.eps C)) :
-    @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C) :=
+    @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C) :=
   ⟨Λ R, Λ_is_map R hbox⟩
 
 /-- The classifier transposes back to `R̄`: `mapClassify(R̄) ≫ ∋_C = R̄`. -/
@@ -187,9 +188,9 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerAllegory 𝒜]
     (cf. the box-restricted `mapTranspose_existsUnique`); the `∅`-naming case (`R̄ = 𝟘`) is now
     included.  This is the universal-property half of "`Map(A)` is a topos". -/
 public theorem mapTranspose_existsUnique_all (C : 𝒜) {a : 𝒜} (R : a ⟶ C) :
-    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
+    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C),
       f.val ≫ PowerAllegory.eps C = R ∧
-      ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
+      ∀ g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C),
         g.val ≫ PowerAllegory.eps C = R → g = f := by
   refine ⟨⟨Λ R, Λ_is_map' R⟩, Λ_eps_eq' R, ?_⟩
   intro g hgeq
@@ -210,7 +211,7 @@ end UnguardedUP
     • **the SUBOBJECT CLASSIFIER** `Ω = [1]`, `true = Λ(1_1)`, with `classify`/`classify_sq`/
       `classify_pullback`/`classify_unique` — i.e. `HasSubobjectClassifier (MapObj 𝒜)`
       (`mapHasSubobjectClassifier`).  The keystone is `unit_eps_eq_singleton_recip` (`∋_1 = true°`).
-    • **POWER OBJECTS** `[C] = powerObj C` with `mem = mapMem C` the §1.9 universal relation
+    • **POWER OBJECTS** `[C] = P C` with `mem = mapMem C` the §1.9 universal relation
       (`mapHasPowerObject`), and the **full `Topos (MapObj 𝒜)`** (`mapTopos`).
 
   The `has_pow` closure (`§2.414  POWER OBJECTS` section below).  `HasPowerObject` (S1_9) demands
@@ -224,7 +225,7 @@ end UnguardedUP
 
 /-! ## §2.414  SUBOBJECT CLASSIFIER  `Ω = [1]`  of `Map(A)`
 
-  The §2.415 subobject classifier of the topos `Map(A)`: `Ω = [1] = powerObj (unit)`,
+  The §2.415 subobject classifier of the topos `Map(A)`: `Ω = [1] = P (unit)`,
   with `true : 1 → Ω` the name `Λ(1_1)` of the maximal subobject of the unit.  A `Map(A)`-monic
   `m : C → a` is classified by `χ_m = Λ(m° ≫ p_C) : a → Ω` where `p_C = term C : C → 1`; the
   classifying square is the tabulation of `χ_m ≫ true°`, which equals the span `(m, term C)`.
@@ -285,8 +286,8 @@ public theorem mapMonic_retract {C a : 𝒜}
       _ ⊑ Cat.id C := hs.2
   · have h := m.property.1; rw [Entire, dom] at h; exact h ▸ inter_lb_right _ _
 
-/-- **§2.415**: the subobject classifier `Ω = [1] = powerObj (unit)` of `Map(A)`. -/
-@[expose] public noncomputable def mapOmega : MapObj 𝒜 := PowerAllegory.powerObj (UnitaryAllegory.unit_obj : 𝒜)
+/-- **§2.415**: the subobject classifier `Ω = [1] = P (unit)` of `Map(A)`. -/
+@[expose] public noncomputable def mapOmega : MapObj 𝒜 := P (UnitaryAllegory.unit_obj : 𝒜)
 
 /-- **§2.415**: `true : 1 → Ω` is the name `Λ(1_1)` of the maximal subobject of the unit
     (the singleton map of the unit). -/
@@ -320,7 +321,7 @@ theorem mapTrue_monic :
 
 /-- The `Map(A)` terminal projection `C → 1 = term C`, retyped with the syntactic target
     `unit_obj` (the terminal `one` of `Map(A)` is `unit_obj` on the nose, `rfl`).  Pinning the
-    target as `unit_obj` keeps `∋`/`powerObj` at `unit_obj` syntactically throughout, while
+    target as `unit_obj` keeps `∋`/`P` at `unit_obj` syntactically throughout, while
     `mapTerm C` is DEFINITIONALLY `term C`, so it slots into the `classify_sq` field. -/
 @[expose] public noncomputable def mapTerm (C : MapObj 𝒜) :
     @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) C (UnitaryAllegory.unit_obj : 𝒜) :=
@@ -498,7 +499,7 @@ end Classifier
 
 /-! ## §2.414  POWER OBJECTS  `[C]`  of `Map(A)` — the final `has_pow` gap
 
-  The §1.9 power object `[C]` of `Map(A)` is `PowerAllegory.powerObj C` with membership the
+  The §1.9 power object `[C]` of `Map(A)` is `P C` with membership the
   span `mapMem C` (allegory relation `∋_C = eps C`).  `HasPowerObject` demands the §1.9
   `IsUniversalRel (mapMem C)`, phrased with `relPullback f (mapMem C) ≅ R` (mutual `RelHom`)
   for every §1.9 binary relation `R : BinRel (Map A) A C`.  We bridge this to the composition
@@ -573,9 +574,9 @@ public theorem relOf_mapMem (C : 𝒜) : relOf (mapMem C) = PowerAllegory.eps C 
     (in `Map(A)`) is `f.val ≫ ∋_C`.  Immediate from the general `relOf_relPullback_of_tab`
     (`relOf (relPullback f U) = f.val ≫ relOf U`) plus `relOf_mapMem` (`relOf (mapMem C) = ∋_C`). -/
 public theorem relOf_relPullback_mem (C : 𝒜) {a : 𝒜}
-    (f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C)) :
+    (f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C)) :
     relOf (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-        (PowerAllegory.powerObj C) C a f (mapMem C))
+        (P C) C a f (mapMem C))
       = f.val ≫ PowerAllegory.eps C := by
   rw [relOf_relPullback_of_tab f (mapMem C), relOf_mapMem]
 
@@ -586,16 +587,16 @@ public theorem relOf_relPullback_mem (C : 𝒜) {a : 𝒜}
     (mapMem C)) = f.val ≫ ∋_C = R̄ = relOf R`) turned into mutual `RelHom` by the dictionary. -/
 public theorem mapClassifyExists (C : 𝒜) (a : 𝒜)
     (R : @BinRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C) :
-    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C),
+    ∃ f : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C),
       @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C R
           (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-            (PowerAllegory.powerObj C) C a f (mapMem C))
+            (P C) C a f (mapMem C))
         ∧ @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C
           (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-            (PowerAllegory.powerObj C) C a f (mapMem C)) R := by
+            (P C) C a f (mapMem C)) R := by
   obtain ⟨f, hf, _⟩ := mapTranspose_existsUnique_all C (relOf R)
   have key : relOf (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-      (PowerAllegory.powerObj C) C a f (mapMem C)) = relOf R := by
+      (P C) C a f (mapMem C)) = relOf R := by
     rw [relOf_relPullback_mem]; exact hf
   obtain ⟨w1, w2⟩ := mutual_relHom_of_relOf_eq R _ key.symm
   exact ⟨f, w1, w2⟩
@@ -605,26 +606,26 @@ public theorem mapClassifyExists (C : 𝒜) (a : 𝒜)
     (bridge A + the dictionary), so `f = g` by `mapTranspose_existsUnique_all`'s uniqueness. -/
 public theorem mapClassifyUnique (C : 𝒜) (a : 𝒜)
     (R : @BinRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C)
-    (f g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (PowerAllegory.powerObj C))
+    (f g : @Cat.Hom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a (P C))
     (hf : @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C R
             (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-              (PowerAllegory.powerObj C) C a f (mapMem C))
+              (P C) C a f (mapMem C))
           ∧ @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C
             (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-              (PowerAllegory.powerObj C) C a f (mapMem C)) R)
+              (P C) C a f (mapMem C)) R)
     (hg : @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C R
             (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-              (PowerAllegory.powerObj C) C a g (mapMem C))
+              (P C) C a g (mapMem C))
           ∧ @RelHom (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) a C
             (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-              (PowerAllegory.powerObj C) C a g (mapMem C)) R) :
+              (P C) C a g (mapMem C)) R) :
     f = g := by
   obtain ⟨f0, _, huniq⟩ := mapTranspose_existsUnique_all C (relOf R)
   have hfe : relOf (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-      (PowerAllegory.powerObj C) C a f (mapMem C)) = relOf R :=
+      (P C) C a f (mapMem C)) = relOf R :=
     le_antisymm (relOf_le_of_relLe ⟨hf.2⟩) (relOf_le_of_relLe ⟨hf.1⟩)
   have hge : relOf (@Freyd.relPullback (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-      (PowerAllegory.powerObj C) C a g (mapMem C)) = relOf R :=
+      (P C) C a g (mapMem C)) = relOf R :=
     le_antisymm (relOf_le_of_relLe ⟨hg.2⟩) (relOf_le_of_relLe ⟨hg.1⟩)
   have hfeps : f.val ≫ PowerAllegory.eps C = relOf R := by rw [← relOf_relPullback_mem C f]; exact hfe
   have hgeps : g.val ≫ PowerAllegory.eps C = relOf R := by rw [← relOf_relPullback_mem C g]; exact hge
@@ -634,19 +635,19 @@ public theorem mapClassifyUnique (C : 𝒜) (a : 𝒜)
     at `C` (`mapClassifyExists`/`mapClassifyUnique`). -/
 public theorem mapIsUniversal (C : 𝒜) :
     @IsUniversalRel (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-      (PowerAllegory.powerObj C) C (mapMem C) :=
+      (P C) C (mapMem C) :=
   @IsUniversalRel.mk (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks
-    (PowerAllegory.powerObj C) C (mapMem C)
+    (P C) C (mapMem C)
     (fun a R => mapClassifyExists C a R)
     (fun a R f g hf hg => mapClassifyUnique C a R f g hf hg)
 
 /-- **§2.414-converse (has_pow)**: every object `C` of `Map(A)` has a POWER OBJECT
-    `[C] = PowerAllegory.powerObj C` with membership span `mapMem C` (allegory relation `∋_C`) as
+    `[C] = P C` with membership span `mapMem C` (allegory relation `∋_C`) as
     its §1.9 universal relation. -/
 @[expose] public noncomputable instance mapHasPowerObject (C : 𝒜) :
     @HasPowerObject (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks C :=
   @HasPowerObject.mk (MapObj 𝒜) (mapCat (𝒜 := 𝒜)) mapHasPullbacks C
-    (PowerAllegory.powerObj C) (mapMem C) (mapIsUniversal C)
+    (P C) (mapMem C) (mapIsUniversal C)
 
 /-- **§2.414-converse (TOPOS)**: `Map(A)` of a tabular unitary UNGUARDED power allegory is a
     TOPOS.  Finite limits + `HasBinaryProducts` are `mapPreLogos`; the subobject classifier

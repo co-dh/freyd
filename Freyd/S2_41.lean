@@ -186,7 +186,7 @@ theorem mem_straight (b : 𝒞) :
     thickness is the §2.413 transpose (`mem_thick`). -/
 noncomputable def relPowerAllegory : PowerAllegory (RelObj 𝒞) :=
   { relDivisionAllegory with
-    powerObj := fun b => ⟨HasPowerObject.powerObj (C := b.carrier)⟩
+    P := fun b => ⟨HasPowerObject.powerObj (C := b.carrier)⟩
     eps := fun b => relClass (HasPowerObject.mem (C := b.carrier))
     eps_straight := fun b => mem_straight b.carrier
     eps_thick := fun {b c} R _hbox => by

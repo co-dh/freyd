@@ -28,11 +28,12 @@ public import AOP.A5_7_PowerBeads
 public import AOP.A6_ConsList
 
 namespace Freyd.Alg.RelSet.Tuple
+open PowerAllegory
 
 open Freyd
 
--- Everything is indexed by RelSet OBJECTS, not by the carrier types: `powerObj a` is an object,
--- and a `dE`-shaped index would leave the elaborator to solve `dE ?A =?= powerObj a` at every
+-- Everything is indexed by RelSet OBJECTS, not by the carrier types: `P a` is an object,
+-- and a `dE`-shaped index would leave the elaborator to solve `dE ?A =?= P a` at every
 -- `N(P(R))`.
 variable {A B : RelSet.{0}} {n : Nat}
 
@@ -107,18 +108,18 @@ public theorem exists_rot_index {n : Nat} (k i : Fin n) : ∃ j : Fin n, k + j =
 
 /-- **`moves(t) = {t, rot(t), rot²(t), …}`** (book p.180): the tuple rotated up, unrotated and
     down — every rotation of it, since a path may step up, straight or down. -/
-@[expose] public def moves : dTuple n A ⟶ PowerAllegory.powerObj (dTuple n A) :=
+@[expose] public def moves : dTuple n A ⟶ P (dTuple n A) :=
   graph fun t => fun u => ∃ j, rot j t = u
 
 /-- **`trans{(a,b,c),(x,y,z)} = ({a,x},{b,y},{c,z})`** (book p.180): component `k` of the result
     is the set of the `k`-th components. -/
 @[expose] public def transT :
-    PowerAllegory.powerObj (dTuple n A) ⟶ dTuple n (PowerAllegory.powerObj A) :=
+    P (dTuple n A) ⟶ dTuple n (P A) :=
   graph fun S => fun k => fun x => ∃ t, S t ∧ t k = x
 
 /-- **`setify(1,2,3,4) = {1,2,3,4}`** (book p.181): the components of a tuple as a set — which
     row a component came from is forgotten. -/
-@[expose] public def setify : dTuple n A ⟶ PowerAllegory.powerObj A :=
+@[expose] public def setify : dTuple n A ⟶ P A :=
   graph fun t => fun x => ∃ k, t k = x
 
 /-- **`zip((a₁,…,aₙ),(x₁,…,xₙ)) = ((a₁,x₁),…,(aₙ,xₙ))`** (book p.181): the product half of the

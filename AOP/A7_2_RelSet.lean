@@ -17,6 +17,7 @@ public import AOP.A6_1_OrdRelSet
 public import AOP.A7_2
 
 namespace Freyd.Alg.RelSet
+open PowerAllegory
 
 /-! ## Concrete Rel(Set) helpers: `Λ` is the classifier, and `est` pointwise -/
 
@@ -28,7 +29,7 @@ public theorem Λ_eq_classifier {B C : RelSet.{0}} (R : C ⟶ B) : Λ R = classi
 /-- Pointwise form of `est` in Rel(Set): `w` is a `est R`-choice of the set `P` iff
     `w ∈ P` and `w` `R`-dominates every member `z ∈ P` (`R w z`). -/
 public theorem est_apply {A : RelSet.{0}} (R : A ⟶ A)
-    (P : (PowerAllegory.powerObj A).carrier) (w : A.carrier) :
+    (P : (P A).carrier) (w : A.carrier) :
     (est R) P w ↔ P w ∧ ∀ z, P z → R w z := Iff.rfl
 
 /-- Pointwise form of `Λ T ≫ est R` ((7.5) unbundled): `w` is an `est R`-choice over the

@@ -23,7 +23,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // `est(Q) : PFA⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
     // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
     (RQ, "Freyd.Alg.greedy_dp.lhs.body", src[]),
-    // lean:AOP.A9_1.est_summand_le@1efecafb
+    // lean:AOP.A9_1.est_summand_le@096fa074
     // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
     // the object wire.
     (EQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
@@ -37,11 +37,11 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_lower") \
     #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
      `h` returns only what `H` returns]],
-     // lean:AOP.A10_1.greedy_dp_lower@44565adb
+     // lean:AOP.A10_1.greedy_dp_lower@3dbc8cfa
   lean-chain(
     (none, "Freyd.Alg.greedy_dp_lower.lhs", []),
     (SQ, "Freyd.Alg.greedy_dp_lower_step1.rhs", src[`est(Q)⊑∋` — @est-defn]),
-     // lean:AOP.A10_1.greedy_dp_lower_step1@66f7230b
+     // lean:AOP.A10_1.greedy_dp_lower_step1@ba3be0a6
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
@@ -53,23 +53,23 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.greedy_dp_upper") \
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
-     // lean:AOP.A10_1.greedy_dp_upper@2d89b7d1
+     // lean:AOP.A10_1.greedy_dp_upper@7abcb139
   lean-chain((
     (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
     (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
       src[`H°=h°F(H°)T` — @hylo-mu]),
-     // lean:AOP.A10_1.greedy_dp_upper_step1@8ec8c9b2
+     // lean:AOP.A10_1.greedy_dp_upper_step1@a5c2daac
     (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
       src[`T`#frc([`T°`])`⊑∈`]),
-     // lean:AOP.A10_1.greedy_dp_upper_step2@4a189407
+     // lean:AOP.A10_1.greedy_dp_upper_step2@bb96243e
     (SQ, "Freyd.Alg.greedy_dp_upper_step3.rhs", src[`∈est(Q)⊑Q°` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step3@c17d0163
+     // lean:AOP.A10_1.greedy_dp_upper_step3@0385457d
   ), (
     (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
       src[`QF(H)h⊑F(H)hR` conversed]),
-     // lean:AOP.A10_1.greedy_dp_upper_step4@bbace0f9
+     // lean:AOP.A10_1.greedy_dp_upper_step4@8e8aa389
     (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step5@49e70aa8
+     // lean:AOP.A10_1.greedy_dp_upper_step5@df77922c
     (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
       src[`h°F(R°)h⊑R°`]),
      // lean:AOP.A10_1.greedy_dp_upper_step6@8d3afe63
@@ -83,18 +83,18 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.greedy_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
      on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
-     // lean:AOP.A10_1.greedy_disjoint_ranges@611c02b4
+     // lean:AOP.A10_1.greedy_disjoint_ranges@e60d7430
   lean-chain(
     (none, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.lhs", []),
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.rhs.inl",
       src[empty off `ran V₁ ∪ ran V₂`]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step1@631ac87a
+     // lean:AOP.A10_1.greedy_disjoint_ranges_step1@0e786fad
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step2.rhs.inl",
       src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁` — @dp-disjoint]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step2@f2908d30
+     // lean:AOP.A10_1.greedy_disjoint_ranges_step2@da0b0f80
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step3.rhs.inl",
       src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`]),
-     // lean:AOP.A10_1.powerRel_inl_est@2ceb36e3 lean:AOP.A10_1.greedy_disjoint_ranges_step3@3a192617
+     // lean:AOP.A10_1.powerRel_inl_est@e8906c3a lean:AOP.A10_1.greedy_disjoint_ranges_step3@f11b2dff
     (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step4.rhs.inl", src[`inl[U₁,U₂]=U₁`]),
   ),
 )]<greedy-disjoint>
@@ -491,7 +491,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
-  // lean:AOP.A10_3_Tardy.schedule_le@e2c381dc lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
+  // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.tardy_laws.rhs", src[the specification — @tardy-defn]),
     // job-schedule row: Theorem 10.1
@@ -503,12 +503,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
        schedule of the whole]),
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_branch.lhs",
       src[Proposition 10.1: `nil` and `snag` have disjoint ranges]),
-    // lean:AOP.A10_3_Tardy.pick_branch_le@e50eb5ea lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
+    // lean:AOP.A10_3_Tardy.pick_branch_le@ee1b2a00 lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
     // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
     (RQ, "Freyd.Alg.RelSet.Tardy.pick_branch_le.lhs",
       src[`pick⊑`#frc([`snag°`])` est(Q')`, a partial function, quadratic in the number of jobs]),
   ),
-  // lean:AOP.A10_3_Tardy.tardy_laws@706eb827 lean:AOP.A10_3_Tardy.greedy_dp_context@4a318c49 lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
+  // lean:AOP.A10_3_Tardy.tardy_laws@9a4c81ea lean:AOP.A10_3_Tardy.greedy_dp_context@78d89cdf lean:AOP.A10_3_Tardy.tardy_mono@f508140f lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
 )]<tardy-laws>
 
 == The TeX problem
@@ -634,7 +634,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
       src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
        digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
   ),
-  // lean:AOP.A10_4_Tex.tex_laws@393983dc lean:AOP.A10_4_Tex.tex_laws_step1@ddde5bc4 lean:AOP.A10_4_Tex.tex_laws_step2@3fd53250 lean:AOP.A10_4_Tex.tex_laws_step3@12f54b12 lean:AOP.A10_4_Tex.tex_laws_body@942aced5
+  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_laws_step1@52e790c7 lean:AOP.A10_4_Tex.tex_laws_step2@3af8b229 lean:AOP.A10_4_Tex.tex_laws_step3@92eb955a lean:AOP.A10_4_Tex.tex_laws_body@20fe2dc1
 )
 ]<tex-laws>
 
@@ -648,7 +648,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     // lean:AOP.A10_4_Tex.f_eq@c0c2128a
   - #leanf("Freyd.Alg.RelSet.Tex.tex_f") \
     #src[the least solution of the greedy recursion of @tex-laws is `f`]
-    // lean:AOP.A10_4_Tex.tex_f@059727cf
+    // lean:AOP.A10_4_Tex.tex_f@de95755e
   - #leanf("Freyd.Alg.RelSet.Tex.digit_unique") \
     #src[Exercise 10.12: two digits `d` and `e` with `0<10b−d<1` and `0<10b−e<1` are equal]
     // lean:AOP.A10_4_Tex.digit_unique@4fd18062

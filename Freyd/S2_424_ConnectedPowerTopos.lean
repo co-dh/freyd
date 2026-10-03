@@ -46,6 +46,7 @@ public import Freyd.S2_41b
 universe v u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 open Cat
 
@@ -297,7 +298,7 @@ public theorem thickAll_straight_classifies {p b : 𝒜} {S : p ⟶ b}
 @[expose] public noncomputable def unguardedPowerOfSplitThickAll
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (T : x ⟶ a), ThickAll T) :
     UnguardedPowerAllegory 𝒜 :=
-  { powerObj := fun b => (exists_straight_thickAll_target hsplit hthick b).choose
+  { P := fun b => (exists_straight_thickAll_target hsplit hthick b).choose
     eps := fun b => (exists_straight_thickAll_target hsplit hthick b).choose_spec.choose
     eps_straight := fun b => (exists_straight_thickAll_target hsplit hthick b).choose_spec.choose_spec.1
     eps_thick := fun {b _c} R _ =>
@@ -343,7 +344,7 @@ public theorem eps_unthick (b : 𝒜) {c : 𝒜} (R : c ⟶ b) : Entire (R /ₛ 
     `splTargetThick_unguarded`. -/
 theorem splObj_thick_target (E : SplObj 𝒜) :
     ∃ (P : SplObj 𝒜) (S : P ⟶ E), Thick S :=
-  ⟨embObj (PowerAllegory.powerObj E.carrier),
+  ⟨embObj (P E.carrier),
    splEqTarget E (∋ E.carrier),
    splTargetThick_unguarded E (∋ E.carrier) (fun {_} R => eps_unthick E.carrier R)⟩
 
@@ -352,7 +353,7 @@ theorem splObj_thick_target (E : SplObj 𝒜) :
     `splTargetThickAll`.  This is the input the UNGUARDED power builder needs. -/
 public theorem splObj_thickAll_target (E : SplObj 𝒜) :
     ∃ (P : SplObj 𝒜) (S : P ⟶ E), ThickAll S :=
-  ⟨embObj (PowerAllegory.powerObj E.carrier),
+  ⟨embObj (P E.carrier),
    splEqTarget E (∋ E.carrier),
    splTargetThickAll E (∋ E.carrier) (fun {_} R => eps_unthick E.carrier R)⟩
 

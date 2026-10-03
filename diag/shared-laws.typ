@@ -374,54 +374,54 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   [$frac(R, ∋)$ ` : A⟶PB`, for `R : A⟶B` ],
   [convert a relation to a function. `a` $frac(R, ∋)$ ` ={b|a R b}` ],
   [#leanf("Freyd.Alg.Λ_is_map'")],  [],
-  // lean:Freyd.S2_40.Λ_is_map'@d8366eca
+  // lean:Freyd.S2_40.Λ_is_map'@4829fa0c
 
  [#leanf("Freyd.Alg.Λ_eps_eq'")], [#src[reading the chosen set back through `∋` returns the relation.]],
-  // lean:Freyd.S2_40.Λ_eps_eq'@a9bc729a
+  // lean:Freyd.S2_40.Λ_eps_eq'@2de083e0
 
   [#leanf("Freyd.Alg.simple_le_Λ_eps")],
  [A partial choice of sets is inside the total one. #src[]],
-  // lean:Freyd.S2_40.simple_le_Λ_eps@a28487fe
+  // lean:Freyd.S2_40.simple_le_Λ_eps@f1c2e71b
 
   [the *singleton map* is monic: #leanf("Freyd.Alg.singletonMap_monic")
  #src[two points with the same one-person set are the same point.]],
-  // lean:Freyd.S2_40.singletonMap_monic@f1b11e36
+  // lean:Freyd.S2_40.singletonMap_monic@ce019d6c
   [The one-person set.],
 
   [#leanf("Freyd.Alg.Λ_eps_reflection")],
  [Make the set of a set, then read it back one level down. #src[]],
-  // lean:AOP.A4_6.Λ_eps_reflection@2e9ddea3
+  // lean:AOP.A4_6.Λ_eps_reflection@eb919721
 
   [*fusion:* #leanf("Freyd.Alg.Λ_fusion")],
   [Naturality of the unit, #leanf("Freyd.Alg.singletonMap_natural").
  #src[renaming a point and then taking its one-person set is taking the set and renaming inside it.]],
-   // lean:AOP.A4_6.Λ_fusion@9d7bda13
-   // lean:AOP.A4_6.singletonMap_natural@9214d7f0
+   // lean:AOP.A4_6.Λ_fusion@4701a288
+   // lean:AOP.A4_6.singletonMap_natural@332a071d
 
   [#leanf("Freyd.Alg.Λ_of_map")],
   [Rename first or take singletons first — the fusion row above at `R=𝟙`.],
-  // lean:Freyd.S2_40.Λ_of_map@9ddca812
+  // lean:Freyd.S2_40.Λ_of_map@80a70f04
 
   [#leanf("Freyd.Alg.symm_div_eq_Λ_comp")],
   [`x` and `y` match when `R` sends `x` and `S` sends `y` to the same set.],
-  // lean:Freyd.S2_40.symm_div_eq_Λ_comp@d031e970
+  // lean:Freyd.S2_40.symm_div_eq_Λ_comp@ad300869
 
   [#leanf("Freyd.Alg.existsImage")], [`E(R): PA⟶PB`, image of a set of A],
-  // lean:AOP.A4_6.existsImage@db266886
+  // lean:AOP.A4_6.existsImage@eb2a9f39
   [#leanf("Freyd.Alg.Λ_eq_singleton_existsImage")],
  [$frac(#[`𝟙`], ∋)$`: x↦{x}` #src[]],
-  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@02b29ea8
+  // lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
   [#leanf("Freyd.Alg.Λ_absorption")],
   [absorption — the monad's composition law, $frac(#[`S`], ∋)$ `⋄` $frac(#[`R`], ∋)$ `=`
  $frac(#[`SR`], ∋)$, §@sec-kleisli #src[]],
-   // lean:AOP.A4_6.Λ_absorption@e87bd8f2
+   // lean:AOP.A4_6.Λ_absorption@00399742
 
   [#leanf("Freyd.Alg.supset")],
   [`xs⊇ys⟺∀a. ys∋a→xs∋a`],
-  // lean:Freyd.S2_40.supset@51b103bf
+  // lean:Freyd.S2_40.supset@ee7109d6
   [#leanf("Freyd.Alg.subset_eq_recip_supset")],
   [`xs⊆ys⟺ys⊇xs`],
-  // lean:Freyd.S2_40.subset_eq_recip_supset@9180510e
+  // lean:Freyd.S2_40.subset_eq_recip_supset@f3a7b182
 )]<pow-laws>
 ]
 
@@ -436,7 +436,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
     lean("Freyd.Alg.singletonMap_comp_eps"), lean("Freyd.Alg.Λ_eps_reflection")),
   [#leanf("Freyd.Alg.Λ_comp_eps") #h(1.4cm)
    #src[`PA` is the powerset of `A`.]],
-   // lean:AOP.A4_6.Λ_comp_eps@76d609ed
+   // lean:AOP.A4_6.Λ_comp_eps@14e3168a
   // The two identities are four panels wide, so the pair only clears the 22cm text block scaled down.
   s: 95%,
 )]<adj-E-bend>
@@ -446,14 +446,14 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.mem_leftDiv_eq") \
     #src[`xs` is related to `c` by `∈\Z` exactly when `xs ⊆ Λ(Z°)(c)`, the set of every `a` with `a Z c`]],
-     // lean:AOP.A7_1.mem_leftDiv_eq@7e4fcb2b
+     // lean:AOP.A7_1.mem_leftDiv_eq@ea4b76f9
   lean-chain(
     (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
     (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°` — @pow-laws]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9ab326b8
+     // lean:AOP.A7_1.mem_leftDiv_eq_step1@9c853dfe
     (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
       src[`X\(Yf°)=(X\Y)f°`, `f` a map]),
-     // lean:AOP.A7_1.mem_leftDiv_eq_step2@dc661372
+     // lean:AOP.A7_1.mem_leftDiv_eq_step2@78502a62
   ),
 )]<mem-ldiv>
 ]

@@ -167,7 +167,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   P(leanc("Freyd.Alg.junc"), s: 85%),
 
   [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
-  // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
+  // lean:AOP.A5_3.junc_eq_Λ_junc_eps@ea4663e1
   [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
    // lean:AOP.A5_3.u₁_junc@a01a115a lean:AOP.A5_3.u₂_junc@e692ee94
@@ -226,7 +226,7 @@ map coproduct can be applied underneath it. For any `T : A+B⟶C`,
   zstep(op: sym.arrow.l.r.double, under: true)[`·∋⊣`$frac(#box(width: 8pt), ∋)$],
   zsqc(`T`, [`[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`], eq: true),
 )
- // lean:AOP.A5_3.Λ_junc@d392c2aa lean:AOP.A5_3.junc_map@b2d62c40
+ // lean:AOP.A5_3.Λ_junc@a2c38b7d lean:AOP.A5_3.junc_map@b2d62c40
 ]<coprod-calc>
 
 #disp[#leancd("Freyd.Alg.u_junc_Λ_eps")]<coprod-square>
@@ -269,9 +269,9 @@ the fork above. The border spells `[R,S]=[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], 
 For `R : A⟶B`,
 #grid(columns: 2, column-gutter: 5pt, align: (right + horizon, left + horizon), row-gutter: 7pt,
  [], [#leanf("Freyd.Alg.powerRel") #src[]],
-  // lean:AOP.A5_4.powerRel@80c5b402
+  // lean:AOP.A5_4.powerRel@ec676a67
  [`E(R)≜` $frac(#[`∋R`], ∋)$ `=`], [`((∋R)/∋)∩(∋/(∋R))°` #src[]],
-  // lean:AOP.A4_6.existsImage@db266886
+  // lean:AOP.A4_6.existsImage@eb2a9f39
 )
 
 `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)`
@@ -310,9 +310,9 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
     [—],
     [every `x` and every `y` \ has a partner],
-  // lean:AOP.A7_2_RelSet.powrel_readings@c6a80634
+  // lean:AOP.A7_2_RelSet.powrel_readings@c8d9a0e3
   // lean:AOP.A7_2_RelSet.existsImage_apply@df0c21b6
-  // lean:AOP.A5_7_PowerBeads.powerRel_apply@ebfffd38
+  // lean:AOP.A5_7_PowerBeads.powerRel_apply@bbd76348
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
@@ -353,24 +353,24 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   [`X⊑P(R)⟺X∋⊑∋R` and `X°∋⊑∋R°`],
   [One containment, and the same one at `R°` — which is the definition read off the two divisions.
  Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[].],
-   // lean:AOP.A5_4.powerRel_mono@00de2d62
+   // lean:AOP.A5_4.powerRel_mono@c7c7e038
 
   [#leanf("Freyd.Alg.powerRel_id")],
   [The straightness axiom verbatim: extensionality *is* `P`'s unit law.
  #src[]],
-   // lean:AOP.A5_4.powerRel_id@4ada24f9
+   // lean:AOP.A5_4.powerRel_id@9a05ab0f
 
   [#leanf("Freyd.Alg.powerRel_map")],
   [In `Rel`, `xs P(f) ys⟺ys={f(a)|a∈xs}`. The half at `f°` says every `a∈xs` has its `f(a)` on
    `ys`; `f` has just the one image per `a`, so that already says `ys` contains everything `xs`
    reaches, which is the fraction's second half. For a map the two definitions coincide.
  #src[]],
-   // lean:AOP.A5_4.powerRel_map@2bf77d9f
+   // lean:AOP.A5_4.powerRel_map@e6f91701
 
   [#leanf("Freyd.Alg.powerRel_comp")],
   [`⊒` is the division cancellation laws. `⊑` is the one law in this section that is not a
  calculation: it needs a tabulation of `P(RS)`. #src[]],
-   // lean:AOP.A5_4.powerRel_comp@06364064
+   // lean:AOP.A5_4.powerRel_comp@cc53e370
 )]<powrel-laws>
 
 // Its own page: the definition below only says what `T(R)` is, and the square after it is the reason
@@ -500,7 +500,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   lean(cata-map-l, cata-map-r, op: [=]),
   [#leanf("Freyd.Alg.Λ_relCata")
  #src[]],
-   // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
+   // lean:AOP.A5_5.Λ_relCata@4967772e lean:AOP.A5_5.relCata_unfold@8434a6c2
 )]<cata-map-square>
 
 // B&dM (5.12), p. 121, mirrored into this note's diagram order.  A row too wide for the column wraps,
@@ -523,7 +523,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 )
 #align(center, block(inset: (y: 3pt))[#src[the last two rows at `X:=⦇R⦈`:
  ]])
- // lean:AOP.A5_5.Λ_relCata@e674c545 lean:AOP.A5_5.relCata_unfold@73696c59
+ // lean:AOP.A5_5.Λ_relCata@4967772e lean:AOP.A5_5.relCata_unfold@8434a6c2
 ]<cata-map-calc>
 
 // B&dM (5.12), p.121: the `⟹` half as ONE term chain from $frac(#[`X`], ∋)$ to the fold that names it,
@@ -531,7 +531,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 #disp[#calc-table(cols: (1fr,), al: auto,
   Thm(cols: 1)[#leanf("Freyd.Alg.relCata_UP_fold") \
     #src[in a tabular allegory, with `F` a relator and `α : F(T)⟶T` its initial algebra: a relation `X` out of `T` satisfies the fold equation `αX=F(X)R` of `R` exactly when $frac(#[`X`], ∋)$ is the fold of the map $frac(#[`F(∋)R`], ∋)$]],
-    // lean:AOP.A5_5.relCata_UP_fold@896f6361
+    // lean:AOP.A5_5.relCata_UP_fold@daf65f6e
   [#lean-chain(formula: true,
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
@@ -540,7 +540,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
       (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @pow-laws]),
       (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
-      // lean:AOP.A5_5.relCata_UP_step5@0c3c4eb1
+      // lean:AOP.A5_5.relCata_UP_step5@cdbc6943
   )],
 )]<cata-map-proof>
 
@@ -613,17 +613,17 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 
   [#leanf("Freyd.Alg.RelSet.ListRel.setify_cpp") \ #leanf("Freyd.Alg.RelSet.ListRel.setify_cpl") \
    #leanf("Freyd.Alg.RelSet.ListRel.setify_cpr") #src[]],
-  // lean:AOP.A5_6_ListCombinators.setify_cpp@1244ff9a lean:AOP.A5_6_ListCombinators.setify_cpl@bd16fc19 lean:AOP.A5_6_ListCombinators.setify_cpr@8d80980d
+  // lean:AOP.A5_6_ListCombinators.setify_cpp@1a28e284 lean:AOP.A5_6_ListCombinators.setify_cpl@a501aaa4 lean:AOP.A5_6_ListCombinators.setify_cpr@87353fd8
   [#leant("Freyd.Alg.RelSet.ListRel.setify_cpp")],
   [Forgetting the order with `setify`, `cpp` is the transpose of `∋×∋`.],
 
   [#leanf("Freyd.Alg.cpMap") #src[]],
-  // lean:AOP.A5_6.cpMap@8554ec3c
+  // lean:AOP.A5_6.cpMap@636ea157
   [#leant("Freyd.Alg.cpMap")],
   [`cp(F)`, the transpose of a relator's action on `∋`; `cpp` implements it at `F(A)=A×A`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.cp_list") \ #leanf("Freyd.Alg.RelSet.ListRel.cp_list_alg") #src[]],
-  // lean:AOP.A5_6_ListCombinators.cp_list@c67067c2 lean:AOP.A5_6_ListCombinators.cp_list_alg@e7822cf3
+  // lean:AOP.A5_6_ListCombinators.cp_list@b2418f21 lean:AOP.A5_6_ListCombinators.cp_list_alg@34227b70
   [#leant("Freyd.Alg.RelSet.ListRel.cp_list")],
   [`cp(list)`: @cata-map-calc at `list(∋)=⦇[nil,(∋×𝟙)cons]⦈`, then the algebra expanded.],
 
@@ -666,7 +666,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 `cup≜` $frac(#[`π₁∋ ∪ π₂∋`], ∋)$ ` : PA×PA⟶PA`, #h(4pt) so
 $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ cup`.
 #h(4pt) #src[]
-// lean:AOP.A5_6.Λ_union@632cc56a
+// lean:AOP.A5_6.Λ_union@a769989a
 ]]<cup-defn>
 
 // The `∪`'s `cons` operand, drawn Hinze–Marsden: `𝟙×∋` acts on the TAIL, so `∋` is a bead on the
@@ -690,7 +690,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
      `subseq=⦇[nil,cons ∪ π₂]⦈`, @comb-fns.
  ]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@d73bdb8e lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@e9ebf14d lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
 
@@ -706,7 +706,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
     [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@73aaa858 lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@5548e84e lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
@@ -715,13 +715,13 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons ∪ π₂)]`]])],
-    // lean:AOP.A5_3.Λ_junc@d392c2aa
+    // lean:AOP.A5_3.Λ_junc@a2c38b7d
   [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
     `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
-    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@99c153ab
+    // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@d276006e
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 )]<subseq-EW-case>
 
@@ -733,7 +733,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_join") \
     #src[power transpose of join: the power transpose of the join of two relations is
      `⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup`, where `cup` is the function that returns the union of two sets]],
-    // lean:AOP.A5_6_ListCombinators.subseq_alg_join@3a6f03a8
+    // lean:AOP.A5_6_ListCombinators.subseq_alg_join@b7ae8680
   table.header([*circuit*],
     [*Hinze–Marsden*]),
 
@@ -748,7 +748,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
     [#frc([`(𝟙×∋)cons ∪ π₂∋`]) \
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
-    // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@d3755d54
+    // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@931da6a5
   [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \

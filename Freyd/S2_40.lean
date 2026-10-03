@@ -42,9 +42,9 @@ namespace Freyd.Alg
     epsilon morphisms ∋_B : [B] → B satisfying straightness and thickness. -/
 public class PowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
   /-- The POWER-OBJECT [b] of b. -/
-  powerObj (b : 𝒜) : 𝒜
+  P (b : 𝒜) : 𝒜
   /-- The epsilon morphism ∋_b : [b] → b. -/
-  eps (b : 𝒜) : powerObj b ⟶ b
+  eps (b : 𝒜) : P b ⟶ b
 
   /-- ∋ is straight: ∋ /ₛ ∋ ⊑ 1 (§2.41). -/
   eps_straight (b : 𝒜) : Straight (eps b)
@@ -63,7 +63,7 @@ public class PowerAllegory (𝒜 : Type u) extends DivisionAllegory 𝒜 where
       `1 ⊑ ∋/∋` is vacuous (`one_le_div_self`); this existential form is the real condition
       (it forces `Λ(R) = R/ₛ∋` entire on the matched box). -/
   eps_thick {b : 𝒜} {c : 𝒜} (R : c ⟶ b) (hbox : codBox R = codBox (eps b)) :
-    ∃ (f : c ⟶ powerObj b), Map f ∧ f ≫ eps b = R
+    ∃ (f : c ⟶ P b), Map f ∧ f ≫ eps b = R
 
 /-! ### Notation -/
 
@@ -72,8 +72,10 @@ notation "∋" => PowerAllegory.eps
 
 /-! ### Derived operations -/
 
+open PowerAllegory
+
 /-- Λ(R) = R /ₛ ∋: the unique map such that Λ(R)∋ = R (§2.41). -/
-@[expose] public def Λ {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : a ⟶ PowerAllegory.powerObj b :=
+@[expose] public def Λ {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) : a ⟶ P b :=
   R /ₛ PowerAllegory.eps b
 
 /-- The note's fraction bar for the transpose: `R%∋` is `Λ(R) = R/∋`. -/
@@ -83,7 +85,7 @@ postfix:max "%∋" => Λ
     Used both for entireness of Λ(R) and the lower bound of Λ(R)∋ = R.
     f ⊑ Λ R = R/ₛ∋ via le_symmDiv_iff: f∋ = R (so f∋ ⊑ R) and f°R = (f°f)∋ ⊑ ∋ (Simple f). -/
 private theorem thick_witness_le_Λ {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
-    {f : a ⟶ PowerAllegory.powerObj b} (hf : Map f) (hfeq : f ≫ ∋ b = R) :
+    {f : a ⟶ P b} (hf : Map f) (hfeq : f ≫ ∋ b = R) :
     f ⊑ Λ R := by
   rw [Λ, le_symmDiv_iff]
   refine ⟨by rw [hfeq]; exact le_refl _, ?_⟩
@@ -143,7 +145,7 @@ public theorem Λ_eps_eq {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b)
     genuine power allegories (toposes' `Rel(C)`, the §2.434 global completion). -/
 public class UnguardedPowerAllegory (𝒜 : Type u) extends PowerAllegory 𝒜 where
   /-- `∋` classifies EVERY `R : c → b`: there is a map `f` with `f ≫ ∋ = R` (§2.412/§2.413). -/
-  eps_thick_all {b c : 𝒜} (R : c ⟶ b) : ∃ (f : c ⟶ powerObj b), Map f ∧ f ≫ eps b = R
+  eps_thick_all {b c : 𝒜} (R : c ⟶ b) : ∃ (f : c ⟶ P b), Map f ∧ f ≫ eps b = R
 
 /-- In an unguarded power allegory `Λ(R)` is a MAP for EVERY `R` (no box hypothesis). -/
 public theorem Λ_is_map' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ b) : Map (Λ R) := by
@@ -169,7 +171,7 @@ public theorem Λ_eps_eq' {a b : 𝒜} [UnguardedPowerAllegory 𝒜] (R : a ⟶ 
 /-! ## §2.415  Power object and singleton map -/
 
 /-- The SINGLETON MAP of a is Λ(1_a) : a → [a] (§2.415). -/
-@[expose] public def singletonMap {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ PowerAllegory.powerObj a :=
+@[expose] public def singletonMap {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ P a :=
   Λ (Cat.id a)
 
 /-- Singleton map is monic (§2.415): Λ(1_a)Λ(1_a)° ⊑ 1.
@@ -255,7 +257,7 @@ theorem semiSimple_comp_simple {𝒜 : Type u} [Allegory 𝒜] {a b d : 𝒜}
 /-- Λ(R) is the UNIQUE map F with F∋ = R (§2.412).
     Uniqueness: if F is a map and F∋ = R then F = Λ(R).
     This follows from straightness of ∋: ∋ /ₛ ∋ ⊑ 1 forces Λ(R) uniqueness. -/
-public theorem Λ_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a ⟶ PowerAllegory.powerObj b)
+public theorem Λ_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a ⟶ P b)
     (hF : Map F) (hFeq : F ≫ ∋ b = R) : F = Λ R := by
   -- Step 1: F ⊑ Λ R = R /ₛ ∋ via le_symmDiv_iff
   have hF_le : F ⊑ Λ R := by
@@ -270,7 +272,7 @@ public theorem Λ_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a 
   -- Helper: (Λ R)° ≫ R ⊑ ∋ b
   have hARo_R : (Λ R)° ≫ R ⊑ ∋ b := ((le_symmDiv_iff _ R _).mp (le_refl _)).2
   -- Step 2: F° ≫ Λ R ⊑ ∋ /ₛ ∋ ⊑ 1
-  have hFoAR : F° ≫ Λ R ⊑ Cat.id (PowerAllegory.powerObj b) := by
+  have hFoAR : F° ≫ Λ R ⊑ Cat.id (P b) := by
     apply le_trans _ (PowerAllegory.eps_straight b)
     rw [le_symmDiv_iff]
     refine ⟨?_, ?_⟩
@@ -295,7 +297,7 @@ public theorem Λ_unique {a b : 𝒜} [PowerAllegory 𝒜] (R : a ⟶ b) (F : a 
     have h2 : (F ≫ F°) ≫ Λ R = F ≫ F° ≫ Λ R := Cat.assoc _ _ _
     rw [h2] at h1
     have h3 : F ≫ F° ≫ Λ R ⊑ F ≫ Cat.id _ := comp_mono_left F hFoAR
-    have h4 : F ≫ Cat.id (PowerAllegory.powerObj b) = F := Cat.comp_id _
+    have h4 : F ≫ Cat.id (P b) = F := Cat.comp_id _
     rw [h4] at h3
     exact le_trans h1 h3
   exact le_antisymm hF_le hAR_le_F
@@ -317,7 +319,7 @@ public theorem Λ_of_map {a b : 𝒜} [PowerAllegory 𝒜] (f : a ⟶ b) (hf : M
     Book: "Indeed, if F is simple then F ⊂ Λ(F∋)."
     Proof: need F ⊑ (F∋)/ₛ∋, i.e. F∋ ⊑ F∋ (trivial) and F°(F∋) ⊑ ∋,
     which follows from F°F ⊑ 1 and Λ(R)∋ = R. -/
-public theorem simple_le_Λ_eps {a b : 𝒜} [PowerAllegory 𝒜] (F : a ⟶ PowerAllegory.powerObj b)
+public theorem simple_le_Λ_eps {a b : 𝒜} [PowerAllegory 𝒜] (F : a ⟶ P b)
     (hF : Simple F) : F ⊑ Λ (F ≫ ∋ b) := by
   -- Λ (F ≫ ∋ b) = (F ≫ ∋ b) /ₛ ∋ b. By le_symmDiv_iff, F ⊑ (F∋)/ₛ∋ iff
   -- (1) F ≫ ∋ ⊑ F ≫ ∋ (trivial) and (2) F° ≫ (F ≫ ∋) ⊑ ∋.
@@ -665,7 +667,7 @@ public class EffectivePrePowerAllegory (𝒜 : Type u) extends EffectiveDivision
     morphism (§2.432).  `thick_target b` gives a thick `T : x → b`; `straight_factorization T`
     factors it `T = h ≫ S` with `h` a map, `h°h = 1`, `S = h° ≫ T` straight;
     `straight_descent_thick` shows `S` stays thick.  This is a `Prop`, so it may be `choose`n
-    into the (data) `powerObj`/`eps` fields below via `Classical`. -/
+    into the (data) `P`/`eps` fields below via `Classical`. -/
 public theorem exists_straight_thick_target_of_split {𝒜 : Type u} [DivisionAllegory 𝒜]
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (S : x ⟶ a), Thick S) (b : 𝒜) :
     ∃ (p : 𝒜) (S : p ⟶ b), Straight S ∧ Thick S := by
@@ -706,7 +708,7 @@ theorem straight_factor_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a
   straight_map_monic hMap (straight_of_comp_straight (S := h) (R := S') (hS ▸ hStr))
 
 /-- §2.432: an effective pre-power allegory is a power allegory.  SORRY-FREE.
-    Everything is built honestly: `powerObj b` / `eps b` are the straight-thick factor
+    Everything is built honestly: `P b` / `eps b` are the straight-thick factor
     `(c, S)` of the chosen thick target of `b` (§2.354 `straight_factorization` + §2.432
     `straight_descent_thick`), `eps_straight` is exactly the straightness of that `S`, and
     `eps_thick` (now the box-guarded `∋_R□ = R□` membership, faithful to Freyd's §2.41) is
@@ -725,7 +727,7 @@ theorem straight_factor_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a
 
     §2.416 inference, specialised to one arbitrary `R : p → b`:
       1.  form the binary cotuple `(R ; S) : (c ⊕ p) → b` of `S : c → b` (our `eps b`,
-          with `c = powerObj b`) and `R`, living on the COPRODUCT object `c ⊕ p`;
+          with `c = P b`) and `R`, living on the COPRODUCT object `c ⊕ p`;
       2.  straighten it (§2.354): `(R ; S) = (h' ; h) ≫ S'` with `h, h'` maps, `S'` straight;
           restricting to the `c`-summand gives `S = h ≫ S'`;
       3.  `S` is MAXIMAL straight (`S = h ≫ S'`, `S'` straight ⟹ `h` iso), so `h` is iso;
@@ -734,8 +736,8 @@ theorem straight_factor_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a
     Two distinct irreducible obstacles, BOTH the progenitor (§1.966), absent here:
 
     • Step 1 needs the coproduct OBJECT `c ⊕ p` with its cotupling map, i.e.
-      `Freyd.Alg.PositiveAllegory.coprod (powerObj b) p` and
-      `PositiveAllegory.has_coproduct (powerObj b) p` — the binary instance of Freyd's
+      `Freyd.Alg.PositiveAllegory.coprod (P b) p` and
+      `PositiveAllegory.has_coproduct (P b) p` — the binary instance of Freyd's
       copower `C_I y`.  An `EffectivePrePowerAllegory` is
       `EffectiveDivisionAllegory = DivisionAllegory + EffectiveAllegory`, and
       `DivisionAllegory extends DistributiveAllegory`, which gives `∪`/`𝟘` on hom-sets but
@@ -767,12 +769,12 @@ theorem straight_factor_map_monic {𝒜 : Type u} [DivisionAllegory 𝒜] {x c a
     coproduct objects in the pre-power setting, and §2.43 pre-power allegories are not
     assumed positive, so supplying them as instance fields would weaken the theorem below
     the book's hypotheses.  Precise missing primitive: a progenitor `y : 𝒜` (§1.966) with
-    its copower `coprod (powerObj b) p` (`PositiveAllegory.has_coproduct`).  That route is
+    its copower `coprod (P b) p` (`PositiveAllegory.has_coproduct`).  That route is
     moot here: the field is now the faithful box-guarded membership, discharged below. -/
 public noncomputable def power_of_split_thick {𝒜 : Type u} [DivisionAllegory 𝒜]
     (hsplit : EqSplits 𝒜) (hthick : ∀ (a : 𝒜), ∃ (x : 𝒜) (S : x ⟶ a), Thick S) :
     PowerAllegory 𝒜 :=
-  { powerObj := fun b => (exists_straight_thick_target_of_split hsplit hthick b).choose
+  { P := fun b => (exists_straight_thick_target_of_split hsplit hthick b).choose
     eps := fun b => (exists_straight_thick_target_of_split hsplit hthick b).choose_spec.choose
     eps_straight := fun b => (exists_straight_thick_target_of_split hsplit hthick b).choose_spec.choose_spec.1
     eps_thick := by
@@ -906,12 +908,12 @@ theorem pre_positive_to_well_joined {𝒜 : Type u} [PrePositiveAllegory 𝒜] :
     Equivalently: X 2 Y iff every member of Y is a member of X (X is a superset of Y), the
     note's `⊇`. -/
 @[expose] public def supset {a : 𝒜} [PowerAllegory 𝒜] :
-    PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
+    P a ⟶ P a :=
   ∋ a / ∋ a
 
 /-- The note's `⊆ ≜ ∈\∈`: `xs ⊆ ys` iff every member of `xs` is a member of `ys`. -/
 @[expose] public def subset {a : 𝒜} [PowerAllegory 𝒜] :
-    PowerAllegory.powerObj a ⟶ PowerAllegory.powerObj a :=
+    P a ⟶ P a :=
   (∋ a)° \ (∋ a)°
 
 /-- `⊆ = ⊇°`: `∈\∈` unfolds to `(∈°/∈°)°`, and `∈° = ∋`. -/
@@ -922,7 +924,7 @@ public theorem subset_eq_recip_supset {a : 𝒜} [PowerAllegory 𝒜] :
   rfl
 
 /-- The note's `∈ ≜ ∋°`: `x ∈ xs` iff `xs ∋ x`. -/
-@[expose] public def mem {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ PowerAllegory.powerObj a := (∋ a)°
+@[expose] public def mem {a : 𝒜} [PowerAllegory 𝒜] : a ⟶ P a := (∋ a)°
 
 /-- `∈ = ∋°`: the pair by which a drawn `∋°` is named `∈`, and `∈°` named `∋`. -/
 public theorem mem_eq_recip_eps {a : 𝒜} [PowerAllegory 𝒜] : mem (a := a) = (∋ a)° := rfl
@@ -986,16 +988,16 @@ theorem straight_semiSimple_of_eps_semiSimple {a b : 𝒜} [PowerAllegory 𝒜]
     ⊔ = Λ(∋' ≫ ∋) where ∋' = ∋_{[a]} : [[a]] → [a] and ∋ = ∋_a : [a] → a.
     Semantically `F (∋'∋) x ↔ ∃ A∈F, x∈A`, so `Λ(∋'∋) : F ↦ ⋃F` (Freyd §2.443). -/
 @[expose] public def bigUnion {a : 𝒜} [PowerAllegory 𝒜] :
-    PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj a :=
-  Λ (∋ (PowerAllegory.powerObj a) ≫ ∋ a)
+    P (P a) ⟶ P a :=
+  Λ (∋ (P a) ≫ ∋ a)
 
 /-- The big-INTERSECTION map ⊓ : [[a]] → [a] (§2.442/§2.443).
     ⊓ = Λ(ε' \ ∋) where ε' = (∋_{[a]})° : [a] → [[a]] and ∋ = ∋_a : [a] → a.
     Left division: ε' \ ∋ = (ε' \ ∋) = (∋° / ∋')°.
     Semantically `F (ε'\∋) x ↔ ∀ A∈F, x∈A`, so `Λ(ε'\∋) : F ↦ ⋂F` (Freyd §2.443). -/
 def bigInter {a : 𝒜} [PowerAllegory 𝒜] :
-    PowerAllegory.powerObj (PowerAllegory.powerObj a) ⟶ PowerAllegory.powerObj a :=
-  Λ (((∋ (PowerAllegory.powerObj a))°) \ (∋ a))
+    P (P a) ⟶ P a :=
+  Λ (((∋ (P a))°) \ (∋ a))
 
 /-- LAW OF METONYMY (Freyd §2.443), the formula `⊃ ⊆ ∪° ∩`, stated at the level of the subset order.
 
@@ -1051,7 +1053,7 @@ theorem leftDiv_union {𝒜 : Type u} [DivisionAllegory 𝒜] {a b c : 𝒜}
 /-- §2.41: for a MAP `f : a → [c]`, `f° \ ∋ = f∋`.  (`f°(f∋) = (f°f)∋ ⊑ ∋` by simplicity,
     and `f∋` is the largest such by entireness: `T ⊑ ff°T ⊑ f(f°\∋'s bound)`.) -/
 theorem leftDiv_recip_map_eps {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    (f : a ⟶ PowerAllegory.powerObj c) (hf : Map f) :
+    (f : a ⟶ P c) (hf : Map f) :
     ((f°) \ (∋ c)) = f ≫ ∋ c := by
   apply le_antisymm
   · have hfe : Cat.id a ⊑ f ≫ f° := by
@@ -1066,22 +1068,22 @@ theorem leftDiv_recip_map_eps {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
 /-- §2.41: a MAP `M` shifts into the numerator of a left division by `∋`,
     `M ≫ (∋' ° \ ∋) = (M∋')° \ ∋`.  (`⊑` uses `M°M ⊑ 1`; `⊒` uses `1 ⊑ MM°`.) -/
 theorem map_comp_leftDiv {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    (M : c ⟶ PowerAllegory.powerObj (PowerAllegory.powerObj a)) (hM : Map M) :
-    M ≫ (((∋ (PowerAllegory.powerObj a))°) \ (∋ a))
-      = (((M ≫ ∋ (PowerAllegory.powerObj a))°) \ (∋ a)) := by
+    (M : c ⟶ P (P a)) (hM : Map M) :
+    M ≫ (((∋ (P a))°) \ (∋ a))
+      = (((M ≫ ∋ (P a))°) \ (∋ a)) := by
   apply le_antisymm
   · rw [le_leftDiv_iff, Allegory.recip_comp, Cat.assoc, ← Cat.assoc M°]
-    refine le_trans (comp_mono_left ((∋ (PowerAllegory.powerObj a))°)
-      (comp_mono_right hM.2 (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)))) ?_
+    refine le_trans (comp_mono_left ((∋ (P a))°)
+      (comp_mono_right hM.2 (((∋ (P a))°) \ (∋ a)))) ?_
     rw [Cat.id_comp]; exact leftDiv_comp_le _ _
   · have hMe : Cat.id c ⊑ M ≫ M° := by
       have := hM.1; dsimp [Entire, dom] at this; rw [← this]; exact inter_lb_right _ _
-    have step1 : (((M ≫ ∋ (PowerAllegory.powerObj a))°) \ (∋ a))
-        ⊑ (M ≫ M°) ≫ (((M ≫ ∋ (PowerAllegory.powerObj a))°) \ (∋ a)) := by
-      have h := comp_mono_right hMe (((M ≫ ∋ (PowerAllegory.powerObj a))°) \ (∋ a))
+    have step1 : (((M ≫ ∋ (P a))°) \ (∋ a))
+        ⊑ (M ≫ M°) ≫ (((M ≫ ∋ (P a))°) \ (∋ a)) := by
+      have h := comp_mono_right hMe (((M ≫ ∋ (P a))°) \ (∋ a))
       rwa [Cat.id_comp] at h
-    have step2 : (M ≫ M°) ≫ (((M ≫ ∋ (PowerAllegory.powerObj a))°) \ (∋ a))
-        ⊑ M ≫ (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) := by
+    have step2 : (M ≫ M°) ≫ (((M ≫ ∋ (P a))°) \ (∋ a))
+        ⊑ M ≫ (((∋ (P a))°) \ (∋ a)) := by
       rw [Cat.assoc]; apply comp_mono_left
       rw [le_leftDiv_iff, ← Cat.assoc, ← Allegory.recip_comp]; exact leftDiv_comp_le _ _
     exact le_trans step1 step2
@@ -1090,9 +1092,9 @@ theorem map_comp_leftDiv {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     (`bigUnion = Λ(∋'∋) : F ↦ ⋃F`.)  The composite is a map whose `≫∋` is
     `(f∪g)∋ = f∋ ∪ g∋`, so by `Λ_unique` it equals `Λ(f∋ ∪ g∋)`. -/
 theorem bigUnion_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    (f g : c ⟶ PowerAllegory.powerObj a)
-    (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
-    (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a)) :
+    (f g : c ⟶ P a)
+    (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
+    (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a)) :
     Λ (f ∪ g) ≫ bigUnion = Λ ((f ≫ ∋ a) ∪ (g ≫ ∋ a)) := by
   have hmap : Map (Λ (f ∪ g) ≫ bigUnion) :=
     map_comp (Λ_is_map _ hbfg) (by rw [bigUnion]; exact Λ_is_map _ hbU)
@@ -1104,9 +1106,9 @@ theorem bigUnion_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     (`bigInter = Λ(ε'\∋) : F ↦ ⋂F`.)  Reduces via `map_comp_leftDiv`, `leftDiv_union`
     (`recip_union`), and `leftDiv_recip_map_eps` to `f∋ ∩ g∋`, then `Λ_unique`. -/
 theorem bigInter_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    (f g : c ⟶ PowerAllegory.powerObj a) (hf : Map f) (hg : Map g)
-    (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
-    (hbI : codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a)) :
+    (f g : c ⟶ P a) (hf : Map f) (hg : Map g)
+    (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
+    (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a)) :
     Λ (f ∪ g) ≫ bigInter = Λ ((f ≫ ∋ a) ∩ (g ≫ ∋ a)) := by
   have hmap : Map (Λ (f ∪ g) ≫ bigInter) :=
     map_comp (Λ_is_map _ hbfg) (by rw [bigInter]; exact Λ_is_map _ hbI)
@@ -1119,13 +1121,13 @@ theorem bigInter_comp_eq {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
 /-- §2.442: `bigUnion` is a map (hence simple), when `∋'≫∋` is in ∋'s box
     (Freyd's `∋_R□ = R□` for the union-defining relation `R = ∋_{[a]}≫∋_a`). -/
 theorem bigUnion_is_map {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
-    (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a)) :
+    (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a)) :
     Map (bigUnion (a := a)) := by
   rw [bigUnion]; exact Λ_is_map _ hbU
 
 /-- §2.442: `bigInter` is a map (hence simple), when `∋'\∋` is in ∋'s box. -/
 theorem bigInter_is_map {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜}
-    (hbI : codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a)) :
+    (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a)) :
     Map (bigInter (a := a)) := by
   rw [bigInter]; exact Λ_is_map _ hbI
 
@@ -1139,7 +1141,7 @@ theorem bigInter_simple {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
 
 /-- §2.442: the partial order `2 = ∋/∋` is reflexive, `1 ⊑ 2`. -/
 theorem supset_reflexive {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} :
-    Cat.id (PowerAllegory.powerObj a) ⊑ supset (a := a) := by
+    Cat.id (P a) ⊑ supset (a := a) := by
   rw [supset, le_div_iff, Cat.id_comp]; exact le_refl _
 
 /-- §2.442: `∋ ⊑ 2 ≫ ∋` (membership factors through the reflexive order). -/
@@ -1157,7 +1159,7 @@ theorem eps_le_supset_comp_eps {𝒜 : Type u} [PowerAllegory 𝒜] {b : 𝒜} :
     `(⟸)`  `g∋ ⊑ f∋` gives `f°g∋ ⊑ f°f∋ ⊑ ∋` (`f` simple: `f°f ⊑ 1`), i.e. `(f°g)∋ ⊑ ∋`,
     so `f°g ⊑ ∋/∋` by `le_div_iff`. -/
 theorem le_supset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) :
+    {f g : c ⟶ P a} (hf : Map f) :
     f° ≫ g ⊑ supset ↔ g ≫ ∋ a ⊑ f ≫ ∋ a := by
   constructor
   · intro hle
@@ -1189,10 +1191,10 @@ theorem le_supset_iff_eps_le {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
     `f°g = bigUnion° ≫ (Λ(f∪g)° ≫ Λ(f∪g)) ≫ bigInter ⊑ bigUnion° ≫ bigInter`,
     a `simple° ≫ simple`. -/
 theorem le_supset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) (hg : Map g)
-    (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
-    (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a))
-    (hbI : codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a))
+    {f g : c ⟶ P a} (hf : Map f) (hg : Map g)
+    (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
+    (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a))
+    (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a))
     (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : f° ≫ g ⊑ bigUnion° ≫ bigInter := by
   -- f∋ ∪ g∋ = f∋ and f∋ ∩ g∋ = g∋ from hle.
   have hu : (f ≫ ∋ a) ∪ (g ≫ ∋ a) = f ≫ ∋ a := by
@@ -1213,10 +1215,10 @@ theorem le_supset_metonymy_bound {𝒜 : Type u} [PowerAllegory 𝒜] {a c : �
     _ = bigUnion° ≫ bigInter := by rw [Cat.id_comp]
 
 theorem semiSimple_of_le_supset {𝒜 : Type u} [PowerAllegory 𝒜] {a c : 𝒜}
-    {f g : c ⟶ PowerAllegory.powerObj a} (hf : Map f) (hg : Map g)
-    (hbfg : codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a)))
-    (hbU : codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a))
-    (hbI : codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a))
+    {f g : c ⟶ P a} (hf : Map f) (hg : Map g)
+    (hbfg : codBox (f ∪ g) = codBox (∋ (P a)))
+    (hbU : codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a))
+    (hbI : codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a))
     (hle : g ≫ ∋ a ⊑ f ≫ ∋ a) : SemiSimple (f° ≫ g) :=
   semiSimple_of_le ⟨_, bigUnion, bigInter, bigUnion_simple, bigInter_simple,
     le_supset_metonymy_bound hf hg hbfg hbU hbI hle⟩
@@ -1384,12 +1386,12 @@ theorem pre_positive_semi_simple_iff_metonymic {𝒜 : Type u} [PrePositivePower
     -- single un-indexed morphism in this repo rather than Freyd's box-indexed family.  These
     -- are the structural box matches the §2.443 `Λ`-calculus consumes; under the over-strong
     -- (unconditional-thickness) axiom they held automatically, here they are honest hypotheses.
-    (hbU : ∀ a : 𝒜, codBox (∋ (PowerAllegory.powerObj a) ≫ ∋ a) = codBox (∋ a))
-    (hbI : ∀ a : 𝒜, codBox (((∋ (PowerAllegory.powerObj a))°) \ (∋ a)) = codBox (∋ a))
+    (hbU : ∀ a : 𝒜, codBox (∋ (P a) ≫ ∋ a) = codBox (∋ a))
+    (hbI : ∀ a : 𝒜, codBox (((∋ (P a))°) \ (∋ a)) = codBox (∋ a))
     (hbox1 : ∀ a : 𝒜, codBox (Cat.id a) = codBox (∋ a))
     (hboxStr : ∀ {a c : 𝒜} (S : a ⟶ c), Straight S → codBox S = codBox (∋ c))
-    (hboxUnion : ∀ {a c : 𝒜} (f g : c ⟶ PowerAllegory.powerObj a),
-        Map f → Map g → codBox (f ∪ g) = codBox (∋ (PowerAllegory.powerObj a))) :
+    (hboxUnion : ∀ {a c : 𝒜} (f g : c ⟶ P a),
+        Map f → Map g → codBox (f ∪ g) = codBox (∋ (P a))) :
     (∀ (a b : 𝒜) (R : a ⟶ b), SemiSimple R) ↔ MetonymyLaw 𝒜 := by
   refine ⟨fun hSS a => ?_, fun hMet a b R => ?_⟩
   · -- CONVERSE (semi-simple ⟹ metonymy `2 ⊑ bigUnion° ≫ bigInter`) via Route B.
@@ -1447,7 +1449,7 @@ public theorem equivRel_idem {𝒜 : Type u} [DivisionAllegory 𝒜] {a : 𝒜} 
     `symm_div_eq_Λ_comp` gives `E /ₛ E = Λ(E) ≫ (Λ E)°`. -/
 public theorem equivRel_eq_map_comp_recip {𝒜 : Type u} [PowerAllegory 𝒜] {a : 𝒜} (E : a ⟶ a)
     (hE : EquivalenceRel E) (hbox : codBox E = codBox (∋ a)) :
-    ∃ (f : a ⟶ PowerAllegory.powerObj a), Map f ∧ E = f ≫ f° := by
+    ∃ (f : a ⟶ P a), Map f ∧ E = f ≫ f° := by
   refine ⟨Λ E, Λ_is_map E hbox, ?_⟩
   -- Step 1: E = E /ₛ E  (idempotence in division allegory)
   have hEidem : E = E /ₛ E := by
@@ -1542,7 +1544,7 @@ open Lean PrettyPrinter in
   | _ => `(∋)
 
 open Lean PrettyPrinter in
-@[app_unexpander PowerAllegory.powerObj] public meta def unexpandPowerObj : Unexpander
+@[app_unexpander P] public meta def unexpandPowerObj : Unexpander
   | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 

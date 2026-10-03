@@ -22,6 +22,7 @@ public import AOP.A5_6
 universe u
 
 namespace Freyd.Alg
+open PowerAllegory
 
 open LocallyCompleteDistributiveAllegory
 
@@ -389,7 +390,7 @@ public theorem Λ_star_step1 {A : 𝒜} (R : A ⟶ A) : Λ (star R) = Λ (𝟙 A
 
 /-- **p.158**: `Λ(R*) = ⟨Λ(𝟙),Λ(RR*)⟩cup` — the `tails` recursion, `R` being `tail`. -/
 public theorem Λ_star {A : 𝒜} (R : A ⟶ A)
-    (P : RelProd (PowerAllegory.powerObj A) (PowerAllegory.powerObj A)) :
+    (P : RelProd (P A) (P A)) :
     Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := by
   rw [Λ_star_step1, Λ_union]
 

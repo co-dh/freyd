@@ -1519,7 +1519,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- note's for the same reason the arrow's is: the printer sets a product off from its factors
   -- (`P ([A] × [A])`) where the note writes `P([A]×[A])`, and how the letter joins is the note's own
   -- rule — `P[A]` against the brackets the printer closed, `PA` against a name, parentheses otherwise.
-  | (``Freyd.Alg.PowerAllegory.powerObj, args) =>
+  | (``Freyd.Alg.PowerAllegory.P, args) =>
     match args.back? with
     | some x => return applyLabelL "P" (← labelTree 0 x) (← objJoin x)
     | none => txt e
