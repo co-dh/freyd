@@ -73,7 +73,7 @@ public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
     pathF.map (𝟙 A) S = (CL.F A.carrier A.carrier).map S :=
   hom_ext fun u v => by cases u <;> cases v <;> exact Iff.rfl
 
-/-- The initial algebra of 8.2d's fold relator `F(E(V),−)`: networks are cons-lists of layers
+/-- The initial algebra of 8.2d's fold relator `F(PV,−)`: networks are cons-lists of layers
     (book p.196).  `CL.initial`'s data verbatim; its laws carried over by `pathF_map_id`. -/
 @[expose] public def pathInit (V : Type) :
     InitialAlgebra (pathF.appl (PowerAllegory.powerObj (dE V))) where
@@ -148,13 +148,13 @@ variable {V : Type}
   | .wrap vs => .wrap (memS vs)
   | .cons vs n => .cons (memS vs) (netSet n)
 
-/-- 8.2d's algebra input `F(E(V),E(LV))` read as sets. -/
+/-- 8.2d's algebra input `F(PV,PLV)` read as sets. -/
 @[expose] public def toS : List V ⊕ (List V × List (ConsList V V))
     → (pathF.obj (PowerAllegory.powerObj (dE V)) (PowerAllegory.powerObj (dCL V V))).carrier
   | .inl vs => .inl (memS vs)
   | .inr (vs, ps) => .inr (memS vs, memS ps)
 
-/-- 8.2d's `[wrap,step]` input `F(V,E(LV))` read as sets. -/
+/-- 8.2d's `[wrap,step]` input `F(V,PLV)` read as sets. -/
 @[expose] public def toS1 : V ⊕ (V × List (ConsList V V))
     → (Fobj V V (PowerAllegory.powerObj (dCL V V))).carrier
   | .inl v => .inl v
