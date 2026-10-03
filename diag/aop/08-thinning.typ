@@ -301,32 +301,28 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
      // lean:AOP.A8_2.thinning_paths_alg@e3a3d2a8
   lean-chain(
     (none, "Freyd.Alg.thinning_paths_alg.rhs", src[the algebra of @path-laws row 2]),
-    (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[bifunctors: `F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`]),
+    (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`]),
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
-    (EQ, "Freyd.Alg.thinning_paths_alg_cancel.lhs", src[`Λ(R)∋=R`, the second ∋ of `union≜`#frc([`∋∋`])]),
-      // lean:AOP.A8_2.thinning_paths_alg_cancel@87132166
-    (EQ, "Freyd.Alg.thinning_paths_alg_transpose.lhs",
-      src[power transpose of composition: the first ∋ cancels against `P(`#frc([`S`])`)`, the one it opened]),
-      // lean:AOP.A8_2.thinning_paths_alg_transpose@983950da
+    (EQ, "Freyd.Alg.thinning_paths_alg_split.lhs", src[#frc([`RS`])`=`#frc([`R`])` P(`#frc([`S`])`) union`]),
+      // lean:AOP.A8_2.thinning_paths_alg_split@e7649320
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
-    (EQ, "Freyd.Alg.thinning_paths_alg_union.lhs", src[`union≜`#frc([`∋∋`])]),
+    (EQ, "Freyd.Alg.thinning_paths_alg_union.rhs", src[`union≜`#frc([`∋∋`])]),
       // lean:AOP.A8_2.thinning_paths_alg_union@61dac39b
     (RQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
-      src[thin distributes over union (8.4): `union thin(Q)⊒P(thin(Q)) union` — @thin-laws]),
+      src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws]),
       // lean:AOP.A8_2.thinning_paths_alg_distrib@848628a4
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
     (RQ, "Freyd.Alg.thinning_paths_alg_elim.lhs",
-      src[thin-elimination (8.3): #frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`]) — @thin-laws; the one
-       step that needs `R∩(S°S)⊑Q`, @path-mono row 2]),
+      src[#frc([`S`])` thin(Q)⊒`#frc([`S`])` est(R) `#frc([`𝟙`])` if R∩(S°S)⊑Q` — @thin-laws, @path-mono]),
       // lean:AOP.A8_2.thinning_paths_alg_elim@46963907
       // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d66c2a44
       // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@962bc252
-    (EQ, "Freyd.Alg.thinning_paths_alg.lhs", src[since `union·Pτ=id`: `P(`#frc([`𝟙`])`) union=𝟙`]),
+    (EQ, "Freyd.Alg.thinning_paths_alg.lhs", src[`P(`#frc([`𝟙`])`) union=𝟙`]),
       // lean:AOP.A8_2.thinning_paths_alg_unit@93e062a0
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@304e0108
     (EQ, "Freyd.Alg.thinning_paths_alg_map.lhs",
-      src[since `P=E` on functions, `α` a map: #frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`]),
+      src[#frc([`F(𝟙,∋)α`])`=`#frc([`F(𝟙,∋)`])` P(α)`]),
       // lean:AOP.A8_2.thinning_paths_alg_map@a2609343
       // lean:AOP.A4_6.Λ_absorption@00399742
   ),
