@@ -98,6 +98,8 @@
 }
 // The mark a relation string stands as; content (a branches group's own `∪`/`+`) passes through.
 #let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
+// A chain table's FORMULA CELL, calc style: the relation of the step INTO the column leads it.
+#let rel-lead(op, f) = if op == none { f } else [#rel-mark(op) #f]
 // Two steps read as one (a `dup` panel merged into the next): `=` is the unit, and an inclusion
 // composes only with itself — a `⊑` then a `⊒` relates nothing.
 #let rel-compose(a, b) = if a == none or b == "=" { a } else if a == "=" or a == b { b } else {
@@ -425,10 +427,9 @@
       let (win, wout) = if type(g) == dictionary { (g.gsel, g.gsel) }
         else if type(s.at(1)) == array { (s.at(1).first() + ".lhs", s.at(1).first() + ".rhs") }
         else { (s.at(1), s.at(1)) }
-      let opens = j == 0 and (ri == 0 or "sub" in row)
-      assert(opens == (s.at(0) == none), message: "lean-chain: the step into " + win
-        + if opens { " opens a chain and carries a relation" } else { " continues a chain and carries none" })
-      if not opens {
+      // `none` opens a chain, and a connective between STATEMENTS (`IMP`, `IFF`, `and`) is the
+      // note's, relating no two arrows; a relation between arrows is Lean's, and the note's must agree.
+      if s.at(0) in (EQ, SQ, RQ) {
         let (m, rel) = lean-rel(prev, win)
         metas += m
         if rel != none {
@@ -456,6 +457,7 @@
   // dropping the picture also drops the ⊑/=/⊒ glyph `hchain` used to draw between panels).
   if not pictures {
     return table.cell(breakable: true, {
+      metas
       for row in rows {
         sub-header(row)
         let lines = ()
@@ -469,10 +471,10 @@
             let s = row.steps.at(i0)
             (leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }), s.at(2))
           }
-          lines.push((if op == none { [] } else { op }, [(#tag)], fit-w(f), hint))
+          lines.push(([(#tag)], fit-w(rel-lead(op, f)), hint))
         }
-        block(above: 6pt, below: 0pt, calc-table(cols: (auto, auto, 1fr, 1fr),
-          al: (center + horizon, center + horizon, left + horizon, left + horizon), ..lines.flatten()))
+        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
+          al: (center + horizon, left + horizon, left + horizon), ..lines.flatten()))
         v(6pt)
       }
     })
@@ -499,8 +501,8 @@
       let i0 = grp.first()
       let s = r.steps.at(i0)
       let s = if held == none { s } else if s.len() > 3 {
-        (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)], s.at(3))
-      } else { (held.at(0), s.at(1), [#held.at(2) \ #s.at(2)]) }
+        (rel-compose(held.at(0), s.at(0)), s.at(1), [#held.at(2) \ #s.at(2)], s.at(3))
+      } else { (rel-compose(held.at(0), s.at(0)), s.at(1), [#held.at(2) \ #s.at(2)]) }
       held = if got.at(i0).dup { s } else { none }
       if not got.at(i0).dup {
         steps.push(s); pics.push(got.at(i0).pic)
@@ -513,7 +515,7 @@
   // A BREAKABLE CELL, against `calc-table`'s unbreakable default: a chain is many pictures, each
   // step `kept` whole, so it breaks between steps; unbreakable, a chain taller than the rest of the
   // page overran its foot (16.3i).
-  table.cell(breakable: true, { for c in calls { c.at(0) }; layout(sz => {
+  table.cell(breakable: true, { metas; for c in calls { c.at(0) }; layout(sz => {
     let ws = calls.map(c => c.at(1).map(p => measure(box(p)).width))
     // The scale factor treats a GROUP as one column, not `n` side by side — its members stack
     // vertically (below), so the row only spends one picture's worth of width on them, the widest.
@@ -561,7 +563,7 @@
       let raw = chain-groups(r).map(((i0, n)) => {
         if n == 1 {
           let (s, p, cw, x, t) = zipped.at(i0)
-          (top: false, op: s.at(0), pic: box(width: cw, align(center, p)),
+          (top: false, op: rel-mark(s.at(0)), pic: box(width: cw, align(center, p)),
             reason: if circuit { [] } else { align(right, box(width: x, align(center, [(#t)]))) },
             f: if formula { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }, compact: true) } else { none })
         } else {
@@ -572,7 +574,7 @@
             children.push(box(width: cw, align(center, p)))
             maxw = calc.max(maxw, x)
           }
-          (top: true, op: zipped.at(i0).at(0).at(0), pic: stack(dir: ttb, spacing: hgut, ..children),
+          (top: true, op: rel-mark(zipped.at(i0).at(0).at(0)), pic: stack(dir: ttb, spacing: hgut, ..children),
             reason: if circuit { [] } else { align(right, box(width: maxw, align(center, [(#tags.at(i0))]))) },
             f: none)
         }
@@ -597,7 +599,7 @@
           let s = r.at(i0)
           let into = if j + 1 < gs.len() { r.at(gs.at(j + 1).at(0)) } else if nxt != none and nxt.at(0) != none { nxt } else { none }
           lines.push(([(#tags.at(i0))],
-            fit-w(if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) }),
+            fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })),
             if into == none { [] } else { into.at(2) }))
         }
         block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
@@ -609,7 +611,7 @@
       if circuit { for s in r {
         assert(type(s.at(1)) != array, message: "lean-chain(circuit: true): the step " + repr(s.at(1))
           + " draws a whole statement, and the circuit route reads one side only")
-        block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { s.at(0) }, leanc(s.at(1)), s.at(2)))
+        block(above: 6pt, below: 0pt, step(if s.at(0) == none { [] } else { rel-mark(s.at(0)) }, leanc(s.at(1)), s.at(2)))
       } }
       // the last circuit is the cell's last ink, and the table's 3pt inset alone set it on the border
       v(6pt)

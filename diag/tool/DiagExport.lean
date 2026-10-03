@@ -1447,8 +1447,8 @@ def parseArg (arg : String) (sel : Bool) :
 /-- A FORMULA CALL OF TWO SELECTORS joined by `+` is a CHAIN STEP (`lean-rel`): the relation Lean
     proves from the first panel to the second (`FormulaRender.relFile`), not a statement to print. -/
 def relSels (formula : Bool) (arg : String) :
-    Option ((Name × List String × List StrDiag.Sel) × (Name × List String × List StrDiag.Sel)) :=
-  let p (s : String) := let (n, _, sd, br) := parseArg s true; (n.toName, sd, br)
+    Option (Freyd.FormulaRender.Side × Freyd.FormulaRender.Side) :=
+  let p (s : String) := let (n, h, sd, br) := parseArg s true; (n.toName, h, sd, br)
   match formula, arg.splitOn "+" with
   | true, [a, b] => some (p a, p b)
   | _, _ => none
