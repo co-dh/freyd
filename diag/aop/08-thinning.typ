@@ -304,10 +304,10 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`]),
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
-    (EQ, "Freyd.Alg.thinning_paths_alg_split.lhs", src[#frc([`RS`])`=`#frc([`R`])` P(`#frc([`S`])`) union`]),
+    (EQ, "Freyd.Alg.thinning_paths_alg_union.rhs",
+      src[#frc([`RS`])`=`#frc([`R`])` P(`#frc([`S`])`) union, union≜`#frc([`∋∋`])]),
       // lean:AOP.A8_2.thinning_paths_alg_split@e7649320
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
-    (EQ, "Freyd.Alg.thinning_paths_alg_union.rhs", src[`union≜`#frc([`∋∋`])]),
       // lean:AOP.A8_2.thinning_paths_alg_union@61dac39b
     (RQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
       src[`union thin(Q)⊒P(thin(Q)) union` — @thin-laws]),
