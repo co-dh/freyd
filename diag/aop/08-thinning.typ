@@ -335,6 +335,20 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
       // lean:AOP.A5_6.cpMap_sum_eq_junc@fde8662f
 )]<path-alg>
+// What `F(R,S)` does at 8.2d's `F(A,X)=A+A×X`: each part moves by its own relation, the summand stays.
+#disp[
+  ```
+  F(A,X)   =  A   +   A  ×  X
+              │       │     │
+              R       R     S
+              ↓       ↓     ↓
+  F(A',X') =  A'  +   A' ×  X'
+  ```
+]
+// lean:AOP.A8_2_Exec.pathF@2dcf37fa
+- `u F(R,S) v` iff both are `inl` with `d R d'` (the leaf moves by `R`), or both are `inr` with `p₁ R q₁` and `p₂ S q₂`.
+- An `inl` never relates to an `inr`: `R+S≜[R inl, S inr]` returns to the summand it came from, and `F(𝟙)=𝟙` allows no crossing.
+- `F(∋,∋)` relates `inr({a,b},{p,q})` to `inr(a,p)`, `inr(a,q)`, `inr(b,p)`, `inr(b,q)`, and `inl({a,b})` to `inl(a)`, `inl(b)`.
 
 // Same reason as the hand-placed breaks in §@sec-opt: `sticky` cannot hold a heading to a BREAKABLE
 // figure, so this heading stranded itself at the foot of the page.
