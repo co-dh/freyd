@@ -123,7 +123,7 @@
 /// `passup` the UP one, for a bead what stands below may pass up.
 /// `spider` draws none at all (IntroString §2.2.4), for a family no declaration says
 /// anything about.  A further verdict is a branch HERE.
-#let hm-mark(p, nat, col, bg) = {
+#let hm-mark(p, nat, col, bg, r: HMC) = {
   if nat == "pass" {
     // A HOLLOW TRIANGLE POINTING DOWN: the bead lets what stands above it pass below it across a
     // `⊑` — one `X` a statement names (`F(X)φ⊑WX`), or every arrow, a lax square `G(X)φ⊑φF(X)`.
@@ -158,7 +158,7 @@
     // the triangles say `⊑`.  The exporter draws a lax family as `pass`, so the hollow circle is the
     // equation's alone; against `strict` it is hollow, against `maps` it has no filled half.
     let hollow = nat in ("lax", "eq")
-    d.circle(p, radius: HMC, fill: if hollow { bg } else { col },
+    d.circle(p, radius: r, fill: if hollow { bg } else { col },
              stroke: if hollow { col + lw } else { none })
   }
 }
@@ -167,9 +167,24 @@
 /// move the name off the dot: centred on one it falls inside the fork of a merge.
 /// `nat` is the verdict the row states and `hm-mark` turns it into ink; `bg` is the colour BEHIND a
 /// hollow mark, which the panel knows and this does not.
+// A hollow circle holds a SHORT label inside: short means the measured label box is at most
+// `HMIN` wide (units of 0.8cm), never a test on its text.  The radius is the least that holds the
+// box (half its diagonal plus `HPAD`), not below `HMC`; the font stays the note's.
+#let HMIN = 0.9
+#let HPAD = 0.16
+#let hm-fit(nat, label, col) = {
+  if nat not in ("lax", "eq") or label == none { return (false, HMC) }
+  let sz = measure(text(col)[#label])
+  let w = sz.width / 0.8cm
+  if w > HMIN { return (false, HMC) }
+  (true, calc.max(HMC, calc.sqrt(w * w + calc.pow(sz.height / 0.8cm, 2)) / 2 + HPAD))
+}
 #let hm-bead(p, label, col: black, dx: 0.32, dy: 0, anchor: "west", bg: none, nat: "strict") = {
-  hm-mark(p, nat, col, bg)
-  if label != none {
+  let (inside, r) = hm-fit(nat, label, col)
+  hm-mark(p, nat, col, bg, r: r)
+  if inside {
+    d.content(p, text(col)[#label], anchor: "center")
+  } else if label != none {
     d.content((p.at(0) + dx, p.at(1) + dy), text(col)[#label], anchor: anchor)
   }
 }

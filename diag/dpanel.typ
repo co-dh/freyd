@@ -6,7 +6,7 @@
 //
 //   typst compile --root . diag/allegory-axioms.typ diag/allegory-axioms.pdf
 #import "note-style.typ": P, dispnum, plain
-#import "hm.typ": cetz, hm-bead, hm-mark-half, hm-name, hm-panel, hm-port, hm-region, hm-wire
+#import "hm.typ": cetz, hm-bead, hm-fit, hm-mark-half, hm-name, hm-panel, hm-port, hm-region, hm-wire
 #import "draw.typ": BCOL, fb-ALLC, lanecheck, palf, palo, panelpal
 
 // The converse lane and the `Relᵒᵖ` region between two of them.
@@ -435,7 +435,7 @@
     xo - 0.3, ..lanes.map(l => l.at(0) - 0.3),
     ..(beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
         .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict"))))
-      .map(b => b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12 - wd(b.at(1)) - 0.1),
+      .map(b => b.at(4) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12 - wd(b.at(1)) - 0.1),
     ..nmd.map(k => lanes.at(k).at(0) - 0.12 - 0.3 - wd(text(9pt)[#dnm(lanes.at(k), top, bot)]) - 0.1),
     ..(top + bot).map(p => p.at(0) - wd(p.at(1)) / 2 - 0.15),
     ..convs.map(c => c.at(0) - 0.12 - wd(text(10pt)[`°`]) - 0.1),
@@ -504,7 +504,7 @@
       let lab = (beads.filter(west) + range(lanes.len()).filter(wunit).map(j => lanes.at(j))
         .map(o => (o.at(1), o.at(4), black, none, o.at(0), o.at(5, default: "strict")))).map(b => {
         let m = sz(text[#b.at(1)])
-        let br = b.at(4) - hm-mark-half(b.at(5, default: "strict")) - 0.12
+        let br = b.at(4) - calc.max(hm-mark-half(b.at(5, default: "strict")), hm-fit(b.at(5, default: "strict"), b.at(1), b.at(2, default: black)).at(1)) - 0.12
         (b.at(0), br - m.width / 0.8cm, br, m.height / 0.8cm / 2) })
       let oth = nmd.filter(k => k != i).map(k => {
         let o = lanes.at(k)
@@ -516,10 +516,10 @@
           and calc.abs(b.at(0) - y) < c) { b.at(0) - c } else { y } })
       // Every MARK in the name's column clears it — a bead's, and a unit's, which `dlane` draws at
       // its lane's birth and `beads` does not list: a name on a unit-born lane sat on its own dot.
-      let marks = (beads.map(b => (dx(b.at(0)), b.at(0), b.at(5, default: "strict")))
-        + lanes.filter(o => o.at(4) != none and o.at(1) != "top").map(o => (o.at(0), o.at(1), o.at(5, default: "strict"))))
+      let marks = (beads.map(b => (dx(b.at(0)), b.at(0), b.at(5, default: "strict"), b.at(1), b.at(2, default: black)))
+        + lanes.filter(o => o.at(4) != none and o.at(1) != "top").map(o => (o.at(0), o.at(1), o.at(5, default: "strict"), o.at(4), black)))
       let gap = calc.max(0.12, ..marks.filter(m => calc.abs(m.at(0) - l.at(0)) < 0.3
-        and calc.abs(m.at(1) - ny) < 0.3).map(m => hm-mark-half(m.at(2)) + 0.12))
+        and calc.abs(m.at(1) - ny) < 0.3).map(m => calc.max(hm-mark-half(m.at(2)), ..if m.len() > 3 { (hm-fit(m.at(2), m.at(3), m.at(4)).at(1),) } else { () }) + 0.12))
       hm-name((l.at(0) - gap, ny), nm, col: col, anchor: "east")
     }
   }
