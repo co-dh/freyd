@@ -346,7 +346,9 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
   ```
 ]
 // lean:AOP.A8_2_Exec.pathF@2dcf37fa
-- `u F(R,S) v` iff both are `inl` with `d R d'` (the leaf moves by `R`), or both are `inr` with `p₁ R q₁` and `p₂ S q₂`.
+`u F(R,S) v` holds iff one of:
+- `u`, `v` are both `inl` and `d R d'`: the leaf moves by `R`;
+- `u`, `v` are both `inr` and `p₁ R q₁ ∧ p₂ S q₂`: the vertex moves by `R`, the rest by `S`.
 - An `inl` never relates to an `inr`: `R+S≜[R inl, S inr]` returns to the summand it came from, and `F(𝟙)=𝟙` allows no crossing.
 - `F(∋,∋)` relates `inr({a,b},{p,q})` to `inr(a,p)`, `inr(a,q)`, `inr(b,p)`, `inr(b,q)`, and `inl({a,b})` to `inl(a)`, `inl(b)`.
 
