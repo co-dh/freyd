@@ -294,6 +294,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
 
 // B&dM §8.2, p. 198, one row per printed line.  Every step rewrites the ALGEBRA, so the chain is stated
 // about the algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.
+// q in row (a): x is the vertex list, y the path list; a path is a list of vertices, head first, so `x,p` is cons.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths_alg") \
     // algebra row: B&dM §8.2, p. 198
@@ -301,7 +302,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
      // lean:AOP.A8_2.thinning_paths_alg@e3a3d2a8
   lean-chain(
     (none, "Freyd.Alg.thinning_paths_alg.rhs", src[the algebra of @path-laws row 2]),
-    (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)`]),
+    (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs", src[`F(∋,∋)=F(∋,𝟙)F(𝟙,∋)` \ #frc([`F(∋,∋)α`]) `= {raze x,/:\:y}`]),
       // lean:AOP.A8_2.thinning_paths_alg_bifunctors@ad88eb30
       // lean:AOP.A5_5_TypeFunctor.BiRelator.interchange@cc0eb4af
     (EQ, "Freyd.Alg.thinning_paths_alg_union.rhs",
