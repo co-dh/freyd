@@ -907,7 +907,6 @@
   let xo = b.at(0) + CHFAN
   let fan(col) = (thickness: lw, paint: col, dash: "dashed")
   tape(a, b)
-  lab((a.at(0) + b.at(0)) / 2, b.at(1) + 0.3, TAPEEDGE)[`∪`]
   d.group({ d.translate((cx, cy + dy)); upper })
   d.group({ d.translate((cx, cy - dy)); lower })
   // in: the pair arrives once and is handed to both copies, wire for wire
