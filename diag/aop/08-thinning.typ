@@ -307,9 +307,11 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
     (EQ, "Freyd.Alg.thinning_paths_alg_cancel.lhs", src[`Λ(R)∋=R`, the second ∋ of `union≜`#frc([`∋∋`])]),
       // lean:AOP.A8_2.thinning_paths_alg_cancel@87132166
     (EQ, "Freyd.Alg.thinning_paths_alg_transpose.lhs",
-      src[power transpose of composition: `P(`#frc([`S`])`) union=`#frc([`∋`#frc([`S`])`∋`])`, the first ∋ of union≜`#frc([`∋∋`])` cancelling against `#frc([`S`])]),
-      // lean:AOP.A8_2.thinning_paths_alg_transpose@c140c43f
+      src[power transpose of composition: the first ∋ cancels against `P(`#frc([`S`])`)`, the one it opened]),
+      // lean:AOP.A8_2.thinning_paths_alg_transpose@983950da
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
+    (EQ, "Freyd.Alg.thinning_paths_alg_union.lhs", src[`union≜`#frc([`∋∋`])]),
+      // lean:AOP.A8_2.thinning_paths_alg_union@61dac39b
     (RQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
       src[thin distributes over union (8.4): `union thin(Q)⊒P(thin(Q)) union` — @thin-laws]),
       // lean:AOP.A8_2.thinning_paths_alg_distrib@848628a4
