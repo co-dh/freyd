@@ -572,13 +572,14 @@ public theorem thinning_paths_alg_transpose_exec [DecidableEq V] (wt : V → V �
       exact ⟨z, hz, hp⟩
 
 /-- **8.2d row 2, executable** (book p.198): `row2`'s graph is contained in
-    `Λ(F(∋,𝟙) F(𝟙,∋) α) thin(Q)`, which the transpose step equates with row 3. -/
+    `Λ(F(∋,𝟙) F(𝟙,∋) α) thin(Q)`, which `Λ(R)∋ = R`, the power transpose of composition and
+    `union ≜ Λ(∋∋)` equate with row 3. -/
 public theorem thinning_paths_alg_bifunctors_exec [DecidableEq V] (wt : V → V → Nat)
     (x : List V ⊕ (List V × List (ConsList V V))) :
     (Λ (pathF.map (∋ (dE V)) (𝟙 (P (dCL V V)))
         ≫ pathF.map (𝟙 (dE V)) (∋ (dCL V V)) ≫ alphaR) ≫ thinRel (pathQ wt))
       (toS x) (memS (row2 wt x)) := by
-  rw [← thinning_paths_alg_cancel, ← thinning_paths_alg_transpose]
+  rw [← thinning_paths_alg_cancel, ← thinning_paths_alg_transpose, ← thinning_paths_alg_union]
   exact thinning_paths_alg_transpose_exec wt x
 
 /-- **8.2d row 1, executable** (book p.198): `row1`'s graph is contained in `Λ(F(∋,∋) α) thin(Q)`,
