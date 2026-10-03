@@ -113,6 +113,11 @@ public theorem curry_unique_eq {A B X : 𝒞} {f : prod A X ⟶ B} {g : X ⟶ B 
     (h : prodMap A X (B ^^ A) g ≫ eval_exp A B = f) : g = curry f :=
   HasExponentials.curry_unique h
 
+/-- The universal property of curry: `g = curry f` iff `(A × g) ≫ eval = f`. -/
+public theorem curry_eq_iff {A B X : 𝒞} {f : prod A X ⟶ B} {g : X ⟶ B ^^ A} :
+    g = curry f ↔ prodMap A X (B ^^ A) g ≫ eval_exp A B = f :=
+  ⟨fun h => h ▸ curry_eval_eq f, curry_unique_eq⟩
+
 /-- curry is injective. -/
 public theorem curry_inj {A B X : 𝒞} {f₁ f₂ : prod A X ⟶ B}
     (h : curry f₁ = curry f₂) : f₁ = f₂ := by

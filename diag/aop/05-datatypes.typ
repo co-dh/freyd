@@ -147,6 +147,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [`g=curry(f)⟺(g×𝟙)eval=f` \ #src[reading `×` as the relational product, does `Rel`
    have exponentials?]],
+  // lean:Freyd.S1_85.curry_eq_iff@3d3eb304
   [],
 )]<bdm-prod-laws>
 
@@ -160,20 +161,31 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header([*the statement*], [*picture*]),
 
-  [#leanf("Freyd.Alg.junc") \ #src[(5.9) The tape is the union — a particle entering at `A+B` takes exactly
+  [`R : a₁⟶c`, `S : a₂⟶c` \ #leanf("Freyd.Alg.junc") \ #src[(5.9) The tape is the union — a particle entering at `A+B` takes exactly
    one branch — and the two mirrored boxes are what makes the branches disjoint.]],
   // lean:AOP.A5_3.junc@da022f10
   P(leanc("Freyd.Alg.junc"), s: 85%),
 
-  [#leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
+  [`R : A⟶C`, `S : B⟶C` \ #leanf("Freyd.Alg.junc_eq_Λ_junc_eps") #src[]], P(leanc("Freyd.Alg.junc_eq_Λ_junc_eps"), s: 85%),
   // lean:AOP.A5_3.junc_eq_Λ_junc_eps@2e29215d
-  [#leanf("Freyd.Alg.sumMap") #src[(5.10)]], P(leanc("Freyd.Alg.sumMap"), s: 85%),
-  // lean:AOP.A5_3.sumMap@eb035ed1
-  [#leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
+  [`R : a₁⟶c`, `S : a₂⟶c` \ #leanf("Freyd.Alg.u₁_junc"), #leanf("Freyd.Alg.u₂_junc") \ #leanf("Freyd.Alg.junc_unique")
  #src[,
    // lean:AOP.A5_3.u₁_junc@a01a115a lean:AOP.A5_3.u₂_junc@e692ee94
  ]], [],
    // lean:AOP.A5_3.junc_unique@192cec99
+
+  [`U : a₁⟶D`, `V : a₂⟶D`, `R : a₁⟶c`, `S : a₂⟶c` \ #leanf("Freyd.Alg.junc_recip_junc") #src[(5.11)]], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
+  // lean:AOP.A5_3.junc_recip_junc@838f4abc
+)]<coprod-laws>
+
+#disp[#table(
+  columns: (1fr, 10.5cm),
+  align: (left + horizon, center + horizon),
+  inset: 8pt, stroke: 0.4pt + luma(190),
+  table.header([*the statement*], [*picture*]),
+
+  [`R : a₁⟶b₁`, `S : a₂⟶b₂` \ #leanf("Freyd.Alg.sumMap") #src[(5.10)]], P(leanc("Freyd.Alg.sumMap"), s: 85%),
+  // lean:AOP.A5_3.sumMap@eb035ed1
 
   [#leanf("Freyd.Alg.Coproduct.u₁_self_comp_recip"), #leanf("Freyd.Alg.Coproduct.u₂_self_comp_recip") #src[Ex 5.12]],
   P(row((leanc("Freyd.Alg.Coproduct.u₁_self_comp_recip"),
@@ -188,10 +200,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   [#leanf("Freyd.Alg.Coproduct.recip_union_eq_id") #src[Ex 5.12]], P(leanc("Freyd.Alg.Coproduct.recip_union_eq_id"), s: 85%),
   // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
-
-  [#leanf("Freyd.Alg.junc_recip_junc") #src[(5.11)]], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
-  // lean:AOP.A5_3.junc_recip_junc@838f4abc
-)]<coprod-laws>
+)]<coprod-map-laws>
 
 === `[R,S]≜[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`
 
