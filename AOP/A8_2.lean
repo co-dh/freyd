@@ -257,13 +257,15 @@ variable {V : Type}
   | ConsList.wrap _ => 0
   | ConsList.cons v q => wt v (headOf q) + costOf wt q
 
-/-- `R ≜ cost≤cost°`: `p R q` iff `p` costs no more than `q`. -/
+/-- `R ≜ cost≤cost°` (book p.196), written as the book composes it so the note's definition line
+    is printed from this value. -/
 @[expose] public def pathR (wt : V → V → Nat) : dCL V V ⟶ dCL V V :=
-  fun p q => costOf wt p ≤ costOf wt q
+  RelSet.graph (costOf wt) ≫ leRel ≫ (RelSet.graph (costOf wt))°
 
-/-- `Q ≜ R∩(head head°)` (book p.197): no dearer, and starting at the same vertex. -/
-@[expose] public def pathQ (wt : V → V → Nat) : dCL V V ⟶ dCL V V :=
-  fun p q => costOf wt p ≤ costOf wt q ∧ headOf p = headOf q
+/-- `p R q` iff `p` costs no more than `q`. -/
+public theorem pathR_apply (wt : V → V → Nat) (p q : ConsList V V) :
+    pathR wt p q ↔ costOf wt p ≤ costOf wt q :=
+  ⟨fun ⟨_, h1, _, h2, h3⟩ => by subst h1 h3; exact h2, fun h => ⟨_, rfl, _, h, rfl⟩⟩
 
 /-- `Sspec ≜ F(∋,𝟙)α`, the specification's algebra: take a vertex out of the layer and `wrap` it,
     or `cons` it onto the partial path already built. -/
@@ -287,6 +289,15 @@ variable {V : Type}
 
 public theorem headRel_map : Map (headRel (V := V)) := RelSet.graph_map _
 
+/-- `Q ≜ R∩(head head°)` (book p.197): no dearer, and starting at the same vertex. -/
+@[expose] public def pathQ (wt : V → V → Nat) : dCL V V ⟶ dCL V V :=
+  pathR wt ∩ (headRel ≫ headRel°)
+
+public theorem pathQ_apply (wt : V → V → Nat) (p q : ConsList V V) :
+    pathQ wt p q ↔ costOf wt p ≤ costOf wt q ∧ headOf p = headOf q :=
+  ⟨fun ⟨h, _, h1, h2⟩ => ⟨(pathR_apply wt p q).mp h, by subst h1; exact h2⟩,
+    fun ⟨h, e⟩ => ⟨(pathR_apply wt p q).mpr h, _, rfl, e⟩⟩
+
 public theorem headAlg_map : Map (headAlg (V := V)) := RelSet.graph_map _
 
 /-- **The first law of the note's `path-mono`** (book p.197): `F(∋,Q)α ⊑ F(∋,𝟙)αQ`, mirrored
@@ -303,7 +314,7 @@ public theorem pathAlg_monotonic (wt : V → V → Nat) :
     | inl S' =>
       have hS : S = S' := hu
       subst hS
-      exact ⟨p, hp, Nat.le_refl _, rfl⟩
+      exact ⟨p, hp, (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩⟩
     | inr q' => exact hu.elim
   | inr q =>
     cases u' with
@@ -311,10 +322,11 @@ public theorem pathAlg_monotonic (wt : V → V → Nat) :
     | inr q' =>
       obtain ⟨hSS, hq⟩ := hu
       obtain ⟨v, hv, rfl⟩ := hp
-      refine ⟨ConsList.cons v q.2, ⟨v, by rw [hSS]; exact hv, rfl⟩, ?_, rfl⟩
+      refine ⟨ConsList.cons v q.2, ⟨v, by rw [hSS]; exact hv, rfl⟩, (pathQ_apply wt _ _).mpr ⟨?_, rfl⟩⟩
+      obtain ⟨hq1, hq2⟩ := (pathQ_apply wt _ _).mp hq
       show wt v (headOf q.2) + costOf wt q.2 ≤ wt v (headOf q'.2) + costOf wt q'.2
-      rw [hq.2]
-      exact Nat.add_le_add_left hq.1 _
+      rw [hq2]
+      exact Nat.add_le_add_left hq1 _
 
 /-- **The second law of the note's `path-mono`** (book p.198, left as an exercise there):
     `S head ⊑ [𝟙,π₁]` — whichever path `S` builds, its first vertex is fixed by `S`'s argument
@@ -334,11 +346,7 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
   have hsimple : Simple (pathSplit (V := V) ≫ headRel) :=
     le_trans (le_trans (comp_mono_right (recip_mono pathSplit_comp_headRel_le) _)
       (comp_mono_left _ pathSplit_comp_headRel_le)) headAlg_map.2
-  refine le_trans (inter_mono (le_refl (pathR wt))
-    (recip_comp_le_of_simple_comp headRel_map hsimple)) ?_
-  refine le_iff.mpr ?_
-  rintro p q ⟨hcost, x, hx, hq⟩
-  exact ⟨hcost, hx ▸ hq⟩
+  exact inter_mono (le_refl (pathR wt)) (recip_comp_le_of_simple_comp headRel_map hsimple)
 
 /-! ### The note's `path-defn`: the transposes computed on the coproduct
 
@@ -435,7 +443,7 @@ public theorem cpMap_comp_powerRel_alphaR_comp_est_eq_junc (wt : V → V → Nat
         intro z hz
         have hz' : z = ConsList.wrap v := hz
         subst hz'
-        exact Nat.le_refl _
+        exact (pathR_apply wt _ _).mpr (Nat.le_refl _)
       · exact (nomatch hy)
   | inr q =>
     constructor

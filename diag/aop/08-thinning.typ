@@ -245,14 +245,14 @@ row((
 
 `wrapz≜⟨wrap,zero⟩`, #h(4pt) `consw(a,(xs,n))=(cons(a,xs),wt(a,head(xs))+n)`.
 
-`cost≜⦇[wrapz,consw]⦈π₂`, #h(4pt) `⦇[wrapz,consw]⦈=⟨𝟙,cost⟩`, #h(4pt) `R≜cost≤cost°`.
+`cost≜⦇[wrapz,consw]⦈π₂`, #h(4pt) `⦇[wrapz,consw]⦈=⟨𝟙,cost⟩`, #h(4pt) #leanf("Freyd.Alg.pathR").
 
-`Q≜R∩(head head°)`, #h(4pt) `S≜F(𝟙,∋)α`, #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
-$frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) `step≜cpr P(cons) est(R)`.
+#leanf("Freyd.Alg.pathQ"), #h(4pt) `S≜F(𝟙,∋)α`, #h(4pt) $frac(#[`F(∋,𝟙)`], ∋)$ `=𝟙+cpl`, #h(4pt)
+$frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
 // lean:AOP.A8_2.pathAlg@111b43a5
 // lean:AOP.A8_2.costOf@dfe994f6
-// lean:AOP.A8_2.pathR@747ec06c
-// lean:AOP.A8_2.pathQ@69a8dcfb
+// lean:AOP.A8_2.pathR@6d0be9c8
+// lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
 // lean:AOP.A8_2.pathStep@b614307d
 ]]<path-defn>
