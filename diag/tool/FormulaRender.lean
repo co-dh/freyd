@@ -196,4 +196,149 @@ def file (declName : Name) (binder : Option String) (path : List String)
   let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
   return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
+/-- The side `path` names of `declName`'s statement, its binders opened with METAVARIABLES, so two
+    panels read off two declarations meet in one theorem by unification rather than by binder name.
+    `.inl`/`.inr` restrict the picture only (`withBody`); a step relates WHOLE sides. -/
+abbrev Side := Name × Option String × List String × List StrDiag.Sel
+
+/-- The binder names of a statement's telescope, outermost first. -/
+def binderNames : Expr → List Name
+  | .forallE n _ t _ => n :: binderNames t
+  | _ => []
+
+/-- The side `d` names, under its declaration's binders `xs` (named `ns`) and statement `body`: a
+    `#h` selector reads the binder `h`'s own statement, as `render` does. -/
+def sideIn (d : Side) (xs : Array Expr) (ns : List Name) (body : Expr) : MetaM Expr := do
+  let (declName, binder, path, branch) := d
+  if branch.any (· matches .body) then
+    throwError "{declName}: a chain step relates whole sides, and `.body` names a fixed point's body"
+  let st ← match binder with
+    | none => pure body
+    | some h => match (xs.toList.zip ns).find? (·.2.toString == h) with
+      | some (x, _) => instantiateMVars (← Meta.inferType x)
+      | none => throwError "{declName} has no binder `{h}`"
+  descend declName path st
+
+def sideM (d : Side) : MetaM (Array Expr × Expr) := do
+  let some ci := (← getEnv).find? d.1 | throwError "no such declaration: {d.1}"
+  let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+  let (ms, _, body) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+  return (ms, ← sideIn d ms (binderNames ci.type) body)
+
+/-- The relation read with its two sides swapped: what `B sym A` says of `A` and `B`. -/
+def converseSym (sym : String) : MetaM String :=
+  match sym with
+  | "=" => pure "=" | "⊑" => pure "⊒" | "≤" => pure "≥"
+  | s => throwError "a chain step's relation `{s}` has no converse in the note's notation"
+
+/-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
+    head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
+    which side each panel unifies with.  The candidates are `rfl`, the panels' own declarations, then
+    every theorem of their modules — where a chain's step lemmas live — ranked below.  No candidate
+    proves the step: an error naming both sides, never a default. -/
+def stepRel (a b : Side) : MetaM (Name × String) := do
+  let env ← getEnv
+  let mods := [a.1, b.1].filterMap env.getModuleIdxFor?
+  let near := env.constants.fold (init := #[]) fun acc n ci =>
+    if (ci matches .thmInfo _) && !n.isInternal && n != a.1 && n != b.1
+      && (env.getModuleIdxFor? n).any mods.contains then acc.push n else acc
+  for m in mods do if let some mn := env.header.moduleNames[m.toNat]? then noteRead (.module mn)
+  -- and the theorems the panels' own proofs cite, wherever they live (`Λ(R∪S)=⟨Λ(R),Λ(S)⟩cup`).
+  let cited := [a.1, b.1].foldl (fun acc d => ((env.find? d).bind (·.value?)).elim acc fun v =>
+    v.getUsedConstants.foldl (fun acc n =>
+      if (env.find? n).any (· matches .thmInfo _) && !acc.contains n && !near.contains n
+        && n != a.1 && n != b.1 then acc.push n else acc) acc) #[]
+  let cands := #[a.1, b.1] ++ near.qsort (·.toString < ·.toString) ++ cited
+  -- `a`'s binders are LOCALS, rigid: a metavariable on both sides unifies with whatever a theorem
+  -- asks and reads `X ⊑ Y` as `X = X`.  `b` is the same statement's other side, or another
+  -- declaration's, whose binders are then fixed by matching `a`'s.
+  let some ca := env.find? a.1 | throwError "no such declaration: {a.1}"
+  Meta.forallTelescope ca.type fun xs bodyA => do
+  let A ← sideIn a xs (binderNames ca.type) bodyA
+  let (msB, B) ← if b.1 == a.1 then pure (#[], ← sideIn b xs (binderNames ca.type) bodyA) else sideM b
+  -- ONE VARIABLE PER BINDER NAME, as `canon` reads a chain's peers: `b`'s `X` IS `a`'s `X`, or
+  -- `X` would swallow a whole composite and call `S° F(X) R` the same term as `S° F(Y) R`.
+  if b.1 != a.1 then
+    let some cb := env.find? b.1 | throwError "no such declaration: {b.1}"
+    for (m, n) in msB.toList.zip (binderNames cb.type) do
+      for x in xs do
+        if (← x.fvarId!.getUserName) == n && !(← m.mvarId!.isAssigned) then
+          let s ← Meta.saveState
+          unless ← Meta.isDefEq m x do s.restore
+  -- The hypotheses the step may use: either panel's declaration assumes them.
+  let given ← (xs ++ msB).filterM fun h => do Meta.isProp (← Meta.inferType h)
+  -- THE SAME TERM, however spelled, is `=` by `rfl`: no theorem states it.
+  let s0 ← Meta.saveState
+  if ← Meta.isDefEq A B then return (`rfl, "=")
+  s0.restore
+  -- A HYPOTHESIS A PANEL'S DECLARATION ASSUMES is a step of its own (`S°F(X)R ⊑ X`, the prefixed
+  -- point a fold is below), answered outright like the declaration.
+  for h in given do
+    let some (sym, l, r) := split (← instantiateMVars (← Meta.inferType h)) | continue
+    for rev in [false, true] do
+      let s ← Meta.saveState
+      let (x, y) := if rev then (B, A) else (A, B)
+      if (← Meta.isDefEq l x) && (← Meta.isDefEq r y) then
+        return (`hypothesis, ← if rev then converseSym sym else pure sym)
+      s.restore
+  let attempt (c : Name) : MetaM (Option (String × Bool)) := do
+    let some ci := env.find? c | return none
+    let lvls ← ci.levelParams.mapM fun _ => Meta.mkFreshLevelMVar
+    let (ms, _, body) ← Meta.forallMetaTelescope (ci.type.instantiateLevelParams ci.levelParams lvls)
+    let some (sym, l, r) := split body | return none
+    -- Whether every hypothesis the sides leave open is one either panel's declaration assumes.
+    let hyps : MetaM Bool := ms.allM fun m => do
+      if ← m.mvarId!.isAssigned then return true
+      let t ← instantiateMVars (← Meta.inferType m)
+      unless ← Meta.isProp t do return true
+      given.anyM fun h => do
+        let s ← Meta.saveState
+        if ← Meta.isDefEq t (← Meta.inferType h) then Meta.isDefEq m h else s.restore; return false
+    for rev in [false, true] do
+      let s ← Meta.saveState
+      let (x, y) := if rev then (B, A) else (A, B)
+      if (← Meta.isDefEq l x) && (← Meta.isDefEq r y) then
+        let ok ← hyps
+        s.restore
+        return some (← if rev then converseSym sym else pure sym, ok)
+      s.restore
+    return none
+  -- THE RANK OF AN ANSWER.  A panel's OWN declaration is the step the note draws, and answers
+  -- outright.  Of the module's theorems, one whose hypotheses the panels assume beats one that
+  -- needs more — the chain's own goal sits among them, and `est R = thin(Q) est(R)` (needing `R`
+  -- transitive) would call the `⊑` that `𝟙 ⊑ Q` alone gives an equation; among the first `=` wins,
+  -- among the second the weaker inclusion.
+  let rank (own : Bool) (s : String) (ok : Bool) : Nat :=
+    if own then 4 else if ok then (if s == "=" then 3 else 2) else (if s == "=" then 0 else 1)
+  let mut best : Option (Nat × Name × String) := none
+  let mut cut : Array Name := #[]
+  for c in cands do
+    let saved ← Meta.saveState
+    let r ← tryCatchRuntimeEx (Core.withCurrHeartbeats <| withTheReader Core.Context
+        (fun ctx => { ctx with maxHeartbeats := SEARCH_HEARTBEATS }) (Except.ok <$> attempt c))
+      fun e => pure (.error e)
+    saved.restore
+    match r with
+    | .ok (some (s, ok)) =>
+      let k := rank (c == a.1 || c == b.1) s ok
+      if k ≥ 3 then noteRead (.stmt c); return (c, s)
+      if best.all (·.1 < k) then best := some (k, c, s)
+    | .ok none => pure ()
+    | .error _ => cut := cut.push c
+  -- A candidate cut short might have outranked what was found: that is not the answer.
+  unless cut.isEmpty do
+    throwError "the step from {a.1}.{".".intercalate a.2.2.1} to {b.1}.{".".intercalate b.2.2.1}: the \
+      search was cut short at {cut.toList}, which might prove it; raise SEARCH_HEARTBEATS"
+  let some (_, c, s) := best
+    | throwError "no theorem of {a.1}, {b.1} or their modules relates {a.1}.{".".intercalate a.2.2.1} \
+        to {b.1}.{".".intercalate b.2.2.1} by `=`, `⊑` or `≤` in either direction — prove the step \
+        in Lean"
+  noteRead (.stmt c)
+  return (c, s)
+
+/-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
+def relFile (a b : Side) : MetaM String := do
+  let (c, s) ← stepRel a b
+  return "// proved by " ++ c.toString ++ "\n#let rel = \"" ++ s ++ "\"\n"
+
 end Freyd.FormulaRender

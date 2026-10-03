@@ -311,9 +311,10 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
       src[#frc([`F(𝟙,∋)`])` P(α)=`#frc([`F(𝟙,∋)α`])]),
       // lean:AOP.A8_2.thinning_paths_alg_map@a2609343
       // lean:AOP.A4_6.Λ_absorption@00399742
-    (EQ, "Freyd.Alg.thinning_paths_alg_elim.lhs", src[`𝟙=P(`#frc([`𝟙`])`) union`]),
+    (EQ, "Freyd.Alg.thinning_paths_alg_elim.lhs", src[`𝟙=P(`#frc([`𝟙`])`) union, union=E(∋)=`#frc([`∋∋`])]),
       // lean:AOP.A8_2.thinning_paths_alg_unit@93e062a0
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@304e0108
+      // lean:AOP.A4_6.bigUnion_eq_existsImage_eps@bca8d7c5
     (SQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
       src[#frc([`S`])` est(R) `#frc([`𝟙`])`⊑`#frc([`S`])` thin(Q) if R∩(S°S)⊑Q` — @thin-laws, @path-mono]),
       // lean:AOP.A8_2.thinning_paths_alg_elim@46963907
