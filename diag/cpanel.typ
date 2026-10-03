@@ -258,15 +258,15 @@
     let x0 = CHFAN; let x1 = CHFAN + mw + 2 * CHPAD
     let hh = UDY + calc.max(UHH + UM, ..ps.map(p => p.hh + CHPAD))
     let body = {
+      // no `∪` label: the tape itself says union, and the letter only crowded the copy above it
       tape((x0, -hh), (x1, hh))
-      lab((x0 + x1) / 2, hh + 0.3, TAPEEDGE)[`∪`]
       for (i, p) in ps.enumerate() {
         let s = if i == 0 { 1 } else { -1 }
         d.group({ d.translate((x0 + CHPAD, s * UDY)); p.body; wire((p.w, 0), (mw, 0)) })
       }
       fan(t.nin, t.nout, x0, x1, (UDY, -UDY))
     }
-    return (w: x1 + CHFAN, hh: hh + 0.3, body: body)
+    return (w: x1 + CHFAN, hh: hh, body: body)
   }
   // ---- §3 row 13: the bracket at a polynomial object — tape fork, branches, tape join.  The fork
   // hands ONE coproduct wire to each arm and the arm's `open` generator splits or ends it, so the
