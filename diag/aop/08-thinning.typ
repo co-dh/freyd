@@ -335,7 +335,7 @@ $frac(#[`F(𝟙,∋)`], ∋)$ `=𝟙+cpr`, #h(4pt) #leanf("Freyd.Alg.pathStep").
   ),
   [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]],
     // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
-    // lean:AOP.A8_2.pathStep@b614307d
+    // lean:AOP.A8_2.pathStep@f546a21f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
   [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
