@@ -129,26 +129,36 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 
   // prodMap (duplicate of @relprod-defn), pair_prodMap (duplicate of @absorption-pic),
   // pair_outl/pair_outr (duplicate of @fork-proj) deleted — rule M.
- [#leanf("Freyd.Alg.RelProd.pair_recip_pair") #src[]],
+ [`X : c⟶a`, `Y : c⟶b`, `R : d⟶a`, `S : d⟶b` \ #leanf("Freyd.Alg.RelProd.pair_recip_pair") #src[]],
   // lean:AOP.A5_2.pair_recip_pair@7b967917
   P(leanc("Freyd.Alg.RelProd.pair_recip_pair"), s: 74%),
 
-  [#leanf("Freyd.Alg.RelProd.recip_pair_pair_le") #src[]],
+  [`R : c⟶a`, `S : c⟶b`, `U : c⟶a'`, `V : c⟶b'` \ #leanf("Freyd.Alg.RelProd.recip_pair_pair_le") #src[]],
   // lean:AOP.A5_2.recip_pair_pair_le@3e24af96
   P(leanc("Freyd.Alg.RelProd.recip_pair_pair_le"), s: 74%),
 
-  [#leanf("Freyd.Alg.RelProd.map_comp_pair") \ #src[`f` a map; it fails for an arbitrary arrow;
+  [`f : d⟶c` a map, `R : c⟶a`, `S : c⟶b` \ #leanf("Freyd.Alg.RelProd.map_comp_pair") \ #src[`f` a map; it fails for an arbitrary arrow;
  ]],
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
   P(leanc("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
+)]<bdm-prod-laws>
 
-  [#leanf("Freyd.Alg.unzip_lax") \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`; only `⊑` for an arbitrary `R`, `S`]],
+#disp[
+  #show table.cell.where(x: 0): rownum
+  #table(
+  columns: (5.95cm, 1fr),
+  align: (left + horizon, center + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*the law*], [*picture*]),
+
+  [`R : C⟶A`, `S : D⟶B` \ #leanf("Freyd.Alg.unzip_lax") \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`; only `⊑` for an arbitrary `R`, `S`]],
   P(leanc("Freyd.Alg.unzip_lax"), s: 74%),
 
-  [`g=curry(f)⟺(g×𝟙)eval=f` \ #src[reading `×` as the relational product, does `Rel`
+  [`f : A×X⟶B`, `g : X⟶B^A` \ `g=curry(f)⟺(g×𝟙)eval=f` \ #src[reading `×` as the relational product, does `Rel`
    have exponentials?]],
+  // lean:Freyd.S1_85.curry_eq_iff@3d3eb304
   [],
-)]<bdm-prod-laws>
+)]<bdm-prod-map-laws>
 
 == Relational coproducts <sec-coprod>
 
