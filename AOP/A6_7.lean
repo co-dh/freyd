@@ -70,42 +70,37 @@ public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R :=
 
 calc_steps le_star
 
-/-- p.158 `SS⊑S`, step 1 of 3 (composition distributes over union), mirrored from the book's
-    `S(𝟙∪R(S\S)) = S∪SR(S\S)`. -/
-public theorem star_trans_step1 {A : 𝒜} (R : A ⟶ A) :
-    (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R = star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by
-  rw [union_comp_distrib, Cat.id_comp, Cat.assoc]
+/-- p.158 `SS⊑S`, the inequality its proof derives: `S/S` is a prefixed point of `X ↦ 𝟙 ∪ RX`,
+    stated through division as `(𝟙 ∪ R(S/S))S ⊑ S`. -/
+public theorem star_div_prefixed {A : 𝒜} (R : A ⟶ A) :
+    (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R ⊑ star R :=
+  calc (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R
+        = 𝟙 A ≫ star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by rw [union_comp_distrib, Cat.assoc]
+    _ = star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by rw [Cat.id_comp]
+    _ ⊑ star R ∪ (R ≫ star R) := union_mono (le_refl _) (comp_mono_left R (div_self_comp_le (star R)))
+    _ ⊑ star R := union_lub (le_refl _) (comp_star_le R)
 
-/-- p.158 `SS⊑S`, step 2 of 3 (`(S/S)S⊑S`). -/
-public theorem star_trans_step2 {A : 𝒜} (R : A ⟶ A) :
-    star R ∪ (R ≫ ((star R / star R) ≫ star R)) ⊑ star R ∪ (R ≫ star R) :=
-  union_mono (le_refl _) (comp_mono_left R (div_self_comp_le (star R)))
-
-/-- p.158 `SS⊑S`, step 3 of 3 (`RS⊑S`): `S ∪ RS ⊑ S`. -/
-public theorem star_trans_step3 {A : 𝒜} (R : A ⟶ A) : star R ∪ (R ≫ star R) ⊑ star R :=
-  union_lub (le_refl _) (comp_star_le R)
+calc_steps star_div_prefixed
 
 /-- **Transitivity of `R*`** (book's division proof, p.157-158): the chain makes `S/S` a prefixed
     point of `X ↦ 𝟙 ∪ RX`, so `S ⊑ S/S`, which is `SS ⊑ S`. -/
-public theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R := by
-  have hsub : star R ⊑ star R / star R := mu_le ((le_div_iff _ _ _).mpr (by
-    rw [star_trans_step1]; exact le_trans (star_trans_step2 R) (star_trans_step3 R)))
-  exact (le_div_iff _ _ _).mp hsub
+public theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R :=
+  (le_div_iff _ _ _).mp (mu_le ((le_div_iff _ _ _).mpr (star_div_prefixed R)))
 
-/-- p.158 least, step 1 of 2 (`𝟙⊑X`, `R⊑X`): `𝟙 ∪ RX ⊑ X ∪ XX`. -/
-public theorem star_le_of_preorder_step1 {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X) (hR : R ⊑ X) :
-    𝟙 A ∪ (R ≫ X) ⊑ X ∪ (X ≫ X) :=
-  union_mono hrefl (comp_mono_right hR X)
+/-- p.158 least, the inequality its proof derives: a preorder `X` containing `R` is a prefixed point
+    of `Y ↦ 𝟙 ∪ RY`. -/
+public theorem preorder_prefixed {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X)
+    (htrans : X ≫ X ⊑ X) (hR : R ⊑ X) : 𝟙 A ∪ (R ≫ X) ⊑ X :=
+  calc 𝟙 A ∪ (R ≫ X) ⊑ X ∪ (R ≫ X) := union_mono hrefl (le_refl _)
+    _ ⊑ X ∪ (X ≫ X) := union_mono (le_refl _) (comp_mono_right hR X)
+    _ ⊑ X := union_lub (le_refl X) htrans
 
-/-- p.158 least, step 2 of 2 (`XX⊑X`): `X ∪ XX ⊑ X`. -/
-public theorem star_le_of_preorder_step2 {A : 𝒜} {X : A ⟶ A} (htrans : X ≫ X ⊑ X) :
-    X ∪ (X ≫ X) ⊑ X :=
-  union_lub (le_refl X) htrans
+calc_steps preorder_prefixed
 
 /-- `R*` is bounded above by any preorder (`refl` + `trans`) containing `R`. -/
 public theorem star_le_of_preorder {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X)
     (htrans : X ≫ X ⊑ X) (hR : R ⊑ X) : star R ⊑ X :=
-  mu_le (le_trans (star_le_of_preorder_step1 hrefl hR) (star_le_of_preorder_step2 htrans))
+  mu_le (preorder_prefixed hrefl htrans hR)
 
 /-- **Universal property of `R*`** (§6.7): `R* ` is the SMALLEST preorder containing `R`. -/
 public theorem star_UP {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X) (htrans : X ≫ X ⊑ X) :

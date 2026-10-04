@@ -561,35 +561,28 @@
 // B&dM 6.7c, p.158.  The book's `SS⊑S ≡ S⊑S\S ⇐ 𝟙∪R(S\S)⊑S\S ≡ S(𝟙∪R(S\S))⊑S`: the first two
 // equivalences are division and least fixed point, and the chain is the inequality they reduce to,
 // mirrored (the book's `S\S` is `S/S` here).
+#import "../generated/Freyd.Alg.star_div_prefixed.calc.typ" as calc-star-trans
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_trans") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_div_prefixed") \
+    #src[`R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`, stated through division] \
+    #leanf("Freyd.Alg.star_trans") \
     #src[`R*` is transitive, because `R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`]],
+     // lean:AOP.A6_7.star_div_prefixed@54036308
      // lean:AOP.A6_7.star_trans@2a716981
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_trans_step1.lhs", []),
-    (EQ, union("Freyd.Alg.star_trans_step1.rhs"),
-      src[`(P∪Q)T=PT∪QT` — composition distributes over `∪`]),
-     // lean:AOP.A6_7.star_trans_step1@c574fb0e
-    (SQ, union("Freyd.Alg.star_trans_step2.rhs"), src[`(S/S)S⊑S`]),
-     // lean:AOP.A6_7.star_trans_step2@ac21f3be
-    (SQ, "Freyd.Alg.star_trans_step3.rhs", src[`RR*⊑R*` — @closure-contains]),
-     // lean:AOP.A6_7.star_trans_step3@525c9edd
-  ),
+  lean-calc(calc-star-trans, pictures: false),
 )]<closure-trans>
 
 // B&dM 6.7d, p.158: `S` is the least preorder containing `R`.
+#import "../generated/Freyd.Alg.preorder_prefixed.calc.typ" as calc-star-least
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_le_of_preorder") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.preorder_prefixed") \
+    #src[a reflexive transitive `X` containing `R` is a prefixed point of `Y ↦ 𝟙∪RY`] \
+    #leanf("Freyd.Alg.star_le_of_preorder") \
     #src[a reflexive transitive `X` containing `R` is a prefixed point of `X ↦ 𝟙∪RX`, so it
      contains `R*`]],
+     // lean:AOP.A6_7.preorder_prefixed@f685d4a1
      // lean:AOP.A6_7.star_le_of_preorder@a62fa34b
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_le_of_preorder_step1.lhs", []),
-    (SQ, "Freyd.Alg.star_le_of_preorder_step1.rhs", src[`𝟙⊑X`, `R⊑X`]),
-     // lean:AOP.A6_7.star_le_of_preorder_step1@00030274
-    (SQ, "Freyd.Alg.star_le_of_preorder_step2.rhs", src[`XX⊑X`]),
-     // lean:AOP.A6_7.star_le_of_preorder_step2@28ad3644
-  ),
+  lean-calc(calc-star-least, pictures: false),
 )]<closure-least>
 
 // B&dM p.158: the `tails` recursion, `R` being `tail`.
