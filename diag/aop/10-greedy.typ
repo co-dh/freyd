@@ -39,6 +39,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #import "../generated/Freyd.Alg.greedy_dp_lower.calc.typ" as calc-gl
 #import "../generated/Freyd.Alg.greedy_dp_upper.calc.typ" as calc-gu
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_tail.calc.typ" as calc-tt
+#import "../generated/Freyd.Alg.RelSet.Tardy.bagify_recip_le.calc.typ" as calc-brl
+#import "../generated/Freyd.Alg.RelSet.Tardy.tardy_greedy.calc.typ" as calc-tg
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -402,17 +404,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[an ordering of a bag with one more job costs at least the cost of the ordering of the
      bag before its last job]],
   // lean:AOP.A10_3_Tardy.bagify_recip_le@583c3c44
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs", src[(10.8) — @tardy-bag-cata]),
-    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step2.rhs", src[(10.7) — @tardy-add]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step2@88a920c7
-    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step3.rhs",
-      src[definition of `R`, and `nil⊑zero≤cost°`]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step3@6d50a490
-    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step4.rhs", src[definition of `m`]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step4@720cf659
-  ),
+  lean-calc(calc-brl),
 )]<tardy-bag-le>
 
 // B&dM (10.3), p.257: the book's calculation, one row per hint.
@@ -421,26 +413,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a schedule of a bag ending in a job of least penalty is no worse than any schedule of
      the same bag]],
   // lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.rhs", src[monotonicity of composition]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step1@588b14c9
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step2.rhs",
-      src[`β°F(bagify°)α=bagify°`, since `bagify=⦇β⦈`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step2@0c67ad67 lean:AOP.A10_3_Tardy.bagify_recip_alg@909c28b3
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step3.rhs", src[@tardy-bag-le]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step3@4c8ea4a0
-  ), (
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step4.rhs", src[modular law]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step4@03c0558d
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step5.rhs",
-      src[choice of `Q`: `F(bagify) Q F(bagify°)=g≤g°`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step5@1f772cd4 lean:AOP.A10_3_Tardy.Q_choice@1881a8ab
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step6.rhs", src[products: `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step6@19339638
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy.rhs", src[@tardy-tail]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step7@127df0be
-  )),
+  lean-calc(calc-tg, breaks: (4,)),
 )]<tardy-greedy>
 
 // B&dM p.257, "to complete the proof it is sufficient to show", `cost°` shunted.
