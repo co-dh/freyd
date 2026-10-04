@@ -176,6 +176,11 @@ public theorem recip_thin_condition [InitialAlgebra F] {T : F.obj A ⟶ A} {h : 
       Cat.assoc]
   rwa [eL, eR] at hrm
 
+/-- `h` monotonic on `R`, conversed and shunted at the map `h`: `h°F(R°)h ⊑ R°`. -/
+public theorem recip_conj_le_of_monoAlg {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
+    (hmono : MonoAlg h R) : h° ≫ F.map (R°) ≫ h ⊑ R° :=
+  (monoAlg_iff_conj hh).mp ((monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono)
+
 /-- **(9.2) with thinning**: `min R·P(h·FM)·thin Q·ΛT° ⊆ H`, mirrored. -/
 public theorem dynamic_programming_thin_lower [InitialAlgebra F] {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} :

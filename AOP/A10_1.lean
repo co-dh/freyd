@@ -89,10 +89,8 @@ public theorem greedy_dp_upper [InitialAlgebra F] {h : F.obj B ⟶ B}
         repeat rw [Cat.assoc]
       _ ⊑ R° ≫ h° ≫ F.map R° ≫ h :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le (H T h) R)) h))
-      -- the book states both on the mirrored `R°` (`est R` = `min R°`); fold the `°` back in
-      _ ⊑ R° ≫ R° := comp_mono_left _ ((monoAlg_iff_conj hh).mp
-          ((monoAlg_recip_iff hh (Relator.preservesRecip_of_tabular F)).mp hmono))
-      _ ⊑ R° := by have h0 := recip_mono htrans; rwa [Allegory.recip_comp] at h0
+      _ ⊑ R° ≫ R° := comp_mono_left _ (recip_conj_le_of_monoAlg hh hmono)
+      _ ⊑ R° := recip_trans_of_trans htrans
 
 calc_steps greedy_dp_upper
 
