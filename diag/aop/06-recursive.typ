@@ -89,6 +89,10 @@
  // lean:AOP.A6_2.relCata_eq_nu@0af949db
 )]<mu-laws>
 
+#import "../generated/Freyd.Alg.relCata_comp_prefixed.calc.typ" as calc-64p
+#import "../generated/Freyd.Alg.relCata_le_comp.calc.typ" as calc-64
+#import "../generated/Freyd.Alg.relCata_comp_postfixed.calc.typ" as calc-65p
+#import "../generated/Freyd.Alg.comp_le_relCata.calc.typ" as calc-65
 // B&dM (6.4), p.141, "easy exercise" (Ex 6.6): (6.2) at `X≜⦇R⦈S`, whose prefix-point condition is
 // this chain.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -96,17 +100,9 @@
     #src[if `S` followed by `R` absorbs `T` after `F(S)`, the fold of `T` is below the fold of `R`
      followed by `S`]],
   // lean:AOP.A6_2.relCata_le_comp@b54d0a6b
-  lean-chain(
-    (none, "Freyd.Alg.relCata_le_comp_step1.lhs", src[`X≜⦇R⦈S`]),
-    (EQ, "Freyd.Alg.relCata_le_comp_step1.rhs", []),
-    // lean:AOP.A6_2.relCata_le_comp_step1@2fbeae5c
-    (SQ, "Freyd.Alg.relCata_le_comp_step2.rhs", src[`F(S)T⊑RS`]),
-    // lean:AOP.A6_2.relCata_le_comp_step2@e2b7aeb0
-    (EQ, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`F(⦇R⦈)R=α⦇R⦈`, `α°α=𝟙` — @cata-defining]),
-    // lean:AOP.A6_2.relCata_le_comp_step3@3ef0b9b8
-    (IMP, ("Freyd.Alg.relCata_le_comp_step4",), src[`⦇R⦈S` is a prefix point of `α°F(−)T`, and `⦇T⦈` is the least one — (6.2) `α°F(X)T⊑X ⟹ ⦇T⦈⊑X`]),
-    // lean:AOP.A6_2.relCata_le_comp_step4@af5d58e5
-  ),
+  // lean:AOP.A6_2.relCata_comp_prefixed@95daa9e8
+  lean-calc(calc-64p),
+  lean-calc(calc-64),
 )]<cata-fusion-le>
 
 // B&dM (6.5), p.141: (6.3) at `X≜⦇R⦈S`; the chain of (6.4) read backwards, its hypothesis reversed.
@@ -115,15 +111,9 @@
     #src[if `R` followed by `S` is absorbed by `F(S)` followed by `T`, the fold of `R` followed by `S`
      is below the fold of `T`]],
   // lean:AOP.A6_2.comp_le_relCata@5874cf45
-  lean-chain(
-    (none, "Freyd.Alg.relCata_le_comp_step3.rhs", src[`X≜⦇R⦈S`]),
-    (EQ, "Freyd.Alg.relCata_le_comp_step3.lhs", src[`α⦇R⦈=F(⦇R⦈)R`, `α°α=𝟙` — @cata-defining]),
-    (SQ, "Freyd.Alg.comp_le_relCata_step2.rhs", src[`RS⊑F(S)T`]),
-    // lean:AOP.A6_2.comp_le_relCata_step2@adb9a462
-    (EQ, "Freyd.Alg.relCata_le_comp_step1.lhs", []),
-    (IMP, ("Freyd.Alg.comp_le_relCata_step3",), src[`⦇R⦈S` is a postfix point of `α°F(−)T`, and `⦇T⦈` is the greatest one — (6.3) `X⊑α°F(X)T ⟹ X⊑⦇T⦈`]),
-    // lean:AOP.A6_2.comp_le_relCata_step3@804ce7dc
-  ),
+  // lean:AOP.A6_2.relCata_comp_postfixed@aae78c87
+  lean-calc(calc-65p),
+  lean-calc(calc-65),
 )]<fusion-le-cata>
 
 == Hylomorphisms <sec-hylo>
@@ -204,22 +194,13 @@
 
 // B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[g,h]` with the
 // fusion conditions `zero f=g`, `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
+#import "../generated/Freyd.Alg.RelSet.FastExp.convert_program.calc.typ" as calc-convert
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
     #src[once `f` sends `zero` to `g` and turns `shift` into `h`, the recursion that halves the
      argument at each step computes `f`]],
   // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@9f928e8d
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.FastExp.convert_step1.rhs", []),
-    (RQ, "Freyd.Alg.RelSet.FastExp.convert_step1.lhs", src[`convert` simple]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step1@69eb83de
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_simple@bb3512f8
-    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step2.rhs", src[fusion: `zero f=g`, `shift f=(f×𝟙)h`]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step2@74323421
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_fusion@4f54bb8d
-    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step3.rhs", src[Corollary 6.1, @hylo-coprod]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step3@e3126154
-  ),
+  lean-calc(calc-convert),
 )]<convert-program>
 
 // B&dM p.145: the two fusion conditions for `exp(a)`, then the program.
@@ -253,19 +234,15 @@
 // TODO p.147 inductive: `R⊑S` ⟹ `R` inductive; `S` inductive iff `S⁺` is — Lean AOP.A6_5.inductive_of_le,
 //   inductive_transClosure_iff; no picture (statements about `Inductive`, not arrows).
 // B&dM p.147 (Ex 6.13)
+#import "../generated/Freyd.Alg.div_div_comp_le.calc.typ" as calc-ind
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.inductive_of_comp_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.div_div_comp_le") \
+    #src[`((X/R)/S)` followed by `RR` stays below `X` when `RR⊑SR`] \
+    #leanf("Freyd.Alg.inductive_of_comp_le") \
     #src[`R` is inductive when `RR⊑SR` for an inductive `S`]],
+    // lean:AOP.A6_5.div_div_comp_le@fba45cc1
     // lean:AOP.A6_5.inductive_of_comp_le@17eb3b43
-  lean-chain(
-    (none, "Freyd.Alg.inductive_of_comp_le_step1.lhs", []),
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step1.rhs", src[`RR⊑SR`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step1@541f5e6c
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step2.rhs", src[division by `S`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step2@de8b5c71
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step3.rhs", src[division by `R`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step3@6567f943
-  ),
+  lean-calc(calc-ind),
 )]<inductive-comp-le>
 // TODO p.148 member: `member(id)=𝟙`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
 //   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `P`, `T` missing.
@@ -300,19 +277,15 @@
 )]<thm63-entire>
 
 // B&dM Corollary 6.2, p.149
+#import "../generated/Freyd.Alg.cor62_simple.calc.typ" as calc-62
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor62") \
-    #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map]],
+    #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map] \
+    #leanf("Freyd.Alg.cor62_simple") \
+    #src[`(gF(Y)f)°` followed by `X` stays below `𝟙` when `g`, `f` are simple and `Y°X⊑𝟙`]],
     // lean:AOP.A6_5.cor62@6df24a22
-  lean-chain(
-    (none, "Freyd.Alg.cor62_step1.lhs", []),
-    (SQ, "Freyd.Alg.cor62_step1.rhs", src[`X=gF(X)f`, `g` simple]),
-    // lean:AOP.A6_5.cor62_step1@71864db7
-    (SQ, "Freyd.Alg.cor62_step2.rhs", src[`Y°X⊑𝟙`]),
-    // lean:AOP.A6_5.cor62_step2@e7d4ea15
-    (SQ, "Freyd.Alg.cor62_step3.rhs", src[`f` simple]),
-    // lean:AOP.A6_5.cor62_step3@fca728a4
-  ),
+    // lean:AOP.A6_5.cor62_simple@efffca93
+  lean-calc(calc-62),
 )]<cor62>
 // B&dM Corollary 6.3, p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -343,17 +316,12 @@
 )]<thm64>
 
 // B&dM Theorem 6.4 (the claim), p.150
+#import "../generated/Freyd.Alg.thm64_claim.calc.typ" as calc-64c
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64_claim") \
     #src[`R°member` is below `α°member` conjugated by `f`, so it is inductive when `α°member` is]],
     // lean:AOP.A6_5.thm64_claim@4b02dea3
-  lean-chain(
-    (none, "Freyd.Alg.thm64_claim_step1.lhs", []),
-    (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`R° ⊑ f α° F(f°)` — `R f ⊑ F(f) α`, shunting, converse]),
-    // lean:AOP.A6_5.thm64_claim_step1@b4925181
-    (SQ, "Freyd.Alg.thm64_claim_step2.rhs", src[`member` lax natural]),
-    // lean:AOP.A6_5.thm64_claim_step2@3e9c7464
-  ),
+  lean-calc(calc-64c),
 )]<thm64-claim>
 
 == Sorting by selection
@@ -373,35 +341,21 @@
 
 // B&dM 6.6a, p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
 // `perm` is strictly natural (lean:AOP.A6_6b_SortConcrete.perm_strictNatural@f0271ba3).
+#import "../generated/Freyd.Alg.RelSet.Sort.selection_sort.calc.typ" as calc-selection
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
     #src[every output of unfolding the input by `select` is a sorted permutation of it]],
      // lean:AOP.A6_6b_SortConcrete.selection_sort@617e20db
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.selection_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.selection_step1.rhs", src[`perm°=perm`, `ordered°=ordered`]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step1@b0c2bf70
-    (EQ, "Freyd.Alg.RelSet.Sort.selection_step2.rhs", src[@sort-ordered]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step2@efecdea7
-    (RQ, "Freyd.Alg.RelSet.Sort.selection_step3.lhs", src[fusion (6.4) under @sort-select]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step3@2c3b5167
-  ),
+  lean-calc(calc-selection),
 )]<sort-selection>
 
 // B&dM 6.6b, p.153, the fusion proviso; `select` is specified by `select°⊑ok cons perm`.
+#import "../generated/Freyd.Alg.RelSet.Sort.select_proviso.calc.typ" as calc-select
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.select_proviso") \
     #src[permuting the tail and then undoing `select` lands among the `ok` conses of a permutation]],
      // lean:AOP.A6_6b_SortConcrete.select_proviso@924131a0
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.select_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.select_step1.rhs", src[`cons perm=(𝟙×perm)cons perm`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step1@7ab18cc3
-    (EQ, "Freyd.Alg.RelSet.Sort.select_step2.rhs", src[Ex 6.22, `ok(𝟙×perm)=(𝟙×perm)ok`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step2@64cbd9c8
-    (RQ, "Freyd.Alg.RelSet.Sort.select_step3.lhs", src[`select°⊑ok cons perm`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step3@b7940931
-  ),
+  lean-calc(calc-select),
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
@@ -420,22 +374,13 @@
 )]<sort-rec>
 // B&dM 6.6d, p.154, "quicksort": the specification `perm ordered` refined through a tree; `R` is a
 // preorder, which the claim `flatten ordered = inordered flatten` needs.
+#import "../generated/Freyd.Alg.RelSet.Sort.quicksort.calc.typ" as calc-quick
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.quicksort") \
     #src[every output of unfolding the input by `split` into a tree and flattening that tree is a
      sorted permutation of the input]],
      // lean:AOP.A6_6e_Quicksort.quicksort@2ff8cd0e
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.qsort_step1.rhs", []),
-    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step1.lhs", src[`flatten` is simple]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step1@f0b72a2c
-    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step2.rhs", src[`flatten ordered=inordered flatten`]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step2@ed8f63c8
-    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step3.rhs", src[converses]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step3@35ed5007
-    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step4.lhs", src[fusion (6.4) under @sort-split]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step4@a3fb7ac7
-  ),
+  lean-calc(calc-quick),
 )]<sort-quick>
 
 // B&dM 6.6d, p.154, "claim: ordered flatten = inordered flatten"; `inordered = ⦇[null, fork check]⦈` is a
@@ -488,39 +433,23 @@
 )]<sort-checkp-perm>
 
 // B&dM 6.6e, p.155, the fusion proviso; `split` is specified by `split°⊑check' join perm`.
+#import "../generated/Freyd.Alg.RelSet.Sort.split_proviso.calc.typ" as calc-split
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_proviso") \
     #src[undoing `split` and then flattening and permuting both parts lands among the `check`ed
      forks whose flattening is permuted]],
      // lean:AOP.A6_6e_Quicksort.split_proviso@124d2f0d
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.split_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step1.rhs", src[`fork flatten=F(flatten)join`]),
-     // lean:AOP.A6_6e_Quicksort.split_step1@06a641a0
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step2.rhs", src[`check F(flatten)=F(flatten)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step2@023773b1
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step3.rhs", src[`join perm=F(perm)join perm`, `check' F(perm)=F(perm)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step3@d865bdf1
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step4.rhs", src[functors]),
-     // lean:AOP.A6_6e_Quicksort.split_step4@a36f98a6
-    (RQ, "Freyd.Alg.RelSet.Sort.split_step5.lhs", src[`split°⊑check' join perm`]),
-     // lean:AOP.A6_6e_Quicksort.split_step5@94aed1e9
-  ),
+  lean-calc(calc-split),
 )]<sort-split>
 // B&dM 6.6f, p.155, `split = ⦇[base,step]⦈·embed` on non-empty lists; the fold is below the
 // specification `split ⊆ check'·join°·perm` when `base` and `step` meet the two fusion conditions.
+#import "../generated/Freyd.Alg.RelSet.Sort.split_cata.calc.typ" as calc-split-cata
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_cata") \
     #src[turning a list into a non-empty list and folding it with any `[bs, st]` meeting the two conditions below gives only
      `check`ed triples `(x,a,y)` whose join `x ⧺ [a] ⧺ y` is a permutation of the list]],
      // lean:AOP.A6_6e_Quicksort.split_cata@6dc148a1
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.split_cata_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step1.rhs", src[@split-base and @split-step, induction on the non-empty list]),
-     // lean:AOP.A6_6e_Quicksort.split_cata_step1@330ccb63
-    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step2.rhs", src[`embed` is simple]),
-     // lean:AOP.A6_6e_Quicksort.split_cata_step2@054111f9
-  ),
+  lean-calc(calc-split-cata),
 )]<split-cata>
 
 // B&dM p.155, the first fusion condition, with `base(a) = ([],a,[])`.
@@ -548,37 +477,23 @@
 )]<split-step>
 // B&dM 6.6f, p.155, the program: by the hylomorphism theorem `X=⦇[nil,split°]⦈°flatten` solves the
 // equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@3e9893c3).
+#import "../generated/Freyd.Alg.RelSet.Sort.qsort_rec.calc.typ" as calc-qsort-rec
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.qsort_rec") \
     #src[quicksort returns `[]` on `[]`, and otherwise splits into `(x,a,y)`, sorts `x` and `y` and
      joins them around `a`]],
      // lean:AOP.A6_6e_Quicksort.qsort_rec@acd4b32a
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.qsort_rec.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.lhs", src[hylomorphism theorem]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step0@1716665d
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.rhs", src[`F(X)[nil,join]=[nil,(X×𝟙×X)join]`]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step1@8fce50a6
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step2.rhs", src[coproduct]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step2@4ee6ccce
-  ),
+  lean-calc(calc-qsort-rec),
 )]<qsort-rec>
 // B&dM p.157 (Ex 6.30): insertion sort, from `perm = ⦇[nil,add]⦈` (§5.6) with `add` putting an
 // element anywhere in a list (lean:AOP.A6_6c_ISort.add@88935b2b).
+#import "../generated/Freyd.Alg.RelSet.ISort.insertion_sort.calc.typ" as calc-isort
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insertion_sort") \
     #src[for any `ins` that, on an ordered list, returns only ordered results of `add`, folding
      with `[nil, ins]` gives only sorted permutations]],
      // lean:AOP.A6_6c_ISort.insertion_sort@3dcc9fbb
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.ISort.isort_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.ISort.isort_step1.rhs", src[`perm = ⦇[nil,add]⦈`]),
-     // lean:AOP.A6_6c_ISort.isort_step1@1b7905a1 lean:AOP.A6_6c_ISort.perm_add@f1c7b0d4
-    (EQ, "Freyd.Alg.RelSet.ISort.isort_step2.rhs", src[fusion, `add ordered = (𝟙×ordered) add ordered`]),
-     // lean:AOP.A6_6c_ISort.isort_step2@3a587343 lean:AOP.A6_6c_ISort.ordered_add@e96a052f
-    (RQ, "Freyd.Alg.RelSet.ISort.isort_step3.lhs", src[`(𝟙×ordered) ins ⊑ add ordered`]),
-     // lean:AOP.A6_6c_ISort.isort_step3@b909215e
-  ),
+  lean-calc(calc-isort),
 )]<isort-ex630>
 
 // B&dM p.157 (Ex 6.30), the `insert` asked for: slide `a` past every element it is not below.
@@ -612,82 +527,58 @@
 )]<closure-up>
 
 // B&dM 6.7a, p.158: `S=(μX : 𝟙∪RX)` is reflexive.
+#import "../generated/Freyd.Alg.id_le_star.calc.typ" as calc-67a
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.id_le_star") \
     #src[`R*` is reflexive]],
      // lean:AOP.A6_7.id_le_star@90d24167
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.id_le_star_step1.lhs", []),
-    (SQ, "Freyd.Alg.id_le_star_step1.rhs", src[union]),
-     // lean:AOP.A6_7.id_le_star_step1@c4b88c90
-    (EQ, "Freyd.Alg.star_unfold.rhs", src[fixed point, Thm 6.1]),
-     // lean:AOP.A6_7.star_unfold@97a800c3
-  ),
+  lean-calc(calc-67a, pictures: false),
 )]<closure-refl>
 
 // B&dM 6.7b, p.158: `S` contains `R`.
+#import "../generated/Freyd.Alg.le_star.calc.typ" as calc-67b
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.le_star") \
     #src[`R*` contains `R`]],
      // lean:AOP.A6_7.le_star@3ecb72e1
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.le_star_step1.lhs", []),
-    (EQ, "Freyd.Alg.le_star_step1.rhs", src[identity]),
-     // lean:AOP.A6_7.le_star_step1@ded98a89
-    (SQ, "Freyd.Alg.le_star_step2.rhs", src[`𝟙⊑R*` — @closure-refl]),
-     // lean:AOP.A6_7.le_star_step2@b6b96fe7
-    (SQ, "Freyd.Alg.comp_star_le.rhs", src[fixed point]),
-     // lean:AOP.A6_7.comp_star_le@b5af2336
-  ),
+  lean-calc(calc-67b, pictures: false),
 )]<closure-contains>
 
 // B&dM 6.7c, p.158.  The book's `SS⊑S ≡ S⊑S\S ⇐ 𝟙∪R(S\S)⊑S\S ≡ S(𝟙∪R(S\S))⊑S`: the first two
 // equivalences are division and least fixed point, and the chain is the inequality they reduce to,
 // mirrored (the book's `S\S` is `S/S` here).
+#import "../generated/Freyd.Alg.star_div_prefixed.calc.typ" as calc-star-trans
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_trans") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.star_div_prefixed") \
+    #src[`R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`, stated through division] \
+    #leanf("Freyd.Alg.star_trans") \
     #src[`R*` is transitive, because `R*/R*` is a prefixed point of `X ↦ 𝟙∪RX`]],
+     // lean:AOP.A6_7.star_div_prefixed@54036308
      // lean:AOP.A6_7.star_trans@2a716981
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_trans_step1.lhs", []),
-    (EQ, union("Freyd.Alg.star_trans_step1.rhs"),
-      src[`(P∪Q)T=PT∪QT` — composition distributes over `∪`]),
-     // lean:AOP.A6_7.star_trans_step1@c574fb0e
-    (SQ, union("Freyd.Alg.star_trans_step2.rhs"), src[`(S/S)S⊑S`]),
-     // lean:AOP.A6_7.star_trans_step2@ac21f3be
-    (SQ, "Freyd.Alg.star_trans_step3.rhs", src[`RR*⊑R*` — @closure-contains]),
-     // lean:AOP.A6_7.star_trans_step3@525c9edd
-  ),
+  lean-calc(calc-star-trans, pictures: false),
 )]<closure-trans>
 
 // B&dM 6.7d, p.158: `S` is the least preorder containing `R`.
+#import "../generated/Freyd.Alg.preorder_prefixed.calc.typ" as calc-star-least
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.star_le_of_preorder") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.preorder_prefixed") \
+    #src[a reflexive transitive `X` containing `R` is a prefixed point of `Y ↦ 𝟙∪RY`] \
+    #leanf("Freyd.Alg.star_le_of_preorder") \
     #src[a reflexive transitive `X` containing `R` is a prefixed point of `X ↦ 𝟙∪RX`, so it
      contains `R*`]],
+     // lean:AOP.A6_7.preorder_prefixed@f685d4a1
      // lean:AOP.A6_7.star_le_of_preorder@a62fa34b
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.star_le_of_preorder_step1.lhs", []),
-    (SQ, "Freyd.Alg.star_le_of_preorder_step1.rhs", src[`𝟙⊑X`, `R⊑X`]),
-     // lean:AOP.A6_7.star_le_of_preorder_step1@00030274
-    (SQ, "Freyd.Alg.star_le_of_preorder_step2.rhs", src[`XX⊑X`]),
-     // lean:AOP.A6_7.star_le_of_preorder_step2@28ad3644
-  ),
+  lean-calc(calc-star-least, pictures: false),
 )]<closure-least>
 
 // B&dM p.158: the `tails` recursion, `R` being `tail`.
+#import "../generated/Freyd.Alg.Λ_star.calc.typ" as calc-tails
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_star") \
     #src[the set of `R*`-successors of `a` is `a` itself joined with the `R*`-successors of its
      `R`-successors]],
      // lean:AOP.A6_7.Λ_star@f11f82f1
-  lean-chain(
-    (none, "Freyd.Alg.Λ_star_step1.lhs", []),
-    (EQ, "Freyd.Alg.Λ_star_step1.rhs", src[`R*=𝟙∪RR*`]),
-     // lean:AOP.A6_7.Λ_star_step1@5cd6f202
-    (EQ, "Freyd.Alg.Λ_star.rhs", src[`Λ(R∪S)=⟨Λ(R),Λ(S)⟩cup`]),
-     // lean:AOP.A5_6.Λ_union@a769989a
-  ),
+  lean-calc(calc-tails),
 )]<closure-tails>
 
 // B&dM 6.7e, p.159: the subtraction laws, chapter 4's (`AOP.A4_5`), each a statement row.
@@ -726,33 +617,21 @@
 )]<closure-comp>
 
 // B&dM (6.9), p.160: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`, mirrored; `θ(𝟘,S)=SR*` is why it is defined.
+#import "../generated/Freyd.Alg.theta_zero_left.calc.typ" as calc-theta-l
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_left") \
     #src[started with nothing found and `S` to explore, `θ` computes `SR*`]],
      // lean:AOP.A6_7.theta_zero_left@b8297d35 lean:AOP.A6_7.theta@494eeaa5
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.theta_zero_left_step1.lhs", []),
-    (DF, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
-     // lean:AOP.A6_7.theta_zero_left_step1@794d78de
-    (EQ, "Freyd.Alg.theta_zero_left_step2.rhs", src[`R−𝟘=R` — @closure-sub]),
-     // lean:AOP.A6_7.theta_zero_left_step2@3d29ce01
-    (EQ, "Freyd.Alg.comp_star_eq_mu.lhs", src[@closure-comp]),
-  ),
+  lean-calc(calc-theta-l, pictures: false),
 )]<closure-theta-zero-left>
 
 // B&dM 6.7h, p.160: `θ(P,𝟘)=P`, the recursion's exit.
+#import "../generated/Freyd.Alg.theta_zero_right.calc.typ" as calc-theta-r
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_right") \
     #src[with nothing left to explore, `θ` returns what it has found]],
      // lean:AOP.A6_7.theta_zero_right@14a43ab2
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.theta_zero_right_step1.lhs", []),
-    (DF, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
-     // lean:AOP.A6_7.theta_zero_right_step1@6c0c4172
-    (EQ, "Freyd.Alg.theta_zero_right_step2.rhs", src[`𝟘` is a prefixed point: `𝟘R−P=𝟘`]),
-     // lean:AOP.A6_7.theta_zero_right_step2@e32277dc
-    (EQ, "Freyd.Alg.theta_zero_right.rhs", src[`P∪𝟘=P`]),
-  ),
+  lean-calc(calc-theta-r, pictures: false),
 )]<closure-theta-zero-right>
 
 // TODO p.161 close: `E(R*)(s)=close(∅,s)`, `close(p,∅)=p`, `close(p,q)=close(p∪q, E(R)(q)−p−q)` by `Λ`

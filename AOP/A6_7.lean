@@ -18,6 +18,7 @@ module
 public import AOP.A6_2
 public import AOP.A6_5
 public import AOP.A5_6
+import AOP.CalcSteps
 
 universe u
 
@@ -49,67 +50,57 @@ public theorem star_body_monotonic {A : 𝒜} (R : A ⟶ A) :
 public theorem star_unfold {A : 𝒜} (R : A ⟶ A) : Cat.id A ∪ (R ≫ star R) = star R :=
   mu_fixed (star_body_monotonic R)
 
-/-- p.158 `𝟙⊑S`, step 1 of 2 (union): `𝟙 ⊑ 𝟙 ∪ RR*`; step 2 is `star_unfold`. -/
-public theorem id_le_star_step1 {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ 𝟙 A ∪ (R ≫ star R) :=
-  le_union_left _ _
+/-- `id ⊑ R*`: `R*` is reflexive (p.158, union then the fixed point). -/
+public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ star R :=
+  calc 𝟙 A ⊑ 𝟙 A ∪ (R ≫ star R) := le_union_left _ _
+    _ = star R := star_unfold R
 
-/-- `id ⊑ R*`: `R*` is reflexive. -/
-public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ star R := by
-  have h := id_le_star_step1 R
-  rwa [star_unfold R] at h
+calc_steps id_le_star
 
 /-- `R·R* ⊑ R*`. -/
 public theorem comp_star_le {A : 𝒜} (R : A ⟶ A) : R ≫ star R ⊑ star R := by
   have h : R ≫ star R ⊑ Cat.id A ∪ (R ≫ star R) := le_union_right (Cat.id A) (R ≫ star R)
   rwa [star_unfold R] at h
 
-/-- p.158 `R⊑S`, step 1 of 3 (identity): `R = R𝟙`. -/
-public theorem le_star_step1 {A : 𝒜} (R : A ⟶ A) : R = R ≫ 𝟙 A := (Cat.comp_id R).symm
+/-- `R ⊑ R*` (p.158: identity, `𝟙⊑R*`, fixed point). -/
+public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R :=
+  calc R = R ≫ 𝟙 A := (Cat.comp_id R).symm
+    _ ⊑ R ≫ star R := comp_mono_left R (id_le_star R)
+    _ ⊑ star R := comp_star_le R
 
-/-- p.158 `R⊑S`, step 2 of 3 (`𝟙⊑R*`): `R𝟙 ⊑ RR*`; step 3 is `comp_star_le`. -/
-public theorem le_star_step2 {A : 𝒜} (R : A ⟶ A) : R ≫ 𝟙 A ⊑ R ≫ star R :=
-  comp_mono_left R (id_le_star R)
+calc_steps le_star
 
-/-- `R ⊑ R*`. -/
-public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R := by
-  have h := le_trans (le_star_step2 R) (comp_star_le R); rwa [← le_star_step1 R] at h
+/-- p.158 `SS⊑S`, the inequality its proof derives: `S/S` is a prefixed point of `X ↦ 𝟙 ∪ RX`,
+    stated through division as `(𝟙 ∪ R(S/S))S ⊑ S`. -/
+public theorem star_div_prefixed {A : 𝒜} (R : A ⟶ A) :
+    (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R ⊑ star R :=
+  calc (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R
+        = 𝟙 A ≫ star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by rw [union_comp_distrib, Cat.assoc]
+    _ = star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by rw [Cat.id_comp]
+    _ ⊑ star R ∪ (R ≫ star R) := union_mono (le_refl _) (comp_mono_left R (div_self_comp_le (star R)))
+    _ ⊑ star R := union_lub (le_refl _) (comp_star_le R)
 
-/-- p.158 `SS⊑S`, step 1 of 3 (composition distributes over union), mirrored from the book's
-    `S(𝟙∪R(S\S)) = S∪SR(S\S)`. -/
-public theorem star_trans_step1 {A : 𝒜} (R : A ⟶ A) :
-    (𝟙 A ∪ (R ≫ (star R / star R))) ≫ star R = star R ∪ (R ≫ ((star R / star R) ≫ star R)) := by
-  rw [union_comp_distrib, Cat.id_comp, Cat.assoc]
-
-/-- p.158 `SS⊑S`, step 2 of 3 (`(S/S)S⊑S`). -/
-public theorem star_trans_step2 {A : 𝒜} (R : A ⟶ A) :
-    star R ∪ (R ≫ ((star R / star R) ≫ star R)) ⊑ star R ∪ (R ≫ star R) :=
-  union_mono (le_refl _) (comp_mono_left R (div_self_comp_le (star R)))
-
-/-- p.158 `SS⊑S`, step 3 of 3 (`RS⊑S`): `S ∪ RS ⊑ S`. -/
-public theorem star_trans_step3 {A : 𝒜} (R : A ⟶ A) : star R ∪ (R ≫ star R) ⊑ star R :=
-  union_lub (le_refl _) (comp_star_le R)
+calc_steps star_div_prefixed
 
 /-- **Transitivity of `R*`** (book's division proof, p.157-158): the chain makes `S/S` a prefixed
     point of `X ↦ 𝟙 ∪ RX`, so `S ⊑ S/S`, which is `SS ⊑ S`. -/
-public theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R := by
-  have hsub : star R ⊑ star R / star R := mu_le ((le_div_iff _ _ _).mpr (by
-    rw [star_trans_step1]; exact le_trans (star_trans_step2 R) (star_trans_step3 R)))
-  exact (le_div_iff _ _ _).mp hsub
+public theorem star_trans {A : 𝒜} (R : A ⟶ A) : star R ≫ star R ⊑ star R :=
+  (le_div_iff _ _ _).mp (mu_le ((le_div_iff _ _ _).mpr (star_div_prefixed R)))
 
-/-- p.158 least, step 1 of 2 (`𝟙⊑X`, `R⊑X`): `𝟙 ∪ RX ⊑ X ∪ XX`. -/
-public theorem star_le_of_preorder_step1 {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X) (hR : R ⊑ X) :
-    𝟙 A ∪ (R ≫ X) ⊑ X ∪ (X ≫ X) :=
-  union_mono hrefl (comp_mono_right hR X)
+/-- p.158 least, the inequality its proof derives: a preorder `X` containing `R` is a prefixed point
+    of `Y ↦ 𝟙 ∪ RY`. -/
+public theorem preorder_prefixed {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X)
+    (htrans : X ≫ X ⊑ X) (hR : R ⊑ X) : 𝟙 A ∪ (R ≫ X) ⊑ X :=
+  calc 𝟙 A ∪ (R ≫ X) ⊑ X ∪ (R ≫ X) := union_mono hrefl (le_refl _)
+    _ ⊑ X ∪ (X ≫ X) := union_mono (le_refl _) (comp_mono_right hR X)
+    _ ⊑ X := union_lub (le_refl X) htrans
 
-/-- p.158 least, step 2 of 2 (`XX⊑X`): `X ∪ XX ⊑ X`. -/
-public theorem star_le_of_preorder_step2 {A : 𝒜} {X : A ⟶ A} (htrans : X ≫ X ⊑ X) :
-    X ∪ (X ≫ X) ⊑ X :=
-  union_lub (le_refl X) htrans
+calc_steps preorder_prefixed
 
 /-- `R*` is bounded above by any preorder (`refl` + `trans`) containing `R`. -/
 public theorem star_le_of_preorder {A : 𝒜} {R X : A ⟶ A} (hrefl : 𝟙 A ⊑ X)
     (htrans : X ≫ X ⊑ X) (hR : R ⊑ X) : star R ⊑ X :=
-  mu_le (le_trans (star_le_of_preorder_step1 hrefl hR) (star_le_of_preorder_step2 htrans))
+  mu_le (preorder_prefixed hrefl htrans hR)
 
 /-- **Universal property of `R*`** (§6.7): `R* ` is the SMALLEST preorder containing `R`. -/
 public theorem star_UP {A : 𝒜} {R X : A ⟶ A} (hrefl : Cat.id A ⊑ X) (htrans : X ≫ X ⊑ X) :
@@ -384,15 +375,14 @@ section LambdaStar
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
 
-/-- p.158 `Λ(R*)`, step 1 of 2 (`R*=𝟙∪RR*`); step 2 is `Λ_union`. -/
-public theorem Λ_star_step1 {A : 𝒜} (R : A ⟶ A) : Λ (star R) = Λ (𝟙 A ∪ (R ≫ star R)) := by
-  rw [star_unfold R]
-
 /-- **p.158**: `Λ(R*) = ⟨Λ(𝟙),Λ(RR*)⟩cup` — the `tails` recursion, `R` being `tail`. -/
 public theorem Λ_star {A : 𝒜} (R : A ⟶ A)
     (P : RelProd (P A) (P A)) :
-    Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := by
-  rw [Λ_star_step1, Λ_union]
+    Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P :=
+  calc Λ (star R) = Λ (𝟙 A ∪ (R ≫ star R)) := by rw [star_unfold R]
+    _ = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := Λ_union ..
+
+calc_steps Λ_star
 
 end LambdaStar
 
@@ -420,36 +410,32 @@ variable {𝒜 : Type u} [DivisionBooleanAllegory 𝒜] {A B : 𝒜}
 @[expose] public def theta {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) : B ⟶ A :=
   P ∪ mu (fun X : B ⟶ A => Q ∪ sub (X ≫ R) P)
 
-/-- p.160 `θ(𝟘,S)`, step 1 of 3 (definition of `θ`). -/
-public theorem theta_zero_left_step1 {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) :
-    theta R 𝟘 S = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) := rfl
+/-- **p.160**: `θ(0,S) = R*·S`, mirrored `θ(0,S) = S≫R*` (the θ-recursion computes `S≫R*`):
+    definition of `θ`, `R−𝟘=R`, `𝟘∪X=X`, then `comp_star_eq_mu`. -/
+public theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R :=
+  calc theta R 𝟘 S = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) := rfl
+    _ = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ (X ≫ R)) :=
+      congrArg (𝟘 ∪ mu ·) (funext fun X => congrArg (S ∪ ·) (sub_zero (X ≫ R)))
+    _ = mu (fun X : B ⟶ A => S ∪ (X ≫ R)) := by rw [DistributiveAllegory.zero_union]
+    _ = S ≫ star R := (comp_star_eq_mu S R).symm
 
-/-- p.160 `θ(𝟘,S)`, step 2 of 3 (subtraction `R−𝟘=R`, and `𝟘∪X=X`); step 3 is `comp_star_eq_mu`. -/
-public theorem theta_zero_left_step2 {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) :
-    𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) = mu (fun X : B ⟶ A => S ∪ (X ≫ R)) := by
-  simp only [sub_zero, DistributiveAllegory.zero_union]
+calc_steps theta_zero_left
 
-/-- **p.160**: `θ(0,S) = R*·S`, mirrored `θ(0,S) = S≫R*` (the θ-recursion computes `S≫R*`). -/
-public theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R := by
-  rw [theta_zero_left_step1, theta_zero_left_step2, comp_star_eq_mu]
+/-- p.160: `(μX : 𝟘 ∪ (XR − P)) = 𝟘` — `𝟘` is a prefixed point, since `𝟘R−P=𝟘`. -/
+public theorem theta_mu_zero {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
+    mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) = 𝟘 := by
+  refine le_antisymm (mu_le ?_) (zero_le _)
+  show 𝟘 ∪ sub (𝟘 ≫ R) P ⊑ 𝟘
+  rw [show (𝟘 : B ⟶ A) ≫ R = 𝟘 from DistributiveAllegory.zero_comp R]
+  exact union_lub (le_refl 𝟘) (inter_lb_left 𝟘 (∼P))
 
-/-- p.160 `θ(P,𝟘)`, step 1 of 3 (definition of `θ`). -/
-public theorem theta_zero_right_step1 {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
-    theta R P 𝟘 = P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) := rfl
+/-- **p.160**: `θ(P,0) = P`: definition of `θ`, `theta_mu_zero`, `P∪𝟘=P`. -/
+public theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P :=
+  calc theta R P 𝟘 = P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) := rfl
+    _ = P ∪ 𝟘 := by rw [theta_mu_zero]
+    _ = P := union_zero _
 
-/-- p.160 `θ(P,𝟘)`, step 2 of 3 (`𝟘` is a prefixed point, `𝟘R−P=𝟘`); step 3 is `union_zero`. -/
-public theorem theta_zero_right_step2 {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
-    P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) = P ∪ 𝟘 := by
-  have hmu : mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) ⊑ 𝟘 := by
-    refine mu_le ?_
-    show 𝟘 ∪ sub (𝟘 ≫ R) P ⊑ 𝟘
-    rw [show (𝟘 : B ⟶ A) ≫ R = 𝟘 from DistributiveAllegory.zero_comp R]
-    exact union_lub (le_refl 𝟘) (inter_lb_left 𝟘 (∼P))
-  rw [le_antisymm hmu (zero_le _)]
-
-/-- **p.160**: `θ(P,0) = P`. -/
-public theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P := by
-  rw [theta_zero_right_step1, theta_zero_right_step2, union_zero]
+calc_steps theta_zero_right
 
 /-- p.160 `θ` recursion, step 1 of 5 (definition of `θ`). -/
 public theorem theta_step_step1 {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) :

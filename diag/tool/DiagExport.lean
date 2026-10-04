@@ -1326,13 +1326,14 @@ partial def libModules (dir : System.FilePath) (pre : Name) : IO (Array Name) :=
   return out
 
 def usage : String :=
-  "usage: diag-export [--proof | --sig | --string | --circuit | --commutative | --graph | --type | --formula\n\
+  "usage: diag-export [--proof | --calc | --sig | --string | --circuit | --commutative | --graph | --type | --formula\n\
      | --value]\n\
      <declaration-name> [<declaration-name> ...]\n\
    writes diag/generated/<name>.typ per declaration and prints each path\n\
    a selector the exporter cannot draw still gets its file — a red box holding the error, so the\n\
      note compiles and the defect is on the page — and the run exits nonzero naming every one\n\
    --proof draws the calc chain of each PROOF instead of the statement, to <name>.proof.typ\n\
+   --calc writes the steps `calc_steps` named of a proof, read by `lean-calc`, to <name>.calc.typ\n\
    --sig prints one JSON line per declaration — its kind, binders and elaborated type as sexps\n\
    --cite <note.typ>... checks the notes' `lean:<decl>@<key>` markers against the index and needs\n\
      no environment at all; `--ch N` narrows it to one chapter (./scripts/cite-check)\n\
@@ -1591,11 +1592,11 @@ def outDirOf (circuit commutative type formula value graph : Bool) : String :=
 
 -- A panel is keyed by its CALL: a selector drawn in a chain or pair carries that call's shared box,
 -- so under its own name it would race the same selector drawn alone (15.1f against 15.1b).
-def outPath (circuit commutative type formula value graph proof : Bool) (call arg : String) :
+def outPath (circuit commutative type formula value graph : Bool) (suffix : String) (call arg : String) :
     System.FilePath :=
   let sub := if call == arg then "" else "/".intercalate (call.splitOn "+") ++ "/"
   System.FilePath.mk
-    s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{if proof then ".proof" else ""}.typ"
+    s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{suffix}.typ"
 
 /-- THE FILES OF ONE CALL: the string and circuit routes' `+` names several pictures, a file each
     (the note's `lean(a, b)`/`leanc(a, b)`); every other route's call is one file.  One rule, read by
@@ -1694,7 +1695,7 @@ def fresh (stored : Option (String × Array StrDiag.Read)) (decls : List Name) :
     one naming a declaration THE ENVIRONMENT NO LONGER HAS ends the run — a picture of a statement
     that no longer exists is not a picture to keep. -/
 def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
-    proofMode : Bool) (env : Environment) (opts : Options) (scopes : List Name)
+    : Bool) (suffix : String) (env : Environment) (opts : Options) (scopes : List Name)
     (args : List String) : IO UInt32 := do
   -- ONE CALL, ITS FILES, AND THE DECLARATIONS EACH FILE IS DRAWN FROM.  The string route's `+`
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
@@ -1706,7 +1707,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
   for (call, files) in jobs do
     let mut stale := false
     for (n, decl, decls) in files do
-      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call n
+      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call n
       let stored ← storedReads path
       -- THE KEY NOW, whether or not the file is there: a declaration that is gone ends the run.
       -- Each selector its own heartbeat budget: the count is the PROCESS's, and this one tests many.
@@ -1734,6 +1735,9 @@ def main (args : List String) : IO UInt32 := do
   if args.contains "--cover" then return ← Cite.coverMain (args.filter (· != "--cover"))
   let argv := args
   let proofMode := args.contains "--proof"
+  let calcMode := args.contains "--calc"
+  -- the file suffix of the two routes that read a PROOF: `<name>.proof.typ`, `<name>.calc.typ`
+  let suffix := if proofMode then ".proof" else if calcMode then ".calc" else ""
   let sigMode := args.contains "--sig"
   let stringMode := args.contains "--string"
   let circuitMode := args.contains "--circuit"
@@ -1752,13 +1756,13 @@ def main (args : List String) : IO UInt32 := do
   -- read the drawing did not record, and the run fails naming it.
   let verifyMode := args.contains "--verify"
   let args := args.filter (fun a =>
-    a != "--proof" && a != "--sig" && a != "--string"
+    a != "--proof" && a != "--calc" && a != "--sig" && a != "--string"
       && a != "--circuit" && a != "--type" && a != "--formula" && a != "--commutative" && a != "--graph"
       && a != "--value" && a != "--records" && a != "--stale" && a != "--verify")
   if args.isEmpty then IO.eprintln usage; return 2
   let t0 ← IO.monoNanosNow
   let kind := (["sig", "string", "circuit", "commutative", "graph", "type", "formula", "value",
-    "proof"].find? (argv.contains <| "--" ++ ·)).getD "draw"
+    "proof", "calc"].find? (argv.contains <| "--" ++ ·)).getD "draw"
   Lean.initSearchPath (← Lean.findSysroot)
   let mods := #[`Freyd] ++ (← libModules "diag" `diag) ++ (← libModules "AOP" `AOP)
   -- `loadExts`: without it the imported environment carries the CONSTANTS but none of the
@@ -1807,7 +1811,7 @@ def main (args : List String) : IO UInt32 := do
       ++ lines.push total
   if staleMode then
     let code ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode
-      graphMode proofMode env opts scopes args
+      graphMode suffix env opts scopes args
     profWrite s!"stale=1 selectors={args.length}"
       ((← Prof.drain).map fun (p, a) => { phase := p, ns := a.ns, extra := s!"calls={a.calls}" })
     return code
@@ -1860,7 +1864,8 @@ def main (args : List String) : IO UInt32 := do
         else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName
-        else if proofMode then drawProof arg.toName else draw arg.toName)
+        else if proofMode then drawProof arg.toName
+        else if calcMode then Freyd.FormulaRender.calcFile arg.toName else draw arg.toName)
       if sigMode then return body
       -- A panel of a chain sits one directory deeper per selector of its call (`outPath`).
       -- Every route's file opens with its library's relative `#import`, whichever library it is.
@@ -1876,7 +1881,7 @@ def main (args : List String) : IO UInt32 := do
     -- The picture's reads start empty, and the call's declarations — the peers' too, which set the
     -- shared box — are the first of them.
     -- Under `--verify`, whether the file on disk is fresh by its own reads, asked before the drawing.
-    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
+    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call arg
     let wasFresh ← if !verifyMode then pure false else do
       let stored ← storedReads path
       Prod.fst <$> (Meta.MetaM.run' (fresh stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
@@ -1892,7 +1897,7 @@ def main (args : List String) : IO UInt32 := do
   let mut wrong : Array String := #[]
   let mut prof : Array Prof.Line := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode proofMode call arg
+    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call arg
     unless sigMode do if let some p := path.parent then IO.FS.createDirAll p
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
     -- the other selectors — so a flag added later is in it without anyone remembering to add it.

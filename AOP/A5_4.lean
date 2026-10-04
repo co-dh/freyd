@@ -159,6 +159,13 @@ public theorem powerRel_map {A B : 𝒜} {f : A ⟶ B} (hf : Map f) : powerRel f
   rw [hterm1]
   exact Allegory.inter_comm _ _
 
+/-- **B&dM §5.4** (`union·Pτ = id`, p.198): the power of the singleton map followed by `E(∋)` is
+    the identity, mirrored `P(τ) E(∋) = 𝟙`.  `τ` is a map, so `P(τ) = E(τ)`, and `E(∋)` is `union`. -/
+public theorem powerRel_singletonMap_comp_existsImage_eps {A : 𝒜} :
+    powerRel (singletonMap : A ⟶ P A) ≫ existsImage (∋ A) = 𝟙 (P A) := by
+  rw [powerRel_map (show Map (singletonMap : A ⟶ P A) from Λ_is_map' _), ← bigUnion_eq_existsImage_eps,
+    bigUnion_existsImage_singleton]
+
 end PowerRelDef
 
 /-! ## §5.4  Functoriality of the power relator (`powerRel (R ≫ S) = powerRel R ≫ powerRel S`)

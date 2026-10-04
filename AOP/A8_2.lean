@@ -44,6 +44,7 @@ public import AOP.A6_ConsList
 -- `est`'s pointwise form at Rel(Set), `Λ_comp_est_apply`, proved where §7.1's `est` and §6.1's
 -- set model meet; the `path-defn` rows at the end read the two transposes off it.
 public import AOP.A7_2_RelSet
+import AOP.CalcSteps
 
 universe u
 
@@ -100,62 +101,16 @@ public theorem thinning_paths_step
   rw [← e]
   exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
 
-/-! ### The algebra chain of p.198, one theorem per printed step
+/-! ### The algebra chain of p.198, one `calc` step per law
 
-  Each theorem's two sides are two consecutive lines of the book's calculation, mirrored, at the
-  split `V ≜ F(∋,𝟙)` of `F(∋,∋)`; `thinning_paths_alg` composes them.  `union` is written
+  Each step of `thinning_paths_alg` relates two consecutive lines of the book calculation, mirrored, at the
+  split `V ≜ F(∋,𝟙)` of `F(∋,∋)`; `calc_steps` names step i `thinning_paths_alg.step_i`.  `union` is written
   `E(∋)`, its definition (`bigUnion_eq_existsImage_eps`), so the chain reads one operator `E`. -/
 
 /-- `S ≜ F(𝟙,∋)α` (book p.198), the letter of the side condition `R∩(S°S)⊑Q` and nothing else:
     the chain spells the composite out, so every panel draws `F(𝟙,∋)` and `α`. -/
 @[expose] public abbrev algSplit (F : BiRelator 𝒜) (α : F.obj A B ⟶ B) : F.obj A (P B) ⟶ B :=
   F.map (𝟙 A) (∋ B) ≫ α
-
-/-- p.198 {bifunctors}: `Λ(F(∋,𝟙)F(𝟙,∋)α) thin(Q) = Λ(F(∋,∋)α) thin(Q)`, by `F(∋,𝟙)F(𝟙,∋) = F(∋,∋)`. -/
-public theorem thinning_paths_alg_bifunctors {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (P B)) ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ thinRel Q
-      = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-  rw [← Cat.assoc, F.interchange]
-
-/-- p.198 {Λ(RS) = Λ(R) P(Λ(F(𝟙,∋)α)) E(∋)}: `Λ(V) P(Λ(F(𝟙,∋)α)) E(∋) thin(Q) = Λ(V F(𝟙,∋)α) thin(Q)`. -/
-public theorem thinning_paths_alg_split {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ existsImage (∋ B) ≫ thinRel Q
-      = Λ (F.map (∋ A) (𝟙 (P B)) ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ thinRel Q := by
-  rw [← bigUnion_eq_existsImage_eps,
-    Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α), Cat.assoc, Cat.assoc]
-
-/-- p.198 {thin distributes over union (8.4)}:
-    `Λ(V) P(Λ(F(𝟙,∋)α) thin(Q)) E(∋) ⊑ Λ(V) P(Λ(F(𝟙,∋)α)) E(∋) thin(Q)`, by `P(thin(Q)) E(∋) ⊑ E(∋) thin(Q)`. -/
-public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (P B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ existsImage (∋ B)
-      ⊑ Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
-        ≫ existsImage (∋ B) ≫ thinRel Q := by
-  rw [← bigUnion_eq_existsImage_eps, powerRel_comp, Cat.assoc]
-  exact comp_mono_left _ (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
-
-/-- p.198 {thin-elimination (8.3)}: `Λ(V) P(Λ(F(𝟙,∋)α) est(R) τ) E(∋) ⊑ Λ(V) P(Λ(F(𝟙,∋)α) thin(Q)) E(∋)`,
-    the one step that needs `R ∩ ((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q`. -/
-public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQ : R ∩ ((algSplit F α)° ≫ algSplit F α) ⊑ Q) :
-    Λ (F.map (∋ A) (𝟙 (P B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R ≫ singletonMap) ≫ existsImage (∋ B)
-      ⊑ Λ (F.map (∋ A) (𝟙 (P B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ existsImage (∋ B) :=
-  comp_mono_left _ (comp_mono_right (powerRel_mono (Λ_comp_est_comp_singletonMap_le_thinRel hQ)) _)
-
-/-- p.198 {since `union·Pτ = id`}: `Λ(V) P(Λ(F(𝟙,∋)α) est(R)) = Λ(V) P(Λ(F(𝟙,∋)α) est(R) τ) E(∋)`,
-    by `P(τ) E(∋) = 𝟙`. -/
-public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
-    Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      = Λ (F.map (∋ A) (𝟙 (P B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R ≫ singletonMap) ≫ existsImage (∋ B) := by
-  have hτ : powerRel (singletonMap : B ⟶ P B) ≫ bigUnion
-      = 𝟙 (P B) := by
-    have hmapτ : Map (singletonMap : B ⟶ P B) := Λ_is_map' (𝟙 B)
-    rw [powerRel_map hmapτ, bigUnion_existsImage_singleton]
-  rw [← bigUnion_eq_existsImage_eps, ← Cat.assoc (Λ (F.map (𝟙 A) (∋ B) ≫ α)),
-    powerRel_comp (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R), Cat.assoc, hτ, Cat.comp_id]
 
 /-- p.198 {since `P = E` on functions}: at a map `α`,
     `Λ(V) P(Λ(F(𝟙,∋)) P(α) est(R)) = Λ(V) P(Λ(F(𝟙,∋)α) est(R))`. -/
@@ -169,14 +124,38 @@ public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R :
     one the program runs —
     `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
     `Λ(V) P(Λ(F(𝟙,∋)α) est(R)) ⊑ Λ(F(∋,∋)α) thin(Q)`, at `R ∩ ((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q`:
-    the step theorems above, from the bottom line of the book's chain up. -/
+    the book's chain from the bottom line up, one `calc` step per law. -/
 public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((algSplit F α)° ≫ algSplit F α) ⊑ Q) :
     Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
-      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
-  rw [thinning_paths_alg_unit R, ← thinning_paths_alg_bifunctors Q, ← thinning_paths_alg_split Q]
-  exact le_trans (thinning_paths_alg_elim hQ) (thinning_paths_alg_distrib Q)
+      ⊑ Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q :=
+  calc Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+        = Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R) ≫ 𝟙 (P B) := by
+          rw [Cat.comp_id]
+    _ = Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
+          ≫ powerRel (singletonMap : B ⟶ P B) ≫ existsImage (∋ B) := by
+      rw [powerRel_singletonMap_comp_existsImage_eps]
+    _ = Λ (F.map (∋ A) (𝟙 (P B)))
+          ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R ≫ singletonMap) ≫ existsImage (∋ B) := by
+      rw [← Cat.assoc (Λ _) (est R), powerRel_comp (Λ _ ≫ est R) singletonMap, Cat.assoc]
+    _ ⊑ Λ (F.map (∋ A) (𝟙 (P B)))
+          ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ existsImage (∋ B) :=
+      comp_mono_left _ (comp_mono_right (powerRel_mono (Λ_comp_est_comp_singletonMap_le_thinRel hQ)) _)
+    _ = Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+          ≫ powerRel (thinRel Q) ≫ existsImage (∋ B) := by
+      rw [powerRel_comp, Cat.assoc]
+    _ ⊑ Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α))
+          ≫ existsImage (∋ B) ≫ thinRel Q :=
+      comp_mono_left _ (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
+    _ = Λ (F.map (∋ A) (𝟙 (P B)) ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ thinRel Q := by
+      rw [Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α),
+        Cat.assoc, Cat.assoc]
+      rfl
+    _ = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
+      rw [← Cat.assoc, F.interchange]
+
+calc_steps thinning_paths_alg
 
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —

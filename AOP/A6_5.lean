@@ -16,6 +16,7 @@ module
 public import AOP.A6_2
 public import AOP.A6_3
 public import AOP.A5_7
+import AOP.CalcSteps
 
 universe u
 
@@ -45,20 +46,15 @@ public theorem zero_inductive (A : 𝒜) : Inductive (𝟘 : A ⟶ A) := by
     rw [DistributiveAllegory.comp_zero]; exact zero_le X
   exact le_trans ((le_div_iff _ _ _).mpr h0) _hX
 
-/-- Ex 6.13, first step: `R≫R ⊑ S≫R` after `(X/R)/S`. -/
-public theorem inductive_of_comp_le_step1 {A B : 𝒜} {R S : A ⟶ A} (h : R ≫ R ⊑ S ≫ R)
-    (X : B ⟶ A) : ((X / R) / S) ≫ R ≫ R ⊑ ((X / R) / S) ≫ S ≫ R :=
-  comp_mono_left _ h
+/-- Ex 6.13, the inequality its proof derives: `((X/R)/S)RR ⊑ X` when `RR ⊑ SR`. -/
+public theorem div_div_comp_le {A B : 𝒜} {R S : A ⟶ A} (h : R ≫ R ⊑ S ≫ R) (X : B ⟶ A) :
+    ((X / R) / S) ≫ R ≫ R ⊑ X :=
+  calc ((X / R) / S) ≫ R ≫ R ⊑ ((X / R) / S) ≫ S ≫ R := comp_mono_left _ h
+    _ ⊑ (X / R) ≫ R := by
+      rw [← Cat.assoc]; exact comp_mono_right (DivisionAllegory.div_comp_le (X / R) S) R
+    _ ⊑ X := DivisionAllegory.div_comp_le X R
 
-/-- Ex 6.13, second step: `(X/R)/S` composed with `S` is below `X/R`. -/
-public theorem inductive_of_comp_le_step2 {A B : 𝒜} (R S : A ⟶ A) (X : B ⟶ A) :
-    ((X / R) / S) ≫ S ≫ R ⊑ (X / R) ≫ R := by
-  rw [← Cat.assoc]; exact comp_mono_right (DivisionAllegory.div_comp_le (X / R) S) R
-
-/-- Ex 6.13, third step: `X/R` composed with `R` is below `X`. -/
-public theorem inductive_of_comp_le_step3 {A B : 𝒜} (R : A ⟶ A) (X : B ⟶ A) :
-    (X / R) ≫ R ⊑ X :=
-  DivisionAllegory.div_comp_le X R
+calc_steps div_div_comp_le
 
 /-- **Ex 6.13**: if `S` is inductive and `R≫R ⊑ S≫R`, then `R` is inductive too.
 
@@ -74,8 +70,7 @@ public theorem inductive_of_comp_le {A : 𝒜} {R S : A ⟶ A} (hS : Inductive S
   apply le_trans _ hX
   apply hS (X / R)
   apply (le_div_iff _ _ _).mpr
-  have h7 := le_trans (inductive_of_comp_le_step1 h X)
-    (le_trans (inductive_of_comp_le_step2 R S X) (inductive_of_comp_le_step3 R X))
+  have h7 := div_div_comp_le h X
   rw [← Cat.assoc] at h7
   exact le_trans ((le_div_iff _ _ _).mpr h7) hX
 
@@ -571,27 +566,25 @@ public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.
   exact ⟨hfix, fun Y hY => thm63_unique M hind hY hfix,
     fun hS hR => thm63_entire M hind hS hR (by rw [← hfix]; exact le_refl _)⟩
 
-/-- Corollary 6.2, simple half, first step: `X = gF(X)f` unfolded under the converse, and `g` simple
-    cancels `g°g`. -/
-public theorem cor62_step1 {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} (hg : Map g) {X : B ⟶ A}
-    (hX : X = g ≫ F.map X ≫ f) (Y : B ⟶ A) :
-    (g ≫ F.map Y ≫ f)° ≫ X ⊑ f° ≫ F.map (Y° ≫ X) ≫ f := by
-  have e : (g ≫ F.map Y ≫ f)° ≫ X = f° ≫ F.map Y° ≫ (g° ≫ g) ≫ F.map X ≫ f := by
-    conv => lhs; rw [hX]
-    simp only [Allegory.recip_comp, Cat.assoc, Relator.preservesRecip_of_tabular F]
-  have s := comp_mono_left f° (comp_mono_left (F.map Y°) (comp_mono_right hg.2 (F.map X ≫ f)))
-  rw [Cat.id_comp] at s
-  rw [e, F.map_comp]
-  simpa only [Cat.assoc] using s
+/-- Corollary 6.2, simple half: when `X = gF(X)f`, `g` and `f` are simple and `Y°X ⊑ 𝟙`, then
+    `(gF(Y)f)°X ⊑ 𝟙`; one law per step. -/
+public theorem cor62_simple {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} {X Y : B ⟶ A}
+    (hX : X = g ≫ F.map X ≫ f) (hg : Simple g) (hf : Simple f) (hY : Y° ≫ X ⊑ 𝟙 A) :
+    (g ≫ F.map Y ≫ f)° ≫ X ⊑ 𝟙 A :=
+  calc (g ≫ F.map Y ≫ f)° ≫ X = (g ≫ F.map Y ≫ f)° ≫ g ≫ F.map X ≫ f := by rw [← hX]
+    _ = f° ≫ (F.map Y)° ≫ g° ≫ g ≫ F.map X ≫ f := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, Cat.assoc, Cat.assoc]
+    _ = f° ≫ F.map Y° ≫ g° ≫ g ≫ F.map X ≫ f := by rw [Relator.preservesRecip_of_tabular F Y]
+    _ ⊑ f° ≫ F.map Y° ≫ 𝟙 (F.obj B) ≫ F.map X ≫ f := by
+        rw [← Cat.assoc g°]; exact comp_mono_left f° (comp_mono_left _ (comp_mono_right hg _))
+    _ = f° ≫ F.map Y° ≫ F.map X ≫ f := by rw [Cat.id_comp]
+    _ = f° ≫ F.map (Y° ≫ X) ≫ f := by rw [F.map_comp, Cat.assoc]
+    _ ⊑ f° ≫ F.map (𝟙 A) ≫ f := comp_mono_left f° (comp_mono_right (F.map_mono hY) f)
+    _ = f° ≫ 𝟙 (F.obj A) ≫ f := by rw [F.map_id]
+    _ = f° ≫ f := by rw [Cat.id_comp]
+    _ ⊑ 𝟙 A := hf
 
-/-- Corollary 6.2, simple half, second step: `Y°X ⊑ 𝟙` under the relator. -/
-public theorem cor62_step2 {A B : 𝒜} {f : F.obj A ⟶ A} {X Y : B ⟶ A} (hY : Y° ≫ X ⊑ 𝟙 A) :
-    f° ≫ F.map (Y° ≫ X) ≫ f ⊑ f° ≫ f := by
-  have := comp_mono_left f° (comp_mono_right (F.map_mono hY) f)
-  rwa [F.map_id, Cat.id_comp] at this
-
-/-- Corollary 6.2, simple half, third step: `f` is simple. -/
-public theorem cor62_step3 {A : 𝒜} {f : F.obj A ⟶ A} (hf : Map f) : f° ≫ f ⊑ 𝟙 A := hf.2
+calc_steps cor62_simple
 
 /-- **Corollary 6.2** (B&dM p.149): if `g member(F)` is inductive and `f`, `g` are maps, the
     solution of `X = gF(X)f` is a map — entire by Theorem 6.3, simple (Ex 6.10) by Theorem 6.3's
@@ -608,7 +601,7 @@ public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.
     refine le_inter ?_ ?_
     · have := comp_mono_left g (comp_mono_right (F.map_mono (inter_lb_left X (𝟙 A / X)°)) f)
       rwa [← hX] at this
-    · have h := le_trans (cor62_step1 hg hX _) (le_trans (cor62_step2 hYX) (cor62_step3 hf))
+    · have h := cor62_simple hX hg.2 hf.2 hYX
       have := recip_mono ((le_div_iff _ _ _).mpr h)
       rwa [Allegory.recip_recip] at this
   have h1 := recip_mono (le_trans (thm63_le M hind hX hY) (inter_lb_right _ _))
@@ -681,15 +674,14 @@ public theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶
   rw [recip_id, Cat.id_comp] at s2
   exact le_trans s1 s2
 
-/-- The claim in Theorem 6.4, first step: `Rf ⊑ F(f)α` shunted and conversed to `R°F(f) ⊑ fα°`,
-    against `F(f)` entire. -/
-public theorem thm64_claim_step1 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜}
-    {R : F.obj A ⟶ A} {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
-    R° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
+/-- The claim in Theorem 6.4, its shunting half: `Rf ⊑ F(f)α` shunted and conversed to
+    `R°F(f) ⊑ fα°`, against `F(f)` entire, gives `R° ⊑ fα°F(f°)`. -/
+public theorem thm64_recip_le (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
+    (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : R° ⊑ f ≫ I.α° ≫ F.map f° := by
   have hE : 𝟙 (F.obj A) ⊑ F.map f ≫ F.map f° := by
     rw [← F.map_comp, ← F.map_id]; exact F.map_mono (map_entire_le hf)
-  have s1 := comp_mono_left R° (comp_mono_right hE (M.mem A))
-  rw [Cat.id_comp] at s1
+  have s1 := comp_mono_left R° hE
+  rw [Cat.comp_id] at s1
   have h2 := recip_mono ((map_shunt_right hf R _).mp hcomm)
   simp only [Allegory.recip_comp, Allegory.recip_recip] at h2
   have h3 : R° ≫ F.map f ⊑ f ≫ I.α° := by
@@ -698,22 +690,22 @@ public theorem thm64_claim_step1 (I : InitialAlgebra F) (M : Membership F) {A : 
     have hs := comp_mono_left f (comp_mono_left I.α° (Relator.map_is_map F hf).2)
     rw [Cat.comp_id] at hs
     exact le_trans this hs
-  have s2 := comp_mono_right h3 (F.map f° ≫ M.mem A)
-  simp only [Cat.assoc] at s1 s2
+  have s2 := comp_mono_right h3 (F.map f°)
+  simp only [Cat.assoc] at s2
   exact le_trans s1 s2
 
-/-- The claim in Theorem 6.4, second step: `member` is lax natural. -/
-public theorem thm64_claim_step2 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜}
-    {f : A ⟶ I.t} : f ≫ I.α° ≫ F.map f° ≫ M.mem A ⊑ f ≫ I.α° ≫ M.mem I.t ≫ f° :=
-  comp_mono_left f (comp_mono_left I.α° (M.lax f°))
-
 /-- **Theorem 6.4**, the claim (B&dM p.150): `R° member ⊑ f α° member f°`, so `R° member` is
-    inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive). -/
+    inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive):
+    `R° ⊑ fα°F(f°)`, then `member` lax natural. -/
 public theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
     {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
-    R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° := by
-  rw [Cat.assoc]
-  exact le_trans (thm64_claim_step1 I M hf hcomm) (thm64_claim_step2 I M)
+    R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° :=
+  calc R° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
+        rw [← Cat.assoc I.α°, ← Cat.assoc f]; exact comp_mono_right (thm64_recip_le I hf hcomm) _
+    _ ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° := by
+        rw [Cat.assoc I.α°]; exact comp_mono_left f (comp_mono_left I.α° (M.lax f°))
+
+calc_steps thm64_claim
 
 /-- **B&dM p.148**, "the central result": `member(F)·α°` (mirrored: `α° ≫ member`) is inductive.
     Given `X/(α°member) ⊑ X`, the points `W` that `X` reaches from everywhere satisfy

@@ -34,6 +34,7 @@ module
 
 public import AOP.A6_GenFold
 public import AOP.A6_6b_SortConcrete
+import AOP.CalcSteps
 
 set_option linter.unusedVariables false
 
@@ -358,16 +359,9 @@ public theorem ordered_add :
       obtain rfl : a = a' := h1; obtain rfl : x = y := h2
       exact ⟨m, hm, hmr⟩⟩
 
-/-- **Ex 6.30, step 1**: `perm ordered = ⦇[nil, add]⦈ ordered`. -/
-public theorem isort_step1 :
-    (perm : dList A ⟶ dList A) ≫ ordered R
-      = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R := by
-  rw [← perm_add]
-
-/-- **Ex 6.30, step 2**: `⦇[nil, add]⦈ ordered = ⦇[nil, add ordered]⦈` — fusion, under
+/-- **Ex 6.30**: `⦇[nil, add]⦈ ordered = ⦇[nil, add ordered]⦈` — fusion, under
     `ordered_add`. -/
-public theorem isort_step2 :
+public theorem add_ordered_fusion :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
         : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R
       = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (add ≫ ordered R)
@@ -375,15 +369,15 @@ public theorem isort_step2 :
   relCata_fusion (initial Unit A)
     (by rw [junc_comp, Fmap_comp_junc, ← ordered_add R, wrap_ordered R])
 
-/-- **Ex 6.30, step 3**: `⦇[nil, add ordered]⦈ ⊒ ⦇[nil, insert]⦈` for any `insert` with
-    `(𝟙×ordered) insert ⊑ add ordered`. -/
-public theorem isort_step3 {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
+/-- **Ex 6.30**: `⦇[nil, add ordered]⦈ ⊒ ⦇[nil, insert]⦈` for any `insert` with
+    `(𝟙×ordered) insert ⊑ add ordered` — fusion (6.4). -/
+public theorem insert_fusion {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR ins
         : (F Unit A).obj (dList A) ⟶ dList A)⦈
       ⊑ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (add ≫ ordered R)
           : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
-  rw [← isort_step2 R]
+  rw [← add_ordered_fusion R]
   refine relCata_le_comp (initial Unit A) ?_
   rw [Fmap_comp_junc, junc_comp, wrap_ordered R]
   exact junc_mono _ (le_of_eq rfl) hins
@@ -393,8 +387,16 @@ public theorem isort_step3 {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ 
 public theorem insertion_sort {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A}
     (hins : rprodMap (𝟙 (dE A)) (ordered R) ≫ ins ⊑ add ≫ ordered R) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR ins
-        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ⊑ (perm : dList A ⟶ dList A) ≫ ordered R := by
-  rw [isort_step1 R, isort_step2 R]; exact isort_step3 R hins
+        : (F Unit A).obj (dList A) ⟶ dList A)⦈ ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
+  calc ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR ins
+        : (F Unit A).obj (dList A) ⟶ dList A)⦈
+        ⊑ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (add ≫ ordered R)
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ := insert_fusion R hins
+    _ = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR add
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ ordered R := (add_ordered_fusion R).symm
+    _ = (perm : dList A ⟶ dList A) ≫ ordered R := by rw [← perm_add]
+
+calc_steps insertion_sort
 
 /-- The relation `insert : list A ← A × list A` of the function `insert`. -/
 @[expose] public def insertR (leb : A → A → Bool) : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=

@@ -102,13 +102,17 @@
   })
 }
 // The mark a relation string stands as; content (a branches group's own `∪`/`+`) passes through.
-#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "≜" { DF } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
+// Long and rightward, matching EQ/SQ's left-to-right reading: the panel before IMP is the
+// hypothesis actually established, the panel after is what it closes the chain to.
+#let IMP = text(SLACK)[$arrow.r.double.long$]
+#let IFF = text(SLACK)[$arrow.l.r.double$]
+#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "⟹" { IMP } else if x == "⟺" { IFF } else if x == "≜" { DF } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
 // A chain table's FORMULA CELL, calc style: the relation of the step INTO the column leads it.
 #let rel-lead(op, f) = if op == none { f } else [#rel-mark(op) #f]
 // Two steps read as one (a `dup` panel merged into the next): `=` is the unit, and an inclusion
 // composes only with itself — a `⊑` then a `⊒` relates nothing.  `≜` is a unit too, and composed
 // with anything but itself it is no longer a definition: `≜` then `=` is `=`.
-#let rel-compose(a, b) = if a == none or a == b { a } else if b in ("=", "≜") { if a == "≜" { "=" } else { a } } else if a in ("=", "≜") { b } else {
+#let rel-compose(a, b) = if a == none or a == b { a } else if (a, b) in (("⟺", "⟹"), ("⟹", "⟺")) { "⟹" } else if b in ("=", "≜") { if a == "≜" { "=" } else { a } } else if a in ("=", "≜") { b } else {
   panic("lean-chain: a merged step reads " + a + " then " + b + ", which relates nothing")
 }
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
@@ -183,11 +187,7 @@
   "thinlist-thm82": [binary thinning theorem],
   "dp-laws": [dynamic programming theorem],
 )
-// Long and rightward, matching EQ/SQ's left-to-right reading: the panel before IMP is the
-// hypothesis actually established, the panel after is what it closes the chain to.
-#let IMP = text(SLACK)[$arrow.r.double.long$]
 #let TH = 1.2   // a fraction box is two lines tall
-#let IFF = text(SLACK)[$arrow.l.r.double$]
 // A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
 // between it and the step before, the formula above, the reason underneath both.  Steps pack
 // greedily into lines of the cell's width, a continued line opening with its op; a line's slack
@@ -355,6 +355,29 @@
 // `formula: true` sets each panel's own statement side above it, generated from the panel's
 // selector like a header, so the chain reads as a term chain as well as a picture chain.
 // `pictures: false` drops the string diagram entirely — see the branch below.
+// THE ONE TABLE OF A CHAIN ROW, pictured or not: one line per COLUMN (a `union`/`sum` group is one
+// line, its `gform`), its letter, the relation INTO it leading its formula, and the hint of the step
+// LEAVING it — the rule applied to this panel to get the next, read off the next column's head step
+// or, for the row's last column, `nxt`, the next row's first step when that one continues the chain.
+// The chain's last column has no step leaving it and keeps an empty hint.
+#let chain-table(r, nxt) = {
+  let gs = chain-groups(r)
+  let lines = ()
+  for (j, (i0, n)) in gs.enumerate() {
+    let s = r.at(i0)
+    let into = if j + 1 < gs.len() { r.at(gs.at(j + 1).at(0)) } else if nxt != none and nxt.at(0) != none { nxt } else { none }
+    lines.push(([(#chain-tags.at(j))],
+      fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })),
+      if into == none { [] } else { into.at(2) }))
+  }
+  block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
+    al: (center + horizon, left + horizon, left + horizon), ..lines.flatten()))
+}
+// A ROW'S FIRST REASON, when that row OPENS a chain (its first step has no op): no step leaves a
+// panel into its first one, so no table line carries it, and it stands as ONE LINE ABOVE the row.
+#let chain-opening(r) = context if r.first().at(0) == none and measure(r.first().at(2)).width > 0pt {
+  block(above: 0pt, below: 6pt, width: 100%, align(left, r.first().at(2)))
+}
 #let lean-chain(..args, circuit: false, formula: false, pictures: true, from: none) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
@@ -429,31 +452,15 @@
       stroke: (top: 0.4pt + luma(190), bottom: 0.7pt + luma(150)),
       align(center, { leanf(row.sub); if row.gloss != none { [ \ ]; row.gloss } })))
   }
-  // `pictures: false`: no string diagram at all, no exporter call — just what a branches group's
-  // own table already prints, letter | formula | hint, one line per STEP (a branches group is
-  // still one line, its whole side), with an OP column at the row's own left edge (the
-  // string-diagram skill's proof-table rule: the relation goes at the START of the row, because
-  // dropping the picture also drops the ⊑/=/⊒ glyph `hchain` used to draw between panels).
+  // `pictures: false`: no string diagram at all, no exporter call — the pictured chain's own
+  // `chain-table` and opening line, so a step's hint sits on the line of the panel it leaves either way.
   if not pictures {
     return table.cell(breakable: true, {
       metas
-      for row in rows {
+      for (ri, row) in rows.enumerate() {
         sub-header(row)
-        let lines = ()
-        for (i0, n) in chain-groups(row.steps) {
-          let tag = chain-tags.at(lines.len())
-          let op = row.steps.at(i0).at(0)
-          let (f, hint) = if n > 1 {
-            let g = row.steps.at(i0).at(3)
-            (g.gform, row.steps.at(i0).at(2))
-          } else {
-            let s = row.steps.at(i0)
-            (leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }), s.at(2))
-          }
-          lines.push(([(#tag)], fit-w(rel-lead(op, f)), hint))
-        }
-        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
-          al: (center + horizon, left + horizon, left + horizon), ..lines.flatten()))
+        chain-opening(row.steps)
+        chain-table(row.steps, if ri + 1 < rows.len() { rows.at(ri + 1).steps.first() } else { none })
         v(6pt)
       }
     })
@@ -468,7 +475,8 @@
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
-    let m = m + lean-step(singles)
+    // Every step is a stacked cell, a statement step (`(decl,)`) as much as a single panel.
+    let m = m + lean-step(r.steps.map(s => if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }))
     let i = 0
     let got = ()
     for s in r.steps {
@@ -505,13 +513,9 @@
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
       // the table's 9pt inset so it spans the cell like a row of the table
       sub-header(row)
-      // A ROW'S FIRST REASON, when that row OPENS a chain (its first step has no op): no step leads
-      // into its panel, so no table line below carries it, and it stands as ONE LINE ABOVE the row,
-      // the author's own words.  A row that CONTINUES a chain gave its reason to the line before it,
-      // and `circuit: true` prints every reason beside its own circuit.
-      if not circuit and r.first().at(0) == none and measure(r.first().at(2)).width > 0pt {
-        block(above: 0pt, below: 6pt, width: 100%, align(left, r.first().at(2)))
-      }
+      // A row that CONTINUES a chain gave its reason to the line before it, and `circuit: true`
+      // prints every reason beside its own circuit.
+      if not circuit { chain-opening(r) }
       // `circuit: false`: a letter under every column, and the 3-column table (letter, formula,
       // hint) under the row — see the comment above `chain-tags`; `circuit: true`: the panels bare,
       // and under them one circuit row per step carrying its op and its reason.
@@ -563,27 +567,9 @@
         if hasg { box(height: rowh, align(if e.top { top } else { horizon }, e.pic)) } else { e.pic },
         e.reason, e.f, none)))
       if not circuit {
-        // One table line per COLUMN: a `union(sel)`/`sum(sel)` call's `n` flat members all carry the
-        // same `gid` (set where the group is expanded, above), so they are one line — the column's
-        // letter and its `gform` once — and a plain step is a line of its own.
-        // THE HINT ON A LINE IS THE RULE APPLIED TO THAT COLUMN TO GET THE NEXT ONE.  A step tuple's
-        // reason justifies its own `op`, the step INTO its panel, and that op is drawn to the RIGHT
-        // of the column before — so the line of column `j` reads the reason off column `j + 1`'s head
-        // step, which for a row's last column is the next row's first step when that one continues
-        // the chain (it carries an op).  The chain's last column has no step leaving it: its line
-        // keeps the letter and the formula and an EMPTY hint.
+        // `chain-table`: one line per column, the hint of the step leaving it.
         let nxt = if ri + 1 < calls.len() { calls.at(ri + 1).at(2).first() } else { none }
-        let lines = ()
-        for (j, (i0, n)) in gs.enumerate() {
-          let s = r.at(i0)
-          let into = if j + 1 < gs.len() { r.at(gs.at(j + 1).at(0)) } else if nxt != none and nxt.at(0) != none { nxt } else { none }
-          lines.push(([(#tags.at(i0))],
-            fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })),
-            if into == none { [] } else { into.at(2) }))
-        }
-        block(above: 6pt, below: 0pt, calc-table(cols: (auto, 1fr, 1fr),
-          al: (center + horizon, left + horizon, left + horizon),
-          ..lines.flatten()))
+        chain-table(r, nxt)
       }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
@@ -597,5 +583,11 @@
     }
   }) })
 }
+// A CALC PROOF AS A CHAIN, everything read off ONE Lean proof: `c` is the module
+// `diag-export --calc` writes (`#import "…/generated/<decl>.calc.typ" as c`) from the `calc` that
+// proves `<decl>` — each term a panel, each relation Lean's, each reason the one law its step applies.
+#let lean-calc(c, ..opts) = lean-chain(..c.steps.map(s => (
+  if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { leanf(s.law) })),
+  ..opts.named())
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

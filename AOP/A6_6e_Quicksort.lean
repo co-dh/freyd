@@ -13,6 +13,7 @@ public import AOP.A6_6b_SortConcrete
 public import AOP.A6_6d_QSort
 public import AOP.A6_TreeBin
 public import AOP.A6_3
+import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Sort
 
@@ -74,7 +75,7 @@ def inorderedP : Tree A → Prop
       ∧ (∀ b, intreeP l b → R b a) ∧ (∀ b, intreeP r b → R a b)
 
 /-- `F(S)` followed by an algebra `[T, U]` is the algebra `[T, (S×𝟙×S)U]`. -/
-theorem TFmap_comp_junc {C D E : RelSet.{0}} (S : C ⟶ D) (T : dL Unit ⟶ E)
+public theorem TFmap_comp_junc {C D E : RelSet.{0}} (S : C ⟶ D) (T : dL Unit ⟶ E)
     (U : (⟨D.carrier × A × D.carrier⟩ : RelSet.{0}) ⟶ E) :
     (TB.F A).map S ≫ junc (sumCop (dL Unit) ⟨D.carrier × A × D.carrier⟩) T U
       = junc (sumCop (dL Unit) ⟨C.carrier × A × C.carrier⟩) T
@@ -345,97 +346,61 @@ public theorem fork_strictNatural :
 
 /-! ## The fusion proviso (p.155) -/
 
-/-- **p.155, step 1**: `check fork flatten perm = check F(flatten) join perm` — catamorphisms,
-    `fork flatten = F(flatten) join` since `flatten = ⦇[nil, join]⦈`. -/
-public theorem split_step1 :
-    check R ≫ fork ≫ (flatten : dTree A ⟶ dList A) ≫ perm
-      = check R ≫ rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ join ≫ perm := by
-  have h : (fork : dTAT A ⟶ dTree A) ≫ flatten
-      = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ join := by
-    rw [flatten_graph]
-    apply hom_ext; intro p y
-    obtain ⟨l, a, r⟩ := p
-    exact ⟨fun ⟨t, ht, hy⟩ => ⟨(flat l, a, flat r), ⟨rfl, rfl, rfl⟩, by subst ht; exact hy⟩,
-      fun ⟨⟨l', a', r'⟩, ⟨h1, h2, h3⟩, hy⟩ => ⟨_, rfl, by
-        have e1 : l' = flat l := h1
-        have e2 : a = a' := h2
-        have e3 : r' = flat r := h3
-        subst e1 e2 e3
-        exact hy⟩⟩
-  rw [← Cat.assoc fork, h, Cat.assoc]
+/-- `fork flatten = F(flatten) join` — `flatten = ⦇[nil, join]⦈` at the `fork` branch. -/
+public theorem fork_flatten :
+    (fork : dTAT A ⟶ dTree A) ≫ flatten = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ join := by
+  rw [flatten_graph]
+  apply hom_ext; intro p y
+  obtain ⟨l, a, r⟩ := p
+  exact ⟨fun ⟨t, ht, hy⟩ => ⟨(flat l, a, flat r), ⟨rfl, rfl, rfl⟩, by subst ht; exact hy⟩,
+    fun ⟨⟨l', a', r'⟩, ⟨h1, h2, h3⟩, hy⟩ => ⟨_, rfl, by
+      have e1 : l' = flat l := h1
+      have e2 : a = a' := h2
+      have e3 : r' = flat r := h3
+      subst e1 e2 e3
+      exact hy⟩⟩
 
-/-- **p.155, step 2**: `check F(flatten) join perm = F(flatten) check' join perm` — the claim
-    `check F(flatten) = F(flatten) check'`. -/
-public theorem split_step2 :
-    check R ≫ rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ join ≫ (perm : dList A ⟶ dList A)
-      = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ check' R ≫ join ≫ perm := by
-  rw [← Cat.assoc, check_flatten, Cat.assoc]
-
-/-- **p.155, step 3**: `F(flatten) check' join perm = F(flatten) F(perm) check' join perm` — the
-    claims `join perm = F(perm) join perm` and `check' F(perm) = F(perm) check'`. -/
-public theorem split_step3 :
-    rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ check' R ≫ join ≫ (perm : dList A ⟶ dList A)
-      = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten)
-          ≫ rprodMap perm (rprodMap (𝟙 (dE A)) perm) ≫ check' R ≫ join ≫ perm := by
-  conv => lhs; rw [join_perm, ← Cat.assoc (check' R), check'_perm, Cat.assoc]
-
-/-- **p.155, step 4**: `F(flatten) F(perm) check' join perm = F(flatten perm) check' join perm` —
-    functors. -/
-public theorem split_step4 :
-    rprodMap flatten (rprodMap (𝟙 (dE A)) flatten)
-        ≫ rprodMap perm (rprodMap (𝟙 (dE A)) perm) ≫ check' R ≫ join ≫ (perm : dList A ⟶ dList A)
-      = rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm))
-          ≫ check' R ≫ join ≫ perm := by
-  rw [← Cat.assoc, rprodMap_comp, rprodMap_comp, Cat.id_comp]
+/-- `F(f) F(g) = F(fg)` on the `fork` branch `X×𝟙×X` — functors. -/
+public theorem forkMap_comp {B C : RelSet.{0}} (f : dTree A ⟶ B) (g : B ⟶ C) :
+    rprodMap f (rprodMap (𝟙 (dE A)) f) ≫ rprodMap g (rprodMap (𝟙 (dE A)) g)
+      = rprodMap (f ≫ g) (rprodMap (𝟙 (dE A)) (f ≫ g)) := by
+  rw [rprodMap_comp, rprodMap_comp, Cat.id_comp]
 
 variable {R} {split : dList A ⟶ dLAL A}
 
-/-- **p.155, step 5**: `F(flatten perm) check' join perm ⊒ F(flatten perm) split°`, taking
-    `split° ⊑ check' join perm`. -/
-public theorem split_step5 (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
-    rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm)) ≫ split°
-      ⊑ rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm))
-          ≫ check' R ≫ join ≫ perm :=
-  comp_mono_left _ hsplit
-
-/-- **p.155**: the fusion proviso `F(flatten perm) split° ⊑ check fork flatten perm`. -/
+/-- **p.155**: the fusion proviso `F(flatten perm) split° ⊑ check fork flatten perm`, the book's
+    chain from the bottom line up. -/
 public theorem split_proviso (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
     rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm)) ≫ split°
-      ⊑ check R ≫ fork ≫ (flatten : dTree A ⟶ dList A) ≫ perm := by
-  rw [split_step1, split_step2, split_step3, split_step4]; exact split_step5 hsplit
+      ⊑ check R ≫ fork ≫ (flatten : dTree A ⟶ dList A) ≫ perm :=
+  calc rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm)) ≫ split°
+        ⊑ rprodMap (flatten ≫ perm) (rprodMap (𝟙 (dE A)) (flatten ≫ perm)) ≫ check' R ≫ join ≫ perm := comp_mono_left _ hsplit
+    _ = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ rprodMap perm (rprodMap (𝟙 (dE A)) perm) ≫ check' R ≫ join ≫ (perm : dList A ⟶ dList A) := by
+      rw [← forkMap_comp, Cat.assoc]
+    _ = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ check' R ≫ rprodMap perm (rprodMap (𝟙 (dE A)) perm) ≫ join ≫ (perm : dList A ⟶ dList A) := by
+      rw [← Cat.assoc (rprodMap perm (rprodMap (𝟙 (dE A)) perm)), ← check'_perm, Cat.assoc]
+    _ = rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ check' R ≫ join ≫ (perm : dList A ⟶ dList A) := by rw [← join_perm]
+    _ = check R ≫ rprodMap flatten (rprodMap (𝟙 (dE A)) flatten) ≫ join ≫ (perm : dList A ⟶ dList A) := by
+      rw [← Cat.assoc, ← check_flatten, Cat.assoc]
+    _ = check R ≫ fork ≫ (flatten : dTree A ⟶ dList A) ≫ perm := by
+      rw [← Cat.assoc fork, fork_flatten, Cat.assoc]
+
+calc_steps split_proviso
 
 /-! ## Quicksort (p.154) -/
 
-variable (R) in
-/-- **p.154, step 1**: `perm ordered ⊒ perm flatten° flatten ordered`, `flatten` being simple. -/
-public theorem qsort_step1 :
-    perm ≫ (flatten : dTree A ⟶ dList A)° ≫ flatten ≫ ordered R ⊑ perm ≫ ordered R := by
-  refine comp_mono_left _ ?_
-  rw [← Cat.assoc]
-  refine le_trans (comp_mono_right ?_ _) (le_of_eq (Cat.id_comp _))
+/-- `flatten` is simple. -/
+public theorem flatten_simple : (flatten : dTree A ⟶ dList A)° ≫ flatten ⊑ 𝟙 (dList A) := by
   rw [flatten_graph]; exact graph_simple flat
 
 variable (R) in
-/-- **p.154, step 2**: `perm flatten° flatten ordered = perm flatten° inordered flatten` — the
-    claim `flatten ordered = inordered flatten`. -/
-public theorem qsort_step2 (htrans : ∀ a b c, R a b → R b c → R a c) :
-    perm ≫ (flatten : dTree A ⟶ dList A)° ≫ flatten ≫ ordered R
-      = perm ≫ flatten° ≫ inordered R ≫ flatten := by
-  rw [flatten_ordered R htrans]
+/-- `inordered` is a coreflexive, so its own converse. -/
+public theorem inordered_recip : (inordered R : dTree A ⟶ dTree A)° = inordered R :=
+  coref_recip (by rw [inordered_coref]; exact le_iff.mpr fun _ _ h => h.1)
 
-variable (R) in
-/-- **p.154, step 3**: `perm flatten° inordered flatten = (inordered flatten perm)° flatten` —
-    converses, `perm` and the coreflexive `inordered` being their own. -/
-public theorem qsort_step3 :
-    perm ≫ (flatten : dTree A ⟶ dList A)° ≫ inordered R ≫ flatten
-      = (inordered R ≫ flatten ≫ perm)° ≫ flatten := by
-  have hi : (inordered R : dTree A ⟶ dTree A)° = inordered R :=
-    coref_recip (by rw [inordered_coref]; exact le_iff.mpr fun _ _ h => h.1)
-  rw [Allegory.recip_comp, Allegory.recip_comp, perm_recip, hi, Cat.assoc, Cat.assoc]
-
-/-- **p.154, step 4**: `(inordered flatten perm)° flatten ⊒ ⦇[nil, split°]⦈° flatten` — fusion
+/-- **p.154**: `(inordered flatten perm)° flatten ⊒ ⦇[nil, split°]⦈° flatten` — fusion
     (6.4) under the proviso. -/
-public theorem qsort_step4 (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
+public theorem quicksort_fusion (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
     (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten
       ⊑ (inordered R ≫ flatten ≫ perm)° ≫ flatten := by
@@ -447,24 +412,33 @@ public theorem qsort_step4 (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
   refine ⟨Tree.nil, rfl, ConsList.wrap (), ?_, h ▸ Perm.refl _⟩
   rw [flatten_graph]; rfl
 
-/-- **Quicksort (B&dM p.154)**: `perm ordered ⊒ ⦇[nil, split°]⦈° flatten`. -/
+/-- **Quicksort (B&dM p.154)**: `perm ordered ⊒ ⦇[nil, split°]⦈° flatten`, the book's chain from
+    the bottom line up. -/
 public theorem quicksort (htrans : ∀ a b c, R a b → R b c → R a c)
     (hsplit : split° ⊑ check' R ≫ join ≫ perm) :
     (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
         ≫ flatten
-      ⊑ (perm : dList A ⟶ dList A) ≫ ordered R := by
-  refine le_trans ?_ (qsort_step1 R)
-  rw [qsort_step2 R htrans, qsort_step3 R]; exact qsort_step4 hsplit
+      ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
+  calc (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+        ≫ flatten
+        ⊑ (inordered R ≫ flatten ≫ perm)° ≫ flatten := quicksort_fusion hsplit
+    _ = ((flatten ≫ perm)° ≫ (inordered R)°) ≫ flatten := by
+      rw [Allegory.recip_comp (inordered R)]
+    _ = ((perm° ≫ (flatten : dTree A ⟶ dList A)°) ≫ (inordered R)°) ≫ flatten := by
+      rw [Allegory.recip_comp (flatten : dTree A ⟶ dList A)]
+    _ = ((perm ≫ (flatten : dTree A ⟶ dList A)°) ≫ (inordered R)°) ≫ flatten := by rw [perm_recip]
+    _ = perm ≫ (flatten : dTree A ⟶ dList A)° ≫ inordered R ≫ flatten := by
+      rw [inordered_recip, Cat.assoc, Cat.assoc]
+    _ = perm ≫ (flatten : dTree A ⟶ dList A)° ≫ flatten ≫ ordered R := by
+      rw [flatten_ordered R htrans]
+    _ ⊑ perm ≫ 𝟙 (dList A) ≫ ordered R :=
+      comp_mono_left _ (by rw [← Cat.assoc]; exact comp_mono_right flatten_simple _)
+    _ = perm ≫ ordered R := by rw [Cat.id_comp]
+
+calc_steps quicksort
 
 /-! ## The quicksort recursion (p.155) -/
 
-/-- **p.155, recursion step 0**: `X = [nil, split°]° F(X) [nil, join]` for `X = flatten ⦇[nil, split°]⦈°`
-    — the hylomorphism theorem. -/
-public theorem qrec_step0 {X : dList A ⟶ dList A}
-    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
-    X = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by
-  subst hX; exact (hylo_fixed (TB.initial A) _ _).symm
 
 /-- **p.155, recursion step 1**: `[nil, split°]° F(X) [nil, join] = [nil, split°]° [nil, join (X×id×X)]`
     — `F` acting on `X` passes into the `fork` branch of the algebra. -/
@@ -488,7 +462,21 @@ public theorem qrec_step2 (X : dList A ⟶ dList A) :
 public theorem qsort_rec {X : dList A ⟶ dList A}
     (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
     X = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join :=
-  (qrec_step0 hX).trans ((qrec_step1 X).trans (qrec_step2 X))
+  calc X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+        ≫ flatten := hX
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
+          : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := (hylo_fixed (TB.initial A) _ _).symm
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by rw [← hX]
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split°)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
+      rw [TFmap_comp_junc]
+    _ = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
+      rw [junc_recip_junc, Allegory.recip_recip]
+
+calc_steps qsort_rec
 
 /-- **The quicksort recursion is the least solution (B&dM p.155)**: every `Y` with
     `nil nil° ∪ join (Y×id×Y) split ⊆ Y` contains `flatten ⦇[nil, split°]⦈°`. -/
@@ -606,9 +594,9 @@ theorem split_fold_le {bs : dL A ⟶ dLAL A} {st : (⟨A × (dLAL A).carrier⟩ 
     subst hw; exact hP
 
 variable (R) in
-/-- **p.155, split step 1**: `embed ⦇[base, step]⦈ ⊑ embed embed° perm join° check'` — the fold is
+/-- **p.155**: `embed ⦇[base, step]⦈ ⊑ embed embed° perm join° check'` — the fold is
     below `embed° perm join° check'` when `base` and `step` meet the two fusion conditions. -/
-public theorem split_cata_step1 {bs : dL A ⟶ dLAL A}
+public theorem split_fold_spec {bs : dL A ⟶ dLAL A}
     {st : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A}
     (hb : bs ⊑ singleR () ≫ perm ≫ join° ≫ check' R)
     (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
@@ -618,9 +606,9 @@ public theorem split_cata_step1 {bs : dL A ⟶ dLAL A}
   exact le_iff.mpr fun x q ⟨y, hxy, hf⟩ => ⟨y, hxy, neList y, rfl, split_fold_le hb hs y q hf⟩
 
 variable (R) in
-/-- **p.155, split step 2**: `embed embed° perm join° check' ⊑ perm join° check'` — `embed` is
+/-- **p.155**: `embed embed° perm join° check' ⊑ perm join° check'` — `embed` is
     simple. -/
-public theorem split_cata_step2 :
+public theorem embed_simple_comp :
     embed ≫ embed° ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R ⊑ perm ≫ join° ≫ check' R :=
   le_iff.mpr fun x q ⟨_, hxy, _, hyx, hP⟩ => by
     have h : x = _ := hxy; have h' : _ = _ := hyx; subst h; subst h'; exact hP
@@ -634,7 +622,11 @@ public theorem split_cata {bs : dL A ⟶ dLAL A}
     (hs : rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ st ⊑ consR ≫ perm ≫ join° ≫ check' R) :
     embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
       ⊑ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
-  le_trans (split_cata_step1 R hb hs) (split_cata_step2 R)
+  calc embed ≫ ⦇(junc (sumCop (dL A) ⟨A × (dLAL A).carrier⟩) bs st : (F A A).obj (dLAL A) ⟶ dLAL A)⦈
+        ⊑ embed ≫ embed° ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R := split_fold_spec R hb hs
+    _ ⊑ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R := embed_simple_comp R
+
+calc_steps split_cata
 
 variable (R) in
 /-- **p.155, the `base` condition**: `base ⊑ wrap perm join° check'`. -/

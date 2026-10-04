@@ -104,12 +104,15 @@ all=$(./scripts/note-files --generated) || exit 1
 ls=$(mktemp -d) || exit 1
 trap 'rm -rf "$ls"' EXIT
 # A PICTURE is a `#lean(...)` call and nothing else; an `#import` draws only a PROOF (`branches`, data
-# a call cannot return beside its metadata), so a picture imported under an alias is refused by name.
-plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | grep -v '^$')
+# a call cannot return beside its metadata) or a CALC (the steps `lean-calc` reads), so a picture
+# imported under an alias is refused by name.
+plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | grep -v '\.calc$' | grep -v '^$')
 [ -z "$plain" ] || { printf 'diag-regen: a picture imported, not drawn by #lean("<sel>"):\n%s\n' "$plain" >&2; exit 1; }
 printf '%s\n' "$all" | sed -n 's|\.proof$||p' > "$ls/proof"
-tests proof --proof
+printf '%s\n' "$all" | sed -n 's|\.calc$||p' > "$ls/calc"
+tests proof --proof calc --calc
 draw "$(cat "$ls/proof.stale")" --proof
+draw "$(cat "$ls/calc.stale")" --calc
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
