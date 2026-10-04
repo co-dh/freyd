@@ -156,7 +156,7 @@ in @mu-defn.
     // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
     (RQ, "Freyd.Alg.dynamic_programming_thin_prefixed.lhs",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @thin-laws, @est-up]),
+      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @Freyd.Alg.thinRel_comp_est, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : PFA⟶PFA` rearranges the SET alone, so it is a bead on the `E` wire.
   ),
@@ -182,7 +182,7 @@ in @mu-defn.
     (none, "Freyd.Alg.dynamic_programming_thin_lower.lhs", src[(9.2)]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
       src[`P(X)est(R)⊑∋X` — @est-710]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @thin-laws]),
+    (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @Freyd.Alg.thinRel_comp_eps_le]),
     (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
@@ -206,7 +206,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_thin_step5.rhs",
       src[`T`#frc([`T°`])`⊑∈`]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",
-      src[`∈thin(Q)⊑Q°∈` — @thin-laws]),
+      src[`∈thin(Q)⊑Q°∈` — @Freyd.Alg.recip_thinRel_comp_eps_le]),
   )),
 )]<dp-laws-93>
 

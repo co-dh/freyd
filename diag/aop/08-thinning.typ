@@ -96,7 +96,7 @@ row((
      // lean:AOP.A8_1.thinRel_comp_est_step1@65f6cc95
   lean-chain(
     (none, "Freyd.Alg.thinRel_comp_est_step1.lhs", []),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @thin-laws]),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @Freyd.Alg.id_le_thinRel]),
   ),
 )
 ]<thin-intro>],
@@ -144,7 +144,7 @@ row((
       src[@thin-defn, `∋/∋` half]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond1@14824541
     (SQ, "Freyd.Alg.est_comp_singletonMap_cond1.rhs",
-      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); `est(Q)⊑∋` — @est-laws]),
+      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); `est(Q)⊑∋` — @est-defn]),
   ), Sub("Freyd.Alg.est_comp_singletonMap_cond2",
     gloss: src[the singleton's member stands in `Q` to every member of the set],
     (IMP, "Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs", src[@thin-defn, `∈\(Q°∈)` half]),
@@ -169,16 +169,16 @@ row((
   lean-chain(Sub("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1",
     gloss: src[every member of the singleton is a value `S` returns],
     (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.lhs",
-      src[@thin-laws, first condition]),
+      src[@thin-laws:1, first condition]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond1@58772169
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs",
-      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); #frc([`S`])` est(R)⊑S` — @est-laws]),
+      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); #frc([`S`])` est(R)⊑S` — @Freyd.Alg.Λ_comp_est]),
   ), Sub("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2",
     gloss: src[the singleton's member stands in `Q` to every value `S` returns at the same argument],
-    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.lhs", src[@thin-laws, second condition]),
+    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.lhs", src[@thin-laws:1, second condition]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2@aa38c1af
     (EQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs",
-      src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]),
+      src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @Freyd.Alg.Λ_comp_est_context]),
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs",
       src[`S°`#frc([`S`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step1@f65de19f
@@ -206,7 +206,7 @@ row((
   // A conjunction has no shape in either calculus, so it heads the chain as text.
   [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
    `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
-   #src[@thin-laws at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]],
+   #src[@thin-laws:1 at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]],
   lean-chain(
     (IMP, "Freyd.Alg.thinning_step1.lhs",
       src[@cata-fusion, @hylo-mu]),
@@ -232,7 +232,7 @@ row((
     // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
     (none, "Freyd.Alg.thinning_est_step1.lhs", []),
     (SQ, "Freyd.Alg.thinning_est_step1.rhs", src[@thin-thm81]),
-    (EQ, "Freyd.Alg.thinning_est_step2.rhs", src[`est(R)=thin(Q) est(R)` — @thin-laws]),
+    (EQ, "Freyd.Alg.thinning_est_step2.rhs", src[`est(R)=thin(Q) est(R)` — @Freyd.Alg.thinRel_comp_est]),
   ),
 )]<thin-cor>
 
@@ -290,7 +290,7 @@ row((
   lean-chain(
     (none, "Freyd.Alg.thinning_paths_step.rhs", src[`=` #frc([`L(∋)`])` est(R)`]),
     // thinning_paths_step row: Corollary 8.1
-    (RQ, "Freyd.Alg.thinning_paths_step.lhs", src[@thin-cor, @path-mono]),
+    (RQ, "Freyd.Alg.thinning_paths_step.lhs", src[@thin-cor, @path-mono:1, @path-mono:2]),
   ),
   // No panel: the program's fold is the path instance, and `thinning_paths` states this step over a
   // general `F`, whose algebra is @path-alg's row 6 rather than this row's `[P(wrap),cpl P(step)]`.
@@ -318,12 +318,12 @@ row((
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@304e0108
       // lean:AOP.A4_6.bigUnion_eq_existsImage_eps@bca8d7c5
     (SQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
-      src[#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`⊑`#frc([`F(𝟙,∋)α`])` thin(Q)` — @thin-laws, @path-mono]),
+      src[#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`⊑`#frc([`F(𝟙,∋)α`])` thin(Q)` — @thin-83, @path-mono:2]),
       // lean:AOP.A8_2.thinning_paths_alg_elim@5980ca57
       // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d66c2a44
       // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@962bc252
     (SQ, "Freyd.Alg.thinning_paths_alg_distrib.rhs",
-      src[`P(thin(Q)) E(∋)⊑E(∋) thin(Q)` — @thin-laws]),
+      src[`P(thin(Q)) E(∋)⊑E(∋) thin(Q)` — @Freyd.Alg.powerRel_thinRel_comp_bigUnion_le]),
       // lean:AOP.A8_2.thinning_paths_alg_distrib@63e8050a
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs",
@@ -451,16 +451,16 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
     // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
     // lane: the same coreflexive, applied to the sorted list instead of to the set.
     // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
-    (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step4.lhs", src[`sort(≼) filter(p)⊑E(p) sort(≼)` — @thinlist-laws]),
+    (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step4.lhs", src[`sort(≼) filter(p)⊑E(p) sort(≼)` — @thinlist-laws:5]),
   ), Sub("Freyd.Alg.map_sort_comp_listcp_le_steps1to3",
     gloss: src[combining the arguments' sorted lists by `listcp`, mapping `f` and filtering is below sorting the `f`-images and filtering],
      // lean:AOP.A8_3.map_sort_comp_listcp_le_steps1to3@fb9f18b9
     (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step3.lhs",
-      src[`sort(f≼f°) list(f)⊑P(f) sort(≼)` — @thinlist-laws]),
+      src[`sort(f≼f°) list(f)⊑P(f) sort(≼)` — @thinlist-laws:4]),
     (RQ, "Freyd.Alg.map_sort_comp_listcp_le_step2.lhs",
       src[`F(≼)⊑f≼f°` — @mon-str, @thinlist-defn]),
     (RQ, "Freyd.Alg.map_sort_comp_listcp_le.lhs",
-      src[`F(sort(≼)) listcp⊑cp(F) sort(F(≼))` — @thinlist-laws]),
+      src[`F(sort(≼)) listcp⊑cp(F) sort(F(≼))` — @thinlist-laws:7]),
   )),
 )]<thinlist-lem81>
 
@@ -485,7 +485,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#lean("Freyd.Alg.thinningList_step3.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.thinningList_step2.lhs"),
-    [#src[`sort(≼) minlist(R)⊑est(R)` — @thinlist-laws at its `Q≜R`]])],
+    [#src[`sort(≼) minlist(R)⊑est(R)` — @thinlist-laws:3 at its `Q≜R`]])],
   // `est(R)` has split into the node that sorts and the `minlist(R)` that reads the head back.
   // `minlist(R) : [A]⟶A` — @thinlist-laws' (8.5) `thinlist(Q) xs=[minlist(Q) xs]`.
   [#lean("Freyd.Alg.thinningList_step2.lhs")],
@@ -512,7 +512,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#lean("Freyd.Alg.sortedAlg_fusion.rhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion_step5.lhs"),
-    [#src[`sort(≼) thinlist(Q)⊑thin(Q) sort(≼)` — @thinlist-laws]])],
+    [#src[`sort(≼) thinlist(Q)⊑thin(Q) sort(≼)` — @thinlist-laws:2]])],
   // The node has walked up past `thin(Q)`, which comes out below it as `thinlist(Q)` on the `list`
   // lane: that exchange is the whole of (8.6), and the rest of the chain rewrites the algebra.
   [#lean("Freyd.Alg.sortedAlg_fusion_step5.lhs")],
@@ -526,7 +526,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion_step3.lhs"),
     [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩(sort(≼)×sort(≼)) merge(≼) thinlist(Q)` \
-     #src[`(sort(≼)×sort(≼)) merge(≼)⊑cup sort(≼)` — @thinlist-laws]])],
+     #src[`(sort(≼)×sort(≼)) merge(≼)⊑cup sort(≼)` — @thinlist-laws:6]])],
   [],
 
   [#vstep(EQ, leanc("Freyd.Alg.sortedAlg_fusion_step2.lhs"),
