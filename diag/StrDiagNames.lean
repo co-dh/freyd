@@ -27,6 +27,7 @@ import AOP.A7_7_TakeWhile
 import AOP.A7_7_Filter
 import AOP.A8_1
 import AOP.A8_2
+import AOP.A8_2_Exec
 import AOP.A8_4_Knapsack
 import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
@@ -278,6 +279,12 @@ open Lean PrettyPrinter in
 /-- The binary tree's BASE relator is the book's `F` (p.154 `F f = f×id×f`), as `RT.F` is. -/
 @[app_unexpander RelSet.TB.F] def unexpandTBF : Unexpander
   | `($_ $_) => `($(mkIdent `F))
+  | _ => throw ()
+
+-- `pow` is `Rel(Set)`'s power object, the object the note writes `P` (`P A` in `S2_40`).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.pow] def unexpandRelSetPow : Unexpander
+  | `($_ $A) => `($(mkIdent `P) $A)
   | _ => throw ()
 
 open Lean PrettyPrinter in
@@ -1123,6 +1130,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander headRel] def unexpandHeadRel : Unexpander
   | _ => `($(mkIdent `head))
+-- B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter, as for `cost`.
+open Lean PrettyPrinter in
+@[app_unexpander minpath] def unexpandMinpath : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `minpath) $args*)
+  | _ => `($(mkIdent `minpath))
 -- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
 open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander

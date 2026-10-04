@@ -1418,6 +1418,11 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".compact" then
       stem := stem.dropEnd 8
       sides := "compact" :: sides
+    -- `.named`: the TYPE cell's print mode, `<term> : S⟶T` — a table whose type column stands
+    -- beside formulas that name several terms says which term each type belongs to.
+    else if stem.endsWith ".named" then
+      stem := stem.dropEnd 6
+      sides := "named" :: sides
     else more := false
   -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
   -- statement too.  Split before `toName`: `#` is not an identifier character, so
@@ -1686,7 +1691,7 @@ def staleMain (route : String) (stringMode circuitMode commutativeMode typeMode 
   -- call; the commutative route's `+` is one file drawn from two declarations.
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
     (a, (callFiles stringMode circuitMode a).map fun n =>
-      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode || typeMode)
       (n, ctxDecl commutativeMode graphMode formulaMode n base, selDecls commutativeMode graphMode formulaMode n base))
   for (call, files) in jobs do
     let mut stale := false
@@ -1809,7 +1814,7 @@ def main (args : List String) : IO UInt32 := do
   -- nothing, whatever declaration they come from.  Every selector is taken apart once, here.
   let jobs : List (String × String) :=
     args.flatMap fun a => (callFiles stringMode circuitMode a).map fun n => (n, a)
-  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
+  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode || typeMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
     -- may name SEVERAL declarations — the steps of one chain, drawn in one row — and each peer is
@@ -1835,6 +1840,10 @@ def main (args : List String) : IO UInt32 := do
       if sides.contains "compact" && !formulaMode then
         throwError "{arg}: `.compact` is a formula's print mode, read by --formula only — a panel's \
           labels are compact already"
+      if sides.contains "named" && !typeMode then
+        throwError "{arg}: `.named` is a type cell's print mode, read by --type only"
+      if typeMode && (sides.any (· != "named") || !branch.isEmpty || binder.isSome) then
+        throwError "{arg}: --type reads a declaration whole; its one selector step is `.named`"
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
@@ -1844,7 +1853,7 @@ def main (args : List String) : IO UInt32 := do
           Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
-        else if typeMode then Freyd.TypeRender.file arg.toName
+        else if typeMode then Freyd.TypeRender.file base.toName (sides.contains "named")
         else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName

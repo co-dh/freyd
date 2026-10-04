@@ -89,35 +89,48 @@ private def hom? (t : Expr) : MetaM (Option String) := do
 /-- The declaration's type in the note's spelling.  Run under `withDeclScope` and printed by
     `plain`, so the same delaborator, namespaces and unexpanders the string route draws its labels
     with print this cell. -/
-def render (declName : Name) : MetaM String := withDeclScope declName do
+def render (declName : Name) (named : Bool := false) : MetaM String := withDeclScope declName do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- NOT `forallTelescopeReducing`: a hom of `RelSet` reduces to `A → B → Prop`, so reducing walks
   -- straight through the arrow this is here to print and leaves `Prop` as the body of every def.
-  Meta.forallTelescope ci.type fun _ body => do
+  Meta.forallTelescope ci.type fun xs body => do
+    -- `named`: the TERM the type belongs to — an (in)equation's left side, else the declaration at
+    -- its own binders — printed by `labelT`, the formula route's printer, so the cell names it as the
+    -- formula beside it does (`Λ(F(∋,𝟙))`, `step`); typst content, since a `Λ` sets as a fraction.
+    let name (t : Expr) (ty : String) : MetaM String := do
+      if named then return "#" ++ ((← labelT t) ++ Lbl.text (" : " ++ ty)).bare.typst else return ty
     -- An (in)equation is a statement ABOUT arrows, and its two sides share one hom: read it off the
     -- left, which is the side the note's `definition` column spells.
     match ← splitM body with
     | some (sym, l, r) =>
-      let t ← Meta.inferType l
+      -- An equation states its type as `Eq`'s first argument, which an ascription in the statement
+      -- sets; the left side's inferred type forgets it.
+      let t ← match body.eq? with | some (ty, _, _) => pure ty | none => Meta.inferType l
       let some s ← hom? t |
         throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
           {← Meta.ppExpr t} and not arrows of a category — it has no hom type to render"
-      return s
+      name l s
     | none =>
-      if let some s ← hom? body then return s else
+      let self := mkAppN (.const declName (ci.levelParams.map .param)) xs
+      if let some s ← hom? body then name self s else
       match body.getAppFnArgs with
-      -- A relator is a 1-cell like an arrow is, and the note writes it with the same `⟶`: the two
-      -- categories it runs between, source first, as `Relator`'s own parameters order them.
       | (``Freyd.Alg.Relator, args) =>
-        if h : args.size ≥ 2 then return (← plain args[0]) ++ "⟶" ++ (← plain args[1])
+        if h : args.size ≥ 2 then name self ((← plain args[0]) ++ "⟶" ++ (← plain args[1]))
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied relator"
+      -- A binary relator runs from the square of its category: `F : 𝒜×𝒜⟶𝒜`.
+      | (``Freyd.Alg.BiRelator, args) =>
+        if h : args.size ≥ 1 then
+          let c ← plain args[0]
+          name self (c ++ "×" ++ c ++ "⟶" ++ c)
+        else throwError "{declName} : {← Meta.ppExpr body} is a partially applied binary relator"
       | _ => throwError "{declName} : {← Meta.ppExpr body} is neither an arrow's hom type, a \
           relator between two categories, nor an (in)equation between arrows — it has no one type \
           to render"
 
 /-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
     above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
-def file (declName : Name) : MetaM String := do
-  return "`" ++ (← render declName) ++ "`\n"
+def file (declName : Name) (named : Bool := false) : MetaM String := do
+  let r ← render declName named
+  return (if named then r else "`" ++ r ++ "`") ++ "\n"
 
 end Freyd.TypeRender
