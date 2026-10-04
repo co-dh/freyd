@@ -779,7 +779,7 @@ def Placement.rows (pl : Placement) (p : Diagram) : Array Nat :=
 def Diagram.drawnAs (a b : Diagram) : Bool :=
   !a.rows.isEmpty
     && a.lanes.map (fun l => (l.label, l.born, l.dies)) == b.lanes.map (fun l => (l.label, l.born, l.dies))
-    && a.rows.all (·.ident.isSome) && a.rows.map (·.ident) == b.rows.map (·.ident)
+    && a.rows.all (·.ident.isSome) && a.rows.map (·.ident.map dropUnits) == b.rows.map (·.ident.map dropUnits)
     && a.top == b.top && a.bot == b.bot
 
 /-- Two selector atoms as the same fork-arm. -/
