@@ -127,6 +127,14 @@
 // A NAME CELL, `leant(sel + ".name")`, also says the row is ABOUT `sel` (`<lean-row-key>`), so a row
 // whose first cell is its name is labelled and cited by that declaration, as a formula cell's row is.
 #let leann(sel) = { [#metadata(sel)<lean-row-key>]; leant(sel + ".name") }
+// A DEFINITION TABLE, rows of name | type | definition | meaning. The type column is its widest
+// type capped at a fifth of the width: `auto` grew it to one long type and squeezed every definition.
+#let deftab(..cells) = layout(sz => {
+  let cs = cells.pos()
+  let tw = cs.enumerate().filter(p => calc.rem(p.at(0), 4) == 1).map(p => measure(p.at(1)).width).fold(0pt, calc.max)
+  table(columns: (auto, calc.min(tw + 10pt, sz.width / 5), 1.6fr, 1fr), align: left + horizon, inset: 5pt,
+    stroke: 0.4pt + luma(190), table.header([*name*], [*type*], [*definition*], [*meaning*]), ..cs)
+})
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
 // The two sides of an `↔` as one call in a shared box: the string route draws no `↔` as one panel.

@@ -57,11 +57,7 @@
 
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
 // come from `⦇T⦈°`, and the recursion is over them rather than over an initial algebra.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.H")], [#leant("Freyd.Alg.H")],
   [#leanf("Freyd.Alg.H")],
@@ -239,11 +235,7 @@
 
 // B&dM §9.2, p. 225.  The section numbers no equation.  `base` and `step` are reused for the
 // tabulating fold at the foot of the table; they are not `edit`'s.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Edit.Op")], [#leant("Freyd.Alg.RelSet.Edit.Op")],
   [#leanf("Freyd.Alg.RelSet.Edit.op_cases")],
@@ -544,11 +536,7 @@
 
 // B&dM §9.3, p. 230.  `⦇T⦈ = flatten` is a map, so `H° = flatten` is simple and Proposition 9.3
 // applies; no decomposition is preferable to another here, so there is no thinning step.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.TT.Tree")], [#leant("Freyd.Alg.RelSet.TT.Tree")],
   [#leanf("Freyd.Alg.RelSet.TT.Tree")],
@@ -556,20 +544,20 @@
   [#leann("Freyd.Alg.RelSet.Bracket.flattenFn")], [#leant("Freyd.Alg.RelSet.Bracket.flattenFn")],
   [#leanf("Freyd.Alg.RelSet.Bracket.flatten_cata"), #leanf("Freyd.Alg.RelSet.Bracket.flattenFn")],
   [the tips of a tree, left to right; `H=flatten°` builds every tree over a list],
-  [#leann("Freyd.Alg.RelSet.Bracket.costSizeFn")], [#leant("Freyd.Alg.RelSet.Bracket.costSizeFn")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.costSizeFn")],
-  [the cost of evaluating a bracketing, paired with the size of its result],
   [#leann("Freyd.Alg.RelSet.Bracket.opbFn")], [#leant("Freyd.Alg.RelSet.Bracket.opbFn")],
   [#leanf("Freyd.Alg.RelSet.Bracket.opbFn")],
   [joining two subtrees costs `cb` of their sizes plus the cost of each],
+  [#leann("Freyd.Alg.RelSet.Bracket.costSizeFn")], [#leant("Freyd.Alg.RelSet.Bracket.costSizeFn")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.costSizeFn")],
+  [the cost of evaluating a bracketing, paired with the size of its result],
   [#leann("Freyd.Alg.RelSet.Bracket.szFn")], [#leant("Freyd.Alg.RelSet.Bracket.szFn")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.szFn"), #leanf("Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten")],
   [`sb` associative, so the size depends only on the flattened list],
   [#leann("Freyd.Alg.RelSet.Bracket.R")], [#leant("Freyd.Alg.RelSet.Bracket.R")],
   [#leanf("Freyd.Alg.RelSet.Bracket.R_eq"), #leanf("Freyd.Alg.RelSet.Bracket.R_apply")],
   [`t` costs no more than `t'`],
   [#leann("Freyd.Alg.RelSet.Bracket.gR")], [#leant("Freyd.Alg.RelSet.Bracket.gR")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq"), #leanf("Freyd.Alg.RelSet.Bracket.gFn_inl"),
+  [#leanf("Freyd.Alg.RelSet.Bracket.gR"), #leanf("Freyd.Alg.RelSet.Bracket.gFn_inl"),
    #leanf("Freyd.Alg.RelSet.Bracket.gFn_inr")],
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#leann("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
@@ -916,11 +904,7 @@
 
 // B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
 // book stops at the recursive program and says the details are messy.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Code.Str")], [#leant("Freyd.Alg.RelSet.Code.Str")],
   [#leanf("Freyd.Alg.RelSet.Code.Str")],

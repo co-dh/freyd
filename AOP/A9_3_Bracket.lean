@@ -92,16 +92,18 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
   | CL.ConsList.wrap a => st a
   | CL.ConsList.cons a x => sb (st a, szFn st sb x)
 
-/-- **mct-defn**: `⟨cost,size⟩≜⦇[opt,opb]⦈` with `opt≜⟨zero,st⟩` and
-    `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))` — cost alone is not a fold, so it is
-    tupled with size. -/
+/-- **mct-defn**: `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`, the node half of the
+    tupled fold's algebra. -/
+@[expose] public def opbFn (sb : S × S → S) (cb : S × S → Int) (p : (Int × S) × (Int × S)) :
+    Int × S :=
+  (cb (p.1.2, p.2.2) + p.1.1 + p.2.1, sb (p.1.2, p.2.2))
+
+/-- **mct-defn**: `⟨cost,size⟩≜⦇[opt,opb]⦈` with `opt≜⟨zero,st⟩` — cost alone is not a fold, so
+    it is tupled with size. The node case calls `opb` rather than restating it. -/
 @[expose] public def costSizeFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     Tree A → Int × S
   | Tree.tip a => (0, st a)
-  | Tree.bin l r =>
-      (cb ((costSizeFn st sb cb l).2, (costSizeFn st sb cb r).2)
-          + (costSizeFn st sb cb l).1 + (costSizeFn st sb cb r).1,
-        sb ((costSizeFn st sb cb l).2, (costSizeFn st sb cb r).2))
+  | Tree.bin l r => opbFn sb cb (costSizeFn st sb cb l, costSizeFn st sb cb r)
 
 /-- **mct-defn**: `cost`, the first component of the tupled fold. -/
 @[expose] public def costFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) (t : Tree A) : Int :=
@@ -201,12 +203,6 @@ public theorem gFn_inr (cx cy : Int) (x y : NEList A) :
 
 /-- **mct-defn**: `zero`, the cost of a leaf. -/
 @[expose] public def zeroFn (_ : A) : Int := 0
-
-/-- **mct-defn**: `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`, the node half of the
-    tupled fold's algebra. -/
-@[expose] public def opbFn (sb : S × S → S) (cb : S × S → Int) (p : (Int × S) × (Int × S)) :
-    Int × S :=
-  (cb (p.1.2, p.2.2) + p.1.1 + p.2.1, sb (p.1.2, p.2.2))
 
 /-- **mct-defn**: `g`, the relation drawn as one bead — the graph of `gFn`, whose two summands a
     picture would otherwise open. -/

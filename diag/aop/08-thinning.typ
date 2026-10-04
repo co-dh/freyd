@@ -249,11 +249,7 @@ row((
 
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.pathF")], [#leant("Freyd.Alg.pathF")],
   [#leanf("Freyd.Alg.pathF_obj")],
@@ -405,11 +401,7 @@ row((
 
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
 // it is one connected preorder, spelled `≼` here.  `≼` is a connected preorder throughout.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.ListRel.setify")], [#leant("Freyd.Alg.RelSet.ListRel.setify")],
   [#leanf("Freyd.Alg.RelSet.ListRel.setify_ni_iff")],
@@ -539,11 +531,7 @@ preorder.
 
 // B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `wrap` that
 // §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.ListRel.total")], [#leant("Freyd.Alg.RelSet.ListRel.total")],
   [#leanf("Freyd.Alg.RelSet.ListRel.total"), #leanf("Freyd.Alg.RelSet.ListRel.total_eq")],
@@ -649,11 +637,7 @@ preorder.
 
 // B&dM §8.5, p. 207.  `P ≜ ⊤` works because `merge ⊤ = cat`, which already brings equal first lines
 // together; the book's first choice `head prefix head°` is correct but not needed.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Paragraph.Line")], [#leant("Freyd.Alg.RelSet.Paragraph.Line")],
   [#leanf("Freyd.Alg.RelSet.Paragraph.Line")],
@@ -807,11 +791,7 @@ preorder.
 
 // B&dM §8.6, p. 212.  `Q` keeps the `head2` conjunct p.215 derives and then drops on the grounds
 // that tours of one input share their heads: without it the two `tour-mono` rows are false.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Tour.Journey")], [#leant("Freyd.Alg.RelSet.Tour.Journey")],
   [#leanf("Freyd.Alg.RelSet.Tour.Journey")],
