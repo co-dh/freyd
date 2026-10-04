@@ -108,6 +108,14 @@ public theorem le_Λ_comp_est_iff {S : B ⟶ A} {R : A ⟶ A} {X : B ⟶ A} :
   · rintro ⟨h1, h2⟩
     exact le_inter h1 ((le_leftDiv_iff _ _ _).mpr h2)
 
+/-- (7.5) at `X ≜ Λ(S) est(R)`, first component: an optimum of `S` is a result of `S`. -/
+public theorem Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : Λ S ≫ est R ⊑ S :=
+  (le_Λ_comp_est_iff.mp (le_refl _)).1
+
+/-- (7.5) at `X ≜ Λ(S) est(R)`, second component: `S° Λ(S) est(R) ⊑ R°`. -/
+public theorem recip_comp_Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : S° ≫ Λ S ≫ est R ⊑ R° :=
+  (le_Λ_comp_est_iff.mp (le_refl _)).2
+
 /-- **(7.4)**: `min R·τ = id ∩ R` at `R°`, mirrored: the `est` of a singleton is its sole
     inhabitant precisely on the reflexive part of `R` ((7.5) at `S := id`). -/
 theorem singletonMap_comp_est (R : A ⟶ A) :
@@ -394,6 +402,15 @@ public theorem powerRel_comp_est_le (S : B ⟶ A) (R : A ⟶ A) :
     have hstep2 : (S ≫ (∋ A)°) ≫ est R ⊑ S ≫ R° := by
       rw [Cat.assoc]; exact comp_mono_left S haR
     exact le_trans hstep1 hstep2
+
+/-- (7.10), left component: `P(S) est(R) ⊑ ∋S`. -/
+public theorem powerRel_comp_est_le_eps (S : B ⟶ A) (R : A ⟶ A) : powerRel S ≫ est R ⊑ ∋ B ≫ S :=
+  le_trans (powerRel_comp_est_le S R) (inter_lb_left _ _)
+
+/-- (7.10), right component: `P(S) est(R) ⊑ ∈\(SR°)`. -/
+public theorem powerRel_comp_est_le_div (S : B ⟶ A) (R : A ⟶ A) :
+    powerRel S ≫ est R ⊑ ((∋ B)°) \ (S ≫ R°) :=
+  le_trans (powerRel_comp_est_le S R) (inter_lb_right _ _)
 
 /-! ### (7.8): shunting a map through `est`
 

@@ -36,6 +36,9 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ),
 )]<greedy-laws>
 
+#import "../generated/Freyd.Alg.greedy_dp_lower.calc.typ" as calc-gl
+#import "../generated/Freyd.Alg.greedy_dp_upper.calc.typ" as calc-gu
+#import "../generated/Freyd.Alg.RelSet.Tardy.tardy_tail.calc.typ" as calc-tt
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -43,14 +46,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
      `h` returns only what `H` returns]],
      // lean:AOP.A10_1.greedy_dp_lower@3dbc8cfa
-  lean-chain(
-    (none, "Freyd.Alg.greedy_dp_lower.lhs", []),
-    (SQ, "Freyd.Alg.greedy_dp_lower_step1.rhs", src[`est(Q)⊑∋` — @est-defn]),
-     // lean:AOP.A10_1.greedy_dp_lower_step1@ba3be0a6
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
-    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
-  ),
+  lean-calc(calc-gl),
 )]<greedy-lower>
 
 // The second half of the same proof.
@@ -59,27 +55,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
      // lean:AOP.A10_1.greedy_dp_upper@7abcb139
-  lean-chain((
-    (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
-    (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
-      src[`H°=h°F(H°)T` — @hylo-mu]),
-     // lean:AOP.A10_1.greedy_dp_upper_step1@a5c2daac
-    (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
-      src[`T`#frc([`T°`])`⊑∈`]),
-     // lean:AOP.A10_1.greedy_dp_upper_step2@bb96243e
-    (SQ, "Freyd.Alg.greedy_dp_upper_step3.rhs", src[`∈est(Q)⊑Q°` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step3@0385457d
-  ), (
-    (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
-      src[`QF(H)h⊑F(H)hR` conversed]),
-     // lean:AOP.A10_1.greedy_dp_upper_step4@8e8aa389
-    (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step5@df77922c
-    (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
-      src[`h°F(R°)h⊑R°`]),
-     // lean:AOP.A10_1.greedy_dp_upper_step6@8d3afe63
-    (SQ, "Freyd.Alg.greedy_dp_upper.rhs", src[`R` transitive]),
-  )),
+  lean-calc(calc-gu, breaks: (4,)),
 )]<greedy-upper>
 
 // B&dM Proposition 10.1, p. 245, "a variation on Proposition 9.1", in Rel(Set).  The book's
@@ -473,29 +449,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a job whose penalty is at most the last penalty, put after a schedule costing at most
      the cost before the last job, gives a schedule costing at most the whole]],
   // lean:AOP.A10_3_Tardy.tardy_tail@d6af1dd1
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.rhs", src[`cost` a map, so `𝟙⊑cost cost°`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step1@7ed1c8a6
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step2.rhs", src[`α cost=⟨g,α cost⟩ bmax`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step2@8865bddf lean:AOP.A10_3_Tardy.alg_cost_self@29bcea57
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step3.rhs", src[`⟨g,α cost⟩` simple]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step3@3427a120
-  ), (
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step4.rhs", src[monotonicity of `bmax`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step4@337d771d
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step5.rhs", src[(10.4) — @tardy-cost-bmax]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step5@739d1394
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail.rhs", src[definition of `R`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step6@6b0b253f
-  )),
+  lean-calc(calc-tt, breaks: (3,)),
 )]<tardy-tail>
 
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
 // `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
 // set at all.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+  Thm(cols: 1)[`schedule=(null→nil,pick (schedule×𝟙) snoc)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tardy.tardy_laws") \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
@@ -620,7 +581,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // moved past it.
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \
+  Thm(cols: 1)[`extern(n)=f(2n−1,2n+1)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tex.tex_laws") \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],

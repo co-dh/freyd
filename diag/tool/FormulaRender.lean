@@ -271,8 +271,9 @@ def opened (A B : Expr) : MetaM (Array Name) := do
     -- to `X → Y → Prop`) and opens the arrow's own arguments, so `takewhile`, `paths` read as no arrow.
     Meta.forallTelescope ci.type fun _ t => return (homObjs? t).isSome || (homObjs? (← Meta.whnfR t)).isSome
 
-/-- One term up to instances and the bracketing of `≫`, which no panel draws. -/
+/-- One term up to instances, the bracketing of `≫` and identity factors, which no panel draws. -/
 partial def sameDrawn (a b : Expr) : MetaM Bool := do
+  let (a, b) := (dropUnits (← instantiateMVars a), dropUnits (← instantiateMVars b))
   let s ← Meta.saveState
   let r ← Meta.withTransparency .instances (Meta.isDefEq a b)
   s.restore

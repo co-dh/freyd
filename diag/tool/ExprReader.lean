@@ -393,6 +393,17 @@ def isComponent (e : Expr) : MetaM Bool := do
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
+/-- A PICTURE DRAWS NO IDENTITY ARROW: `R𝟙` and `𝟙R` are the picture of `R`, as `(RS)T` is that of
+    `R(ST)`, so a unit-law step (`Cat.comp_id`, `Cat.id_comp`) re-spells the term and draws nothing new. -/
+partial def dropUnits (e : Expr) : Expr :=
+  match e.getAppFnArgs with
+  | (``Cat.comp, args) =>
+    if args.size < 2 then e else
+    let (f, g) := (dropUnits args[args.size - 2]!, dropUnits args[args.size - 1]!)
+    if g.isAppOf ``Cat.id then f else if f.isAppOf ``Cat.id then g
+    else mkAppN e.getAppFn ((args.extract 0 (args.size - 2)).push f |>.push g)
+  | _ => if e.isApp then mkAppN (dropUnits e.getAppFn) (e.getAppArgs.map dropUnits) else e
+
 /-- The factors of a composite, flattened: `≫` is associative and the picture of a run does not
     record which way it was bracketed. -/
 partial def factorList (e : Expr) : Array Expr :=
