@@ -141,6 +141,13 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- B&dM's `head : Line ⟵ Para`, the first line of a paragraph (§8.5). -/
+@[app_unexpander RelSet.Paragraph.headLine] def unexpandHeadLine : Unexpander
+  | `($_:ident) => `($(mkIdent `head))
+  | `($_ $p) => `($(mkIdent `head) $p)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The preorder a measure induces is the note's `length≤length°`. -/
 @[app_unexpander RelSet.leOn] def unexpandLeOn : Unexpander
   | `($_ $f) => `($f ≤ $f°)

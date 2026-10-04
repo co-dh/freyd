@@ -112,12 +112,30 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
     | _, e => e
   return go pi.numParams ty
 
+/-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
+    elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none
+    can drift.  Any value that is not two lambdas is refused. -/
+def pointwise (sp : Bool) (declName : Name) : MetaM Lbl :=
+  withDeclScope declName do withSpaced sp do
+  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
+  let some v := ci.value? | throwError "{declName}: a pointwise relation needs a value, and it has none"
+  Meta.forallTelescope ci.type fun xs ty => do
+    let some _ := homObjs? ty |
+      throwError "{declName}: a pointwise relation is an `R : A ⟶ B`; its type is {← Meta.ppExpr ty}"
+    let body := v.beta xs
+    unless body.isLambda && body.bindingBody!.isLambda do
+      throwError "{declName}: a pointwise relation is `fun x y => …`; this one is {← Meta.ppExpr body}"
+    Meta.lambdaBoundedTelescope body 2 fun ys p => do
+      let R := mkAppN (.const declName (ci.levelParams.map .param)) xs
+      return (← labelT ys[0]!) ++ " " ++ (← labelT R) ++ " " ++ (← labelT ys[1]!)
+        ++ spaced "⟺" sp ++ (← labelT p)
+
 /-- The declaration's statement, or the one side `path`/`branch` names, in the note's own
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
     from.  `sp` IS THE PRINT MODE (`StrDiag.withSpaced`), the caller's: a formula set as text has the
     room and is SPACED, and the same statement inside a drawn panel is not. -/
-def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
+partial def render (sp : Bool) (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
@@ -143,6 +161,22 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
           return #[head ++ spaced "≜" sp ++ (← labelT c)]
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
+      -- A DEFINITION BY CASES — its value made of a matcher or a recursor, the KIND test `plain`
+      -- refuses such terms by — is stated by the EQUATIONS Lean derived from it, one per case,
+      -- because its value is the compiled match and no arrow the note writes.
+      let env ← getEnv
+      let byCases := (val.find? fun e => match e with
+        | .const c _ => Meta.isMatcherCore env c || isAuxRecursor env c || isRecCore env c
+        | _ => false).isSome
+      if byCases && branch.isEmpty then
+        let some eqs ← Meta.getEqnsFor? declName |
+          throwError "{declName}: a definition by cases, and Lean derives no equations for it"
+        let rs ← eqs.mapM fun q => render sp q none [] []
+        return rs.foldl (init := #[]) fun acc r =>
+          if acc.isEmpty then r else acc ++ r.modify 0 (Lbl.text ", " ++ ·)
+      -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.
+      if branch.isEmpty && (homObjs? body).isSome && (val.beta xs).isLambda then
+        return #[← pointwise sp declName]
       return ← withBody declName branch (val.beta xs) fun v => return #[head ++ spaced "≜" sp ++ (← labelT v)]
     let body ← match binder with
       | some h =>
