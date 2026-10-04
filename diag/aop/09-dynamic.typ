@@ -132,7 +132,7 @@
  optimum #h(4pt) ]],
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_thin_prefixed.rhs",
-      src[`H≜⦇T⦈°⦇h⦈` — @dp-defn]),
+      src[`H≜⦇T⦈°⦇h⦈` — @Freyd.Alg.H]),
     // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
     // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
     // it draws the same panel; the regions are named only in the first.
@@ -265,7 +265,7 @@
   [#leanf("Freyd.Alg.RelSet.Edit.R_eq")],
   [`es` is no longer than `fs`],
   [#leann("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
-  [#leanf("Freyd.Alg.RelSet.Edit.V_eq"), #leanf("Freyd.Alg.RelSet.Edit.V_apply")],
+  [#leanf("Freyd.Alg.RelSet.Edit.V_eq")],
   [each string of the first pair is a suffix of the matching string of the second],
   [#leann("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
   [#leanf("Freyd.Alg.RelSet.Edit.Q_inl"), #leanf("Freyd.Alg.RelSet.Edit.Q_inr")],
@@ -335,7 +335,7 @@
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_laws.rhs"),
-    [#src[the specification — @edit-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Edit.editFn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
   // `est(R) : P([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.rhs")],
@@ -398,7 +398,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
-    [#src[`R≜length≤length°` — @edit-defn; `F` preserves composition]])],
+    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
      // lean:AOP.A9_2_Edit.edit_mono_step1@bc06a294
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
@@ -408,7 +408,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
-    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @edit-defn]])],
+    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @Freyd.Alg.RelSet.Edit.R]])],
      // lean:AOP.A9_2_Edit.edit_mono_step3@f2d71928
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
 
@@ -428,7 +428,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
-    [#src[`R≜length≤length°` — @edit-defn]])],
+    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R]])],
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
 )]<edit-mono>
 
@@ -444,7 +444,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn; and the bifunctor `F` preserves
+    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @Freyd.Alg.RelSet.Edit.Q; and the bifunctor `F` preserves
       composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
      // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
@@ -630,12 +630,12 @@
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
-    [#src[definition of `g`; coproducts and products — @mct-defn]])],
+    [#src[definition of `g`; coproducts and products — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@45921a50
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
-    [#src[`flatten sz=size`, since `sb` is associative — @mct-defn]])],
+    [#src[`flatten sz=size`, since `sb` is associative — @Freyd.Alg.RelSet.Bracket.szFn]])],
      // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@4e428835
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs")],
 
@@ -667,7 +667,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
-    [#src[definition of `g` — @mct-defn]])],
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bfddbbdc
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs", step: true)],
 
@@ -682,7 +682,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs"),
-    [#src[definition of `g` — @mct-defn]])],
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_g_mono_step4@cb9454b8
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
 )]<mct-g-mono>
@@ -698,7 +698,7 @@
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_laws.rhs"),
-    [#src[the specification — @mct-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Bracket.flattenFn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : P(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.rhs")],
@@ -971,7 +971,7 @@
   [#leanf("Freyd.Alg.RelSet.Code.Q")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#leann("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
-  [#leanf("Freyd.Alg.RelSet.Code.reduceFn")],
+  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.prefixR@0a5c54fb
 )]<code-defn>
@@ -990,7 +990,7 @@
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_laws.rhs"),
-    [#src[the specification — @code-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Code.decode]])],
   [#lean("Freyd.Alg.RelSet.Code.code_laws.rhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Code.code_laws.lhs.body"),
@@ -1033,7 +1033,7 @@
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @code-defn]])],
+    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @Freyd.Alg.RelSet.Code.Q]])],
      // lean:AOP.A9_4_Code.code_thin_step1@c5eac63a lean:AOP.A9_4_Code.Fbimap@f45fdcce
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs", step: true)],
 

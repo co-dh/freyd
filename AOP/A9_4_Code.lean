@@ -991,4 +991,38 @@ open Lean PrettyPrinter in
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
 
+-- printing-only unexpanders: §9.4's carriers and arrows under the book's names, `c`, `p` dropped.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.Str] public meta def unexpandCodeStr : Unexpander
+  | _ => `($(mkIdent `String))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.SnocNE] public meta def unexpandSnocNE : Unexpander
+  | `($_ $a) => `($(mkIdent (Name.mkSimple "list⁺")) $a)
+  | _ => `($(mkIdent (Name.mkSimple "list⁺")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.sizeFn] public meta def unexpandSizeFn : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `size) $x $args*)
+  | _ => `($(mkIdent `size))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.bytes] public meta def unexpandBytes : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `bytes) $x $args*)
+  | _ => `($(mkIdent `bytes))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.extendP] public meta def unexpandExtendP : Unexpander
+  | `($_ $args*) => `($(mkIdent `extend) $args*)
+  | _ => `($(mkIdent `extend))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.extendAlg] public meta def unexpandExtendAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[nil,extend]")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.reduceFn] public meta def unexpandReduceFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `reduce) $args*)
+  | _ => `($(mkIdent `reduce))
+
 end Freyd.Alg.RelSet.Code

@@ -8,7 +8,7 @@
 // B&dM §10.1, p. 245.  Theorem 9.2 with `est(Q)` for `thin(Q)`: the same hypotheses, a much stronger
 // conclusion, and one far harder to refine into a program.
 #disp[#definition[
-`h`, `T`, `R`, `H`, `M` as in @dp-defn; #h(4pt) additionally `Q` a *connected* preorder on the sets
+`h`, `T`, `R`, `H`, `M` as in @Freyd.Alg.M; #h(4pt) additionally `Q` a *connected* preorder on the sets
 $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 ]]<greedy-defn>
 
@@ -153,7 +153,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      tab stop]],
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.entab_laws_prefixed.rhs",
-      src[the specification — @entab-defn; `detab entab=𝟙` and nothing
+      src[the specification — @Freyd.Alg.RelSet.Detab.detabFn; `detab entab=𝟙` and nothing
        shorter does]),
     // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
     // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
@@ -334,7 +334,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_k.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_k.rhs",
       src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, and `penalty(xs,j)` reads only the
-       bag of `xs` — @tardy-defn]),
+       bag of `xs` — @Freyd.Alg.RelSet.Tardy.penalty]),
     // lean:AOP.A10_3_Tardy.penalty_eq_bagPenalty@437884a3
   ),
 )]<tardy-cost-k>
@@ -375,7 +375,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",
-      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))` and `bmax` commutes — @tardy-defn]),
+      src[`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))` and `bmax` commutes — @Freyd.Alg.RelSet.Tardy.cost]),
   ),
 )]<tardy-cost-bmax>
 
@@ -401,7 +401,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs",
-      src[take out the last copy of `j` and put it back — @tardy-defn]),
+      src[take out the last copy of `j` and put it back — @Freyd.Alg.RelSet.Tardy.add]),
     // lean:AOP.A10_3_Tardy.add_del@18003f68 lean:AOP.A10_3_Tardy.blist_add@74e74883
   ),
 )]<tardy-bag-cata>
@@ -442,7 +442,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
   lean-chain(
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.rhs", src[the specification — @tardy-defn]),
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.rhs", src[the specification — @Freyd.Alg.RelSet.Tardy.bagify]),
     // job-schedule row: Theorem 10.1
     // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
     // theorem it feeds and it would otherwise both be `h` in one table.
@@ -464,22 +464,60 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM §10.4, p. 259.  The book's local `h` for `⦇[arb,step]⦈` is @dp-defn's algebra letter, so it
 // is written `H°` here instead.  The base case of `f` is `a<0` on p. 262 and `p≤0` in the program.
-#disp[#definition[
-`intern≜val round : Decimal⟶[0,2¹⁶)`, #h(4pt) `val≜⦇[zero,shift]⦈`, #h(4pt)
-`shift (d,r)=(d+r)/10`, #h(4pt) `round r` rounds `2¹⁶r` to the nearest integer:
-`round r=n⟺2n−1<2¹⁷r<2n+1`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`interval n=((2n−1)/2¹⁷,(2n+1)/2¹⁷)`, #h(4pt) `r inrange (a,b)⟺a<r<b`, #h(4pt)
-`round°=interval inrange`, #h(4pt) `R≜length≤length°`.
-
-`Interval` the pairs `(a,b)` with `Legal(a,b)⟺0<b<1` and `a<b` #h(4pt) #src[(10.9); `step_legal` is what types `step`]; #h(4pt)
-`[arb,step] : 1+(Digit×Interval)⟶Interval`, #h(4pt)
-`step (d,(a,b))=((d+a)/10,(d+b)/10)`.
-
-`FX=1+(Digit×X)`, #h(4pt) `α≜[nil,cons]`, #h(4pt) `H≜⦇[arb,step]⦈°`, #h(4pt)
-`! : Digit×Interval⟶1`, #h(4pt) `Q≜(l°!°r) ∪ 𝟙` #h(4pt)
-#src[`l`, `r` are @Freyd.Alg.junc's injections into `FX=1+(Digit×X)`, so `l : 1⟶FX` and
- `r : Digit×X⟶FX`], #h(4pt) `w≜2¹⁷`.
+  [#leann("Freyd.Alg.RelSet.Tex.intern")], [#leant("Freyd.Alg.RelSet.Tex.intern")],
+  [#leanf("Freyd.Alg.RelSet.Tex.intern")],
+  [the value of a decimal fraction, rounded to `16` binary places],
+  [#leann("Freyd.Alg.RelSet.Tex.val")], [#leant("Freyd.Alg.RelSet.Tex.val")],
+  [#leanf("Freyd.Alg.RelSet.Tex.val")],
+  [the real number a digit list denotes after the decimal point],
+  [#leann("Freyd.Alg.RelSet.Tex.shift")], [#leant("Freyd.Alg.RelSet.Tex.shift")],
+  [#leanf("Freyd.Alg.RelSet.Tex.shift"), #leanf("Freyd.Alg.RelSet.Tex.shiftFn")],
+  [put digit `d` in front of `r`: `(d+r)/10`],
+  [#leann("Freyd.Alg.RelSet.Tex.round")], [#leant("Freyd.Alg.RelSet.Tex.round")],
+  [#leanf("Freyd.Alg.RelSet.Tex.round"), #leanf("Freyd.Alg.RelSet.Tex.round_recip")],
+  [the nearest integer to `2¹⁶r`: `round r=n` iff `2n−1<2¹⁷r<2n+1`],
+  [#leann("Freyd.Alg.RelSet.Tex.interval")], [#leant("Freyd.Alg.RelSet.Tex.interval")],
+  [#leanf("Freyd.Alg.RelSet.Tex.intervalFn")],
+  [the open interval `((2n−1)/2¹⁷,(2n+1)/2¹⁷)` of the reals that round to `n`],
+  [#leann("Freyd.Alg.RelSet.Tex.inrange")], [#leant("Freyd.Alg.RelSet.Tex.inrange")],
+  [#leanf("Freyd.Alg.RelSet.Tex.inrange")],
+  [`r` lies strictly inside `(a,b)`],
+  [#leann("Freyd.Alg.RelSet.Tex.Legal")], [#leant("Freyd.Alg.RelSet.Tex.Legal")],
+  [#leanf("Freyd.Alg.RelSet.Tex.Legal")],
+  [(10.9): `0<b<1` and `a<b`; `Interval` is the legal pairs],
+  [#leann("Freyd.Alg.RelSet.Tex.arb")], [#leant("Freyd.Alg.RelSet.Tex.arb")],
+  [#leanf("Freyd.Alg.RelSet.Tex.arb")],
+  [any legal interval],
+  [#leann("Freyd.Alg.RelSet.Tex.step")], [#leant("Freyd.Alg.RelSet.Tex.step")],
+  [#leanf("Freyd.Alg.RelSet.Tex.stepFn")],
+  [put digit `d` in front of both ends: `((d+a)/10,(d+b)/10)`],
+  [#leann("Freyd.Alg.RelSet.Tex.H")], [#leant("Freyd.Alg.RelSet.Tex.H")],
+  [#leanf("Freyd.Alg.RelSet.Tex.H")],
+  [every digit list whose interval the given one is],
+  [#leann("Freyd.Alg.RelSet.Tex.R")], [#leant("Freyd.Alg.RelSet.Tex.R")],
+  [#leanf("Freyd.Alg.RelSet.Tex.R")],
+  [`x` is no longer than `y`],
+  [#leann("Freyd.Alg.RelSet.Tex.l")], [#leant("Freyd.Alg.RelSet.Tex.l")],
+  [#leanf("Freyd.Alg.RelSet.Tex.l")],
+  [the injection of the empty case into `FX=1+(Digit×X)`],
+  [#leann("Freyd.Alg.RelSet.Tex.r")], [#leant("Freyd.Alg.RelSet.Tex.r")],
+  [#leanf("Freyd.Alg.RelSet.Tex.r")],
+  [the injection of the digit case into `FX=1+(Digit×X)`],
+  [#leann("Freyd.Alg.RelSet.Tex.bang")], [#leant("Freyd.Alg.RelSet.Tex.bang")],
+  [#leanf("Freyd.Alg.RelSet.Tex.bang")],
+  [the one map to `1`],
+  [#leann("Freyd.Alg.RelSet.Tex.Q")], [#leant("Freyd.Alg.RelSet.Tex.Q")],
+  [#leanf("Freyd.Alg.RelSet.Tex.Q"), #leanf("Freyd.Alg.RelSet.Tex.Q_apply")],
+  [`u` is the empty case and `z` a digit case, or `u=z`],
+  [#leann("Freyd.Alg.RelSet.Tex.w")], [#leant("Freyd.Alg.RelSet.Tex.w")],
+  [#leanf("Freyd.Alg.RelSet.Tex.w")],
+  [`2¹⁷`],
 // lean:AOP.A10_4_Tex.intern@56deb4eb
 // lean:AOP.A10_4_Tex.val@b556684c lean:AOP.A10_4_Tex.zero@c2d020a3
 // lean:AOP.A10_4_Tex.shift@522be7b7
@@ -491,7 +529,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // lean:AOP.A10_4_Tex.Legal@ad318946
 // lean:AOP.A10_4_Tex.step@1b245185
 // lean:AOP.A10_4_Tex.H@f5c2c294
-]]<tex-defn>
+)]<tex-defn>
 
 // B&dM pp. 260-261: the fusion condition, the two cases of `[zero,shift]` one row each.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

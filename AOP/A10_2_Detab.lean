@@ -1372,4 +1372,14 @@ public theorem alpha_recip_strictNatural :
   rw [con_eq_junc, con_eq_junc] at h
   exact h
 
+-- printing-only unexpanders: `detab` with its tab data dropped, and `String` for the carrier.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.detabFn] public meta def unexpandDetabFn : Unexpander
+  | `($_ $_ $_ $_ $_ $x $args*) => `($(mkIdent `detab) $x $args*)
+  | _ => `($(mkIdent `detab))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.Str] public meta def unexpandDetabStr : Unexpander
+  | _ => `($(mkIdent `String))
+
 end Freyd.Alg.RelSet.Detab

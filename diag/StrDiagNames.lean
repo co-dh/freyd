@@ -902,6 +902,12 @@ open Lean PrettyPrinter in
   | `($_ $_ $_ $x $args*) => `($(mkIdent `H) $x $args*)
   | _ => `($(mkIdent `H))
 
+open Lean PrettyPrinter in
+-- `M≜Λ(H) est(R)` is the note's one bead `M`, for `H`'s reason.
+@[app_unexpander Freyd.Alg.M] def unexpandM : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `M) $x $args*)
+  | _ => `($(mkIdent `M))
+
 -- A SECTION'S PARAMETERS ARE THE PANEL'S REGION, NOT PART OF THE BEAD'S NAME.  `gen`, `Q` and
 -- `paths` are stated over the cylinder's fixed data (`I`, `moves`, `trans`, `zip`, …), which every
 -- panel of §17.3 sits in, so spelling it in the label writes the section's context on every bead.
