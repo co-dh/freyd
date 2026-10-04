@@ -17,6 +17,7 @@ import AOP.A5_7
 -- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
 -- relator is one, and its partial application is what `openBuiltField?` opens.
 import AOP.A5_5_TypeFunctor
+import diag.Monoidal
 import diag.tool.Tags
 import diag.tool.Prof
 import diag.tool.Reads
@@ -1242,9 +1243,12 @@ def Peeled.inner (p? : Option Peeled) (n : Nat) (x : Expr) : Option Peeled := do
 partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr) : MetaM Expr := do
   let .fvar vid := v | throwError "the family variable {← Meta.ppExpr v} is not a local"
   if !X.containsFVar vid then
-    unless alg == .relator do
-      throwError "the end {← Meta.ppExpr X} does not vary with {← Meta.ppExpr v} and \
-        {← Meta.ppExpr regionTy} is no allegory, so there is no constant lane to read it as"
+    -- A CATEGORY'S CONSTANT LANE is `constFunctor X`, from the region the index lives in: `⊸ : n ⟶ 𝕀`
+    -- runs into it, and refusing it left every generator with a unit end unread.
+    if alg == .functor then
+      let idx ← Meta.inferType v
+      return ← Meta.mkAppOptM ``Freyd.Diag.constFunctor
+        #[some idx, some (← catInst idx), some regionTy, some (← catInst regionTy), some X]
     let inst ← allegoryInst regionTy
     return ← Meta.mkAppOptM ``Freyd.Alg.Relator.const
       #[some regionTy, some regionTy, some inst, some inst, some X]
@@ -1274,6 +1278,15 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
       throwError "the coproduct {← Meta.ppExpr X} has no lane in {← Meta.ppExpr regionTy}: the \
         repo has `Relator.sum` and no coproduct FUNCTOR, so a family under one is read nowhere"
     return ← Meta.mkAppM ``Freyd.Alg.Relator.sum #[fa, fb]
+  -- A MONOIDAL REGION'S `⊗` IS A LANE too, the two readings side by side (`tensFunctor`): the ends
+  -- of the copy `◁ : n ⟶ n ⊗ n` and of the merge, the generators a cartesian bicategory is built from.
+  if let (``Freyd.Diag.Word.tens, #[_, a, b]) := X.getAppFnArgs then
+    let fa ← relatorOfObj alg cat regionTy v a
+    let fb ← relatorOfObj alg cat regionTy v b
+    unless alg == .functor do
+      throwError "the tensor {← Meta.ppExpr X} has no lane in the allegory {← Meta.ppExpr regionTy}: \
+        `tensFunctor` is a functor of a monoidal category, and no relator"
+    return ← Meta.mkAppM ``Freyd.Diag.tensFunctor #[fa, fb]
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
@@ -1308,6 +1321,19 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
     by, and nothing else — a spider is the absence of all three, not a fourth. -/
 inductive Grade where | strict | lax | oplax
   deriving Inhabited, BEq
+
+/-- THE HOM ORDER A SQUARE IS GRADED BY: an allegory's `⊑` (`Freyd.Alg.le`), else the `≤` an
+    ordered category carries as `LE` on each hom (`diag.Basic`'s `HomLE`) — a cartesian bicategory's
+    `◁` is lax there (`lax_Δ`) as `∋` is in an allegory. -/
+def homLe (regionTy l r : Expr) : MetaM Expr := do
+  if (← laneAlgOf regionTy) == .relator then Meta.mkAppM ``Freyd.Alg.le #[l, r]
+  else Meta.mkAppM ``LE.le #[l, r]
+
+/-- Whether the region's homs carry an order (`homLe`) at all; a bare category's squares have only `=`. -/
+def homOrdered (regionTy : Expr) : MetaM Bool := do
+  if (← laneAlgOf regionTy) == .relator then return true
+  Meta.withLocalDeclD `x regionTy fun x => do
+    return (← Meta.synthInstance? (← Meta.mkAppM ``LE #[← Meta.mkAppM ``Cat.Hom #[x, x]])).isSome
 
 /-- THE NATURALITY SQUARE OF A FAMILY BETWEEN LANES, as a proposition.  `φ a : G.obj a ⟶ F.obj a`,
     so naturality is `G.map f ≫ φ y ∼ φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the region,
@@ -1351,8 +1377,8 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
       let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
       let sq ← match grade with
         | .strict => Meta.mkEq l r
-        | .lax => Meta.mkAppM ``Freyd.Alg.le #[l, r]
-        | .oplax => Meta.mkAppM ``Freyd.Alg.le #[r, l]
+        | .lax => homLe regionTy l r
+        | .oplax => homLe regionTy r l
       if !onMaps then return ← Meta.mkForallFVars #[x, y, f] sq
       Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
         Meta.mkForallFVars #[x, y, f, hf] sq

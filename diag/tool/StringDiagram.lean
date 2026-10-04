@@ -1058,10 +1058,9 @@ def markOfNatPredicate : Name → Option Mark
     The binder may state the class or the family's SQUARE at an arrow of the statement
     (`laxNatural_comp_slide`'s `hψ`), graded by the square's relation. -/
 def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark × Name × Expr)) := do
-  -- A category has only the equation to grade a square by (`laneSquare`).
-  let grades := match alg with
-    | .relator => #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)]
-    | .functor => #[(Grade.strict, Mark.strict)]
+  -- A bare category has only the equation to grade a square by (`laneSquare`); an ordered one has `≤`.
+  let grades := if alg == .relator || (← homOrdered regionTy)
+    then #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)] else #[(Grade.strict, Mark.strict)]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     let ty ← instantiateMVars d.type
@@ -1818,6 +1817,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- it of every arrow — `∋` drew solid here while the same `∋` elsewhere drew hollow off
       -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a region that is a
       -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
+      -- AN ORDERED CATEGORY grades by its own `≤` (`homLe`) and has no maps to restrict to: the copy
+      -- of a cartesian bicategory is lax (`lax_Δ`), its merge op-lax.
+      if alg0 == .functor && (← homOrdered regionTy) then
+        for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
+          if let some (n, _) ← tele (← laneSquare alg regionTy F G φ g) then
+            return some { mark := some m, lean := #[n] }
       if alg0 == .relator then
         -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
         -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
