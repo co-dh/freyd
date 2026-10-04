@@ -410,7 +410,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step3.rhs",
       src[definition of `R`, and `nil⊑zero≤cost°`]),
     // lean:AOP.A10_3_Tardy.bagify_recip_le_step3@6d50a490
-    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step4.rhs", src[definition of `m`]),
+    (DF, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step4.rhs", src[definition of `m`]),
     // lean:AOP.A10_3_Tardy.bagify_recip_le_step4@720cf659
   ),
 )]<tardy-bag-le>
