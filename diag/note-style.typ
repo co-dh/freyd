@@ -122,9 +122,9 @@
       let s = disp-of(here())
       if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        // The number column as narrow as its digits: a fixed 0.55cm one widened every `auto` first column
-        // by that much and pushed a full-width table past the paper edge; out of flow it met bullets and text.
-        grid(columns: (auto, 1fr), column-gutter: 3pt, text(8pt, luma(140))[#n], it.body)
+        // In the margin left of the cell, out of the flow: a number column widened every `auto` first
+        // column and pushed a full-width table past the paper edge (inkfit: 0 hits in ch 7 here, 19 in flow).
+        place(left + top, dx: -1.5em, box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))); it.body
       } else { it.body }
     }
   })
