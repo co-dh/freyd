@@ -1080,6 +1080,102 @@ public theorem Fmap_sort_comp_listcp_le {L E X : Type} {«≼» : dE X ⟶ dE X}
     exact ⟨funext fun y => propext (inlistP_cmap _ y z).symm, rfl,
       orderedP_cmap _ ≼ _ (fun _ _ h => ⟨rfl, h⟩) z ho⟩
 
+/-- `list(F(R))` on one label's row: `cmap (e,·) xs` is related to `zs` exactly when `zs` is the
+    row of `e` over a `list(R)`-image of `xs`. -/
+public theorem listP_Fmap_cmap_inr {L E X Y : Type} (R : dE X ⟶ dE Y) (e : E) :
+    ∀ (xs : ConsList Unit X) (zs : ConsList Unit (L ⊕ E × Y)),
+      listP ((CL.F L E).map R) (cmap (fun x => Sum.inr (e, x)) xs) zs ↔
+        ∃ ys, listP R xs ys ∧ zs = cmap (fun y => Sum.inr (e, y)) ys
+  | ConsList.wrap _, ConsList.wrap _ => ⟨fun _ => ⟨ConsList.wrap (), trivial, rfl⟩, fun _ => trivial⟩
+  | ConsList.wrap _, ConsList.cons _ _ => ⟨False.elim, fun ⟨ys, h, hz⟩ => by
+      cases ys with
+      | wrap _ => exact nomatch hz
+      | cons _ _ => exact h.elim⟩
+  | ConsList.cons _ _, ConsList.wrap _ => ⟨False.elim, fun ⟨ys, h, hz⟩ => by
+      cases ys with
+      | wrap _ => exact h.elim
+      | cons _ _ => exact nomatch hz⟩
+  | ConsList.cons x xs, ConsList.cons z zs => by
+    show (Fmap L E R (Sum.inr (e, x)) z ∧ _) ↔ _
+    constructor
+    · rintro ⟨hz, h⟩
+      obtain ⟨ys, hys, rfl⟩ := (listP_Fmap_cmap_inr R e xs zs).mp h
+      rcases z with _ | ⟨e', y⟩
+      · exact hz.elim
+      · obtain ⟨rfl, hxy⟩ := hz
+        exact ⟨ConsList.cons y ys, ⟨hxy, hys⟩, rfl⟩
+    · rintro ⟨ys, hys, hz⟩
+      cases ys with
+      | wrap _ => exact hys.elim
+      | cons y ys =>
+        obtain ⟨hxy, hys⟩ := hys
+        cases hz
+        exact ⟨⟨rfl, hxy⟩, (listP_Fmap_cmap_inr R e xs _).mpr ⟨ys, hys, rfl⟩⟩
+
+-- Stated in the relators the bead's two lanes spell (`L+E×𝟙` then `list`, and `L+E×(𝟙 list)`),
+-- because that is the statement the diagram exporter asks for the `listcp` bead.
+/-- **`listcp` is STRICTLY natural**: `F(list(R)) listcp = listcp list(F(R))`. -/
+public theorem listcp_strictNatural {L E : Type} :
+    StrictNatural
+      (Relator.comp (Relator.sum (Relator.const (dL L))
+          (Relator.prod (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))) listRelator)
+      (Relator.sum (Relator.const (dL L))
+          (Relator.prod (Relator.const (dE E))
+            (Relator.comp (Relator.idRelator RelSet.{0}) listRelator)))
+      (fun a : RelSet.{0} => listcp (L := L) (E := E) (X := a.carrier)) := by
+  intro x y R
+  show (Relator.sum (Relator.const (dL L)) (Relator.prod (Relator.const (dE E))
+      (Relator.idRelator RelSet.{0}))).map (listRelator.map R) ≫ listcp
+    = listcp ≫ listRelator.map ((Relator.sum (Relator.const (dL L)) (Relator.prod
+      (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))).map R)
+  rw [F_eq_sum_prod, F_eq_sum_prod]
+  apply hom_ext
+  intro u zs
+  rcases u with d | ⟨e, xs⟩
+  · constructor
+    · rintro ⟨w, hw, rfl⟩
+      rcases w with d' | _
+      · obtain rfl : d = d' := hw
+        exact ⟨_, rfl, rfl, trivial⟩
+      · exact (hw : False).elim
+    · rintro ⟨v, rfl, hv⟩
+      rcases zs with _ | ⟨z, zs⟩
+      · exact (hv : False).elim
+      · obtain ⟨hz, ht⟩ := hv
+        rcases z with d' | _
+        · obtain rfl : d = d' := hz
+          cases zs with
+          | wrap u => exact ⟨Sum.inl d, rfl, rfl⟩
+          | cons _ _ => exact ht.elim
+        · exact (hz : False).elim
+  · constructor
+    · rintro ⟨w, hw, rfl⟩
+      rcases w with _ | ⟨e', ys⟩
+      · exact (hw : False).elim
+      · obtain ⟨rfl, hys⟩ := hw
+        exact ⟨_, rfl, (listP_Fmap_cmap_inr R e xs _).mpr ⟨ys, hys, rfl⟩⟩
+    · rintro ⟨v, rfl, hv⟩
+      obtain ⟨ys, hys, rfl⟩ := (listP_Fmap_cmap_inr R e xs zs).mp hv
+      exact ⟨Sum.inr (e, ys), ⟨rfl, hys⟩, rfl⟩
+
+/-- **`cp(F)` is STRICTLY natural** at `FX = L+E×X`, in the relators its lanes spell:
+    `Tuple.cpMap_strict_natural` read through `F = L+E×𝟙` (`F_eq_sum_prod`). -/
+public theorem cpMap_F_strictNatural {L E : Type} :
+    StrictNatural
+      (Relator.comp (Relator.sum (Relator.const (dL L))
+          (Relator.prod (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))) powerRelator)
+      (Relator.sum (Relator.const (dL L))
+          (Relator.prod (Relator.const (dE E))
+            (Relator.comp (Relator.idRelator RelSet.{0}) powerRelator)))
+      (fun a : RelSet.{0} => cpMap (CL.F L E) a) := by
+  intro a b R
+  show (Relator.sum (Relator.const (dL L)) (Relator.prod (Relator.const (dE E))
+      (Relator.idRelator RelSet.{0}))).map (powerRel R) ≫ cpMap (CL.F L E) b
+    = cpMap (CL.F L E) a ≫ powerRel ((Relator.sum (Relator.const (dL L)) (Relator.prod
+      (Relator.const (dE E)) (Relator.idRelator RelSet.{0}))).map R)
+  rw [F_eq_sum_prod, F_eq_sum_prod]
+  exact Tuple.cpMap_strict_natural L E R
+
 end Freyd.Alg.RelSet.ListRel
 
 /-! ## `merge(≼)` in `Rel` (B&dM Exercise 6.27, p.156)
