@@ -611,6 +611,9 @@ public theorem list_mono {B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : list R
   map_comp R S := list_comp R S
   map_mono h := list_mono h
 
+/-- The list relator's object action, `list(A)=[A]`: the formula a reference to its definition prints. -/
+public theorem listRelator_obj (A : RelSet.{0}) : listRelator.obj A = dList A.carrier := rfl
+
 /-! ### The non-empty-list relator `list⁺(R)`
 
   `list⁺ A` is `ConsList A A` — a leaf carries the LAST element, so the datatype IS the non-empty

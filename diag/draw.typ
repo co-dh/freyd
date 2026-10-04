@@ -1353,9 +1353,10 @@
 // `s: auto` fills the column, so the box is as wide as a definition box beside it; 24pt is the inset.
 // `pair-fill` is that scale on its own, for a picture below that must match the pair's size.
 #let pair-fill(sq, sd, w) = (w - 24pt - 34pt) / (measure(P(sq, s: 100%)).width + measure(P(sd, s: 100%)).width) * 100%
-// `<lean-keys-in>`: the formula cell again, outside the `layout`, whose closure no content walk
-// (`lean-keys`) can enter — so a reference to the display finds the laws it states.
-#let pair(sq, sd, f, s: 100%) = [#metadata(f)<lean-keys-in>] + layout(avail => {
+#let pair(sq, sd, f, s: 100%) = layout(avail => {
+  // `<lean-keys-in>`: the formula cell as a placed marker, which `disp-keys` queries — no content
+  // walk enters a `layout` — so a reference to the display finds the laws it states.
+  let f = f + [#metadata(f)<lean-keys-in>]
   let s = if s != auto { s } else { pair-fill(sq, sd, avail.width) }
   let body = grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s))
   let (px, fe) = (hm-sepx(sd), capeqx(f))

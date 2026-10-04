@@ -14,7 +14,7 @@
   table.header([*definition*], [*type*], [*note*]),
 
   // cons-lists definition: B&dM p. 55
-  [`listr A::=nil|cons(A,listr A)`],
+  [`listr A::=nil|cons(A,listr A)` #h(4pt) #leanf("Freyd.Alg.RelSet.ListRel.listRelator_obj")],
   [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   [The cons-lists over `A`, the datatype every row below folds.],
 

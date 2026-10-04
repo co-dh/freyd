@@ -138,6 +138,12 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
+/-- The preorder a measure induces is the note's `length≤length°`. -/
+@[app_unexpander RelSet.leOn] def unexpandLeOn : Unexpander
+  | `($_ $f) => `($f ≤ $f°)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The carrier of `F X = L + E×X`, written as the sum it is (B&dM's `FX=𝟏+A×X`). -/
 @[app_unexpander RelSet.CL.Fobj] def unexpandCLFobj : Unexpander
   | `($_ $L $E $C) => `($L + $E × $C)

@@ -447,7 +447,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   inset: 7pt, stroke: 0.4pt + luma(190),
   table.header([*name*], [*definition*], [*type*], [*example*], [*in words*]),
 
-  [`F`], [`FX=𝟏+A×X`], [#leant("Freyd.Alg.RelSet.CL.F")], [],
+  [`F`], [#leanf("Freyd.Alg.RelSet.CL.F_obj")], [#leant("Freyd.Alg.RelSet.CL.F")], [],
   [nothing, or a head and a tail],
 
   [`nil`, `cons`], [`[A]::=nil|cons(A,[A])` #h(4pt) #src[@comb-fns:1]],
@@ -459,11 +459,11 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [both constructors as one map],
 
  [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
-  // lean:AOP.A7_7_TakeWhile.pcor@62cb073c
+  // lean:AOP.A7_7_TakeWhile.pcor@cdf778e6
   [`{(a,a)∣a` passes the test`}`],
 
  [`R`], [`length≤length°`, a preorder #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [`[1] R [1,2]`],
-  // lean:AOP.A7_7_TakeWhile.lenLE@e922b2d4
+  // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
   [`xs R ys⟺length(xs)≤length(ys)`],
 
   [`⊸ nil`], [the constant `nil` — the second `nil` of `prefix`],

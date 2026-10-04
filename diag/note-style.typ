@@ -114,8 +114,8 @@
 #let law-formula(keys) = if "list" in sys.inputs { none } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
-/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the
-/// declarations its `#leant` cells type — a definition row's formula is that definition,
+/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else its other
+/// cells' `#leanf`s, else the declarations its `#leant` cells type — a definition row's formula is that definition,
 /// `<name>≜<body>` — else the one declaration its picture draws (`<lean-decls>` of a single
 /// selector), else `()`.
 #let row-keys(loc) = {
@@ -125,7 +125,8 @@
     let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
     let b = nxt.sorted(key: l => (l.page(), l.position().y)).at(0, default: none)
     let within(l) = query(if b == none { selector(l).after(a) } else { selector(l).after(a).before(b) })
-    let ts = within(<lean-type>).map(m => m.value).dedup()
+    let fs = within(<lean-formula>).map(m => m.value).dedup()
+    let ts = if fs.len() > 0 { fs } else { within(<lean-type>).map(m => m.value).dedup() }
     if ts.len() > 0 { ts } else {
       let vs = within(<lean-decls>).map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
       vs.slice(0, calc.min(1, vs.len()))
@@ -144,7 +145,10 @@
     let te = query(selector(<thm-end>).after(ts.first().location())).first()
     (query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup(), none)
   } else {
-    let own = lean-keys(query(selector(figure.where(kind: "disp")).before(s.location())).last().body).dedup()
+    // `<lean-keys-in>` by QUERY too: a wrapper such as `definition` hides its body from the walk.
+    let ins = if e == none { () } else { query(selector(<lean-keys-in>).after(s.location()).before(e.location())) }
+    let own = (lean-keys(query(selector(figure.where(kind: "disp")).before(s.location())).last().body)
+      + ins.map(m => lean-keys(m.value)).flatten()).dedup()
     let h = query(selector(heading).before(s.location())).at(-1, default: none)
     let hk = if own.len() > 0 or h == none { () } else { lean-keys(h.body).dedup() }
     if hk.len() == 0 { (own, none) } else { (hk, h.location()) }
