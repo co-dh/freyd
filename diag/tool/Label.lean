@@ -1878,7 +1878,14 @@ partial def relLabel (r : Expr) : MetaM String := do
     return " ".intercalate (← ws.toList.reverse.mapM relLabel)
   | (``Freyd.Alg.timesRel, _) => return "×"
   | (``Freyd.Alg.Relator.idRelator, _) => return "𝟙"
-  | _ => label r
+  | (_, args) => do
+    -- A LANE AT TYPE PARAMETERS IS NAMED BY ITSELF (`relatorName?`): the tip-tree's `F` at `A` is the
+    -- lane `F`, the `A` being the region the picture already draws — never the object `FA`.
+    let fi ← Meta.getFunInfoNArgs r.getAppFn args.size
+    let ex := (List.range args.size).filter fun i => (fi.paramInfo[i]?.map (·.isExplicit)).getD true
+    if !ex.isEmpty && (← ex.allM fun i => Meta.isType args[i]!) then
+      if let some n ← relatorName? r then return n
+    label r
 
 /-- A WIRE'S NAME, by the same printer as the object wire beside it. -/
 def Wire.label : Wire → MetaM String
