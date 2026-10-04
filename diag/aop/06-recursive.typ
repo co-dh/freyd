@@ -732,7 +732,7 @@
      // lean:AOP.A6_7.theta_zero_left@b8297d35 lean:AOP.A6_7.theta@494eeaa5
   lean-chain(pictures: false,
     (none, "Freyd.Alg.theta_zero_left_step1.lhs", []),
-    (EQ, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
+    (DF, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
      // lean:AOP.A6_7.theta_zero_left_step1@794d78de
     (EQ, "Freyd.Alg.theta_zero_left_step2.rhs", src[`R−𝟘=R` — @closure-sub]),
      // lean:AOP.A6_7.theta_zero_left_step2@3d29ce01
@@ -747,7 +747,7 @@
      // lean:AOP.A6_7.theta_zero_right@14a43ab2
   lean-chain(pictures: false,
     (none, "Freyd.Alg.theta_zero_right_step1.lhs", []),
-    (EQ, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
+    (DF, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
      // lean:AOP.A6_7.theta_zero_right_step1@6c0c4172
     (EQ, "Freyd.Alg.theta_zero_right_step2.rhs", src[`𝟘` is a prefixed point: `𝟘R−P=𝟘`]),
      // lean:AOP.A6_7.theta_zero_right_step2@e32277dc
