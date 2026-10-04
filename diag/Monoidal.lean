@@ -173,6 +173,18 @@ theorem tensHom_split' {a a' b b' : Word O} (R : a ⟶ a') (S : b ⟶ b') :
     (𝟙 a ⊗ₕ S) ≫ (R ⊗ₕ 𝟙 b') = R ⊗ₕ S := by
   rw [← tensHom_comp, Cat.comp_id, Cat.id_comp]
 
+/-- TWO SQUARES SIDE BY SIDE ARE ONE SQUARE: `AB ≤ CD` and `A'B' ≤ C'D'` give
+    `(A⊗A')(B⊗B') ≤ (C⊗C')(D⊗D')`.  The closure of a lax (or op-lax) family under `⊗`: a bead
+    `𝟙 ⊗ φ` inherits the grade of `φ`, the identity's square being an equation. -/
+theorem tensHom_square {p q r s p' q' r' s' : Word O} {A : p ⟶ q} {B : q ⟶ r} {C : p ⟶ s}
+    {D : s ⟶ r} {A' : p' ⟶ q'} {B' : q' ⟶ r'} {C' : p' ⟶ s'} {D' : s' ⟶ r'}
+    (h : (A ≫ B) ≤ (C ≫ D)) (h' : (A' ≫ B') ≤ (C' ≫ D')) :
+    ((A ⊗ₕ A') ≫ (B ⊗ₕ B')) ≤ ((C ⊗ₕ C') ≫ (D ⊗ₕ D')) :=
+  calc (A ⊗ₕ A') ≫ (B ⊗ₕ B')
+      = (A ≫ B) ⊗ₕ (A' ≫ B') := (tensHom_comp A B A' B').symm
+    _ ≤ (C ≫ D) ⊗ₕ (C' ≫ D') := tensHom_mono h h'
+    _ = (C ⊗ₕ C') ≫ (D ⊗ₕ D') := tensHom_comp C D C' D'
+
 /-- THE LANE OF `n ⊗ n`: two lanes side by side, `n ↦ F(n) ⊗ G(n)` and `R ↦ F(R) ⊗ₕ G(R)`.  The end
     of `◁ : n ⟶ n ⊗ n` is this lane at `F = G = 𝟙`, so the naturality of a generator is a square in
     it; a functor by `tensHom_id` and the interchange `tensHom_comp`. -/

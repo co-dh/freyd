@@ -2435,6 +2435,8 @@ def statesSquare (al : Std.HashMap Name (Array Name)) (fam : Name) (ty : Expr) :
     let some (l, r) := (match concl.getAppFnArgs with
       | (``Eq, #[_, l, r]) => some (l, r)
       | (``Freyd.Alg.le, args) => lastTwo args
+      -- An ordered category's square is graded by `LE.le` (`homLe`), so it is stated in it too.
+      | (``LE.le, args) => lastTwo args
       | _ => none) | return false
     -- The family is met by any spelling a bridge could have rewritten into it, as in `must`.
     let names (e : Expr) : Bool :=
