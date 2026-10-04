@@ -34,7 +34,12 @@ failed=
 verify=
 [ "$1" = "--missing" ] && { missing=1; shift; }
 [ "$1" = "--verify" ] && { verify=--verify; shift; }
-[ $# -eq 0 ] || { echo "usage: diag-regen [--missing | --verify]" >&2; exit 2; }
+# TWO STAGES for `make`: a chapter's listing needs `make ref-ids`'s file, whose whole-note query needs
+# the `#import`s drawn.  `--imports` stops after them; `--listed` follows it in the same run, prepared.
+stage=
+[ "$1" = "--imports" ] && { stage=imports; shift; }
+[ "$1" = "--listed" ] && { stage=listed; prepared=1; shift; }
+[ $# -eq 0 ] || { echo "usage: diag-regen [--missing | --verify] [--imports | --listed]" >&2; exit 2; }
 
 # Only the names that NEED DRAWING, under --missing — and a picture whose Lean statement has changed
 # needs it as much as one that was never drawn: every generated file carries the `cert:` key it was
@@ -111,9 +116,12 @@ plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | grep -v '\.calc$' | grep -v 
 [ -z "$plain" ] || { printf 'diag-regen: a picture imported, not drawn by #lean("<sel>"):\n%s\n' "$plain" >&2; exit 1; }
 printf '%s\n' "$all" | sed -n 's|\.proof$||p' > "$ls/proof"
 printf '%s\n' "$all" | sed -n 's|\.calc$||p' > "$ls/calc"
-tests proof --proof calc --calc
-draw "$(cat "$ls/proof.stale")" --proof
-draw "$(cat "$ls/calc.stale")" --calc
+if [ "$stage" != listed ]; then
+  tests proof --proof calc --calc
+  draw "$(cat "$ls/proof.stale")" --proof
+  draw "$(cat "$ls/calc.stale")" --calc
+fi
+[ "$stage" != imports ] || { [ -z "$failed" ] || exit 1; exit 0; }
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
