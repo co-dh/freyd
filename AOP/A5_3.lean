@@ -291,25 +291,34 @@ end SumMap
 
 section SumRelator
 
+variable {𝒜 : Type u} [DistributiveAllegory 𝒜]
+
+/-- The sum relator over a GIVEN coproduct family `C`: `X ↦ G(X)+H(X)` with `C x` saying which
+    object is that sum, `R ↦ G(R)+H(R)`.  Functor laws from `sumMap`'s composed with `G`'s and
+    `H`'s. -/
+@[expose] public abbrev Relator.sumOn {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] {G H : Relator 𝒮 𝒜}
+    {T : 𝒮 → 𝒜} (C : ∀ x, Coproduct (T x) (G.obj x) (H.obj x)) : Relator 𝒮 𝒜 where
+  obj := T
+  map {x y} R := sumMap (C x) (C y) (G.map R) (H.map R)
+  map_id x := by simp only [G.map_id, H.map_id]; exact sumMap_id (C x)
+  map_comp R S := by simp only [G.map_comp, H.map_comp]; exact (sumMap_comp _ _ _ _ _ _ _).symm
+  map_mono h := sumMap_mono _ _ (G.map_mono h) (H.map_mono h)
+
+end SumRelator
+
+section SumRelatorChosen
+
 -- Needs `PositiveAllegory`, not merely `DistributiveAllegory`: a relator's `obj` must CHOOSE a
 -- coproduct object for each `x`, which is exactly `PositiveAllegory.coprod`.
 variable {𝒜 : Type u} [PositiveAllegory 𝒜]
 
-/-- Relators are closed under coproduct: `X ↦ F X + G X`, `R ↦ F R + G R`, on the ambient
-    `PositiveAllegory`'s chosen coproducts.  Functor laws from `sumMap`'s composed with `F`'s
-    and `G`'s. -/
+/-- Relators are closed under coproduct: `X ↦ F X + G X`, `R ↦ F R + G R`, the sum relator on
+    the ambient `PositiveAllegory`'s chosen coproducts. -/
 @[expose] public def Relator.sum {𝒮 : Type u₂} [Allegory.{v₂} 𝒮] (F G : Relator 𝒮 𝒜) :
-    Relator 𝒮 𝒜 where
-  obj x := PositiveAllegory.coprod (F.obj x) (G.obj x)
-  map R := sumMap (PositiveAllegory.has_coproduct _ _) (PositiveAllegory.has_coproduct _ _)
-    (F.map R) (G.map R)
-  map_id x := by
-    simp only [F.map_id, G.map_id]; exact sumMap_id (PositiveAllegory.has_coproduct _ _)
-  map_comp R S := by
-    simp only [F.map_comp, G.map_comp]; exact (sumMap_comp _ _ _ _ _ _ _).symm
-  map_mono h := sumMap_mono _ _ (F.map_mono h) (G.map_mono h)
+    Relator 𝒮 𝒜 :=
+  Relator.sumOn fun x => PositiveAllegory.has_coproduct (F.obj x) (G.obj x)
 
-end SumRelator
+end SumRelatorChosen
 
 /-! ## §4  Ex 5.12 -/
 

@@ -69,18 +69,14 @@
   [#leann("Freyd.Alg.M")], [#leant("Freyd.Alg.M")],
   [#leanf("Freyd.Alg.M")],
   [the problem to be solved: an answer of `H` that is best under `R`],
-  [#leann("Freyd.Alg.DPSetting")], [#leant("Freyd.Alg.DPSetting")],
-  [#leanf("Freyd.Alg.DPSetting")],
-  [`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive],
 // lean:AOP.A9_1.H@71852cf7
-// lean:AOP.A9_1.DPSetting@761bb771
 )]<dp-defn>
 
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming") \
     #src[every answer the recursion returns is an optimal one]],
-    // lean:AOP.A9_1.dynamic_programming@283c7263
+    // lean:AOP.A9_1.dynamic_programming@72427731
   pad(left: -9pt)[#src[
     - #frc([`T°`]) takes the input apart one step every way; `F(X)` solves
       each part by the recursion `X`; `h` assembles each candidate; `est(R)` keeps a best one
@@ -116,7 +112,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@7d38edb3
+     // lean:AOP.A9_1.dynamic_programming_upper@d6c7f3f2
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>

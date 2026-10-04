@@ -150,6 +150,18 @@ def pointwise (sp : Bool) (declName : Name) : MetaM Lbl :=
       return (← labelT ys[0]!) ++ " " ++ (← labelT R) ++ " " ++ (← labelT ys[1]!)
         ++ spaced "⟺" sp ++ (← labelT p)
 
+/-- A CLASS THAT STATES A CONDITION rather than supplying data: its type is a proposition, or it is a
+    structure every field of which is a proof — read off the constructor at the class's arguments. -/
+def conditionClass (t : Expr) : MetaM Bool := do
+  if ← Meta.isProp t then return true
+  let .const c us := t.getAppFn | return false
+  let env ← getEnv
+  unless isStructure env c do return false
+  let cty ← Meta.instantiateForall (← Meta.inferType (mkConst (getStructureCtor env c).name us)) t.getAppArgs
+  Meta.forallTelescope cty fun fs _ => do
+    if fs.isEmpty then return false
+    fs.allM fun f => do Meta.isProp (← Meta.inferType f)
+
 /-- The declaration's statement, or the one side `path`/`branch` names, in the note's own
     spelling: `label` is the one spelling the string, circuit and commutative functors already
     write every box and bead with, so this prints from the same place their pictures are drawn
@@ -230,6 +242,14 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     -- operand are the one table's and not a second spelling here.  A NATURALITY HYPOTHESIS is the one
     -- exception: the panel's bead dot already states it (`markOfNatPredicate`, by head constant).
     let cond ← if binder.isNone && path.isEmpty && branch.isEmpty then do
+        -- A CONDITION HIDDEN IN AN INSTANCE BINDER would print no hypothesis and the law would read as
+        -- unconditional, so it is refused: the condition belongs in explicit binders.
+        for x in xs do
+          let d ← x.fvarId!.getDecl
+          if d.binderInfo.isInstImplicit && (← conditionClass d.type) then
+            throwError "{declName}: instance binder `[{d.userName.eraseMacroScopes} : \
+              {← Meta.ppExpr d.type}]` is a condition (a proposition, or a structure of proofs), \
+              and the formula prints no instance binder — state it as explicit hypotheses"
         let hyps ← xs.filterM fun x => do
           let t ← Meta.inferType x
           return (← x.fvarId!.getDecl).binderInfo.isExplicit && (← Meta.isProp t)
