@@ -441,12 +441,27 @@ inductive Law where
   | hyp (h : Name)
   deriving BEq
 
+/-- A statement relating two STATEMENTS — `a ↔ b`, or `a = b` at `Prop` (`propext`'s) — and its sides. -/
+def stmtSides? (t : Expr) : MetaM (Option (Expr × Expr)) := do
+  if t.isAppOfArity ``Iff 2 then return some (t.appFn!.appArg!, t.appArg!)
+  unless t.isAppOfArity ``Eq 3 do return none
+  return if ← Meta.isProp t.appFn!.appArg! then some (t.appFn!.appArg!, t.appArg!) else none
+
+/-- Whether statement `e` relates arrows, itself or through a connective (`R ⊑ S ∧ T ⊑ U`). -/
+partial def statesArrows (e : Expr) : MetaM Bool := do
+  if (← splitM e).isSome then return true
+  let some (a, b) := conn? e | return false
+  return (← statesArrows a) || (← statesArrows b)
+
 /-- Whether theorem `c` is LOGIC rather than a law of arrows: its generic conclusion relates no two
     arrows (`Eq.mpr`, `id`), or relates terms of a type it quantifies over (`Eq.symm`, `congrArg`).
+    A conclusion relating two STATEMENTS is a law when a side relates arrows (a Galois connection
+    `R ⊑ S/T ↔ R T ⊑ S`), logic when both are variables (`Iff.trans`, `propext`).
     Reducing, because a conclusion named by a definition (`F.PreservesRecip`) quantifies inside it. -/
 def isLogic (c : Name) : MetaM Bool := do
   let some ci := (← getEnv).find? c | return true
   Meta.forallTelescopeReducing ci.type fun _ t => do
+    if let some (a, b) ← stmtSides? t then return !((← statesArrows a) || (← statesArrows b))
     let some (_, l, _) ← splitM t | return true
     return (← Meta.inferType l).getAppFn.isFVar
 
@@ -470,6 +485,15 @@ def around (c : Name) (i : Nat) : MetaM Bool := do
       let some (_, pl, pr) ← splitM (← Meta.inferType y) | continue
       (l, r) := (sub (sub l pl (mark "P" j)) pr (mark "Q" j), sub (sub r pr (mark "P" j)) pl (mark "Q" j))
     return l == r && ((mark "P" i).occurs l || (mark "Q" i).occurs l)
+
+/-- Whether logic `c`'s premise `i` is the statement it CARRIES rather than a relation it uses: its
+    type in `c`'s generic statement is a variable (`Iff.mp`'s `a`, `Eq.mpr`'s `b : β`), so `c` only
+    moves that proof along the other premises (`(h).mp hx`, `h ▸ hx`). -/
+def carries (c : Name) (i : Nat) : MetaM Bool := do
+  let some ci := (← getEnv).find? c | return false
+  Meta.forallTelescope ci.type fun xs _ => do
+    let some x := xs[i]? | return false
+    return (← Meta.inferType x).getAppFn.isFVar
 
 /-- Whether law `c`, as its reason cell prints it, reads as a tautology: its two sides one label,
     as `graph_comp`'s `f g = f g`, the `graph` coercion unprinted.  Such a law is no reason. -/
@@ -537,6 +561,7 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
     -- this application congruence around it.
     let isThm (x : Expr) := x.getAppFn.constName?.any fun n => (env.find? n).any (· matches .thmInfo _)
     let mut inner := #[]
+    let mut carried := #[]
     let mut built := false
     for (a, i) in args.toList.zipIdx do
       unless a.isFVar do
@@ -547,11 +572,18 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
       -- A hypothesis is a law the step rewrites with unless a law takes it as its premise.
       if !law || (← e.getAppFn.constName?.elim (pure false) (around · i)) then
         let l ← lawsIn coerced a
-        inner := inner ++ l; built := built || !l.isEmpty
+        if !law && (← e.getAppFn.constName?.elim (pure false) (carries · i)) then
+          carried := carried ++ l
+        else
+          inner := inner ++ l; built := built || !l.isEmpty
+    -- A carried hypothesis is the step's law only when nothing else here applies one (`id h`).
+    inner := if inner.any (· matches .thm _) then inner else inner ++ carried
     let some c := e.getAppFn.constName? | return inner
     unless law && !built do return inner
     -- A law applied short of its premise (`relCata_le_of_prefixed I`, a `⟹` step) concludes under it.
     Meta.forallTelescope concl fun _ concl => do
+      -- A law relating two statements (`le_leftDiv_iff`, a `⟺` step) draws no two pictures to compare.
+      if (← stmtSides? concl).isSome then return inner.push (.thm c)
       let some (_, l, r) ← splitM concl | return inner
       -- The instance's labels are asked only on a coerced step: elsewhere they decide nothing, and
       -- an instance may hold a raw algebra lambda no label writes (`qsort_rec`'s `fun p q => …`).
