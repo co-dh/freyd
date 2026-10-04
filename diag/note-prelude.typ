@@ -120,10 +120,11 @@
 #let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
+// The two sides of an `↔` as one call in a shared box: the string route draws no `↔` as one panel.
 #let lean-sides(sel, f) = {
-  let (m, fs) = lean-pics("generated/", <lean-panel>, (sel,))
+  let (m, fs) = lean-pics("generated/", <lean-panel>, (sel + ".lhs", sel + ".rhs"))
   m
-  if "list" in sys.inputs { f([], []) } else { f(fs.at(0).lhs, fs.at(0).rhs) }
+  if "list" in sys.inputs { f([], []) } else { f(fs.at(0).pic, fs.at(1).pic) }
 }
 // A PROOF's steps are data (`branches`), not a picture, so they stay an import: `diag-regen` reads
 // these off `note-files --generated` and draws them by `--proof`.

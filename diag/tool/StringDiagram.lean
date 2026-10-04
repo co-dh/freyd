@@ -3230,7 +3230,8 @@ partial def drawWith (declName : Name) (path : List String) (binder : Option Str
         | some p, _ =>
           throwError "`.{s}` follows `.{p}`, which already names a part of \
             {← Meta.ppExpr body}: a part has no sides of its own"
-      let parts : Array (String × Expr) := match split body with
+      -- `splitM`: a side that is a named predicate (`Total (R ∩ S)`) has its two parts once unfolded.
+      let parts : Array (String × Expr) := match ← splitM body with
         | some (sym, l, r) => #[("", l), (sym, r)]
         | none => #[("", body)]
       let drawn : Array (String × Expr × Bool × Expr) ← match side with

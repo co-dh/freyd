@@ -146,7 +146,7 @@ the meet semilattice and back down to state a containment in which no meet occur
 `R` is *entire* when `𝟙 ⊑ R R°`. When is an *intersection* entire?
 
 #align(center, block(inset: (y: 6pt))[
-  #P(lean("Freyd.Diag.entire_inter_iff"), s: 80%) \
+  #P(lean("Freyd.Diag.entire_inter_iff.lhs", "Freyd.Diag.entire_inter_iff.rhs", op: IFF), s: 80%) \
   #src[`Total (R ∩ S) ↔ 𝟙 ≤ R S°`]])
 
 On the left `R ∩ S` is named *twice*; on the right `R` and `S` once each and the meet is gone. The
