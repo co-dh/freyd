@@ -729,7 +729,7 @@ in @mu-defn.
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs",
       src[`graft`, `trees`; `zip list(f×g)=(list(f)×list(g)) zip`]),
      // lean:AOP.A9_3_Bracket.mct_rec_step2@bdfe8912
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
+    (DF, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
       src[`mix≜zip list(bin) minlist(R)` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_rec_step3@8ba2a32c
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs",
@@ -746,7 +746,7 @@ in @mu-defn.
      // lean:AOP.A9_3_Bracket.col_rec@11ff5e11
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[`col` — @mct-defn]),
+    (DF, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[`col` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.col_rec_step1@b9b76e62
     (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs", src[`inits=⟨init inits,𝟙⟩ snoc` on non-singletons]),
      // lean:AOP.A9_3_Bracket.col_rec_step2@42a73ac5
@@ -767,7 +767,7 @@ in @mu-defn.
      // lean:AOP.A9_3_Bracket.row_rec@2ee70011
   lean-chain(
     (none, "Freyd.Alg.RelSet.Bracket.row_rec_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[`row` — @mct-defn]),
+    (DF, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[`row` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.row_rec_step1@8ee2d203
     (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step2.rhs", src[`tails=⟨𝟙,tail tails⟩ cons` on non-singletons]),
      // lean:AOP.A9_3_Bracket.row_rec_step2@53dda069

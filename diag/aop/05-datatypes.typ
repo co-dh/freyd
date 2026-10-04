@@ -647,7 +647,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // two rows: seven panels in one row shrink the labels past reading
   lean-chain((
     (none, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.lhs", src[the starting composite]),
-    (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.rhs", src[definition of glue]),
+    (DF, "Freyd.Alg.RelSet.ListRel.concat_glue_step1.rhs", src[definition of glue]),
     // lean:AOP.A5_6_ListCombinators.concat_glue_step1@116e04aa
     (EQ, "Freyd.Alg.RelSet.ListRel.concat_glue_step2.rhs", src[since `concat=⦇[nil,cat]⦈`]),
     // lean:AOP.A5_6_ListCombinators.concat_glue_step2@6a274ac8
