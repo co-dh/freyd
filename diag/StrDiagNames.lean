@@ -631,6 +631,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.dropFn] def unexpandKnapDropFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[nil,π₂]")))
+-- The cons-list constructor map is the book's `[nil,cons]`, as `[nil,π₂]` is `dropFn`'s.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.CL.con] def unexpandCLCon : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[nil,cons]")))
+-- `suffixP` is the book's `suffix`, read pointwise.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.suffixP] def unexpandSuffixP : Unexpander
+  | `($_ $x $y) => `($(mkIdent `suffix) $x $y)
+  | _ => `($(mkIdent `suffix))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.hd] def unexpandTourHd : Unexpander
   | `($_ $x) => `($(mkIdent `head) $x)

@@ -246,14 +246,14 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
   and carries its own naturality square. -/
 
 /-- `partition` at a one-word list: the one-line paragraph. -/
-theorem partition_wrap (a : Word) (q : Para Word) :
+public theorem partition_wrap (a : Word) (q : Para Word) :
     partition (ConsList.wrap a) q ↔ q = ConsList.wrap (ConsList.wrap a) := by
   unfold partition
   rw [← cataR_eq_relCata]
   exact ⟨fun h => h.elim id id, Or.inl⟩
 
 /-- `partition` at a `cons`: partition the tail, then either open a new line or glue. -/
-theorem partition_cons (a : Word) (x : NEList Word) (q : Para Word) :
+public theorem partition_cons (a : Word) (x : NEList Word) (q : Para Word) :
     partition (ConsList.cons a x) q ↔ ∃ p, partition x p ∧ (q = new a p ∨ q = glue a p) := by
   unfold partition
   rw [← cataR_eq_relCata]

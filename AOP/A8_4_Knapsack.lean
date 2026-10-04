@@ -166,7 +166,7 @@ public theorem drop_eq_junc :
   (graph con ≫ within (wt := wt) w) ∪ graph dropFn
 
 /-- Pointwise reading of `[nil,cons](within w)`. -/
-theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
+public theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
     (r : ConsList Unit Item) :
     (graph con ≫ within (wt := wt) w) u r ↔ r = con u ∧ total wt r ≤ w := by
   constructor
