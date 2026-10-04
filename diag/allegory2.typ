@@ -7,7 +7,7 @@
 // only places them; a statement or a side is a `#lean(...)` call, as in the note. `./scripts/diag-regen`
 // redraws every binding below, reading the list off these very imports.
 #import "note-style.typ": *
-#import "note-prelude.typ": lean, lean-sides
+#import "note-prelude.typ": lean, lean-sides, IFF
 #import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
