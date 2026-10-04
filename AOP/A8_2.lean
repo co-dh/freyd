@@ -82,27 +82,6 @@ section Layered
 
 variable {B : 𝒜} {F : BiRelator 𝒜}
 
-/-- **Corollary 8.1 at the layered network** (book p.198, the step the thinning theorem makes):
-    the specification is above the thinned fold —
-    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇thin Q·Λ(α·F(∈,∈))⦈`, mirrored
-    `relCata (Λ (F(∋,∋)α) ≫ thin Q) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`.
-    `thinning_est` is stated at `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose
-    action on `∋` is `F(𝟙,∋)`; `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange. -/
-public theorem thinning_paths_step
-    (I : InitialAlgebra (F.appl (P A)))
-    {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
-    (hmono : Freyd.Alg.MonoAlg
-      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q) :
-    relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
-      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have e : (F.appl (P A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
-      = F.map (∋ A) (∋ B) ≫ α := by
-    show F.map (𝟙 (P A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
-    rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
-  rw [← e]
-  exact thinning_est I hQR hQ hR hmono
-
 /-! ### The algebra chain of p.198, one `calc` step per law
 
   Each step of `thinning_paths_alg` relates two consecutive lines of the book calculation, mirrored, at the
@@ -159,36 +138,11 @@ public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
 
 calc_steps thinning_paths_alg
 
-/-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
-    the layers —
-    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored
-    `relCata (Λ F(∋,𝟙) ≫ P (Λ (F(𝟙,∋)α) ≫ est R)) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`,
-    at `R ∩ ((F(𝟙,∋)α)°(F(𝟙,∋)α)) ⊑ Q`.  `thinning_paths_step` supplies the fold and
-    `thinning_paths_alg` the algebra; the source `F(∋,∋)α` of the thinned algebra splits as
-    `F(∋,𝟙)` followed by `F(𝟙,∋)α` by interchange.  At the book's `α = [wrap,cons]` the algebra
-    `ΛF(∈,id)·P(min R·Λ(α·F(id,∈)))` is the printed `[P wrap, cpl·P step]`. -/
-public theorem thinning_paths
-    (I : InitialAlgebra (F.appl (P A)))
-    {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hpQ : Preorder Q) (hpR : Preorder R)
-    (hmono : Freyd.Alg.MonoAlg
-      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q)
-    (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
-    relCata (Λ (F.map (∋ A) (𝟙 (P B)))
-        ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
-      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R :=
-  -- The terms are the two laws' own sides: spelled out, `relCata`'s initial algebra is a fresh
-  -- metavariable that `whnf` cannot close within the heartbeat budget.
-  calc _ ⊑ _ := comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R)
-    _ ⊑ _ := thinning_paths_step I hQR hpQ hpR hmono
-
-calc_steps thinning_paths
-
 end Layered
 
 /-! ## The note's `path-mono`: the two laws `thinning_paths` assumes, discharged
 
-  `thinning_paths` takes `hmono` and `hQ` as hypotheses.  The note's `path-mono` table states
+  `thinning_paths` (`AOP.A8_2_Exec`) discharges Corollary 8.1's `hmono` and (8.3)'s `hQ` with them.  The note's `path-mono` table states
   them as the two laws of the layered-network example, and both are proved below: the second by
   the book's own shunting step (p.198), which uses nothing of the datatype beyond `head` being a
   map and `S·head` being simple; the first for the concrete network, where it is the arithmetic
@@ -510,6 +464,23 @@ public theorem pathQ_apply (wt : A → A → Nat) (p q : ConsList A A) :
     pathQ wt p q ↔ costOf wt p ≤ costOf wt q ∧ headOf p = headOf q :=
   ⟨fun ⟨h, _, h1, h2⟩ => ⟨(pathR_apply wt p q).mp h, by subst h1; exact h2⟩,
     fun ⟨h, e⟩ => ⟨(pathR_apply wt p q).mpr h, _, rfl, e⟩⟩
+
+/-- `Q ⊑ R` (book p.197): `Q` is `R` with the head recorded. -/
+public theorem pathQ_le_pathR (wt : A → A → Nat) : pathQ wt ⊑ pathR wt :=
+  le_iff.mpr fun _ _ h => h.1
+
+/-- `R ≜ cost≤cost°` is a preorder (book p.197), because `≤` on costs is. -/
+public theorem pathR_preorder (wt : A → A → Nat) : Preorder (pathR wt) :=
+  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathR_apply wt p p).mpr (Nat.le_refl _),
+   le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
+     (pathR_apply wt _ _).mpr (Nat.le_trans ((pathR_apply wt _ _).mp h1) ((pathR_apply wt _ _).mp h2))⟩
+
+/-- `Q ≜ R∩(head head°)` is a preorder (book p.197): both `≤` on costs and `=` on heads are. -/
+public theorem pathQ_preorder (wt : A → A → Nat) : Preorder (pathQ wt) :=
+  ⟨le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩,
+   le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
+     have h1 := (pathQ_apply wt _ _).mp h1; have h2 := (pathQ_apply wt _ _).mp h2
+     (pathQ_apply wt _ _).mpr ⟨Nat.le_trans h1.1 h2.1, h1.2.trans h2.2⟩⟩
 
 public theorem headAlg_map : Map (headAlg (A := A)) := RelSet.graph_map _
 
