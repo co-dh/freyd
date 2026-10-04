@@ -207,7 +207,7 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
   // lean:Freyd.S2_20.Coproduct.recip_union_eq_id@6443cb0e
 )]<coprod-map-laws>
 
-=== `[R,S]≜[`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`]∋`
+=== #leanf("Freyd.Alg.junc_eq_Λ_junc_eps") — a case of relations is the case of their transposes, then `∋`
 
 // B&dM §5.3, pp. 117-118, mirrored into this note's diagram order: why the universal property holds
 // with equality where the fork's triangles above only hold up to `Dom`.
@@ -490,7 +490,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
 )]<cata-initial>
 
 
-=== `⦇R⦈=⦇`$frac(#[`F(∋)R`], ∋)$`⦈∋`
+=== #leanf("Freyd.Alg.relCata_unfold") — folding with `R` is a fold of maps into sets, then `∋`
 
 // B&dM p.121's figure, mirrored: @cata-defining's square at `f := `#frc([`F(∋)R`])`, `A := P A`,
 // over the ∋/F(∋) rows and the relation `R` — the renamed arrows are the two induced ones and the bottom row.
