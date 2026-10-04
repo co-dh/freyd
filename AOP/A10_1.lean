@@ -230,9 +230,9 @@ public theorem powerRel_inr_est (Q₁ : α ⟶ α) (Q₂ : β ⟶ β) :
     exact (ListRel.junc_sum_inr (Q₁ ≫ (sumCop α β).u₁) (Q₂ ≫ (sumCop α β).u₂)
       b (Sum.inr b')).mpr ⟨b', hlow b' hb', rfl⟩
 
-/-- Proposition 10.1, step 1: the result is empty off `ran V₁ ∪ ran V₂` — an `est` of the empty
-    set is nothing — so the body splits by where the input lies. -/
-public theorem greedy_disjoint_ranges_step1 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
+/-- The greedy body is empty off `ran V₁ ∪ ran V₂` — an `est` of the empty set is nothing — so it
+    splits by where the input lies. -/
+public theorem est_ran_split {V₁ : α ⟶ A} {V₂ : β ⟶ A}
     {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
     Λ ((junc (sumCop α β) V₁ V₂)°) ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
         ≫ junc (sumCop α β) U₁ U₂
@@ -257,59 +257,61 @@ public theorem greedy_disjoint_ranges_step1 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
       exact Or.inr ⟨y, ⟨rfl, b, hb, hb⟩, S, hS, _, hest, hU⟩
   · rintro (⟨y', ⟨rfl, -⟩, h⟩ | ⟨y', ⟨rfl, -⟩, h⟩) <;> exact h
 
-/-- Proposition 10.1, step 2: Ex 9.5's second claim on each branch. -/
-public theorem greedy_disjoint_ranges_step2 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
-    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β}
-    (hdisj : ∀ a b y, V₁ a y → V₂ b y → False) :
-    (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
-      ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
-      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
-        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
-  rw [← Cat.assoc (Freyd.Alg.ran V₁), ran_Λ_junc_recip_inl hdisj,
-    ← Cat.assoc (Freyd.Alg.ran V₂), ran_Λ_junc_recip_inr hdisj]
-  simp only [Cat.assoc]
-
-/-- Proposition 10.1, step 3: `P(inl)est(Q₁+Q₂)=est(Q₁)inl` and `P(inr)est(Q₁+Q₂)=est(Q₂)inr`. -/
-public theorem greedy_disjoint_ranges_step3 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
-    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
-    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
-      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
-          ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
-      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
-        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
-            ≫ junc (sumCop α β) U₁ U₂) := by
-  rw [← Cat.assoc (powerRel (sumCop α β).u₁), powerRel_inl_est,
-    ← Cat.assoc (powerRel (sumCop α β).u₂), powerRel_inr_est]
-  simp only [Cat.assoc]
-
-/-- Proposition 10.1, step 4: `inl[U₁,U₂]=U₁` and `inr[U₁,U₂]=U₂`. -/
-public theorem greedy_disjoint_ranges_step4 {V₁ : α ⟶ A} {V₂ : β ⟶ A}
-    {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} :
-    (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
-      ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂ ≫ junc (sumCop α β) U₁ U₂)
-      = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
-        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ U₂) := by
-  rw [u₁_junc, u₂_junc]
-
 /-- **Proposition 10.1 (B&dM p.245)**, in `Rel(Set)`: when `V₁` and `V₂` have disjoint ranges,
     taking a `Q₁+Q₂`-extreme decomposition `[V₁,V₂]°` and assembling by `[U₁,U₂]` runs, on
-    `ran V₁`, `W₁≜Λ(V₁°)est(Q₁)U₁` and, on `ran V₂`, `W₂≜Λ(V₂°)est(Q₂)U₂`. -/
+    `ran V₁`, `W₁≜Λ(V₁°)est(Q₁)U₁` and, on `ran V₂`, `W₂≜Λ(V₂°)est(Q₂)U₂`.  One `calc` step per
+    law, each branch in turn. -/
 public theorem greedy_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
     {U₁ : α ⟶ B} {U₂ : β ⟶ B} {Q₁ : α ⟶ α} {Q₂ : β ⟶ β} (hdisj : V₂ ≫ V₁° = 𝟘) :
     Λ ((junc (sumCop α β) V₁ V₂)°) ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
         ≫ junc (sumCop α β) U₁ U₂
       = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ U₂) :=
+  calc Λ ((junc (sumCop α β) V₁ V₂)°) ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
+        ≫ junc (sumCop α β) U₁ U₂
+      = (Freyd.Alg.ran V₁ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) :=
+        est_ran_split
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
+        rw [← Cat.assoc (Freyd.Alg.ran V₁), ran_Λ_junc_recip_inl hdisj, Cat.assoc, Cat.assoc]
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
+        rw [← Cat.assoc (Freyd.Alg.ran V₂), ran_Λ_junc_recip_inr hdisj, Cat.assoc, Cat.assoc]
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
+            ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
+        rw [← Cat.assoc (powerRel (sumCop α β).u₁), powerRel_inl_est, Cat.assoc]
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
+            ≫ junc (sumCop α β) U₁ U₂) := by
+        rw [← Cat.assoc (powerRel (sumCop α β).u₂), powerRel_inr_est, Cat.assoc]
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
+        ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
+            ≫ junc (sumCop α β) U₁ U₂) := by
+        rw [u₁_junc]
+    _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ U₂) := by
-  -- `V₂V₁°=𝟘` read at a point: no `y` is reached by both
-  have hd : ∀ a b y, V₁ a y → V₂ b y → False := fun a b y h1 h2 =>
-    cast (congrFun (congrFun hdisj b) a) ⟨y, h2, h1⟩
-  exact (greedy_disjoint_ranges_step1.trans (greedy_disjoint_ranges_step2 hd)).trans
-    (greedy_disjoint_ranges_step3.trans greedy_disjoint_ranges_step4)
+        rw [u₂_junc]
+
+calc_steps greedy_disjoint_ranges
+
+/-- `∪` is the least upper bound: the allegory axioms give `le_union_left`/`le_union_right` but no
+    lub, and in `RelSet` it is pointwise `∨`. -/
+public theorem union_le {a b : RelSet.{0}} {S T U : a ⟶ b} (hS : S ⊑ U) (hT : T ⊑ U) :
+    S ∪ T ⊑ U :=
+  le_iff.mpr fun x y h => ((union_apply S T x y) ▸ h).elim (le_iff.mp hS x y) (le_iff.mp hT x y)
+
+/-- `∪` is monotone in both places: the congruence a step on one branch of a union runs under. -/
+public theorem union_mono {a b : RelSet.{0}} {S S' T T' : a ⟶ b} (hS : S ⊑ S') (hT : T ⊑ T') :
+    S ∪ T ⊑ S' ∪ T' :=
+  union_le (le_trans hS (le_union_left _ _)) (le_trans hT (le_union_right _ _))
 
 end Freyd.Alg.RelSet
 

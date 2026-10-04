@@ -39,6 +39,14 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #import "../generated/Freyd.Alg.greedy_dp_lower.calc.typ" as calc-gl
 #import "../generated/Freyd.Alg.greedy_dp_upper.calc.typ" as calc-gu
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_tail.calc.typ" as calc-tt
+#import "../generated/Freyd.Alg.RelSet.Tardy.bagify_recip_le.calc.typ" as calc-brl
+#import "../generated/Freyd.Alg.RelSet.Tardy.tardy_greedy.calc.typ" as calc-tg
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_fusion_condition.calc.typ" as calc-tf
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_laws.calc.typ" as calc-tl
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_greedy.calc.typ" as calc-tgr
+#import "../generated/Freyd.Alg.RelSet.greedy_disjoint_ranges.calc.typ" as calc-gd
+#import "../generated/Freyd.Alg.RelSet.Detab.expand_V.calc.typ" as calc-ev
+#import "../generated/Freyd.Alg.RelSet.Detab.detab_V_R.calc.typ" as calc-dv
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -65,19 +73,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
      on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
      // lean:AOP.A10_1.greedy_disjoint_ranges@e60d7430
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.rhs.inl",
-      src[empty off `ran V₁ ∪ ran V₂`]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step1@0e786fad
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step2.rhs.inl",
-      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁` — @dp-disjoint]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step2@da0b0f80
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step3.rhs.inl",
-      src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`]),
-     // lean:AOP.A10_1.powerRel_inl_est@e8906c3a lean:AOP.A10_1.greedy_disjoint_ranges_step3@f11b2dff
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step4.rhs.inl", src[`inl[U₁,U₂]=U₁`]),
-  ),
+  lean-calc(calc-gd, breaks: (3, 5)),
 )]<greedy-disjoint>
 
 == The detab-entab problem
@@ -112,27 +108,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
      // lean:AOP.A10_2_Detab.expand_V@56eb1503
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Detab.expand_V_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
-      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`]),
-     // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step2.rhs"),
-      src[`(S∪T)R=SR∪TR` — conditionals distribute]),
-     // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
-  ), (
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step3.rhs"), src[`fill V°=fill` (Ex. 10.4)]),
-     // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
-    // the `nottab` arm splits again here — three diagrams: the unchanged `istab` side, then its own
-    // two children — because `snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4) introduces a second `∪` under `nottab`.
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", split: "inr"),
-      src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
-     // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step5.rhs"),
-      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`; `nottab R⊑R` — guard
-       dropped]),
-     // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
-  )),
+  lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
 // B&dM p.249, "To prove V·detab ⊆ detab·R we reason", in diagram order: the note's `V` relates the
@@ -142,28 +118,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[any `V`-shortening of `detab`'s output is `detab`'s output on an input no longer than the
      given one]],
      // lean:AOP.A10_2_Detab.detab_V_R@a6015fdd
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.rhs",
-      src[`detab` is a fold: `detab=α°F(detab)[nil,expand]` — @entab-defn]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step1@7202f1a5
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step2.rhs",
-      src[coproducts, and `nil V°=nil` (Exercise 10.4)]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step2@17093b20 lean:AOP.A10_2_Detab.nil_V@ab8b8818
-    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step3.rhs", src[the claim — @entab-expand-V]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step3@63a29781
-  ), (
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs"),
-      src[distributing `∪`; the fold again, and the definition of `F`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step4@12589ca1
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs"),
-      src[naturality of `π₁`: `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step5@84af6677
-    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step6.rhs",
-      src[`init` is inductive, so `X≜detab V°`, a solution of `X⊑detab∪(init X)`, lies below the
-       greatest one, `prefix detab` (induction on the input); `prefix⊑R°`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step6@6f212d06
-  )),
+  lean-calc(calc-dv, breaks: (4,)),
 )]<entab-detab-V>
 
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
@@ -402,17 +357,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[an ordering of a bag with one more job costs at least the cost of the ordering of the
      bag before its last job]],
   // lean:AOP.A10_3_Tardy.bagify_recip_le@583c3c44
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_cata.rhs", src[(10.8) — @tardy-bag-cata]),
-    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step2.rhs", src[(10.7) — @tardy-add]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step2@88a920c7
-    (SQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step3.rhs",
-      src[definition of `R`, and `nil⊑zero≤cost°`]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step3@6d50a490
-    (EQ, "Freyd.Alg.RelSet.Tardy.bagify_recip_le_step4.rhs", src[definition of `m`]),
-    // lean:AOP.A10_3_Tardy.bagify_recip_le_step4@720cf659
-  ),
+  lean-calc(calc-brl),
 )]<tardy-bag-le>
 
 // B&dM (10.3), p.257: the book's calculation, one row per hint.
@@ -421,26 +366,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a schedule of a bag ending in a job of least penalty is no worse than any schedule of
      the same bag]],
   // lean:AOP.A10_3_Tardy.tardy_greedy@5953b96f
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step1.rhs", src[monotonicity of composition]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step1@588b14c9
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step2.rhs",
-      src[`β°F(bagify°)α=bagify°`, since `bagify=⦇β⦈`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step2@0c67ad67 lean:AOP.A10_3_Tardy.bagify_recip_alg@909c28b3
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step3.rhs", src[@tardy-bag-le]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step3@4c8ea4a0
-  ), (
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step4.rhs", src[modular law]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step4@03c0558d
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step5.rhs",
-      src[choice of `Q`: `F(bagify) Q F(bagify°)=g≤g°`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step5@1f772cd4 lean:AOP.A10_3_Tardy.Q_choice@1881a8ab
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step6.rhs", src[products: `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step6@19339638
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy.rhs", src[@tardy-tail]),
-    // lean:AOP.A10_3_Tardy.tardy_greedy_step7@127df0be
-  )),
+  lean-calc(calc-tg, breaks: (4,)),
 )]<tardy-greedy>
 
 // B&dM p.257, "to complete the proof it is sufficient to show", `cost°` shunted.
@@ -518,23 +444,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[every interval got by folding a decimal's digits with `[arb,step]` has the decimal's value
      strictly inside it]],
     // lean:AOP.A10_4_Tex.tex_fusion@6c48b5bc
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.lhs",
-      src[fusion: it suffices that `[zero,shift] inrange°⊒F(inrange°)[arb,step]`]),
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.rhs",
-      src[`[T,U]Z=[TZ,UZ]`, a coproduct law not tabulated in the note]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step1@258065cf
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step2.rhs",
-      src[`zero inrange°=arb`: the first condition, which determines `arb`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step2@bc02821b
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.lhs",
-      src[arithmetic: `10a−d<r<10b−d ⟹ a<(d+r)/10<b` for `(a,b)=step(d,(10a−d,10b−d))`; only `⊒`,
-       since `(10a−d,10b−d)` satisfies (10.9) only when `d<10b<d+1`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step3@15be0440
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step4.rhs",
-      src[`F(S)[T,U]=[T,(𝟙×S)U]` read right to left: definition of `F`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step4@66ce201d
-  ),
+  lean-calc(calc-tf),
 )]<tex-fusion>
 
 // B&dM p. 262: the greedy condition, the book's hints one row each; `Q` here is the book's `Q°`
@@ -544,34 +454,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[choosing by `Q` among the one-step decompositions before building with `F(X)` and `α`
      yields only decimals that are `R`-related to one built without choosing]],
     // lean:AOP.A10_4_Tex.tex_greedy@a8ba8ee9
-  // steps 1-6's rhs is a `∪` of the branch that simplifies (`.inl`) and the fixed `F(X)α[≫R]`
-  // branch (`.inr`); `union`'s coproduct order draws them left-to-right that way throughout, so the
-  // fixed branch stays on the same side across every step, remerging by idempotence at step 7.
-  lean-chain(
-    (
-      (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs"),
-        src[`(S ∪ T)U = SU ∪ TU` — definition of `Q`; composition distributes over `∪`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs"), src[`𝟙 ⊑ R` — `R` is reflexive]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs"),
-        src[`rF(X)α ⊑ !lαR` — `lα = nil`, and `length(nil) = 0` is at most any length]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
-    ),
-    (
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs"),
-        src[`!°! ⊑ 𝟙` on `𝟏` — universal property of `!`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs"),
-        src[`lF(X) = l` — definition of `F`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs"), src[`l°l ⊑ 𝟙` — `l` is simple]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
-      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`S ∪ S = S` — `∪` is idempotent]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
-    ),
-  ),
+  lean-calc(calc-tgr, breaks: (3, 6)),
 )]<tex-greedy>
 
 // ONE WIRE, `[0,2¹⁶)` to `Decimal`, in every row: `interval`, `H` and `[arb,step]°` are relations
@@ -585,25 +468,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs", src[the specification — @tex-defn]),
-    // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
-    // the unit: the set the transpose opens starts on its target.
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs",
-      src[`round°` is not a map, but `interval` is, so it comes out of the transpose]),
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_step2.lhs",
-      src[the type restriction (10.9): a shortest decimal `H` gives an interval is a shortest one
-       among all decimals inside it, and is inside it by @tex-fusion]),
-    // interval row: Theorem 10.1
-    // `est(Q) : P(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
-    // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born (`X≜Λ(H) est(R)`
-    // recurses — with `H` there the tail is unconstrained and the step is false —, `α≜[nil,cons]` —
-    // @tex-defn — builds the list).
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_prefixed.lhs",
-      src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
-       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
-  ),
-  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_laws_step1@52e790c7 lean:AOP.A10_4_Tex.tex_laws_step2@3af8b229 lean:AOP.A10_4_Tex.tex_laws_step3@92eb955a lean:AOP.A10_4_Tex.tex_laws_prefixed@1f69fdb3 lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
+  lean-calc(calc-tl),
+  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
 )
 ]<tex-laws>
 

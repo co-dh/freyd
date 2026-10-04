@@ -91,6 +91,10 @@ in @mu-defn.
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
 #import "../generated/Freyd.Alg.monoAlg_of_cost_shunted.calc.typ" as calc-cost
 #import "../generated/Freyd.Alg.monoAlg_in_context.calc.typ" as calc-ctx
+#import "../generated/Freyd.Alg.RelSet.dp_disjoint_ranges.calc.typ" as calc-dpd
+#import "../generated/Freyd.Alg.RelSet.Bracket.mct_rec.calc.typ" as calc-mct
+#import "../generated/Freyd.Alg.RelSet.Bracket.col_rec.calc.typ" as calc-col
+#import "../generated/Freyd.Alg.RelSet.Bracket.row_rec.calc.typ" as calc-row
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -172,17 +176,7 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs.inl",
-      src[empty off `ran V₁ ∪ ran V₂`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs.inl",
-      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs.inl",
-      src[`P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs.inl",
-      src[`P` a relator, `inl[U₁,U₂]=U₁`]),
-  ),
+  lean-calc(calc-dpd, breaks: (3, 6)),
 )]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
@@ -714,67 +708,31 @@ in @mu-defn.
   [],
 )]<mct-laws>
 
-// B&dM (9.7), pp. 233-234: the book's five hints, one step each, read left to right.
+// B&dM (9.7), pp. 233-234: the book's five hints split into one law per step.
 #disp(num: "(9.7)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.mct_rec") \
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.mct_rec@d5db4aed
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Bracket.mct_eq.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_eq.rhs", src[`mct` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.mct_eq@5c6a919c
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step1.rhs", src[`splits` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.mct_rec_step1@cab18148
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs",
-      src[`graft`, `trees`; `zip list(f×g)=(list(f)×list(g)) zip`]),
-     // lean:AOP.A9_3_Bracket.mct_rec_step2@bdfe8912
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
-      src[`mix≜zip list(bin) minlist(R)` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.mct_rec_step3@8ba2a32c
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs",
-      src[`inits⁺=init inits`, `tails⁺=tail tails`; `row`, `col` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.mct_rec_step4@c9829da7
-  ),
+  lean-calc(calc-mct),
 )]<mct-rec>
 
-// B&dM (9.8), p. 234: the book's five hints, one step each, read left to right.
+// B&dM (9.8), p. 234: the book's five hints split into one law per step.
 #disp(num: "(9.8)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.col_rec") \
     #src[on a list of two or more elements, the column is what `next` makes of the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.col_rec@11ff5e11
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Bracket.col_rec_step1.lhs", []),
-    (DF, "Freyd.Alg.RelSet.Bracket.col_rec_step1.rhs", src[`col` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.col_rec_step1@b9b76e62
-    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step2.rhs", src[`inits=⟨init inits,𝟙⟩ snoc` on non-singletons]),
-     // lean:AOP.A9_3_Bracket.col_rec_step2@42a73ac5
-    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step3.rhs",
-      src[`snoc list(f)=(list(f)×f) snoc`; `col`]),
-     // lean:AOP.A9_3_Bracket.col_rec_step3@b23c2989
-    (EQ, "Freyd.Alg.RelSet.Bracket.col_rec_step4.rhs",
-      src[(9.7) — @mct-rec; `next≜⟨π₁,mix⟩ snoc` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.col_rec_step4@84225c07
-  ),
+  lean-calc(calc-col),
 )]<col-rec>
 
-// B&dM (9.10), p. 235: the book's three hints, one step each, read left to right.
+// B&dM (9.10), p. 235: the book's three hints split into one law per step.
 #disp(num: "(9.10)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Bracket.row_rec") \
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
      // lean:AOP.A9_3_Bracket.row_rec@2ee70011
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Bracket.row_rec_step1.lhs", []),
-    (DF, "Freyd.Alg.RelSet.Bracket.row_rec_step1.rhs", src[`row` — @mct-defn]),
-     // lean:AOP.A9_3_Bracket.row_rec_step1@8ee2d203
-    (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step2.rhs", src[`tails=⟨𝟙,tail tails⟩ cons` on non-singletons]),
-     // lean:AOP.A9_3_Bracket.row_rec_step2@53dda069
-    (EQ, "Freyd.Alg.RelSet.Bracket.row_rec_step3.rhs",
-      src[`cons list(f)=(f×list(f)) cons`; `row`]),
-     // lean:AOP.A9_3_Bracket.row_rec_step3@27b9f396
-  ),
+  lean-calc(calc-row),
 )]<row-rec>
 
 // B&dM (9.9), p. 234, by Exercise 9.13, p. 237: `col` as a loop, then the book's equivalent form.
