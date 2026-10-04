@@ -928,6 +928,11 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
           || !(← hasStrands (← Meta.inferType x)) then return l
       return "⊸ " ++ l
   match f.getAppFnArgs with
+  -- A COMPOSITE OF MAPS is the composite of their graphs, `graph` being a functor: juxtaposition,
+  -- as `graph f graph g` prints, so `paths`' body `⦇gen⦈concat` reads as the note writes it.
+  | (``Cat.comp, args) =>
+    if args.size < 2 then plain f else
+    return juxt (← mapLabel args[args.size - 2]! wired) (← mapLabel args.back! wired)
   | (``Prod.fst, _) => return "π₁"
   | (``Prod.snd, _) => return "π₂"
   -- A CONSTRUCTOR HANDED THE INPUT WHOLE is the same box as one handed its factors, so it gets the

@@ -294,7 +294,9 @@ def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
   -- Opening `ds` must leave no bead on one side only, before any picture is compared: `Λ` opened
   -- beside `takewhile` leaves `takewhile`, and a raw `fun xs ys => …` that has no label.
   if !(← opened a b).isEmpty then return false
-  drawnAlike a b
+  -- Printing alike stands in for one term only around ONE body (`graph` unprinted round `paths`'s);
+  -- several bodies opened at once must be one term, and may hold lambdas no label writes.
+  if ds.size == 1 then drawnAlike a b else sameDrawn a b
 
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
     head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
