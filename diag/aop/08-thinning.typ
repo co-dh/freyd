@@ -45,7 +45,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
    // lean:AOP.A8_1.id_le_thinRel@8ec713e9
    // lean:AOP.A8_1.thinRel_trans@84a7d558
   [keeping everything is always a legal thinning],
-  [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[`Q⊑R`, both preorders — @thin-intro]],
+  [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[@thin-intro]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
    // lean:AOP.A8_1.thinRel_comp_est@82e39233
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
@@ -114,7 +114,7 @@ row((
 #disp[
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond2") \
-    #src[the `⊒` half, second condition — `Q⊑R`, `R` a preorder]],
+    #src[the `⊒` half, second condition]],
      // lean:AOP.A8_1.thinRel_comp_est_cond2@6650d7bb
   lean-calc(calc-up2),
 )]<thin-intro-up2>
@@ -146,10 +146,9 @@ row((
 // B&dM (8.3), p. 194, mirrored.  The first of the two conditions cancels the singleton against `∋`;
 // the second is the chain, and the context row is where the side condition enters.
 #disp(num: "(8.3)")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel") \
-    #src[given `R∩(S°S)⊑Q`, `Q` a preorder
-     // thinning row: (8.3), p. 194
- #h(4pt) ]],
+  Thm(cols: 1)[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_le_thinRel")
+    // thinning row: (8.3), p. 194
+    ],
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d66c2a44
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1") \
     #src[every member of the singleton is a value `S` returns — @thin-laws:1, first condition]],
@@ -168,10 +167,9 @@ row((
 // touches both wires — the `E` it receives dies at it and the `E` it returns is born there.
 #disp(num: "Theorem 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning") \
-    #src[thinning at every step of the reduce is a thinning of the whole candidate set —
+    #src[thinning at every step of the reduce is a thinning of the whole candidate set]
      // thinning-of-reduce row: Theorem 8.1, p. 195
-     `S` monotonic on `Q`, `Q` a preorder
- #h(4pt) ]],
+  ],
      // lean:AOP.A8_1.thinning@818ac37b
   // A conjunction has no shape in either calculus, so it heads the chain as text.
   [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
@@ -186,10 +184,9 @@ row((
 #import "../generated/Freyd.Alg.thinning_est.calc.typ" as calc-cor
 #disp(num: "Corollary 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_est") \
-    #src[the thinning fold refines the optimisation problem itself —
+    #src[the thinning fold refines the optimisation problem itself]
      // thinning-est row: Corollary 8.1
-     `S` monotonic on `Q`, `Q⊑R`, both preorders
- #h(4pt) ]],
+  ],
      // lean:AOP.A8_1.thinning_est@6bdf56a5
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
