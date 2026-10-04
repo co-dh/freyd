@@ -104,6 +104,13 @@ attribute [diag_unfold] RelSet.Tour.tour
 -- draws by (`openBuiltField?`).
 attribute [diag_unfold] Δ
 
+open Lean PrettyPrinter in
+/-- B&dM's "`Q` a preorder" (p.86) is the note's `preorder(Q)`: lower case, as B&dM write the word,
+    because `Reflexive`/`Transitive` have no capitalised spelling in the note to match. -/
+@[app_unexpander Preorder] def unexpandPreorder : Unexpander
+  | `($_ $R) => `($(mkIdent `preorder) $R)
+  | _ => throw ()
+
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- A `RelProd a b`'s apex IS the product of `a` and `b` — that is what tabulating `⊤ : a ⟶ b`
     says — so the note writes it `a×b`, never by the field's own name.  A DELABORATOR and not an
