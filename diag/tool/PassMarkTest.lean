@@ -81,8 +81,8 @@ def cites (step thm : Name) : MetaM Bool := do
 -- hollow circle on `cost` in (a), the down triangle on `cost` in (b), each BEFORE its sign.
 /-- info: [[("cost", "circle")], [("cost", "down")]] -/
 #guard_msgs in #eval do
-  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg s!"monoAlg_of_cost_step{k}"
-  return [← panel steps[0]! true steps, ← panel steps[0]! false steps]
+  let steps := [1, 2, 3, 4].map fun k => Name.str `Freyd.Alg.monoAlg_of_cost_shunted s!"step_{k}"
+  return [← panel steps[0]! true steps, ← panel steps[1]! true steps]
 -- 10.4c: no step of the greedy chain cites `tex_mono`, so its square marks none of them.
 /-- info: [false, false, false, false, false, false, false] -/
 #guard_msgs in #eval [1, 2, 3, 4, 5, 6, 7].mapM fun k =>

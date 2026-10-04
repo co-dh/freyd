@@ -89,6 +89,7 @@ in @mu-defn.
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
+#import "../generated/Freyd.Alg.monoAlg_of_cost_shunted.calc.typ" as calc-cost
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -187,22 +188,12 @@ in @mu-defn.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_of_cost") \
     #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
-     equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`]],
+     equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`] \
      // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
-  lean-chain(
-    (none, "Freyd.Alg.monoAlg_of_cost_step1.lhs",
-      src[definition of `R`, shunting]),
-    (EQ, "Freyd.Alg.monoAlg_of_cost_step1.rhs", src[`h cost=F(cost)k`]),
-     // lean:AOP.A9_1.monoAlg_of_cost_step1@633bfed2
-    (SQ, "Freyd.Alg.monoAlg_of_cost_step2.rhs",
-      src[`R cost⊑cost ≤`]),
-     // lean:AOP.A9_1.monoAlg_of_cost_step2@0d9c17f8
-    (SQ, "Freyd.Alg.monoAlg_of_cost_step3.rhs",
-      src[`F(≤)k⊑k≤`]),
-     // lean:AOP.A9_1.monoAlg_of_cost_step3@87ddc29e
-    (EQ, "Freyd.Alg.monoAlg_of_cost_step4.rhs", src[`h cost=F(cost)k`]),
-     // lean:AOP.A9_1.monoAlg_of_cost_step4@501ca466
-  ),
+    #leanf("Freyd.Alg.monoAlg_of_cost_shunted") \
+    #src[by the definition of `R` and shunting at the map `cost`, `F(R)h⊑hR` is `F(R)h cost⊑h cost ≤`,
+     which the chain proves]],
+  lean-calc(calc-cost),
 )]<dp-cost>
 
 #disp[#table(

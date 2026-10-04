@@ -295,41 +295,34 @@ theorem dynamic_programming_of_thin (I : InitialAlgebra F)
 
 /-! ## Proposition 9.2 (B&dM p.222) — checking monotonicity via cost functions -/
 
-/-- Proposition 9.2, first step: the assumption `h cost = F(cost) k`. -/
-public theorem monoAlg_of_cost_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
-    F.map R ≫ h ≫ cost = F.map R ≫ F.map cost ≫ k := by
-  rw [hch]
+/-- A relation `R ≜ f S f°` pulled back along a map `f` is reached from `f S`: `R f ⊑ f S`, because
+    `f` is simple (`f°f ⊑ 𝟙`). -/
+public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A ⟶ A} (hf : Map f)
+    (hR : R = f ≫ S ≫ f°) : R ≫ f ⊑ f ≫ S := by
+  have e := comp_mono_left f (comp_mono_left S hf.2)
+  rw [Cat.comp_id] at e
+  rw [hR]; simpa only [Cat.assoc] using e
 
-/-- Proposition 9.2, second step: `R cost ⊑ cost leq` (`cost` a map, `R ≜ cost leq cost°`),
-    under `F`; functors. -/
-public theorem monoAlg_of_cost_step2 {C : 𝒜} {R : A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°) :
-    F.map R ≫ F.map cost ≫ k ⊑ F.map cost ≫ F.map «≤» ≫ k := by
-  have eB : R ≫ cost ⊑ cost ≫ «≤» := by
-    have e := comp_mono_left cost (comp_mono_left «≤» hcost.2)
-    rw [Cat.comp_id] at e
-    rw [hR]; simpa only [Cat.assoc] using e
-  rw [← Cat.assoc, ← Cat.assoc, ← F.map_comp, ← F.map_comp]
-  exact comp_mono_right (F.map_mono eB) k
+/-- Proposition 9.2 (B&dM p.222), the book's chain after shunting at `cost`: one `calc` step per
+    hint — the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k` monotonic
+    on `≤`, and the assumption on `cost` again. -/
+public theorem monoAlg_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
+    (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
+    F.map R ≫ h ≫ cost ⊑ h ≫ cost ≫ «≤» :=
+  calc F.map R ≫ h ≫ cost = F.map R ≫ F.map cost ≫ k := congrArg (F.map R ≫ ·) hch
+      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := by
+        simpa only [← Cat.assoc, ← F.map_comp] using comp_mono_right (F.map_mono (conj_comp_map_le hcost hR)) k
+      _ ⊑ F.map cost ≫ k ≫ «≤» := comp_mono_left _ hk
+      _ = h ≫ cost ≫ «≤» := by rw [← Cat.assoc, ← hch, Cat.assoc]
 
-/-- Proposition 9.2, third step: the assumption that `k` is monotonic on `leq`. -/
-public theorem monoAlg_of_cost_step3 {C : 𝒜} {cost : A ⟶ C} {«≤» : C ⟶ C}
-    {k : F.obj C ⟶ C} (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    F.map cost ≫ F.map «≤» ≫ k ⊑ F.map cost ≫ k ≫ «≤» :=
-  comp_mono_left _ hk
-
-/-- Proposition 9.2, fourth step: the assumption `h cost = F(cost) k` again. -/
-public theorem monoAlg_of_cost_step4 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hch : h ≫ cost = F.map cost ≫ k) :
-    F.map cost ≫ k ≫ «≤» = h ≫ cost ≫ «≤» := by
-  rw [← Cat.assoc, ← hch, Cat.assoc]
+calc_steps monoAlg_of_cost_shunted
 
 /-- **Proposition 9.2 (B&dM p.222)**: an algebra `h` is monotonic on the order `R := cost·leq·cost°`
     (induced on `a` by pulling the order `leq` on `c` back along a "cost" function) whenever `h`
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
     monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
-    `F(R)h cost ⊑ h cost leq`, which steps 1–4 prove. -/
+    `F(R)h cost ⊑ h cost leq`, which `monoAlg_of_cost_shunted` proves. -/
 public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
@@ -339,11 +332,7 @@ public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cos
   rw [hsh]
   apply (map_shunt_right hcost _ _).mp
   rw [Cat.assoc]
-  exact calc F.map R ≫ h ≫ cost
-      _ = F.map R ≫ F.map cost ≫ k := monoAlg_of_cost_step1 hch
-      _ ⊑ F.map cost ≫ F.map «≤» ≫ k := monoAlg_of_cost_step2 hcost hR
-      _ ⊑ F.map cost ≫ k ≫ «≤» := monoAlg_of_cost_step3 hk
-      _ = h ≫ cost ≫ «≤» := monoAlg_of_cost_step4 hch
+  exact monoAlg_of_cost_shunted hcost hR hch hk
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 
