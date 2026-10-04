@@ -162,7 +162,7 @@ def typeNamed (t : Expr) : MetaM Bool := do
   let s ← PrettyPrinter.delab t
   if stxJoin s == .bracket then return true
   let some h := StrDiag.stxHead s | return true
-  return h.getString! != c.getString!
+  return (← StrDiag.identText h) != (← StrDiag.identText c)
 
 mutual
 
@@ -343,7 +343,7 @@ def isNamed (e : Expr) : MetaM Bool := do
     if stx.raw.isIdent then
       let fi ← Meta.getFunInfoNArgs e.getAppFn e.getAppNumArgs
       if fi.paramInfo.any (·.binderInfo.isExplicit) then return true
-    return h.getString! != s
+    return (← StrDiag.identText h) != s
   | _ => return false
 
 /-- Whether the term is built from an operator this functor draws — the test for unfolding a

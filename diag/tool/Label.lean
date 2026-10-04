@@ -177,9 +177,13 @@ partial def stxPeel (s : Syntax) : Syntax :=
   | _ => s
 
 /-- The text an identifier the printer wrote stands for: its last component, macro scopes erased —
-    a hygienic `p✝` ends in its scope's NUMBER, where `getString!` panicked and wrote "". -/
-def identText (n : Name) : String :=
-  match n.eraseMacroScopes with | .str _ s => s | n => n.toString
+    a hygienic `p✝` ends in its scope's NUMBER, where `getString!` panicked and wrote "".  A name
+    with no text at all — `getId` of syntax that is not an identifier — is REFUSED, never `""`. -/
+def identText [Monad m] [MonadError m] (n : Name) : m String :=
+  match n.eraseMacroScopes with
+  | .str _ s => pure s
+  | .anonymous => throwError "identText: no name to read off `{n}` — the syntax was not an identifier"
+  | e => pure e.toString
 
 mutual
 
@@ -217,7 +221,7 @@ partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[])
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
 partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
-  if h.isIdent then return identText h.getId
+  if h.isIdent then return ← identText h.getId
   -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
   -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
   -- application is looked for among the paren's OWN children — `Term.paren` carries the optional
@@ -508,8 +512,9 @@ def declName? (e : Expr) : MetaM (Option String) := do
   -- writes THAT name on the box, the way `relatorName?` takes the printer's.  A head that only
   -- drops the namespace chose nothing, so the constant's own last component stands.
   if let some h := stxHead (← delabP e) then
-    if h.getString! != n.getString! then return some h.getString!
-  return some n.getString!
+    let hs ← identText h
+    if hs != (← identText n) then return some hs
+  return some (← identText n)
 
 /-- A HEAD WITH THE ARGUMENTS THE PICTURE ALREADY DRAWS TAKEN OUT, spelled from its EXPLICIT
     positions alone.  An implicit or instance argument is the elaborator's business and no factor of
@@ -703,9 +708,9 @@ partial def betaHead (e : Expr) : Expr :=
     relator and the PRINTER gives the letter, so an unexpander's chosen name still wins. -/
 def relatorName? (e : Expr) : MetaM (Option String) := do
   unless ← isLaneBundle e do return none
-  if let some h := stxHead (← delabP e) then return some h.getString!
+  if let some h := stxHead (← delabP e) then return some (← identText h)
   let some c := e.getAppFn.constName? | return none
-  return some c.getString!
+  return some (← identText c)
 
 /-- A FUNCTOR'S ACTION ON OBJECTS, as the things the note writes it from: the functor and EVERY
     object it is taken at.  Read off the field's own arguments — the bundle stands at the
@@ -753,7 +758,7 @@ def printsItsName (e : Expr) : MetaM Bool := do
     on the field wrote the note's spelling instead (`A[n]`), neither appears in the syntax. -/
 def printsAsField (e : Expr) : MetaM Bool := do
   let .const n _ := e.getAppFn | return false
-  let fld := Name.mkSimple n.getString!
+  let fld := Name.mkSimple (← identText n)
   if ((← delabP e).raw.find? fun s =>
       s.isOfKind ``Lean.Parser.Term.proj && s[2].isIdent
         && s[2].getId.eraseMacroScopes == fld).isSome then return true
@@ -777,7 +782,7 @@ partial def objJoin (e : Expr) : MetaM Join := do
 def ctorName? (e : Expr) : MetaM (Option String) := do
   let .const n _ := e.getAppFn | return none
   match (← getEnv).find? n with
-  | some (.ctorInfo _) => return some n.getString!
+  | some (.ctorInfo _) => return some (← identText n)
   | _ => return none
 
 /-- AN OBJECT OF THE GIVEN CATEGORY INSIDE AN ARGUMENT, at whatever depth it sits: the algebra of a
@@ -820,14 +825,14 @@ def indexedComponent? (e₀ : Expr) : MetaM (Option (String × Expr)) := do
   -- dot and `stxHead` — whose business is an application's head — cannot reach; that the constant
   -- is a projection is read off the environment, never off its spelling.
   let head? : MetaM (Option Name) := do
-    if ((← getEnv).getProjectionFnInfo? c).isSome then return some (Name.mkSimple c.getString!)
+    if ((← getEnv).getProjectionFnInfo? c).isSome then return some (Name.mkSimple (← identText c))
     return stxHead (← delabP e)
   let some h ← head? | return none
   let mut ix : Option Expr := none
   for a in e.getAppArgs do
     if let some x ← objIn? obj a then ix := some x
   match ix with
-  | some a => return some (h.getString!, a)
+  | some a => return some (← identText h, a)
   | none => return none
 
 mutual
@@ -1883,7 +1888,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
     -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
     | .ident _ _ nm _ =>
-      if oneToken (identText nm) || prec ≤ (← Prec.juxt) then return out else return .delim "(" ")" out
+      if oneToken (← identText nm) || prec ≤ (← Prec.juxt) then return out else return .delim "(" ")" out
     | _ => return out
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by
