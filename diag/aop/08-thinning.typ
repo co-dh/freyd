@@ -309,13 +309,7 @@ row((
      every `z` in `Λ(S)(x)`.
    - We have `w R z` (`w` is cheapest) and `w (S°S) z` (both are built by `S` from the same argument
      `x`); the hypothesis turns the two into `w Q z`: among candidates from one argument, cheaper
-     already means `Q`-better.
-   - In the layered network, `Q ≜ R∩(head head°)`, and every path `S` builds from `r(a,ts)` is
-     `cons(a,t)`, with head `a`; from `l(a)` only `[a]`. So `S head ⊑ [𝟙,π₁]` is simple,
-     `S°S ⊑ head head°`, and `R∩(S°S) ⊑ Q`.
-   - For the program: all tails behind one vertex `a` give paths with one head, so keeping the
-     cheapest suffices — `step = cpr P(cons) est(R)` uses `est`, not `thin`; paths from different
-     vertices of a layer have different heads and are thinned by `Q`, one per head.],
+     already means `Q`-better.],
   lean-calc(calc-82c),
 )]<path-laws>
 
