@@ -356,7 +356,7 @@ public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
     algebras is `Q`-monotonic, which is the only hypothesis of it the union has to earn. -/
 public theorem thinningList_step3 (I : InitialAlgebra F)
     {f₁ f₂ S : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
-    (hQR : Q ⊑ R) (hQ : IsPreorder Q) (hR : IsPreorder R)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
@@ -388,7 +388,7 @@ public theorem thinningList (I : InitialAlgebra F)
     {minlist : (A ⟶ A) → (L.obj A ⟶ A)} {Pr : RelProd (L.obj A) (L.obj A)}
     {Pr' : RelProd (P A) (P A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
-    (hQR : Q ⊑ R) (hQ : IsPreorder Q) (hR : IsPreorder R)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
     (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)

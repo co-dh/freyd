@@ -264,7 +264,7 @@ public theorem id_le_thinRel_id : Cat.id (P A) ⊑ thinRel (Cat.id A) :=
   `calc_steps` names; `thinRel_comp_est` is their composition. -/
 
 /-- Step 1: `𝟙 ⊑ thin Q` (`Q` reflexive) composed with `est R` on the right. -/
-public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hQ : IsPreorder Q) :
+public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hQ : Preorder Q) :
     est R ⊑ thinRel Q ≫ est R := by
   have h := comp_mono_right (id_le_thinRel hQ.1) (est R)
   rwa [Cat.id_comp] at h
@@ -289,7 +289,7 @@ public theorem thinRel_comp_est_cond1 (Q : A ⟶ A) {R : A ⟶ A} :
 calc_steps thinRel_comp_est_cond1
 
 /-- The UP's second condition: every member is `R`-above something the thinning kept. -/
-public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : IsPreorder R) :
+public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : Preorder R) :
     (∋ A)° ≫ thinRel Q ≫ est R ⊑ R° :=
   calc (∋ A)° ≫ thinRel Q ≫ est R ⊑ Q° ≫ (∋ A)° ≫ est R := by
         rw [← Cat.assoc, ← Cat.assoc]
@@ -302,15 +302,15 @@ calc_steps thinRel_comp_est_cond2
 
 /-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R` is transitive — thinning below a
     coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
-public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : IsPreorder R) :
+public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : Preorder R) :
     thinRel Q ≫ est R ⊑ est R :=
   le_est_iff.mpr ⟨thinRel_comp_est_cond1 Q, thinRel_comp_est_cond2 hQR hR⟩
 
 /-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R`
     is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
     leaves it unchanged.  Oriented as the book and the note's row write it, `est R` first. -/
-public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hQ : IsPreorder Q)
-    (hR : IsPreorder R) : est R = thinRel Q ≫ est R :=
+public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hQ : Preorder Q)
+    (hR : Preorder R) : est R = thinRel Q ≫ est R :=
   le_antisymm (thinRel_comp_est_step1 hQ) (thinRel_comp_est_le hQR hR)
 
 /-! ### The (8.2) chain
@@ -451,7 +451,7 @@ public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
 /-- The prefixed-point premise of `thinning`'s second half: `Q°` walks out of the `F` handle by
     monotonicity, the transpose is swallowed by its own converse (`W ≜ F(∋)S`), `thin`'s second
     half, and `Q` transitive. -/
-public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : IsPreorder Q)
+public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : Preorder Q)
     (hmono : Freyd.Alg.MonoAlg S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   calc S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
@@ -481,7 +481,7 @@ calc_steps thinning_prefixed
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQ : IsPreorder Q) (hmono : Freyd.Alg.MonoAlg S Q) :
+    {S : F.obj A ⟶ A} (hQ : Preorder Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
@@ -502,7 +502,7 @@ public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (I : InitialAlgebra F) {Q R : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : IsPreorder Q) (hR : IsPreorder R)
+    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   calc relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R

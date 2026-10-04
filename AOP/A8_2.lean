@@ -89,7 +89,7 @@ variable {B : 𝒜} {F : BiRelator 𝒜}
 public theorem thinning_paths_step
     (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hQ : IsPreorder Q) (hR : IsPreorder R)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q) :
     relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
@@ -168,7 +168,7 @@ calc_steps thinning_paths_alg
 public theorem thinning_paths
     (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hpQ : IsPreorder Q) (hpR : IsPreorder R)
+    (hQR : Q ⊑ R) (hpQ : Preorder Q) (hpR : Preorder R)
     (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q)
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
