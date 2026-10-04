@@ -106,8 +106,9 @@
 }
 /// A CITED LAW PRINTS ITS FORMULA, read off Lean as the row stating it prints it, because a generated
 /// row number sends the reader off to look the row up.  A cited DISPLAY keeps its number beside the
-/// formula, since there the number is a name (`Theorem 8.1`).  `keys`: the Lean selectors the cited
-/// row or `Thm` header states; with none the number is all there is.  Nothing under `list`, where no
+/// formula only when the book gave it (`Theorem 8.1`, `(7.5)`), since only then is the number a name;
+/// `row`: the number is generated, so the formula stands alone.  `keys`: the Lean selectors the cited
+/// row or display states; with none the number is all there is.  Nothing under `list`, where no
 /// formula file need exist yet.
 #let law-formula(keys) = if "list" in sys.inputs { none } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
@@ -125,15 +126,23 @@
     vs.slice(0, calc.min(1, vs.len()))
   }
 }
-/// The Lean selectors a display's first `Thm` header states, `()` for a display with none.
+/// The Lean selectors a display states: its first `Thm` header's formulas; else the `#leanf`s in its
+/// own body (`lean-keys`: a chain's cited laws are emitted from a `context`, which it does not walk);
+/// else what its heading states, the theorem a derivation with no statement of its own proves.
 #let disp-keys(s) = {
   let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
   let ts = if e == none { () } else { disp-thms(s, e.location()) }
-  if ts.len() == 0 { () } else {
+  if ts.len() > 0 {
     let te = query(selector(<thm-end>).after(ts.first().location())).first()
     query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup()
+  } else {
+    let own = lean-keys(query(selector(figure.where(kind: "disp")).before(s.location())).last().body).dedup()
+    let h = query(selector(heading).before(s.location())).at(-1, default: none)
+    if own.len() > 0 or h == none { own } else { lean-keys(h.body).dedup() }
   }
 }
+/// The book's own number for the display `s` opens (`disp(num: …)`), `none` for a generated one.
+#let booknum(s) = query(selector(<disp-num>).after(s.location())).at(0).value
 /// A row's number as a reference prints it: the display's number and the row index, `(0.10a.5)`;
 /// a row of a theorem display is cited as the theorem, its display's number.
 #let rowid(loc, y) = {
@@ -301,14 +310,15 @@
   show ref: it => context {
     let el = it.element
     // A row of a law table cites as its formula alone; a display, or a row of a theorem display,
-    // as the display's number and its `Thm` formula (`cite`).
+    // as the formula it states, after the display's number only when the book gave it (`cite`).
     let (id, keys, row) = if el == none { (none, (), false) }
       else if el.func() == figure and el.at("kind", default: none) == "disp" {
-        (dispid(el.location()), disp-keys(query(selector(<disp-start>).after(el.location())).at(0)), false) }
+        let s = query(selector(<disp-start>).after(el.location())).at(0)
+        (dispid(el.location()), disp-keys(s), booknum(s) == none) }
       else if el.func() == metadata and type(el.value) == int {
         let s = disp-of(el.location())
         if law-table(s) { (rowid(el.location(), el.value), row-keys(el.location()), true) }
-        else { (rowid(el.location(), el.value), disp-keys(s), false) } }
+        else { (rowid(el.location(), el.value), disp-keys(s), booknum(s) == none) } }
       else { (none, (), false) }
     if el != none and el.func() == figure { law-gate(it) }
     // Under `list` only: what `diag-regen` reads to write the formula files `cite` prints.
