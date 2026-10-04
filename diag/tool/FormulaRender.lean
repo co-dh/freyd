@@ -159,6 +159,20 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
             | throwError "{declName}: a structure with no fields states nothing"
           return #[head ++ spaced "≜" sp ++ (← labelT c)]
+      -- A DATATYPE has no value but its CONSTRUCTORS: `tree A≜tip(A) ∣ bin(tree A,tree A)`, each
+      -- constructor at these parameters beside the types of its fields, read off its own type.
+      if let .inductInfo iv := ci then
+        let lv := ci.levelParams.map Level.param
+        let alts ← iv.ctors.toArray.mapM fun c => do
+          let k := mkAppN (.const c lv) (xs.extract 0 iv.numParams)
+          Meta.forallTelescope (← Meta.inferType k) fun fs _ => do
+            if fs.isEmpty then return ← labelT k
+            let tys ← fs.mapM fun f => do labelT (← Meta.inferType f)
+            let args := tys[1:].foldl (fun acc t => acc ++ Lbl.text "," ++ t) tys[0]!
+            return (← labelT k) ++ Lbl.text "(" ++ args ++ Lbl.text ")"
+        let some (a₀ : Lbl) := alts[0]? | throwError "{declName}: a datatype with no constructors"
+        let body := alts[1:].foldl (fun (acc : Lbl) (a : Lbl) => acc ++ spaced "∣" sp ++ a) a₀
+        return #[head ++ spaced "≜" sp ++ body]
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
       -- A DEFINITION BY CASES — its value made of a matcher or a recursor, the KIND test `plain`
