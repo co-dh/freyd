@@ -587,10 +587,12 @@ partial def pairPart? (x : Expr) : MetaM (Option Nat) := do
     pairPart? args[info.coercee]!
 
 /-- A PAIR TAKEN APART INTO A CURRIED FUNCTION is that function: `fun p => g (↑p.1) p.2` is `g`, which
-    the note applies as `g(a,b)` already, so the lambda adds a binder and no step. -/
+    the note applies as `g(a,b)` already, so the lambda adds a binder and no step.  Only when the note
+    has a word for `g`: `twStep p` has none, and its body — the `match` — is what the note writes. -/
 def uncurried? (f : Expr) : MetaM (Option Expr) := do
   let .lam _ _ (.app (.app g x) y) _ := f | return none
   if g.hasLooseBVars then return none
+  if let .const c _ := g.getAppFn then unless ← noteNames c do return none
   unless (← pairPart? x) == some 0 && (← pairPart? y) == some 1 do return none
   return some g
 
