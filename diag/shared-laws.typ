@@ -250,7 +250,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   table.header([*semi-distributivity, and what supplies it*], [*picture*]),
 
   [`R (S∩T)⊑RS∩RT` — the lax copy law. #src[Equality exactly when `R` is single valued: the Maps section's
- `F(R∩S)=FR∩FS`. ]], P(lean("Freyd.Diag.semidistrib_of_lax")),
+ `F(R∩S)=FR∩FS`. ]#leank("Freyd.Alg.comp_inter_le")], P(lean("Freyd.Diag.semidistrib_of_lax")),
    // lean:AOP.A4_1.comp_inter_le@c62bf05a
 )]<meet-semidistrib>
 ]
@@ -288,7 +288,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
  — the discard slides back past `S` #src[]
    // lean:Freyd.S2_10.dom_comp_le@a99434dd
    // lean:Freyd.Diag.dom_comp_le@4f75b0f2
-],), s: 62%)]<dom-slide>
+],), s: 62%)#leank("Freyd.Alg.dom_comp_le")]<dom-slide>
 ]
 
 #let law-div-laws = [
@@ -303,7 +303,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
    such that `x` admires everyone `y` hates lies inside `R/S`, and `R/S` is the largest such.]],
   P(lean("Freyd.Alg.le_div_iff.lhs", "Freyd.Alg.le_div_iff.rhs", op: IFF)),
 
-  [`X⊑S\R⟺SX⊑R` \ #src[The mirror — divide on the left when `x` comes first.]],
+  [`X⊑S\R⟺SX⊑R` \ #src[The mirror — divide on the left when `x` comes first.]#leank("Freyd.Alg.le_leftDiv_iff")],
   P(lean("Freyd.Alg.le_leftDiv_iff.lhs", "Freyd.Alg.le_leftDiv_iff.rhs", op: IFF)),
 
   [`(R/S)S⊑R` \ #src[There is a `y` such that `x` admires everyone `y` hates, and `p` is one of
