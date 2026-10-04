@@ -25,10 +25,10 @@
 
  [#leanf("Freyd.Alg.simple_dist_inter") \ #v(2pt) #src[`F` single valued]],
   // lean:Freyd.S2_10.simple_dist_inter@46ef7904
-  grid(columns: 3, align: horizon, column-gutter: 10pt,
-    [#P(p-236a, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
+  lean-sides("Freyd.Diag.comp_meet_of_singleValued", (l, r) => grid(columns: 3, align: horizon, column-gutter: 10pt,
+    [#P(l, s: 74%) #v(-9pt) #align(center, src[one person who admires both])],
     text(17pt)[=],
-    [#P(p-236b, s: 74%) #v(-9pt) #align(center, src[`a` at A, `b` at B])],
-  ),
+    [#P(r, s: 74%) #v(-9pt) #align(center, src[`a` at A, `b` at B])],
+  )),
 )]<map-meet>
 

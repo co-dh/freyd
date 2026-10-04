@@ -12,7 +12,7 @@
 #                                       read the drawing made and did not record
 #
 # The notes THEMSELVES are the list: `diag-export --list` reads every `#lean(...)`/`#leanc(...)`
-# selector out of the note's own metadata, and `note-files --generated` every surviving `#import`
+# selector out of the note's own metadata, and `note-files --generated` every proof `#import`
 # as a path from the file making it.  A second
 # copy of that list in a header comment is how the two drifted — three declarations were renamed and
 # the comment went on naming the old ones — and a pattern written for the note's own
@@ -26,7 +26,7 @@
 # reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leang(...)` name by `--graph`
 # (a concrete relation decided pair by pair), a `#leanf(...)`
 # name by `--formula` (the statement in the note's spelling), a `#leant(...)` name by `--type` (the
-# hom its arrows share), a `#leanv(...)` name by `--value` (a tree-valued `def` drawn as a tree), a `<decl>.proof` by `--proof`, and what is left by the term walk.  The route is not a property of the name, so the lists are asked
+# hom its arrows share), a `#leanv(...)` name by `--value` (a tree-valued `def` drawn as a tree), and a `<decl>.proof` import by `--proof`.  The route is not a property of the name, so the lists are asked
 # for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
@@ -103,10 +103,12 @@ all=$(./scripts/note-files --generated) || exit 1
 # puts it back — on the file the exporter writes and on the one `--stale` reads.
 ls=$(mktemp -d) || exit 1
 trap 'rm -rf "$ls"' EXIT
-printf '%s\n' "$all" | grep -v '\.proof$' > "$ls/plain"
+# A PICTURE is a `#lean(...)` call and nothing else; an `#import` draws only a PROOF (`branches`, data
+# a call cannot return beside its metadata), so a picture imported under an alias is refused by name.
+plain=$(printf '%s\n' "$all" | grep -v '\.proof$' | grep -v '^$')
+[ -z "$plain" ] || { printf 'diag-regen: a picture imported, not drawn by #lean("<sel>"):\n%s\n' "$plain" >&2; exit 1; }
 printf '%s\n' "$all" | sed -n 's|\.proof$||p' > "$ls/proof"
-tests plain '' proof --proof
-draw "$(cat "$ls/plain.stale")"
+tests proof --proof
 draw "$(cat "$ls/proof.stale")" --proof
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it

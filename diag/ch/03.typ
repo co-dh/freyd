@@ -11,7 +11,7 @@
 The one rule (ii) and (iii) use, and each of them uses it twice. A converse facing a merge on the
 lower strand is the box itself, upright, on the upper one:
 
-#disp[#P(p-conv-slide, s: 62%)]<conv-slide>
+#disp[#P(lean("Freyd.Diag.CartBicat.«°_slide»"), s: 62%)]<conv-slide>
 
 `R°` is DEFINED as the bending of `(R⊗𝟙)▷⊸`, so the slide claims only that unbending it gives
 that back — and unbending undoes bending for every arrow. That is the snake above with a passenger:
