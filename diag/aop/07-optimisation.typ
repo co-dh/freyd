@@ -669,6 +669,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 )])]
 
+#import "../generated/Freyd.Alg.RelSet.GCTakeWhile.takewhile_cata_le.calc.typ" as calc-tw
 #disp(num: "Exercise 7.39")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.174, Ex 7.39: "In words, takewhile p x returns the longest prefix of x with the property that all
   // its elements satisfy p." … "derive the standard implementation of takewhile."
@@ -679,19 +680,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
      elements satisfy `p`; the catamorphism is the standard implementation.
  ]],
      // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@31b3dec9
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.lhs",
-      // lean:AOP.A7_7_TakeWhile.takewhile@9e837282
-      src[@est-defn]),
-    (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step1.rhs",
-      // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
-      src[@takewhile-alg]),
-    (RQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_greedy.lhs",
-      src[@greedy-thm72 at `R°` — @takewhile-mono]),
-    (EQ, "Freyd.Alg.RelSet.GCTakeWhile.takewhile_laws_step3.rhs",
-      // lean:AOP.A7_7_TakeWhile.takewhile_step@bb113fef
-      src[@takewhile-step]),
-  ),
+  lean-calc(calc-tw),
 )
 #align(center, block(inset: (y: 4pt))[#src[`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
   `takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
@@ -897,6 +886,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
+#import "../generated/Freyd.Alg.RelSet.MSS.mss_eq_scan.calc.typ" as calc-mss
 #disp(num: "Exercise 7.40")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
@@ -907,20 +897,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@758d9b12
-  lean-chain(
-    // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
-    // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
-    // collapses a pair puts its one bead midway between the two it replaces.
-    (none, "Freyd.Alg.RelSet.MSS.mss_shape.lhs",
-      src[@mss-defn]),
-    // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
-    // `E` runs past it, and `prefix sum` is where the `list` wire dies.
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_shape.rhs", src[@mss-shape]),
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs",
-      src[@greedy-thm72 at `R:=≥` — @mss-mono, @mss-step, @takewhile-laws]),
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs",
-      src[`⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])` E(⦇[zero,⊕]⦈)⟩` — @cata-defining, @mss-scan]),
-  ),
+  // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
+  // it, so no bead here carries a `%∋`.  `suffix` is only LAX natural in `Rel`, so it is a NODE on
+  // the object wire like the rest; the outer `E` runs past it, and `prefix sum` is where `list` dies.
+  lean-calc(calc-mss),
 )
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])
@@ -1038,6 +1018,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 )])]
 
+#import "../generated/Freyd.Alg.RelSet.Filter.filter_cata_le.calc.typ" as calc-filter
 #disp(num: "Exercise 7.41")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.41: "In words, filter p x returns the longest subsequence of x with the property that
   // all its elements satisfy p." … "derive the standard program for filter."
@@ -1047,23 +1028,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
  ]],
      // lean:AOP.A7_7_Filter.filter_eq_cata@0882803d
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Filter.filter_laws_step1.lhs",
-      // lean:AOP.A7_7_Filter.filter@698bf998
-      src[@comb-fns-7]),
-    (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step1.rhs",
-      src[`subseq list(p)=⦇S⦈` — @takewhile-alg]),
-    // The `E` wire is gone: the transpose and `est(R°)` now meet inside the reduce.  `list` and `A` are
-    // unchanged, so they are drawn where the two panels above draw them.
-    (RQ, "Freyd.Alg.RelSet.Filter.filter_greedy.lhs",
-      src[@greedy-thm72 at `R°` — @filter-mono]),
-    // Empty: the step only renames the algebra, and the picture above already draws the reduce.
-    (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step3.rhs",
-      // lean:AOP.A7_7_Filter.filter_laws_step3@222a9c81
-      src[@filter-step]),
-  ),
+  lean-calc(calc-filter),
 )
-#align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊒`
+#align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊑`
   is `=`.]])
   // lean:AOP.A7_7_Filter.filter_entire@587e37a8
   // lean:AOP.A7_7_Filter.filter_simple@de8b5dbc
@@ -1715,19 +1682,14 @@ zip(that)                                         each row: its square, and the 
 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
+#import "../generated/Freyd.Alg.Vec.Rel.cyl_laws.calc.typ" as calc-cyl
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
-  lean-chain(
-    (none, "Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs", []),
-    (EQ, "Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs", src[@vec-defn-cyl at `paths`]),
-    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs",
-      src[`R` transitive]),
-    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs", src[@cata-fusion at @vec-cyl-fusion]),
-  ),
+  lean-calc(calc-cyl),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
     #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
      `jk` entries laid end to end.

@@ -174,10 +174,13 @@ public theorem thinning_paths
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
     relCata (Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)) ≫ est R
-      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  exact le_trans
-    (comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R))
-    (thinning_paths_step I hQR hreflQ htransQ htransR hmono)
+      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R :=
+  -- The terms are the two laws' own sides: spelled out, `relCata`'s initial algebra is a fresh
+  -- metavariable that `whnf` cannot close within the heartbeat budget.
+  calc _ ⊑ _ := comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R)
+    _ ⊑ _ := thinning_paths_step I hQR hreflQ htransQ htransR hmono
+
+calc_steps thinning_paths
 
 end Layered
 

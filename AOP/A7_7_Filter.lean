@@ -31,6 +31,7 @@ module
 
 public import AOP.A7_7_TakeWhile
 public import AOP.A5_6_ListCombinators
+import AOP.CalcSteps
 
 set_option linter.unusedVariables false
 
@@ -216,13 +217,6 @@ public theorem filter_mono (p : A → Bool) :
             le_iff.mp (filter_mono_cons p) q ws ⟨q', hv, (junc_sum_inr _ _ _ _).mp hS⟩
           exact ⟨vs, (junc_sum_inr _ _ _ _).mpr hvs, hlen⟩
 
-/-- **filter-deriv, first row**: the specification's own greedy choice IS the catamorphism's,
-    `(subseq list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)` — `filter_alg` rewritten under `Λ … est(R°)`,
-    at the `R` the chain chooses by (`lenLE`), so it meets the greedy row's right side. -/
-public theorem filter_laws_step1 (p : A → Bool) :
-    (subseq ≫ listP p)%∋ ≫ est(lenLE°) = (cataR (Salg p))%∋ ≫ est(lenLE°) := by
-  rw [filter_alg p]
-
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
     every `p`-subsequence collected and one chosen at the end. -/
@@ -343,12 +337,20 @@ public theorem filter_step (p : A → Bool) :
   (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
     ((filter_step3 p lenLE).trans (filter_step4 p)))
 
-/-- The `filter-deriv` last row: **`⦇S%∋ est(R°)⦈ = ⦇[nil,(π₁p→cons,π₂)]⦈`** — the greedy algebra
-    IS the program's (`filter_step`), so the fold on the left is the fold the program runs. -/
-public theorem filter_laws_step3 (p : A → Bool) :
-    cataR ((Salg p)%∋ ≫ est(lenLE°))
-      = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) := by
-  rw [filter_step]
+/-- **The `filter-deriv` chain**, from the program up: `⦇[nil,(π₁p→cons,π₂)]⦈ ⊑ filter(p)` — the
+    program's algebra is the greedy one (`filter_step`), Theorem 7.2 puts its fold below the
+    transposed fold's choice (`filter_greedy`), that fold is the specification's relation
+    (`filter_alg`), and the result is `filter` by definition. -/
+public theorem filter_cata_le (p : A → Bool) :
+    cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
+      ⊑ filter p :=
+  calc cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
+        = cataR ((Salg p)%∋ ≫ est(lenLE°)) := by rw [filter_step]
+    _ ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := filter_greedy p
+    _ = (subseq ≫ listP p)%∋ ≫ est(lenLE°) := by rw [filter_alg]
+    _ = filter p := rfl
+
+calc_steps filter_cata_le
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 
@@ -455,17 +457,11 @@ public theorem filter_simple (p : A → Bool) : Simple (filter p) := by
 public theorem filter_eq_cata (p : A → Bool) :
     filter p
       = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) := by
-  have hle : cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
-      ⊑ filter p := by
-    rw [← filter_step p]
-    show cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (subseq ≫ listP p)%∋ ≫ est(lenLE°)
-    rw [filter_alg p]
-    exact filter_greedy p
   have hentire : Entire
       (cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))) := by
     rw [← filter_emerges p]
     exact graph_entire _
-  exact (eq_of_le_entire_simple hentire (filter_simple p) hle).symm
+  exact (eq_of_le_entire_simple hentire (filter_simple p) (filter_cata_le p)).symm
 
 /-- The entirety row: `Λ(subseq list(p)) est(R°)` is entire — `nil` is always a `p`-subsequence
     and a longest one exists; read off the headline, whose program is a reduce of maps. -/

@@ -58,6 +58,7 @@ import diag.tool.Label
 import diag.tool.StringDiagram
 import diag.tool.TypeRender
 import diag.tool.FormulaRender
+import AOP.CalcSteps
 import diag.tool.Cite
 -- The allegory layer's division and negation (B&dM §4.4–4.5), so `Alg.neg`, `Alg.impl` and
 -- `Alg.thenRel` are names this file can quote.  `AOP.A4_5` pulls `AOP.A4_4` and the `Freyd` core.
@@ -964,33 +965,14 @@ hole, so `bestChain` searches for the LONGEST spine anywhere in the term. -/
 /-- One step: the relation symbol and the two sides. -/
 abbrev Step := String × Expr × Expr
 
-mutual
-
-/-- Flatten a trans spine, or fail.  `calc` elaborates to `Trans.trans`, but a proof written as
-    `le_trans h₁ h₂` — which is most of `diag` — is a spine too, and the picture chain is the same
-    either way. -/
-partial def transChain (e : Expr) : MetaM (Option (Array Step)) := do
-  match e.getAppFnArgs with
-  | (``Trans.trans, args) | (``Eq.trans, args)
-  | (``Freyd.Diag.OrderedCat.«≤_trans», args) | (``Freyd.Alg.le_trans, args) =>
-    match lastTwo args with
-    | some (f, g) => return some ((← chainOrLeaf f) ++ (← chainOrLeaf g))
-    | none => return none
-  | _ => return none
-
-/-- The chain a proof contributes: its trans spine if it has one, else the single step it proves.
-    `splitM`, not `split`: a hypothesis of a named predicate — `h : Total (R ∩ S)` — is a link like
-    any other once the predicate is unfolded, and dropping it silently shortens the chain. -/
-partial def chainOrLeaf (e : Expr) : MetaM (Array Step) := do
-  match ← transChain e with
-  | some c => return c
-  | none =>
-    let t ← (do pure (some (← Meta.inferType e))) <|> pure none
-    match ← t.mapM StrDiag.splitM with
-    | some (some st) => return #[st]
-    | _ => return #[]
-
-end
+/-- Flatten a trans spine, or fail: `CalcSteps.leaves`, the one flattener `calc_steps` reads too,
+    each leaf the step its type states.  `splitM`, not `split`: a hypothesis of a named predicate —
+    `h : Total (R ∩ S)` — is a link like any other once the predicate is unfolded, and dropping it
+    silently shortens the chain. -/
+def transChain (e : Expr) : MetaM (Option (Array Step)) := do
+  let ls ← Freyd.Alg.CalcSteps.leaves e (← Meta.inferType e)
+  if ls.size < 2 then return none
+  return some (← ls.filterMapM fun (_, t) => StrDiag.splitM t)
 
 /-- The longest trans spine anywhere in `e`.  Depth-first over applications, lambdas and lets; a
     spine found at a node wins over anything nested inside its leaves, since that is the outermost
@@ -1011,7 +993,7 @@ partial def bestChain (e : Expr) : MetaM (Array Step) := do
   -- caller opens the binders it means to, and renders inside that scope.
   | .lam .. => return #[]
   -- Opened as a local HYPOTHESIS, never substituted.  Substituting puts the `have`'s proof in the
-  -- leaf position, and a leaf that is itself a `calc` gets flattened by `chainOrLeaf` — so a
+  -- leaf position, and a leaf that is itself a `calc` gets flattened by `transChain` — so a
   -- three-line argument standing on a thirteen-line reshaping lemma comes out as thirteen lines of
   -- that lemma.  As a hypothesis the leaf is an fvar whose TYPE is the one step it contributes.
   -- Safe to return from under the binder: those types are the closed statements, never the fvar.
