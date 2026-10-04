@@ -394,10 +394,11 @@ inductive Law where
   deriving BEq
 
 /-- Whether theorem `c` is LOGIC rather than a law of arrows: its generic conclusion relates no two
-    arrows (`Eq.mpr`, `id`), or relates terms of a type it quantifies over (`Eq.symm`, `congrArg`). -/
+    arrows (`Eq.mpr`, `id`), or relates terms of a type it quantifies over (`Eq.symm`, `congrArg`).
+    Reducing, because a conclusion named by a definition (`F.PreservesRecip`) quantifies inside it. -/
 def isLogic (c : Name) : MetaM Bool := do
   let some ci := (← getEnv).find? c | return true
-  Meta.forallTelescope ci.type fun _ t => do
+  Meta.forallTelescopeReducing ci.type fun _ t => do
     let some (_, l, _) ← splitM t | return true
     return (← Meta.inferType l).getAppFn.isFVar
 

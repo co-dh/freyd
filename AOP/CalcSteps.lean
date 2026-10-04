@@ -16,14 +16,18 @@ open Lean Elab Command Meta
 
 namespace Freyd.Alg.CalcSteps
 
-/-- The leaves of a `calc` spine, left to right: `calc` elaborates to nested `Trans.trans` (and
-    `Eq.trans` for a chain of `=`), whose last two arguments are the two halves it composes. -/
-public meta partial def leaves (e : Expr) : Array Expr :=
+/-- The leaves of a `calc` spine, left to right, each with the relation the `calc` states for it:
+    `calc` elaborates to nested `Trans.trans` (and `Eq.trans` for a chain of `=`), whose last two
+    arguments are the two halves it composes.  The statement is read off `Trans.trans`'s own `r a b`
+    and `s b c`, not off the leaf's type, which for a step proved by `hf : Simple f` is `Simple f`. -/
+public meta partial def leaves (e : Expr) (ty : Option Expr := none) : Array (Expr × Option Expr) :=
   let e := e.consumeMData
   match e.getAppFnArgs with
+  | (``Trans.trans, #[_, _, _, r, s, _, _, a, b, c, h₁, h₂]) =>
+    leaves h₁ (some (mkApp2 r a b).headBeta) ++ leaves h₂ (some (mkApp2 s b c).headBeta)
   | (``Trans.trans, args) | (``Eq.trans, args) =>
-    if args.size < 2 then #[e] else leaves args[args.size - 2]! ++ leaves args[args.size - 1]!
-  | _ => #[e]
+    if args.size < 2 then #[(e, ty)] else leaves args[args.size - 2]! ++ leaves args[args.size - 1]!
+  | _ => #[(e, ty)]
 
 /-- `calc_steps <decl>`: adds `<decl>.step_i` for every step of the `calc` proving `<decl>`. -/
 syntax (name := calcSteps) "calc_steps " ident : command
@@ -40,8 +44,8 @@ syntax (name := calcSteps) "calc_steps " ident : command
     -- A binder the step does not use is no binder of the step: kept, it would have to be supplied
     -- by every caller of a step that never needs it.  Used means in the step, or in a used binder's
     -- type, so the binders are read last to first.
-    ls.mapM fun l => do
-      let (t, l) := (← instantiateMVars (← inferType l), ← instantiateMVars l)
+    ls.mapM fun (l, ty) => do
+      let (t, l) := (← instantiateMVars (← ty.getDM (inferType l)), ← instantiateMVars l)
       let mut ys : Array Expr := #[]
       for x in xs.reverse do
         let used (e : Expr) := e.containsFVar x.fvarId!

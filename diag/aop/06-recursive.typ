@@ -287,19 +287,15 @@
 )]<thm63-entire>
 
 // B&dM Corollary 6.2, p.149
+#import "../generated/Freyd.Alg.cor62_simple.calc.typ" as calc-62
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.cor62") \
-    #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map]],
+    #src[when `g member` is inductive and `f`, `g` are maps, the solution of `X=gF(X)f` is a map] \
+    #leanf("Freyd.Alg.cor62_simple") \
+    #src[`(gF(Y)f)°` followed by `X` stays below `𝟙` when `g`, `f` are simple and `Y°X⊑𝟙`]],
     // lean:AOP.A6_5.cor62@6df24a22
-  lean-chain(
-    (none, "Freyd.Alg.cor62_step1.lhs", []),
-    (SQ, "Freyd.Alg.cor62_step1.rhs", src[`X=gF(X)f`, `g` simple]),
-    // lean:AOP.A6_5.cor62_step1@71864db7
-    (SQ, "Freyd.Alg.cor62_step2.rhs", src[`Y°X⊑𝟙`]),
-    // lean:AOP.A6_5.cor62_step2@e7d4ea15
-    (SQ, "Freyd.Alg.cor62_step3.rhs", src[`f` simple]),
-    // lean:AOP.A6_5.cor62_step3@fca728a4
-  ),
+    // lean:AOP.A6_5.cor62_simple@efffca93
+  lean-calc(calc-62),
 )]<cor62>
 // B&dM Corollary 6.3, p.149
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

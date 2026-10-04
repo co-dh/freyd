@@ -566,27 +566,25 @@ public theorem thm63 (M : Membership F) {A B : 𝒜} {S : B ⟶ F.obj B} {R : F.
   exact ⟨hfix, fun Y hY => thm63_unique M hind hY hfix,
     fun hS hR => thm63_entire M hind hS hR (by rw [← hfix]; exact le_refl _)⟩
 
-/-- Corollary 6.2, simple half, first step: `X = gF(X)f` unfolded under the converse, and `g` simple
-    cancels `g°g`. -/
-public theorem cor62_step1 {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} (hg : Map g) {X : B ⟶ A}
-    (hX : X = g ≫ F.map X ≫ f) (Y : B ⟶ A) :
-    (g ≫ F.map Y ≫ f)° ≫ X ⊑ f° ≫ F.map (Y° ≫ X) ≫ f := by
-  have e : (g ≫ F.map Y ≫ f)° ≫ X = f° ≫ F.map Y° ≫ (g° ≫ g) ≫ F.map X ≫ f := by
-    conv => lhs; rw [hX]
-    simp only [Allegory.recip_comp, Cat.assoc, Relator.preservesRecip_of_tabular F]
-  have s := comp_mono_left f° (comp_mono_left (F.map Y°) (comp_mono_right hg.2 (F.map X ≫ f)))
-  rw [Cat.id_comp] at s
-  rw [e, F.map_comp]
-  simpa only [Cat.assoc] using s
+/-- Corollary 6.2, simple half: when `X = gF(X)f`, `g` and `f` are simple and `Y°X ⊑ 𝟙`, then
+    `(gF(Y)f)°X ⊑ 𝟙`; one law per step. -/
+public theorem cor62_simple {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.obj A ⟶ A} {X Y : B ⟶ A}
+    (hX : X = g ≫ F.map X ≫ f) (hg : Simple g) (hf : Simple f) (hY : Y° ≫ X ⊑ 𝟙 A) :
+    (g ≫ F.map Y ≫ f)° ≫ X ⊑ 𝟙 A :=
+  calc (g ≫ F.map Y ≫ f)° ≫ X = (g ≫ F.map Y ≫ f)° ≫ g ≫ F.map X ≫ f := by rw [← hX]
+    _ = f° ≫ (F.map Y)° ≫ g° ≫ g ≫ F.map X ≫ f := by
+        rw [Allegory.recip_comp, Allegory.recip_comp, Cat.assoc, Cat.assoc]
+    _ = f° ≫ F.map Y° ≫ g° ≫ g ≫ F.map X ≫ f := by rw [Relator.preservesRecip_of_tabular F Y]
+    _ ⊑ f° ≫ F.map Y° ≫ 𝟙 (F.obj B) ≫ F.map X ≫ f := by
+        rw [← Cat.assoc g°]; exact comp_mono_left f° (comp_mono_left _ (comp_mono_right hg _))
+    _ = f° ≫ F.map Y° ≫ F.map X ≫ f := by rw [Cat.id_comp]
+    _ = f° ≫ F.map (Y° ≫ X) ≫ f := by rw [F.map_comp, Cat.assoc]
+    _ ⊑ f° ≫ F.map (𝟙 A) ≫ f := comp_mono_left f° (comp_mono_right (F.map_mono hY) f)
+    _ = f° ≫ 𝟙 (F.obj A) ≫ f := by rw [F.map_id]
+    _ = f° ≫ f := by rw [Cat.id_comp]
+    _ ⊑ 𝟙 A := hf
 
-/-- Corollary 6.2, simple half, second step: `Y°X ⊑ 𝟙` under the relator. -/
-public theorem cor62_step2 {A B : 𝒜} {f : F.obj A ⟶ A} {X Y : B ⟶ A} (hY : Y° ≫ X ⊑ 𝟙 A) :
-    f° ≫ F.map (Y° ≫ X) ≫ f ⊑ f° ≫ f := by
-  have := comp_mono_left f° (comp_mono_right (F.map_mono hY) f)
-  rwa [F.map_id, Cat.id_comp] at this
-
-/-- Corollary 6.2, simple half, third step: `f` is simple. -/
-public theorem cor62_step3 {A : 𝒜} {f : F.obj A ⟶ A} (hf : Map f) : f° ≫ f ⊑ 𝟙 A := hf.2
+calc_steps cor62_simple
 
 /-- **Corollary 6.2** (B&dM p.149): if `g member(F)` is inductive and `f`, `g` are maps, the
     solution of `X = gF(X)f` is a map — entire by Theorem 6.3, simple (Ex 6.10) by Theorem 6.3's
@@ -603,7 +601,7 @@ public theorem cor62 (M : Membership F) {A B : 𝒜} {g : B ⟶ F.obj B} {f : F.
     refine le_inter ?_ ?_
     · have := comp_mono_left g (comp_mono_right (F.map_mono (inter_lb_left X (𝟙 A / X)°)) f)
       rwa [← hX] at this
-    · have h := le_trans (cor62_step1 hg hX _) (le_trans (cor62_step2 hYX) (cor62_step3 hf))
+    · have h := cor62_simple hX hg.2 hf.2 hYX
       have := recip_mono ((le_div_iff _ _ _).mpr h)
       rwa [Allegory.recip_recip] at this
   have h1 := recip_mono (le_trans (thm63_le M hind hX hY) (inter_lb_right _ _))
