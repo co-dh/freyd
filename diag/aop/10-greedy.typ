@@ -108,7 +108,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leanf("Freyd.Alg.RelSet.Detab.V")],
   [a prefix that fills to the same string],
   [#leann("Freyd.Alg.RelSet.Detab.Q")], [#leant("Freyd.Alg.RelSet.Detab.Q")],
-  [#leanf("Freyd.Alg.RelSet.Detab.Q")],
+  [#leanf("Freyd.Alg.RelSet.Detab.Q_eq")],
   [compare two decompositions by `V` on the strings and `U` on the characters],
   [#leann("Freyd.Alg.RelSet.Detab.unfillFn")], [#leant("Freyd.Alg.RelSet.Detab.unfillFn")],
   [#leanf("Freyd.Alg.RelSet.Detab.unfillFn")],
@@ -122,7 +122,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // lean:AOP.A10_2_Detab.detab_cata@37355797
 // lean:AOP.A10_2_Detab.R@5b23da25
 // lean:AOP.A10_2_Detab.V@b0fc79bc
-// lean:AOP.A10_2_Detab.Q@7a0a1541
+// lean:AOP.A10_2_Detab.Q@7a0a1541 lean:AOP.A10_2_Detab.Q_eq@74544c65
 )]<entab-defn>
 
 // B&dM pp.249–250, "we argue": the claim the next chain leaves aside, one row per hint.

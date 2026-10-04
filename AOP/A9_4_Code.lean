@@ -306,6 +306,30 @@ public theorem R_recip_trans : (R c p)° ≫ (R c p)° ⊑ (R c p)° :=
   | Code.ptr _ _, Code.ptr _ _ => True
   | _, _ => False
 
+/-- **code-defn**, point-free: `U=[sym,ptr]°(⊤+⊤)[sym,ptr]` — read through its constructors
+    `[sym,ptr]` as the sum `Char+(String×String)`, `Code`'s `U` is the book's `⊤+⊤`. -/
+public theorem U_eq :
+    U = (junc (sumCop ⟨Char⟩ ⟨Str × Str⟩) (graph Code.sym) (graph (Function.uncurry Code.ptr)))°
+      ≫ sumMap (sumCop ⟨Char⟩ ⟨Str × Str⟩) (sumCop ⟨Char⟩ ⟨Str × Str⟩) (topMor _ _) (topMor _ _)
+      ≫ junc (sumCop ⟨Char⟩ ⟨Str × Str⟩) (graph Code.sym) (graph (Function.uncurry Code.ptr)) := by
+  apply hom_ext; intro e f
+  constructor
+  · intro h
+    cases e with
+    | sym a => cases f with
+      | sym b => exact ⟨Sum.inl a, Or.inl ⟨a, rfl, rfl⟩, Sum.inl b,
+          Or.inl ⟨a, rfl, b, topMor_apply _ _, rfl⟩, Or.inl ⟨b, rfl, rfl⟩⟩
+      | ptr _ _ => exact h.elim
+    | ptr x y => cases f with
+      | sym _ => exact h.elim
+      | ptr x' y' => exact ⟨Sum.inr (x, y), Or.inr ⟨(x, y), rfl, rfl⟩, Sum.inr (x', y'),
+          Or.inr ⟨(x, y), rfl, (x', y'), topMor_apply _ _, rfl⟩, Or.inr ⟨(x', y'), rfl, rfl⟩⟩
+  · rintro ⟨s, hs, t, hst, ht⟩
+    rcases hs with ⟨a, rfl, rfl⟩ | ⟨q, rfl, rfl⟩ <;> rcases ht with ⟨b, rfl, rfl⟩ | ⟨r, rfl, rfl⟩
+      <;> first
+        | trivial
+        | rcases hst with ⟨_, h₁, _, _, h₂⟩ | ⟨_, h₁, _, _, h₂⟩ <;> first | (cases h₁ <;> done) | (cases h₂ <;> done)
+
 /-- The book's "the sizes of symbols and pointers are constants", `[c,p](⊤+⊤)=[c,p]`. -/
 public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
   | Code.sym _, Code.sym _, _ => rfl
@@ -488,12 +512,9 @@ public theorem Fmap_Fbimap {E : Type} {C C' C'' : RelSet.{0}} (U : (⟨E⟩ : Re
           | inr s => exact ⟨⟨s.1, h1.1, h2.1⟩, by rw [h1.2]; exact h2.2⟩,
         fun ⟨⟨a, ha, hb⟩, hU⟩ => ⟨Sum.inr (a, q.2), ⟨ha, rfl⟩, ⟨hb, hU⟩⟩⟩
 
-/-- `code-thin`, first step: `Q` IS `F(⊤+⊤,prefix°)`. -/
-public theorem code_thin_step1 :
-    Q ≫ (F Unit Code).map (decode°) ≫ graph con
-      = Fbimap U (prefixR°) ≫ (F Unit Code).map (decode°) ≫ graph con := by
-  congr 1
-  exact hom_ext fun u w => by
+/-- **code-defn**, point-free: `Q=F(⊤+⊤,prefix°)`. -/
+public theorem Q_eq : Q = Fbimap U (prefixR°) :=
+  hom_ext fun u w => by
     cases u with
     | inl _ => cases w with
       | inl _ => exact ⟨fun _ => rfl, fun _ => trivial⟩
@@ -501,6 +522,12 @@ public theorem code_thin_step1 :
     | inr _ => cases w with
       | inl _ => exact Iff.rfl
       | inr _ => exact Iff.rfl
+
+/-- `code-thin`, first step: `Q` IS `F(⊤+⊤,prefix°)`. -/
+public theorem code_thin_step1 :
+    Q ≫ (F Unit Code).map (decode°) ≫ graph con
+      = Fbimap U (prefixR°) ≫ (F Unit Code).map (decode°) ≫ graph con := by
+  rw [Q_eq]
 
 /-- `code-thin`, second step: `F(U,prefix°)F(decode°)=F(U,prefix° decode°)`. -/
 public theorem code_thin_step2 :
@@ -971,6 +998,23 @@ public theorem code_prog (encode : dStr ⟶ dCodes) :
 open Lean PrettyPrinter in
 @[app_unexpander extend] public meta def unexpandExtend : Unexpander
   | _ => `($(mkIdent `extend))
+
+-- printing-only unexpanders: `Code`'s constructors under the book's `sym`, `ptr`; `ptr` takes
+-- the pair, as B&dM's `ptr (String,String⁺)` does, so `uncurry ptr` is `ptr`.
+open Lean PrettyPrinter in
+@[app_unexpander Code.sym] public meta def unexpandCodeSym : Unexpander
+  | `($_ $args*) => `($(mkIdent `sym) $args*)
+  | _ => `($(mkIdent `sym))
+
+open Lean PrettyPrinter in
+@[app_unexpander Code.ptr] public meta def unexpandCodePtr : Unexpander
+  | `($_ $args*) => `($(mkIdent `ptr) $args*)
+  | _ => `($(mkIdent `ptr))
+
+open Lean PrettyPrinter in
+@[app_unexpander Function.uncurry] public meta def unexpandUncurryPtr : Unexpander
+  | `($_ ptr) => `($(mkIdent `ptr))
+  | _ => throw ()
 
 -- `U≜⊤+⊤` is written by what it IS, the way `RinterH` is written `R∩H`: the note's box says the
 -- relation, not the letter the definition bound it to.  Its own brackets, because it appears as a
