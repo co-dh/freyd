@@ -676,6 +676,18 @@ open Lean PrettyPrinter in
   | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
   | `($_ $_ $w) => `($(mkIdent `fits) $w)
   | _ => `($(mkIdent `fits))
+-- B&dM's `y subseq x` (p.123) is the predicate under the relation `subseq`, as `allFitP` is `fits`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.subseqP] def unexpandSubseqP : Unexpander
+  | `($_ $y $x) => `($(mkIdent `subseq) $y $x)
+  | `($_ $y) => `($(mkIdent `subseq) $y)
+  | _ => `($(mkIdent `subseq))
+-- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), the relator's letter.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cmap] def unexpandCmap : Unexpander
+  | `($_ $f $x) => `($(mkIdent `list) $f $x)
+  | `($_ $f) => `($(mkIdent `list) $f)
+  | _ => `($(mkIdent `list))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.headLine] def unexpandParaHeadLine : Unexpander
   | `($_ $p) => `($(mkIdent `head) $p)
