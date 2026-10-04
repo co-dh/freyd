@@ -84,8 +84,8 @@ attribute [diag_defines] relCata_cancel
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
-  RelSet.Paragraph.Q RelSet.Van.secureP RelSet.Tour.dTour Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.MonoAlg Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
-  RelSet.CL.ConsList.cons RelSet.Tour.Qc RelSet.Tour.start
+  RelSet.Paragraph.Q RelSet.Tour.dTour Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
+  RelSet.CL.ConsList.cons RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
@@ -98,6 +98,8 @@ attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.P
 -- the mirror of `diag_induced`; the tags are here for the same reason `diag_induced`'s are, that
 -- the note's spelling is the DIAGRAM's vocabulary and not the algebra's.
 attribute [diag_unfold] RelSet.Tour.tour
+-- "`S` monotonic on `Q`" is written, as B&dM's (7.2) is, by its inequation `F(Q)S⊑SQ`.
+attribute [diag_unfold] MonoAlg
 
 -- THE DUPLICATION RELATOR IS WRITTEN OUT AS THE PRODUCT IT IS: the note's corner is `A×A` and its
 -- side `R×R`, never `Δ(A)` — `Δ` is `Relator.prod` of two identities (`AOP.A5_2`), and a bundle
@@ -570,6 +572,19 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent (Name.mkSimple "≤")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.R] def unexpandTourR : Unexpander | _ => `($(mkIdent `R))
+-- The note's tour `Q` already carries the `head2` conjunct; Lean's `Q` without it is never drawn.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.Qc] def unexpandTourQc : Unexpander | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.droplFn] def unexpandDroplFn : Unexpander | _ => `($(mkIdent `dropl))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.droprFn] def unexpandDroprFn : Unexpander | _ => `($(mkIdent `dropr))
+-- "`x` is secure" is the note's word for the predicate under the coreflexive `secure`; `amount` and
+-- `N` are the section's context, dropped as `R` drops its own.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Van.secureP] def unexpandSecureP : Unexpander
+  | `($_ $_ $_ $x) => `($(mkIdent `secure) $x)
+  | _ => `($(mkIdent `secure))
 
 -- `lenLE` is the same thing under its definition's name: the length preorder IS §13.4.2's ordering,
 -- and the note draws `R` on that box and `est(R°)` on the greedy step.

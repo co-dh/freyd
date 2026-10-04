@@ -647,10 +647,9 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
  ]],
    // lean:AOP.A8_5_Paragraph.para_mono_glue@d88580bd
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
-  [#leanf("Freyd.Alg.RelSet.ListRel.merge_top"); #h(4pt) `P≜head prefix head°` also serves],
+  [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
   // lean:AOP.A8_3.merge_top@a86d5d43
-  [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
-   input],
+  [`⊤` needs no sorting at all],
 )]<para-mono>
 
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
