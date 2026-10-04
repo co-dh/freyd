@@ -560,6 +560,12 @@ public theorem tour_sort_dropr :
 
 /-! ## `tour-laws` -/
 
+/-- B&dM's `g₁ ≜ list[start,dropl]` (§8.6, p.215). -/
+@[expose] public def g₁ := list (graph (droplAlgFn (City := City)))
+
+/-- B&dM's `g₂ ≜ list[start,dropr]`. -/
+@[expose] public def g₂ := list (graph (droprAlgFn (City := City)))
+
 /-- **tour-laws**, the specification step: `tour ≜ ⦇[start,dropl ∪ dropr]⦈` unfolded under
     `Λ(−) est(R)`. -/
 public theorem tour_laws_defn :
@@ -574,7 +580,7 @@ public theorem tour_laws_defn :
     `tour_mono_dropl_Q_false`.  `merge ⊤ = cat` (`merge_top`). -/
 public theorem tour_laws :
     ⦇listcp ≫ (relProd (dList (Tour City)) (dList (Tour City))).pair
-        (list (graph (droplAlgFn (City := City)))) (list (graph droprAlgFn))
+        (g₁ (City := City)) g₂
         ≫ catR ≫ thinlist (Qc tc)⦈ ≫ minlist (R tc)
       ⊑ Λ (tour (City := City)) ≫ est (R tc) := by
   have key := thinningList droplAlgFn droprAlgFn (fun _ => true) (fun _ => true)

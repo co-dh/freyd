@@ -594,13 +594,18 @@ public theorem para_spec (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
     partition ≫ fits (len := len) w = ⦇Salg len w⦈ :=
   relCata_fusion (initial Word Word) (para_alg_fusion hlen hfit)
 
+/-- B&dM's `g₁ ≜ list(new)` (§8.5, p.210): start a new line with the word. -/
+@[expose] public def g₁ := list (graph (newAlgFn (Word := Word)))
+
+/-- B&dM's `g₂ ≜ list(glue) filter(ok w)`: glue the word onto the last line, keep the layouts that fit. -/
+@[expose] public def g₂ := list (graph (glueAlgFn (Word := Word))) ≫ Filter.filter (okB (len := len) w)
+
 /-- **para-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [wrap wrap,new]`,
     `p₁ ≜ 𝟙`, `f₂ ≜ [wrap wrap,glue]`, `p₂ ≜ ok w`, `P ≜ ⊤`.  Its specification side is the
     fold `⦇S⦈`, which `para_laws_step2` reads back as `partition list⁺(fits w)`. -/
 public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a) :
     ⦇listcp ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-        (list (graph (newAlgFn (Word := Word))))
-        (list (graph glueAlgFn) ≫ Filter.filter (okB (len := len) w))
+        (g₁ (Word := Word)) (g₂ (len := len) (w := w))
         ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinlist (Q len w)⦈ ≫ minlist (R len w)
       ⊑ Λ ⦇Salg len w⦈ ≫ est (R len w) := by
   have key := thinningList newAlgFn glueAlgFn (fun _ => true) (okB (len := len) w)
@@ -633,8 +638,7 @@ public theorem para_laws_split :
     monotonicity conditions and `para_spec` the specification. -/
 public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w) :
     ⦇listcp ≫ (relProd (dList (Para Word)) (dList (Para Word))).pair
-        (list (graph (newAlgFn (Word := Word))))
-        (list (graph glueAlgFn) ≫ Filter.filter (okB (len := len) w))
+        (g₁ (Word := Word)) (g₂ (len := len) (w := w))
         ≫ merge (topMor (dPara Word) (dPara Word)) ≫ thinlist (Q len w)⦈ ≫ minlist (R len w)
       ⊑ Λ (partition ≫ fits (len := len) w) ≫ est (R len w) := by
   rw [← para_laws_step2 hlen hfit]

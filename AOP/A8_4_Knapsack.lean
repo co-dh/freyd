@@ -392,12 +392,18 @@ public theorem within_eq_pcor :
 public theorem R_connected : Freyd.Alg.Connected (R vol) :=
   le_iff.mpr fun x y _ => (Int.le_total (total vol y) (total vol x)).imp id id
 
+/-- B&dM's `g₁ ≜ list(cons) filter(within w)` (§8.4, p.206): extend each packing by the item, keep those that fit. -/
+@[expose] public def g₁ := list (graph con) ≫ Filter.filter (withinB (Item := Item) (wt := wt) w)
+
+/-- B&dM's `g₂ ≜ list(π₂)`: keep each packing without the item. -/
+@[expose] public def g₂ := list (graph (dropFn (Item := Item)))
+
 /-- **knap-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [nil,cons]`,
     `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
     `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
 public theorem knap_laws_step1 :
     ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-        (list (graph con) ≫ Filter.filter (withinB (wt := wt) w)) (list (graph dropFn))
+        (g₁ (wt := wt) (w := w)) g₂
         ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
   have key := thinningList con dropFn (withinB (wt := wt) w) (fun _ => true)
@@ -421,7 +427,7 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `knap_spec` the specification. -/
 public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
-        (list (graph con) ≫ Filter.filter (withinB (wt := wt) w)) (list (graph dropFn))
+        (g₁ (wt := wt) (w := w)) g₂
         ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
       ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
   rw [← knap_laws_step2 hw hwt]
