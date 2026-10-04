@@ -227,24 +227,31 @@ row((
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
 #disp[#table(
-  columns: (1fr, 1fr),
-  align: (left + horizon, left + horizon),
+  columns: (1.3fr, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*what it says*]),
+  table.header([*formula*], [*type*], [*what it says*]),
 
-  [`F(A,X)=A+A×X`, `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`],
+  [`F(A,X)=A+A×X`, `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR")],
+  [#leant("Freyd.Alg.RelSet.CL.alphaR", named: true)],
   [a path is a non-empty cons-list: one vertex, or a vertex in front of a path],
   [#leanf("Freyd.Alg.wrapz"), #leanf("Freyd.Alg.conswFn_apply")],
+  [#leant("Freyd.Alg.wrapz", named: true) \ #leant("Freyd.Alg.consw", named: true)],
   [a path carried with its cost: `wrap` starts at cost `0`, `consw` adds the edge from the new vertex to the old head],
   [#leanf("Freyd.Alg.pathCost"), #leanf("Freyd.Alg.cataR_wrapz_consw"), #leanf("Freyd.Alg.pathR")],
+  [#leant("Freyd.Alg.pathCost", named: true) \ #leant("Freyd.Alg.pathR", named: true)],
   [the cost of a path is the sum of `wt` over consecutive vertices; `p R q` iff `p` costs no more than `q`],
-  [#leanf("Freyd.Alg.minpath_spec")],
+  [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist"), #leanf("Freyd.Alg.minpath_spec")],
+  [#leant("Freyd.Alg.minpath", named: true)],
   [the input `[x₀,…,xₙ] : L(PA)` is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and `minpath` returns a cheapest one],
   [#leanf("Freyd.Alg.pathQ")],
+  [#leant("Freyd.Alg.pathQ", named: true)],
   [`p Q q`: `p` costs no more than `q` and starts at the same vertex],
   [#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #leanf("Freyd.Alg.Λ_pathF_map_id_eps")],
+  [#leant("Freyd.Alg.Λ_pathF_map_eps_id", named: true) \ #leant("Freyd.Alg.Λ_pathF_map_id_eps", named: true)],
   [the two transposes on the coproduct: `cpl` chooses a vertex from a layer, `cpr` chooses a tail from a set of paths],
   [#leanf("Freyd.Alg.pathStep")],
+  [#leant("Freyd.Alg.pathStep", named: true)],
   [put the vertex in front of every tail in the set and keep a cheapest],
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
 // lean:AOP.A8_2.wrapz@e528d496
