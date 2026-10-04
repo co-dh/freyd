@@ -84,24 +84,17 @@ in @mu-defn.
   ]],
 )]<dp-thm>
 
+#import "../generated/Freyd.Alg.dynamic_programming_lower.calc.typ" as calc-dpl
+#import "../generated/Freyd.Alg.dynamic_programming_upper.calc.typ" as calc-dpu
+#import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
+#import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
      // lean:AOP.A9_1.dynamic_programming_lower@5dd00afd
-  lean-chain(
-    (none, "Freyd.Alg.dynamic_programming_lower_step1.lhs", []),
-    (SQ, "Freyd.Alg.dynamic_programming_lower_step1.rhs",
-      src[`P(X)est(R)⊑∋X` — @est-710]),
-     // lean:AOP.A9_1.dynamic_programming_lower_step1@a9e44a1f
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
-     // lean:AOP.A9_1.dynamic_programming_lower_step2@b5881e96
-    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs",
-      src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-     // lean:AOP.A9_1.dynamic_programming_lower_step3@5654b7b5
-    (EQ, "Freyd.Alg.dynamic_programming_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
-  ),
+  lean-calc(calc-dpl),
 )]<dp-lower>
 
 // B&dM (9.3), p. 221: the book's five hints and transitivity, one row each.
@@ -111,31 +104,7 @@ in @mu-defn.
      from that input only `b'` with `R` relating `b'` to `b`]],
      // lean:AOP.A9_1.dynamic_programming_upper@dbf5fa82
   // two rows: nine panels in one row shrink the fractions past reading
-  lean-chain(Sub("Freyd.Alg.dynamic_programming_upper_steps1to3",
-    gloss: src[from an answer of `H`, the step's answer is reached by taking `H`'s parts back, rebuilding them by `F(M)h`, then one `R°`],
-     // lean:AOP.A9_1.dynamic_programming_upper_steps1to3@778e5935
-    (none, "Freyd.Alg.dynamic_programming_upper_step1.lhs", []),
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step1.rhs",
-      src[`P(X)est(R)⊑∈\(XR°)` — @est-710]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step1@0da124af
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T` — @hylo-mu]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step2@00a7e312
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
-      src[`T`#frc([`T°`])`⊑∈` — @pow-laws]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step3a@a14c0412
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y`]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step3b@db566dd4
-  ), Sub("Freyd.Alg.dynamic_programming_upper_steps4to5",
-    gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`],
-     // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@e85ef872
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)` — @relator-laws]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step3c@0569b820
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°` — @est-up]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step4@7bf9d190
-    (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h` monotonic on `R°`]),
-     // lean:AOP.A9_1.dynamic_programming_upper_step5@6140d646
-    (SQ, "Freyd.Alg.dynamic_programming_upper.rhs", src[`R` transitive]),
-  )),
+  lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
 
 // The chapter's chain, at the level every application below instantiates it.  ONE WIRE, `A` to `B`:
@@ -178,16 +147,7 @@ in @mu-defn.
     #src[taking the input apart every way `T` allows (#frc([`T°`])), dropping the parts `thin(Q)`
      rejects, solving each rest by `M` and keeping an optimum returns only what `H` returns]],
      // lean:AOP.A9_1.dynamic_programming_thin_lower@32f5e9ad
-  lean-chain(
-    (none, "Freyd.Alg.dynamic_programming_thin_lower.lhs", src[(9.2)]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
-      src[`P(X)est(R)⊑∋X` — @est-710]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @thin-laws]),
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
-    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-    (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
-      src[`T°F(H)h=H` — @hylo-mu]),
-  ),
+  lean-calc(calc-dptl),
 )]<dp-laws-92>
 
 // (9.3), the second half of the same proof: a `#disp` does not break across a page.
@@ -195,39 +155,12 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-chain(Sub("Freyd.Alg.dynamic_programming_thin_steps3to6",
-    gloss: src[from an answer of `H`, the thinned step's answer is reached through `H`'s parts, a `Q°` step to a candidate, and that candidate's answer],
-     // lean:AOP.A9_1.dynamic_programming_thin_steps3to6@6e1d7fd3
-    (none, "Freyd.Alg.dynamic_programming_thin_step3.lhs", []),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step3.rhs",
-      src[`P(X)est(R)⊑∈\(XR°)` — @est-710]),
-    (EQ, "Freyd.Alg.dynamic_programming_thin_step4.rhs",
-      src[`H°=h°F(H°)T` — @hylo-mu]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step5.rhs",
-      src[`T`#frc([`T°`])`⊑∈`]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step6.rhs",
-      src[`∈thin(Q)⊑Q°∈` — @thin-laws]),
-  )),
+  lean-calc(calc-dptu, span: (0, 7), breaks: (4,)),
 )]<dp-laws-93>
 
 // (9.3) continued from the last row above: the ten rows overflow one page.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain(Sub("Freyd.Alg.dynamic_programming_thin_steps7to8",
-    gloss: src[the hypothesis on `Q` turns the `Q°` step into an `R°` step in front of rebuilding by `F(M)h`],
-     // lean:AOP.A9_1.dynamic_programming_thin_steps7to8@f7e5e201
-    (none, "Freyd.Alg.dynamic_programming_thin_step6.rhs", []),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step7.rhs",
-      src[`∈(∈\Y)⊑Y`]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step8.rhs",
-      src[`QF(H)h⊑F(H)hR` conversed]),
-  ), Sub("Freyd.Alg.dynamic_programming_thin_steps9to11",
-    gloss: src[rebuilding from parts replaced by `M`'s, between two `R°` steps, stays within `R°`],
-     // lean:AOP.A9_1.dynamic_programming_thin_steps9to11@e3b4b6ee
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step9.rhs", src[`H°M⊑R°` under `F` — @est-up]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step10.rhs",
-      src[`h°F(R°)h⊑R°`]),
-    (SQ, "Freyd.Alg.dynamic_programming_thin_step11.rhs", src[`R` transitive, twice]),
-  )),
+  lean-calc(calc-dptu, span: (6, 12)),
 )]<dp-laws-93b>
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is

@@ -89,7 +89,7 @@ public theorem dynamic_programming_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ H :=
   calc Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
         comp_mono_left _ (powerRel_comp_est_le_eps _ R)
       _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
       _ ⊑ T° ≫ F.map H ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le H R)) h)
@@ -105,11 +105,11 @@ public theorem dynamic_programming_upper {h : F.obj B ⟶ B}
     (hHfix : T° ≫ F.map H ≫ h = H) :
     H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        ⊑ H° ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ R))
       _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        (congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
-          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _)))
+        id ((congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
+          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
       _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ ((∋ (F.obj A))° \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (by
         simpa only [Cat.assoc] using
@@ -118,7 +118,7 @@ public theorem dynamic_programming_upper {h : F.obj B ⟶ B}
         comp_mono_left _ (comp_mono_left _ (leftDiv_comp_le _ _))
       _ = h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := by
         rw [F.map_comp (H°) (Λ H ≫ est R)]
-        simp only [Cat.assoc]
+        repeat rw [Cat.assoc]
       _ ⊑ h° ≫ F.map (R°) ≫ h ≫ R° :=
         comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le H R)) _)
       _ ⊑ R° ≫ R° := by simpa only [Cat.assoc] using comp_mono_right ((monoAlg_iff_conj s.map).mp s.mono) (R°)
@@ -178,7 +178,7 @@ public theorem dynamic_programming_thin_lower {h : F.obj B ⟶ B} {T : F.obj A �
     {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ H :=
   calc Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        ⊑ Λ (T°) ≫ thinRel Q ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
         comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_eps _ R))
       _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
         comp_mono_left _ (by
@@ -196,12 +196,12 @@ public theorem dynamic_programming_thin_upper {h : F.obj B ⟶ B}
     (hHfix : T° ≫ F.map H ≫ h = H) (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ thinRel Q ≫ powerRel (F.map (Λ H ≫ est R) ≫ h) ≫ est R
-      _ ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
+        ⊑ H° ≫ Λ (T°) ≫ thinRel Q ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_left _ (powerRel_comp_est_le_div _ R)))
       _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ thinRel Q
             ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
-        (congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
-          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _)))
+        id ((congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
+          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
       _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ thinRel Q
             ≫ (((∋ (F.obj A))°) \ ((F.map (Λ H ≫ est R) ≫ h) ≫ R°)) :=
         comp_mono_left _ (comp_mono_left _ (by
@@ -223,7 +223,7 @@ public theorem dynamic_programming_thin_upper {h : F.obj B ⟶ B}
           comp_mono_right (recip_thin_condition hQ) (F.map (Λ H ≫ est R) ≫ h ≫ R°)
       _ = R° ≫ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h ≫ R° := by
         rw [F.map_comp (H°) (Λ H ≫ est R)]
-        simp only [Cat.assoc]
+        repeat rw [Cat.assoc]
       _ ⊑ R° ≫ h° ≫ F.map (R°) ≫ h ≫ R° :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le H R)) _))
       _ ⊑ R° ≫ R° ≫ R° := comp_mono_left _ (by
@@ -568,7 +568,7 @@ public theorem birelator_thin_condition {G : BiRelator 𝒜} {e w : 𝒜}
     (hU : G.map U R ≫ h ⊑ h ≫ R) (hV : V ≫ H ⊑ H ≫ R) :
     G.map U V ≫ G.map (𝟙 e) H ≫ h ⊑ G.map (𝟙 e) H ≫ h ≫ R :=
   calc G.map U V ≫ G.map (𝟙 e) H ≫ h
-      _ = G.map U (V ≫ H) ≫ h := birelator_thin_condition_step1
+        = G.map U (V ≫ H) ≫ h := birelator_thin_condition_step1
       _ ⊑ G.map U (H ≫ R) ≫ h := birelator_thin_condition_step2 hV
       _ = G.map (𝟙 e) H ≫ G.map U R ≫ h := birelator_thin_condition_step3
       _ ⊑ G.map (𝟙 e) H ≫ h ≫ R := birelator_thin_condition_step4 hU
@@ -622,7 +622,7 @@ theorem dp_thin_prefixed_context {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
         ⊑ T° ≫ F.map (Λ H ≫ est R) ≫ h := by
       have e1 : Λ (T°) ≫ thinRel Q ≫ (∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h)
           = (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h := by
-        simp only [Cat.assoc]
+        repeat rw [Cat.assoc]
       rw [e1]
       have e2 : (Λ (T°) ≫ (thinRel Q ≫ ∋ (F.obj A))) ≫ F.map (Λ H ≫ est R) ≫ h
           ⊑ (Λ (T°) ≫ ∋ (F.obj A)) ≫ F.map (Λ H ≫ est R) ≫ h :=

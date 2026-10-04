@@ -57,7 +57,7 @@ public theorem greedy_dp_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ H :=
   calc Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
         comp_mono_left _ (comp_mono_right (est_le_eps Q) _)
       _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
       _ ⊑ T° ≫ F.map H ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le H R)) h)
@@ -72,9 +72,9 @@ public theorem greedy_dp_upper {h : F.obj B ⟶ B}
     (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
     H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
-        (congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
-          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _)))
+        = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
+        id ((congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
+          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _))))
       _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
         comp_mono_left _ (comp_mono_left _ (by
           simpa only [Cat.assoc] using
@@ -87,7 +87,7 @@ public theorem greedy_dp_upper {h : F.obj B ⟶ B}
         simpa only [Cat.assoc] using comp_mono_right (recip_thin_condition hQ) (F.map (Λ H ≫ est R) ≫ h)
       _ = R° ≫ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h := by
         rw [F.map_comp (H°) (Λ H ≫ est R)]
-        simp only [Cat.assoc]
+        repeat rw [Cat.assoc]
       _ ⊑ R° ≫ h° ≫ F.map R° ≫ h :=
         comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le H R)) h))
       _ ⊑ R° ≫ R° := comp_mono_left _ ((monoAlg_iff_conj hh).mp hmono)

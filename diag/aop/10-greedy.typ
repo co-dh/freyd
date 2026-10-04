@@ -36,6 +36,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   ),
 )]<greedy-laws>
 
+#import "../generated/Freyd.Alg.greedy_dp_lower.calc.typ" as calc-gl
+#import "../generated/Freyd.Alg.greedy_dp_upper.calc.typ" as calc-gu
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -43,14 +45,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[taking the input apart in one `Q`-extreme way, solving the parts by `M` and assembling by
      `h` returns only what `H` returns]],
      // lean:AOP.A10_1.greedy_dp_lower@3dbc8cfa
-  lean-chain(
-    (none, "Freyd.Alg.greedy_dp_lower.lhs", []),
-    (SQ, "Freyd.Alg.greedy_dp_lower_step1.rhs", src[`est(Q)⊑∋` — @est-defn]),
-     // lean:AOP.A10_1.greedy_dp_lower_step1@ba3be0a6
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
-    (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
-    (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
-  ),
+  lean-calc(calc-gl),
 )]<greedy-lower>
 
 // The second half of the same proof.
@@ -59,27 +54,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[`H°` followed by the greedy body at `M` is `⊑R°`: an answer of the body is never worse
      than an answer of `H` to the same input]],
      // lean:AOP.A10_1.greedy_dp_upper@7abcb139
-  lean-chain((
-    (none, "Freyd.Alg.greedy_dp_upper_step1.lhs", []),
-    (EQ, "Freyd.Alg.greedy_dp_upper_step1.rhs",
-      src[`H°=h°F(H°)T` — @hylo-mu]),
-     // lean:AOP.A10_1.greedy_dp_upper_step1@a5c2daac
-    (SQ, "Freyd.Alg.greedy_dp_upper_step2.rhs",
-      src[`T`#frc([`T°`])`⊑∈`]),
-     // lean:AOP.A10_1.greedy_dp_upper_step2@bb96243e
-    (SQ, "Freyd.Alg.greedy_dp_upper_step3.rhs", src[`∈est(Q)⊑Q°` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step3@0385457d
-  ), (
-    (SQ, "Freyd.Alg.greedy_dp_upper_step4.rhs",
-      src[`QF(H)h⊑F(H)hR` conversed]),
-     // lean:AOP.A10_1.greedy_dp_upper_step4@8e8aa389
-    (SQ, "Freyd.Alg.greedy_dp_upper_step5.rhs", src[`H°M⊑R°` under `F` — @est-up]),
-     // lean:AOP.A10_1.greedy_dp_upper_step5@df77922c
-    (SQ, "Freyd.Alg.greedy_dp_upper_step6.rhs",
-      src[`h°F(R°)h⊑R°`]),
-     // lean:AOP.A10_1.greedy_dp_upper_step6@8d3afe63
-    (SQ, "Freyd.Alg.greedy_dp_upper.rhs", src[`R` transitive]),
-  )),
+  lean-calc(calc-gu, breaks: (4,)),
 )]<greedy-upper>
 
 // B&dM Proposition 10.1, p. 245, "a variation on Proposition 9.1", in Rel(Set).  The book's

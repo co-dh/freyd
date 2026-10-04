@@ -631,8 +631,16 @@
 // A CALC PROOF AS A CHAIN, everything read off ONE Lean proof: `c` is the module
 // `diag-export --calc` writes (`#import "…/generated/<decl>.calc.typ" as c`) from the `calc` that
 // proves `<decl>` — each term a panel, each relation Lean's, each reason the one law its step applies.
-#let lean-calc(c, ..opts) = lean-chain(..c.steps.map(s => (
-  if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { leanf(s.law) })),
-  ..opts.named())
+// `breaks`: the step indices a new row starts at, for a chain too long to read on one row;
+// `span: (a, b)`: only panels a…b−1, for a chain split over displays (a `#disp` cannot break a page).
+#let lean-calc(c, breaks: (), span: none, ..opts) = {
+  let steps = c.steps.map(s => (
+    if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { leanf(s.law) }))
+  let (a, b) = if span == none { (0, steps.len()) } else { span }
+  steps = steps.slice(a, b)
+  steps.at(0) = (none, steps.at(0).at(1), [])
+  let cuts = (0,) + breaks + (steps.len(),)
+  lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named())
+}
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)
