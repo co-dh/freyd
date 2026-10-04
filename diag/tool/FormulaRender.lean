@@ -386,6 +386,53 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   noteRead (.stmt c)
   return (c, s)
 
+/-- THE LAWS A STEP'S PROOF APPLIES: every theorem application whose statement relates two arrows
+    and whose proof arguments are all hypotheses.  An application handed a proof built from another
+    law is congruence or monotonicity around that law (`congrArg`, `comp_mono_left`), and one whose
+    two sides draw as one picture (`Cat.assoc`, `rfl`) is bracketing no panel shows. -/
+partial def lawsIn (e : Expr) : MetaM (Array Name) := do
+  match e with
+  | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn b
+  | .letE _ _ v b _ => return (← lawsIn v) ++ (← lawsIn (b.instantiate1 v))
+  | .mdata _ b => lawsIn b
+  | .app .. | .const .. =>
+    let args := e.getAppArgs
+    let inner ← args.foldlM (fun acc a => return acc ++ (← lawsIn a)) #[]
+    let built ← args.anyM fun a => return !a.isFVar && (← Meta.isProof a)
+    let some c := e.getAppFn.constName? | return inner
+    unless !built && ((← getEnv).find? c).any (· matches .thmInfo _) do return inner
+    let some (_, l, r) := split (← instantiateMVars (← Meta.inferType e)) | return inner
+    return if ← sameDrawn l r then inner else inner.push c
+  | _ => return #[]
+
+/-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
+    selector, the relation into it and the law of the step that reaches it.  The steps are
+    `calc_steps`' `<decl>.step_i` theorems, so every panel is a side of a statement like any other;
+    the relation is `stepRel`'s between the two panels the chain shows, so `lean-chain`'s own check
+    reads the same answer; a step whose proof applies more than one law is refused, naming them. -/
+def calcFile (declName : Name) : MetaM String := do
+  let env ← getEnv
+  let step (i : Nat) := declName ++ Name.mkSimple s!"step_{i + 1}"
+  let n := (List.range 1000).find? (fun i => !env.contains (step i)) |>.getD 1000
+  if n == 0 then
+    throwError "{declName}: no `{step 0}` — write `calc_steps {declName}` after its `calc` proof"
+  let side (i : Nat) (s : String) : Side := (step i, none, [s], [])
+  let mut rows := #[s!"(sel: {s!"{step 0}.lhs".quote}, rel: none, law: none)"]
+  for i in List.range n do
+    let some v := (env.find? (step i)).bind (·.value?) | throwError "{step i} has no proof to read"
+    noteRead (.decl (step i))
+    let laws ← lawsIn v
+    if laws.size > 1 then
+      throwError "{step i}: a step applies one law under congruence, and its proof applies \
+        {laws.toList} — split it into one `calc` step per law"
+    let (a, b) := if i + 1 < n then (side i "lhs", side (i + 1) "lhs") else (side i "lhs", side i "rhs")
+    let (_, rel) ← stepRel a b
+    for l in laws do noteRead (.stmt l)
+    let sel := if i + 1 < n then s!"{step (i + 1)}.lhs" else s!"{step i}.rhs"
+    let law := laws[0]?.elim "none" fun l => l.toString.quote
+    rows := rows.push s!"(sel: {sel.quote}, rel: {rel.quote}, law: {law})"
+  return "#let steps = (\n  " ++ ",\n  ".intercalate rows.toList ++ ",\n)\n"
+
 /-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
 def relFile (a b : Side) : MetaM String := do
   let (c, s) ← stepRel a b

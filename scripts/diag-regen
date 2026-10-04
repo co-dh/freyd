@@ -103,11 +103,14 @@ all=$(./scripts/note-files --generated) || exit 1
 # puts it back — on the file the exporter writes and on the one `--stale` reads.
 ls=$(mktemp -d) || exit 1
 trap 'rm -rf "$ls"' EXIT
-printf '%s\n' "$all" | grep -v '\.proof$' > "$ls/plain"
+# `.calc` likewise: the steps of a `calc_steps` proof, which `lean-calc` reads.
+printf '%s\n' "$all" | grep -v '\.proof$' | grep -v '\.calc$' > "$ls/plain"
 printf '%s\n' "$all" | sed -n 's|\.proof$||p' > "$ls/proof"
-tests plain '' proof --proof
+printf '%s\n' "$all" | sed -n 's|\.calc$||p' > "$ls/calc"
+tests plain '' proof --proof calc --calc
 draw "$(cat "$ls/plain.stale")"
 draw "$(cat "$ls/proof.stale")" --proof
+draw "$(cat "$ls/calc.stale")" --calc
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.

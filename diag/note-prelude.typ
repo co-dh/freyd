@@ -628,5 +628,11 @@
 #let listcp-F-box = ([`listcp`], 1.87, false)
 #let pair-g-box = ([`⟨g₁,g₂⟩`], 2.2, false)
 #let minlist-R-box = ([`minlist(R)`], 2.93, true)
+// A CALC PROOF AS A CHAIN, everything read off ONE Lean proof: `c` is the module
+// `diag-export --calc` writes (`#import "…/generated/<decl>.calc.typ" as c`) from the `calc` that
+// proves `<decl>` — each term a panel, each relation Lean's, each reason the one law its step applies.
+#let lean-calc(c, ..opts) = lean-chain(..c.steps.map(s => (
+  if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { leanf(s.law) })),
+  ..opts.named())
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)
