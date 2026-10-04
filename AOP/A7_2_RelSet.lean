@@ -53,15 +53,38 @@ public theorem existsImage_apply {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).c
   rw [Λ_eq_classifier]
   exact Iff.rfl
 
+/-- `(∋R)/∋` read pointwise: every member of `Q` is reached from `P`. -/
+public theorem powrel_reading_reached {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) : ((∋ A ≫ R) / ∋ B) P Q ↔ ∀ w, Q w → ∃ s, P s ∧ R s w := Iff.rfl
+
+/-- `(∋/(∋R))°` read pointwise: every element reached from `P` is in `Q`. -/
+public theorem powrel_reading_closed {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) : (∋ B / (∋ A ≫ R))° P Q ↔ ∀ w, (∃ s, P s ∧ R s w) → Q w := Iff.rfl
+
+/-- `((∋R°)/∋)°` read pointwise: every member of `P` reaches into `Q`. -/
+public theorem powrel_reading_reaches {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) : ((∋ B ≫ R°) / ∋ A)° P Q ↔ ∀ s, P s → ∃ w, Q w ∧ R s w := Iff.rfl
+
 /-- The pointwise readings of the three relations between subsets that `P(R)` and `E(R)` are
-    built from: every member of `Q` is reached, every reached element is in `Q`, every member of
-    `P` reaches into `Q`. -/
+    built from, together. -/
 public theorem powrel_readings {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
     (Q : (pow B).carrier) :
     (((∋ A ≫ R) / ∋ B) P Q ↔ ∀ w, Q w → ∃ s, P s ∧ R s w) ∧
     ((∋ B / (∋ A ≫ R))° P Q ↔ ∀ w, (∃ s, P s ∧ R s w) → Q w) ∧
     (((∋ B ≫ R°) / ∋ A)° P Q ↔ ∀ s, P s → ∃ w, Q w ∧ R s w) :=
-  ⟨Iff.rfl, Iff.rfl, Iff.rfl⟩
+  ⟨powrel_reading_reached R P Q, powrel_reading_closed R P Q, powrel_reading_reaches R P Q⟩
+
+/-- `P(R)` read pointwise: every member of `Q` is reached from `P`, and every member of `P` reaches
+    into `Q` — `(∋R)/∋` and `((∋R°)/∋)°` together. -/
+public theorem powerRel_reading {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
+    (Q : (pow B).carrier) :
+    powerRel R P Q ↔ (∀ w, Q w → ∃ s, P s ∧ R s w) ∧ (∀ s, P s → ∃ w, Q w ∧ R s w) := by
+  -- `powerRel`'s left-division half is `((∋R°)/∋)°` with each witness's two facts swapped.
+  have swap : ((∋ A)° \ (R ≫ (∋ B)°)) P Q ↔ ((∋ B ≫ R°) / ∋ A)° P Q :=
+    ⟨fun h s hs => (h s hs).imp fun _ ⟨hR, hQ⟩ => ⟨hQ, hR⟩,
+     fun h s hs => (h s hs).imp fun _ ⟨hQ, hR⟩ => ⟨hR, hQ⟩⟩
+  exact and_comm.trans (and_congr (powrel_reading_reached R P Q)
+    (swap.trans (powrel_reading_reaches R P Q)))
 
 /-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
     of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/
