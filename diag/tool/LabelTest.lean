@@ -84,4 +84,11 @@ def formula (n : Lean.Name) (sp : Bool := true) : Lean.Meta.MetaM String :=
     -- `(op°) m p` with its two points taken off
     both (body.getArg! 0).appFn!.appFn! "op°"
 
+-- A SET BINDER APPLIED TO A POINT IS MEMBERSHIP, decided by the binder's type `X → Prop`: `ys y`
+-- printed `ys(y)`, an application, where the note reads `y∈ys`.
+/-- info: P(R)(xs,ys) ⟺ (∀y. y∈ys ⟹ (∃x. x∈xs ∧ R(x,y))) ∧ (∀x. x∈xs ⟹ (∃y. y∈ys ∧ R(x,y))) -/
+#guard_msgs in
+#eval show Lean.Meta.MetaM Unit from do
+  Lean.logInfo (← formula ``Freyd.Alg.RelSet.powerRel_reading false)
+
 end Freyd.LabelTest

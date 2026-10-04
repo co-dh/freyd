@@ -264,7 +264,7 @@
   [#leanf("Freyd.Alg.RelSet.Edit.V_eq"), #leanf("Freyd.Alg.RelSet.Edit.V_apply")],
   [each string of the first pair is a suffix of the matching string of the second],
   [#leann("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
-  [#leanf("Freyd.Alg.RelSet.Edit.Q_inl"), #leanf("Freyd.Alg.RelSet.Edit.Q_inr")],
+  [#leanf("Freyd.Alg.RelSet.Edit.Q"), #leanf("Freyd.Alg.RelSet.Edit.Q_inl"), #leanf("Freyd.Alg.RelSet.Edit.Q_inr")],
   [the identity on the `base` summand; on the `step` summand any two operations, and the two pairs
    of strings by `V`],
   [#leann("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
