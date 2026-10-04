@@ -11,25 +11,19 @@
 
 == Digits of a number
 
-// B&dM (6.1), p.138.  The book derives `val°` for `val=⦇[embed,op]⦈`; the chain is stated for any
+// B&dM (6.1), p.138.  The book derives `val°` for `val=⦇[embed,op]⦈`; the calc is stated for any
 // algebra `[g,h]`, and `val_converse_eq` is it at `g≜embed`, `h≜op`.
+#import "../generated/Freyd.Alg.RelSet.Digits.cata_converse_eq.calc.typ" as calc-val
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Digits.cata_converse_eq") \
+    #src[the converse of a fold over decimals undoes the algebra `[g,h]` and then either `wrap`, or
+     the fold's converse on the front and `snoc`]],
+  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
+  lean-calc(calc-val),
+  [#leanf("Freyd.Alg.RelSet.Digits.val_converse_eq") \
     #src[a number is read back into digits either as one nonzero digit, or by splitting off its
      last digit and reading back the rest]],
   // lean:AOP.A6_1_Digits.RelSet.Digits.val_converse_eq@639ee2c7
-  // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_eq@19be99a2
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Digits.val_converse_step1.lhs", src[the converse of `val`, which reads digits as a number]),
-    (EQ, "Freyd.Alg.RelSet.Digits.val_converse_step1.rhs", src[`val` undoes `wrap` or `snoc`, reads the front with `val` and combines by `embed` or `op`, so its converse runs that backwards]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step1@53737b95
-    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step2.rhs"), src[undoing `wrap` or `snoc` first gives two cases: a decimal and its last digit read by `val` then `op`, or one digit read by `embed`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step2@5227a8b5
-    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step3.rhs"), src[the converse of each case is its steps undone in reverse: undo `op`, undo reading the front, then `snoc`; or undo `embed`, then `wrap`]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step3@b5e43d1f
-    (EQ, union("Freyd.Alg.RelSet.Digits.val_converse_step4.rhs"), src[undoing the read of the front while keeping the last digit is `val°` on the front alone]),
-    // lean:AOP.A6_1_Digits.RelSet.Digits.cata_converse_step4@e643973b
-  ),
 )]<val-converse>
 // B&dM p.139: `op(n,d)=10n+d` read backwards, and where `op°` and `embed°` are defined — which is what
 // turns the join of (6.1) into a conditional.
@@ -147,22 +141,15 @@
   lean-calc(calc-hl),
 )]<hylo-mu>
 
-// B&dM Corollary 6.1, p.143: Theorem 6.2 at `R≜[R₁,R₂]`, `S≜[S₁,S₂]` over `F(X)=G(X)+H(X)`; the chain
+// B&dM Corollary 6.1, p.143: Theorem 6.2 at `R≜[R₁,R₂]`, `S≜[S₁,S₂]` over `F(X)=G(X)+H(X)`; the calc
 // is the body under the `μ`.
+#import "../generated/Freyd.Alg.hylo_body_coprod.calc.typ" as calc-hcop
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu_coprod") \
     #src[when both algebras are case splits over the same sum, the recursion runs each case on its
      own and unites the results]],
   // lean:AOP.A6_3.hylo_eq_mu_coprod@066877fe
-  lean-chain(
-    (none, "Freyd.Alg.hylo_body_coprod_step1.lhs", src[the body of Theorem 6.2 at `F(X)=G(X)+H(X)`]),
-    // `sum`/`union` give the formula's own left-to-right order, `.inl` (`S₁°G(X)R₁`) then `.inr`
-    // (`S₂°H(X)R₂`), as `<van-h>` does for `Hrel`.
-    (EQ, sum("Freyd.Alg.hylo_body_coprod_sum_step1.rhs"), src[`[S,T]=(S+T)∇` on both sides gives `∇°(S₁°G(X)R₁+S₂°H(X)R₂)∇`; the `+` stands for the codiagonals `∇°`, `∇`, which are not drawn]),
-    // lean:AOP.A6_3.hylo_body_coprod_sum_step1@cb461a01
-    (EQ, union("Freyd.Alg.hylo_body_coprod_sum_step2.rhs"), src[`∇°(P+Q)∇=P∪Q` — coproduct]),
-    // lean:AOP.A6_3.hylo_body_coprod_sum_step2@ef499730
-  ),
+  lean-calc(calc-hcop),
 )]<hylo-coprod>
 
 == Fast exponentiation and modulus computation
