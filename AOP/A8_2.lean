@@ -103,12 +103,11 @@ public theorem thinning_paths_step
 /-! ### The algebra chain of p.198, one theorem per printed step
 
   Each theorem's two sides are two consecutive lines of the book's calculation, mirrored, at the
-  split `V ≜ F(∋,𝟙)`, `S ≜ F(𝟙,∋)α`; `thinning_paths_alg` composes them.  `union` is written
+  split `V ≜ F(∋,𝟙)` of `F(∋,∋)`; `thinning_paths_alg` composes them.  `union` is written
   `E(∋)`, its definition (`bigUnion_eq_existsImage_eps`), so the chain reads one operator `E`. -/
 
-/-- `S ≜ F(𝟙,∋)α` (book p.198): the second factor of the split of the algebra's source, the
-    bifunctor at `∋` in the recursion argument followed by the algebra.  An `abbrev`, so a rewrite
-    stated with `S` fires on the spelled-out composite too. -/
+/-- `S ≜ F(𝟙,∋)α` (book p.198), the letter of the side condition `R∩(S°S)⊑Q` and nothing else:
+    the chain spells the composite out, so every panel draws `F(𝟙,∋)` and `α`. -/
 @[expose] public abbrev algSplit (F : BiRelator 𝒜) (α : F.obj A B ⟶ B) : F.obj A (P B) ⟶ B :=
   F.map (𝟙 A) (∋ B) ≫ α
 
@@ -118,15 +117,15 @@ public theorem thinning_paths_alg_bifunctors {α : F.obj A B ⟶ B} (Q : B ⟶ B
       = Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q := by
   rw [← Cat.assoc, F.interchange]
 
-/-- p.198 {Λ(RS) = Λ(R) P(Λ(S)) E(∋)}: `Λ(V) P(Λ(S)) E(∋) thin(Q) = Λ(VS) thin(Q)`. -/
+/-- p.198 {Λ(RS) = Λ(R) P(Λ(F(𝟙,∋)α)) E(∋)}: `Λ(V) P(Λ(F(𝟙,∋)α)) E(∋) thin(Q) = Λ(V F(𝟙,∋)α) thin(Q)`. -/
 public theorem thinning_paths_alg_split {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ existsImage (∋ B) ≫ thinRel Q
       = Λ (F.map (∋ A) (𝟙 (P B)) ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ≫ thinRel Q := by
   rw [← bigUnion_eq_existsImage_eps,
-    Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) ((F.map (𝟙 A) (∋ B) ≫ α)), Cat.assoc, Cat.assoc]
+    Λ_comp_eq_Λ_comp_powerRel_bigUnion (F.map (∋ A) (𝟙 _)) (F.map (𝟙 A) (∋ B) ≫ α), Cat.assoc, Cat.assoc]
 
 /-- p.198 {thin distributes over union (8.4)}:
-    `Λ(V) P(Λ(S) thin(Q)) E(∋) ⊑ Λ(V) P(Λ(S)) E(∋) thin(Q)`, by `P(thin(Q)) E(∋) ⊑ E(∋) thin(Q)`. -/
+    `Λ(V) P(Λ(F(𝟙,∋)α) thin(Q)) E(∋) ⊑ Λ(V) P(Λ(F(𝟙,∋)α)) E(∋) thin(Q)`, by `P(thin(Q)) E(∋) ⊑ E(∋) thin(Q)`. -/
 public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ existsImage (∋ B)
@@ -135,8 +134,8 @@ public theorem thinning_paths_alg_distrib {α : F.obj A B ⟶ B} (Q : B ⟶ B) :
   rw [← bigUnion_eq_existsImage_eps, powerRel_comp, Cat.assoc]
   exact comp_mono_left _ (comp_mono_left _ (powerRel_thinRel_comp_bigUnion_le Q))
 
-/-- p.198 {thin-elimination (8.3)}: `Λ(V) P(Λ(S) est(R) τ) E(∋) ⊑ Λ(V) P(Λ(S) thin(Q)) E(∋)`,
-    the one step that needs `R ∩ (S°S) ⊑ Q`. -/
+/-- p.198 {thin-elimination (8.3)}: `Λ(V) P(Λ(F(𝟙,∋)α) est(R) τ) E(∋) ⊑ Λ(V) P(Λ(F(𝟙,∋)α) thin(Q)) E(∋)`,
+    the one step that needs `R ∩ ((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q`. -/
 public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((algSplit F α)° ≫ algSplit F α) ⊑ Q) :
     Λ (F.map (∋ A) (𝟙 (P B)))
@@ -145,7 +144,7 @@ public theorem thinning_paths_alg_elim {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ thinRel Q) ≫ existsImage (∋ B) :=
   comp_mono_left _ (comp_mono_right (powerRel_mono (Λ_comp_est_comp_singletonMap_le_thinRel hQ)) _)
 
-/-- p.198 {since `union·Pτ = id`}: `Λ(V) P(Λ(S) est(R)) = Λ(V) P(Λ(S) est(R) τ) E(∋)`,
+/-- p.198 {since `union·Pτ = id`}: `Λ(V) P(Λ(F(𝟙,∋)α) est(R)) = Λ(V) P(Λ(F(𝟙,∋)α) est(R) τ) E(∋)`,
     by `P(τ) E(∋) = 𝟙`. -/
 public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (P B))) ≫ powerRel (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R)
@@ -159,7 +158,7 @@ public theorem thinning_paths_alg_unit {α : F.obj A B ⟶ B} (R : B ⟶ B) :
     powerRel_comp (Λ (F.map (𝟙 A) (∋ B) ≫ α) ≫ est R), Cat.assoc, hτ, Cat.comp_id]
 
 /-- p.198 {since `P = E` on functions}: at a map `α`,
-    `Λ(V) P(Λ(F(𝟙,∋)) P(α) est(R)) = Λ(V) P(Λ(S) est(R))`. -/
+    `Λ(V) P(Λ(F(𝟙,∋)) P(α) est(R)) = Λ(V) P(Λ(F(𝟙,∋)α) est(R))`. -/
 public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R : B ⟶ B) :
     Λ (F.map (∋ A) (𝟙 (P B)))
         ≫ powerRel (Λ (F.map (𝟙 A) (∋ B)) ≫ powerRel α ≫ est R)
@@ -169,8 +168,8 @@ public theorem thinning_paths_alg_map {α : F.obj A B ⟶ B} (hα : Map α) (R :
 /-- **The algebra chain of book p.198 at the layered network**: the thinned algebra is above the
     one the program runs —
     `thin Q·Λ(α·F(∈,∈)) ⊒ P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)`, mirrored
-    `Λ(V) P(Λ(S) est(R)) ⊑ Λ(F(∋,∋)α) thin(Q)`, at `R ∩ (S°S) ⊑ Q` for
-    `S ≜ F(𝟙,∋)α`: the step theorems above, from the bottom line of the book's chain up. -/
+    `Λ(V) P(Λ(F(𝟙,∋)α) est(R)) ⊑ Λ(F(∋,∋)α) thin(Q)`, at `R ∩ ((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q`:
+    the step theorems above, from the bottom line of the book's chain up. -/
 public theorem thinning_paths_alg {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
     (hQ : R ∩ ((algSplit F α)° ≫ algSplit F α) ⊑ Q) :
     Λ (F.map (∋ A) (𝟙 (P B)))
@@ -447,9 +446,9 @@ public theorem Λ_pathF_map_id_eps (A X : RelSet.{0}) :
   rw [prodMap_eq_rprodMap]
   exact rfl
 
-/-- `S ≜ F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
+/-- `F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
 @[expose] public def pathSplit : Fobj V V (pow (dCL V V)) ⟶ dCL V V :=
-  algSplit pathF alphaR
+  pathF.map (𝟙 _) (∋ _) ≫ alphaR
 
 /-- `S`'s pointwise reading: `wrap` the leaf vertex, or `cons` the vertex onto some tail of the
     set. -/
@@ -543,7 +542,7 @@ public theorem pathSplit_comp_headRel_le : pathSplit (V := V) ≫ headRel ⊑ he
   | inl v => subst hp; exact hx
   | inr q => obtain ⟨t, _, rfl⟩ := hp; exact hx
 
-/-- `thinning_paths`'s `hQ` for the network (book p.198): `R∩(S°S) ⊑ Q` at `Q ≜ R∩(head head°)`.
+/-- `thinning_paths`'s `hQ` for the network (book p.198): `R∩((F(𝟙,∋)α)°F(𝟙,∋)α) ⊑ Q` at `Q ≜ R∩(head head°)`.
     `S head ⊑ [𝟙,π₁]` makes `S head` simple, and the shunting step turns that into
     `S°S ⊑ head head°`. -/
 public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
@@ -565,11 +564,11 @@ public theorem pathR_inter_recip_le_pathQ (wt : V → V → Nat) :
     (⟨V × (pow (dCL V V)).carrier⟩ : RelSet.{0}) ⟶ dCL V V :=
   cprMap (dE V) (dCL V V) ≫ powerRel consR ≫ est (pathR wt)
 
-/-- `S ≜ F(𝟙,∋)α` (book p.198): what `pathSplit`'s definition says in words — the bifunctor at
+/-- `F(𝟙,∋)α` (book p.198): what `pathSplit`'s definition says in words — the bifunctor at
     `∋` in the recursion argument, followed by the constructor. -/
 public theorem pathSplit_eq_Fmap_comp_alphaR :
     (pathSplit (V := V)) = (CL.F V V).map (∋ (dCL V V)) ≫ alphaR := by
-  unfold pathSplit algSplit
+  unfold pathSplit
   rw [pathF_map_id]
 
 /-- **`F(𝟙,∋) P(α) est(R) = [wrap,step]`** (book p.198, the note's `path-defn`): the second

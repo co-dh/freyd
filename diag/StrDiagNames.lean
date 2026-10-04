@@ -1219,11 +1219,7 @@ open Lean PrettyPrinter in
 @[app_unexpander pathCost] def unexpandPathCost : Unexpander
   | `($_ $_ $args*) => `($(mkIdent `cost) $args*)
   | _ => `($(mkIdent `cost))
--- B&dM p.198 names the algebra's second factor `S`; `pathSplit` is only Lean's name for it.
-open Lean PrettyPrinter in
-@[app_unexpander pathSplit] def unexpandPathSplit : Unexpander
-  | _ => `($(mkIdent `S))
--- The same `S ≜ F(𝟙,∋)α` at any bifunctor, the letter of the 8.2d chain.
+-- `S ≜ F(𝟙,∋)α`, the letter of the 8.2d side condition `R∩(S°S)⊑Q` only.
 open Lean PrettyPrinter in
 @[app_unexpander algSplit] def unexpandAlgSplit : Unexpander
   | _ => `($(mkIdent `S))

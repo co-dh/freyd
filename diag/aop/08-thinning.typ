@@ -247,7 +247,7 @@ row((
 
 #leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
 
-#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.algSplit"), \
+#leanf("Freyd.Alg.pathQ"), \
 #leanf("Freyd.Alg.Λ_pathF_map_eps_id"), \
 #leanf("Freyd.Alg.Λ_pathF_map_id_eps"), #h(4pt) #leanf("Freyd.Alg.pathStep").
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
@@ -255,7 +255,6 @@ row((
 // lean:AOP.A8_2.conswFn_apply@c88ec21b
 // lean:AOP.A8_2.pathCost@2d18e3c4
 // lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
-// lean:AOP.A8_2.algSplit@e9b028ae
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
 // lean:AOP.A8_2.pathQ@adf20bfb
@@ -304,7 +303,7 @@ row((
 // about the algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.
 // q in row (a): x is the vertex list, y the path list; a path is a list of vertices, head first, so `x,p` is cons.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths_alg") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths_alg"), #h(4pt) #leanf("Freyd.Alg.algSplit") \
     // algebra row: B&dM §8.2, p. 198
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
@@ -319,7 +318,7 @@ row((
       // lean:AOP.A4_6.bigUnion_existsImage_singleton@304e0108
       // lean:AOP.A4_6.bigUnion_eq_existsImage_eps@bca8d7c5
     (SQ, "Freyd.Alg.thinning_paths_alg_distrib.lhs",
-      src[#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`⊑`#frc([`F(𝟙,∋)α`])` thin(Q) if R∩(S°S)⊑Q` — @thin-laws, @path-mono]),
+      src[#frc([`F(𝟙,∋)α`])` est(R) `#frc([`𝟙`])`⊑`#frc([`F(𝟙,∋)α`])` thin(Q)` — @thin-laws, @path-mono]),
       // lean:AOP.A8_2.thinning_paths_alg_elim@5980ca57
       // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_le_thinRel@d66c2a44
       // lean:AOP.A8_2.pathSplit_eq_Fmap_comp_alphaR@962bc252
@@ -328,7 +327,7 @@ row((
       // lean:AOP.A8_2.thinning_paths_alg_distrib@63e8050a
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs",
-      src[`P(`#frc([`S`])`) E(∋)=E(S)`, #frc([`R`])` E(S)=`#frc([`RS`])` — `@pow-laws]),
+      src[`P(`#frc([`F(𝟙,∋)α`])`) E(∋)=E(F(𝟙,∋)α)`, #frc([`F(∋,𝟙)`])` E(F(𝟙,∋)α)=`#frc([`F(∋,𝟙)F(𝟙,∋)α`])` — `@pow-laws]),
       // lean:AOP.A8_2.thinning_paths_alg_split@0a60a907
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
       // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@cd08cc82
@@ -427,7 +426,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
       src[`ordered(≼) thinlist(Q)⊑thinlist(Q) ordered(≼)` — @thinlist-defn]),
     (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs",
       src[`thinlist(Q) setify⊑setify thin(Q)` — @thinlist-defn, @dom-laws, @triple-chains]),
-    (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step4.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
+    (DF, "Freyd.Alg.sortRel_comp_thinlist_le_step4.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
   ),
 )]<thinlist-86>
 
