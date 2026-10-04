@@ -301,7 +301,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [every `y` with `some xs R y` is in `ys`],
     [`ys⊇im(xs)`],
     [`ys` leaves out no partner],
-  [`E(R)`],
+  [`E(R)`#leank("Freyd.Alg.RelSet.existsImage_apply")],
     [`ys={y∣∃x∈xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
     [`ys=im(xs)`],
