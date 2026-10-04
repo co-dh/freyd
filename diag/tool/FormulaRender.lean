@@ -464,6 +464,31 @@ def readsAlike (c : Name) : MetaM Bool := do
     let some (_, l, r) := split b | return false
     return (← labelT l (some r)).bare.typst == (← labelT r (some l)).bare.typst
 
+/-- `l = r` is a FUNCTOR LAW of the one map `g`: `g(…,XY,…) = g(…X…) g(…Y…)` or `g(…,𝟙,…) = 𝟙`.
+    Read off the statement's head constants, so a relator's `map_comp` field, `BiRelator`'s, and a
+    relator's own theorem over its map (`powerRel_comp`) are one case. -/
+def distributes (l r : Expr) : Bool :=
+  let (g, ls) := (l.getAppFn, l.getAppArgs)
+  let comp? (e : Expr) := if e.isAppOf ``Cat.comp && e.getAppNumArgs ≥ 2 then
+    some (e.getAppArgs[e.getAppNumArgs - 2]!, e.getAppArgs[e.getAppNumArgs - 1]!) else none
+  if g.isConstOf ``Cat.comp || g.isConstOf ``Cat.id then false
+  else if r.isAppOf ``Cat.id then ls.any (·.isAppOf ``Cat.id)
+  else match comp? r with
+    | some (x, y) =>
+      let ps := (List.range ls.size).filter fun i => (comp? ls[i]!).isSome
+      x.getAppFn == g && y.getAppFn == g && x.getAppNumArgs == ls.size && y.getAppNumArgs == ls.size
+        && !ps.isEmpty && ps.all fun i => comp? ls[i]! == some (x.getAppArgs[i]!, y.getAppArgs[i]!)
+    | none => false
+
+/-- A FUNCTOR LAW cited by a step: like `Cat.assoc` it re-brackets `F(RS)` as `F(R)F(S)` (or drops
+    `F(𝟙)`) and names no law a reader looks up, in either direction. -/
+def functorLaw (c : Name) : MetaM Bool := do
+  let some ci := (← getEnv).find? c | throwError "no such declaration: {c}"
+  Meta.forallTelescope ci.type fun _ st => do
+    let some (_, l, r) ← splitM st | return false
+    let (l, r) := (← instantiateMVars l, ← instantiateMVars r)
+    return distributes l r || distributes r l
+
 /-- THE LAWS A STEP'S PROOF APPLIES.  A theorem application counts when its statement relates two
     arrows and no proof argument is rewritten inside it: one handed a proof that applies a theorem,
     or a hypothesis it carries to both sides, is congruence or monotonicity around that law
@@ -515,7 +540,7 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
       -- an instance may hold a raw algebra lambda no label writes (`qsort_rec`'s `fun p q => …`).
       let alike ← if ← sameDrawn l r then pure true else if ← readsAlike c then coerced
         else if ← coerced then drawnAlike l r else pure false
-      return if alike then inner else inner.push (.thm c)
+      return if alike || (← functorLaw c) then inner else inner.push (.thm c)
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel

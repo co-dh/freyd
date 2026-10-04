@@ -46,7 +46,7 @@
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step8@18b2392f
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step9.rhs", src[(1.12): `𝟙 f = f`]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step9@711631d0
-    (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step10.rhs", src[definition of filter]),
+    (DF, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step10.rhs", src[definition of filter]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step10@2397640c
   )),
 )]<filter-pointfree>

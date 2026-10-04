@@ -161,7 +161,10 @@ hand-typed reason column, is a second copy of the derivation that nobody checks 
 
 **A REFERENCE NAMES THE ROW, NEVER THE TABLE.** A reason that cites a law points at the one row that
 states it, because a table label sends the reader to scan every row for the step he is checking, and
-may hold no row that justifies it at all.
+may hold no row that justifies it at all. The reason prints the law's FORMULA, read off Lean, and the
+formula is the link to that row; a generated row number never appears, and a law the book names
+(Theorem 8.1) prints its name beside the formula — because a number makes the reader leave the step to
+learn what it says, where the formula says it in place.
 
 **`≜` PUTS THE DEFINED NAME ON THE LEFT.** `step ≜ cpr P(cons) est(R)`, never `cpr P(cons) est(R) ≜ step`,
 and a chain step that folds a body back into its name is `=`, not `≜`, because `≜` reads "the left is

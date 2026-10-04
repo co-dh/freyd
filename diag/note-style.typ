@@ -93,6 +93,47 @@
   else if c.func() == metadata { if c.at("label", default: none) == <lean-formula> { (c.value,) } else { () } }
   else if c.has("children") { c.children.map(lean-keys).flatten() }
   else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
+// A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file
+// cuts there with a `zws` (FormulaRender `render`), which becomes the line break.  Always, not by a
+// measured width: the cell is measured inside the chain's own scaling, where every width fits.
+#let first-raw(x) = if x.func() == raw { x.text } else if x.has("children") and x.children.len() > 0 { first-raw(x.children.first()) } else if x.has("body") { first-raw(x.body) } else { none }
+#let impl-split(c) = if not c.has("children") { c } else {
+  let ch = c.children
+  for (i, x) in ch.enumerate() {
+    let nxt = if i + 1 < ch.len() { first-raw(ch.at(i + 1)) } else { none }
+    if x == [#sym.zws] and nxt != none and nxt.starts-with("⟹") { linebreak() } else { x }
+  }
+}
+/// A CITED LAW PRINTS ITS FORMULA, read off Lean as the row stating it prints it, because a generated
+/// row number sends the reader off to look the row up.  A cited DISPLAY keeps its number beside the
+/// formula, since there the number is a name (`Theorem 8.1`).  `keys`: the Lean selectors the cited
+/// row or `Thm` header states; with none the number is all there is.  Nothing under `list`, where no
+/// formula file need exist yet.
+#let law-formula(keys) = if "list" in sys.inputs { none } else {
+  keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
+#let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
+/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the one
+/// declaration its picture draws (`<lean-decls>` of a single selector), else `()`.
+#let row-keys(loc) = {
+  let ks = query(selector(<law-row-keys>).before(loc)).last().value
+  if ks.len() > 0 { ks } else {
+    let a = query(selector(<law-row>).before(loc)).last().location()
+    let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
+    let b = nxt.sorted(key: l => (l.page(), l.position().y)).at(0, default: none)
+    let ds = query(if b == none { selector(<lean-decls>).after(a) } else { selector(<lean-decls>).after(a).before(b) })
+    let vs = ds.map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
+    vs.slice(0, calc.min(1, vs.len()))
+  }
+}
+/// The Lean selectors a display's first `Thm` header states, `()` for a display with none.
+#let disp-keys(s) = {
+  let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
+  let ts = if e == none { () } else { disp-thms(s, e.location()) }
+  if ts.len() == 0 { () } else {
+    let te = query(selector(<thm-end>).after(ts.first().location())).first()
+    query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup()
+  }
+}
 /// A row's number as a reference prints it: the display's number and the row index, `(0.10a.5)`;
 /// a row of a theorem display is cited as the theorem, its display's number.
 #let rowid(loc, y) = {
@@ -124,6 +165,8 @@
   let _ = f.remove("body")
   table.cell(..f, {
     [#metadata(n)<law-row>]
+    // what a reference to this row prints (`cite`)
+    [#metadata(lean-keys(it.body).dedup())<law-row-keys>]
     for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)]
     context {
       let s = disp-of(here())
@@ -257,14 +300,26 @@
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
   show ref: it => context {
     let el = it.element
-    let id = if el == none { none }
-      else if el.func() == figure and el.at("kind", default: none) == "disp" { dispid(el.location()) }
-      else if el.func() == metadata and type(el.value) == int { rowid(el.location(), el.value) }
+    // A row of a law table cites as its formula alone; a display, or a row of a theorem display,
+    // as the display's number and its `Thm` formula (`cite`).
+    let (id, keys, row) = if el == none { (none, (), false) }
+      else if el.func() == figure and el.at("kind", default: none) == "disp" {
+        (dispid(el.location()), disp-keys(query(selector(<disp-start>).after(el.location())).at(0)), false) }
+      else if el.func() == metadata and type(el.value) == int {
+        let s = disp-of(el.location())
+        if law-table(s) { (rowid(el.location(), el.value), row-keys(el.location()), true) }
+        else { (rowid(el.location(), el.value), disp-keys(s), false) } }
+      else { (none, (), false) }
     if el != none and el.func() == figure { law-gate(it) }
-    if id == none { it } else { link(el.location(), id) }
+    // Under `list` only: what `diag-regen` reads to write the formula files `cite` prints.
+    if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] }
+    if id == none { it } else { link(el.location(), cite(id, keys, row: row)) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.
     // A heading reference prints its counter dot-joined: typst drops the numbering pattern's trailing `.`.
+    // What `cite` needs beside the number, under `<label>#cite`: the plain entry stays a string, which
+    // an older tree's compile (`diff-crop`'s before) still prints.
+    if NOTEROOT.get() and id != none [#metadata((str(it.target) + "#cite", (keys: keys, row: row)))<ref-id>]
     let rec = if id != none { plain(id) } else if el != none and el.func() == heading and el.numbering != none {
       counter(heading).at(el.location()).map(str).join(".") }
     if NOTEROOT.get() and rec != none [#metadata((str(it.target), rec))<ref-id>]
@@ -388,7 +443,8 @@
         if p == none { panic("@" + t + " is in another chapter: compile with --input refs=/.lake/build/ref-ids-<note>.json, which `make ref-ids` writes") }
         let r = json(p).to-dict().at(t, default: none)
         if r == none { panic("@" + t + ": no label of that name in the whole note (" + p + "), so no chapter can print it") }
-        r
+        let c = json(p).to-dict().at(t + "#cite", default: none)
+        if c == none { r } else { cite(r, c.keys, row: c.row) }
         }
       }
     }

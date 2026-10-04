@@ -729,7 +729,7 @@ in @mu-defn.
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step2.rhs",
       src[`graft`, `trees`; `zip list(f×g)=(list(f)×list(g)) zip`]),
      // lean:AOP.A9_3_Bracket.mct_rec_step2@bdfe8912
-    (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
+    (DF, "Freyd.Alg.RelSet.Bracket.mct_rec_step3.rhs",
       src[`mix≜zip list(bin) minlist(R)` — @mct-defn]),
      // lean:AOP.A9_3_Bracket.mct_rec_step3@8ba2a32c
     (EQ, "Freyd.Alg.RelSet.Bracket.mct_rec_step4.rhs",
