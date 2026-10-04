@@ -247,14 +247,14 @@ row((
 
 #leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
 
-#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.pathSplit"), #h(4pt) #leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #h(4pt)
+#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.algSplit"), #h(4pt) #leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #h(4pt)
 #leanf("Freyd.Alg.Λ_pathF_map_id_eps"), #h(4pt) #leanf("Freyd.Alg.pathStep").
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
 // lean:AOP.A8_2.wrapz@e528d496
 // lean:AOP.A8_2.conswFn_apply@c88ec21b
 // lean:AOP.A8_2.pathCost@2d18e3c4
 // lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
-// lean:AOP.A8_2.pathSplit@c1a8f904
+// lean:AOP.A8_2.algSplit@e9b028ae
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
 // lean:AOP.A8_2.pathQ@adf20bfb
