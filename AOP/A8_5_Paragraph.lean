@@ -172,6 +172,21 @@ public theorem Q_eq :
     rw [(show m = headLine p from hm)] at hm'
     exact hm'
 
+/-- `p R q` iff `p` wastes no more than `q`: the pointwise reading of `R_eq`. -/
+public theorem R_apply (p q : Para Word) : R len w p q ↔ wasteFn len w p ≤ wasteFn len w q := Iff.rfl
+
+/-- `p Q q` iff `p` wastes no more than `q` and has the same first line. -/
+public theorem Q_apply (p q : Para Word) :
+    Q len w p q ↔ wasteFn len w p ≤ wasteFn len w q ∧ headLine p = headLine q := Iff.rfl
+
+/-- `p (fits w) q` iff `p = q` and every line of `p` is at most `w` wide. -/
+public theorem fits_apply (p q : Para Word) : fits (len := len) w p q ↔ p = q ∧ allFitP len w p :=
+  Iff.rfl
+
+/-- `p (ok w) q` iff `p = q` and the first line of `p` is at most `w` wide. -/
+public theorem ok_apply (p q : Para Word) :
+    ok (len := len) w p q ↔ p = q ∧ widthFn len (headLine p) ≤ w := Iff.rfl
+
 public theorem Q_le_R : Q len w ⊑ R len w := le_iff.mpr fun _ _ h => h.1
 
 public theorem Q_refl : 𝟙 (dPara Word) ⊑ Q len w :=
@@ -212,6 +227,11 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
   graph (newAlgFn (Word := Word)) ∪ graph glueAlgFn
 
 @[expose] public def partition : dCL Word Word ⟶ dPara Word := ⦇partAlg⦈
+
+/-- **para-defn**: `start ≜ wrap wrap wrap` (B&dM p.210) — the thinned fold's base case: the one
+    candidate list holding the one-line, one-word paragraph `[[a]]`. -/
+@[expose] public def start (a : Word) : ConsList Unit (Para Word) :=
+  ConsList.cons (ConsList.wrap (ConsList.wrap a)) (ConsList.wrap ())
 
 /-! ### `partition`'s computation rules and its naturality square
 

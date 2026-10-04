@@ -612,16 +612,16 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#leanf("Freyd.Alg.RelSet.Knapsack.dropFn"), #leanf("Freyd.Alg.RelSet.Knapsack.drop_eq_junc")],
   [drop the item: keep the tail],
   [#leann("Freyd.Alg.RelSet.Knapsack.within")], [#leant("Freyd.Alg.RelSet.Knapsack.within")],
-  [#leanf("Freyd.Alg.RelSet.Knapsack.within")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.within_apply")],
   [the packings whose total weight is at most w],
   [#leann("Freyd.Alg.RelSet.Knapsack.Salg")], [#leant("Freyd.Alg.RelSet.Knapsack.Salg")],
   [#leanf("Freyd.Alg.RelSet.Knapsack.Salg"), #leanf("Freyd.Alg.RelSet.Knapsack.Salg_junc")],
   [at each item, keep it if the packing still fits, or drop it],
   [#leann("Freyd.Alg.RelSet.Knapsack.R")], [#leant("Freyd.Alg.RelSet.Knapsack.R")],
-  [#leanf("Freyd.Alg.RelSet.Knapsack.R"), #leanf("Freyd.Alg.RelSet.Knapsack.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.R_eq"), #leanf("Freyd.Alg.RelSet.Knapsack.R_apply")],
   [x is worth at least as much as y],
   [#leann("Freyd.Alg.RelSet.Knapsack.Q")], [#leant("Freyd.Alg.RelSet.Knapsack.Q")],
-  [#leanf("Freyd.Alg.RelSet.Knapsack.Q"), #leanf("Freyd.Alg.RelSet.Knapsack.Q_eq")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.Q_eq"), #leanf("Freyd.Alg.RelSet.Knapsack.Q_apply")],
   [x is worth at least as much as y and weighs no more],
 // lean:AOP.A5_6_ListCombinators.total@374f995b
 // lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
@@ -636,6 +636,9 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 // lean:AOP.A8_4_Knapsack.R_eq@1c13d35d
 // lean:AOP.A8_4_Knapsack.Q@0a7ed9db
 // lean:AOP.A8_4_Knapsack.Q_eq@22acbe51
+// lean:AOP.A8_4_Knapsack.within_apply@36f4b7b0
+// lean:AOP.A8_4_Knapsack.R_apply@dc58c6b8
+// lean:AOP.A8_4_Knapsack.Q_apply@41c1da16
 )]<knap-defn>
 
 #disp[#table(
@@ -738,10 +741,10 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#leanf("Freyd.Alg.RelSet.Paragraph.allFitP")],
   [every line is at most w wide],
   [#leann("Freyd.Alg.RelSet.Paragraph.fits")], [#leant("Freyd.Alg.RelSet.Paragraph.fits")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.fits")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.fits_apply")],
   [the paragraphs whose every line is at most w wide],
   [#leann("Freyd.Alg.RelSet.Paragraph.ok")], [#leant("Freyd.Alg.RelSet.Paragraph.ok")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.ok")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.ok_apply")],
   [the paragraphs whose first line is at most w wide],
   [#leann("Freyd.Alg.RelSet.Paragraph.sqr")], [#leant("Freyd.Alg.RelSet.Paragraph.sqr")],
   [#leanf("Freyd.Alg.RelSet.Paragraph.sqr")],
@@ -750,11 +753,14 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#leanf("Freyd.Alg.RelSet.Paragraph.wasteFn")],
   [the squared white space left on every line but the last, added up],
   [#leann("Freyd.Alg.RelSet.Paragraph.R")], [#leant("Freyd.Alg.RelSet.Paragraph.R")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.R"), #leanf("Freyd.Alg.RelSet.Paragraph.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.R_eq"), #leanf("Freyd.Alg.RelSet.Paragraph.R_apply")],
   [p wastes no more than q],
   [#leann("Freyd.Alg.RelSet.Paragraph.Q")], [#leant("Freyd.Alg.RelSet.Paragraph.Q")],
-  [#leanf("Freyd.Alg.RelSet.Paragraph.Q"), #leanf("Freyd.Alg.RelSet.Paragraph.Q_eq")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.Q_eq"), #leanf("Freyd.Alg.RelSet.Paragraph.Q_apply")],
   [p wastes no more than q and has the same first line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.start")], [#leant("Freyd.Alg.RelSet.Paragraph.start")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.start")],
+  [the one candidate for a single word: the paragraph of one line holding that word],
 // lean:AOP.A8_5_Paragraph.Line@5d1dfba3
 // lean:AOP.A8_5_Paragraph.Para@03a1f9c7
 // lean:AOP.A8_5_Paragraph.new@bda7247b
@@ -774,6 +780,11 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 // lean:AOP.A8_5_Paragraph.R_eq@cf0ea074
 // lean:AOP.A8_5_Paragraph.Q@11255ece
 // lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf
+// lean:AOP.A8_5_Paragraph.fits_apply@42c87fb1
+// lean:AOP.A8_5_Paragraph.ok_apply@a532e43a
+// lean:AOP.A8_5_Paragraph.R_apply@358f7c84
+// lean:AOP.A8_5_Paragraph.Q_apply@4e24926a
+// lean:AOP.A8_5_Paragraph.start@056fc54e
 )]<para-defn>
 
 #disp[#table(
@@ -899,10 +910,16 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#leanf("Freyd.Alg.RelSet.Tour.tour")],
   [every bitonic tour of the cities],
   [#leann("Freyd.Alg.RelSet.Tour.R")], [#leant("Freyd.Alg.RelSet.Tour.R")],
-  [#leanf("Freyd.Alg.RelSet.Tour.R"), #leanf("Freyd.Alg.RelSet.Tour.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Tour.R_eq"), #leanf("Freyd.Alg.RelSet.Tour.R_apply")],
   [t costs no more than t′],
+  [#leann("Freyd.Alg.RelSet.Tour.next2")], [#leant("Freyd.Alg.RelSet.Tour.next2")],
+  [#leanf("Freyd.Alg.RelSet.Tour.next2")],
+  [the second cities of both journeys],
+  [#leann("Freyd.Alg.RelSet.Tour.head2")], [#leant("Freyd.Alg.RelSet.Tour.head2")],
+  [#leanf("Freyd.Alg.RelSet.Tour.head2")],
+  [the first cities of both journeys],
   [#leann("Freyd.Alg.RelSet.Tour.Qc")], [#leant("Freyd.Alg.RelSet.Tour.Qc")],
-  [#leanf("Freyd.Alg.RelSet.Tour.Qc")],
+  [#leanf("Freyd.Alg.RelSet.Tour.Qc_eq"), #leanf("Freyd.Alg.RelSet.Tour.Qc_apply")],
   [t costs no more than t′, and both journeys of t and t′ share their first two cities],
 // lean:AOP.A8_6_Tour.Journey@43d30e10
 // lean:AOP.A8_6_Tour.Tour@5351625c
@@ -922,6 +939,11 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 // lean:AOP.A8_6_Tour.R@99271c4e
 // lean:AOP.A8_6_Tour.R_eq@15ad4adc
 // lean:AOP.A8_6_Tour.Qc@a73d3422
+// lean:AOP.A8_6_Tour.R_apply@f30bcc6e
+// lean:AOP.A8_6_Tour.next2@d792d805
+// lean:AOP.A8_6_Tour.head2@02940dda
+// lean:AOP.A8_6_Tour.Qc_eq@1fd75015
+// lean:AOP.A8_6_Tour.Qc_apply@00f522e3
 )]<tour-defn>
 
 #disp[#table(
