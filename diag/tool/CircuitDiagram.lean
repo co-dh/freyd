@@ -321,6 +321,10 @@ Spelled the way the BOOK spells it, and read off the TERM: `est(R)` is the `est`
     leaves the name alone and says nothing, so it does not count, and a constant given a name of
     its own tomorrow stops being opened without a line being added here. -/
 def isNamed (e : Expr) : MetaM Bool := do
+  -- A `diag_noted` tag is the third way: the note says the Lean name already IS the book's word
+  -- (B&dM's arms `g₁`, `g₂`), so the box is that word and the body stays closed.
+  if let some c := e.getAppFn.constName? then
+    if (← Lean.labelled `diag_noted).contains c then return true
   match e.getAppFnArgs.1 with
   | ``Cat.id | ``Freyd.Alg.PowerAllegory.eps | ``Freyd.Alg.est | ``Freyd.Alg.Λ
   | ``Freyd.Alg.cup | ``Freyd.Alg.powerRel
