@@ -60,7 +60,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [the same as an equality, once empty sets are dropped],
 )]<est-laws>
 
-=== `X⊑est(R)⟺X⊑∋` and `X°∋⊑R`
+=== #leanf("Freyd.Alg.le_est_iff") — `X` refines `est(R)` when it picks a member `R`-related to every member
 
 // The definition read through the two adjunctions it is built from.  B&dM p. 166 cites this as the
 // hint "universal property of min", which the chains below cite as "UP of `est`".
@@ -78,7 +78,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 // lean:AOP.A7_1.le_est_iff@0a537bd2
 ]<est-up>
 
-=== $frac(#[`𝟙`], ∋)$ `(∈\R)=R`
+=== #leanf("Freyd.Alg.singletonMap_comp_lb") — all of `{a}` relates by `R` to `c` exactly when `a` does
 
 // B&dM (7.1): the same four steps as the subsection below, with `(𝟙%∋) ∋ = 𝟙` — the `i ⊣ E` triangle —
 // where that one has `(S%∋) ∋ = S`.
@@ -98,7 +98,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 // lean:AOP.A7_1.singletonMap_comp_lb@38cf516c
 ]<est-71>
 
-=== $frac(#[`S`], ∋)$ `(∈\R)=S°\R`
+=== #leanf("Freyd.Alg.Λ_comp_lb") — gathering the `S`-values into one set first changes nothing
 
 $frac(#[`S`], ∋)$ gathers the `S`-image of a point into one set and `∈\R` asks that every member of
 that set be `R`-related to the target, so the set cancels and `S°\R` asks it of the `S`-image
@@ -123,7 +123,7 @@ directly.
 // lean:AOP.A7_1.Λ_comp_lb@e66a494e
 ]<est-72>
 
-=== `union (∈\R)=∈\(∈\R)`
+=== #leanf("Freyd.Alg.bigUnion_comp_lb") — every member of the union relates by `R` iff every set's members do
 
 // B&dM (7.3): the shape of the two chains above with `union ∋ = ∋ ∋` in the middle.
 #disp(num: "(7.3)")[
@@ -144,7 +144,7 @@ directly.
 // lean:AOP.A7_1.bigUnion_comp_lb@96c7fcdf
 ]<est-73>
 
-=== $frac(#[`S`], ∋)$ `est(R)=S∩(S°\R°)`
+=== #leanf("Freyd.Alg.Λ_comp_est") — the smallest `S`-value is an `S`-value `R`-related to every `S`-value
 
 // B&dM (7.5).  (7.4) is this at `S := 𝟙` and (7.7) at `S := ∋ S`, so neither needs a chain of its own.
 #disp(num: "(7.5)")[
@@ -165,7 +165,7 @@ directly.
 // lean:AOP.A7_1.Λ_comp_est@c1d1bcdd
 ]<est-75>
 
-=== $frac(#[`S`], ∋)$ `est(R)=` $frac(#[`S`], ∋)$ `est(R∩S°S)`
+=== #leanf("Freyd.Alg.Λ_comp_est_context") — only `R` between `S`-values of one argument matters for the smallest
 
 // B&dM (7.6): `X ⊑ S` already forces `S° X ⊑ S° S`, so the extra conjunct costs nothing — that is
 // the whole content, and it is the middle step.
@@ -190,7 +190,7 @@ directly.
 // lean:AOP.A7_1.Λ_comp_est_context@4f68e16f
 ]<est-76>
 
-=== `P(f) est(R)=est(fRf°) f`
+=== #leanf("Freyd.Alg.powerRel_map_comp_est") — the smallest `f`-image is `f` of the smallest under `fRf°`
 
 // B&dM (7.8), shunting a map through a minimum.  The one step that is not an adjunction is the
 // modular law, and it needs `f` simple — the only such step in §@sec-est.
@@ -213,7 +213,7 @@ directly.
 // lean:AOP.A7_1.powerRel_map_comp_est@cd2fa61a
 ]<est-78>
 
-=== `P(S) est(R)⊑(∋S)∩(∈\(SR°))`
+=== #leanf("Freyd.Alg.powerRel_comp_est_le") — the smallest of the `S`-image is `R`-below an `S`-value of every member
 
 // B&dM (7.10): `∋` is lax natural for the power relator, `P(S) ∋ ⊑ ∋ S`, and with the universal
 // property of `est` that is the whole proof.  The equality (7.9) is not this — it needs tabulations.
@@ -229,7 +229,7 @@ directly.
 // lean:AOP.A7_1.powerRel_comp_est_le@1893b87c
 ]<est-710>
 
-=== `P(est(R)) est(R)⊑union est(R)`
+=== #leanf("Freyd.Alg.powerRel_est_le_bigUnion") — the smallest of the smallests is a smallest of the union
 
 // B&dM (7.11): (7.5) at `S := ∋ ∋` opens the right-hand side, then the same two facts as (7.10)
 // close both strands — the left one twice, the right one against transitivity.
@@ -371,7 +371,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3.1's last page.
 #pagebreak(weak: true)
-=== `Greedy Theorem: ⦇`$frac(#[`S`], ∋)$` est(R)⦈⊑`$frac(#[`⦇S⦈`], ∋)$` est(R), given S monotoic on R, F preserving °, and R transitive` <sec-greedy-thm72>
+=== #leanf("Freyd.Alg.greedy") — taking the best at each step gives a best overall result <sec-greedy-thm72>
 
 // `inner` conversed, `after` above, `⊑ rhs` if given: rows 5–7 draw a TERM of one chain rather than an inequation,
 // and with the run after the frame raised to `TH` — a fraction box is two lines tall.  A leading run
@@ -436,7 +436,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of §13.3's last page.
 #pagebreak(weak: true)
-=== `takewhile(p)=⦇[nil,(π₁p→cons,⊸ nil)]⦈` <sec-takewhile>
+=== #leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_eq_cata") — `takewhile(p)` keeps items while `p` holds, as one fold <sec-takewhile>
 
 // B&dM Ex 7.39, p. 174.  The derivation runs on `est(R°)` (@est-defn) and the greedy theorem
 // (Theorem 7.2), both above it.
@@ -696,7 +696,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
 ]<takewhile-laws>
 
-=== `mss=⦇[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨(𝟙×π₁)⊕,⟨(𝟙×π₁)⊕ `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]⦈ π₂ est(≥)` <sec-mss>
+=== #leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") — `mss` is a fold followed by taking the largest <sec-mss>
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
 // `≤` is on `A`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
@@ -849,7 +849,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs"),
     [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @Freyd.Alg.junc_comp, composition over `∪`]])],
-  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
+  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its $frac(#[`𝟙`], ∋)$ `E(…)` and `est(≥)`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step2.rhs"), [#src[singleton, `≥` reflexive — @est-laws:6's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
@@ -909,7 +909,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // `sticky` cannot reach through the breakable block `conf` wraps every display in, so the heading
 // would sit alone at the foot of @mss-deriv's page.
 #pagebreak(weak: true)
-=== `filter(p)=⦇[nil,(π₁p→cons,π₂)]⦈` <sec-filter>
+=== #leanf("Freyd.Alg.RelSet.Filter.filter_eq_cata") — `filter(p)` keeps the items satisfying `p`, as one fold <sec-filter>
 
 // B&dM Ex 7.41, p. 174.  @sec-takewhile with `subseq` for `prefix`: same `F`, `α`, `p`, `R`, same
 // greedy theorem, and only the second branch of the algebra differs.
@@ -982,11 +982,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step1.rhs")]],
-  [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn:4] #h(4pt) — and the `%∋` of a coproduct of maps
-   is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
+  [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn:4] #h(4pt) — and the fraction of a coproduct of maps
+   is the coproduct of their fractions #h(4pt) #src[@coprod-calc]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step2.rhs")]],
-  [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
+  [$frac(#[`nil`], ∋)$ is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
    reflexive #h(4pt) #src[@est-defn]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step3.rhs")][]],
@@ -1259,7 +1259,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   `[]` does not. That is why the three leaves of §@sec-party-mono's proof all reduce to
   "`cost` is a sum".]]
 
-=== `(𝟙×list((R×R)°))S⊑S(R×R)°` — `S : F([A]×[A])⟶[A]×[A]` monotonic on `(R×R)°` <sec-party-mono>
+=== #leanf("Freyd.Alg.RelSet.Party.party_mono") — `S` is monotonic on `(R×R)°` <sec-party-mono>
 
 // @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`; @lax-defn at
 // `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
@@ -1617,7 +1617,7 @@ xs = 1 2 3 4                                    : A[m][n], m=2
   folds to the column `5 6 7 8`, one path per row and each of them one square long, and `gen` on it
   is that walk.]])
 
-=== `Q≜(𝟙×(moves trans Vec(n)(est(R)))) zip`, `A[n]×A[n][m]⟶A[n][m+1]` <sec-cyl-vec-q>
+=== #leanf("Freyd.Alg.Vec.Rel.Q") — `Q` is `gen` with `est(R)` choosing one path per square <sec-cyl-vec-q>
 
 // `gen` with the choice made: `concat` and `cp` are gone, and `est(R)` takes one of the three
 // candidates a row is offered before the new square is put in front of it.  In `Rel` now, so
@@ -1652,7 +1652,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Q_run@c3d869b1
 ]<vec-q-step>
 
-=== `paths est(R)⊒⦇Q⦈ est(R)` <sec-cyl-vec-deriv>
+=== #leanf("Freyd.Alg.Vec.Rel.cyl_laws") — folding `Q` gives a smallest of `paths` <sec-cyl-vec-deriv>
 
 // This section's own box vocabulary.  CIRCUIT: one wire, a box per factor of the composite, a cut
 // corner for a relation and a square box for a map.
@@ -1783,7 +1783,7 @@ zip(that)                                         each row: its square, and the 
   [`[a,b]` gives `[[a,b]]` when `[a,b]` is secure, and `[[a],[b]]` otherwise.],
 )]<van-defn>
 
-=== `secure prefix⊑prefix secure` <sec-van-prefix>
+=== #leanf("Freyd.Alg.RelSet.Van.secure_prefix") — a prefix of a secure segment is secure <sec-van-prefix>
 
 // B&dM p.185.  `secure` is "the coreflexive corresponding to this predicate", and the predicate's
 // test `⟨ceiling,ceiling−floor⟩bmax` is a MAP, so the coreflexive is the one that slides across it
@@ -1816,7 +1816,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.secure_prefix@572206f0
 ]<van-prefix>
 
-=== `partition list(secure)=⦇[nil,new ∪ old]⦈` <sec-van-fusion>
+=== #leanf("Freyd.Alg.RelSet.Van.van_spec") — partitioning into secure segments is one fold <sec-van-fusion>
 
 // B&dM p.185.  The three algebras are arrows out of a PRODUCT, so their panels are a stack of
 // context wires: `A×−` carries the transaction the algebra is handed, `[A]×−` the segment being
@@ -1898,7 +1898,7 @@ zip(that)                                         each row: its square, and the 
     secure]],
 )]<van-fusion>
 
-=== `(𝟙×R)new⊑(new ∪ old)R` <sec-van-714>
+=== #leanf("Freyd.Alg.RelSet.Van.van_7_14") — `new` on an `R`-related schedule is matched by `new` or `old` <sec-van-714>
 
 // B&dM p.186's (7.14).  Its mirror (7.15) — the same with `old` in place of `new` — is FALSE, and
 // @van-deriv is where that costs the refinement of `R` to `R;H`.  `R` sits on the two schedule
@@ -1922,7 +1922,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_7_14_step2.rhs")],
 )]<van-714>
 
-=== `H≜(head prefix° head°) ∪ (nil° nil)` <sec-van-h>
+=== #leanf("Freyd.Alg.RelSet.Van.Hrel") — the right first segment is a prefix of the left one, or both are empty <sec-van-h>
 
 // B&dM p.186, the order that refines `R`.  Two branches, two panels: the left opens each schedule's
 // first segment with `head`, compares the two with `prefix` and closes both again; the right is the
@@ -1937,7 +1937,7 @@ zip(that)                                         each row: its square, and the 
 // lean:AOP.A7_5_Van.Hrel@9b25c946
 ]<van-h>
 
-=== `(𝟙×(R;H))new⊑(new ∪ old)(R;H)` <sec-van-716>
+=== #leanf("Freyd.Alg.RelSet.Van.van_mono_new") — `new` on an `R;H`-related schedule is matched by `new` or `old` <sec-van-716>
 
 // B&dM p.187's (7.16), the `new` half of monotonicity on the refined order.  It rests on (7.18):
 // both sides open a segment `[a]` of their own, so the two first segments are EQUAL and `H` holds
@@ -1978,7 +1978,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_mono_new_step4.rhs")],
 )]<van-716>
 
-=== `(𝟙×(R;H))old⊑(new ∪ old)(R;H)` <sec-van-717>
+=== #leanf("Freyd.Alg.RelSet.Van.van_mono") — `old` on an `R;H`-related schedule is matched by `new` or `old` <sec-van-717>
 
 // B&dM p.187–188's (7.17), the `old` half.  `R;H` splits as `|R| ∪ (R∩H)` and the two pieces are
 // answered by different branches of the algebra: on the strict part the van is called, on the tie

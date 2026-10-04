@@ -60,7 +60,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   [thinning each member set is a thinning of the union],
 )]<thin-laws>
 
-=== `X⊑(S%∋) thin(Q)⟺X∋⊑S` and `S°X⊑Q°∈`
+=== #leanf("Freyd.Alg.le_Λ_comp_thinRel_iff") — the definition of $frac(#[`S`], ∋)$ `thin(Q)`
 
 // @thin-laws' first row drawn: the `E` lane is born at the singleton and dies at the `∋`, so the
 // left panel's `X` lands on it and each condition on the right is one panel.
@@ -81,10 +81,10 @@ row((
 #grid(columns: 3, align: horizon, column-gutter: 4pt,
   lean("Freyd.Alg.thinRel_comp_eps_le"), [and], lean("Freyd.Alg.recip_thinRel_comp_eps_le"),
 )
-#src[@thin-up at `X≜thin(Q)`, `S≜∋`: the left side is `thin(Q)⊑thin(Q)`, since `∋%∋=Λ(∋)=𝟙`]
+#src[@thin-up at `X≜thin(Q)`, `S≜∋`: the left side is `thin(Q)⊑thin(Q)`, since $frac(#[`∋`], ∋)$`=Λ(∋)=𝟙`]
 ]<thin-up-eps>
 
-=== `est(R)=thin(Q) est(R)` given `Q⊑R`, `𝟙⊑Q`, `RR⊑R`
+=== #leanf("Freyd.Alg.thinRel_comp_est") — thinning first, then taking the smallest, is the same as taking the smallest
 
 // B&dM p. 194, thin-introduction, mirrored: the row above read as a calculation.
 #import "../generated/Freyd.Alg.thinRel_comp_est_cond1.calc.typ" as calc-up1

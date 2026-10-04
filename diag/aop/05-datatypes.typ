@@ -721,7 +721,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons ∪ π₂)]`]])],
     // lean:AOP.A5_3.Λ_junc@a2c38b7d
-  [#sb-hm-p2 \ #src[the `π₂` operand under its `𝟙%∋`, the arm @subseq-outr-square's square rewrites,
+  [#sb-hm-p2 \ #src[the `π₂` operand under its $frac(#[`𝟙`], ∋)$, the arm @subseq-outr-square's square rewrites,
     `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
@@ -758,7 +758,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
     #src[#frc([`R ∪ S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
-  [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
+  [#sb-hm-born \ #src[the `cons` operand under its $frac(#[`𝟙`], ∋)$]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
     #src[@Freyd.Alg.Λ_absorption, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
