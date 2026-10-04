@@ -348,6 +348,11 @@ theorem alg_eq_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
     | inl h => obtain ⟨d, h1, h2⟩ := h; subst h1; exact h2
     | inr h => obtain ⟨p, h1, h2⟩ := h; subst h1; exact h2
 
+/-- The book's {catamorphisms} step with `α = [wrap,snoc]`: `⦇φ⦈ = [wrap,snoc]°F(⦇φ⦈)φ`. -/
+public theorem cata_fix_junc {C : RelSet.{0}} (φ : Fobj C ⟶ C) :
+    cataR φ = ⁅wrap, snoc⁆° ≫ (F(cataR φ) ≫ φ) :=
+  (cata_fix φ).trans (by rw [con_eq_junc])
+
 /-- The relator `−×Digit` preserves converse: `(R×𝟙)° = R°×𝟙`. -/
 public theorem timesDigit_recip {C c' : RelSet.{0}} (R : C ⟶ c') :
     (timesDigit.map R)° = timesDigit.map R° :=
@@ -363,12 +368,12 @@ public theorem cata_converse_eq {C : RelSet.{0}} (g : dDigitP ⟶ C)
     (cataR ⁅g, h⁆)° = g° ≫ wrap
       ∪ h° ≫ timesDigit.map (cataR ⁅g, h⁆)° ≫ snoc :=
   calc (cataR ⁅g, h⁆)°
-        = ((graph con)° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := congrArg _ (cata_fix _)
-    _ = (⁅wrap, snoc⁆° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := by rw [con_eq_junc]
-    _ = (⁅wrap, snoc⁆° ≫ (sumMap (sumCop dDigitP (timesDigit.obj dDec))
-          (sumCop dDigitP (timesDigit.obj C)) (𝟙 dDigitP) (timesDigit.map (cataR ⁅g, h⁆))
-          ≫ ⁅g, h⁆))° := by rw [Fmap_eq_sumMap]; rfl
+        = (⁅wrap, snoc⁆° ≫ (F(cataR ⁅g, h⁆) ≫ ⁅g, h⁆))° := congrArg _ (cata_fix_junc _)
+    -- `F(R)` is `𝟙+(R×𝟙)` by definition, so the `show` spells it as the `sumMap` the law reads.
     _ = (⁅wrap, snoc⁆° ≫ ⁅g, timesDigit.map (cataR ⁅g, h⁆) ≫ h⁆)° := by
+        show (⁅wrap, snoc⁆° ≫ (sumMap (sumCop dDigitP (timesDigit.obj dDec))
+          (sumCop dDigitP (timesDigit.obj C)) (𝟙 dDigitP) (timesDigit.map (cataR ⁅g, h⁆))
+          ≫ ⁅g, h⁆))° = _
         rw [sumMap_junc, Cat.id_comp]
     _ = ((wrap° ≫ g) ∪ (snoc° ≫ (timesDigit.map (cataR ⁅g, h⁆) ≫ h)))° := by
         rw [junc_recip_junc]
