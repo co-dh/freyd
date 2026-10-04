@@ -301,7 +301,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [every `y` with `some xs R y` is in `ys`],
     [`ys⊇im(xs)`],
     [`ys` leaves out no partner],
-  [`E(R)`#leank("Freyd.Alg.RelSet.existsImage_apply")],
+  [`E(R)`],
     [`ys={y∣∃x∈xs. x R y}`],
     [`ys` = every `y` with `some xs R y`],
     [`ys=im(xs)`],
@@ -316,9 +316,11 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
     [—],
     [every `x` and every `y` \ has a partner],
-  // lean:AOP.A7_2_RelSet.powrel_readings@c8d9a0e3
+  // lean:AOP.A7_2_RelSet.powrel_reading_reached@b6af65a3
+  // lean:AOP.A7_2_RelSet.powrel_reading_closed@acced2ef
   // lean:AOP.A7_2_RelSet.existsImage_apply@df0c21b6
-  // lean:AOP.A5_7_PowerBeads.powerRel_apply@bbd76348
+  // lean:AOP.A7_2_RelSet.powrel_reading_reaches@267efedb
+  // lean:AOP.A7_2_RelSet.powerRel_reading@f245c42c
 ))]<powrel-readings>
 
 // `1,2,3` on the left, `a,b,c` on the right — and the `skel` pictures below are a DIFFERENT example,
