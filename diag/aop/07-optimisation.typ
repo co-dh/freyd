@@ -897,6 +897,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
 // Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
+#import "../generated/Freyd.Alg.RelSet.MSS.mss_eq_scan.calc.typ" as calc-mss
 #disp(num: "Exercise 7.40")[#calc-table(cols: (1fr,), al: (left + top,),
   // B&dM p.175, Ex 7.40: "Finally, express list ⦇[c,f]⦈ · tails as a catamorphism and hence show how to
   // implement mss by a linear-time algorithm."
@@ -907,20 +908,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
     // lean:AOP.A7_7_MSS.mss_eq_scan@758d9b12
-  lean-chain(
-    // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
-    // it, so no bead here carries a `%∋`.  One height per bead down the column, and a row that
-    // collapses a pair puts its one bead midway between the two it replaces.
-    (none, "Freyd.Alg.RelSet.MSS.mss_shape.lhs",
-      src[@mss-defn]),
-    // `suffix` is only LAX natural in `Rel`, so it is a NODE on the object wire like the rest; the outer
-    // `E` runs past it, and `prefix sum` is where the `list` wire dies.
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_shape.rhs", src[@mss-shape]),
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step2.rhs",
-      src[@greedy-thm72 at `R:=≥` — @mss-mono, @mss-step, @takewhile-laws]),
-    (EQ, "Freyd.Alg.RelSet.MSS.mss_eq_scan_step3.rhs",
-      src[`⦇k⦈=⟨⦇[zero,⊕]⦈,`#frc([`suffix`])` E(⦇[zero,⊕]⦈)⟩` — @cata-defining, @mss-scan]),
-  ),
+  // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
+  // it, so no bead here carries a `%∋`.  `suffix` is only LAX natural in `Rel`, so it is a NODE on
+  // the object wire like the rest; the outer `E` runs past it, and `prefix sum` is where `list` dies.
+  lean-calc(calc-mss),
 )
 #align(center, block(inset: (y: 4pt))[#src[one fold builds the `n+1` running maxima and the final
   `est(≥)` reads them in one more pass, so `mss` is linear.]])

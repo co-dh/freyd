@@ -16,14 +16,27 @@ open Lean Elab Command Meta
 
 namespace Freyd.Alg.CalcSteps
 
-/-- The leaves of a `calc` spine, left to right: `calc` elaborates to nested `Trans.trans` (and
-    `Eq.trans` for a chain of `=`), whose last two arguments are the two halves it composes. -/
-public meta partial def leaves (e : Expr) : Array Expr :=
+/-- The heads of a trans spine: `calc` elaborates to nested `Trans.trans` (`Eq.trans` for a chain
+    of `=`), and a proof written `le_trans h₁ h₂` is a spine too.  Each composes its last two
+    arguments.  The last two are named, not imported: they live in libraries this one precedes. -/
+public meta def spineHeads : List Name :=
+  [``Trans.trans, ``Eq.trans, `Freyd.Alg.le_trans, `Freyd.Diag.OrderedCat.«≤_trans»]
+
+/-- The leaves of a trans spine, left to right, each with the type THE SPINE states for it — the
+    binder type of its head at that argument — never the leaf's inferred type: a `rfl` step infers
+    `X = X` where the `calc` line it closes reads `X = Y`.  `t` is the type `e` proves. -/
+public meta partial def leaves (e t : Expr) : MetaM (Array (Expr × Expr)) := do
   let e := e.consumeMData
-  match e.getAppFnArgs with
-  | (``Trans.trans, args) | (``Eq.trans, args) =>
-    if args.size < 2 then #[e] else leaves args[args.size - 2]! ++ leaves args[args.size - 1]!
-  | _ => #[e]
+  let args := e.getAppArgs
+  let some c := e.getAppFn.constName? | return #[(e, t)]
+  unless spineHeads.contains c && args.size ≥ 2 do return #[(e, t)]
+  let (f, g) := (args[args.size - 2]!, args[args.size - 1]!)
+  match ← whnf (← inferType (mkAppN e.getAppFn (args.extract 0 (args.size - 2)))) with
+  | .forallE _ tf b _ =>
+    match ← whnf (b.instantiate1 f) with
+    | .forallE _ tg _ _ => return (← leaves f tf.headBeta) ++ (← leaves g tg.headBeta)
+    | _ => return #[(e, t)]
+  | _ => return #[(e, t)]
 
 /-- `calc_steps <decl>`: adds `<decl>.step_i` for every step of the `calc` proving `<decl>`. -/
 syntax (name := calcSteps) "calc_steps " ident : command
@@ -33,15 +46,15 @@ syntax (name := calcSteps) "calc_steps " ident : command
   let ci ← getConstInfo n
   let some v := ci.value? | throwError "calc_steps: {n} has no proof term to read the steps off"
   let steps ← liftTermElabM <| lambdaTelescope v fun xs b => do
-    let ls := leaves b
+    let ls ← leaves b (← inferType b)
     if ls.size < 2 then
       throwError "calc_steps: the proof of {n} is no `calc` of two or more steps — its body is \
         {← ppExpr b}"
     -- A binder the step does not use is no binder of the step: kept, it would have to be supplied
     -- by every caller of a step that never needs it.  Used means in the step, or in a used binder's
     -- type, so the binders are read last to first.
-    ls.mapM fun l => do
-      let (t, l) := (← instantiateMVars (← inferType l), ← instantiateMVars l)
+    ls.mapM fun (l, t) => do
+      let (t, l) := (← instantiateMVars t, ← instantiateMVars l)
       let mut ys : Array Expr := #[]
       for x in xs.reverse do
         let used (e : Expr) := e.containsFVar x.fvarId!

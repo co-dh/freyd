@@ -87,6 +87,7 @@ row((
 === `est(R)=thin(Q) est(R)` given `Q⊑R`, `𝟙⊑Q`, `RR⊑R`
 
 // B&dM p. 194, thin-introduction, mirrored: the row above read as a calculation.
+#import "../generated/Freyd.Alg.thinRel_comp_est_cond1.calc.typ" as calc-up1
 #grid(columns: (1fr, 1fr), column-gutter: 42pt, align: top,
 [#disp[
    // lean:AOP.A8_1.thinRel_comp_est@eafff35f
@@ -105,29 +106,17 @@ row((
   Thm(cols: 1)[`thin(Q) est(R)⊑∋` \
     #src[the `⊒` half, first condition of the UP of `est` at `X≜thin(Q) est(R)` — @est-up]],
      // lean:AOP.A8_1.thinRel_comp_est_cond1@2c9241e0
-  lean-chain(
-    (none, "Freyd.Alg.thinRel_comp_est_step2.lhs", []),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step2.rhs", src[`est(R)⊑∋` — @est-laws]),
-    (SQ, "Freyd.Alg.thinRel_comp_eps_le.rhs",
-      src[`thin(Q)∋⊑∋` — @thin-up]),
-  ),
+  lean-calc(calc-up1),
 )
 ]<thin-intro-up1>])
 
+#import "../generated/Freyd.Alg.thinRel_comp_est_cond2.calc.typ" as calc-up2
 #disp[
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[`∈ thin(Q) est(R)⊑R°` \
     #src[the `⊒` half, second condition — `Q⊑R`, `R` transitive]],
      // lean:AOP.A8_1.thinRel_comp_est_cond2@1bf58dd7
-  lean-chain(
-    (none, "Freyd.Alg.thinRel_comp_est_step3.lhs", []),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step3.rhs",
-      src[`∈ thin(Q)⊑Q°∈` — @thin-up]),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step4.rhs",
-      src[`∈ est(R)⊑R°` — @est-laws]),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step5.rhs", src[`Q⊑R`]),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step6.rhs", src[`R` transitive]),
-  ),
+  lean-calc(calc-up2),
 )]<thin-intro-up2>
 
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
@@ -221,6 +210,7 @@ row((
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
+#import "../generated/Freyd.Alg.thinning_est.calc.typ" as calc-cor
 #disp(num: "Corollary 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_est") \
     #src[the thinning fold refines the optimisation problem itself —
@@ -228,12 +218,8 @@ row((
      `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
      // lean:AOP.A8_1.thinning_est@bb2ad6af
-  lean-chain(
-    // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
-    (none, "Freyd.Alg.thinning_est_step1.lhs", []),
-    (SQ, "Freyd.Alg.thinning_est_step1.rhs", src[@thin-thm81]),
-    (EQ, "Freyd.Alg.thinning_est_step2.rhs", src[`est(R)=thin(Q) est(R)` — @thin-laws]),
-  ),
+  // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
+  lean-calc(calc-cor),
 )]<thin-cor>
 
 == Paths in a layered network
@@ -383,23 +369,16 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 // subsequence of a `≼`-ordered list is `≼`-ordered, so the thinning may run before the sort.
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
+#import "../generated/Freyd.Alg.sortRel_comp_thinlist_le.calc.typ" as calc-86
 #disp(num: "(8.6)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
     // sortRel row: (8.6), p. 201
     #src[a thinning of the sorted list lists a thinning of the set — `≼` a connected
  preorder, `thinlist(Q)⊑subseq`. ]],
      // lean:AOP.A8_3.sortRel_comp_thinlist_le@9b7ffbea
-  lean-chain(
-    // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
-    // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.
-    (none, "Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs", []),
-    (DF, "Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
-    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs",
-      src[`ordered(≼) thinlist(Q)⊑thinlist(Q) ordered(≼)` — @thinlist-defn]),
-    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs",
-      src[`thinlist(Q) setify⊑setify thin(Q)` — @thinlist-defn, @dom-laws, @triple-chains]),
-    (DF, "Freyd.Alg.sortRel_comp_thinlist_le_step4.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
-  ),
+  // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
+  // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.
+  lean-calc(calc-86),
 )]<thinlist-86>
 
 // B&dM Lemma 8.1, p. 202, mirrored.  The chain walks the sort INWARDS, past `filter(p)`, then past

@@ -46,6 +46,7 @@ public import AOP.A7_4_Horner
 public import AOP.A5_6
 public import AOP.A6_GenFold
 public import AOP.A5_6_ListCombinators
+import AOP.CalcSteps
 
 set_option linter.unusedVariables false
 
@@ -930,14 +931,6 @@ public theorem mssPre_eq_oplus_cata :
     | inr q => rw [junc_sum_inr]; exact Iff.rfl
   rw [mssPre_eq_cata, halg]
 
-/-- Step 2 of `mss-deriv` (its first step is `mss_shape`): the inner `Λ(prefix sum) est(≥)` under
-    the `E` is the fold the greedy row produced, `⦇[zero,⊕]⦈`. -/
-public theorem mss_eq_scan_step2 :
-    suffixR%∋ ≫ existsImage (mssPre (A := A)) ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
-          zero oplus)) ≫ est(geq) := by
-  rw [mssPre_eq_oplus_cata]
-
 /-- `⦇k⦈` is the program `scanFn`: `Kalg_eq_prog` is `k`'s recursion and `scan_emerges` the fold
     law that produced the program from it. -/
 public theorem cata_Kalg_eq_graph :
@@ -1017,23 +1010,28 @@ public theorem scan_pair_comm :
   rw [hcon, scan_pair_eq_cata, ← cataR_eq_relCata]
   exact cataFold_comm (L := Unit) (E := A) Kalg
 
-/-- Step 3 of `mss-deriv`: `𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)est(≥) = ⦇k⦈ π₂ est(≥)` — the suffixes and
-    the inner fold fuse into the ONE fold `k`, whose carrier keeps the running maximum beside the
-    set, and `π₂` reads the set back. -/
-public theorem mss_eq_scan_step3 :
-    suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
-        (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)) ≫ est(geq)
-      = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
-          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩) ≫ est(geq) := by
-  rw [← mss_eq_scan_step2, cata_Kalg_eq_graph]
-  conv => rhs; rw [← Cat.assoc, scan_snd_eq, Cat.assoc]
+/-- `⦇k⦈ π₂ = 𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)`: the suffixes and the inner fold fuse into the ONE fold
+    `k`, whose carrier keeps the running maximum beside the set, and `π₂` reads the set back. -/
+public theorem Kalg_snd_eq :
+    ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2) : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩)
+      = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+        (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)) := by
+  rw [cata_Kalg_eq_graph, scan_snd_eq, mssPre_eq_oplus_cata]
 
 /-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
     of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
 public theorem mss_eq_scan :
     mss = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
       : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩) ≫ est(geq) :=
-  mss_shape.trans (mss_eq_scan_step2.trans mss_eq_scan_step3)
+  calc mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := mss_shape
+    _ = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨A × A⟩)
+          (zero : dL Unit ⟶ (⟨A⟩ : RelSet.{0})) oplus)) ≫ est(geq) := by
+      rw [mssPre_eq_oplus_cata]
+    _ = ⦇Kalg⦈ ≫ (graph (fun p : A × (A → Prop) => p.2)
+          : (⟨A × (A → Prop)⟩ : RelSet.{0}) ⟶ P ⟨A⟩) ≫ est(geq) := by
+      rw [← Cat.assoc, ← Cat.assoc, Kalg_snd_eq]
+
+calc_steps mss_eq_scan
 
 /-! ## Executable sanity checks -/
 
