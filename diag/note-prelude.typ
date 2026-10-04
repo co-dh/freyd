@@ -63,7 +63,12 @@
 // than a term walk.  Unlike `lean`/`leanc`, a `+` inside ONE selector is not a pair of boxes but two
 // DIFFERENT statements drawn on one page (`diag/cd-panels.txt`'s `A+B`), so it stays one string and
 // `leancd` takes exactly one selector, never `..sels`.
-#let leancd(sel) = lean-call("generated/commutative/", <lean-cd>, (sel,))
+// Under `--input cdscan=1` the call brackets its canvases with two marks, so `scripts/cd-obligations`
+// reads each canvas's statement off the note itself — a manifest copy of it drifted.
+#let leancd(sel) = {
+  let p = lean-call("generated/commutative/", <lean-cd>, (sel,))
+  if "cdscan" in sys.inputs { [#metadata((kind: "cd", el: "lean", sel: sel))#p#metadata((kind: "cd", el: "lean-end"))] } else { p }
+}
 // A DATA VALUE drawn as a tree, from `diag-export --value`: a tree-valued `def` read off its value,
 // so an example tree in the note is the one its theorems run on.
 #let leanv(sel) = lean-call("generated/value/", <lean-value>, (sel,))

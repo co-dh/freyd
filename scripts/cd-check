@@ -1,6 +1,7 @@
 #!/bin/sh
 # cd-check — the commutative diagrams' gate.  Every commutative canvas the note draws is an
-# obligation, and the record answering it is a line of `diag/cd-panels.txt`.
+# obligation, drawn from the selector of its own `#leancd(...)`, and the reference it is held to is a
+# line of `diag/cd-panels.txt`.
 #
 #   ./scripts/cd-check
 #
@@ -128,25 +129,36 @@ rm -rf "$OUT"
 mkdir -p "$OUT/gen" "$OUT/ref" "$OUT/rows"
 rc=0
 
-# A manifest read into the three fields every loop below wants: canvas, selector, reference.
-# `#` opens a comment only after whitespace — a Lean selector may carry one.
+# A manifest read into the three fields every loop below wants: canvas, selector, reference.  A
+# canvas's selector is the note's own `#leancd(...)` (`cd-obligations` reads it), so a canvas line is
+# `<canvas> | <reference>` and its selector reads `=` here; only a panel the note draws no canvas
+# for names one, `- | <selector> | <reference>`.  `#` opens a comment only after whitespace — a
+# Lean selector may carry one.
 fields() {
   awk -F' *[|] *' '/^[ \t]*#/ { next } { sub(/[ \t]+#.*$/, "") } NF == 0 { next }
-     NF != 3 { printf "cd-check: %s line %d has %d fields, not <canvas> | <selector> |" \
-                      " <reference>: %s\n", FILENAME, FNR, NF, $0 > "/dev/stderr"; bad = 1; next }
-     { gsub(/[ \t]+$/, "", $1); gsub(/[ \t]+$/, "", $2); gsub(/[ \t]+$/, "", $3)
-       print $1 "\t" $2 "\t" $3 }
+     { for (k = 1; k <= NF; k++) gsub(/[ \t]+$/, "", $k) }   # a `$3` named on a 2-field line makes it 3
+     NF == 2 && $1 != "-" { print $1 "\t=\t" $2; next }
+     NF == 3 && $1 == "-" { print $1 "\t" $2 "\t" $3; next }
+     { printf "cd-check: %s line %d is neither <canvas> | <reference> nor - | <selector> |" \
+              " <reference> (a canvas'"'"'s selector is its #leancd): %s\n", FILENAME, FNR, $0 > "/dev/stderr"
+       bad = 1 }
      END { exit bad }' "$@"
 }
-fields "$PANELS" > "$OUT/panels"
+fields "$PANELS" > "$OUT/manifest"
+# THE OBLIGATIONS, each with the `#leancd` selector it is drawn from (`-` for a hand-drawn canvas,
+# which is then NO-SEL): a canvas line takes its selector from here, never from a copy.
+./scripts/cd-obligations > "$OUT/obligations"
+cut -f1 "$OUT/obligations" > "$OUT/canvases"
+awk -F'\t' -v OFS='\t' 'NR == FNR { sel[$1] = $2; next }
+  $2 == "=" { $2 = ($1 in sel) ? sel[$1] : "-" } { print }' "$OUT/obligations" "$OUT/manifest" \
+  > "$OUT/panels"
 # Every note's manifest: the reference drawings are shared, so one is an orphan only when no note's
 # manifest names it.
 fields $(./scripts/note-files --names | while read -r n; do NOTE=$n ./scripts/note-files --panels; done) \
   > "$OUT/allpanels"
 
-# THE OBLIGATIONS.  A canvas the file does not name is a plus line here, a line naming a canvas the
-# note no longer draws a minus line, and either fails before a single panel is drawn.
-./scripts/cd-obligations > "$OUT/canvases"
+# A canvas the file does not name is a plus line here, a line naming a canvas the note no longer
+# draws a minus line, and either fails before a single panel is drawn.
 if [ -n "${CH:-}" ]; then
   awk -F'\t' 'NR == FNR { keep[$0]; next } ($1 in keep)' "$OUT/canvases" "$OUT/panels" > "$OUT/ch"
   echo "cd-check: chapter $CH — $(wc -l < "$OUT/ch") of $(wc -l < "$OUT/panels") rows of $PANELS," \
