@@ -965,15 +965,15 @@
   [#leanf("Freyd.Alg.RelSet.Code.prefixR")],
   [`ys` is a prefix of `x`],
   [#leann("Freyd.Alg.RelSet.Code.U")], [#leant("Freyd.Alg.RelSet.Code.U")],
-  [#leanf("Freyd.Alg.RelSet.Code.U")],
+  [#leanf("Freyd.Alg.RelSet.Code.U_eq")],
   [any symbol to any symbol, any pointer to any pointer],
   [#leann("Freyd.Alg.RelSet.Code.Q")], [#leant("Freyd.Alg.RelSet.Code.Q")],
-  [#leanf("Freyd.Alg.RelSet.Code.Q")],
+  [#leanf("Freyd.Alg.RelSet.Code.Q_eq")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#leann("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
   [#leanf("Freyd.Alg.RelSet.Code.reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
-// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.prefixR@0a5c54fb
+// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
