@@ -1045,10 +1045,10 @@ public theorem f_nil (p q : Int) (h : 0 < q - p ∧ q < w) (hp : p < 0) :
 
 /-- **tex-extern**: the program's second clause, `f(p,q)=[d]⧺f(10p−w·d,10q−w·d)` where
     `d=(10q) div w`. -/
-public theorem f_cons (p q d : Int) (h : 0 < q - p ∧ q < w) (hp : ¬ p < 0) (hd : d = 10 * q / w) :
-    f ⟨(p, q), h⟩ = ConsList.cons (dig d (dig_ok p q d hp h hd))
-      (f ⟨(10 * p - w * d, 10 * q - w * d), next_ok p q d h hd⟩) := by
-  subst hd; rw [f]; exact dif_neg hp
+public theorem f_cons (p q : Int) (h : 0 < q - p ∧ q < w) (hp : ¬ p < 0) :
+    f ⟨(p, q), h⟩ = ConsList.cons (dig (10 * q / w) (dig_ok p q _ hp h rfl))
+      (f ⟨(10 * p - w * (10 * q / w), 10 * q - w * (10 * q / w)), next_ok p q _ h rfl⟩) := by
+  rw [f]; exact dif_neg hp
 
 /-- **tex-extern**: `interval n=(2n−1,2n+1)`, the representation of `interval`'s pair. -/
 @[expose] public def interval (n : Fin 65536) : Rep :=
@@ -1074,7 +1074,7 @@ public theorem f_agree (p q : Int) (h : 0 < q - p ∧ q < w) (hr : Prog.Reach p 
     refine fR.nil ?_
     show p * sc 0 < 0 * sc 0
     rw [sc_zero]; omega
-  · rw [Prog.f_cons p q _ h hp rfl]
+  · rw [Prog.f_cons p q h hp]
     have hv := Prog.dig_val (10 * q / w) (Prog.dig_ok p q _ hp h rfl)
     have ih := f_agree (10 * p - w * (10 * q / w)) (10 * q - w * (10 * q / w))
       (Prog.next_ok p q _ h rfl) (Prog.reach_next p q hp h hr)

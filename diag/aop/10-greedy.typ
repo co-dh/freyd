@@ -130,7 +130,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
-     // lean:AOP.A10_2_Detab.expand_V@56eb1503
+     // lean:AOP.A10_2_Detab.expand_V@5930d9f4
   lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
@@ -140,7 +140,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.detab_V_R") \
     #src[any `V`-shortening of `detab`'s output is `detab`'s output on an input no longer than the
      given one]],
-     // lean:AOP.A10_2_Detab.detab_V_R@a6015fdd
+     // lean:AOP.A10_2_Detab.detab_V_R@ab4a93f1
   lean-calc(calc-dv, breaks: (4,)),
 )]<entab-detab-V>
 
@@ -161,21 +161,21 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
      // entab-thin row: Theorem 10.1
      #src[at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
-      // lean:AOP.A10_2_Detab.entab_thin_condition@4bf50608
+      // lean:AOP.A10_2_Detab.entab_thin_condition@1be2ea10
       decided at each step. `F(⊤,R)α⊑αR`#src[].
       // lean:AOP.A10_2_Detab.entab_mono@1561c867
       `detab prefix⊑R° detab` is
  FALSE #src[,
-      // lean:AOP.A10_2_Detab.detab_prefix_false@5fe54dc9
+      // lean:AOP.A10_2_Detab.detab_prefix_false@373b3b35
  ] — at `n=8`,
       // lean:AOP.A10_2_Detab.detab_len_of_short@66be497e
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
       `[a,b,c,d,e,BL,BL]` is longer than any input giving it, and `detab V°⊑R° detab`
  #src[]
-      // lean:Freyd.Alg.RelSet.Detab.detab_V@332fe8ac lean:AOP.A10_2_Detab.entab_V@ff19c265
+      // lean:Freyd.Alg.RelSet.Detab.detab_V@837dc115 lean:AOP.A10_2_Detab.entab_V@0324bd01
       holds. `expand V°⊑expand ∪ (π₁V°)`
  #src[] — shortening the output either leaves the
-      // lean:AOP.A10_2_Detab.expand_V@56eb1503
+      // lean:AOP.A10_2_Detab.expand_V@5930d9f4
       last step alone or discards it]]),
     (RQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
@@ -188,7 +188,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.detab_tupled") \
     #src[one pass over the input carries the output so far together with its column]],
-    // lean:AOP.A10_2_Detab.detab_tupled@6e91c58a
+    // lean:AOP.A10_2_Detab.detab_tupled@20b816d4
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.detab_tupled.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.detab_tupled.rhs",
@@ -201,7 +201,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   - #leanf("Freyd.Alg.RelSet.Detab.detab_loop") \
     #src[the fold of `[base,step]` over the input converted to a snoc-list is the left loop of
      `step` from `base`]
-    // lean:AOP.A10_2_Detab.detab_loop@9eb74257
+    // lean:AOP.A10_2_Detab.detab_loop@aa8e5d8d
   - #leanf("Freyd.Alg.RelSet.Detab.outl_loop") \
     #src[Exercise 10.1: when `step` only appends `f(c,a)` to the output and moves the state by
      `g`, the output of the loop is `loop'(f,g)`, which never carries the output]
@@ -215,7 +215,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // lean:AOP.A10_2_Detab.expand_recip_snoc@7a7b0b8f
   - #leanf("Freyd.Alg.RelSet.Detab.fill_exists_iff") \
     #src[a string is a `fill` exactly when it ends in a blank on a tab stop]
-    // lean:AOP.A10_2_Detab.fill_exists_iff@0db73b67
+    // lean:AOP.A10_2_Detab.fill_exists_iff@fd9f7e28
 ]<entab-step>
 
 // B&dM p.251: (10.1) and the equations for `tbc` it gives.
@@ -236,7 +236,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.tbc_col_fold") \
     #src[one pass counts the held blanks and the column together]],
-    // lean:AOP.A10_2_Detab.tbc_col_fold@a4bc74e4
+    // lean:AOP.A10_2_Detab.tbc_col_fold@02925e78
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.tbc_col_fold.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.tbc_col_fold.rhs",
@@ -248,7 +248,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.triple_fold") \
     #src[one pass carries the output up to the held blanks, their count and the column]],
-    // lean:AOP.A10_2_Detab.triple_fold@69838b3d
+    // lean:AOP.A10_2_Detab.triple_fold@215a42d6
   lean-chain(
     (none, "Freyd.Alg.RelSet.Detab.triple_fold.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Detab.triple_fold.rhs",
@@ -591,7 +591,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   - #leanf("Freyd.Alg.RelSet.Tex.Prog.f_cons") \
     #src[the program's second clause: with `d=(10q) div w`, `f(p,q)` is `d` followed by
      `f(10p−w·d,10q−w·d)`]
-    // lean:AOP.A10_4_Tex.Prog.f_cons@7cf555c4
+    // lean:AOP.A10_4_Tex.Prog.f_cons@745b991e
   - #leanf("Freyd.Alg.RelSet.Tex.f_agree") \
     #src[on the pairs the program reaches from `interval n`, the integer `f` at `(p,q)` is a value
      of the rational `f` at `(p/w,q/w)`]

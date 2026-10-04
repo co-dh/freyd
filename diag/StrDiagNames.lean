@@ -1130,6 +1130,13 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.V] def unexpandDetabV : Unexpander | _ => `($(mkIdent `V))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.U] def unexpandDetabU : Unexpander | _ => `($(mkIdent `U))
+-- The section's three characters print as the letters its functions are stated over.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.tb] def unexpandDetabTb : Unexpander | _ => `($(mkIdent `tb))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.nl] def unexpandDetabNl : Unexpander | _ => `($(mkIdent `nl))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.blank] def unexpandDetabBlank : Unexpander | _ => `($(mkIdent `blank))
 -- And of the section's ARROWS: `expand` is one box on the note's row, and the tab width and the
 -- three characters it is stated over are the section's, not part of the name the picture writes.
 open Lean PrettyPrinter in
