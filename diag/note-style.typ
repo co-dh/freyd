@@ -382,10 +382,14 @@
       else if present { it } else {
         // Another chapter's label: printed as the root printed it (`make ref-ids`), never as its name.
         let p = sys.inputs.at("refs", default: none)
+        // A QUERY (`list=1`: the panel and ref-id listings; `cdscan=1`: cd-check) renders no reference,
+        // and runs before `make ref-ids` has written the file; the chapter's compile still checks it.
+        if p == none and ("list" in sys.inputs or "cdscan" in sys.inputs) { t } else {
         if p == none { panic("@" + t + " is in another chapter: compile with --input refs=/.lake/build/ref-ids-<note>.json, which `make ref-ids` writes") }
         let r = json(p).to-dict().at(t, default: none)
         if r == none { panic("@" + t + ": no label of that name in the whole note (" + p + "), so no chapter can print it") }
         r
+        }
       }
     }
     doc
