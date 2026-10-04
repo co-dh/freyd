@@ -164,6 +164,7 @@
   "thin-defn": [≜ `thin`],
   "path-defn": [≜ `cost`],
   "thinlist-defn": [≜ `thinlist`],
+  "binthin-data": [binary thinning data],
   "knap-defn": [≜ `within`],
   "para-defn": [≜ `partition`],
   "tour-defn": [≜ `tour`],

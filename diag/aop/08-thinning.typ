@@ -404,21 +404,60 @@ row((
 == Implementing thin
 
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
-// it is one connected preorder, spelled `≼` here.
+// it is one connected preorder, spelled `≼` here.  `≼` is a connected preorder throughout.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+
+  [#leann("Freyd.Alg.RelSet.ListRel.setify")], [#leant("Freyd.Alg.RelSet.ListRel.setify")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.setify_ni_iff")],
+  [the set of a list's elements],
+  [#leann("Freyd.Alg.cup")], [#leant("Freyd.Alg.cup")],
+  [#leanf("Freyd.Alg.cup")],
+  [the union of two sets],
+  [#leann("Freyd.Alg.cpMap")], [#leant("Freyd.Alg.cpMap")],
+  [#leanf("Freyd.Alg.cpMap")],
+  [every `F`-shaped value whose parts are chosen from the given sets],
+  [#leann("Freyd.Alg.sortRel")], [#leant("Freyd.Alg.sortRel")],
+  [#leanf("Freyd.Alg.sortRel")],
+  [read a set back as one of its `≼`-ordered listings],
+  [#leann("Freyd.Alg.RelSet.CL.bumpRel")], [#leant("Freyd.Alg.RelSet.CL.bumpRel")],
+  [#leanf("Freyd.Alg.RelSet.CL.bumpRel_wrap.mapsto"), #leanf("Freyd.Alg.RelSet.CL.bumpRel_cons")],
+  [put `a` in front of a thinned list, dropping whichever of `a` and the old head the other beats],
+  [#leann("Freyd.Alg.RelSet.CL.thinlist")], [#leant("Freyd.Alg.RelSet.CL.thinlist")],
+  [#leanf("Freyd.Alg.RelSet.CL.thinlist_eq")],
+  [thin a list in one pass, bumping each element into the thinned rest],
+  [], [],
+  [#leanf("Freyd.Alg.RelSet.ListRel.isThinlist_iff")],
+  [what a list implementation of `thin(Q)` must do: only drop elements, and thin the set],
+  [#leann("Freyd.Alg.RelSet.CL.minlist")], [#leant("Freyd.Alg.RelSet.CL.minlist")],
+  [#leanf("Freyd.Alg.RelSet.CL.minlist")],
+  [a `Q`-least element of the list],
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify@c31d6e6f
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.setify_ni_iff@fefd0da3
+// lean:AOP.A5_6.cup@38377606
+// lean:AOP.A5_6.cpMap@636ea157
+// lean:AOP.A8_3.sortRel@0e1a3dba
+// lean:AOP.A8_3.RelSet.CL.bumpRel@088a04f4
+// lean:AOP.A8_3.RelSet.CL.bumpRel_wrap@993629d2
+// lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
+// lean:AOP.A8_3.RelSet.CL.thinlist@e18d60ed
+// lean:AOP.A8_3.RelSet.CL.thinlist_eq@2ed93a79
+// lean:AOP.A8_3.RelSet.ListRel.IsThinlist@ed4179e5
+// lean:AOP.A8_3.RelSet.ListRel.isThinlist_iff@2741ee92
+// lean:AOP.A8_3.RelSet.CL.minlist@4457079b
+)]<thinlist-defn>
+
+// The data Theorem 8.2 and its fusion condition are stated at: no single definition, so it stays
+// a list of assumptions rather than a row of the table above.
 #disp[#definition[
-`setify : [A]⟶PA`, #h(4pt) `cup : PA×PA⟶PA`, #h(4pt) `cp(F)` #src[@Freyd.Alg.cpMap], #h(4pt)
-`listcp : F(L)⟶LF`, #h(4pt) `sort(≼)≜setify° ordered(≼)` #src[]
-// lean:AOP.A8_3.sortRel@0e1a3dba lean:AOP.A5_6_ListCombinators.ordered@76bb18c0 lean:AOP.A8_3.merge@536822df
-for `≼` a connected preorder.
-
-`thinlist(Q)` is any `thinlist(Q)⊑subseq` with #h(4pt) `thinlist(Q) setify⊑setify thin(Q)`; #h(4pt)
-one is #h(4pt) `⦇[nil,bump Q]⦈`, #h(4pt) `bump Q (a,[])=[a]`, #h(4pt)
-`bump Q (a,[b]⧺xs)=(b Q a→[a]⧺xs,a Q b→[b]⧺xs,[a]⧺[b]⧺xs)`.
-
 *Binary thinning* data: #h(4pt) `S=(f₁p₁) ∪ (f₂p₂)` with `p₁`, `p₂` coreflexive; #h(4pt) `Q` a
 preorder with `Q⊑R` and both `f₁p₁`, `f₂p₂` monotonic on `Q`; #h(4pt) `≼` a connected preorder
-with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(pᵢ)`.
-]]<thinlist-defn>
+with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(pᵢ)`; #h(4pt)
+`listcp : F(L)⟶LF`.
+]]<binthin-data>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -426,21 +465,21 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`thinlist(Q) xs=[minlist(Q) xs]` \ #src[(8.5), `Q` connected, `xs` non-empty]],
+  [#leanf("Freyd.Alg.RelSet.CL.thinlist_eq_singleton_minlist") #h(6pt) #src[(8.5)]],
   [what thinning should come to when it can: one element],
-  [#leanf("Freyd.Alg.sortRel_comp_thinlist_le") #h(6pt) #src[(8.6) — @thinlist-86]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_thinlist_le") #h(6pt) #src[(8.6) — @thinlist-86]],
   [thinning a sorted list is a thinning of the set — this is what `thinlist(Q)⊑subseq` buys],
-  [#leanf("Freyd.Alg.sortRel_comp_minlist_le") #h(6pt) #src[(8.7)]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_minlist_le") #h(6pt) #src[(8.7)]],
   [a minimum of the sorted list is a minimum of the set],
-  [`sort(f≼f°) list(f)⊑P(f) sort(≼)` #h(6pt) #src[(8.8)]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_list_le") #h(6pt) #src[(8.8)]],
   [shunt a function through a sort],
   [`sort(≼) filter(p)⊑E(p) sort(≼)` #h(6pt) #src[(8.9), `p` coreflexive]],
   [filtering a sorted list sorts the restricted set],
-  [#leanf("Freyd.Alg.prodMap_sortRel_comp_merge_le") #h(6pt) #src[(8.10)]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.prodMap_sort_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],
   [`F(sort(≼)) listcp⊑cp(F) sort(F(≼))` \ #src[(8.11), `F` linear]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  // lean:AOP.A8_3.sortRel_comp_thinlist_le@9b7ffbea lean:AOP.A8_3.sortRel_comp_le@53ffaf83 lean:AOP.A8_3.sortRel_comp_minlist_le@fbc36753 lean:AOP.A8_3.sortRel_comp_listMap_le@04773615 lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.prodMap_sortRel_comp_merge_le@4178afbc lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.sort_comp_thinlist_le@d576e387 lean:AOP.A8_3.sort_comp_filter_le@b35d850d lean:AOP.A8_3.prodMap_sort_comp_merge_le@904cb4a4 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6
+  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@afe50013 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@18c2744f lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@8445225e lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -479,7 +518,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   Thm[#leanf("Freyd.Alg.thinningList") \
     #src[a fold on sorted lists of partial solutions, thinned at every step —
      // thinningList row: Theorem 8.2, p. 203
-     at @thinlist-defn's binary thinning data.
+     at @binthin-data.
  ]],
      // lean:AOP.A8_3.thinningList@81e181db
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
@@ -490,7 +529,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#lean("Freyd.Alg.thinningList_step3.rhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.thinningList_step3.lhs"),
-    [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @thinlist-defn]])],
+    [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @binthin-data]])],
   [#lean("Freyd.Alg.thinningList_step3.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.thinningList_step2.lhs"),
@@ -528,7 +567,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(EQ, leanc("Freyd.Alg.sortedAlg_fusion_step4.lhs"),
     [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩ cup sort(≼) thinlist(Q)` \
-     #src[`S=(f₁p₁) ∪ (f₂p₂)` — @thinlist-defn, then @cup-defn]])],
+     #src[`S=(f₁p₁) ∪ (f₂p₂)` — @binthin-data, then @cup-defn]])],
   // Empty from here: a fork is an operation on hom-sets, and `×` is a bifunctor, so neither is a
   // wiring; the circuit column keeps them as one box, §14's convention for a pair.
   [],
@@ -546,7 +585,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion.lhs"),
     [`F(sort(≼)) listcp ⟨g₁,g₂⟩ merge(≼) thinlist(Q)` \
      #src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
-      `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @Freyd.Alg.RelProd.comp_pair_le; `gᵢ≜list(fᵢ) filter(pᵢ)` — @thinlist-defn]])],
+      `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @Freyd.Alg.RelProd.comp_pair_le; `gᵢ≜list(fᵢ) filter(pᵢ)` — @binthin-data]])],
   [],
 )]<thinlist-fusion>
 
@@ -707,7 +746,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
-     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinlist-defn.
+     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @binthin-data.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_spec@0ec1a795
   // Empty: the step renames the algebra and the panel above already draws the reduce.

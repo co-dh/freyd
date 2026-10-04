@@ -588,9 +588,9 @@ end Freyd.Alg
 
       `bump Q (a,[]) = [a]`,  `bump Q (a,[b]⧺x) = (aQb → [a]⧺x, bQa → [b]⧺x, [a]⧺[b]⧺x)`.
 
-    The note's `<thinlist-defn>` prints those two guards against the OTHER two results; read that
-    way (8.5) is false already at `[a,b]` with `b Q a` and `¬ a Q b`, where the note's `bump`
-    returns `[a]` and the least member is `b`. -/
+    The guards go with these results: swapped, (8.5) is false already at `[a,b]` with `b Q a` and
+    `¬ a Q b`, where `bump` would return `[a]` and the least member is `b`.  The note prints
+    `bump(Q)` from `bumpRel_wrap`/`bumpRel_cons`, so it cannot drift from this. -/
 
 namespace Freyd.Alg.RelSet.CL
 open PowerAllegory
@@ -668,6 +668,20 @@ public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) 
       ∨ (Q b p.1 ∧ ys = ConsList.cons b xs)
       ∨ (¬ Q p.1 b ∧ ¬ Q b p.1 ∧ ys = ConsList.cons p.1 (ConsList.cons b xs))
 
+/-- `bump(Q)`, its operator applied in brackets as `minlist(Q)` is: a bare `bump Q` loses the `Q` a
+    junction label prints. -/
+notation:max "bump(" Q ")" => Freyd.Alg.RelSet.CL.bumpRel Q
+
+/-- `bump(Q)` on an empty list: the new element alone. -/
+public theorem bumpRel_wrap (Q : dE A ⟶ dE A) (a : A) (u : Unit) (ys : ConsList Unit A) :
+    bumpRel Q (a, ConsList.wrap u) ys ↔ ys = ConsList.cons a (ConsList.wrap ()) := Iff.rfl
+
+/-- `bump(Q)` on `[b]⧺xs`: keep `a` if it beats `b`, keep `b` if it beats `a`, else keep both. -/
+public theorem bumpRel_cons (Q : dE A ⟶ dE A) (a b : A) (xs ys : ConsList Unit A) :
+    bumpRel Q (a, ConsList.cons b xs) ys ↔
+      (Q a b ∧ ys = ConsList.cons a xs) ∨ (Q b a ∧ ys = ConsList.cons b xs)
+        ∨ (¬ Q a b ∧ ¬ Q b a ∧ ys = ConsList.cons a (ConsList.cons b xs)) := Iff.rfl
+
 /-- The algebra `[nil, bump Q]`. -/
 @[expose] public def bumpAlg (Q : dE A ⟶ dE A) : Fobj Unit A (dCL Unit A) ⟶ dCL Unit A :=
   fun u ys => match u with
@@ -676,6 +690,27 @@ public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) 
 
 /-- `thinlist Q ≜ ⦇[nil,bump Q]⦈`. -/
 @[expose] public def thinlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dCL Unit A := cataR (bumpAlg Q)
+
+/-- `thinlist(Q) ≜ ⦇[nil,bump(Q)]⦈`, the junction written out. -/
+public theorem thinlist_eq (Q : dE A ⟶ dE A) :
+    thinlist Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+      : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ := by
+  have h : bumpAlg Q = (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+      : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A) := by
+    funext u ys
+    cases u with
+    | inl d =>
+      refine propext ⟨fun h => Or.inl ⟨d, rfl, h⟩, fun h => ?_⟩
+      rcases h with ⟨_, h1, h2⟩ | ⟨_, h1, _⟩
+      · cases h1; exact h2
+      · cases h1
+    | inr p =>
+      refine propext ⟨fun h => Or.inr ⟨p, rfl, h⟩, fun h => ?_⟩
+      rcases h with ⟨_, h1, _⟩ | ⟨_, h1, h2⟩
+      · cases h1
+      · cases h1; exact h2
+  unfold thinlist
+  rw [h, cataR_eq_relCata]
 
 public theorem thinlist_wrap (Q : dE A ⟶ dE A) (u : Unit) (r : ConsList Unit A) :
     thinlist Q (ConsList.wrap u) r ↔ r = ConsList.wrap () := Iff.rfl
@@ -813,15 +848,46 @@ public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
     obtain ⟨y, ⟨rfl, hx⟩, hys⟩ := h
     exact ⟨ys, hys, rfl, orderedP_of_subseqP ≼ hys hx⟩
 
+/-- What B&dM p.200 asks of an implementation of `thin(Q)` on lists, and all it asks: it only
+    drops elements, and on the underlying set it is a thinning.  Every other premise the abstract
+    (8.6) carries is a theorem about `setify` and `ordered(≼)`, so this pair is what is left. -/
+public structure IsThinlist (Q : dE A ⟶ dE A) (thinlist : dList A ⟶ dList A) : Prop where
+  /-- `thinlist(Q)⊑subseq`: the result is a subsequence of the input. -/
+  sub : thinlist ⊑ subseq
+  /-- `thinlist(Q) setify⊑setify thin(Q)`: as a set, the result is a thinning of the input's. -/
+  spec : thinlist ≫ setify ⊑ setify ≫ thinRel Q
+
+/-- `IsThinlist` unfolded: the two conditions of B&dM p.200. -/
+public theorem isThinlist_iff (Q : dE A ⟶ dE A) (thinlist : dList A ⟶ dList A) :
+    IsThinlist Q thinlist ↔ thinlist ⊑ subseq ∧ thinlist ≫ setify ⊑ setify ≫ thinRel Q :=
+  ⟨fun h => ⟨h.sub, h.spec⟩, fun h => ⟨h.1, h.2⟩⟩
+
 /-- **(8.6)** in `Rel` (book p.201), `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` with
-    `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: only `thinlist Q`'s two conditions
-    remain hypotheses. -/
+    `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: the one hypothesis is that
+    `thinlist` implements `thin(Q)`. -/
 public theorem sort_comp_thinlist_le {«≼» : dE A ⟶ dE A}
     {thinlist : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {Q : dE A ⟶ dE A}
-    (hsub : thinlist ⊑ subseq) (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
+    (h : IsThinlist Q thinlist) :
     sortRel listRelator setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-  Freyd.Alg.sortRel_comp_thinlist_le listRelator (graph_map _) (ordered_coreflexive ≼) hsub
-    (ordered_comp_subseq_le ≼) hspec
+  Freyd.Alg.sortRel_comp_thinlist_le listRelator (graph_map _) (ordered_coreflexive ≼) h.sub
+    (ordered_comp_subseq_le ≼) h.spec
+
+/-- **(8.7)** in `Rel` (book p.203), `sort(≼)·minlist R ⊑ min R`, with no hypothesis: `minlist(R)`
+    is `setify est(R)`, so `ordered(≼)` drops by coreflexivity and `setify° setify` by `setify`
+    being a function. -/
+public theorem sort_comp_minlist_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
+    sortRel listRelator setify ordered ≼ ≫ minlist R ⊑ est R := by
+  have hset : Map (setify : dList A ⟶ P (dE A)) := graph_map _
+  rw [minlist_eq_setify_comp_est]
+  show (setify° ≫ ordered ≼) ≫ setify ≫ est R ⊑ est R
+  rw [Cat.assoc]
+  have hord : ordered ≼ ≫ setify ≫ est R ⊑ setify ≫ est R := by
+    have := comp_mono_right (ordered_coreflexive ≼) (setify ≫ est R)
+    rwa [Cat.id_comp] at this
+  refine le_trans (comp_mono_left _ hord) ?_
+  rw [← Cat.assoc]
+  have := comp_mono_right hset.2 (est R)
+  rwa [Cat.id_comp] at this
 
 /-- **(8.9)** in `Rel` (book p.203), `sort(≼)·filter p ⊑ E p·sort(≼)`: only `filter p`'s two
     conditions remain hypotheses. -/
@@ -837,9 +903,9 @@ end Freyd.Alg.RelSet.ListRel
 /-! ## `merge(≼)` in `Rel` (B&dM Exercise 6.27, p.156)
 
   `merge(x,[]) = x`, `merge([],y) = y`, and `merge([a]⧺x,[b]⧺y)` is `[a]⧺merge(x,[b]⧺y)` when
-  `a ≼ b`, otherwise `[b]⧺merge([a]⧺x,y)`.  With it, (8.10)'s order condition `hmord` is a
-  theorem for `≼` a connected preorder; the set condition `hmset` stays a hypothesis, since it
-  needs `cup`'s pointwise reading in `Rel`, which nothing here states yet. -/
+  `a ≼ b`, otherwise `[b]⧺merge([a]⧺x,y)`.  With it both of (8.10)'s conditions are theorems:
+  the set condition `hmset` for any `≼` (a merge has exactly the elements of its two inputs), the
+  order condition `hmord` for `≼` a connected preorder. -/
 
 namespace Freyd.Alg.RelSet.ListRel
 open PowerAllegory
@@ -942,6 +1008,51 @@ public theorem orderedP_of_Merge {«≼» : A → A → Prop} (htrans : ∀ a b 
       · exact htrans _ _ _ hba (hx.1 c hc)
     · exact hy.1 c hc
 
+/-- Every element of either list is an element of their merge. -/
+public theorem inlistP_Merge {«≼» : A → A → Prop} {x y z : ConsList Unit A}
+    (h : Merge ≼ x y z) {c : A} (hc : inlistP x c ∨ inlistP y c) : inlistP z c := by
+  induction h with
+  | nilr x => exact hc.elim id False.elim
+  | nill y => exact hc.elim False.elim id
+  | consl a b _ _ ih =>
+    rcases hc with (rfl | hc) | hc
+    · exact Or.inl rfl
+    · exact Or.inr (ih (Or.inl hc))
+    · exact Or.inr (ih (Or.inr hc))
+  | consr a b _ _ ih =>
+    rcases hc with hc | (rfl | hc)
+    · exact Or.inr (ih (Or.inl hc))
+    · exact Or.inl rfl
+    · exact Or.inr (ih (Or.inr hc))
+
+/-- (8.10)'s `hmset` from the definitions: a listing of `S` and a listing of `T` merge to a listing
+    of `S∪T`, `(setify°×setify°) merge(≼) ⊑ cup setify°`, for any `≼`. -/
+public theorem prodMap_setify_recip_comp_merge_le {«≼» : dE A ⟶ dE A} :
+    prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A)) (setify°) (setify°)
+        ≫ merge ≼ ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ setify° := by
+  rw [prodMap_eq_rprodMap]
+  refine le_iff.mpr fun ⟨S, T⟩ z h => ?_
+  obtain ⟨⟨x, y⟩, hxy, hm⟩ := h
+  obtain ⟨hx, hy⟩ := hxy
+  refine ⟨fun w => S w ∨ T w, ?_, ?_⟩
+  · rw [cup, Λ_eq_classifier]
+    show _ = _
+    funext w
+    apply propext
+    constructor
+    · rintro (h | h)
+      · exact Or.inl ⟨S, rfl, h⟩
+      · exact Or.inr ⟨T, rfl, h⟩
+    · rintro (⟨_, rfl, h⟩ | ⟨_, rfl, h⟩)
+      · exact Or.inl h
+      · exact Or.inr h
+  · show _ = _
+    change S = inlistP x at hx
+    change T = inlistP y at hy
+    subst hx hy
+    funext w
+    exact propext ⟨fun hw => inlistP_Merge hm hw, fun hw => inlistP_of_Merge hm hw⟩
+
 /-- (8.10)'s `hmord` from the definitions: `(ordered(≼)×ordered(≼)) merge(≼) ⊑ merge(≼) ordered(≼)`. -/
 public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
     (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a) :
@@ -953,17 +1064,59 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
   exact ⟨z, hm, rfl, orderedP_of_Merge htrans hconn hm hx hy⟩
 
 /-- **(8.10)** in `Rel` (book p.203), `(sort(≼)×sort(≼))·merge(≼) ⊑ cup·sort(≼)`, with
-    `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: only the set condition
-    `hmset` remains a hypothesis. -/
+    `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: both conditions on
+    `merge(≼)` are theorems, so the order's two properties are all that is left. -/
 public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
-    {Pr' : RelProd (P (dE A)) (P (dE A))}
-    (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a)
-    (hmset : prodMap Pr' (relProd (dList A) (dList A)) (setify°) (setify°) ≫ merge ≼
-      ⊑ cup Pr' ≫ setify°) :
-    prodMap Pr' (relProd (dList A) (dList A)) (sortRel listRelator setify ordered ≼)
-        (sortRel listRelator setify ordered ≼) ≫ merge ≼
-      ⊑ cup Pr' ≫ sortRel listRelator setify ordered ≼ :=
-  Freyd.Alg.prodMap_sortRel_comp_merge_le listRelator (merge := merge) hmset
-    (prodMap_ordered_comp_merge_le htrans hconn)
+    (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a) :
+    prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
+        (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼) ≫ merge ≼
+      ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼ :=
+  Freyd.Alg.prodMap_sortRel_comp_merge_le listRelator (merge := merge)
+    prodMap_setify_recip_comp_merge_le (prodMap_ordered_comp_merge_le htrans hconn)
+
+/-- An element of `list(g)(x)` is `g` of an element of `x`. -/
+public theorem inlistP_of_listP_graph {B : Type} (g : A → B) :
+    ∀ {x : ConsList Unit A} {y : ConsList Unit B}, listP (graph g : dE A ⟶ dE B) x y →
+      ∀ {b' : B}, inlistP y b' → ∃ b, inlistP x b ∧ b' = g b
+  | ConsList.wrap _, ConsList.wrap _, _, _, hb => hb.elim
+  | ConsList.wrap _, ConsList.cons _ _, h, _, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h, _, _ => h.elim
+  | ConsList.cons a x, ConsList.cons c y, ⟨hac, hxy⟩, b', hb => by
+    rcases hb with rfl | hb
+    · exact ⟨a, Or.inl rfl, hac⟩
+    · obtain ⟨b, hbx, rfl⟩ := inlistP_of_listP_graph g hxy hb
+      exact ⟨b, Or.inr hbx, rfl⟩
+
+/-- `list(g)` carries a `g≼g°`-ordered list to a `≼`-ordered one. -/
+public theorem orderedP_of_listP_graph {B : Type} (g : A → B) («≼» : B → B → Prop) :
+    ∀ {x : ConsList Unit A} {y : ConsList Unit B}, listP (graph g : dE A ⟶ dE B) x y →
+      orderedP ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°) x → orderedP ≼ y
+  | ConsList.wrap _, ConsList.wrap _, _, _ => trivial
+  | ConsList.wrap _, ConsList.cons _ _, h, _ => h.elim
+  | ConsList.cons _ _, ConsList.wrap _, h, _ => h.elim
+  | ConsList.cons a x, ConsList.cons c y, ⟨hac, hxy⟩, ⟨hx1, hx2⟩ => by
+    refine ⟨fun b' hb' => ?_, orderedP_of_listP_graph g ≼ hxy hx2⟩
+    obtain ⟨b, hb, rfl⟩ := inlistP_of_listP_graph g hxy hb'
+    obtain ⟨_, rfl, _, h, rfl⟩ := hx1 b hb
+    have hc : c = g a := hac
+    subst hc
+    exact h
+
+/-- **(8.8)** in `Rel` (book p.203), `sort(g≼g°)·list g ⊑ P g·sort(≼)` for a function `g`, with
+    no hypothesis: `setify`'s naturality and the order condition both follow from `list`'s
+    definition. -/
+public theorem sort_comp_list_le {B : Type} (g : A → B) {«≼» : dE B ⟶ dE B} :
+    sortRel listRelator setify ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°)
+        ≫ list (graph g) ⊑ powerRel (graph g) ≫ sortRel listRelator setify ordered ≼ := by
+  have hnat : list (graph g : dE A ⟶ dE B) ≫ setify ⊑ setify ≫ existsImage (graph g) := by
+    have := setify_lax_natural (graph g : dE A ⟶ dE B)
+    rwa [powerRel_map (graph_map g)] at this
+  have hordf : ordered ((graph g : dE A ⟶ dE B) ≫ ≼ ≫ (graph g)°) ≫ list (graph g)
+      ⊑ list (graph g) ≫ ordered ≼ :=
+    le_iff.mpr fun x y h => by
+      obtain ⟨_, ⟨rfl, hx⟩, hxy⟩ := h
+      exact ⟨y, hxy, rfl, orderedP_of_listP_graph g ≼ hxy hx⟩
+  exact Freyd.Alg.sortRel_comp_listMap_le listRelator (graph_map _) (graph_map _)
+    (ordered := fun R => ordered R) (graph_map g) hnat hordf
 
 end Freyd.Alg.RelSet.ListRel

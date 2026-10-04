@@ -91,6 +91,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
+  RelSet.CL.thinlist RelSet.ListRel.IsThinlist
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
@@ -1181,6 +1182,11 @@ open Lean PrettyPrinter in
 -- `editAlg` above: one name, the junction the note sets.
 @[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[start,dropl ∪ dropr]")))
+open Lean PrettyPrinter in
+-- The cons-list `setify` is the note's `setify` (`setifyCL_eq_setify`): `CL` says which file.
+@[app_unexpander RelSet.CL.setifyCL] def unexpandSetifyCL : Unexpander
+  | `($_ $args*) => `($(mkIdent `setify) $args*)
+  | _ => `($(mkIdent `setify))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
