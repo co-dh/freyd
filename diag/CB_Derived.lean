@@ -391,6 +391,25 @@ theorem «∇⊗𝟙_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
           ≫ ((▷ : y ⊗ y ⟶ y) ⊗ₕ 𝟙 y)) :=
   tensHom_square («lax_∇» f) (id_square f)
 
+/-- `𝟙 ⊗ ⊸` taken at the DIAGONAL `x ⊗ x`, the family a panel draws, is LAX: `«!_laxNatural»`
+    beside the identity.  `«𝟙⊗!_laxNatural»` fixes the kept wire at `a`, another family. -/
+theorem «𝟙⊗!_laxNatural_diag» {x y : Word O} (f : x ⟶ y) :
+    ((tensFunctor idFunctor idFunctor).map f ≫ (𝟙 y ⊗ₕ (⊸ : y ⟶ 𝕀)))
+      ≤ ((𝟙 x ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ idFunctor.map f) :=
+  calc ((f ⊗ₕ f) ≫ (𝟙 y ⊗ₕ (⊸ : y ⟶ 𝕀)))
+      ≤ (𝟙 x ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ (f ⊗ₕ 𝟙 (𝕀 : Word O)) :=
+        tensHom_square (by rw [Cat.id_comp, Cat.comp_id]; exact OrderedCat.«≤_refl» _) («!_laxNatural» f)
+    _ = (𝟙 x ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ f := by rw [tensHom_runit]
+
+/-- `⟜ ⊗ 𝟙` is OP-LAX: `«?_oplaxNatural»` beside the identity, the mirror of `«𝟙⊗?_oplaxNatural»`. -/
+theorem «?⊗𝟙_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
+    (((⟜ : 𝕀 ⟶ x) ⊗ₕ 𝟙 x) ≫ (tensFunctor idFunctor idFunctor).map f)
+      ≤ (idFunctor.map f ≫ ((⟜ : 𝕀 ⟶ y) ⊗ₕ 𝟙 y)) :=
+  calc (((⟜ : 𝕀 ⟶ x) ⊗ₕ 𝟙 x) ≫ (f ⊗ₕ f))
+      ≤ (𝟙 (𝕀 : Word O) ⊗ₕ f) ≫ ((⟜ : 𝕀 ⟶ y) ⊗ₕ 𝟙 y) :=
+        tensHom_square («?_oplaxNatural» f) (id_square f)
+    _ = f ≫ ((⟜ : 𝕀 ⟶ y) ⊗ₕ 𝟙 y) := by rw [tensHom_lunit]
+
 end Naturality
 
 /-! ### Maps (functorialSemanticsForRelationalTheories.pdf pp. 20–21)
