@@ -864,6 +864,13 @@ public inductive Merge («≼» : A → A → Prop) :
 @[expose] public def merge («≼» : dE A ⟶ dE A) : (relProd (dList A) (dList A)).p ⟶ dList A :=
   fun p z => Merge ≼ p.1 p.2 z
 
+-- The book's `merge`, not Lean's qualified name: another `merge` is in scope.
+open Lean PrettyPrinter in
+@[app_unexpander merge] public meta def unexpandMerge : Unexpander
+  | `($_:ident $a) => `($(mkIdent `merge) $a)
+  | `($_:ident) => `($(mkIdent `merge))
+  | _ => throw ()
+
 /-- `merge(⊤)=cat` (B&dM p.212): with every pair in order a merge takes all of the first list
     before the second, so `P≜⊤` needs no sorting. -/
 public theorem merge_top :
