@@ -2,7 +2,7 @@
 #import "note-style.typ": definition, disp, P, d, src, Thm, calc-table, EQ, vstep
 #import "draw.typ": zline, zpair, zsqc, zstep, SQ, RQ
 #import "dpanel.typ": dpanel, hm-meta
-#import "note-prelude.typ": lean, leanc, leant, leanf
+#import "note-prelude.typ": lean, leanc, leant, leanf, leank
 
 = Appendix <sec-appendix>
 
@@ -22,6 +22,7 @@
   zstep(op: sym.arrow.l.double, under: true)[`p°q=W`, `𝟙⊑yy°`],
   zpair(zsqc(`p°y`, `P(S)`), zsqc(`y°q`, `est(R)`)),
 )
+#leank("Freyd.Alg.RelSet.powerRel_comp_est")
 // lean:AOP.A7_2_RelSet.powerRel_comp_est@e57e00c3
 ]<est-79>
 
@@ -193,7 +194,7 @@
 
 // One raw block, not a grid: the four components line up because every glyph is one monospace
 // advance wide, which no measured column can promise.
-#disp[#align(center)[```
+#disp[#align(center)[#leanf("Freyd.Alg.Cylinder.gen") \ ```
 ⦇gen⦈[(5,6,7,8)] = ({[5]},{[6]},{[7]},{[8]})
 
 gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
@@ -282,7 +283,7 @@ cp(w)  = {(1,[5]),(1,[6]),(1,[8])}   : E(A+A×L A)   the three of them, collecte
 
 #disp[#align(center, lean("Freyd.Alg.Cylinder.gen"))]<gen-diag>
 
-#disp[#align(center)[```
+#disp[#align(center)[#leanf("Freyd.Alg.Cylinder.gen") \ ```
 u = ((1,2,3,4),({[5]},{[6]},{[7]},{[8]}))      : F(N A,N(E(L A)))
 F(𝟙,moves trans N(union))                         𝟙 keeps the column, the path SETS move
   moves({[5]},{[6]},{[7]},{[8]})

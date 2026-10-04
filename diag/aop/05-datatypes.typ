@@ -734,7 +734,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
 // @relprod-pic's square at `R × S := 𝟙 × ∋`, on @cata-defining's 5.2 × 2.7 geometry.  The two `π₂`
 // sit on OPPOSITE sides — one name, one colour, two rows, which is what the string picture cannot show.
-#disp[#leancd("Freyd.Alg.RelSet.ListRel.prod_ni_proj_slide")]<subseq-outr-square>
+#disp[#leancd("Freyd.Alg.RelSet.ListRel.prod_ni_proj_slide")#leank("Freyd.Alg.RelSet.ListRel.prod_ni_proj_slide")]<subseq-outr-square>
 
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_join") \

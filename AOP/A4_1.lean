@@ -26,7 +26,7 @@ variable {𝒜 : Type u} [Allegory 𝒜]
   `comp_mono_right` plus `le_inter`, so no use of the equational axiom is needed. -/
 
 /-- Order form of semi-distributivity (B&dM p.83): `R(S∩T) ⊑ RS ∩ RT`. -/
-theorem comp_inter_le {A B C : 𝒜} (R : A ⟶ B) (S T : B ⟶ C) :
+public theorem comp_inter_le {A B C : 𝒜} (R : A ⟶ B) (S T : B ⟶ C) :
     R ≫ (S ∩ T) ⊑ (R ≫ S) ∩ (R ≫ T) :=
   le_inter (comp_mono_left R (inter_lb_left S T)) (comp_mono_left R (inter_lb_right S T))
 
