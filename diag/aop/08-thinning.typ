@@ -290,7 +290,7 @@ row((
 // about the algebra alone: no `⦇ ⦈` around it and no `est(R)` behind it.
 // q in row (a): x is the vertex list, y the path list; a path is a list of vertices, head first, so `x,p` is cons.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths_alg"), #h(4pt) #leanf("Freyd.Alg.algSplit") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.algSplit"), #h(4pt) #leanf("Freyd.Alg.thinning_paths_alg") \
     // algebra row: B&dM §8.2, p. 198
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
