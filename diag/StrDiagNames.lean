@@ -1416,6 +1416,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
   | _ => `($(mkIdent `listcp))
+-- `listcp = wrap+cpr` (B&dM p.201): the right arm is `cpr`; `Inr` only marks the summand it lands in.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cprInr] def unexpandCprInr : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpr) $args*)
+  | _ => `($(mkIdent `cpr))
 -- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
 open Lean PrettyPrinter in
 @[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
