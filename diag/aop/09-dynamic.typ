@@ -128,7 +128,7 @@ in @mu-defn.
   ), Sub("Freyd.Alg.dynamic_programming_upper_steps4to5",
     gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`],
      // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@e85ef872
-    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)` — @relator-laws]),
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)` — @relator-defn]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3c@0569b820
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@7bf9d190
@@ -317,7 +317,7 @@ in @mu-defn.
       src[`⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
      // lean:AOP.A9_1.monoAlg_in_context_step4@e0fdcf2e
     (EQ, "Freyd.Alg.monoAlg_in_context_step5.rhs",
-      src[`⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @bdm-prod-laws, @relator-laws]),
+      src[`⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @absorption-pic]),
      // lean:AOP.A9_1.monoAlg_in_context_step5@b63ea26a
     (SQ, "Freyd.Alg.monoAlg_in_context_step6.rhs",
       src[`F(≤×𝟙)k⊑k≤`]),
@@ -339,12 +339,12 @@ in @mu-defn.
   lean-chain(
     (none, "Freyd.Alg.birelator_thin_condition_step1.lhs", []),
     (EQ, "Freyd.Alg.birelator_thin_condition_step1.rhs",
-      src[`G(U,V)G(𝟙,H)=G(U,VH)` — @relator-laws]),
+      src[`G(U,V)G(𝟙,H)=G(U,VH)` — @relator-defn]),
      // lean:AOP.A9_1.birelator_thin_condition_step1@5cb3fde0
     (SQ, "Freyd.Alg.birelator_thin_condition_step2.rhs", src[`VH⊑HR`]),
      // lean:AOP.A9_1.birelator_thin_condition_step2@8990dc41
     (EQ, "Freyd.Alg.birelator_thin_condition_step3.rhs",
-      src[`G(U,HR)=G(𝟙,H)G(U,R)` — @relator-laws]),
+      src[`G(U,HR)=G(𝟙,H)G(U,R)` — @relator-defn]),
      // lean:AOP.A9_1.birelator_thin_condition_step3@920f9952
     (SQ, "Freyd.Alg.birelator_thin_condition_step4.rhs", src[`G(U,R)h⊑hR`]),
      // lean:AOP.A9_1.birelator_thin_condition_step4@988df7b4

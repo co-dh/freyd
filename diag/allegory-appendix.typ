@@ -414,7 +414,7 @@ N(α)(that)
   [#ca1],
 
   [#vstep(EQ, leanc("Freyd.Alg.Cylinder.cyl_laws_step4.lhs"),
-    [#src[@cyl-defn at `paths`]])],
+    [#src[@Freyd.Alg.Cylinder.paths at `paths`]])],
   [#ca2],
 
   [#vstep(RQ, leanc("Freyd.Alg.Cylinder.cyl_laws_step3.lhs"),

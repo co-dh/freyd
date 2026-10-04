@@ -108,19 +108,21 @@
     }
   }
 }
-/// The first cell of every row of a display's table; the header (`y = 0`) is the table's, not a row.
+/// The first cell of every row of a display's table, numbered from 1: a header (`h`) is row 0 and the table's,
+/// not a row; a table with none starts its rows at `y = 0`, and that row is a law too (`<dom-laws>`).
 /// The rebuilt cell matches this rule again; its leading `<law-row>` marker is what stops it.
-#let law-row = it => if it.y == 0 or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) == <law-row>) { it } else {
+#let law-row(h, it) = if (h and it.y == 0) or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) == <law-row>) { it } else {
+  let n = if h { it.y } else { it.y + 1 }
   let f = it.fields()
   let _ = f.remove("body")
   table.cell(..f, {
-    [#metadata(it.y)<law-row>]
-    for k in lean-keys(it.body).dedup() [#metadata(it.y)#label(k)]
+    [#metadata(n)<law-row>]
+    for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)]
     context {
       let s = disp-of(here())
-      if s != none and s.value != none [#metadata(it.y)#label(s.value + ":" + str(it.y))]
+      if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#it.y], it.body)
+        grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#n], it.body)
       } else { it.body }
     }
   })
@@ -266,7 +268,7 @@
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     show list: set align(left)
     show table: set align(left)
-    show table.cell.where(x: 0): law-row
+    show table: t => { show table.cell.where(x: 0): law-row.with(t.children.any(c => c.func() == table.header)); t }
     set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.

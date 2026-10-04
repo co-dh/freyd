@@ -107,7 +107,7 @@ row((
      // lean:AOP.A8_1.thinRel_comp_est_cond1@2c9241e0
   lean-chain(
     (none, "Freyd.Alg.thinRel_comp_est_step2.lhs", []),
-    (SQ, "Freyd.Alg.thinRel_comp_est_step2.rhs", src[`est(R)⊑∋` — @est-laws]),
+    (SQ, "Freyd.Alg.thinRel_comp_est_step2.rhs", src[`est(R)⊑∋` — @est-defn]),
     (SQ, "Freyd.Alg.thinRel_comp_eps_le.rhs",
       src[`thin(Q)∋⊑∋` — @thin-up]),
   ),
@@ -124,7 +124,7 @@ row((
     (SQ, "Freyd.Alg.thinRel_comp_est_step3.rhs",
       src[`∈ thin(Q)⊑Q°∈` — @thin-up]),
     (SQ, "Freyd.Alg.thinRel_comp_est_step4.rhs",
-      src[`∈ est(R)⊑R°` — @est-laws]),
+      src[`∈ est(R)⊑R°` — @est-laws:1]),
     (SQ, "Freyd.Alg.thinRel_comp_est_step5.rhs", src[`Q⊑R`]),
     (SQ, "Freyd.Alg.thinRel_comp_est_step6.rhs", src[`R` transitive]),
   ),
@@ -211,10 +211,10 @@ row((
     (IMP, "Freyd.Alg.thinning_step1.lhs",
       src[@cata-fusion, @hylo-mu]),
     (SQ, "Freyd.Alg.thinning_step1.rhs",
-      src[`S°F(Q°)⊑Q°S°` — @mon-str, @relator-laws]),
+      src[`S°F(Q°)⊑Q°S°` — @mon-str, @relator-laws:3]),
     (SQ, "Freyd.Alg.thinning_step2.rhs",
       src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
-    (SQ, "Freyd.Alg.thinning_step3.rhs", src[`∈ thin(Q)⊑Q°∈` — @thin-defn, @adj-all]),
+    (SQ, "Freyd.Alg.thinning_step3.rhs", src[`∈ thin(Q)⊑Q°∈` — @thin-defn, @div-laws:4]),
     (SQ, "Freyd.Alg.thinning_step4.rhs", src[`Q` a preorder]),
   ),
 )]<thin-thm81>
@@ -370,7 +370,7 @@ row((
 // B&dM §8.3, p. 199.  Lemma 8.1 is printed with `R` where its own proof and Theorem 8.2 write `P`;
 // it is one connected preorder, spelled `≼` here.
 #disp[#definition[
-`setify : [A]⟶PA`, #h(4pt) `cup : PA×PA⟶PA`, #h(4pt) `cp(F)` #src[@comb-fns], #h(4pt)
+`setify : [A]⟶PA`, #h(4pt) `cup : PA×PA⟶PA`, #h(4pt) `cp(F)` #src[@Freyd.Alg.cpMap], #h(4pt)
 `listcp : F(L)⟶LF`, #h(4pt) `sort(≼)≜setify° ordered(≼)` #src[]
 // lean:AOP.A8_3.sortRel@0e1a3dba lean:AOP.A5_6_ListCombinators.ordered@76bb18c0 lean:AOP.A8_3.merge@536822df
 for `≼` a connected preorder.
@@ -425,7 +425,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
     (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs",
       src[`ordered(≼) thinlist(Q)⊑thinlist(Q) ordered(≼)` — @thinlist-defn]),
     (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs",
-      src[`thinlist(Q) setify⊑setify thin(Q)` — @thinlist-defn, @dom-laws, @triple-chains]),
+      src[`thinlist(Q) setify⊑setify thin(Q)` — @thinlist-defn, @Freyd.Alg.Map, @triple-chains]),
     (DF, "Freyd.Alg.sortRel_comp_thinlist_le_step4.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
   ),
 )]<thinlist-86>
@@ -447,7 +447,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
     (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step6.lhs",
       src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @Freyd.Alg.Λ_absorption, @thinlist-defn]),
     (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step5.lhs",
-      src[`E(f)=P(f)`, `f` a map — @powrel-laws]),
+      src[`E(f)=P(f)`, `f` a map — @Freyd.Alg.powerRel_map]),
     // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`
     // lane: the same coreflexive, applied to the sorted list instead of to the set.
     // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
@@ -531,13 +531,13 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(EQ, leanc("Freyd.Alg.sortedAlg_fusion_step2.lhs"),
     [`⟨`#frc([`F(∋)f₁p₁`])` sort(≼),`#frc([`F(∋)f₂p₂`])` sort(≼)⟩ merge(≼) thinlist(Q)` \
-     #src[`⟨X,Y⟩(sort(≼)×sort(≼))=⟨X sort(≼),Y sort(≼)⟩` — @bdm-prod-laws]])],
+     #src[`⟨X,Y⟩(sort(≼)×sort(≼))=⟨X sort(≼),Y sort(≼)⟩` — @absorption-pic]])],
   [],
 
   [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion.lhs"),
     [`F(sort(≼)) listcp ⟨g₁,g₂⟩ merge(≼) thinlist(Q)` \
      #src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
-      `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @bdm-prod-laws; `gᵢ≜list(fᵢ) filter(pᵢ)` — @thinlist-defn]])],
+      `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @Freyd.Alg.RelProd.comp_pair_le; `gᵢ≜list(fᵢ) filter(pᵢ)` — @thinlist-defn]])],
   [],
 )]<thinlist-fusion>
 
@@ -610,7 +610,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
     [`⦇listcp ⟨g₁,g₂⟩ merge R thinlist(Q)⦈ minlist(R)` \
-     #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono]])],
+     #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono:2]])],
   // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs")],
 
@@ -706,7 +706,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs"),
     [`⦇listcp ⟨g₁,g₂⟩ cat thinlist(Q)⦈ minlist(R)` \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @para-mono]])],
+     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat` (@para-mono:3), `Q` from @para-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs")],
 
   [#vstep(EQ, [],
@@ -777,7 +777,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws.lhs"),
     [`⦇listcp ⟨g₁,g₂⟩ cat thinlist(Q)⦈ minlist(R)` \
-     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono]])],
+     #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 
   [#vstep(EQ, [],

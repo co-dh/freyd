@@ -157,7 +157,7 @@
       (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
       (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", []),
       (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
-      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws]),
+      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws:3]),
       (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
     ),
@@ -169,14 +169,14 @@
       (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
       (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
       (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", []),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @adj-all]),
+      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @div-laws:4]),
       (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
     ),
     (
       (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix",),
-        src[`S·⊣S\` — @adj-all]),
+        src[`S·⊣S\` — @adj-all:10]),
       (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
-        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @mu-laws, @adj-all]),
+        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @Freyd.Alg.relCata_le_of_prefixed, @adj-all:15]),
       // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
     ),
   )],
