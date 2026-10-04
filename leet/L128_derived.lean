@@ -133,19 +133,19 @@ def build (nums : List Int) : AHashSet := foldSet (mkHashMap Unit nums.length) (
 
 /-- `mem (insert' s a) x` is exactly "`x` is `a` or already in `s`". -/
 theorem mem_insert' (s : AHashSet) (a x : Int) :
-    mem (insert' s a) x = true ↔ (x = a ∨ mem s x = true) := by
+    HashMap.mem (insert' s a) x = true ↔ (x = a ∨ HashMap.mem s x = true) := by
   by_cases hx : x = a
   · subst hx; simp [mem_insert_self]
   · rw [mem_insert_other s a x hx]
     exact ⟨Or.inr, fun h => h.elim (fun he => absurd he hx) id⟩
 
 theorem mem_foldSet (s0 : AHashSet) (x : Int) : ∀ nums : List Int,
-    mem (foldSet s0 (ofConsList nums)) x = true ↔ (x ∈ nums ∨ mem s0 x = true) := by
+    HashMap.mem (foldSet s0 (ofConsList nums)) x = true ↔ (x ∈ nums ∨ HashMap.mem s0 x = true) := by
   intro nums
   induction nums with
-  | nil => show mem s0 x = true ↔ _; simp
+  | nil => show HashMap.mem s0 x = true ↔ _; simp
   | cons a rest ih =>
-    show mem (insert' (foldSet s0 (ofConsList rest)) a) x = true ↔ _
+    show HashMap.mem (insert' (foldSet s0 (ofConsList rest)) a) x = true ↔ _
     rw [mem_insert', ih, List.mem_cons]
     constructor
     · rintro (h | h | h)
@@ -158,7 +158,7 @@ theorem mem_foldSet (s0 : AHashSet) (x : Int) : ∀ nums : List Int,
       · exact Or.inr (Or.inr h)
 
 /-- **The Phase-1 membership bridge.**  After building the set, membership is exactly list membership. -/
-theorem mem_build (nums : List Int) (x : Int) : mem (build nums) x = true ↔ x ∈ nums := by
+theorem mem_build (nums : List Int) (x : Int) : HashMap.mem (build nums) x = true ↔ x ∈ nums := by
   rw [show build nums = foldSet (mkHashMap Unit nums.length) (ofConsList nums) from rfl,
       mem_foldSet, mem_mk]
   constructor
@@ -283,28 +283,28 @@ theorem runStart_P2 (p : Int → Bool) : ∀ (F : Nat) (x : Int), p x = true →
     `t ≤ s` (predecessor absent), and everything in `[t, s]` is in the set.  Fuel exhaustion is
     impossible: a full walk would expose `nums.length + 1` consecutive members, contradicting
     `pigeon`. -/
-theorem run_start_exists (nums : List Int) (s : Int) (hs : mem (build nums) s = true) :
-    ∃ t : Int, t ≤ s ∧ mem (build nums) (t - 1) = false ∧
-      (∀ y : Int, t ≤ y → y ≤ s → mem (build nums) y = true) := by
-  refine ⟨runStart (fun y => mem (build nums) y) nums.length s, ?_, ?_, ?_⟩
-  · exact (runStart_P1 (fun y => mem (build nums) y) nums.length s hs).1
-  · rcases runStart_P2 (fun y => mem (build nums) y) nums.length s hs with h | h
+theorem run_start_exists (nums : List Int) (s : Int) (hs : HashMap.mem (build nums) s = true) :
+    ∃ t : Int, t ≤ s ∧ HashMap.mem (build nums) (t - 1) = false ∧
+      (∀ y : Int, t ≤ y → y ≤ s → HashMap.mem (build nums) y = true) := by
+  refine ⟨runStart (fun y => HashMap.mem (build nums) y) nums.length s, ?_, ?_, ?_⟩
+  · exact (runStart_P1 (fun y => HashMap.mem (build nums) y) nums.length s hs).1
+  · rcases runStart_P2 (fun y => HashMap.mem (build nums) y) nums.length s hs with h | h
     · exact h
     · exfalso
-      obtain ⟨h1, h2, h3⟩ := runStart_P1 (fun y => mem (build nums) y) nums.length s hs
+      obtain ⟨h1, h2, h3⟩ := runStart_P1 (fun y => HashMap.mem (build nums) y) nums.length s hs
       have hb : ∀ i : Nat, i < nums.length + 1 →
-          runStart (fun y => mem (build nums) y) nums.length s + (i : Int) ∈ nums := by
+          runStart (fun y => HashMap.mem (build nums) y) nums.length s + (i : Int) ∈ nums := by
         intro i hi
-        have hy : mem (build nums) (runStart (fun y => mem (build nums) y) nums.length s + i) = true :=
+        have hy : HashMap.mem (build nums) (runStart (fun y => HashMap.mem (build nums) y) nums.length s + i) = true :=
           h2 _ (by omega) (by rw [h]; omega)
         exact (mem_build nums _).mp hy
-      have := pigeon nums (runStart (fun y => mem (build nums) y) nums.length s) (nums.length + 1) hb
+      have := pigeon nums (runStart (fun y => HashMap.mem (build nums) y) nums.length s) (nums.length + 1) hb
       omega
-  · exact (runStart_P1 (fun y => mem (build nums) y) nums.length s hs).2.1
+  · exact (runStart_P1 (fun y => HashMap.mem (build nums) y) nums.length s hs).2.1
 
 /-- One Phase-2 step: if `x` is a run start, fold in its run length; otherwise pass `best` through. -/
 def stepP (S : AHashSet) (F : Nat) (best : Nat) (x : Int) : Nat :=
-  if mem S (x - 1) then best else LC128.nmax best (runFrom (fun y => mem S y) F x)
+  if HashMap.mem S (x - 1) then best else LC128.nmax best (runFrom (fun y => HashMap.mem S y) F x)
 
 /-- The Phase-2 scan is monotone in its accumulator. -/
 theorem scan_mono (S : AHashSet) (F : Nat) : ∀ (l : List Int) (b : Nat),
@@ -323,8 +323,8 @@ theorem scan_mono (S : AHashSet) (F : Nat) : ∀ (l : List Int) (b : Nat),
 
 /-- The final scan value dominates the run length of every counted run-start in the list. -/
 theorem scan_dom (S : AHashSet) (F : Nat) : ∀ (l : List Int) (b : Nat) (t : Int),
-    t ∈ l → mem S (t - 1) = false →
-    runFrom (fun y => mem S y) F t ≤ l.foldl (stepP S F) b := by
+    t ∈ l → HashMap.mem S (t - 1) = false →
+    runFrom (fun y => HashMap.mem S y) F t ≤ l.foldl (stepP S F) b := by
   intro l
   induction l with
   | nil => intro b t ht _; exact absurd ht (List.not_mem_nil)
@@ -332,10 +332,10 @@ theorem scan_dom (S : AHashSet) (F : Nat) : ∀ (l : List Int) (b : Nat) (t : In
     intro b t ht hstart
     rcases List.mem_cons.mp ht with he | he
     · subst he
-      have hcond : ¬ (mem S (t - 1) = true) := by rw [hstart]; decide
-      have hstepval : stepP S F b t = LC128.nmax b (runFrom (fun y => mem S y) F t) := by
+      have hcond : ¬ (HashMap.mem S (t - 1) = true) := by rw [hstart]; decide
+      have hstepval : stepP S F b t = LC128.nmax b (runFrom (fun y => HashMap.mem S y) F t) := by
         unfold stepP; rw [if_neg hcond]
-      have h1 : runFrom (fun y => mem S y) F t ≤ stepP S F b t := by
+      have h1 : runFrom (fun y => HashMap.mem S y) F t ≤ stepP S F b t := by
         rw [hstepval]; exact LC128.nmax_ge_right _ _
       exact Nat.le_trans h1 (scan_mono S F rest (stepP S F b t))
     · exact ih (stepP S F b a) t he hstart
@@ -345,9 +345,9 @@ def Ach (nums : List Int) (k : Nat) : Prop := ∃ s : Int, ∀ i : Nat, i < k �
 
 /-- Every run-counter value is achievable (its counted block is in the set, hence in `nums`). -/
 theorem ach_runFrom (nums : List Int) (F : Nat) (x : Int) :
-    Ach nums (runFrom (fun y => mem (build nums) y) F x) := by
+    Ach nums (runFrom (fun y => HashMap.mem (build nums) y) F x) := by
   refine ⟨x, fun i hi => ?_⟩
-  have := runFrom_mem (fun y => mem (build nums) y) F x i hi
+  have := runFrom_mem (fun y => HashMap.mem (build nums) y) F x i hi
   exact (mem_build nums (x + i)).mp this
 
 /-- Achievability is preserved along the Phase-2 scan. -/
@@ -362,7 +362,7 @@ theorem ach_scan (nums : List Int) (F : Nat) : ∀ (l : List Int) (b : Nat),
     unfold stepP
     split
     · exact hb
-    · rcases LC128.nmax_eq_or b (runFrom (fun y => mem (build nums) y) F a) with h | h
+    · rcases LC128.nmax_eq_or b (runFrom (fun y => HashMap.mem (build nums) y) F a) with h | h
       · rw [h]; exact hb
       · rw [h]; exact ach_runFrom nums F a
 
@@ -386,12 +386,12 @@ theorem hash_dom (nums : List Int) : ∀ (s : Int) (Lrun : Nat),
   intro s Lrun hblock
   rcases Nat.eq_zero_or_pos Lrun with hL | hL
   · omega
-  · have hs_mem : mem (build nums) s = true :=
+  · have hs_mem : HashMap.mem (build nums) s = true :=
       (mem_build nums s).mpr (by have := hblock 0 (by omega); simpa using this)
     have hLF : Lrun ≤ nums.length := pigeon nums s Lrun hblock
     obtain ⟨t, ht_le, ht_start, ht_int⟩ := run_start_exists nums s hs_mem
     have ht_nums : t ∈ nums := (mem_build nums t).mp (ht_int t (by omega) ht_le)
-    have hblockS : ∀ j : Nat, j < Lrun → (fun y => mem (build nums) y) (t + j) = true := by
+    have hblockS : ∀ j : Nat, j < Lrun → (fun y => HashMap.mem (build nums) y) (t + j) = true := by
       intro j hj
       by_cases hjs : t + (j : Int) ≤ s
       · exact ht_int (t + j) (by omega) hjs
@@ -403,9 +403,9 @@ theorem hash_dom (nums : List Int) : ∀ (s : Int) (Lrun : Nat),
             rw [hm]; omega
           rwa [heq] at hmem
         exact (mem_build nums (t + j)).mpr hk
-    have hrun : Lrun ≤ runFrom (fun y => mem (build nums) y) nums.length t :=
-      runFrom_ge (fun y => mem (build nums) y) nums.length Lrun t hblockS hLF
-    have hdom : runFrom (fun y => mem (build nums) y) nums.length t ≤ hashLongest nums :=
+    have hrun : Lrun ≤ runFrom (fun y => HashMap.mem (build nums) y) nums.length t :=
+      runFrom_ge (fun y => HashMap.mem (build nums) y) nums.length Lrun t hblockS hLF
+    have hdom : runFrom (fun y => HashMap.mem (build nums) y) nums.length t ≤ hashLongest nums :=
       scan_dom (build nums) nums.length nums 0 t ht_nums ht_start
     omega
 
