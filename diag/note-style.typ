@@ -122,7 +122,9 @@
       let s = disp-of(here())
       if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#n], it.body)
+        // The number column as narrow as its digits: a fixed 0.55cm one widened every `auto` first column
+        // by that much and pushed a full-width table past the paper edge; out of flow it met bullets and text.
+        grid(columns: (auto, 1fr), column-gutter: 3pt, text(8pt, luma(140))[#n], it.body)
       } else { it.body }
     }
   })
