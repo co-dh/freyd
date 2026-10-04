@@ -33,6 +33,7 @@ module
 
 public import AOP.A9_1
 public import AOP.A7_2_RelSet
+import AOP.CalcSteps
 
 universe u
 
@@ -42,90 +43,29 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 
 /-! ## Theorem 10.1 (B&dM p.245) — the greedy theorem, as extreme dynamic programming -/
 
-/-! ### Theorem 10.1's proof, one theorem per step (note §16.1)
+/-! ### Theorem 10.1's proof, one `calc` step per hint (note §16.1)
 
   The exercise B&dM leave: Theorem 9.2's proof with `est(Q)` for `thin(Q)`.  `M≜Λ(H) est(R)`
   throughout; Knaster–Tarski needs the body at `M` below `M`, which `M=H∩(H°\R°)` splits into
   (i) `body(M)⊑H` and (ii) `H°body(M)⊑R°`. -/
 
-/-- (i), step 1: `est(Q)⊑∋` — an `est` picks a member. -/
-public theorem greedy_dp_lower_step1 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
-    Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
-  comp_mono_left _ (comp_mono_right (show est Q ⊑ ∋ (F.obj A) from inter_lb_left _ _) _)
+/-- `est(Q)⊑∋`: an `est` picks a member. -/
+public theorem est_le_eps {C : 𝒜} (Q : C ⟶ C) : est Q ⊑ ∋ C := inter_lb_left _ _
 
-/-- **Theorem 10.1, (i)**: the greedy body at `M` returns only what `H` returns — step 1, then
-    Theorem 9.1's `Λ` cancellation, `M⊑H` and the fixed-point equation. -/
+/-- **Theorem 10.1, (i)**: the greedy body at `M` returns only what `H` returns. -/
 public theorem greedy_dp_lower {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
     {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hHfix : T° ≫ F.map H ≫ h = H) :
     Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ H :=
   calc Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_lower_step1
-      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := dynamic_programming_lower_step2
-      _ ⊑ T° ≫ F.map H ≫ h := dynamic_programming_lower_step3
+      _ ⊑ Λ (T°) ≫ ∋ (F.obj A) ≫ F.map (Λ H ≫ est R) ≫ h :=
+        comp_mono_left _ (comp_mono_right (est_le_eps Q) _)
+      _ = T° ≫ F.map (Λ H ≫ est R) ≫ h := by rw [← Cat.assoc (Λ (T°)) (∋ (F.obj A)) _, Λ_eps_eq']
+      _ ⊑ T° ≫ F.map H ≫ h := comp_mono_left _ (comp_mono_right (F.map_mono (Λ_comp_est_le H R)) h)
       _ = H := hHfix
 
-/-- (ii), step 1: `H°=h°F(H°)T`, the converse of the fixed-point equation. -/
-public theorem greedy_dp_upper_step1 {h : F.obj B ⟶ B}
-    {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
-    (hHfix : T° ≫ F.map H ≫ h = H) :
-    H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
-  have hHrec : H° = h° ≫ F.map (H°) ≫ T := by
-    have h1 : (T° ≫ F.map H ≫ h)° = h° ≫ F.map (H°) ≫ T := by
-      rw [Allegory.recip_comp, Allegory.recip_comp, Allegory.recip_recip, ← Relator.preservesRecip_of_tabular F H, Cat.assoc]
-    rw [← h1, hHfix]
-  exact (congrArg (· ≫ (Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h)) hHrec).trans
-    (by simp only [Cat.assoc])
+calc_steps greedy_dp_lower
 
-/-- (ii), step 2: `TΛ(T°)⊑∈`, the converse of `Λ(T°)∋=T°`. -/
-public theorem greedy_dp_upper_step2 {h : F.obj B ⟶ B} {T : F.obj A ⟶ A}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
-    h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h := by
-  have hTA : T ≫ Λ (T°) ⊑ (∋ (F.obj A))° := by
-    have h0 := recip_comp_Λ_le_recip_eps (T°)
-    rwa [Allegory.recip_recip] at h0
-  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
-    (comp_mono_right hTA (est Q ≫ F.map (Λ H ≫ est R) ≫ h))))
-
-/-- (ii), step 3: `∈est(Q)⊑Q°` — the `est` lower bound. -/
-public theorem greedy_dp_upper_step3 {h : F.obj B ⟶ B}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} :
-    h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
-      ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h :=
-  comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
-    (comp_mono_right (recip_eps_comp_est_le Q) (F.map (Λ H ≫ est R) ≫ h))))
-
-/-- (ii), step 4: `QF(H)h⊑F(H)hR` conversed — the hypothesis on `Q`. -/
-public theorem greedy_dp_upper_step4 {h : F.obj B ⟶ B}
-    {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B}
-    (hQ : Q ≫ F.map H ≫ h ⊑ F.map H ≫ h ≫ R) :
-    h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h
-      ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h := by
-  have hrm := recip_mono hQ
-  simp only [Allegory.recip_comp] at hrm
-  rw [← Relator.preservesRecip_of_tabular F H] at hrm
-  simpa only [Cat.assoc] using comp_mono_right hrm (F.map (Λ H ≫ est R) ≫ h)
-
-/-- (ii), step 5: `H°M⊑R°` under `F`. -/
-public theorem greedy_dp_upper_step5 {h : F.obj B ⟶ B} {R : B ⟶ B} {H : A ⟶ B} :
-    R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° ≫ h° ≫ F.map R° ≫ h := by
-  have hFRM : F.map (H°) ≫ F.map (Λ H ≫ est R) ⊑ F.map R° := by
-    rw [← F.map_comp]
-    exact F.map_mono (le_Λ_comp_est_iff.mp (le_refl (Λ H ≫ est R))).2
-  exact comp_mono_left _ (comp_mono_left _ (by simpa only [Cat.assoc] using
-    (comp_mono_right hFRM h)))
-
-/-- (ii), step 6: `h` monotonic on `R`, in the conjugated form `h°F(R°)h⊑R°`. -/
-public theorem greedy_dp_upper_step6 {h : F.obj B ⟶ B} {R : B ⟶ B} (hh : Map h)
-    (hmono : MonoAlg h R°) :
-    R° ≫ h° ≫ F.map R° ≫ h ⊑ R° ≫ R° :=
-  comp_mono_left _ ((monoAlg_iff_conj hh).mp hmono)
-
-/-- **Theorem 10.1, (ii)**: `H°` followed by the greedy body at `M` is `⊑R°` — steps 1–6, then
-    `R` transitive. -/
+/-- **Theorem 10.1, (ii)**: `H°` followed by the greedy body at `M` is `⊑R°`. -/
 public theorem greedy_dp_upper {h : F.obj B ⟶ B}
     {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} {H : A ⟶ B} (hh : Map h)
     (hmono : MonoAlg h R°) (htrans : R° ≫ R° ⊑ R°) (hHfix : T° ≫ F.map H ≫ h = H)
@@ -133,14 +73,27 @@ public theorem greedy_dp_upper {h : F.obj B ⟶ B}
     H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h ⊑ R° :=
   calc H° ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h
       _ = h° ≫ F.map (H°) ≫ T ≫ Λ (T°) ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
-        greedy_dp_upper_step1 hHfix
+        (congrArg (· ≫ _) (recip_of_fixed hHfix)).trans
+          ((Cat.assoc _ _ _).trans (congrArg (_ ≫ ·) (Cat.assoc _ _ _)))
       _ ⊑ h° ≫ F.map (H°) ≫ (∋ (F.obj A))° ≫ est Q ≫ F.map (Λ H ≫ est R) ≫ h :=
-        greedy_dp_upper_step2
-      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_upper_step3
-      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h := greedy_dp_upper_step4 hQ
-      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h := greedy_dp_upper_step5
-      _ ⊑ R° ≫ R° := greedy_dp_upper_step6 hh hmono
+        comp_mono_left _ (comp_mono_left _ (by
+          simpa only [Cat.assoc] using
+            (comp_mono_right (comp_Λ_recip_le_recip_eps T) (est Q ≫ F.map (Λ H ≫ est R) ≫ h))))
+      _ ⊑ h° ≫ F.map (H°) ≫ Q° ≫ F.map (Λ H ≫ est R) ≫ h :=
+        comp_mono_left _ (comp_mono_left _ (by
+          simpa only [Cat.assoc] using
+            (comp_mono_right (recip_eps_comp_est_le Q) (F.map (Λ H ≫ est R) ≫ h))))
+      _ ⊑ R° ≫ h° ≫ F.map (H°) ≫ F.map (Λ H ≫ est R) ≫ h := by
+        simpa only [Cat.assoc] using comp_mono_right (recip_thin_condition hQ) (F.map (Λ H ≫ est R) ≫ h)
+      _ = R° ≫ h° ≫ F.map (H° ≫ Λ H ≫ est R) ≫ h := by
+        rw [F.map_comp (H°) (Λ H ≫ est R)]
+        simp only [Cat.assoc]
+      _ ⊑ R° ≫ h° ≫ F.map R° ≫ h :=
+        comp_mono_left _ (comp_mono_left _ (comp_mono_right (F.map_mono (recip_comp_Λ_comp_est_le H R)) h))
+      _ ⊑ R° ≫ R° := comp_mono_left _ ((monoAlg_iff_conj hh).mp hmono)
       _ ⊑ R° := htrans
+
+calc_steps greedy_dp_upper
 
 /-- **Core of Theorem 10.1**: `M = min R°·ΛH` (mirrored `Λ H ≫ est R`) is a PREFIXED point of
     the GREEDY body `h·FX·min Q°·ΛT°` (mirrored `Λ (T°) ≫ est Q ≫ F.map X ≫ h`) — (i) and (ii)
