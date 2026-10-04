@@ -185,12 +185,12 @@
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.
 #disp(num: "Proposition 9.2")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_of_cost") \
-    #src[if `R` compares two values by comparing their `cost`s under `≤`, and `h` then `cost`
-     equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on `R`] \
-     // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
+    #src[if `h` then `cost` equals `F(cost)` then a `k` monotonic on `≤`, then `h` is monotonic on
+     `cost≤cost°`, which compares two values by comparing their `cost`s under `≤`] \
+     // lean:AOP.A9_1.monoAlg_of_cost@18cabf17
     #leanf("Freyd.Alg.monoAlg_of_cost_shunted") \
-    #src[by the definition of `R` and shunting at the map `cost`, `F(R)h⊑hR` is `F(R)h cost⊑h cost ≤`,
-     which the chain proves]],
+    #src[by shunting at the map `cost`, `F(cost≤cost°)h⊑h cost≤cost°` is
+     `F(cost≤cost°)h cost⊑h cost ≤`, which the chain proves]],
   lean-calc(calc-cost),
 )]<dp-cost>
 
@@ -202,12 +202,12 @@
 
   [`F(R)h⊑hR` \ #src[Proposition 9.2, `R≜cost≤cost°`, `h cost=F(cost)k`,
  `F(≤)k⊑k≤`]],
-   // lean:AOP.A9_1.monoAlg_of_cost@6156daa7
+   // lean:AOP.A9_1.monoAlg_of_cost@18cabf17
   [monotonicity when the cost is itself a fold with a step `k` monotonic on `≤`],
   [`F(R∩(H°H))h⊑hR` \ #src[Proposition 9.3, `R≜cost≤cost°`,
    `h cost=F(⟨cost,H°⟩)k`, `F(≤×𝟙)k⊑k≤`, `H°` simple;
  ]],
-   // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
+   // lean:AOP.A9_1.monoAlg_in_context@3ce8e2d0
   [monotonicity *in context*: `k` may also read the input the part was built from],
   [`QF(H)h⊑F(H)hR` at `Q≜F(U,V)` \ #src[Proposition 9.4, `U`, `V` preorders, `F(U,R)h⊑hR`,
    `VH⊑HR`]],
@@ -219,7 +219,7 @@
 #disp(num: "Proposition 9.3")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
-     // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
+     // lean:AOP.A9_1.monoAlg_in_context@3ce8e2d0
   // two rows: seven panels in one row shrink the bundles past reading
   lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>

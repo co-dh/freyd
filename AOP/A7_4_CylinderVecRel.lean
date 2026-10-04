@@ -217,6 +217,41 @@ public theorem est_eq (S : A ⟶ A) : (est S : dTuple k A ⟶ A) = mem ∩ (mem�
     ≫ (RelSet.graph (fun v : Fin m → Nat => (List.ofFn v).sum) :
         dTuple m (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}))°
 
+/-- `costLE` pointwise: `v` is below `w` iff `v`'s sum is at most `w`'s. -/
+theorem costLE_iff {m : Nat} (v w : Fin m → Nat) :
+    costLE m v w ↔ (List.ofFn v).sum ≤ (List.ofFn w).sum :=
+  ⟨fun ⟨_, ha, _, hab, hb⟩ => by subst ha; subst hb; exact hab, fun h => ⟨_, rfl, _, h, rfl⟩⟩
+
+/-- A square put in front adds its cost: the sum of `cons(a,v)` is `a` plus the sum of `v`. -/
+theorem sum_ofFn_cons {m : Nat} (a : Nat) (v : Fin m → Nat) :
+    (List.ofFn (cons (a, v) : Fin (m + 1) → Nat)).sum = a + (List.ofFn v).sum := by
+  rw [List.ofFn_succ, List.sum_cons]; rfl
+
+/-- `costLE` is reflexive. -/
+theorem costLE_refl (m : Nat) : 𝟙 (dTuple m (⟨Nat⟩ : RelSet.{0})) ⊑ costLE m :=
+  le_iff.mpr fun v w h => by
+    have e : v = w := (id_apply v w).mp h
+    subst e; exact (costLE_iff v v).mpr (Nat.le_refl _)
+
+/-- `costLE` is transitive. -/
+theorem costLE_trans (m : Nat) : costLE m ≫ costLE m ⊑ costLE m :=
+  le_iff.mpr fun u w ⟨v, h1, h2⟩ => (costLE_iff u w).mpr
+    (Nat.le_trans ((costLE_iff u v).mp h1) ((costLE_iff v w).mp h2))
+
+/-- `costLE` is monotonic under `cons`: the same square in front of two paths keeps their order. -/
+theorem costLE_mono (m : Nat) :
+    rprodMap (𝟙 (⟨Nat⟩ : RelSet.{0})) (costLE m) ≫ RelSet.graph cons
+      ⊑ RelSet.graph cons ≫ costLE (m + 1) := by
+  refine le_iff.mpr fun q y h => ?_
+  obtain ⟨q₁, q₂⟩ := q
+  obtain ⟨⟨r₁, r₂⟩, ⟨hx, hR⟩, hy⟩ := h
+  have hxeq : q₁ = r₁ := hx
+  have hyeq : y = cons (r₁, r₂) := hy
+  subst hxeq; subst hyeq
+  refine ⟨cons (q₁, q₂), rfl, (costLE_iff _ _).mpr ?_⟩
+  rw [sum_ofFn_cons, sum_ofFn_cons]
+  exact Nat.add_le_add_left ((costLE_iff q₂ r₂).mp hR) _
+
 /-! ## The greedy algebra and its fold -/
 
 /-- **`Q(R) ≜ F(𝟙,moves trans Vec(n)(est(R))) zip Vec(n)(cons)`** — `gen` with the choice made:
@@ -304,12 +339,11 @@ public theorem est_concat {S : A ⟶ A} (htrans : S ≫ S ⊑ S) :
   · exact le_iff.mp htrans x _ ⟨u _, hxu _, (hu _).2 _⟩
 
 /-- **(7.13)** `F(𝟙,est(R)) cons ⊑ cp Vec(k)(cons) est(R)` — choose the cheapest path and put the
-    square in front of it, or put the square in front of all `k` and choose.  Needs `hmono`:
-    putting the same square in front keeps the cost order. -/
-public theorem cyl_7_13 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {m k : Nat}
-    (hmono : rprodMap (𝟙 A) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
-    rprodMap (𝟙 A) (est (R m) (k := k)) ≫ RelSet.graph cons
-      ⊑ RelSet.graph cp ≫ tupleP k (RelSet.graph cons) ≫ est (R (m + 1)) := by
+    square in front of it, or put the square in front of all `k` and choose.  Putting the same
+    square in front keeps the cost order (`costLE_mono`). -/
+public theorem cyl_7_13 {m k : Nat} :
+    rprodMap (𝟙 (⟨Nat⟩ : RelSet.{0})) (est (costLE m) (k := k)) ≫ RelSet.graph cons
+      ⊑ RelSet.graph cp ≫ tupleP k (RelSet.graph cons) ≫ est (costLE (m + 1)) := by
   refine le_iff.mpr fun q y h => ?_
   obtain ⟨q₁, q₂⟩ := q
   obtain ⟨⟨r₁, r₂⟩, ⟨hx, ⟨⟨i₀, hi₀⟩, hall⟩⟩, hy⟩ := h
@@ -318,7 +352,7 @@ public theorem cyl_7_13 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {m k : Nat
   subst hxeq; subst hyeq
   refine ⟨cp (q₁, q₂), rfl, fun i => cons (q₁, q₂ i), fun _ => rfl, ⟨⟨i₀, ?_⟩, fun i => ?_⟩⟩
   · exact congrArg (fun w => cons (q₁, w)) hi₀
-  · obtain ⟨w, hw, hR⟩ := le_iff.mp hmono (q₁, r₂) (cons (q₁, q₂ i))
+  · obtain ⟨w, hw, hR⟩ := le_iff.mp (costLE_mono m) (q₁, r₂) (cons (q₁, q₂ i))
       ⟨(q₁, q₂ i), ⟨rfl, hall i⟩, rfl⟩
     have hweq : w = cons (q₁, r₂) := hw
     subst hweq
@@ -328,11 +362,9 @@ public theorem cyl_7_13 {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {m k : Nat
     path per square before extending the column is no better than extending and choosing after.
     The left `est` is over the `p` paths of a square, the right over the `3p` of the next
     column. -/
-public theorem cyl_fusion {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m p : Nat}
-    (htrans : R m ≫ R m ⊑ R m)
-    (hmono : rprodMap (𝟙 A) (R m) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (m + 1)) :
-    rprodMap (𝟙 (dTuple n A)) (tupleP n (est (R m) (k := p))) ≫ Q (R m)
-      ⊑ RelSet.graph gen ≫ tupleP n (est (R (m + 1))) := by
+public theorem cyl_fusion {n m p : Nat} :
+    rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (tupleP n (est (costLE m) (k := p))) ≫ Q (costLE m)
+      ⊑ RelSet.graph gen ≫ tupleP n (est (costLE (m + 1))) := by
   refine le_iff.mpr fun q z h => ?_
   obtain ⟨q₁, q₂⟩ := q
   obtain ⟨⟨y₁, y₂⟩, ⟨hu, hw⟩, ⟨y₁', y₂'⟩, ⟨hu', s, hs, t, ht, hbest⟩, cs, hcs, hz⟩ := h
@@ -345,12 +377,12 @@ public theorem cyl_fusion {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m p :
   subst hcseq
   refine ⟨gen (q₁, q₂), rfl, fun i => ?_⟩
   -- a cheapest of the three neighbours' cheapests is a cheapest of all `3p` candidates …
-  obtain ⟨_, hcat0, hcat⟩ := le_iff.mp (est_concat htrans) (trans (moves q₂) i) (y₂' i)
+  obtain ⟨_, hcat0, hcat⟩ := le_iff.mp (est_concat (costLE_trans m)) (trans (moves q₂) i) (y₂' i)
     ⟨trans (moves y₂) i, fun _ => hw _, hbest i⟩
   have hcat0eq : _ = concat (trans (moves q₂) i) := hcat0
   subst hcat0eq
   -- … and putting the square in front of that cheapest is (7.13).
-  obtain ⟨v₁, hv₁, v₂, hv₂, hest⟩ := le_iff.mp (cyl_7_13 hmono)
+  obtain ⟨v₁, hv₁, v₂, hv₂, hest⟩ := le_iff.mp (cyl_7_13 (m := m))
     (q₁ i, concat (trans (moves q₂) i)) (z i) ⟨(q₁ i, y₂' i), ⟨rfl, hcat⟩, hz i⟩
   have hv₁eq : v₁ = cp (q₁ i, concat (trans (moves q₂) i)) := hv₁
   subst hv₁eq
@@ -359,33 +391,32 @@ public theorem cyl_fusion {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m p :
 
 /-- **`⦇Q⦈ ⊑ ⦇gen⦈ Vec(n)(est(R))`** — the greedy fold picks one of the paths `⦇gen⦈` generates,
     and a cheapest one.  By induction on the columns, from the fusion condition. -/
-public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n : Nat}
-    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
-    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) : ∀ m : Nat,
-    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ dTuple n (dTuple (m + 1) A))
-      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (R (m + 1)))
+public theorem Qfold_le_genFold {n : Nat} : ∀ m : Nat,
+    (Qfold costLE m : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ dTuple n (dTuple (m + 1) ⟨Nat⟩))
+      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (costLE (m + 1)))
   | 0 => by
       refine le_iff.mpr fun v z h => ?_
       have hzeq : z = fun i (_ : Fin 1) => v 0 i := h
       subst hzeq
       exact ⟨genFold 0 v, rfl, fun i => ⟨⟨⟨0, by decide⟩, rfl⟩, fun l =>
-        le_iff.mp (hrefl 1) _ _ rfl⟩⟩
+        le_iff.mp (costLE_refl 1) _ _ rfl⟩⟩
   | m + 1 => by
-      have h1 : rprodMap (𝟙 (dTuple n A)) (Qfold R m)
-          ⊑ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m))
-              ≫ rprodMap (𝟙 (dTuple n A)) (tupleP n (est (R (m + 1)))) := by
+      have h1 : rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (Qfold costLE m)
+          ⊑ rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (RelSet.graph (genFold m))
+              ≫ rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (tupleP n (est (costLE (m + 1)))) := by
         rw [rprodMap_comp, Cat.id_comp]
-        exact rprodMap_mono (le_refl _) (Qfold_le_genFold hrefl htrans hmono m)
-      have key : rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1))
-          ⊑ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m))
-              ≫ RelSet.graph gen ≫ tupleP n (est (R (m + 1 + 1))) := by
+        exact rprodMap_mono (le_refl _) (Qfold_le_genFold m)
+      have key : rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (Qfold costLE m) ≫ Q (costLE (m + 1))
+          ⊑ rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (RelSet.graph (genFold m))
+              ≫ RelSet.graph gen ≫ tupleP n (est (costLE (m + 1 + 1))) := by
         refine le_trans (comp_mono_right h1 _) ?_
         rw [Cat.assoc]
-        exact comp_mono_left _ (cyl_fusion (htrans (m + 1)) (hmono (m + 1)))
+        exact comp_mono_left _ cyl_fusion
       -- `graph_id` and `rprodMap_graph` are module-private in `AOP.A6_1_RelSet`, so the pair's
       -- graph is re-derived here rather than cited.
-      have hpair : rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold (n := n) (A := A.carrier) m))
-          = RelSet.graph (Prod.map id (genFold (n := n) (A := A.carrier) m)) := by
+      have hpair : rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0})))
+            (RelSet.graph (genFold (n := n) (A := Nat) m))
+          = RelSet.graph (Prod.map id (genFold (n := n) (A := Nat) m)) := by
         apply hom_ext; intro q r
         obtain ⟨r₁, r₂⟩ := r
         constructor
@@ -395,29 +426,29 @@ public theorem Qfold_le_genFold {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n
         · intro h
           injection h with h1 h2
           exact ⟨h1.symm, h2⟩
-      have hgraph : (RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n A)) (RelSet.graph (genFold m)))
+      have hgraph : (RelSet.graph uncons
+            ≫ rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (RelSet.graph (genFold m)))
           ≫ RelSet.graph gen = RelSet.graph (genFold (m + 1)) := by
         rw [hpair, RelSet.graph_comp, RelSet.graph_comp]
         rfl
-      show RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n A)) (Qfold R m) ≫ Q (R (m + 1)) ⊑ _
+      show RelSet.graph uncons ≫ rprodMap (𝟙 (dTuple n (⟨Nat⟩ : RelSet.{0}))) (Qfold costLE m)
+        ≫ Q (costLE (m + 1)) ⊑ _
       refine le_trans (comp_mono_left _ key) ?_
       rw [← Cat.assoc, ← Cat.assoc, hgraph]
       exact le_refl _
 
 /-- **`⦇Q⦈ est(R) ⊑ paths est(R)`** — the note's `paths est(R) ⊒ ⦇Q⦈ est(R)`: the greedy fold
     followed by a cheapest of the `n` column answers is a cheapest of all `n·3^m` paths. -/
-public theorem cyl_laws {R : (i : Nat) → dTuple i A ⟶ dTuple i A} {n m : Nat}
-    (hrefl : ∀ i, 𝟙 (dTuple i A) ⊑ R i) (htrans : ∀ i, R i ≫ R i ⊑ R i)
-    (hmono : ∀ i, rprodMap (𝟙 A) (R i) ≫ RelSet.graph cons ⊑ RelSet.graph cons ≫ R (i + 1)) :
-    (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
-      ⊑ RelSet.graph paths ≫ est (R (m + 1)) :=
-  calc (Qfold R m : dTuple (m + 1) (dTuple n A) ⟶ _) ≫ est (R (m + 1))
-      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (R (m + 1))) ≫ est (R (m + 1)) := by
+public theorem cyl_laws {n m : Nat} :
+    (Qfold costLE m : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ _) ≫ est (costLE (m + 1))
+      ⊑ RelSet.graph paths ≫ est (costLE (m + 1)) :=
+  calc (Qfold costLE m : dTuple (m + 1) (dTuple n (⟨Nat⟩ : RelSet.{0})) ⟶ _) ≫ est (costLE (m + 1))
+      ⊑ RelSet.graph (genFold m) ≫ tupleP n (est (costLE (m + 1))) ≫ est (costLE (m + 1)) := by
         rw [← Cat.assoc]
-        exact comp_mono_right (Qfold_le_genFold hrefl htrans hmono m) _
-    _ ⊑ RelSet.graph (genFold m) ≫ RelSet.graph concat ≫ est (R (m + 1)) :=
-        comp_mono_left _ (est_concat (htrans (m + 1)))
-    _ = RelSet.graph paths ≫ est (R (m + 1)) := by rw [← Cat.assoc, RelSet.graph_comp]; rfl
+        exact comp_mono_right (Qfold_le_genFold m) _
+    _ ⊑ RelSet.graph (genFold m) ≫ RelSet.graph concat ≫ est (costLE (m + 1)) :=
+        comp_mono_left _ (est_concat (costLE_trans (m + 1)))
+    _ = RelSet.graph paths ≫ est (costLE (m + 1)) := by rw [← Cat.assoc, RelSet.graph_comp]; rfl
 
 calc_steps cyl_laws
 

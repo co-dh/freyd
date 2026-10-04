@@ -1670,7 +1670,7 @@ zip(that)                                         each row: its square, and the 
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
-    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@bf3a8b15
   lean-calc(calc-cyl),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
     #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
@@ -1678,11 +1678,11 @@ zip(that)                                         each row: its square, and the 
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.est_concat@8fdae89e
 
-  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.Qfold_le_genFold"), `R` reflexive, transitive and monotonic \
+  Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.Qfold_le_genFold") \
     #src[the one path per row the greedy fold keeps is one of the `p` that `⦇gen⦈` generates for
      that row, and a cheapest of them.
  ]],
-    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold_le_genFold@6553db32
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.Qfold_le_genFold@3f6053d6
 )]<vec-cyl-laws>
 
 // B&dM §7.4, p. 183.  `gen` kills the `[3p]` candidates before the minimum is taken inside the
@@ -1697,11 +1697,11 @@ zip(that)                                         each row: its square, and the 
     (RQ, "Freyd.Alg.Vec.Rel.cyl_fusion.lhs",
       src[(7.13); `zip`, `trans`, `moves` lax natural]),
   ),
-  Thm(cols: 1)[(7.13) on `Vec`: #leanf("Freyd.Alg.Vec.Rel.cyl_7_13"), `R` monotonic \
+  Thm(cols: 1)[(7.13) on `Vec`: #leanf("Freyd.Alg.Vec.Rel.cyl_7_13") \
     #src[putting the new square in front of every one of the `p` candidates and then choosing a
      cheapest is beaten by choosing a cheapest first and putting the square in front of that one.
  ]],
-    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_7_13@8bf677c6
+    // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_7_13@e6a0e255
 )]<vec-cyl-fusion>
 
 == The security van problem

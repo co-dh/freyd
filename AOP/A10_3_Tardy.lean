@@ -666,12 +666,13 @@ public theorem k_mono :
 public theorem tardy_mono :
     (F Unit Job).map ((R ct dt wt)° ∩ (bagify ≫ (bagify (Job := Job))°))
         ≫ graph (con (L := Unit) (E := Job))
-      ⊑ graph (con (L := Unit) (E := Job)) ≫ (R ct dt wt)° :=
-  monoAlg_in_context (cost := costR ct dt wt) (S := bagify) («≤» := ListRel.geq) (k := k ct dt wt)
-    (graph_map _) (graph_simple _)
-    (hom_ext fun u v => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
-      subst h1; subst h3; exact h2⟩)
-    (cost_alg_k ct dt wt) (k_mono ct dt wt)
+      ⊑ graph (con (L := Unit) (E := Job)) ≫ (R ct dt wt)° := by
+  have e : (R ct dt wt)° = costR ct dt wt ≫ ListRel.geq ≫ (costR ct dt wt)° :=
+    hom_ext fun u v => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
+      subst h1; subst h3; exact h2⟩
+  rw [e]
+  exact monoAlg_in_context (cost := costR ct dt wt) (S := bagify) («≤» := ListRel.geq)
+    (k := k ct dt wt) (graph_map _) (graph_simple _) (cost_alg_k ct dt wt) (k_mono ct dt wt)
 
 /-! ## The greedy condition (10.3), B&dM p.257 — the book's calculation, one theorem per hint -/
 

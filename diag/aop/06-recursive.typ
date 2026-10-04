@@ -154,14 +154,14 @@
 
 == Fast exponentiation and modulus computation
 
-// B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[g,h]` with the
-// fusion conditions `zero f=g`, `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
+// B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[zero f,h]` with the
+// fusion condition `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
 #import "../generated/Freyd.Alg.RelSet.FastExp.convert_program.calc.typ" as calc-convert
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
-    #src[once `f` sends `zero` to `g` and turns `shift` into `h`, the recursion that halves the
+    #src[once `f` turns `shift` into `h`, the recursion that halves the
      argument at each step computes `f`]],
-  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@9f928e8d
+  // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@c1787858
   lean-calc(calc-convert),
 )]<convert-program>
 
