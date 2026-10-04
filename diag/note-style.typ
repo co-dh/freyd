@@ -372,6 +372,9 @@
         grid(columns: (w, 1fr, w), column-gutter: 4pt, [], strong(body), align(right + top, n))
       }
     }
+    // Where the header ends: a `<lean-formula>` between a `<thm-num>` and this states the display
+    // (`law-ref`).
+    [#metadata(none)<thm-end>]
   })
 
 // `auto` and not a fixed width: a panel column is as wide as the panels IN IT, so the column beside

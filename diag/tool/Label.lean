@@ -954,7 +954,9 @@ and the two ways of writing it can never disagree. -/
     does: asked of the printer at both precedences, never of the spelling of the answer. -/
 inductive Lbl where
   | text (s : String)
-  | sub (base index : Lbl)
+  /-- `wire`: the index is an object the component is an arrow AT, so a picture draws it as the wire
+      and `flat`/`bare` drop it; an index that is no object (`R i`, `i : Nat`) is kept by `bare`. -/
+  | sub (base index : Lbl) (wire : Bool := true)
   | frac (num den : Lbl) (tight : Bool)
   | seq (parts : Array Lbl)
   /-- A form CLOSED IN ITS OWN BRACKETS, `o` and `c` a mating pair with no name in them
@@ -971,7 +973,7 @@ inductive Lbl where
     wire's own name spelled a second time. -/
 partial def Lbl.flat : Lbl → String
   | .text s => s
-  | .sub b _ => b.flat
+  | .sub b _ _ => b.flat
   | .frac n d t => (if t then "(" ++ n.flat ++ ")" else n.flat) ++ "%" ++ d.flat
   | .seq ps => String.join (ps.toList.map Lbl.flat)
   | .delim o c b => o ++ b.flat ++ c
@@ -979,7 +981,7 @@ partial def Lbl.flat : Lbl → String
 /-- The tree with every component's index dropped — `flat`'s rule, kept in the tree so a picture
     that sets the label as typst content still gets its fractions. -/
 partial def Lbl.bare : Lbl → Lbl
-  | .sub b _ => b.bare
+  | .sub b i w => if w then b.bare else .sub b.bare i.bare w
   | .frac n d t => .frac n.bare d.bare t
   | .seq ps => .seq (ps.map Lbl.bare)
   | .delim o c b => .delim o c b.bare
@@ -988,7 +990,7 @@ partial def Lbl.bare : Lbl → Lbl
 /-- Whether a fraction stands anywhere in the tree: its bar makes the label two lines tall. -/
 partial def Lbl.hasFrac : Lbl → Bool
   | .text _ => false
-  | .sub b i => b.hasFrac || i.hasFrac
+  | .sub b i _ => b.hasFrac || i.hasFrac
   | .frac .. => true
   | .seq ps => ps.any Lbl.hasFrac
   | .delim _ _ b => b.hasFrac
@@ -1004,7 +1006,7 @@ where
     | .text "" => #[]
     | .text s => #[.text s]
     | .seq ps => ps.foldl (fun acc p => (go p).foldl push acc) #[]
-    | .sub b i => #[.sub b.norm i.norm]
+    | .sub b i w => #[.sub b.norm i.norm w]
     | .frac n d t => #[.frac n.norm d.norm t]
     -- The brackets are the JOIN's business and no shape of the writer's: they are written as text.
     | .delim o c b => go (.seq #[.text o, b, .text c])
@@ -1023,7 +1025,7 @@ where
 partial def Lbl.typst (l : Lbl) : String :=
   match l.norm with
   | .text s => "raw(\"" ++ (s.replace "\\" "\\\\" |>.replace "\"" "\\\"") ++ "\")"
-  | .sub b i => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
+  | .sub b i _ => "[#" ++ b.typst ++ "#sub[#" ++ i.typst ++ "]]"
   | .frac n d _ => "$frac(#" ++ n.typst ++ ", #" ++ d.typst ++ ")$"
   | .seq ps => "[" ++ String.join (ps.toList.map fun p => "#" ++ p.typst) ++ "]"
   | .delim o c b => (Lbl.seq #[.text o, b, .text c]).typst
@@ -1049,7 +1051,7 @@ where
 /-- Every TEXT leaf rewritten by `f`, the shape left alone. -/
 partial def Lbl.mapText (f : String → String) : Lbl → Lbl
   | .text s => .text (f s)
-  | .sub b i => .sub (b.mapText f) (i.mapText f)
+  | .sub b i w => .sub (b.mapText f) (i.mapText f) w
   | .frac n d t => .frac (n.mapText f) (d.mapText f) t
   | .seq ps => .seq (ps.map (Lbl.mapText f))
   | .delim o c b => .delim (f o) (f c) (b.mapText f)
@@ -1735,8 +1737,18 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       -- that writes it too spells one object twice and lets the two drift (`est(R)` over `[m + 1]`,
       -- never `est(R(m+1))`).  The commutative panel, having no wire to read it off, keeps the
       -- subscript, which is what `Lbl.sub` is: the index is dropped by `flat` and by nothing else.
+      -- AN INDEX THAT IS NO OBJECT OF THE CATEGORY THE COMPONENT IS AN ARROW IN — `i : Nat` in
+      -- `R i : [i] ⟶ [i]` — is no wire, so nothing else writes it and `bare` keeps it: `R`#sub[`i`].
       let ix ← e.getAppArgs.toList.mapM (labelTree 0)
-      return .sub (.text (← plain e.getAppFn)) (Lbl.join "," ix.toArray)
+      let wire ← match homObjs? (← Meta.inferType e) with
+        | some (src, _) => do
+          let obj ← Meta.inferType src
+          e.getAppArgs.allM fun a => do
+            let s ← Meta.saveState
+            let r ← Meta.isDefEq (← Meta.inferType a) obj
+            s.restore; return r
+        | none => pure true
+      return .sub (.text (← plain e.getAppFn)) (Lbl.join "," ix.toArray) wire
     else do
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
