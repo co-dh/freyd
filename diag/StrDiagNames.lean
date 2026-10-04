@@ -665,14 +665,13 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Detab.expandFn] def unexpandDetabExpandFn : Unexpander
   | `($_ $_ $_ $_ $_ $x $a) => `($(mkIdent `expand) $x $a)
-  | `($_ $_ $_ $_ $_) => `($(mkIdent `expand))
-  | _ => throw ()
+  | `($_ $_ $_ $_ $_ $x) => `($(mkIdent `expand) $x)
+  | _ => `($(mkIdent `expand))
 -- `k`'s second arm as B&dM p.256 write it, in diagram order; costs and due dates are context.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.kStep] def unexpandTardyKStep : Unexpander
   | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")) $p)
-  | `($_ $_ $_ $_) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")))
-  | _ => throw ()
+  | _ => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.outcost] def unexpandTourOutcost : Unexpander
   | `($_ $_ $x) => `($(mkIdent `outcost) $x)
