@@ -131,16 +131,23 @@ def keyedDecls {γ : Type} (a : KeyedDeclsAttribute γ) (env : Environment) : UI
 /-- THE EXPORTER'S OWN CODE: the `.olean.hash` Lake writes beside each `diag/tool` module, a hash
     of the olean's content.  Not the binary's: it relinks after any edit to the library it imports,
     which leaves the tool's code as it was.  The tool is no module of the drawn environment. -/
+def oleanKey (m : Name) : IO UInt64 := do
+  let p := (← findOLean m).addExtension "hash"
+  let s ← try IO.FS.readFile p catch e =>
+    throw <| IO.userError s!"diag-export: {p}: {e} — `lake build {m}` writes it beside the olean"
+  return mixHash (hash m) (hash s)
+
 def codeKey : IO UInt64 := do
   let mut h : UInt64 := 13
   let fs := (← System.FilePath.readDir "diag/tool").map (·.path) |>.filter (·.extension == some "lean")
   for f in fs.qsort (·.toString < ·.toString) do
     let some stem := f.fileStem | throw <| IO.userError s!"diag-export: {f} has no file stem"
-    let p := (← findOLean (Name.str `diag.tool stem)).addExtension "hash"
-    let s ← try IO.FS.readFile p catch e =>
-      throw <| IO.userError s!"diag-export: {p}: {e} — `lake build diag-export` writes it beside the olean"
-    h := mixHash (mixHash h (hash stem)) (hash s)
+    h := mixHash h (← oleanKey (Name.str `diag.tool stem))
   return h
+
+/-- The declarations a keyed attribute (an unexpander, a delaborator) holds. -/
+def keyedNames {γ : Type} (a : KeyedDeclsAttribute γ) (env : Environment) : Array Name :=
+  (a.ext.getState env).table.fold (init := #[]) fun acc _ es => acc ++ es.toArray.map (·.declName)
 
 initialize envPrintRef : IO.Ref (Option EnvPrint) ← IO.mkRef none
 
@@ -177,7 +184,21 @@ def envPrint (extra : UInt64) : CoreM EnvPrint := do
     h + mixHash (hash n) e.priority.toUInt64
   let printers := mixHash (keyedDecls PrettyPrinter.Delaborator.appUnexpanderAttribute env)
     (keyedDecls PrettyPrinter.Delaborator.delabAttribute env)
-  p := { p with shared := mixHash (mixHash p.shared insts) printers }
+  -- THE TAGS A LABEL READS (`diag_noted`, `diag_unfold`, …): attribute state, which no constant's
+  -- statement or value carries, so a tag added in diag/StrDiagNames.lean changed no key.
+  let labels := (← (labelExtensionMapRef.get : IO _)).fold (init := 0) fun h a ext =>
+    (ext.getState env).foldl (fun h n => h + mixHash (hash a) (hash n)) h
+  -- A PRINTING RULE WHOSE BODY THE IMPORT HIDES (a `module` file's unexposed `def`) hashes as no
+  -- value, so an edit to its body changed no key: such a rule is keyed by its module's olean.
+  let rules := keyedNames PrettyPrinter.Delaborator.appUnexpanderAttribute env
+    ++ keyedNames PrettyPrinter.Delaborator.delabAttribute env
+  let hidden := rules.filterMap fun n =>
+    if ((env.find? n).bind (·.value? (allowOpaque := true))).isSome then none
+    else (env.getModuleIdxFor? n).map (env.header.moduleNames[·.toNat]!)
+  let mut hiddenKey : UInt64 := 0
+  for m in (hidden.qsort Name.lt).toList.eraseDups do
+    hiddenKey := mixHash hiddenKey (← oleanKey m)
+  p := { p with shared := mixHash (mixHash (mixHash p.shared insts) printers) (mixHash labels hiddenKey) }
   envPrintRef.set (some p)
   return p
 

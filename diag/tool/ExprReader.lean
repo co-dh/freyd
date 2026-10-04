@@ -285,6 +285,57 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
         its own.  Give it an `app_unexpander {c}` — or a `delab app.{c}` where the spelling needs \
         an implicit argument — in diag/StrDiagNames.lean, beside its kin"
 
+/-- `m` when `n` is `m.appendIndexAfter k` — the `x_1` Lean's `getUnusedName` and an equation's
+    sanitized binder make of `x` — read by Lean's own numeral reader and kept only when
+    `appendIndexAfter` rebuilds `n` from it exactly. -/
+def indexBase? : Name → Option Name
+  | n@(.str p s) =>
+    let cs := s.toList
+    (List.range cs.length).findSome? fun i =>
+      let m := Name.str p (String.ofList (cs.take i))
+      if i == 0 || cs[i]? != some '_' then none else
+      (String.ofList (cs.drop (i + 1))).toNat?.bind fun k => if m.appendIndexAfter k == n then some m else none
+  | _ => none
+
+/-- THE NOTE'S NAME FOR A BINDER: Lean's `x✝` (a pattern's `_`) and `x_1` (a renaming) are no
+    variable a reader knows, so a binder takes its stem, primed apart from the names in `taken`
+    (`ptr(a,a')`) — and a binder shadowing one of `taken` is primed too, so no printer renames it. -/
+def primeName (taken : List Name) (n : Name) : Name :=
+  let base := if n.hasMacroScopes then n.eraseMacroScopes else (indexBase? n).getD n
+  if n.isAnonymous || (base == n && !taken.contains n) then n else
+  ((List.range (taken.length + 1)).map fun k =>
+    Name.mkSimple (base.toString ++ String.ofList (List.replicate k '\''))).find? (!taken.contains ·)
+    |>.getD base
+
+/-- Every binder of `e` under `primeName`, against `taken` and the binders around it. -/
+partial def primeBinders (taken : List Name) : Expr → Expr
+  | .forallE n t b bi => let n' := primeName taken n; .forallE n' (primeBinders taken t) (primeBinders (n' :: taken) b) bi
+  | .lam n t b bi => let n' := primeName taken n; .lam n' (primeBinders taken t) (primeBinders (n' :: taken) b) bi
+  | .letE n t v b nd =>
+    let n' := primeName taken n
+    .letE n' (primeBinders taken t) (primeBinders taken v) (primeBinders (n' :: taken) b) nd
+  | .app f a => .app (primeBinders taken f) (primeBinders taken a)
+  | .mdata d e => .mdata d (primeBinders taken e)
+  | .proj s i e => .proj s i (primeBinders taken e)
+  | e => e
+
+/-- The user names in scope, innermost first. -/
+def scopeNames : MetaM (List Name) := return (← getLCtx).foldl (fun a d => d.userName :: a) []
+
+/-- The printer under the note's names: every local and every binder through `primeName`, so the
+    delaborator meets no inaccessible name and no shadowing, and never invents an `x_1` itself. -/
+def noteDelab (e : Expr) : MetaM Term := do
+  let (lctx, taken) := (← getLCtx).foldl (init := ((← getLCtx), ([] : List Name))) fun (l, ns) d =>
+    if d.isImplementationDetail then (l, ns) else
+    let n := primeName ns d.userName
+    (if n == d.userName then l else l.setUserName d.fvarId n, n :: ns)
+  Meta.withLCtx lctx (← Meta.getLocalInstances) (PrettyPrinter.delab (primeBinders taken e))
+
+/-- `noteDelab` on one line, as text. -/
+def notePP (e : Expr) : MetaM String := do
+  let s := (toString (← PrettyPrinter.ppTerm (← noteDelab e))).replace "«" "" |>.replace "»" ""
+  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
+
 /-- Lean's pretty printer on one line, the repo's own namespaces off — and the KINDS a label may
     never be made of refused rather than printed.  A matcher, an auxiliary recursor, an internal
     name and a local bound as an instance are Lean's own compilation artefacts: `cons.match_1` and
@@ -304,11 +355,10 @@ def plain (e : Expr) : MetaM String := do
   if let some k ← unlabelled? e then
     throwError "a label is the note's own spelling of an arrow, and `{← Meta.ppExpr e}` is made of \
       {k}, which is Lean's own elaboration and names no arrow the note writes"
-  checkSpelled e (← PrettyPrinter.delab e).raw
+  checkSpelled e (← noteDelab e).raw
   -- A label is the note's spelling, not Lean syntax: a name the parser would need escaped (`prefix`
-  -- is a keyword) prints bare, so the `«»` the formatter wraps it in are dropped.
-  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
-  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
+  -- is a keyword) prints bare, so `notePP` drops the `«»` the formatter wraps it in.
+  notePP e
 
 /-- A PROJECTION of a bundle the statement names OUTRIGHT, reduced to what it projects: the carrier
     of `initial Unit A` is the list object `[A]`, where a bundle the statement BINDS — the `I` of
