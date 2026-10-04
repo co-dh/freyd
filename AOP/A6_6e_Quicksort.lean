@@ -556,10 +556,10 @@ public theorem base_strictNatural :
       | cons _ _ => exact h3.elim
       | wrap u' => exact ⟨y, h2, by cases u; cases u'; rfl⟩
 
-/-- B&dM p.155 `step(a,(x,b,y))`: `([a]⧺x, b, y)` if `aRb`, otherwise `(x, b, [a]⧺y)`; `leb`
-    decides `R`. -/
-@[expose] public def step (leb : A → A → Bool) : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A :=
-  graph fun p => bif leb p.1 p.2.2.1 then (ConsList.cons p.1 p.2.1, p.2.2.1, p.2.2.2)
+variable (R) in
+/-- B&dM p.155 `step(a,(x,b,y))`: `([a]⧺x, b, y)` if `aRb`, otherwise `(x, b, [a]⧺y)`. -/
+@[expose] public def step [DecidableRel R] : (⟨A × (dLAL A).carrier⟩ : RelSet.{0}) ⟶ dLAL A :=
+  graph fun p => if R p.1 p.2.2.1 then (ConsList.cons p.1 p.2.1, p.2.2.1, p.2.2.2)
     else (p.2.1, p.2.2.1, ConsList.cons p.1 p.2.2.2)
 
 /-- `perm join° check'` pointwise: `q` passes `check'` and joins to a permutation of `x`. -/
@@ -636,9 +636,8 @@ public theorem split_base : (base : dL A ⟶ dLAL A) ⊑ singleR () ≫ perm ≫
     exact ⟨_, rfl, (pjc_iff _ _).mpr ⟨Perm.refl _, fun _ hb => hb.elim, fun _ hb => hb.elim⟩⟩
 
 /-- **p.155, the `step` condition**: `(𝟙×perm join° check') step ⊑ cons perm join° check'`. -/
-public theorem split_step {leb : A → A → Bool}
-    (hleb : ∀ a b, leb a b = true → R a b) (htotal : ∀ a b, leb a b = false → R b a) :
-    rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ step leb
+public theorem split_step [DecidableRel R] (hconn : connectedP R) :
+    rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ step R
       ⊑ consR ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
   le_iff.mpr fun p q ⟨p', ⟨h1, hP⟩, hs⟩ => by
     obtain ⟨a, l⟩ := p; obtain ⟨a', x, b, y⟩ := p'
@@ -646,14 +645,12 @@ public theorem split_step {leb : A → A → Bool}
     obtain ⟨hm, hx, hy⟩ := (pjc_iff _ _).mp hP
     refine ⟨ConsList.cons a l, rfl, (pjc_iff _ _).mpr ?_⟩
     subst hs
-    cases h : leb a b with
-    | true =>
-      simp only [h, cond_true]
-      exact ⟨Perm.cons a hm, fun c hc => hc.elim (fun e => e ▸ hleb a b h) (hx c), hy⟩
-    | false =>
-      simp only [h, cond_false]
+    by_cases h : R a b
+    · simp only [h, ↓reduceIte]
+      exact ⟨Perm.cons a hm, fun c hc => hc.elim (fun e => e ▸ h) (hx c), hy⟩
+    · simp only [h, ↓reduceIte]
       refine ⟨Perm.trans (Perm.cons a hm) (Perm.trans (QSort.perm_cons_cappend a x _)
         (QSort.perm_cappend_right x (Perm.swap a b y))), hx,
-        fun c hc => hc.elim (fun e => e ▸ htotal a b h) (hy c)⟩
+        fun c hc => hc.elim (fun e => e ▸ (hconn a b).resolve_left h) (hy c)⟩
 
 end Freyd.Alg.RelSet.Sort

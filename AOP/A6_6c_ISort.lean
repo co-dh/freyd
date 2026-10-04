@@ -27,8 +27,8 @@
       combine`) and `insert` ESTABLISHES SORTEDNESS (AoPA `insert-respects-order`/`-lbound`,
       `relax-lbound`).
 
-  Parameters mirror AoPA's `DecTotalOrder`: an order `R` with a Boolean test `leb` sound for it
-  (`hleb`), totality (`htotal`, AoPA `≰-elim`+`<-relax`) and transitivity (`htrans`, `≤-trans`).
+  Parameters mirror AoPA's `DecTotalOrder`: a DECIDABLE order `R` (`DecidableRel R`, the test
+  `insert` runs), connected (`hconn`, AoPA `≰-elim`+`<-relax`) and transitive (`htrans`, `≤-trans`).
 -/
 module
 
@@ -46,31 +46,30 @@ variable {A : Type}
 
 /-! ## The insertion function and insertion sort -/
 
-/-- `insert a x` slides `a` into `x` past every element it is not `leb`-below (AoPA `insert`,
+/-- `insert a x` slides `a` into `x` past every element it is not `R`-below (AoPA `insert`,
     `iSort.agda`'s `Second-try.insert`). -/
-public def insert (leb : A → A → Bool) (a : A) : ConsList Unit A → ConsList Unit A
+public def insert (R : A → A → Prop) [DecidableRel R] (a : A) : ConsList Unit A → ConsList Unit A
   | ConsList.wrap _   => ConsList.cons a (ConsList.wrap ())
-  | ConsList.cons b x => match leb a b with
-    | true  => ConsList.cons a (ConsList.cons b x)
-    | false => ConsList.cons b (insert leb a x)
+  | ConsList.cons b x =>
+    if R a b then ConsList.cons a (ConsList.cons b x) else ConsList.cons b (insert R a x)
 
 /-- **Insertion sort** `isortFn = foldr insert []` (AoPA `isort = foldr insert []`), a cons-list
     fold: nil ↦ nil, `cons a x ↦ insert a (isortFn x)`. -/
-def isortFn (leb : A → A → Bool) : ConsList Unit A → ConsList Unit A
+def isortFn (R : A → A → Prop) [DecidableRel R] : ConsList Unit A → ConsList Unit A
   | ConsList.wrap _   => ConsList.wrap ()
-  | ConsList.cons a x => insert leb a (isortFn leb x)
+  | ConsList.cons a x => insert R a (isortFn R x)
 
 /-- The insertion-sort algebra `[nil, insert]` over the carrier `list A` (`consScalarAlg` with
     base `nil` and step `insert`). -/
-def insertAlg (leb : A → A → Bool) : Fobj Unit A (dList A) ⟶ dList A :=
-  consScalarAlg (fun _ => ConsList.wrap ()) (insert leb)
+def insertAlg (R : A → A → Prop) [DecidableRel R] : Fobj Unit A (dList A) ⟶ dList A :=
+  consScalarAlg (fun _ => ConsList.wrap ()) (insert R)
 
 /-- **The program EMERGES from the fold-uniqueness law** (AoPA `foldR-to-foldr insert []`):
     `graph isortFn = cataR insertAlg`.  The recursion is not hand-written — `isortFn` obeys the
     cons-list fold equations (both `rfl`), so `CL.consFold_unique` emits it as the catamorphism. -/
-theorem isort_emerges (leb : A → A → Bool) :
-    (graph (isortFn leb) : dList A ⟶ dList A) = cataR (insertAlg leb) :=
-  CL.consFold_unique (fun _ => ConsList.wrap ()) (insert leb) (isortFn leb)
+theorem isort_emerges (R : A → A → Prop) [DecidableRel R] :
+    (graph (isortFn R) : dList A ⟶ dList A) = cataR (insertAlg R) :=
+  CL.consFold_unique (fun _ => ConsList.wrap ()) (insert R) (isortFn R)
     (fun _ => rfl) (fun _ _ => rfl)
 
 /-! ## `combine`, the RELATIONAL insert, and `insert ⊑ combine` (AoPA `Combine`)
@@ -103,23 +102,23 @@ public theorem combine_perm (a : A) :
 
 /-- **`insert ⊑ combine`** (AoPA `insert⊑combine`): the deterministic `insert` is one branch of
     the relational splice. -/
-public theorem insert_le_combine (leb : A → A → Bool) (a : A) :
-    ∀ x : ConsList Unit A, combineP a x (insert leb a x)
+public theorem insert_le_combine (R : A → A → Prop) [DecidableRel R] (a : A) :
+    ∀ x : ConsList Unit A, combineP a x (insert R a x)
   | ConsList.wrap _   => rfl
   | ConsList.cons b x => by
-      show combineP a (ConsList.cons b x) (insert leb a (ConsList.cons b x))
+      show combineP a (ConsList.cons b x) (insert R a (ConsList.cons b x))
       unfold insert
-      cases h : leb a b with
-      | true  => exact Or.inl rfl
-      | false => exact Or.inr ⟨insert leb a x, insert_le_combine leb a x, rfl⟩
+      split
+      · exact Or.inl rfl
+      · exact Or.inr ⟨insert R a x, insert_le_combine R a x, rfl⟩
 
 /-! ## Insertion permutes (AoPA `bagify-homo`) -/
 
 /-- `insert a x` is a permutation of `a :: x`.  Directly from `insert ⊑ combine` and
     `combine_perm`. -/
-theorem insert_perm (leb : A → A → Bool) (a : A) (x : ConsList Unit A) :
-    Perm (ConsList.cons a x) (insert leb a x) :=
-  combine_perm a (insert_le_combine leb a x)
+theorem insert_perm (R : A → A → Prop) [DecidableRel R] (a : A) (x : ConsList Unit A) :
+    Perm (ConsList.cons a x) (insert R a x) :=
+  combine_perm a (insert_le_combine R a x)
 
 /-! ## Insertion establishes sortedness (AoPA `insert-respects-order`, `-lbound`, `relax-lbound`)
 
@@ -128,56 +127,53 @@ theorem insert_perm (leb : A → A → Bool) (a : A) (x : ConsList Unit A) :
 /-- Membership through `insert`: an element of `insert a x` is `a` or was already in `x`.  AoPA
     handles this inside `insert-respects-lbound` by recursion; we get it free from `insert_perm`
     and the existing `Sort.perm_mem`. -/
-theorem inlist_insert (leb : A → A → Bool) (a : A) (x : ConsList Unit A) {c : A}
-    (h : inlistP (insert leb a x) c) : c = a ∨ inlistP x c :=
-  Sort.perm_mem (Perm.symm (insert_perm leb a x)) h
+theorem inlist_insert (R : A → A → Prop) [DecidableRel R] (a : A) (x : ConsList Unit A) {c : A}
+    (h : inlistP (insert R a x) c) : c = a ∨ inlistP x c :=
+  Sort.perm_mem (Perm.symm (insert_perm R a x)) h
 
 /-- **`insert` respects and establishes sortedness** (AoPA `insert-respects-order`): if `x` is
     sorted then so is `insert a x`.  Needs the order to be transitive (`htrans`, AoPA `≤-trans`)
-    and total with a sound test (`hleb`, `htotal`, AoPA `≰-elim`/`<-relax`). -/
-theorem insert_ordered {R : A → A → Prop} {leb : A → A → Bool}
-    (hleb : ∀ a b, leb a b = true → R a b)
-    (htotal : ∀ a b, leb a b = false → R b a)
+    and connected (`hconn`, AoPA `≰-elim`/`<-relax`). -/
+theorem insert_ordered {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
     (htrans : ∀ a b c, R a b → R b c → R a c) (a : A) :
-    ∀ x : ConsList Unit A, orderedP R x → orderedP R (insert leb a x)
+    ∀ x : ConsList Unit A, orderedP R x → orderedP R (insert R a x)
   | ConsList.wrap _, _ =>
       -- insert a [] = [a] : sorted vacuously
       ⟨fun b hb => hb.elim, trivial⟩
   | ConsList.cons b x, hx => by
-      show orderedP R (insert leb a (ConsList.cons b x))
+      show orderedP R (insert R a (ConsList.cons b x))
       unfold insert
-      cases h : leb a b with
-      | true =>
-          -- a::b::x : a below b (test) and below all of x (transitivity through b)
-          refine ⟨fun c hc => ?_, hx⟩
-          cases hc with
-          | inl hcb => rw [hcb]; exact hleb a b h
-          | inr hcx => exact htrans a b c (hleb a b h) (hx.1 c hcx)
-      | false =>
-          -- b :: insert a x : b below everything in insert a x, and insert a x sorted (IH)
-          refine ⟨fun c hc => ?_, insert_ordered hleb htotal htrans a x hx.2⟩
-          cases inlist_insert leb a x hc with
-          | inl hca => rw [hca]; exact htotal a b h
-          | inr hcx => exact hx.1 c hcx
+      split
+      · -- a::b::x : a below b (test) and below all of x (transitivity through b)
+        rename_i h
+        refine ⟨fun c hc => ?_, hx⟩
+        cases hc with
+        | inl hcb => rw [hcb]; exact h
+        | inr hcx => exact htrans a b c h (hx.1 c hcx)
+      · -- b :: insert a x : b below everything in insert a x, and insert a x sorted (IH)
+        rename_i h
+        refine ⟨fun c hc => ?_, insert_ordered hconn htrans a x hx.2⟩
+        cases inlist_insert R a x hc with
+        | inl hca => rw [hca]; exact (hconn a b).resolve_left h
+        | inr hcx => exact hx.1 c hcx
 
 /-! ## The two whole-list facts, then the refinement headline -/
 
 /-- `isortFn x` is a permutation of `x` (AoPA `permute ⊒ perm`, the permutation half). -/
-theorem isort_perm (leb : A → A → Bool) : ∀ x : ConsList Unit A, Perm x (isortFn leb x)
+theorem isort_perm (R : A → A → Prop) [DecidableRel R] :
+    ∀ x : ConsList Unit A, Perm x (isortFn R x)
   | ConsList.wrap _   => Perm.nil
   | ConsList.cons a x =>
       -- a::x  --cons a (IH)-->  a::(isortFn x)  --insert_perm-->  insert a (isortFn x)
-      Perm.trans (Perm.cons a (isort_perm leb x)) (insert_perm leb a (isortFn leb x))
+      Perm.trans (Perm.cons a (isort_perm R x)) (insert_perm R a (isortFn R x))
 
 /-- `isortFn x` is sorted (AoPA `ordered?` half of the derivation). -/
-theorem isort_sorted {R : A → A → Prop} {leb : A → A → Bool}
-    (hleb : ∀ a b, leb a b = true → R a b)
-    (htotal : ∀ a b, leb a b = false → R b a)
+theorem isort_sorted {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
-    ∀ x : ConsList Unit A, orderedP R (isortFn leb x)
+    ∀ x : ConsList Unit A, orderedP R (isortFn R x)
   | ConsList.wrap _   => trivial
   | ConsList.cons a x =>
-      insert_ordered hleb htotal htrans a (isortFn leb x) (isort_sorted hleb htotal htrans x)
+      insert_ordered hconn htrans a (isortFn R x) (isort_sorted hconn htrans x)
 
 /-- **The sorting specification** (program-independent), the book's `sort = ordered? ∘ permute`
     in diagram order: `(perm ≫ ordered R) x y` iff `y` is a sorted permutation of `x`. -/
@@ -187,15 +183,13 @@ def sortSpec (R : A → A → Prop) : dList A ⟶ dList A := perm ≫ ordered R
     Mirrors AoPA's `ordered? ○ permute ⊒ fun (foldr insert [])`.  The program itself is the
     catamorphism `isort_emerges`; here we prove it produces a SORTED PERMUTATION, i.e. it refines
     `sortSpec`.  Together with `isort_emerges` this is the full AoPA derivation. -/
-theorem isort_refines_spec {R : A → A → Prop} {leb : A → A → Bool}
-    (hleb : ∀ a b, leb a b = true → R a b)
-    (htotal : ∀ a b, leb a b = false → R b a)
+theorem isort_refines_spec {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
-    (graph (isortFn leb) : dList A ⟶ dList A) ⊑ sortSpec R := by
+    (graph (isortFn R) : dList A ⟶ dList A) ⊑ sortSpec R := by
   rw [le_iff]; intro x y hxy
   -- hxy : y = isortFn x.  Witness the permutation `z := isortFn x = y`.
-  refine ⟨isortFn leb x, isort_perm leb x, ?_⟩
-  exact ⟨hxy.symm, isort_sorted hleb htotal htrans x⟩
+  refine ⟨isortFn R x, isort_perm R x, ?_⟩
+  exact ⟨hxy.symm, isort_sorted hconn htrans x⟩
 
 /-! ## Exercise 6.30 (B&dM p.157): insertion sort from `perm = ⦇[nil, add]⦈`
 
@@ -399,29 +393,27 @@ public theorem insertion_sort {ins : (⟨A × ConsList Unit A⟩ : RelSet.{0}) �
 calc_steps insertion_sort
 
 /-- The relation `insert : list A ← A × list A` of the function `insert`. -/
-@[expose] public def insertR (leb : A → A → Bool) : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
-  graph fun p => insert leb p.1 p.2
+@[expose] public def insertR [DecidableRel R] : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+  graph fun p => insert R p.1 p.2
 
 /-- **Ex 6.30, the `insert` asked for**: the `insert` above meets
     `(𝟙×ordered) insert ⊑ add ordered`. -/
-public theorem insert_add {leb : A → A → Bool}
-    (hleb : ∀ a b, leb a b = true → R a b)
-    (htotal : ∀ a b, leb a b = false → R b a)
+public theorem insert_add [DecidableRel R] (hconn : connectedP R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
-    rprodMap (𝟙 (dE A)) (ordered R) ≫ insertR leb
+    rprodMap (𝟙 (dE A)) (ordered R) ≫ insertR R
       ⊑ add ≫ ordered R :=
   le_iff.mpr fun p r ⟨q, ⟨h1, h2, ho⟩, hr⟩ => by
     obtain ⟨a, x⟩ := p; obtain ⟨a', y⟩ := q
     obtain rfl : a = a' := h1; obtain rfl : x = y := h2
     subst hr
-    exact ⟨_, insert_le_combine leb a x, rfl, insert_ordered hleb htotal htrans a x ho⟩
+    exact ⟨_, insert_le_combine R a x, rfl, insert_ordered hconn htrans a x ho⟩
 
-/-! ## Sanity checks on `ℕ` with `Nat.ble` -/
+/-! ## Sanity checks on `ℕ` with `≤` -/
 
-example : isortFn Nat.ble (ConsList.cons 3 (ConsList.cons 1 (ConsList.cons 2 (ConsList.wrap ()))))
+example : isortFn (· ≤ · : Nat → Nat → Prop) (ConsList.cons 3 (ConsList.cons 1 (ConsList.cons 2 (ConsList.wrap ()))))
     = ConsList.cons 1 (ConsList.cons 2 (ConsList.cons 3 (ConsList.wrap ()))) := rfl
 
-example : isortFn Nat.ble
+example : isortFn (· ≤ · : Nat → Nat → Prop)
       (ConsList.cons 2 (ConsList.cons 2 (ConsList.cons 1 (ConsList.wrap ()))))
     = ConsList.cons 1 (ConsList.cons 2 (ConsList.cons 2 (ConsList.wrap ()))) := rfl
 

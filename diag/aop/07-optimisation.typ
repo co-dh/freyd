@@ -337,12 +337,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_iff_distributes") \
-    // lean:AOP.A7_2.monoAlg_iff_distributes@650c43f5
+    // lean:AOP.A7_2.monoAlg_iff_distributes@0c8d6289
     #src[`f` carries `R`-related parts to `R`-related wholes (`f°F(R)f⊑R`) if and only if applying `f` to the
      `R`-best parts (`F(est(R))f`) is included in applying `f` to all parts, then taking an `R`-best (`F(∋)f` then `est(R)`)
-      // lean:AOP.A7_2.distributes_of_monoAlg@437ca1ee
+      // lean:AOP.A7_2.distributes_of_monoAlg@d1b87e50
  ]],
-      // lean:AOP.A7_2.monoAlg_of_distributes@213bcf14
+      // lean:AOP.A7_2.monoAlg_of_distributes@5bfa3376
 
   [#vstep([], lean("Freyd.Alg.Distributes.lhs", "Freyd.Alg.Distributes.rhs"), [#src[`f` distributes over `R` — @dist-defn — the fraction bent as @adj-E-bend]])],
 
