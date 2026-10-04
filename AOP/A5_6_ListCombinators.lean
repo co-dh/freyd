@@ -142,7 +142,7 @@ public theorem subseqP.weaken {b : A} : ∀ {x y : ConsList Unit A}, subseqP x y
   | ConsList.cons _ _, _, h => Or.inr h
 
 /-- Dropping the front element of the smaller list preserves subsequence. -/
-theorem subseqP.of_cons {a : A} :
+public theorem subseqP.of_cons {a : A} :
     ∀ {x y : ConsList Unit A}, subseqP (ConsList.cons a x) y → subseqP x y
   | x, ConsList.wrap _, h => h.elim
   | x, ConsList.cons b y, h => by
