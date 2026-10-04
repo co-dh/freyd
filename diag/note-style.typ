@@ -90,7 +90,7 @@
 }
 /// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
 #let lean-keys(c) = { if type(c) != content { () }
-  else if c.func() == metadata { if c.at("label", default: none) == <lean-formula> { (c.value,) } else { () } }
+  else if c.func() == metadata { if c.at("label", default: none) in (<lean-formula>, <lean-row-key>) { (c.value,) } else { () } }
   else if c.has("children") { c.children.map(lean-keys).flatten() }
   else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
 // A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file

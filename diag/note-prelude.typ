@@ -121,6 +121,9 @@
 // A NAME CELL is the same route's `.name` step, `#leant(sel + ".name")`: the term the type belongs
 // to, so a table's name column is read off the declaration too.
 #let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
+// A NAME CELL, `leant(sel + ".name")`, also says the row is ABOUT `sel` (`<lean-row-key>`), so a row
+// whose first cell is its name is labelled and cited by that declaration, as a formula cell's row is.
+#let leann(sel) = { [#metadata(sel)<lean-row-key>]; leant(sel + ".name") }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
 // The two sides of an `↔` as one call in a shared box: the string route draws no `↔` as one panel.
