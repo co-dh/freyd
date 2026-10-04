@@ -467,6 +467,59 @@ public theorem party_pair_step :
           ≫ est((rprodMap (R rating) (R rating))°) :=
   pair_est_le includeR excludeR (R rating) (R rating)
 
+/-- **party-laws, Ex 7.38 row**: `frac(⦇S⦈,∋) est((R×R)°) frac(choose,∋) est(R°) ⊑
+    frac(⦇S⦈,∋) E(choose) est(R°)` — `est_Λ_est_le` at `Q := (R×R)°`, `T := choose`, with
+    `(R×R)°choose ⊑ choose R°` for its hypothesis. -/
+public theorem party_step2 :
+    Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°)
+      ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
+  have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
+    have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
+  exact comp_mono_left _ (est_Λ_est_le (chooseR_monotonic rating) hRtrans')
+
+/-- **party-laws, greedy row**: `⦇S%∋ est((R×R)°)⦈ ⊑ ⦇S⦈%∋ est((R×R)°)` (Theorem 7.2 with
+    `party_mono`), followed by `frac(choose,∋) est(R°)`. -/
+public theorem party_step3 :
+    ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°)
+      ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°) := by
+  exact le_trans (comp_mono_right
+    (greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)) _) (le_of_eq (Cat.assoc _ _ _))
+
+/-- **party-laws, Ex 7.15 row**: `party_pair_step` inside the fold. -/
+public theorem party_step4 :
+    ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°)
+      ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°) :=
+  comp_mono_right (relCata_mono (RT.initial A) (party_pair_step rating)) _
+
+/-- **party-laws, `include` row**: `include_step` inside the fold — `include` a map. -/
+public theorem party_step5 :
+    ⦇(rpair (graph «include»)
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°)
+      ⊑ ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°) :=
+  comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (include_step rating) (le_refl _))) _
+
+/-- **party-laws, `exclude` row**: `exclude_step` inside the fold. -/
+public theorem party_step6 :
+    ⦇(rpair (graph «include»)
+        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
+            ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
+          ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°)
+      ⊑ ⦇(rpair (graph «include»)
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°) :=
+  comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (le_refl _) (exclude_step rating))) _
+
 /-- **party-laws (the derivation's headline)**: the greedy program refines the specification,
     `⦇⟨include, π₂ list(Λ(choose) est(R°)) concat⟩⦈ Λ(choose) est(R°) ⊑ Λ(party) est(R°)` —
     the best of every guest list the president allows is one pass up the tree, each subtree
@@ -480,37 +533,9 @@ public theorem party_laws :
       : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
           ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°)
-      ⊑ Λ party ≫ est((R rating)°) := by
-  -- last row: the program's algebra refines ⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩
-  have hRrefl : 𝟙 (dList A) ⊑ (R rating)° := by
-    have h := recip_mono (R_refl rating); rwa [recip_id] at h
-  have row7 := rpair_mono (graph_le_Λ_est «include» hRrefl) (exclude_step rating)
-  -- Ex 7.15 row: `⟨Λ(include) est(R°), Λ(exclude) est(R°)⟩ ⊑ Λ(S) est((R×R)°)`
-  have row6 := party_pair_step rating
-  have hcata : ⦇(rpair (graph «include»)
-        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-            ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
-          ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-          ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-      ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ :=
-    relCata_mono (RT.initial A) (le_trans row7 row6)
-  -- the greedy theorem at `(R×R)°`
-  have hgreedy : ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈
-      ⊑ ⦇S⦈%∋ ≫ est((rprodMap (R rating) (R rating))°) :=
-    greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)
-  -- Ex 7.38 row, at `Q := (R×R)°`, `T := choose`
-  have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
-    have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
-  have row4 : est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°)
-      ⊑ existsImage choose ≫ est((R rating)°) :=
-    est_Λ_est_le (chooseR_monotonic rating) hRtrans'
-  -- absorption + `party ≜ ⦇S⦈ choose` close the chain
-  have hfin : ⦇S⦈%∋ ≫ (existsImage choose ≫ est((R rating)°))
-      = Λ party ≫ est((R rating)°) := by
-    rw [← Cat.assoc, Λ_absorption, ← party_eq]
-  exact le_trans (comp_mono_right hcata _) (le_trans (comp_mono_right hgreedy _)
-    (le_trans (le_of_eq (Cat.assoc _ _ _)) (le_trans (comp_mono_left _ row4) (le_of_eq hfin))))
+      ⊑ Λ party ≫ est((R rating)°) :=
+  le_trans (party_step6 rating) (le_trans (party_step5 rating) (le_trans (party_step4 rating)
+    (le_trans (party_step3 rating) (le_trans (party_step2 rating) (le_of_eq (party_open rating).symm)))))
 
 /-! ### The worked example (`party-example-tree`: employees ARE their ratings, `rating := id`) -/
 
