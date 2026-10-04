@@ -91,7 +91,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
-attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.tourAlg RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient
+attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
@@ -355,7 +355,9 @@ def delabConsList : Delab := do
   if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `([$(← withAppArg delab)])
   else if ← Meta.isDefEq args[0]! args[1]! then
     `($(mkIdent (Name.mkSimple "L")) $(← withAppArg delab))
-  else failure
+  -- Any other leaf (§8.6's `City×City`, or a leaf left general) names no list the note has a word
+  -- for: the type is the carrier of the base functor `F`'s initial algebra, which is `μF`.
+  else `($(mkIdent (Name.mkSimple "μF")))
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- The LEAF object is the leaf type itself — `dL L` names no former — and the EMPTY leaf is the
@@ -1161,8 +1163,9 @@ open Lean PrettyPrinter in
   | `($_ $F) => `($(mkIdent `cp) $F)
   | _ => `($(mkIdent `cp))
 -- THE NAMES THE NOTE NEVER WRITES ITSELF: the suffix is Lean's disambiguator (`Fn`, `Rel`, `Alg`,
--- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): the algebras keep
--- the Lean name; a bundled relator prints as the type it bundles (`op`, `Journey`).
+-- `Relator`, as `editFn` is `edit` above). The author's decision (2026-09-22): a bundled relator
+-- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
+-- when the rule became that Lean follows the note: an algebra prints as the junction the note writes.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.opRelator] def unexpandEditOpRelator : Unexpander
   | `($_ $args*) => `($(mkIdent `op) $args*)
@@ -1173,6 +1176,11 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.editAlg] def unexpandEditAlg : Unexpander
   -- ONE name, closed up as the note sets a junction: a list literal would print `[base, step]`.
   | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
+open Lean PrettyPrinter in
+-- §8.6 writes the tour algebra as its body, `tour≜⦇[start,dropl ∪ dropr]⦈` (@tour-defn), as
+-- `editAlg` above: one name, the junction the note sets.
+@[app_unexpander RelSet.Tour.tourAlg] def unexpandTourAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[start,dropl ∪ dropr]")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
@@ -1535,9 +1543,12 @@ open Lean PrettyPrinter in
   | `($_ $args*) => `($(mkIdent `arm₂) $args*)
   | _ => `($(mkIdent `arm₂))
 open Lean PrettyPrinter in
+-- The arm of a preorder `Q` is the note's `Q₂` (chapter 10 writes `est(Qᵢ)`): the preorder's own
+-- name, subscripted, never `armQ₂` — the Lean name only says which arm the declaration takes.
 @[app_unexpander RelSet.SL.armQ₂] def unexpandSLArmQ2 : Unexpander
-  | `($_ $args*) => `($(mkIdent `armQ₂) $args*)
-  | _ => `($(mkIdent `armQ₂))
+  | `($_ $q:ident) =>
+    `($(mkIdent (Name.mkSimple (q.getId.eraseMacroScopes.toString (escape := false) ++ "₂"))))
+  | _ => `($(mkIdent `Q₂))
 open Lean PrettyPrinter in
 @[app_unexpander Fin] def unexpandFinName : Unexpander
   | `($_ $args*) => `($(mkIdent `Fin) $args*)
