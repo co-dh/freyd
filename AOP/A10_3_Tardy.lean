@@ -724,6 +724,11 @@ public theorem R_eq : R ct dt wt = costR ct dt wt ≫ ListRel.leq ≫ (costR ct 
   hom_ext fun _ _ => ⟨fun h => ⟨_, rfl, _, h, rfl⟩, fun ⟨_, h1, _, h2, h3⟩ => by
     subst h1; subst h3; exact h2⟩
 
+/-- **tardy-defn**, pointwise: `u R v` iff `u` costs no more than `v`. -/
+public theorem R_apply (u v : SnocList Unit Job) :
+    R ct dt wt u v ↔ cost ct dt wt u ≤ cost ct dt wt v :=
+  Iff.rfl
+
 /-- `β°F(bagify°)α=bagify°`: the step of the fold `bagify=⦇β⦈`, read backwards. -/
 public theorem bagify_recip_alg : (bagAlg (Job := Job))° ≫ FbJ ≫ αJ = (bagify (Job := Job))° := by
   apply hom_ext; intro b w

@@ -129,6 +129,13 @@ public theorem R_recip_trans : (R vol)° ≫ (R vol)° ⊑ (R vol)° :=
   | Sum.inl D => ConsList.wrap D
   | Sum.inr p => p.2
 
+/-- **knap-defn**: `[nil,cons]`, the `nil` arm. -/
+public theorem con_nil (u : Unit) :
+    con (Sum.inl u : (Fobj Unit Item (dList Item)).carrier) = ConsList.wrap u := rfl
+/-- **knap-defn**: `[nil,cons]`, the `cons` arm. -/
+public theorem con_cons (a : Item) (x : ConsList Unit Item) :
+    con (Sum.inr (a, x) : (Fobj Unit Item (dList Item)).carrier) = ConsList.cons a x := rfl
+
 /-- `[nil,cons] = con`, the initial algebra. -/
 public theorem con_eq_junc :
     (graph con : (F Unit Item).obj (dList Item) ⟶ dList Item)

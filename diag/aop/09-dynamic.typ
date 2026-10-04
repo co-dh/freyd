@@ -252,16 +252,16 @@
   [#leanf("Freyd.Alg.RelSet.Edit.F_obj")],
   [`F(Op,X)` is the empty sequence or one operation paired with an `X`],
   [#leann("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
-  [#leanf("Freyd.Alg.RelSet.Edit.edit_cata")],
+  [#leanf("Freyd.Alg.RelSet.Edit.edit_cata"), #leanf("Freyd.Alg.RelSet.Edit.editFn")],
   [the two strings an edit sequence turns one into the other],
   [], [],
   [#leanf("Freyd.Alg.RelSet.Edit.length_cata")],
   [the number of operations in a sequence],
   [#leann("Freyd.Alg.RelSet.Edit.R")], [#leant("Freyd.Alg.RelSet.Edit.R")],
-  [#leanf("Freyd.Alg.RelSet.Edit.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Edit.R_eq"), #leanf("Freyd.Alg.RelSet.Edit.R_apply")],
   [`es` is no longer than `fs`],
   [#leann("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
-  [#leanf("Freyd.Alg.RelSet.Edit.V_eq")],
+  [#leanf("Freyd.Alg.RelSet.Edit.V_eq"), #leanf("Freyd.Alg.RelSet.Edit.V_apply")],
   [each string of the first pair is a suffix of the matching string of the second],
   [#leann("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
   [#leanf("Freyd.Alg.RelSet.Edit.Q_inl"), #leanf("Freyd.Alg.RelSet.Edit.Q_inr")],
@@ -271,8 +271,17 @@
   [#leanf("Freyd.Alg.RelSet.Edit.empty_iff")],
   [holds only at the pair of two empty strings],
   [#leann("Freyd.Alg.RelSet.Edit.unstep")], [#leant("Freyd.Alg.RelSet.Edit.unstep")],
-  [#leanf("Freyd.Alg.RelSet.Edit.unstep_sound")],
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_sound"), #leanf("Freyd.Alg.RelSet.Edit.unstep_nil"),
+   #leanf("Freyd.Alg.RelSet.Edit.unstep_del"), #leanf("Freyd.Alg.RelSet.Edit.unstep_ins"),
+   #leanf("Freyd.Alg.RelSet.Edit.unstep_cons")],
   [every split of a pair of strings into one operation and a smaller pair; `step` puts it back],
+  [#leann("Freyd.Alg.RelSet.CL.con")], [#leant("Freyd.Alg.RelSet.CL.con")],
+  [#leanf("Freyd.Alg.RelSet.Edit.con_nil"), #leanf("Freyd.Alg.RelSet.Edit.con_cons")],
+  [`α=[nil,cons]`: the empty edit sequence, or one operation in front of a sequence],
+  [#leann("Freyd.Alg.RelSet.Edit.baseStepFn")], [#leant("Freyd.Alg.RelSet.Edit.baseStepFn")],
+  [#leanf("Freyd.Alg.RelSet.Edit.base_nil"), #leanf("Freyd.Alg.RelSet.Edit.step_cpy"),
+   #leanf("Freyd.Alg.RelSet.Edit.step_del"), #leanf("Freyd.Alg.RelSet.Edit.step_ins")],
+  [`[base,step]`: the two empty strings, or one operation added to the front of the pair],
 // lean:AOP.A9_2_Edit.op_cases@c6eaf29f
 // lean:AOP.A9_2_Edit.F_obj@c75acbc8
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
@@ -283,40 +292,17 @@
 // lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
 // lean:AOP.A9_2_Edit.empty_iff@0a966621
 // lean:AOP.A9_2_Edit.unstep_sound@d5b21374
+// lean:AOP.A9_2_Edit.con_nil@56d08b95
+// lean:AOP.A9_2_Edit.con_cons@347d25ed
+// lean:AOP.A9_2_Edit.base_nil@eba6cc46
+// lean:AOP.A9_2_Edit.step_cpy@ef7fd738
+// lean:AOP.A9_2_Edit.step_del@eee5b78e
+// lean:AOP.A9_2_Edit.step_ins@1fed2e53
+// lean:AOP.A9_2_Edit.unstep_nil@1e0900c5
+// lean:AOP.A9_2_Edit.unstep_del@07222c75
+// lean:AOP.A9_2_Edit.unstep_ins@d0e84c5e
+// lean:AOP.A9_2_Edit.unstep_cons@008bce13
 )]<edit-defn>
-
-// `α`, `[base,step]` and `unstep` are maps, so each row is one equation, input | output.
-#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*`x`*], [*`α(x)`*]),
-  [#leanf("Freyd.Alg.RelSet.Edit.con_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.con_nil.rhs")],
-  // lean:AOP.A9_2_Edit.con_nil@56d08b95
-  [#leanf("Freyd.Alg.RelSet.Edit.con_cons.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.con_cons.rhs")],
-  // lean:AOP.A9_2_Edit.con_cons@347d25ed
-)]<edit-defn-alpha>
-
-#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*`x`*], [*`[base,step](x)`*]),
-  [#leanf("Freyd.Alg.RelSet.Edit.base_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.base_nil.rhs")],
-  // lean:AOP.A9_2_Edit.base_nil@eba6cc46
-  [#leanf("Freyd.Alg.RelSet.Edit.step_cpy.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_cpy.rhs")],
-  // lean:AOP.A9_2_Edit.step_cpy@ef7fd738
-  [#leanf("Freyd.Alg.RelSet.Edit.step_del.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_del.rhs")],
-  // lean:AOP.A9_2_Edit.step_del@eee5b78e
-  [#leanf("Freyd.Alg.RelSet.Edit.step_ins.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.step_ins.rhs")],
-  // lean:AOP.A9_2_Edit.step_ins@1fed2e53
-)]<edit-defn-step>
-
-#disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
-  table.header([*`p`*], [*`unstep(p)`*]),
-  [#leanf("Freyd.Alg.RelSet.Edit.unstep_nil.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_nil.rhs")],
-  // lean:AOP.A9_2_Edit.unstep_nil@1e0900c5
-  [#leanf("Freyd.Alg.RelSet.Edit.unstep_del.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_del.rhs")],
-  // lean:AOP.A9_2_Edit.unstep_del@07222c75
-  [#leanf("Freyd.Alg.RelSet.Edit.unstep_ins.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_ins.rhs")],
-  // lean:AOP.A9_2_Edit.unstep_ins@d0e84c5e
-  [#leanf("Freyd.Alg.RelSet.Edit.unstep_cons.lhs.arg")], [#leanf("Freyd.Alg.RelSet.Edit.unstep_cons.rhs")],
-  // lean:AOP.A9_2_Edit.unstep_cons@008bce13
-)]<edit-defn-unstep>
 
 // The two strings are a PRODUCT, hence TWO WIRES, and every box here spans them: nothing in the
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
@@ -568,7 +554,7 @@
   [#leanf("Freyd.Alg.RelSet.TT.Tree")],
   [a tree is a tip holding one value, or a node joining two trees; `h≜[tip,bin]`],
   [#leann("Freyd.Alg.RelSet.Bracket.flattenFn")], [#leant("Freyd.Alg.RelSet.Bracket.flattenFn")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.flatten_cata")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.flatten_cata"), #leanf("Freyd.Alg.RelSet.Bracket.flattenFn")],
   [the tips of a tree, left to right; `H=flatten°` builds every tree over a list],
   [#leann("Freyd.Alg.RelSet.Bracket.costSizeFn")], [#leant("Freyd.Alg.RelSet.Bracket.costSizeFn")],
   [#leanf("Freyd.Alg.RelSet.Bracket.costSizeFn")],
@@ -580,16 +566,16 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten")],
   [`sb` associative, so the size depends only on the flattened list],
   [#leann("Freyd.Alg.RelSet.Bracket.R")], [#leant("Freyd.Alg.RelSet.Bracket.R")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.R_eq"), #leanf("Freyd.Alg.RelSet.Bracket.R_apply")],
   [`t` costs no more than `t'`],
   [#leann("Freyd.Alg.RelSet.Bracket.gR")], [#leant("Freyd.Alg.RelSet.Bracket.gR")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq"), #leanf("Freyd.Alg.RelSet.Bracket.gFn")],
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#leann("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
   [#leanf("Freyd.Alg.RelSet.Bracket.nonsingle")],
   [holds at the lists of two or more elements],
   [#leann("Freyd.Alg.RelSet.Bracket.splits")], [#leant("Freyd.Alg.RelSet.Bracket.splits")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq"), #leanf("Freyd.Alg.RelSet.Bracket.splitsFn_eq")],
   [every way to cut a list into two non-empty parts — an implementation of #frc([`cat°`])],
   [#leann("Freyd.Alg.RelSet.Bracket.array")], [#leant("Freyd.Alg.RelSet.Bracket.array")],
   [#leanf("Freyd.Alg.RelSet.Bracket.array")],
@@ -952,22 +938,22 @@
   [#leanf("Freyd.Alg.RelSet.Code.bytes")],
   [a symbol costs `c`, a pointer costs `p`],
   [#leann("Freyd.Alg.RelSet.Code.sizeFn")], [#leant("Freyd.Alg.RelSet.Code.sizeFn")],
-  [#leanf("Freyd.Alg.RelSet.Code.size_cata")],
+  [#leanf("Freyd.Alg.RelSet.Code.size_cata"), #leanf("Freyd.Alg.RelSet.Code.sizeFn")],
   [the total cost of a code sequence],
   [#leann("Freyd.Alg.RelSet.Code.R")], [#leant("Freyd.Alg.RelSet.Code.R")],
-  [#leanf("Freyd.Alg.RelSet.Code.R_eq")],
+  [#leanf("Freyd.Alg.RelSet.Code.R_eq"), #leanf("Freyd.Alg.RelSet.Code.R_apply")],
   [`u` costs no more than `v`],
   [#leann("Freyd.Alg.RelSet.Code.prefixR")], [#leant("Freyd.Alg.RelSet.Code.prefixR")],
   [#leanf("Freyd.Alg.RelSet.Code.prefixR")],
   [`ys` is a prefix of `x`],
   [#leann("Freyd.Alg.RelSet.Code.U")], [#leant("Freyd.Alg.RelSet.Code.U")],
-  [#leanf("Freyd.Alg.RelSet.Code.U_eq")],
+  [#leanf("Freyd.Alg.RelSet.Code.U_eq"), #leanf("Freyd.Alg.RelSet.Code.U")],
   [any symbol to any symbol, any pointer to any pointer],
   [#leann("Freyd.Alg.RelSet.Code.Q")], [#leant("Freyd.Alg.RelSet.Code.Q")],
-  [#leanf("Freyd.Alg.RelSet.Code.Q_eq")],
+  [#leanf("Freyd.Alg.RelSet.Code.Q_eq"), #leanf("Freyd.Alg.RelSet.Code.Q")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#leann("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
-  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
+  [#leanf("Freyd.Alg.RelSet.Code.reduce"), #leanf("Freyd.Alg.RelSet.Code.reduceFn")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
 )]<code-defn>
