@@ -65,7 +65,7 @@ in @mu-defn.
 // lean:AOP.A9_1.H@71852cf7
 
 #leanf("Freyd.Alg.DPSetting") \
-#src[`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive — assumed by every theorem below]
+#src[`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive]
 // lean:AOP.A9_1.DPSetting@761bb771
 ]]<dp-defn>
 
@@ -547,7 +547,7 @@ in @mu-defn.
 // applies; no decomposition is preferable to another here, so there is no thinning step.
 #disp[#definition[
 `tree A::=tip A∣bin (tree A,tree A)`, #h(4pt) `FX=A+X²`, so `F(R)=𝟙+R²`; #h(4pt)
-`h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`
+`h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ :` #leant("Freyd.Alg.RelSet.Bracket.flatten_cata")
 #src[], #h(4pt) `H=flatten°`.
 // lean:AOP.A9_3_Bracket.flatten_cata@ce76fada
 
