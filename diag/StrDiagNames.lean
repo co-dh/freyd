@@ -90,7 +90,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.ListRel.zeros RelSet.ListRel.pluss
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
-  RelSet.Edit.empty RelSet.Code.null
+  RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.tourAlg RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
@@ -128,6 +128,19 @@ open Lean PrettyPrinter in
 /-- The bifunctor's unary form is still the same bifunctor: the note's lane is `F`. -/
 @[app_unexpander BiRelator.toRelator] def unexpandToRelator : Unexpander
   | `($_ $F) => `($F)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- A Bool test read as a predicate is still the test: the note writes `corefl(p)`, never the
+    coercion between `Bool` and `Prop`. -/
+@[app_unexpander RelSet.GCTakeWhile.holds] def unexpandHolds : Unexpander
+  | `($_ $p) => `($p)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
+/-- The carrier of `F X = L + E×X`, written as the sum it is (B&dM's `FX=𝟏+A×X`). -/
+@[app_unexpander RelSet.CL.Fobj] def unexpandCLFobj : Unexpander
+  | `($_ $L $E $C) => `($L + $E × $C)
   | _ => throw ()
 
 open Lean PrettyPrinter in

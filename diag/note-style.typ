@@ -90,7 +90,8 @@
 }
 /// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
 #let lean-keys(c) = { if type(c) != content { () }
-  else if c.func() == metadata { if c.at("label", default: none) in (<lean-formula>, <lean-row-key>) { (c.value,) } else { () } }
+  else if c.func() == metadata { let l = c.at("label", default: none)
+    if l in (<lean-formula>, <lean-row-key>) { (c.value,) } else if l == <lean-keys-in> { lean-keys(c.value) } else { () } }
   else if c.has("children") { c.children.map(lean-keys).flatten() }
   else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
 // A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file
@@ -113,17 +114,22 @@
 #let law-formula(keys) = if "list" in sys.inputs { none } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
-/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the one
-/// declaration its picture draws (`<lean-decls>` of a single selector), else `()`.
+/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the
+/// declarations its `#leant` cells type — a definition row's formula is that definition,
+/// `<name>≜<body>` — else the one declaration its picture draws (`<lean-decls>` of a single
+/// selector), else `()`.
 #let row-keys(loc) = {
   let ks = query(selector(<law-row-keys>).before(loc)).last().value
   if ks.len() > 0 { ks } else {
     let a = query(selector(<law-row>).before(loc)).last().location()
     let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
     let b = nxt.sorted(key: l => (l.page(), l.position().y)).at(0, default: none)
-    let ds = query(if b == none { selector(<lean-decls>).after(a) } else { selector(<lean-decls>).after(a).before(b) })
-    let vs = ds.map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
-    vs.slice(0, calc.min(1, vs.len()))
+    let within(l) = query(if b == none { selector(l).after(a) } else { selector(l).after(a).before(b) })
+    let ts = within(<lean-type>).map(m => m.value).dedup()
+    if ts.len() > 0 { ts } else {
+      let vs = within(<lean-decls>).map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
+      vs.slice(0, calc.min(1, vs.len()))
+    }
   }
 }
 /// The Lean selectors a display states: its first `Thm` header's formulas; else the `#leanf`s in its

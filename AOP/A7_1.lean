@@ -118,7 +118,7 @@ public theorem recip_comp_Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : S° ≫ �
 
 /-- **(7.4)**: `min R·τ = id ∩ R` at `R°`, mirrored: the `est` of a singleton is its sole
     inhabitant precisely on the reflexive part of `R` ((7.5) at `S := id`). -/
-theorem singletonMap_comp_est (R : A ⟶ A) :
+public theorem singletonMap_comp_est (R : A ⟶ A) :
     singletonMap ≫ est R = Cat.id A ∩ R° := by
   show Λ (Cat.id A) ≫ est R = Cat.id A ∩ R°
   rw [Λ_comp_est, recip_id, leftDiv_id]

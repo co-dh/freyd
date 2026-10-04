@@ -43,9 +43,8 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
   [`union≜` $frac(#[`∋∋`], ∋)$ `: PPA⟶PA`], [flattens a set of sets],
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
-  [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°` #src[(7.4)]],
+  [#leanf("Freyd.Alg.singletonMap_comp_est") #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
-  // lean:AOP.A7_1.singletonMap_comp_est@76cd41a5
   [#leanf("Freyd.Alg.Λ_comp_est")], [an `S`-value that points to every `S`-value],
   [#leanf("Freyd.Alg.Λ_comp_est_context")], [only `R` between values `S` gives one argument counts — context],
   [`E(S) est(R)=(∋S)∩((∋S)°\R°)` #src[(7.7)]],
