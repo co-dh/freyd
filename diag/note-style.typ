@@ -129,9 +129,11 @@
       let s = disp-of(here())
       if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        // In the PAGE margin, out of the flow: a number column widened every `auto` first column past the
-        // paper edge, and one em left of the cell lands on a list bullet or a neighbour's ink when nested.
-        place(left + top, dx: MARGIN - 1.5em - here().position().x, box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))); it.body
+        // In the page margin only where the table starts the line: a number column widened every `auto`
+        // first column past the paper edge, and a nested table's margin holds a bullet, a fill or a neighbour.
+        let num = box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))
+        let x = here().position().x
+        if x - MARGIN < 1em.to-absolute() { place(left + top, dx: MARGIN - 1.5em - x, num); it.body } else { box(width: 1.5em, num); it.body }
       } else { it.body }
     }
   })
@@ -262,7 +264,10 @@
     if id == none { it } else { link(el.location(), id) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.
-    if NOTEROOT.get() and id != none [#metadata((str(it.target), plain(id)))<ref-id>]
+    // A heading reference prints its counter dot-joined: typst drops the numbering pattern's trailing `.`.
+    let rec = if id != none { plain(id) } else if el != none and el.func() == heading and el.numbering != none {
+      counter(heading).at(el.location()).map(str).join(".") }
+    if NOTEROOT.get() and rec != none [#metadata((str(it.target), rec))<ref-id>]
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
   // must run on.
