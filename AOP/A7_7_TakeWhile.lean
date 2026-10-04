@@ -187,12 +187,14 @@ example : twCL (fun n => decide (n < 1)) (ofList [1, 2]) = ConsList.wrap () := r
   `takewhile(p)` ↦ `takewhile p`; the program algebra `[nil,(π₁p→cons,⊸ nil)]` is the AoPA
   route's `consScalarAlg (fun _ => nil) (twStep p)`, shared verbatim. -/
 
+/-- A Bool test read as the predicate it decides; the note writes it as the test `p` itself. -/
+@[expose, reducible] public def holds (p : A → Bool) (x : A) : Prop := p x = true
+
 /-- The note's coreflexive `p : A⟶A` — the partial identity on the `p`-passers. -/
-@[expose] public def pcor (p : A → Bool) : dE A ⟶ dE A := fun x y => x = y ∧ p x = true
+@[expose] public def pcor (p : A → Bool) : dE A ⟶ dE A := corefl (holds p)
 
 /-- The note's `R ≜ length ≤ length°`, the length preorder: `xs lenLE ys ⟺ |xs| ≤ |ys|`. -/
-@[expose] public def lenLE : dList A ⟶ dList A :=
-  fun xs ys => clen xs ≤ clen ys
+@[expose] public def lenLE : dList A ⟶ dList A := leOn clen
 
 /-- `R°` is reflexive — the greedy theorem's preorder hypothesis, at `R ≜ length ≤ length°`. -/
 public theorem lenLE_recip_refl : 𝟙 (dList A) ⊑ (lenLE (A := A))° :=

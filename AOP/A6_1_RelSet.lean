@@ -100,6 +100,13 @@ public theorem le_iff {A B : RelSet.{u}} {R S : A ⟶ B} : R ⊑ S ↔ ∀ x y, 
 theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x : A.carrier)
     (y : B.carrier) : graph f x y = (y = f x) := rfl
 
+/-- The coreflexive of a predicate, `{(a,a)∣P(a)}`: a `def`, so a relation built from it prints
+    this name where Lean's pointwise lambda would print. -/
+@[expose] public def corefl {A : RelSet.{u}} (P : A.carrier → Prop) : A ⟶ A := fun x y => x = y ∧ P x
+
+/-- The preorder a measure induces, `f≤f°`: `x` below `y` when `f(x)≤f(y)`. -/
+@[expose] public def leOn {A : RelSet.{u}} (f : A.carrier → Nat) : A ⟶ A := fun x y => f x ≤ f y
+
 @[simp] public theorem recip_apply {A B : RelSet.{u}} (R : A ⟶ B) (y : B.carrier) (x : A.carrier) :
     R° y x = R x y := rfl
 

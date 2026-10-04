@@ -116,6 +116,9 @@ public inductive ConsList (L E : Type) where
     cases u <;> cases v <;> simp only [Fmap_ll, Fmap_rr, Fmap_lr, Fmap_rl] <;>
       first | exact id | exact fun hh => ⟨hh.1, le_iff.mp h _ _ hh.2⟩ | exact False.elim
 
+/-- `F`'s object action, `FX=L+E×X`: the formula a reference to its definition prints. -/
+public theorem F_obj (L E : Type) (X : RelSet.{0}) : (F L E).obj X = Fobj L E X := rfl
+
 /-- **The cons-list base BIFUNCTOR `F(A,X) = L + A×X`** — B&dM §7.4's `F`, the one the cylinder
     is folded over: the element type is an ARGUMENT, not a parameter, because `AOP.A7_4_Cylinder`
     fixes `A` in one slot and the `n`-tuple `N(A)` in the other and needs both partial

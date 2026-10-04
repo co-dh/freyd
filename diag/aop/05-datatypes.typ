@@ -568,7 +568,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*definition*], [*type*], [*note*]),
 
-  [`[A]::=nil|cons(A,[A])`],
+  [`[A]::=nil|cons(A,[A])` #h(4pt) #leanf("Freyd.Alg.RelSet.ListRel.listRelator_obj")],
   [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   // list type note: B&dM's `listr`, renamed here from p. 125 on
   [The list type, under the short name it keeps.],
