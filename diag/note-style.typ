@@ -27,6 +27,10 @@
 #import "cetz-nodraw.typ": d
 #let NODRAW = cetz.NODRAW
 
+/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
+/// `#include`, so a chapter can tell whether it is the document or one file of it.
+#let NOTEROOT = state("note-root", false)
+
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
 /// A display's path — `13.4.3c`, the heading numbers then the display's letter.  Bare, so a panel's
 /// `scanline` metadata can use it as an address; `conf` parenthesises it for the display.
@@ -249,13 +253,16 @@
   show heading.where(level: 1): it => { pagebreak(weak: true); it }
   // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
-  show ref: it => {
+  show ref: it => context {
     let el = it.element
-    if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
-      context { law-gate(it); link(el.location(), dispid(el.location())) }
-    } else if el != none and el.func() == metadata and type(el.value) == int {
-      context link(el.location(), rowid(el.location(), el.value))
-    } else { it }
+    let id = if el == none { none }
+      else if el.func() == figure and el.at("kind", default: none) == "disp" { dispid(el.location()) }
+      else if el.func() == metadata and type(el.value) == int { rowid(el.location(), el.value) }
+    if el != none and el.func() == figure { law-gate(it) }
+    if id == none { it } else { link(el.location(), id) }
+    // The whole note records what each reference printed, so a chapter compiled alone prints a label
+    // of another chapter the same way (`make ref-ids`), not as the label's own name.
+    if NOTEROOT.get() and id != none [#metadata((str(it.target), plain(id)))<ref-id>]
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
   // must run on.
@@ -317,9 +324,6 @@
   }
 }
 
-/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
-/// `#include`, so a chapter can tell whether it is the document or one file of it.
-#let NOTEROOT = state("note-root", false)
 
 /// A CHAPTER COMPILED ALONE — its file starts `#show: note-chapter.with(N)` — must look like its
 /// pages in the book, and a whole-note compile costs about 13 GiB, which every gate paid.  Same
@@ -370,7 +374,14 @@
       let t = str(it.target)
       let present = query(it.target).len() > 0
       if t in names { if present { law-gate(it); link(it.target, names.at(t)) } else { names.at(t) } }
-      else if present { it } else { [#t] }
+      else if present { it } else {
+        // Another chapter's label: printed as the root printed it (`make ref-ids`), never as its name.
+        let p = sys.inputs.at("refs", default: none)
+        if p == none { panic("@" + t + " is in another chapter: compile with --input refs=/.lake/build/ref-ids-<note>.json, which `make ref-ids` writes") }
+        let r = json(p).to-dict().at(t, default: none)
+        if r == none { panic("@" + t + ": no label of that name in the whole note (" + p + "), so no chapter can print it") }
+        r
+      }
     }
     doc
   })
