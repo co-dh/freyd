@@ -120,12 +120,11 @@ public theorem convert_recip_cata :
   rw [Cat.id_comp, prodMap_eq_rprodMap]
 
 /-- **B&dM p.144–145**: the divide-and-conquer program refines the specification `f`. -/
-public theorem convert_program (hg : zero ≫ f = g)
-    (hh : shift ≫ f = rprodMap f (𝟙 (dE Bit)) ≫ h) :
-    mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) ⊑ f :=
-  calc mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h))
-        = convert° ≫ relCata (junc (cop dNat) g h) := convert_recip_cata.symm
-    _ = convert° ≫ convert ≫ f := by rw [convert_fusion hg hh]
+public theorem convert_program (hh : shift ≫ f = rprodMap f (𝟙 (dE Bit)) ≫ h) :
+    mu (fun X : dNat ⟶ dNat => (zero° ≫ zero ≫ f) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) ⊑ f :=
+  calc mu (fun X : dNat ⟶ dNat => (zero° ≫ zero ≫ f) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h))
+        = convert° ≫ relCata (junc (cop dNat) (zero ≫ f) h) := convert_recip_cata.symm
+    _ = convert° ≫ convert ≫ f := by rw [convert_fusion rfl hh]
     _ ⊑ 𝟙 dNat ≫ f := by rw [← Cat.assoc]; exact comp_mono_right convert_simple f
     _ = f := Cat.id_comp _
 
@@ -172,7 +171,7 @@ public theorem exp_shift (a : Nat) : shift ≫ exp a = rprodMap (exp a) (𝟙 (d
 public theorem exp_program (a : Nat) :
     mu (fun X : dNat ⟶ dNat => (zero° ≫ one) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ Exp.op a))
       ⊑ exp a :=
-  convert_program (exp_zero a) (exp_shift a)
+  by have e := convert_program (exp_shift a); rwa [exp_zero] at e
 
 /-! ## Modulus computation -/
 
@@ -205,6 +204,6 @@ public theorem mod_shift (b : Nat) :
 public theorem mod_program (b : Nat) :
     mu (fun X : dNat ⟶ dNat => (zero° ≫ zero) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ Modulus.op b))
       ⊑ mod b :=
-  convert_program (mod_zero b) (mod_shift b)
+  by have e := convert_program (mod_shift b); rwa [mod_zero] at e
 
 end Freyd.Alg.RelSet.FastExp

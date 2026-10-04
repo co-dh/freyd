@@ -312,13 +312,14 @@ public theorem conj_comp_map_le {C : 𝒜} {f : A ⟶ C} {S : C ⟶ C} {R : A �
 /-- Proposition 9.2 (B&dM p.222), the book's chain after shunting at `cost`: one `calc` step per
     hint — the assumption on `cost`, `R cost ⊑ cost ≤` under the functor `F`, `k` monotonic
     on `≤`, and the assumption on `cost` again. -/
-public theorem monoAlg_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
+public theorem monoAlg_of_cost_shunted {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    F.map R ≫ h ≫ cost ⊑ h ≫ cost ≫ «≤» :=
-  calc F.map R ≫ h ≫ cost = F.map R ≫ F.map cost ≫ k := congrArg (F.map R ≫ ·) hch
+    F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost ⊑ h ≫ cost ≫ «≤» :=
+  calc F.map (cost ≫ «≤» ≫ cost°) ≫ h ≫ cost
+        = F.map (cost ≫ «≤» ≫ cost°) ≫ F.map cost ≫ k := congrArg (F.map (cost ≫ «≤» ≫ cost°) ≫ ·) hch
       _ ⊑ F.map cost ≫ F.map «≤» ≫ k := by
-        simpa only [← Cat.assoc, ← F.map_comp] using comp_mono_right (F.map_mono (conj_comp_map_le hcost hR)) k
+        simpa only [← Cat.assoc, ← F.map_comp] using comp_mono_right (F.map_mono (conj_comp_map_le hcost rfl)) k
       _ ⊑ F.map cost ≫ k ≫ «≤» := comp_mono_left _ hk
       _ = h ≫ cost ≫ «≤» := by rw [← Cat.assoc, ← hch, Cat.assoc]
 
@@ -329,16 +330,16 @@ calc_steps monoAlg_of_cost_shunted
     followed by `cost` factors as `F.map cost` followed by an algebra `k` that is itself
     monotonic on `leq`.  The definition of `R` and shunting reduce `F(R)h ⊑ hR` to
     `F(R)h cost ⊑ h cost leq`, which `monoAlg_of_cost_shunted` proves. -/
-public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
-    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
+public theorem monoAlg_of_cost {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
+    {«≤» : C ⟶ C} {k : F.obj C ⟶ C} (hcost : Map cost)
     (hch : h ≫ cost = F.map cost ≫ k) (hk : F.map «≤» ≫ k ⊑ k ≫ «≤») :
-    MonoAlg h R := by
-  show F.map R ≫ h ⊑ h ≫ R
-  have hsh : h ≫ R = (h ≫ cost ≫ «≤») ≫ cost° := by rw [hR]; simp only [Cat.assoc]
+    MonoAlg h (cost ≫ «≤» ≫ cost°) := by
+  show F.map (cost ≫ «≤» ≫ cost°) ≫ h ⊑ h ≫ (cost ≫ «≤» ≫ cost°)
+  have hsh : h ≫ (cost ≫ «≤» ≫ cost°) = (h ≫ cost ≫ «≤») ≫ cost° := by simp only [Cat.assoc]
   rw [hsh]
   apply (map_shunt_right hcost _ _).mp
   rw [Cat.assoc]
-  exact monoAlg_of_cost_shunted hcost hR hch hk
+  exact monoAlg_of_cost_shunted hcost hch hk
 
 /-! ## Ex 9.4 (B&dM p.222) — a universal but useless thinning relation -/
 
@@ -402,16 +403,16 @@ variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
     chain, one `calc` step per hint: `cost` entire, products, the assumption on `cost`, `⟨cost,S⟩`
     simple, products and functors, the assumption on `k`, the assumption on `cost` read backwards. -/
-public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
+public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
+    (hcost : Map cost) (hS : Simple S)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
-    F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
-  calc F.map (R ∩ (S ≫ S°)) ≫ h = F.map (R ∩ (S ≫ S°)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
-    _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° :=
+    F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ⊑ h ≫ cost ≫ «≤» ≫ cost° :=
+  calc F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h
+        = F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
+    _ ⊑ F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° :=
         comp_mono_left _ (comp_mono_left h (map_entire_le hcost))
-    _ = F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := by rw [hR]
     _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
         rw [P.pair_recip_pair, Cat.assoc cost «≤» cost°]
     _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
@@ -428,7 +429,6 @@ public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {
     _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° :=
         comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
     _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
-    _ = h ≫ R := by rw [hR]
 
 calc_steps monoAlg_in_context
 
