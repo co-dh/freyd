@@ -619,20 +619,24 @@ def keycrop(key, before_pdf, after_pdf, out, tmp, caption=""):
 NUMCOL = "#828282"   # `numtext`'s luma(130) in diag/note-style.typ: a display's OWN number, never a reference to it
 
 
-def _title_for(typ):
-    """The title of whichever note owns `typ` (`note-files --title-for`) — a chapter queried alone
-    never sets NOTEROOT, so `note-chapter` needs it or it panics; the whole note ignores it."""
-    r = subprocess.run(["./scripts/note-files", "--title-for", typ], cwd=ROOT, capture_output=True, text=True)
+def _note_files(flag, typ):
+    """`note-files FLAG typ`: the title (`--title-for`) or NOTE= name (`--note-for`) of the note owning
+    `typ` — a chapter queried alone needs both, the title for `note-chapter` and the note's ref-ids
+    (`make ref-ids`) for every label another chapter holds, or it panics."""
+    r = subprocess.run(["./scripts/note-files", flag, typ], cwd=ROOT, capture_output=True, text=True)
     if r.returncode:
-        sys.exit(f"diff-crop: ./scripts/note-files --title-for {typ}: {r.stderr.strip()}")
+        sys.exit(f"diff-crop: ./scripts/note-files {flag} {typ}: {r.stderr.strip()}")
     return r.stdout.strip()
 
 
 def disp_query(root, typ):
     """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`,
     laid out in full so each display's parts are where that tree's own pdf sets them."""
-    a = ["typst", "query", "--root", root, "--input", "title=" + _title_for(typ),
-         os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
+    refs = f"/.lake/build/ref-ids-{_note_files('--note-for', typ)}.json"
+    if not os.path.exists(os.path.join(root, refs[1:])):
+        sys.exit(f"diff-crop: {root}{refs} is missing: run `make ref-ids NOTE=<note>` first")
+    a = ["typst", "query", "--root", root, "--input", "title=" + _note_files("--title-for", typ),
+         "--input", "refs=" + refs, os.path.join(root, typ), "metadata", "--field", "value", "--format", "json"]
     r = run(*a)
     if r.returncode:
         sys.exit(f"diff-crop: {' '.join(a)}: {r.stderr.strip()[:800]}")
@@ -657,6 +661,8 @@ def rev_tree(rev, tmp):
     emit("git", "-C", ROOT, "archive", "-o", tar, rev, "diag")
     emit("tar", "-xf", tar, "-C", d)
     os.symlink(os.path.join(ROOT, "diag", "generated"), os.path.join(d, "diag", "generated"))
+    # The ref-ids `disp_query` passes are untracked too; the current ones stand in, as for the panels.
+    os.symlink(os.path.join(ROOT, ".lake"), os.path.join(d, ".lake"))
     return d
 
 

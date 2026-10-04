@@ -786,6 +786,13 @@ def cmd_files(argv):
         return print(note_title())
     if "--title-for" in argv:
         return print(title_of_root(root_for(argv[argv.index("--title-for") + 1])))
+    # `--note-for PATH`: the NOTE= name owning it, so such a caller passes that note's ref-ids too.
+    if "--note-for" in argv:
+        p = argv[argv.index("--note-for") + 1]
+        ns = [n for n, (root, *_) in NOTE_ROOTS.items() if root == root_for(p)]
+        if not ns:
+            sys.exit("note-files: %s belongs to %s, which no NOTE= names" % (p, root_for(p)))
+        return print(ns[0])
     if "--panels" in argv:
         return print(PANELS)
     if "--shared" in argv:
