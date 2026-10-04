@@ -116,8 +116,8 @@ public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ P A}
 
 /-! ### (8.6)'s chain, spelled with `thinlist Q` and `thin Q`
 
-  Only the ends of the chain and the shunt name the combinator; the step between them is
-  `sortRel_comp_le_step1` at `g ≜ thinlist Q`, whose statement it is verbatim. -/
+  One theorem per step, so each panel of the chain names the declaration that assumes what its
+  step uses. -/
 
 /-- Step 1: `sort(≼) ≜ ordered(≼)·setify°` unfolded. -/
 public theorem sortRel_comp_thinlist_le_step1 (setify : L.obj A ⟶ P A)
@@ -126,16 +126,26 @@ public theorem sortRel_comp_thinlist_le_step1 (setify : L.obj A ⟶ P A)
   show (setify° ≫ ordered ≼) ≫ thinlist = setify° ≫ ordered ≼ ≫ thinlist
   exact Cat.assoc _ _ _
 
-/-- Step 2: `thinlist Q·setify ⊑ setify·thin Q` shunted across `setify°`. -/
-public theorem sortRel_comp_thinlist_le_step2 {setify : L.obj A ⟶ P A}
+/-- Step 2: `thinlist Q ⊑ subseq`, so the thinning runs before the order test.  Its own
+    theorem, not `sortRel_comp_le_step1` cited in place, so the chain's panel assumes the
+    hypotheses the step uses. -/
+public theorem sortRel_comp_thinlist_le_step2 (setify : L.obj A ⟶ P A)
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq thinlist : L.obj A ⟶ L.obj A}
+    (hord : Coreflexive (ordered ≼)) (hsub : thinlist ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
+    setify° ≫ ordered ≼ ≫ thinlist ⊑ setify° ≫ thinlist ≫ ordered ≼ :=
+  sortRel_comp_le_step1 L setify hord hsub hos
+
+/-- Step 3: `thinlist Q·setify ⊑ setify·thin Q` shunted across `setify°`. -/
+public theorem sortRel_comp_thinlist_le_step3 {setify : L.obj A ⟶ P A}
     (hset : Map setify) (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A)
     {thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
     (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
     setify° ≫ thinlist ≫ ordered ≼ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ :=
   sortRel_comp_le_step2 L hset ordered ≼ hspec
 
-/-- Step 3: `sort(≼)` folded back. -/
-public theorem sortRel_comp_thinlist_le_step3 (setify : L.obj A ⟶ P A)
+/-- Step 4: `sort(≼)` folded back. -/
+public theorem sortRel_comp_thinlist_le_step4 (setify : L.obj A ⟶ P A)
     (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A) {Q : A ⟶ A} :
     thinRel Q ≫ setify° ≫ ordered ≼ = thinRel Q ≫ sortRel L setify ordered ≼ := rfl
 
@@ -153,9 +163,9 @@ public theorem sortRel_comp_thinlist_le
     (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
     sortRel L setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel L setify ordered ≼ :=
   le_trans (le_of_eq (sortRel_comp_thinlist_le_step1 L setify ordered ≼ thinlist))
-    (le_trans (le_trans (sortRel_comp_le_step1 L setify hord hsub hos)
-        (sortRel_comp_thinlist_le_step2 L hset ordered ≼ hspec))
-      (le_of_eq (sortRel_comp_thinlist_le_step3 L setify ordered ≼)))
+    (le_trans (le_trans (sortRel_comp_thinlist_le_step2 L setify hord hsub hos)
+        (sortRel_comp_thinlist_le_step3 L hset ordered ≼ hspec))
+      (le_of_eq (sortRel_comp_thinlist_le_step4 L setify ordered ≼)))
 
 /-! ## Lemma 8.1 (book p.202) -/
 

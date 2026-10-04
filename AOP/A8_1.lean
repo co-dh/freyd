@@ -74,6 +74,25 @@ public theorem Λ_comp_supset (W : B ⟶ A) : Λ W ≫ supset = W / (∋ A) := b
 public theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (RelSet.pow α).carrier) :
     thinRel Q P Y ↔ (∀ y, Y y → P y) ∧ (∀ z, P z → ∃ w, Q w z ∧ Y w) := Iff.rfl
 
+/-- `thin Q` is no relator image `P(X)`: once `a Q a` and `a Q b` for distinct `a`, `b`, `thin Q`
+    takes `{a,b}` to `{a}`, so any `X` with `P(X) = thin Q` has `b X a`; then `P(X)` also takes
+    `{b}` to `{a}`, which `thin Q` cannot, since `{a} ⊄ {b}`. -/
+public theorem thinRel_ne_powerRel {α : RelSet.{0}} {Q : α ⟶ α} {a b : α.carrier}
+    (hab : a ≠ b) (haa : Q a a) (hab' : Q a b) : ¬ ∃ X : α ⟶ α, thinRel Q = powerRel X := by
+  rintro ⟨X, hX⟩
+  have h1 : powerRel X (fun z => z = a ∨ z = b) (fun z => z = a) := by
+    rw [← hX]
+    refine (thinRel_pt Q _ _).mpr ⟨fun y hy => Or.inl hy, fun z hz => ⟨a, ?_, rfl⟩⟩
+    rcases hz with rfl | rfl
+    · exact haa
+    · exact hab'
+  obtain ⟨y, hby, hy⟩ := ((powerRel_apply X _ _).mp h1).1 b (Or.inr rfl)
+  have hba : X b a := hy ▸ hby
+  have h2 : powerRel X (fun z => z = b) (fun z => z = a) :=
+    (powerRel_apply X _ _).mpr ⟨fun x hx => ⟨a, hx ▸ hba, rfl⟩, fun _ hz => ⟨b, rfl, hz ▸ hba⟩⟩
+  rw [← hX] at h2
+  exact hab (((thinRel_pt Q _ _).mp h2).1 a rfl)
+
 /-- Thinning only shrinks: `thin Q ≫ ∋ ⊑ ∋` (members of the output were members of the
     input). -/
 public theorem thinRel_comp_eps_le (Q : A ⟶ A) : thinRel Q ≫ ∋ A ⊑ ∋ A :=
@@ -380,12 +399,11 @@ public theorem Λ_comp_est_comp_singletonMap_cond2_context {S : B ⟶ A} {R : A 
   rw [← Cat.assoc (Λ S) (est R) singletonMap, (Λ_comp_est_context S R).symm,
       Cat.assoc (Λ S) (est (R ∩ (S° ≫ S))) singletonMap]
 
-/-- Step 1: the context rule (7.6) renames the bead, then `S°·ΛS ⊑ ∈` swallows the transpose. -/
+/-- Step 1's second half: `S°·ΛS ⊑ ∈` swallows the transpose of the renamed bead. -/
 public theorem Λ_comp_est_comp_singletonMap_cond2_step1 {S : B ⟶ A} {R : A ⟶ A} :
-    S° ≫ Λ S ≫ est R ≫ singletonMap
+    S° ≫ Λ S ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap
       ⊑ (∋ A)° ≫ est (R ∩ (S° ≫ S)) ≫ singletonMap := by
-  rw [Λ_comp_est_comp_singletonMap_cond2_context,
-      ← Cat.assoc S° (Λ S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)]
+  rw [← Cat.assoc S° (Λ S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)]
   exact comp_mono_right (recip_comp_Λ_le_recip_eps S) (est (R ∩ (S° ≫ S)) ≫ singletonMap)
 
 /-- Step 2: `∈ est(X) ⊑ X°` at `X ≜ R∩S°S`, then the hypothesis `R∩(S°S)⊑Q` conversed. -/
@@ -414,8 +432,8 @@ public theorem Λ_comp_est_comp_singletonMap_cond1 {S : B ⟶ A} {R : A ⟶ A} :
 public theorem Λ_comp_est_comp_singletonMap_cond2 {S : B ⟶ A} {Q R : A ⟶ A}
     (h : R ∩ (S° ≫ S) ⊑ Q) :
     S° ≫ Λ S ≫ est R ≫ singletonMap ⊑ Q° ≫ (∋ A)° :=
-  le_trans Λ_comp_est_comp_singletonMap_cond2_step1
-    (le_trans (Λ_comp_est_comp_singletonMap_cond2_step2 h) recip_comp_singletonMap_le)
+  le_trans (le_of_eq Λ_comp_est_comp_singletonMap_cond2_context)
+    (le_trans Λ_comp_est_comp_singletonMap_cond2_step1 <| le_trans (Λ_comp_est_comp_singletonMap_cond2_step2 h) recip_comp_singletonMap_le)
 
 /-- **(8.3)**, thin-elimination with context: `ΛS ≫ min R ≫ τ ⊑ ΛS ≫ thin Q` whenever `R`
     restricted to the domain of `S` (i.e. `R ∩ S°S`) refines `Q`.  Proved via the thin universal

@@ -175,7 +175,7 @@ row((
       src[#frc([`𝟙`])`∋=𝟙` — @pow-laws; #frc([`S`])` est(R)⊑S` — @est-laws]),
   ), Sub("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2",
     gloss: src[the singleton's member stands in `Q` to every value `S` returns at the same argument],
-    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.lhs", src[@thin-laws, second condition]),
+    (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.lhs", src[@thin-laws, second condition]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2@aa38c1af
     (EQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs",
       src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]),
@@ -421,11 +421,11 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
     // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.
     (none, "Freyd.Alg.sortRel_comp_thinlist_le_step1.lhs", []),
     (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step1.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
-    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.lhs",
-      src[`ordered(≼) thinlist(Q)⊑thinlist(Q) ordered(≼)` — @thinlist-defn]),
     (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step2.rhs",
+      src[`ordered(≼) thinlist(Q)⊑thinlist(Q) ordered(≼)` — @thinlist-defn]),
+    (SQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs",
       src[`thinlist(Q) setify⊑setify thin(Q)` — @thinlist-defn, @dom-laws, @triple-chains]),
-    (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step3.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
+    (EQ, "Freyd.Alg.sortRel_comp_thinlist_le_step4.rhs", src[`sort(≼)≜setify° ordered(≼)` — @thinlist-defn]),
   ),
 )]<thinlist-86>
 

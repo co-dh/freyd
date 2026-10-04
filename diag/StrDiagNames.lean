@@ -1223,6 +1223,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander pathSplit] def unexpandPathSplit : Unexpander
   | _ => `($(mkIdent `S))
+-- The same `S ≜ F(𝟙,∋)α` at any bifunctor, the letter of the 8.2d chain.
+open Lean PrettyPrinter in
+@[app_unexpander algSplit] def unexpandAlgSplit : Unexpander
+  | _ => `($(mkIdent `S))
 -- THE CONCRETE CYLINDER'S ARROWS, for the reason `gen` and `paths` beside them are delaborators:
 -- they take only implicit arguments and so print as bare constants, which no `app_unexpander`
 -- fires on.
