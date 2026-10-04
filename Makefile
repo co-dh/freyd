@@ -65,7 +65,7 @@ NOTETITLE := $(shell ./scripts/note-files --title)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels cite panels cd-check cover books v exe
+.PHONY: p c w labels cite panels cd-check cover books v exe table-refs
 
 # ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
 # their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
@@ -156,9 +156,15 @@ panels: | exe
 cd-check: panels
 	./scripts/cd-check
 
+# A REFERENCE TO A LAW TABLE IN ANOTHER CHAPTER: a chapter compiled alone holds none of that chapter's
+# tables, so its own compile cannot tell a table from a display.  The root is queried in list mode (no
+# picture read) and `conf` stops on every `<table-ref>` it records, naming the page and the display.
+table-refs:
+	$(LOCK) typst query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) 'label("table-ref")' > /dev/null
+
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book ingest`.
 # Those two are 26s of layout for the PDF itself; nothing here needs a rendered page.
-c: panels labels cite cd-check
+c: panels labels cite cd-check table-refs
 
 # One section rendered to a fixed path, for the edit-and-look loop; the whole note is `make p`.
 # No viewer is launched: the author keeps diag/.view.pdf open and it reloads itself.
