@@ -101,7 +101,8 @@ the monoid's unit law:
 // The same pair of pictures with `C` replaced by `C × D`, once per projection: the two triangles
 // become two squares, and the copy dot goes away — `R × S` is the two strands side by side.
 #disp[#row((box(inset: (right: 18pt),
-  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), leanc("Freyd.Alg.prodMap")))]<relprod-pic>
+  leancd("Freyd.Alg.prodMap_outl_le+Freyd.Alg.prodMap_outr_le")), leanc("Freyd.Alg.prodMap")))#leank("Freyd.Alg.prodMap_out_le")]<relprod-pic>
+// lean:AOP.A5_2.prodMap_out_le@35d07374
 
 Right-then-up is `(R×S)π₁`, up-then-right is `π₁R`, and `(R×S)π₁⊑π₁R`, equality when `S` is
 entire. In `Rel`, `(c,d) (R×S) (a,b)` iff `c R a` and `d S b` — two strands side by side, no copy
@@ -910,7 +911,8 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
   leancd("Freyd.Alg.inter_not_laxNatural_square"),
   [`A=B≜{0,1}`, #h(4pt) `R≜{(0,0),(1,0)}`, #h(4pt) `φ≜π₁∩π₂ : Δ⇒Id` #h(4pt) #src[]],
    // lean:AOP.A6_1_OrdRelSet.laxNatural_inter_false@bcff53dc
-)]]<meet-counterex>
+)#leank("Freyd.Alg.inter_not_laxNatural_square")]]<meet-counterex>
+// lean:AOP.A6_1_OrdRelSet.inter_not_laxNatural_square@ebe7498f
 
 === Two stacked towers
 

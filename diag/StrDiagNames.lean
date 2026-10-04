@@ -832,6 +832,12 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `E))
 
 open Lean PrettyPrinter in
+/-- The subset `R` reaches from `s` is B&dM's `(ER)x` (p.32): the existential image `E(R)` at `s`. -/
+@[app_unexpander RelSet.img] def unexpandImg : Unexpander
+  | `($_ $R $s) => `(($(mkIdent `E) $R) $s)
+  | _ => throw ()
+
+open Lean PrettyPrinter in
 /-- The diagonal relator's lane is `Δ`: the category it is taken over is the panel's region, which
     the lane already sits in, so `Δ 𝒜` writes it twice. -/
 @[app_unexpander Δ] def unexpandDiagonalRelator : Unexpander
