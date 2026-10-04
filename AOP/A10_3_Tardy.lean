@@ -1515,6 +1515,15 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `bmax))
 
 open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.kFn] public meta def unexpandTardyK : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `k) $x $args*)
+  | _ => `($(mkIdent `k))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.nilBag] public meta def unexpandNilBag : Unexpander
+  | _ => `($(mkIdent `nil))
+
+open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.snag] public meta def unexpandSnag : Unexpander
   | `($_ $args*) => `($(mkIdent `snag) $args*)
   | _ => `($(mkIdent `snag))

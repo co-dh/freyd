@@ -597,8 +597,8 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.process"), #leanf("Freyd.Alg.RelSet.Bracket.process_apply")],
   [start the column at a tip and run `next` over the rows],
 // lean:AOP.A9_3_Bracket.gFn_inl@8e7dad0f lean:AOP.A9_3_Bracket.gFn_inr@2e7bf01a
-// lean:AOP.A9_3_Bracket.array_apply@1a37d675 lean:AOP.A9_3_Bracket.row_apply@ce32beea lean:AOP.A9_3_Bracket.col_apply@1133047c
-// lean:AOP.A9_3_Bracket.mix_apply@40642e17 lean:AOP.A9_3_Bracket.next_apply@69a7307c lean:AOP.A9_3_Bracket.process_apply@46f60471
+// lean:AOP.A9_3_Bracket.array_apply@37e22f4f lean:AOP.A9_3_Bracket.row_apply@ce32beea lean:AOP.A9_3_Bracket.col_apply@1133047c
+// lean:AOP.A9_3_Bracket.mix_apply@83e8fd85 lean:AOP.A9_3_Bracket.next_apply@962999b6 lean:AOP.A9_3_Bracket.process_apply@a365e25c
 // lean:AOP.A9_3_Bracket.flatten_cata@ce76fada
 // lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74
 // lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
