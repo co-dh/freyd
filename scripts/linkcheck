@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""linkcheck PDF LOG — every internal link of a compiled note lands ON the row it names, and the
+compile that wrote PDF converged.
+
+A link's destination point must have a text line starting just below it (within LEAD), and a link that prints
+a formula must find that formula's letters in the lines just below the point (BAND).  A destination
+that is off its row — a marker typst placed against the wrong region, or a position left over from
+a layout that did not converge — fails here instead of sending the reader to the page top.
+LOG is the stderr `typst-compile` kept of the compile that wrote PDF: "did not converge" means the
+pdf holds positions from an earlier pass, so it fails too.  Geometry: qpdf --json + pdftotext -bbox."""
+import json, subprocess, sys, unicodedata, xml.etree.ElementTree as ET
+from collections import Counter
+
+LEAD, BAND = 15.0, 40.0  # pt: typst sets the point ~10pt above the line it names; BAND + twice the
+# cited formula's own height holds it at the destination, which a multi-line `Thm` header needs
+if len(sys.argv) != 3: sys.exit("usage: linkcheck PDF LOG")
+pdf, log = sys.argv[1:]
+bad = []
+if "did not converge" in open(log, encoding="utf-8").read():
+    bad.append(f"{log}: layout did not converge — {pdf} holds stale positions")
+
+q = json.loads(subprocess.run(["qpdf", "--json=2", pdf], check=True, capture_output=True, text=True).stdout)
+objs = {k[4:]: v for k, v in q["qpdf"][1].items() if k.startswith("obj:")}
+def val(r):
+    while isinstance(r, str) and r.endswith(" R") and r in objs: r = objs[r].get("value", objs[r].get("stream", {}).get("dict"))
+    return r
+def s(x): return x[2:] if isinstance(x, str) and x[:2] in ("u:", "b:") else x
+pages = [p["object"] for p in q["pages"]]
+pidx = {r: i for i, r in enumerate(pages)}
+heights = [float(val(val(r)["/MediaBox"])[3]) for r in pages]
+
+# named destinations: catalog /Dests dict, or the /Names /Dests name tree
+cat = val(q["qpdf"][1]["trailer"]["value"]["/Root"])
+named = {}
+def walk(n):
+    n = val(n)
+    for k in val(n.get("/Kids", [])) or []: walk(k)
+    a = val(n.get("/Names", [])) or []
+    for i in range(0, len(a), 2): named[s(a[i])] = val(a[i + 1])
+if "/Dests" in cat: named.update({k: val(v) for k, v in val(cat["/Dests"]).items()})
+if "/Names" in cat and "/Dests" in val(cat["/Names"]): walk(val(cat["/Names"])["/Dests"])
+
+def dest(d):
+    d = val(d)
+    if isinstance(d, str): d = named.get(s(d), named.get(d))
+    if isinstance(d, dict): d = val(d.get("/D"))
+    if isinstance(d, str): d = named.get(s(d))
+    d = val(d)
+    if not isinstance(d, list) or d[0] not in pidx or d[1] != "/XYZ" or val(d[3]) is None: return None
+    return pidx[d[0]], heights[pidx[d[0]]] - float(val(d[3]))
+
+# words per page, top-left origin
+root = ET.fromstring(subprocess.run(["pdftotext", "-bbox", pdf, "-"], check=True, capture_output=True, text=True).stdout)
+ns = {"h": "http://www.w3.org/1999/xhtml"}
+words = [[(float(w.get("xMin")), float(w.get("yMin")), float(w.get("xMax")), float(w.get("yMax")), w.text or "")
+          for w in pg.findall("h:word", ns)] for pg in root.iter("{http://www.w3.org/1999/xhtml}page")]
+def under(pi, r):  # a word counts when most of its width lies inside the rect
+    return [w for w in words[pi] if min(w[2], r[2]) - max(w[0], r[0]) > 0.6 * (w[2] - w[0]) and r[1] - 1 <= (w[1] + w[3]) / 2 <= r[3] + 1]
+# a bare reference: a number, a name, punctuation — nothing to find at the destination but the line
+def bare(t): return all(c.isalnum() or c in ".(), ’‘'-" for c in t)
+# letters and digits only, NFKC: a row sets letters in math italic (𝑅), a reason cell upright (R)
+def chars(ws): return Counter(c for w in ws for c in unicodedata.normalize("NFKC", w[4]) if c.isalnum())
+
+# one link = consecutive annotations of a page with the same destination: typst writes one per glyph run
+groups = []
+for pi, pr in enumerate(pages):
+    H = heights[pi]
+    for a in val(val(pr).get("/Annots", [])) or []:
+        a = val(a); act = val(a.get("/A")) or {}
+        if a.get("/Subtype") != "/Link" or ("/Dest" not in a and act.get("/S") != "/GoTo"): continue
+        key = (pi, json.dumps(a.get("/Dest", act.get("/D"))))
+        R = [float(val(v)) for v in val(a["/Rect"])]
+        r = (R[0], H - R[3], R[2], H - R[1])
+        if groups and groups[-1][0] == key and r[0] - groups[-1][1][-1][2] < 6: groups[-1][1].append(r)
+        else: groups.append((key, [r]))
+
+for (pi, dk), rs in groups:
+    ws = sorted({w for r in rs for w in under(pi, r)}, key=lambda w: (round(w[1]), w[0]))
+    t = " ".join(w[4] for w in ws)
+    at = f"p{pi + 1} link '{t}'"
+    d = dest(json.loads(dk))
+    if d is None: bad.append(f"{at}: destination {dk} does not resolve to a page point"); continue
+    dp, y = d
+    where = f"p{dp + 1} y={y:.0f}"
+    if not any(y - 2 <= w[1] <= y + LEAD for w in words[dp]):
+        near = min(words[dp], key=lambda w: abs(w[1] - y), default=None)
+        bad.append(f"{at} -> {where}: no line starts there (nearest: '{near[4] if near else ''}' at y={near[1]:.0f})" if near
+                   else f"{at} -> {where}: the page has no text"); continue
+    miss = chars([w for w in ws if not bare(w[4])]) - chars([w for w in words[dp] if y - 2 <= w[1] <= y + BAND + 2 * (ws[-1][3] - ws[0][1])])
+    if miss: bad.append(f"{at} -> {where}: '{''.join(miss.elements())}' not in the row there")
+print(f"linkcheck {pdf}: {len(groups)} links, {len(bad)} failures")
+for b in bad: print("  " + b)
+sys.exit(1 if bad else 0)

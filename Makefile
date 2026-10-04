@@ -65,7 +65,7 @@ NOTETITLE := $(shell ./scripts/note-files --title)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels cite panels cd-check cover books v exe ref-ids
+.PHONY: p c w labels links cite panels cd-check cover books v exe ref-ids
 
 # ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
 # their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
@@ -108,6 +108,12 @@ labels: $(NOTEPDF)
 	./scripts/labelfit
 	./scripts/inkfit
 	./scripts/dispfit
+
+# Every internal link of the compiled note lands on the row it names, and the compile that wrote the
+# pdf converged: a link off its row sends the reader to the page top, and nothing else shows it.
+# `make links NOTE=aop` is the companion; the log is what `typst-compile` kept of that compile.
+links: $(NOTEPDF)
+	./scripts/linkcheck $(NOTEPDF) .lake/build/typst-compile/$(subst /,%,$(NOTEPDF)).log
 
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.

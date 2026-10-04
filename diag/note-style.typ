@@ -165,19 +165,19 @@
   let _ = f.remove("body")
   table.cell(..f, {
     [#metadata(n)<law-row>]
-    // what a reference to this row prints (`cite`)
-    [#metadata(lean-keys(it.body).dedup())<law-row-keys>]
-    for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)]
     context {
       let s = disp-of(here())
-      if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
+      // The markers a link lands on, INLINE beside the body: as flow items ahead of it, a `horizon`
+      // cell placed them against its full-height region, about half a page above the row.
+      // `<law-row-keys>`: what a reference to this row prints (`cite`).
+      let marks = [#metadata(lean-keys(it.body).dedup())<law-row-keys>] + for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
         // In the page margin only where the table starts the line: a number column widened every `auto`
         // first column past the paper edge, and a nested table's margin holds a bullet, a fill or a neighbour.
         let num = box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))
         let x = here().position().x
-        if x - MARGIN < 1em.to-absolute() { block({ place(left + top, dx: MARGIN - 1.5em - x, num); it.body }) } else { box(width: 1.5em, num); it.body }
-      } else { it.body }
+        if x - MARGIN < 1em.to-absolute() { block({ place(left + top, dx: MARGIN - 1.5em - x, num); marks; it.body }) } else { box(width: 1.5em, num); marks; it.body }
+      } else { marks; it.body }
     }
   })
 }
@@ -417,7 +417,10 @@
   chapter-number(N)
   it.body
 }
-#let note-chapter(N, title: none, names: (:), doc) = context if NOTEROOT.get() {
+// Included or alone is read off the page `conf` sets, a STYLE, not off `NOTEROOT`: a state reads its
+// initial `false` on the first pass, which laid the whole note out as standalone chapters and spent
+// a layout pass, so the note's position-dependent blocks ran out of passes ("did not converge").
+#let note-chapter(N, title: none, names: (:), doc) = context if page.height == PAGEH {
   show heading.where(level: 1): it => { set heading(numbering: none); chapter-heading(N, it); counter(heading).update(N) }
   doc
 } else {
