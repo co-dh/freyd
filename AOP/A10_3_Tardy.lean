@@ -22,6 +22,7 @@ public import AOP.A10_1
 public import AOP.A6_SnocList
 public import AOP.A6_MonoFactor
 public import AOP.A7_4_Horner
+import AOP.CalcSteps
 
 universe u
 
@@ -847,88 +848,67 @@ public theorem tardy_greedy_step6 :
     rw [inter_apply]
     exact ⟨⟨c1, hc1, d1, hd1, he1⟩, ⟨c2, hc2, d2, hd2, w', he2, hα'⟩⟩
 
-/-- The tail, first step: shunting — `cost` a map, so `𝟙⊑cost cost°`. -/
-public theorem tardy_tail_step1 :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
-      ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
-        ≫ (costR ct dt wt)° :=
-  le_iff.mpr fun _ w ⟨q, hq, s', hq', hα⟩ => ⟨q, hq, s', hq', w, hα, _, rfl, rfl⟩
+/-- `cost` is a map, so entire: `𝟙⊑cost cost°`. -/
+public theorem costR_entire : 𝟙 _ ⊑ costR ct dt wt ≫ (costR ct dt wt)° := (graph_map _).1
 
-/-- The tail, second step: `α cost=⟨g,α cost⟩ bmax` (`alg_cost_self`). -/
-public theorem tardy_tail_step2 :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
-        ≫ (costR ct dt wt)°
-      = (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
-        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)° := by
-  have hk : ∀ s' c, (αJ ≫ costR ct dt wt) s' c
-      ↔ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR) s' c := fun _ _ => by
-    rw [← alg_cost_self]
-  apply hom_ext; intro s w
-  constructor
-  · rintro ⟨q, hq, s', hq', w', hα, c, hc, hc'⟩
-    obtain ⟨q', hp, hb⟩ := (hk s' c).mp ⟨w', hα, hc⟩
-    exact ⟨q, hq, s', hq', q', hp, c, hb, hc'⟩
-  · rintro ⟨q, hq, s', hq', q', hp, c, hb, hc'⟩
-    obtain ⟨w', hα, hc⟩ := (hk s' c).mpr ⟨q', hp, hb⟩
-    exact ⟨q, hq, s', hq', w', hα, c, hc, hc'⟩
-
-/-- The tail, third step: `⟨g,α cost⟩` is simple. -/
-public theorem tardy_tail_step3 :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
-        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)°
-      ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
-        ≫ (costR ct dt wt)° := by
-  rw [pair_eq_rpair, pair_eq_rpair]
-  refine le_iff.mpr fun s w h => ?_
-  obtain ⟨q, hq, s', ⟨h1, x1, hx1, hc1⟩, q', ⟨h1', x2, hx2, hc2⟩, c, hb, hc⟩ := h
+/-- `⟨g,α cost⟩` is simple: both components are maps, so a pair they relate one schedule to is
+    the only one. -/
+public theorem pair_g_alg_cost_simple :
+    ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt)
+      ⊑ 𝟙 _ := by
+  rw [pair_eq_rpair]
+  refine le_iff.mpr fun q q' h => ?_
+  obtain ⟨s', ⟨h1, x1, hx1, hc1⟩, ⟨h1', x2, hx2, hc2⟩⟩ := h
   obtain rfl : x1 = con s' := hx1
   obtain rfl : x2 = con s' := hx2
-  have e : q' = q := Prod.ext
-    (((g_apply ct dt wt s' _).mp h1').trans ((g_apply ct dt wt s' _).mp h1).symm)
-    ((hc2 : q'.2 = _).trans (hc1 : q.2 = _).symm)
-  subst e
-  exact ⟨q', hq, c, hb, hc⟩
+  exact (Prod.ext (((g_apply ct dt wt s' _).mp h1).trans ((g_apply ct dt wt s' _).mp h1').symm)
+    ((hc1 : q.2 = _).trans (hc2 : q'.2 = _).symm) : q = q')
 
-/-- The tail, fourth step: `bmax` is monotone, `⟨g≤,m≤⟩ bmax⊑⟨g,m⟩ bmax≤`. -/
-public theorem tardy_tail_step4 :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR ≫ (costR ct dt wt)°
-      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+/-- `bmax` is monotone: `⟨g≤,m≤⟩ bmax⊑⟨g,m⟩ bmax≤`. -/
+public theorem pair_leq_bmax_le :
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
+      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq := by
   rw [pair_eq_rpair, pair_eq_rpair]
-  refine le_iff.mpr fun s w h => ?_
-  obtain ⟨⟨q1, q2⟩, ⟨⟨c1, hc1, h1⟩, ⟨c2, hc2, h2⟩⟩, c, hb, hc⟩ := h
-  refine ⟨(c1, c2), ⟨hc1, hc2⟩, bmax c1 c2, rfl, c, ?_, hc⟩
+  refine le_iff.mpr fun s c h => ?_
+  obtain ⟨⟨q1, q2⟩, ⟨⟨c1, hc1, h1⟩, ⟨c2, hc2, h2⟩⟩, hb⟩ := h
+  refine ⟨(c1, c2), ⟨hc1, hc2⟩, bmax c1 c2, rfl, ?_⟩
   obtain rfl : c = bmax q1 q2 := hb
   exact bmax_le (Int.le_trans (h1 : c1 ≤ q1) (le_bmax_left _ _))
     (Int.le_trans (h2 : c2 ≤ q2) (le_bmax_right _ _))
 
-/-- The tail, fifth step: (10.4), `cost_alg_bmax`. -/
-public theorem tardy_tail_step5 :
-    (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)°
-      = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
-  rw [← Cat.assoc ((P2).pair _ _) bmaxR, ← cost_alg_bmax, Cat.assoc]
-
-/-- The tail, closing step: the definition of `R` (`R_eq`). -/
-public theorem tardy_tail_step6 :
-    αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° = αJ ≫ R ct dt wt := by
-  rw [R_eq]
-
 /-- B&dM p.257, the tail of (10.3): `⟨g≤,m≤⟩⟨g,α cost⟩°α⊑αR` — a job whose penalty is at most
-    the last job's, put last after a schedule costing at most the rest, costs at most the whole. -/
+    the last job's, put last after a schedule costing at most the rest, costs at most the whole.
+    One `calc` step per hint: `cost` a map, `α cost=⟨g,α cost⟩ bmax`, `⟨g,α cost⟩` simple, `bmax`
+    monotone, (10.4), the definition of `R`. -/
 public theorem tardy_tail :
     (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
         ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
-      ⊑ αJ ≫ R ct dt wt := by
-  refine le_trans (tardy_tail_step1 ct dt wt) ?_
-  rw [tardy_tail_step2]
-  refine le_trans (tardy_tail_step3 ct dt wt) ?_
-  refine le_trans (tardy_tail_step4 ct dt wt) ?_
-  rw [tardy_tail_step5, tardy_tail_step6]
-  exact le_refl _
+      ⊑ αJ ≫ R ct dt wt :=
+  calc (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
+        ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ ≫ costR ct dt wt
+        ≫ (costR ct dt wt)° := by
+        simpa only [Cat.comp_id, Cat.assoc] using
+          comp_mono_left ((P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+            ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ) (costR_entire ct dt wt)
+      _ = (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
+        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)° := by
+        simpa only [Cat.assoc] using congrArg (fun Z => (P2).pair (g ct dt wt ≫ ListRel.leq)
+          (m ct dt wt ≫ ListRel.leq) ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ Z
+          ≫ (costR ct dt wt)°) (alg_cost_self ct dt wt)
+      _ ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
+        ≫ (costR ct dt wt)° := by
+        simpa only [Cat.id_comp, Cat.assoc] using
+          comp_mono_left _ (comp_mono_right (pair_g_alg_cost_simple ct dt wt) (bmaxR ≫ (costR ct dt wt)°))
+      _ ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+        simpa only [Cat.assoc] using comp_mono_right (pair_leq_bmax_le ct dt wt) (costR ct dt wt)°
+      _ = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+        rw [← Cat.assoc ((P2).pair _ _) bmaxR, ← cost_alg_bmax, Cat.assoc]
+      _ = αJ ≫ R ct dt wt := by rw [R_eq]
+
+calc_steps tardy_tail
 
 /-- **(10.3)**, seventh step: the tail `tardy_tail`, under `F(bagify°)`. -/
 public theorem tardy_greedy_step7 :

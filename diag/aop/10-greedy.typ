@@ -38,6 +38,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 #import "../generated/Freyd.Alg.greedy_dp_lower.calc.typ" as calc-gl
 #import "../generated/Freyd.Alg.greedy_dp_upper.calc.typ" as calc-gu
+#import "../generated/Freyd.Alg.RelSet.Tardy.tardy_tail.calc.typ" as calc-tt
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -448,22 +449,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a job whose penalty is at most the last penalty, put after a schedule costing at most
      the cost before the last job, gives a schedule costing at most the whole]],
   // lean:AOP.A10_3_Tardy.tardy_tail@d6af1dd1
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step1.rhs", src[`cost` a map, so `𝟙⊑cost cost°`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step1@7ed1c8a6
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step2.rhs", src[`α cost=⟨g,α cost⟩ bmax`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step2@8865bddf lean:AOP.A10_3_Tardy.alg_cost_self@29bcea57
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step3.rhs", src[`⟨g,α cost⟩` simple]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step3@3427a120
-  ), (
-    (SQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step4.rhs", src[monotonicity of `bmax`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step4@337d771d
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step5.rhs", src[(10.4) — @tardy-cost-bmax]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step5@739d1394
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail.rhs", src[definition of `R`]),
-    // lean:AOP.A10_3_Tardy.tardy_tail_step6@6b0b253f
-  )),
+  lean-calc(calc-tt, breaks: (3,)),
 )]<tardy-tail>
 
 // ONE WIRE, `Bag Job` to `[Job]`, one datatype lane carrying `bag` above the bead that eats it and
