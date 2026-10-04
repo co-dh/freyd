@@ -612,33 +612,21 @@
 )]<closure-up>
 
 // B&dM 6.7a, p.158: `S=(μX : 𝟙∪RX)` is reflexive.
+#import "../generated/Freyd.Alg.id_le_star.calc.typ" as calc-67a
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.id_le_star") \
     #src[`R*` is reflexive]],
      // lean:AOP.A6_7.id_le_star@90d24167
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.id_le_star_step1.lhs", []),
-    (SQ, "Freyd.Alg.id_le_star_step1.rhs", src[union]),
-     // lean:AOP.A6_7.id_le_star_step1@c4b88c90
-    (EQ, "Freyd.Alg.star_unfold.rhs", src[fixed point, Thm 6.1]),
-     // lean:AOP.A6_7.star_unfold@97a800c3
-  ),
+  lean-calc(calc-67a, pictures: false),
 )]<closure-refl>
 
 // B&dM 6.7b, p.158: `S` contains `R`.
+#import "../generated/Freyd.Alg.le_star.calc.typ" as calc-67b
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.le_star") \
     #src[`R*` contains `R`]],
      // lean:AOP.A6_7.le_star@3ecb72e1
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.le_star_step1.lhs", []),
-    (EQ, "Freyd.Alg.le_star_step1.rhs", src[identity]),
-     // lean:AOP.A6_7.le_star_step1@ded98a89
-    (SQ, "Freyd.Alg.le_star_step2.rhs", src[`𝟙⊑R*` — @closure-refl]),
-     // lean:AOP.A6_7.le_star_step2@b6b96fe7
-    (SQ, "Freyd.Alg.comp_star_le.rhs", src[fixed point]),
-     // lean:AOP.A6_7.comp_star_le@b5af2336
-  ),
+  lean-calc(calc-67b, pictures: false),
 )]<closure-contains>
 
 // B&dM 6.7c, p.158.  The book's `SS⊑S ≡ S⊑S\S ⇐ 𝟙∪R(S\S)⊑S\S ≡ S(𝟙∪R(S\S))⊑S`: the first two
@@ -676,18 +664,13 @@
 )]<closure-least>
 
 // B&dM p.158: the `tails` recursion, `R` being `tail`.
+#import "../generated/Freyd.Alg.Λ_star.calc.typ" as calc-tails
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Λ_star") \
     #src[the set of `R*`-successors of `a` is `a` itself joined with the `R*`-successors of its
      `R`-successors]],
      // lean:AOP.A6_7.Λ_star@f11f82f1
-  lean-chain(
-    (none, "Freyd.Alg.Λ_star_step1.lhs", []),
-    (EQ, "Freyd.Alg.Λ_star_step1.rhs", src[`R*=𝟙∪RR*`]),
-     // lean:AOP.A6_7.Λ_star_step1@5cd6f202
-    (EQ, "Freyd.Alg.Λ_star.rhs", src[`Λ(R∪S)=⟨Λ(R),Λ(S)⟩cup`]),
-     // lean:AOP.A5_6.Λ_union@a769989a
-  ),
+  lean-calc(calc-tails),
 )]<closure-tails>
 
 // B&dM 6.7e, p.159: the subtraction laws, chapter 4's (`AOP.A4_5`), each a statement row.
@@ -726,33 +709,21 @@
 )]<closure-comp>
 
 // B&dM (6.9), p.160: `θ(P,Q) ≜ P ∪ (μX : Q ∪ (XR − P))`, mirrored; `θ(𝟘,S)=SR*` is why it is defined.
+#import "../generated/Freyd.Alg.theta_zero_left.calc.typ" as calc-theta-l
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_left") \
     #src[started with nothing found and `S` to explore, `θ` computes `SR*`]],
      // lean:AOP.A6_7.theta_zero_left@b8297d35 lean:AOP.A6_7.theta@494eeaa5
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.theta_zero_left_step1.lhs", []),
-    (DF, "Freyd.Alg.theta_zero_left_step1.rhs", src[definition of `θ`]),
-     // lean:AOP.A6_7.theta_zero_left_step1@794d78de
-    (EQ, "Freyd.Alg.theta_zero_left_step2.rhs", src[`R−𝟘=R` — @closure-sub]),
-     // lean:AOP.A6_7.theta_zero_left_step2@3d29ce01
-    (EQ, "Freyd.Alg.comp_star_eq_mu.lhs", src[@closure-comp]),
-  ),
+  lean-calc(calc-theta-l, pictures: false),
 )]<closure-theta-zero-left>
 
 // B&dM 6.7h, p.160: `θ(P,𝟘)=P`, the recursion's exit.
+#import "../generated/Freyd.Alg.theta_zero_right.calc.typ" as calc-theta-r
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.theta_zero_right") \
     #src[with nothing left to explore, `θ` returns what it has found]],
      // lean:AOP.A6_7.theta_zero_right@14a43ab2
-  lean-chain(pictures: false,
-    (none, "Freyd.Alg.theta_zero_right_step1.lhs", []),
-    (DF, "Freyd.Alg.theta_zero_right_step1.rhs", src[definition of `θ`]),
-     // lean:AOP.A6_7.theta_zero_right_step1@6c0c4172
-    (EQ, "Freyd.Alg.theta_zero_right_step2.rhs", src[`𝟘` is a prefixed point: `𝟘R−P=𝟘`]),
-     // lean:AOP.A6_7.theta_zero_right_step2@e32277dc
-    (EQ, "Freyd.Alg.theta_zero_right.rhs", src[`P∪𝟘=P`]),
-  ),
+  lean-calc(calc-theta-r, pictures: false),
 )]<closure-theta-zero-right>
 
 // TODO p.161 close: `E(R*)(s)=close(∅,s)`, `close(p,∅)=p`, `close(p,q)=close(p∪q, E(R)(q)−p−q)` by `Λ`

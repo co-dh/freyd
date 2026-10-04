@@ -18,6 +18,7 @@ module
 public import AOP.A6_2
 public import AOP.A6_5
 public import AOP.A5_6
+import AOP.CalcSteps
 
 universe u
 
@@ -49,30 +50,25 @@ public theorem star_body_monotonic {A : 𝒜} (R : A ⟶ A) :
 public theorem star_unfold {A : 𝒜} (R : A ⟶ A) : Cat.id A ∪ (R ≫ star R) = star R :=
   mu_fixed (star_body_monotonic R)
 
-/-- p.158 `𝟙⊑S`, step 1 of 2 (union): `𝟙 ⊑ 𝟙 ∪ RR*`; step 2 is `star_unfold`. -/
-public theorem id_le_star_step1 {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ 𝟙 A ∪ (R ≫ star R) :=
-  le_union_left _ _
+/-- `id ⊑ R*`: `R*` is reflexive (p.158, union then the fixed point). -/
+public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ star R :=
+  calc 𝟙 A ⊑ 𝟙 A ∪ (R ≫ star R) := le_union_left _ _
+    _ = star R := star_unfold R
 
-/-- `id ⊑ R*`: `R*` is reflexive. -/
-public theorem id_le_star {A : 𝒜} (R : A ⟶ A) : 𝟙 A ⊑ star R := by
-  have h := id_le_star_step1 R
-  rwa [star_unfold R] at h
+calc_steps id_le_star
 
 /-- `R·R* ⊑ R*`. -/
 public theorem comp_star_le {A : 𝒜} (R : A ⟶ A) : R ≫ star R ⊑ star R := by
   have h : R ≫ star R ⊑ Cat.id A ∪ (R ≫ star R) := le_union_right (Cat.id A) (R ≫ star R)
   rwa [star_unfold R] at h
 
-/-- p.158 `R⊑S`, step 1 of 3 (identity): `R = R𝟙`. -/
-public theorem le_star_step1 {A : 𝒜} (R : A ⟶ A) : R = R ≫ 𝟙 A := (Cat.comp_id R).symm
+/-- `R ⊑ R*` (p.158: identity, `𝟙⊑R*`, fixed point). -/
+public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R :=
+  calc R = R ≫ 𝟙 A := (Cat.comp_id R).symm
+    _ ⊑ R ≫ star R := comp_mono_left R (id_le_star R)
+    _ ⊑ star R := comp_star_le R
 
-/-- p.158 `R⊑S`, step 2 of 3 (`𝟙⊑R*`): `R𝟙 ⊑ RR*`; step 3 is `comp_star_le`. -/
-public theorem le_star_step2 {A : 𝒜} (R : A ⟶ A) : R ≫ 𝟙 A ⊑ R ≫ star R :=
-  comp_mono_left R (id_le_star R)
-
-/-- `R ⊑ R*`. -/
-public theorem le_star {A : 𝒜} (R : A ⟶ A) : R ⊑ star R := by
-  have h := le_trans (le_star_step2 R) (comp_star_le R); rwa [← le_star_step1 R] at h
+calc_steps le_star
 
 /-- p.158 `SS⊑S`, step 1 of 3 (composition distributes over union), mirrored from the book's
     `S(𝟙∪R(S\S)) = S∪SR(S\S)`. -/
@@ -384,15 +380,14 @@ section LambdaStar
 
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜]
 
-/-- p.158 `Λ(R*)`, step 1 of 2 (`R*=𝟙∪RR*`); step 2 is `Λ_union`. -/
-public theorem Λ_star_step1 {A : 𝒜} (R : A ⟶ A) : Λ (star R) = Λ (𝟙 A ∪ (R ≫ star R)) := by
-  rw [star_unfold R]
-
 /-- **p.158**: `Λ(R*) = ⟨Λ(𝟙),Λ(RR*)⟩cup` — the `tails` recursion, `R` being `tail`. -/
 public theorem Λ_star {A : 𝒜} (R : A ⟶ A)
     (P : RelProd (P A) (P A)) :
-    Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := by
-  rw [Λ_star_step1, Λ_union]
+    Λ (star R) = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P :=
+  calc Λ (star R) = Λ (𝟙 A ∪ (R ≫ star R)) := by rw [star_unfold R]
+    _ = P.pair (Λ (𝟙 A)) (Λ (R ≫ star R)) ≫ cup P := Λ_union ..
+
+calc_steps Λ_star
 
 end LambdaStar
 
@@ -420,36 +415,32 @@ variable {𝒜 : Type u} [DivisionBooleanAllegory 𝒜] {A B : 𝒜}
 @[expose] public def theta {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) : B ⟶ A :=
   P ∪ mu (fun X : B ⟶ A => Q ∪ sub (X ≫ R) P)
 
-/-- p.160 `θ(𝟘,S)`, step 1 of 3 (definition of `θ`). -/
-public theorem theta_zero_left_step1 {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) :
-    theta R 𝟘 S = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) := rfl
+/-- **p.160**: `θ(0,S) = R*·S`, mirrored `θ(0,S) = S≫R*` (the θ-recursion computes `S≫R*`):
+    definition of `θ`, `R−𝟘=R`, `𝟘∪X=X`, then `comp_star_eq_mu`. -/
+public theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R :=
+  calc theta R 𝟘 S = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) := rfl
+    _ = 𝟘 ∪ mu (fun X : B ⟶ A => S ∪ (X ≫ R)) :=
+      congrArg (𝟘 ∪ mu ·) (funext fun X => congrArg (S ∪ ·) (sub_zero (X ≫ R)))
+    _ = mu (fun X : B ⟶ A => S ∪ (X ≫ R)) := by rw [DistributiveAllegory.zero_union]
+    _ = S ≫ star R := (comp_star_eq_mu S R).symm
 
-/-- p.160 `θ(𝟘,S)`, step 2 of 3 (subtraction `R−𝟘=R`, and `𝟘∪X=X`); step 3 is `comp_star_eq_mu`. -/
-public theorem theta_zero_left_step2 {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) :
-    𝟘 ∪ mu (fun X : B ⟶ A => S ∪ sub (X ≫ R) 𝟘) = mu (fun X : B ⟶ A => S ∪ (X ≫ R)) := by
-  simp only [sub_zero, DistributiveAllegory.zero_union]
+calc_steps theta_zero_left
 
-/-- **p.160**: `θ(0,S) = R*·S`, mirrored `θ(0,S) = S≫R*` (the θ-recursion computes `S≫R*`). -/
-public theorem theta_zero_left {A B : 𝒜} (R : A ⟶ A) (S : B ⟶ A) : theta R 𝟘 S = S ≫ star R := by
-  rw [theta_zero_left_step1, theta_zero_left_step2, comp_star_eq_mu]
+/-- p.160: `(μX : 𝟘 ∪ (XR − P)) = 𝟘` — `𝟘` is a prefixed point, since `𝟘R−P=𝟘`. -/
+public theorem theta_mu_zero {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
+    mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) = 𝟘 := by
+  refine le_antisymm (mu_le ?_) (zero_le _)
+  show 𝟘 ∪ sub (𝟘 ≫ R) P ⊑ 𝟘
+  rw [show (𝟘 : B ⟶ A) ≫ R = 𝟘 from DistributiveAllegory.zero_comp R]
+  exact union_lub (le_refl 𝟘) (inter_lb_left 𝟘 (∼P))
 
-/-- p.160 `θ(P,𝟘)`, step 1 of 3 (definition of `θ`). -/
-public theorem theta_zero_right_step1 {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
-    theta R P 𝟘 = P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) := rfl
+/-- **p.160**: `θ(P,0) = P`: definition of `θ`, `theta_mu_zero`, `P∪𝟘=P`. -/
+public theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P :=
+  calc theta R P 𝟘 = P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) := rfl
+    _ = P ∪ 𝟘 := by rw [theta_mu_zero]
+    _ = P := union_zero _
 
-/-- p.160 `θ(P,𝟘)`, step 2 of 3 (`𝟘` is a prefixed point, `𝟘R−P=𝟘`); step 3 is `union_zero`. -/
-public theorem theta_zero_right_step2 {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) :
-    P ∪ mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) = P ∪ 𝟘 := by
-  have hmu : mu (fun X : B ⟶ A => 𝟘 ∪ sub (X ≫ R) P) ⊑ 𝟘 := by
-    refine mu_le ?_
-    show 𝟘 ∪ sub (𝟘 ≫ R) P ⊑ 𝟘
-    rw [show (𝟘 : B ⟶ A) ≫ R = 𝟘 from DistributiveAllegory.zero_comp R]
-    exact union_lub (le_refl 𝟘) (inter_lb_left 𝟘 (∼P))
-  rw [le_antisymm hmu (zero_le _)]
-
-/-- **p.160**: `θ(P,0) = P`. -/
-public theorem theta_zero_right {A B : 𝒜} (R : A ⟶ A) (P : B ⟶ A) : theta R P 𝟘 = P := by
-  rw [theta_zero_right_step1, theta_zero_right_step2, union_zero]
+calc_steps theta_zero_right
 
 /-- p.160 `θ` recursion, step 1 of 5 (definition of `θ`). -/
 public theorem theta_step_step1 {A B : 𝒜} (R : A ⟶ A) (P Q : B ⟶ A) :
