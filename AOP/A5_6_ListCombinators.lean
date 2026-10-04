@@ -1161,6 +1161,34 @@ public theorem subseq_alg_transpose :
               (P (dList A)))) := by
   rw [subseq_alg_join]
 
+/-- **`Λ(subseq) = ⦇[nil Λ𝟙,⟨Λ(𝟙×∋)E(cons),π₂⟩ cup]⦈`** (B&dM §5.6, p.124): the set of
+    subsequences is a fold of maps — `subseq`'s fold under the power transpose (`Λ_relCata`), its
+    algebra rewritten by `subseq_alg_Λ` and `subseq_alg_transpose`. -/
+public theorem Λ_subseq :
+    Λ (subseq : dList A ⟶ dList A)
+      = ⦇(junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap)
+          (rpair (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))) ≫ existsImage consR)
+              (graph fun q : A × (P (dList A)).carrier => q.2)
+            ≫ cup (relProd (P (dList A)) (P (dList A))))
+          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
+  calc Λ (subseq : dList A ⟶ dList A)
+      = Λ ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+          (consR ∪ graph fun p => p.2) : (F Unit A).obj (dList A) ⟶ dList A)⦈ := by
+        rw [← subseq_cata]
+    _ = ⦇(Λ ((F Unit A).map (∋ (dList A))
+          ≫ junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR
+            (consR ∪ graph fun p : A × ConsList Unit A => p.2))
+          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ :=
+        (Λ_relCata (initial Unit A) _).trans (relCata_map (initial Unit A) _ (Λ_is_map' _)).symm
+    _ = ⦇(junc (sumCop (dL Unit) ⟨A × (P (dList A)).carrier⟩)
+          (wrapR ≫ singletonMap)
+          (Λ (rprodMap (𝟙 (dE A)) (∋ (dList A))
+            ≫ (consR ∪ graph fun p : A × ConsList Unit A => p.2)))
+          : (F Unit A).obj (P (dList A)) ⟶ P (dList A))⦈ := by
+        rw [subseq_alg_Λ]
+    _ = _ := by rw [subseq_alg_transpose]
+
 /-- The prefix algebra **`[nil, ⊸ nil ∪ cons] : F([A]) ⟶ [A]`** — the arrow the `prefix-defn`
     display draws: on the leaf, `nil`; on a head and a tail-prefix, either discard and stop with
     `nil` or keep the head.  Named so the fold below has an arrow to be the fold OF. -/

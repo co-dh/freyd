@@ -663,7 +663,7 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   )),
 )]<concat-glue>
 
-=== $frac(#[`subseq`], ∋)$ `=⦇[nil` $frac(#[`𝟙`], ∋)$`,⟨`$frac(#[`𝟙×∋`], ∋)$` E(cons),π₂⟩ cup]⦈`
+=== #leanf("Freyd.Alg.RelSet.ListRel.Λ_subseq") — the set of subsequences is a fold of maps into sets
 
 // B&dM §5.6, p. 124: @cata-map-calc run at `subseq`'s algebra `[nil, cons ∪ π₂]`, which is what
 // turns the relation into a program.  `cup` is needed first — nothing above this note has a binary union.

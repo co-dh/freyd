@@ -195,7 +195,7 @@ public theorem relCata_UP (I : InitialAlgebra F) {A : 𝒜} (R : F.obj A ⟶ A) 
 
 /-- The relational catamorphism over a MAP algebra is the ordinary (map) catamorphism:
     `(|f|) = cata f hf` when `f` is a map. -/
-theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) :
+public theorem relCata_map (I : InitialAlgebra F) {A : 𝒜} (f : F.obj A ⟶ A) (hf : Map f) :
     relCata f = I.cata f hf :=
   ((relCata_UP I f (I.cata f hf)).mp (I.cata_comm f hf)).symm
 
