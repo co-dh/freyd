@@ -293,7 +293,8 @@ def drawnAlike (a b : Expr) : MetaM Bool := do
   withOptions (·.setBool `diag.labelCompare true) do
     return (← labelT a).bare.typst == (← labelT b).bare.typst
 
-/-- Whether `B` is `A` with the definitions `ds` opened (or closed) and nothing else: both sides
+/-- Whether `B` and `A` differ only by the definitions `ds` (either direction; the caller decides
+    which way the step goes): both sides
     delta-expanded at `ds` (`deltaExpand` beta-reduces) draw one term. -/
 def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
   let a ← Meta.deltaExpand (← instantiateMVars A) ds.contains
@@ -331,17 +332,19 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   openUnder xs cb.type #[] fun ys bodyB => do
   let A ← sideIn a xs (binderNames ca.type) bodyA
   let B ← sideIn b ys (binderNames cb.type) bodyB
-  -- A STEP THAT ONLY OPENS A DEFINITION IS `≜`: the beads on one side alone, unfolded, leave the two
-  -- sides one picture.  Asked before `rfl`, which would answer the same step `=`.
+  -- `≜` only when the step OPENS a definition (name in A, left; body in B): the name on the right
+  -- would read as a definition of the left.  Asked before `rfl`, which answers the same step `=`.
   -- ONE of them may be the step: `genFold concat ≜ paths` has `genFold` and `concat` on one side
   -- only, and opening them as well as `paths` leaves no picture to compare.
   -- The answer names the ONE definition opened, the step's reason; several at once have no one name.
   let ds ← opened A B
-  if let some d ← ds.findM? fun d => unfoldsTo #[d] A B then
+  let (ca, cb) := ((← instantiateMVars A).getUsedConstants, (← instantiateMVars B).getUsedConstants)
+  let dsA := ds.filter fun d => ca.contains d && !cb.contains d
+  if let some d ← dsA.findM? fun d => unfoldsTo #[d] A B then
     noteRead (.decl d)
     return (d, "≜")
-  if !ds.isEmpty && (← unfoldsTo ds A B) then
-    for d in ds do noteRead (.decl d)
+  if !dsA.isEmpty && (← unfoldsTo dsA A B) then
+    for d in dsA do noteRead (.decl d)
     return (`delta, "≜")
   -- The hypotheses the step may use: either panel's declaration assumes them.
   let given ← (xs ++ ys).filterMapM fun h => do

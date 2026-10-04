@@ -163,6 +163,10 @@ hand-typed reason column, is a second copy of the derivation that nobody checks 
 states it, because a table label sends the reader to scan every row for the step he is checking, and
 may hold no row that justifies it at all.
 
+**`≜` PUTS THE DEFINED NAME ON THE LEFT.** `step ≜ cpr P(cons) est(R)`, never `cpr P(cons) est(R) ≜ step`,
+and a chain step that folds a body back into its name is `=`, not `≜`, because `≜` reads "the left is
+by definition the right" and a reader who meets the name on the right takes the row for a definition.
+
 **A REVIEW PICTURE CARRIES ITS OWN CAPTION, AND `scripts/diff-crop` IS THE ONLY THING THAT MAKES ONE.**
 Cut every before/after with `./scripts/diff-crop --key <key> --caption "<the line in the author's own
 words>"`, because a file called `p53-1.png` says nothing about which item it answers and a caption written
