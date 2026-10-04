@@ -135,47 +135,6 @@ public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ P A}
 
 variable {F : Relator 𝒜 𝒜}
 
-/-! ## Lemma 8.1 (book p.202) -/
-
--- Kept only while the note's Lemma 8.1 display still names it: Theorem 8.2 uses the concrete
--- `RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le`, which replaces it.
-/-- **Lemma 8.1** (book p.202): one sorted list built from sorted arguments, instead of a set
-    built and then sorted —
-    `filter p·list f·listcp(F)·F(sort ≼) ⊑ sort ≼·Λ(p·f·F∈)`, mirrored to
-    `F(sort ≼) ≫ listcp ≫ list f ≫ filter p ⊑ Λ (F(∋) ≫ f ≫ p) ≫ sort ≼`.
-    The sort walks inwards one law at a time: under `F` by (8.11), `f` monotonic on `≼`
-    (`F(≼) ⊑ f≼f°`), past `list f` by (8.8), past `filter p` by (8.9), then `E(f) = P(f)` and the
-    transpose absorbs `E(fp)`. -/
-public theorem map_sort_comp_listcp_le
-    {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
-    {sort : ∀ {X : 𝒜}, (X ⟶ X) → (P X ⟶ L.obj X)}
-    {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
-    {filterp : L.obj A ⟶ L.obj A}
-    (hsort : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sort X ⊑ sort Y)
-    (hmono : Freyd.Alg.MonoAlg f ≼)
-    (h88 : sort (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼)
-    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼)
-    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sort (F.map ≼)) :
-    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ :=
-  calc F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp
-        ⊑ cpMap F A ≫ sort (F.map ≼) ≫ listf ≫ filterp := by
-        rw [← Cat.assoc, ← Cat.assoc (cpMap F A)]
-        exact comp_mono_right h811 _
-    _ ⊑ cpMap F A ≫ sort (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp :=
-        comp_mono_left _ (comp_mono_right (hsort ((Freyd.Alg.monoAlg_iff_sandwich hf).mp hmono)) _)
-    _ ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp := by
-        refine comp_mono_left _ ?_
-        rw [← Cat.assoc, ← Cat.assoc (powerRel f)]
-        exact comp_mono_right h88 filterp
-    _ ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼ := comp_mono_left _ (comp_mono_left _ h89)
-    _ = cpMap F A ≫ existsImage f ≫ existsImage p ≫ sort ≼ := by rw [powerRel_map hf]
-    _ = cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ := by
-        rw [← Cat.assoc (existsImage f), ← existsImage_comp]
-    _ = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
-        rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
-
-calc_steps map_sort_comp_listcp_le
-
 /-- The union of two algebras monotonic on `Q` is monotonic on `Q`. -/
 public theorem monoAlg_union {S₁ S₂ : F.obj A ⟶ A} {Q : A ⟶ A}
     (h₁ : Freyd.Alg.MonoAlg S₁ Q) (h₂ : Freyd.Alg.MonoAlg S₂ Q) :
@@ -830,10 +789,14 @@ public theorem orderedP_cmap {B : Type} (g : A → B) («≼» : A → A → Pro
       obtain ⟨c, hc, rfl⟩ := (inlistP_cmap g b xs).mp hb
       exact hg a c (ha c hc), orderedP_cmap g ≼ R hg xs hxs⟩
 
+/-- B&dM's `cpr : E×[X] ⟶ [E×X]` (p.126) pointwise, landing in the right summand of `F`. -/
+@[expose] public def cprInr {L E X : Type} (s : E × ConsList Unit X) : ConsList Unit (L ⊕ E × X) :=
+  cmap (fun x => Sum.inr (s.1, x)) s.2
+
 /-- `listcp ≜ wrap+cpr` pointwise. -/
 @[expose] public def listcpFn {L E X : Type} : L ⊕ E × ConsList Unit X → ConsList Unit (L ⊕ E × X)
   | Sum.inl d => ConsList.cons (Sum.inl d) (ConsList.wrap ())
-  | Sum.inr (e, xs) => cmap (fun x => Sum.inr (e, x)) xs
+  | Sum.inr s => cprInr s
 
 /-- **`listcp(F) : F[X]⟶[FX]`** at the linear `FX = L+E×X` (B&dM p.201, Exercise 8.19):
     `wrap` on the leaf, `cpr` on the pair. -/

@@ -1477,8 +1477,8 @@ partial def fillArgs {α : Type} (args : Array Expr) (ms : List Expr) (hyps : Ar
     -- picture leaves its scope with the picture, and the next reader fails on an unknown local.
     if let (``Freyd.Alg.RelProd, #[_, _, x, y]) := ty.getAppFnArgs then
       let s ← Meta.saveState
-      let p? ← (try some <$> Meta.mkAppOptM ``Freyd.Alg.HasRelProd.relProd
-          #[none, none, none, some x, some y] catch _ => pure none)
+      let xs : Array (Option Expr) := #[none, none, none, some x, some y]
+      let p? : Option Expr ← try some <$> Meta.mkAppOptM ``Freyd.Alg.HasRelProd.relProd xs catch _ => pure none
       if let some p := p? then
         if ← Meta.isDefEq m p then return ← fillArgs args rest hyps k
       s.restore
