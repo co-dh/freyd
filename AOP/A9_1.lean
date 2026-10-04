@@ -391,6 +391,17 @@ public theorem dynamic_programming_thin_upper {h : F.obj B ⟶ B}
   le_trans (dynamic_programming_thin_steps3to6 hHfix)
     (le_trans (dynamic_programming_thin_steps7to8 hQ) dynamic_programming_thin_steps9to11)
 
+/-- **(9.1) with thinning**: at `X≜Λ(H) est(R)` the thinning body is below `X` — the prefixed
+    point Knaster–Tarski consumes, with the note's bead `X` as a binder of its own.  The universal
+    property of `est` splits it into (9.2) and (9.3). -/
+public theorem dynamic_programming_thin_prefixed (I : InitialAlgebra F)
+    {h : F.obj B ⟶ B} {T : F.obj A ⟶ A} {R : B ⟶ B} {Q : F.obj A ⟶ F.obj A} [DPSetting h R]
+    (hQ : ThinCondition T h R Q) {X : A ⟶ B} (hX : X = Λ (H T h) ≫ est R) :
+    Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R ⊑ Λ (H T h) ≫ est R := by
+  subst hX
+  exact le_Λ_comp_est_iff.mpr ⟨dynamic_programming_thin_lower (H_fixed I T h),
+    dynamic_programming_thin_upper (H_fixed I T h) hQ⟩
+
 /-- **Theorem 9.2 (B&dM p.221)**, thinning dynamic programming: thinning by a preorder `Q` at
     every unfold step, before minimizing over `R°`, refines minimizing the plain hylomorphism
     recursion — provided `Q` interacts correctly with `H := ⦇h⦈·⦇T⦈°` and `h` (hypothesis
@@ -402,9 +413,7 @@ public theorem dynamic_programming_thin (I : InitialAlgebra F)
     (hQ : ThinCondition T h R Q) :
     mu (fun X : A ⟶ B => Λ (T°) ≫ thinRel Q ≫ powerRel (F.map X ≫ h) ≫ est R)
       ⊑ Λ (H T h) ≫ est R :=
-  LocallyCompleteDistributiveAllegory.Sup_le (fun _S hS => hS _ (le_Λ_comp_est_iff.mpr
-    ⟨dynamic_programming_thin_lower (H_fixed I T h),
-     dynamic_programming_thin_upper (H_fixed I T h) hQ⟩))
+  mu_le (dynamic_programming_thin_prefixed I hQ rfl)
 
 /-! ## Ex 9.1 — Theorem 9.1 as an instance of Theorem 9.2 -/
 

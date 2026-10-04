@@ -962,6 +962,22 @@ public theorem tardy_H :
   rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, bagify_cata]
   exact Cat.comp_id _
 
+/-- **tardy-laws**, the prefixed point (Theorem 10.1 in context at `Q≜f≤f°`): at
+    `X≜Λ(bagify°) est(R)` the greedy body is below `X`, so the least fixed point `tardy_laws` is
+    too. -/
+public theorem tardy_laws_prefixed [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j)
+    {X : Bag Job ⟶ dSL Unit Job} (hX : X = Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt)) :
+    Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
+        ≫ graph (con (L := Unit) (E := Job))
+      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) := by
+  subst hX
+  have hfix := hylo_fixed (F := F Unit Job) (initial Unit Job)
+    (graph (con (L := Unit) (E := Job))) bagAlg
+  rw [tardy_H] at hfix
+  exact greedy_dp_prefixed_context (graph_map con)
+    (by rw [Allegory.recip_recip]; exact tardy_mono ct dt wt) (R_trans ct dt wt) hfix
+    (tardy_greedy ct dt wt hct hwt)
+
 /-- **tardy-laws** (B&dM p.257): the schedule of least maximum penalty is the least fixed point
     of `(μX : [nil,snoc](𝟙+(X×𝟙)) est(Q) Λ[nil,snag]°)` — Theorem 10.1 IN CONTEXT at
     `Q≜f≤f°`, one job of the bag committed to the end of the schedule at each step.  `nil` and
@@ -972,14 +988,8 @@ public theorem tardy_laws [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀
     mu (fun X : Bag Job ⟶ dSL Unit Job =>
         Λ ((bagAlg (Job := Job))°) ≫ est (Q ct dt wt) ≫ (F Unit Job).map X
           ≫ graph (con (L := Unit) (E := Job)))
-      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) := by
-  have key := greedy_dp_context (F := F Unit Job)
-    (initial Unit Job) (h := graph (con (L := Unit) (E := Job))) (T := bagAlg)
-    (R := R ct dt wt) (Q := Q ct dt wt) (graph_map con)
-    (by rw [tardy_H, Allegory.recip_recip]; exact tardy_mono ct dt wt)
-    (R_trans ct dt wt)
-    (by rw [tardy_H]; exact tardy_greedy ct dt wt hct hwt)
-  rwa [tardy_H] at key
+      ⊑ Λ ((bagify (Job := Job))°) ≫ est (R ct dt wt) :=
+  mu_le (tardy_laws_prefixed ct dt wt hct hwt rfl)
 
 /-- **Proposition 10.1** in the shape both arm laws ask for: no bag is built by `nil` and by
     `snag` alike, so a branch of `[nil,snag]°` can be read off on its own. -/
