@@ -90,6 +90,7 @@ in @mu-defn.
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
 #import "../generated/Freyd.Alg.monoAlg_of_cost_shunted.calc.typ" as calc-cost
+#import "../generated/Freyd.Alg.monoAlg_in_context.calc.typ" as calc-ctx
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -222,35 +223,8 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_in_context") \
     #src[improving each part by `R` within its `S`-context, then assembling by `h`, is below `hR`]],
      // lean:AOP.A9_1.monoAlg_in_context@f0a1b13c
-  lean-chain(Sub("Freyd.Alg.monoAlg_in_context_steps1to3",
-    gloss: src[improving the parts within their `S`-context and assembling by `h` is below the same improvement on the (cost, context) bundles, assembled by `k`],
-     // lean:AOP.A9_1.monoAlg_in_context_steps1to3@11f5c474
-    (none, "Freyd.Alg.monoAlg_in_context_step1.lhs", []),
-    (SQ, "Freyd.Alg.monoAlg_in_context_step1.rhs",
-      src[`𝟙⊑cost cost°` — @triple-chains]),
-     // lean:AOP.A9_1.monoAlg_in_context_step1@44f1c030
-    (EQ, "Freyd.Alg.monoAlg_in_context_step2.rhs",
-      src[`R∩SS°=⟨cost≤,S⟩⟨cost,S⟩°` — @relprod-defn]),
-     // lean:AOP.A9_1.monoAlg_in_context_step2@e27a633e
-    (EQ, "Freyd.Alg.monoAlg_in_context_step3.rhs",
-      src[`h cost=F(⟨cost,S⟩)k`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step3@604aead5
-  ), Sub("Freyd.Alg.monoAlg_in_context_steps4to7",
-    gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`],
-     // lean:AOP.A9_1.monoAlg_in_context_steps4to7@865a4e77
-    (SQ, "Freyd.Alg.monoAlg_in_context_step4.rhs",
-      src[`⟨cost,S⟩°⟨cost,S⟩⊑𝟙`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step4@e0fdcf2e
-    (EQ, "Freyd.Alg.monoAlg_in_context_step5.rhs",
-      src[`⟨cost≤,S⟩=⟨cost,S⟩(≤×𝟙)` — @bdm-prod-laws, @relator-laws]),
-     // lean:AOP.A9_1.monoAlg_in_context_step5@b63ea26a
-    (SQ, "Freyd.Alg.monoAlg_in_context_step6.rhs",
-      src[`F(≤×𝟙)k⊑k≤`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step6@941ec9da
-    (EQ, "Freyd.Alg.monoAlg_in_context.rhs",
-      src[`h cost=F(⟨cost,S⟩)k`, `R=cost≤cost°`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step7@b5c7d052
-  )),
+  // two rows: seven panels in one row shrink the bundles past reading
+  lean-calc(calc-ctx, breaks: (6,)),
 )]<dp-context-mono>
 
 // B&dM Proposition 9.4, pp. 223–224, "argue as follows": the thinning condition at `Q≜G(U,V)`,

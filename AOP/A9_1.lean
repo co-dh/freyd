@@ -389,100 +389,41 @@ section Prop9_3
 
 variable {𝒜 : Type u} [TabularUnitaryDivisionAllegory 𝒜] {F : Relator 𝒜 𝒜} {A B : 𝒜}
 
-/-- Proposition 9.3, first step: shunting — `cost` is a map, so `𝟙⊑cost cost°`. -/
-public theorem monoAlg_in_context_step1 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} (hcost : Map cost) :
-    F.map (R ∩ (S ≫ S°)) ≫ h ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := by
-  simpa only [Cat.comp_id, Cat.assoc] using
-    comp_mono_left (F.map (R ∩ (S ≫ S°)) ≫ h) (map_entire_le hcost)
-
-/-- Proposition 9.3, second step: products — `R∩SS° = ⟨cost leq,S⟩⟨cost,S⟩°` by the definition
-    of `R` (`pair_recip_pair`). -/
-public theorem monoAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} (hR : R = cost ≫ «≤» ≫ cost°) :
-    F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost°
-      = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
-  rw [P.pair_recip_pair, hR, Cat.assoc cost «≤» cost°]
-
-/-- Proposition 9.3, third step: the assumption on `cost`, `h cost = F(⟨cost,S⟩)k`. -/
-public theorem monoAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
-    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost°
-      = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
-  rw [← Cat.assoc h cost, hch]
-  simp only [Cat.assoc]
-
-/-- Proposition 9.3, fourth step: `S` simple makes `⟨cost,S⟩` simple
-    (`tabulation_simple_of_simple`), so `⟨cost,S⟩°⟨cost,S⟩⊑𝟙`. -/
-public theorem monoAlg_in_context_step4 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} (hcost : Map cost) (hS : Simple S) :
-    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
-      ⊑ F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := by
-  have hsp : Simple (P.pair cost S) := tabulation_simple_of_simple P.tab hcost.2 hS
-  have hs : P.pair (cost ≫ «≤») S ≫ (P.pair cost S)° ≫ P.pair cost S ⊑ P.pair (cost ≫ «≤») S := by
-    simpa only [Cat.comp_id] using comp_mono_left (P.pair (cost ≫ «≤») S) hsp
-  rw [← Cat.assoc (F.map _) (F.map _) (k ≫ cost°), ← F.map_comp, Cat.assoc]
-  exact comp_mono_right (F.map_mono hs) _
-
-/-- Proposition 9.3, fifth step: products; functors — `⟨cost leq,S⟩ = ⟨cost,S⟩(leq×𝟙)`
-    (`pair_prodMap_fst`), then `F` preserves the composite. -/
-public theorem monoAlg_in_context_step5 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C} :
-    F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost°
-      = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
-  rw [← RelProd.pair_prodMap_fst (P := P) (Q := P) cost S «≤», F.map_comp, Cat.assoc]
-
-/-- Proposition 9.3, sixth step: the assumption on `k`, `F(leq×𝟙)k⊑k leq`. -/
-public theorem monoAlg_in_context_step6 {C : 𝒜} {cost : A ⟶ C} {S : A ⟶ B}
-    {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
-    F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost°
-      ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° :=
-  comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
-
-/-- Proposition 9.3, closing step: the assumption on `cost` read backwards, then the definition
-    of `R`. -/
-public theorem monoAlg_in_context_step7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hR : R = cost ≫ «≤» ≫ cost°) (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
-    F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° = h ≫ R := by
-  rw [hR, ← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
-
-/-- Proposition 9.3, hints 1–3 as one row: shunting at `cost` a map, the product form of
-    `R ∩ S S°`, and the assumption on `cost`. -/
-public theorem monoAlg_in_context_steps1to3 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
-    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hcost : Map cost) (hR : R = cost ≫ «≤» ≫ cost°)
-    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
-    F.map (R ∩ (S ≫ S°)) ≫ h
-      ⊑ F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° :=
-  (monoAlg_in_context_step2 hR).trans (monoAlg_in_context_step3 hch) ▸ monoAlg_in_context_step1 hcost
-
-/-- Proposition 9.3, hints 4–7 as one row: `S` simple, products and functors, the assumption on
-    `k`, and the assumption on `cost` read backwards. -/
-public theorem monoAlg_in_context_steps4to7 {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A}
-    {cost : A ⟶ C} {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
-    (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
-    (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
-    (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
-    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost°
-      ⊑ h ≫ R :=
-  monoAlg_in_context_step7 hR hch ▸ le_trans (monoAlg_in_context_step4 hcost hS)
-    (monoAlg_in_context_step5 (F := F) ▸ monoAlg_in_context_step6 hk)
-
 /-- **Proposition 9.3 (B&dM p.223)**, monotonicity in context: given a cost function `cost`
     bundled with a simple context relation `S` via a chosen product `P`, and an algebra `k`
     (on the bundle) monotonic on `leq × 𝟙` in the sense of `hk`, the algebra `h` is monotonic
     on `R := cost·leq·cost°` RESTRICTED to `S`'s domain of definition (`R ∩ S·S°`).  The book's
-    chain, one step theorem per hint. -/
+    chain, one `calc` step per hint: `cost` entire, products, the assumption on `cost`, `⟨cost,S⟩`
+    simple, products and functors, the assumption on `k`, the assumption on `cost` read backwards. -/
 public theorem monoAlg_in_context {C : 𝒜} {h : F.obj A ⟶ A} {R : A ⟶ A} {cost : A ⟶ C}
     {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hcost : Map cost) (hS : Simple S) (hR : R = cost ≫ «≤» ≫ cost°)
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k)
     (hk : F.map (prodMap P P «≤» (𝟙 B)) ≫ k ⊑ k ≫ «≤») :
     F.map (R ∩ (S ≫ S°)) ≫ h ⊑ h ≫ R :=
-  le_trans (monoAlg_in_context_steps1to3 hcost hR hch) (monoAlg_in_context_steps4to7 hcost hS hR hch hk)
+  calc F.map (R ∩ (S ≫ S°)) ≫ h = F.map (R ∩ (S ≫ S°)) ≫ h ≫ 𝟙 A := by rw [Cat.comp_id]
+    _ ⊑ F.map (R ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° :=
+        comp_mono_left _ (comp_mono_left h (map_entire_le hcost))
+    _ = F.map ((cost ≫ «≤» ≫ cost°) ∩ (S ≫ S°)) ≫ h ≫ cost ≫ cost° := by rw [hR]
+    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost° := by
+        rw [P.pair_recip_pair, Cat.assoc cost «≤» cost°]
+    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
+        rw [← Cat.assoc h cost, hch, Cat.assoc]
+    _ = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)° ≫ P.pair cost S) ≫ k ≫ cost° := by
+        rw [← Cat.assoc (F.map _) (F.map _), ← F.map_comp, Cat.assoc]
+    _ ⊑ F.map (P.pair (cost ≫ «≤») S ≫ 𝟙 P.p) ≫ k ≫ cost° :=
+        comp_mono_right (F.map_mono (comp_mono_left _ (tabulation_simple_of_simple P.tab hcost.2 hS))) _
+    _ = F.map (P.pair (cost ≫ «≤») S) ≫ k ≫ cost° := by rw [Cat.comp_id]
+    _ = F.map (P.pair cost S ≫ prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
+        rw [RelProd.pair_prodMap_fst (P := P) (Q := P) cost S «≤»]
+    _ = F.map (P.pair cost S) ≫ F.map (prodMap P P «≤» (𝟙 B)) ≫ k ≫ cost° := by
+        rw [F.map_comp, Cat.assoc]
+    _ ⊑ F.map (P.pair cost S) ≫ k ≫ «≤» ≫ cost° :=
+        comp_mono_left _ (by simpa only [Cat.assoc] using comp_mono_right hk cost°)
+    _ = h ≫ cost ≫ «≤» ≫ cost° := by rw [← Cat.assoc (F.map _) k, ← hch, Cat.assoc]
+    _ = h ≫ R := by rw [hR]
+
+calc_steps monoAlg_in_context
 
 end Prop9_3
 
