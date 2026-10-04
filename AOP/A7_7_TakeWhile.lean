@@ -667,9 +667,9 @@ public theorem takewhile_mono (p : A → Bool) :
 
 /-- The `takewhile-laws` first row: **`(prefix list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)`** — the
     specification is the fold (`takewhile_alg`), under a transpose and a choice that neither
-    touch, so the row holds at every `R`. -/
-public theorem takewhile_laws_step1 (p : A → Bool) (R : dList A ⟶ dList A) :
-    (prefixR ≫ listP p)%∋ ≫ est(R°) = (cataR (Salg p))%∋ ≫ est(R°) := by
+    touch; stated at the `R` the chain chooses by (`lenLE`), so it meets the greedy row. -/
+public theorem takewhile_laws_step1 (p : A → Bool) :
+    (prefixR ≫ listP p)%∋ ≫ est(lenLE°) = (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [takewhile_alg]
 
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,

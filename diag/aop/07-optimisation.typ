@@ -1059,7 +1059,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (RQ, "Freyd.Alg.RelSet.Filter.filter_greedy.lhs",
       src[@greedy-thm72 at `R°` — @filter-mono]),
     // Empty: the step only renames the algebra, and the picture above already draws the reduce.
-    (EQ, "Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs", src[@filter-step]),
+    (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step3.rhs",
+      // lean:AOP.A7_7_Filter.filter_laws_step3@222a9c81
+      src[@filter-step]),
   ),
 )
 #align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊒`
