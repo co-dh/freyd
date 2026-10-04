@@ -461,6 +461,21 @@ def readsAlike (c : Name) : MetaM Bool := do
     let some (_, l, r) := split b | return false
     return (← labelT l (some r)).bare.typst == (← labelT r (some l)).bare.typst
 
+/-- A FUNCTOR LAW, read off the declaration: the composition or identity field every relator carries
+    (`Freyd.Functor` under a `Relator`, `BiRelator` for two arguments), or a theorem whose proof is
+    one of them, possibly reversed.  Like `Cat.assoc` it re-brackets `F(RS)` as `F(R)F(S)` and names
+    no law a reader looks up.  `BiRelator` is single-quoted: this module does not import it. -/
+partial def functorLaw (c : Name) : MetaM Bool := do
+  if [``Freyd.Functor.map_comp, ``Freyd.Functor.map_id, `Freyd.Alg.BiRelator.map_comp,
+      `Freyd.Alg.BiRelator.map_id].contains c then return true
+  let some (.thmInfo t) := (← getEnv).find? c | return false
+  let v := t.value
+  let rec via (e : Expr) : MetaM Bool := match e.getAppFn.constName? with
+    | some ``Eq.symm => e.getAppArgs.back?.elim (pure false) via
+    | some h => if h == c then pure false else functorLaw h
+    | none => pure false
+  Meta.lambdaTelescope v fun _ b => via b
+
 /-- THE LAWS A STEP'S PROOF APPLIES.  A theorem application counts when its statement relates two
     arrows and no proof argument is rewritten inside it: one handed a proof that applies a theorem,
     or a hypothesis it carries to both sides, is congruence or monotonicity around that law
@@ -512,7 +527,7 @@ partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
       -- an instance may hold a raw algebra lambda no label writes (`qsort_rec`'s `fun p q => …`).
       let alike ← if ← sameDrawn l r then pure true else if ← readsAlike c then coerced
         else if ← coerced then drawnAlike l r else pure false
-      return if alike then inner else inner.push (.thm c)
+      return if alike || (← functorLaw c) then inner else inner.push (.thm c)
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel

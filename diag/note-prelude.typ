@@ -580,20 +580,10 @@
 // A CALC PROOF AS A CHAIN, everything read off ONE Lean proof: `c` is the module
 // `diag-export --calc` writes (`#import "…/generated/<decl>.calc.typ" as c`) from the `calc` that
 // proves `<decl>` — each term a panel, each relation Lean's, each reason the one law its step applies.
-// A STEP'S LAW, cited: a declaration that a `Thm` header of ANOTHER display states is that display's
-// number, linked, so the reader follows it to its proof; any other law prints its statement.  The
-// header is found by the markers `Thm` emits (`<thm-num>` … `<thm-end>`), never by the formula text.
-// A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file
-// cuts there with a `zws` (FormulaRender `render`), which becomes the line break.  Always, not by a
-// measured width: the cell is measured inside the chain's own scaling, where every width fits.
-#let first-raw(x) = if x.func() == raw { x.text } else if x.has("children") and x.children.len() > 0 { first-raw(x.children.first()) } else if x.has("body") { first-raw(x.body) } else { none }
-#let impl-split(c) = if not c.has("children") { c } else {
-  let ch = c.children
-  for (i, x) in ch.enumerate() {
-    let nxt = if i + 1 < ch.len() { first-raw(ch.at(i + 1)) } else { none }
-    if x == [#sym.zws] and nxt != none and nxt.starts-with("⟹") { linebreak() } else { x }
-  }
-}
+// A STEP'S LAW, cited: its formula (`cite`), and the formula is the link to what states it — a `Thm`
+// header of ANOTHER display, cited as that display's number and formula, else a law-table row, cited
+// as its formula alone.  The header is found by the markers `Thm` emits (`<thm-num>` … `<thm-end>`),
+// the row by the label `law-row` gives each of its selectors, never by the formula text.
 #let law-ref(law) = {
   [#metadata(law)<lean-formula>]
   context {
@@ -604,10 +594,12 @@
     })
     let s = if home == none { none } else {
       query(selector(<disp-start>).before(home.location())).at(-1, default: none) }
+    let row = query(label(law)).find(m => m.func() == metadata and type(m.value) == int)
     if "list" in sys.inputs { none }
-    else if s == none or (at != none and s.location() == at.location()) {
-      impl-split(include "generated/formula/" + law + ".typ") }
-    else { link(s.location(), dispid(s.location())) }
+    else if s != none and (at == none or s.location() != at.location()) {
+      link(s.location(), cite(dispid(s.location()), (law,))) }
+    else if row != none { link(row.location(), cite(none, (law,), row: true)) }
+    else { cite(none, (law,), row: true) }
   }
 }
 // `breaks`: the step indices a new row starts at, for a chain too long to read on one row;
