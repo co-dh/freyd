@@ -849,7 +849,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs"),
     [`[`#mss-zero` est(≥),` #mss-plus ` est(≥)]` \ #src[coproduct of maps — @coprod-calc at
      `T:=[zero,⊸ zero ∪ plus]`, then `[U,V]Z=[UZ,VZ]` — @Freyd.Alg.junc_comp, composition over `∪`]])],
-  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its `𝟙%∋ E(…)` and `est(≥)`]],
+  [#mh-alg-plus \ #src[the `plus` operand of the lower arm's `⊸ zero ∪ plus`, under its $frac(#[`𝟙`], ∋)$ `E(…)` and `est(≥)`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.MSS.mss_step2.rhs"), [#src[singleton, `≥` reflexive — @est-laws:6's $frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R` at `R:=≥`, `zero` a
     map; the lower branch is `⊕`'s definition, @mss-defn, and no law]])],
@@ -982,11 +982,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step1.rhs")]],
-  [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn:4] #h(4pt) — and the `%∋` of a coproduct of maps
-   is the coproduct of their `%∋` #h(4pt) #src[@coprod-calc]],
+  [`S=[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[@filter-defn:4] #h(4pt) — and the fraction of a coproduct of maps
+   is the coproduct of their fractions #h(4pt) #src[@coprod-calc]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step2.rhs")][#leanf("Freyd.Alg.RelSet.Filter.filter_step2.rhs")]],
-  [`nil%∋` is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
+  [$frac(#[`nil`], ∋)$ is the singleton `{nil}`, and `est(R°)` of a singleton is its element because `R°` is
    reflexive #h(4pt) #src[@est-defn]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.Filter.filter_step3.rhs")][]],
