@@ -8,11 +8,11 @@
   declaration the row already cites, and carries a `lean:<decl>@<key>` marker of its own: a statement
   that moves under the note fails `cite-check` here too.
 
-  WHAT "THE TYPE" IS.  Three shapes of declaration have one, read off the ELABORATED statement and
-  nothing else: an arrow-valued `def` has its hom, an (in)equation between arrows has the hom its two
-  sides share, and a relator-valued `def` runs between two categories.  Anything else — a `def`
-  returning `Type`, a `Prop` that is not a relation between arrows — gets an error naming the
-  statement, never a guessed cell.
+  WHAT "THE TYPE" IS, read off the ELABORATED statement and nothing else: an arrow-valued `def` has
+  its hom, an (in)equation between arrows has the hom its two sides share, a relator-valued `def`
+  runs between two categories, and any other non-theorem — a plain function, a `Type`, a `Prop`
+  predicate — has the Lean type of the name cell's term.  A theorem that is no (in)equation gets an
+  error naming the statement, never a guessed cell.
 
   NO STRING SURGERY ON THE PRINTED TYPE.  The spelling is whatever the delaborator and the repo's
   unexpanders give (`dList A` ⇝ `[A]`, `Sched X` ⇝ `[[X]]`, a `RelSet.mk` wrapper peeled), so a
@@ -150,9 +150,19 @@ def render (declName : Name) (sides : List String := []) : MetaM String := withD
           let c ← plain args[0]
           name self (c ++ "×" ++ c ++ "⟶" ++ c)
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied binary relator"
-      | _ => throwError "{declName} : {← Meta.ppExpr body} is neither an arrow's hom type, a \
-          relator between two categories, nor an (in)equation between arrows — it has no one type \
-          to render"
+      -- A THEOREM's body is a statement, not a type: printing it here would repeat the formula cell.
+      | _ => do
+        if ci matches .thmInfo _ then
+          throwError "{declName} : {← Meta.ppExpr body} is a theorem but neither an (in)equation \
+            between arrows nor about a hom — it has no type to render"
+        -- ANY OTHER DECLARATION has the type Lean gave it: `sqr(n) : Int`, `Para(Word) : Type`,
+        -- `IsThinlist(Q,thinlist) : Prop`.  The name cell applies it to its OWN binders only; an
+        -- arrow the signature wrote `A → B` has a hygienic binder and stays in the type (`hd : J → C`).
+        let rec named : Expr → Nat
+          | .forallE n _ b _ => if n.hasMacroScopes then 0 else named b + 1
+          | _ => 0
+        Meta.forallBoundedTelescope ci.type (named ci.type) fun ys ty =>
+          do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← plain ty)
 
 /-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
     above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
