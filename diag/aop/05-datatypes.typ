@@ -313,7 +313,7 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
     [—],
     [every `x` has a partner],
   [`P(R)`#leank("Freyd.Alg.RelSet.powerRel_reading")],
-    [`∀y∈ys. ∃x∈xs. x R y` and \ `∀x∈xs. ∃y∈ys. x R y`],
+    [#leanf("Freyd.Alg.RelSet.powerRel_reading")],
     [`∀y. some xs R y` and \ `∀x. x R some ys`],
     [—],
     [every `x` and every `y` \ has a partner],

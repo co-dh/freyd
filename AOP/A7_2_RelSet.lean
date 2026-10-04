@@ -74,17 +74,17 @@ public theorem powrel_readings {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).car
     (((∋ B ≫ R°) / ∋ A)° P Q ↔ ∀ s, P s → ∃ w, Q w ∧ R s w) :=
   ⟨powrel_reading_reached R P Q, powrel_reading_closed R P Q, powrel_reading_reaches R P Q⟩
 
-/-- `P(R)` read pointwise: every member of `Q` is reached from `P`, and every member of `P` reaches
-    into `Q` — `(∋R)/∋` and `((∋R°)/∋)°` together. -/
-public theorem powerRel_reading {A B : RelSet.{0}} (R : A ⟶ B) (P : (pow A).carrier)
-    (Q : (pow B).carrier) :
-    powerRel R P Q ↔ (∀ w, Q w → ∃ s, P s ∧ R s w) ∧ (∀ s, P s → ∃ w, Q w ∧ R s w) := by
+/-- `P(R)` read pointwise: every member of `ys` is reached from `xs`, and every member of `xs` reaches
+    into `ys` — `(∋R)/∋` and `((∋R°)/∋)°` together. -/
+public theorem powerRel_reading {A B : RelSet.{0}} (R : A ⟶ B) (xs : (pow A).carrier)
+    (ys : (pow B).carrier) :
+    powerRel R xs ys ↔ (∀ y, ys y → ∃ x, xs x ∧ R x y) ∧ (∀ x, xs x → ∃ y, ys y ∧ R x y) := by
   -- `powerRel`'s left-division half is `((∋R°)/∋)°` with each witness's two facts swapped.
-  have swap : ((∋ A)° \ (R ≫ (∋ B)°)) P Q ↔ ((∋ B ≫ R°) / ∋ A)° P Q :=
-    ⟨fun h s hs => (h s hs).imp fun _ ⟨hR, hQ⟩ => ⟨hQ, hR⟩,
-     fun h s hs => (h s hs).imp fun _ ⟨hQ, hR⟩ => ⟨hR, hQ⟩⟩
-  exact and_comm.trans (and_congr (powrel_reading_reached R P Q)
-    (swap.trans (powrel_reading_reaches R P Q)))
+  have swap : ((∋ A)° \ (R ≫ (∋ B)°)) xs ys ↔ ((∋ B ≫ R°) / ∋ A)° xs ys :=
+    ⟨fun h x hs => (h x hs).imp fun _ ⟨hR, hQ⟩ => ⟨hQ, hR⟩,
+     fun h x hs => (h x hs).imp fun _ ⟨hQ, hR⟩ => ⟨hR, hQ⟩⟩
+  exact and_comm.trans (and_congr (powrel_reading_reached R xs ys)
+    (swap.trans (powrel_reading_reaches R xs ys)))
 
 /-- Pointwise form of `E T ≫ est R`: `w` is an `est R`-choice over the `T`-images of the members
     of `P` iff some member has `w` as a `T`-image and `w` `R`-dominates every such image. -/

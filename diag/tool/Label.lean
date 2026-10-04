@@ -1429,6 +1429,14 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- A STATEMENT IS A TERM OF THE NOTE'S TOO — its relation and its two sides, read by the one
   -- `split` every route already asks of a head — so a HYPOTHESIS is spelled by the same rules its
   -- conclusion is, where it used to fall to the printer and carry Lean's `≫` into the cell.
+  -- A SET APPLIED TO A POINT is membership, `y∈ys`: a binder whose type unfolds to `X → Prop` is a
+  -- set of `X`, and juxtaposing it with the point (`ys y`) would read as a composite.
+  if let .app s x := e then
+    if s.isFVar then
+      if let .forallE _ _ b _ ← Meta.whnf (← Meta.inferType s) then
+        if !b.hasLooseBVars && b.isProp then
+          return wrap Prec.rel
+            ((← labelTree (Prec.rel + 1) x) ++ spaced "∈" sp ++ (← labelTree (Prec.rel + 1) s))
   if let some (sym, l, r) := split e then
     return wrap Prec.rel
       ((← labelTree (Prec.rel + 1) l (some r)) ++ spaced sym sp ++ (← labelTree (Prec.rel + 1) r (some l)))
