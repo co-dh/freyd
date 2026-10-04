@@ -113,9 +113,9 @@
 /// row number sends the reader off to look the row up.  A cited DISPLAY keeps its number beside the
 /// formula only when the book gave it (`Theorem 8.1`, `(7.5)`), since only then is the number a name;
 /// `row`: the number is generated, so the formula stands alone.  `keys`: the Lean selectors the cited
-/// row or display states; with none the number is all there is.  Nothing under `list`, where no
-/// formula file need exist yet.
-#let law-formula(keys) = if "list" in sys.inputs { none } else {
+/// row or display states; with none the number is all there is.  Under `list`, where no formula file
+/// need exist yet, each key is requested instead, so a chapter compiled alone draws what it only cites.
+#let law-formula(keys) = if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
 /// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else its other
@@ -343,8 +343,6 @@
         else { let (ks, at) = disp-keys(s); (rowid(el.location(), el.value), ks, booknum(s) == none, at) } }
       else { (none, (), false, none) }
     if el != none and el.func() == figure { law-gate(it) }
-    // Under `list` only: what `diag-regen` reads to write the formula files `cite` prints.
-    if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] }
     if id == none { it } else { link(if to == none or not row { el.location() } else { to }, cite(id, keys, row: row)) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.
@@ -472,8 +470,8 @@
       else if present { it } else {
         // Another chapter's label: printed as the root printed it (`make ref-ids`), never as its name.
         let p = sys.inputs.at("refs", default: none)
-        // A QUERY (`list=1`: the panel and ref-id listings; `cdscan=1`: cd-check) renders no reference,
-        // and runs before `make ref-ids` has written the file; the chapter's compile still checks it.
+        // A QUERY with no `refs` (the `ref-ids` listing itself; `cdscan=1`: cd-check) renders no
+        // reference; the chapter's panel listing is given `refs`, so `cite` requests what it prints.
         if p == none and ("list" in sys.inputs or "cdscan" in sys.inputs) { t } else {
         if p == none { panic("@" + t + " is in another chapter: compile with --input refs=/.lake/build/ref-ids-<note>.json, which `make ref-ids` writes") }
         let r = json(p).to-dict().at(t, default: none)

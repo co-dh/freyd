@@ -150,8 +150,10 @@ books:
 # from LEAN.  The NOTE is the list of obligations, so adding a picture is writing its name in the note
 # and nothing else; a name already drawn is left alone unless its statement, a theorem it cites or
 # the exporter changed since (`diag-export --stale`), which is what keeps this in the edit loop.
-panels: | exe
-	./scripts/diag-regen --missing
+# AFTER `ref-ids`: a chapter listed alone requests what it cites from another chapter through that
+# file, so a formula it only cites is drawn by its own gate, not by the next whole-book run.
+panels: ref-ids | exe
+	./scripts/diag-regen --missing --listed
 
 # Every commutative panel of `diag/cd-panels.txt`, redrawn from LEAN and held to the drawing in the
 # note it answers.  The PANELS are the obligations, and so are the note's reference drawings: one
@@ -168,8 +170,12 @@ cd-check: panels
 # The same query writes what every reference printed, `[label, id]`, for a chapter compiled alone to
 # print another chapter's label as the whole note does; replaced only on change, so the chapter's
 # compile cache (`typst-compile`, which hashes this file as a read) stays valid.
+# The `#import`s are drawn first: the query compiles every chapter, and one whose import has no file
+# yet does not compile.  `REFIDS` is exported for `panels`' chapter listing (`diag-export --list`).
 REFIDS := .lake/build/ref-ids-$(NOTE).json
-ref-ids:
+export REFIDS
+ref-ids: | exe
+	./scripts/diag-regen --missing --imports
 	$(LOCK) typst query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) '<ref-id>' --field value > $(REFIDS).new
 	if cmp -s $(REFIDS).new $(REFIDS); then rm $(REFIDS).new; else mv $(REFIDS).new $(REFIDS); fi
 

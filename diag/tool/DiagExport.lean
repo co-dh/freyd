@@ -1533,12 +1533,20 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
     | l :: ls => ls.foldl (fun s t => s!"{s}.or({t})") s!"selector({l})"
   let mut out : Std.HashMap String (Array String) := asked.foldl (fun m l => m.insert (tag l) #[]) {}
   let title ← noteTitle
+  -- A chapter listed alone cites other chapters' displays only through `make ref-ids`'s file, so
+  -- without it every formula the chapter only cites goes undrawn and its compile fails on the include.
+  let refs ← if ((← IO.getEnv "CH").getD "").trimAscii.isEmpty then pure #[] else do
+    let some p := (← IO.getEnv "REFIDS").filter (!·.isEmpty)
+      | throw <| IO.userError "diag-export --list: CH is set but REFIDS is not: run it as `make panels`, which writes the cross-chapter references there first"
+    unless ← System.FilePath.pathExists p do
+      throw <| IO.userError s!"diag-export --list: REFIDS={p} does not exist: `make ref-ids` writes it"
+    pure #["--input", "refs=/" ++ p]
   -- `list-shared=1` is harmless noise to every root but the shared files: only they check it
   -- (`shared-laws.typ`'s own `#if sys.inputs.at("list-shared", …)`), placing every binding they
   -- have so a chapter-scoped listing sees what that chapter's compile needs from them.
   for root in ← rootsToList do
     let args := #["query", "--root", ".", "--input", "list=1", "--input", "list-shared=1",
-                  "--input", "title=" ++ title, root, sel]
+                  "--input", "title=" ++ title] ++ refs ++ #[root, sel]
     let cmdline := "typst " ++ String.intercalate " " args.toList
     let r ← IO.Process.output { cmd := "typst", args := args }
     if r.exitCode != 0 then
