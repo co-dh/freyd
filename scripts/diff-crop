@@ -632,7 +632,22 @@ def _note_files(flag, typ):
 def disp_query(root, typ):
     """`[(id, label)]` in document order and `{id: [(page, y, h)]}` for a chapter compiled from `root`,
     laid out in full so each display's parts are where that tree's own pdf sets them."""
-    refs = f"/.lake/build/ref-ids-{_note_files('--note-for', typ)}.json"
+    note = _note_files('--note-for', typ)
+    refs = f"/.lake/build/ref-ids-{note}.json"
+    if root != ROOT:
+        # An older tree's labels differ from today's ref-ids (a renamed label panics), so it gets its own.
+        nr = subprocess.run(["./scripts/note-files", "--root"], cwd=ROOT, capture_output=True, text=True,
+                            env={**os.environ, "NOTE": note})
+        if nr.returncode:
+            sys.exit(f"diff-crop: NOTE={note} ./scripts/note-files --root: {nr.stderr.strip()}")
+        q = ["typst", "query", "--root", root, "--input", "list=1", "--input", "title=" + _note_files("--title-for", typ),
+             os.path.join(root, nr.stdout.strip()), "<ref-id>", "--field", "value"]
+        r = run(*q)
+        if r.returncode:
+            sys.exit(f"diff-crop: {' '.join(q)}: {r.stderr.strip()[:800]}")
+        refs = f"/ref-ids-{note}.json"
+        with open(os.path.join(root, refs[1:]), "w") as f:
+            f.write(r.stdout)
     if not os.path.exists(os.path.join(root, refs[1:])):
         sys.exit(f"diff-crop: {root}{refs} is missing: run `make ref-ids NOTE=<note>` first")
     a = ["typst", "query", "--root", root, "--input", "title=" + _note_files("--title-for", typ),
