@@ -138,9 +138,10 @@
   // `M`, the monad of IntroString p.74, so those figures render against the book without a rename;
   // amber is ΔE76 66 from the nearest bead colour and 31 from the nearest lane.
   "M": rgb("#b58900"),
-  // `P A = E A` is the same object, so `P` takes `E`'s hue a shade darker: the two relators must
-  // read as siblings, because the whole content of `P(est(R))est(R)⊑union est(R)` is that they differ.
-  "P": rgb("#00767e"),
+  // `P A = E A` is the same object, so `P` takes `E`'s hue darker: the two relators must read as
+  // siblings, because the whole content of `P(est(R))est(R)⊑union est(R)` is that they differ.
+  // ΔE76 31 from `E`, over the 29 two lanes sharing a panel need: (8.4) draws both.
+  "P": rgb("#005a62"),
   // §11.5.1's type functor and the fork that feeds the bifunctor its two arguments, `⟨𝟙,T⟩ : 𝒜⟶𝒜×𝒜`.
   // They share a panel with `F`, hence ΔE76 37 and 41 from it and from each other.
   "T": rgb("#883462"), "⟨𝟙,T⟩": rgb("#a884ca"),

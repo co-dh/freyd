@@ -56,7 +56,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   [$frac(#[`S`], ∋)$ `thin(Q)⊒` $frac(#[`S`], ∋)$ `est(R)` $frac(#[`𝟙`], ∋)$ \
    #src[(8.3), `R∩(S°S)⊑Q` — @thin-83]],
   [the usable variant: `R` need only refine `Q` between values `S` gives one argument],
-  [#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le") #h(6pt) #src[(8.4)]],
+  [#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le") #h(6pt) #src[(8.4) — @thin-84]],
   [thinning each member set is a thinning of the union],
 )]<thin-laws>
 
@@ -194,6 +194,25 @@ row((
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
 )]<thin-cor>
+
+// B&dM (8.4), p. 195, mirrored.  `union` is `Λ(∋∋)`, so @thin-up at `S≜∋∋` splits the law into its
+// two conditions, each a chain.
+#import "../generated/Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond1.calc.typ" as calc-84a
+#import "../generated/Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond2.calc.typ" as calc-84b
+#disp(num: "(8.4)")[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_le") \
+    #src[thinning each member set, then taking the union, is a thinning of the union]],
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
+  Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond1") \
+    #src[every member of the result is a member of a member set — @thin-laws:1, first condition]],
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond1@cfee5704
+  lean-calc(calc-84a),
+  Thm(cols: 1)[#leanf("Freyd.Alg.powerRel_thinRel_comp_bigUnion_cond2") \
+    #src[every member of a member set has a `Q`-lower bound in the result — @thin-laws:1, second
+     condition]],
+     // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_cond2@3acd6d82
+  lean-calc(calc-84b),
+)]<thin-84>
 
 == Paths in a layered network
 
