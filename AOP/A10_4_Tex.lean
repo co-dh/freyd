@@ -746,13 +746,8 @@ public theorem tex_restrict : Λ H ≫ est R ⊑ Λ (inrange ≫ (val)°) ≫ es
 public theorem tex_body_prefixed :
     Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map (Λ H ≫ est R) ≫ alphaR
       ⊑ Λ H ≫ est R := by
-  have hfix : (junc cop arb step)°
-      ≫ (F Unit Digit).map
-          (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
-        = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
-    hylo_fixed (F := F Unit Digit) (initial Unit Digit) alphaR (junc cop arb step)
-  rw [tex_H] at hfix
-  exact greedy_dp_prefixed (graph_map con) tex_mono R_trans hfix (tex_greedy _)
+  rw [← tex_H]
+  exact greedy_dp_prefixed (graph_map con) tex_mono R_trans (tex_greedy _)
 
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification

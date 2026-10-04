@@ -679,11 +679,11 @@ public theorem entab_laws_prefixed (n : Nat) (tb nl blank : Char) (hn : 0 < n) (
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
   subst hX
   rw [← expandAlg_eq_junc, ← con_eq_junc]
-  have hfix := hylo_fixed (F := F Unit Char) (initial Unit Char)
-    (graph (con (L := Unit) (E := Char))) (graph (expandAlgFn n tb nl blank))
-  rw [entab_H] at hfix
-  exact greedy_dp_prefixed (graph_map con) entab_mono R_trans hfix
-    (entab_thin_condition n tb nl blank hn hb)
+  have e : _root_.Freyd.Alg.H (F := F Unit Char) (graph (expandAlgFn n tb nl blank))
+      (graph (con (L := Unit) (E := Char))) = (detabR n tb nl blank)° := entab_H n tb nl blank
+  rw [← e]
+  exact greedy_dp_prefixed (graph_map con) entab_mono R_trans
+    (by unfold ThinCondition; rw [e]; exact entab_thin_condition n tb nl blank hn hb)
 
 /-- **entab-laws**, second row (B&dM p.247): the shortest input `detab` expands to the given
     output is the least fixed point of `(μX : [nil,expand]° est(Q)(𝟙+(X×𝟙))[nil,snoc])` —

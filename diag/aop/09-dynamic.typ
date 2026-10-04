@@ -107,7 +107,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), solving each part by `M` and
      keeping an optimum (`P(F(M)h) est(R)`) returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_lower@5dd00afd
+     // lean:AOP.A9_1.dynamic_programming_lower@2ac2fd1f
   lean-calc(calc-dpl),
 )]<dp-lower>
 
@@ -116,7 +116,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_upper") \
     #src[for every `b` that `H` returns from an input, the step #frc([`T°`])` P(F(M)h) est(R)` returns
      from that input only `b'` with `R` relating `b'` to `b`]],
-     // lean:AOP.A9_1.dynamic_programming_upper@dbf5fa82
+     // lean:AOP.A9_1.dynamic_programming_upper@7d38edb3
   // two rows: nine panels in one row shrink the fractions past reading
   lean-calc(calc-dpu, breaks: (5,)),
 )]<dp-upper>
@@ -160,7 +160,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_lower") \
     #src[taking the input apart every way `T` allows (#frc([`T°`])), dropping the parts `thin(Q)`
      rejects, solving each rest by `M` and keeping an optimum returns only what `H` returns]],
-     // lean:AOP.A9_1.dynamic_programming_thin_lower@32f5e9ad
+     // lean:AOP.A9_1.dynamic_programming_thin_lower@e2b2509f
   lean-calc(calc-dptl),
 )]<dp-laws-92>
 
