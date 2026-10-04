@@ -84,7 +84,7 @@ attribute [diag_defines] relCata_cancel
 -- constant NOT here is still refused, which is what keeps `BiRelator.appl` out of a cell.
 attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   BiRelator.PreservesRecip Relator.PreservesRecip RelSet.Bracket.Assoc RelSet.Knapsack.Q
-  RelSet.Paragraph.Q RelSet.Tour.dTour Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
+  RelSet.Paragraph.Q Coreflexive Monotonic Freyd.Alg.Inductive Freyd.Alg.ThinCondition Freyd.Alg.DPSetting
   RelSet.CL.ConsList.cons RelSet.Tour.start
   RelSet.ListRel.zero RelSet.ListRel.plus RelSet.ListRel.succ RelSet.ListRel.div
   RelSet.ListRel.zeros RelSet.ListRel.pluss
@@ -491,6 +491,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.minOf] def unexpandMinOf : Unexpander
   | `($_ $xs $_m) => `(min($xs))
   | _ => throw ()
+-- `tail(x)` inside a `⧺` keeps its brackets, which a plain application loses there.
+syntax:max "tail(" term ")" : term
 
 -- A DATATYPE'S OBJECT IS SPELLED THE WAY THE NOTE'S OBJECT LANGUAGE SPELLS IT: lower case, and
 -- bracketed where the argument is applied — `tree A`, `list⁺ A`, `bag(Job)`.  A NOTATION and not an
@@ -648,10 +650,29 @@ open Lean PrettyPrinter in
   | `($_ $x) => `($(mkIdent `head2) $x)
   | _ => `($(mkIdent `head2))
 open Lean PrettyPrinter in
+-- B&dM name no function for "the head replaced": `dropl(a,([b]⧺x,y))=([a]⧺x,…)` writes it as the
+-- new head before the old tail, so the note does too.
 @[app_unexpander RelSet.Tour.replaceHead] def unexpandTourReplaceHead : Unexpander
-  | `($_ $a $x) => `($(mkIdent `replaceHead) $a $x)
-  | `($_ $a) => `($(mkIdent `replaceHead) $a)
-  | _ => `($(mkIdent `replaceHead))
+  | `($_ $a $x) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail($x))])
+  | `($_ $a) => do pure (.node .none ``noteCat #[← `([$a]), mkAtom "⧺", ← `(tail(·))])
+  | _ => throw ()
+-- The carrier object of tours is the type `Tour` it wraps; `dTour` only says it is the `RelSet` one.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.dTour] def unexpandDTour : Unexpander
+  | `($_ $A) => `($(mkIdent `Tour) $A)
+  | _ => throw ()
+-- §10.2's `expand(xs,a)` (B&dM p.246); tab size and the three characters are the section's context.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.expandFn] def unexpandDetabExpandFn : Unexpander
+  | `($_ $_ $_ $_ $_ $x $a) => `($(mkIdent `expand) $x $a)
+  | `($_ $_ $_ $_ $_) => `($(mkIdent `expand))
+  | _ => throw ()
+-- `k`'s second arm as B&dM p.256 write it, in diagram order; costs and due dates are context.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.kStep] def unexpandTardyKStep : Unexpander
+  | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")) $p)
+  | `($_ $_ $_ $_) => `($(mkIdent (Name.mkSimple "assocr (𝟙×((bagify°×𝟙) penalty)) bmax")))
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.outcost] def unexpandTourOutcost : Unexpander
   | `($_ $_ $x) => `($(mkIdent `outcost) $x)
@@ -1977,10 +1998,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.bagPenalty] def unexpandTardyBagPenalty : Unexpander
   | `($_ $_ $_ $_ $p) => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")) $p)
   | _ => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tardy.kStep] def unexpandTardyKStep : Unexpander
-  | `($_ $_ $_ $_ $p) => `($(mkIdent `kStep) $p)
-  | _ => `($(mkIdent `kStep))
 -- B&dM p.258: `shift(d,r)=(d+r)/10`, the representative `shiftPre` computes; the class `mkR x` of
 -- any other representative is `x`, as `Quotient.mk`'s is.
 open Lean PrettyPrinter in
