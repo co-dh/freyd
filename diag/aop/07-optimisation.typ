@@ -1135,7 +1135,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Every guest list the president's ruling allows.],
 
   [the specification \ $frac(#[`party`], ∋)$ `est(R°)`],
-  [#leant("Freyd.Alg.RelSet.Party.party_open")],
+  [#leant("Freyd.Alg.RelSet.Party.party_laws")],
   [A guest list of greatest total conviviality.],
 )]<party-defn>
 
@@ -1422,43 +1422,23 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // SAME panel: `E(⦇S⦈ choose)=E(⦇S⦈)E(choose)`, the absorption step.  Inside the brackets the
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
+#import "../generated/Freyd.Alg.RelSet.Party.party_laws.calc.typ" as calc-party
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  // Three rows here and four in the next display: at the book's own panel metric the seven no longer
-  // fit one page, and the cut is where the fold is opened — outside the `⦇ ⦈` here, inside it there.
+  // Five rows here and four in the next display: at the book's own panel metric the seven no longer
+  // fit one page, and the cut is where the fold is opened — inside the `⦇ ⦈` here, outside it there.
+  // lean:AOP.A7_2.greedy@5876dfbf lean:AOP.A7_3_Party.pair_est_le@44802697
+  // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
      // lean:AOP.A7_3_Party.party_laws@b2a60154
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Party.party_open.lhs", src[@party-defn:11]),
-    (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs",
-      src[`party≜⦇S⦈ choose`, #frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]),
-    // party-branch row: Ex 7.38
-    (RQ, "Freyd.Alg.RelSet.Party.party_step2.lhs",
-      // lean:AOP.A7_3_Party.party_step2@d7096c3f
-      src[`(R×R)°choose⊑choose R°` — @party-mono-branch]),
-  ),
+  // The fold.s four rows here, the four outside it in the next display.
+  lean-calc(calc-party, span: (0, 5)),
 )]<party-laws>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain(from: "Freyd.Alg.RelSet.Party.party_step2.lhs",
-    (RQ, "Freyd.Alg.RelSet.Party.party_step3.lhs",
-      // lean:AOP.A7_2.greedy@5876dfbf lean:AOP.A7_3_Party.party_step3@4f17fb41
-      src[
-        // greedy row: Theorem 7.2
-        `(𝟙×list((R×R)°))S⊑S(R×R)°` — @party-mono]),
-    (RQ, "Freyd.Alg.RelSet.Party.party_step4.lhs",
-      // lean:AOP.A7_3_Party.pair_est_le@44802697 lean:AOP.A7_3_Party.party_step4@dcdfde0f
-      // pair_est_le row: Ex 7.15
-      src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`]),
-    (RQ, "Freyd.Alg.RelSet.Party.party_step5.lhs",
-      // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.party_step5@e750eb39
-      src[`include` a map]),
-    (RQ, "Freyd.Alg.RelSet.Party.party_step6.lhs",
-      // lean:AOP.A7_3_Party.exclude_step@e8fd3123 lean:AOP.A7_3_Party.party_step6@0f90e211
-      src[`π₂ list(`#frc([`choose`])` est(R°)) concat⊑`#frc([`exclude`])` est(R°)`]),
-  ),
+  lean-calc(calc-party, span: (4, 8)),
 )]<party-laws-fold>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
@@ -2076,28 +2056,17 @@ zip(that)                                         each row: its square, and the 
 // the `A` one, and the outer `list` is born where the partition is.  A bead whose source and target
 // differ by one outermost functor kills just that wire (`est` the `E`); an ALGEBRA rebuilds the type,
 // so every strand lands on it and the ones it returns are born there.
+#import "../generated/Freyd.Alg.RelSet.Van.van_laws.calc.typ" as calc-van
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Van.van_laws") \
     #src[the fewest secure segments the transactions can be cut into are one pass along them, the
      next transaction glued onto the open segment wherever that segment stays secure and the van
  called where it does not]],
      // lean:AOP.A7_5_Van.van_laws@d9b2bf01
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Van.van_laws_step4.rhs",
-      src[@Freyd.Alg.RelSet.Van.van_spec]),
-    (EQ, "Freyd.Alg.RelSet.Van.van_laws_step4.lhs",
-      // lean:AOP.A7_5_Van.van_spec@104cf5ec
-      src[`partition list(secure)=⦇S⦈` — @Freyd.Alg.RelSet.Van.van_spec, @cata-fusion]),
-    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step3.lhs",
-      // lean:AOP.A7_5_Van.van_7_15_false@1b163187 lean:AOP.A7_5_Van.van_7_14@31454849
-      src[`R;H⊑R` — @van-defn:13]),
-    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step2.lhs",
-      // lean:AOP.A7_5_Van.van_mono_new@ca4101c9
-      src[@greedy-thm72 at `R;H` — @van-mono, @van-716, @van-718]),
-    (RQ, "Freyd.Alg.RelSet.Van.van_laws_step1.lhs",
-      // lean:AOP.A7_5_Van.prog_le_greedy@8cc86313
-      src[`old⊑new (R;H)°`]),
-  ),
+  // lean:AOP.A7_5_Van.van_spec@104cf5ec lean:AOP.A7_5_Van.van_7_15_false@1b163187
+  // lean:AOP.A7_5_Van.van_7_14@31454849 lean:AOP.A7_5_Van.van_mono_new@ca4101c9
+  // lean:AOP.A7_5_Van.prog_le_greedy@8cc86313
+  lean-calc(calc-van),
 )]<van-laws>
 
 #pagebreak(weak: true)
