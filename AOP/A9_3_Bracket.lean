@@ -182,6 +182,15 @@ public theorem R_recip_refl : 𝟙 (dTree A) ⊑ (R st sb cb)° :=
   | Sum.inl _ => 0
   | Sum.inr pq => gArmFn st sb cb pq
 
+/-- **mct-defn**, pointwise: `g` is zero at a tip. -/
+public theorem gFn_inl (a : A) :
+    gFn st sb cb (Sum.inl a : (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier) = 0 := rfl
+
+/-- **mct-defn**, pointwise: at a node `g` is `cb` of the two sizes plus the two costs. -/
+public theorem gFn_inr (cx cy : Int) (x y : NEList A) :
+    gFn st sb cb (Sum.inr ((cx, x), (cy, y)) : (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier)
+      = cb (szFn st sb x, szFn st sb y) + cx + cy := rfl
+
 /-- The product `Int × list⁺ A` the context bundle `⟨cost,flatten⟩` lands in. -/
 @[expose] public abbrev P (A : Type) : RelProd (⟨Int⟩ : RelSet.{0}) (dNE A) :=
   relProd (⟨Int⟩ : RelSet.{0}) (dNE A)
@@ -988,6 +997,13 @@ public theorem rprodMap_graph_pair {X Y X' Y' : RelSet.{0}} (f : X.carrier → X
           : (⟨X.carrier × Y.carrier⟩ : RelSet.{0}) ⟶ (⟨X'.carrier × Y'.carrier⟩ : RelSet.{0})) :=
   hom_ext fun _ _ => ⟨fun h => Prod.ext h.1 h.2,
     fun h => ⟨congrArg Prod.fst h, congrArg Prod.snd h⟩⟩
+
+/-- `bin`, uncurried: the join of a pair of trees, the map `list(bin)` applies in `mix`. -/
+@[expose] public def binFn (q : Tree A × Tree A) : Tree A := Tree.bin q.1 q.2
+
+/-- `row` read as the function it is: `mct` of every non-empty suffix. -/
+@[expose] public def rowFn [Inhabited A] (x : NEList A) : CL.ConsList Unit (Tree A) :=
+  cmap (mct st sb cb) (neTailsFn x)
 
 /-- `row≜tails list(mct)`. -/
 @[expose] public def row [Inhabited A] : dNE A ⟶ dList (Tree A) :=
@@ -1864,6 +1880,55 @@ public theorem idArray_graph :
   exact hom_ext fun _ _ => ⟨fun h => Prod.ext h.1.symm h.2,
     fun h => ⟨(congrArg Prod.fst h).symm, congrArg Prod.snd h⟩⟩
 
+/-- `row`, pointwise: the best tree of every non-empty suffix. -/
+public theorem row_apply (x : NEList A) (ys : CL.ConsList Unit (Tree A)) :
+    row st sb cb x ys ↔ ys = cmap (mct st sb cb) (neTailsFn x) := by
+  have h : row st sb cb = (graph (fun x => cmap (mct st sb cb) (neTailsFn x)) : dNE A ⟶ dList (Tree A)) := by
+    simp only [row, list_graph, graph_comp]
+  rw [h]; exact Iff.rfl
+
+/-- `col`, pointwise: the best tree of every non-empty prefix. -/
+public theorem col_apply (x : NEList A) (ys : CL.ConsList Unit (Tree A)) :
+    col st sb cb x ys ↔ ys = cmap (mct st sb cb) (neInitsFn x) := by
+  have h : col st sb cb = (graph (fun x => cmap (mct st sb cb) (neInitsFn x)) : dNE A ⟶ dList (Tree A)) := by
+    simp only [col, list_graph, graph_comp]
+  rw [h]; exact Iff.rfl
+
+/-- `array`, pointwise: one row for every non-empty prefix. -/
+public theorem array_apply (x : NEList A) (xss : CL.ConsList Unit (CL.ConsList Unit (Tree A))) :
+    array st sb cb x xss ↔ xss = cmap (rowFn st sb cb) (neInitsFn x) := by
+  rw [array_graph]; exact Iff.rfl
+
+/-- `mix`, pointwise: a cheapest of the trees joining matching prefix and suffix trees. -/
+public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)) (t : Tree A) :
+    mix st sb cb p t ↔ t = minlistFn (R st sb cb) (cmap binFn (zipFn p)) := by
+  have h : mix st sb cb = (graph (fun p => minlistFn (R st sb cb) (cmap binFn (zipFn p))) : _ ⟶ dTree A) := by
+    simp only [mix, list_graph, graph_comp]; try rfl
+  rw [h]; exact Iff.rfl
+
+/-- `next`, pointwise: the column with the `mix` of the column and the row added at its end. -/
+public theorem next_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A))
+    (zs : CL.ConsList Unit (Tree A)) :
+    next st sb cb p zs
+      ↔ zs = snocFn (p.1, minlistFn (R st sb cb) (cmap binFn (zipFn p))) := by
+  constructor
+  · rintro ⟨⟨u, t⟩, ⟨hu, hm⟩, rfl⟩
+    rw [mix_apply] at hm
+    cases hu; cases hm; rfl
+  · rintro rfl
+    exact ⟨(p.1, _), ⟨rfl, (mix_apply st sb cb p _).2 rfl⟩, rfl⟩
+
+/-- `process`, pointwise: `loop(next)` started from the column holding the tip of `a`. -/
+public theorem process_apply (a : A) (xss : CL.ConsList Unit (CL.ConsList Unit (Tree A)))
+    (ys : CL.ConsList Unit (Tree A)) :
+    process st sb cb (a, xss) ys
+      ↔ loop (X := dList (Tree A)) (next st sb cb) (CL.ConsList.cons (Tree.tip a) (CL.ConsList.wrap ()), xss) ys := by
+  constructor
+  · rintro ⟨⟨c, xs'⟩, ⟨⟨t, ht, hc⟩, hx⟩, hl⟩
+    cases ht; cases hc; cases hx; exact hl
+  · intro h
+    exact ⟨(_, xss), ⟨⟨_, rfl, rfl⟩, rfl⟩, h⟩
+
 /-- `tops≜tic list(mct)`: our name, not the book's — the trees at the top of the new rows. -/
 @[expose] public def tops : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dList (Tree A) :=
   tic ≫ list (graph (mct st sb cb) : dNE A ⟶ dTree A)
@@ -1986,6 +2051,21 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Bracket.costSizeFn] public meta def unexpandCostSizeFn : Unexpander
   | `($_ $_ $_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "⟨cost,size⟩")) $x $args*)
   | _ => `($(mkIdent (Name.mkSimple "⟨cost,size⟩")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.gFn] public meta def unexpandBracketG : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `g) $x $args*)
+  | _ => `($(mkIdent `g))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.rowFn] public meta def unexpandRowFn : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `row) $x $args*)
+  | _ => `($(mkIdent `row))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.binFn] public meta def unexpandBinFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `bin) $args*)
+  | _ => `($(mkIdent `bin))
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.TT.cataR] public meta def unexpandTTCataR : Unexpander

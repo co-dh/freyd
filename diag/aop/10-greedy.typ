@@ -285,7 +285,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leanf("Freyd.Alg.RelSet.Tardy.snag")],
   [put one job into a bag],
   [#leann("Freyd.Alg.RelSet.Tardy.bagify")], [#leant("Freyd.Alg.RelSet.Tardy.bagify")],
-  [#leanf("Freyd.Alg.RelSet.Tardy.bagify_cata")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.bagify_cata"), #leanf("Freyd.Alg.RelSet.Tardy.bagifyFn_wrap"),
+   #leanf("Freyd.Alg.RelSet.Tardy.bagifyFn_snoc")],
   [forget the order of a schedule; `H=bagify°` lists every schedule of a bag],
   [#leann("Freyd.Alg.RelSet.Tardy.penalty")], [#leant("Freyd.Alg.RelSet.Tardy.penalty")],
   [#leanf("Freyd.Alg.RelSet.Tardy.penalty")],
@@ -303,7 +304,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leanf("Freyd.Alg.RelSet.Tardy.add")],
   [insert `j` anywhere in `xs`; `perm≜bagify bagify°=⦇[nil,add]⦈`],
   [#leann("Freyd.Alg.RelSet.Tardy.k")], [#leant("Freyd.Alg.RelSet.Tardy.k")],
-  [#leanf("Freyd.Alg.RelSet.Tardy.k")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.k"), #leanf("Freyd.Alg.RelSet.Tardy.kFn_inl"),
+   #leanf("Freyd.Alg.RelSet.Tardy.kFn_inr")],
   [the cost of a schedule from the cost of its front and the penalty of its last job],
   [#leann("Freyd.Alg.RelSet.Tardy.fFn")], [#leant("Freyd.Alg.RelSet.Tardy.fFn")],
   [#leanf("Freyd.Alg.RelSet.Tardy.fFn")],
@@ -314,9 +316,12 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leann("Freyd.Alg.RelSet.Tardy.Q'")], [#leant("Freyd.Alg.RelSet.Tardy.Q'")],
   [#leanf("Freyd.Alg.RelSet.Tardy.Q'")],
   [`Q` on the `snag` summand: compare the penalties of the two last jobs],
+// lean:AOP.A10_3_Tardy.bagifyFn_wrap@bf98bd9a lean:AOP.A10_3_Tardy.bagifyFn_snoc@e893608e lean:AOP.A10_3_Tardy.kFn_inl@bdad6597 lean:AOP.A10_3_Tardy.kFn_inr@7ad10e44
+// lean:AOP.A10_3_Tardy.gFn_inl@5bc3cee0 lean:AOP.A10_3_Tardy.gFn_inr@76eab831
 // lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
   [#leann("Freyd.Alg.RelSet.Tardy.g")], [#leant("Freyd.Alg.RelSet.Tardy.g")],
-  [#leanf("Freyd.Alg.RelSet.Tardy.g"), #leanf("Freyd.Alg.RelSet.Tardy.g_apply")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.g"), #leanf("Freyd.Alg.RelSet.Tardy.g_apply"),
+   #leanf("Freyd.Alg.RelSet.Tardy.gFn_inl"), #leanf("Freyd.Alg.RelSet.Tardy.gFn_inr")],
   [(10.5): the penalty of the last job, zero for the empty schedule],
   [#leann("Freyd.Alg.RelSet.Tardy.m")], [#leant("Freyd.Alg.RelSet.Tardy.m")],
   [#leanf("Freyd.Alg.RelSet.Tardy.m")],
