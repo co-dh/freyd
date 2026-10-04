@@ -340,6 +340,21 @@ public theorem mcp_spec (wt : V → V → Nat) (net : ConsList (List V) (List V)
     rw [← cataR_eq_relCata]
     exact hr
 
+/-- `minpath` (book p.196): the program's graph — a network, read as its layers' sets, is related
+    to the path `mcp` returns on it. -/
+@[expose] public def minpath (wt : V → V → Nat) : dCL (V → Prop) (V → Prop) ⟶ dCL V V :=
+  fun x p => ∃ net, x = netSet net ∧ mcp wt net = some p
+
+/-- The problem (B&dM p.196: `minpath ⊑ min R · Λ(list⁺ ∈)`), in diagram order: whatever
+    `minpath` returns is a cheapest path through the layers, `minpath ⊑ Λ(L(∋)) est(R)`. -/
+public theorem minpath_spec (wt : V → V → Nat) :
+    minpath wt ⊑ Λ (relCata (I := pathInit V)
+      (pathF.map (∋ (dE V)) (𝟙 (dCL V V)) ≫ alphaR)) ≫ est (pathR wt) :=
+  le_iff.mpr fun _ p ⟨net, hx, h⟩ => by
+    subst hx
+    rw [relCata_pathInit, pathF_map_comp_alphaR_eq_pathAlg]
+    exact mcp_spec wt net p h
+
 /-- 8.2d end to end, pointwise (book p.196's problem): `mcp`'s answer is a path of the network
     and no path of the network is cheaper. -/
 public theorem mcp_least (wt : V → V → Nat) (net : ConsList (List V) (List V)) (p : ConsList V V)

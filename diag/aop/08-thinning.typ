@@ -226,16 +226,26 @@ row((
 
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
-#disp[#definition[
-`F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`.
+#disp[#table(
+  columns: (1fr, 1fr),
+  align: (left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*formula*], [*what it says*]),
 
-#leanf("Freyd.Alg.wrapz"), #h(4pt) #leanf("Freyd.Alg.conswFn_apply").
-
-#leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
-
-#leanf("Freyd.Alg.pathQ"), \
-#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), \
-#leanf("Freyd.Alg.Λ_pathF_map_id_eps"), #h(4pt) #leanf("Freyd.Alg.pathStep").
+  [`F(A,X)=A+A×X`, `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`],
+  [a path is a non-empty cons-list: one vertex, or a vertex in front of a path],
+  [#leanf("Freyd.Alg.wrapz"), #leanf("Freyd.Alg.conswFn_apply")],
+  [a path carried with its cost: `wrap` starts at cost `0`, `consw` adds the edge from the new vertex to the old head],
+  [#leanf("Freyd.Alg.pathCost"), #leanf("Freyd.Alg.cataR_wrapz_consw"), #leanf("Freyd.Alg.pathR")],
+  [the cost of a path is the sum of `wt` over consecutive vertices; `p R q` iff `p` costs no more than `q`],
+  [#leanf("Freyd.Alg.minpath_spec")],
+  [the input `[x₀,…,xₙ] : L(PA)` is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and `minpath` returns a cheapest one],
+  [#leanf("Freyd.Alg.pathQ")],
+  [`p Q q`: `p` costs no more than `q` and starts at the same vertex],
+  [#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #leanf("Freyd.Alg.Λ_pathF_map_id_eps")],
+  [the two transposes on the coproduct: `cpl` chooses a vertex from a layer, `cpr` chooses a tail from a set of paths],
+  [#leanf("Freyd.Alg.pathStep")],
+  [put the vertex in front of every tail in the set and keep a cheapest],
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
 // lean:AOP.A8_2.wrapz@e528d496
 // lean:AOP.A8_2.conswFn_apply@c88ec21b
@@ -243,12 +253,13 @@ row((
 // lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
+// lean:AOP.A8_2_Exec.minpath_spec@3bcadf85
 // lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
 // lean:AOP.A8_2.pathStep@f546a21f
 // lean:AOP.A8_2.Λ_pathF_map_eps_id@59cd9f69
 // lean:AOP.A8_2.Λ_pathF_map_id_eps@b7473cec
-]]<path-defn>
+)]<path-defn>
 
 #disp[#table(
   columns: (1fr, 1fr),
