@@ -759,6 +759,14 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
   | _ => `($(mkIdent `opb))
+-- The node arm of `g≜[zero,(𝟙×sz)² opb π₁]`, and of the size algebra `[zero,distr [𝟙×c,𝟙×p] plus]`,
+-- as the book writes them.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.gArmFn] def unexpandBracketGArmFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "(𝟙×sz)² opb π₁")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.sizeArmFn] def unexpandCodeSizeArmFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.gR] def unexpandBracketGR : Unexpander
   | _ => `($(mkIdent `g))
@@ -1673,6 +1681,47 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.TT.Tree.tip] def unexpandTreeTip : Unexpander
   | `($_ $a) => `($(mkIdent `tip) $a)
   | _ => `($(mkIdent `tip))
+-- The datatypes' constructors are the book's own words: `bin` (p. 217), `sym`/`ptr` (p. 225).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.TT.Tree.bin] def unexpandTreeBin : Unexpander
+  | `($_ $args*) => `($(mkIdent `bin) $args*)
+  | _ => `($(mkIdent `bin))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.Code.sym] def unexpandCodeSym : Unexpander
+  | `($_ $args*) => `($(mkIdent `sym) $args*)
+  | _ => `($(mkIdent `sym))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.Code.ptr] def unexpandCodePtr : Unexpander
+  | `($_ $args*) => `($(mkIdent `ptr) $args*)
+  | _ => `($(mkIdent `ptr))
+-- `prefixS x y` is "`x` is a prefix of `y`", the note's `prefix°` (`Q≜F(⊤+⊤,prefix°)`).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.prefixS] def unexpandCodePrefixS : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "prefix°")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "prefix°")))
+-- Its proper part is the book's `init⁺` (p. 226).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.properPrefixS] def unexpandCodeProperPrefixS : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "init⁺")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "init⁺")))
+-- A relation given by cases holds outright on a case as `true`, the Boolean spelling beside it.
+open Lean PrettyPrinter in
+@[app_unexpander True] def unexpandTrue : Unexpander
+  | `($_:ident) => `($(mkIdent `true))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander False] def unexpandFalse : Unexpander
+  | `($_:ident) => `($(mkIdent `false))
+  | _ => throw ()
+-- Joining two lists is the book's `cat` (`flatten≜⦇[wrap,cat]⦈`), on cons and snoc lists alike.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.cat] def unexpandBracketCat : Unexpander
+  | `($_ $args*) => `($(mkIdent `cat) $args*)
+  | _ => `($(mkIdent `cat))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.sappend] def unexpandCodeSappend : Unexpander
+  | `($_ $args*) => `($(mkIdent `cat) $args*)
+  | _ => `($(mkIdent `cat))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
   | _ => `($(mkIdent `cons))

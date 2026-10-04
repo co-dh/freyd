@@ -158,8 +158,10 @@ def render (declName : Name) (sides : List String := []) : MetaM String := withD
         -- ANY OTHER DECLARATION has the type Lean gave it: `sqr(n) : Int`, `Para(Word) : Type`,
         -- `IsThinlist(Q,thinlist) : Prop`.  The name cell applies it to its OWN binders only; an
         -- arrow the signature wrote `A → B` has a hygienic binder and stays in the type (`hd : J → C`).
+        -- An INSTANCE binder is hygienic too, but is a constraint and no arrow: it is passed over,
+        -- never left in the type as `[inst : …] →`.
         let rec named : Expr → Nat
-          | .forallE n _ b _ => if n.hasMacroScopes then 0 else named b + 1
+          | .forallE n _ b bi => if n.hasMacroScopes && !bi.isInstImplicit then 0 else named b + 1
           | _ => 0
         Meta.forallBoundedTelescope ci.type (named ci.type) fun ys ty =>
           do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← plain ty)

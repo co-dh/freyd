@@ -212,7 +212,8 @@ partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[])
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
 partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
-  if h.isIdent then return h.getId.getString!
+  -- A last component that is a NUMBER (`q.1`) has no string to shorten to: the whole name is it.
+  if h.isIdent then return match h.getId with | .str _ s => s | n => n.toString
   -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
   -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
   -- application is looked for among the paren's OWN children — `Term.paren` carries the optional

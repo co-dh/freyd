@@ -112,6 +112,26 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
     | _, e => e
   return go pi.numParams ty
 
+/-- A PATTERN'S `_` BINDS A HYGIENIC NAME (`a._@._internal…`) in the equations Lean derives, which no
+    reader can take for a variable: each is bound under its base name, primed apart from the names
+    bound before it (`ptr(a,a')`) — at every depth, since a catch-all case's equation binds them
+    inside its hypotheses too. -/
+partial def readableBinders (ty : Expr) : Expr :=
+  go [] ty
+where
+  fresh (used : List Name) (n : Name) : Name :=
+    if !n.hasMacroScopes then n else
+    let base := n.eraseMacroScopes
+    ((List.range (used.length + 1)).map fun k =>
+      Name.mkSimple (base.toString ++ String.ofList (List.replicate k '\''))).find?
+      (!used.contains ·) |>.getD base
+  go (used : List Name) : Expr → Expr
+    | .forallE n t b bi => let n' := fresh used n; .forallE n' (go used t) (go (n' :: used) b) bi
+    | .lam n t b bi => let n' := fresh used n; .lam n' (go used t) (go (n' :: used) b) bi
+    | .app f a => .app (go used f) (go used a)
+    | .mdata d e => .mdata d (go used e)
+    | e => e
+
 /-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
     elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none
     can drift.  Any value that is not two lambdas is refused. -/
@@ -139,7 +159,7 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  Meta.forallTelescope (← nameSelf declName ci.type) fun xs body => do
+  Meta.forallTelescope (readableBinders (← nameSelf declName ci.type)) fun xs body => do
     -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
     -- the definition itself: the name under its own arguments, `≜`, and the VALUE.  Read off the
     -- type, so every `def` a table heads with prints this way and none is named here.
@@ -159,6 +179,20 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
           let some c := tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none
             | throwError "{declName}: a structure with no fields states nothing"
           return #[head ++ spaced "≜" sp ++ (← labelT c)]
+      -- A DATATYPE has no value but its CONSTRUCTORS: `tree A≜tip(A) ∣ bin(tree A,tree A)`, each
+      -- constructor at these parameters beside the types of its fields, read off its own type.
+      if let .inductInfo iv := ci then
+        let lv := ci.levelParams.map Level.param
+        let alts ← iv.ctors.toArray.mapM fun c => do
+          let k := mkAppN (.const c lv) (xs.extract 0 iv.numParams)
+          Meta.forallTelescope (← Meta.inferType k) fun fs _ => do
+            if fs.isEmpty then return ← labelT k
+            let tys ← fs.mapM fun f => do labelT (← Meta.inferType f)
+            let args := tys[1:].foldl (fun acc t => acc ++ Lbl.text "," ++ t) tys[0]!
+            return (← labelT k) ++ Lbl.text "(" ++ args ++ Lbl.text ")"
+        let some (a₀ : Lbl) := alts[0]? | throwError "{declName}: a datatype with no constructors"
+        let body := alts[1:].foldl (fun (acc : Lbl) (a : Lbl) => acc ++ spaced "∣" sp ++ a) a₀
+        return #[head ++ spaced "≜" sp ++ body]
       let some val := ci.value? | throwError "{declName}: a definition with no value — \
         --formula writes `<name>≜<body>` and there is no body to write"
       -- A DEFINITION BY CASES — its value made of a matcher or a recursor, the KIND test `plain`

@@ -244,11 +244,15 @@ public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nilR extend := 
   | Code.sym _ => c
   | Code.ptr _ _ => p
 
+/-- **code-defn**: `distr [𝟙×c,𝟙×p] plus`, the step arm of the size algebra — a def of its own, so
+    the junction below is written by its arms' names and no arm is a lambda. -/
+@[expose] public def sizeArmFn (c p : Int) (q : Int × Code) : Int := q.1 + bytes c p q.2
+
 /-- **code-defn**: the algebra `[zero,distr [𝟙×c,𝟙×p] plus]` whose fold is `size`. -/
 @[expose] public def sizeAlgFn (c p : Int) :
     (Fobj Unit Code (⟨Int⟩ : RelSet.{0})).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr q => q.1 + bytes c p q.2
+  | Sum.inr q => sizeArmFn c p q
 
 /-- **code-defn**: `size`, read as the function it is. -/
 @[expose] public def sizeFn (c p : Int) : SnocList Unit Code → Int

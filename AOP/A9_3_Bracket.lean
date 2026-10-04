@@ -165,12 +165,18 @@ public theorem R_recip_refl : 𝟙 (dTree A) ⊑ (R st sb cb)° :=
     obtain rfl : t = t' := h
     exact Int.le_refl _
 
+/-- **mct-defn**: `(𝟙×sz)² opb π₁`, the node arm of `g` — a def of its own, so the junction below
+    is written by its two arms' names and no arm is a lambda. -/
+@[expose] public def gArmFn (st : A → S) (sb : S × S → S) (cb : S × S → Int)
+    (pq : (Int × NEList A) × (Int × NEList A)) : Int :=
+  cb (szFn st sb pq.1.2, szFn st sb pq.2.2) + pq.1.1 + pq.2.1
+
 /-- **mct-defn**: `g≜[zero,(𝟙×sz)² opb π₁]` — the cost of a node computed from the cost and the
     FLATTENING of each subtree. -/
 @[expose] public def gFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr (p, q) => cb (szFn st sb p.2, szFn st sb q.2) + p.1 + q.1
+  | Sum.inr pq => gArmFn st sb cb pq
 
 /-- The product `Int × list⁺ A` the context bundle `⟨cost,flatten⟩` lands in. -/
 @[expose] public abbrev P (A : Type) : RelProd (⟨Int⟩ : RelSet.{0}) (dNE A) :=
