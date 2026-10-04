@@ -107,7 +107,7 @@ public instance decSecureP (amount : A → Int) (N : Int) (x : Seg A) :
 
 /-- **van-defn**: `secure` as a coreflexive on stretches. -/
 @[expose] public def secure (amount : A → Int) (N : Int) : dList A ⟶ dList A :=
-  fun x y => x = y ∧ secureP amount N x
+  corefl (secureP amount N)
 
 public theorem secure_coreflexive : Coreflexive (secure amount N) :=
   le_iff.mpr fun _ _ h => h.1

@@ -91,7 +91,8 @@
 /// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
 /// `labels`: which calls count; `STATED` collects the statements the cell draws whole instead.
 #let lean-keys(c, labels: (<lean-formula>, <lean-row-key>)) = { if type(c) != content { () }
-  else if c.func() == metadata { if c.at("label", default: none) in labels { (c.value,) } else { () } }
+  else if c.func() == metadata { let l = c.at("label", default: none)
+    if l in labels { (c.value,) } else if l == <lean-keys-in> { lean-keys(c.value, labels: labels) } else { () } }
   else if c.has("children") { c.children.map(x => lean-keys(x, labels: labels)).flatten() }
   else if c.has("body") { lean-keys(c.body, labels: labels) } else if c.has("child") { lean-keys(c.child, labels: labels) } else { () } }
 /// A commutative diagram draws one WHOLE statement (`leancd` takes one selector); a `lean`/`leanc`
@@ -117,17 +118,23 @@
 #let law-formula(keys) = if "list" in sys.inputs { none } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
-/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the one
-/// declaration its picture draws (`<lean-decls>` of a single selector), else `()`.
+/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else its other
+/// cells' `#leanf`s, else the declarations its `#leant` cells type — a definition row's formula is that definition,
+/// `<name>≜<body>` — else the one declaration its picture draws (`<lean-decls>` of a single
+/// selector), else `()`.
 #let row-keys(loc) = {
   let ks = query(selector(<law-row-keys>).before(loc)).last().value
   if ks.len() > 0 { ks } else {
     let a = query(selector(<law-row>).before(loc)).last().location()
     let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
     let b = nxt.sorted(key: l => (l.page(), l.position().y)).at(0, default: none)
-    let ds = query(if b == none { selector(<lean-decls>).after(a) } else { selector(<lean-decls>).after(a).before(b) })
-    let vs = ds.map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
-    vs.slice(0, calc.min(1, vs.len()))
+    let within(l) = query(if b == none { selector(l).after(a) } else { selector(l).after(a).before(b) })
+    let fs = within(<lean-formula>).map(m => m.value).dedup()
+    let ts = if fs.len() > 0 { fs } else { within(<lean-type>).map(m => m.value).dedup() }
+    if ts.len() > 0 { ts } else {
+      let vs = within(<lean-decls>).map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
+      vs.slice(0, calc.min(1, vs.len()))
+    }
   }
 }
 /// The Lean selectors a display states: its first `Thm` header's formulas; else the `#leanf`s in its
@@ -143,10 +150,13 @@
     let te = query(selector(<thm-end>).after(ts.first().location())).first()
     (query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup(), none)
   } else {
+    // `<lean-keys-in>` by QUERY too: a wrapper such as `definition` hides its body from the walk.
+    let ins = if e == none { () } else { query(selector(<lean-keys-in>).after(s.location()).before(e.location())) }
     let body = query(selector(figure.where(kind: "disp")).before(s.location())).last().body
-    let own = lean-keys(body).dedup()
+    let keys(labels) = (lean-keys(body, labels: labels) + ins.map(m => lean-keys(m.value, labels: labels)).flatten()).dedup()
+    let own = keys((<lean-formula>, <lean-row-key>))
     let h = query(selector(heading).before(s.location())).at(-1, default: none)
-    let hk = if own.len() > 0 or h == none or lean-keys(body, labels: STATED).len() > 0 { () } else { lean-keys(h.body).dedup() }
+    let hk = if own.len() > 0 or h == none or keys(STATED).len() > 0 { () } else { lean-keys(h.body).dedup() }
     if hk.len() == 0 { (own, none) } else { (hk, h.location()) }
   }
 }
