@@ -4,26 +4,20 @@
 # `scripts/cd-check` asks this file for each one's record, in the note's document order — so
 # deleting a line does not drop an obligation, it leaves a canvas with no record and fails the gate.
 #
-#   <label>#<canvas> | <selector> | <reference in diag/>
+#   <label>#<canvas> | <reference in diag/>
 #
 # The key is the typst LABEL, never the display number: a renumbering (`#disp(num:)`) must not
 # break the match, so `scripts/cd-obligations` reads the number nowhere near this key.  `<canvas>`
-# counts the commutative canvases of that display, in the order the display draws them.  `-` in a
-# column: no selector (the canvas is drawn from no statement — its candidates are in the trailing
-# `#` comment), or no reference (the note never drew the canvas by hand, so there is no original to
-# hold the generated panel to, and only the panel's own geometry is checked).
+# counts the commutative canvases of that display, in the order the display draws them.  `-` as the
+# reference: the note never drew the canvas by hand, so there is no original to hold the generated
+# panel to, and only the panel's own geometry is checked.
 #
-# WHY THE SELECTOR IS AUTHORED AND NOT DERIVED.  A display's `lean:` marker lives in a TYPST
-# COMMENT, which the compiler discards before anything can query it, so no typed reader can see it
-# and the canvas → declaration mapping cannot be computed; it is written here by hand, the way
-# `diag/string-panels.txt` names theirs.  The candidates in the
-# comments come from `./scripts/cite-cover`, which reads the markers through `cite-check`'s own
-# reader.  Everything the gate then does is typed: the canvas list from `typst query`, the panel
-# from the elaborated Lean statement, the comparison from SVG path data and `pdftotext -bbox`.
+# NO SELECTOR HERE: the canvas is the note's `#leancd("<selector>")`, and `cd-obligations` reads the
+# selector off that call (`--input cdscan=1` brackets its canvases), so the note is its one source.
 #
-# A row whose canvas column is `-` names a panel the note draws NO canvas for: it is exported and
+# A row `- | <selector> | <reference>` names a panel the note draws NO canvas for: it is exported and
 # checked for its own geometry, and holds nothing to the note.
 #
 #
 # Panels with no canvas in the note: drawn for their own geometry, held to no drawing.
-adj-E-bend#1                     | Freyd.Alg.Λ_comp_eps+Freyd.Alg.Λ_eq_singleton_existsImage  | cdref-adjE.typ
+adj-E-bend#1                     | cdref-adjE.typ

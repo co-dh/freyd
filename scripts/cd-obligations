@@ -49,17 +49,22 @@ def canvases():
     chs = [scan] if chapter_env() is not None else \
         [["--ch", str(n), *scan] for n in chapter_numbers()]
     marks = [m for ms in queries(*chs) for m in ms]
-    out, lab = [], "(before the first display)"
+    # `sel`: the `#leancd` call the canvas lies inside (`note-prelude.typ` brackets its canvases with
+    # `lean`/`lean-end` marks), `None` for a canvas the note draws by hand.
+    out, lab, sel = [], "(before the first display)", None
     for m in marks:
-        if not isinstance(m, dict):
+        if not isinstance(m, dict) or m.get("kind") != "cd":
             continue
-        if m.get("kind") == "cd" and m["el"] == "disp":
+        if m["el"] == "disp":
             lab = m["label"] or "(unlabelled)"       # the show rule runs ahead of the display's body
-        elif m.get("kind") == "cd":
-            if m["el"] == "canvas":
-                out.append((lab, {"ar": 0, "node": 0}))
-            elif out:
-                out[-1][1][m["el"]] += 1
+        elif m["el"] == "lean":
+            sel = m["sel"]
+        elif m["el"] == "lean-end":
+            sel = None
+        elif m["el"] == "canvas":
+            out.append((lab, {"ar": 0, "node": 0}, sel))
+        elif out:
+            out[-1][1][m["el"]] += 1
     return out
 
 
@@ -71,17 +76,18 @@ def commutative(c):
 def main(argv):
     cs = canvases()
     if "--all" in argv:
-        for lab, c in cs:
+        for lab, c, sel in cs:
             print(f"{lab}\t{c['ar']} ar\t{c['node']} node\t"
-                  f"{'commutative' if commutative(c) else 'other picture'}")
+                  f"{'commutative' if commutative(c) else 'other picture'}\t{sel or '-'}")
         return
     # `<label>#<n>`: the canvas's place among the COMMUTATIVE canvases of its display, which is what
     # a record can name — a count per display could not tell two squares of one display apart.
+    # Then the `#leancd` selector it is drawn from, `-` for a hand-drawn canvas.
     seen = {}
-    for lab, c in cs:
+    for lab, c, sel in cs:
         if commutative(c):
             seen[lab] = seen.get(lab, 0) + 1
-            print(f"{lab}#{seen[lab]}")
+            print(f"{lab}#{seen[lab]}\t{sel or '-'}")
 
 
 if __name__ == "__main__":

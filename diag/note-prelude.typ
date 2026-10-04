@@ -63,7 +63,12 @@
 // than a term walk.  Unlike `lean`/`leanc`, a `+` inside ONE selector is not a pair of boxes but two
 // DIFFERENT statements drawn on one page (`diag/cd-panels.txt`'s `A+B`), so it stays one string and
 // `leancd` takes exactly one selector, never `..sels`.
-#let leancd(sel) = lean-call("generated/commutative/", <lean-cd>, (sel,))
+// Under `--input cdscan=1` the call brackets its canvases with two marks, so `scripts/cd-obligations`
+// reads each canvas's statement off the note itself — a manifest copy of it drifted.
+#let leancd(sel) = {
+  let p = lean-call("generated/commutative/", <lean-cd>, (sel,))
+  if "cdscan" in sys.inputs { [#metadata((kind: "cd", el: "lean", sel: sel))#p#metadata((kind: "cd", el: "lean-end"))] } else { p }
+}
 // A DATA VALUE drawn as a tree, from `diag-export --value`: a tree-valued `def` read off its value,
 // so an example tree in the note is the one its theorems run on.
 #let leanv(sel) = lean-call("generated/value/", <lean-value>, (sel,))
@@ -109,45 +114,16 @@
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
 // spelling, so a table's type column is read off the declaration its row already cites.
 #let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
-// EVERY PICTURE OF A THEOREM BELOW IS EXPORTED, NOT DRAWN: hand-drawing is how the first draft got
-// `inter_assoc` wrong.  `./scripts/diag-regen` redraws every binding, reading the list off these imports.
-#import "generated/Freyd.Diag.meet_top.typ": pic as p-meet-top
-#import "generated/Freyd.Diag.meet_comm.typ": pic as p-meet-comm
-#import "generated/Freyd.Diag.meet_assoc.typ": pic as p-meet-assoc
-#import "generated/Freyd.Diag.meet_idem.typ": pic as p-meet-idem
-#import "generated/Freyd.Diag.semidistrib_of_lax.typ": pic as p-semidistrib
-#import "generated/Freyd.Diag.CartBicat.«∇_assoc».typ": pic as p-n-assoc
-#import "generated/Freyd.Diag.CartBicat.«∇_comm».typ": pic as p-n-comm
-#import "generated/Freyd.Diag.CartBicat.«∇_unit».typ": pic as p-n-unit
-#import "generated/Freyd.Diag.CartBicat.«∇Δ≤𝟙».typ": pic as p-37
-#import "generated/Freyd.Diag.CartBicat.«𝟙≤Δ∇».typ": pic as p-38
-#import "generated/Freyd.Diag.CartBicat.«?!≤𝟙».typ": pic as p-39
-#import "generated/Freyd.Diag.CartBicat.«𝟙≤!?».typ": pic as p-40
+// A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
+// both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
+#let lean-sides(sel, f) = {
+  let (m, fs) = lean-pics("generated/", <lean-panel>, (sel,))
+  m
+  if "list" in sys.inputs { f([], []) } else { f(fs.at(0).lhs, fs.at(0).rhs) }
+}
+// A PROOF's steps are data (`branches`), not a picture, so they stay an import: `diag-regen` reads
+// these off `note-files --generated` and draws them by `--proof`.
 #import "generated/Freyd.Diag.CartBicat.frob.proof.typ": branches as frobb
-#import "generated/Freyd.Diag.CartBicat.lax_Δ.typ": pic as p-lax-delta
-#import "generated/Freyd.Diag.CartBicat.lax_!.typ": pic as p-lax-bang
-#import "generated/Freyd.Diag.CartBicat.«°_slide».typ": pic as p-conv-slide
-#import "generated/Freyd.Diag.dom_cd.typ": pic as p-dom-cd
-#import "generated/Freyd.Diag.dom_comp_le.typ": pic as p-dom-comp-le
-#import "generated/Freyd.Diag.comp_meet_of_singleValued.typ": lhs as p-236a, rhs as p-236b
-// The allegory layer's division (last section).  `Freyd.Alg`, not `Freyd.Diag`: `/` is a theorem of
-// `Freyd/S2_30.lean` and `AOP/A4_4`, and of nothing in `diag/`.
-#import "generated/Freyd.Alg.le_div_iff.typ": pic as p-le-div
-#import "generated/Freyd.Alg.le_leftDiv_iff.typ": pic as p-le-ldiv
-#import "generated/Freyd.Alg.DivisionAllegory.div_comp_le.typ": pic as p-div-cancel
-#import "generated/Freyd.Alg.leftDiv_comp_le.typ": pic as p-ldiv-cancel
-#import "generated/Freyd.Alg.div_comp_assoc.typ": pic as p-div-assoc
-#import "generated/Freyd.Alg.leftDiv_comp.typ": pic as p-ldiv-assoc
-#import "generated/Freyd.Alg.map_comp_div.typ": pic as p-map-div
-#import "generated/Freyd.Alg.div_comp_recip_map.typ": pic as p-div-map
-// §2.314's list, in the book's order.
-#import "generated/Freyd.Alg.div_comp.typ": pic as p-div-comp
-#import "generated/Freyd.Alg.one_le_div_self.typ": pic as p-one-div
-#import "generated/Freyd.Alg.div_self_comp_self.typ": pic as p-div-self-idem
-#import "generated/Freyd.Alg.div_self_comp.typ": pic as p-div-self
-#import "generated/Freyd.Alg.div_one.typ": pic as p-div-one
-#import "generated/Freyd.Alg.div_union.typ": pic as p-div-union
-#import "generated/Freyd.Alg.leftDiv_div.typ": pic as p-ldiv-div
 
 // Row numbers so a law can be cited: `it.y` is the table's OWN index, so deleting a row renumbers
 // the rest.  Rebuilt as a cell, not returned bare — bare content loses the row's height.

@@ -4,21 +4,16 @@
 //
 // EVERY PICTURE HERE IS EXPORTED, NOT DRAWN. `./scripts/diag-export --proof <decl>` walks the Lean
 // PROOF and writes diag/generated/<decl>.proof.typ, which binds the steps to `branches`; this note
-// only places them. `./scripts/diag-regen` redraws every binding below, reading the list off these
-// very imports.
+// only places them; a statement or a side is a `#lean(...)` call, as in the note. `./scripts/diag-regen`
+// redraws every binding below, reading the list off these very imports.
 #import "note-style.typ": *
+#import "note-prelude.typ": lean, lean-sides
 #import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
-#import "generated/Freyd.Diag.modular_of_frobenius.typ": pic as p-modular
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
-#import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».typ": pic as p-nabla-slide
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
-#import "generated/Freyd.Diag.CartBicat.«Δ≤?𝟙».typ": pic as p-cut-copy
-#import "generated/Freyd.Diag.CartBicat.«∇≤𝟙!».typ": pic as p-cut-merge
 #import "generated/Freyd.Diag.le_comp_conv_comp.proof.typ": branches as zzb
 #import "generated/Freyd.Diag.le_comp_conv_comp_of_lax.proof.typ": branches as zzlax
-#import "generated/Freyd.Diag.entire_inter_iff.typ": pic as p-entire, lhs as ent-a, rhs as ent-b
 #import "generated/Freyd.Diag.entire_inter_iff.proof.typ": branches as entb
-#import "generated/Freyd.Diag.shunt_right.typ": lhs as sr-a, rhs as sr-b
 #import "generated/Freyd.Diag.shunt_right.proof.typ": branches as srb
 
 #show: conf.with(title: "The allegory axioms: the proofs")
@@ -47,7 +42,7 @@ then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, 
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header(
-    Th[*the modular law,* `R S ∩ T ≤ (R ∩ T S°) S` #h(8pt) #Pin(p-modular)],
+    Th[*the modular law,* `R S ∩ T ≤ (R ∩ T S°) S` #h(8pt) #Pin(lean("Freyd.Diag.modular_of_frobenius"))],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(mfb.at(0).terms.at(0)), P(mfb.at(0).steps.at(0), s: 62%),
@@ -72,7 +67,7 @@ in the definition that may duplicate a box — so that is where the inequality h
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header(
-    Th[*the merge slide,* `(S ⊗ 𝟙) ▷ ≤ (𝟙 ⊗ S°) ▷ S` #h(8pt) #Pin(p-nabla-slide)],
+    Th[*the merge slide,* `(S ⊗ 𝟙) ▷ ≤ (𝟙 ⊗ S°) ▷ S` #h(8pt) #Pin(lean("Freyd.Diag.CartBicat.«∇_slide_conv»"))],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(nsb.at(0).terms.at(0)), P(nsb.at(0).steps.at(0), s: 62%),
@@ -98,9 +93,9 @@ pictures neither the modular law nor a meet with `1` is wanted. The one law that
 bigger is spent twice, and it is the cut, `𝟙 ≤ ⊸ ⟜`:
 
 #grid(columns: (1fr, 1fr), gutter: 30pt, align: center + bottom,
-  [#P(p-cut-copy, s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
+  [#P(lean("Freyd.Diag.CartBicat.«Δ≤?𝟙»"), s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
    *anything at all*]],
-  [#P(p-cut-merge, s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
+  [#P(lean("Freyd.Diag.CartBicat.«∇≤𝟙!»"), s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
    discarded*]],
 )
 
@@ -151,7 +146,7 @@ the meet semilattice and back down to state a containment in which no meet occur
 `R` is *entire* when `𝟙 ⊑ R R°`. When is an *intersection* entire?
 
 #align(center, block(inset: (y: 6pt))[
-  #P(p-entire, s: 80%) \
+  #P(lean("Freyd.Diag.entire_inter_iff"), s: 80%) \
   #src[`Total (R ∩ S) ↔ 𝟙 ≤ R S°`]])
 
 On the left `R ∩ S` is named *twice*; on the right `R` and `S` once each and the meet is gone. The
@@ -163,8 +158,8 @@ steps — and they cost very different things.
   columns: (5.0cm, 1fr, 6.0cm),
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*`⟹`* #h(6pt) given `R ∩ S` entire, #Pin(ent-a)
-    #h(6pt) show #Pin(ent-b)],
+  table.header(Th[*`⟹`* #h(6pt) #lean-sides("Freyd.Diag.entire_inter_iff", (l, r) => [given `R ∩ S` entire, #Pin(l)
+    #h(6pt) show #Pin(r)])],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(entb.at(0).terms.at(0)), P(entb.at(0).steps.at(0), s: 68%), [*the start:* `𝟙`.],
@@ -178,8 +173,8 @@ steps — and they cost very different things.
   columns: (5.0cm, 1fr, 6.0cm),
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*`⟸`* #h(6pt) given #Pin(ent-b) #h(6pt) show
-    `R ∩ S` entire, #Pin(ent-a)],
+  table.header(Th[*`⟸`* #h(6pt) #lean-sides("Freyd.Diag.entire_inter_iff", (l, r) => [given #Pin(r) #h(6pt) show
+    `R ∩ S` entire, #Pin(l)])],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(entb.at(1).terms.at(0)), P(entb.at(1).steps.at(0), s: 68%), [*the start:* `𝟙`.],
@@ -206,8 +201,8 @@ reasoned about. Each direction spends exactly one half of *map* — never both.
   columns: (4.4cm, 1fr, 6.4cm),
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting right, `⟹`* #h(6pt) given #Pin(sr-a) #h(4pt)
-    show #Pin(sr-b)],
+  table.header(Th[*shunting right, `⟹`* #h(6pt) #lean-sides("Freyd.Diag.shunt_right", (l, r) => [given #Pin(l) #h(4pt)
+    show #Pin(r)])],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(srb.at(0).terms.at(0)), P(srb.at(0).steps.at(0), s: 74%), [*the start:* `R`.],
@@ -221,8 +216,8 @@ reasoned about. Each direction spends exactly one half of *map* — never both.
   columns: (4.4cm, 1fr, 6.4cm),
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
-  table.header(Th[*shunting right, `⟸`* #h(6pt) given #Pin(sr-b) #h(4pt)
-    show #Pin(sr-a)],
+  table.header(Th[*shunting right, `⟸`* #h(6pt) #lean-sides("Freyd.Diag.shunt_right", (l, r) => [given #Pin(r) #h(4pt)
+    show #Pin(l)])],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(srb.at(1).terms.at(0)), P(srb.at(1).steps.at(0), s: 74%), [*the start:* `R f`.],
