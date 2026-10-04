@@ -490,6 +490,8 @@
   // with a pair whose two branches BOTH match; it never merges with a single panel, and never with
   // its own sibling branch, because the exporter's `dup` answers for the STEP, not the branch, and
   // is the same for every row of one step — so this loop reads it once, at the step's first row.
+  // A ROW THAT OPENS A CHAIN keeps its first panel even when it is `dup`: it has no op, so merging
+  // drops the term the chain (or a split half, `lean-calc(span:)`) starts from and floats its reason.
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
@@ -507,8 +509,8 @@
       let s = if held == none { s } else if s.len() > 3 {
         (rel-compose(held.at(0), s.at(0)), s.at(1), [#held.at(2) \ #s.at(2)], s.at(3))
       } else { (rel-compose(held.at(0), s.at(0)), s.at(1), [#held.at(2) \ #s.at(2)]) }
-      held = if got.at(i0).dup { s } else { none }
-      if not got.at(i0).dup {
+      held = if got.at(i0).dup and s.at(0) != none { s } else { none }
+      if held == none {
         steps.push(s); pics.push(got.at(i0).pic)
         for idx in grp.slice(1) { steps.push(r.steps.at(idx)); pics.push(got.at(idx).pic) }
       }
@@ -640,6 +642,9 @@
   steps = steps.slice(a, b)
   steps.at(0) = (none, steps.at(0).at(1), [])
   let cuts = (0,) + breaks + (steps.len(),)
+  // EVERY LAW THE CALC NAMES is a formula to draw, listed here whatever `span` shows and wherever
+  // the chain places it: `diag-regen` lists only placed metadata, and a hint a layout dropped went unlisted.
+  for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] }
   lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named())
 }
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
