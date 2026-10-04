@@ -166,9 +166,11 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
         let tys ← hyps.mapM fun x => Meta.inferType x
         pure (tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none)
       else pure none
-    let ante ← match cond with
-      | some c => pure ((← labelTree (Prec.impl + 1) c) ++ implArrow)
-      | none => pure (Lbl.text "")
+    -- THE HYPOTHESES ARE A PART OF THEIR OWN, cut before `⟹` like the relation: a conditional law
+    -- in a narrow reason cell breaks there (7.4.4a), not inside a hypothesis.
+    let (pre, ante) ← match cond with
+      | some c => pure (#[(← labelTree (Prec.impl + 1) c) ++ Lbl.text " "], Lbl.text implArrow.trimLeft)
+      | none => pure (#[], Lbl.text "")
     let target ← descend declName path body
     withBody declName branch target fun target' => do
       -- A PREDICATE THE NOTE WRITES BY NAME IS NOT UNFOLDED HERE.  `splitM`'s delta step is there so
@@ -182,8 +184,8 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
       match sides with
-      | some (sym, l, r) => return #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
-      | none => return #[ante ++ (← labelT target')]
+      | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
+      | none => return pre ++ #[ante ++ (← labelT target')]
 
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
     fraction wherever it stands), cut after its relation by

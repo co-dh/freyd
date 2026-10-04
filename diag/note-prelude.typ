@@ -634,6 +634,16 @@
 // A STEP'S LAW, cited: a declaration that a `Thm` header of ANOTHER display states is that display's
 // number, linked, so the reader follows it to its proof; any other law prints its statement.  The
 // header is found by the markers `Thm` emits (`<thm-num>` … `<thm-end>`), never by the formula text.
+// A CONDITIONAL LAW TOO WIDE FOR ITS CELL breaks before `⟹`, never inside a hypothesis: the
+// formula file cuts there with a `zws` (FormulaRender `render`), which becomes the line break.
+#let first-raw(x) = if x.func() == raw { x.text } else if x.has("children") and x.children.len() > 0 { first-raw(x.children.first()) } else if x.has("body") { first-raw(x.body) } else { none }
+#let impl-split(c) = layout(sz => if not c.has("children") or measure(c).width <= sz.width { c } else {
+  let ch = c.children
+  for (i, x) in ch.enumerate() {
+    let nxt = if i + 1 < ch.len() { first-raw(ch.at(i + 1)) } else { none }
+    if x.func() == text and x.text == sym.zws and nxt != none and nxt.starts-with("⟹") { linebreak() } else { x }
+  }
+})
 #let law-ref(law) = {
   [#metadata(law)<lean-formula>]
   context {
@@ -646,7 +656,7 @@
       query(selector(<disp-start>).before(home.location())).at(-1, default: none) }
     if "list" in sys.inputs { none }
     else if s == none or (at != none and s.location() == at.location()) {
-      include "generated/formula/" + law + ".typ" }
+      impl-split(include "generated/formula/" + law + ".typ") }
     else { link(s.location(), dispid(s.location())) }
   }
 }
