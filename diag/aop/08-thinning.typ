@@ -453,10 +453,9 @@ row((
 // The data Theorem 8.2 and its fusion condition are stated at: no single definition, so it stays
 // a list of assumptions rather than a row of the table above.
 #disp[#definition[
-*Binary thinning* data: #h(4pt) `S=(f₁p₁) ∪ (f₂p₂)` with `p₁`, `p₂` coreflexive; #h(4pt) `Q` a
-preorder with `Q⊑R` and both `f₁p₁`, `f₂p₂` monotonic on `Q`; #h(4pt) `≼` a connected preorder
-with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(pᵢ)`; #h(4pt)
-`listcp : F(L)⟶LF`.
+*Binary thinning* data: #h(4pt) `Q` a preorder with `Q⊑R` and both `f₁p₁`, `f₂p₂` monotonic on
+`Q`; #h(4pt) `≼` a connected preorder with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `R` a
+preorder.
 ]]<binthin-data>
 
 #disp[#table(
@@ -513,81 +512,27 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 )]<thinlist-lem81>
 
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
-// LIST, and that swap — `E` killed by `est(R)`, `list` by `minlist(R)` — is what rows 3 and 4 draw.
-#disp(num: "Theorem 8.2")[#calc-table(
-  Thm[#leanf("Freyd.Alg.thinningList") \
-    #src[a fold on sorted lists of partial solutions, thinned at every step —
-     // thinningList row: Theorem 8.2, p. 203
-     at @binthin-data.
- ]],
-     // lean:AOP.A8_3.thinningList@510fb7b3
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.thinningList_step3.rhs"), [])],
-  [#lean("Freyd.Alg.thinningList_step3.rhs", step: true)],
-
-  [#vstep(RQ, leanc("Freyd.Alg.thinningList_step3.lhs"),
-    [#src[@thin-cor at `f₁p₁` and `f₂p₂` monotonic on `Q` — @binthin-data]])],
-  [#lean("Freyd.Alg.thinningList_step3.lhs", step: true)],
-
-  [#vstep(RQ, leanc("Freyd.Alg.thinningList_step2.lhs"),
-    [#src[`sort(≼) minlist(R)⊑est(R)` — @thinlist-laws:3 at its `Q≜R`]])],
-  // `est(R)` has split into the node that sorts and the `minlist(R)` that reads the head back.
-  // `minlist(R) : [A]⟶A` — @thinlist-laws' (8.5) `thinlist(Q) xs=[minlist(Q) xs]`.
-  [#lean("Freyd.Alg.thinningList_step2.lhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.thinningList_step1.lhs"),
-    [#src[@cata-fusion at @thinlist-fusion]])],
-  // The reduce now births `list` where it births `E` above: no set is ever built.
-  [#lean("Freyd.Alg.thinningList_step1.lhs")],
+// LIST: `E` is killed by `est(R)`, `list` by `minlist(R)`.
+#import "../generated/Freyd.Alg.RelSet.ListRel.thinningList.calc.typ" as calc-82
+#disp(num: "Theorem 8.2")[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.thinningList") \
+    // thinningList row: Theorem 8.2, p. 203
+    #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
+ specification — at @binthin-data. ]],
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@3c16db6b
+  lean-calc(calc-82),
 )]<thinlist-thm82>
 
-// The fusion condition of the last step above, B&dM p. 203.  Two of its moves are unwritten there:
-// the product law that distributes `sort(≼)×sort(≼)` over the fork, and the fork law that closes it.
-#disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.sortedAlg_fusion") \
-    #src[sorting the candidate set is what turns the thinning algebra into an algebra on lists —
-     // sortedAlg-fusion row: B&dM p. 203
-     the side condition of @thinlist-thm82's last step.
- ]],
-  // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
-  // law's own letters, so the column has no one pair of ports.
-  table.header([*circuit*], [*Hinze–Marsden*]),
-
-  [#vstep([], leanc("Freyd.Alg.sortedAlg_fusion.rhs"), [])],
-  [#lean("Freyd.Alg.sortedAlg_fusion.rhs")],
-
-  [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion_step5.lhs"),
-    [#src[`sort(≼) thinlist(Q)⊑thin(Q) sort(≼)` — @thinlist-laws:2]])],
-  // The node has walked up past `thin(Q)`, which comes out below it as `thinlist(Q)` on the `list`
-  // lane: that exchange is the whole of (8.6), and the rest of the chain rewrites the algebra.
-  [#lean("Freyd.Alg.sortedAlg_fusion_step5.lhs")],
-
-  [#vstep(EQ, leanc("Freyd.Alg.sortedAlg_fusion_step4.lhs"),
-    [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩ cup sort(≼) thinlist(Q)` \
-     #src[`S=(f₁p₁) ∪ (f₂p₂)` — @binthin-data, then @cup-defn]])],
-  // Empty from here: a fork is an operation on hom-sets, and `×` is a bifunctor, so neither is a
-  // wiring; the circuit column keeps them as one box, §14's convention for a pair.
-  [],
-
-  [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion_step3.lhs"),
-    [`⟨`#frc([`F(∋)f₁p₁`])`,`#frc([`F(∋)f₂p₂`])`⟩(sort(≼)×sort(≼)) merge(≼) thinlist(Q)` \
-     #src[`(sort(≼)×sort(≼)) merge(≼)⊑cup sort(≼)` — @thinlist-laws:6]])],
-  [],
-
-  [#vstep(EQ, leanc("Freyd.Alg.sortedAlg_fusion_step2.lhs"),
-    [`⟨`#frc([`F(∋)f₁p₁`])` sort(≼),`#frc([`F(∋)f₂p₂`])` sort(≼)⟩ merge(≼) thinlist(Q)` \
-     #src[`⟨X,Y⟩(sort(≼)×sort(≼))=⟨X sort(≼),Y sort(≼)⟩` — @absorption-pic]])],
-  [],
-
-  [#vstep(RQ, leanc("Freyd.Alg.sortedAlg_fusion.lhs"),
-    [`F(sort(≼)) listcp ⟨g₁,g₂⟩ merge(≼) thinlist(Q)` \
-     #src[@thinlist-lem81 at `f₁`, `p₁` and at `f₂`, `p₂`, then
-      `X⟨g₁,g₂⟩⊑⟨Xg₁,Xg₂⟩` — @Freyd.Alg.RelProd.comp_pair_le; `gᵢ≜list(fᵢ) filter(pᵢ)` — @binthin-data]])],
-  [],
+// The fusion condition of the first step above, B&dM p. 203.
+#import "../generated/Freyd.Alg.RelSet.ListRel.sortedAlg_fusion.calc.typ" as calc-82f
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
+    // sortedAlg-fusion row: B&dM p. 203
+    #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@661d9cc4
+  lean-calc(calc-82f),
 )]<thinlist-fusion>
+
 
 == The knapsack problem
 
@@ -667,7 +612,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@c710dd69
+     // lean:AOP.A8_4_Knapsack.knap_laws@d3a6517d
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -819,7 +764,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@fc587671
+     // lean:AOP.A8_5_Paragraph.para_laws@5515d286
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -837,7 +782,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
     [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
-     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @binthin-data.
+     #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinlist-thm82.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_spec@0ec1a795
   // Empty: the step renames the algebra and the panel above already draws the reduce.
