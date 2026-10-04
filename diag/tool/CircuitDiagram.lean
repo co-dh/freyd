@@ -120,14 +120,13 @@ repo's own algebra.  The book's own spellings (`cons`, `nil`, `[A]`) are structu
 the term, never a table of strings: `cons` is the arrow whose graph is `List.cons`. -/
 
 def plain (e : Expr) : MetaM String := do
-  StrDiag.checkSpelled e (← PrettyPrinter.delab e).raw
-  let s := (toString (← Meta.ppExpr e)).replace "«" "" |>.replace "»" ""
-  return " ".intercalate (s.splitOn "\n" |>.map fun t => t.trimAscii.toString)
+  StrDiag.checkSpelled e (← StrDiag.noteDelab e).raw
+  StrDiag.notePP e
 
 /-- An object with no structure of its own: the printer's label, and how that label joins under a
     functor, read off the syntax the printer built it from. -/
 def opaqObj (e : Expr) : MetaM Obj :=
-  return .mk (← StrDiag.appShow e) .opaq #[] (stxJoin (← PrettyPrinter.delab e))
+  return .mk (← StrDiag.appShow e) .opaq #[] (stxJoin (← StrDiag.noteDelab e))
 
 /-- A functor's action on an OBJECT, `applyLabel` at the join the ARGUMENT recorded where it was
     built (`Obj.join`), never re-read off its finished name. -/
@@ -159,7 +158,7 @@ def prodObj (ps : Array Obj) : Obj :=
 def typeNamed (t : Expr) : MetaM Bool := do
   if let (``List, #[_]) := t.getAppFnArgs then return true
   let some c := t.getAppFn.constName? | return true
-  let s ← PrettyPrinter.delab t
+  let s ← StrDiag.noteDelab t
   if stxJoin s == .bracket then return true
   let some h := StrDiag.stxHead s | return true
   return (← StrDiag.identText h) != (← StrDiag.identText c)
@@ -285,7 +284,7 @@ partial def typeObj (t : Expr) : MetaM Obj := do
       -- LAST type-valued one, as it is for a functor's action (`functorObj?`): `ConsList Unit A`
       -- carries its index type first, and an element in another slot comes out visibly wrong on
       -- the label rather than silently.
-      let stx ← PrettyPrinter.delab red
+      let stx ← StrDiag.noteDelab red
       if stxJoin stx != .bracket then opaqObj t else
       match (← red.getAppArgs.filterM fun a => return (← Meta.inferType a).isSort).back? with
       | none => opaqObj t
@@ -330,7 +329,7 @@ def isNamed (e : Expr) : MetaM Bool := do
     -- NO IDENTIFIER HEAD AT ALL means the printer wrote it under its own NOTATION (`thin(Q)`,
     -- `⦇S⦈`), which is a spelling of its own by the same test: the head it prints is not the
     -- constant's name.  A notation DELIMITS its operand, so the syntax opens with an atom.
-    let stx ← PrettyPrinter.delab e
+    let stx ← StrDiag.noteDelab e
     let some h := StrDiag.stxHead stx | return true
     -- A name of its own is one the DECLARATION chose.  A head that is one of the term's own
     -- BINDERS chose nothing — `F(R)` prints under the relator variable `F`, and that relator is

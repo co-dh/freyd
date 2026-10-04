@@ -112,26 +112,6 @@ def nameSelf (declName : Name) (ty : Expr) : MetaM Expr := do
     | _, e => e
   return go pi.numParams ty
 
-/-- A PATTERN'S `_` BINDS A HYGIENIC NAME (`a._@._internal…`) in the equations Lean derives, which no
-    reader can take for a variable: each is bound under its base name, primed apart from the names
-    bound before it (`ptr(a,a')`) — at every depth, since a catch-all case's equation binds them
-    inside its hypotheses too. -/
-partial def readableBinders (ty : Expr) : Expr :=
-  go [] ty
-where
-  fresh (used : List Name) (n : Name) : Name :=
-    if !n.hasMacroScopes then n else
-    let base := n.eraseMacroScopes
-    ((List.range (used.length + 1)).map fun k =>
-      Name.mkSimple (base.toString ++ String.ofList (List.replicate k '\''))).find?
-      (!used.contains ·) |>.getD base
-  go (used : List Name) : Expr → Expr
-    | .forallE n t b bi => let n' := fresh used n; .forallE n' (go used t) (go (n' :: used) b) bi
-    | .lam n t b bi => let n' := fresh used n; .lam n' (go used t) (go (n' :: used) b) bi
-    | .app f a => .app (go used f) (go used a)
-    | .mdata d e => .mdata d (go used e)
-    | e => e
-
 /-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
     elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none
     can drift.  Any value that is not two lambdas is refused. -/
@@ -171,7 +151,9 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
     (branch : List StrDiag.Sel) : MetaM (Array Lbl) :=
   withDeclScope declName do withSpaced sp do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
-  Meta.forallTelescope (readableBinders (← nameSelf declName ci.type)) fun xs body => do
+  -- An equation Lean derives binds a pattern's `_` as `a✝` or `a_1` — at every depth, since a
+  -- catch-all case binds them inside its hypotheses too — so the binders are the note's.
+  Meta.forallTelescope (primeBinders [] (← nameSelf declName ci.type)) fun xs body => do
     -- A DECLARATION WHOSE TYPE IS NOT A PROPOSITION STATES NOTHING — it DEFINES — so its formula is
     -- the definition itself: the name under its own arguments, `≜`, and the VALUE.  Read off the
     -- type, so every `def` a table heads with prints this way and none is named here.
@@ -217,7 +199,9 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       if byCases && branch.isEmpty then
         let some eqs ← Meta.getEqnsFor? declName |
           throwError "{declName}: a definition by cases, and Lean derives no equations for it"
-        let rs ← eqs.mapM fun q => render sp q none [] []
+        -- An equation is a closed statement: rendered in an EMPTY context, so the definition's own
+        -- binders opened above take no name its variables could need.
+        let rs ← eqs.mapM fun q => Meta.withLCtx {} {} (render sp q none [] [])
         return rs.foldl (init := #[]) fun acc r =>
           if acc.isEmpty then r else acc ++ r.modify 0 (Lbl.text ", " ++ ·)
       -- A RELATION GIVEN POINTWISE, `fun x y => P` at a hom type, is written at two points.

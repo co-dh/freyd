@@ -46,9 +46,9 @@ def printKey (es : Array Expr) : MetaM (Option (Array Expr × String)) := do
 initialize delabMemo : IO.Ref (Std.HashMap (Array Expr × String) Term) ← IO.mkRef {}
 
 def delabP (e : Expr) : MetaM Term := do
-  let some k ← printKey #[e] | PrettyPrinter.delab e
+  let some k ← printKey #[e] | noteDelab e
   if let some t := (← delabMemo.get)[k]? then return t
-  let t ← PrettyPrinter.delab e
+  let t ← noteDelab e
   delabMemo.modify (·.insert k t)
   return t
 
@@ -1441,10 +1441,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     if ← Meta.isProp e then
       -- AN INACCESSIBLE BINDER (`val✝`, a `match`'s `_`) takes an unused name of its own stem, so the
       -- `∀` and the body spell it alike and no macro scope reaches the page.
-      let lctx ← getLCtx
+      let taken ← scopeNames
       let e := match e with
-        | .forallE n t b bi =>
-          if n.hasMacroScopes then .forallE (lctx.getUnusedName n.eraseMacroScopes) t b bi else e
+        | .forallE n t b bi => .forallE (primeName taken n) t b bi
         | e => e
       return ← Meta.forallBoundedTelescope e (some 1) fun xs body => do
         match xs[0]? with
@@ -1661,7 +1660,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       let φ ← if φ.isLambda then pure φ else do
         let .forallE _ dom _ _ ← Meta.whnf (← Meta.inferType φ)
           | throwError "mu's body {← Meta.ppExpr φ} is no function, so `(μX : …)` has no X to bind"
-        let n := (← getLCtx).getUnusedName `X
+        let n := primeName (← scopeNames) `X
         pure (.lam n dom (mkApp φ (.bvar 0)) .default)
       Meta.lambdaBoundedTelescope φ 1 fun xs b => do
         match xs[0]? with
