@@ -153,6 +153,12 @@ only by eye is how a bead landed on a wire that was not its source, and `cite-ch
 --verify-sigs` can only hold what has a declaration behind it. No declaration, no dot, no claim: a
 transformation with no naturality proof draws as a spider, a type with no Lean spelling is not written.
 
+**PROVE IN EQUATIONAL STYLE: ONE `calc`, ONE NAMED LAW PER STEP.** A theorem the note shows as a
+derivation is proved as a single `calc` (B&dM's style), each step one law under congruence, then
+`calc_steps <thm>` and `lean-calc(…)` draw the table as 8.2d does: every term a panel, the relation and
+the reason read off the proof. Because a proof with no steps, or a chain of step theorems beside a
+hand-typed reason column, is a second copy of the derivation that nobody checks against the first.
+
 **A REVIEW PICTURE CARRIES ITS OWN CAPTION, AND `scripts/diff-crop` IS THE ONLY THING THAT MAKES ONE.**
 Cut every before/after with `./scripts/diff-crop --key <key> --caption "<the line in the author's own
 words>"`, because a file called `p53-1.png` says nothing about which item it answers and a caption written
