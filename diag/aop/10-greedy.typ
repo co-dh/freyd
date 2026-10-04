@@ -470,7 +470,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // `list` below.  The last row has NO `E` wire: `pick` is where the greedy program stops carrying a
 // set at all.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.tardy_laws"), #h(6pt) `schedule=(null→nil,pick (schedule×𝟙) snoc)` \
+  Thm(cols: 1)[`schedule=(null→nil,pick (schedule×𝟙) snoc)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tardy.tardy_laws") \
     #src[an ordering of the given bag with least maximum penalty is got by taking a job of least
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
@@ -595,7 +595,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 // moved past it.
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tex.tex_laws"), #h(6pt) `extern(n)=f(2n−1,2n+1)` \
+  Thm(cols: 1)[`extern(n)=f(2n−1,2n+1)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Tex.tex_laws") \
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],

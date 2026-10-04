@@ -361,7 +361,7 @@ in @mu-defn.
 // chain acts on one string alone.  `Δ` is the relator `X↦X×X`, so `[Char]×[Char]` is `Δ`, `list`,
 // `Char` — sugar undone at the ends too.
 #disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Edit.edit_laws"), #h(6pt) `mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))` \
+  Thm[`mle=(empty→nil,unstep list((𝟙×mle)cons) minlist(R))`, #h(6pt) #leanf("Freyd.Alg.RelSet.Edit.edit_laws") \
     #src[a shortest edit sequence from which both strings can be reconstituted is one pass over the
      two of them, each step copying, deleting or inserting one character and the best sequence for
      what is left taken from the entries already computed]],
@@ -692,7 +692,7 @@ in @mu-defn.
 // ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #disp[#calc-table(
-  Thm[#leanf("Freyd.Alg.RelSet.Bracket.mct_laws"), #h(6pt) `mct=(single→head tip,⟨init col,tail row⟩ mix)` \
+  Thm[`mct=(single→head tip,⟨init col,tail row⟩ mix)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Bracket.mct_laws") \
     #src[a least-cost bracketing of `a₁⊕⋯⊕aₙ` is read off an array holding one best tree per
      non-empty segment, each entry built from the column to its left and the row below it]],
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
