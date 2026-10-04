@@ -306,6 +306,17 @@ public theorem greedy_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
 
 calc_steps greedy_disjoint_ranges
 
+/-- `∪` is the least upper bound: the allegory axioms give `le_union_left`/`le_union_right` but no
+    lub, and in `RelSet` it is pointwise `∨`. -/
+public theorem union_le {a b : RelSet.{0}} {S T U : a ⟶ b} (hS : S ⊑ U) (hT : T ⊑ U) :
+    S ∪ T ⊑ U :=
+  le_iff.mpr fun x y h => ((union_apply S T x y) ▸ h).elim (le_iff.mp hS x y) (le_iff.mp hT x y)
+
+/-- `∪` is monotone in both places: the congruence a step on one branch of a union runs under. -/
+public theorem union_mono {a b : RelSet.{0}} {S S' T T' : a ⟶ b} (hS : S ⊑ S') (hT : T ⊑ T') :
+    S ∪ T ⊑ S' ∪ T' :=
+  union_le (le_trans hS (le_union_left _ _)) (le_trans hT (le_union_right _ _))
+
 end Freyd.Alg.RelSet
 
 namespace Freyd.Alg.RelSet.SL

@@ -584,92 +584,68 @@ public theorem tex_mono : Freyd.Alg.MonoAlg (F := F Unit Digit) alphaR R :=
       show len (ConsList.cons a.1 a.2) ≤ len (ConsList.cons b.1 b.2)
       exact Nat.succ_le_succ (hR : len a.2 ≤ len b.2)
 
-/-- **tex-greedy**, first step: definition of `Q`; composition distributes over `∪`. -/
-public theorem tex_greedy_step1 (X : Interval ⟶ Decimal) :
-    Q ≫ (F Unit Digit).map X ≫ alphaR
-      = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR) := by
-  rw [Q, union_comp_distrib, Cat.id_comp]
-  simp only [Cat.assoc]
-
-/-- **tex-greedy**, second step: `R` is reflexive. -/
-public theorem tex_greedy_step2 (X : Interval ⟶ Decimal) :
-    (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR)
-      ⊑ (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
-  le_iff.mpr fun u z h => by
-    rcases h with h | ⟨v, hv, ha⟩
-    · exact Or.inl h
-    · exact Or.inr ⟨v, hv, z, ha, Nat.le_refl _⟩
-
-/-- **tex-greedy**, third step: `r F(X) α⊑! l α R`, since `l α` is `nil` and
-    `length(nil)=0≤length cons`. -/
-public theorem tex_greedy_step3 (X : Interval ⟶ Decimal) :
-    (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      ⊑ (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
-  le_iff.mpr fun u z h => by
-    rcases h with ⟨t, hl, s, hb, _⟩ | h
-    · exact Or.inl ⟨t, hl, s, hb, (), rfl, Sum.inl (), rfl, ConsList.wrap (), rfl, Nat.zero_le _⟩
-    · exact Or.inr h
-
-/-- **tex-greedy**, fourth step: the universal property of `!` — `!°!⊑𝟙` on `𝟏`. -/
-public theorem tex_greedy_step4 (X : Interval ⟶ Decimal) :
-    (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      ⊑ (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
-  le_iff.mpr fun u z h => by
-    rcases h with ⟨t, hl, _, _, t', _, f, hf, hR⟩ | h
-    · cases t; cases t'; exact Or.inl ⟨(), hl, f, hf, hR⟩
-    · exact Or.inr h
-
-/-- **tex-greedy**, fifth step: definition of `F` — `l F(X)=l`. -/
-public theorem tex_greedy_step5 (X : Interval ⟶ Decimal) :
-    (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      = (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) := by
-  have h : l ≫ (F Unit Digit).map X = l := by
-    apply hom_ext
-    intro t g
-    constructor
-    · rintro ⟨_, hl, hF⟩
-      subst hl
-      match g, hF with
-      | Sum.inl t', hF => have ht : t = t' := hF; subst ht; rfl
-    · intro h
-      subst h
-      exact ⟨Sum.inl t, rfl, rfl⟩
-  rw [← h]
-  simp only [Cat.assoc]
-
-/-- **tex-greedy**, sixth step: `l` is simple, `l°l⊑𝟙`. -/
-public theorem tex_greedy_step6 (X : Interval ⟶ Decimal) :
-    (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      ⊑ ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
-  le_iff.mpr fun u z h => by
-    rcases h with ⟨t, h1, f, h2, h3⟩ | h
-    · have e : u = f := (h1 : u = Sum.inl t).trans (h2 : f = Sum.inl t).symm
-      subst e
-      exact Or.inl h3
-    · exact Or.inr h
-
-/-- **tex-greedy**, seventh step: `∪` is idempotent. -/
-public theorem tex_greedy_step7 (X : Interval ⟶ Decimal) :
-    ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R)
-      = (F Unit Digit).map X ≫ alphaR ≫ R := by
+/-- `F(X)` leaves the `nil` summand alone: `l F(X)=l` — definition of `F`. -/
+public theorem l_Fmap (X : Interval ⟶ Decimal) : l ≫ (F Unit Digit).map X = l := by
   apply hom_ext
-  intro u z
-  exact ⟨fun h => h.elim id id, Or.inl⟩
+  intro t g
+  constructor
+  · rintro ⟨_, hl, hF⟩
+    subst hl
+    match g, hF with
+    | Sum.inl t', hF => have ht : t = t' := hF; subst ht; rfl
+  · intro h
+    subst h
+    exact ⟨Sum.inl t, rfl, rfl⟩
 
-/-- **B&dM p.262**: the greedy condition for `Q≜(l°!°r) ∪ 𝟙`.  The `𝟙` half is reflexivity of
-    `R`; the other half says that where stopping is legal the empty decimal is no longer than
-    whatever the recursion would have produced — `len(nil)=0`. -/
+/-- `l` reaches only `nil`, so `l°l⊑𝟙`. -/
+public theorem l_recip_l {Y : RelSet.{0}} : (l : dL Unit ⟶ (F Unit Digit).obj Y)° ≫ l ⊑ 𝟙 _ :=
+  le_iff.mpr fun u f h => by
+    obtain ⟨t, h1, h2⟩ := h
+    have e : u = f := (h1 : u = Sum.inl t).trans (h2 : f = Sum.inl t).symm
+    subst e
+    rw [id_apply]
+
+/-- On `𝟏`, `!°!⊑𝟙` — the universal property of `!`. -/
+public theorem bang_recip_bang : bang° ≫ bang ⊑ 𝟙 (dL Unit) :=
+  le_iff.mpr fun t t' _ => by cases t; cases t'; rw [id_apply]
+
+/-- `r F(X) α⊑! l α R`: `l α` is `nil`, and `length(nil)=0` is at most any length. -/
+public theorem r_le_nil (X : Interval ⟶ Decimal) :
+    r ≫ (F Unit Digit).map X ≫ alphaR ⊑ bang ≫ l ≫ alphaR ≫ R :=
+  le_iff.mpr fun _ _ _ => ⟨(), rfl, Sum.inl (), rfl, ConsList.wrap (), rfl, Nat.zero_le _⟩
+
+/-- **B&dM p.262**: the greedy condition for `Q≜(l°!°r) ∪ 𝟙`, the book's hints one `calc` step
+    each.  The `𝟙` half is reflexivity of `R`; the other half says that where stopping is legal the
+    empty decimal is no longer than whatever the recursion would have produced — `len(nil)=0`. -/
 public theorem tex_greedy (X : Interval ⟶ Decimal) :
     Q ≫ (F Unit Digit).map X ≫ alphaR ⊑ (F Unit Digit).map X ≫ alphaR ≫ R :=
   calc Q ≫ (F Unit Digit).map X ≫ alphaR
-      = _ := tex_greedy_step1 X
-    _ ⊑ _ := tex_greedy_step2 X
-    _ ⊑ _ := tex_greedy_step3 X
-    _ ⊑ _ := tex_greedy_step4 X
-    _ = _ := tex_greedy_step5 X
-    _ ⊑ _ := tex_greedy_step6 X
-    _ = _ := tex_greedy_step7 X
+      = ((l° ≫ bang° ≫ r) ∪ 𝟙 ((F Unit Digit).obj Interval)) ≫ (F Unit Digit).map X ≫ alphaR := by
+        rw [Q]
+    _ = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR)
+          ∪ (𝟙 ((F Unit Digit).obj Interval) ≫ (F Unit Digit).map X ≫ alphaR) := by
+        rw [union_comp_distrib]; simp only [Cat.assoc]
+    _ = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR) := by
+        rw [Cat.id_comp]
+    _ ⊑ (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+        union_mono (le_refl _) (by
+          simpa only [Cat.comp_id, Cat.assoc] using
+            comp_mono_left ((F Unit Digit).map X ≫ alphaR) R_refl)
+    _ ⊑ (l° ≫ bang° ≫ bang ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+        union_mono (comp_mono_left _ (comp_mono_left _ (r_le_nil X))) (le_refl _)
+    _ ⊑ (l° ≫ l ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+        union_mono (comp_mono_left _ (by
+          simpa only [Cat.id_comp, Cat.assoc] using
+            comp_mono_right bang_recip_bang (l ≫ alphaR ≫ R))) (le_refl _)
+    _ = (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) := by
+        rw [← l_Fmap X]; simp only [Cat.assoc]
+    _ ⊑ ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
+        union_mono (by
+          simpa only [Cat.id_comp, Cat.assoc] using
+            comp_mono_right l_recip_l ((F Unit Digit).map X ≫ alphaR ≫ R)) (le_refl _)
+    _ = (F Unit Digit).map X ≫ alphaR ≫ R := DistributiveAllegory.union_idem _
 
+calc_steps tex_greedy
 
 /-- `H=⦇[arb,step]⦈°⦇α⦈` collapses to `⦇[arb,step]⦈°` by reflection
     (`AOP.A6_ConsList.cataR_con`). -/

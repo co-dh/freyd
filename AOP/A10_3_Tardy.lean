@@ -952,16 +952,6 @@ public theorem tardy_branch (X : Bag Job ⟶ dSL Unit Job) :
 
 section Pick
 
-/-- `∪` is the least upper bound: the allegory axioms give `le_union_left`/`le_union_right` but no
-    lub, and in `RelSet` it is pointwise `∨`. -/
-private theorem union_le {a b : RelSet.{0}} {S T U : a ⟶ b} (hS : S ⊑ U) (hT : T ⊑ U) :
-    S ∪ T ⊑ U :=
-  le_iff.mpr fun x y h => ((union_apply S T x y) ▸ h).elim (le_iff.mp hS x y) (le_iff.mp hT x y)
-
-private theorem union_mono {a b : RelSet.{0}} {S S' T T' : a ⟶ b} (hS : S ⊑ S') (hT : T ⊑ T') :
-    S ∪ T ⊑ S' ∪ T' :=
-  union_le (le_trans hS (le_union_left _ _)) (le_trans hT (le_union_right _ _))
-
 variable (pick : Bag Job ⟶ (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}))
   (hpickS : Simple pick)
   (hpick : pick ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt))
