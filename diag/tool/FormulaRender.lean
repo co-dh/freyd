@@ -387,9 +387,10 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   return (c, s)
 
 /-- THE LAWS A STEP'S PROOF APPLIES: every theorem application whose statement relates two arrows
-    and whose proof arguments are all hypotheses.  An application handed a proof built from another
-    law is congruence or monotonicity around that law (`congrArg`, `comp_mono_left`), and one whose
-    two sides draw as one picture (`Cat.assoc`, `rfl`) is bracketing no panel shows. -/
+    and none of whose arguments applies a law itself.  An application handed a proof that applies
+    another law is congruence or monotonicity around that law (`congrArg`, `comp_mono_left`); a
+    hypothesis, even instantiated (`htrans (m+1)`), applies none.  One whose two sides draw as one
+    picture (`Cat.assoc`, `rfl`) is bracketing no panel shows. -/
 partial def lawsIn (e : Expr) : MetaM (Array Name) := do
   match e with
   | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn b
@@ -397,8 +398,9 @@ partial def lawsIn (e : Expr) : MetaM (Array Name) := do
   | .mdata _ b => lawsIn b
   | .app .. | .const .. =>
     let args := e.getAppArgs
-    let inner ← args.foldlM (fun acc a => return acc ++ (← lawsIn a)) #[]
-    let built ← args.anyM fun a => return !a.isFVar && (← Meta.isProof a)
+    let per ← args.mapM lawsIn
+    let inner := per.foldl (· ++ ·) #[]
+    let built := per.any (!·.isEmpty)
     let some c := e.getAppFn.constName? | return inner
     unless !built && ((← getEnv).find? c).any (· matches .thmInfo _) do return inner
     let some (_, l, r) := split (← instantiateMVars (← Meta.inferType e)) | return inner

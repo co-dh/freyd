@@ -268,21 +268,13 @@ row((
 // and INSIDE it from the thinning theorem on; that is what rows 1 and 2 differ by.
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
 // one the transpose opens outside it — by the unit `𝟙%∋` above the reduce, or by the reduce itself.
+#import "../generated/Freyd.Alg.thinning_paths.calc.typ" as calc-82c
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@f43f12a8
-  lean-chain(
-    (none, "Freyd.Alg.thinning_paths_step.rhs", src[`=` #frc([`L(∋)`])` est(R)`]),
-    // thinning_paths_step row: Corollary 8.1
-    (RQ, "Freyd.Alg.thinning_paths_step.lhs", src[@thin-cor, @path-mono]),
-  ),
-  // No panel: the program's fold is the path instance, and `thinning_paths` states this step over a
-  // general `F`, whose algebra is @path-alg's row 6 rather than this row's `[P(wrap),cpl P(step)]`.
-  [#RQ #src[@path-alg under #box[`⦇ ⦈`] monotonic: the whole chain runs inside the reduce, and the
-    `est(R)` behind it never moves.]],
-      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
+  lean-calc(calc-82c),
 )]<path-laws>
 
 #import "../generated/Freyd.Alg.thinning_paths_alg.calc.typ" as calc-82d

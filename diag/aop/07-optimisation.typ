@@ -1707,19 +1707,14 @@ zip(that)                                         each row: its square, and the 
 
 // B&dM §7.4, p. 182.  Beside @cyl-laws with `E` gone: `setify` has nothing to forget, `union`
 // becomes `concat`, and the two steps that moved the minimum inside the set become one.
+#import "../generated/Freyd.Alg.Vec.Rel.cyl_laws.calc.typ" as calc-cyl
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.cyl_laws") \
     #src[a cheapest of all `np` paths of the cylinder is beaten by the greedy fold's one path per
      row and then a cheapest of those `n`, which costs `O(n×m)`.
  ]],
     // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.cyl_laws@126f6cbc
-  lean-chain(
-    (none, "Freyd.Alg.Vec.Rel.cyl_laws_step3.rhs", []),
-    (EQ, "Freyd.Alg.Vec.Rel.cyl_laws_step3.lhs", src[@vec-defn-cyl at `paths`]),
-    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step2.lhs",
-      src[`R` transitive]),
-    (RQ, "Freyd.Alg.Vec.Rel.cyl_laws_step1.lhs", src[@cata-fusion at @vec-cyl-fusion]),
-  ),
+  lean-calc(calc-cyl),
   Thm(cols: 1)[#leanf("Freyd.Alg.Vec.Rel.est_concat"), `R` transitive \
     #src[a cheapest of each of the `j` rows and then a cheapest of those `j` is a cheapest of all
      `jk` entries laid end to end.
