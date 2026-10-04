@@ -86,10 +86,15 @@ private def hom? (t : Expr) : MetaM (Option String) := do
   let some (a, b) := homObjs? t | return none
   return some ((← label a) ++ "⟶" ++ (← label b))
 
+/-- A FACTOR STEP `f<k>`, `k ≥ 1`: the k-th factor of the composite the step follows. -/
+def factorIdx? (s : String) : Option Nat :=
+  if s.startsWith "f" then (String.toNat? (toString (s.drop 1))).filter (· ≥ 1) else none
+
 /-- The declaration's type in the note's spelling.  Run under `withDeclScope` and printed by
     `plain`, so the same delaborator, namespaces and unexpanders the string route draws its labels
     with print this cell. -/
-def render (declName : Name) (nameOnly : Bool := false) : MetaM String := withDeclScope declName do
+def render (declName : Name) (sides : List String := []) : MetaM String := withDeclScope declName do
+  let nameOnly := sides.contains "name"
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- NOT `forallTelescopeReducing`: a hom of `RelSet` reduces to `A → B → Prop`, so reducing walks
   -- straight through the arrow this is here to print and leaves `Prop` as the body of every def.
@@ -100,6 +105,27 @@ def render (declName : Name) (nameOnly : Bool := false) : MetaM String := withDe
     -- `Λ` sets as a fraction.
     let name (t : Expr) (ty : String) : MetaM String := do
       if nameOnly then return "#" ++ (← labelT t).bare.typst else return ty
+    -- A SUBTERM's type: `.lhs`/`.rhs` a side, then `.f<k>` its k-th factor in diagram order — so a
+    -- table walking a composite stage by stage reads every stage's type off the one statement.
+    let steps := sides.filter (· != "name")
+    if let s₀ :: rest := steps then
+      let some (_, l, r) ← splitM body |
+        throwError "{declName}: `.{s₀}` selects a side, but {← Meta.ppExpr body} is no (in)equation"
+      let side ← match s₀ with
+        | "lhs" => pure l | "rhs" => pure r
+        | s => throwError "{declName}: a subterm selector starts at `.lhs` or `.rhs`, not `.{s}`"
+      let t ← rest.foldlM (init := side) fun (u : Expr) (s : String) => do
+        let some k := factorIdx? s |
+          throwError "{declName}: selector step `.{s}` is not a factor `.f<k>` (k ≥ 1)"
+        let fs := compFactors u
+        let some f := fs[k - 1]? |
+          throwError "{declName}: `.{s}` asks for factor {k} of {← Meta.ppExpr u}, which has {fs.size}"
+        pure f
+      let ty ← Meta.inferType t
+      let some s ← hom? ty |
+        throwError "{declName}: the selected subterm {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, \
+          not an arrow of a category"
+      return ← name t s
     -- An (in)equation is a statement ABOUT arrows, and its two sides share one hom: read it off the
     -- left, which is the side the note's `definition` column spells.
     match ← splitM body with
@@ -130,8 +156,8 @@ def render (declName : Name) (nameOnly : Bool := false) : MetaM String := withDe
 
 /-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
     above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
-def file (declName : Name) (nameOnly : Bool := false) : MetaM String := do
-  let r ← render declName nameOnly
-  return (if nameOnly then r else "`" ++ r ++ "`") ++ "\n"
+def file (declName : Name) (sides : List String := []) : MetaM String := do
+  let r ← render declName sides
+  return (if sides.contains "name" then r else "`" ++ r ++ "`") ++ "\n"
 
 end Freyd.TypeRender
