@@ -591,8 +591,9 @@
 // header of ANOTHER display, cited as that display's number and formula, else a law-table row, cited
 // as its formula alone.  The header is found by the markers `Thm` emits (`<thm-num>` … `<thm-end>`),
 // the row by the label `law-row` gives each of its selectors, never by the formula text.
+// No `<lean-formula>` of its own: `lean-calc` lists every law it cites from a `context`, and one
+// placed in flow here would read, to `lean-keys`, as a law the display states.
 #let law-ref(law) = {
-  [#metadata(law)<lean-formula>]
   context {
     let at = query(selector(<disp-start>).before(here())).at(-1, default: none)
     let home = query(<lean-formula>).filter(m => m.value == law).find(m => {

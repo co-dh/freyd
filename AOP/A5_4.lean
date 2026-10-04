@@ -91,6 +91,19 @@ public theorem powerRel_recip {A B : 𝒜} (R : A ⟶ B) : powerRel R° = (power
     Allegory.recip_recip]
   exact Allegory.inter_comm _ _
 
+/-- **B&dM §5.4**, the definition read off its two divisions: `X⊑P(R)` iff `X∋⊑∋R` and the same
+    containment at `R°`, `X°∋⊑∋R°`. -/
+public theorem le_powerRel_iff {A B : 𝒜} (R : A ⟶ B) (X : P A ⟶ P B) :
+    X ⊑ P(R) ↔ X ≫ ∋ B ⊑ ∋ A ≫ R ∧ X° ≫ ∋ A ⊑ ∋ B ≫ R° := by
+  constructor
+  · intro h
+    refine ⟨(le_div_iff _ _ _).mp (le_trans h (inter_lb_right _ _)), ?_⟩
+    simpa only [Allegory.recip_comp, Allegory.recip_recip] using
+      recip_mono ((le_leftDiv_iff _ _ _).mp (le_trans h (inter_lb_left _ _)))
+  · rintro ⟨h₂, h₁⟩
+    refine le_inter ((le_leftDiv_iff _ _ _).mpr ?_) ((le_div_iff _ _ _).mpr h₂)
+    simpa only [Allegory.recip_comp, Allegory.recip_recip] using recip_mono h₁
+
 /-- Term₁ cancellation (the "input-reaches" half): `(∋ a)° ≫ powerRel R ⊑ R ≫ (∋ b)°`. -/
 public theorem powerRel_term1_cancel {A B : 𝒜} (R : A ⟶ B) :
     (∋ A)° ≫ powerRel R ⊑ R ≫ (∋ B)° :=

@@ -38,7 +38,8 @@ the 2-category.
   // lean:AOP.A5_1.preservesRecip_of_tabular@02b327b3
   // lean:AOP.A5_1_Converse.thm5_1_fails_for_tabular@e3406781
   // F(R°)=F(R)° row: after Theorem 5.1, p. 113
-  [`F(R°)=F(R)°` for every `R`, so `F(R)°` needs no bracket.],
+  [#leanf("Freyd.Alg.Relator.map_recip") for every `R`, so `F(R)°` needs no bracket.],
+  // lean:AOP.A5_1.map_recip@ed6f591c
   // relators-agree-on-maps row: Corollary 5.1
   [Two relators agreeing on maps are equal. #src[Corollary 5.1]],
  // F(X∩Y) row: Ex 5.2
@@ -355,7 +356,8 @@ Every element of `xs` is related by `R` to some element of `ys`, and conversely.
   inset: 9pt, stroke: 0.4pt + luma(190),
   table.header([*law*], [*the reading*]),
 
-  [`X⊑P(R)⟺X∋⊑∋R` and `X°∋⊑∋R°`],
+  [#leanf("Freyd.Alg.le_powerRel_iff")],
+   // lean:AOP.A5_4.le_powerRel_iff@5cb5df83
   [One containment, and the same one at `R°` — which is the definition read off the two divisions.
  Hence `P(R°)=P(R)°`, and `R⊑S⟹P(R)⊑P(S)` #src[].],
    // lean:AOP.A5_4.powerRel_mono@c7c7e038

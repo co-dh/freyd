@@ -31,7 +31,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*the law*], [*what it says*]),
 
-  [`X⊑` $frac(#[`S`], ∋)$ `thin(Q)⟺X∋⊑S` and `S°X⊑Q°∈`],
+  [#leanf("Freyd.Alg.le_Λ_comp_thinRel_iff")],
   [`S` is the whole algebra: it produces every candidate that `thin(Q)` thins. Everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound among the kept ones],
   [#leanf("Freyd.Alg.thinRel_comp_eps_le")],
   [everything a thinning keeps was in the set],
@@ -394,15 +394,15 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [`thinlist(Q) xs=[minlist(Q) xs]` \ #src[(8.5), `Q` connected, `xs` non-empty]],
   [what thinning should come to when it can: one element],
-  [`sort(≼) thinlist(Q)⊑thin(Q) sort(≼)` #h(6pt) #src[(8.6) — @thinlist-86]],
+  [#leanf("Freyd.Alg.sortRel_comp_thinlist_le") #h(6pt) #src[(8.6) — @thinlist-86]],
   [thinning a sorted list is a thinning of the set — this is what `thinlist(Q)⊑subseq` buys],
-  [`sort(≼) minlist(Q)⊑est(Q)` #h(6pt) #src[(8.7)]],
+  [#leanf("Freyd.Alg.sortRel_comp_minlist_le") #h(6pt) #src[(8.7)]],
   [a minimum of the sorted list is a minimum of the set],
   [`sort(f≼f°) list(f)⊑P(f) sort(≼)` #h(6pt) #src[(8.8)]],
   [shunt a function through a sort],
   [`sort(≼) filter(p)⊑E(p) sort(≼)` #h(6pt) #src[(8.9), `p` coreflexive]],
   [filtering a sorted list sorts the restricted set],
-  [`(sort(≼)×sort(≼)) merge(≼)⊑cup sort(≼)` #h(6pt) #src[(8.10)]],
+  [#leanf("Freyd.Alg.prodMap_sortRel_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],
   [`F(sort(≼)) listcp⊑cp(F) sort(F(≼))` \ #src[(8.11), `F` linear]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
@@ -554,7 +554,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [`(𝟙×R) (cons (within w))⊑cons (within w)R` \ #src[FALSE]],
   [not monotonic on `R`: a selection of greater value need not still fit once one more item goes in],
-  [`(𝟙×Q) (cons (within w))⊑cons (within w)Q` \ `(𝟙×Q)π₂⊑π₂Q`
+  [#leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_cons") \ #leanf("Freyd.Alg.RelSet.Knapsack.knap_mono_drop")
  #src[,
    // lean:AOP.A8_4_Knapsack.knap_mono_cons@d44e5999
  ]],
@@ -636,13 +636,14 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [`(𝟙×R) glue⊑glue R` #h(6pt) #src[FALSE]],
   [`glue` is not monotonic on `R`: the waste of a paragraph depends on its whole first line, so no
    greedy algorithm solves this],
-  [`(𝟙×Q) new⊑new Q` \ `(𝟙×Q) (glue (ok w))⊑glue (ok w)Q` \ #src[`cons` monotonic on
+  [#leanf("Freyd.Alg.RelSet.Paragraph.para_mono_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_mono_glue") \ #src[`cons` monotonic on
  `collect≤collect°`. ,
    // lean:AOP.A8_5_Paragraph.para_mono_new@7bd0f665
  ]],
    // lean:AOP.A8_5_Paragraph.para_mono_glue@d88580bd
   [both halves are monotonic on `Q` once ties in waste are broken by the first line],
-  [`merge ⊤=cat`; #h(4pt) `P≜head prefix head°` also serves],
+  [#leanf("Freyd.Alg.RelSet.ListRel.merge_top"); #h(4pt) `P≜head prefix head°` also serves],
+  // lean:AOP.A8_3.merge_top@a86d5d43
   [`⊤` needs no sorting at all, and `prefix` is a linear order on first lines of paragraphs of one
    input],
 )]<para-mono>
@@ -723,7 +724,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [`(𝟙×R) dropl⊑dropl R` #h(6pt) #src[FALSE] \ `(𝟙×R) dropr⊑dropr R` #h(6pt) #src[FALSE]],
   [neither drop is monotonic on `R`: the two edges it adds and removes depend on `head` and `next`
    of both lists],
-  [`(𝟙×Q) dropl⊑dropl Q` \ `(𝟙×Q) dropr⊑dropr Q`
+  [#leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_mono_dropr")
  #src[,
    // lean:AOP.A8_6_Tour.tour_mono_dropl@a80a947d
  ]],

@@ -41,7 +41,8 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
   [`X⊑est(R)⟺X⊑∋` and `X°∋⊑R`], [in the set, and below every element of it],
   [$frac(#[`𝟙`], ∋)$ `(∈\R)=R`], [bounding a singleton is bounding its element],
   [$frac(#[`S`], ∋)$ `(∈\R)=S°\R`], [bound `S`'s image without building the set],
-  [`union≜` $frac(#[`∋∋`], ∋)$ `: PPA⟶PA`], [flattens a set of sets],
+  [#leanf("Freyd.Alg.bigUnion")], [flattens a set of sets],
+  // lean:Freyd.S2_40.bigUnion@a91eebb8
   [`union (∈\R)=∈\(∈\R)`], [bound a union by bounding each member set],
   [$frac(#[`𝟙`], ∋)$ `est(R)=𝟙∩R°` #src[(7.4)]],
  [a singleton's minimum is its element, where `R` is reflexive \ #src[$frac(#[`S`], ∋)$ `est(R)` at `S:=𝟙`]],
