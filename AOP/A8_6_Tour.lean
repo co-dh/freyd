@@ -246,6 +246,34 @@ public theorem R_eq :
   fun t t' => cost tc t ≤ cost tc t' ∧ (nxt t.1 = nxt t'.1 ∧ nxt t.2 = nxt t'.2)
     ∧ (hd t.1 = hd t'.1 ∧ hd t.2 = hd t'.2)
 
+/-- **tour-defn**: `next2 ≜ next×next`, the second cities of both journeys. -/
+@[expose] public def next2 (t : Tour City) : City × City := (nxt t.1, nxt t.2)
+
+/-- **tour-defn**: `head2 ≜ head×head`, the first cities of both journeys. -/
+@[expose] public def head2 (t : Tour City) : City × City := (hd t.1, hd t.2)
+
+/-- `t R t′` iff `t` costs no more than `t′`: the pointwise reading of `R_eq`. -/
+public theorem R_apply (t t' : Tour City) : R tc t t' ↔ cost tc t ≤ cost tc t' := Iff.rfl
+
+/-- `Qc = R ∩ (next2 next2°) ∩ (head2 head2°)`, point-free. -/
+public theorem Qc_eq :
+    Qc tc = R tc ∩ (graph next2 ≫ (graph next2 : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°)
+      ∩ (graph head2 ≫ (graph head2 : dTour City ⟶ (⟨City × City⟩ : RelSet.{0}))°) := by
+  apply hom_ext; intro t t'
+  constructor
+  · rintro ⟨hc, ⟨hn1, hn2⟩, hh1, hh2⟩
+    exact ⟨⟨hc, next2 t, rfl, (by rw [hn1, hn2] : (nxt t.1, nxt t.2) = (nxt t'.1, nxt t'.2))⟩,
+      head2 t, rfl, (by rw [hh1, hh2] : (hd t.1, hd t.2) = (hd t'.1, hd t'.2))⟩
+  · rintro ⟨⟨hc, m, hm, hm'⟩, k, hk, hk'⟩
+    have hn : next2 t = next2 t' := (hm : m = next2 t).symm.trans hm'
+    have hh : head2 t = head2 t' := (hk : k = head2 t).symm.trans hk'
+    exact ⟨hc, ⟨congrArg Prod.fst hn, congrArg Prod.snd hn⟩, congrArg Prod.fst hh, congrArg Prod.snd hh⟩
+
+/-- `t Qc t′` iff `t` costs no more than `t′` and both journeys share their first two cities. -/
+public theorem Qc_apply (t t' : Tour City) :
+    Qc tc t t' ↔ cost tc t ≤ cost tc t' ∧ (nxt t.1 = nxt t'.1 ∧ nxt t.2 = nxt t'.2)
+      ∧ (hd t.1 = hd t'.1 ∧ hd t.2 = hd t'.2) := Iff.rfl
+
 public theorem Qc_le_Q : Qc tc ⊑ Q tc := le_iff.mpr fun _ _ h => ⟨h.1, h.2.1⟩
 
 public theorem Qc_le_R : Qc tc ⊑ R tc := le_iff.mpr fun _ _ h => h.1

@@ -593,31 +593,53 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
 // B&dM §8.4, p. 205.  The printed base of the final fold is `nil`, without the outer `wrap` that
 // §8.5 and §8.6 do print (`wrap wrap wrap`, `start wrap`).
-#disp[#definition[
-`vol,wt : Item⟶Real`, #h(4pt) `value≜list(vol) sum`, #h(4pt) `weight≜list(wt) sum`
-#src[].
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+
+  [#leann("Freyd.Alg.RelSet.ListRel.total")], [#leant("Freyd.Alg.RelSet.ListRel.total")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.total"), #leanf("Freyd.Alg.RelSet.ListRel.total_eq")],
+  [add up f over the items of the list],
+  [#leann("Freyd.Alg.RelSet.ListRel.subseq")], [#leant("Freyd.Alg.RelSet.ListRel.subseq")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.subseq")],
+  [every subsequence of the list],
+  [#leann("Freyd.Alg.RelSet.Knapsack.con_eq_junc")], [#leant("Freyd.Alg.RelSet.Knapsack.con_eq_junc")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.con_eq_junc")],
+  [keep the item: the list constructor],
+  [#leann("Freyd.Alg.RelSet.Knapsack.dropFn")], [#leant("Freyd.Alg.RelSet.Knapsack.dropFn")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.dropFn"), #leanf("Freyd.Alg.RelSet.Knapsack.drop_eq_junc")],
+  [drop the item: keep the tail],
+  [#leann("Freyd.Alg.RelSet.Knapsack.within")], [#leant("Freyd.Alg.RelSet.Knapsack.within")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.within_apply")],
+  [the packings whose total weight is at most w],
+  [#leann("Freyd.Alg.RelSet.Knapsack.Salg")], [#leant("Freyd.Alg.RelSet.Knapsack.Salg")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.Salg"), #leanf("Freyd.Alg.RelSet.Knapsack.Salg_junc")],
+  [at each item, keep it if the packing still fits, or drop it],
+  [#leann("Freyd.Alg.RelSet.Knapsack.R")], [#leant("Freyd.Alg.RelSet.Knapsack.R")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.R_eq"), #leanf("Freyd.Alg.RelSet.Knapsack.R_apply")],
+  [x is worth at least as much as y],
+  [#leann("Freyd.Alg.RelSet.Knapsack.Q")], [#leant("Freyd.Alg.RelSet.Knapsack.Q")],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.Q_eq"), #leanf("Freyd.Alg.RelSet.Knapsack.Q_apply")],
+  [x is worth at least as much as y and weighs no more],
+// lean:AOP.A5_6_ListCombinators.total@374f995b
 // lean:AOP.A5_6_ListCombinators.total_eq@2b26e4d0
-
-`subseq=⦇[nil,cons] ∪ [nil,π₂]⦈` #src[,
+// lean:AOP.A5_6_ListCombinators.subseq@9db1a985
 // lean:AOP.A8_4_Knapsack.con_eq_junc@f6f12bd6
-], #h(4pt) `within w` the coreflexive on `xs` with
+// lean:AOP.A8_4_Knapsack.dropFn@08a216bd
 // lean:AOP.A8_4_Knapsack.drop_eq_junc@1f5b4c77
-`weight xs≤w`, #h(4pt) `0≤w`.
-
-`R≜value≥value°` #src[], #h(4pt)
+// lean:AOP.A8_4_Knapsack.within@172899da
+// lean:AOP.A8_4_Knapsack.Salg@a25a32d6
+// lean:AOP.A8_4_Knapsack.Salg_junc@1c8b59e1
+// lean:AOP.A8_4_Knapsack.R@88e39502
 // lean:AOP.A8_4_Knapsack.R_eq@1c13d35d
-`Q≜R∩(weight≤weight°)` #src[], #h(4pt)
+// lean:AOP.A8_4_Knapsack.Q@0a7ed9db
 // lean:AOP.A8_4_Knapsack.Q_eq@22acbe51
-`P≜R` #src[,
-// lean:AOP.A8_4_Knapsack.knap_sort_cons@dce0f4b3
-].
-// lean:AOP.A8_4_Knapsack.knap_sort_drop@23381fc8
-
-`FA=1+Item×A`, #h(4pt) `listcp=wrap+cpr`, #h(4pt) `g₁≜list([nil,cons]) filter(within w)`
-#h(4pt) `=[list(nil),h₁]`, #h(4pt) `g₂≜list([nil,π₂])=[list(nil),h₂]`.
-
-`h₁≜list(cons) filter(within w)`, #h(4pt) `h₂≜list(π₂)`.
-]]<knap-defn>
+// lean:AOP.A8_4_Knapsack.within_apply@36f4b7b0
+// lean:AOP.A8_4_Knapsack.R_apply@dc58c6b8
+// lean:AOP.A8_4_Knapsack.Q_apply@41c1da16
+)]<knap-defn>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -633,6 +655,10 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
  ]],
    // lean:AOP.A8_4_Knapsack.knap_mono_drop@fce8ac80
   [both halves are monotonic on `Q` once ties in value are broken by weight],
+  [#leanf("Freyd.Alg.RelSet.Knapsack.knap_sort_cons") \ #leanf("Freyd.Alg.RelSet.Knapsack.knap_sort_drop")],
+  // lean:AOP.A8_4_Knapsack.knap_sort_cons@dce0f4b3
+  // lean:AOP.A8_4_Knapsack.knap_sort_drop@23381fc8
+  [both algebras are monotonic on `R` itself, so `R` is the sort order `P`],
 )]<knap-mono>
 
 // B&dM §8.4, p. 206.  The set the transpose opens becomes a LIST at the binary thinning step, and
@@ -664,7 +690,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
   [#vstep(EQ, [],
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn; `minlist(R)` is `head`, packings
+     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn:3, @knap-defn:4; `minlist(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
@@ -675,30 +701,91 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 
 // B&dM §8.5, p. 207.  `P ≜ ⊤` works because `merge ⊤ = cat`, which already brings equal first lines
 // together; the book's first choice `head prefix head°` is correct but not needed.
-#disp[#definition[
-`Line=list⁺ Word`, #h(4pt) `Para=list⁺ Line`, #h(4pt) `FA=Word+Word×A`, #h(4pt)
-`listcp=wrap+cpr`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`new(a,xs)=[[a]]⧺xs`, #h(4pt) `glue(a,xs)=[[a]⧺head(xs)]⧺tail(xs)`, #h(4pt)
-`partition≜⦇[wrap wrap,new ∪ glue]⦈ : list⁺ Word⟶Para`.
-
-`width≜⦇[length,(length×𝟙) plus succ]⦈`, #h(4pt) `0≤length a`, #h(4pt) `fits w` the coreflexive on a
-line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `width x≤w`.
-
-`white w x=w−width x`, #h(4pt) `collect≜list(sqr) sum`, #h(4pt) `waste w≜init list(white w) collect`.
-
-`R≜(waste w)≤(waste w)°` #src[], #h(4pt)
+  [#leann("Freyd.Alg.RelSet.Paragraph.Line")], [#leant("Freyd.Alg.RelSet.Paragraph.Line")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.Line")],
+  [a line is a non-empty list of words],
+  [#leann("Freyd.Alg.RelSet.Paragraph.Para")], [#leant("Freyd.Alg.RelSet.Paragraph.Para")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.Para")],
+  [a paragraph is a non-empty list of lines],
+  [#leann("Freyd.Alg.RelSet.Paragraph.new")], [#leant("Freyd.Alg.RelSet.Paragraph.new")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.new")],
+  [start a new first line holding only the word a],
+  [#leann("Freyd.Alg.RelSet.Paragraph.glue")], [#leant("Freyd.Alg.RelSet.Paragraph.glue")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.glue")],
+  [put the word a at the front of the first line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.newAlgFn")], [#leant("Freyd.Alg.RelSet.Paragraph.newAlgFn")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.newAlgFn")],
+  [one word is a one-line paragraph; each further word starts a new line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.glueAlgFn")], [#leant("Freyd.Alg.RelSet.Paragraph.glueAlgFn")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.glueAlgFn")],
+  [one word is a one-line paragraph; each further word joins the first line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.partAlg")], [#leant("Freyd.Alg.RelSet.Paragraph.partAlg")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.partAlg")],
+  [each further word either starts a new line or joins the first line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.partition")], [#leant("Freyd.Alg.RelSet.Paragraph.partition")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.partition")],
+  [every way of breaking the words into lines],
+  [#leann("Freyd.Alg.RelSet.Paragraph.widthFn")], [#leant("Freyd.Alg.RelSet.Paragraph.widthFn")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.widthFn")],
+  [the lengths of the words plus one space between neighbours],
+  [#leann("Freyd.Alg.RelSet.Paragraph.headLine")], [#leant("Freyd.Alg.RelSet.Paragraph.headLine")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.headLine")],
+  [the first line of the paragraph],
+  [#leann("Freyd.Alg.RelSet.Paragraph.allFitP")], [#leant("Freyd.Alg.RelSet.Paragraph.allFitP")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.allFitP")],
+  [every line is at most w wide],
+  [#leann("Freyd.Alg.RelSet.Paragraph.fits")], [#leant("Freyd.Alg.RelSet.Paragraph.fits")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.fits_apply")],
+  [the paragraphs whose every line is at most w wide],
+  [#leann("Freyd.Alg.RelSet.Paragraph.ok")], [#leant("Freyd.Alg.RelSet.Paragraph.ok")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.ok_apply")],
+  [the paragraphs whose first line is at most w wide],
+  [#leann("Freyd.Alg.RelSet.Paragraph.sqr")], [#leant("Freyd.Alg.RelSet.Paragraph.sqr")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.sqr")],
+  [n squared],
+  [#leann("Freyd.Alg.RelSet.Paragraph.wasteFn")], [#leant("Freyd.Alg.RelSet.Paragraph.wasteFn")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.wasteFn")],
+  [the squared white space left on every line but the last, added up],
+  [#leann("Freyd.Alg.RelSet.Paragraph.R")], [#leant("Freyd.Alg.RelSet.Paragraph.R")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.R_eq"), #leanf("Freyd.Alg.RelSet.Paragraph.R_apply")],
+  [p wastes no more than q],
+  [#leann("Freyd.Alg.RelSet.Paragraph.Q")], [#leant("Freyd.Alg.RelSet.Paragraph.Q")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.Q_eq"), #leanf("Freyd.Alg.RelSet.Paragraph.Q_apply")],
+  [p wastes no more than q and has the same first line],
+  [#leann("Freyd.Alg.RelSet.Paragraph.start")], [#leant("Freyd.Alg.RelSet.Paragraph.start")],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.start")],
+  [the one candidate for a single word: the paragraph of one line holding that word],
+// lean:AOP.A8_5_Paragraph.Line@5d1dfba3
+// lean:AOP.A8_5_Paragraph.Para@03a1f9c7
+// lean:AOP.A8_5_Paragraph.new@bda7247b
+// lean:AOP.A8_5_Paragraph.glue@01a4db05
+// lean:AOP.A8_5_Paragraph.newAlgFn@e587172a
+// lean:AOP.A8_5_Paragraph.glueAlgFn@65824f9e
+// lean:AOP.A8_5_Paragraph.partAlg@5fb0da43
+// lean:AOP.A8_5_Paragraph.partition@913aa4cf
+// lean:AOP.A8_5_Paragraph.widthFn@925793a1
+// lean:AOP.A8_5_Paragraph.headLine@52e4596a
+// lean:AOP.A8_5_Paragraph.allFitP@dbdf240f
+// lean:AOP.A8_5_Paragraph.fits@6274a548
+// lean:AOP.A8_5_Paragraph.ok@a900976e
+// lean:AOP.A8_5_Paragraph.sqr@0bb9fcb4
+// lean:AOP.A8_5_Paragraph.wasteFn@fb89a4e6
+// lean:AOP.A8_5_Paragraph.R@1aaea13f
 // lean:AOP.A8_5_Paragraph.R_eq@cf0ea074
-`Q≜R∩(head head°)` #src[], #h(4pt)
+// lean:AOP.A8_5_Paragraph.Q@11255ece
 // lean:AOP.A8_5_Paragraph.Q_eq@a6330fbf
-`P≜⊤` #src[,
-// lean:AOP.A8_5_Paragraph.para_sort_new@79ca91ea
-].
-// lean:AOP.A8_5_Paragraph.para_sort_glue@01887a30
-
-`g₁≜list([wrap wrap,new])`, #h(4pt) `g₂≜list([wrap wrap,glue]) filter(ok w)`, #h(4pt)
-`start≜wrap wrap wrap`, #h(4pt) `h₁≜list(new)`, #h(4pt) `h₂≜list(glue) filter(ok w)`.
-]]<para-defn>
+// lean:AOP.A8_5_Paragraph.fits_apply@42c87fb1
+// lean:AOP.A8_5_Paragraph.ok_apply@a532e43a
+// lean:AOP.A8_5_Paragraph.R_apply@358f7c84
+// lean:AOP.A8_5_Paragraph.Q_apply@4e24926a
+// lean:AOP.A8_5_Paragraph.start@056fc54e
+)]<para-defn>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -718,6 +805,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#leanf("Freyd.Alg.RelSet.ListRel.merge_top")],
   // lean:AOP.A8_3.merge_top@a86d5d43
   [`⊤` needs no sorting at all],
+  [#leanf("Freyd.Alg.RelSet.Paragraph.para_sort_new") \ #leanf("Freyd.Alg.RelSet.Paragraph.para_sort_glue")],
+  // lean:AOP.A8_5_Paragraph.para_sort_new@79ca91ea
+  // lean:AOP.A8_5_Paragraph.para_sort_glue@01887a30
+  [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<para-mono>
 
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
@@ -759,7 +850,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep(EQ, [],
     [`⦇[start,cpr ⟨h₁,h₂⟩ cat thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ` along the coproduct — @para-defn]])],
+     #src[`listcp=wrap+cpr`, `gᵢ` along the coproduct — @para-defn:5, @para-defn:6]])],
   [],
 )]<para-laws>
 
@@ -767,25 +858,93 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
 // B&dM §8.6, p. 212.  `Q` keeps the `head2` conjunct p.215 derives and then drops on the grounds
 // that tours of one input share their heads: without it the two `tour-mono` rows are false.
-#disp[#definition[
-`FA=(City×City)+(City×A)`, the base functor of cons-lists of length at least two; #h(4pt)
-`listcp=wrap+cpr`; #h(4pt) `tc : City×City⟶Real`, neither positive nor symmetric.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`start (a,b)=([a,b],[a,b])`, #h(4pt) `dropl (a,([b]⧺xs,ys))=([a]⧺xs,[a]⧺ys)`, #h(4pt)
-`dropr (a,(xs,[b]⧺ys))=([a]⧺xs,[a]⧺ys)`, #h(4pt) `tour≜⦇[start,dropl ∪ dropr]⦈`.
-
-`cost (xs,ys)=outcost xs+incost ys`, #h(4pt) `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`,
-#h(4pt) `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`.
-
-`next≜tail head`, #h(4pt) `next2≜next×next`, #h(4pt) `head2≜head×head`, #h(4pt) `R≜cost≤cost°`
-#src[], #h(4pt)
+  [#leann("Freyd.Alg.RelSet.Tour.Journey")], [#leant("Freyd.Alg.RelSet.Tour.Journey")],
+  [#leanf("Freyd.Alg.RelSet.Tour.Journey")],
+  [a list of at least two cities, the last two held as a pair],
+  [#leann("Freyd.Alg.RelSet.Tour.Tour")], [#leant("Freyd.Alg.RelSet.Tour.Tour")],
+  [#leanf("Freyd.Alg.RelSet.Tour.Tour")],
+  [the outward journey and the return journey],
+  [#leann("Freyd.Alg.RelSet.Tour.hd")], [#leant("Freyd.Alg.RelSet.Tour.hd")],
+  [#leanf("Freyd.Alg.RelSet.Tour.hd")],
+  [the first city of the journey],
+  [#leann("Freyd.Alg.RelSet.Tour.nxt")], [#leant("Freyd.Alg.RelSet.Tour.nxt")],
+  [#leanf("Freyd.Alg.RelSet.Tour.nxt")],
+  [the second city of the journey],
+  [#leann("Freyd.Alg.RelSet.Tour.replaceHead")], [#leant("Freyd.Alg.RelSet.Tour.replaceHead")],
+  [#leanf("Freyd.Alg.RelSet.Tour.replaceHead")],
+  [replace the first city of the journey by a],
+  [#leann("Freyd.Alg.RelSet.Tour.outcost")], [#leant("Freyd.Alg.RelSet.Tour.outcost")],
+  [#leanf("Freyd.Alg.RelSet.Tour.outcost")],
+  [the cost of travelling the journey forwards],
+  [#leann("Freyd.Alg.RelSet.Tour.incost")], [#leant("Freyd.Alg.RelSet.Tour.incost")],
+  [#leanf("Freyd.Alg.RelSet.Tour.incost")],
+  [the cost of travelling the journey backwards],
+  [#leann("Freyd.Alg.RelSet.Tour.cost")], [#leant("Freyd.Alg.RelSet.Tour.cost")],
+  [#leanf("Freyd.Alg.RelSet.Tour.cost")],
+  [the outward journey forwards plus the return journey backwards],
+  [#leann("Freyd.Alg.RelSet.Tour.start")], [#leant("Freyd.Alg.RelSet.Tour.start")],
+  [#leanf("Freyd.Alg.RelSet.Tour.start")],
+  [the tour of the last two cities, both journeys being that one edge],
+  [#leann("Freyd.Alg.RelSet.Tour.droplFn")], [#leant("Freyd.Alg.RelSet.Tour.droplFn")],
+  [#leanf("Freyd.Alg.RelSet.Tour.droplFn")],
+  [a replaces the first city of the outward journey and is put in front of the return],
+  [#leann("Freyd.Alg.RelSet.Tour.droprFn")], [#leant("Freyd.Alg.RelSet.Tour.droprFn")],
+  [#leanf("Freyd.Alg.RelSet.Tour.droprFn")],
+  [a is put in front of the outward journey and replaces the first city of the return],
+  [#leann("Freyd.Alg.RelSet.Tour.droplAlgFn")], [#leant("Freyd.Alg.RelSet.Tour.droplAlgFn")],
+  [#leanf("Freyd.Alg.RelSet.Tour.droplAlgFn")],
+  [start at the last two cities, then add each city by dropl],
+  [#leann("Freyd.Alg.RelSet.Tour.droprAlgFn")], [#leant("Freyd.Alg.RelSet.Tour.droprAlgFn")],
+  [#leanf("Freyd.Alg.RelSet.Tour.droprAlgFn")],
+  [start at the last two cities, then add each city by dropr],
+  [#leann("Freyd.Alg.RelSet.Tour.tourAlg")], [#leant("Freyd.Alg.RelSet.Tour.tourAlg")],
+  [#leanf("Freyd.Alg.RelSet.Tour.tourAlg")],
+  [each further city is added by dropl or by dropr],
+  [#leann("Freyd.Alg.RelSet.Tour.tour")], [#leant("Freyd.Alg.RelSet.Tour.tour")],
+  [#leanf("Freyd.Alg.RelSet.Tour.tour")],
+  [every bitonic tour of the cities],
+  [#leann("Freyd.Alg.RelSet.Tour.R")], [#leant("Freyd.Alg.RelSet.Tour.R")],
+  [#leanf("Freyd.Alg.RelSet.Tour.R_eq"), #leanf("Freyd.Alg.RelSet.Tour.R_apply")],
+  [t costs no more than t′],
+  [#leann("Freyd.Alg.RelSet.Tour.next2")], [#leant("Freyd.Alg.RelSet.Tour.next2")],
+  [#leanf("Freyd.Alg.RelSet.Tour.next2")],
+  [the second cities of both journeys],
+  [#leann("Freyd.Alg.RelSet.Tour.head2")], [#leant("Freyd.Alg.RelSet.Tour.head2")],
+  [#leanf("Freyd.Alg.RelSet.Tour.head2")],
+  [the first cities of both journeys],
+  [#leann("Freyd.Alg.RelSet.Tour.Qc")], [#leant("Freyd.Alg.RelSet.Tour.Qc")],
+  [#leanf("Freyd.Alg.RelSet.Tour.Qc_eq"), #leanf("Freyd.Alg.RelSet.Tour.Qc_apply")],
+  [t costs no more than t′, and both journeys of t and t′ share their first two cities],
+// lean:AOP.A8_6_Tour.Journey@43d30e10
+// lean:AOP.A8_6_Tour.Tour@5351625c
+// lean:AOP.A8_6_Tour.hd@ec270d00
+// lean:AOP.A8_6_Tour.nxt@4eb9366c
+// lean:AOP.A8_6_Tour.replaceHead@b9cb84df
+// lean:AOP.A8_6_Tour.outcost@d41264e2
+// lean:AOP.A8_6_Tour.incost@6cc43105
+// lean:AOP.A8_6_Tour.cost@06de8db1
+// lean:AOP.A8_6_Tour.start@d985a9ce
+// lean:AOP.A8_6_Tour.droplFn@fbc7f8e7
+// lean:AOP.A8_6_Tour.droprFn@f1f2bddf
+// lean:AOP.A8_6_Tour.droplAlgFn@b62e1231
+// lean:AOP.A8_6_Tour.droprAlgFn@1ee00147
+// lean:AOP.A8_6_Tour.tourAlg@0486790c
+// lean:AOP.A8_6_Tour.tour@e98fe8cb
+// lean:AOP.A8_6_Tour.R@99271c4e
 // lean:AOP.A8_6_Tour.R_eq@15ad4adc
-`Q≜R∩(next2 next2°)∩(head2 head2°)`, #h(4pt) `P≜⊤` #src[,
-// lean:AOP.A8_6_Tour.tour_sort_dropl@0dc4ff40
-], #h(4pt) `g₁≜list([start,dropl])`, #h(4pt)
-// lean:AOP.A8_6_Tour.tour_sort_dropr@f9356ac3
-`g₂≜list([start,dropr])`.
-]]<tour-defn>
+// lean:AOP.A8_6_Tour.Qc@a73d3422
+// lean:AOP.A8_6_Tour.R_apply@f30bcc6e
+// lean:AOP.A8_6_Tour.next2@d792d805
+// lean:AOP.A8_6_Tour.head2@02940dda
+// lean:AOP.A8_6_Tour.Qc_eq@1fd75015
+// lean:AOP.A8_6_Tour.Qc_apply@00f522e3
+)]<tour-defn>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -803,6 +962,10 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
    // lean:AOP.A8_6_Tour.tour_mono_dropr@327889aa
   [both are, once ties in cost are broken by the two second cities — the heads already agree among
    tours of one input],
+  [#leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropl") \ #leanf("Freyd.Alg.RelSet.Tour.tour_sort_dropr")],
+  // lean:AOP.A8_6_Tour.tour_sort_dropl@0dc4ff40
+  // lean:AOP.A8_6_Tour.tour_sort_dropr@f9356ac3
+  [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<tour-mono>
 
 // B&dM §8.6, p. 215.  A tour is a PAIR of lists, so `[City]×[City]` is the one unary functor
@@ -819,7 +982,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs"),
-    [#frc([`⦇[start,dropl ∪ dropr]⦈`])` est(R)` \ #src[`tour≜⦇[start,dropl ∪ dropr]⦈` — @tour-defn]])],
+    [#frc([`⦇[start,dropl ∪ dropr]⦈`])` est(R)` \ #src[@tour-defn:15]])],
   // Empty: the step only names the reduce, and the panel above already draws it.
   [],
 
@@ -830,7 +993,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
 
   [#vstep(EQ, [],
     [`⦇[start wrap,cpr ⟨list(dropl),list(dropr)⟩ cat thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn; quadratic, two tours
+     #src[`listcp=wrap+cpr`, `gᵢ=[list(start),list(dropᵢ)]` — @tour-defn:12, @tour-defn:13; quadratic, two tours
       added per step]])],
   [],
 )]<tour-laws>

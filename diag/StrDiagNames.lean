@@ -601,6 +601,105 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.droplFn] def unexpandDroplFn : Unexpander | _ => `($(mkIdent `dropl))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.droprFn] def unexpandDroprFn : Unexpander | _ => `($(mkIdent `dropr))
+-- §8.4–8.6 under the book's names (B&dM pp.205–215).  The cost function (`tc`, `len`) is the
+-- section's context and is dropped, as `R` drops it; `w` and the list stay, as the book writes them.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.total] def unexpandListTotal : Unexpander
+  | `($_ $f $x) => `($(mkIdent `total) $f $x)
+  | `($_ $f) => `($(mkIdent `total) $f)
+  | _ => `($(mkIdent `total))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Knapsack.dropFn] def unexpandKnapDropFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[nil,π₂]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.hd] def unexpandTourHd : Unexpander
+  | `($_ $x) => `($(mkIdent `head) $x)
+  | _ => `($(mkIdent `head))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.nxt] def unexpandTourNxt : Unexpander
+  | `($_ $x) => `($(mkIdent `next) $x)
+  | _ => `($(mkIdent `next))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.next2] def unexpandTourNext2 : Unexpander
+  | `($_ $x) => `($(mkIdent `next2) $x)
+  | _ => `($(mkIdent `next2))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.head2] def unexpandTourHead2 : Unexpander
+  | `($_ $x) => `($(mkIdent `head2) $x)
+  | _ => `($(mkIdent `head2))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.replaceHead] def unexpandTourReplaceHead : Unexpander
+  | `($_ $a $x) => `($(mkIdent `replaceHead) $a $x)
+  | `($_ $a) => `($(mkIdent `replaceHead) $a)
+  | _ => `($(mkIdent `replaceHead))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.outcost] def unexpandTourOutcost : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `outcost) $x)
+  | _ => `($(mkIdent `outcost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.incost] def unexpandTourIncost : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `incost) $x)
+  | _ => `($(mkIdent `incost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.cost] def unexpandTourCost : Unexpander
+  | `($_ $_ $t) => `($(mkIdent `cost) $t)
+  | _ => `($(mkIdent `cost))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.Tour] def unexpandTourTour : Unexpander
+  | `($_ $C) => `($(mkIdent `Tour) $C)
+  | _ => `($(mkIdent `Tour))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.droplAlgFn] def unexpandDroplAlgFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[start,dropl]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tour.droprAlgFn] def unexpandDroprAlgFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[start,dropr]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.widthFn] def unexpandParaWidth : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `width) $x)
+  | _ => `($(mkIdent `width))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.wasteFn] def unexpandParaWaste : Unexpander
+  | `($_ $_ $w $p) => `($(mkIdent `waste) $w $p)
+  | `($_ $_ $w) => `($(mkIdent `waste) $w)
+  | _ => `($(mkIdent `waste))
+-- The predicate under the coreflexive `fits(w)` is written `fits`, as `secureP` is `secure`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.allFitP] def unexpandParaAllFitP : Unexpander
+  | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
+  | `($_ $_ $w) => `($(mkIdent `fits) $w)
+  | _ => `($(mkIdent `fits))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.headLine] def unexpandParaHeadLine : Unexpander
+  | `($_ $p) => `($(mkIdent `head) $p)
+  | _ => `($(mkIdent `head))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.glue] def unexpandParaGlue : Unexpander
+  | `($_ $a $p) => `($(mkIdent `glue) $a $p)
+  | `($_ $a) => `($(mkIdent `glue) $a)
+  | _ => `($(mkIdent `glue))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.new] def unexpandParaNew : Unexpander
+  | `($_ $a $p) => `($(mkIdent `new) $a $p)
+  | `($_ $a) => `($(mkIdent `new) $a)
+  | _ => `($(mkIdent `new))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.sqr] def unexpandParaSqr : Unexpander
+  | `($_ $n) => `($(mkIdent `sqr) $n)
+  | _ => `($(mkIdent `sqr))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.start] def unexpandParaStart : Unexpander
+  | `($_ $a) => `($(mkIdent `start) $a)
+  | _ => `($(mkIdent `start))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.newAlgFn] def unexpandParaNewAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,new]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.glueAlgFn] def unexpandParaGlueAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,glue]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.partAlg] def unexpandParaPartAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[wrap wrap,new ∪ glue]")))
 -- "`x` is secure" is the note's word for the predicate under the coreflexive `secure`; `amount` and
 -- `N` are the section's context, dropped as `R` drops its own.
 open Lean PrettyPrinter in

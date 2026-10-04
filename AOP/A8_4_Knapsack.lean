@@ -92,6 +92,17 @@ public theorem Q_eq :
     rw [← (show m = total wt x from hm), ← (show n = total wt y from hn)]
     exact hmn
 
+/-- `x R y` iff `x` is worth at least as much as `y`: the pointwise reading of `R_eq`. -/
+public theorem R_apply (x y : ConsList Unit Item) : R vol x y ↔ total vol y ≤ total vol x := Iff.rfl
+
+/-- `x Q y` iff `x` is worth at least as much as `y` and weighs no more. -/
+public theorem Q_apply (x y : ConsList Unit Item) :
+    Q vol wt x y ↔ total vol y ≤ total vol x ∧ total wt x ≤ total wt y := Iff.rfl
+
+/-- `x (within w) y` iff `x = y` and `x` weighs at most `w`. -/
+public theorem within_apply (x y : ConsList Unit Item) :
+    within (wt := wt) w x y ↔ x = y ∧ total wt x ≤ w := Iff.rfl
+
 public theorem Q_le_R : Q vol wt ⊑ R vol := le_iff.mpr fun _ _ h => h.1
 
 public theorem R_refl : 𝟙 (dList Item) ⊑ R vol :=
