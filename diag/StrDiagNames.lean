@@ -747,6 +747,14 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.opbFn] def unexpandBracketOpbFn : Unexpander
   | _ => `($(mkIdent `opb))
+-- The node arm of `g≜[zero,(𝟙×sz)² opb π₁]`, and of the size algebra `[zero,distr [𝟙×c,𝟙×p] plus]`,
+-- as the book writes them.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Bracket.gArmFn] def unexpandBracketGArmFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "(𝟙×sz)² opb π₁")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Code.sizeArmFn] def unexpandCodeSizeArmFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Bracket.gR] def unexpandBracketGR : Unexpander
   | _ => `($(mkIdent `g))
