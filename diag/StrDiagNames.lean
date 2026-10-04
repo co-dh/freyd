@@ -1343,6 +1343,12 @@ open Lean PrettyPrinter in
 @[app_unexpander Prod.map] def unexpandCoreProdMap : Unexpander
   | `($_ $f $g) => `($f × $g)
   | _ => throw ()
+-- THE IDENTITY FUNCTION IS THE NOTE'S `𝟙`: in §1.241's category of types the identity arrow is core's
+-- `id`, the factor `Prod.map id f` keeps unchanged.  Applied to a point it is no arrow, so no rule.
+open Lean PrettyPrinter in
+@[app_unexpander id] def unexpandCoreId : Unexpander
+  | `($_:ident) => `($(mkIdent (Name.mkSimple "𝟙")))
+  | _ => throw ()
 -- THE SUM OF TWO ARROWS IS THE NOTE'S `R+S` (B&dM 5.10).  A delaborator, not an unexpander: the two
 -- coproducts `sumMap` runs between are explicit arguments, and only the last two are the arrows.
 open Lean PrettyPrinter Delaborator in

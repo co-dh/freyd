@@ -1547,7 +1547,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [A cheapest path from the entry side to the exit side.],
 )]<vec-defn-cyl>
 
-=== `gen≜(𝟙×(moves trans Vec(n)(concat))) zip Vec(n)(cp Vec(3p)(cons))` <sec-cyl-vec>
+=== #leanf("Freyd.Alg.Vec.gen") — one more column: each square's paths go to its three neighbours, then the square goes in front <sec-cyl-vec>
 
 // Beside @sec-cyl-gen: `union` becomes `concat`, `trans` the transpose, and `α` drops out because
 // `wrap` and `cons` are identities.  A one-square path is its square, which is what keeps `[1]` out
@@ -1585,7 +1585,7 @@ Vec(n)(cp)(that)                                  cp pairs the square with each 
 // lean:AOP.A7_4_CylinderVec.Vec.gen_run@47a0e44e
 ]<vec-step>
 
-=== `gen` is an `F`-algebra; `⦇gen⦈`: `cons ⦇gen⦈=(𝟙×⦇gen⦈)gen` <sec-cyl-vec-fold>
+=== #leanf("Freyd.Alg.Vec.cons_genFold") — folding a matrix with one more column is folding the rest, then one `gen` <sec-cyl-vec-fold>
 
 // The defining equation of @cata-defining at `gen`, both sides drawn: the fold bead is OUTSIDE `F`
 // on the left and INSIDE it on the right — that is all the recursion there is.  `cons=𝟙` here, so

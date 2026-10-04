@@ -1761,7 +1761,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- A PRODUCT OF ARROWS is its two arrows and nothing else.  The head's own printer writes the
     -- OBJECT it is taken at too (`wrap × 𝟙 [[X]]`), and an object inside a bead's label is the wire
     -- under it spelled twice; read as a product map off the TYPE, so every spelling goes one way.
-    if let some (x, _) := homObjs? (← Meta.inferType e) then
+    -- `homEnds?`, not `homObjs?`: §1.241's `Prod.map f g` has a FUNCTION type, and missed here it
+    -- printed as the opaque `f × g` atom, unbracketed as a factor of a composite.
+    if let some (x, _) ← homEnds? e then
       let pm ← asProdMap? (← Meta.inferType x) e fun
         | some (φ, ψ) => do
           return some (← prodL φ ψ)
