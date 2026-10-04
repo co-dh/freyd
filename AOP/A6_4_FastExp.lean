@@ -16,6 +16,7 @@ module
 
 public import AOP.A6_SnocList
 public import AOP.A6_3
+import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.FastExp
 
@@ -76,12 +77,6 @@ public theorem convert_simple : Simple convert := by
   unfold convert; rw [← cataR_eq_relCata]
   exact le_iff.mpr fun r r' ⟨dec, h1, h2⟩ => cataFold_functional _ hm dec r r' h1 h2
 
-/-- **B&dM p.144, step 1**: `f ⊒ convert°convert f` — `convert` simple. -/
-public theorem convert_step1 : convert° ≫ convert ≫ f ⊑ f := by
-  rw [← Cat.assoc]
-  calc (convert° ≫ convert) ≫ f ⊑ 𝟙 dNat ≫ f := comp_mono_right convert_simple f
-    _ = f := Cat.id_comp _
-
 /-- **B&dM p.144, fusion**: `convert f = ⦇[g,h]⦈` when `zero f = g` and `shift f = (f×𝟙)h`. -/
 public theorem convert_fusion (hg : zero ≫ f = g) (hh : shift ≫ f = rprodMap f (𝟙 (dE Bit)) ≫ h) :
     convert ≫ f = relCata (junc (cop dNat) g h) :=
@@ -90,14 +85,9 @@ public theorem convert_fusion (hg : zero ≫ f = g) (hh : shift ≫ f = rprodMap
     show _ = junc _ (𝟙 _ ≫ g) (prodMap (relProd _ _) (relProd _ _) f (𝟙 (dE Bit)) ≫ h)
     rw [Cat.id_comp, prodMap_eq_rprodMap])
 
-/-- **B&dM p.144, step 2**: `convert°convert f = convert°⦇[g,h]⦈` — fusion. -/
-public theorem convert_step2 (hg : zero ≫ f = g) (hh : shift ≫ f = rprodMap f (𝟙 (dE Bit)) ≫ h) :
-    convert° ≫ convert ≫ f = convert° ≫ relCata (junc (cop dNat) g h) := by
-  rw [convert_fusion hg hh]
-
-/-- **B&dM p.145, step 3**: `convert°⦇[g,h]⦈ = (μX : zero°g ∪ shift°(X×𝟙)h)` — Corollary 6.1
+/-- **B&dM p.145**: `convert°⦇[g,h]⦈ = (μX : zero°g ∪ shift°(X×𝟙)h)` — Corollary 6.1
     over `F(X) = 𝟏+(X×Bit)`. -/
-public theorem convert_step3 :
+public theorem convert_recip_cata :
     convert° ≫ relCata (junc (cop dNat) g h)
       = mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) := by
   refine (hylo_eq_mu_coprod I (G := Relator.const (dL Unit))
@@ -110,8 +100,14 @@ public theorem convert_step3 :
 /-- **B&dM p.144–145**: the divide-and-conquer program refines the specification `f`. -/
 public theorem convert_program (hg : zero ≫ f = g)
     (hh : shift ≫ f = rprodMap f (𝟙 (dE Bit)) ≫ h) :
-    mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) ⊑ f := by
-  rw [← convert_step3, ← convert_step2 hg hh]; exact convert_step1
+    mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) ⊑ f :=
+  calc mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h))
+        = convert° ≫ relCata (junc (cop dNat) g h) := convert_recip_cata.symm
+    _ = convert° ≫ convert ≫ f := by rw [convert_fusion hg hh]
+    _ ⊑ 𝟙 dNat ≫ f := by rw [← Cat.assoc]; exact comp_mono_right convert_simple f
+    _ = f := Cat.id_comp _
+
+calc_steps convert_program
 
 /-! ## Fast exponentiation -/
 

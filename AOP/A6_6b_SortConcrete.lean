@@ -13,6 +13,7 @@ module
 
 public import AOP.A6_6_Sort
 public import AOP.A5_6_ListCombinators
+import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Sort
 
@@ -119,18 +120,9 @@ public theorem nil_strictNatural :
     | wrap u => exact ⟨(), rfl, by cases u; rfl⟩
     | cons b w => exact hl.elim
 
-/-- **p.152, step 1**: `perm ordered = (ordered perm)°`, `perm` and the coreflexive `ordered`
-    being their own converses. -/
-public theorem selection_step1 :
-    (perm : dList A ⟶ dList A) ≫ ordered R = (ordered R ≫ perm)° := by
-  rw [Allegory.recip_comp, perm_recip, coref_recip (le_iff.mpr fun _ _ h => h.1)]
-
-/-- **p.152, step 2**: `(ordered perm)° = (⦇[nil, ok cons]⦈ perm)°` — (6.6). -/
-public theorem selection_step2 :
-    ((ordered R : dList A ⟶ dList A) ≫ perm)°
-      = (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (ok R ≫ consR)
-          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ perm)° := by
-  rw [ordered_cata]
+/-- `ordered` is a coreflexive, so its own converse. -/
+public theorem ordered_recip : (ordered R : dList A ⟶ dList A)° = ordered R :=
+  coref_recip (le_iff.mpr fun _ _ h => h.1)
 
 /-- The cons-branch of `perm = ⦇[nil, cons perm]⦈`: `cons perm = (𝟙×perm) cons perm`. -/
 public theorem cons_perm :
@@ -153,34 +145,22 @@ public theorem ok_perm :
       subst hq
       exact ⟨p, ⟨rfl, fun b hb => h1 ▸ hlb b (perm_mem h2 hb)⟩, h1, h2⟩⟩
 
-/-- **p.153, step 1**: `ok cons perm = ok (𝟙×perm) cons perm` — the cons-branch of `perm`. -/
-public theorem select_step1 :
-    ok R ≫ consR ≫ (perm : dList A ⟶ dList A)
-      = ok R ≫ rprodMap (𝟙 (dE A)) perm ≫ consR ≫ perm :=
-  congrArg (ok R ≫ ·) cons_perm
-
-/-- **p.153, step 2**: `ok (𝟙×perm) cons perm = (𝟙×perm) ok cons perm` — Ex 6.22. -/
-public theorem select_step2 :
-    ok R ≫ rprodMap (𝟙 (dE A)) perm ≫ consR ≫ (perm : dList A ⟶ dList A)
-      = rprodMap (𝟙 (dE A)) perm ≫ ok R ≫ consR ≫ perm := by
-  rw [← Cat.assoc, ok_perm, Cat.assoc]
-
 variable {R} {select : dList A ⟶ (⟨A × ConsList Unit A⟩ : RelSet.{0})}
 
-/-- **p.153, step 3**: `(𝟙×perm) ok cons perm ⊒ (𝟙×perm) select°`, `select` being specified by
-    `select° ⊑ ok cons perm`. -/
-public theorem select_step3 (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
-    rprodMap (𝟙 (dE A)) perm ≫ select° ⊑ rprodMap (𝟙 (dE A)) perm ≫ ok R ≫ consR ≫ perm :=
-  comp_mono_left _ hsel
-
-/-- **p.153**: the fusion proviso `ok cons perm ⊒ (𝟙×perm) select°`. -/
+/-- **p.153**: the fusion proviso `ok cons perm ⊒ (𝟙×perm) select°`: `select° ⊑ ok cons perm`,
+    Ex 6.22, then the cons-branch of `perm`. -/
 public theorem select_proviso (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
-    rprodMap (𝟙 (dE A)) perm ≫ select° ⊑ ok R ≫ consR ≫ (perm : dList A ⟶ dList A) := by
-  rw [select_step1, select_step2]; exact select_step3 hsel
+    rprodMap (𝟙 (dE A)) perm ≫ select° ⊑ ok R ≫ consR ≫ (perm : dList A ⟶ dList A) :=
+  calc rprodMap (𝟙 (dE A)) perm ≫ select° ⊑ rprodMap (𝟙 (dE A)) perm ≫ ok R ≫ consR ≫ perm :=
+        comp_mono_left _ hsel
+    _ = ok R ≫ rprodMap (𝟙 (dE A)) perm ≫ consR ≫ perm := by rw [← Cat.assoc, ← ok_perm, Cat.assoc]
+    _ = ok R ≫ consR ≫ perm := congrArg (ok R ≫ ·) cons_perm.symm
 
-/-- **p.152, step 3**: `(⦇[nil, ok cons]⦈ perm)° ⊒ ⦇[nil, select°]⦈°` — fusion (6.4) under the
+calc_steps select_proviso
+
+/-- **p.152**: `(⦇[nil, ok cons]⦈ perm)° ⊒ ⦇[nil, select°]⦈°` — fusion (6.4) under the
     proviso. -/
-public theorem selection_step3 (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
+public theorem selection_fusion (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
           : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
       ⊑ (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (ok R ≫ consR)
@@ -191,12 +171,22 @@ public theorem selection_step3 (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     exact junc_mono _ (le_iff.mpr fun d r h => ⟨r, h, Perm.refl r⟩) (select_proviso hsel)
   exact recip_mono (relCata_le_comp _ hfus)
 
-/-- **Selection sort (B&dM p.152)**: `perm ordered ⊒ ⦇[nil, select°]⦈°`. -/
+/-- **Selection sort (B&dM p.152)**: `perm ordered ⊒ ⦇[nil, select°]⦈°`, the book's chain from
+    the bottom line up. -/
 public theorem selection_sort (hsel : select° ⊑ ok R ≫ consR ≫ perm) :
     (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
           : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
-      ⊑ (perm : dList A ⟶ dList A) ≫ ordered R := by
-  rw [selection_step1, selection_step2]; exact selection_step3 hsel
+      ⊑ (perm : dList A ⟶ dList A) ≫ ordered R :=
+  calc (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR select°
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈)°
+        ⊑ (⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (ok R ≫ consR)
+          : (F Unit A).obj (dList A) ⟶ dList A)⦈ ≫ perm)° := selection_fusion hsel
+    _ = ((ordered R : dList A ⟶ dList A) ≫ perm)° := by rw [ordered_cata]
+    _ = perm° ≫ (ordered R)° := Allegory.recip_comp _ _
+    _ = perm ≫ (ordered R)° := by rw [perm_recip]
+    _ = perm ≫ ordered R := by rw [ordered_recip]
+
+calc_steps selection_sort
 
 /-- The concrete `select` meets the specification `select° ⊑ ok cons perm` (B&dM p.153). -/
 theorem selectC_spec : (selectC R)° ⊑ ok R ≫ consR ≫ (perm : dList A ⟶ dList A) :=

@@ -204,22 +204,13 @@
 
 // B&dM p.144–145: the argument for `exp(a)`, stated once for a map `f` and an algebra `[g,h]` with the
 // fusion conditions `zero f=g`, `shift f=(f×𝟙)h`; `exp` and `mod` are it at `[one,op(a)]`, `[zero,op(b)]`.
+#import "../generated/Freyd.Alg.RelSet.FastExp.convert_program.calc.typ" as calc-convert
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.FastExp.convert_program") \
     #src[once `f` sends `zero` to `g` and turns `shift` into `h`, the recursion that halves the
      argument at each step computes `f`]],
   // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_program@9f928e8d
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.FastExp.convert_step1.rhs", []),
-    (RQ, "Freyd.Alg.RelSet.FastExp.convert_step1.lhs", src[`convert` simple]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step1@69eb83de
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_simple@bb3512f8
-    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step2.rhs", src[fusion: `zero f=g`, `shift f=(f×𝟙)h`]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step2@74323421
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_fusion@4f54bb8d
-    (EQ, "Freyd.Alg.RelSet.FastExp.convert_step3.rhs", src[Corollary 6.1, @hylo-coprod]),
-    // lean:AOP.A6_4_FastExp.RelSet.FastExp.convert_step3@e3126154
-  ),
+  lean-calc(calc-convert),
 )]<convert-program>
 
 // B&dM p.145: the two fusion conditions for `exp(a)`, then the program.
@@ -368,35 +359,21 @@
 
 // B&dM 6.6a, p.152, "selection sort": the specification `perm ordered` refined to the converse of a fold.
 // `perm` is strictly natural (lean:AOP.A6_6b_SortConcrete.perm_strictNatural@f0271ba3).
+#import "../generated/Freyd.Alg.RelSet.Sort.selection_sort.calc.typ" as calc-selection
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.selection_sort") \
     #src[every output of unfolding the input by `select` is a sorted permutation of it]],
      // lean:AOP.A6_6b_SortConcrete.selection_sort@617e20db
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.selection_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.selection_step1.rhs", src[`perm°=perm`, `ordered°=ordered`]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step1@b0c2bf70
-    (EQ, "Freyd.Alg.RelSet.Sort.selection_step2.rhs", src[@sort-ordered]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step2@efecdea7
-    (RQ, "Freyd.Alg.RelSet.Sort.selection_step3.lhs", src[fusion (6.4) under @sort-select]),
-     // lean:AOP.A6_6b_SortConcrete.selection_step3@2c3b5167
-  ),
+  lean-calc(calc-selection),
 )]<sort-selection>
 
 // B&dM 6.6b, p.153, the fusion proviso; `select` is specified by `select°⊑ok cons perm`.
+#import "../generated/Freyd.Alg.RelSet.Sort.select_proviso.calc.typ" as calc-select
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.select_proviso") \
     #src[permuting the tail and then undoing `select` lands among the `ok` conses of a permutation]],
      // lean:AOP.A6_6b_SortConcrete.select_proviso@924131a0
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.select_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.select_step1.rhs", src[`cons perm=(𝟙×perm)cons perm`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step1@7ab18cc3
-    (EQ, "Freyd.Alg.RelSet.Sort.select_step2.rhs", src[Ex 6.22, `ok(𝟙×perm)=(𝟙×perm)ok`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step2@64cbd9c8
-    (RQ, "Freyd.Alg.RelSet.Sort.select_step3.lhs", src[`select°⊑ok cons perm`]),
-     // lean:AOP.A6_6b_SortConcrete.select_step3@b7940931
-  ),
+  lean-calc(calc-select),
 )]<sort-select>
 // TODO p.153 select-cata: `select = embed ⦇[base,step]⦈` with `base ⊆ wrap perm cons°ok`,
 //   `(𝟙×cons°ok)step ⊆ cons perm cons°ok`; `base(a)=(a,[])`, `step`.
@@ -415,22 +392,13 @@
 )]<sort-rec>
 // B&dM 6.6d, p.154, "quicksort": the specification `perm ordered` refined through a tree; `R` is a
 // preorder, which the claim `flatten ordered = inordered flatten` needs.
+#import "../generated/Freyd.Alg.RelSet.Sort.quicksort.calc.typ" as calc-quick
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.quicksort") \
     #src[every output of unfolding the input by `split` into a tree and flattening that tree is a
      sorted permutation of the input]],
      // lean:AOP.A6_6e_Quicksort.quicksort@2ff8cd0e
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.qsort_step1.rhs", []),
-    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step1.lhs", src[`flatten` is simple]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step1@f0b72a2c
-    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step2.rhs", src[`flatten ordered=inordered flatten`]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step2@ed8f63c8
-    (EQ, "Freyd.Alg.RelSet.Sort.qsort_step3.rhs", src[converses]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step3@35ed5007
-    (RQ, "Freyd.Alg.RelSet.Sort.qsort_step4.lhs", src[fusion (6.4) under @sort-split]),
-     // lean:AOP.A6_6e_Quicksort.qsort_step4@a3fb7ac7
-  ),
+  lean-calc(calc-quick),
 )]<sort-quick>
 
 // B&dM 6.6d, p.154, "claim: ordered flatten = inordered flatten"; `inordered = ⦇[null, fork check]⦈` is a
@@ -483,39 +451,23 @@
 )]<sort-checkp-perm>
 
 // B&dM 6.6e, p.155, the fusion proviso; `split` is specified by `split°⊑check' join perm`.
+#import "../generated/Freyd.Alg.RelSet.Sort.split_proviso.calc.typ" as calc-split
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_proviso") \
     #src[undoing `split` and then flattening and permuting both parts lands among the `check`ed
      forks whose flattening is permuted]],
      // lean:AOP.A6_6e_Quicksort.split_proviso@124d2f0d
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.split_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step1.rhs", src[`fork flatten=F(flatten)join`]),
-     // lean:AOP.A6_6e_Quicksort.split_step1@06a641a0
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step2.rhs", src[`check F(flatten)=F(flatten)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step2@023773b1
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step3.rhs", src[`join perm=F(perm)join perm`, `check' F(perm)=F(perm)check'`]),
-     // lean:AOP.A6_6e_Quicksort.split_step3@d865bdf1
-    (EQ, "Freyd.Alg.RelSet.Sort.split_step4.rhs", src[functors]),
-     // lean:AOP.A6_6e_Quicksort.split_step4@a36f98a6
-    (RQ, "Freyd.Alg.RelSet.Sort.split_step5.lhs", src[`split°⊑check' join perm`]),
-     // lean:AOP.A6_6e_Quicksort.split_step5@94aed1e9
-  ),
+  lean-calc(calc-split),
 )]<sort-split>
 // B&dM 6.6f, p.155, `split = ⦇[base,step]⦈·embed` on non-empty lists; the fold is below the
 // specification `split ⊆ check'·join°·perm` when `base` and `step` meet the two fusion conditions.
+#import "../generated/Freyd.Alg.RelSet.Sort.split_cata.calc.typ" as calc-split-cata
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_cata") \
     #src[turning a list into a non-empty list and folding it with any `[bs, st]` meeting the two conditions below gives only
      `check`ed triples `(x,a,y)` whose join `x ⧺ [a] ⧺ y` is a permutation of the list]],
      // lean:AOP.A6_6e_Quicksort.split_cata@6dc148a1
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.split_cata_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step1.rhs", src[@split-base and @split-step, induction on the non-empty list]),
-     // lean:AOP.A6_6e_Quicksort.split_cata_step1@330ccb63
-    (SQ, "Freyd.Alg.RelSet.Sort.split_cata_step2.rhs", src[`embed` is simple]),
-     // lean:AOP.A6_6e_Quicksort.split_cata_step2@054111f9
-  ),
+  lean-calc(calc-split-cata),
 )]<split-cata>
 
 // B&dM p.155, the first fusion condition, with `base(a) = ([],a,[])`.
@@ -560,20 +512,13 @@
 )]<qsort-rec>
 // B&dM p.157 (Ex 6.30): insertion sort, from `perm = ⦇[nil,add]⦈` (§5.6) with `add` putting an
 // element anywhere in a list (lean:AOP.A6_6c_ISort.add@88935b2b).
+#import "../generated/Freyd.Alg.RelSet.ISort.insertion_sort.calc.typ" as calc-isort
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insertion_sort") \
     #src[for any `ins` that, on an ordered list, returns only ordered results of `add`, folding
      with `[nil, ins]` gives only sorted permutations]],
      // lean:AOP.A6_6c_ISort.insertion_sort@3dcc9fbb
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.ISort.isort_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.ISort.isort_step1.rhs", src[`perm = ⦇[nil,add]⦈`]),
-     // lean:AOP.A6_6c_ISort.isort_step1@1b7905a1 lean:AOP.A6_6c_ISort.perm_add@f1c7b0d4
-    (EQ, "Freyd.Alg.RelSet.ISort.isort_step2.rhs", src[fusion, `add ordered = (𝟙×ordered) add ordered`]),
-     // lean:AOP.A6_6c_ISort.isort_step2@3a587343 lean:AOP.A6_6c_ISort.ordered_add@e96a052f
-    (RQ, "Freyd.Alg.RelSet.ISort.isort_step3.lhs", src[`(𝟙×ordered) ins ⊑ add ordered`]),
-     // lean:AOP.A6_6c_ISort.isort_step3@b909215e
-  ),
+  lean-calc(calc-isort),
 )]<isort-ex630>
 
 // B&dM p.157 (Ex 6.30), the `insert` asked for: slide `a` past every element it is not below.
