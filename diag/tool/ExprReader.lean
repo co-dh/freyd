@@ -1393,7 +1393,12 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
         | .lax => homLe regionTy l r
         | .oplax => homLe regionTy r l
       if !onMaps then return ← Meta.mkForallFVars #[x, y, f] sq
-      Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
+      -- THE REGION'S OWN MAPS: an allegory's `Map` (Freyd §2.13), an ordered category's the
+      -- cartesian bicategory's `Map` (single valued and total), named by string: not imported here.
+      let isMap ← if alg == .relator || (← laneAlgOf regionTy) == .relator then Meta.mkAppM ``Freyd.Alg.Map #[f]
+        else try Meta.mkAppM `Freyd.Diag.Map #[f] catch e => throwError "diag-export: an ordered \
+          category's square over the maps needs `Freyd.Diag.Map` to type its arrow `{← Meta.ppExpr f}`: {e.toMessageData}"
+      Meta.withLocalDeclD `hf isMap fun hf =>
         Meta.mkForallFVars #[x, y, f, hf] sq
 
 /-- The two ends of an arrow.

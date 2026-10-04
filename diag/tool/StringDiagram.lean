@@ -1816,17 +1816,15 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- AND IT IS NOT THE FILLED DOT.  In an ALLEGORY the maps are a sub-category of the arrows,
       -- so a square proved only over them says nothing at any relation, where the filled dot says
       -- it of every arrow — `∋` drew solid here while the same `∋` elsewhere drew hollow off
-      -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a region that is a
-      -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
-      -- AN ORDERED CATEGORY grades by its own `≤` (`homLe`) and has no maps to restrict to: the copy
-      -- of a cartesian bicategory is lax (`lax_Δ`), its merge op-lax.
-      if alg0 == .functor && (← homOrdered regionTy) then
-        for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
-          if let some (n, _) ← tele (← laneSquare alg regionTy F G φ g) then
-            return some { mark := some m, lean := #[n] }
-      if alg0 == .relator then
-        -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
-        -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
+      -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a bare CATEGORY never
+      -- reaches this line, and there the two coincide.
+      -- AN ORDERED CATEGORY grades by its own `≤` (`homLe`): the copy of a cartesian bicategory is
+      -- lax (`lax_Δ`), its merge op-lax.
+      -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
+      -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
+      -- AN ORDERED CATEGORY HAS MAPS TOO, and the cartesian bicategory's cap and cup are natural on
+      -- them and on no wider class, so it asks the same squares over the maps an allegory does.
+      if alg0 == .relator || (alg0 == .functor && (← homOrdered regionTy)) then
         for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
           if let some (n, _) ← tele (← laneSquare alg regionTy F G φ g) then
             return some { mark := some m, lean := #[n] }

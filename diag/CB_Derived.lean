@@ -443,6 +443,25 @@ def Surjective {a b : Word O} (R : a ⟶ b) : Prop := (𝟙 b) ≤ (conv R ≫ R
     converse is its right adjoint. -/
 def Map {a b : Word O} (R : a ⟶ b) : Prop := SingleValued R ∧ Total R
 
+section
+open SymMonCat
+
+/-- The CAP `▷⊸` is OP-LAX natural over the MAPS: `cap ≤ (f⊗f) cap` for a map `f`.  Over all arrows
+    it has no grade — in `Rel`, `(R⊗R) cap` is `RR°`, which no `R` orders against `𝟙` — so the square
+    holds in the sub-category the maps form, and only `Total f` is used. -/
+theorem cap_oplaxNatural_maps {x y : Word O} (f : x ⟶ y) (hf : Map f) :
+    (cap x ≫ (constFunctor (𝕀 : Word O)).map f) ≤ ((tensFunctor idFunctor idFunctor).map f ≫ cap y) :=
+  calc cap x ≫ 𝟙 (𝕀 : Word O)
+      = 𝟙 (x ⊗ x) ≫ (▷ ≫ (𝟙 x ≫ ⊸)) := by rw [Cat.comp_id, Cat.id_comp, Cat.id_comp]; rfl
+    _ ≤ 𝟙 (x ⊗ x) ≫ (▷ ≫ ((f ≫ conv f) ≫ ⊸)) :=
+        OrderedCat.comp_mono (OrderedCat.«≤_refl» _) (OrderedCat.comp_mono (OrderedCat.«≤_refl» _)
+          (OrderedCat.comp_mono hf.2 (OrderedCat.«≤_refl» _)))
+    _ = (▷ ≫ f) ≫ (conv f ≫ ⊸) := by rw [Cat.id_comp, Cat.assoc, Cat.assoc]
+    _ ≤ ((f ⊗ₕ f) ≫ ▷) ≫ ⊸ := OrderedCat.comp_mono («lax_∇» f) (lax_! (conv f))
+    _ = (f ⊗ₕ f) ≫ cap y := by rw [Cat.assoc]; rfl
+
+end
+
 /-- (SV) as the paper writes it on p. 20: `◁;(R ⊗ R) ≤ R;◁`, the reverse of the lax inequation
     (42).  Recorded for reference; `SingleValued` above is the form everything uses. -/
 def ineq_SV {a b : Word O} (R : a ⟶ b) : Prop :=
