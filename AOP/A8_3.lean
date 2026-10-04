@@ -141,96 +141,13 @@ calc_steps sortRel_comp_thinlist_le
 
 variable {F : Relator 𝒜 𝒜}
 
-/-! ### Lemma 8.1's steps
-
-  The sort walks inwards one law at a time; `map_sort_comp_listcp_le` is their composition. -/
-
-/-- Step 1, (8.11): the sort goes under `F`. -/
-public theorem map_sort_comp_listcp_le_step1 {«≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)}
-    {sortF : (F.obj A ⟶ F.obj A) → (P (F.obj A) ⟶ L.obj (F.obj A))}
-    {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
-    {filterp : L.obj A ⟶ L.obj A}
-    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
-    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ sortF (F.map ≼) ≫ listf ≫ filterp := by
-  rw [← Cat.assoc, ← Cat.assoc (cpMap F A)]
-  exact comp_mono_right h811 _
-
-/-- Step 2: `f` monotonic on `≼`, and `sort` grows with its order. -/
-public theorem map_sort_comp_listcp_le_step2 {f : F.obj A ⟶ A} (hf : Map f) {«≼» : A ⟶ A}
-    {sortF : (F.obj A ⟶ F.obj A) → (P (F.obj A) ⟶ L.obj (F.obj A))}
-    {listf : L.obj (F.obj A) ⟶ L.obj A} {filterp : L.obj A ⟶ L.obj A}
-    (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : Freyd.Alg.MonoAlg f ≼) :
-    cpMap F A ≫ sortF (F.map ≼) ≫ listf ≫ filterp
-      ⊑ cpMap F A ≫ sortF (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp :=
-  comp_mono_left _ (comp_mono_right (hsortF ((Freyd.Alg.monoAlg_iff_sandwich hf).mp hmono)) _)
-
-/-- Step 3, (8.8): the sort walks past `list f`. -/
-public theorem map_sort_comp_listcp_le_step3 {f : F.obj A ⟶ A} {«≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)}
-    {sortF : (F.obj A ⟶ F.obj A) → (P (F.obj A) ⟶ L.obj (F.obj A))}
-    {listf : L.obj (F.obj A) ⟶ L.obj A} {filterp : L.obj A ⟶ L.obj A}
-    (h88 : sortF (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼) :
-    cpMap F A ≫ sortF (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp
-      ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp := by
-  refine comp_mono_left _ ?_
-  rw [← Cat.assoc, ← Cat.assoc (powerRel f)]
-  exact comp_mono_right h88 filterp
-
-/-- Step 4, (8.9): the sort walks past `filter p`. -/
-public theorem map_sort_comp_listcp_le_step4 {f : F.obj A ⟶ A} {p «≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)} {filterp : L.obj A ⟶ L.obj A}
-    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼) :
-    cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp
-      ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼ :=
-  comp_mono_left _ (comp_mono_left _ h89)
-
-/-- Step 5: `E` is a functor and agrees with `≼` on maps. -/
-public theorem map_sort_comp_listcp_le_step5 {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)} :
-    cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼
-      = cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ := by
-  rw [powerRel_map hf, ← Cat.assoc (existsImage f), ← existsImage_comp]
-
-/-- Step 6: `cp(F) ≜ F(∋)%∋`, and the power transpose absorbs `E(fp)`. -/
-public theorem map_sort_comp_listcp_le_step6 {f : F.obj A ⟶ A} {p «≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)} :
-    cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
-  rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
-
-/-- Lemma 8.1, steps 4–6 as one row: the sort walks past `filter p` by (8.9), and the image of
-    `p` after `≼ f` is the transpose of `F(∋) f p`. -/
-public theorem map_sort_comp_listcp_le_steps4to6
-    {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)} {filterp : L.obj A ⟶ L.obj A}
-    (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼) :
-    cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
-  rw [← map_sort_comp_listcp_le_step6 L, ← map_sort_comp_listcp_le_step5 L hf]
-  exact map_sort_comp_listcp_le_step4 L h89
-
-/-- Lemma 8.1, steps 1–3 as one row: the sort walks under `F` by (8.11), changes order by `f`
-    monotonic on `≼`, and walks past `list f` by (8.8). -/
-public theorem map_sort_comp_listcp_le_steps1to3
-    {f : F.obj A ⟶ A} (hf : Map f) {«≼» : A ⟶ A}
-    {sort : (A ⟶ A) → (P A ⟶ L.obj A)}
-    {sortF : (F.obj A ⟶ F.obj A) → (P (F.obj A) ⟶ L.obj (F.obj A))}
-    {listcp : F.obj (L.obj A) ⟶ L.obj (F.obj A)} {listf : L.obj (F.obj A) ⟶ L.obj A}
-    {filterp : L.obj A ⟶ L.obj A}
-    (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (hmono : Freyd.Alg.MonoAlg f ≼)
-    (h88 : sortF (f ≫ ≼ ≫ f°) ≫ listf ⊑ powerRel f ≫ sort ≼)
-    (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
-    F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp :=
-  le_trans (map_sort_comp_listcp_le_step1 L h811)
-    (le_trans (map_sort_comp_listcp_le_step2 L hf hsortF hmono) (map_sort_comp_listcp_le_step3 L h88))
-
 /-- **Lemma 8.1** (book p.202): one sorted list built from sorted arguments, instead of a set
     built and then sorted —
     `filter p·list f·listcp(F)·F(sort ≼) ⊑ sort ≼·Λ(p·f·F∈)`, mirrored to
     `F(sort ≼) ≫ listcp ≫ list f ≫ filter p ⊑ Λ (F(∋) ≫ f ≫ p) ≫ sort ≼`.
-    The sort walks inwards: past `filter p` by (8.9), past `list f` by (8.8), under `F` by
-    (8.11), with `f` monotonic on `≼` (`FP ⊑ f·≼·f°`) closing the change of order. -/
+    The sort walks inwards one law at a time: under `F` by (8.11), `f` monotonic on `≼`
+    (`F(≼) ⊑ f≼f°`), past `list f` by (8.8), past `filter p` by (8.9), then `E(f) = P(f)` and the
+    transpose absorbs `E(fp)`. -/
 public theorem map_sort_comp_listcp_le
     {f : F.obj A ⟶ A} (hf : Map f) {p «≼» : A ⟶ A}
     {sort : (A ⟶ A) → (P A ⟶ L.obj A)}
@@ -243,8 +160,23 @@ public theorem map_sort_comp_listcp_le
     (h89 : sort ≼ ≫ filterp ⊑ existsImage p ≫ sort ≼)
     (h811 : F.map (sort ≼) ≫ listcp ⊑ cpMap F A ≫ sortF (F.map ≼)) :
     F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp ⊑ Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ :=
-  le_trans (map_sort_comp_listcp_le_steps1to3 L hf hsortF hmono h88 h811)
-    (map_sort_comp_listcp_le_steps4to6 L hf h89)
+  calc F.map (sort ≼) ≫ listcp ≫ listf ≫ filterp
+        ⊑ cpMap F A ≫ sortF (F.map ≼) ≫ listf ≫ filterp := by
+        rw [← Cat.assoc, ← Cat.assoc (cpMap F A)]
+        exact comp_mono_right h811 _
+    _ ⊑ cpMap F A ≫ sortF (f ≫ ≼ ≫ f°) ≫ listf ≫ filterp :=
+        comp_mono_left _ (comp_mono_right (hsortF ((Freyd.Alg.monoAlg_iff_sandwich hf).mp hmono)) _)
+    _ ⊑ cpMap F A ≫ powerRel f ≫ sort ≼ ≫ filterp := by
+        refine comp_mono_left _ ?_
+        rw [← Cat.assoc, ← Cat.assoc (powerRel f)]
+        exact comp_mono_right h88 filterp
+    _ ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼ := comp_mono_left _ (comp_mono_left _ h89)
+    _ = cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ := by
+        rw [powerRel_map hf, ← Cat.assoc (existsImage f), ← existsImage_comp]
+    _ = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
+        rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
+
+calc_steps map_sort_comp_listcp_le
 
 /-! ## THEOREM 8.2 (book p.203) and its fusion side condition
 

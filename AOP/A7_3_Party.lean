@@ -21,6 +21,7 @@
 -/
 module
 
+import AOP.CalcSteps
 public import AOP.A7_2
 public import AOP.A5_2
 public import AOP.A6_RoseTree
@@ -237,14 +238,6 @@ public theorem party_eq : party (A := A) = ⦇S⦈ ≫ choose := by
 public theorem party_absorb :
     Λ (⦇S⦈ ≫ choose (A := A)) = Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose :=
   (Λ_absorption _ _).symm
-
-/-- **party-laws, the opening row**: `frac(party,∋) est(R°) = frac(⦇S⦈,∋) E(choose) est(R°)` —
-    `party` opened by its definition and the absorption law, the two sides the note's first two
-    panels draw.  The step of the chain, so that each panel is one side of one statement. -/
-public theorem party_open :
-    Λ (party (A := A)) ≫ est((R rating)°)
-      = Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
-  rw [party_eq, party_absorb, Cat.assoc]
 
 /-! ### The two leaves of `party-mono-branch` (B&dM's exercises: `cost` is a sum) -/
 
@@ -467,64 +460,14 @@ public theorem party_pair_step :
           ≫ est((rprodMap (R rating) (R rating))°) :=
   pair_est_le includeR excludeR (R rating) (R rating)
 
-/-- **party-laws, Ex 7.38 row**: `frac(⦇S⦈,∋) est((R×R)°) frac(choose,∋) est(R°) ⊑
-    frac(⦇S⦈,∋) E(choose) est(R°)` — `est_Λ_est_le` at `Q := (R×R)°`, `T := choose`, with
-    `(R×R)°choose ⊑ choose R°` for its hypothesis. -/
-public theorem party_step2 :
-    Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°)
-      ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
-  have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
-    have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
-  exact comp_mono_left _ (est_Λ_est_le (chooseR_monotonic rating) hRtrans')
-
-/-- **party-laws, greedy row**: `⦇S%∋ est((R×R)°)⦈ ⊑ ⦇S⦈%∋ est((R×R)°)` (Theorem 7.2 with
-    `party_mono`), followed by `frac(choose,∋) est(R°)`. -/
-public theorem party_step3 :
-    ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°)
-      ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°) := by
-  exact le_trans (comp_mono_right
-    (greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)) _) (le_of_eq (Cat.assoc _ _ _))
-
-/-- **party-laws, Ex 7.15 row**: `party_pair_step` inside the fold. -/
-public theorem party_step4 :
-    ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-        ≫ Λ choose ≫ est((R rating)°)
-      ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°) :=
-  comp_mono_right (relCata_mono (RT.initial A) (party_pair_step rating)) _
-
-/-- **party-laws, `include` row**: `include_step` inside the fold — `include` a map. -/
-public theorem party_step5 :
-    ⦇(rpair (graph «include»)
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-        ≫ Λ choose ≫ est((R rating)°)
-      ⊑ ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-        ≫ Λ choose ≫ est((R rating)°) :=
-  comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (include_step rating) (le_refl _))) _
-
-/-- **party-laws, `exclude` row**: `exclude_step` inside the fold. -/
-public theorem party_step6 :
-    ⦇(rpair (graph «include»)
-        ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
-            ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
-          ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR)
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-        ≫ Λ choose ≫ est((R rating)°)
-      ⊑ ⦇(rpair (graph «include»)
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
-        ≫ Λ choose ≫ est((R rating)°) :=
-  comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (le_refl _) (exclude_step rating))) _
-
 /-- **party-laws (the derivation's headline)**: the greedy program refines the specification,
     `⦇⟨include, π₂ list(Λ(choose) est(R°)) concat⟩⦈ Λ(choose) est(R°) ⊑ Λ(party) est(R°)` —
     the best of every guest list the president allows is one pass up the tree, each subtree
     handing up its best party with its boss in and its best with the boss out, and `choose`
-    taking the better of the two at the root. -/
+    taking the better of the two at the root.  Inside the fold: `exclude_step`, `include_step`
+    (`include` a map), Ex 7.15 at the party's letters; then the greedy theorem with
+    `party_mono`, Ex 7.38 with `(R×R)°choose ⊑ choose R°`, and `party` opened by its definition
+    and the absorption law. -/
 public theorem party_laws :
     ⦇(rpair (graph «include»)
         ((graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
@@ -534,8 +477,28 @@ public theorem party_laws :
           ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°)
       ⊑ Λ party ≫ est((R rating)°) :=
-  le_trans (party_step6 rating) (le_trans (party_step5 rating) (le_trans (party_step4 rating)
-    (le_trans (party_step3 rating) (le_trans (party_step2 rating) (le_of_eq (party_open rating).symm)))))
+  calc _ ⊑ ⦇(rpair (graph «include»)
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°) :=
+        comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (le_refl _) (exclude_step rating))) _
+    _ ⊑ ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+      : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
+        ≫ Λ choose ≫ est((R rating)°) :=
+        comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (include_step rating) (le_refl _))) _
+    _ ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°) :=
+        comp_mono_right (relCata_mono (RT.initial A) (party_pair_step rating)) _
+    _ ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°) :=
+        le_trans (comp_mono_right
+          (greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)) _) (le_of_eq (Cat.assoc _ _ _))
+    _ ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
+        have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
+          have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
+        exact comp_mono_left _ (est_Λ_est_le (chooseR_monotonic rating) hRtrans')
+    _ = Λ party ≫ est((R rating)°) := by rw [party_eq, party_absorb, Cat.assoc]
+
+calc_steps party_laws
 
 /-! ### The worked example (`party-example-tree`: employees ARE their ratings, `rating := id`) -/
 

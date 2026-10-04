@@ -41,6 +41,7 @@
 -/
 module
 
+import AOP.CalcSteps
 public import AOP.A8_2
 public import AOP.A7_2
 public import AOP.A5_6_ListCombinators
@@ -1103,34 +1104,6 @@ public theorem prog_le_greedy :
             ConsList.cons s t, ConsList.cons a (ConsList.wrap ()), ConsList.cons s t,
             rfl, rfl, prefixP.refl _⟩)⟩
 
-/-- **@van-laws' last step, drawn first**: `⦇[nil,(ok→glue,new)]⦈ ⊑ ⦇S%∋ est(R;H)⦈` — the fold
-    is monotonic in its algebra, and `prog_le_greedy` is the algebra's refinement. -/
-public theorem van_laws_step1 :
-    (⦇progAlg amount N⦈ : dList A ⟶ dSched A) ⊑ ⦇Λ (Salg amount N) ≫ est (RH A)⦈ :=
-  relCata_mono (initial Unit A) prog_le_greedy
-
-/-- **@van-laws' third step**: `⦇S%∋ est(R;H)⦈ ⊑ 𝟙%∋ E(⦇S⦈)est(R;H)` — the greedy theorem at
-    `R;H`, whose hypothesis is `van_mono_alg` and whose transitivity is `RH_trans`. -/
-public theorem van_laws_step2 :
-    (⦇Λ (Salg amount N) ≫ est (RH A)⦈ : dList A ⟶ dSched A)
-      ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) :=
-  greedy (initial Unit A) RH_trans van_mono_alg
-
-/-- **@van-laws' second step**: `𝟙%∋ E(⦇S⦈)est(R;H) ⊑ 𝟙%∋ E(⦇S⦈)est(R)` — `R;H ⊑ R`, and `est`
-    is monotonic. -/
-public theorem van_laws_step3 :
-    Λ (⦇Salg amount N⦈ : dList A ⟶ dSched A) ≫ est (RH A)
-      ⊑ Λ (⦇Salg amount N⦈ : dList A ⟶ dSched A) ≫ est (R A) :=
-  comp_mono_left _ (est_mono RH_le_R)
-
-/-- **@van-laws' first step**: `𝟙%∋ E(⦇S⦈)est(R) = 𝟙%∋ E(partition)E(list(secure))est(R)` —
-    `van_spec`, the fold IS the specification. -/
-public theorem van_laws_step4
-    (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
-    Λ (⦇Salg amount N⦈ : dList A ⟶ dSched A) ≫ est (R A)
-      = Λ (partition ≫ list (secure amount N)) ≫ est (R A) := by
-  rw [van_spec hsingle]
-
 /-- **van-laws** (B&dM §7.5, p.188): the fewest secure segments the transactions can be cut
     into are one pass along them, the next transaction glued onto the open segment wherever
     that segment stays secure and the van called where it does not —
@@ -1143,10 +1116,12 @@ public theorem van_laws
     (hsingle : ∀ a : A, secureP amount N (ConsList.cons a (ConsList.wrap ()))) :
     ⦇progAlg amount N⦈ ⊑ Λ (partition ≫ list (secure amount N)) ≫ est (R A) :=
   calc (⦇progAlg amount N⦈ : dList A ⟶ dSched A)
-      ⊑ ⦇Λ (Salg amount N) ≫ est (RH A)⦈ := van_laws_step1
-    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) := van_laws_step2
-    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (R A) := van_laws_step3
-    _ = Λ (partition ≫ list (secure amount N)) ≫ est (R A) := van_laws_step4 hsingle
+      ⊑ ⦇Λ (Salg amount N) ≫ est (RH A)⦈ := relCata_mono (initial Unit A) prog_le_greedy
+    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) := greedy (initial Unit A) RH_trans van_mono_alg
+    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (R A) := comp_mono_left _ (est_mono RH_le_R)
+    _ = Λ (partition ≫ list (secure amount N)) ≫ est (R A) := by rw [van_spec hsingle]
+
+calc_steps van_laws
 
 /-- **`van_spec` needs `hsingle`**: without the book's "N is at least as large as any single
     transaction", `partition list(secure)` and `⦇S⦈` differ.  At `N = 0` the one transaction
