@@ -90,7 +90,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Bracket.gR RelSet.Bracket.zeroFn RelSet.Bracket.opbFn
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null
-attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.SL.arm₂ RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.SL.armQ₂ RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.tourAlg RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Edit.Op.cpy RelSet.Edit.Op.del RelSet.Edit.Op.ins RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient Fin
+attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.tourAlg RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
 -- the note's `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`.  `diag_unfold` is `diag/tool/Tags.lean`'s,
@@ -1439,6 +1439,30 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.consAtUnit] def unexpandConsAtUnit : Unexpander
   | _ => `($(mkIdent `cons))
 -- The edit operations are the note's `cpy`/`del`/`ins`; `inlistP xs q` is membership `q∈xs`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.arm₂] def unexpandSLArm2 : Unexpander
+  | `($_ $args*) => `($(mkIdent `arm₂) $args*)
+  | _ => `($(mkIdent `arm₂))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.SL.armQ₂] def unexpandSLArmQ2 : Unexpander
+  | `($_ $args*) => `($(mkIdent `armQ₂) $args*)
+  | _ => `($(mkIdent `armQ₂))
+open Lean PrettyPrinter in
+@[app_unexpander Fin] def unexpandFinName : Unexpander
+  | `($_ $args*) => `($(mkIdent `Fin) $args*)
+  | _ => `($(mkIdent `Fin))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.cpy] def unexpandEditCpy : Unexpander
+  | `($_ $args*) => `($(mkIdent `cpy) $args*)
+  | _ => `($(mkIdent `cpy))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.del] def unexpandEditDel : Unexpander
+  | `($_ $args*) => `($(mkIdent `del) $args*)
+  | _ => `($(mkIdent `del))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.Op.ins] def unexpandEditIns : Unexpander
+  | `($_ $args*) => `($(mkIdent `ins) $args*)
+  | _ => `($(mkIdent `ins))
 -- `baseStepFn` is the note's algebra `[base,step]`; only `unstep_sound` prints it, at an `inr`, so `step`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditStepFn : Unexpander
