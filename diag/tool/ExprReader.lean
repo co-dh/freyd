@@ -1272,6 +1272,13 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
   -- identity at `𝒜` there built `𝟙 ∘ Δᴛ` out of two lanes that do not compose, so the fold read
   -- as no family at all.  For an endofunctor lane the two regions are the one region.
   if ← Meta.isDefEq X v then return ← alg.id (← Meta.inferType v)
+  -- AN INDEX COMES FROM THE WIRES AN END RUNS BETWEEN, NEVER FROM INSIDE ONE: `CL.F L E` is one wire
+  -- whose `L`, `E` are fixed parameters, and unfolding its object to `L+E×X` first read them as lanes.
+  if let (``Freyd.Functor.obj, args) := X.getAppFnArgs then
+    if let some (f, _) := lastTwo args then
+      if (wiresOf f).any (·.containsFVar vid) then
+        throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no lane \
+          of the region and {← Meta.ppExpr X} has no reading"
   if let some (a, b) ← splitTimes? regionTy X then
     -- THE PRODUCT LANE IS THE ALGEBRA'S OWN, and BOTH algebras have one: `Relator.prod` in an
     -- allegory, §1.424's `functorProd` in a category.  Refusing the functor algebra a product end
@@ -1304,9 +1311,6 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
       let ws := wiresOf f
-      if ws.any (·.containsFVar vid) then
-        throwError "the wire {← Meta.ppExpr f} varies with {← Meta.ppExpr v}, so it is no lane \
-          of the region and {← Meta.ppExpr X} has no reading"
       let mut acc ← relatorOfObj alg cat regionTy v x
       for i in [0 : ws.size] do
         acc ← alg.comp acc ws[ws.size - 1 - i]!

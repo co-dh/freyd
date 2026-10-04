@@ -125,7 +125,7 @@ row((
 #import "../generated/Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2.calc.typ" as calc-83b
 #import "../generated/Freyd.Alg.thinning_fusion.calc.typ" as calc-81a
 #import "../generated/Freyd.Alg.thinning_prefixed.calc.typ" as calc-81
-#import "../generated/Freyd.Alg.map_sort_comp_listcp_le.calc.typ" as calc-l81
+#import "../generated/Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le.calc.typ" as calc-l81
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
 // the first cancels the singleton against the `∋`, the second is the chain.
 #disp(num: "(8.2)")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -503,11 +503,12 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
 // `sort(≼) : PA⟶[A]` is where one datatype becomes another, and nothing survives outside it, so it
 // is a NODE on the object wire — the `E` bends in, the `list` bends out — not a bead on a lane.
 #disp(num: "Lemma 8.1")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.map_sort_comp_listcp_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le") \
     #src[one sorted list built from sorted arguments, instead of a set built and then sorted —
      // map_sort row: Lemma 8.1, p. 202
-     `f : FA⟶A` monotonic on `≼`, `p` coreflexive, `F` linear.
+     `f : FA⟶A` monotonic on `≼`.
  ]],
+     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@937ce9d3
   // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
   lean-calc(calc-l81),
 )]<thinlist-lem81>
