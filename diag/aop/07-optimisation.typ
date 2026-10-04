@@ -266,7 +266,7 @@ For a map `f : FA⟶A` that is #h(4pt) `f°F(R)f⊑R` #h(4pt) #src[@adj-all:15's
 ].
 // lean:AOP.A7_2.monoAlg_iff_sandwich@5bcca5c8
 
-`(≤×≤)+⊑+≤` — addition on `Nat` is monotonic on `≤`, which at the point level
+`(≤×≤)+⊑+≤` — addition, #leant("Freyd.Alg.RelSet.plusRel"), is monotonic on `≤`, which at the point level
 reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 ]]<mon-defn>
 
@@ -338,8 +338,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
   Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
-    #src[function `f` is monotonic over `R` if and only if it distributes over `R`; `f` a map,
-     `R` reflexive
+    #src[`f` carries `R`-related parts to `R`-related wholes (`f°F(R)f⊑R`) if and only if applying `f` to the
+     `R`-best parts (`F(est(R))f`) is included in applying `f` to all parts, then taking an `R`-best (`F(∋)f` then `est(R)`)
       // lean:AOP.A7_2.distributes_of_monoAlg@437ca1ee
  ]],
       // lean:AOP.A7_2.monoAlg_of_distributes@213bcf14
@@ -1514,7 +1514,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [A component that is `R`-below every component; `∋` is "is some component" and `∈` its converse.],
 
   [`R≜sum≤sum°`],
-  [`L Nat⟶L Nat`],
+  [#leant("Freyd.Alg.RelSet.Tuple.costLE")],
   [`Nat[m]⟶Nat[m]`],
   [The cost of a path, which the cheapest minimises — one order per length `m`.],
 
@@ -1531,7 +1531,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [Columns in, rows out.],
 
   [`paths≜⦇gen⦈ concat`],
-  [`⦇gen⦈ setify union` \ `L N Nat⟶P(L Nat)`],
+  [`⦇gen⦈ setify union` \ #leant("Freyd.Alg.RelSet.Tuple.pathsRel")],
   [`A[m][n]⟶A[np][m]`],
   // lean:AOP.A7_4_CylinderVec.Vec.paths@83577d2b
   [The `n` rows of `p` paths laid end to end: every path of the cylinder, in one row.],
@@ -1543,7 +1543,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [The cheapest of three; no `p` anywhere. `⦇Q⦈:A[m][n]⟶A[n][m]` has the type of a transpose.],
 
   [the specification \ `paths est(R)`],
-  [`L N Nat⟶L Nat`],
+  [#leant("Freyd.Alg.RelSet.Tuple.cheapest")],
   [`A[m][n]⟶A[m]`, `est(R):X[np]⟶X`],
   [A cheapest path from the entry side to the exit side.],
 )]<vec-defn-cyl>
