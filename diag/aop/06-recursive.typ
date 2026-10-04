@@ -244,19 +244,15 @@
 // TODO p.147 inductive: `R⊑S` ⟹ `R` inductive; `S` inductive iff `S⁺` is — Lean AOP.A6_5.inductive_of_le,
 //   inductive_transClosure_iff; no picture (statements about `Inductive`, not arrows).
 // B&dM p.147 (Ex 6.13)
+#import "../generated/Freyd.Alg.div_div_comp_le.calc.typ" as calc-ind
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.inductive_of_comp_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.div_div_comp_le") \
+    #src[`((X/R)/S)` followed by `RR` stays below `X` when `RR⊑SR`] \
+    #leanf("Freyd.Alg.inductive_of_comp_le") \
     #src[`R` is inductive when `RR⊑SR` for an inductive `S`]],
+    // lean:AOP.A6_5.div_div_comp_le@fba45cc1
     // lean:AOP.A6_5.inductive_of_comp_le@17eb3b43
-  lean-chain(
-    (none, "Freyd.Alg.inductive_of_comp_le_step1.lhs", []),
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step1.rhs", src[`RR⊑SR`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step1@541f5e6c
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step2.rhs", src[division by `S`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step2@de8b5c71
-    (SQ, "Freyd.Alg.inductive_of_comp_le_step3.rhs", src[division by `R`]),
-    // lean:AOP.A6_5.inductive_of_comp_le_step3@6567f943
-  ),
+  lean-calc(calc-ind),
 )]<inductive-comp-le>
 // TODO p.148 member: `member(id)=𝟙`, `member(FG)=member(F)member(G)`, `member(P)=∈`,
 //   `member(T)=setify(T)∈` — Lean idMembership, compMembership; `P`, `T` missing.

@@ -46,20 +46,15 @@ public theorem zero_inductive (A : 𝒜) : Inductive (𝟘 : A ⟶ A) := by
     rw [DistributiveAllegory.comp_zero]; exact zero_le X
   exact le_trans ((le_div_iff _ _ _).mpr h0) _hX
 
-/-- Ex 6.13, first step: `R≫R ⊑ S≫R` after `(X/R)/S`. -/
-public theorem inductive_of_comp_le_step1 {A B : 𝒜} {R S : A ⟶ A} (h : R ≫ R ⊑ S ≫ R)
-    (X : B ⟶ A) : ((X / R) / S) ≫ R ≫ R ⊑ ((X / R) / S) ≫ S ≫ R :=
-  comp_mono_left _ h
+/-- Ex 6.13, the inequality its proof derives: `((X/R)/S)RR ⊑ X` when `RR ⊑ SR`. -/
+public theorem div_div_comp_le {A B : 𝒜} {R S : A ⟶ A} (h : R ≫ R ⊑ S ≫ R) (X : B ⟶ A) :
+    ((X / R) / S) ≫ R ≫ R ⊑ X :=
+  calc ((X / R) / S) ≫ R ≫ R ⊑ ((X / R) / S) ≫ S ≫ R := comp_mono_left _ h
+    _ ⊑ (X / R) ≫ R := by
+      rw [← Cat.assoc]; exact comp_mono_right (DivisionAllegory.div_comp_le (X / R) S) R
+    _ ⊑ X := DivisionAllegory.div_comp_le X R
 
-/-- Ex 6.13, second step: `(X/R)/S` composed with `S` is below `X/R`. -/
-public theorem inductive_of_comp_le_step2 {A B : 𝒜} (R S : A ⟶ A) (X : B ⟶ A) :
-    ((X / R) / S) ≫ S ≫ R ⊑ (X / R) ≫ R := by
-  rw [← Cat.assoc]; exact comp_mono_right (DivisionAllegory.div_comp_le (X / R) S) R
-
-/-- Ex 6.13, third step: `X/R` composed with `R` is below `X`. -/
-public theorem inductive_of_comp_le_step3 {A B : 𝒜} (R : A ⟶ A) (X : B ⟶ A) :
-    (X / R) ≫ R ⊑ X :=
-  DivisionAllegory.div_comp_le X R
+calc_steps div_div_comp_le
 
 /-- **Ex 6.13**: if `S` is inductive and `R≫R ⊑ S≫R`, then `R` is inductive too.
 
@@ -75,8 +70,7 @@ public theorem inductive_of_comp_le {A : 𝒜} {R S : A ⟶ A} (hS : Inductive S
   apply le_trans _ hX
   apply hS (X / R)
   apply (le_div_iff _ _ _).mpr
-  have h7 := le_trans (inductive_of_comp_le_step1 h X)
-    (le_trans (inductive_of_comp_le_step2 R S X) (inductive_of_comp_le_step3 R X))
+  have h7 := div_div_comp_le h X
   rw [← Cat.assoc] at h7
   exact le_trans ((le_div_iff _ _ _).mpr h7) hX
 
