@@ -14,6 +14,7 @@
 module
 
 public import AOP.A5_7_PowerBeads
+public import AOP.A5_6_ListCombinators
 meta import AOP.A8_2
 
 namespace Freyd.Alg
@@ -339,6 +340,52 @@ public theorem mcp_spec (wt : V → V → Nat) (net : ConsList (List V) (List V)
     refine ⟨memS (pathsExec wt net), ?_, (est_apply _ _ _).mpr ⟨hm, fun z hz => (pathR_apply wt p z).mpr (hle z hz)⟩⟩
     rw [← cataR_eq_relCata]
     exact hr
+
+/-- `minpath` (book p.196): the program's graph — a network, read as its layers' sets, is related
+    to the path `mcp` returns on it. -/
+@[expose] public def minpath (wt : V → V → Nat) : dCL (V → Prop) (V → Prop) ⟶ dCL V V :=
+  fun x p => ∃ net, x = netSet net ∧ mcp wt net = some p
+
+/-- `F(A,X) = A+A×X` (book p.196): the layered network's base bifunctor on objects, the
+    statement 8.2a's first row prints. -/
+public theorem pathF_obj (A X : RelSet.{0}) :
+    pathF.obj A X = ⟨A.carrier ⊕ A.carrier × X.carrier⟩ := rfl
+
+/-- `α = [wrap,cons]` (book p.196) at the layered network's `F`: the initial algebra
+    `F(V,list⁺(V))⟶list⁺(V)`, typed at 8.2's instance of `CL`'s generic leaf and element. -/
+public theorem alphaR_pathF :
+    @Eq (pathF.obj (dE V) (dCL V V) ⟶ dCL V V) alphaR (RelSet.graph con) := rfl
+
+/-- `⦇F(∋,𝟙)α⦈ = L(∋)` (book p.196): the fold that takes one vertex out of each layer is the list
+    relator `L = list⁺` applied to `∋` — the type functor's action on an arrow, at `∋`. -/
+public theorem relCata_pathF_eps_eq_nelist :
+    relCata (I := pathInit V) (pathF.map (∋ (dE V)) (𝟙 (dCL V V)) ≫ alphaR)
+      = ListRel.nelistRelator.map (∋ (dE V)) := by
+  rw [relCata_pathInit, pathF_map_comp_alphaR_eq_pathAlg, ← cataR_eq_relCata]
+  apply hom_ext
+  intro x
+  induction x with
+  | wrap S =>
+    intro p
+    cases p with
+    | wrap b => exact ⟨fun ⟨_, hv, h⟩ => (by cases h; exact hv), fun h => ⟨b, h, rfl⟩⟩
+    | cons b y => exact ⟨fun ⟨_, _, h⟩ => (by cases h), False.elim⟩
+  | cons S tl ih =>
+    intro p
+    cases p with
+    | wrap b => exact ⟨fun ⟨_, _, _, _, h⟩ => (by cases h), False.elim⟩
+    | cons b y =>
+      exact ⟨fun ⟨_, hr, _, hv, h⟩ => (by cases h; exact ⟨hv, (ih _).mp hr⟩),
+        fun ⟨hb, hy⟩ => ⟨y, (ih y).mpr hy, b, hb, rfl⟩⟩
+
+/-- The problem (B&dM p.196: `minpath ⊑ min R · Λ(list⁺ ∈)`), in diagram order: whatever
+    `minpath` returns is a cheapest path through the layers, `minpath ⊑ Λ(L(∋)) est(R)`. -/
+public theorem minpath_spec (wt : V → V → Nat) :
+    minpath wt ⊑ Λ (ListRel.nelistRelator.map (∋ (dE V))) ≫ est (pathR wt) :=
+  le_iff.mpr fun _ p ⟨net, hx, h⟩ => by
+    subst hx
+    rw [← relCata_pathF_eps_eq_nelist, relCata_pathInit, pathF_map_comp_alphaR_eq_pathAlg]
+    exact mcp_spec wt net p h
 
 /-- 8.2d end to end, pointwise (book p.196's problem): `mcp`'s answer is a path of the network
     and no path of the network is cheaper. -/

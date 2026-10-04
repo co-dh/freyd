@@ -1750,7 +1750,7 @@ open Lean PrettyPrinter in
 -- datatype's object is named.
 open Lean PrettyPrinter in
 @[app_unexpander nelistRelator] public meta def unexpandNelistRelator : Unexpander
-  | `($_:ident) => `($(mkIdent (Name.mkSimple "list⁺")))
+  | `($_:ident) => `($(mkIdent (Name.mkSimple "L")))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander

@@ -27,6 +27,7 @@ import AOP.A7_7_TakeWhile
 import AOP.A7_7_Filter
 import AOP.A8_1
 import AOP.A8_2
+import AOP.A8_2_Exec
 import AOP.A8_4_Knapsack
 import AOP.A8_5_Paragraph
 import AOP.A9_2_Edit
@@ -280,17 +281,33 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `F))
   | _ => throw ()
 
+-- `pow` is `Rel(Set)`'s power object, the object the note writes `P` (`P A` in `S2_40`).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.pow] def unexpandRelSetPow : Unexpander
+  | `($_ $A) => `($(mkIdent `P) $A)
+  | _ => throw ()
+
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
-  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
   | _ => throw ()
+
+-- The relator's ACTION on an arrow is the same letter applied: `nelist R` is `L(R)`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.nelist] def unexpandNEListMap : Unexpander
+  | `($_ $R) => `($(mkIdent (Name.mkSimple "L")) $R)
+  | _ => throw ()
+
+-- The NATURAL NUMBERS are the note's `ℕ`, keyed on the constant `Nat`.
+open Lean PrettyPrinter Delaborator in
+@[delab const.Nat] def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
 
 -- The CARRIER needs the clause as much as the object: `NEList A` is an `abbrev`, so the term keeps
 -- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
 -- declared objects is labelled from the carrier and would print the Lean name.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.NEList] def unexpandNEListType : Unexpander
-  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
   | _ => throw ()
 
 -- THE LEAF TYPE SAYS WHICH LIST A CONS-LIST IS, and a leaf carrying an ELEMENT is a one-element
@@ -308,7 +325,7 @@ def delabConsList : Delab := do
   -- nothing is a list of units and not a non-empty list of them.
   if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `([$(← withAppArg delab)])
   else if ← Meta.isDefEq args[0]! args[1]! then
-    `($(mkIdent (Name.mkSimple "list⁺")) $(← withAppArg delab))
+    `($(mkIdent (Name.mkSimple "L")) $(← withAppArg delab))
   else failure
 
 open Lean PrettyPrinter Delaborator SubExpr in
@@ -384,6 +401,20 @@ open Lean PrettyPrinter in
   | `($_ $x [$xs,*]) => `([$x, $xs,*])
   | `($_ $x $xs) => do pure (.node .none ``noteCat #[← `([$x]), mkAtom "⧺", xs])
   | _ => throw ()
+
+-- A cons-list's LEAF prints by what the leaf is, read off the type arguments `L E`: a leaf of the
+-- element type is the one-element list `[x]`, a `Unit` leaf the empty list `[]`; any other leaf
+-- keeps the constructor's own name.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] def delabConsWrap : Delab := do
+  let e ← getExpr
+  unless e.getAppNumArgs == 3 do failure
+  let args := e.getAppArgs
+  if (← Meta.isDefEq args[0]! args[1]!) then
+    let x ← withAppArg delab
+    `([$x])
+  else if (← Meta.isDefEq args[0]! (.const ``Unit [])) then `([])
+  else failure
 
 -- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
 open Lean PrettyPrinter Delaborator in
@@ -961,6 +992,16 @@ open Lean PrettyPrinter Delaborator SubExpr in
   spliceIndex inner i
 
 open Lean PrettyPrinter Delaborator SubExpr in
+/-- THE POWER OBJECT'S CARRIER IS THE POWER OBJECT.  `pow B` is `⟨Sub B⟩`, `Sub B = B → Prop`, so a
+    TYPE that is a non-dependent pi into `Prop` is that object's carrier and prints as `pow` does,
+    `P A` — `list⁺(V → Prop)` is `list⁺(PV)`.  Read off the pi's codomain, not a printed string. -/
+@[delab forallE] def delabPowCarrier : Delab := do
+  let .forallE _ _ b _ ← getExpr | failure
+  guard (b.isProp && !b.hasLooseBVars)
+  let a ← withBindingDomain delab
+  `($(mkIdent `P) $a)
+
+open Lean PrettyPrinter Delaborator SubExpr in
 /-- `Vec(n)`'s object is the same `A[n]`: the object the lane `[n]` carries is spelled like the
     tuple object, or a product wire over it prints `Vec(A)×−` with the index gone. -/
 @[delab app.Freyd.Functor.obj] def delabVecObj : Delab := do
@@ -1123,6 +1164,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander headRel] def unexpandHeadRel : Unexpander
   | _ => `($(mkIdent `head))
+-- B&dM p.196 writes `minpath`; the weight `wt` is the section's one parameter, as for `cost`.
+open Lean PrettyPrinter in
+@[app_unexpander minpath] def unexpandMinpath : Unexpander
+  | `($_ $_ $args*) => `($(mkIdent `minpath) $args*)
+  | _ => `($(mkIdent `minpath))
 -- B&dM p.198 writes `step`; the `path` prefix only keeps Lean's name apart from `Edit`'s step.
 open Lean PrettyPrinter in
 @[app_unexpander pathStep] def unexpandPathStep : Unexpander

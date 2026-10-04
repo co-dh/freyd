@@ -268,6 +268,16 @@ public theorem conswFn_apply (wt : V → V → Nat) (a : V) (xs : ConsList V V) 
     (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0}) ⟶ (⟨ConsList V V × Nat⟩ : RelSet.{0}) :=
   RelSet.graph fun q => conswFn wt q.1 q.2
 
+/-- `wrapz` on a point: `a ↦ ([a],0)`. -/
+public theorem wrapz_apply (a : V) (r : ConsList V V × Nat) :
+    wrapz a r ↔ r = (ConsList.wrap a, 0) :=
+  ⟨fun ⟨h1, h2⟩ => Prod.ext h1 h2, fun h => by subst h; exact ⟨rfl, rfl⟩⟩
+
+/-- `consw` on a point: `(a,(xs,n)) ↦ ([a]⧺xs, wt(a,head(xs))+n)`. -/
+public theorem consw_apply (wt : V → V → Nat) (a : V) (xs : ConsList V V) (n : Nat)
+    (r : ConsList V V × Nat) :
+    consw wt (a, (xs, n)) r ↔ r = (ConsList.cons a xs, wt a (headOf xs) + n) := Iff.rfl
+
 /-- `cost ≜ ⦇[wrapz,consw]⦈π₂` (book p.196): the fold builds the path beside its cost, and the
     cost is read off. -/
 @[expose] public def pathCost (wt : V → V → Nat) : dCL V V ⟶ (⟨Nat⟩ : RelSet.{0}) :=
@@ -397,6 +407,20 @@ public theorem pathF_map_eq_junc {A A' X X' : RelSet.{0}} (R : A ⟶ A') (S : X 
     cases u <;> cases v <;> simp only [pathF, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq, false_and,
       and_false, exists_false, or_false, false_or, exists_eq_left', exists_eq_right']
       <;> exact Iff.rfl
+
+/-- The left injection `l` of `Rel(Set)`'s coproduct is the graph of `inl`. -/
+public theorem sumCop_u₁_eq (A B : RelSet.{0}) : (sumCop A B).u₁ = RelSet.graph Sum.inl := rfl
+
+/-- The right injection `r` of `Rel(Set)`'s coproduct is the graph of `inr`. -/
+public theorem sumCop_u₂_eq (A B : RelSet.{0}) : (sumCop A B).u₂ = RelSet.graph Sum.inr := rfl
+
+/-- `l` on a point: `a ↦ l(a)`. -/
+public theorem sumCop_u₁_apply (A B : RelSet.{0}) (a : A.carrier) (s : A.carrier ⊕ B.carrier) :
+    (sumCop A B).u₁ a s ↔ s = Sum.inl a := Iff.rfl
+
+/-- `r` on a point: `b ↦ r(b)`. -/
+public theorem sumCop_u₂_apply (A B : RelSet.{0}) (b : B.carrier) (s : A.carrier ⊕ B.carrier) :
+    (sumCop A B).u₂ b s ↔ s = Sum.inr b := Iff.rfl
 
 /-- `F(∋,𝟙)%∋ = [𝟙 P(inl), cpl P(inr)]` (book p.198's `ΛF(∈,id) = id + cpl`): a set of layer
     vertices injects whole, and beside a partial path `cpl` pairs the path with each vertex. -/
