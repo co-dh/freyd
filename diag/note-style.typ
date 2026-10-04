@@ -112,6 +112,19 @@
 #let law-formula(keys) = if "list" in sys.inputs { none } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
+/// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else the one
+/// declaration its picture draws (`<lean-decls>` of a single selector), else `()`.
+#let row-keys(loc) = {
+  let ks = query(selector(<law-row-keys>).before(loc)).last().value
+  if ks.len() > 0 { ks } else {
+    let a = query(selector(<law-row>).before(loc)).last().location()
+    let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
+    let b = nxt.sorted(key: l => (l.page(), l.position().y)).at(0, default: none)
+    let ds = query(if b == none { selector(<lean-decls>).after(a) } else { selector(<lean-decls>).after(a).before(b) })
+    let vs = ds.map(m => m.value).filter(v => v.len() == 1).map(v => v.first())
+    vs.slice(0, calc.min(1, vs.len()))
+  }
+}
 /// The Lean selectors a display's first `Thm` header states, `()` for a display with none.
 #let disp-keys(s) = {
   let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
@@ -294,10 +307,12 @@
         (dispid(el.location()), disp-keys(query(selector(<disp-start>).after(el.location())).at(0)), false) }
       else if el.func() == metadata and type(el.value) == int {
         let s = disp-of(el.location())
-        if law-table(s) { (rowid(el.location(), el.value), query(selector(<law-row-keys>).before(el.location())).last().value, true) }
+        if law-table(s) { (rowid(el.location(), el.value), row-keys(el.location()), true) }
         else { (rowid(el.location(), el.value), disp-keys(s), false) } }
       else { (none, (), false) }
     if el != none and el.func() == figure { law-gate(it) }
+    // Under `list` only: what `diag-regen` reads to write the formula files `cite` prints.
+    if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] }
     if id == none { it } else { link(el.location(), cite(id, keys, row: row)) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.

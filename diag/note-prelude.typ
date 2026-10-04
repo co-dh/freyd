@@ -27,7 +27,8 @@
 // listing queries, because a second copy of this would drift from the first at the next change.
 // `lean-pics` is the call's metadata and its panels one by one, for a layout that puts something
 // between them — a chain's steps in `hchain` — while the call stays ONE box.
-#let lean-pics(dir, label, ns) = ([#metadata(ns.join("+"))#label],
+// `<lean-decls>`: the selectors as a list, for a reference to a law row whose formula is only drawn.
+#let lean-pics(dir, label, ns) = ([#metadata(ns.join("+"))#label#if label == <lean-panel> [#metadata(ns)<lean-decls>]],
   // a call of several selectors is its own directory, the exporter's `outPath`: a selector drawn in
   // a shared box and drawn alone are two pictures
   // each file's MODULE: a chain reads the string route's `dup` beside `pic` (`lean-chain`)

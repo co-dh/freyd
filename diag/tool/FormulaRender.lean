@@ -461,20 +461,30 @@ def readsAlike (c : Name) : MetaM Bool := do
     let some (_, l, r) := split b | return false
     return (← labelT l (some r)).bare.typst == (← labelT r (some l)).bare.typst
 
-/-- A FUNCTOR LAW, read off the declaration: the composition or identity field every relator carries
-    (`Freyd.Functor` under a `Relator`, `BiRelator` for two arguments), or a theorem whose proof is
-    one of them, possibly reversed.  Like `Cat.assoc` it re-brackets `F(RS)` as `F(R)F(S)` and names
-    no law a reader looks up.  `BiRelator` is single-quoted: this module does not import it. -/
-partial def functorLaw (c : Name) : MetaM Bool := do
-  if [``Freyd.Functor.map_comp, ``Freyd.Functor.map_id, `Freyd.Alg.BiRelator.map_comp,
-      `Freyd.Alg.BiRelator.map_id].contains c then return true
-  let some (.thmInfo t) := (← getEnv).find? c | return false
-  let v := t.value
-  let rec via (e : Expr) : MetaM Bool := match e.getAppFn.constName? with
-    | some ``Eq.symm => e.getAppArgs.back?.elim (pure false) via
-    | some h => if h == c then pure false else functorLaw h
-    | none => pure false
-  Meta.lambdaTelescope v fun _ b => via b
+/-- `l = r` is a FUNCTOR LAW of the one map `g`: `g(…,XY,…) = g(…X…) g(…Y…)` or `g(…,𝟙,…) = 𝟙`.
+    Read off the statement's head constants, so a relator's `map_comp` field, `BiRelator`'s, and a
+    relator's own theorem over its map (`powerRel_comp`) are one case. -/
+def distributes (l r : Expr) : Bool :=
+  let (g, ls) := (l.getAppFn, l.getAppArgs)
+  let comp? (e : Expr) := if e.isAppOf ``Cat.comp && e.getAppNumArgs ≥ 2 then
+    some (e.getAppArgs[e.getAppNumArgs - 2]!, e.getAppArgs[e.getAppNumArgs - 1]!) else none
+  if g.isConstOf ``Cat.comp || g.isConstOf ``Cat.id then false
+  else if r.isAppOf ``Cat.id then ls.any (·.isAppOf ``Cat.id)
+  else match comp? r with
+    | some (x, y) =>
+      let ps := (List.range ls.size).filter fun i => (comp? ls[i]!).isSome
+      x.getAppFn == g && y.getAppFn == g && x.getAppNumArgs == ls.size && y.getAppNumArgs == ls.size
+        && !ps.isEmpty && ps.all fun i => comp? ls[i]! == some (x.getAppArgs[i]!, y.getAppArgs[i]!)
+    | none => false
+
+/-- A FUNCTOR LAW cited by a step: like `Cat.assoc` it re-brackets `F(RS)` as `F(R)F(S)` (or drops
+    `F(𝟙)`) and names no law a reader looks up, in either direction. -/
+def functorLaw (c : Name) : MetaM Bool := do
+  let some ci := (← getEnv).find? c | throwError "no such declaration: {c}"
+  Meta.forallTelescope ci.type fun _ st => do
+    let some (_, l, r) ← splitM st | return false
+    let (l, r) := (← instantiateMVars l, ← instantiateMVars r)
+    return distributes l r || distributes r l
 
 /-- THE LAWS A STEP'S PROOF APPLIES.  A theorem application counts when its statement relates two
     arrows and no proof argument is rewritten inside it: one handed a proof that applies a theorem,
