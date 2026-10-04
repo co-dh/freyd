@@ -41,6 +41,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_tail.calc.typ" as calc-tt
 #import "../generated/Freyd.Alg.RelSet.Tardy.bagify_recip_le.calc.typ" as calc-brl
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_greedy.calc.typ" as calc-tg
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_fusion_condition.calc.typ" as calc-tf
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_laws.calc.typ" as calc-tl
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -491,23 +493,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[every interval got by folding a decimal's digits with `[arb,step]` has the decimal's value
      strictly inside it]],
     // lean:AOP.A10_4_Tex.tex_fusion@6c48b5bc
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.lhs",
-      src[fusion: it suffices that `[zero,shift] inrange°⊒F(inrange°)[arb,step]`]),
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step1.rhs",
-      src[`[T,U]Z=[TZ,UZ]`, a coproduct law not tabulated in the note]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step1@258065cf
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step2.rhs",
-      src[`zero inrange°=arb`: the first condition, which determines `arb`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step2@bc02821b
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step3.lhs",
-      src[arithmetic: `10a−d<r<10b−d ⟹ a<(d+r)/10<b` for `(a,b)=step(d,(10a−d,10b−d))`; only `⊒`,
-       since `(10a−d,10b−d)` satisfies (10.9) only when `d<10b<d+1`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step3@15be0440
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_fusion_step4.rhs",
-      src[`F(S)[T,U]=[T,(𝟙×S)U]` read right to left: definition of `F`]),
-     // lean:AOP.A10_4_Tex.tex_fusion_step4@66ce201d
-  ),
+  lean-calc(calc-tf),
 )]<tex-fusion>
 
 // B&dM p. 262: the greedy condition, the book's hints one row each; `Q` here is the book's `Q°`
@@ -558,25 +544,8 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[a shortest decimal whose internal representation is the given multiple of `2⁻¹⁶` is got by
      emitting the one digit the interval of admissible reals allows, until that interval contains
      zero and the empty decimal will do]],
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Tex.tex_laws_step1.lhs", src[the specification — @tex-defn]),
-    // `interval` is an arrow between two objects that carry no functor, so it is a bare bead above
-    // the unit: the set the transpose opens starts on its target.
-    (EQ, "Freyd.Alg.RelSet.Tex.tex_laws_step1.rhs",
-      src[`round°` is not a map, but `interval` is, so it comes out of the transpose]),
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_step2.lhs",
-      src[the type restriction (10.9): a shortest decimal `H` gives an interval is a shortest one
-       among all decimals inside it, and is inside it by @tex-fusion]),
-    // interval row: Theorem 10.1
-    // `est(Q) : P(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
-    // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born (`X≜Λ(H) est(R)`
-    // recurses — with `H` there the tail is unconstrained and the step is false —, `α≜[nil,cons]` —
-    // @tex-defn — builds the list).
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_prefixed.lhs",
-      src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
-       digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
-  ),
-  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_laws_step1@52e790c7 lean:AOP.A10_4_Tex.tex_laws_step2@3af8b229 lean:AOP.A10_4_Tex.tex_laws_step3@92eb955a lean:AOP.A10_4_Tex.tex_laws_prefixed@1f69fdb3 lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
+  lean-calc(calc-tl),
+  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
 )
 ]<tex-laws>
 

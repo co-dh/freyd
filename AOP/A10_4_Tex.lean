@@ -20,13 +20,14 @@
   `0<b<1` and `a<b`, and `step_legal` is what types `step : Digit×Interval⟶Interval`.  Over it the
   p.260 fusion is an inclusion, `⦇[arb,step]⦈⊑val inrange°`: a decimal's value lies inside every
   interval its digits fold to, but an interval wider than one digit's cell is folded to by no
-  decimal.  What makes the restriction harmless is `tex_laws_step2`: the shortest decimal among
+  decimal.  What makes the restriction harmless is `tex_restrict`: the shortest decimal among
   those `⦇[arb,step]⦈°` allows is a shortest one among ALL decimals inside the interval.
 -/
 module
 
 public import AOP.A10_1
 public import AOP.A6_ConsList
+import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet.Tex
 
@@ -544,28 +545,19 @@ public theorem tex_fusion_shift :
     exact ⟨shiftFn (d.val : Int) rr, rfl, (shift_lt_shift _ _ _).mpr hin.1,
       (shift_lt_shift _ _ _).mpr hin.2⟩
 
-/-- **tex-fusion**, first step: composition distributes into the case analysis. -/
-public theorem tex_fusion_step1 :
-    junc copR zero shift ≫ (inrange)° = junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) :=
-  junc_comp _ _ _ _
+/-- **tex-fusion**, the fusion condition (B&dM p.260): `F(inrange°)[arb,step]⊑[zero,shift] inrange°`.
+    One `calc` step per hint: the relator slides into the bracket, the `shift` branch, the `zero`
+    branch, composition distributes into the case analysis. -/
+public theorem tex_fusion_condition :
+    (F Unit Digit).map (inrange)° ≫ junc cop arb step ⊑ junc copR zero shift ≫ (inrange)° :=
+  calc (F Unit Digit).map (inrange)° ≫ junc cop arb step
+      = junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step) :=
+        Fmap_comp_junc Unit Digit _ _ _
+    _ ⊑ junc copR arb (shift ≫ (inrange)°) := junc_mono _ (le_refl arb) tex_fusion_shift
+    _ = junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) := by rw [tex_fusion_zero]
+    _ = junc copR zero shift ≫ (inrange)° := (junc_comp _ _ _ _).symm
 
-/-- **tex-fusion**, second step: the `zero` branch, `tex_fusion_zero`. -/
-public theorem tex_fusion_step2 :
-    junc copR (zero ≫ (inrange)°) (shift ≫ (inrange)°) = junc copR arb (shift ≫ (inrange)°) := by
-  rw [tex_fusion_zero]
-
-/-- **tex-fusion**, third step: the `shift` branch, `tex_fusion_shift`. -/
-public theorem tex_fusion_step3 :
-    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
-      ⊑ junc copR arb (shift ≫ (inrange)°) :=
-  junc_mono _ (le_iff.mpr fun _ _ h => h) tex_fusion_shift
-
-/-- **tex-fusion**, fourth step: the relator slides out of the bracket — `F(S)[T,U]=[T,(𝟙×S)U]`
-    read right to left. -/
-public theorem tex_fusion_step4 :
-    junc copR arb (rprodMap (𝟙 (dE Digit)) (inrange)° ≫ step)
-      = (F Unit Digit).map (inrange)° ≫ junc cop arb step :=
-  (Fmap_comp_junc Unit Digit _ _ _).symm
+calc_steps tex_fusion_condition
 
 /-- **tex-fusion** (B&dM p.260): `⦇[arb,step]⦈⊑val inrange°` — every interval a decimal's digits
     fold to has the decimal's value strictly inside it, because
@@ -573,12 +565,7 @@ public theorem tex_fusion_step4 :
 public theorem tex_fusion : cataR (junc cop arb step) ⊑ val ≫ (inrange)° := by
   show cataR (junc cop arb step) ⊑ cataR (junc copR zero shift) ≫ (inrange)°
   rw [cataR_eq_relCata, cataR_eq_relCata]
-  refine relCata_le_comp (initial Unit Digit) ?_
-  calc (F Unit Digit).map (inrange)° ≫ junc cop arb step
-      = _ := tex_fusion_step4.symm
-    _ ⊑ _ := tex_fusion_step3
-    _ = _ := tex_fusion_step2.symm
-    _ = _ := tex_fusion_step1.symm
+  exact relCata_le_comp (initial Unit Digit) tex_fusion_condition
 
 
 /-! ## Theorem 10.1 at `[nil,cons]` (B&dM pp. 261-262) -/
@@ -693,14 +680,13 @@ public theorem tex_H : _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step
 
 /-! ## `tex-laws` (B&dM pp. 260-262) -/
 
-/-- **tex-laws**, first step: `round°` is not a map, but `interval` is, so it comes out of the
-    transpose — `Λ(intern°) est(R) = interval Λ(inrange val°) est(R)`. -/
-public theorem tex_laws_step1 :
-    Λ ((intern)°) ≫ est R = interval ≫ Λ (inrange ≫ (val)°) ≫ est R := by
+/-- `round°` is not a map, but `interval` is, so it comes out of the transpose —
+    `Λ(intern°) = interval Λ(inrange val°)`. -/
+public theorem Λ_intern_recip : Λ ((intern)°) = interval ≫ Λ (inrange ≫ (val)°) := by
   have h : (intern)° = interval ≫ (inrange ≫ (val)°) := by
     show (val ≫ round)° = interval ≫ (inrange ≫ (val)°)
     rw [Allegory.recip_comp, round_recip, Cat.assoc]
-  rw [h, Λ_fusion interval_map, Cat.assoc]
+  rw [h, Λ_fusion interval_map]
 
 /-- A decimal's value `r` lies in `[0,1)`. -/
 public theorem val_bounds (y : Dec) (r : Real.carrier) (h : val y r) :
@@ -767,12 +753,11 @@ public theorem tex_short (y : Dec) : ∀ (r : Real.carrier) (p : Interval.carrie
               (ListRel.junc_sum_inr arb step (d, p1) _).mpr rfl⟩,
             Nat.succ_le_succ (Nat.zero_le _)⟩
 
-/-- **tex-laws**, second step: the type restriction (10.9) — a shortest decimal among those the
-    fold's converse `H` gives an interval is a shortest among all decimals inside it (`tex_short`),
-    and it is inside it by fusion. -/
-public theorem tex_laws_step2 :
-    interval ≫ Λ H ≫ est R ⊑ interval ≫ Λ (inrange ≫ (val)°) ≫ est R := by
-  refine comp_mono_left _ (le_iff.mpr fun p x h => ?_)
+/-- The type restriction (10.9): `Λ(H) est(R)⊑Λ(inrange val°) est(R)` — a shortest decimal among
+    those the fold's converse `H` gives an interval is a shortest among all decimals inside it
+    (`tex_short`), and it is inside it by fusion. -/
+public theorem tex_restrict : Λ H ≫ est R ⊑ Λ (inrange ≫ (val)°) ≫ est R := by
+  refine le_iff.mpr fun p x h => ?_
   rw [Λ_comp_est_apply] at h ⊢
   obtain ⟨hx, hmin⟩ := h
   refine ⟨?_, fun y hy => ?_⟩
@@ -796,33 +781,23 @@ public theorem tex_body_prefixed :
   rw [tex_H] at hfix
   exact greedy_dp_prefixed (graph_map con) tex_mono R_trans hfix (tex_greedy _)
 
-/-- **tex-laws**, third step: at `X≜Λ(H) est(R)` the greedy body, after `interval`, is below
-    `interval X` — the prefixed point `tex_body_prefixed`, with the note's bead `X` a binder. -/
-public theorem tex_laws_prefixed {X : Interval ⟶ Decimal} (hX : X = Λ H ≫ est R) :
-    interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR
-      ⊑ interval ≫ Λ H ≫ est R := by
-  subst hX
-  exact comp_mono_left _ tex_body_prefixed
-
-/-- **tex-laws**, the least fixed point (Theorem 10.1): below every prefixed point, so below
-    `tex_body_prefixed`'s. -/
-public theorem tex_laws_step3 :
-    interval ≫ mu (fun X : Interval ⟶ Decimal =>
-        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
-      ⊑ interval ≫ Λ H ≫ est R :=
-  comp_mono_left _ (mu_le tex_body_prefixed)
-
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification
     `Λ(intern°) est(R)` — a shortest decimal whose internal representation is the given `n`.
-    The fixed point is `f` (`tex_f`), and on points `extern(n)=f(2n−1,2n+1)` (`tex_extern`). -/
+    The fixed point is `f` (`tex_f`), and on points `extern(n)=f(2n−1,2n+1)` (`tex_extern`).
+    One `calc` step per hint: Theorem 10.1's prefixed point, the type restriction (10.9),
+    `interval` out of the transpose. -/
 public theorem tex_laws :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
-      ⊑ Λ ((intern)°) ≫ est R := by
-  rw [tex_laws_step1]
-  calc _ ⊑ _ := tex_laws_step3
-    _ ⊑ _ := tex_laws_step2
+      ⊑ Λ ((intern)°) ≫ est R :=
+  calc interval ≫ mu (fun X : Interval ⟶ Decimal =>
+        Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
+      ⊑ interval ≫ Λ H ≫ est R := comp_mono_left _ (mu_le tex_body_prefixed)
+    _ ⊑ interval ≫ Λ (inrange ≫ (val)°) ≫ est R := comp_mono_left _ tex_restrict
+    _ = Λ ((intern)°) ≫ est R := by rw [Λ_intern_recip, Cat.assoc]
+
+calc_steps tex_laws
 
 /-! ## `f` on points (B&dM p.263, `tex-extern`) -/
 
