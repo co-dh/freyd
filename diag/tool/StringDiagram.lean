@@ -991,6 +991,22 @@ partial def indexTypes : Nat → List Expr → Array Expr → MetaM (Array Expr)
     let next := e.getAppArgs.toList.filter (!·.hasLooseBVars)
     indexTypes fuel (es ++ next ++ (← Meta.unfoldDefinition? e).toList) out
 
+/-- Whether `t` stands in `e` anywhere but as a PARAMETER OF A WIRE: a subterm whose TYPE is a
+    `Relator` or a `Functor` is one wire, and what it is applied to (`L`, `E` of `CL.F L E`) is fixed
+    with it, so a type reaching `e` only through wires is no index the picture varies. -/
+partial def occursOffWire (t e : Expr) : MetaM Bool := do
+  if e == t then return true
+  if (e.find? (· == t)).isNone then return false
+  if !e.hasLooseBVars then
+    let ty ← Meta.whnf (← Meta.inferType e)
+    if ty.isAppOf ``Freyd.Alg.Relator || ty.isAppOf ``Freyd.Functor then return false
+  match e with
+  | .app .. => (e.getAppFn :: e.getAppArgs.toList).anyM (occursOffWire t)
+  | .lam _ d b _ | .forallE _ d b _ => return (← occursOffWire t d) || (← occursOffWire t b)
+  | .letE _ d v b _ => [d, v, b].anyM (occursOffWire t)
+  | .mdata _ b | .proj _ _ b => occursOffWire t b
+  | _ => return false
+
 /-- THE TWO ENDS OF A FAMILY, READ AS LANES, and in WHICH algebra — the REGION'S, not the bead's.
     §1.241's function category is a `Cat` and no allegory, so its lanes are functors and its
     naturality is the plain square; and one region carries BOTH kinds, since `E`, the existential
@@ -2019,7 +2035,11 @@ def Diagram.bead (regionTy : Expr) (cat : Array Name) (objVars : Array Expr)
   -- answers where the two differ, which is where the lanes CROSS categories.  Neither is a
   -- fallback for a failure — they are two places an index can live, and the ENVIRONMENT picks
   -- between the readings below by which one has a square.
+  -- A WIRE'S PARAMETER IS NO INDEX, told apart by TYPE: `L`, `E` reach `sort(F(≼))` only inside
+  -- `CL.F L E : Relator`, where `A` of `[nil,join]` also stands in the object `dList A`.  A type the
+  -- term never names (reached by a delta step, `Op Char`) is left to the readers below.
   let famAt : Expr → MetaM (Option Expr) := fun t => do
+    if (core.find? (· == t)).isSome && !(← occursOffWire t core) then return none
     match ← familyAtIndex? regionTy core t with
     | some φ => return some φ
     | none => familyAtIndex? idxTy core t
