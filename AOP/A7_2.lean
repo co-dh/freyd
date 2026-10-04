@@ -119,13 +119,13 @@ variable [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator 𝒜 𝒜} {A : �
 variable {R : A ⟶ A} {f : F.obj A ⟶ A}
 
 /-- **Theorem 7.1, step 1**: a bound by `Λ X ≫ est R` is exactly a bound by `X` together with
-    `X° ≫ (−) ⊑ R°`, and `hFr` moves `(F(∋)f)°` across as `f° F(∈)`. -/
-public theorem mon_thm71_step1 (hFr : F.PreservesRecip) :
+    `X° ≫ (−) ⊑ R°`, and `F(∋)° = F(∈)` (Theorem 5.1(a)) moves `(F(∋)f)°` across as `f° F(∈)`. -/
+public theorem mon_thm71_step1 :
     Distributes f R ↔ (F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f ∧
       f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R°) := by
   have hrecip : (F.map (∋ A) ≫ f)° ≫ (F.map (est R) ≫ f)
       = f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f := by
-    rw [Allegory.recip_comp, ← hFr (∋ A), Cat.assoc]
+    rw [Allegory.recip_comp, ← F.map_recip (∋ A), Cat.assoc]
   unfold Distributes
   rw [le_Λ_comp_est_iff, hrecip]
 
@@ -138,53 +138,49 @@ public theorem mon_thm71_step2 :
   ⟨And.right, fun h => ⟨Fmap_est_comp_le_Fmap_eps_comp f R, h⟩⟩
 
 /-- **Theorem 7.1, step 3**: `∈ est(R) = R°`, under the relator and conjugated by `f`.  `⊑` is
-    (7.5)'s bound; `⊒` is `hpair`, the half that needs TABULATIONS (B&dM Ex 7.9). -/
-public theorem mon_thm71_step3 (hpair : R° ⊑ (∋ A)° ≫ est R) :
+    (7.5)'s bound; `⊒` is `recip_le_eps_comp_est`, which needs `R` reflexive. -/
+public theorem mon_thm71_step3 (hrefl : 𝟙 A ⊑ R) :
     f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° ↔ f° ≫ F.map R° ≫ f ⊑ R° := by
   constructor
   · intro h
     have hle : f° ≫ F.map R° ≫ f ⊑ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f := by
       refine comp_mono_left _ ?_
       rw [← Cat.assoc, ← F.map_comp]
-      exact comp_mono_right (F.map_mono hpair) f
+      exact comp_mono_right (F.map_mono (recip_le_eps_comp_est hrefl)) f
     exact le_trans hle h
   · exact fun h => le_trans (conj_Fmap_eps_est_le f R) h
 
-/-- **Theorem 7.1, step 4**: both sides conversed — `F(R°)° = F(R)` by `hFr`, `f` a map. -/
-public theorem mon_thm71_step4 (hf : Map f) (hFr : F.PreservesRecip) :
+/-- **Theorem 7.1, step 4**: both sides conversed — `F(R°)° = F(R)` (Theorem 5.1(a)), `f` a map. -/
+public theorem mon_thm71_step4 (hf : Map f) :
     f° ≫ F.map R° ≫ f ⊑ R° ↔ f° ≫ F.map R ≫ f ⊑ R := by
   rw [← Freyd.Alg.monoAlg_iff_conj hf, ← Freyd.Alg.monoAlg_iff_conj hf]
-  exact (Freyd.Alg.monoAlg_recip_iff hf hFr).symm
+  exact (Freyd.Alg.monoAlg_recip_iff hf (Relator.preservesRecip_of_tabular F)).symm
 
 /-- **Theorem 7.1 (B&dM p.172)**: `f` is monotonic on `R` exactly when it distributes over
-    `min R°` — the four steps composed.  The right side is `Distributes f R` written out, so the
-    note prints the inequation itself rather than the predicate's name. -/
-public theorem monoAlg_iff_distributes (hf : Map f) (hFr : F.PreservesRecip)
-    (hpair : R° ⊑ (∋ A)° ≫ est R) :
+    `min R°`, for `R` reflexive — the four steps composed.  The right side is `Distributes f R`
+    written out, so the note prints the inequation itself rather than the predicate's name. -/
+public theorem monoAlg_iff_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) :
     f° ≫ F.map R ≫ f ⊑ R ↔ F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R :=
   calc f° ≫ F.map R ≫ f ⊑ R
-      ↔ f° ≫ F.map R° ≫ f ⊑ R° := (mon_thm71_step4 hf hFr).symm
-    _ ↔ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° := (mon_thm71_step3 hpair).symm
+      ↔ f° ≫ F.map R° ≫ f ⊑ R° := (mon_thm71_step4 hf).symm
+    _ ↔ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° := (mon_thm71_step3 hrefl).symm
     _ ↔ (F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f ∧
           f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R°) := mon_thm71_step2.symm
-    _ ↔ Distributes f R := (mon_thm71_step1 hFr).symm
+    _ ↔ Distributes f R := mon_thm71_step1.symm
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
     distributes over `min R°`.  Steps 1 and 2 are the whole content; step 3's `⊑` half is
-    `conj_Fmap_eps_est_le`, which needs no `hpair`. -/
-public theorem distributes_of_monoAlg (hf : Map f) (hFr : F.PreservesRecip)
-    (hmono : MonoAlg f R°) : Distributes f R :=
-  (mon_thm71_step1 hFr).mpr (mon_thm71_step2.mpr
+    `conj_Fmap_eps_est_le`, which needs no reflexivity. -/
+public theorem distributes_of_monoAlg (hf : Map f) (hmono : MonoAlg f R°) : Distributes f R :=
+  mon_thm71_step1.mpr (mon_thm71_step2.mpr
     (le_trans (conj_Fmap_eps_est_le f R) ((monoAlg_iff_conj hf).mp hmono)))
 
-/-- **Theorem 7.1 (B&dM p.172), converse half**: given `R° = min R°·∋` (B&dM Ex 7.9, taken here
-    as a hypothesis — its `⊒` half needs TABULATIONS, via Ex 7.8's pairing, not otherwise
-    available in this setting), distributivity of `f` over `min R°` implies `f` is monotonic
-    on `R°`. -/
-theorem monoAlg_of_distributes (hf : Map f) (hFr : F.PreservesRecip)
-    (hpair : R° ⊑ (∋ A)° ≫ est R) (hdist : Distributes f R) : MonoAlg f R° :=
+/-- **Theorem 7.1 (B&dM p.172), converse half**: for `R` reflexive, distributivity of `f` over
+    `min R°` implies `f` is monotonic on `R°`. -/
+theorem monoAlg_of_distributes (hf : Map f) (hrefl : 𝟙 A ⊑ R) (hdist : Distributes f R) :
+    MonoAlg f R° :=
   (monoAlg_iff_conj hf).mpr
-    ((mon_thm71_step3 hpair).mp (mon_thm71_step2.mp ((mon_thm71_step1 hFr).mp hdist)))
+    ((mon_thm71_step3 hrefl).mp (mon_thm71_step2.mp (mon_thm71_step1.mp hdist)))
 
 end Thm71
 

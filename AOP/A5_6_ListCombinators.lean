@@ -164,6 +164,10 @@ variable (R : A → A → Prop)
   | ConsList.wrap _ => True
   | ConsList.cons a x => (∀ b, inlistP x b → R a b) ∧ orderedP x
 
+/-- `R` is CONNECTED (B&dM p.152, `R ∪ R° = Π`): any two elements are related one way or the
+    other — what sorting under `R` needs of `R` besides transitivity. -/
+@[expose] public def connectedP : Prop := ∀ a b, R a b ∨ R b a
+
 /-- The sortedness coreflexive `ordered : list A ⟶ list A`. -/
 @[expose] public def ordered : dList A ⟶ dList A := fun x y => x = y ∧ orderedP R x
 

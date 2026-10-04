@@ -426,12 +426,12 @@
 )]<split-base>
 
 // B&dM p.155, the second fusion condition, with `step(a,(x,b,y)) = ([a]⧺x,b,y)` if `aRb`, otherwise
-// `(x,b,[a]⧺y)`; `R` total.
+// `(x,b,[a]⧺y)`; `R` connected.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.split_step") \
     #src[if `(x,b,y)` is a `check`ed triple for a permutation of `l`, then `step(a,(x,b,y))` is a
      `check`ed triple for a permutation of `[a] ⧺ l`]],
-     // lean:AOP.A6_6e_Quicksort.split_step@5468d217
+     // lean:AOP.A6_6e_Quicksort.split_step@b7a3c037
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.split_step.lhs", []),
     (SQ, "Freyd.Alg.RelSet.Sort.split_step.rhs", src[`aRb` puts `a` in front of `x`; otherwise `bRa` and `a` goes in front of `y`]),
@@ -462,10 +462,10 @@
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ISort.insert_add") \
     #src[inserting `a` into an ordered list puts `a` somewhere in it and keeps it ordered]],
-     // lean:AOP.A6_6c_ISort.insert_add@dd8903b1
+     // lean:AOP.A6_6c_ISort.insert_add@95dfc136
   lean-chain(
     (none, "Freyd.Alg.RelSet.ISort.insert_add.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.ISort.insert_add.rhs", src[`insert` splices `a` in, and `R` transitive and total]),
+    (SQ, "Freyd.Alg.RelSet.ISort.insert_add.rhs", src[`insert` splices `a` in, and `R` transitive and connected]),
   ),
 )]<isort-insert>
 

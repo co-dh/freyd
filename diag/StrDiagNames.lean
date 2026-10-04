@@ -1392,6 +1392,11 @@ open Lean PrettyPrinter in
 @[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
   | `($_ $R) => `($(mkIdent `connected) $R)
   | _ => throw ()
+-- The same connectedness, on a pointwise relation `A → A → Prop` (§6.6's sorts).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.connectedP] def unexpandConnectedP : Unexpander
+  | `($_ $R) => `($(mkIdent `connected) $R)
+  | _ => throw ()
 -- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander

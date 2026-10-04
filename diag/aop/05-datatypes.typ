@@ -49,7 +49,7 @@ the 2-category.
  [#leanf("Freyd.Alg.Relator.map_inter_le"), and strictly. #src[Ex 5.2]],
   // lean:AOP.A5_1.map_inter_le@af565f80
  [#leanf("Freyd.Alg.Relator.map_dom") #src[Ex 5.5]],
-  // lean:AOP.A5_1.map_dom@5e9ecd68
+  // lean:AOP.A5_1.map_dom@c994b038
 )]<relator-laws>
 
 The *power relator* `P` — `xs P(R) ys⟺(∀a∈xs. ∃b∈ys. a R b)∧(∀b∈ys. ∃a∈xs. a R b)` — is where

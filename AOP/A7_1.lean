@@ -116,6 +116,17 @@ public theorem Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : Λ S ≫ est R ⊑ S
 public theorem recip_comp_Λ_comp_est_le (S : B ⟶ A) (R : A ⟶ A) : S° ≫ Λ S ≫ est R ⊑ R° :=
   (le_Λ_comp_est_iff.mp (le_refl _)).2
 
+/-- **B&dM p.173**: for `R` reflexive, `R° ⊑ ∈ est(R)` — when `b R a`, both `a` and `b` lie in the
+    set `Λ(R)(b)` of `b`'s `R`-successors, and `b` is an `est(R)` of it. -/
+public theorem recip_le_eps_comp_est {R : A ⟶ A} (hrefl : 𝟙 A ⊑ R) : R° ⊑ (∋ A)° ≫ est R := by
+  have hR : R° = (∋ A)° ≫ (Λ R)° := by rw [← Allegory.recip_comp, Λ_comp_eps]
+  calc R° = R° ≫ 𝟙 A := (Cat.comp_id _).symm
+    _ ⊑ R° ≫ Λ R ≫ est R :=
+        comp_mono_left _ (le_Λ_comp_est_iff.mpr ⟨hrefl, le_of_eq (Cat.comp_id _)⟩)
+    _ = (∋ A)° ≫ ((Λ R)° ≫ Λ R) ≫ est R := by rw [hR]; simp only [Cat.assoc]
+    _ ⊑ (∋ A)° ≫ 𝟙 (P A) ≫ est R := comp_mono_left _ (comp_mono_right (Λ_is_map' R).2 _)
+    _ = (∋ A)° ≫ est R := by rw [Cat.id_comp]
+
 /-- **(7.4)**: `min R·τ = id ∩ R` at `R°`, mirrored: the `est` of a singleton is its sole
     inhabitant precisely on the reflexive part of `R` ((7.5) at `S := id`). -/
 public theorem singletonMap_comp_est (R : A ⟶ A) :

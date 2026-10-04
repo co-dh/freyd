@@ -258,33 +258,26 @@ public theorem Relator.map_inter_coreflexive {𝒜 : Type u₁} {ℬ : Type u₂
     have := F.map_mono hY; rwa [F.map_id] at this
   rw [← coreflexive_comp_eq_inter hX hY, F.map_comp, coreflexive_comp_eq_inter hFX hFY]
 
-/-! ## Ex 5.5  A relator commutes with `dom`, given it preserves converse (B&dM p. 113)
+/-! ## Ex 5.5  A relator commutes with `dom` (B&dM p. 113)
 
-  `⊑`: `dom R` is below both `id` and `R≫R°`; take images under `F.map` and combine with
-  `le_inter`.  `⊒`: `dom_UP` (A4_2) reduces `dom(F.map R) ⊑ F.map(dom R)` to
+  `⊑`: `dom R` is below both `id` and `R≫R°`; take images under `F.map` (which preserves `°`
+  over a tabular source, Theorem 5.1(a)) and combine with `le_inter`.  `⊒`: `dom_UP` (A4_2) reduces `dom(F.map R) ⊑ F.map(dom R)` to
   `F.map R ⊑ F.map(dom R)≫F.map R`, which is the image of `R ⊑ dom R≫R` (`le_dom_comp`,
   S2_1) under `F.map`. -/
 
 public theorem Relator.map_dom {𝒜 : Type u₁} {ℬ : Type u₂}
-    [Allegory.{v₁} 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) (hc : F.PreservesRecip)
+    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ)
     {A B : 𝒜} (R : A ⟶ B) : F.map (dom R) = dom (F.map R) := by
   have hcoref : Coreflexive (F.map (dom R)) := by
     have := F.map_mono (dom_coreflexive R); rwa [F.map_id] at this
   apply le_antisymm
   · have h2 : F.map (dom R) ⊑ F.map R ≫ (F.map R)° := by
       have := F.map_mono (inter_lb_right (Cat.id A) (R ≫ R°))
-      rwa [F.map_comp, hc R] at this
+      rwa [F.map_comp, F.map_recip R] at this
     exact le_inter hcoref h2
   · rw [dom_UP hcoref]
     have := F.map_mono (le_dom_comp R)
     rwa [F.map_comp] at this
-
-/-- Ex 5.5, tabular corollary: over a tabular source, `Theorem 5.1(a)` discharges the
-    converse-preservation hypothesis automatically. -/
-theorem Relator.map_dom_of_tabular {𝒜 : Type u₁} {ℬ : Type u₂}
-    [TabularAllegory 𝒜] [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R : A ⟶ B) :
-    F.map (dom R) = dom (F.map R) :=
-  Relator.map_dom F (Relator.preservesRecip_of_tabular F) R
 
 -- printing-only unexpanders: the note's spelling.  A picture drawn by `diag-export --commutative`
 -- takes every label from `Meta.ppExpr`, so what the note calls a thing has to be what Lean PRINTS
