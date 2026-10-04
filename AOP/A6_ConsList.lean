@@ -188,7 +188,7 @@ public theorem F_eq_sum_prod (L E : Type) {C c' : RelSet.{0}} (R : C ⟶ c') :
   apply hom_ext; intro u v
   cases u <;> cases v <;>
     simp [F, Fmap, Fbimap, Relator.sum, Relator.prod, Relator.const, Relator.idRelator, sumMap, junc,
-      RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> grind
+      RelProd.pair, prodMap, graph, instPositiveAllegory, instHasRelProd, sumCop] <;> exact eq_comm
 
 /-- **`F(R) = 𝟙 + 𝟙×R`** in the coproduct calculus: `F`'s action as a `sumMap` over the concrete
     coproducts `sumCop`, the leaf arm an identity and the pair arm `𝟙×R` on the tail.  This is
