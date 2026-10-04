@@ -159,6 +159,10 @@ derivation is proved as a single `calc` (B&dM's style), each step one law under 
 the reason read off the proof. Because a proof with no steps, or a chain of step theorems beside a
 hand-typed reason column, is a second copy of the derivation that nobody checks against the first.
 
+**A REFERENCE NAMES THE ROW, NEVER THE TABLE.** A reason that cites a law points at the one row that
+states it, because a table label sends the reader to scan every row for the step he is checking, and
+may hold no row that justifies it at all.
+
 **A REVIEW PICTURE CARRIES ITS OWN CAPTION, AND `scripts/diff-crop` IS THE ONLY THING THAT MAKES ONE.**
 Cut every before/after with `./scripts/diff-crop --key <key> --caption "<the line in the author's own
 words>"`, because a file called `p53-1.png` says nothing about which item it answers and a caption written
