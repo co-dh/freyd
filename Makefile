@@ -171,11 +171,12 @@ cd-check: panels
 # print another chapter's label as the whole note does; replaced only on change, so the chapter's
 # compile cache (`typst-compile`, which hashes this file as a read) stays valid.
 # The `#import`s are drawn first: the query compiles every chapter, and one whose import has no file
-# yet does not compile.  `REFIDS` is exported for `panels`' chapter listing (`diag-export --list`).
+# yet does not compile.  `CH=` (the whole book) because the query compiles EVERY chapter, while a bare
+# `CH=N` would narrow `--imports` to chapter N's and leave another chapter's import undrawn.  `REFIDS` is exported for `panels`' chapter listing (`diag-export --list`).
 REFIDS := .lake/build/ref-ids-$(NOTE).json
 export REFIDS
 ref-ids: | exe
-	./scripts/diag-regen --missing --imports
+	CH= ./scripts/diag-regen --missing --imports
 	$(LOCK) typst query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) '<ref-id>' --field value > $(REFIDS).new
 	if cmp -s $(REFIDS).new $(REFIDS); then rm $(REFIDS).new; else mv $(REFIDS).new $(REFIDS); fi
 
