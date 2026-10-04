@@ -634,16 +634,17 @@
 // A STEP'S LAW, cited: a declaration that a `Thm` header of ANOTHER display states is that display's
 // number, linked, so the reader follows it to its proof; any other law prints its statement.  The
 // header is found by the markers `Thm` emits (`<thm-num>` … `<thm-end>`), never by the formula text.
-// A CONDITIONAL LAW TOO WIDE FOR ITS CELL breaks before `⟹`, never inside a hypothesis: the
-// formula file cuts there with a `zws` (FormulaRender `render`), which becomes the line break.
+// A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file
+// cuts there with a `zws` (FormulaRender `render`), which becomes the line break.  Always, not by a
+// measured width: the cell is measured inside the chain's own scaling, where every width fits.
 #let first-raw(x) = if x.func() == raw { x.text } else if x.has("children") and x.children.len() > 0 { first-raw(x.children.first()) } else if x.has("body") { first-raw(x.body) } else { none }
-#let impl-split(c) = layout(sz => if not c.has("children") or measure(c).width <= sz.width { c } else {
+#let impl-split(c) = if not c.has("children") { c } else {
   let ch = c.children
   for (i, x) in ch.enumerate() {
     let nxt = if i + 1 < ch.len() { first-raw(ch.at(i + 1)) } else { none }
-    if x.func() == text and x.text == sym.zws and nxt != none and nxt.starts-with("⟹") { linebreak() } else { x }
+    if x == [#sym.zws] and nxt != none and nxt.starts-with("⟹") { linebreak() } else { x }
   }
-})
+}
 #let law-ref(law) = {
   [#metadata(law)<lean-formula>]
   context {
