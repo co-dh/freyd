@@ -268,6 +268,16 @@ public theorem conswFn_apply (wt : V → V → Nat) (a : V) (xs : ConsList V V) 
     (⟨V × (ConsList V V × Nat)⟩ : RelSet.{0}) ⟶ (⟨ConsList V V × Nat⟩ : RelSet.{0}) :=
   RelSet.graph fun q => conswFn wt q.1 q.2
 
+/-- `wrapz` on a point: `a ↦ ([a],0)`. -/
+public theorem wrapz_apply (a : V) (r : ConsList V V × Nat) :
+    wrapz a r ↔ r = (ConsList.wrap a, 0) :=
+  ⟨fun ⟨h1, h2⟩ => Prod.ext h1 h2, fun h => by subst h; exact ⟨rfl, rfl⟩⟩
+
+/-- `consw` on a point: `(a,(xs,n)) ↦ ([a]⧺xs, wt(a,head(xs))+n)`. -/
+public theorem consw_apply (wt : V → V → Nat) (a : V) (xs : ConsList V V) (n : Nat)
+    (r : ConsList V V × Nat) :
+    consw wt (a, (xs, n)) r ↔ r = (ConsList.cons a xs, wt a (headOf xs) + n) := Iff.rfl
+
 /-- `cost ≜ ⦇[wrapz,consw]⦈π₂` (book p.196): the fold builds the path beside its cost, and the
     cost is read off. -/
 @[expose] public def pathCost (wt : V → V → Nat) : dCL V V ⟶ (⟨Nat⟩ : RelSet.{0}) :=

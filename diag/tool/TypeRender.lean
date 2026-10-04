@@ -89,16 +89,17 @@ private def hom? (t : Expr) : MetaM (Option String) := do
 /-- The declaration's type in the note's spelling.  Run under `withDeclScope` and printed by
     `plain`, so the same delaborator, namespaces and unexpanders the string route draws its labels
     with print this cell. -/
-def render (declName : Name) (named : Bool := false) : MetaM String := withDeclScope declName do
+def render (declName : Name) (nameOnly : Bool := false) : MetaM String := withDeclScope declName do
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- NOT `forallTelescopeReducing`: a hom of `RelSet` reduces to `A → B → Prop`, so reducing walks
   -- straight through the arrow this is here to print and leaves `Prop` as the body of every def.
   Meta.forallTelescope ci.type fun xs body => do
-    -- `named`: the TERM the type belongs to — an (in)equation's left side, else the declaration at
-    -- its own binders — printed by `labelT`, the formula route's printer, so the cell names it as the
-    -- formula beside it does (`Λ(F(∋,𝟙))`, `step`); typst content, since a `Λ` sets as a fraction.
+    -- `nameOnly`: the TERM the type belongs to instead of the type — an (in)equation's left side,
+    -- else the declaration at its own binders — printed by `labelT`, the formula route's printer, so
+    -- the name cell reads as the formula beside it (`Λ(F(∋,𝟙))`, `step`); typst content, since a
+    -- `Λ` sets as a fraction.
     let name (t : Expr) (ty : String) : MetaM String := do
-      if named then return "#" ++ ((← labelT t) ++ Lbl.text (" : " ++ ty)).bare.typst else return ty
+      if nameOnly then return "#" ++ (← labelT t).bare.typst else return ty
     -- An (in)equation is a statement ABOUT arrows, and its two sides share one hom: read it off the
     -- left, which is the side the note's `definition` column spells.
     match ← splitM body with
@@ -129,8 +130,8 @@ def render (declName : Name) (named : Bool := false) : MetaM String := withDeclS
 
 /-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
     above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
-def file (declName : Name) (named : Bool := false) : MetaM String := do
-  let r ← render declName named
-  return (if named then r else "`" ++ r ++ "`") ++ "\n"
+def file (declName : Name) (nameOnly : Bool := false) : MetaM String := do
+  let r ← render declName nameOnly
+  return (if nameOnly then r else "`" ++ r ++ "`") ++ "\n"
 
 end Freyd.TypeRender

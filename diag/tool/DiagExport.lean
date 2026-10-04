@@ -1418,11 +1418,15 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".compact" then
       stem := stem.dropEnd 8
       sides := "compact" :: sides
-    -- `.named`: the TYPE cell's print mode, `<term> : S⟶T` — a table whose type column stands
-    -- beside formulas that name several terms says which term each type belongs to.
-    else if stem.endsWith ".named" then
-      stem := stem.dropEnd 6
-      sides := "named" :: sides
+    -- `.mapsto`: the FORMULA's point form `x ↦ e`, read off `R x r ↔ r = e` (`FormulaRender.mapsto`).
+    else if stem.endsWith ".mapsto" then
+      stem := stem.dropEnd 7
+      sides := "mapsto" :: sides
+    -- `.name`: the TYPE route's name cell, the term alone — a table with a name column prints the
+    -- name from the declaration its type cell reads, not a hand-typed copy.
+    else if stem.endsWith ".name" then
+      stem := stem.dropEnd 5
+      sides := "name" :: sides
     else more := false
   -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
   -- statement too.  Split before `toName`: `#` is not an identifier character, so
@@ -1840,10 +1844,12 @@ def main (args : List String) : IO UInt32 := do
       if sides.contains "compact" && !formulaMode then
         throwError "{arg}: `.compact` is a formula's print mode, read by --formula only — a panel's \
           labels are compact already"
-      if sides.contains "named" && !typeMode then
-        throwError "{arg}: `.named` is a type cell's print mode, read by --type only"
-      if typeMode && (sides.any (· != "named") || !branch.isEmpty || binder.isSome) then
-        throwError "{arg}: --type reads a declaration whole; its one selector step is `.named`"
+      if sides.contains "mapsto" && !formulaMode then
+        throwError "{arg}: `.mapsto` is a formula's print mode, read by --formula only"
+      if sides.contains "name" && !typeMode then
+        throwError "{arg}: `.name` is a name cell's print mode, read by --type only"
+      if typeMode && (sides.any (· != "name") || !branch.isEmpty || binder.isSome) then
+        throwError "{arg}: --type reads a declaration whole; its one selector step is `.name`"
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
@@ -1853,7 +1859,7 @@ def main (args : List String) : IO UInt32 := do
           Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
-        else if typeMode then Freyd.TypeRender.file base.toName (sides.contains "named")
+        else if typeMode then Freyd.TypeRender.file base.toName (sides.contains "name")
         else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName
@@ -1880,7 +1886,7 @@ def main (args : List String) : IO UInt32 := do
       Prod.fst <$> (Meta.MetaM.run' (fresh kind stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
     discard StrDiag.takeReads
     for n in if stringMode then call.splitOn "+" else [arg] do
-      let (b, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      let (b, _) := parseArg n (circuitMode || stringMode || formulaMode || typeMode)
       for d in selDecls commutativeMode graphMode formulaMode n b do StrDiag.noteRead (.decl d)
     let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
     let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO

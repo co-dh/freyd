@@ -118,9 +118,9 @@
 }
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
 // spelling, so a table's type column is read off the declaration its row already cites.
-// `named: true` prints `<term> : S⟶T`, the exporter's `.named` step, for a type column beside
-// formulas that name several terms.
-#let leant(sel, named: false) = lean-text("generated/type/", <lean-type>, sel + if named { ".named" } else { "" })
+// A NAME CELL is the same route's `.name` step, `#leant(sel + ".name")`: the term the type belongs
+// to, so a table's name column is read off the declaration too.
+#let leant(sel) = lean-text("generated/type/", <lean-type>, sel)
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
 // The two sides of an `↔` as one call in a shared box: the string route draws no `↔` as one panel.

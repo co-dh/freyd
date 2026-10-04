@@ -200,52 +200,52 @@ row((
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
 #disp[#table(
-  columns: (1.3fr, 1fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon),
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
   inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*formula*], [*type*], [*what it says*]),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
+  [#leant("Freyd.Alg.pathF.name")], [#leant("Freyd.Alg.pathF")],
   [#leanf("Freyd.Alg.pathF_obj")],
-  [#leant("Freyd.Alg.pathF", named: true)],
-  [the base bifunctor: a path is one vertex, or a vertex in front of a path],
+  [a path is either one vertex a, or a vertex a followed by a path xs],
+  [#leant("Freyd.Alg.alphaR_pathF.name")], [#leant("Freyd.Alg.alphaR_pathF")],
   [#leanf("Freyd.Alg.alphaR_pathF")],
-  [#leant("Freyd.Alg.alphaR_pathF", named: true)],
-  [the initial algebra: a path is a non-empty cons-list],
-  [#leanf("Freyd.Alg.wrapz")],
-  [#leant("Freyd.Alg.wrapz", named: true)],
-  [`wrap` a vertex as a path of cost `0`],
-  [#leanf("Freyd.Alg.conswFn_apply")],
-  [#leant("Freyd.Alg.consw", named: true)],
-  [put a vertex in front of a costed path, adding the edge from the new vertex to the old head],
-  [#leanf("Freyd.Alg.pathCost"), #leanf("Freyd.Alg.cataR_wrapz_consw")],
-  [#leant("Freyd.Alg.pathCost", named: true)],
-  [the cost of a path is the sum of `wt` over consecutive vertices],
+  [build a path: wrap one vertex as [a], or put a in front of xs],
+  [#leant("Freyd.Alg.wrapz.name")], [#leant("Freyd.Alg.wrapz")],
+  [#leanf("Freyd.Alg.wrapz"), #leanf("Freyd.Alg.wrapz_apply.mapsto")],
+  [a path of one vertex, no edge, cost 0],
+  [#leant("Freyd.Alg.consw.name")], [#leant("Freyd.Alg.consw")],
+  [#leanf("Freyd.Alg.consw_apply.mapsto")],
+  [put a in front of the path; the cost adds the weight of the new edge a→head(xs)],
+  [#leant("Freyd.Alg.pathCost.name")], [#leant("Freyd.Alg.pathCost")],
+  [#leanf("Freyd.Alg.pathCost")],
+  [the cost of [a₀,…,aₙ] is wt(a₀,a₁)+…+wt(aₙ₋₁,aₙ)],
+  [#leant("Freyd.Alg.pathR.name")], [#leant("Freyd.Alg.pathR")],
   [#leanf("Freyd.Alg.pathR")],
-  [#leant("Freyd.Alg.pathR", named: true)],
-  [`R` relates a path to every path that costs no less],
+  [path xs is related to path ys when cost(xs) ≤ cost(ys)],
+  [#leant("Freyd.Alg.minpath.name")], [#leant("Freyd.Alg.minpath")],
   [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist"), #leanf("Freyd.Alg.minpath_spec")],
-  [#leant("Freyd.Alg.minpath", named: true)],
-  [the fold takes one vertex out of each layer; the input is a list of layers, each a set of vertices, and `minpath` returns a cheapest path],
+  [the input [x₀,…,xₙ] : L(PA) is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and minpath returns a cheapest one],
+  [#leant("Freyd.Alg.pathQ.name")], [#leant("Freyd.Alg.pathQ")],
   [#leanf("Freyd.Alg.pathQ")],
-  [#leant("Freyd.Alg.pathQ", named: true)],
-  [`Q` relates a path to every path that costs no less and starts at the same vertex],
+  [like R, and the two paths also start at the same vertex: head(xs) = head(ys)],
+  [#leant("Freyd.Alg.Λ_pathF_map_eps_id.name")], [#leant("Freyd.Alg.Λ_pathF_map_eps_id")],
   [#leanf("Freyd.Alg.Λ_pathF_map_eps_id")],
-  [#leant("Freyd.Alg.Λ_pathF_map_eps_id", named: true)],
-  [the transpose on the coproduct that chooses a vertex from a layer, `cpl`],
+  [cpl transpose: from layer x and a set of paths ps, choose a vertex a ∈ x],
+  [#leant("Freyd.Alg.Λ_pathF_map_id_eps.name")], [#leant("Freyd.Alg.Λ_pathF_map_id_eps")],
   [#leanf("Freyd.Alg.Λ_pathF_map_id_eps")],
-  [#leant("Freyd.Alg.Λ_pathF_map_id_eps", named: true)],
-  [the transpose on the coproduct that chooses a tail from a set of paths, `cpr`],
+  [cpr transpose: from a vertex a and a set of paths ps, choose a tail xs ∈ ps],
+  [#leant("Freyd.Alg.pathStep.name")], [#leant("Freyd.Alg.pathStep")],
   [#leanf("Freyd.Alg.pathStep")],
-  [#leant("Freyd.Alg.pathStep", named: true)],
-  [put the vertex in front of every tail in the set and keep a cheapest],
+  [put a in front of every path in ps and keep a cheapest one],
 // lean:AOP.A8_2_Exec.pathF_obj@55c448b1
 // lean:AOP.A8_2.pathF@2dcf37fa
 // lean:AOP.A8_2_Exec.alphaR_pathF@6536d8fa
 // lean:AOP.A8_2.wrapz@e528d496
-// lean:AOP.A8_2.conswFn_apply@c88ec21b
+// lean:AOP.A8_2.wrapz_apply@e7256951
 // lean:AOP.A8_2.consw@53d456cc
+// lean:AOP.A8_2.consw_apply@e512412c
 // lean:AOP.A8_2.pathCost@2d18e3c4
-// lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
 // lean:AOP.A8_2_Exec.relCata_pathF_eps_eq_nelist@c0422a4d

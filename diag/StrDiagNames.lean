@@ -392,6 +392,20 @@ open Lean PrettyPrinter in
   | `($_ $x $xs) => do pure (.node .none ``noteCat #[← `([$x]), mkAtom "⧺", xs])
   | _ => throw ()
 
+-- A cons-list's LEAF prints by what the leaf is, read off the type arguments `L E`: a leaf of the
+-- element type is the one-element list `[x]`, a `Unit` leaf the empty list `[]`; any other leaf
+-- keeps the constructor's own name.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Freyd.Alg.RelSet.CL.ConsList.wrap] def delabConsWrap : Delab := do
+  let e ← getExpr
+  unless e.getAppNumArgs == 3 do failure
+  let args := e.getAppArgs
+  if (← Meta.isDefEq args[0]! args[1]!) then
+    let x ← withAppArg delab
+    `([$x])
+  else if (← Meta.isDefEq args[0]! (.const ``Unit [])) then `([])
+  else failure
+
 -- The segmenting example's `T` and `h` are the note's letters; implicit-only, so delaborators.
 open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
