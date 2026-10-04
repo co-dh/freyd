@@ -497,7 +497,7 @@
 // next four displays put together.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.star_UP") \
-    #src[for a preorder `X`, `X` contains `R` exactly when it contains `R*`]],
+    #src[`X` contains `R` exactly when it contains `R*`]],
      // lean:AOP.A6_7.star_UP@96ea823a
 )]<closure-up>
 
