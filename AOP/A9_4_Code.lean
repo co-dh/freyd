@@ -294,6 +294,10 @@ public theorem R_eq :
     obtain rfl : n = sizeFn c p v := hn
     exact hmn
 
+/-- **code-defn**, pointwise: `u R v` iff `u` costs no more than `v`. -/
+public theorem R_apply (u v : SnocList Unit Code) : R c p u v ↔ sizeFn c p u ≤ sizeFn c p v :=
+  Iff.rfl
+
 /-- `R°` is transitive — Theorem 9.2's `htrans`. -/
 public theorem R_recip_trans : (R c p)° ≫ (R c p)° ⊑ (R c p)° :=
   le_iff.mpr fun u w h => by

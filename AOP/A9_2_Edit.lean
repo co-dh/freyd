@@ -222,6 +222,10 @@ public theorem R_eq :
     obtain rfl : n = clen fs := hn
     exact hmn
 
+/-- **edit-defn**, pointwise: `es R fs` iff `es` is no longer than `fs`. -/
+public theorem R_apply (es fs : ConsList Unit (Op Char)) : R Char es fs ↔ clen es ≤ clen fs :=
+  Iff.rfl
+
 public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
   le_iff.mpr fun es gs h => by
     obtain ⟨fs, h1, h2⟩ := h

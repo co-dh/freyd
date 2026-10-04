@@ -143,6 +143,10 @@ public theorem R_eq :
     obtain rfl : n = costFn st sb cb t' := hn
     exact hmn
 
+/-- **mct-defn**, pointwise: `t R t'` iff `t` costs no more than `t'`. -/
+public theorem R_apply (t t' : Tree A) : R st sb cb t t' ↔ costFn st sb cb t ≤ costFn st sb cb t' :=
+  Iff.rfl
+
 public theorem R_recip_eq :
     (R st sb cb)° = (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0})) ≫ geq
       ≫ (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0}))° := by
