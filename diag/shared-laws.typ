@@ -292,8 +292,8 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 ]
 
 #let law-div-laws = [
-// One law per row, and the picture column takes the rest of the 22cm: `le_div_iff` is a `⟺` between
-// two containments, four sub-pictures wide (10.9cm before scaling), the widest picture in the note.
+// One law per row, the picture column taking the rest of the 22cm.  `le_div_iff` is a `⟺` between two
+// containments, drawn as its two sides by name: the string route draws no `↔` as one panel.
 #disp[#table(
   columns: (8.6cm, 1fr),
   align: (left + horizon, center + horizon),
@@ -301,10 +301,10 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 
   [`X⊑R/S⟺XS⊑R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y`
    such that `x` admires everyone `y` hates lies inside `R/S`, and `R/S` is the largest such.]],
-  P(lean("Freyd.Alg.le_div_iff")),
+  P(lean("Freyd.Alg.le_div_iff.lhs", "Freyd.Alg.le_div_iff.rhs", op: IFF)),
 
   [`X⊑S\R⟺SX⊑R` \ #src[The mirror — divide on the left when `x` comes first.]],
-  P(lean("Freyd.Alg.le_leftDiv_iff")),
+  P(lean("Freyd.Alg.le_leftDiv_iff.lhs", "Freyd.Alg.le_leftDiv_iff.rhs", op: IFF)),
 
   [`(R/S)S⊑R` \ #src[There is a `y` such that `x` admires everyone `y` hates, and `p` is one of
    the people `y` hates — then `x` admires `p` too. Strict at `S=∅`: `R/S` is everyone, `(R/S)S=∅`.]],
@@ -358,7 +358,6 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 
 #let law-pow-laws = [
 #disp[
-  #show table.cell.where(x: 0): rownum
   #table(
   columns: (7.95cm, 1fr),
   align: (left + horizon, left + horizon),
@@ -426,6 +425,9 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
   [#leanf("Freyd.Alg.subset_eq_recip_supset")],
   [`xs⊆ys⟺ys⊇xs`],
   // lean:Freyd.S2_40.subset_eq_recip_supset@f3a7b182
+  [#leanf("Freyd.Alg.recip_comp_Λ_le_recip_eps")],
+  [#src[every `T`-value of a point is a member of its `T`-set: `Λ(T)` is a map and `Λ(T)∋=T`.]],
+  // lean:AOP.A8_1.recip_comp_Λ_le_recip_eps@3d01c19f
 )]<pow-laws>
 ]
 
@@ -453,7 +455,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
      // lean:AOP.A7_1.mem_leftDiv_eq@ea4b76f9
   lean-chain(
     (none, "Freyd.Alg.mem_leftDiv_eq_step1.lhs", []),
-    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°` — @pow-laws]),
+    (EQ, "Freyd.Alg.mem_leftDiv_eq_step1.rhs", src[`Z=∈Λ(Z°)°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
      // lean:AOP.A7_1.mem_leftDiv_eq_step1@9c853dfe
     (EQ, "Freyd.Alg.mem_leftDiv_eq_step2.rhs",
       src[`X\(Yf°)=(X\Y)f°`, `f` a map]),

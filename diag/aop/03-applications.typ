@@ -79,7 +79,7 @@
   carried by `A×B`, with structure `⟨F(π₁)h,F(π₂)k⟩ : F(A×B)⟶A×B`.
 - `π₁` and `π₂` are homomorphisms out of it, and `⟨p,q⟩ : X⟶A×B` is a homomorphism *iff* `p`
   and `q` both are — substitute the structure and compare the two forks component by component.
-- The banana-split law of @cata-examples IS that product's universal property read at the initial
+- The banana-split law of @Freyd.Alg.pair_relCata_eq_relCata_pair IS that product's universal property read at the initial
   algebra: `⦇h⦈` and `⦇k⦈` are the unique homomorphisms to `(A,h)` and `(B,k)`, so their fork is the
   unique homomorphism into the product, which is `⦇⟨F(π₁)h,F(π₂)k⟩⦈`.
 // Fokkinga bullet: B&dM's Ex 3.4 (p. 58) is the other special case

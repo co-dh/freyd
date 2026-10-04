@@ -222,7 +222,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
 )
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#src[row 1's set has no `[1,7]` — from row 1
   only rows 4, 1 and 2 are reachable — and it does have `[1,8]`, because the cylinder glues the
-  bottom row to the top. That is `moves trans N(union)` of @cyl-defn: component `k` collects the
+  bottom row to the top. That is `moves trans N(union)` of @Freyd.Alg.Cylinder.gen: component `k` collects the
   paths of rows `k-1`, `k`, `k+1`.]])
 ]]<cyl-nela>
 
@@ -263,7 +263,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
   [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
-  [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @pow-laws],
+  [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @Freyd.Alg.Λ_eq_singleton_existsImage],
   // lean:AOP.A7_4_Cylinder.cyl_cp@fbd62a53 lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
 )]<cp-types>
 
@@ -414,7 +414,7 @@ N(α)(that)
   [#ca1],
 
   [#vstep(EQ, leanc("Freyd.Alg.Cylinder.cyl_laws_step4.lhs"),
-    [#src[@cyl-defn at `paths`]])],
+    [#src[@Freyd.Alg.Cylinder.paths at `paths`]])],
   [#ca2],
 
   [#vstep(RQ, leanc("Freyd.Alg.Cylinder.cyl_laws_step3.lhs"),

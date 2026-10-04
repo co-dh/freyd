@@ -26,6 +26,13 @@
 #import "cetz-nodraw.typ" as cetz
 #import "cetz-nodraw.typ": d
 #let NODRAW = cetz.NODRAW
+#let PAGEW = 25cm
+#let PAGEH = 35cm
+#let MARGIN = 1.5cm
+
+/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
+/// `#include`, so a chapter can tell whether it is the document or one file of it.
+#let NOTEROOT = state("note-root", false)
 
 /// The document rules; a note begins with `#show: conf.with(title: "…")`.  PAGINATED, not one endless
 /// A display's path — `13.4.3c`, the heading numbers then the display's letter.  Bare, so a panel's
@@ -63,6 +70,75 @@
 /// marker that depends on a state or query of its own costs a layout pass per link and never converged.
 #let disp-thms(s, at) = query(selector(<thm-num>).after(s.location()).before(at))
 
+// ---- A REFERENCE NAMES THE ROW, NEVER THE TABLE: a law cited as its whole table sends the reader
+// hunting through every row for the one that justifies the step.  Every first cell of a table inside a
+// display (`law-row`, bound by `conf`) emits a `<law-row>` marker holding its row index, the same index
+// under the label `<table-label:index>`, and under each Lean selector its `#leanf`s name — so the row
+// that states a law owns its number, and `@Freyd.Alg.Λ_absorption` lands on it.
+/// The `<disp-start>` of the display around `loc`, or `none` outside every display.
+#let disp-of(loc) = {
+  let s = query(selector(<disp-start>).before(loc)).at(-1, default: none)
+  if s != none and query(selector(<disp-end>).after(s.location()).before(loc)).len() == 0 { s }
+}
+/// A LAW TABLE: a display of two or more numbered rows, no `Thm` header and no book number.  A `Thm`
+/// heads a theorem and a book number (`disp(num: …)`) names one book statement: either is cited whole.
+#let law-table(s) = {
+  let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
+  let m = query(selector(<disp-num>).after(s.location())).at(0, default: none)
+  (e != none and m != none and m.value == none and disp-thms(s, e.location()).len() == 0
+    and query(selector(<law-row>).after(s.location()).before(e.location())).len() > 1)
+}
+/// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
+#let lean-keys(c) = { if type(c) != content { () }
+  else if c.func() == metadata { if c.at("label", default: none) == <lean-formula> { (c.value,) } else { () } }
+  else if c.has("children") { c.children.map(lean-keys).flatten() }
+  else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
+/// A row's number as a reference prints it: the display's number and the row index, `(0.10a.5)`;
+/// a row of a theorem display is cited as the theorem, its display's number.
+#let rowid(loc, y) = {
+  let s = disp-of(loc)
+  let m = query(selector(<disp-num>).after(s.location())).at(0)
+  if not law-table(s) { dispid(s.location()) }
+  else if m.value == none { "(" + dispid(s.location(), raw: true) + "." + str(y) + ")" }
+  else { [#m.value.#str(y)] }
+}
+/// THE GATE: a reference to a law table records itself, where it stands and what it cites, and `conf`
+/// stops the compile at the end with every such reference listed — one run names them all.
+#let law-gate(it) = {
+  let el = it.element
+  if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
+    let s = query(selector(<disp-start>).after(el.location())).at(0)
+    if law-table(s) {
+      let at = disp-of(here())
+      [#metadata("p." + str(here().page()) + (if at == none { "" } else { " in (" + dispid(at.location(), raw: true) + ")" }) +
+        ": @" + str(it.target) + " cites the whole law table (" + dispid(s.location(), raw: true) + ")")<table-ref>]
+    }
+  }
+}
+/// The first cell of every row of a display's table, numbered from 1: a header (`h`) is row 0 and the table's,
+/// not a row; a table with none starts its rows at `y = 0`, and that row is a law too (`<dom-laws>`).
+/// The rebuilt cell matches this rule again; its leading `<law-row>` marker is what stops it.
+#let law-row(h, it) = if (h and it.y == 0) or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) == <law-row>) { it } else {
+  let n = if h { it.y } else { it.y + 1 }
+  let f = it.fields()
+  let _ = f.remove("body")
+  table.cell(..f, {
+    [#metadata(n)<law-row>]
+    for k in lean-keys(it.body).dedup() [#metadata(n)#label(k)]
+    context {
+      let s = disp-of(here())
+      if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
+      if s != none and law-table(s) {
+        // In the page margin only where the table starts the line: a number column widened every `auto`
+        // first column past the paper edge, and a nested table's margin holds a bullet, a fill or a neighbour.
+        let num = box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))
+        let x = here().position().x
+        if x - MARGIN < 1em.to-absolute() { block({ place(left + top, dx: MARGIN - 1.5em - x, num); it.body }) } else { box(width: 1.5em, num); it.body }
+      } else { it.body }
+    }
+  })
+}
+
 // ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
 // `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
 // A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
@@ -84,9 +160,6 @@
 }
 
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
-#let PAGEW = 25cm
-#let PAGEH = 35cm
-#let MARGIN = 1.5cm
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
@@ -182,11 +255,19 @@
   show heading.where(level: 1): it => { pagebreak(weak: true); it }
   // A REFERENCE RESOLVES AT THE DISPLAY, NOT AT THE SENTENCE THAT CITES IT: a `context` inside a
   // reference resolves where the REFERENCE stands, so a display in §12 cited from §13 came out `(13.n)`.
-  show ref: it => {
+  show ref: it => context {
     let el = it.element
-    if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
-      context link(el.location(), dispid(el.location()))
-    } else { it }
+    let id = if el == none { none }
+      else if el.func() == figure and el.at("kind", default: none) == "disp" { dispid(el.location()) }
+      else if el.func() == metadata and type(el.value) == int { rowid(el.location(), el.value) }
+    if el != none and el.func() == figure { law-gate(it) }
+    if id == none { it } else { link(el.location(), id) }
+    // The whole note records what each reference printed, so a chapter compiled alone prints a label
+    // of another chapter the same way (`make ref-ids`), not as the label's own name.
+    // A heading reference prints its counter dot-joined: typst drops the numbering pattern's trailing `.`.
+    let rec = if id != none { plain(id) } else if el != none and el.func() == heading and el.numbering != none {
+      counter(heading).at(el.location()).map(str).join(".") }
+    if NOTEROOT.get() and rec != none [#metadata((str(it.target), rec))<ref-id>]
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
   // must run on.
@@ -201,6 +282,7 @@
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     show list: set align(left)
     show table: set align(left)
+    show table: t => { show table.cell.where(x: 0): law-row.with(t.children.any(c => c.func() == table.header)); t }
     set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
@@ -220,7 +302,8 @@
     // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
     // stood a page gutter away from the table it names.
     context {
-      [#metadata(none)<disp-start>]
+      // its label, so a row inside can name itself `<label:row>`
+      [#metadata(if it.at("label", default: none) == none { none } else { str(it.label) })<disp-start>]
       context {
         let s = query(selector(<disp-start>).before(here())).last()
         let e = query(selector(<disp-end>).after(here())).at(0, default: none)
@@ -237,11 +320,15 @@
     [#metadata(none)<disp-end>]
   }))
   body
+  context {
+    let bad = query(<table-ref>).map(m => m.value)
+    if bad.len() > 0 {
+      panic(str(bad.len()) + " reference(s) cite a whole law table; cite the row that justifies the step — " +
+        "@<the selector its #leanf names> or @<table label>:<row number>\n" + bad.join("\n"))
+    }
+  }
 }
 
-/// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
-/// `#include`, so a chapter can tell whether it is the document or one file of it.
-#let NOTEROOT = state("note-root", false)
 
 /// A CHAPTER COMPILED ALONE — its file starts `#show: note-chapter.with(N)` — must look like its
 /// pages in the book, and a whole-note compile costs about 13 GiB, which every gate paid.  Same
@@ -291,8 +378,19 @@
     show ref: it => context {
       let t = str(it.target)
       let present = query(it.target).len() > 0
-      if t in names { if present { link(it.target, names.at(t)) } else { names.at(t) } }
-      else if present { it } else { [#t] }
+      if t in names { if present { law-gate(it); link(it.target, names.at(t)) } else { names.at(t) } }
+      else if present { it } else {
+        // Another chapter's label: printed as the root printed it (`make ref-ids`), never as its name.
+        let p = sys.inputs.at("refs", default: none)
+        // A QUERY (`list=1`: the panel and ref-id listings; `cdscan=1`: cd-check) renders no reference,
+        // and runs before `make ref-ids` has written the file; the chapter's compile still checks it.
+        if p == none and ("list" in sys.inputs or "cdscan" in sys.inputs) { t } else {
+        if p == none { panic("@" + t + " is in another chapter: compile with --input refs=/.lake/build/ref-ids-<note>.json, which `make ref-ids` writes") }
+        let r = json(p).to-dict().at(t, default: none)
+        if r == none { panic("@" + t + ": no label of that name in the whole note (" + p + "), so no chapter can print it") }
+        r
+        }
+      }
     }
     doc
   })

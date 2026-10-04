@@ -128,7 +128,7 @@ in @mu-defn.
     // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
     (RQ, "Freyd.Alg.dynamic_programming_thin_prefixed.lhs",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
-      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @thin-laws, @est-up]),
+      src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @Freyd.Alg.thinRel_comp_est, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
     // `F(X)`.  `thin(Q) : PFA⟶PFA` rearranges the SET alone, so it is a bead on the `E` wire.
   ),

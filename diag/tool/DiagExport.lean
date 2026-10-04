@@ -1639,17 +1639,19 @@ def certLine (names : List Name) : MetaM String := do
 
 /-- THE KEY OF WHAT A PICTURE READ: everything every drawing reads (`envPrint`'s `shared`, the
     exporter's own code among it), the label rules as the drawn declarations see them, and each
-    read the drawing recorded, as it answers now.  A drawn declaration that is gone is an error. -/
-def readsKey (decls : List Name) (rs : Array StrDiag.Read) : MetaM UInt64 := do
+    read the drawing recorded, as it answers now.  A drawn declaration that is gone is an error.
+    The ROUTE is in it: the routes share one output path, so a file the term walk drew passed as
+    fresh to `--stale --string` and hid that the string route cannot draw it. -/
+def readsKey (route : String) (decls : List Name) (rs : Array StrDiag.Read) : MetaM UInt64 := do
   let env ← getEnv
   for d in decls do unless env.contains d do throwError "no such declaration: {d}"
   let p ← Prof.phase "print" StrDiag.envPrintNow
   rs.foldlM (fun h r => return mixHash h (mixHash (hash r.json.compress) (← StrDiag.readPrint p r)))
-    (mixHash p.shared (← Prof.phase "rules" (rulesKey decls)))
+    (mixHash (mixHash (hash route) p.shared) (← Prof.phase "rules" (rulesKey decls)))
 
 /-- The `reads:` line: the reads the drawing recorded, and their key now. -/
-def readsLine (decls : List Name) (rs : Array StrDiag.Read) : MetaM String :=
-  return READS_PREFIX ++ (Json.mkObj [("key", .str (toString (← readsKey decls rs))),
+def readsLine (route : String) (decls : List Name) (rs : Array StrDiag.Read) : MetaM String :=
+  return READS_PREFIX ++ (Json.mkObj [("key", .str (toString (← readsKey route decls rs))),
     ("reads", .arr (rs.map (·.json)))]).compress ++ "\n"
 
 /-- The file's reads line: its key and reads, `none` for no file or one with no such line — a red
@@ -1664,8 +1666,8 @@ def storedReads (path : System.FilePath) : IO (Option (String × Array StrDiag.R
       delete the file to redraw it"
 
 /-- Whether a file whose reads line is `stored` is still what those reads answer. -/
-def fresh (stored : Option (String × Array StrDiag.Read)) (decls : List Name) : MetaM Bool := do
-  return stored.map (·.1) == some (toString (← readsKey decls ((stored.map (·.2)).getD #[])))
+def fresh (route : String) (stored : Option (String × Array StrDiag.Read)) (decls : List Name) : MetaM Bool := do
+  return stored.map (·.1) == some (toString (← readsKey route decls ((stored.map (·.2)).getD #[])))
 
 /-- `--stale`: WHICH OF THESE SELECTORS' PICTURES ARE OUT OF DATE — no file, no `reads:` line, or
     a key that is no longer what those reads answer — printed one per line, in the order given, for
@@ -1676,8 +1678,8 @@ def fresh (stored : Option (String × Array StrDiag.Read)) (decls : List Name) :
     THE SELECTORS ARE THE OBLIGATIONS, not the files: a selector whose file is missing is stale, and
     one naming a declaration THE ENVIRONMENT NO LONGER HAS ends the run — a picture of a statement
     that no longer exists is not a picture to keep. -/
-def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode valueMode graphMode
-    : Bool) (suffix : String) (env : Environment) (opts : Options) (scopes : List Name)
+def staleMain (route : String) (stringMode circuitMode commutativeMode typeMode formulaMode valueMode
+    graphMode : Bool) (suffix : String) (env : Environment) (opts : Options) (scopes : List Name)
     (args : List String) : IO UInt32 := do
   -- ONE CALL, ITS FILES, AND THE DECLARATIONS EACH FILE IS DRAWN FROM.  The string route's `+`
   -- names two pictures sharing a box, so each is its own file and either one stale redraws the
@@ -1694,7 +1696,7 @@ def staleMain (stringMode circuitMode commutativeMode typeMode formulaMode value
       -- THE KEY NOW, whether or not the file is there: a declaration that is gone ends the run.
       -- Each selector its own heartbeat budget: the count is the PROCESS's, and this one tests many.
       let ctx := { StrDiag.declCtx env opts scopes decl with initHeartbeats := ← IO.getNumHeartbeats }
-      let ok ← try Prod.fst <$> (Meta.MetaM.run' (fresh stored decls)).toIO ctx { env }
+      let ok ← try Prod.fst <$> (Meta.MetaM.run' (fresh route stored decls)).toIO ctx { env }
         catch e => throw <| IO.userError s!"diag-export --stale: {n}: {e} — a picture drawn from \
           it is a picture of a statement that no longer exists.  Rename the note's selector"
       unless ok do stale := true
@@ -1792,7 +1794,7 @@ def main (args : List String) : IO UInt32 := do
     Prof.write t0 <| #[{ phase := "import", ns := tImport - t0, extra := s!"hb={hbImport}" }]
       ++ lines.push total
   if staleMode then
-    let code ← staleMain stringMode circuitMode commutativeMode typeMode formulaMode valueMode
+    let code ← staleMain kind stringMode circuitMode commutativeMode typeMode formulaMode valueMode
       graphMode suffix env opts scopes args
     profWrite s!"stale=1 selectors={args.length}"
       ((← Prof.drain).map fun (p, a) => { phase := p, ns := a.ns, extra := s!"calls={a.calls}" })
@@ -1859,14 +1861,14 @@ def main (args : List String) : IO UInt32 := do
         else throwError "diag-export: {arg} in the call {call} does not begin with {head}, so it \
           cannot be moved into the call's directory"
       let decls := selDecls commutativeMode graphMode formulaMode arg base
-      return (← certLine decls) ++ (← readsLine decls (← StrDiag.takeReads)) ++ body
+      return (← certLine decls) ++ (← readsLine kind decls (← StrDiag.takeReads)) ++ body
     -- The picture's reads start empty, and the call's declarations — the peers' too, which set the
     -- shared box — are the first of them.
     -- Under `--verify`, whether the file on disk is fresh by its own reads, asked before the drawing.
     let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call arg
     let wasFresh ← if !verifyMode then pure false else do
       let stored ← storedReads path
-      Prod.fst <$> (Meta.MetaM.run' (fresh stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
+      Prod.fst <$> (Meta.MetaM.run' (fresh kind stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
     discard StrDiag.takeReads
     for n in if stringMode then call.splitOn "+" else [arg] do
       let (b, _) := parseArg n (circuitMode || stringMode || formulaMode)

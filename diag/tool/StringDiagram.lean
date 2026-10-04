@@ -1058,10 +1058,9 @@ def markOfNatPredicate : Name → Option Mark
     The binder may state the class or the family's SQUARE at an arrow of the statement
     (`laxNatural_comp_slide`'s `hψ`), graded by the square's relation. -/
 def hypVerdict (alg : LaneAlg) (regionTy F G φ : Expr) : MetaM (Option (Mark × Name × Expr)) := do
-  -- A category has only the equation to grade a square by (`laneSquare`).
-  let grades := match alg with
-    | .relator => #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)]
-    | .functor => #[(Grade.strict, Mark.strict)]
+  -- A bare category has only the equation to grade a square by (`laneSquare`); an ordered one has `≤`.
+  let grades := if alg == .relator || (← homOrdered regionTy)
+    then #[(Grade.strict, Mark.strict), (.lax, .lax), (.oplax, .oplax)] else #[(Grade.strict, Mark.strict)]
   for d in ← getLCtx do
     if d.isImplementationDetail then continue
     let ty ← instantiateMVars d.type
@@ -1792,15 +1791,16 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- The spider's message is what the next proving agent reads, so the scan records what it passed
   -- over as it goes: re-running the search to explain it would pay for it twice.  The state is this
   -- search's own — the exporter runs a task per panel in one process.
-  let s ← Search.new (← Prof.phase "bridge" (familyHead br φ))
+  let s ← Search.new (← Prof.phase "bridge" (familyHead br φ)) (← bridge br φ).expr
   -- The proposition the verdict rests on and its proof, as the last hit left them: what the cache
   -- stores, so that a hit is a term `Meta.check`ed again and never a remembered mark.
   let proof ← IO.mkRef (none : Option (Expr × Expr))
   let keep (want : Expr) (r : Option (Name × Expr)) : MetaM (Option (Name × Expr)) := do
     if let some (_, pf) := r then proof.set (some (want, pf))
     return r
-  let tele (sq : Expr) := do keep sq (← findTelescoped br s sq must s.head FUEL)
-  let prove (want : Expr) (h : Name) (m : NameSet) := do keep want (← findProof br s want h m FUEL)
+  let fuel ← IO.mkRef 0
+  let tele (sq : Expr) := do keep sq (← findTelescoped br s sq must s.head (← fuel.get))
+  let prove (want : Expr) (h : Name) (m : NameSet) := do keep want (← findProof br s want h m (← fuel.get))
   -- A CATEGORY HAS ONE NATURALITY STATEMENT, THE SQUARE, and no `⊑` to grade it by: there is no
   -- lax, no oplax and no refutation to look for, so a family between functor lanes is the solid
   -- dot its square proves or the spider below — never the object-wire bead a failed RELATOR
@@ -1818,6 +1818,12 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
       -- it of every arrow — `∋` drew solid here while the same `∋` elsewhere drew hollow off
       -- `eps_laxNatural`.  `maps` is that weaker claim with ink of its own; a region that is a
       -- CATEGORY (`alg0 == .functor`) never reaches this line, and there the two coincide.
+      -- AN ORDERED CATEGORY grades by its own `≤` (`homLe`) and has no maps to restrict to: the copy
+      -- of a cartesian bicategory is lax (`lax_Δ`), its merge op-lax.
+      if alg0 == .functor && (← homOrdered regionTy) then
+        for (g, m) in #[(Grade.lax, Mark.lax), (.oplax, .oplax)] do
+          if let some (n, _) ← tele (← laneSquare alg regionTy F G φ g) then
+            return some { mark := some m, lean := #[n] }
       if alg0 == .relator then
         -- AN ALLEGORY HAS `⊑` TO GRADE BY, so a functor lane's square there is lax or op-lax like a
         -- relator's: `⊆ E(R) ⊑ E(R) ⊆` holds at every relation although `E` is no relator.
@@ -1886,8 +1892,17 @@ def verdict (regionTy : Expr) (cat : Array Name) (φ : Expr) : MetaM Verdict := 
   -- from the search's own start and the handler runs outside it, so the message is not itself cut
   -- short; the answer is the spider below, and the line names the family so a bead that lost its
   -- dot to a budget is not silent about it.
+  -- A DECLARATION THAT STATES THE SQUARE DECIDES THE BEAD BEFORE ANY SEARCH: the full search is
+  -- bounded, so its answer moved whenever an unrelated lemma joined the bucket (`𝟙%∋` lost
+  -- `singletonMap_natural` to one); the stated pass is the same phases at fuel 0 over `about` only.
+  let staged : MetaM (Option Verdict) := do
+    s.stated.set true
+    if let some v ← search then return some v
+    s.stated.set false
+    fuel.set FUEL
+    search
   let bounded : MetaM (Option Verdict) := Core.withCurrHeartbeats <| withTheReader Core.Context
-    (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) search
+    (fun c => { c with maxHeartbeats := SEARCH_HEARTBEATS }) staged
   -- A HIT STANDS FOR THE SEARCH ONLY AS A TERM THAT CHECKS (`cacheLoad`).  A FOUND verdict is stored
   -- even where a candidate's budget was cut on the way — it is a proof, and nearly every search of the
   -- heavy panels is cut somewhere — but NOTHING FOUND only where no budget was: a spider off a

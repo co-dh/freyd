@@ -120,7 +120,6 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 // B&dM §5.2, pp. 114–117, MIRRORED: the book writes `h·f` for first `f`, this note `f h`.  Five rows are
 // ONE picture — `×` is `⊗` and `⟨R,S⟩` is `◁(R⊗S)`, so interchange spends the law before it is stated.
 #disp[
-  #show table.cell.where(x: 0): rownum
   #table(
   columns: (5.95cm, 1fr),
   align: (left + horizon, center + horizon),
@@ -141,6 +140,10 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
  ]],
    // lean:AOP.A5_2.map_comp_pair@4056dfe1
   P(leanc("Freyd.Alg.RelProd.map_comp_pair"), s: 74%),
+
+  [#leanf("Freyd.Alg.RelProd.comp_pair_le") \ #src[the half of the row above that holds for every `X`]],
+   // lean:AOP.A5_2.comp_pair_le@094fa78f
+  [],
 
   [#leanf("Freyd.Alg.unzip_lax") \ #src[`unzip(F)≜⟨F(π₁),F(π₂)⟩`; only `⊑` for an arbitrary `R`, `S`]],
   P(leanc("Freyd.Alg.unzip_lax"), s: 74%),
@@ -175,6 +178,8 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
    // lean:AOP.A5_3.junc_unique@192cec99
 
   [`U : a₁⟶D`, `V : a₂⟶D` \ #leanf("Freyd.Alg.junc_recip_junc") #src[(5.11)]], P(leanc("Freyd.Alg.junc_recip_junc"), s: 85%),
+  [`Z : c⟶D` \ #leanf("Freyd.Alg.junc_comp") #src[]], [],
+  // lean:AOP.A5_3.junc_comp@8a97ad9b
   // lean:AOP.A5_3.junc_recip_junc@838f4abc
 )]<coprod-laws>
 
@@ -536,9 +541,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` is a map because `α` is an iso, so it leaves Λ: $frac(#[`α°F(X)R`], ∋)$`=α°`$frac(#[`F(X)R`], ∋)$ — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` is a map because `α` is an iso, so it leaves Λ: $frac(#[`α°F(X)R`], ∋)$`=α°`$frac(#[`F(X)R`], ∋)$ — @Freyd.Alg.Λ_fusion]),
+      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @Freyd.Alg.Λ_fusion]),
       (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
       // lean:AOP.A5_5.relCata_UP_step5@cdbc6943
   )],
@@ -688,7 +693,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   Thm[#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ") \
     #src[the set of lists the algebra builds is, from nothing, just `nil`, and from a head and a set
      of tails, every tail in the set with the head put on or left off — @cata-map-calc at
-     `subseq=⦇[nil,cons ∪ π₂]⦈`, @comb-fns.
+     `subseq=⦇[nil,cons ∪ π₂]⦈`, @Freyd.Alg.RelSet.ListRel.subseq_cata.
  ]],
     // lean:AOP.A5_6_ListCombinators.subseq_alg_Λ@e9ebf14d lean:AOP.A5_6_ListCombinators.subseq_cata@8a4731df
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
@@ -705,12 +710,12 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 
   // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
-    [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns]])],
+    [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns:1]])],
     // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@5548e84e lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
-    #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @coprod-laws]])],
+    #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @Freyd.Alg.junc, #ref(label("Freyd.Alg.u₁_junc"))]])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
@@ -720,7 +725,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
     `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
-    #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+    #src[@Freyd.Alg.Λ_of_map, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
     // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@d276006e
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 )]<subseq-EW-case>
@@ -742,7 +747,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   [#sb-hm \ #src[the `cons` operand of `cons ∪ π₂`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs"),
-    [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross]])],
+    [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross:8]])],
   [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
@@ -756,7 +761,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
-    #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
+    #src[@Freyd.Alg.Λ_absorption, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
 )]<subseq-EW-join>
@@ -766,7 +771,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
 #disp[#leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_transpose.rhs")
 #align(center, block(inset: (y: 4pt))[
   `[`#frc([`nil`])`,⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup]` \
-  #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @powrel-laws.]
+  #src[which writes `Pcons`; `cons` is a map, and there `P(cons)=E(cons)` — @Freyd.Alg.powerRel_map.]
 ])]<subseq-alg>
 
 #pagebreak(weak: true)
@@ -925,14 +930,14 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
 
   [order], [`R⊑S`], [`φ⊑ψ` componentwise],
 
-  [union], [`R ∪ S`], [`φ ∪ ψ`, *survives* #h(4pt) #src[@lax-closure]],
+  [union], [`R ∪ S`], [`φ ∪ ψ`, *survives* #h(4pt) #src[@lax-closure:3]],
 
   [product], [`R×S` #h(4pt) #src[@relprod-defn]],
   [`φ×ψ`, *survives*; a TENSOR, not a categorical product; SYMMETRIC
-   #h(4pt) #src[@fork-proj] #h(4pt) #src[@lax-closure]],
+   #h(4pt) #src[@fork-proj] #h(4pt) #src[@lax-closure:5]],
 
   [coproduct], [`R+S`],
-  [`φ+ψ`, *survives*; a BIPRODUCT #h(4pt) #src[@lax-closure]],
+  [`φ+ψ`, *survives*; a BIPRODUCT #h(4pt) #src[@lax-closure:6]],
 
   [meet], [`R∩S`],
   [`φ∩ψ` componentwise, *fails* #h(4pt) #src[@meet-counterex]],
@@ -962,7 +967,7 @@ Lax at every *map* already gives LaT, and at a map the inequation is an equality
    to `𝟙` #h(4pt) #src[@lax-defn] \
    with `𝒞` two objects and one non-identity arrow `X⟶Y`, a LaT `const A⇒const B` is the pair
    `φ`#sub[`X`]`,φ`#sub[`Y`]` : A⟶B` with `φ`#sub[`Y`]`⊑φ`#sub[`X`] #h(4pt) — the datum `R⊑S` \
-   not every LaT is constant: #h(4pt) `∋ : P⇒Id` #h(4pt) #src[@powrel-laws] #h(4pt)
+   not every LaT is constant: #h(4pt) `∋ : P⇒Id` #h(4pt) #src[@powrel-laws:1] #h(4pt)
    `π₂ : (A×−)⇒Id` #h(4pt) #src[@subseq-outr-square] #h(4pt) `◁ : Id⇒Δ` #h(4pt) #src[@rel-monoid]],
   // lean:AOP.A5_7.laxNatural_const_iff@4af68018
 )]<lat-const>

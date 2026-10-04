@@ -68,7 +68,7 @@ monad `iE`.]]
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset@92f4fb8f
   lean-chain(
     (none, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.lhs", []),
-    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.rhs", src[`R=∈Λ(R°)°` — @pow-laws]),
+    (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step1.rhs", src[`R=∈Λ(R°)°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step1@389887f3
     (EQ, "Freyd.Alg.leftDiv_eq_Λ_subset_step2.rhs", src[`(XY)\S=Y\(X\S)`]),
      // lean:AOP.A7_1.leftDiv_eq_Λ_subset_step2@7002b70d
@@ -105,14 +105,14 @@ $frac(#[`𝟙`], ∋)$,
   zsqc([$frac(#[`S`], ∋)$ `E(`$frac(#[`R`], ∋)$`∋)`], none),
 )
 #zline(
-  zstep(op: sym.eq, under: true)[@pow-laws, $frac(#[`R`], ∋)$ `∋=R`],
+  zstep(op: sym.eq, under: true)[#ref(label("Freyd.Alg.Λ_eps_eq'")), $frac(#[`R`], ∋)$ `∋=R`],
   zsqc([$frac(#[`S`], ∋)$ `E(R)`], none),
-  zstep(op: sym.eq, under: true)[@pow-laws, absorption],
+  zstep(op: sym.eq, under: true)[@Freyd.Alg.Λ_absorption, absorption],
   zsqc([$frac(#[`SR`], ∋)$], none),
 )
 #align(center, block(width: 16.5cm, inset: (y: 4pt))[#align(center)[#src[the first three steps only
   unfold `⋄` — `E` is a functor, so `E(`$frac(#[`R`], ∋)$`)union=E(`$frac(#[`R`], ∋)$`∋)=E(R)` and the
-  `union` is gone. Absorption, the row of @pow-laws, is the whole law, and it is the functoriality
+  `union` is gone. Absorption, @Freyd.Alg.Λ_absorption, is the whole law, and it is the functoriality
  of $frac(#[`·`], ∋)$. ]]])
   // lean:Freyd.S2_40.Λ_eps_eq'@2de083e0 lean:AOP.A4_6.Λ_absorption@00399742
 ]<kleisli-comp>

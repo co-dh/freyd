@@ -44,6 +44,7 @@
   collide once both layers exist.
 -/
 import diag.Basic
+import Freyd.S1_18
 
 universe v u
 
@@ -171,6 +172,35 @@ theorem tensHom_split {a a' b b' : Word O} (R : a ⟶ a') (S : b ⟶ b') :
 theorem tensHom_split' {a a' b b' : Word O} (R : a ⟶ a') (S : b ⟶ b') :
     (𝟙 a ⊗ₕ S) ≫ (R ⊗ₕ 𝟙 b') = R ⊗ₕ S := by
   rw [← tensHom_comp, Cat.comp_id, Cat.id_comp]
+
+/-- TWO SQUARES SIDE BY SIDE ARE ONE SQUARE: `AB ≤ CD` and `A'B' ≤ C'D'` give
+    `(A⊗A')(B⊗B') ≤ (C⊗C')(D⊗D')`.  The closure of a lax (or op-lax) family under `⊗`: a bead
+    `𝟙 ⊗ φ` inherits the grade of `φ`, the identity's square being an equation. -/
+theorem tensHom_square {p q r s p' q' r' s' : Word O} {A : p ⟶ q} {B : q ⟶ r} {C : p ⟶ s}
+    {D : s ⟶ r} {A' : p' ⟶ q'} {B' : q' ⟶ r'} {C' : p' ⟶ s'} {D' : s' ⟶ r'}
+    (h : (A ≫ B) ≤ (C ≫ D)) (h' : (A' ≫ B') ≤ (C' ≫ D')) :
+    ((A ⊗ₕ A') ≫ (B ⊗ₕ B')) ≤ ((C ⊗ₕ C') ≫ (D ⊗ₕ D')) :=
+  calc (A ⊗ₕ A') ≫ (B ⊗ₕ B')
+      = (A ≫ B) ⊗ₕ (A' ≫ B') := (tensHom_comp A B A' B').symm
+    _ ≤ (C ≫ D) ⊗ₕ (C' ≫ D') := tensHom_mono h h'
+    _ = (C ⊗ₕ C') ≫ (D ⊗ₕ D') := tensHom_comp C D C' D'
+
+/-- THE LANE OF `n ⊗ n`: two lanes side by side, `n ↦ F(n) ⊗ G(n)` and `R ↦ F(R) ⊗ₕ G(R)`.  The end
+    of `◁ : n ⟶ n ⊗ n` is this lane at `F = G = 𝟙`, so the naturality of a generator is a square in
+    it; a functor by `tensHom_id` and the interchange `tensHom_comp`. -/
+def tensFunctor (F G : Functor (Word O) (Word O)) : Functor (Word O) (Word O) where
+  obj n := F.obj n ⊗ G.obj n
+  map R := F.map R ⊗ₕ G.map R
+  map_id n := by rw [F.map_id, G.map_id, tensHom_id]
+  map_comp R S := by rw [F.map_comp, G.map_comp, tensHom_comp]
+
+/-- THE CONSTANT LANE at `X`: every object to `X`, every arrow to `𝟙 X`.  The end of a family that
+    does not vary — `⊸ : n ⟶ 𝕀` runs from the identity lane to the constant lane at `𝕀`. -/
+def constFunctor {𝒞 : Type u} [Cat.{v} 𝒞] {𝒟 : Type u} [Cat.{v} 𝒟] (X : 𝒟) : Functor 𝒞 𝒟 where
+  obj _ := X
+  map _ := Cat.id X
+  map_id _ := rfl
+  map_comp _ _ := (Cat.id_comp _).symm
 
 /-- `γ_{a,I} = 𝟙_a`.  Mac Lane lists `γ;λ = ρ` among the axioms of a symmetric monoidal category and
     it is a `SymMonCat` field in the non-strict tower; here the unitors are identities, so what it

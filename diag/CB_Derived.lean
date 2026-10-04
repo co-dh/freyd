@@ -333,6 +333,66 @@ theorem lax_? {m n : Word O} (R : m ⟶ n) : (⟜ ≫ R) ≤ (⟜) :=
         OrderedCat.comp_mono («?!≤𝟙» m) (OrderedCat.«≤_refl» _)
     _ = ⟜ := Cat.id_comp _
 
+section Naturality
+
+/-! THE GENERATORS AS FAMILIES, stated the way `diag-export` builds a bead's square (`laneSquare`):
+    `G.map f ≫ φ y ≤ φ x ≫ F.map f` (lax) or its reverse (op-lax), over the lanes `idFunctor`,
+    `tensFunctor` and `constFunctor` the generator's ends read as.  `lax_Δ` and `«lax_∇»` already have
+    that shape; `lax_!` and `lax_?` have a bare generator on one side and are restated here with the
+    constant lane's `𝟙 𝕀`.  A tensored bead inherits its grade through `tensHom_square`. -/
+
+open SymMonCat
+
+/-- `lax_!` as a square: `f⊸ ≤ ⊸𝟙`, the discard LAX natural into the constant lane at `𝕀`. -/
+theorem «!_laxNatural» {x y : Word O} (f : x ⟶ y) :
+    (idFunctor.map f ≫ ⊸) ≤ (⊸ ≫ (constFunctor (𝕀 : Word O)).map f) :=
+  calc f ≫ ⊸ ≤ ⊸ := lax_! f
+    _ = ⊸ ≫ 𝟙 (𝕀 : Word O) := (Cat.comp_id _).symm
+
+/-- `lax_?` as a square: `⟜f ≤ 𝟙⟜`, the create OP-LAX natural out of the constant lane at `𝕀`. -/
+theorem «?_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
+    ((⟜ : 𝕀 ⟶ x) ≫ idFunctor.map f) ≤ ((constFunctor (𝕀 : Word O)).map f ≫ ⟜) :=
+  calc ((⟜ : 𝕀 ⟶ x) ≫ f) ≤ ⟜ := lax_? f
+    _ = 𝟙 (𝕀 : Word O) ≫ ⟜ := (Cat.id_comp _).symm
+
+/-- The identity family's square, an equation read at `≤`: the `𝟙` half of every tensored bead. -/
+theorem id_square {x y : Word O} (f : x ⟶ y) : (𝟙 x ≫ f) ≤ (f ≫ 𝟙 y) := by
+  rw [Cat.id_comp, Cat.comp_id]; exact OrderedCat.«≤_refl» _
+
+/-- `𝟙 ⊗ ⊸`, LAX in the discarded wire: `«!_laxNatural»` beside the identity. -/
+theorem «𝟙⊗!_laxNatural» (a : Word O) {x y : Word O} (f : x ⟶ y) :
+    ((tensFunctor (constFunctor a) idFunctor).map f ≫ (𝟙 a ⊗ₕ (⊸ : y ⟶ 𝕀)))
+      ≤ ((𝟙 a ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ (constFunctor (a ⊗ 𝕀)).map f) :=
+  calc ((𝟙 a ⊗ₕ f) ≫ (𝟙 a ⊗ₕ (⊸ : y ⟶ 𝕀)))
+      ≤ (𝟙 a ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ (𝟙 a ⊗ₕ 𝟙 (𝕀 : Word O)) :=
+        tensHom_square (OrderedCat.«≤_refl» _) («!_laxNatural» f)
+    _ = (𝟙 a ⊗ₕ (⊸ : x ⟶ 𝕀)) ≫ 𝟙 (a ⊗ 𝕀) := by rw [tensHom_id]
+
+/-- `𝟙 ⊗ ⟜` is OP-LAX: `«?_oplaxNatural»` beside the identity. -/
+theorem «𝟙⊗?_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
+    ((𝟙 x ⊗ₕ (⟜ : 𝕀 ⟶ x)) ≫ (tensFunctor idFunctor idFunctor).map f)
+      ≤ (idFunctor.map f ≫ (𝟙 y ⊗ₕ (⟜ : 𝕀 ⟶ y))) :=
+  calc ((𝟙 x ⊗ₕ (⟜ : 𝕀 ⟶ x)) ≫ (f ⊗ₕ f))
+      ≤ (f ⊗ₕ 𝟙 (𝕀 : Word O)) ≫ (𝟙 y ⊗ₕ (⟜ : 𝕀 ⟶ y)) :=
+        tensHom_square (id_square f) («?_oplaxNatural» f)
+    _ = f ≫ (𝟙 y ⊗ₕ (⟜ : 𝕀 ⟶ y)) := by rw [tensHom_runit]
+
+/-- `𝟙 ⊗ ▷` is OP-LAX: `«lax_∇»` beside the identity. -/
+theorem «𝟙⊗∇_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
+    ((𝟙 x ⊗ₕ (▷ : x ⊗ x ⟶ x)) ≫ (tensFunctor idFunctor idFunctor).map f)
+      ≤ ((tensFunctor idFunctor (tensFunctor idFunctor idFunctor)).map f
+          ≫ (𝟙 y ⊗ₕ (▷ : y ⊗ y ⟶ y))) :=
+  tensHom_square (id_square f) («lax_∇» f)
+
+/-- `▷ ⊗ 𝟙` is OP-LAX: `«lax_∇»` beside the identity. -/
+theorem «∇⊗𝟙_oplaxNatural» {x y : Word O} (f : x ⟶ y) :
+    (((▷ : x ⊗ x ⟶ x) ⊗ₕ 𝟙 x) ≫ (tensFunctor idFunctor idFunctor).map f)
+      ≤ ((tensFunctor (tensFunctor idFunctor idFunctor) idFunctor).map f
+          ≫ ((▷ : y ⊗ y ⟶ y) ⊗ₕ 𝟙 y)) :=
+  tensHom_square («lax_∇» f) (id_square f)
+
+end Naturality
+
 /-! ### Maps (functorialSemanticsForRelationalTheories.pdf pp. 20–21)
 
   The paper gives the map conditions twice.  (SV)/(TOT)/(INJ)/(SUR) on p. 20 are COMONOID

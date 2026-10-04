@@ -17,6 +17,7 @@ import AOP.A5_7
 -- The BIFUNCTOR, for the one test that says which bundles are lanes the picture names: a binary
 -- relator is one, and its partial application is what `openBuiltField?` opens.
 import AOP.A5_5_TypeFunctor
+import diag.Monoidal
 import diag.tool.Tags
 import diag.tool.Prof
 import diag.tool.Reads
@@ -1255,9 +1256,12 @@ def Peeled.inner (p? : Option Peeled) (n : Nat) (x : Expr) : Option Peeled := do
 partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr) : MetaM Expr := do
   let .fvar vid := v | throwError "the family variable {← Meta.ppExpr v} is not a local"
   if !X.containsFVar vid then
-    unless alg == .relator do
-      throwError "the end {← Meta.ppExpr X} does not vary with {← Meta.ppExpr v} and \
-        {← Meta.ppExpr regionTy} is no allegory, so there is no constant lane to read it as"
+    -- A CATEGORY'S CONSTANT LANE is `constFunctor X`, from the region the index lives in: `⊸ : n ⟶ 𝕀`
+    -- runs into it, and refusing it left every generator with a unit end unread.
+    if alg == .functor then
+      let idx ← Meta.inferType v
+      return ← Meta.mkAppOptM ``Freyd.Diag.constFunctor
+        #[some idx, some (← catInst idx), some regionTy, some (← catInst regionTy), some X]
     let inst ← allegoryInst regionTy
     return ← Meta.mkAppOptM ``Freyd.Alg.Relator.const
       #[some regionTy, some regionTy, some inst, some inst, some X]
@@ -1287,6 +1291,15 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
       throwError "the coproduct {← Meta.ppExpr X} has no lane in {← Meta.ppExpr regionTy}: the \
         repo has `Relator.sum` and no coproduct FUNCTOR, so a family under one is read nowhere"
     return ← Meta.mkAppM ``Freyd.Alg.Relator.sum #[fa, fb]
+  -- A MONOIDAL REGION'S `⊗` IS A LANE too, the two readings side by side (`tensFunctor`): the ends
+  -- of the copy `◁ : n ⟶ n ⊗ n` and of the merge, the generators a cartesian bicategory is built from.
+  if let (``Freyd.Diag.Word.tens, #[_, a, b]) := X.getAppFnArgs then
+    let fa ← relatorOfObj alg cat regionTy v a
+    let fb ← relatorOfObj alg cat regionTy v b
+    unless alg == .functor do
+      throwError "the tensor {← Meta.ppExpr X} has no lane in the allegory {← Meta.ppExpr regionTy}: \
+        `tensFunctor` is a functor of a monoidal category, and no relator"
+    return ← Meta.mkAppM ``Freyd.Diag.tensFunctor #[fa, fb]
   match X.getAppFnArgs with
   | (``Freyd.Functor.obj, args) =>
     if let some (f, x) := lastTwo args then
@@ -1321,6 +1334,19 @@ partial def relatorOfObj (alg : LaneAlg) (cat : Array Name) (regionTy v X : Expr
     by, and nothing else — a spider is the absence of all three, not a fourth. -/
 inductive Grade where | strict | lax | oplax
   deriving Inhabited, BEq
+
+/-- THE HOM ORDER A SQUARE IS GRADED BY: an allegory's `⊑` (`Freyd.Alg.le`), else the `≤` an
+    ordered category carries as `LE` on each hom (`diag.Basic`'s `HomLE`) — a cartesian bicategory's
+    `◁` is lax there (`lax_Δ`) as `∋` is in an allegory. -/
+def homLe (regionTy l r : Expr) : MetaM Expr := do
+  if (← laneAlgOf regionTy) == .relator then Meta.mkAppM ``Freyd.Alg.le #[l, r]
+  else Meta.mkAppM ``LE.le #[l, r]
+
+/-- Whether the region's homs carry an order (`homLe`) at all; a bare category's squares have only `=`. -/
+def homOrdered (regionTy : Expr) : MetaM Bool := do
+  if (← laneAlgOf regionTy) == .relator then return true
+  Meta.withLocalDeclD `x regionTy fun x => do
+    return (← Meta.synthInstance? (← Meta.mkAppM ``LE #[← Meta.mkAppM ``Cat.Hom #[x, x]])).isSome
 
 /-- THE NATURALITY SQUARE OF A FAMILY BETWEEN LANES, as a proposition.  `φ a : G.obj a ⟶ F.obj a`,
     so naturality is `G.map f ≫ φ y ∼ φ x ≫ F.map f` for every arrow `f : x ⟶ y` of the region,
@@ -1364,8 +1390,8 @@ def laneSquare (alg : LaneAlg) (regionTy F G φ : Expr) (grade : Grade := .stric
       let r ← Meta.mkAppM ``Cat.comp #[(mkApp φ x).headBeta, ← apply (wiresOf F) f]
       let sq ← match grade with
         | .strict => Meta.mkEq l r
-        | .lax => Meta.mkAppM ``Freyd.Alg.le #[l, r]
-        | .oplax => Meta.mkAppM ``Freyd.Alg.le #[r, l]
+        | .lax => homLe regionTy l r
+        | .oplax => homLe regionTy r l
       if !onMaps then return ← Meta.mkForallFVars #[x, y, f] sq
       Meta.withLocalDeclD `hf (← Meta.mkAppM ``Freyd.Alg.Map #[f]) fun hf =>
         Meta.mkForallFVars #[x, y, f, hf] sq
@@ -2374,11 +2400,47 @@ structure Search where
   /-- Every candidate scan the search made (`Read.scan`): what its answer depends on,
       with the declarations those candidates reach (`depText`). -/
   scans : IO.Ref (Std.HashSet Read)
+  /-- The STATED pass: only candidates about the family's own head, hypotheses answered from the
+      context alone, so a declaration that states the square decides the bead before any budget does. -/
+  stated : IO.Ref Bool
+  /-- The bridged family `fun a => core`: a stated candidate is one whose conclusion contains it. -/
+  family : Option Expr := none
 
 /-- A search at its start. -/
-def Search.new (head : Option Name) : IO Search := do
+def Search.new (head : Option Name) (family : Option Expr := none) : IO Search := do
   return { leanedOn := ← IO.mkRef 0, head, passed := ← IO.mkRef #[], cut := ← IO.mkRef false
-           scans := ← IO.mkRef {} }
+           scans := ← IO.mkRef {}, stated := ← IO.mkRef false, family }
+
+/-- Whether `e` STATES something of the family `φ`: some closed subterm is `φ` itself, or its core
+    at fresh objects, up to reducible unfolding — a test on the statement, before any unification.
+    At the CURRENT depth, since the candidate's own instance and object metavariables have to be
+    assignable to meet the region's; every assignment is undone. -/
+def mentionsFamily (φ e : Expr) : MetaM Bool := Meta.withReducible do
+  let saved ← Meta.saveState
+  let r ← go
+  saved.restore
+  return r
+where go : MetaM Bool := do
+  let (_, _, core) ← Meta.lambdaMetaTelescope φ
+  let hd := core.getAppFn.constName?
+  let mut todo := #[e]
+  while h : todo.size > 0 do
+    let x := todo.back
+    todo := todo.pop
+    unless x.hasLooseBVars do
+      if x.isLambda then
+        if ← Meta.isDefEq x φ then return true
+      else if hd.isSome && x.getAppFn.constName? == hd then
+        let saved ← Meta.saveState
+        if ← Meta.isDefEq x core then return true
+        saved.restore
+    match x with
+    | .app f a => todo := todo.push f |>.push a
+    | .lam _ t b _ | .forallE _ t b _ => todo := todo.push t |>.push b
+    | .letE _ t v b _ => todo := todo.push t |>.push v |>.push b
+    | .mdata _ b | .proj _ _ b => todo := todo.push b
+    | _ => pure ()
+  return false
 
 /-- One candidate not taken, kept only where it is ABOUT this family — its statement names the
     family's head — because the whole bucket is every theorem of the repo with that conclusion. -/
@@ -2399,6 +2461,8 @@ def remembered (s : Search) (square : Bool) (goal : Expr) (must : List Name) (fu
     (seen : Array Expr) (search : MetaM (Option (Name × Expr))) : MetaM (Option (Name × Expr)) := do
   -- The pure `LocalContext.mkForall`, not `Meta.mkForallFVars`: that one reverts an unassigned
   -- metavariable, assigning it (or throwing) before the test below could decline the key.
+  -- A stated pass sees part of the bucket, so its failure answers no full search.
+  if ← s.stated.get then return ← search
   let lctx ← instantiateLCtxMVars (← getLCtx)
   let key : Failed := { square, must, goal := lctx.mkForall lctx.getFVars (← instantiateMVars goal) }
   if key.goal.hasMVar || key.goal.hasFVar then return ← search
@@ -2423,6 +2487,8 @@ def statesSquare (al : Std.HashMap Name (Array Name)) (fam : Name) (ty : Expr) :
     let some (l, r) := (match concl.getAppFnArgs with
       | (``Eq, #[_, l, r]) => some (l, r)
       | (``Freyd.Alg.le, args) => lastTwo args
+      -- An ordered category's square is graded by `LE.le` (`homLe`), so it is stated in it too.
+      | (``LE.le, args) => lastTwo args
       | _ => none) | return false
     -- The family is met by any spelling a bridge could have rewritten into it, as in `must`.
     let names (e : Expr) : Bool :=
@@ -2495,7 +2561,7 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
     let (a, b, c) := rank x.1
     let (d, e, f) := rank y.1
     a < d || (a == d && (b < e || (b == e && c < f)))
-  for (n, has) in about ++ rest do
+  for (n, has) in if ← s.stated.get then about else about ++ rest do
     if hit.isSome then break
     -- THE SEARCH IS BOUNDED FROM ITS OWN START, and the check sits OUTSIDE the candidate's own
     -- `tryCatchRuntimeEx` below: a budget spent inside one candidate is caught as that candidate's
@@ -2530,9 +2596,13 @@ partial def scan (br : Meta.Simp.Context) (s : Search) (want : Expr) (head : Nam
       -- relator metavariable applied to an object has no most general solution and can diverge, so
       -- it gets a budget of its own; what follows — discharging the factors' squares, checking the
       -- assembled term — is more searching, and a budget there is a dot lost to a timeout.
-      unless ← Core.withCurrHeartbeats (withTheReader Core.Context
-        (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS })
-        (Meta.isDefEq rc.expr rw.expr)) do
+      -- A STATED candidate is one of a few about the family, and only the search's own bound holds
+      -- it: under the per-candidate cap its match failed cold and passed warm.
+      if ← s.stated.get then
+        unless ← s.family.elim (pure false) (mentionsFamily · rc.expr) do return none
+      let unify := Meta.isDefEq rc.expr rw.expr
+      unless ← (if ← s.stated.get then unify else Core.withCurrHeartbeats (withTheReader Core.Context
+        (fun c => { c with maxHeartbeats := CANDIDATE_HEARTBEATS }) unify)) do
         if seen.isEmpty then s.passOver has s!"tried {n}: no unification"
         return none
       unless ← discharge br s args bis fuel (seen.push want) do return none

@@ -30,6 +30,7 @@
 # for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
+failed=
 verify=
 [ "$1" = "--missing" ] && { missing=1; shift; }
 [ "$1" = "--verify" ] && { verify=--verify; shift; }
@@ -89,7 +90,7 @@ draw() {
   n=$(printf '%s\n' "$names" | wc -l)
   printf '%s\n' "$names" \
     | xargs -d '\n' -n "$(( (n + 4 * p - 1) / (4 * p) ))" -P "$p" \
-        ./scripts/diag-export --prepared $verify "$@" || exit 1
+        ./scripts/diag-export --prepared $verify "$@" || failed=1
 }
 
 all=$(./scripts/note-files --generated) || exit 1
@@ -132,4 +133,7 @@ draw "$(cat "$ls/lean-graph.stale")" --graph
 draw "$(cat "$ls/lean-formula.stale")" --formula
 draw "$(cat "$ls/lean-type.stale")" --type
 draw "$(cat "$ls/lean-value.stale")" --value
+# EVERY ROUTE IS DRAWN BEFORE THE RUN FAILS: a red stub in one route stopped the run before the next,
+# and the gate then failed on a formula file that was never drawn instead of on the panel.
+[ -z "$failed" ] || { echo "diag-regen: a drawing above failed (its message names it); every route was still drawn" >&2; exit 1; }
 exit 0

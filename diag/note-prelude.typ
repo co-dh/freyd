@@ -129,14 +129,6 @@
 // these off `note-files --generated` and draws them by `--proof`.
 #import "generated/Freyd.Diag.CartBicat.frob.proof.typ": branches as frobb
 
-// Row numbers so a law can be cited: `it.y` is the table's OWN index, so deleting a row renumbers
-// the rest.  Rebuilt as a cell, not returned bare — bare content loses the row's height.
-#let rownum = it => if it.y == 0 or it.body.func() == grid { it } else {
-  let f = it.fields()
-  let _ = f.remove("body")
-  table.cell(..f, grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#it.y], it.body))
-}
-
 // The Hinze–Marsden picture column the derivation tables share; the formula column takes the rest
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm
@@ -629,7 +621,9 @@
   let cuts = (0,) + breaks + (steps.len(),)
   // EVERY LAW THE CALC NAMES is a formula to draw, listed here whatever `span` shows and wherever
   // the chain places it: `diag-regen` lists only placed metadata, and a hint a layout dropped went unlisted.
-  for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] }
+  // Emitted from a `context`, which `lean-keys` does not walk: a law a step CITES is no law its row
+  // STATES, and labelling the row with it duplicated the label of the row that does.
+  context for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] }
   lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named())
 }
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
