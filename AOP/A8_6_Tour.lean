@@ -573,10 +573,7 @@ public theorem tour_laws_defn :
     `p₁ = p₂ ≜ 𝟙`, `P ≜ ⊤`.  The thinning order is `Qc`, NOT the note's `Q`: see
     `tour_mono_dropl_Q_false`. -/
 public theorem tour_laws
-    {sort : (dTour City ⟶ dTour City) → (P (dTour City) ⟶ listRelator.obj (dTour City))}
-    {sortF : ((F (City × City) City).obj (dTour City) ⟶ (F (City × City) City).obj (dTour City)) →
-      (P ((F (City × City) City).obj (dTour City)) ⟶
-        listRelator.obj ((F (City × City) City).obj (dTour City)))}
+    {sort : ∀ {X : RelSet.{0}}, (X ⟶ X) → (P X ⟶ listRelator.obj X)}
     {listcp : (F (City × City) City).obj (listRelator.obj (dTour City)) ⟶
       listRelator.obj ((F (City × City) City).obj (dTour City))}
     {g₁ g₂ : listRelator.obj ((F (City × City) City).obj (dTour City)) ⟶ listRelator.obj (dTour City)}
@@ -585,15 +582,15 @@ public theorem tour_laws
     {Pr : RelProd (listRelator.obj (dTour City)) (listRelator.obj (dTour City))}
     {Pr' : RelProd (P (dTour City)) (P (dTour City))}
     {cat : Pr.p ⟶ listRelator.obj (dTour City)}
-    (hsortF : ∀ {X Y : (F (City × City) City).obj (dTour City)
-        ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sortF X ⊑ sortF Y)
-    (h88₁ : sortF (graph droplAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droplAlgFn)°)
+    (hsort : ∀ {X Y : (F (City × City) City).obj (dTour City)
+        ⟶ (F (City × City) City).obj (dTour City)}, X ⊑ Y → sort X ⊑ sort Y)
+    (h88₁ : sort (graph droplAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droplAlgFn)°)
       ≫ g₁ ⊑ powerRel (graph (droplAlgFn (City := City))) ≫ (sort (topMor (dTour City) (dTour City))))
-    (h88₂ : sortF (graph droprAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droprAlgFn)°)
+    (h88₂ : sort (graph droprAlgFn ≫ topMor (dTour City) (dTour City) ≫ (graph droprAlgFn)°)
       ≫ g₂ ⊑ powerRel (graph (droprAlgFn (City := City))) ≫ (sort (topMor (dTour City) (dTour City))))
     (h811 : (F (City × City) City).map (sort (topMor (dTour City) (dTour City))) ≫ listcp
       ⊑ cpMap (F (City × City) City) (dTour City)
-        ≫ sortF ((F (City × City) City).map (topMor (dTour City) (dTour City))))
+        ≫ sort ((F (City × City) City).map (topMor (dTour City) (dTour City))))
     (h810 : prodMap Pr' Pr (sort (topMor (dTour City) (dTour City))) (sort (topMor (dTour City) (dTour City))) ≫ cat ⊑ cup Pr' ≫ (sort (topMor (dTour City) (dTour City))))
     (h86 : (sort (topMor (dTour City) (dTour City))) ≫ thinlist ⊑ thinRel (Qc tc) ≫ (sort (topMor (dTour City) (dTour City))))
     (h87 : (sort (topMor (dTour City) (dTour City))) ≫ minlist ⊑ est (R tc)) :
@@ -619,7 +616,7 @@ public theorem tour_laws
     (minlist := fun _ => minlist)
     (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R ⟨Qc_refl, Qc_trans⟩
     ⟨le_trans Qc_refl Qc_le_R, trans_of_recip_trans R_recip_trans⟩
-    hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
+    hm₁ hm₂ hsort tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
     rfl rfl rfl
   -- The note's program is the fold of ITS OWN arrows: `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`, so the
   -- `p₁ = p₂ = 𝟙` Theorem 8.2 was taken at leave no `≫ 𝟙` behind in the statement drawn.

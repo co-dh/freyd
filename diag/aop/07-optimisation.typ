@@ -336,7 +336,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // Each step's two sides are one `lean(l, r)` call, so they share one box and stand one height.
 #disp(num: "Theorem 7.1")[#calc-table(cols: (1fr,), al: auto,
   // monotonic-alg row: Theorem 7.1
-  Thm(cols: 1)[`f°F(R)f⊑R⟺F(est(R))f⊑` #frc([`F(∋)f`]) ` est(R)` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.monoAlg_iff_distributes") \
+    // lean:AOP.A7_2.monoAlg_iff_distributes@650c43f5
     #src[`f` carries `R`-related parts to `R`-related wholes (`f°F(R)f⊑R`) if and only if applying `f` to the
      `R`-best parts (`F(est(R))f`) is included in applying `f` to all parts, then taking an `R`-best (`F(∋)f` then `est(R)`)
       // lean:AOP.A7_2.distributes_of_monoAlg@437ca1ee
@@ -1514,7 +1515,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
   [`R≜sum≤sum°`],
   [#leant("Freyd.Alg.RelSet.Tuple.costLE")],
-  [`Nat[m]⟶Nat[m]`],
+  [#leant("Freyd.Alg.Vec.Rel.costLE")],
+  // lean:AOP.A7_4_CylinderVecRel.Vec.Rel.costLE@8f746cf3
   [The cost of a path, which the cheapest minimises — one order per length `m`.],
 
   [`gen`],
@@ -1774,9 +1776,12 @@ zip(that)                                         each row: its square, and the 
   [#leant("Freyd.Alg.RelSet.Van.RH_eq")],
   [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`, and `[[a],[b,c]]` to `[[a,b],[c]]` by `R∩H`.],
 
-  [`|R|≜R∩¬R°`],
-  [`[[A]]⟶[[A]]`],
-  [`[[a,b,c]]` to `[[a],[b,c]]`: `1<2`. The strict part `R` splits into: `R;H=|R| ∪ (R∩H)`.],
+ [#leanf("Freyd.Alg.RelSet.Van.RH_eq_strict") \
+   #src[`|R|` is the strict part of `R`, strictly fewer segments; `R;H` splits into it and `R∩H`]],
+  // lean:AOP.A7_5_Van.RH_eq_strict@370b0cab
+  [#leant("Freyd.Alg.RelSet.Van.strictR")],
+  // lean:AOP.A7_5_Van.strictR@9f4d506f
+  [`[[a,b,c]]` to `[[a],[b,c]]` by `|R|`: `1<2`.],
 
   [the specification \ $frac(#[`partition list(secure)`], ∋)$ `est(R)`],
   [`[A]⟶[[A]]`],

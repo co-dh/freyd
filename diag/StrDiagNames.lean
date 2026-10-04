@@ -676,6 +676,18 @@ open Lean PrettyPrinter in
   | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
   | `($_ $_ $w) => `($(mkIdent `fits) $w)
   | _ => `($(mkIdent `fits))
+-- B&dM's `y subseq x` (p.123) is the predicate under the relation `subseq`, as `allFitP` is `fits`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.subseqP] def unexpandSubseqP : Unexpander
+  | `($_ $y $x) => `($(mkIdent `subseq) $y $x)
+  | `($_ $y) => `($(mkIdent `subseq) $y)
+  | _ => `($(mkIdent `subseq))
+-- The list map on a function is B&dM's `list f` (p.205: `value = sum·list val`), the relator's letter.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.cmap] def unexpandCmap : Unexpander
+  | `($_ $f $x) => `($(mkIdent `list) $f $x)
+  | `($_ $f) => `($(mkIdent `list) $f)
+  | _ => `($(mkIdent `list))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.headLine] def unexpandParaHeadLine : Unexpander
   | `($_ $p) => `($(mkIdent `head) $p)
@@ -1353,6 +1365,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander cplMap] def unexpandCplMap : Unexpander
   | _ => `($(mkIdent `cpl))
+-- B&dM p.201's `listcp(F)`; the functor is the wire's, as for `cp`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
+  | _ => `($(mkIdent `listcp))
+-- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
+open Lean PrettyPrinter in
+@[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
+  | `($_ $R) => `($(mkIdent `connected) $R)
+  | _ => throw ()
 -- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
