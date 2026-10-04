@@ -569,20 +569,36 @@ partial def valSteps (s : FVarId) (x : Expr) : MetaM (Option (Array String)) := 
         step deps[0]! (← headShow x.getAppFn args fun a => !a.containsFVar s)
       else return none
 
-/-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
-    peeled the way a tuple pattern binds it. -/
-partial def tupleFactors (s ty : Expr) (n : Nat) : MetaM (Array Expr) := do
-  if n == 0 then return #[]
-  if n == 1 then return #[s]
+/-- The factors an alternative's bound variables come from, read off the BINDERS' TYPES: a binder whose
+    type is the factor in hand takes it whole, any other factor is split as the product it is.  The
+    pattern's nesting is the tree of those types, so `(c,(b,j))` and `((c,b),j)` both bind their
+    leaves; returns the factors and the binder types still unmatched. -/
+partial def tupleFactors (s ty : Expr) (tys : List Expr) : MetaM (Array Expr × List Expr) := do
+  let t :: _ := tys | throwError "a branch binds fewer variables than {← Meta.ppExpr ty} has factors"
+  if ← Meta.isDefEq t ty then return (#[s], tys.drop 1)
   match (← Meta.whnfD ty).getAppFnArgs with
-  | (``Prod, #[_, b]) => return #[.proj ``Prod 0 s] ++ (← tupleFactors (.proj ``Prod 1 s) b (n - 1))
-  | _ => throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which is not a \
-      product of that many factors"
+  | (``Prod, #[a, b]) =>
+    let (l, rest) ← tupleFactors (.proj ``Prod 0 s) a tys
+    let (r, rest) ← tupleFactors (.proj ``Prod 1 s) b rest
+    return (l ++ r, rest)
+  | _ => throwError "a branch binds a variable of type {← Meta.ppExpr t} out of \
+      {← Meta.ppExpr ty}, which is neither that type nor a product"
 
 /-- One alternative as a map OUT OF ITS SUMMAND, which is what an arm of the junction is. -/
 def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
   Meta.withLocalDeclD `s ty fun s => do
-    Meta.mkLambdaFVars #[s] (mkAppN alt (← tupleFactors s ty n)).headBeta
+    let tys ← Meta.forallBoundedTelescope (← Meta.inferType alt) n fun xs _ =>
+      xs.toList.mapM Meta.inferType
+    -- No binder is the `Unit` a constant arm takes; one binder is the whole summand.
+    let fs ← match n with
+      | 0 => pure #[]
+      | 1 => pure #[s]
+      | _ => do
+        let (fs, rest) ← tupleFactors s ty tys
+        unless rest.isEmpty do
+          throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which has fewer factors"
+        pure fs
+    Meta.mkLambdaFVars #[s] (mkAppN alt fs).headBeta
 
 /-- The arms of a map given by a `match` ON ITS INPUT at a coproduct — the junction `[f,g]` the note
     writes, whether the picture opens it as a tape or a label names it.  `matchMatcherApp?` reads

@@ -432,6 +432,10 @@ open Lean PrettyPrinter Delaborator SubExpr in
   unless info.type == .coe && e.getAppNumArgs == info.numArgs do failure
   withNaryArg info.coercee delab
 
+-- A SUBTYPE'S VALUE IS ITS COERCION, `↑p`, as Mathlib registers it; core Lean leaves `Subtype.val`
+-- out of the `@[coe]` registry, so a legal interval's bound `p.1.lo` printed `lo(Subtype.val p)`.
+attribute [coe] Subtype.val
+
 -- A cons-list VALUE is written as the list it is: `cons a (cons b [])` is `[a,b]`, and a variable
 -- tail is the book's `[a]⧺x`.
 open Lean PrettyPrinter in
@@ -1457,6 +1461,7 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.mkR] def unexpandTexMkR : Unexpander
   | `($_ ($p, 0)) => pure (.node .none ``noteDiv #[p, mkAtom "/", mkIdent `w])
+  | `($_ $x) => pure x
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tex.IsDigit] def unexpandTexIsDigit : Unexpander
@@ -1842,6 +1847,47 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Bool.false] def unexpandBoolFalse : Unexpander
   | `($_:ident) => `($(mkIdent `false))
+  | _ => throw ()
+-- A relation given by a `match` states its related cases with `true`/`false`, as `leb`'s tests do.
+open Lean PrettyPrinter in
+@[app_unexpander True] def unexpandPropTrue : Unexpander
+  | `($_:ident) => `($(mkIdent `true))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander False] def unexpandPropFalse : Unexpander
+  | `($_:ident) => `($(mkIdent `false))
+  | _ => throw ()
+-- A QUOTIENT IS WRITTEN BY ITS REPRESENTATIVES, as a coercion is by what it coerces: a lift is the
+-- function it lifts applied to the class, and the class of `x` is `x` — a bag is its list.
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Quotient.liftOn] def delabNoteLiftOn : Delab := do
+  let a := (← getExpr).getAppArgs
+  unless a.size == 6 do failure
+  PrettyPrinter.delab (mkApp a[4]! a[3]!).headBeta
+open Lean PrettyPrinter Delaborator SubExpr in
+@[delab app.Quotient.mk] def delabNoteQuotMk : Delab := do
+  unless (← getExpr).getAppNumArgs == 3 do failure
+  withNaryArg 2 delab
+-- §10.2/§10.4 (B&dM pp.246, 258): a string's or a decimal's `length`, and the `prefix` order.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.slen] def unexpandDetabSlen : Unexpander | _ => `($(mkIdent `length))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.len] def unexpandTexLen : Unexpander | _ => `($(mkIdent `length))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Detab.prefixS] def unexpandDetabPrefix : Unexpander
+  | _ => `($(mkIdent `prefix))
+-- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
+-- `(bagify°×𝟙) penalty`, the penalty of putting the job last after any ordering of the bag.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.AddP] def unexpandTardyAddP : Unexpander | _ => `($(mkIdent `add))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tardy.bagPenalty] def unexpandTardyBagPenalty : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "(bagify°×𝟙) penalty")))
+-- B&dM p.258: `shift(d,r)=(d+r)/10`, the representative `shiftPre` computes; the class `mkR x` of
+-- any other representative is `x`, as `Quotient.mk`'s is.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Tex.shiftPre] def unexpandTexShiftPre : Unexpander
+  | `($_ $d $x) => do pure (.node .none ``noteDiv #[← `(($d + $x)), mkAtom "/", Syntax.mkNumLit "10"])
   | _ => throw ()
 -- Ex 6.30 insertion sort (B&dM p.157).
 open Lean PrettyPrinter in
