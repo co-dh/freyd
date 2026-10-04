@@ -361,7 +361,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     (IFF, lean("Freyd.Alg.mon_thm71_step3.rhs.lhs", "Freyd.Alg.mon_thm71_step3.rhs.rhs"),
       src[`(F(∋)f)°=f°F(∈)` — @conv-defn — and `∈ est(R)=R°` — @est-defn, `R` reflexive]),
     (IFF, lean("Freyd.Alg.mon_thm71_step4.rhs.lhs", "Freyd.Alg.mon_thm71_step4.rhs.rhs"),
-      src[both sides conversed — `F(R°)°=F(R)`, @relator-laws
+      src[both sides conversed — `F(R°)°=F(R)`, @relator-laws:3
      // lean:AOP.A7_2.monoAlg_iff_conj@4f4eb3ac
     ]),
     // lean:AOP.A7_2.monoAlg_recip_iff@d760ac4d
