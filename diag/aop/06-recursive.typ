@@ -148,7 +148,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu_coprod") \
     #src[when both algebras are case splits over the same sum, the recursion runs each case on its
      own and unites the results]],
-  // lean:AOP.A6_3.hylo_eq_mu_coprod@066877fe
+  // lean:AOP.A6_3.hylo_eq_mu_coprod@aaac99b8
   lean-calc(calc-hcop),
 )]<hylo-coprod>
 

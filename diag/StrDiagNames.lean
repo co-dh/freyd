@@ -1835,6 +1835,15 @@ open Lean PrettyPrinter in
 @[app_unexpander Relator.prod] def unexpandRelatorProd : Unexpander
   | `($_ $F $G) => `($F × $G)
   | _ => throw ()
+-- THE SUM RELATOR ON A GIVEN COPRODUCT FAMILY IS THE NOTE'S `G+H`, as `Relator.sum` is.  A
+-- delaborator: `G`, `H` are implicit, read off the coproduct family's type; the family is last.
+open Lean PrettyPrinter Delaborator in
+@[delab app.Freyd.Alg.Relator.sumOn] def delabRelatorSumOn : Delab := do
+  let n := (← SubExpr.getExpr).getAppNumArgs
+  guard (n ≥ 4)
+  let g ← SubExpr.withNaryArg (n - 4) delab
+  let h ← SubExpr.withNaryArg (n - 3) delab
+  `($g + $h)
 -- The bag's quotient is taken of the note's `perm`, the permutation relation `16-greedy` defines
 -- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.
 open Lean PrettyPrinter in

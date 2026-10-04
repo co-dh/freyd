@@ -85,14 +85,36 @@ public theorem convert_fusion (hg : zero ≫ f = g) (hh : shift ≫ f = rprodMap
     show _ = junc _ (𝟙 _ ≫ g) (prodMap (relProd _ _) (relProd _ _) f (𝟙 (dE Bit)) ≫ h)
     rw [Cat.id_comp, prodMap_eq_rprodMap])
 
+/-- `F(X) = 𝟏+(X×Bit)` as the sum relator on `cop`: the same objects, and on arrows `F` agrees
+    with it by `Fmap_eq_sumMap`. -/
+abbrev Fsum : Relator RelSet.{0} RelSet.{0} :=
+  Relator.sumOn (G := Relator.const (dL Unit))
+    (H := Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bit))) cop
+
+/-- `I` read as the initial algebra of `Fsum`: the same carrier, structure map and folds. -/
+noncomputable abbrev Isum : InitialAlgebra Fsum where
+  t := I.t
+  α := I.α
+  α_map := I.α_map
+  cata := I.cata
+  cata_map := I.cata_map
+  cata_comm f hf := (I.cata_comm f hf).trans (by rw [Fmap_eq_sumMap])
+  cata_unique f hf h hh hc := I.cata_unique f hf h hh (hc.trans (by rw [Fmap_eq_sumMap]))
+
+/-- The fold over `Fsum` is the fold over `F`: the transposed algebras agree by `Fmap_eq_sumMap`. -/
+theorem relCata_Isum {A : RelSet.{0}} (R : (F Unit Bit).obj A ⟶ A) :
+    relCata (I := Isum) R = relCata (I := I) R := by
+  unfold relCata; (simp only [Fmap_eq_sumMap]) <;> rfl
+
 /-- **B&dM p.145**: `convert°⦇[g,h]⦈ = (μX : zero°g ∪ shift°(X×𝟙)h)` — Corollary 6.1
     over `F(X) = 𝟏+(X×Bit)`. -/
 public theorem convert_recip_cata :
     convert° ≫ relCata (junc (cop dNat) g h)
       = mu (fun X : dNat ⟶ dNat => (zero° ≫ g) ∪ (shift° ≫ rprodMap X (𝟙 (dE Bit)) ≫ h)) := by
-  refine (hylo_eq_mu_coprod I (G := Relator.const (dL Unit))
-    (H := Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bit))) cop
-    (fun X => Fmap_eq_sumMap Unit Bit X) (S₁ := zero) (S₂ := shift)).trans ?_
+  unfold convert; rw [← relCata_Isum, ← relCata_Isum]
+  refine (hylo_eq_mu_coprod (G := Relator.const (dL Unit))
+    (H := Relator.prod (Relator.idRelator RelSet.{0}) (Relator.const (dE Bit))) cop Isum
+    (S₁ := zero) (S₂ := shift)).trans ?_
   congr 1; funext X
   show (zero° ≫ 𝟙 _ ≫ g) ∪ (shift° ≫ prodMap (relProd _ _) (relProd _ _) X (𝟙 (dE Bit)) ≫ h) = _
   rw [Cat.id_comp, prodMap_eq_rprodMap]

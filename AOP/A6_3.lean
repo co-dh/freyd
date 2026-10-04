@@ -18,8 +18,8 @@
     `calc_steps` names the steps.
   * Ex 6.10: hylomorphisms of simple algebra/coalgebra pairs are simple (`mu_simple`,
     `hylo_simple`).
-  * Corollary 6.1 (`hylo_body_coprod_decompose`, `hylo_eq_mu_coprod`): the hylo body over a
-    coproduct-decomposed relator splits into two independent branch bodies joined by `∪`.
+  * Corollary 6.1 (`hylo_body_coprod`, `hylo_eq_mu_coprod`): the hylo body over a
+    sum relator `Relator.sumOn` splits into two independent branch bodies joined by `∪`.
 -/
 module
 
@@ -217,10 +217,8 @@ end ExSimple
 
 /-! ## Corollary 6.1  Coproduct decomposition of the hylo body
 
-  If `F` is presented over a coproduct decomposition `F ≅ G + H` (each `F.obj x` a coproduct of
-  `G.obj x` and `H.obj x`, with `F`'s action on morphisms matching `sumMap`), and the algebra and
-  coalgebra are themselves juncs (case splits) `R = [R₁,R₂]`, `S = [S₁,S₂]` against that same
-  decomposition, then the hylo body decomposes into two INDEPENDENT branch bodies, joined by
+  If `F` is the sum relator `G + H` on a coproduct family `C` (`Relator.sumOn C`), and the
+  algebra and coalgebra are juncs (case splits) `R = [R₁,R₂]`, `S = [S₁,S₂]` over `C`, then the hylo body decomposes into two INDEPENDENT branch bodies, joined by
   `∪`. Needs `DistributiveAllegory` for `junc`/`Coproduct`, already implied by
   `LocallyCompleteDistributiveAllegory ⊆ UnguardedPowerLCDA`. -/
 
@@ -228,8 +226,8 @@ section Corollary61
 
 /-- Corollary 6.1, the body over `F(X)=G(X)+H(X)`: `[S₁,S₂]°(G(X)+H(X))[R₁,R₂]` is the union of
     the two branch bodies, one law per step. -/
-public theorem hylo_body_coprod {G H : Relator 𝒜 𝒜}
-    (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
+public theorem hylo_body_coprod {G H : Relator 𝒜 𝒜} {T : 𝒜 → 𝒜}
+    (C : ∀ x : 𝒜, Coproduct (T x) (G.obj x) (H.obj x))
     {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
     (X : B ⟶ A) :
     (junc (C B) S₁ S₂)° ≫ sumMap (C B) (C A) (G.map X) (H.map X) ≫ junc (C A) R₁ R₂
@@ -241,30 +239,16 @@ public theorem hylo_body_coprod {G H : Relator 𝒜 𝒜}
 
 calc_steps hylo_body_coprod
 
-/-- **Corollary 6.1**, the body decomposition: `S° ≫ F.map X ≫ R = (S₁°≫G.map X≫R₁) ∪
-    (S₂°≫H.map X≫R₂)` when `R = [R₁,R₂]`, `S = [S₁,S₂]` are juncs over `F`'s coproduct
-    presentation `F.map X = sumMap (C x) (C y) (G.map X) (H.map X)`. -/
-public theorem hylo_body_coprod_decompose {G H : Relator 𝒜 𝒜}
-    (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
-    (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
-    {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B}
-    (X : B ⟶ A) :
-    (junc (C B) S₁ S₂)° ≫ F.map X ≫ junc (C A) R₁ R₂
-      = (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂) := by
-  rw [hF X]; exact hylo_body_coprod C X
-
-/-- **Corollary 6.1**, hylo form: transporting `hylo_eq_mu`'s fixed-point equation through the
-    body decomposition (`mu_congr`) — the hylomorphism over a coproduct-decomposed `F` equals
-    the `mu` of the two-branch body directly, with NO reference to `F`, `G.map`/`H.map`'s common
-    ambient functor beyond what's already in the branch bodies. -/
-public theorem hylo_eq_mu_coprod (I : InitialAlgebra F)
-    {G H : Relator 𝒜 𝒜} (C : ∀ x : 𝒜, Coproduct (F.obj x) (G.obj x) (H.obj x))
-    (hF : ∀ {x y : 𝒜} (X : x ⟶ y), F.map X = sumMap (C x) (C y) (G.map X) (H.map X))
+/-- **Corollary 6.1**, hylo form: Theorem 6.2 over the sum relator `F = G+H` on a coproduct
+    family `C`, with both algebras case splits over `C` — the hylomorphism is the `mu` of the
+    union of the two branch bodies. -/
+public theorem hylo_eq_mu_coprod {G H : Relator 𝒜 𝒜} {T : 𝒜 → 𝒜}
+    (C : ∀ x : 𝒜, Coproduct (T x) (G.obj x) (H.obj x)) (I : InitialAlgebra (Relator.sumOn C))
     {A B : 𝒜} {R₁ : G.obj A ⟶ A} {R₂ : H.obj A ⟶ A} {S₁ : G.obj B ⟶ B} {S₂ : H.obj B ⟶ B} :
-    (relCata (junc (C B) S₁ S₂))° ≫ relCata (junc (C A) R₁ R₂)
+    (relCata (I := I) (junc (C B) S₁ S₂))° ≫ relCata (I := I) (junc (C A) R₁ R₂)
       = mu (fun X : B ⟶ A => (S₁° ≫ G.map X ≫ R₁) ∪ (S₂° ≫ H.map X ≫ R₂)) := by
   rw [hylo_eq_mu I (junc (C A) R₁ R₂) (junc (C B) S₁ S₂)]
-  exact mu_congr (fun X => hylo_body_coprod_decompose C hF X)
+  exact mu_congr (fun X => hylo_body_coprod C X)
 
 end Corollary61
 
