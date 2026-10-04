@@ -58,6 +58,8 @@ public theorem graph_monoAlg_topMor {F : Relator RelSet.{0} RelSet.{0}} {A : Rel
     Freyd.Alg.MonoAlg (F := F) (RelSet.graph f) (topMor A A) :=
   RelSet.le_iff.mpr fun u r _ => ⟨f u, rfl, RelSet.topMor_apply _ r⟩
 
+section Generic
+
 variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A C w : 𝒜}
 
 /-- **The power transpose of a composition** (book p.198, the first step of the calculation):
@@ -213,6 +215,8 @@ public theorem recip_comp_le_of_simple_comp {A B C : 𝒜} {S : C ⟶ A} {hd : A
   simp only [Cat.assoc, Cat.id_comp] at h3
   rw [e1] at h2
   exact le_trans h2 h3
+
+end Generic
 
 /-! ### The layered network itself (book p.196)
 

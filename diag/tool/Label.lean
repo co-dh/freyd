@@ -711,10 +711,13 @@ def printsAsField (e : Expr) : MetaM Bool := do
 
 /-- How an OBJECT's label joins under a functor's name.  A functor's action heads with THAT
     functor's name (`applyJoin`), whatever its operand was; everything else is the printer's own
-    answer, read off the syntax it built. -/
-def objJoin (e : Expr) : MetaM Join := do
+    answer, read off the syntax it built.  A COMBINATOR RELATOR'S action is labelled as the object
+    it reduces to (`labelTree`'s `relatorObj?` clause), so it joins as that object: `P(B×A)`, not `PB×A`. -/
+partial def objJoin (e : Expr) : MetaM Join := do
   match ← functorObj? e with
-  | some (f, _) => return applyJoin (← functorName f)
+  | some (f, _) =>
+    if let some v ← relatorObj? f e then return ← objJoin v
+    return applyJoin (← functorName f)
   | none => return stxJoin (← delabP e)
 
 /-- The last component of the head's name WHEN THAT HEAD IS A CONSTRUCTOR — read off the

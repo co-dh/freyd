@@ -424,8 +424,8 @@ open Lean PrettyPrinter Delaborator in
 @[delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
 
 -- The coproduct injections applied to a point are applications, so they take parentheses.
-notation:max "inl(" x ")" => Sum.inl x
-notation:max "inr(" x ")" => Sum.inr x
+notation:max "l(" x ")" => Sum.inl x
+notation:max "r(" x ")" => Sum.inr x
 
 -- The note's `thin(Q)` is a DELIMITED operator, like `est(R)` (`AOP.A7_1`) and `P(R)` (`AOP.A5_4`)
 -- which are declared this same way: an unexpander returns a term, and no term prints its own brackets.
@@ -774,7 +774,7 @@ open Lean PrettyPrinter in
 -- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.FastExp.dNat] def unexpandFEdNat : Unexpander
-  | _ => `($(mkIdent `Nat))
+  | _ => `($(mkIdent (Name.mkSimple "ℕ")))
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.FastExp.Bit] def unexpandFEBit : Unexpander
@@ -782,7 +782,7 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.FastExp.dNB] def unexpandFEdNB : Unexpander
-  | _ => `($(mkIdent `Nat) × $(mkIdent `Bit))
+  | _ => `($(mkIdent (Name.mkSimple "ℕ")) × $(mkIdent `Bit))
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.FastExp.dBin] def unexpandFEdBin : Unexpander
@@ -1580,8 +1580,6 @@ open Lean PrettyPrinter Delaborator in
 -- B&dM's own name for the booleans (§1.7, the answers of `p` in `filter`).
 open Lean PrettyPrinter Delaborator in
 @[delab app.Bool, delab const.Bool] def delabBoolName : Delab := `($(mkIdent `Bool))
-open Lean PrettyPrinter Delaborator in
-@[delab app.Nat, delab const.Nat] def delabNatName : Delab := `($(mkIdent `Nat))
 -- The counterexample's objects and relation are the note's `A`, `B`, `R`; which sets they are, is
 -- the paragraph above the panel.  Delaborators, because they take no explicit argument.
 open Lean PrettyPrinter Delaborator in
