@@ -298,9 +298,10 @@ open Lean PrettyPrinter in
   | `($_ $R) => `($(mkIdent (Name.mkSimple "L")) $R)
   | _ => throw ()
 
--- The NATURAL NUMBERS are the note's `ℕ`, keyed on the constant `Nat`.
+-- The NATURAL NUMBERS are the note's `ℕ`.  Keyed `app.Nat`: the delaborator files a bare constant as a
+-- nullary application, so a `const.Nat` key alone never fires and the label printed `Nat`.
 open Lean PrettyPrinter Delaborator in
-@[delab const.Nat] def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
+@[delab app.Nat] def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
 
 -- The CARRIER needs the clause as much as the object: `NEList A` is an `abbrev`, so the term keeps
 -- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
@@ -421,7 +422,7 @@ open Lean PrettyPrinter Delaborator in
 @[delab app.Freyd.Alg.RelSet.Segment.T, delab const.Freyd.Alg.RelSet.Segment.T]
 def delabSegmentT : Delab := `($(mkIdent `T))
 open Lean PrettyPrinter Delaborator in
-@[delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
+@[delab app.Freyd.Alg.RelSet.Segment.h, delab const.Freyd.Alg.RelSet.Segment.h] def delabSegmentH : Delab := `($(mkIdent `h))
 
 -- The coproduct injections applied to a point are applications, so they take parentheses.
 notation:max "l(" x ")" => Sum.inl x

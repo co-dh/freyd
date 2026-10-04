@@ -304,6 +304,18 @@ row((
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@f43f12a8
+  [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
+     dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
+     every `z` in `Λ(S)(x)`.
+   - We have `w R z` (`w` is cheapest) and `w (S°S) z` (both are built by `S` from the same argument
+     `x`); the hypothesis turns the two into `w Q z`: among candidates from one argument, cheaper
+     already means `Q`-better.
+   - In the layered network, `Q ≜ R∩(head head°)`, and every path `S` builds from `r(a,ts)` is
+     `cons(a,t)`, with head `a`; from `l(a)` only `[a]`. So `S head ⊑ [𝟙,π₁]` is simple,
+     `S°S ⊑ head head°`, and `R∩(S°S) ⊑ Q`.
+   - For the program: all tails behind one vertex `a` give paths with one head, so keeping the
+     cheapest suffices — `step = cpr P(cons) est(R)` uses `est`, not `thin`; paths from different
+     vertices of a layer have different heads and are thinned by `Q`, one per head.],
   lean-calc(calc-82c),
 )]<path-laws>
 
