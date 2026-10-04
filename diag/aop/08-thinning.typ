@@ -47,7 +47,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   [keeping everything is always a legal thinning],
   [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[@thin-intro]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
-   // lean:AOP.A8_1.thinRel_comp_est@6bfc12d6
+   // lean:AOP.A8_1.thinRel_comp_est@eafff35f
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
  #src[(8.2) — @thin-82]],
    // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@8aad298c
@@ -90,11 +90,11 @@ row((
 #import "../generated/Freyd.Alg.thinRel_comp_est_cond1.calc.typ" as calc-up1
 #grid(columns: (1fr, 1fr), column-gutter: 42pt, align: top,
 [#disp[
-   // lean:AOP.A8_1.thinRel_comp_est@6bfc12d6
+   // lean:AOP.A8_1.thinRel_comp_est@eafff35f
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_step1") \
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
-     // lean:AOP.A8_1.thinRel_comp_est_step1@93d6fb99
+     // lean:AOP.A8_1.thinRel_comp_est_step1@65f6cc95
   lean-chain(
     (none, "Freyd.Alg.thinRel_comp_est_step1.lhs", []),
     (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @Freyd.Alg.id_le_thinRel]),
@@ -115,7 +115,7 @@ row((
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond2") \
     #src[the `⊒` half, second condition]],
-     // lean:AOP.A8_1.thinRel_comp_est_cond2@f6b6c061
+     // lean:AOP.A8_1.thinRel_comp_est_cond2@1bf58dd7
   lean-calc(calc-up2),
 )]<thin-intro-up2>
 

@@ -82,27 +82,6 @@ section Layered
 
 variable {B : 𝒜} {F : BiRelator 𝒜}
 
-/-- **Corollary 8.1 at the layered network** (book p.198, the step the thinning theorem makes):
-    the specification is above the thinned fold —
-    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇thin Q·Λ(α·F(∈,∈))⦈`, mirrored
-    `relCata (Λ (F(∋,∋)α) ≫ thin Q) ≫ est R ⊑ Λ (relCata (F(∋,𝟙)α)) ≫ est R`.
-    `thinning_est` is stated at `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose
-    action on `∋` is `F(𝟙,∋)`; `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange. -/
-public theorem thinning_paths_step
-    (I : InitialAlgebra (F.appl (P A)))
-    {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
-    (hmono : Freyd.Alg.MonoAlg
-      ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q) :
-    relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
-      ⊑ Λ (relCata (I := I) (F.map (∋ A) (𝟙 B) ≫ α)) ≫ est R := by
-  have e : (F.appl (P A)).map (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α)
-      = F.map (∋ A) (∋ B) ≫ α := by
-    show F.map (𝟙 (P A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
-    rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
-  rw [← e]
-  exact thinning_est I hQR hQ hR hmono
-
 /-! ### The algebra chain of p.198, one `calc` step per law
 
   Each step of `thinning_paths_alg` relates two consecutive lines of the book calculation, mirrored, at the

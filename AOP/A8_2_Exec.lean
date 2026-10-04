@@ -290,6 +290,35 @@ public theorem pathF_map_comp_alphaR_eq_pathAlg :
     · rintro ⟨v, hv, hp⟩
       exact ⟨.inr (v, q.2), ⟨hv, rfl⟩, hp⟩
 
+/-- **The algebra chain at the layered network** (book p.198): `thinning_paths_alg` at the
+    network's `α`, `R` and `Q`, whose `R∩(S°S)⊑Q` is `pathR_inter_recip_le_pathQ`. -/
+public theorem thinning_paths_alg_net (wt : A → A → Nat) :
+    Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
+        ≫ powerRel (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ est (pathR wt))
+      ⊑ Λ (pathF.map (∋ (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ thinRel (pathQ wt) :=
+  thinning_paths_alg (F := pathF) (α := alphaR) (pathR_inter_recip_le_pathQ wt)
+
+/-- **Corollary 8.1 at the layered network** (book p.198, the step the thinning theorem makes):
+    the specification is above the thinned fold —
+    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇thin Q·Λ(α·F(∈,∈))⦈`, mirrored.  `thinning_est` is stated at
+    `Λ(F(∋)·S)·thin Q` for the fold's own relator `F(E A,−)`, whose action on `∋` is `F(𝟙,∋)`;
+    `F(𝟙,∋)F(∋,𝟙)α` IS `F(∋,∋)α`, by interchange.  Its premises are the network's own laws:
+    `pathQ_le_pathR`, the two preorders, and `pathAlg_monotonic`. -/
+public theorem thinning_paths_step (wt : A → A → Nat) :
+    relCata (I := pathInit A) (Λ (pathF.map (∋ (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ thinRel (pathQ wt))
+        ≫ est (pathR wt)
+      ⊑ Λ (relCata (I := pathInit A) (pathF.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR))
+        ≫ est (pathR wt) := by
+  have e : (pathF.appl (P (dE A))).map (∋ (dCL A A)) ≫ (pathF.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR)
+      = pathF.map (∋ (dE A)) (∋ (dCL A A)) ≫ alphaR := by
+    show pathF.map (𝟙 (P (dE A))) (∋ (dCL A A)) ≫ (pathF.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR) = _
+    rw [← Cat.assoc, pathF.interchange' (∋ (dE A)) (∋ (dCL A A))]
+  rw [← e]
+  refine thinning_est (pathInit A) (pathQ_le_pathR wt) (pathQ_preorder wt) (pathR_preorder wt) ?_
+  show pathF.map (𝟙 _) (pathQ wt) ≫ _ ⊑ _
+  rw [pathF_map_id, pathF_map_comp_alphaR_eq_pathAlg]
+  exact pathAlg_monotonic wt
+
 /-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
     the layers —
     `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored, at the network's
@@ -305,13 +334,8 @@ public theorem thinning_paths (wt : A → A → Nat) :
   -- The terms are the two laws' own sides: spelled out, `relCata`'s initial algebra is a fresh
   -- metavariable that `whnf` cannot close within the heartbeat budget.
   calc _ ⊑ _ := comp_mono_right (relCata_le_relCata (pathInit A)
-          (comp_mono_left _ (thinning_paths_alg (F := pathF) (α := alphaR) (Q := pathQ wt)
-            (pathR_inter_recip_le_pathQ wt)))) (est (pathR wt))
-    _ ⊑ _ := thinning_paths_step (pathInit A) (pathQ_le_pathR wt) (pathQ_preorder wt)
-      (pathR_preorder wt) (by
-        show pathF.map (𝟙 _) (pathQ wt) ≫ _ ⊑ _
-        rw [pathF_map_id, pathF_map_comp_alphaR_eq_pathAlg]
-        exact pathAlg_monotonic wt)
+          (comp_mono_left _ (thinning_paths_alg_net wt))) (est (pathR wt))
+    _ ⊑ _ := thinning_paths_step wt
 
 calc_steps thinning_paths
 
@@ -380,6 +404,20 @@ public theorem relCata_pathF_eps_eq_nelist :
     | cons b y =>
       exact ⟨fun ⟨_, hr, _, hv, h⟩ => (by cases h; exact ⟨hv, (ih _).mp hr⟩),
         fun ⟨hb, hy⟩ => ⟨y, (ih y).mpr hy, b, hb, rfl⟩⟩
+
+/-- **the `⦇F(∋,𝟙)α⦈` bead is LAX** (book p.196): it is `L(∋)`, and `L` applied outside the lax
+    natural `∋` keeps the square lax, `L(P(R)) ⦇F(∋,𝟙)α⦈ ⊑ ⦇F(∋,𝟙)α⦈ L(R)`. -/
+public theorem relCata_pathF_eps_laxNatural :
+    LaxNatural (Relator.comp (Relator.idRelator RelSet.{0}) ListRel.nelistRelator)
+      (Relator.comp (Relator.comp (Relator.idRelator RelSet.{0}) powerRelator)
+        ListRel.nelistRelator)
+      (fun a => (relCata (I := pathInit a.carrier)
+          (pathF.map (∋ (dE a.carrier)) (𝟙 (dCL a.carrier a.carrier)) ≫ alphaR)
+        : ListRel.dNE (a.carrier → Prop) ⟶ ListRel.dNE a.carrier)) := by
+  intro a b R
+  dsimp only
+  rw [relCata_pathF_eps_eq_nelist, relCata_pathF_eps_eq_nelist]
+  exact ListRel.nelistRelator.map_laxNatural eps_laxNatural R
 
 /-- The problem (B&dM p.196: `minpath ⊑ min R · Λ(list⁺ ∈)`), in diagram order: whatever
     `minpath` returns is a cheapest path through the layers, `minpath ⊑ Λ(L(∋)) est(R)`. -/

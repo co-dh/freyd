@@ -264,7 +264,7 @@ public theorem id_le_thinRel_id : Cat.id (P A) ⊑ thinRel (Cat.id A) :=
   `calc_steps` names; `thinRel_comp_est` is their composition. -/
 
 /-- Step 1: `𝟙 ⊑ thin Q` (`Q` reflexive) composed with `est R` on the right. -/
-public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hQ : Reflexive Q) :
+public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hQ : 𝟙 A ⊑ Q) :
     est R ⊑ thinRel Q ≫ est R := by
   have h := comp_mono_right (id_le_thinRel hQ) (est R)
   rwa [Cat.id_comp] at h
@@ -289,7 +289,7 @@ public theorem thinRel_comp_est_cond1 (Q : A ⟶ A) {R : A ⟶ A} :
 calc_steps thinRel_comp_est_cond1
 
 /-- The UP's second condition: every member is `R`-above something the thinning kept. -/
-public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : Transitive R) :
+public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : R ≫ R ⊑ R) :
     (∋ A)° ≫ thinRel Q ≫ est R ⊑ R° :=
   calc (∋ A)° ≫ thinRel Q ≫ est R ⊑ Q° ≫ (∋ A)° ≫ est R := by
         rw [← Cat.assoc, ← Cat.assoc]
@@ -302,15 +302,15 @@ calc_steps thinRel_comp_est_cond2
 
 /-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R` is transitive — thinning below a
     coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
-public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : Transitive R) :
+public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : R ≫ R ⊑ R) :
     thinRel Q ≫ est R ⊑ est R :=
   le_est_iff.mpr ⟨thinRel_comp_est_cond1 Q, thinRel_comp_est_cond2 hQR hR⟩
 
 /-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R`
     is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
     leaves it unchanged.  Oriented as the book and the note's row write it, `est R` first. -/
-public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hQ : Reflexive Q)
-    (hR : Transitive R) : est R = thinRel Q ≫ est R :=
+public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hQ : 𝟙 A ⊑ Q)
+    (hR : R ≫ R ⊑ R) : est R = thinRel Q ≫ est R :=
   le_antisymm (thinRel_comp_est_step1 hQ) (thinRel_comp_est_le hQR hR)
 
 /-! ### The (8.2) chain
