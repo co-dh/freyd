@@ -299,10 +299,11 @@ def indexBase? : Name → Option Name
 
 /-- THE NOTE'S NAME FOR A BINDER: Lean's `x✝` (a pattern's `_`) and `x_1` (a renaming) are no
     variable a reader knows, so a binder takes its stem, primed apart from the names in `taken`
-    (`ptr(a,a')`) — and a binder shadowing one of `taken` is primed too, so no printer renames it. -/
+    (`ptr(a,a')`).  A name of the source's own stays, shadowing or not: a lane is matched by the
+    name its binder prints under. -/
 def primeName (taken : List Name) (n : Name) : Name :=
   let base := if n.hasMacroScopes then n.eraseMacroScopes else (indexBase? n).getD n
-  if n.isAnonymous || (base == n && !taken.contains n) then n else
+  if n.isAnonymous || base == n then n else
   ((List.range (taken.length + 1)).map fun k =>
     Name.mkSimple (base.toString ++ String.ofList (List.replicate k '\''))).find? (!taken.contains ·)
     |>.getD base
@@ -322,14 +323,10 @@ partial def primeBinders (taken : List Name) : Expr → Expr
 /-- The user names in scope, innermost first. -/
 def scopeNames : MetaM (List Name) := return (← getLCtx).foldl (fun a d => d.userName :: a) []
 
-/-- The printer under the note's names: every local and every binder through `primeName`, so the
-    delaborator meets no inaccessible name and no shadowing, and never invents an `x_1` itself. -/
+/-- The printer under the note's names: every binder of `e` through `primeName`, primed apart from
+    the names in scope.  The locals keep theirs: a lane is matched by the name its local prints. -/
 def noteDelab (e : Expr) : MetaM Term := do
-  let (lctx, taken) := (← getLCtx).foldl (init := ((← getLCtx), ([] : List Name))) fun (l, ns) d =>
-    if d.isImplementationDetail then (l, ns) else
-    let n := primeName ns d.userName
-    (if n == d.userName then l else l.setUserName d.fvarId n, n :: ns)
-  Meta.withLCtx lctx (← Meta.getLocalInstances) (PrettyPrinter.delab (primeBinders taken e))
+  PrettyPrinter.delab (primeBinders (← scopeNames) e)
 
 /-- `noteDelab` on one line, as text. -/
 def notePP (e : Expr) : MetaM String := do
