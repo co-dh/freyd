@@ -103,7 +103,9 @@ def render (declName : Name) (named : Bool := false) : MetaM String := withDeclS
     -- left, which is the side the note's `definition` column spells.
     match ← splitM body with
     | some (sym, l, r) =>
-      let t ← Meta.inferType l
+      -- An equation states its type as `Eq`'s first argument, which an ascription in the statement
+      -- sets; the left side's inferred type forgets it.
+      let t ← match body.eq? with | some (ty, _, _) => pure ty | none => Meta.inferType l
       let some s ← hom? t |
         throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
           {← Meta.ppExpr t} and not arrows of a category — it has no hom type to render"
@@ -115,6 +117,12 @@ def render (declName : Name) (named : Bool := false) : MetaM String := withDeclS
       | (``Freyd.Alg.Relator, args) =>
         if h : args.size ≥ 2 then name self ((← plain args[0]) ++ "⟶" ++ (← plain args[1]))
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied relator"
+      -- A binary relator runs from the square of its category: `F : 𝒜×𝒜⟶𝒜`.
+      | (``Freyd.Alg.BiRelator, args) =>
+        if h : args.size ≥ 1 then
+          let c ← plain args[0]
+          name self (c ++ "×" ++ c ++ "⟶" ++ c)
+        else throwError "{declName} : {← Meta.ppExpr body} is a partially applied binary relator"
       | _ => throwError "{declName} : {← Meta.ppExpr body} is neither an arrow's hom type, a \
           relator between two categories, nor an (in)equation between arrows — it has no one type \
           to render"

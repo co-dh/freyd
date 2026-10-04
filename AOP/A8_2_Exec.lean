@@ -351,6 +351,11 @@ public theorem mcp_spec (wt : V → V → Nat) (net : ConsList (List V) (List V)
 public theorem pathF_obj (A X : RelSet.{0}) :
     pathF.obj A X = ⟨A.carrier ⊕ A.carrier × X.carrier⟩ := rfl
 
+/-- `α = [wrap,cons]` (book p.196) at the layered network's `F`: the initial algebra
+    `F(V,list⁺(V))⟶list⁺(V)`, typed at 8.2's instance of `CL`'s generic leaf and element. -/
+public theorem alphaR_pathF :
+    @Eq (pathF.obj (dE V) (dCL V V) ⟶ dCL V V) alphaR (RelSet.graph con) := rfl
+
 /-- `⦇F(∋,𝟙)α⦈ = L(∋)` (book p.196): the fold that takes one vertex out of each layer is the list
     relator `L = list⁺` applied to `∋` — the type functor's action on an arrow, at `∋`. -/
 public theorem relCata_pathF_eps_eq_nelist :

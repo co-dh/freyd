@@ -281,6 +281,12 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `F))
   | _ => throw ()
 
+-- `pow` is `Rel(Set)`'s power object, the object the note writes `P` (`P A` in `S2_40`).
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.pow] def unexpandRelSetPow : Unexpander
+  | `($_ $A) => `($(mkIdent `P) $A)
+  | _ => throw ()
+
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
   | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
