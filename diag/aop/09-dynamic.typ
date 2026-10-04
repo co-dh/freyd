@@ -128,6 +128,8 @@ in @mu-defn.
   ), Sub("Freyd.Alg.dynamic_programming_upper_steps4to5",
     gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`],
      // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@e85ef872
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)` — @relator-laws]),
+     // lean:AOP.A9_1.dynamic_programming_upper_step3c@0569b820
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@7bf9d190
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h` monotonic on `R°`]),
@@ -146,13 +148,13 @@ in @mu-defn.
      allows, dropping the parts that can never win, solving each of the rest and keeping one
  optimum #h(4pt) ]],
   lean-chain(
-    (none, "Freyd.Alg.dynamic_programming_thin.rhs",
+    (none, "Freyd.Alg.dynamic_programming_thin_prefixed.rhs",
       src[`H≜⦇T⦈°⦇h⦈` — @dp-defn]),
     // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
     // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
     // it draws the same panel; the regions are named only in the first.
     // (9.3) concludes `⊑R°` where B&dM prints `⊑R` (p. 220): his `R` is this `R` conversed as an arrow.
-    (RQ, "Freyd.Alg.dynamic_programming_thin.lhs.body",
+    (RQ, "Freyd.Alg.dynamic_programming_thin_prefixed.lhs",
       // dp-laws row: Theorem 9.2 and Theorem 9.1 (thinning step dropped)
       src[`QF(H)h⊑F(H)hR`, `h` monotonic on `R` — @thin-laws, @est-up]),
     // `T°` births the base functor and `h` kills it; `X` is a bead with `F` running past, which is
@@ -307,7 +309,7 @@ in @mu-defn.
      // lean:AOP.A9_1.monoAlg_in_context_step2@e27a633e
     (EQ, "Freyd.Alg.monoAlg_in_context_step3.rhs",
       src[`h cost=F(⟨cost,S⟩)k`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step3@23c4eb72
+     // lean:AOP.A9_1.monoAlg_in_context_step3@604aead5
   ), Sub("Freyd.Alg.monoAlg_in_context_steps4to7",
     gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`],
      // lean:AOP.A9_1.monoAlg_in_context_steps4to7@865a4e77

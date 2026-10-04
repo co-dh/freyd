@@ -22,11 +22,16 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     // dp-shrink row: Theorem 10.1
     // `est(Q) : PFA⟶FA` kills the SET but not the `F` under it, so its wire spans the `E` lane
     // down to the object wire, crossing `F` — the whole difference from @dp-laws' second row.
-    (RQ, "Freyd.Alg.greedy_dp.lhs.body", src[]),
+    (RQ, "Freyd.Alg.greedy_dp_step1.lhs", src[]),
+  ),
+  // Proposition 10.1 holds for EVERY `X`, and only at a base functor `−+(−×W)`: a chain of its own,
+  // since a step relates two sides of one generality.
+  lean-chain(
+    (none, "Freyd.Alg.RelSet.SL.est_arm₂_le.rhs", src[the body at `T` a coproduct of two arms]),
     // lean:AOP.A9_1.est_summand_le@096fa074
     // The branch, not the conditional; nothing survives outside the set here, so `est(Qᵢ)` lands on
     // the object wire.
-    (EQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
+    (RQ, "Freyd.Alg.RelSet.SL.est_arm₂_le.lhs",
       src[Proposition 10.1, `V₂V₁°=𝟘`]),
   ),
 )]<greedy-laws>
@@ -193,12 +198,12 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      holding each blank back and cashing the held blanks in for a tab wherever the column reaches a
      tab stop]],
   lean-chain(
-    (none, "Freyd.Alg.RelSet.Detab.entab_laws.rhs",
+    (none, "Freyd.Alg.RelSet.Detab.entab_laws_prefixed.rhs",
       src[the specification — @entab-defn; `detab entab=𝟙` and nothing
        shorter does]),
     // `[nil,expand]°` opens `−×Char` inside the set the singleton opened; `est(Q)` kills that set but
     // not the `F` under it, so its wire spans down to the object wire, crossing `F`.
-    (RQ, "Freyd.Alg.RelSet.Detab.entab_laws.lhs.body", [
+    (RQ, "Freyd.Alg.RelSet.Detab.entab_laws_prefixed.lhs", [
      // entab-thin row: Theorem 10.1
      #src[at `Q≜𝟙+(V×U)`
  #src[]: one character of input is
@@ -218,7 +223,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
  #src[] — shortening the output either leaves the
       // lean:AOP.A10_2_Detab.expand_V@56eb1503
       last step alone or discards it]]),
-    (EQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
+    (RQ, "Freyd.Alg.RelSet.Detab.entab_branch.lhs",
       src[Proposition 10.1: `nil` and `expand` have disjoint ranges. The greedy step is to emit
        a tab whenever a tab is legal, consuming all the blanks back to the previous tab stop]),
   ),
@@ -458,6 +463,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step6.rhs", src[products: `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`]),
     // lean:AOP.A10_3_Tardy.tardy_greedy_step6@19339638
     (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy.rhs", src[@tardy-tail]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step7@127df0be
   )),
 )]<tardy-greedy>
 
@@ -481,6 +487,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step5.rhs", src[(10.4) — @tardy-cost-bmax]),
     // lean:AOP.A10_3_Tardy.tardy_tail_step5@739d1394
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail.rhs", src[definition of `R`]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step6@6b0b253f
   )),
 )]<tardy-tail>
 
@@ -493,15 +500,15 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
      penalty out of the bag, putting it last, and scheduling what is left the same way]],
   // lean:AOP.A10_3_Tardy.schedule_le@af8c3e61 lean:AOP.A10_3_Tardy.schedule_unfold@d98fd6f6
   lean-chain(
-    (none, "Freyd.Alg.RelSet.Tardy.tardy_laws.rhs", src[the specification — @tardy-defn]),
+    (none, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.rhs", src[the specification — @tardy-defn]),
     // job-schedule row: Theorem 10.1
     // `(10.6)`'s arrow is B&dM's `h`, which is @dp-defn's algebra letter; renamed `m` here, since the
     // theorem it feeds and it would otherwise both be `h` in one table.
-    (RQ, "Freyd.Alg.RelSet.Tardy.tardy_laws.lhs.body",
+    (RQ, "Freyd.Alg.RelSet.Tardy.tardy_laws_prefixed.lhs",
       src[No greedy *reduce* exists — one would also
        solve every prefix of the input, and the best schedule of a prefix need not extend to a best
        schedule of the whole]),
-    (EQ, "Freyd.Alg.RelSet.Tardy.tardy_branch.lhs",
+    (RQ, "Freyd.Alg.RelSet.Tardy.tardy_branch.lhs",
       src[Proposition 10.1: `nil` and `snag` have disjoint ranges]),
     // lean:AOP.A10_3_Tardy.pick_branch_le@ee1b2a00 lean:AOP.A10_3_Tardy.pick_branch_simple@43683444
     // No `E` lane: `pick` does the transpose and the `est` in one function, so nothing is ever a set.
@@ -628,13 +635,14 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
        among all decimals inside it, and is inside it by @tex-fusion]),
     // interval row: Theorem 10.1
     // `est(Q) : P(F(Interval))⟶F(Interval)` kills the set but not the `F` under it, so its wire ends
-    // on the `E` lane; `F(H)α` closes `F` and is where the digits' `list` is born (`H` recurses,
-    // `α≜[nil,cons]` — @tex-defn — builds the list).
-    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_body.lhs",
+    // on the `E` lane; `F(X)α` closes `F` and is where the digits' `list` is born (`X≜Λ(H) est(R)`
+    // recurses — with `H` there the tail is unconstrained and the step is false —, `α≜[nil,cons]` —
+    // @tex-defn — builds the list).
+    (RQ, "Freyd.Alg.RelSet.Tex.tex_laws_prefixed.lhs",
       src[#frc([`[arb,step]°`]) returns at most two elements — stop, or take one more
        digit — and `! nil⊑cons R°` makes it stop whenever stopping is legal]),
   ),
-  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_laws_step1@52e790c7 lean:AOP.A10_4_Tex.tex_laws_step2@3af8b229 lean:AOP.A10_4_Tex.tex_laws_step3@92eb955a lean:AOP.A10_4_Tex.tex_laws_body@20fe2dc1
+  // lean:AOP.A10_4_Tex.tex_laws@9152d6ce lean:AOP.A10_4_Tex.tex_laws_step1@52e790c7 lean:AOP.A10_4_Tex.tex_laws_step2@3af8b229 lean:AOP.A10_4_Tex.tex_laws_step3@92eb955a lean:AOP.A10_4_Tex.tex_laws_prefixed@1f69fdb3 lean:AOP.A10_4_Tex.tex_body_prefixed@765738e0
 )
 ]<tex-laws>
 

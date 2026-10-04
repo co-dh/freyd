@@ -782,44 +782,35 @@ public theorem tex_laws_step2 :
     obtain ⟨z, hz, hlen⟩ := tex_short y r p x hv hin hx
     exact Nat.le_trans (hmin z hz) hlen
 
-/-- **tex-laws**, the greedy body at `H`: `interval Λ([arb,step]°) est(Q) F(H) α ⊑ interval H`.
-    `est(Q) ⊑ ∋` cancels the transpose, and what is left is `H`'s own fixed-point equation
-    `[arb,step]° F(H) α = H`, so choosing greedily among the one-step decompositions and then
-    recursing with `H` still produces a decimal `H` allows.  This is the arrow the last panel of
-    the note's `tex-laws` draws — the body with `H` in the recursive slot.  It is NOT the prefixed
-    point `tex_laws_step3` runs on: that one needs the SPECIFICATION `Λ(H) est(R)` in the slot
-    (`greedy_dp_prefixed`), and the body at `H` leaves the tail unconstrained, so it does not
-    refine `Λ(H) est(R)`. -/
-public theorem tex_laws_body :
-    interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map H ≫ alphaR
-      ⊑ interval ≫ H := by
-  have hfix : (junc cop arb step)° ≫ (F Unit Digit).map H ≫ alphaR = H := by
-    have h0 : (junc cop arb step)°
-        ≫ (F Unit Digit).map
-            (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
-          = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
-      hylo_fixed (F := F Unit Digit) (initial Unit Digit)
-        alphaR (junc cop arb step)
-    rwa [tex_H] at h0
-  have hest : est Q ⊑ ∋ ((F Unit Digit).obj Interval) := inter_lb_left _ _
-  calc interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map H ≫ alphaR
-      ⊑ interval ≫ Λ ((junc cop arb step)°) ≫ ∋ ((F Unit Digit).obj Interval)
-          ≫ (F Unit Digit).map H ≫ alphaR :=
-        comp_mono_left _ (comp_mono_left _ (comp_mono_right hest _))
-    _ = interval ≫ H := by
-        rw [← Cat.assoc (Λ ((junc cop arb step)°)), Λ_comp_eps, hfix]
+/-- Theorem 10.1's prefixed point at `M≜Λ(H) est(R)`: `Λ([arb,step]°) est(Q) F(M) α ⊑ M`.  The
+    SPECIFICATION sits in the recursive slot: with `H` there the tail is unconstrained, and the
+    body does not refine `M`. -/
+public theorem tex_body_prefixed :
+    Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map (Λ H ≫ est R) ≫ alphaR
+      ⊑ Λ H ≫ est R := by
+  have hfix : (junc cop arb step)°
+      ≫ (F Unit Digit).map
+          (_root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR) ≫ alphaR
+        = _root_.Freyd.Alg.H (F := F Unit Digit) (junc cop arb step) alphaR :=
+    hylo_fixed (F := F Unit Digit) (initial Unit Digit) alphaR (junc cop arb step)
+  rw [tex_H] at hfix
+  exact greedy_dp_prefixed (graph_map con) tex_mono R_trans hfix (tex_greedy _)
 
-/-- **tex-laws**, third step (Theorem 10.1): the greedy body is a prefixed point of the
-    specification, so the least fixed point refines it. -/
+/-- **tex-laws**, third step: at `X≜Λ(H) est(R)` the greedy body, after `interval`, is below
+    `interval X` — the prefixed point `tex_body_prefixed`, with the note's bead `X` a binder. -/
+public theorem tex_laws_prefixed {X : Interval ⟶ Decimal} (hX : X = Λ H ≫ est R) :
+    interval ≫ Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR
+      ⊑ interval ≫ Λ H ≫ est R := by
+  subst hX
+  exact comp_mono_left _ tex_body_prefixed
+
+/-- **tex-laws**, the least fixed point (Theorem 10.1): below every prefixed point, so below
+    `tex_body_prefixed`'s. -/
 public theorem tex_laws_step3 :
     interval ≫ mu (fun X : Interval ⟶ Decimal =>
         Λ ((junc cop arb step)°) ≫ est Q ≫ (F Unit Digit).map X ≫ alphaR)
-      ⊑ interval ≫ Λ H ≫ est R := by
-  have key := greedy_dp (F := F Unit Digit) (initial Unit Digit)
-    (h := alphaR) (T := (junc cop arb step)) (R := R) (Q := Q) (graph_map con) tex_mono R_trans
-    (by unfold ThinCondition; rw [tex_H]; exact tex_greedy _)
-  rw [tex_H] at key
-  exact comp_mono_left _ key
+      ⊑ interval ≫ Λ H ≫ est R :=
+  comp_mono_left _ (mu_le tex_body_prefixed)
 
 /-- **tex-laws** (B&dM p.262): `extern` is the least fixed point of
     `(μX : interval Λ([arb,step]°) est(Q) F(X) α)`, and it refines the specification

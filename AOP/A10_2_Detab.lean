@@ -661,6 +661,32 @@ public theorem entab_thin_condition (n : Nat) (tb nl blank : Char) (hn : 0 < n)
           show slen t₀ + 1 ≤ slen r.1 + 1
           exact Nat.succ_le_succ hlen
 
+/-- `H = ⦇α⦈·⦇[nil,expand]⦈°` collapses to `detab°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
+public theorem entab_H (n : Nat) (tb nl blank : Char) :
+    (relCata (F := F Unit Char) (graph (expandAlgFn n tb nl blank)))°
+        ≫ relCata (F := F Unit Char) (I := initial Unit Char)
+            (graph (con (L := Unit) (E := Char)))
+      = Allegory.recip (detabR n tb nl blank) := by
+  rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, detab_cata]
+  exact Cat.comp_id _
+
+/-- **entab-laws**, the prefixed point (Theorem 10.1 at `Q≜𝟙+(V×U)`): at `X≜Λ(detab°) est(R)` the
+    greedy body is below `X`, so the least fixed point `entab_laws` is too. -/
+public theorem entab_laws_prefixed (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blank ≠ nl)
+    {X : dSL Unit Char ⟶ dSL Unit Char}
+    (hX : X = Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R) :
+    Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+        : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
+      ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR
+      ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
+  subst hX
+  rw [← expandAlg_eq_junc, ← con_eq_junc]
+  have hfix := hylo_fixed (F := F Unit Char) (initial Unit Char)
+    (graph (con (L := Unit) (E := Char))) (graph (expandAlgFn n tb nl blank))
+  rw [entab_H] at hfix
+  exact greedy_dp_prefixed (graph_map con) entab_mono R_trans hfix
+    (entab_thin_condition n tb nl blank hn hb)
+
 /-- **entab-laws**, second row (B&dM p.247): the shortest input `detab` expands to the given
     output is the least fixed point of `(μX : [nil,expand]° est(Q)(𝟙+(X×𝟙))[nil,snoc])` —
     Theorem 10.1 at `Q≜𝟙+(V×U)`, one character of input decided at each step.
@@ -671,19 +697,8 @@ public theorem entab_laws (n : Nat) (tb nl blank : Char) (hn : 0 < n) (hb : blan
         Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
             : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
           ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR)
-      ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
-  rw [← expandAlg_eq_junc, ← con_eq_junc]
-  have hH : (relCata (F := F Unit Char) (graph (expandAlgFn n tb nl blank)))°
-        ≫ relCata (F := F Unit Char) (I := initial Unit Char)
-            (graph (con (L := Unit) (E := Char)))
-      = Allegory.recip (detabR n tb nl blank) := by
-    rw [← cataR_eq_relCata, ← cataR_eq_relCata, cataR_con, detab_cata]
-    exact Cat.comp_id _
-  have key := greedy_dp (F := F Unit Char) (initial Unit Char)
-    (h := graph (con (L := Unit) (E := Char))) (T := graph (expandAlgFn n tb nl blank))
-    (R := R) (Q := Q n tb nl blank) (graph_map con) entab_mono R_trans
-    (by simp only [ThinCondition, H]; rw [hH]; exact entab_thin_condition n tb nl blank hn hb)
-  simp only [H] at key; rwa [hH] at key
+      ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R :=
+  mu_le (entab_laws_prefixed n tb nl blank hn hb rfl)
 
 /-- `expand` never returns the empty string: on a tab it fills at least one blank (the column is
     `< n` after `%`), on any other character it snocs.  This is B&dM's Proposition 10.1
