@@ -1345,7 +1345,8 @@ def usage : String :=
      diag/generated/graph/<name>.typ; `<a>+<b>` puts several relations on one canvas\n\
    --type writes the declaration's TYPE as a note cell, to diag/generated/type/<name>.typ —\n\
      an arrow-valued def's hom, the hom the sides of an (in)equation share, or the two\n\
-     categories a relator runs between; no side or branch selector applies\n\
+     categories a relator runs between; `<name>.lhs`/`.rhs` one side, `.f<k>` its k-th factor\n\
+     (diagram order, from 1); no branch selector applies\n\
    --value draws a DATA VALUE that is a tree — a `def` of an inductive type — as a tree, to\n\
      diag/generated/value/<name>.typ, what the note's `#leanv(\"<name>\")` imports: its value is\n\
      reduced constructor by constructor, a field of the same type is a child, one whose type\n\
@@ -1427,6 +1428,10 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".name" then
       stem := stem.dropEnd 5
       sides := "name" :: sides
+    -- `.f<k>`: the TYPE route's k-th factor of the side before it (`TypeRender.factorIdx?`).
+    else if let some s := (stem.toString.splitOn ".").getLast?.filter (Freyd.TypeRender.factorIdx? · |>.isSome) then
+      stem := stem.dropEnd (s.length + 1)
+      sides := s :: sides
     else more := false
   -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
   -- statement too.  Split before `toName`: `#` is not an identifier character, so
@@ -1848,8 +1853,13 @@ def main (args : List String) : IO UInt32 := do
         throwError "{arg}: `.mapsto` is a formula's print mode, read by --formula only"
       if sides.contains "name" && !typeMode then
         throwError "{arg}: `.name` is a name cell's print mode, read by --type only"
-      if typeMode && (sides.any (· != "name") || !branch.isEmpty || binder.isSome) then
-        throwError "{arg}: --type reads a declaration whole; its one selector step is `.name`"
+      let factorStep (s : String) := (Freyd.TypeRender.factorIdx? s).isSome
+      if sides.any factorStep && !typeMode then
+        throwError "{arg}: `.f<k>` (a factor of a side) is read by --type only"
+      if typeMode && (sides.any (fun s => !(s ∈ ["name", "lhs", "rhs"] || factorStep s))
+          || !branch.isEmpty || binder.isSome) then
+        throwError "{arg}: --type reads a declaration, or a side `.lhs`/`.rhs` and its factors \
+          `.f<k>`, then optionally `.name`"
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
@@ -1859,7 +1869,7 @@ def main (args : List String) : IO UInt32 := do
           Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
-        else if typeMode then Freyd.TypeRender.file base.toName (sides.contains "name")
+        else if typeMode then Freyd.TypeRender.file base.toName sides
         else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName

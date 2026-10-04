@@ -184,6 +184,35 @@ row((
   lean-calc(calc-81),
 )]<thin-thm81>
 
+// The prefixed-point inequality of the chain above, one factor per row.  Step and type cells are
+// read off `thinning_prefixed`'s sides by `.lhs.f<k>`; the example runs at `F(X)=V+V×X`.
+#disp[#table(
+  columns: (auto, auto, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*step*], [*type*], [*example*], [*what it does*]),
+  table.cell(colspan: 4)[`S:F(A)⟶A` is 8.1's algebra; example `F(X)=V+V×X`, `S=[wrap,cons]`,
+   candidate `a=cons(v,p)`],
+
+  [#leann("Freyd.Alg.thinning_prefixed.lhs.f1")], [#leant("Freyd.Alg.thinning_prefixed.lhs.f1")],
+  [`cons(v,p) ↦ r(v,p)`],
+  [takes `a` apart into the input of its last step],
+  [#leann("Freyd.Alg.thinning_prefixed.lhs.f2")], [#leant("Freyd.Alg.thinning_prefixed.lhs.f2")],
+  [`r(v,p) ↦ r(v,ps)`, some `p'∈ps` with `p' Q p`],
+  [replaces each recursive component by a set holding a `Q`-no-worse one; `v` stays],
+  [#leann("Freyd.Alg.thinning_prefixed.lhs.f3")], [#leant("Freyd.Alg.thinning_prefixed.lhs.f3")],
+  [`r(v,ps) ↦ {cons(v,t) ∣ t∈ps}`],
+  [picks one element from each set, combines by `S`, collects every result],
+  [#leann("Freyd.Alg.thinning_prefixed.lhs.f4")], [#leant("Freyd.Alg.thinning_prefixed.lhs.f4")],
+  [`{cons(v,t) ∣ t∈ps} ↦ ys`],
+  [keeps a subset; every dropped element is `Q`-beaten by a kept one],
+  [#SQ #leann("Freyd.Alg.thinning_prefixed.rhs")], [#leant("Freyd.Alg.thinning_prefixed.rhs")],
+  [`ys` holds `y` with `y Q cons(v,p') Q cons(v,p) = a`],
+  [the thinned set still holds an element `Q`-no-worse than `a` (`S` monotonic on `Q`, `Q`
+   transitive)],
+  // lean:AOP.A8_1.thinning_prefixed@3628d19e
+)]<thin-thm81-steps>
+
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
 // `⦇−⦈` and not the algebra: its transpose opens an `E` INSIDE the reduce, which no outer panel has.
 #import "../generated/Freyd.Alg.thinning_est.calc.typ" as calc-cor
