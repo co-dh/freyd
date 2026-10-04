@@ -697,7 +697,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   // THE TWO COLUMNS ARE NOT ONE THEOREM PER ROW HERE, and that is deliberate: the circuit column
   // rewrites the WHOLE term step by step, where the Hinze–Marsden column stays on the one operand
   // `(𝟙×∋)π₂` the steps do not touch — which is why one selector repeats down three rows.  The
-  // general rule is the other way round (AGENTS.md); §12.1 is its exception and stays as it is.
+  // general rule is the other way round (CLAUDE.md); §12.1 is its exception and stays as it is.
   // Rows 1–3 draw the NUMERATOR, `F(P[A]) ⟶ [A]`: the transpose is still outside the bracket there,
   // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust.
   [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
