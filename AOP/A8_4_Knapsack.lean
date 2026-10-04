@@ -378,10 +378,7 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
     `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
 public theorem knap_laws_step1
-    {sort : (dList Item ⟶ dList Item) → (P (dList Item) ⟶ listRelator.obj (dList Item))}
-    {sortF : ((F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)) →
-      (P ((F Unit Item).obj (dList Item)) ⟶
-        listRelator.obj ((F Unit Item).obj (dList Item)))}
+    {sort : ∀ {X : RelSet.{0}}, (X ⟶ X) → (P X ⟶ listRelator.obj X)}
     {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
     {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
     {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
@@ -389,14 +386,14 @@ public theorem knap_laws_step1
     {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
     {Pr' : RelProd (P (dList Item)) (P (dList Item))}
     {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
-    (hsortF : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
-      X ⊑ Y → sortF X ⊑ sortF Y)
-    (h88₁ : sortF (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
-    (h88₂ : sortF (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
+    (hsort : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
+      X ⊑ Y → sort X ⊑ sort Y)
+    (h88₁ : sort (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
+    (h88₂ : sort (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
       ⊑ powerRel (graph dropFn) ≫ (sort (R vol)))
     (h89₁ : (sort (R vol)) ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ (sort (R vol)))
     (h811 : (F Unit Item).map (sort (R vol)) ≫ listcp
-      ⊑ cpMap (F Unit Item) (dList Item) ≫ sortF ((F Unit Item).map (R vol)))
+      ⊑ cpMap (F Unit Item) (dList Item) ≫ sort ((F Unit Item).map (R vol)))
     (h810 : prodMap Pr' Pr (sort (R vol)) (sort (R vol)) ≫ (merge (R vol)) ⊑ cup Pr' ≫ (sort (R vol)))
     (h86 : (sort (R vol)) ≫ thinlist ⊑ thinRel (Q vol wt) ≫ (sort (R vol)))
     (h87 : (sort (R vol)) ≫ minlist ⊑ est (R vol)) :
@@ -417,7 +414,7 @@ public theorem knap_laws_step1
     (minlist := fun _ => minlist)
     (graph_map con) (graph_map dropFn) Q_le_R ⟨Q_refl, Q_trans⟩
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩
-    knap_mono_cons hm₂ hsortF knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
+    knap_mono_cons hm₂ hsort knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
     rfl rfl rfl
   rw [Cat.comp_id (graph dropFn)] at key
   exact key
@@ -435,10 +432,7 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `knap_spec` the specification.  The sorted-list interface (8.7)-(8.11) is assumed, as in
     the book. -/
 public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i)
-    {sort : (dList Item ⟶ dList Item) → (P (dList Item) ⟶ listRelator.obj (dList Item))}
-    {sortF : ((F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)) →
-      (P ((F Unit Item).obj (dList Item)) ⟶
-        listRelator.obj ((F Unit Item).obj (dList Item)))}
+    {sort : ∀ {X : RelSet.{0}}, (X ⟶ X) → (P X ⟶ listRelator.obj X)}
     {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
     {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
     {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
@@ -446,14 +440,14 @@ public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i)
     {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
     {Pr' : RelProd (P (dList Item)) (P (dList Item))}
     {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
-    (hsortF : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
-      X ⊑ Y → sortF X ⊑ sortF Y)
-    (h88₁ : sortF (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
-    (h88₂ : sortF (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
+    (hsort : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
+      X ⊑ Y → sort X ⊑ sort Y)
+    (h88₁ : sort (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
+    (h88₂ : sort (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
       ⊑ powerRel (graph dropFn) ≫ (sort (R vol)))
     (h89₁ : (sort (R vol)) ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ (sort (R vol)))
     (h811 : (F Unit Item).map (sort (R vol)) ≫ listcp
-      ⊑ cpMap (F Unit Item) (dList Item) ≫ sortF ((F Unit Item).map (R vol)))
+      ⊑ cpMap (F Unit Item) (dList Item) ≫ sort ((F Unit Item).map (R vol)))
     (h810 : prodMap Pr' Pr (sort (R vol)) (sort (R vol)) ≫ (merge (R vol)) ⊑ cup Pr' ≫ (sort (R vol)))
     (h86 : (sort (R vol)) ≫ thinlist ⊑ thinRel (Q vol wt) ≫ (sort (R vol)))
     (h87 : (sort (R vol)) ≫ minlist ⊑ est (R vol)) :
@@ -461,6 +455,6 @@ public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i)
         ≫ (merge (R vol)) ≫ thinlist⦈ ≫ minlist
       ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
   rw [← knap_laws_step2 hw hwt]
-  exact knap_laws_step1 hsortF h88₁ h88₂ h89₁ h811 h810 h86 h87
+  exact knap_laws_step1 hsort h88₁ h88₂ h89₁ h811 h810 h86 h87
 
 end Freyd.Alg.RelSet.Knapsack

@@ -1353,6 +1353,15 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander cplMap] def unexpandCplMap : Unexpander
   | _ => `($(mkIdent `cpl))
+-- B&dM p.201's `listcp(F)`; the functor is the wire's, as for `cp`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.listcp] def unexpandListcp : Unexpander
+  | _ => `($(mkIdent `listcp))
+-- B&dM's connected order; the full name is only Lean's way past §1.72's object-level `Connected`.
+open Lean PrettyPrinter in
+@[app_unexpander _root_.Freyd.Alg.Connected] def unexpandConnected : Unexpander
+  | `($_ $R) => `($(mkIdent `connected) $R)
+  | _ => throw ()
 -- B&dM p.196's `zero`, `consw` and `cost`; the weight `wt` is the section's parameter, as for `costOf`.
 open Lean PrettyPrinter in
 @[app_unexpander zeroCost] def unexpandZeroCost : Unexpander
