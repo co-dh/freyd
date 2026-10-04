@@ -47,7 +47,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   [keeping everything is always a legal thinning],
   [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[@thin-intro]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
-   // lean:AOP.A8_1.thinRel_comp_est@82e39233
+   // lean:AOP.A8_1.thinRel_comp_est@6bfc12d6
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
  #src[(8.2) — @thin-82]],
    // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@8aad298c
@@ -90,11 +90,11 @@ row((
 #import "../generated/Freyd.Alg.thinRel_comp_est_cond1.calc.typ" as calc-up1
 #grid(columns: (1fr, 1fr), column-gutter: 42pt, align: top,
 [#disp[
-   // lean:AOP.A8_1.thinRel_comp_est@82e39233
+   // lean:AOP.A8_1.thinRel_comp_est@6bfc12d6
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_step1") \
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
-     // lean:AOP.A8_1.thinRel_comp_est_step1@60449281
+     // lean:AOP.A8_1.thinRel_comp_est_step1@93d6fb99
   lean-chain(
     (none, "Freyd.Alg.thinRel_comp_est_step1.lhs", []),
     (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @Freyd.Alg.id_le_thinRel]),
@@ -115,7 +115,7 @@ row((
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond2") \
     #src[the `⊒` half, second condition]],
-     // lean:AOP.A8_1.thinRel_comp_est_cond2@6650d7bb
+     // lean:AOP.A8_1.thinRel_comp_est_cond2@f6b6c061
   lean-calc(calc-up2),
 )]<thin-intro-up2>
 
@@ -353,7 +353,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2.thinning_paths@3fb68ea5
+     // lean:AOP.A8_2_Exec.thinning_paths@a206827d
   [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
      dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
      every `z` in `Λ(S)(x)`.

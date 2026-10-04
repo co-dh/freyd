@@ -16,6 +16,7 @@ module
 public import AOP.A5_7_PowerBeads
 public import AOP.A5_6_ListCombinators
 meta import AOP.A8_2
+import AOP.CalcSteps
 
 namespace Freyd.Alg
 open PowerAllegory
@@ -289,6 +290,31 @@ public theorem pathF_map_comp_alphaR_eq_pathAlg :
     · rintro ⟨v, hv, hp⟩
       exact ⟨.inr (v, q.2), ⟨hv, rfl⟩, hp⟩
 
+/-- **The §8.2 headline** (book p.198): a least-cost path in a layered network, as a fold over
+    the layers —
+    `min R·Λ⦇α·F(∈,id)⦈ ⊒ min R·⦇P(min R·Λ(α·F(id,∈)))·ΛF(∈,id)⦈`, mirrored, at the network's
+    own `α = [wrap,cons]`, `R ≜ cost≤cost°` and `Q ≜ R∩(head head°)`.  `thinning_paths_alg`
+    supplies the algebra, its `R∩(S°S)⊑Q` discharged by `pathR_inter_recip_le_pathQ`;
+    `thinning_paths_step` supplies the fold, its monotonicity discharged by `pathAlg_monotonic`. -/
+public theorem thinning_paths (wt : A → A → Nat) :
+    relCata (I := pathInit A) (Λ (pathF.map (∋ (dE A)) (𝟙 (P (dCL A A))))
+        ≫ powerRel (Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR) ≫ est (pathR wt)))
+        ≫ est (pathR wt)
+      ⊑ Λ (relCata (I := pathInit A) (pathF.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR))
+        ≫ est (pathR wt) :=
+  -- The terms are the two laws' own sides: spelled out, `relCata`'s initial algebra is a fresh
+  -- metavariable that `whnf` cannot close within the heartbeat budget.
+  calc _ ⊑ _ := comp_mono_right (relCata_le_relCata (pathInit A)
+          (comp_mono_left _ (thinning_paths_alg (F := pathF) (α := alphaR) (Q := pathQ wt)
+            (pathR_inter_recip_le_pathQ wt)))) (est (pathR wt))
+    _ ⊑ _ := thinning_paths_step (pathInit A) (pathQ_le_pathR wt) (pathQ_preorder wt)
+      (pathR_preorder wt) (by
+        show pathF.map (𝟙 _) (pathQ wt) ≫ _ ⊑ _
+        rw [pathF_map_id, pathF_map_comp_alphaR_eq_pathAlg]
+        exact pathAlg_monotonic wt)
+
+calc_steps thinning_paths
+
 /-- **8.2d end to end** (book p.198): whatever `mcp` returns is related to the network by the
     specification `Λ(relCata(pathAlg)) est(R)` — a path of the network that costs no more than
     any other.  The code's algebra sits in row 8, rows 8 → 7 → 6 are the chain's equalities
@@ -298,30 +324,7 @@ public theorem mcp_spec (wt : A → A → Nat) (net : ConsList (List A) (List A)
     (h : mcp wt net = some p) :
     (Λ (relCata (I := CL.initial (A → Prop) (A → Prop)) (pathAlg (A := A))) ≫ est (pathR wt))
       (netSet net) p := by
-  have hQR : pathQ wt ⊑ pathR wt := le_iff.mpr fun _ _ h => h.1
-  have hreflQ : 𝟙 (dCL A A) ⊑ pathQ wt :=
-    le_iff.mpr fun p q (h : p = q) => by subst h; exact (pathQ_apply wt p p).mpr ⟨Nat.le_refl _, rfl⟩
-  have htransQ : pathQ wt ≫ pathQ wt ⊑ pathQ wt :=
-    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
-      have h1 := (pathQ_apply wt _ _).mp h1; have h2 := (pathQ_apply wt _ _).mp h2
-      (pathQ_apply wt _ _).mpr ⟨Nat.le_trans h1.1 h2.1, h1.2.trans h2.2⟩
-  have htransR : (pathR wt)° ≫ (pathR wt)° ⊑ (pathR wt)° :=
-    le_iff.mpr fun _ _ ⟨_, h1, h2⟩ =>
-      (pathR_apply wt _ _).mpr (Nat.le_trans ((pathR_apply wt _ _).mp h2) ((pathR_apply wt _ _).mp h1))
-  have hmono : Freyd.Alg.MonoAlg
-      ((pathF.map (∋ (dE A)) (𝟙 (dCL A A)) ≫ alphaR
-        : (pathF.appl (P (dE A))).obj (dCL A A) ⟶ dCL A A)) (pathQ wt) := by
-    show pathF.map (𝟙 _) (pathQ wt) ≫ _ ⊑ _
-    rw [pathF_map_id, pathF_map_comp_alphaR_eq_pathAlg]
-    exact pathAlg_monotonic wt
-  have hQ : pathR wt ∩ ((pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR)°
-      ≫ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)) ≫ alphaR)) ⊑ pathQ wt := by
-    rw [pathF_map_id]
-    have := pathR_inter_recip_le_pathQ (A := A) wt
-    rw [pathSplit_eq_Fmap_comp_alphaR] at this
-    exact this
-  have hthin := thinning_paths (F := pathF) (A := dE A) (B := dCL A A) (pathInit A)
-    (α := alphaR) hQR ⟨hreflQ, htransQ⟩ ⟨le_trans hreflQ hQR, trans_of_recip_trans htransR⟩ hmono hQ
+  have hthin := thinning_paths wt
   have hα : Map (alphaR : pathF.obj (dE A) (dCL A A) ⟶ dCL A A) := graph_map _
   rw [← thinning_paths_alg_map (F := pathF) (A := dE A) hα (pathR wt)] at hthin
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))
