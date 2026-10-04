@@ -1059,7 +1059,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     (RQ, "Freyd.Alg.RelSet.Filter.filter_greedy.lhs",
       src[@greedy-thm72 at `R°` — @filter-mono]),
     // Empty: the step only renames the algebra, and the picture above already draws the reduce.
-    (EQ, "Freyd.Alg.RelSet.Filter.filter_eq_cata.rhs", src[@filter-step]),
+    (EQ, "Freyd.Alg.RelSet.Filter.filter_laws_step3.rhs",
+      // lean:AOP.A7_7_Filter.filter_laws_step3@222a9c81
+      src[@filter-step]),
   ),
 )
 #align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊒`
@@ -1455,7 +1457,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // algebra is natural in NOTHING — it eats every functor the source carries and MAKES the pair it
 // returns — so all four strands land on its bead and the two it returns are born there.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  // Four rows here and three in the next display: at the book's own panel metric the seven no longer
+  // Three rows here and four in the next display: at the book's own panel metric the seven no longer
   // fit one page, and the cut is where the fold is opened — outside the `⦇ ⦈` here, inside it there.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
@@ -1464,28 +1466,32 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      // lean:AOP.A7_3_Party.party_laws@b2a60154
   lean-chain(
     (none, "Freyd.Alg.RelSet.Party.party_open.lhs", src[@party-defn]),
-    (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs", src[`party≜⦇S⦈ choose` — @party-defn]),
-    (EQ, "Freyd.Alg.est_Λ_est_le.lhs",
-      src[#frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]),
+    (EQ, "Freyd.Alg.RelSet.Party.party_open.rhs",
+      src[`party≜⦇S⦈ choose`, #frc([`⦇S⦈ choose`])`=`#frc([`⦇S⦈`])` E(choose)` — @party-absorb]),
     // party-branch row: Ex 7.38
-    (RQ, "Freyd.Alg.est_Λ_est_le.rhs", src[`(R×R)°choose⊑choose R°` — @party-mono-branch]),
+    (RQ, "Freyd.Alg.RelSet.Party.party_step2.lhs",
+      // lean:AOP.A7_3_Party.party_step2@d7096c3f
+      src[`(R×R)°choose⊑choose R°` — @party-mono-branch]),
   ),
 )]<party-laws>
 
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-chain(from: "Freyd.Alg.est_Λ_est_le.rhs",
-    (RQ, "Freyd.Alg.RelSet.Party.party_pair_step.rhs",
-      // lean:AOP.A7_2.greedy@5876dfbf
+  lean-chain(from: "Freyd.Alg.RelSet.Party.party_step2.lhs",
+    (RQ, "Freyd.Alg.RelSet.Party.party_step3.lhs",
+      // lean:AOP.A7_2.greedy@5876dfbf lean:AOP.A7_3_Party.party_step3@4f17fb41
       src[
         // greedy row: Theorem 7.2
         `(𝟙×list((R×R)°))S⊑S(R×R)°` — @party-mono]),
-    (RQ, "Freyd.Alg.RelSet.Party.include_step.rhs",
-      // lean:AOP.A7_3_Party.pair_est_le@44802697
+    (RQ, "Freyd.Alg.RelSet.Party.party_step4.lhs",
+      // lean:AOP.A7_3_Party.pair_est_le@44802697 lean:AOP.A7_3_Party.party_step4@dcdfde0f
       // pair_est_le row: Ex 7.15
       src[`⟨`#frc([`include`])` est(R°),`#frc([`exclude`])` est(R°)⟩⊑`#frc([`S`])` est((R×R)°)`]),
-    (RQ, "Freyd.Alg.RelSet.Party.exclude_step.lhs",
-      // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
+    (RQ, "Freyd.Alg.RelSet.Party.party_step5.lhs",
+      // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.party_step5@e750eb39
       src[`include` a map]),
+    (RQ, "Freyd.Alg.RelSet.Party.party_step6.lhs",
+      // lean:AOP.A7_3_Party.exclude_step@e8fd3123 lean:AOP.A7_3_Party.party_step6@0f90e211
+      src[`π₂ list(`#frc([`choose`])` est(R°)) concat⊑`#frc([`exclude`])` est(R°)`]),
   ),
 )]<party-laws-fold>
 

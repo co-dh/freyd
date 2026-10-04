@@ -458,6 +458,14 @@ public theorem quicksort (htrans : ∀ a b c, R a b → R b c → R a c)
 
 /-! ## The quicksort recursion (p.155) -/
 
+/-- **p.155, recursion step 0**: `X = [nil, split°]° F(X) [nil, join]` for `X = flatten ⦇[nil, split°]⦈°`
+    — the hylomorphism theorem. -/
+public theorem qrec_step0 {X : dList A ⟶ dList A}
+    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
+    X = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by
+  subst hX; exact (hylo_fixed (TB.initial A) _ _).symm
+
 /-- **p.155, recursion step 1**: `[nil, split°]° F(X) [nil, join] = [nil, split°]° [nil, join (X×id×X)]`
     — `F` acting on `X` passes into the `fork` branch of the algebra. -/
 public theorem qrec_step1 (X : dList A ⟶ dList A) :
@@ -477,15 +485,10 @@ public theorem qrec_step2 (X : dList A ⟶ dList A) :
 
 /-- **The quicksort recursion (B&dM p.155)**: `X = flatten ⦇[nil, split°]⦈°` solves
     `X = nil nil° ∪ join (X×id×X) split`, by the hylomorphism theorem. -/
-public theorem qsort_rec :
-    (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
-        ≫ flatten
-      = wrapR° ≫ wrapR
-        ∪ split ≫ rprodMap ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
-              : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)
-            (rprodMap (𝟙 (dE A)) ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
-              : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)) ≫ join := by
-  rw [← qrec_step2, ← qrec_step1]; exact (hylo_fixed (TB.initial A) _ _).symm
+public theorem qsort_rec {X : dList A ⟶ dList A}
+    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
+    X = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join :=
+  (qrec_step0 hX).trans ((qrec_step1 X).trans (qrec_step2 X))
 
 /-- **The quicksort recursion is the least solution (B&dM p.155)**: every `Y` with
     `nil nil° ∪ join (Y×id×Y) split ⊆ Y` contains `flatten ⦇[nil, split°]⦈°`. -/

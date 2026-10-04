@@ -217,10 +217,10 @@ public theorem filter_mono (p : A → Bool) :
           exact ⟨vs, (junc_sum_inr _ _ _ _).mpr hvs, hlen⟩
 
 /-- **filter-deriv, first row**: the specification's own greedy choice IS the catamorphism's,
-    `(subseq list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)` — `filter_alg` rewritten under `Λ … est(R°)`.
-    Generic in `R`: the step says nothing about which order the best is taken in. -/
-public theorem filter_laws_step1 (p : A → Bool) (R : dList A ⟶ dList A) :
-    (subseq ≫ listP p)%∋ ≫ est(R°) = (cataR (Salg p))%∋ ≫ est(R°) := by
+    `(subseq list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)` — `filter_alg` rewritten under `Λ … est(R°)`,
+    at the `R` the chain chooses by (`lenLE`), so it meets the greedy row's right side. -/
+public theorem filter_laws_step1 (p : A → Bool) :
+    (subseq ≫ listP p)%∋ ≫ est(lenLE°) = (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [filter_alg p]
 
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`, with
@@ -342,6 +342,13 @@ public theorem filter_step (p : A → Bool) :
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) :=
   (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
     ((filter_step3 p lenLE).trans (filter_step4 p)))
+
+/-- The `filter-deriv` last row: **`⦇S%∋ est(R°)⦈ = ⦇[nil,(π₁p→cons,π₂)]⦈`** — the greedy algebra
+    IS the program's (`filter_step`), so the fold on the left is the fold the program runs. -/
+public theorem filter_laws_step3 (p : A → Bool) :
+    cataR ((Salg p)%∋ ≫ est(lenLE°))
+      = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) := by
+  rw [filter_step]
 
 /-! ## The closing rows: the program, its entirety, and the specification's simplicity -/
 

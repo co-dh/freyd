@@ -41,6 +41,7 @@ module
 
 public import AOP.A7_6_Shrink
 public import AOP.A7_4_Horner
+public import AOP.A7_5_VanBeads
 public import AOP.A7_2
 public import AOP.A6_ConsList
 public import AOP.A6_GenFold
@@ -54,7 +55,7 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.CL
 -- `prefix` is ListRel's arrow, not a second copy: the note's bead finds its naturality by the
 -- head constant.  Opened by name because this section's `listP p` clashes with ListRel's `listP`.
 open Freyd.Alg.RelSet.ListRel
-  (dList prefixR prefAlg prefixP prefix_cata clen junc_sum_inl junc_sum_inr)
+  (dList prefixR prefAlg prefixP prefix_cata clen junc_sum_inl junc_sum_inr listRelator)
 
 variable {A : Type}
 
@@ -201,6 +202,25 @@ public theorem lenLE_recip_trans : (lenLE (A := A))° ≫ lenLE° ⊑ lenLE° :=
   le_iff.mpr fun xs zs h => by
     obtain ⟨ys, h1, h2⟩ := h
     exact Nat.le_trans h2 h1
+
+/-- **`est(R°)` is LAX natural**: `P(list S) est(R°) ⊑ est(R°) list(S)`.  A longest list `r` of the
+    image has a source `w` in the set, of the same length; every other member `z` of the set has an
+    image `v`, also of its own length, and `v` is no longer than `r`, so `w` is a longest member. -/
+public theorem est_lenLE_lax_natural :
+    LaxNatural ((Relator.idRelator RelSet.{0}).comp listRelator)
+      (((Relator.idRelator RelSet.{0}).comp listRelator).comp powerRelator)
+      (fun a : RelSet.{0} => est ((lenLE (A := a.carrier))°)) := by
+  intro x y S
+  refine le_iff.mpr fun xs r => ?_
+  rintro ⟨ys, hxy, hest⟩
+  obtain ⟨hys, hmax⟩ := (est_apply _ _ _).mp hest
+  obtain ⟨hfwd, hbwd⟩ := (powerRel_apply _ _ _).mp hxy
+  obtain ⟨w, hw, hwr⟩ := hbwd r hys
+  refine ⟨w, (est_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
+  obtain ⟨v, hzv, hv⟩ := hfwd z hz
+  show clen z ≤ clen w
+  rw [Van.listP_clen hwr, Van.listP_clen hzv]
+  exact hmax v hv
 
 /-- `(p×𝟙) cons : A×[A] ⟶ [A]` — keep a head that passes `p` onto the folded tail. -/
 @[expose] public def pcons (p : A → Bool) :
@@ -667,9 +687,9 @@ public theorem takewhile_mono (p : A → Bool) :
 
 /-- The `takewhile-laws` first row: **`(prefix list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)`** — the
     specification is the fold (`takewhile_alg`), under a transpose and a choice that neither
-    touch, so the row holds at every `R`. -/
-public theorem takewhile_laws_step1 (p : A → Bool) (R : dList A ⟶ dList A) :
-    (prefixR ≫ listP p)%∋ ≫ est(R°) = (cataR (Salg p))%∋ ≫ est(R°) := by
+    touch; stated at the `R` the chain chooses by (`lenLE`), so it meets the greedy row. -/
+public theorem takewhile_laws_step1 (p : A → Bool) :
+    (prefixR ≫ listP p)%∋ ≫ est(lenLE°) = (cataR (Salg p))%∋ ≫ est(lenLE°) := by
   rw [takewhile_alg]
 
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,

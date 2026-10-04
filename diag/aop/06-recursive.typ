@@ -552,10 +552,11 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.qsort_rec") \
     #src[quicksort returns `[]` on `[]`, and otherwise splits into `(x,a,y)`, sorts `x` and `y` and
      joins them around `a`]],
-     // lean:AOP.A6_6e_Quicksort.qsort_rec@6776e923
+     // lean:AOP.A6_6e_Quicksort.qsort_rec@acd4b32a
   lean-chain(
     (none, "Freyd.Alg.RelSet.Sort.qsort_rec.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.lhs", src[hylomorphism theorem]),
+     // lean:AOP.A6_6e_Quicksort.qrec_step0@1716665d
     (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.rhs", src[`F(X)[nil,join]=[nil,(X×𝟙×X)join]`]),
      // lean:AOP.A6_6e_Quicksort.qrec_step1@8fce50a6
     (EQ, "Freyd.Alg.RelSet.Sort.qrec_step2.rhs", src[coproduct]),
