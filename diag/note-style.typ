@@ -133,7 +133,7 @@
         // first column past the paper edge, and a nested table's margin holds a bullet, a fill or a neighbour.
         let num = box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))
         let x = here().position().x
-        if x - MARGIN < 1em.to-absolute() { place(left + top, dx: MARGIN - 1.5em - x, num); it.body } else { box(width: 1.5em, num); it.body }
+        if x - MARGIN < 1em.to-absolute() { block({ place(left + top, dx: MARGIN - 1.5em - x, num); it.body }) } else { box(width: 1.5em, num); it.body }
       } else { it.body }
     }
   })
