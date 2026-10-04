@@ -57,7 +57,7 @@ words = [[(float(w.get("xMin")), float(w.get("yMin")), float(w.get("xMax")), flo
 def under(pi, r):  # a word counts when most of its width lies inside the rect
     return [w for w in words[pi] if min(w[2], r[2]) - max(w[0], r[0]) > 0.6 * (w[2] - w[0]) and r[1] - 1 <= (w[1] + w[3]) / 2 <= r[3] + 1]
 # a bare reference: a number, a name, punctuation — nothing to find at the destination but the line
-def bare(t): return all(c.isalnum() or c in ".(), ’‘'-" for c in t)
+def bare(t): return all(c.isalnum() or c in ".(), ’‘'′-§" for c in t)
 # letters and digits only, NFKC: a row sets letters in math italic (𝑅), a reason cell upright (R)
 def chars(ws): return Counter(c for w in ws for c in unicodedata.normalize("NFKC", w[4]) if c.isalnum())
 
