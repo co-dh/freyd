@@ -405,6 +405,49 @@ public theorem pathF_map_id (A : RelSet.{0}) {B C : RelSet.{0}} (S : B ⟶ C) :
     pathF.map (𝟙 A) S = (CL.F A.carrier A.carrier).map S :=
   hom_ext fun u v => by cases u <;> cases v <;> exact Iff.rfl
 
+/-- `F(R,S) = [R inl, (R×S) inr]`: the network's bifunctor is the sum of its two arms, each
+    followed by its injection — the form the two transposes below are read off. -/
+public theorem pathF_map_eq_junc {A A' X X' : RelSet.{0}} (R : A ⟶ A') (S : X ⟶ X') :
+    pathF.map R S = junc (sumCop A ⟨A.carrier × X.carrier⟩)
+      (R ≫ (sumCop A' ⟨A'.carrier × X'.carrier⟩).u₁)
+      (rprodMap R S ≫ (sumCop A' ⟨A'.carrier × X'.carrier⟩).u₂) :=
+  hom_ext fun u v => by
+    show _ ↔ (∃ x', u = Sum.inl x' ∧ ∃ m, R x' m ∧ v = Sum.inl m)
+      ∨ (∃ y', u = Sum.inr y' ∧ ∃ m, rprodMap R S y' m ∧ v = Sum.inr m)
+    cases u <;> cases v <;> simp only [pathF, Sum.inl.injEq, Sum.inr.injEq, reduceCtorEq, false_and,
+      and_false, exists_false, or_false, false_or, exists_eq_left', exists_eq_right']
+      <;> exact Iff.rfl
+
+/-- `F(∋,𝟙)%∋ = [𝟙 P(inl), cpl P(inr)]` (book p.198's `ΛF(∈,id) = id + cpl`): a set of layer
+    vertices injects whole, and beside a partial path `cpl` pairs the path with each vertex. -/
+public theorem Λ_pathF_map_eps_id (A X : RelSet.{0}) :
+    Λ (pathF.map (∋ A) (𝟙 X))
+      = junc (sumCop (P A) ⟨(P A).carrier × X.carrier⟩)
+          (𝟙 (P A) ≫ powerRel (sumCop A ⟨A.carrier × X.carrier⟩).u₁)
+          (cplMap X A ≫ powerRel (sumCop A ⟨A.carrier × X.carrier⟩).u₂) := by
+  have hu₁ : Map (sumCop A ⟨A.carrier × X.carrier⟩).u₁ := graph_map _
+  have hu₂ : Map (sumCop A ⟨A.carrier × X.carrier⟩).u₂ := graph_map _
+  rw [pathF_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
+    ← Λ_absorption, ← Λ_absorption, Λ_eps_reflection]
+  simp only [cplMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
+  rw [prodMap_eq_rprodMap]
+  exact rfl
+
+/-- `F(𝟙,∋)%∋ = [τ P(inl), cpr P(inr)]` (book p.198's `id + cpr`): a leaf vertex becomes the
+    singleton of its injection, and `cpr` pairs a vertex with each tail of the set beside it. -/
+public theorem Λ_pathF_map_id_eps (A X : RelSet.{0}) :
+    Λ (pathF.map (𝟙 A) (∋ X))
+      = junc (sumCop A ⟨A.carrier × (P X).carrier⟩)
+          (singletonMap ≫ powerRel (sumCop A ⟨A.carrier × X.carrier⟩).u₁)
+          (cprMap A X ≫ powerRel (sumCop A ⟨A.carrier × X.carrier⟩).u₂) := by
+  have hu₁ : Map (sumCop A ⟨A.carrier × X.carrier⟩).u₁ := graph_map _
+  have hu₂ : Map (sumCop A ⟨A.carrier × X.carrier⟩).u₂ := graph_map _
+  rw [pathF_map_eq_junc, Λ_junc, powerRel_map hu₁, powerRel_map hu₂,
+    ← Λ_absorption, ← Λ_absorption]
+  simp only [cprMap, cpMap, Relator.prod, Relator.const, Relator.idRelator]
+  rw [prodMap_eq_rprodMap]
+  exact rfl
+
 /-- `S ≜ F(𝟙,∋)α`, the second factor of book p.198's split of the algebra's source. -/
 @[expose] public def pathSplit : Fobj V V (pow (dCL V V)) ⟶ dCL V V :=
   algSplit pathF alphaR

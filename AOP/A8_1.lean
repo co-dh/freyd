@@ -80,6 +80,10 @@ public theorem thinRel_pt {α : RelSet.{0}} (Q : α ⟶ α) (P Y : (RelSet.pow �
 public theorem thinRel_ne_powerRel {α : RelSet.{0}} {Q : α ⟶ α} {a b : α.carrier}
     (hab : a ≠ b) (haa : Q a a) (hab' : Q a b) : ¬ ∃ X : α ⟶ α, thinRel Q = powerRel X := by
   rintro ⟨X, hX⟩
+  -- `powerRel`'s pointwise reading in Rel(Set), `AOP.A5_7_PowerBeads.powerRel_apply`, which
+  -- imports this module: it holds on the nose.
+  have powerRel_apply : ∀ (X : α ⟶ α) (S T : (RelSet.pow α).carrier), powerRel X S T ↔
+      (∀ x, S x → ∃ y, X x y ∧ T y) ∧ (∀ y, T y → ∃ x, S x ∧ X x y) := fun _ _ _ => Iff.rfl
   have h1 : powerRel X (fun z => z = a ∨ z = b) (fun z => z = a) := by
     rw [← hX]
     refine (thinRel_pt Q _ _).mpr ⟨fun y hy => Or.inl hy, fun z hz => ⟨a, ?_, rfl⟩⟩
