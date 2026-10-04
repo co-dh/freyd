@@ -357,15 +357,15 @@ end CylLaws
 public theorem cyl_step {p₀ q₀ q : 𝒜} (R : I.t ⟶ I.t)
     (C : Coproduct (F.obj (N.obj A) (N.obj I.t)) (N.obj p₀) q)
     {pm : q ⟶ q} {zip' : q ⟶ N.obj q₀}
-    {inlA : p₀ ⟶ F.obj A I.t} {inrA : q₀ ⟶ F.obj A I.t}
-    {wrapA : p₀ ⟶ I.t} {consA : q₀ ⟶ I.t}
+    {inl : p₀ ⟶ F.obj A I.t} {inr : q₀ ⟶ F.obj A I.t}
+    {wrap : p₀ ⟶ I.t} {cons : q₀ ⟶ I.t}
     (hGmap : (F.appl (N.obj A)).map (moves I.t ≫ trans I.t ≫ N.map (est R))
       = junc C C.u₁ (pm ≫ C.u₂))
-    (hzip : zip I.t = junc C (N.map inlA) (zip' ≫ N.map inrA))
-    (hwrap : inlA ≫ I.α = wrapA) (hcons : inrA ≫ I.α = consA) :
+    (hzip : zip I.t = junc C (N.map inl) (zip' ≫ N.map inr))
+    (hwrap : inl ≫ I.α = wrap) (hcons : inr ≫ I.α = cons) :
     Q F I moves trans zip moves_natural trans_natural zip_natural R
-      = junc C (N.map wrapA) (pm ≫ zip' ≫ N.map consA) := by
-  have hZ : zip I.t ≫ N.map I.α = junc C (N.map wrapA) (zip' ≫ N.map consA) := by
+      = junc C (N.map wrap) (pm ≫ zip' ≫ N.map cons) := by
+  have hZ : zip I.t ≫ N.map I.α = junc C (N.map wrap) (zip' ≫ N.map cons) := by
     rw [hzip, junc_comp, ← N.map_comp, hwrap, Cat.assoc, ← N.map_comp, hcons]
   rw [Q, hGmap, hZ, junc_comp, u₁_junc, Cat.assoc, u₂_junc]
 
