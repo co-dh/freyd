@@ -1701,7 +1701,8 @@ partial def rewriteSpine (e : Expr) (fuel : Nat := 8) : MetaM Expr := do
     draws no panel of its own and a selector has to go on through it. -/
 def conn? (e : Expr) : Option (Expr × Expr) :=
   match e.getAppFnArgs with
-  | (``Iff, args) | (``And, args) => lastTwo args
+  -- `Imp` is `→` as a `calc` relation (`AOP.CalcSteps`), named by string: this file does not import it.
+  | (``Iff, args) | (``And, args) | (`Freyd.Alg.Imp, args) => lastTwo args
   | _ => none
 
 /-- The relation between the two sides of a statement, and the sides.  ONE copy: the string, the

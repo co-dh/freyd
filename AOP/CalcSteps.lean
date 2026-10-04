@@ -19,12 +19,14 @@ namespace Freyd.Alg.CalcSteps
 /-- The leaves of a `calc` spine, left to right, each with the relation the `calc` states for it:
     `calc` elaborates to nested `Trans.trans` (and `Eq.trans` for a chain of `=`), whose last two
     arguments are the two halves it composes.  The statement is read off `Trans.trans`'s own `r a b`
-    and `s b c`, not off the leaf's type, which for a step proved by `hf : Simple f` is `Simple f`. -/
-public meta partial def leaves (e : Expr) (ty : Option Expr := none) : Array (Expr × Option Expr) :=
+    and `s b c` (the relation and its two terms), not off the leaf's type, which for a step proved by
+    `hf : Simple f` is `Simple f`. -/
+public meta partial def leaves (e : Expr) (ty : Option (Expr × Expr × Expr) := none) :
+    Array (Expr × Option (Expr × Expr × Expr)) :=
   let e := e.consumeMData
   match e.getAppFnArgs with
   | (``Trans.trans, #[_, _, _, r, s, _, _, a, b, c, h₁, h₂]) =>
-    leaves h₁ (some (mkApp2 r a b).headBeta) ++ leaves h₂ (some (mkApp2 s b c).headBeta)
+    leaves h₁ (some (r, a, b)) ++ leaves h₂ (some (s, b, c))
   | (``Trans.trans, args) | (``Eq.trans, args) =>
     if args.size < 2 then #[(e, ty)] else leaves args[args.size - 2]! ++ leaves args[args.size - 1]!
   | _ => #[(e, ty)]
@@ -45,7 +47,8 @@ syntax (name := calcSteps) "calc_steps " ident : command
     -- by every caller of a step that never needs it.  Used means in the step, or in a used binder's
     -- type, so the binders are read last to first.
     ls.mapM fun (l, ty) => do
-      let (t, l) := (← instantiateMVars (← ty.getDM (inferType l)), ← instantiateMVars l)
+      let t ← ty.elim (inferType l) fun (r, a, b) => pure (mkApp2 r a b).headBeta
+      let (t, l) := (← instantiateMVars t, ← instantiateMVars l)
       let mut ys : Array Expr := #[]
       for x in xs.reverse do
         let used (e : Expr) := e.containsFVar x.fvarId!
@@ -56,3 +59,15 @@ syntax (name := calcSteps) "calc_steps " ident : command
       { name := n ++ Name.mkSimple s!"step_{i + 1}", levelParams := ci.levelParams, type := t, value := p }
 
 end Freyd.Alg.CalcSteps
+
+namespace Freyd.Alg
+
+/-- An implication as a `calc` relation: a `calc` step is an application `r a b`, and `a → b` is
+    none, so a chain of statements writes `Imp a b`. -/
+public abbrev Imp (a b : Prop) : Prop := a → b
+
+public instance : Trans Imp Imp Imp := ⟨fun h₁ h₂ x => h₂ (h₁ x)⟩
+public instance : Trans Iff Imp Imp := ⟨fun h₁ h₂ x => h₂ (h₁.mp x)⟩
+public instance : Trans Imp Iff Imp := ⟨fun h₁ h₂ x => h₂.mp (h₁ x)⟩
+
+end Freyd.Alg

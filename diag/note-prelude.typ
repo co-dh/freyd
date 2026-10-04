@@ -97,13 +97,17 @@
   })
 }
 // The mark a relation string stands as; content (a branches group's own `∪`/`+`) passes through.
-#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "≜" { DF } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
+// Long and rightward, matching EQ/SQ's left-to-right reading: the panel before IMP is the
+// hypothesis actually established, the panel after is what it closes the chain to.
+#let IMP = text(SLACK)[$arrow.r.double.long$]
+#let IFF = text(SLACK)[$arrow.l.r.double$]
+#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "⟹" { IMP } else if x == "⟺" { IFF } else if x == "≜" { DF } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
 // A chain table's FORMULA CELL, calc style: the relation of the step INTO the column leads it.
 #let rel-lead(op, f) = if op == none { f } else [#rel-mark(op) #f]
 // Two steps read as one (a `dup` panel merged into the next): `=` is the unit, and an inclusion
 // composes only with itself — a `⊑` then a `⊒` relates nothing.  `≜` is a unit too, and composed
 // with anything but itself it is no longer a definition: `≜` then `=` is `=`.
-#let rel-compose(a, b) = if a == none or a == b { a } else if b in ("=", "≜") { if a == "≜" { "=" } else { a } } else if a in ("=", "≜") { b } else {
+#let rel-compose(a, b) = if a == none or a == b { a } else if (a, b) in (("⟺", "⟹"), ("⟹", "⟺")) { "⟹" } else if b in ("=", "≜") { if a == "≜" { "=" } else { a } } else if a in ("=", "≜") { b } else {
   panic("lean-chain: a merged step reads " + a + " then " + b + ", which relates nothing")
 }
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
@@ -207,11 +211,7 @@
   "thinlist-thm82": [binary thinning theorem],
   "dp-laws": [dynamic programming theorem],
 )
-// Long and rightward, matching EQ/SQ's left-to-right reading: the panel before IMP is the
-// hypothesis actually established, the panel after is what it closes the chain to.
-#let IMP = text(SLACK)[$arrow.r.double.long$]
 #let TH = 1.2   // a fraction box is two lines tall
-#let IFF = text(SLACK)[$arrow.l.r.double$]
 #let So-box = ([`S°`], 0.85, true)
 // A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
 // between it and the step before, the formula above, the reason underneath both.  Steps pack
@@ -500,7 +500,8 @@
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
-    let m = m + lean-step(singles)
+    // Every step is a stacked cell, a statement step (`(decl,)`) as much as a single panel.
+    let m = m + lean-step(r.steps.map(s => if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }))
     let i = 0
     let got = ()
     for s in r.steps {

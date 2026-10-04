@@ -21,6 +21,7 @@
   through the same stub-file machinery every other route already uses.
 -/
 import diag.tool.TypeRender
+import AOP.CalcSteps
 
 open Lean
 
@@ -59,7 +60,7 @@ partial def descend (declName : Name) (path : List String) (body : Expr) : MetaM
         else throwError "{declName}: `.{rest.head!}` follows `.{s}`, which already names a side \
           of {← Meta.ppExpr body} — a side has no sides of its own"
       | none => throwError "{declName}: `.{s}` finds no side to take of {← Meta.ppExpr body}, \
-          which is neither a connective (`↔`, `∧`) nor a relation between two arrows"
+          which is neither a connective (`↔`, `∧`, `Imp`) nor a relation between two arrows"
 
 /-- `.body`, the one branch selector a formula opens: it instantiates a least fixed point's binder
     with a local of that binder's own name — the same local `StrDiag.withSel` opens for the
@@ -447,8 +448,10 @@ partial def lawsIn (e : Expr) : MetaM (Array Law) := do
         inner := inner ++ l; built := built || !l.isEmpty
     let some c := e.getAppFn.constName? | return inner
     unless law && !built do return inner
-    let some (_, l, r) ← splitM concl | return inner
-    return if ← sameDrawn l r then inner else inner.push (.thm c)
+    -- A law applied short of its premise (`relCata_le_of_prefixed I`, a `⟹` step) concludes under it.
+    Meta.forallTelescope concl fun _ concl => do
+      let some (_, l, r) ← splitM concl | return inner
+      return if ← sameDrawn l r then inner else inner.push (.thm c)
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
@@ -463,7 +466,15 @@ def calcFile (declName : Name) : MetaM String := do
   if n == 0 then
     throwError "{declName}: no `{step 0}` — write `calc_steps {declName}` after its `calc` proof"
   let side (i : Nat) (s : String) : Side := (step i, none, [s], [])
-  let mut rows := #[s!"(sel: {s!"{step 0}.lhs".quote}, rel: none, law: none)"]
+  let some ci := env.find? declName | throwError "{declName}: no such declaration"
+  let some v := ci.value? | throwError "{declName} has no proof term to read the calc off"
+  Meta.lambdaTelescope v fun _ body => do
+  let spine := Freyd.Alg.CalcSteps.leaves body
+  let first := s!"{step 0}.lhs"
+  let first ← match spine[0]? |>.bind (·.2) with
+    | some (_, t, _) => pure (if ← Meta.isProp t then s!"({first.quote},)" else first.quote)
+    | none => pure first.quote
+  let mut rows := #[s!"(sel: {first}, rel: none, law: none)"]
   for i in List.range n do
     let some v := (env.find? (step i)).bind (·.value?) | throwError "{step i} has no proof to read"
     noteRead (.decl (step i))
@@ -474,11 +485,19 @@ def calcFile (declName : Name) : MetaM String := do
       throwError "{step i}: a step applies one law under congruence, and its proof applies \
         {laws.toList.map lawSel} — split it into one `calc` step per law"
     let (a, b) := if i + 1 < n then (side i "lhs", side (i + 1) "lhs") else (side i "lhs", side i "rhs")
-    let (_, rel) ← stepRel a b
+    -- The relation is the calc's own: `↔` and `→` between statements are read off its `Trans`
+    -- spine; between arrows `stepRel` names the theorem relating the two panels.
+    let some (r, t, _) := spine[i]? |>.bind (·.2) | throwError "{declName}: step {i + 1} is no calc step"
+    let rel ← match (← instantiateMVars r).eta with
+      | .const ``Iff _ => pure "⟺"
+      | .const ``Freyd.Alg.Imp _ => pure "⟹"
+      | _ => pure (← stepRel a b).2
     for l in laws do if let .thm c := l then noteRead (.stmt c)
     let sel := if i + 1 < n then s!"{step (i + 1)}.lhs" else s!"{step i}.rhs"
+    -- A term that is a statement draws whole: lean-chain's statement selector is a 1-tuple.
+    let sel := if ← Meta.isProp t then s!"({sel.quote},)" else sel.quote
     let law := laws[0]?.elim "none" fun l => (lawSel l).quote
-    rows := rows.push s!"(sel: {sel.quote}, rel: {rel.quote}, law: {law})"
+    rows := rows.push s!"(sel: {sel}, rel: {rel.quote}, law: {law})"
   return "#let steps = (\n  " ++ ",\n  ".intercalate rows.toList ++ ",\n)\n"
 
 /-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
