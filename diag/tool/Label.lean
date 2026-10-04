@@ -1317,6 +1317,19 @@ def memoLbl (what : String) (es : Array Expr) (m : MetaM (Array Lbl)) : MetaM (A
   labelMemo.modify (·.insert (what, k, t) (r, rs))
   return r
 
+/-- AN EQUATION WITH A `fun` SIDE, read at a point: `Q = fun w => P` is `∀w. Q(w) ⟺ P`, as
+    `FormulaRender.pointwise` reads a `def R := fun x y => P` at its binders, because the note
+    writes a set or a relation by what holds at a point and has no spelling for Lean's lambda.
+    Both sides are applied to the lambda's own binders, so the binder keeps its name; a `Prop`
+    codomain relates the two by `⟺` (the equation of predicates is `propext`'s), any other by `=`. -/
+def atPointEq? (e : Expr) : MetaM (Option Expr) := do
+  let some (_, l, r) := e.eq? | return none
+  let some f := [r, l].find? (·.isLambda) | return none
+  Meta.lambdaTelescope f fun ys b => do
+    let (a, c) := ((mkAppN l ys).headBeta, (mkAppN r ys).headBeta)
+    let st ← if ← Meta.isProp b then pure (mkApp2 (mkConst ``Iff) a c) else Meta.mkEq a c
+    some <$> Meta.mkForallFVars ys st
+
 mutual
 
 /-- A term, spelled the way the BOOK spells it — juxtaposition for composition, `°` for the converse
@@ -1360,6 +1373,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- …and a field of a bundle with no name of its own is the field's DEFINITION at that bundle: the
   -- product relator's action is `G(R)×G'(R)`, where its head prints `prod` for every factor alike.
   if let some x ← openBuiltField? e then return ← labelTree prec x
+  if let some x ← atPointEq? e then return ← labelTree prec x
   let sp ← isSpaced
   let wrap (p : Nat) (s : Lbl) : Lbl := if prec > p then "(" ++ s ++ ")" else s
   -- A SUM AND A PRODUCT, of objects or of arrows, are written with Lean's own `+` and `×`, so they

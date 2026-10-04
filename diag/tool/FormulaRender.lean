@@ -251,6 +251,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       -- declaration that the name IS the note's, so it is also the declaration that there is
       -- nothing under it to open.
       let noted ← Lean.labelled `diag_noted
+      -- A WHOLE STATEMENT `Q = fun w => P` is no two sides a label can write; read at a point it is one.
+      let target' := (← atPointEq? target').getD target'
       let sides ← match target'.getAppFn.constName? with
         | some c => if noted.contains c then pure (split target') else splitM target'
         | none => splitM target'
