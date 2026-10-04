@@ -98,7 +98,7 @@ every F-algebra `f`
 // `relCata_alpha`, AOP/A6_3.lean:40.
 Taking a value apart with `α` and putting it straight back is doing nothing.
 
-=== Fusion: ⦇R:FB⦈ absorb S:R->Q (in Alg(F) ) and becomes ⦇Q⦈
+=== #leanf("Freyd.Alg.relCata_fusion") — folding with `R`, then applying `S`, is folding with `Q`
 
 // `T` is already the initial algebra's carrier, so the two algebras of the law take their own letters,
 // `R` on `B` and `Q` on `C`; `S` is the homomorphism between them, not an algebra.
