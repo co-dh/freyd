@@ -1805,6 +1805,8 @@ partial def labelRunT (e : Expr) : MetaM (Array Lbl) := do
   match e.getAppFnArgs with
   | (``Cat.comp, args) =>
     if (lastTwo args).isNone then return #[← labelTree (← Prec.factor) e]
+    -- the picture draws no identity factor (`dropUnits`), so neither does its label: `𝟙U` is `U`
+    if dropUnits e != e then return ← labelRunT (dropUnits e)
     let mut out := #[]
     for f in factors e do out := out ++ (← labelRunT f)
     return out
