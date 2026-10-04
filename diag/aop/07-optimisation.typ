@@ -26,7 +26,7 @@ letter, `min R`, so `est(R)=min(R°)` once `R` is an arrow;
 `est(R)=∋∩all R°` #h(4pt) #src[`all R≜∈\R`, q's `all`; the chains below keep it written `∈\`]
 
 `E(R)≜` $frac(#[`∋R`], ∋)$ ` : PA⟶PB`, #h(4pt) `xs E(R) ys⟺ys={y∣∃x∈xs. x R y}` #h(4pt)
-#src[the image of `xs`, @pow-laws]
+#src[the image of `xs`, @Freyd.Alg.existsImage]
 
 `P(R) : PA⟶PB`, #h(4pt) `xs P(R) ys⟺(∀x∈xs. ∃y∈ys. x R y)∧(∀y∈ys. ∃x∈xs. x R y)` #h(4pt)
 #src[every `x` and every `y` has a partner, @powrel-readings]
@@ -744,11 +744,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`segment=suffix prefix` \ #src[@comb-fns-7, @mss-defn]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step2.rhs")][]],
-  [absorption \ #src[@pow-laws — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
+  [absorption \ #src[@Freyd.Alg.Λ_absorption — `frac(S,∋) E(R)=frac(SR,∋)` at `S:=suffix`, `R:=prefix sum`]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step3.rhs")][]],
-  [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[@pow-laws's `frac(R,∋)∋=R` at `R:=prefix sum` and
-   `E(R)≜frac(∋R,∋)`; @est-laws's `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
+  [#frc([`R`])` ∋=R`, `union=E(∋)` \ #src[#ref(label("Freyd.Alg.Λ_eps_eq'")) `frac(R,∋)∋=R` at `R:=prefix sum` and
+   `E(R)≜frac(∋R,∋)`, @Freyd.Alg.existsImage; @est-laws:4 `union≜frac(∋∋,∋)`; the middle equality is @relator-defn's
    `F(RS)=F(R)F(S)` at `F:=E`]],
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step4.rhs")][]],
@@ -1311,7 +1311,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #disp[#pair(
   leancd("Freyd.Alg.RelSet.Party.party_absorb.lhs"),
   leancd("Freyd.Alg.RelSet.Party.party_absorb.rhs"),
-  [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@pow-laws, absorption,
+  [$frac(#[`⦇S⦈choose`], ∋)$ `=` $frac(#[`⦇S⦈`], ∋)$ `E(choose)` #h(1cm) #src[@Freyd.Alg.Λ_absorption, absorption,
  ]],
    // lean:AOP.A4_6.Λ_absorption@00399742
    // lean:AOP.A7_3_Party.party_absorb@4dd05f08

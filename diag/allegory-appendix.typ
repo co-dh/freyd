@@ -263,7 +263,7 @@ gen((1,2,3,4),({[5]},{[6]},{[7]},{[8]})) =
   [$frac(#[`R`], ∋)$ turns `R:X⟶Y` into `X⟶E Y`],
 
   [`cp=`$frac(#[`𝟙`], ∋)$` E(F(𝟙,∋))`],
-  [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @pow-laws],
+  [what the picture draws: the unit makes the outer `E`, leaving one `∋` — @Freyd.Alg.Λ_eq_singleton_existsImage],
   // lean:AOP.A7_4_Cylinder.cyl_cp@fbd62a53 lean:AOP.A4_6.Λ_eq_singleton_existsImage@49bf48f6
 )]<cp-types>
 

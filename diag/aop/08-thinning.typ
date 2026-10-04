@@ -144,7 +144,7 @@ row((
       src[@thin-defn, `∋/∋` half]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond1@14824541
     (SQ, "Freyd.Alg.est_comp_singletonMap_cond1.rhs",
-      src[#frc([`𝟙`])`∋=𝟙` — @pow-laws; `est(Q)⊑∋` — @est-laws]),
+      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); `est(Q)⊑∋` — @est-laws]),
   ), Sub("Freyd.Alg.est_comp_singletonMap_cond2",
     gloss: src[the singleton's member stands in `Q` to every member of the set],
     (IMP, "Freyd.Alg.est_comp_singletonMap_cond2_step1.lhs", src[@thin-defn, `∈\(Q°∈)` half]),
@@ -153,7 +153,7 @@ row((
       src[`∈ est(Q)⊑Q°` — @est-up]),
      // lean:AOP.A8_1.est_comp_singletonMap_cond2_step1@b4d0cc01
     (SQ, "Freyd.Alg.recip_comp_singletonMap_le.rhs",
-      src[#frc([`𝟙`])`⊑∈` — @pow-laws]),
+      src[#frc([`𝟙`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
      // lean:AOP.A8_1.recip_comp_singletonMap_le@e1798cc6
   )),
 )]<thin-82>
@@ -172,7 +172,7 @@ row((
       src[@thin-laws, first condition]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond1@58772169
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.rhs",
-      src[#frc([`𝟙`])`∋=𝟙` — @pow-laws; #frc([`S`])` est(R)⊑S` — @est-laws]),
+      src[#frc([`𝟙`])`∋=𝟙` — #ref(label("Freyd.Alg.Λ_eps_eq'")); #frc([`S`])` est(R)⊑S` — @est-laws]),
   ), Sub("Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2",
     gloss: src[the singleton's member stands in `Q` to every value `S` returns at the same argument],
     (IMP, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.lhs", src[@thin-laws, second condition]),
@@ -180,14 +180,14 @@ row((
     (EQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_context.rhs",
       src[#frc([`S`])` est(R)=`#frc([`S`])` est(R∩S°S)` — @est-laws]),
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step1.rhs",
-      src[`S°`#frc([`S`])`⊑∈` — @pow-laws]),
+      src[`S°`#frc([`S`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step1@f65de19f
   ), (
     (SQ, "Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2_step2.rhs",
       src[`∈ est(R∩S°S)⊑(R∩S°S)°` — @est-up; `R∩(S°S)⊑Q`]),
      // lean:AOP.A8_1.Λ_comp_est_comp_singletonMap_cond2_step2@fde1a573
     (SQ, "Freyd.Alg.recip_comp_singletonMap_le.rhs",
-      src[#frc([`𝟙`])`⊑∈` — @pow-laws]),
+      src[#frc([`𝟙`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
      // lean:AOP.A8_1.recip_comp_singletonMap_le@e1798cc6
   )),
 )]<thin-83>
@@ -213,7 +213,7 @@ row((
     (SQ, "Freyd.Alg.thinning_step1.rhs",
       src[`S°F(Q°)⊑Q°S°` — @mon-str, @relator-laws]),
     (SQ, "Freyd.Alg.thinning_step2.rhs",
-      src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈` — @pow-laws]),
+      src[`S°F(∈)`#frc([`F(∋)S`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
     (SQ, "Freyd.Alg.thinning_step3.rhs", src[`∈ thin(Q)⊑Q°∈` — @thin-defn, @adj-all]),
     (SQ, "Freyd.Alg.thinning_step4.rhs", src[`Q` a preorder]),
   ),
@@ -327,7 +327,7 @@ row((
       // lean:AOP.A8_2.thinning_paths_alg_distrib@63e8050a
       // lean:AOP.A8_1.powerRel_thinRel_comp_bigUnion_le@91d6431a
     (EQ, "Freyd.Alg.thinning_paths_alg_bifunctors.lhs",
-      src[`P(`#frc([`F(𝟙,∋)α`])`) E(∋)=E(F(𝟙,∋)α)`, #frc([`F(∋,𝟙)`])` E(F(𝟙,∋)α)=`#frc([`F(∋,𝟙)F(𝟙,∋)α`])` — `@pow-laws]),
+      src[`P(`#frc([`F(𝟙,∋)α`])`) E(∋)=E(F(𝟙,∋)α)`, #frc([`F(∋,𝟙)`])` E(F(𝟙,∋)α)=`#frc([`F(∋,𝟙)F(𝟙,∋)α`])` — `@Freyd.Alg.existsImage_eq_Λ_bigUnion, @Freyd.Alg.Λ_absorption]),
       // lean:AOP.A8_2.thinning_paths_alg_split@0a60a907
       // lean:AOP.A8_2.Λ_comp_eq_Λ_comp_powerRel_bigUnion@40ff2482
       // lean:AOP.A4_6.existsImage_eq_Λ_bigUnion@cd08cc82
@@ -445,7 +445,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
      // lean:AOP.A8_3.map_sort_comp_listcp_le_steps4to6@32a5d6f6
     (none, "Freyd.Alg.map_sort_comp_listcp_le.rhs", []),
     (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step6.lhs",
-      src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @pow-laws, @thinlist-defn]),
+      src[#frc([`F(∋)fp`])` =`#frc([`F(∋)`])` E(fp)` — @Freyd.Alg.Λ_absorption, @thinlist-defn]),
     (EQ, "Freyd.Alg.map_sort_comp_listcp_le_step5.lhs",
       src[`E(f)=P(f)`, `f` a map — @powrel-laws]),
     // The node has walked up past `p`, which comes out the other side as `filter(p)` on the `list`

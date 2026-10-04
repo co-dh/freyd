@@ -47,7 +47,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     (none, "Freyd.Alg.greedy_dp_lower.lhs", []),
     (SQ, "Freyd.Alg.greedy_dp_lower_step1.rhs", src[`est(Q)⊑∋` — @est-defn]),
      // lean:AOP.A10_1.greedy_dp_lower_step1@ba3be0a6
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.greedy_dp_lower.rhs", src[`T°F(H)h=H` — @hylo-mu]),
   ),

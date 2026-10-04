@@ -535,9 +535,9 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
       (none, "Freyd.Alg.relCata_UP_step1.lhs", []),
       (EQ, "Freyd.Alg.relCata_UP_step1.rhs", src[`α` iso; `αX=F(X)R`]),
       // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` is a map because `α` is an iso, so it leaves Λ: $frac(#[`α°F(X)R`], ∋)$`=α°`$frac(#[`F(X)R`], ∋)$ — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — @pow-laws]),
-      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @pow-laws]),
+      (EQ, "Freyd.Alg.relCata_UP_step2.rhs", src[`α°` is a map because `α` is an iso, so it leaves Λ: $frac(#[`α°F(X)R`], ∋)$`=α°`$frac(#[`F(X)R`], ∋)$ — @Freyd.Alg.Λ_fusion]),
+      (EQ, "Freyd.Alg.relCata_UP_step3.rhs", src[`X=`$frac(#[`X`], ∋)$`∋` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
+      (EQ, "Freyd.Alg.relCata_UP_step4.rhs", src[`F(`$frac(#[`X`], ∋)$`∋)=F(`$frac(#[`X`], ∋)$`)F(∋)` as `F` is a functor, and `F(`$frac(#[`X`], ∋)$`)` is a map (a relator sends maps to maps), so it leaves Λ — @relator-defn, @Freyd.Alg.Λ_fusion]),
       (EQ, "Freyd.Alg.relCata_UP_step5.rhs", src[fold uniqueness, $frac(#[`F(∋)R`], ∋)$ being a map — @initial-defn]),
       // lean:AOP.A5_5.relCata_UP_step5@cdbc6943
   )],
@@ -719,7 +719,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
     `(𝟙×∋)π₂=π₂∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
-    #src[@pow-laws, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
+    #src[@Freyd.Alg.Λ_of_map, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
     // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@d276006e
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
 )]<subseq-EW-case>
@@ -755,7 +755,7 @@ $frac(#[`R ∪ S`], ∋)$ `=⟨`$frac(#[`R`], ∋)$`,` $frac(#[`S`], ∋)$`⟩ c
   [#sb-hm-born \ #src[the `cons` operand under its `𝟙%∋`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
-    #src[@pow-laws, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
+    #src[@Freyd.Alg.Λ_absorption, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
 )]<subseq-EW-join>

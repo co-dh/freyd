@@ -95,7 +95,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_lower_step1.rhs",
       src[`P(X)est(R)⊑∋X` — @est-710]),
      // lean:AOP.A9_1.dynamic_programming_lower_step1@a9e44a1f
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
      // lean:AOP.A9_1.dynamic_programming_lower_step2@b5881e96
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs",
       src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
@@ -121,7 +121,7 @@ in @mu-defn.
     (EQ, "Freyd.Alg.dynamic_programming_upper_step2.rhs", src[`H°=h°F(H°)T` — @hylo-mu]),
      // lean:AOP.A9_1.dynamic_programming_upper_step2@00a7e312
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3a.rhs",
-      src[`T`#frc([`T°`])`⊑∈` — @pow-laws]),
+      src[`T`#frc([`T°`])`⊑∈` — @Freyd.Alg.recip_comp_Λ_le_recip_eps]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3a@a14c0412
     (SQ, "Freyd.Alg.dynamic_programming_upper_step3b.rhs", src[`∈(∈\Y)⊑Y`]),
      // lean:AOP.A9_1.dynamic_programming_upper_step3b@db566dd4
@@ -183,7 +183,7 @@ in @mu-defn.
     (SQ, "Freyd.Alg.dynamic_programming_thin_step1.rhs",
       src[`P(X)est(R)⊑∋X` — @est-710]),
     (SQ, "Freyd.Alg.dynamic_programming_thin_step2.rhs", src[`thin(Q)∋⊑∋` — @thin-laws]),
-    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — @pow-laws]),
+    (EQ, "Freyd.Alg.dynamic_programming_lower_step2.rhs", src[#frc([`T°`])`∋=T°` — #ref(label("Freyd.Alg.Λ_eps_eq'"))]),
     (SQ, "Freyd.Alg.dynamic_programming_lower_step3.rhs", src[`M⊑`#frc([`H`])`∋=H` — @est-up]),
     (EQ, "Freyd.Alg.dynamic_programming_thin_lower.rhs",
       src[`T°F(H)h=H` — @hylo-mu]),
