@@ -66,6 +66,10 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L :
   statement prints `ordered(≼)`, never a fused name.  The notation is declared at the top of
   the file, so the `Rel` section at its end reads the same. -/
 
+/-- CONNECTED (B&dM p.153, "a connected preorder"): any two elements are comparable one way or the
+    other, `Π ⊑ R ∪ R°`.  §8.3's sort order and (8.5)'s thinning order are connected preorders. -/
+@[expose] public def Connected (R : A ⟶ A) : Prop := topMor A A ⊑ R ∪ R°
+
 /-! ## `sort(≼)` and (8.6) -/
 
 /-- `sort(≼) ≜ ordered(≼)·setify°` (book p.201, "definition of sort P"), mirrored
@@ -743,13 +747,25 @@ public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
         · exact h
         · exact hm.2 z hz'
 
+/-- `Preorder(Q)` in `Rel`, pointwise: reflexive and transitive. -/
+public theorem preorder_apply {Q : dE A ⟶ dE A} (h : Preorder Q) :
+    (∀ a, Q a a) ∧ ∀ a b c, Q a b → Q b c → Q a c :=
+  ⟨fun a => le_iff.mp h.1 a a rfl, fun a b c hab hbc => le_iff.mp h.2 a c ⟨b, hab, hbc⟩⟩
+
+/-- `Connected(Q)` in `Rel`, pointwise: any two elements are comparable. -/
+public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.Connected Q) :
+    ∀ a b, Q a b ∨ Q b a := fun a b => by
+  have := le_iff.mp h a b (topMor_apply a b)
+  rwa [union_apply] at this
+
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
     `thinlist Q xs = [minlist Q xs]` — thinning comes down to one element. -/
-public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
-    (htrans : ∀ a b c, Q a b → Q b c → Q a c) (hconn : ∀ a b, Q a b ∨ Q b a)
-    (a : A) (xs ys : ConsList Unit A) :
+public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : Preorder Q)
+    (hc : Freyd.Alg.Connected Q) (a : A) (xs ys : ConsList Unit A) :
     thinlist Q (ConsList.cons a xs) ys
       ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
+  obtain ⟨hrefl, htrans⟩ := preorder_apply hQ
+  have hconn := connected_apply hc
   induction xs generalizing a ys with
   | wrap u =>
       rw [thinlist_cons]
@@ -1172,12 +1188,13 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: both conditions on
     `merge(≼)` are theorems, so the order's two properties are all that is left. -/
 public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
-    (htrans : ∀ a b c, ≼ a b → ≼ b c → ≼ a c) (hconn : ∀ a b, ≼ a b ∨ ≼ b a) :
+    (h : Preorder ≼) (hc : Freyd.Alg.Connected ≼) :
     prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
         (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼) ≫ merge ≼
       ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼ :=
   Freyd.Alg.prodMap_sortRel_comp_merge_le listRelator (merge := merge)
-    prodMap_setify_recip_comp_merge_le (prodMap_ordered_comp_merge_le htrans hconn)
+    prodMap_setify_recip_comp_merge_le
+    (prodMap_ordered_comp_merge_le (preorder_apply h).2 (connected_apply hc))
 
 /-- An element of `list(g)(x)` is `g` of an element of `x`. -/
 public theorem inlistP_of_listP_graph {B : Type} (g : A → B) :
