@@ -525,29 +525,14 @@ public theorem cost_alg_bmax :
         = bmax (cost ct dt wt p.1) (penalty ct dt wt p.1 p.2)
       unfold bmax; split <;> split <;> omega
 
-/-- B&dM p.256, the calculation's second step: (10.7) under `[nil,−]`. -/
-public theorem bagify_recip_le_step2 (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add
-      ⊑ (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt) :=
-  le_iff.mpr fun u w ⟨v, hv, hj⟩ => ⟨v, hv, by
-    cases v with
-    | inl d => exact (ListRel.junc_sum_inl _ _ _ _).mpr ((ListRel.junc_sum_inl _ _ _ _).mp hj)
-    | inr q => exact (ListRel.junc_sum_inr _ _ _ _).mpr
-                  (le_iff.mp (add_le ct dt wt hct hwt) _ _ ((ListRel.junc_sum_inr _ _ _ _).mp hj))⟩
-
-/-- B&dM p.256, the calculation's third step: the definition of `R`, and `nil⊑zero≤cost°`. -/
-public theorem bagify_recip_le_step3 :
-    (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt)
-      ⊑ (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+/-- `[nil,outl R]⊑[zero,outl cost]≤cost°`: the definition of `R`, and `nil⊑zero≤cost°`. -/
+public theorem nil_R_le_cost :
+    junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+        ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt)
+      ⊑ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
+          ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
         ≫ ListRel.leq ≫ (costR ct dt wt)° :=
-  le_iff.mpr fun u w ⟨v, hv, hj⟩ => ⟨v, hv, by
+  le_iff.mpr fun v w hj => by
     cases v with
     | inl d =>
       have hw : w = SnocList.wrap () := (ListRel.junc_sum_inl nilR _ d w).mp hj
@@ -556,24 +541,30 @@ public theorem bagify_recip_le_step3 :
     | inr q =>
       obtain ⟨_, rfl, hR⟩ := (ListRel.junc_sum_inr _ _ _ _).mp hj
       exact ⟨cost ct dt wt q.1, (ListRel.junc_sum_inr _ _ _ _).mpr ⟨q.1, rfl, rfl⟩,
-        cost ct dt wt w, hR, rfl⟩⟩
-
-/-- B&dM p.256, the calculation's last step: the definition of `m`. -/
-public theorem bagify_recip_le_step4 :
-    (F Unit Job).map (bagify (Job := Job))°
-        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
-            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
-        ≫ ListRel.leq ≫ (costR ct dt wt)°
-      = (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
-  rfl
+        cost ct dt wt w, hR, rfl⟩
 
 /-- B&dM p.256, "putting (10.7) and (10.8) together": `β bagify°⊑F(bagify°) m≤cost°` — a schedule
-    of a bag costs at least the cost of the rest after its last job. -/
+    of a bag costs at least the cost of the rest after its last job.  One `calc` step per hint:
+    (10.8), (10.7) under `[nil,−]`, the definition of `R` with `nil⊑zero≤cost°`, the definition of
+    `m`. -/
 public theorem bagify_recip_le [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     bagAlg ≫ (bagify (Job := Job))°
-      ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
-  rw [bagify_recip_cata, ← bagify_recip_le_step4]
-  exact le_trans (bagify_recip_le_step2 ct dt wt hct hwt) (bagify_recip_le_step3 ct dt wt)
+      ⊑ (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+  calc bagAlg ≫ (bagify (Job := Job))°
+      = (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR add := bagify_recip_cata
+    _ ⊑ (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) nilR
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ R ct dt wt) :=
+        comp_mono_left _ (junc_mono _ (le_refl nilR) (add_le ct dt wt hct hwt))
+    _ ⊑ (F Unit Job).map (bagify (Job := Job))°
+        ≫ junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero
+            ((relProd (dSL Unit Job) (⟨Job⟩ : RelSet.{0})).outl ≫ costR ct dt wt)
+        ≫ ListRel.leq ≫ (costR ct dt wt)° := comp_mono_left _ (nil_R_le_cost ct dt wt)
+    _ = (F Unit Job).map (bagify (Job := Job))° ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° :=
+        rfl
+
+calc_steps bagify_recip_le
 
 /-! ## (10.2) by Proposition 9.3 (B&dM pp.255–256) -/
 
@@ -786,67 +777,17 @@ public theorem alg_cost_self :
     obtain rfl : q2 = cost ct dt wt (con s) := hq2
     exact ⟨_, rfl, (hb : c = _).trans key.symm⟩
 
-/-- **(10.3)**, first step: monotonicity of composition. -/
-public theorem tardy_greedy_step1 :
-    (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°)) ≫ FbJ ≫ αJ
-      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ) := by
-  refine le_iff.mpr fun u w h => ?_
-  obtain ⟨v, hv, h2⟩ := h
-  rw [inter_apply] at hv ⊢
-  obtain ⟨b, hb1, hb2⟩ := hv.2
-  exact ⟨⟨v, hv.1, h2⟩, ⟨b, hb1, v, hb2, h2⟩⟩
-
-/-- **(10.3)**, second step: `β°F(bagify°)α=bagify°`, since `bagify=⦇β⦈`. -/
-public theorem tardy_greedy_step2 :
-    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ)
-      = (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°) := by
-  rw [bagify_recip_alg]
-
-/-- **(10.3)**, third step: the calculation above, `bagify_recip_le`. -/
-public theorem tardy_greedy_step3 [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
-    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°)
-      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°) := by
-  refine le_iff.mpr fun u w h => ?_
-  rw [inter_apply] at h ⊢
-  exact ⟨h.1, le_iff.mp (bagify_recip_le ct dt wt hct hwt) u w h.2⟩
-
-/-- **(10.3)**, fourth step: the modular law, on both sides. -/
-public theorem tardy_greedy_step4 :
-    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°)
-      ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
+/-- The modular law, on both sides: `(Q F(bagify°)α)∩(F(bagify°)M)⊑F(bagify°)((F(bagify) Q F(bagify°))∩(Mα°))α`
+    — the two schedules share the decomposition `F(bagify°)` picks, so the meet moves inside it. -/
+public theorem tardy_modular {M : (F Unit Job).obj (dSL Unit Job) ⟶ dSL Unit Job} :
+    (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ M)
+      ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ) ∩ (M ≫ αJ°)) ≫ αJ := by
   refine le_iff.mpr fun u w h => ?_
   rw [inter_apply] at h
-  obtain ⟨⟨v, hQ, s, hs, hα⟩, ⟨s', hs', c, hc, d, hd, he⟩⟩ := h
+  obtain ⟨⟨v, hQ, s, hs, hα⟩, ⟨s', hs', hM⟩⟩ := h
   refine ⟨s', hs', s, ?_, hα⟩
   rw [inter_apply]
-  exact ⟨⟨u, (Fbag_apply s' u).mpr ((Fb_apply u s').mp hs'), v, hQ, hs⟩, ⟨c, hc, d, hd, w, he, hα⟩⟩
-
-/-- **(10.3)**, fifth step: the choice of `Q`, `Q_choice`. -/
-public theorem tardy_greedy_step5 :
-    FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ
-      = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
-  rw [Q_choice]
-
-/-- **(10.3)**, sixth step: products, `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`. -/
-public theorem tardy_greedy_step6 :
-    FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
-          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ
-      = FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-          ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ := by
-  rw [pair_eq_rpair, pair_eq_rpair]
-  apply hom_ext; intro u w
-  constructor
-  · rintro ⟨s, hs, s', hi, hα⟩
-    rw [inter_apply] at hi
-    obtain ⟨⟨c1, hc1, d1, hd1, he1⟩, ⟨c2, hc2, d2, hd2, w', he2, hα'⟩⟩ := hi
-    exact ⟨s, hs, (d1, d2), ⟨⟨c1, hc1, hd1⟩, ⟨c2, hc2, hd2⟩⟩, s', ⟨he1, w', hα', he2⟩, hα⟩
-  · rintro ⟨s, hs, ⟨d1, d2⟩, ⟨⟨c1, hc1, hd1⟩, ⟨c2, hc2, hd2⟩⟩, s', ⟨he1, w', hα', he2⟩, hα⟩
-    refine ⟨s, hs, s', ?_, hα⟩
-    rw [inter_apply]
-    exact ⟨⟨c1, hc1, d1, hd1, he1⟩, ⟨c2, hc2, d2, hd2, w', he2, hα'⟩⟩
+  exact ⟨⟨u, (Fbag_apply s' u).mpr ((Fb_apply u s').mp hs'), v, hQ, hs⟩, ⟨w, hM, hα⟩⟩
 
 /-- `cost` is a map, so entire: `𝟙⊑cost cost°`. -/
 public theorem costR_entire : 𝟙 _ ⊑ costR ct dt wt ≫ (costR ct dt wt)° := (graph_map _).1
@@ -910,26 +851,39 @@ public theorem tardy_tail :
 
 calc_steps tardy_tail
 
-/-- **(10.3)**, seventh step: the tail `tardy_tail`, under `F(bagify°)`. -/
-public theorem tardy_greedy_step7 :
-    FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
-        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
-      ⊑ FbJ ≫ αJ ≫ R ct dt wt :=
-  comp_mono_left _ (tardy_tail ct dt wt)
-
 /-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`, by the
-    book's calculation (B&dM p.257). -/
+    book's calculation (B&dM p.257), one `calc` step per hint. -/
 public theorem tardy_greedy [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : ∀ j, 0 ≤ wt j) :
     (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°))
         ≫ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
       ⊑ (F Unit Job).map ((bagify (Job := Job))°) ≫ graph (con (L := Unit) (E := Job))
-          ≫ R ct dt wt := by
-  refine le_trans (tardy_greedy_step1 ct dt wt) ?_
-  rw [tardy_greedy_step2]
-  refine le_trans (tardy_greedy_step3 ct dt wt hct hwt) ?_
-  refine le_trans (tardy_greedy_step4 ct dt wt) ?_
-  rw [tardy_greedy_step5, tardy_greedy_step6]
-  exact tardy_greedy_step7 ct dt wt
+          ≫ R ct dt wt :=
+  calc (Q ct dt wt ∩ (bagAlg ≫ (bagAlg (Job := Job))°)) ≫ FbJ ≫ αJ
+      ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagAlg (Job := Job))° ≫ FbJ ≫ αJ) := by
+        simpa only [Cat.assoc] using
+          inter_comp_le (Q ct dt wt) (bagAlg ≫ (bagAlg (Job := Job))°) (FbJ ≫ αJ)
+    _ = (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (bagAlg ≫ (bagify (Job := Job))°) := by
+        rw [bagify_recip_alg]
+    _ ⊑ (Q ct dt wt ≫ FbJ ≫ αJ) ∩ (FbJ ≫ m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°) :=
+        inter_mono (le_refl _) (bagify_recip_le ct dt wt hct hwt)
+    _ ⊑ FbJ ≫ (((F Unit Job).map (bagify (Job := Job)) ≫ Q ct dt wt ≫ FbJ)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ :=
+        by simpa only [Cat.assoc] using
+          tardy_modular ct dt wt (M := m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)°)
+    _ = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° ≫ αJ°)) ≫ αJ := by
+        rw [Q_choice]
+    _ = FbJ ≫ ((g ct dt wt ≫ ListRel.leq ≫ (g ct dt wt)°)
+          ∩ (m ct dt wt ≫ ListRel.leq ≫ (αJ ≫ costR ct dt wt)°)) ≫ αJ := by
+        rw [Allegory.recip_comp]
+    _ = FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+          ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ := by
+        simpa only [Cat.assoc] using congrArg (fun Z => FbJ ≫ Z ≫ αJ)
+          (RelProd.pair_recip_pair (P := P2) (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+            (g ct dt wt) (αJ ≫ costR ct dt wt)).symm
+    _ ⊑ FbJ ≫ αJ ≫ R ct dt wt := comp_mono_left _ (tardy_tail ct dt wt)
+
+calc_steps tardy_greedy
 
 end Greedy
 
@@ -997,16 +951,6 @@ public theorem tardy_branch (X : Bag Job ⟶ dSL Unit Job) :
   tie-break, so nothing here may assume an order on `Job`. -/
 
 section Pick
-
-/-- `∪` is the least upper bound: the allegory axioms give `le_union_left`/`le_union_right` but no
-    lub, and in `RelSet` it is pointwise `∨`. -/
-private theorem union_le {a b : RelSet.{0}} {S T U : a ⟶ b} (hS : S ⊑ U) (hT : T ⊑ U) :
-    S ∪ T ⊑ U :=
-  le_iff.mpr fun x y h => ((union_apply S T x y) ▸ h).elim (le_iff.mp hS x y) (le_iff.mp hT x y)
-
-private theorem union_mono {a b : RelSet.{0}} {S S' T T' : a ⟶ b} (hS : S ⊑ S') (hT : T ⊑ T') :
-    S ∪ T ⊑ S' ∪ T' :=
-  union_le (le_trans hS (le_union_left _ _)) (le_trans hT (le_union_right _ _))
 
 variable (pick : Bag Job ⟶ (⟨(Bag Job).carrier × Job⟩ : RelSet.{0}))
   (hpickS : Simple pick)
