@@ -533,45 +533,23 @@ public theorem birelator_mono_recip {G : BiRelator 𝒜} {e : 𝒜}
   rw [Cat.comp_id] at hRRcollapse
   exact (map_shunt_left hh _ _).mp (le_trans hpost hRRcollapse)
 
-/-- Proposition 9.4, first step: taking `Q≜G(U,V)`; bifunctors — `G(U,V)G(𝟙,H) = G(U,VH)`. -/
-public theorem birelator_thin_condition_step1 {G : BiRelator 𝒜} {e w : 𝒜}
-    {h : G.obj e A ⟶ A} {H : w ⟶ A} {U : e ⟶ e} {V : w ⟶ w} :
-    G.map U V ≫ G.map (𝟙 e) H ≫ h = G.map U (V ≫ H) ≫ h := by
-  rw [← Cat.assoc, ← G.map_comp, Cat.comp_id]
-
-/-- Proposition 9.4, second step: the assumption on `V`, `VH⊑HR`. -/
-public theorem birelator_thin_condition_step2 {G : BiRelator 𝒜} {e w : 𝒜}
-    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} {V : w ⟶ w}
-    (hV : V ≫ H ⊑ H ≫ R) :
-    G.map U (V ≫ H) ≫ h ⊑ G.map U (H ≫ R) ≫ h :=
-  comp_mono_right (G.map_mono (le_refl U) hV) h
-
-/-- Proposition 9.4, third step: bifunctors — `G(U,HR) = G(𝟙,H)G(U,R)`. -/
-public theorem birelator_thin_condition_step3 {G : BiRelator 𝒜} {e w : 𝒜}
-    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} :
-    G.map U (H ≫ R) ≫ h = G.map (𝟙 e) H ≫ G.map U R ≫ h := by
-  rw [← Cat.assoc, ← G.map_comp, Cat.id_comp]
-
-/-- Proposition 9.4, fourth step: the assumption on `h`, `G(U,R)h⊑hR`. -/
-public theorem birelator_thin_condition_step4 {G : BiRelator 𝒜} {e w : 𝒜}
-    {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e}
-    (hU : G.map U R ≫ h ⊑ h ≫ R) :
-    G.map (𝟙 e) H ≫ G.map U R ≫ h ⊑ G.map (𝟙 e) H ≫ h ≫ R :=
-  comp_mono_left _ hU
-
 /-- **Proposition 9.4(ii) (B&dM pp.223-224)**, the thinning condition: given the monotonicity
     witness `hU` and the bound `hV : V·H ⊑ H·R` (the note's letters, at the folded `°`), the
     thinning relation `Q := G(U,V)` discharges `dynamic_programming_thin`'s hypothesis `hQ`
-    for the fixed-left relator `G.appl e` — the book's chain, one step theorem per hint. -/
+    for the fixed-left relator `G.appl e` — the book's chain, one `calc` step per law. -/
 public theorem birelator_thin_condition {G : BiRelator 𝒜} {e w : 𝒜}
     {h : G.obj e A ⟶ A} {H : w ⟶ A} {R : A ⟶ A} {U : e ⟶ e} {V : w ⟶ w}
     (hU : G.map U R ≫ h ⊑ h ≫ R) (hV : V ≫ H ⊑ H ≫ R) :
     G.map U V ≫ G.map (𝟙 e) H ≫ h ⊑ G.map (𝟙 e) H ≫ h ≫ R :=
   calc G.map U V ≫ G.map (𝟙 e) H ≫ h
-        = G.map U (V ≫ H) ≫ h := birelator_thin_condition_step1
-      _ ⊑ G.map U (H ≫ R) ≫ h := birelator_thin_condition_step2 hV
-      _ = G.map (𝟙 e) H ≫ G.map U R ≫ h := birelator_thin_condition_step3
-      _ ⊑ G.map (𝟙 e) H ≫ h ≫ R := birelator_thin_condition_step4 hU
+        = G.map (U ≫ 𝟙 e) (V ≫ H) ≫ h := by rw [← Cat.assoc, ← G.map_comp]
+      _ = G.map U (V ≫ H) ≫ h := by rw [Cat.comp_id]
+      _ ⊑ G.map U (H ≫ R) ≫ h := comp_mono_right (G.map_mono (le_refl U) hV) h
+      _ = G.map (𝟙 e ≫ U) (H ≫ R) ≫ h := by rw [Cat.id_comp]
+      _ = G.map (𝟙 e) H ≫ G.map U R ≫ h := by rw [G.map_comp, Cat.assoc]
+      _ ⊑ G.map (𝟙 e) H ≫ h ≫ R := comp_mono_left _ hU
+
+calc_steps birelator_thin_condition
 
 
 /-! ## Ex 9.2 (B&dM p.222) — context-strengthened Theorem 9.2

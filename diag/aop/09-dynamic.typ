@@ -88,6 +88,7 @@ in @mu-defn.
 #import "../generated/Freyd.Alg.dynamic_programming_upper.calc.typ" as calc-dpu
 #import "../generated/Freyd.Alg.dynamic_programming_thin_lower.calc.typ" as calc-dptl
 #import "../generated/Freyd.Alg.dynamic_programming_thin_upper.calc.typ" as calc-dptu
+#import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -269,19 +270,7 @@ in @mu-defn.
      solving by `H` and assembling by `h`, gives only what solving and assembling and then improving
      by `R` gives (`G(𝟙,H)hR`)]],
      // lean:AOP.A9_1.birelator_thin_condition@178e7cca
-  lean-chain(
-    (none, "Freyd.Alg.birelator_thin_condition_step1.lhs", []),
-    (EQ, "Freyd.Alg.birelator_thin_condition_step1.rhs",
-      src[`G(U,V)G(𝟙,H)=G(U,VH)` — @relator-laws]),
-     // lean:AOP.A9_1.birelator_thin_condition_step1@5cb3fde0
-    (SQ, "Freyd.Alg.birelator_thin_condition_step2.rhs", src[`VH⊑HR`]),
-     // lean:AOP.A9_1.birelator_thin_condition_step2@8990dc41
-    (EQ, "Freyd.Alg.birelator_thin_condition_step3.rhs",
-      src[`G(U,HR)=G(𝟙,H)G(U,R)` — @relator-laws]),
-     // lean:AOP.A9_1.birelator_thin_condition_step3@920f9952
-    (SQ, "Freyd.Alg.birelator_thin_condition_step4.rhs", src[`G(U,R)h⊑hR`]),
-     // lean:AOP.A9_1.birelator_thin_condition_step4@988df7b4
-  ),
+  lean-calc(calc-bithin),
 )]<dp-bifunctor-thin>
 
 == The string edit problem
