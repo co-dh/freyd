@@ -589,7 +589,8 @@ public theorem tour_laws
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
     (sort := sort) (merge := fun _ => cat) (thinlist := fun _ => thinlist)
     (minlist := fun _ => minlist)
-    (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R Qc_refl Qc_trans R_recip_trans
+    (graph_map droplAlgFn) (graph_map droprAlgFn) Qc_le_R ⟨Qc_refl, Qc_trans⟩
+    ⟨le_trans Qc_refl Qc_le_R, trans_of_recip_trans R_recip_trans⟩
     hm₁ hm₂ hsortF tour_sort_dropl tour_sort_dropr h88₁ h88₂ h89 h89 h811 h810 h86 h87
     rfl rfl rfl
   -- The note's program is the fold of ITS OWN arrows: `⦇listcp(F)⟨g₁,g₂⟩cat thinlist(Q)⦈`, so the

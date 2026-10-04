@@ -321,7 +321,7 @@ public theorem mcp_spec (wt : A → A → Nat) (net : ConsList (List A) (List A)
     rw [pathSplit_eq_Fmap_comp_alphaR] at this
     exact this
   have hthin := thinning_paths (F := pathF) (A := dE A) (B := dCL A A) (pathInit A)
-    (α := alphaR) hQR hreflQ htransQ htransR hmono hQ
+    (α := alphaR) hQR ⟨hreflQ, htransQ⟩ ⟨le_trans hreflQ hQR, trans_of_recip_trans htransR⟩ hmono hQ
   have hα : Map (alphaR : pathF.obj (dE A) (dCL A A) ⟶ dCL A A) := graph_map _
   rw [← thinning_paths_alg_map (F := pathF) (A := dE A) hα (pathR wt)] at hthin
   have e8 : Λ (pathF.map (𝟙 (dE A)) (∋ (dCL A A)))

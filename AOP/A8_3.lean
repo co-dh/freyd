@@ -356,7 +356,7 @@ public theorem thinningList_step2 (I : InitialAlgebra F) {S : F.obj A ⟶ A}
     algebras is `Q`-monotonic, which is the only hypothesis of it the union has to earn. -/
 public theorem thinningList_step3 (I : InitialAlgebra F)
     {f₁ f₂ S : F.obj A ⟶ A} {p₁ p₂ Q R : A ⟶ A}
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hS : S = (f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
@@ -366,7 +366,7 @@ public theorem thinningList_step3 (I : InitialAlgebra F)
     show F.map Q ≫ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ⊑ ((f₁ ≫ p₁) ∪ (f₂ ≫ p₂)) ≫ Q
     rw [DistributiveAllegory.comp_union_distrib, union_comp_distrib]
     exact union_mono hm₁ hm₂
-  exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmonoS
+  exact thinning_est I hQR hQ hR hmonoS
 
 /-- **THEOREM 8.2** (book p.203): a fold on SORTED LISTS of partial solutions, thinned at
     every step, refines the thinning specification —
@@ -388,7 +388,7 @@ public theorem thinningList (I : InitialAlgebra F)
     {minlist : (A ⟶ A) → (L.obj A ⟶ A)} {Pr : RelProd (L.obj A) (L.obj A)}
     {Pr' : RelProd (P A) (P A)}
     {merge : (A ⟶ A) → (Pr.p ⟶ L.obj A)}
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hm₁ : Freyd.Alg.MonoAlg (f₁ ≫ p₁) Q) (hm₂ : Freyd.Alg.MonoAlg (f₂ ≫ p₂) Q)
     (hsortF : ∀ {X Y : F.obj A ⟶ F.obj A}, X ⊑ Y → sortF X ⊑ sortF Y)
     (hmono₁ : Freyd.Alg.MonoAlg f₁ ≼) (hmono₂ : Freyd.Alg.MonoAlg f₂ ≼)
@@ -409,7 +409,7 @@ public theorem thinningList (I : InitialAlgebra F)
     (thinningList_step1 L I hf₁ hf₂ hsortF hmono₁ hmono₂ h88₁ h88₂ h89₁ h89₂ h811 h810 h86
       hg₁ hg₂)
     (le_trans (thinningList_step2 L I h87)
-      (thinningList_step3 I hQR hreflQ htransQ htransR hm₁ hm₂ rfl))
+      (thinningList_step3 I hQR hQ hR hm₁ hm₂ rfl))
 
 /-! ## The note's `thinlist-laws`: (8.7), (8.8) and (8.9) discharged
 

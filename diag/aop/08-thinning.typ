@@ -45,9 +45,9 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
    // lean:AOP.A8_1.id_le_thinRel@8ec713e9
    // lean:AOP.A8_1.thinRel_trans@84a7d558
   [keeping everything is always a legal thinning],
-  [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[`Q⊑R`, `𝟙⊑Q`, `RR⊑R` — @thin-intro; weaker than the book’s "both preorders": `Q` transitive is never used and `𝟙⊑R` follows]],
+  [#leanf("Freyd.Alg.thinRel_comp_est") #h(4pt) #src[`Q⊑R`, both preorders — @thin-intro]],
   [*thin-introduction*: thinning first cannot lose an `R`-minimum],
-   // lean:AOP.A8_1.thinRel_comp_est@eafff35f
+   // lean:AOP.A8_1.thinRel_comp_est@82e39233
   [`thin(Q)⊒est(Q)` $frac(#[`𝟙`], ∋)$ #h(6pt)
  #src[(8.2) — @thin-82]],
    // lean:AOP.A8_1.est_comp_singletonMap_le_thinRel@8aad298c
@@ -90,11 +90,11 @@ row((
 #import "../generated/Freyd.Alg.thinRel_comp_est_cond1.calc.typ" as calc-up1
 #grid(columns: (1fr, 1fr), column-gutter: 42pt, align: top,
 [#disp[
-   // lean:AOP.A8_1.thinRel_comp_est@eafff35f
+   // lean:AOP.A8_1.thinRel_comp_est@82e39233
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_step1") \
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
-     // lean:AOP.A8_1.thinRel_comp_est_step1@65f6cc95
+     // lean:AOP.A8_1.thinRel_comp_est_step1@60449281
   lean-chain(
     (none, "Freyd.Alg.thinRel_comp_est_step1.lhs", []),
     (SQ, "Freyd.Alg.thinRel_comp_est_step1.rhs", src[`𝟙⊑thin(Q)` — @Freyd.Alg.id_le_thinRel]),
@@ -114,8 +114,8 @@ row((
 #disp[
 #calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond2") \
-    #src[the `⊒` half, second condition — `Q⊑R`, `R` transitive]],
-     // lean:AOP.A8_1.thinRel_comp_est_cond2@1bf58dd7
+    #src[the `⊒` half, second condition — `Q⊑R`, `R` a preorder]],
+     // lean:AOP.A8_1.thinRel_comp_est_cond2@6650d7bb
   lean-calc(calc-up2),
 )]<thin-intro-up2>
 
@@ -172,7 +172,7 @@ row((
      // thinning-of-reduce row: Theorem 8.1, p. 195
      `S` monotonic on `Q`, `Q` a preorder
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning@5c4fa102
+     // lean:AOP.A8_1.thinning@818ac37b
   // A conjunction has no shape in either calculus, so it heads the chain as text.
   [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
    `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
@@ -190,7 +190,7 @@ row((
      // thinning-est row: Corollary 8.1
      `S` monotonic on `Q`, `Q⊑R`, both preorders
  #h(4pt) ]],
-     // lean:AOP.A8_1.thinning_est@bb2ad6af
+     // lean:AOP.A8_1.thinning_est@6bdf56a5
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
 )]<thin-cor>
@@ -303,7 +303,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_paths") \
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
-     // lean:AOP.A8_2.thinning_paths@f43f12a8
+     // lean:AOP.A8_2.thinning_paths@3fb68ea5
   [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
      dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
      every `z` in `Λ(S)(x)`.
@@ -431,7 +431,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
      // thinningList row: Theorem 8.2, p. 203
      at @thinlist-defn's binary thinning data.
  ]],
-     // lean:AOP.A8_3.thinningList@8637feb9
+     // lean:AOP.A8_3.thinningList@81e181db
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),

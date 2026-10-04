@@ -91,7 +91,7 @@ variable {B : 𝒜} {F : BiRelator 𝒜}
 public theorem thinning_paths_step
     (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
     (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q) :
     relCata (Λ (F.map (∋ A) (∋ B) ≫ α) ≫ thinRel Q) ≫ est R
@@ -101,7 +101,7 @@ public theorem thinning_paths_step
     show F.map (𝟙 (P A)) (∋ B) ≫ (F.map (∋ A) (𝟙 B) ≫ α) = _
     rw [← Cat.assoc, F.interchange' (∋ A) (∋ B)]
   rw [← e]
-  exact thinning_est I hQR hreflQ htransQ (trans_of_recip_trans htransR) hmono
+  exact thinning_est I hQR hQ hR hmono
 
 /-! ### The algebra chain of p.198, one `calc` step per law
 
@@ -170,7 +170,7 @@ calc_steps thinning_paths_alg
 public theorem thinning_paths
     (I : InitialAlgebra (F.appl (P A)))
     {α : F.obj A B ⟶ B} {Q R : B ⟶ B}
-    (hQR : Q ⊑ R) (hreflQ : 𝟙 B ⊑ Q) (htransQ : Q ≫ Q ⊑ Q) (htransR : R° ≫ R° ⊑ R°)
+    (hQR : Q ⊑ R) (hpQ : Preorder Q) (hpR : Preorder R)
     (hmono : Freyd.Alg.MonoAlg
       ((F.map (∋ A) (𝟙 B) ≫ α : (F.appl (P A)).obj B ⟶ B)) Q)
     (hQ : R ∩ ((F.map (𝟙 A) (∋ B) ≫ α)° ≫ (F.map (𝟙 A) (∋ B) ≫ α)) ⊑ Q) :
@@ -180,7 +180,7 @@ public theorem thinning_paths
   -- The terms are the two laws' own sides: spelled out, `relCata`'s initial algebra is a fresh
   -- metavariable that `whnf` cannot close within the heartbeat budget.
   calc _ ⊑ _ := comp_mono_right (relCata_le_relCata I (comp_mono_left _ (thinning_paths_alg hQ))) (est R)
-    _ ⊑ _ := thinning_paths_step I hQR hreflQ htransQ htransR hmono
+    _ ⊑ _ := thinning_paths_step I hQR hpQ hpR hmono
 
 calc_steps thinning_paths
 

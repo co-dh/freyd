@@ -23,28 +23,28 @@ variable {𝒜 : Type u} [Allegory 𝒜]
   Freyd already has `Reflexive`, `Symmetric`, `Transitive`, `Coreflexive` (§2.12) and
   `EquivalenceRel` (§2.163); only the preorder/antisymmetry/partial-order bundles are new. -/
 
-/-- A PREORDER on `a`: reflexive and transitive (B&dM p.86).  (Named `IsPreorder`, not
-    `Preorder`, to avoid clashing with an unrelated core/order name.) -/
-def IsPreorder {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
+/-- A PREORDER on `a`: reflexive and transitive (B&dM p.86).  Core has no `Preorder` (only
+    `Std.IsPreorder`, `Std.PreorderPackage`), so the book's name is free. -/
+@[expose] public def Preorder {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
 
 /-- ANTISYMMETRIC: `R ∩ R° ⊑ id` (B&dM p.86). -/
 @[expose] public def AntiSymmetric {A : 𝒜} (R : A ⟶ A) : Prop := R ∩ R° ⊑ Cat.id A
 
 /-- A PARTIAL ORDER on `a`: a preorder that is also antisymmetric (B&dM p.86). -/
-def IsPartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := IsPreorder R ∧ AntiSymmetric R
+@[expose] public def PartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := Preorder R ∧ AntiSymmetric R
 
 /-! ### Closure of preorders/symmetric relations under `°` and `∩` -/
 
 /-- A preorder's reciprocal is a preorder (B&dM p.86). -/
-theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : IsPreorder R) : IsPreorder R° := by
+public theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : Preorder R) : Preorder R° := by
   obtain ⟨hRefl, hTrans⟩ := hR
   refine ⟨?_, ?_⟩
   · have h := recip_mono hRefl; rwa [recip_id] at h
   · have h := recip_mono hTrans; rwa [Allegory.recip_comp] at h
 
 /-- The intersection of two preorders is a preorder (B&dM p.86). -/
-theorem isPreorder_inter {A : 𝒜} {R S : A ⟶ A} (hR : IsPreorder R) (hS : IsPreorder S) :
-    IsPreorder (R ∩ S) := by
+theorem isPreorder_inter {A : 𝒜} {R S : A ⟶ A} (hR : Preorder R) (hS : Preorder S) :
+    Preorder (R ∩ S) := by
   obtain ⟨hRRefl, hRTrans⟩ := hR
   obtain ⟨hSRefl, hSTrans⟩ := hS
   refine ⟨le_inter hRRefl hSRefl, ?_⟩
@@ -63,7 +63,7 @@ theorem symmetric_inter {A : 𝒜} {R S : A ⟶ A} (hR : Symmetric R) (hS : Symm
 
 /-- **B&dM p.86**: if `R` is a preorder then `R ∩ R°` is an equivalence relation
     (the equivalence induced by the preorder). -/
-theorem equivalence_inter_recip {A : 𝒜} {R : A ⟶ A} (hR : IsPreorder R) :
+theorem equivalence_inter_recip {A : 𝒜} {R : A ⟶ A} (hR : Preorder R) :
     EquivalenceRel (R ∩ R°) := by
   obtain ⟨hRefl, hTrans⟩ := hR
   obtain ⟨hReflRecip, hTransRecip⟩ := isPreorder_recip ⟨hRefl, hTrans⟩
