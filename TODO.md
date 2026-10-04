@@ -101,3 +101,4 @@
     left 23 panels printing `leq` until they were deleted by hand. Key freshness on what the picture prints.
 [X] ch14: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
 [X] ch16: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
+[ ] 9.3a definition table looks weird, squeezed, especially <cost, size>.
