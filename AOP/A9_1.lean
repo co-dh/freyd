@@ -48,6 +48,10 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {F : Relator �
 @[expose] public def H [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) : A ⟶ B :=
   (relCata T)° ≫ relCata h
 
+/-- **`M≜Λ(H) est(R)`** (B&dM p.220): the problem to be solved — an `R`-extreme answer of `H`. -/
+@[expose] public def M [InitialAlgebra F] (T : F.obj A ⟶ A) (h : F.obj B ⟶ B) (R : B ⟶ B) : A ⟶ B :=
+  Λ (H T h) ≫ est R
+
 /-- **The setting of Theorems 9.1 and 9.2** (B&dM p.220, "h is monotonic on R"): `h` a map,
     monotonic on `R°`, and `R°` transitive.  A class, so every theorem of the section takes it as an
     instance binder — the setting, stated once — and no header repeats it as a hypothesis. -/

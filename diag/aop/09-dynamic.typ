@@ -57,17 +57,24 @@
 
 // B&dM §9.1, p. 220.  @sec-opt's problem with the algebra cut down to a MAP `h`; the decompositions
 // come from `⦇T⦈°`, and the recursion is over them rather than over an initial algebra.
-#disp[#definition[
-`h : FB⟶B` a map, #h(4pt) `T : FA⟶A` an F-algebra, #h(4pt) `R : B⟶B`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`H≜⦇T⦈°⦇h⦈ : A⟶B`, #h(4pt) `M≜` $frac(#[`H`], ∋)$ `est(R)` the problem to be solved, #h(4pt) `(μX : G(X))` as
-in @mu-defn.
+  [#leann("Freyd.Alg.H")], [#leant("Freyd.Alg.H")],
+  [#leanf("Freyd.Alg.H")],
+  [take the input apart by the `T`-decompositions, and put it together by `h`],
+  [#leann("Freyd.Alg.M")], [#leant("Freyd.Alg.M")],
+  [#leanf("Freyd.Alg.M")],
+  [the problem to be solved: an answer of `H` that is best under `R`],
+  [#leann("Freyd.Alg.DPSetting")], [#leant("Freyd.Alg.DPSetting")],
+  [#leanf("Freyd.Alg.DPSetting")],
+  [`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive],
 // lean:AOP.A9_1.H@71852cf7
-
-#leanf("Freyd.Alg.DPSetting") \
-#src[`h` is a map, `h` is monotonic on `R°`, and `R°` is transitive]
 // lean:AOP.A9_1.DPSetting@761bb771
-]]<dp-defn>
+)]<dp-defn>
 
 // B&dM Theorem 9.1, p. 220: what the recursion computes, read left to right.
 #disp(num: "Theorem 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -125,7 +132,7 @@ in @mu-defn.
  optimum #h(4pt) ]],
   lean-chain(
     (none, "Freyd.Alg.dynamic_programming_thin_prefixed.rhs",
-      src[`H≜⦇T⦈°⦇h⦈` — @dp-defn]),
+      src[`H≜⦇T⦈°⦇h⦈` — @Freyd.Alg.H]),
     // `H%∋=(𝟙%∋)E(H)`: the unit BIRTHS `E` outside everything and `est(R)` kills it, and `H` is a bead
     // with that `E` running past — the pass IS `E`'s action on `H`.  §16.1 opens on the same problem, so
     // it draws the same panel; the regions are named only in the first.
@@ -236,41 +243,51 @@ in @mu-defn.
 
 // B&dM §9.2, p. 225.  The section numbers no equation.  `base` and `step` are reused for the
 // tabulating fold at the foot of the table; they are not `edit`'s.
-#disp[
-  - #leanf("Freyd.Alg.RelSet.Edit.op_cases") \
-    #src[an edit operation copies, deletes or inserts one character]
-    // lean:AOP.A9_2_Edit.op_cases@c6eaf29f
-  - #leanf("Freyd.Alg.RelSet.Edit.F_obj") \
-    #src[`F(Op,X)` is the empty sequence or one operation paired with an `X`]
-    // lean:AOP.A9_2_Edit.F_obj@c75acbc8
-  - #leanf("Freyd.Alg.RelSet.Edit.edit_cata") \
-    #src[`edit` is the fold of `[base,step]` over an edit sequence, returning the two strings it
-     reconstitutes]
-    // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
-  - #leanf("Freyd.Alg.RelSet.Edit.length_cata") \
-    #src[the fold of `[zero,π₂ succ]` counts the operations of a sequence]
-    // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
-  - #leanf("Freyd.Alg.RelSet.Edit.R_eq") \
-    #src[`R` relates `es` to `fs` when `es` is no longer than `fs`]
-    // lean:AOP.A9_2_Edit.R_eq@0f7a4661
-  - #leanf("Freyd.Alg.RelSet.Edit.V_eq") \
-    #src[`V` relates two pairs of strings when each string of the first is a suffix of the matching
-     string of the second]
-    // lean:AOP.A9_2_Edit.V_eq@dca965f7
-  - #leanf("Freyd.Alg.RelSet.Edit.Q_inl") \
-    #src[`Q` is the identity on the `base` summand]
-    // lean:AOP.A9_2_Edit.Q_inl@881e94ca
-  - #leanf("Freyd.Alg.RelSet.Edit.Q_inr") \
-    #src[on the `step` summand `Q` compares any two operations (`U≜⊤`) and the two pairs of strings
-     by `V`]
-    // lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
-  - #leanf("Freyd.Alg.RelSet.Edit.empty_iff") \
-    #src[`empty` is the coreflexive holding only at the pair of two empty strings]
-    // lean:AOP.A9_2_Edit.empty_iff@0a966621
-  - #leanf("Freyd.Alg.RelSet.Edit.unstep_sound") \
-    #src[every decomposition `unstep` returns is sent back to its input by `step`]
-    // lean:AOP.A9_2_Edit.unstep_sound@d5b21374
-]<edit-defn>
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+
+  [#leann("Freyd.Alg.RelSet.Edit.Op")], [#leant("Freyd.Alg.RelSet.Edit.Op")],
+  [#leanf("Freyd.Alg.RelSet.Edit.op_cases")],
+  [an edit operation copies, deletes or inserts one character],
+  [], [],
+  [#leanf("Freyd.Alg.RelSet.Edit.F_obj")],
+  [`F(Op,X)` is the empty sequence or one operation paired with an `X`],
+  [#leann("Freyd.Alg.RelSet.Edit.editFn")], [#leant("Freyd.Alg.RelSet.Edit.editFn")],
+  [#leanf("Freyd.Alg.RelSet.Edit.edit_cata")],
+  [the two strings an edit sequence turns one into the other],
+  [], [],
+  [#leanf("Freyd.Alg.RelSet.Edit.length_cata")],
+  [the number of operations in a sequence],
+  [#leann("Freyd.Alg.RelSet.Edit.R")], [#leant("Freyd.Alg.RelSet.Edit.R")],
+  [#leanf("Freyd.Alg.RelSet.Edit.R_eq")],
+  [`es` is no longer than `fs`],
+  [#leann("Freyd.Alg.RelSet.Edit.V")], [#leant("Freyd.Alg.RelSet.Edit.V")],
+  [#leanf("Freyd.Alg.RelSet.Edit.V_eq")],
+  [each string of the first pair is a suffix of the matching string of the second],
+  [#leann("Freyd.Alg.RelSet.Edit.Q")], [#leant("Freyd.Alg.RelSet.Edit.Q")],
+  [#leanf("Freyd.Alg.RelSet.Edit.Q_inl"), #leanf("Freyd.Alg.RelSet.Edit.Q_inr")],
+  [the identity on the `base` summand; on the `step` summand any two operations, and the two pairs
+   of strings by `V`],
+  [#leann("Freyd.Alg.RelSet.Edit.empty")], [#leant("Freyd.Alg.RelSet.Edit.empty")],
+  [#leanf("Freyd.Alg.RelSet.Edit.empty_iff")],
+  [holds only at the pair of two empty strings],
+  [#leann("Freyd.Alg.RelSet.Edit.unstep")], [#leant("Freyd.Alg.RelSet.Edit.unstep")],
+  [#leanf("Freyd.Alg.RelSet.Edit.unstep_sound")],
+  [every split of a pair of strings into one operation and a smaller pair; `step` puts it back],
+// lean:AOP.A9_2_Edit.op_cases@c6eaf29f
+// lean:AOP.A9_2_Edit.F_obj@c75acbc8
+// lean:AOP.A9_2_Edit.edit_cata@2dc97e76
+// lean:AOP.A9_2_Edit.length_cata@30fa5c4d
+// lean:AOP.A9_2_Edit.R_eq@0f7a4661
+// lean:AOP.A9_2_Edit.V_eq@dca965f7
+// lean:AOP.A9_2_Edit.Q_inl@881e94ca
+// lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
+// lean:AOP.A9_2_Edit.empty_iff@0a966621
+// lean:AOP.A9_2_Edit.unstep_sound@d5b21374
+)]<edit-defn>
 
 // `α`, `[base,step]` and `unstep` are maps, so each row is one equation, input | output.
 #disp[#table(columns: 2, align: left + horizon, inset: 7pt, stroke: 0.4pt + luma(190),
@@ -318,7 +335,7 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Edit.edit_laws.rhs"),
-    [#src[the specification — @edit-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Edit.editFn]])],
   // `edit°` eats `Δ` and the source `list` and MAKES the target one, so every strand lands on it;
   // `est(R) : P([Op])⟶[Op]` kills the set, so its wire spans the `E` lane down to the object.
   [#lean("Freyd.Alg.RelSet.Edit.edit_laws.rhs")],
@@ -381,7 +398,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
-    [#src[`R≜length≤length°` — @edit-defn; `F` preserves composition]])],
+    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
      // lean:AOP.A9_2_Edit.edit_mono_step1@bc06a294
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
@@ -391,7 +408,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
-    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @edit-defn]])],
+    [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @Freyd.Alg.RelSet.Edit.R]])],
      // lean:AOP.A9_2_Edit.edit_mono_step3@f2d71928
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
 
@@ -411,7 +428,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),
-    [#src[`R≜length≤length°` — @edit-defn]])],
+    [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R]])],
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono.rhs")],
 )]<edit-mono>
 
@@ -427,7 +444,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @edit-defn; and the bifunctor `F` preserves
+    [#src[`Q≜𝟙+(U×V)` is `F(U,V)` at `U≜⊤` — @Freyd.Alg.RelSet.Edit.Q; and the bifunctor `F` preserves
       composition: `F(U,V)F(𝟙,edit°)=F(U,V edit°)`]])],
      // lean:AOP.A9_2_Edit.edit_thin_step1@d6e83157 lean:AOP.A9_2_Edit.Fbimap_comp@65b27e12
   [#lean("Freyd.Alg.RelSet.Edit.edit_thin_step1.rhs", step: true)],
@@ -545,28 +562,61 @@ in @mu-defn.
 
 // B&dM §9.3, p. 230.  `⦇T⦈ = flatten` is a map, so `H° = flatten` is simple and Proposition 9.3
 // applies; no decomposition is preferable to another here, so there is no thinning step.
-#disp[#definition[
-`tree A::=tip A∣bin (tree A,tree A)`, #h(4pt) `FX=A+X²`, so `F(R)=𝟙+R²`; #h(4pt)
-`h≜[tip,bin]`, #h(4pt) `flatten≜⦇[wrap,cat]⦈ :` #leant("Freyd.Alg.RelSet.Bracket.flatten_cata")
-#src[], #h(4pt) `H=flatten°`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+
+  [#leann("Freyd.Alg.RelSet.TT.Tree")], [#leant("Freyd.Alg.RelSet.TT.Tree")],
+  [#leanf("Freyd.Alg.RelSet.TT.Tree")],
+  [a tree is a tip holding one value, or a node joining two trees; `h≜[tip,bin]`],
+  [#leann("Freyd.Alg.RelSet.Bracket.flattenFn")], [#leant("Freyd.Alg.RelSet.Bracket.flattenFn")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.flatten_cata")],
+  [the tips of a tree, left to right; `H=flatten°` builds every tree over a list],
+  [#leann("Freyd.Alg.RelSet.Bracket.costSizeFn")], [#leant("Freyd.Alg.RelSet.Bracket.costSizeFn")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.costSizeFn")],
+  [the cost of evaluating a bracketing, paired with the size of its result],
+  [#leann("Freyd.Alg.RelSet.Bracket.opbFn")], [#leant("Freyd.Alg.RelSet.Bracket.opbFn")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.opbFn")],
+  [joining two subtrees costs `cb` of their sizes plus the cost of each],
+  [#leann("Freyd.Alg.RelSet.Bracket.szFn")], [#leant("Freyd.Alg.RelSet.Bracket.szFn")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.size_eq_sz_flatten")],
+  [`sb` associative, so the size depends only on the flattened list],
+  [#leann("Freyd.Alg.RelSet.Bracket.R")], [#leant("Freyd.Alg.RelSet.Bracket.R")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.R_eq")],
+  [`t` costs no more than `t'`],
+  [#leann("Freyd.Alg.RelSet.Bracket.gR")], [#leant("Freyd.Alg.RelSet.Bracket.gR")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq")],
+  [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
+  [#leann("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.nonsingle")],
+  [holds at the lists of two or more elements],
+  [#leann("Freyd.Alg.RelSet.Bracket.splits")], [#leant("Freyd.Alg.RelSet.Bracket.splits")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq")],
+  [every way to cut a list into two non-empty parts — an implementation of #frc([`cat°`])],
+  [#leann("Freyd.Alg.RelSet.Bracket.array")], [#leant("Freyd.Alg.RelSet.Bracket.array")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.array")],
+  [the best trees of every segment, held as rows],
+  [#leann("Freyd.Alg.RelSet.Bracket.row")], [#leant("Freyd.Alg.RelSet.Bracket.row")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.row.eq_1")],
+  [the best tree of every non-empty suffix],
+  [#leann("Freyd.Alg.RelSet.Bracket.col")], [#leant("Freyd.Alg.RelSet.Bracket.col")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.col.eq_1")],
+  [the best tree of every non-empty prefix],
+  [#leann("Freyd.Alg.RelSet.Bracket.mix")], [#leant("Freyd.Alg.RelSet.Bracket.mix")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.mix.eq_1")],
+  [join the matching prefix and suffix trees and keep a cheapest],
+  [#leann("Freyd.Alg.RelSet.Bracket.next")], [#leant("Freyd.Alg.RelSet.Bracket.next")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.next.eq_1")],
+  [add the next best tree to the end of the column],
+  [#leann("Freyd.Alg.RelSet.Bracket.process")], [#leant("Freyd.Alg.RelSet.Bracket.process")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.process")],
+  [start the column at a tip and run `next` over the rows],
 // lean:AOP.A9_3_Bracket.flatten_cata@ce76fada
-
-`⟨cost,size⟩≜⦇[opt,opb]⦈`, #h(4pt) `opt≜⟨zero,st⟩`, #h(4pt)
-`opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`.
-
-`sb` associative, so `size=flatten sz` for a map `sz`
-#src[]; #h(4pt)
 // lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74
-`R≜cost≤cost°` #src[], #h(4pt)
 // lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
-`g≜[zero,(𝟙×sz)² opb π₁]`, #h(4pt) `single` the coreflexive on singleton lists.
-
-`splits≜⟨inits⁺,tails⁺⟩ zip`, an implementation of $frac(#[`cat°`], ∋)$; #h(4pt) `array≜inits list(row)`,
-#h(4pt) `row≜tails list(mct)`, #h(4pt) `col≜inits list(mct)`.
-
-`mix≜zip list(bin) minlist(R)`, #h(4pt) `next≜⟨π₁,mix⟩ snoc`, #h(4pt)
-`process≜((tip wrap)×𝟙) loop(next)`.
-]]<mct-defn>
+)]<mct-defn>
 
 // B&dM (9.5), p. 232: the book's five hints, one row each.
 #disp(num: "(9.5)")[#calc-table(
@@ -580,12 +630,12 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs"),
-    [#src[definition of `g`; coproducts and products — @mct-defn]])],
+    [#src[definition of `g`; coproducts and products — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_cost_alg_step1@45921a50
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step1.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs"),
-    [#src[`flatten sz=size`, since `sb` is associative — @mct-defn]])],
+    [#src[`flatten sz=size`, since `sb` is associative — @Freyd.Alg.RelSet.Bracket.szFn]])],
      // lean:AOP.A9_3_Bracket.mct_cost_alg_step2@4e428835
   [#lean("Freyd.Alg.RelSet.Bracket.mct_cost_alg_step2.rhs")],
 
@@ -617,7 +667,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs"),
-    [#src[definition of `g` — @mct-defn]])],
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_g_mono_step1@bfddbbdc
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step1.rhs", step: true)],
 
@@ -632,7 +682,7 @@ in @mu-defn.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs"),
-    [#src[definition of `g` — @mct-defn]])],
+    [#src[definition of `g` — @Freyd.Alg.RelSet.Bracket.gR]])],
      // lean:AOP.A9_3_Bracket.mct_g_mono_step4@cb9454b8
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
 )]<mct-g-mono>
@@ -648,7 +698,7 @@ in @mu-defn.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_laws.rhs"),
-    [#src[the specification — @mct-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Bracket.flattenFn]])],
   // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : P(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.rhs")],
@@ -880,25 +930,51 @@ in @mu-defn.
 
 // B&dM §9.4, p. 238.  Snoc-lists throughout.  No numbered equations, and no tabulation phase — the
 // book stops at the recursive program and says the details are messy.
-#disp[#definition[
-`[A]::=nil∣snoc ([A],A)`, #h(4pt) `list⁺ A::=wrap A∣snoc (list⁺ A,A)`, #h(4pt)
-`String=[Char]`, #h(4pt) `Code::=sym Char∣ptr (String,String⁺)`, #h(4pt)
-`F(Code,String)=1+(String×Code)`, #h(4pt) `α≜[nil,snoc]`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`decode≜⦇[nil,extend]⦈ : [Code]⟶String`, #h(4pt) `extend (xs,sym a)=xs⧺[a]`, #h(4pt)
-`extend (xs,ptr (ys,zs))=xs⧺zs` when `ys⧺zs` is a proper prefix of `xs⧺zs`; #h(4pt)
-`H=decode°`.
-
-`size≜⦇[zero,distr [𝟙×c,𝟙×p] plus]⦈` with `c`, `p` the constant costs of a symbol and a
-pointer; #h(4pt) `R≜size≤size°`, #h(4pt) `Q≜F(⊤+⊤,prefix°)=𝟙+(prefix°×(⊤+⊤))`, the
-two `⊤` on symbols and on pointers.
-
-`lrt ws=est(prefix°×(⊤+⊤)) {(xs,(ys,zs))∣xs⧺zs=ws`, `ys⧺zs` a proper prefix of `ws}`,
-the longest repeated tail; #h(4pt)
-`reduce (ws⧺[a])=(zs≠[]→[(ws,sym a),(xs,ptr (ys,zs))],[(ws,sym a)])` with
-`(xs,(ys,zs))=lrt (ws⧺[a])`.
+  [#leann("Freyd.Alg.RelSet.Code.Str")], [#leant("Freyd.Alg.RelSet.Code.Str")],
+  [#leanf("Freyd.Alg.RelSet.Code.Str")],
+  [a string is a snoc-list of characters],
+  [#leann("Freyd.Alg.RelSet.Code.SnocNE")], [#leant("Freyd.Alg.RelSet.Code.SnocNE")],
+  [#leanf("Freyd.Alg.RelSet.Code.SnocNE")],
+  [a non-empty snoc-list: one value, then any number more appended],
+  [#leann("Freyd.Alg.RelSet.Code.Code")], [#leant("Freyd.Alg.RelSet.Code.Code")],
+  [#leanf("Freyd.Alg.RelSet.Code.Code")],
+  [a code is one character, or a pointer back to a repeated piece],
+  [#leann("Freyd.Alg.RelSet.Code.extend")], [#leant("Freyd.Alg.RelSet.Code.extend")],
+  [#leanf("Freyd.Alg.RelSet.Code.extend"), #leanf("Freyd.Alg.RelSet.Code.extendP")],
+  [a symbol appends its character; a pointer appends `zs` when `ys⧺zs` is a proper prefix of
+   `xs⧺zs`],
+  [#leann("Freyd.Alg.RelSet.Code.decode")], [#leant("Freyd.Alg.RelSet.Code.decode")],
+  [#leanf("Freyd.Alg.RelSet.Code.decode")],
+  [rebuild the string from its codes, left to right; `H=decode°`],
+  [#leann("Freyd.Alg.RelSet.Code.bytes")], [#leant("Freyd.Alg.RelSet.Code.bytes")],
+  [#leanf("Freyd.Alg.RelSet.Code.bytes")],
+  [a symbol costs `c`, a pointer costs `p`],
+  [#leann("Freyd.Alg.RelSet.Code.sizeFn")], [#leant("Freyd.Alg.RelSet.Code.sizeFn")],
+  [#leanf("Freyd.Alg.RelSet.Code.size_cata")],
+  [the total cost of a code sequence],
+  [#leann("Freyd.Alg.RelSet.Code.R")], [#leant("Freyd.Alg.RelSet.Code.R")],
+  [#leanf("Freyd.Alg.RelSet.Code.R_eq")],
+  [`u` costs no more than `v`],
+  [#leann("Freyd.Alg.RelSet.Code.prefixR")], [#leant("Freyd.Alg.RelSet.Code.prefixR")],
+  [#leanf("Freyd.Alg.RelSet.Code.prefixR")],
+  [`ys` is a prefix of `x`],
+  [#leann("Freyd.Alg.RelSet.Code.U")], [#leant("Freyd.Alg.RelSet.Code.U")],
+  [#leanf("Freyd.Alg.RelSet.Code.U")],
+  [any symbol to any symbol, any pointer to any pointer],
+  [#leann("Freyd.Alg.RelSet.Code.Q")], [#leant("Freyd.Alg.RelSet.Code.Q")],
+  [#leanf("Freyd.Alg.RelSet.Code.Q")],
+  [compare two decompositions by the prefix order on the strings and `U` on the codes],
+  [#leann("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
+  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
+  [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.prefixR@0a5c54fb
-]]<code-defn>
+)]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
 // code sequence below.  Snoc-lists throughout, so the base functor is `(−)×Code`.
@@ -914,7 +990,7 @@ the longest repeated tail; #h(4pt)
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_laws.rhs"),
-    [#src[the specification — @code-defn]])],
+    [#src[the specification — @Freyd.Alg.RelSet.Code.decode]])],
   [#lean("Freyd.Alg.RelSet.Code.code_laws.rhs")],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Code.code_laws.lhs.body"),
@@ -957,7 +1033,7 @@ the longest repeated tail; #h(4pt)
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step1.rhs"),
-    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @code-defn]])],
+    [#src[`Q≜𝟙+(prefix°×(⊤+⊤))` is `F(⊤+⊤,prefix°)` — @Freyd.Alg.RelSet.Code.Q]])],
      // lean:AOP.A9_4_Code.code_thin_step1@c5eac63a lean:AOP.A9_4_Code.Fbimap@f45fdcce
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step1.rhs", step: true)],
 

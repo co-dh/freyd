@@ -1444,4 +1444,46 @@ public theorem bagAdd_laxNatural :
       (strictNatural_id _) R)
   · exact le_of_eq (add_strictNatural R)
 
+-- printing-only unexpanders: §10.3's arrows under the book's names, the job data `ct`, `dt`, `wt`
+-- dropped.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.cost] public meta def unexpandTardyCost : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `cost) $x $args*)
+  | _ => `($(mkIdent `cost))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.penalty] public meta def unexpandTardyPenalty : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `penalty) $x $args*)
+  | _ => `($(mkIdent `penalty))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.fFn] public meta def unexpandTardyF : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `f) $x $args*)
+  | _ => `($(mkIdent `f))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.gFn] public meta def unexpandTardyG : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent `g) $x $args*)
+  | _ => `($(mkIdent `g))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.ctsum] public meta def unexpandCtsum : Unexpander
+  | `($_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "sum(list(ct))")) $x $args*)
+  | _ => `($(mkIdent (Name.mkSimple "sum(list(ct))")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.bagifyFn] public meta def unexpandBagifyFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `bagify) $args*)
+  | _ => `($(mkIdent `bagify))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.bmax] public meta def unexpandBmax : Unexpander
+  | `($_ $args*) => `($(mkIdent `bmax) $args*)
+  | _ => `($(mkIdent `bmax))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tardy.snag] public meta def unexpandSnag : Unexpander
+  | `($_ $args*) => `($(mkIdent `snag) $args*)
+  | _ => `($(mkIdent `snag))
+
 end Freyd.Alg.RelSet.Tardy

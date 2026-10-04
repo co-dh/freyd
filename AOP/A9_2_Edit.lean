@@ -1691,4 +1691,13 @@ public theorem column_cata (xs : ConsList Unit Char) :
       = cataR (consScalarAlg (fun _ => fstcol xs) (fun b us => nextcol xs (b, us))) :=
   consFold_unique _ _ _ (column_nil xs) (fun b ys => column_cons b ys xs)
 
+-- printing-only unexpanders: the edit sequences and the string pairs under the note's names.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dEdit] public meta def unexpandDEdit : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[Op]")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Edit.dPair] public meta def unexpandDPair : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[Char]×[Char]")))
+
 end Freyd.Alg.RelSet.Edit

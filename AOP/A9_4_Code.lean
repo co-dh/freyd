@@ -56,6 +56,10 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.SL
 -- every panel peels it into the list lane over `Char`.
 macro:max "dStr" : term => `(dSL Unit Char)
 
+/-- **code-defn**: `list⁺ A::=wrap A∣snoc (list⁺ A,A)`, the non-empty snoc-lists — a `SnocList`
+    whose base is itself one `A`, so `String⁺` is `SnocNE Char`. -/
+@[expose] public def SnocNE (A : Type) : Type := SnocList A A
+
 /-- **code-defn**: `Code::=sym Char∣ptr (String,String⁺)`.  `String⁺` is the guard `zs≠nil`
     inside `extend`, not a second datatype. -/
 public inductive Code where
@@ -986,5 +990,39 @@ open Lean PrettyPrinter in
 @[app_unexpander prefixR] public meta def unexpandPrefixR : Unexpander
   | `($_:ident) => `($(mkIdent `prefix))
   | _ => throw ()
+
+-- printing-only unexpanders: §9.4's carriers and arrows under the book's names, `c`, `p` dropped.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.Str] public meta def unexpandCodeStr : Unexpander
+  | _ => `($(mkIdent `String))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.SnocNE] public meta def unexpandSnocNE : Unexpander
+  | `($_ $a) => `($(mkIdent (Name.mkSimple "list⁺")) $a)
+  | _ => `($(mkIdent (Name.mkSimple "list⁺")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.sizeFn] public meta def unexpandSizeFn : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `size) $x $args*)
+  | _ => `($(mkIdent `size))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.bytes] public meta def unexpandBytes : Unexpander
+  | `($_ $_ $_ $x $args*) => `($(mkIdent `bytes) $x $args*)
+  | _ => `($(mkIdent `bytes))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.extendP] public meta def unexpandExtendP : Unexpander
+  | `($_ $args*) => `($(mkIdent `extend) $args*)
+  | _ => `($(mkIdent `extend))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.extendAlg] public meta def unexpandExtendAlg : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "[nil,extend]")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.reduceFn] public meta def unexpandReduceFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `reduce) $args*)
+  | _ => `($(mkIdent `reduce))
 
 end Freyd.Alg.RelSet.Code

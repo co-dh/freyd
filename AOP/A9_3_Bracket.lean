@@ -1970,4 +1970,16 @@ open Lean PrettyPrinter in
 @[app_unexpander R] public meta def unexpandBracketR : Unexpander
   | _ => `($(mkIdent `R))
 
+-- printing-only unexpanders: the tupled fold is the note's `⟨cost,size⟩`, its parameters dropped;
+-- the tip-tree fold wears the banana, as `CL.cataR` and `SL.cataR` do.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Bracket.costSizeFn] public meta def unexpandCostSizeFn : Unexpander
+  | `($_ $_ $_ $_ $x $args*) => `($(mkIdent (Name.mkSimple "⟨cost,size⟩")) $x $args*)
+  | _ => `($(mkIdent (Name.mkSimple "⟨cost,size⟩")))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.TT.cataR] public meta def unexpandTTCataR : Unexpander
+  | `($_ $φ) => `(⦇$φ⦈)
+  | _ => throw ()
+
 end Freyd.Alg.RelSet.Bracket

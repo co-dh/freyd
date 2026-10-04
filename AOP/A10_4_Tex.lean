@@ -1118,4 +1118,35 @@ public theorem tex_extern : interval ≫ f = extern := by
     subst hx'
     exact ⟨intervalFn n, rfl, hn⟩
 
+-- printing-only unexpanders: §10.4's names as the book writes them.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.Legal] public meta def unexpandLegal : Unexpander
+  | `($_ $args*) => `($(mkIdent `Legal) $args*)
+  | _ => `($(mkIdent `Legal))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.round] public meta def unexpandRound : Unexpander
+  | `($_ $args*) => `($(mkIdent `round) $args*)
+  | _ => `($(mkIdent `round))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.shiftFn] public meta def unexpandShiftFn : Unexpander
+  | `($_ $d $r) => `($(mkIdent `shift) ($d, $r))
+  | _ => `($(mkIdent `shift))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.Iv.lo] public meta def unexpandIvLo : Unexpander
+  | `($_ $args*) => `($(mkIdent `lo) $args*)
+  | _ => `($(mkIdent `lo))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.Iv.hi] public meta def unexpandIvHi : Unexpander
+  | `($_ $args*) => `($(mkIdent `hi) $args*)
+  | _ => `($(mkIdent `hi))
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.stepFn] public meta def unexpandStepFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `step) $args*)
+  | _ => `($(mkIdent `step))
+
 end Freyd.Alg.RelSet.Tex
