@@ -46,6 +46,7 @@ public import AOP.A7_2
 public import AOP.A6_ConsList
 public import AOP.A6_GenFold
 public import AOP.A5_7_ListBeads
+import AOP.CalcSteps
 
 set_option linter.unusedVariables false
 
@@ -685,13 +686,6 @@ public theorem takewhile_mono (p : A → Bool) :
             le_iff.mp (takewhile_mono_cons p) q ws ⟨q', hv, (junc_sum_inr _ _ _ _).mp hS⟩
           exact ⟨vs, (junc_sum_inr _ _ _ _).mpr hvs, hlen⟩
 
-/-- The `takewhile-laws` first row: **`(prefix list(p))%∋ est(R°) = (⦇S⦈)%∋ est(R°)`** — the
-    specification is the fold (`takewhile_alg`), under a transpose and a choice that neither
-    touch; stated at the `R` the chain chooses by (`lenLE`), so it meets the greedy row. -/
-public theorem takewhile_laws_step1 (p : A → Bool) :
-    (prefixR ≫ listP p)%∋ ≫ est(lenLE°) = (cataR (Salg p))%∋ ≫ est(lenLE°) := by
-  rw [takewhile_alg]
-
 /-- The greedy row: `⦇Λ(S) est(R°)⦈ ⊑ Λ(⦇S⦈) est(R°)` — Theorem 7.2 at the preorder `R°`,
     with `takewhile-mono` for its hypothesis: one longest `p`-prefix kept at each `cons`
     refines every `p`-prefix collected and one chosen at the end. -/
@@ -797,13 +791,20 @@ public theorem takewhile_step (p : A → Bool) :
   (takewhile_step1 p lenLE).trans
     ((takewhile_step2 p lenLE_recip_refl).trans (takewhile_step3 p))
 
-/-- The `takewhile-laws` last row: **`⦇S%∋ est(R°)⦈ = ⦇[nil,(π₁p→cons,⊸ nil)]⦈`** — the greedy
-    algebra IS the one-step take-while (`takewhile_step`), so the fold on the left is the fold the
-    program runs. -/
-public theorem takewhile_laws_step3 (p : A → Bool) :
-    cataR ((Salg p)%∋ ≫ est(lenLE°))
-      = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p)) := by
-  rw [takewhile_step]
+/-- **The `takewhile-laws` chain**, from the program up: `⦇[nil,(π₁p→cons,⊸ nil)]⦈ ⊑ takewhile(p)`
+    — the program's algebra is the greedy one (`takewhile_step`), Theorem 7.2 puts its fold below
+    the transposed fold's choice (`takewhile_greedy`), that fold is the specification's relation
+    (`takewhile_alg`), and the result is `takewhile` by definition. -/
+public theorem takewhile_cata_le (p : A → Bool) :
+    cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))
+      ⊑ takewhile p :=
+  calc cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))
+        = cataR ((Salg p)%∋ ≫ est(lenLE°)) := by rw [takewhile_step]
+    _ ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := takewhile_greedy p
+    _ = (prefixR ≫ listP p)%∋ ≫ est(lenLE°) := by rw [takewhile_alg]
+    _ = takewhile p := rfl
+
+calc_steps takewhile_cata_le
 
 /-- The simplicity row: `takewhile(p)° takewhile(p) ⊑ 𝟙` — two prefixes of one list of equal
     length are equal, so `takewhile(p)` is THE longest `p`-prefix, not A longest. -/
@@ -823,17 +824,11 @@ public theorem takewhile_simple (p : A → Bool) : Simple (takewhile p) := by
 public theorem takewhile_eq_cata (p : A → Bool) :
     takewhile p
       = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p)) := by
-  have hle : cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))
-      ⊑ takewhile p := by
-    rw [← takewhile_step p]
-    show cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (prefixR ≫ listP p)%∋ ≫ est(lenLE°)
-    rw [takewhile_alg p]
-    exact takewhile_greedy p
   have hentire : Entire
       (cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (twStep p))) := by
     rw [← takeWhile_emerges p]
     exact graph_entire _
-  exact (eq_of_le_entire_simple hentire (takewhile_simple p) hle).symm
+  exact (eq_of_le_entire_simple hentire (takewhile_simple p) (takewhile_cata_le p)).symm
 
 /-- The entirety row: `Λ(prefix list(p)) est(R°)` is entire — `nil` is always a `p`-prefix and
     the longest exists; read off the headline, whose program is a reduce of maps. -/
