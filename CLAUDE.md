@@ -11,7 +11,8 @@ This project explain the book Categories, Allegories of Freyd.
   + the auto-derivation drivers (`AutoDerive*`). Modules `rel.*`.
 - `Freyd/note/` — the author's own `.typ`/`.pdf` section notes and diagrams (non-Lean).
 Imports cross libs freely within the one Lake package (e.g. `leet.L20` imports `AOP.A6_GenFold`).
-lakefile: `AOP`/`leet`/`rel` are glob'd (all their files are in the default build); `Freyd` keeps the
+lakefile: `AOP`/`leet`/`rel` are glob'd; only `AOP` is in `defaultTargets` (nothing in `Freyd`/`AOP` imports
+`leet`/`rel`, so check them with `lake build leet rel`, which they need together); `Freyd` keeps the
 curated `Freyd.lean` aggregator (no glob — do not force-build the deliberately un-imported orphan core).
 
 You should should any 3+ digits sections of the book into `Freyd/Sa_bc.lean`. e.g. section 1.123 in Freyd/S1_12.lean.

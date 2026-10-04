@@ -19,9 +19,15 @@ name = "AOP"             # Algebra-of-Programming layer; glob so every AOP/*.lea
 globs = ["AOP.+"]
 
 # `leet` (LeetCode case studies) and `rel` (the relation-algebra interpreter, its auto-derivation
-# drivers and the LeetRun studies) are OUT of the default build: nothing in `Freyd` or `AOP` imports
-# them, and rebuilding them on every AOP edit was the bulk of a build.  Their sources stay in the
-# tree; declare a lean_lib again to bring either back.
+# drivers and the LeetRun studies) are declared but left out of `defaultTargets`: nothing in `Freyd`
+# or `AOP` imports them, so a default build skips them, while `lake build leet rel` still checks them.
+[[lean_lib]]
+name = "leet"
+globs = ["leet.+"]
+
+[[lean_lib]]
+name = "rel"
+globs = ["rel.+"]
 
 [[lean_lib]]
 name = "diag"            # diagrammatic-calculus tower (cartesian bicategory → tapes → fo-bicategory)

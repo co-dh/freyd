@@ -216,17 +216,17 @@ theorem thin_dom {cands : List St} {z : St} (hz : z ∈ cands) :
 
 /-! ## The mechanical side conditions, discharged once -/
 
-theorem Qm_refl_le : Cat.id (⟨St⟩ : RelSet.{0}) ⊑ P.Qm := by
-  rw [le_iff]; intro s t h; exact h ▸ P.Q_refl s
-
-theorem Qm_trans_le : P.Qm ≫ P.Qm ⊑ P.Qm := by
-  rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.Q_trans h1 h2
+theorem Qm_preorder : Preorder P.Qm :=
+  ⟨show 𝟙 _ ⊑ P.Qm by rw [le_iff]; intro s t h; exact h ▸ P.Q_refl s,
+   show P.Qm ≫ P.Qm ⊑ P.Qm by rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.Q_trans h1 h2⟩
 
 theorem Qm_le_Rm : P.Qm ⊑ P.Rm := by
   rw [le_iff]; intro s t h; exact P.Q_le_R h
 
-theorem Rm_trans_le : P.Rm ≫ P.Rm ⊑ P.Rm := by
-  rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.R_trans h1 h2
+/-- `R` is reflexive because it contains the reflexive `Q`. -/
+theorem Rm_preorder : Preorder P.Rm :=
+  ⟨show 𝟙 _ ⊑ P.Rm by rw [le_iff]; intro s t h; exact h ▸ P.Q_le_R (P.Q_refl s),
+   show P.Rm ≫ P.Rm ⊑ P.Rm by rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.R_trans h1 h2⟩
 
 /-- The generator is MONOTONIC on `Q°` (THEOREM 8.1's hypothesis): `step_mono` on the `snoc`
     summand, reflexivity of `Q` on the leaf summand. -/
@@ -310,10 +310,7 @@ theorem bridge : ∀ xs : SnocList L E, cataFold P.thinAlg xs (fun s => s ∈ P.
 theorem le_Λ_cata_thinRel :
     (graph (fun xs => fun s => s ∈ P.foldFn xs) : dSL L E ⟶ pow (⟨St⟩ : RelSet.{0}))
       ⊑ Λ (cataR P.gen) ≫ thinRel P.Qm° := by
-  have hQtrans : P.Qm° ≫ P.Qm° ⊑ P.Qm° := by
-    have h0 := recip_mono P.Qm_trans_le
-    rwa [Allegory.recip_comp] at h0
-  have Hcore := thinning (initial L E) hQtrans P.gen_mono
+  have Hcore := thinning (initial L E) (isPreorder_recip P.Qm_preorder) P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore
   rw [le_iff]; intro xs Y hY
@@ -412,18 +409,8 @@ def solveFn (xs : SnocList L E) : Option St := P.bestOf (P.foldFn xs)
 theorem correct (xs : SnocList L E) (b : St) (hb : P.solveFn xs = some b) :
     cataFold P.gen xs b ∧ ∀ z, cataFold P.gen xs z → P.R z b := by
   obtain ⟨hbmem, hblb⟩ := P.bestOf_spec hb
-  have hQtrans : P.Qm° ≫ P.Qm° ⊑ P.Qm° := by
-    have h0 := recip_mono P.Qm_trans_le
-    rwa [Allegory.recip_comp] at h0
-  have hQrefl : Cat.id (⟨St⟩ : RelSet.{0}) ⊑ P.Qm° := by
-    have h0 := recip_mono P.Qm_refl_le
-    rwa [recip_id] at h0
-  -- `thinning_est` takes its order's transitivity unconversed, and here that order is `Rm°`.
-  have hRtrans : P.Rm° ≫ P.Rm° ⊑ P.Rm° := by
-    have h0 := recip_mono P.Rm_trans_le
-    rwa [Allegory.recip_comp] at h0
-  have Hcore := thinning_est (R := P.Rm°) (initial L E)
-    (recip_mono P.Qm_le_Rm) hQrefl hQtrans hRtrans P.gen_mono
+  have Hcore := thinning_est (R := P.Rm°) (initial L E) (recip_mono P.Qm_le_Rm)
+    (isPreorder_recip P.Qm_preorder) (isPreorder_recip P.Rm_preorder) P.gen_mono
   rw [← cataR_eq_relCata (Λ ((F L E).map (∋ (⟨St⟩ : RelSet.{0})) ≫ P.gen) ≫ thinRel P.Qm°),
     ← cataR_eq_relCata P.gen] at Hcore
   have hminb : est P.Rm° (fun s => s ∈ P.foldFn xs) b :=
