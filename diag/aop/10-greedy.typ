@@ -80,11 +80,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Detab.detabFn")], [#leant("Freyd.Alg.RelSet.Detab.detabFn")],
   [#leanf("Freyd.Alg.RelSet.Detab.detab_cata"), #leanf("Freyd.Alg.RelSet.Detab.detabFn")],
@@ -272,11 +268,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM §10.3, p. 253.  Both conditions need context, and `cost` has to be restated over `perm xs`
 // before Proposition 9.3 fits — `penalty` reads the bag of scheduled jobs, not their order.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Tardy.Bag")], [#leant("Freyd.Alg.RelSet.Tardy.Bag")],
   [#leanf("Freyd.Alg.RelSet.Tardy.Bag")],
@@ -469,11 +461,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM §10.4, p. 259.  The book's local `h` for `⦇[arb,step]⦈` is @dp-defn's algebra letter, so it
 // is written `H°` here instead.  The base case of `f` is `a<0` on p. 262 and `p≤0` in the program.
-#disp[#table(
-  columns: (auto, auto, 1.3fr, 1fr),
-  align: (left + horizon, left + horizon, left + horizon, left + horizon),
-  inset: 5pt, stroke: 0.4pt + luma(190),
-  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+#disp[#deftab(
 
   [#leann("Freyd.Alg.RelSet.Tex.intern")], [#leant("Freyd.Alg.RelSet.Tex.intern")],
   [#leanf("Freyd.Alg.RelSet.Tex.intern")],
