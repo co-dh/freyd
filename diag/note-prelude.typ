@@ -212,7 +212,6 @@
 #let IMP = text(SLACK)[$arrow.r.double.long$]
 #let TH = 1.2   // a fraction box is two lines tall
 #let IFF = text(SLACK)[$arrow.l.r.double$]
-#let So-box = ([`S°`], 0.85, true)
 // A derivation read LEFT TO RIGHT: one panel per `(op, panel, reason[, formula])` step, the op
 // between it and the step before, the formula above, the reason underneath both.  Steps pack
 // greedily into lines of the cell's width, a continued line opening with its op; a line's slack
@@ -622,11 +621,5 @@
     }
   }) })
 }
-#let sort-P-box = ([`sort(P)`], 2.23, true)
-#let thinlist-Q-box = ([`thinlist(Q)`], 3.0, true)
-#let est-Rc-box = ([`est(R°)`], 2.2, true)
-#let listcp-F-box = ([`listcp`], 1.87, false)
-#let pair-g-box = ([`⟨g₁,g₂⟩`], 2.2, false)
-#let minlist-R-box = ([`minlist(R)`], 2.93, true)
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)
