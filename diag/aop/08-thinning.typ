@@ -232,35 +232,39 @@ row((
   inset: 5pt, stroke: 0.4pt + luma(190),
   table.header([*formula*], [*type*], [*what it says*]),
 
-  [`F(A,X)=A+A×X`, `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR")],
+  [#leanf("Freyd.Alg.pathF_obj"), #leanf("Freyd.Alg.RelSet.CL.alphaR")],
   [#leant("Freyd.Alg.RelSet.CL.alphaR", named: true)],
-  [a path is a non-empty cons-list: one vertex, or a vertex in front of a path],
+  [the base bifunctor and its initial algebra: a path is a non-empty cons-list, one vertex or a vertex in front of a path],
   [#leanf("Freyd.Alg.wrapz"), #leanf("Freyd.Alg.conswFn_apply")],
   [#leant("Freyd.Alg.wrapz", named: true) \ #leant("Freyd.Alg.consw", named: true)],
   [a path carried with its cost: `wrap` starts at cost `0`, `consw` adds the edge from the new vertex to the old head],
   [#leanf("Freyd.Alg.pathCost"), #leanf("Freyd.Alg.cataR_wrapz_consw"), #leanf("Freyd.Alg.pathR")],
   [#leant("Freyd.Alg.pathCost", named: true) \ #leant("Freyd.Alg.pathR", named: true)],
-  [the cost of a path is the sum of `wt` over consecutive vertices; `p R q` iff `p` costs no more than `q`],
+  [the cost of a path is the sum of `wt` over consecutive vertices; `R` relates a path to every path that costs no less],
   [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist"), #leanf("Freyd.Alg.minpath_spec")],
   [#leant("Freyd.Alg.minpath", named: true)],
-  [the input `[x₀,…,xₙ] : L(PA)` is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and `minpath` returns a cheapest one],
+  [the fold takes one vertex out of each layer; the input is a list of layers, each a set of vertices, and `minpath` returns a cheapest path],
   [#leanf("Freyd.Alg.pathQ")],
   [#leant("Freyd.Alg.pathQ", named: true)],
-  [`p Q q`: `p` costs no more than `q` and starts at the same vertex],
+  [`Q` relates a path to every path that costs no less and starts at the same vertex],
   [#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #leanf("Freyd.Alg.Λ_pathF_map_id_eps")],
   [#leant("Freyd.Alg.Λ_pathF_map_eps_id", named: true) \ #leant("Freyd.Alg.Λ_pathF_map_id_eps", named: true)],
   [the two transposes on the coproduct: `cpl` chooses a vertex from a layer, `cpr` chooses a tail from a set of paths],
   [#leanf("Freyd.Alg.pathStep")],
   [#leant("Freyd.Alg.pathStep", named: true)],
   [put the vertex in front of every tail in the set and keep a cheapest],
+// lean:AOP.A8_2_Exec.pathF_obj@55c448b1
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
 // lean:AOP.A8_2.wrapz@e528d496
 // lean:AOP.A8_2.conswFn_apply@c88ec21b
+// lean:AOP.A8_2.consw@53d456cc
 // lean:AOP.A8_2.pathCost@2d18e3c4
 // lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
-// lean:AOP.A8_2_Exec.minpath_spec@3bcadf85
+// lean:AOP.A8_2_Exec.relCata_pathF_eps_eq_nelist@c0422a4d
+// lean:AOP.A8_2_Exec.minpath_spec@15aa3287
+// lean:AOP.A8_2_Exec.minpath@6e6b277d
 // lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
 // lean:AOP.A8_2.pathStep@f546a21f
@@ -305,12 +309,12 @@ row((
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
-  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]],
+  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @Freyd.Alg.pathStep]],
     // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
     // lean:AOP.A8_2.pathStep@f546a21f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
-  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
+  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Λ_pathF_map_eps_id]],
       // lean:AOP.A5_6.cpMap_sum_eq_junc@01828e3f
 )]<path-alg>
 // What `F(R,S)` does at 8.2d's `F(A,X)=A+A×X`: each part moves by its own relation, the summand stays.

@@ -1691,7 +1691,7 @@ def staleMain (route : String) (stringMode circuitMode commutativeMode typeMode 
   -- call; the commutative route's `+` is one file drawn from two declarations.
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
     (a, (callFiles stringMode circuitMode a).map fun n =>
-      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode || typeMode)
       (n, ctxDecl commutativeMode graphMode formulaMode n base, selDecls commutativeMode graphMode formulaMode n base))
   for (call, files) in jobs do
     let mut stale := false

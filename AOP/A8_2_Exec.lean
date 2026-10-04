@@ -346,6 +346,11 @@ public theorem mcp_spec (wt : V → V → Nat) (net : ConsList (List V) (List V)
 @[expose] public def minpath (wt : V → V → Nat) : dCL (V → Prop) (V → Prop) ⟶ dCL V V :=
   fun x p => ∃ net, x = netSet net ∧ mcp wt net = some p
 
+/-- `F(A,X) = A+A×X` (book p.196): the layered network's base bifunctor on objects, the
+    statement 8.2a's first row prints. -/
+public theorem pathF_obj (A X : RelSet.{0}) :
+    pathF.obj A X = ⟨A.carrier ⊕ A.carrier × X.carrier⟩ := rfl
+
 /-- `⦇F(∋,𝟙)α⦈ = L(∋)` (book p.196): the fold that takes one vertex out of each layer is the list
     relator `L = list⁺` applied to `∋` — the type functor's action on an arrow, at `∋`. -/
 public theorem relCata_pathF_eps_eq_nelist :
