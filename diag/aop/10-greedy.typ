@@ -43,6 +43,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_greedy.calc.typ" as calc-tg
 #import "../generated/Freyd.Alg.RelSet.Tex.tex_fusion_condition.calc.typ" as calc-tf
 #import "../generated/Freyd.Alg.RelSet.Tex.tex_laws.calc.typ" as calc-tl
+#import "../generated/Freyd.Alg.RelSet.Detab.expand_V.calc.typ" as calc-ev
+#import "../generated/Freyd.Alg.RelSet.Detab.detab_V_R.calc.typ" as calc-dv
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
 // `thin(Q)`.  Knaster–Tarski needs the body at `M` below `M`; `M=H∩(H°\R°)` splits that in two.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -116,27 +118,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[shortening the output of one `expand` step to a `V`-smaller string either keeps the whole
      step (`expand`) or drops its character and shortens its input string (`π₁V°`)]],
      // lean:AOP.A10_2_Detab.expand_V@56eb1503
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Detab.expand_V_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Detab.expand_V_step1.rhs",
-      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`]),
-     // lean:AOP.A10_2_Detab.expand_V_step1@d11ccbc6
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step2.rhs"),
-      src[`(S∪T)R=SR∪TR` — conditionals distribute]),
-     // lean:AOP.A10_2_Detab.expand_V_step2@390338c4
-  ), (
-    (EQ, union("Freyd.Alg.RelSet.Detab.expand_V_step3.rhs"), src[`fill V°=fill` (Ex. 10.4)]),
-     // lean:AOP.A10_2_Detab.expand_V_step3@1a325a1e lean:AOP.A10_2_Detab.fill_V@6f4dc6ad
-    // the `nottab` arm splits again here — three diagrams: the unchanged `istab` side, then its own
-    // two children — because `snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4) introduces a second `∪` under `nottab`.
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step4.rhs", split: "inr"),
-      src[`snoc V°⊑snoc∪(π₁V°)` (Ex. 10.4)]),
-     // lean:AOP.A10_2_Detab.expand_V_step4@1743f6f5 lean:AOP.A10_2_Detab.snoc_V@2f6227ca
-    (SQ, union("Freyd.Alg.RelSet.Detab.expand_V_step5.rhs"),
-      src[`expand=istab outl fill∪nottab snocR` — definition of `expand`; `nottab R⊑R` — guard
-       dropped]),
-     // lean:AOP.A10_2_Detab.expand_V_step5@664b51b5
-  )),
+  lean-calc(calc-ev, breaks: (3,)),
 )]<entab-expand-V>
 
 // B&dM p.249, "To prove V·detab ⊆ detab·R we reason", in diagram order: the note's `V` relates the
@@ -146,28 +128,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[any `V`-shortening of `detab`'s output is `detab`'s output on an input no longer than the
      given one]],
      // lean:AOP.A10_2_Detab.detab_V_R@a6015fdd
-  lean-chain((
-    (none, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step1.rhs",
-      src[`detab` is a fold: `detab=α°F(detab)[nil,expand]` — @entab-defn]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step1@7202f1a5
-    (EQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step2.rhs",
-      src[coproducts, and `nil V°=nil` (Exercise 10.4)]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step2@17093b20 lean:AOP.A10_2_Detab.nil_V@ab8b8818
-    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step3.rhs", src[the claim — @entab-expand-V]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step3@63a29781
-  ), (
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step4.rhs"),
-      src[distributing `∪`; the fold again, and the definition of `F`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step4@12589ca1
-    (EQ, union("Freyd.Alg.RelSet.Detab.detab_V_R_step5.rhs"),
-      src[naturality of `π₁`: `(detab×𝟙)π₁=π₁ detab`; `snoc°π₁` is `init`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step5@84af6677
-    (SQ, "Freyd.Alg.RelSet.Detab.detab_V_R_step6.rhs",
-      src[`init` is inductive, so `X≜detab V°`, a solution of `X⊑detab∪(init X)`, lies below the
-       greatest one, `prefix detab` (induction on the input); `prefix⊑R°`]),
-     // lean:AOP.A10_2_Detab.detab_V_R_step6@6f212d06
-  )),
+  lean-calc(calc-dv, breaks: (4,)),
 )]<entab-detab-V>
 
 // ONE WIRE, `String` to `String`; `F(X)h` is drawn as the ONE bead the formula writes,
