@@ -376,7 +376,7 @@ N(α)(that)
 // B&dM §7.4, p. 183.  Read as a definition, the fusion condition names `Q`; opening the coproduct
 // of maps turns it into the program.
 #disp[#calc-table(
-  Thm[`Q=[N(wrap),(𝟙×moves trans N(est(R))) zip' N(cons)]` \
+  Thm[#leanf("Freyd.Alg.Cylinder.cyl_step") \
     #src[at the last column `Q` starts one path per row, and at each earlier one it puts each square in
      front of the cheapest of the three kept paths it can step to — the algebra @cyl-laws's last
      step folds]],
@@ -402,7 +402,7 @@ N(α)(that)
 #disp[#calc-table(
   // B&dM p.179: "Show how the dynamic programming approach to exhaustive search allows a path of least
   // cost to be found in O(n × m) time."
-  Thm[`paths est(R)⊒⦇Q⦈ setify est(R)` \
+  Thm[#leanf("Freyd.Alg.Cylinder.cyl_laws") \
     #src[shortest paths on a cylinder: the dynamic programming approach to exhaustive search allows a path
      // cylinder row: B&dM §7.4, p. 182
      of least cost to be found in `O(n×m)` time; `Q` is @cyl-step's algebra.
@@ -442,7 +442,7 @@ N(α)(that)
 #calc-table(
   // B&dM p.182: "The condition for fusion is N(min R)·generate ⊇ Q·F(id, N(min R)), and we can use this to
   // derive a definition of Q"
-  Thm[`gen N(est(R))⊒F(𝟙,N(est(R)))Q` \
+  Thm[#leanf("Freyd.Alg.Cylinder.cyl_fusion") \
     #src[fusion: the condition for fusion in @cyl-laws's last step, used to derive a definition of `Q`.
  ]],
   table.header([*circuit*], [*Hinze–Marsden*]),

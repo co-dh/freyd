@@ -158,11 +158,13 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
     -- one.  EXPLICITNESS IS THE TEST: an instance, a `Decidable` and a typeclass reach the
     -- telescope as instance binders, and an object or an arrow is not a `Prop`.  The conjunction is
     -- built as a TERM and handed to the label, so the `∧`, its spacing and the brackets round an
-    -- operand are the one table's and not a second spelling here.
+    -- operand are the one table's and not a second spelling here.  A NATURALITY HYPOTHESIS is the one
+    -- exception: the panel's bead dot already states it (`markOfNatPredicate`, by head constant).
     let cond ← if binder.isNone && path.isEmpty && branch.isEmpty then do
         let hyps ← xs.filterM fun x => do
-          return (← x.fvarId!.getDecl).binderInfo.isExplicit
-            && (← Meta.isProp (← Meta.inferType x))
+          let t ← Meta.inferType x
+          return (← x.fvarId!.getDecl).binderInfo.isExplicit && (← Meta.isProp t)
+            && (t.getAppFn.constName?.bind StrDiag.markOfNatPredicate).isNone
         let tys ← hyps.mapM fun x => Meta.inferType x
         pure (tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none)
       else pure none

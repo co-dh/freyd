@@ -1492,6 +1492,11 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Relator.idRelator] def unexpandIdRelator : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "𝟙")))
+-- A COMPOSITE LANE IS JUXTAPOSITION in diagram order: `Relator.comp F G` is first `F` then `G`.
+open Lean PrettyPrinter in
+@[app_unexpander Relator.comp] def unexpandRelatorComp : Unexpander
+  | `($_ $F $G) => `($F $G)
+  | _ => throw ()
 -- A CONSTANT LANE IS THE OBJECT IT IS CONSTANTLY: the wire carries `𝟏`, and `Relator.const` is
 -- only how Lean says the wire does not vary.
 open Lean PrettyPrinter in
