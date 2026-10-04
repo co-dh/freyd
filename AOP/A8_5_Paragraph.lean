@@ -611,7 +611,8 @@ public theorem para_laws_step1 (hlen : ∀ a, 0 ≤ len a)
     -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
     (sort := sort) (merge := merge) (thinlist := fun _ => thinlist)
     (minlist := fun _ => minlist)
-    (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R Q_refl Q_trans R_recip_trans
+    (graph_map newAlgFn) (graph_map glueAlgFn) Q_le_R ⟨Q_refl, Q_trans⟩
+    ⟨le_trans Q_refl Q_le_R, trans_of_recip_trans R_recip_trans⟩
     hm₁ (para_mono_glue hlen) hsortF para_sort_new para_sort_glue h88₁ h88₂ h89₁ h89₂ h811 h810
     h86 h87 rfl rfl rfl
   rw [Cat.comp_id (graph (newAlgFn (Word := Word)))] at key

@@ -25,18 +25,18 @@ variable {𝒜 : Type u} [Allegory 𝒜]
 
 /-- A PREORDER on `a`: reflexive and transitive (B&dM p.86).  (Named `IsPreorder`, not
     `Preorder`, to avoid clashing with an unrelated core/order name.) -/
-def IsPreorder {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
+@[expose] public def IsPreorder {A : 𝒜} (R : A ⟶ A) : Prop := Reflexive R ∧ Transitive R
 
 /-- ANTISYMMETRIC: `R ∩ R° ⊑ id` (B&dM p.86). -/
 @[expose] public def AntiSymmetric {A : 𝒜} (R : A ⟶ A) : Prop := R ∩ R° ⊑ Cat.id A
 
 /-- A PARTIAL ORDER on `a`: a preorder that is also antisymmetric (B&dM p.86). -/
-def IsPartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := IsPreorder R ∧ AntiSymmetric R
+@[expose] public def IsPartialOrder {A : 𝒜} (R : A ⟶ A) : Prop := IsPreorder R ∧ AntiSymmetric R
 
 /-! ### Closure of preorders/symmetric relations under `°` and `∩` -/
 
 /-- A preorder's reciprocal is a preorder (B&dM p.86). -/
-theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : IsPreorder R) : IsPreorder R° := by
+public theorem isPreorder_recip {A : 𝒜} {R : A ⟶ A} (hR : IsPreorder R) : IsPreorder R° := by
   obtain ⟨hRefl, hTrans⟩ := hR
   refine ⟨?_, ?_⟩
   · have h := recip_mono hRefl; rwa [recip_id] at h

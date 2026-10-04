@@ -28,6 +28,7 @@ public import AOP.A7_2
 -- `thinRel_pt`, the pointwise reading every Rel(Set) user of `thinRel` needs, is stated beside the
 -- definition it reads rather than re-derived in each of them.
 public import AOP.A6_1_RelSet
+public import AOP.A4_2
 import AOP.CalcSteps
 
 universe u
@@ -263,9 +264,9 @@ public theorem id_le_thinRel_id : Cat.id (P A) ⊑ thinRel (Cat.id A) :=
   `calc_steps` names; `thinRel_comp_est` is their composition. -/
 
 /-- Step 1: `𝟙 ⊑ thin Q` (`Q` reflexive) composed with `est R` on the right. -/
-public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hreflQ : Cat.id A ⊑ Q) :
+public theorem thinRel_comp_est_step1 {Q R : A ⟶ A} (hQ : IsPreorder Q) :
     est R ⊑ thinRel Q ≫ est R := by
-  have h := comp_mono_right (id_le_thinRel hreflQ) (est R)
+  have h := comp_mono_right (id_le_thinRel hQ.1) (est R)
   rwa [Cat.id_comp] at h
 
 /-- `R° R° ⊑ R°` from `R` transitive: the converse of a transitive relation is transitive. -/
@@ -288,29 +289,29 @@ public theorem thinRel_comp_est_cond1 (Q : A ⟶ A) {R : A ⟶ A} :
 calc_steps thinRel_comp_est_cond1
 
 /-- The UP's second condition: every member is `R`-above something the thinning kept. -/
-public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (htrans : R ≫ R ⊑ R) :
+public theorem thinRel_comp_est_cond2 {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : IsPreorder R) :
     (∋ A)° ≫ thinRel Q ≫ est R ⊑ R° :=
   calc (∋ A)° ≫ thinRel Q ≫ est R ⊑ Q° ≫ (∋ A)° ≫ est R := by
         rw [← Cat.assoc, ← Cat.assoc]
         exact comp_mono_right (recip_eps_comp_thinRel_le Q) (est R)
     _ ⊑ Q° ≫ R° := comp_mono_left Q° (recip_eps_comp_est_le R)
     _ ⊑ R° ≫ R° := comp_mono_right (recip_mono hQR) R°
-    _ ⊑ R° := recip_trans_of_trans htrans
+    _ ⊑ R° := recip_trans_of_trans hR.2
 
 calc_steps thinRel_comp_est_cond2
 
 /-- **Ex 8.3**: `min R ⊇ min R·thin Q` when `Q ⊑ R` and `R` is transitive — thinning below a
     coarser transitive preorder does not lose the minimum (mirrored at the folded `°`). -/
-public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (htrans : R ≫ R ⊑ R) :
+public theorem thinRel_comp_est_le {Q R : A ⟶ A} (hQR : Q ⊑ R) (hR : IsPreorder R) :
     thinRel Q ≫ est R ⊑ est R :=
-  le_est_iff.mpr ⟨thinRel_comp_est_cond1 Q, thinRel_comp_est_cond2 hQR htrans⟩
+  le_est_iff.mpr ⟨thinRel_comp_est_cond1 Q, thinRel_comp_est_cond2 hQR hR⟩
 
 /-- **Thin-introduction** (book p.194): `min R = min R·thin Q` when `Q ⊑ R`, `id ⊑ Q`, and `R`
     is transitive (mirrored at the folded `°`) — introducing a thinning step below a minimum
     leaves it unchanged.  Oriented as the book and the note's row write it, `est R` first. -/
-public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q)
-    (htrans : R ≫ R ⊑ R) : est R = thinRel Q ≫ est R :=
-  le_antisymm (thinRel_comp_est_step1 hreflQ) (thinRel_comp_est_le hQR htrans)
+public theorem thinRel_comp_est {Q R : A ⟶ A} (hQR : Q ⊑ R) (hQ : IsPreorder Q)
+    (hR : IsPreorder R) : est R = thinRel Q ≫ est R :=
+  le_antisymm (thinRel_comp_est_step1 hQ) (thinRel_comp_est_le hQR hR)
 
 /-! ### The (8.2) chain
 
@@ -450,7 +451,7 @@ public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
 /-- The prefixed-point premise of `thinning`'s second half: `Q°` walks out of the `F` handle by
     monotonicity, the transpose is swallowed by its own converse (`W ≜ F(∋)S`), `thin`'s second
     half, and `Q` transitive. -/
-public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (htrans : Q ≫ Q ⊑ Q)
+public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : IsPreorder Q)
     (hmono : Freyd.Alg.MonoAlg S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   calc S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
@@ -467,7 +468,7 @@ public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (htrans : Q �
     _ ⊑ Q° ≫ Q° ≫ (∋ A)° := comp_mono_left Q° (recip_eps_comp_thinRel_le Q)
     _ ⊑ Q° ≫ (∋ A)° := by
         rw [← Cat.assoc Q° Q° ((∋ A)°)]
-        exact comp_mono_right (recip_trans_of_trans htrans) ((∋ A)°)
+        exact comp_mono_right (recip_trans_of_trans hQ.2) ((∋ A)°)
 
 calc_steps thinning_prefixed
 
@@ -480,7 +481,7 @@ calc_steps thinning_prefixed
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
-    {S : F.obj A ⟶ A} (htrans : Q ≫ Q ⊑ Q) (hmono : Freyd.Alg.MonoAlg S Q) :
+    {S : F.obj A ⟶ A} (hQ : IsPreorder Q) (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
   apply le_Λ_comp_thinRel_iff.mpr
   refine ⟨?_, ?_⟩
@@ -493,7 +494,7 @@ public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
   · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q°·∋`, by the hylomorphism theorem
     apply hylo_le_of_prefixed I
     -- goal: `S° ≫ F.map (Q° ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q° ≫ (∋a)°`
-    exact thinning_prefixed htrans hmono
+    exact thinning_prefixed hQ hmono
 
 /-- **Corollary 8.1 (B&dM p.196)**: thinning at every step, then taking the `R°`-minimum, refines
     taking the `R°`-minimum of the plain catamorphism, mirrored
@@ -501,12 +502,12 @@ public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (I : InitialAlgebra F) {Q R : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hreflQ : Cat.id A ⊑ Q) (htransQ : Q ≫ Q ⊑ Q)
-    (htransR : R ≫ R ⊑ R) (hmono : Freyd.Alg.MonoAlg S Q) :
+    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : IsPreorder Q) (hR : IsPreorder R)
+    (hmono : Freyd.Alg.MonoAlg S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   calc relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R
-        ⊑ (Λ (relCata S) ≫ thinRel Q) ≫ est R := comp_mono_right (thinning I htransQ hmono) (est R)
-    _ = Λ (relCata S) ≫ est R := by rw [Cat.assoc, ← thinRel_comp_est hQR hreflQ htransR]
+        ⊑ (Λ (relCata S) ≫ thinRel Q) ≫ est R := comp_mono_right (thinning I hQ hmono) (est R)
+    _ = Λ (relCata S) ≫ est R := by rw [Cat.assoc, ← thinRel_comp_est hQR hQ hR]
 
 calc_steps thinning_est
 
