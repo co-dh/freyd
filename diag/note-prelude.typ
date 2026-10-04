@@ -97,12 +97,13 @@
   })
 }
 // The mark a relation string stands as; content (a branches group's own `∪`/`+`) passes through.
-#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
+#let rel-mark(x) = if type(x) != str { x } else if x == "=" { EQ } else if x == "≜" { DF } else if x == "⊑" { SQ } else if x == "⊒" { RQ } else { text(SLACK)[#x] }
 // A chain table's FORMULA CELL, calc style: the relation of the step INTO the column leads it.
 #let rel-lead(op, f) = if op == none { f } else [#rel-mark(op) #f]
 // Two steps read as one (a `dup` panel merged into the next): `=` is the unit, and an inclusion
-// composes only with itself — a `⊑` then a `⊒` relates nothing.
-#let rel-compose(a, b) = if a == none or b == "=" { a } else if a == "=" or a == b { b } else {
+// composes only with itself — a `⊑` then a `⊒` relates nothing.  `≜` is a unit too, and composed
+// with anything but itself it is no longer a definition: `≜` then `=` is `=`.
+#let rel-compose(a, b) = if a == none or a == b { a } else if b in ("=", "≜") { if a == "≜" { "=" } else { a } } else if a in ("=", "≜") { b } else {
   panic("lean-chain: a merged step reads " + a + " then " + b + ", which relates nothing")
 }
 // A TYPE CELL, from `diag-export --type`: the hom a declaration's arrows share, in the note's
@@ -430,7 +431,7 @@
         else { (s.at(1), s.at(1)) }
       // `none` opens a chain, and a connective between STATEMENTS (`IMP`, `IFF`, `and`) is the
       // note's, relating no two arrows; a relation between arrows is Lean's, and the note's must agree.
-      if s.at(0) in (EQ, SQ, RQ) {
+      if s.at(0) in (EQ, SQ, RQ, DF) {
         assert(prev != none, message: "lean-chain: " + win + " opens with a relation but nothing "
           + "precedes it; name the side it continues with `from:`")
         let (m, rel) = lean-rel(prev, win)

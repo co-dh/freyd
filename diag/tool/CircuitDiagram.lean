@@ -77,7 +77,7 @@ inductive OKind where
 
 -- How a label JOINS under a functor's name, recorded WHERE THE LABEL IS BUILT — the note's own
 -- rule, one copy for all three pictures in `diag/tool/Label.lean`.
-export Freyd.StrDiag (Join stxJoin applyLabel applyJoin)
+export Freyd.StrDiag (Join stxJoin applyLabel applyJoin factorList)
 
 inductive Obj where
   /-- `join` records, WHERE THE LABEL IS BUILT, how it sets under a functor's name.  Asking the
@@ -484,15 +484,6 @@ def runSeams (items : Array Pic) (objs : Array Obj) : Array (Nat × Array String
     if i + 1 < items.size && items[i]!.val.kindOf == some "fork" then
       out := out.push (i, items[i]!.outs.map (·.label))
   return out.qsort (fun a b => a.1 < b.1)
-
-/-- The factors of a composite, flattened: `≫` is associative and the picture of a run does not
-    record which way it was bracketed. -/
-partial def factorList (e : Expr) : Array Expr :=
-  match e.getAppFnArgs with
-  | (``Cat.comp, args) =>
-    if h : args.size ≥ 2 then factorList args[args.size - 2] ++ factorList args[args.size - 1]
-    else #[e]
-  | _ => #[e]
 
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none

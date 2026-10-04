@@ -393,6 +393,15 @@ def isComponent (e : Expr) : MetaM Bool := do
 def lastTwo (args : Array Expr) : Option (Expr × Expr) :=
   if h : args.size ≥ 2 then some (args[args.size - 2], args[args.size - 1]) else none
 
+/-- The factors of a composite, flattened: `≫` is associative and the picture of a run does not
+    record which way it was bracketed. -/
+partial def factorList (e : Expr) : Array Expr :=
+  match e.getAppFnArgs with
+  | (``Cat.comp, args) =>
+    if h : args.size ≥ 2 then factorList args[args.size - 2] ++ factorList args[args.size - 1]
+    else #[e]
+  | _ => #[e]
+
 /-- The WIRES a functor expression is: `Relator.comp F G` is not one wire but two NESTED, `G`
     outside `F`, and the identity relator is no wire at all.  Outermost first, as a wire stack is
     read left to right in the picture. -/

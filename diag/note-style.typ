@@ -386,6 +386,8 @@
   pad(right: pr, table(columns: cols, align: al, inset: (x: 9pt, y: 3pt), stroke: 0.4pt + luma(190), ..rows)) }
 
 #let EQ = text(luma(140))[$=$]
+// A chain step that only opens a definition (`FormulaRender.stepRel`'s `≜`).
+#let DF = text(luma(140))[$≜$]
 
 // The op lane is one glyph wide: `⊑`, `⊒` and `=` all measure 8.95pt here.  `layout` gives the
 // CELL's width, so a row that cannot fit picture and formula side by side stacks them itself.
