@@ -26,6 +26,9 @@
 #import "cetz-nodraw.typ" as cetz
 #import "cetz-nodraw.typ": d
 #let NODRAW = cetz.NODRAW
+#let PAGEW = 25cm
+#let PAGEH = 35cm
+#let MARGIN = 1.5cm
 
 /// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
 /// `#include`, so a chapter can tell whether it is the document or one file of it.
@@ -126,9 +129,9 @@
       let s = disp-of(here())
       if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
-        // In the margin left of the cell, out of the flow: a number column widened every `auto` first
-        // column and pushed a full-width table past the paper edge (inkfit: 0 hits in ch 7 here, 19 in flow).
-        place(left + top, dx: -1.5em, box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))); it.body
+        // In the PAGE margin, out of the flow: a number column widened every `auto` first column past the
+        // paper edge, and one em left of the cell lands on a list bullet or a neighbour's ink when nested.
+        place(left + top, dx: MARGIN - 1.5em - here().position().x, box(width: 1.2em, align(right, text(9pt, luma(140))[#n]))); it.body
       } else { it.body }
     }
   })
@@ -155,9 +158,6 @@
 }
 
 /// page: page numbers beat the unbroken column.  25cm is the widest exported picture, a four-part `⟺`.
-#let PAGEW = 25cm
-#let PAGEH = 35cm
-#let MARGIN = 1.5cm
 // Where a display sits on the page, for `./scripts/book pic`: `here()` is its top-left corner and
 // `measure` its extent, so a crop box is read off the layout instead of guessed from the text.
 // Under `--input nodraw=1` there is no ink to crop and this is the query's remaining cost: one
