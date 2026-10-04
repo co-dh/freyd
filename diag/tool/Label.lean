@@ -186,6 +186,10 @@ mutual
 partial def stxShow (s : Syntax) (brk : Array Name := #[]) : MetaM String := do
   let p := stxPeel s
   if let some (h, ops) := appParts p then return ← appSpell (← headShown h brk) ops brk
+  -- A NULL NODE IS A LIST OF SYNTAX, not a term: the formatter has no rule for the kind `null` and
+  -- threw `Unknown constant null`, so it is written as its children.
+  if p.isOfKind nullKind then
+    return " ".intercalate ((← p.getArgs.toList.mapM (stxShow · brk)).filter (· != ""))
   let t := (toString (← PrettyPrinter.ppTerm ⟨p⟩)).replace "«" "" |>.replace "»" ""
   return " ".intercalate (t.splitOn "\n" |>.map fun u => u.trimAscii.toString)
 
@@ -612,7 +616,12 @@ def branchesOnInput (f : Expr) : MetaM Bool := do
     -- no branch the picture draws either: `unstep`'s four cases on a pair of lists are its
     -- implementation, so its name stands, as a recursive map's does.
     unless ma.alts.size == 2 do return false
-    return ma.discrs.any (·.containsFVar x.fvarId!)
+    -- ONLY THE TWO SHAPES THE NOTE WRITES BY THEIR ARMS: a match on a carrier's own constructors
+    -- (`headLine` on `ConsList`) is opened by no picture (`sumArms` wants a `Sum`), so its name stands.
+    ma.discrs.anyM fun d => do
+      unless d.containsFVar x.fvarId! do return false
+      let t ← Meta.whnfD (← Meta.inferType d)
+      return t.isConstOf ``Bool || t.isAppOfArity ``Sum 2
 
 /-- A MAP GIVEN BY A `match` ON ITS INPUT IS WRITTEN BY WHAT IT DOES, so a NAME standing for one is
     opened until the match is in view; `none` where no delta reaches a match, and the name then

@@ -1,18 +1,15 @@
 # Handoff: def-table cells the exporter could not print
 
-Done (diag/tool/TypeRender.lean, `render`, last match arm):
-- plain functions, `Type`, `Prop` declarations: the type cell is the Lean type of the name-cell term,
-  the declaration applied to its NAMED binders (an `A → B` arrow has a hygienic binder and stays in
-  the type). Theorems that are no (in)equation are still refused.
+Done:
+- `--type` (TypeRender.render): plain functions, `Type`, `Prop` declarations print the Lean type of
+  the name-cell term (declaration at its named binders); `IsThinlist(Q,thinlist) : Prop`.
+- `--formula` def path (FormulaRender.render): a def whose value holds a matcher/recursor prints its
+  Lean equations (`head[l] = l, head([l]⧺a) = l`); a hom-valued `fun x y => P` prints `x R y ⟺ P`.
+- `Unknown constant null`: Label.branchesOnInput opened a 2-arm match on a non-Sum/Bool carrier, which
+  reached sectionShow → stxShow → ppTerm on a `null` list node. Both fixed; `head` rule for headLine.
 
-Left:
-- Item 4 `Paragraph.Q_eq`: `Unknown constant null`. Reproduced by labelling `graph headLine`
-  (scratch file Bisect.lean in the session scratchpad: walks the rhs subterms with `labelT`).
-  `headLine` is a 2-arm `match` on ConsList. Throw site in diag/tool/Label.lean map-label path not yet
-  pinned (`mapLabel`/`guardLabel` ~l.887, `declName?` l.495, `ctorName?` l.727).
-- Item 3: `fun x y => …` relation defs (Knapsack.Q/R/within, Paragraph.Q/R/ok/fits, Tour.R/Qc) are
-  refused by ExprReader.lean `checkSpelled` (lambda on the page). Plan: a formula-route selector
-  printing `x R y ⟺ body` from the def value's lambda telescope.
-- Name cells needing `diag_noted`/unexpanders in diag/StrDiagNames.lean (vocabulary for the note
-  rows): Tour.Tour, Tour.hd, Tour.nxt, Tour.cost, Tour.incost, Tour.outcost, Tour.replaceHead,
-  Paragraph.sqr, glue, new, headLine, widthFn, wasteFn, allFitP, partAlg, ListRel.total, *Fn/*AlgFn.
+Left (vocabulary, not mechanism): names with no printing rule, refused by ExprReader.checkSpelled —
+ListRel.total, ListRel.subseqP, Tour.{cost,replaceHead,Tour,outcost,nxt,incost,hd,droplAlgFn,
+droprAlgFn}, Paragraph.{wasteFn,widthFn,partAlg,allFitP,sqr,new,newAlgFn,glue,glueAlgFn},
+Knapsack.dropFn. Fix: `attribute [diag_noted] …` or an unexpander in diag/StrDiagNames.lean, or a
+rename in Lean to the book's word.
