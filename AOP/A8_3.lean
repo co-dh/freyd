@@ -862,6 +862,62 @@ public theorem isThinlist_iff (Q : dE A ⟶ dE A) (thinlist : dList A ⟶ dList 
     IsThinlist Q thinlist ↔ thinlist ⊑ subseq ∧ thinlist ≫ setify ⊑ setify ≫ thinRel Q :=
   ⟨fun h => ⟨h.sub, h.spec⟩, fun h => ⟨h.1, h.2⟩⟩
 
+/-- `bump(Q)` keeps a subsequence: the output of `thinlist(Q)` is a subsequence of its input. -/
+public theorem subseqP_of_thinlist (Q : dE A ⟶ dE A) :
+    ∀ {x ys : ConsList Unit A}, thinlist Q x ys → subseqP ys x
+  | ConsList.wrap _, _, h => by rw [thinlist_wrap] at h; subst h; exact subseqP.nil _
+  | ConsList.cons c d, ys, h => by
+    obtain ⟨r', hr', hb⟩ := (thinlist_cons Q c d ys).mp h
+    have ih := subseqP_of_thinlist Q hr'
+    cases r' with
+    | wrap _ => rw [bumpRel_wrap] at hb; subst hb; exact Or.inl ⟨rfl, subseqP.nil _⟩
+    | cons b xs =>
+      rcases (bumpRel_cons Q c b xs ys).mp hb with ⟨_, rfl⟩ | ⟨_, rfl⟩ | ⟨_, _, rfl⟩
+      · exact Or.inl ⟨rfl, subseqP.of_cons ih⟩
+      · exact Or.inr ih
+      · exact Or.inl ⟨rfl, ih⟩
+
+/-- For a preorder `Q`, every member of the input of `thinlist(Q)` has a `Q`-lower bound in its
+    output: reflexivity covers a kept element, transitivity passes on what a bumped head covered. -/
+public theorem thinlist_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    ∀ {x ys : ConsList Unit A}, thinlist Q x ys → ∀ z, inlistP x z → ∃ w, Q w z ∧ inlistP ys w
+  | ConsList.wrap _, _, _, _, hz => hz.elim
+  | ConsList.cons c d, ys, h, z, hz => by
+    have hrefl : ∀ a, Q a a := fun a => le_iff.mp hQ.1 a a rfl
+    have htrans : ∀ a b e, Q a b → Q b e → Q a e := fun a b e hab hbe =>
+      le_iff.mp hQ.2 a e ⟨b, hab, hbe⟩
+    obtain ⟨r', hr', hb⟩ := (thinlist_cons Q c d ys).mp h
+    have ih := thinlist_covers hQ hr'
+    cases r' with
+    | wrap _ =>
+      rw [bumpRel_wrap] at hb; subst hb
+      rcases hz with rfl | hz
+      · exact ⟨z, hrefl z, Or.inl rfl⟩
+      · obtain ⟨_, _, hw⟩ := ih z hz; exact hw.elim
+    | cons b xs =>
+      rcases (bumpRel_cons Q c b xs ys).mp hb with ⟨hcb, rfl⟩ | ⟨hbc, rfl⟩ | ⟨_, _, rfl⟩
+      · rcases hz with rfl | hz
+        · exact ⟨z, hrefl z, Or.inl rfl⟩
+        · obtain ⟨w, hwz, hw⟩ := ih z hz
+          rcases hw with rfl | hw
+          · exact ⟨c, htrans c w z hcb hwz, Or.inl rfl⟩
+          · exact ⟨w, hwz, Or.inr hw⟩
+      · rcases hz with rfl | hz
+        · exact ⟨b, hbc, Or.inl rfl⟩
+        · exact ih z hz
+      · rcases hz with rfl | hz
+        · exact ⟨z, hrefl z, Or.inl rfl⟩
+        · obtain ⟨w, hwz, hw⟩ := ih z hz; exact ⟨w, hwz, Or.inr hw⟩
+
+/-- B&dM's `thinlist(Q) ≜ ⦇[nil, bump(Q)]⦈` (p.200) implements `thin(Q)` when `Q` is a preorder. -/
+public theorem isThinlist_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    IsThinlist Q (thinlist Q) where
+  sub := le_iff.mpr fun _ _ h => subseqP_of_thinlist Q h
+  spec := le_iff.mpr fun x S h => by
+    obtain ⟨ys, hys, rfl⟩ := h
+    exact ⟨inlistP x, rfl, fun _ hy => inlistP_of_subseqP (subseqP_of_thinlist Q hys) hy,
+      thinlist_covers hQ hys⟩
+
 /-- **(8.6)** in `Rel` (book p.201), `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` with
     `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: the one hypothesis is that
     `thinlist` implements `thin(Q)`. -/
@@ -871,6 +927,12 @@ public theorem sort_comp_thinlist_le {«≼» : dE A ⟶ dE A}
     sortRel listRelator setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
   Freyd.Alg.sortRel_comp_thinlist_le listRelator (graph_map _) (ordered_coreflexive ≼) h.sub
     (ordered_comp_subseq_le ≼) h.spec
+
+/-- **(8.6)** in `Rel` (book p.201) at B&dM's own `thinlist(Q) ≜ ⦇[nil, bump(Q)]⦈`: the one
+    hypothesis left is the book's, that `Q` is a preorder. -/
+public theorem sort_comp_bump_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    sortRel listRelator setify ordered ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
+  sort_comp_thinlist_le (isThinlist_thinlist hQ)
 
 /-- **(8.7)** in `Rel` (book p.203), `sort(≼)·minlist R ⊑ min R`, with no hypothesis: `minlist(R)`
     is `setify est(R)`, so `ordered(≼)` drops by coreflexivity and `setify° setify` by `setify`
