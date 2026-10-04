@@ -122,10 +122,9 @@
 // `s: 100%`.  `sigs:` types the section's abstract letters; `frame: 5` is the ONE box every panel
 // of the section draws in, so a step's two panels line up under `trow`'s `align: horizon`, and
 // `top: 3` drops a lone bead to the height of the bead it stands against.
-// 11.6.4a/b are sub theorems of the fixed-point equation below, so all three rows of Theorem 6.2
-// share ONE table, headed by the fixed-point statement.  hylo_le_of_prefixed is a term chain ending
-// in its hypothesis, then two statement rows (adjunction, fold leastness), each a pair step: one
-// `lean(l, r)` call apiece so its two sides are one height.
+// 11.6.4a/b are sub theorems of Theorem 6.2, so all three chains share ONE table, headed by it.
+// Each chain is one Lean `calc`: hylo_le_of_prefixed is a term chain ending in its hypothesis, then
+// a chain of statements (adjunction, fold leastness, adjunction).
 
 // B&dM p. 142, mirrored into diagram order.  The `F` wire is born at the leading converse and dies
 // at the trailing algebra; every step shortens it, and by the last panel it is gone.  B&dM p. 143,
@@ -133,43 +132,19 @@
 // fires between them, and the `F` wire's top end walks from `α°` up to `S°`.  Theorem 6.2's two
 // inclusions are these two rows: one `⊑` is hylo_fixed
 // through @mu-laws, the other hylo_le_of_prefixed at the prefix point `μ`.
-#disp[#calc-table(cols: (1fr,), al: auto,
-  // hylo-fusion-eq header: Theorem 6.2, whose two inclusions are the Sub rows a and b
-  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
+#import "../generated/Freyd.Alg.hylo_fixed.calc.typ" as calc-hf
+#import "../generated/Freyd.Alg.hylo_le_of_prefixed_chain.calc.typ" as calc-hlc
+#import "../generated/Freyd.Alg.hylo_le_of_prefixed.calc.typ" as calc-hl
+#disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.hylo_eq_mu") \
     #src[hylomorphism theorem: a hylomorphism is the least fixed point of a certain recursion equation]],
-  [#lean-chain(
-    Sub("Freyd.Alg.hylo_fixed",
-      gloss: src[hylomorphism theorem: a prototypical 'divide and conquer' scheme — the term `S°` represents the
-        decomposition stage, `F(⦇S⦈°⦇R⦈)` the stage of solving the subproblems recursively, and `R` the
-        recombination stage; `R : FA⟶A`, `S : FB⟶B`, `α : FT⟶T` initial],
-      // lean:AOP.A6_3.hylo_fixed@67ca7394
-      (none, "Freyd.Alg.hylo_fixed_step1.lhs", src[the body at `⦇S⦈°⦇R⦈`]),
-      (EQ, "Freyd.Alg.hylo_fixed_step1.rhs", []),
-      (EQ, "Freyd.Alg.hylo_fixed_step2.rhs", src[`F(⦇R⦈)R=α⦇R⦈` — @cata-defining]),
-      (EQ, "Freyd.Alg.hylo_fixed_step3.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)` — @cata-defining, @relator-laws:3]),
-      (EQ, "Freyd.Alg.hylo_fixed_step4.rhs", src[`α` iso]),
-      // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
-    ),
-  )],
-  [#lean-chain(
-    Sub("Freyd.Alg.hylo_le_of_prefixed",
-      gloss: src[hylomorphism theorem: by Knaster–Tarski, the hylomorphism `⦇S⦈°⦇R⦈` is included in `X` if `X`
-        satisfies the associated recursion inequation],
-      (none, "Freyd.Alg.hylo_le_of_prefixed_step1.lhs", src[`Y:=⦇S⦈°\X`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step1.rhs", src[`⦇S⦈°α°=S°F(⦇S⦈°)`]),
-      (EQ, "Freyd.Alg.hylo_le_of_prefixed_step2.rhs", []),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed_step3.rhs", src[`⦇S⦈°(⦇S⦈°\X)⊑X` — @div-laws:4]),
-      (SQ, "Freyd.Alg.hylo_le_of_prefixed#h.rhs", src[`S°F(X)R⊑X`]),
-    ),
-    (
-      (IFF, ("Freyd.Alg.hylo_le_of_prefixed_prefix",),
-        src[`S·⊣S\` — @adj-all:10]),
-      (IMP, ("Freyd.Alg.hylo_le_of_prefixed_fold",),
-        src[`⦇R⦈=(μX : α°F(X)R)` — @cata-defining, @Freyd.Alg.relCata_le_of_prefixed, @adj-all:15]),
-      // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
-    ),
-  )],
+  // lean:AOP.A6_3.hylo_eq_mu@5da9c8e8
+  // lean:AOP.A6_3.hylo_fixed@67ca7394
+  // lean:AOP.A5_5.InitialAlgebra.recip_alpha_alpha@5dcef861
+  // lean:AOP.A6_2.relCata_le_of_prefixed@837a5bf7
+  lean-calc(calc-hf),
+  lean-calc(calc-hlc),
+  lean-calc(calc-hl),
 )]<hylo-mu>
 
 // B&dM Corollary 6.1, p.143: Theorem 6.2 at `R≜[R₁,R₂]`, `S≜[S₁,S₂]` over `F(X)=G(X)+H(X)`; the chain
