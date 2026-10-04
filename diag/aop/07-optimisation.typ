@@ -820,7 +820,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 #disp[#calc-table(cols: (1fr,), al: left + horizon, 
   // B&dM p.172: "By definition, an F-algebra S : A ← FA is monotonic on a relation R : A ← A if S·FR ⊆ R·S."
-  Thm(cols: 1)[`(𝟙×≥)(⊸ zero ∪ plus)⊑(⊸ zero ∪ plus)≥` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.MSS.mss_mono") \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
      branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
     // lean:AOP.A7_7_MSS.mss_mono@dcf943db
@@ -964,7 +964,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ])]<filter-defn>
 
 #disp[#calc-table(cols: 1fr, al: center + horizon, pr: 0pt, 
-  Thm(cols: 1)[`(𝟙×R°)(π₂ ∪ (p×𝟙) cons)⊑(π₂ ∪ (p×𝟙) cons)R°` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_mono") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
      // lean:AOP.A7_7_Filter.filter_mono@4da97239
@@ -992,7 +992,6 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ]<filter-mono>
 
 #let step = step.with(pw: 340pt)
-// §13.3.4 rebound `est-Rc-box` to `est(≥)`, which is what the pictures below were drawing.
 #disp[#calc-table(cols: (1fr, 4.4cm), al: (center + horizon, left + horizon), pr: 0pt, 
   Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and

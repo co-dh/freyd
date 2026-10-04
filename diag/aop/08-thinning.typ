@@ -91,7 +91,7 @@ row((
 [#disp[
    // lean:AOP.A8_1.thinRel_comp_est@eafff35f
 #calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[`est(R)⊑thin(Q) est(R)` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_step1") \
     #src[the `⊑` half: keeping everything is a thinning — `𝟙⊑Q`]],
      // lean:AOP.A8_1.thinRel_comp_est_step1@65f6cc95
   lean-chain(
@@ -102,7 +102,7 @@ row((
 ]<thin-intro>],
 [#disp[
 #calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[`thin(Q) est(R)⊑∋` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond1") \
     #src[the `⊒` half, first condition of the UP of `est` at `X≜thin(Q) est(R)` — @est-up]],
      // lean:AOP.A8_1.thinRel_comp_est_cond1@2c9241e0
   lean-chain(
@@ -116,7 +116,7 @@ row((
 
 #disp[
 #calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[`∈ thin(Q) est(R)⊑R°` \
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinRel_comp_est_cond2") \
     #src[the `⊒` half, second condition — `Q⊑R`, `R` transitive]],
      // lean:AOP.A8_1.thinRel_comp_est_cond2@1bf58dd7
   lean-chain(
