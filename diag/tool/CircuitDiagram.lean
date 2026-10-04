@@ -7,9 +7,9 @@
   of a composite is the composite of the trees, and every clause below is one operator.  Nothing
   here reads a formula string, a signature table or the note: the source and target OBJECT of every
   subterm is `Meta.inferType` of it, and the WIRE COUNT of an object is its own product structure —
-  which is why the Python generator's `circuit-sigs.json` has no counterpart here.
+  which is why no signature table exists for circuits.
 
-  THE MONOIDAL READING (`diag/CIRCUIT-GEN.md` §2-3).  A wire is an object, a box a morphism,
+  THE MONOIDAL READING.  A wire is an object, a box a morphism,
   composition runs left to right, and a product is TWO WIRES — never one wire labelled `A×B`.  A
   coproduct is the one object that stays ONE wire at a port: the tape fork is what opens it, and
   each arm's `open` generator splits or ends that wire according to its summand.
@@ -462,7 +462,7 @@ def seqPic (items₀ : Array Pic) (seams : Array (Nat × Array String)) (objs : 
     isMap := items.all (·.isMap) }
 
 /-- Which interior objects a run prints: an interior seam exactly when its object is ONE wire and
-    differs from both printed neighbours (CIRCUIT-GEN §3), written with the OBJECT's own name.  A
+    differs from both printed neighbours, written with the OBJECT's own name.  A
     port of several strands is named where the strands are MADE — after the fork that makes them
     (`runSeams`), or after the generator an arm opens its summand with (`tapePic`) — never here,
     where a coproduct's factors would be named on a wire the fork has not yet opened. -/
@@ -799,10 +799,10 @@ partial def recipPic (r : Expr) (src tgt : Obj) : MetaM Pic := do
     let p ← draw r
     if p.val.kindOf != some "box" then
       if let some r' ← pushRecip? r then return ← draw r'
-      throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame of \
-        CIRCUIT-GEN §3 row 8 — `cpanel` has no node for it"
+      throwError "`{← StrDiag.label r}°` writes `°` on a composite, which is the cup/cap frame \
+        that `cpanel` has no node for"
     -- A CONVERSE WITH A NAME OF ITS OWN is that name's own box, not the operand's mirrored: `∈`
-    -- is a primitive of `circuit-sigs.json`, so mirroring `∋` would chamfer it the wrong way.
+    -- is a primitive of its own, so mirroring `∋` would chamfer it the wrong way.
     let named ← StrDiag.namedRecip? r
     let lbl ← StrDiag.labelT (named.getD r)
     let flip := if named.isSome then p.val.flag "flip" else !(p.val.flag "flip")
