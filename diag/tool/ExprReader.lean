@@ -245,6 +245,8 @@ def hasPrintRule (env : Environment) (c : Name) : Bool :=
     which is what `moves`, `zip`, `N` and `F` are.  A constant WITH a rule that wrote its own name
     back is that rule's business, not this one's. -/
 def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
+  -- A label made only to COMPARE two terms (`drawnAlike`) is never written on the page.
+  if (← getOptions).getBool `diag.labelCompare then return
   let env ← getEnv
   let noted ← Lean.labelled `diag_noted
   let opts ← getOptions

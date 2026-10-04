@@ -434,6 +434,10 @@ def note_files(root=None, root_dir=None, ch=None, _seen=None):
         return []
     seen.add(ap)
     out = [path]
+    # An exporter OUTPUT is drawn from the note, never a source of it: listed, not walked, so an
+    # import `diag-regen` has yet to draw is listed instead of crashing the listing that draws it.
+    if ap.startswith(os.path.join(os.path.abspath(root_dir), "diag", "generated") + os.sep):
+        return out
     for inc in imports(path) + includes(path):
         out += note_files(root=inc, root_dir=root_dir, _seen=seen)
     return out
@@ -588,7 +592,8 @@ def generated_imports(root_dir=None):
     gen = os.path.join(root_dir, "diag", "generated")
     out = []
     files = [os.path.join(root_dir, PRELUDE)] + [p for n in NOTES for p in note_files(n, root_dir)]
-    for path in files:
+    # The outputs are what this lists, never where it reads: one not yet drawn has no text.
+    for path in (p for p in files if not os.path.abspath(p).startswith(gen + os.sep)):
         d = os.path.dirname(path)
         for ln in read(path).split("\n"):
             if ln[:1] + "".join(takewhile_alpha(ln[1:])) != "#import":

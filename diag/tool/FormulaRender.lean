@@ -290,7 +290,8 @@ partial def sameDrawn (a b : Expr) : MetaM Bool := do
     both print `f g`, and a law between them read as the tautology `f g = f g`. -/
 def drawnAlike (a b : Expr) : MetaM Bool := do
   if ← sameDrawn a b then return true
-  return (← labelT a).bare.typst == (← labelT b).bare.typst
+  withOptions (·.setBool `diag.labelCompare true) do
+    return (← labelT a).bare.typst == (← labelT b).bare.typst
 
 /-- Whether `B` is `A` with the definitions `ds` opened (or closed) and nothing else: both sides
     delta-expanded at `ds` (`deltaExpand` beta-reduces) draw one term. -/
@@ -430,24 +431,32 @@ def isLogic (c : Name) : MetaM Bool := do
     return (← Meta.inferType l).getAppFn.isFVar
 
 /-- Whether `c`'s premise `i`, a relation between arrows, is rewritten INSIDE its conclusion: in
-    `c`'s own generic statement each side of the conclusion contains a side of the premise
-    (`comp_mono_left : R ⊑ S → T;R ⊑ T;S`), so applying `c` is monotonicity or congruence around
-    that premise, not a law with it as its condition.  Read off the generic statement, where the
-    sides are bound variables, because the instantiated ones match only up to unfolding. -/
+    `c`'s own generic statement the conclusion's two sides are ONE context, every premise's lhs in
+    it on one side where its rhs is on the other (`comp_mono_left : R ⊑ S → T;R ⊑ T;S`; antitone
+    places swap them), so applying `c` is monotonicity or congruence around that premise, not a law
+    with it as its condition (`thinning_paths_step`'s `Q ⊑ R`, whose sides merely occur).  Read off
+    the generic statement, where the sides are bound variables, because the instantiated ones match
+    only up to unfolding. -/
 def around (c : Name) (i : Nat) : MetaM Bool := do
   let some ci := (← getEnv).find? c | return false
   Meta.forallTelescope ci.type fun xs concl => do
     let some x := xs[i]? | return false
-    let some (_, pl, pr) ← splitM (← Meta.inferType x) | return false
+    let some _ ← splitM (← Meta.inferType x) | return false
     let some (_, cl, cr) ← splitM concl | return false
-    return (pl.occurs cl && pr.occurs cr) || (pr.occurs cl && pl.occurs cr)
+    let sub (e a b : Expr) := e.replace fun y => if y == a then some b else none
+    let mark (k : String) (j : Nat) := mkConst (Name.mkSimple s!"_around_{k}{j}")
+    let mut (l, r) := (cl, cr)
+    for (y, j) in xs.toList.zipIdx do
+      let some (_, pl, pr) ← splitM (← Meta.inferType y) | continue
+      (l, r) := (sub (sub l pl (mark "P" j)) pr (mark "Q" j), sub (sub r pr (mark "P" j)) pl (mark "Q" j))
+    return l == r && ((mark "P" i).occurs l || (mark "Q" i).occurs l)
 
 /-- Whether law `c`, as its reason cell prints it, reads as a tautology: its two sides one label,
     as `graph_comp`'s `f g = f g`, the `graph` coercion unprinted.  Such a law is no reason. -/
 def readsAlike (c : Name) : MetaM Bool := do
   let some ci := (← getEnv).find? c | throwError "no such declaration: {c}"
   -- In the scope and spacing `render` prints the reason cell with.
-  withDeclScope c do withSpaced true do
+  withDeclScope c do withSpaced true do withOptions (·.setBool `diag.labelCompare true) do
   Meta.forallTelescope (← nameSelf c ci.type) fun _ b => do
     let some (_, l, r) := split b | return false
     return (← labelT l (some r)).bare.typst == (← labelT r (some l)).bare.typst
@@ -462,7 +471,7 @@ def readsAlike (c : Name) : MetaM Bool := do
     sides only PRINT alike (`graph_comp`, `graph` unprinted) is that coercion; on a step whose sides
     differ on the page the law printing alike is the label dropping a factor (`X 𝟙 = X` by
     `Cat.comp_id`), and it is the step's reason. -/
-partial def lawsIn (coerced : Bool) (e : Expr) : MetaM (Array Law) := do
+partial def lawsIn (coerced : MetaM Bool) (e : Expr) : MetaM (Array Law) := do
   match e with
   | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn coerced b
   | .letE _ _ v b _ => return (← lawsIn coerced v) ++ (← lawsIn coerced (b.instantiate1 v))
@@ -499,7 +508,10 @@ partial def lawsIn (coerced : Bool) (e : Expr) : MetaM (Array Law) := do
     -- A law applied short of its premise (`relCata_le_of_prefixed I`, a `⟹` step) concludes under it.
     Meta.forallTelescope concl fun _ concl => do
       let some (_, l, r) ← splitM concl | return inner
-      let alike ← if coerced then pure ((← drawnAlike l r) || (← readsAlike c)) else sameDrawn l r
+      -- The instance's labels are asked only on a coerced step: elsewhere they decide nothing, and
+      -- an instance may hold a raw algebra lambda no label writes (`qsort_rec`'s `fun p q => …`).
+      let alike ← if ← sameDrawn l r then pure true else if ← readsAlike c then coerced
+        else if ← coerced then drawnAlike l r else pure false
       return if alike then inner else inner.push (.thm c)
   | _ => return #[]
 
@@ -545,11 +557,13 @@ def calcFile (declName : Name) : MetaM String := do
     -- A step opening ONE definition has that definition as its reason, whatever bracketing the
     -- proof does around it (`graph_comp` then `rfl` to reach `paths`).
     let laws ← if c?.any (rel == "≜" && env.contains ·) then pure (c?.toArray.map Law.thm) else do
-      -- A step between statements has no two pictures a coercion could make alike.
-      let coerced ← if c?.isNone then pure false else do
-        let (_, st) ← sideM (step i, none, [], [])
-        let some (_, l, r) := split st | throwError "{step i}: its statement relates no two sides"
-        drawnAlike l r
+      -- A step between statements has no two pictures a coercion could make alike.  Over the step's
+      -- binders as free variables: `dropUnits` unifies, and a metavariable side leaves that stuck.
+      let coerced : MetaM Bool := if c?.isNone then pure false else do
+        let some ci := env.find? (step i) | throwError "{step i}: no such declaration"
+        Meta.forallTelescope ci.type fun _ st => do
+          let some (_, l, r) := split st | throwError "{step i}: its statement relates no two sides"
+          drawnAlike l r
       pure (← lawsIn coerced v).toList.eraseDups.toArray
     -- A hypothesis prints as its own statement: the `#h` selector of the step that binds it.
     let lawSel : Law → String | .thm c => c.toString | .hyp h => s!"{step i}#{h}"
