@@ -408,6 +408,20 @@ public theorem pathF_map_eq_junc {A A' X X' : RelSet.{0}} (R : A ⟶ A') (S : X 
       and_false, exists_false, or_false, false_or, exists_eq_left', exists_eq_right']
       <;> exact Iff.rfl
 
+/-- The left injection `l` of `Rel(Set)`'s coproduct is the graph of `inl`. -/
+public theorem sumCop_u₁_eq (A B : RelSet.{0}) : (sumCop A B).u₁ = RelSet.graph Sum.inl := rfl
+
+/-- The right injection `r` of `Rel(Set)`'s coproduct is the graph of `inr`. -/
+public theorem sumCop_u₂_eq (A B : RelSet.{0}) : (sumCop A B).u₂ = RelSet.graph Sum.inr := rfl
+
+/-- `l` on a point: `a ↦ l(a)`. -/
+public theorem sumCop_u₁_apply (A B : RelSet.{0}) (a : A.carrier) (s : A.carrier ⊕ B.carrier) :
+    (sumCop A B).u₁ a s ↔ s = Sum.inl a := Iff.rfl
+
+/-- `r` on a point: `b ↦ r(b)`. -/
+public theorem sumCop_u₂_apply (A B : RelSet.{0}) (b : B.carrier) (s : A.carrier ⊕ B.carrier) :
+    (sumCop A B).u₂ b s ↔ s = Sum.inr b := Iff.rfl
+
 /-- `F(∋,𝟙)%∋ = [𝟙 P(inl), cpl P(inr)]` (book p.198's `ΛF(∈,id) = id + cpl`): a set of layer
     vertices injects whole, and beside a partial path `cpl` pairs the path with each vertex. -/
 public theorem Λ_pathF_map_eps_id (A X : RelSet.{0}) :

@@ -222,13 +222,28 @@ row((
   [the cost of [a₀,…,aₙ] is wt(a₀,a₁)+…+wt(aₙ₋₁,aₙ)],
   [#leann("Freyd.Alg.pathR")], [#leant("Freyd.Alg.pathR")],
   [#leanf("Freyd.Alg.pathR")],
-  [path xs is related to path ys when cost(xs) ≤ cost(ys)],
+  [xs is cheaper than ys],
+  [#leann("Freyd.Alg.RelSet.ListRel.nelist")], [#leant("Freyd.Alg.RelSet.ListRel.nelist")],
+  [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist")],
+  [L(∋) relates a list of layers to every path that chooses one vertex from each layer],
   [#leann("Freyd.Alg.minpath")], [#leant("Freyd.Alg.minpath")],
-  [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist"), #leanf("Freyd.Alg.minpath_spec")],
+  [#leanf("Freyd.Alg.minpath_spec")],
   [the input [x₀,…,xₙ] : L(PA) is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and minpath returns a cheapest one],
   [#leann("Freyd.Alg.pathQ")], [#leant("Freyd.Alg.pathQ")],
   [#leanf("Freyd.Alg.pathQ")],
   [like R, and the two paths also start at the same vertex: head(xs) = head(ys)],
+  [#leann("Freyd.Alg.sumCop_u₁_eq")], [#leant("Freyd.Alg.sumCop_u₁_eq")],
+  [#leanf("Freyd.Alg.sumCop_u₁_apply.mapsto")],
+  [mark a value as the left alternative],
+  [#leann("Freyd.Alg.sumCop_u₂_eq")], [#leant("Freyd.Alg.sumCop_u₂_eq")],
+  [#leanf("Freyd.Alg.sumCop_u₂_apply.mapsto")],
+  [mark a value as the right alternative],
+  [#leann("Freyd.Alg.cplMap")], [#leant("Freyd.Alg.cplMap")],
+  [#leanf("Freyd.Alg.cplMap")],
+  [pair every element of the set with the value beside it],
+  [#leann("Freyd.Alg.cprMap")], [#leant("Freyd.Alg.cprMap")],
+  [#leanf("Freyd.Alg.cprMap")],
+  [pair the value beside the set with every element of the set],
   [#leann("Freyd.Alg.Λ_pathF_map_eps_id")], [#leant("Freyd.Alg.Λ_pathF_map_eps_id")],
   [#leanf("Freyd.Alg.Λ_pathF_map_eps_id")],
   [cpl transpose: from layer x and a set of paths ps, choose a vertex a ∈ x],
@@ -251,6 +266,13 @@ row((
 // lean:AOP.A8_2_Exec.relCata_pathF_eps_eq_nelist@c0422a4d
 // lean:AOP.A8_2_Exec.minpath_spec@15aa3287
 // lean:AOP.A8_2_Exec.minpath@6e6b277d
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.nelist@8f93f06d
+// lean:AOP.A8_2.sumCop_u₁_eq@77ceb1de
+// lean:AOP.A8_2.sumCop_u₂_eq@345d6352
+// lean:AOP.A8_2.sumCop_u₁_apply@950600cc
+// lean:AOP.A8_2.sumCop_u₂_apply@774edfff
+// lean:AOP.A5_6.cplMap@a82b3919
+// lean:AOP.A5_6.cprMap@379d6c37
 // lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
 // lean:AOP.A8_2.pathStep@f546a21f

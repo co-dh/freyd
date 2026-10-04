@@ -289,15 +289,25 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.dNE] def unexpandDNE : Unexpander
-  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
   | _ => throw ()
+
+-- The relator's ACTION on an arrow is the same letter applied: `nelist R` is `L(R)`.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.nelist] def unexpandNEListMap : Unexpander
+  | `($_ $R) => `($(mkIdent (Name.mkSimple "L")) $R)
+  | _ => throw ()
+
+-- The NATURAL NUMBERS are the note's `ℕ`, keyed on the constant `Nat`.
+open Lean PrettyPrinter Delaborator in
+@[delab const.Nat] def delabNat : Delab := `($(mkIdent (Name.mkSimple "ℕ")))
 
 -- The CARRIER needs the clause as much as the object: `NEList A` is an `abbrev`, so the term keeps
 -- the abbreviation and the `ConsList A A` delaborator below never sees it — a seam between two
 -- declared objects is labelled from the carrier and would print the Lean name.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.ListRel.NEList] def unexpandNEListType : Unexpander
-  | `($_ $A) => `($(mkIdent (Name.mkSimple "list⁺")) $A)
+  | `($_ $A) => `($(mkIdent (Name.mkSimple "L")) $A)
   | _ => throw ()
 
 -- THE LEAF TYPE SAYS WHICH LIST A CONS-LIST IS, and a leaf carrying an ELEMENT is a one-element
@@ -315,7 +325,7 @@ def delabConsList : Delab := do
   -- nothing is a list of units and not a non-empty list of them.
   if ← Meta.isDefEq args[0]! (mkConst ``Unit) then `([$(← withAppArg delab)])
   else if ← Meta.isDefEq args[0]! args[1]! then
-    `($(mkIdent (Name.mkSimple "list⁺")) $(← withAppArg delab))
+    `($(mkIdent (Name.mkSimple "L")) $(← withAppArg delab))
   else failure
 
 open Lean PrettyPrinter Delaborator SubExpr in
@@ -980,6 +990,16 @@ open Lean PrettyPrinter Delaborator SubExpr in
   let i ← withBindingDomain (withNaryArg 0 delab)
   let inner ← withBindingBody `i delab
   spliceIndex inner i
+
+open Lean PrettyPrinter Delaborator SubExpr in
+/-- THE POWER OBJECT'S CARRIER IS THE POWER OBJECT.  `pow B` is `⟨Sub B⟩`, `Sub B = B → Prop`, so a
+    TYPE that is a non-dependent pi into `Prop` is that object's carrier and prints as `pow` does,
+    `P A` — `list⁺(V → Prop)` is `list⁺(PV)`.  Read off the pi's codomain, not a printed string. -/
+@[delab forallE] def delabPowCarrier : Delab := do
+  let .forallE _ _ b _ ← getExpr | failure
+  guard (b.isProp && !b.hasLooseBVars)
+  let a ← withBindingDomain delab
+  `($(mkIdent `P) $a)
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- `Vec(n)`'s object is the same `A[n]`: the object the lane `[n]` carries is spelled like the
