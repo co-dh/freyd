@@ -26,5 +26,9 @@ if [ -f "$base.deps" ] && [ -f "$base.stamp" ] && [ -f "$pdf" ] \
   exit 0
 fi
 rm -f "$base.stamp"
-typst compile --root . --deps "$base.deps" --deps-format zero "$src" "$pdf" "$@"
+# The compile's warnings kept beside its stamp: a skipped compile still answers `scripts/linkcheck`
+# ("did not converge") for the pdf it left.
+typst compile --root . --deps "$base.deps" --deps-format zero "$src" "$pdf" "$@" 2> "$base.log" \
+  || { cat "$base.log" >&2; exit 1; }
+cat "$base.log" >&2
 key "$@" > "$base.stamp"
