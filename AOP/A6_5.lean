@@ -16,6 +16,7 @@ module
 public import AOP.A6_2
 public import AOP.A6_3
 public import AOP.A5_7
+import AOP.CalcSteps
 
 universe u
 
@@ -681,15 +682,14 @@ public theorem thm64_backward (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶
   rw [recip_id, Cat.id_comp] at s2
   exact le_trans s1 s2
 
-/-- The claim in Theorem 6.4, first step: `Rf ⊑ F(f)α` shunted and conversed to `R°F(f) ⊑ fα°`,
-    against `F(f)` entire. -/
-public theorem thm64_claim_step1 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜}
-    {R : F.obj A ⟶ A} {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
-    R° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
+/-- The claim in Theorem 6.4, its shunting half: `Rf ⊑ F(f)α` shunted and conversed to
+    `R°F(f) ⊑ fα°`, against `F(f)` entire, gives `R° ⊑ fα°F(f°)`. -/
+public theorem thm64_recip_le (I : InitialAlgebra F) {A : 𝒜} {R : F.obj A ⟶ A} {f : A ⟶ I.t}
+    (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) : R° ⊑ f ≫ I.α° ≫ F.map f° := by
   have hE : 𝟙 (F.obj A) ⊑ F.map f ≫ F.map f° := by
     rw [← F.map_comp, ← F.map_id]; exact F.map_mono (map_entire_le hf)
-  have s1 := comp_mono_left R° (comp_mono_right hE (M.mem A))
-  rw [Cat.id_comp] at s1
+  have s1 := comp_mono_left R° hE
+  rw [Cat.comp_id] at s1
   have h2 := recip_mono ((map_shunt_right hf R _).mp hcomm)
   simp only [Allegory.recip_comp, Allegory.recip_recip] at h2
   have h3 : R° ≫ F.map f ⊑ f ≫ I.α° := by
@@ -698,22 +698,22 @@ public theorem thm64_claim_step1 (I : InitialAlgebra F) (M : Membership F) {A : 
     have hs := comp_mono_left f (comp_mono_left I.α° (Relator.map_is_map F hf).2)
     rw [Cat.comp_id] at hs
     exact le_trans this hs
-  have s2 := comp_mono_right h3 (F.map f° ≫ M.mem A)
-  simp only [Cat.assoc] at s1 s2
+  have s2 := comp_mono_right h3 (F.map f°)
+  simp only [Cat.assoc] at s2
   exact le_trans s1 s2
 
-/-- The claim in Theorem 6.4, second step: `member` is lax natural. -/
-public theorem thm64_claim_step2 (I : InitialAlgebra F) (M : Membership F) {A : 𝒜}
-    {f : A ⟶ I.t} : f ≫ I.α° ≫ F.map f° ≫ M.mem A ⊑ f ≫ I.α° ≫ M.mem I.t ≫ f° :=
-  comp_mono_left f (comp_mono_left I.α° (M.lax f°))
-
 /-- **Theorem 6.4**, the claim (B&dM p.150): `R° member ⊑ f α° member f°`, so `R° member` is
-    inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive). -/
+    inductive when `α° member` is (Ex 6.16, conjugation, then p.147, below an inductive):
+    `R° ⊑ fα°F(f°)`, then `member` lax natural. -/
 public theorem thm64_claim (I : InitialAlgebra F) (M : Membership F) {A : 𝒜} {R : F.obj A ⟶ A}
     {f : A ⟶ I.t} (hf : Map f) (hcomm : R ≫ f ⊑ F.map f ≫ I.α) :
-    R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° := by
-  rw [Cat.assoc]
-  exact le_trans (thm64_claim_step1 I M hf hcomm) (thm64_claim_step2 I M)
+    R° ≫ M.mem A ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° :=
+  calc R° ≫ M.mem A ⊑ f ≫ I.α° ≫ F.map f° ≫ M.mem A := by
+        rw [← Cat.assoc I.α°, ← Cat.assoc f]; exact comp_mono_right (thm64_recip_le I hf hcomm) _
+    _ ⊑ f ≫ (I.α° ≫ M.mem I.t) ≫ f° := by
+        rw [Cat.assoc I.α°]; exact comp_mono_left f (comp_mono_left I.α° (M.lax f°))
+
+calc_steps thm64_claim
 
 /-- **B&dM p.148**, "the central result": `member(F)·α°` (mirrored: `α° ≫ member`) is inductive.
     Given `X/(α°member) ⊑ X`, the points `W` that `X` reaches from everywhere satisfy

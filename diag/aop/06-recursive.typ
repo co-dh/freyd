@@ -343,17 +343,12 @@
 )]<thm64>
 
 // B&dM Theorem 6.4 (the claim), p.150
+#import "../generated/Freyd.Alg.thm64_claim.calc.typ" as calc-64c
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.thm64_claim") \
     #src[`R°member` is below `α°member` conjugated by `f`, so it is inductive when `α°member` is]],
     // lean:AOP.A6_5.thm64_claim@4b02dea3
-  lean-chain(
-    (none, "Freyd.Alg.thm64_claim_step1.lhs", []),
-    (SQ, "Freyd.Alg.thm64_claim_step1.rhs", src[`R° ⊑ f α° F(f°)` — `R f ⊑ F(f) α`, shunting, converse]),
-    // lean:AOP.A6_5.thm64_claim_step1@b4925181
-    (SQ, "Freyd.Alg.thm64_claim_step2.rhs", src[`member` lax natural]),
-    // lean:AOP.A6_5.thm64_claim_step2@3e9c7464
-  ),
+  lean-calc(calc-64c),
 )]<thm64-claim>
 
 == Sorting by selection
