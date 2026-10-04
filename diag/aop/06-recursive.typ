@@ -495,20 +495,13 @@
 )]<split-step>
 // B&dM 6.6f, p.155, the program: by the hylomorphism theorem `X=⦇[nil,split°]⦈°flatten` solves the
 // equation, and is its least solution (lean:AOP.A6_6e_Quicksort.qsort_least@3e9893c3).
+#import "../generated/Freyd.Alg.RelSet.Sort.qsort_rec.calc.typ" as calc-qsort-rec
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Sort.qsort_rec") \
     #src[quicksort returns `[]` on `[]`, and otherwise splits into `(x,a,y)`, sorts `x` and `y` and
      joins them around `a`]],
      // lean:AOP.A6_6e_Quicksort.qsort_rec@acd4b32a
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Sort.qsort_rec.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.lhs", src[hylomorphism theorem]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step0@1716665d
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step1.rhs", src[`F(X)[nil,join]=[nil,(X×𝟙×X)join]`]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step1@8fce50a6
-    (EQ, "Freyd.Alg.RelSet.Sort.qrec_step2.rhs", src[coproduct]),
-     // lean:AOP.A6_6e_Quicksort.qrec_step2@4ee6ccce
-  ),
+  lean-calc(calc-qsort-rec),
 )]<qsort-rec>
 // B&dM p.157 (Ex 6.30): insertion sort, from `perm = ⦇[nil,add]⦈` (§5.6) with `add` putting an
 // element anywhere in a list (lean:AOP.A6_6c_ISort.add@88935b2b).

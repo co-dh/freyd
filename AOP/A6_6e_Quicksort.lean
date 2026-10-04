@@ -75,7 +75,7 @@ def inorderedP : Tree A → Prop
       ∧ (∀ b, intreeP l b → R b a) ∧ (∀ b, intreeP r b → R a b)
 
 /-- `F(S)` followed by an algebra `[T, U]` is the algebra `[T, (S×𝟙×S)U]`. -/
-theorem TFmap_comp_junc {C D E : RelSet.{0}} (S : C ⟶ D) (T : dL Unit ⟶ E)
+public theorem TFmap_comp_junc {C D E : RelSet.{0}} (S : C ⟶ D) (T : dL Unit ⟶ E)
     (U : (⟨D.carrier × A × D.carrier⟩ : RelSet.{0}) ⟶ E) :
     (TB.F A).map S ≫ junc (sumCop (dL Unit) ⟨D.carrier × A × D.carrier⟩) T U
       = junc (sumCop (dL Unit) ⟨C.carrier × A × C.carrier⟩) T
@@ -439,13 +439,6 @@ calc_steps quicksort
 
 /-! ## The quicksort recursion (p.155) -/
 
-/-- **p.155, recursion step 0**: `X = [nil, split°]° F(X) [nil, join]` for `X = flatten ⦇[nil, split°]⦈°`
-    — the hylomorphism theorem. -/
-public theorem qrec_step0 {X : dList A ⟶ dList A}
-    (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
-    X = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
-        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by
-  subst hX; exact (hylo_fixed (TB.initial A) _ _).symm
 
 /-- **p.155, recursion step 1**: `[nil, split°]° F(X) [nil, join] = [nil, split°]° [nil, join (X×id×X)]`
     — `F` acting on `X` passes into the `fork` branch of the algebra. -/
@@ -469,7 +462,21 @@ public theorem qrec_step2 (X : dList A ⟶ dList A) :
 public theorem qsort_rec {X : dList A ⟶ dList A}
     (hX : X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten) :
     X = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join :=
-  (qrec_step0 hX).trans ((qrec_step1 X).trans (qrec_step2 X))
+  calc X = (⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)⦈)°
+        ≫ flatten := hX
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map ((⦇(junc (sumCop (dL Unit) (dLAL A)) wrapR split°
+          : (TB.F A).obj (dList A) ⟶ dList A)⦈)° ≫ flatten)
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := (hylo_fixed (TB.initial A) _ _).symm
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split° : (TB.F A).obj (dList A) ⟶ dList A)°
+        ≫ (TB.F A).map X ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR join := by rw [← hX]
+    _ = (junc (sumCop (dL Unit) (dLAL A)) wrapR split°)°
+        ≫ junc (sumCop (dL Unit) (dLAL A)) wrapR (rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join) := by
+      rw [TFmap_comp_junc]
+    _ = wrapR° ≫ wrapR ∪ split ≫ rprodMap X (rprodMap (𝟙 (dE A)) X) ≫ join := by
+      rw [junc_recip_junc, Allegory.recip_recip]
+
+calc_steps qsort_rec
 
 /-- **The quicksort recursion is the least solution (B&dM p.155)**: every `Y` with
     `nil nil° ∪ join (Y×id×Y) split ⊆ Y` contains `flatten ⦇[nil, split°]⦈°`. -/
