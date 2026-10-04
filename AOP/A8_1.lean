@@ -440,6 +440,13 @@ public theorem monoAlg_recip_le {Q : A ⟶ A} {S : F.obj A ⟶ A}
   have h := recip_mono hmono
   rwa [Allegory.recip_comp, Allegory.recip_comp, ← Relator.preservesRecip_of_tabular F Q] at h
 
+/-- `S°F(∈)·Λ(F(∋)S) ⊑ ∈`: the transpose swallowed by its own converse, `recip_comp_Λ_le_recip_eps`
+    at `W ≜ F(∋)S` with `F(∋)° = F(∈)`. -/
+public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
+    S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ⊑ (∋ A)° := by
+  rw [Relator.preservesRecip_of_tabular F (∋ A), ← Cat.assoc, ← Allegory.recip_comp]
+  exact recip_comp_Λ_le_recip_eps (F.map (∋ A) ≫ S)
+
 /-- The prefixed-point premise of `thinning`'s second half: `Q°` walks out of the `F` handle by
     monotonicity, the transpose is swallowed by its own converse (`W ≜ F(∋)S`), `thin`'s second
     half, and `Q` transitive. -/
@@ -447,18 +454,16 @@ public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (htrans : Q �
     (hmono : Freyd.Alg.MonoAlg S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   calc S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
-        ⊑ Q° ≫ S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q := by
-        rw [F.map_comp Q° ((∋ A)°),
-          Cat.assoc (F.map Q°) (F.map ((∋ A)°)) (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q),
-          ← Cat.assoc S° (F.map Q°) (F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q),
+        = S° ≫ F.map Q° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q := by
+        rw [F.map_comp Q° ((∋ A)°), Cat.assoc]
+    _ ⊑ Q° ≫ S° ≫ F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q := by
+        rw [← Cat.assoc S° (F.map Q°) (F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q),
           ← Cat.assoc Q° S° (F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q)]
         exact comp_mono_right (monoAlg_recip_le hmono) _
     _ ⊑ Q° ≫ (∋ A)° ≫ thinRel Q := by
-        rw [← Cat.assoc S° (F.map ((∋ A)°)) (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q),
-          Relator.preservesRecip_of_tabular F (∋ A), ← Allegory.recip_comp,
-          ← Cat.assoc ((F.map (∋ A) ≫ S)°) (Λ (F.map (∋ A) ≫ S)) (thinRel Q)]
-        exact comp_mono_left Q°
-          (comp_mono_right (recip_comp_Λ_le_recip_eps (F.map (∋ A) ≫ S)) (thinRel Q))
+        rw [← Cat.assoc (F.map ((∋ A)°)) (Λ (F.map (∋ A) ≫ S)) (thinRel Q),
+          ← Cat.assoc S° (F.map ((∋ A)°) ≫ Λ (F.map (∋ A) ≫ S)) (thinRel Q)]
+        exact comp_mono_left Q° (comp_mono_right recip_comp_map_recip_eps_comp_Λ_le (thinRel Q))
     _ ⊑ Q° ≫ Q° ≫ (∋ A)° := comp_mono_left Q° (recip_eps_comp_thinRel_le Q)
     _ ⊑ Q° ≫ (∋ A)° := by
         rw [← Cat.assoc Q° Q° ((∋ A)°)]

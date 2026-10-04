@@ -171,8 +171,9 @@ public theorem map_sort_comp_listcp_le
         rw [← Cat.assoc, ← Cat.assoc (powerRel f)]
         exact comp_mono_right h88 filterp
     _ ⊑ cpMap F A ≫ powerRel f ≫ existsImage p ≫ sort ≼ := comp_mono_left _ (comp_mono_left _ h89)
+    _ = cpMap F A ≫ existsImage f ≫ existsImage p ≫ sort ≼ := by rw [powerRel_map hf]
     _ = cpMap F A ≫ existsImage (f ≫ p) ≫ sort ≼ := by
-        rw [powerRel_map hf, ← Cat.assoc (existsImage f), ← existsImage_comp]
+        rw [← Cat.assoc (existsImage f), ← existsImage_comp]
     _ = Λ (F.map (∋ A) ≫ f ≫ p) ≫ sort ≼ := by
         rw [← Cat.assoc, show cpMap F A = Λ (F.map (∋ A)) from rfl, Λ_absorption]
 

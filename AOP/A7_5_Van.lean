@@ -1104,6 +1104,12 @@ public theorem prog_le_greedy :
             ConsList.cons s t, ConsList.cons a (ConsList.wrap ()), ConsList.cons s t,
             rfl, rfl, prefixP.refl _⟩)⟩
 
+/-- **@van-laws' greedy row**: Theorem 7.2 at `R;H`, whose hypothesis is `van_mono_alg` and whose
+    transitivity is `RH_trans`. -/
+public theorem van_greedy :
+    (⦇Λ (Salg amount N) ≫ est (RH A)⦈ : dList A ⟶ dSched A) ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) :=
+  greedy (initial Unit A) RH_trans van_mono_alg
+
 /-- **van-laws** (B&dM §7.5, p.188): the fewest secure segments the transactions can be cut
     into are one pass along them, the next transaction glued onto the open segment wherever
     that segment stays secure and the van called where it does not —
@@ -1117,7 +1123,7 @@ public theorem van_laws
     ⦇progAlg amount N⦈ ⊑ Λ (partition ≫ list (secure amount N)) ≫ est (R A) :=
   calc (⦇progAlg amount N⦈ : dList A ⟶ dSched A)
       ⊑ ⦇Λ (Salg amount N) ≫ est (RH A)⦈ := relCata_mono (initial Unit A) prog_le_greedy
-    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) := greedy (initial Unit A) RH_trans van_mono_alg
+    _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (RH A) := van_greedy
     _ ⊑ Λ ⦇Salg amount N⦈ ≫ est (R A) := comp_mono_left _ (est_mono RH_le_R)
     _ = Λ (partition ≫ list (secure amount N)) ≫ est (R A) := by rw [van_spec hsingle]
 

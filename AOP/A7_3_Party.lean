@@ -460,6 +460,21 @@ public theorem party_pair_step :
           ≫ est((rprodMap (R rating) (R rating))°) :=
   pair_est_le includeR excludeR (R rating) (R rating)
 
+/-- **party-laws, greedy row**: Theorem 7.2 at `(R×R)°`, its hypothesis `party_mono`. -/
+public theorem party_greedy :
+    (⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ : dRose A ⟶ _)
+      ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) :=
+  greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)
+
+/-- **party-laws, Ex 7.38 row**: `est((R×R)°) frac(choose,∋) est(R°) ⊑ E(choose) est(R°)` —
+    `est_Λ_est_le` at `Q := (R×R)°`, `T := choose`, with `(R×R)°choose ⊑ choose R°`. -/
+public theorem party_est_choose :
+    est((rprodMap (R rating) (R rating))°) ≫ Λ (choose (A := A)) ≫ est((R rating)°)
+      ⊑ existsImage choose ≫ est((R rating)°) := by
+  have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
+    have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
+  exact est_Λ_est_le (chooseR_monotonic rating) hRtrans'
+
 /-- **party-laws (the derivation's headline)**: the greedy program refines the specification,
     `⦇⟨include, π₂ list(Λ(choose) est(R°)) concat⟩⦈ Λ(choose) est(R°) ⊑ Λ(party) est(R°)` —
     the best of every guest list the president allows is one pass up the tree, each subtree
@@ -490,13 +505,12 @@ public theorem party_laws :
     _ ⊑ ⦇S%∋ ≫ est((rprodMap (R rating) (R rating))°)⦈ ≫ Λ choose ≫ est((R rating)°) :=
         comp_mono_right (relCata_mono (RT.initial A) (party_pair_step rating)) _
     _ ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ est((rprodMap (R rating) (R rating))°) ≫ Λ choose ≫ est((R rating)°) :=
-        le_trans (comp_mono_right
-          (greedy (RT.initial A) (RR_recip_trans rating) (party_mono rating)) _) (le_of_eq (Cat.assoc _ _ _))
-    _ ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) := by
-        have hRtrans' : (R rating)° ≫ (R rating)° ⊑ (R rating)° := by
-          have h := recip_mono (R_trans rating); rwa [Allegory.recip_comp] at h
-        exact comp_mono_left _ (est_Λ_est_le (chooseR_monotonic rating) hRtrans')
-    _ = Λ party ≫ est((R rating)°) := by rw [party_eq, party_absorb, Cat.assoc]
+        le_trans (comp_mono_right (party_greedy rating) _) (le_of_eq (Cat.assoc _ _ _))
+    _ ⊑ Λ (⦇S⦈ : dRose A ⟶ _) ≫ existsImage choose ≫ est((R rating)°) :=
+        comp_mono_left _ (party_est_choose rating)
+    _ = Λ ((⦇S⦈ : dRose A ⟶ _) ≫ choose (A := A)) ≫ est((R rating)°) := by
+        rw [party_absorb, Cat.assoc]
+    _ = Λ party ≫ est((R rating)°) := by rw [party_eq]
 
 calc_steps party_laws
 
