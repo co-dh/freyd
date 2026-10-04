@@ -129,16 +129,19 @@
 /// The Lean selectors a display states: its first `Thm` header's formulas; else the `#leanf`s in its
 /// own body (`lean-keys`: a chain's cited laws are emitted from a `context`, which it does not walk);
 /// else what its heading states, the theorem a derivation with no statement of its own proves.
+/// `(keys, at)`: `at` is the heading when the formula is its, so the link lands where the formula
+/// stands; `none` for the display itself.
 #let disp-keys(s) = {
   let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
   let ts = if e == none { () } else { disp-thms(s, e.location()) }
   if ts.len() > 0 {
     let te = query(selector(<thm-end>).after(ts.first().location())).first()
-    query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup()
+    (query(selector(<lean-formula>).after(ts.first().location()).before(te.location())).map(m => m.value).dedup(), none)
   } else {
     let own = lean-keys(query(selector(figure.where(kind: "disp")).before(s.location())).last().body).dedup()
     let h = query(selector(heading).before(s.location())).at(-1, default: none)
-    if own.len() > 0 or h == none { own } else { lean-keys(h.body).dedup() }
+    let hk = if own.len() > 0 or h == none { () } else { lean-keys(h.body).dedup() }
+    if hk.len() == 0 { (own, none) } else { (hk, h.location()) }
   }
 }
 /// The book's own number for the display `s` opens (`disp(num: …)`), `none` for a generated one.
@@ -311,19 +314,22 @@
     let el = it.element
     // A row of a law table cites as its formula alone; a display, or a row of a theorem display,
     // as the formula it states, after the display's number only when the book gave it (`cite`).
-    let (id, keys, row) = if el == none { (none, (), false) }
+    // `to`: where the cited formula stands, when not at the element (`disp-keys`); a book number
+    // printed beside it names the display, so then the link stays on the display.
+    let (id, keys, row, to) = if el == none { (none, (), false, none) }
       else if el.func() == figure and el.at("kind", default: none) == "disp" {
         let s = query(selector(<disp-start>).after(el.location())).at(0)
-        (dispid(el.location()), disp-keys(s), booknum(s) == none) }
+        let (ks, at) = disp-keys(s)
+        (dispid(el.location()), ks, booknum(s) == none, at) }
       else if el.func() == metadata and type(el.value) == int {
         let s = disp-of(el.location())
-        if law-table(s) { (rowid(el.location(), el.value), row-keys(el.location()), true) }
-        else { (rowid(el.location(), el.value), disp-keys(s), booknum(s) == none) } }
-      else { (none, (), false) }
+        if law-table(s) { (rowid(el.location(), el.value), row-keys(el.location()), true, none) }
+        else { let (ks, at) = disp-keys(s); (rowid(el.location(), el.value), ks, booknum(s) == none, at) } }
+      else { (none, (), false, none) }
     if el != none and el.func() == figure { law-gate(it) }
     // Under `list` only: what `diag-regen` reads to write the formula files `cite` prints.
     if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] }
-    if id == none { it } else { link(el.location(), cite(id, keys, row: row)) }
+    if id == none { it } else { link(if to == none or not row { el.location() } else { to }, cite(id, keys, row: row)) }
     // The whole note records what each reference printed, so a chapter compiled alone prints a label
     // of another chapter the same way (`make ref-ids`), not as the label's own name.
     // A heading reference prints its counter dot-joined: typst drops the numbering pattern's trailing `.`.
