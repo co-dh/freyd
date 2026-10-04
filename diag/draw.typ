@@ -1353,10 +1353,7 @@
 // `s: auto` fills the column, so the box is as wide as a definition box beside it; 24pt is the inset.
 // `pair-fill` is that scale on its own, for a picture below that must match the pair's size.
 #let pair-fill(sq, sd, w) = (w - 24pt - 34pt) / (measure(P(sq, s: 100%)).width + measure(P(sd, s: 100%)).width) * 100%
-#let pair(sq, sd, f, s: 100%) = layout(avail => {
-  // `<lean-keys-in>`: the formula cell as a placed marker, which `disp-keys` queries — no content
-  // walk enters a `layout` — so a reference to the display finds the laws it states.
-  let f = f + [#metadata(f)<lean-keys-in>]
+#let pair-at(sq, sd, f, s, avail) = {
   let s = if s != auto { s } else { pair-fill(sq, sd, avail.width) }
   let body = grid(columns: 2, align: horizon, column-gutter: 34pt, P(sq, s: s), P(sd, s: s))
   let (px, fe) = (hm-sepx(sd), capeqx(f))
@@ -1377,7 +1374,10 @@
   // The caption is left-aligned because `capbox`'s centring reaches inside it and would centre a
   // multi-line caption's first line — the one with the sign — over the longer prose line below.
   capbox(row(dx, body), row(fx + dx, align(left, f)))
-})
+}
+// `<lean-keys-in>`: the formula cell as a placed marker, which `disp-keys` queries — no content walk
+// enters a `layout` — so a reference to the display finds the laws it states.
+#let pair(sq, sd, f, s: 100%) = layout(avail => { [#metadata(f)<lean-keys-in>]; pair-at(sq, sd, f, s, avail) })
 
 // ---------------------------------------------------- the standalone page: the note's calls, BLACK BEADS
 // A bead's colour in the note is its arrow's hue in the square beside it, and this page has no square.
