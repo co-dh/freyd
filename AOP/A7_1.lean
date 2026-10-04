@@ -143,13 +143,13 @@ public theorem junc_Λ_est {s a₁ a₂ : 𝒜} (C : Coproduct s a₁ a₂) (T :
 /-! ## (7.1)/(7.3): lower-bound laws (book p.166) -/
 
 /-- **(7.1)**: `τ·(R/∋) = R`, mirrored: `singletonMap ≫ ((∋a)° \ R) = R`. -/
-theorem singletonMap_comp_lb (R : A ⟶ A) : singletonMap ≫ (((∋ A)°) \ R) = R := by
+public theorem singletonMap_comp_lb (R : A ⟶ A) : singletonMap ≫ (((∋ A)°) \ R) = R := by
   show Λ (Cat.id A) ≫ (((∋ A)°) \ R) = R
   rw [Λ_comp_lb, recip_id, leftDiv_id]
 
 /-- **(7.3)**: `(R/∋)·union = (R/∋)/∋`, mirrored: `bigUnion ≫ ((∋a)° \ R) =
     ((∋[a])° \ ((∋a)° \ R))`, via `bigUnion = Λ(∋[a]≫∋a)`, (7.2), and `leftDiv_comp`. -/
-theorem bigUnion_comp_lb (R : A ⟶ A) :
+public theorem bigUnion_comp_lb (R : A ⟶ A) :
     bigUnion ≫ (((∋ A)°) \ R) =
       (((∋ (P A))°) \ (((∋ A)°) \ R)) := by
   show Λ (∋ (P A) ≫ ∋ A) ≫ (((∋ A)°) \ R) =
