@@ -479,20 +479,20 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [merging two sorted lists sorts their union],
   [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `FX=L+E×X`]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@5d74539a lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@18c2744f lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@669dbfaa lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
+  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@5d74539a lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@669dbfaa lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
 // subsequence of a `≼`-ordered list is `≼`-ordered, so the thinning may run before the sort.
 // `setify°` is where the set becomes a list, so it is a NODE on the object wire — the `E` bends in,
 // the `list` bends out — and the two coreflexive-shaped arrows are beads on the lane each acts on.
-#import "../generated/Freyd.Alg.sortRel_comp_thinlist_le.calc.typ" as calc-86
+#import "../generated/Freyd.Alg.RelSet.ListRel.sort_comp_bump_thinlist_le.calc.typ" as calc-86
 #disp(num: "(8.6)")[#calc-table(cols: (1fr,), al: (left + top,),
-  Thm(cols: 1)[#leanf("Freyd.Alg.sortRel_comp_thinlist_le") \
+  Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_bump_thinlist_le") \
     // sortRel row: (8.6), p. 201
-    #src[a thinning of the sorted list lists a thinning of the set — `≼` a connected
- preorder, `thinlist(Q)⊑subseq`. ]],
-     // lean:AOP.A8_3.sortRel_comp_thinlist_le@9b7ffbea
+    #src[sorting the set then thinning the list by `Q` lists, sorted, a `Q`-thinning of the
+ set — `Q` a preorder. ]],
+     // lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc
   // `sort(≼) : PA⟶[A]`, `ordered(≼)`,`thinlist(Q) : [A]⟶[A]` — @thinlist-defn's
   // `sort(≼)≜setify° ordered(≼)` at `setify : [A]⟶PA`.
   lean-calc(calc-86),

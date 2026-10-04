@@ -88,14 +88,13 @@ variable {𝒜 : Type u} [TabularUnitaryUnguardedPowerLCDA 𝒜] {A : 𝒜} (L :
   implements `T` on the underlying set.  `sortRel_comp_le` below is their composition, (8.6) and
   (8.9) its instances, so the argument is written once. -/
 
-/-- Step 1: `g` only drops elements (`g ⊑ subseq`) and a subsequence of a `≼`-ordered list is
+/-- `g` only drops elements (`g ⊑ subseq`) and a subsequence of a `≼`-ordered list is
     `≼`-ordered, so `g` may run before the order test. -/
-public theorem sortRel_comp_le_step1 (setify : L.obj A ⟶ P A)
+public theorem ordered_comp_le_of_subseq
     {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
     (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
     (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
-    setify° ≫ ordered ≼ ≫ g ⊑ setify° ≫ g ≫ ordered ≼ := by
-  refine comp_mono_left _ ?_
+    ordered ≼ ≫ g ⊑ g ≫ ordered ≼ := by
   have h1 : ordered ≼ ≫ g ⊑ subseq ≫ ordered ≼ := le_trans (comp_mono_left _ hsub) hos
   have h2 : ordered ≼ ≫ g ⊑ g := by
     have := comp_mono_right hord g
@@ -104,45 +103,35 @@ public theorem sortRel_comp_le_step1 (setify : L.obj A ⟶ P A)
   rw [coreflexive_comp_inter hord subseq g] at h3
   exact le_trans h3 (comp_mono_right (inter_lb_right _ _) (ordered ≼))
 
-/-- Step 2: `·setify ⊣ ·setify°` shunts `g`'s specification `g·setify ⊑ setify·T` across the
+/-- Step 1: `ordered_comp_le_of_subseq` under `setify°`. -/
+public theorem sortRel_comp_le_step1 (setify : L.obj A ⟶ P A)
+    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A} {subseq g : L.obj A ⟶ L.obj A}
+    (hord : Coreflexive (ordered ≼)) (hsub : g ⊑ subseq)
+    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼) :
+    setify° ≫ ordered ≼ ≫ g ⊑ setify° ≫ g ≫ ordered ≼ :=
+  comp_mono_left _ (ordered_comp_le_of_subseq L hord hsub hos)
+
+/-- `·setify ⊣ ·setify°` shunts `g`'s specification `g·setify ⊑ setify·T` across the
     converse. -/
+public theorem setify_conv_comp_le {setify : L.obj A ⟶ P A} (hset : Map setify)
+    {g : L.obj A ⟶ L.obj A} {T : P A ⟶ P A} (hspec : g ≫ setify ⊑ setify ≫ T) :
+    setify° ≫ g ⊑ T ≫ setify° := by
+  refine (map_shunt_left hset g _).mpr ?_
+  have hent : g ⊑ g ≫ setify ≫ setify° := by
+    have := comp_mono_left g (entire_id_le hset.1)
+    rwa [Cat.comp_id] at this
+  refine le_trans hent ?_
+  rw [← Cat.assoc g setify (setify°), ← Cat.assoc setify T (setify°)]
+  exact comp_mono_right hspec _
+
+/-- Step 2: `setify_conv_comp_le` before the order test. -/
 public theorem sortRel_comp_le_step2 {setify : L.obj A ⟶ P A}
     (hset : Map setify) (ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)) («≼» : A ⟶ A)
     {g : L.obj A ⟶ L.obj A}
     {T : P A ⟶ P A} (hspec : g ≫ setify ⊑ setify ≫ T) :
     setify° ≫ g ≫ ordered ≼ ⊑ T ≫ setify° ≫ ordered ≼ := by
-  have hshunt : setify° ≫ g ⊑ T ≫ setify° := by
-    refine (map_shunt_left hset g _).mpr ?_
-    have hent : g ⊑ g ≫ setify ≫ setify° := by
-      have := comp_mono_left g (entire_id_le hset.1)
-      rwa [Cat.comp_id] at this
-    refine le_trans hent ?_
-    rw [← Cat.assoc g setify (setify°), ← Cat.assoc setify T (setify°)]
-    exact comp_mono_right hspec _
   rw [← Cat.assoc (setify°) g (ordered ≼), ← Cat.assoc T (setify°) (ordered ≼)]
-  exact comp_mono_right hshunt (ordered ≼)
-
-/-- **(8.6)** (book p.201): a thinning of the sorted list lists a thinning of the set,
-    `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` mirrored to
-    `sortRel setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel setify ordered ≼`.  The two
-    conditions on `thinlist Q` do all the work: `thinlist Q ⊑ subseq` lets the thinning run
-    before the order test, and `thinlist Q·setify ⊑ setify·thin Q` shunts across `setify°`. -/
-public theorem sortRel_comp_thinlist_le
-    {setify : L.obj A ⟶ P A} (hset : Map setify)
-    {ordered : (A ⟶ A) → (L.obj A ⟶ L.obj A)} {«≼» : A ⟶ A}
-    {subseq thinlist : L.obj A ⟶ L.obj A} {Q : A ⟶ A}
-    (hord : Coreflexive (ordered ≼)) (hsub : thinlist ⊑ subseq)
-    (hos : ordered ≼ ≫ subseq ⊑ subseq ≫ ordered ≼)
-    (hspec : thinlist ≫ setify ⊑ setify ≫ thinRel Q) :
-    sortRel L setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel L setify ordered ≼ :=
-  calc sortRel L setify ordered ≼ ≫ thinlist = setify° ≫ ordered ≼ ≫ thinlist := by
-        show (setify° ≫ ordered ≼) ≫ thinlist = _
-        exact Cat.assoc _ _ _
-    _ ⊑ setify° ≫ thinlist ≫ ordered ≼ := sortRel_comp_le_step1 L setify hord hsub hos
-    _ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ := sortRel_comp_le_step2 L hset ordered ≼ hspec
-    _ = thinRel Q ≫ sortRel L setify ordered ≼ := rfl
-
-calc_steps sortRel_comp_thinlist_le
+  exact comp_mono_right (setify_conv_comp_le L hset hspec) (ordered ≼)
 
 /-! ## Lemma 8.1 (book p.202) -/
 
@@ -932,21 +921,31 @@ public theorem isThinlist_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
     exact ⟨inlistP x, rfl, fun _ hy => inlistP_of_subseqP (subseqP_of_thinlist Q hys) hy,
       thinlist_covers hQ hys⟩
 
-/-- **(8.6)** in `Rel` (book p.201), `sort(≼)·thinlist Q ⊑ thin Q·sort(≼)` with
-    `sort(≼) ≜ setify° ordered(≼)` and `ordered(≼)` the book's: the one hypothesis is that
-    `thinlist` implements `thin(Q)`. -/
-public theorem sort_comp_thinlist_le {«≼» : dE A ⟶ dE A}
-    {thinlist : listRelator.obj (dE A) ⟶ listRelator.obj (dE A)} {Q : dE A ⟶ dE A}
-    (h : IsThinlist Q thinlist) :
-    sortRel listRelator setify ordered ≼ ≫ thinlist ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-  Freyd.Alg.sortRel_comp_thinlist_le listRelator (graph_map _) (ordered_coreflexive ≼) h.sub
-    (ordered_comp_subseq_le ≼) h.spec
+/-- `thinlist(Q)` only drops elements, so it may run before the order test. -/
+public theorem ordered_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    ordered ≼ ≫ thinlist Q ⊑ thinlist Q ≫ ordered ≼ :=
+  ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼) (isThinlist_thinlist hQ).sub
+    (ordered_comp_subseq_le ≼)
+
+/-- `thinlist(Q)` lists a thinning of the set it lists, read across `setify°`. -/
+public theorem setify_conv_comp_thinlist_le {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    setify° ≫ thinlist Q ⊑ thinRel Q ≫ setify° :=
+  setify_conv_comp_le listRelator (graph_map _) (isThinlist_thinlist hQ).spec
 
 /-- **(8.6)** in `Rel` (book p.201) at B&dM's own `thinlist(Q) ≜ ⦇[nil, bump(Q)]⦈`: the one
-    hypothesis left is the book's, that `Q` is a preorder. -/
+    hypothesis is the book's, that `Q` is a preorder. -/
 public theorem sort_comp_bump_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) :
     sortRel listRelator setify ordered ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-  sort_comp_thinlist_le (isThinlist_thinlist hQ)
+  calc sortRel listRelator setify ordered ≼ ≫ thinlist Q = setify° ≫ ordered ≼ ≫ thinlist Q := by
+        show (setify° ≫ ordered ≼) ≫ thinlist Q = _
+        exact Cat.assoc _ _ _
+    _ ⊑ setify° ≫ thinlist Q ≫ ordered ≼ := comp_mono_left _ (ordered_comp_thinlist_le hQ)
+    _ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ := by
+        rw [← Cat.assoc (setify°) (thinlist Q) (ordered ≼), ← Cat.assoc (thinRel Q) (setify°)]
+        exact comp_mono_right (setify_conv_comp_thinlist_le hQ) _
+    _ = thinRel Q ≫ sortRel listRelator setify ordered ≼ := rfl
+
+calc_steps sort_comp_bump_thinlist_le
 
 /-- **(8.7)** in `Rel` (book p.203), `sort(≼)·minlist R ⊑ min R`, with no hypothesis: `minlist(R)`
     is `setify est(R)`, so `ordered(≼)` drops by coreflexivity and `setify° setify` by `setify`
@@ -1302,5 +1301,59 @@ public theorem sort_comp_list_le {B : Type} (g : A → B) {«≼» : dE B ⟶ dE
       exact ⟨y, hxy, rfl, orderedP_of_listP_graph g ≼ hxy hx⟩
   exact Freyd.Alg.sortRel_comp_listMap_le listRelator (graph_map _) (graph_map _)
     (ordered := fun R => ordered R) (graph_map g) hnat hordf
+
+/-- A list ordered by `X` is ordered by any larger `Y`. -/
+public theorem orderedP_mono {X Y : A → A → Prop} (h : ∀ a b, X a b → Y a b) :
+    ∀ x : ConsList Unit A, orderedP X x → orderedP Y x
+  | ConsList.wrap _, _ => trivial
+  | ConsList.cons a x, ⟨ha, hx⟩ => ⟨fun b hb => h a b (ha b hb), orderedP_mono h x hx⟩
+
+/-- `sort` is monotonic in the order: a larger order admits more listings. -/
+public theorem sortRel_mono {X Y : dE A ⟶ dE A} (h : X ⊑ Y) :
+    sortRel listRelator setify ordered X ⊑ sortRel listRelator setify ordered Y :=
+  comp_mono_left _ (le_iff.mpr fun x _ ⟨hxy, ho⟩ =>
+    ⟨hxy, orderedP_mono (fun a b hab => le_iff.mp h a b hab) x ho⟩)
+
+/-- **Lemma 8.1** in `Rel` (book p.202) at `FX = L+E×X`: one sorted list built from sorted
+    arguments, instead of a set built and then sorted — the one hypothesis is the book's, `f`
+    monotonic on `≼`.  The sort walks inwards one law at a time: under `F` by (8.11), `f`
+    monotonic, past `list(f)` by (8.8), past `filter(p)` by (8.9), then `E(f) = P(f)` and the
+    transpose absorbs `E(fp)`. -/
+public theorem Fmap_sort_comp_listcp_list_filter_le {L E : Type} (f : L ⊕ E × A → A)
+    (p : A → Bool) {«≼» : dE A ⟶ dE A} (hmono : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f) ≼) :
+    (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
+        ≫ Filter.filter p
+      ⊑ Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ GCTakeWhile.pcor p)
+        ≫ sortRel listRelator setify ordered ≼ :=
+  calc (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp ≫ list (graph f)
+          ≫ Filter.filter p
+        ⊑ cpMap (CL.F L E) (dE A) ≫ sortRel listRelator setify ordered ((CL.F L E).map ≼)
+          ≫ list (graph f) ≫ Filter.filter p := by
+        rw [← Cat.assoc, ← Cat.assoc (cpMap (CL.F L E) (dE A))]
+        exact comp_mono_right Fmap_sort_comp_listcp_le _
+    _ ⊑ cpMap (CL.F L E) (dE A)
+          ≫ sortRel listRelator setify ordered (graph f ≫ ≼ ≫ (graph f)°)
+          ≫ list (graph f) ≫ Filter.filter p :=
+        comp_mono_left _ (comp_mono_right
+          (sortRel_mono ((Freyd.Alg.monoAlg_iff_sandwich (graph_map f)).mp hmono)) _)
+    _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ sortRel listRelator setify ordered ≼
+          ≫ Filter.filter p := by
+        refine comp_mono_left _ ?_
+        rw [← Cat.assoc, ← Cat.assoc (powerRel (graph f))]
+        exact comp_mono_right (sort_comp_list_le f) _
+    _ ⊑ cpMap (CL.F L E) (dE A) ≫ powerRel (graph f) ≫ existsImage (GCTakeWhile.pcor p)
+          ≫ sortRel listRelator setify ordered ≼ :=
+        comp_mono_left _ (comp_mono_left _ (sort_comp_filter_le p))
+    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f) ≫ existsImage (GCTakeWhile.pcor p)
+          ≫ sortRel listRelator setify ordered ≼ := by rw [powerRel_map (graph_map f)]
+    _ = cpMap (CL.F L E) (dE A) ≫ existsImage (graph f ≫ GCTakeWhile.pcor p)
+          ≫ sortRel listRelator setify ordered ≼ := by
+        rw [← Cat.assoc (existsImage (graph f)), ← existsImage_comp]
+    _ = Λ ((CL.F L E).map (∋ (dE A)) ≫ graph f ≫ GCTakeWhile.pcor p)
+          ≫ sortRel listRelator setify ordered ≼ := by
+        rw [← Cat.assoc, show cpMap (CL.F L E) (dE A) = Λ ((CL.F L E).map (∋ (dE A))) from rfl,
+          Λ_absorption]
+
+calc_steps Fmap_sort_comp_listcp_list_filter_le
 
 end Freyd.Alg.RelSet.ListRel

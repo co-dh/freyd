@@ -236,6 +236,11 @@ def hasPrintRule (env : Environment) (c : Name) : Bool :=
     || !(delabAttribute.getEntries env (`app ++ c)).isEmpty
     || !(delabAttribute.getEntries env (`const ++ c)).isEmpty
 
+/-- Whether the note has a WORD for the constant `c`: a printing rule of its own, or a `diag_noted`
+    tag saying its Lean name already is the book's word. -/
+def noteNames (c : Name) : MetaM Bool :=
+  return hasPrintRule (← getEnv) c || (← Lean.labelled `diag_noted).contains c
+
 /-- A LABEL IS THE NOTE'S VOCABULARY, SO A RAW LEAN NAME IN IT IS REFUSED.  A head no printing rule
     rewrote comes out as the constant Lean declared — `appl(F,NA)` for `BiRelator.appl` — and the
     page then makes a claim in a vocabulary the note's tables never use, which no gate downstream
@@ -249,7 +254,6 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
   -- A label made only to COMPARE two terms (`drawnAlike`) is never written on the page.
   if (← getOptions).getBool `diag.labelCompare then return
   let env ← getEnv
-  let noted ← Lean.labelled `diag_noted
   let opts ← getOptions
   let ns ← getCurrNamespace
   let ods ← getOpenDecls
@@ -275,7 +279,7 @@ def checkSpelled (e : Expr) (stx : Syntax) : MetaM Unit := do
     match cs with
     | [] => continue
     | c :: _ =>
-      if cs.any (fun c => hasPrintRule env c || noted.contains c) then continue
+      if ← cs.anyM noteNames then continue
       throwError "the label of `{← Meta.ppExpr e}` writes `{c}` under its own Lean name: no \
         printing rule rewrote it, so the page would carry Lean's vocabulary where the note writes \
         its own.  Give it an `app_unexpander {c}` — or a `delab app.{c}` where the spelling needs \

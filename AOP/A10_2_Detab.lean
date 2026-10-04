@@ -278,6 +278,24 @@ public theorem detab_prefix_false :
     | Sum.inr p, Sum.inr q => V n nl blank p.1 q.1 ∧ U tb p.2 q.2
     | _, _ => False
 
+/-- **entab-defn**, point-free: `Q=𝟙+(V×U)`. -/
+public theorem Q_eq (n : Nat) (tb nl blank : Char) :
+    Q n tb nl blank = sumMap (sumCop (dL Unit) ⟨Str × Char⟩) (sumCop (dL Unit) ⟨Str × Char⟩)
+      (𝟙 (dL Unit)) (rprodMap (V n nl blank) (U tb)) := by
+  apply hom_ext; intro u v
+  constructor
+  · intro h
+    cases u with
+    | inl d => cases v with
+      | inl d' => exact Or.inl ⟨d, rfl, d', rfl, rfl⟩
+      | inr _ => exact h.elim
+    | inr p => cases v with
+      | inl _ => exact h.elim
+      | inr q => exact Or.inr ⟨p, rfl, q, h, rfl⟩
+  · rintro (⟨_, rfl, _, _, rfl⟩ | ⟨_, rfl, _, h, rfl⟩)
+    · trivial
+    · exact h
+
 public theorem pad_add (blank : Char) (x : Str) (j : Nat) :
     ∀ k, pad blank (pad blank x j) k = pad blank x (j + k)
   | 0 => rfl
