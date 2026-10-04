@@ -262,7 +262,9 @@ def opened (A B : Expr) : MetaM (Array Name) := do
     let some ci@(.defnInfo _) := env.find? c | return false
     if c.isInternal || (← Meta.isInstance c) || (← isProjectionFn c) || isAuxRecursor env c
       || Meta.isMatcherCore env c then return false
-    Meta.forallTelescopeReducing ci.type fun _ t => return (homObjs? (← Meta.whnfR t)).isSome
+    -- NOT `forallTelescopeReducing`: at a concrete category it unfolds `X ⟶ Y` itself (in `RelSet`
+    -- to `X → Y → Prop`) and opens the arrow's own arguments, so `takewhile`, `paths` read as no arrow.
+    Meta.forallTelescope ci.type fun _ t => return (homObjs? t).isSome || (homObjs? (← Meta.whnfR t)).isSome
 
 /-- One term up to instances and the bracketing of `≫`, which no panel draws. -/
 partial def sameDrawn (a b : Expr) : MetaM Bool := do
@@ -287,8 +289,12 @@ def drawnAlike (a b : Expr) : MetaM Bool := do
 /-- Whether `B` is `A` with the definitions `ds` opened (or closed) and nothing else: both sides
     delta-expanded at `ds` (`deltaExpand` beta-reduces) draw one term. -/
 def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
-  drawnAlike (← Meta.deltaExpand (← instantiateMVars A) ds.contains)
-    (← Meta.deltaExpand (← instantiateMVars B) ds.contains)
+  let a ← Meta.deltaExpand (← instantiateMVars A) ds.contains
+  let b ← Meta.deltaExpand (← instantiateMVars B) ds.contains
+  -- Opening `ds` must leave no bead on one side only, before any picture is compared: `Λ` opened
+  -- beside `takewhile` leaves `takewhile`, and a raw `fun xs ys => …` that has no label.
+  if !(← opened a b).isEmpty then return false
+  drawnAlike a b
 
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
     head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
@@ -320,12 +326,13 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   -- sides one picture.  Asked before `rfl`, which would answer the same step `=`.
   -- ONE of them may be the step: `genFold concat ≜ paths` has `genFold` and `concat` on one side
   -- only, and opening them as well as `paths` leaves no picture to compare.
+  -- The answer names the ONE definition opened, the step's reason; several at once have no one name.
   let ds ← opened A B
-  if !ds.isEmpty && (← unfoldsTo ds A B) then
-    for d in ds do noteRead (.decl d)
-    return (`delta, "≜")
   if let some d ← ds.findM? fun d => unfoldsTo #[d] A B then
     noteRead (.decl d)
+    return (d, "≜")
+  if !ds.isEmpty && (← unfoldsTo ds A B) then
+    for d in ds do noteRead (.decl d)
     return (`delta, "≜")
   -- The hypotheses the step may use: either panel's declaration assumes them.
   let given ← (xs ++ ys).filterMapM fun h => do
@@ -411,16 +418,19 @@ def readsAlike (c : Name) : MetaM Bool := do
 /-- THE LAWS A STEP'S PROOF APPLIES: every theorem application whose statement relates two arrows
     and none of whose arguments applies a law itself.  An application handed a proof that applies
     another law is congruence or monotonicity around that law (`congrArg`, `comp_mono_left`); a
-    hypothesis, even instantiated (`htrans (m+1)`), applies none.  One whose two sides draw as one
-    picture (`Cat.assoc`, `rfl`) is bracketing no panel shows. -/
-partial def lawsIn (e : Expr) : MetaM (Array Name) := do
+    hypothesis, even instantiated (`htrans (m+1)`), applies none.  One whose two sides are one term
+    (`Cat.assoc`, `rfl`) is bracketing no panel shows.  `coerced`: the STEP's two sides print alike,
+    so a law whose sides only PRINT alike (`graph_comp`, `graph` unprinted) is that coercion; on a
+    step whose sides differ on the page the law printing alike is the label dropping a factor
+    (`X 𝟙 = X` by `Cat.comp_id`), and it is the step's reason. -/
+partial def lawsIn (coerced : Bool) (e : Expr) : MetaM (Array Name) := do
   match e with
-  | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn b
-  | .letE _ _ v b _ => return (← lawsIn v) ++ (← lawsIn (b.instantiate1 v))
-  | .mdata _ b => lawsIn b
+  | .lam .. => Meta.lambdaTelescope e fun _ b => lawsIn coerced b
+  | .letE _ _ v b _ => return (← lawsIn coerced v) ++ (← lawsIn coerced (b.instantiate1 v))
+  | .mdata _ b => lawsIn coerced b
   | .app .. | .const .. =>
     let args := e.getAppArgs
-    let per ← args.mapM lawsIn
+    let per ← args.mapM (lawsIn coerced)
     let inner := per.foldl (· ++ ·) #[]
     let env ← getEnv
     -- A PROOF argument applying ANY theorem, law or bracketing (`graph_comp` under `congrArg`), makes
@@ -431,7 +441,8 @@ partial def lawsIn (e : Expr) : MetaM (Array Name) := do
     let some c := e.getAppFn.constName? | return inner
     unless !built && (env.find? c).any (· matches .thmInfo _) do return inner
     let some (_, l, r) := split (← instantiateMVars (← Meta.inferType e)) | return inner
-    return if (← drawnAlike l r) || (← readsAlike c) then inner else inner.push c
+    let alike ← if coerced then pure ((← drawnAlike l r) || (← readsAlike c)) else sameDrawn l r
+    return if alike then inner else inner.push c
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
@@ -450,12 +461,17 @@ def calcFile (declName : Name) : MetaM String := do
   for i in List.range n do
     let some v := (env.find? (step i)).bind (·.value?) | throwError "{step i} has no proof to read"
     noteRead (.decl (step i))
-    let laws ← lawsIn v
+    let (a, b) := if i + 1 < n then (side i "lhs", side (i + 1) "lhs") else (side i "lhs", side i "rhs")
+    let (c, rel) ← stepRel a b
+    -- A step opening ONE definition has that definition as its reason, whatever bracketing the
+    -- proof does around it (`graph_comp` then `rfl` to reach `paths`).
+    let laws ← if rel == "≜" && env.contains c then pure #[c] else do
+      let (_, st) ← sideM (step i, none, [], [])
+      let some (_, l, r) := split st | throwError "{step i}: its statement relates no two sides"
+      lawsIn (← drawnAlike l r) v
     if laws.size > 1 then
       throwError "{step i}: a step applies one law under congruence, and its proof applies \
         {laws.toList} — split it into one `calc` step per law"
-    let (a, b) := if i + 1 < n then (side i "lhs", side (i + 1) "lhs") else (side i "lhs", side i "rhs")
-    let (_, rel) ← stepRel a b
     for l in laws do noteRead (.stmt l)
     let sel := if i + 1 < n then s!"{step (i + 1)}.lhs" else s!"{step i}.rhs"
     let law := laws[0]?.elim "none" fun l => l.toString.quote
