@@ -27,7 +27,7 @@
   // two rows: ten panels in one row shrink the labels past reading
   lean-chain((
     (none, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step1.lhs", src[the starting composite]),
-    (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step1.rhs", src[definition of filter: `filter(p) ≜ list((p → wrap, nil)) concat`]),
+    (DF, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step1.rhs", src[definition of filter: `filter(p) ≜ list((p → wrap, nil)) concat`]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step1@d635eea6
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step2.rhs", src[(1.6): `concat list(f) = list(list(f)) concat`]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step2@1323a4f7
@@ -46,7 +46,7 @@
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step8@18b2392f
     (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step9.rhs", src[(1.12): `𝟙 f = f`]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step9@711631d0
-    (EQ, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step10.rhs", src[definition of filter]),
+    (DF, "Freyd.Alg.RelSet.Pointfree.filter_pointfree_step10.rhs", src[definition of filter]),
     // lean:AOP.A1_7_Pointfree.RelSet.Pointfree.filter_pointfree_step10@2397640c
   )),
 )]<filter-pointfree>

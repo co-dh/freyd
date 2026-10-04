@@ -252,25 +252,17 @@ partial def openUnder {α} (xs : Array Expr) (t : Expr) (vs : Array Expr)
     Meta.withLocalDecl n bi d fun y => openUnder xs body (vs.push y) k
   | _ => k vs (t.instantiateRev vs)
 
-/-- THE DEFINITIONS A STEP OPENS: the `def`s on one side of the step and not the other — the atoms
-    a panel draws, so neither an instance, a projection nor a compiler auxiliary. -/
+/-- THE DEFINITIONS A STEP OPENS: the `def`s on one side of the step and not the other that a panel
+    draws as a bead — an arrow, so no object (`dCL`, `Unit`), instance, projection or auxiliary. -/
 def opened (A B : Expr) : MetaM (Array Name) := do
   let env ← getEnv
   let a := (← instantiateMVars A).getUsedConstants
   let b := (← instantiateMVars B).getUsedConstants
   (a.filter (!b.contains ·) ++ b.filter (!a.contains ·)).filterM fun c => do
-    let some (.defnInfo _) := env.find? c | return false
-    return !c.isInternal && !(← Meta.isInstance c) && !(← isProjectionFn c) && !isAuxRecursor env c
-      && !Meta.isMatcherCore env c
-
-/-- Lean's own unfolding rule (`Meta.canUnfoldDefault`, private there) with `ds` held OPAQUE. -/
-def atoms (ds : Array Name) (cfg : Meta.Config) (ci : ConstantInfo) : CoreM Bool := do
-  if ds.contains ci.name then return false
-  match cfg.transparency with
-  | .none => return false
-  | .all => return true
-  | .default => return !(← isIrreducible ci.name)
-  | m => return (← isReducible ci.name) || (m == .instances && Meta.isGlobalInstance (← getEnv) ci.name)
+    let some ci@(.defnInfo _) := env.find? c | return false
+    if c.isInternal || (← Meta.isInstance c) || (← isProjectionFn c) || isAuxRecursor env c
+      || Meta.isMatcherCore env c then return false
+    Meta.forallTelescopeReducing ci.type fun _ t => return (homObjs? (← Meta.whnfR t)).isSome
 
 /-- One term up to instances and the bracketing of `≫`, which no panel draws. -/
 partial def sameDrawn (a b : Expr) : MetaM Bool := do
@@ -290,43 +282,6 @@ partial def sameDrawn (a b : Expr) : MetaM Bool := do
 def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
   sameDrawn (← Meta.deltaExpand (← instantiateMVars A) ds.contains)
     (← Meta.deltaExpand (← instantiateMVars B) ds.contains)
-
-/-- Whether the step from `A` to `B` RELEASES `d`: an explicit argument of a `d`-application on its
-    side, found nowhere else there, stands outside every `d` on the other side. -/
-def releases (d : Name) (A B : Expr) : MetaM Bool := do
-  let (A, B) := (← instantiateMVars A, ← instantiateMVars B)
-  let (here, there) := if A.getUsedConstants.contains d then (A, B) else (B, A)
-  let outside (x e : Expr) : Bool :=
-    ((e.replace fun t => if t.isAppOf d then some (.sort .zero) else none).find? (· == x)).isSome
-  let rec apps : Expr → Array Expr
-    | e@(.app f x) => (if e.isAppOf d then #[e] else #[]) ++ apps f ++ apps x
-    | .lam _ t b _ | .forallE _ t b _ => apps t ++ apps b
-    | .letE _ t v b _ => apps t ++ apps v ++ apps b
-    | .mdata _ b | .proj _ _ b => apps b
-    | _ => #[]
-  let mut held : Array Expr := #[]
-  for t in apps here do
-    let fi ← Meta.getFunInfoNArgs t.getAppFn t.getAppNumArgs
-    for i in [:t.getAppNumArgs] do
-      if (fi.paramInfo[i]?.all (·.isExplicit)) then held := held.push t.getAppArgs[i]!
-  return held.any fun x => outside x there && !outside x here
-
-/-- Why the proof `e` needs one of `ds` opened, or `none`: it rewrites with an equation of one, or
-    does not type-check with them opaque.  A `have` is a stated law about the atom, so its own proof
-    is not read — only the rewriting the step itself does. -/
-partial def opensIn (ds : Array Name) (e : Expr) : MetaM (Option MessageData) := do
-  let whole (e : Expr) : MetaM (Option MessageData) := do
-    if let some d := e.getUsedConstants.find? (ds.contains ·.getPrefix) then
-      return some m!"it rewrites with {d}"
-    try Meta.check e; return none catch ex => return some ex.toMessageData
-  match e with
-  | .mdata _ e => opensIn ds e
-  | .lam n t body bi => Meta.withLocalDecl n bi t fun x => opensIn ds (body.instantiate1 x)
-  | .letE n t _ body _ =>
-    if ← Meta.isProp t then Meta.withLocalDeclD n t fun x => opensIn ds (body.instantiate1 x) else whole e
-  | .app (.lam n t body bi) _ =>
-    if ← Meta.isProp t then Meta.withLocalDecl n bi t fun x => opensIn ds (body.instantiate1 x) else whole e
-  | e => whole e
 
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
     head (`split`: `Eq`, `⊑`, `≤`) relates the two sides, read in either direction and oriented by
@@ -354,25 +309,12 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   openUnder xs cb.type #[] fun ys bodyB => do
   let A ← sideIn a xs (binderNames ca.type) bodyA
   let B ← sideIn b ys (binderNames cb.type) bodyB
-  -- A STEP THAT OPENS A DEFINITION DOES ONLY THAT, and is `≜`; any other step proves itself with
-  -- the definitions it opens held opaque, so a law reads them as atoms or the step is two steps.
+  -- A STEP THAT ONLY OPENS A DEFINITION IS `≜`: the beads on one side alone, unfolded, leave the two
+  -- sides one picture.  Asked before `rfl`, which would answer the same step `=`.
   let ds ← opened A B
   if !ds.isEmpty && (← unfoldsTo ds A B) then
     for d in ds do noteRead (.decl d)
     return (`delta, "≜")
-  let mixed (ds : Array Name) (c : Name) (why : MessageData) : MetaM (Name × String) := throwError "the step from \
-    {a.1}.{".".intercalate a.2.2.1} to {b.1}.{".".intercalate b.2.2.1} opens the definition \
-    {ds.toList} and applies {c} as well ({why}): split it into a `≜` step that only opens it and \
-    the law"
-  -- A panel's own theorem IS the step, so its proof is the step's.  A law about an atom consumes its
-  -- arguments (`est(R)⊑∋`); opening it releases them (`S≜F(𝟙,∋)α` sets `α` free), so only those count.
-  let rs ← ds.filterM (releases · A B)
-  let done (c : Name) (s : String) : MetaM (Name × String) := do
-    if !rs.isEmpty && (c == a.1 || c == b.1) then
-      if let some v := (env.find? c).bind (·.value?) then
-        if let some why ← Meta.withCanUnfoldPred (atoms rs) (opensIn rs v) then return ← mixed rs c why
-    noteRead (.stmt c); return (c, s)
-  Meta.withCanUnfoldPred (atoms ds) do
   -- The hypotheses the step may use: either panel's declaration assumes them.
   let given ← (xs ++ ys).filterMapM fun h => do
     let t ← Meta.inferType h
@@ -429,7 +371,7 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
     | .ok (some (s, ok)) =>
       if !ok then continue
       let k := rank (c == a.1 || c == b.1) s
-      if k ≥ 3 then return ← done c s
+      if k ≥ 3 then noteRead (.stmt c); return (c, s)
       if best.all (·.1 < k) then best := some (k, c, s)
     | .ok none => pure ()
     | .error _ => cut := cut.push c
@@ -438,11 +380,11 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
     throwError "the step from {a.1}.{".".intercalate a.2.2.1} to {b.1}.{".".intercalate b.2.2.1}: the \
       search was cut short at {cut.toList}, which might prove it; raise SEARCH_HEARTBEATS"
   let some (_, c, s) := best
-    | if ds.isEmpty then throwError "no theorem of {a.1}, {b.1} or their modules relates \
-        {a.1}.{".".intercalate a.2.2.1} to {b.1}.{".".intercalate b.2.2.1} by `=`, `⊑` or `≤` in \
-        either direction — prove the step in Lean"
-      else mixed ds `rfl m!"no law relates the sides with it opaque"
-  done c s
+    | throwError "no theorem of {a.1}, {b.1} or their modules relates {a.1}.{".".intercalate a.2.2.1} \
+        to {b.1}.{".".intercalate b.2.2.1} by `=`, `⊑` or `≤` in either direction — prove the step \
+        in Lean"
+  noteRead (.stmt c)
+  return (c, s)
 
 /-- The file a chain step's `lean-rel` imports: the relation `stepRel` reads off Lean. -/
 def relFile (a b : Side) : MetaM String := do
