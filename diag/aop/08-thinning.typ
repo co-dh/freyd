@@ -32,7 +32,7 @@ For `Q : A⟶A`, #h(4pt) `thin(Q)≜(∋/∋)∩(∈\(Q°∈)) : PA⟶PA` #h(4pt
   table.header([*the law*], [*what it says*]),
 
   [`X⊑` $frac(#[`S`], ∋)$ `thin(Q)⟺X∋⊑S` and `S°X⊑Q°∈`],
-  [everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound among the kept ones],
+  [`S` is the whole algebra: it produces every candidate that `thin(Q)` thins. Everything kept is an `S`-value, and every `S`-value has a `Q`-lower bound among the kept ones],
   [#leanf("Freyd.Alg.thinRel_comp_eps_le")],
   [everything a thinning keeps was in the set],
    // lean:AOP.A8_1.thinRel_comp_eps_le@17481c78
