@@ -1293,6 +1293,53 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
 
 calc_steps sortedAlg_fusion
 
+/-- `cup` read pointwise in `Rel`: the union of the two sets of the pair. -/
+public theorem cup_apply {a : RelSet.{0}} (q : (relProd (P a) (P a)).p.carrier) (Z : (P a).carrier) :
+    cup (relProd (P a) (P a)) q Z ↔ Z = fun v => q.1 v ∨ q.2 v := by
+  unfold cup
+  rw [Λ_eq_classifier]
+  have : (fun v => (((relProd (P a) (P a)).outl ≫ ∋ a) ∪ ((relProd (P a) (P a)).outr ≫ ∋ a)) q v)
+      = fun v => q.1 v ∨ q.2 v := by
+    funext v
+    simp only [union_apply, comp_apply]
+    apply propext; constructor
+    · rintro (⟨y, rfl, hv⟩ | ⟨y, rfl, hv⟩)
+      · exact Or.inl hv
+      · exact Or.inr hv
+    · rintro (h | h)
+      · exact Or.inl ⟨_, rfl, h⟩
+      · exact Or.inr ⟨_, rfl, h⟩
+  exact iff_of_eq (congrArg (fun W => Z = W) this)
+
+/-- **`cup` is LAX NATURAL** in `Rel` (B&dM Ex 5.20): `(P(R)×P(R)) cup ⊑ cup P(R)` — the unions of
+    two pairs of sets related by `P(R)` are related by `P(R)`.  Stated in the relators the diagram
+    exporter reads off `cup`'s two ends. -/
+public theorem cup_laxNatural :
+    LaxNatural (Relator.comp (Relator.idRelator RelSet.{0}) powerRelator)
+      (Relator.prod (Relator.comp (Relator.idRelator RelSet.{0}) powerRelator)
+        (Relator.comp (Relator.idRelator RelSet.{0}) powerRelator))
+      (fun a => cup (relProd (P a) (P a))) := by
+  intro A B R
+  refine le_iff.mpr fun p Y h => ?_
+  obtain ⟨X, hX, hc⟩ := h
+  have h' : prodMap (relProd _ _) (relProd _ _) (powerRel R) (powerRel R) p X := hX
+  rw [prodMap_eq_rprodMap] at h'
+  have h2 : powerRel R p.1 X.1 ∧ powerRel R p.2 X.2 := h'
+  have hY := (cup_apply X Y).mp hc
+  show (cup (relProd (P A) (P A)) ≫ powerRel R) p Y
+  refine ⟨fun v => p.1 v ∨ p.2 v, (cup_apply p _).mpr rfl, ?_⟩
+  rw [powerRel_reading, powerRel_reading] at h2
+  rw [powerRel_reading]
+  subst hY
+  obtain ⟨⟨r1, s1⟩, r2, s2⟩ := h2
+  refine ⟨fun w hw => ?_, fun s hs => ?_⟩
+  · rcases hw with hw | hw
+    · obtain ⟨s, hs, hR⟩ := r1 w hw; exact ⟨s, Or.inl hs, hR⟩
+    · obtain ⟨s, hs, hR⟩ := r2 w hw; exact ⟨s, Or.inr hs, hR⟩
+  · rcases hs with hs | hs
+    · obtain ⟨w, hw, hR⟩ := s1 s hs; exact ⟨w, Or.inl hw, hR⟩
+    · obtain ⟨w, hw, hR⟩ := s2 s hs; exact ⟨w, Or.inr hw, hR⟩
+
 /-- **THEOREM 8.2** in `Rel` (book p.203) at `FX = L+E×X`: a fold on SORTED LISTS of partial
     solutions, thinned at every step, refines the thinning specification —
     `min R·Λ⦇f₁p₁ ∪ f₂p₂⦈ ⊒ minlist R·⦇thinlist Q·merge ≼·⟨g₁,g₂⟩·listcp(F)⦈` with
