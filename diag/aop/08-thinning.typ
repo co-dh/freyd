@@ -123,6 +123,7 @@ row((
 #import "../generated/Freyd.Alg.est_comp_singletonMap_cond2.calc.typ" as calc-82b
 #import "../generated/Freyd.Alg.Λ_comp_est_comp_singletonMap_cond1.calc.typ" as calc-83a
 #import "../generated/Freyd.Alg.Λ_comp_est_comp_singletonMap_cond2.calc.typ" as calc-83b
+#import "../generated/Freyd.Alg.thinning_fusion.calc.typ" as calc-81a
 #import "../generated/Freyd.Alg.thinning_prefixed.calc.typ" as calc-81
 #import "../generated/Freyd.Alg.map_sort_comp_listcp_le.calc.typ" as calc-l81
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
@@ -171,11 +172,15 @@ row((
      // thinning-of-reduce row: Theorem 8.1, p. 195
   ],
      // lean:AOP.A8_1.thinning@818ac37b
-  // A conjunction has no shape in either calculus, so it heads the chain as text.
-  [`⦇`#frc([`F(∋)S`])` thin(Q)⦈∋⊑⦇S⦈` #h(10pt) and #h(10pt)
-   `⦇S⦈°⦇`#frc([`F(∋)S`])` thin(Q)⦈⊑Q°∈` \
-   #src[@thin-laws:1 at `X≜⦇`#frc([`F(∋)S`])` thin(Q)⦈`, `⦇S⦈` for its `S`]],
-  [#IMP #src[@cata-fusion, @hylo-mu]],
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond1") \
+    #src[everything the thinning fold keeps is a value of the plain fold — @thin-laws:1, first
+     condition, by @cata-fusion from the chain below]],
+     // lean:AOP.A8_1.thinning_cond1@daa38052
+  lean-calc(calc-81a),
+  Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond2") \
+    #src[every value of the plain fold is `Q`-above one the thinning fold keeps — @thin-laws:1,
+     second condition, by @hylo-mu from the chain below]],
+     // lean:AOP.A8_1.thinning_cond2@5ea85cb4
   lean-calc(calc-81),
 )]<thin-thm81>
 

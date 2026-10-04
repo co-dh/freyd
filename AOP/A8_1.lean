@@ -472,6 +472,30 @@ public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : Preorde
 
 calc_steps thinning_prefixed
 
+/-- The fusion premise of `thinning`'s first half: a thinning keeps only members of the set, and
+    the transpose cancels against `∋`. -/
+public theorem thinning_fusion {Q : A ⟶ A} {S : F.obj A ⟶ A} :
+    (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A ⊑ F.map (∋ A) ≫ S :=
+  calc (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A
+        = Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ≫ ∋ A := Cat.assoc _ _ _
+    _ ⊑ Λ (F.map (∋ A) ≫ S) ≫ ∋ A := comp_mono_left _ (thinRel_comp_eps_le Q)
+    _ = F.map (∋ A) ≫ S := Λ_eps_eq' _
+
+calc_steps thinning_fusion
+
+/-- `thinning`'s first condition: everything the thinning fold keeps is a value of `⦇S⦈` — the
+    fusion law (6.5) at `thinning_fusion`. -/
+public theorem thinning_cond1 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A ⟶ A} :
+    relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ ∋ A ⊑ relCata S :=
+  comp_le_relCata I thinning_fusion
+
+/-- `thinning`'s second condition: every value of `⦇S⦈` is `Q`-above one the thinning fold keeps —
+    the hylomorphism theorem at the prefixed point `thinning_prefixed`. -/
+public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A ⟶ A}
+    (hQ : Preorder Q) (hmono : Freyd.Alg.MonoAlg S Q) :
+    (relCata S)° ≫ relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Q° ≫ (∋ A)° :=
+  hylo_le_of_prefixed I (thinning_prefixed hQ hmono)
+
 /-- **THEOREM 8.1 (the thinning theorem, B&dM p.195)**: for a transitive `Q` and an algebra `S`
     that is monotonic on the preorder `Q`, thinning at every unfold step
     (`⦇Λ(F∈·S)·thin Q⦈`) refines thinning once, at the end, on the plain catamorphism
@@ -482,19 +506,8 @@ calc_steps thinning_prefixed
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     {S : F.obj A ⟶ A} (hQ : Preorder Q) (hmono : Freyd.Alg.MonoAlg S Q) :
-    relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q := by
-  apply le_Λ_comp_thinRel_iff.mpr
-  refine ⟨?_, ?_⟩
-  · -- (i) `⦇ΛW·thin Q⦈ ≫ ∈ ⊑ ⦇S⦈`, by the fusion law (6.5)
-    apply comp_le_relCata I
-    rw [Cat.assoc]
-    have h1 : Λ (F.map (∋ A) ≫ S) ≫ (thinRel Q ≫ ∋ A) ⊑ Λ (F.map (∋ A) ≫ S) ≫ ∋ A :=
-      comp_mono_left _ (thinRel_comp_eps_le Q)
-    rwa [Λ_eps_eq'] at h1
-  · -- (ii) `⦇S⦈°·⦇ΛW·thin Q⦈ ⊑ Q°·∋`, by the hylomorphism theorem
-    apply hylo_le_of_prefixed I
-    -- goal: `S° ≫ F.map (Q° ≫ (∋a)°) ≫ (ΛW ≫ thin Q) ⊑ Q° ≫ (∋a)°`
-    exact thinning_prefixed hQ hmono
+    relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q :=
+  le_Λ_comp_thinRel_iff.mpr ⟨thinning_cond1 I, thinning_cond2 I hQ hmono⟩
 
 /-- **Corollary 8.1 (B&dM p.196)**: thinning at every step, then taking the `R°`-minimum, refines
     taking the `R°`-minimum of the plain catamorphism, mirrored
