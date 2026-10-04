@@ -176,6 +176,11 @@ partial def stxPeel (s : Syntax) : Syntax :=
   | #[inner] => if s.isOfKind nullKind then stxPeel inner else s
   | _ => s
 
+/-- The text an identifier the printer wrote stands for: its last component, macro scopes erased —
+    a hygienic `p✝` ends in its scope's NUMBER, where `getString!` panicked and wrote "". -/
+def identText (n : Name) : String :=
+  match n.eraseMacroScopes with | .str _ s => s | n => n.toString
+
 mutual
 
 /-- One operand as the printer writes it, peeled — and AN OPERAND THAT IS ITSELF A JUXTAPOSED
@@ -212,8 +217,7 @@ partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[])
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
 partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
-  -- A last component that is a NUMBER (`q.1`) has no string to shorten to: the whole name is it.
-  if h.isIdent then return match h.getId with | .str _ s => s | n => n.toString
+  if h.isIdent then return identText h.getId
   -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
   -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
   -- application is looked for among the paren's OWN children — `Term.paren` carries the optional
@@ -570,20 +574,56 @@ partial def valSteps (s : FVarId) (x : Expr) : MetaM (Option (Array String)) := 
         step deps[0]! (← headShow x.getAppFn args fun a => !a.containsFVar s)
       else return none
 
-/-- The factors an alternative's `n` bound variables come from: the summand's own product structure,
-    peeled the way a tuple pattern binds it. -/
-partial def tupleFactors (s ty : Expr) (n : Nat) : MetaM (Array Expr) := do
-  if n == 0 then return #[]
-  if n == 1 then return #[s]
+/-- Which factor of the bound pair `bvar 0` the term `x` is — `0` for `π₁`, `1` for `π₂` — under any
+    coercions, which print as what they coerce (`delabNoteCoe`). -/
+partial def pairPart? (x : Expr) : MetaM (Option Nat) := do
+  if let .proj ``Prod i (.bvar 0) := x then return some i
+  match x.getAppFnArgs with
+  | (``Prod.fst, #[_, _, .bvar 0]) => return some 0
+  | (``Prod.snd, #[_, _, .bvar 0]) => return some 1
+  | (c, args) =>
+    let some info ← Meta.getCoeFnInfo? c | return none
+    unless info.type == .coe && args.size == info.numArgs do return none
+    pairPart? args[info.coercee]!
+
+/-- A PAIR TAKEN APART INTO A CURRIED FUNCTION is that function: `fun p => g (↑p.1) p.2` is `g`, which
+    the note applies as `g(a,b)` already, so the lambda adds a binder and no step. -/
+def uncurried? (f : Expr) : MetaM (Option Expr) := do
+  let .lam _ _ (.app (.app g x) y) _ := f | return none
+  if g.hasLooseBVars then return none
+  unless (← pairPart? x) == some 0 && (← pairPart? y) == some 1 do return none
+  return some g
+
+/-- The factors an alternative's bound variables come from, read off the BINDERS' TYPES: a binder whose
+    type is the factor in hand takes it whole, any other factor is split as the product it is.  The
+    pattern's nesting is the tree of those types, so `(c,(b,j))` and `((c,b),j)` both bind their
+    leaves; returns the factors and the binder types still unmatched. -/
+partial def tupleFactors (s ty : Expr) (tys : List Expr) : MetaM (Array Expr × List Expr) := do
+  let t :: _ := tys | throwError "a branch binds fewer variables than {← Meta.ppExpr ty} has factors"
+  if ← Meta.isDefEq t ty then return (#[s], tys.drop 1)
   match (← Meta.whnfD ty).getAppFnArgs with
-  | (``Prod, #[_, b]) => return #[.proj ``Prod 0 s] ++ (← tupleFactors (.proj ``Prod 1 s) b (n - 1))
-  | _ => throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which is not a \
-      product of that many factors"
+  | (``Prod, #[a, b]) =>
+    let (l, rest) ← tupleFactors (.proj ``Prod 0 s) a tys
+    let (r, rest) ← tupleFactors (.proj ``Prod 1 s) b rest
+    return (l ++ r, rest)
+  | _ => throwError "a branch binds a variable of type {← Meta.ppExpr t} out of \
+      {← Meta.ppExpr ty}, which is neither that type nor a product"
 
 /-- One alternative as a map OUT OF ITS SUMMAND, which is what an arm of the junction is. -/
 def armFun (alt ty : Expr) (n : Nat) : MetaM Expr :=
   Meta.withLocalDeclD `s ty fun s => do
-    Meta.mkLambdaFVars #[s] (mkAppN alt (← tupleFactors s ty n)).headBeta
+    let tys ← Meta.forallBoundedTelescope (← Meta.inferType alt) n fun xs _ =>
+      xs.toList.mapM Meta.inferType
+    -- No binder is the `Unit` a constant arm takes; one binder is the whole summand.
+    let fs ← match n with
+      | 0 => pure #[]
+      | 1 => pure #[s]
+      | _ => do
+        let (fs, rest) ← tupleFactors s ty tys
+        unless rest.isEmpty do
+          throwError "a branch binds {n} variables out of {← Meta.ppExpr ty}, which has fewer factors"
+        pure fs
+    Meta.mkLambdaFVars #[s] (mkAppN alt fs).headBeta
 
 /-- The arms of a map given by a `match` ON ITS INPUT at a coproduct — the junction `[f,g]` the note
     writes, whether the picture opens it as a tape or a label names it.  `matchMatcherApp?` reads
@@ -933,6 +973,7 @@ partial def mapLabel (f : Expr) (wired : Bool) : MetaM String := do
   -- `@[diag_unfold]`, which `labelTree` has already applied wherever it is spelled.
   let f ← Meta.whnfCore f
   let f := (← branchForm? f).getD f
+  if let some g ← uncurried? f then return ← mapLabel g wired
   if f.isLambda then
     return ← Meta.lambdaBoundedTelescope f 1 fun xs body => do
       let some x := xs[0]? | plain f
@@ -1377,6 +1418,13 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       return wrap Prec.impl
         ((← labelTree (Prec.impl + 1) t) ++ implArrow ++ (← labelTree Prec.impl b))
     if ← Meta.isProp e then
+      -- AN INACCESSIBLE BINDER (`val✝`, a `match`'s `_`) takes an unused name of its own stem, so the
+      -- `∀` and the body spell it alike and no macro scope reaches the page.
+      let lctx ← getLCtx
+      let e := match e with
+        | .forallE n t b bi =>
+          if n.hasMacroScopes then .forallE (lctx.getUnusedName n.eraseMacroScopes) t b bi else e
+        | e => e
       return ← Meta.forallBoundedTelescope e (some 1) fun xs body => do
         match xs[0]? with
         | some x => return wrap Prec.loose ("∀" ++ (← x.fvarId!.getUserName).toString ++ ". "
@@ -1646,6 +1694,11 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
       | some fn => return (← labelTree Prec.atom fn) ++ commaL "(" ")" #[← labelTree 0 x, ← labelTree 0 y]
       | none => txt e
     | none => txt e
+  -- A QUOTIENT LIFT IS THE FUNCTION IT LIFTS applied to the class: the note writes a bag or a real by
+  -- its representative, as `Quotient.mk`'s printer does.  `lift f h q` and `liftOn q f h` alike.
+  | (``Quotient.liftOn, #[_, _, _, q, f, _]) | (``Quot.liftOn, #[_, _, _, q, f, _])
+  | (``Quotient.lift, #[_, _, _, f, _, q]) | (``Quot.lift, #[_, _, _, f, _, q]) =>
+    labelTree prec (mkApp f q).headBeta
   | (c, args) =>
     -- A HEAD THE LABEL HAS NO SPELLING OF is rewritten along the note's own equations first, and
     -- ONLY here: `arm₂` of an algebra is the arm the note names, while every head with a clause
@@ -1816,7 +1869,7 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- The brackets are the NAME'S OWN, closing one token (`(≤N)`), so the tree says `delim` and
     -- the factor before it closes up against them as it does against `⟨…⟩`: `bmax(≤N)`.
     | .ident _ _ nm _ =>
-      if oneToken nm.getString! || prec ≤ (← Prec.juxt) then return out else return .delim "(" ")" out
+      if oneToken (identText nm) || prec ≤ (← Prec.juxt) then return out else return .delim "(" ")" out
     | _ => return out
 
 /-- THE FACTORS A LABEL WRITES, in diagram order, FLAT — composition's own factors, each spelled by

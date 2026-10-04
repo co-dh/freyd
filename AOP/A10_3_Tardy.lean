@@ -568,11 +568,16 @@ calc_steps bagify_recip_le
 
 /-! ## (10.2) by Proposition 9.3 (B&dM pp.255–256) -/
 
+/-- **tardy-defn**: `assocr (𝟙×((bagify°×𝟙) penalty)) bmax`, `k`'s arm on a front's cost, its bag
+    and the last job: a `def` of its own because its pointwise body is no label the note can write. -/
+@[expose] public def kStep (p : (Int × (Bag Job).carrier) × Job) : Int :=
+  bmax p.1.1 (bagPenalty ct dt wt (p.1.2, p.2))
+
 /-- **tardy-defn**: `k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, the step `cost` is a fold of
     once the schedule carries its bag. -/
 @[expose] public def kFn : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier → Int
   | Sum.inl _ => 0
-  | Sum.inr ((c, b), j) => bmax c (bagPenalty ct dt wt (b, j))
+  | Sum.inr p => kStep ct dt wt p
 
 /-- **tardy-defn**: `k` as an arrow. -/
 @[expose] public def k :
