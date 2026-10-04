@@ -301,6 +301,11 @@ public theorem prodMap_outl_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A)
   have h := comp_mono_right (dom_coreflexive (P.outr ≫ S)) (P.outl ≫ R)
   rwa [Cat.id_comp] at h
 
+/-- Both projection squares of `R×S` at once, the statement the note's two-square picture draws. -/
+public theorem prodMap_out_le (P : RelProd C D) (Q : RelProd A B) (R : C ⟶ A) (S : D ⟶ B) :
+    prodMap P Q R S ≫ Q.outl ⊑ P.outl ≫ R ∧ prodMap P Q R S ≫ Q.outr ⊑ P.outr ≫ S :=
+  ⟨prodMap_outl_le P Q R S, prodMap_outr_le P Q R S⟩
+
 /-- **(5.6) sharpened**, the mirror of `prodMap_outr_eq_of_entire`: the `dom` factor (5.6) leaves
     behind sits on the DISCARDED leg, so it is `𝟙` as soon as that leg's relation is ENTIRE:
     `(R×S) ≫ outl = outl ≫ R`.  `prodMap_id_outl` is the case `S = 𝟙`. -/
