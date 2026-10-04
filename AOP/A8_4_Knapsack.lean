@@ -21,12 +21,8 @@
     candidate lists are sorted by.
   - `knap_laws`: the note's `knap-laws` headline, Theorem 8.2 at those data.
 
-  ASSUMED, as in the book and in `AOP.A8_3`: the sorted-list interface (8.7)-(8.11) —
-  `sort P`, `listcp(F)`, `list fᵢ`, `filter pᵢ`, `merge P`, `thinlist Q`, `minlist R` — stays
-  a family of abstract arrows with the laws it is used by as hypotheses.  Only the last row
-  of the note's `knap-laws` is out of reach at that level: `listcp(F)=wrap+cpr` and
-  `gᵢ=[list(nil),hᵢ]` compute inside a CONCRETE list implementation, and there is no `wrap`
-  or `cpr` to compute with while the list object is abstract.
+  The sorted-list combinators are `AOP.A8_3`'s concrete ones (`sort`, `listcp`, `list`,
+  `filter`, `merge`, `thinlist`, `minlist`), so (8.6)-(8.11) are theorems, not hypotheses.
 
   B&dM's `Real` is `Int` here (the repo is Mathlib-free; only `+` and `≤` are ever used), as
   in `AOP.A7_3_Party`.
@@ -374,49 +370,35 @@ public theorem knap_spec (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
         obtain rfl : r = y := hcase
         exact ⟨subseqP.weaken hsy, hwy⟩
 
+/-- `within w` as the test `filter` takes: the packing's weight fits the knapsack. -/
+@[expose] public def withinB (w : Int) (x : ConsList Unit Item) : Bool := decide (total wt x ≤ w)
+
+/-- `within w` is the coreflexive of the test `withinB w`. -/
+public theorem within_eq_pcor :
+    within (wt := wt) w = GCTakeWhile.pcor (withinB (wt := wt) w) := by
+  apply hom_ext; intro x y
+  constructor
+  · rintro ⟨rfl, h⟩; exact ⟨rfl, decide_eq_true h⟩
+  · rintro ⟨rfl, h⟩; exact ⟨rfl, of_decide_eq_true h⟩
+
+/-- `R ≜ value ≥ value°` is connected: any two packings compare by value one way or the other. -/
+public theorem R_connected : Freyd.Alg.Connected (R vol) :=
+  le_iff.mpr fun x y _ => (Int.le_total (total vol y) (total vol x)).imp id id
+
 /-- **knap-laws**, the thinning step: Theorem 8.2 (`thinningList`) at `f₁ ≜ [nil,cons]`,
     `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`, `p₂ ≜ 𝟙`, `P ≜ R`.  Its specification side is the fold
     `⦇S⦈`, which `knap_laws_step2` reads back as `subseq (within w)`. -/
-public theorem knap_laws_step1
-    {sort : ∀ {X : RelSet.{0}}, (X ⟶ X) → (P X ⟶ listRelator.obj X)}
-    {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
-    {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
-    {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
-    {minlist : listRelator.obj (dList Item) ⟶ dList Item}
-    {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
-    {Pr' : RelProd (P (dList Item)) (P (dList Item))}
-    {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
-    (hsort : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
-      X ⊑ Y → sort X ⊑ sort Y)
-    (h88₁ : sort (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
-    (h88₂ : sort (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
-      ⊑ powerRel (graph dropFn) ≫ (sort (R vol)))
-    (h89₁ : (sort (R vol)) ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ (sort (R vol)))
-    (h811 : (F Unit Item).map (sort (R vol)) ≫ listcp
-      ⊑ cpMap (F Unit Item) (dList Item) ≫ sort ((F Unit Item).map (R vol)))
-    (h810 : prodMap Pr' Pr (sort (R vol)) (sort (R vol)) ≫ (merge (R vol)) ⊑ cup Pr' ≫ (sort (R vol)))
-    (h86 : (sort (R vol)) ≫ thinlist ⊑ thinRel (Q vol wt) ≫ (sort (R vol)))
-    (h87 : (sort (R vol)) ≫ minlist ⊑ est (R vol)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 (listRelator.obj (dList Item)))
-        ≫ (merge (R vol)) ≫ thinlist⦈ ≫ minlist
+public theorem knap_laws_step1 :
+    ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+        (list (graph con) ≫ Filter.filter (withinB (wt := wt) w)) (list (graph dropFn))
+        ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
       ⊑ Λ ⦇Salg wt w⦈ ≫ est (R vol) := by
-  have hm₂ : Freyd.Alg.MonoAlg (F := F Unit Item) (graph dropFn ≫ 𝟙 (dList Item)) (Q vol wt) := by
-    rw [Cat.comp_id]; exact knap_mono_drop
-  have h89₂ : (sort (R vol)) ≫ 𝟙 (listRelator.obj (dList Item)) ⊑ existsImage (𝟙 (dList Item)) ≫ (sort (R vol)) := by
-    rw [Cat.comp_id, existsImage_id, Cat.id_comp]
-    exact le_refl _
-  have key := thinningList (L := listRelator) (F := F Unit Item) (initial Unit Item)
-    (f₁ := graph con) (f₂ := graph dropFn) (p₁ := within (wt := wt) w) (p₂ := 𝟙 (dList Item))
-    («≼» := R vol) (Q := Q vol wt) (R := R vol)
-    -- §8.3's combinators are FAMILIES indexed by the order they are given, as the note writes
-    -- them (`sort P`, `merge P`, `thinlist Q`, `minlist R`); this chapter fixes one order each.
-    (sort := sort) (merge := merge) (thinlist := fun _ => thinlist)
-    (minlist := fun _ => minlist)
-    (graph_map con) (graph_map dropFn) Q_le_R ⟨Q_refl, Q_trans⟩
+  have key := thinningList con dropFn (withinB (wt := wt) w) (fun _ => true)
+    («≼» := R vol) (Q := Q vol wt) (R := R vol) Q_le_R ⟨Q_refl, Q_trans⟩
     ⟨R_refl, trans_of_recip_trans R_recip_trans⟩
-    knap_mono_cons hm₂ hsort knap_sort_cons knap_sort_drop h88₁ h88₂ h89₁ h89₂ h811 h810 h86 h87
-    rfl rfl rfl
-  rw [Cat.comp_id (graph dropFn)] at key
+    (by rw [← within_eq_pcor]; exact knap_mono_cons) (by rw [pcor_true, Cat.comp_id]; exact knap_mono_drop)
+    ⟨R_refl, trans_of_recip_trans R_recip_trans⟩ R_connected knap_sort_cons knap_sort_drop
+  rw [filter_true, Cat.comp_id, pcor_true, Cat.comp_id, ← within_eq_pcor] at key
   exact key
 
 /-- **knap-laws**, the specification step: `knap_spec` under `Λ(−) est(R)`. -/
@@ -429,32 +411,14 @@ public theorem knap_laws_step2 (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
     `Λ(subseq (within w)) est(R) ⊒ ⦇listcp(F) ⟨g₁,g₂⟩ merge R thinlist Q⦈ minlist R`.
     Theorem 8.2 (`thinningList`) at `f₁ ≜ [nil,cons]`, `p₁ ≜ within w`, `f₂ ≜ [nil,π₂]`,
     `p₂ ≜ 𝟙`, `P ≜ R`, with `knap-mono` discharging the monotonicity conditions and
-    `knap_spec` the specification.  The sorted-list interface (8.7)-(8.11) is assumed, as in
-    the book. -/
-public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i)
-    {sort : ∀ {X : RelSet.{0}}, (X ⟶ X) → (P X ⟶ listRelator.obj X)}
-    {listcp : (F Unit Item).obj (listRelator.obj (dList Item)) ⟶ listRelator.obj ((F Unit Item).obj (dList Item))}
-    {listf₁ listf₂ : listRelator.obj ((F Unit Item).obj (dList Item)) ⟶ listRelator.obj (dList Item)}
-    {filterp₁ thinlist : listRelator.obj (dList Item) ⟶ listRelator.obj (dList Item)}
-    {minlist : listRelator.obj (dList Item) ⟶ dList Item}
-    {Pr : RelProd (listRelator.obj (dList Item)) (listRelator.obj (dList Item))}
-    {Pr' : RelProd (P (dList Item)) (P (dList Item))}
-    {merge : (dList Item ⟶ dList Item) → (Pr.p ⟶ listRelator.obj (dList Item))}
-    (hsort : ∀ {X Y : (F Unit Item).obj (dList Item) ⟶ (F Unit Item).obj (dList Item)},
-      X ⊑ Y → sort X ⊑ sort Y)
-    (h88₁ : sort (graph con ≫ R vol ≫ (graph con)°) ≫ listf₁ ⊑ powerRel (graph con) ≫ (sort (R vol)))
-    (h88₂ : sort (graph dropFn ≫ R vol ≫ (graph dropFn)°) ≫ listf₂
-      ⊑ powerRel (graph dropFn) ≫ (sort (R vol)))
-    (h89₁ : (sort (R vol)) ≫ filterp₁ ⊑ existsImage (within (wt := wt) w) ≫ (sort (R vol)))
-    (h811 : (F Unit Item).map (sort (R vol)) ≫ listcp
-      ⊑ cpMap (F Unit Item) (dList Item) ≫ sort ((F Unit Item).map (R vol)))
-    (h810 : prodMap Pr' Pr (sort (R vol)) (sort (R vol)) ≫ (merge (R vol)) ⊑ cup Pr' ≫ (sort (R vol)))
-    (h86 : (sort (R vol)) ≫ thinlist ⊑ thinRel (Q vol wt) ≫ (sort (R vol)))
-    (h87 : (sort (R vol)) ≫ minlist ⊑ est (R vol)) :
-    ⦇listcp ≫ Pr.pair (listf₁ ≫ filterp₁) (listf₂ ≫ 𝟙 (listRelator.obj (dList Item)))
-        ≫ (merge (R vol)) ≫ thinlist⦈ ≫ minlist
+    `knap_spec` the specification. -/
+public theorem knap_laws (hw : 0 ≤ w) (hwt : ∀ i, 0 ≤ wt i) :
+    ⦇listcp ≫ (relProd (dList (ConsList Unit Item)) (dList (ConsList Unit Item))).pair
+        (list (graph con) ≫ Filter.filter (withinB (wt := wt) w)) (list (graph dropFn))
+        ≫ merge (R vol) ≫ thinlist (Q vol wt)⦈ ≫ minlist (R vol)
       ⊑ Λ (subseq ≫ within (wt := wt) w) ≫ est (R vol) := by
   rw [← knap_laws_step2 hw hwt]
-  exact knap_laws_step1 hsort h88₁ h88₂ h89₁ h811 h810 h86 h87
+  exact knap_laws_step1
 
 end Freyd.Alg.RelSet.Knapsack
+

@@ -575,6 +575,15 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.add] def unexpandTardyAdd : Unexpander | _ => `($(mkIdent `add))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Knapsack.R] def unexpandKnapsackR : Unexpander | _ => `($(mkIdent `R))
+-- The Bool tests `filter` takes are the book's coreflexives `within w`, `ok w` read as tests.
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Knapsack.withinB] def unexpandKnapsackWithinB : Unexpander
+  | `($_ $w) => `($(mkIdent `within) $w)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Paragraph.okB] def unexpandParagraphOkB : Unexpander
+  | `($_ $w) => `($(mkIdent `ok) $w)
+  | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Paragraph.R] def unexpandParagraphR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
