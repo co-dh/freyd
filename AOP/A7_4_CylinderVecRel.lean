@@ -209,6 +209,14 @@ public theorem est_eq (S : A ⟶ A) : (est S : dTuple k A ⟶ A) = mem ∩ (mem�
   · rintro ⟨hx, hall⟩
     exact ⟨hx, fun i => hall (v i) ⟨i, rfl⟩⟩
 
+/-- **cyl-defn** on `Vec`: `R ≜ sum≤sum°` at one length `m` — a path of `m` squares is no
+    costlier than another; one order per length, which is how the `Vec` column types `R`. -/
+@[expose] public def costLE (m : Nat) : dTuple m (⟨Nat⟩ : RelSet.{0}) ⟶ dTuple m ⟨Nat⟩ :=
+  RelSet.graph (fun v : Fin m → Nat => (List.ofFn v).sum)
+    ≫ (fun a b => a ≤ b : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)
+    ≫ (RelSet.graph (fun v : Fin m → Nat => (List.ofFn v).sum) :
+        dTuple m (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}))°
+
 /-! ## The greedy algebra and its fold -/
 
 /-- **`Q(R) ≜ F(𝟙,moves trans Vec(n)(est(R))) zip Vec(n)(cons)`** — `gen` with the choice made:

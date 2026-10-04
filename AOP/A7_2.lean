@@ -157,11 +157,17 @@ public theorem mon_thm71_step4 (hf : Map f) (hFr : F.PreservesRecip) :
   exact (Freyd.Alg.monoAlg_recip_iff hf hFr).symm
 
 /-- **Theorem 7.1 (B&dM p.172)**: `f` is monotonic on `R` exactly when it distributes over
-    `min R°` — the four steps composed. -/
+    `min R°` — the four steps composed.  The right side is `Distributes f R` written out, so the
+    note prints the inequation itself rather than the predicate's name. -/
 public theorem monoAlg_iff_distributes (hf : Map f) (hFr : F.PreservesRecip)
-    (hpair : R° ⊑ (∋ A)° ≫ est R) : f° ≫ F.map R ≫ f ⊑ R ↔ Distributes f R :=
-  (mon_thm71_step4 hf hFr).symm.trans
-    ((mon_thm71_step3 hpair).symm.trans (mon_thm71_step2.symm.trans (mon_thm71_step1 hFr).symm))
+    (hpair : R° ⊑ (∋ A)° ≫ est R) :
+    f° ≫ F.map R ≫ f ⊑ R ↔ F.map (est R) ≫ f ⊑ Λ (F.map (∋ A) ≫ f) ≫ est R :=
+  calc f° ≫ F.map R ≫ f ⊑ R
+      ↔ f° ≫ F.map R° ≫ f ⊑ R° := (mon_thm71_step4 hf hFr).symm
+    _ ↔ f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R° := (mon_thm71_step3 hpair).symm
+    _ ↔ (F.map (est R) ≫ f ⊑ F.map (∋ A) ≫ f ∧
+          f° ≫ F.map ((∋ A)°) ≫ F.map (est R) ≫ f ⊑ R°) := mon_thm71_step2.symm
+    _ ↔ Distributes f R := (mon_thm71_step1 hFr).symm
 
 /-- **Theorem 7.1 (B&dM p.172), unconditional half**: monotonicity of `f` on `R°` implies `f`
     distributes over `min R°`.  Steps 1 and 2 are the whole content; step 3's `⊑` half is
