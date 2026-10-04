@@ -277,10 +277,17 @@ partial def sameDrawn (a b : Expr) : MetaM Bool := do
   if xs.size == 0 || xs.size != ys.size then return false
   return (← sameDrawn a.getAppFn b.getAppFn) && (← (xs.zip ys).allM fun (x, y) => sameDrawn x y)
 
+/-- Two terms the note DRAWS alike: one term by `sameDrawn`, or two whose labels are one.  A
+    coercion the label does not print is no step a reader can see: `graph (f g)` and `graph f graph g`
+    both print `f g`, and a law between them read as the tautology `f g = f g`. -/
+def drawnAlike (a b : Expr) : MetaM Bool := do
+  if ← sameDrawn a b then return true
+  return (← labelT a).bare.typst == (← labelT b).bare.typst
+
 /-- Whether `B` is `A` with the definitions `ds` opened (or closed) and nothing else: both sides
     delta-expanded at `ds` (`deltaExpand` beta-reduces) draw one term. -/
 def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
-  sameDrawn (← Meta.deltaExpand (← instantiateMVars A) ds.contains)
+  drawnAlike (← Meta.deltaExpand (← instantiateMVars A) ds.contains)
     (← Meta.deltaExpand (← instantiateMVars B) ds.contains)
 
 /-- THE RELATION LEAN PROVES FROM PANEL `a` TO PANEL `b` OF A CHAIN: a theorem whose statement's
@@ -311,9 +318,14 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   let B ← sideIn b ys (binderNames cb.type) bodyB
   -- A STEP THAT ONLY OPENS A DEFINITION IS `≜`: the beads on one side alone, unfolded, leave the two
   -- sides one picture.  Asked before `rfl`, which would answer the same step `=`.
+  -- ONE of them may be the step: `genFold concat ≜ paths` has `genFold` and `concat` on one side
+  -- only, and opening them as well as `paths` leaves no picture to compare.
   let ds ← opened A B
   if !ds.isEmpty && (← unfoldsTo ds A B) then
     for d in ds do noteRead (.decl d)
+    return (`delta, "≜")
+  if let some d ← ds.findM? fun d => unfoldsTo #[d] A B then
+    noteRead (.decl d)
     return (`delta, "≜")
   -- The hypotheses the step may use: either panel's declaration assumes them.
   let given ← (xs ++ ys).filterMapM fun h => do
@@ -386,6 +398,16 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   noteRead (.stmt c)
   return (c, s)
 
+/-- Whether law `c`, as its reason cell prints it, reads as a tautology: its two sides one label,
+    as `graph_comp`'s `f g = f g`, the `graph` coercion unprinted.  Such a law is no reason. -/
+def readsAlike (c : Name) : MetaM Bool := do
+  let some ci := (← getEnv).find? c | throwError "no such declaration: {c}"
+  -- In the scope and spacing `render` prints the reason cell with.
+  withDeclScope c do withSpaced true do
+  Meta.forallTelescope (← nameSelf c ci.type) fun _ b => do
+    let some (_, l, r) := split b | return false
+    return (← labelT l (some r)).bare.typst == (← labelT r (some l)).bare.typst
+
 /-- THE LAWS A STEP'S PROOF APPLIES: every theorem application whose statement relates two arrows
     and none of whose arguments applies a law itself.  An application handed a proof that applies
     another law is congruence or monotonicity around that law (`congrArg`, `comp_mono_left`); a
@@ -400,11 +422,16 @@ partial def lawsIn (e : Expr) : MetaM (Array Name) := do
     let args := e.getAppArgs
     let per ← args.mapM lawsIn
     let inner := per.foldl (· ++ ·) #[]
-    let built := per.any (!·.isEmpty)
+    let env ← getEnv
+    -- A PROOF argument applying ANY theorem, law or bracketing (`graph_comp` under `congrArg`), makes
+    -- this application congruence around it.
+    let isThm (x : Expr) := x.getAppFn.constName?.any fun n => (env.find? n).any (· matches .thmInfo _)
+    let built := per.any (!·.isEmpty) || (← args.anyM fun a => do
+      return (a.find? isThm).isSome && (← Meta.isProof a))
     let some c := e.getAppFn.constName? | return inner
-    unless !built && ((← getEnv).find? c).any (· matches .thmInfo _) do return inner
+    unless !built && (env.find? c).any (· matches .thmInfo _) do return inner
     let some (_, l, r) := split (← instantiateMVars (← Meta.inferType e)) | return inner
-    return if ← sameDrawn l r then inner else inner.push c
+    return if (← drawnAlike l r) || (← readsAlike c) then inner else inner.push c
   | _ => return #[]
 
 /-- THE FILE `lean-calc` READS, one row per term of the `calc` proving `declName`: the panel
