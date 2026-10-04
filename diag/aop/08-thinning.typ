@@ -247,7 +247,8 @@ row((
 
 #leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
 
-#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.algSplit"), #h(4pt) #leanf("Freyd.Alg.Λ_pathF_map_eps_id"), #h(4pt)
+#leanf("Freyd.Alg.pathQ"), #h(4pt) #leanf("Freyd.Alg.algSplit"), \
+#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), \
 #leanf("Freyd.Alg.Λ_pathF_map_id_eps"), #h(4pt) #leanf("Freyd.Alg.pathStep").
 // lean:AOP.A6_ConsList.alphaR@d7bb4987
 // lean:AOP.A8_2.wrapz@e528d496
