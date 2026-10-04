@@ -80,27 +80,50 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
-#disp[#definition[
-`detab≜⦇[nil,expand]⦈ : String⟶String` #src[]
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
+
+  [#leann("Freyd.Alg.RelSet.Detab.detabFn")], [#leant("Freyd.Alg.RelSet.Detab.detabFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.detab_cata")],
+  [replace every tab by blanks up to the next tab stop; `H=detab°`],
+  [#leann("Freyd.Alg.RelSet.Detab.expandFn")], [#leant("Freyd.Alg.RelSet.Detab.expandFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.expandFn")],
+  [a tab fills the line to the next stop; any other character is appended],
+  [#leann("Freyd.Alg.RelSet.Detab.fillFn")], [#leant("Freyd.Alg.RelSet.Detab.fillFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.fillFn")],
+  [append blanks up to the next multiple of `n` columns],
+  [#leann("Freyd.Alg.RelSet.Detab.colFn")], [#leant("Freyd.Alg.RelSet.Detab.colFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.colFn")],
+  [the column the string ends at: characters since the last newline],
+  [#leann("Freyd.Alg.RelSet.Detab.R")], [#leant("Freyd.Alg.RelSet.Detab.R")],
+  [#leanf("Freyd.Alg.RelSet.Detab.R")],
+  [`x` is no longer than `y`],
+  [#leann("Freyd.Alg.RelSet.Detab.U")], [#leant("Freyd.Alg.RelSet.Detab.U")],
+  [#leanf("Freyd.Alg.RelSet.Detab.U")],
+  [`a` is the tab or `a=b`],
+  [#leann("Freyd.Alg.RelSet.Detab.V")], [#leant("Freyd.Alg.RelSet.Detab.V")],
+  [#leanf("Freyd.Alg.RelSet.Detab.V")],
+  [a prefix that fills to the same string],
+  [#leann("Freyd.Alg.RelSet.Detab.Q")], [#leant("Freyd.Alg.RelSet.Detab.Q")],
+  [#leanf("Freyd.Alg.RelSet.Detab.Q")],
+  [compare two decompositions by `V` on the strings and `U` on the characters],
+  [#leann("Freyd.Alg.RelSet.Detab.unfillFn")], [#leant("Freyd.Alg.RelSet.Detab.unfillFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.unfillFn")],
+  [the shortest prefix that fills to the same string],
+  [#leann("Freyd.Alg.RelSet.Detab.tbcFn")], [#leant("Freyd.Alg.RelSet.Detab.tbcFn")],
+  [#leanf("Freyd.Alg.RelSet.Detab.tbcFn")],
+  [the number of trailing blanks],
+  [#leann("Freyd.Alg.RelSet.Detab.tripleR")], [#leant("Freyd.Alg.RelSet.Detab.tripleR")],
+  [#leanf("Freyd.Alg.RelSet.Detab.tripleR")],
+  [what `entab` keeps: the unfilled output, its trailing blank count and its column],
 // lean:AOP.A10_2_Detab.detab_cata@37355797
-over snoc-lists, #h(4pt) `α≜[nil,snoc]`, #h(4pt)
-`H=detab°`; #h(4pt) `expand (xs,a)=(a=TB→fill xs,xs⧺[a])`, #h(4pt)
-`fill xs=xs⧺blanks (n−(col xs) mod n)`.
-
-`col≜⦇[zero,count]⦈`, #h(4pt) `count (c,a)=(a=NL→0,c+1)`; #h(4pt) `TB` the tab, `BL` the
-blank, `NL` the newline, tab stops every `n` columns.
-
-`R≜length≤length°` #src[], #h(4pt)
 // lean:AOP.A10_2_Detab.R@5b23da25
-`U` the preorder with `a U b⟺a=TB∨a=b`, #h(4pt)
-`V≜prefix°∩(fill fill°)` #src[], #h(4pt)
 // lean:AOP.A10_2_Detab.V@b0fc79bc
-`Q≜𝟙+(V×U)` #src[].
 // lean:AOP.A10_2_Detab.Q@7a0a1541
-
-`unfill xs` the shortest prefix of `xs` with `fill (unfill xs)=fill xs`; #h(4pt) `tbc` the trailing
-blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
-]]<entab-defn>
+)]<entab-defn>
 
 // B&dM pp.249–250, "we argue": the claim the next chain leaves aside, one row per hint.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
@@ -249,25 +272,57 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
 
 // B&dM §10.3, p. 253.  Both conditions need context, and `cost` has to be restated over `perm xs`
 // before Proposition 9.3 fits — `penalty` reads the bag of scheduled jobs, not their order.
-#disp[#definition[
-`FX=1+(X×Job)`, #h(4pt) `α≜[nil,snoc]` on schedules, #h(4pt) `β≜[nil,snag]` on bags,
-`snag` putting a job into a bag; #h(4pt) `bagify≜⦇β⦈ : [Job]⟶Bag Job`, #h(4pt) `H=bagify°`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-`ct`, `dt`, `wt : Job⟶Real` the completion, due and weighting quantities of a job; #h(4pt)
-`penalty(xs,j)=(sum(list(ct)(xs))+ct(j)−dt(j))×wt(j)`.
-
-`cost≜` $frac(#[`prefix`], ∋)$ `P(α° [zero,penalty]) est(≥)`, #h(4pt) `cost []=0`, #h(4pt)
-`cost (xs⧺[j])=bmax (cost xs,penalty (xs,j))`, #h(4pt) `R≜cost≤cost°`.
-
-`perm≜bagify bagify°=⦇[nil,add]⦈`, #h(4pt) `add (xs,j)=ys⧺[j]⧺zs` for some `xs=ys⧺zs`.
-
-`k≜[zero,assocr (𝟙×((bagify°×𝟙) penalty)) bmax]`, #h(4pt)
-`f≜[zero,(bagify°×𝟙) penalty]`, #h(4pt) `Q≜f≤f°`, #h(4pt) `Q'≜(bagify°×𝟙) penalty≤penalty°(bagify×𝟙)`.
+  [#leann("Freyd.Alg.RelSet.Tardy.Bag")], [#leant("Freyd.Alg.RelSet.Tardy.Bag")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.Bag")],
+  [a bag of jobs: a list up to reordering],
+  [#leann("Freyd.Alg.RelSet.Tardy.snag")], [#leant("Freyd.Alg.RelSet.Tardy.snag")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.snag")],
+  [put one job into a bag],
+  [#leann("Freyd.Alg.RelSet.Tardy.bagify")], [#leant("Freyd.Alg.RelSet.Tardy.bagify")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.bagify_cata")],
+  [forget the order of a schedule; `H=bagify°` lists every schedule of a bag],
+  [#leann("Freyd.Alg.RelSet.Tardy.penalty")], [#leant("Freyd.Alg.RelSet.Tardy.penalty")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.penalty")],
+  [how late job `j` finishes after the schedule `xs`, times its weight],
+  [#leann("Freyd.Alg.RelSet.Tardy.cost")], [#leant("Freyd.Alg.RelSet.Tardy.cost")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.cost")],
+  [the largest penalty of any job in the schedule],
+  [#leann("Freyd.Alg.RelSet.Tardy.bmax")], [#leant("Freyd.Alg.RelSet.Tardy.bmax")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.bmax")],
+  [the larger of two numbers],
+  [#leann("Freyd.Alg.RelSet.Tardy.R")], [#leant("Freyd.Alg.RelSet.Tardy.R")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.R_eq")],
+  [`xs` costs no more than `ys`],
+  [#leann("Freyd.Alg.RelSet.Tardy.add")], [#leant("Freyd.Alg.RelSet.Tardy.add")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.add")],
+  [insert `j` anywhere in `xs`; `perm≜bagify bagify°=⦇[nil,add]⦈`],
+  [#leann("Freyd.Alg.RelSet.Tardy.k")], [#leant("Freyd.Alg.RelSet.Tardy.k")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.k")],
+  [the cost of a schedule from the cost of its front and the penalty of its last job],
+  [#leann("Freyd.Alg.RelSet.Tardy.fFn")], [#leant("Freyd.Alg.RelSet.Tardy.fFn")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.fFn")],
+  [the penalty of the last job, read off the bag before it],
+  [#leann("Freyd.Alg.RelSet.Tardy.Q")], [#leant("Freyd.Alg.RelSet.Tardy.Q")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.Q")],
+  [the last job of `u` gets no larger penalty than that of `v`],
+  [#leann("Freyd.Alg.RelSet.Tardy.Q'")], [#leant("Freyd.Alg.RelSet.Tardy.Q'")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.Q'")],
+  [`Q` on the `snag` summand: compare the penalties of the two last jobs],
 // lean:AOP.A10_3_Tardy.bagify@31766900 lean:AOP.A10_3_Tardy.bagAlg@d0f7446e lean:AOP.A10_3_Tardy.snag@c772c474 lean:AOP.A10_3_Tardy.nilBag@f9126385 lean:AOP.A10_3_Tardy.Bag@257c054f lean:AOP.A10_3_Tardy.bagify_cata@bcacee1a lean:AOP.A10_3_Tardy.penalty@cb396f8a lean:AOP.A10_3_Tardy.cost@a1054f80 lean:AOP.A10_3_Tardy.bmax@fc84cd0a lean:AOP.A10_3_Tardy.R@be4c6db5 lean:AOP.A10_3_Tardy.Q@f060536c lean:AOP.A10_3_Tardy.Q'@ea357147 lean:AOP.A10_3_Tardy.fFn@94a6f009 lean:AOP.A10_3_Tardy.tardy_H@23f37b4f lean:AOP.A10_3_Tardy.nil_ne_snag@77e87166
-
-`g≜[zero,penalty]` #src[(10.5)], #h(4pt) `m≜[zero,π₁ cost]` (B&dM's `h`, renamed as in @tardy-laws) #src[(10.6)].
+  [#leann("Freyd.Alg.RelSet.Tardy.g")], [#leant("Freyd.Alg.RelSet.Tardy.g")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.g"), #leanf("Freyd.Alg.RelSet.Tardy.g_apply")],
+  [(10.5): the penalty of the last job, zero for the empty schedule],
+  [#leann("Freyd.Alg.RelSet.Tardy.m")], [#leant("Freyd.Alg.RelSet.Tardy.m")],
+  [#leanf("Freyd.Alg.RelSet.Tardy.m")],
+  [(10.6), B&dM's `h` renamed as in @tardy-laws: the cost of the schedule before the last job],
 // lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A10_3_Tardy.bmaxR@c4eeff86 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
-]]<tardy-defn>
+)]<tardy-defn>
 
 // B&dM p.255: `cost` restated over the bag of the schedule, the form Proposition 9.3 asks for.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),

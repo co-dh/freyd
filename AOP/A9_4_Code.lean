@@ -56,6 +56,10 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet.SL
 -- every panel peels it into the list lane over `Char`.
 macro:max "dStr" : term => `(dSL Unit Char)
 
+/-- **code-defn**: `list⁺ A::=wrap A∣snoc (list⁺ A,A)`, the non-empty snoc-lists — a `SnocList`
+    whose base is itself one `A`, so `String⁺` is `SnocNE Char`. -/
+@[expose] public def SnocNE (A : Type) : Type := SnocList A A
+
 /-- **code-defn**: `Code::=sym Char∣ptr (String,String⁺)`.  `String⁺` is the guard `zs≠nil`
     inside `extend`, not a second datatype. -/
 public inductive Code where
