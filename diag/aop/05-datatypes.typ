@@ -120,7 +120,6 @@ For `X : E⟶C` and `Y : E⟶D`, `⟨X,Y⟩(R×S)=⟨XR,YS⟩`. Both sides are t
 // B&dM §5.2, pp. 114–117, MIRRORED: the book writes `h·f` for first `f`, this note `f h`.  Five rows are
 // ONE picture — `×` is `⊗` and `⟨R,S⟩` is `◁(R⊗S)`, so interchange spends the law before it is stated.
 #disp[
-  #show table.cell.where(x: 0): rownum
   #table(
   columns: (5.95cm, 1fr),
   align: (left + horizon, center + horizon),

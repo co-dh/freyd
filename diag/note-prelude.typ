@@ -125,14 +125,6 @@
 // these off `note-files --generated` and draws them by `--proof`.
 #import "generated/Freyd.Diag.CartBicat.frob.proof.typ": branches as frobb
 
-// Row numbers so a law can be cited: `it.y` is the table's OWN index, so deleting a row renumbers
-// the rest.  Rebuilt as a cell, not returned bare — bare content loses the row's height.
-#let rownum = it => if it.y == 0 or it.body.func() == grid { it } else {
-  let f = it.fields()
-  let _ = f.remove("body")
-  table.cell(..f, grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#it.y], it.body))
-}
-
 // The Hinze–Marsden picture column the derivation tables share; the formula column takes the rest
 // of the 22cm block, and 9cm is what the widest circuit in that column still fits in.
 #let HMW = 9cm

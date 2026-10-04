@@ -63,6 +63,69 @@
 /// marker that depends on a state or query of its own costs a layout pass per link and never converged.
 #let disp-thms(s, at) = query(selector(<thm-num>).after(s.location()).before(at))
 
+// ---- A REFERENCE NAMES THE ROW, NEVER THE TABLE: a law cited as its whole table sends the reader
+// hunting through every row for the one that justifies the step.  Every first cell of a table inside a
+// display (`law-row`, bound by `conf`) emits a `<law-row>` marker holding its row index, the same index
+// under the label `<table-label:index>`, and under each Lean selector its `#leanf`s name — so the row
+// that states a law owns its number, and `@Freyd.Alg.Λ_absorption` lands on it.
+/// The `<disp-start>` of the display around `loc`, or `none` outside every display.
+#let disp-of(loc) = {
+  let s = query(selector(<disp-start>).before(loc)).at(-1, default: none)
+  if s != none and query(selector(<disp-end>).after(s.location()).before(loc)).len() == 0 { s }
+}
+/// A LAW TABLE: a display of two or more numbered rows, no `Thm` header and no book number.  A `Thm`
+/// heads a theorem and a book number (`disp(num: …)`) names one book statement: either is cited whole.
+#let law-table(s) = {
+  let e = query(selector(<disp-end>).after(s.location())).at(0, default: none)
+  let m = query(selector(<disp-num>).after(s.location())).at(0, default: none)
+  (e != none and m != none and m.value == none and disp-thms(s, e.location()).len() == 0
+    and query(selector(<law-row>).after(s.location()).before(e.location())).len() > 1)
+}
+/// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
+#let lean-keys(c) = { if type(c) != content { () }
+  else if c.func() == metadata { if c.at("label", default: none) == <lean-formula> { (c.value,) } else { () } }
+  else if c.has("children") { c.children.map(lean-keys).flatten() }
+  else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
+/// A row's number as a reference prints it: the display's number and the row index, `(0.10a.5)`;
+/// a row of a theorem display is cited as the theorem, its display's number.
+#let rowid(loc, y) = {
+  let s = disp-of(loc)
+  let m = query(selector(<disp-num>).after(s.location())).at(0)
+  if not law-table(s) { dispid(s.location()) }
+  else if m.value == none { "(" + dispid(s.location(), raw: true) + "." + str(y) + ")" }
+  else { [#m.value.#str(y)] }
+}
+/// THE GATE: a reference to a law table records itself, where it stands and what it cites, and `conf`
+/// stops the compile at the end with every such reference listed — one run names them all.
+#let law-gate(it) = {
+  let el = it.element
+  if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
+    let s = query(selector(<disp-start>).after(el.location())).at(0)
+    if law-table(s) {
+      let at = disp-of(here())
+      [#metadata("p." + str(here().page()) + (if at == none { "" } else { " in (" + dispid(at.location(), raw: true) + ")" }) +
+        ": @" + str(it.target) + " cites the whole law table (" + dispid(s.location(), raw: true) + ")")<table-ref>]
+    }
+  }
+}
+/// The first cell of every row of a display's table; the header (`y = 0`) is the table's, not a row.
+/// The rebuilt cell matches this rule again; its leading `<law-row>` marker is what stops it.
+#let law-row = it => if it.y == 0 or (it.body.has("children") and it.body.children.at(0, default: none) != none and it.body.children.at(0).at("label", default: none) == <law-row>) { it } else {
+  let f = it.fields()
+  let _ = f.remove("body")
+  table.cell(..f, {
+    [#metadata(it.y)<law-row>]
+    for k in lean-keys(it.body).dedup() [#metadata(it.y)#label(k)]
+    context {
+      let s = disp-of(here())
+      if s != none and s.value != none [#metadata(it.y)#label(s.value + ":" + str(it.y))]
+      if s != none and law-table(s) {
+        grid(columns: (0.55cm, 1fr), text(9pt, luma(140))[#it.y], it.body)
+      } else { it.body }
+    }
+  })
+}
+
 // ---- `scripts/scanline`'s input.  A panel helper emits THE SAME lists it draws from as
 // `#metadata`, which is not laid out: a copy written beside the picture is a copy that drifts.
 // A label is content and JSON wants its text; coordinates, `none` and strings ride through, so a
@@ -185,7 +248,9 @@
   show ref: it => {
     let el = it.element
     if el != none and el.func() == figure and el.at("kind", default: none) == "disp" {
-      context link(el.location(), dispid(el.location()))
+      context { law-gate(it); link(el.location(), dispid(el.location())) }
+    } else if el != none and el.func() == metadata and type(el.value) == int {
+      context link(el.location(), rowid(el.location(), el.value))
     } else { it }
   }
   // Breakable when taller than a page (`kept`), though a figure is not: a chain table that tall
@@ -201,6 +266,7 @@
   show figure.where(kind: "disp"): it => kept(k => block(width: 100%, {
     show list: set align(left)
     show table: set align(left)
+    show table.cell.where(x: 0): law-row
     set list(indent: 0pt, spacing: 0.9em)
     // `--input cdscan=1`: the display's own LABEL, which nothing inside `disp` can see — a label
     // belongs to the figure, and only a show rule holds the element it is attached to.
@@ -220,7 +286,8 @@
     // with no `Thm` sets it on its own line above, right-aligned to the column.  In the margin it
     // stood a page gutter away from the table it names.
     context {
-      [#metadata(none)<disp-start>]
+      // its label, so a row inside can name itself `<label:row>`
+      [#metadata(if it.at("label", default: none) == none { none } else { str(it.label) })<disp-start>]
       context {
         let s = query(selector(<disp-start>).before(here())).last()
         let e = query(selector(<disp-end>).after(here())).at(0, default: none)
@@ -237,6 +304,13 @@
     [#metadata(none)<disp-end>]
   }))
   body
+  context {
+    let bad = query(<table-ref>).map(m => m.value)
+    if bad.len() > 0 {
+      panic(str(bad.len()) + " reference(s) cite a whole law table; cite the row that justifies the step — " +
+        "@<the selector its #leanf names> or @<table label>:<row number>\n" + bad.join("\n"))
+    }
+  }
 }
 
 /// THE WHOLE-BOOK COMPILE, SEEN FROM INSIDE A CHAPTER: the root sets this before its first
@@ -291,7 +365,7 @@
     show ref: it => context {
       let t = str(it.target)
       let present = query(it.target).len() > 0
-      if t in names { if present { link(it.target, names.at(t)) } else { names.at(t) } }
+      if t in names { if present { law-gate(it); link(it.target, names.at(t)) } else { names.at(t) } }
       else if present { it } else { [#t] }
     }
     doc

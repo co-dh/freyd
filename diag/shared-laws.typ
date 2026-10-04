@@ -358,7 +358,6 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 
 #let law-pow-laws = [
 #disp[
-  #show table.cell.where(x: 0): rownum
   #table(
   columns: (7.95cm, 1fr),
   align: (left + horizon, left + horizon),

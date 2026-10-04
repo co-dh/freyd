@@ -11,7 +11,7 @@
 // `▿` at the four generator glyphs' size and for the same reason: at running-text size it reads as a
 // subscript, not an operator.  Not in note-style.typ — the proofs note shares that file and has no copair.
 #show regex("▿"): it => text(size: 1.45em, it)
-#show ref: it => context { import "shared-laws.typ": elsewhere; let t = str(it.target); if t in refname { link(it.target, refname.at(t)) } else if t in elsewhere and query(it.target).len() == 0 { elsewhere.at(t) } else { it } }
+#show ref: it => context { import "shared-laws.typ": elsewhere; let t = str(it.target); if t in refname { law-gate(it); link(it.target, refname.at(t)) } else if t in elsewhere and query(it.target).len() == 0 { elsewhere.at(t) } else { it } }
 
 #NOTEROOT.update(true)
 #include "aop/00-laws.typ"
