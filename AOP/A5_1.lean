@@ -171,6 +171,12 @@ public theorem Relator.preservesRecip_of_tabular {𝒜 : Type u₁} {ℬ : Type 
     rw [hRrecip, F.map_comp, F.map_recip_map hg_map]
   rw [hFmapRrecip, hFmapR, Allegory.recip_comp, Allegory.recip_recip]
 
+/-- `F(R°)=F(R)°` for every `R` (B&dM p. 113), so `F(R)°` needs no bracket: Theorem 5.1 at one
+    arrow, the form the note states. -/
+public theorem Relator.map_recip {𝒜 : Type u₁} {ℬ : Type u₂} [TabularAllegory 𝒜]
+    [Allegory.{v₂} ℬ] (F : Relator 𝒜 ℬ) {A B : 𝒜} (R : A ⟶ B) : F.map R° = (F.map R)° :=
+  F.preservesRecip_of_tabular R
+
 /-- A relator carries ENTIRENESS: in the form `𝟙 ⊑ R ≫ R°` (`entire_id_le`, §2.13) the condition
     is built from `𝟙`, `≫` and `°`, and over a tabular source a relator preserves all three
     (Theorem 5.1(a)), so `𝟙 = F(𝟙) ⊑ F(R ≫ R°) = F R ≫ (F R)°`. -/

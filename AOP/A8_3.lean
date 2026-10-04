@@ -864,6 +864,40 @@ public inductive Merge («≼» : A → A → Prop) :
 @[expose] public def merge («≼» : dE A ⟶ dE A) : (relProd (dList A) (dList A)).p ⟶ dList A :=
   fun p z => Merge ≼ p.1 p.2 z
 
+-- The book's `merge`, not Lean's qualified name: another `merge` is in scope.
+open Lean PrettyPrinter in
+@[app_unexpander merge] public meta def unexpandMerge : Unexpander
+  | `($_:ident $a) => `($(mkIdent `merge) $a)
+  | `($_:ident) => `($(mkIdent `merge))
+  | _ => throw ()
+
+/-- `merge(⊤)=cat` (B&dM p.212): with every pair in order a merge takes all of the first list
+    before the second, so `P≜⊤` needs no sorting. -/
+public theorem merge_top :
+    (merge (topMor (dE A) (dE A)) : (relProd (dList A) (dList A)).p ⟶ dList A) = catR := by
+  have hnil : ∀ x : ConsList Unit A, cappend x (ConsList.wrap ()) = x := by
+    intro x; induction x with
+    | wrap _ => rfl
+    | cons a x ih => exact congrArg (ConsList.cons a) ih
+  funext p z
+  obtain ⟨x, y⟩ := p
+  apply propext
+  show Merge _ x y z ↔ z = cappend x y
+  constructor
+  · intro h
+    induction h with
+    | nilr x => exact (hnil x).symm
+    | nill y => rfl
+    | consl a b _ _ ih => exact congrArg (ConsList.cons a) ih
+    | consr a b hn _ _ => exact absurd (RelSet.topMor_apply a b) hn
+  · rintro rfl
+    induction x generalizing y with
+    | wrap _ => exact Merge.nill y
+    | cons a x ih =>
+      cases y with
+      | wrap _ => rw [hnil]; exact Merge.nilr _
+      | cons b y => exact Merge.consl a b (RelSet.topMor_apply a b) (ih _)
+
 /-- Every element of a merge comes from one of the two lists. -/
 public theorem inlistP_of_Merge {«≼» : A → A → Prop} {x y z : ConsList Unit A}
     (h : Merge ≼ x y z) {c : A} (hc : inlistP z c) : inlistP x c ∨ inlistP y c := by

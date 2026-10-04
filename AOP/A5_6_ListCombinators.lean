@@ -218,7 +218,7 @@ public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.i
 @[expose] public def suffixR : dList A ⟶ dList A := fun x ys => suffixP ys x
 
 /-- B&dM's `cat` (append) as a relation: the graph of `cappend`. -/
-public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
+@[expose] public def catR : (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A :=
   graph fun p => cappend p.1 p.2
 
 /-- `cat` at the restricted type `list A ⟵ list⁺ A × list A` (B&dM p.128), the restriction carried
