@@ -128,6 +128,8 @@ in @mu-defn.
   ), Sub("Freyd.Alg.dynamic_programming_upper_steps4to5",
     gloss: src[rebuilding an answer of `H` from its parts, each replaced by `M`'s, and one `R°` stays within `R°`],
      // lean:AOP.A9_1.dynamic_programming_upper_steps4to5@e85ef872
+    (EQ, "Freyd.Alg.dynamic_programming_upper_step3c.rhs", src[`F(H°)F(M)=F(H°M)` — @relator-laws]),
+     // lean:AOP.A9_1.dynamic_programming_upper_step3c@0569b820
     (SQ, "Freyd.Alg.dynamic_programming_upper_step4.rhs", src[`H°M⊑R°` — @est-up]),
      // lean:AOP.A9_1.dynamic_programming_upper_step4@7bf9d190
     (SQ, "Freyd.Alg.dynamic_programming_upper_step5.rhs", src[`h` monotonic on `R°`]),
@@ -307,7 +309,7 @@ in @mu-defn.
      // lean:AOP.A9_1.monoAlg_in_context_step2@e27a633e
     (EQ, "Freyd.Alg.monoAlg_in_context_step3.rhs",
       src[`h cost=F(⟨cost,S⟩)k`]),
-     // lean:AOP.A9_1.monoAlg_in_context_step3@23c4eb72
+     // lean:AOP.A9_1.monoAlg_in_context_step3@604aead5
   ), Sub("Freyd.Alg.monoAlg_in_context_steps4to7",
     gloss: src[the improvement on the bundles, assembled by `k`, is below assembling by `h` and improving by `R`],
      // lean:AOP.A9_1.monoAlg_in_context_steps4to7@865a4e77

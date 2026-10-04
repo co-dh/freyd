@@ -565,9 +565,10 @@ public theorem monoAlg_in_context_step2 {C : 𝒜} {h : F.obj A ⟶ A} {R : A �
 
 /-- Proposition 9.3, third step: the assumption on `cost`, `h cost = F(⟨cost,S⟩)k`. -/
 public theorem monoAlg_in_context_step3 {C : 𝒜} {h : F.obj A ⟶ A} {cost : A ⟶ C}
-    {S : A ⟶ B} {P : RelProd C B} {k : F.obj P.p ⟶ C} {X : A ⟶ A}
+    {S : A ⟶ B} {P : RelProd C B} {«≤» : C ⟶ C} {k : F.obj P.p ⟶ C}
     (hch : h ≫ cost = F.map (P.pair cost S) ≫ k) :
-    F.map X ≫ h ≫ cost ≫ cost° = F.map X ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
+    F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ h ≫ cost ≫ cost°
+      = F.map (P.pair (cost ≫ «≤») S ≫ (P.pair cost S)°) ≫ F.map (P.pair cost S) ≫ k ≫ cost° := by
   rw [← Cat.assoc h cost, hch]
   simp only [Cat.assoc]
 

@@ -912,6 +912,11 @@ public theorem tardy_tail_step5 :
       = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
   rw [← Cat.assoc ((P2).pair _ _) bmaxR, ← cost_alg_bmax, Cat.assoc]
 
+/-- The tail, closing step: the definition of `R` (`R_eq`). -/
+public theorem tardy_tail_step6 :
+    αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° = αJ ≫ R ct dt wt := by
+  rw [R_eq]
+
 /-- B&dM p.257, the tail of (10.3): `⟨g≤,m≤⟩⟨g,α cost⟩°α⊑αR` — a job whose penalty is at most
     the last job's, put last after a schedule costing at most the rest, costs at most the whole. -/
 public theorem tardy_tail :
@@ -922,8 +927,15 @@ public theorem tardy_tail :
   rw [tardy_tail_step2]
   refine le_trans (tardy_tail_step3 ct dt wt) ?_
   refine le_trans (tardy_tail_step4 ct dt wt) ?_
-  rw [tardy_tail_step5, R_eq]
+  rw [tardy_tail_step5, tardy_tail_step6]
   exact le_refl _
+
+/-- **(10.3)**, seventh step: the tail `tardy_tail`, under `F(bagify°)`. -/
+public theorem tardy_greedy_step7 :
+    FbJ ≫ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
+        ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ
+      ⊑ FbJ ≫ αJ ≫ R ct dt wt :=
+  comp_mono_left _ (tardy_tail ct dt wt)
 
 /-- **(10.3)**, the greedy condition IN CONTEXT: `α·Fbagify°·(Q° ∩ β°β) ⊆ R°·α·Fbagify°`, by the
     book's calculation (B&dM p.257). -/
@@ -937,7 +949,7 @@ public theorem tardy_greedy [DecidableEq Job] (hct : ∀ j, 0 ≤ ct j) (hwt : �
   refine le_trans (tardy_greedy_step3 ct dt wt hct hwt) ?_
   refine le_trans (tardy_greedy_step4 ct dt wt) ?_
   rw [tardy_greedy_step5, tardy_greedy_step6]
-  exact comp_mono_left _ (tardy_tail ct dt wt)
+  exact tardy_greedy_step7 ct dt wt
 
 end Greedy
 
@@ -1059,14 +1071,14 @@ public theorem schedule_unfold :
 include hpick in
 /-- **tardy-laws**, last row: the step the panel draws — `pick` in place of the search
     `est(Q')Λsnag°` refines the branch `tardy_branch` starts from. -/
-public theorem pick_branch_le (schedule : Bag Job ⟶ dSL Unit Job) :
-    pick ≫ rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0}))
+public theorem pick_branch_le (X : Bag Job ⟶ dSL Unit Job) :
+    pick ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
         ≫ arm₂ (graph (con (L := Unit) (E := Job)))
       ⊑ Λ ((arm₂ (bagAlg (Job := Job)))°) ≫ est (Q' ct dt wt)
-          ≫ rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0}))
+          ≫ rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0}))
           ≫ arm₂ (graph (con (L := Unit) (E := Job))) := by
   have h := comp_mono_right hpick
-    (rprodMap schedule (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))
+    (rprodMap X (𝟙 (⟨Job⟩ : RelSet.{0})) ≫ arm₂ (graph (con (L := Unit) (E := Job))))
   rw [Cat.assoc] at h
   exact h
 

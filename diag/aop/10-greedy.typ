@@ -458,6 +458,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy_step6.rhs", src[products: `⟨R,S⟩⟨T,U⟩°=RT°∩SU°`]),
     // lean:AOP.A10_3_Tardy.tardy_greedy_step6@19339638
     (SQ, "Freyd.Alg.RelSet.Tardy.tardy_greedy.rhs", src[@tardy-tail]),
+    // lean:AOP.A10_3_Tardy.tardy_greedy_step7@127df0be
   )),
 )]<tardy-greedy>
 
@@ -481,6 +482,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail_step5.rhs", src[(10.4) — @tardy-cost-bmax]),
     // lean:AOP.A10_3_Tardy.tardy_tail_step5@739d1394
     (EQ, "Freyd.Alg.RelSet.Tardy.tardy_tail.rhs", src[definition of `R`]),
+    // lean:AOP.A10_3_Tardy.tardy_tail_step6@6b0b253f
   )),
 )]<tardy-tail>
 
