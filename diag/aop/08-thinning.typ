@@ -199,29 +199,86 @@ row((
 
 // B&dM §8.2, p. 196.  `Q` has to record `head` because `wt (a, head xs)` is unbounded: a dearer path
 // with a nearer first vertex can still win.
-#disp[#definition[
-`F(A,X)=A+A×X`, #h(4pt) `L=list⁺` with initial algebra #leanf("Freyd.Alg.RelSet.CL.alphaR") `: F(A,LA)⟶LA`.
+#disp[#table(
+  columns: (auto, auto, 1.3fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*name*], [*type*], [*definition*], [*meaning*]),
 
-#leanf("Freyd.Alg.wrapz"), #h(4pt) #leanf("Freyd.Alg.conswFn_apply").
-
-#leanf("Freyd.Alg.pathCost"), #h(4pt) #leanf("Freyd.Alg.cataR_wrapz_consw"), #h(4pt) #leanf("Freyd.Alg.pathR").
-
-#leanf("Freyd.Alg.pathQ"), \
-#leanf("Freyd.Alg.Λ_pathF_map_eps_id"), \
-#leanf("Freyd.Alg.Λ_pathF_map_id_eps"), #h(4pt) #leanf("Freyd.Alg.pathStep").
-// lean:AOP.A6_ConsList.alphaR@d7bb4987
+  [#leann("Freyd.Alg.pathF")], [#leant("Freyd.Alg.pathF")],
+  [#leanf("Freyd.Alg.pathF_obj")],
+  [a path is either one vertex a, or a vertex a followed by a path xs],
+  [#leann("Freyd.Alg.alphaR_pathF")], [#leant("Freyd.Alg.alphaR_pathF")],
+  [#leanf("Freyd.Alg.alphaR_pathF")],
+  [build a path: wrap one vertex as [a], or put a in front of xs],
+  [#leann("Freyd.Alg.wrapz")], [#leant("Freyd.Alg.wrapz")],
+  [#leanf("Freyd.Alg.wrapz"), #leanf("Freyd.Alg.wrapz_apply.mapsto")],
+  [a path of one vertex, no edge, cost 0],
+  [#leann("Freyd.Alg.consw")], [#leant("Freyd.Alg.consw")],
+  [#leanf("Freyd.Alg.consw_apply.mapsto")],
+  [put a in front of the path; the cost adds the weight of the new edge a→head(xs)],
+  [#leann("Freyd.Alg.pathCost")], [#leant("Freyd.Alg.pathCost")],
+  [#leanf("Freyd.Alg.pathCost")],
+  [the cost of [a₀,…,aₙ] is wt(a₀,a₁)+…+wt(aₙ₋₁,aₙ)],
+  [#leann("Freyd.Alg.pathR")], [#leant("Freyd.Alg.pathR")],
+  [#leanf("Freyd.Alg.pathR")],
+  [xs is cheaper than ys],
+  [#leann("Freyd.Alg.RelSet.ListRel.nelist")], [#leant("Freyd.Alg.RelSet.ListRel.nelist")],
+  [#leanf("Freyd.Alg.relCata_pathF_eps_eq_nelist")],
+  [L(∋) relates a list of layers to every path that chooses one vertex from each layer],
+  [#leann("Freyd.Alg.minpath")], [#leant("Freyd.Alg.minpath")],
+  [#leanf("Freyd.Alg.minpath_spec")],
+  [the input [x₀,…,xₙ] : L(PA) is a list of layers, each a set of vertices; a path chooses one vertex from each layer, and minpath returns a cheapest one],
+  [#leann("Freyd.Alg.pathQ")], [#leant("Freyd.Alg.pathQ")],
+  [#leanf("Freyd.Alg.pathQ")],
+  [like R, and the two paths also start at the same vertex: head(xs) = head(ys)],
+  [#leann("Freyd.Alg.sumCop_u₁_eq")], [#leant("Freyd.Alg.sumCop_u₁_eq")],
+  [#leanf("Freyd.Alg.sumCop_u₁_apply.mapsto")],
+  [mark a value as the left alternative],
+  [#leann("Freyd.Alg.sumCop_u₂_eq")], [#leant("Freyd.Alg.sumCop_u₂_eq")],
+  [#leanf("Freyd.Alg.sumCop_u₂_apply.mapsto")],
+  [mark a value as the right alternative],
+  [#leann("Freyd.Alg.cplMap")], [#leant("Freyd.Alg.cplMap")],
+  [#leanf("Freyd.Alg.cplMap")],
+  [pair every element of the set with the value beside it],
+  [#leann("Freyd.Alg.cprMap")], [#leant("Freyd.Alg.cprMap")],
+  [#leanf("Freyd.Alg.cprMap")],
+  [pair the value beside the set with every element of the set],
+  [#leann("Freyd.Alg.Λ_pathF_map_eps_id")], [#leant("Freyd.Alg.Λ_pathF_map_eps_id")],
+  [#leanf("Freyd.Alg.Λ_pathF_map_eps_id")],
+  [cpl transpose: from layer x and a set of paths ps, choose a vertex a ∈ x],
+  [#leann("Freyd.Alg.Λ_pathF_map_id_eps")], [#leant("Freyd.Alg.Λ_pathF_map_id_eps")],
+  [#leanf("Freyd.Alg.Λ_pathF_map_id_eps")],
+  [cpr transpose: from a vertex a and a set of paths ps, choose a tail xs ∈ ps],
+  [#leann("Freyd.Alg.pathStep")], [#leant("Freyd.Alg.pathStep")],
+  [#leanf("Freyd.Alg.pathStep")],
+  [put a in front of every path in ps and keep a cheapest one],
+// lean:AOP.A8_2_Exec.pathF_obj@55c448b1
+// lean:AOP.A8_2.pathF@2dcf37fa
+// lean:AOP.A8_2_Exec.alphaR_pathF@6536d8fa
 // lean:AOP.A8_2.wrapz@e528d496
-// lean:AOP.A8_2.conswFn_apply@c88ec21b
+// lean:AOP.A8_2.wrapz_apply@e7256951
+// lean:AOP.A8_2.consw@53d456cc
+// lean:AOP.A8_2.consw_apply@e512412c
 // lean:AOP.A8_2.pathCost@2d18e3c4
-// lean:AOP.A8_2.cataR_wrapz_consw@03d3331b
 // lean:AOP.A8_2.costOf@dfe994f6
 // lean:AOP.A8_2.pathR@6d0be9c8
+// lean:AOP.A8_2_Exec.relCata_pathF_eps_eq_nelist@c0422a4d
+// lean:AOP.A8_2_Exec.minpath_spec@15aa3287
+// lean:AOP.A8_2_Exec.minpath@6e6b277d
+// lean:AOP.A5_6_ListCombinators.RelSet.ListRel.nelist@8f93f06d
+// lean:AOP.A8_2.sumCop_u₁_eq@77ceb1de
+// lean:AOP.A8_2.sumCop_u₂_eq@345d6352
+// lean:AOP.A8_2.sumCop_u₁_apply@950600cc
+// lean:AOP.A8_2.sumCop_u₂_apply@774edfff
+// lean:AOP.A5_6.cplMap@a82b3919
+// lean:AOP.A5_6.cprMap@379d6c37
 // lean:AOP.A8_2.pathQ@adf20bfb
 // lean:AOP.A8_2.headRel@32b2507f
 // lean:AOP.A8_2.pathStep@f546a21f
 // lean:AOP.A8_2.Λ_pathF_map_eps_id@59cd9f69
 // lean:AOP.A8_2.Λ_pathF_map_id_eps@b7473cec
-]]<path-defn>
+)]<path-defn>
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -247,6 +304,12 @@ row((
     // layered-network row: B&dM §8.2, p. 198
     #src[a least-cost path in a layered network, as a fold over the layers]],
      // lean:AOP.A8_2.thinning_paths@f43f12a8
+  [- Why it is needed: `est(R)` keeps one cheapest `w` of the set `Λ(S)(x)`; `thin(Q)` needs every
+     dropped `z` to be `Q`-beaten by a kept one. For `{w}` alone to be a thinning we need `w Q z` for
+     every `z` in `Λ(S)(x)`.
+   - We have `w R z` (`w` is cheapest) and `w (S°S) z` (both are built by `S` from the same argument
+     `x`); the hypothesis turns the two into `w Q z`: among candidates from one argument, cheaper
+     already means `Q`-better.],
   lean-calc(calc-82c),
 )]<path-laws>
 
@@ -260,12 +323,12 @@ row((
     #src[thinning the algebra of a layered network costs no more than taking the program's two cases]],
      // lean:AOP.A8_2.thinning_paths_alg@b81f936d
   lean-calc(calc-82d),
-  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @path-defn]],
+  [#EQ #leanf("Freyd.Alg.cpMap_comp_powerRel_alphaR_comp_est_eq_junc") \ #src[at the layered network (`F(A,X)=A+A×X`, `B` the paths `V⁺`, `α=[wrap,cons]`): #frc([`F(𝟙,∋)`])` P(α) est(R)=[wrap,step]` — @Freyd.Alg.pathStep]],
     // lean:AOP.A8_2.cpMap_comp_powerRel_alphaR_comp_est_eq_junc@7d981497
     // lean:AOP.A8_2.pathStep@f546a21f
   // No panel: `cpMap_sum_eq_junc` holds for EVERY pair of relators, and the exporter has no
   // naturality verdict for an `F` that is only a variable — it draws a red stub instead.
-  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @path-defn]],
+  [#EQ #src[#frc([`F(∋,𝟙)`])` =𝟙+cpl` — @Freyd.Alg.Λ_pathF_map_eps_id]],
       // lean:AOP.A5_6.cpMap_sum_eq_junc@01828e3f
 )]<path-alg>
 // What `F(R,S)` does at 8.2d's `F(A,X)=A+A×X`: each part moves by its own relation, the summand stays.

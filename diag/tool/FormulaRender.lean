@@ -190,6 +190,22 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
       | some (sym, l, r) => return pre ++ #[ante ++ (← labelT l (some r)) ++ spaced sym sp, ← labelT r (some l)]
       | none => return pre ++ #[ante ++ (← labelT target')]
 
+/-- The selector step `.mapsto`: an arrow on a point, `x ↦ e`, read off a statement `R x r ↔ r = e`
+    whose `R` is an arrow and whose `r` is the statement's own bound variable — the shape that says
+    `R` is the map `x ↦ e` there.  Any other shape is refused: `↦` would then claim a map nobody proved. -/
+def mapsto (declName : Name) : MetaM Lbl :=
+  withDeclScope declName do withSpaced true do
+  let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
+  Meta.forallTelescope ci.type fun xs body => do
+    let refuse : MetaM Lbl := throwError "{declName}: `.mapsto` reads a statement `R x r ↔ r = e`, \
+      `R` an arrow and `r` a bound variable; this one states {← Meta.ppExpr body}"
+    let some (lhs, rhs) := body.iff? | refuse
+    let some (_, r, e) := rhs.eq? | refuse
+    unless lhs.getAppNumArgs ≥ 2 && lhs.appArg! == r && r.isFVar && xs.contains r do return ← refuse
+    let x := lhs.appFn!.appArg!
+    let some _ := homObjs? (← Meta.inferType lhs.appFn!.appFn!) | refuse
+    return (← labelT x) ++ spaced "↦" true ++ (← labelT e)
+
 /-- The file a note cell `#include`s: the statement as typst content (`Lbl.typst`, a division the
     fraction wherever it stands), cut after its relation by
     `relBreak` so the cell has somewhere to wrap.  The `lean:<decl>@<key>` marker above it is
@@ -198,6 +214,7 @@ def render (sp : Bool) (declName : Name) (binder : Option String) (path : List S
     (`leanf(sel, compact: true)`, the selector step `.compact`: a formula fitted above a panel). -/
 def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
+  if path.contains "mapsto" then return "#" ++ (← mapsto declName).bare.typst ++ "\n"
   let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
   return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 

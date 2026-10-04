@@ -1418,6 +1418,15 @@ def parseArg (arg : String) (sel : Bool) :
     else if stem.endsWith ".compact" then
       stem := stem.dropEnd 8
       sides := "compact" :: sides
+    -- `.mapsto`: the FORMULA's point form `x ↦ e`, read off `R x r ↔ r = e` (`FormulaRender.mapsto`).
+    else if stem.endsWith ".mapsto" then
+      stem := stem.dropEnd 7
+      sides := "mapsto" :: sides
+    -- `.name`: the TYPE route's name cell, the term alone — a table with a name column prints the
+    -- name from the declaration its type cell reads, not a hand-typed copy.
+    else if stem.endsWith ".name" then
+      stem := stem.dropEnd 5
+      sides := "name" :: sides
     else more := false
   -- `<Name>#<binder>` is one BINDER of the declaration's `∀`-telescope — a hypothesis is a
   -- statement too.  Split before `toName`: `#` is not an identifier character, so
@@ -1686,7 +1695,7 @@ def staleMain (route : String) (stringMode circuitMode commutativeMode typeMode 
   -- call; the commutative route's `+` is one file drawn from two declarations.
   let jobs : List (String × List (String × Name × List Name)) := args.map fun a =>
     (a, (callFiles stringMode circuitMode a).map fun n =>
-      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      let (base, _, _, _) := parseArg n (circuitMode || stringMode || formulaMode || typeMode)
       (n, ctxDecl commutativeMode graphMode formulaMode n base, selDecls commutativeMode graphMode formulaMode n base))
   for (call, files) in jobs do
     let mut stale := false
@@ -1809,7 +1818,7 @@ def main (args : List String) : IO UInt32 := do
   -- nothing, whatever declaration they come from.  Every selector is taken apart once, here.
   let jobs : List (String × String) :=
     args.flatMap fun a => (callFiles stringMode circuitMode a).map fun n => (n, a)
-  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode)
+  let parsed := jobs.map fun (n, _) => parseArg n (circuitMode || stringMode || formulaMode || typeMode)
   let tasks ← (jobs.zip parsed).mapM fun ((arg, call), base, binder, sides, branch) => do
     -- The selectors of THIS CALL, this one among them, as the string functor takes them.  A call
     -- may name SEVERAL declarations — the steps of one chain, drawn in one row — and each peer is
@@ -1835,6 +1844,12 @@ def main (args : List String) : IO UInt32 := do
       if sides.contains "compact" && !formulaMode then
         throwError "{arg}: `.compact` is a formula's print mode, read by --formula only — a panel's \
           labels are compact already"
+      if sides.contains "mapsto" && !formulaMode then
+        throwError "{arg}: `.mapsto` is a formula's print mode, read by --formula only"
+      if sides.contains "name" && !typeMode then
+        throwError "{arg}: `.name` is a name cell's print mode, read by --type only"
+      if typeMode && (sides.any (· != "name") || !branch.isEmpty || binder.isSome) then
+        throwError "{arg}: --type reads a declaration whole; its one selector step is `.name`"
       let body ←
         (if sigMode then sig arg.toName
         else if stringMode then StrDiag.drawString base.toName sides binder branch peers
@@ -1844,7 +1859,7 @@ def main (args : List String) : IO UInt32 := do
           Freyd.CircuitDiagram.drawDecl base.toName sides.head? binder branch
         else if commutativeMode then Freyd.CommutativeDiagram.draw arg
         else if graphMode then Freyd.ElementGraph.file arg
-        else if typeMode then Freyd.TypeRender.file arg.toName
+        else if typeMode then Freyd.TypeRender.file base.toName (sides.contains "name")
         else if let some (a, b) := relSels formulaMode arg then Freyd.FormulaRender.relFile a b
         else if formulaMode then Freyd.FormulaRender.file base.toName binder sides branch
         else if valueMode then Freyd.ValueTree.file arg.toName
@@ -1871,7 +1886,7 @@ def main (args : List String) : IO UInt32 := do
       Prod.fst <$> (Meta.MetaM.run' (fresh kind stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
     discard StrDiag.takeReads
     for n in if stringMode then call.splitOn "+" else [arg] do
-      let (b, _) := parseArg n (circuitMode || stringMode || formulaMode)
+      let (b, _) := parseArg n (circuitMode || stringMode || formulaMode || typeMode)
       for d in selDecls commutativeMode graphMode formulaMode n b do StrDiag.noteRead (.decl d)
     let t ← IO.monoNanosNow; let hb ← IO.getNumHeartbeats
     let r ← (Prod.fst <$> run.toIO ctx { env }).toBaseIO
