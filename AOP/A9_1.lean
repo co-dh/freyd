@@ -1273,29 +1273,25 @@ public theorem _root_.Freyd.Alg.RelSet.dp_disjoint_ranges {V₁ : α ⟶ A} {V�
         ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
             ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
-        rw [← Cat.assoc (Freyd.Alg.ran V₁), RelSet.ran_Λ_junc_recip_inl hdisj]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (Freyd.Alg.ran V₁), RelSet.ran_Λ_junc_recip_inl hdisj, Cat.assoc, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
             ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
             ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
-        rw [← Cat.assoc (Freyd.Alg.ran V₂), RelSet.ran_Λ_junc_recip_inr hdisj]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (Freyd.Alg.ran V₂), RelSet.ran_Λ_junc_recip_inr hdisj, Cat.assoc, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
             ≫ thinRel (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂)
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (powerRel (sumCop α β).u₁), RelSet.powerRel_inl_thinRel, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁ ≫ powerRel (sumCop α β).u₁
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂ ≫ powerRel (sumCop α β).u₂
             ≫ powerRel (junc (sumCop α β) U₁ U₂) ≫ est R) := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₂), RelSet.powerRel_inr_thinRel]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (powerRel (sumCop α β).u₂), RelSet.powerRel_inr_thinRel, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ thinRel Q₁
             ≫ powerRel ((sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂) ≫ est R)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ thinRel Q₂

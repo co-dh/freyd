@@ -624,7 +624,7 @@ public theorem tex_greedy (X : Interval ⟶ Decimal) :
         rw [Q]
     _ = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR)
           ∪ (𝟙 ((F Unit Digit).obj Interval) ≫ (F Unit Digit).map X ≫ alphaR) := by
-        rw [union_comp_distrib]; simp only [Cat.assoc]
+        rw [union_comp_distrib, Cat.assoc, Cat.assoc]
     _ = (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR) := by
         rw [Cat.id_comp]
     _ ⊑ (l° ≫ bang° ≫ r ≫ (F Unit Digit).map X ≫ alphaR) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
@@ -638,7 +638,7 @@ public theorem tex_greedy (X : Interval ⟶ Decimal) :
           simpa only [Cat.id_comp, Cat.assoc] using
             comp_mono_right bang_recip_bang (l ≫ alphaR ≫ R))) (le_refl _)
     _ = (l° ≫ l ≫ (F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) := by
-        rw [← l_Fmap X]; simp only [Cat.assoc]
+        rw [← l_Fmap X, Cat.assoc]
     _ ⊑ ((F Unit Digit).map X ≫ alphaR ≫ R) ∪ ((F Unit Digit).map X ≫ alphaR ≫ R) :=
         union_mono (by
           simpa only [Cat.id_comp, Cat.assoc] using

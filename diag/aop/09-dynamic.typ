@@ -91,6 +91,7 @@ in @mu-defn.
 #import "../generated/Freyd.Alg.birelator_thin_condition.calc.typ" as calc-bithin
 #import "../generated/Freyd.Alg.monoAlg_of_cost_shunted.calc.typ" as calc-cost
 #import "../generated/Freyd.Alg.monoAlg_in_context.calc.typ" as calc-ctx
+#import "../generated/Freyd.Alg.RelSet.dp_disjoint_ranges.calc.typ" as calc-dpd
 // B&dM (9.2), p. 220: the book's four hints, one step each, read left to right.
 #disp(num: "(9.2)")[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_lower") \
@@ -172,17 +173,7 @@ in @mu-defn.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.dp_disjoint_ranges") \
     #src[when `V₁` and `V₂` have disjoint ranges, the body over `[V₁,V₂]` runs the `V₁` problem on
      inputs `V₁` reaches and the `V₂` problem on inputs `V₂` reaches]],
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step1.rhs.inl",
-      src[empty off `ran V₁ ∪ ran V₂`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step2.rhs.inl",
-      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step3.rhs.inl",
-      src[`P(inl)thin(Q₁+Q₂)=thin(Q₁)P(inl)`]),
-    (EQ, "Freyd.Alg.RelSet.dp_disjoint_ranges_step4.rhs.inl",
-      src[`P` a relator, `inl[U₁,U₂]=U₁`]),
-  ),
+  lean-calc(calc-dpd, breaks: (3, 6)),
 )]<dp-disjoint>
 
 // B&dM Proposition 9.2, p. 222: the book's hints, one row each.

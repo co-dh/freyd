@@ -43,6 +43,8 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 #import "../generated/Freyd.Alg.RelSet.Tardy.tardy_greedy.calc.typ" as calc-tg
 #import "../generated/Freyd.Alg.RelSet.Tex.tex_fusion_condition.calc.typ" as calc-tf
 #import "../generated/Freyd.Alg.RelSet.Tex.tex_laws.calc.typ" as calc-tl
+#import "../generated/Freyd.Alg.RelSet.Tex.tex_greedy.calc.typ" as calc-tgr
+#import "../generated/Freyd.Alg.RelSet.greedy_disjoint_ranges.calc.typ" as calc-gd
 #import "../generated/Freyd.Alg.RelSet.Detab.expand_V.calc.typ" as calc-ev
 #import "../generated/Freyd.Alg.RelSet.Detab.detab_V_R.calc.typ" as calc-dv
 // B&dM Theorem 10.1, p. 245, "left as an exercise": the proof of Theorem 9.2 with `est(Q)` for
@@ -71,19 +73,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
     #src[when `V₁` and `V₂` have disjoint ranges, the greedy step over `[V₁,V₂]` runs the `V₁` step
      on inputs `V₁` reaches and the `V₂` step on inputs `V₂` reaches]],
      // lean:AOP.A10_1.greedy_disjoint_ranges@e60d7430
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.lhs", []),
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step1.rhs.inl",
-      src[empty off `ran V₁ ∪ ran V₂`]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step1@0e786fad
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step2.rhs.inl",
-      src[#frc([`[V₁,V₂]°`])` = `#frc([`V₁°`])`P(inl)` on `ran V₁` — @dp-disjoint]),
-     // lean:AOP.A10_1.greedy_disjoint_ranges_step2@da0b0f80
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step3.rhs.inl",
-      src[`P(inl)est(Q₁+Q₂)=est(Q₁)inl`]),
-     // lean:AOP.A10_1.powerRel_inl_est@e8906c3a lean:AOP.A10_1.greedy_disjoint_ranges_step3@f11b2dff
-    (EQ, "Freyd.Alg.RelSet.greedy_disjoint_ranges_step4.rhs.inl", src[`inl[U₁,U₂]=U₁`]),
-  ),
+  lean-calc(calc-gd, breaks: (3, 5)),
 )]<greedy-disjoint>
 
 == The detab-entab problem
@@ -464,34 +454,7 @@ blank count, #h(4pt) `triple≜⟨unfill entab,⟨tbc,col⟩⟩`.
     #src[choosing by `Q` among the one-step decompositions before building with `F(X)` and `α`
      yields only decimals that are `R`-related to one built without choosing]],
     // lean:AOP.A10_4_Tex.tex_greedy@a8ba8ee9
-  // steps 1-6's rhs is a `∪` of the branch that simplifies (`.inl`) and the fixed `F(X)α[≫R]`
-  // branch (`.inr`); `union`'s coproduct order draws them left-to-right that way throughout, so the
-  // fixed branch stays on the same side across every step, remerging by idempotence at step 7.
-  lean-chain(
-    (
-      (none, "Freyd.Alg.RelSet.Tex.tex_greedy_step1.lhs", []),
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step1.rhs"),
-        src[`(S ∪ T)U = SU ∪ TU` — definition of `Q`; composition distributes over `∪`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step1@01b945da
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step2.rhs"), src[`𝟙 ⊑ R` — `R` is reflexive]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step2@a4d7ae25
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step3.rhs"),
-        src[`rF(X)α ⊑ !lαR` — `lα = nil`, and `length(nil) = 0` is at most any length]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step3@178d1ae7
-    ),
-    (
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step4.rhs"),
-        src[`!°! ⊑ 𝟙` on `𝟏` — universal property of `!`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step4@c1f18bc7
-      (EQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step5.rhs"),
-        src[`lF(X) = l` — definition of `F`]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step5@f5a296e0
-      (SQ, union("Freyd.Alg.RelSet.Tex.tex_greedy_step6.rhs"), src[`l°l ⊑ 𝟙` — `l` is simple]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step6@d0746bbf
-      (EQ, "Freyd.Alg.RelSet.Tex.tex_greedy_step7.rhs", src[`S ∪ S = S` — `∪` is idempotent]),
-       // lean:AOP.A10_4_Tex.tex_greedy_step7@a3c2f19f
-    ),
-  ),
+  lean-calc(calc-tgr, breaks: (3, 6)),
 )]<tex-greedy>
 
 // ONE WIRE, `[0,2¹⁶)` to `Decimal`, in every row: `interval`, `H` and `[arb,step]°` are relations

@@ -278,24 +278,20 @@ public theorem greedy_disjoint_ranges {V₁ : α ⟶ A} {V₂ : β ⟶ A}
             ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ ((junc (sumCop α β) V₁ V₂)°)
             ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
-        rw [← Cat.assoc (Freyd.Alg.ran V₁), ran_Λ_junc_recip_inl hdisj]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (Freyd.Alg.ran V₁), ran_Λ_junc_recip_inl hdisj, Cat.assoc, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ powerRel (sumCop α β).u₁
             ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
             ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
-        rw [← Cat.assoc (Freyd.Alg.ran V₂), ran_Λ_junc_recip_inr hdisj]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (Freyd.Alg.ran V₂), ran_Λ_junc_recip_inr hdisj, Cat.assoc, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ powerRel (sumCop α β).u₂
             ≫ est (sumMap (sumCop α β) (sumCop α β) Q₁ Q₂) ≫ junc (sumCop α β) U₁ U₂) := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₁), powerRel_inl_est]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (powerRel (sumCop α β).u₁), powerRel_inl_est, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ (sumCop α β).u₁ ≫ junc (sumCop α β) U₁ U₂)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
             ≫ junc (sumCop α β) U₁ U₂) := by
-        rw [← Cat.assoc (powerRel (sumCop α β).u₂), powerRel_inr_est]
-        simp only [Cat.assoc]
+        rw [← Cat.assoc (powerRel (sumCop α β).u₂), powerRel_inr_est, Cat.assoc]
     _ = (Freyd.Alg.ran V₁ ≫ Λ (V₁°) ≫ est Q₁ ≫ U₁)
         ∪ (Freyd.Alg.ran V₂ ≫ Λ (V₂°) ≫ est Q₂ ≫ (sumCop α β).u₂
             ≫ junc (sumCop α β) U₁ U₂) := by
