@@ -61,7 +61,7 @@ def g : Int → AHashSet × Bool := fun x => (insert' (mkHashMap Unit 15) x, fal
     array repeats a value — set the flag, keep the set (no need to re-insert `x`); otherwise add `x`
     to the seen-set, flag unchanged.  One `mem` + at most one `insert'`, `O(1)` expected. -/
 def step (st : AHashSet × Bool) (x : Int) : AHashSet × Bool :=
-  bif mem st.1 x then (st.1, true) else (insert' st.1 x, st.2)
+  bif HashMap.mem st.1 x then (st.1, true) else (insert' st.1 x, st.2)
 
 /-- The hash-set-carrying fold, written as its two defining equations (so `hashPair_wrap`/
     `hashPair_snoc` are `rfl` and `SL.snocFold_unique` applies). -/
@@ -75,12 +75,12 @@ theorem hashPair_snoc (xs : SnocList Int Int) (x : Int) :
     hashPair (SnocList.snoc xs x) = step (hashPair xs) x := rfl
 
 /-- `step` reduced on the "already seen" branch. -/
-theorem step_pos (st : AHashSet × Bool) (x : Int) (h : mem st.1 x = true) :
+theorem step_pos (st : AHashSet × Bool) (x : Int) (h : HashMap.mem st.1 x = true) :
     step st x = (st.1, true) := by
   simp only [step, h, cond_true]
 
 /-- `step` reduced on the "new element" branch. -/
-theorem step_neg (st : AHashSet × Bool) (x : Int) (h : mem st.1 x = false) :
+theorem step_neg (st : AHashSet × Bool) (x : Int) (h : HashMap.mem st.1 x = false) :
     step st x = (insert' st.1 x, st.2) := by
   simp only [step, h, cond_false]
 
@@ -90,7 +90,7 @@ theorem step_neg (st : AHashSet × Bool) (x : Int) (h : mem st.1 x = false) :
     `mem s p || eqi p q`.  Proved from `mem_insert_self`/`mem_insert_other` by casing on `eqi p q`
     (which reflects `p = q` via `L217.eqi_eq_true`). -/
 theorem mem_insert_eq (s : AHashSet) (q p : Int) :
-    mem (insert' s q) p = (mem s p || eqi p q) := by
+    HashMap.mem (insert' s q) p = (HashMap.mem s p || eqi p q) := by
   cases hpq : eqi p q with
   | true =>
       have hp : p = q := eqi_eq_true.mp hpq
@@ -108,23 +108,23 @@ theorem mem_insert_eq (s : AHashSet) (q p : Int) :
     induction on the array using the hash-set lemmas; the flag component mirrors `L217`'s own
     `hasDup (snoc xs x) = hasDup xs || memB xs x` recurrence. -/
 theorem inv : ∀ xs : SnocList Int Int,
-    (∀ p, mem (hashPair xs).1 p = memB xs p) ∧ (hashPair xs).2 = hasDup xs := by
+    (∀ p, HashMap.mem (hashPair xs).1 p = memB xs p) ∧ (hashPair xs).2 = hasDup xs := by
   intro xs
   induction xs with
   | wrap x =>
       refine ⟨?_, rfl⟩
       intro p
-      show mem (insert' (mkHashMap Unit 15) x) p = eqi p x
+      show HashMap.mem (insert' (mkHashMap Unit 15) x) p = eqi p x
       rw [mem_insert_eq (mkHashMap Unit 15) x p, mem_mk, Bool.false_or]
   | snoc xs x ih =>
       obtain ⟨ih1, ih2⟩ := ih
-      cases hc : mem (hashPair xs).1 x with
+      cases hc : HashMap.mem (hashPair xs).1 x with
       | true =>
           have hmx : memB xs x = true := (ih1 x).symm.trans hc
           constructor
           · intro p
             rw [hashPair_snoc, step_pos _ _ hc]
-            show mem (hashPair xs).1 p = (memB xs p || eqi p x)
+            show HashMap.mem (hashPair xs).1 p = (memB xs p || eqi p x)
             rw [ih1 p]
             cases hpx : eqi p x with
             | true  => have hp : p = x := eqi_eq_true.mp hpx; subst hp; rw [Bool.or_true]; exact hmx
@@ -137,7 +137,7 @@ theorem inv : ∀ xs : SnocList Int Int,
           constructor
           · intro p
             rw [hashPair_snoc, step_neg _ _ hc]
-            show mem (insert' (hashPair xs).1 x) p = (memB xs p || eqi p x)
+            show HashMap.mem (insert' (hashPair xs).1 x) p = (memB xs p || eqi p x)
             rw [mem_insert_eq (hashPair xs).1 x p, ih1 p]
           · rw [hashPair_snoc, step_neg _ _ hc]
             show (hashPair xs).2 = (hasDup xs || memB xs x)

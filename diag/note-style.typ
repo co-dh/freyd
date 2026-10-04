@@ -89,11 +89,15 @@
     and query(selector(<law-row>).after(s.location()).before(e.location())).len() > 1)
 }
 /// The Lean selectors a cell's `#leanf`s name: the CONTENT TREE walked, not the cell's text matched.
-#let lean-keys(c) = { if type(c) != content { () }
+/// `labels`: which calls count; `STATED` collects the statements the cell draws whole instead.
+#let lean-keys(c, labels: (<lean-formula>, <lean-row-key>)) = { if type(c) != content { () }
   else if c.func() == metadata { let l = c.at("label", default: none)
-    if l in (<lean-formula>, <lean-row-key>) { (c.value,) } else if l == <lean-keys-in> { lean-keys(c.value) } else { () } }
-  else if c.has("children") { c.children.map(lean-keys).flatten() }
-  else if c.has("body") { lean-keys(c.body) } else if c.has("child") { lean-keys(c.child) } else { () } }
+    if l in labels { (c.value,) } else if l == <lean-keys-in> { lean-keys(c.value, labels: labels) } else { () } }
+  else if c.has("children") { c.children.map(x => lean-keys(x, labels: labels)).flatten() }
+  else if c.has("body") { lean-keys(c.body, labels: labels) } else if c.has("child") { lean-keys(c.child, labels: labels) } else { () } }
+/// A commutative diagram draws one WHOLE statement (`leancd` takes one selector); a `lean`/`leanc`
+/// panel draws a side, which may be the heading's own statement's (`<thin-up>`).
+#let STATED = (<lean-cd>,)
 // A CONDITIONAL LAW IN A REASON CELL breaks before `⟹`, never inside a hypothesis: the formula file
 // cuts there with a `zws` (FormulaRender `render`), which becomes the line break.  Always, not by a
 // measured width: the cell is measured inside the chain's own scaling, where every width fits.
@@ -135,7 +139,8 @@
 }
 /// The Lean selectors a display states: its first `Thm` header's formulas; else the `#leanf`s in its
 /// own body (`lean-keys`: a chain's cited laws are emitted from a `context`, which it does not walk);
-/// else what its heading states, the theorem a derivation with no statement of its own proves.
+/// else what its heading states, the theorem a derivation with no statement of its own proves.  A
+/// display that draws a statement whole (`STATED`) states that one, not its heading's: it cites by number.
 /// `(keys, at)`: `at` is the heading when the formula is its, so the link lands where the formula
 /// stands; `none` for the display itself.
 #let disp-keys(s) = {
@@ -147,10 +152,11 @@
   } else {
     // `<lean-keys-in>` by QUERY too: a wrapper such as `definition` hides its body from the walk.
     let ins = if e == none { () } else { query(selector(<lean-keys-in>).after(s.location()).before(e.location())) }
-    let own = (lean-keys(query(selector(figure.where(kind: "disp")).before(s.location())).last().body)
-      + ins.map(m => lean-keys(m.value)).flatten()).dedup()
+    let body = query(selector(figure.where(kind: "disp")).before(s.location())).last().body
+    let keys(labels) = (lean-keys(body, labels: labels) + ins.map(m => lean-keys(m.value, labels: labels)).flatten()).dedup()
+    let own = keys((<lean-formula>, <lean-row-key>))
     let h = query(selector(heading).before(s.location())).at(-1, default: none)
-    let hk = if own.len() > 0 or h == none { () } else { lean-keys(h.body).dedup() }
+    let hk = if own.len() > 0 or h == none or keys(STATED).len() > 0 { () } else { lean-keys(h.body).dedup() }
     if hk.len() == 0 { (own, none) } else { (hk, h.location()) }
   }
 }
