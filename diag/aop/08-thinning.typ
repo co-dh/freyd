@@ -473,13 +473,13 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   [a minimum of the sorted list is a minimum of the set],
   [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_list_le") #h(6pt) #src[(8.8)]],
   [shunt a function through a sort],
-  [`sort(≼) filter(p)⊑E(p) sort(≼)` #h(6pt) #src[(8.9), `p` coreflexive]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sort_comp_filter_le") #h(6pt) #src[(8.9)]],
   [filtering a sorted list sorts the restricted set],
   [#leanf("Freyd.Alg.RelSet.ListRel.prodMap_sort_comp_merge_le") #h(6pt) #src[(8.10)]],
   [merging two sorted lists sorts their union],
-  [`F(sort(≼)) listcp⊑cp(F) sort(F(≼))` \ #src[(8.11), `F` linear]],
+  [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `FX=L+E×X`]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@afe50013 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@18c2744f lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@8445225e lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6
+  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@afe50013 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@18c2744f lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@8445225e lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@669dbfaa lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -520,7 +520,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
      // thinningList row: Theorem 8.2, p. 203
      at @binthin-data.
  ]],
-     // lean:AOP.A8_3.thinningList@81e181db
+     // lean:AOP.A8_3.thinningList@510fb7b3
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -641,7 +641,7 @@ with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `gᵢ≜list(fᵢ) filter(p
   Thm[#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws") \
     // knapsack row: B&dM §8.4, p. 206
     #src[the knapsack problem, as a fold that thins the packings kept at each item]],
-     // lean:AOP.A8_4_Knapsack.knap_laws@12891aa4
+     // lean:AOP.A8_4_Knapsack.knap_laws@c710dd69
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -728,7 +728,7 @@ line `x` with `width x≤w`, #h(4pt) `ok w` the coreflexive on `[x]⧺xs` with `
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
     // paragraph row: B&dM §8.5, p. 210
     #src[a paragraph laid out as a fold that thins the layouts kept at each word]],
-     // lean:AOP.A8_5_Paragraph.para_laws@58149d9d
+     // lean:AOP.A8_5_Paragraph.para_laws@fc587671
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
