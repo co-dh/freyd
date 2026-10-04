@@ -1367,7 +1367,7 @@ public theorem mct_rec :
       = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
           ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ mix st sb cb :=
   calc nonsingle ≫ (graph (mct st sb cb) : dNE A ⟶ dTree A)
-      _ = nonsingle ≫ splits ≫ list (graft st sb cb)
+        = nonsingle ≫ splits ≫ list (graft st sb cb)
           ≫ (graph (minlistFn (R st sb cb)) : dList (Tree A) ⟶ dTree A) := mct_eq st sb cb
       _ = nonsingle ≫ rpair (graph initsPFn : dNE A ⟶ dList (NEList A))
             (graph tailsPFn : dNE A ⟶ dList (NEList A))
@@ -1449,13 +1449,16 @@ public theorem rpair_fst {C P Q W : RelSet.{0}} {U : C ⟶ P}
   · rintro ⟨hw1, m, ⟨hm1, hm2⟩, hw2⟩
     exact ⟨m, ⟨hm1, hm2⟩, hU x _ _ hw1 hm1, hw2⟩
 
-/-- `init col` is simple: a composite of maps. -/
-public theorem initCol_simple :
-    ∀ x y y', ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) x y
-      → ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) x y' → y = y' := by
-  simp only [col, list_graph, graph_comp]
-  intro x y y' h h'
-  exact Eq.trans h (Eq.symm h')
+/-- `⟨init col,V⟩⟨π₁,M⟩=⟨init col,⟨init col,V⟩M⟩`: `init col` is a map, so `rpair_fst` applies. -/
+public theorem initCol_fst {Q W : RelSet.{0}} (V : dNE A ⟶ Q)
+    (M : (⟨CL.ConsList Unit (Tree A) × Q.carrier⟩ : RelSet.{0}) ⟶ W) :
+    rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) V
+        ≫ rpair (graph Prod.fst : (⟨CL.ConsList Unit (Tree A) × Q.carrier⟩ : RelSet.{0}) ⟶ dList (Tree A)) M
+      = rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
+          (rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb) V ≫ M) :=
+  rpair_fst (fun x y y' h h' => by
+    simp only [col, list_graph, graph_comp] at h h'
+    exact Eq.trans h (Eq.symm h')) V M
 
 /-! ### (9.8): `col` in terms of `row` and `col` -/
 
@@ -1466,7 +1469,7 @@ public theorem col_rec :
       = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
           ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ next st sb cb :=
   calc nonsingle ≫ col st sb cb
-      _ = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := by
+        = nonsingle ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := by
         rw [col]
       _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A)
             ≫ (graph neInitsFn : dNE A ⟶ dList (NEList A))) (𝟙 (dNE A))
@@ -1506,7 +1509,7 @@ public theorem col_rec :
             ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
           ≫ rpair (graph Prod.fst : _ ⟶ dList (Tree A)) (mix st sb cb)
           ≫ (graph snocFn : (⟨CL.ConsList Unit (Tree A) × Tree A⟩ : RelSet.{0}) ⟶ dList (Tree A)) := by
-        rw [← Cat.assoc (rpair _ _) (rpair _ _), rpair_fst (initCol_simple st sb cb)]
+        rw [← Cat.assoc (rpair _ _) (rpair _ _), initCol_fst]
       _ = nonsingle ≫ rpair ((graph initFn : dNE A ⟶ dNE A) ≫ col st sb cb)
           ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb) ≫ next st sb cb := by
         rw [next]
@@ -1522,7 +1525,7 @@ public theorem row_rec :
       = nonsingle ≫ rpair (graph (mct st sb cb) : dNE A ⟶ dTree A) ((graph tailFn : dNE A ⟶ dNE A) ≫ row st sb cb)
           ≫ consAtUnit :=
   calc nonsingle ≫ row st sb cb
-      _ = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := by
+        = nonsingle ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)) ≫ list (graph (mct st sb cb)) := by
         rw [row]
       _ = nonsingle ≫ rpair (𝟙 (dNE A)) ((graph tailFn : dNE A ⟶ dNE A)
             ≫ (graph neTailsFn : dNE A ⟶ dList (NEList A)))

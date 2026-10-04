@@ -714,7 +714,7 @@ in @mu-defn.
     #src[on a list of two or more elements, `mct` gives what `mix` gives on the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.mct_rec@d5db4aed
-  lean-calc(calc-mct),
+  lean-calc(calc-mct, breaks: (3, 6, 9, 12)),
 )]<mct-rec>
 
 // B&dM (9.8), p. 234: the book's five hints split into one law per step.
@@ -723,7 +723,7 @@ in @mu-defn.
     #src[on a list of two or more elements, the column is what `next` makes of the column of its
      `init` and the row of its `tail`]],
      // lean:AOP.A9_3_Bracket.col_rec@11ff5e11
-  lean-calc(calc-col),
+  lean-calc(calc-col, breaks: (3, 6, 9)),
 )]<col-rec>
 
 // B&dM (9.10), p. 235: the book's three hints split into one law per step.
@@ -732,7 +732,7 @@ in @mu-defn.
     #src[on a list of two or more elements, the row is `mct` of the whole list consed onto the row
      of its `tail`]],
      // lean:AOP.A9_3_Bracket.row_rec@2ee70011
-  lean-calc(calc-row),
+  lean-calc(calc-row, breaks: (3,)),
 )]<row-rec>
 
 // B&dM (9.9), p. 234, by Exercise 9.13, p. 237: `col` as a loop, then the book's equivalent form.
