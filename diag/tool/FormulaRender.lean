@@ -279,7 +279,8 @@ partial def sameDrawn (a b : Expr) : MetaM Bool := do
   if xs.size == 0 || xs.size != ys.size then return false
   return (← sameDrawn a.getAppFn b.getAppFn) && (← (xs.zip ys).allM fun (x, y) => sameDrawn x y)
 
-/-- Whether `B` is `A` with the definitions `ds` opened (or closed) and nothing else: both sides
+/-- Whether `B` and `A` differ only by the definitions `ds` (either direction; the caller decides
+    which way the step goes): both sides
     delta-expanded at `ds` (`deltaExpand` beta-reduces) draw one term. -/
 def unfoldsTo (ds : Array Name) (A B : Expr) : MetaM Bool := do
   sameDrawn (← Meta.deltaExpand (← instantiateMVars A) ds.contains)
@@ -311,11 +312,13 @@ def stepRel (a b : Side) : MetaM (Name × String) := do
   openUnder xs cb.type #[] fun ys bodyB => do
   let A ← sideIn a xs (binderNames ca.type) bodyA
   let B ← sideIn b ys (binderNames cb.type) bodyB
-  -- A STEP THAT ONLY OPENS A DEFINITION IS `≜`: the beads on one side alone, unfolded, leave the two
-  -- sides one picture.  Asked before `rfl`, which would answer the same step `=`.
+  -- `≜` only when the step OPENS a definition (name in A, left; body in B): the name on the right
+  -- would read as a definition of the left.  Asked before `rfl`, which answers the same step `=`.
   let ds ← opened A B
-  if !ds.isEmpty && (← unfoldsTo ds A B) then
-    for d in ds do noteRead (.decl d)
+  let (ca, cb) := ((← instantiateMVars A).getUsedConstants, (← instantiateMVars B).getUsedConstants)
+  let dsA := ds.filter fun d => ca.contains d && !cb.contains d
+  if !dsA.isEmpty && (← unfoldsTo dsA A B) then
+    for d in dsA do noteRead (.decl d)
     return (`delta, "≜")
   -- The hypotheses the step may use: either panel's declaration assumes them.
   let given ← (xs ++ ys).filterMapM fun h => do
