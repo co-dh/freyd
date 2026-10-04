@@ -204,6 +204,13 @@ public instance permSetoid (Job : Type) : Setoid (List Job) where
 @[expose] public def bagifyFn (s : SnocList Unit Job) : (Bag Job).carrier :=
   Quotient.mk (permSetoid Job) (blist s)
 
+/-- **tardy-defn**, pointwise: the empty schedule has the empty bag. -/
+public theorem bagifyFn_wrap (u : Unit) : bagifyFn (SnocList.wrap u : SnocList Unit Job) = nilBag := rfl
+
+/-- **tardy-defn**, pointwise: the last job of a schedule joins the bag of its front. -/
+public theorem bagifyFn_snoc (x : SnocList Unit Job) (a : Job) :
+    bagifyFn (SnocList.snoc x a) = snag (bagifyFn x, a) := rfl
+
 /-- **tardy-defn**: `bagify` as a morphism; `H = bagify°`. -/
 @[expose] public def bagify : dSL Unit Job ⟶ Bag Job := graph bagifyFn
 
@@ -579,6 +586,15 @@ calc_steps bagify_recip_le
   | Sum.inl _ => 0
   | Sum.inr p => kStep ct dt wt p
 
+/-- **tardy-defn**, pointwise: the empty schedule costs nothing. -/
+public theorem kFn_inl (u : Unit) :
+    kFn ct dt wt (Sum.inl u : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier) = 0 := rfl
+
+/-- **tardy-defn**, pointwise: the larger of the front's cost and the last job's penalty on the bag. -/
+public theorem kFn_inr (c : Int) (b : (Bag Job).carrier) (j : Job) :
+    kFn ct dt wt (Sum.inr ((c, b), j) : (Fobj Unit Job ⟨Int × (Bag Job).carrier⟩).carrier)
+      = bmax c (bagPenalty ct dt wt (b, j)) := rfl
+
 /-- **tardy-defn**: `k` as an arrow. -/
 @[expose] public def k :
     (F Unit Job).obj (relProd (⟨Int⟩ : RelSet.{0}) (Bag Job)).p ⟶ (⟨Int⟩ : RelSet.{0}) :=
@@ -676,6 +692,13 @@ public theorem g_apply (s : (Fobj Unit Job (dSL Unit Job)).carrier) (c : Int) :
   cases s with
   | inl d => exact ListRel.junc_sum_inl ListRel.zero (penaltyR ct dt wt) d c
   | inr p => exact ListRel.junc_sum_inr ListRel.zero (penaltyR ct dt wt) p c
+
+/-- `g`, pointwise: zero on the empty schedule. -/
+public theorem gFn_inl (u : Unit) : gFn ct dt wt (Sum.inl u : (Fobj Unit Job (dSL Unit Job)).carrier) = 0 := rfl
+
+/-- `g`, pointwise: the penalty of the last job after its front. -/
+public theorem gFn_inr (x : SnocList Unit Job) (j : Job) :
+    gFn ct dt wt (Sum.inr (x, j) : (Fobj Unit Job (dSL Unit Job)).carrier) = penalty ct dt wt x j := rfl
 
 /-- `F(bagify)` read as the function it is. -/
 @[expose] public def FbFn : (Fobj Unit Job (dSL Unit Job)).carrier → (Fobj Unit Job (Bag Job)).carrier

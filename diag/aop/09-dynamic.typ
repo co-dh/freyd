@@ -569,7 +569,8 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.R_eq"), #leanf("Freyd.Alg.RelSet.Bracket.R_apply")],
   [`t` costs no more than `t'`],
   [#leann("Freyd.Alg.RelSet.Bracket.gR")], [#leant("Freyd.Alg.RelSet.Bracket.gR")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.g_eq"), #leanf("Freyd.Alg.RelSet.Bracket.gFn_inl"),
+   #leanf("Freyd.Alg.RelSet.Bracket.gFn_inr")],
   [the cost of the top step alone: zero at a tip, `cb` of the two sizes at a node],
   [#leann("Freyd.Alg.RelSet.Bracket.nonsingle")], [#leant("Freyd.Alg.RelSet.Bracket.nonsingle")],
   [#leanf("Freyd.Alg.RelSet.Bracket.nonsingle")],
@@ -578,23 +579,26 @@
   [#leanf("Freyd.Alg.RelSet.Bracket.splits_eq"), #leanf("Freyd.Alg.RelSet.Bracket.splitsFn_eq")],
   [every way to cut a list into two non-empty parts — an implementation of #frc([`cat°`])],
   [#leann("Freyd.Alg.RelSet.Bracket.array")], [#leant("Freyd.Alg.RelSet.Bracket.array")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.array")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.array"), #leanf("Freyd.Alg.RelSet.Bracket.array_apply")],
   [the best trees of every segment, held as rows],
   [#leann("Freyd.Alg.RelSet.Bracket.row")], [#leant("Freyd.Alg.RelSet.Bracket.row")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.row.eq_1")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.row.eq_1"), #leanf("Freyd.Alg.RelSet.Bracket.row_apply")],
   [the best tree of every non-empty suffix],
   [#leann("Freyd.Alg.RelSet.Bracket.col")], [#leant("Freyd.Alg.RelSet.Bracket.col")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.col.eq_1")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.col.eq_1"), #leanf("Freyd.Alg.RelSet.Bracket.col_apply")],
   [the best tree of every non-empty prefix],
   [#leann("Freyd.Alg.RelSet.Bracket.mix")], [#leant("Freyd.Alg.RelSet.Bracket.mix")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.mix.eq_1")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.mix.eq_1"), #leanf("Freyd.Alg.RelSet.Bracket.mix_apply")],
   [join the matching prefix and suffix trees and keep a cheapest],
   [#leann("Freyd.Alg.RelSet.Bracket.next")], [#leant("Freyd.Alg.RelSet.Bracket.next")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.next.eq_1")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.next.eq_1"), #leanf("Freyd.Alg.RelSet.Bracket.next_apply")],
   [add the next best tree to the end of the column],
   [#leann("Freyd.Alg.RelSet.Bracket.process")], [#leant("Freyd.Alg.RelSet.Bracket.process")],
-  [#leanf("Freyd.Alg.RelSet.Bracket.process")],
+  [#leanf("Freyd.Alg.RelSet.Bracket.process"), #leanf("Freyd.Alg.RelSet.Bracket.process_apply")],
   [start the column at a tip and run `next` over the rows],
+// lean:AOP.A9_3_Bracket.gFn_inl@8e7dad0f lean:AOP.A9_3_Bracket.gFn_inr@2e7bf01a
+// lean:AOP.A9_3_Bracket.array_apply@1a37d675 lean:AOP.A9_3_Bracket.row_apply@ce32beea lean:AOP.A9_3_Bracket.col_apply@1133047c
+// lean:AOP.A9_3_Bracket.mix_apply@40642e17 lean:AOP.A9_3_Bracket.next_apply@69a7307c lean:AOP.A9_3_Bracket.process_apply@46f60471
 // lean:AOP.A9_3_Bracket.flatten_cata@ce76fada
 // lean:AOP.A9_3_Bracket.size_eq_sz_flatten@e6003d74
 // lean:AOP.A9_3_Bracket.R_eq@48f5ee2a
@@ -953,8 +957,9 @@
   [#leanf("Freyd.Alg.RelSet.Code.Q_eq"), #leanf("Freyd.Alg.RelSet.Code.Q")],
   [compare two decompositions by the prefix order on the strings and `U` on the codes],
   [#leann("Freyd.Alg.RelSet.Code.reduce")], [#leant("Freyd.Alg.RelSet.Code.reduce")],
-  [#leanf("Freyd.Alg.RelSet.Code.reduce")],
+  [#leanf("Freyd.Alg.RelSet.Code.reduce"), #leanf("Freyd.Alg.RelSet.Code.mem_reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
+// lean:AOP.A9_4_Code.mem_reduce@3b6329b5
 // lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
 )]<code-defn>
 
