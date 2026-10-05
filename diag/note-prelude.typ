@@ -365,6 +365,14 @@
   }
   out
 }
+// THE LETTERS RUN ON across the rows of one chain, so a chain broken over rows (or pages) reads as
+// one table with one `(c)`; they restart only where a row opens a chain (no op: the first, a `Sub`).
+// `rs`: each row's flat steps; the result, each row's first letter index.
+#let chain-offsets(rs) = {
+  let (o, acc) = ((), 0)
+  for r in rs { if r.first().at(0) == none { acc = 0 }; o.push(acc); acc += chain-groups(r).len() }
+  o
+}
 // Shrinks CONTENT to whatever width its container gives it, never growing past 1.0 — the ratio
 // `chain-k` uses for a whole row, read here from `layout` since a table cell's width is only known
 // once the surrounding grid resolves its `1fr` columns.  WHERE it sits in the cell is the table's
@@ -383,13 +391,13 @@
 // LEAVING it — the rule applied to this panel to get the next, read off the next column's head step
 // or, for the row's last column, `nxt`, the next row's first step when that one continues the chain.
 // The chain's last column has no step leaving it and keeps an empty hint.
-#let chain-table(r, nxt) = {
+#let chain-table(r, nxt, off: 0) = {
   let gs = chain-groups(r)
   let lines = ()
   for (j, (i0, n)) in gs.enumerate() {
     let s = r.at(i0)
     let into = if j + 1 < gs.len() { r.at(gs.at(j + 1).at(0)) } else if nxt != none and nxt.at(0) != none { nxt } else { none }
-    lines.push(([(#chain-tags.at(j))],
+    lines.push(([(#chain-tags.at(off + j))],
       fit-w(rel-lead(s.at(0), if n > 1 { s.at(3).gform } else { leanf(if type(s.at(1)) == array { s.at(1).first() } else { s.at(1) }) })),
       if into == none { [] } else { into.at(2) }))
   }
@@ -401,7 +409,9 @@
 #let chain-opening(r) = context if r.first().at(0) == none and measure(r.first().at(2)).width > 0pt {
   block(above: 0pt, below: 6pt, width: 100%, align(left, r.first().at(2)))
 }
-#let lean-chain(..args, circuit: false, formula: false, pictures: true, from: none) = {
+// `metas`: content placed first INSIDE the chain's own breakable cell — a caller's marker set beside
+// the cell instead makes the pair a sequence, which the table wraps in an unbreakable cell of its own.
+#let lean-chain(..args, circuit: false, formula: false, pictures: true, from: none, metas: []) = {
   let a = args.pos()
   let rows = (if type(a.first()) == dictionary or type(a.first().at(0)) == array { a } else { (a,) })
     .map(r => if type(r) == dictionary {
@@ -441,7 +451,7 @@
   // statement step's `.lhs` entered and `.rhs` left.  A chain OPENS at the first row and at every
   // `Sub` row, and nowhere else.  A chain that CONTINUES another display names the side it
   // continues (`from:`), so its first relation is Lean's too.
-  let (out, prev, metas) = ((), from, [])
+  let (out, prev) = ((), from)
   for (ri, row) in rows.enumerate() {
     let steps = row.steps
     for (j, s) in steps.enumerate() {
@@ -480,10 +490,11 @@
   if not pictures {
     return table.cell(breakable: true, {
       metas
+      let offs = chain-offsets(rows.map(row => row.steps))
       for (ri, row) in rows.enumerate() {
         sub-header(row)
         chain-opening(row.steps)
-        chain-table(row.steps, if ri + 1 < rows.len() { rows.at(ri + 1).steps.first() } else { none })
+        chain-table(row.steps, if ri + 1 < rows.len() { rows.at(ri + 1).steps.first() } else { none }, off: offs.at(ri))
         v(6pt)
       }
     })
@@ -496,7 +507,7 @@
   // its own sibling branch, because the exporter's `dup` answers for the STEP, not the branch, and
   // is the same for every row of one step — so this loop reads it once, at the step's first row.
   // A ROW THAT OPENS A CHAIN keeps its first panel even when it is `dup`: it has no op, so merging
-  // drops the term the chain (or a split half, `lean-calc(span:)`) starts from and floats its reason.
+  // drops the term the chain starts from and floats its reason.
   let calls = rows.map(r => {
     let singles = r.steps.map(s => s.at(1)).filter(x => type(x) != array)
     let (m, sp) = if singles.len() > 0 { lean-pics("generated/", <lean-panel>, singles) } else { ([], ()) }
@@ -533,6 +544,7 @@
     // vertically (below), so the row only spends one picture's worth of width on them, the widest.
     let k = calc.min(..calls.zip(ws).map(((c, w)) => chain-k(sz.width, c.at(2).first().at(0) == none,
       chain-groups(c.at(2)).map(((i0, n)) => calc.max(..range(i0, i0 + n).map(idx => w.at(idx)))))))
+    let offs = chain-offsets(calls.map(c => c.at(2)))
     for (ri, ((row, c), w)) in rows.zip(calls).zip(ws).enumerate() {
       let r = c.at(2)
       // the `Thm` header's look one step down: lighter fill, no bold, a thinner rule; `pad` spends
@@ -552,7 +564,7 @@
       // would eat two letters of the row's alphabet and print them joined ("(b, c)") under one picture.
       let tags = ()
       for (n, (i0, gn)) in gs.enumerate() {
-        for idx in range(i0, i0 + gn) { tags.push(if circuit { none } else { chain-tags.at(n) }) }
+        for idx in range(i0, i0 + gn) { tags.push(if circuit { none } else { chain-tags.at(offs.at(ri) + n) }) }
       }
       // A GROUP's flat members stack VERTICALLY into one hchain column — `.inl` on top, `.inr`
       // below, the group's own `sym` between them as a plain centred label — instead of standing
@@ -594,7 +606,7 @@
       if not circuit {
         // `chain-table`: one line per column, the hint of the step leaving it.
         let nxt = if ri + 1 < calls.len() { calls.at(ri + 1).at(2).first() } else { none }
-        chain-table(r, nxt)
+        chain-table(r, nxt, off: offs.at(ri))
       }
       // One block per circuit IN FLOW, never a `stack`: a stack is one unbreakable piece, so a chain
       // whose circuits outgrow the page ran its last one over the page foot and number (16.3i).
@@ -635,20 +647,19 @@
   }
 }
 // `breaks`: the step indices a new row starts at, for a chain too long to read on one row;
-// `span: (a, b)`: only panels a…b−1, for a chain split over displays (a `#disp` cannot break a page).
-#let lean-calc(c, breaks: (), span: none, ..opts) = {
+// A chain taller than the page is still ONE display: it breaks between rows (`kept`, `lean-chain`'s
+// breakable cell), so a long proof takes more `breaks`, never a second display.
+#let lean-calc(c, breaks: (), ..opts) = {
   let steps = c.steps.map(s => (
     if s.rel == none { none } else { rel-mark(s.rel) }, s.sel, if s.law == none { [] } else { law-ref(s.law) }))
-  let (a, b) = if span == none { (0, steps.len()) } else { span }
-  steps = steps.slice(a, b)
   steps.at(0) = (none, steps.at(0).at(1), [])
   let cuts = (0,) + breaks + (steps.len(),)
-  // EVERY LAW THE CALC NAMES is a formula to draw, listed here whatever `span` shows and wherever
+  // EVERY LAW THE CALC NAMES is a formula to draw, listed here wherever
   // the chain places it: `diag-regen` lists only placed metadata, and a hint a layout dropped went unlisted.
   // Emitted from a `context`, which `lean-keys` does not walk: a law a step CITES is no law its row
   // STATES, and labelling the row with it duplicated the label of the row that does.
-  context for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] }
-  lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named())
+  lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named(),
+    metas: context for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] })
 }
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

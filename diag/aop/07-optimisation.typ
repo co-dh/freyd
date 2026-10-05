@@ -1426,8 +1426,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // returns — so all four strands land on its bead and the two it returns are born there.
 #import "../generated/Freyd.Alg.RelSet.Party.party_laws.calc.typ" as calc-party
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
-  // Five rows here and four in the next display: at the book's own panel metric the seven no longer
-  // fit one page, and the cut is where the fold is opened — inside the `⦇ ⦈` here, outside it there.
+  // Two rows, cut where the fold is opened — inside the `⦇ ⦈` in the first, outside it in the
+  // second; the display breaks across the page between them.
   // lean:AOP.A7_2.greedy@5876dfbf lean:AOP.A7_3_Party.pair_est_le@44802697
   // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
@@ -1435,13 +1435,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      handing up its best party with its boss in and its best with the boss out, and `choose` taking
  the better of the two at the root]],
      // lean:AOP.A7_3_Party.party_laws@b2a60154
-  // The fold.s four rows here, the four outside it in the next display.
-  lean-calc(calc-party, span: (0, 5)),
+  lean-calc(calc-party, breaks: (5,)),
 )]<party-laws>
-
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-calc(calc-party, span: (4, 8)),
-)]<party-laws-fold>
 
 // Its own page: the section opens with a long definition display and was starting mid-page.
 #pagebreak(weak: true)
