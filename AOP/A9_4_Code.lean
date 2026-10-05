@@ -1048,8 +1048,8 @@ open Lean PrettyPrinter in
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.SnocNE] public meta def unexpandSnocNE : Unexpander
-  | `($_ $a) => `($(mkIdent (Name.mkSimple "list⁺")) $a)
-  | _ => `($(mkIdent (Name.mkSimple "list⁺")))
+  | `($_ $a) => `($(mkIdent (Name.mkSimple "L")) $a)
+  | _ => `($(mkIdent (Name.mkSimple "L")))
 
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.sizeFn] public meta def unexpandSizeFn : Unexpander

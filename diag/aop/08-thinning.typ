@@ -746,7 +746,7 @@ preorder.
 
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
 // bead on the object wire with three list wires at it, and the candidate set is a fourth.
-// The source is ONE `list⁺`; `partition` births the paragraph's, and the reduce of the last two rows
+// The source is ONE `L`; `partition` births the paragraph's, and the reduce of the last two rows
 // births a third — the list of candidate paragraphs `minlist(R)` reads back down.
 #disp[#calc-table(
   Thm[#leanf("Freyd.Alg.RelSet.Paragraph.para_laws") \
@@ -758,7 +758,7 @@ preorder.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs"),
-    [#frc([`partition list⁺(fits w)`])` est(R)`])],
+    [#frc([`partition L(fits w)`])` est(R)`])],
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs"),
