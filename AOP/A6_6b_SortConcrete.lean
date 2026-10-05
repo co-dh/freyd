@@ -52,7 +52,7 @@ Ex 6.22) drop to points. -/
 
 /-- B&dM p.152 `ok`: the coreflexive holding at `(a, x)` when `a` is `R`-below every element of `x`. -/
 @[expose] public def ok : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ ⟨A × ConsList Unit A⟩ :=
-  fun p q => p = q ∧ ∀ b, inlistP p.2 b → R p.1 b
+  fun (a, x) q => (a, x) = q ∧ ∀ b, inlistP x b → R a b
 
 /-- **(6.6)** `ordered = ⦇[nil, ok cons]⦈`: sortedness is the fold that checks `ok` at each `cons`. -/
 public theorem ordered_cata :
