@@ -164,7 +164,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
  FALSE #src[,
       // lean:AOP.A10_2_Detab.detab_prefix_false@373b3b35
  ] — at `n=8`,
-      // lean:AOP.A10_2_Detab.detab_len_of_short@66be497e
+      // lean:AOP.A10_2_Detab.detab_len_of_short@bfc4b886
       `detab [a,b,c,d,e,TB]=[a,b,c,d,e,BL,BL,BL]`, whose prefix
       `[a,b,c,d,e,BL,BL]` is longer than any input giving it, and `detab V°⊑R° detab`
  #src[]

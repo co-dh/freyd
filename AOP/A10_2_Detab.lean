@@ -202,7 +202,7 @@ public theorem pad_eq_pad (blank : Char) (x y : Str) :
 
 /-- A newline-free output shorter than a tab stop is produced letter by letter: no step of
     `detab` can have been a tab, since a tab lands the column on a multiple of `n`. -/
-public theorem detab_len_of_short (n : Nat) (tb nl blank : Char) (hn : 0 < n)
+public theorem detab_len_of_short (n : Nat) (tb nl blank : Char)
     (hb : blank ≠ nl) :
     ∀ (v w : Str), noNL nl w → slen w < n → detabFn n tb nl blank v = w → slen v = slen w
   | SnocList.wrap _, w, _, _, h => by subst h; rfl
@@ -227,7 +227,7 @@ public theorem detab_len_of_short (n : Nat) (tb nl blank : Char) (hn : 0 < n)
         have : slen (SnocList.snoc (detabFn n tb nl blank s) c)
             = slen (detabFn n tb nl blank s) + 1 := rfl
         omega
-      have hlen := detab_len_of_short n tb nl blank hn hb s (detabFn n tb nl blank s)
+      have hlen := detab_len_of_short n tb nl blank hb s (detabFn n tb nl blank s)
         hnn.2 hlt' rfl
       show slen s + 1 = slen (detabFn n tb nl blank s) + 1
       rw [hlen]
@@ -252,7 +252,7 @@ public theorem detab_prefix_false :
     ⟨detabFn 8 tb nl blank (ofChars ['x', 'x', 'x', 'x', 'x', '\t']), rfl, hpre⟩
   have hnn : noNL nl (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) :=
     ⟨by decide, by decide, by decide, by decide, by decide, by decide, by decide, trivial⟩
-  have hv7 := detab_len_of_short 8 tb nl blank (by decide) (by decide) v
+  have hv7 := detab_len_of_short 8 tb nl blank (by decide) v
     (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) hnn (by decide)
     (hdv : ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' '] = detabFn 8 tb nl blank v).symm
   have h6 : slen v ≤ slen (ofChars ['x', 'x', 'x', 'x', 'x', '\t']) := hR

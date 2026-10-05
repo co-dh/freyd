@@ -662,10 +662,10 @@ public theorem isThinlist_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
       thinlist_covers hQ hys⟩
 
 /-- `thinlist(Q)` only drops elements, so it may run before the order test. -/
-public theorem ordered_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+public theorem ordered_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} :
     ordered ≼ ≫ thinlist Q ⊑ thinlist Q ≫ ordered ≼ :=
-  ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼) (isThinlist_thinlist hQ).sub
-    (ordered_comp_subseq_le ≼)
+  ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼)
+    (le_iff.mpr fun _ _ h => subseqP_of_thinlist Q h) (ordered_comp_subseq_le ≼)
 
 /-- `thinlist(Q)` lists a thinning of the set it lists, read across `setify°`. -/
 public theorem setify_conv_comp_thinlist_le {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
@@ -679,7 +679,7 @@ public theorem sort_comp_bump_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preo
   calc sortRel listRelator setify ordered ≼ ≫ thinlist Q = setify° ≫ ordered ≼ ≫ thinlist Q := by
         show (setify° ≫ ordered ≼) ≫ thinlist Q = _
         exact Cat.assoc _ _ _
-    _ ⊑ setify° ≫ thinlist Q ≫ ordered ≼ := comp_mono_left _ (ordered_comp_thinlist_le hQ)
+    _ ⊑ setify° ≫ thinlist Q ≫ ordered ≼ := comp_mono_left _ ordered_comp_thinlist_le
     _ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ := by
         rw [← Cat.assoc (setify°) (thinlist Q) (ordered ≼), ← Cat.assoc (thinRel Q) (setify°)]
         exact comp_mono_right (setify_conv_comp_thinlist_le hQ) _
