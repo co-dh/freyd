@@ -1938,6 +1938,10 @@ open Lean PrettyPrinter in
   | `($_ $_) => `($(mkIdent `ordered))
   | _ => throw ()
 open Lean PrettyPrinter in
+@[app_unexpander RelSet.ListRel.orderedP] def unexpandOrderedP : Unexpander
+  | `($_ $_ $x) => `(orderedP $x)
+  | _ => throw ()
+open Lean PrettyPrinter in
 @[app_unexpander RelSet.Sort.ok] def unexpandOk : Unexpander
   | `($_ $_) => `($(mkIdent `ok))
   | _ => throw ()
