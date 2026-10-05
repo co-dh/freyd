@@ -5,7 +5,8 @@ import Lean
     lists (`diag-export --list` output), imports every `AOP` module and, for each declaration a
     selector names, walks the binders of its type — and of its value, for a `def`, which is what a
     def row unfolds to — and reports
-    * a binder whose type is a collection whose name is not a plural (`xs`, `ys₁`, `zs'`), and
+    * a binder whose type is a collection whose name is not a plural (`xs`, `ys₁`, `zs'`),
+    * a binder whose elements are collections whose name does not end in `ss` (`xss`; its element is `xs`), and
     * an application taking a collection binder `c` and an element binder `e` of it where `e`'s name
       plus `s` is not `c`'s (`inlistP x b` is reported: `b` should be `x`, `x` should be `xs`).
     A type is a collection when a head constant met while unfolding it is one of `collHeads`; its
@@ -57,8 +58,12 @@ partial def walk (e : Expr) : StateT (Array String) MetaM Unit := do
   | .forallE n t b bi | .lam n t b bi =>
     walk t
     let skip := n.hasMacroScopes || n.isInternal || bi.isInstImplicit
-    if !skip && (← collApp? t).isSome && !plural n then
-      modify (·.push s!"{n} : {← ppExpr t} — a collection, not a plural")
+    if !skip then if let some a ← collApp? t then
+      if !plural n then
+        modify (·.push s!"{n} : {← ppExpr t} — a collection, not a plural")
+      else if let some el := a.getAppArgs.back? then
+        if (← collApp? el).isSome && !(base n).endsWith "ss" then
+          modify (·.push s!"{n} : {← ppExpr t} — a collection of collections is named `xss`")
     withLocalDecl n bi t fun x => walk (b.instantiate1 x)
   | .letE n t v b _ => walk t; walk v; withLetDecl n t v fun x => walk (b.instantiate1 x)
   | .mdata _ b => walk b

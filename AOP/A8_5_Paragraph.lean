@@ -85,7 +85,7 @@ open Lean PrettyPrinter in
     first line. -/
 @[expose] public def glue (a : Word) : Para Word → Para Word
   | ConsList.wrap xs => ConsList.wrap (ConsList.cons a xs)
-  | ConsList.cons xs ls => ConsList.cons (ConsList.cons a xs) ls
+  | ConsList.cons xs xss => ConsList.cons (ConsList.cons a xs) xss
 
 public theorem headLine_glue (a : Word) (p : Para Word) :
     headLine (glue a p) = ConsList.cons a (headLine p) := by cases p <;> rfl
@@ -107,7 +107,7 @@ public theorem sqr_eq_zero {n : Int} (h : sqr n = 0) : n = 0 := by
     the last line's white space is not wasted, so it is the base case that is `0`. -/
 @[expose] public def wasteFn (len : Word → Int) (w : Int) : Para Word → Int
   | ConsList.wrap _ => 0
-  | ConsList.cons xs ls => sqr (w - widthFn len xs) + wasteFn len w ls
+  | ConsList.cons xs xss => sqr (w - widthFn len xs) + wasteFn len w xss
 
 public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
   | ConsList.wrap _ => Int.le_refl _
@@ -116,18 +116,18 @@ public theorem wasteFn_nonneg : ∀ p : Para Word, 0 ≤ wasteFn len w p
 /-- `list⁺(fits w)`: every line of the paragraph fits. -/
 @[expose] public def allFitP (len : Word → Int) (w : Int) : Para Word → Prop
   | ConsList.wrap xs => widthFn len xs ≤ w
-  | ConsList.cons xs ls => widthFn len xs ≤ w ∧ allFitP len w ls
+  | ConsList.cons xs xss => widthFn len xs ≤ w ∧ allFitP len w xss
 
 -- The line-length function is the SECTION'S data, not part of the names the note writes
 -- (`fits(w)`, `ok(w)`), so it is an implicit binder supplied by name where a use site pins it.
 /-- **para-defn**: `list⁺(fits w)`, the coreflexive on paragraphs all of whose lines fit. -/
 @[expose] public def fits (w : Int) : dPara Word ⟶ dPara Word :=
-  fun ls ms => ls = ms ∧ allFitP len w ls
+  fun xss yss => xss = yss ∧ allFitP len w xss
 
 /-- **para-defn**: `ok w`, the coreflexive on `[x]⧺xs` with `width x ≤ w` — only the FIRST
     line is tested. -/
 @[expose] public def ok (w : Int) : dPara Word ⟶ dPara Word :=
-  fun ls ms => ls = ms ∧ widthFn len (headLine ls) ≤ w
+  fun xss yss => xss = yss ∧ widthFn len (headLine xss) ≤ w
 
 public theorem fits_coreflexive : Coreflexive (fits (len := len) w) :=
   le_iff.mpr fun _ _ h => h.1
@@ -147,7 +147,7 @@ public theorem ok_eq_pcor : ok (len := len) w = GCTakeWhile.pcor (okB (len := le
 
 /-- **para-defn**: `R ≜ (waste w) ≤ (waste w)°`. -/
 @[expose] public def R (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
-  fun ls ms => wasteFn len w ls ≤ wasteFn len w ms
+  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss
 
 /-- `R = waste ≤ waste°`, point-free. -/
 public theorem R_eq :
@@ -164,7 +164,7 @@ public theorem R_eq :
 
 /-- **para-defn**: `Q ≜ R ∩ (head head°)` — no more wasteful, and with the same first line. -/
 @[expose] public def Q (len : Word → Int) (w : Int) : dPara Word ⟶ dPara Word :=
-  fun ls ms => wasteFn len w ls ≤ wasteFn len w ms ∧ headLine ls = headLine ms
+  fun xss yss => wasteFn len w xss ≤ wasteFn len w yss ∧ headLine xss = headLine yss
 
 /-- `Q = R ∩ (head head°)`, point-free. -/
 public theorem Q_eq :
@@ -178,20 +178,21 @@ public theorem Q_eq :
     rw [(show m = headLine p from hm)] at hm'
     exact hm'
 
-/-- `ls R ms` iff `ls` wastes no more than `ms`: the pointwise reading of `R_eq`. -/
-public theorem R_apply (ls ms : Para Word) : R len w ls ms ↔ wasteFn len w ls ≤ wasteFn len w ms := Iff.rfl
+/-- `xss R yss` iff `xss` wastes no more than `yss`: the pointwise reading of `R_eq`. -/
+public theorem R_apply (xss yss : Para Word) :
+    R len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss := Iff.rfl
 
-/-- `ls Q ms` iff `ls` wastes no more than `ms` and has the same first line. -/
-public theorem Q_apply (ls ms : Para Word) :
-    Q len w ls ms ↔ wasteFn len w ls ≤ wasteFn len w ms ∧ headLine ls = headLine ms := Iff.rfl
+/-- `xss Q yss` iff `xss` wastes no more than `yss` and has the same first line. -/
+public theorem Q_apply (xss yss : Para Word) :
+    Q len w xss yss ↔ wasteFn len w xss ≤ wasteFn len w yss ∧ headLine xss = headLine yss := Iff.rfl
 
-/-- `ls (fits w) ms` iff `ls = ms` and every line of `ls` is at most `w` wide. -/
-public theorem fits_apply (ls ms : Para Word) : fits (len := len) w ls ms ↔ ls = ms ∧ allFitP len w ls :=
-  Iff.rfl
+/-- `xss (fits w) yss` iff `xss = yss` and every line of `xss` is at most `w` wide. -/
+public theorem fits_apply (xss yss : Para Word) :
+    fits (len := len) w xss yss ↔ xss = yss ∧ allFitP len w xss := Iff.rfl
 
-/-- `ls (ok w) ms` iff `ls = ms` and the first line of `ls` is at most `w` wide. -/
-public theorem ok_apply (ls ms : Para Word) :
-    ok (len := len) w ls ms ↔ ls = ms ∧ widthFn len (headLine ls) ≤ w := Iff.rfl
+/-- `xss (ok w) yss` iff `xss = yss` and the first line of `xss` is at most `w` wide. -/
+public theorem ok_apply (xss yss : Para Word) :
+    ok (len := len) w xss yss ↔ xss = yss ∧ widthFn len (headLine xss) ≤ w := Iff.rfl
 
 public theorem Q_le_R : Q len w ⊑ R len w := le_iff.mpr fun _ _ h => h.1
 
@@ -214,7 +215,7 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
 /-- **para-defn**: `new (a,xs)=[[a]]⧺xs` — open a new line for the word.  Named for the same
     reason `glue` is: it is one arm of the algebra the note draws, and an arm is written by its
     own name. -/
-@[expose] public def new (a : Word) (ls : Para Word) : Para Word := ConsList.cons (ConsList.wrap a) ls
+@[expose] public def new (a : Word) (xss : Para Word) : Para Word := ConsList.cons (ConsList.wrap a) xss
 
 /-- **para-defn**: `[wrap wrap,new]` — a single word becomes a one-word paragraph, and
     `new (a,xs)=[[a]]⧺xs` opens a new line. -/
@@ -246,15 +247,15 @@ public theorem R_recip_trans : (R len w)° ≫ (R len w)° ⊑ (R len w)° :=
   and carries its own naturality square. -/
 
 /-- `partition` at a one-word list: the one-line paragraph. -/
-public theorem partition_wrap (a : Word) (ms : Para Word) :
-    partition (ConsList.wrap a) ms ↔ ms = ConsList.wrap (ConsList.wrap a) := by
+public theorem partition_wrap (a : Word) (yss : Para Word) :
+    partition (ConsList.wrap a) yss ↔ yss =ConsList.wrap (ConsList.wrap a) := by
   unfold partition
   rw [← cataR_eq_relCata]
   exact ⟨fun h => h.elim id id, Or.inl⟩
 
 /-- `partition` at a `cons`: partition the tail, then either open a new line or glue. -/
-public theorem partition_cons (a : Word) (xs : NEList Word) (ms : Para Word) :
-    partition (ConsList.cons a xs) ms ↔ ∃ ls, partition xs ls ∧ (ms = new a ls ∨ ms = glue a ls) := by
+public theorem partition_cons (a : Word) (xs : NEList Word) (yss : Para Word) :
+    partition (ConsList.cons a xs) yss ↔ ∃ xss, partition xs xss ∧ (yss = new a xss ∨ yss = glue a xss) := by
   unfold partition
   rw [← cataR_eq_relCata]
   all_goals exact Iff.rfl
