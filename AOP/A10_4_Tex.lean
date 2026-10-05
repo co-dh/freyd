@@ -456,7 +456,7 @@ public theorem step_legal (d : Digit) (q : Iv) (h : Legal q) :
   | ConsList.cons _ x => len x + 1
 
 /-- **tex-defn**: `R≜length≤length°` — a shortest decimal is wanted. -/
-@[expose] public def R : Decimal ⟶ Decimal := fun x y => len x ≤ len y
+@[expose] public def R : Decimal ⟶ Decimal := fun xs ys => len xs ≤ len ys
 
 public theorem R_refl : 𝟙 Decimal ⊑ R :=
   le_iff.mpr fun x y h => by
@@ -787,16 +787,16 @@ public inductive fR : Iv → Dec → Prop
 
 /-- **tex-extern** (B&dM p.263): `f(a,b)=[]` if `a<0`, and `[d]⧺f(10a−d,10b−d)` with `d=⌊10b⌋`
     otherwise — the two clauses `fR` is the least relation satisfying. -/
-public theorem f_eq (a b : Real.carrier) (x : Dec) :
-    fR ⟨a, b⟩ x ↔ (rlt a zeroR ∧ x = ConsList.wrap ()) ∨
-      (¬ rlt a zeroR ∧ ∃ d y, IsDigit d b ∧ fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ y
-        ∧ x = ConsList.cons d y) := by
+public theorem f_eq (a b : Real.carrier) (xs : Dec) :
+    fR ⟨a, b⟩ xs ↔ (rlt a zeroR ∧ xs = ConsList.wrap ()) ∨
+      (¬ rlt a zeroR ∧ ∃ d ys, IsDigit d b ∧ fR ⟨unshift (d.val : Int) a, unshift (d.val : Int) b⟩ ys
+        ∧ xs = ConsList.cons d ys) := by
   constructor
   · intro h
     cases h with
     | nil ha => exact Or.inl ⟨ha, rfl⟩
     | cons d ha hd hy => exact Or.inr ⟨ha, d, _, hd, hy, rfl⟩
-  · rintro (⟨ha, rfl⟩ | ⟨ha, d, y, hd, hy, rfl⟩)
+  · rintro (⟨ha, rfl⟩ | ⟨ha, d, ys, hd, hy, rfl⟩)
     · exact fR.nil ha
     · exact fR.cons d ha hd hy
 
