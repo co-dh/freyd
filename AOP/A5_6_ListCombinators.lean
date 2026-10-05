@@ -1787,7 +1787,7 @@ open Lean PrettyPrinter in
 @[app_unexpander listRelator] public meta def unexpandListRelator : Unexpander
   | `($_:ident) => `($(mkIdent `list))
   | _ => throw ()
--- `nelistRelator` is the note's lane `list⁺`, the pair `listRelator`/`list` is above.  The OBJECT
+-- `nelistRelator` is the note's lane `L`, the pair `listRelator`/`list` is above.  The OBJECT
 -- `dNE` and the carrier `NEList` keep their clauses in `diag/StrDiagNames.lean`, where every
 -- datatype's object is named.
 open Lean PrettyPrinter in

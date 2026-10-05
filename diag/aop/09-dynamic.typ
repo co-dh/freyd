@@ -661,7 +661,7 @@
   [#lean("Freyd.Alg.RelSet.Bracket.mct_g_mono_step4.rhs")],
 )]<mct-g-mono>
 
-// ONE WIRE, `list⁺ A` to `tree A`, and one datatype lane carrying `list⁺` above the bead that eats
+// ONE WIRE, `L(A)` to `tree A`, and one datatype lane carrying `L` above the bead that eats
 // it and `tree` below.  No thinning step: no decomposition of a list is preferable to another here.
 #disp[#calc-table(
   Thm[`mct=(single→head tip,⟨init col,tail row⟩ mix)`, #h(6pt) #leanf("Freyd.Alg.RelSet.Bracket.mct_laws") \
@@ -673,7 +673,7 @@
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Bracket.mct_laws.rhs"),
     [#src[the specification — @Freyd.Alg.RelSet.Bracket.flattenFn]])],
-  // `flatten°` eats `list⁺` and MAKES `tree`, so one lane carries both; `est(R) : P(tree A)⟶tree A`
+  // `flatten°` eats `L` and MAKES `tree`, so one lane carries both; `est(R) : P(tree A)⟶tree A`
   // kills the set, so its wire spans the `E` lane down to the object wire, `tree` surviving.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.rhs")],
 
@@ -693,7 +693,7 @@
       // lean:AOP.A9_3_Bracket.mct_g_mono@10f38142
       cost arguments)]])],
   // `[wrap,cat]°` opens the base functor `A+(−)²` inside the set and `[tip,(X×X)bin]` closes it;
-  // `list⁺` dies and is remade at both, so it runs as a loop between them.
+  // `L` dies and is remade at both, so it runs as a loop between them.
   [#lean("Freyd.Alg.RelSet.Bracket.mct_laws.lhs.body")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Bracket.mct_branch.lhs"),
