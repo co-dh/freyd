@@ -115,7 +115,7 @@
 /// `row`: the number is generated, so the formula stands alone.  `keys`: the Lean selectors the cited
 /// row or display states; with none the number is all there is.  Under `list`, where no formula file
 /// need exist yet, each key is requested instead, so a chapter compiled alone draws what it only cites.
-#let law-formula(keys) = if "list" in sys.inputs { for k in keys [#metadata(k)<lean-formula>] } else {
+#let law-formula(keys) = if "list" in sys.inputs { for k in keys [#metadata(k)<lean-cited>] } else {
   keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
 #let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
 /// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else its other

@@ -1,0 +1,16 @@
+#!/bin/sh
+# typst-run LOG TYPST-ARGS... — `typst TYPST-ARGS...` with its stderr kept in LOG and echoed, failing
+# when typst fails OR its layout did not converge.  Every typst compile and query the note gates make
+# goes through here, because typst only WARNS on non-convergence and exits 0, while the pdf it wrote
+# (or the query's answer) holds positions and values from an earlier pass: wrong link targets, nothing red.
+[ $# -ge 2 ] || { echo "usage: typst-run LOG TYPST-ARGS..." >&2; exit 2; }
+log=$1; shift
+mkdir -p "$(dirname "$log")" || exit 1
+typst "$@" 2> "$log"; st=$?
+cat "$log" >&2
+[ "$st" -eq 0 ] || exit "$st"
+if grep -q "did not converge" "$log"; then
+  echo "typst-run: layout did not converge — the output of 'typst $*' holds stale positions; log: $log." >&2
+  echo "  Bisect the note's includes until one display reproduces it: a query whose answer changes what it reads (a marker read back by its own query) is the usual cause." >&2
+  exit 1
+fi

@@ -126,10 +126,13 @@ fi
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
-# ONE listing for all eight labels, a file each: every typst query lays the note out again.
+# ONE listing for every label, a file each: every typst query lays the note out again.
 prepare
 ./scripts/diag-export --prepared --list "$ls" \
-  lean-panel lean-circuit lean-walk lean-cd lean-graph lean-formula lean-type lean-value || exit 1
+  lean-panel lean-circuit lean-walk lean-cd lean-graph lean-formula lean-cited lean-type lean-value || exit 1
+# `lean-cited`: a law only CITED (a reference, a calc step) is drawn by the formula route too, but under
+# its own label, because `row-keys`/`disp-keys` read `<lean-formula>` as what a row STATES.
+sort -u -o "$ls/lean-formula" "$ls/lean-formula" "$ls/lean-cited" || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.

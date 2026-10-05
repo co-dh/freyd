@@ -651,10 +651,10 @@
   let cuts = (0,) + breaks + (steps.len(),)
   // EVERY LAW THE CALC NAMES is a formula to draw, listed here wherever
   // the chain places it: `diag-regen` lists only placed metadata, and a hint a layout dropped went unlisted.
-  // Emitted from a `context`, which `lean-keys` does not walk: a law a step CITES is no law its row
+  // Under `<lean-cited>`, not `<lean-formula>`: a law a step CITES is no law its row
   // STATES, and labelling the row with it duplicated the label of the row that does.
   lean-chain(..range(cuts.len() - 1).map(i => steps.slice(cuts.at(i), cuts.at(i + 1))), ..opts.named(),
-    metas: context for s in c.steps { if s.law != none [#metadata(s.law)<lean-formula>] })
+    metas: context for s in c.steps { if s.law != none [#metadata(s.law)<lean-cited>] })
 }
 // note-split: prelude footer — written by scripts/note-split and stripped by scripts/note-join
 #let note-chapter = note-chapter.with(names: refname)

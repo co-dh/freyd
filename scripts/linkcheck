@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
-"""linkcheck PDF LOG — every internal link of a compiled note lands ON the row it names, and the
-compile that wrote PDF converged.
+"""linkcheck PDF — every internal link of a compiled note lands ON the row it names.
 
 A link's destination point must have a text line starting just below it (within LEAD), and a link that prints
 a formula must find that formula's letters in the lines just below the point (BAND).  A destination
 that is off its row — a marker typst placed against the wrong region, or a position left over from
 a layout that did not converge — fails here instead of sending the reader to the page top.
-LOG is the stderr `typst-compile` kept of the compile that wrote PDF: "did not converge" means the
-pdf holds positions from an earlier pass, so it fails too.  Geometry: qpdf --json + pdftotext -bbox."""
+A compile that did not converge never leaves a pdf to check: `scripts/typst-run` fails it.  Geometry: qpdf --json + pdftotext -bbox."""
 import json, subprocess, sys, unicodedata, xml.etree.ElementTree as ET
 from collections import Counter
 
 LEAD, BAND = 15.0, 40.0  # pt: typst sets the point ~10pt above the line it names; BAND + twice the
 # cited formula's own height holds it at the destination, which a multi-line `Thm` header needs
-if len(sys.argv) != 3: sys.exit("usage: linkcheck PDF LOG")
-pdf, log = sys.argv[1:]
+if len(sys.argv) != 2: sys.exit("usage: linkcheck PDF")
+pdf = sys.argv[1]
 bad = []
-if "did not converge" in open(log, encoding="utf-8").read():
-    bad.append(f"{log}: layout did not converge — {pdf} holds stale positions")
 
 q = json.loads(subprocess.run(["qpdf", "--json=2", pdf], check=True, capture_output=True, text=True).stdout)
 objs = {k[4:]: v for k, v in q["qpdf"][1].items() if k.startswith("obj:")}

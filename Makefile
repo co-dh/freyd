@@ -93,7 +93,7 @@ p: $(STAMP) .WAIT panels cite
 # The WHOLE repository: every other gate builds only what `diag-export` imports, so a module
 # nothing draws from can be broken with all of them green.
 	./scripts/cap lake build
-	for t in $(TYP); do $(LOCK) typst compile $$t $${t%.typ}.pdf || exit 1; done
+	for t in $(TYP); do $(LOCK) ./scripts/typst-run .lake/build/typst-run/$$(basename $$t .typ).log compile $$t $${t%.typ}.pdf || exit 1; done
 	for n in $(NOTENAMES); do NOTE=$$n ./scripts/labelfit && NOTE=$$n ./scripts/dispfit || exit 1; done
 	./scripts/inkfit
 	for n in $(NOTENAMES); do NOTE=$$n ./scripts/cd-check || exit 1; done
@@ -109,11 +109,10 @@ labels: $(NOTEPDF)
 	./scripts/inkfit
 	./scripts/dispfit
 
-# Every internal link of the compiled note lands on the row it names, and the compile that wrote the
-# pdf converged: a link off its row sends the reader to the page top, and nothing else shows it.
-# `make links NOTE=aop` is the companion; the log is what `typst-compile` kept of that compile.
+# Every internal link of the compiled note lands on the row it names: a link off its row sends the
+# reader to the page top, and nothing else shows it.  `make links NOTE=aop` is the companion.
 links: $(NOTEPDF)
-	./scripts/linkcheck $(NOTEPDF) .lake/build/typst-compile/$(subst /,%,$(NOTEPDF)).log
+	./scripts/linkcheck $(NOTEPDF)
 
 # `--root .`: a chapter sits one directory below the prelude it imports, and the note's own imports
 # resolve the same either way.
@@ -177,7 +176,7 @@ REFIDS := .lake/build/ref-ids-$(NOTE).json
 export REFIDS
 ref-ids: | exe
 	CH= ./scripts/diag-regen --missing --imports
-	$(LOCK) typst query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) '<ref-id>' --field value > $(REFIDS).new
+	$(LOCK) ./scripts/typst-run .lake/build/ref-ids-$(NOTE).log query --root . --input list=1 --input title="$(NOTETITLE)" $(NOTEROOT) '<ref-id>' --field value > $(REFIDS).new
 	if cmp -s $(REFIDS).new $(REFIDS); then rm $(REFIDS).new; else mv $(REFIDS).new $(REFIDS); fi
 
 # The sub-second edit loop: everything `make p` checks, with neither typst compile nor `book ingest`.
@@ -203,7 +202,7 @@ v:
 # thing that turns it into a file, so a renamed heading needs no edit here.
 ch: ref-ids
 	@test -n "$(strip $(CH))" || { echo "make ch N=13 — the number the chapter's header declares"; exit 1; }
-	$(LOCK) typst compile --root . --input title="$(NOTETITLE)" --input refs=/$(REFIDS) $(NOTESRC) $(NOTEPDF)
+	$(LOCK) ./scripts/typst-run .lake/build/typst-run/ch-$(NOTE)-$(CH).log compile --root . --input title="$(NOTETITLE)" --input refs=/$(REFIDS) $(NOTESRC) $(NOTEPDF)
 
 w: p
 	@zathura $(NOTEROOT:.typ=.pdf) & \
