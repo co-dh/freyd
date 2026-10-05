@@ -1312,12 +1312,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     // THREE DECLARATIONS, NOT ONE CONJUNCTION: each row is a law with its own proof and its own
     // citation, so the next such header is written the same way and needs nothing of the printer.
     grid.cell(colspan: 3, align: center)[#leanf("Freyd.Alg.RelSet.Party.S")],
-    [#leanf("Freyd.Alg.RelSet.Party.party_mono.lhs")], SQ,
-      [#leanf("Freyd.Alg.RelSet.Party.party_mono.rhs")],
     [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.lhs")], SQ,
       [#leanf("Freyd.Alg.RelSet.Party.include_monotonic.rhs")],
     [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.lhs")], SQ,
       [#leanf("Freyd.Alg.RelSet.Party.exclude_monotonic.rhs")],
+    // `S`'s row follows from the two above it by pairing, so it comes after them.
+    [#leanf("Freyd.Alg.RelSet.Party.party_mono.lhs")], SQ,
+      [#leanf("Freyd.Alg.RelSet.Party.party_mono.rhs")],
   ))
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
    running it first and bettering the two parties it returns,
