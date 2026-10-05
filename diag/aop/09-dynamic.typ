@@ -156,18 +156,13 @@
   lean-calc(calc-dptl),
 )]<dp-laws-92>
 
-// (9.3), the second half of the same proof: a `#disp` does not break across a page.
+// (9.3), the second half of the same proof; its rows run on across the page.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.dynamic_programming_thin_upper") \
     #src[`H°` followed by the body at `M` is `⊑R°`: an answer of the body is never worse than an
      answer of `H` to the same input]],
-  lean-calc(calc-dptu, span: (0, 7), breaks: (4,)),
+  lean-calc(calc-dptu, breaks: (4, 7)),
 )]<dp-laws-93>
-
-// (9.3) continued from the last row above: the ten rows overflow one page.
-#disp[#calc-table(cols: (1fr,), al: (left + top,),
-  lean-calc(calc-dptu, span: (6, 12)),
-)]<dp-laws-93b>
 
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
