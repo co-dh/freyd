@@ -26,7 +26,8 @@
 # reading), a `#leancd(...)` name by `--commutative` (the statement as a graph), a `#leang(...)` name by `--graph`
 # (a concrete relation decided pair by pair), a `#leanf(...)`
 # name by `--formula` (the statement in the note's spelling), a `#leant(...)` name by `--type` (the
-# hom its arrows share), a `#leanv(...)` name by `--value` (a tree-valued `def` drawn as a tree), and a `<decl>.proof` import by `--proof`.  The route is not a property of the name, so the lists are asked
+# hom its arrows share), a `#leanv(...)` name by `--value` (a tree-valued `def` drawn as a tree), a `#leanw(...)` name by
+# the term walk (no flag: strands per letter of a monoidal word, `circuit.typ`), and a `<decl>.proof` import by `--proof`.  The route is not a property of the name, so the lists are asked
 # for separately rather than guessed at here.
 cd "$(dirname "$0")/.." || exit 1
 missing=
@@ -125,17 +126,18 @@ fi
 
 # The two metadata listings are the EXPORTER's: it is the process that draws them, and asking it
 # keeps the route and its list in one place.
-# ONE listing for all seven labels, a file each: every typst query lays the note out again.
+# ONE listing for all eight labels, a file each: every typst query lays the note out again.
 prepare
 ./scripts/diag-export --prepared --list "$ls" \
-  lean-panel lean-circuit lean-cd lean-graph lean-formula lean-type lean-value || exit 1
+  lean-panel lean-circuit lean-walk lean-cd lean-graph lean-formula lean-type lean-value || exit 1
 # The three lists are DISJOINT by construction — `--generated` is the `#import`s alone and
 # `--list` the metadata calls — so nothing is subtracted here.  The union they once shared is what
 # drew a picture twice, once by its own route and once as an import that does not exist.
-tests lean-panel --string lean-circuit --circuit lean-cd --commutative lean-graph --graph \
+tests lean-panel --string lean-circuit --circuit lean-walk '' lean-cd --commutative lean-graph --graph \
   lean-formula --formula lean-type --type lean-value --value
 draw "$(cat "$ls/lean-panel.stale")" --string
 draw "$(cat "$ls/lean-circuit.stale")" --circuit
+draw "$(cat "$ls/lean-walk.stale")"
 draw "$(cat "$ls/lean-cd.stale")" --commutative
 draw "$(cat "$ls/lean-graph.stale")" --graph
 draw "$(cat "$ls/lean-formula.stale")" --formula

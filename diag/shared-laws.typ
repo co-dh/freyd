@@ -196,24 +196,24 @@
 
 #let law-rel-monoid = [
 #disp[#grid(columns: (1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(lean("Freyd.Diag.CartBicat.«∇_assoc»"), s: 60%) #v(-7pt) \ #src[`▷` associative]],
-  [#P(lean("Freyd.Diag.CartBicat.«∇_comm»"), s: 60%) #v(-7pt) \ #src[`▷` commutative]],
-  [#P(lean("Freyd.Diag.CartBicat.«∇_unit»"), s: 60%) #v(-7pt) \ #src[`⟜` is its unit]],
+  [#P(leanw("Freyd.Diag.CartBicat.«∇_assoc»"), s: 60%) #v(-7pt) \ #src[`▷` associative]],
+  [#P(leanw("Freyd.Diag.CartBicat.«∇_comm»"), s: 60%) #v(-7pt) \ #src[`▷` commutative]],
+  [#P(leanw("Freyd.Diag.CartBicat.«∇_unit»"), s: 60%) #v(-7pt) \ #src[`⟜` is its unit]],
   // `slice(0, 2)`, not `slice(1)`: the exporter draws the relation symbol at the LEFT edge of every
   // step after the first, so dropping the first step would leave a dangling `=` in front.
   [#row(frobb.at(0).steps.slice(0, 2), s: 42%) #v(-7pt) \ #src[Frobenius, one half — the other is
    its `°`]],
-  [#P(lean("Freyd.Diag.CartBicat.lax_Δ"), s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_Δ")]],
-  [#P(lean("Freyd.Diag.CartBicat.lax_!"), s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_!")]],
+  [#P(leanw("Freyd.Diag.CartBicat.lax_Δ"), s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_Δ")]],
+  [#P(leanw("Freyd.Diag.CartBicat.lax_!"), s: 60%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.lax_!")]],
 )]<rel-monoid>
 ]
 
 #let law-rel-adj = [
 #disp[#grid(columns: (1fr, 1fr, 1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(lean("Freyd.Diag.CartBicat.«∇Δ≤𝟙»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«∇Δ≤𝟙»")]],
-  [#P(lean("Freyd.Diag.CartBicat.«𝟙≤Δ∇»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤Δ∇»")]],
-  [#P(lean("Freyd.Diag.CartBicat.«?!≤𝟙»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«?!≤𝟙»")]],
-  [#P(lean("Freyd.Diag.CartBicat.«𝟙≤!?»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤!?»")]],
+  [#P(leanw("Freyd.Diag.CartBicat.«∇Δ≤𝟙»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«∇Δ≤𝟙»")]],
+  [#P(leanw("Freyd.Diag.CartBicat.«𝟙≤Δ∇»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤Δ∇»")]],
+  [#P(leanw("Freyd.Diag.CartBicat.«?!≤𝟙»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«?!≤𝟙»")]],
+  [#P(leanw("Freyd.Diag.CartBicat.«𝟙≤!?»"), s: 52%) #v(-7pt) \ #src[#leanf("Freyd.Diag.CartBicat.«𝟙≤!?»")]],
 )]<rel-adj>
 ]
 
@@ -283,7 +283,7 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 ]
 
 #let law-dom-slide = [
-#disp[#chain((lean("Freyd.Diag.dom_comp_le"),),
+#disp[#chain((leanw("Freyd.Diag.dom_comp_le"),),
   ([`S⊸⊑⊸`, the lax axiom for `⊸` in the first section \
  — the discard slides back past `S` #src[]
    // lean:Freyd.S2_10.dom_comp_le@a99434dd
@@ -301,58 +301,58 @@ be circular: `◁` and `⊸` are `▷°` and `⟜°`.  The laws of `°` are that
 
   [`X⊑R/S⟺XS⊑R` \ #src[`X` is any `x`-to-`y` pairing; one that only pairs `x` with a `y`
    such that `x` admires everyone `y` hates lies inside `R/S`, and `R/S` is the largest such.]],
-  P(lean("Freyd.Alg.le_div_iff.lhs", "Freyd.Alg.le_div_iff.rhs", op: IFF)),
+  P(leanw("Freyd.Alg.le_div_iff")),
 
   [`X⊑S\R⟺SX⊑R` \ #src[The mirror — divide on the left when `x` comes first.]#leank("Freyd.Alg.le_leftDiv_iff")],
-  P(lean("Freyd.Alg.le_leftDiv_iff.lhs", "Freyd.Alg.le_leftDiv_iff.rhs", op: IFF)),
+  P(leanw("Freyd.Alg.le_leftDiv_iff")),
 
   [`(R/S)S⊑R` \ #src[There is a `y` such that `x` admires everyone `y` hates, and `p` is one of
    the people `y` hates — then `x` admires `p` too. Strict at `S=∅`: `R/S` is everyone, `(R/S)S=∅`.]],
-  P(lean("Freyd.Alg.DivisionAllegory.div_comp_le")),
+  P(leanw("Freyd.Alg.DivisionAllegory.div_comp_le")),
 
   [`S (S\R)⊑R` \ #src[The mirror.]],
-  P(lean("Freyd.Alg.leftDiv_comp_le")),
+  P(leanw("Freyd.Alg.leftDiv_comp_le")),
 
   [*associate:* `R/(S₁S₂)=(R/S₂)/S₁` \ #src[*A friend's enemy* is two hops: divide by the far end
    first.]],
-  P(lean("Freyd.Alg.div_comp_assoc")),
+  P(leanw("Freyd.Alg.div_comp_assoc")),
 
   [`(S₁S₂)\R=S₂\(S₁\R)` \ #src[The mirror.]],
-  P(lean("Freyd.Alg.leftDiv_comp")),
+  P(leanw("Freyd.Alg.leftDiv_comp")),
 
   [*maps:* `f (R/S)=(fR)/S` \ #src[Rename `x` before or after dividing — the licence to write
    `fR/S`.]],
-  P(lean("Freyd.Alg.map_comp_div")),
+  P(leanw("Freyd.Alg.map_comp_div")),
 
   [`R/(fS)=(R/S)f°` \ #src[Rename `y`: a map leaves a denominator as `f°` outside the box.
  ]],
    // lean:AOP.A4_4.div_comp_recip_map@bc41ec1a
-  P(lean("Freyd.Alg.div_comp_recip_map")),
+  P(leanw("Freyd.Alg.div_comp_recip_map")),
 
   [`(R/S)(S/W)⊑R/W` \ #src[Someone who admires all of a hate-set that already covers everyone
    `z` works for admires those people too.]],
-  P(lean("Freyd.Alg.div_comp")),
+  P(leanw("Freyd.Alg.div_comp")),
 
   [`𝟙⊑R/R` \ #src[`R/R` runs admirer to admirer: each admires everyone they admire. Strict: two
    people who each admire only `a` and `b` admire each other's idols too, and still stay two people.]],
-  P(lean("Freyd.Alg.one_le_div_self")),
+  P(leanw("Freyd.Alg.one_le_div_self")),
 
   [`(R/R)(R/R)=R/R` \ #src[`R/R` is the preorder *admires at least as much as*, and a preorder is
    idempotent. Freyd writes `⊑`; with `𝟙⊑R/R` above it is an equality.]],
-  P(lean("Freyd.Alg.div_self_comp_self")),
+  P(leanw("Freyd.Alg.div_self_comp_self")),
 
   [`(R/R)R=R` \ #src[Reaching `p` through someone whose idols `x` fully admires is reaching `p`
    directly, since `x` admires their own idols.]],
-  P(lean("Freyd.Alg.div_self_comp")),
+  P(leanw("Freyd.Alg.div_self_comp")),
 
   [`R/𝟙=R` \ #src[Dividing by `𝟙`: `p`'s set is just `{p}`, so admiring all of it is admiring `p`.]],
-  P(lean("Freyd.Alg.div_one")),
+  P(leanw("Freyd.Alg.div_one")),
 
   [`R/(S₁ ∪ S₂)=R/S₁∩R/S₂` \ #src[Admiring a combined hate-set is admiring each set in full.]],
-  P(lean("Freyd.Alg.div_union")),
+  P(leanw("Freyd.Alg.div_union")),
 
   [`S\(R/W)=(S\R)/W` \ #src[Which is why `S\R/W` needs no bracket.]],
-  P(lean("Freyd.Alg.leftDiv_div")),
+  P(leanw("Freyd.Alg.leftDiv_div")),
 )]<div-laws>
 ]
 

@@ -12,7 +12,7 @@ The *domain* #leanf("Freyd.Alg.dom") #src[] and the *range* #leanf("Freyd.Alg.ra
 
 // THE MEET FIRST, then the stub: the stub alone does not look like `𝟙 ∩ R R°` — one strand carries no
 // box and the return leg is gone — so the definition is drawn beside it and the chain shows the collapse.
-#disp[#chain((lean("Freyd.Diag.dom_cd"),),
+#disp[#chain((leanw("Freyd.Diag.dom_cd"),),
   // Broken by hand: the hint is this column's width, so an unbroken line of this length stretches
   // the row far past the picture.
   ([`▷` lands the return leg back on the value `◁` handed out, \
