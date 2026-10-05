@@ -50,20 +50,20 @@ open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.SL
 /-- **entab-defn**: `col≜⦇[zero,count]⦈`, `count (c,a)=(a=NL→0,c+1)`. -/
 @[expose] public def colFn (nl : Char) : Str → Nat
   | SnocList.wrap _ => 0
-  | SnocList.snoc x a => if a = nl then 0 else colFn nl x + 1
+  | SnocList.snoc xs a => if a = nl then 0 else colFn nl xs + 1
 
 /-- **entab-defn**: `fill xs=xs⧺blanks (n−(col xs) mod n)`. -/
-@[expose] public def fillFn (n : Nat) (nl blank : Char) (x : Str) : Str :=
-  pad blank x (n - colFn nl x % n)
+@[expose] public def fillFn (n : Nat) (nl blank : Char) (xs : Str) : Str :=
+  pad blank xs (n - colFn nl xs % n)
 
 /-- **entab-defn**: `expand (xs,a)=(a=TB→fill xs,xs⧺[a])`. -/
-@[expose] public def expandFn (n : Nat) (tb nl blank : Char) (x : Str) (a : Char) : Str :=
-  if a = tb then fillFn n nl blank x else SnocList.snoc x a
+@[expose] public def expandFn (n : Nat) (tb nl blank : Char) (xs : Str) (a : Char) : Str :=
+  if a = tb then fillFn n nl blank xs else SnocList.snoc xs a
 
 /-- **entab-defn**: `detab≜⦇[nil,expand]⦈ : String⟶String`, read as the function it is. -/
 @[expose] public def detabFn (n : Nat) (tb nl blank : Char) : Str → Str
   | SnocList.wrap _ => SnocList.wrap ()
-  | SnocList.snoc x a => expandFn n tb nl blank (detabFn n tb nl blank x) a
+  | SnocList.snoc xs a => expandFn n tb nl blank (detabFn n tb nl blank xs) a
 
 /-- **entab-defn**: the algebra `[nil,expand] : F(String)⟶String`. -/
 @[expose] public def expandAlgFn (n : Nat) (tb nl blank : Char) :
@@ -139,7 +139,7 @@ public theorem detab_cata (n : Nat) (tb nl blank : Char) :
   | SnocList.snoc x a => a ≠ nl ∧ noNL nl x
 
 /-- **entab-defn**: `R≜length≤length°`. -/
-@[expose] public def R : dSL Unit Char ⟶ dSL Unit Char := fun u v => slen u ≤ slen v
+@[expose] public def R : dSL Unit Char ⟶ dSL Unit Char := fun xs ys => slen xs ≤ slen ys
 
 /-- **entab-defn**: `detab` as a morphism. -/
 @[expose] public def detabR (n : Nat) (tb nl blank : Char) : dSL Unit Char ⟶ dSL Unit Char :=
@@ -275,7 +275,7 @@ public theorem detab_prefix_false :
 /-- **entab-defn**: `V≜prefix°∩(fill fill°)` — a prefix that fills to the same string, i.e. one
     that does not cross a tab stop. -/
 @[expose] public def V (n : Nat) (nl blank : Char) : dSL Unit Char ⟶ dSL Unit Char :=
-  fun x y => prefixS x y ∧ fillFn n nl blank x = fillFn n nl blank y
+  fun xs ys => prefixS xs ys ∧ fillFn n nl blank xs = fillFn n nl blank ys
 
 /-- **entab-defn**: `Q≜𝟙+(V×U)`. -/
 @[expose] public def Q (n : Nat) (tb nl blank : Char) :
@@ -813,11 +813,11 @@ public theorem detabCol_foldl (n : Nat) (tb nl blank : Char) (hb : blank ≠ nl)
 
 /-- **B&dM p.247**: `⦇[base,step]⦈ convert=loop step (base,id)` — `ofChars` is `convert`. -/
 public theorem detab_loop (n : Nat)
-    (l : List Char) (r : Str × Nat) :
-    cataR (detabAlg n tb nl blank) (ofChars l) r
-      ↔ r = loop (step n tb nl blank) ((SnocList.wrap (), 0), l) := by
+    (xs : List Char) (r : Str × Nat) :
+    cataR (detabAlg n tb nl blank) (ofChars xs) r
+      ↔ r = loop (step n tb nl blank) ((SnocList.wrap (), 0), xs) := by
   rw [detabAlg_cata n tb nl blank (by decide) (by decide)]
-  show r = detabColFn n tb nl blank (ofChars l) ↔ _
+  show r = detabColFn n tb nl blank (ofChars xs) ↔ _
   rw [ofChars, detabCol_foldl n tb nl blank (by decide) (by decide)]
   exact Iff.rfl
 
@@ -844,9 +844,9 @@ public theorem outl_loop_append {C A B : Type} (f : C × A → List B) (g : C ×
 
 /-- **Exercise 10.1**: `outl·loop step (base,id)=loop'(f,g)(c₀,id)` when `base=(nil,c₀)` and
     `step((x,c),a)=(x⧺f(c,a),g(c,a))`. -/
-public theorem outl_loop {C A B : Type} (f : C × A → List B) (g : C × A → C) (c₀ : C) (x : List A) :
-    (loop (loopStep f g) (([], c₀), x)).1 = loop' f g (c₀, x) :=
-  (outl_loop_append f g x [] c₀).trans (List.nil_append _)
+public theorem outl_loop {C A B : Type} (f : C × A → List B) (g : C × A → C) (c₀ : C) (xs : List A) :
+    (loop (loopStep f g) (([], c₀), xs)).1 = loop' f g (c₀, xs) :=
+  (outl_loop_append f g xs [] c₀).trans (List.nil_append _)
 
 /-! ## `entab` (B&dM pp.250–252): the greedy step, `unfill`, `tbc`, and the loop -/
 
@@ -866,12 +866,12 @@ public theorem prefixS_eq_of_le : ∀ {x y : Str}, prefixS x y → slen y ≤ sl
 public theorem prefixS_antisymm {x y : Str} (h1 : prefixS x y) (h2 : prefixS y x) : x = y :=
   prefixS_eq_of_le h1 (prefixS_slen_le h2)
 
-/-- **B&dM p.250** `Λexpand°(x⧺[a])={(y,TB)∣fill y=x⧺[a]}∪{(x,a)}`, for `a≠TB` (on `x⧺[TB]` the
+/-- **B&dM p.250** `Λexpand°(xs⧺[a])={(ys,TB)∣fill ys=xs⧺[a]}∪{(xs,a)}`, for `a≠TB` (on `xs⧺[TB]` the
     left side is empty). -/
-public theorem expand_recip_snoc (n : Nat) (tb nl blank : Char) (x : Str) (a : Char) (ha : a ≠ tb)
-    (y : Str) (b : Char) :
-    expandFn n tb nl blank y b = SnocList.snoc x a
-      ↔ (fillFn n nl blank y = SnocList.snoc x a ∧ b = tb) ∨ (y, b) = (x, a) := by
+public theorem expand_recip_snoc (n : Nat) (tb nl blank : Char) (xs : Str) (a : Char) (ha : a ≠ tb)
+    (ys : Str) (b : Char) :
+    expandFn n tb nl blank ys b = SnocList.snoc xs a
+      ↔ (fillFn n nl blank ys = SnocList.snoc xs a ∧ b = tb) ∨ (ys, b) = (xs, a) := by
   unfold expandFn
   by_cases hb : b = tb
   · rw [if_pos hb]
@@ -928,24 +928,24 @@ public theorem fill_snoc_blank (n : Nat) (nl blank : Char) (hn : 0 < n) (hb : bl
   have e : n - colFn nl x % n = 1 + (n - (colFn nl x % n + 1)) := by omega
   rw [hm, e, ← pad_add]; rfl
 
-/-- **B&dM p.250** `(∃y: fill y=x⧺[a]) ≡ a=BL ∧ col(x⧺[a]) mod n=0`. -/
+/-- **B&dM p.250** `(∃ys: fill ys=xs⧺[a]) ≡ a=BL ∧ col(xs⧺[a]) mod n=0`. -/
 public theorem fill_exists_iff (n : Nat) (hn : 0 < n)
-    (x : Str) (a : Char) :
-    (∃ y, fillFn n nl blank y = SnocList.snoc x a) ↔ a = blank ∧ colFn nl (SnocList.snoc x a) % n = 0 := by
+    (xs : Str) (a : Char) :
+    (∃ ys, fillFn n nl blank ys = SnocList.snoc xs a) ↔ a = blank ∧ colFn nl (SnocList.snoc xs a) % n = 0 := by
   constructor
-  · rintro ⟨y, hy⟩
-    exact ⟨(fill_eq_snoc n nl blank hn hy).1, by rw [← hy]; exact col_fill_mod n nl blank hn (by decide) y⟩
+  · rintro ⟨ys, hy⟩
+    exact ⟨(fill_eq_snoc n nl blank hn hy).1, by rw [← hy]; exact col_fill_mod n nl blank hn (by decide) ys⟩
   · rintro ⟨ha, h0⟩
     rw [ha] at h0 ⊢
-    exact ⟨x, fill_eq_snoc_blank n nl blank hn (by decide) x h0⟩
+    exact ⟨xs, fill_eq_snoc_blank n nl blank hn (by decide) xs h0⟩
 
-/-- **B&dM p.250** `unfill`: `unfill[]=[]`, `unfill(x⧺[a])=unfill x` on a blank off a tab stop,
-    `x⧺[a]` otherwise — the shortest prefix with the same `fill`. -/
+/-- **B&dM p.250** `unfill`: `unfill[]=[]`, `unfill(xs⧺[a])=unfill xs` on a blank off a tab stop,
+    `xs⧺[a]` otherwise — the shortest prefix with the same `fill`. -/
 @[expose] public def unfillFn (n : Nat) (nl blank : Char) : Str → Str
   | SnocList.wrap _ => SnocList.wrap ()
-  | SnocList.snoc x a =>
-      if a = blank ∧ colFn nl (SnocList.snoc x a) % n ≠ 0 then unfillFn n nl blank x
-      else SnocList.snoc x a
+  | SnocList.snoc xs a =>
+      if a = blank ∧ colFn nl (SnocList.snoc xs a) % n ≠ 0 then unfillFn n nl blank xs
+      else SnocList.snoc xs a
 
 public theorem unfill_prefix (n : Nat) (nl blank : Char) : ∀ x : Str, prefixS (unfillFn n nl blank x) x
   | SnocList.wrap () => rfl
@@ -1064,20 +1064,20 @@ decreasing_by
 /-- **B&dM p.251** `tbc`, the trailing blank count. -/
 @[expose] public def tbcFn (n : Nat) (nl blank : Char) : Str → Nat
   | SnocList.wrap _ => 0
-  | SnocList.snoc x a =>
-      if a = blank ∧ colFn nl (SnocList.snoc x a) % n ≠ 0 then tbcFn n nl blank x + 1 else 0
+  | SnocList.snoc xs a =>
+      if a = blank ∧ colFn nl (SnocList.snoc xs a) % n ≠ 0 then tbcFn n nl blank xs + 1 else 0
 
 /-- **B&dM p.251**: `tbc[]=0`. -/
 public theorem tbc_nil (n : Nat) (nl blank : Char) : tbcFn n nl blank (SnocList.wrap ()) = 0 := rfl
 
-/-- **B&dM p.251**: `tbc(x⧺[a])=tbc x+1` on a blank off a tab stop, `0` otherwise. -/
-public theorem tbc_snoc (n : Nat) (nl blank : Char) (x : Str) (a : Char) :
-    tbcFn n nl blank (SnocList.snoc x a)
-      = if a = blank ∧ colFn nl (SnocList.snoc x a) % n ≠ 0 then tbcFn n nl blank x + 1 else 0 := rfl
+/-- **B&dM p.251**: `tbc(xs⧺[a])=tbc xs+1` on a blank off a tab stop, `0` otherwise. -/
+public theorem tbc_snoc (n : Nat) (nl blank : Char) (xs : Str) (a : Char) :
+    tbcFn n nl blank (SnocList.snoc xs a)
+      = if a = blank ∧ colFn nl (SnocList.snoc xs a) % n ≠ 0 then tbcFn n nl blank xs + 1 else 0 := rfl
 
-/-- **(10.1)**, B&dM p.251: `entab x=entab(unfill x)⧺blanks(tbc x)`. -/
-public theorem entab_unfill (n : Nat) (tb nl blank : Char) : ∀ x : Str,
-    entabFn n tb nl blank x = pad blank (entabFn n tb nl blank (unfillFn n nl blank x)) (tbcFn n nl blank x)
+/-- **(10.1)**, B&dM p.251: `entab xs=entab(unfill xs)⧺blanks(tbc xs)`. -/
+public theorem entab_unfill (n : Nat) (tb nl blank : Char) : ∀ xs : Str,
+    entabFn n tb nl blank xs = pad blank (entabFn n tb nl blank (unfillFn n nl blank xs)) (tbcFn n nl blank xs)
   | SnocList.wrap () => rfl
   | SnocList.snoc z a => by
     by_cases h : a = blank ∧ colFn nl (SnocList.snoc z a) % n ≠ 0
