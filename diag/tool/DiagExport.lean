@@ -1549,10 +1549,11 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
   -- (`shared-laws.typ`'s own `#if sys.inputs.at("list-shared", …)`), placing every binding they
   -- have so a chapter-scoped listing sees what that chapter's compile needs from them.
   for root in ← rootsToList do
-    let args := #["query", "--root", ".", "--input", "list=1", "--input", "list-shared=1",
+    let log := s!".lake/build/typst-run/list-{(System.FilePath.mk root).fileStem.getD root}.log"
+    let args := #[log, "query", "--root", ".", "--input", "list=1", "--input", "list-shared=1",
                   "--input", "title=" ++ title] ++ refs ++ #[root, sel]
-    let cmdline := "typst " ++ String.intercalate " " args.toList
-    let r ← IO.Process.output { cmd := "typst", args := args }
+    let cmdline := "./scripts/typst-run " ++ String.intercalate " " args.toList
+    let r ← IO.Process.output { cmd := "./scripts/typst-run", args := args }
     if r.exitCode != 0 then
       IO.eprintln s!"diag-export --list: `{cmdline}` exited {r.exitCode}: {r.stderr.trimAscii}"
       return 1
