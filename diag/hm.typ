@@ -167,13 +167,14 @@
 /// move the name off the dot: centred on one it falls inside the fork of a merge.
 /// `nat` is the verdict the row states and `hm-mark` turns it into ink; `bg` is the colour BEHIND a
 /// hollow mark, which the panel knows and this does not.
-// A hollow circle holds a SHORT label inside: short means the measured label box is at most
-// `HMIN` wide (units of 0.8cm), never a test on its text.  The radius is the least that holds the
-// box (half its diagonal plus `HPAD`), not below `HMC`; the font stays the note's.
+// A hollow circle holds a SHORT label inside only when it is a NATURAL TRANSFORMATION's mark
+// (`lax`): the `eq` circle is a step's pass mark, kin to the triangles, and keeps its label beside.
+// Short means the measured label box is at most `HMIN` wide (units of 0.8cm), never a test on its
+// text.  The radius is the least that holds the box (half its diagonal plus `HPAD`), not below `HMC`.
 #let HMIN = 0.9
 #let HPAD = 0.16
 #let hm-fit(nat, label, col) = {
-  if nat not in ("lax", "eq") or label == none { return (false, HMC) }
+  if nat != "lax" or label == none { return (false, HMC) }
   let sz = measure(text(col)[#label])
   let w = sz.width / 0.8cm
   if w > HMIN { return (false, HMC) }
