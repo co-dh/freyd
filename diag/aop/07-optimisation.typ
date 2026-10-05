@@ -1262,14 +1262,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 === #leanf("Freyd.Alg.RelSet.Party.party_mono") — `S` is monotonic on `(R×R)°` <sec-party-mono>
 
-// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`; @lax-defn at
-// `G := F`, `F := Id`, `φ := S` for the panels, `rev` putting the smaller side left, where `⊑` points.
+// @mon-str at `F := (− × [−])`, `A := [A]×[A]`, `R := (R×R)°`, so `F((R×R)°) = 𝟙×list((R×R)°)`.
 #disp[#pair(
   leancd("Freyd.Alg.RelSet.Party.party_mono"),
-  // `length` up from the file's 0.95cm: the port labels do not scale with it, and at 0.95cm the two
-  // top ports touch — `F` `[A]×[A]`, which the reader reads across, comes out as `F[A]`.
-  homeq(`F`, `[A]×[A]`, `S`, `(R×R)°`, `S`, `[A]×[A]`, ctop: GIVEN1, cmid: GIVEN2, cbot: GIVEN1,
-    regions: auto, sep: text(SLACK)[`⊑`], rev: true, gap: 1.4, length: 1.35cm),
+  lean("Freyd.Alg.RelSet.Party.party_mono.lhs", "Freyd.Alg.RelSet.Party.party_mono.rhs"),
  [`(𝟙×list((R×R)°))S⊑S(R×R)°` #src[]],
   // lean:AOP.A7_3_Party.party_mono@8a43178e
 )]<party-mono>
@@ -1303,8 +1299,9 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 // that drifts — both times this one changed, it had to change in every cell.
 #let EW = [`E`]
 
-// Only the three `⊑` steps are rows: the five `=` steps are `F(RS)=F(R)F(S)`, `(R×S)(U×V)=(RU)×(SV)`
-// and the branch unfolded and refolded, and BOTH pictures draw either side of them with the same ink.
+// Only the three `⊑` steps are rows: the functor laws that bring each bead next to its box draw
+// either side with the same ink, so `branch_monotonic`'s calc keeps them inside the step.
+#import "../generated/Freyd.Alg.RelSet.Party.branch_monotonic.calc.typ" as calc-branch
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   // One shape instantiated three times, so the three `⊑` stand in a column.
   Thm(cols: 1)[#align(center, grid(columns: 3, column-gutter: 6pt, row-gutter: 3pt,
@@ -1323,12 +1320,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    running it first and bettering the two parties it returns,
  ]],
    // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@92dade83
-  lean-chain(
-    (none, "Freyd.Alg.RelSet.Party.branch_step1.lhs", []),
-    (SQ, "Freyd.Alg.RelSet.Party.branch_step1.rhs", []),
-    (SQ, "Freyd.Alg.RelSet.Party.branch_step2.rhs", []),
-    (SQ, "Freyd.Alg.RelSet.Party.branch_step3.rhs", []),
-  ),
+  lean-calc(calc-branch),
 )
 
 #v(3pt)
@@ -1338,7 +1330,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   columns: (1.7cm, auto),
   row-gutter: 3.5pt, align: (left, left),
   [`g`],
-  [`(R×R)°g⊑gR°` \ `g:=π₂` is `(R×R)°π₂=(dom(π₁R°))π₂R°⊑π₂R°`
+  [`g:=π₂` is `(R×R)°π₂=(dom(π₁R°))π₂R°⊑π₂R°`
  #src[], `g:=π₁` its mirror
    // lean:AOP.A7_3_Party.include_monotonic@226b6fb6
    `(dom(π₂R°))π₁R°⊑π₁R°` — @relprod-defn and @fork-proj, then `dom⊑𝟙`; `g:=choose≜π₁ ∪ π₂` is the union
@@ -1346,12 +1338,12 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    // lean:AOP.A7_3_Party.chooseR_monotonic@c712a88d
    `list` monotonic, @relator-defn],
   [`concat`],
-  [`list(R°)concat⊑concat R°` \ a LEAF: no law above it. `cost` is a sum, so
+  [a LEAF: no law above it. `cost` is a sum, so
    `cost(concat(xss))=sum(list(cost)(xss))` and a cheaper part makes a cheaper whole.
  #src[]],
    // lean:AOP.A7_3_Party.concat_monotonic@084e46a9  — B&dM's exercise
   [`h`],
-  [`(𝟙×R°)h⊑hR°` \ a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
+  [a LEAF: `cost(cons(a,xs))` `=rating(a)+cost(xs)`, so a cheaper tail
  makes a cheaper list. #src[]
    // lean:AOP.A7_3_Party.cons_monotonic@e5288fc0  — B&dM's exercise
    For `h:=π₂` it is an EQUALITY `(𝟙×R°)π₂=(dom(π₁))π₂R°`
