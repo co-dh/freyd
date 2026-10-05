@@ -939,7 +939,7 @@
   [#leanf("Freyd.Alg.RelSet.Code.reduce"), #leanf("Freyd.Alg.RelSet.Code.mem_reduce")],
   [the last code of a string: one symbol, or a pointer to its longest repeated tail],
 // lean:AOP.A9_4_Code.mem_reduce@3b6329b5
-// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@d6390d6f lean:AOP.A9_4_Code.size_cata@acc91a37 lean:AOP.A9_4_Code.R@4bb66fd8 lean:AOP.A9_4_Code.R_eq@5966875d lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
+// lean:AOP.A9_4_Code.Code@1aaa6e50 lean:AOP.A9_4_Code.extendP@f49b7c97 lean:AOP.A9_4_Code.extendAlg@90db2e8c lean:AOP.A9_4_Code.decode@6e333c71 lean:AOP.A9_4_Code.sizeFn@f640f067 lean:AOP.A9_4_Code.size_cata@35093a54 lean:AOP.A9_4_Code.R@1e52f40b lean:AOP.A9_4_Code.R_eq@db31e434 lean:AOP.A9_4_Code.Q@e037d736 lean:AOP.A9_4_Code.Q_eq@ea360d8e lean:AOP.A9_4_Code.U@f6ac9e29 lean:AOP.A9_4_Code.U_eq@efe90b64 lean:AOP.A9_4_Code.prefixR@0a5c54fb
 )]<code-defn>
 
 // ONE WIRE, `String` to `[Code]`, and one `list` lane: the string above the bead that eats it, the
@@ -950,7 +950,7 @@
     #src[a smallest code sequence decoding to the given string is built from the right, each step
      emitting the last character as a symbol or ending with a pointer back into what has already
      been decoded]],
-  // lean:AOP.A9_4_Code.code_laws@5516bed1
+  // lean:AOP.A9_4_Code.code_laws@8f508f50
   // No source/target in the header: each row draws the LAW its Hinze–Marsden column names, in that
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
@@ -992,7 +992,7 @@
     #src[every code sequence built from a decomposition `Q` puts above a given one — a code element
      of the same kind, a longer front string — costs at least as much as one built from the given
      one]],
-     // lean:AOP.A9_4_Code.code_thin_condition@00aae404
+     // lean:AOP.A9_4_Code.code_thin_condition@9713e3ac
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Code.code_thin_step1.lhs"), [])],
@@ -1012,18 +1012,18 @@
     [#src[Proposition 9.4's second condition `prefix° decode°⊑decode° R`: dropping the last
       character drops the last `sym`, or shortens or drops the last pointer. Proved at `prefix`
       directly by induction, not through `init`]])],
-     // lean:AOP.A9_4_Code.code_thin_step3@9c774e54 lean:AOP.A9_4_Code.code_V@3407acb5
+     // lean:AOP.A9_4_Code.code_thin_step3@ad5dd78c lean:AOP.A9_4_Code.code_V@379f605b
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step3.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step4.rhs"),
     [#src[`F` preserves composition: `F(U,decode° R)=F(𝟙,decode°)F(U,R)`]])],
-     // lean:AOP.A9_4_Code.code_thin_step4@ff2b0d68 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
+     // lean:AOP.A9_4_Code.code_thin_step4@4ff1cf98 lean:AOP.A9_4_Code.Fmap_Fbimap@a683eae6
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step4.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Code.code_thin_step5.rhs"),
     [#src[Proposition 9.4's first condition `F(⊤+⊤,R)α⊑αR`, left as an exercise in the book: `snoc`
       adds the cost of the last element to both sides, and `[c,p](⊤+⊤)=[c,p]`]])],
-     // lean:AOP.A9_4_Code.code_thin_step5@2bc8116d lean:AOP.A9_4_Code.bytes_U@953e99c3
+     // lean:AOP.A9_4_Code.code_thin_step5@77287aac lean:AOP.A9_4_Code.bytes_U@5cdd8403
   [#lean("Freyd.Alg.RelSet.Code.code_thin_step5.rhs")],
 )]<code-thin>
 

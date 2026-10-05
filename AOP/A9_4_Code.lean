@@ -30,9 +30,8 @@
   Two modelling notes.  `String⁺` is not a separate type: `extend` guards its pointer with
   `zs≠nil`, which is exactly what `String⁺` asks of it.  `Str`/`slen`/`prefix` are declared here
   rather than imported from §10.2 (`AOP.A10_2_Detab`), which has the same snoc-string helpers,
-  because a chapter-9 module must not import chapter 10.  `Real` is `Int`, as everywhere in this
-  repo's chapter 8-10 case studies, and the book's "amount of space" is made explicit as `0≤c`,
-  `0≤p`.
+  because a chapter-9 module must not import chapter 10.  `c` and `p` are the book's "amount of
+  space to store symbols and pointers", so `Nat`, and `size` with them.
 -/
 module
 
@@ -240,32 +239,32 @@ public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nilR extend := 
 @[expose] public def decode : dCodes ⟶ dStr := cataR extendAlg
 
 /-- **code-defn**: `c`, `p` the constant costs of a symbol and a pointer. -/
-@[expose] public def bytes (c p : Int) : Code → Int
+@[expose] public def bytes (c p : Nat) : Code → Nat
   | Code.sym _ => c
   | Code.ptr _ _ => p
 
 /-- **code-defn**: `distr [𝟙×c,𝟙×p] plus`, the step arm of the size algebra — a def of its own, so
     the junction below is written by its arms' names and no arm is a lambda. -/
-@[expose] public def sizeArmFn (c p : Int) (q : Int × Code) : Int := q.1 + bytes c p q.2
+@[expose] public def sizeArmFn (c p : Nat) (q : Nat × Code) : Nat := q.1 + bytes c p q.2
 
 /-- **code-defn**: the algebra `[zero,distr [𝟙×c,𝟙×p] plus]` whose fold is `size`. -/
-@[expose] public def sizeAlgFn (c p : Int) :
-    (Fobj Unit Code (⟨Int⟩ : RelSet.{0})).carrier → Int
+@[expose] public def sizeAlgFn (c p : Nat) :
+    (Fobj Unit Code (⟨Nat⟩ : RelSet.{0})).carrier → Nat
   | Sum.inl _ => 0
   | Sum.inr q => sizeArmFn c p q
 
 /-- **code-defn**: `size`, read as the function it is. -/
-@[expose] public def sizeFn (c p : Int) : SnocList Unit Code → Int
+@[expose] public def sizeFn (c p : Nat) : SnocList Unit Code → Nat
   | SnocList.wrap _ => 0
   | SnocList.snoc cs e => sizeFn c p cs + bytes c p e
 
-variable (c p : Int)
+variable (c p : Nat)
 
 /-- **code-defn**: `size≜⦇[zero,distr [𝟙×c,𝟙×p] plus]⦈` — the fold of `sizeAlgFn` IS `sizeFn`. -/
 public theorem size_cata :
     cataR (graph (sizeAlgFn c p) :
-        Fobj Unit Code (⟨Int⟩ : RelSet.{0}) ⟶ (⟨Int⟩ : RelSet.{0}))
-      = (graph (sizeFn c p) : dCodes ⟶ (⟨Int⟩ : RelSet.{0})) := by
+        Fobj Unit Code (⟨Nat⟩ : RelSet.{0}) ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) := by
   apply hom_ext; intro cs
   induction cs with
   | wrap _ => exact fun _ => Iff.rfl
@@ -280,12 +279,12 @@ public theorem size_cata :
       exact ⟨sizeFn c p cs', (ih _).mpr rfl, h⟩
 
 /-- **code-defn**: `R≜size≤size°`. -/
-@[expose] public def R (c p : Int) : dCodes ⟶ dCodes := fun u v => sizeFn c p u ≤ sizeFn c p v
+@[expose] public def R (c p : Nat) : dCodes ⟶ dCodes := fun u v => sizeFn c p u ≤ sizeFn c p v
 
 /-- `R = size≤size°`, point-free. -/
 public theorem R_eq :
-    R c p = (graph (sizeFn c p) : dCodes ⟶ (⟨Int⟩ : RelSet.{0})) ≫ ListRel.leq
-      ≫ (graph (sizeFn c p) : dCodes ⟶ (⟨Int⟩ : RelSet.{0}))° := by
+    R c p = (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
+      ≫ (graph (sizeFn c p) : dCodes ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   apply hom_ext; intro u v
   constructor
   · intro h; exact ⟨sizeFn c p u, rfl, sizeFn c p v, h, rfl⟩
@@ -302,7 +301,7 @@ public theorem R_apply (u v : SnocList Unit Code) : R c p u v ↔ sizeFn c p u �
 public theorem R_recip_trans : (R c p)° ≫ (R c p)° ⊑ (R c p)° :=
   le_iff.mpr fun u w h => by
     obtain ⟨v, h1, h2⟩ := h
-    exact Int.le_trans (h2 : sizeFn c p w ≤ sizeFn c p v) (h1 : sizeFn c p v ≤ sizeFn c p u)
+    exact Nat.le_trans (h2 : sizeFn c p w ≤ sizeFn c p v) (h1 : sizeFn c p v ≤ sizeFn c p u)
 
 /-! ## `code-defn`: `U`, `V`, `Q` -/
 
@@ -364,7 +363,7 @@ public theorem code_mono : Freyd.Alg.MonoAlg (F := F Unit Code) (graph con) ((R 
     cases u with
     | inl _ =>
       cases v with
-      | inl _ => exact ⟨SnocList.wrap (), rfl, Int.le_refl _⟩
+      | inl _ => exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
       | inr _ => exact hFv.elim
     | inr q =>
       cases v with
@@ -373,7 +372,7 @@ public theorem code_mono : Freyd.Alg.MonoAlg (F := F Unit Code) (graph con) ((R 
         refine ⟨SnocList.snoc q.1 q.2, rfl, ?_⟩
         show sizeFn c p r.1 + bytes c p r.2 ≤ sizeFn c p q.1 + bytes c p q.2
         rw [← (hFv.2 : q.2 = r.2)]
-        exact Int.add_le_add_right (hFv.1 : sizeFn c p r.1 ≤ sizeFn c p q.1) _
+        exact Nat.add_le_add_right (hFv.1 : sizeFn c p r.1 ≤ sizeFn c p q.1) _
 
 /-- **code-laws**, third row (Proposition 9.1, B&dM p.241): the decompositions of a non-empty
     string — take the last character as a symbol, or end with a pointer. -/
@@ -412,7 +411,7 @@ public theorem code_decomp (ws : Str) (a : Char) (xs : Str) (e : Code) :
     directly.  Dropping the last character drops the last `sym` (cheaper), shortens the last
     pointer's target (same cost), or drops that pointer (cheaper); everything earlier is the
     induction hypothesis. -/
-public theorem decode_prefix (hc : 0 ≤ c) (hp : 0 ≤ p) :
+public theorem decode_prefix :
     ∀ (cs : SnocList Unit Code) (w : Str), decode cs w → ∀ x : Str, prefixS x w →
       ∃ cs₀, decode cs₀ x ∧ sizeFn c p cs₀ ≤ sizeFn c p cs := by
   intro cs
@@ -421,7 +420,7 @@ public theorem decode_prefix (hc : 0 ≤ c) (hp : 0 ≤ p) :
     intro w hw x hx
     obtain rfl : w = SnocList.wrap () := hw
     obtain rfl : x = SnocList.wrap () := hx
-    exact ⟨SnocList.wrap (), rfl, Int.le_refl _⟩
+    exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
   | snoc cs e ih =>
     intro w hw x hx
     obtain ⟨w', hw', hstep⟩ := hw
@@ -429,7 +428,7 @@ public theorem decode_prefix (hc : 0 ≤ c) (hp : 0 ≤ p) :
     | sym a =>
       obtain rfl : w = SnocList.snoc w' a := hstep
       rcases hx with rfl | hx
-      · exact ⟨SnocList.snoc cs (Code.sym a), ⟨w', hw', rfl⟩, Int.le_refl _⟩
+      · exact ⟨SnocList.snoc cs (Code.sym a), ⟨w', hw', rfl⟩, Nat.le_refl _⟩
       · obtain ⟨cs₀, hcs₀, hle⟩ := ih w' hw' x hx
         refine ⟨cs₀, hcs₀, ?_⟩
         show sizeFn c p cs₀ ≤ sizeFn c p cs + c
@@ -450,14 +449,14 @@ public theorem decode_prefix (hc : 0 ≤ c) (hp : 0 ≤ p) :
           refine ⟨SnocList.snoc cs (Code.ptr ys (SnocList.snoc zs₀ b)), ⟨w', hw', ?_⟩, ?_⟩
           · exact ⟨rfl, snoc_ne_wrap zs₀ b, properPrefixS_shorten hpp hzs'⟩
           · show sizeFn c p cs + p ≤ sizeFn c p cs + p
-            exact Int.le_refl _
+            exact Nat.le_refl _
 
 /-- **code-laws**, third row: Proposition 9.4's `hV`, `prefix° decode°⊑decode° R`. -/
-public theorem code_V (hc : 0 ≤ c) (hp : 0 ≤ p) :
+public theorem code_V :
     (prefixR)° ≫ decode° ⊑ decode° ≫ R c p :=
   le_iff.mpr fun x cs h => by
     obtain ⟨w, hV, hw⟩ := h
-    exact decode_prefix c p hc hp cs w hw x hV
+    exact decode_prefix c p cs w hw x hV
 
 /-! ### `code-thin` — Proposition 9.4 at `Q≜F(⊤+⊤,prefix°)`, one step per fact (B&dM p.240) -/
 
@@ -544,7 +543,7 @@ public theorem code_thin_step2 :
   rw [← Cat.assoc, Fbimap_Fmap]
 
 /-- `code-thin`, third step: Proposition 9.4's `prefix° decode°⊑decode° R` (`code_V`). -/
-public theorem code_thin_step3 (hc : 0 ≤ c) (hp : 0 ≤ p) :
+public theorem code_thin_step3 :
     Fbimap U (prefixR° ≫ decode°) ≫ graph con ⊑ Fbimap U (decode° ≫ R c p) ≫ graph con :=
   comp_mono_right (le_iff.mpr fun u w h => by
     cases u with
@@ -553,7 +552,7 @@ public theorem code_thin_step3 (hc : 0 ≤ c) (hp : 0 ≤ p) :
       | inr _ => exact h.elim
     | inr _ => cases w with
       | inl _ => exact h.elim
-      | inr _ => exact ⟨le_iff.mp (code_V c p hc hp) _ _ h.1, h.2⟩) _
+      | inr _ => exact ⟨le_iff.mp (code_V c p) _ _ h.1, h.2⟩) _
 
 /-- `code-thin`, fourth step: `F(U,decode° R)=F(decode°)F(U,R)`. -/
 public theorem code_thin_step4 :
@@ -572,25 +571,25 @@ public theorem code_thin_step5 :
     refine ⟨con u, rfl, ?_⟩
     cases u with
     | inl _ => cases v with
-      | inl _ => exact Int.le_refl _
+      | inl _ => exact Nat.le_refl _
       | inr _ => exact hv.elim
     | inr a => cases v with
       | inl _ => exact hv.elim
       | inr b =>
         show sizeFn c p a.1 + bytes c p a.2 ≤ sizeFn c p b.1 + bytes c p b.2
         rw [bytes_U c p hv.2]
-        exact Int.add_le_add_right hv.1 _)
+        exact Nat.add_le_add_right hv.1 _)
 
 /-- **code-laws**, second row: Theorem 9.2's thinning condition, Proposition 9.4 at `U≜⊤+⊤` and
     `V≜prefix°`.  `U` leaves the code element free but pins its cost, `code_V` supplies the
     cheaper code sequence for the shorter output, and `snoc` adds the same constant to both. -/
-public theorem code_thin_condition (hc : 0 ≤ c) (hp : 0 ≤ p) :
+public theorem code_thin_condition :
     Q ≫ (F Unit Code).map (decode°) ≫ graph con
       ⊑ (F Unit Code).map (decode°) ≫ graph con ≫ R c p :=
   calc Q ≫ (F Unit Code).map (decode°) ≫ graph con
       _ = _ := code_thin_step1
       _ = _ := code_thin_step2
-      _ ⊑ _ := code_thin_step3 c p hc hp
+      _ ⊑ _ := code_thin_step3 c p
       _ = _ := code_thin_step4 c p
       _ ⊑ _ := code_thin_step5 c p
 
@@ -600,7 +599,7 @@ public theorem code_thin_condition (hc : 0 ≤ c) (hp : 0 ≤ p) :
     `R`-smallest.  Theorem 9.2 at `Q≜𝟙+(prefix°×(⊤+⊤))`, with `code_mono` the monotonicity
     condition and `code_thin_condition` the thinning one.  `H = ⦇α⦈·⦇[nil,extend]⦈°` collapses to
     `decode°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
-public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
+public theorem code_laws :
     mu (fun X : dStr ⟶ dCodes =>
         Λ ((junc (sumCop _ _) nilR extend
               : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
@@ -616,7 +615,7 @@ public theorem code_laws (hc : 0 ≤ c) (hp : 0 ≤ p) :
   have key := dynamic_programming_thin (F := F Unit Code)
     (initial Unit Code) (h := graph (con (L := Unit) (E := Code))) (T := extendAlg)
     (R := R c p) (Q := Q) (graph_map con) (code_mono c p) (R_recip_trans c p)
-    (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p hc hp)
+    (by simp only [ThinCondition, H]; rw [hH]; exact code_thin_condition c p)
   simp only [H] at key; rwa [hH] at key
 
 /-- `extend` never returns the empty string: the symbol case snocs, and the pointer case appends
