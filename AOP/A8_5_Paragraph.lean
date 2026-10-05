@@ -54,20 +54,20 @@ variable {Word : Type} {len : Word → Int} {w : Int}
 /-- The object carrying `Para`. -/
 @[expose] public abbrev dPara (Word : Type) : RelSet.{0} := dNE (Line Word)
 
--- A LINE AND A PARAGRAPH ARE THE ONE NON-EMPTY-LIST OBJECT, so the picture writes the note's
--- `L(L(Word))` and not this section's abbreviation for it: an abbreviation keeps its own
--- name in the term, so `AOP.A5_6_ListCombinators`'s `dNE` clause never sees it.
+-- B&dM p.208 names the types `Line` and `Para` over one fixed `Word`, so they print by name with
+-- the argument dropped; printing the unfolding made `Line ≜ L(Word)` read `L(Word) ≜ L(Word)`.
 open Lean PrettyPrinter in
 @[app_unexpander Line] public meta def unexpandLine : Unexpander
-  | `($_ $W) => `($(mkIdent (Name.mkSimple "L")) $W)
+  | `($_ $_) => `($(mkIdent (Name.mkSimple "Line")))
   | _ => throw ()
 open Lean PrettyPrinter in
 @[app_unexpander Para] public meta def unexpandPara : Unexpander
-  | `($_ $W) => `($(mkIdent (Name.mkSimple "L")) ($(mkIdent (Name.mkSimple "L")) $W))
+  | `($_ $_) => `($(mkIdent (Name.mkSimple "Para")))
   | _ => throw ()
+-- `dPara` is the object whose carrier is `Para`, so it prints as the type it carries.
 open Lean PrettyPrinter in
 @[app_unexpander dPara] public meta def unexpandDPara : Unexpander
-  | `($_ $W) => `($(mkIdent (Name.mkSimple "L")) ($(mkIdent (Name.mkSimple "L")) $W))
+  | `($_ $_) => `($(mkIdent (Name.mkSimple "Para")))
   | _ => throw ()
 
 /-- **para-defn**: `width ≜ ⦇[length,(length×𝟙) plus succ]⦈` — the words' lengths plus one
