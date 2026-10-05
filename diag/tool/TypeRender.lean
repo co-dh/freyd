@@ -82,9 +82,20 @@ def hex8 (k : UInt64) : String :=
 
 /-- A hom in the note's spelling: each end through `label`, the rule every route's text goes
     through, and the arrow set tight as the note sets it, `[A]⟶[B]`. -/
-private def hom? (t : Expr) : MetaM (Option String) := do
+private def hom? (t : Expr) (piece : String → String := id) (brk := "") : MetaM (Option String) := do
   let some (a, b) := homObjs? t | return none
-  return some ((← label a) ++ "⟶" ++ (← label b))
+  return some (piece ((← label a) ++ "⟶") ++ brk ++ piece (← label b))
+
+/-- A TYPE LEAN GAVE, its top-level non-dependent `→` split off the type tree, so `piece` can keep
+    each end whole and the line break falls at the arrow; any other type is one piece. -/
+private def funPieces (ty : Expr) (piece : String → String) : MetaM String := do
+  match ty with
+  | .forallE _ d c bi =>
+    -- `X → Prop` is the power object `P X` the delaborator prints, not an arrow to split.
+    if c.hasLooseBVars || !bi.isExplicit || c.isSort then return piece (← plain ty)
+    let dom ← plain d
+    return piece ((if d.isForall then "(" ++ dom ++ ")" else dom) ++ " →") ++ " " ++ piece (← plain c)
+  | _ => return piece (← plain ty)
 
 /-- A FACTOR STEP `f<k>`, `k ≥ 1`: the k-th factor of the composite the step follows. -/
 def factorIdx? (s : String) : Option Nat :=
@@ -93,7 +104,8 @@ def factorIdx? (s : String) : Option Nat :=
 /-- The declaration's type in the note's spelling.  Run under `withDeclScope` and printed by
     `plain`, so the same delaborator, namespaces and unexpanders the string route draws its labels
     with print this cell. -/
-def render (declName : Name) (sides : List String := []) : MetaM String := withDeclScope declName do
+def render (declName : Name) (sides : List String := []) (piece : String → String := id) (brk := "") :
+    MetaM String := withDeclScope declName do
   let nameOnly := sides.contains "name"
   let some ci := (← getEnv).find? declName | throwError "no such declaration: {declName}"
   -- NOT `forallTelescopeReducing`: a hom of `RelSet` reduces to `A → B → Prop`, so reducing walks
@@ -122,7 +134,7 @@ def render (declName : Name) (sides : List String := []) : MetaM String := withD
           throwError "{declName}: `.{s}` asks for factor {k} of {← Meta.ppExpr u}, which has {fs.size}"
         pure f
       let ty ← Meta.inferType t
-      let some s ← hom? ty |
+      let some s ← hom? ty piece brk |
         throwError "{declName}: the selected subterm {← Meta.ppExpr t} has type {← Meta.ppExpr ty}, \
           not an arrow of a category"
       return ← name t s
@@ -133,22 +145,22 @@ def render (declName : Name) (sides : List String := []) : MetaM String := withD
       -- An equation states its type as `Eq`'s first argument, which an ascription in the statement
       -- sets; the left side's inferred type forgets it.
       let t ← match body.eq? with | some (ty, _, _) => pure ty | none => Meta.inferType l
-      let some s ← hom? t |
+      let some s ← hom? t piece brk |
         throwError "{declName} states {← Meta.ppExpr l} {sym} {← Meta.ppExpr r}, whose sides are \
           {← Meta.ppExpr t} and not arrows of a category — it has no hom type to render"
       name l s
     | none =>
       let self := mkAppN (.const declName (ci.levelParams.map .param)) xs
-      if let some s ← hom? body then name self s else
+      if let some s ← hom? body piece brk then name self s else
       match body.getAppFnArgs with
       | (``Freyd.Alg.Relator, args) =>
-        if h : args.size ≥ 2 then name self ((← plain args[0]) ++ "⟶" ++ (← plain args[1]))
+        if h : args.size ≥ 2 then name self (piece ((← plain args[0]) ++ "⟶") ++ brk ++ piece (← plain args[1]))
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied relator"
       -- A binary relator runs from the square of its category: `F : 𝒜×𝒜⟶𝒜`.
       | (``Freyd.Alg.BiRelator, args) =>
         if h : args.size ≥ 1 then
           let c ← plain args[0]
-          name self (c ++ "×" ++ c ++ "⟶" ++ c)
+          name self (piece (c ++ "×" ++ c ++ "⟶") ++ brk ++ piece c)
         else throwError "{declName} : {← Meta.ppExpr body} is a partially applied binary relator"
       -- A THEOREM's body is a statement, not a type: printing it here would repeat the formula cell.
       | _ => do
@@ -164,12 +176,13 @@ def render (declName : Name) (sides : List String := []) : MetaM String := withD
           | .forallE n _ b bi => if n.hasMacroScopes && !bi.isInstImplicit then 0 else named b + 1
           | _ => 0
         Meta.forallBoundedTelescope ci.type (named ci.type) fun ys ty =>
-          do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← plain ty)
+          do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← funPieces ty piece)
 
-/-- The file a note cell `#include`s: the type as typst inline raw.  The `lean:<decl>@<key>` marker
-    above it is `DiagExport.certLine`'s, written for every route at the one place the file is. -/
+/-- The file a note cell `#include`s: the type as typst inline raw, each end of a top-level arrow
+    an unbreakable box and a zero-width space after the arrow, so a capped type column wraps there and
+    never inside `[tree A]`.  The `lean:<decl>@<key>` marker above it is `DiagExport.certLine`'s. -/
 def file (declName : Name) (sides : List String := []) : MetaM String := do
-  let r ← render declName sides
-  return (if sides.contains "name" then r else "`" ++ r ++ "`") ++ "\n"
+  if sides.contains "name" then return (← render declName sides) ++ "\n"
+  return (← render declName sides (fun p => "#box(`" ++ p ++ "`)") "​") ++ "\n"
 
 end Freyd.TypeRender
