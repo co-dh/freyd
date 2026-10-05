@@ -70,7 +70,7 @@ variable {A S : Type} (st : A → S) (sb : S × S → S) (cb : S × S → Int)
 /-- **mct-defn**: `flatten≜⦇[wrap,cat]⦈ : tree A⟶list⁺ A`, read as the function it is. -/
 @[expose] public def flattenFn : Tree A → NEList A
   | Tree.tip a => CL.ConsList.wrap a
-  | Tree.bin l r => cat (flattenFn l) (flattenFn r)
+  | Tree.bin xs ys => cat (flattenFn xs) (flattenFn ys)
 
 /-- **mct-defn**: the catamorphism of `[wrap,cat]` IS `flattenFn`. -/
 public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flattenFn := by
@@ -90,7 +90,7 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
 /-- **mct-defn**: `sz`, the size of a non-empty list read directly off it. -/
 @[expose] public def szFn (st : A → S) (sb : S × S → S) : NEList A → S
   | CL.ConsList.wrap a => st a
-  | CL.ConsList.cons a x => sb (st a, szFn st sb x)
+  | CL.ConsList.cons a xs => sb (st a, szFn st sb xs)
 
 /-- **mct-defn**: `opb ((cx,sx),(cy,sy))=(cb (sx,sy)+cx+cy,sb (sx,sy))`, the node half of the
     tupled fold's algebra. -/
@@ -103,7 +103,7 @@ public theorem flatten_cata : cataR (graph (wrapCatFn (A := A))) = graph flatten
 @[expose] public def costSizeFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
     Tree A → Int × S
   | Tree.tip a => (0, st a)
-  | Tree.bin l r => opbFn sb cb (costSizeFn st sb cb l, costSizeFn st sb cb r)
+  | Tree.bin xs ys => opbFn sb cb (costSizeFn st sb cb xs, costSizeFn st sb cb ys)
 
 /-- **mct-defn**: `cost`, the first component of the tupled fold. -/
 @[expose] public def costFn (st : A → S) (sb : S × S → S) (cb : S × S → Int) (t : Tree A) : Int :=
@@ -123,16 +123,16 @@ public theorem sz_cat (hassoc : Assoc sb) :
 /-- **mct-defn**: `sb` associative, so `size=flatten sz` — the size of a tree depends only on
     its flattening, which is what makes the context `flatten flatten°` enough for (9.5). -/
 public theorem size_eq_sz_flatten (hassoc : Assoc sb) :
-    ∀ t : Tree A, (costSizeFn st sb cb t).2 = szFn st sb (flattenFn t)
+    ∀ xs : Tree A, (costSizeFn st sb cb xs).2 = szFn st sb (flattenFn xs)
   | Tree.tip a => rfl
-  | Tree.bin l r => by
-    show sb ((costSizeFn st sb cb l).2, (costSizeFn st sb cb r).2)
-      = szFn st sb (cat (flattenFn l) (flattenFn r))
-    rw [sz_cat st sb hassoc, size_eq_sz_flatten hassoc l, size_eq_sz_flatten hassoc r]
+  | Tree.bin xs ys => by
+    show sb ((costSizeFn st sb cb xs).2, (costSizeFn st sb cb ys).2)
+      = szFn st sb (cat (flattenFn xs) (flattenFn ys))
+    rw [sz_cat st sb hassoc, size_eq_sz_flatten hassoc xs, size_eq_sz_flatten hassoc ys]
 
 /-- **mct-defn**: `R≜cost≤cost°`. -/
 @[expose] public def R (st : A → S) (sb : S × S → S) (cb : S × S → Int) :
-    dTree A ⟶ dTree A := fun t t' => costFn st sb cb t ≤ costFn st sb cb t'
+    dTree A ⟶ dTree A := fun xs ys => costFn st sb cb xs ≤ costFn st sb cb ys
 
 public theorem R_eq :
     R st sb cb = (graph (costFn st sb cb) : dTree A ⟶ (⟨Int⟩ : RelSet.{0})) ≫ leq
@@ -145,8 +145,8 @@ public theorem R_eq :
     obtain rfl : n = costFn st sb cb t' := hn
     exact hmn
 
-/-- **mct-defn**, pointwise: `t R t'` iff `t` costs no more than `t'`. -/
-public theorem R_apply (t t' : Tree A) : R st sb cb t t' ↔ costFn st sb cb t ≤ costFn st sb cb t' :=
+/-- **mct-defn**, pointwise: `t R t'` iff `xs` costs no more than `ys`. -/
+public theorem R_apply (xs ys : Tree A) : R st sb cb xs ys ↔ costFn st sb cb xs ≤ costFn st sb cb ys :=
   Iff.rfl
 
 public theorem R_recip_eq :
@@ -189,9 +189,9 @@ public theorem gFn_inl (a : A) :
     gFn st sb cb (Sum.inl a : (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier) = 0 := rfl
 
 /-- **mct-defn**, pointwise: at a node `g` is `cb` of the two sizes plus the two costs. -/
-public theorem gFn_inr (cx cy : Int) (x y : NEList A) :
-    gFn st sb cb (Sum.inr ((cx, x), (cy, y)) : (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier)
-      = cb (szFn st sb x, szFn st sb y) + cx + cy := rfl
+public theorem gFn_inr (cx cy : Int) (xs ys : NEList A) :
+    gFn st sb cb (Sum.inr ((cx, xs), (cy, ys)) : (TFobj A (⟨Int × NEList A⟩ : RelSet.{0})).carrier)
+      = cb (szFn st sb xs, szFn st sb ys) + cx + cy := rfl
 
 /-- The product `Int × list⁺ A` the context bundle `⟨cost,flatten⟩` lands in. -/
 @[expose] public abbrev P (A : Type) : RelProd (⟨Int⟩ : RelSet.{0}) (dNE A) :=
@@ -836,7 +836,7 @@ public theorem splits_lax_natural {B : Type} (R : CL.dE A ⟶ CL.dE B) :
 
 /-- `nonsingle`, the coreflexive on lists of two or more elements — the book's "on non-singletons". -/
 @[expose] public def nonsingle : dNE A ⟶ dNE A :=
-  fun x y => x = y ∧ ∃ a z, x = CL.ConsList.cons a z
+  fun xs ys => xs = ys ∧ ∃ a zs, xs = CL.ConsList.cons a zs
 
 /-- The `nonsingle` bead is STRICTLY natural: `list⁺(R)` keeps the length, so relating the
     elements and then testing for two or more is testing first. -/
@@ -1094,11 +1094,11 @@ public theorem neTails_eq : ∀ x : NEList A, neTailsFn x = CL.ConsList.cons x (
   | CL.ConsList.cons _ _ => by rw [tailsPFn_cons]; rfl
 
 /-- `splits≜⟨inits⁺,tails⁺⟩ zip`: the definition the note states, of `splitsFn`. -/
-public theorem splitsFn_eq : ∀ x : NEList A, splitsFn x = zipFn (initsPFn x, tailsPFn x)
+public theorem splitsFn_eq : ∀ xs : NEList A, splitsFn xs = zipFn (initsPFn xs, tailsPFn xs)
   | CL.ConsList.wrap _ => by simp only [splitsFn, initsPFn, tailsPFn, zipFn]
-  | CL.ConsList.cons a x => by
+  | CL.ConsList.cons a xs => by
       simp only [splitsFn, initsPFn, tailsPFn]
-      rw [neTails_eq x, zipFn, splitsFn_eq x, consSplits_zip]
+      rw [neTails_eq xs, zipFn, splitsFn_eq xs, consSplits_zip]
 
 /-- `inits⁺=init inits` on non-singletons. -/
 public theorem initsP_eq (a : A) :
@@ -1879,27 +1879,27 @@ public theorem idArray_graph :
     fun h => ⟨(congrArg Prod.fst h).symm, congrArg Prod.snd h⟩⟩
 
 /-- `row`, pointwise: the best tree of every non-empty suffix. -/
-public theorem row_apply (x : NEList A) (ys : CL.ConsList Unit (Tree A)) :
-    row st sb cb x ys ↔ ys = cmap (mct st sb cb) (neTailsFn x) := by
-  have h : row st sb cb = (graph (fun x => cmap (mct st sb cb) (neTailsFn x)) : dNE A ⟶ dList (Tree A)) := by
+public theorem row_apply (xs : NEList A) (ys : CL.ConsList Unit (Tree A)) :
+    row st sb cb xs ys ↔ ys = cmap (mct st sb cb) (neTailsFn xs) := by
+  have h : row st sb cb = (graph (fun xs => cmap (mct st sb cb) (neTailsFn xs)) : dNE A ⟶ dList (Tree A)) := by
     simp only [row, list_graph, graph_comp]
   rw [h]; exact Iff.rfl
 
 /-- `col`, pointwise: the best tree of every non-empty prefix. -/
-public theorem col_apply (x : NEList A) (ys : CL.ConsList Unit (Tree A)) :
-    col st sb cb x ys ↔ ys = cmap (mct st sb cb) (neInitsFn x) := by
-  have h : col st sb cb = (graph (fun x => cmap (mct st sb cb) (neInitsFn x)) : dNE A ⟶ dList (Tree A)) := by
+public theorem col_apply (xs : NEList A) (ys : CL.ConsList Unit (Tree A)) :
+    col st sb cb xs ys ↔ ys = cmap (mct st sb cb) (neInitsFn xs) := by
+  have h : col st sb cb = (graph (fun xs => cmap (mct st sb cb) (neInitsFn xs)) : dNE A ⟶ dList (Tree A)) := by
     simp only [col, list_graph, graph_comp]
   rw [h]; exact Iff.rfl
 
 /-- `array`, pointwise: one row for every non-empty prefix. -/
-public theorem array_apply (x : NEList A) (xss : CL.ConsList Unit (CL.ConsList Unit (Tree A))) :
-    array st sb cb x xss ↔ xss = cmap (rowFn st sb cb) (neInitsFn x) := by
+public theorem array_apply (xs : NEList A) (xss : CL.ConsList Unit (CL.ConsList Unit (Tree A))) :
+    array st sb cb xs xss ↔ xss = cmap (rowFn st sb cb) (neInitsFn xs) := by
   rw [array_graph]; exact Iff.rfl
 
 /-- `mix`, pointwise: a cheapest of the trees joining matching prefix and suffix trees. -/
-public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)) (t : Tree A) :
-    mix st sb cb p t ↔ t = minlistFn (R st sb cb) (cmap binFn (zipFn p)) := by
+public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A)) (xs : Tree A) :
+    mix st sb cb p xs ↔ xs = minlistFn (R st sb cb) (cmap binFn (zipFn p)) := by
   have h : mix st sb cb = (graph (fun p => minlistFn (R st sb cb) (cmap binFn (zipFn p))) : _ ⟶ dTree A) := by
     simp only [mix, list_graph, graph_comp]; try rfl
   rw [h]; exact Iff.rfl
