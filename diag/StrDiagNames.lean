@@ -614,10 +614,6 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.opF] def unexpandEditOpF : Unexpander | _ => `($(mkIdent `F))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.pairF] def unexpandEditPairF : Unexpander | _ => `($(mkIdent `F))
--- The section's order on lengths is written by its operator, as `leRel` is.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Edit.leqN] def unexpandEditLeqN : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "≤")))
 -- The section's own integer ordering is written by its operator, as `leRel` is.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.leq] def unexpandPartyLeq : Unexpander

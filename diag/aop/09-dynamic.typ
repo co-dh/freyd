@@ -273,7 +273,7 @@
 // lean:AOP.A9_2_Edit.F_obj@c75acbc8
 // lean:AOP.A9_2_Edit.edit_cata@2dc97e76
 // lean:AOP.A9_2_Edit.length_cata@30fa5c4d
-// lean:AOP.A9_2_Edit.R_eq@0f7a4661
+// lean:AOP.A9_2_Edit.R_eq@feea92aa
 // lean:AOP.A9_2_Edit.V_eq@dca965f7
 // lean:AOP.A9_2_Edit.Q_inl@881e94ca
 // lean:AOP.A9_2_Edit.Q_inr@3c2b60fa
@@ -368,32 +368,32 @@
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs"),
     [#src[`R≜length≤length°` — @Freyd.Alg.RelSet.Edit.R; `F` preserves composition]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step1@bc06a294
+     // lean:AOP.A9_2_Edit.edit_mono_step1@36eb5b3f
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step1.rhs", step: true)],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs"),
     [#src[`length` is a map, so entire: `𝟙⊑length length°`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step2@31a5bbaf
+     // lean:AOP.A9_2_Edit.edit_mono_step2@d411c950
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step2.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs"),
     [#src[`α length=F(length)[zero,π₂ succ]`: `length≜⦇[zero,π₂ succ]⦈` — @Freyd.Alg.RelSet.Edit.R]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step3@f2d71928
+     // lean:AOP.A9_2_Edit.edit_mono_step3@3495c8d6
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step3.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs"),
     [#src[`length` is a map, so simple, and `F` is monotonic: `F(length°)F(length)⊑F(𝟙)=𝟙`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step4@758407c4
+     // lean:AOP.A9_2_Edit.edit_mono_step4@1ee01952
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step4.rhs")],
 
   [#vstep(SQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs"),
     [#src[`succ` is monotonic on `≤`: `F(≤)[zero,π₂ succ]⊑[zero,π₂ succ]≤`]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step5@66ce5aee
+     // lean:AOP.A9_2_Edit.edit_mono_step5@de5e293d
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step5.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs"),
     [#src[`F(length)[zero,π₂ succ]=α length` again]])],
-     // lean:AOP.A9_2_Edit.edit_mono_step6@52788976
+     // lean:AOP.A9_2_Edit.edit_mono_step6@52d6f873
   [#lean("Freyd.Alg.RelSet.Edit.edit_mono_step6.rhs")],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Edit.edit_mono.rhs"),

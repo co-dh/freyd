@@ -182,10 +182,6 @@ public theorem edit_cata : graph editFn = cataR (editAlg (Char := Char)) := by
     · intro (h : p = baseStepFn (Sum.inr (op, editFn es)))
       exact ⟨editFn es, (ih _).mpr rfl, h⟩
 
-/-- `≤` on `Nat`: the lengths of edit sequences are counts, so `R` is pulled back along a
-    `Nat`-valued cost, not along `AOP.A5_6_ListCombinators`'s `Int`-valued `leq`. -/
-@[expose] public def leqN : (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩ := fun m n => m ≤ n
-
 /-- **edit-defn**: the algebra `[zero,π₂ succ]` of `length`. -/
 @[expose] public def lenAlgFn : (Fobj Unit (Op Char) (⟨Nat⟩ : RelSet.{0})).carrier → Nat
   | Sum.inl _ => Nat.zero
@@ -212,7 +208,7 @@ public theorem length_cata :
 @[expose] public def R (Char : Type) : dEdit Char ⟶ dEdit Char := fun es fs => clen es ≤ clen fs
 
 public theorem R_eq :
-    R Char = (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leqN
+    R Char = (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
       ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   apply hom_ext; intro es fs
   constructor
@@ -375,7 +371,7 @@ public theorem lenAlg_comm :
         exact hn
 
 public theorem lenAlg_mono :
-    (F Unit (Op Char)).map leqN ≫ graph lenAlgFn ⊑ graph lenAlgFn ≫ leqN :=
+    (F Unit (Op Char)).map leRel ≫ graph lenAlgFn ⊑ graph lenAlgFn ≫ leRel :=
   le_iff.mpr fun u n h => by
     obtain ⟨w, hw, hn⟩ := h
     cases u with
@@ -398,7 +394,7 @@ public theorem lenAlg_mono :
 public theorem edit_mono_step1 :
     (F Unit (Op Char)).map (R Char) ≫ graph con
       = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-          ≫ (F Unit (Op Char)).map leqN
+          ≫ (F Unit (Op Char)).map leRel
           ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
           ≫ graph con := by
   rw [R_eq, (F Unit (Op Char)).map_comp, (F Unit (Op Char)).map_comp]; simp only [Cat.assoc]
@@ -406,11 +402,11 @@ public theorem edit_mono_step1 :
 /-- `edit-mono`, second step: `length` is entire, `𝟙⊑length length°`. -/
 public theorem edit_mono_step2 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ graph con
       ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
@@ -422,17 +418,17 @@ public theorem edit_mono_step2 :
 /-- `edit-mono`, third step: `α length=F(length)[zero,π₂ succ]` (`lenAlg_comm`). -/
 public theorem edit_mono_step3 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
       = (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   have h := congrArg (fun Z => (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-    ≫ (F Unit (Op Char)).map leqN
+    ≫ (F Unit (Op Char)).map leRel
     ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
     ≫ Z ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°) (lenAlg_comm (Char := Char))
   simpa only [Cat.assoc] using h
@@ -440,12 +436,12 @@ public theorem edit_mono_step3 :
 /-- `edit-mono`, fourth step: `F(length)` is simple, `F(length°)F(length)⊑F(𝟙)=𝟙`. -/
 public theorem edit_mono_step4 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
         ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
         ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
       ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   have hs : (F Unit (Op Char)).map ((graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
       ≫ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
@@ -461,10 +457,10 @@ public theorem edit_mono_step4 :
     (`lenAlg_mono`). -/
 public theorem edit_mono_step5 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ (F Unit (Op Char)).map leqN
+        ≫ (F Unit (Op Char)).map leRel
         ≫ graph lenAlgFn ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
       ⊑ (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leqN ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
+        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
   have h := comp_mono_right (lenAlg_mono (Char := Char))
     (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
   simp only [Cat.assoc] at h
@@ -473,10 +469,10 @@ public theorem edit_mono_step5 :
 /-- `edit-mono`, sixth step: `lenAlg_comm` read backwards. -/
 public theorem edit_mono_step6 :
     (F Unit (Op Char)).map (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))
-        ≫ graph lenAlgFn ≫ leqN ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
-      = graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leqN
+        ≫ graph lenAlgFn ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°
+      = graph con ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0})) ≫ leRel
         ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))° := by
-  have h := congrArg (fun Z => Z ≫ leqN ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
+  have h := congrArg (fun Z => Z ≫ leRel ≫ (graph clen : dEdit Char ⟶ (⟨Nat⟩ : RelSet.{0}))°)
     (lenAlg_comm (Char := Char))
   simpa only [Cat.assoc] using h.symm
 
