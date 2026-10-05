@@ -148,12 +148,12 @@ public theorem journey_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) :
 /-- **tour-defn**: `next ≜ tail head`, the second city of a journey. -/
 @[expose] public def nxt : Journey City → City
   | ConsList.wrap p => p.2
-  | ConsList.cons _ x => hd x
+  | ConsList.cons _ xs => hd xs
 
-/-- `[a]⧺x` with the old head dropped — what `dropl` does to the outward journey. -/
+/-- `[a]⧺xs` with the old head dropped — what `dropl` does to the outward journey. -/
 @[expose] public def replaceHead (a : City) : Journey City → Journey City
   | ConsList.wrap p => ConsList.wrap (a, p.2)
-  | ConsList.cons _ x => ConsList.cons a x
+  | ConsList.cons _ xs => ConsList.cons a xs
 
 public theorem hd_replaceHead (a : City) (x : Journey City) : hd (replaceHead a x) = a := by
   cases x <;> rfl
@@ -164,12 +164,12 @@ public theorem nxt_replaceHead (a : City) (x : Journey City) : nxt (replaceHead 
 /-- **tour-defn**: `outcost [a₀,…,aₙ]=tc (a₀,a₁)+⋯+tc (aₙ₋₁,aₙ)`. -/
 @[expose] public def outcost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc p
-  | ConsList.cons a x => tc (a, hd x) + outcost tc x
+  | ConsList.cons a xs => tc (a, hd xs) + outcost tc xs
 
 /-- **tour-defn**: `incost [a₀,…,aₙ]=tc (a₁,a₀)+⋯+tc (aₙ,aₙ₋₁)`. -/
 @[expose] public def incost (tc : City × City → Int) : Journey City → Int
   | ConsList.wrap p => tc (p.2, p.1)
-  | ConsList.cons a x => tc (hd x, a) + incost tc x
+  | ConsList.cons a xs => tc (hd xs, a) + incost tc xs
 
 /-- **tour-defn**: `cost (xs,ys)=outcost xs+incost ys`. -/
 @[expose] public def cost (tc : City × City → Int) (t : Tour City) : Int :=

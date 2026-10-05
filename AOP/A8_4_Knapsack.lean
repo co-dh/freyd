@@ -46,15 +46,15 @@ variable {Item : Type} {vol wt : Item → Int} {w : Int}
 -- The weight function is the SECTION'S data, not part of the name the note writes (`within(w)`),
 -- so it is an implicit binder supplied by name where a use site has to pin it.
 @[expose] public def within (w : Int) : dList Item ⟶ dList Item :=
-  fun x y => x = y ∧ total wt x ≤ w
+  fun xs ys => xs = ys ∧ total wt xs ≤ w
 
 public theorem within_coreflexive : Coreflexive (within (wt := wt) w) :=
   le_iff.mpr fun _ _ h => h.1
 
-/-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `x R y` iff `x` is worth at
+/-- **knap-defn**: `R ≜ value ≥ value°` — packings by total value, `xs R ys` iff `xs` is worth at
     least as much as `y`. -/
 @[expose] public def R (vol : Item → Int) : dList Item ⟶ dList Item :=
-  fun x y => total vol y ≤ total vol x
+  fun xs ys => total vol ys ≤ total vol xs
 
 /-- `R = value ≥ value°`, point-free. -/
 public theorem R_eq :
@@ -71,7 +71,7 @@ public theorem R_eq :
 /-- **knap-defn**: `Q ≜ R ∩ (weight ≤ weight°)` — at least as valuable AND no heavier, the
     order that makes the cons branch monotonic. -/
 @[expose] public def Q (vol wt : Item → Int) : dList Item ⟶ dList Item :=
-  fun x y => total vol y ≤ total vol x ∧ total wt x ≤ total wt y
+  fun xs ys => total vol ys ≤ total vol xs ∧ total wt xs ≤ total wt ys
 
 /-- `Q = R ∩ (weight ≤ weight°)`, point-free. -/
 public theorem Q_eq :
@@ -88,16 +88,16 @@ public theorem Q_eq :
     rw [← (show m = total wt x from hm), ← (show n = total wt y from hn)]
     exact hmn
 
-/-- `x R y` iff `x` is worth at least as much as `y`: the pointwise reading of `R_eq`. -/
-public theorem R_apply (x y : ConsList Unit Item) : R vol x y ↔ total vol y ≤ total vol x := Iff.rfl
+/-- `xs R ys` iff `xs` is worth at least as much as `ys`: the pointwise reading of `R_eq`. -/
+public theorem R_apply (xs ys : ConsList Unit Item) : R vol xs ys ↔ total vol ys ≤ total vol xs := Iff.rfl
 
-/-- `x Q y` iff `x` is worth at least as much as `y` and weighs no more. -/
-public theorem Q_apply (x y : ConsList Unit Item) :
-    Q vol wt x y ↔ total vol y ≤ total vol x ∧ total wt x ≤ total wt y := Iff.rfl
+/-- `xs Q ys` iff `xs` is worth at least as much as `ys` and weighs no more. -/
+public theorem Q_apply (xs ys : ConsList Unit Item) :
+    Q vol wt xs ys ↔ total vol ys ≤ total vol xs ∧ total wt xs ≤ total wt ys := Iff.rfl
 
-/-- `x (within w) y` iff `x = y` and `x` weighs at most `w`. -/
-public theorem within_apply (x y : ConsList Unit Item) :
-    within (wt := wt) w x y ↔ x = y ∧ total wt x ≤ w := Iff.rfl
+/-- `xs (within w) ys` iff `xs = ys` and `xs` weighs at most `w`. -/
+public theorem within_apply (xs ys : ConsList Unit Item) :
+    within (wt := wt) w xs ys ↔ xs = ys ∧ total wt xs ≤ w := Iff.rfl
 
 public theorem Q_le_R : Q vol wt ⊑ R vol := le_iff.mpr fun _ _ h => h.1
 
@@ -133,8 +133,8 @@ public theorem R_recip_trans : (R vol)° ≫ (R vol)° ⊑ (R vol)° :=
 public theorem con_nil (u : Unit) :
     con (Sum.inl u : (Fobj Unit Item (dList Item)).carrier) = ConsList.wrap u := rfl
 /-- **knap-defn**: `[nil,cons]`, the `cons` arm. -/
-public theorem con_cons (a : Item) (x : ConsList Unit Item) :
-    con (Sum.inr (a, x) : (Fobj Unit Item (dList Item)).carrier) = ConsList.cons a x := rfl
+public theorem con_cons (a : Item) (xs : ConsList Unit Item) :
+    con (Sum.inr (a, xs) : (Fobj Unit Item (dList Item)).carrier) = ConsList.cons a xs := rfl
 
 /-- `[nil,cons] = con`, the initial algebra. -/
 public theorem con_eq_junc :
@@ -167,12 +167,12 @@ public theorem drop_eq_junc :
 
 /-- Pointwise reading of `[nil,cons](within w)`. -/
 public theorem con_within_apply (u : ((F Unit Item).obj (dList Item)).carrier)
-    (r : ConsList Unit Item) :
-    (graph con ≫ within (wt := wt) w) u r ↔ r = con u ∧ total wt r ≤ w := by
+    (rs : ConsList Unit Item) :
+    (graph con ≫ within (wt := wt) w) u rs ↔ rs = con u ∧ total wt rs ≤ w := by
   constructor
   · rintro ⟨c, hc, hcr, hwc⟩
     obtain rfl : c = con u := hc
-    obtain rfl : con u = r := hcr
+    obtain rfl : con u = rs := hcr
     exact ⟨rfl, hwc⟩
   · rintro ⟨rfl, hwr⟩
     exact ⟨con u, rfl, rfl, hwr⟩
