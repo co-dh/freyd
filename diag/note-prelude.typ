@@ -132,20 +132,15 @@
 #let leann(sel) = { [#metadata(sel)<lean-row-key>]; leant(sel + ".name") }
 // A DEFINITION TABLE, rows of name | type | definition | meaning. A type cell breaks only after its
 // top-level arrow (`TypeRender.file`) and each end is one unbreakable unit, so the type column is
-// exactly as wide as the widest end — read off the `<type-end>` texts between this table's two
-// markers, since typst cannot measure a cell's widest unbreakable piece — and the definition gets the rest.
-#let deftab(..cells) = {
-  [#metadata(none)<deftab-start>]
-  context {
-    let s = query(selector(<deftab-start>).before(here())).last().location()
-    let e = query(selector(<deftab-end>).after(s))
-    let ends = if e.len() == 0 { () } else {
-      query(selector(<type-end>).after(s).before(e.first().location())).map(m => m.value) }
-    let w = calc.max(measure([*type*]).width, ..ends.map(t => measure(box(raw(t))).width))
-    table(columns: (auto, w + 10.5pt, 1.6fr, 1fr), align: left + horizon, inset: 5pt,
-      stroke: 0.4pt + luma(190), table.header([*name*], [*type*], [*definition*], [*meaning*]), ..cells)
-  }
-  [#metadata(none)<deftab-end>]
+// exactly as wide as the widest end — read off the `<type-end>` texts in the cells' own content,
+// since typst cannot measure a cell's widest unbreakable piece — and the definition gets the rest.
+// Walked, not queried: a query is answered one layout pass late, and that pass, added to the
+// companion's other introspection, kept the layout from converging within typst's five.
+#let type-ends(c) = if type(c) != content { () } else if c.func() == metadata and c.at("label", default: none) == <type-end> { (c.value,) } else if c.has("children") { c.children.map(type-ends).flatten() } else if c.has("body") { type-ends(c.body) } else if c.has("child") { type-ends(c.child) } else { () }
+#let deftab(..cells) = context {
+  let w = calc.max(measure([*type*]).width, ..cells.pos().map(type-ends).flatten().map(t => measure(box(raw(t))).width))
+  table(columns: (auto, w + 10.5pt, 1.6fr, 1fr), align: left + horizon, inset: 5pt,
+    stroke: 0.4pt + luma(190), table.header([*name*], [*type*], [*definition*], [*meaning*]), ..cells)
 }
 // A STATEMENT'S TWO SIDES SET APART in the text, `f(lhs, rhs)`: the statement's own panel file binds
 // both beside `pic`, so it is ONE call of the whole statement — an iff's sides are no arrows to select.
