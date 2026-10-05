@@ -18,9 +18,9 @@
   [#leant("Freyd.Alg.RelSet.ListRel.listRelator")],
   [The cons-lists over `A`, the datatype every row below folds.],
 
-  [#leanf("Freyd.Alg.RelSet.ListRel.sum_cata")],
-  // lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
-  [#leant("Freyd.Alg.RelSet.ListRel.sumR")],
+  [#leanf("Freyd.Alg.RelSet.ListRel.sum_cata_nat")],
+  // lean:AOP.A5_6_ListCombinators.sum_cata_nat@42a45bfa
+  [#leant("Freyd.Alg.RelSet.ListRel.sum_cata_nat")],
   [`plus(a,b)=a+b`.],
 
   [#leanf("Freyd.Alg.RelSet.ListRel.length_cata")],

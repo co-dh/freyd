@@ -703,7 +703,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 // `≤` is on `A`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
 #disp[#definition[
 `FX=𝟏+A×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
-`sum=⦇[zero,plus]⦈` and `segment=suffix prefix` from @Freyd.Alg.RelSet.ListRel.sum_cata and @Freyd.Alg.RelSet.ListRel.segment_eq.
+#leanf("Freyd.Alg.RelSet.ListRel.sum_cata") and `segment=suffix prefix` from @Freyd.Alg.RelSet.ListRel.segment_eq.
 #h(4pt) #src[]
 // lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
 
