@@ -87,15 +87,16 @@ private def hom? (t : Expr) (piece : String → String := id) (brk := "") : Meta
   return some (piece ((← label a) ++ "⟶") ++ brk ++ piece (← label b))
 
 /-- A TYPE LEAN GAVE, its top-level non-dependent `→` split off the type tree, so `piece` can keep
-    each end whole and the line break falls at the arrow; any other type is one piece. -/
-private def funPieces (ty : Expr) (piece : String → String) : MetaM String := do
+    each end whole and the line break falls at the arrow; any other type is one piece.  Each end is
+    a `label`, set as `hom?` sets a hom's (`F(list⁺(list⁺(Word)))⟶`): a map is an arrow of the note. -/
+private partial def funPieces (ty : Expr) (piece : String → String := id) (brk := "") : MetaM String := do
   match ty with
   | .forallE _ d c bi =>
     -- `X → Prop` is the power object `P X` the delaborator prints, not an arrow to split.
-    if c.hasLooseBVars || !bi.isExplicit || c.isSort then return piece (← plain ty)
-    let dom ← plain d
-    return piece ((if d.isForall then "(" ++ dom ++ ")" else dom) ++ " →") ++ " " ++ piece (← plain c)
-  | _ => return piece (← plain ty)
+    if c.hasLooseBVars || !bi.isExplicit || c.isSort then return piece (← label ty)
+    let dom ← if d.isForall then pure ("(" ++ (← funPieces d) ++ ")") else label d
+    return piece (dom ++ "⟶") ++ brk ++ piece (← funPieces c)
+  | _ => return piece (← label ty)
 
 /-- A FACTOR STEP `f<k>`, `k ≥ 1`: the k-th factor of the composite the step follows. -/
 def factorIdx? (s : String) : Option Nat :=
@@ -176,13 +177,16 @@ def render (declName : Name) (sides : List String := []) (piece : String → Str
           | .forallE n _ b bi => if n.hasMacroScopes && !bi.isInstImplicit then 0 else named b + 1
           | _ => 0
         Meta.forallBoundedTelescope ci.type (named ci.type) fun ys ty =>
-          do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← funPieces ty piece)
+          do name (mkAppN (.const declName (ci.levelParams.map .param)) ys) (← funPieces ty piece brk)
 
 /-- The file a note cell `#include`s: the type as typst inline raw, each end of a top-level arrow
     an unbreakable box and a zero-width space after the arrow, so a capped type column wraps there and
-    never inside `[tree A]`.  The `lean:<decl>@<key>` marker above it is `DiagExport.certLine`'s. -/
+    never inside `[tree A]`.  Each end's text rides beside it as `<type-end>` metadata: typst cannot
+    measure the widest unbreakable piece of a cell, so `deftab` sizes its type column from these.
+    The `lean:<decl>@<key>` marker above it is `DiagExport.certLine`'s. -/
 def file (declName : Name) (sides : List String := []) : MetaM String := do
   if sides.contains "name" then return (← render declName sides) ++ "\n"
-  return (← render declName sides (fun p => "#box(`" ++ p ++ "`)") "​") ++ "\n"
+  let piece p := "#box(`" ++ p ++ "`)#metadata(`" ++ p ++ "`.text)<type-end>"
+  return (← render declName sides piece "​") ++ "\n"
 
 end Freyd.TypeRender

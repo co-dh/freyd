@@ -170,6 +170,9 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
     A TUPLE is not peeled: its brackets are its own, and peeling `(xs, ys)` left a bare comma list
     that `mle` bracketed a second time. -/
 partial def stxPeel (s : Syntax) : Syntax :=
+  -- BY KIND first: a paren an unexpander's quotation built opens with a `hygienicLParen` NODE, not
+  -- the atom `(`, and left unpeeled it printed `list⁺((list⁺ Word))`.
+  if s.isOfKind ``Lean.Parser.Term.paren && s.getNumArgs == 3 then stxPeel s[1] else
   match s.getArgs with
   | #[.atom _ "(", inner, .atom _ ")"] =>
     if s.isOfKind ``Lean.Parser.Term.tuple then s else stxPeel inner

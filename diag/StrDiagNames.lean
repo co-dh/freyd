@@ -92,6 +92,8 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
   RelSet.Edit.mle RelSet.Edit.column RelSet.Edit.fstcol RelSet.Edit.nextcol RelSet.Edit.head RelSet.Edit.base
   RelSet.Edit.empty RelSet.Code.null RelSet.corefl RelSet.leOn
   RelSet.CL.thinlist RelSet.ListRel.IsThinlist
+-- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
+attribute [diag_noted] _root_.Int
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.listcp
 
 -- WHICH DEFINITIONS A PICTURE OPENS: the `AOP` constants the note draws opened — `tour%∋` against
