@@ -7,7 +7,7 @@
 // only places them; a statement or a side is a `#lean(...)` call, as in the note. `./scripts/diag-regen`
 // redraws every binding below, reading the list off these very imports.
 #import "note-style.typ": *
-#import "note-prelude.typ": lean, lean-sides, IFF
+#import "note-prelude.typ": lean, leanw, lean-sides, IFF
 #import "generated/Freyd.Diag.meet_idem.proof.typ": branches as mib
 #import "generated/Freyd.Diag.modular_of_frobenius.proof.typ": branches as mfb
 #import "generated/Freyd.Diag.CartBicat.«∇_slide_conv».proof.typ": branches as nsb
@@ -42,7 +42,7 @@ then collapsing `R ∩ ⊤` — which is the paper's own remaining three steps, 
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header(
-    Th[*the modular law,* `R S ∩ T ≤ (R ∩ T S°) S` #h(8pt) #Pin(lean("Freyd.Diag.modular_of_frobenius"))],
+    Th[*the modular law,* `R S ∩ T ≤ (R ∩ T S°) S` #h(8pt) #Pin(leanw("Freyd.Diag.modular_of_frobenius"))],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(mfb.at(0).terms.at(0)), P(mfb.at(0).steps.at(0), s: 62%),
@@ -67,7 +67,7 @@ in the definition that may duplicate a box — so that is where the inequality h
   align: (left + horizon, center + horizon, left + horizon),
   inset: 8pt, stroke: 0.4pt + luma(190),
   table.header(
-    Th[*the merge slide,* `(S ⊗ 𝟙) ▷ ≤ (𝟙 ⊗ S°) ▷ S` #h(8pt) #Pin(lean("Freyd.Diag.CartBicat.«∇_slide_conv»"))],
+    Th[*the merge slide,* `(S ⊗ 𝟙) ▷ ≤ (𝟙 ⊗ S°) ▷ S` #h(8pt) #Pin(leanw("Freyd.Diag.CartBicat.«∇_slide_conv»"))],
     [*term*], [*picture*], [*the rule that reaches it*]),
 
   raw(nsb.at(0).terms.at(0)), P(nsb.at(0).steps.at(0), s: 62%),
@@ -93,9 +93,9 @@ pictures neither the modular law nor a meet with `1` is wanted. The one law that
 bigger is spent twice, and it is the cut, `𝟙 ≤ ⊸ ⟜`:
 
 #grid(columns: (1fr, 1fr), gutter: 30pt, align: center + bottom,
-  [#P(lean("Freyd.Diag.CartBicat.«Δ≤?𝟙»"), s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
+  [#P(leanw("Freyd.Diag.CartBicat.«Δ≤?𝟙»"), s: 60%) #v(-7pt) \ #src[cut the copy's left output and what comes out there is
    *anything at all*]],
-  [#P(lean("Freyd.Diag.CartBicat.«∇≤𝟙!»"), s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
+  [#P(leanw("Freyd.Diag.CartBicat.«∇≤𝟙!»"), s: 60%) #v(-7pt) \ #src[cut the merge's right input and it is *simply
    discarded*]],
 )
 

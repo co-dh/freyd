@@ -60,6 +60,9 @@
 // The CIRCUIT column's counterpart: the same declaration read by `diag-export --circuit`, which
 // walks the same Expr under the monoidal reading.
 #let leanc(..sels) = lean-call("generated/circuit/", <lean-circuit>, sels.pos())
+// The TERM WALK: `diag-export` with no flag, one strand per letter of a monoidal word and the
+// `▷`/`◁` drawn as shapes, for a statement the Hinze–Marsden route would draw as regions.
+#let leanw(..sels) = lean-call("generated/walk/", <lean-walk>, sels.pos())
 // The COMMUTATIVE DIAGRAM route: `diag-export --commutative` draws the statement as a graph rather
 // than a term walk.  Unlike `lean`/`leanc`, a `+` inside ONE selector is not a pair of boxes but two
 // DIFFERENT statements drawn on one page (`diag/cd-panels.txt`'s `A+B`), so it stays one string and

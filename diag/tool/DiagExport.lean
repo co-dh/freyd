@@ -1019,14 +1019,14 @@ partial def bestChain (e : Expr) : MetaM (Array Step) := do
     discards its content, so the page below costs the importer nothing — which is what keeps a note
     from ever redrawing by hand what the exporter already derives from the Lean statement. -/
 def page (declName : Name) (doc : Option String) (body : String) (isChain := false)
-    (extra : String := "") : String :=
+    (extra : String := "") (lib := "../circuit.typ") : String :=
   -- The docstring goes through `raw`: it is arbitrary prose, and `#`, `[`, `$`, `*` in it would
   -- otherwise be read as Typst markup.  The header naming how to regenerate the file is written
   -- by `main` from the argv it was run with.
   let docLet := match doc with
     | some d => "#let doc = " ++ typstString d ++ "\n"
     | none => "#let doc = none\n"
-  "#import \"../circuit.typ\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv-frame, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
+  "#import \"" ++ lib ++ "\": cetz, d, wire, gbox, delta, nabla, bang, unitR, bend, cap, cup, conv-frame, meet, swap, tape, tape-fork, tape-join, cut, divbox, capAt, cupAt, TINT\n\n"
     ++ docLet ++ (if isChain then "#let branches = " else "#let pic = ") ++ body
     ++ (if isChain then
           "#let pic = stack(dir: ttb, spacing: 14pt, ..branches.map(b => stack(dir: ttb, \
@@ -1120,6 +1120,9 @@ def drawProof (declName : Name) : MetaM String := do
   return page declName doc ("(\n" ++ String.intercalate "\n" blocks.toList ++ "\n)\n")
     (isChain := true)
 
+-- The term walk's files sit in `diag/generated/walk` (`outDirOf "draw"`), one below the proof route's.
+def walkLib := "../../circuit.typ"
+
 /-- Draw the statement of `declName`: the two sides side by side, the relation symbol between.  A
     `def` whose telescope ends in `Prop` — `SingleValued`, `Total`, … — has no statement in its TYPE,
     so its VALUE is drawn instead; that is the inequation the definition unfolds to. -/
@@ -1151,7 +1154,7 @@ def draw (declName : Name) : MetaM String := do
       -- the exporter is free to relayout.
       let sides := "#let lhs = " ++ (← canvasOfParts #[("", lhs)])
         ++ "#let rhs = " ++ (← canvasOfParts #[("", rhs)])
-      return page declName doc (← canvasOf sym lhs rhs) (extra := sides)
+      return page declName doc (← canvasOf sym lhs rhs) (extra := sides) (lib := walkLib)
     | none =>
       -- An `↔` between two containments — the shunting rules — is four drawings in a row.
       match body.getAppFnArgs with
@@ -1163,11 +1166,12 @@ def draw (declName : Name) : MetaM String := do
           -- hypothesis of one branch and the goal of the other.
           let sides := "#let lhs = " ++ (← canvasOf s₁ a b) ++ "#let rhs = " ++ (← canvasOf s₂ c d)
           return page declName doc (← canvasOfParts #[("", a), (s₁, b), ("⟺", c), (s₂, d)])
+            (lib := walkLib)
             (extra := sides)
         | _, _ => throwError "{declName}: an `↔` whose sides are not containments"
       | _ =>
         let (d, _) := renderCells (← toCells body) 0.0
-        return page declName doc ("cetz.canvas({\n" ++ d ++ "\n})\n")
+        return page declName doc ("cetz.canvas({\n" ++ d ++ "\n})\n") (lib := walkLib)
 
 /-! ### `--sig`: the elaborated TYPE, as JSON
 
@@ -1585,22 +1589,21 @@ def listMain (dir : System.FilePath) (labels : List String) : IO UInt32 := do
 
 /-- THE ROUTE'S DIRECTORY, and the PATH of one selector's picture in it — one rule, read by the
     writer and by `--stale`, because a path computed twice is a staleness check reporting every
-    picture missing. -/
-def outDirOf (circuit commutative type formula value graph : Bool) : String :=
-  if circuit then "diag/generated/circuit"
-  else if value then "diag/generated/value"
-  else if commutative then "diag/generated/commutative"
-  else if graph then "diag/generated/graph"
-  else if type then "diag/generated/type"
-  else if formula then "diag/generated/formula" else "diag/generated"
+    picture missing.
+    The term walk (`draw`, `leanw`) has its own directory: sharing the string route's let a file one
+    drew pass as the other's, which is how 064d1a7 sent every term-walk panel to the string route.
+    `string`, `proof` and `calc` keep `diag/generated`: the proof route is imported by file name. -/
+def outDirOf (route : String) : String :=
+  match route with
+  | "circuit" | "value" | "commutative" | "graph" | "type" | "formula" => s!"diag/generated/{route}"
+  | "draw" => "diag/generated/walk"
+  | _ => "diag/generated"
 
 -- A panel is keyed by its CALL: a selector drawn in a chain or pair carries that call's shared box,
 -- so under its own name it would race the same selector drawn alone (15.1f against 15.1b).
-def outPath (circuit commutative type formula value graph : Bool) (suffix : String) (call arg : String) :
-    System.FilePath :=
+def outPath (route : String) (suffix : String) (call arg : String) : System.FilePath :=
   let sub := if call == arg then "" else "/".intercalate (call.splitOn "+") ++ "/"
-  System.FilePath.mk
-    s!"{outDirOf circuit commutative type formula value graph}/{sub}{arg}{suffix}.typ"
+  System.FilePath.mk s!"{outDirOf route}/{sub}{arg}{suffix}.typ"
 
 /-- THE FILES OF ONE CALL: the string and circuit routes' `+` names several pictures, a file each
     (the note's `lean(a, b)`/`leanc(a, b)`); every other route's call is one file.  One rule, read by
@@ -1713,7 +1716,7 @@ def staleMain (route : String) (stringMode circuitMode commutativeMode typeMode 
   for (call, files) in jobs do
     let mut stale := false
     for (n, decl, decls) in files do
-      let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call n
+      let path := outPath route suffix call n
       let stored ← storedReads path
       -- THE KEY NOW, whether or not the file is there: a declaration that is gone ends the run.
       -- Each selector its own heartbeat budget: the count is the PROCESS's, and this one tests many.
@@ -1789,7 +1792,7 @@ def main (args : List String) : IO UInt32 := do
   let hbImport ← IO.getNumHeartbeats
   -- Each route writes under its own directory, except the string one: its panel IS the picture the
   -- note imports by name (`#lean("<decl>")` reads `diag/generated/<decl>.typ`).
-  let outDir := outDirOf circuitMode commutativeMode typeMode formulaMode valueMode graphMode
+  let outDir := outDirOf kind
   unless sigMode do IO.FS.createDirAll outDir
   -- `≫` and `⟶` are `scoped` in `Freyd`, so the delaborator only reaches them with that namespace
   -- opened; without this a fallthrough label prints `inst✝.comp R S`.
@@ -1898,7 +1901,7 @@ def main (args : List String) : IO UInt32 := do
     -- The picture's reads start empty, and the call's declarations — the peers' too, which set the
     -- shared box — are the first of them.
     -- Under `--verify`, whether the file on disk is fresh by its own reads, asked before the drawing.
-    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call arg
+    let path := outPath kind suffix call arg
     let wasFresh ← if !verifyMode then pure false else do
       let stored ← storedReads path
       Prod.fst <$> (Meta.MetaM.run' (fresh kind stored (selDecls commutativeMode graphMode formulaMode arg base))).toIO ctx { env }
@@ -1914,7 +1917,7 @@ def main (args : List String) : IO UInt32 := do
   let mut wrong : Array String := #[]
   let mut prof : Array Prof.Line := #[]
   for ((arg, call), t) in jobs.zip tasks do
-    let path := outPath circuitMode commutativeMode typeMode formulaMode valueMode graphMode suffix call arg
+    let path := outPath kind suffix call arg
     unless sigMode do if let some p := path.parent then IO.FS.createDirAll p
     -- The header names the EXACT command that wrote this file — the argv it was run with, minus
     -- the other selectors — so a flag added later is in it without anyone remembering to add it.

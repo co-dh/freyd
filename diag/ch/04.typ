@@ -21,13 +21,13 @@ On every hom-set it is associative, commutative and idempotent
 ]]<meet-defn>
 
 #disp[#grid(columns: (1fr, 1fr), gutter: 6pt, align: center + bottom,
-  [#P(lean("Freyd.Diag.meet_top"), s: 60%) #v(-7pt) \ #src[*unit:* one half of `⊤` per end — the merge's unit law
+  [#P(leanw("Freyd.Diag.meet_top"), s: 60%) #v(-7pt) \ #src[*unit:* one half of `⊤` per end — the merge's unit law
    absorbs the `⟜`, the copy's counit law the `⊸`]],
-  [#P(lean("Freyd.Diag.meet_comm"), s: 60%) #v(-7pt) \ #src[*commutative:* `σ` crosses `R⊗S` by naturality and is
+  [#P(leanw("Freyd.Diag.meet_comm"), s: 60%) #v(-7pt) \ #src[*commutative:* `σ` crosses `R⊗S` by naturality and is
    absorbed by cocommutativity and commutativity]],
-  [#P(lean("Freyd.Diag.meet_assoc"), s: 44%) #v(-7pt) \ #src[*associative:* coassociativity and associativity; `⊗`
+  [#P(leanw("Freyd.Diag.meet_assoc"), s: 44%) #v(-7pt) \ #src[*associative:* coassociativity and associativity; `⊗`
    re-brackets for nothing, being strict here]],
-  [#P(lean("Freyd.Diag.meet_idem"), s: 60%) #v(-7pt) \ #src[*idempotent:* the one that is not bookkeeping — the lax
+  [#P(leanw("Freyd.Diag.meet_idem"), s: 60%) #v(-7pt) \ #src[*idempotent:* the one that is not bookkeeping — the lax
    copy law is the whole of it, worked in allegory2]],
 )]<meet-laws>
 
