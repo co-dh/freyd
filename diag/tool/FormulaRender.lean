@@ -126,16 +126,18 @@ def pointwiseEqn (sp : Bool) (declName : Name) (arity : Nat) (eqn : Name) : Meta
     let hyps ← xs.filterM fun x => do
       return (← x.fvarId!.getDecl).binderInfo.isExplicit && (← Meta.isProp (← Meta.inferType x))
     let tys ← hyps.mapM Meta.inferType
-    let (pre, ante) ← match tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none with
-      | some c => pure (#[(← labelTree (Prec.impl + 1) c) ++ Lbl.text " "], Lbl.text implArrow.trimLeft)
-      | none => pure (#[], Lbl.text "")
+    let (pre, ante, br) ← match tys.foldr (fun t acc => some (match acc with | some a => mkAnd t a | none => t)) none with
+      | some c => pure (#[(← labelTree (Prec.impl + 1) c) ++ Lbl.text " "], Lbl.text implArrow.trimLeft, true)
+      | none => pure (#[], Lbl.text "", false)
     let some (_, lhs, rhs) := st.eq? |
       throwError "{eqn}: an equation of {declName} states {← Meta.ppExpr st}, which is no `=`"
     let args := lhs.getAppArgs
     unless lhs.getAppFn.constName? == some declName && args.size == arity + 2 do
       throwError "{eqn}: the left side {← Meta.ppExpr lhs} is not {declName} at its {arity} \
         arguments and two points"
-    return pre ++ #[ante ++ (← relAt sp (mkAppN lhs.getAppFn (args.extract 0 arity)) args[arity]! args[arity + 1]! rhs)]
+    let eq ← relAt sp (mkAppN lhs.getAppFn (args.extract 0 arity)) args[arity]! args[arity + 1]! rhs
+    -- nothing ranks `⟹` against `⟺`, so under hypotheses the equation is bracketed
+    return pre ++ #[ante ++ (if br then Lbl.text "(" ++ eq ++ Lbl.text ")" else eq)]
 
 /-- A relation `def R : A ⟶ B := fun x y => P` read at two points, `x R y ⟺ P`, off the def's own
     elaborated VALUE at its binders — not a restatement of it, so no `_iff` lemma is needed and none

@@ -348,7 +348,7 @@ public theorem bytes_U : ∀ {e f : Code}, U e f → bytes c p e = bytes c p f
 @[expose] public def Q : (F Unit Code).obj dStr ⟶ (F Unit Code).obj dStr := fun u v =>
   match u, v with
   | Sum.inl _, Sum.inl _ => True
-  | Sum.inr q, Sum.inr r => prefixS q.1 r.1 ∧ U q.2 r.2
+  | Sum.inr p, Sum.inr q => prefixS p.1 q.1 ∧ U p.2 q.2
   | _, _ => False
 
 /-! ## `code-laws` -/
