@@ -1553,7 +1553,14 @@ public theorem sum_cata [Add A] [OfNat A 0] :
   show r = a + csum x ↔ ∃ y, y = csum x ∧ r = a + y
   exact ⟨fun h => ⟨csum x, rfl, h⟩, fun ⟨y, hy, hr⟩ => by rw [hr, hy]⟩
 
-/-- **`length = ⦇[zero, π₂ succ]⦈`** (note `cata-examples`): fold the list, the head dropped by
+/-- **`sum = ⦇[zero, plus]⦈` over numbers** (B&dM §3.1, p. 55): the `sum` that `average` divides,
+    at `Nat` where `averageR` is taken; `sum_cata` stays generic for the MSS chapter's `A`. -/
+public theorem sum_cata_nat :
+    (sumR : dList Nat ⟶ (⟨Nat⟩ : RelSet.{0}))
+      = ⦇(junc (sumCop (dL Unit) ⟨Nat × Nat⟩) zero plus
+            : (F Unit Nat).obj (⟨Nat⟩ : RelSet.{0}) ⟶ ⟨Nat⟩)⦈ := sum_cata
+
+/-- **`length =⦇[zero, π₂ succ]⦈`** (note `cata-examples`): fold the list, the head dropped by
     `π₂` and one added by `succ` for it, `nil` contributing `zero`. -/
 public theorem length_cata :
     (lengthR : dList A ⟶ (⟨Nat⟩ : RelSet.{0}))
