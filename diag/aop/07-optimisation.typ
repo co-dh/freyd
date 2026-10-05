@@ -700,9 +700,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 === #leanf("Freyd.Alg.RelSet.MSS.mss_eq_scan") — `mss` is a fold followed by taking the largest <sec-mss>
 
 // B&dM Ex 7.40, p. 174–175, whose five staged instructions are the five displays below, mirrored.
-// `≤` is on `A`: over `Nat` every `⊕` would take its right branch and `mss` would be `sum`.
 #disp[#definition[
-`FX=𝟏+A×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
+`FX=𝟏+Int×X`, #h(4pt) `α≜[nil,cons]`, #h(4pt)
 #leanf("Freyd.Alg.RelSet.ListRel.sum_cata") and `segment=suffix prefix` from @Freyd.Alg.RelSet.ListRel.segment_eq.
 #h(4pt) #src[]
 // lean:AOP.A5_6_ListCombinators.sum_cata@077bdde7
@@ -714,7 +713,7 @@ one-element list, beside @Freyd.Alg.RelSet.ListRel.suffix_cat's `tail≜cons° �
 set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 ]
 // B&dM's `oplus=max(Λ(zero ∪ plus))`.
-// lean:AOP.A7_7_MSS.oplus@d30f8d90 lean:AOP.A7_7_MSS.oplus_eq@8819d3f7
+// lean:AOP.A7_7_MSS.oplus@9a541ed6 lean:AOP.A7_7_MSS.oplus_eq@b0466a25
 ]]<mss-defn>
 
 
@@ -725,8 +724,8 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_shape") \
     #src[maximum segment sum problem: using `segment=suffix prefix`, the specification is expressed in this
      form]],
-    // lean:AOP.A7_7_MSS.mss_shape@f0837b92
-  table.header([*formula* — one wire from `[A]` to `A`, its type written along it], [*reason*]),
+    // lean:AOP.A7_7_MSS.mss_shape@cd789bb8
+  table.header([*formula* — one wire from `[Int]` to `Int`, its type written along it], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.MSS.mss_shape_step1.lhs")][]], [],
 
@@ -759,10 +758,10 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #let mh-alg-est = lean("Freyd.Alg.RelSet.MSS.mss_step1.lhs")
 #let mh-alg = lean("Freyd.Alg.RelSet.MSS.mss_step2.rhs", branch: "inr")
 // The `plus` operand of the lower arm's `⊸ zero ∪ plus`, cut by hand (`rank` would draw `⊸ zero`):
-// `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:A×A⟶A"`.
+// `𝟙%∋ E(plus)est(≥)`, emitted verbatim by `./scripts/diagram --sigs "plus:Int×Int⟶Int"`.
 #let mh-alg-plus = lean("Freyd.Alg.RelSet.MSS.mss_step_plus.lhs")
 
-// HINZE–MARSDEN: `[A]` is `list` beside `A`, so `cons` kills the base functor's `A×−` onto the `list`
+// HINZE–MARSDEN: `[Int]` is `list` beside `Int`, so `cons` kills the base functor's `Int×−` onto the `list`
 // wire and `sum` kills `list` onto `A`.  `∪` has no shape here — only `cons`'s branch is drawn.
 #disp[#pad(right: 10pt, table(
   columns: (1fr, HMW),
@@ -774,7 +773,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[#leanf("Freyd.Alg.RelSet.MSS.prefAlg_comp_sum") \
     #src[fusion: `prefix` expressed as a catamorphism on cons-lists, `⦇[nil,⊸ nil ∪ cons]⦈`, and this is
      the fusion condition that expresses `prefix sum` as a catamorphism]],
-  table.header([*circuit* — the fork is the bracket's case split `F([A])=𝟙+A×[A]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
+  table.header([*circuit* — the fork is the bracket's case split `F([Int])=𝟙+Int×[Int]`: `nil` above, the pair and its `∪` below], [*Hinze–Marsden*]),
 
   // `sum` keeps ONE height down the column: what the fusion moves is the algebra bead, from below
   // `sum` to above it, and the join it rides is drawn with the same knee angle both times.
@@ -805,7 +804,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   `S:=sum`: the side condition, so `prefix sum=⦇[zero,⊸ zero ∪ plus]⦈`. `prefix` is the
   reduce, `sum` the map fused into it — the intermediate list is gone.
  ]])
-  // lean:AOP.A7_7_MSS.mss_prefix_sum@4a7ef8bd
+  // lean:AOP.A7_7_MSS.mss_prefix_sum@ef95d32c
 ]<mss-prefix-sum>
 
 #disp[#calc-table(cols: (1fr,), al: left + horizon, 
@@ -813,7 +812,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.MSS.mss_mono") \
     #src[monotonic algebra: an `F`-algebra `S` is monotonic on a relation `R` if `F(R)S⊑SR` — the `plus`
      branch of `F(≥)S⊑S≥`; the `zero` branch is `zero⊑zero≥`]],
-    // lean:AOP.A7_7_MSS.mss_mono@dcf943db
+    // lean:AOP.A7_7_MSS.mss_mono@77b25ac2
   table.header([*circuit* — the head above, the running sum below; the tape is the `∪`]),
 
   [#hchain(fill: true,
@@ -836,11 +835,11 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // HINZE–MARSDEN: the WHOLE algebra is one bead here, so `F` is its wire and joins the object wire
 // there; #frc([`S`]) `=` #frc([`𝟙`]) `E(S)` (@adj-E-bend) births the `E` the last row has no more.
-#disp[#calc-table(
+#disp[#calc-table(cols: (1fr, 1fr),
  Thm[#leanf("Freyd.Alg.RelSet.MSS.mss_step") \
     #src[the largest sum the algebra offers is zero from nothing and, from a head and a running sum,
      the larger of zero and the head added to it]],
-  // lean:AOP.A7_7_MSS.mss_step@1d9c20e4 lean:AOP.A7_7_MSS.mss_step_plus@10bf728b
+  // lean:AOP.A7_7_MSS.mss_step@1d55d1f4 lean:AOP.A7_7_MSS.mss_step_plus@0649f220
   table.header([*circuit* — the tape is the coproduct: `zero`'s branch above, `plus`'s below],
     [*Hinze–Marsden*]),
 
@@ -860,7 +859,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 #align(center, block(inset: (y: 4pt))[#src[with @mss-mono the greedy theorem gives
   `⦇[zero,⊕]⦈⊑` $frac(#[`prefix sum`], ∋)$ ` est(≥)` — and @mss-deriv
  makes it an equality. ]])
-  // lean:AOP.A7_7_MSS.mss_greedy@4b131516
+  // lean:AOP.A7_7_MSS.mss_greedy@fbb45188
 ]<mss-step>
 
 // B&dM Ex 7.40's last stage, in the power object: @cata-defining's equation for the pair whose
@@ -871,7 +870,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[`k≜[zero⟨𝟙,`#frc([`𝟙`])`⟩,⟨w,⟨w `#frc([`𝟙`])`,π₂π₂⟩ cup⟩]`, `w≜(𝟙×π₁)⊕`: the value at the
      whole list, paired with the set of the values at its suffixes, runs `k`'s recursion.
  ]],
-     // lean:AOP.A7_7_MSS.Kalg@745285de lean:AOP.A7_7_MSS.scanStep_union@ebb14e72
+     // lean:AOP.A7_7_MSS.Kalg@206c4ecd lean:AOP.A7_7_MSS.scanStep_union@051f2b01
   table.header([*the equation at that branch*], [*why*]),
 
   [`nil⟨g,`#frc([`suffix`])` E(g)⟩=zero⟨𝟙,`#frc([`𝟙`])`⟩`],
@@ -885,7 +884,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
 
 // B&dM Ex 7.40, p. 174–175: the four stages above, run as one chain from the specification down to
 // the fold.  `g≜⦇[zero,⊕]⦈` throughout, as @mss-scan's `g`.
-// Every row runs `[A]` to `A`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
+// Every row runs `[Int]` to `Int`, so the ends are drawn once.  @mss-shape's helper writes the TYPE
 // along the wire, which is that display's content; here what changes is the boxes.
 #import "../generated/Freyd.Alg.RelSet.MSS.mss_eq_scan.calc.typ" as calc-mss
 #disp(num: "Exercise 7.40")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -897,7 +896,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
      hence `mss` implemented by a linear-time algorithm, `⊕≜` #frc([`⊸ zero ∪ plus`]) ` est(≥)` —
      @mss-defn; `k` and `w` — @mss-scan.
  ]],
-    // lean:AOP.A7_7_MSS.mss_eq_scan@758d9b12
+    // lean:AOP.A7_7_MSS.mss_eq_scan@520c4147
   // #frc([`R`]) `=` #frc([`𝟙`]) `E(R)` (@adj-E-bend): the singleton BIRTHS the `E` and `est(≥)` KILLS
   // it, so no bead here carries a `%∋`.  `suffix` is only LAX natural in `Rel`, so it is a NODE on
   // the object wire like the rest; the outer `E` runs past it, and `prefix sum` is where `list` dies.
