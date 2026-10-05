@@ -1879,15 +1879,15 @@ public theorem idArray_graph :
     fun h => ⟨(congrArg Prod.fst h).symm, congrArg Prod.snd h⟩⟩
 
 /-- `row`, pointwise: the best tree of every non-empty suffix. -/
-public theorem row_apply (xs : NEList A) (ys : CL.ConsList Unit (Tree A)) :
-    row st sb cb xs ys ↔ ys = cmap (mct st sb cb) (neTailsFn xs) := by
+public theorem row_apply (xs : NEList A) (xss : CL.ConsList Unit (Tree A)) :
+    row st sb cb xs xss ↔ xss = cmap (mct st sb cb) (neTailsFn xs) := by
   have h : row st sb cb = (graph (fun xs => cmap (mct st sb cb) (neTailsFn xs)) : dNE A ⟶ dList (Tree A)) := by
     simp only [row, list_graph, graph_comp]
   rw [h]; exact Iff.rfl
 
 /-- `col`, pointwise: the best tree of every non-empty prefix. -/
-public theorem col_apply (xs : NEList A) (ys : CL.ConsList Unit (Tree A)) :
-    col st sb cb xs ys ↔ ys = cmap (mct st sb cb) (neInitsFn xs) := by
+public theorem col_apply (xs : NEList A) (xss : CL.ConsList Unit (Tree A)) :
+    col st sb cb xs xss ↔ xss = cmap (mct st sb cb) (neInitsFn xs) := by
   have h : col st sb cb = (graph (fun xs => cmap (mct st sb cb) (neInitsFn xs)) : dNE A ⟶ dList (Tree A)) := by
     simp only [col, list_graph, graph_comp]
   rw [h]; exact Iff.rfl
@@ -1906,9 +1906,9 @@ public theorem mix_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tre
 
 /-- `next`, pointwise: the column with the `mix` of the column and the row added at its end. -/
 public theorem next_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tree A))
-    (zs : CL.ConsList Unit (Tree A)) :
-    next st sb cb p zs
-      ↔ zs = snocFn (p.1, minlistFn (R st sb cb) (cmap binFn (zipFn p))) := by
+    (xss : CL.ConsList Unit (Tree A)) :
+    next st sb cb p xss
+      ↔ xss = snocFn (p.1, minlistFn (R st sb cb) (cmap binFn (zipFn p))) := by
   constructor
   · rintro ⟨⟨u, t⟩, ⟨hu, hm⟩, rfl⟩
     rw [mix_apply] at hm
@@ -1917,15 +1917,15 @@ public theorem next_apply (p : CL.ConsList Unit (Tree A) × CL.ConsList Unit (Tr
     exact ⟨(p.1, _), ⟨rfl, (mix_apply st sb cb p _).2 rfl⟩, rfl⟩
 
 /-- `process`, pointwise: `loop(next)` started from the column holding the tip of `a`. -/
-public theorem process_apply (a : A) (xss : CL.ConsList Unit (CL.ConsList Unit (Tree A)))
-    (ys : CL.ConsList Unit (Tree A)) :
-    process st sb cb (a, xss) ys
-      ↔ loop (X := dList (Tree A)) (next st sb cb) (CL.ConsList.cons (Tree.tip a) (CL.ConsList.wrap ()), xss) ys := by
+public theorem process_apply (a : A) (xsss : CL.ConsList Unit (CL.ConsList Unit (Tree A)))
+    (xss : CL.ConsList Unit (Tree A)) :
+    process st sb cb (a, xsss) xss
+      ↔ loop (X := dList (Tree A)) (next st sb cb) (CL.ConsList.cons (Tree.tip a) (CL.ConsList.wrap ()), xsss) xss := by
   constructor
   · rintro ⟨⟨c, xs'⟩, ⟨⟨t, ht, hc⟩, hx⟩, hl⟩
     cases ht; cases hc; cases hx; exact hl
   · intro h
-    exact ⟨(_, xss), ⟨⟨_, rfl, rfl⟩, rfl⟩, h⟩
+    exact ⟨(_, xsss), ⟨⟨_, rfl, rfl⟩, rfl⟩, h⟩
 
 /-- `tops≜tic list(mct)`: our name, not the book's — the trees at the top of the new rows. -/
 @[expose] public def tops : (⟨A × NEList A⟩ : RelSet.{0}) ⟶ dList (Tree A) :=

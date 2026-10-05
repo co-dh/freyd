@@ -199,10 +199,10 @@ public theorem ordered_coreflexive : (ordered R : dList A ⟶ dList A) ⊑ Cat.i
   | ConsList.cons seg rest => isNonempty seg ∧ allNonempty rest
 
 /-- **`partition : list A ⟶ list (list⁺ A)`** (B&dM p.128, `partition = concat°`): a decomposition
-    of `xs` into a list of non-empty contiguous segments — `ps` is a partition of `xs` iff flattening
-    `ps` gives `xs` and every segment is non-empty. -/
+    of `xs` into a list of non-empty contiguous segments — `xss` is a partition of `xs` iff flattening
+    `xss` gives `xs` and every segment is non-empty. -/
 @[expose] public def partition : dList A ⟶ (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) :=
-  fun xs ps => cconcat ps = xs ∧ allNonempty ps
+  fun xs xss => cconcat xss = xs ∧ allNonempty xss
 
 /-- The one-segment non-emptiness coreflexive `neSeg ⊑ 𝟙`: pass a segment iff it is not `nil`. -/
 @[expose] public def neSeg : dList A ⟶ dList A := fun s t => s = t ∧ isNonempty s

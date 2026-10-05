@@ -65,7 +65,7 @@ NOTETITLE := $(shell ./scripts/note-files --title)
 # wrapped around `make` holds the file on another descriptor and the two wait on each other forever.
 LOCK := flock $(if $(strip $(CH)),-s,-x) $(HOME)/.cache/freyd-note.lock
 
-.PHONY: p c w labels links cite panels cd-check cover books v exe ref-ids
+.PHONY: p c w labels links cite binders panels cd-check cover books v exe ref-ids
 
 # ONE link of the exe before the gates fan out.  Under `-j` the stamp, `panels` and `$(DB)` each ran
 # their own `lake build`, and two of them linking `diag-export` at once left one reading the binary
@@ -129,6 +129,18 @@ FORCE:
 # a note whose display has drifted from its Lean proof should not produce a PDF that looks fine.
 cite: $(DB)
 	./scripts/cite-check $(CITESRC)
+ifeq ($(NOTE),aop)
+	$(MAKE) binders
+endif
+
+# Collections are `xs` (a collection of collections `xss`) and a membership's element is named after its
+# collection, in every declaration the companion note draws; the rule is AOP's, so only `NOTE=aop` runs it.
+# The lists are `diag-export --list`'s, i.e. exactly the declarations the note's selectors name.
+BINDERLISTS := .lake/build/binder-lists
+binders: exe
+	mkdir -p $(BINDERLISTS)
+	./scripts/diag-export --prepared --list $(BINDERLISTS) lean-panel lean-circuit lean-walk lean-cd lean-graph lean-formula lean-cited lean-type lean-value
+	./scripts/cap lake env lean --run diag/tool/BinderNames.lean $(BINDERLISTS)/*
 
 # The displays that carry NO `lean:` marker, each with the statements worth reading against it.
 # A PROMPT, not a check: it never passes or fails and nothing depends on it, because what it asks
