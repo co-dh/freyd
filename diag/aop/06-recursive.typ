@@ -292,9 +292,6 @@
   [#rowkey("Freyd.Alg.RelSet.ListRel.orderedP")], [#leant("Freyd.Alg.RelSet.ListRel.orderedP")],
   [#leanf("Freyd.Alg.RelSet.ListRel.orderedP")],
   [every element is `R`-below each element after it],
-  [#rowkey("Freyd.Alg.RelSet.ListRel.ordered")], [#leant("Freyd.Alg.RelSet.ListRel.ordered")],
-  [#leanf("Freyd.Alg.RelSet.ListRel.orderedP")],
-  [the coreflexive that tests whether a list is ordered under `R`],
 // lean:AOP.A5_6_ListCombinators.orderedP@7a55f3ef
   [#rowkey("Freyd.Alg.RelSet.Sort.ok")], [#leant("Freyd.Alg.RelSet.Sort.ok")],
   [#leanf("Freyd.Alg.RelSet.Sort.ok")],

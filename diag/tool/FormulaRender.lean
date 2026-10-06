@@ -239,11 +239,8 @@ partial def render (sp : Bool) (declName : Name) (binder : Option String) (path 
       return ← withBody declName branch (val.beta xs) fun v => do
         let b ← labelT v
         -- `x ≜ x` says nothing: the body is a wrapper (`graph f`, `corefl p`) whose argument prints
-        -- under the same name, and the note must cite that argument's declaration instead.
-        if b.flat == head.flat then
-          throwError "{declName}: its formula prints `{head.flat} ≜ {b.flat}`, which says nothing — \
-            cite the declaration its body applies ({(v.getAppFn.constName?.getD .anonymous)} of \
-            {(v.getAppArgs.filterMap (·.getAppFn.constName?)).toList})"
+        -- under the same name.  No line: `file` marks it, a citation skips it, a `leanf` refuses it.
+        if b.flat == head.flat then return #[]
         return #[head ++ spaced "≜" sp ++ b]
     let body ← match binder with
       | some h =>
@@ -331,6 +328,8 @@ def file (declName : Name) (binder : Option String) (path : List String)
     (branch : List StrDiag.Sel) : MetaM String := do
   if path.contains "mapsto" then return "#" ++ (← mapsto declName).bare.typst ++ "\n"
   let ls ← render (!path.contains "compact") declName binder (path.filter (· != "compact")) branch
+  -- A definition whose body prints as its own name (`render`): the note reads the mark, not a formula.
+  if ls.isEmpty then return s!"#metadata(\"{declName}\")<formula-says-nothing>\n"
   return relBreak.intercalate (ls.toList.map fun l => "#" ++ l.bare.typst) ++ "\n"
 
 /-- The side `path` names of `declName`'s statement, its binders opened with METAVARIABLES, so two

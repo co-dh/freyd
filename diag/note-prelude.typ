@@ -94,7 +94,10 @@
 }
 // SPACED by default — a formula set as text has the room; `compact: true` is the call that has none
 // (a formula fitted above a panel), and it names the exporter's `.compact` step of the selector.
-#let leanf(sel, compact: false) = lean-text("generated/formula/", <lean-formula>, sel + if compact { ".compact" } else { "" })
+#let leanf(sel, compact: false) = {
+  let c = lean-text("generated/formula/", <lean-formula>, sel + if compact { ".compact" } else { "" })
+  if says-nothing(c) { panic(sel + " prints `x ≜ x`, which says nothing: set the formula of the declaration its body applies") }
+  c }
 // A KEY WITH NO PRINT: the row or display is cited as `sel`'s formula, though its own cell is a picture or
 // a hand-typed worked run that states `sel` in no form `leanf` could replace.
 #let leank(sel) = [#metadata(sel)<lean-formula>]

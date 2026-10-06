@@ -115,15 +115,20 @@
 /// `row`: the number is generated, so the formula stands alone.  `keys`: the Lean selectors the cited
 /// row or display states; with none the number is all there is.  Under `list`, where no formula file
 /// need exist yet, each key is requested instead, so a chapter compiled alone draws what it only cites.
+/// A cited row prints EVERY formula it states, except one the exporter marks as saying nothing — a
+/// definition whose body prints as its own name, `x ≜ x` (`FormulaRender.file`); `none` when all are.
+#let says-nothing(c) = lean-keys(c, labels: (<formula-says-nothing>,)).len() > 0
 #let law-formula(keys) = if "list" in sys.inputs { for k in keys [#metadata(k)<lean-cited>] } else {
-  keys.map(k => impl-split(include "generated/formula/" + k + ".typ")).join([, ]) }
-#let cite(id, keys, row: false) = if keys.len() == 0 { id } else if row { law-formula(keys) } else [#id #law-formula(keys)]
+  let fs = keys.map(k => include "generated/formula/" + k + ".typ").filter(c => not says-nothing(c))
+  if fs.len() > 0 { fs.map(impl-split).join([, ]) } }
+#let cite(id, keys, row: false) = { let f = if keys.len() > 0 { law-formula(keys) }
+  if f == none { id } else if row { f } else [#id #f] }
 /// The Lean selectors the law row around `loc` states: its first cell's `#leanf`s, else its other
 /// cells' `#leanf`s, else the declarations its `#leant` cells type — a definition row's formula is that definition,
 /// `<name>≜<body>` — else the one declaration its picture draws (`<lean-decls>` of a single
 /// selector), else `()`.
 #let row-keys(loc) = {
-  let ks = query(selector(<law-row-cite>).before(loc)).last().value
+  let ks = query(selector(<law-row-keys>).before(loc)).last().value
   if ks.len() > 0 { ks } else {
     let a = query(selector(<law-row>).before(loc)).last().location()
     let nxt = (query(selector(<law-row>).after(loc)) + query(selector(<disp-end>).after(loc))).map(m => m.location())
@@ -212,10 +217,17 @@
       // every row emits unconditionally, so the choice settles in one pass.
       let ks = lean-keys(it.body).dedup()
       let seen = query(selector(<law-row-keys>).before(here())).map(m => m.value).flatten()
-      // A cite prints the row's FORMULAS; its row key only labels it, and prints only when the row has
-      // no formula — a key `x` of `x≜graph(x)` would print `x ≜ x`.
+      // A TABLE SHOWS EACH DEFINITION ONCE: a row whose printed formulas an earlier row of the same
+      // table already printed restates it (`corefl(p)` prints as `p`), so it fails naming both.
       let fs = lean-keys(it.body, labels: (<lean-formula>,)).dedup()
-      let marks = [#metadata(ks)<law-row-keys>#metadata(if fs.len() > 0 { fs } else { ks })<law-row-cite>] + for k in ks.filter(k => k not in seen) [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
+      if s != none and fs.len() > 0 and "list" not in sys.inputs and law-table(s) {
+        let shown = query(selector(<law-row-fs>).after(s.location()).before(here())).map(m => m.value).flatten().dedup()
+        let pr(k) = include "generated/formula/" + k + ".typ"
+        let prior = shown.map(pr)
+        let dup = fs.filter(k => pr(k) in prior)
+        if dup.len() == fs.len() { panic("row " + str(n) + " of " + repr(s.value) + " prints " + repr(fs) + ", which an earlier row of the table already prints (" + repr(shown.filter(k => pr(k) in fs.map(pr))) + "): delete the row") }
+      }
+      let marks = [#metadata(ks)<law-row-keys>#metadata(fs)<law-row-fs>] + for k in ks.filter(k => k not in seen) [#metadata(n)#label(k)] + if s != none and s.value != none [#metadata(n)#label(s.value + ":" + str(n))]
       if s != none and law-table(s) {
         let i = f.at("inset", default: auto)
         block({ rownum(n, left-inset(if i == auto { inset } else { i }, it.x, it.y)); marks; it.body })
