@@ -31,6 +31,7 @@ module
 
 public import AOP.A7_7_TakeWhile
 public import AOP.A5_6_ListCombinators
+public import AOP.A1_7_Pointfree
 import AOP.CalcSteps
 
 set_option linter.unusedVariables false
@@ -468,6 +469,47 @@ public theorem filter_eq_cata (p : A → Bool) :
 public theorem filter_entire (p : A → Bool) : Entire (filter (pcor p)) := by
   rw [filter_eq_cata p, ← filter_emerges p]
   exact graph_entire _
+
+/-- **`filter(p) = filter(pcor(p))`**: the book uses both — §1.7 and Ex 3.30 define
+    `filter(p) ≜ list((p → wrap, nil)) concat` at a test `p : A → Bool` (`Pointfree.filter`), Ex 7.41
+    and (8.9) take `p` a coreflexive (`filter` here) — and they are one arrow once the test is read
+    as the coreflexive `pcor(p)` of the elements that pass it. -/
+public theorem filter_bool_eq_pcor (p : A → Bool) :
+    Pointfree.filter (graph p) = filter (pcor p) :=
+  calc Pointfree.filter (graph p) = graph (filtCL p) := by
+        have hC : (Pointfree.conditional (graph p) (singleR ()) Pointfree.nil
+              : dE A ⟶ dE (ConsList Unit A)) = graph fun a => fStep p a (ConsList.wrap ()) := by
+          apply hom_ext; intro a z
+          show (true = p a ∧ z = _) ∨ (false = p a ∧ z = _) ↔ z = fStep p a (ConsList.wrap ())
+          cases hpa : p a with
+          | true => rw [fStep_pos hpa]; exact ⟨fun h => h.elim And.right (fun h' => nomatch h'.1),
+              fun h => Or.inl ⟨rfl, h⟩⟩
+          | false => rw [fStep_neg hpa]; exact ⟨fun h => h.elim (fun h' => nomatch h'.1) And.right,
+              fun h => Or.inr ⟨rfl, h⟩⟩
+        have hcat : ∀ x : ConsList Unit A,
+            cconcat (cmap (fun a => fStep p a (ConsList.wrap ())) x) = filtCL p x := by
+          intro x
+          induction x with
+          | wrap D => rfl
+          | cons a x ih =>
+            show cappend (fStep p a (ConsList.wrap ())) (cconcat (cmap _ x)) = fStep p a (filtCL p x)
+            rw [ih]
+            cases hpa : p a with
+            | true => rw [fStep_pos hpa, fStep_pos hpa]; rfl
+            | false => rw [fStep_neg hpa, fStep_neg hpa]; rfl
+        apply hom_ext; intro x y
+        unfold Pointfree.filter
+        rw [hC, comp_apply]
+        show _ ↔ y = filtCL p x
+        constructor
+        · rintro ⟨zs, hzs, hy⟩
+          rw [(ListRel.listP_graph _ x zs).mp hzs] at hy
+          exact (show y = cconcat _ from hy).trans (hcat x)
+        · intro hy
+          exact ⟨_, (ListRel.listP_graph _ x _).mpr rfl, show y = cconcat _ from hy.trans (hcat x).symm⟩
+    _ = cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p)) :=
+        filter_emerges p
+    _ = filter (pcor p) := (filter_eq_cata p).symm
 
 /-! ## Executable sanity checks -/
 

@@ -471,7 +471,7 @@ preorder.
   [merging two sorted lists sorts their union],
   [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `FX=L+E×X`]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
-  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@5d74539a lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@669dbfaa lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
+  // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@5d74539a lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -500,7 +500,7 @@ preorder.
      // map_sort row: Lemma 8.1, p. 202
      `f : FA⟶A` monotonic on `≼`.
  ]],
-     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@937ce9d3
+     // lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le@1743a970
   // `filter(p) : [A]⟶[A]` — @thinlist-defn's `gᵢ≜list(fᵢ) filter(pᵢ)`.
   lean-calc(calc-l81),
 )]<thinlist-lem81>
@@ -513,7 +513,7 @@ preorder.
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@3c16db6b
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@d351eaee
   lean-calc(calc-82),
 )]<thinlist-thm82>
 
@@ -523,7 +523,7 @@ preorder.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@661d9cc4
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@991c0a33
   lean-calc(calc-82f),
 )]<thinlist-fusion>
 

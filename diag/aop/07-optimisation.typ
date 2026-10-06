@@ -1027,13 +1027,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
  ]],
-     // lean:AOP.A7_7_Filter.filter_eq_cata@0882803d
+     // lean:AOP.A7_7_Filter.filter_eq_cata@46d2634b
   lean-calc(calc-filter),
 )
 #align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊑`
   is `=`.]])
-  // lean:AOP.A7_7_Filter.filter_entire@587e37a8
-  // lean:AOP.A7_7_Filter.filter_simple@de8b5dbc
+  // lean:AOP.A7_7_Filter.filter_entire@38d444ac
+  // lean:AOP.A7_7_Filter.filter_simple@23207018
   // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
   `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness
