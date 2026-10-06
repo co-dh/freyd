@@ -1421,6 +1421,13 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
   -- algebra, and `@[diag_unfold]` is the statement that the note writes that algebra out.
   let e' ← openNotedAll e
   if e' != e then return ← labelTree prec e'
+  -- …and a tagged MAP whose body is a `match` on its input, which `openNoted` leaves closed, is
+  -- written by its arms (`[nil,π₂]`), as `mapLabel` writes its graph — bare, or applied to a point.
+  if let .const n _ := e.getAppFn then
+    if (← Lean.labelled `diag_unfold).contains n then
+      if (← branchForm? e).isSome then return ← mapLabel e true
+      if e.isApp && (← branchForm? e.appFn!).isSome then
+        return (← mapLabel e.appFn! true) ++ "(" ++ (← labelTree 0 e.appArg!) ++ ")"
   -- A ONE-FIELD RECORD IS ITS FIELD, the rule `plain` already prints by: the object `⟨X⟩` of a
   -- category of sets IS the set `X`, so the wrapper must come off HERE too or the clause below
   -- dispatches on `RelSet.mk` and the operator inside — a product, a sum — is never seen.
