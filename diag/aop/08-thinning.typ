@@ -682,17 +682,17 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs"),
-    [#frc([`subseq (within w)`])` est(R)`])],
+    [#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs")])],
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs"),
-    [#frc([`⦇[nil,cons](within w) ∪ [nil,π₂]⦈`])` est(R)` \
+    [#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs") \
  #src[@cata-fusion, weights non-negative. ]])],
      // lean:AOP.A8_4_Knapsack.knap_spec@89359e6f
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step2.lhs", step: true)],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs"),
-    [`⦇listcp ⟨g₁,g₂⟩ merge R thinlist(Q)⦈ minlist(R)` \
+    [#leanf("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs") \
      #src[@thinlist-thm82, at `P≜R`, `F` linear, `Q` from @knap-mono:2]])],
   // The candidate set is now a candidate LIST: the reduce births `list` where it births `E` above.
   [#lean("Freyd.Alg.RelSet.Knapsack.knap_laws_step1.lhs")],
@@ -830,18 +830,18 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   table.header([*circuit*], [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs"),
-    [#frc([`partition L(fits w)`])` est(R)`])],
+    [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs")])],
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs"),
-    [#frc([`⦇[wrap wrap,new ∪ (glue (ok w))]⦈`])` est(R)` \
+    [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs") \
      #src[@cata-fusion, every word fits on a line by itself.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_alg_fusion@031c245f
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step2.lhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs"),
-    [#frc([`⦇[wrap wrap,new] ∪ ([wrap wrap,glue] (ok w))⦈`])` est(R)` \
+    [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_split.rhs") \
      #src[the algebra as `(f₁p₁) ∪ (f₂p₂)`, `p₁≜𝟙` — @thinlist-thm82.
  ]])],
      // lean:AOP.A8_5_Paragraph.para_spec@0ec1a795
@@ -849,7 +849,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs"),
-    [`⦇listcp ⟨g₁,g₂⟩ cat thinlist(Q)⦈ minlist(R)` \
+    [#leanf("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs") \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat` (@para-mono:3), `Q` from @para-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Paragraph.para_laws_step1.lhs")],
 
@@ -980,16 +980,16 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   // law's own letters, so the column has no one pair of ports.
   table.header([*circuit*], [*Hinze–Marsden*]),
 
-  [#vstep([], leanc("Freyd.Alg.RelSet.Tour.tour_laws.rhs"), [#frc([`tour`])` est(R)`])],
+  [#vstep([], leanc("Freyd.Alg.RelSet.Tour.tour_laws.rhs"), [#leanf("Freyd.Alg.RelSet.Tour.tour_laws.rhs")])],
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs"),
-    [#frc([`⦇[start,dropl ∪ dropr]⦈`])` est(R)` \ #src[@tour-defn:15]])],
+    [#leanf("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs") \ #src[@tour-defn:15]])],
   // Empty: the step only names the reduce, and the panel above already draws it.
   [],
 
   [#vstep(RQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws.lhs"),
-    [`⦇listcp ⟨g₁,g₂⟩ cat thinlist(Q)⦈ minlist(R)` \
+    [#leanf("Freyd.Alg.RelSet.Tour.tour_laws.lhs") \
      #src[@thinlist-thm82, at `P≜⊤` with `merge ⊤=cat`, `Q` from @tour-mono:2]])],
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.lhs", step: true)],
 

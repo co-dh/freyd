@@ -672,25 +672,25 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
   // general rule is the other way round (CLAUDE.md); §12.1 is its exception and stays as it is.
   // Rows 1–3 draw the NUMERATOR, `F(P[A]) ⟶ [A]`: the transpose is still outside the bracket there,
   // and the generator fuses `F(∋)[f,g]` into the one tape `[f,(𝟙×∋)g]` on trust.
-  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc([`F(∋)[nil,cons ∪ π₂]`])])],
+  [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"), [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.lhs"))])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of `cons ∪ π₂` under the `𝟙×∋` summand of `F(∋)`, i.e. `(𝟙×∋)π₂`]],
 
   // The sum `𝟙+𝟙×∋` and the bracket after it fuse into the one tape, `(R+S)[f,g]=[Rf,Sg]`.
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs"),
-    [#frc([`(𝟙+𝟙×∋)[nil,cons ∪ π₂]`]) \ #src[`F(X)=𝟏+A×X` — @comb-fns:1]])],
+    [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_map.lhs")) \ #src[`F(X)=𝟏+A×X` — @comb-fns:1]])],
     // lean:AOP.A5_6_ListCombinators.subseq_alg_sum_map@5548e84e lean:AOP.A6_ConsList.F_eq_sum_prod@cab297e7
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the same operand under `𝟙+𝟙×∋`, whose `𝟙×∋` summand it sits in]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc([`[nil,(𝟙×∋)(cons ∪ π₂)]`]) \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs"), [#frc(leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs")) \
     #src[`R+S≜[Rl,Sr]`, `l[R,S]=R`, `r[R,S]=S` — @Freyd.Alg.junc, #ref(label("Freyd.Alg.u₁_junc"))]])],
   [#lean("Freyd.Alg.RelSet.ListRel.subseq_alg_sum_junc.rhs", branch: "inr.inr") \ #src[the `π₂` operand of the second arm `(𝟙×∋)(cons ∪ π₂)`]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [`[`#frc([`nil`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_junc.rhs") \
     #src[@coprod-calc at `T:=[nil,(𝟙×∋)(cons ∪ π₂)]`]])],
     // lean:AOP.A5_3.Λ_junc@a2c38b7d
   [#sb-hm-p2 \ #src[the `π₂` operand under its $frac(#[`𝟙`], ∋)$, the arm @subseq-outr-square rewrites]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [`[nil `#frc([`𝟙`])`,`#frc([`(𝟙×∋)(cons ∪ π₂)`])`]` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_Λ_nil.rhs") \
     #src[@Freyd.Alg.Λ_of_map, #frc([`f`])` =f `#frc([`𝟙`]) for `f` a map, at `f:=nil`]])],
     // lean:AOP.A5_6_ListCombinators.Λ_nil_singleton@d276006e
   [#sb-hm-p2 \ #src[the same operand; the two rows differ only in the `nil` arm]],
@@ -709,24 +709,24 @@ component `FX⟶X` at every object and a commuting square at every arrow, but F-
     [*Hinze–Marsden*]),
 
   [#vstep([], leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.lhs"),
-    [#frc([`(𝟙×∋)(cons ∪ π₂)`]) \ #src[@subseq-EW-case's second branch]])],
+    [#frc(leanf("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.lhs")) \ #src[@subseq-EW-case's second branch]])],
   [#sb-hm \ #src[the `cons` operand of `cons ∪ π₂`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs"),
-    [#frc([`(𝟙×∋)cons ∪ (𝟙×∋)π₂`]) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross:8]])],
+    [#frc(leanf("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs")) \ #src[`T(X₁ ∪ X₂)=TX₁ ∪ TX₂` — @adj-cross:8]])],
   [#lean("Freyd.Alg.RelSet.ListRel.prod_ni_union_dist.rhs", branch: "inr") \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ (𝟙×∋)π₂`]],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs"),
-    [#frc([`(𝟙×∋)cons ∪ π₂∋`]) \
+    [#frc(leanf("Freyd.Alg.RelSet.ListRel.prod_ni_union_slide.rhs")) \
     #src[`(𝟙×∋)π₂=π₂∋` — @relprod-pic at `π₂`, an equality because `𝟙` is entire]])],
     // lean:AOP.A5_6_ListCombinators.prod_ni_proj_slide@931da6a5
   [#sb-hm-p2-slid \ #src[the `π₂` operand of `(𝟙×∋)cons ∪ π₂∋`]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [`⟨`#frc([`(𝟙×∋)cons`])`,`#frc([`π₂∋`])`⟩ cup` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.Λ_prod_ni_union.rhs") \
     #src[#frc([`R ∪ S`])` =⟨`#frc([`R`])`,`#frc([`S`])`⟩ cup` — @cup-defn]])],
   [#sb-hm-born \ #src[the `cons` operand under its $frac(#[`𝟙`], ∋)$]],
 
-  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [`⟨`#frc([`𝟙×∋`])` E(cons),π₂⟩ cup` \
+  [#vstep(EQ, leanc("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs"), [#leanf("Freyd.Alg.RelSet.ListRel.subseq_alg_join.rhs") \
     #src[@Freyd.Alg.Λ_absorption, absorption #frc([`S`])` E(R)=`#frc([`SR`]) at `S:=𝟙×∋`, `R:=cons`; fusion and
      #frc([`∋`])` =𝟙` on the `π₂` operand]])],
   [#sb-hm-p2-bare \ #src[the `π₂` operand, bare `π₂`]],
