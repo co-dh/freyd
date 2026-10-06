@@ -112,7 +112,10 @@ partial def stxJoin : Syntax → Join
   -- character; only the functor's half of it lives here, in `applyJoin`.
   | .ident _ _ n _ => if oneChar n.toString then .name else .other
   | .atom _ s => if oneChar s then .name else .other
-  | .node _ _ args =>
+  -- A TUPLE's brackets are its own (`stxPeel` keeps them) even when a quotation opened it with a
+  -- `hygienicLParen` node rather than the atom `(`.
+  | .node _ k args =>
+    if k == ``Lean.Parser.Term.tuple then .bracket else
     match (args[0]? : Option Syntax), (args.back? : Option Syntax) with
     -- A BRACKET IS A MATCHING PAIR OF TOKENS WITH NO NAME IN THEM.  `bag(Job)` and `list⁺(A)` open
     -- with an atom and close with one just as `[A]` does, but their opening token CARRIES THE
@@ -156,9 +159,11 @@ partial def appParts : Syntax → Option (Syntax × Array Syntax)
       -- A HEAD THE PRINTER PARENTHESISED IS A HEAD, never a factor to flatten into the operands:
       -- the note's curried `Vec(n)(R)` says the operator is `Vec(n)` and `R` is what it is applied
       -- to, where flattening would spell one application of three parts.
+      -- A HEAD WRITTEN AS A NOTATION (`minlist(R)`, `loop(step)`) is an operator the same way: what
+      -- follows it is applied, and left to Lean it juxtaposed the point, `minlist(R) list(bin)(…)`.
       if f matches .ident .. then some (f, ops)
-      else if f.isOfKind ``Lean.Parser.Term.paren then some (f, ops)
-      else (appParts f).map fun (h, prev) => (h, prev ++ ops)
+      else if f.isOfKind ``Lean.Parser.Term.app then (appParts f).map fun (h, prev) => (h, prev ++ ops)
+      else some (f, ops)
     | _, _ => none
   | _ => none
 
@@ -187,6 +192,16 @@ def identText [Monad m] [MonadError m] (n : Name) : m String :=
   | .str _ s => pure s
   | .anonymous => throwError "identText: no name to read off `{n}` — the syntax was not an identifier"
   | e => pure e.toString
+
+/-- How ONE operand joins the head applied to it.  AN OPERAND HANDED IN AS A HOLE joins as the TREE
+    it stands for: `brk` names the holes whose label closes itself in its own brackets
+    (`Lbl.delimited`), which the hole's name cannot show.  A POINT (`pt`) never joins as a name; its
+    own brackets (`[xs]`, `{bb}`, a tuple) still serve as the call's. -/
+def opJoin (a : Syntax) (brk : Array Name) (pt : Bool) : Join :=
+  let j := match stxPeel a with
+    | .ident _ _ n _ => if brk.contains n then .bracket else stxJoin (stxPeel a)
+    | p => stxJoin p
+  if pt && j == .name then .other else j
 
 mutual
 
@@ -220,18 +235,14 @@ partial def stxShow (s : Syntax) (brk : Array Name := #[]) : MetaM String := do
 partial def appSpell (h : String) (ops : Array Syntax) (brk : Array Name := #[]) (pt := false) :
     MetaM String := do
   match ops with
-  -- AN OPERAND HANDED IN AS A HOLE joins as the TREE it stands for: `brk` names the holes whose
-  -- label closes itself in its own brackets (`Lbl.delimited`), which the hole's name cannot show.
-  | #[a] =>
-    let j := match stxPeel a with
-      | .ident _ _ n _ => if brk.contains n then .bracket else stxJoin (stxPeel a)
-      | p => stxJoin p
-    -- a POINT (`pt`) never joins as a name; its own brackets (a tuple) still serve as the call's
-    return applyLabel h (← stxShow a brk) (if pt && j == .name then .other else j)
+  | #[a] => return applyLabel h (← stxShow a brk) (opJoin a brk pt)
   | _ => return h ++ "(" ++ String.intercalate "," (← ops.toList.mapM (stxShow · brk)) ++ ")"
 
 partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := do
   if h.isIdent then return ← identText h.getId
+  -- A FIELD OF A STRUCTURE (`F.1`, a functor's action on objects) is written by the structure's name,
+  -- the qualifier rule from the other side: the note writes `F(NA,N(TA))`, never `F.1(NA,…)`.
+  if h.isOfKind ``Lean.Parser.Term.proj then return ← headShown h[0] brk
   -- A HEAD THAT IS ITSELF AN APPLICATION is spelled by this same rule applied again, which is what
   -- the note's curried `Vec(n)(R)` is: the operator `Vec(n)`, and `R` applied to it.  The
   -- application is looked for among the paren's OWN children — `Term.paren` carries the optional
@@ -328,12 +339,19 @@ partial def pointCall (e : Expr) (ops : Array Syntax) (brk : Array Name) :
     unless ← isPoint e (n - 1 - k) do break
     k := k + 1
   let mut ops' := ops
+  -- A form the printer closed in its OWN BRACKETS (`[xs]`, `{bb}`, a tuple) keeps its syntax, so its
+  -- join and its comma list survive; everything else is re-set from its term, which also puts back
+  -- what an unexpander dropped (`zip` for `zip p`).
   for i in [m - k:m] do
     let a := args[n - m + i]!
-    if a.isApp then ops' := ops'.set! i (mkIdent (Name.mkSimple (← appShow a brk)))
+    if a.isApp && stxJoin (stxPeel ops[i]!) != .bracket then
+      ops' := ops'.set! i (mkIdent (Name.mkSimple (← appShow a brk)))
   if k == 0 || k == m then return (ops', "")
-  let pts ← (ops'.extract (m - k) m).toList.mapM (stxShow · brk)
-  return (ops'.extract 0 (m - k), "(" ++ ",".intercalate pts ++ ")")
+  let pts := ops'.extract (m - k) m
+  -- ONE point joins as `appSpell` joins one operand: `head[xs]`, `loop(step)(([],0),xs)`.
+  let call ← if h : pts.size = 1 then pure (applyLabel "" (← stxShow pts[0] brk) (opJoin pts[0] brk true))
+    else pure ("(" ++ ",".intercalate (← pts.toList.mapM (stxShow · brk)) ++ ")")
+  return (ops'.extract 0 (m - k), call)
 
 /-- A NOTATION'S OWN JUXTAPOSITIONS are applications like any other: each `f x` the printer wrote
     inside `q ∈ f x` or `x ++ blanks y` is re-set as an application, where Lean's formatter kept
@@ -2022,7 +2040,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
     -- its components in the note's spelling — and an arrow inside it is not holed on its own.
     let out ← respell (if paren then Prec.loose else Prec.atom)
       (args.filter (·.isAppOfArity ``Prod.mk 4) ++ (← arrows args) ++ (← relatorArgs args)
-        ++ (← args.filterM fun a => return (← swallowedPoints? a).isSome)
+        -- a swallowed point at ANY depth: `appShow` re-sets an operand from the printer's syntax,
+        -- which never had it (`list(bin)(zip)` for `cmap binFn (zip p)`)
+        ++ (← args.filterM fun a => (appSubs a).anyM fun s => return (← swallowedPoints? s).isSome)
         -- …and an operand the printer writes as a JUXTAPOSED APPLICATION, which inside a notation
         -- (`[d]⧺f (p) (q)`) no `appSpell` reaches: respelled here, it is the note's `f(p,q)`.
         -- A VALUE only, `swallowedPoints?`'s test: an explicit argument whose type is a small set.
