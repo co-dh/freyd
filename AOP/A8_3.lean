@@ -44,6 +44,8 @@ public import AOP.A5_7_ListBeads
 -- (8.9) and (8.11) in `Rel`: the book's `filter(p)` is §7.7's, `cp(F)` at `L+E×X` is §7.4's.
 public import AOP.A7_7_Filter
 public import AOP.A7_4_CylinderPaths
+-- `listcp(F)` for every polynomial `F` recurses on the code `PolyF`.
+public import AOP.A6_Poly
 import AOP.CalcSteps
 
 universe u
@@ -921,6 +923,219 @@ public theorem cpMap_F_strictNatural {L E : Type} :
   exact Tuple.cpMap_strict_natural L E R
 
 end Freyd.Alg.RelSet.ListRel
+
+/-! ## `listcp(F)` for every polynomial `F`, and (8.11) for every linear one (B&dM p.202)
+
+  The exercise of p.202, by recursion on the code of `F`: a constant or the first argument is the
+  one-element list, the second argument is the list itself, a sum lists its summand, a product
+  pairs every element of one list with every element of the other (`cpp`).  On sets this is
+  `cp(F)` for every `F`; the order `F(≼)` survives only when no product pairs two lists. -/
+
+namespace Freyd.Alg.RelSet.Poly
+
+open Freyd Freyd.Alg Freyd.Alg.RelSet PowerAllegory
+open Freyd.Alg.RelSet.CL (ConsList dE)
+open Freyd.Alg.RelSet.ListRel (cmap cppFn cappend inlistP orderedP ordered setify listRelator
+  inlistP_cmap inlistP_cpp orderedP_cmap ordered_coreflexive graph_setify_Λ setify_ni_iff)
+
+/-- `F` mentions its second argument: `arg₂` occurs in the code. -/
+@[expose] public def hasArg₂ : PolyF → Prop
+  | .zer | .one | .arg₁ => False
+  | .arg₂ => True
+  | .oplus l r | .otimes l r => hasArg₂ l ∨ hasArg₂ r
+
+/-- **`F` is linear** (B&dM p.202): `F` distributes over (nonempty) joins.  For a polynomial `F`
+    that is: no product both of whose factors mention the argument. -/
+@[expose] public def Linear : PolyF → Prop
+  | .zer | .one | .arg₁ | .arg₂ => True
+  | .oplus l r => Linear l ∧ Linear r
+  | .otimes l r => Linear l ∧ Linear r ∧ (¬ hasArg₂ l ∨ ¬ hasArg₂ r)
+
+/-- `listcp(F)` pointwise, by recursion on `F`: `[−]` on a constant and on `arg₁`, the list itself
+    on `arg₂`, `list(inl)`/`list(inr)` on a sum, `cpp` on a product. -/
+@[expose] public def listcpFn {A X : Type} :
+    (F : PolyF) → sem F A (ConsList Unit X) → ConsList Unit (sem F A X)
+  | .zer, e => Empty.elim e
+  | .one, u => ConsList.cons u (ConsList.wrap ())
+  | .arg₁, a => ConsList.cons a (ConsList.wrap ())
+  | .arg₂, xs => xs
+  | .oplus l _, Sum.inl u => cmap Sum.inl (listcpFn l u)
+  | .oplus _ r, Sum.inr v => cmap Sum.inr (listcpFn r v)
+  | .otimes l r, (u, v) => cppFn (listcpFn l u, listcpFn r v)
+
+/-- **`listcp(F) : F[X]⟶[FX]`** for every polynomial `F` (B&dM p.202, Exercise 8.19). -/
+@[expose] public def listcp (F : PolyF) (A : RelSet.{0}) (X : Type) :
+    (relator F A).obj (listRelator.obj (dE X)) ⟶ listRelator.obj ((relator F A).obj (dE X)) :=
+  graph (listcpFn (A := A.carrier) (X := X) F)
+
+/-- `list(g)` along an injective `g` keeps membership: `g(b)` is in `list(g)(xs)` iff `b` is in `xs`. -/
+public theorem inlistP_cmap_inj {B C : Type} {g : B → C} (hg : ∀ {a b}, g a = g b → a = b) (b : B) :
+    ∀ xs : ConsList Unit B, inlistP (cmap g xs) (g b) ↔ inlistP xs b
+  | ConsList.wrap _ => Iff.rfl
+  | ConsList.cons a xs =>
+      calc (g b = g a ∨ inlistP (cmap g xs) (g b)) ↔ (b = a ∨ inlistP (cmap g xs) (g b)) :=
+            or_congr_left ⟨hg, congrArg g⟩
+        _ ↔ (b = a ∨ inlistP xs b) := or_congr_right (inlistP_cmap_inj hg b xs)
+
+/-- `list(inl)` lists no `inr`. -/
+public theorem inlistP_cmap_inl_inr {B C : Type} (b : C) :
+    ∀ xs : ConsList Unit B, ¬ inlistP (cmap (Sum.inl (β := C)) xs) (Sum.inr b)
+  | ConsList.wrap _ => id
+  | ConsList.cons _ xs => fun h => h.elim (fun e => by cases e) (inlistP_cmap_inl_inr b xs)
+
+/-- `list(inr)` lists no `inl`. -/
+public theorem inlistP_cmap_inr_inl {B C : Type} (b : B) :
+    ∀ xs : ConsList Unit C, ¬ inlistP (cmap (Sum.inr (α := B)) xs) (Sum.inl b)
+  | ConsList.wrap _ => id
+  | ConsList.cons _ xs => fun h => h.elim (fun e => by cases e) (inlistP_cmap_inr_inl b xs)
+
+/-- `listcp(F)` lists exactly `F(∈)`: `y` is in `listcp(F)(w)` iff `F` of list membership relates
+    `w` to `y`. -/
+public theorem inlistP_listcpFn {A : RelSet.{0}} {X : Type} (R : listRelator.obj (dE X) ⟶ dE X)
+    (hR : ∀ xs x, R xs x ↔ inlistP xs x) :
+    (F : PolyF) → ∀ w y, inlistP (listcpFn (A := A.carrier) (X := X) F w) y ↔ fmapR F R w y
+  | .zer, e, _ => Empty.elim e
+  | .one, _, _ => ⟨fun _ => trivial, fun _ => Or.inl rfl⟩
+  | .arg₁, a, y =>
+      calc (y = a ∨ False) ↔ y = a := Iff.of_eq (or_false _)
+        _ ↔ a = y := eq_comm
+        _ ↔ (Cat.id A) a y := Iff.of_eq (id_apply a y).symm
+  | .arg₂, xs, y => (hR xs y).symm
+  | .oplus l _, Sum.inl u, Sum.inl b =>
+      calc inlistP (cmap Sum.inl (listcpFn l u)) (Sum.inl b) ↔ inlistP (listcpFn l u) b :=
+            inlistP_cmap_inj Sum.inl.inj b _
+        _ ↔ fmapR l R u b := inlistP_listcpFn R hR l u b
+  | .oplus _ _, Sum.inl _, Sum.inr b =>
+      ⟨fun h => inlistP_cmap_inl_inr b _ h, fun h => False.elim h⟩
+  | .oplus _ r, Sum.inr v, Sum.inr b =>
+      calc inlistP (cmap Sum.inr (listcpFn r v)) (Sum.inr b) ↔ inlistP (listcpFn r v) b :=
+            inlistP_cmap_inj Sum.inr.inj b _
+        _ ↔ fmapR r R v b := inlistP_listcpFn R hR r v b
+  | .oplus _ _, Sum.inr _, Sum.inl b =>
+      ⟨fun h => inlistP_cmap_inr_inl b _ h, fun h => False.elim h⟩
+  | .otimes l r, (u, v), y =>
+      calc inlistP (cppFn (listcpFn l u, listcpFn r v)) y
+            ↔ inlistP (listcpFn l u) y.1 ∧ inlistP (listcpFn r v) y.2 := inlistP_cpp _ _ _
+        _ ↔ fmapR l R u y.1 ∧ fmapR r R v y.2 :=
+            and_congr (inlistP_listcpFn R hR l u y.1) (inlistP_listcpFn R hR r v y.2)
+
+/-- **`listcp(F) setify = F(setify) cp(F)`** (mirrored): on the underlying sets `listcp(F)` IS
+    the cartesian product, for every polynomial `F`, linear or not. -/
+public theorem listcp_comp_setify (F : PolyF) (A : RelSet.{0}) (X : Type) :
+    listcp F A X ≫ setify = (relator F A).map setify ≫ cpMap (relator F A) (dE X) :=
+  calc listcp F A X ≫ setify
+      = Λ ((relator F A).map (setify ≫ ∋ (dE X))) :=
+        graph_setify_Λ _ _ fun w y => inlistP_listcpFn _ setify_ni_iff F w y
+    _ = Λ ((relator F A).map setify ≫ (relator F A).map (∋ (dE X))) := by rw [(relator F A).map_comp]
+    _ = (relator F A).map setify ≫ cpMap (relator F A) (dE X) :=
+        Λ_fusion ((relator F A).map_is_map (graph_map _)) _
+
+/-- A code that does not mention `arg₂` lists exactly one value. -/
+public theorem listcpFn_single {A X : Type} : (F : PolyF) → ¬ hasArg₂ F →
+    ∀ w : sem F A (ConsList Unit X), ∃ u, listcpFn F w = ConsList.cons u (ConsList.wrap ())
+  | .zer, _, e => Empty.elim e
+  | .one, _, _ => ⟨_, rfl⟩
+  | .arg₁, _, _ => ⟨_, rfl⟩
+  | .arg₂, h, _ => (h trivial).elim
+  | .oplus l _, h, Sum.inl u =>
+      let ⟨u', hu⟩ := listcpFn_single l (fun x => h (Or.inl x)) u
+      ⟨Sum.inl u', congrArg (cmap Sum.inl) hu⟩
+  | .oplus _ r, h, Sum.inr v =>
+      let ⟨v', hv⟩ := listcpFn_single r (fun x => h (Or.inr x)) v
+      ⟨Sum.inr v', congrArg (cmap Sum.inr) hv⟩
+  | .otimes l r, h, (u, v) =>
+      let ⟨u', hu⟩ := listcpFn_single l (fun x => h (Or.inl x)) u
+      let ⟨v', hv⟩ := listcpFn_single r (fun x => h (Or.inr x)) v
+      ⟨(u', v'), congr (congrArg (fun x y => cppFn (x, y)) hu) hv⟩
+
+/-- A code that does not mention `arg₂` relates every value to itself under `F(S)`. -/
+public theorem fmapR_refl {A b : RelSet.{0}} (S : b ⟶ b) : (F : PolyF) → ¬ hasArg₂ F →
+    ∀ u, fmapR (A := A) F S u u
+  | .zer, _, e => Empty.elim e
+  | .one, _, _ => trivial
+  | .arg₁, _, a => cast (id_apply a a).symm rfl
+  | .arg₂, h, _ => (h trivial).elim
+  | .oplus l _, h, Sum.inl u => fmapR_refl S l (fun x => h (Or.inl x)) u
+  | .oplus _ r, h, Sum.inr v => fmapR_refl S r (fun x => h (Or.inr x)) v
+  | .otimes l r, h, (u, v) =>
+      ⟨fmapR_refl S l (fun x => h (Or.inl x)) u, fmapR_refl S r (fun x => h (Or.inr x)) v⟩
+
+public theorem cappend_wrap {B : Type} : ∀ x : ConsList Unit B, cappend x (ConsList.wrap ()) = x
+  | ConsList.wrap _ => rfl
+  | ConsList.cons a x => congrArg (ConsList.cons a) (cappend_wrap x)
+
+/-- `cpp([a],ys) = list(a,−)(ys)`. -/
+public theorem cppFn_single_left {B C : Type} (a : B) (ys : ConsList Unit C) :
+    cppFn (ConsList.cons a (ConsList.wrap ()), ys) = cmap (fun b => (a, b)) ys :=
+  cappend_wrap (cmap (fun b => (a, b)) ys)
+
+/-- `cpp(xs,[b]) = list(−,b)(xs)`. -/
+public theorem cppFn_single_right {B C : Type} (b : C) : ∀ xs : ConsList Unit B,
+    cppFn (xs, ConsList.cons b (ConsList.wrap ())) = cmap (fun a => (a, b)) xs
+  | ConsList.wrap _ => rfl
+  | ConsList.cons a x => congrArg (ConsList.cons (a, b)) (cppFn_single_right b x)
+
+/-- For linear `F`, `listcp(F)` of `F`-many `≼`-ordered lists is `F(≼)`-ordered. -/
+public theorem orderedP_listcpFn {A : RelSet.{0}} {X : Type} («≼» : dE X ⟶ dE X) :
+    (F : PolyF) → Linear F → ∀ w, fmapR (A := A) F (ordered ≼) w w →
+      orderedP (fmapR (A := A) F ≼) (listcpFn (A := A.carrier) (X := X) F w)
+  | .zer, _, e, _ => Empty.elim e
+  | .one, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
+  | .arg₁, _, _, _ => ⟨fun _ hb => False.elim hb, trivial⟩
+  | .arg₂, _, _, h => And.right h
+  | .oplus l _, hF, Sum.inl u, h =>
+      orderedP_cmap Sum.inl _ _ (fun _ _ h' => h') _ (orderedP_listcpFn ≼ l (And.left hF) u h)
+  | .oplus _ r, hF, Sum.inr v, h =>
+      orderedP_cmap Sum.inr _ _ (fun _ _ h' => h') _ (orderedP_listcpFn ≼ r (And.right hF) v h)
+  | .otimes l r, hF, (u, v), h =>
+      match And.right (And.right hF) with
+      | Or.inl hl =>
+        let ⟨u', hu⟩ := listcpFn_single l hl u
+        have he : cppFn (listcpFn l u, listcpFn r v) = cmap (fun y => (u', y)) (listcpFn r v) :=
+          calc cppFn (listcpFn l u, listcpFn r v)
+                = cppFn (ConsList.cons u' (ConsList.wrap ()), listcpFn r v) :=
+                  congrArg (fun z => cppFn (z, listcpFn r v)) hu
+            _ = cmap (fun y => (u', y)) (listcpFn r v) := cppFn_single_left u' _
+        Eq.mpr (congrArg (orderedP (fmapR (A := A) (.otimes l r) ≼)) he)
+          (orderedP_cmap _ _ _ (fun _ _ h' => ⟨fmapR_refl ≼ l hl u', h'⟩) _
+            (orderedP_listcpFn ≼ r (And.left (And.right hF)) v (And.right h)))
+      | Or.inr hr =>
+        let ⟨v', hv⟩ := listcpFn_single r hr v
+        have he : cppFn (listcpFn l u, listcpFn r v) = cmap (fun x => (x, v')) (listcpFn l u) :=
+          calc cppFn (listcpFn l u, listcpFn r v)
+                = cppFn (listcpFn l u, ConsList.cons v' (ConsList.wrap ())) :=
+                  congrArg (fun z => cppFn (listcpFn l u, z)) hv
+            _ = cmap (fun x => (x, v')) (listcpFn l u) := cppFn_single_right v' _
+        Eq.mpr (congrArg (orderedP (fmapR (A := A) (.otimes l r) ≼)) he)
+          (orderedP_cmap _ _ _ (fun _ _ h' => ⟨h', fmapR_refl ≼ r hr v'⟩) _
+            (orderedP_listcpFn ≼ l (And.left hF) u (And.left h)))
+
+/-- **`F(ordered(≼)) listcp(F) ⊑ listcp(F) ordered(F(≼))`** for linear `F`: `listcp(F)` carries
+    `F`-many `≼`-ordered lists to an `F(≼)`-ordered one. -/
+public theorem Fmap_ordered_comp_listcp_le (F : PolyF) (hF : Linear F) (A : RelSet.{0}) {X : Type}
+    («≼» : dE X ⟶ dE X) :
+    (relator F A).map (ordered ≼) ≫ listcp F A X ⊑ listcp F A X ≫ ordered ((relator F A).map ≼) :=
+  have hco : (relator F A).map (ordered ≼) ⊑ 𝟙 _ :=
+    calc (relator F A).map (ordered ≼) ⊑ (relator F A).map (𝟙 _) :=
+          (relator F A).map_mono (ordered_coreflexive ≼)
+      _ = 𝟙 _ := (relator F A).map_id _
+  le_iff.mpr fun w ys ⟨w', hw, hys⟩ =>
+    have he : w = w' := cast (id_apply w w') (le_iff.mp hco w w' hw)
+    have hys' : ys = listcpFn F w' := hys
+    match w', ys, he, hw, hys' with
+    | _, _, rfl, hw, rfl => ⟨_, rfl, rfl, orderedP_listcpFn ≼ F hF w hw⟩
+
+/-- **(8.11)** for every linear polynomial `F` (B&dM p.202, Exercise 8.19), mirrored
+    `F(sort(≼)) listcp(F) ⊑ cp(F) sort(F(≼))`: the abstract (8.11) from `listcp(F)`'s two
+    defining properties, each proved by induction on `F`. -/
+public theorem Fmap_sort_comp_listcp_le (F : PolyF) (hF : Linear F) (A : RelSet.{0}) {X : Type}
+    {«≼» : dE X ⟶ dE X} :
+    (relator F A).map (sortRel listRelator setify ordered ≼) ≫ listcp F A X
+      ⊑ cpMap (relator F A) (dE X) ≫ sortRel listRelator setify ordered ((relator F A).map ≼) :=
+  map_sortRel_comp_listcp_le listRelator (ordered := fun R => ordered R) («≼» := ≼) (graph_map _) (graph_map _)
+    (le_of_eq (listcp_comp_setify F A X)) (Fmap_ordered_comp_listcp_le F hF A ≼)
+
+end Freyd.Alg.RelSet.Poly
 
 /-! ## `merge(≼)` in `Rel` (B&dM Exercise 6.27, p.156)
 

@@ -412,6 +412,13 @@ row((
   [#leann("Freyd.Alg.cpMap")], [#leant("Freyd.Alg.cpMap")],
   [#leanf("Freyd.Alg.cpMap")],
   [every `F`-shaped value whose parts are chosen from the given sets],
+  [#leann("Freyd.Alg.RelSet.Poly.listcp")], [#leant("Freyd.Alg.RelSet.Poly.listcp")],
+  [#leanf("Freyd.Alg.RelSet.Poly.listcpFn")],
+  [by the shape of `F`: a constant or `arg₁` is a one-element list, `arg₂` the list itself, a sum
+   lists its summand, a product pairs every element of one list with every element of the other],
+  [#leann("Freyd.Alg.RelSet.Poly.Linear")], [#leant("Freyd.Alg.RelSet.Poly.Linear")],
+  [#leanf("Freyd.Alg.RelSet.Poly.Linear")],
+  [no product in `F` has the argument on both sides],
   [#leann("Freyd.Alg.sortRel")], [#leant("Freyd.Alg.sortRel")],
   [#leanf("Freyd.Alg.sortRel")],
   [read a set back as one of its `≼`-ordered listings],
@@ -470,6 +477,8 @@ preorder.
   [merging two sorted lists sorts their union],
   [#leanf("Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_le") \ #src[(8.11), `FX=L+E×X`]],
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
+  [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F` polynomial and linear]],
+  [the same for every linear polynomial `F`],
   // lean:AOP.A8_3.RelSet.CL.thinlist_eq_singleton_minlist@5d74539a lean:AOP.A8_3.RelSet.ListRel.sort_comp_bump_thinlist_le@a512f4cc lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@669dbfaa lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
