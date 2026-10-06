@@ -554,7 +554,7 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@912f5822
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@934d94b0
   lean-calc(calc-82),
 )]<thinlist-thm82>
 
@@ -564,7 +564,7 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@3109d841
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@e02e773e
   lean-calc(calc-82f),
 )]<thinlist-fusion>
 
