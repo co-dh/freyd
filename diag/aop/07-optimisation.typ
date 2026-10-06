@@ -1103,7 +1103,7 @@ directly.
   [The party that invites the root, which puts every immediate subtree's root out. A map.],
 
   [#leanf("Freyd.Alg.RelSet.Party.exclude_eq")],
-  [#leant("Freyd.Alg.RelSet.Party.excludeR")],
+  [#leant("Freyd.Alg.RelSet.Party.exclude")],
   [The party that leaves the root out, so each subtree is free to choose. Not a map.],
 
   [#leanf("Freyd.Alg.RelSet.Party.S")],
@@ -1169,7 +1169,7 @@ directly.
 
 #disp[#leanc("Freyd.Alg.RelSet.Party.exclude_eq.rhs")
 #align(center, src[])
-// lean:AOP.A7_3_Party.exclude_eq@52820610
+// lean:AOP.A7_3_Party.exclude_eq@9c937c68
 ]<exclude-pic>
 
 // `choose = π₁ ∪ π₂` is a choice PER ELEMENT, so `list(choose)` multiplies: two items, four lists.
@@ -1300,7 +1300,7 @@ directly.
   #src[bettering both parties of every subtree before the node's algebra runs gets no further than
    running it first and bettering the two parties it returns,
  ]],
-   // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@92dade83
+   // lean:AOP.A7_3_Party.branch_monotonic@668fb773 lean:AOP.A7_3_Party.exclude_monotonic@242e469c
   lean-calc(calc-branch),
 )
 
@@ -1341,7 +1341,7 @@ directly.
   table.header([`(𝟙×(list(g) concat))h`], [`g`], [`h`]),
   [`include`], [`π₂`], [`cons`],
  [`exclude` #src[]], [`choose`], [`π₂`],
-  // lean:AOP.A7_3_Party.exclude_monotonic@92dade83
+  // lean:AOP.A7_3_Party.exclude_monotonic@242e469c
 ))
 ]<party-mono-branch>
 
@@ -1401,7 +1401,7 @@ directly.
   // Two rows, cut where the fold is opened — inside the `⦇ ⦈` in the first, outside it in the
   // second; the display breaks across the page between them.
   // lean:AOP.A7_2.greedy@a6b26d38 lean:AOP.A7_3_Party.pair_est_le@44802697
-  // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@e8fd3123
+  // lean:AOP.A7_3_Party.graph_le_Λ_est@0a19f8f7 lean:AOP.A7_3_Party.exclude_step@ba4fa6b3
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Party.party_laws") \
     #src[the best of every guest list the president allows is one pass up the tree, each subtree
      handing up its best party with its boss in and its best with the boss out, and `choose` taking

@@ -171,7 +171,7 @@ row((
     #src[thinning at every step of the reduce is a thinning of the whole candidate set]
      // thinning-of-reduce row: Theorem 8.1, p. 195
   ],
-     // lean:AOP.A8_1.thinning@ae51956f
+     // lean:AOP.A8_1.thinning@6d6c6473
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond1") \
     #src[everything the thinning fold keeps is a value of the plain fold — @thin-laws:1, first
      condition, by @cata-fusion from the chain below]],
@@ -180,7 +180,7 @@ row((
   Thm(cols: 1)[#leanf("Freyd.Alg.thinning_cond2") \
     #src[every value of the plain fold is `Q`-above one the thinning fold keeps — @thin-laws:1,
      second condition, by @hylo-mu from the chain below]],
-     // lean:AOP.A8_1.thinning_cond2@a9c5afe4
+     // lean:AOP.A8_1.thinning_cond2@6a7d582f
   lean-calc(calc-81),
 )]<thin-thm81>
 
@@ -210,7 +210,7 @@ row((
   [`ys` holds `y` with `y Q cons(v,p') Q cons(v,p) = a`],
   [the thinned set still holds an element `Q`-no-worse than `a` (`S` monotonic on `Q`, `Q`
    transitive)],
-  // lean:AOP.A8_1.thinning_prefixed@9de9d3e6
+  // lean:AOP.A8_1.thinning_prefixed@3d1dc0a4
 )]<thin-thm81-steps>
 
 // B&dM Corollary 8.1, p. 195: the thinning theorem read against the optimisation problem itself.
@@ -221,7 +221,7 @@ row((
     #src[the thinning fold refines the optimisation problem itself]
      // thinning-est row: Corollary 8.1
   ],
-     // lean:AOP.A8_1.thinning_est@cdac371e
+     // lean:AOP.A8_1.thinning_est@6aa3a7c1
   // The reduce CONSUMES `T` and the transpose inside it BIRTHS `E`, so the two wires meet at one bead.
   lean-calc(calc-cor),
 )]<thin-cor>
@@ -445,7 +445,7 @@ row((
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
 // lean:AOP.A8_3.RelSet.ListRel.thinlist@91e5cf00
 // lean:AOP.A8_3.RelSet.ListRel.le_thinlist_iff@a16f1cea
-// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinlist@2636cb11
+// lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinlist@a3505422
 // lean:AOP.A8_3.RelSet.CL.minlist@4457079b
 )]<thinlist-defn>
 
@@ -475,7 +475,7 @@ row((
   [`listcp` is the list implementation of the cartesian product `cp(F)`],
   [#leanf("Freyd.Alg.RelSet.Poly.Fmap_sort_comp_listcp_le") \ #src[(8.11), `F` polynomial and linear]],
   [the same for every linear polynomial `F`],
-  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minlist@5ed69dd6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@e2340e2b lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
+  // lean:AOP.A8_3.RelSet.CL.bumpFold_eq_singleton_minlist@0407b6bb lean:AOP.A8_3.RelSet.ListRel.sort_comp_thinlist_le@12d9be58 lean:AOP.A8_3.RelSet.ListRel.sort_comp_minlist_le@f29a7afa lean:AOP.A8_3.RelSet.ListRel.sort_comp_list_le@e2552a3c lean:AOP.A8_3.sortRel_comp_filter_le@a19a57e0 lean:AOP.A8_3.RelSet.ListRel.prodMap_sort_comp_merge_le@ad2f5615 lean:AOP.A8_3.RelSet.ListRel.prodMap_setify_recip_comp_merge_le@e29a3c9c lean:AOP.A8_3.map_sortRel_comp_listcp_le@7c091df5 lean:AOP.A8_3.ordered_comp_subseq_le@3d670f97 lean:AOP.A8_3.prodMap_ordered_comp_merge_le@9cd186c6 lean:AOP.A8_3.RelSet.ListRel.sort_comp_filter_le@293fdf1e lean:AOP.A8_3.RelSet.ListRel.Fmap_sort_comp_listcp_le@388575e2
 )]<thinlist-laws>
 
 // B&dM (8.6), p. 201, mirrored.  Row 3 is the content: `thinlist(Q)` only drops elements, and a
@@ -561,7 +561,7 @@ preorder.
     // thinningList row: Theorem 8.2, p. 203
     #src[a fold on sorted lists of partial solutions, thinned at every step, refines the thinning
  specification — at @binthin-data. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.thinningList@934d94b0
+     // lean:AOP.A8_3.RelSet.ListRel.thinningList@b0d971e1
   lean-calc(calc-82),
 )]<thinlist-thm82>
 
@@ -594,7 +594,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.ListRel.sortedAlg_fusion") \
     // sortedAlg-fusion row: B&dM p. 203
     #src[sorting the candidate set turns the thinning algebra into an algebra on sorted lists. ]],
-     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@e02e773e
+     // lean:AOP.A8_3.RelSet.ListRel.sortedAlg_fusion@bdd21d57
   lean-calc(calc-82f),
 )]<thinlist-fusion>
 
