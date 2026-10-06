@@ -179,6 +179,10 @@ public instance permSetoid (Job : Type) : Setoid (List Job) where
 /-- **tardy-defn**: the object `Bag Job`. -/
 @[expose] public abbrev Bag (Job : Type) : RelSet.{0} := ⟨Quotient (permSetoid Job)⟩
 
+-- The note's object language spells a datatype's object lower case and bracketed where the argument
+-- is applied (`bag(Job)`); a NOTATION for the reason `thin(` is one: no term prints its own brackets.
+notation:max "bag(" J ")" => Bag J
+
 /-- **tardy-defn**: `nil`, the empty bag. -/
 @[expose] public def nilBag : (Bag Job).carrier := Quotient.mk (permSetoid Job) []
 

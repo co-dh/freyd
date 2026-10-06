@@ -436,7 +436,7 @@ def binOps : Array (Name × String × String) := #[
   (``Freyd.Alg.symmDiv, "/ₛ", "/ₛ"),
   (``Freyd.Alg.DistributiveAllegory.union, "∪", "∪"),
   (``Freyd.Diag.Biprod.union, "∪", "∪"),
-  -- B&dM's subtraction (p.159), at `∪`'s level by the notation in diag/StrDiagNames.lean.
+  -- B&dM's subtraction (p.159), at `∪`'s level by its notation beside it in `AOP.A4_5`.
   (``Freyd.Alg.sub, "−", "−"),
   (``Freyd.Alg.thenRel, "⨾", "⨾"),
   -- `S Pres Q`: a word, so no token of its own (it would break the identifier `Pres`); the level is

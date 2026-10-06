@@ -164,12 +164,26 @@ public theorem eq_Λ_comp_est {d : RelSet.{0}} {V : Type} (D : (⟨V⟩ : RelSet
 @[expose] public def sums (xs ys : (pow (⟨Nat⟩ : RelSet.{0})).carrier) :
     (pow (⟨Nat⟩ : RelSet.{0})).carrier := fun n => ∃ x y, xs x ∧ ys y ∧ Nat.add x y = n
 
+-- THE SET OF SUMS IS SPELLED AS THE SET IT IS: a name says what the point is called and the
+-- set-builder says what is IN it.  A NOTATION, since no term prints its own brackets.
+notation:max "{x+y∣x∈" xs "∧y∈" ys "}" => sums xs ys
+
 /-- `min(xs)` — the least member of `xs`, the point `est(≤)` sends `xs` to; `xs` stays explicit
     because it is what the printed corner shows.  The witness is a binder, not `Classical.choose`:
     a set of naturals is `Nat → Prop`, nothing computes its least member, and the statement is about
     sets that have one. -/
 @[expose] public def minOf (xs : (pow (⟨Nat⟩ : RelSet.{0})).carrier)
     (m : {a // est leRel xs a}) : Nat := m.val
+
+-- `minOf xs m` is the note's `min(xs)`.  The witness `m` is not written, so the unexpander drops
+-- it and the parser takes it as a hole; a notation cannot, since a notation supplies every argument.
+syntax:max "min(" term ")" : term
+macro_rules | `(min($xs)) => `(minOf $xs _)
+
+open Lean PrettyPrinter in
+@[app_unexpander minOf] public meta def unexpandMinOf : Unexpander
+  | `($_ $xs $_m) => `(min($xs))
+  | _ => throw ()
 
 /-- **`+` distributes over `≤`** — `Distributes` (§7.2) at `Rel(Set)`'s `+` and `est(≤)`: the
     smallest sum of a member of `xs` and a member of `ys` is the sum of the smallest of each.
