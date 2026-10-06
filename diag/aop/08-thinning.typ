@@ -507,6 +507,37 @@ preorder.
   lean-calc(calc-l81),
 )]<thinlist-lem81>
 
+// Lemma 8.1 worked example, asked for by the user: each side step by step on one input.
+#disp[
+At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, input `r(3,{4,1,2})`.
+#table(
+  columns: (2.6cm, 1fr, 4.6cm),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*left side*], [*what it does*], [*result*]),
+  [input], [an `r(e,xs)`, `xs` a set], [`r(3,{4,1,2})`],
+  [`F(sort(≼))`], [sorts the set in the `X` place; `e` is untouched], [`r(3,[1,2,4])`],
+  [`listcp`], [pairs `e` with each element, in list order], [`[r(3,1),r(3,2),r(3,4)]`],
+  [`list(f)`], [`f` on each], [`[4,5,7]`],
+  [`filter(p)`], [keeps the odd ones, order kept], [`[5,7]`],
+)
+#table(
+  columns: (2.6cm, 1fr, 4.6cm),
+  align: (left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*right side*], [*what it does*], [*result*]),
+  [input], [], [`r(3,{4,1,2})`],
+  [`F(∋)`], [relates `r(3,xs)` to each `r(3,x)` with `x∈xs`], [`r(3,4)`, `r(3,1)`, `r(3,2)`],
+  [`f`], [], [`7`, `4`, `5`],
+  [`p`], [only odd values pass], [`7`, `5`],
+  [`Λ(…)`], [collects every result into one set], [`{5,7}`],
+  [`sort(≼)`], [], [`[5,7]`],
+)
+- `⊑`: the left's `[5,7]` is one result of the right; with ties `sort(≼)` has several orders.
+- `f` preserving `≼` is used at `list(f)`: `[1,2,4]` is sorted, so `[4,5,7]` is; `filter(p)` only drops
+  elements. With `f(r(e,x))=e−x` the left gives `[1,−1]` after `p`, not sorted, so `⊑` fails.
+]
+
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
 // LIST: `E` is killed by `est(R)`, `list` by `minlist(R)`.
 #import "../generated/Freyd.Alg.RelSet.ListRel.thinningList.calc.typ" as calc-82
