@@ -708,7 +708,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
 
   [#vstep(EQ, [],
     [`⦇[nil,cpr ⟨h₁,h₂⟩ merge R thinlist(Q)]⦈ minlist(R)` \
-     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @knap-defn:3, @knap-defn:4; `minlist(R)` is `head`, packings
+     #src[`listcp=wrap+cpr`, `gᵢ=[list(nil),hᵢ]` — @Freyd.Alg.RelSet.Knapsack.con_eq_junc, @Freyd.Alg.RelSet.Knapsack.dropFn; `minlist(R)` is `head`, packings
       coming out in descending value]])],
   [],
 )]<knap-laws>
@@ -984,7 +984,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [#lean("Freyd.Alg.RelSet.Tour.tour_laws.rhs", step: true)],
 
   [#vstep(EQ, leanc("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs"),
-    [#leanf("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs") \ #src[@tour-defn:15]])],
+    [#leanf("Freyd.Alg.RelSet.Tour.tour_laws_defn.rhs") \ #src[@Freyd.Alg.RelSet.Tour.tour]])],
   // Empty: the step only names the reduce, and the panel above already draws it.
   [],
 
