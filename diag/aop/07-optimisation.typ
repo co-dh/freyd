@@ -1370,7 +1370,7 @@ directly.
    and it is an equality iff `dom(R)=𝟙`],
 )]<choose-strict>
 
-=== The derivation <sec-party-deriv>
+=== Derivation <sec-party-deriv>
 
 // The pictures are ONE WIRE from `tree A` to `[A]`, a box per factor; `[A]×[A]` is where it runs as
 // TWO — `est((R×R)°)` opens the strand into a pair and `choose/∋` closes it again.  Every `R/∋` is a
@@ -2020,7 +2020,7 @@ zip(that)                                         each row: its square, and the 
   [#lean("Freyd.Alg.RelSet.Van.van_mono_step3.rhs", branch: "inr")],
 )]<van-mono>
 
-=== The derivation <sec-van-deriv>
+=== Derivation <sec-van-deriv>
 
 // B&dM §7.5, pp. 186–188: the specification down to the program.  ONE WIRE, `[A]` to `[[A]]`:
 // nothing forks, so a row is a run of boxes and what changes is the box the wire runs through.  A

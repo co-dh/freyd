@@ -125,6 +125,7 @@ row((
 #import "../generated/Freyd.Alg.thinning_fusion.calc.typ" as calc-81a
 #import "../generated/Freyd.Alg.thinning_prefixed.calc.typ" as calc-81
 #import "../generated/Freyd.Alg.RelSet.ListRel.Fmap_sort_comp_listcp_list_filter_le.calc.typ" as calc-l81
+=== Properties of thinning
 // B&dM (8.2), p. 194, mirrored.  `thin` is a meet of two divisions, so the law is its two halves:
 // the first cancels the singleton against the `∋`, the second is the chain.
 #disp(num: "(8.2)")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -339,6 +340,7 @@ row((
   // lean:AOP.A8_2.pathAlg_monotonic@98a6ae56 lean:AOP.A8_2.pathSplit_comp_headRel_le@c6b78bec lean:AOP.A8_2.pathR_inter_recip_le_pathQ@2e1f5c5d
 )]<path-mono>
 
+=== Derivation
 // B&dM §8.2, p. 198.  The `E` the transpose opens is born OUTSIDE the reduce in the specification
 // and INSIDE it from the thinning theorem on; that is what rows 1 and 2 differ by.
 // TWO `E` wires, and that is the content: the one the source carries inside `L` (top port), and the
@@ -667,6 +669,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [both algebras are monotonic on `R` itself, so `R` is the sort order `P`],
 )]<knap-mono>
 
+=== Derivation
 // B&dM §8.4, p. 206.  The set the transpose opens becomes a LIST at the binary thinning step, and
 // that swap — `E` killed by `est(R)`, `list` killed by `minlist(R)` — is what the right column draws.
 #disp[#calc-table(
@@ -812,6 +815,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<para-mono>
 
+=== Derivation
 // B&dM §8.5, p. 210.  `partition` turns ONE list into two — the paragraph and its lines — so it is a
 // bead on the object wire with three list wires at it, and the candidate set is a fourth.
 // The source is ONE `L`; `partition` births the paragraph's, and the reduce of the last two rows
@@ -965,6 +969,7 @@ At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))
   [both algebras are monotonic on `⊤`, so `⊤` is the sort order `P`],
 )]<tour-mono>
 
+=== Derivation
 // B&dM §8.6, p. 215.  A tour is a PAIR of lists, so `[City]×[City]` is the one unary functor
 // `X↦[X]×[X]` — a bifunctor is never a wire, and this one is partially applied before it is drawn.
 #disp[#calc-table(

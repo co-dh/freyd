@@ -78,6 +78,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 
 == The detab-entab problem
 
+=== Detab
 // B&dM §10.2, p. 246.  `V ≜ prefix° ∩ (fill fill°)` is the whole trick: a bare `prefix°` fails because
 // a prefix of the expansion can be longer than the input once it crosses a tab stop.
 #disp[#deftab(
@@ -121,6 +122,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
 // lean:AOP.A10_2_Detab.Q@7a0a1541 lean:AOP.A10_2_Detab.Q_eq@74544c65
 )]<entab-defn>
 
+=== Derivation
 // B&dM pp.249–250, "we argue": the claim the next chain leaves aside, one row per hint.
 #disp[#calc-table(cols: (1fr,), al: (left + top,),
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Detab.expand_V") \

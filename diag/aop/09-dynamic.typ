@@ -164,6 +164,7 @@
   lean-calc(calc-dptu, breaks: (4, 7)),
 )]<dp-laws-93>
 
+=== Checking the conditions
 // B&dM Proposition 9.1, p. 222, along Exercise 9.5, in Rel(Set).  The book's `(ran V₁ → W₁, W₂)` is
 // the union below: off `ran V₁ ∪ ran V₂` both are empty.
 #disp(num: "Proposition 9.1")[#calc-table(cols: (1fr,), al: (left + top,),
@@ -495,6 +496,7 @@
   [#lean("Freyd.Alg.RelSet.Edit.edit_disj.rhs")],
 )]<edit-disj>
 
+=== Tabulation
 // No picture: a curried function on lists is not a relation between the objects the panels carry.
 // Its own display, because `#disp` cannot break across pages and the panel rows above already fill one.
 #disp[#table(
@@ -985,6 +987,7 @@
   [#lean("Freyd.Alg.RelSet.Code.code_prog.lhs")],
 )]<code-laws>
 
+=== Derivation
 // B&dM p.240, "By Proposition 9.4 we have to check that": the proposition's argument at
 // `Q≜F(⊤+⊤,prefix°)`, its two conditions one row each.
 #disp[#calc-table(
