@@ -1965,9 +1965,9 @@ partial def labelTreeCore (prec : Nat) (e : Expr) (avoid : Option Expr := none) 
         -- (`[d]⧺f (p) (q)`) no `appSpell` reaches: respelled here, it is the note's `f(p,q)`.
         -- A VALUE only, `swallowedPoints?`'s test: an explicit argument whose type is a small set.
         ++ (← (← (List.range args.size).toArray.filterM fun i => do
-          -- only under a `noteArith` notation: everywhere else `appSpell` already re-sets them
-          unless ((Parser.parserExtension.getState (← getEnv)).categories.find? `noteArith).any
-            (·.kinds.contains (stxPeel stx).getKind) do return false
+          -- under ANY notation (`∈`, `⧺`), wherever its rule is declared: only an application head
+          -- has `appSpell` to re-set its operands, and a notation's operand kept Lean's `f x`.
+          if (appParts (stxPeel stx)).isSome then return false
           let a := args[i]!
           let fi ← Meta.getFunInfoNArgs e.getAppFn args.size
           unless (fi.paramInfo[i]?.map (·.isExplicit)).getD true do return false

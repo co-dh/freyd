@@ -677,8 +677,6 @@ open Lean PrettyPrinter in
   | `($_ $r) => `($(mkIdent `inductive) $r)
   | _ => throw ()
 
-/-- The book's closure `R*` (6.7), postfix like `°`. -/
-postfix:max "*" => star
 
 open Lean PrettyPrinter in
 /-- `theta R P Q` is the book's `θ(P,Q)` (6.9): `R` is the section's fixed relation, which the
@@ -1040,17 +1038,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.DigitP] def unexpandDigitP : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
--- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME: one arrow, drawn as a map in
--- one panel and as a relation in another (`splits ≜ graph(splitsFn)`, so no dedup).  KEPT here: the
--- same rule in `AOP.A9_4_Code` printed `q ∈ reduce ws` where this one prints the note's `reduce(ws)`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Code.reduceFn] def unexpandCodeReduceFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `reduce) $args*)
-  | _ => `($(mkIdent `reduce))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Bracket.splitsFn] def unexpandBracketSplitsFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `splits) $args*)
-  | _ => `($(mkIdent `splits))
 -- The constructor `wrap` as a relation is `wrap`, as `consR` is `cons`; a delaborator, since
 -- `wrapR` takes only implicit arguments and prints as a bare constant no `app_unexpander` fires on.
 -- Out of the EMPTY leaf `𝟏` it is the list's `nil`, the name `Label.lean` gives every map out of a
@@ -1196,5 +1183,9 @@ open Lean PrettyPrinter in
 attribute [diag_noted] connected head zero succ union RelSet.Detab.length RelSet.Tex.length RelSet.Edit.op
   RelSet.GCTakeWhile.R RelSet.ListRel.cat RelSet.ListRel.concat RelSet.ListRel.connected RelSet.ListRel.cons
   RelSet.MSS.k RelSet.Paragraph.head RelSet.Tour.head RelSet.Tour.next
+
+/-- The book's closure `R*` (6.7), postfix like `°`.  LAST IN THE FILE: below it every quotation's
+    splice `$args*` parses as `star $args`, so a clause `($_ $args*)` matched nothing. -/
+postfix:max "*" => star
 
 end Freyd.Alg

@@ -1093,3 +1093,8 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.sizeArmFn] public meta def Freyd.Alg.RelSet.Code.unexpandCodeSizeArmFn : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))
+-- `reduce ≜ graph(reduceFn)`: the graph and the function it is taken of share the note's name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.reduceFn] public meta def Freyd.Alg.RelSet.Code.unexpandCodeReduceFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `reduce) $args*)
+  | _ => `($(mkIdent `reduce))
