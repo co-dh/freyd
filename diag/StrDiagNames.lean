@@ -1039,8 +1039,8 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Digits.DigitP] def unexpandDigitP : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
 -- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME: one arrow, drawn as a map in
--- one panel and as a relation in another.  `reduceFn`'s rule is KEPT here: the same rule in
--- `AOP.A9_4_Code` printed `q ∈ reduce ws` where this one prints the note's `q ∈ reduce(ws)`.
+-- one panel and as a relation in another (`splits ≜ graph(splitsFn)`, so no dedup).  KEPT here: the
+-- same rule in `AOP.A9_4_Code` printed `q ∈ reduce ws` where this one prints the note's `reduce(ws)`.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Code.reduceFn] def unexpandCodeReduceFn : Unexpander
   | `($_ $args*) => `($(mkIdent `reduce) $args*)
