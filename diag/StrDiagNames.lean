@@ -1636,17 +1636,15 @@ open Lean PrettyPrinter in
   | `($_ $q:ident) =>
     `($(mkIdent (Name.mkSimple (q.getId.eraseMacroScopes.toString (escape := false) ++ "₂"))))
   | _ => `($(mkIdent `Q₂))
--- `baseStepFn` is the note's algebra `[base,step]`, and only at an injection is it one arm:
--- `[base,step](l(u)) = base(u)`, `[base,step](r(q)) = step(q)`; any other argument keeps the whole algebra.
+-- The edit algebra is the junction `[base,step]`; its arms are declarations of their own
+-- (`baseFn`, `stepFn`), so a term at one arm is spelled by that arm and no rule here guesses it.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.baseStepFn] def unexpandEditBaseStep : Unexpander
-  | `($_ l($u)) => `($(mkIdent `base) $u)
-  | `($_ r($q)) => `($(mkIdent `step) $q)
-  -- `unexpandInrTuple` has already opened a tuple argument: `r((a,b))` arrives as `r(a,b)`.
-  -- Its components stay the printer's own nodes, read as B&dM's `step(cpy a,(xs,ys))`.
-  | `($_ r($a,$bs,*)) => `($(mkIdent `step) $a $(bs.getElems)*)
-  | `($_ $args*) => `($(mkIdent (Name.mkSimple "[base,step]")) $args*)
   | _ => `($(mkIdent (Name.mkSimple "[base,step]")))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.stepFn] def unexpandEditStepFn : Unexpander | _ => `($(mkIdent `step))
+open Lean PrettyPrinter in
+@[app_unexpander RelSet.Edit.baseFn] def unexpandEditBaseFn : Unexpander | _ => `($(mkIdent `base))
 -- A projection applied to a point is the note's `π₁`/`π₂` applied to it: `V(π₂(p),π₂(q))`.
 open Lean PrettyPrinter in
 @[app_unexpander Prod.fst] def unexpandProdFst : Unexpander

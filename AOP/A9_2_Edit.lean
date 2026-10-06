@@ -136,14 +136,23 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
   map_comp R S := op_comp R S
   map_mono h := op_mono h
 
-/-- **edit-defn**: `base` returning `([],[])`, and `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`,
-    `step (del a,(xs,ys))=([a]⧺xs,ys)`, `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
+/-- **edit-defn**: `base` returning `([],[])`. -/
+@[expose] public def baseFn (_ : Unit) : ConsList Unit Char × ConsList Unit Char :=
+  (ConsList.wrap (), ConsList.wrap ())
+
+/-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`, `step (del a,(xs,ys))=([a]⧺xs,ys)`,
+    `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
+@[expose] public def stepFn :
+    Op Char × (ConsList Unit Char × ConsList Unit Char) → ConsList Unit Char × ConsList Unit Char
+  | (Op.cpy a, p) => (ConsList.cons a p.1, ConsList.cons a p.2)
+  | (Op.del a, p) => (ConsList.cons a p.1, p.2)
+  | (Op.ins a, p) => (p.1, ConsList.cons a p.2)
+
+/-- **edit-defn**: the junction `[base,step]` of the two arms, B&dM's algebra of `edit`. -/
 @[expose] public def baseStepFn :
     (Fobj Unit (Op Char) (dPair Char)).carrier → ConsList Unit Char × ConsList Unit Char
-  | Sum.inl _ => (ConsList.wrap (), ConsList.wrap ())
-  | Sum.inr (Op.cpy a, p) => (ConsList.cons a p.1, ConsList.cons a p.2)
-  | Sum.inr (Op.del a, p) => (ConsList.cons a p.1, p.2)
-  | Sum.inr (Op.ins a, p) => (p.1, ConsList.cons a p.2)
+  | Sum.inl u => baseFn u
+  | Sum.inr q => stepFn q
 
 /-- **edit-defn**: the algebra `[base,step] : F(Op,[Char]×[Char])⟶[Char]×[Char]`. -/
 @[expose] public def editAlg : (F Unit (Op Char)).obj (dPair Char) ⟶ dPair Char :=
@@ -152,7 +161,7 @@ public theorem op_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : opRel 
 /-- **edit-defn**: `edit≜⦇[base,step]⦈`, read as the function it is. -/
 @[expose] public def editFn : ConsList Unit (Op Char) → ConsList Unit Char × ConsList Unit Char
   | ConsList.wrap _ => (ConsList.wrap (), ConsList.wrap ())
-  | ConsList.cons op es => baseStepFn (Sum.inr (op, editFn es))
+  | ConsList.cons op es => stepFn (op, editFn es)
 
 @[simp] public theorem editFn_nil (u : Unit) :
     editFn (ConsList.wrap u : ConsList Unit (Op Char))
@@ -271,7 +280,7 @@ public theorem R_recip_trans : (R Char)° ≫ (R Char)° ⊑ (R Char)° :=
 public theorem unstep_sound [DecidableEq Char]
     (p : ConsList Unit Char × ConsList Unit Char)
     (q : Op Char × (ConsList Unit Char × ConsList Unit Char)) (h : inlistP (unstepFn p) q) :
-    baseStepFn (Sum.inr q) = p := by
+    stepFn q = p := by
   obtain ⟨xs, ys⟩ := p
   cases xs with
   | wrap _ =>
@@ -303,14 +312,14 @@ public theorem unstep_sound [DecidableEq Char]
 public theorem unstep_complete [DecidableEq Char]
     (p : ConsList Unit Char × ConsList Unit Char)
     (q : Op Char × (ConsList Unit Char × ConsList Unit Char))
-    (h : baseStepFn (Sum.inr q) = p) :
+    (h : stepFn q = p) :
     ∃ q', inlistP (unstepFn p) q' ∧ V Char q'.2 q.2 := by
   obtain ⟨op, x, y⟩ := q
   cases op with
   | cpy a =>
     subst h
     refine ⟨(Op.cpy a, (x, y)), ?_, ⟨suffixP.refl x, suffixP.refl y⟩⟩
-    simp [baseStepFn, unstepFn, inlistP]
+    simp [baseStepFn, stepFn, unstepFn, inlistP]
   | del a =>
     cases y with
     | wrap u =>
@@ -321,11 +330,11 @@ public theorem unstep_complete [DecidableEq Char]
       · subst hab
         subst h
         refine ⟨(Op.cpy a, (x, ys)), ?_, ⟨suffixP.refl x, Or.inr (suffixP.refl ys)⟩⟩
-        simp [baseStepFn, unstepFn, inlistP]
+        simp [baseStepFn, stepFn, unstepFn, inlistP]
       · subst h
         refine ⟨(Op.del a, (x, ConsList.cons b ys)), ?_,
           ⟨suffixP.refl x, suffixP.refl (ConsList.cons b ys)⟩⟩
-        simp [baseStepFn, unstepFn, inlistP, if_neg hab]
+        simp [baseStepFn, stepFn, unstepFn, inlistP, if_neg hab]
   | ins b =>
     cases x with
     | wrap u =>
@@ -336,11 +345,11 @@ public theorem unstep_complete [DecidableEq Char]
       · subst hab
         subst h
         refine ⟨(Op.cpy a, (xs, y)), ?_, ⟨Or.inr (suffixP.refl xs), suffixP.refl y⟩⟩
-        simp [baseStepFn, unstepFn, inlistP]
+        simp [baseStepFn, stepFn, unstepFn, inlistP]
       · subst h
         refine ⟨(Op.ins b, (ConsList.cons a xs, y)), ?_,
           ⟨suffixP.refl (ConsList.cons a xs), suffixP.refl y⟩⟩
-        simp [baseStepFn, unstepFn, inlistP, if_neg hab]
+        simp [baseStepFn, stepFn, unstepFn, inlistP, if_neg hab]
 
 /-! ## `edit-laws` — monotonicity, Proposition 9.2 at `length` -/
 
@@ -741,13 +750,13 @@ public theorem edit_laws :
 /-- **edit-defn**: `step`, the second arm of `[base,step]`.  The note writes the third row at
     this arm alone, so the arm has the name the note gives it. -/
 @[expose] public def step : (⟨Op Char × (dPair Char).carrier⟩ : RelSet.{0}) ⟶ dPair Char :=
-  graph (fun q => baseStepFn (Sum.inr q))
+  graph stepFn
 
 /-- `step` never returns the empty pair — `cpy` and `del` put a character on the left string,
     `ins` one on the right — and `base` returns nothing else.  This is Proposition 9.1's
     disjointness hypothesis at `[base,step]`. -/
 public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
-    baseStepFn (Sum.inr q) ≠ ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) := by
+    stepFn q ≠ ((ConsList.wrap () : ConsList Unit Char), ConsList.wrap ()) := by
   obtain ⟨op, p⟩ := q
   cases op with
   | cpy a => intro h; injection h with h1 _; cases h1
@@ -755,7 +764,7 @@ public theorem step_ne_base (q : Op Char × (dPair Char).carrier) :
   | ins a => intro h; injection h with _ h2; cases h2
 
 /-- **edit-defn**: `base`, the first arm of `[base,step]`, returning `([],[])`. -/
-@[expose] public def base : dL Unit ⟶ dPair Char := graph (fun d => baseStepFn (Sum.inl d))
+@[expose] public def base : dL Unit ⟶ dPair Char := graph baseFn
 
 /-- **edit-defn**: the algebra IS the junction `[base,step]` of its two arms, as B&dM write it. -/
 public theorem editAlg_junc :
@@ -766,7 +775,7 @@ public theorem editAlg_junc :
     | inl d =>
       cases d; simp [editAlg, base, junc, graph, sumCop]
       exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
-    | inr q => simp [editAlg, step, junc, graph, sumCop]
+    | inr q => simp [editAlg, step, junc, graph, sumCop]; exact Iff.rfl
 
 /-- **edit-defn**: `empty`, the coreflexive on `(xs,ys)` with both lists empty. -/
 @[expose] public def empty : dPair Char ⟶ dPair Char :=
@@ -795,16 +804,16 @@ public theorem con_cons (o : Op Char) (es : ConsList Unit (Op Char)) :
 
 /-- **edit-defn**: `base` returns `([],[])`. -/
 public theorem base_nil (u : Unit) :
-    baseStepFn (Char := Char) (Sum.inl u) = (ConsList.wrap (), ConsList.wrap ()) := rfl
+    baseFn (Char := Char) u = (ConsList.wrap (), ConsList.wrap ()) := rfl
 /-- **edit-defn**: `step (cpy a,(xs,ys))=([a]⧺xs,[a]⧺ys)`. -/
 public theorem step_cpy (a : Char) (xs ys : ConsList Unit Char) :
-    baseStepFn (Sum.inr (Op.cpy a, (xs, ys))) = (ConsList.cons a xs, ConsList.cons a ys) := rfl
+    stepFn (Op.cpy a, (xs, ys)) = (ConsList.cons a xs, ConsList.cons a ys) := rfl
 /-- **edit-defn**: `step (del a,(xs,ys))=([a]⧺xs,ys)`. -/
 public theorem step_del (a : Char) (xs ys : ConsList Unit Char) :
-    baseStepFn (Sum.inr (Op.del a, (xs, ys))) = (ConsList.cons a xs, ys) := rfl
+    stepFn (Op.del a, (xs, ys)) = (ConsList.cons a xs, ys) := rfl
 /-- **edit-defn**: `step (ins a,(xs,ys))=(xs,[a]⧺ys)`. -/
 public theorem step_ins (a : Char) (xs ys : ConsList Unit Char) :
-    baseStepFn (Sum.inr (Op.ins a, (xs, ys))) = (xs, ConsList.cons a ys) := rfl
+    stepFn (Op.ins a, (xs, ys)) = (xs, ConsList.cons a ys) := rfl
 
 /-- **edit-defn**: `V≜suffix°×suffix°`. -/
 public theorem V_eq : V Char = rprodMap (suffixR (A := Char))° (suffixR (A := Char))° := rfl
@@ -1025,12 +1034,12 @@ public theorem editAlg_laxNatural :
   refine le_iff.mpr fun u q => ?_
   rintro ⟨v, hv, rfl⟩
   rcases u with d | ⟨op, xs, ys⟩ <;> rcases v with d' | ⟨op', xs', ys'⟩
-  · simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+  · simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, baseFn, stepFn, Relator.prod, prodMap, RelProd.pair,
       instHasRelProd, rprodMap, listRelator, list, listP]
   · exact (hv : False).elim
   · exact (hv : False).elim
   · rcases op with a | a | a <;> rcases op' with b | b | b <;>
-      simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair,
+      simp_all [Fbimap, clF, Poly.bimapR, editAlg, graph, baseStepFn, baseFn, stepFn, Relator.prod, prodMap, RelProd.pair,
         instHasRelProd, rprodMap, opRel, opP, listRelator, list, listP]
 
 /-- **`step` is LAX natural** — the `inr` arm of `editAlg_laxNatural`, at the arm's own lane
@@ -1045,7 +1054,7 @@ public theorem step_laxNatural :
   obtain ⟨op, xs, ys⟩ := u
   obtain ⟨op', xs', ys'⟩ := v
   rcases op with a | a | a <;> rcases op' with b | b | b <;>
-    simp_all [step, graph, baseStepFn, Relator.prod, prodMap, RelProd.pair, instHasRelProd,
+    simp_all [step, graph, baseStepFn, stepFn, Relator.prod, prodMap, RelProd.pair, instHasRelProd,
       rprodMap, opRelator, opRel, opP, listRelator, list, listP]
 
 /-- An edit sequence and one it is `Op(S)`-related to reconstitute `S`-related strings: every
