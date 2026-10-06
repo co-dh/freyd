@@ -71,3 +71,10 @@ public instance instCatFAlg {F : Relator 𝒜 𝒜} : Cat.{v₁} (FAlg F) where
   assoc f g h := FHom.ext (Cat.assoc f.h g.h h.h)
 
 end Freyd.Alg
+
+-- printing-only: `IsFHom f g h` is the note's `h : f⟶g`, an arrow of `Alg(F)` from the algebra `f`
+-- to the algebra `g`, which a type ascription already spells.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.IsFHom] public meta def Freyd.Alg.unexpandIsFHom : Unexpander
+  | `($_ $f $g $h) => `(($h : $f ⟶ $g))
+  | _ => throw ()

@@ -212,3 +212,9 @@ public theorem sort_rec :
   rw [hw, hc, Allegory.recip_recip]
 
 end Freyd.Alg.RelSet.Sort
+
+-- printing-only: the preorder is fixed for the whole of §6.6, so `ok` is written without it (p.151).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Sort.ok] public meta def Freyd.Alg.RelSet.Sort.unexpandOk : Unexpander
+  | `($_ $_) => `($(mkIdent `ok))
+  | _ => throw ()

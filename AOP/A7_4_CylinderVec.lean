@@ -262,3 +262,15 @@ public theorem genFold_run :
 end Vec
 
 end Freyd.Alg
+
+-- printing-only: an index functor is the note's `[k]`, one lane per axis, so each dimension of a
+-- matrix gets its own colour; the path count `pow3 m` is the note's `3^m`, and it sits inside a
+-- `Vec` type index, where the label printer opens no `diag_unfold`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Vec] public meta def Freyd.Alg.Vec.unexpandVec : Unexpander
+  | `($_ $n) => `([$n])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Vec.pow3] public meta def Freyd.Alg.Vec.unexpandPow3 : Unexpander
+  | `($_ $m) => `(3 ^ $m)
+  | _ => throw ()

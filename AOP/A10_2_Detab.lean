@@ -1407,3 +1407,31 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `String))
 
 end Freyd.Alg.RelSet.Detab
+
+-- printing-only (B&dM p.246): the thinning preorder `Q`, its two orders `V` (output string) and `U`
+-- (character), and the arrows `expand`, `detab`, `prefix` are stated over the section's tab width
+-- and its three characters, which are the section's context and not part of the name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.Q] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabQ : Unexpander
+  | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.V] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabV : Unexpander
+  | _ => `($(mkIdent `V))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.U] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabU : Unexpander
+  | _ => `($(mkIdent `U))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.expand] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabExpand : Unexpander
+  | _ => `($(mkIdent `expand))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.expandFn] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabExpandFn : Unexpander
+  | `($_ $_ $_ $_ $_ $x $a) => `($(mkIdent `expand) $x $a)
+  | `($_ $_ $_ $_ $_ $x) => `($(mkIdent `expand) $x)
+  | _ => `($(mkIdent `expand))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.detabR] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabFn : Unexpander
+  | _ => `($(mkIdent `detab))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Detab.prefixS] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabPrefix : Unexpander
+  | `($_ $x $y) => `($(mkIdent `prefix) $x $y)
+  | _ => `($(mkIdent `prefix))

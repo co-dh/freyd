@@ -1870,3 +1870,30 @@ notation:max "list(" R ")" => list R
 
 end Freyd.Alg.RelSet.ListRel
 
+
+-- printing-only: the list sum and length are the note's `sum` and `length` (the `c` only tells the
+-- cons-list function from the relation); `suffixP` is the book's `suffix` read pointwise; `inlistP
+-- xs q` is membership `q∈xs`; and the preorder is fixed for the whole of §6.6, so `ordered` is
+-- written without it (B&dM p.151).
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.csum] public meta def Freyd.Alg.RelSet.ListRel.unexpandCsum : Unexpander
+  | _ => `($(mkIdent `sum))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.clen] public meta def Freyd.Alg.RelSet.ListRel.unexpandClen : Unexpander
+  | _ => `($(mkIdent `length))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.suffixP] public meta def Freyd.Alg.RelSet.ListRel.unexpandSuffixP : Unexpander
+  | `($_ $x $y) => `($(mkIdent `suffix) $x $y)
+  | _ => `($(mkIdent `suffix))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.inlistP] public meta def Freyd.Alg.RelSet.ListRel.unexpandInlistP : Unexpander
+  | `($_ $xs $q) => `($q ∈ $xs)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.ordered] public meta def Freyd.Alg.RelSet.ListRel.unexpandOrdered : Unexpander
+  | `($_ $_) => `($(mkIdent `ordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.ListRel.orderedP] public meta def Freyd.Alg.RelSet.ListRel.unexpandOrderedP : Unexpander
+  | `($_ $_ $x) => `(orderedP $x)
+  | _ => throw ()

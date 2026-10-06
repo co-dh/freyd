@@ -1075,3 +1075,26 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `reduce))
 
 end Freyd.Alg.RelSet.Code
+
+-- printing-only (B&dM p.226): the ordering is the note's `R`; `prefixS x y` is "`x` is a prefix of
+-- `y`", the note's `prefix°` (`Q≜F(⊤+⊤,prefix°)`), its proper part the book's `init⁺`, and the
+-- string append the book's `cat`.  The size algebra's node arm is written by its body
+-- `distr [𝟙×c,𝟙×p] plus`: it computes on points, so its body prints no arrow.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.R] public meta def Freyd.Alg.RelSet.Code.unexpandCodeR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.prefixS] public meta def Freyd.Alg.RelSet.Code.unexpandCodePrefixS : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "prefix°")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "prefix°")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.properPrefixS] public meta def Freyd.Alg.RelSet.Code.unexpandCodeProperPrefixS : Unexpander
+  | `($_ $args*) => `($(mkIdent (Name.mkSimple "init⁺")) $args*)
+  | _ => `($(mkIdent (Name.mkSimple "init⁺")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.sappend] public meta def Freyd.Alg.RelSet.Code.unexpandCodeSappend : Unexpander
+  | `($_ $args*) => `($(mkIdent `cat) $args*)
+  | _ => `($(mkIdent `cat))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.sizeArmFn] public meta def Freyd.Alg.RelSet.Code.unexpandCodeSizeArmFn : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "distr [𝟙×c,𝟙×p] plus")))

@@ -572,3 +572,12 @@ end Party
 end RelSet
 
 end Freyd.Alg
+
+-- printing-only: the party's ordering `R` and its `cost` drop the `rating`, which is the section's
+-- context and not part of the name.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.R] public meta def Freyd.Alg.RelSet.Party.unexpandPartyR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Party.costFn] public meta def Freyd.Alg.RelSet.Party.unexpandPartyCostFn : Unexpander
+  | _ => `($(mkIdent `cost))

@@ -635,3 +635,28 @@ public theorem para_laws (hlen : ∀ a, 0 ≤ len a) (hfit : ∀ a, len a ≤ w)
   exact para_laws_step1 hlen
 
 end Freyd.Alg.RelSet.Paragraph
+
+-- printing-only (B&dM pp.207–210): the ordering is the note's `R` and the step algebra `S` (drawn
+-- opened, so the letter shows only where a label names it whole); the length function `len` is the
+-- section's context and is dropped, while `w` and the paragraph stay as the book writes them.
+-- The predicate under the coreflexive `fits(w)` is written `fits`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.R] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParagraphR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.Salg] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParagraphSalg : Unexpander
+  | _ => `($(mkIdent `S))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.widthFn] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaWidth : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `width) $x)
+  | _ => `($(mkIdent `width))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.wasteFn] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaWaste : Unexpander
+  | `($_ $_ $w $p) => `($(mkIdent `waste) $w $p)
+  | `($_ $_ $w) => `($(mkIdent `waste) $w)
+  | _ => `($(mkIdent `waste))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Paragraph.allFitP] public meta def Freyd.Alg.RelSet.Paragraph.unexpandParaAllFitP : Unexpander
+  | `($_ $_ $w $p) => `($(mkIdent `fits) $w $p)
+  | `($_ $_ $w) => `($(mkIdent `fits) $w)
+  | _ => `($(mkIdent `fits))

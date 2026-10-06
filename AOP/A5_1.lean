@@ -322,3 +322,18 @@ section
     on an arrow some other law produced. -/
 register_label_attr diag_induced
 end
+
+-- printing-only: the identity lane is the note's `𝟙`, the letter the identity arrow wears; a
+-- composite lane is juxtaposition in diagram order (`Relator.comp F G` is first `F` then `G`); a
+-- constant lane is the object it is constantly.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Relator.idRelator] public meta def Freyd.Alg.Relator.unexpandIdRelator : Unexpander
+  | _ => `($(mkIdent (Name.mkSimple "𝟙")))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Relator.comp] public meta def Freyd.Alg.Relator.unexpandRelatorComp : Unexpander
+  | `($_ $F $G) => `($F $G)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Relator.const] public meta def Freyd.Alg.Relator.unexpandRelatorConst : Unexpander
+  | `($_ $A) => `($A)
+  | _ => throw ()

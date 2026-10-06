@@ -654,3 +654,22 @@ public theorem split_step [DecidableRel R] (hconn : connected R) :
         fun c hc => hc.elim (fun e => e ▸ (hconn a b).resolve_left h) (hy c)⟩
 
 end Freyd.Alg.RelSet.Sort
+
+-- printing-only: quicksort's tree-fold arrows and `split`'s step under the book's names (B&dM
+-- pp.154–155); the preorder is fixed for the whole section and is not written.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Sort.inordered] public meta def Freyd.Alg.RelSet.Sort.unexpandInordered : Unexpander
+  | `($_ $_) => `($(mkIdent `inordered))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Sort.check] public meta def Freyd.Alg.RelSet.Sort.unexpandCheck : Unexpander
+  | `($_ $_) => `($(mkIdent `check))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Sort.check'] public meta def Freyd.Alg.RelSet.Sort.unexpandCheck' : Unexpander
+  | `($_ $_) => `($(mkIdent `check'))
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Sort.step] public meta def Freyd.Alg.RelSet.Sort.unexpandStep : Unexpander
+  | `($_ $_) => `($(mkIdent `step))
+  | _ => throw ()

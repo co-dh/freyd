@@ -684,3 +684,18 @@ public theorem comp_topMor_adj_id_inter_div_topMor {b c : 𝒜} (R : c ⟶ b) {X
   · intro h; exact (le_div_iff X R (topMor c b)).mp (le_trans h (inter_lb_right _ _))
 
 end Freyd.Alg
+
+-- printing-only: the product of two relators is the note's `F×G`; Ex 5.10's `unzip(F)` names only
+-- the relator, the two objects being the wires' own; the diagonal relator's lane is `Δ`, the
+-- category it is taken over being the panel's region the lane already sits in.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Relator.prod] public meta def Freyd.Alg.Relator.unexpandRelatorProd : Unexpander
+  | `($_ $F $G) => `($F × $G)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.unzip] public meta def Freyd.Alg.unexpandUnzip : Unexpander
+  | `($_ $F $_ $_) => `($(mkIdent `unzip) $F)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.Δ] public meta def Freyd.Alg.unexpandDiagonalRelator : Unexpander
+  | _ => `($(mkIdent `Δ))

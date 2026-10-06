@@ -593,3 +593,31 @@ public theorem tour_laws :
   exact key
 
 end Freyd.Alg.RelSet.Tour
+
+-- printing-only: the section's ordering is the note's `R` and its thinning preorder `Q` (the note's
+-- `Q` already carries the `head2` conjunct; Lean's `Q` without it is never drawn); the cost function
+-- `tc` is the section's context, dropped as `R` drops it.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.R] public meta def Freyd.Alg.RelSet.Tour.unexpandTourR : Unexpander
+  | _ => `($(mkIdent `R))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.Qc] public meta def Freyd.Alg.RelSet.Tour.unexpandTourQc : Unexpander
+  | _ => `($(mkIdent `Q))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.droplFn] public meta def Freyd.Alg.RelSet.Tour.unexpandDroplFn : Unexpander
+  | _ => `($(mkIdent `dropl))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.droprFn] public meta def Freyd.Alg.RelSet.Tour.unexpandDroprFn : Unexpander
+  | _ => `($(mkIdent `dropr))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.outcost] public meta def Freyd.Alg.RelSet.Tour.unexpandTourOutcost : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `outcost) $x)
+  | _ => `($(mkIdent `outcost))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.incost] public meta def Freyd.Alg.RelSet.Tour.unexpandTourIncost : Unexpander
+  | `($_ $_ $x) => `($(mkIdent `incost) $x)
+  | _ => `($(mkIdent `incost))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tour.cost] public meta def Freyd.Alg.RelSet.Tour.unexpandTourCost : Unexpander
+  | `($_ $_ $t) => `($(mkIdent `cost) $t)
+  | _ => `($(mkIdent `cost))

@@ -204,3 +204,15 @@ public theorem zip_lax_natural (R : A ⟶ B) {C D : RelSet.{0}} (S : C ⟶ D) :
   le_of_eq (zip_natural R S)
 
 end Freyd.Alg.RelSet.Tuple
+
+-- printing-only: the relator `[n]` on relations is the lane the index functor `Vec n` is on
+-- functions, and its action on an arrow is that operator APPLIED, curried — `Vec(n)(cons)` —
+-- because the length is the operator's own parameter and the arrow is what it acts on.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tuple.tupleRelator] public meta def Freyd.Alg.RelSet.Tuple.unexpandTupleRelator : Unexpander
+  | `($_ $n) => `([$n])
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tuple.tupleP] public meta def Freyd.Alg.RelSet.Tuple.unexpandTupleP : Unexpander
+  | `($_ $n $R) => `(($(mkIdent `Vec) $n) $R)
+  | _ => throw ()

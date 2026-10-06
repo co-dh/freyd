@@ -1145,3 +1145,25 @@ open Lean PrettyPrinter in
   | _ => `($(mkIdent `step))
 
 end Freyd.Alg.RelSet.Tex
+
+-- printing-only (B&dM p.263): `Real`'s constants wear the book's arithmetic, the rational `f` and
+-- the program's `f` share the book's letter, a digit pair prints as its digit, and the graph of
+-- `intervalFn` is `interval`.
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.zeroR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexZeroR : Unexpander
+  | _ => `(0)
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.oneR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexOneR : Unexpander
+  | _ => `(1)
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.fR] public meta def Freyd.Alg.RelSet.Tex.unexpandTexFR : Unexpander
+  | `($_ $args*) => `($(mkIdent `f) $args*)
+  | _ => `($(mkIdent `f))
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.Prog.dig] public meta def Freyd.Alg.RelSet.Tex.unexpandTexProgDig : Unexpander
+  | `($_ $d $_) => `($d)
+  | _ => throw ()
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Tex.intervalFn] public meta def Freyd.Alg.RelSet.Tex.unexpandTexIntervalFn : Unexpander
+  | `($_ $args*) => `($(mkIdent `interval) $args*)
+  | _ => `($(mkIdent `interval))
