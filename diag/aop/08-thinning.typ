@@ -448,13 +448,8 @@ row((
 // lean:AOP.A8_3.RelSet.CL.minlist@4457079b
 )]<thinlist-defn>
 
-// The data Theorem 8.2 and its fusion condition are stated at: no single definition, so it stays
-// a list of assumptions rather than a row of the table above.
-#disp[#definition[
-*Binary thinning* data: #h(4pt) `Q` a preorder with `Q⊑R` and both `f₁p₁`, `f₂p₂` monotonic on
-`Q`; #h(4pt) `≼` a connected preorder with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `R` a
-preorder.
-]]<binthin-data>
+// B&dM's paragraph title "Sorting sets", p. 200: `sort(≼)`, its laws (8.6)–(8.11) and Lemma 8.1.
+=== Sorting sets
 
 #disp[#table(
   columns: (1fr, 1fr),
@@ -546,6 +541,17 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
   elements. With `f(r(e,x))=e−x` the left gives `[1,−1]` after `p`, not sorted, so `⊑` fails.
 ]
 
+// B&dM Theorem 8.2, p. 202–203: the binary thinning theorem.
+=== Binary thinning
+
+// The data Theorem 8.2 and its fusion condition are stated at: no single definition, so it stays
+// a list of assumptions rather than a row of the table above.
+#disp[#definition[
+*Binary thinning* data: #h(4pt) `Q` a preorder with `Q⊑R` and both `f₁p₁`, `f₂p₂` monotonic on
+`Q`; #h(4pt) `≼` a connected preorder with both `f₁`, `f₂` monotonic on `≼`; #h(4pt) `R` a
+preorder.
+]]<binthin-data>
+
 // B&dM Theorem 8.2, p. 203, mirrored.  The candidate SET of the thinning theorem becomes a sorted
 // LIST: `E` is killed by `est(R)`, `list` by `minlist(R)`.
 #import "../generated/Freyd.Alg.RelSet.ListRel.thinningList.calc.typ" as calc-82
@@ -557,6 +563,29 @@ At `F(X)=L+E×X`, `f(r(e,x))=e+x`, `≼` is `≤`, `p` passes the odd numbers, i
      // lean:AOP.A8_3.RelSet.ListRel.thinningList@934d94b0
   lean-calc(calc-82),
 )]<thinlist-thm82>
+
+// Theorem 8.2 worked example, asked for by the user, laid out like the Lemma 8.1 one: one row per
+// fold step.  `Q` is `=`, so `Q⊑R` and both `fᵢpᵢ` monotonic on `Q` hold trivially.
+#disp[
+At `F(X)=L+E×X`, `f₁(inl(l))=f₂(inl(l))=0`, `f₁(r(e,x))=x`, `f₂(r(e,x))=e+x`, `p₁` passes all,
+`p₂` passes values `≤6`, `≼` is `≤`, `Q` is `=`, `R` is `≥`, input `[3,3,1]`.
+#table(
+  columns: (2.8cm, 1fr, 1fr, 1fr, 1fr),
+  align: (left + horizon, left + horizon, left + horizon, left + horizon, left + horizon),
+  inset: 5pt, stroke: 0.4pt + luma(190),
+  table.header([*input*], [`list(f₁) filter(p₁)`], [`list(f₂) filter(p₂)`], [`merge(≼)`],
+    [`thinlist(Q)`]),
+  [`inl(l)`], [`[0]`], [`[0]`], [`[0,0]`], [`[0]`],
+  [`r(1,[0])`], [`[0]`], [`[1]`], [`[0,1]`], [`[0,1]`],
+  [`r(3,[0,1])`], [`[0,1]`], [`[3,4]`], [`[0,1,3,4]`], [`[0,1,3,4]`],
+  [`r(3,[0,1,3,4])`], [`[0,1,3,4]`], [`[3,4,6]`], [`[0,1,3,3,4,4,6]`], [`[0,1,3,4,6]`],
+  [`minlist(R)`], [], [], [], [`6`],
+)
+- `merge(≼)` is one pass: both copies arrive `≤`-sorted (`fᵢ` monotonic on `≼`, `filter(pᵢ)` only
+  drops), so it only compares their two heads.
+- `thinlist(Q)` compares neighbours only; the list is `≤`-sorted, so equal values are neighbours and one
+  pass drops every repeat.
+]
 
 // The fusion condition of the first step above, B&dM p. 203.
 #import "../generated/Freyd.Alg.RelSet.ListRel.sortedAlg_fusion.calc.typ" as calc-82f
