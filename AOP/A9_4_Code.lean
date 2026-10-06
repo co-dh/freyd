@@ -1069,11 +1069,6 @@ open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Code.extendAlg] public meta def unexpandExtendAlg : Unexpander
   | _ => `($(mkIdent (Name.mkSimple "[nil,extend]")))
 
-open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Code.reduceFn] public meta def unexpandReduceFn : Unexpander
-  | `($_ $args*) => `($(mkIdent `reduce) $args*)
-  | _ => `($(mkIdent `reduce))
-
 end Freyd.Alg.RelSet.Code
 
 -- printing-only (B&dM p.226): the ordering is the note's `R`; `prefixS x y` is "`x` is a prefix of

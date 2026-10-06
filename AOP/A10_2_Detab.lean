@@ -1429,7 +1429,7 @@ open Lean PrettyPrinter in
   | `($_ $_ $_ $_ $_ $x) => `($(mkIdent `expand) $x)
   | _ => `($(mkIdent `expand))
 open Lean PrettyPrinter in
-@[app_unexpander Freyd.Alg.RelSet.Detab.detabR] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabFn : Unexpander
+@[app_unexpander Freyd.Alg.RelSet.Detab.detabR] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabR : Unexpander
   | _ => `($(mkIdent `detab))
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Detab.prefixS] public meta def Freyd.Alg.RelSet.Detab.unexpandDetabPrefix : Unexpander
