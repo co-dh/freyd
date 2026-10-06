@@ -43,9 +43,9 @@ open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.SL
   | x, k + 1 => SnocList.snoc (pad blank x k) blank
 
 /-- The length of a string. -/
-@[expose] public def slen : Str → Nat
+@[expose] public def length : Str → Nat
   | SnocList.wrap _ => 0
-  | SnocList.snoc x _ => slen x + 1
+  | SnocList.snoc x _ => length x + 1
 
 /-- **entab-defn**: `col≜⦇[zero,count]⦈`, `count (c,a)=(a=NL→0,c+1)`. -/
 @[expose] public def colFn (nl : Char) : Str → Nat
@@ -79,7 +79,7 @@ open Freyd Freyd.Alg.RelSet Freyd.Alg.RelSet.SL
 
 /-- **entab-defn**: the algebra IS the junction `[nil,expand]` the note writes. -/
 public theorem expandAlg_eq_junc (n : Nat) (tb nl blank : Char) :
-    graph (expandAlgFn n tb nl blank) = junc (sumCop _ _) nilR (expand n tb nl blank) := by
+    graph (expandAlgFn n tb nl blank) = junc (sumCop _ _) nil (expand n tb nl blank) := by
   apply hom_ext; intro u r
   constructor
   · intro h
@@ -139,7 +139,7 @@ public theorem detab_cata (n : Nat) (tb nl blank : Char) :
   | SnocList.snoc x a => a ≠ nl ∧ noNL nl x
 
 /-- **entab-defn**: `R≜length≤length°`. -/
-@[expose] public def R : dSL Unit Char ⟶ dSL Unit Char := fun xs ys => slen xs ≤ slen ys
+@[expose] public def R : dSL Unit Char ⟶ dSL Unit Char := fun xs ys => length xs ≤ length ys
 
 /-- **entab-defn**: `detab` as a morphism. -/
 @[expose] public def detabR (n : Nat) (tb nl blank : Char) : dSL Unit Char ⟶ dSL Unit Char :=
@@ -151,9 +151,9 @@ public theorem detab_cata (n : Nat) (tb nl blank : Char) :
 
 /-! ## Elementary facts about `pad`, `slen`, `col` and `prefixS` -/
 
-public theorem slen_pad (blank : Char) (x : Str) : ∀ k, slen (pad blank x k) = slen x + k
+public theorem slen_pad (blank : Char) (x : Str) : ∀ k, length (pad blank x k) = length x + k
   | 0 => rfl
-  | k + 1 => by show slen (pad blank x k) + 1 = slen x + (k + 1); rw [slen_pad blank x k]; omega
+  | k + 1 => by show length (pad blank x k) + 1 = length x + (k + 1); rw [slen_pad blank x k]; omega
 
 public theorem col_pad (nl blank : Char) (hb : blank ≠ nl) (x : Str) :
     ∀ k, colFn nl (pad blank x k) = colFn nl x + k
@@ -163,13 +163,13 @@ public theorem col_pad (nl blank : Char) (hb : blank ≠ nl) (x : Str) :
     rw [if_neg hb, col_pad nl blank hb x k]
     omega
 
-public theorem col_eq_slen (nl : Char) : ∀ {w : Str}, noNL nl w → colFn nl w = slen w
+public theorem col_eq_slen (nl : Char) : ∀ {w : Str}, noNL nl w → colFn nl w = length w
   | SnocList.wrap _, _ => rfl
   | SnocList.snoc x a, h => by
-    show (if a = nl then 0 else colFn nl x + 1) = slen x + 1
+    show (if a = nl then 0 else colFn nl x + 1) = length x + 1
     rw [if_neg h.1, col_eq_slen nl h.2]
 
-public theorem prefixS_slen_le : ∀ {x y : Str}, prefixS x y → slen x ≤ slen y
+public theorem prefixS_slen_le : ∀ {x y : Str}, prefixS x y → length x ≤ length y
   | x, SnocList.wrap _, h => by rw [(h : x = SnocList.wrap ())]; exact Nat.zero_le _
   | x, SnocList.snoc y c, h => by
     rcases (h : x = SnocList.snoc y c ∨ prefixS x y) with rfl | h
@@ -179,11 +179,11 @@ public theorem prefixS_slen_le : ∀ {x y : Str}, prefixS x y → slen x ≤ sle
 /-- If two padded strings are equal and the first base is no longer, the second base is the
     first one padded — the only structural fact the `V` calculations need. -/
 public theorem pad_eq_pad (blank : Char) (x y : Str) :
-    ∀ j k, slen x ≤ slen y → pad blank x j = pad blank y k → ∃ m, y = pad blank x m ∧ j = m + k
+    ∀ j k, length x ≤ length y → pad blank x j = pad blank y k → ∃ m, y = pad blank x m ∧ j = m + k
   | j, 0, _, h => ⟨j, h.symm, rfl⟩
   | 0, k + 1, hle, h => by
     exfalso
-    have hl : slen x = slen y + (k + 1) := by
+    have hl : length x = length y + (k + 1) := by
       rw [← slen_pad blank y (k + 1), ← h]; rfl
     omega
   | j + 1, k + 1, hle, h => by
@@ -204,7 +204,7 @@ public theorem pad_eq_pad (blank : Char) (x y : Str) :
     `detab` can have been a tab, since a tab lands the column on a multiple of `n`. -/
 public theorem detab_len_of_short (n : Nat) (tb nl blank : Char)
     (hb : blank ≠ nl) :
-    ∀ (v w : Str), noNL nl w → slen w < n → detabFn n tb nl blank v = w → slen v = slen w
+    ∀ (v w : Str), noNL nl w → length w < n → detabFn n tb nl blank v = w → length v = length w
   | SnocList.wrap _, w, _, _, h => by subst h; rfl
   | SnocList.snoc s c, w, hnn, hlt, h => by
     by_cases hc : c = tb
@@ -212,7 +212,7 @@ public theorem detab_len_of_short (n : Nat) (tb nl blank : Char)
       have hw : w = pad blank (detabFn n tb nl blank s)
           (n - colFn nl (detabFn n tb nl blank s) % n) := by
         rw [← h]; simp only [detabFn, expandFn, if_pos hc, fillFn]
-      have hcol : colFn nl w = slen w := col_eq_slen nl hnn
+      have hcol : colFn nl w = length w := col_eq_slen nl hnn
       have hcol' : colFn nl w
           = colFn nl (detabFn n tb nl blank s)
             + (n - colFn nl (detabFn n tb nl blank s) % n) := by
@@ -223,13 +223,13 @@ public theorem detab_len_of_short (n : Nat) (tb nl blank : Char)
     · have hw : w = SnocList.snoc (detabFn n tb nl blank s) c := by
         rw [← h]; simp only [detabFn, expandFn, if_neg hc]
       subst hw
-      have hlt' : slen (detabFn n tb nl blank s) < n := by
-        have : slen (SnocList.snoc (detabFn n tb nl blank s) c)
-            = slen (detabFn n tb nl blank s) + 1 := rfl
+      have hlt' : length (detabFn n tb nl blank s) < n := by
+        have : length (SnocList.snoc (detabFn n tb nl blank s) c)
+            = length (detabFn n tb nl blank s) + 1 := rfl
         omega
       have hlen := detab_len_of_short n tb nl blank hb s (detabFn n tb nl blank s)
         hnn.2 hlt' rfl
-      show slen s + 1 = slen (detabFn n tb nl blank s) + 1
+      show length s + 1 = length (detabFn n tb nl blank s) + 1
       rw [hlen]
 
 /-- Five ordinary characters and a tab: the note's `[a,b,c,d,e,TB]` at `n=8`. -/
@@ -255,9 +255,9 @@ public theorem detab_prefix_false :
   have hv7 := detab_len_of_short 8 tb nl blank (by decide) v
     (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) hnn (by decide)
     (hdv : ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' '] = detabFn 8 tb nl blank v).symm
-  have h6 : slen v ≤ slen (ofChars ['x', 'x', 'x', 'x', 'x', '\t']) := hR
-  have e6 : slen (ofChars ['x', 'x', 'x', 'x', 'x', '\t']) = 6 := rfl
-  have e7 : slen (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) = 7 := rfl
+  have h6 : length v ≤ length (ofChars ['x', 'x', 'x', 'x', 'x', '\t']) := hR
+  have e6 : length (ofChars ['x', 'x', 'x', 'x', 'x', '\t']) = 6 := rfl
+  have e7 : length (ofChars ['x', 'x', 'x', 'x', 'x', ' ', ' ']) = 7 := rfl
   omega
 
 /-! ## `entab-defn`: `U`, `V`, `Q`, and the greedy condition
@@ -339,7 +339,7 @@ public theorem prefixS_refl : ∀ x : Str, prefixS x x
 
 /-- Exercise 10.4, first claim: `nil V°=nil` — the empty string has no other prefix. -/
 public theorem nil_V (n : Nat) (nl blank : Char) :
-    (nilR : dL Unit ⟶ dSL Unit Char) ≫ (V n nl blank)° = nilR :=
+    (nil : dL Unit ⟶ dSL Unit Char) ≫ (V n nl blank)° = nil :=
   hom_ext fun _ x => ⟨fun ⟨_, hy, hpre, _⟩ => by subst hy; exact hpre,
     fun h => ⟨SnocList.wrap (), rfl, h, by rw [h]⟩⟩
 
@@ -361,11 +361,11 @@ public theorem prefix_fill_snoc (n : Nat) (nl blank : Char) (hn : 0 < n) (hb : b
     (hfill : fillFn n nl blank x = fillFn n nl blank (SnocList.snoc z c)) :
     c = blank ∧ fillFn n nl blank x = fillFn n nl blank z
       ∧ colFn nl (SnocList.snoc z c) % n ≠ 0 := by
-  have hlx : slen x ≤ slen z := prefixS_slen_le hpz
+  have hlx : length x ≤ length z := prefixS_slen_le hpz
   obtain ⟨m, hm, hjk⟩ := pad_eq_pad blank x (SnocList.snoc z c) (n - colFn nl x % n)
-    (n - colFn nl (SnocList.snoc z c) % n) (by show slen x ≤ slen z + 1; omega) hfill
-  have hslen : slen z + 1 = slen x + m := by
-    show slen (SnocList.snoc z c) = slen x + m
+    (n - colFn nl (SnocList.snoc z c) % n) (by show length x ≤ length z + 1; omega) hfill
+  have hslen : length z + 1 = length x + m := by
+    show length (SnocList.snoc z c) = length x + m
     rw [hm, slen_pad]
   obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 := ⟨m - 1, by omega⟩
   have hsplit : SnocList.snoc z c = SnocList.snoc (pad blank x m') blank := hm
@@ -472,7 +472,7 @@ calc_steps expand_V
     `expand_V` at each step. -/
 public theorem detab_V (n : Nat) (hn : 0 < n) :
     ∀ (t x : Str), V n nl blank x (detabFn n tb nl blank t) →
-      ∃ t₀, detabFn n tb nl blank t₀ = x ∧ slen t₀ ≤ slen t
+      ∃ t₀, detabFn n tb nl blank t₀ = x ∧ length t₀ ≤ length t
   | SnocList.wrap _, x, h => by
     obtain rfl : x = SnocList.wrap () := h.1
     exact ⟨SnocList.wrap (), rfl, Nat.le_refl _⟩
@@ -496,8 +496,8 @@ public theorem con_recip_con :
     `detab=α°F(detab)[nil,expand]`. -/
 public theorem detab_unfold (n : Nat) (tb nl blank : Char) :
     detabR n tb nl blank
-      = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
-        ≫ (F Unit Char).map (detabR n tb nl blank) ≫ junc (sumCop _ _) nilR (expand n tb nl blank) := by
+      = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+        ≫ (F Unit Char).map (detabR n tb nl blank) ≫ junc (sumCop _ _) nil (expand n tb nl blank) := by
   have hc : detabR n tb nl blank = cataR (graph (expandAlgFn n tb nl blank)) :=
     (detab_cata n tb nl blank).symm
   have hcomm : (F Unit Char).map (cataR (graph (expandAlgFn n tb nl blank)))
@@ -509,9 +509,9 @@ public theorem detab_unfold (n : Nat) (tb nl blank : Char) :
 /-- Distributing `∪`; the fold again, and the definition of `F`:
     `α°F(detab)[nil,expand∪X]=detab∪snoc°(detab×𝟙)X`. -/
 public theorem detab_unfold_union (n : Nat) (tb nl blank : Char) {X : _ ⟶ dSL Unit Char} :
-    (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
         ≫ (F Unit Char).map (detabR n tb nl blank)
-        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ∪ X)
+        ≫ junc (sumCop _ _) nil (expand n tb nl blank ∪ X)
       = detabR n tb nl blank
         ∪ snocR° ≫ rprodMap (detabR n tb nl blank) (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ X :=
   hom_ext fun t x => by
@@ -576,21 +576,21 @@ public theorem detab_V_induction (n : Nat) (hn : 0 < n) :
 public theorem detab_V_R (n : Nat) (hn : 0 < n) :
     detabR n tb nl blank ≫ (V n nl blank)° ⊑ R° ≫ detabR n tb nl blank :=
   calc detabR n tb nl blank ≫ (V n nl blank)°
-      = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+      = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
         ≫ (F Unit Char).map (detabR n tb nl blank)
-        ≫ junc (sumCop _ _) nilR (expand n tb nl blank) ≫ (V n nl blank)° := by
+        ≫ junc (sumCop _ _) nil (expand n tb nl blank) ≫ (V n nl blank)° := by
         simpa only [Cat.assoc] using congrArg (· ≫ (V n nl blank)°) (detab_unfold n tb nl blank)
-    _ = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
         ≫ (F Unit Char).map (detabR n tb nl blank)
-        ≫ junc (sumCop _ _) (nilR ≫ (V n nl blank)°) (expand n tb nl blank ≫ (V n nl blank)°) := by
+        ≫ junc (sumCop _ _) (nil ≫ (V n nl blank)°) (expand n tb nl blank ≫ (V n nl blank)°) := by
         rw [junc_comp]
-    _ = (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ = (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
         ≫ (F Unit Char).map (detabR n tb nl blank)
-        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ≫ (V n nl blank)°) := by
+        ≫ junc (sumCop _ _) nil (expand n tb nl blank ≫ (V n nl blank)°) := by
         rw [nil_V]
-    _ ⊑ (junc (sumCop _ _) nilR snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
+    _ ⊑ (junc (sumCop _ _) nil snocR : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°
         ≫ (F Unit Char).map (detabR n tb nl blank)
-        ≫ junc (sumCop _ _) nilR (expand n tb nl blank ∪ outl ≫ (V n nl blank)°) :=
+        ≫ junc (sumCop _ _) nil (expand n tb nl blank ∪ outl ≫ (V n nl blank)°) :=
         comp_mono_left _ (comp_mono_left _
           (union_mono (le_refl _) (comp_mono_left _ (expand_V n hn))))
     _ = detabR n tb nl blank
@@ -625,13 +625,13 @@ public theorem entab_mono : Freyd.Alg.Pres (F := F Unit Char) (graph con) R :=
       | inl _ => exact hFv.elim
       | inr q =>
         refine ⟨SnocList.snoc p.1 p.2, rfl, ?_⟩
-        show slen p.1 + 1 ≤ slen q.1 + 1
-        exact Nat.succ_le_succ (hFv.1 : slen p.1 ≤ slen q.1)
+        show length p.1 + 1 ≤ length q.1 + 1
+        exact Nat.succ_le_succ (hFv.1 : length p.1 ≤ length q.1)
 
 public theorem R_trans : R ≫ R ⊑ R :=
   le_iff.mpr fun u w h => by
     obtain ⟨v, h1, h2⟩ := h
-    exact Nat.le_trans (h1 : slen u ≤ slen v) (h2 : slen v ≤ slen w)
+    exact Nat.le_trans (h1 : length u ≤ length v) (h2 : length v ≤ length w)
 
 /-- **entab-laws**, second row: Theorem 10.1's greedy condition, Proposition 9.4 at `U` and
     `V≜prefix°∩(fill fill°)`.  `U` leaves the character free — `entab_V` supplies the shorter
@@ -662,7 +662,7 @@ public theorem entab_thin_condition (n : Nat) (hn : 0 < n) :
           obtain ⟨t₀, ht₀, hlen⟩ := le_iff.mp (entab_V n hn) p.1 r.1
             ⟨q.1, hQ.1, (hFw.1 : q.1 = detabFn n tb nl blank r.1)⟩
           refine ⟨Sum.inr (t₀, p.2), ⟨ht₀, rfl⟩, SnocList.snoc t₀ p.2, rfl, ?_⟩
-          show slen t₀ + 1 ≤ slen r.1 + 1
+          show length t₀ + 1 ≤ length r.1 + 1
           exact Nat.succ_le_succ hlen
 
 /-- `H = ⦇α⦈·⦇[nil,expand]⦈°` collapses to `detab°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
@@ -679,9 +679,9 @@ public theorem entab_H (n : Nat) (tb nl blank : Char) :
 public theorem entab_laws_prefixed (n : Nat) (hn : 0 < n)
     {X : dSL Unit Char ⟶ dSL Unit Char}
     (hX : X = Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R) :
-    Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+    Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
         : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
-      ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR
+      ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R := by
   subst hX
   rw [← expandAlg_eq_junc, ← con_eq_junc]
@@ -698,9 +698,9 @@ public theorem entab_laws_prefixed (n : Nat) (hn : 0 < n)
     (`AOP.A6_SnocList.cataR_con`). -/
 public theorem entab_laws (n : Nat) (hn : 0 < n) :
     mu (fun X : dSL Unit Char ⟶ dSL Unit Char =>
-        Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+        Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
             : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°)
-          ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR)
+          ≫ est (Q n tb nl blank) ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR)
       ⊑ Λ (Allegory.recip (detabR n tb nl blank)) ≫ est R :=
   mu_le (entab_laws_prefixed n hn rfl)
 
@@ -727,9 +727,9 @@ public theorem entab_branch (n : Nat) (hn : 0 < n)
     (X : dSL Unit Char ⟶ dSL Unit Char) :
     Λ ((expand n tb nl blank)°) ≫ est (rprodMap (V n nl blank) (U tb))
         ≫ rprodMap X (𝟙 (⟨Char⟩ : RelSet.{0})) ≫ snocR
-      ⊑ Λ ((junc (sumCop _ _) nilR (expand n tb nl blank)
+      ⊑ Λ ((junc (sumCop _ _) nil (expand n tb nl blank)
             : (F Unit Char).obj (dSL Unit Char) ⟶ dSL Unit Char)°) ≫ est (Q n tb nl blank)
-          ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nilR snocR := by
+          ≫ (F Unit Char).map X ≫ junc (sumCop _ _) nil snocR := by
   rw [← expandAlg_eq_junc, ← con_eq_junc]
   exact est_arm₂_le (X := X) (Q := Q n tb nl blank)
     (T := graph (expandAlgFn n tb nl blank)) (U := graph (con (L := Unit) (E := Char)))
@@ -854,13 +854,13 @@ public theorem prefixS_pad (blank : Char) (y : Str) : ∀ k, prefixS y (pad blan
   | 0 => prefixS_refl y
   | k + 1 => Or.inr (prefixS_pad blank y k)
 
-public theorem prefixS_eq_of_le : ∀ {x y : Str}, prefixS x y → slen y ≤ slen x → x = y
+public theorem prefixS_eq_of_le : ∀ {x y : Str}, prefixS x y → length y ≤ length x → x = y
   | _, SnocList.wrap (), h, _ => h
   | x, SnocList.snoc y c, h, hl => by
     rcases (h : x = SnocList.snoc y c ∨ prefixS x y) with h | h
     · exact h
     · have := prefixS_slen_le h
-      have : slen (SnocList.snoc y c) = slen y + 1 := rfl
+      have : length (SnocList.snoc y c) = length y + 1 := rfl
       omega
 
 public theorem prefixS_antisymm {x y : Str} (h1 : prefixS x y) (h2 : prefixS y x) : x = y :=
@@ -1044,7 +1044,7 @@ public theorem entab_step (n : Nat) (hn : 0 < n)
       exact ⟨⟨prefixS_refl x, rfl⟩, Or.inr rfl⟩
 
 public theorem contract_slen_le (n : Nat) (tb nl blank : Char) (x : Str) (a : Char) :
-    slen (contractFn n tb nl blank x a).1 ≤ slen x := by
+    length (contractFn n tb nl blank x a).1 ≤ length x := by
   unfold contractFn; split
   · exact prefixS_slen_le (unfill_prefix n nl blank x)
   · exact Nat.le_refl _
@@ -1056,9 +1056,9 @@ public theorem contract_slen_le (n : Nat) (tb nl blank : Char) (x : Str) (a : Ch
   | SnocList.snoc x a =>
       SnocList.snoc (entabFn n tb nl blank (contractFn n tb nl blank x a).1)
         (contractFn n tb nl blank x a).2
-termination_by x => slen x
+termination_by x => length x
 decreasing_by
-  show slen (contractFn n tb nl blank x a).1 < slen x + 1
+  show length (contractFn n tb nl blank x a).1 < length x + 1
   exact Nat.lt_succ_of_le (contract_slen_le n tb nl blank x a)
 
 /-- **B&dM p.251** `tbc`, the trailing blank count. -/
@@ -1388,7 +1388,7 @@ public theorem alpha_recip_strictNatural :
       (Relator.sum (Relator.const (dL Unit))
         (Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0})))
       (snocRelator Unit)
-      (fun A => (junc (sumCop _ _) nilR snocR
+      (fun A => (junc (sumCop _ _) nil snocR
         : Fobj Unit A.carrier (dSL Unit A.carrier) ⟶ dSL Unit A.carrier)°) := by
   intro A B R
   have h := snocAlg_recip_strictNatural (L := Unit) R

@@ -57,13 +57,13 @@ variable {A : Type}
 /-- Ex 7.41's specification: `filter(p) ≜ Λ(subseq list(p)) est(R°)` — the longest subsequence
     all of whose elements pass the coreflexive `p` (B&dM: "the relation `p` is a coreflexive"). -/
 @[expose] public def filter (p : dE A ⟶ dE A) : dList A ⟶ dList A :=
-  (subseq ≫ ListRel.list p)%∋ ≫ est(lenLE°)
+  (subseq ≫ ListRel.list p)%∋ ≫ est(R°)
 
 /-- The `filter-defn` table's last row, `𝟙 ⊑ π₂ R cons°`: the tail is one shorter than the cons,
     so `π₂` loses the `est(R°)` at every step — where takewhile's loser is `nil`. -/
 public theorem id_le_pi2_lenLE_cons :
     𝟙 (⟨A × ConsList Unit A⟩ : RelSet.{0})
-      ⊑ (graph fun q => q.2) ≫ lenLE ≫ (consR : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)° :=
+      ⊑ (graph fun q => q.2) ≫ R ≫ (consR : (⟨A × ConsList Unit A⟩ : RelSet.{0}) ⟶ dList A)° :=
   le_iff.mpr fun q q' h => by
     obtain rfl : q = q' := h
     exact ⟨q.2, rfl, ConsList.cons q.1 q.2, Nat.le_succ _, rfl⟩
@@ -142,12 +142,12 @@ public theorem filter_alg {p : dE A ⟶ dE A} (hC : Coreflexive p) : subseq ≫ 
     reaches each operand of the `∪` on its own, and on the `cons` one it stands beside `p` as the
     pair's second strand. -/
 public theorem filter_mono_step1 (p : dE A ⟶ dE A) :
-    rprodMap (𝟙 (dE A)) (lenLE (A := A))°
+    rprodMap (𝟙 (dE A)) (R (A := A))°
         ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
-      = rprodMap p (lenLE (A := A))° ≫ consR
-        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) := by
-  have hcons : rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ pcons p
-      = rprodMap p (lenLE (A := A))° ≫ consR := by
+      = rprodMap p (R (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (R (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) := by
+  have hcons : rprodMap (𝟙 (dE A)) (R (A := A))° ≫ pcons p
+      = rprodMap p (R (A := A))° ≫ consR := by
     unfold pcons
     rw [← Cat.assoc, rprodMap_comp, Cat.id_comp, Cat.comp_id]
   rw [DistributiveAllegory.comp_union_distrib, hcons]
@@ -155,19 +155,19 @@ public theorem filter_mono_step1 (p : dE A ⟶ dE A) :
 /-- **`filter-mono`'s second step**: `(p×R°) cons ∪ (𝟙×R°)π₂=(p×R°) cons ∪ π₂R°` — the
     projection's naturality square, `(𝟙×R°)π₂=π₂R°`. -/
 public theorem filter_mono_step2 (p : dE A ⟶ dE A) :
-    rprodMap p (lenLE (A := A))° ≫ consR
-        ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
-      = rprodMap p (lenLE (A := A))° ≫ consR
-        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := by
+    rprodMap p (R (A := A))° ≫ consR
+        ∪ rprodMap (𝟙 (dE A)) (R (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2)
+      = rprodMap p (R (A := A))° ≫ consR
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))° := by
   rw [rprodMap_id_snd]
 
 /-- **`filter-mono`'s third step**: `(p×R°) cons ∪ π₂R° ⊑ (p×𝟙) cons R° ∪ π₂R°` — the `cons`
     operand slides its `R°` out, which is `takewhile-mono`'s own step. -/
 public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    rprodMap p (lenLE (A := A))° ≫ consR
-        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))°
-      ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
-        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := by
+    rprodMap p (R (A := A))° ≫ consR
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))°
+      ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ R°
+        ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))° := by
   refine union_mono ?_ (le_refl _)
   rw [← Cat.assoc]
   exact takewhile_mono_slide hC
@@ -176,28 +176,28 @@ public theorem filter_mono_step3 {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     inside taking the step and then shortening the result.  The `π₂` branch is an equality
     (`π₂` is natural), where takewhile's `⊸ nil` branch buys it with `nil R° = nil`. -/
 public theorem filter_mono_cons {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    rprodMap (𝟙 (dE A)) (lenLE (A := A))°
+    rprodMap (𝟙 (dE A)) (R (A := A))°
         ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
-      ⊑ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ lenLE° :=
-  calc rprodMap (𝟙 (dE A)) (lenLE (A := A))°
+      ⊑ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ R° :=
+  calc rprodMap (𝟙 (dE A)) (R (A := A))°
           ≫ (pcons p ∪ graph fun q : A × ConsList Unit A => q.2)
-      = rprodMap p (lenLE (A := A))° ≫ consR
-          ∪ rprodMap (𝟙 (dE A)) (lenLE (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) :=
+      = rprodMap p (R (A := A))° ≫ consR
+          ∪ rprodMap (𝟙 (dE A)) (R (A := A))° ≫ (graph fun q : A × ConsList Unit A => q.2) :=
         filter_mono_step1 p
-    _ = rprodMap p (lenLE (A := A))° ≫ consR
-          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° :=
+    _ = rprodMap p (R (A := A))° ≫ consR
+          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))° :=
         filter_mono_step2 p
-    _ ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ lenLE°
-          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (lenLE (A := A))° := filter_mono_step3 hC
-    _ = (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ lenLE° := by
+    _ ⊑ rprodMap p (𝟙 (dList A)) ≫ consR ≫ R°
+          ∪ (graph fun q : A × ConsList Unit A => q.2) ≫ (R (A := A))° := filter_mono_step3 hC
+    _ = (pcons p ∪ graph fun q : A × ConsList Unit A => q.2) ≫ R° := by
         rw [← Cat.assoc]
         exact (union_comp_distrib _ _ _).symm
 
 /-- The `filter-mono` header: **`F(R°) S ⊑ S R°`** — the `cons` chain above, with the leaf arm
     `nil ⊑ nil R°`. -/
 public theorem filter_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    Freyd.Alg.Pres (F := F Unit A) (Salg p) lenLE° := by
-  show (F Unit A).map lenLE° ≫ Salg p ⊑ Salg p ≫ lenLE°
+    Freyd.Alg.Pres (F := F Unit A) (Salg p) R° := by
+  show (F Unit A).map R° ≫ Salg p ⊑ Salg p ≫ R°
   apply le_iff.mpr
   intro u ws h
   obtain ⟨v, hv, hS⟩ := h
@@ -222,7 +222,7 @@ public theorem filter_mono {p : dE A ⟶ dE A} (hC : Coreflexive p) :
     `filter_mono` for its hypothesis: one longest `p`-subsequence kept at each `cons` refines
     every `p`-subsequence collected and one chosen at the end. -/
 public theorem filter_greedy {p : dE A ⟶ dE A} (hC : Coreflexive p) :
-    cataR ((Salg p)%∋ ≫ est(lenLE°)) ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := by
+    cataR ((Salg p)%∋ ≫ est(R°)) ⊑ (cataR (Salg p))%∋ ≫ est(R°) := by
   rw [cataR_eq_relCata, cataR_eq_relCata]
   exact greedy (initial Unit A) lenLE_recip_trans (filter_mono hC)
 
@@ -288,7 +288,7 @@ public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩)
         (wrapR : dL Unit ⟶ dList A)
         (rpair ((pcons p)%∋) ((graph fun q : A × ConsList Unit A => q.2)%∋)
-          ≫ cup (PL (A := A)) ≫ est(lenLE°))
+          ≫ cup (PL (A := A)) ≫ est(R°))
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) := by
   rw [← filter_step3]
   apply hom_ext; intro u ws
@@ -329,10 +329,10 @@ public theorem filter_step4 {p : dE A ⟶ dE A} (hC : Coreflexive p)
     `⊸ nil`. -/
 public theorem filter_step {p : dE A ⟶ dE A} (hC : Coreflexive p)
     [DecidablePred (holds p)] :
-    (Salg p)%∋ ≫ est(lenLE°)
+    (Salg p)%∋ ≫ est(R°)
       = consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p) :=
-  (filter_step1 p lenLE).trans ((filter_step2 p lenLE_recip_refl).trans
-    ((filter_step3 p lenLE).trans (filter_step4 hC)))
+  (filter_step1 p R).trans ((filter_step2 p lenLE_recip_refl).trans
+    ((filter_step3 p R).trans (filter_step4 hC)))
 
 /-- **The `filter-deriv` chain**, from the program up: `⦇[nil,(π₁p→cons,π₂)]⦈ ⊑ filter(p)` — the
     program's algebra is the greedy one (`filter_step`), Theorem 7.2 puts its fold below the
@@ -343,9 +343,9 @@ public theorem filter_cata_le {p : dE A ⟶ dE A} (hC : Coreflexive p)
     cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
       ⊑ filter p :=
   calc cataR (consScalarAlg (fun _ : Unit => (ConsList.wrap () : ConsList Unit A)) (fStep p))
-        = cataR ((Salg p)%∋ ≫ est(lenLE°)) := by rw [filter_step hC]
-    _ ⊑ (cataR (Salg p))%∋ ≫ est(lenLE°) := filter_greedy hC
-    _ = (subseq ≫ listP p)%∋ ≫ est(lenLE°) := by rw [filter_alg hC]
+        = cataR ((Salg p)%∋ ≫ est(R°)) := by rw [filter_step hC]
+    _ ⊑ (cataR (Salg p))%∋ ≫ est(R°) := filter_greedy hC
+    _ = (subseq ≫ listP p)%∋ ≫ est(R°) := by rw [filter_alg hC]
     _ = filter p := rfl
 
 calc_steps filter_cata_le
@@ -441,8 +441,8 @@ public theorem filter_simple {p : dE A ⟶ dE A} (hC : Coreflexive p)
   apply le_iff.mpr
   intro ws zs h
   obtain ⟨u, h1, h2⟩ := h
-  have h1' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (A := A))°) u ws).mp h1
-  have h2' := (Λ_comp_est_apply (subseq ≫ listP p) ((lenLE (A := A))°) u zs).mp h2
+  have h1' := (Λ_comp_est_apply (subseq ≫ listP p) ((R (A := A))°) u ws).mp h1
+  have h2' := (Λ_comp_est_apply (subseq ≫ listP p) ((R (A := A))°) u zs).mp h2
   have e1 : ws = filtCL p u :=
     subseqP_eq_of_clen_le (filt_best hC u ws h1'.1) (h1'.2 _ (filt_sound hC u))
   have e2 : zs = filtCL p u :=

@@ -105,14 +105,14 @@ public theorem cyl_cp_const (A B : 𝒜) : cpMap (Relator.const (𝒜 := 𝒜) A
     F.obj (N.obj A) (N.obj (P I.t))
       ⟶ N.obj (P I.t) :=
   (F.appl (N.obj A)).map (moves (P I.t)
-      ≫ trans (P I.t) ≫ N.map (bigUnion (a := I.t)))
+      ≫ trans (P I.t) ≫ N.map (union (a := I.t)))
     ≫ zip (P I.t) ≫ N.map (cpMap (F.appl A) I.t ≫ existsImage I.α)
 
 /-- **cyl-defn**: `paths ≜ ⦇gen⦈ setify union`, of type `T(NA)⟶E(TA)` — every path
     across the cylinder. -/
 @[expose] public noncomputable def paths : J.t ⟶ P I.t :=
   ⦇gen F I moves trans zip moves_natural trans_natural zip_natural⦈
-    ≫ setify (P I.t) ≫ bigUnion
+    ≫ setify (P I.t) ≫ union
 
 /-- **fold-diag**: `α⦇gen⦈ = F(𝟙,⦇gen⦈)gen` — the fold's computation rule at `gen`: reading the
     whole list is putting the column back on it and then reading it, which is reading the rest
@@ -174,7 +174,7 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
   -- the tuple-side chain: `N(est R)` slides through `moves`, `trans` and (7.11) to the front
   have hinner : N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R)
       ⊑ (moves (P I.t) ≫ trans (P I.t)
-          ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R) := by
+          ≫ N.map (union (a := I.t))) ≫ N.map (est R) := by
     calc N.map (est R) ≫ moves I.t ≫ trans I.t ≫ N.map (est R)
         = (N.map (est R) ≫ moves I.t) ≫ trans I.t ≫ N.map (est R) := by
           simp only [Cat.assoc]
@@ -190,10 +190,10 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
             ≫ N.map (powerRel (est R) ≫ est R) := by
           rw [N.map_comp]; simp only [Cat.assoc]
       _ ⊑ moves (P I.t) ≫ trans (P I.t)
-            ≫ N.map (bigUnion (a := I.t) ≫ est R) :=
+            ≫ N.map (union (a := I.t) ≫ est R) :=
           comp_mono_left _ (comp_mono_left _ (N.map_mono (powerRel_est_le_bigUnion htrans)))
       _ = (moves (P I.t) ≫ trans (P I.t)
-            ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R) := by
+            ≫ N.map (union (a := I.t))) ≫ N.map (est R) := by
           rw [N.map_comp]; simp only [Cat.assoc]
   -- the base-functor side: `zip` lax natural, then (7.13)
   have houter : N.map ((F.appl A).map (est R)) ≫ N.map I.α
@@ -210,23 +210,23 @@ public theorem cyl_fusion (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R)
         rw [Q, ← Cat.assoc, ← (F.appl (N.obj A)).map_comp]
     _ ⊑ (F.appl (N.obj A)).map ((moves (P I.t)
           ≫ trans (P I.t)
-          ≫ N.map (bigUnion (a := I.t))) ≫ N.map (est R)) ≫ zip I.t ≫ N.map I.α :=
+          ≫ N.map (union (a := I.t))) ≫ N.map (est R)) ≫ zip I.t ≫ N.map I.α :=
         comp_mono_right ((F.appl (N.obj A)).map_mono hinner) _
     _ = (F.appl (N.obj A)).map (moves (P I.t)
-          ≫ trans (P I.t) ≫ N.map (bigUnion (a := I.t)))
+          ≫ trans (P I.t) ≫ N.map (union (a := I.t)))
           ≫ ((F.appl (N.obj A)).map (N.map (est R)) ≫ zip I.t) ≫ N.map I.α := by
         rw [(F.appl (N.obj A)).map_comp]; simp only [Cat.assoc]
     _ ⊑ (F.appl (N.obj A)).map (moves (P I.t)
-          ≫ trans (P I.t) ≫ N.map (bigUnion (a := I.t)))
+          ≫ trans (P I.t) ≫ N.map (union (a := I.t)))
           ≫ (zip (P I.t) ≫ N.map ((F.appl A).map (est R))) ≫ N.map I.α :=
         comp_mono_left _ (comp_mono_right hzip _)
     _ = (F.appl (N.obj A)).map (moves (P I.t)
-          ≫ trans (P I.t) ≫ N.map (bigUnion (a := I.t)))
+          ≫ trans (P I.t) ≫ N.map (union (a := I.t)))
           ≫ zip (P I.t)
           ≫ N.map ((F.appl A).map (est R)) ≫ N.map I.α := by
         simp only [Cat.assoc]
     _ ⊑ (F.appl (N.obj A)).map (moves (P I.t)
-          ≫ trans (P I.t) ≫ N.map (bigUnion (a := I.t)))
+          ≫ trans (P I.t) ≫ N.map (union (a := I.t)))
           ≫ zip (P I.t)
           ≫ N.map (cpMap (F.appl A) I.t ≫ existsImage I.α) ≫ N.map (est R) :=
         comp_mono_left _ (comp_mono_left _ houter)
@@ -307,14 +307,14 @@ public theorem cyl_laws_step3 (R : I.t ⟶ I.t) (htrans : R ≫ R ⊑ R) :
         : J.t ⟶ N.obj (P I.t))
         ≫ setify (P I.t) ≫ powerRel (est R) ≫ est R
       ⊑ ⦇gen F I moves trans zip moves_natural trans_natural zip_natural⦈
-          ≫ setify (P I.t) ≫ bigUnion ≫ est R :=
+          ≫ setify (P I.t) ≫ union ≫ est R :=
   comp_mono_left _ (comp_mono_left _ (powerRel_est_le_bigUnion htrans))
 
 /-- **cyl-laws** step 4: `⦇gen⦈ setify union est(R) = paths est(R)` — `paths`' definition. -/
 public theorem cyl_laws_step4 (R : I.t ⟶ I.t) :
     (⦇gen F I moves trans zip moves_natural trans_natural zip_natural⦈
         : J.t ⟶ N.obj (P I.t))
-        ≫ setify (P I.t) ≫ bigUnion ≫ est R
+        ≫ setify (P I.t) ≫ union ≫ est R
       = paths F I J moves trans zip setify moves_natural trans_natural zip_natural ≫ est R := by
   rw [paths]; simp only [Cat.assoc]
 

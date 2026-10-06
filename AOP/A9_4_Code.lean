@@ -222,7 +222,7 @@ public theorem arm₂_extendAlg : arm₂ extendAlg = extend := rfl
 /-- **code-defn**: the algebra IS the junction `[nil,extend]` the note writes.  A `match` on the
     coproduct draws as one box labelled with its own body; the junction draws as the note's two
     arms, which is why every §9.4 statement is written with this side. -/
-public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nilR extend := by
+public theorem extendAlg_eq_junc : extendAlg = junc (sumCop _ _) nil extend := by
   apply hom_ext; intro u r
   constructor
   · intro h
@@ -601,9 +601,9 @@ public theorem code_thin_condition :
     `decode°` by reflection (`AOP.A6_SnocList.cataR_con`). -/
 public theorem code_laws :
     mu (fun X : dStr ⟶ dCodes =>
-        Λ ((junc (sumCop _ _) nilR extend
+        Λ ((junc (sumCop _ _) nil extend
               : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nilR snocR) ≫ est (R c p))
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR) ≫ est (R c p))
       ⊑ Λ (Allegory.recip decode) ≫ est (R c p) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   have hH : (relCata (F := F Unit Code) extendAlg)°
@@ -636,7 +636,7 @@ public theorem extend_ne_nil : ∀ (q : Str × Code) (w : Str), extendP q w → 
 /-- **`nil°` is LAX natural** in the element type: only `[]` is related to `[]` by `list(S)`. -/
 public theorem nilR_recip_laxNatural :
     LaxNatural (Relator.const (dL Unit)) (snocRelator Unit)
-      (fun a : RelSet.{0} => (nilR (E := a.carrier))°) := by
+      (fun a : RelSet.{0} => (nil (E := a.carrier))°) := by
   intro x y S
   refine le_iff.mpr fun xs d h => ?_
   obtain ⟨ys, hxy, hd⟩ := h
@@ -651,13 +651,13 @@ public theorem nilR_recip_laxNatural :
 
 /-- `code-disj`, first step: `nil` returns only `[]`, so `nil°=null nil°`. -/
 public theorem code_disj_step1 :
-    extend ≫ (nilR : dL Unit ⟶ dStr)° = extend ≫ null ≫ (nilR : dL Unit ⟶ dStr)° := by
+    extend ≫ (nil : dL Unit ⟶ dStr)° = extend ≫ null ≫ (nil : dL Unit ⟶ dStr)° := by
   congr 1
   exact hom_ext fun w d => ⟨fun h => ⟨w, ⟨rfl, h⟩, h⟩, fun ⟨_, ⟨h1, _⟩, h2⟩ => h1 ▸ h2⟩
 
 /-- `code-disj`, second step: `extend null=𝟘`, `extend` never returns `[]` (`extend_ne_nil`). -/
 public theorem code_disj_step2 :
-    extend ≫ null ≫ (nilR : dL Unit ⟶ dStr)° = 𝟘 ≫ (nilR : dL Unit ⟶ dStr)° := by
+    extend ≫ null ≫ (nil : dL Unit ⟶ dStr)° = 𝟘 ≫ (nil : dL Unit ⟶ dStr)° := by
   rw [← Cat.assoc]
   congr 1
   exact hom_ext fun q w => ⟨fun ⟨_, h1, h2, h3⟩ => extend_ne_nil q _ h1 h3 |>.elim,
@@ -665,8 +665,8 @@ public theorem code_disj_step2 :
 
 /-- **code-disj** (B&dM p.240): `nil` and `extend` have disjoint ranges, `extend nil°=𝟘` —
     Proposition 9.1's hypothesis. -/
-public theorem code_disj : extend ≫ (nilR : dL Unit ⟶ dStr)° = 𝟘 :=
-  calc extend ≫ (nilR : dL Unit ⟶ dStr)°
+public theorem code_disj : extend ≫ (nil : dL Unit ⟶ dStr)° = 𝟘 :=
+  calc extend ≫ (nil : dL Unit ⟶ dStr)°
       _ = _ := code_disj_step1
       _ = _ := code_disj_step2
       _ = 𝟘 := hom_ext fun _ _ => ⟨fun ⟨_, h, _⟩ => h.elim, fun h => h.elim⟩
@@ -678,9 +678,9 @@ public theorem code_disj : extend ≫ (nilR : dL Unit ⟶ dStr)° = 𝟘 :=
 public theorem code_branch (X : dStr ⟶ dCodes) :
     Λ (extend°) ≫ thinRel (rprodMap (prefixR°) U)
         ≫ powerRel (rprodMap X (𝟙 (⟨Code⟩ : RelSet.{0})) ≫ snocR) ≫ est (R c p)
-      ⊑ Λ ((junc (sumCop _ _) nilR extend
+      ⊑ Λ ((junc (sumCop _ _) nil extend
               : (F Unit Code).obj dStr ⟶ dStr)°) ≫ thinRel Q
-          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nilR snocR)
+          ≫ powerRel ((F Unit Code).map X ≫ junc (sumCop _ _) nil snocR)
           ≫ est (R c p) := by
   rw [← extendAlg_eq_junc, ← con_eq_junc]
   -- `T` and `U` are named because `arm₂ ?T = extend` is a higher-order unification the elaborator

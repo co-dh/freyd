@@ -316,7 +316,7 @@ def wrapR : dL L ⟶ dSL L E := graph SnocList.wrap
 
 /-- The empty list `nil : 𝟏⟼[E]` — `wrap` at the ONE label, written as the constant map it is
     there, because that is what the picture draws: a box with no input port. -/
-@[expose] public def nilR : dL Unit ⟶ dSL Unit E := graph fun _ => SnocList.wrap ()
+@[expose] public def nil : dL Unit ⟶ dSL Unit E := graph fun _ => SnocList.wrap ()
 
 /-- **The §6.1/§6.4 recursive equation** (B&dM p.138/145): the converse of a catamorphism over a
     snoc-list datatype satisfies `val° = (wrap·g°) ∪ (snoc·(val°×id)·h°)` (mirrored to diagram

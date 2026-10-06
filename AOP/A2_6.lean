@@ -32,10 +32,10 @@ variable {𝒜 : Type u} [PositiveTabularUnitaryUnguardedDivisionPowerAllegory �
 variable [I : InitialAlgebra (natF (𝒜 := 𝒜))]
 
 /-- B&dM p.46: `zero = inl α`, the constant the declaration `Nat ::= zero | succ Nat` names. -/
-@[expose] public def natZero : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ I.t := (natCop I.t).u₁ ≫ I.α
+@[expose] public def zero : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ I.t := (natCop I.t).u₁ ≫ I.α
 
 /-- B&dM p.46: `succ = inr α`. -/
-@[expose] public def natSucc : I.t ⟶ I.t := (natCop I.t).u₂ ≫ I.α
+@[expose] public def succ : I.t ⟶ I.t := (natCop I.t).u₂ ≫ I.α
 
 /-- p.47, step 1 {definition of F}: `F(h)[c,f] = (𝟙+h)[c,f]`. -/
 public theorem nat_fold_spec_step1 {A : 𝒜} (h : I.t ⟶ A)
@@ -53,20 +53,20 @@ public theorem nat_fold_spec_step2 {A : 𝒜} (h : I.t ⟶ A)
 
 /-- p.47, step 3 {since α = [zero,succ]}: `αh = [zero,succ]h`. -/
 public theorem nat_fold_spec_step3 {A : 𝒜} (h : I.t ⟶ A) :
-    I.α ≫ h = junc (natCop I.t) natZero natSucc ≫ h :=
-  congrArg (· ≫ h) (junc_unique (natCop I.t) (R := natZero) (S := natSucc) rfl rfl)
+    I.α ≫ h = junc (natCop I.t) zero succ ≫ h :=
+  congrArg (· ≫ h) (junc_unique (natCop I.t) (R := zero) (S := succ) rfl rfl)
 
 /-- p.47, step 4 {coproduct}: `[zero,succ]h = [zero h,succ h]`. -/
 public theorem nat_fold_spec_step4 {A : 𝒜} (h : I.t ⟶ A) :
-    junc (natCop I.t) natZero natSucc ≫ h = junc (natCop I.t) (natZero ≫ h) (natSucc ≫ h) :=
-  junc_comp (natCop I.t) natZero natSucc h
+    junc (natCop I.t) zero succ ≫ h = junc (natCop I.t) (zero ≫ h) (succ ≫ h) :=
+  junc_comp (natCop I.t) zero succ h
 
 /-- p.47, step 5 {cancellation}: `[zero h,succ h] = [c,hf]` iff the arms agree, since
     `inl[P,Q] = P` and `inr[P,Q] = Q`. -/
 public theorem nat_fold_spec_step5 {A : 𝒜} (h : I.t ⟶ A)
     (c : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ A) (f : A ⟶ A) :
-    junc (natCop I.t) (natZero ≫ h) (natSucc ≫ h) = junc (natCop I.t) c (h ≫ f)
-      ↔ natZero ≫ h = c ∧ natSucc ≫ h = h ≫ f := by
+    junc (natCop I.t) (zero ≫ h) (succ ≫ h) = junc (natCop I.t) c (h ≫ f)
+      ↔ zero ≫ h = c ∧ succ ≫ h = h ≫ f := by
   constructor
   · intro e
     exact ⟨(u₁_junc (natCop I.t) _ _).symm.trans (e ▸ u₁_junc (natCop I.t) c (h ≫ f)),
@@ -78,22 +78,22 @@ public theorem nat_fold_spec_step5 {A : 𝒜} (h : I.t ⟶ A)
 /-- p.47, step 5, the `zero` arm of the right side: `zero h = c`. -/
 public theorem nat_fold_spec_step5_zero {A : 𝒜} {h : I.t ⟶ A}
     {c : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ A} {f : A ⟶ A}
-    (e : junc (natCop I.t) (natZero ≫ h) (natSucc ≫ h) = junc (natCop I.t) c (h ≫ f)) :
-    natZero ≫ h = c :=
+    (e : junc (natCop I.t) (zero ≫ h) (succ ≫ h) = junc (natCop I.t) c (h ≫ f)) :
+    zero ≫ h = c :=
   ((nat_fold_spec_step5 h c f).mp e).1
 
 /-- p.47, step 5, the `succ` arm of the right side: `succ h = h f`. -/
 public theorem nat_fold_spec_step5_succ {A : 𝒜} {h : I.t ⟶ A}
     {c : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ A} {f : A ⟶ A}
-    (e : junc (natCop I.t) (natZero ≫ h) (natSucc ≫ h) = junc (natCop I.t) c (h ≫ f)) :
-    natSucc ≫ h = h ≫ f :=
+    (e : junc (natCop I.t) (zero ≫ h) (succ ≫ h) = junc (natCop I.t) c (h ≫ f)) :
+    succ ≫ h = h ≫ f :=
   ((nat_fold_spec_step5 h c f).mp e).2
 
 /-- **B&dM p.47**: `h = ⦇c,f⦈` on the naturals, spelled out — `h` is an F-homomorphism from
     `α = [zero,succ]` to `[c,f]` iff `zero h = c` and `succ h = h f`.  Steps 1–5. -/
 public theorem nat_fold_spec {A : 𝒜} (h : I.t ⟶ A)
     (c : UnitaryAllegory.unit_obj (𝒜 := 𝒜) ⟶ A) (f : A ⟶ A) :
-    I.α ≫ h = natF.map h ≫ junc (natCop A) c f ↔ natZero ≫ h = c ∧ natSucc ≫ h = h ≫ f := by
+    I.α ≫ h = natF.map h ≫ junc (natCop A) c f ↔ zero ≫ h = c ∧ succ ≫ h = h ≫ f := by
   rw [nat_fold_spec_step1, nat_fold_spec_step2, nat_fold_spec_step3, nat_fold_spec_step4]
   exact nat_fold_spec_step5 h c f
 

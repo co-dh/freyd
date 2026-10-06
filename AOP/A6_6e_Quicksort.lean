@@ -636,7 +636,7 @@ public theorem split_base : (base : dL A ⟶ dLAL A) ⊑ singleR () ≫ perm ≫
     exact ⟨_, rfl, (pjc_iff _ _).mpr ⟨Perm.refl _, fun _ hb => hb.elim, fun _ hb => hb.elim⟩⟩
 
 /-- **p.155, the `step` condition**: `(𝟙×perm join° check') step ⊑ cons perm join° check'`. -/
-public theorem split_step [DecidableRel R] (hconn : connectedP R) :
+public theorem split_step [DecidableRel R] (hconn : connected R) :
     rprodMap (𝟙 (dE A)) (perm ≫ join° ≫ check' R) ≫ step R
       ⊑ consR ≫ (perm : dList A ⟶ dList A) ≫ join° ≫ check' R :=
   le_iff.mpr fun p q ⟨p', ⟨h1, hP⟩, hs⟩ => by

@@ -24,7 +24,7 @@ variable {A : Type}
 /-- **`⦇T⦈ = concat`**: folding with `T` flattens a list of non-empty segments. -/
 public theorem fold_T :
     (⦇(T : (F Unit (ConsList Unit A)).obj (dList A) ⟶ dList A)⦈
-      : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A) = concatNE := rfl
+      : (⟨ConsList Unit (ConsList Unit A)⟩ : RelSet.{0}) ⟶ dList A) = concat := rfl
 
 /-- **`⦇T⦈° = partition`**: unfolding with `T°` segments a list every way. -/
 public theorem fold_T_recip :

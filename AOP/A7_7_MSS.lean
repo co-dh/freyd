@@ -587,13 +587,13 @@ public theorem mss_shape_step2 :
 /-- `E(R)=E(Λ(R)) union` at `R:=prefix sum`. -/
 public theorem mss_shape_step3 :
     suffixR%∋ ≫ existsImage ((prefixR : dList Int ⟶ dList Int) ≫ sumR) ≫ est(geq)
-      = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ bigUnion
+      = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ union
           ≫ est(geq) := by
   rw [existsImage_eq_Λ_bigUnion ((prefixR : dList Int ⟶ dList Int) ≫ sumR), Cat.assoc]
 
 /-- `union est(≥)=E(est(≥)) est(≥)` on the sets `E(Λ(prefix sum))` yields, which are non-empty. -/
 public theorem mss_shape_step4 :
-    suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ bigUnion ≫ est(geq)
+    suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋) ≫ union ≫ est(geq)
       = suffixR%∋ ≫ existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋)
           ≫ existsImage est(geq) ≫ est(geq) := by
   have h : existsImage (((prefixR : dList Int ⟶ dList Int) ≫ sumR)%∋)
@@ -755,7 +755,7 @@ public theorem suffixMax_not_relCata :
     set `x` carries.  The carrier is a PAIR because `π₁` holds the value at the whole list, which
     `suffixMax_not_relCata` shows a bare `E(Int)` cannot carry — `E(⦇[zero,⊕]⦈)` forgets which
     member of the set came from that list. -/
-@[expose] public def Kalg :
+@[expose] public def k :
     (F Unit Int).obj (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ ⟨Int × (Int → Prop)⟩ :=
   junc (sumCop (dL Unit) ⟨Int × (Int × (Int → Prop))⟩)
     (graph (fun _ : Unit => (0 : Int)) ≫ rpair (𝟙 (⟨Int⟩ : RelSet.{0})) singletonMap)
@@ -806,10 +806,10 @@ theorem scanStep_union (P : RelProd (P (⟨Int⟩ : RelSet.{0}))
 
 /-- `k` computes: the base is `(0,{0})`, the step `(a,(v,S)) ↦ (a⊕v, {a⊕v} ∪ S)`. -/
 theorem Kalg_eq_prog :
-    Kalg = consScalarAlg (fun _ : Unit => ((0 : Int), fun v => v = 0))
+    k = consScalarAlg (fun _ : Unit => ((0 : Int), fun v => v = 0))
       (fun (a : Int) (p : Int × (Int → Prop)) =>
         (oplusFn a p.1, fun u => u = oplusFn a p.1 ∨ p.2 u)) := by
-  rw [Kalg]
+  rw [k]
   apply hom_ext; intro u q
   cases u with
   | inl D =>
@@ -905,7 +905,7 @@ public theorem mssPre_eq_oplus_cata :
 /-- `⦇k⦈` is the program `scanFn`: `Kalg_eq_prog` is `k`'s recursion and `scan_emerges` the fold
     law that produced the program from it. -/
 public theorem cata_Kalg_eq_graph :
-    ⦇Kalg⦈ = (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩) := by
+    ⦇k⦈ = (graph scanFn : dCL Unit Int ⟶ ⟨Int × (Int → Prop)⟩) := by
   rw [scan_emerges, ← Kalg_eq_prog, ← cataR_eq_relCata]
 
 /-- The scan's second component IS `Λ(suffix)E(Λ(prefix sum) est(≥))`: the set of the greatest
@@ -935,7 +935,7 @@ public theorem scan_pair_eq_cata :
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
         (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))
-      = ⦇Kalg⦈ := by
+      = ⦇k⦈ := by
   rw [← mssPre_eq_oplus_cata, cata_Kalg_eq_graph]
   apply hom_ext; intro s q
   constructor
@@ -971,7 +971,7 @@ public theorem scan_pair_comm :
       = (F Unit Int).map (rpair (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
             (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus))
           (suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
-            (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))) ≫ Kalg := by
+            (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)))) ≫ k := by
   have hcon : (junc (sumCop (dL Unit) ⟨Int × ConsList Unit Int⟩) wrapR consR
       : (F Unit Int).obj (dCL Unit Int) ⟶ dCL Unit Int) = graph con := by
     apply hom_ext; intro u y
@@ -979,12 +979,12 @@ public theorem scan_pair_comm :
     | inl d => rw [junc_sum_inl]; exact Iff.rfl
     | inr p => rw [junc_sum_inr]; exact Iff.rfl
   rw [hcon, scan_pair_eq_cata, ← cataR_eq_relCata]
-  exact cataFold_comm (L := Unit) (E := Int) Kalg
+  exact cataFold_comm (L := Unit) (E := Int) k
 
 /-- `⦇k⦈ π₂ = 𝟙%∋ E(suffix)E(⦇[zero,⊕]⦈)`: the suffixes and the inner fold fuse into the ONE fold
     `k`, whose carrier keeps the running maximum beside the set, and `π₂` reads the set back. -/
 public theorem Kalg_snd_eq :
-    ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+    ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
         : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩)
       = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
         (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) := by
@@ -993,13 +993,13 @@ public theorem Kalg_snd_eq :
 /-- **Ex 7.40's headline in the power object**: `mss = ⦇k⦈ π₂ est(≥)` — one fold builds the pair
     of the running maximum and the set of the suffix maxima, and `est(≥)` reads that set. -/
 public theorem mss_eq_scan :
-    mss = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+    mss = ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
       : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩) ≫ est(geq) :=
   calc mss = suffixR%∋ ≫ existsImage mssPre ≫ est(geq) := mss_shape
     _ = suffixR%∋ ≫ existsImage (cataR (junc (sumCop (dL Unit) ⟨Int × Int⟩)
           (zero : dL Unit ⟶ (⟨Int⟩ : RelSet.{0})) oplus)) ≫ est(geq) := by
       rw [mssPre_eq_oplus_cata]
-    _ = ⦇Kalg⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
+    _ = ⦇k⦈ ≫ (graph (fun p : Int × (Int → Prop) => p.2)
           : (⟨Int × (Int → Prop)⟩ : RelSet.{0}) ⟶ P ⟨Int⟩) ≫ est(geq) := by
       rw [← Cat.assoc, ← Cat.assoc, Kalg_snd_eq]
 

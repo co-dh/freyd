@@ -134,7 +134,7 @@ theorem inlist_insert (R : A → A → Prop) [DecidableRel R] (a : A) (x : ConsL
 /-- **`insert` respects and establishes sortedness** (AoPA `insert-respects-order`): if `x` is
     sorted then so is `insert a x`.  Needs the order to be transitive (`htrans`, AoPA `≤-trans`)
     and connected (`hconn`, AoPA `≰-elim`/`<-relax`). -/
-theorem insert_ordered {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
+theorem insert_ordered {R : A → A → Prop} [DecidableRel R] (hconn : connected R)
     (htrans : ∀ a b c, R a b → R b c → R a c) (a : A) :
     ∀ x : ConsList Unit A, orderedP R x → orderedP R (insert R a x)
   | ConsList.wrap _, _ =>
@@ -168,7 +168,7 @@ theorem isort_perm (R : A → A → Prop) [DecidableRel R] :
       Perm.trans (Perm.cons a (isort_perm R x)) (insert_perm R a (isortFn R x))
 
 /-- `isortFn x` is sorted (AoPA `ordered?` half of the derivation). -/
-theorem isort_sorted {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
+theorem isort_sorted {R : A → A → Prop} [DecidableRel R] (hconn : connected R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
     ∀ x : ConsList Unit A, orderedP R (isortFn R x)
   | ConsList.wrap _   => trivial
@@ -183,7 +183,7 @@ def sortSpec (R : A → A → Prop) : dList A ⟶ dList A := perm ≫ ordered R
     Mirrors AoPA's `ordered? ○ permute ⊒ fun (foldr insert [])`.  The program itself is the
     catamorphism `isort_emerges`; here we prove it produces a SORTED PERMUTATION, i.e. it refines
     `sortSpec`.  Together with `isort_emerges` this is the full AoPA derivation. -/
-theorem isort_refines_spec {R : A → A → Prop} [DecidableRel R] (hconn : connectedP R)
+theorem isort_refines_spec {R : A → A → Prop} [DecidableRel R] (hconn : connected R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
     (graph (isortFn R) : dList A ⟶ dList A) ⊑ sortSpec R := by
   rw [le_iff]; intro x y hxy
@@ -398,7 +398,7 @@ calc_steps insertion_sort
 
 /-- **Ex 6.30, the `insert` asked for**: the `insert` above meets
     `(𝟙×ordered) insert ⊑ add ordered`. -/
-public theorem insert_add [DecidableRel R] (hconn : connectedP R)
+public theorem insert_add [DecidableRel R] (hconn : connected R)
     (htrans : ∀ a b c, R a b → R b c → R a c) :
     rprodMap (𝟙 (dE A)) (ordered R) ≫ insertR R
       ⊑ add ≫ ordered R :=

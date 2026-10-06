@@ -287,7 +287,7 @@ public theorem cpMap_strict_natural (L E : Type) (R : a ⟶ b) :
     rotation, so the transpose holds all `n` rows at each index and `union` collapses them —
     which is why a path may start in any row. -/
 public theorem moves_trans_union :
-    (moves ≫ transT ≫ tupleP n (bigUnion (a := a))
+    (moves ≫ transT ≫ tupleP n (union (a := a))
         : dTuple n (P a) ⟶ dTuple n (P a))
       = graph (fun T : (dTuple n (P a)).carrier =>
           (fun _ => fun q => ∃ i, T i q : (dTuple n (P a)).carrier)) := by
@@ -395,7 +395,7 @@ public theorem gen_eq_graph :
         moves_natural trans_natural zipCL_natural
       = graph (genFun (n := n) (A := A)) := by
   show (F Unit (Fin n → A)).map
-        (moves ≫ transT ≫ tupleP n (bigUnion (a := dList A)))
+        (moves ≫ transT ≫ tupleP n (union (a := dList A)))
       ≫ zipCL ≫ tupleP n (cpMap (F Unit A) (dList A)
         ≫ existsImage (alphaR : (F Unit A).obj (dList A) ⟶ dList A))
     = graph (genFun (n := n) (A := A))
@@ -563,7 +563,7 @@ public theorem cataGen_lax_natural (R : dE A ⟶ dE B) :
     `setify union`. -/
 public theorem pathsRel_eq :
     (pathsRel : dList (Fin n → A) ⟶ P (dList A))
-      = cataGen ≫ setify ≫ bigUnion := by
+      = cataGen ≫ setify ≫ union := by
   rw [pathsRel, Cylinder.paths, ← cataGen_eq_relCata]
 
 /-- **`paths` is lax natural**: `L(N(R)) paths ⊑ paths P(L(R))`.  The three squares of its
@@ -572,20 +572,20 @@ public theorem pathsRel_eq :
 public theorem paths_lax_natural (R : dE A ⟶ dE B) :
     list (tupleP n R) ≫ pathsRel ⊑ pathsRel ≫ powerRel (list R) := by
   rw [pathsRel_eq, pathsRel_eq]
-  calc list (tupleP n R) ≫ cataGen ≫ setify ≫ bigUnion
-      = (list (tupleP n R) ≫ cataGen) ≫ setify ≫ bigUnion := by
+  calc list (tupleP n R) ≫ cataGen ≫ setify ≫ union
+      = (list (tupleP n R) ≫ cataGen) ≫ setify ≫ union := by
         simp only [Cat.assoc]
-    _ ⊑ (cataGen ≫ tupleP n (powerRel (list R))) ≫ setify ≫ bigUnion :=
+    _ ⊑ (cataGen ≫ tupleP n (powerRel (list R))) ≫ setify ≫ union :=
         comp_mono_right (cataGen_lax_natural R) _
-    _ = cataGen ≫ (tupleP n (powerRel (list R)) ≫ setify) ≫ bigUnion := by
+    _ = cataGen ≫ (tupleP n (powerRel (list R)) ≫ setify) ≫ union := by
         simp only [Cat.assoc]
-    _ ⊑ cataGen ≫ (setify ≫ powerRel (powerRel (list R))) ≫ bigUnion :=
+    _ ⊑ cataGen ≫ (setify ≫ powerRel (powerRel (list R))) ≫ union :=
         comp_mono_left _ (comp_mono_right (setify_lax_natural (powerRel (list R))) _)
-    _ = cataGen ≫ setify ≫ powerRel (powerRel (list R)) ≫ bigUnion := by
+    _ = cataGen ≫ setify ≫ powerRel (powerRel (list R)) ≫ union := by
         simp only [Cat.assoc]
-    _ = cataGen ≫ setify ≫ bigUnion ≫ powerRel (list R) := by
+    _ = cataGen ≫ setify ≫ union ≫ powerRel (list R) := by
         rw [bigUnion_strict_relSet]
-    _ = (cataGen ≫ setify ≫ bigUnion) ≫ powerRel (list R) := by simp only [Cat.assoc]
+    _ = (cataGen ≫ setify ≫ union) ≫ powerRel (list R) := by simp only [Cat.assoc]
 
 /-! ## The cost of a path, and the specification -/
 
