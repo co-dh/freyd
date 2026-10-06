@@ -1110,12 +1110,12 @@ public theorem minlist_R_laxNatural :
   rintro ⟨fss, hff, hmin⟩
   obtain ⟨hr, hleast⟩ := (minlist_apply _ _ _).mp hmin
   obtain ⟨hfwd, hbwd⟩ := listP_inlistP_split (list (opRel S)) ess fss hff
-  obtain ⟨w, hw, hwr⟩ := hbwd r ((clMem_iff_inlistP _ _).mp hr)
-  refine ⟨w, (minlist_apply _ _ _).mpr ⟨(clMem_iff_inlistP _ _).mpr hw, fun z hz => ?_⟩, hwr⟩
-  obtain ⟨v, hzv, hv⟩ := hfwd z ((clMem_iff_inlistP _ _).mp hz)
+  obtain ⟨w, hw, hwr⟩ := hbwd r hr
+  refine ⟨w, (minlist_apply _ _ _).mpr ⟨hw, fun z hz => ?_⟩, hwr⟩
+  obtain ⟨v, hzv, hv⟩ := hfwd z hz
   show clen w ≤ clen z
   rw [Van.listP_clen (P := opRel S) hwr, Van.listP_clen (P := opRel S) hzv]
-  exact hleast v ((clMem_iff_inlistP _ _).mpr hv)
+  exact hleast v hv
 
 /-! ## The two thinning beads are not even lax natural
 

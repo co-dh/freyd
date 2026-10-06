@@ -332,63 +332,35 @@ open Freyd Freyd.Alg Freyd.Alg.RelSet
 
 variable {A : Type}
 
-/-- Membership in a cons-list. -/
-@[expose] public def clMem (w : A) : ConsList Unit A → Prop
-  | ConsList.wrap _ => False
-  | ConsList.cons a xs => w = a ∨ clMem w xs
-
-public theorem clMem_wrap {u : Unit} {w : A} : clMem w (ConsList.wrap u) ↔ False := Iff.rfl
-
-public theorem clMem_cons {w c : A} {d : ConsList Unit A} :
-    clMem w (ConsList.cons c d) ↔ (w = c ∨ clMem w d) := Iff.rfl
-
-/-- `setify : [A]⟶EA` for cons-lists: a list ↦ the set of its elements. -/
-@[expose] public def setifyCL : dCL Unit A ⟶ pow (dE A) := graph (fun xs => fun w => clMem w xs)
+public theorem inlistP_cons {w c : A} {d : ConsList Unit A} :
+    ListRel.inlistP (ConsList.cons c d) w ↔ (w = c ∨ ListRel.inlistP d w) := Iff.rfl
 
 /-- `minlist Q : [A]⟶A` — a `Q`-least member of the list, i.e. `setify` then `est Q`. -/
-@[expose] public def minlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := setifyCL ≫ est Q
+@[expose] public def minlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dE A := ListRel.setify ≫ est Q
 
 /-- Applying an operator takes its own brackets, like `P(R)` and `est(R)`.  The spelling is also
     what keeps the arrow ONE box in a circuit: a constant printed under its own bare name is opened
     and drawn by its body, and `minlist`'s body is the `setify est(Q)` the step exists to replace. -/
 notation:max "minlist(" Q ")" => Freyd.Alg.RelSet.CL.minlist Q
 
-/-- `clMem` and `AOP.A5_6_ListCombinators`' `inlistP` are the same predicate read in the two
-    argument orders. -/
-public theorem clMem_iff_inlistP (w : A) :
-    ∀ xs : ConsList Unit A, clMem w xs ↔ ListRel.inlistP xs w
-  | ConsList.wrap _ => Iff.rfl
-  | ConsList.cons _ xs => or_congr Iff.rfl (clMem_iff_inlistP w xs)
-
-/-- `setifyCL` and `AOP.A5_6_ListCombinators`' `setify` are the SAME arrow — one is written with
-    `clMem`, the other with `inlistP`. -/
-public theorem setifyCL_eq_setify : (setifyCL : ListRel.dList A ⟶ _) = ListRel.setify := by
-  show graph (fun xs => fun w => clMem w xs) = graph (ListRel.inlistP (A := A))
-  exact congrArg graph (funext fun xs => funext fun w => propext (clMem_iff_inlistP w xs))
-
-/-- `minlist Q ≜ setify est(Q)`, in the note's own `setify`. -/
-public theorem minlist_eq_setify_comp_est (Q : dE A ⟶ dE A) :
-    minlist Q = ListRel.setify ≫ est Q := by
-  show setifyCL ≫ est Q = ListRel.setify ≫ est Q
-  rw [setifyCL_eq_setify]
-
 /-- The one step every §9 program shares (B&dM pp.232, 242): `list(g)minlist(R) ⊑ setify P(g)est(R)`
     — a list of `g`-images has, as a SET, a `P(g)`-image of the set, which is `setify`'s lax
     naturality, and `est(R)` reads the least member off either. -/
 public theorem list_comp_minlist_le {B : Type} (g : dE A ⟶ dE B) (R : dE B ⟶ dE B) :
     ListRel.list g ≫ minlist R ⊑ ListRel.setify ≫ powerRel g ≫ est R := by
-  rw [minlist_eq_setify_comp_est, ← Cat.assoc, ← Cat.assoc]
+  show ListRel.list g ≫ (ListRel.setify ≫ est R) ⊑ _
+  rw [← Cat.assoc, ← Cat.assoc]
   exact comp_mono_right (ListRel.setify_lax_natural g) _
 
 public theorem minlist_apply (Q : dE A ⟶ dE A) (xs : ConsList Unit A) (w : A) :
-    minlist Q xs w ↔ clMem w xs ∧ ∀ z, clMem z xs → Q w z := by
+    minlist Q xs w ↔ ListRel.inlistP xs w ∧ ∀ z, ListRel.inlistP xs z → Q w z := by
   constructor
   · rintro ⟨P, hP, hest⟩
-    have hP' : P = fun v => clMem v xs := hP
+    have hP' : P = ListRel.inlistP xs := hP
     subst hP'
     exact (RelSet.est_apply Q _ w).mp hest
   · intro h
-    exact ⟨fun v => clMem v xs, rfl, (RelSet.est_apply Q _ w).mpr h⟩
+    exact ⟨ListRel.inlistP xs, rfl, (RelSet.est_apply Q _ w).mpr h⟩
 
 /-- `bump Q` (B&dM p.200): insert `a` into an already thinned list, dropping whichever of the
     new element and the old head the other dominates. -/
@@ -459,23 +431,23 @@ public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
   intro a xs
   induction xs generalizing a with
   | wrap u =>
-      refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩⟩
+      refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
       intro z hz
-      rcases clMem_cons.mp hz with rfl | hz'
+      rcases inlistP_cons.mp hz with rfl | hz'
       · exact hrefl _
       · exact hz'.elim
   | cons b zs ih =>
       obtain ⟨m, hm⟩ := ih b
       rw [minlist_apply] at hm
       rcases hconn a m with h | h
-      · refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩⟩
+      · refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩⟩
         intro z hz
-        rcases clMem_cons.mp hz with rfl | hz'
+        rcases inlistP_cons.mp hz with rfl | hz'
         · exact hrefl _
         · exact htrans a m z h (hm.2 z hz')
-      · refine ⟨m, (minlist_apply Q _ m).mpr ⟨clMem_cons.mpr (Or.inr hm.1), ?_⟩⟩
+      · refine ⟨m, (minlist_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩⟩
         intro z hz
-        rcases clMem_cons.mp hz with rfl | hz'
+        rcases inlistP_cons.mp hz with rfl | hz'
         · exact h
         · exact hm.2 z hz'
 
@@ -505,14 +477,14 @@ public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder 
       · rintro ⟨r', hr', hb⟩
         rw [bumpFold_wrap] at hr'
         subst hr'
-        refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
+        refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
         intro z hz
-        rcases clMem_cons.mp hz with rfl | hz'
+        rcases inlistP_cons.mp hz with rfl | hz'
         · exact hrefl _
         · exact hz'.elim
       · rintro ⟨w, hw, rfl⟩
         rw [minlist_apply] at hw
-        rcases clMem_cons.mp hw.1 with rfl | hw'
+        rcases inlistP_cons.mp hw.1 with rfl | hw'
         · exact ⟨ConsList.wrap (), rfl, rfl⟩
         · exact hw'.elim
   | cons b zs ih =>
@@ -522,29 +494,29 @@ public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder 
         obtain ⟨m, hm, rfl⟩ := (ih b r').mp hr'
         rw [minlist_apply] at hm
         rcases hb with ⟨hab, rfl⟩ | ⟨hba, rfl⟩ | ⟨h1, h2, _⟩
-        · refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩, rfl⟩
+        · refine ⟨a, (minlist_apply Q _ a).mpr ⟨inlistP_cons.mpr (Or.inl rfl), ?_⟩, rfl⟩
           intro z hz
-          rcases clMem_cons.mp hz with rfl | hz'
+          rcases inlistP_cons.mp hz with rfl | hz'
           · exact hrefl _
           · exact htrans a m z hab (hm.2 z hz')
-        · refine ⟨m, (minlist_apply Q _ m).mpr ⟨clMem_cons.mpr (Or.inr hm.1), ?_⟩, rfl⟩
+        · refine ⟨m, (minlist_apply Q _ m).mpr ⟨inlistP_cons.mpr (Or.inr hm.1), ?_⟩, rfl⟩
           intro z hz
-          rcases clMem_cons.mp hz with rfl | hz'
+          rcases inlistP_cons.mp hz with rfl | hz'
           · exact hba
           · exact hm.2 z hz'
         · exact ((hconn a m).elim h1 h2).elim
       · rintro ⟨w, hw, rfl⟩
         rw [minlist_apply] at hw
-        rcases clMem_cons.mp hw.1 with rfl | hwtail
+        rcases inlistP_cons.mp hw.1 with rfl | hwtail
         · obtain ⟨m, hm⟩ := minlist_exists hrefl htrans hconn b zs
           rw [minlist_apply] at hm
           refine ⟨ConsList.cons m (ConsList.wrap ()),
             (ih b _).mpr ⟨m, (minlist_apply Q _ m).mpr hm, rfl⟩, ?_⟩
-          exact Or.inl ⟨hw.2 m (clMem_cons.mpr (Or.inr hm.1)), rfl⟩
+          exact Or.inl ⟨hw.2 m (inlistP_cons.mpr (Or.inr hm.1)), rfl⟩
         · refine ⟨ConsList.cons w (ConsList.wrap ()),
             (ih b _).mpr ⟨w, (minlist_apply Q _ w).mpr
-              ⟨hwtail, fun z hz => hw.2 z (clMem_cons.mpr (Or.inr hz))⟩, rfl⟩, ?_⟩
-          exact Or.inr (Or.inl ⟨hw.2 a (clMem_cons.mpr (Or.inl rfl)), rfl⟩)
+              ⟨hwtail, fun z hz => hw.2 z (inlistP_cons.mpr (Or.inr hz))⟩, rfl⟩, ?_⟩
+          exact Or.inr (Or.inl ⟨hw.2 a (inlistP_cons.mpr (Or.inl rfl)), rfl⟩)
 
 end Freyd.Alg.RelSet.CL
 
@@ -700,7 +672,6 @@ calc_steps sort_comp_thinlist_le
 public theorem sort_comp_minlist_le {«≼» : dE A ⟶ dE A} (R : dE A ⟶ dE A) :
     sortRel listRelator setify ordered ≼ ≫ minlist R ⊑ est R := by
   have hset : Map (setify : dList A ⟶ P (dE A)) := graph_map _
-  rw [minlist_eq_setify_comp_est]
   show (setify° ≫ ordered ≼) ≫ setify ≫ est R ⊑ est R
   rw [Cat.assoc]
   have hord : ordered ≼ ≫ setify ≫ est R ⊑ setify ≫ est R := by

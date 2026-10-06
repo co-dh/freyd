@@ -22,6 +22,7 @@ public import AOP.A10_1
 public import AOP.A6_SnocList
 public import AOP.A6_MonoFactor
 public import AOP.A7_4_Horner
+public import AOP.A7_5_Van
 import AOP.CalcSteps
 
 universe u
@@ -488,9 +489,6 @@ public theorem bagify_recip_cata [DecidableEq Job] :
 @[expose] public def penaltyR : (⟨(dSL Unit Job).carrier × Job⟩ : RelSet.{0}) ⟶ ⟨Int⟩ :=
   graph fun p => penalty ct dt wt p.1 p.2
 
-/-- **tardy-defn**: `bmax : Int×Int⟶Int` as an arrow. -/
-@[expose] public def bmaxR : (⟨Int × Int⟩ : RelSet.{0}) ⟶ ⟨Int⟩ := graph fun p => bmax p.1 p.2
-
 /-- **(10.5)**: `g≜[zero,penalty]`, the penalty of the last job. -/
 @[expose] public def g : (F Unit Job).obj (dSL Unit Job) ⟶ ⟨Int⟩ :=
   junc (sumCop (dL Unit) ⟨(dSL Unit Job).carrier × Job⟩) ListRel.zero (penaltyR ct dt wt)
@@ -505,7 +503,7 @@ public theorem bagify_recip_cata [DecidableEq Job] :
 public theorem cost_alg_bmax :
     graph (con (L := Unit) (E := Job)) ≫ costR ct dt wt
       = (relProd (⟨Int⟩ : RelSet.{0}) (⟨Int⟩ : RelSet.{0})).pair (g ct dt wt) (m ct dt wt)
-          ≫ bmaxR := by
+          ≫ Van.bmax := by
   rw [pair_eq_rpair]
   apply hom_ext; intro u c
   rw [comp_apply, comp_apply]
@@ -799,7 +797,7 @@ public theorem Q_choice :
 
 /-- B&dM p.257: `α cost=⟨g,α cost⟩ bmax`, since the last penalty is below the cost. -/
 public theorem alg_cost_self :
-    αJ ≫ costR ct dt wt = (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR := by
+    αJ ≫ costR ct dt wt = (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ Van.bmax := by
   rw [pair_eq_rpair]; apply hom_ext; intro s c
   have key : cost ct dt wt (con s) = bmax (gFn ct dt wt s) (cost ct dt wt (con s)) := by
     cases s with
@@ -845,8 +843,8 @@ public theorem pair_g_alg_cost_simple :
 
 /-- `bmax` is monotone: `⟨g≤,m≤⟩ bmax⊑⟨g,m⟩ bmax≤`. -/
 public theorem pair_leq_bmax_le :
-    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
-      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq := by
+    (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ Van.bmax
+      ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ Van.bmax ≫ ListRel.leq := by
   rw [pair_eq_rpair, pair_eq_rpair]
   refine le_iff.mpr fun s c h => ?_
   obtain ⟨⟨q1, q2⟩, ⟨⟨c1, hc1, h1⟩, ⟨c2, hc2, h2⟩⟩, hb⟩ := h
@@ -873,18 +871,18 @@ public theorem tardy_tail :
             ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ αJ) (costR_entire ct dt wt)
       _ = (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq)
         ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))°
-        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ bmaxR ≫ (costR ct dt wt)° := by
+        ≫ (P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt) ≫ Van.bmax ≫ (costR ct dt wt)° := by
         simpa only [Cat.assoc] using congrArg (fun Z => (P2).pair (g ct dt wt ≫ ListRel.leq)
           (m ct dt wt ≫ ListRel.leq) ≫ ((P2).pair (g ct dt wt) (αJ ≫ costR ct dt wt))° ≫ Z
           ≫ (costR ct dt wt)°) (alg_cost_self ct dt wt)
-      _ ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ bmaxR
+      _ ⊑ (P2).pair (g ct dt wt ≫ ListRel.leq) (m ct dt wt ≫ ListRel.leq) ≫ Van.bmax
         ≫ (costR ct dt wt)° := by
         simpa only [Cat.id_comp, Cat.assoc] using
-          comp_mono_left _ (comp_mono_right (pair_g_alg_cost_simple ct dt wt) (bmaxR ≫ (costR ct dt wt)°))
-      _ ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ bmaxR ≫ ListRel.leq ≫ (costR ct dt wt)° := by
+          comp_mono_left _ (comp_mono_right (pair_g_alg_cost_simple ct dt wt) (Van.bmax ≫ (costR ct dt wt)°))
+      _ ⊑ (P2).pair (g ct dt wt) (m ct dt wt) ≫ Van.bmax ≫ ListRel.leq ≫ (costR ct dt wt)° := by
         simpa only [Cat.assoc] using comp_mono_right (pair_leq_bmax_le ct dt wt) (costR ct dt wt)°
       _ = αJ ≫ costR ct dt wt ≫ ListRel.leq ≫ (costR ct dt wt)° := by
-        rw [← Cat.assoc ((P2).pair _ _) bmaxR, ← cost_alg_bmax, Cat.assoc]
+        rw [← Cat.assoc ((P2).pair _ _) Van.bmax, ← cost_alg_bmax, Cat.assoc]
       _ = αJ ≫ R ct dt wt := by rw [R_eq]
 
 calc_steps tardy_tail

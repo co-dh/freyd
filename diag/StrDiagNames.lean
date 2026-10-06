@@ -600,15 +600,13 @@ open Lean PrettyPrinter in
 @[app_unexpander RelSet.Edit.R] def unexpandEditR : Unexpander | _ => `($(mkIdent `R))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.R] def unexpandTardyR : Unexpander | _ => `($(mkIdent `R))
--- §10.3's arrows drop the job quantities `ct dt wt` as `R` does; `costR`/`penaltyR`/`bmaxR` only
+-- §10.3's arrows drop the job quantities `ct dt wt` as `R` does; `costR`/`penaltyR` only
 -- tell the arrow from the Int function of the same name.
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.costR] def unexpandTardyCostR : Unexpander | _ => `($(mkIdent `cost))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.penaltyR] def unexpandTardyPenaltyR : Unexpander
   | _ => `($(mkIdent `penalty))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Tardy.bmaxR] def unexpandTardyBmaxR : Unexpander | _ => `($(mkIdent `bmax))
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tardy.g] def unexpandTardyG : Unexpander | _ => `($(mkIdent `g))
 open Lean PrettyPrinter in
@@ -870,15 +868,6 @@ open Lean PrettyPrinter in
   | `($_ $φ) => `(⦇$φ⦈)
   | _ => throw ()
 
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Digits.timesDigit] def unexpandDigitsTimes : Unexpander
-  | `($_ $args*) => `($(mkIdent (Name.mkSimple "−×Digit")) $args*)
-  | _ => `($(mkIdent (Name.mkSimple "−×Digit")))
-
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Digits.plusDigitP] def unexpandDigitsPlus : Unexpander
-  | `($_ $args*) => `($(mkIdent (Name.mkSimple "Digit⁺+−")) $args*)
-  | _ => `($(mkIdent (Name.mkSimple "Digit⁺+−")))
 
 -- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
 -- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
@@ -1159,11 +1148,6 @@ open Lean PrettyPrinter in
 -- prints as the type it bundles (`op`, `Journey`).  Algebras kept the Lean name until 2026-10-04,
 -- when the rule became that Lean follows the note: an algebra prints as the junction the note writes.
 open Lean PrettyPrinter in
--- The cons-list `setify` is the note's `setify` (`setifyCL_eq_setify`): `CL` says which file.
-@[app_unexpander RelSet.CL.setifyCL] def unexpandSetifyCL : Unexpander
-  | `($_ $args*) => `($(mkIdent `setify) $args*)
-  | _ => `($(mkIdent `setify))
-open Lean PrettyPrinter in
 @[app_unexpander RelSet.Tour.journeyRelator] def unexpandTourJourney : Unexpander
   | `($_ $args*) => `($(mkIdent `Journey) $args*)
   | _ => `($(mkIdent `Journey))
@@ -1371,10 +1355,6 @@ open Lean PrettyPrinter in
   | `($_ $A) => `($(mkIdent `tree) $A)
   | `($_:ident) => `($(mkIdent `tree))
   | _ => throw ()
--- The non-zero digits `{d // d ≠ 0}` are B&dM's `Digit⁺`.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Digits.DigitP] def unexpandDigitP : Unexpander
-  | _ => `($(mkIdent (Name.mkSimple "Digit⁺")))
 -- THE GRAPH AND THE FUNCTION IT IS TAKEN OF SHARE THE NOTE'S NAME, as `edit` does above: one
 -- arrow, drawn as a map in one panel and as a relation in another.
 open Lean PrettyPrinter in
