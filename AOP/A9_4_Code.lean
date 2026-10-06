@@ -782,6 +782,26 @@ public theorem prefixS_sappend_self : ∀ (u t : Str), prefixS u (sappend u t)
   | u, SnocList.wrap _ => prefixS_refl u
   | u, SnocList.snoc t _ => Or.inr (prefixS_sappend_self u t)
 
+/-- `cat : String×String⟶String`, `⧺` as an arrow. -/
+@[expose] public def cat : (⟨Str × Str⟩ : RelSet.{0}) ⟶ dStr := graph fun p => sappend p.1 p.2
+
+open Lean PrettyPrinter in
+@[app_unexpander Freyd.Alg.RelSet.Code.cat] public meta def unexpandCodeCat : Unexpander
+  | _ => `($(mkIdent `cat))
+
+/-- **code-defn**: `prefix = cat° outl` (B&dM p.126, `prefix = outl·cat°`) — `ys` is a prefix of
+    `xs` when `xs = ys⧺zs` for some `zs`. -/
+public theorem prefixR_eq : prefixR = cat° ≫ (graph Prod.fst : (⟨Str × Str⟩ : RelSet.{0}) ⟶ dStr) := by
+  apply hom_ext; intro xs ys
+  constructor
+  · intro h
+    obtain ⟨t, ht⟩ := prefixS_append h
+    exact ⟨(ys, t), (ht.symm : xs = sappend ys t), rfl⟩
+  · rintro ⟨p, hp, hq⟩
+    obtain rfl : xs = sappend p.1 p.2 := hp
+    obtain rfl : ys = p.1 := hq
+    exact prefixS_sappend_self p.1 p.2
+
 /-- The `sym` candidate: the last character stands for itself. -/
 @[expose] public def symCands : Str → CL.ConsList Unit (Str × Code)
   | SnocList.wrap u => CL.ConsList.wrap u
