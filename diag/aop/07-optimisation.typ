@@ -300,9 +300,10 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 - #leanf("Freyd.Alg.RelSet.graph_conj_le_iff_monotone") #h(4pt) #src[`f°F(≤)f` relates `f(u)` to
   `f(v)` whenever `u F(≤) v`; `⊑≤` says each such pair has `f(u)≤f(v)`.]
-- #leanf("Freyd.Alg.RelSet.CL.graph_monoAlg_iff_monotone_tail") #h(4pt) #src[at `F(X)=L+E×X`, `F(≤)`
-  relates a leaf only to itself, which `𝟙⊑≤` covers, and `r(e,x)` to `r(e,y)` when `x≤y`, so
-  monotonic is `x≤y ⟹ f(r(e,x))≤f(r(e,y))`.]
+- #src[read `f°F(≤)f` as the path `f(u)` #h(2pt) `f°` #h(2pt) `u` #h(2pt) `F(≤)` #h(2pt) `v` #h(2pt) `f` #h(2pt)
+  `f(v)`: the middle step `u F(≤) v` is the premise, and `⊑≤` relates the two ends, so `f(u)≤f(v)`; it does
+  not say that `f(u)≤f(v)` gives `u F(≤) v`. `u`, `v` are in `FA` and `F(≤)` compares them component by
+  component; `f(u)`, `f(v)` are in `A`.]
 ]<mon-points>
 
 === Function `f` is monotonic on `R` iff it distributes over `R` <sec-mon-thm71>
