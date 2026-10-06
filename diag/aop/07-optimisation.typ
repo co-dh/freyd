@@ -460,9 +460,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")], [],
   [both constructors as one map],
 
- [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.pcor")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
-  // lean:AOP.A7_7_TakeWhile.pcor@cdf778e6
-  [`{(a,a)∣a` passes the test`}`],
+ [`p`], [a coreflexive #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.holds")], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
+  // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
+  [`a` passes `p` when `a p a`],
 
  [`R`], [`length≤length°`, a preorder #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.lenLE")], [`[1] R [1,2]`],
   // lean:AOP.A7_7_TakeWhile.lenLE@dc9aa9fe
@@ -479,7 +479,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`xs prefix ys⟺∃zs. xs=ys⧺zs` #h(4pt) — at each `cons`, stop or keep the head],
 
  [`S`], [`[nil,⊸ nil ∪ (p×𝟙) cons]` #src[]], [#leant("Freyd.Alg.RelSet.GCTakeWhile.Salg")],
-  // lean:AOP.A7_7_TakeWhile.Salg@8ccdcfd1
+  // lean:AOP.A7_7_TakeWhile.Salg@fd30b6d5
   [`(4,[2]) S [4,2]`, #h(4pt) and `(3,[2]) S nil` only],
   [`prefix`'s algebra with one extra `p` — stop, or keep a head that passes `p`],
 
@@ -553,8 +553,8 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[building the list and then keeping a `p`-passing prefix of it is keeping one of the tail
      first, and then building with `S`] \
     #src[this same diagram is `subseq`'s: algebra `[nil,π₂ ∪ cons]`, type `[A]⟶[A]`]
-    // lean:AOP.A7_7_Filter.filter_alg_comm@73bbcbaa
-    // lean:AOP.A7_7_Filter.filter_alg@5c8645c6
+    // lean:AOP.A7_7_Filter.filter_alg_comm@021a75c0
+    // lean:AOP.A7_7_Filter.filter_alg@29fa69bd
     ],
   table.header([*circuit* — the fork is `F([A])=𝟏+A×[A]`: `nil` above, the pair below],
     [*Hinze–Marsden*]),
@@ -582,9 +582,9 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #align(center, block(inset: (y: 4pt))[#src[@cata-defining reads that off as `prefix list(p)=⦇S⦈`.
   @cata-fusion cannot: `list(p)` is not entire, `(𝟙×list(p))⊸ nil⊏⊸ nil`, and no algebra meets
  the side condition. ,
-  // lean:AOP.A7_7_TakeWhile.takewhile_alg@89d813c7
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg@a2e1ff8a
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@4f482b64
+  // lean:AOP.A7_7_TakeWhile.takewhile_alg_comm@21496035
 ]<takewhile-alg>
 
 // One law to a step: `R°` starts on the tail strand, is copied into both operands of the `∪`,
@@ -598,12 +598,12 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step([])[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_cons.lhs")]],
   [],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@99fa663b
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_cons@d2b222de
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_fork.rhs")]],
   [each operand is reached on its own #h(4pt) #src[@adj-all:9] #h(4pt) — and `(𝟙×R°)(p×𝟙)` is `p`
    and `R°` on the pair's two strands at once],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@0142ae2e
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_fork@6c113545
 
   [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step2.rhs")]],
   [`⊸` is the greatest arrow into `𝟏`, so `(𝟙×R°)⊸⊑⊸`],
@@ -611,7 +611,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 
   [#step(SQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step3.rhs")]],
   [`cons length=(𝟙×length)π₂ succ` with `succ` monotone — a shorter tail makes a shorter list],
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@51fc70a5
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono_slide@5b43bd21
 
   [#step(EQ)[#leanc("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")][#leanf("Freyd.Alg.RelSet.GCTakeWhile.takewhile_mono_step4.rhs")]],
   [`nil R°=nil` #h(4pt) #src[@takewhile-defn:5] #h(4pt) — so the constant branch may carry the `R°`
@@ -624,7 +624,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 )
 #align(center, block(inset: (y: 4pt))[#src[the `nil` branch, which no row above draws, is
   `nil⊑nil R°`.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_mono@edba3e4e
+  // lean:AOP.A7_7_TakeWhile.takewhile_mono@d7bb11c7
 ]<takewhile-mono>
 
 // ONE wire while `S` sits inside a division — nothing can be seen into it — then the bracket, once
@@ -651,7 +651,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
 #align(center, block(inset: (y: 4pt))[#src[the set is `{nil}` where `p` fails on the head and
   `{nil,cons(a,xs)}` where it holds, and `nil` loses the second — @est-defn at a two-element set.
  ]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_step@bb113fef
+  // lean:AOP.A7_7_TakeWhile.takewhile_step@dfa01b38
 ]<takewhile-step>
 
 // B&dM Ex 7.39, p. 174: the specification down to the program, then the three facts that turn the
@@ -680,17 +680,17 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
     #src[takewhile: `takewhile(p)(x)` returns the longest prefix of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard implementation.
  ]],
-     // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@31b3dec9
+     // lean:AOP.A7_7_TakeWhile.takewhile_eq_cata@83291be3
   lean-calc(calc-tw),
 )
 #align(center, block(inset: (y: 4pt))[#src[`takewhile(p)° takewhile(p)⊑prefix° prefix∩R∩R°⊑𝟙` \
   `takewhile(p)⊑prefix list(p)` and `(prefix list(p))° takewhile(p)⊑R` — @est-75 at `est(R°)` —
    and two prefixes of one list of equal length are equal, so `takewhile(p)` is simple: *the*
    longest, not *a* longest.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_simple@f4543b09
+  // lean:AOP.A7_7_TakeWhile.takewhile_simple@63f4e6a3
 #align(center, block(inset: (y: 4pt))[#src[#frc([`prefix list(p)`]) ` est(R°)` entire \ `nil` is always
   a `p`-prefix and `R` is connected on the prefixes of one list, so the longest exists.]])
-  // lean:AOP.A7_7_TakeWhile.takewhile_entire@125bd033
+  // lean:AOP.A7_7_TakeWhile.takewhile_entire@8fdb32c9
 #align(center, block(inset: (y: 4pt))[#src[`X⊑Y`, `X` entire, `Y` simple `⟹X=Y` \
   `⦇[nil,(π₁p→cons,⊸ nil)]⦈` is a reduce of maps, hence entire — what turns the `⊒` above into the
    heading's `=`.]])
@@ -932,7 +932,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
    keep it],
 
  [`S`], [`[nil,π₂ ∪ (p×𝟙) cons]` #h(4pt) #src[]], [#leant("Freyd.Alg.RelSet.Filter.Salg")],
-  // lean:AOP.A7_7_Filter.Salg@a0accc65
+  // lean:AOP.A7_7_Filter.Salg@70c9b9f0
   [`(4,[2]) S [2]` #h(4pt) and #h(4pt) `(4,[2]) S [4,2]`, #h(4pt) but `(3,[2]) S [2]` only],
   [`subseq`'s algebra with one extra `p` — drop the head, or keep a head that passes `p`],
 
@@ -947,7 +947,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Filter.filter_mono") \
     #src[shortening the tail and then taking the step lands inside taking the step and then
  shortening the result]],
-     // lean:AOP.A7_7_Filter.filter_mono@4da97239
+     // lean:AOP.A7_7_Filter.filter_mono@4e66c31e
   table.header([*formula* — the `cons` branch of `F(R°)S⊑SR°`; *reason* under each circuit]),
 
   [#hchain(fill: true,
@@ -976,7 +976,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   Thm[#leanf("Freyd.Alg.RelSet.Filter.filter_step") \
     #src[the longest of the lists the algebra allows is the `cons` where the head passes `p`, and
  the tail where it does not]],
-     // lean:AOP.A7_7_Filter.filter_step@853608fd
+     // lean:AOP.A7_7_Filter.filter_step@b7f347f5
   table.header([*formula*], [*reason*]),
 
   [#step([])[#leanc("Freyd.Alg.RelSet.Filter.filter_step1.lhs")][]], [],
@@ -1027,13 +1027,13 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
     #src[filter: `filter(p) x` returns the longest subsequence of `x` with the property that all its
      elements satisfy `p`; the catamorphism is the standard program; `R` a preorder.
  ]],
-     // lean:AOP.A7_7_Filter.filter_eq_cata@46d2634b
+     // lean:AOP.A7_7_Filter.filter_eq_cata@f2a5ccbe
   lean-calc(calc-filter),
 )
 #align(center, block(inset: (y: 4pt))[#src[the catamorphism is entire and `filter(p)` simple, so `⊑`
   is `=`.]])
-  // lean:AOP.A7_7_Filter.filter_entire@38d444ac
-  // lean:AOP.A7_7_Filter.filter_simple@23207018
+  // lean:AOP.A7_7_Filter.filter_entire@1f3c4c56
+  // lean:AOP.A7_7_Filter.filter_simple@f0eba84c
   // lean:Freyd.S2_10.eq_of_le_entire_simple@e9665c67
 #align(center, block(inset: (y: 4pt))[#src[`(subseq list(p))°(subseq list(p))∩R∩R°⊑𝟙` fails — two
   `p`-subsequences of one list can be of equal length and different — so §@sec-takewhile's uniqueness

@@ -1241,10 +1241,10 @@ attribute [diag_unfold] RelSet.Knapsack.Salg RelSet.Paragraph.Salg
 -- The prefix algebra is drawn written out, `⦇[nil,⊸ nil ∪ cons]⦈` (13.3.3b), never as its name.
 attribute [diag_unfold] RelSet.ListRel.prefAlg
 -- The take-while section's algebras the same way: the note draws what each arm DOES — `prefix`,
--- `cons`, `p`, `(π₁p→cons,⊸ nil)` — and `prefConsAlg`, `consScalarAlg` and the step `twStep` are
--- Lean names for those arms, so opened they are read off their own `match`.
+-- `cons`, `p`, `(π₁p→cons,⊸ nil)` — and `prefConsAlg` and `consScalarAlg` are Lean names for those
+-- arms, so they are opened; a step (`twStep`, `fStep`) is read as the guard its `if` is.
 attribute [diag_unfold] RelSet.GCTakeWhile.prefConsAlg
-  RelSet.GCTakeWhile.twStep RelSet.CL.consScalarAlg
+  RelSet.CL.consScalarAlg
 -- Each arm of that algebra with one `p` on it: the note writes what the arm DOES — `⊸ nil`,
 -- `(p×𝟙)cons` — and the definition's own name says nothing, which is the whole of `diag_unfold`.
 attribute [diag_unfold] RelSet.GCTakeWhile.discNil RelSet.GCTakeWhile.pcons
