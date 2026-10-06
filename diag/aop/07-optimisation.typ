@@ -463,7 +463,7 @@ reads #h(4pt) `c=a+b∧a≤a'∧b≤b'⟹c≤a'+b'`.
   [`α`], [`[nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")], [],
   [both constructors as one map],
 
- [`p`], [a coreflexive: #leanf("Freyd.Alg.Coreflexive")], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
+ [`p`], [`p⊑𝟙`, a coreflexive], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`a` passes `p` when `a p a`],
 
@@ -930,7 +930,7 @@ set at `(a,b)` is `{0,a+b}`, so `⊕` is the larger of the two,
   [`α`], [`[nil,cons]`], [#leant("Freyd.Alg.RelSet.ListRel.alphaR_eq_junc")], [],
   [both constructors as one map],
 
- [`p`], [a coreflexive: #leanf("Freyd.Alg.Coreflexive")], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
+ [`p`], [`p⊑𝟙`, a coreflexive], [`A⟶A`], [`p≜even` #h(4pt) — `2 p 2`, and `3∉dom(p)`],
   // lean:AOP.A7_7_TakeWhile.holds@91a3ed4e
   [`a` passes `p` when `a p a`],
 
