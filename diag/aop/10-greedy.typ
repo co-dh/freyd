@@ -320,7 +320,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   [#leann("Freyd.Alg.RelSet.Tardy.m")], [#leant("Freyd.Alg.RelSet.Tardy.m")],
   [#leanf("Freyd.Alg.RelSet.Tardy.m")],
   [(10.6), B&dM's `h` renamed as in @tardy-laws: the cost of the schedule before the last job],
-// lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A10_3_Tardy.bmaxR@c4eeff86 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
+// lean:AOP.A10_3_Tardy.g@41729767 lean:AOP.A10_3_Tardy.m@7bff7a03 lean:AOP.A10_3_Tardy.k@daadb101 lean:AOP.A10_3_Tardy.add@a93c9066 lean:AOP.A10_3_Tardy.costR@42c139cf lean:AOP.A10_3_Tardy.penaltyR@89469572 lean:AOP.A7_5_Van.bmax@6afe4642 lean:AOP.A10_3_Tardy.R_eq@8f5cc907
 )]<tardy-defn>
 
 // B&dM p.255: `cost` restated over the bag of the schedule, the form Proposition 9.3 asks for.
@@ -370,7 +370,7 @@ $frac(#[`T°`], ∋)$ returns, so that $frac(#[`T°`], ∋)$ `est(Q)` is entire.
   Thm(cols: 1)[#leanf("Freyd.Alg.RelSet.Tardy.cost_alg_bmax") \
     #src[the cost of a schedule is the larger of the penalty of its last job and the cost of the
      schedule before it]],
-  // lean:AOP.A10_3_Tardy.cost_alg_bmax@6bdd5030
+  // lean:AOP.A10_3_Tardy.cost_alg_bmax@30fe295d
   lean-chain(
     (none, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.lhs", []),
     (EQ, "Freyd.Alg.RelSet.Tardy.cost_alg_bmax.rhs",

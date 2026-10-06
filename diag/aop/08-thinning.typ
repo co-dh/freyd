@@ -440,13 +440,13 @@ row((
 // lean:AOP.A5_6.cup@38377606
 // lean:AOP.A5_6.cpMap@636ea157
 // lean:AOP.A8_3.sortRel@0e1a3dba
-// lean:AOP.A8_3.RelSet.CL.bumpRel@088a04f4
+// lean:AOP.A8_3.RelSet.CL.bumpRel@415b7c12
 // lean:AOP.A8_3.RelSet.CL.bumpRel_wrap@993629d2
 // lean:AOP.A8_3.RelSet.CL.bumpRel_cons@a12aeb2f
 // lean:AOP.A8_3.RelSet.ListRel.thinlist@91e5cf00
 // lean:AOP.A8_3.RelSet.ListRel.le_thinlist_iff@a16f1cea
 // lean:AOP.A8_3.RelSet.ListRel.bumpFold_le_thinlist@a3505422
-// lean:AOP.A8_3.RelSet.CL.minlist@4457079b
+// lean:AOP.A8_3.RelSet.CL.minlist@7684e8d6
 )]<thinlist-defn>
 
 // B&dM's paragraph title "Sorting sets", p. 200: `sort(≼)`, its laws (8.6)–(8.11) and Lemma 8.1.
