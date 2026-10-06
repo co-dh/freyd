@@ -216,7 +216,7 @@ theorem thin_dom {cands : List St} {z : St} (hz : z ∈ cands) :
 
 /-! ## The mechanical side conditions, discharged once -/
 
-theorem Qm_preorder : Preorder P.Qm :=
+theorem Qm_preorder : preorder P.Qm :=
   ⟨show 𝟙 _ ⊑ P.Qm by rw [le_iff]; intro s t h; exact h ▸ P.Q_refl s,
    show P.Qm ≫ P.Qm ⊑ P.Qm by rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.Q_trans h1 h2⟩
 
@@ -224,7 +224,7 @@ theorem Qm_le_Rm : P.Qm ⊑ P.Rm := by
   rw [le_iff]; intro s t h; exact P.Q_le_R h
 
 /-- `R` is reflexive because it contains the reflexive `Q`. -/
-theorem Rm_preorder : Preorder P.Rm :=
+theorem Rm_preorder : preorder P.Rm :=
   ⟨show 𝟙 _ ⊑ P.Rm by rw [le_iff]; intro s t h; exact h ▸ P.Q_le_R (P.Q_refl s),
    show P.Rm ≫ P.Rm ⊑ P.Rm by rw [le_iff]; rintro s u ⟨t, h1, h2⟩; exact P.R_trans h1 h2⟩
 

@@ -480,7 +480,7 @@ public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
         · exact hm.2 z hz'
 
 /-- `Preorder(Q)` in `Rel`, pointwise: reflexive and transitive. -/
-public theorem preorder_apply {Q : dE A ⟶ dE A} (h : Preorder Q) :
+public theorem preorder_apply {Q : dE A ⟶ dE A} (h : preorder Q) :
     (∀ a, Q a a) ∧ ∀ a b c, Q a b → Q b c → Q a c :=
   ⟨fun a => le_iff.mp h.1 a a rfl, fun a b c hab hbc => le_iff.mp h.2 a c ⟨b, hab, hbc⟩⟩
 
@@ -492,7 +492,7 @@ public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.Connected Q) :
 
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
     the fold `⦇[nil,bump(Q)]⦈` sends `xs` to `[minlist Q xs]` — thinning comes down to one element. -/
-public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : Preorder Q)
+public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : preorder Q)
     (hc : Freyd.Alg.Connected Q) (a : A) (xs ys : ConsList Unit A) :
     bumpFold Q (ConsList.cons a xs) ys
       ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
@@ -626,7 +626,7 @@ public theorem subseqP_of_bumpFold (Q : dE A ⟶ dE A) :
 /-- For a preorder `Q`, every member of the input of `⦇[nil,bump(Q)]⦈` has a `Q`-lower bound in
     its output: reflexivity covers a kept element, transitivity passes on what a bumped head
     covered. -/
-public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : preorder Q) :
     ∀ {x ys : ConsList Unit A}, bumpFold Q x ys → ∀ z, inlistP x z → ∃ w, Q w z ∧ inlistP ys w
   | ConsList.wrap _, _, _, _, hz => hz.elim
   | ConsList.cons c d, ys, h, z, hz => by
@@ -658,7 +658,7 @@ public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
 
 /-- The fold `⦇[nil,bump(Q)]⦈` is an implementation of `thinlist(Q)` (B&dM p.200) when `Q` is a
     preorder: it only drops elements, and every dropped element is covered by a kept one. -/
-public theorem bumpFold_le_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+public theorem bumpFold_le_thinlist {Q : dE A ⟶ dE A} (hQ : preorder Q) :
     ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
       : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinlist Q := by
   rw [← bumpFold_eq]
@@ -1317,7 +1317,7 @@ public theorem prodMap_ordered_comp_merge_le {«≼» : dE A ⟶ dE A}
     `merge(≼)` and `ordered(≼)` the book's and `≼` a connected preorder: both conditions on
     `merge(≼)` are theorems, so the order's two properties are all that is left. -/
 public theorem prodMap_sort_comp_merge_le {«≼» : dE A ⟶ dE A}
-    (h : Preorder ≼) (hc : Freyd.Alg.Connected ≼) :
+    (h : preorder ≼) (hc : Freyd.Alg.Connected ≼) :
     prodMap (relProd (P (dE A)) (P (dE A))) (relProd (dList A) (dList A))
         (sortRel listRelator setify ordered ≼) (sortRel listRelator setify ordered ≼) ≫ merge ≼
       ⊑ cup (relProd (P (dE A)) (P (dE A))) ≫ sortRel listRelator setify ordered ≼ :=
@@ -1442,7 +1442,7 @@ public theorem filter_id : Filter.filter (𝟙 (dE A)) = 𝟙 (dList A) := by
     exact Filter.subseqP_clen_le hu
 
 /-- `⊤` is a preorder: it relates everything. -/
-public theorem preorder_topMor : Preorder (topMor (dE A) (dE A)) :=
+public theorem preorder_topMor : preorder (topMor (dE A) (dE A)) :=
   ⟨le_iff.mpr fun a b _ => RelSet.topMor_apply a b, le_iff.mpr fun a b _ => RelSet.topMor_apply a b⟩
 
 /-- `⊤` is connected: it relates everything. -/
@@ -1456,7 +1456,7 @@ public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
     `thin(Q)`. -/
 public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q : dE A ⟶ dE A} (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    {«≼» Q : dE A ⟶ dE A} (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
@@ -1573,10 +1573,10 @@ public theorem cup_laxNatural :
     puts `thin Q` inside the fold.  No set is ever built. -/
 public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
+    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
@@ -1603,10 +1603,10 @@ calc_steps thinningList
     composition are monotonic, so the smaller algebra gives the smaller fold. -/
 public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
+    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hm₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁ ≫ p₁) Q)
     (hm₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂ ≫ p₂) Q)
-    (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    (hP : preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.Pres (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.Pres (F := CL.F L E) (graph f₂) ≼) :
     relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair

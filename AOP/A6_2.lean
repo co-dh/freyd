@@ -356,12 +356,12 @@ variable [LocallyCompleteDistributiveAllegory 𝒜] {A B : 𝒜}
 
 /-- Monotonicity for a map between (possibly different) hom-sets.  `Monotonic φ` is
     definitionally `MonotonicHom φ` when the hom-sets coincide. -/
-@[expose] public def MonotonicHom {C D : 𝒜} (φ : (A ⟶ B) → (C ⟶ D)) : Prop :=
+@[expose] public def monotonic {C D : 𝒜} (φ : (A ⟶ B) → (C ⟶ D)) : Prop :=
   ∀ {X Y : A ⟶ B}, X ⊑ Y → φ X ⊑ φ Y
 
 /-- **Rolling rule** (B&dM Ex 6.35): `μ(φ∘ψ) = φ(μ(ψ∘φ))`. -/
 public theorem mu_rolling {C D : 𝒜} {φ : (A ⟶ B) → (C ⟶ D)} {ψ : (C ⟶ D) → (A ⟶ B)}
-    (hφ : MonotonicHom φ) (hψ : MonotonicHom ψ) :
+    (hφ : monotonic φ) (hψ : monotonic ψ) :
     mu (fun X => φ (ψ X)) = φ (mu (fun Y => ψ (φ Y))) := by
   have hφψ : Monotonic (fun X => φ (ψ X)) := fun h => hφ (hψ h)
   have hψφ : Monotonic (fun Y => ψ (φ Y)) := fun h => hψ (hφ h)

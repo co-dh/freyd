@@ -455,7 +455,7 @@ public theorem recip_comp_map_recip_eps_comp_Λ_le {S : F.obj A ⟶ A} :
 /-- The prefixed-point premise of `thinning`'s second half: `Q°` walks out of the `F` handle by
     monotonicity, the transpose is swallowed by its own converse (`W ≜ F(∋)S`), `thin`'s second
     half, and `Q` transitive. -/
-public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : Preorder Q)
+public theorem thinning_prefixed {Q : A ⟶ A} {S : F.obj A ⟶ A} (hQ : preorder Q)
     (hmono : Freyd.Alg.Pres S Q) :
     S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q ⊑ Q° ≫ (∋ A)° :=
   calc S° ≫ F.map (Q° ≫ (∋ A)°) ≫ Λ (F.map (∋ A) ≫ S) ≫ thinRel Q
@@ -496,7 +496,7 @@ public theorem thinning_cond1 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A 
 /-- `thinning`'s second condition: every value of `⦇S⦈` is `Q`-above one the thinning fold keeps —
     the hylomorphism theorem at the prefixed point `thinning_prefixed`. -/
 public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A ⟶ A}
-    (hQ : Preorder Q) (hmono : Freyd.Alg.Pres S Q) :
+    (hQ : preorder Q) (hmono : Freyd.Alg.Pres S Q) :
     (relCata S)° ≫ relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Q° ≫ (∋ A)° :=
   hylo_le_of_prefixed I (thinning_prefixed hQ hmono)
 
@@ -509,7 +509,7 @@ public theorem thinning_cond2 (I : InitialAlgebra F) {Q : A ⟶ A} {S : F.obj A 
     "keeps lower bounds" half by the hylomorphism theorem (`hylo_le_of_prefixed`), using the
     reciprocated monotonicity `S° ≫ FQ° ⊑ Q° ≫ S°` exactly as in the GREEDY THEOREM. -/
 public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQ : Preorder Q) (hmono : Freyd.Alg.Pres S Q) :
+    {S : F.obj A ⟶ A} (hQ : preorder Q) (hmono : Freyd.Alg.Pres S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ⊑ Λ (relCata S) ≫ thinRel Q :=
   le_Λ_comp_thinRel_iff.mpr ⟨thinning_cond1 I, thinning_cond2 I hQ hmono⟩
 
@@ -519,7 +519,7 @@ public theorem thinning (I : InitialAlgebra F) {Q : A ⟶ A}
     `id ⊑ Q`, `Q` and `R` transitive, and `S` monotonic on `Q`.  Immediate from THEOREM 8.1
     composed with `min R°` and thin-introduction (`thinRel_comp_est`). -/
 public theorem thinning_est (I : InitialAlgebra F) {Q R : A ⟶ A}
-    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
+    {S : F.obj A ⟶ A} (hQR : Q ⊑ R) (hQ : preorder Q) (hR : preorder R)
     (hmono : Freyd.Alg.Pres S Q) :
     relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R ⊑ Λ (relCata S) ≫ est R := by
   calc relCata (Λ (F.map (∋ A) ≫ S) ≫ thinRel Q) ≫ est R

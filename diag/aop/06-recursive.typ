@@ -575,7 +575,7 @@
   Thm(cols: 1)[#leanf("Freyd.Alg.mu_rolling") \
     #src[the least fixed point of `φ` after `ψ` is `φ` applied to the least fixed point of `ψ` after
      `φ`]],
-     // lean:AOP.A6_2.mu_rolling@c705ef5a
+     // lean:AOP.A6_2.mu_rolling@4775ca31
 )]<closure-rolling>
 
 // B&dM 6.7g, p.160 and Ex 6.32: `SR*` and `R*S` as least fixed points, mirrored.
