@@ -243,6 +243,16 @@ partial def headShown (h : Syntax) (brk : Array Name := #[]) : MetaM String := d
 
 end
 
+/-- A NOTATION'S OWN JUXTAPOSITIONS are applications like any other: each `f x` the printer wrote
+    inside `q ∈ f x` or `x ++ blanks y` is re-set by `appSpell`, where Lean's formatter kept `f x`
+    and a hole filled in beside it read as a composite (`blanks tbc(xs)`). -/
+partial def reSetApps (s : Syntax) (brk : Array Name) : MetaM Syntax := do
+  if let some (h, ops) := appParts s then
+    return mkIdent (Name.mkSimple (← appSpell (← headShown h brk) ops brk))
+  match s with
+  | .node i k args => return .node i k (← args.mapM (reSetApps · brk))
+  | _ => return s
+
 /-- Whether the `i`-th argument of the application `e` is a POINT: an explicit argument that is
     data — no type, proof, object, arrow, or value of `Unit`, which says nothing. -/
 def isPoint (e : Expr) (i : Nat) : MetaM Bool := do
@@ -289,6 +299,11 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   | none =>
     if (stxPeel stx).isIdent && ((← isObjType (← Meta.inferType e)) || (← homEnds? e).isSome) then
       headShown (stxPeel stx)
+    -- A POINT OR A STATEMENT only, `isPoint`'s test (its type lives in `Type`): an object or an arrow
+    -- joins by the functor rule (`PA`, `(PA)[n]`), whose grouping an atom in its place would lose.
+    else if (stx.raw.find? (appParts · |>.isSome)).isSome
+        && (← Meta.whnf (← Meta.inferType (← Meta.inferType e))) == .sort 1
+        && (← homEnds? e).isNone then stxShow (← reSetApps stx.raw brk) brk
     else plain e
 
 /-- Whether a factor OPENS WITH A WORD: a name of two letters or more, standing alone (`cost`) or

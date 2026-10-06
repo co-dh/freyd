@@ -1559,10 +1559,10 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.Q'] public meta def Freyd.Alg.RelSet.Tardy.unexpandTardyQ' : Unexpander | _ => `($(mkIdent `Q'))
 -- The bag's quotient is taken of the note's `perm`, the permutation relation `16-greedy` defines
--- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.
+-- as `bagify bagify°`; `permSetoid` is the Lean bundle carrying it.  The job type is the section's
+-- context, dropped as `R` drops its own.
 open Lean PrettyPrinter in
 @[app_unexpander Freyd.Alg.RelSet.Tardy.permSetoid] public meta def Freyd.Alg.RelSet.Tardy.unexpandPermSetoid : Unexpander
-  | `($_ $args*) => `($(mkIdent `perm) $args*)
   | _ => `($(mkIdent `perm))
 -- §10.3: `add`'s inductive statement is `add` itself, and the penalty of a bag is the book's
 -- `(bagify°×𝟙) penalty`, the penalty of putting the job last after any ordering of the bag; both
