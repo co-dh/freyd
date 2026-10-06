@@ -515,6 +515,15 @@
 /// spends the second scale factor.  `s` stays what the picture asked for whenever it fits.
 /// `fit(w, sz)`: that second factor for a picture `w` wide, already at `s`, in the region `sz`.
 #let fit(w, sz) = if w > sz.width and sz.width > 0pt { sz.width / w * 100% } else { 100% }
+/// The product of every factor the helpers here have scaled a picture by: `scale` tells its body
+/// nothing, and a picture that must hold a length ON THE PAGE (`cpanel`'s frame pad) needs it.
+/// `measure` does not see an update inside what it measures, only one placed before it.  A STACK of
+/// factors, popped exactly: a running `x / k` drifts in the last bit, and typst then never converges.
+#let pscale = state("pscale", ())
+#let pscaled(k, body) = {
+  pscale.update(a => a + (k,)); scale(k * 100%, reflow: true, body); pscale.update(a => a.slice(0, -1))
+}
+#let pscale-get() = pscale.get().product(default: 1.0)
 #let P(p, s: 92%, key: none) = layout(sz => align(center, box({
   let q = scale(x: s, y: s, reflow: true, p)
   let m = measure(q)
@@ -526,7 +535,7 @@
 })))
 /// A picture set INLINE in a table header.  Deliberately large: at running-text size the theorem it
 /// states cannot be read at all.
-#let Pin(p, s: 70%) = box(baseline: 36%, scale(x: s, y: s, reflow: true, p))
+#let Pin(p, s: 70%) = box(baseline: 36%, pscaled(s / 100%, p))
 /// A chain table's top header row: the theorem, one size up from the body.
 #let Th(body) = table.cell(colspan: 3, text(12.5pt)[#body])
 /// A figure transcribed from the paper by hand — used only where there is no Lean STATEMENT to
@@ -536,13 +545,13 @@
 /// horizon puts all their wires at one height; a per-box `baseline:` shift cannot, being a fraction of each.
 #let row(items, s: 100%) = align(center, box(grid(
   columns: items.len(), align: horizon, column-gutter: 3pt,
-  ..items.map(t => scale(x: s, y: s, reflow: true, t)))))
+  ..items.map(t => pscaled(s / 100%, t)))))
 
 /// A proof in ONE ROW, the rule under each step.  The exporter draws the `=` (or `≤`) at the LEFT edge
 /// of every step after the first, so a left-aligned hint lands under it and the first hint is empty.
 #let chain(steps, hints, s: 62%) = align(center, box(grid(
   columns: steps.len(), align: horizon, column-gutter: 14pt, row-gutter: 1pt,
-  ..steps.map(t => scale(x: s, y: s, reflow: true, t)),
+  ..steps.map(t => pscaled(s / 100%, t)),
   ..hints.map(h => src[#h]))))
 
 // WHAT THE TABLE SETTLES, in its top row: the reader needs the destination before the steps, and a

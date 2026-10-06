@@ -12,7 +12,7 @@
 // `cetz` through `circuit.typ`, not from the package: that is where the `--input nodraw=1` shim lives.
 #import "circuit.typ": cetz, gbox, wire, bend, delta, nabla, bang, tape, tape-join, BH, TINT, TAPEEDGE, lw, CBAR, banana, d, frc, PFRAME
 #import "draw.typ": lab
-#import "note-style.typ": P, TYCOL, fit
+#import "note-style.typ": P, TYCOL, fit, pscale-get
 
 #let UIP = 0.4          // the pair's half-height — one strand of a product to the next
 #let UHH = 0.7          // a `∪` copy's half-height
@@ -315,13 +315,16 @@
   }
 }
 
-// A frame's `pad` is `CHPAD`, raised until it is `PFRAME` on the PAGE after both `s` and the fit
-// scale `P` will spend.  The pad widens the panel, so the fit falls as it grows: iterate to the fixed point.
+// A frame's `pad` is `CHPAD`, raised until it is `PFRAME` on the PAGE after `s`, the fit scale `P`
+// will spend, and every scale a helper round the panel records in `pscale`.  The pad widens the panel, so the fit falls as it grows: iterate to the fixed point.
 #let cpanel(tree, s: 74%, length: 0.8cm, cert: (:)) = {
   layout(sz => {
     let draw(pad) = cetz.canvas(length: length, cbody(tree, length, pad))
-    let need(pad) = calc.max(CHPAD,
-      PFRAME / (length * (s / 100%) * (fit(measure(draw(pad)).width * (s / 100%), sz) / 100%)))
+    // On a grid of 1/64, rounded the way that only grows the pad: a scale read back from `pscale`
+    // moves in the last bit from one layout pass to the next, and typst then never converges.
+    let k = calc.floor(pscale-get() * 64) / 64
+    let need(pad) = calc.max(CHPAD, calc.ceil(64 * PFRAME / (length * k * (s / 100%)
+      * (fit(measure(draw(pad)).width * (s / 100%), sz) / 100%))) / 64)
     let pad = CHPAD
     let q = need(pad)
     let n = 0
