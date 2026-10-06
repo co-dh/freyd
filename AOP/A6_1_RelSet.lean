@@ -97,7 +97,7 @@ public theorem le_iff {A B : RelSet.{u}} {R S : A ⟶ B} : R ⊑ S ↔ ∀ x y, 
 /-- The graph relation `y = f x` of an ordinary function `f`. -/
 @[expose] public def graph {A B : RelSet.{u}} (f : A.carrier → B.carrier) : A ⟶ B := fun x y => y = f x
 
-theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x : A.carrier)
+public theorem graph_apply {A B : RelSet.{u}} (f : A.carrier → B.carrier) (x : A.carrier)
     (y : B.carrier) : graph f x y = (y = f x) := rfl
 
 /-- The coreflexive of a predicate, `{(a,a)∣P(a)}`: a `def`, so a relation built from it prints

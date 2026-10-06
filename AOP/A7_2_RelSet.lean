@@ -16,6 +16,7 @@ module
 public import AOP.A6_1_OrdRelSet
 public import AOP.A7_2
 public import AOP.A6_ConsList
+import AOP.CalcSteps
 
 namespace Freyd.Alg.RelSet
 open PowerAllegory
@@ -241,19 +242,63 @@ public theorem CL.forall_Fmap_imp_iff {L E : Type} {C : RelSet.{0}} {R : C ⟶ C
           ∀ e x e' y, e = e' ∧ R x y → Q (.inr (e, x)) (.inr (e', y)) :=
       and_congr_right fun _ => forall_congr' fun _ => forall_congr' fun _ => Prod.forall
 
+/-- **A bound over the `f`-images of `P`-related pairs is a bound over `f` of the pairs** —
+    `forall_image_imp_iff` once per end of the pair. -/
+public theorem forall_image₂_imp_iff {α β : Type _} {P : α → α → Prop} {Q : β → β → Prop}
+    {f : α → β} :
+    (∀ x y, (∃ u, x = f u ∧ ∃ v, P u v ∧ y = f v) → Q x y) ↔ ∀ u v, P u v → Q (f u) (f v) :=
+  calc (∀ x y, (∃ u, x = f u ∧ ∃ v, P u v ∧ y = f v) → Q x y)
+      ↔ ∀ y x, (∃ u, x = f u ∧ ∃ v, P u v ∧ y = f v) → Q x y := forall_comm
+    _ ↔ ∀ y x, (∃ u, (∃ v, P u v ∧ y = f v) ∧ x = f u) → Q x y :=
+      forall_congr' fun _ => forall_congr' fun _ => imp_congr_left (exists_congr fun _ => and_comm)
+    _ ↔ ∀ y u, (∃ v, P u v ∧ y = f v) → Q (f u) y :=
+      forall_congr' fun y => forall_image_imp_iff (Q := fun x => Q x y)
+    _ ↔ ∀ u y, (∃ v, P u v ∧ y = f v) → Q (f u) y := forall_comm
+    _ ↔ ∀ u v, P u v → Q (f u) (f v) := forall_congr' fun _ => forall_image_imp_iff
+
+/-- **`f°Rg` at points**: it relates `x` to `y` when `x = f(u)`, `u R v` and `y = g(v)`. -/
+public theorem recip_graph_comp_graph_apply {A B C D : RelSet.{0}} (f : A.carrier → B.carrier)
+    (R : A ⟶ C) (g : C.carrier → D.carrier) (x : B.carrier) (y : D.carrier) :
+    ((graph f)° ≫ R ≫ graph g) x y ↔ ∃ u, x = f u ∧ ∃ v, R u v ∧ y = g v :=
+  calc ((graph f)° ≫ R ≫ graph g) x y
+      ↔ ∃ u, (graph f)° x u ∧ (R ≫ graph g) u y := iff_of_eq (comp_apply _ _ x y)
+    _ ↔ ∃ u, x = f u ∧ (R ≫ graph g) u y :=
+      exists_congr fun u => and_congr_left fun _ =>
+        iff_of_eq ((recip_apply (graph f) x u).trans (graph_apply f u x))
+    _ ↔ ∃ u, x = f u ∧ ∃ v, R u v ∧ graph g v y :=
+      exists_congr fun u => and_congr_right fun _ => iff_of_eq (comp_apply R (graph g) u y)
+    _ ↔ ∃ u, x = f u ∧ ∃ v, R u v ∧ y = g v :=
+      exists_congr fun _ => and_congr_right fun _ => exists_congr fun v =>
+        and_congr_right fun _ => iff_of_eq (graph_apply g v y)
+
+/-- **Shunting the map `f` at `≤`**: `F(≤)f⊑f≤` iff `f°F(≤)f⊑≤` — `map_shunt_left` at `R:=F(≤)f`. -/
+public theorem graph_monoAlg_iff_conj {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+    (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
+    F.map «≤» ≫ graph f ⊑ graph f ≫ «≤» ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» :=
+  calc F.map «≤» ≫ graph f ⊑ graph f ≫ «≤»
+      ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» := (map_shunt_left (graph_map f) _ «≤»).symm
+
+calc_steps graph_monoAlg_iff_conj
+
+/-- **`f°F(≤)f⊑≤` at points**: `F(≤)`-related arguments go to `≤`-related results. -/
+public theorem graph_conj_le_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
+    (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
+    (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) :=
+  calc (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤»
+      ↔ ∀ x y, ((graph f)° ≫ F.map «≤» ≫ graph f) x y → «≤» x y := le_iff
+    _ ↔ ∀ x y, (∃ u, x = f u ∧ ∃ v, F.map «≤» u v ∧ y = f v) → «≤» x y :=
+      forall_congr' fun x => forall_congr' fun y =>
+        imp_congr_left (recip_graph_comp_graph_apply f (F.map «≤») f x y)
+    _ ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) := forall_image₂_imp_iff
+
 /-- **A map `f` is monotonic on `≤` iff `F(≤)`-related arguments go to `≤`-related results** —
-    `F(≤)f⊑f≤` read at points: `f`'s source is `FA`, so its source order is `≤` lifted by `F`. -/
+    the shunting step, then its reading at points. -/
 public theorem graph_monoAlg_iff_monotone {F : Relator RelSet.{0} RelSet.{0}} {A : RelSet.{0}}
     (f : (F.obj A).carrier → A.carrier) («≤» : A ⟶ A) :
     MonoAlg (F := F) (graph f) «≤» ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) :=
   calc MonoAlg (F := F) (graph f) «≤»
-      ↔ ∀ u z, (F.map «≤» ≫ graph f) u z → (graph f ≫ «≤») u z := le_iff
-    _ ↔ ∀ u z, (∃ v, F.map «≤» u v ∧ z = f v) → (graph f ≫ «≤») u z :=
-      forall_congr' fun u => forall_congr' fun z => imp_congr_left (iff_of_eq (comp_apply _ _ u z))
-    _ ↔ ∀ u z, (∃ v, F.map «≤» u v ∧ z = f v) → «≤» (f u) z :=
-      forall_congr' fun u => forall_congr' fun z => imp_congr_right fun _ =>
-        iff_of_eq (congrFun (congrFun (graph_comp_left f «≤») u) z)
-    _ ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) := forall_congr' fun _ => forall_image_imp_iff
+      ↔ (graph f)° ≫ F.map «≤» ≫ graph f ⊑ «≤» := graph_monoAlg_iff_conj f «≤»
+    _ ↔ ∀ u v, F.map «≤» u v → «≤» (f u) (f v) := graph_conj_le_iff_monotone f «≤»
 
 /-- **At `F(X)=L+E×X`, monotonic on a reflexive `≤` means monotone in the tail, `e` held still** —
     `F(≤)` relates a leaf only to itself and a pair only to one with the same element. -/

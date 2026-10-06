@@ -271,7 +271,8 @@ def appShow (e : Expr) (brk : Array Name := #[]) : MetaM String := do
   -- A MAP APPLIED TO A POINT takes parentheses at any length, `f(u)`, never `fu`: the one-letter
   -- juxtaposition is a functor's on an OBJECT (`EA`), and `fu` would read as a composite.
   | some (h, ops) =>
-    let pt := e.getAppNumArgs > 0 && (← isPoint e (e.getAppNumArgs - 1))
+    -- `if`, not `&&`: a `(← …)` is hoisted out of `&&`, so it would run on a term with no argument.
+    let pt ← if e.getAppNumArgs > 0 then isPoint e (e.getAppNumArgs - 1) else pure false
     appSpell (← headShown h brk) ops brk pt
   -- A CONSTANT THE PRINTER WROTE AS ONE NAME wears that name's LAST COMPONENT, the rule `headShown`
   -- already applies to the head of an application: a qualifier is what the printer adds to keep a

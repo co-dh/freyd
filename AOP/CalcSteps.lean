@@ -46,10 +46,8 @@ syntax (name := calcSteps) "calc_steps " ident : command
   let ci ← getConstInfo n
   let some v := ci.value? | throwError "calc_steps: {n} has no proof term to read the steps off"
   let steps ← liftTermElabM <| lambdaTelescope v fun xs b => do
+    -- A proof by one law is a chain of one step: `calc a ↔ b := h` elaborates to `h` itself.
     let ls ← leaves b (← inferType b)
-    if ls.size < 2 then
-      throwError "calc_steps: the proof of {n} is no `calc` of two or more steps — its body is \
-        {← ppExpr b}"
     -- A binder the step does not use is no binder of the step: kept, it would have to be supplied
     -- by every caller of a step that never needs it.  Used means in the step, or in a used binder's
     -- type, so the binders are read last to first.
