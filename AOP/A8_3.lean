@@ -421,12 +421,13 @@ public theorem bumpRel_cons (Q : dE A ⟶ dE A) (a b : A) (xs ys : ConsList Unit
     | Sum.inl _ => ys = ConsList.wrap ()
     | Sum.inr p => bumpRel Q p ys
 
-/-- `thinlist Q ≜ ⦇[nil,bump Q]⦈`. -/
-@[expose] public def thinlist (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dCL Unit A := cataR (bumpAlg Q)
+/-- The fold `⦇[nil,bump(Q)]⦈`: thin a list in one pass.  It carries no book name of its own — it
+    is an implementation of `ListRel.thinlist(Q)` (`bumpFold_le_thinlist`), not its definition. -/
+@[expose] public def bumpFold (Q : dE A ⟶ dE A) : dCL Unit A ⟶ dCL Unit A := cataR (bumpAlg Q)
 
-/-- `thinlist(Q) ≜ ⦇[nil,bump(Q)]⦈`, the junction written out. -/
-public theorem thinlist_eq (Q : dE A ⟶ dE A) :
-    thinlist Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+/-- `bumpFold(Q) = ⦇[nil,bump(Q)]⦈`, the junction written out. -/
+public theorem bumpFold_eq (Q : dE A ⟶ dE A) :
+    bumpFold Q = ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
       : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ := by
   have h : bumpAlg Q = (junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
       : (F Unit A).obj (dCL Unit A) ⟶ dCL Unit A) := by
@@ -442,14 +443,14 @@ public theorem thinlist_eq (Q : dE A ⟶ dE A) :
       rcases h with ⟨_, h1, _⟩ | ⟨_, h1, h2⟩
       · cases h1
       · cases h1; exact h2
-  unfold thinlist
+  unfold bumpFold
   rw [h, cataR_eq_relCata]
 
-public theorem thinlist_wrap (Q : dE A ⟶ dE A) (u : Unit) (r : ConsList Unit A) :
-    thinlist Q (ConsList.wrap u) r ↔ r = ConsList.wrap () := Iff.rfl
+public theorem bumpFold_wrap (Q : dE A ⟶ dE A) (u : Unit) (r : ConsList Unit A) :
+    bumpFold Q (ConsList.wrap u) r ↔ r = ConsList.wrap () := Iff.rfl
 
-public theorem thinlist_cons (Q : dE A ⟶ dE A) (c : A) (d r : ConsList Unit A) :
-    thinlist Q (ConsList.cons c d) r ↔ ∃ r', thinlist Q d r' ∧ bumpRel Q (c, r') r := Iff.rfl
+public theorem bumpFold_cons (Q : dE A ⟶ dE A) (c : A) (d r : ConsList Unit A) :
+    bumpFold Q (ConsList.cons c d) r ↔ ∃ r', bumpFold Q d r' ∧ bumpRel Q (c, r') r := Iff.rfl
 
 /-- A non-empty list has a `Q`-least member when `Q` is a connected preorder. -/
 public theorem minlist_exists {Q : dE A ⟶ dE A} (hrefl : ∀ a, Q a a)
@@ -490,19 +491,19 @@ public theorem connected_apply {Q : dE A ⟶ dE A} (h : Freyd.Alg.Connected Q) :
   rwa [union_apply] at this
 
 /-- **(8.5)** (B&dM p.200): for a CONNECTED preorder `Q` and a non-empty list,
-    `thinlist Q xs = [minlist Q xs]` — thinning comes down to one element. -/
-public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : Preorder Q)
+    the fold `⦇[nil,bump(Q)]⦈` sends `xs` to `[minlist Q xs]` — thinning comes down to one element. -/
+public theorem bumpFold_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : Preorder Q)
     (hc : Freyd.Alg.Connected Q) (a : A) (xs ys : ConsList Unit A) :
-    thinlist Q (ConsList.cons a xs) ys
+    bumpFold Q (ConsList.cons a xs) ys
       ↔ ∃ w, minlist Q (ConsList.cons a xs) w ∧ ys = ConsList.cons w (ConsList.wrap ()) := by
   obtain ⟨hrefl, htrans⟩ := preorder_apply hQ
   have hconn := connected_apply hc
   induction xs generalizing a ys with
   | wrap u =>
-      rw [thinlist_cons]
+      rw [bumpFold_cons]
       constructor
       · rintro ⟨r', hr', hb⟩
-        rw [thinlist_wrap] at hr'
+        rw [bumpFold_wrap] at hr'
         subst hr'
         refine ⟨a, (minlist_apply Q _ a).mpr ⟨clMem_cons.mpr (Or.inl rfl), ?_⟩, hb⟩
         intro z hz
@@ -515,7 +516,7 @@ public theorem thinlist_eq_singleton_minlist {Q : dE A ⟶ dE A} (hQ : Preorder 
         · exact ⟨ConsList.wrap (), rfl, rfl⟩
         · exact hw'.elim
   | cons b zs ih =>
-      rw [thinlist_cons]
+      rw [bumpFold_cons]
       constructor
       · rintro ⟨r', hr', hb⟩
         obtain ⟨m, hm, rfl⟩ := (ih b r').mp hr'
@@ -593,27 +594,34 @@ public theorem ordered_comp_subseq_le («≼» : A → A → Prop) :
     obtain ⟨y, ⟨rfl, hx⟩, hys⟩ := h
     exact ⟨ys, hys, rfl, orderedP_of_subseqP ≼ hys hx⟩
 
-/-- What B&dM p.200 asks of an implementation of `thin(Q)` on lists, and all it asks: it only
-    drops elements, and on the underlying set it is a thinning.  Every other premise the abstract
-    (8.6) carries is a theorem about `setify` and `ordered(≼)`, so this pair is what is left. -/
-public structure IsThinlist (Q : dE A ⟶ dE A) (thinlist : dList A ⟶ dList A) : Prop where
-  /-- `thinlist(Q)⊑subseq`: the result is a subsequence of the input. -/
-  sub : thinlist ⊑ subseq
-  /-- `thinlist(Q) setify⊑setify thin(Q)`: as a set, the result is a thinning of the input's. -/
-  spec : thinlist ≫ setify ⊑ setify ≫ thinRel Q
+/-- `thinlist(Q) ≜ (setify thin(Q))/setify ∩ subseq` (B&dM p.200): the largest list relation
+    that only drops elements and, on the set of the elements, is a thinning by `Q`. -/
+@[expose] public def thinlist (Q : dE A ⟶ dE A) : dList A ⟶ dList A :=
+  ((setify ≫ thinRel Q) / setify) ∩ subseq
 
-/-- `IsThinlist` unfolded: the two conditions of B&dM p.200. -/
-public theorem isThinlist_iff (Q : dE A ⟶ dE A) (thinlist : dList A ⟶ dList A) :
-    IsThinlist Q thinlist ↔ thinlist ⊑ subseq ∧ thinlist ≫ setify ⊑ setify ≫ thinRel Q :=
-  ⟨fun h => ⟨h.sub, h.spec⟩, fun h => ⟨h.1, h.2⟩⟩
+/-- `setify` is a map, so dividing by it is composing with its reciprocal. -/
+public theorem setify_thin_div_setify (Q : dE A ⟶ dE A) :
+    (setify ≫ thinRel Q) / setify = setify ≫ thinRel Q ≫ setify° :=
+  calc (setify ≫ thinRel Q) / setify = (setify ≫ thinRel Q) ≫ setify° := div_map _ (graph_map _)
+    _ = setify ≫ thinRel Q ≫ setify° := Cat.assoc _ _ _
 
-/-- `bump(Q)` keeps a subsequence: the output of `thinlist(Q)` is a subsequence of its input. -/
-public theorem subseqP_of_thinlist (Q : dE A ⟶ dE A) :
-    ∀ {x ys : ConsList Unit A}, thinlist Q x ys → subseqP ys x
-  | ConsList.wrap _, _, h => by rw [thinlist_wrap] at h; subst h; exact subseqP.nil _
+calc_steps setify_thin_div_setify
+
+/-- `T ⊑ thinlist(Q)` is B&dM's two conditions (p.200): `T` only drops elements, and on the set
+    of the elements it is a thinning — the meet's and the division's universal properties. -/
+public theorem le_thinlist_iff (Q : dE A ⟶ dE A) (T : dList A ⟶ dList A) :
+    T ⊑ thinlist Q ↔ T ⊑ subseq ∧ T ≫ setify ⊑ setify ≫ thinRel Q :=
+  ⟨fun h => ⟨le_trans h (inter_lb_right _ _),
+      (le_div_iff _ _ _).mp (le_trans h (inter_lb_left _ _))⟩,
+    fun h => le_inter ((le_div_iff _ _ _).mpr h.2) h.1⟩
+
+/-- `bump(Q)` keeps a subsequence: the output of `⦇[nil,bump(Q)]⦈` is a subsequence of its input. -/
+public theorem subseqP_of_bumpFold (Q : dE A ⟶ dE A) :
+    ∀ {x ys : ConsList Unit A}, bumpFold Q x ys → subseqP ys x
+  | ConsList.wrap _, _, h => by rw [bumpFold_wrap] at h; subst h; exact subseqP.nil _
   | ConsList.cons c d, ys, h => by
-    obtain ⟨r', hr', hb⟩ := (thinlist_cons Q c d ys).mp h
-    have ih := subseqP_of_thinlist Q hr'
+    obtain ⟨r', hr', hb⟩ := (bumpFold_cons Q c d ys).mp h
+    have ih := subseqP_of_bumpFold Q hr'
     cases r' with
     | wrap _ => rw [bumpRel_wrap] at hb; subst hb; exact Or.inl ⟨rfl, subseqP.nil _⟩
     | cons b xs =>
@@ -622,17 +630,18 @@ public theorem subseqP_of_thinlist (Q : dE A ⟶ dE A) :
       · exact Or.inr ih
       · exact Or.inl ⟨rfl, ih⟩
 
-/-- For a preorder `Q`, every member of the input of `thinlist(Q)` has a `Q`-lower bound in its
-    output: reflexivity covers a kept element, transitivity passes on what a bumped head covered. -/
-public theorem thinlist_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
-    ∀ {x ys : ConsList Unit A}, thinlist Q x ys → ∀ z, inlistP x z → ∃ w, Q w z ∧ inlistP ys w
+/-- For a preorder `Q`, every member of the input of `⦇[nil,bump(Q)]⦈` has a `Q`-lower bound in
+    its output: reflexivity covers a kept element, transitivity passes on what a bumped head
+    covered. -/
+public theorem bumpFold_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    ∀ {x ys : ConsList Unit A}, bumpFold Q x ys → ∀ z, inlistP x z → ∃ w, Q w z ∧ inlistP ys w
   | ConsList.wrap _, _, _, _, hz => hz.elim
   | ConsList.cons c d, ys, h, z, hz => by
     have hrefl : ∀ a, Q a a := fun a => le_iff.mp hQ.1 a a rfl
     have htrans : ∀ a b e, Q a b → Q b e → Q a e := fun a b e hab hbe =>
       le_iff.mp hQ.2 a e ⟨b, hab, hbe⟩
-    obtain ⟨r', hr', hb⟩ := (thinlist_cons Q c d ys).mp h
-    have ih := thinlist_covers hQ hr'
+    obtain ⟨r', hr', hb⟩ := (bumpFold_cons Q c d ys).mp h
+    have ih := bumpFold_covers hQ hr'
     cases r' with
     | wrap _ =>
       rw [bumpRel_wrap] at hb; subst hb
@@ -654,29 +663,32 @@ public theorem thinlist_covers {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
         · exact ⟨z, hrefl z, Or.inl rfl⟩
         · obtain ⟨w, hwz, hw⟩ := ih z hz; exact ⟨w, hwz, Or.inr hw⟩
 
-/-- B&dM's `thinlist(Q) ≜ ⦇[nil, bump(Q)]⦈` (p.200) implements `thin(Q)` when `Q` is a preorder. -/
-public theorem isThinlist_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
-    IsThinlist Q (thinlist Q) where
-  sub := le_iff.mpr fun _ _ h => subseqP_of_thinlist Q h
-  spec := le_iff.mpr fun x S h => by
-    obtain ⟨ys, hys, rfl⟩ := h
-    exact ⟨inlistP x, rfl, fun _ hy => inlistP_of_subseqP (subseqP_of_thinlist Q hys) hy,
-      thinlist_covers hQ hys⟩
+/-- The fold `⦇[nil,bump(Q)]⦈` is an implementation of `thinlist(Q)` (B&dM p.200) when `Q` is a
+    preorder: it only drops elements, and every dropped element is covered by a kept one. -/
+public theorem bumpFold_le_thinlist {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+    ⦇(junc (sumCop (dL Unit) ⟨A × ConsList Unit A⟩) wrapR (bumpRel Q)
+      : (CL.F Unit A).obj (dCL Unit A) ⟶ dCL Unit A)⦈ ⊑ thinlist Q := by
+  rw [← bumpFold_eq]
+  refine (le_thinlist_iff Q _).mpr ⟨le_iff.mpr fun _ _ h => subseqP_of_bumpFold Q h,
+    le_iff.mpr fun x S h => ?_⟩
+  obtain ⟨ys, hys, rfl⟩ := h
+  exact ⟨inlistP x, rfl, fun _ hy => inlistP_of_subseqP (subseqP_of_bumpFold Q hys) hy,
+    bumpFold_covers hQ hys⟩
 
 /-- `thinlist(Q)` only drops elements, so it may run before the order test. -/
 public theorem ordered_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} :
     ordered ≼ ≫ thinlist Q ⊑ thinlist Q ≫ ordered ≼ :=
-  ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼)
-    (le_iff.mpr fun _ _ h => subseqP_of_thinlist Q h) (ordered_comp_subseq_le ≼)
+  ordered_comp_le_of_subseq listRelator (ordered_coreflexive ≼) (inter_lb_right _ _)
+    (ordered_comp_subseq_le ≼)
 
 /-- `thinlist(Q)` lists a thinning of the set it lists, read across `setify°`. -/
-public theorem setify_conv_comp_thinlist_le {Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+public theorem setify_conv_comp_thinlist_le {Q : dE A ⟶ dE A} :
     setify° ≫ thinlist Q ⊑ thinRel Q ≫ setify° :=
-  setify_conv_comp_le listRelator (graph_map _) (isThinlist_thinlist hQ).spec
+  setify_conv_comp_le listRelator (graph_map _) ((le_thinlist_iff Q _).mp (le_refl _)).2
 
-/-- **(8.6)** in `Rel` (book p.201) at B&dM's own `thinlist(Q) ≜ ⦇[nil, bump(Q)]⦈`: the one
-    hypothesis is the book's, that `Q` is a preorder. -/
-public theorem sort_comp_bump_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) :
+/-- **(8.6)** in `Rel` (book p.201) at the specification `thinlist(Q)`: no hypothesis — both
+    conditions of p.200 are in the definition. -/
+public theorem sort_comp_thinlist_le {«≼» Q : dE A ⟶ dE A} :
     sortRel listRelator setify ordered ≼ ≫ thinlist Q ⊑ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
   calc sortRel listRelator setify ordered ≼ ≫ thinlist Q = setify° ≫ ordered ≼ ≫ thinlist Q := by
         show (setify° ≫ ordered ≼) ≫ thinlist Q = _
@@ -684,10 +696,10 @@ public theorem sort_comp_bump_thinlist_le {«≼» Q : dE A ⟶ dE A} (hQ : Preo
     _ ⊑ setify° ≫ thinlist Q ≫ ordered ≼ := comp_mono_left _ ordered_comp_thinlist_le
     _ ⊑ thinRel Q ≫ setify° ≫ ordered ≼ := by
         rw [← Cat.assoc (setify°) (thinlist Q) (ordered ≼), ← Cat.assoc (thinRel Q) (setify°)]
-        exact comp_mono_right (setify_conv_comp_thinlist_le hQ) _
+        exact comp_mono_right setify_conv_comp_thinlist_le _
     _ = thinRel Q ≫ sortRel listRelator setify ordered ≼ := rfl
 
-calc_steps sort_comp_bump_thinlist_le
+calc_steps sort_comp_thinlist_le
 
 /-- **(8.7)** in `Rel` (book p.203), `sort(≼)·minlist R ⊑ min R`, with no hypothesis: `minlist(R)`
     is `setify est(R)`, so `ordered(≼)` drops by coreflexivity and `setify° setify` by `setify`
@@ -1451,7 +1463,7 @@ public theorem connected_topMor : Freyd.Alg.Connected (topMor (dE A) (dE A)) :=
     `thin(Q)`. -/
 public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
     (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
-    {«≼» Q : dE A ⟶ dE A} (hQ : Preorder Q) (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    {«≼» Q : dE A ⟶ dE A} (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
     (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
     (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
     (CL.F L E).map (sortRel listRelator setify ordered ≼) ≫ listcp
@@ -1507,7 +1519,7 @@ public theorem sortedAlg_fusion {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p
     _ ⊑ Λ ((CL.F L E).map (∋ (dE A))
           ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
         ≫ thinRel Q ≫ sortRel listRelator setify ordered ≼ :=
-        comp_mono_left _ (sort_comp_bump_thinlist_le hQ)
+        comp_mono_left _ sort_comp_thinlist_le
 
 calc_steps sortedAlg_fusion
 
@@ -1583,7 +1595,7 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
             ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
             ≫ thinRel Q) ≫ sortRel listRelator setify ordered ≼) ≫ minlist R :=
         comp_mono_right (relCata_le_comp (CL.initial L E) (by
-          rw [Cat.assoc]; exact sortedAlg_fusion f₁ f₂ p₁ p₂ hp₁ hp₂ hQ hP hc hmono₁ hmono₂)) _
+          rw [Cat.assoc]; exact sortedAlg_fusion f₁ f₂ p₁ p₂ hp₁ hp₂ hP hc hmono₁ hmono₂)) _
     _ ⊑ relCata (I := CL.initial L E) (Λ ((CL.F L E).map (∋ (dE A))
             ≫ ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂)))
             ≫ thinRel Q) ≫ est R :=
@@ -1593,5 +1605,24 @@ public theorem thinningList {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ 
         thinning_est (CL.initial L E) hQR hQ hR (Freyd.Alg.monoAlg_union hm₁ hm₂)
 
 calc_steps thinningList
+
+/-- **THEOREM 8.2** at the implementation `⦇[nil,bump(Q)]⦈` of `thinlist(Q)`: the fold and
+    composition are monotonic, so the smaller algebra gives the smaller fold. -/
+public theorem thinningList_bumpFold {L E : Type} (f₁ f₂ : L ⊕ E × A → A) (p₁ p₂ : dE A ⟶ dE A)
+    (hp₁ : Coreflexive p₁) (hp₂ : Coreflexive p₂)
+    {«≼» Q R : dE A ⟶ dE A} (hQR : Q ⊑ R) (hQ : Preorder Q) (hR : Preorder R)
+    (hm₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁ ≫ p₁) Q)
+    (hm₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂ ≫ p₂) Q)
+    (hP : Preorder ≼) (hc : Freyd.Alg.Connected ≼)
+    (hmono₁ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₁) ≼)
+    (hmono₂ : Freyd.Alg.MonoAlg (F := CL.F L E) (graph f₂) ≼) :
+    relCata (I := CL.initial L E) (listcp ≫ (relProd (dList A) (dList A)).pair
+        (list (graph f₁) ≫ Filter.filter p₁) (list (graph f₂) ≫ Filter.filter p₂)
+        ≫ merge ≼ ≫ bumpFold Q) ≫ minlist R
+      ⊑ Λ (relCata (I := CL.initial L E)
+          ((graph f₁ ≫ p₁) ∪ (graph f₂ ≫ p₂))) ≫ est R :=
+  le_trans (comp_mono_right (relCata_mono (CL.initial L E) (comp_mono_left _ (comp_mono_left _
+      (comp_mono_left _ (by rw [bumpFold_eq]; exact bumpFold_le_thinlist hQ))))) _)
+    (thinningList f₁ f₂ p₁ p₂ hp₁ hp₂ hQR hQ hR hm₁ hm₂ hP hc hmono₁ hmono₂)
 
 end Freyd.Alg.RelSet.ListRel

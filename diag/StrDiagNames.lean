@@ -94,7 +94,7 @@ attribute [diag_noted] dom ran Entire Simple Map Symmetric simplePart codBox
 attribute [diag_noted] RelSet.Poly.listcp RelSet.Poly.listcpFn RelSet.Poly.linear RelSet.Poly.hasArg₂
   RelSet.Poly.relator RelSet.Poly.PolyF RelSet.Poly.PolyC RelSet.Poly.PolyC.zer RelSet.Poly.PolyC.one
   RelSet.Poly.PolyC.const RelSet.Poly.PolyC.arg₁ RelSet.Poly.PolyC.arg₂ RelSet.CL.clF RelSet.ListRel.cppFn RelSet.ListRel.cprFn RelSet.ListRel.cplFn
-  RelSet.CL.thinlist RelSet.ListRel.IsThinlist
+  RelSet.CL.bumpFold RelSet.ListRel.thinlist
 -- A map's type cell labels its ends (`TypeRender.funPieces`), and B&dM write the integers `Int`.
 attribute [diag_noted] _root_.Int
 attribute [diag_noted] RelSet.RT.tree RelSet.TB.tree RelSet.Party.party RelSet.Party.choose RelSet.Tex.interval RelSet.Tex.intern RelSet.Tardy.bagify RelSet.ListRel.subseq RelSet.MSS.mss RelSet.Paragraph.partition RelSet.Bracket.splits RelSet.Edit.step RelSet.TT.F RelSet.Bracket.wrapCatFn RelSet.Tex.Interval RelSet.Knapsack.within RelSet.Tour.tour RelSet.pow RelSet.Paragraph.ok RelSet.Paragraph.fits RelSet.Edit.unstep RelSet.Code.reduce RelSet.Code.decode RelSet.Code.Code RelSet.Tex.Real RelSet.Tex.inrange RelSet.Tex.val RelSet.Tex.step RelSet.Tex.arb RelSet.Tex.f RelSet.Tex.Prog.Reach RelSet.Tour.Journey RelSet.Tex.Iv RelSet.Tex.Digit RelSet.Sub RelSet.ListRel.segment RelSet.Filter.filter RelSet.GCTakeWhile.takewhile RelSet.Party.include Quotient RelSet.Knapsack.g₁ RelSet.Knapsack.g₂ RelSet.Paragraph.g₁ RelSet.Paragraph.g₂ RelSet.Tour.g₁ RelSet.Tour.g₂ RelSet.ListRel.listcp
