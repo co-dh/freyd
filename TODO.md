@@ -102,3 +102,24 @@
 [X] ch14: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
 [X] ch16: proof chains horizontal (lean-chain) by default, except those with a U-shaped wire; review
 [ ] 9.3a definition table looks weird, squeezed, especially <cost, size>.
+
+B&dM companion note (diag/aop/), open as of 2026-10-05:
+[ ] Pres: "can Pres be infix? so instead of Pres(S, Q), we see S Pres Q?" — agent on branch
+    worktree-agent-abbe748bcf6c026fb (rename + pr3 two-line definition done, "pr3 good"); review pr4.
+[ ] 8.3a thinlist: "why use / setify if setify' do?" — define `thinlist(Q) ≜ setify thin(Q) setify° ∩ subseq`;
+    agent on branch worktree-agent-a065e8e87f3161c91; review t2. Needs a full `lake build` in main (S2_30).
+[ ] Row numbers outside every table, SD labels (1),(2),…, every section on a new page — branch
+    worktree-agent-a0b1e249915cd4f68, "n1–n4 good". The axioms note's section breaks and numbers are unchecked.
+[ ] Merge the three branches above to master: full `lake build`, diag-regen, `make c` per chapter, cite, push.
+[ ] "8.3e should have a subsection titled Binary thinning", with a step-by-step table like 8.3d; "this is a
+    general rule. you should add sorting sets too." — every B&dM paragraph title becomes a subsection, ch1–10.
+    After the merge above (it touches 08-thinning.typ).
+[ ] Cut every old definition block to two lines like pr3 (#leanf + one reading + book's name once; one example).
+[ ] Review the ch9/ch10 def table crops.
+[ ] Printer: fix the 4 wrong rules.
+[ ] Printer: rename Lean decls to book names (including 𝒫/ℰ), delete the ~306 rename rules.
+[ ] Printer: symbol rules become Lean notation beside the definition.
+[ ] Printer: 14 hand-typed formula names → diag_unfold.
+[ ] Printer: stop hiding LaxNatural/StrictNatural/OpLaxNatural hypotheses.
+[ ] RCA: the Lemma 8.1 chain lost its triangles; why no gate caught it.
+[ ] cc-guard `minAgents=0` is uncommitted on branch png-open-per-file.
