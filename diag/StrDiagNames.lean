@@ -112,6 +112,8 @@ attribute [diag_noted] RelSet.Detab.R RelSet.Tardy.add RelSet.ListRel.total RelS
   _root_.Fin RelSet.Edit.Op.cpy RelSet.Edit.Op.ins RelSet.ListRel.perm
   RelSet.Sort.flatten RelSet.Sort.join RelSet.Sort.fork RelSet.Sort.null RelSet.Sort.embed
   RelSet.Sort.base RelSet.ISort.add
+-- Renamed to the book's word (B&dM p.86 "preorder", Ex 6.35 "monotonic", §6.4 `Bin`, §7.3 `exclude`).
+attribute [diag_noted] preorder monotonic RelSet.Tardy.bag RelSet.FastExp.Bin RelSet.Party.exclude
 
 open Lean PrettyPrinter Delaborator SubExpr in
 /-- AN OBJECT THE NOTE HAS NO WORD FOR IS THE SET IT WRAPS: a `def` whose body is a one-field record
@@ -185,13 +187,6 @@ attribute [diag_drawn_open] Pres
 -- built out of bundles has no name of its own, which is what every other product relator already
 -- draws by (`openBuiltField?`).
 attribute [diag_unfold] Δ
-
-open Lean PrettyPrinter in
-/-- B&dM's "`Q` a preorder" (p.86) is the note's `preorder(Q)`: lower case, as B&dM write the word,
-    because `Reflexive`/`Transitive` have no capitalised spelling in the note to match. -/
-@[app_unexpander Preorder] def unexpandPreorder : Unexpander
-  | `($_ $R) => `($(mkIdent `preorder) $R)
-  | _ => throw ()
 
 -- A naturality premise is the note's adjective on the family (§5.7: `φ` is "lax", "oplax", "strictly
 -- natural"); `F`, `G` are `φ`'s own type, which the picture beside the formula already draws.
@@ -360,11 +355,6 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 
-open Lean PrettyPrinter in
-/-- The bag relator is the note's lane `bag`; `bag(Job)` is that lane over the `Job` wire. -/
-@[app_unexpander RelSet.Tardy.bagRelator] def unexpandBagRelator : Unexpander
-  | `($_:ident) => `($(mkIdent `bag))
-  | _ => throw ()
 
 -- A DATATYPE'S CARRIER IS THE NOTE'S OBJECT, under the note's own name for it: `tree(A)`,
 -- `list⁺(A)`.  The unexpander writes the NAME, applied; the BRACKETS are the label printer's
@@ -590,9 +580,6 @@ open Lean PrettyPrinter in
 open Lean PrettyPrinter in
 @[app_unexpander RelSet.Party.includeR] def unexpandIncludeR : Unexpander
   | _ => `($(mkIdent `«include»))
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.Party.excludeR] def unexpandExcludeR : Unexpander
-  | _ => `($(mkIdent `exclude))
 
 -- AN ARITHMETIC RELATION IS WRITTEN BY ITS OWN OPERATOR, the way the note writes it: `+` for the
 -- addition's graph, `≤` for the ordering, so `est(leRel)` reads `est(≤)`.  The `Rel` the Lean name
@@ -870,12 +857,6 @@ open Lean PrettyPrinter in
   | _ => throw ()
 
 open Lean PrettyPrinter in
-/-- The rolling rule's hypothesis (B&dM Ex 6.35) in the book's word: `φ` is monotonic. -/
-@[app_unexpander MonotonicHom] def unexpandMonotonicHom : Unexpander
-  | `($_ $f) => `($(mkIdent `monotonic) $f)
-  | _ => throw ()
-
-open Lean PrettyPrinter in
 /-- The hypothesis of B&dM p.158 in the book's word (p.147): `R` is inductive. -/
 @[app_unexpander Inductive] def unexpandInductive : Unexpander
   | `($_ $r) => `($(mkIdent `inductive) $r)
@@ -920,10 +901,6 @@ open Lean PrettyPrinter in
 
 -- B&dM §6.4's vocabulary: `Bin = listl Bit`, `convert = ⦇[zero,shift]⦈`, the specifications `exp(a)`
 -- and `mod(b)`, and the two algebras' `op`, each applied to its parameter as the book writes it.
-open Lean PrettyPrinter in
-@[app_unexpander RelSet.FastExp.dBin] def unexpandFEdBin : Unexpander
-  | _ => `($(mkIdent `Bin))
-
 open Lean PrettyPrinter in
 /-- `IsFHom f g h` is the note's F-homomorphism statement `h : f⟶g` — an arrow of `Alg(F)` from the
     algebra `f` to the algebra `g`, which a type ascription already spells. -/

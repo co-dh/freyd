@@ -201,12 +201,12 @@ public theorem choose_eq :
 /-- **party-defn**: `exclude ≜ (𝟙×(list(choose) concat))π₂`, concretely — the party that leaves
     the root out, so each subtree is free to choose.  Not a map (`exclude_eq` is the
     point-free form). -/
-@[expose] public def excludeR : dBranch A ⟶ dList A :=
+@[expose] public def exclude : dBranch A ⟶ dList A :=
   fun u xs => ∃ xss, listP choose u.2 xss ∧ xs = cconcat xss
 
 /-- `exclude = (𝟙×(list(choose) concat))π₂`, point-free. -/
 public theorem exclude_eq :
-    excludeR = rprodMap (𝟙 (dE A)) (list choose ≫ concatR)
+    exclude = rprodMap (𝟙 (dE A)) (list choose ≫ concatR)
       ≫ graph Prod.snd := by
   apply hom_ext; intro u y
   constructor
@@ -220,7 +220,7 @@ public theorem exclude_eq :
     subtree at once (`pair_eq_rpair` ties `rpair` to the §5.2 `⟨,⟩`). -/
 @[expose] public def S :
     dBranch A ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) :=
-  rpair includeR excludeR
+  rpair includeR exclude
 
 /-- **party-defn**: `party ≜ ⦇S⦈ choose` — every guest list the president's ruling allows
     (structural fold; `party_eq` is the relational-catamorphism form). -/
@@ -349,8 +349,8 @@ public theorem chooseR_monotonic :
 /-- **party-mono-branch, `exclude` row**: `(𝟙×list((R×R)°)) exclude ⊑ exclude R°` —
     `g := choose` (`chooseR_monotonic`) and `h := π₂` (an equality, `rprodMap_id_snd`). -/
 public theorem exclude_monotonic :
-    rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°)) ≫ excludeR
-      ⊑ excludeR ≫ (R rating)° := by
+    rprodMap (𝟙 (dE A)) (list ((rprodMap (R rating) (R rating))°)) ≫ exclude
+      ⊑ exclude ≫ (R rating)° := by
   rw [exclude_eq]
   exact branch_monotonic rating (chooseR_monotonic rating) (le_of_eq (rprodMap_id_snd _))
 
@@ -406,7 +406,7 @@ public theorem exclude_step :
     (graph Prod.snd : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0})
         ⟶ (⟨ConsList Unit (ConsList Unit A × ConsList Unit A)⟩ : RelSet.{0}))
         ≫ list (Λ choose ≫ est((R rating)°)) ≫ concatR
-      ⊑ Λ excludeR ≫ est((R rating)°) := by
+      ⊑ Λ exclude ≫ est((R rating)°) := by
   apply le_iff.mpr; intro u y
   rintro ⟨m, hm, ys, hys, hy⟩
   obtain rfl : m = u.2 := hm
@@ -417,7 +417,7 @@ public theorem exclude_step :
       rw [Λ_eq_classifier] at hP0; exact hP0
     subst hP0'
     exact ((est_apply _ _ _).mp hest).1
-  refine ⟨fun z => excludeR u z, by rw [Λ_eq_classifier]; rfl, ?_⟩
+  refine ⟨fun z => exclude u z, by rw [Λ_eq_classifier]; rfl, ?_⟩
   refine (est_apply _ _ _).mpr ⟨⟨ys, hmem, (show y = cconcat ys from hy)⟩, ?_⟩
   rintro z ⟨qs, hqs, hz⟩
   show costFn rating z ≤ costFn rating y
@@ -430,10 +430,10 @@ public theorem exclude_step :
     `pair_est_le` is stated at `U`, `V`, `Ra`, `Rb`, and its `⟨U,V⟩` is this `S`. -/
 public theorem party_pair_step :
     rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (exclude : dBranch A ⟶ dList A) ≫ est((R rating)°))
       ⊑ Λ (S : dBranch A ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))
           ≫ est((rprodMap (R rating) (R rating))°) :=
-  pair_est_le includeR excludeR (R rating) (R rating)
+  pair_est_le includeR exclude (R rating) (R rating)
 
 /-- **party-laws, greedy row**: Theorem 7.2 at `(R×R)°`, its hypothesis `party_mono`. -/
 public theorem party_greedy :
@@ -468,12 +468,12 @@ public theorem party_laws :
         ≫ Λ choose ≫ est((R rating)°)
       ⊑ Λ party ≫ est((R rating)°) :=
   calc _ ⊑ ⦇(rpair (graph «include»)
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (exclude : dBranch A ⟶ dList A) ≫ est((R rating)°))
       : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°) :=
         comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (le_refl _) (exclude_step rating))) _
     _ ⊑ ⦇(rpair (Λ (includeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
-        (Λ (excludeR : dBranch A ⟶ dList A) ≫ est((R rating)°))
+        (Λ (exclude : dBranch A ⟶ dList A) ≫ est((R rating)°))
       : (RT.F A).obj (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}) ⟶ (⟨ConsList Unit A × ConsList Unit A⟩ : RelSet.{0}))⦈
         ≫ Λ choose ≫ est((R rating)°) :=
         comp_mono_right (relCata_mono (RT.initial A) (rpair_mono (include_step rating) (le_refl _))) _

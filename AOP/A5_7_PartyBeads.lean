@@ -79,8 +79,8 @@ public theorem listP_choose_transfer (R : dE A ⟶ dE B) :
 
 /-- **`exclude` is lax natural**: `(R×list(list R×list R)) exclude ⊑ exclude list(R)`. -/
 public theorem exclude_lax_natural (R : dE A ⟶ dE B) :
-    rprodMap R (list (rprodMap (list R) (list R))) ≫ (excludeR : dBranch B ⟶ dList B)
-      ⊑ (excludeR : dBranch A ⟶ dList A) ≫ list R := by
+    rprodMap R (list (rprodMap (list R) (list R))) ≫ (exclude : dBranch B ⟶ dList B)
+      ⊑ (exclude : dBranch A ⟶ dList A) ≫ list R := by
   refine le_iff.mpr fun u y h => ?_
   obtain ⟨v, ⟨-, h2⟩, qs, hqs, rfl⟩ := h
   obtain ⟨ps, hps, hpq⟩ := listP_choose_transfer R u.2 v.2 qs h2 hqs

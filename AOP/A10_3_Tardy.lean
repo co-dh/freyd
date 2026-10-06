@@ -1226,7 +1226,7 @@ public theorem bag_mono {A B : Type} {R S : dE A ⟶ dE B} (h : R ⊑ S) : bagRe
     ⟨xs, ys, hu, hv, elemsP_mono (le_iff.mp h) xs ys hxy⟩
 
 /-- `bag` BUNDLED as a relator, the lane the tardy-jobs pictures draw over the `Job` wire. -/
-@[expose] public def bagRelator : Relator RelSet.{0} RelSet.{0} where
+@[expose] public def bag : Relator RelSet.{0} RelSet.{0} where
   obj a := Bag a.carrier
   map R := bagRel R
   map_id _ := bag_id
@@ -1256,10 +1256,10 @@ public theorem bagP_snag {A B : Type} (R : dE A ⟶ dE B) (u : (Bag A).carrier) 
 /-- **`snag` IS STRICTLY NATURAL**: `bag(R)×R` then `snag` is `snag` then `bag(R)` — the square
     `bagP_snag` states, with the two composites spelled out. -/
 public theorem snag_strictNatural :
-    StrictNatural bagRelator (Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+    StrictNatural bag (Relator.prod bag (Relator.idRelator RelSet.{0}))
       (fun A => arm₂ (bagAlg (Job := A.carrier))) := by
   intro A B R
-  rw [show (Relator.prod bagRelator (Relator.idRelator RelSet.{0})).map R
+  rw [show (Relator.prod bag (Relator.idRelator RelSet.{0})).map R
       = rprodMap (bagRel R) R from prodMap_eq_rprodMap _ _]
   apply hom_ext
   intro p z
@@ -1272,7 +1272,7 @@ public theorem snag_strictNatural :
 
 /-- `snag°`, the bead the tardy pictures carry: `Rel(Set)` is tabular, so the square turns round. -/
 public theorem snag_recip_strictNatural :
-    StrictNatural (Relator.prod bagRelator (Relator.idRelator RelSet.{0})) bagRelator
+    StrictNatural (Relator.prod bag (Relator.idRelator RelSet.{0})) bag
       (fun A => (arm₂ (bagAlg (Job := A.carrier)))°) :=
   strictNatural_recip (Relator.preservesRecip_of_tabular _)
     (Relator.preservesRecip_of_tabular _) snag_strictNatural
@@ -1294,13 +1294,13 @@ public theorem bagP_nil {A B : Type} (R : dE A ⟶ dE B) (w : (Bag B).carrier) :
     the coproduct `𝟏 + bag(Job)×Job` read summand by summand, the leaf arm the constant lane at `𝟏`
     and the pair arm `snag_strictNatural`'s. -/
 public theorem bagAlg_strictNatural :
-    StrictNatural bagRelator
+    StrictNatural bag
       (Relator.sum (Relator.const (dL Unit))
-        (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+        (Relator.prod bag (Relator.idRelator RelSet.{0})))
       (fun A => bagAlg (Job := A.carrier)) := by
   intro A B R
   rw [show (Relator.sum (Relator.const (dL Unit))
-        (Relator.prod bagRelator (Relator.idRelator RelSet.{0}))).map R
+        (Relator.prod bag (Relator.idRelator RelSet.{0}))).map R
       = sumMap (sumCop (dL Unit) ⟨(Bag A.carrier).carrier × A.carrier⟩)
           (sumCop (dL Unit) ⟨(Bag B.carrier).carrier × B.carrier⟩)
           (𝟙 (dL Unit)) (rprodMap (bagRel R) R) from prodMap_eq_rprodMap _ _ ▸ rfl]
@@ -1330,12 +1330,12 @@ public theorem bagAlg_strictNatural :
 public theorem bagAlg_recip_strictNatural :
     StrictNatural
       (Relator.sum (Relator.const (dL Unit))
-        (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
-      bagRelator
+        (Relator.prod bag (Relator.idRelator RelSet.{0})))
+      bag
       (fun A => (bagAlg (Job := A.carrier))°) :=
-  strictNatural_recip (F := bagRelator)
+  strictNatural_recip (F := bag)
     (G := Relator.sum (Relator.const (dL Unit))
-      (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+      (Relator.prod bag (Relator.idRelator RelSet.{0})))
     (Relator.preservesRecip_of_tabular _) (Relator.preservesRecip_of_tabular _)
     bagAlg_strictNatural
 
@@ -1375,7 +1375,7 @@ public theorem bagP_bagify {A B : Type} (R : dE A ⟶ dE B) (s : SnocList Unit A
 /-- **`bagify` IS STRICTLY NATURAL**: relating job by job then forgetting the order is forgetting
     it then `bag(R)` — a re-ordering of the jobs carries the matching with it. -/
 public theorem bagify_strictNatural :
-    StrictNatural bagRelator (snocRelator Unit) (fun A => bagify (Job := A.carrier)) := by
+    StrictNatural bag (snocRelator Unit) (fun A => bagify (Job := A.carrier)) := by
   intro A B R
   apply hom_ext
   intro s w
@@ -1389,8 +1389,8 @@ public theorem bagify_strictNatural :
 /-- `H = bagify°`, the bead the tardy pictures carry: `Rel(Set)` is tabular, so the square turns
     round and `H` is strictly natural too. -/
 public theorem bagify_recip_strictNatural :
-    StrictNatural (snocRelator Unit) bagRelator (fun A => (bagify (Job := A.carrier))°) :=
-  strictNatural_recip (F := bagRelator) (G := snocRelator Unit)
+    StrictNatural (snocRelator Unit) bag (fun A => (bagify (Job := A.carrier))°) :=
+  strictNatural_recip (F := bag) (G := snocRelator Unit)
     (φ := fun A => bagify (Job := A.carrier))
     (Relator.preservesRecip_of_tabular _) (Relator.preservesRecip_of_tabular _)
     bagify_strictNatural
@@ -1463,19 +1463,19 @@ public theorem nilR_laxNatural :
     `bagify°×𝟙` then `add`, both strictly natural. -/
 public theorem bagAdd_laxNatural :
     LaxNatural (snocRelator Unit)
-      (Relator.sum (Relator.const (dL Unit)) (Relator.prod bagRelator (Relator.idRelator RelSet.{0})))
+      (Relator.sum (Relator.const (dL Unit)) (Relator.prod bag (Relator.idRelator RelSet.{0})))
       (fun a => junc (sumCop (dL Unit) ⟨(Bag a.carrier).carrier × a.carrier⟩) nilR
         (prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
           (bagify (Job := a.carrier))° (𝟙 a) ≫ add)) := by
   intro A B R
-  refine laxNatural_junc (F' := Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+  refine laxNatural_junc (F' := Relator.prod bag (Relator.idRelator RelSet.{0}))
     (ψ := fun a => prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
       (bagify (Job := a.carrier))° (𝟙 a) ≫ add) nilR_laxNatural ?_ R
   intro A B R
   show _ ≫ (_ ≫ add) ⊑ (_ ≫ add) ≫ _
   refine laxNatural_comp_slide (F := snocRelator Unit)
     (G := Relator.prod (snocRelator Unit) (Relator.idRelator RelSet.{0}))
-    (H := Relator.prod bagRelator (Relator.idRelator RelSet.{0}))
+    (H := Relator.prod bag (Relator.idRelator RelSet.{0}))
     (ψ := fun a => prodMap (relProd (Bag a.carrier) a) (relProd (dSL Unit a.carrier) a)
       (bagify (Job := a.carrier))° (𝟙 a)) (φ := fun a => add (Job := a.carrier)) ?_ ?_
   · exact le_of_eq (strictNatural_prod (F' := Relator.idRelator RelSet.{0}) bagify_recip_strictNatural

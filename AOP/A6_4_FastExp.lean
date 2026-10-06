@@ -30,7 +30,7 @@ open Freyd Freyd.Alg.RelSet.SL
 @[expose] public abbrev dNB : RelSet.{0} := ⟨Nat × Bit⟩
 
 /-- `Bin`, the binary-number datatype `1 + Bin × Bit`, is `SnocList Unit Bit`. -/
-@[expose] public abbrev dBin : RelSet.{0} := dSL Unit Bit
+@[expose] public abbrev Bin : RelSet.{0} := dSL Unit Bit
 
 /-- `I = initial Unit Bit`, the initial algebra of `F X = 1 + X × Bit`. -/
 abbrev I : InitialAlgebra (F Unit Bit) := initial Unit Bit
@@ -47,7 +47,7 @@ abbrev I : InitialAlgebra (F Unit Bit) := initial Unit Bit
 @[expose] public def shift : dNB ⟶ dNat := graph fun p => 2 * p.1 + p.2.val
 
 /-- **B&dM p.144**: `convert = ⦇[zero,shift]⦈ : Bin ⟶ Nat`. -/
-@[expose] public def convert : dBin ⟶ dNat := relCata (junc (cop dNat) zero shift)
+@[expose] public def convert : Bin ⟶ dNat := relCata (junc (cop dNat) zero shift)
 
 /-- **B&dM p.144**: the specification `exp(a)(b) = a^b`. -/
 @[expose] public def exp (a : Nat) : dNat ⟶ dNat := graph fun b => a ^ b
