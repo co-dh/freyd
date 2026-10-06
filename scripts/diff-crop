@@ -748,7 +748,8 @@ def disp_spans(pdf, order, parts, ids, tmp):
         if not parts[d][0][0] - 1 <= a[0] <= parts[d][0][0]:
             raise Refuse(f"({d}): own number on page {a[0]} of {pdf}, but its query sets it on page "
                          f"{parts[d][0][0]} — the pdf was not compiled from the queried tree (for a rev, "
-                         f"its panels differ from the current diag/generated)")
+                         f"its panels differ from the current diag/generated; for the after, rebuild the "
+                         f"pdf with `make c CH=<n>`)")
         for j, (pg, y, h) in enumerate(parts[d]):
             nxt = min([sy for sp, sy in starts if sp == pg and sy > y + 1], default=y + h + GROWMAX)
             top = min(y, a[2]) if j == 0 and a[0] == pg else y
@@ -805,7 +806,11 @@ def labelcrop(key, rev, before_pdf, after_pdf, typ, out, tmp, caption, border, a
     emit("magick", cb, "-trim", "+repage", tb)
     emit("magick", ca, "-trim", "+repage", ta)
     if size(tb) == size(ta) and re.match(r"0\b", run("compare", "-metric", "AE", tb, ta, f"{tmp}/ld.png").stderr.strip()):
-        print(f"{key}: unchanged, skipped (crops pixel-identical)")
+        # Both halves were located by their own pdf's anchor (`disp_spans`); name the pages so a key that
+        # is only CITED by the edited display (`@lax-closure` in 5.7.2a) is seen to be the wrong key.
+        print(f"{key}: unchanged, skipped (crops pixel-identical): before {', '.join(borders)} p{bpages} / "
+              f"after {', '.join(ids)} p{apages} — the edit is in another display; try the key of the "
+              f"display that cites `{key}`")
         return None
     rings(bcuts, acuts, cb, ca, tmp, key)
     label(cb, f"{tmp}/llb.png", f"{'/'.join(borders)} BEFORE ({rev}) p{bpages[0]}", tmp, [])
