@@ -801,6 +801,17 @@ public theorem con_nil (u : Unit) :
 /-- **edit-defn**: `α=[nil,cons]`, the `cons` arm. -/
 public theorem con_cons (o : Op Char) (es : ConsList Unit (Op Char)) :
     con (Sum.inr (o, es) : (Fobj Unit (Op Char) (dEdit Char)).carrier) = ConsList.cons o es := rfl
+/-- **edit-defn**: the edit sequences' initial algebra IS the junction `α=[nil,cons]` of its two
+    constructors, at the empty leaf. -/
+public theorem con_eq_junc :
+    graph (con (L := Unit) (E := Op Char))
+      = junc (sumCop (dL Unit) ⟨Op Char × ConsList Unit (Op Char)⟩) wrapR consR :=
+  hom_ext fun u es => by
+    cases u with
+    | inl d =>
+      cases d; simp [junc, graph, sumCop, wrapR, con]
+      exact ⟨fun h => ⟨(), h⟩, fun ⟨(), h⟩ => h⟩
+    | inr p => simp [junc, graph, sumCop, consR, con]
 
 /-- **edit-defn**: `base` returns `([],[])`. -/
 public theorem base_nil (u : Unit) :
